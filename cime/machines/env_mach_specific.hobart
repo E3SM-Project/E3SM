@@ -1,0 +1,56 @@
+#! /bin/csh -f
+
+#===============================================================================
+# Hobart machine specific settings
+#===============================================================================
+setenv PATH /home/jedwards/cmake-3.2.3/bin:$PATH
+# statements such as these screw up the module loading, we cannot do this...
+#cmake --version
+set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
+
+if($status == 0) then
+  set COMPILER = `./xmlquery COMPILER -value`
+  set MPILIB = `./xmlquery MPILIB -value`
+endif
+
+limit stacksize unlimited
+limit coredumpsize unlimited
+
+source /usr/share/Modules/init/csh
+module purge
+if ( $COMPILER == "intel" ) then
+    module load compiler/intel/15.0.2.164
+    if ( $MPILIB != "mpi-serial" ) then
+        module load tool/parallel-netcdf/1.6.1/intel
+    endif
+endif
+
+if ( $COMPILER == "pgi" ) then
+    module load compiler/pgi/15.1
+endif
+
+if ( $COMPILER == "nag" ) then
+    setenv MACH hobart
+    module load compiler/nag/6.0
+    if( $MPILIB == "mvapich2" ) then
+      ./xmlchange MPILIB=openmpi
+#      module rm mpi
+#      module load mpi/nag/mvapich2-2.1
+   endif
+endif
+
+if ( $COMPILER == "gnu" ) then
+    module load compiler/gnu/4.8.3
+endif
+
+setenv OMP_STACKSIZE 64M
+setenv NETCDF_DIR $NETCDF_PATH
+# statements such as these screw up the module loading, we cannot do this...
+#module list
+
+# this if statement is necessary for the current module-loading system to 
+# work, if removed it will not work any longer!!!
+# DO NOT REMOVE!!!!!
+if ( $?PERL ) then
+  printenv
+endif

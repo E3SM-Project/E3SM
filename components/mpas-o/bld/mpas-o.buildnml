@@ -1,0 +1,550 @@
+#! /usr/bin/env perl
+use strict;
+use Cwd;
+
+if ($#ARGV == -1) {
+    die " ERROR mpas-o.buildnml: must specify a caseroot input argument";
+}
+my ($CASEROOT) = @ARGV;
+chdir "${CASEROOT}";
+
+my @dirs = ("$CASEROOT/Tools");
+unshift @INC, @dirs;
+require SetupTools;
+my $sysmod;
+
+my $CASEROOT		= `./xmlquery  CASEROOT			-value`;
+my $CASEBUILD		= `./xmlquery  CASEBUILD		-value`;
+my $CCSMROOT		= `./xmlquery  CCSMROOT			-value`;
+my $OBJROOT		    = `./xmlquery  OBJROOT			-value`;
+my $SCRIPTSROOT		= `./xmlquery  SCRIPTSROOT		-value`;
+my $COMP_INTERFACE	= `./xmlquery  COMP_INTERFACE	-value`;
+my $DIN_LOC_ROOT    = `./xmlquery  DIN_LOC_ROOT     -value`;
+my $OCN_GRID		= `./xmlquery  OCN_GRID			-value`;
+my $NTASKS_OCN		= `./xmlquery  NTASKS_OCN		-value`;
+#my $NINST_OCN		= `./xmlquery  NINST_OCN		-value`;
+my $NINST_OCN = 1; # Change if you want multiple instances... though this isn't coded yet.
+my $RUNDIR		    = `./xmlquery  RUNDIR			-value`;
+my $STREAM_NAME     = 'streams.ocean';
+
+if (! -d "$CASEBUILD/mpas-oconf" ) {
+    $sysmod = "mkdir $CASEBUILD/mpas-oconf";
+    system($sysmod) == 0 or die "ERROR mpas-o.buildnml: $sysmod failed: $?\n";
+}
+
+#--------------------------------------------------------------------
+# Determine date stamp, from grid names
+#--------------------------------------------------------------------
+
+my $grid_date = '';
+my $grid_prefix = '';
+my $decomp_prefix = '';
+
+if ( $OCN_GRID eq 'oEC60to30' ) {
+	$grid_date .= '150107';
+	$grid_prefix .= 'ocean.EC.60-30km';
+	$decomp_prefix .= 'mpas-o.graph.info.';
+} elsif ( $OCN_GRID eq 'mpas120' ) {
+	$grid_date .= '121116';
+	$grid_prefix .= 'ocean120km';
+	$decomp_prefix .= 'mpas-o.graph.info.';
+}
+
+chdir "$CASEBUILD/mpas-oconf";
+
+#--------------------------------------------------------------------
+# Generate input data file
+#--------------------------------------------------------------------
+
+open(my $input_list, "+>", "$CASEBUILD/mpas-o.input_data_list");
+print $input_list "mesh = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_GRID/$grid_prefix.$grid_date.nc\n";
+#print $input_list "full_graph = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_GRID/$decomp_prefix$grid_date\n";
+print $input_list "graph$NTASKS_OCN = $DIN_LOC_ROOT/ocn/mpas-o/$OCN_GRID/$decomp_prefix$grid_date.part.$NTASKS_OCN\n";
+close($input_list);
+
+#--------------------------------------------------------------------
+# Invoke mpas build-namelist - output will go in $CASEBUILD/mpas-oconf
+#--------------------------------------------------------------------
+
+my $inst_string;
+my $inst_counter = 1;
+while ($inst_counter <= $NINST_OCN) {
+
+    # -----------------------------------------------------
+    # determine instance string 
+    # -----------------------------------------------------
+
+    $inst_string = "";       
+    if ($NINST_OCN > 1) {
+		$inst_string = `printf _%04d $inst_counter`;
+
+		# If multi-instance case does not have restart file, use single-case restart
+		# for each instance
+		if ( (! -e "$RUNDIR/rpointer.ocn${inst_string}") && (-e "$RUNDIR/rpointer.ocn") ) {
+				$sysmod = "cp -v $RUNDIR/rpointer.ocn $RUNDIR/rpointer.ocn${inst_string}";
+				system($sysmod) == 0 or die "ERROR mpas-o.buildnml: $sysmod failed: $?\n";
+		}
+    }
+
+    # -----------------------------------------------------
+    # create mpas-oconf/cesm_namelist
+    # -----------------------------------------------------
+
+    SetupTools::create_namelist_infile("$CASEROOT", 
+				       "$CASEROOT/user_nl_mpas-o${inst_string}", 
+				       "$CASEBUILD/mpas-oconf/cesm_namelist"); 
+
+    # -----------------------------------------------------
+    # call build-namelist- output will go in $CASEBUILD/mpas-oconf/mpas-o_in
+    # -----------------------------------------------------
+
+    #$sysmod = "$CCSMROOT/components/mpas-o/bld/build-namelist";
+    #$sysmod = "$sysmod -infile $CASEBUILD/mpas-oconf/cesm_namelist";
+    #$sysmod = "$sysmod -inputdata $CASEBUILD/mpas-o.input_data_list";
+    #$sysmod = "$sysmod -rundir $RUNDIR";
+    #$sysmod = "$sysmod -caseroot $CASEROOT";
+    #$sysmod = "$sysmod -scriptsroot $SCRIPTSROOT";
+    #$sysmod = "$sysmod -inst_string \"$inst_string\"";
+    #$sysmod = "$sysmod -namelist \"\&cice $CICE_NAMELIST_OPTS\/\" ";
+    #$sysmod = "$sysmod -config config_cache.xml";
+
+    $sysmod =  "$CCSMROOT/components/mpas-o/bld/build-namelist";
+	$sysmod .= " -infile $CASEBUILD/mpas-oconf/cesm_namelist";
+	$sysmod .= " -caseroot $CASEROOT";
+	$sysmod .= " -casebuild $CASEBUILD";
+	$sysmod .= " -scriptsroot $SCRIPTSROOT";
+	$sysmod .= " -inst_string '$inst_string'";
+	$sysmod .= " -date_stamp '$grid_date'";
+	$sysmod .= " -ocn_grid '$OCN_GRID'";
+
+    system($sysmod) == 0 or die "ERROR mpas-o.buildnml: $sysmod failed: $?\n";
+
+    # -----------------------------------------------------
+    # Copy resolved namelist to $RUNDIR
+    # -----------------------------------------------------
+
+    my $default_in_filename = "mpas-o_in";
+    my $in_filename = "${default_in_filename}${inst_string}";
+    if ( -d ${RUNDIR} ) {
+	$sysmod = "cp $CASEBUILD/mpas-oconf/mpas-o_in ${RUNDIR}/$in_filename";
+	system($sysmod) == 0 or die "ERROR mpas-o.buildnml: $sysmod failed: $?\n";
+    }
+
+    # -----------------------------------------------------
+    # increment instance counter
+    # -----------------------------------------------------
+
+    $inst_counter = $inst_counter + 1;
+}
+
+# Write streams file if there isn't one in SourceMods
+
+if ( -e "$CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME" ) {
+	$sysmod = "cp $CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME $RUNDIR/$STREAM_NAME";
+	system($sysmod) == 0 or die "ERROR mpas-o.buildnml: $sysmod fails: $?\n";
+} else {
+	open(my $stream_file, "+>", "$RUNDIR/$STREAM_NAME");
+	print $stream_file "<streams>\n";
+	print $stream_file "\n";
+	print $stream_file "<immutable_stream name=" . '"mesh"' . "\n";
+	print $stream_file "                  type=" . '"none"' . "\n";
+	print $stream_file "                  filename_template=" . '"mesh_variables.nc"' . "\n";
+	print $stream_file "/>\n";
+
+	print $stream_file "<immutable_stream name=" . '"input"' . "\n";
+	print $stream_file "                  type=" . '"input"' . "\n";
+	print $stream_file "                  filename_template=" . '"' 
+						 . "$DIN_LOC_ROOT/ocn/mpas-o/$OCN_GRID/$grid_prefix.$grid_date.nc" 
+						 . '"' . "\n";
+	print $stream_file "                  input_interval=" . '"initial_only"' . "\n"; 
+	print $stream_file "/>\n";
+	print $stream_file "\n";
+	print $stream_file "<!--\n";
+	print $stream_file "The restart stream is actually controlled via the coupler.\n";
+	print $stream_file "Changing output_interval here will not have any affect on\n";
+	print $stream_file "the frequency restart files are written.\n";
+	print $stream_file "\n";
+	print $stream_file "Changing the output_interval could cause loss of data.\n";
+	print $stream_file "\n";
+	print $stream_file "The output_interval is set to 1 second to ensure each restart frame has a\n";
+	print $stream_file "unique file.\n";
+	print $stream_file "-->\n";
+
+	print $stream_file "<immutable_stream name=" . '"restart"' . "\n";
+	print $stream_file "				  type=" . '"input;output"' . "\n";
+	print $stream_file "				  filename_template=" . '"rst.ocn.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "				  filename_interval=" . '"output_interval"' . "\n";
+	print $stream_file "				  reference_time=" . '"0000-01-01_00:00:00"' . "\n";
+	print $stream_file "				  clobber_mode=" . '"truncate"'. "\n";
+	print $stream_file "				  input_interval=" . '"initial_only"' ."\n";
+	print $stream_file "				  output_interval=" . '"00-00-00_00:00:01"/>'. "\n";
+	print $stream_file "\n";
+	print $stream_file "<!--\n";
+	print $stream_file "output is the main history output stream. You can add auxiliary streams to\n";
+	print $stream_file "this stream to include more fields.\n";
+	print $stream_file "-->\n";
+	print $stream_file "\n";
+	print $stream_file "<stream name=" . '"output"' . "\n";
+	print $stream_file "		type=" . '"output"' . "\n";
+	print $stream_file "		filename_template=" . '"hist.ocn.$Y-$M-$D_$h.$m.$s.nc"'. "\n";
+	print $stream_file "		filename_interval=" . '"01-00-00_00:00:00"' . "\n";
+	print $stream_file "		reference_time=". '"0000-01-01_00:00:00"' . "\n";
+	print $stream_file "		clobber_mode=". '"truncate"'. "\n";
+	print $stream_file "		output_interval=" . '"00-01-00_00:00:00">' . "\n";
+	print $stream_file "\n";
+	print $stream_file "	<stream name=" . '"mesh"/>' . "\n";
+	print $stream_file "	<stream name=" . '"real_world"/>' . "\n";
+	print $stream_file "	<var_array name=" . '"tracers"/>' . "\n";
+	print $stream_file "	<var name=" . '"layerThickness"/>' . "\n";
+	print $stream_file "	<var name=" . '"ssh"/>' . "\n";
+	print $stream_file "	<var name=" . '"maxLevelEdgeTop"/>' . "\n";
+	print $stream_file "	<var name=" . '"vertCoordMovementWeights"/>' . "\n";
+	print $stream_file "	<var name=" . '"edgeMask"/>' . "\n";
+	print $stream_file "	<var name=" . '"vertexMask"/>' . "\n";
+	print $stream_file "	<var name=" . '"cellMask"/>' . "\n";
+	print $stream_file "	<var name=" . '"refZMid"/>' . "\n";
+	print $stream_file "	<var name=" . '"refLayerThickness"/>' . "\n";
+	print $stream_file "	<var name=" . '"xtime"/>' . "\n";
+	print $stream_file "	<var name=" . '"zMid"/>' . "\n";
+	print $stream_file "	<var name=" . '"zTop"/>' . "\n";
+	print $stream_file "	<var name=" . '"kineticEnergyCell"/>' . "\n";
+	print $stream_file "	<var name=" . '"relativeVorticityCell"/>' . "\n";
+	print $stream_file "	<var name=" . '"areaCellGlobal"/>' . "\n";
+	print $stream_file "	<var name=" . '"areaEdgeGlobal"/>' . "\n";
+	print $stream_file "	<var name=" . '"areaTriangleGlobal"/>' . "\n";
+	print $stream_file "	<var name=" . '"volumeCellGlobal"/>' . "\n";
+	print $stream_file "	<var name=" . '"volumeEdgeGlobal"/>' . "\n";
+	print $stream_file "	<var name=" . '"CFLNumberGlobal"/>' . "\n";
+	print $stream_file "\n";
+	print $stream_file "</stream>\n";
+	print $stream_file "\n";
+	print $stream_file "<!--\n";
+	print $stream_file "Streams between this line and the auxiliary stream line below are analysis member streams.\n";
+	print $stream_file "They can be used to perform online analysis of the simulation and control the output of\n";
+	print $stream_file "the analysis data.\n";
+	print $stream_file "-->\n";
+	print $stream_file "\n";
+	print $stream_file "<stream name=" . '"globalStatsOutput"' . "\n";
+	print $stream_file "		type=" . '"output"' . "\n";
+	print $stream_file "		filename_template=" . '"analysis_members/ocn.globalStats.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "		filename_interval=" . '"01-00-00_00:00:00"' . "\n";
+	print $stream_file "		packages=" . '"amGlobalStats"' . "\n";
+	print $stream_file "		clobber_mode=" . '"truncate"' . "\n";
+	print $stream_file "		output_interval=" . '"0010_00:00:00">' . "\n";
+	print $stream_file "\n";
+	print $stream_file "	<var_array name=" . '"minGlobalStats"/>' . "\n";
+	print $stream_file "	<var_array name=" . '"maxGlobalStats"/>' . "\n";
+	print $stream_file "	<var_array name=" . '"sumGlobalStats"/>' . "\n";
+	print $stream_file "	<var_array name=" . '"rmsGlobalStats"/>' . "\n";
+	print $stream_file "	<var_array name=" . '"avgGlobalStats"/>' . "\n";
+	print $stream_file "	<var_array name=" . '"vertSumMinGlobalStats"/>' . "\n";
+	print $stream_file "	<var_array name=" . '"vertSumMaxGlobalStats"/>' . "\n";
+	print $stream_file "	<var name=" . '"xtime"/>' . "\n";
+	print $stream_file "\n";
+	print $stream_file "</stream>\n";
+	print $stream_file "\n";
+	print $stream_file "<stream name=" . '"zonalMeanOutput"' . "\n";
+	print $stream_file "		type=" . '"output"' . "\n";
+	print $stream_file "		filename_template=" . '"analysis_members/ocn.zonalMeans.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "		filename_interval=" . '"01-00-00_00:00:00"' . "\n";
+	print $stream_file "		packages=" . '"amZonalMean"' . "\n";
+	print $stream_file "		clobber_mode=" . '"truncate"' . "\n";
+	print $stream_file "		output_interval=" . '"0000_12:00:00">' . "\n";
+	print $stream_file "\n";
+	print $stream_file "	<var_array name=" . '"tracersZonalMean"/>' . "\n";
+	print $stream_file "	<var name=" . '"xtime"/>' . "\n";
+	print $stream_file "	<var name=" . '"binCenterZonalMean"/>' . "\n";
+	print $stream_file "	<var name=" . '"binBoundaryZonalMean"/>' . "\n";
+	print $stream_file "	<var name=" . '"velocityZonalZonalMean"/>' . "\n";
+	print $stream_file "	<var name=" . '"velocityMeridionalZonalMean"/>' . "\n";
+	print $stream_file "\n";
+	print $stream_file "</stream>\n";
+	print $stream_file "\n";
+	print $stream_file "<stream name=" . '"sfcAreaOutput"' . "\n";
+	print $stream_file "        type=" . '"output"' . "\n";
+	print $stream_file "        filename_template=" . '"analysis_members/surface_area_weighted_averages.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "        filename_interval=" . '"01-00-00_00:00:00"' . "\n";
+	print $stream_file "        clobber_mode=" . '"truncate"' . "\n";
+	print $stream_file "        packages=" . '"amSfcAreaWeightedAvgPkg"' . "\n";
+	print $stream_file "        output_interval=" . '"00-00-05_00:00:00" >' . "\n";
+	print $stream_file "\n";
+	print $stream_file "    <var_array name=" . '"minValueWithinOceanRegion"/>' . "\n";
+	print $stream_file "    <var_array name=" . '"maxValueWithinOceanRegion"/>' . "\n";
+	print $stream_file "    <var_array name=" . '"avgValueWithinOceanRegion"/>' . "\n";
+	print $stream_file "    <var name=" . '"xtime"/>' . "\n";
+	print $stream_file "</stream>\n";
+	print $stream_file "\n";
+	print $stream_file "<stream name=" . '"waterMassOutput"' . "\n";
+	print $stream_file "        type=" . '"output"' . "\n";
+	print $stream_file "        filename_template=" . '"analysis_members/water_mass_census.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "        filename_interval=" . '"01-00-00_00:00:00"' . "\n";
+	print $stream_file "        clobber_mode=" . '"truncate"' . "\n";
+	print $stream_file "        packages=" . '"amWaterMassCensusPkg"' . "\n";
+	print $stream_file "        output_interval=" . '"00-00-05_00:00:00" >' . "\n";
+	print $stream_file "\n";
+	print $stream_file "    <var_array name=" . '"waterMassCensusTemperatureValues"/>' . "\n";
+	print $stream_file "    <var_array name=" . '"waterMassCensusSalinityValues"/>' . "\n";
+	print $stream_file "    <var_array name=" . '"waterMassFractionalDistribution"/>' . "\n";
+	print $stream_file "    <var_array name=" . '"potentialDensityOfTSDiagram"/>' . "\n";
+	print $stream_file "    <var_array name=" . '"zPositionOfTSDiagram"/>' . "\n";
+	print $stream_file "    <var name=" . '"xtime"/>' . "\n";
+	print $stream_file "</stream>\n";
+	print $stream_file "\n";
+	print $stream_file "<stream name=" . '"layerVolOutput"' . "\n";
+	print $stream_file "        type=" . '"output"' . "\n";
+	print $stream_file "        filename_template=" . '"analysis_members/layer_volume_weighted_averages.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "        filename_interval=" . '"01-00-00_00:00:00"' . "\n";
+	print $stream_file "        clobber_mode=" . '"truncate"' . "\n";
+	print $stream_file "        packages=" . '"amLayerVolWeightedAvgPkg"' . "\n";
+	print $stream_file "        output_interval=" . '"00-00-05_00:00:00" >' . "\n";
+	print $stream_file "\n";
+	print $stream_file "    <var_array name=" . '"minValueWithinOceanLayerRegion"/>' . "\n";
+	print $stream_file "    <var_array name=" . '"maxValueWithinOceanLayerRegion"/>' . "\n";
+	print $stream_file "    <var_array name=" . '"avgValueWithinOceanLayerRegion"/>' . "\n";
+	print $stream_file "    <var_array name=" . '"minValueWithinOceanVolumeRegion"/>' . "\n";
+	print $stream_file "    <var_array name=" . '"maxValueWithinOceanVolumeRegion"/>' . "\n";
+	print $stream_file "    <var_array name=" . '"avgValueWithinOceanVolumeRegion"/>' . "\n";
+	print $stream_file "    <var name=" . '"xtime"/>' . "\n";
+	print $stream_file "</stream>\n";
+	print $stream_file "\n";
+	print $stream_file "<stream name=" . '"okuboWeissOutput"' . "\n";
+	print $stream_file "        type=" . '"output"' . "\n";
+	print $stream_file "        filename_template=" . '"analysis_members/okuboWeiss.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "        filename_interval=" . '"01-00-00_00:00:00"' . "\n";
+	print $stream_file "        clobber_mode=" . '"truncate"' . "\n";
+	print $stream_file "        packages=" . '"amOkuboWeiss"' . "\n";
+	print $stream_file "        output_interval=" . '"00-00-05_00:00:00" >' . "\n";
+	print $stream_file "\n";
+	print $stream_file "    <stream name=" . '"mesh"/>' . "\n";
+	print $stream_file "    <var name=" . '"xtime"/>' . "\n";
+	print $stream_file "    <var name=" . '"okuboWeiss"/>' . "\n";
+	print $stream_file "    <var name=" . '"vorticity"/>' . "\n";
+	print $stream_file "    <var name=" . '"eddyID"/>' . "\n";
+	print $stream_file "</stream>\n";
+	print $stream_file "\n";
+	print $stream_file "<stream name=" . '"MerHeatTransOutput"' . "\n";
+	print $stream_file "        type=" . '"output"' . "\n";
+	print $stream_file "        filename_template=" . '"analysis_members/meridional_heat_transport.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "        filename_interval=" . '"01-00-00_00:00:00"' . "\n";
+	print $stream_file "        reference_time=" . '"0000-01-01_00:00:00"' . "\n";
+	print $stream_file "        clobber_mode=" . '"truncate"' . "\n";
+	print $stream_file "        packages=" . '"MerHeatTransPkg"' . "\n";
+	print $stream_file "        output_interval=" . '"0001_00:00:00" >' . "\n";
+	print $stream_file "\n";
+	print $stream_file "    <var name=" . '"xtime"/>' . "\n";
+	print $stream_file "    <var name=" . '"binBoundaryMerHeatTrans"/>' . "\n";
+	print $stream_file "    <var name=" . '"meridionalHeatTransportLatZ"/>' . "\n";
+	print $stream_file "    <var name=" . '"meridionalHeatTransportLat"/>' . "\n";
+	print $stream_file "    <var name=" . '"refZMid"/>' . "\n";
+	print $stream_file "    <var name=" . '"refBottomDepth"/>' . "\n";
+	print $stream_file "</stream>\n";
+	print $stream_file "\n";
+	print $stream_file "\n";
+	print $stream_file "\n";
+	print $stream_file "<!--\n";
+	print $stream_file "All streams below this line are auxiliary streams. They are provided as\n";
+	print $stream_file "groupings of fields that one might be interested in. You can either enable the\n";
+	print $stream_file "stream to write a file for the fileds, or add the stream to another stream that\n";
+	print $stream_file "will already be written.  \n";
+	print $stream_file "-->\n";
+	print $stream_file "\n";
+	print $stream_file "<stream name=" . '"additional_output"' . "\n";
+	print $stream_file "		type=" . '"none"' . "\n";
+	print $stream_file "		filename_template=" . '"ocn.additional_output.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "		filename_interval=" . '"01-00-00_00:00:00"' . "\n";
+	print $stream_file "		reference_time=" . '"0000-01-01_00:00:00"' . "\n";
+	print $stream_file "		clobber_mode=" . '"truncate"' . "\n";
+	print $stream_file ">\n";
+	print $stream_file "\n";
+	print $stream_file "	<var name=" . '"normalVelocity"/>' . "\n";
+	print $stream_file "	<var name=" . '"density"/>' . "\n";
+	print $stream_file "	<var name=" . '"pressure"/>' . "\n";
+	print $stream_file "	<var name=" . '"divergence"/>' . "\n";
+	print $stream_file "	<var name=" . '"viscosity"/>' . "\n";
+	print $stream_file "	<var name=" . '"vertViscTopOfEdge"/>' . "\n";
+	print $stream_file "	<var name=" . '"vertViscTopOfCell"/>' . "\n";
+	print $stream_file "	<var name=" . '"vertDiffTopOfCell"/>' . "\n";
+	print $stream_file "	<var name=" . '"BruntVaisalaFreqTop"/>' . "\n";
+	print $stream_file "	<var name=" . '"RiTopOfCell"/>' . "\n";
+	print $stream_file "	<var name=" . '"bulkRichardsonNumber"/>' . "\n";
+	print $stream_file "	<var name=" . '"vertAleTransportTop"/>' . "\n";
+	print $stream_file "	<var name=" . '"vertVelocityTop"/>' . "\n";
+	print $stream_file "\n";
+	print $stream_file "</stream>\n";
+	print $stream_file "\n";
+	print $stream_file "<stream name=" . '"real_world"' . "\n";
+	print $stream_file "		type=" . '"none"' . "\n";
+	print $stream_file "		filename_template=" . '"ocn.real_world_variables.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "		filename_interval=" . '"01-00-00_00:00:00"' . "\n";
+	print $stream_file "		reference_time=" . '"0000-01-01_00:00:00"' . "\n";
+	print $stream_file "		clobber_mode=" . '"truncate"' . "\n";
+	print $stream_file ">\n";
+	print $stream_file "\n";
+	print $stream_file "	<stream name=" . '"mesh"/>' . "\n";
+	print $stream_file "	<var name=" . '"normalVelocity"/>' . "\n";
+	print $stream_file "	<var name=" . '"velocityZonal"/>' . "\n";
+	print $stream_file "	<var name=" . '"velocityMeridional"/>' . "\n";
+	print $stream_file "	<var name=" . '"displacedDensity"/>' . "\n";
+	print $stream_file "	<var name=" . '"potentialDensity"/>' . "\n";
+	print $stream_file "	<var name=" . '"boundaryLayerDepth"/>' . "\n";
+	print $stream_file "	<var name=" . '"boundaryLayerDepthEdge"/>' . "\n";
+	print $stream_file "	<var name=" . '"indexBoundaryLayerDepth"/>' . "\n";
+	print $stream_file "	<var name=" . '"indexSurfaceLayerDepth"/>' . "\n";
+	print $stream_file "	<var name=" . '"surfaceFrictionVelocity"/>' . "\n";
+	print $stream_file "	<var name=" . '"windStressZonalDiag"/>' . "\n";
+	print $stream_file "	<var name=" . '"windStressMeridionalDiag"/>' . "\n";
+	print $stream_file "	<var name=" . '"surfaceBuoyancyForcing"/>' . "\n";
+	print $stream_file "	<var name=" . '"seaSurfacePressure"/>' . "\n";
+	print $stream_file "\n";
+	print $stream_file "</stream>\n";
+	print $stream_file "\n";
+	print $stream_file "<stream name=" . '"averages"' . "\n";
+	print $stream_file "		type=" . '"none"' . "\n";
+	print $stream_file "		filename_template=" . '"ocn.average_variables.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "		filename_interval=" . '"01-00-00_00:00:00"' . "\n";
+	print $stream_file "		reference_time=" . '"0000-01-01_00:00:00"' . "\n";
+	print $stream_file "		clobber_mode=" . '"truncate"' . "\n";
+	print $stream_file ">\n";
+	print $stream_file "\n";
+	print $stream_file "	<stream name=" . '"mesh"/>' . "\n";
+	print $stream_file "	<var_array name=" . '"avgTracersSurfaceValue"/>' . "\n";
+	print $stream_file "	<var_array name=" . '"avgSurfaceVelocity"/>' . "\n";
+	print $stream_file "	<var_array name=" . '"avgSSHGradient"/>' . "\n";
+	print $stream_file "	<var name=" . '"nAverage"/>' . "\n";
+	print $stream_file "	<var name=" . '"avgSSH"/>' . "\n";
+	print $stream_file "	<var name=" . '"avgNormalVelocity"/>' . "\n";
+	print $stream_file "	<var name=" . '"avgVelocityZonal"/>' . "\n";
+	print $stream_file "	<var name=" . '"avgVelocityMeridional"/>' . "\n";
+	print $stream_file "	<var name=" . '"avgVertVelocityTop"/>' . "\n";
+	print $stream_file "	<var name=" . '"avgNormalTransportVelocity"/>' . "\n";
+	print $stream_file "	<var name=" . '"avgTransportVelocityZonal"/>' . "\n";
+	print $stream_file "	<var name=" . '"avgTransportVelocityMeridional"/>' . "\n";
+	print $stream_file "	<var name=" . '"avgVertTransportVelocityTop"/>' . "\n";
+	print $stream_file "	<var name=" . '"varSSH"/>' . "\n";
+	print $stream_file "	<var name=" . '"varNormalVelocity"/>' . "\n";
+	print $stream_file "	<var name=" . '"varVelocityZonal"/>' . "\n";
+	print $stream_file "	<var name=" . '"varVelocityMeridional"/>' . "\n";
+	print $stream_file "\n";
+	print $stream_file "</stream>\n";
+	print $stream_file "\n";
+	print $stream_file "<stream name=" . '"Cartesian"' . "\n";
+	print $stream_file "		type=" . '"none"' . "\n";
+	print $stream_file "		filename_template=" . '"ocn.Cartesian_variables.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "		filename_interval=" . '"01-00-00_00:00:00"' . "\n";
+	print $stream_file "		reference_time=" . '"0000-01-01_00:00:00"' . "\n";
+	print $stream_file "		clobber_mode=" . '"truncate"' . "\n";
+	print $stream_file ">\n";
+	print $stream_file "\n";
+	print $stream_file "	<stream name=" . '"mesh"/>' . "\n";
+	print $stream_file "	<var name=" . '"velocityX"/>' . "\n";
+	print $stream_file "	<var name=" . '"velocityY"/>' . "\n";
+	print $stream_file "\n";
+	print $stream_file "</stream>\n";
+	print $stream_file "\n";
+	print $stream_file "<stream name=" . '"forcing"' . "\n";
+	print $stream_file "		type=" . '"none"' . "\n";
+	print $stream_file "		filename_template=" . '"ocn.forcing_variables.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "		filename_interval=" . '"01-00-00_00:00:00"' . "\n";
+	print $stream_file "		reference_time=" . '"0000-01-01_00:00:00"' . "\n";
+	print $stream_file "		clobber_mode=" . '"truncate"' . "\n";
+	print $stream_file ">\n";
+	print $stream_file "\n";
+	print $stream_file "	<stream name=" . '"mesh"/>' . "\n";
+	print $stream_file "	<var_array name=" . '"tracersSurfaceValue"/>' . "\n";
+	print $stream_file "	<var_array name=" . '"surfaceVelocity"/>' . "\n";
+	print $stream_file "	<var_array name=" . '"SSHGradient"/>' . "\n";
+	print $stream_file "	<var_array name=" . '"surfaceTracerFlux"/>' . "\n";
+	print $stream_file "	<var_array name=" . '"vertNonLocalFlux"/>' . "\n";
+	print $stream_file "	<var name=" . '"surfaceWindStressMagnitude"/>' . "\n";
+	print $stream_file "	<var name=" . '"surfaceWindStress"/>' . "\n";
+	print $stream_file "	<var name=" . '"surfaceThicknessFlux"/>' . "\n";
+	print $stream_file "	<var name=" . '"seaIceEnergy"/>' . "\n";
+	print $stream_file "	<var name=" . '"penetrativeTemperatureFlux"/>' . "\n";
+	print $stream_file "	<var name=" . '"fractionAbsorbed"/>' . "\n";
+	print $stream_file "	<var name=" . '"windStressZonal"/>' . "\n";
+	print $stream_file "	<var name=" . '"windStressMeridional"/>' . "\n";
+	print $stream_file "	<var name=" . '"latentHeatFlux"/>' . "\n";
+	print $stream_file "	<var name=" . '"sensibleHeatFlux"/>' . "\n";
+	print $stream_file "	<var name=" . '"longWaveHeatFluxUp"/>' . "\n";
+	print $stream_file "	<var name=" . '"longWaveHeatFluxDown"/>' . "\n";
+	print $stream_file "	<var name=" . '"seaIceHeatFlux"/>' . "\n";
+	print $stream_file "	<var name=" . '"shortWaveHeatFlux"/>' . "\n";
+	print $stream_file "	<var name=" . '"evaporationFlux"/>' . "\n";
+	print $stream_file "	<var name=" . '"seaIceSalinityFlux"/>' . "\n";
+	print $stream_file "	<var name=" . '"seaIceFreshWaterFlux"/>' . "\n";
+	print $stream_file "	<var name=" . '"riverRunoffFlux"/>' . "\n";
+	print $stream_file "	<var name=" . '"iceRunoffFlux"/>' . "\n";
+	print $stream_file "	<var name=" . '"rainFlux"/>' . "\n";
+	print $stream_file "	<var name=" . '"snowFlux"/>' . "\n";
+	print $stream_file "	<var name=" . '"iceFraction"/>' . "\n";
+	print $stream_file "	<var name=" . '"prognosticCO2"/>' . "\n";
+	print $stream_file "	<var name=" . '"diagnosticCO2"/>' . "\n";
+	print $stream_file "	<var name=" . '"squaredWindSpeed10Meter"/>' . "\n";
+	print $stream_file "	<var name=" . '"CO2Flux"/>' . "\n";
+	print $stream_file "	<var name=" . '"DMSFlux"/>' . "\n";
+	print $stream_file "	<var name=" . '"nAccumulatedCoupled"/>' . "\n";
+	print $stream_file "	<var name=" . '"thermalExpansionCoeff"/>' . "\n";
+	print $stream_file "	<var name=" . '"salineContractionCoeff"/>' . "\n";
+	print $stream_file "\n";
+	print $stream_file "</stream>\n";
+	print $stream_file "\n";
+	print $stream_file "<stream name=" . '"Gent_McWilliams_spherical"' . "\n";
+	print $stream_file "		type=" . '"none"' . "\n";
+	print $stream_file "		filename_template=" . '"ocn.Gent_McWilliams_spherical_variables.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "		filename_interval=" . '"01-00-00_00:00:00"' . "\n";
+	print $stream_file "		reference_time=" . '"0000-01-01_00:00:00"' . "\n";
+	print $stream_file "		clobber_mode=" . '"truncate"' . "\n";
+	print $stream_file ">\n";
+	print $stream_file "\n";
+	print $stream_file "	<stream name=" . '"mesh"/>' . "\n";
+	print $stream_file "	<var name=" . '"relativeSlopeTopOfCell"/>' . "\n";
+	print $stream_file "	<var name=" . '"relativeSlopeTaperingCell"/>' . "\n";
+	print $stream_file "	<var name=" . '"relativeSlopeTopOfCellZonal"/>' . "\n";
+	print $stream_file "	<var name=" . '"relativeSlopeTopOfCellMeridional"/>' . "\n";
+	print $stream_file "	<var name=" . '"k33"/>' . "\n";
+	print $stream_file "	<var name=" . '"GMBolusVelocityZonal"/>' . "\n";
+	print $stream_file "	<var name=" . '"GMBolusVelocityMeridional"/>' . "\n";
+	print $stream_file "	<var name=" . '"normalGMBolusVelocity"/>' . "\n";
+	print $stream_file "	<var name=" . '"vertGMBolusVelocityTop"/>' . "\n";
+	print $stream_file "	<var name=" . '"gmStreamFuncTopOfEdge"/>' . "\n";
+	print $stream_file "	<var name=" . '"avgNormalGMBolusVelocity"/>' . "\n";
+	print $stream_file "	<var name=" . '"avgGMBolusVelocityZonal"/>' . "\n";
+	print $stream_file "	<var name=" . '"avgGMBolusVelocityMeridional"/>' . "\n";
+	print $stream_file "	<var name=" . '"avgVertGMBolusVelocityTop"/>' . "\n";
+	print $stream_file "\n";
+	print $stream_file "</stream>\n";
+	print $stream_file "\n";
+	print $stream_file "<stream name=" . '"Gent_McWilliams_Cartesian"' . "\n";
+	print $stream_file "		type=" . '"none"' . "\n";
+	print $stream_file "		filename_template=" . '"ocn.Gent_McWilliams_Cartesian_variables.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
+	print $stream_file "		filename_interval=" . '"01-00-00_00:00:00"' . "\n";
+	print $stream_file "		reference_time=" . '"0000-01-01_00:00:00"' . "\n";
+	print $stream_file "		clobber_mode=" . '"truncate"' . "\n";
+	print $stream_file ">\n";
+	print $stream_file "\n";
+	print $stream_file "	<stream name=" . '"mesh"/>' . "\n";
+	print $stream_file "	<var name=" . '"relativeSlopeTopOfCell"/>' . "\n";
+	print $stream_file "	<var name=" . '"relativeSlopeTaperingCell"/>' . "\n";
+	print $stream_file "	<var name=" . '"relativeSlopeTopOfCellX"/>' . "\n";
+	print $stream_file "	<var name=" . '"relativeSlopeTopOfCellY"/>' . "\n";
+	print $stream_file "	<var name=" . '"relativeSlopeTopOfCellZ"/>' . "\n";
+	print $stream_file "	<var name=" . '"k33"/>' . "\n";
+	print $stream_file "	<var name=" . '"GMBolusVelocityX"/>' . "\n";
+	print $stream_file "	<var name=" . '"GMBolusVelocityY"/>' . "\n";
+	print $stream_file "	<var name=" . '"normalGMBolusVelocity"/>' . "\n";
+	print $stream_file "	<var name=" . '"vertGMBolusVelocityTop"/>' . "\n";
+	print $stream_file "	<var name=" . '"gmStreamFuncTopOfEdge"/>' . "\n";
+	print $stream_file "	<var name=" . '"avgNormalGMBolusVelocity"/>' . "\n";
+	print $stream_file "	<var name=" . '"GMStreamFuncX"/>' . "\n";
+	print $stream_file "	<var name=" . '"GMStreamFuncY"/>' . "\n";
+	print $stream_file "\n";
+	print $stream_file "</stream>\n";
+	print $stream_file "</streams>\n";
+
+
+
+}
+
+exit (0);
+
+

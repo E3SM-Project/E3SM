@@ -1,0 +1,4 @@
+     echo "THIS TEST is completed in the create_test call"
+     echo "In order to rerun this test issue the create_test command again - Now exiting"
+
+     exit -1

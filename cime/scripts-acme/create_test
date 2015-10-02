@@ -1,0 +1,259 @@
+#!/usr/bin/env python
+
+"""
+Script to run ACME tests.
+
+Runs single tests or test suites based on either the input list or the testname.
+
+This is currently a wrapper around CESM's create_test, but this will eventually replace
+that tool entirely.
+"""
+
+import acme_util
+acme_util.check_minimum_python_version(2, 7)
+
+import argparse, sys, os, doctest, tempfile
+import update_acme_tests
+from acme_util import expect, warning, verbose_print, run_cmd
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n%s <TEST|SUITE> [<TEST|SUITE> ...] [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Run single test \033[0m
+    > %s <TESTNAME>
+
+    \033[1;32m# Run test suite \033[0m
+    > %s <SUITE>
+
+    \033[1;32m# Run two tests \033[0m
+    > %s <TESTNAME1> <TESTNAME2>
+
+    \033[1;32m# Run two suites \033[0m
+    > %s <SUITE1> <SUITE2>
+
+    \033[1;32m# Run all tests in a suite except for one \033[0m
+    > %s <SUITE> ^<TESTNAME>
+
+    \033[1;32m# Run all tests in a suite except for tests that are in another suite \033[0m
+    > %s <SUITE1> ^<SUITE2>
+""" % ((os.path.basename(args[0]), ) * 9),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    default_compiler, _, _, default_project, default_testroot, default_baseline_root, _ = acme_util.get_machine_info(raw=True)
+    if ("PROJECT" in os.environ):
+        default_project = os.environ["PROJECT"]
+
+    default_baseline_name = acme_util.get_current_branch(repo=acme_util.get_cime_root())
+
+    parser.add_argument("testargs", nargs="+", help="Tests or test suites to run. Testnames expect in form CASE.GRID.COMPSET")
+
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Print extra information")
+
+    parser.add_argument("--no-run", action="store_true",
+                        help="Do not run generated tests")
+
+    parser.add_argument("--no-build", action="store_true",
+                        help="Do not build generated tests, implies --no-run")
+
+    parser.add_argument("--no-batch", action="store_true",
+                        help="Do not submit jobs to batch system, run locally. If false, will default to machine setting.")
+
+    parser.add_argument("-r", "--test-root", default=default_testroot,
+                        help="Where test cases will be created. Will default to scratch root XML machine file")
+
+    parser.add_argument("--baseline-root", default=default_baseline_root,
+                        help="Specifies an root directory for baseline"
+                        "datasets used for Bit-for-bit generate/compare"
+                        "testing.")
+
+    parser.add_argument("--clean", action="store_true",
+                        help="Specifies if tests should be cleaned after run. If set, "
+                        "all object executables, and data files will be removed after tests are run")
+
+    parser.add_argument("-c", "--compare", action="store_true",
+                        help="While testing, compare baselines")
+
+    parser.add_argument("-g", "--generate", action="store_true",
+                        help="While testing, generate baselines")
+
+    parser.add_argument("-b", "--baseline-name", default=default_baseline_name,
+                        help="If comparing or generating baselines, use this directory under baseline root. "
+                        "Default will be current branch name")
+
+    parser.add_argument("--compiler", default=default_compiler,
+                        help="Compiler to use to build ACME.")
+
+    parser.add_argument("-n", "--namelists-only", action="store_true",
+                        help="Only perform namelist actions for tests")
+
+    parser.add_argument("-p", "--project", default=default_project,
+                        help="Specify a project id for the case (optional)."
+                        "Used for accounting when on a batch system."
+                        "The default is user-specified environment variable PROJECT")
+
+    parser.add_argument("-t", "--test-id",
+                        help="Specify an 'id' for the test. This is simply a"
+                        "string that is appended to the end of a test name."
+                        "If no testid is specified, then a time stamp will be"
+                        "used.")
+
+    args = parser.parse_args(args[1:])
+
+    acme_util.set_verbosity(args.verbose)
+
+    expect(not (args.generate and args.compare),
+           "Cannot generate and compare baselines at the same time")
+    expect(not (args.baseline_name != default_baseline_name and (not args.compare and not args.generate)),
+           "Provided baseline name but did not specify compare or generate")
+
+    if (args.no_build):
+        args.no_run = True
+
+    _, _, use_batch, _, testroot, baseline_root, _ = \
+        acme_util.get_machine_info(project=args.project)
+
+    if (not args.no_batch and not use_batch):
+        args.no_batch = True
+
+    # Couple defaults might need fixup because their values were dependent on
+    # information that can't be determined until after args are parsed
+    if (args.test_root == default_testroot):
+        args.test_root = testroot
+
+    if (args.baseline_root == default_baseline_root):
+        args.baseline_root = baseline_root
+
+    return args.testargs, args.compiler, args.no_run, args.no_build, args.no_batch, args.test_root, args.baseline_root, \
+        args.clean, args.compare, args.generate, args.baseline_name, args.namelists_only, args.project, args.test_id
+
+###############################################################################
+def get_full_test_name(test, machine, compiler, testmod=None):
+###############################################################################
+    if (test.count(".") == 2):
+        return "%s.%s_%s%s" % (test, machine, compiler, "" if testmod is None else ".%s" % testmod)
+    elif (test.count(".") == 3):
+        return "%s%s" % (test, "" if testmod is None else ".%s" % testmod)
+    elif (test.count(".") == 4):
+        return test
+    else:
+        expect(False, "Could not parse test entry: '%s'" % test)
+
+###############################################################################
+def get_tests_from_args(testargs, machine, compiler):
+###############################################################################
+    """
+    Return full test names in the form:
+    TESTCASE.GRID.COMPSET.MACHINE_COMPILER.TESTMODS
+    Testmods are optional
+    """
+    acme_test_suites = update_acme_tests.get_test_suites()
+
+    tests_to_run = set()
+    negations = set()
+
+    for testarg in testargs:
+        if (testarg.startswith("^")):
+            negations.add(testarg)
+        elif (testarg in acme_test_suites):
+            for test, testmod in update_acme_tests.get_test_suite(testarg):
+                tests_to_run.add(get_full_test_name(test, machine, compiler, testmod))
+        else:
+            tests_to_run.add(get_full_test_name(testarg, machine, compiler))
+
+    for negation in negations:
+        if (negation in acme_test_suites):
+            for test, testmod in update_acme_tests.get_test_suite(negation):
+                fullname = get_full_test_name(test, machine, compiler, testmod)
+                if (fullname in tests_to_run):
+                    tests_to_run.remove(fullname)
+        else:
+            fullname = get_full_test_name(negation, machine, compiler)
+            if (fullname in tests_to_run):
+                tests_to_run.remove(fullname)
+
+    return tests_to_run
+
+###############################################################################
+def create_test(testargs, compiler, no_run=False, no_build=False, no_batch=False, test_root=None,
+                baseline_root=None, clean=False, compare=False, generate=False,
+                baseline_name=None, namelists_only=False, project=None, test_id=None):
+###############################################################################
+    machine = acme_util.probe_machine_name()
+
+    tests_to_run = get_tests_from_args(testargs, machine, compiler)
+
+    expect(len(tests_to_run) > 0, "No tests to run")
+
+    testlist_file = tempfile.mktemp()
+
+    fd = open(testlist_file, "w")
+    fd.write("\n".join(tests_to_run))
+    fd.close()
+
+    create_test_cmd = "./create_test -input_list %s -mach %s" % (testlist_file, machine)
+    if (no_run):
+        create_test_cmd = "%s -autosubmit off" % create_test_cmd
+    if (no_build):
+        create_test_cmd = "%s -nobuild on" % create_test_cmd
+    if (test_root):
+        create_test_cmd = "%s -testroot %s" % (create_test_cmd, test_root)
+    if (baseline_root):
+        create_test_cmd = "%s -baselineroot %s" % (create_test_cmd, baseline_root)
+    if (clean):
+        create_test_cmd = "%s -clean on" % create_test_cmd
+    if (compare):
+        create_test_cmd = "%s -compare %s/%s" % (create_test_cmd, compiler, baseline_name)
+    if (generate):
+        create_test_cmd = "%s -generate %s/%s" % (create_test_cmd, compiler, baseline_name)
+    if (namelists_only):
+        create_test_cmd = "%s -nlcompareonly" % create_test_cmd
+    if (project):
+        create_test_cmd = "%s -project %s" % (create_test_cmd, project)
+    if (test_id):
+        create_test_cmd = "%s -testid %s" % (create_test_cmd, test_id)
+    if (no_batch):
+        create_test_cmd = "%s -autosubmit off -nobatch on" % create_test_cmd
+
+    stat = acme_util.run_cmd(create_test_cmd,
+                             from_dir=os.path.join(acme_util.get_cime_root(), "scripts"),
+                             ok_to_fail=True,
+                             verbose=True,
+                             arg_stdout=None, arg_stderr=None)[0]
+
+    os.remove(testlist_file)
+
+    return stat
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    acme_util.stop_buffering_output()
+
+    testargs, compiler, no_run, no_build, no_batch, test_root, baseline_root, clean, \
+        compare, generate, baseline_name, namelists_only, project, test_id = \
+        parse_command_line(sys.argv, description)
+
+    sys.exit(create_test(testargs, compiler, no_run, no_build, no_batch, test_root, baseline_root, clean,
+                         compare, generate, baseline_name, namelists_only, project, test_id))
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)
