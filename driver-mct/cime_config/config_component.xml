@@ -392,6 +392,16 @@
     </desc>
   </entry>
 
+  <entry id="RUN_WITH_SUBMIT">
+    <type>logical</type>
+    <group>run_begin_stop_restart</group>
+    <default_value>FALSE</default_value>
+    <valid_values>TRUE,FALSE</valid_values>
+    <file>env_run.xml</file>
+    <desc>Logical to determine whether CESM run has been submitted with the submit script or not</desc>
+  </entry>
+  
+
   <!-- ===================================================================== -->
   <!-- definitions archive -->
   <!-- ===================================================================== -->
