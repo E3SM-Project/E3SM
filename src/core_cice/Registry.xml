@@ -712,7 +712,6 @@
                 <var name="xyyyAvgCell"                       type="real"     dimensions="nCells"                   name_in_code="xyyyAvgCell"/>
                 <var name="yyyyAvgCell"                       type="real"     dimensions="nCells"                   name_in_code="yyyyAvgCell"/>
 	        <var name="workCategoryCell"                  type="real"     dimensions="nCategories nCells"       name_in_code="workCategoryCell"/>
-		<var name="cellsOnEdgeSign"                   type="integer"  dimensions="nEdges"                   name_in_code="cellsOnEdgeSign"/>
 	</var_struct>
 
 	<!--atmos coupling -->

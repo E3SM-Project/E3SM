@@ -14,7 +14,7 @@
 !> \date   March 2015
 !> \details
 !>  This module contains routines for setting up the tracer data structures
-!>  required by the CICE incremental remapping scheme
+!>  required by the CICE incremental remapping scheme.
 !
 !-----------------------------------------------------------------------
 module cice_advection_incremental_remap_tracers
@@ -84,8 +84,8 @@ module cice_advection_incremental_remap_tracers
       ! tracer values at each quadrature point of departure triangles
       !                  (nCategories, nQuadPoints, nTriPerEdge, nEdges) for 2D
       !          (nLayers,nCategories, nQuadPoints, nTriPerEdge, nEdges) for 3D
-      real(kind=RKIND), dimension(:,:,:,:),     pointer :: triangle2D => null()
-      real(kind=RKIND), dimension(:,:,:,:,:),   pointer :: triangle3D => null()
+      real(kind=RKIND), dimension(:,:,:,:),     pointer :: triangleValue2D => null()
+      real(kind=RKIND), dimension(:,:,:,:,:),   pointer :: triangleValue3D => null()
 
       ! coordinates of barycenter associated with this tracer
       ! The term 'barycenter' refers to a center of mass or related quantity, as distinct from the geometric center.
@@ -136,14 +136,22 @@ module cice_advection_incremental_remap_tracers
 
    type(tracer_type), pointer, public :: tracersHead ! the linked list, but this always points to the first element
 
-   !WHL - debug
    logical, parameter :: verbose_tracers = .false.
 !!   logical, parameter :: verbose_tracers = .true.
 
 contains
 
-!TODO - Add subroutine headers
-  !-----------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  routine cice_add_tracers_to_linked_list
+!
+!> \brief  construct a linked list of tracers
+!> \author Adrian Turner and William Lipscomb
+!> \date   March 2015
+!> \details
+!>  This routine constructs a linked list of tracers, with iceAreaCategory
+!>  at the head of the list.
+!-----------------------------------------------------------------------
 
   subroutine cice_add_tracers_to_linked_list(domain)
 
@@ -221,7 +229,16 @@ contains
 
   end subroutine cice_add_tracers_to_linked_list
 
-  !-----------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  routine add_tracer_to_tracer_linked_list
+!
+!> \brief  add a tracer to the linked list
+!> \author Adrian Turner and William Lipscomb
+!> \date   March 2015
+!> \details
+!>  This routine adds a tracer to the linked list.
+!-----------------------------------------------------------------------
 
   subroutine add_tracer_to_tracer_linked_list(tracersHead, &
                                               tracerName,  &
@@ -254,9 +271,6 @@ contains
 
        ! search for the end of the list
        do while (associated(newTracer % nextInitial))
-
-          !TODO - check here that not adding same child
-
           newTracer => newTracer % nextInitial
        enddo
        
@@ -277,7 +291,16 @@ contains
 
   end subroutine add_tracer_to_tracer_linked_list
   
-  !-----------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  routine create_tracers_connectivity
+!
+!> \brief  set pointer from child to parent tracers
+!> \author Adrian Turner and William Lipscomb
+!> \date   March 2015
+!> \details
+!>  This routine sets pointers from each child tracer to its parent tracer.
+!-----------------------------------------------------------------------
 
   subroutine create_tracers_connectivity(tracersHead)
 
@@ -308,6 +331,7 @@ contains
           endif
           
           parentTracer => parentTracer % nextInitial
+
        enddo
        
        thisTracer => thisTracer % nextInitial
@@ -316,7 +340,16 @@ contains
 
   end subroutine create_tracers_connectivity
 
-  !-----------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  routine set_parent_numbers
+!
+!> \brief  compute the number of parents for each tracer
+!> \author Adrian Turner and William Lipscomb
+!> \date   March 2015
+!> \details
+!>  This routine determines the number of parents of each tracer.
+!-----------------------------------------------------------------------
 
   subroutine set_parent_numbers(tracersHead)
 
@@ -349,7 +382,16 @@ contains
 
   end subroutine set_parent_numbers
 
-  !-----------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  routine set_tracers_active
+!
+!> \brief  determine which tracers are active
+!> \author Adrian Turner and William Lipscomb
+!> \date   March 2015
+!> \details
+!>  This routine determines whether each tracer is active.
+!-----------------------------------------------------------------------
 
   subroutine set_tracers_active(domain, tracersHead)
 
@@ -381,11 +423,18 @@ contains
 
   end subroutine set_tracers_active
   
-  !-----------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  routine remove_inactive_tracers
+!
+!> \brief  remove inactive tracers from the linked list
+!> \author William Lipscomb
+!> \date   March 2015
+!> \details
+!>  This routine removes inactive tracers from the linked list.
+!-----------------------------------------------------------------------
 
   subroutine remove_inactive_tracers(domain, tracersHead)
-
-    ! Remove inactive tracers from the linked list
 
     type(domain_type), intent(in) :: domain
 
@@ -468,7 +517,7 @@ contains
                             write(stderrUnit,*) 'ERROR, IR tracers: Cannot have an inactive parent with an active child'
                             write(stderrUnit,*) 'Inactive parent:', trim(tracer % tracerName)
                             write(stderrUnit,*) 'Active child:', trim(childTracer % tracerName)
-                            stop !TODO WHL - abort cleanly
+                            call mpas_dmpar_global_abort('Aborting with IR error')
                          endif
                       endif
                    endif     ! nParents > 1
@@ -487,10 +536,11 @@ contains
 
              nullify(tracerPrev % nextInitial)
              nullify(tracer)
-             if (first) then ! the list is empty; something may be wrong
+
+             if (first) then ! the list is empty; something is wrong
                 nullify(tracersHead)
-                write(stderrUnit,*) 'WARNING: No active tracers for IR'
-!                stop   !WHL - think about whether empty tracer lists should be allowed
+                write(stderrUnit,*) 'ERROR: No active tracers for IR'
+                call mpas_dmpar_global_abort('Aborting with IR error')
              endif
 
           endif  ! associated(tracer % nextInitial)
@@ -501,7 +551,17 @@ contains
 
   end subroutine remove_inactive_tracers
   
-  !-----------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  routine set_tracer_order
+!
+!> \brief  order the tracer linked list
+!> \author Adrian Turner and William Lipscomb
+!> \date   March 2015
+!> \details
+!>  This routine orders the tracer linked list such that parent tracers
+!>  always appear before their children.
+!-----------------------------------------------------------------------
 
   subroutine set_tracer_order(tracersHead)
 
@@ -519,6 +579,7 @@ contains
          tracerLevel
 
     ! determine the number of levels (1, 2 or 3, from max value of nParents)
+
     maxLevels = 0
     
     tracer => tracersHead
@@ -527,6 +588,7 @@ contains
        maxLevels = max(maxLevels,tracer % nParents)
        
        tracer => tracer % nextInitial
+
     enddo
     
     ! loop over the levels making sure the order is by levels
@@ -555,6 +617,7 @@ contains
           endif
           
           tracer => tracer % nextInitial
+
        enddo
        
     enddo
@@ -564,7 +627,17 @@ contains
 
   end subroutine set_tracer_order
 
-  !-----------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  routine cice_set_tracer_array_pointers
+!
+!> \brief  set tracer pointers to the appropriate field objects
+!> \author Adrian Turner and William Lipscomb
+!> \date   March 2015
+!> \details
+!>  This routine sets tracer pointers to field objects retrieved from
+!>  the appropriate pools.
+!-----------------------------------------------------------------------
 
   subroutine cice_set_tracer_array_pointers(tracersHead, block, timeLevelIn)
 
@@ -619,7 +692,9 @@ contains
     call MPAS_pool_get_subpool(block % structs, 'tracer_monotonicity', tracerMonotonicityPool)
 
     ! loop over the tracers in the linked list
+
     thisTracer => tracersHead
+
     do while (associated(thisTracer))
      
        call MPAS_pool_get_field_info(tracerPool, trim(thisTracer % tracerName), thisFieldInfo)
@@ -658,7 +733,7 @@ contains
           call MPAS_pool_get_field(tracerProductPool, trim(thisTracer % tracerName) // 'Product', tracerField2DReal)
           thisTracer % massTracerProduct2D => tracerField2DReal % array
           call MPAS_pool_get_field(tracerTrianglePool, trim(thisTracer % tracerName) // 'Triangle', tracerField4DReal)
-          thisTracer % triangle2D => tracerField4DReal % array
+          thisTracer % triangleValue2D => tracerField4DReal % array
           call MPAS_pool_get_field(tracerBarycenterPool, trim(thisTracer % tracerName) // 'Barycenterx', tracerField2DReal)
           thisTracer % xBarycenter2D => tracerField2DReal % array
           call MPAS_pool_get_field(tracerBarycenterPool, trim(thisTracer % tracerName) // 'Barycentery', tracerField2DReal)
@@ -689,7 +764,7 @@ contains
           call MPAS_pool_get_field(tracerProductPool, trim(thisTracer % tracerName) // 'Product', tracerField3DReal)
           thisTracer % massTracerProduct2D => tracerField3DReal % array(1,:,:)
           call MPAS_pool_get_field(tracerTrianglePool, trim(thisTracer % tracerName) // 'Triangle', tracerField5DReal)
-          thisTracer % triangle2D => tracerField5DReal % array(1,:,:,:,:)
+          thisTracer % triangleValue2D => tracerField5DReal % array(1,:,:,:,:)
           call MPAS_pool_get_field(tracerBarycenterPool, trim(thisTracer % tracerName) // 'Barycenterx', tracerField3DReal)
           thisTracer % xBarycenter2D => tracerField3DReal % array(1,:,:)
           call MPAS_pool_get_field(tracerBarycenterPool, trim(thisTracer % tracerName) // 'Barycentery', tracerField3DReal)
@@ -720,7 +795,7 @@ contains
           call MPAS_pool_get_field(tracerProductPool, trim(thisTracer % tracerName) // 'Product', tracerField3DReal)
           thisTracer % massTracerProduct3D => tracerField3DReal % array
           call MPAS_pool_get_field(tracerTrianglePool, trim(thisTracer % tracerName) // 'Triangle', tracerField5DReal)
-          thisTracer % triangle3D => tracerField5DReal % array
+          thisTracer % triangleValue3D => tracerField5DReal % array
           call MPAS_pool_get_field(tracerBarycenterPool, trim(thisTracer % tracerName) // 'Barycenterx', tracerField3DReal)
           thisTracer % xBarycenter3D => tracerField3DReal % array
           call MPAS_pool_get_field(tracerBarycenterPool, trim(thisTracer % tracerName) // 'Barycentery', tracerField3DReal)
@@ -748,7 +823,16 @@ contains
 
   end subroutine cice_set_tracer_array_pointers
 
-  !-----------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  routine cice_update_tracer_halo
+!
+!> \brief  halo update for tracers
+!> \author William Lipscomb
+!> \date   March 2015
+!> \details
+!>  This routine does a halo update for each tracer in the linked list.
+!-----------------------------------------------------------------------
 
   subroutine cice_update_tracer_halo(tracersHead, domain, timeLevelIn)
 
@@ -784,7 +868,6 @@ contains
     thisTracer => tracersHead   ! point to first element of linked list
     do while(associated(thisTracer))
 
-       !TODO - Do we need to get field info if we already know ndims for each tracer?
        call MPAS_pool_get_field_info(tracerPool, trim(thisTracer % tracerName), thisFieldInfo)
 
        ! halo update for local max/min fields

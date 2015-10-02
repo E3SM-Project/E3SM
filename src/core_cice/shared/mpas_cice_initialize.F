@@ -933,6 +933,9 @@ contains
        block, &
        configs)!{{{
 
+    use cice_constants, only: &
+         earthRadius
+
     type(block_type), intent(inout) :: &
          block !< Input/Output: 
 
@@ -969,17 +972,11 @@ contains
     integer :: &
          iCell
     
-    !WHL - debug - Assume that the surface of the sphere is defined by xCell^2 + yCell^2 = zCell^2 = 1
-    ! NOTE: This may require setting the Earth's radius to 1.0 in ../../framework/mpas_constants.F:
-    !       Instead of this:
-    !          real (kind=RKIND), parameter :: a       = 6371229.0           !< Constant: Spherical Earth radius [m]
-    !       Use this:
-    !          real (kind=RKIND), parameter :: a       = 1.0d0           !< Constant: Spherical Earth radius [m]
+    !WHL - debug - Assume that the surface of the sphere is defined by xCell^2 + yCell^2 = zCell^2 = earthRadius^2
 
     real(kind=RKIND), parameter :: &
-!!!         circle_radius = 1.0e6_RKIND  ! suitable for a grid whose radius is 6371 km
-         circle_radius = 0.1_RKIND   ! I often use this radius on the gx3 grid
-!!         circle_radius = 0.01_RKIND    ! I sometimes use a smaller radius on the gx1 grid
+         circle_radius = 0.1_RKIND*earthRadius      ! I often use this radius on the gx3 grid
+!         circle_radius = 0.01_RKIND*earthRadius    ! I sometimes use a smaller radius on the gx1 grid
    
     call MPAS_pool_get_config(configs, "config_initial_ice_area", config_initial_ice_area)
     call MPAS_pool_get_config(configs, "config_initial_ice_volume", config_initial_ice_volume)

@@ -11,7 +11,7 @@
 !
 !> \brief  incremental remapping transport scheme for cice
 !> \author William Lipscomb
-!> \date   March 2015
+!> \date   September 2015
 !> \details
 !>  This module contains routines for transport of sea-ice mass and tracers
 !>  using incremental remapping
@@ -74,7 +74,6 @@ module cice_advection_incremental_remap
         q3TriangleQP = 1.08103018168070275e-01_RKIND, &
         q4TriangleQP = 4.45948490915965612e-01_RKIND
 
-   !TODO - Get nQuadPoints from the registry?
    integer, pointer :: &
         nQuadPoints   ! number of triangle quadrature points
                       ! = 6 for exact integration of polynomials up to degree 4
@@ -83,28 +82,32 @@ module cice_advection_incremental_remap
    real(kind=RKIND), dimension(:), allocatable ::   &
         weightQuadPoint                               ! weighting factor for each quadrature point
 
-   !WHL - debug - local diagnostic indices and IDs
+   ! local diagnostic indices and IDs
+   ! These are included for writing detailed diagnostic output for individual cells, edges and vertices
    integer :: ctest, etest, vtest   ! local cell, edge and vertex indices for diagnostics
    logical :: ctestOnProc,  etestOnProc,  vtestOnProc     ! true if ctestGlobal, etc. are on this processor node
-                                                          ! Note: Can be true for more than one mode (because of halo cells)
-   integer :: ctestBlockID, etestBlockID, vtestBlockID    ! ID for blocks that own ctest, etc.
+                                                          ! Note: Can be true for more than one node (because of halo cells)
+   integer :: ctestBlockID, etestBlockID, vtestBlockID    ! ID for blocks that own ctest, etest and vtest
    
-   ! The following are the desired global indices for diagnostic cells, edges and vertices
-   ! For parallel runs, the local indices will in general be different
+   ! global indices for diagnostic cells, edges and vertices
+   ! Uncomment to choose appropriate values for specific meshes
 
    ! default values that should work on any mesh
    integer, parameter :: ctestGlobal = 1
    integer, parameter :: etestGlobal = 1
    integer, parameter :: vtestGlobal = 1
 
+   ! planar quad
 !   integer, parameter :: ctestGlobal = 3244    ! test cell for planar quad ('square') test case
 !   integer, parameter :: etestGlobal = 6529    ! test edge for planar quad test case
 !   integer, parameter :: vtestGlobal = 3366    ! test vertex for planar quad test case
 
+   ! planar hex
 !   integer, parameter :: ctestGlobal = 3240     ! test cell for planar hex test case
 !   integer, parameter :: etestGlobal = 9801     ! test edge for planer hex test case
 !   integer, parameter :: vtestGlobal = 6720     ! test vertex for planar hex test case
 
+   ! spherical quad (gx3)
 !   integer, parameter :: ctestGlobal = 5411    ! test cell for spherical quad test case (gx3_noland, near equator)
 !   integer, parameter :: etestGlobal = 5706    ! test edge for spherical quad test case
 !   integer, parameter :: vtestGlobal = 5511    ! test vertex for spherical quad test case
@@ -112,6 +115,7 @@ module cice_advection_incremental_remap
 !!   integer, parameter :: etestGlobal = 13898    ! test edge for spherical quad test case
 !!   integer, parameter :: vtestGlobal = 1        ! test vertex for spherical quad test case
 
+   ! spherical quad (gx1)
 !   integer, parameter :: ctestGlobal = 51157    ! test cell for spherical quad test case (gx1, not rotated)
 !   integer, parameter :: etestGlobal = 126267    ! test edge for spherical quad test case
 !   integer, parameter :: vtestGlobal = 52059    ! test vertex for spherical quad test case
@@ -119,6 +123,7 @@ module cice_advection_incremental_remap
 !!   integer, parameter :: etestGlobal = 124953    ! test edge for spherical quad test case
 !!   integer, parameter :: vtestGlobal = 2    ! test vertex for spherical quad test case
 
+   ! spherical hex (2562 mesh)
 !   integer, parameter :: ctestGlobal = 3          ! test cell for spherical hex test case (North Pole on 2562 grid)
 !   integer, parameter :: etestGlobal = 473         ! test edge for spherical hex test case
 !   integer, parameter :: vtestGlobal = 12
@@ -126,11 +131,13 @@ module cice_advection_incremental_remap
 !   integer, parameter :: etestGlobal = 3473      ! test edge for spherical hex test case
 !   integer, parameter :: vtestGlobal = 2585
 
-   logical, parameter :: conservation_check = .true.  ! if true, check for exact conservation
-   logical, parameter :: monotonicity_check = .true.  ! if true, check for tracer monotonicity
+   ! logic for conservation and monotonicity check
+   ! These could be turned off for production runs to reduce computation, but it is safer to leave them on.
+   logical, parameter :: conservationCheck = .true.  ! if true, check for exact conservation
+   logical, parameter :: monotonicityCheck = .true.  ! if true, check for tracer monotonicity
 
-   !WHL - Change these to T to see extensive diagnostic output      
-   !      I often debug with verboseInit/Run/Construct/Geometry/Fluxes/Global set to true.
+   ! verbose options; set to true for extensive diagnostic output      
+   ! WHL: I often debug with verboseInit/Run/Construct/Geometry/Fluxes/Global set to true.
 !   logical, parameter :: verboseInit = .true.
 !   logical, parameter :: verboseRun = .true.
 !   logical, parameter :: verboseConstruct = .true.
@@ -144,9 +151,7 @@ module cice_advection_incremental_remap
    logical, parameter :: verboseFluxes = .false.
    logical, parameter :: verboseGlobal = .false.
    logical, parameter :: verboseGeomAvg = .false.
-   logical, parameter :: verboseMasks = .false.
 
-   !WHL - debug
    logical :: first_call = .true.  ! set to false after the first call
 
 contains
@@ -186,33 +191,30 @@ contains
          xVertexOnEdge, yVertexOnEdge     ! local x/y coordinates of vertices relative to edge
 
     type(geometric_avg_cell_type), pointer :: &
-         geomAvgCell       ! derived type holding geometric averages
+         geomAvgCell          ! derived type holding geometric averages
 
-    integer, pointer ::  &
-         nCells,         &   ! number of cells
-         nVertices,      &   ! number of vertices
-         nEdges,         &   ! number of edges
-         nCellsSolve,    &   ! number of locally owned cells
-         nVerticesSolve, &   ! number of locally owned vertices
-         nEdgesSolve,    &   ! number of locally owned edges
-         maxEdges,       &   ! max number of edges per cell
-         vertexDegree        ! number of edges that meet at each vertex
+    integer, pointer ::   &
+         nCells,          &   ! number of cells
+         nVertices,       &   ! number of vertices
+         nEdges,          &   ! number of edges
+         nCellsSolve,     &   ! number of locally owned cells
+         nVerticesSolve,  &   ! number of locally owned vertices
+         nEdgesSolve,     &   ! number of locally owned edges
+         maxEdges,        &   ! max number of edges per cell
+         vertexDegree         ! number of edges that meet at each vertex
 
-    !TODO - can remove cellsOnEdgeSign if always = 1
     integer, dimension(:), pointer :: &
          nEdgesOnCell,      & ! number of edges for each cell
-         remapEdge,         & ! = 1 if IR fluxes need to be computed across an edge, else = 0
-                              ! (i.e., = 1 for all edges of locally owned cells)
-         cellsOnEdgeSign      ! = 1 if cell 1 lies in the left half plane of the edge
-                              ! = -1 if cell 1 lies in the right half plan of the edge
+         remapEdge            ! = 1 if IR fluxes need to be computed across an edge, else = 0
+                              ! = 1 for all edges of locally owned cells, provided a cell exists on each side
 
     integer, dimension(:,:), pointer ::  &
          cellsOnCell,       & ! index for each neighbor cell of a given cell
          edgesOnCell,       & ! index for each edge of a given cell
          verticesOnCell,    & ! index for each vertex of a given cell
          verticesOnEdge,    & ! index for each vertex of a given edge
-         cellsOnEdge,       & ! index for each cell that shares a given edge
-         cellsOnVertex,     & ! index for each cell of a given vertex
+         cellsOnEdge,       & ! index for each cell on a given edge
+         cellsOnVertex,     & ! index for each cell on a given vertex
          edgesOnVertex,     & ! index for each edge neighbor of a given vertex
          cellsOnEdgeRemap,  & ! cell index for each cell neighbor of a given edge,
                               !  including cells that share a vertex with the edge
@@ -230,22 +232,25 @@ contains
          xEdge, yEdge, zEdge            ! global coordinates of edge midpoints
 
     real(kind=RKIND), dimension(:), pointer :: &
-         minLengthEdgesOnVertex          ! minimum length of the edges on each vertex
-
-    real(kind=RKIND), dimension(:), pointer :: &
          xCellRotate, yCellRotate, zCellRotate,         & ! rotated global coordinates of cell centers
          xVertexRotate, yVertexRotate, zVertexRotate,   & ! rotated global coordinates of vertices
          xEdgeRotate, yEdgeRotate, zEdgeRotate            ! rotated global coordinates of edge midpoints
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         minLengthEdgesOnVertex         ! minimum length of the edges on each vertex
+                                        ! used for CFL diagnostics
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         transGlobalToCell,    &  ! 3x3 matrix for transforming vectors from global to cell-based coordinates
+         transGlobalToVertex,  &  ! 3x3 matrix for transforming vectors from global to vertex-based coordinates
+         transGlobalToEdge        ! 3x3 matrix for transforming vectors from global to edge-based coordinates
 
     !Note: The matrices transCellToGlobal, transVertexToGlobal and transEdgeToGlobal are not currently used,
     !      but they are computed just in case.
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          transCellToGlobal,    &  ! 3x3 matrix for transforming vectors from cell-based to global coordinates
-         transGlobalToCell,    &  ! 3x3 matrix for transforming vectors from global to cell-based coordinates
          transVertexToGlobal,  &  ! 3x3 matrix for transforming vectors from vertex-based to global coordinates
-         transGlobalToVertex,  &  ! 3x3 matrix for transforming vectors from global to vertex-based coordinates
-         transEdgeToGlobal,    &  ! 3x3 matrix for transforming vectors from edge-based to global coordinates
-         transGlobalToEdge        ! 3x3 matrix for transforming vectors from global to edge-based coordinates
+         transEdgeToGlobal        ! 3x3 matrix for transforming vectors from edge-based to global coordinates
 
     real(kind=RKIND), dimension(:,:,:), pointer ::  & 
          coeffsReconstruct        ! coefficients for reconstructing edge-based fields at cell centers
@@ -257,7 +262,7 @@ contains
          on_a_sphere,                & ! if true, then the mesh lives on the surface of a sphere; else in a plane
          config_rotate_cartesian_grid  ! if true, then rotate the true North and South Poles to the equator
 
-    !WHL - the indexTo*ID arrays are for diagnostics only
+    ! IDs for diagnostics
     integer, dimension(:), pointer ::  &
          indexToCellID,   & ! global index for each cell on a block
          indexToVertexID, & ! global index for each vertex on a block
@@ -265,6 +270,7 @@ contains
 
     integer :: i, n, iCell, iEdge, iVertex, iCellNeighbor, iEdgeNeighbor
     integer :: iVertexOnCell, iEdgeOnCell, iCellOnEdge, iCellOnCell, iVertexOnEdge, iEdgeOnEdge, iEdgeOnVertex
+    integer :: nCellsOnEdgeRemap, nEdgesOnEdgeRemap, nVerticesOnEdgeRemap
 
     if (verboseInit) then
        write(stderrUnit,*) ' '
@@ -282,7 +288,7 @@ contains
 
     do while (associated(block))
 
-    if (verboseInit) write(stderrUnit,*) 'Get arrays from pools'
+       if (verboseInit) write(stderrUnit,*) 'Get arrays from pools'
 
        ! get pools
        call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -334,7 +340,7 @@ contains
        ! If on a rotated spherical grid, get arrays for rotated cell, vertex and edge vectors.
        ! These vectors will be rotated to put the North and South Poles at the equator.
        ! After rotation, we will assign the standard pointers (without the 'Rotate' suffix)
-       !  to these vectors so that subroutine arguments are the same with or without rotation..
+       !  to these vectors so that subroutine arguments are the same with or without rotation.
 
        if (config_rotate_cartesian_grid .and. on_a_sphere) then
           call mpas_pool_get_array(rotatedMeshPool, 'xCellRotate', xCellRotate)
@@ -368,16 +374,9 @@ contains
        call mpas_pool_get_array(incrementalRemapPool, 'edgesOnEdgeRemap', edgesOnEdgeRemap)
        call mpas_pool_get_array(incrementalRemapPool, 'minLengthEdgesOnVertex', minLengthEdgesOnVertex)
 
-       !TODO - Remove cellsOnEdgeSign?
-       !Note: When working with the spherical quad test case, I had to regenerate the grid files
-       !      to satisfy this convention.  So probably a good idea to test, but we can rely on
-       !      the user to fix the input file rather than deal with sign ambiguity in the main
-       !      IR routine.
-       call mpas_pool_get_array(incrementalRemapPool, 'cellsOnEdgeSign',  cellsOnEdgeSign)
-
-       ! Find the local index, block ID and proc ID associated with global diagnostic cells, edges and vertices
+       ! Find the local index, block ID and proc ID associated with global diagnostic cells, edges and vertices.
        ! Note: If ctest/etest/vtest lie on a processor other than the head node, then diagnostic output will be written 
-       !       only if the code is built in debug mode
+       !       only if the code is built in debug mode.
 
        if (ctestGlobal > 0) then
 
@@ -464,28 +463,29 @@ contains
           if (verboseInit) then
              write(stderrUnit,*) ' '
              write(stderrUnit,*) 'Rotated the global Cell, Vertex and Edge vectors'
-             !WHL - debug
              if (ctestOnProc .and. block % localBlockID == ctestBlockID) then
                 iCell = ctest
-                write(stderrUnit,*) 'iCell, xCell, yCell, zCell:', iCell, xCell(iCell), yCell(iCell), zCell(iCell)
-                write(stderrUnit,*) 'Rotated iCell, xCell, yCell, zCell:', iCell, xCellRotate(iCell), yCellRotate(iCell), zCellRotate(iCell)
+                write(stderrUnit,*) 'iCell, xCell, yCell, zCell:', &
+                                     iCell, xCell(iCell), yCell(iCell), zCell(iCell)
+                write(stderrUnit,*) 'Rotated iCell, xCell, yCell, zCell:', &
+                                     iCell, xCellRotate(iCell), yCellRotate(iCell), zCellRotate(iCell)
              endif
           endif
 
           ! We do not need the unrotated vectors again in this subroutine, so reassign the local pointers
           !  to point to the rotated vectors.
-          !TODO - Can we simply reassign the pointers here, i.e., xCell => xCellRotate?
-          call mpas_pool_get_array(rotatedMeshPool, 'xCellRotate', xCell)
-          call mpas_pool_get_array(rotatedMeshPool, 'yCellRotate', yCell)
-          call mpas_pool_get_array(rotatedMeshPool, 'zCellRotate', zCell)
-          call mpas_pool_get_array(rotatedMeshPool, 'xVertexRotate', xVertex)
-          call mpas_pool_get_array(rotatedMeshPool, 'yVertexRotate', yVertex)
-          call mpas_pool_get_array(rotatedMeshPool, 'zVertexRotate', zVertex)
-          call mpas_pool_get_array(rotatedMeshPool, 'xEdgeRotate', xEdge)
-          call mpas_pool_get_array(rotatedMeshPool, 'yEdgeRotate', yEdge)
-          call mpas_pool_get_array(rotatedMeshPool, 'zEdgeRotate', zEdge)
 
-       endif
+          xCell => xCellRotate
+          yCell => yCellRotate
+          zCell => zCellRotate
+          xEdge => xEdgeRotate
+          yEdge => yEdgeRotate
+          zEdge => zEdgeRotate
+          xVertex => xVertexRotate
+          yVertex => yVertexRotate
+          zVertex => zVertexRotate
+
+       endif  ! config_rotate_cartesian_grid and on_a_sphere
 
        ! set up some matrices for transformation between global coordinates and local coordinates
 
@@ -509,7 +509,6 @@ contains
                transEdgeToGlobal,    &
                transGlobalToEdge)
 
-          !WHL - debug
           if (verboseInit .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
              iCell = ctest
              write(stderrUnit,*) ' '
@@ -526,18 +525,11 @@ contains
              enddo
           endif
 
-          !TODO - Do transformation matrices require a halo update? I don't think so.
        endif   ! on a sphere
 
-       !WHL - debug
-       if (verboseInit .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
-          iCell = ctest
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'iCell, x/y/zCell:', indexToCellID(iCell), xCell(iCell), yCell(iCell), zCell(iCell)
-       endif
-
-       !TODO - Move this calculation into the get_geometry subroutine with all the others
        ! compute local vertex coordinates relative to cell center
+       ! Note: This calculation could be done in subroutine get_geometry_incremental_remap, 
+       !       but I kept it separate in case we want to make it available to other parts of the code.
        call get_vertex_on_cell_coordinates(&
             nCells,                       &
             nEdgesOnCell,                 &
@@ -548,6 +540,7 @@ contains
             transGlobalToCell,            &
             xVertexOnCell, yVertexOnCell)
 
+       ! compute other geometric data structures used for IR
        call get_geometry_incremental_remap(&
             nEdges,                    &
             nVertices,                 &
@@ -572,12 +565,11 @@ contains
             transGlobalToVertex,       &
             remapEdge,                 &
             cellsOnEdgeRemap,          &
-            cellsOnEdgeSign,           &
             edgesOnEdgeRemap,          &
             xVertexOnEdge, yVertexOnEdge, &
             minLengthEdgesOnVertex)
 
-       !WHL - debug - Print information for test cell
+       ! Write diagnostics for the test cell
        if (verboseInit .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
 
           iCell = ctest
@@ -610,7 +602,7 @@ contains
           
        endif   ! ctestOnProc & ctestBlockID
 
-       !WHL - debug - Print information for test edge
+       ! Write diagnostics for the test edge
        if (verboseInit .and. etestOnProc .and. block % localBlockID == etestBlockID) then
 
           iEdge = etest
@@ -629,24 +621,34 @@ contains
              write(stderrUnit,*) iVertexOnEdge, verticesOnEdge(iVertexOnEdge, iEdge), indexToVertexID(verticesOnEdge(iVertexOnEdge, iEdge))
           enddo
           
+          if (vertexDegree == 3) then   ! hex mesh
+             nCellsOnEdgeRemap = 4
+             nEdgesOnEdgeRemap = 4
+             nVerticesOnEdgeRemap = 6
+          elseif (vertexDegree == 4) then   ! quad mesh
+             nCellsOnEdgeRemap = 6
+             nEdgesOnEdgeRemap = 6
+             nVerticesOnEdgeRemap = 8
+          endif
+
           write(stderrUnit,*) ' '
           write(stderrUnit,*) 'cellsOnEdgeRemap:'
-          do iCellOnEdge = 1, 6  ! TODO - Make upper bound depend on VertexDegree?
+          do iCellOnEdge = 1, nCellsOnEdgeRemap
              iCellNeighbor = cellsOnEdgeRemap(iCellOnEdge,iEdge)
              if (iCellNeighbor >= 1) then
                 write(stderrUnit,*) iCellOnEdge, iCellNeighbor, indexToCellID(iCellNeighbor)
-             else  ! no global ID
+             else  ! no global ID if local ID = 0
                 write(stderrUnit,*) iCellOnEdge, iCellNeighbor
              endif
           enddo
           
           write(stderrUnit,*) ' '
           write(stderrUnit,*) 'edgesOnEdgeRemap:'
-          do iEdgeOnEdge = 1, 6  ! TODO - Make upper bound depend on VertexDegree?
+          do iEdgeOnEdge = 1, nEdgesOnEdgeRemap
              iEdgeNeighbor = edgesOnEdgeRemap(iEdgeOnEdge,iEdge)
              if (iEdgeNeighbor >= 1) then
                 write(stderrUnit,*) iEdgeOnEdge, iEdgeNeighbor, indexToEdgeID(iEdgeNeighbor)
-             else  ! no global ID
+             else  ! no global ID if local ID = 0
                 write(stderrUnit,*) iEdgeOnEdge, iEdgeNeighbor
              endif
           enddo
@@ -654,7 +656,7 @@ contains
           write(stderrUnit,*) ' '
           write(stderrUnit,*) 'xVertexOnEdge, yVertexOnEdge:', indexToEdgeID(iEdge)
           write(stderrUnit,*) 'vertex, x, y:'
-          do iVertexOnEdge = 1, 8  ! TODO - Make upper bound depend on VertexDegree?
+          do iVertexOnEdge = 1, nVerticesOnEdgeRemap
              write(stderrUnit,*) iVertexOnEdge, xVertexOnEdge(iVertexOnEdge,iEdge), yVertexOnEdge(iVertexOnEdge,iEdge)
           enddo
 
@@ -662,7 +664,7 @@ contains
           
        endif  ! etestOnProc & etestBlockID
 
-       !WHL - debug - Print information for test vertex
+       ! Write diagnostics for the test vertex
        if (verboseInit .and. vtestOnProc .and. block % localBlockID == vtestBlockID) then
 
           iVertex = vtest
@@ -688,7 +690,6 @@ contains
             dvEdge,                        &
             geomAvgCell)
 
-       !WHL - debug
        if (verboseInit .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
           iCell = ctest
           write(stderrUnit,*) ' '
@@ -711,13 +712,13 @@ contains
        endif   ! ctestOnProc & ctestBlockID
 
        ! compute coefficients needed for reconstructing tracer gradients at cell centers
-       ! Note: This field needs a halo update outside the block loop
-
+       ! Note: This field gets a halo update outside the block loop.
+       !TODO - These subroutines assume unrotated vectors. How do we get them to use the rotated vectors?
+       !       One possibility would be to pass an optional rotation argument; if true, then point to rotated vectors.
        call mpas_rbf_interp_initialize(meshPool)
        call mpas_init_reconstruct(meshPool)
        call mpas_pool_get_array(meshPool, 'coeffs_reconstruct', coeffsReconstruct)
 
-       !WHL - debug
        if (verboseInit .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
           iCell = ctest
           write(stderrUnit,*) ' '
@@ -732,13 +733,15 @@ contains
 
     enddo  ! associated(block)
 
-    ! Do a halo update for reconstruction coefficients
-    ! (Otherwise the coefficients are zero in halo cells.)
+    ! Do a halo update for the reconstruction coefficients.
+    ! Otherwise the coefficients are zero in halo cells.
 
     call mpas_pool_get_field(meshPool, 'coeffs_reconstruct', coeffsReconstructField)
     call mpas_dmpar_exch_halo_field(coeffsReconstructField)
 
-    ! get number of points for triangle quadrature
+    ! get the number of points for triangle quadrature
+    ! = 6 for exact integration of polynomials up to degree 4
+    ! = 3 for exact integration of polynomials up to degree 2
     call mpas_pool_get_dimension(meshPool, 'nQuadPoints', nQuadPoints)
 
     ! set weights for triangle quadrature
@@ -748,13 +751,25 @@ contains
        weightQuadPoint(:) = 1.0_RKIND / 3.0_RKIND
     elseif (nQuadPoints == 6) then    
        weightQuadPoint(1:3) = w1TriangleQP    ! 0.010995...
-       weightQuadPoint(4:6) = w2TriangleQP    ! 0.022338...       
+       weightQuadPoint(4:6) = w2TriangleQP    ! 0.022338...
     else
-       write(stderrUnit,*) 'ERROR: must have nQuadPoints = 3 or 6 for IR'
+       write(stderrUnit,*) 'ERROR: must have nQuadPoints = 3 or 6 for IR transport'
        call mpas_dmpar_global_abort('Aborting with IR error')
     endif
 
-    !WHL - debug - Check nCellsSolve, nEdgesSolve
+    ! check for non-positive cell areas
+    ! Note: As of Sept. 2015, the mesh converter tool had a bug that can give negative areas
+    !       for some cells on a spherical quad mesh.
+    do iCell = 1, nCellsSolve
+       if (areaCell(iCell) <= 0.0_RKIND) then
+          write(stderrUnit,*) ' '
+          write(stderrUnit,*) 'Bad cell area, iCell, area:', iCell, areaCell(iCell)
+!!          write(stderrUnit,*) 'cellsOnCell:', cellsOnCell(:,iCell)
+          call mpas_dmpar_global_abort('Aborting with IR error')
+       endif
+    enddo
+
+    ! uncomment to get a list of cells and edges with local and global IDs
     if (verboseInit) then
        write(stderrUnit,*) 'nCells, nEdges, nVertices:', nCells, nEdges, nVertices
        write(stderrUnit,*) 'nCellsSolve, nEdgesSolve, nVerticesSolve:', nCellsSolve, nEdgesSolve, nVerticesSolve
@@ -771,16 +786,6 @@ contains
        enddo
     endif
 
-    !WHL - debug - check for zero or negative cell areas
-    do iCell = 1, nCellsSolve
-       if (areaCell(iCell) <= 0.0_RKIND) then
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'Bad cell area, iCell, area:', iCell, areaCell(iCell)
-!!          write(stderrUnit,*) 'cellsOnCell:', cellsOnCell(:,iCell)
-          call mpas_dmpar_global_abort('Aborting with IR error')
-       endif
-    enddo
-
   end subroutine cice_init_advection_incremental_remap
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -792,9 +797,7 @@ contains
 !> \date   June 2015
 !> \details
 !>  This routine finds the local index, block ID and proc ID for an element
-!>  (edge, vertex or cell) given the global index.
-!>  Note: Must be called from outside a block loop.
-!TODO - Move this routine elsewhere if useful for other modules
+!>  (edge, vertex or cell), given the global index.
 !-----------------------------------------------------------------------
 
   subroutine get_local_index(&
@@ -826,7 +829,7 @@ contains
 
     integer :: iElement
 
-    ! initialize
+    ! initialize output
     testElementLocal = 0
     testBlockID = -999  ! not 0, because 0 is an actual block ID
     testOnProc = .false.
@@ -853,7 +856,7 @@ contains
 !> \details
 !>  This routine rotates global vectors through 90 degrees such that the 
 !>  true poles have z = 0 and the true equator has x = 0.
-!>  It is identical to cice_grid_rotation_forward, except that it operates
+!>  It is similar to cice_grid_rotation_forward, except that it operates
 !>  on a global array instead of a single vector.
 !-----------------------------------------------------------------------
 
@@ -863,11 +866,11 @@ contains
        nElements)
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         xElement, yElement, zElement   ! components of a global vector pointing from the center of a sphere
-                                        ! to an element (cell, vertex or edge) on its surface
+         xElement, yElement, zElement   !< Input: components of a global vector pointing from the center of a sphere
+                                        !         to an element (cell, vertex or edge) on its surface
 
     real(kind=RKIND), dimension(:), intent(out) :: &
-         xElementRotate, yElementRotate, zElementRotate   ! input global vector rotated by 90 degrees about the y-axis
+         xElementRotate, yElementRotate, zElementRotate   !< Output: global vector rotated by 90 degrees about the y-axis
          
     integer, intent(in) :: nElements    ! number of elements
     
@@ -906,25 +909,25 @@ contains
        transGlobalToLocal)
 
     real(kind=RKIND), dimension(nElements), intent(in) ::  &
-         xGlobal, yGlobal, zGlobal  ! global coordinates of points on the surface of the sphere
+         xGlobal, yGlobal, zGlobal  !< Input: global coordinates of points on the surface of the sphere
 
     integer, intent(in) :: &
-         nElements    ! number of points (typically nCells, nVertices or nEdges)
+         nElements                  !< Input: number of points (typically nCells, nVertices or nEdges)
 
     real(kind=RKIND), dimension(3, 3, nElements), intent(out) ::  &
-         transLocalToGlobal  ! 3 x 3 matrix for transforming from local to global coordinates
+         transLocalToGlobal         !< Output: 3 x 3 matrix for transforming from local to global coordinates
 
     real(kind=RKIND), dimension(3, 3, nElements), intent(out) ::  &
-         transGlobalToLocal  ! 3 x 3 matrix for transforming from global to local coordinates
+         transGlobalToLocal         !< Output: 3 x 3 matrix for transforming from global to local coordinates
 
     ! local variables
 
     integer :: iElement
 
     real(kind=RKIND), dimension(3,3) :: &
-         unitVectorGlobal,     &  ! unit vectors for global coordinate system
-         unitVectorLocal          ! unit vectors for local coordinate system
-                                  ! (expressed in global coordinates)
+         unitVectorGlobal,       &  ! unit vectors for global coordinate system
+         unitVectorLocal            ! unit vectors for local coordinate system
+                                    ! (expressed in global coordinates)
 
     transLocalToGlobal(:,:,:) = 0.0_RKIND
     transGlobalToLocal(:,:,:) = 0.0_RKIND 
@@ -1009,6 +1012,8 @@ contains
 !>  (3) xVertexOnEdge, yVertexOnEdge, the local x/y coordinates of the vertices
 !>      of each edge included in edgesOnEdgeRemap
 !>  (4) minLengthEdgesOnVertex, which is used to detect potential CFL violations
+!>  It also checks that cell 1 is in the left half-plane (and cell 2 in the right 
+!>   half-plane) for each edge.
 !>  See the diagrams below for labeling conventions.
 !-----------------------------------------------------------------------
 
@@ -1036,7 +1041,6 @@ contains
        transGlobalToVertex,       &
        remapEdge,                 &
        cellsOnEdgeRemap,          &
-       cellsOnEdgeSign,           &
        edgesOnEdgeRemap,          &
        xVertexOnEdge, yVertexOnEdge, &
        minLengthEdgesOnVertex)
@@ -1044,7 +1048,6 @@ contains
        !-----------------------------------------------------------------------------------
        !
        ! The IR edge-numbering and cell-numbering conventions are as follows for a hex mesh (vertexDegree = 3):
-       ! Fluxes are computed for each edge.  
        ! The main edge (E0) has vertices V1 and V2 and is shared by cells C1 and C2.
        ! C1 lies in the left half-plane of the vector pointing from C1 to C2, and C2 in the right half-plane.
        ! Edges E1 and E2 lie on C1, and edges E3 and E4 lie on C2.
@@ -1066,7 +1069,7 @@ contains
        !
        ! On a quad mesh (vertexDegree = 4), we add the 2 edges that are colinear with the main edge
        ! (E5 containing V1/V7 and E6 containing V2/V8).
-       ! We also add two cells sharing a vertex with the main edge (C5 sharing V1 and C6 sharing V2).
+       ! We also add two cells that share a vertex with the main edge (C5 sharing V1 and C6 sharing V2).
        !
        !                             V3            V4
        !                             |             |
@@ -1100,7 +1103,7 @@ contains
          xEdge,   yEdge,   zEdge       !< Input: global coordinates of edges
 
     integer, dimension(:), intent(in) ::  &
-         indexToEdgeID     ! global index for each edge on a block (diagnostic only)
+         indexToEdgeID     !< Input: global index for each edge on a block (diagnostic only)
 
     integer, dimension(:,:), intent(in) :: &
          cellsOnEdge,    & !< Input: index for each cell sharing a given edge
@@ -1111,8 +1114,8 @@ contains
          cellsOnVertex     !< Input: cell index for each cell of a given vertex
 
     real(kind=RKIND), dimension(:,:), intent(in) ::  &
-         xVertexOnCell,  &  !< Output: x (east) coordinate of vertex relative to cell center in local tangent plane
-         yVertexOnCell      !< Output: y (north) coordinate of vertex relative to cell center in local tangent plane
+         xVertexOnCell,  & !< Output: x (east) coordinate of vertex relative to cell center in local tangent plane
+         yVertexOnCell     !< Output: y (north) coordinate of vertex relative to cell center in local tangent plane
 
     logical, intent(in) ::  &
          on_a_sphere       !< Input: if true, then the mesh lives on the surface of a sphere; else in a plane
@@ -1123,9 +1126,9 @@ contains
     real(kind=RKIND), dimension(3, 3, nEdges), intent(in) ::  &
          transGlobalToVertex  !< Input:  3 x 3 matrix for transforming from global to vertex-based coordinates
 
-    !Note: remapEdge could be a logical array, but logical fields are not supported in MPAS (as of June 2015)
+    !Note: remapEdge could be a logical array, but logical fields are not supported (as of June 2015)
     integer, dimension(:), intent(out) :: &
-         remapEdge          !< Input: = 1 if IR fluxes need to be computed across an edge, else = 0
+         remapEdge          !< Output: = 1 if IR fluxes need to be computed across an edge, else = 0
                             !         (i.e., = 1 for all edges of locally owned cells)
 
     integer, dimension(:,:), intent(out) ::  &
@@ -1133,11 +1136,6 @@ contains
                             !          including cells that share a vertex with the edge
          edgesOnEdgeRemap   !< Output: index for nearest edge neighbors of a given edge
     
-    integer, dimension(:), intent(out) ::  &
-         cellsOnEdgeSign    !< Output:  = 1 if cell 1 lies in the left half plane of the edge
-                            !               (i.e., of the vector from vertex 1 to vertex 2)
-                            !           = -1 if cell 1 lies in the right half plan of the edge
-
     real(kind=RKIND), dimension(:,:), intent(out) ::  &
          xVertexOnEdge,  &  !< Output: x (east) coordinate of vertex relative to edge midpoint in local tangent plane
          yVertexOnEdge      !< Output: y (north) coordinate of vertex relative to edge midpoint in local tangent plane
@@ -1162,7 +1160,7 @@ contains
 
     integer :: count, m, m1, m2, n, n1
 
-    integer :: nEdgesOnEdgeRemap, nCellsOnEdgeRemap
+    integer :: nEdgesOnEdgeRemap
 
     logical :: newRemapEdge  ! true if this edge is to be added to edgesOnEdgeRemap
 
@@ -1186,7 +1184,6 @@ contains
              iCell = cellsOnEdge(iCellOnEdge,iEdge)
              if (iCell < 1 .or. iCell > nCells) then
                 remapEdge(iEdge) = 0
-                  !WHL - debug                
 !!                write(stderrUnit,*) 'Excluding edge, iedge (local, global):', iEdge, indexToEdgeID(iEdge)
 !!                write(stderrUnit,*) 'Cell neighbors:', cellsOnEdge(1,iEdge), cellsOnEdge(2,iEdge)
                 exit
@@ -1195,130 +1192,117 @@ contains
        endif
     enddo
        
-    !WHL - debug - Write out edges not used for IR
     if (verboseInit) then
-       !  write(stderrUnit,*) 'Edges not used for IR:'
+!!       write(stderrUnit,*) 'Edges not used for IR:'
        do iEdge = 1, nEdges
           if (remapEdge(iEdge) == 0) then
-             !  write(stderrUnit,*) iEdge
+!!             write(stderrUnit,*) iEdge
           endif
        enddo
     endif
 
-    !TODO - It may not be necessary to compute cellsOnEdgeSign, if it is always equal to 1
-    !        (as seems to be the case for standard MPAS meshes).
-    !       For now I am leaving in the calculation as a check that will throw a fatal error
-    !        with a sign of -1.
-    !
-    ! Compute cellsOnEdgeSign
-    !    = 1 if cell 1 lies in the left half-plane of the edge, 
-    !    = -1 if cell 1 lies in the right half-plane of the edge
-    ! This sign is needed to determine the correct sign of fluxes across a given edge.
-
-    cellsOnEdgeSign(:) = 0
+    ! Make sure cell 1 is in the left half-plane (implying that cell 2 is in the right half-plane)
+    !  for each edge.  This should be true for MPAS-conforming meshes.
+    ! If this check fails, then the user will need to apply the mpas mesh converter to the input grid file.
 
     if (on_a_sphere) then
 
        ! loop over edges
        do iEdge = 1, nEdges
-        if (remapEdge(iEdge) == 1) then
+          if (remapEdge(iEdge) == 1) then
 
-          do iVertexOnEdge = 1, 2
+             do iVertexOnEdge = 1, 2
 
-             ! Compute coordinates of this vertex (relative to the edge) in global coordinates
-             iVertex = verticesOnEdge(iVertexOnEdge,iEdge)
+                ! Compute coordinates of this vertex (relative to the edge) in global coordinates
+                iVertex = verticesOnEdge(iVertexOnEdge,iEdge)
 
-             workVector(1) = xVertex(iVertex) - xEdge(iEdge)
-             workVector(2) = yVertex(iVertex) - yEdge(iEdge)
-             workVector(3) = zVertex(iVertex) - zEdge(iEdge)
+                workVector(1) = xVertex(iVertex) - xEdge(iEdge)
+                workVector(2) = yVertex(iVertex) - yEdge(iEdge)
+                workVector(3) = zVertex(iVertex) - zEdge(iEdge)
 
-             ! transform to coordinates of iEdge
-             edgeVertex(1,iVertexOnEdge) = transGlobalToEdge(1,1,iEdge) * workVector(1)  &
-                                         + transGlobalToEdge(1,2,iEdge) * workVector(2)  &
-                                         + transGlobalToEdge(1,3,iEdge) * workVector(3)
+                ! transform to coordinates of iEdge
+                edgeVertex(1,iVertexOnEdge) = transGlobalToEdge(1,1,iEdge) * workVector(1)  &
+                                            + transGlobalToEdge(1,2,iEdge) * workVector(2)  &
+                                            + transGlobalToEdge(1,3,iEdge) * workVector(3)
 
-             edgeVertex(2,iVertexOnEdge) = transGlobalToEdge(2,1,iEdge) * workVector(1)  &
-                                         + transGlobalToEdge(2,2,iEdge) * workVector(2)  &
-                                         + transGlobalToEdge(2,3,iEdge) * workVector(3)
+                edgeVertex(2,iVertexOnEdge) = transGlobalToEdge(2,1,iEdge) * workVector(1)  &
+                                            + transGlobalToEdge(2,2,iEdge) * workVector(2)  &
+                                            + transGlobalToEdge(2,3,iEdge) * workVector(3)
 
-          enddo   ! iVertexOnEdge
+             enddo   ! iVertexOnEdge
 
-          ! compute global coordinates of the center of neighboring cell 1
+             ! compute global coordinates of the center of neighboring cell 1
 
-          iCell = cellsOnEdge(1,iEdge)
+             iCell = cellsOnEdge(1,iEdge)
 
-          if (iCell >= 1 .and. iCell <= nCells) then  ! neighbor cell exists for this edge
+             if (iCell >= 1 .and. iCell <= nCells) then  ! neighbor cell exists for this edge
 
-             workVector(1) = xCell(iCell) - xEdge(iEdge)
-             workVector(2) = yCell(iCell) - yEdge(iEdge)
-             workVector(3) = zCell(iCell) - zEdge(iEdge)
+                workVector(1) = xCell(iCell) - xEdge(iEdge)
+                workVector(2) = yCell(iCell) - yEdge(iEdge)
+                workVector(3) = zCell(iCell) - zEdge(iEdge)
 
-             ! transform to coordinates of iEdge
-             cellCenter(1) = transGlobalToEdge(1,1,iEdge) * workVector(1)  &
-                           + transGlobalToEdge(1,2,iEdge) * workVector(2)  &
-                           + transGlobalToEdge(1,3,iEdge) * workVector(3)
+                ! transform to coordinates of iEdge
+                cellCenter(1) = transGlobalToEdge(1,1,iEdge) * workVector(1)  &
+                              + transGlobalToEdge(1,2,iEdge) * workVector(2)  &
+                              + transGlobalToEdge(1,3,iEdge) * workVector(3)
 
-             cellCenter(2) = transGlobalToEdge(2,1,iEdge) * workVector(1)  &
-                           + transGlobalToEdge(2,2,iEdge) * workVector(2)  &
-                           + transGlobalToEdge(2,3,iEdge) * workVector(3)
+                cellCenter(2) = transGlobalToEdge(2,1,iEdge) * workVector(1)  &
+                              + transGlobalToEdge(2,2,iEdge) * workVector(2)  &
+                              + transGlobalToEdge(2,3,iEdge) * workVector(3)
 
-             ! find whether this cell center is in the left half plane of the edge
-             if (point_in_half_plane(edgeVertex(:,1), edgeVertex(:,2), cellCenter(:))) then
-                cellsOnEdgeSign(iEdge) = 1
-             else
-                cellsOnEdgeSign(iEdge) = -1
-
-                !WHL - debug
-                write(stderrUnit,*) 'edgeVertex(:,1):', edgeVertex(:,1)
-                write(stderrUnit,*) 'edgeVertex(:,2):', edgeVertex(:,2)
-                write(stderrUnit,*) 'cellCenter(:):', cellCenter(:)
-
-                write(stderrUnit,*)'ERROR: cellsOnEdgeSign = -1: iEdge (local, global ID) =', iEdge, indexToEdgeID(iEdge)
-                write(stderrUnit,*)'IR assumes cellsOnEdgeSign = 1 for all edges'                
-                call mpas_dmpar_global_abort('Aborting with IR error')
-             endif
+                ! find whether this cell center is in the left half-plane of the edge
+                if (point_in_half_plane(edgeVertex(:,1), edgeVertex(:,2), cellCenter(:))) then
+                   ! cell 1 is in the left half-plane, as required
+                else
+                   write(stderrUnit,*) 'ERROR: cell 1 is not in the left half-plane: iEdge (local, global ID) =', iEdge, indexToEdgeID(iEdge)
+                   write(stderrUnit,*) 'edgeVertex(:,1):', edgeVertex(:,1)
+                   write(stderrUnit,*) 'edgeVertex(:,2):', edgeVertex(:,2)
+                   write(stderrUnit,*) 'cellCenter(:):', cellCenter(:)
+                   call mpas_dmpar_global_abort('Aborting with IR error')
+                endif
+                
+             endif  ! neighbor cell exists
              
-          endif  ! neighbor cell exists
-
-        endif  ! remapEdge = 1
+          endif  ! remapEdge = 1
        enddo  ! iEdge
-
+       
     else   ! on a plane
-
+       
        do iEdge = 1, nEdges
-        if (remapEdge(iEdge) == 1) then
+          if (remapEdge(iEdge) == 1) then
+             
+             do iVertexOnEdge = 1, 2
+                
+                iVertex = verticesOnEdge(iVertexOnEdge,iEdge)
 
-          do iVertexOnEdge = 1, 2
+                edgeVertex(1,iVertexOnEdge) = xVertex(iVertex) - xEdge(iEdge)
+                edgeVertex(2,iVertexOnEdge) = yVertex(iVertex) - yEdge(iEdge)
 
-             iVertex = verticesOnEdge(iVertexOnEdge,iEdge)
+             enddo   ! iVertexOnEdge
 
-             edgeVertex(1,iVertexOnEdge) = xVertex(iVertex) - xEdge(iEdge)
-             edgeVertex(2,iVertexOnEdge) = yVertex(iVertex) - yEdge(iEdge)
+             iCell = cellsOnEdge(1,iEdge)
 
-          enddo   ! iVertexOnEdge
-
-          iCell = cellsOnEdge(1,iEdge)
-
-          if (iCell >= 1 .and. iCell <= nCells) then  ! neighbor cell exists for this edge
-
-             cellCenter(1) = xCell(iCell) - xEdge(iEdge)
-             cellCenter(2) = yCell(iCell) - yEdge(iEdge)
-
-             ! find whether this cell center is in the left half plane of the edge
-             if (point_in_half_plane(edgeVertex(:,1), edgeVertex(:,2), cellCenter(:))) then
-                cellsOnEdgeSign(iEdge) = 1
-             else
-                cellsOnEdgeSign(iEdge) = -1
-                write(stderrUnit,*)'ERROR: cellsOnEdgeSign = -1: iEdge =', iEdge
-                write(stderrUnit,*)'IR assumes cellsOnEdgeSign = 1 for all edges'                
-                call mpas_dmpar_global_abort('Aborting with IR error')
-             endif
-          
-          endif  ! neighbor cell exists
-
-        endif   ! remapEdge = 1  
+             if (iCell >= 1 .and. iCell <= nCells) then  ! neighbor cell exists for this edge
+                
+                cellCenter(1) = xCell(iCell) - xEdge(iEdge)
+                cellCenter(2) = yCell(iCell) - yEdge(iEdge)
+                
+                ! find whether this cell center is in the left half plane of the edge
+                if (point_in_half_plane(edgeVertex(:,1), edgeVertex(:,2), cellCenter(:))) then
+                   ! cell 1 is in the left half-plane, as required
+                else
+                   write(stderrUnit,*) 'ERROR: cell 1 is not in the left half-plane: iEdge (local, global ID) =', iEdge, indexToEdgeID(iEdge)
+                   write(stderrUnit,*) 'edgeVertex(:,1):', edgeVertex(:,1)
+                   write(stderrUnit,*) 'edgeVertex(:,2):', edgeVertex(:,2)
+                   write(stderrUnit,*) 'cellCenter(:):', cellCenter(:)
+                   call mpas_dmpar_global_abort('Aborting with IR error')
+                endif
+                
+             endif  ! neighbor cell exists
+             
+          endif   ! remapEdge = 1  
        enddo   ! iEdge
-
+       
     endif   ! on a sphere
 
     ! Compute indices of each edge neighbor of each edge: i.e., each edge that shares a vertex
@@ -1335,191 +1319,193 @@ contains
 
     ! loop over edges
     do iEdge = 1, nEdges
-     if (remapEdge(iEdge) == 1) then  ! this edge is a boundary of a locally owned cell
-                                      ! (but might be on the global boundary, hence missing some neighbors)
+       if (remapEdge(iEdge) == 1) then  ! this edge is a boundary of a locally owned cell
+                                        ! (but might be on the global boundary, hence missing some neighbors)
 
-       ! identify the 2 cells that share the edge
-       do iCellOnEdge = 1, 2
-          iCell = cellsOnEdge(iCellOnEdge,iEdge)
-          cellsOnEdgeRemap(iCellOnEdge,iEdge) = iCell   ! C1, then C2
-       enddo
+          ! identify the 2 cells that share the edge
+          do iCellOnEdge = 1, 2
+             iCell = cellsOnEdge(iCellOnEdge,iEdge)
+             cellsOnEdgeRemap(iCellOnEdge,iEdge) = iCell   ! C1, then C2
+          enddo
+          
+          ! Identify the side edges (4 for a hex mesh, 6 for a quad mesh) that share a single vertex with iEdge
+          ! Note: I first coded a method looping over edgesOnVertex for vertices 1 and 2.
+          !       However, that method fails if there are non-existent edges at global boundaries that are
+          !        pushed to the end of the array, as can happen using the MPAS mesh converter tool (as of Aug. 2015).
+          !       The following method (using edgesOnCell) is less elegant, but it finds all the remapping edges
+          !        in the required order as shown in the diagrams above.
+          
+          ! loop over the 2 cells on the edge
+          do iCellOnEdge = 1, 2
 
-       ! Identify the side edges (4 for a hex mesh, 6 for a quad mesh) that share a single vertex with iEdge
-       ! Note: I first coded a method looping over edgesOnVertex for vertices 1 and 2.
-       !       However, that method fails if there are non-existent edges at global boundaries that are
-       !        pushed to the end of the array, as can happen using the MPAS mesh converter tool (as of Aug. 2015).
-       !       The following method (using edgesOnCell) is less elegant, but it finds all the remapping edges
-       !        in the required order as shown in the diagrams above.
-
-       ! loop over the 2 cells on the edge
-       do iCellOnEdge = 1, 2
-
-          iCell = cellsOnEdge(iCellOnEdge,iEdge)
-
-          if (iCell >= 1 .and. iCell <= nCells) then  ! this cell exists
-
-             ! Of the several edges of cell 1, identify the one that is iEdge
-
-             do iEdgeOnCell = 1, nEdgesOnCell(iCell)
-                if (edgesOnCell(iEdgeOnCell,iCell) == iEdge) then
-                   iMainEdgeOnCell = iEdgeOnCell
-                   exit
-                endif
-             enddo
+             iCell = cellsOnEdge(iCellOnEdge,iEdge)
              
-             ! Having found the index of iEdgeOnCell corresponding to iEdge, pick up the 
-             !  neighboring edges on iCell that share a vertex with iEdge (E1 and E2 for C1,
-             !  (E3 and E4 for C2).
-             
-             if (iCellOnEdge == 1) then
-
-                ! find E1
-                iEdgeOnCell = iMainEdgeOnCell - 1
-                if (iEdgeOnCell < 1) iEdgeOnCell = iEdgeOnCell + nEdgesOnCell(iCell)
-                edgesOnEdgeRemap(1,iEdge) = edgesOnCell(iEdgeOnCell,iCell)
+             if (iCell >= 1 .and. iCell <= nCells) then  ! this cell exists
                 
-                ! find E2
-                iEdgeOnCell = iMainEdgeOnCell + 1
-                if (iEdgeOnCell > nEdgesOnCell(iCell)) iEdgeOnCell = iEdgeOnCell - nEdgesOnCell(iCell)
-                edgesOnEdgeRemap(2,iEdge) = edgesOnCell(iEdgeOnCell,iCell)
+                ! Of the several edges of cell 1, identify the one that is iEdge
                 
-             elseif (iCellOnEdge == 2) then
-
-                ! find E3
-                iEdgeOnCell = iMainEdgeOnCell + 1
-                if (iEdgeOnCell > nEdgesOnCell(iCell)) iEdgeOnCell = iEdgeOnCell - nEdgesOnCell(iCell)
-                edgesOnEdgeRemap(3,iEdge) = edgesOnCell(iEdgeOnCell,iCell)
-                
-                ! find E4
-                iEdgeOnCell = iMainEdgeOnCell - 1
-                if (iEdgeOnCell < 1) iEdgeOnCell = iEdgeOnCell + nEdgesOnCell(iCell)
-                edgesOnEdgeRemap(4,iEdge) = edgesOnCell(iEdgeOnCell,iCell)
-
-             endif  ! iCellOnEdge
-
-          endif  ! this cell exists
-
-       enddo  ! iCellOnEdge
-
-       ! For quad meshes, we still need to pick up E5 and E6, which share a single vertex with iEdge and cells 1 and 2
-
-       if (vertexDegree == 4) then
-
-          do iVertexOnEdge = 1, 2
-
-             iVertex = verticesOnEdge(iVertexOnEdge,iEdge)  ! V1 or V2
-
-             ! Of the 4 edges meeting at this vertex, find the one that has not yet been picked up
-             do iEdgeOnVertex = 1, vertexDegree  ! loop through candidate edges for E5/E6
-                iEdgeNeighbor = edgesOnVertex(iEdgeOnVertex,iVertex)
-                if (iEdgeNeighbor >= 1 .and. iEdgeNeighbor <= nEdges) then  ! this is a real edge
-                   newRemapEdge = .true.  ! true until found to be false
-                   do iEdgeOnEdge = 1, 4  ! loop over the 4 remap edges found so far 
-                      if (iEdgeNeighbor == edgesOnEdgeRemap(iEdgeOnEdge,iEdge) .or. &
-                          iEdgeNeighbor == iEdge) then  ! already picked up this edge
-                         newRemapEdge = .false.
-                         exit   ! exit loop over iEdgeOnEdgeRemap
-                      endif
-                   enddo   ! iEdgeOnEdgeRemap
-                   ! If we get this far and newRemapEdge = true, then we have found the missing edge (E5 for V1, E6 for V2)
-                   if (newRemapEdge) then
-                      edgesOnEdgeRemap(iVertexOnEdge+4,iEdge) = iEdgeNeighbor
-                      exit   ! exit loop over iEdgeOnVertex
+                do iEdgeOnCell = 1, nEdgesOnCell(iCell)
+                   if (edgesOnCell(iEdgeOnCell,iCell) == iEdge) then
+                      iMainEdgeOnCell = iEdgeOnCell
+                      exit
                    endif
-                endif   ! this is a real edge
-             enddo
+                enddo
+                
+                ! Having found the index of iEdgeOnCell corresponding to iEdge, pick up the 
+                !  neighboring edges on iCell that share a vertex with iEdge (E1 and E2 for C1,
+                !  (E3 and E4 for C2).
+                
+                if (iCellOnEdge == 1) then
+                   
+                   ! find E1
+                   iEdgeOnCell = iMainEdgeOnCell - 1
+                   if (iEdgeOnCell < 1) iEdgeOnCell = iEdgeOnCell + nEdgesOnCell(iCell)
+                   edgesOnEdgeRemap(1,iEdge) = edgesOnCell(iEdgeOnCell,iCell)
+                   
+                   ! find E2
+                   iEdgeOnCell = iMainEdgeOnCell + 1
+                   if (iEdgeOnCell > nEdgesOnCell(iCell)) iEdgeOnCell = iEdgeOnCell - nEdgesOnCell(iCell)
+                   edgesOnEdgeRemap(2,iEdge) = edgesOnCell(iEdgeOnCell,iCell)
+                   
+                elseif (iCellOnEdge == 2) then
+                   
+                   ! find E3
+                   iEdgeOnCell = iMainEdgeOnCell + 1
+                   if (iEdgeOnCell > nEdgesOnCell(iCell)) iEdgeOnCell = iEdgeOnCell - nEdgesOnCell(iCell)
+                   edgesOnEdgeRemap(3,iEdge) = edgesOnCell(iEdgeOnCell,iCell)
+                   
+                   ! find E4
+                   iEdgeOnCell = iMainEdgeOnCell - 1
+                   if (iEdgeOnCell < 1) iEdgeOnCell = iEdgeOnCell + nEdgesOnCell(iCell)
+                   edgesOnEdgeRemap(4,iEdge) = edgesOnCell(iEdgeOnCell,iCell)
+                   
+                endif  ! iCellOnEdge
+                
+             endif  ! this cell exists
+             
+          enddo  ! iCellOnEdge
 
-          enddo   ! iVertexOnEdge
+          ! For quad meshes, we still need to pick up E5 and E6, which share a single vertex with iEdge and cells 1 and 2
 
-       endif   ! vertexDegree = 4 (quad mesh)
+          if (vertexDegree == 4) then  ! quad mesh
+             
+             do iVertexOnEdge = 1, 2
+                
+                iVertex = verticesOnEdge(iVertexOnEdge,iEdge)  ! V1 or V2
+                
+                ! Of the 4 edges meeting at this vertex, find the one that has not yet been picked up
+                do iEdgeOnVertex = 1, vertexDegree  ! loop through candidate edges for E5/E6
+                   iEdgeNeighbor = edgesOnVertex(iEdgeOnVertex,iVertex)
+                   if (iEdgeNeighbor >= 1 .and. iEdgeNeighbor <= nEdges) then  ! this is a real edge
+                      newRemapEdge = .true.  ! true until found to be false
+                      do iEdgeOnEdge = 1, 4  ! loop over the 4 remap edges found so far 
+                         if (iEdgeNeighbor == edgesOnEdgeRemap(iEdgeOnEdge,iEdge) .or. &
+                              iEdgeNeighbor == iEdge) then  ! already picked up this edge
+                            newRemapEdge = .false.
+                            exit   ! exit loop over iEdgeOnEdgeRemap
+                         endif
+                      enddo   ! iEdgeOnEdgeRemap
+                      ! If we get this far and newRemapEdge = true, then we have found the missing edge (E5 for V1, E6 for V2)
+                      if (newRemapEdge) then
+                         edgesOnEdgeRemap(iVertexOnEdge+4,iEdge) = iEdgeNeighbor
+                         exit   ! exit loop over iEdgeOnVertex
+                      endif
+                   endif   ! this is a real edge
+                enddo
+                
+             enddo   ! iVertexOnEdge
+             
+          endif   ! vertexDegree = 4 (quad mesh)
 
-       ! At this point we have C1 and C2, along with all the side edges
-       ! Finally, find C3, C4 and (on quad mesh) C5 and C6
-       ! V1 lies on C3 (and C5); V2 lies on C4 (and C6)
+          ! At this point we have C1 and C2, along with all the side edges
+          ! Finally, find C3, C4 and (on quad mesh) C5 and C6
+          ! V1 lies on C3 (and C5); V2 lies on C4 (and C6)
+          
+          if (vertexDegree == 3) then  ! hex mesh
+             
+             ! initialize cellsOnEdgeRemap to nCells+1 (in case no cell is found below)
+             cellsOnEdgeRemap(3:4,iEdge) = nCells + 1
+             
+             do iVertexOnEdge = 1, 2
+                
+                ! if E1 (or E2) exists, find the other cell (apart from C1) that lies on this edge
+                ! else if E3 (or E4) exists, find the other cell (apart from C2) that lies on this edge
+                
+                iEdgeNeighbor = edgesOnEdgeRemap(iVertexOnEdge,iEdge)  ! E1 or E2
+                if (iEdgeNeighbor < 1 .or. iEdgeNeighbor > nEdges) then  ! edges does not exist; choose E3 or E4 instead
+                   iEdgeNeighbor = edgesOnEdgeRemap(iVertexOnEdge+2,iEdge)  ! E3 or E4
+                endif
+                
+                ! look for a cell that lies on this edge and is not C1 or C2
+                do iCellOnEdge = 1, 2
+                   iCellNeighbor = cellsOnEdge(iCellOnEdge,iEdgeNeighbor)
+                   if (iCellNeighbor >= 1 .and. iCellNeighbor <= nCells) then   ! this cell exists
+                      if (iCellNeighbor /= cellsOnEdgeRemap(1,iEdge) .and. iCellNeighbor /= cellsOnEdgeRemap(2,iEdge)) then ! not C1 or C2
+                         cellsOnEdgeRemap(iVertexOnEdge+2,iEdge) = iCellNeighbor
+                      endif
+                   endif
+                enddo
+                
+             enddo  ! iVertexOnEdge
 
-       if (vertexDegree == 3) then  ! hex mesh
+          elseif (vertexDegree == 4) then   ! quad mesh
 
-          ! initialize cellsOnEdgeRemap to nCells+1 (in case no cell is found below)
-          cellsOnEdgeRemap(3:4,iEdge) = nCells + 1
+             ! initialize cellsOnEdgeRemap to nCells+1 (in case no cell is found below)
+             cellsOnEdgeRemap(3:6,iEdge) = nCells + 1
 
-          do iVertexOnEdge = 1, 2
+             do iVertexOnEdge = 1, 2
 
-             ! if E1 (or E2) exists, find the other cell (apart from C1) that lies on this edge
-             ! else if E3 (or E4) exists, find the other cell (apart from C2) that lies on this edge
-
-             iEdgeNeighbor = edgesOnEdgeRemap(iVertexOnEdge,iEdge)  ! E1 or E2
-             if (iEdgeNeighbor < 1 .or. iEdgeNeighbor > nEdges) then  ! edges does not exist; choose E3 or E4 instead
+                ! if E1 (or E2) exists, find the other cell (apart from C1) that lies on this edge
+                iEdgeNeighbor = edgesOnEdgeRemap(iVertexOnEdge,iEdge)  ! E1 or E2
+                if (iEdgeNeighbor >= 1 .and. iEdgeNeighbor <= nEdges) then  ! E1 (or E2) exists
+                   ! look for a cell that lies on this edge and is not C1
+                   do iCellOnEdge = 1, 2
+                      iCellNeighbor = cellsOnEdge(iCellOnEdge,iEdgeNeighbor)
+                      if (iCellNeighbor >= 1 .and. iCellNeighbor <= nCells) then ! this cell exists
+                         if (iCellNeighbor /= cellsOnEdgeRemap(1,iEdge)) then    ! not C1
+                            cellsOnEdgeRemap(iVertexOnEdge+2,iEdge) = iCellNeighbor  ! C3 or C4
+                         endif
+                      endif
+                   enddo  ! iCellOnEdge
+                endif  ! E1 (or E2) exists
+                
+                ! if E3 (or E4) exists, find the other cell (apart from C2) that lies on this edge
                 iEdgeNeighbor = edgesOnEdgeRemap(iVertexOnEdge+2,iEdge)  ! E3 or E4
-             endif
-
-             ! look for a cell that lies on this edge and is not C1 or C2
-             do iCellOnEdge = 1, 2
-                iCellNeighbor = cellsOnEdge(iCellOnEdge,iEdgeNeighbor)
-                if (iCellNeighbor >= 1 .and. iCellNeighbor <= nCells) then   ! this cell exists
-                   if (iCellNeighbor /= cellsOnEdgeRemap(1,iEdge) .and. iCellNeighbor /= cellsOnEdgeRemap(2,iEdge)) then ! not C1 or C2
-                      cellsOnEdgeRemap(iVertexOnEdge+2,iEdge) = iCellNeighbor
-                   endif
-                endif
-             enddo
+                if (iEdgeNeighbor >= 1 .and. iEdgeNeighbor <= nEdges) then  ! E3 (or E4) exists
+                   ! look for a cell that lies on this edge and is not C2
+                   do iCellOnEdge = 1, 2
+                      iCellNeighbor = cellsOnEdge(iCellOnEdge,iEdgeNeighbor)
+                      if (iCellNeighbor >= 1 .and. iCellNeighbor <= nCells) then ! this cell exists
+                         if (iCellNeighbor /= cellsOnEdgeRemap(2,iEdge)) then    ! not C2
+                            cellsOnEdgeRemap(iVertexOnEdge+4,iEdge) = iCellNeighbor  ! C5 or C6
+                         endif
+                      endif
+                      
+                   enddo  ! iCellOnEdge
+                   
+                endif  ! E1 (or E2) exists
                 
-          enddo  ! iVertexOnEdge
-
-       elseif (vertexDegree == 4) then   ! quad mesh
-
-          ! initialize cellsOnEdgeRemap to nCells+1 (in case no cell is found below)
-          cellsOnEdgeRemap(3:6,iEdge) = nCells + 1
-
-          do iVertexOnEdge = 1, 2
-
-             ! if E1 (or E2) exists, find the other cell (apart from C1) that lies on this edge
-             iEdgeNeighbor = edgesOnEdgeRemap(iVertexOnEdge,iEdge)  ! E1 or E2
-             if (iEdgeNeighbor >= 1 .and. iEdgeNeighbor <= nEdges) then  ! E1 (or E2) exists
-                ! look for a cell that lies on this edge and is not C1
-
-                do iCellOnEdge = 1, 2
-                   iCellNeighbor = cellsOnEdge(iCellOnEdge,iEdgeNeighbor)
-                   if (iCellNeighbor >= 1 .and. iCellNeighbor <= nCells) then ! this cell exists
-                      if (iCellNeighbor /= cellsOnEdgeRemap(1,iEdge)) then    ! not C1
-                         cellsOnEdgeRemap(iVertexOnEdge+2,iEdge) = iCellNeighbor  ! C3 or C4
-                      endif
-                   endif
-                enddo  ! iCellOnEdge
-             endif  ! E1 (or E2) exists
-
-             ! if E3 (or E4) exists, find the other cell (apart from C2) that lies on this edge
-             iEdgeNeighbor = edgesOnEdgeRemap(iVertexOnEdge+2,iEdge)  ! E3 or E4
-             if (iEdgeNeighbor >= 1 .and. iEdgeNeighbor <= nEdges) then  ! E3 (or E4) exists
-                ! look for a cell that lies on this edge and is not C2
-                do iCellOnEdge = 1, 2
-                   iCellNeighbor = cellsOnEdge(iCellOnEdge,iEdgeNeighbor)
-                   if (iCellNeighbor >= 1 .and. iCellNeighbor <= nCells) then ! this cell exists
-                      if (iCellNeighbor /= cellsOnEdgeRemap(2,iEdge)) then    ! not C2
-                         cellsOnEdgeRemap(iVertexOnEdge+4,iEdge) = iCellNeighbor  ! C5 or C6
-                      endif
-                   endif
-
-                enddo  ! iCellOnEdge
-
-             endif  ! E1 (or E2) exists
-
-          enddo  ! iVertexOnEdge
-
-       endif  ! vertexDegree
-
-     endif  ! remapEdge = 1
+             enddo  ! iVertexOnEdge
+             
+          endif  ! vertexDegree
+          
+       endif  ! remapEdge = 1
     enddo  ! iEdge
 
     ! compute vertex coordinates relative to each edge
-    !TODO - Set to 4 or 6 depending on vertex degree?
 
-    nEdgesOnEdgeRemap = size(edgesOnEdgeRemap,1)
+    if (vertexDegree == 3) then   ! hex mesh
+       nEdgesOnEdgeRemap = 4
+    elseif (vertexDegree == 4) then   ! quad mesh
+       nEdgesOnEdgeRemap = 6
+    endif
 
     if (on_a_sphere) then
 
        ! first loop: compute the local x/y coordinates of the 2 vertices of each edge
        ! Note: This loop is not limited to edges with remapEdge = 1, because
        !       some values in cells without remapEdge = 1 are needed in the second loop.
-       ! Note: Previously, I transformed the global vectors (x/y/zVertex - x/y/zEdge)
+       ! Note: Previously, the global vectors (x/y/zVertex - x/y/zEdge) were transformed
        !       to the plane, one vertex at a time. This resulted in edge midpoints that
        !       did not lie exactly halfway between the 2 vertices. With the calculation
        !       below, the edge midpoints (by construction) exactly bisect the segment 
@@ -1625,64 +1611,64 @@ contains
     else  ! on a plane
 
        do iEdge = 1, nEdges
-        if (remapEdge(iEdge) == 1) then
+          if (remapEdge(iEdge) == 1) then
 
-          ! first, compute the local x/y coordinates of the 2 vertices of iEdge
+             ! first, compute the local x/y coordinates of the 2 vertices of iEdge
 
-          do iVertexOnEdge = 1, 2
+             do iVertexOnEdge = 1, 2
 
-             iVertex = verticesOnEdge(iVertexOnEdge,iEdge)
+                iVertex = verticesOnEdge(iVertexOnEdge,iEdge)
 
-             ! Compute a vector pointing from the edge to the vertex
+                ! Compute a vector pointing from the edge to the vertex
              
-             xVertexOnEdge(iVertexOnEdge,iEdge) = xVertex(iVertex) - xEdge(iEdge)
-             yVertexOnEdge(iVertexOnEdge,iEdge) = yVertex(iVertex) - yEdge(iEdge)
+                xVertexOnEdge(iVertexOnEdge,iEdge) = xVertex(iVertex) - xEdge(iEdge)
+                yVertexOnEdge(iVertexOnEdge,iEdge) = yVertex(iVertex) - yEdge(iEdge)
                 
-          enddo   ! iVertexOnEdge
+             enddo   ! iVertexOnEdge
 
-          ! next, compute the coordinates of the vertices of the neighboring edges
-          ! (i.e., those that share a vertex with iEdge)
+             ! next, compute the coordinates of the vertices of the neighboring edges
+             ! (i.e., those that share a vertex with iEdge)
 
-          count = 2   ! 2 vertices already computed above
-
-          do iEdgeOnEdge = 1, nEdgesOnEdgeRemap   ! 4 neighbor edges for hexes, 6 for quads
-
-             iEdgeNeighbor = edgesOnEdgeRemap(iEdgeOnEdge,iEdge)
-
-             if (iEdgeNeighbor >= 1 .and. iEdgeNeighbor <= nEdges) then  ! neighbor edge exists
-
-                ! identify the side vertex of the neighbor edge 
-                do n = 1, 2    ! vertices of iEdge
-                   do m = 1, 2   ! vertices of iEdgeNeighbor
-                      
-                      if (verticesOnEdge(m,iEdgeNeighbor) == verticesOnEdge(n,iEdge)) then  ! shared vertex
+             count = 2   ! 2 vertices already computed above
+             
+             do iEdgeOnEdge = 1, nEdgesOnEdgeRemap   ! 4 neighbor edges for hexes, 6 for quads
+                
+                iEdgeNeighbor = edgesOnEdgeRemap(iEdgeOnEdge,iEdge)
+                
+                if (iEdgeNeighbor >= 1 .and. iEdgeNeighbor <= nEdges) then  ! neighbor edge exists
+                   
+                   ! identify the side vertex of the neighbor edge 
+                   do n = 1, 2    ! vertices of iEdge
+                      do m = 1, 2   ! vertices of iEdgeNeighbor
                          
-                         ! identify the other vertex of this neighbor edge
-                         if (m == 1) then
-                            m2 = 2  ! the other vertex of iEdgeNeighbor
-                         else ! m = 2
-                            m2 = 1
-                         endif
-                         iVertex = verticesOnEdge(m2,iEdgeNeighbor)
-                         count = count + 1
-                         exit
-                         
-                      endif   ! shared vertex
+                         if (verticesOnEdge(m,iEdgeNeighbor) == verticesOnEdge(n,iEdge)) then  ! shared vertex
+                            
+                            ! identify the other vertex of this neighbor edge
+                            if (m == 1) then
+                               m2 = 2  ! the other vertex of iEdgeNeighbor
+                            else ! m = 2
+                               m2 = 1
+                            endif
+                            iVertex = verticesOnEdge(m2,iEdgeNeighbor)
+                            count = count + 1
+                            exit
+                            
+                         endif   ! shared vertex
 
-                   enddo   ! vertices of iEdgeNeighbor
-                enddo   ! vertices of iEdge
+                      enddo   ! vertices of iEdgeNeighbor
+                   enddo   ! vertices of iEdge
 
-                ! Compute a global vector pointing from the midpoint of iEdge to this vertex
-                xVertexOnEdge(count,iEdge) = xVertex(iVertex) - xEdge(iEdge)
-                yVertexOnEdge(count,iEdge) = yVertex(iVertex) - yEdge(iEdge)
+                   ! Compute a global vector pointing from the midpoint of iEdge to this vertex
+                   xVertexOnEdge(count,iEdge) = xVertex(iVertex) - xEdge(iEdge)
+                   yVertexOnEdge(count,iEdge) = yVertex(iVertex) - yEdge(iEdge)
 
-             endif   ! neighbor edge exists
+                endif   ! neighbor edge exists
 
-          enddo  ! iEdgeOnEdge
-
-        endif   ! remapEdge
+             enddo  ! iEdgeOnEdge
+             
+          endif   ! remapEdge
        enddo   ! iEdge
-
+       
     endif  ! on a sphere
 
     ! Find the minimum length of the edges that meet at each vertex.
@@ -1718,11 +1704,10 @@ contains
              if (edgeLength < minLengthEdgesOnVertex(iVertex)) &
                   minLengthEdgesOnVertex(iVertex) = edgeLength
 
-             !WHL - debug
-!             if (verboseInit .and. vtestOnProc .and. block % localBlockID == vtestBlockID) then
-!                write(stderrUnit,*) 'iVertex, iEdge, edgeLength, minLength:', &
-!                     iVertex, iEdge, edgeLength, minLengthEdgesOnVertex(iVertex)
-!             endif
+!!             if (verboseInit .and. vtestOnProc .and. block % localBlockID == vtestBlockID) then
+!!                write(stderrUnit,*) 'iVertex, iEdge, edgeLength, minLength:', &
+!!                     iVertex, iEdge, edgeLength, minLengthEdgesOnVertex(iVertex)
+!!             endif
 
           endif  ! edge exists
 
@@ -1741,7 +1726,7 @@ contains
 !> \date   April 2015
 !> \details
 !>  This routine computes the coordinates of each vertex of each cell,
-!>  in the local tangent plane of the cell center
+!>  in the local tangent plane of the cell center.
 !
 !-----------------------------------------------------------------------
 
@@ -1790,7 +1775,6 @@ contains
     real(kind=RKIND), dimension(2) :: &
          nextVertex         ! x/y coordinates of a vertex
 
-    !WHL - debug
     real(kind=RKIND), dimension(3) :: workVector1, workVector2, workVector3
     real(kind=RKIND) :: dotProduct, crossProduct
 
@@ -1820,16 +1804,16 @@ contains
                                                 + transGlobalToCell(2,2,iCell) * workVector(2)  &
                                                 + transGlobalToCell(2,3,iCell) * workVector(3)
 
-             !TODO - Check that z component is small
-             workVector(3) = transGlobalToCell(3,1,iCell) * workVector(1)  &
-                           + transGlobalToCell(3,2,iCell) * workVector(2)  &
-                           + transGlobalToCell(3,3,iCell) * workVector(3)
+             ! The z component would be computed as follows, but is thrown away.
+             ! It is small compared to the x and y components.
+!             workVector(3) = transGlobalToCell(3,1,iCell) * workVector(1)  &
+!                           + transGlobalToCell(3,2,iCell) * workVector(2)  &
+!                           + transGlobalToCell(3,3,iCell) * workVector(3)
 
-             !WHL - debug
-             if (iCell == ctest) then
-!!                write(stderrUnit,*) 'Local:', &
-!!                     iVertexOnCell, xVertexOnCell(iVertexOnCell,iCell), yVertexOnCell(iVertexOnCell,iCell), workVector(3)
-             endif
+!             if (iCell == ctest) then
+!                write(stderrUnit,*) 'Local:', &
+!                     iVertexOnCell, xVertexOnCell(iVertexOnCell,iCell), yVertexOnCell(iVertexOnCell,iCell), workVector(3)
+!             endif
 
           enddo  ! VertexOnCell
 
@@ -1852,8 +1836,8 @@ contains
 
     endif
 
-    !WHL - debug - Make sure each cell is convex with vertices ordered counterclockwise
-    !TODO - May be able to remove this check later.
+    ! Bug check - Make sure each cell is convex with vertices ordered counterclockwise.
+    ! This should be true for conforming MPAS meshes.
 
     ! First check for CCW ordering in 3D spherical coordinates
 
@@ -1863,11 +1847,6 @@ contains
 
     if (on_a_sphere) then
        
-       if (verboseInit) then
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'Check for CCW ordering of vertices in 3D:'
-       endif
-
        do iCell = 1, nCells
 
           do iVertexOnCell = 1, nEdgesOnCell(iCell)
@@ -1902,9 +1881,8 @@ contains
              
              if (dotProduct >= 0.0_RKIND) then
                 continue
-!             write(stderrUnit,*) 'OK: iCell, zCell, dotProduct:', iCell, zCell(iCell), dotProduct
              else
-!             write(stderrUnit,*) 'Violation: iCell, zCell, dotProduct:', iCell, zCell(iCell), dotProduct
+!                write(stderrUnit,*) 'Violation: iCell, zCell, dotProduct:', iCell, zCell(iCell), dotProduct
                 write(stderrUnit,*) 'ERROR: IR requires convex cells with vertices arranged CCW around the cell'
                 write(stderrUnit,*) 'Violation for cell:', iCell
                 write(stderrUnit,*) 'iVertexOnCell, xVertex, yVertex, zVertex:'
@@ -1919,17 +1897,11 @@ contains
           
        enddo   ! iCell
 
-       if (verboseInit) write(stderrUnit,*) 'CCW ordering on a sphere is OK'
+       if (verboseInit) write(stderrUnit,*) 'CCW ordering of cell vertices on a sphere is OK'
 
     endif  ! on a sphere
 
-    ! Next check for CCW ordering on the plane. This makes sure the projection from the sphere to the plane is correct.
-    !TODO - Remove this check later?
-
-    if (verboseInit) then
-       write(stderrUnit,*) ' '
-       write(stderrUnit,*) 'Check for CCW ordering of vertices on local tangent plane:'
-    endif
+    ! Bug check: Verify CCW ordering on the plane. This makes sure the projection from the sphere to the plane is correct.
 
     do iCell = 1, nCells
 
@@ -1952,7 +1924,6 @@ contains
 
           if (crossProduct >= 0.0_RKIND) then
              continue
-!             write(stderrUnit,*) 'OK: iCell, zCell, crossProduct:', iCell, zCell(iCell), crossProduct
           else
 !             write(stderrUnit,*) 'Violation: iCell, zCell, crossProduct:', iCell, zCell(iCell), crossProduct
              write(stderrUnit,*) 'ERROR: IR requires convex cells with vertices arranged CCW around the cell'
@@ -1968,7 +1939,7 @@ contains
 
     enddo   ! iCell
 
-    if (verboseInit) write(stderrUnit,*) 'CCW ordering on local tangent plane is OK'
+    if (verboseInit) write(stderrUnit,*) 'CCW ordering of cell vertices on local tangent plane is OK'
 
   end subroutine get_vertex_on_cell_coordinates
 
@@ -2048,21 +2019,21 @@ contains
          yVertexOnCell     !< Input: y (north) coordinate of vertex relative to cell center in local tangent plane
 
     integer, intent(in) ::  &
-         nCells,        &  ! number of cells
-         maxEdges          ! maximum number of edges per cell
+         nCells,        &  !< Input: number of cells
+         maxEdges          !< Input: maximum number of edges per cell
 
     integer, dimension(:,:), intent(in) ::  &
-         edgesOnCell       ! edge index for each edge of a given cell
+         edgesOnCell       !< Input: edge index for each edge of a given cell
 
     integer, dimension(:), intent(in) :: &
-         nEdgesOnCell      ! number of edges for each cell
+         nEdgesOnCell      !< Input: number of edges for each cell
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         dcEdge,        &  ! distance between the 2 cell centers on each side of an edge
-         dvEdge            ! distance between the 2 vertices of an edge
+         dcEdge,        &  !< Input: distance between the 2 cell centers on each side of an edge
+         dvEdge            !< Input: distance between the 2 vertices of an edge
 
     type(geometric_avg_cell_type), pointer :: &
-         geomAvgCell       ! derived type holding geometric averages
+         geomAvgCell       !< Output: derived type holding geometric averages
 
     ! local variables
 
@@ -2168,17 +2139,18 @@ contains
           wQP(1:3) = w1TriangleQP
           wQP(4:6) = w2TriangleQP
 
-          !WHL - debug
-          if (verboseGeomAvg .and. iCell == ctest) then
-             write(stderrUnit,*) ' '
-             write(stderrUnit,*) 'edge =', iEdgeOnCell
-             write(stderrUnit,*) 'x1, y1:', x1Vertex, y1Vertex
-             write(stderrUnit,*) 'x2, y2:', x2Vertex, y2Vertex
-             write(stderrUnit,*) 'x3, y3:', x3Vertex, y3Vertex
-             write(stderrUnit,*) 'quad point x, y, w:'
-             do n = 1, 6
-                write(stderrUnit,*) n, xQP(n), yQP(n), wQP(n)
-             enddo
+          if (verboseGeomAvg .and. ctestOnProc) then
+             if (iCell == ctest) then
+                write(stderrUnit,*) ' '
+                write(stderrUnit,*) 'edge =', iEdgeOnCell
+                write(stderrUnit,*) 'x1, y1:', x1Vertex, y1Vertex
+                write(stderrUnit,*) 'x2, y2:', x2Vertex, y2Vertex
+                write(stderrUnit,*) 'x3, y3:', x3Vertex, y3Vertex
+                write(stderrUnit,*) 'quad point x, y, w:'
+                do n = 1, 6
+                   write(stderrUnit,*) n, xQP(n), yQP(n), wQP(n)
+                enddo
+             endif
           endif
 
           ! compute geometric averages for this triangle
@@ -2216,27 +2188,28 @@ contains
              yyyyavg = yyyyavg + wQP(n) * yqp(n)**4
           enddo
 
-          !WHL - debug
-          if (iCell == ctest .and. verboseGeomAvg) then
-             write(stderrUnit,*) ' '
-             write(stderrUnit,*) 'Averages for edge ', iEdgeOnCell
-             write(stderrUnit,*) 'x:', xavg
-             write(stderrUnit,*) 'y:', yavg
-             write(stderrUnit,*) 'xx:', xxavg
-             write(stderrUnit,*) 'xy:', xyavg
-             write(stderrUnit,*) 'yy:', yyavg
-             write(stderrUnit,*) 'xxx:', xxxavg
-             write(stderrUnit,*) 'xxy:', xxyavg
-             write(stderrUnit,*) 'xyy:', xyyavg
-             write(stderrUnit,*) 'yyy:', yyyavg
-             write(stderrUnit,*) 'xxxx:', xxxxavg
-             write(stderrUnit,*) 'xxxy:', xxxyavg
-             write(stderrUnit,*) 'xxyy:', xxyyavg
-             write(stderrUnit,*) 'xyyy:', xyyyavg
-             write(stderrUnit,*) 'yyyy:', yyyyavg
+          if (verboseGeomAvg .and. ctestOnProc) then
+             if (iCell == ctest) then
+                write(stderrUnit,*) ' '
+                write(stderrUnit,*) 'Averages for edge ', iEdgeOnCell
+                write(stderrUnit,*) 'x:', xavg
+                write(stderrUnit,*) 'y:', yavg
+                write(stderrUnit,*) 'xx:', xxavg
+                write(stderrUnit,*) 'xy:', xyavg
+                write(stderrUnit,*) 'yy:', yyavg
+                write(stderrUnit,*) 'xxx:', xxxavg
+                write(stderrUnit,*) 'xxy:', xxyavg
+                write(stderrUnit,*) 'xyy:', xyyavg
+                write(stderrUnit,*) 'yyy:', yyyavg
+                write(stderrUnit,*) 'xxxx:', xxxxavg
+                write(stderrUnit,*) 'xxxy:', xxxyavg
+                write(stderrUnit,*) 'xxyy:', xxyyavg
+                write(stderrUnit,*) 'xyyy:', xyyyavg
+                write(stderrUnit,*) 'yyyy:', yyyyavg
+             endif
           endif
-
-          ! add this triangle's contribution to the cumulative sum for the cell,
+          
+          ! add this triangle contribution to the cumulative sum for the cell,
           ! weighted by the fractional area of the triangle
           geomAvgCell % x   (iCell) = geomAvgCell % x   (iCell) + fracEdgeArea(iEdgeOnCell) * xavg
           geomAvgCell % y   (iCell) = geomAvgCell % y   (iCell) + fracEdgeArea(iEdgeOnCell) * yavg
@@ -2277,32 +2250,34 @@ contains
        clock,       &
        dt,          &
        timeLevelIn, &
-       updateHaloIn)
+       updateHaloInitIn,  &
+       updateHaloFinalIn)
  
     use mpas_dmpar
 
     type (domain_type), intent(inout) :: &
-         domain !< Input/Output: 
+         domain    !< Input/Output: domain info
 
     type (MPAS_Clock_type), intent(in) :: &
-         clock !< Input:
+         clock     !< Input: clock
 
     real(kind=RKIND), intent(in) :: &
-         dt    !< Input: time step 
+         dt        !< Input: time step 
 
     integer, intent(in), optional :: &
          timeLevelIn    !< Input: time level of input fields (1 or 2)
 
     logical, intent(in), optional :: &
-         updateHaloIn   !< Input: if true, do initial halo updates for mass and tracer fields
-
-    !TODO - Add logical variable for doing final halo updates
-    !       Also for conservation and monotonicity checks
+         updateHaloInitIn,   & !< Input: if true, do initial halo updates for velocity, mass and tracer fields
+         updateHaloFinalIn     !< Input: if true, do final halo updates for mass and tracer fields
 
     ! Local variables
 
     integer :: timeLevel    ! time level of input fields (1 or 2)
-    logical :: updateHalo   ! if true, do halo updates for mass and tracer fields
+
+    logical :: &
+         updateHaloInit,   & ! if true, do initial halo updates for velocity, mass and tracer fields
+         updateHaloFinal     ! if true, do final halo updates for mass and tracer fields
 
     type (mpas_pool_type), pointer :: velocityPool
 
@@ -2322,17 +2297,23 @@ contains
        timeLevel = 1        ! old time by default
     endif
 
-    ! Set logical variable for halo updates
-    if (present(updateHaloIn)) then
-       updateHalo = updateHaloIn
+    ! Set logical variables for halo updates
+
+    if (present(updateHaloInitIn)) then
+       updateHaloInit = updateHaloInitIn
     else
-       updateHalo = .true.  ! do updates to be safe
+       updateHaloInit = .true.    ! do initial updates to be safe
     endif
 
-    !WHL - debug
+    if (present(updateHaloFinalIn)) then
+       updateHaloFinal = updateHaloFinalIn
+    else
+       updateHaloFinal = .false.  ! another module can take care of halo updates later
+    endif
+
     if (verboseRun) then
        write(stderrUnit,*) ' '
-       write(stderrUnit,*) 'In cice_incremental remap: updateHalo, timeLevel =', updateHalo, timeLevel
+       write(stderrUnit,*) 'In cice_incremental remap: timeLevel =', timeLevel
     endif
 
     ! halo updates
@@ -2342,7 +2323,11 @@ contains
     !TODO - Make sure there are at least two layers of halo cells.
     !       (Is this part of the field info?)
 
-    if (updateHalo) then
+    if (updateHaloInit) then
+
+       if (verboseRun) then
+          write(stderrUnit,*) 'Doing initial halo updates for velocity, mass and tracers'
+       endif
 
        ! velocity
        call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity_solver', velocityPool)
@@ -2351,7 +2336,7 @@ contains
        call mpas_dmpar_exch_halo_field(uVelocityField)
        call mpas_dmpar_exch_halo_field(vVelocityField)
 
-       ! tracers
+       ! mass and tracers
        call cice_update_tracer_halo(tracersHead, domain, timeLevel)
 
     endif  ! halo update
@@ -2364,8 +2349,9 @@ contains
 
     do while (associated(block))
 
-       if (verboseRun) &
-            write(stderrUnit,*) 'Call incremental_remap_block: block =', block % localBlockID
+       if (verboseRun) then
+          write(stderrUnit,*) 'Call incremental_remap_block: block =', block % localBlockID
+       endif
 
        ! do IR for this block
        call incremental_remap_block(&
@@ -2380,7 +2366,7 @@ contains
     ! Optional check for conservation of mass and mass*tracer
     ! Note: This check must be done outside the block loop because it requires global sums
 
-    if (conservation_check) then
+    if (conservationCheck) then
 
        call check_tracer_conservation(dminfo, tracersHead)
 
@@ -2388,15 +2374,24 @@ contains
 
     ! Optional check for tracer monotonicity
     ! Note: This check should be done outside the block loop because it requires a halo update.
-    !       (However, monotonicity should hold in almost all cases without the halo update.)
+    !       (However, monotonicity should hold in most cases without the halo update.)
 
-    if (monotonicity_check) then
+    if (monotonicityCheck) then
 
        call check_tracer_monotonicity(domain, tracersHead)
 
     endif
 
-    !TODO - optional final halo update
+    if (updateHaloFinal) then
+
+       if (verboseRun) then
+          write(stderrUnit,*) 'Doing final halo updates for mass and tracers'
+       endif
+
+       ! mass and tracers
+       call cice_update_tracer_halo(tracersHead, domain, timeLevel)
+
+    endif  ! halo update
 
     if (verboseRun) write(stderrUnit,*) 'Done in IR'
 
@@ -2440,7 +2435,7 @@ contains
 !     except where horizontal gradients are limited to preserve 
 !     monotonicity. 
 ! (3) There are economies of scale.  Transporting a single field 
-!     is rather expensive, but additional fields have a relatively 
+!     is fairly expensive, but additional fields have a relatively 
 !     low marginal cost. 
 ! 
 ! The following generic conservation equations may be solved: 
@@ -2463,7 +2458,7 @@ contains
 ! If density is variable, then density is T2 and enthalpy is T3.
 !
 ! Requirements for input fields::
-! (1) The input mass and tracer fields must be up to date in 2 or more layers
+! (1) The input mass and tracer fields must be up to date in two or more layers
 !     of halo cells. Else the output mass and tracers will not be correct
 !     for all locally owned cells in the block.
 ! (2) The velocity must be up to date for all vertices of locally owned cells,
@@ -2481,7 +2476,7 @@ contains
 
     ! in/out arguments
 
-    type(block_type), intent(inout) :: &   !TODO - inout or in?
+    type(block_type), intent(inout) :: &
          block        !< Input: block info
 
     real(kind=RKIND), intent(in) :: &
@@ -2520,7 +2515,7 @@ contains
 
     logical, pointer ::  &
          on_a_sphere,                & ! if true, then the mesh lives on the surface of a sphere; else in a plane
-         config_rotate_cartesian_grid  ! if true, then the true North and South Poles are rotated to the equator
+         config_rotate_cartesian_grid  ! if true, then the North and South Poles are rotated to the equator
 
     ! mesh arrays
 
@@ -2537,12 +2532,12 @@ contains
     real(kind=RKIND), dimension(:), pointer :: &
          areaCell,                  &  ! cell area
          dcEdge,                    &  ! distance between the 2 cell centers on each side of an edge
-         xCell,   yCell,   zCell,   &  ! global coordinates of cells
-         xVertex, yVertex, zVertex, &  ! global coordinates of vertices
-         xEdge,   yEdge,   zEdge,   &  ! global coordinates of edges
          minLengthEdgesOnVertex        ! minimum length of the edges on each vertex
 
-    !WHL - the indexTo*ID arrays are for diagnostics only
+    real(kind=RKIND), dimension(:), pointer :: &
+         xCell,   yCell,   zCell       ! global coordinates of cells; diagnostic only
+
+    !Note: The indexTo*ID arrays are for diagnostics only
     integer, dimension(:), pointer ::  &
          indexToCellID,   & ! global index for each cell on a block
          indexToVertexID, & ! global index for each vertex on a block
@@ -2551,14 +2546,11 @@ contains
     ! IR-specific arrays
 
     type(geometric_avg_cell_type), pointer :: &
-         geomAvgCell       ! derived type holding geometric averages
+         geomAvgCell        ! derived type holding geometric averages
 
     integer, dimension(:), pointer :: &
-         remapEdge,         & ! = 1 if IR fluxes need to be computed across an edge, else = 0
-                              ! (i.e., = 1 for all edges of locally owned cells)
-         cellsOnEdgeSign      ! = 1 if cell 1 lies in the left half plane of the edge
-                              ! = -1 if cell 1 lies in the right half plan of the edge
-                              !TODO - cellsOnEdgeSign not needed if always = 1
+         remapEdge          ! = 1 if IR fluxes need to be computed across an edge, else = 0
+                            ! (i.e., = 1 for all edges of locally owned cells)
 
     integer, dimension(:,:), pointer ::  &
          cellsOnEdgeRemap,& ! index for each cell neighbor of a given edge,
@@ -2579,16 +2571,14 @@ contains
          departurePoint,                & ! x/y coordinates of departure points relative to vertices
                                           ! 1st dimension = 2, 2nd dimension = nVertices
          triangleArea                     ! area of departure triangle
-                                          ! 1st dimension = nEdges, 2nd dimension = nTriPerEdgeRemap
+                                          ! 1st dimension = nTriPerEdgeRemap, 2nd dimension = nEdges
 
     real(kind=RKIND), dimension(:,:,:), pointer ::  &
          coeffsReconstruct,    & ! coefficients for reconstructing the gradient at a cell center, given normal components on edges
          xTriangle, yTriangle    ! x and y coordinates of vertices and/or quadrature points of departure triangles for each edge
                                  ! 1st dimension = nQuadPoints, 2nd dimension = nTriPerEdgeRemap, 3rd dimension = nEdges
 
-    !TODO - transGlobalToEdge used for polygon intersection calc only; can be removed later
     real(kind=RKIND), dimension(:,:,:), pointer :: &
-         transGlobalToEdge,   &  ! 3x3 matrix for transforming vectors from global to edge-based coordinates
          transGlobalToCell       ! 3x3 matrix for transforming vectors from global to cell-based coordinates
 
     real(kind=RKIND), dimension(:,:), pointer ::  &
@@ -2603,6 +2593,8 @@ contains
     type(tracer_type), pointer :: thisTracer
     integer :: n, m, iEdge, iCat, iLayer, iCell
     integer :: nCategories, nLayers, count
+
+    integer, parameter :: iCatTest = 1   ! category for which diagnostics are written
 
     if (present(timeLevelIn)) then
        timeLevel = timeLevelIn
@@ -2622,7 +2614,7 @@ contains
     call mpas_pool_get_config(configPool, 'config_rotate_cartesian_grid', config_rotate_cartesian_grid)
     call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-    ! get state variables (velocity, ice area, tracers)
+    ! get velocity
     call mpas_pool_get_array(velocityPool, 'uVelocity', uVelocity)
     call mpas_pool_get_array(velocityPool, 'vVelocity', vVelocity)
 
@@ -2648,40 +2640,13 @@ contains
     call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
     call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
     call mpas_pool_get_array(meshPool, 'coeffs_reconstruct', coeffsReconstruct)
-
-    ! the indexTo*ID arrays are diagnostic only
     call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID) 
     call mpas_pool_get_array(meshPool, 'indexToVertexID', indexToVertexID)
     call mpas_pool_get_array(meshPool, 'indexToEdgeID', indexToEdgeID)
 
-    ! get mesh arrays for cell, vertex and edge vectors
-    ! Note: If using a rotated spherical grid, then the arrays are pulled from the rotated mesh pool.
-    !        These have been rotated to put the North and South Poles at the equator,
-    !        as indicated by the 'Rotate' suffix.
-    !       We use the same pointer names (without the 'Rotate' suffix) either way,
-    !        in order to avoid extra logic.
-
-    if (config_rotate_cartesian_grid .and. on_a_sphere) then
-       call mpas_pool_get_array(rotatedMeshPool, 'xCellRotate', xCell)
-       call mpas_pool_get_array(rotatedMeshPool, 'yCellRotate', yCell)
-       call mpas_pool_get_array(rotatedMeshPool, 'zCellRotate', zCell)
-       call mpas_pool_get_array(rotatedMeshPool, 'xVertexRotate', xVertex)
-       call mpas_pool_get_array(rotatedMeshPool, 'yVertexRotate', yVertex)
-       call mpas_pool_get_array(rotatedMeshPool, 'zVertexRotate', zVertex)
-       call mpas_pool_get_array(rotatedMeshPool, 'xEdgeRotate', xEdge)
-       call mpas_pool_get_array(rotatedMeshPool, 'yEdgeRotate', yEdge)
-       call mpas_pool_get_array(rotatedMeshPool, 'zEdgeRotate', zEdge)
-    else
-       call mpas_pool_get_array(meshPool, 'xCell', xCell)
-       call mpas_pool_get_array(meshPool, 'yCell', yCell)
-       call mpas_pool_get_array(meshPool, 'zCell', zCell)
-       call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
-       call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
-       call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
-       call mpas_pool_get_array(meshPool, 'xEdge', xEdge)
-       call mpas_pool_get_array(meshPool, 'yEdge', yEdge)
-       call mpas_pool_get_array(meshPool, 'zEdge', zEdge)
-    endif
+    call mpas_pool_get_array(meshPool, 'xCell', xCell)  ! x/y/zCell are diagnostic only
+    call mpas_pool_get_array(meshPool, 'yCell', yCell)
+    call mpas_pool_get_array(meshPool, 'zCell', zCell)
 
     ! get IR geometry arrays
     call get_incremental_remap_geometry_pointers(geomAvgCell, block)
@@ -2698,30 +2663,24 @@ contains
     call mpas_pool_get_array(incrementalRemapPool, 'yTriangle', yTriangle)
     call mpas_pool_get_array(incrementalRemapPool, 'iCellTriangle', iCellTriangle)
     call mpas_pool_get_array(incrementalRemapPool, 'triangleArea', triangleArea)
-    call mpas_pool_get_array(incrementalRemapPool, 'transGlobalToEdge',   transGlobalToEdge)
     call mpas_pool_get_array(incrementalRemapPool, 'transGlobalToCell',   transGlobalToCell)
     call mpas_pool_get_array(incrementalRemapPool, 'minLengthEdgesOnVertex', minLengthEdgesOnVertex)
-    call mpas_pool_get_array(incrementalRemapPool, 'cellsOnEdgeSign',  cellsOnEdgeSign)
     call mpas_pool_get_array(incrementalRemapPool, 'workCategoryCell', workCategoryCell)
 
-    !WHL - debug - one-time diagnostics (this info can also be written at the end of each time step)
-    if (first_call) then   
+    ! Optional initial diagnostics: Write a list of cells with ice
+    ! If verboseGlobal = true, then this info is also written at the end of each time step.
+
+    if (first_call) then
        first_call = .false.
-       thisTracer => tracersHead
+       thisTracer => tracersHead  ! point to the mass-like field, iceAreaCategory
        if (verboseGlobal .and. trim(thisTracer % tracerName) == 'iceAreaCategory') then
           write(stderrUnit,*) ' '
           write(stderrUnit,*) 'Cells with initial ice:'
           write(stderrUnit,*) 'iCell (local), iCell(global), ice area, xCell, yCell, zCell:'
-          if (thisTracer % ndims == 2) then
+          if (thisTracer % ndims == 2) then  ! the pointer to iceAreaCategory should always be 2D, but check just in case
              do iCell = 1, nCellsSolve
-                if (thisTracer % array2D(1,iCell) > 0.0_RKIND) then
-                   write(stderrUnit,*) iCell, indexToCellID(iCell), thisTracer % array2D(1,iCell), xCell(iCell), yCell(iCell), zCell(iCell)
-                endif
-             enddo
-          elseif (thisTracer % ndims == 3) then
-             do iCell = 1, nCellsSolve
-                if (thisTracer % array3D(1,1,iCell) > 0.0_RKIND) then
-                   write(stderrUnit,*) iCell, indexToCellID(iCell), thisTracer % array3D(1,1,iCell), xCell(iCell), yCell(iCell), zCell(iCell)
+                if (thisTracer % array2D(iCatTest,iCell) > 0.0_RKIND) then
+                   write(stderrUnit,*) iCell, indexToCellID(iCell), thisTracer % array2D(iCatTest,iCell), xCell(iCell), yCell(iCell), zCell(iCell)
                 endif
              enddo
           endif  ! ndims
@@ -2768,15 +2727,15 @@ contains
     !------------------------------------------------------------------- 
     ! Compute masks.
     ! The tracer mask identifies cells whose values are physically meaningful.
-    ! For example, the ice thickness is meaningful iff the area is nonzero,
-    !  and the ice enthalpy is meaningful iff the area and thickness are nonzero.
+    ! For example, the ice thickness is meaningful if and only if the area is nonzero,
+    !  and the ice enthalpy is meaningful if and only if the area and thickness are nonzero.
     !------------------------------------------------------------------- 
 
     if (verboseRun) write(stderrUnit,*) 'Make masks'
 
     call make_masks (tracersHead)
 
-    if (monotonicity_check) then
+    if (monotonicityCheck) then
 
        if (verboseRun) write(stderrUnit,*) 'Compute local mins and maxes'
 
@@ -2814,9 +2773,8 @@ contains
          block)
 
     !------------------------------------------------------------------- 
-    ! Find the locations of departure points for each edge
-    ! Note: uVelocity and vVelocity are given in local east and north coordinates at vertices.
-    !       The output departure points are given in global x/y/z coordinates.
+    ! Find the locations of departure points for each edge.
+    ! Both the velocity components and the departure points are given in local east/north coordinates at vertices.
     !------------------------------------------------------------------- 
 
     if (verboseRun) then
@@ -2826,9 +2784,8 @@ contains
     endif
 
     call find_departure_points(&
-         nVertices,                           &    
+         nVertices,                           &
          dt,                                  &
-         xVertex,      yVertex,     zVertex,  &
          uVelocity,    vVelocity,             &
          minLengthEdgesOnVertex,              &
          indexToVertexID,                     &
@@ -2850,9 +2807,6 @@ contains
          maxEdges,                                  &
          nTriPerEdgeRemap,                          &
          nEdgesOnCell,                              &    
-         xCell,            yCell,         zCell,    &
-         xVertex,          yVertex,       zVertex,  &
-         xEdge,            yEdge,         zEdge,    &
          xVertexOnEdge,    yVertexOnEdge,           &
          xVertexOnCell,    yVertexOnCell,           &
          verticesOnCell,                            &
@@ -2861,7 +2815,6 @@ contains
          cellsOnEdge,                               &
          remapEdge,                                 &
          cellsOnEdgeRemap,                          &
-         cellsOnEdgeSign,                           &
          edgesOnEdgeRemap,                          &
          vertexDegree,                              &
          departurePoint,                            &
@@ -2869,42 +2822,37 @@ contains
          iCellTriangle,                             &
          triangleArea,                              &
          on_a_sphere,                               &
-         transGlobalToEdge,                         &
          transGlobalToCell,                         &
          indexToCellID,                             &
          indexToEdgeID,                             &
          indexToVertexID,                           &
          block)
 
-    !------------------------------------------------------------------- 
-    ! Compute quadrature points for each departure triangle.
-    !------------------------------------------------------------------- 
-
-    !WHL - debug
     if (verboseGeometry .and. etestOnProc .and. block % localBlockID == etestBlockID) then
        iEdge = etest
        write(stderrUnit,*) ' '
        write(stderrUnit,*) 'Triangles, iEdge =', indexToEdgeID(iEdge)
        do n = 1, nTriPerEdgeRemap
-          !!       if (maxval(xTriangle(:,n,iEdge)) /= 0.0_RKIND) then
           iCell = iCellTriangle(n,iEdge)
-          if (iCell >= 1) then
+          if (iCell >= 1 .and. iCell <= nCells) then
              write(stderrUnit,*) n, 'cell, area =', indexToCellID(iCell), triangleArea(n,iEdge)
              do m = 1, 3
                 write(stderrUnit,*) m, xTriangle(m,n,iEdge), yTriangle(m,n,iEdge)
              enddo
           endif
-          !!       endif
        enddo
     endif
 
+    !------------------------------------------------------------------- 
+    ! Compute quadrature points for each departure triangle.
+    !------------------------------------------------------------------- 
+
     call get_triangle_quadrature_points (&
-         nEdges,       &
-         nTriPerEdgeRemap,  &
-         remapEdge,    &
+         nEdges,             &
+         nTriPerEdgeRemap,   &
+         remapEdge,          &
          xTriangle, yTriangle)
 
-    !WHL - debug
     if (verboseGeometry .and. etestOnProc .and. block % localBlockID == etestBlockID) then
        iEdge = etest
        write(stderrUnit,*) ' '
@@ -2918,7 +2866,7 @@ contains
           endif
        enddo
     endif
-
+    
     !------------------------------------------------------------------- 
     ! Integrate mass and tracer fluxes over each departure triangle.
     !------------------------------------------------------------------- 
@@ -2936,39 +2884,35 @@ contains
          indexToEdgeID,        &
          block)
 
-    !WHL - debug
     if (verboseFluxes .and. etestOnProc .and. block % localBlockID == etestBlockID) then
        iEdge = etest
-       thisTracer => tracersHead
+       thisTracer => tracersHead   ! point to the mass-like field, iceAreaCategory
        write(stderrUnit,*) ' '
        write(stderrUnit,*) 'Fluxes, iEdge, tracer =', indexToEdgeID(iEdge), trim(thisTracer % tracerName)
-       if (thisTracer % ndims == 2) then
+       if (thisTracer % ndims == 2) then  ! the pointer to iceAreaCategory should always be 2D, but check just in case
           nCategories = size(thisTracer % edgeFlux2D, 1)
           write(stderrUnit,*)'category, flux:'
           do iCat = 1, nCategories
              write(stderrUnit,*) iCat, thisTracer % edgeFlux2D(iCat,iEdge)
           enddo
-       elseif (thisTracer % ndims == 3) then
-          nLayers = size(thisTracer % edgeFlux3D, 1)
-          nCategories = size(thisTracer % edgeFlux3D, 2)
-          write(stderrUnit,*)'layer, category, flux:'
-          do iCat = 1, nCategories
-             do iLayer = 1, nLayers
-                write(stderrUnit,*) iLayer, iCat, thisTracer % edgeFlux3D(iLayer,iCat,iEdge)
-             enddo
-          enddo
-       endif  ! ndims
-    endif     ! etestProcId & etestBlockID
+       endif
+    endif     ! verboseFluxes & etestProcId & etestBlockID
 
-    ! compute mass*tracer products to be conserved
-    ! Note: This subroutine must be called before calling either sum_tracers or
-    !       update_mass_and_tracers.
+    !------------------------------------------------------------------- 
+    ! Compute mass*tracer products
+    ! Note: This subroutine must be called before calling sum_tracers or update_mass_and_tracers.
+    !       (So it is needed even if conservationCheck = .false.)
+    !------------------------------------------------------------------- 
 
     call compute_mass_tracer_products(&
          nCells,           &
          tracersHead)
     
-    if (conservation_check) then
+    !------------------------------------------------------------------- 
+    ! Compute initial sums of mass*tracer over the locally owned cells
+    !------------------------------------------------------------------- 
+
+    if (conservationCheck) then
 
        ! compute initial sums of mass*tracer
        call sum_tracers(&
@@ -2978,6 +2922,10 @@ contains
             init=.true.)
 
     endif
+
+    !------------------------------------------------------------------- 
+    ! Compute the new values of mass and tracers in each locally owned cell
+    !------------------------------------------------------------------- 
 
     call update_mass_and_tracers(&
          nCellsSolve,      &
@@ -2990,7 +2938,11 @@ contains
          indexToEdgeID,    &
          block)
 
-    if (conservation_check) then
+    !------------------------------------------------------------------- 
+    ! Compute final sums of mass*tracer over the locally owned cells
+    !------------------------------------------------------------------- 
+
+    if (conservationCheck) then
 
        ! compute new mass*tracer products
        call compute_mass_tracer_products(&
@@ -3006,40 +2958,6 @@ contains
 
     endif
 
-    !WHL - debug - Check for negative ice area
-    thisTracer => tracersHead
-
-    if (thisTracer % ndims == 2) then
-       nCategories = size(thisTracer % array2D, 1)
-       do iCell = 1, nCells
-          do iCat = 1, nCategories
-             if (thisTracer % array2D(iCat,iCell) < 0.0_RKIND) then
-                write(stderrUnit,*) 'Negative ice area: iCat, iCell, value:',  &
-                     iCat, iCell, thisTracer % array2D(iCat,iCell)
-                call mpas_dmpar_global_abort('Aborting with IR error')
-             endif
-          enddo
-       enddo
-    elseif (thisTracer % ndims == 3) then
-       nLayers = size(thisTracer % array3D, 1)
-       nCategories = size(thisTracer % array3D, 2)
-       do iCell = 1, nCells
-          do iCat = 1, nCategories
-             do iLayer = 1, nLayers
-                if (thisTracer % array3D(iLayer,iCat,iCell) < 0.0_RKIND) then
-                   write(stderrUnit,*) 'Negative ice area: iCat, iCell, value:',  &
-                        iCat, iCell, thisTracer % array3D(iLayer,iCat,iCell)
-                   call mpas_dmpar_global_abort('Aborting with IR error')
-                endif
-             enddo
-          enddo
-       enddo
-    endif
-
-    !Note: The zap_small_mass subroutine could be used to eliminate very small negative values
-    !      if placed above the negative-area check. For now, I am allowing very
-    !      small negative values to crash the code, since they could reveal bugs.
-
     !WHL - Optionally, zero out the ice area and tracers in cells with very small ice areas
     !TODO - Turn off this call if not needed (for example, if very small areas are zapped
     !       in the column-physics calculation).
@@ -3054,8 +2972,8 @@ contains
 
     endif
 
-    !WHL - debug
-    if (ctestOnProc .and. block % localBlockID == ctestBlockID) then
+    ! More optional diagnostics
+    if (verboseRun .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
 
        count = 0
        thisTracer => tracersHead
@@ -3063,54 +2981,47 @@ contains
        do while(count < 3)  ! output for first 3 tracers
           count = count + 1
 
-          if (verboseRun) then
-             iCell = ctest
-             write(stderrUnit,*) ' '
-             write(stderrUnit,*) 'New values, iCell, tracer =', indexToCellID(iCell), trim(thisTracer % tracerName)
-             if (thisTracer % ndims == 2) then
-                write(stderrUnit,*)'category, value:'
-                nCategories = size(thisTracer % array2D, 1)
-                do iCat = 1, nCategories
-                   write(stderrUnit,*) iCat, thisTracer % array2D(iCat,iCell)
+          iCell = ctest
+          write(stderrUnit,*) ' '
+          write(stderrUnit,*) 'New values, iCell, tracer =', indexToCellID(iCell), trim(thisTracer % tracerName)
+          if (thisTracer % ndims == 2) then
+             write(stderrUnit,*)'category, value:'
+             nCategories = size(thisTracer % array2D, 1)
+             do iCat = 1, nCategories
+                write(stderrUnit,*) iCat, thisTracer % array2D(iCat,iCell)
+             enddo
+          elseif (thisTracer % ndims == 3) then
+             write(stderrUnit,*)'layer, category, value:'
+             nLayers = size(thisTracer % array3D, 1)
+             nCategories = size(thisTracer % array3D, 2)
+             do iCat = 1, nCategories
+                do iLayer = 1, nLayers
+                   write(stderrUnit,*) iLayer, iCat, thisTracer % array3D(iLayer,iCat,iCell)
                 enddo
-             elseif (thisTracer % ndims == 3) then
-                write(stderrUnit,*)'layer, category, value:'
-                nLayers = size(thisTracer % array3D, 1)
-                nCategories = size(thisTracer % array3D, 2)
-                do iCat = 1, nCategories
-                   do iLayer = 1, nLayers
-                      write(stderrUnit,*) iLayer, iCat, thisTracer % array3D(iLayer,iCat,iCell)
-                   enddo
-                enddo
-             endif  ! ndims
-          endif   ! verbose
+             enddo
+          endif  ! ndims
           
           thisTracer => thisTracer % next
-       enddo   ! count < 2
+       enddo   ! count < 3
 
-    endif   ! ctestOnProc & ctestBlockID
+    endif   ! verboseRun & ctestOnProc & ctestBlockID
 
-    !WHL - debug
-    thisTracer => tracersHead
+    ! Optional diagnostics: Write a list of cells with ice
+
+    thisTracer => tracersHead  ! point to the mass-like field, iceAreaCategory
     if (verboseGlobal .and. trim(thisTracer % tracerName) == 'iceAreaCategory') then
        write(stderrUnit,*) ' '
        write(stderrUnit,*) 'Cells with ice:'
        write(stderrUnit,*) 'iCell (local), iCell(global), ice area, xCell, yCell, zCell:'
-       if (thisTracer % ndims == 2) then
+       if (thisTracer % ndims == 2) then  ! the pointer to iceAreaCategory should always be 2D, but check just in case
           do iCell = 1, nCellsSolve
-             if (thisTracer % array2D(1,iCell) > 0.0_RKIND) then
-                write(stderrUnit,*) iCell, indexToCellID(iCell), thisTracer % array2D(1,iCell), xCell(iCell), yCell(iCell), zCell(iCell)
-             endif
-          enddo
-       elseif (thisTracer % ndims == 3) then
-          do iCell = 1, nCellsSolve
-             if (thisTracer % array3D(1,1,iCell) > 0.0_RKIND) then
-                write(stderrUnit,*) iCell, indexToCellID(iCell), thisTracer % array3D(1,1,iCell), xCell(iCell), yCell(iCell), zCell(iCell)
+             if (thisTracer % array2D(iCatTest,iCell) > 0.0_RKIND) then
+                write(stderrUnit,*) iCell, indexToCellID(iCell), thisTracer % array2D(iCatTest,iCell), xCell(iCell), yCell(iCell), zCell(iCell)
              endif
           enddo
        endif  ! ndims
-    endif
-
+    endif   ! verbose and iceAreaCategory
+    
     !------------------------------------------------------------------- 
     ! Convert the ice and snow thickness back to volume.
     ! The IR code assumes that all tracers except the first (fractional ice area,
@@ -3187,8 +3098,6 @@ contains
 
     do while (associated(thisTracer))
 
-       if (verboseMasks) write(stderrUnit,*) 'compute tracer mask:', trim(thisTracer % tracerName)
-          
        if (thisTracer % nParents == 0) then  ! mass-like field; value is meaningful everywhere
 
           if (associated(thisTracer % array2D)) then
@@ -3199,6 +3108,7 @@ contains
 
        else   ! nParents = 1, 2 or 3; value is meaningful where parent value > 0
               !TODO - Confirm that there are no physically meaningful parents with nonzero negative values
+              !TODO - Change eps11 threshold to 0.0?
 
           parentTracer => thisTracer % parent
 
@@ -3279,9 +3189,9 @@ contains
        block)
 
     integer, intent(in) :: &
-         nCells,           & !< Input: number of cells
-                             !   Note: Need to construct fields in a layer of halo cells outside nCellsSolve
-         maxEdges            !< Input: max number of edges per cell
+         nCells,         & !< Input: number of cells
+                           !   Note: Need to construct fields in a layer of halo cells outside nCellsSolve
+         maxEdges          !< Input: max number of edges per cell
  
     integer, dimension(:), intent(in) :: &
          nEdgesOnCell      !< Input: number of edges per cell
@@ -3377,8 +3287,8 @@ contains
        ! set parent tracer
        if (thisTracer % nParents == 0) then   ! mass-like field (fractional ice concentration for CICE)
 
-          ! this field has no parent, but create a dummy parent tracer with (xBarycenter, yBarycenter) at cell centroid 
-          ! this ensures correct values for xBarycenter and yBarycenter below
+          ! This field has no parent, but create a dummy parent tracer with (xBarycenter, yBarycenter) at cell centroid.
+          ! This ensures correct values for xBarycenter and yBarycenter below.
           allocate(dummyTracer)
 
           if (thisTracer % ndims == 2) then
@@ -3463,7 +3373,6 @@ contains
              enddo
           enddo
 
-          !WHL - debug
           if (verboseConstruct .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
              iCell = ctest
              iCat = 1
@@ -3476,7 +3385,7 @@ contains
 
           if (thisTracer % hasChild) then
 
-             if (thisTracer % nParents == 0) then   ! mass-like field (fractional ice concentration for CICE)
+             if (thisTracer % nParents == 0) then   ! this tracer is the mass-like field (fractional ice concentration for CICE)
 
                 do iCell = 1, nCells
                    do iCat = 1, nCategories
@@ -3516,7 +3425,7 @@ contains
                    enddo   ! iCat
                 enddo      ! iCell
 
-             elseif (thisTracer % nParents == 2) then
+             elseif (thisTracer % nParents == 2) then   ! the mass-like field is the grandparent
                       
                 do iCell = 1, nCells
                    do iCat = 1, nCategories
@@ -3544,7 +3453,7 @@ contains
 
              elseif (thisTracer % nParents == 3) then
 
-                write(stderrUnit,*) 'IR, construct_linear_tracer_fields: something is wrong; tracers with 3 parents should not have children'
+                write(stderrUnit,*) 'IR, construct_linear_tracer_fields: Tracers with 3 parents should not have children'
                 call mpas_dmpar_global_abort('Aborting with IR error')
 
              endif   ! nParents
@@ -3553,11 +3462,6 @@ contains
 
        elseif (thisTracer % ndims == 3) then
  
-          !WHL - debug - set up a nonzero gradient
-!!          thisTracer % array3D(:,:,3244) = 0.0_RKIND
-!!          thisTracer % array3D(:,:,3245) = 1.0_RKIND
-!!          thisTracer % array3D(:,:,3246) = 2.0_RKIND
-
           ! compute unlimited gradient
           call compute_gradient_3d(&
                nCells,                   &
@@ -3624,6 +3528,8 @@ contains
                   xBarycenter3D = parentTracer % xBarycenter3D,  &
                   yBarycenter3D = parentTracer % yBarycenter3D)
 
+             ! compute the value of the field at the geometric center of the cell
+
              do iCell = 1, nCells
                 do iCat = 1, nCategories
                    do iLayer = 1, nLayers
@@ -3636,7 +3542,6 @@ contains
 
           endif  ! parentTracer % ndims
 
-          !WHL - debug
           if (verboseConstruct .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
              iCell = ctest
              iCat = 1; iLayer = 1
@@ -3649,7 +3554,7 @@ contains
 
           if (thisTracer % hasChild) then
 
-             if (thisTracer % nParents == 0) then   ! mass-like field (fractional ice concentration for CICE)
+             if (thisTracer % nParents == 0) then   ! this tracer is the mass-like field (fractional ice concentration for CICE)
 
                 do iCell = 1, nCells
                    do iCat = 1, nCategories
@@ -3814,7 +3719,7 @@ contains
 
                 elseif (thisTracer % nParents == 3) then
 
-                   write(stderrUnit,*) 'ERROR: IR, construct_linear_tracer_fields: something is wrong; tracers with 3 parents should not have children'
+                   write(stderrUnit,*) 'ERROR: IR, construct_linear_tracer_fields: Tracers with 3 parents should not have children'
                    call mpas_dmpar_global_abort('Aborting with IR error')
 
                 endif   ! parentTracer % ndims
@@ -3921,6 +3826,9 @@ contains
     real(kind=RKIND) :: &
          signGradient      ! = 1 or -1, depending on which direction is taken as positive at a given edge
 
+    !WHL - debug
+    real(kind=RKIND) :: zGrad
+
     ! find dimensions and allocate arrays
     nCategories = size(field,1)
     allocate(normalGrad(nCategories,maxEdges))
@@ -3949,6 +3857,7 @@ contains
              iEdge = edgesOnCell(iEdgeOnCell,iCell)
 
              do iCat = 1, nCategories
+
                 if (mask(iCat,iCell) == 1 .and. mask(iCat,iCellNeighbor) == 1) then   ! field values in cell and its neighbor have physical meaning
                    
                    if(iCell == cellsOnEdge(1,iEdge)) then
@@ -3956,6 +3865,7 @@ contains
                    else
                       signGradient = -1.0_RKIND
                    end if
+
                    normalGrad(iCat,iEdgeOnCell) = signGradient * (field(iCat,iCellNeighbor) - field(iCat,iCell)) / dcEdge(iEdge)
 
                 else   ! either or both field values do not have physical meaning; set gradient component = 0
@@ -3980,6 +3890,8 @@ contains
 
        enddo  ! iEdgeOnCell
 
+       !TODO - Add optional rotation of globalGrad vector
+
        ! transform from global x/y/z coordinates to local east/west coordinates
 
        if (on_a_sphere) then
@@ -3992,12 +3904,23 @@ contains
                          + transGlobalToCell(2,2,iCell) * globalGrad(:,2)  & 
                          + transGlobalToCell(2,3,iCell) * globalGrad(:,3)
 
-          ! Drop the local z component of the gradient
-          !TODO - Make sure this z component is small
+          ! Ignore the local z component of the gradient
 !          zGrad(:,iCell) = transGlobalToCell(3,1,iCell) * globalGrad(:,1)  & 
 !                         + transGlobalToCell(3,2,iCell) * globalGrad(:,2)  & 
-!                         + transGlobalToCell(3,3,iCell) * globalGrad(:,3)  & 
+!                         + transGlobalToCell(3,3,iCell) * globalGrad(:,3)
 
+          iCat = 1
+          zGrad = transGlobalToCell(3,1,iCell) * globalGrad(iCat,1)  & 
+                + transGlobalToCell(3,2,iCell) * globalGrad(iCat,2)  & 
+                + transGlobalToCell(3,3,iCell) * globalGrad(iCat,3)
+
+          !WHL - debug
+          !TODO - Compare for rotated v. nonrotated meshes
+!          if (iCell == ctest) then
+!             write(stderrUnit,*) ' '
+!             write(stderrUnit,*) 'iCell, xGrad, yGrad, zGrad:', iCell, xGrad(iCat,iCell), yGrad(iCat,iCell), zGrad
+!          endif
+             
        else  ! on a plane; do a simple copy
 
           xGrad(:,iCell) = globalGrad(:,1)
@@ -4005,7 +3928,6 @@ contains
              
        endif
 
-       !WHL - debug
        if (verboseConstruct .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
           if (iCell == ctest) then
              iCat = 1
@@ -4149,6 +4071,7 @@ contains
 
              do iCat = 1, nCategories
                 do iLayer = 1, nLayers
+
                    if (mask(iLayer,iCat,iCell) == 1 .and. mask(iLayer,iCat,iCellNeighbor) == 1) then
 
                       ! field values in cell and its neighbor have physical meaning; set the normal gradient
@@ -4183,6 +4106,8 @@ contains
 
        enddo  ! iEdgeOnCell
 
+       !TODO - Add optional rotation of globalGrad vector
+
        ! transform from global x/y/z coordinates to local east/west coordinates
 
        if (on_a_sphere) then
@@ -4195,11 +4120,10 @@ contains
                            + transGlobalToCell(2,2,iCell) * globalGrad(:,:,2)  & 
                            + transGlobalToCell(2,3,iCell) * globalGrad(:,:,3)
 
-          ! Drop the local z component of the gradient
-          !TODO - Make sure this z component is small
+          ! Ignore the local z component of the gradient
 !          zGrad(:,:,iCell) = transGlobalToCell(3,1,iCell) * globalGrad(:,:,1)  & 
 !                           + transGlobalToCell(3,2,iCell) * globalGrad(:,:,2)  & 
-!                           + transGlobalToCell(3,3,iCell) * globalGrad(:,:,3)  & 
+!                           + transGlobalToCell(3,3,iCell) * globalGrad(:,:,3)
 
        else  ! on a plane; do a simple copy
 
@@ -4464,7 +4388,7 @@ contains
 
        ! compute max and min values of this tracer in the cell and its nearest neighbors
 
-       ! initialize neighbor max and min for each category
+       ! initialize neighbor max and min to the value in iCell
        !TODO - Do we need to worry about tracer mask here?
        maxNeighbor(:) = field(:,iCell)
        minNeighbor(:) = field(:,iCell)
@@ -4550,24 +4474,11 @@ contains
 
           gradFactor = min(gradFactor1, gradFactor2)
 
-          !WHL - debug
-          if (iCat == 1 .and. iCell==ctest) then
-!!             write(stderrUnit,*) ' '
-!!             write(stderrUnit,*) 'minNeighbor, minLocal:', minNeighbor(iCat), minLocal(iCat)
-!!             write(stderrUnit,*) 'gradFactor1, gradFactor2, gradFactor:', gradFactor1, gradFactor2, gradFactor
-          endif
-
-          !WHL - Reduced this factor slightly to avoid going out of bounds due to roundoff errors. 
-          !      This can happen with the current (Aug. 2015) geometry calculations when a departure trajectory 
-          !       and an edge are very nearly parallel. In this case their intersection is sometimes ignored, resulting
-          !       in a small triangle lying very slightly outside the cell that the code thinks is its source cell.
+          ! Reduce this factor slightly to avoid going out of bounds due to roundoff errors. 
+          ! This can happen with the current (Aug. 2015) geometry calculations when a departure trajectory 
+          !  and an edge are very nearly parallel. In this case their intersection is sometimes ignored, resulting
+          !  in a small triangle lying very slightly outside the cell that the code thinks is its source cell.
           gradFactor = max(0.0_RKIND, gradFactor - eps11)
-
-          !WHL - debug
-          if (iCat == 1 .and. iCell==ctest) then
-!!             write(stderrUnit,*) 'reduced gradFactor:', gradFactor
-!!             write(stderrUnit,*) 'xGrad, limited xGrad:', xGrad(iCat,iCell), xGrad(iCat,iCell)*gradFactor
-          endif
 
           ! limit the gradient components
 
@@ -4805,10 +4716,10 @@ contains
              
              gradFactor = min(gradFactor1, gradFactor2)
 
-             !WHL - Reduced this factor slightly to avoid going out of bounds due to roundoff errors. 
-             !      This can happen with the current (Aug. 2015) geometry calculations when a departure trajectory 
-             !       and an edge are very nearly parallel. In this case their intersection is sometimes ignored, resulting
-             !       in a small triangle lying very slightly outside the cell that the code thinks is its source cell.
+             ! Reduce this factor slightly to avoid going out of bounds due to roundoff errors. 
+             ! This can happen with the current (Aug. 2015) geometry calculations when a departure trajectory 
+             !  and an edge are very nearly parallel. In this case their intersection is sometimes ignored, resulting
+             !  in a small triangle lying very slightly outside the cell that the code thinks is its source cell.
 
              gradFactor = max(0.0_RKIND, gradFactor - eps11)
 
@@ -4846,7 +4757,6 @@ contains
   subroutine find_departure_points(&
        nVertices,                           &
        dt,                                  &
-       xVertex,      yVertex,     zVertex,  &
        uVelocity,    vVelocity,             &
        minLengthEdgesOnVertex,              &
        indexToVertexID,                     &
@@ -4858,9 +4768,6 @@ contains
 
     real(kind=RKIND) ::  &
          dt                 !< Input: time step
-
-    real(kind=RKIND), dimension(:), intent(in) ::  &
-         xVertex, yVertex, zVertex    !< Input: global x/y/z coordinates of vertices
 
     real(kind=RKIND), dimension(:) ::   &
          uVelocity, vVelocity   !< Input: eastward and northward components of velocity field
@@ -4898,21 +4805,11 @@ contains
     do iVertex = 1, nVertices
 
        ! Note: Departure points are computed in vertex-based coordinates.
-       !       I also tried translating to global coordinates, from which they were
+       !       I tried translating to global coordinates, from which they were
        !       further translated to edge-based coordinates.  But because of small
        !       projection differences, this led to negative areas.
        !       See the comments in subroutine get_geometry_incremental_remap.
        
-          !WHL - debug - change the velocity at test vertex to introduce different triangles
-!          if (iVertex == vtest) then
-             ! across center line
-!             uVelocity(iVertex) = -uVelocity(iVertex)
-
-             ! double side triangles
-!             vVelocity(iVertex) =  uVelocity(iVertex)
-!             uVelocity(iVertex) = -uVelocity(iVertex) * 0.1_RKIND
-!          enddo  ! iVertex
-
        departurePoint(1,iVertex) = -uVelocity(iVertex) * dt
        departurePoint(2,iVertex) = -vVelocity(iVertex) * dt
 
@@ -4949,7 +4846,7 @@ contains
 !
 !> \brief  find the departure triangles associated with each edge
 !> \author William Lipscomb
-!> \date   April 2015
+!> \date   June 2015
 !> \details
 !>  This routine computes the vertices of the triangles in the departure
 !>  regions associated with each edge, along with the triangle areas
@@ -4963,9 +4860,6 @@ contains
        maxEdges,                                  &
        nTriPerEdgeRemap,                          &
        nEdgesOnCell,                              &    
-       xCell,            yCell,         zCell,    &
-       xVertex,          yVertex,       zVertex,  &
-       xEdge,            yEdge,         zEdge,    &
        xVertexOnEdge,    yVertexOnEdge,           &
        xVertexOnCell,    yVertexOnCell,           &
        verticesOnCell,                            &
@@ -4974,7 +4868,6 @@ contains
        cellsOnEdge,                               &
        remapEdge,                                 &
        cellsOnEdgeRemap,                          &
-       cellsOnEdgeSign,                           &
        edgesOnEdgeRemap,                          &
        vertexDegree,                              &
        departurePointIn,                          &
@@ -4982,7 +4875,6 @@ contains
        iCellTriangle,                             &
        triangleArea,                              &
        on_a_sphere,                               &
-       transGlobalToEdge,                         &
        transGlobalToCell,                         &
        indexToCellID,                             &
        indexToEdgeID,                             &
@@ -5044,7 +4936,7 @@ contains
     ! (1) We have two additional cells, C3 and C5.
     !     C3 and C5 include V1, with C3 in the left half-plane of the edge and C5 in the right half-plane.
     !     Similarly, C4 and C6 include V2, with C4 in the left half-plane of the edge and C6 in the right half-plane.
-    ! (2) We have two additional edges, E5 and E6, that are colinear with the main edge.
+    ! (2) We have two additional edges, E5 and E6, that are (at least approximately) colinear with the main edge.
     !     E5 includes V1, and E6 includes V2.
     ! (3) We have two additional vertices, V7 and V8. These lie on edges E5 and E6, respectively.
     ! (4) The maximum number of departure triangles is 6 instead of 4, if there is 1 triangle
@@ -5072,21 +4964,13 @@ contains
     integer, dimension(:), intent(in) :: &
          nEdgesOnCell       !< Input: number of edges per cell
 
-    real(kind=RKIND), dimension(:), intent(in) ::  &
-         xCell, yCell, zCell,       & !< Input: global x/y/z coordinates of cells
-         xEdge, yEdge, zEdge,       & !< Input: global x/y/z coordinates of edges
-         xVertex, yVertex, zVertex    !< Input: global x/y/z coordinates of vertices
-
     real(kind=RKIND), dimension(:,:), intent(in) ::  &
          xVertexOnEdge, yVertexOnEdge,  & !< Input: x/y coordinates of vertices in local edge-based coordinates
          xVertexOnCell, yVertexOnCell     !< Input: x/y coordinates of vertices in local cell-based coordinates
 
     integer, dimension(:), intent(in) ::  &
-         remapEdge,         & !< Input: = 1 if IR fluxes need to be computed across an edge, else = 0
+         remapEdge            !< Input: = 1 if IR fluxes need to be computed across an edge, else = 0
                               !        (i.e., = 1 for all edges of locally owned cells)
-         cellsOnEdgeSign      !< Input: = 1 if cell 1 lies in the left half plane of the edge
-                              !         = -1 if cell 1 lies in the right half plan of the edge
-                              !TODO - cellsOnEdgeSign not needed if always = 1
 
     integer, dimension(:,:), intent(in) :: &
          verticesOnCell,      & !< Input: vertex index for each vertex of a given cell
@@ -5103,22 +4987,21 @@ contains
                                 !         1st index = 2, 2nd index = nVertices
 
     real(kind=RKIND), dimension(:,:,:), intent(out) ::  &
-         xTriangle, yTriangle !< Output: x and y coordinates of vertices of departure triangles,
-                              !          relative to the center of the cell where they are located
-                              !          1st index = nQuadPoints, 2nd index = nTriPerEdgeRemap, 3rd index = nEdges
+         xTriangle, yTriangle   !< Output: x and y coordinates of vertices of departure triangles,
+                                !          relative to the center of the cell where they are located
+                                !          1st index = nQuadPoints, 2nd index = nTriPerEdgeRemap, 3rd index = nEdges
 
     real(kind=RKIND), dimension(:,:), intent(out) ::  &
-         triangleArea         !< Output: area of departure triangles
-                              !          positive if the triangle moves across the edge from cell 1 to cell 2; else negative
+         triangleArea           !< Output: area of departure triangles
+                                !          positive if the triangle moves across the edge from cell 1 to cell 2; else negative
 
     integer, dimension(:,:), intent(out) :: &
-         iCellTriangle        !< Output: index of the cell containing each departure triangle
+         iCellTriangle          !< Output: index of the cell containing each departure triangle
 
     logical, intent(in) :: &
          on_a_sphere            !< Input: T if flow is on a sphere, F if on a plane
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         transGlobalToEdge,   & !< Input: 3x3 matrix for transforming vectors from global to edge-based coordinates
          transGlobalToCell      !< Input: 3x3 matrix for transforming vectors from global to cell-based coordinates
 
     integer, dimension(:), intent(in) ::  &
@@ -5127,7 +5010,7 @@ contains
          indexToEdgeID      !< Input: global index for each edge on a block (diagnostic only)
 
     type(block_type), intent(in) :: &
-         block             !< Input: local block (diagnostic only)
+         block              !< Input: local block (diagnostic only)
 
     ! local variables
     
@@ -5149,8 +5032,6 @@ contains
          triangleVertexOnCell, &! vertexOnCell index for a given triangle, relative to iCell
          fluxSign               ! sign of the flux across a given edge
                                 ! (positive if going from cell 1 to cell 2, negative if in the other direction)
-
-    real(kind=RKIND), dimension(2) :: workVector
 
     real(kind=RKIND), dimension(2,2) ::  &
          edgeVertex,         & ! x/y coordinates of 2 vertices of edge
@@ -5206,7 +5087,7 @@ contains
     !TODO - Skip edges where velocity = 0 at both vertices
 
     do iEdge = 1, nEdges
-     if (remapEdge(iEdge) == 1) then
+     if (remapEdge(iEdge) == 1) then   !TODO - Modify indentation from here to the end of the loop?
   
        ! Compute the coordinates of the departure points in local edge-based coordinates
        ! Note: The logic is the same on a sphere as on a plane, because in either case the departurePoint
@@ -5215,7 +5096,6 @@ contains
        !        and then edge-based coordinates, but this led to negative areas in some cases.
        !        See comments in subroutine get_geometry_incremental_remap.
 
-       !WHL - debug
        if (verboseGeometry .and. etestOnProc .and. block % localBlockID == etestBlockID) then
           if (iEdge == etest) then
              write(stderrUnit,*) ' '
@@ -5233,7 +5113,6 @@ contains
           departurePoint(1,iVertexOnEdge) = xVertexOnEdge(iVertexOnEdge,iEdge) + departurePointIn(1,iVertex)
           departurePoint(2,iVertexOnEdge) = yVertexOnEdge(iVertexOnEdge,iEdge) + departurePointIn(2,iVertex)
 
-          !WHL - debug
           if (verboseGeometry .and. etestOnProc .and. block % localBlockID == etestBlockID) then
              if (iEdge == etest) then
                 write(stderrUnit,*) indexToVertexID(iVertex), departurePoint(1,iVertexOnEdge), departurePoint(2,iVertexOnEdge)
@@ -5242,38 +5121,16 @@ contains
 
        enddo   ! iVertexOnEdge
 
-       ! Make sure cell 1 is in the left half-plane of the vector from V1 to V2.
-       ! This is true iff cellsOnEdgeSign(iEdge) = 1.
-       ! For the case cellsOnEdgeSign(iEdge) = -1, we have to exchange V1 with V2 and DP1 with DP2.
+       ! Set the coordinates of the 2 vertices on iEdge
 
-       !TODO - Can remove this code if cellsOnEdgeSign = 1 always
-       if (cellsOnEdgeSign(iEdge) == 1) then
-
-          iVertex1 = verticesOnEdge(1,iEdge)
-          iVertex2 = verticesOnEdge(2,iEdge)
+       iVertex1 = verticesOnEdge(1,iEdge)
+       iVertex2 = verticesOnEdge(2,iEdge)
           
-          edgeVertex(1,1) = xVertexOnEdge(1,iEdge)
-          edgeVertex(2,1) = yVertexOnEdge(1,iEdge)
+       edgeVertex(1,1) = xVertexOnEdge(1,iEdge)
+       edgeVertex(2,1) = yVertexOnEdge(1,iEdge)
 
-          edgeVertex(1,2) = xVertexOnEdge(2,iEdge)
-          edgeVertex(2,2) = yVertexOnEdge(2,iEdge)
-
-       else   ! cellsOnEdgeSign(iEdge) = -1
-
-          iVertex1 = verticesOnEdge(2,iEdge)
-          iVertex2 = verticesOnEdge(1,iEdge)
-
-          edgeVertex(1,1) = xVertexOnEdge(2,iEdge)
-          edgeVertex(2,1) = yVertexOnEdge(2,iEdge)
-
-          edgeVertex(1,2) = xVertexOnEdge(1,iEdge)
-          edgeVertex(2,2) = yVertexOnEdge(1,iEdge)
-
-          workVector(:)      = departurePoint(:,1)
-          departurePoint(:,1) = departurePoint(:,2)
-          departurePoint(:,2) = workVector(:)          
-
-       endif
+       edgeVertex(1,2) = xVertexOnEdge(2,iEdge)
+       edgeVertex(2,2) = yVertexOnEdge(2,iEdge)
 
        ! Determine whether each departure point lies in the left half-plane of the edge.
        !  
@@ -5285,13 +5142,13 @@ contains
        !     The departure region is a convex quadrilateral. 
        !     The flux across the edge is from cell 2 to cell 1 and is defined to be negative. 
        ! (3) One departure point lies in the left half-plane, and the other does not.
-       !     The departure region consists of two triangles, one in the half-plane but not the other..
+       !     The departure region consists of two triangles, one in the half-plane but not the other.
        !     (a) The line segment connecting D1 and D2 intersects the edge. The triangle within the left half-plane
        !         contributes a positive flux; the other triangle contributes a negative flux.
        !     (b) The line segment connecting D1 and D2 does not intersect the edge. Both triangles contribute
        !         a flux of the same sign.  The flux is positive if the midpoint between D1 and D2 
        !         lies in the left half-plane, else the flux is negative.
-       !     Note: In case 3b the departure region is a quadrilateral, but it not convex.
+       !     Note: In case 3b the departure region is a quadrilateral, but is not necessarily convex.
 
        do iVertexOnEdge = 1,2 
           dpInHalfPlane(iVertexOnEdge) = point_in_half_plane(edgeVertex(:,1), edgeVertex(:,2), departurePoint(:,iVertexOnEdge))
@@ -5312,8 +5169,6 @@ contains
        endif
 
        ! Compute the vertices and area of the departure triangles across this edge
-       ! Note: I began with a polygon intersection algorithm using C++ code, but removed it after 
-       !       developing a faster approach in native Fortran 
 
        ! initialize the number of flux triangles for this edge
        triangleCount = 0
@@ -5379,13 +5234,6 @@ contains
                    if (verticesOnEdge(iVertexOnEdge,iEdge) == verticesOnCell(iVertexOnCell,iCell)) then  
                       ! this is the vertex shared by iCell and iEdge
                       triangleVertexOnCell(triangleCount) = iVertexOnCell
-
-                      !WHL - debug
-                      if (iEdge == etest) then
-!!                         write(stderrUnit,*) 'iEdge, iCell, count, triangleVertexOnEdge, triangleVertexOnCell:', &
-!!                              iEdge, iCell, triangleCount, triangleVertexOnEdge(triangleCount), triangleVertexOnCell(triangleCount)
-                      endif
-
                    endif
                 enddo
                 
@@ -5421,12 +5269,6 @@ contains
                    fluxSign(triangleCount) = -1
                 endif
                 
-                !WHL - debug
-                if (iEdge == etest) then
-!!                   write(stderrUnit,*) 'Add triangle: count, source cell, sign:', &
-!!                        triangleCount, iCellTriangle(triangleCount,iEdge), fluxSign(triangleCount)
-                endif
-
                 ! If vertexDegree = 4 (quad mesh), then check whether the line joining D1 and D2
                 ! intersects E5 or E6.  If so, break the triangle above into 2 triangles, one each in C3 and C5.
                 
@@ -5488,16 +5330,6 @@ contains
                             
                          endif
 
-                         !WHL - debug
-                         if (iEdge == etest) then
-!!                            write(stderrUnit,*) 'Change triangle: count, source cell, sign:', &
-!!                                 triangleCount, iCellTriangle(triangleCount,iEdge), fluxSign(triangleCount)
-!!                            write(stderrUnit,*) 'New triangleVertexOnEdge, triangleVertexOnCell:', &
-!!                                 triangleVertexOnEdge(triangleCount), triangleVertexOnCell(triangleCount)
-!!                            write(stderrUnit,*) 'New edgeVector1:', edgeVector1(:,1)
-!!                            write(stderrUnit,*) 'New edgeVector2:', edgeVector2(:,2)
-                         endif
-                         
                       else    ! iSideIndex = 1; IP in right half-plane, so this triangle is in left half-plane
                          ! iCellTriangle is already correct (C3 or C4)
                          ! Thus triangleVertexOnCell is also correct
@@ -5512,7 +5344,6 @@ contains
                             edgeNeighborVertex(1,2) = xVertexOnEdge(iOtherVertex,iEdge)
                             edgeNeighborVertex(2,2) = yVertexOnEdge(iOtherVertex,iEdge)
                             edgeVector1(:,triangleCount) = edgeNeighborVertex(:,2) - edgeNeighborVertex(:,1)
-                            
                             
                          endif  ! on a sphere
 
@@ -5562,12 +5393,6 @@ contains
                       ! set the sign of the flux (same as for the previous triangle)
                       fluxSign(triangleCount) = fluxSign(triangleCount-1)
 
-                      !WHL - debug
-                      if (iEdge == etest) then
-!!                         write(stderrUnit,*) 'Add triangle: count, source cell, sign:', &
-!!                              triangleCount, iCellTriangle(triangleCount,iEdge), fluxSign(triangleCount)
-                      endif
-                      
                    else    ! no intersection with E5 or E6, but may have to change the source cell to C5 or C6
 
                       if (iSideIndex == 0) then  ! IP in left half-plane, where this triangle is located
@@ -5591,14 +5416,6 @@ contains
                          ! Note: edgeVectors do not need to be changed
                          !       edgeVector1 already points toward iVertexOnEdgeRemap (V3, V4, V5 or V6)
                          !       edgeVector2 points toward V7 or V8
-
-                         !WHL - debug
-                         if (iEdge == etest) then
-!!                            write(stderrUnit,*) 'Change triangle: count, source cell, sign:', &
-!!                                 triangleCount, iCellTriangle(triangleCount,iEdge), fluxSign(triangleCount)
-!!                            write(stderrUnit,*) 'New triangleVertexOnEdge, triangleVertexOnCell:', &
-!!                                 triangleVertexOnEdge(triangleCount), triangleVertexOnCell(triangleCount)
-                         endif
 
                       endif   ! iSideIndex
 
@@ -5718,8 +5535,8 @@ contains
              ! TODO: Think about handling this differently by constructing a departure quad and
              !        assigning V1/D1 to vertex 1, and V2/D2 to vertex 2.  The division into triangles
              !        would then be done later, after V1/D1 and V2/D2 are transformed to cell-based coordinates.
-             !       This would be conceptually cleaner.  More important, it might come closer to conserving
-             !        triangle areas (though I'm not sure about this).
+             !       This would be conceptually cleaner, and might come closer to conserving triangle area.
+
              triangleVertexOnEdge(triangleCount) = 1
 
              ! choose the source cell and set the sign of the flux
@@ -5850,13 +5667,10 @@ contains
                         abs (0.5_RKIND * ( (xTriangle(2,iTri,iEdge) - xTriangle(1,iTri,iEdge)) * (yTriangle(3,iTri,iEdge) - yTriangle(1,iTri,iEdge))  &
                                          - (yTriangle(2,iTri,iEdge) - yTriangle(1,iTri,iEdge)) * (xTriangle(3,iTri,iEdge) - xTriangle(1,iTri,iEdge)) ) )
                    write(stderrUnit,*) 'source cell =', indexToCellID(iCell)
-!!                   write(stderrUnit,*) 'edgeVector1:', edgeVector1(:,iTri)
-!!                   write(stderrUnit,*) 'edgeVector2:', edgeVector2(:,iTri)
                 endif
              endif
 
-             ! compute triangle area in edge-based coordinates?
-             !TODO - Should I use the edge-based triangle area in lieu of the cell-based area?
+             !TODO: Compute triangle area in edge-based coordinates? Then would use the edge-based triangle area instead of the cell-based area.
 
              call shift_vertices_of_departure_triangle(&
                   iEdge,                         &
@@ -5874,9 +5688,9 @@ contains
                   triangleArea(iTri,iEdge))
 
              ! choose the sign of the flux
+             !TODO - Eliminate triangles with very small areas?
              triangleArea(iTri,iEdge) = triangleArea(iTri,iEdge) * fluxSign(iTri)
 
-             !TODO - Eliminate triangles with very small areas?
              if (verboseGeometry .and. etestOnProc .and. block % localBlockID == etestBlockID) then
                 if (iEdge == etest) then
                    write(stderrUnit,*) 'vertices in cell-based coordinates, iTri =', iTri
@@ -5895,7 +5709,7 @@ contains
 
        enddo   ! iTri
 
-     endif      ! remapEdge = 1
+     endif     ! remapEdge = 1
     enddo      ! iEdge
     
   end subroutine find_departure_triangles
@@ -5946,8 +5760,8 @@ contains
          yVertexOnCell       !< Input: y (north) coordinate of cell vertex relative to cell center in local tangent plane
 
     ! Note: Together, edgeVector1 and edgeVector2 define a basis for locating triangle vertices.
-    !       Both edges are among the edges included in the above diagram (7 for quads, 5 for hexes).
-    !       The edges are assumed to be adjacent and to share a vertex; each vector points away from that common vertex.
+    !       Both edges are among the edges included in the diagrams at the top of subroutine find_departure_triangles (7 for quads, 5 for hexes).
+    !       The edges are assumed to be adjacent and to share a vertex; each vector points away from the common vertex.
     !       Both edges must belong to the source cell, with the second edge following the first edge 
     !        when proceeding CCW around the cell. This implies that the cross product (edgeVector1 x edgeVector2) < 0.
 
@@ -5969,7 +5783,7 @@ contains
          triangleVertexOnCell   !< Input: vertexOnCell index for a given triangle vertex, relative to iCell
 
     real(kind=RKIND), intent(out) ::  &
-         triangleArea         !< Output: area of the triangle
+         triangleArea           !< Output: area of the triangle
 
     ! local variables
 
@@ -6008,10 +5822,10 @@ contains
     !                          u2 = V7 - V1  (the vector pointing along E5)
     !
     ! The steps for each triangle vertex (V1, D1 or I) are as follows:
-    ! (1) Given the (x,y) coordinates relative to the midpoint of the main edge.
+    ! (1) Given the (x,y) coordinates relative to the midpoint of the main edge,
     !     subtract x/yVertexOnEdge to get coordinates relative to V1.
     !     Thus V1 will have coordinates (0,0).
-    ! (2) Next, express the triangle vertex coordinates relative to V1 as a 
+    ! (2) Next, express the triangle vertex coordinates relative to V1 as a
     !     linear combination of the basis vectors u1 and u2:
     !           (x,y) = a*u1 + b*u2
     !     The formulas are as follows:
@@ -6042,14 +5856,8 @@ contains
     ! This means that when the two triangles are separately transformed to the source cell,
     ! they can overlap.
     ! I am not sure whether this is a bad thing.  I don't think it will destroy the nice properties of IR
-    ! (e.g., tracer monotonicity).  But if we decide later that it is a bad thing,
+    ! (e.g., tracer monotonicity).  If we decide later that it is a bad thing,
     ! an alternative would be to write a separate procedure to deal with departure quadrilaterals.
-
-    !WHL - debug
-    if (iEdge == etest) then 
-!!       write(stderrUnit,*) ' '
-!!       write(stderrUnit,*) 'New shift_vertices subroutine: iEdge, iCell =', iEdge, iCell
-    endif
 
     if (on_a_sphere) then   ! use the more complex method with an expansion in terms of basis vectors
 
@@ -6111,17 +5919,6 @@ contains
           coeff_a = (xTriangle(iTriVert) * edgeVector2(2) - yTriangle(iTriVert) * edgeVector2(1)) / denom
           coeff_b = (yTriangle(iTriVert) * edgeVector1(1) - xTriangle(iTriVert) * edgeVector1(2)) / denom
 
-          if (iEdge == etest) then
-!!             write(stderrUnit,*) 'triVert =', iTriVert
-!!             write(stderrUnit,*) 'edgeVector1 on edge:', edgeVector1(:)
-!!             write(stderrUnit,*) 'edgeVector2 on edge:', edgeVector2(:)
-!!             write(stderrUnit,*) 'iVertexOnCell =', iVertexOnCell
-!!             write(stderrUnit,*) 'Relative to triangle vertex 1: (x,y) =', xTriangle(iTriVert), yTriangle(iTriVert)
-!!             write(stderrUnit,*) 'edgeVector1 on cell:', edgeVector1OnCell(:)
-!!             write(stderrUnit,*) 'edgeVector2 on cell:', edgeVector2OnCell(:)
-!!             write(stderrUnit,*) 'coeffs a and b:', coeff_a, coeff_b
-          endif
-
           ! Express the triangle vertex in cell-based coordinates by taking a linear combination
           ! of the two edge vectors
 
@@ -6129,11 +5926,6 @@ contains
                               + coeff_a * edgeVector1OnCell(1) + coeff_b * edgeVector2OnCell(1)
           yTriangle(iTriVert) = yVertexOnCell(triangleVertexOnCell,iCell)  &
                               + coeff_a * edgeVector1OnCell(2) + coeff_b * edgeVector2OnCell(2)
-
-          if (iEdge == etest) then
-!!             write(stderrUnit,*) 'x/yVertexOnCell:', xVertexOnCell(triangleVertexOnCell,iCell), yVertexOnCell(triangleVertexOnCell,iCell)
-!!             write(stderrUnit,*) 'Relative to cell center: (x,y) =', xTriangle(iTriVert), yTriangle(iTriVert)
-          endif
 
        enddo  ! iTriVert
 
@@ -6170,7 +5962,7 @@ contains
 !> \date   March 2015
 !> \details
 !>  This routine computes quadrature points for integrating over triangles;
-!>  up to 6 points as required to integrate 4th degree polynomials exactly
+!>  up to 6 points as required to integrate 4th degree polynomials exactly.
 !
 !-----------------------------------------------------------------------
 !
@@ -6206,9 +5998,9 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine get_triangle_quadrature_points (&
-       nEdges,       &
+       nEdges,            &
        nTriPerEdgeRemap,  &
-       remapEdge,    &
+       remapEdge,         &
        xTriangle, yTriangle)
  
     integer, intent(in) :: &
@@ -6216,8 +6008,8 @@ contains
          nTriPerEdgeRemap    !< Input: number of triangles per edge
 
     integer, dimension(:), intent(in) ::  &
-         remapEdge         !< Input: = 1 if IR fluxes need to be computed across an edge, else = 0
-                           !        (i.e., = 1 for all edges of locally owned cells)
+         remapEdge           !< Input: = 1 if IR fluxes need to be computed across an edge, else = 0
+                             !        (i.e., = 1 for all edges of locally owned cells)
 
     real(kind=RKIND), dimension(:,:,:), intent(inout) :: &  ! nQuadPoints, nTriPerEdgeRemap, nEdges
          xTriangle, yTriangle   !< Input/output: on input, coordinates of triangle vertices (indices 1-3)
@@ -6242,71 +6034,71 @@ contains
        ! Not used in CICE (which uses 6 quadrature points), but likely to be used for land ice
 
        do iEdge = 1, nEdges
-        if (remapEdge(iEdge) == 1) then
+          if (remapEdge(iEdge) == 1) then
 
-          do iTri = 1, nTriPerEdgeRemap
+             do iTri = 1, nTriPerEdgeRemap
 
-             ! coordinates of triangle midpoint
-             xMidpoint = (xTriangle(1,iTri,iEdge) + xTriangle(2,iTri,iEdge) + xTriangle(3,iTri,iEdge)) / 3.0_RKIND
-             yMidpoint = (xTriangle(1,iTri,iEdge) + xTriangle(2,iTri,iEdge) + xTriangle(3,iTri,iEdge)) / 3.0_RKIND
+                ! coordinates of triangle midpoint
+                xMidpoint = (xTriangle(1,iTri,iEdge) + xTriangle(2,iTri,iEdge) + xTriangle(3,iTri,iEdge)) / 3.0_RKIND
+                yMidpoint = (xTriangle(1,iTri,iEdge) + xTriangle(2,iTri,iEdge) + xTriangle(3,iTri,iEdge)) / 3.0_RKIND
+                
+                ! coordinates of 3 quadrature points
+                xTriangle(1,iTri,iEdge) = 0.5_RKIND * (xTriangle(1,iTri,iEdge) + xMidpoint)
+                yTriangle(1,iTri,iEdge) = 0.5_RKIND * (yTriangle(1,iTri,iEdge) + yMidpoint)
+                
+                xTriangle(2,iTri,iEdge) = 0.5_RKIND * (xTriangle(2,iTri,iEdge) + xMidpoint)
+                yTriangle(2,iTri,iEdge) = 0.5_RKIND * (yTriangle(2,iTri,iEdge) + yMidpoint)
+                
+                xTriangle(3,iTri,iEdge) = 0.5_RKIND * (xTriangle(3,iTri,iEdge) + xMidpoint)
+                yTriangle(3,iTri,iEdge) = 0.5_RKIND * (yTriangle(3,iTri,iEdge) + yMidpoint)
+                
+             enddo     ! nTriPerEdgeRemap
              
-             ! coordinates of 3 quadrature points
-             xTriangle(1,iTri,iEdge) = 0.5_RKIND * (xTriangle(1,iTri,iEdge) + xMidpoint)
-             yTriangle(1,iTri,iEdge) = 0.5_RKIND * (yTriangle(1,iTri,iEdge) + yMidpoint)
-             
-             xTriangle(2,iTri,iEdge) = 0.5_RKIND * (xTriangle(2,iTri,iEdge) + xMidpoint)
-             yTriangle(2,iTri,iEdge) = 0.5_RKIND * (yTriangle(2,iTri,iEdge) + yMidpoint)
-             
-             xTriangle(3,iTri,iEdge) = 0.5_RKIND * (xTriangle(3,iTri,iEdge) + xMidpoint)
-             yTriangle(3,iTri,iEdge) = 0.5_RKIND * (yTriangle(3,iTri,iEdge) + yMidpoint)
-             
-          enddo      ! nTriPerEdgeRemap
-          
-        endif        ! remapEdge = 1
-       enddo         ! iEdge
-    
+          endif        ! remapEdge = 1
+       enddo           ! iEdge
+     
     elseif (nQuadPoints == 6) then
 
        ! compute coordinates of 6 quadrature points that are accurate for polynomials up to degree 4
        do iEdge = 1, nEdges
-        if (remapEdge(iEdge) == 1) then
+          if (remapEdge(iEdge) == 1) then
 
-          do iTri = 1, nTriPerEdgeRemap
+             do iTri = 1, nTriPerEdgeRemap
 
-             ! save coordinates of the 3 vertices
-             x1Vertex = xTriangle(1,iTri,iEdge)
-             y1Vertex = yTriangle(1,iTri,iEdge)
-             x2Vertex = xTriangle(2,iTri,iEdge)
-             y2Vertex = yTriangle(2,iTri,iEdge)
-             x3Vertex = xTriangle(3,iTri,iEdge)
-             y3Vertex = yTriangle(3,iTri,iEdge)
-
-             ! coordinates of 6 quadrature points
-
-             xTriangle(1,iTri,iEdge) = q1TriangleQP * x1Vertex + q1TriangleQP * x2Vertex + q2TriangleQP * x3Vertex 
-             yTriangle(1,iTri,iEdge) = q1TriangleQP * y1Vertex + q1TriangleQP * y2Vertex + q2TriangleQP * y3Vertex 
-
-             xTriangle(2,iTri,iEdge) = q1TriangleQP * x1Vertex + q2TriangleQP * x2Vertex + q1TriangleQP * x3Vertex 
-             yTriangle(2,iTri,iEdge) = q1TriangleQP * y1Vertex + q2TriangleQP * y2Vertex + q1TriangleQP * y3Vertex 
-
-             xTriangle(3,iTri,iEdge) = q2TriangleQP * x1Vertex + q1TriangleQP * x2Vertex + q1TriangleQP * x3Vertex 
-             yTriangle(3,iTri,iEdge) = q2TriangleQP * y1Vertex + q1TriangleQP * y2Vertex + q1TriangleQP * y3Vertex 
-
-             xTriangle(4,iTri,iEdge) = q3TriangleQP * x1Vertex + q4TriangleQP * x2Vertex + q4TriangleQP * x3Vertex 
-             yTriangle(4,iTri,iEdge) = q3TriangleQP * y1Vertex + q4TriangleQP * y2Vertex + q4TriangleQP * y3Vertex 
-
-             xTriangle(5,iTri,iEdge) = q4TriangleQP * x1Vertex + q3TriangleQP * x2Vertex + q4TriangleQP * x3Vertex 
-             yTriangle(5,iTri,iEdge) = q4TriangleQP * y1Vertex + q3TriangleQP * y2Vertex + q4TriangleQP * y3Vertex 
-
-             xTriangle(6,iTri,iEdge) = q4TriangleQP * x1Vertex + q4TriangleQP * x2Vertex + q3TriangleQP * x3Vertex 
-             yTriangle(6,iTri,iEdge) = q4TriangleQP * y1Vertex + q4TriangleQP * y2Vertex + q3TriangleQP * y3Vertex 
-
-          enddo      ! nTriPerEdgeRemap
-
-        endif        ! remapEdge = 1
+                ! save coordinates of the 3 vertices
+                x1Vertex = xTriangle(1,iTri,iEdge)
+                y1Vertex = yTriangle(1,iTri,iEdge)
+                x2Vertex = xTriangle(2,iTri,iEdge)
+                y2Vertex = yTriangle(2,iTri,iEdge)
+                x3Vertex = xTriangle(3,iTri,iEdge)
+                y3Vertex = yTriangle(3,iTri,iEdge)
+                
+                ! coordinates of 6 quadrature points
+                
+                xTriangle(1,iTri,iEdge) = q1TriangleQP * x1Vertex + q1TriangleQP * x2Vertex + q2TriangleQP * x3Vertex 
+                yTriangle(1,iTri,iEdge) = q1TriangleQP * y1Vertex + q1TriangleQP * y2Vertex + q2TriangleQP * y3Vertex 
+                
+                xTriangle(2,iTri,iEdge) = q1TriangleQP * x1Vertex + q2TriangleQP * x2Vertex + q1TriangleQP * x3Vertex 
+                yTriangle(2,iTri,iEdge) = q1TriangleQP * y1Vertex + q2TriangleQP * y2Vertex + q1TriangleQP * y3Vertex 
+                
+                xTriangle(3,iTri,iEdge) = q2TriangleQP * x1Vertex + q1TriangleQP * x2Vertex + q1TriangleQP * x3Vertex 
+                yTriangle(3,iTri,iEdge) = q2TriangleQP * y1Vertex + q1TriangleQP * y2Vertex + q1TriangleQP * y3Vertex 
+                
+                xTriangle(4,iTri,iEdge) = q3TriangleQP * x1Vertex + q4TriangleQP * x2Vertex + q4TriangleQP * x3Vertex 
+                yTriangle(4,iTri,iEdge) = q3TriangleQP * y1Vertex + q4TriangleQP * y2Vertex + q4TriangleQP * y3Vertex 
+                
+                xTriangle(5,iTri,iEdge) = q4TriangleQP * x1Vertex + q3TriangleQP * x2Vertex + q4TriangleQP * x3Vertex 
+                yTriangle(5,iTri,iEdge) = q4TriangleQP * y1Vertex + q3TriangleQP * y2Vertex + q4TriangleQP * y3Vertex 
+                
+                xTriangle(6,iTri,iEdge) = q4TriangleQP * x1Vertex + q4TriangleQP * x2Vertex + q3TriangleQP * x3Vertex 
+                yTriangle(6,iTri,iEdge) = q4TriangleQP * y1Vertex + q4TriangleQP * y2Vertex + q3TriangleQP * y3Vertex 
+                
+             enddo      ! nTriPerEdgeRemap
+             
+          endif        ! remapEdge = 1
        enddo         ! nEdges
 
-    else
+    else   ! nQuadPoint /= 3 or 6
 
        write(stderrUnit,*) 'ERROR: must have nQuadPoints = 3 or 6'
        call mpas_dmpar_global_abort('Aborting with IR error')
@@ -6324,7 +6116,7 @@ contains
 !> \date   March 2015
 !> \details
 !>  This routine sums over quadrature points in each departure triangle to
-!>  obtain the area-integrated fluxes of masses and tracers across cell edges
+!>  obtain the area-integrated fluxes of masses and tracers across cell edges.
 !
 !-----------------------------------------------------------------------
 
@@ -6427,19 +6219,20 @@ contains
        ! set parent tracer
        if (thisTracer % nParents == 0) then   ! mass-like field (fractional ice concentration for CICE)
 
-          ! this field has no parent, but set a parentTracer pointer to have value of 1 at each QP
-          ! this ensures correct values for triangle2D/3D below
+          ! This field has no parent, but set a parentTracer pointer to have value of 1 at each QP.
+          ! This ensures correct values for triangleValue2D/3D below.
+
           allocate(dummyTracer)
           if (thisTracer % ndims == 2) then
 
-             allocate(dummyTracer % triangle2D(nCategories,nQuadPoints,nTriPerEdgeRemap,nEdges))
-             dummyTracer % triangle2D(:,:,:,:) = 1.0_RKIND
+             allocate(dummyTracer % triangleValue2D(nCategories,nQuadPoints,nTriPerEdgeRemap,nEdges))
+             dummyTracer % triangleValue2D(:,:,:,:) = 1.0_RKIND
              dummyTracer % ndims = 2
 
           elseif (thisTracer % ndims == 3) then
 
-             allocate(dummyTracer % triangle3D(nLayers,nCategories,nQuadPoints,nTriPerEdgeRemap,nEdges))
-             dummyTracer % triangle3D(:,:,:,:,:) = 1.0_RKIND
+             allocate(dummyTracer % triangleValue3D(nLayers,nCategories,nQuadPoints,nTriPerEdgeRemap,nEdges))
+             dummyTracer % triangleValue3D(:,:,:,:,:) = 1.0_RKIND
              dummyTracer % ndims = 3
 
           endif
@@ -6451,7 +6244,6 @@ contains
 
        endif
 
-       !WHL - debug
        if (verboseFluxes) then
           write(stderrUnit,*) ' '
           write(stderrUnit,*) 'Tracer: ', trim(thisTracer % tracerName) 
@@ -6462,190 +6254,183 @@ contains
 
        if (thisTracer % ndims == 2) then
 
-          !TODO - Change triangle2D to triangleValue2D?
-          !TODO - Skip triangles with zero area
+          !TODO - Skip triangles with zero area?
 
           do iEdge = 1, nEdges
-           if (remapEdge(iEdge) == 1) then
+             if (remapEdge(iEdge) == 1) then
 
-             do iTri = 1, nTriPerEdgeRemap
+                do iTri = 1, nTriPerEdgeRemap
 
-                ! In the following arrays:
-                ! 1st index of triangle2D = category; 2nd index = QP
-                ! 1st index of tc/tx/ty = category
-                ! 1st index of xTriangle/yTriangle = QP
-                ! 1st index of tracerIntegral2D = category
-                ! 1st index of edgeFlux2D = category
-                
-                ! identify the cell where the triangle is located, and make sure we have data for that cell
-                iCell = iCellTriangle(iTri,iEdge)
-                if (iCell >= 1 .and. iCell <= nCells) then  ! source cell exists
-
-                   ! evaluate the tracer at each quadrature point
-                   do iqp = 1, nQuadPoints
-                      thisTracer % triangle2D(:,iqp,iTri,iEdge) = thisTracer % center2D(:,iCell)                            &
-                                                                + thisTracer % xGrad2D(:,iCell) * xTriangle(iqp,iTri,iEdge)  &
-                                                                + thisTracer % yGrad2D(:,iCell) * yTriangle(iqp,iTri,iEdge)
-                   enddo
-
-                   !WHL - debug - Check for negative areas
-                   if (trim(thisTracer % tracerName) == 'iceAreaCategory') then
-                      do iCat = 1, nCategories
-                         do iqp = 1, nQuadPoints
-                            if (thisTracer % triangle2D(iCat,iqp,itri,iEdge) < 0.0_RKIND .and.  &
-                                 triangleArea(iTri,iEdge) > 0.0_RKIND) then
-                               write(stderrUnit,*)'ERROR: Negative reconstructed ice area'
-                               write(stderrUnit,*)'nCells =', nCells
-                               write(stderrUnit,*)'iCat, iCell, global iCell:', iCat, iCell, indexToCellID(iCell)
-                               write(stderrUnit,*)'iEdge, global iEdge, iTri, iqp:', iEdge, indexToEdgeID(iEdge), iTri, iqp
-                               write(stderrUnit,*)'triangle area:', triangleArea(itri,iEdge)
-                               write(stderrUnit,*)'tracer val:', thisTracer % triangle2D(iCat,iqp,itri,iEdge)
-                               write(stderrUnit,*)'center val:', thisTracer % center2D(iCat,iCell)
-                               write(stderrUnit,*)'x gradient:', thisTracer % xGrad2D(iCat,iCell)
-                               write(stderrUnit,*)'y gradient:', thisTracer % yGrad2D(iCat,iCell)
-                               call mpas_dmpar_global_abort('Aborting with IR error')
-                            endif
-                         enddo
-                      enddo
-                   endif
+                   ! In the following arrays:
+                   ! 1st index of triangleValue2D = category; 2nd index = QP
+                   ! 1st index of tc/tx/ty = category
+                   ! 1st index of xTriangle/yTriangle = QP
+                   ! 1st index of tracerIntegral2D = category
+                   ! 1st index of edgeFlux2D = category
                    
-                   ! evaluate the product mass*tracer at each quadrature point (using parent tracer info computed already)
-                   ! In nParents = 0, this is mass
-                   ! If nParents = 1, this is mass*tracer1
-                   ! If nParents = 2, this is mass*tracer1*tracer2
-                   ! If nParents = 3, this is mass*tracer1*tracer2*tracer3
-                   ! Note: Parent tracer must have ndims = 2
-                   thisTracer % triangle2D(:,:,itri,iEdge) = parentTracer % triangle2D(:,:,iTri,iEdge)  &
-                                                             * thisTracer % triangle2D(:,:,iTri,iEdge)
+                   ! identify the cell where the triangle is located, and make sure we have data for that cell
+                   iCell = iCellTriangle(iTri,iEdge)
+                   if (iCell >= 1 .and. iCell <= nCells) then  ! source cell exists
 
-                   ! integrate over the triangle by summing over quadrature points
-                   tracerIntegral2D(:) = 0.0_RKIND
-                   do iqp = 1, nQuadPoints
-                      tracerIntegral2D(:) = tracerIntegral2D(:) &
-                                          + weightQuadPoint(iqp) * thisTracer % triangle2D(:,iqp,iTri,iEdge)
-                   enddo
+                      ! evaluate the tracer at each quadrature point
+                      do iqp = 1, nQuadPoints
+                         thisTracer % triangleValue2D(:,iqp,iTri,iEdge) = thisTracer % center2D(:,iCell)                            &
+                                                                        + thisTracer % xGrad2D(:,iCell) * xTriangle(iqp,iTri,iEdge)  &
+                                                                        + thisTracer % yGrad2D(:,iCell) * yTriangle(iqp,iTri,iEdge)
+                      enddo
 
-                   !WHL - debug
-                   if (verboseFluxes .and. etestOnProc .and. block % localBlockID == etestBlockID) then
-                      if (iEdge == etest) then
-                         if (trim(thisTracer % tracerName) == 'iceAreaCategory' .or. trim(thisTracer % tracerName) == 'iceVolumeCategory') then
-                            write(stderrUnit,*) 'iEdge, iTri, tracerIntegral, triArea, product:', &
-                                 indexToEdgeID(iEdge), iTri, tracerIntegral2D(1), triangleArea(iTri,iEdge), &
-                                 triangleArea(iTri,iEdge)*tracerIntegral2D(1)
+                      ! Check for negative ice areas
+                      if (trim(thisTracer % tracerName) == 'iceAreaCategory') then
+                         do iCat = 1, nCategories
+                            do iqp = 1, nQuadPoints
+                               if (thisTracer % triangleValue2D(iCat,iqp,itri,iEdge) < 0.0_RKIND .and.  &
+                                    triangleArea(iTri,iEdge) > 0.0_RKIND) then
+                                  write(stderrUnit,*)'ERROR: Negative reconstructed ice area'
+                                  write(stderrUnit,*)'nCells =', nCells
+                                  write(stderrUnit,*)'iCat, iCell, global iCell:', iCat, iCell, indexToCellID(iCell)
+                                  write(stderrUnit,*)'iEdge, global iEdge, iTri, iqp:', iEdge, indexToEdgeID(iEdge), iTri, iqp
+                                  write(stderrUnit,*)'triangle area:', triangleArea(itri,iEdge)
+                                  write(stderrUnit,*)'tracer val:', thisTracer % triangleValue2D(iCat,iqp,itri,iEdge)
+                                  write(stderrUnit,*)'center val:', thisTracer % center2D(iCat,iCell)
+                                  write(stderrUnit,*)'x gradient:', thisTracer % xGrad2D(iCat,iCell)
+                                  write(stderrUnit,*)'y gradient:', thisTracer % yGrad2D(iCat,iCell)
+                                  call mpas_dmpar_global_abort('Aborting with IR error')
+                               endif
+                            enddo
+                         enddo
+                      endif
+                      
+                      ! evaluate the product mass*tracer at each quadrature point (using parent tracer info computed already)
+                      ! In nParents = 0, this is mass
+                      ! If nParents = 1, this is mass*tracer1
+                      ! If nParents = 2, this is mass*tracer1*tracer2
+                      ! If nParents = 3, this is mass*tracer1*tracer2*tracer3
+                      ! Note: Parent tracer must have ndims = 2
+                      thisTracer % triangleValue2D(:,:,itri,iEdge) = parentTracer % triangleValue2D(:,:,iTri,iEdge)  &
+                                                                     * thisTracer % triangleValue2D(:,:,iTri,iEdge)
+
+                      ! integrate over the triangle by summing over quadrature points
+                      tracerIntegral2D(:) = 0.0_RKIND
+                      do iqp = 1, nQuadPoints
+                         tracerIntegral2D(:) = tracerIntegral2D(:) &
+                                             + weightQuadPoint(iqp) * thisTracer % triangleValue2D(:,iqp,iTri,iEdge)
+                      enddo
+
+                      if (verboseFluxes .and. etestOnProc .and. block % localBlockID == etestBlockID) then
+                         if (iEdge == etest) then
+                            if (trim(thisTracer % tracerName) == 'iceAreaCategory' .or. trim(thisTracer % tracerName) == 'iceVolumeCategory') then
+                               write(stderrUnit,*) 'iEdge, iTri, tracerIntegral, triArea, product:', &
+                                    indexToEdgeID(iEdge), iTri, tracerIntegral2D(1), triangleArea(iTri,iEdge), &
+                                    triangleArea(iTri,iEdge)*tracerIntegral2D(1)
+                            endif
                          endif
                       endif
-                   endif
+                      
+                      ! increment the area-weighted flux across the edge
+                      thisTracer % edgeFlux2D(:,iEdge) = thisTracer % edgeFlux2D(:,iEdge) &
+                                                       + triangleArea(iTri,iEdge) * tracerIntegral2D(:)
 
-                   ! increment the area-weighted flux across the edge
-                   thisTracer % edgeFlux2D(:,iEdge) = thisTracer % edgeFlux2D(:,iEdge) &
-                                                    + triangleArea(iTri,iEdge) * tracerIntegral2D(:)
+                   endif  ! source cell exists
 
-                endif  ! source cell exists
+                enddo  ! nTriPerEdgeRemap
 
-             enddo  ! nTriPerEdgeRemap
-
-           endif    ! remapEdge = 1  
+             endif    ! remapEdge = 1  
           enddo     ! nEdges
 
           deallocate(tracerIntegral2D)
 
        elseif (thisTracer % ndims == 3) then
 
-          !TODO - Change triangle3D to triangleValue3D?
-          !TODO - Skip triangles with zero area
+          !TODO - Skip triangles with zero area?
 
           do iEdge = 1, nEdges
-           if (remapEdge(iEdge) == 1) then
+             if (remapEdge(iEdge) == 1) then
 
-             do iTri = 1, nTriPerEdgeRemap
+                do iTri = 1, nTriPerEdgeRemap
 
-!!                write(stderrUnit,*) 'iEdge, iTri, iCellTriangle:', iEdge, iTri, iCellTriangle(iTri,iEdge)
+                   ! In the following arrays:
+                   ! 1st index of triangleValue3D = layer; 2nd index = category; 3rd index = QP
+                   ! 1st index of tc/tx/ty = layer; 2nd index = category
+                   ! 1st index of xTriangle/yTriangle = QP
+                   ! 1st index of tracerIntegral = layer; 2nd index = category
+                   ! 1st index of edgeFlux = layer; 2nd index = category
+                   
+                   ! identify the cell where the triangle is located, and make sure we have data for that cell
+                   iCell = iCellTriangle(iTri,iEdge)
+                   if (iCell >= 1 .and. iCell <= nCells) then  ! source cell exists
+                      
+                      ! evaluate the tracer at each quadrature point
+                      do iqp = 1, nQuadPoints
+                         thisTracer % triangleValue3D(:,:,iqp,itri,iEdge) = thisTracer % center3D(:,:,iCell)   &
+                                                                          + thisTracer % xGrad3D(:,:,iCell) * xTriangle(iqp,iTri,iEdge)  &
+                                                                          + thisTracer % yGrad3D(:,:,iCell) * yTriangle(iqp,iTri,iEdge)
+                      enddo
 
-                ! In the following arrays:
-                ! 1st index of triangle3D = layer; 2nd index = category; 3rd index = QP
-                ! 1st index of tc/tx/ty = layer; 2nd index = category
-                ! 1st index of xTriangle/yTriangle = QP
-                ! 1st index of tracerIntegral = layer; 2nd index = category
-                ! 1st index of edgeFlux = layer; 2nd index = category
-                
-                ! identify the cell where the triangle is located, and make sure we have data for that cell
-                iCell = iCellTriangle(iTri,iEdge)
-                if (iCell >= 1 .and. iCell <= nCells) then  ! source cell exists
-
-                   ! evaluate the tracer at each quadrature point
-                   do iqp = 1, nQuadPoints
-                      thisTracer % triangle3D(:,:,iqp,itri,iEdge) = thisTracer % center3D(:,:,iCell)   &
-                                                                  + thisTracer % xGrad3D(:,:,iCell) * xTriangle(iqp,iTri,iEdge)  &
-                                                                  + thisTracer % yGrad3D(:,:,iCell) * yTriangle(iqp,iTri,iEdge)
-                   enddo
-
-                   !WHL - debug - Check for negative areas
-                   if (trim(thisTracer % tracerName) == 'iceAreaCategory') then
-                      do iCat = 1, nCategories
-                         do iLayer = 1, nLayers
-                            do iqp = 1, nQuadPoints
-                               if (thisTracer % triangle3D(iLayer,iCat,iqp,itri,iEdge) < 0.0_RKIND .and.  &
-                                    triangleArea(iTri,iEdge) > 0.0_RKIND) then
-                                  write(stderrUnit,*)'ERROR: Negative reconstructed ice area'
-                                  write(stderrUnit,*)'nCells =', nCells
-                                  write(stderrUnit,*)'iLayer, iCat, iCell, global iCell:', iLayer, iCat, iCell, indexToCellID(iCell)
-                                  write(stderrUnit,*)'iEdge, global iEdge, iTri, iqp:', iEdge, indexToEdgeID(iEdge), iTri, iqp
-                                  write(stderrUnit,*)'triangle area:', triangleArea(itri,iEdge)
-                                  write(stderrUnit,*)'tracer val:', thisTracer % triangle3D(iLayer,iCat,iqp,itri,iEdge)
-                                  write(stderrUnit,*)'center val:', thisTracer % center3D(iLayer,iCat,iCell)
-                                  write(stderrUnit,*)'x gradient:', thisTracer % xGrad3D(iLayer,iCat,iCell)
-                                  write(stderrUnit,*)'y gradient:', thisTracer % yGrad3D(iLayer,iCat,iCell)
-                                  call mpas_dmpar_global_abort('Aborting with IR error')
-                               endif
+                      ! Check for negative ice areas
+                      if (trim(thisTracer % tracerName) == 'iceAreaCategory') then
+                         do iCat = 1, nCategories
+                            do iLayer = 1, nLayers
+                               do iqp = 1, nQuadPoints
+                                  if (thisTracer % triangleValue3D(iLayer,iCat,iqp,itri,iEdge) < 0.0_RKIND .and.  &
+                                       triangleArea(iTri,iEdge) > 0.0_RKIND) then
+                                     write(stderrUnit,*)'ERROR: Negative reconstructed ice area'
+                                     write(stderrUnit,*)'nCells =', nCells
+                                     write(stderrUnit,*)'iLayer, iCat, iCell, global iCell:', iLayer, iCat, iCell, indexToCellID(iCell)
+                                     write(stderrUnit,*)'iEdge, global iEdge, iTri, iqp:', iEdge, indexToEdgeID(iEdge), iTri, iqp
+                                     write(stderrUnit,*)'triangle area:', triangleArea(itri,iEdge)
+                                     write(stderrUnit,*)'tracer val:', thisTracer % triangleValue3D(iLayer,iCat,iqp,itri,iEdge)
+                                     write(stderrUnit,*)'center val:', thisTracer % center3D(iLayer,iCat,iCell)
+                                     write(stderrUnit,*)'x gradient:', thisTracer % xGrad3D(iLayer,iCat,iCell)
+                                     write(stderrUnit,*)'y gradient:', thisTracer % yGrad3D(iLayer,iCat,iCell)
+                                     call mpas_dmpar_global_abort('Aborting with IR error')
+                                  endif
+                               enddo
                             enddo
                          enddo
-                      enddo
-                   endif
-                               
-                   ! evaluate the product mass*tracer at each quadrature point (using parent tracer info computed already)
-                   ! In nParents = 0, this is mass
-                   ! If nParents = 1, this is mass*tracer1
-                   ! If nParents = 2, this is mass*tracer1*tracer2
-                   ! If nParents = 3, this is mass*tracer1*tracer2*tracer3
-                   ! Note: Parent tracer can have ndims = 2 or 3
-                   if (parentTracer % ndims == 2) then
-                      do iLayer = 1, nLayers
-                         !WHL - Divide triangle2D by nLayers?  (Assuming 2D parent tracer is hice or hsno)
-                         thisTracer % triangle3D(iLayer,:,:,itri,iEdge) = parentTracer % triangle2D       (:,:,iTri,iEdge) &
-                                                                          * thisTracer % triangle3D(iLayer,:,:,iTri,iEdge)
-                      enddo
-                   else  ! parents has ndims = 3
-                      thisTracer % triangle3D(:,:,:,itri,iEdge) = parentTracer % triangle3D(:,:,:,iTri,iEdge) &
-                                                                  * thisTracer % triangle3D(:,:,:,iTri,iEdge)
-                   endif
+                      endif
+                      
+                      ! evaluate the product mass*tracer at each quadrature point (using parent tracer info computed already)
+                      ! In nParents = 0, this is mass
+                      ! If nParents = 1, this is mass*tracer1
+                      ! If nParents = 2, this is mass*tracer1*tracer2
+                      ! If nParents = 3, this is mass*tracer1*tracer2*tracer3
+                      ! Note: Parent tracer can have ndims = 2 or 3
+                      if (parentTracer % ndims == 2) then
+                         do iLayer = 1, nLayers
+                            thisTracer % triangleValue3D(iLayer,:,:,itri,iEdge) = parentTracer % triangleValue2D       (:,:,iTri,iEdge) &
+                                                                                  * thisTracer % triangleValue3D(iLayer,:,:,iTri,iEdge)
+                         enddo
+                      else  ! parents has ndims = 3
+                         thisTracer % triangleValue3D(:,:,:,itri,iEdge) = parentTracer % triangleValue3D(:,:,:,iTri,iEdge) &
+                                                                          * thisTracer % triangleValue3D(:,:,:,iTri,iEdge)
+                      endif
 
-                   ! integrate over the triangle by summing over quadrature points
-                   tracerIntegral3D(:,:) = 0.0_RKIND
-                   do iqp = 1, nQuadPoints
-                      tracerIntegral3D(:,:) = tracerIntegral3D(:,:) &
-                                            + weightQuadPoint(iqp) * thisTracer % triangle3D(:,:,iqp,iTri,iEdge)
-                   enddo
+                      ! integrate over the triangle by summing over quadrature points
+                      tracerIntegral3D(:,:) = 0.0_RKIND
+                      do iqp = 1, nQuadPoints
+                         tracerIntegral3D(:,:) = tracerIntegral3D(:,:) &
+                                               + weightQuadPoint(iqp) * thisTracer % triangleValue3D(:,:,iqp,iTri,iEdge)
+                      enddo
                 
-                   !WHL - debug
-                   if (verboseFluxes .and. etestOnProc .and. block % localBlockID == etestBlockID) then
-                      if (iEdge == etest) then
-                         if (trim(thisTracer % tracerName) == 'iceAreaCategory' .or. trim(thisTracer % tracerName) == 'iceVolumeCategory') then
-                            write(stderrUnit,*) 'iEdge, iTri, tracerIntegral, triArea, product:', &
-                                                 indexToEdgeID(iEdge), iTri, tracerIntegral3D(1,1), triangleArea(iTri,iEdge), &
-                                                 triangleArea(iTri,iEdge)*tracerIntegral3D(1,1)
+                      if (verboseFluxes .and. etestOnProc .and. block % localBlockID == etestBlockID) then
+                         if (iEdge == etest) then
+                            if (trim(thisTracer % tracerName) == 'iceAreaCategory' .or. trim(thisTracer % tracerName) == 'iceVolumeCategory') then
+                               write(stderrUnit,*) 'iEdge, iTri, tracerIntegral, triArea, product:', &
+                                    indexToEdgeID(iEdge), iTri, tracerIntegral3D(1,1), triangleArea(iTri,iEdge), &
+                                    triangleArea(iTri,iEdge)*tracerIntegral3D(1,1)
+                            endif
                          endif
                       endif
-                   endif
+                      
+                      ! increment the area-weighted flux across the edge
+                      thisTracer % edgeFlux3D(:,:,iEdge) = thisTracer % edgeFlux3D(:,:,iEdge) &
+                                                         + triangleArea(iTri,iEdge) * tracerIntegral3D(:,:)
 
-                   ! increment the area-weighted flux across the edge
-                   thisTracer % edgeFlux3D(:,:,iEdge) = thisTracer % edgeFlux3D(:,:,iEdge) &
-                                                      + triangleArea(iTri,iEdge) * tracerIntegral3D(:,:)
+                   endif ! source cell exists
 
-                endif ! source cell exists
-
-             enddo    ! nTriPerEdgeRemap
-
-           endif      ! remapEdge = 1
+                enddo    ! nTriPerEdgeRemap
+                
+             endif      ! remapEdge = 1
           enddo       ! nEdges
 
           deallocate(tracerIntegral3D)
@@ -6717,8 +6502,8 @@ contains
        ! set parent tracer
        if (thisTracer % nParents == 0) then   ! mass-like field (fractional ice concentration for CICE)
 
-          ! set a parentTracer pointer to have a mass-tracer product of 1 in each cell
-          ! this ensures correct values for massTracerProduct below
+          ! Set a parentTracer pointer to have a mass-tracer product of 1 in each cell.
+          ! This ensures correct values for massTracerProduct below.
           allocate(dummyTracer)
           if (thisTracer % ndims == 2) then
 
@@ -6830,8 +6615,8 @@ contains
          areaCell          !< Input: cell area
 
     type(tracer_type), pointer :: &
-         tracersHead   !< Input/output: pointer to first element of linked list of tracers
-                       ! old values on input; new values on output
+         tracersHead       !< Input/output: pointer to first element of linked list of tracers
+                           ! old tracer values on input; new values on output
 
     integer, dimension(:), intent(in) ::  &
          indexToCellID,  & !< Input: global index for each edge on a block (diagnostic only)
@@ -6886,8 +6671,8 @@ contains
        ! set parent tracer
        if (thisTracer % nParents == 0) then   ! mass-like field (fractional ice concentration for CICE)
 
-          ! set a parentTracer pointer to have a mass-tracer product of 1 in each cell
-          ! this ensures correct values for massTracerProduct below
+          ! Set a parentTracer pointer to have a mass-tracer product of 1 in each cell.
+          ! This ensures correct values for massTracerProduct below.
           allocate(dummyTracer)
           if (thisTracer % ndims == 2) then
 
@@ -6916,8 +6701,7 @@ contains
     enddo  ! while(associated)
 
     ! update loop through linked list of tracers
-    ! Note: Must begin with up-to-date values of massTracerProduct
-    !       Must recompute nCategories and nLayers for each tracer
+    ! Note: Must begin with up-to-date values of massTracerProduct from previous loop
 
     thisTracer => tracersHead
     do while (associated(thisTracer))
@@ -6999,7 +6783,7 @@ contains
              endif
              
              ! update the mass-tracer product, as needed for child tracers
-             !WHL - Do this only if hasChild = T?
+             !TODO - Do this only if hasChild = T?
 
              thisTracer % massTracerProduct2D(:,iCell) = parentTracer % massTracerProduct2D(:,iCell)  &
                                                          * thisTracer % array2D(:,iCell)
@@ -7127,9 +6911,8 @@ contains
 
        endif
 
-       !WHL - bug check - look for negative values
+       ! Check for negative values
 
-       ! check for negative values
        if (thisTracer % nParents == 0) then   ! mass-like field
 
           if (thisTracer % ndims == 2) then
@@ -7247,7 +7030,6 @@ contains
 
           deallocate(tracerSum2D)
 
-          !WHL - debug
           if (verboseRun) then
              if (trim(thisTracer % tracerName) == 'iceAreaCategory' .or. trim(thisTracer % tracerName) == 'iceVolumeCategory') then
                 write(stderrUnit,*) ' '
@@ -7283,7 +7065,6 @@ contains
 
           deallocate(tracerSum3D)
 
-          !WHL - debug
           if (verboseRun) then
              if (trim(thisTracer % tracerName) == 'iceAreaCategory' .or. trim(thisTracer % tracerName) == 'iceVolumeCategory') then
                 write(stderrUnit,*) ' '
@@ -7319,11 +7100,11 @@ contains
   
   subroutine check_tracer_conservation(dminfo, tracersHead)
 
-    type (dm_info), intent(in) :: dminfo
+    type (dm_info), intent(in) :: dminfo   !< Input: domain info
 
     type(tracer_type), pointer :: &
-         tracersHead  !< Input/output: pointer to first element of linked list of tracers
-                      ! The pointer stays attached to the first tracer, but all tracer sums are updated
+         tracersHead    !< Input/output: pointer to first element of linked list of tracers
+                        ! The pointer stays attached to the first tracer, but tracer sums are updated
     ! local variables
     type(tracer_type), pointer :: thisTracer
 
@@ -7364,8 +7145,9 @@ contains
                 difference = thisTracer % globalSumFinal2D(iCat) - thisTracer % globalSumInit2D(iCat)
                 ratio = difference / thisTracer % globalSumInit2D(iCat)
                 
-!!                if (abs(ratio) > eps11) then
-                if (abs(ratio) > 1.e-8) then
+                !TODO - Verify that eps11 will work as a threshold
+                if (abs(ratio) > eps11) then
+!!                if (abs(ratio) > 1.e-8_RKIND) then
                    write(stderrUnit,*) 'Tracer conservation error: tracer, category =', trim(thisTracer % tracerName), iCat
                    write(stderrUnit,*) 'Init value, final value:', thisTracer % globalSumInit2D(iCat), thisTracer % globalSumFinal2D(iCat)
                    write(stderrUnit,*) 'Difference, ratio:', difference, ratio
@@ -7403,8 +7185,9 @@ contains
                    difference = thisTracer % globalSumFinal3D(iLayer,iCat) - thisTracer % globalSumInit3D(iLayer,iCat)
                    ratio = difference/ thisTracer % globalSumInit3D(iLayer,iCat)
                    
-!!                   if (abs(ratio) > eps11) then
-                   if (abs(ratio) > 1.e-8) then
+                   !TODO - Verify that eps11 will work as a threshold
+                   if (abs(ratio) > eps11) then
+!!                   if (abs(ratio) > 1.e-8_RKIND) then
                       write(stderrUnit,*) 'Tracer conservation error: tracer, category, layer =', trim(thisTracer % tracerName), iCat, iLayer
                       write(stderrUnit,*) 'Init value, final value:', thisTracer % globalSumInit3D(iLayer,iCat), thisTracer % globalSumFinal3D(iLayer,iCat)
                       write(stderrUnit,*) 'Difference, ratio:', difference, ratio
@@ -7456,7 +7239,7 @@ contains
          nEdgesOnCell  !< Input: number of edges per cell
 
     integer, dimension(:,:), intent(in) ::  &
-         cellsOnCell       !< Input: cell index for each edge neighbor of a given cell
+         cellsOnCell   !< Input: cell index for each edge neighbor of a given cell
 
     ! local variables
     type(tracer_type), pointer :: thisTracer
@@ -7507,14 +7290,6 @@ contains
           enddo   ! iCell
 
        elseif (thisTracer % ndims == 3) then
-
-          !WHL - debug - make tracer values more interesting
-          if (trim(thisTracer % tracerName) == 'iceVolumeCategory') then
-!!!             do iCell = 1, nCellsSolve
-!!!                thisTracer % array3D(:,:,iCell) = thisTracer % parent % array3D(:,:,iCell)
-!!!             enddo
-!!!             write(stderrUnit,*) 'Reset iceVolumeCategory for monotonicity check'
-          endif
 
           nLayers = size(thisTracer % array3D, 1)
           nCategories = size(thisTracer % array3D, 2)
@@ -7631,9 +7406,8 @@ contains
     integer :: iCell, iCellOnCell, iCellNeighbor, iCat, iLayer
 
     logical, parameter :: &
-!         extendedMinMax = .false.  ! if true, then extend the local min/max by one layer of cells
          extendedMinMax = .true.  ! if true, then extend the local min/max by one layer of cells
-                                   ! may be necessary for complex fields with large CFL
+                                  ! may be necessary for complex fields with large CFL
 
     ! get pools
 
@@ -7667,10 +7441,10 @@ contains
 
                 ! halo update for local max/min
 
-                !WHL - Find out how many dimensions the LocalMin field has (and assume the LocalMax field has the same number).
-                !Note: This is temporary logic associated with the fact that some fields are both formally and physically 2D,
+                ! Find out how many dimensions the LocalMin field has (and assume the LocalMax field has the same number).
+                ! Note: This is temporary logic associated with the fact that some fields are both formally and physically 2D,
                 !      whereas others are physically 2D but formally 3D. In the latter case, we need to get a 3D field.
-                !TODO: Once all fields that are physically 2D are also formally 2D, remove this extra logic.
+                ! TODO: Once all fields that are physically 2D are also formally 2D, remove this extra logic.
 
                 call MPAS_pool_get_field_info(tracerMonotonicityPool, trim(thisTracer % tracerName) // 'LocalMin', thisFieldInfo)
 
@@ -7929,15 +7703,15 @@ contains
 
     integer :: iCell, iCat, iLayer
 
-    ! Make this very small (<< eps11) so as not to sweep potential problems under the rug
+    ! Make the threshold very small (<< eps11) so as not to sweep potential problems under the rug
 
     real(kind=RKIND), parameter :: &
 !!         smallMassThreshold = eps11
          smallMassThreshold = 1.0e-22_RKIND
 
-    !WHL - This loop has pointer assignments inside loop over cells and categories, which is inefficient.
-    !TODO- Find a more efficient method. (Or simply do not call this subroutine, but rely on a similar
-    !      subroutine in the column package.)
+    !NOTE - This loop has pointer assignments inside loop over cells and categories, which is inefficient.
+    !TODO - Find a more efficient method. (Or simply do not call this subroutine, but rely on a similar
+    !       subroutine in the column package.)
 
     do iCell = 1, nCellsSolve
 
@@ -7952,8 +7726,7 @@ contains
              if (thisTracer % array2D(iCat,iCell) > 0.0_RKIND .and. &
                  thisTracer % array2D(iCat,iCell) < smallMassThreshold) then
 
-                !WHL - debug
-                write(stderrUnit,*) 'ZAP: iCell, iCat =', iCell, iCat
+!!                write(stderrUnit,*) 'ZAP: iCell, iCat =', iCell, iCat
 
                 ! zero out the mass and mask for this category
                 thisTracer % array2D(iCat,iCell) = 0.0_RKIND
@@ -8000,6 +7773,8 @@ contains
 
                 if (thisTracer % array3D(iLayer,iCat,iCell) > 0.0_RKIND .and. &
                     thisTracer % array3D(iLayer,iCat,iCell) < smallMassThreshold) then
+
+!!                   write(stderrUnit,*) 'ZAP: iCell, iCat, iLayer =', iCell, iCat, iLayer
 
                    ! zero out the mass and mask for this category
                    thisTracer % array3D(iLayer,iCat,iCell) = 0.0_RKIND
@@ -8127,7 +7902,7 @@ contains
 
     !TODO - Adjust this tolerance for single precision?
     ! Min value for cross product (if smaller than this, the lines are deemed to be parallel)
-    rsCrossMin = eps11 * sqrt( (rx*rx + ry*ry) * (sx*sx + sy*sy) ) 
+    rsCrossMin = eps11 * sqrt( (rx*rx + ry*ry) * (sx*sx + sy*sy) )
 
     ! Compute t1 and t2 such that (x1,y1) + t1*(rx,ry) = (x3,y3) + t2*(sx,sy)
     ! If both t1 and t2 are in the range [0,1], then the line segments intersect
@@ -8277,7 +8052,7 @@ contains
 !> \author William Lipscomb
 !> \date   August 2015
 !> \details
-!>  Given four vertices of a quadrilateral, return its area
+!>  Given four vertices of a quadrilateral, return its area.
 !
 !-----------------------------------------------------------------------
 
@@ -8312,7 +8087,7 @@ contains
 !> \author William Lipscomb
 !> \date   August 2015
 !> \details
-!>  Given three vertices of a triangle, return its area
+!>  Given three vertices of a triangle, return its area.
 !
 !-----------------------------------------------------------------------
 
@@ -8330,6 +8105,55 @@ contains
                                     - (vertex2(2) - vertex1(2)) * (vertex3(1) - vertex1(1)) ) )
 
   end subroutine triangle_area
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  routine point_in_half_plane
+!
+!> \brief  determine whether a given point is in the half-plane of a given line
+!> \author William Lipscomb
+!> \date   May 2015
+!> \details
+!>  Given the 2D Cartesian coordinates of two points on a line, along with a
+!>  third point, determine whether the third point lies in the left half-plane
+!>  of the line.
+!
+!-----------------------------------------------------------------------
+
+  logical function point_in_half_plane(point, lineStart, lineEnd)
+
+    real(kind=RKIND), dimension(2), intent(in) ::  &
+         point          !< Input: x/y coordinates of an input point
+
+    real(kind=RKIND), dimension(2), intent(in) ::  &
+         lineStart, &   !< Input: x/y coordinates of starting point on a line segment
+         lineEnd        !< Input: x/y coordinates of ending point on a line segment
+    
+    ! local variables
+
+    real(kind=RKIND), dimension(2) :: &
+         vector1, vector2   ! 2D work vectors in the x/y plane
+
+    real(kind=RKIND) ::  &
+         crossProduct       ! z component of the cross product
+
+    ! vector from start point to end point of the input line
+    vector1(:) = lineEnd(:) - lineStart(:)
+
+    ! vector from start point of line to the input point
+    vector2(:) = point(:) - lineStart(:)
+
+    ! cross product
+    call cross_product_2d(vector1, vector2, crossProduct)
+
+    ! determine whether the point is in the half plane of the line
+    if (crossProduct >= 0.0_RKIND) then
+       point_in_half_plane = .true.
+    else
+       point_in_half_plane = .false.
+    endif
+
+  end function point_in_half_plane
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -8354,13 +8178,13 @@ contains
     !      This subroutine converts volume to thickness for purposes of IR.
 
     integer, intent(in) :: &
-         nCells           ! number of cells on block 
+         nCells             !< Input: number of cells on block 
 
     real(kind=RKIND), dimension(:,:), intent(in) ::  &
-         area             ! fractional area; first index is nCategories, second index is nCells
+         area               !< Input: fractional area; first index is nCategories, second index is nCells
 
     real(kind=RKIND), dimension(:,:), intent(inout) ::  &
-         volumeToThickness  ! volume = area*thickness on input; thickness on output
+         volumeToThickness  !< Input/output: volume = area*thickness on input; thickness on output
 
     integer :: nCategories
 
@@ -8404,13 +8228,13 @@ contains
     !      This subroutine converts thickness back to volume for purposes of IR.
 
     integer, intent(in) :: &
-         nCells           ! number of cells on block 
+         nCells           !< Input: number of cells on block 
 
     real(kind=RKIND), dimension(:,:), intent(in) ::  &
-         area             ! fractional area; first index is nCategories, second index is nCells
+         area             !< Input: fractional area; first index is nCategories, second index is nCells
 
     real(kind=RKIND), dimension(:,:), intent(inout) ::  &
-         thicknessToVolume   ! thickness on input; volume = area*thickness on output
+         thicknessToVolume   !< Input/output: thickness on input; volume = area*thickness on output
 
     integer :: nCategories
 
@@ -8427,54 +8251,5 @@ contains
     enddo
 
   end subroutine thickness_to_volume
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  routine point_in_half_plane
-!
-!> \brief  determine whether a given point is in the half-plane of a given line
-!> \author William Lipscomb
-!> \date   May 2015
-!> \details
-!>  Given the 2D Cartesian coordinates of two points on a line, along with a
-!>  third point, determine whether the third point lies in the left half-plane
-!>  of the line.
-!
-!-----------------------------------------------------------------------
-
-  logical function point_in_half_plane(point, lineStart, lineEnd)
-
-    real(kind=RKIND), dimension(2), intent(in) ::  &
-         point          ! x/y coordinates of an input point
-
-    real(kind=RKIND), dimension(2), intent(in) ::  &
-         lineStart, &  ! x/y coordinates of starting point on a line segment
-         lineEnd     ! x/y coordinates of ending point on a line segment
-    
-    ! local variables
-
-    real(kind=RKIND), dimension(2) :: &
-         vector1, vector2   ! 2D work vectors in the x/y plane
-
-    real(kind=RKIND) ::  &
-         crossProduct       ! z component of the cross product
-
-    ! vector from start point to end point of the input line
-    vector1(:) = lineEnd(:) - lineStart(:)
-
-    ! vector from start point of line to the input point
-    vector2(:) = point(:) - lineStart(:)
-
-    ! cross product
-    call cross_product_2d(vector1, vector2, crossProduct)
-
-    ! determine whether the point is in the half plane of the line
-    if (crossProduct >= 0.0_RKIND) then
-       point_in_half_plane = .true.
-    else
-       point_in_half_plane = .false.
-    endif
-
-  end function point_in_half_plane
 
 end module cice_advection_incremental_remap
