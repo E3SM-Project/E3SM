@@ -52,8 +52,9 @@ if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
     target_compile_options (piof
         PRIVATE -ffree-line-length-none)
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "NAG")
-    target_compile_options (piof
-        PRIVATE -mismatch_all)
+    set ( CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -mismatch_all" )
+#    target_compile_options (piof
+#        PRIVATE -mismatch_all)
 endif()
 
 # Look for c_sizeof capability

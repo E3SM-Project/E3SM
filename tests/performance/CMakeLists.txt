@@ -12,6 +12,12 @@ if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
         PRIVATE -ffree-line-length-none)
 endif()
 
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "NAG")
+   set ( CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -mismatch_all" )
+#    target_compile_options (gptl
+#        PRIVATE -mismatch_all)
+endif ()
+
 if (PIO_HDF5_LOGGING) 
     target_compile_definitions (pioperf 
         PUBLIC LOGGING)
