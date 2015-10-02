@@ -111,9 +111,9 @@ module cice_advection_incremental_remap
 !   integer, parameter :: ctestGlobal = 5411    ! test cell for spherical quad test case (gx3_noland, near equator)
 !   integer, parameter :: etestGlobal = 5706    ! test edge for spherical quad test case
 !   integer, parameter :: vtestGlobal = 5511    ! test vertex for spherical quad test case
-!!   integer, parameter :: ctestGlobal = 1        ! test cell for spherical quad test case (gx3, rotated, near SP)
-!!   integer, parameter :: etestGlobal = 13898    ! test edge for spherical quad test case
-!!   integer, parameter :: vtestGlobal = 1        ! test vertex for spherical quad test case
+!   integer, parameter :: ctestGlobal = 1        ! test cell for spherical quad test case (gx3, rotated, near SP)
+!   integer, parameter :: etestGlobal = 13898    ! test edge for spherical quad test case
+!   integer, parameter :: vtestGlobal = 1        ! test vertex for spherical quad test case
 
    ! spherical quad (gx1)
 !   integer, parameter :: ctestGlobal = 51157    ! test cell for spherical quad test case (gx1, not rotated)
@@ -2764,6 +2764,7 @@ contains
          xVertexOnCell, yVertexOnCell,  &
          dcEdge,                        &
          on_a_sphere,                   &
+         config_rotate_cartesian_grid,  &
          transGlobalToCell,             &
          coeffsReconstruct,             &
          geomAvgCell,                   &
@@ -3180,6 +3181,7 @@ contains
        xVertexOnCell, yVertexOnCell, &
        dcEdge,                       &
        on_a_sphere,                  &
+       config_rotate_cartesian_grid, &
        transGlobalToCell,            &
        coeffsReconstruct,            &
        geomAvgCell,                  &
@@ -3209,7 +3211,8 @@ contains
          dcEdge             !< Input: distance between the 2 cell centers on each side of an edge
 
     logical, intent(in) ::   &
-         on_a_sphere        !< Input: T if flow is on a sphere, F if on a plane
+         on_a_sphere,               &  !< Input: T if flow is on a sphere, F if on a plane
+         config_rotate_cartesian_grid  !< Input: if true, then the North and South Poles are rotated to the equator
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
          transGlobalToCell  !< Input: 3x3 matrix for transforming vectors from global to cell-based coordinates
@@ -3332,22 +3335,23 @@ contains
 
           ! compute unlimited gradient
           call compute_gradient_2d(&
-               nCells,                   &
-               maxEdges,                 &
-               nEdgesOnCell,             &
-               edgesOnCell,              &
-               cellsOnCell,              &
-               cellsOnEdge,              &
-               dcEdge,                   &
-               coeffsReconstruct,        &
-               on_a_sphere,              &
-               transGlobalToCell,        &
-               thisTracer % array2D,     &
-               thisTracer % arrayMask2D, &
-               thisTracer % xGrad2D,     &
-               thisTracer % yGrad2D,     &
-               indexToCellID,            &
-               indexToEdgeID,            &
+               nCells,                       &
+               maxEdges,                     &
+               nEdgesOnCell,                 &
+               edgesOnCell,                  &
+               cellsOnCell,                  &
+               cellsOnEdge,                  &
+               dcEdge,                       &
+               coeffsReconstruct,            &
+               on_a_sphere,                  &
+               config_rotate_cartesian_grid, &
+               transGlobalToCell,            &
+               thisTracer % array2D,         &
+               thisTracer % arrayMask2D,     &
+               thisTracer % xGrad2D,         &
+               thisTracer % yGrad2D,         &
+               indexToCellID,                &
+               indexToEdgeID,                &
                block)
 
           ! limit the gradient
@@ -3464,22 +3468,23 @@ contains
  
           ! compute unlimited gradient
           call compute_gradient_3d(&
-               nCells,                   &
-               maxEdges,                 &
-               nEdgesOnCell,             &
-               edgesOnCell,              &
-               cellsOnCell,              &
-               cellsOnEdge,              &
-               dcEdge,                   &
-               coeffsReconstruct,        &
-               on_a_sphere,              &
-               transGlobalToCell,        &
-               thisTracer % array3D,     &
-               thisTracer % arrayMask3D, &
-               thisTracer % xGrad3D,     &
-               thisTracer % yGrad3D,     &
-               indexToCellID,            &
-               indexToEdgeID,            &
+               nCells,                       &
+               maxEdges,                     &
+               nEdgesOnCell,                 &
+               edgesOnCell,                  &
+               cellsOnCell,                  &
+               cellsOnEdge,                  &
+               dcEdge,                       &
+               coeffsReconstruct,            &
+               on_a_sphere,                  &
+               config_rotate_cartesian_grid, &
+               transGlobalToCell,            &
+               thisTracer % array3D,         &
+               thisTracer % arrayMask3D,     &
+               thisTracer % xGrad3D,         &
+               thisTracer % yGrad3D,         &
+               indexToCellID,                &
+               indexToEdgeID,                &
                block)
 
           ! Note: The following argument lists are different depending on whether the parent tracer is 2D or 3D
@@ -3752,21 +3757,22 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine compute_gradient_2d(&
-       nCells,              &
-       maxEdges,            &
-       nEdgesOnCell,        &
-       edgesOnCell,         &
-       cellsOnCell,         &
-       cellsOnEdge,         &
-       dcEdge,              &
-       coeffsReconstruct,   &
-       on_a_sphere,         &
-       transGlobalToCell,   &
-       field,               &
-       mask,                &
-       xGrad,  yGrad,       &
-       indexToCellID,       &
-       indexToEdgeID,       &
+       nCells,                       &
+       maxEdges,                     &
+       nEdgesOnCell,                 &
+       edgesOnCell,                  &
+       cellsOnCell,                  &
+       cellsOnEdge,                  &
+       dcEdge,                       &
+       coeffsReconstruct,            &
+       on_a_sphere,                  &
+       config_rotate_cartesian_grid, &
+       transGlobalToCell,            &
+       field,                        &
+       mask,                         &
+       xGrad,  yGrad,                &
+       indexToCellID,                &
+       indexToEdgeID,                &
        block)
 
     integer, intent(in) :: &
@@ -3788,7 +3794,8 @@ contains
          coeffsReconstruct   !< Input: coefficients for reconstructing the gradient at a cell center, given normal components on edges
 
     logical, intent(in) ::   &
-         on_a_sphere         !< Input: T if flow is on a sphere, F if on a plane
+         on_a_sphere,               &  !< Input: T if flow is on a sphere, F if on a plane
+         config_rotate_cartesian_grid  !< Input: if true, then the North and South Poles are rotated to the equator
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
          transGlobalToCell   !< Input: 3x3 matrix for transforming vectors from global to cell-based coordinates
@@ -3817,26 +3824,28 @@ contains
 
     integer :: iCell, iEdge, iEdgeOnCell, iCellNeighbor
 
-    real(kind=RKIND), dimension(:,:), allocatable ::   &
-         normalGrad        ! normal components of the gradient, defined on cell edges
-
-    real(kind=RKIND), dimension(:,:), allocatable ::   &
-         globalGrad        ! gradient at cell center, in global x/y/z coordinates
-
     real(kind=RKIND) :: &
          signGradient      ! = 1 or -1, depending on which direction is taken as positive at a given edge
 
-    !WHL - debug
-    real(kind=RKIND) :: zGrad
+    real(kind=RKIND), dimension(:,:), allocatable ::   &
+         normalGrad,     & ! normal components of the gradient, defined on cell edges
+         globalGrad,     & ! gradient at cell center, in global x/y/z coordinates
+         globalGradRotate  ! rotated globalGrad vector
+
+    real(kind=RKIND), dimension(:), allocatable ::   &
+         zGrad             ! diagnostic only; should be much smaller than xGrad and yGrad
 
     ! find dimensions and allocate arrays
     nCategories = size(field,1)
+    allocate(zGrad(nCategories))
     allocate(normalGrad(nCategories,maxEdges))
     allocate(globalGrad(nCategories,3))
+    if (config_rotate_cartesian_grid) allocate(globalGradRotate(nCategories,3))
 
     ! initialize the gradient
     xGrad(:,:) = 0.0_RKIND
     yGrad(:,:) = 0.0_RKIND
+    zGrad(:) = 0.0_RKIND  ! diagnostic only
 
     ! loop over cells
     do iCell = 1, nCells
@@ -3890,7 +3899,18 @@ contains
 
        enddo  ! iEdgeOnCell
 
-       !TODO - Add optional rotation of globalGrad vector
+       ! The global gradient vector lives in Cartesian x/y/z space.  
+       ! If on a rotated grid, then rotate the vector by 90 degrees, such that 
+       !  the true North Pole goes to (-1,0,0) and the true South Pole to (1,0,0).
+
+       !TODO - Rotate the gradient vector if on a plane?
+
+       if (config_rotate_cartesian_grid .and. on_a_sphere) then
+          globalGradRotate(:,1) = -globalGrad(:,3)   ! xR = -z
+          globalGradRotate(:,2) =  globalGrad(:,2)   ! yR = y
+          globalGradRotate(:,3) =  globalGrad(:,1)   ! zR = x
+          globalGrad(:,:) = globalGradRotate(:,:)
+       endif
 
        ! transform from global x/y/z coordinates to local east/west coordinates
 
@@ -3904,23 +3924,12 @@ contains
                          + transGlobalToCell(2,2,iCell) * globalGrad(:,2)  & 
                          + transGlobalToCell(2,3,iCell) * globalGrad(:,3)
 
-          ! Ignore the local z component of the gradient
-!          zGrad(:,iCell) = transGlobalToCell(3,1,iCell) * globalGrad(:,1)  & 
-!                         + transGlobalToCell(3,2,iCell) * globalGrad(:,2)  & 
-!                         + transGlobalToCell(3,3,iCell) * globalGrad(:,3)
+          ! Note: The zGrad component is never used; it is simply computed as a diagnostic
+          !TODO - Comment out zGrad computation?
+          zGrad(:) = transGlobalToCell(3,1,iCell) * globalGrad(:,1)  & 
+                   + transGlobalToCell(3,2,iCell) * globalGrad(:,2)  & 
+                   + transGlobalToCell(3,3,iCell) * globalGrad(:,3)
 
-          iCat = 1
-          zGrad = transGlobalToCell(3,1,iCell) * globalGrad(iCat,1)  & 
-                + transGlobalToCell(3,2,iCell) * globalGrad(iCat,2)  & 
-                + transGlobalToCell(3,3,iCell) * globalGrad(iCat,3)
-
-          !WHL - debug
-          !TODO - Compare for rotated v. nonrotated meshes
-!          if (iCell == ctest) then
-!             write(stderrUnit,*) ' '
-!             write(stderrUnit,*) 'iCell, xGrad, yGrad, zGrad:', iCell, xGrad(iCat,iCell), yGrad(iCat,iCell), zGrad
-!          endif
-             
        else  ! on a plane; do a simple copy
 
           xGrad(:,iCell) = globalGrad(:,1)
@@ -3941,15 +3950,17 @@ contains
                 write(stderrUnit,*) iEdgeOnCell, indexToEdgeID(iEdge), field(iCat,iCellNeighbor), normalGrad(iCat,iEdgeOnCell)
              enddo
              write(stderrUnit,*) ' '
-             write(stderrUnit,*) 'Unlimited center gradient:', xGrad(iCat,iCell), yGrad(iCat,iCell)
+             write(stderrUnit,*) 'Unlimited center gradient:', xGrad(iCat,iCell), yGrad(iCat,iCell), zGrad(iCat)
           endif
        endif
 
     enddo  ! iCell
 
     ! cleanup
+    deallocate(zGrad)
     deallocate(normalGrad)
     deallocate(globalGrad)
+    if (config_rotate_cartesian_grid) deallocate(globalGradRotate)
 
   end subroutine compute_gradient_2d
 
@@ -3967,21 +3978,22 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine compute_gradient_3d(&
-       nCells,              &
-       maxEdges,            &
-       nEdgesOnCell,        &
-       edgesOnCell,         &
-       cellsOnCell,         &
-       cellsOnEdge,         &
-       dcEdge,              &
-       coeffsReconstruct,   &
-       on_a_sphere,         &
-       transGlobalToCell,   &
-       field,               &
-       mask,                &
-       xGrad,  yGrad,       &
-       indexToCellID,       &
-       indexToEdgeID,       &
+       nCells,                       &
+       maxEdges,                     &
+       nEdgesOnCell,                 &
+       edgesOnCell,                  &
+       cellsOnCell,                  &
+       cellsOnEdge,                  &
+       dcEdge,                       &
+       coeffsReconstruct,            &
+       on_a_sphere,                  &
+       config_rotate_cartesian_grid, &
+       transGlobalToCell,            &
+       field,                        &
+       mask,                         &
+       xGrad,  yGrad,                &
+       indexToCellID,                &
+       indexToEdgeID,                &
        block)
 
     integer, intent(in) :: &
@@ -4003,7 +4015,8 @@ contains
          coeffsReconstruct   !< Input: coefficients for reconstructing the gradient at a cell center, given normal components on edges
 
     logical, intent(in) ::   &
-         on_a_sphere         !< Input: T if flow is on a sphere, F if on a plane
+         on_a_sphere,               &  !< Input: T if flow is on a sphere, F if on a plane
+         config_rotate_cartesian_grid  !< Input: if true, then the North and South Poles are rotated to the equator
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
          transGlobalToCell   !< Input: 3x3 matrix for transforming vectors from global to cell-based coordinates
@@ -4033,23 +4046,28 @@ contains
     integer :: iCell, iEdge, iEdgeOnCell, iCellNeighbor
 
     real(kind=RKIND), dimension(:,:,:), allocatable ::   &
-         normalGrad        ! normal components of the gradient, defined on cell edges
-
-    real(kind=RKIND), dimension(:,:,:), allocatable ::   &
-         globalGrad        ! gradient at cell center, in global x/y/z coordinates
+         normalGrad,     & ! normal components of the gradient, defined on cell edges
+         globalGrad,     & ! gradient at cell center, in global x/y/z coordinates
+         globalGradRotate  ! rotated globalGrad vector
 
     real(kind=RKIND) :: &
          signGradient      ! = 1 or -1, depending on which direction is taken as positive at a given edge
 
+    real(kind=RKIND), dimension(:,:), allocatable :: &
+         zGrad             ! diagnostic only; should be much smaller than xGrad and yGrad
+
     ! find dimensions and allocate arrays
     nLayers = size(field,1)
     nCategories = size(field,2)
+    allocate(zGrad(nLayers,nCategories))
     allocate(normalGrad(nLayers,nCategories,maxEdges))
     allocate(globalGrad(nLayers,nCategories,3))
+    if (config_rotate_cartesian_grid) allocate(globalGradRotate(nLayers,nCategories,3))
 
     ! initialize the gradient
     xGrad(:,:,:) = 0.0_RKIND
     yGrad(:,:,:) = 0.0_RKIND
+    zGrad(:,:) = 0.0_RKIND     ! diagnostic only
 
     ! loop over cells
     do iCell = 1, nCells
@@ -4106,7 +4124,18 @@ contains
 
        enddo  ! iEdgeOnCell
 
-       !TODO - Add optional rotation of globalGrad vector
+       ! The global gradient vector lives in Cartesian x/y/z space.  
+       ! If on a rotated grid, then rotate the vector by 90 degrees, such that 
+       !  the true North Pole goes to (-1,0,0) and the true South Pole to (1,0,0).
+
+       !TODO - Rotate the gradient vector if on a plane?
+
+       if (config_rotate_cartesian_grid .and. on_a_sphere) then
+          globalGradRotate(:,:,1) = -globalGrad(:,:,3)   ! xR = -z
+          globalGradRotate(:,:,2) =  globalGrad(:,:,2)   ! yR = y
+          globalGradRotate(:,:,3) =  globalGrad(:,:,1)   ! zR = x
+          globalGrad(:,:,:) = globalGradRotate(:,:,:)
+       endif
 
        ! transform from global x/y/z coordinates to local east/west coordinates
 
@@ -4120,22 +4149,21 @@ contains
                            + transGlobalToCell(2,2,iCell) * globalGrad(:,:,2)  & 
                            + transGlobalToCell(2,3,iCell) * globalGrad(:,:,3)
 
-          ! Ignore the local z component of the gradient
-!          zGrad(:,:,iCell) = transGlobalToCell(3,1,iCell) * globalGrad(:,:,1)  & 
-!                           + transGlobalToCell(3,2,iCell) * globalGrad(:,:,2)  & 
-!                           + transGlobalToCell(3,3,iCell) * globalGrad(:,:,3)
+          ! Note: The zGrad component is never used; it is simply computed as a diagnostic
+          !TODO - Comment out zGrad computation?
+          zGrad(:,:) = transGlobalToCell(3,1,iCell) * globalGrad(:,:,1)  & 
+                     + transGlobalToCell(3,2,iCell) * globalGrad(:,:,2)  & 
+                     + transGlobalToCell(3,3,iCell) * globalGrad(:,:,3)
 
        else  ! on a plane; do a simple copy
 
           xGrad(:,:,iCell) = globalGrad(:,:,1)
           yGrad(:,:,iCell) = globalGrad(:,:,2)
-             
+
        endif
 
-       !WHL - debug
        if (verboseConstruct .and. ctestOnProc .and. block % localBlockID == ctestBlockID) then
-!!          if (iCell == ctest) then
-          if (iCell == ctest .or. indexToCellID(iCell) == cTestGlobal) then
+          if (iCell == ctest) then
              iCat = 1; iLayer = 1
              write(stderrUnit,*) ' '
              write(stderrUnit,*) 'iCell =', indexToCellID(iCell)
@@ -4147,15 +4175,17 @@ contains
                 write(stderrUnit,*) iEdgeOnCell, indexToEdgeID(iEdge), field(iLayer,iCat,iCellNeighbor), normalGrad(iLayer,iCat,iEdgeOnCell)
              enddo
              write(stderrUnit,*) ' '
-             write(stderrUnit,*) 'Unlimited center gradient:', xGrad(iLayer,iCat,iCell), yGrad(iLayer,iCat,iCell)
+             write(stderrUnit,*) 'Unlimited center gradient:', xGrad(iLayer,iCat,iCell), yGrad(iLayer,iCat,iCell), zGrad(iLayer,iCat)
           endif
        endif
 
     enddo  ! iCell
 
     ! cleanup
+    deallocate(zGrad)
     deallocate(normalGrad)
     deallocate(globalGrad)
+    if (config_rotate_cartesian_grid) deallocate(globalGradRotate)
 
   end subroutine compute_gradient_3d
 
