@@ -32,7 +32,7 @@ BATCH_INFO = \
 
 # TODO: Get these values from ACME XML files instead of duplicating here.
 
-# machine -> defaults (compiler, test_suite, use_batch, project, testroot, baseline_root, proxy)
+# machine -> defaults (compiler, test_suite, use_batch, project, testroot, baseline_root, proxy, maintain_baselines)
 MACHINE_INFO = {
     "redsky"    : (
         "intel",
@@ -41,7 +41,8 @@ MACHINE_INFO = {
         "fy150001",
         "/gscratch/<USER>/acme_scratch",
         "/projects/ccsm/ccsm_baselines",
-        "wwwproxy.sandia.gov:80"
+        "wwwproxy.sandia.gov:80",
+        True,
     ),
     "skybridge" : (
         "intel",
@@ -50,7 +51,8 @@ MACHINE_INFO = {
         "fy150001",
         "/gscratch/<USER>/acme_scratch/skybridge",
         "/projects/ccsm/ccsm_baselines",
-        "wwwproxy.sandia.gov:80"
+        "wwwproxy.sandia.gov:80",
+        True,
     ),
     "melvin"    : (
         "gnu",
@@ -59,16 +61,18 @@ MACHINE_INFO = {
         "ignore",
         "/home/<USER>/acme/scratch",
         "/home/jgfouca/acme/baselines",
-        "sonproxy.sandia.gov:80"
+        "sonproxy.sandia.gov:80",
+        True,
     ),
     "edison"    : (
         "intel",
-        "acme_integration",
+        "acme_developer",
         True,
         "acme",
         "/scratch1/scratchdirs/<USER>/acme_scratch",
         "/project/projectdirs/acme/baselines",
-        None
+        None,
+        False,
     ),
     "blues"    : (
         "pgi",
@@ -77,7 +81,8 @@ MACHINE_INFO = {
         "ACME",
         "/lcrc/project/ACME/<USER>/acme_scratch",
         "/lcrc/group/earthscience/acme_baselines",
-        None
+        None,
+        False,
     ),
     "titan"    : (
         "pgi",
@@ -86,25 +91,28 @@ MACHINE_INFO = {
         "cli115",
         "/lustre/atlas/scratch/<USER>/<PROJECT>",
         "/lustre/atlas1/cli900/world-shared/cesm/acme/baselines",
-        None
+        None,
+        False,
     ),
     "mira"     : (
         "ibm",
-        "acme_integration",
+        "acme_developer",
         True,
         "HiRes_EarthSys",
         "/projects/<PROJECT>/<USER>",
         "/projects/ccsm/ccsm_baselines",
-        None
+        None,
+        False,
     ),
     "cetus"     : (
         "ibm",
-        "acme_integration",
+        "acme_developer",
         True,
         "HiRes_EarthSys",
         "/projects/<PROJECT>/<USER>",
         "/projects/ccsm/ccsm_baselines",
-        None
+        None,
+        False,
     ),
 }
 
