@@ -156,7 +156,7 @@ contains
     real(kind=RKIND), dimension(:,:), pointer :: &
          oceanBioFluxes, &
          atmosIceBioFluxes, &
-         SnowIceBioFluxes, &
+         snowIceBioFluxes, &
          totalverticalBiologyIce, &
          totalverticalBiologySnow
 
@@ -176,7 +176,7 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "zSalinityGDFlux", zSalinityGDFlux)
        call MPAS_pool_get_array(biogeochemistry, "oceanBioFluxes", oceanBioFluxes)
        call MPAS_pool_get_array(biogeochemistry, "atmosIceBioFluxes", atmosIceBioFluxes)
-       call MPAS_pool_get_array(biogeochemistry, "SnowIceBioFluxes", SnowIceBioFluxes)
+       call MPAS_pool_get_array(biogeochemistry, "snowIceBioFluxes", snowIceBioFluxes)
        call MPAS_pool_get_array(biogeochemistry, "totalverticalBiologyIce", totalverticalBiologyIce)
        call MPAS_pool_get_array(biogeochemistry, "totalverticalBiologySnow", totalverticalBiologySnow)
        call MPAS_pool_get_array(biogeochemistry, "bioTracerShortwave", bioTracerShortwave)
@@ -188,7 +188,7 @@ contains
        zSalinityGDFlux = 0.0_RKIND
        oceanBioFluxes = 0.0_RKIND
        atmosIceBioFluxes = 0.0_RKIND
-       SnowIceBioFluxes = 0.0_RKIND
+       snowIceBioFluxes = 0.0_RKIND
        totalverticalBiologyIce = 0.0_RKIND
        totalverticalBiologySnow = 0.0_RKIND
        bioTracerShortwave = 0.0_RKIND

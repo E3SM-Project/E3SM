@@ -74,16 +74,16 @@ module cice_column
      integer, dimension(:), allocatable :: ancestorNumber ! n_trcr_strata
 
 !nj-bgc+
-     ! length of tracer array not including bio tracers
-     integer :: nTracersNotBio   !ntrcr
+     ! length of tracer array not including biology and biology related tracers
+     integer :: nTracersNotBio   !ntrcr - ntrcr(bio)
 
-     ! length of bio tracer array
+     ! length of bio tracer array (does not include biology related tracers), 
      integer :: nBioTracers   !nbtrcr
 
-     ! length of bio tracer array
+     ! length of bio tracer array  (does not include brine or mobilefraction)
      integer :: nBioTracersLayer   !nltrcr
 
-     ! length of shortwave bio tracer array
+     ! length of shortwave bio tracer array (for aerosols and chlorophyll)
      integer :: nBioTracersShortwave   !nbtrcr_sw
 
      ! length of bio indices
@@ -99,27 +99,27 @@ module cice_column
 
      ! indexes of bio tracers with types in tracer array
      integer, dimension(:), allocatable :: &                             
-          index_algae,  &             ! nt_bgc_N*
-          index_algalCarbon, &        ! nt_bgc_C *
-          index_algalChlorophyll, &   ! nt_bgc_chl *
-          index_DOC, &                ! nt_bgc_DOC *
-          index_DON, &                ! nt_bgc_DON *
-          index_DIC, &                ! nt_bgc_DIC *
-          index_dissolvedIron, &      ! nt_bgc_Fed *
-          index_particulateIron, &    ! nt_bgc_Fep *
-          index_zAerosols,   &        ! nt_zaero   *      *     
-          index_algaeLayer,  &             ! nlt_bgc_N *
-          index_algalCarbonLayer, &        ! nlt_bgc_C *
-          index_algalChlorophyllLayer, &   ! nlt_bgc_chl *
-          index_DOCLayer, &                ! nlt_bgc_DOC *
-          index_DONLayer, &                ! nlt_bgc_DON *
-          index_DICLayer, &                ! nlt_bgc_DIC *
-          index_dissolvedIronLayer, &      ! nlt_bgc_Fed *
-          index_particulateIronLayer, &    ! nlt_bgc_Fep *
-          index_zAerosolsLayer, &          ! nlt_zaero   *
-          index_zAerosolsShortwave, &      ! nlt_zaero_sw *   
-          index_LayerIndexToDataArray, &   ! relates nlt to data array  *
-          index_LayerIndexToBioIndex       ! relates nlt to nt  * 
+          index_algae, &             ! nt_bgc_N
+          index_algalCarbon, &        ! nt_bgc_C 
+          index_algalChlorophyll, &   ! nt_bgc_chl 
+          index_DOC, &                ! nt_bgc_DOC 
+          index_DON, &                ! nt_bgc_DON 
+          index_DIC, &                ! nt_bgc_DIC 
+          index_dissolvedIron, &      ! nt_bgc_Fed 
+          index_particulateIron, &    ! nt_bgc_Fep 
+          index_zAerosols, &        ! nt_zaero             
+          index_algaeLayer, &             ! nlt_bgc_N 
+          index_algalCarbonLayer, &        ! nlt_bgc_C 
+          index_algalChlorophyllLayer, &   ! nlt_bgc_chl 
+          index_DOCLayer, &                ! nlt_bgc_DOC 
+          index_DONLayer, &                ! nlt_bgc_DON 
+          index_DICLayer, &                ! nlt_bgc_DIC
+          index_dissolvedIronLayer, &      ! nlt_bgc_Fed 
+          index_particulateIronLayer, &    ! nlt_bgc_Fep 
+          index_zAerosolsLayer, &          ! nlt_zaero   
+          index_zAerosolsShortwave, &      ! nlt_zaero_sw  
+          index_LayerIndexToDataArray, &   ! relates nlt to data array  
+          index_LayerIndexToBioIndex       ! relates nlt to nt   
 !nj-bgc-
      ! indexes of tracers in tracer array
      integer :: &
@@ -136,8 +136,8 @@ module cice_column
           index_pondLidThickness, &   ! nt_ipnd
           index_aerosols, &           ! nt_aero
 !nj-bgc+
-          index_hbrine,   &           ! nt_fbri
-          index_nitrate,  &           ! nt_bgc_Nit
+          index_hbrine, &           ! nt_fbri
+          index_nitrate, &           ! nt_bgc_Nit
           index_ammonium, &           ! nt_bgc_Am
           index_silicate, &           ! nt_bgc_Sil
           index_DMSPp,    &           ! nt_bgc_DMSPp
@@ -1609,7 +1609,7 @@ contains
          categoryThicknessLimits, &
 !nj-bgc+
          biologyGrid, &
-         iceGrid, &
+         verticalGrid, &
          interfaceBiologyGrid, &
 !nj-bgc+
          zSalinityFlux
@@ -1636,7 +1636,8 @@ contains
          iCell, &
          iCategory, &
 !nj-bgc+
-         iBioTracers
+         iBioTracers, &
+         iBioData
 !nj-bgc-
 
     logical, dimension(:), allocatable :: &
@@ -1646,7 +1647,8 @@ contains
         oceanBioConcentrationsUsed
 
     logical :: &
-         abortFlag
+         abortFlag, &
+         getPhysicsTracers
 
     character(len=strKIND) :: &
          abortMessage
@@ -1721,7 +1723,7 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "oceanBioFluxes", oceanBioFluxes)
        call MPAS_pool_get_array(biogeochemistry, "oceanBioConcentrations", oceanBioConcentrations)
        call MPAS_pool_get_array(biogeochemistry, "biologyGrid", biologyGrid)
-       call MPAS_pool_get_array(biogeochemistry, "iceGrid", iceGrid)
+       call MPAS_pool_get_array(biogeochemistry, "verticalGrid", verticalGrid)
        call MPAS_pool_get_array(biogeochemistry, "interfaceBiologyGrid",interfaceBiologyGrid)
        call MPAS_pool_get_array(biogeochemistry, "zSalinityFlux",zSalinityFlux)
 !nj-bgc-
@@ -1735,6 +1737,8 @@ contains
        allocate(newlyFormedIceLogical(nCategories))
 !nj-bgc+
        allocate(oceanBioConcentrationsUsed(ciceTracerObject % nBioTracers))
+
+       getPhysicsTracers = .true.
 !nj-bgc-
        
        do iCell = 1, nCellsSolve
@@ -1743,10 +1747,12 @@ contains
           do iCategory = 1, nCategories
              newlyFormedIceLogical(iCategory) = (newlyFormedIce(iCategory,iCell) == 1)
           enddo ! iCategory
-!nj-bgc+
+
+!nj-bgc+  ! read the required ocean concentration fields into the allocated array
           do iBioTracers = 1, ciceTracerObject % nBioTracers
-                oceanBioConcentrationsUsed(iBioTracers) =  &
-              oceanBioConcentrations(ciceTracerObject % index_LayerIndexToDataArray(iBioTracers), iCell)
+             iBioData = ciceTracerObject % index_LayerIndexToDataArray(iBioTracers)
+             oceanBioConcentrationsUsed(iBioTracers) =  &
+                        oceanBioConcentrations(iBioData, iCell)  
           enddo ! iBioTracers           
 !nj-bgc-
 
@@ -1795,7 +1801,7 @@ contains
                config_update_ocean_fluxes, &
 !nj-bgc+
                biologyGrid(:), &
-               iceGrid(:), &
+               verticalGrid(:), &
                interfaceBiologyGrid(:), &
                oceanAerosolFlux(:,iCell), &
                newlyFormedIceLogical(:), &
@@ -1815,13 +1821,10 @@ contains
              if (newlyFormedIceLogical(iCategory)) newlyFormedIce(iCategory,iCell) = 1
           enddo ! iCategory
 
-          ! get category tracer array
-          call get_cice_tracer_array_category(block, ciceTracerObject, iCell)
-
 !nj-bgc+
-          ! get biogeochemistry category tracer array
-          if (config_use_column_biogeochemistry) &
-          call get_cice_biogeochemistry_array_category(block, ciceTracerObject, iCell)
+          ! get category tracer array
+          call get_cice_tracer_array_category(block, ciceTracerObject, iCell, getPhysicsTracers, &
+               config_use_column_biogeochemistry)
 !nj-bgc-
 
           ! code abort
@@ -2052,8 +2055,8 @@ contains
          solarZenithAngleCosine, &
          snowfallRate, &
 !nj-bgc+
-         iceShortwaveGrid, & 
-         iceGrid
+         verticalShortwaveGrid, & 
+         verticalGrid
 !nj-bgc-
 
     real(kind=RKIND), dimension(:,:), pointer :: &
@@ -2223,8 +2226,8 @@ contains
        call MPAS_pool_get_array(aerosols, "ModalBCabsorptionParameter", ModalBCabsorptionParameter)
 
        call MPAS_pool_get_array(biogeochemistry, "bioTracerShortwave", bioTracerShortwave)
-       call MPAS_pool_get_array(biogeochemistry, "iceShortwaveGrid", iceShortwaveGrid)
-       call MPAS_pool_get_array(biogeochemistry, "iceGrid", iceGrid)
+       call MPAS_pool_get_array(biogeochemistry, "verticalShortwaveGrid", verticalShortwaveGrid)
+       call MPAS_pool_get_array(biogeochemistry, "verticalGrid", verticalGrid)
 !nj-bgc-
 
        ! aerosols array
@@ -2279,8 +2282,8 @@ contains
                config_use_modal_aerosols, &
                ciceTracerObject % index_chlorophyllShortwave, &
                ciceTracerObject % index_zAerosolsShortwave(:), &
-               iceShortwaveGrid(:), &
-               iceGrid(:), &
+               verticalShortwaveGrid(:), &
+               verticalGrid(:), &
                brineheightfraction(:), &
 !nj-bgc-
                iceAreaCategory(1,:,iCell), &
@@ -2294,7 +2297,8 @@ contains
                aerosolsArray, &
 !nj-bgc+
                bioTracerShortwave(:,:,iCell), &
-               ztracerArray(:,:), &
+               ciceTracerObject% TracerArrayCategory(:,:), &
+              ! ztracerArray(:,:), &
 !nj-bgc-
                latCell(iCell), & 
                lonCellColumn, &
@@ -2458,7 +2462,8 @@ contains
          newlyFormedIceLogical
 
     logical :: &
-         abortFlag
+         abortFlag, &
+         getPhysicsTracers
 
     character(len=strKIND) :: &
          abortMessage
@@ -2534,6 +2539,7 @@ contains
 
        ! newly formed ice
        allocate(newlyFormedIceLogical(nCategories))
+       getPhysicsTracers = .true.
 
        do iCell = 1, nCellsSolve
 
@@ -2569,7 +2575,7 @@ contains
                areaLossRidge(iCell), &  
                areaGainRidge(iCell), &
                iceVolumeRidged(iCell), &
-               openingRateRidge(iCell),  &
+               openingRateRidge(iCell), &
                pondFreshWaterFlux(iCell), &
                oceanFreshWaterFlux(iCell), &    
                oceanHeatFlux(iCell), &
@@ -2599,10 +2605,9 @@ contains
              if (newlyFormedIceLogical(iCategory)) newlyFormedIce(iCategory,iCell) = 1
           enddo ! iCategory
           ! get category tracer array
-          call get_cice_tracer_array_category(block, ciceTracerObject, iCell)
+          call get_cice_tracer_array_category(block, ciceTracerObject, iCell,getPhysicsTracers, &
+               config_use_column_biogeochemistry)
 
-          if (config_use_column_biogeochemistry) &
-          call get_cice_biogeochemistry_array_category(block, ciceTracerObject, iCell)
 
           ! code abort
           if (abortFlag) then
@@ -2659,7 +2664,8 @@ contains
 
     logical, pointer :: &
          config_use_brine, &
-         config_use_skeletal_biochemistry
+         config_use_skeletal_biochemistry, &
+         config_use_column_biogeochemistry 
 
     ! dimensions
     integer, pointer :: &
@@ -2674,12 +2680,14 @@ contains
          nDIC, &
          nDON, &
          nParticulateIron, &
-         nDissolvedIron   
+         nDissolvedIron, & 
+         nZBGCTracers, &
+         maxAlgae
         
     ! variables
 
     real(kind=RKIND), dimension(:), pointer :: &
-         RayleighCriteriaReal, &
+         rayleighCriteriaReal, &
          netNitrateUptake, &
          netAmmoniumUptake, &
          totalverticalSalinity, &
@@ -2689,7 +2697,7 @@ contains
          biologyGrid, &
          interfaceBiologyGrid, &
          interfaceGrid, &
-         iceGrid, &
+         verticalGrid, &
          seaSurfaceTemperature, & 
          seaSurfaceSalinity, &    
          snowfallRate, &    
@@ -2706,7 +2714,7 @@ contains
          brineBottomChange, &
          brineTopChange, &
          darcyVelocityBio, &
-         SnowIceBioFluxes, &
+         snowIceBioFluxes, &
          atmosIceBioFluxes, &
          oceanBioConcentrations, &
          totalverticalBiologyIce, &
@@ -2740,9 +2748,11 @@ contains
     ! local
     integer :: &
          iCell, &
+         iTracers, &
          iBioTracers, &
          iCategory, &
-         iAlgae
+         iAlgae, &
+         iBioData
         
     real(kind=RKIND), dimension(:), allocatable :: &
          oceanBioConcentrationsUsed
@@ -2755,7 +2765,8 @@ contains
 
     logical :: &
          abortFlag, &
-         RayleighCriteria
+         rayleighCriteria, &
+         getPhysicsTracers
 
     character(len=strKIND) :: &
          abortMessage
@@ -2777,6 +2788,8 @@ contains
        call MPAS_pool_get_dimension(block % dimensions, "nDON", nDON)
        call MPAS_pool_get_dimension(block % dimensions, "nParticulateIron", nParticulateIron)
        call MPAS_pool_get_dimension(block % dimensions, "nDissolvedIron", nDissolvedIron)
+       call MPAS_pool_get_dimension(block % dimensions, "nZBGCTracers", nZBGCTracers)
+       call MPAS_pool_get_dimension(block % dimensions, "maxAlgae", maxAlgae)
 
        call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
@@ -2790,6 +2803,7 @@ contains
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
        call MPAS_pool_get_config(block % configs, "config_use_brine", config_use_brine)
        call MPAS_pool_get_config(block % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
+       call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
 
        call MPAS_pool_get_array(biogeochemistry, "newlyFormedIce", newlyFormedIce)
        call MPAS_pool_get_array(biogeochemistry, "netNitrateUptake", netNitrateUptake)
@@ -2801,16 +2815,16 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "brineBottomChange", brineBottomChange)
        call MPAS_pool_get_array(biogeochemistry, "brineTopChange", brineTopChange)
        call MPAS_pool_get_array(biogeochemistry, "bioPorosity", bioPorosity)
-       call MPAS_pool_get_array(biogeochemistry, "RayleighCriteriaReal", RayleighCriteriaReal)
+       call MPAS_pool_get_array(biogeochemistry, "rayleighCriteriaReal", rayleighCriteriaReal)
        call MPAS_pool_get_array(biogeochemistry, "biologyGrid", biologyGrid)
        call MPAS_pool_get_array(biogeochemistry, "interfaceBiologyGrid", interfaceBiologyGrid)
        call MPAS_pool_get_array(biogeochemistry, "interfaceGrid", interfaceGrid)
-       call MPAS_pool_get_array(biogeochemistry, "iceGrid", iceGrid)
+       call MPAS_pool_get_array(biogeochemistry, "verticalGrid", verticalGrid)
        call MPAS_pool_get_array(biogeochemistry, "bioDiffusivity",bioDiffusivity)
        call MPAS_pool_get_array(biogeochemistry, "bioPermeability",bioPermeability)
        call MPAS_pool_get_array(biogeochemistry, "bioShortwaveFlux",bioShortwaveFlux)
        call MPAS_pool_get_array(biogeochemistry, "darcyVelocityBio",darcyVelocityBio)
-       call MPAS_pool_get_array(biogeochemistry, "SnowIceBioFluxes",SnowIceBioFluxes)
+       call MPAS_pool_get_array(biogeochemistry, "snowIceBioFluxes",snowIceBioFluxes)
        call MPAS_pool_get_array(biogeochemistry, "atmosIceBioFluxes",atmosIceBioFluxes)
        call MPAS_pool_get_array(biogeochemistry, "oceanBioConcentrations",oceanBioConcentrations)
        call MPAS_pool_get_array(biogeochemistry, "totalverticalBiologyIce",totalverticalBiologyIce)
@@ -2855,19 +2869,23 @@ contains
        allocate(oceanBioConcentrationsUsed(ciceTracerObject % nBioTracers))
        allocate(TracerArray(ciceTracerObject % nTracers,nCategories))
 
+       getPhysicsTracers = .false.
+
        do iCell = 1, nCellsSolve
 
           ! newly formed ice
           do iCategory = 1, nCategories
              newlyFormedIceLogical(iCategory) = (newlyFormedIce(iCategory,iCell) == 1)
-             do iBioTracers = 1, ciceTracerObject % nTracers
-                  TracerArray(iBioTracers, iCategory) = ciceTracerObject % tracerArrayCategory(iBioTracers,iCategory)
+             do iTracers = 1, ciceTracerObject % nTracers
+                  TracerArray(iTracers, iCategory) = ciceTracerObject % tracerArrayCategory(iTracers,iCategory)
              enddo
           enddo ! iCategory
-          RayleighCriteria = (RayleighCriteriaReal(iCell) > 0.5_RKIND)
+          rayleighCriteria = (rayleighCriteriaReal(iCell) > 0.5_RKIND)
 
+          ! read required ocean concentrations fields into allocated array 
           do iBioTracers = 1, ciceTracerObject % nBioTracers
-                oceanBioConcentrationsUsed(iBioTracers) = oceanBioConcentrations(ciceTracerObject % index_LayerIndexToDataArray(iBioTracers), iCell)
+                iBioData = ciceTracerObject % index_LayerIndexToDataArray(iBioTracers)
+                oceanBioConcentrationsUsed(iBioTracers) = oceanBioConcentrations(iBioData, iCell)
           enddo ! iBioTracers           
 
           abortFlag = .false.
@@ -2889,24 +2907,24 @@ contains
                brineBottomChange(:,iCell), &
                brineTopChange(:,iCell), &
                verticalNitrogenLosses(:,:,iCell), &
-               SnowIceBioFluxes(:,iCell), &
+               snowIceBioFluxes(:,iCell), &
                atmosIceBioFluxes(:,iCell), &
                oceanBioConcentrations(:,iCell), &
-               newlyFormedIceLogical, &
+               newlyFormedIceLogical(:), &
                shortwaveLayerPenetration(:,:,iCell), &
                bioPorosity(:,:,iCell), &
                bioTemperature(:,:,iCell), &
                totalverticalBiologyIce(:,iCell), &
                totalverticalBiologySnow(:,iCell), &
                penetratingShortwaveFlux(:,iCell), &
-               RayleighCriteria, &
+               rayleighCriteria, &
                zSalinityIceDensity(:,iCell), &
                zSalinityFlux(iCell), &
                zSalinityGDFlux(iCell), &
                biologyGrid, &
                interfaceBiologyGrid, &
                interfaceGrid, &
-               iceGrid, &
+               verticalGrid, &
                nBioLayers, &
                nIceLayers, &
                nSnowLayers, &
@@ -2937,9 +2955,11 @@ contains
                iceAreaCategory(1,:,iCell), &
                iceVolumeCategory(1,:,iCell), &
                snowVolumeCategory(1,:,iCell), &
-               TracerArray(:,:), &
+               ciceTracerObject % tracerArrayCategory(:,:), &
+              ! TracerArray(:,:), &
                snowVolumeCategoryInitial(:,iCell), &
                config_use_skeletal_biochemistry, &
+               maxAlgae, nZBGCTracers, &
                abortFlag, &
                abortMessage)
 
@@ -2954,21 +2974,25 @@ contains
           totalskeletalAlgae(iCell) = 0.0_RKIND
 
           do iCategory = 1, nCategories
-             do iBioTracers = 1, ciceTracerObject % nTracers
-                 ciceTracerObject % tracerArrayCategory(iBioTracers,iCategory) =  TracerArray(iBioTracers, iCategory) 
-             enddo
+            ! do iTracers = 1, ciceTracerObject % nTracers
+            !     ciceTracerObject % tracerArrayCategory(iTracers,iCategory) =  TracerArray(iTracers, iCategory) 
+           !  enddo
              if (config_use_skeletal_biochemistry .and. iceAreaCategory(1,iCategory,iCell) > puny) then
-                totalskeletalAlgae(iCell) = totalskeletalAlgae(iCell) + &
-                   ciceTracerObject % tracerArrayCategory(ciceTracerObject % index_algae(iAlgae), iCategory) *&
-                   iceAreaCategory(1,iCategory,iCell)
+               do iAlgae = 1, nAlgae
+                   totalskeletalAlgae(iCell) = totalskeletalAlgae(iCell) + &
+                      ciceTracerObject % tracerArrayCategory(ciceTracerObject % index_algae(iAlgae), iCategory) *&
+                      iceAreaCategory(1,iCategory,iCell)
+               enddo
              endif
              newlyFormedIce(iCategory,iCell) = 0
              if (newlyFormedIceLogical(iCategory)) newlyFormedIce(iCategory,iCell) = 1
           enddo ! iCategory
 
-          if (.not. RayleighCriteria) RayleighCriteriaReal(iCell) =   0.0_RKIND
+          if (.not. rayleighCriteria) rayleighCriteriaReal(iCell) =   0.0_RKIND
 
-          call get_cice_biogeochemistry_array_category(block, ciceTracerObject, iCell)
+          call get_cice_tracer_array_category(block, ciceTracerObject, iCell, getPhysicsTracers, &
+               config_use_column_biogeochemistry)
+
        enddo ! iCell
 
        deallocate(newlyFormedIceLogical)
@@ -3323,6 +3347,9 @@ contains
          nCellsSolve, &
          nCategories
 
+    logical :: &
+         getPhysicsTracers
+
     block => domain % blocklist
     do while (associated(block))
 
@@ -3345,6 +3372,8 @@ contains
        call MPAS_pool_get_array(tracers_aggregate, "snowVolumeCell", snowVolumeCell)
 
        call MPAS_pool_get_array(icestate, "openWaterArea", openWaterArea)
+
+       getPhysicsTracers = .true.
 
        do iCell = 1, nCellsSolve
 
@@ -3369,10 +3398,8 @@ contains
                ciceTracerObject % ancestorIndices) ! nt_strata
 
           ! set the cell tracer array
-          call get_cice_tracer_array_cell(block, ciceTracerObject, iCell)
-          
-          if (config_use_column_biogeochemistry) &
-          call get_cice_biogeochemistry_array_cell(block, ciceTracerObject, iCell)
+          call get_cice_tracer_array_cell(block, ciceTracerObject, iCell,getPhysicsTracers, &
+              config_use_column_biogeochemistry)
 
        enddo ! iCell
 
@@ -3994,14 +4021,16 @@ contains
          tracerObject
 
     integer, pointer :: &
-         nCategories
+         nCategories, &
+         nZBGCTracers
 
     ! local
 
     integer :: &
-        nBioTracers
+        nTracers_temp
 
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nCategories", nCategories)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nZBGCTracers", nZBGCTracers)
 
     ! get the number of CICE tracers in trcrn 
     call init_column_tracer_object_tracer_number(domain, tracerObject)
@@ -4031,13 +4060,22 @@ contains
     call init_column_tracer_object_ancestor_indices(domain, tracerObject)
     
 !nj-bgc+
-    nBioTracers = max(1,tracerObject % nTracers - tracerObject % nTracersNotBio)
-    allocate(tracerObject % index_LayerIndexToDataArray(nBioTracers))
-    allocate(tracerObject % index_LayerIndexToBioIndex(nBioTracers))
-    tracerObject % nTracers = tracerObject % nTracersNotBio
 
-    ! set all indices for biogeochemistry
+    allocate(tracerObject % index_LayerIndexToDataArray(nZBGCTracers))
+    allocate(tracerObject % index_LayerIndexToBioIndex(nZBGCTracers))
+
+    nTracers_temp = tracerObject % nTracers
+    tracerObject % nTracers = tracerObject % nTracersNotBio
+    
+    ! set all indices for biogeochemistry including parent, ancestor and ancestor mask
     call init_column_tracer_object_for_biogeochemistry(domain, tracerObject)
+
+    if (nTracers_temp /= tracerObject % nTracers) then
+          COLUMN_ERROR_WRITE("init_column_tracer_object Error: nTracers_temp, nTracers")
+          WRITE (stdoutUnit, *) nTracers_temp
+          WRITE (stdoutUnit, *) tracerObject % nTracers
+          call MPAS_dmpar_global_abort("tracer number error") 
+    endif
 !nj_bgc-
 
   end subroutine init_column_tracer_object
@@ -4106,7 +4144,8 @@ contains
 !nj-bgc-
  integer :: &
          iLayers, &
-         iBioTracers
+         iBioTracers, &
+         nMobileTracers
 
     call MPAS_pool_get_config(domain % configs, "config_use_ice_age", config_use_ice_age)
     call MPAS_pool_get_config(domain % configs, "config_use_first_year_ice", config_use_first_year_ice)
@@ -4143,6 +4182,7 @@ contains
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nBioLayersP3", nBioLayersP3)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nAlgae", nAlgae)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nDOC", nDOC)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nDIC", nDIC)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nDON", nDON)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nParticulateIron", nParticulateIron)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nDissolvedIron", nDissolvedIron)
@@ -4199,106 +4239,111 @@ contains
     ! vertical zSalinity
     if (config_use_vertical_zsalinity) then
          tracerObject % nTracers = tracerObject % nTracers + nBioLayers
-         tracerObject % nBioTracersLayer = 1
+         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1
     endif
+    nMobileTracers = 0
 
     ! Skeletal Biogeochemistry
     if (config_use_skeletal_biochemistry) then
          iLayers = 1
+         iBioTracers = 0
 
     ! Vertical Biogeochemistry
     elseif (config_use_vertical_tracers) then
          iLayers = nBioLayersP3
+         iBioTracers = 1
     endif
-
-    iBioTracers = 0
 
     ! Algal nitrogen
      if (config_use_vertical_biochemistry .or. config_use_skeletal_biochemistry) then
          tracerObject % nTracers = tracerObject % nTracers + iLayers*nAlgae 
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + nAlgae
-         iBioTracers = iBioTracers + iLayers*nAlgae 
+         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + nAlgae * iBioTracers
+         nMobileTracers = nMobileTracers + nAlgae
      endif
     
     ! nitrate
      if (config_use_nitrate) then
          TracerObject % nTracers = tracerObject % nTracers + iLayers
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1
-         iBioTracers = iBioTracers + iLayers 
+         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1 * iBioTracers
+         nMobileTracers = nMobileTracers + 1
      endif
 
     ! carbon 
      if (config_use_carbon) then
          TracerObject % nTracers = tracerObject % nTracers + iLayers * nDOC &
                                  + iLayers * nDIC
-         iBioTracers = iBioTracers + iLayers*nDOC + iLayers * nDIC
+         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + (nDOC + nDIC) * iBioTracers
+         nMobileTracers = nMobileTracers + nDIC + nDOC
      endif
     ! Algal chorophyll
      if (config_use_chlorophyll) then
          TracerObject % nTracers = tracerObject % nTracers + iLayers*nAlgae
-         iBioTracers = iBioTracers + iLayers*nAlgae
+         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + nAlgae * iBioTracers
+         nMobileTracers = nMobileTracers + nAlgae
      endif
 
     ! ammonium
      if (config_use_ammonium) then
          TracerObject % nTracers = tracerObject % nTracers + iLayers
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1
-         iBioTracers = iBioTracers + iLayers
+         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1 * iBioTracers
+         nMobileTracers = nMobileTracers + 1
      endif
 
     ! silicate
      if (config_use_silicate) then
          TracerObject % nTracers = tracerObject % nTracers + iLayers
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1
-         iBioTracers = iBioTracers + iLayers
+         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1 * iBioTracers
+         nMobileTracers = nMobileTracers + 1
      endif
 
     ! DMS     
      if (config_use_DMS) then
          TracerObject % nTracers = tracerObject % nTracers + iLayers * 3
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 3
-         iBioTracers = iBioTracers + iLayers
+         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 3  * iBioTracers
+         nMobileTracers = nMobileTracers + 3
      endif
 
     ! nonreactive mobile tracer
      if (config_use_nonreactive) then
          TracerObject % nTracers = tracerObject % nTracers + iLayers
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1
-         iBioTracers = iBioTracers + iLayers
+         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1  * iBioTracers
+         nMobileTracers = nMobileTracers + 1
      endif
 
     ! DON
      if (config_use_DON) then
          TracerObject % nTracers = tracerObject % nTracers + iLayers * nDON
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + nDON
-         iBioTracers = iBioTracers + iLayers
+         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + nDON  * iBioTracers
+         nMobileTracers = nMobileTracers + nDON
      endif
 
     ! iron
      if (config_use_iron) then
          TracerObject % nTracers = tracerObject % nTracers + iLayers * nParticulateIron &
                                  + iLayers * nDissolvedIron
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + nParticulateIron
-         iBioTracers = iBioTracers + iLayers
+         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + &
+                                  (nParticulateIron + nDissolvedIron)  * iBioTracers
+         nMobileTracers = nMobileTracers + nParticulateIron + nDissolvedIron
      endif
 
     ! humic material
      if (config_use_humics) then
          TracerObject % nTracers = tracerObject % nTracers + iLayers
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1
-         iBioTracers = iBioTracers + iLayers
+         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1  * iBioTracers
+         nMobileTracers = nMobileTracers + 1
      endif
 
     ! zAerosols
      if (config_use_zaerosols) then
          TracerObject % nTracers = tracerObject % nTracers + iLayers * nzAerosols
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + nzAerosols
-         iBioTracers = iBioTracers + iLayers
+         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + nzAerosols * iBioTracers
+         nMobileTracers = nMobileTracers + nzAerosols
      endif
     
      ! mobile fraction of vertical tracers
      if (config_use_vertical_tracers) & 
-         TracerObject % nTracers = tracerObject % nTracers + nBioLayers
+         TracerObject % nTracers = tracerObject % nTracers + nMobileTracers
+
 !nj-bgc-       
 
   end subroutine init_column_tracer_object_tracer_number
@@ -4835,7 +4880,82 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine get_cice_tracer_array_category(block, tracerObject, iCell)
+  subroutine get_cice_tracer_array_category(block, tracerObject, iCell, getPhysicsTracers, getGBCTRacers)
+
+    type(block_type), intent(inout) :: &
+         block
+
+    type(ciceTracerObjectType), intent(in) :: &
+         tracerObject
+
+    integer, intent(in) :: &
+         iCell
+
+    logical, intent(in) :: &
+         getPhysicsTracers, &
+         getGBCTRacers
+
+    ! get physics tracers
+    if (getPhysicsTracers) &
+         call get_cice_physics_tracer_array_category(block, tracerObject, iCell)
+
+    ! get BGC tracers
+    if (getGBCTRacers) &
+         call get_cice_biogeochemistry_tracer_array_category(block, tracerObject, iCell)
+
+  end subroutine get_cice_tracer_array_category
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  get_cice_tracer_array_cell
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 4th Feburary 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine get_cice_tracer_array_cell(block, tracerObject, iCell, getPhysicsTracers, getGBCTRacers)
+
+    type(block_type), intent(inout) :: &
+         block
+
+    type(ciceTracerObjectType), intent(in) :: &
+         tracerObject
+
+    integer, intent(in) :: &
+         iCell
+
+    logical, intent(in) :: &
+         getPhysicsTracers, &
+         getGBCTRacers
+
+    ! get physics tracers
+    if (getPhysicsTracers) &
+         call get_cice_physics_tracer_array_cell(block, tracerObject, iCell)
+
+    ! get BGC tracers
+    if (getGBCTRacers) &
+         call get_cice_biogeochemistry_tracer_array_cell(block, tracerObject, iCell)
+
+  end subroutine get_cice_tracer_array_cell
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  get_cice_physics_tracer_array_category
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 4th Feburary 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine get_cice_physics_tracer_array_category(block, tracerObject, iCell)
+    
 
     type(block_type), intent(inout) :: &
          block
@@ -4979,8 +5099,7 @@ contains
        enddo ! iAerosol
     endif
 
-
-  end subroutine get_cice_tracer_array_category
+  end subroutine get_cice_physics_tracer_array_category
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -5145,7 +5264,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  get_cice_tracer_array_cell
+!  get_cice_physics_tracer_array_cell
 !
 !> \brief 
 !> \author Adrian K. Turner, LANL
@@ -5155,7 +5274,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine get_cice_tracer_array_cell(block, tracerObject, iCell)
+  subroutine get_cice_physics_tracer_array_cell(block, tracerObject, iCell)
 
     type(block_type), intent(inout) :: &
          block
@@ -5302,7 +5421,7 @@ contains
     endif
 
 
-  end subroutine get_cice_tracer_array_cell
+  end subroutine get_cice_physics_tracer_array_cell
 
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -5317,7 +5436,7 @@ contains
 !
 !-----------------------------------------------------------------------
   
-  subroutine set_cice_biogeochemistry_array_category(block, tracerObject, iCell)
+  subroutine set_cice_biogeochemistry_tracer_array_category(block, tracerObject, iCell)
 
     type(block_type), intent(in) :: &
          block
@@ -5460,42 +5579,64 @@ contains
     call MPAS_pool_get_array(tracers, "mobileFraction", mobileFraction, 1)
 
     ! biogeochemistry
+
+    ! brine height fraction
     if (config_use_brine) &
-         tracerObject % tracerArrayCategory(tracerObject % index_hbrine, :) = brinefraction(1,:,iCell)
+         tracerObject % tracerArrayCategory(tracerObject % index_hbrine,:) = brinefraction(1,:,iCell)
 
     if (config_use_skeletal_biochemistry) then
 
+        ! algal nitrogen
         do iBioTracers = 1, nAlgae
           tracerObject % tracerArrayCategory(tracerObject % index_algae(iBioTracers),:) = skeletalAlgaeConc(iBioTracers,:,iCell)
         enddo
+
+        ! nitrate
         if (config_use_nitrate) &
-          tracerObject % tracerArrayCategory(tracerObject % index_nitrate, :) = skeletalNitrateConc(1,:,iCell)
+          tracerObject % tracerArrayCategory(tracerObject % index_nitrate,:) = skeletalNitrateConc(1,:,iCell)
+
+        ! DOC
         if (config_use_carbon) then
           do iBioTracers = 1, nDOC
             tracerObject % tracerArrayCategory(tracerObject % index_DOC(iBioTracers),:) = skeletalDOCConc(iBioTracers,:,iCell)
           enddo
+
+        ! DIC
           do iBioTracers = 1, nDIC
             tracerObject % tracerArrayCategory(tracerObject % index_DIC(iBioTracers),:) = skeletalDICConc(iBioTracers,:,iCell)
           enddo
         endif
+
+        ! DON
         if (config_use_DON) then
           do iBioTracers = 1, nDON
             tracerObject % tracerArrayCategory(tracerObject % index_DON(iBioTracers),:) = skeletalDONConc(iBioTracers,:,iCell)
           enddo
         endif
+
+        ! ammonium
         if (config_use_ammonium) &
-          tracerObject % tracerArrayCategory(tracerObject % index_ammonium, :) = skeletalAmmoniumConc(1,:,iCell)
+          tracerObject % tracerArrayCategory(tracerObject % index_ammonium,:) = skeletalAmmoniumConc(1,:,iCell)
+
+        ! silicate
         if (config_use_silicate) &
-          tracerObject % tracerArrayCategory(tracerObject % index_silicate, :) = skeletalSilicateConc(1,:,iCell)
+          tracerObject % tracerArrayCategory(tracerObject % index_silicate,:) = skeletalSilicateConc(1,:,iCell)
+
+        ! DMS, DMSPp, DMSPd
         if (config_use_DMS) then
-          tracerObject % tracerArrayCategory(tracerObject % index_DMS, :) = skeletalDMSConc(1,:,iCell)
-          tracerObject % tracerArrayCategory(tracerObject % index_DMSPp, :) = skeletalDMSPpConc(1,:,iCell)
-          tracerObject % tracerArrayCategory(tracerObject % index_DMSPd, :) = skeletalDMSPdConc(1,:,iCell)
+          tracerObject % tracerArrayCategory(tracerObject % index_DMS,:) = skeletalDMSConc(1,:,iCell)
+          tracerObject % tracerArrayCategory(tracerObject % index_DMSPp,:) = skeletalDMSPpConc(1,:,iCell)
+          tracerObject % tracerArrayCategory(tracerObject % index_DMSPd,:) = skeletalDMSPdConc(1,:,iCell)
         endif
+
+        ! nonreactive mobile tracer
         if (config_use_nonreactive) &
-          tracerObject % tracerArrayCategory(tracerObject % index_nonreactive, :) = skeletalNonreactiveConc(1,:,iCell)
+          tracerObject % tracerArrayCategory(tracerObject % index_nonreactive,:) = skeletalNonreactiveConc(1,:,iCell)
+        ! humic material
         if (config_use_humics) &
-          tracerObject % tracerArrayCategory(tracerObject % index_humics, :) = skeletalHumicsConc(1,:,iCell)
+          tracerObject % tracerArrayCategory(tracerObject % index_humics,:) = skeletalHumicsConc(1,:,iCell)
+
+        ! Particulate and dissovled Iron
         if (config_use_iron) then
           do iBioTracers = 1, nParticulateIron
             tracerObject % tracerArrayCategory(tracerObject % index_particulateIron(iBioTracers),:) = skeletalPartIronConc(iBioTracers,:,iCell)
@@ -5507,10 +5648,12 @@ contains
 
     elseif (config_use_vertical_tracers) then
 
+        ! Fraction of biogeochemical tracer in the mobile phase
         do iLayers = 1, tracerObject % nBioTracers
             tracerObject % tracerArrayCategory(tracerObject % index_mobilePhaseFrac+iLayers-1,:) = mobileFraction(iLayers,:,iCell)
         enddo
 
+        ! algal nitrogen
         if (config_use_vertical_biochemistry) then
            iBioCount = 0
            do iBioTracers = 1, nAlgae
@@ -5520,11 +5663,15 @@ contains
              enddo
            enddo
         endif
+
+        ! nitrate
         if (config_use_nitrate) then
           do iLayers = 1, nBioLayersP3
-             tracerObject % tracerArrayCategory(tracerObject % index_nitrate + iLayers-1, :) = verticalNitrateConc(iLayers,:,iCell)
+             tracerObject % tracerArrayCategory(tracerObject % index_nitrate + iLayers-1,:) = verticalNitrateConc(iLayers,:,iCell)
           enddo
         endif
+ 
+        ! DOC
         if (config_use_carbon) then
           iBioCount = 0
           do iBioTracers = 1, nDOC
@@ -5534,6 +5681,8 @@ contains
              enddo
           enddo
           iBioCount = 0
+
+        ! DIC
           do iBioTracers = 1, nDIC
              do iLayers = 1,nBioLayersP3
                iBioCount = iBioCount + 1
@@ -5541,6 +5690,8 @@ contains
              enddo
           enddo
         endif
+
+        ! DON
         if (config_use_DON) then
           iBioCount = 0
           do iBioTracers = 1, nDON
@@ -5550,33 +5701,45 @@ contains
              enddo
           enddo
         endif
+
+        ! ammonium
         if (config_use_ammonium) then
           do iLayers = 1, nBioLayersP3
-             tracerObject % tracerArrayCategory(tracerObject % index_ammonium + iLayers-1, :) = verticalAmmoniumConc(iLayers,:,iCell)
+             tracerObject % tracerArrayCategory(tracerObject % index_ammonium + iLayers-1,:) = verticalAmmoniumConc(iLayers,:,iCell)
           enddo
         endif
+
+        ! silicate
         if (config_use_silicate) then
           do iLayers = 1, nBioLayersP3
-             tracerObject % tracerArrayCategory(tracerObject % index_silicate+iLayers-1, :) = verticalSilicateConc(iLayers,:,iCell)
+             tracerObject % tracerArrayCategory(tracerObject % index_silicate+iLayers-1,:) = verticalSilicateConc(iLayers,:,iCell)
           enddo
         endif
+
+        ! DMS, DMSPp, DMSPd
         if (config_use_DMS) then
           do iLayers = 1, nBioLayersP3
-             tracerObject % tracerArrayCategory(tracerObject % index_DMS+iLayers-1, :) = verticalDMSConc(iLayers,:,iCell)
-             tracerObject % tracerArrayCategory(tracerObject % index_DMSPp+iLayers-1, :) = verticalDMSPpConc(iLayers,:,iCell)
-             tracerObject % tracerArrayCategory(tracerObject % index_DMSPd+iLayers-1, :) = verticalDMSPdConc(iLayers,:,iCell)
+             tracerObject % tracerArrayCategory(tracerObject % index_DMS+iLayers-1,:) = verticalDMSConc(iLayers,:,iCell)
+             tracerObject % tracerArrayCategory(tracerObject % index_DMSPp+iLayers-1,:) = verticalDMSPpConc(iLayers,:,iCell)
+             tracerObject % tracerArrayCategory(tracerObject % index_DMSPd+iLayers-1,:) = verticalDMSPdConc(iLayers,:,iCell)
           enddo
         endif
+
+        ! nonreactive purely mobile tracers
         if (config_use_nonreactive) then
           do iLayers = 1, nBioLayersP3
-             tracerObject % tracerArrayCategory(tracerObject % index_nonreactive+iLayers-1, :) = verticalNonreactiveConc(iLayers,:,iCell)
+             tracerObject % tracerArrayCategory(tracerObject % index_nonreactive+iLayers-1,:) = verticalNonreactiveConc(iLayers,:,iCell)
           enddo
         endif
+
+        ! humic material
         if (config_use_humics) then
           do iLayers = 1, nBioLayersP3
-             tracerObject % tracerArrayCategory(tracerObject % index_humics+iLayers-1, :) = verticalHumicsConc(iLayers,:,iCell)
+             tracerObject % tracerArrayCategory(tracerObject % index_humics+iLayers-1,:) = verticalHumicsConc(iLayers,:,iCell)
           enddo
         endif
+
+        ! particulate and dissolved Iron
         if (config_use_iron) then
           iBioCount = 0
           do iBioTracers = 1, nParticulateIron
@@ -5594,6 +5757,7 @@ contains
           enddo
         endif
 
+        ! black carbon and dust aerosols
         if (config_use_zaerosols) then
           iBioCount = 0
           do iBioTracers = 1, nzAerosols
@@ -5604,6 +5768,7 @@ contains
           enddo
         endif
 
+        ! salinity used with BL99 thermodynamics
         if (config_use_vertical_zsalinity) then
           do iLayers = 1, nBioLayers
             tracerObject % tracerArrayCategory(tracerObject % index_zSalinity+iLayers-1,:) = verticalSalinity(iLayers,:,iCell)
@@ -5611,7 +5776,7 @@ contains
         endif
     endif 
  
-  end subroutine set_cice_biogeochemistry_array_category
+  end subroutine set_cice_biogeochemistry_tracer_array_category
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -5625,7 +5790,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine get_cice_biogeochemistry_array_category(block, tracerObject, iCell)
+  subroutine get_cice_biogeochemistry_tracer_array_category(block, tracerObject, iCell)
 
     type(block_type), intent(inout) :: &
          block
@@ -5768,46 +5933,69 @@ contains
     call MPAS_pool_get_array(tracers, "mobileFraction", mobileFraction, 1)
 
     ! biogeochemistry
+    ! brine height fraction 
     if (config_use_brine) &
-        brinefraction(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_hbrine, :) 
+        brinefraction(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_hbrine,:) 
 
     if (config_use_skeletal_biochemistry) then
 
+        ! algal nitrogen
         do iBioTracers = 1, nAlgae
             skeletalAlgaeConc(iBioTracers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_algae(iBioTracers),:)
         enddo
+
+        ! nitrate
         if (config_use_nitrate) &
-          skeletalNitrateConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_nitrate, :) 
+          skeletalNitrateConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_nitrate,:) 
+
         if (config_use_carbon) then
+
+          ! DOC
           do iBioTracers = 1, nDOC
              skeletalDOCConc(iBioTracers,:,iCell) =  tracerObject % tracerArrayCategory(tracerObject % index_DOC(iBioTracers),:)
           enddo
+
+          ! DIC
           do iBioTracers = 1, nDIC
              skeletalDOCConc(iBioTracers,:,iCell) =  tracerObject % tracerArrayCategory(tracerObject % index_DIC(iBioTracers),:)
           enddo
         endif
+
+        ! DON
         if (config_use_DON) then
           do iBioTracers = 1, nDON
             skeletalDONConc(iBioTracers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DON(iBioTracers),:) 
           enddo
         endif
+
+        ! ammonium
         if (config_use_ammonium) &
-          skeletalAmmoniumConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_ammonium, :) 
+          skeletalAmmoniumConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_ammonium,:) 
+        ! silicate
         if (config_use_silicate) &
-          skeletalSilicateConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_silicate, :) 
+          skeletalSilicateConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_silicate,:) 
+        ! DNS, DMSPp, DMSPd
         if (config_use_DMS) then
-          skeletalDMSConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DMS, :) 
-          skeletalDMSPpConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DMSPp, :) 
-          skeletalDMSPdConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DMSPd, :)
+          skeletalDMSConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DMS,:) 
+          skeletalDMSPpConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DMSPp,:) 
+          skeletalDMSPdConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DMSPd,:)
         endif
+
+        ! nonreactive tracer 
         if (config_use_nonreactive) &
-          skeletalNonreactiveConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_nonreactive, :)
+          skeletalNonreactiveConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_nonreactive,:)
+        ! humic material
         if (config_use_humics) &
-          skeletalHumicsConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_humics, :) 
+          skeletalHumicsConc(1,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_humics,:) 
+
         if (config_use_iron) then
+          
+          ! Particulate Iron
           do iBioTracers = 1, nParticulateIron
             skeletalPartIronConc(iBioTracers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_particulateIron(iBioTracers),:)  
           enddo
+
+          ! Dissolved Iron
           do iBioTracers = 1, nDissolvedIron
             skeletalDisIronConc(iBioTracers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_dissolvedIron(iBioTracers),:) 
           enddo
@@ -5815,12 +6003,15 @@ contains
 
     elseif (config_use_vertical_tracers) then
 
+        ! fraction of biogeochemical tracer in the mobile phase
         do iLayers = 1, tracerObject % nBioTracers
             mobileFraction(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_mobilePhaseFrac+iLayers-1,:) 
         enddo
 
         if (config_use_vertical_biochemistry) then
            iBioCount = 0
+
+           ! algal nitrogen
            do iBioTracers = 1, nAlgae
              do iLayers = 1,nBioLayersP3
                iBiocount = iBiocount + 1
@@ -5828,13 +6019,18 @@ contains
              enddo
            enddo
         endif
+
+        ! nitrate
         if (config_use_nitrate) then
           do iLayers = 1, nBioLayersP3
-             verticalNitrateConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_nitrate + iLayers-1, :)
+             verticalNitrateConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_nitrate + iLayers-1,:)
           enddo
         endif
+
         if (config_use_carbon) then
           iBioCount = 0
+
+          ! DOC
           do iBioTracers = 1, nDOC
              do iLayers = 1,nBioLayersP3
                iBioCount = iBioCount + 1
@@ -5842,6 +6038,8 @@ contains
              enddo
           enddo
           iBioCount = 0
+
+          ! DIC
           do iBioTracers = 1, nDIC
              do iLayers = 1,nBioLayersP3
                iBioCount = iBioCount + 1
@@ -5849,6 +6047,8 @@ contains
              enddo
           enddo
         endif
+
+        ! DON
         if (config_use_DON) then
           iBioCount = 0
           do iBioTracers = 1, nDON
@@ -5858,35 +6058,48 @@ contains
              enddo
           enddo
         endif
+
+        ! ammonium
         if (config_use_ammonium) then
           do iLayers = 1, nBioLayersP3
-             verticalAmmoniumConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_ammonium + iLayers-1, :) 
+             verticalAmmoniumConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_ammonium + iLayers-1,:) 
           enddo
         endif
+
+        ! silicate
         if (config_use_silicate) then
           do iLayers = 1, nBioLayersP3
-             verticalSilicateConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_silicate+iLayers-1, :) 
+             verticalSilicateConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_silicate+iLayers-1,:) 
           enddo
         endif
+
+        ! DMS, DMSPp, DMSPd
         if (config_use_DMS) then
           do iLayers = 1, nBioLayersP3
-             verticalDMSConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DMS+iLayers-1, :) 
-             verticalDMSPpConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DMSPp+iLayers-1, :) 
-             verticalDMSPdConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DMSPd+iLayers-1, :) 
+             verticalDMSConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DMS+iLayers-1,:) 
+             verticalDMSPpConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DMSPp+iLayers-1,:) 
+             verticalDMSPdConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_DMSPd+iLayers-1,:) 
           enddo
         endif
+
+        ! nonreactive tracer
         if (config_use_nonreactive) then
           do iLayers = 1, nBioLayersP3
-             verticalNonreactiveConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_nonreactive+iLayers-1, :) 
+             verticalNonreactiveConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_nonreactive+iLayers-1,:) 
           enddo
         endif
+
+        ! humic material
         if (config_use_humics) then
           do iLayers = 1, nBioLayersP3
-             verticalHumicsConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_humics+iLayers-1, :) 
+             verticalHumicsConc(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_humics+iLayers-1,:) 
           enddo
         endif
+
         if (config_use_iron) then
           iBioCount = 0
+
+          ! particulate iron
           do iBioTracers = 1, nParticulateIron
              do iLayers = 1,nBioLayersP3
                iBioCount = iBioCount + 1
@@ -5894,6 +6107,8 @@ contains
              enddo
           enddo
           iBioCount = 0
+
+          ! dissolved iron
           do iBioTracers = 1, nDissolvedIron
              do iLayers = 1,nBioLayersP3
                iBioCount = iBioCount + 1
@@ -5902,6 +6117,7 @@ contains
           enddo
         endif
 
+        ! black carbon and dust aerosols
         if (config_use_zaerosols) then
           iBioCount = 0
           do iBioTracers = 1, nzAerosols
@@ -5912,6 +6128,7 @@ contains
           enddo
         endif
 
+        ! salinity used with BL99 thermodynamics
         if (config_use_vertical_zsalinity) then
           do iLayers = 1, nBioLayers
             verticalSalinity(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_zSalinity+iLayers-1,:) 
@@ -5920,7 +6137,7 @@ contains
     endif 
  
 
-  end subroutine get_cice_biogeochemistry_array_category
+  end subroutine get_cice_biogeochemistry_tracer_array_category
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -5934,7 +6151,7 @@ contains
 !
 !-----------------------------------------------------------------------
   
-  subroutine set_cice_biogeochemistry_array_cell(block, tracerObject, iCell)
+  subroutine set_cice_biogeochemistry_tracer_array_cell(block, tracerObject, iCell)
 
     type(block_type), intent(in) :: &
          block
@@ -6077,55 +6294,82 @@ contains
     call MPAS_pool_get_array(tracers_aggregate, "brinefractionCell", brinefractionCell)
 
     ! biogeochemistry
+    ! brine height fraction
     if (config_use_brine) &
         tracerObject % tracerArrayCell(tracerObject % index_hbrine)  = brinefractionCell(iCell) 
 
     if (config_use_skeletal_biochemistry) then
 
+        ! algal nitrogen
         do iBioTracers = 1, nAlgae
             tracerObject % tracerArrayCell(tracerObject % index_algae(iBioTracers)) = skeletalAlgaeConcCell(iBioTracers,iCell)
         enddo
+
+        ! nitrate
         if (config_use_nitrate) &
           tracerObject % tracerArrayCell(tracerObject % index_nitrate)  = skeletalNitrateConcCell(1,iCell)
+
         if (config_use_carbon) then
+
+          ! DOC
           do iBioTracers = 1, nDOC
              tracerObject % tracerArrayCell(tracerObject % index_DOC(iBioTracers)) = skeletalDOCConcCell(iBioTracers,iCell) 
           enddo
+
+          ! DIC
           do iBioTracers = 1, nDIC
             tracerObject % tracerArrayCell(tracerObject % index_DIC(iBioTracers))  = skeletalDICConcCell(iBioTracers,iCell) 
           enddo
         endif
+
+        ! DON
         if (config_use_DON) then
           do iBioTracers = 1, nDON
             tracerObject % tracerArrayCell(tracerObject % index_DON(iBioTracers))  = skeletalDONConcCell(iBioTracers,iCell)
           enddo
         endif
+
+        ! ammonium
         if (config_use_ammonium) &
-          tracerObject % tracerArrayCell(tracerObject % index_ammonium)  = skeletalAmmoniumConcCell(1,iCell) 
+          tracerObject % tracerArrayCell(tracerObject % index_ammonium)  = skeletalAmmoniumConcCell(1,iCell)
+
+        ! silicate 
         if (config_use_silicate) &
           tracerObject % tracerArrayCell(tracerObject % index_silicate)  = skeletalSilicateConcCell(1,iCell) 
+
+        ! DMS, DMSPp, DMSPd
         if (config_use_DMS) then
           tracerObject % tracerArrayCell(tracerObject % index_DMS)  = skeletalDMSConcCell(1,iCell)
           tracerObject % tracerArrayCell(tracerObject % index_DMSPp) = skeletalDMSPpConcCell(1,iCell)
           tracerObject % tracerArrayCell(tracerObject % index_DMSPd) = skeletalDMSPdConcCell(1,iCell) 
         endif
+
+        ! nonreactive tracer
         if (config_use_nonreactive) &
           tracerObject % tracerArrayCell(tracerObject % index_nonreactive) = skeletalNonreactiveConcCell(1,iCell)
+        ! humic material
         if (config_use_humics) &
           tracerObject % tracerArrayCell(tracerObject % index_humics)  = skeletalHumicsConcCell(1,iCell)
+
         if (config_use_iron) then
+
+          ! particulate iron
           do iBioTracers = 1, nParticulateIron
             tracerObject % tracerArrayCell(tracerObject % index_particulateIron(iBioTracers))   = skeletalPartIronConcCell(iBioTracers,iCell) 
           enddo
+
+          ! dissolved iron
           do iBioTracers = 1, nDissolvedIron
             tracerObject % tracerArrayCell(tracerObject % index_dissolvedIron(iBioTracers))  = skeletalDisIronConcCell(iBioTracers,iCell) 
           enddo
         endif
 
     elseif (config_use_vertical_tracers) then
-
+           
         if (config_use_vertical_biochemistry) then
            iBioCount = 0
+
+           ! algal nitrogen
            do iBioTracers = 1, nAlgae
              do iLayers = 1,nBioLayersP3
                iBiocount = iBiocount + 1
@@ -6133,13 +6377,18 @@ contains
              enddo
            enddo
         endif
+
+        ! nitrate
         if (config_use_nitrate) then
           do iLayers = 1, nBioLayersP3
              tracerObject % tracerArrayCell(tracerObject % index_nitrate + iLayers-1) = verticalNitrateConcCell(iLayers,iCell) 
           enddo
         endif
+
         if (config_use_carbon) then
           iBioCount = 0
+
+          ! DOC
           do iBioTracers = 1, nDOC
              do iLayers = 1,nBioLayersP3
                iBioCount = iBioCount + 1
@@ -6147,6 +6396,8 @@ contains
              enddo
           enddo
           iBioCount = 0
+
+          ! DIC
           do iBioTracers = 1, nDIC
              do iLayers = 1,nBioLayersP3
                iBioCount = iBioCount + 1
@@ -6154,6 +6405,8 @@ contains
              enddo
           enddo
         endif
+
+        ! DON
         if (config_use_DON) then
           iBioCount = 0
           do iBioTracers = 1, nDON
@@ -6163,16 +6416,22 @@ contains
              enddo
           enddo
         endif
+
+        ! ammonium
         if (config_use_ammonium) then
           do iLayers = 1, nBioLayersP3
              tracerObject % tracerArrayCell(tracerObject % index_ammonium + iLayers-1)  = verticalAmmoniumConcCell(iLayers,iCell) 
           enddo
         endif
+
+        ! silicate
         if (config_use_silicate) then
           do iLayers = 1, nBioLayersP3
              tracerObject % tracerArrayCell(tracerObject % index_silicate+iLayers-1)  = verticalSilicateConcCell(iLayers,iCell) 
           enddo
         endif
+
+        ! DMS, DMSPp, DMSPd
         if (config_use_DMS) then
           do iLayers = 1, nBioLayersP3
              tracerObject % tracerArrayCell(tracerObject % index_DMS+iLayers-1)  = verticalDMSConcCell(iLayers,iCell)
@@ -6180,18 +6439,25 @@ contains
              tracerObject % tracerArrayCell(tracerObject % index_DMSPd+iLayers-1)  = verticalDMSPdConcCell(iLayers,iCell) 
           enddo
         endif
+
+        ! nonreactive
         if (config_use_nonreactive) then
           do iLayers = 1, nBioLayersP3
              tracerObject % tracerArrayCell(tracerObject % index_nonreactive+iLayers-1) =  verticalNonreactiveConcCell(iLayers,iCell)
           enddo
         endif
+
+        ! humic material
         if (config_use_humics) then
           do iLayers = 1, nBioLayersP3
              tracerObject % tracerArrayCell(tracerObject % index_humics+iLayers-1)  = verticalHumicsConcCell(iLayers,iCell)
           enddo
         endif
+
         if (config_use_iron) then
           iBioCount = 0
+
+          ! particulate iron
           do iBioTracers = 1, nParticulateIron
              do iLayers = 1,nBioLayersP3
                iBioCount = iBioCount + 1
@@ -6199,6 +6465,8 @@ contains
              enddo
           enddo
           iBioCount = 0
+
+          ! dissolved iron
           do iBioTracers = 1, nDissolvedIron
              do iLayers = 1,nBioLayersP3
                iBioCount = iBioCount + 1
@@ -6207,6 +6475,7 @@ contains
           enddo
         endif
 
+        ! black carbon and dust aerosols
         if (config_use_zaerosols) then
           iBioCount = 0
           do iBioTracers = 1, nzAerosols
@@ -6217,6 +6486,7 @@ contains
           enddo
         endif
 
+        ! salinity for use with BL99 thermodynamics
         if (config_use_vertical_zsalinity) then
           do iLayers = 1, nBioLayers
             tracerObject % tracerArrayCell(tracerObject % index_zSalinity+iLayers-1)  = verticalSalinityCell(iLayers,iCell) 
@@ -6224,11 +6494,11 @@ contains
         endif
     endif 
 
-  end subroutine set_cice_biogeochemistry_array_cell
+  end subroutine set_cice_biogeochemistry_tracer_array_cell
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  get_cice_biogeochemistry_array_cell
+!  get_cice_biogeochemistry_tracer_array_cell
 !
 !> \brief 
 !> \author Nicole Jeffery
@@ -6238,7 +6508,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine get_cice_biogeochemistry_array_cell(block, tracerObject, iCell)
+  subroutine get_cice_biogeochemistry_tracer_array_cell(block, tracerObject, iCell)
 
     type(block_type), intent(inout) :: &
          block
@@ -6381,46 +6651,71 @@ contains
     call MPAS_pool_get_array(tracers_aggregate, "brinefractionCell", brinefractionCell)
 
     ! biogeochemistry
+    ! brine height fraction
     if (config_use_brine) &
         brinefractionCell(iCell) = tracerObject % tracerArrayCell(tracerObject % index_hbrine) 
 
     if (config_use_skeletal_biochemistry) then
 
+        ! algal nitrogen
         do iBioTracers = 1, nAlgae
             skeletalAlgaeConcCell(iBioTracers,iCell) = tracerObject % tracerArrayCell(tracerObject % index_algae(iBioTracers))
         enddo
+
+        ! nitrate
         if (config_use_nitrate) &
           skeletalNitrateConcCell(1,iCell) = tracerObject % tracerArrayCell(tracerObject % index_nitrate) 
+
         if (config_use_carbon) then
+    
+          ! DOC
           do iBioTracers = 1, nDOC
              skeletalDOCConcCell(iBioTracers,iCell) =  tracerObject % tracerArrayCell(tracerObject % index_DOC(iBioTracers))
           enddo
+
+          ! DIC
           do iBioTracers = 1, nDIC
             skeletalDICConcCell(iBioTracers,iCell) = tracerObject % tracerArrayCell(tracerObject % index_DIC(iBioTracers)) 
           enddo
         endif
+ 
+        ! DON
         if (config_use_DON) then
           do iBioTracers = 1, nDON
             skeletalDONConcCell(iBioTracers,iCell) = tracerObject % tracerArrayCell(tracerObject % index_DON(iBioTracers)) 
           enddo
         endif
+
+        ! ammonium
         if (config_use_ammonium) &
           skeletalAmmoniumConcCell(1,iCell) = tracerObject % tracerArrayCell(tracerObject % index_ammonium) 
+
+        ! silicate
         if (config_use_silicate) &
           skeletalSilicateConcCell(1,iCell) = tracerObject % tracerArrayCell(tracerObject % index_silicate) 
+
+        ! DMS
         if (config_use_DMS) then
           skeletalDMSConcCell(1,iCell) = tracerObject % tracerArrayCell(tracerObject % index_DMS) 
           skeletalDMSPpConcCell(1,iCell) = tracerObject % tracerArrayCell(tracerObject % index_DMSPp) 
           skeletalDMSPdConcCell(1,iCell) = tracerObject % tracerArrayCell(tracerObject % index_DMSPd)
         endif
+
+        ! nonreactive tracer
         if (config_use_nonreactive) &
           skeletalNonreactiveConcCell(1,iCell) = tracerObject % tracerArrayCell(tracerObject % index_nonreactive)
+        ! humic material
         if (config_use_humics) &
           skeletalHumicsConcCell(1,iCell) = tracerObject % tracerArrayCell(tracerObject % index_humics) 
+
         if (config_use_iron) then
+
+          ! particulate iron
           do iBioTracers = 1, nParticulateIron
             skeletalPartIronConcCell(iBioTracers,iCell) = tracerObject % tracerArrayCell(tracerObject % index_particulateIron(iBioTracers))  
           enddo
+
+          ! dissolved iron
           do iBioTracers = 1, nDissolvedIron
             skeletalDisIronConcCell(iBioTracers,iCell) = tracerObject % tracerArrayCell(tracerObject % index_dissolvedIron(iBioTracers)) 
           enddo
@@ -6430,6 +6725,8 @@ contains
 
         if (config_use_vertical_biochemistry) then
            iBioCount = 0
+
+           ! algal nitrogen
            do iBioTracers = 1, nAlgae
              do iLayers = 1,nBioLayersP3
                iBiocount = iBiocount + 1
@@ -6437,13 +6734,18 @@ contains
              enddo
            enddo
         endif
+
+        ! nitrate
         if (config_use_nitrate) then
           do iLayers = 1, nBioLayersP3
              verticalNitrateConcCell(iLayers,iCell) = tracerObject % tracerArrayCell(tracerObject % index_nitrate + iLayers-1)
           enddo
         endif
+
         if (config_use_carbon) then
           iBioCount = 0
+
+          ! DOC
           do iBioTracers = 1, nDOC
              do iLayers = 1,nBioLayersP3
                iBioCount = iBioCount + 1
@@ -6451,6 +6753,8 @@ contains
              enddo
           enddo
           iBioCount = 0
+
+          ! DIC
           do iBioTracers = 1, nDIC
              do iLayers = 1,nBioLayersP3
                iBioCount = iBioCount + 1
@@ -6458,6 +6762,8 @@ contains
              enddo
           enddo
         endif
+
+        ! DON
         if (config_use_DON) then
           iBioCount = 0
           do iBioTracers = 1, nDON
@@ -6467,16 +6773,22 @@ contains
              enddo
           enddo
         endif
+
+        ! ammonium
         if (config_use_ammonium) then
           do iLayers = 1, nBioLayersP3
              verticalAmmoniumConcCell(iLayers,iCell) = tracerObject % tracerArrayCell(tracerObject % index_ammonium + iLayers-1) 
           enddo
         endif
+
+        ! silicate
         if (config_use_silicate) then
           do iLayers = 1, nBioLayersP3
              verticalSilicateConcCell(iLayers,iCell) = tracerObject % tracerArrayCell(tracerObject % index_silicate+iLayers-1) 
           enddo
         endif
+
+        ! DMS, DMSPp, DMSPd
         if (config_use_DMS) then
           do iLayers = 1, nBioLayersP3
              verticalDMSConcCell(iLayers,iCell) = tracerObject % tracerArrayCell(tracerObject % index_DMS+iLayers-1) 
@@ -6484,18 +6796,25 @@ contains
              verticalDMSPdConcCell(iLayers,iCell) = tracerObject % tracerArrayCell(tracerObject % index_DMSPd+iLayers-1) 
           enddo
         endif
+
+        ! nonreactive tracer
         if (config_use_nonreactive) then
           do iLayers = 1, nBioLayersP3
              verticalNonreactiveConcCell(iLayers,iCell) = tracerObject % tracerArrayCell(tracerObject % index_nonreactive+iLayers-1) 
           enddo
         endif
+
+        ! humic material
         if (config_use_humics) then
           do iLayers = 1, nBioLayersP3
              verticalHumicsConcCell(iLayers,iCell) = tracerObject % tracerArrayCell(tracerObject % index_humics+iLayers-1) 
           enddo
         endif
+
         if (config_use_iron) then
           iBioCount = 0
+
+          ! particulate iron   
           do iBioTracers = 1, nParticulateIron
              do iLayers = 1,nBioLayersP3
                iBioCount = iBioCount + 1
@@ -6503,6 +6822,8 @@ contains
              enddo
           enddo
           iBioCount = 0
+
+          ! dissolved iron
           do iBioTracers = 1, nDissolvedIron
              do iLayers = 1,nBioLayersP3
                iBioCount = iBioCount + 1
@@ -6511,6 +6832,7 @@ contains
           enddo
         endif
 
+        ! black carbon and dust aerosols
         if (config_use_zaerosols) then
           iBioCount = 0
           do iBioTracers = 1, nzAerosols
@@ -6521,6 +6843,7 @@ contains
           enddo
         endif
 
+        ! salinity for use with BL99 thermodynamics
         if (config_use_vertical_zsalinity) then
           do iLayers = 1, nBioLayers
             verticalSalinityCell(iLayers,iCell) = tracerObject % tracerArrayCell(tracerObject % index_zSalinity+iLayers-1) 
@@ -6529,7 +6852,7 @@ contains
     endif 
  
 
-  end subroutine get_cice_biogeochemistry_array_cell
+  end subroutine get_cice_biogeochemistry_tracer_array_cell
 
 !-----------------------------------------------------------------------
 ! Init CICE parameters
@@ -7079,24 +7402,24 @@ contains
     !     nt_ipnd, & ! melt pond refrozen lid thickness
     !     nt_aero, & ! starting index for aerosols in ice
     !     nt_fbri,      & ! volume fraction of ice with dynamic salt (hinS/vicen*aicen)
-    !     nt_bgc_Nit,   & ! nutrients  
+    !     nt_bgc_Nit, & ! nutrients  
     !     nt_bgc_Am,    & ! 
-    !     nt_bgc_Sil,   & !
+    !     nt_bgc_Sil, & !
     !     nt_bgc_DMSPp, & ! trace gases (skeletal layer)
     !     nt_bgc_DMSPd, & ! 
-    !     nt_bgc_DMS,   & ! 
-    !     nt_bgc_PON,   & ! zooplankton and detritus 
-    !     nt_bgc_hum,   & ! humic material 
+    !     nt_bgc_DMS, & ! 
+    !     nt_bgc_PON, & ! zooplankton and detritus 
+    !     nt_bgc_hum, & ! humic material 
     !                     ! bio layer indicess
-    !     nlt_bgc_Nit,  & ! nutrients  
-    !     nlt_bgc_Am,   & ! 
-    !     nlt_bgc_Sil,  & !
+    !     nlt_bgc_Nit, & ! nutrients  
+    !     nlt_bgc_Am, & ! 
+    !     nlt_bgc_Sil, & !
     !     nlt_bgc_DMSPp,& ! trace gases (skeletal layer)
     !     nlt_bgc_DMSPd,& ! 
-    !     nlt_bgc_DMS,  & ! 
-    !     nlt_bgc_PON,  & ! zooplankton and detritus 
-    !     nlt_bgc_hum,  & ! humic material 
-    !     nlt_chl_sw,   & ! points to total chla in trcrn_sw
+    !     nlt_bgc_DMS, & ! 
+    !     nlt_bgc_PON, & ! zooplankton and detritus 
+    !     nlt_bgc_hum, & ! humic material 
+    !     nlt_chl_sw, & ! points to total chla in trcrn_sw
     !     nt_zbgc_frac, & ! fraction of tracer in the mobile phase
     !     nt_bgc_S        ! Bulk salinity in fraction ice with dynamic salinity (Bio grid)
     !     nt_bgc_N , & ! diatoms, phaeocystis, pico/small   
@@ -7105,9 +7428,9 @@ contains
     !     nlt_bgc_N ,& ! diatoms, phaeocystis, pico/small   
     !     nlt_bgc_C ,& ! diatoms, phaeocystis, pico/small   
     !     nlt_bgc_chl   ! diatoms, phaeocystis, pico/small   
-    !     nt_bgc_DOC,   & !  dissolved organic carbon  
+    !     nt_bgc_DOC, & !  dissolved organic carbon  
     !     nlt_bgc_DOC     !  dissolved organic carbon
-    !     nt_bgc_DON,   & !  dissolved organic nitrogen
+    !     nt_bgc_DON, & !  dissolved organic nitrogen
     !     nlt_bgc_DON     !  dissolved organic nitrogen 
     !     nt_bgc_DIC,    & !  dissolved inorganic carbon
     !     nlt_bgc_DIC      !  dissolved inorganic carbon
@@ -7116,7 +7439,7 @@ contains
     !     nlt_bgc_Fed,    & !  dissolved iron
     !     nlt_bgc_Fep       !  particulate iron 
     !     nt_zaero,    & !  black carbon and other aerosols 
-    !     nlt_zaero,   & !  black carbon and other aerosols
+    !     nlt_zaero, & !  black carbon and other aerosols
     !     nlt_zaero_sw   !  black carbon and other aerosols
 
     use ice_colpkg, only: &
@@ -7585,7 +7908,7 @@ contains
     !a_rapid_mode = config_rapid_mode_channel_radius
 
     ! Rac_rapid_mode:
-    ! critical Rayleigh number for rapid drainage mode
+    ! critical rayleigh number for rapid drainage mode
     !Rac_rapid_mode = config_rapid_model_critical_Ra
 
     ! aspect_rapid_mode:
@@ -7804,8 +8127,8 @@ contains
     !     dEdd_algae        ! if .true., algal absorption of Shortwave is computed in the
     !    
     !  logical (kind=log_kind), public :: & 
-    !     skl_bgc     ,  & ! if true, solve skeletal biochemistry
-    !     solve_zsal  ,  & ! if true, update salinity profile from solve_S_dt
+    !     skl_bgc     , & ! if true, solve skeletal biochemistry
+    !     solve_zsal  , & ! if true, update salinity profile from solve_S_dt
     !     modal_aero       ! if true, use modal aerosal optical properties
     !                      ! only for use with tr_aero or tr_zaero
 
@@ -8454,7 +8777,14 @@ contains
          nDON, &
          nParticulateIron, &
          nDissolvedIron, &
-         nzAerosols
+         nzAerosols, &
+         maxzAerosols, &
+         maxAlgae, &
+         maxDOC, &
+         maxDIC, &
+         maxDON, &
+         maxIron
+         
 
     logical :: &
          use_nitrogen
@@ -8490,154 +8820,139 @@ contains
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nParticulateIron", nParticulateIron)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nDissolvedIron", nDissolvedIron)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nzAerosols", nzAerosols)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "maxzAerosols", maxzAerosols)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "maxAlgae", maxAlgae)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "maxDOC", maxDOC)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "maxDIC", maxDIC)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "maxDON", maxDON)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "maxIron", maxIron)
 
     use_nitrogen = .false.
     if (config_use_skeletal_biochemistry .or. config_use_vertical_biochemistry) &
         use_nitrogen = .true.
 
-    ! allocate index arrays
-     
-  !  if (config_use_zaerosols .and. nzAerosols .ge. ONE) then  
-        allocate(tracerObject % index_zAerosols(nzAerosols))
-        allocate(tracerObject % index_zAerosolsLayer(nzAerosols))
-        allocate(tracerObject % index_zAerosolsShortwave(nzAerosols))
-        tracerObject % nzAerosolsIndex = nzAerosols
-  !  else
-  !      allocate(tracerObject % index_zAerosols(ONE))
-  !      allocate(tracerObject % index_zAerosolsLayer(ONE))
-  !      allocate(tracerObject % index_zAerosolsShortwave(ONE))
-  !      tracerObject % nzAerosolsIndex = ONE
-  !  endif
+    allocate(tracerObject % index_zAerosols(maxzAerosols))
+    allocate(tracerObject % index_zAerosolsLayer(maxzAerosols))
+    allocate(tracerObject % index_zAerosolsShortwave(maxzAerosols))
+    tracerObject % nzAerosolsIndex = nzAerosols
 
- !   if (use_nitrogen .and. nAlgae .ge. ONE) then  
-        allocate(tracerObject % index_algae(nAlgae))
-        allocate(tracerObject % index_algaeLayer(nAlgae))
-        tracerObject % nAlgaeIndex = nAlgae
- !   else
-  !      allocate(tracerObject % index_algae(ONE))
-  !      allocate(tracerObject % index_algaeLayer(ONE))
-  !      tracerObject % nAlgaeIndex = ONE
-  !  endif
+    allocate(tracerObject % index_algae(maxAlgae))
+    allocate(tracerObject % index_algaeLayer(maxAlgae))
+    tracerObject % nAlgaeIndex = nAlgae
 
-  !  if (config_use_carbon) then
-        allocate(tracerObject % index_algalCarbon(nAlgae))
-        allocate(tracerObject % index_algalCarbonLayer(nAlgae))
-        tracerObject % nAlgalCarbonIndex = nAlgae
-   !     if (nDOC .ge. ONE) then  
-          allocate(tracerObject % index_DOC(nDOC))
-          allocate(tracerObject % index_DOCLayer(nDOC))
-          tracerObject % nDOCIndex = nDOC
-    !    else
-    !      allocate(tracerObject % index_DOC(ONE))
-    !      allocate(tracerObject % index_DOCLayer(ONE))
-    !      tracerObject % nDOCIndex = ONE
-    !    endif
-     !   if (nDIC .ge. ONE) then  
-          allocate(tracerObject % index_DIC(nDIC))
-          allocate(tracerObject % index_DICLayer(nDIC))
-          tracerObject % nDICIndex = nDIC
-     !   else
-     !     allocate(tracerObject % index_DIC(ONE))
-     !     allocate(tracerObject % index_DICLayer(ONE))
-     !     tracerObject % nDICIndex = ONE
-     !   endif
-    ! else
-    !    allocate(tracerObject % index_algalCarbon(ONE))
-    !    allocate(tracerObject % index_algalCarbonLayer(ONE))
-    !    tracerObject % nAlgalCarbonIndex = ONE
-    !    allocate(tracerObject % index_DOC(ONE))
-    !    allocate(tracerObject % index_DOCLayer(ONE))
-    !    tracerObject % nDOCIndex = ONE
-    !    allocate(tracerObject % index_DIC(ONE))
-    !    allocate(tracerObject % index_DICLayer(ONE))
-    !    tracerObject % nDICIndex = ONE
-    ! endif
+    allocate(tracerObject % index_algalCarbon(maxAlgae))
+    allocate(tracerObject % index_algalCarbonLayer(maxAlgae))
+    tracerObject % nAlgalCarbonIndex = nAlgae
 
-     !if (config_use_chlorophyll .and. nAlgae .ge. ONE) then
-        allocate(tracerObject % index_algalChlorophyll(nAlgae))
-        allocate(tracerObject % index_algalChlorophyllLayer(nAlgae))
-        tracerObject % nAlgalChlorophyllIndex = nAlgae
-    ! else
-    !    allocate(tracerObject % index_algalChlorophyll(ONE))
-    !    allocate(tracerObject % index_algalChlorophyllLayer(ONE))
-    !    tracerObject % nAlgalChlorophyllIndex = ONE
-    ! endif
+    allocate(tracerObject % index_DOC(maxDOC))
+    allocate(tracerObject % index_DOCLayer(maxDOC))
+    tracerObject % nDOCIndex = nDOC
 
-   !  if (config_use_DON .and. nDON .ge. ONE) then 
-        allocate(tracerObject % index_DON(nDON))
-        allocate(tracerObject % index_DONLayer(nDON))
-        tracerObject % nDONIndex = nDON
-   !  else
-   !     allocate(tracerObject % index_DON(ONE))
-   !     allocate(tracerObject % index_DONLayer(ONE))
-   !     tracerObject % nDONIndex = ONE
-   !  endif
+    allocate(tracerObject % index_DIC(maxDIC))
+    allocate(tracerObject % index_DICLayer(maxDIC))
+    tracerObject % nDICIndex = nDIC
 
-    !if (config_use_iron) then
-    !    if (nParticulateIron .ge. ONE) then  
-          allocate(tracerObject % index_particulateIron(nParticulateIron))
-          allocate(tracerObject % index_particulateIronLayer(nParticulateIron))
-          tracerObject % nparticulateIronIndex = nParticulateIron
-     !   else
-     !     allocate(tracerObject % index_particulateIron(ONE))
-     !     allocate(tracerObject % index_particulateIronLayer(ONE))
-     !     tracerObject % nparticulateIronIndex = ONE
-     !   endif
-      !  if (nDissolvedIron .ge. ONE) then  
-          allocate(tracerObject % index_dissolvedIron(nDissolvedIron))
-          allocate(tracerObject % index_dissolvedIronLayer(nDissolvedIron))
-          tracerObject % ndissolvedIronIndex = nDissolvedIron
-      !  else
-      !    allocate(tracerObject % index_dissolvedIron(ONE))
-      !    allocate(tracerObject % index_dissolvedIronLayer(ONE))
-      !    tracerObject % ndissolvedIronIndex = ONE
-      !  endif
-    ! endif
+    allocate(tracerObject % index_algalChlorophyll(maxAlgae))
+    allocate(tracerObject % index_algalChlorophyllLayer(maxAlgae))
+    tracerObject % nAlgalChlorophyllIndex = nAlgae
 
-    call colpkg_init_zbgc(nBioLayers, nIceLayers, nSnowLayers, &
-         tracerObject % nAlgaeIndex,tracerObject % nzAerosolsIndex, &
-         tracerObject % nDOCIndex, tracerObject % nDICIndex, &
-         tracerObject % nDONIndex, tracerObject % ndissolvedIronIndex, &
-         tracerObject % nparticulateIronIndex, &
-         tracerObject % firstAncestorMask,   &
-         tracerObject % parentIndex, tracerObject % ancestorNumber, &
-         tracerObject % ancestorIndices, tracerObject % nBioTracersShortwave, &
-         config_use_brine, tracerObject % index_hbrine, tracerObject % nTracers, &
-         tracerObject % nBioTracers, tracerObject % index_nitrate, &
-         tracerObject % index_ammonium, tracerObject % index_silicate, &
-         tracerObject % index_DMS, tracerObject % index_nonreactive, &
-         tracerObject % index_zSalinity, tracerObject % index_algae, &
-         tracerObject % index_algalCarbon, tracerObject % index_algalChlorophyll, &
-         tracerObject % index_DOC, tracerObject % index_DON, &
-         tracerObject % index_DIC, tracerObject % index_zAerosols, &
-         tracerObject % index_DMSPp, tracerObject % index_DMSPd, &
-         tracerObject % index_dissolvedIron, tracerObject % index_particulateIron, &
-         tracerObject % index_mobilePhaseFrac, config_use_nitrate, &
-         config_use_ammonium, config_use_silicate, config_use_DMS, &
-         config_use_nonreactive, config_use_vertical_zsalinity, &
-         use_nitrogen, config_use_carbon, config_use_chlorophyll, &
-         config_use_DON, config_use_iron, config_use_zaerosols, &
+    allocate(tracerObject % index_DON(maxDON))
+    allocate(tracerObject % index_DONLayer(maxDON))
+    tracerObject % nDONIndex = nDON
+
+    allocate(tracerObject % index_particulateIron(maxIron))
+    allocate(tracerObject % index_particulateIronLayer(maxIron))
+    tracerObject % nparticulateIronIndex = nParticulateIron
+
+    allocate(tracerObject % index_dissolvedIron(maxIron))
+    allocate(tracerObject % index_dissolvedIronLayer(maxIron))
+    tracerObject % ndissolvedIronIndex = nDissolvedIron
+
+    call colpkg_init_zbgc(nBioLayers, &
+         nIceLayers, &
+         nSnowLayers, &
+         nAlgae, &
+         nzAerosols, &
+         nDOC, &
+         nDIC, &
+         nDON, &
+         nDissolvedIron, &
+         nParticulateIron, &
+         tracerObject % firstAncestorMask, &
+         tracerObject % parentIndex, &
+         tracerObject % ancestorNumber, &
+         tracerObject % ancestorIndices, &
+         tracerObject % nBioTracersShortwave, &
+         config_use_brine, &
+         tracerObject % index_hbrine,&
+         tracerObject % nTracers, &
+         tracerObject % nBioTracers, &
+         tracerObject % index_nitrate, &
+         tracerObject % index_ammonium, &
+         tracerObject % index_silicate, &
+         tracerObject % index_DMS, &
+         tracerObject % index_nonreactive, &
+         tracerObject % index_zSalinity, &
+         tracerObject % index_algae, &
+         tracerObject % index_algalCarbon, &
+         tracerObject % index_algalChlorophyll, &
+         tracerObject % index_DOC, &
+         tracerObject % index_DON, &
+         tracerObject % index_DIC, &
+         tracerObject % index_zAerosols, &
+         tracerObject % index_DMSPp, &
+         tracerObject % index_DMSPd, &
+         tracerObject % index_dissolvedIron, &
+         tracerObject % index_particulateIron, &
+         tracerObject % index_mobilePhaseFrac, &
+         config_use_nitrate, &
+         config_use_ammonium, &
+         config_use_silicate, &
+         config_use_DMS, &
+         config_use_nonreactive, &
+         config_use_vertical_zsalinity, &
+         use_nitrogen,  &
+         config_use_carbon, &
+         config_use_chlorophyll, &
+         config_use_DON, &
+         config_use_iron,&
+         config_use_zaerosols, &
          tracerObject % index_zAerosolsShortwave, &
          tracerObject % index_chlorophyllShortwave, &
-         tracerObject % index_algaeLayer, tracerObject % index_nitrateLayer, &
-         tracerObject % index_ammoniumLayer, tracerObject % index_silicateLayer, &
+         tracerObject % index_algaeLayer, &
+         tracerObject % index_nitrateLayer, &
+         tracerObject % index_ammoniumLayer, &
+         tracerObject % index_silicateLayer, &
          tracerObject % index_DMSLayer, &
-         tracerObject % index_DMSPpLayer, tracerObject % index_DMSPdLayer, &
-         tracerObject % index_algalCarbonLayer,  &
+         tracerObject % index_DMSPpLayer, &
+         tracerObject % index_DMSPdLayer, &
+         tracerObject % index_algalCarbonLayer, &
          tracerObject % index_algalChlorophyllLayer, &
          tracerObject % index_DICLayer, &
-         tracerObject % index_DOCLayer, tracerObject % index_nonreactiveLayer, &
-         tracerObject % index_DONLayer, tracerObject % index_dissolvedIronLayer, &
+         tracerObject % index_DOCLayer, &
+         tracerObject % index_nonreactiveLayer, &
+         tracerObject % index_DONLayer, &
+         tracerObject % index_dissolvedIronLayer, &
          tracerObject % index_particulateIronLayer, &
          tracerObject % index_zAerosolsLayer, &
-         tracerObject % index_humics, tracerObject % index_humicsLayer,  &
-         config_use_humics, config_use_vertical_zsalinity, &
-         config_use_skeletal_biochemistry, config_use_vertical_tracers, &
-         config_use_shortwave_bioabsorption, config_use_vertical_biochemistry, &
-         config_fraction_biotracer_in_frazil, config_new_ice_fraction_biotracer, &
+         tracerObject % index_humics, &
+         tracerObject % index_humicsLayer, &
+         config_use_humics, &
+         config_use_vertical_zsalinity, &
+         config_use_skeletal_biochemistry, &
+         config_use_vertical_tracers, &
+         config_use_shortwave_bioabsorption, &
+         config_use_vertical_biochemistry, &
+         config_fraction_biotracer_in_frazil, &
+         config_new_ice_fraction_biotracer, &
          tracerObject % index_LayerIndexToDataArray, &
          tracerObject % index_LayerIndexToBioIndex, &
-         tracerObject % nTracersNotBio )
+         tracerObject % nTracersNotBio, &
+         maxAlgae, &
+         maxDOC, &
+         maxDIC, &
+         maxDON, &
+         maxIron)
 
   end subroutine init_column_tracer_object_for_biogeochemistry
 
@@ -8671,7 +8986,8 @@ contains
          config_use_vertical_tracers, &
          config_use_skeletal_biochemistry, &
          config_do_restart_zsalinity, &
-         config_do_restart_bgc
+         config_do_restart_bgc, &
+         config_use_column_biogeochemistry
        
     real(kind=RKIND), pointer :: &
          config_dt, &
@@ -8685,12 +9001,12 @@ contains
          oceanDMSPConc, &
          oceanHumicsConc, &
          seaSurfaceSalinity , &
-         iceGrid, &              ! cgrid
+         verticalGrid, &         ! cgrid
          interfaceBiologyGrid, & ! igrid
          biologyGrid, &          ! bgrid
-         iceShortwaveGrid, &     ! swgrid
+         verticalShortwaveGrid, &! swgrid
          interfaceGrid, &        ! icgrid
-         RayleighCriteriaReal
+         rayleighCriteriaReal
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          oceanAlgaeConc, &
@@ -8714,9 +9030,6 @@ contains
          bioPermeability, &
          bioShortwaveFlux, &
          bioTracerShortwave, &
-         iceAreaCategory, &
-         iceVolumeCategory, &
-         snowVolumeCategory, &
          iceSalinity
 
     type(block_type), pointer :: &
@@ -8736,7 +9049,12 @@ contains
          nCategories, &
          nShortwaveBio, &
          nZBGCTracers, &
-         maxzAerosols
+         maxzAerosols, &
+         maxAlgae, &
+         maxDOC, &
+         maxDIC, &
+         maxDON, &
+         maxIron
          
     integer :: &
          iCell, &
@@ -8755,21 +9073,24 @@ contains
 
     logical :: &
          abortFlag, &
-         RayleighCriteria
+         rayleighCriteria, &
+         getPhysicsTracers
 
     character(len=strKIND) :: &
          abortMessage
 
-       call MPAS_pool_get_config(domain % configs, "config_use_brine",config_use_brine)
-       call MPAS_pool_get_config(domain % configs, "config_do_restart_zsalinity",config_do_restart_zsalinity)
-       call MPAS_pool_get_config(domain % configs, "config_do_restart_bgc",config_do_restart_bgc)
-       call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
-       call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
-       call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
-       call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
-       call MPAS_pool_get_config(domain % configs, "config_snow_porosity_at_ice_surface", config_snow_porosity_at_ice_surface)
+    call MPAS_pool_get_config(domain % configs, "config_use_brine",config_use_brine)
+    call MPAS_pool_get_config(domain % configs, "config_do_restart_zsalinity",config_do_restart_zsalinity)
+    call MPAS_pool_get_config(domain % configs, "config_do_restart_bgc",config_do_restart_bgc)
+    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+    call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
+    call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
+    call MPAS_pool_get_config(domain % configs, "config_snow_porosity_at_ice_surface", config_snow_porosity_at_ice_surface)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry",config_use_column_biogeochemistry)
 
-       abortFlag = .false.
+    abortFlag = .false.
+    getPhysicsTracers = .true.
 
     block => domain % blocklist
     do while (associated(block))
@@ -8788,10 +9109,10 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "bioTracerShortwave", bioTracerShortwave)
        call MPAS_pool_get_array(biogeochemistry, "interfaceBiologyGrid", interfaceBiologyGrid)
        call MPAS_pool_get_array(biogeochemistry, "interfaceGrid", interfaceGrid)
-       call MPAS_pool_get_array(biogeochemistry, "RayleighCriteriaReal", RayleighCriteriaReal)
-       call MPAS_pool_get_array(biogeochemistry, "iceGrid", iceGrid)
+       call MPAS_pool_get_array(biogeochemistry, "rayleighCriteriaReal", rayleighCriteriaReal)
+       call MPAS_pool_get_array(biogeochemistry, "verticalGrid", verticalGrid)
        call MPAS_pool_get_array(biogeochemistry, "biologyGrid", biologyGrid)
-       call MPAS_pool_get_array(biogeochemistry, "iceShortwaveGrid", iceShortwaveGrid)
+       call MPAS_pool_get_array(biogeochemistry, "verticalShortwaveGrid", verticalShortwaveGrid)
        call MPAS_pool_get_array(biogeochemistry, "oceanAlgaeConc",oceanAlgaeConc)
        call MPAS_pool_get_array(biogeochemistry, "oceanDOCConc",oceanDOCConc)
        call MPAS_pool_get_array(biogeochemistry, "oceanDICConc",oceanDICConc)
@@ -8810,9 +9131,6 @@ contains
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
 
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
-       call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
-       call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
-       call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
        call MPAS_pool_get_array(tracers, "iceSalinity", iceSalinity, 1)
 
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
@@ -8824,25 +9142,35 @@ contains
        call MPAS_pool_get_dimension(block % dimensions, "nShortwaveBio", nShortwaveBio)
        call MPAS_pool_get_dimension(block % dimensions, "nZBGCTracers", nZBGCTracers)
        call MPAS_pool_get_dimension(block % dimensions, "maxzAerosols", maxzAerosols)
+       call MPAS_pool_get_dimension(block % dimensions, "maxAlgae", maxAlgae)
+       call MPAS_pool_get_dimension(block % dimensions, "maxDOC", maxDOC)
+       call MPAS_pool_get_dimension(block % dimensions, "maxDIC", maxDIC)
+       call MPAS_pool_get_dimension(block % dimensions, "maxDON", maxDON)
+       call MPAS_pool_get_dimension(block % dimensions, "maxIron", maxIron)
        
        ntrcr_bgc = ciceTracerObject % nTracers - ciceTracerObject % nTracersNotBio
        allocate(oceanzAerosols(maxzAerosols))
        allocate(bgcTracerArray(ntrcr_bgc,nCategories))
        oceanzAerosols(:) = 0.0_RKIND
-
-       call colpkg_init_hbrine(biologyGrid,interfaceBiologyGrid,iceGrid,interfaceGrid, &
-                  iceShortwaveGrid, nBioLayers, nIceLayers, config_snow_porosity_at_ice_surface)
-
        bgcTracerArray(:,:) = 0.0_RKIND
 
+       call colpkg_init_hbrine(biologyGrid, &
+                  interfaceBiologyGrid, &
+                  verticalGrid, &
+                  interfaceGrid, &
+                  verticalShortwaveGrid, &
+                  nBioLayers, &
+                  nIceLayers, &
+                  config_snow_porosity_at_ice_surface)
+
        do iCell = 1, nCellsSolve
-          RayleighCriteriaReal(iCell) = 1.0_RKIND
-          RayleighCriteria = .true.
+          rayleighCriteriaReal(iCell) = 1.0_RKIND
+          rayleighCriteria = .true.
           tracerObject % tracerArrayCell(tracerObject%index_hbrine) = 1.0_RKIND
            
           newlyFormedIce(:, iCell) = 1
           tracerObject % tracerArrayCategory(tracerObject%index_hbrine,:) = 1.0_RKIND
-          do iTracers = tracerObject % nTracersNotBio+1,tracerObject % nTracers
+          do iTracers =tracerObject % nTracersNotBio+1,tracerObject % nTracers 
           do iCategory = 1,nCategories
               bgcTracerArray(iTracers-tracerObject % nTracersNotBio,iCategory) = &
                    tracerObject % tracerArrayCategory(iTracers,iCategory)     
@@ -8859,7 +9187,7 @@ contains
           enddo ! iBioLayer
 
              bioPorosity(nBioLayersP2,:,iCell) = 0.0_RKIND
-             bioDiffusivity(nBioLayersP2,:,iCell) = 0.0_RKIND
+             bioTemperature(nBioLayersP2,:,iCell) = 0.0_RKIND
 
           do iShortwaveBio = 1, nShortwaveBio
 
@@ -8878,46 +9206,71 @@ contains
 
 
           if (config_use_vertical_zsalinity) &
-             call colpkg_init_zsalinity(nBioLayers,tracerObject % nTracersNotBio, config_do_restart_zsalinity, &
-                  RayleighCriteria, RayleighCriteriaReal(iCell), &
+             call colpkg_init_zsalinity(nBioLayers, &
+                  tracerObject % nTracersNotBio, &
+                  config_do_restart_zsalinity, &
+                  rayleighCriteria, &
+                  rayleighCriteriaReal(iCell), &
                   bgcTracerArray(:,:), &
                   tracerObject % index_zSalinity, &
-                  nCategories, seaSurfaceSalinity(iCell))
+                  nCategories, &
+                  seaSurfaceSalinity(iCell))
 
           if (config_use_vertical_tracers .or. config_use_skeletal_biochemistry) then
-            call colpkg_init_bgc(config_dt,nCategories,nBioLayers, nIceLayers, &
+             call colpkg_init_bgc(config_dt, &
+                  nCategories, &
+                  nBioLayers, &
+                  nIceLayers, &
                   tracerObject % nTracersNotBio, &
-                  iceGrid, interfaceBiologyGrid, config_do_restart_bgc, &
-                  tracerObject % nTracers, tracerObject % nBiotracers, &
+                  verticalGrid, &
+                  interfaceBiologyGrid, & 
+                  config_do_restart_bgc, &
+                  tracerObject % nTracers, &
+                  tracerObject % nBiotracers, &
                   iceSalinity(:,:,iCell), &
                   bgcTracerArray(:,:), &
-                  iceAreaCategory(1,:,iCell), iceVolumeCategory(1,:,iCell), &
-                  snowVolumeCategory(1,:,iCell), seaSurfaceSalinity(iCell), &  
-                  oceanNitrateConc(iCell), oceanAmmoniumConc(iCell), &
-                  oceanSilicateConc(iCell), oceanDMSPConc(iCell), &
-                  oceanDMSConc(iCell), oceanAlgaeConc(:,iCell), &
-                  oceanDOCConc(:,iCell), oceanDONConc(:,iCell), &
-                  oceanDICConc(:,iCell), oceanDissolvedIronConc(:,iCell), &
-                  oceanParticulateIronConc(:,iCell), oceanzAerosols, &
-                  oceanHumicsConc(iCell), atmosBioConcentrations(:,iCell), &
-                  oceanBioConcentrations(:,iCell), totalverticalBiologyIce(:,iCell), &
-                  totalverticalBiologySnow(:,iCell), abortFlag, abortMessage, stdoutUnit)
+                  seaSurfaceSalinity(iCell), &  
+                  oceanNitrateConc(iCell), &
+                  oceanAmmoniumConc(iCell), &
+                  oceanSilicateConc(iCell), &
+                  oceanDMSPConc(iCell), &
+                  oceanDMSConc(iCell), &
+                  oceanAlgaeConc(:,iCell), &
+                  oceanDOCConc(:,iCell), &
+                  oceanDONConc(:,iCell), &
+                  oceanDICConc(:,iCell), &
+                  oceanDissolvedIronConc(:,iCell), &
+                  oceanParticulateIronConc(:,iCell), &
+                  oceanzAerosols, &
+                  oceanHumicsConc(iCell), &
+                  atmosBioConcentrations(:,iCell), &
+                  oceanBioConcentrations(:,iCell), & 
+                  maxAlgae, &
+                  maxDOC, &
+                  maxDIC, &
+                  maxDON, &
+                  maxIron, &
+                  nZBGCTracers, &
+                  maxzAerosols, &
+                  abortFlag, &
+                  abortMessage)
 
-                  if (abortFlag) then
-                     COLUMN_ERROR_WRITE("colpkg_init_bgc")
-                     COLUMN_ERROR_WRITE(trim(abortMessage))
-                     call MPAS_dmpar_global_abort(trim(abortMessage)) 
-                  endif
+             if (abortFlag) then
+                 COLUMN_ERROR_WRITE("colpkg_init_bgc")
+                 COLUMN_ERROR_WRITE(trim(abortMessage))
+                 call MPAS_dmpar_global_abort(trim(abortMessage)) 
+             endif
           endif ! biogeochemistry
 
-          do iTracers = tracerObject % nTracersNotBio+1,tracerObject % nTracers
-          do iCategory = 1,nCategories
-              tracerObject % tracerArrayCategory(iTracers,iCategory)  =  &
+          do iTracers =tracerObject % nTracersNotBio+1,tracerObject % nTracers
+             do iCategory = 1,nCategories
+                 tracerObject % tracerArrayCategory(iTracers,iCategory)  =  &
                       bgcTracerArray(iTracers-tracerObject % nTracersNotBio,iCategory) 
-          enddo
+             enddo
           enddo
 
-          call get_cice_biogeochemistry_array_category(block, tracerObject, iCell)
+          call get_cice_tracer_array_category(block, tracerObject, iCell, getPhysicsTracers, &
+               config_use_column_biogeochemistry)
 
        enddo    ! iCell
 
