@@ -153,7 +153,6 @@ sub main {
 
     my $use_trilinos = 'FALSE';
     if ($CISM_USE_TRILINOS eq 'TRUE') {$use_trilinos = 'TRUE'};
-    my $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_TRILINOS -val ${use_trilinos}";
     $ENV{USE_TRILINOS} = ${use_trilinos};
     $ENV{CISM_USE_TRILINOS} = $CISM_USE_TRILINOS;
 
@@ -165,7 +164,6 @@ sub main {
 
     my $use_albany = 'FALSE';
     if ($MPASLI_USE_ALBANY eq 'TRUE') {$use_albany = 'TRUE'};
-    my $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_ALBANY -val ${use_albany}";
     $ENV{USE_ALBANY} = ${use_albany};
     $ENV{MPASLI_USE_ALBANY} = $MPASLI_USE_ALBANY;
 
