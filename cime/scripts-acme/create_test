@@ -51,7 +51,7 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-    default_compiler, _, _, default_project, default_testroot, default_baseline_root, _ = acme_util.get_machine_info(raw=True)
+    default_compiler, _, _, default_project, default_testroot, default_baseline_root, _, _ = acme_util.get_machine_info(raw=True)
     if ("PROJECT" in os.environ):
         default_project = os.environ["PROJECT"]
 
@@ -122,7 +122,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     if (args.no_build):
         args.no_run = True
 
-    _, _, use_batch, _, testroot, baseline_root, _ = \
+    _, _, use_batch, _, testroot, baseline_root, _, _ = \
         acme_util.get_machine_info(project=args.project)
 
     if (not args.no_batch and not use_batch):
