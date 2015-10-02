@@ -194,7 +194,7 @@ my $testcase_interp = <<END_INTERP;
     # (Don't) Remove test status files! create_test puts the namelist comparision 
     # status and output into these files, respectively.  
     #======================================================================
-    set CASEROOT            = $caseroot
+    setenv CASEROOT            = $caseroot
     set CASE			=  $case
     set CASEBASEID		=  $casebaseid
     set TEST_TESTID		=  $test_testid 
