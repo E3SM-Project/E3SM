@@ -619,14 +619,10 @@
 		/>
 	</nml_record>
         <nml_record name="land_ice_fluxes" mode="forward">
-                <nml_option name="config_use_land_ice_fluxes" type="logical" default_value=".false." units="unitless"
-                                        description="Controls if land-ice fluxes are computed under ice shelves."
-                                        possible_values=".true. or .false."
-                />
-                <nml_option name="config_compute_land_ice_fluxes_in_ocean" type="logical" default_value=".true." units="unitless"
-                                        description="Controls if land-ice fluxes are computed in MPAS-O (as opposed to in the coupler)."
-                                        possible_values=".true. or .false."
-                />
+		<nml_option name="config_land_ice_flux_mode" type="character" default_value="off" units="unitless"
+					description="Selects the mode in which land-ice fluxes are computed."
+					possible_values="'off','pressure_only','standalone','coupled'"
+		/>
 		<nml_option name="config_land_ice_flux_formulation" type="character" default_value="Jenkins" units="unitless"
 					description="Name of land-ice flux formulation."
 					possible_values="'ISOMIP', 'Jenkins', 'HollandJenkins'"

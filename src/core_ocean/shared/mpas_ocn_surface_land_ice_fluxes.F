@@ -54,7 +54,7 @@ module ocn_surface_land_ice_fluxes
    !
    !--------------------------------------------------------------------
 
-   logical :: landIceFluxesOn, isomipOn, jenkinsOn, hollandJenkinsOn
+   logical :: landIceFluxesOn, standaloneOn, isomipOn, jenkinsOn, hollandJenkinsOn
 
    real (kind=RKIND) :: Tf0, dTf_dp, dTf_dS, cp_land_ice, rho_land_ice
 
@@ -402,7 +402,7 @@ contains
 
       err = 0
 
-      if ( .not. landIceFluxesOn ) return
+      if ( .not. standaloneOn ) return
 
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_ISOMIP_gammaT', config_land_ice_flux_ISOMIP_gammaT)
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_useHollandJenkinsAdvDiff', config_land_ice_flux_useHollandJenkinsAdvDiff)
@@ -571,8 +571,7 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      character (len=StrKIND), pointer :: config_land_ice_flux_formulation
-      logical, pointer :: config_use_land_ice_fluxes
+      character (len=StrKIND), pointer :: config_land_ice_flux_formulation, config_land_ice_flux_mode
 
       real (kind=RKIND), pointer :: config_land_ice_flux_Tf0, &
                                     config_land_ice_flux_dTf_dp, &
@@ -586,9 +585,12 @@ contains
       jenkinsOn = .false.
       hollandJenkinsOn = .false.
 
-      call mpas_pool_get_config(ocnConfigs, 'config_use_land_ice_fluxes', config_use_land_ice_fluxes)
-      landIceFluxesOn = config_use_land_ice_fluxes
+      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
+      landIceFluxesOn = (trim(config_land_ice_flux_mode) == 'standalone')  &
+           .or. (trim(config_land_ice_flux_mode) == 'coupled')
       if(.not. landIceFluxesOn) return
+
+      standaloneOn = trim(config_land_ice_flux_mode) == 'standalone'
 
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_formulation', config_land_ice_flux_formulation)
 
