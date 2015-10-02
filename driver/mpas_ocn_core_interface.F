@@ -112,6 +112,7 @@ module ocn_core_interface
       logical, pointer :: splitTimeIntegratorActive
       logical, pointer :: windStressBulkPKGActive
       logical, pointer :: landIceFluxesPKGActive
+      logical, pointer :: landIceCouplingPKGActive
       logical, pointer :: thicknessBulkPKGActive
       logical, pointer :: frazilIceActive
       logical, pointer :: inSituEOSActive
@@ -211,14 +212,16 @@ module ocn_core_interface
 
       !
       ! test for land ice fluxes, landIceFluxesPKG
-      ! test for land ice pressure, landIcePressurePKG
+      ! test for land ice coupling, landIceCouplingPKG
       !
       call mpas_pool_get_package(packagePool, 'landIceFluxesPKGActive', landIceFluxesPKGActive)
-      call mpas_pool_get_package(packagePool, 'landIcePressurePKGActive', landIcePressurePKGActive)
+      call mpas_pool_get_package(packagePool, 'landIceCouplingPKGActive', landIceCouplingPKGActive)
       call mpas_pool_get_config(configPool, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
-      if ( (trim(config_land_ice_flux_mode) == 'standalone')  &
-           .or. (trim(config_land_ice_flux_mode) == 'coupled') ) then
+      if ( trim(config_land_ice_flux_mode) == 'standalone' ) then
          landIceFluxesPKGActive = .true.
+      else if ( trim(config_land_ice_flux_mode) == 'coupled' ) then
+         landIceFluxesPKGActive = .true.
+         landIceCouplingPKGActive = .true.
       end if
 
       !

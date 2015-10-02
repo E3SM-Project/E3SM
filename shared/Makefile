@@ -49,6 +49,7 @@ OBJS = mpas_ocn_init_routines.o \
 	   mpas_ocn_forcing.o \
 	   mpas_ocn_surface_bulk_forcing.o \
 	   mpas_ocn_surface_land_ice_fluxes.o \
+	   mpas_ocn_effective_density_in_land_ice.o \
 	   mpas_ocn_forcing_restoring.o \
 	   mpas_ocn_time_average.o \
 	   mpas_ocn_time_average_coupled.o \
@@ -150,10 +151,11 @@ mpas_ocn_surface_bulk_forcing.o:
 
 mpas_ocn_surface_land_ice_fluxes.o: mpas_ocn_constants.o
 
+mpas_ocn_effective_density_in_land_ice.o: mpas_ocn_constants.o
+
 mpas_ocn_forcing_restoring.o: mpas_ocn_constants.o
 
 mpas_ocn_sea_ice.o: mpas_ocn_constants.o
-
 
 clean:
 	$(RM) *.o *.i *.mod *.f90
