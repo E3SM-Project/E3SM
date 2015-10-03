@@ -1,3 +1,4 @@
-#!/bin/csh
+#! /usr/bin/env perl
+
 # This script is intentionally blank
-exit 0;
+exit (0);
