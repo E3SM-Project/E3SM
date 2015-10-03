@@ -562,17 +562,11 @@ sub submitSingleJob()
     if(! -e $workflowhostfile)
     {
         open (my $W, ">", $workflowhostfile) or $logger->logdie ("could not open workflow host file, $!");
-        if(defined $ENV{'HOST'})
-        {
-            print $W $ENV{'HOST'} . "\n";
-        }
-        elsif(defined $ENV{'HOSTNAME'})
-        {
-            print $W $ENV{'HOSTNAME'} . "\n";
-        }
+        my $host = (defined $ENV{HOST})? $ENV{HOST}: $ENV{HOSTNAME}; 
+        print $W "$host\n";
         close $W;
+        $logger->info("Setting workflow host $host");
     }
-    #$self->SUPER::submitSingleJob($scriptname, $dependentJobId, $islastjob, $sta_ok);
     my %config = %{$self->{'caseconfig'}};
     
     my $dependarg = '';
@@ -616,8 +610,11 @@ sub doResubmit()
 
     my %config = %{$self->{'caseconfig'}};
     
-    #If we're NOT doing short-term archiving, and we need to resubmit, then we need to resubmit JUST the run.  
-    if($scriptname =~ /run/ && $config{'RESUBMIT'} > 0  && $config{'DOUT_S'} eq 'FALSE')
+    #If we're NOT doing short-term archiving, and we need to resubmit, then we need to resubmit JUST the run
+
+    my $issta = ($scriptname =~ /archive/);
+  
+    if(! $issta && $config{'RESUBMIT'} > 0  && $config{'DOUT_S'} eq 'FALSE')
     {
         chdir $config{'CASEROOT'};
         my $submitargs = $self->getSubmitArguments($scriptname);
@@ -633,7 +630,7 @@ sub doResubmit()
 
     # If we ARE doing short-term archiving and we aren't resubmitting, then 
     # just run the short-term archiver 
-    if($scriptname =~ /run/ && $config{'DOUT_S'} eq 'TRUE' && $config{'RESUBMIT'} == 0)
+    if(! $issta && $config{'DOUT_S'} eq 'TRUE' && $config{'RESUBMIT'} == 0)
     {
         chdir $config{'CASEROOT'};
         my $starchivescript = $scriptname;
@@ -651,7 +648,7 @@ sub doResubmit()
     
     # If we're post run and we need to run the short-term archiver AND resubmit, then run the short-term archiver
     # on cooley
-    if($scriptname =~ /run/ && $config{'RESUBMIT'} > 0 && $config{'DOUT_S'} eq 'TRUE')
+    if( ! $issta && $config{'RESUBMIT'} > 0 && $config{'DOUT_S'} eq 'TRUE')
     {
         chdir $config{'CASEROOT'};
         my $starchivescript = $scriptname;
@@ -668,7 +665,7 @@ sub doResubmit()
     # If we're being called by the short-term archiver, and we actually need to resubmit
     # something, then ssh from the cooley compute nodes to cooleylogin1, then ssh back to 
     # either mira or cetuslac1, and resubmit the run. 
-    if($scriptname =~ /archive/ && $config{RESUBMIT} > 0)
+    if($issta && $config{RESUBMIT} > 0)
     {
         chdir $config{'CASEROOT'};
         

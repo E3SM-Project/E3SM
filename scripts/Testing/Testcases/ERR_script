@@ -1,9 +1,10 @@
+#! /bin/csh -f
 
 #======================================================================
 # Test setup:
 #======================================================================
 
-echo "ERR first job run starting" >>& $TESTSTATUS_LOG
+
 # turn on memory leak check - if comparing with baseline also 
 # compare memory highwater mark from baseline 
 set DETECT_MEMORY_LEAK
@@ -30,39 +31,39 @@ if( $resubmit > 0 ) then
 # (1) Test run:
 # do an initial run test
 #======================================================================
+    echo "ERR first job run starting" >>& $TESTSTATUS_LOG	
+    cd $CASEROOT
 
-       cd $CASEROOT
+    echo "" >>& $TESTSTATUS_LOG 
+    echo "initial: doing a ${stopn1} ${STOP_OPTION} initial test writing a restart at ${restn1} ${STOP_OPTION}" >>& $TESTSTATUS_LOG 
 
-       echo "" >>& $TESTSTATUS_LOG 
-       echo "initial: doing a ${stopn1} ${STOP_OPTION} initial test writing a restart at ${restn1} ${STOP_OPTION}" >>& $TESTSTATUS_LOG 
+    ./xmlchange -file env_run.xml -id CONTINUE_RUN -val FALSE
+    ./xmlchange -file env_run.xml -id STOP_N       -val ${stopn1}
+    ./xmlchange -file env_run.xml -id REST_OPTION  -val ${STOP_OPTION}
+    ./xmlchange -file env_run.xml -id REST_N       -val ${restn1}
+    ./xmlchange -file env_run.xml -id HIST_OPTION  -val ${STOP_OPTION}
+    ./xmlchange -file env_run.xml -id HIST_N       -val ${histn}
 
-       ./xmlchange -file env_run.xml -id CONTINUE_RUN -val FALSE
-       ./xmlchange -file env_run.xml -id STOP_N       -val ${stopn1}
-       ./xmlchange -file env_run.xml -id REST_OPTION  -val ${STOP_OPTION}
-       ./xmlchange -file env_run.xml -id REST_N       -val ${restn1}
-       ./xmlchange -file env_run.xml -id HIST_OPTION  -val ${STOP_OPTION}
-       ./xmlchange -file env_run.xml -id HIST_N       -val ${histn}
+    ./$CASE.run
+    if ($status != 0) then
+	echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+	exit -1
+    endif
 
-       ./$CASE.run
-       if ($status != 0) then
-	   echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
-	   exit -1
-	   endif
-
-	   set CplLogFile = `ls -1t $RUNDIR/cpl.log* | head -1`
-	   if ( $?CplLogFile ) then
-	       if (-e $CplLogFile) then
-		   set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
-		   if ($pass != 1) then
-		       echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
- 		       exit -1
-		   else 
-		       echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
-		   endif
-	       endif
-	   else
-	      echo "ERROR: no coupler log created, model run failed" >>& $TESTSTATUS_LOG
-	      exit -1
+    set CplLogFile = `ls -1t $RUNDIR/cpl.log* | head -1`
+    if ( $?CplLogFile ) then
+	if (-e $CplLogFile) then
+	    set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
+	    if ($pass != 1) then
+		echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+ 		exit -1
+	    else 
+		echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+		endif
+		endif
+	    else
+		echo "ERROR: no coupler log created, model run failed" >>& $TESTSTATUS_LOG
+		exit -1
 	   endif
 
 	   echo "" >>& $TESTSTATUS_LOG

@@ -15,7 +15,7 @@ require Batch::BatchUtils;
 use Cwd;
 require Log::Log4perl;
 
-my $level = Log::Log4perl::Level::to_priority("INFO");
+my $level = Log::Log4perl::Level::to_priority("DEBUG");
 Log::Log4perl->easy_init({level=>$level,
 			  layout=>'%m%n'});
 
