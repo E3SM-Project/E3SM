@@ -343,7 +343,7 @@ sub runModel()
     # Run the model
     {{ mpirun }}
     $localtime = localtime;
-    $logger->info "$localtime MODEL EXECUTION HAS FINISHED");
+    $logger->info( "$localtime MODEL EXECUTION HAS FINISHED");
 }
 
 sub disposeLog
@@ -488,7 +488,7 @@ sub resubmitCheck()
 	my $cwd = getcwd;
 	chdir $config{'CASEROOT'};
 	my $resubmitcommand = "$submitscript -resubmit -scriptname $config{'CASE'}.";
-	if($config{TESTNAME} eq "ERR"){
+	if(defined $config{TESTCASE} && $config{TESTCASE} eq "ERR"){
 	    $resubmitcommand .= "test"; 
 	}else{
 	    $resubmitcommand .= "run"; 
