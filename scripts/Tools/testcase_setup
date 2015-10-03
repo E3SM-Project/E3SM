@@ -251,7 +251,7 @@ my $testcase_begin = <<'END_BEGIN';
     set resubmit =  `./xmlquery RESUBMIT -value`
     set add_iop = ''
     set msg = "${testname}_test"
-    if( $testname == "ERR" && $#argv > 0 ) then
+    if( $testname == "ERR" && $resubmit <= 0 ) then
        echo "Second pass of ERR test"
     else    
       # Reset all previous settings: obtain copy of original env_run.xml file
