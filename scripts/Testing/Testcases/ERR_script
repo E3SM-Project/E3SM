@@ -12,7 +12,7 @@ if ($?COMPARE_BASELINE ) then
     set COMPARE_MEMORY
     set COMPARE_THROUGHPUT
 endif
-	
+set DOUT_S_ROOT 	= `./xmlquery DOUT_S_ROOT      -value`
 set STOP_N      = `./xmlquery STOP_N      -value`
 set STOP_OPTION = `./xmlquery STOP_OPTION -value`
 
@@ -139,6 +139,11 @@ echo "obtaining test functionality from history files with command "										  
 echo "$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 rest $add_iop -msg $msg">>& $TESTSTATUS_LOG
 echo ""																		     >>& $TESTSTATUS_LOG
 
-$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 rest $add_iop -msg "$msg" >>& $TESTSTATUS_OUT
+#
+# Results have been archived - compare the hist files in thier archived location
+#
+foreach comp ( atm cpl ocn wav glc ice rof lnd )
+  $SCRIPTSROOT/Tools/component_compare_test.sh -rundir "$DOUT_D_ROOT/$CASE/$comp/hist" -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 rest $add_iop -msg "$msg" >>& $TESTSTATUS_OUT
+end
 
 
