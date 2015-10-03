@@ -15,7 +15,7 @@ module clm_initializeMod
   use clm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
   use perf_mod         , only : t_startf, t_stopf
   use readParamsMod    , only : readParameters
-  use ncdio_pio       , only : file_desc_t
+  use ncdio_pio        , only : file_desc_t
   ! 
   !-----------------------------------------
   ! Definition of component types
@@ -70,6 +70,8 @@ module clm_initializeMod
   use EDBioType              , only : EDbio_type         ! ED type used to interact with CLM variables
   use EDVecPatchType         , only : EDpft                   
   use EDVecCohortType        , only : coh                ! unique to ED, used for domain decomp
+  ! bgc interface
+  use clm_bgc_interface_data , only : clm_bgc_interface_data_type
   !
   implicit none
   save
@@ -119,6 +121,8 @@ module clm_initializeMod
 
   type(phosphorusstate_type)    :: phosphorusstate_vars
   type(phosphorusflux_type)     :: phosphorusflux_vars
+  !! bgc interface:
+  type(clm_bgc_interface_data_type) :: clm_bgc_data
   !
   public :: initialize1  ! Phase one initialization
   public :: initialize2  ! Phase two initialization
@@ -407,7 +411,10 @@ contains
     use lnd2atmMod            , only : lnd2atm_minimal
     use glc2lndMod            , only : glc2lnd_type
     use lnd2glcMod            , only : lnd2glc_type 
-    use SoilWaterRetentionCurveFactoryMod, only : create_soil_water_retention_curve
+    use SoilWaterRetentionCurveFactoryMod   , only : create_soil_water_retention_curve
+    ! bgc interface & pflotran:
+    use clm_varctl                          , only : use_bgc_interface, use_pflotran
+    use clm_pflotran_interfaceMod           , only : clm_pf_interface_init !!, clm_pf_set_restart_stamp
     !
     ! !ARGUMENTS    
     implicit none
@@ -730,7 +737,7 @@ contains
        call nitrogenflux_vars%Init(bounds_proc) 
 
 
-       call phosphorusstate_vars%Init(bounds_proc,                      &
+       call phosphorusstate_vars%Init(bounds_proc,                    &
             carbonstate_vars%leafc_patch(begp:endp),                  &
             carbonstate_vars%leafc_storage_patch(begp:endp),          &
             carbonstate_vars%deadstemc_patch(begp:endp),              &
@@ -1049,6 +1056,19 @@ contains
     ! deallocated
 
     deallocate(topo_glc_mec)
+
+    !------------------------------------------------------------
+    !! initialize clm_bgc_interface_data_type
+    call t_startf('init_clm_bgc_interface_data & pflotran')
+    if (use_bgc_interface) then
+        call clm_bgc_data%Init(bounds_proc)
+        ! PFLOTRAN initialization
+        if (use_pflotran) then
+            call clm_pf_interface_init(bounds_proc)
+        end if
+    end if
+    call t_stopf('init_clm_bgc_interface_data & pflotran')
+    !------------------------------------------------------------
 
     !------------------------------------------------------------       
     ! Write log output for end of initialization

@@ -48,7 +48,10 @@ module clm_time_manager
         is_last_step,             &! return true on last timestep
         is_perpetual,             &! return true if perpetual calendar is in use
         is_restart,               &! return true if this is a restart run
-        update_rad_dtime           ! track radiation interval via nstep
+        update_rad_dtime,         &! track radiation interval via nstep
+        !!below used by pflotran
+        nsstep,                   &! (re-)start timestep
+        nestep                     ! ending timestep
 
    ! Public parameter data
    character(len=*), public, parameter :: NO_LEAP_C   = 'NO_LEAP'
@@ -97,6 +100,7 @@ module clm_time_manager
    logical, save :: tm_perp_calendar      = .false.    ! true when using perpetual calendar
    logical, save :: timemgr_set           = .false.    ! true when timemgr initialized
    integer, save :: nestep                = uninit_int ! ending time-step
+   integer, save :: nsstep                = 0          ! (re-)start time-step
    !
    ! Next short-wave radiation calendar day
    ! 
@@ -626,6 +630,10 @@ contains
     ! Set flag that this is the first timestep of the restart run.
 
     tm_first_restart_step = .true.
+
+    !! pflotran: nsstep
+    ! save the first restart 'nstep'
+    nsstep = get_nstep()
 
     ! Calculate ending time step
 

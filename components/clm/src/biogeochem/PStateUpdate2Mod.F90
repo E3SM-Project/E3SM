@@ -12,6 +12,8 @@ module PStateUpdate2Mod
   use clm_varctl          , only : iulog
   use PhosphorusStateType , only : phosphorusstate_type
   use PhosphorusFLuxType  , only : phosphorusflux_type
+  !! bgc interface & pflotran:
+  use clm_varctl          , only : use_pflotran, pf_cmode
   !
   implicit none
   save
@@ -56,6 +58,11 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
 
+      !------------------------------------------------------------------
+      ! if coupled with pflotran, the following updates are NOT needed
+!      if (.not.(use_pflotran .and. pf_cmode)) then
+      !------------------------------------------------------------------
+
       ! column-level phosporus fluxes from gap-phase mortality
 
       do j = 1, nlevdecomp
@@ -72,7 +79,8 @@ contains
                  ps%decomp_ppools_vr_col(c,j,i_cwd)     + pf%gap_mortality_p_to_cwdp_col(c,j)       * dt
          end do
       end do
-
+!      endif ! if (.not.(use_pflotran .and. pf_cmode))
+      !------------------------------------------------------------------
 
       ! patch -level phosporus fluxes from gap-phase mortality
 
@@ -142,6 +150,11 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
 
+      !------------------------------------------------------------------
+      ! if coupled with pflotran, the following updates are NOT needed
+      if (.not.(use_pflotran .and. pf_cmode)) then
+      !------------------------------------------------------------------
+
       ! column-level phosporus fluxes from harvest mortality
 
       do j = 1,nlevdecomp
@@ -157,6 +170,8 @@ contains
                  ps%decomp_ppools_vr_col(c,j,i_cwd)     + pf%harvest_p_to_cwdp_col(c,j)       * dt
          end do
       end do
+      endif ! if (.not.(use_pflotran .and. pf_cmode))
+      !------------------------------------------------------------------
 
       ! patch-level phosporus fluxes from harvest mortality
 

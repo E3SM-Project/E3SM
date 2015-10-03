@@ -105,7 +105,7 @@ module CNCarbonStateType
      procedure , public  :: ZeroDWT
      procedure , public  :: Restart
      procedure , public  :: Summary
-     procedure , private :: InitAllocate 
+     procedure , private :: InitAllocate
      procedure , private :: InitHistory  
      procedure , private :: InitCold     
 

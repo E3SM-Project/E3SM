@@ -291,6 +291,20 @@ module clm_varctl
   logical, private :: clmvarctl_isset = .false.
  !-----------------------------------------------------------------------
 
+  !-----------------------------------------------------------------------
+  ! bgc & pflotran interface
+  !
+  logical, public :: use_bgc_interface  = .false.
+  logical, public :: use_clm_bgc        = .false.
+  logical, public :: use_pflotran       = .false.
+  logical, public :: pf_surfaceflow     = .false.
+  ! the following switches will allow flexibility of coupling CLM with PFLOTRAN (which in fact runs in 3 modes individually or coupled)
+  logical, public :: pf_hmode     = .false.                 ! switch for 'H' mode coupling (will be updated in interface)
+  logical, public :: pf_tmode     = .false.                 ! switch for 'T' mode coupling (will be updated in interface)
+  logical, public :: pf_frzmode   = .false.                 ! switch for 'freezing' mode availablity in PF-thmode (will be updated in interface)
+  logical, public :: pf_cmode     = .false.                 ! switch for 'C' mode coupling (will be updated in interface)
+  logical, public :: initth_pf2clm= .false.                 ! switch for initializing CLM TH states from pflotran
+
 contains
 
   !---------------------------------------------------------------------------

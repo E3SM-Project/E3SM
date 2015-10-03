@@ -1478,6 +1478,12 @@ sub process_namelist_inline_logic {
   # namelist group: lai_streams  #
   ##################################
   setup_logic_lai_streams($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
+
+  #########################################
+  # namelist group: clm_pflotran_inparm   #
+  #########################################
+  setup_logic_pflotran($opts, $nl_flags, $definition, $defaults, $nl, $physv);
+
 }
 
 #-------------------------------------------------------------------------------
@@ -2651,6 +2657,28 @@ sub setup_logic_snowpack {
 }
 
 #-------------------------------------------------------------------------------
+sub setup_logic_pflotran {
+    # clm_pflotran_inparm
+    # PFLOTRAN model if bgc=CN or CNDV and CLM4.5 physics
+    #
+    my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+
+    if ( $physv->as_long() >= $physv->as_long("clm4_5")) {
+
+      if ( $nl_flags->{'use_pflotran'}  eq '.true.' ) {
+        add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'pflotran_inputdir' );
+        add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'pflotran_prefix' );
+        #
+        # Check if $pflotran_prefix is set in $inputdata_rootdir/$pflotran      #
+        my $pflotran_inputdir = $nl->get_value('pflotran_inputdir');
+        my $pflotran_prefix = $nl->get_value('pflotran_prefix');
+             # (TODO) something here, but not yet at this momment.
+      }
+    }
+} # end setup_logic_pflotran
+
+
+#-------------------------------------------------------------------------------
 
 sub write_output_files {
   my ($opts, $nl_flags, $defaults, $nl, $physv) = @_;
@@ -2678,7 +2706,7 @@ sub write_output_files {
   } else {
     @groups = qw(clm_inparm ndepdyn_nml popd_streams light_streams lai_streams clm_canopyhydrology_inparm 
                  clm_soilhydrology_inparm dynamic_subgrid finidat_consistency_checks dynpft_consistency_checks 
-                 clmu_inparm clm_soilstate_inparm );
+                 clmu_inparm clm_soilstate_inparm clm_pflotran_inparm );
     #@groups = qw(clm_inparm clm_canopyhydrology_inparm clm_soilhydrology_inparm 
     #             finidat_consistency_checks dynpft_consistency_checks);
     # Eventually only list namelists that are actually used when CN on

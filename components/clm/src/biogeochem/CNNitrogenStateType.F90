@@ -19,7 +19,8 @@ module CNNitrogenStateType
   use spmdMod                , only : masterproc 
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
-  use PatchType              , only : pft                
+  use PatchType              , only : pft
+  use clm_varctl             , only : use_pflotran, pf_cmode
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -99,6 +100,10 @@ module CNNitrogenStateType
      real(r8), pointer :: endnb_col                    (:)     ! col nitrogen mass, end of time step (gN/m**2)
      real(r8), pointer :: errnb_col                    (:)     ! colnitrogen balance error for the timestep (gN/m**2)
 
+     ! for newly-added coupled codes with pflotran (it should be included in total 'sminn' defined above when doing summation)
+     real(r8), pointer :: smin_nh4sorb_vr_col          (:,:)   ! col (gN/m3) vertically-resolved soil mineral NH4 absorbed
+     real(r8), pointer :: smin_nh4sorb_col             (:)     ! col (gN/m2) soil mineral NH4 pool absorbed
+
    contains
 
      procedure , public  :: Init   
@@ -106,7 +111,7 @@ module CNNitrogenStateType
      procedure , public  :: SetValues
      procedure , public  :: ZeroDWT
      procedure , public  :: Summary
-     procedure , private :: InitAllocate 
+     procedure , private :: InitAllocate
      procedure , private :: InitHistory  
      procedure , private :: InitCold     
 
@@ -216,6 +221,10 @@ contains
     allocate(this%endnb_col   (begc:endc));     this%endnb_col   (:) =nan
     allocate(this%errnb_patch (begp:endp));     this%errnb_patch (:) =nan
     allocate(this%errnb_col   (begc:endc));     this%errnb_col   (:) =nan 
+
+    ! pflotran
+    allocate(this%smin_nh4sorb_vr_col      (begc:endc,1:nlevdecomp_full)) ; this%smin_nh4sorb_vr_col      (:,:) = nan
+    allocate(this%smin_nh4sorb_col         (begc:endc))                   ; this%smin_nh4sorb_col         (:)   = nan
 
   end subroutine InitAllocate
 
@@ -466,6 +475,12 @@ contains
             avgflag='A', long_name='soil mineral NH4 (vert. res.)', &
             ptr_col=this%smin_nh4_vr_col)
 
+       ! pflotran
+       this%smin_nh4sorb_vr_col(begc:endc,:) = spval
+       call hist_addfld_decomp (fname='SMIN_NH4SORB'//trim(vr_suffix), units='gN/m^3',  type2d='levdcmp', &
+            avgflag='A', long_name='soil mineral NH4 absorbed (vert. res.)', &
+            ptr_col=this%smin_nh4sorb_vr_col)
+
        if ( nlevdecomp_full > 1 ) then
           this%smin_no3_col(begc:endc) = spval
           call hist_addfld1d (fname='SMIN_NO3', units='gN/m^2', &
@@ -476,6 +491,12 @@ contains
           call hist_addfld1d (fname='SMIN_NH4', units='gN/m^2', &
                avgflag='A', long_name='soil mineral NH4', &
                ptr_col=this%smin_nh4_col)
+
+          ! pflotran
+          this%smin_nh4sorb_col(begc:endc) = spval
+          call hist_addfld1d (fname='SMIN_NH4SORB', units='gN/m^2', &
+               avgflag='A', long_name='soil mineral NH4 absorbed', &
+               ptr_col=this%smin_nh4sorb_col)
        endif
 
        this%sminn_vr_col(begc:endc,:) = spval
@@ -689,9 +710,11 @@ contains
              do j = 1, nlevdecomp_full
                 this%smin_nh4_vr_col(c,j) = 0._r8
                 this%smin_no3_vr_col(c,j) = 0._r8
+                this%smin_nh4sorb_vr_col(c,j) = 0._r8
              end do
              this%smin_nh4_col(c) = 0._r8
              this%smin_no3_col(c) = 0._r8
+             this%smin_nh4sorb_col(c) = 0._r8
           end if
           this%totlitn_col(c)    = 0._r8
           this%totsomn_col(c)    = 0._r8
@@ -968,6 +991,26 @@ contains
        end if
     end if
 
+    ! pflotran: smin_nh4sorb
+    if (use_pflotran .and. pf_cmode) then
+       if (use_vertsoilc) then
+          ptr2d => this%smin_nh4sorb_vr_col(:,:)
+          call restartvar(ncid=ncid, flag=flag, varname='smin_nh4sorb_vr', xtype=ncd_double, &
+               dim1name='column', dim2name='levgrnd', switchdim=.true., &
+               long_name='', units='', &
+               interpinic_flag='interp', readvar=readvar, data=ptr2d)
+        else
+          ptr1d => this%smin_nh4sorb_vr_col(:,1)
+          call restartvar(ncid=ncid, flag=flag, varname='smin_nh4sorb', xtype=ncd_double, &
+               dim1name='column', &
+               long_name='', units='', &
+               interpinic_flag='interp', readvar=readvar, data=ptr1d)
+       end if
+       if (flag=='read' .and. .not. readvar) then
+          call endrun(msg= 'ERROR:: smin_nh4sorb_vr'//' is required on an initialization dataset' )
+       end if
+    end if
+
     ! Set the integrated sminn based on sminn_vr, as is done in CNSummaryMod (this may
     ! not be the most appropriate method or place to do this)
 
@@ -1184,6 +1227,10 @@ contains
        if (use_nitrif_denitrif) then
           this%smin_no3_col(i) = value_column
           this%smin_nh4_col(i) = value_column
+
+          if(use_pflotran .and. pf_cmode) then
+             this%smin_nh4sorb_col(i) = value_column
+          end if
        end if
        this%totlitn_col(i)     = value_column
        this%totsomn_col(i)     = value_column
@@ -1201,6 +1248,10 @@ contains
           if (use_nitrif_denitrif) then
              this%smin_no3_vr_col(i,j) = value_column
              this%smin_nh4_vr_col(i,j) = value_column
+
+             if(use_pflotran .and. pf_cmode) then
+               this%smin_nh4sorb_vr_col(i,j) = value_column
+             end if
           end if
        end do
     end do
@@ -1337,6 +1388,10 @@ contains
          c = filter_soilc(fc)
          this%smin_no3_col(c) = 0._r8
          this%smin_nh4_col(c) = 0._r8
+
+         if(use_pflotran .and. pf_cmode) then
+            this%smin_nh4sorb_col(c) = 0._r8
+         end if
       end do
       do j = 1, nlevdecomp
          do fc = 1,num_soilc
@@ -1348,6 +1403,12 @@ contains
             this%smin_nh4_col(c) = &
                  this%smin_nh4_col(c) + &
                  this%smin_nh4_vr_col(c,j) * dzsoi_decomp(j)
+
+            if(use_pflotran .and. pf_cmode) then
+               this%smin_nh4sorb_col(c) = &
+                 this%smin_nh4sorb_col(c) + &
+                 this%smin_nh4sorb_vr_col(c,j) * dzsoi_decomp(j)
+            end if
           end do 
        end do
 

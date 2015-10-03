@@ -1421,4 +1421,32 @@ If TRUE (which is the default), check consistency between pct_nat_pft on the fla
 and pct_nat_pft read from the surface dataset.
 </entry>
 
+<!-- =========================================================================================  -->
+<!-- Namelist options related to the bgc & pflotran interface
+<!-- ========================================================================================  -->
+<entry id="use_bgc_interface" type="logical" category="default_settings"
+    group="clm_inparm" valid_values="">
+    Runtime flag to turn on/off bgc interface.
+</entry>
+
+<entry id="use_clm_bgc" type="logical" category="default_settings"
+    group="clm_inparm" valid_values="">
+    Runtime flag to turn on/off clm-bgc.
+</entry>
+
+<entry id="use_pflotran" type="logical" category="default_settings"
+    group="clm_inparm" valid_values="">
+    Runtime flag to turn on/off pflotran interface.
+</entry>
+
+<entry id="pflotran_inputdir" type="char*256" category="clm_pflotran"
+    group="clm_pflotran_inparm" valid_values="" >
+    pflotran input directory in which $pflotran_prefix.in and files contained should be located, but not yet done.
+</entry>
+
+<entry id="pflotran_prefix" type="char*256" category="clm_pflotran"
+    group="clm_pflotran_inparm" valid_values="" >
+    pflotran file prefix.
+</entry>
+
 </namelist_definition>

@@ -144,7 +144,7 @@ module CNStateType
      procedure, public  :: Init         
      procedure, public  :: Restart      
      procedure, public  :: CropRestIncYear
-     procedure, private :: InitAllocate 
+     procedure, private :: InitAllocate
      procedure, private :: InitHistory  
      procedure, private :: InitCold     
 
