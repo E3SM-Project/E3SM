@@ -578,7 +578,7 @@ contains
   use TransportMod          , only : semi_lagrange_adv_backward
   use abortutils            , only : endrun
   use WaterfluxType         , only : waterflux_type  
- 
+  use MathfuncMod           , only : safe_div 
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: num_soilc                                  ! number of columns in column filter_soilc
@@ -621,6 +621,7 @@ contains
 
   real(r8), parameter :: err_relative_threshold=1.e-2_r8 !relative error threshold
   real(r8), parameter :: err_adv_min=1.e-10_r8  
+  real(r8), parameter :: loc_eps = 1.e-8_r8  !smoothing factor to avoid advection velocity spikes, dimension less
   real(r8)            :: mass0
   character(len=255) :: subname = 'do_tracer_advection'
   
@@ -695,10 +696,10 @@ contains
       !obtain advective velocity for the group
     do fc = 1, num_soilc
       c = filter_soilc(fc)
-      qflx_adv_local(c,jtops(c)-1) = qflx_adv(c,jtops(c)-1)/aqu2bulkcef_mobile_col(c,jtops(c),j)
+      qflx_adv_local(c,jtops(c)-1) = safe_div(qflx_adv(c,jtops(c)-1),aqu2bulkcef_mobile_col(c,jtops(c),j),eps=loc_eps)
       do l = jtops(c), ubj
-        qflx_adv_local(c,l) = qflx_adv(c,l)/aqu2bulkcef_mobile_col(c,l,j)
-        qflx_rootsoi_local(c,l) = qflx_rootsoi(c,l)/aqu2bulkcef_mobile_col(c,l,j)
+        qflx_adv_local(c,l) = safe_div(qflx_adv(c,l),aqu2bulkcef_mobile_col(c,l,j),eps=loc_eps)
+        qflx_rootsoi_local(c,l) = safe_div(qflx_rootsoi(c,l),aqu2bulkcef_mobile_col(c,l,j),eps=loc_eps)
       enddo
     enddo
 
@@ -807,6 +808,16 @@ contains
           if(halfdt_col(c))then
              dtime_loc(c) = max(dtime_loc(c)*0.5_r8,dtime_min)
              dtime_loc(c) = min(dtime_loc(c), time_remain(c))
+!             if(get_nstep()==655386 .and. c==5161)then
+!               print*,'c dt tr',c,dtime_loc(c),time_remain(c),tracernames(j)
+!               do l = jtops(c), ubj
+!                 print*,l,tracer_conc_mobile_col(c,l,adv_trc_group(1)),qflx_adv_local(c,l),qflx_adv(c,l),aqu2bulkcef_mobile_col(c,l,j)
+!               enddo
+!             endif
+!             if(dtime_loc(c)<=dtime_min)then
+!               print*,tracer_conc_mobile_col(c,jtops(c):ubj,adv_trc_group(1))
+!               call endrun('minimum time step less than 1s'//tracernames(j)//errMsg(__FILE__,__LINE__))
+!             endif
           else
              time_remain(c) = time_remain(c) - dtime_loc(c)
           endif

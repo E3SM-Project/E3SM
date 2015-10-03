@@ -195,17 +195,23 @@ contains
    end subroutine diff   
   
 !------------------------------------------------------------------------------- 
-   function safe_div(a,b)result(ans)
+   function safe_div(a,b,eps)result(ans)
    !
    !DESCRIPTION
    !avoid division by zero when calculate a/b
    implicit none
    real(r8), intent(in) :: a
    real(r8), intent(in) :: b
-   
+   real(r8), optional, intent(in) :: eps
    real(r8) :: ans
-   if(abs(b)<1.e-40_r8)then 
-     ans = a * b / (b**2._r8+1.e-40_r8)
+   real(r8) :: loc_eps
+   if(present(eps))then
+     loc_eps=eps
+   else
+     loc_eps=1.e-40_r8
+   endif
+   if(abs(b)<loc_eps)then 
+     ans = a * b / (b**2._r8+loc_eps)
    else
      ans = a/b
    endif
