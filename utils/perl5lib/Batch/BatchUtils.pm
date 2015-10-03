@@ -168,7 +168,7 @@ sub submitJobs()
     {
 	foreach my $jobname(@{$depqueue{$jobnum}})
 	{
-            $logger->debug("jobname: $jobname");
+            $logger->info("jobname: $jobname");
             $logger->debug( "lastjobseqnum $lastjobseqnum");
 	    my $islastjob = 0;
 	    $islastjob = 1 if ($jobnum == $lastjobseqnum);
@@ -202,7 +202,8 @@ sub submitSingleJob()
     #my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname $sta_argument";
     chdir $config{'CASEROOT'};
     my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname ";
-    $logger->debug(": $runcmd");    
+
+    $logger->info(": $runcmd");    
     my $output;
 
     eval {
@@ -226,7 +227,12 @@ sub submitSingleJob()
 sub _decrementResubmitCounter()
 {
     my ($self,$config) = @_;
-    my $newresubmit = $config->{'RESUBMIT'} - 1;
+    my $newresubmit;
+    if(defined $config->{RESUBMIT}){
+	$newresubmit = $config->{'RESUBMIT'} - 1;
+    }else{
+	$logger->logdie("RESUBMIT not defined in \$config");
+    }
     my $owd = getcwd;
     chdir $config->{'CASEROOT'};
     if($config->{COMP_RUN_BARRIERS} ne "TRUE") 
@@ -253,7 +259,7 @@ sub doResubmit()
     $logger->info( "resubmitting jobs...");
     $self->dependencyCheck($scriptname);
     $self->submitJobs($scriptname);
-    $self->_decrementResubmitCounter($self->{config});
+    $self->_decrementResubmitCounter($self->{caseconfig});
 
 }
 
@@ -274,7 +280,6 @@ sub dependencyCheck()
     {
 	my $jobname = "$config{'CASE'}.test";
 	$self->addDependentJob($jobname);
-        return;
     }
     else
     {
@@ -551,11 +556,8 @@ sub submitJobs()
 #==============================================================================
 sub submitSingleJob()
 {
-    my $self = shift;
-    my $scriptname = shift;
-    #    my $dependentJobId = shift;
-    #    my $islastjob = shift;
-    #    my $sta_ok = shift;
+    my ($self, $scriptname) = @_;
+
     my $workflowhostfile = "./workflowhostfile";
     if(! -e $workflowhostfile)
     {
@@ -580,9 +582,10 @@ sub submitSingleJob()
     {
         $submitargs = '';
     }
-
     $logger->info( "Submitting job script $scriptname");
-    my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname";
+    my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname ";
+
+    $logger->info( "Submitting job $runcmd");
     $logger->debug("Runcmd: $runcmd");
     
     my $output;
@@ -619,7 +622,7 @@ sub doResubmit()
         chdir $config{'CASEROOT'};
         my $submitargs = $self->getSubmitArguments($scriptname);
         
-        my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $scriptname";
+        my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $scriptname ";
         
         qx($runcmd) or $logger->logdie ("could not exec command $runcmd, $!");
 
