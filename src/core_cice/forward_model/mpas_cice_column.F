@@ -39,9 +39,6 @@ module cice_column
        cice_column_aggregate, &
        cice_column_initial_air_drag_coefficient, &
        cice_column_reinitialize_fluxes
-
-  ! constants
-  real(kind=RKIND), parameter :: puny = 1e-11_RKIND
        
   ! tracer object
   type, private :: ciceTracerObjectType
@@ -315,7 +312,11 @@ contains
 
   subroutine cice_init_column_shortwave(domain, clock)
 
-    use ice_colpkg, only: colpkg_init_orbit
+    use ice_colpkg, only: &
+         colpkg_init_orbit
+
+    use cice_constants, only: &
+         cicePuny
 
     type(domain_type), intent(inout) :: domain
 
@@ -468,7 +469,7 @@ contains
           do iCategory = 1, nCategories
 
              ! aggregate albedos
-             if (iceAreaCategory(1,iCategory,iCell) > puny) then
+             if (iceAreaCategory(1,iCategory,iCell) > cicePuny) then
 
                 albedoVisibleDirectCell(iCell)  = albedoVisibleDirectCell(iCell)  + &
                      albedoVisibleDirectCategory(iCategory,iCell)  * iceAreaCategory(1,iCategory,iCell)
@@ -479,7 +480,7 @@ contains
                 albedoIRDiffuseCell(iCell)      = albedoIRDiffuseCell(iCell)      + &
                      albedoIRDiffuseCategory(iCategory,iCell)      * iceAreaCategory(1,iCategory,iCell)
 
-                if (solarZenithAngleCosine(iCell) > puny) then ! sun above horizon
+                if (solarZenithAngleCosine(iCell) > cicePuny) then ! sun above horizon
 
                    bareIceAlbedoCell(iCell) = bareIceAlbedoCell(iCell) + &
                         bareIceAlbedoCategory(iCategory,iCell) * iceAreaCategory(1,iCategory,iCell)
@@ -884,7 +885,11 @@ contains
 
   subroutine column_vertical_thermodynamics(domain, clock)
 
-    use ice_colpkg, only: colpkg_step_therm1
+    use ice_colpkg, only: &
+         colpkg_step_therm1
+
+    use cice_constants, only: &
+         cicePuny
 
     type(domain_type), intent(inout) :: domain
 
@@ -1427,10 +1432,10 @@ contains
              do iCategory = 1, nCategories
                 do iAerosol = 1, nAerosols
 
-                   if (snowVolumeCategory(1,iCategory,iCell) > puny) &
+                   if (snowVolumeCategory(1,iCategory,iCell) > cicePuny) &
                         specificSnowAerosol(iAerosol, :, iCategory) = specificSnowAerosol(iAerosol, :, iCategory) / snowVolumeCategory(1,iCategory,iCell)
 
-                   if (iceVolumeCategory(1,iCategory,iCell) > puny) &
+                   if (iceVolumeCategory(1,iCategory,iCell) > cicePuny) &
                         specificIceAerosol(iAerosol, :, iCategory)  = specificIceAerosol(iAerosol, :, iCategory)  / iceVolumeCategory(1,iCategory,iCell)
 
                    snowScatteringAerosol(iAerosol,iCategory,iCell) = specificSnowAerosol(iAerosol, 1, iCategory)
@@ -4529,6 +4534,9 @@ contains
 
   subroutine check_column_package_configs(domain)
 
+    use cice_constants, only: &
+         cicePuny
+
     type(domain_type), intent(inout) :: &
          domain
 
@@ -4683,7 +4691,7 @@ contains
     endif
     
     ! check config_snow_to_ice_transition_depth and level ponds
-    if (config_use_level_meltponds .and. abs(config_snow_to_ice_transition_depth) > puny) then
+    if (config_use_level_meltponds .and. abs(config_snow_to_ice_transition_depth) > cicePuny) then
        COLUMN_ERROR_WRITE("config_use_level_meltponds = .true. and config_snow_to_ice_transition_depth /= 0")
        call MPAS_dmpar_global_abort('Incompatible config_use_level_meltponds and config_snow_to_ice_transition_depth')
     endif

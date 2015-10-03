@@ -787,6 +787,10 @@ contains
     use ice_colpkg, only: &
          colpkg_ice_strength
 
+    use cice_constants, only: &
+         ciceIceStrengthConstantHiblerP, &
+         ciceIceStrengthConstantHiblerC
+
     type(domain_type), intent(inout) :: &
          domain
 
@@ -826,10 +830,6 @@ contains
     integer :: &
          iCell
 
-    real(kind=RKIND), parameter :: &
-         Pstar = 2.75e4_RKIND, & ! constant in Hibler strength formula 
-         Cstar = 20.0_RKIND      ! constant in Hibler strength formula 
-
     block => domain % blocklist
     do while (associated(block))
 
@@ -862,7 +862,8 @@ contains
 
              if (solveStress(iCell) == 1) then
 
-                icePressure(iCell) = Pstar * iceVolumeCell(iCell) * exp(-Cstar*(1.0_RKIND-iceAreaCell(iCell)))
+                icePressure(iCell) = ciceIceStrengthConstantHiblerP * iceVolumeCell(iCell) * &
+                     exp(-ciceIceStrengthConstantHiblerC*(1.0_RKIND-iceAreaCell(iCell)))
 
              else
 
@@ -1481,6 +1482,10 @@ contains
 
   subroutine ocean_stress_coefficient(domain)
 
+    use cice_constants, only: &
+         ciceDensitySeaWater, &
+         ciceIceOceanDragCoefficient
+
     type(domain_type), intent(inout) :: &
          domain
 
@@ -1504,10 +1509,6 @@ contains
 
     logical, pointer :: &
          configUseOceanStress
-
-    real(kind=RKIND), parameter :: &
-         densityWater      = 1026.0_RKIND, &
-         iceOceanDragCoeff = 0.00536_RKIND
 
     integer, pointer :: &
          nVerticesSolve
@@ -1541,7 +1542,7 @@ contains
 
              if (solveVelocity(iVertex) == 1) then
 
-                oceanStressCoeff(iVertex) = iceOceanDragCoeff * densityWater * iceAreaVertex(iVertex) * &
+                oceanStressCoeff(iVertex) = ciceIceOceanDragCoefficient * ciceDensitySeaWater * iceAreaVertex(iVertex) * &
                      sqrt((uOceanVelocityVertex(iVertex) - uVelocity(iVertex))**2 + &
                           (vOceanVelocityVertex(iVertex) - vVelocity(iVertex))**2)
 

@@ -14,30 +14,61 @@ module cice_constants
 
   use mpas_derived_types
 
+  use ice_constants_colpkg, only: &
+       rhoi, &
+       rhos, &
+       rhow, &
+       puny, &
+       stefan_boltzmann, &
+       emissivity, &
+       Tffresh, &
+       cp_air, &
+       Lsub, &
+       Pstar, &
+       Cstar, &
+       dragio
+
   private
   save
-  
+
+  ! fundamental constants
   real (kind=RKIND), parameter, public :: &
-       pii = 3.141592653589793
-
-  real (kind=RKIND), parameter, public :: &
-       earthRadius = 6371229.0
-
-   real (kind=RKIND), parameter, public :: &
-        omega   = 7.29212e-5 !< Constant: Angular rotation rate of the Earth [s-1]
-
-  character (len=*), public, parameter :: coupleAlarmID = 'coupling'
-
-  real(kind=RKIND), parameter, public :: &
+       pii = 3.141592653589793, &
        ciceDegreesToRadians = pii / 180.0_RKIND, &
-       ciceRadiansToDegrees = 180.0_RKIND / pii
+       ciceRadiansToDegrees = 180.0_RKIND / pii, &
+       ciceSecondsPerYear = 24.0_RKIND * 3600.0_RKIND * 365.0_RKIND, &
+       ciceSecondsPerDay  = 24.0_RKIND * 3600.0_RKIND
+
+  ! Earth constants
+  real (kind=RKIND), parameter, public :: &
+       earthRadius = 6371229.0, & ! radius of Earth in [m]
+       omega       = 7.29212e-5   ! angular rotation rate of the Earth [s-1]
+
+  character (len=*), public, parameter :: &
+       coupleAlarmID = 'coupling'
 
   real(kind=RKIND), parameter, public :: &
-       ciceDensityIce  = 917.0_RKIND, &
-       ciceDensitySnow = 330.0_RKIND
+       cicePuny = puny
 
+  ! physical constants
   real(kind=RKIND), parameter, public :: &
-       cicePuny = 1.0e-11_RKIND
+       ciceDensityIce      = rhoi, & ! density of ice (kg/m^3)
+       ciceDensitySnow     = rhos, & ! density of snow (kg/m^3)
+       ciceDensitySeaWater = rhow    ! density of seawater (kg/m^3)
+
+  ! thermodynamic constants
+  real(kind=RKIND), parameter, public :: &
+       ciceStefanBoltzmann         = stefan_boltzmann, & ! J m-2 K-4 s-1
+       ciceIceSnowEmissivity       = emissivity, &       ! emissivity of snow and ice
+       ciceFreshWaterFreezingPoint = Tffresh, &          ! freezing temp of fresh ice (K)
+       ciceAirSpecificHeat         = cp_air, &           ! specific heat of air (J/kg/K)
+       ciceLatentHeatSublimation   = Lsub                ! latent heat, sublimation freshwater (J/kg)
+
+  ! dynamics constants
+  real(kind=RKIND), parameter, public :: &
+       ciceIceStrengthConstantHiblerP = Pstar, & ! P* constant in Hibler strength formulation
+       ciceIceStrengthConstantHiblerC = Cstar, & ! C* constant in Hibler strength formulation
+       ciceIceOceanDragCoefficient    = dragio   ! ice ocean drag coefficient
 
   ! minimum sea ice area
   real(kind=RKIND), parameter, public :: &
@@ -45,19 +76,6 @@ module cice_constants
        iceThicknessMinimum  = cicePuny, &
        snowThicknessMinimum = cicePuny
 
-
-  real(kind=RKIND), parameter, public :: &
-       ciceStefanBoltzmann = 5.67e-8_RKIND , & ! J m-2 K-4 s-1
-       ciceIceSnowEmissivity = 0.95_RKIND, & ! emissivity of snow and ice
-       ciceFreshWaterFreezingPoint = 273.15_RKIND, & ! freezing temp of fresh ice (K)
-       ciceAirSpecificHeat = 1005.0_RKIND, & ! specific heat of air (J/kg/K)
-       ciceLatentHeatSublimation = 2.835e6_RKIND ! latent heat, sublimation freshwater (J/kg)
-
-
-
- real(kind=RKIND), parameter, public :: &
-      ciceSecondsPerYear = 365.0_RKIND * 24.0_RKIND * 3600.0_RKIND, &
-      ciceSecondsPerDay = 24.0_RKIND * 3600.0_RKIND
 
 end module cice_constants
 
