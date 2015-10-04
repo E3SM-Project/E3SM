@@ -88,17 +88,28 @@ contains
 
     real(kind=RKIND), pointer :: &
          dynamicsTimeStep, &
+         elasticTimeStep, &
          config_dt
 
-    ! set things even if we dont want velocity
+    integer, pointer :: &
+         config_dynamics_subcycle_number, &
+         config_elastic_subcycle_number
+
+    ! set timesteps even with velocity turned off
     block => domain % blocklist
     do while (associated(block))
 
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
+       call MPAS_pool_get_config(block % configs, "config_dynamics_subcycle_number", config_dynamics_subcycle_number)
+       call MPAS_pool_get_config(block % configs, "config_elastic_subcycle_number", config_elastic_subcycle_number)
+
        call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolver)
        call MPAS_pool_get_array(velocitySolver, "dynamicsTimeStep", dynamicsTimeStep)
+       call MPAS_pool_get_array(velocitySolver, "elasticTimeStep", elasticTimeStep)
 
-       dynamicsTimeStep = config_dt
+       dynamicsTimeStep = config_dt / real(config_dynamics_subcycle_number,RKIND)
+
+       elasticTimeStep = dynamicsTimeStep / real(config_elastic_subcycle_number,RKIND)
 
        block => block % next
     enddo
@@ -176,10 +187,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_run_velocity_solver(&
-       domain, &
-       clock, &
-       dt)!{{{
+  subroutine cice_run_velocity_solver(domain, clock)!{{{
 
     use cice_debug
 
@@ -188,9 +196,6 @@ contains
 
     type (MPAS_Clock_type), intent(in) :: &
          clock !< Input: 
-
-    real(kind=RKIND), intent(in) :: &
-         dt !< Input: 
 
     logical, pointer :: &
          config_use_velocity_solver
@@ -1744,7 +1749,7 @@ contains
          oceanStressCoeff
 
     real(kind=RKIND), pointer :: &
-         dt
+         dynamicsTimeStep
 
     real(kind=RKIND), dimension(2) :: &
          rightHandSide
@@ -1763,8 +1768,6 @@ contains
 
     block => domain % blocklist
     do while (associated(block))
-
-       call MPAS_pool_get_config(block % configs, "config_dt", dt)
  
        call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
 
@@ -1788,13 +1791,14 @@ contains
        call MPAS_pool_get_array(velocitySolverPool, "oceanStressU", oceanStressU)
        call MPAS_pool_get_array(velocitySolverPool, "oceanStressV", oceanStressV)
        call MPAS_pool_get_array(velocitySolverPool, "oceanStressCoeff", oceanStressCoeff)
+       call MPAS_pool_get_array(velocitySolverPool, "dynamicsTimeStep", dynamicsTimeStep)
 
        do iVertex = 1, nVerticesSolve
 
           if (solveVelocity(iVertex) == 1) then
 
              ! U equation
-             leftMatrix(1,1) =  (numericalInertiaCoefficient + 1.0_RKIND) * (totalMassVertex(iVertex) / dt) &
+             leftMatrix(1,1) =  (numericalInertiaCoefficient + 1.0_RKIND) * (totalMassVertex(iVertex) / dynamicsTimeStep) &
                              +  oceanStressCoeff(iVertex) * cosOceanTurningAngle
              leftMatrix(1,2) = -totalMassVertexfVertex(iVertex) &
                              -  oceanStressCoeff(iVertex) * sinOceanTurningAngle * sign(1.0_RKIND,totalMassVertexfVertex(iVertex))
@@ -1802,17 +1806,17 @@ contains
              ! V equation
              leftMatrix(2,1) =  totalMassVertexfVertex(iVertex) &
                              +  oceanStressCoeff(iVertex) * sinOceanTurningAngle * sign(1.0_RKIND,totalMassVertexfVertex(iVertex))
-             leftMatrix(2,2) =  (numericalInertiaCoefficient + 1.0_RKIND) * (totalMassVertex(iVertex) / dt) &
+             leftMatrix(2,2) =  (numericalInertiaCoefficient + 1.0_RKIND) * (totalMassVertex(iVertex) / dynamicsTimeStep) &
                              +  oceanStressCoeff(iVertex) * cosOceanTurningAngle
 
              ! right hand side of matrix solve
              rightHandSide(1) = stressDivergenceU(iVertex) + airStressVertexU(iVertex) + surfaceTiltForceU(iVertex) + &
                   oceanStressCoeff(iVertex) * oceanStressU(iVertex) + &
-                  (totalMassVertex(iVertex) * (numericalInertiaCoefficient * uVelocity(iVertex) + uVelocityInitial(iVertex))) / dt
+                  (totalMassVertex(iVertex) * (numericalInertiaCoefficient * uVelocity(iVertex) + uVelocityInitial(iVertex))) / dynamicsTimeStep
 
              rightHandSide(2) = stressDivergenceV(iVertex) + airStressVertexV(iVertex) + surfaceTiltForceV(iVertex) + &
                   oceanStressCoeff(iVertex) * oceanStressV(iVertex) + &
-                  (totalMassVertex(iVertex) * (numericalInertiaCoefficient * vVelocity(iVertex) + vVelocityInitial(iVertex))) / dt
+                  (totalMassVertex(iVertex) * (numericalInertiaCoefficient * vVelocity(iVertex) + vVelocityInitial(iVertex))) / dynamicsTimeStep
 
              ! solve the equation
              solutionDenominator = leftMatrix(1,1) * leftMatrix(2,2) - leftMatrix(1,2) * leftMatrix(2,1)

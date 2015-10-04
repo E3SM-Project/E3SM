@@ -1945,9 +1945,6 @@ contains
     logical, pointer :: &
          config_revised_evp
 
-    real(kind=RKIND), pointer :: &
-         config_dt
-
     type(MPAS_pool_type), pointer :: &
          velocitySolver
 
@@ -1958,7 +1955,6 @@ contains
          iTest
 
     call MPAS_pool_get_config(domain % configs, "config_revised_evp", config_revised_evp)
-    call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
 
     call cice_init_evp(domain)
 
@@ -2006,8 +2002,7 @@ contains
                   strain12(iTest), &
                   icePressure(iTest), &
                   replacementPressure,   &
-                  areaCell, &
-                  config_dt)
+                  areaCell)
              
           endif
 

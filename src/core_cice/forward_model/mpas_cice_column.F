@@ -2151,12 +2151,10 @@ contains
          ridging, &
          aerosols, &
          biogeochemistry, &
-         initial
+         initial, &
+         velocity_solver
 
     ! configs
-    real(kind=RKIND), pointer :: &
-         config_dt
-
     integer, pointer :: &
          config_dynamics_subcycle_number
 
@@ -2205,6 +2203,9 @@ contains
     integer, dimension(:,:), pointer :: &
          newlyFormedIce
 
+    real(kind=RKIND), pointer :: &
+         dynamicsTimeStep
+
     ! local
     integer :: &
          iCell, &
@@ -2234,9 +2235,11 @@ contains
        call MPAS_pool_get_subpool(block % structs, "aerosols", aerosols)
        call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
        call MPAS_pool_get_subpool(block % structs, "initial", initial)
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
 
-       call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
        call MPAS_pool_get_config(block % configs, "config_dynamics_subcycle_number", config_dynamics_subcycle_number)
+
+       call MPAS_pool_get_array(velocity_solver, "dynamicsTimeStep", dynamicsTimeStep)
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
@@ -2297,7 +2300,7 @@ contains
           abortFlag = .false.
 
           call colpkg_step_ridge(&
-               config_dt, &        
+               dynamicsTimeStep, &
                config_dynamics_subcycle_number, &
                nIceLayers, &
                nSnowLayers, &
