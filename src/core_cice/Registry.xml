@@ -132,7 +132,6 @@
         	<nml_option name="config_use_ice_age"                            type="logical"       default_value="true"/>
         	<nml_option name="config_use_first_year_ice"                     type="logical"       default_value="true"/>
        		<nml_option name="config_use_level_ice"                          type="logical"       default_value="true"/>
-       		<nml_option name="config_use_meltponds"                          type="logical"       default_value="true"/>
         	<nml_option name="config_use_cesm_meltponds"                     type="logical"       default_value="false"/>
         	<nml_option name="config_use_level_meltponds"                    type="logical"       default_value="true"/>
         	<nml_option name="config_use_topo_meltponds"                     type="logical"       default_value="false"/>
