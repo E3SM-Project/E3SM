@@ -38,25 +38,25 @@
 
   <!-- 1850 compsets Default, Mosart, Wave for CESM2 -->
 
-  <COMPSET>
+  <compset>
     <alias>B1850</alias>
     <lname>1850_CAM5_CLM50%BGC_CICE_POP2_RTM_SGLC_SWAV</lname>
-  </COMPSET>
+  </compset>
 
-  <COMPSET>
+  <compset>
     <alias>BM1850</alias>
     <lname>1850_CAM5_CLM50%BGC_CICE_POP2_MOSART_SGLC_SWAV</lname>
-  </COMPSET>
+  </compset>
 
-  <COMPSET>
+  <compset>
     <alias>BW1850</alias>
     <lname>1850_CAM5_CLM50%BGC_CICE_POP2_RTM_SGLC_DWAV</lname>
-  </COMPSET>
+  </compset>
 
-  <COMPSET>
+  <compset>
     <alias>BMW1850</alias>
     <lname>1850_CAM5_CLM50%BGC_CICE_POP2_MOSART_SGLC_DWAV</lname>
-  </COMPSET>
+  </compset>
 
   <!-- Other B compsets -->
 
