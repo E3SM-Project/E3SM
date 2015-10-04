@@ -13,6 +13,7 @@ if ($?COMPARE_BASELINE ) then
     set COMPARE_THROUGHPUT
 endif
 set DOUT_S_ROOT 	= `./xmlquery DOUT_S_ROOT      -value`
+set DOUT_S 	= `./xmlquery DOUT_S     -value`
 set STOP_N      = `./xmlquery STOP_N      -value`
 set STOP_OPTION = `./xmlquery STOP_OPTION -value`
 
@@ -92,6 +93,12 @@ echo "restart: doing a ${stopn2} ${STOP_OPTION} restart test" >>& $TESTSTATUS_LO
 ./xmlchange -file env_run.xml -id HIST_OPTION  -val ${STOP_OPTION}
 ./xmlchange -file env_run.xml -id HIST_N       -val ${histn}
 
+if ( $DOUT_S == "TRUE" ) then
+    echo "Staging restart files from archive"
+    cp $DOUT_S_ROOT/rest/*/* $RUNDIR/
+endif
+
+
 ./$CASE.run
 if ($status != 0) then
     echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
@@ -142,8 +149,6 @@ echo ""																		     >>& $TESTSTATUS_LOG
 #
 # Results have been archived - compare the hist files in thier archived location
 #
-foreach comp ( atm cpl ocn wav glc ice rof lnd )
-  $SCRIPTSROOT/Tools/component_compare_test.sh -rundir "$DOUT_D_ROOT/$CASE/$comp/hist" -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 rest $add_iop -msg "$msg" >>& $TESTSTATUS_OUT
-end
+$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 rest $add_iop -msg "$msg" >>& $TESTSTATUS_OUT
 
 
