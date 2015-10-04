@@ -78,7 +78,7 @@
         <machine compiler="intel" testtype="prebeta">edison</machine>
         <machine compiler="intel" testtype="prebeta">eos</machine>
       </test>
-      <test name="PEA_P1_M_Ld3">
+      <test name="PEA_P1_Ld3">
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -135,7 +135,7 @@
   </compset>
   <compset name="X">
     <grid name="T31_g37">
-      <test name="PEA_P1_M_Ld3">
+      <test name="PEA_P1_Ld3">
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
