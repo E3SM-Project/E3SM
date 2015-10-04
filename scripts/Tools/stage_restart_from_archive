@@ -1,0 +1,121 @@
+#!/usr/bin/env perl
+
+use strict;
+use Cwd;
+use English;
+use Getopt::Long;
+use IO::File;
+use IO::Handle;
+use File::Basename;
+use File::Copy;
+use File::Path;
+
+sub usage {
+    die <<EOF;
+
+SYNOPSIS
+  stage_restart_from_archive  [options]
+
+OPTIONS
+  -restdate Stage restart and rpointer files for this date 
+  -loglevel  Controls the level of output from the script, 5 levels supported
+                  DEBUG (most verbose), INFO (default), WARN, ERROR, FATAL (silent)
+  -dryrun    Do not attempt to load modules or create directories
+
+  -help [or -h]  Print usage to STDOUT (optional).
+EOF
+} 
+
+my %opts = ( loglevel => "INFO");
+
+GetOptions(
+    "restdate=s" => \$opts{restdate},
+    "loglevel=s" => \$opts{'loglevel'},
+    "dryrun" => \$opts{dryrun},
+    "h|help"  => \$opts{'help'},
+    )  or usage();
+
+# Give usage message.
+usage() if $opts{'help'};
+
+# Check for unparsed argumentss
+if (@ARGV) {
+    print "ERROR: unrecognized arguments: @ARGV\n";
+    usage();
+}
+my $RUNDIR		        = `./xmlquery  RUNDIR	 	-value`;
+my $DOUT_S_ROOT        = `./xmlquery  DOUT_S_ROOT	 	-value`;
+my $CASE		        = `./xmlquery  CASE		-value`;
+my $COMP_CPL		= `./xmlquery  COMP_CPL		-value`;
+my $COMP_ATM		= `./xmlquery  COMP_ATM		-value`;
+my $COMP_LND		= `./xmlquery  COMP_LND		-value`;
+my $COMP_ICE		= `./xmlquery  COMP_ICE		-value`;
+my $COMP_OCN		= `./xmlquery  COMP_OCN		-value`;
+my $COMP_GLC		= `./xmlquery  COMP_GLC		-value`;
+my $COMP_WAV		= `./xmlquery  COMP_WAV		-value`;
+my $COMP_ROF		= `./xmlquery  COMP_ROF		-value`;
+my $CIMEROOT            = `./xmlquery  CIMEROOT		-value`;
+
+my $logger;
+my $dryrun = $opts{dryrun};
+
+my $perl5lib = "$CIMEROOT/utils/perl5lib";
+push(@INC, $perl5lib);
+require Log::Log4perl;
+
+my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
+Log::Log4perl->easy_init({level=>$level,
+			  layout=>'%m%n'});
+
+$logger = Log::Log4perl::get_logger();
+
+# -------------------------------------------------------------------------
+# First make sure that the archive directory exists
+
+$logger->logdie("Could not find archive directory \"$DOUT_S_ROOT\"") unless(-d $DOUT_S_ROOT);
+
+# and that the date is in the correct format and files exist
+
+my $restdate = $opts{restdate};
+
+if($restdate =~ /\d\d\d\d-\d\d-\d\d-\d\d\d\d\d/){
+    my $cplrestfile = "$DOUT_S_ROOT/cpl/rest/$CASE.cpl.r.$restdate.nc";
+    if(! -e $cplrestfile){
+	$logger->logdie("Could not find coupler restart file in \"$cplrestfile\"");
+    }
+
+}else{
+    $logger->logdie("Malformed restdate format \"$restdate\"");
+}
+
+opendir(ADIR,$DOUT_S_ROOT);
+my @comps = grep !/^\./, readdir(ADIR);
+closedir(ADIR);
+
+foreach my $comp (@comps){
+    my $restdir = "$DOUT_S_ROOT/$comp/rest/";
+    opendir(RD,$restdir);
+    my @restfiles = grep /$CASE.*$restdate\.nc$/ ,readdir(RD);
+    closedir(RD);
+    next unless $#restfiles >= 0;
+    foreach my $restfile (@restfiles){
+	$logger->info("Copying $restfile to $RUNDIR");
+	copy "$restdir/$restfile", $RUNDIR or $logger->logdie("Could not copy file $restfile");
+	
+    }
+    my $restfile = (grep /\.r\.$restdate\.nc/, @restfiles)[0];
+    #create the rpointer file for this component
+    open(RP,">$RUNDIR/rpointer.$comp");
+    print RP "$restfile\n";
+    close(RP);
+    # copy any history files as well
+    my $histdir = "$DOUT_S_ROOT/$comp/hist/";
+    opendir(HD,$histdir);
+    my @histfiles = grep /$CASE.*$restdate\.nc$/, readdir(HD);
+    closedir(HD);
+    print "$histdir<> @histfiles\n";
+    foreach my $histfile (@histfiles){
+	$logger->info("Copying $histfile to $RUNDIR");
+	copy "$histdir/$histfile", $RUNDIR;
+    }
+}
