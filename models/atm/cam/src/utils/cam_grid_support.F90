@@ -9,7 +9,7 @@ module cam_grid_support
   use cam_pio_utils,       only: cam_pio_handle_error
   use cam_map_utils,       only: cam_filemap_t
 !!XXgoldyXX:
-use spmd_utils, only: iam, npes, mpicom, mpi_integer, mpi_sum, mpi_max, mpi_min
+use spmd_utils, only: iam, npes, mpicom, mpi_integer,  mpi_sum, mpi_max, mpi_min
 use shr_sys_mod, only: shr_sys_flush
 use cam_map_utils, only: goldy_debug
 !!XXgoldyXX:
@@ -48,11 +48,6 @@ use cam_map_utils, only: goldy_debug
     procedure                 :: get_units      => horiz_coord_units
     procedure                 :: write_attr     => write_horiz_coord_attr
     procedure                 :: write_var      => write_horiz_coord_var
-!!XXgoldyXX: v remove this
-!    procedure, public :: get_value      => horiz_coord_value
-!    procedure, public :: find_index     => horiz_coord_find_index
-!    procedure, public :: map_pos        => horiz_coord_map_pos
-!!XXgoldyXX: ^ remove this
   end type horiz_coord_t
 
   !---------------------------------------------------------------------------
