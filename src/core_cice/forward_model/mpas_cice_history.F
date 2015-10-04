@@ -149,7 +149,7 @@ contains
     real(kind=RKIND), dimension(:), pointer :: &
          primaryProduction, &
          netSpecificAlgalGrowthRate, &
-         netbrineheight, &
+         netBrineHeight, &
          zSalinityFlux, &
          zSalinityGDFlux
          
@@ -157,8 +157,8 @@ contains
          oceanBioFluxes, &
          atmosIceBioFluxes, &
          snowIceBioFluxes, &
-         totalverticalBiologyIce, &
-         totalverticalBiologySnow
+         totalVerticalBiologyIce, &
+         totalVerticalBiologySnow
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          bioTracerShortwave
@@ -171,26 +171,26 @@ contains
 
        call MPAS_pool_get_array(biogeochemistry, "primaryProduction", primaryProduction)
        call MPAS_pool_get_array(biogeochemistry, "netSpecificAlgalGrowthRate", netSpecificAlgalGrowthRate)
-       call MPAS_pool_get_array(biogeochemistry, "netbrineheight", netbrineheight)
+       call MPAS_pool_get_array(biogeochemistry, "netBrineHeight", netBrineHeight)
        call MPAS_pool_get_array(biogeochemistry, "zSalinityFlux", zSalinityFlux)
        call MPAS_pool_get_array(biogeochemistry, "zSalinityGDFlux", zSalinityGDFlux)
        call MPAS_pool_get_array(biogeochemistry, "oceanBioFluxes", oceanBioFluxes)
        call MPAS_pool_get_array(biogeochemistry, "atmosIceBioFluxes", atmosIceBioFluxes)
        call MPAS_pool_get_array(biogeochemistry, "snowIceBioFluxes", snowIceBioFluxes)
-       call MPAS_pool_get_array(biogeochemistry, "totalverticalBiologyIce", totalverticalBiologyIce)
-       call MPAS_pool_get_array(biogeochemistry, "totalverticalBiologySnow", totalverticalBiologySnow)
+       call MPAS_pool_get_array(biogeochemistry, "totalVerticalBiologyIce", totalVerticalBiologyIce)
+       call MPAS_pool_get_array(biogeochemistry, "totalVerticalBiologySnow", totalVerticalBiologySnow)
        call MPAS_pool_get_array(biogeochemistry, "bioTracerShortwave", bioTracerShortwave)
 
        primaryProduction = 0.0_RKIND
        netSpecificAlgalGrowthRate = 0.0_RKIND
-       netbrineheight = 0.0_RKIND
+       netBrineHeight = 0.0_RKIND
        zSalinityFlux = 0.0_RKIND
        zSalinityGDFlux = 0.0_RKIND
        oceanBioFluxes = 0.0_RKIND
        atmosIceBioFluxes = 0.0_RKIND
        snowIceBioFluxes = 0.0_RKIND
-       totalverticalBiologyIce = 0.0_RKIND
-       totalverticalBiologySnow = 0.0_RKIND
+       totalVerticalBiologyIce = 0.0_RKIND
+       totalVerticalBiologySnow = 0.0_RKIND
        bioTracerShortwave = 0.0_RKIND
        
        block => block % next

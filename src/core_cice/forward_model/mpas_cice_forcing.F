@@ -1632,9 +1632,9 @@ contains
        atmosReferenceTemperature2m = 0.0_RKIND
        atmosReferenceHumidity2m    = 0.0_RKIND
 !nj-bgc+
-       atmosBioFluxes(:,:)         = 0.0_RKIND
-       atmosBlackCarbonFlux(:,:)   = 0.0_RKIND
-       atmosDustFlux(:,:)          = 0.0_RKIND
+       atmosBioFluxes              = 0.0_RKIND
+       atmosBlackCarbonFlux        = 0.0_RKIND
+       atmosDustFlux               = 0.0_RKIND
 !nj-bgc-
 
        block => block % next
@@ -1722,25 +1722,25 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "oceanDustIronFlux",oceanDustIronFlux)
 !nj-bgc-
 
-       oceanFreshWaterFlux = 0.0_RKIND
-       oceanSaltFlux       = 0.0_RKIND
-       oceanHeatFlux       = 0.0_RKIND
-       oceanShortwaveFlux  = 0.0_RKIND
+       oceanFreshWaterFlux      = 0.0_RKIND
+       oceanSaltFlux            = 0.0_RKIND
+       oceanHeatFlux            = 0.0_RKIND
+       oceanShortwaveFlux       = 0.0_RKIND
 !nj-bgc+
-       oceanBioFluxes(:,:) = 0.0_RKIND  
-       oceanDOCFlux(:,:)   = 0.0_RKIND
-       oceanDICFlux(:,:)   = 0.0_RKIND
-       oceanDONFlux(:,:)   = 0.0_RKIND
-       oceanNitrateFlux    = 0.0_RKIND
-       oceanSilicateFlux   = 0.0_RKIND
-       oceanAmmoniumFlux   = 0.0_RKIND
-       oceanDMSFlux        = 0.0_RKIND
-       oceanDMSPpFlux      = 0.0_RKIND
-       oceanDMSPdFlux      = 0.0_RKIND
-       oceanHumicsFlux     = 0.0_RKIND
-       oceanParticulateIronFlux(:,:) = 0.0_RKIND
-       oceanDissolvedIronFlux(:,:)   = 0.0_RKIND
-       oceanDustIronFlux   = 0.0_RKIND
+       oceanBioFluxes           = 0.0_RKIND  
+       oceanDOCFlux             = 0.0_RKIND
+       oceanDICFlux             = 0.0_RKIND
+       oceanDONFlux             = 0.0_RKIND
+       oceanNitrateFlux         = 0.0_RKIND
+       oceanSilicateFlux        = 0.0_RKIND
+       oceanAmmoniumFlux        = 0.0_RKIND
+       oceanDMSFlux             = 0.0_RKIND
+       oceanDMSPpFlux           = 0.0_RKIND
+       oceanDMSPdFlux           = 0.0_RKIND
+       oceanHumicsFlux          = 0.0_RKIND
+       oceanParticulateIronFlux = 0.0_RKIND
+       oceanDissolvedIronFlux   = 0.0_RKIND
+       oceanDustIronFlux        = 0.0_RKIND
 !nj-bgc-
 
        block => block % next

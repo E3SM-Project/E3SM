@@ -2327,13 +2327,13 @@ contains
          iceThickness, &
          snowThickness, &
 !nj-bgc+
-         netbrineheight, &
-         totalverticalSalinity, &
-         totalskeletalAlgae
+         netBrineHeight, &
+         totalVerticalSalinity, &
+         totalSkeletalAlgae
 
     real(kind=RKIND), dimension(:,:), pointer :: &
-         totalverticalBiologyIce, &
-         totalverticalBiologySnow
+         totalVerticalBiologyIce, &
+         totalVerticalBiologySnow
 !nj-bgc-
 
     integer :: &
@@ -2361,11 +2361,11 @@ contains
     call MPAS_pool_get_array(plotting, "iceThickness", iceThickness)
     call MPAS_pool_get_array(plotting, "snowThickness", snowThickness)
 !nj-bgc+
-    call MPAS_pool_get_array(biogeochemistry, "netbrineheight", netbrineheight)
-    call MPAS_pool_get_array(biogeochemistry, "totalskeletalAlgae", totalskeletalAlgae)
-    call MPAS_pool_get_array(biogeochemistry, "totalverticalBiologyIce", totalverticalBiologyIce)
-    call MPAS_pool_get_array(biogeochemistry, "totalverticalBiologySnow", totalverticalBiologySnow)
-    call MPAS_pool_get_array(biogeochemistry, "totalverticalSalinity", totalverticalSalinity)
+    call MPAS_pool_get_array(biogeochemistry, "netBrineHeight", netBrineHeight)
+    call MPAS_pool_get_array(biogeochemistry, "totalSkeletalAlgae", totalSkeletalAlgae)
+    call MPAS_pool_get_array(biogeochemistry, "totalVerticalBiologyIce", totalVerticalBiologyIce)
+    call MPAS_pool_get_array(biogeochemistry, "totalVerticalBiologySnow", totalVerticalBiologySnow)
+    call MPAS_pool_get_array(biogeochemistry, "totalVerticalSalinity", totalVerticalSalinity)
 !nj-bgc-
 
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
@@ -2384,10 +2384,10 @@ contains
           iceThickness(iCell)  = 0.0_RKIND
           snowThickness(iCell) = 0.0_RKIND
 !nj-bgc+
-          netbrineheight(iCell) = 0.0_RKIND
-          totalverticalSalinity(iCell) = 0.0_RKIND
-          totalverticalBiologyIce(:,iCell) = 0.0_RKIND
-          totalverticalBiologySnow(:,iCell) = 0.0_RKIND
+          netBrineHeight(iCell) = 0.0_RKIND
+          totalVerticalSalinity(iCell) = 0.0_RKIND
+          totalVerticalBiologyIce(:,iCell) = 0.0_RKIND
+          totalVerticalBiologySnow(:,iCell) = 0.0_RKIND
 !nj-bgc-
        endif
     enddo ! iCell

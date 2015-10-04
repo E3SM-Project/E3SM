@@ -24,14 +24,14 @@
 		<dim name="nBioLayersP1"       definition="nBioLayers+1"/>
 		<dim name="nBioLayersP2"       definition="nBioLayers+2"/>
 		<dim name="nBioLayersP3"       definition="nBioLayers+3"/>
-		<dim name="maxAlgae"           definition="3"/>
-		<dim name="maxDOC"             definition="3"/>
-		<dim name="maxDIC"             definition="1"/>
-		<dim name="maxDON"             definition="1"/>
-		<dim name="maxIron"            definition="2"/>
-		<dim name="maxBC"              definition="2"/>
-		<dim name="maxDust"            definition="4"/>
-		<dim name="maxzAerosols"       definition="maxBC+maxDust"/>
+		<dim name="maxAlgaeType"       definition="3"/>
+		<dim name="maxDOCType"         definition="3"/>
+		<dim name="maxDICType"         definition="1"/>
+		<dim name="maxDONType"         definition="1"/>
+		<dim name="maxIronType"        definition="2"/>
+		<dim name="maxBCType"          definition="2"/>
+		<dim name="maxDustType"        definition="4"/>
+		<dim name="maxAerosolType"     definition="maxBCType+maxDustType"/>
 		<dim name="nModal1"            definition="10"/>
 		<dim name="nModal2"            definition="8"/>
 		<dim name="nAlgae"             definition="3"/>
@@ -46,8 +46,8 @@
 		<dim name="nDOCLayers"         definition="nBioLayersP3*nDOC"/>
 		<dim name="nDICLayers"         definition="nBioLayersP3*nDIC"/>
 		<dim name="nDONLayers"	       definition="nBioLayersP3*nDON"/>
-		<dim name="nParticulateIronLayers"    definition="nBioLayersP3*nParticulateIron"/>
-		<dim name="nDissolvedIronLayers"     definition="nBioLayersP3*nDissolvedIron"/>
+		<dim name="nParticulateIronLayers" definition="nBioLayersP3*nParticulateIron"/>
+		<dim name="nDissolvedIronLayers"   definition="nBioLayersP3*nDissolvedIron"/>
 		<dim name="nzAerosolsLayers"   definition="nBioLayersP3*nzAerosols"/>
 		<dim name="nZBGCTracers"       definition="29"/>
 	</dims>
@@ -365,8 +365,8 @@
 	    <var name="skeletalDMSPdConc"/>   
 	    <var name="skeletalNonreactiveConc"/>
 	    <var name="skeletalHumicsConc"/> 
-	    <var name="skeletalPartIronConc"/>
-	    <var name="skeletalDisIronConc"/>
+	    <var name="skeletalParticulateIronConc"/>
+	    <var name="skeletalDissolvedIronConc"/>
 	    <var name="verticalAlgaeConc"/>
 	    <var name="verticalDOCConc"/>   
 	    <var name="verticalDICConc"/>   
@@ -379,11 +379,11 @@
 	    <var name="verticalDMSPdConc"/>   
 	    <var name="verticalNonreactiveConc"/>
 	    <var name="verticalHumicsConc"/> 
-	    <var name="verticalPartIronConc"/>
-	    <var name="verticalDisIronConc"/>
+	    <var name="verticalParticulateIronConc"/>
+	    <var name="verticalDissolvedIronConc"/>
 	    <var name="verticalAerosolsConc"/>
 	    <var name="verticalSalinity"/>               
-	    <var name="brinefraction"/>                    
+	    <var name="brineFraction"/>                    
 	    <var name="mobileFraction"/>            
 	  </stream>
 
@@ -438,11 +438,11 @@
 	    <var name="snowfallRate"/>
 	    <var name="sensibleTransferCoefficient"/>
 	    <var name="latentTransferCoefficient"/>
-	    <var name="totalskeletalAlgae"/>
-	    <var name="totalverticalBiologyIce"/>
-	    <var name="totalverticalBiologySnow"/>
-	    <var name="totalverticalSalinity"/>               
-	    <var name="brinefractionCell"/>         
+	    <var name="totalSkeletalAlgae"/>
+	    <var name="totalVerticalBiologyIce"/>
+	    <var name="totalVerticalBiologySnow"/>
+	    <var name="totalVerticalSalinity"/>               
+	    <var name="brineFractionCell"/>         
 	  </stream>
 
         <!-- forcing streams -->
@@ -586,7 +586,7 @@
 		<var name="snowBodyAerosol"                   type="real"     dimensions="nAerosols nCategories nCells Time"    name_in_code="snowBodyAerosol"       packages="pkgColumnTracerAerosols"/>
 		<var name="iceScatteringAerosol"              type="real"     dimensions="nAerosols nCategories nCells Time"    name_in_code="iceScatteringAerosol"  packages="pkgColumnTracerAerosols"/>
 		<var name="iceBodyAerosol"		      type="real"     dimensions="nAerosols nCategories	nCells Time"    name_in_code="iceBodyAerosol"	packages="pkgColumnTracerAerosols"/>
-		<var name="brinefraction"		      type="real"     dimensions="ONE nCategories nCells Time"       name_in_code="brinefraction"  packages="pkgColumnBiogeochemistry"/>
+		<var name="brineFraction"		      type="real"     dimensions="ONE nCategories nCells Time"          name_in_code="brineFraction"  packages="pkgColumnBiogeochemistry"/>
 		<var name="mobileFraction"		      type="real"     dimensions="nZBGCTracers nCategories nCells Time" name_in_code="mobileFraction"  packages="pkgColumnBiogeochemistry"/>
 		<var name="skeletalAlgaeConc"		      type="real"     dimensions="nAlgae nCategories nCells Time"  name_in_code="skeletalAlgaeConc"  packages="pkgColumnBiogeochemistry"/>
 		<var name="skeletalDOCConc"		      type="real"     dimensions="nDOC nCategories nCells Time"  name_in_code="skeletalDOCConc"  packages="pkgColumnBiogeochemistry"/>
@@ -600,8 +600,8 @@
 		<var name="skeletalDMSPdConc"		      type="real"     dimensions="ONE nCategories nCells Time"   name_in_code="skeletalDMSPdConc"  packages="pkgColumnBiogeochemistry"/>
 		<var name="skeletalNonreactiveConc"	      type="real"     dimensions="ONE nCategories nCells Time"   name_in_code="skeletalNonreactiveConc"  packages="pkgColumnBiogeochemistry"/>
 		<var name="skeletalHumicsConc"		      type="real"     dimensions="ONE nCategories nCells Time"   name_in_code="skeletalHumicsConc"  packages="pkgColumnBiogeochemistry"/>
-		<var name="skeletalPartIronConc"	      type="real"     dimensions="nParticulateIron nCategories nCells Time"   name_in_code="skeletalPartIronConc"  packages="pkgColumnBiogeochemistry"/>
-		<var name="skeletalDisIronConc"		      type="real"     dimensions="nDissolvedIron nCategories nCells Time"   name_in_code="skeletalDisIronConc"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalParticulateIronConc"	      type="real"     dimensions="nParticulateIron nCategories nCells Time"   name_in_code="skeletalParticulateIronConc"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDissolvedIronConc" 	      type="real"     dimensions="nDissolvedIron nCategories nCells Time"   name_in_code="skeletalDissolvedIronConc"  packages="pkgColumnBiogeochemistry"/>
 		<var name="verticalAlgaeConc"		      type="real"     dimensions="nAlgaeLayers nCategories nCells Time"   name_in_code="verticalAlgaeConc"  packages="pkgColumnBiogeochemistry"/>
 		<var name="verticalDOCConc"		      type="real"     dimensions="nDOCLayers nCategories nCells Time"   name_in_code="verticalDOCConc"  packages="pkgColumnBiogeochemistry"/>
 		<var name="verticalDICConc"		      type="real"     dimensions="nDICLayers nCategories nCells Time"   name_in_code="verticalDICConc"  packages="pkgColumnBiogeochemistry"/>
@@ -614,9 +614,9 @@
 		<var name="verticalDMSPdConc"		      type="real"     dimensions="nBioLayersP3 nCategories nCells Time"   name_in_code="verticalDMSPdConc"  packages="pkgColumnBiogeochemistry"/>
 		<var name="verticalNonreactiveConc"	      type="real"     dimensions="nBioLayersP3 nCategories nCells Time"   name_in_code="verticalNonreactiveConc"  packages="pkgColumnBiogeochemistry"/>
 		<var name="verticalHumicsConc"		      type="real"     dimensions="nBioLayersP3 nCategories nCells Time"   name_in_code="verticalHumicsConc"  packages="pkgColumnBiogeochemistry"/>
-		<var name="verticalPartIronConc"	      type="real"     dimensions="nParticulateIronLayers nCategories nCells Time"   name_in_code="verticalPartIronConc"  packages="pkgColumnBiogeochemistry"/>
-		<var name="verticalDisIronConc"		      type="real"     dimensions="nDissolvedIronLayers nCategories nCells Time"   name_in_code="verticalDisIronConc"  packages="pkgColumnBiogeochemistry"/>
-		<var name="verticalAerosolsConc"	      type="real"     dimensions="nzAerosols nCategories nCells Time"   name_in_code="verticalAerosolsConc"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalParticulateIronConc"	      type="real"     dimensions="nParticulateIronLayers nCategories nCells Time"   name_in_code="verticalParticulateIronConc"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDissolvedIronConc"	      type="real"     dimensions="nDissolvedIronLayers nCategories nCells Time"   name_in_code="verticalDissolvedIronConc"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAerosolsConc"	      type="real"     dimensions="nzAerosolsLayers nCategories nCells Time"   name_in_code="verticalAerosolsConc"  packages="pkgColumnBiogeochemistry"/>
 		<var name="verticalSalinity"		      type="real"     dimensions="nBioLayers nCategories nCells Time"   name_in_code="verticalSalinity"  packages="pkgColumnBiogeochemistry;pkgColumnVerticalThermodynamics"/>
 	</var_struct>
 	<var_struct name="tracer_tendencies" time_levs="1">
@@ -656,7 +656,7 @@
 		<var name="snowBodyAerosolCell"               type="real"     dimensions="nAerosols nCells Time"    name_in_code="snowBodyAerosolCell"       packages="pkgColumnTracerAerosols"/>
 		<var name="iceScatteringAerosolCell"          type="real"     dimensions="nAerosols nCells Time"    name_in_code="iceScatteringAerosolCell"  packages="pkgColumnTracerAerosols"/>
 		<var name="iceBodyAerosolCell"                type="real"     dimensions="nAerosols nCells Time"    name_in_code="iceBodyAerosolCell"        packages="pkgColumnTracerAerosols"/>
-		<var name="brinefractionCell"		      type="real"     dimensions="nCells Time"       name_in_code="brinefractionCell"  packages="pkgColumnBiogeochemistry"/>
+		<var name="brineFractionCell"		      type="real"     dimensions="nCells Time"       name_in_code="brineFractionCell"  packages="pkgColumnBiogeochemistry"/>
 		<var name="skeletalAlgaeConcCell"	      type="real"     dimensions="nAlgae nCells Time"  name_in_code="skeletalAlgaeConcCell"  packages="pkgColumnBiogeochemistry"/>
 		<var name="skeletalDOCConcCell"		      type="real"     dimensions="nDOC nCells Time"  name_in_code="skeletalDOCConcCell"  packages="pkgColumnBiogeochemistry"/>
 		<var name="skeletalDICConcCell"		      type="real"     dimensions="nDIC nCells Time"  name_in_code="skeletalDICConcCell"  packages="pkgColumnBiogeochemistry"/>
@@ -669,8 +669,8 @@
 		<var name="skeletalDMSPdConcCell"	      type="real"     dimensions="ONE nCells Time"   name_in_code="skeletalDMSPdConcCell"  packages="pkgColumnBiogeochemistry"/>
 		<var name="skeletalNonreactiveConcCell"	      type="real"     dimensions="ONE nCells Time"   name_in_code="skeletalNonreactiveConcCell"  packages="pkgColumnBiogeochemistry"/>
 		<var name="skeletalHumicsConcCell"	      type="real"     dimensions="ONE nCells Time"   name_in_code="skeletalHumicsConcCell"  packages="pkgColumnBiogeochemistry"/>
-		<var name="skeletalPartIronConcCell"	      type="real"     dimensions="nParticulateIron nCells Time"   name_in_code="skeletalPartIronConcCell"  packages="pkgColumnBiogeochemistry"/>
-		<var name="skeletalDisIronConcCell"	      type="real"     dimensions="nDissolvedIron nCells Time"   name_in_code="skeletalDisIronConcCell"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalParticulateIronConcCell"   type="real"     dimensions="nParticulateIron nCells Time"   name_in_code="skeletalParticulateIronConcCell"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDissolvedIronConcCell"     type="real"     dimensions="nDissolvedIron nCells Time"   name_in_code="skeletalDissolvedIronConcCell"  packages="pkgColumnBiogeochemistry"/>
 		<var name="verticalAlgaeConcCell"	      type="real"     dimensions="nAlgaeLayers nCells Time"   name_in_code="verticalAlgaeConcCell"  packages="pkgColumnBiogeochemistry"/>
 		<var name="verticalDOCConcCell"		      type="real"     dimensions="nDOCLayers nCells Time"   name_in_code="verticalDOCConcCell"  packages="pkgColumnBiogeochemistry"/>
 		<var name="verticalDICConcCell"		      type="real"     dimensions="nDICLayers nCells Time"   name_in_code="verticalDICConcCell"  packages="pkgColumnBiogeochemistry"/>
@@ -683,8 +683,8 @@
 		<var name="verticalDMSPdConcCell"	      type="real"     dimensions="nBioLayersP3 nCells Time"   name_in_code="verticalDMSPdConcCell"  packages="pkgColumnBiogeochemistry"/>
 		<var name="verticalNonreactiveConcCell"	      type="real"     dimensions="nBioLayersP3 nCells Time"   name_in_code="verticalNonreactiveConcCell"  packages="pkgColumnBiogeochemistry"/>
 		<var name="verticalHumicsConcCell"	      type="real"     dimensions="nBioLayersP3 nCells Time"   name_in_code="verticalHumicsConcCell"  packages="pkgColumnBiogeochemistry"/>
-		<var name="verticalPartIronConcCell"	      type="real"     dimensions="nParticulateIronLayers nCells Time"   name_in_code="verticalPartIronConcCell"  packages="pkgColumnBiogeochemistry"/>
-		<var name="verticalDisIronConcCell"	      type="real"     dimensions="nDissolvedIronLayers nCells	Time"   name_in_code="verticalDisIronConcCell" packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalParticulateIronConcCell"   type="real"     dimensions="nParticulateIronLayers nCells Time"   name_in_code="verticalParticulateIronConcCell"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDissolvedIronConcCell"     type="real"     dimensions="nDissolvedIronLayers nCells	Time"   name_in_code="verticalDissolvedIronConcCell" packages="pkgColumnBiogeochemistry"/>
 		<var name="verticalAerosolsConcCell"	      type="real"     dimensions="nzAerosols nCells Time"   name_in_code="verticalAerosolsConcCell"  packages="pkgColumnBiogeochemistry"/>
 		<var name="verticalSalinityCell"	      type="real"     dimensions="nBioLayers nCells Time"   name_in_code="verticalSalinityCell"  packages="pkgColumnBiogeochemistry;pkgColumnVerticalThermodynamics"/>
 	</var_struct>
@@ -1056,26 +1056,26 @@
 		<var name="atmosIceBioFluxes"		      type="real"     dimensions="nZBGCTracers nCells"	         name_in_code="atmosIceBioFluxes" packages="pkgColumnBiogeochemistry"/>
 		<var name="snowIceBioFluxes"		      type="real"     dimensions="nZBGCTracers nCells"	         name_in_code="snowIceBioFluxes" packages="pkgColumnBiogeochemistry"/>
 		<var name="atmosBioConcentrations"	      type="real"     dimensions="nZBGCTracers nCells"	         name_in_code="atmosBioConcentrations" packages="pkgColumnBiogeochemistry"/>
-		<var name="atmosBlackCarbonFlux"	      type="real"     dimensions="maxBC nCells"                  name_in_code="atmosBlackCarbonFlux"  packages="pkgColumnBiogeochemistry"/>
-		<var name="atmosDustFlux"       	      type="real"     dimensions="maxDust nCells"                name_in_code="atmosDustFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="atmosBlackCarbonFlux"	      type="real"     dimensions="maxBCType nCells"                  name_in_code="atmosBlackCarbonFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="atmosDustFlux"       	      type="real"     dimensions="maxDustType nCells"                name_in_code="atmosDustFlux"  packages="pkgColumnBiogeochemistry"/>
 		<var name="oceanBioFluxes"		      type="real"     dimensions="nZBGCTracers nCells"	         name_in_code="oceanBioFluxes" packages="pkgColumnITDThermodynamics;pkgColumnRidging;pkgColumnBiogeochemistry"/>
 		<var name="oceanBioConcentrations"    	      type="real"     dimensions="nZBGCTracers nCells"		 name_in_code="oceanBioConcentrations" packages="pkgColumnITDThermodynamics;pkgColumnBiogeochemistry"/>
-		<var name="oceanAlgaeConc"		      type="real"     dimensions="maxAlgae nCells"		 name_in_code="oceanAlgaeConc"  packages="pkgColumnBiogeochemistry"/>
-		<var name="oceanDOCConc"		      type="real"     dimensions="maxDOC nCells"		 name_in_code="oceanDOCConc"  packages="pkgColumnBiogeochemistry"/>
-		<var name="oceanDICConc"		      type="real"     dimensions="maxDIC nCells"		 name_in_code="oceanDICConc"  packages="pkgColumnBiogeochemistry"/>
-		<var name="oceanDONConc"		      type="real"     dimensions="maxDON nCells"		 name_in_code="oceanDONConc"  packages="pkgColumnBiogeochemistry"/>
+		<var name="oceanAlgaeConc"		      type="real"     dimensions="maxAlgaeType nCells"		 name_in_code="oceanAlgaeConc"  packages="pkgColumnBiogeochemistry"/>
+		<var name="oceanDOCConc"		      type="real"     dimensions="maxDOCType nCells"		 name_in_code="oceanDOCConc"  packages="pkgColumnBiogeochemistry"/>
+		<var name="oceanDICConc"		      type="real"     dimensions="maxDICType nCells"		 name_in_code="oceanDICConc"  packages="pkgColumnBiogeochemistry"/>
+		<var name="oceanDONConc"		      type="real"     dimensions="maxDONType nCells"		 name_in_code="oceanDONConc"  packages="pkgColumnBiogeochemistry"/>
 		<var name="oceanNitrateConc"		      type="real"     dimensions="nCells"			 name_in_code="oceanNitrateConc"  packages="pkgColumnBiogeochemistry"/>
 		<var name="oceanSilicateConc"		      type="real"     dimensions="nCells"			 name_in_code="oceanSilicateConc"  packages="pkgColumnBiogeochemistry"/>
 		<var name="oceanAmmoniumConc"		      type="real"     dimensions="nCells"			 name_in_code="oceanAmmoniumConc"  packages="pkgColumnBiogeochemistry"/>
 		<var name="oceanDMSConc"		      type="real"     dimensions="nCells"			 name_in_code="oceanDMSConc"  packages="pkgColumnBiogeochemistry"/>
 		<var name="oceanDMSPConc"		      type="real"     dimensions="nCells"			 name_in_code="oceanDMSPConc"  packages="pkgColumnBiogeochemistry"/>
 		<var name="oceanHumicsConc"	    	      type="real"     dimensions="nCells"			 name_in_code="oceanHumicsConc"  packages="pkgColumnBiogeochemistry"/>
-		<var name="oceanParticulateIronConc"	      type="real"     dimensions="maxIron nCells"                name_in_code="oceanParticulateIronConc"  packages="pkgColumnBiogeochemistry"/>
-		<var name="oceanDissolvedIronConc"	      type="real"     dimensions="maxIron nCells"                name_in_code="oceanDissolvedIronConc"  packages="pkgColumnBiogeochemistry"/>
-		<var name="oceanAlgaeFlux"		      type="real"     dimensions="maxAlgae nCells"		 name_in_code="oceanAlgaeFlux"  packages="pkgColumnBiogeochemistry"/>
-		<var name="oceanDOCFlux"		      type="real"     dimensions="maxDOC nCells"		 name_in_code="oceanDOCFlux"  packages="pkgColumnBiogeochemistry"/>
-		<var name="oceanDICFlux"		      type="real"     dimensions="maxDIC nCells"		 name_in_code="oceanDICFlux"  packages="pkgColumnBiogeochemistry"/>
-		<var name="oceanDONFlux"		      type="real"     dimensions="maxDON nCells"		 name_in_code="oceanDONFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="oceanParticulateIronConc"	      type="real"     dimensions="maxIronType nCells"                name_in_code="oceanParticulateIronConc"  packages="pkgColumnBiogeochemistry"/>
+		<var name="oceanDissolvedIronConc"	      type="real"     dimensions="maxIronType nCells"                name_in_code="oceanDissolvedIronConc"  packages="pkgColumnBiogeochemistry"/>
+		<var name="oceanAlgaeFlux"		      type="real"     dimensions="maxAlgaeType nCells"		 name_in_code="oceanAlgaeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="oceanDOCFlux"		      type="real"     dimensions="maxDOCType nCells"		 name_in_code="oceanDOCFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="oceanDICFlux"		      type="real"     dimensions="maxDICType nCells"		 name_in_code="oceanDICFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="oceanDONFlux"		      type="real"     dimensions="maxDONType nCells"		 name_in_code="oceanDONFlux"  packages="pkgColumnBiogeochemistry"/>
 		<var name="oceanNitrateFlux"		      type="real"     dimensions="nCells"			 name_in_code="oceanNitrateFlux"  packages="pkgColumnBiogeochemistry"/>
 		<var name="oceanSilicateFlux"		      type="real"     dimensions="nCells"			 name_in_code="oceanSilicateFlux"  packages="pkgColumnBiogeochemistry"/>
 		<var name="oceanAmmoniumFlux"		      type="real"     dimensions="nCells"			 name_in_code="oceanAmmoniumFlux"  packages="pkgColumnBiogeochemistry"/>
@@ -1083,8 +1083,8 @@
 		<var name="oceanDMSPpFlux"		      type="real"     dimensions="nCells"			 name_in_code="oceanDMSPpFlux"  packages="pkgColumnBiogeochemistry"/>
 		<var name="oceanDMSPdFlux"		      type="real"     dimensions="nCells"			 name_in_code="oceanDMSPdFlux"  packages="pkgColumnBiogeochemistry"/>
 		<var name="oceanHumicsFlux"	    	      type="real"     dimensions="nCells"			 name_in_code="oceanHumicsFlux"  packages="pkgColumnBiogeochemistry"/>
-		<var name="oceanParticulateIronFlux"	      type="real"     dimensions="maxIron nCells"                name_in_code="oceanParticulateIronFlux"  packages="pkgColumnBiogeochemistry"/>
-		<var name="oceanDissolvedIronFlux"	      type="real"     dimensions="maxIron nCells"                name_in_code="oceanDissolvedIronFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="oceanParticulateIronFlux"	      type="real"     dimensions="maxIronType nCells"                name_in_code="oceanParticulateIronFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="oceanDissolvedIronFlux"	      type="real"     dimensions="maxIronType nCells"                name_in_code="oceanDissolvedIronFlux"  packages="pkgColumnBiogeochemistry"/>
 		<var name="oceanDustIronFlux"	              type="real"     dimensions="nCells"                        name_in_code="oceanDustIronFlux"  packages="pkgColumnBiogeochemistry"/>
 		<var name="bioTracerShortwave"		      type="real"     dimensions="nShortwaveBio nCategories nCells" name_in_code="bioTracerShortwave"  packages="pkgColumnBiogeochemistry"/>
 		<var name="bioPorosity"                       type="real"     dimensions="nBioLayersP2 nCategories nCells"   name_in_code="bioPorosity"  packages="pkgColumnBiogeochemistry"/>
@@ -1106,18 +1106,18 @@
 		<var name="netNitrateUptake"                  type="real"     dimensions="nCells"                   name_in_code="netNitrateUptake"/>
 		<var name="netAmmoniumUptake"                 type="real"     dimensions="nCells"                   name_in_code="netAmmoniumUptake"/>
 		<var name="primaryProduction"                 type="real"     dimensions="nCells"                   name_in_code="primaryProduction"/>
-		<var name="totalskeletalAlgae"                type="real"     dimensions="nCells Time"              name_in_code="totalskeletalAlgae"/>
-		<var name="totalverticalBiologyIce"           type="real"     dimensions="nZBGCTracers nCells Time" name_in_code="totalverticalBiologyIce"/>
-		<var name="totalverticalBiologySnow"          type="real"     dimensions="nZBGCTracers nCells Time" name_in_code="totalverticalBiologySnow"/>
-		<var name="totalverticalSalinity"             type="real"     dimensions="nCells Time"              name_in_code="totalverticalSalinity"/>
+		<var name="totalSkeletalAlgae"                type="real"     dimensions="nCells Time"              name_in_code="totalSkeletalAlgae"/>
+		<var name="totalVerticalBiologyIce"           type="real"     dimensions="nZBGCTracers nCells Time" name_in_code="totalVerticalBiologyIce"/>
+		<var name="totalVerticalBiologySnow"          type="real"     dimensions="nZBGCTracers nCells Time" name_in_code="totalVerticalBiologySnow"/>
+		<var name="totalVerticalSalinity"             type="real"     dimensions="nCells Time"              name_in_code="totalVerticalSalinity"/>
 		<var name="totalChlorophyll"                  type="real"     dimensions="nCells Time"              name_in_code="totalChlorophyll"/>
 		<var name="totalNitrate"                      type="real"     dimensions="nCells Time"              name_in_code="totalNitrate"/>
-		<var name="netbrineheight"                    type="real"     dimensions="nCells Time"              name_in_code="netbrineheight"/>
+		<var name="netBrineHeight"                    type="real"     dimensions="nCells Time"              name_in_code="netBrineHeight"/>
 		<var name="biologyGrid"                       type="real"     dimensions="nBioLayersP2"             name_in_code="biologyGrid"/>
 		<var name="interfaceBiologyGrid"              type="real"     dimensions="nBioLayersP1"             name_in_code="interfaceBiologyGrid"/>
-		<var name="verticalGrid"                           type="real"     dimensions="nIceLayersP1"             name_in_code="verticalGrid"/>
+		<var name="verticalGrid"                      type="real"     dimensions="nIceLayersP1"             name_in_code="verticalGrid"/>
 		<var name="interfaceGrid"                     type="real"     dimensions="nIceLayersP1"             name_in_code="interfaceGrid"/>
-		<var name="verticalShortwaveGrid"                  type="real"     dimensions="nIceLayersP1"             name_in_code="verticalShortwaveGrid"/>
+		<var name="verticalShortwaveGrid"             type="real"     dimensions="nIceLayersP1"             name_in_code="verticalShortwaveGrid"/>
 	</var_struct>
 
 	<!-- initial profiles -->

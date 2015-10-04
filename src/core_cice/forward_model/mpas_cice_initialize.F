@@ -1705,14 +1705,14 @@ contains
          oceanDissolvedIronConc
 
     integer, pointer :: &
-         maxAlgae, &
-         maxDOC, &
-         maxDIC, &
-         maxDON, &
-         maxIron, &
-         maxBC, &
-         maxDust, &
-         maxzAerosols, &
+         maxAlgaeType, &
+         maxDOCType, &
+         maxDICType, &
+         maxDONType, &
+         maxIronType, &
+         maxBCType, &
+         maxDustType, &
+         maxAerosolType, &
          nZBGCTracers         
 !nj-bgc-
 
@@ -1728,7 +1728,7 @@ contains
     do while (associated(block))
 
        !-------------------------------------------------------------
-       ! fluxes received from atmosphere
+       ! Physics fluxes received from atmosphere
        !-------------------------------------------------------------
        call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCoupling)
        call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmosForcing)
@@ -1751,14 +1751,14 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "atmosBlackCarbonFlux", atmosBlackCarbonFlux)
        call MPAS_pool_get_array(biogeochemistry, "atmosDustFlux", atmosDustFlux)
 
-       call MPAS_pool_get_dimension(block % dimensions, "maxAlgae", maxAlgae)
-       call MPAS_pool_get_dimension(block % dimensions, "maxDOC", maxDOC)
-       call MPAS_pool_get_dimension(block % dimensions, "maxDIC", maxDIC)
-       call MPAS_pool_get_dimension(block % dimensions, "maxDON", maxDON)
-       call MPAS_pool_get_dimension(block % dimensions, "maxIron", maxIron)
-       call MPAS_pool_get_dimension(block % dimensions, "maxBC", maxBC)
-       call MPAS_pool_get_dimension(block % dimensions, "maxDust", maxDust)
-       call MPAS_pool_get_dimension(block % dimensions, "maxzAerosols", maxzAerosols)
+       call MPAS_pool_get_dimension(block % dimensions, "maxAlgaeType", maxAlgaeType)
+       call MPAS_pool_get_dimension(block % dimensions, "maxDOCType", maxDOCType)
+       call MPAS_pool_get_dimension(block % dimensions, "maxDICType", maxDICType)
+       call MPAS_pool_get_dimension(block % dimensions, "maxDONType", maxDONType)
+       call MPAS_pool_get_dimension(block % dimensions, "maxIronType", maxIronType)
+       call MPAS_pool_get_dimension(block % dimensions, "maxBCType", maxBCType)
+       call MPAS_pool_get_dimension(block % dimensions, "maxDustType", maxDustType)
+       call MPAS_pool_get_dimension(block % dimensions, "maxAerosolType", maxAerosolType)
        call MPAS_pool_get_dimension(block % dimensions, "nZBGCTracers", nZBGCTracers)
 
        airLevelHeight          = 10.0_RKIND
@@ -1774,11 +1774,11 @@ contains
        vAirStress              = 0.05_RKIND
        windSpeed = sqrt(uAirVelocity**2 + vAirVelocity**2)
 
-       atmosBioFluxes(:,:)  = 0.0_RKIND
-       indexj = 2*maxAlgae + maxDOC + maxDIC + maxDON + 2*maxIron + 7
+       atmosBioFluxes          = 0.0_RKIND
+       indexj = 2*maxAlgaeType + maxDOCType + maxDICType + maxDONType + 2*maxIronType + 7
 
        !-------------------------------------------------------------
-       ! fluxes received from ocean
+       ! Physics fluxes received from ocean
        !-------------------------------------------------------------
 
        call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCoupling)
@@ -1804,6 +1804,8 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "oceanDMSPConc",oceanDMSPConc)
        call MPAS_pool_get_array(biogeochemistry, "oceanHumicsConc",oceanHumicsConc)
 
+       seaSurfaceTemperature = seaFreezingTemperature
+       oceanMixedLayerDepth  = 20.0_RKIND
        seaSurfaceSalinity    = 34.0_RKIND
        do iCell = 1, nCells
           seaFreezingTemperature(iCell) = colpkg_liquidus_temperature(seaSurfaceSalinity(iCell))
@@ -1812,14 +1814,14 @@ contains
        ! Bio fluxes received from atmosphere
        !-------------------------------------------------------------
 
-       do iBio = 1, maxBC
-         atmosBlackCarbonFlux(iBio,iCell) =  1.e-12_RKIND
-         atmosBioFluxes(indexj + iBio,iCell) = atmosBlackCarbonFlux(iBio,iCell)
-       enddo
-       do iBio = 1, maxDust
-         atmosDustFlux(iBio,iCell) =  1.e-13_RKIND
-         atmosBioFluxes(indexj + maxBC + iBio, iCell) = atmosDustFlux(iBio,iCell)
-       enddo
+         do iBio = 1, maxBCType
+            atmosBlackCarbonFlux(iBio,iCell) =  1.e-12_RKIND
+            atmosBioFluxes(indexj + iBio,iCell) = atmosBlackCarbonFlux(iBio,iCell)
+         enddo
+         do iBio = 1, maxDustType
+            atmosDustFlux(iBio,iCell) =  1.e-13_RKIND
+            atmosBioFluxes(indexj + maxBCType + iBio, iCell) = atmosDustFlux(iBio,iCell)
+         enddo
 
        !-------------------------------------------------------------
        ! Bio Concentrations received from ocean
@@ -1836,14 +1838,12 @@ contains
                  oceanHumicsConc(iCell), &
                  oceanNitrateConc(iCell), &
                  oceanSilicateConc(iCell),&
-                 maxDIC, &
-                 maxDON, &
-                 maxIron, &
-                 maxzAerosols)
+                 maxDICType, &
+                 maxDONType, &
+                 maxIronType, &
+                 maxAerosolType)
 !nj-bgc-
        enddo ! iCell
-       seaSurfaceTemperature = seaFreezingTemperature
-       oceanMixedLayerDepth  = 20.0_RKIND
 
        !------------------------------------------------------------- 
        ! fluxes sent to atmosphere
