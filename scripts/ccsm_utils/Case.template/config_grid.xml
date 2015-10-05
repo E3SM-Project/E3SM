@@ -760,7 +760,14 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <OCN2ATM_FMAPNAME>cpl/cpl6/map_mp120v1_to_fv0.9x1.25_aave_da_111004.nc</OCN2ATM_FMAPNAME>
   <OCN2ATM_SMAPNAME>cpl/cpl6/map_mp120v1_to_fv0.9x1.25_aave_da_111004.nc</OCN2ATM_SMAPNAME>>
 </gridmap>
-  
+
+<gridmap lnd_grid="0.9x1.25" glc_grid="ais20">
+  <LND2GLC_FMAPNAME>cpl/gridmaps/fv0.9x1.25/map_f09_TO_ais20km_nearestdtos.151005.nc</LND2GLC_FMAPNAME>
+  <LND2GLC_SMAPNAME>cpl/gridmaps/fv0.9x1.25/map_f09_TO_ais20km_nearestdtos.151005.nc</LND2GLC_SMAPNAME>
+  <GLC2LND_FMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_TO_f09_nearestdtos.151005.nc</GLC2LND_FMAPNAME>
+  <GLC2LND_SMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_TO_f09_nearestdtos.151005.nc</GLC2LND_SMAPNAME>
+</gridmap>
+
 <!-- ====================  -->
 <!--  atm fv: 1.9x2.5      -->
 <!-- ====================  -->
