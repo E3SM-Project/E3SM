@@ -677,11 +677,11 @@ sub checkOptions
 	my @testlist = ExpandTestList($opts{'input_list'});
 	my $firsttest = $testlist[0];
 	my $testhash = ParseTestName($firsttest);
-	Debug("first test: ");
-	Debug( eval { Dumper $testhash });
+	$logger->debug("first test: ");
+	$logger->debug( eval { Dumper $testhash });
 	my $machine = $testhash->{'mach'};
 	$opts{'guessmach'} = $machine;
-	Debug("opts{'guessmach'} = $opts{'guessmach'}");
+	$logger->debug("opts{'guessmach'} = $opts{'guessmach'}");
     }
 
     # Read options from config_machines.xml
