@@ -1369,6 +1369,8 @@ contains
 
    type (block_type), pointer :: block
 
+   real (kind=RKIND), pointer :: config_sea_level
+
    type (mpas_pool_type), pointer :: meshPool
    type (mpas_pool_type), pointer :: geometryPool
 
@@ -1382,6 +1384,8 @@ contains
 
     n = 0
     block => domain % blocklist
+
+    call mpas_pool_get_config(domain % configs, 'config_sea_level', config_sea_level)
 
     do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -1397,6 +1401,21 @@ contains
             n = n + 1
             g2x_g % rAttr(index_g2x_Sg_topo, n) = upperSurface(i)
             g2x_g % rAttr(index_g2x_Sg_ice_covered, n) = li_mask_is_ice_int(cellMask(i))
+            ! Sg_icemask should be 1 in locations where GLC will use a SMB value
+            ! This is cells with ice or bare land (no ocean cells)
+            ! This can easily be checked by any cells where upperSurface is
+            ! above sea level!
+            if (upperSurface(i) > config_sea_level) then
+               g2x_g % rAttr(index_g2x_Sg_icemask, n) = 1
+            else
+               g2x_g % rAttr(index_g2x_Sg_icemask, n) = 0
+            endif
+
+            ! icemask_coupled_fluxes for now should be the same as icemask
+            ! If we add in the ability to prevent the ice sheet from evolving
+            ! (i.e., to ignore these fluxes) then this should be set to 0 everywhere.
+            g2x_g % rAttr(index_g2x_Sg_icemask_coupled_fluxes, n) = g2x_g % rAttr(index_g2x_Sg_icemask, n)
+
          end do
 
          block => block % next
