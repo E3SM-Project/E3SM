@@ -192,18 +192,18 @@ if ( -e "$CASEROOT/SourceMods/src.mpasli/$STREAM_NAME" ) {
         # There is some performance hit for making this too small.  For now making it 1 day.
 	print $stream_file "\n";
 	print $stream_file "    <stream name=" . '"basicmesh"' . "/>\n";
-	print $stream_file "    <var_array name=" . '"tracers"' . "/>\n";
 	print $stream_file "    <var name=" . '"xtime"' . "/>\n";
 	print $stream_file "    <var name=" . '"thickness"' . "/>\n";
-	print $stream_file "    <var name=" . '"layerThickness"' . "/>\n";
 	print $stream_file "    <var name=" . '"lowerSurface"' . "/>\n";
 	print $stream_file "    <var name=" . '"upperSurface"' . "/>\n";
 	print $stream_file "    <var name=" . '"cellMask"' . "/>\n";
-	print $stream_file "    <var name=" . '"edgeMask"' . "/>\n";
-	print $stream_file "    <var name=" . '"vertexMask"' . "/>\n";
-	print $stream_file "    <var name=" . '"normalVelocity"' . "/>\n";
-	print $stream_file "    <var name=" . '"uReconstructX"' . "/>\n";
-	print $stream_file "    <var name=" . '"uReconstructY"' . "/>\n";
+#	print $stream_file "    <var name=" . '"edgeMask"' . "/>\n";
+#	print $stream_file "    <var name=" . '"vertexMask"' . "/>\n";
+#	print $stream_file "    <var name=" . '"normalVelocity"' . "/>\n";
+#	print $stream_file "    <var name=" . '"uReconstructX"' . "/>\n";
+#	print $stream_file "    <var name=" . '"uReconstructY"' . "/>\n";
+	print $stream_file "    <var name=" . '"surfaceSpeed"' . "/>\n";
+	print $stream_file "    <var name=" . '"basalSpeed"' . "/>\n";
 	print $stream_file "    <var name=" . '"sfcMassBal"' . "/>\n";
 	print $stream_file "\n";
 	print $stream_file "</stream>\n";
