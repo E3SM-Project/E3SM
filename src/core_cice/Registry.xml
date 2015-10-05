@@ -302,6 +302,7 @@
 		  output_interval="1:00:00"
 		  clobber_mode="replace_files"
 		  runtime_format="single_file">
+	    <var name="xtime"/>
 	    <stream name="mesh"/>
 	    <var name="fVertex"/>
 	    <var name="POPindxi"/>
