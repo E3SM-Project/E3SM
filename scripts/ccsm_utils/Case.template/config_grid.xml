@@ -768,6 +768,14 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <GLC2LND_SMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_TO_f09_nearestdtos.151005.nc</GLC2LND_SMAPNAME>
 </gridmap>
 
+<gridmap ocean_grid="oEC60to30" glc_grid="ais20">
+  <OCN2GLC_FMAPNAME>cpl/gridmaps/oEC60to30/map_oEC60to30_TO_ais20km_nearestdtos.151005.nc</OCN2GLC_FMAPNAME>
+  <OCN2GLC_SMAPNAME>cpl/gridmaps/oEC60to30/map_oEC60to30_TO_ais20km_nearestdtos.151005.nc</OCN2GLC_SMAPNAME>
+  <GLC2OCN_FMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_TO_oEC60to30_nearestdtos.151005.nc</GLC2OCN_FMAPNAME>
+  <GLC2OCN_SMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_TO_oEC60to30_nearestdtos.151005.nc</GLC2OCN_SMAPNAME>
+</gridmap>
+
+
 <!-- ====================  -->
 <!--  atm fv: 1.9x2.5      -->
 <!-- ====================  -->
