@@ -37,27 +37,30 @@ module SystemOfEquationsBaseType
 #include "finclude/petscksp.h90"
 
   type, public :: sysofeqns_base_type
-    character(len =256)                  :: name         ! name for system-of-equations (SoE)
-    PetscInt                             :: itype        ! identifier for SoE
+    character(len =256)                  :: name                                ! name for system-of-equations (SoE)
+    PetscInt                             :: itype                               ! identifier for SoE
 
-    class(goveqn_base_type),pointer      :: goveqns      ! pointer to governing equations within SoE
-    PetscInt                             :: ngoveqns     ! number of governing equations within SoE
+    class(goveqn_base_type),pointer      :: goveqns                             ! pointer to governing equations within SoE
+    PetscInt                             :: ngoveqns                            ! number of governing equations within SoE
 
 
-    PetscReal                            :: time         ! [sec]
-    PetscReal                            :: dtime        ! [sec]
+    PetscReal                            :: time                                ! [sec]
+    PetscReal                            :: dtime                               ! [sec]
 
-    PetscInt                             :: solver_type  ! type of PETSc equation being solved (KSP, SNES, TS)
-    DM                                   :: dm           ! PETSc DM
-    TS                                   :: ts           ! PETSc TS
-    SNES                                 :: snes         ! PETSc SNES
-    KSP                                  :: ksp          ! PETSc KSP
+    PetscInt                             :: cumulative_newton_iterations        ! Total number of Newton iterations
+    PetscInt                             :: cumulative_linear_iterations        ! Total number of Linear iterations
 
-    Vec                                  :: soln         ! solution at current iteration + time step
-    Vec                                  :: soln_prev    ! solution vector at previous time step
-    Vec                                  :: rhs          ! used if SoE is a PETSc TS
-    Mat                                  :: jac          ! used if SoE is a PETSc TS/SNES
-    Mat                                  :: Amat         ! used if SoE is a PETSc KSP
+    PetscInt                             :: solver_type                         ! type of PETSc equation being solved (KSP, SNES, TS)
+    DM                                   :: dm                                  ! PETSc DM
+    TS                                   :: ts                                  ! PETSc TS
+    SNES                                 :: snes                                ! PETSc SNES
+    KSP                                  :: ksp                                 ! PETSc KSP
+
+    Vec                                  :: soln                                ! solution at current iteration + time step
+    Vec                                  :: soln_prev                           ! solution vector at previous time step
+    Vec                                  :: rhs                                 ! used if SoE is a PETSc TS
+    Mat                                  :: jac                                 ! used if SoE is a PETSc TS/SNES
+    Mat                                  :: Amat                                ! used if SoE is a PETSc KSP
 
   contains
     procedure, public :: Init                   => SOEBaseInit
@@ -101,6 +104,9 @@ contains
 
     this%time            = 0.d0
     this%dtime           = 0.d0
+
+    this%cumulative_newton_iterations = 0
+    this%cumulative_linear_iterations = 0
 
     this%solver_type     = 0
     this%dm              = 0
@@ -346,6 +352,8 @@ contains
     !
     ! !LOCAL VARIABLES:
     SNESConvergedReason           :: snes_reason
+    PetscInt                      :: num_newton_iterations
+    PetscInt                      :: num_linear_iterations
     PetscInt                      :: num_time_cuts
     PetscInt, parameter           :: max_num_time_cuts = 20
     PetscReal                     :: target_time
@@ -384,6 +392,16 @@ contains
           ! SNES converged.
           converged = PETSC_TRUE
           soe%time = soe%time + dt_iter
+
+          call SNESGetIterationNumber(soe%snes, &
+                                      num_newton_iterations, ierr); CHKERRQ(ierr)
+          call SNESGetLinearSolveIterations(soe%snes, &
+                                            num_linear_iterations, ierr); CHKERRQ(ierr)
+
+          soe%cumulative_newton_iterations = soe%cumulative_newton_iterations + &
+                                             num_newton_iterations
+          soe%cumulative_linear_iterations = soe%cumulative_linear_iterations + &
+                                             num_linear_iterations
 
           ! Do any post-solve operations
           call soe%PostSolve()

@@ -39,33 +39,33 @@ module SaturationFunction
     end type saturation_params_type
 
 
-    public ::                     &
+    public ::                                         &
         ! Parameterize a saturation function.
-        SatFunc_Set_VG,           &
-        SatFunc_Set_BC,           &
-        SatFunc_Set_SBC,          &
-        SatFunc_Set_SBC_bz2,      &
-        SatFunc_Set_SBC_bz3,      &
-        SatFunc_Set_Weibull,      &
+        SatFunc_Set_VG,                               &
+        SatFunc_Set_BC,                               &
+        SatFunc_Set_SBC,                              &
+        SatFunc_Set_SBC_bz2,                          &
+        SatFunc_Set_SBC_bz3,                          &
+        SatFunc_Set_Weibull_RelPerm,                  &
 
         ! Gateway routines (i.e., generic functions).
-        SatFunc_PressToSat,       &
-        SatFunc_SatToPress,       &
-        SatFunc_PressToRelPerm,   &
+        SatFunc_PressToSat,                           &
+        SatFunc_SatToPress,                           &
+        SatFunc_PressToRelPerm,                       &
 
         ! Find saturation for a specific function.
-        SatFunc_PcToSat_VG,       &
-        SatFunc_PcToSat_BC,       &
-        SatFunc_PcToSat_SBC,      &
+        SatFunc_PcToSat_VG,                           &
+        SatFunc_PcToSat_BC,                           &
+        SatFunc_PcToSat_SBC,                          &
 
         ! Find relative permeability for a specific function.
-        SatFunc_PcToRelPerm_VG,   &
-        SatFunc_PcToRelPerm_BC,   &
-        SatFunc_PcToRelPerm_SBC,  &
+        SatFunc_PcToRelPerm_VG,                       &
+        SatFunc_PcToRelPerm_BC,                       &
+        SatFunc_PcToRelPerm_SBC,                      &
 
         ! Find capillary pressure for a specific function.
-        SatFunc_SatToPc_VG,       &
-        SatFunc_SatToPc_BC,       &
+        SatFunc_SatToPc_VG,                           &
+        SatFunc_SatToPc_BC,                           &
         SatFunc_SatToPc_SBC
 
 
@@ -460,7 +460,7 @@ end function findGu_SBC_zeroCoeff
 
 
 !------------------------------------------------------------------------
-subroutine SatFunc_Set_Weibull(satParams, d, c)
+subroutine SatFunc_Set_Weibull_RelPerm(satParams, d, c)
     !
     ! !DESCRIPTION:
     ! Sets parameters for Weibull model for relative permeability
@@ -478,7 +478,7 @@ subroutine SatFunc_Set_Weibull(satParams, d, c)
     satParams%w_d                = d
     satParams%w_c                = c
 
-end subroutine SatFunc_Set_Weibull
+end subroutine SatFunc_Set_Weibull_RelPerm
 
 
 !------------------------------------------------------------------------
