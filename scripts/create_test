@@ -1156,7 +1156,7 @@ sub documentTestCase
   my $outstr ="
   ----------------------------------------------
   Setting up the following test:
-  ----------------------------------------------";
+  ----------------------------------------------\n";
   foreach (sort keys %test){
       $outstr .= "    $_:  $test{$_}\n";
   }

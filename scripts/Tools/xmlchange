@@ -56,11 +56,11 @@ REQUIRED OPTIONS
          contain the symbols "=" or ",".
 
 OPTIONAL
+     -subgroup           If the value is in more than one node change this one (default - change all)
      -append [or -a]      append value to the end of existing value
      -help [or -h]        Print usage to STDOUT.
      -noecho              Do NOT echo command to CaseStatus file
-     -silent [or -s]      Turns on silent mode - only fatal messages issued.
-     -verbose [or -v]     Turn on verbose echoing of settings.
+     -loglevel            Level of output verbosity: DEBUG, INFO, WARN, ERROR, FATAL
      -warn [or -w]        Warn and abort if you are overwriting data that is not blank
 
 NOTE:
@@ -84,6 +84,8 @@ my $cimeroot = $nodes[0]->getAttribute('value');
 
 unshift @INC, "$cimeroot/utils/perl5lib";
 require Config::SetupTools;
+require Log::Log4perl;
+
 
 # Parse command-line options.
 my @saved_argv = @ARGV;
@@ -92,6 +94,8 @@ my %opts = (
     file=>undef,
     id=>undef,
     val=>undef,
+    subgroup=>undef,
+    loglevel => "INFO"
     );
 
 GetOptions(
@@ -101,10 +105,16 @@ GetOptions(
     "val=s"      => \$opts{'val'},
     "h|help"     => \$opts{'help'},
     "noecho"     => \$opts{'noecho'},
-    "s|silent"   => \$opts{'silent'},
-    "v|verbose"  => \$opts{'verbose'},
+    "loglevel=s"  => \$opts{'loglevel'},
     "w|warn"     => \$opts{'warn'},
+    "subgroup=s" => \$opts{subgroup},
 )  or usage();
+
+my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
+Log::Log4perl->easy_init({level=>$level,
+			  layout=>'%m%n'});
+
+my $logger = Log::Log4perl::get_logger();
 
 # Give usage message.
 usage() if $opts{'help'};
@@ -114,8 +124,8 @@ my $settinglist = shift(@ARGV);
 
 # Check for unparsed argumentss
 if (@ARGV) {
-    print "ERROR xmlchange: unrecognized arguments: @ARGV\n";
-    print "A list of ID's needs to be comma-delimited with NO-WHITESPACE!\n";
+    $logger->error( "ERROR xmlchange: unrecognized arguments: @ARGV");
+    $logger->error( "A list of ID's needs to be comma-delimited with NO-WHITESPACE!");
     usage();
 }
 
@@ -125,7 +135,7 @@ if ( ! defined($settinglist) ) {
    foreach my $item ( "file", "id", "val" ) 
    {
       if ( ! defined($opts{$item}) ) {
-         print "ERROR xmlchange : Must provide $item as input argument \n";
+         $logger->error( "ERROR xmlchange : Must provide $item as input argument ");
          usage();
       }
    }
@@ -134,12 +144,12 @@ if ( ! defined($settinglist) ) {
    foreach my $varval ( split( /,/, $settinglist ) ) {
       if ( $varval =~ /^([a-zA-Z0-9_]+)=([^,=]+)$/ ) {
          if ( defined($idlist{$1}) ) {
-            print "ERROR: variable $1 was already set once in the settings list: $settinglist\n";
+            $logger->warn( "ERROR: variable $1 was already set once in the settings list: $settinglist");
          }
          $idlist{$1} = $2;
       } else {
-         print "ERROR xmlchange : variable = value setting is NOT recognized: $varval\n";
-         die "Should be of the form: variable = value\n";
+         $logger->logdie( "ERROR xmlchange : variable = value setting is NOT recognized: $varval
+                                            Should be of the form: variable = value");
       }
    }
 }
@@ -157,25 +167,13 @@ if ( ! defined($settinglist) ) {
        }
    }
    if ($status != 1) {
-       print "** $opts{'file'} is not an acceptable file to modify *** \n";
-       print "*** acceptable files are @filenames *** \n";
-       print "*** Note: env_archive.xml can be modified manually and checked with xmllint. *** \n";
-       print " *** See st_archive --help for details *** \n";
-       die;
+       my $str = "** $opts{'file'} is not an acceptable file to modify *** \n";
+       $str .= "*** acceptable files are @filenames *** \n";
+       $str .= "*** Note: env_archive.xml can be modified manually and checked with xmllint. *** \n";
+       $str .= " *** See st_archive --help for details *** ";
+       $logger->logdie($str);
    }
 }
-
-# Define 3 print levels:
-# 0 - only issue fatal error messages
-# 1 - only informs what files are created (default)
-# 2 - verbose
-my $print = 1;
-if ($opts{'silent'})  { $print = 0; }
-if ($opts{'verbose'}) { $print = 2; }
-if ($opts{'append'} && $opts{'warn'} ) {
-    die "warn and append modes can NOT both be set\n";
-}
-my $eol = "\n";
 
 #-----------------------------------------------------------------------------------------------
 # Determine the env_xxx.xml file for each required xmlchange variable
@@ -222,7 +220,7 @@ foreach my $id ( keys(%idlist) )
 	    # If append mode is on - check that variable is of the character type
 	    if ($opts{'append'}) {
 		if ( $type ne 'char') {
-		    die "ERROR xmlchange: Append mode can ONLY work on character type values.\n";
+		    $logger->logdie( "ERROR xmlchange: Append mode can ONLY work on character type values.");
 		}
 	    }
 
@@ -230,17 +228,17 @@ foreach my $id ( keys(%idlist) )
 	    if ($opts{'warn'}) {
 		if ( $type ne 'char') {
 		    if ( ($value !~ m/^\s*$/) && ($value !~ m/UNSET/i) ) { 
-			die "ERROR xmlchange: Variable $id is already set to $value.\n";
+			$logger->logdie ("ERROR xmlchange: Variable $id is already set to $value.");
 		    }
 		} elsif ( $value != -99 && $value != -999 && $value != -999.99 ) { 
-		    die "ERROR xmlchange : Variable $id is already set to $value.\n";
+		    $logger->logdie ("ERROR xmlchange : Variable $id is already set to $value.");
 		}
 	    }
 	    last;
 	}
     }
     if (! $id_file{$id}) {
-	die "ERROR xmlchange: variable $id is not a valid name \n";
+	$logger->logdie ("ERROR xmlchange: variable $id is not a valid name ");
     }
 }
 
@@ -254,12 +252,12 @@ foreach my $file (values (%id_file))
 {
     # Create backup file
     my $backupfile = "$file.bak";
-    copy($file, $backupfile) or die "A problem occurred copying $file to $backupfile, reason was $!";
+    copy($file, $backupfile) or $logger->logdie ("A problem occurred copying $file to $backupfile, reason was $!");
     
     # Write out the file header
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file); 
 
-    my $fh = IO::File->new($file, '>' ) or die "can't open file: $file\n";
+    my $fh = IO::File->new($file, '>' ) or $logger->logdie ("can't open file: $file");
     print $fh "<?xml version=\"1.0\"?> \n";
     print $fh "\n";
     print $fh "<config_definition> \n";
@@ -284,79 +282,107 @@ foreach my $file (values (%id_file))
     print $fh "</groups>\n";   	    
     print $fh "\n";
 
-    # Loop over each file variable, modify if needed, then write it out
-    foreach my $node ($xml->findnodes(".//entry")) 
-    {
-	my $name  = $node->getAttribute('id');
-	my $value = $node->getAttribute('value');
-	$value =~ s/'/&apos;/g;
-	$value =~ s/\</&lt;/g;
-	$value =~ s/\</&gt;/g;
-
-	my ($group, $valid_values, $type, $desc, $is_list_value);
-	foreach my $childnode ($node->childNodes()) 
-	{
-	    # Determine all node properties other than value
-	    if ($childnode->nodeName() eq 'desc') {
-		$desc = $childnode->textContent();
-		$desc =~ s/^\n//;
-		$desc =~ s/\n$//;
-		$desc =~ s/\r//;
-		$desc =~ s/^ *//;
-		chomp $desc;
-	    }
-	    if ($childnode->nodeName() eq 'type') {
-		$type = $childnode->textContent();
-	    }
-	    if ($childnode->nodeName() eq 'valid_values') {
-		$valid_values = $childnode->textContent();
-	    }
-	    if ($childnode->nodeName() eq 'group') {
-		$group = $childnode->textContent();
-	    }
-	    if ($childnode->nodeName() eq 'list') {
-		$is_list_value = $childnode->textContent();
-	    }
-
-	}
-
-	# Loop over all entries in the file
-	foreach my $id ( keys(%idlist) ) 
-	{
-	    # Make a change to the value if requested
-	    if ($id eq $name) {
-		my $id_value = $idlist{$id};
-		my $newval   = $id_value;
-		if ($opts{'append'}) {
-		    # Append new value on the end of old only if old NOT unset
-		    if ( ($value !~ m/^\s*$/) && ($value !~ m/UNSET/i) ) { 
-			$newval = "$value $id_value";
-		    }
-		}		    
-		$newval =~ s/'/&apos;/g;
-		$newval =~ s/\</&lt;/g;
-		$newval =~ s/\</&gt;/g;
-		$value  = $newval;
-	    }
-	} 
-
-	# Write out the entry
-	write_xml_entry($fh, $name, $value, $type, $valid_values, $desc, $group, $is_list_value);
+    my @subgroups = qw(none);
+    if($file =~ "env_batch.xml"){
+	@subgroups = qw(run test st_archive lt_archive);
     }
+    
+    my $indent = "  ";
+    my $editthis=1;
+    my $nodename;
+    foreach my $subgroup (@subgroups){
+	if($subgroup ne "none"){
+	    $indent = "      ";
+	    print $fh "  <job name=\"$subgroup\">";
+	    $nodename = "job/entry";
+	}else{
+	    $nodename = "entry";
+	# Loop over each file variable, modify if needed, then write it out
+	foreach my $node ($xml->findnodes(".//$nodename")) 
+	{
+	    if($subgroup ne "none" && defined $opts{subgroup}){
+		$editthis = 0;
+		my $pname = $node->parentNode->getAttribute("name");
+		if ($pname eq $opts{subgroup}){
+		    $editthis=1;
+		}
+	    }
+	    my $name  = $node->getAttribute('id');
+	    my $value = $node->getAttribute('value');
+	    $value =~ s/'/&apos;/g;
+	    $value =~ s/\</&lt;/g;
+	    $value =~ s/\</&gt;/g;
 
-    # print out the tail of the fail
+	    my ($group, $valid_values, $type, $desc, $is_list_value);
+	    foreach my $childnode ($node->childNodes()) 
+	    {
+		# Determine all node properties other than value
+		if ($childnode->nodeName() eq 'desc') {
+		    $desc = $childnode->textContent();
+		    $desc =~ s/^\n//;
+		    $desc =~ s/\n$//;
+		    $desc =~ s/\r//;
+		    $desc =~ s/^ *//;
+		    chomp $desc;
+		}
+		if ($childnode->nodeName() eq 'type') {
+		    $type = $childnode->textContent();
+		}
+		if ($childnode->nodeName() eq 'valid_values') {
+		    $valid_values = $childnode->textContent();
+		}
+		if ($childnode->nodeName() eq 'group') {
+		    $group = $childnode->textContent();
+		}
+		if ($childnode->nodeName() eq 'list') {
+		    $is_list_value = $childnode->textContent();
+		}
+
+	    }
+
+	    # Loop over all entries in the file
+	    foreach my $id ( keys(%idlist) ) 
+	    {
+		# Make a change to the value if requested
+		if ($id eq $name) {
+		    my $id_value = $idlist{$id};
+		    my $newval   = $id_value;
+		    if ($opts{'append'}) {
+			# Append new value on the end of old only if old NOT unset
+			if ( ($value !~ m/^\s*$/) && ($value !~ m/UNSET/i) ) { 
+			    $newval = "$value $id_value";
+			}
+		    }		    
+		    $newval =~ s/'/&apos;/g;
+		    $newval =~ s/\</&lt;/g;
+		    $newval =~ s/\</&gt;/g;
+		    if($editthis==1){
+			$value  = $newval;
+		    }
+		}
+		$logger->debug("name = $name value = $value subgroup = $subgroup");
+		# Write out the entry
+		write_xml_entry($fh, $name, $value, $type, $valid_values, $desc, $group, $is_list_value, $indent);
+	   
+	    }
+	}
+	if($subgroup ne "none"){
+	    print $fh "  </job>\n";
+	}
+    }
+    # print out the tail of the file
     print $fh "\n";
     print $fh "</config_definition> \n";
 
     # Before finishing, remove the backup files.  
-    unlink($backupfile) or warn "unable to link $backupfile, $!";
+    unlink($backupfile) or $logger->warn ("unable to link $backupfile, $!");
 }
 
 if (! $opts{'noecho'}) {
    echo_command_to_CaseStatus();
 }
 
-if ($print>=2) { print "xmlchange done.\n"; }
+$logger->debug( "xmlchange done."); 
 exit;
 
 #-----------------------------------------------------------------------------------------------
@@ -371,14 +397,18 @@ sub echo_command_to_CaseStatus {
       close $CS;
    }
    else {
-      warn "WARNING: No CaseStatus file found; this xmlchange command has been executed, but not recorded in the CaseStatus file\n";
+      $logger->warn ("WARNING: No CaseStatus file found; this xmlchange command has been executed, but not recorded in the CaseStatus file");
    }
 }   
 
 #-----------------------------------------------------------------------------------------------
+#   TODO this code is duplicated in ConfigCase.pm
+#
+#
+
 sub write_xml_entry
 {
-    my ($fh, $id, $value, $type, $valid_values, $desc, $group, $is_list_value) = @_;
+    my ($fh, $id, $value, $type, $valid_values, $desc, $group, $is_list_value, $indent) = @_;
 
     $value =~ s/'/&apos;/g;
     $value =~ s/\</&lt;/g;
@@ -391,12 +421,12 @@ sub write_xml_entry
     chomp $desc;
     
     print $fh "\n";
-    print $fh "<entry id=\"$id\"  value=\"$value\">\n";   	    
-    print $fh "  <type>$type</type> \n"; 
-    if ($valid_values  ne '') {print $fh "  <valid_values>$valid_values</valid_values> \n";}
-    if ($is_list_value ne '') {print $fh "  <list>$is_list_value</list> \n";}
-    print $fh "  <group>$group</group> \n"; 
-    print $fh "  <desc>$desc</desc> \n";
-    print $fh "</entry> \n";
+    print $fh "$indent<entry id=\"$id\"  value=\"$value\">\n";   	    
+    print $fh "$indent  <type>$type</type> \n"; 
+    if ($valid_values  ne '') {print $fh "$indent  <valid_values>$valid_values</valid_values> \n";}
+    if ($is_list_value ne '') {print $fh "$indent  <list>$is_list_value</list> \n";}
+    print $fh "$indent  <group>$group</group> \n"; 
+    print $fh "$indent  <desc>$desc</desc> \n";
+    print $fh "$indent</entry> \n";
 }
 
