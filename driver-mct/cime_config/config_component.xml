@@ -1842,23 +1842,6 @@
     <desc>Root directory on long term archiving store system for long-term data archives.</desc>
   </entry> 
 
-  <entry id="PROJECT"> 
-    <type>char</type>
-    <default_value>PROJECT_UNSET</default_value>
-    <group>case_desc</group>
-    <file>env_case.xml</file>
-    <desc>project for project-sensitive build and run paths, and job scripts</desc>
-  </entry> 
-
-  <entry id="PROJECT_REQUIRED">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>case_desc</group>
-    <file>env_case.xml</file>
-    <desc>whether the PROJECT value is required on this machine</desc>
-  </entry>
-
   <entry id="BATCHQUERY"> 
     <type>char</type>
     <default_value>UNSET</default_value>
@@ -3286,6 +3269,43 @@
     <file>env_case.xml</file>
     <desc>2**n relative cost of machine (DO NOT EDIT)</desc>
   </entry>
+
+  <!-- Job Submission stuff -->
+  <entry id="JOB_QUEUE">
+    <type>character</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <group>job_submission</group>
+    <file>env_batch.xml</file>
+    <desc>The machine queue in which to submit the job.  Default determined in config_machines.xml can be overwritten by testing</desc>
+  </entry>
+  <entry id="JOB_WALLCLOCK_TIME">
+    <type>character</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <group>job_submission</group>
+    <file>env_batch.xml</file>
+    <desc>The machine wallclock setting.  Default determined in config_machines.xml can be overwritten by testing</desc>
+  </entry>
+  
+  <entry id="PROJECT"> 
+    <type>char</type>
+    <default_value>PROJECT_UNSET</default_value>
+    <group>job_submission</group>
+    <file>env_batch.xml</file>
+    <desc>project for project-sensitive build and run paths, and job scripts</desc>
+  </entry> 
+
+  <entry id="PROJECT_REQUIRED">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>job_submission</group>
+    <file>env_batch.xml</file>
+    <desc>whether the PROJECT value is required on this machine</desc>
+  </entry>
+
+
 
   <!-- Data Assimilation type stuff -->
 
