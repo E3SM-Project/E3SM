@@ -385,6 +385,9 @@ value of RUN_STARTDATE will be date2.
 <!-- OCN + GLC Only Compsets -->
 <COMPSET sname="MPAS_LI_O_TEST"   alias="MPAS_LI_O_TEST" support_level="Experimental, under development" >2000_DATM%NYF_SLND_DICE%SSMI_MPASO_DROF%NYF_MPASLI_SWAV</COMPSET>
 
+<!-- OCN + CICE + GLC Only Compsets -->
+<COMPSET sname="MPAS_LI_SI_O_TEST"   alias="MPAS_LISIO_TEST" support_level="Experimental, under development" >2000_DATM%NYF_SLND_MPASCICE%SSMI_MPASO_DROF%NYF_MPASLI_SWAV</COMPSET>
+
 <!-- Stubs/Dead compsets -->
 
 <COMPSET sname="S" alias="S">2000_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV </COMPSET>
