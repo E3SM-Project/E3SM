@@ -60,6 +60,14 @@
       <test name="CME_Ld3">
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
       </test>
+      <test name="ERR">
+        <machine compiler="intel" testtype="prealpha">yellowstone</machine>
+        <machine compiler="nag" testtype="prealpha">hobart</machine>
+        <machine compiler="cray" testtype="prealpha">eos</machine>
+        <machine compiler="intel" testtype="prealpha">edison</machine>
+        <machine compiler="pgi" testtype="prealpha">bluewaters</machine>
+        <machine compiler="ibm" testtype="prealpha">mira</machine>
+      </test>
       <test name="ERS_D_Ld3">
         <machine compiler="intel" testtype="prebeta">edison</machine>
         <machine compiler="intel" testtype="prealpha">hobart</machine>
