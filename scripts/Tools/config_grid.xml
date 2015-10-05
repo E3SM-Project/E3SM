@@ -50,7 +50,7 @@ Each grid is associated with five names
 <GRID sname="T62_tx0.1v2" alias="T62_t12" compset="(DATM|XATM|SATM)">a%T62_l%T62_oi%tx0.1v2_r%rx1_m%tx0.1v2_g%null_w%null</GRID>
 <GRID sname="T62_gx1v6"   alias="T62_g16" compset="(DATM|XATM|SATM)">a%T62_l%T62_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null</GRID>
 <GRID sname="T62_mpas120" alias="T62_m120" compset="(DATM|XATM|SATM)">a%T62_l%T62_oi%mpas120_r%rx1_m%mpas120_g%null_w%null</GRID>
-<GRID sname="T62_mpasgx1" alias="T62_mgx1" compset="_MPAS-CICE">a%T62_l%T62_oi%mpasgx1_r%rx1_m%mpasgx1_g%null_w%null</GRID>
+<GRID sname="T62_mpasgx1" alias="T62_mgx1" compset="(DATM|XATM|SATM)">a%T62_l%T62_oi%mpasgx1_r%rx1_m%mpasgx1_g%null_w%null</GRID>
 <GRID sname="T62_oEC60to30" alias="T62_oEC60to30" compset="(DATM|XATM|SATM)">a%T62_l%T62_oi%oEC60to30_r%rx1_m%oEC60to30_g%null_w%null</GRID>
 
 <!-- finite volume grids -->
