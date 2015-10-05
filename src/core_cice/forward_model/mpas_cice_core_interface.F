@@ -242,7 +242,6 @@ module cice_core_interface
           config_use_ice_age, &
           config_use_first_year_ice, &
           config_use_level_ice, &
-          config_use_meltponds, &
           config_use_cesm_meltponds, &
           config_use_level_meltponds, &
           config_use_topo_meltponds, &
@@ -264,6 +263,9 @@ module cice_core_interface
 
      logical, pointer :: &
           pkgColumnFormDragActive
+
+     logical :: &
+          use_meltponds
 
      ierr = 0
 
@@ -325,7 +327,6 @@ module cice_core_interface
      call MPAS_pool_get_config(configPool, "config_use_ice_age", config_use_ice_age)
      call MPAS_pool_get_config(configPool, "config_use_first_year_ice", config_use_first_year_ice)
      call MPAS_pool_get_config(configPool, "config_use_level_ice", config_use_level_ice)
-     call MPAS_pool_get_config(configPool, "config_use_meltponds", config_use_meltponds)
      call MPAS_pool_get_config(configPool, "config_use_cesm_meltponds", config_use_cesm_meltponds)
      call MPAS_pool_get_config(configPool, "config_use_level_meltponds", config_use_level_meltponds)
      call MPAS_pool_get_config(configPool, "config_use_topo_meltponds", config_use_topo_meltponds)
@@ -340,10 +341,12 @@ module cice_core_interface
      call MPAS_pool_get_package(packagePool, "pkgColumnTracerAerosolsActive", pkgColumnTracerAerosolsActive)
      call MPAS_pool_get_package(packagePool, "pkgColumnTracerArrayStandInActive", pkgColumnTracerArrayStandInActive)
 
+     use_meltponds = (config_use_cesm_meltponds .or. config_use_level_meltponds .or. config_use_topo_meltponds)
+
      pkgColumnTracerIceAgeActive       = config_use_ice_age
      pkgColumnTracerFirstYearIceActive = config_use_first_year_ice
      pkgColumnTracerLevelIceActive     = config_use_level_ice
-     pkgColumnTracerPondsActive        = config_use_meltponds
+     pkgColumnTracerPondsActive        = use_meltponds
      pkgColumnTracerLidThicknessActive = (config_use_level_meltponds .or. config_use_topo_meltponds)
      pkgColumnTracerAerosolsActive     = config_use_aerosols
 

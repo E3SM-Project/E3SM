@@ -133,8 +133,7 @@ contains
          stressDivergenceV
 
     real(kind=RKIND), pointer :: &
-         elasticTimeStep, &
-         dt
+         elasticTimeStep
 
     logical, pointer :: &
          revisedEVP
@@ -167,7 +166,6 @@ contains
     block => domain % blocklist
     do while (associated(block))
 
-       call MPAS_pool_get_config(block % configs, "config_dt", dt)
        call MPAS_pool_get_config(block % configs, "config_revised_evp", revisedEVP)
 
        call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
@@ -222,7 +220,6 @@ contains
             replacementPressure, &
             solveStress, &
             elasticTimeStep, &
-            dt, &
             revisedEVP)
 
        call cice_stress_divergence_variational(&
@@ -380,7 +377,6 @@ contains
        replacementPressure, &
        solveStress, &
        dtElastic, &
-       dt, &
        revisedEVP)!{{{
     
     use cice_velocity_solver_constitutive_relation, only: &
@@ -410,8 +406,7 @@ contains
          solveStress !< Input: 
 
     real(kind=RKIND), intent(in) :: &
-         dtElastic, & !< Input: 
-         dt           !< Input: 
+         dtElastic !< Input: 
          
     logical, intent(in) :: &
          revisedEVP !< Input: 
@@ -494,8 +489,7 @@ contains
                      strain12(iVertexOnCell,iCell), &
                      icePressure(iCell), &
                      replacementPressureCell(iVertexOnCell), &
-                     areaCell(iCell), &
-                     dt)
+                     areaCell(iCell))
 
              enddo ! iVertexOnCell
 

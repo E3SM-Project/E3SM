@@ -95,6 +95,12 @@ contains
          config_perform_unit_test, &
          config_use_advection
 
+    integer, pointer :: &
+         config_dynamics_subcycle_number
+
+    integer :: &
+         iDynamicsSubcycle
+
     call cice_debug_write_out_fields(domain, "cice_timestep", 1)
 
     call store_timestep_counter(domain, itimestep)
@@ -118,21 +124,27 @@ contains
     call cice_column_predynamics_time_integration(domain, clock)
     call mpas_timer_stop("Column")
 
-    ! velocity solve
-    call mpas_timer_start("Velocity solve")
-    call cice_run_velocity_solver(domain, clock, dt)
-    call mpas_timer_stop("Velocity solve")
+    ! loop of dynamcis subcycle
+    call MPAS_pool_get_config(configs, "config_dynamics_subcycle_number", config_dynamics_subcycle_number)
+    do iDynamicsSubcycle = 1, config_dynamics_subcycle_number
 
-    ! advection
-    call mpas_timer_start("Advection")
-    if (config_use_advection) &
-       call cice_run_advection(domain, clock, dt)
-    call mpas_timer_stop("Advection")
+       ! velocity solve
+       call mpas_timer_start("Velocity solver")
+       call cice_run_velocity_solver(domain, clock)
+       call mpas_timer_stop("Velocity solver")
 
-    ! ridging
-    call mpas_timer_start("Column")
-    call cice_column_dynamics_time_integration(domain, clock)
-    call mpas_timer_stop("Column")
+       ! advection
+       call mpas_timer_start("Advection")
+       if (config_use_advection) &
+            call cice_run_advection(domain, clock, dt)
+       call mpas_timer_stop("Advection")
+
+       ! ridging
+       call mpas_timer_start("Column")
+       call cice_column_dynamics_time_integration(domain, clock)
+       call mpas_timer_stop("Column")
+
+    enddo ! iDynamicsSubcycle
 
     ! shortwave
     call mpas_timer_start("Column")

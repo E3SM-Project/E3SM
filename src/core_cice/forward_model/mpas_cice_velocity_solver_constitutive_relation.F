@@ -66,12 +66,6 @@ contains
 
     type(block_type), pointer :: block
 
-    integer, pointer :: &
-         config_elastic_subcycle_number
-
-    real(kind=RKIND), pointer :: &
-         config_dt
-
     type(MPAS_pool_type), pointer :: &
          velocitySolver, &
          mesh
@@ -91,9 +85,6 @@ contains
          dvEdgeMin, &
          dvEdgeMinGlobal
 
-    call MPAS_pool_get_config(domain % configs, "config_elastic_subcycle_number", config_elastic_subcycle_number)
-    call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
-
     ! general EVP
     block => domain % blocklist
     do while (associated(block))
@@ -101,10 +92,6 @@ contains
        call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolver)
        call MPAS_pool_get_array(velocitySolver, "dynamicsTimeStep", dynamicsTimeStep)
        call MPAS_pool_get_array(velocitySolver, "elasticTimeStep", elasticTimeStep)
-
-       dynamicsTimeStep = config_dt
-       
-       elasticTimeStep = dynamicsTimeStep / real(config_elastic_subcycle_number,RKIND)
        
        dampingTimescale = dampingTimescaleParameter * dynamicsTimeStep
        
@@ -139,7 +126,7 @@ contains
     block => domain % blocklist
     do while (associated(block))
        
-       gamma = 0.25_RKIND * 1.0e11_RKIND * config_dt
+       gamma = 0.25_RKIND * 1.0e11_RKIND * dynamicsTimeStep
        numericalInertiaCoefficient = (2.0_RKIND * dampingRatioDenominator * dampingRatio * gamma) / dvEdgeMinGlobal**2
        
        block => block % next
@@ -248,8 +235,7 @@ contains
        strain12, &
        icePressure, &
        replacementPressure, &
-       areaCell, &
-       dtElastic)
+       areaCell)
 
     real(kind=RKIND), intent(inout) :: &
          stress11, & !< Input/Output: 
@@ -263,7 +249,6 @@ contains
 
     real(kind=RKIND), intent(in) :: &
          icePressure, & !< Input:
-         dtElastic, &   !< Input:
          areaCell       !< Input:
 
     real(kind=RKIND), intent(out) :: &
