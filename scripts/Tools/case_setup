@@ -11,7 +11,7 @@ use Getopt::Long;
 use IO::File;
 use IO::Handle;
 use File::Basename;
-
+use File::Copy;
 #-----------------------------------------------------------------------------------------------
 sub usage {
     die <<EOF;
@@ -265,12 +265,16 @@ if (! $clean ) {
 							     machroot => $xmlvars{'MACHDIR'},
 							     machine  => $xmlvars{'MACH'},
 							     compiler => $xmlvars{'COMPILER'},
-							     threaded => $build_threaded);
+							     threaded => $build_threaded
+	                                                     );
+
+
 	
 	my $inputbatchscript  = "$xmlvars{'MACHDIR'}/template.cesmrun";
 	my $outputbatchscript = "$xmlvars{'CASEROOT'}/$case.run";
 
 	$batchmaker->makeBatchScript($inputbatchscript, $outputbatchscript);
+
 	$logger->info("Creating batch script $case.st_archive");
 	$batchmaker->overrideNodeCount(1);
 

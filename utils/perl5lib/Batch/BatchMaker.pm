@@ -174,9 +174,9 @@ sub makeBatchScript()
 	
 	$self->getBatchSystemTypeForMachine();
 	$self->setTaskInfo();
-# moved to runtime
-#	$self->setQueue();
-#	$self->setWallTime();
+
+	$self->setQueue();
+	$self->setWallTime();
 #	$self->setProject();
 	$self->setBatchDirectives();
 	$self->setCESMRun();
@@ -215,8 +215,8 @@ sub getBatchDirectives()
 
 	    $self->getBatchSystemTypeForMachine();
 	    $self->setTaskInfo();
-#	    $self->setQueue();
-#	    $self->setWallTime();
+	    $self->setQueue();
+	    $self->setWallTime();
 #	    $self->setProject();
 		$self->setBatchDirectives();
 	}
@@ -234,8 +234,8 @@ sub getField()
     my $fieldname = shift;
     $self->getBatchSystemTypeForMachine();
     $self->setTaskInfo();
-#    $self->setQueue();
-#    $self->setWallTime();
+    $self->setQueue();
+    $self->setWallTime();
 #    $self->setProject();
     my $field = $self->{$fieldname};
     if(defined $field)

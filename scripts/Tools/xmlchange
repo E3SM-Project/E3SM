@@ -294,9 +294,10 @@ foreach my $file (values (%id_file))
 	if($subgroup ne "none"){
 	    $indent = "      ";
 	    print $fh "  <job name=\"$subgroup\">";
-	    $nodename = "job/entry";
+	    $nodename = "job[\@name=\"$subgroup\"]/entry";
 	}else{
 	    $nodename = "entry";
+	}
 	# Loop over each file variable, modify if needed, then write it out
 	foreach my $node ($xml->findnodes(".//$nodename")) 
 	{
@@ -363,9 +364,9 @@ foreach my $file (values (%id_file))
 		$logger->debug("name = $name value = $value subgroup = $subgroup");
 		# Write out the entry
 		write_xml_entry($fh, $name, $value, $type, $valid_values, $desc, $group, $is_list_value, $indent);
-	   
 	    }
 	}
+	    
 	if($subgroup ne "none"){
 	    print $fh "  </job>\n";
 	}
