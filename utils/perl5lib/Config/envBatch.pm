@@ -43,8 +43,16 @@ sub read {
 	    }
 	}
     }
-
-
-
     
 }
+
+sub get
+{
+    my ($self, $job) = @_;
+    
+    return($self->{$job});
+}
+
+
+
+1;

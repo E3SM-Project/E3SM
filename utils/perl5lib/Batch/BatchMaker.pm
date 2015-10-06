@@ -177,7 +177,7 @@ sub makeBatchScript()
 
 	$self->setQueue();
 	$self->setWallTime();
-#	$self->setProject();
+	$self->setProject();
 	$self->setBatchDirectives();
 	$self->setCESMRun();
 	$self->writeBatchScript($inputfilename, $outputfilename);
@@ -217,8 +217,8 @@ sub getBatchDirectives()
 	    $self->setTaskInfo();
 	    $self->setQueue();
 	    $self->setWallTime();
-#	    $self->setProject();
-		$self->setBatchDirectives();
+	    $self->setProject();
+	    $self->setBatchDirectives();
 	}
 	return $self->{'batchdirectives'};
 
