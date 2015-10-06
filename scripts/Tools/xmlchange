@@ -361,10 +361,12 @@ foreach my $file (values (%id_file))
 			$value  = $newval;
 		    }
 		}
-		$logger->debug("name = $name value = $value subgroup = $subgroup");
-		# Write out the entry
-		write_xml_entry($fh, $name, $value, $type, $valid_values, $desc, $group, $is_list_value, $indent);
 	    }
+	    $logger->debug("name = $name value = $value subgroup = $subgroup");
+	    # Write out the entry
+	    write_xml_entry($fh, $name, $value, $type, $valid_values, $desc, $group, $is_list_value, $indent);
+		
+	    
 	}
 	    
 	if($subgroup ne "none"){

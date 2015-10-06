@@ -7,10 +7,10 @@ setenv CIMEROOT `./xmlquery CIMEROOT    -value`
 set CASE     = `./xmlquery CASE    -value`
 set EXEROOT  = `./xmlquery EXEROOT -value`
 
-./xmlchange -file env_build.xml -id USE_ESMF_LIB   -val TRUE
+./xmlchange USE_ESMF_LIB=TRUE
 
 #------------------------------------------------------------
-./xmlchange -file env_build.xml -id COMP_INTERFACE -val MCT
+./xmlchange COMP_INTERFACE=MCT
 ./$CASE.clean_build
 
 ./$CASE.build
@@ -24,7 +24,7 @@ mv -f $EXEROOT/cesm.exe $EXEROOT/cesm.exe.mct
 cp -f env_build.xml      env_build.xml.mct
 
 #------------------------------------------------------------
-./xmlchange -file env_build.xml -id COMP_INTERFACE -val ESMF
+./xmlchange COMP_INTERFACE=ESMF
 ./$CASE.clean_build
 
 ./$CASE.build
