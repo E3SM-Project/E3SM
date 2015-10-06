@@ -202,7 +202,7 @@ if (! $clean ) {
 
     } else {
 
-	my $sysmod = "./Tools/check_lockedfiles";
+	my $sysmod = "./Tools/check_lockedfiles -cimeroot $cimeroot";
 	system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
 	
 	my $pestot = `$caseroot/Tools/taskmaker.pl -sumonly`;

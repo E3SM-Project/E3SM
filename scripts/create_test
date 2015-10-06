@@ -98,11 +98,13 @@ SYNOPSIS
       [-nobuild           no_test_compilation]
       [-pes_file          specified_pes_file]
       [-project           specified project id]
+      [-queue            specify batch system queue]
       [-reruntests        are_tests_rerunnable ]
       [-sharedlibroot     shared build directory to reuse static library components]
       [-testroot          root_directory_for_testsuite]
       [-testid            unique_identifier_for_tests]
       [-testname          name_of_single_test]
+      [-walltime        specify job walltime]
       [-xml_list          list_of_tests (new xml format), default is 
                           $scriptsroot/Testing/Testlistxml/testlist.xml]
       [-xml_mach          target machine for xml list of tests]
@@ -386,12 +388,14 @@ sub initialize()
 	nobuild              => 'off',
 	pes_file             => undef,
 	project              => undef,
+	queue               => undef,
 	reruntests           => 'off',
 	testid               => "$testlid",
 	testname             => undef,
 	testroot             => "$cwd",
 	scratchroot          => undef,
 	sharedlibroot        => undef,
+	walltime               => undef,
 	);
 
 
@@ -440,11 +444,13 @@ sub options
 	"nobuild=s"           => \$opts{'nobuild'}, 
 	"pes_file=s"          => \$opts{'pes_file'},
 	"project=s"           => \$opts{'project'},  
+	"queue=s"            => \$opts{queue},
 	"reruntests=s"        => \$opts{'reruntests'}, 
 	"sharedlibroot=s"     => \$opts{'sharedlibroot'},
 	"testid=s"            => \$opts{'testid'},
 	"testname=s"          => \$opts{'testname'},
 	"testroot=s"          => \$opts{'testroot'},
+	"walltime=s"         => \$opts{walltime},
 	) or usage();
     usage() if $opts{'help'};
 
@@ -1409,9 +1415,12 @@ sub testcaseSetup
     $logger->debug("sysmod is $sysmod");
     system($sysmod) == 0 or $logger->warn ("$sysmod failed: $?");
 
-    qx(./xmlchange -file env_batch.xml -id JOB_WALLCLOCK_TIME -val 1:00);
-    qx(./xmlchange -file env_batch.xml -id JOB_QUEUE -val premium);
-    
+    if(defined $opts{walltime}){
+	qx(./xmlchange -file env_batch.xml -id JOB_WALLCLOCK_TIME -val $opts{walltime});
+    }
+    if(defined $opts{queue}){
+	qx(./xmlchange -file env_batch.xml -id JOB_QUEUE -val $opts{queue});
+    }
 
     
     
