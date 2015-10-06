@@ -56,7 +56,8 @@ REQUIRED OPTIONS
          contain the symbols "=" or ",".
 
 OPTIONAL
-     -subgroup           If the value is in more than one node change this one (default - change all)
+     -subgroup           If the value is in more than one node change this one (default - change all)  Currently this supports changing values in env_batch.xml which are defined by
+          the name of the job being submitted.  (run, test, st_archive, lt_archive) 
      -append [or -a]      append value to the end of existing value
      -help [or -h]        Print usage to STDOUT.
      -noecho              Do NOT echo command to CaseStatus file

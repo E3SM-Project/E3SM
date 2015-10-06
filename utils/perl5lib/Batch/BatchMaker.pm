@@ -408,6 +408,9 @@ sub set
 sub setWallTime()
 {
 	my $self = shift;
+	# Get the wallclock time from env_batch.xml if its defined there
+	# otherwise get the default from config_machines.xml
+	# and set it in env_batch.xml
 
 	if(defined $self->{envBatch}{$self->{job}}{JOB_WALLCLOCK_TIME}){
 	    $self->{wall_time} = $self->{envBatch}{$self->{job}}{JOB_WALLCLOCK_TIME};
@@ -493,7 +496,10 @@ sub getEstCost()
 sub setQueue()
 {
 	my $self = shift;
-
+	
+	# Get the queue from env_batch.xml if its defined there
+	# otherwise get the default from config_machines.xml
+	# and set it in env_batch.xml
 
 
 	if(defined $self->{envBatch}{$self->{job}}{JOB_QUEUE}){
