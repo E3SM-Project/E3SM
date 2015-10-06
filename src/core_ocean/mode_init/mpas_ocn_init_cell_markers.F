@@ -83,7 +83,6 @@ contains
       integer, pointer :: nCells
 
       integer :: iCell
-      integer :: count
 
       iErr = 0
 
@@ -95,13 +94,10 @@ contains
       call mpas_pool_get_array(meshPool, 'cullCell', cullCell)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
-      count = 0
-
       if ( associated(cullCell) ) then
          do iCell = 1, nCells
             if ( yCell(iCell) > yMax - 0.8_RKIND * edgeMin ) then
                cullCell(iCell) = 1
-               count = count + 1
             end if
          end do
       end if

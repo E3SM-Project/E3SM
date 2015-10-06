@@ -31,6 +31,7 @@ core_input_gen:
 	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.cvmix_shear_unit_test mode=init configuration=cvmix_shear_unit_test)
 	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.soma mode=init configuration=soma)
 	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.iso mode=init configuration=iso)
+	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.ziso mode=init configuration=ziso)
 	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.global_ocean mode=init configuration=global_ocean)
 	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean stream_list.ocean. mutable )
 	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean.forward stream_list.ocean.forward. mutable mode=forward )
