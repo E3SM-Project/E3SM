@@ -177,6 +177,8 @@ contains
     type (MPAS_Time_type) :: start_time
     type (MPAS_Time_type) :: ref_time
     type (MPAS_TimeInterval_type) :: filename_interval
+    type (MPAS_TimeInterval_type) :: denInterval, remInterval, zeroInterval
+    integer :: numDivs
     character(len=StrKIND) :: start_timestamp
     character(len=StrKIND) :: iotype
     logical :: streamsExists
@@ -561,10 +563,48 @@ contains
 !-----------------------------------------------------------------------
 
     call seq_timemgr_EClockGetData(EClock, dtime=ocn_cpl_dt)
-    call convert_seconds_to_timestamp(ocn_cpl_dt, coupleTimeStamp)
+    call mpas_set_timeInterval(alarmTimeStep, S=ocn_cpl_dt, ierr=ierr)
+    call mpas_get_timeInterval(alarmTimeStep, timeString=coupleTimeStamp, ierr=ierr)
+
+    ! Verify the mpas time step fits into a coupling interval
+    call mpas_pool_get_config(domain % configs, 'config_dt', tempCharConfig)
+    call mpas_set_timeInterval(denInterval, timeString=tempCharConfig, ierr=ierr)
+    call mpas_set_timeInterval(zeroInterval, S=0, ierr=ierr)
+    call mpas_interval_division(start_time, alarmTimeStep, denInterval, numDivs, remInterval)
+
+    ierr = 0
+
+    if ( alarmTimeStep < denInterval ) then
+       ierr = 1
+    end if
+    call mpas_dmpar_max_int(domain % dminfo, ierr, ierr)
+
+    if ( ierr == 1 ) then
+       write(stderrUnit, *) ' ERROR: Coupling interval is: ', trim(coupleTimeStamp)
+       write(stderrUnit, *) '        OCN Model time step is: ', trim(tempCharConfig)
+
+       write(stderrUnit, *) '        The model time step cannot be longer then the coupling interval'
+       call mpas_dmpar_global_abort('ERROR: Model is not properly configured for coupling interval.')
+    end if
+
+    if ( remInterval > zeroInterval ) then
+       ierr = 1
+    end if
+
+    call mpas_dmpar_max_int(domain % dminfo, ierr, ierr)
+
+    if ( ierr == 1 ) then
+       write(stderrUnit, *) ' ERROR: Coupling interval is: ', trim(coupleTimeStamp)
+       write(stderrUnit, *) '        OCN Model time step is: ', trim(tempCharConfig)
+
+       write(stderrUnit, *) '        These are not synchronized, so time steps'
+       write(stderrUnit, *) '        will not match to coupling interval boundaries.'
+       write(stderrUnit, *) '        Please reconfigure either the coupling interval, '
+       write(stderrUnit, *) '        or the time step.'
+       call mpas_dmpar_global_abort('ERROR: Model is not properly configured for coupling interval.')
+    end if
 
     ! set coupling alarm
-    call mpas_set_timeInterval(alarmTimeStep, timeString=coupleTimeStamp, ierr=ierr)
     alarmStartTime = currTime
     call mpas_add_clock_alarm(domain % clock, coupleAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
     call mpas_reset_clock_alarm(domain_ptr % clock, coupleAlarmID, ierr=ierr)
