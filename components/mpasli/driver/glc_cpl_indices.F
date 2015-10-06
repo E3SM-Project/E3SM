@@ -65,7 +65,7 @@ contains
     
     index_x2g_Sl_tsrf =                   mct_avect_indexra(x2g,'Sl_tsrf',perrwith='quiet')    
     ! Surface temperature (deg C)
-    
+
     index_x2g_Fogx_qiceli =               mct_avect_indexra(x2g,'Fogx_qiceli',perrwith='quiet')
     index_x2g_Fogx_qicehi =               mct_avect_indexra(x2g,'Fogx_qicehi',perrwith='quiet')
     index_x2g_So_phieff =                 mct_avect_indexra(x2g,'So_phieff',perrwith='quiet')
@@ -81,6 +81,7 @@ contains
     index_g2x_Sg_lithop =                 mct_avect_indexra(g2x,'Sg_lithop',perrwith='quiet')
     
     !Following block are GLC outputs for other components.  
+
     index_g2x_Fogg_rofi =                 mct_avect_indexra(g2x,'Fogg_rofi',perrwith='quiet')    
     ! solid ice runoff to OCN  (kg/m^2/s = mm H2O/s) (flux: time-average)
     
@@ -129,7 +130,7 @@ contains
     ! conservation in configurations that have an ice sheet instance running
     ! but not evolving.  The GLC_TWO_WAY_COUPLING xml variable is what controls
     ! how this should be handled in CLM and the ice sheet model.
-    
+
     !Following block are subshelf melt routine outputs for ocean import
     index_g2x_Fogx_qicelo =               mct_avect_indexra(g2x,'Fogx_qicelo',perrwith='quiet')
     index_g2x_Fogx_qiceho =               mct_avect_indexra(g2x,'Fogx_qiceho',perrwith='quiet')
