@@ -1547,7 +1547,7 @@
 	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
 	<CCSM_BASELINE>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
 	<CESMSCRATCHROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME</CESMSCRATCHROOT>
-	<CCSM_CPRNC>$CIMEROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
+	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/mustang/cprnc/v0.40/cprnc</CCSM_CPRNC>
 	<BATCHQUERY>mshow</BATCHQUERY>
 	<BATCHSUBMIT>msub</BATCHSUBMIT>
 	<BATCHREDIRECT></BATCHREDIRECT>
@@ -1597,7 +1597,7 @@
 	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
 	<CCSM_BASELINE>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
 	<CESMSCRATCHROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME</CESMSCRATCHROOT>
-	<CCSM_CPRNC>$CIMEROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
+	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
 	<BATCHQUERY>mshow</BATCHQUERY>
 	<BATCHSUBMIT>msub</BATCHSUBMIT>
 	<BATCHREDIRECT></BATCHREDIRECT>
