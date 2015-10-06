@@ -16,7 +16,8 @@ MEMBERS = mpas_ocn_global_stats.o \
           mpas_ocn_lagrangian_particle_tracking.o \
           mpas_ocn_eliassen_palm.o \
           mpas_ocn_time_filters.o \
-          mpas_ocn_mixed_layer_depths.o
+          mpas_ocn_mixed_layer_depths.o \
+          mpas_ocn_time_series_stats.o 
 
 all: $(OBJS)
 
