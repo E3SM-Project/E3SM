@@ -108,33 +108,37 @@ module cice_advection_incremental_remap
 !   integer, parameter :: vtestGlobal = 6720     ! test vertex for planar hex test case
 
    ! spherical quad (gx3)
-!   integer, parameter :: ctestGlobal = 5411    ! test cell for spherical quad test case (gx3_noland, near equator)
-!   integer, parameter :: etestGlobal = 5706    ! test edge for spherical quad test case
-!   integer, parameter :: vtestGlobal = 5511    ! test vertex for spherical quad test case
 !   integer, parameter :: ctestGlobal = 1        ! test cell for spherical quad test case (gx3, rotated, near SP)
 !   integer, parameter :: etestGlobal = 13898    ! test edge for spherical quad test case
 !   integer, parameter :: vtestGlobal = 1        ! test vertex for spherical quad test case
+!!   integer, parameter :: ctestGlobal = 5411    ! test cell for spherical quad test case (gx3_noland, near equator)
+!!   integer, parameter :: etestGlobal = 5706    ! test edge for spherical quad test case
+!!   integer, parameter :: vtestGlobal = 5511    ! test vertex for spherical quad test case
 
    ! spherical quad (gx1)
-!   integer, parameter :: ctestGlobal = 51157    ! test cell for spherical quad test case (gx1, not rotated)
-!   integer, parameter :: etestGlobal = 126267    ! test edge for spherical quad test case
-!   integer, parameter :: vtestGlobal = 52059    ! test vertex for spherical quad test case
-!!   integer, parameter :: ctestGlobal = 2    ! test cell for spherical quad test case (gx1, rotated, near SP)
-!!   integer, parameter :: etestGlobal = 124953    ! test edge for spherical quad test case
-!!   integer, parameter :: vtestGlobal = 2    ! test vertex for spherical quad test case
+!   integer, parameter :: ctestGlobal = 2         ! test cell for spherical quad test case (gx1, rotated, near SP)
+!   integer, parameter :: etestGlobal = 124953    ! test edge for spherical quad test case
+!   integer, parameter :: vtestGlobal = 2         ! test vertex for spherical quad test case
+!!   integer, parameter :: ctestGlobal = 51157    ! test cell for spherical quad test case (gx1, not rotated)
+!!   integer, parameter :: etestGlobal = 126267   ! test edge for spherical quad test case
+!!   integer, parameter :: vtestGlobal = 52059    ! test vertex for spherical quad test case
 
    ! spherical hex (2562 mesh)
 !   integer, parameter :: ctestGlobal = 3          ! test cell for spherical hex test case (North Pole on 2562 grid)
-!   integer, parameter :: etestGlobal = 473         ! test edge for spherical hex test case
-!   integer, parameter :: vtestGlobal = 12
-!   integer, parameter :: ctestGlobal = 2354       ! test cell for spherical hex test case (rotated)
-!   integer, parameter :: etestGlobal = 3473      ! test edge for spherical hex test case
-!   integer, parameter :: vtestGlobal = 2585
+!   integer, parameter :: etestGlobal = 473        ! test edge for spherical hex test case
+!   integer, parameter :: vtestGlobal = 12         ! test vertex for spherical hex test case
+!!   integer, parameter :: ctestGlobal = 2354       ! test cell for spherical hex test case (rotated)
+!!   integer, parameter :: etestGlobal = 3473       ! test edge for spherical hex test case
+!!   integer, parameter :: vtestGlobal = 2585       ! test vertex for spherical hex test case
 
    ! logic for conservation and monotonicity check
    ! These could be turned off for production runs to reduce computation, but it is safer to leave them on.
    logical, parameter :: conservationCheck = .true.  ! if true, check for exact conservation
    logical, parameter :: monotonicityCheck = .true.  ! if true, check for tracer monotonicity
+
+   ! logic for verifying that reconstructed tracer fields recover the mean
+   ! If this is true once, it is generally true for all time, so this check is turned off by default
+   logical, parameter :: recoverTracerMeansCheck = .false.
 
    ! verbose options; set to true for extensive diagnostic output      
    ! WHL: I often debug with verboseInit/Run/Construct/Geometry/Fluxes/Global set to true.
@@ -2532,6 +2536,7 @@ contains
     real(kind=RKIND), dimension(:), pointer :: &
          areaCell,                  &  ! cell area
          dcEdge,                    &  ! distance between the 2 cell centers on each side of an edge
+         dvEdge,                    &  ! distance between the 2 vertices of an edge
          minLengthEdgesOnVertex        ! minimum length of the edges on each vertex
 
     real(kind=RKIND), dimension(:), pointer :: &
@@ -2639,6 +2644,7 @@ contains
     call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
     call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
     call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+    call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
     call mpas_pool_get_array(meshPool, 'coeffs_reconstruct', coeffsReconstruct)
     call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID) 
     call mpas_pool_get_array(meshPool, 'indexToVertexID', indexToVertexID)
@@ -2888,15 +2894,31 @@ contains
     if (verboseFluxes .and. etestOnProc .and. block % localBlockID == etestBlockID) then
        iEdge = etest
        thisTracer => tracersHead   ! point to the mass-like field, iceAreaCategory
-       write(stderrUnit,*) ' '
-       write(stderrUnit,*) 'Fluxes, iEdge, tracer =', indexToEdgeID(iEdge), trim(thisTracer % tracerName)
-       if (thisTracer % ndims == 2) then  ! the pointer to iceAreaCategory should always be 2D, but check just in case
-          nCategories = size(thisTracer % edgeFlux2D, 1)
-          write(stderrUnit,*)'category, flux:'
-          do iCat = 1, nCategories
-             write(stderrUnit,*) iCat, thisTracer % edgeFlux2D(iCat,iEdge)
-          enddo
-       endif
+
+       do while(associated(thisTracer))
+          if (trim(thisTracer % tracerName) == 'iceAreaCategory') then
+             write(stderrUnit,*) ' '
+             write(stderrUnit,*) 'Fluxes, iEdge, tracer =', indexToEdgeID(iEdge), trim(thisTracer % tracerName)
+             if (thisTracer % ndims == 2) then
+                nCategories = size(thisTracer % edgeFlux2D, 1)
+                write(stderrUnit,*)'category, flux:'
+                do iCat = 1, nCategories
+                   write(stderrUnit,*) iCat, thisTracer % edgeFlux2D(iCat,iEdge)
+                enddo
+             elseif (thisTracer % ndims == 3) then
+                nLayers = size(thisTracer % edgeFlux3D, 1)
+                nCategories = size(thisTracer % edgeFlux3D, 2)
+                write(stderrUnit,*)'layer, category, flux:'
+                do iLayer = 1, nLayers
+                   do iCat = 1, nCategories
+                      write(stderrUnit,*) iLayer, iCat, thisTracer % edgeFlux3D(iLayer,iCat,iEdge)
+                   enddo
+                enddo
+             endif
+          endif
+
+          thisTracer => thisTracer % next
+       enddo     ! associated(thisTracer)
     endif     ! verboseFluxes & etestProcId & etestBlockID
 
     !------------------------------------------------------------------- 
@@ -2909,6 +2931,31 @@ contains
          nCells,           &
          tracersHead)
     
+    !------------------------------------------------------------------- 
+    ! Optionally, compare these mass*tracer products to the values computed
+    !  by analytically integrating the reconstructed tracer fields over each cell
+    !  (using the center/xGrad/yGrad values found in construct_linear_tracer_fields).
+    !------------------------------------------------------------------- 
+
+    if (recoverTracerMeansCheck) then
+
+       if (verboseRun) then
+          write(stderrUnit,*) 'Recover tracer means'
+          write(stderrUnit,*) 'WARNING: This subroutine will considerably increase the computation time for IR'
+       endif
+
+       call recover_tracer_means(&
+            nCells,                        &
+            maxEdges,                      &
+            nEdgesOnCell,                  &
+            xVertexOnCell, yVertexOnCell,  &
+            edgesOnCell,                   &
+            dcEdge,                        &
+            dvEdge, &
+            tracersHead)
+
+    endif
+
     !------------------------------------------------------------------- 
     ! Compute initial sums of mass*tracer over the locally owned cells
     !------------------------------------------------------------------- 
@@ -3022,7 +3069,7 @@ contains
           enddo
        endif  ! ndims
     endif   ! verbose and iceAreaCategory
-    
+
     !------------------------------------------------------------------- 
     ! Convert the ice and snow thickness back to volume.
     ! The IR code assumes that all tracers except the first (fractional ice area,
@@ -3290,7 +3337,7 @@ contains
        ! set parent tracer
        if (thisTracer % nParents == 0) then   ! mass-like field (fractional ice concentration for CICE)
 
-          ! This field has no parent, but create a dummy parent tracer with (xBarycenter, yBarycenter) at cell centroid.
+          ! This tracer has no parent, but create a dummy parent tracer with (xBarycenter, yBarycenter) at cell centroid.
           ! This ensures correct values for xBarycenter and yBarycenter below.
           allocate(dummyTracer)
 
@@ -4472,15 +4519,6 @@ contains
              ! modify the max and min, as appropriate
              maxLocal(iCat) = max(maxLocal(iCat), deviationAtVertex)
              minLocal(iCat) = min(minLocal(iCat), deviationAtVertex)
-
-             !WHL - debug
-             if (iCat == 1 .and. iCell==ctest) then
-!!                write(stderrUnit,*) ' '
-!!                write(stderrUnit,*) 'Limit gradient, iCell =', iCell
-!!                write(stderrUnit,*) 'x/yVertexOnCell:', xVertexOnCell(iVertex,iCell), yVertexOnCell(iVertex,iCell)
-!!                write(stderrUnit,*) 'x/yBarycenter:', xBarycenter(iCat,iCell), yBarycenter(iCat,iCell)
-!!                write(stderrUnit,*) 'iVertex, deviation, minLocal:', iVertex, deviationAtVertex, minLocal(iCat)
-             endif
 
           enddo  ! iCat
 
@@ -6173,7 +6211,7 @@ contains
 
     integer, dimension(:), intent(in) ::  &
          remapEdge        !< Input: = 1 if IR fluxes need to be computed across an edge, else = 0
-                          !        (i.e., = 1 for all edges of locally owned cells)
+                          !        (i.e., = 1 for edges of locally owned cells with two cell neighbors)
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &  ! nQuadPoints, nTriPerEdgeRemap, nEdges
          xTriangle, yTriangle     !< Input: coordinates of triangle quadrature points (indices 1-3 or 1-6)
@@ -6181,6 +6219,7 @@ contains
     real(kind=RKIND), dimension(:,:), intent(in) :: &  ! nTriPerEdgeRemap, nEdges
          triangleArea             !< Input: triangle area
                                   !   Note: Area is positive if flux across the edge is from cell 1 to cell 2, else is negative
+
     integer, dimension(:,:), intent(in) :: &  ! 2, nEdges
          cellsOnEdge              !< Input: index for each cell neighboring an edge 
 
@@ -6223,6 +6262,11 @@ contains
 
     thisTracer => tracersHead
     do while (associated(thisTracer))
+
+       if (verboseFluxes) then
+          write(stderrUnit,*) ' '
+          write(stderrUnit,*) 'Tracer: ', trim(thisTracer % tracerName)
+       endif
 
        ! check that nParents <= 3
        if (thisTracer % nParents > 3) then
@@ -6275,8 +6319,9 @@ contains
        endif
 
        if (verboseFluxes) then
-          write(stderrUnit,*) ' '
-          write(stderrUnit,*) 'Tracer: ', trim(thisTracer % tracerName) 
+          if (thisTracer % nParents > 0) then
+             write(stderrUnit,*) 'Parent: ', trim(parentTracer % tracerName) 
+          endif
        endif
 
        ! Integrate the fluxes of this tracer (for each category and layer) over each triangle of each edge.
@@ -6304,7 +6349,7 @@ contains
 
                       ! evaluate the tracer at each quadrature point
                       do iqp = 1, nQuadPoints
-                         thisTracer % triangleValue2D(:,iqp,iTri,iEdge) = thisTracer % center2D(:,iCell)                            &
+                         thisTracer % triangleValue2D(:,iqp,iTri,iEdge) = thisTracer % center2D(:,iCell)                             &
                                                                         + thisTracer % xGrad2D(:,iCell) * xTriangle(iqp,iTri,iEdge)  &
                                                                         + thisTracer % yGrad2D(:,iCell) * yTriangle(iqp,iTri,iEdge)
                       enddo
@@ -6336,7 +6381,7 @@ contains
                       ! If nParents = 2, this is mass*tracer1*tracer2
                       ! If nParents = 3, this is mass*tracer1*tracer2*tracer3
                       ! Note: Parent tracer must have ndims = 2
-                      thisTracer % triangleValue2D(:,:,itri,iEdge) = parentTracer % triangleValue2D(:,:,iTri,iEdge)  &
+                      thisTracer % triangleValue2D(:,:,iTri,iEdge) = parentTracer % triangleValue2D(:,:,iTri,iEdge)  &
                                                                      * thisTracer % triangleValue2D(:,:,iTri,iEdge)
 
                       ! integrate over the triangle by summing over quadrature points
@@ -6364,7 +6409,7 @@ contains
 
                 enddo  ! nTriPerEdgeRemap
 
-             endif    ! remapEdge = 1  
+             endif    ! remapEdge = 1
           enddo     ! nEdges
 
           deallocate(tracerIntegral2D)
@@ -6391,7 +6436,7 @@ contains
                       
                       ! evaluate the tracer at each quadrature point
                       do iqp = 1, nQuadPoints
-                         thisTracer % triangleValue3D(:,:,iqp,itri,iEdge) = thisTracer % center3D(:,:,iCell)   &
+                         thisTracer % triangleValue3D(:,:,iqp,iTri,iEdge) = thisTracer % center3D(:,:,iCell)   &
                                                                           + thisTracer % xGrad3D(:,:,iCell) * xTriangle(iqp,iTri,iEdge)  &
                                                                           + thisTracer % yGrad3D(:,:,iCell) * yTriangle(iqp,iTri,iEdge)
                       enddo
@@ -6464,9 +6509,10 @@ contains
           enddo       ! nEdges
 
           deallocate(tracerIntegral3D)
-          if (associated(dummyTracer)) nullify(dummyTracer)
 
        endif   ! ndims
+
+       if (associated(dummyTracer)) nullify(dummyTracer)
 
        thisTracer => thisTracer % next
 
@@ -6989,6 +7035,440 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
+!  routine recover_tracer_means
+!
+!> \brief MPAS-CICE check whether reconstructed tracer fields recover the means
+!> \author William Lipscomb
+!> \date   September 2015
+!> \details
+!>  This routine integrates mass and mass*tracer for each cell to verify
+!>  that the integrals recover the mean values.
+!>  It is just a check; it is not required for production runs.
+!>  Note: It is coded with embedded tracer loops, such that is has a small memory footprint 
+!>        but runs very slowly.
+!
+!-----------------------------------------------------------------------
+
+  subroutine recover_tracer_means(&
+       nCells,                        &
+       maxEdges,                      &
+       nEdgesOnCell,                  &
+       xVertexOnCell, yVertexOnCell,  &
+       edgesOnCell,                   &
+       dcEdge,                        &
+       dvEdge, &
+       tracersHead)
+
+    integer, intent(in) ::  &
+         nCells,        &  !< Input: number of cells
+         maxEdges          !< Input: maximum number of edges per cell
+
+    integer, dimension(:), intent(in) :: &
+         nEdgesOnCell      !< Input: number of edges for each cell
+
+    real(kind=RKIND), dimension(:,:), intent(in) ::  &
+         xVertexOnCell,  & !< Input: x (east) coordinate of vertex relative to cell center in local tangent plane
+         yVertexOnCell     !< Input: y (north) coordinate of vertex relative to cell center in local tangent plane
+
+    integer, dimension(:,:), intent(in) ::  &
+         edgesOnCell       !< Input: edge index for each edge of a given cell
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         dcEdge,        &  !< Input: distance between the 2 cell centers on each side of an edge
+         dvEdge            !< Input: distance between the 2 vertices of an edge
+
+    type(tracer_type), pointer :: &
+         tracersHead       !< Input/output: pointer to first element of linked list of tracers
+                           ! The pointer stays attached to the first tracer, but all tracers are updated
+    ! local variables
+
+    type(tracer_type), pointer :: &
+         thisTracer,        &   ! pointer that loops through linked list of tracers
+         parentTracer,      &   ! parent of thisTracer
+         dummyTracer            ! dummy tracer with barycenter at cell centroid
+
+    real(kind=RKIND), dimension(maxEdges) :: &
+         fracEdgeArea      ! fractional area of the triangle joining the cell center to the 2 vertices of each edge
+                           ! (relative to the total cell area)
+    real(kind=RKIND) :: &
+         sumArea           ! sum of edge areas for a cell
+
+    real(kind=RKIND) :: &
+         x1Vertex, y1Vertex, x2Vertex, y2Vertex, x3Vertex, y3Vertex  ! coordinates of triangle vertices
+
+    real(kind=RKIND) :: difference  ! difference between two values
+
+    real(kind=RKIND), dimension(nQuadPoints) ::  &
+         xQP, yQP,      &  ! x and y coordinates of quadrature points in each triangle
+         wQP               ! weight assigned to each quadrature point
+ 
+    integer :: iCell, iEdge, iCat, iLayer, iEdgeOnCell, iVertexOnCell, iqp, nLayers, nCategories
+
+    integer, parameter :: iCatTest = 1, iLayerTest = 1
+
+    ! loop over tracers, allocating some local arrays
+
+    thisTracer => tracersHead
+
+    do while (associated(thisTracer))
+
+       if (thisTracer % ndims == 2) then
+
+          nCategories = size(thisTracer % array2D, 1)
+          allocate(thisTracer % massTracerProductCell2D(nCategories))
+          allocate(thisTracer % massTracerProductTriangle2D(nCategories))
+          allocate(thisTracer % valueQP2D(nCategories,6))
+
+       elseif (thisTracer % ndims == 3) then
+
+          nLayers = size(thisTracer % array3D, 1)
+          nCategories = size(thisTracer % array3D, 2)
+          allocate(thisTracer % massTracerProductCell3D(nLayers,nCategories))
+          allocate(thisTracer % massTracerProductTriangle3D(nLayers,nCategories))
+          allocate(thisTracer % valueQP3D(nLayers,nCategories,6))
+
+       endif   ! ndims
+
+       if (thisTracer % nParents == 0) then   ! mass-like field; set up dummy tracer with value of 1 at each QP
+
+          allocate(dummyTracer)
+          dummyTracer % ndims = 2
+          allocate(dummyTracer % valueQP2D(nCategories,6))   ! hardwire nQuadPoints = 6
+          dummyTracer % valueQP2D(:,:) = 1.0_RKIND
+          thisTracer % parent => dummyTracer
+          
+       else   ! nParents = 1, 2 or 3
+
+          ! do nothing
+          
+       endif  ! nParents
+
+       thisTracer => thisTracer % next
+
+    enddo   ! associated(thisTracer)
+
+    ! Note: The following loop over cells contains embedded loops over tracers. This is not good for performance.
+    !       However, since this subroutine is just for bug-checking and can be turned off for production, 
+    !        I am trading speed for simplicity (and reduced memory footprint).
+    !       It could be sped up by defining some additional tracer fields and moving the tracer loops to the outside.
+
+    ! loop over cells
+    do iCell = 1, nCells
+
+       if (verboseConstruct .and. ctestOnProc) then
+          if (iCell == ctest) then
+             write(stderrUnit,*) 'Reconstructed mass*tracer products for cell ', iCell
+          endif
+       endif
+
+       ! loop over tracers, initializing the mass*tracer products for this cell
+
+       thisTracer => tracersHead
+
+       do while(associated(thisTracer))
+
+          if (thisTracer % ndims == 2) then
+             thisTracer % massTracerProductCell2D(:) = 0.0_RKIND
+          elseif (thisTracer % ndims == 3) then
+             thisTracer % massTracerProductCell3D(:,:) = 0.0_RKIND
+          endif
+
+          thisTracer => thisTracer % next
+
+       enddo  ! associate(thisTracer)
+
+       ! loop over edges of the cell
+       ! For each edge, compute the area of the triangle joining the cell center to the 2 vertices of each edge
+       ! Accumulate the sum
+
+       fracEdgeArea(:) = 0.0_RKIND
+       sumArea = 0.0_RKIND
+
+       do iEdgeOnCell = 1, nEdgesOnCell(iCell)
+
+          iEdge = edgesOnCell(iEdgeOnCell, iCell)
+          fracEdgeArea(iEdgeOnCell) = 0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
+          sumArea = sumArea + fracEdgeArea(iEdgeOnCell)
+
+       enddo
+
+       ! loop over edges again
+       ! Each edge is associated with a triangle joining the cell center to the 2 vertices of the edge;
+       !  do various calculations on each triangle
+
+       do iEdgeOnCell = 1, nEdgesOnCell(iCell)
+
+          ! convert the area of this triangle to a fraction of the total cell area
+          fracEdgeArea(iEdgeOnCell) = fracEdgeArea(iEdgeOnCell) / sumArea
+
+          if (verboseConstruct .and. ctestOnProc) then
+             if (iCell == ctest) then
+                write(stderrUnit,*) ' '
+                write(stderrUnit,*) 'Edge triangle, fracEdgeArea:', iEdgeOnCell, fracEdgeArea(iEdgeOnCell)
+             endif
+          endif
+
+          ! find the coordinates of the triangle vertices associated with this edge
+          ! Note: Vertex indices lead edge indices, so edge n has vertices n and n+1.
+          x1Vertex = 0.0_RKIND   ! cell center
+          y1Vertex = 0.0_RKIND
+
+          iVertexOnCell = iEdgeOnCell   ! one vertex of this edge
+          x2Vertex = xVertexOnCell(iVertexOnCell, iCell)
+          y2Vertex = yVertexOnCell(iVertexOnCell, iCell)
+
+          iVertexOnCell = iEdgeOnCell+1  ! the other vertex of this edge
+          if (iVertexOnCell > nEdgesOnCell(iCell)) iVertexOnCell = 1  
+          x3Vertex = xVertexOnCell(iVertexOnCell, iCell)
+          y3Vertex = yVertexOnCell(iVertexOnCell, iCell)
+          
+          if (verboseConstruct .and. ctestOnProc) then
+             if (iCell == ctest) then
+                write(stderrUnit,*) 'Vertices:', x1Vertex, y1Vertex, x2Vertex, y2Vertex, x3Vertex, y3Vertex
+             endif
+          endif
+
+          ! find the coordinates of 6 quadrature points
+          ! Note: 6 points are sufficient for exact integration of polynomials up to 4th order
+
+          xQP(1) = q1TriangleQP * x1Vertex + q1TriangleQP * x2Vertex + q2TriangleQP * x3Vertex
+          yQP(1) = q1TriangleQP * y1Vertex + q1TriangleQP * y2Vertex + q2TriangleQP * y3Vertex
+          
+          xQP(2) = q1TriangleQP * x1Vertex + q2TriangleQP * x2Vertex + q1TriangleQP * x3Vertex
+          yQP(2) = q1TriangleQP * y1Vertex + q2TriangleQP * y2Vertex + q1TriangleQP * y3Vertex
+          
+          xQP(3) = q2TriangleQP * x1Vertex + q1TriangleQP * x2Vertex + q1TriangleQP * x3Vertex
+          yQP(3) = q2TriangleQP * y1Vertex + q1TriangleQP * y2Vertex + q1TriangleQP * y3Vertex
+          
+          xQP(4) = q3TriangleQP * x1Vertex + q4TriangleQP * x2Vertex + q4TriangleQP * x3Vertex
+          yQP(4) = q3TriangleQP * y1Vertex + q4TriangleQP * y2Vertex + q4TriangleQP * y3Vertex
+          
+          xQP(5) = q4TriangleQP * x1Vertex + q3TriangleQP * x2Vertex + q4TriangleQP * x3Vertex
+          yQP(5) = q4TriangleQP * y1Vertex + q3TriangleQP * y2Vertex + q4TriangleQP * y3Vertex
+          
+          xQP(6) = q4TriangleQP * x1Vertex + q4TriangleQP * x2Vertex + q3TriangleQP * x3Vertex
+          yQP(6) = q4TriangleQP * y1Vertex + q4TriangleQP * y2Vertex + q3TriangleQP * y3Vertex
+
+          ! set weight of each quadrature point
+          wQP(1:3) = w1TriangleQP
+          wQP(4:6) = w2TriangleQP
+
+          ! loop over tracers
+
+          thisTracer => tracersHead
+
+          do while (associated(thisTracer))
+
+             if (verboseConstruct .and. ctestOnProc) then
+                if (iCell == ctest) then
+  
+                endif
+             endif
+
+             parentTracer => thisTracer % parent
+
+             ! Integrate mass*tracer over this triangle by computing a sum of mass*tracer over quadrature points
+ 
+             if (thisTracer % ndims == 2) then
+
+                ! initialize
+                thisTracer % massTracerProductTriangle2D(:) = 0.0_RKIND
+                   
+                ! sum over quadrature points
+                ! For each QP, evaluate this tracer at the quadrature point, then multiply by the value of the parent tracer.
+                ! For nParents = 0, this is the value of the mass-like field at the QP.
+                ! For nParents = 1, it is mass*tracer1
+                ! For nParents = 2, it is mass*tracer1*tracer2
+                ! For nParents = 3, it is mass*tracer1*tracer2*tracer3
+                
+                do iqp = 1, 6
+
+                   thisTracer % valueQP2D(:,iqp) = thisTracer % center2D(:,iCell)         &
+                                                 + thisTracer % xGrad2D(:,iCell)*xQP(iqp) &
+                                                 + thisTracer % yGrad2D(:,iCell)*yQP(iqp)
+ 
+                   ! reset the current tracer value to the product of the tracer and its parent(s)
+                   ! Note: The parent of a 2D tracer always has ndims = 2
+                   thisTracer % valueQP2D(:,iqp) = thisTracer % valueQP2D(:,iqp) * parentTracer % valueQP2D(:,iqp)
+
+                   ! increment the sum over QPs
+                   thisTracer % massTracerProductTriangle2D(:) = thisTracer % massTracerProductTriangle2D(:)    &
+                                                               + wQP(iqp) * thisTracer % valueQP2D(:,iqp)
+
+                enddo  ! iqp
+
+                if (verboseConstruct .and. ctestOnProc) then
+                   if (iCell == ctest) then
+                      write(stderrUnit,*) '   Tracer, triangle value: ', trim(thisTracer % tracerName), thisTracer % massTracerProductTriangle2D(iCatTest)
+                   endif
+                endif
+
+                ! add this triangle contribution to the cumulative sum for the cell,
+                ! weighted by the fractional area of the triangle
+
+                thisTracer % massTracerProductCell2D(:) = thisTracer % massTracerProductCell2D(:)   &
+                                                        + fracEdgeArea(iEdgeOnCell) * thisTracer % massTracerProductTriangle2D(:)
+
+             elseif (thisTracer % ndims == 3) then
+
+                ! initialize
+                thisTracer % massTracerProductTriangle3D(:,:) = 0.0_RKIND
+                   
+                ! sum over quadrature points
+                ! For each QP, evaluate this tracer at the quadrature point, then multiply by the value of the parent tracer.
+                ! For nParents = 0, this is the value of the mass-like field at the QP.
+                ! For nParents = 1, it is mass*tracer1
+                ! For nParents = 2, it is mass*tracer1*tracer2
+                ! For nParents = 3, it is mass*tracer1*tracer2*tracer3
+                
+                do iqp = 1, 6
+
+                   thisTracer % valueQP3D(:,:,iqp) = thisTracer % center3D(:,:,iCell)         &
+                                                   + thisTracer % xGrad3D(:,:,iCell)*xQP(iqp) &
+                                                   + thisTracer % yGrad3D(:,:,iCell)*yQP(iqp)
+ 
+                   ! Note: parent tracer can have ndims = 2 or 3
+
+                   if (parentTracer % ndims == 2) then
+
+                      do iLayer = 1, nLayers
+
+                         ! reset the current tracer value to the product of the tracer and its parent(s)
+                         thisTracer % valueQP3D(iLayer,:,iqp) = thisTracer % valueQP3D(iLayer,:,iqp) * parentTracer % valueQP2D(:,iqp)
+
+                         ! increment the sum over QPs
+                         thisTracer % massTracerProductTriangle3D(iLayer,:) = thisTracer % massTracerProductTriangle3D(iLayer,:)    &
+                                                                            + wQP(iqp) * thisTracer % valueQP3D(iLayer,:,iqp)
+
+                      enddo   ! nLayers
+
+                   elseif (parentTracer % ndims == 3) then
+
+                      ! reset the current tracer value to the product of the tracer and its parent(s)
+                      thisTracer % valueQP3D(:,:,iqp) = thisTracer % valueQP3D(:,:,iqp) * parentTracer % valueQP3D(:,:,iqp)
+
+                      ! increment the sum over QPs
+                      thisTracer % massTracerProductTriangle3D(:,:) = thisTracer % massTracerProductTriangle3D(:,:)    &
+                                                                    + wQP(iqp) * thisTracer % valueQP3D(:,:,iqp)
+
+                   endif  ! parentTracer % ndims
+                      
+                enddo  ! iqp
+
+                if (verboseConstruct .and. ctestOnProc) then
+                   if (iCell == ctest) then
+                      write(stderrUnit,*) '   Tracer, triangle value:', trim(thisTracer % tracerName), thisTracer % massTracerProductTriangle3D(iLayerTest,iCatTest)
+                   endif
+                endif
+
+                ! add this triangle contribution to the cumulative sum for the cell,
+                ! weighted by the fractional area of the triangle
+
+                thisTracer % massTracerProductCell3D(:,:) = thisTracer % massTracerProductCell3D(:,:)   &
+                                                          + fracEdgeArea(iEdgeOnCell) * thisTracer % massTracerProductTriangle3D(:,:)
+
+             endif   ! thisTracer % ndims
+
+             thisTracer => thisTracer % next
+
+          enddo   ! associated(thisTracer)
+
+       enddo  ! iEdgeOnCell
+
+       ! We now have the integral of mass*tracer over the cell for each tracer
+       ! Loop over tracers again, and compare to the known mass*tracer product computed above.
+
+       thisTracer => tracersHead   ! start by pointing to the mass-like field
+
+       do while (associated(thisTracer))
+
+          if (thisTracer % ndims == 2) then
+ 
+             do iCat = 1, nCategories
+
+                !TODO - Figure out a criterion based on nParents?  Relative errors are largest for tracers with 3 parents (e.g., pond depth)
+                difference = thisTracer % massTracerProductCell2D(iCat) - thisTracer % massTracerProduct2D(iCat,iCell)
+                if (abs(difference) > eps11 * abs(thisTracer % massTracerProduct2D(iCat,iCell)) .and. abs(difference) > eps11) then
+                   write(stderrUnit,*) 'WARNING: Reconstructed tracer does not recover the mean, iCat, iCell, tracer =', &
+                        iCat, iCell, trim(thisTracer % tracerName)
+                   write(stderrUnit,*) 'Product of means:     ', thisTracer % massTracerProduct2D(iCat,iCell)
+                   write(stderrUnit,*) 'Reconstructed product:', thisTracer % massTracerProductCell2D(iCat)
+                   write(stderrUnit,*) 'Difference:           ', difference
+                endif
+
+             enddo
+
+             if (verboseConstruct .and. ctestOnProc) then
+                if (iCell == ctest) then
+                   write(stderrUnit,*) '   Tracer, reconstructed and desired value of mass*tracer: ', trim(thisTracer % tracerName),  &
+                        thisTracer % massTracerProductCell2D(iCatTest), &
+                        thisTracer % massTracerProduct2D(iCatTest,iCell)
+                endif
+             endif
+
+          elseif (thisTracer % ndims == 3) then
+
+             do iCat = 1, nCategories
+                do iLayer = 1, nLayers
+
+                   difference = thisTracer % massTracerProductCell3D(iLayer,iCat) - thisTracer % massTracerProduct3D(iLayer,iCat,iCell)
+                   if (abs(difference) > eps11 * abs(thisTracer % massTracerProduct3D(iLayer,iCat,iCell)) .and. abs(difference) > eps11) then
+                      write(stderrUnit,*) 'WARNING: Reconstructed tracer does not recover the mean, iCat, iCell, tracer =', &
+                           iCat, iCell, trim(thisTracer % tracerName)
+                      write(stderrUnit,*) 'Product of means:     ', thisTracer % massTracerProduct3D(iLayer,iCat,iCell)
+                      write(stderrUnit,*) 'Reconstructed product:', thisTracer % massTracerProductCell3D(iLayer,iCat)
+                      write(stderrUnit,*) 'Difference:           ', difference
+                   endif
+
+                enddo   ! iLayer
+             enddo   ! iCat
+
+             if (verboseConstruct .and. ctestOnProc) then
+                if (iCell == ctest) then
+                   write(stderrUnit,*) '   Tracer, reconstructed and desired value of  mass*tracer: ', trim(thisTracer % tracerName),  &
+                        thisTracer % massTracerProductCell3D(iLayerTest,iCatTest), &
+                        thisTracer % massTracerProduct3D(iLayerTest,iCatTest,iCell)
+                endif
+             endif
+
+          endif  ! ndims
+
+          thisTracer => thisTracer % next
+
+       enddo   ! associated(thisTracer)
+                
+    enddo     ! iCell
+
+    ! clean up
+
+    thisTracer => tracersHead
+
+    do while (associated(thisTracer))
+
+       if (thisTracer % ndims == 2) then
+
+          deallocate(thisTracer % massTracerProductTriangle2D)
+          deallocate(thisTracer % massTracerProductCell2D)
+          deallocate(thisTracer % valueQP2D)
+
+       elseif (thisTracer % ndims == 3) then
+
+          deallocate(thisTracer % massTracerProductTriangle3D)
+          deallocate(thisTracer % massTracerProductCell3D)
+          deallocate(thisTracer % valueQP3D)
+
+       endif  ! ndims
+
+       if (associated(dummyTracer)) nullify(dummyTracer)
+
+       thisTracer => thisTracer % next
+
+    enddo   ! associated(thisTracer)
+
+  end subroutine recover_tracer_means
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
 !  routine sum_tracers
 !
 !> \brief  sum mass*tracer products over all sums in block
@@ -7177,7 +7657,6 @@ contains
                 
                 !TODO - Verify that eps11 will work as a threshold
                 if (abs(ratio) > eps11) then
-!!                if (abs(ratio) > 1.e-8_RKIND) then
                    write(stderrUnit,*) 'Tracer conservation error: tracer, category =', trim(thisTracer % tracerName), iCat
                    write(stderrUnit,*) 'Init value, final value:', thisTracer % globalSumInit2D(iCat), thisTracer % globalSumFinal2D(iCat)
                    write(stderrUnit,*) 'Difference, ratio:', difference, ratio
@@ -7217,7 +7696,6 @@ contains
                    
                    !TODO - Verify that eps11 will work as a threshold
                    if (abs(ratio) > eps11) then
-!!                   if (abs(ratio) > 1.e-8_RKIND) then
                       write(stderrUnit,*) 'Tracer conservation error: tracer, category, layer =', trim(thisTracer % tracerName), iCat, iLayer
                       write(stderrUnit,*) 'Init value, final value:', thisTracer % globalSumInit3D(iLayer,iCat), thisTracer % globalSumFinal3D(iLayer,iCat)
                       write(stderrUnit,*) 'Difference, ratio:', difference, ratio
@@ -7648,13 +8126,6 @@ contains
                       do iLayer = 1, nLayers
                          
                          if (thisTracer % arrayMask3D(iLayer,iCat,iCell) == 1) then   ! the tracer value in this cell has physical meaning
-                            
-                            !WHL - debug
-                            if (verboseRun .and. trim(thisTracer % tracerName) == 'iceVolumeCategory' .and. iCell == ctest) then
-                               write(stderrUnit,*) 'Check monotonicity, iCell =', iCell
-                               write(stderrUnit,*) 'value,  min, max:', thisTracer % array3D(1,1,iCell), &
-                                    thisTracer % localMin3D(1,1,iCell), thisTracer % localMax3D(1,1,iCell)
-                            endif
                             
                             toleranceMin = eps11 * max(1.0_RKIND, abs(thisTracer % localMin3D(iLayer,iCat,iCell)))
                             toleranceMax = eps11 * max(1.0_RKIND, abs(thisTracer % localMax3D(iLayer,iCat,iCell)))

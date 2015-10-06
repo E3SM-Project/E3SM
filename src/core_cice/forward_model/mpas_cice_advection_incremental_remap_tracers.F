@@ -132,12 +132,22 @@ module cice_advection_incremental_remap_tracers
       ! pointer to the next element in the ordered linked list
       type(tracer_type), pointer :: next => null()
 
+      ! some diagnostic arrays defined locally (for a single cell or a triangle within the cell)
+      real(kind=RKIND), dimension(:),   pointer :: massTracerProductTriangle2D => null()
+      real(kind=RKIND), dimension(:,:), pointer :: massTracerProductTriangle3D => null()
+
+      real(kind=RKIND), dimension(:),   pointer :: massTracerProductCell2D => null()
+      real(kind=RKIND), dimension(:,:), pointer :: massTracerProductCell3D => null()
+
+      real(kind=RKIND), dimension(:,:),   pointer :: valueQP2D => null()
+      real(kind=RKIND), dimension(:,:,:), pointer :: valueQP3D => null()
+
    end type tracer_type
 
    type(tracer_type), pointer, public :: tracersHead ! the linked list, but this always points to the first element
 
-   logical, parameter :: verbose_tracers = .false.
-!!   logical, parameter :: verbose_tracers = .true.
+   logical, parameter :: verboseTracers = .false.
+!!   logical, parameter :: verboseTracers = .true.
 
 contains
 
@@ -158,27 +168,79 @@ contains
     type(domain_type), intent(in) :: &
          domain   !< Input:
 
-    !WHL - debug
-    type(tracer_type), pointer :: thisTracer
+    logical, pointer :: &
+         pkgColumnTracerIceAgeActive, &
+         pkgColumnTracerFirstYearIceActive, &
+         pkgColumnTracerLevelIceActive, &
+         pkgColumnTracerPondsActive, &
+         pkgColumnTracerLidThicknessActive, &
+         pkgColumnTracerAerosolsActive
+
+    type(tracer_type), pointer :: thisTracer  ! diagnostic only
 
     nullify(tracersHead)
     nullify(thisTracer)
 
     ! add all the tracers to the linked list
-    ! Note: These can be added in any order. They are reordered below to the required order for IR.
+    ! Note: These can be added in any order. They are reordered later to the order required for IR.
     ! Note: The fractional ice area (iceAreaCategory) is actually a mass-like field rather than a tracer.
-    !       It is included here because it is the parent (or grandparent, great-grandparent, etc.) of all tracers
+    !       It is included here because it is the parent (or grandparent or great-grandparent) of all tracers
     !        and is part of the tracer pool.
-    call add_tracer_to_tracer_linked_list(tracersHead, 'iceAreaCategory', 'None')
-    call add_tracer_to_tracer_linked_list(tracersHead, 'surfaceTemperature', 'iceAreaCategory')
-    call add_tracer_to_tracer_linked_list(tracersHead, 'iceVolumeCategory', 'iceAreaCategory')
-    call add_tracer_to_tracer_linked_list(tracersHead, 'snowVolumeCategory', 'iceAreaCategory')
-    call add_tracer_to_tracer_linked_list(tracersHead, 'iceEnthalpy', 'iceVolumeCategory')
-    call add_tracer_to_tracer_linked_list(tracersHead, 'snowEnthalpy', 'snowVolumeCategory')
-    call add_tracer_to_tracer_linked_list(tracersHead, 'iceSalinity', 'iceVolumeCategory')
+    ! Note: The ice and snow volume are not tracers (since volume = area*thickness, where thickness is the tracer), 
+    !       but they are converted to thickness before being transported.
 
-    !WHL - debug
-    if (verbose_tracers) then
+    ! First the tracers that are always included:
+
+    call add_tracer_to_tracer_linked_list(tracersHead, 'iceAreaCategory',      'None')
+    call add_tracer_to_tracer_linked_list(tracersHead, 'iceVolumeCategory',    'iceAreaCategory')
+    call add_tracer_to_tracer_linked_list(tracersHead, 'snowVolumeCategory',   'iceAreaCategory')
+    call add_tracer_to_tracer_linked_list(tracersHead, 'surfaceTemperature',   'iceAreaCategory')
+    call add_tracer_to_tracer_linked_list(tracersHead, 'iceEnthalpy',          'iceVolumeCategory')
+    call add_tracer_to_tracer_linked_list(tracersHead, 'iceSalinity',          'iceVolumeCategory')
+    call add_tracer_to_tracer_linked_list(tracersHead, 'snowEnthalpy',         'snowVolumeCategory')
+
+    ! Next the tracers that might be included, depending on column package options:
+
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerIceAgeActive',       pkgColumnTracerIceAgeActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerFirstYearIceActive', pkgColumnTracerFirstYearIceActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerLevelIceActive',     pkgColumnTracerLevelIceActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerPondsActive',        pkgColumnTracerPondsActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerLidThicknessActive', pkgColumnTracerLidThicknessActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerAerosolsActive',     pkgColumnTracerAerosolsActive)
+
+    !TODO - Confirm that parent tracers are correct
+    !       Confirm that this is the best way to get the package logic
+
+    if (pkgColumnTracerIceAgeActive) then
+       call add_tracer_to_tracer_linked_list(tracersHead, 'iceAge',               'iceVolumeCategory')
+    endif
+
+    if (pkgColumnTracerFirstYearIceActive) then
+       call add_tracer_to_tracer_linked_list(tracersHead, 'firstYearIceArea',     'iceAreaCategory')
+    endif
+
+    if (pkgColumnTracerLevelIceActive) then
+       call add_tracer_to_tracer_linked_list(tracersHead, 'levelIceArea',         'iceAreaCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'levelIceVolume',       'iceVolumeCategory')
+    endif
+
+    if (pkgColumnTracerPondsActive) then
+       call add_tracer_to_tracer_linked_list(tracersHead, 'pondArea',             'levelIceArea')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'pondDepth',            'pondArea')
+    endif
+
+    if (pkgColumnTracerLidThicknessActive) then
+       call add_tracer_to_tracer_linked_list(tracersHead, 'pondLidThickness',     'pondArea')
+    endif
+
+    if (pkgColumnTracerAerosolsActive) then
+       call add_tracer_to_tracer_linked_list(tracersHead, 'snowScatteringAerosol','snowVolumeCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'snowBodyAerosol',      'snowVolumeCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'iceScatteringAerosol', 'iceVolumeCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'iceBodyAerosol',       'iceVolumeCategory')
+    endif
+
+    if (verboseTracers) then
        thisTracer => tracersHead
        write(stderrUnit,*) ' '
        write(stderrUnit,*) 'Tracers in initial list:'
@@ -208,7 +270,7 @@ contains
     call set_tracer_order(tracersHead)
 
     !WHL - debug
-    if (verbose_tracers) then
+    if (verboseTracers) then
        thisTracer => tracersHead
        write(stderrUnit,*) ' '
        write(stderrUnit,*) 'Tracers in ordered list:'
@@ -477,7 +539,7 @@ contains
 
        if (tracer % isActive) then
           
-          if (verbose_tracers) then
+          if (verboseTracers) then
              write(stderrUnit,*) 'Active tracer: ', trim(tracer % tracerName)
           endif
 
@@ -491,7 +553,7 @@ contains
           ! point the previous tracer to the next tracer (if not null) and
           ! remove this tracer from the list
 
-          if (verbose_tracers) then
+          if (verboseTracers) then
              write(stderrUnit,*) 'Inactive tracer:', trim(tracer % tracerName)
           endif
 
@@ -873,11 +935,11 @@ contains
        ! halo update for local max/min fields
        select case(thisFieldInfo % ndims)
        case(2)
-          if (verbose_tracers) write(stderrUnit,*) '2D halo update:', trim(thisTracer % tracerName)
+          if (verboseTracers) write(stderrUnit,*) '2D halo update:', trim(thisTracer % tracerName)
           call mpas_pool_get_field(tracerPool, trim(thisTracer % tracerName), tracerField2D, timeLevel)
           call mpas_dmpar_exch_halo_field(tracerField2D)
        case(3)
-          if (verbose_tracers) write(stderrUnit,*) '3D halo update:', trim(thisTracer % tracerName)
+          if (verboseTracers) write(stderrUnit,*) '3D halo update:', trim(thisTracer % tracerName)
           call mpas_pool_get_field(tracerPool, trim(thisTracer % tracerName), tracerField3D, timeLevel)
           call mpas_dmpar_exch_halo_field(tracerField3D)
        end select
