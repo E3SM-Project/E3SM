@@ -1,0 +1,1037 @@
+<?xml version="1.0"?>
+
+<namelist_definition>
+
+<!-- Each namelist variable is defined in an <entry> element.  The
+     content of the element is the documentation of how the variable is
+     used.  Other aspects of the variable's definition are expressed as
+     attributes of the <entry> element.  Note that it is an XML requirement
+     that the attribute values are enclosed in quotes.  The attributes are:
+
+     id
+          The variable's name.  *** N.B. *** The name must be lower case.
+          The module convert all namelist variable names to lower case
+          since Fortran is case insensitive.
+
+     type
+          An abbreviation of the fortran declaration for the variable.
+      Valid declarations are:
+
+          char*n  
+          integer
+          logical
+          real
+
+      Any of these types may be followed by a comma separated list of
+      integers enclosed in parenthesis to indicate an array.
+
+      The current namelist validation code only distinquishes between
+      string and non-string types.
+
+     input_pathname
+          Only include this attribute to indicate that the variable
+          contains the pathname of an input dataset that resides in the
+          CESM inputdata directory tree.  
+
+      The recognized values are "abs" to indicate that an absolute
+          pathname is required, or "rel:var_name" to indicate that the
+          pathname is relative and that the namelist variable "var_name"
+          contains the absolute root directory.
+
+     category
+          A category assigned for organizing the documentation.
+
+     group
+          The namelist group that the variable is declared in.
+
+     valid_values
+          This is an optional attribute that is mainly useful for variables
+          that have only a small number of allowed values.
+                                                                        -->
+
+
+<!-- cice_model -->
+
+<entry id="config_dt" type="real"
+	category="cice_model" group="cice_model">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_calendar_type" type="char*1024"
+	category="cice_model" group="cice_model">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_start_time" type="char*1024"
+	category="cice_model" group="cice_model">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_stop_time" type="char*1024"
+	category="cice_model" group="cice_model">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_run_duration" type="char*1024"
+	category="cice_model" group="cice_model">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_num_halos" type="integer"
+	category="cice_model" group="cice_model">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- io -->
+
+<entry id="config_pio_num_iotasks" type="integer"
+	category="io" group="io">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_pio_stride" type="integer"
+	category="io" group="io">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_test_case_diag" type="logical"
+	category="io" group="io">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_test_case_diag_type" type="char*1024"
+	category="io" group="io">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- decomposition -->
+
+<entry id="config_block_decomp_file_prefix" type="char*1024"
+	category="decomposition" group="decomposition">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_number_of_blocks" type="integer"
+	category="decomposition" group="decomposition">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_explicit_proc_decomp" type="logical"
+	category="decomposition" group="decomposition">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_proc_decomp_file_prefix" type="char*1024"
+	category="decomposition" group="decomposition">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- restart -->
+
+<entry id="config_do_restart" type="logical"
+	category="restart" group="restart">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_restart_timestamp_name" type="char*1024"
+	category="restart" group="restart">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- initialize -->
+
+<entry id="config_initial_condition_type" type="char*1024"
+	category="initialize" group="initialize">
+MISSING DESCRIPTION
+
+Valid values: 'uniform', 'circle', 'square' or 'uniform_interior'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_initial_ice_area" type="real"
+	category="initialize" group="initialize">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_initial_ice_volume" type="real"
+	category="initialize" group="initialize">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_initial_snow_volume" type="real"
+	category="initialize" group="initialize">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_initial_latitude_north" type="real"
+	category="initialize" group="initialize">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_initial_latitude_south" type="real"
+	category="initialize" group="initialize">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_initial_velocity_type" type="char*1024"
+	category="initialize" group="initialize">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_initial_uvelocity" type="real"
+	category="initialize" group="initialize">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_initial_vvelocity" type="real"
+	category="initialize" group="initialize">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- use_sections -->
+
+<entry id="config_use_velocity_solver" type="logical"
+	category="use_sections" group="use_sections">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_advection" type="logical"
+	category="use_sections" group="use_sections">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_forcing" type="logical"
+	category="use_sections" group="use_sections">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_column_package" type="logical"
+	category="use_sections" group="use_sections">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- forcing -->
+
+<entry id="config_atmospheric_forcing_type" type="char*1024"
+	category="forcing" group="forcing">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_forcing_start_time" type="char*1024"
+	category="forcing" group="forcing">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_forcing_cycle_start" type="char*1024"
+	category="forcing" group="forcing">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_forcing_cycle_duration" type="char*1024"
+	category="forcing" group="forcing">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_forcing_restart_file" type="char*1024"
+	category="forcing" group="forcing">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_forcing_precipitation_units" type="char*1024"
+	category="forcing" group="forcing">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_forcing_sst_type" type="char*1024"
+	category="forcing" group="forcing">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_update_ocean_fluxes" type="logical"
+	category="forcing" group="forcing">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_include_pond_freshwater_feedback" type="logical"
+	category="forcing" group="forcing">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- unit_test -->
+
+<entry id="config_perform_unit_test" type="logical"
+	category="unit_test" group="unit_test">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_unit_test_type" type="char*1024"
+	category="unit_test" group="unit_test">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_unit_test_subtype" type="char*1024"
+	category="unit_test" group="unit_test">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- velocity_solver -->
+
+<entry id="config_dynamics_subcycle_number" type="integer"
+	category="velocity_solver" group="velocity_solver">
+MISSING DESCRIPTION
+
+Valid values: any positive integer
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rotate_cartesian_grid" type="logical"
+	category="velocity_solver" group="velocity_solver">
+MISSING DESCRIPTION
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_include_metric_terms" type="logical"
+	category="velocity_solver" group="velocity_solver">
+MISSING DESCRIPTION
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_elastic_subcycle_number" type="integer"
+	category="velocity_solver" group="velocity_solver">
+MISSING DESCRIPTION
+
+Valid values: any positive integer
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_stress_divergence_scheme" type="char*1024"
+	category="velocity_solver" group="velocity_solver">
+MISSING DESCRIPTION
+
+Valid values: 'weak' or 'variational'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_variational_basis" type="char*1024"
+	category="velocity_solver" group="velocity_solver">
+MISSING DESCRIPTION
+
+Valid values: 'wachspress' or 'pwl'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_revised_evp" type="logical"
+	category="velocity_solver" group="velocity_solver">
+MISSING DESCRIPTION
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- advection -->
+
+<entry id="config_convert_volume_to_thickness" type="logical"
+	category="advection" group="advection">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_limit_ice_concentration" type="logical"
+	category="advection" group="advection">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_conservation_check" type="logical"
+	category="advection" group="advection">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_clean_tracers" type="logical"
+	category="advection" group="advection">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_vert_tracer_adv" type="char*1024"
+	category="advection" group="advection">
+Method for interpolating tracer values from layer centers to layer edges
+
+Valid values: 'spline' and 'stencil'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_vert_tracer_adv_order" type="integer"
+	category="advection" group="advection">
+Order of polynomial used for tracer reconstruction at layer edges
+
+Valid values: 2, 3 and 4
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_horiz_tracer_adv_order" type="integer"
+	category="advection" group="advection">
+Order of polynomial used for tracer reconstruction at cell edges
+
+Valid values: 2, 3 and 4
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_coef_3rd_order" type="real"
+	category="advection" group="advection">
+Reconstruction of 3rd-order reconstruction to blend with 4th-order reconstuction
+
+Valid values: any real between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_monotonic" type="logical"
+	category="advection" group="advection">
+If .true. then fluxes are limited to produce a monotonic advection scheme
+
+Valid values: .true. and .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- column_package -->
+
+<entry id="config_use_column_shortwave" type="logical"
+	category="column_package" group="column_package">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_column_vertical_thermodynamics" type="logical"
+	category="column_package" group="column_package">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_column_itd_thermodynamics" type="logical"
+	category="column_package" group="column_package">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_column_ridging" type="logical"
+	category="column_package" group="column_package">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- column_tracers -->
+
+<entry id="config_use_ice_age" type="logical"
+	category="column_tracers" group="column_tracers">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_first_year_ice" type="logical"
+	category="column_tracers" group="column_tracers">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_level_ice" type="logical"
+	category="column_tracers" group="column_tracers">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_meltponds" type="logical"
+	category="column_tracers" group="column_tracers">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_cesm_meltponds" type="logical"
+	category="column_tracers" group="column_tracers">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_level_meltponds" type="logical"
+	category="column_tracers" group="column_tracers">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_topo_meltponds" type="logical"
+	category="column_tracers" group="column_tracers">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_aerosols" type="logical"
+	category="column_tracers" group="column_tracers">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_brine" type="logical"
+	category="column_tracers" group="column_tracers">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- shortwave -->
+
+<entry id="config_shortwave_type" type="char*1024"
+	category="shortwave" group="shortwave">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_albedo_type" type="char*1024"
+	category="shortwave" group="shortwave">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_visible_ice_albedo" type="real"
+	category="shortwave" group="shortwave">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_infrared_ice_albedo" type="real"
+	category="shortwave" group="shortwave">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_visible_snow_albedo" type="real"
+	category="shortwave" group="shortwave">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_infrared_snow_albedo" type="real"
+	category="shortwave" group="shortwave">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_variable_albedo_thickness_limit" type="real"
+	category="shortwave" group="shortwave">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ice_shortwave_tuning_parameter" type="real"
+	category="shortwave" group="shortwave">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_pond_shortwave_tuning_parameter" type="real"
+	category="shortwave" group="shortwave">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_snow_shortwave_tuning_parameter" type="real"
+	category="shortwave" group="shortwave">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_temp_change_snow_grain_radius_change" type="real"
+	category="shortwave" group="shortwave">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_max_melting_snow_grain_radius" type="real"
+	category="shortwave" group="shortwave">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_algae_absorption_coefficient" type="real"
+	category="shortwave" group="shortwave">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- meltponds -->
+
+<entry id="config_snow_to_ice_transition_depth" type="real"
+	category="meltponds" group="meltponds">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_pond_refreezing_type" type="char*1024"
+	category="meltponds" group="meltponds">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_pond_flushing_timescale" type="real"
+	category="meltponds" group="meltponds">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_min_meltwater_retained_fraction" type="real"
+	category="meltponds" group="meltponds">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_max_meltwater_retained_fraction" type="real"
+	category="meltponds" group="meltponds">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_pond_depth_to_fraction_ratio" type="real"
+	category="meltponds" group="meltponds">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_snow_on_pond_ice_tapering_parameter" type="real"
+	category="meltponds" group="meltponds">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_critical_pond_ice_thickness" type="real"
+	category="meltponds" group="meltponds">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- thermodynamics -->
+
+<entry id="config_thermodynamics_type" type="char*1024"
+	category="thermodynamics" group="thermodynamics">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_heat_conductivity_type" type="char*1024"
+	category="thermodynamics" group="thermodynamics">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rapid_mode_channel_radius" type="real"
+	category="thermodynamics" group="thermodynamics">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rapid_model_critical_Ra" type="real"
+	category="thermodynamics" group="thermodynamics">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rapid_mode_aspect_ratio" type="real"
+	category="thermodynamics" group="thermodynamics">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_slow_mode_drainage_strength" type="real"
+	category="thermodynamics" group="thermodynamics">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_slow_mode_critical_porosity" type="real"
+	category="thermodynamics" group="thermodynamics">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_congelation_ice_porosity" type="real"
+	category="thermodynamics" group="thermodynamics">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- itd -->
+
+<entry id="config_itd_conversion_type" type="char*1024"
+	category="itd" group="itd">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_category_bounds_type" type="char*1024"
+	category="itd" group="itd">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- ridging -->
+
+<entry id="config_ice_strength_formulation" type="char*1024"
+	category="ridging" group="ridging">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ridging_participation_function" type="char*1024"
+	category="ridging" group="ridging">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ridging_redistribution_function" type="char*1024"
+	category="ridging" group="ridging">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ridiging_efolding_scale" type="real"
+	category="ridging" group="ridging">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ratio_ridging_work_to_PE" type="real"
+	category="ridging" group="ridging">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- atmosphere -->
+
+<entry id="config_atmos_boundary_method" type="char*1024"
+	category="atmosphere" group="atmosphere">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_calc_surface_stresses" type="logical"
+	category="atmosphere" group="atmosphere">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_calc_surface_temperature" type="logical"
+	category="atmosphere" group="atmosphere">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_form_drag" type="logical"
+	category="atmosphere" group="atmosphere">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_high_frequency_coupling" type="logical"
+	category="atmosphere" group="atmosphere">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_boundary_layer_iteration_number" type="integer"
+	category="atmosphere" group="atmosphere">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- ocean -->
+
+<entry id="config_use_ocean_mixed_layer" type="logical"
+	category="ocean" group="ocean">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_min_friction_velocity" type="real"
+	category="ocean" group="ocean">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ocean_heat_transfer_type" type="char*1024"
+	category="ocean" group="ocean">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sea_freezing_temperature_type" type="char*1024"
+	category="ocean" group="ocean">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+</namelist_definition>

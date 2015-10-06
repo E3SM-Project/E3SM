@@ -16,7 +16,7 @@ Where
    TIME = Time period (e.g. 2000, 20TR, RCP8...)
    ATM  = [CAM4, CAM5, DATM, SATM, XATM]
    LND  = [CLM40, CLM45, CLM50, DLND, SLND, XLND]
-   ICE  = [CICE, DICE, SICE, SICE]
+   ICE  = [CICE, DICE, SICE, SICE, MPASCICE]
    OCN  = [POP, DOCN, SOCN, XOCN,AQUAP,MPASO]
    ROF  = [RTM, DROF, SROF, XROF]
    GLC  = [CISM1, CISM2S, CISM2P, SGLC, XGLC, MPASLI]
@@ -180,16 +180,10 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="C_MPAS_INTERANNUAL"        alias="CMPASO-IAF" support_level="Experimental, under development" >2000_DATM%IAF_SLND_DICE%SIAF_MPASO_DROF%IAF_SGLC_SWAV</COMPSET>
 
 <!-- D compsets -->
-
 <COMPSET sname="D_NORMAL_YEAR" alias="D"    support_level="Requires additional user-supplied datasets" >2000_DATM%NYF_SLND_CICE_DOCN%SOM_DROF%NYF_SGLC_SWAV</COMPSET>
 <COMPSET sname="D_INTERANNUAL" alias="DIAF" support_level="Requires additional user-supplied datasets" >2000_DATM%IAF_SLND_CICE_DOCN%SOM_DROF%IAF_SGLC_SWAV</COMPSET>
 <COMPSET sname="D_TEST"        alias="DTEST">2000_DATM%NYF_SLND_CICE_DOCN%SOM_DROF%NYF_SGLC_SWAV_TEST </COMPSET>
-
-<!-- G compsets -->
-
-<COMPSET sname="G_NORMAL_YEAR"  alias="G"   >2000_DATM%NYF_SLND_CICE_POP2_DROF%NYF_SGLC_SWAV</COMPSET>
-<COMPSET sname="G_INTERANNUAL"  alias="GIAF">2000_DATM%IAF_SLND_CICE_POP2_DROF%IAF_SGLC_SWAV</COMPSET>
-<COMPSET sname="G_1850_ECOSYS"  alias="GECO">1850_DATM%NYF_SLND_CICE_POP2%ECO_DROF%NYF_SGLC_SWAV</COMPSET>
+<COMPSET sname="D_TEST_MPAS"   alias="DTESTM">2000_DATM%NYF_SLND_MPASCICE_DOCN%SOM_DROF%NYF_SGLC_SWAV_TEST </COMPSET>
 
 <!-- E compsets -->
 
@@ -258,6 +252,13 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="F_1850_CN_GLC_CISM1"      alias="FG1850CN" grid="gland">1850_CAM4_CLM40%CN_CICE%PRES_DOCN%DOM_RTM_CISM1_SWAV</COMPSET> 	 
 <COMPSET sname="F_2000_CN_GLC_CISM2P"     alias="FGCNIS2"  grid="gland">2000_CAM4_CLM40%CN_CICE%PRES_DOCN%DOM_RTM_CISM2P_SWAV</COMPSET>
 <COMPSET sname="F_1850-2000_CN_GLC_CISM1" alias="FG20TRCN" grid="gland">20TR_CAM4_CLM40%CN_CICE%PRES_DOCN%DOM_RTM_CISM1_SWAV</COMPSET>
+
+<!-- G compsets -->
+
+<COMPSET sname="G_NORMAL_YEAR"       alias="G"     >2000_DATM%NYF_SLND_CICE_POP2_DROF%NYF_SGLC_SWAV</COMPSET>
+<COMPSET sname="G_MPAS_NORMAL_YEAR"  alias="GMPAS" >2000_DATM%NYF_SLND_MPASCICE_MPASO_DROF%NYF_SGLC_SWAV</COMPSET>
+<COMPSET sname="G_INTERANNUAL"       alias="GIAF"  >2000_DATM%IAF_SLND_CICE_POP2_DROF%IAF_SGLC_SWAV</COMPSET>
+<COMPSET sname="G_1850_ECOSYS"       alias="GECO"  >1850_DATM%NYF_SLND_CICE_POP2%ECO_DROF%NYF_SGLC_SWAV</COMPSET>
 
 <!-- K compsets (just for testing)-->
 
@@ -381,6 +382,12 @@ value of RUN_STARTDATE will be date2.
 <!-- GLC-only compsets -->
 <COMPSET sname="MPASLI_ONLY" alias="MPASLI">RCP8_SATM_SLND_SICE_SOCN_SROF_MPASLI_SWAV</COMPSET>
 
+<!-- OCN + GLC Only Compsets -->
+<COMPSET sname="MPAS_LI_O_TEST"   alias="MPAS_LI_O_TEST" support_level="Experimental, under development" >2000_DATM%NYF_SLND_DICE%SSMI_MPASO_DROF%NYF_MPASLI_SWAV</COMPSET>
+
+<!-- OCN + CICE + GLC Only Compsets -->
+<COMPSET sname="MPAS_LI_SI_O_TEST"   alias="MPAS_LISIO_TEST" support_level="Experimental, under development" >2000_DATM%NYF_SLND_MPASCICE%SSMI_MPASO_DROF%NYF_MPASLI_SWAV</COMPSET>
+
 <!-- Stubs/Dead compsets -->
 
 <COMPSET sname="S" alias="S">2000_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV </COMPSET>
@@ -432,6 +439,7 @@ value of RUN_STARTDATE will be date2.
 <COMP_ICE compset="_DICE">dice</COMP_ICE>
 <COMP_ICE compset="_SICE">sice</COMP_ICE> 
 <COMP_ICE compset="_XICE">xice</COMP_ICE> 
+<COMP_ICE compset="_MPASCICE">mpas-cice</COMP_ICE>
 
 <COMP_OCN compset="_POP" >pop</COMP_OCN> 
 <COMP_OCN compset="_DOCN">docn</COMP_OCN>
@@ -469,6 +477,7 @@ value of RUN_STARTDATE will be date2.
 <desc compset="_DICE">DICE:</desc>
 <desc compset="_SICE">SICE:</desc>
 <desc compset="_XICE">XICE:</desc>
+<desc compset="_MPASCICE">MPAS-CICE: (Experimental)</desc>
 
 <desc compset="_POP2">POP2:</desc>
 <desc compset="_DOCN">DOCN:</desc>
@@ -1487,7 +1496,7 @@ DOCN%COPY => docn copy mode
 <STOP_N      compset="_DLND.*_CISM">10    </STOP_N>
 
 <!-- Stop options for MPASLI_ONLY compset -->
-<STOP_OPTION compset="_SLND.*SOCN_.*_MPASLI">nyears</STOP_OPTION>
+<STOP_OPTION compset="_SLND.*SOCN_.*_MPASLI">ndays</STOP_OPTION>
 <STOP_N      compset="_SLND.*SOCN_.*_MPASLI">5     </STOP_N>
 
 <CALENDAR compset="GEOS_">GREGORIAN</CALENDAR> 
@@ -1595,13 +1604,23 @@ DOCN%COPY => docn copy mode
 <NCPL_BASE_PERIOD compset="_MPASO"       >hour  </NCPL_BASE_PERIOD>
 
 <!-- coupler intervals for MPASLI-ONLY compset -->
-<NCPL_BASE_PERIOD compset="_SLND.*SOCN.*_MPASLI">year  </NCPL_BASE_PERIOD>
+<NCPL_BASE_PERIOD compset="_SLND.*SOCN.*_MPASLI">day  </NCPL_BASE_PERIOD>
 <ATM_NCPL compset="_SLND.*SOCN.*_MPASLI">1</ATM_NCPL>
 <LND_NCPL compset="_SLND.*SOCN.*_MPASLI">1</LND_NCPL>
 <ICE_NCPL compset="_SLND.*SOCN.*_MPASLI">1</ICE_NCPL>
 <OCN_NCPL compset="_SLND.*SOCN.*_MPASLI">1</OCN_NCPL>
 <GLC_NCPL compset="_SLND.*SOCN.*_MPASLI">1</GLC_NCPL>
 <ROF_NCPL compset="_SLND.*SOCN.*_MPASLI">1</ROF_NCPL>
+
+<!-- coupler intervals for MPASLI-ONLY compset -->
+<NCPL_BASE_PERIOD compset="_DATM.*_SLND.*MPASO.*_MPASLI">day  </NCPL_BASE_PERIOD>
+<ATM_NCPL compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</ATM_NCPL>
+<LND_NCPL compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</LND_NCPL>
+<ICE_NCPL compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</ICE_NCPL>
+<OCN_NCPL compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</OCN_NCPL>
+<GLC_NCPL compset="_DATM.*_SLND.*MPASO.*_MPASLI">1</GLC_NCPL>
+<ROF_NCPL compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</ROF_NCPL>
+
 
 <!-- ======================================= -->
 <!--          USER_DEFINED section           -->
