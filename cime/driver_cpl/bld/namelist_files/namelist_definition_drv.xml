@@ -2412,6 +2412,49 @@ grid.
 </entry>
 
 <entry 
+id="glc2ocn_smapname"
+type="char*256"
+category="mapping" 
+input_pathname="abs"
+group="seq_maps">
+glc to ocn runoff state mapping file
+</entry>
+
+<entry 
+id="glc2ocn_smaptype"
+type="char*256"
+category="mapping" 
+group="seq_maps">
+The type of mapping desired, either "source" or "destination" mapping.
+X is associated with rearrangement of the source grid to the
+destination grid and then local mapping.  Y is associated with mapping
+on the source grid and then rearrangement and sum to the destination
+grid.
+</entry>
+
+
+<entry 
+id="glc2ocn_fmapname"
+type="char*256"
+category="mapping" 
+input_pathname="abs"
+group="seq_maps">
+glc to ocn runoff state mapping file
+</entry>
+
+<entry 
+id="glc2ocn_fmaptype"
+type="char*256"
+category="mapping" 
+group="seq_maps">
+The type of mapping desired, either "source" or "destination" mapping.
+X is associated with rearrangement of the source grid to the
+destination grid and then local mapping.  Y is associated with mapping
+on the source grid and then rearrangement and sum to the destination
+grid.
+</entry>
+
+<entry 
 id="glc2ice_rmapname"
 type="char*256"
 category="mapping" 
@@ -2422,6 +2465,48 @@ glc to ice runoff conservative mapping file
 
 <entry 
 id="glc2ice_rmaptype"
+type="char*256"
+category="mapping" 
+group="seq_maps">
+The type of mapping desired, either "source" or "destination" mapping.
+X is associated with rearrangement of the source grid to the
+destination grid and then local mapping.  Y is associated with mapping
+on the source grid and then rearrangement and sum to the destination
+grid.
+</entry>
+
+<entry 
+id="glc2ice_smapname"
+type="char*256"
+category="mapping" 
+input_pathname="abs"
+group="seq_maps">
+glc to ice runoff conservative mapping file
+</entry>
+
+<entry 
+id="glc2ice_smaptype"
+type="char*256"
+category="mapping" 
+group="seq_maps">
+The type of mapping desired, either "source" or "destination" mapping.
+X is associated with rearrangement of the source grid to the
+destination grid and then local mapping.  Y is associated with mapping
+on the source grid and then rearrangement and sum to the destination
+grid.
+</entry>
+
+<entry 
+id="glc2ice_fmapname"
+type="char*256"
+category="mapping" 
+input_pathname="abs"
+group="seq_maps">
+glc to ice runoff conservative mapping file
+</entry>
+
+<entry 
+id="glc2ice_fmaptype"
 type="char*256"
 category="mapping" 
 group="seq_maps">
@@ -2569,6 +2654,48 @@ ocn to wav state mapping file for states
 
 <entry 
 id="ocn2wav_smaptype"
+type="char*256"
+category="mapping" 
+group="seq_maps">
+The type of mapping desired, either "source" or "destination" mapping.
+X is associated with rearrangement of the source grid to the
+destination grid and then local mapping.  Y is associated with mapping
+on the source grid and then rearrangement and sum to the destination
+grid.
+</entry>
+
+<entry 
+id="ocn2glc_smapname"
+type="char*256"
+category="mapping" 
+input_pathname="abs"
+group="seq_maps">
+ocn to glc state mapping file for states
+</entry>
+
+<entry 
+id="ocn2glc_smaptype"
+type="char*256"
+category="mapping" 
+group="seq_maps">
+The type of mapping desired, either "source" or "destination" mapping.
+X is associated with rearrangement of the source grid to the
+destination grid and then local mapping.  Y is associated with mapping
+on the source grid and then rearrangement and sum to the destination
+grid.
+</entry>
+
+<entry 
+id="ocn2glc_fmapname"
+type="char*256"
+category="mapping" 
+input_pathname="abs"
+group="seq_maps">
+ocn to glc flux mapping file for states
+</entry>
+
+<entry 
+id="ocn2glc_fmaptype"
 type="char*256"
 category="mapping" 
 group="seq_maps">
