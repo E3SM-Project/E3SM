@@ -8,7 +8,7 @@ my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml");
 my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]"); 
 my $cimeroot = $nodes[0]->getAttribute('value');
 my %opts=(loglevel=>"INFO");
-
+$ENV{CIMEROOT}=$cimeroot;
 unshift @INC, "$cimeroot/utils/perl5lib";
 require Log::Log4perl;
 require Config::SetupTools;
