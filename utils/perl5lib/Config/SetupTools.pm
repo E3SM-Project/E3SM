@@ -175,6 +175,7 @@ sub set_compiler
 	    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
 	    my @nodes = $xml->findnodes(".//compiler");
 	    foreach my $node (@nodes) {
+		next if ($node->nodeType() == XML_COMMENT_NODE);
 		my $COMPILER = $node->getAttribute('COMPILER');
 		my $MACH     = $node->getAttribute('MACH');
 		my $OS       = $node->getAttribute('OS');
@@ -187,11 +188,7 @@ sub set_compiler
 		next if (defined $MPILIB   && $MPILIB   ne $mpilib  );
 		
 		# compiler settings comprises child xml nodes
-		if ($node->nodeType() == XML_COMMENT_NODE) {
-		    # do nothing
-		} else {
-		    push (@compiler_settings ,$node->childNodes());
-		}
+		push (@compiler_settings ,$node->childNodes());
 	    }
 	}	
     }
