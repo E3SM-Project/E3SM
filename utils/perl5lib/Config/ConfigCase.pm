@@ -274,24 +274,40 @@ sub write_file
 	print $fh "</groups>\n";   	    
 	print $fh "\n";
 
+	my @subgroups = qw(none);
+	if($output_xml_file =~ "env_batch.xml"){
+	    @subgroups = qw(run test st_archive lt_archive);
+	}
+
+	my $indent = "  ";
 	# Write out all necessary groups to the output xml file
 	foreach my $group (@groups) {
-	    foreach my $id (sort keys %$self) {
-		if ($self->{$id}->{'group'} eq $group ) {
-		    my $value         = $self->{$id}->{'value'};
-		    my $type          = $self->{$id}->{'type'};
-		    my $valid_values  = $self->{$id}->{'valid_values'};
-		    my $desc          = $self->{$id}->{'desc'};
-		    my $is_list_value = $self->{$id}->{'list'};
-		    my $file          = $self->{$id}->{'file'};
-		    if (defined $file) {
-			if ($file eq $file_xml) {
-			    write_xml_entry($fh, $id, $value, $type, $valid_values, $desc, $group, $is_list_value);
+	    foreach my $subgroup (@subgroups){
+		if($subgroup ne "none"){
+		    print $fh "  <job name=\"$subgroup\">";
+		    my $indent = "      ";
+		}
+		foreach my $id (sort keys %$self) {
+		    if ($self->{$id}->{'group'} eq $group ) {
+			my $value         = $self->{$id}->{'value'};
+			my $type          = $self->{$id}->{'type'};
+			my $valid_values  = $self->{$id}->{'valid_values'};
+			my $desc          = $self->{$id}->{'desc'};
+			my $is_list_value = $self->{$id}->{'list'};
+			my $file          = $self->{$id}->{'file'};
+			if (defined $file) {
+			    if ($file eq $file_xml) {
+				write_xml_entry($fh, $id, $value, $type, $valid_values, $desc, $group, $is_list_value, $indent);
+			    }
+			} else {
+			    $logger->logdie("file attribute for variable $id is not defined \n");
 			}
-		    } else {
-			$logger->logdie("file attribute for variable $id is not defined \n");
 		    }
 		}
+		if($subgroup ne "none"){
+		    print $fh "  </job>\n";
+		}
+
 	    }
 	}
     }
@@ -303,8 +319,8 @@ sub write_file
 sub write_xml_entry
 {
     # Output xml file entry
-    my ($fh, $id, $value, $type, $valid_values, $desc, $group, $is_list_value) = @_;
-
+    my ($fh, $id, $value, $type, $valid_values, $desc, $group, $is_list_value,$indent) = @_;
+    $indent="" unless defined($indent);
     $value =~ s/'/&apos;/g;
     $value =~ s/\</&lt;/g;
     $value =~ s/\</&gt;/g;
@@ -318,13 +334,13 @@ sub write_xml_entry
 	$desc = "no description available";
     }
     print $fh "\n";
-    print $fh "<entry id=\"$id\"  value=\"$value\">\n";   	    
-    print $fh "  <type>$type</type> \n"; 
-    if (defined $valid_values && $valid_values  ne '') {print $fh "  <valid_values>$valid_values</valid_values> \n";}
-    if (defined $is_list_value && $is_list_value ne '') {print $fh "  <list>$is_list_value</list> \n";}
-    print $fh "  <group>$group</group> \n"; 
-    print $fh "  <desc>$desc</desc> \n";
-    print $fh "</entry> \n";
+    print $fh "$indent<entry id=\"$id\"  value=\"$value\">\n";   	    
+    print $fh "$indent  <type>$type</type> \n"; 
+    if (defined $valid_values && $valid_values  ne '') {print $fh "$indent  <valid_values>$valid_values</valid_values> \n";}
+    if (defined $is_list_value && $is_list_value ne '') {print $fh "$indent  <list>$is_list_value</list> \n";}
+    print $fh "$indent  <group>$group</group> \n"; 
+    print $fh "$indent  <desc>$desc</desc> \n";
+    print $fh "$indent</entry> \n";
 }
 
 #-----------------------------------------------------------------------------------------------

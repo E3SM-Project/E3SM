@@ -40,6 +40,7 @@ sub new
 	machine		=> $params{'machine'}		|| undef,
 	machroot	=> $params{'machroot'}		|| undef,
 	mpilib		=> $params{'mpilib'}		|| undef,
+	job => $params{job}
     };
     bless $self, $class;
 
@@ -192,7 +193,9 @@ sub submitSingleJob()
     my %config = %{$self->{'caseconfig'}};
     my $dependarg = '';
     my $submitargs = '';
+
     $submitargs = $self->getSubmitArguments($scriptname, $dependentJobId);
+
     if(! defined $submitargs && length($submitargs) <= 0)
     {
 	$submitargs = '' ;
@@ -353,7 +356,8 @@ sub getSubmitArguments()
 							 mpilib => $self->{mpilib}, 
 							 machroot => $self->{machroot}, 
 							 machine => $self->{machine},
-							 compiler => $self->{compiler} );
+							 compiler => $self->{compiler},
+                                                          job => $self->{job} );
 
 
     # Find the submit arguments for this particular batch system.

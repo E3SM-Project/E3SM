@@ -28,6 +28,7 @@ endif
 
 # The actual build for this test is the same as for the standard test, so the
 # contents of test_build.csh are copied below:
+setenv CIMEROOT `./xmlquery CIMEROOT    -value`
 
 ./Tools/check_lockedfiles || exit -1
 

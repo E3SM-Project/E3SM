@@ -11,7 +11,7 @@ use Getopt::Long;
 use IO::File;
 use IO::Handle;
 use File::Basename;
-
+use File::Copy;
 #-----------------------------------------------------------------------------------------------
 sub usage {
     die <<EOF;
@@ -202,7 +202,7 @@ if (! $clean ) {
 
     } else {
 
-	my $sysmod = "./Tools/check_lockedfiles";
+	my $sysmod = "./Tools/check_lockedfiles -cimeroot $cimeroot";
 	system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
 	
 	my $pestot = `$caseroot/Tools/taskmaker.pl -sumonly`;
@@ -265,7 +265,11 @@ if (! $clean ) {
 							     machroot => $xmlvars{'MACHDIR'},
 							     machine  => $xmlvars{'MACH'},
 							     compiler => $xmlvars{'COMPILER'},
-							     threaded => $build_threaded);
+							     threaded => $build_threaded,
+							     job => 'run'
+	                                                     );
+
+
 	
 	my $inputbatchscript  = "$xmlvars{'MACHDIR'}/template.cesmrun";
 	my $outputbatchscript = "$xmlvars{'CASEROOT'}/$case.run";
@@ -273,11 +277,12 @@ if (! $clean ) {
 	$batchmaker->makeBatchScript($inputbatchscript, $outputbatchscript);
 	$logger->info("Creating batch script $case.st_archive");
 	$batchmaker->overrideNodeCount(1);
-
+	$batchmaker->set({job=>'st_archive'});
 	$batchmaker->makeBatchScript("$xmlvars{'MACHDIR'}/template.starchive", "$xmlvars{'CASEROOT'}/$case.st_archive");
+
 	$logger->info("Creating batch script $case.lt_archive");
 	$batchmaker->overrideNodeCount(1);
-
+	$batchmaker->set({job=>'lt_archive'});
 	$batchmaker->makeBatchScript("$xmlvars{'MACHDIR'}/template.ltarchive", "$xmlvars{'CASEROOT'}/$case.lt_archive");
 	
 	# Make a copy of env_mach_pes.xml in order to be able 
