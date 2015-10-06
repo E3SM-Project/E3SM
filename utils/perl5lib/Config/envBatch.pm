@@ -1,4 +1,4 @@
-package envBatch;
+package Config::envBatch;
 my  $pkg_nm = __PACKAGE__;
 use strict;
 use warnings;
@@ -14,16 +14,15 @@ BEGIN{
 sub new {
      my $class = shift();
      my $this = {};
-     
      bless($this, $class);
      $this->_init(@_);
      return $this;
 }
 
 sub _init {
-  my ($this, $foo, $bar, $baz) = @_;
-  $this->SUPER::_init($bar, $baz);
-  $$this{foo} = $foo;
+  my ($this) = @_;
+#  $this->SUPER::_init();
+
 }
 
 sub read {
@@ -35,11 +34,12 @@ sub read {
     
     foreach my $job (@jobs){
 	my $name = $job->getAttribute('name');
-	foreach my $entry ($job->childnNodes()){
+	foreach my $entry ($job->childNodes()){
 	    if($entry->nodeName() eq "entry"){
 		my $id = $entry->getAttribute('id');
 		my $value = $entry->getAttribute('value');
-		$self->{$job}{$id}=$value;
+		$logger->debug ("job= $name id=$id value=$value");
+		$self->{$name}{$id}=$value;
 	    }
 	}
     }
@@ -51,6 +51,17 @@ sub get
     my ($self, $job) = @_;
     
     return($self->{$job});
+}
+
+
+sub set
+{
+    my($self, $id, $job, $value)  = @_;
+    
+    $self->{$job}{$id} = $value;
+
+    qx(./xmlchange -file env_batch.xml -id $id -val $value -subgroup $job);
+
 }
 
 

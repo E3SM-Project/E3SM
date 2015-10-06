@@ -146,7 +146,8 @@ my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $caseroot,
 						     machroot => $machdir,
                                                      machine  => $mach,        
 						     compiler => $compiler,
-                                                     threaded => $build_threaded);
+                                                     threaded => $build_threaded,
+                                                     job => 'test');
 
 my $batchdirectives = $batchmaker->getBatchDirectives();
                                                      

@@ -1409,6 +1409,10 @@ sub testcaseSetup
     $logger->debug("sysmod is $sysmod");
     system($sysmod) == 0 or $logger->warn ("$sysmod failed: $?");
 
+    qx(./xmlchange -file env_batch.xml -id JOB_WALLCLOCK_TIME -val 1:00);
+    qx(./xmlchange -file env_batch.xml -id JOB_QUEUE -val premium);
+    
+
     
     
     if($? != 0)

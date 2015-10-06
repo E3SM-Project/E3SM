@@ -129,5 +129,5 @@ sub _read_project_from_file
    return $project;
 }
    
-
+1;
 
