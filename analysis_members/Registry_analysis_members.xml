@@ -11,3 +11,4 @@
 #include "Registry_lagrangian_particle_tracking.xml"
 #include "Registry_eliassen_palm.xml"
 #include "Registry_mixed_layer_depths.xml"
+#include "Registry_time_series_stats.xml"

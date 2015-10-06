@@ -39,6 +39,7 @@ module ocn_analysis_driver
    use ocn_lagrangian_particle_tracking
    use ocn_eliassen_palm
    use ocn_mixed_layer_depths
+   use ocn_time_series_stats
 !   use ocn_TEM_PLATE
 
    implicit none
@@ -155,6 +156,7 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'lagrPartTrack', 1)
       call mpas_pool_add_config(analysisMemberList, 'eliassenPalm', 1)
       call mpas_pool_add_config(analysisMemberList, 'mixedLayerDepths', 1)
+      call mpas_pool_add_config(analysisMemberList, 'timeSeriesStats', 1)
 !     call mpas_pool_add_config(analysisMemberList, 'temPlate', 1)
 
       ! DON'T EDIT BELOW HERE
@@ -747,16 +749,18 @@ contains
          call ocn_init_water_mass_census(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'zonalMean' ) then
          call ocn_init_zonal_mean(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
-        call ocn_init_high_frequency_output(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'timeFilters' ) then
-        call ocn_init_time_filters(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'lagrPartTrack' ) then
-        call ocn_init_lagrangian_particle_tracking(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'eliassenPalm' ) then
-        call ocn_init_eliassen_palm(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'mixedLayerDepths' ) then
-        call ocn_init_mixed_layer_depths(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
+         call ocn_init_high_frequency_output(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeFilters' ) then
+         call ocn_init_time_filters(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'lagrPartTrack' ) then
+         call ocn_init_lagrangian_particle_tracking(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'eliassenPalm' ) then
+         call ocn_init_eliassen_palm(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'mixedLayerDepths' ) then
+         call ocn_init_mixed_layer_depths(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
+         call ocn_init_time_series_stats(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_init_TEM_PLATE(domain, err_tmp)
       end if
@@ -804,16 +808,18 @@ contains
          call ocn_compute_water_mass_census(domain, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'zonalMean' ) then
          call ocn_compute_zonal_mean(domain, timeLevel, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
-        call ocn_compute_high_frequency_output(domain, timeLevel, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'timeFilters' ) then
-        call ocn_compute_time_filters(domain, timeLevel, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'lagrPartTrack' ) then
-        call ocn_compute_lagrangian_particle_tracking(domain, timeLevel, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'eliassenPalm' ) then
-        call ocn_compute_eliassen_palm(domain, timeLevel, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'mixedLayerDepths' ) then
-        call ocn_compute_mixed_layer_depths(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
+         call ocn_compute_high_frequency_output(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeFilters' ) then
+         call ocn_compute_time_filters(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'lagrPartTrack' ) then
+         call ocn_compute_lagrangian_particle_tracking(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'eliassenPalm' ) then
+         call ocn_compute_eliassen_palm(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'mixedLayerDepths' ) then
+         call ocn_compute_mixed_layer_depths(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
+         call ocn_compute_time_series_stats(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_compute_TEM_PLATE(domain, timeLevel, err_tmp)
       end if
@@ -860,16 +866,18 @@ contains
          call ocn_restart_water_mass_census(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'zonalMean' ) then
          call ocn_restart_zonal_mean(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
-        call ocn_restart_high_frequency_output(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'timeFilters' ) then
-        call ocn_restart_time_filters(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'lagrPartTrack' ) then
-        call ocn_restart_lagrangian_particle_tracking(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'eliassenPalm' ) then
-        call ocn_restart_eliassen_palm(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'mixedLayerDepths' ) then
-        call ocn_restart_mixed_layer_depths(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
+         call ocn_restart_high_frequency_output(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeFilters' ) then
+         call ocn_restart_time_filters(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'lagrPartTrack' ) then
+         call ocn_restart_lagrangian_particle_tracking(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'eliassenPalm' ) then
+         call ocn_restart_eliassen_palm(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'mixedLayerDepths' ) then
+         call ocn_restart_mixed_layer_depths(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
+         call ocn_restart_time_series_stats(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_restart_TEM_PLATE(domain, err_tmp)
       end if
@@ -916,16 +924,18 @@ contains
          call ocn_finalize_water_mass_census(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'zonalMean' ) then
          call ocn_finalize_zonal_mean(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
-        call ocn_finalize_high_frequency_output(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'timeFilters' ) then
-        call ocn_finalize_time_filters(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'lagrPartTrack' ) then
-        call ocn_finalize_lagrangian_particle_tracking(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'eliassenPalm' ) then
-        call ocn_finalize_eliassen_palm(domain, err_tmp)
-     else if ( analysisMemberName(1:nameLength) == 'mixedLayerDepths' ) then
-        call ocn_finalize_mixed_layer_depths(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
+         call ocn_finalize_high_frequency_output(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeFilters' ) then
+         call ocn_finalize_time_filters(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'lagrPartTrack' ) then
+         call ocn_finalize_lagrangian_particle_tracking(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'eliassenPalm' ) then
+         call ocn_finalize_eliassen_palm(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'mixedLayerDepths' ) then
+         call ocn_finalize_mixed_layer_depths(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
+         call ocn_finalize_time_series_stats(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_finalize_TEM_PLATE(domain, err_tmp)
       end if
