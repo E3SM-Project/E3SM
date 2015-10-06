@@ -1718,7 +1718,7 @@ module seq_flds_mod
      ! Also note that we need to keep track of the l2x fields destined for glc in the
      ! additional variables, l2x_fluxes_to_glc and l2x_states_to_glc. This is needed so that
      ! we can set up an additional attribute vector holding accumulated quantities of just
-     ! these fields. (We can't determine these field lists with a call to
+     ! these fields. (We cannot determine these field lists with a call to
      ! mct_aVect_initSharedFields, because the field names differ between l2x and x2g.)
      
      name = 'Flgl_qice'
@@ -1794,6 +1794,146 @@ module seq_flds_mod
      call set_glc_elevclass_field(name, attname, longname, stdname, units, x2l_fluxes)
      call set_glc_elevclass_field(name, attname, longname, stdname, units, x2l_fluxes_from_glc, &
           additional_list = .true.)
+
+     name = 'So_blt'
+     call seq_flds_add(o2x_states,trim(name))
+     call seq_flds_add(x2g_states,trim(name))
+     longname = 'Ice shelf boundary layer ocean temperature'
+     stdname  = 'Ice_shelf_boundary_layer_ocean_temperature'
+     units    = 'C'
+     attname  = 'So_blt'
+     call metadata_set(attname, longname, stdname, units)
+
+     name = 'So_bls'
+     call seq_flds_add(o2x_states,trim(name))
+     call seq_flds_add(x2g_states,trim(name))
+     longname = 'Ice shelf boundary layer ocean salinity'
+     stdname  = 'Ice_shelf_boundary_layer_ocean_salinity'
+     units    = 'psu'
+     attname  = 'So_bls'
+     call metadata_set(attname, longname, stdname, units)
+
+     name = 'So_htv'
+     call seq_flds_add(o2x_states,trim(name))
+     call seq_flds_add(x2g_states,trim(name))
+     longname = 'Ice shelf ocean heat transfer velocity'
+     stdname  = 'Ice_shelf_ocean_heat_transfer_velocity'
+     units    = 'm/s'
+     attname  = 'So_htv'
+     call metadata_set(attname, longname, stdname, units)
+
+     name = 'So_hsv'
+     call seq_flds_add(o2x_states,trim(name))
+     call seq_flds_add(x2g_states,trim(name))
+     longname = 'Ice shelf ocean salinity transfer velocity'
+     stdname  = 'Ice_shelf_ocean_salinity_transfer_velocity'
+     units    = 'm/s'
+     attname  = 'So_hsv'
+     call metadata_set(attname, longname, stdname, units)
+
+     name = 'So_phieff'
+     call seq_flds_add(o2x_states,trim(name))
+     call seq_flds_add(x2g_states,trim(name))
+     longname = 'Ocean effective pressure'
+     stdname  = 'Ocean_effective_pressure'
+     units    = 'Pa'
+     attname  = 'So_phieff'
+     call metadata_set(attname, longname, stdname, units)
+
+     name = 'Fogx_qicelo'
+     call seq_flds_add(g2x_fluxes,trim(name))
+     call seq_flds_add(x2o_fluxes,trim(name))
+     longname = 'Subshelf liquid flux for ocean'
+     stdname  = 'Subshelf_liquid_flux_for_ocean'
+     units    = 'kg m-2 s-1'
+     attname  = 'Fogx_qicelo'
+     call metadata_set(attname, longname, stdname, units)
+
+     name = 'Fogx_qiceho'
+     call seq_flds_add(g2x_fluxes,trim(name))
+     call seq_flds_add(x2o_fluxes,trim(name))
+     longname = 'Subshelf heat flux for the ocean'
+     stdname  = 'Subshelf_heat_flux_for_the_ocean'
+     units    = 'W m-2'
+     attname  = 'Fogx_qiceho'
+     call metadata_set(attname, longname, stdname, units)
+
+     name = 'Sg_blit'
+     call seq_flds_add(g2x_states,trim(name))
+     call seq_flds_add(x2o_states,trim(name))
+     longname = 'Boundary layer interface temperature for ocean'
+     stdname  = 'Boundary_layer_interface_temperature_for_ocean'
+     units    = 'C'
+     attname  = 'Sg_blit'
+     call metadata_set(attname, longname, stdname, units)
+
+     name = 'Sg_blis'
+     call seq_flds_add(g2x_states,trim(name))
+     call seq_flds_add(x2o_states,trim(name))
+     longname = 'Boundary layer interface salinity for ocean'
+     stdname  = 'Boundary_layer_interface_salinity_for_ocean'
+     units    = 'psu'
+     attname  = 'Sg_blis'
+     call metadata_set(attname, longname, stdname, units)
+
+     name = 'Sg_lithop'
+     call seq_flds_add(g2x_states,trim(name))
+     call seq_flds_add(x2o_states,trim(name))
+     longname = 'Ice sheet lithostatic pressure'
+     stdname  = 'Ice_sheet_lithostatic_pressure'
+     units    = 'Pa'
+     attname  = 'Sg_lithop'
+     call metadata_set(attname, longname, stdname, units)
+
+     name = 'Sg_icemask_grounded'
+     call seq_flds_add(g2x_states,trim(name))
+     call seq_flds_add(x2o_states,trim(name))
+     longname = 'Grounded ice mask'
+     stdname  = 'Grounded_ice_mask'
+     units    = 'unitless'
+     attname  = 'Sg_icemask_grounded'
+     call metadata_set(attname, longname, stdname, units)
+
+     name = 'Sg_icemask_floating'
+     call seq_flds_add(g2x_states,trim(name))
+     call seq_flds_add(x2o_states,trim(name))
+     longname = 'Floating ice mask'
+     stdname  = 'Floating_ice_mask'
+     units    = 'unitless'
+     attname  = 'Sg_icemask_floating'
+     call metadata_set(attname, longname, stdname, units)
+
+     name = 'Sg_tbot'
+     call seq_flds_add(g2x_states,trim(name))
+     longname = 'Bottom layer ice temperature'
+     stdname  = 'Bottom_layer_ice_temperature'
+     units    = 'C'
+     attname  = 'Sg_tbot'
+     call metadata_set(attname, longname, stdname, units)
+     
+     name = 'Sg_dztbot'
+     call seq_flds_add(g2x_states,trim(name))
+     longname = 'Bottom layer ice layer half thickness'
+     stdname  = 'Bottom_layer_ice_layer_half_thickness'
+     units    = 'm'
+     attname  = 'Sg_dztbot'
+     call metadata_set(attname, longname, stdname, units)
+
+     name = 'Fogx_qiceli'
+     call seq_flds_add(x2g_fluxes,trim(name))
+     longname = 'Subshelf mass flux for ice sheet'
+     stdname  = 'Subshelf_mass_flux_for_ice_sheet'
+     units    = 'kg m-2 s-1'
+     attname  = 'Fogx_qiceli'
+     call metadata_set(attname, longname, stdname, units)
+
+     name = 'Fogx_qicehi'
+     call seq_flds_add(x2g_fluxes,trim(name))
+     longname = 'Subshelf heat flux for ice sheet'
+     stdname  = 'Subshelf_heat_flux_for_ice_sheet'
+     units    = 'W m-2'
+     attname  = 'Fogx_qicehi'
+     call metadata_set(attname, longname, stdname, units)     
 
      ! Done glc fields
      

@@ -19,6 +19,14 @@ module mpaso_cpl_indices
   integer :: index_o2x_Fioo_q
   integer :: index_o2x_Faoo_fco2_ocn
   integer :: index_o2x_Faoo_fdms_ocn
+  
+  ! ocn -> drv for calculation of ocean-ice sheet interactions
+  
+  integer :: index_o2x_So_blt !boundary layer temperature
+  integer :: index_o2x_So_bls !boundary layer salinity
+  integer :: index_o2x_So_htv !ocean heat-transfer velocity
+  integer :: index_o2x_So_hsv !ocean salt-transfer velocity
+  integer :: index_o2x_So_phieff !ocean effective density  
 
   ! drv -> ocn
 
@@ -58,6 +66,15 @@ module mpaso_cpl_indices
   integer :: index_x2o_Foxx_rofl       ! river runoff flux                (kg/m2/s)
   integer :: index_x2o_Foxx_rofi       ! ice runoff flux                  (kg/m2/s)
 
+  integer :: index_x2o_Fogx_qicelo
+  integer :: index_x2o_Fogx_qiceho
+  integer :: index_x2o_Sg_blit
+  integer :: index_x2o_Sg_blis
+  integer :: index_x2o_Sg_lithop
+  integer :: index_x2o_Sg_icemask
+  integer :: index_x2o_Sg_icemask_grounded
+  integer :: index_x2o_Sg_icemask_floating
+  
 contains
 
   subroutine mpaso_cpl_indices_set( )
@@ -80,6 +97,13 @@ contains
     index_o2x_Fioo_q        = mct_avect_indexra(o2x,'Fioo_q')
     index_o2x_Faoo_fco2_ocn = mct_avect_indexra(o2x,'Faoo_fco2_ocn',perrWith='quiet')
     index_o2x_Faoo_fdms_ocn = mct_avect_indexra(o2x,'Faoo_fdms_ocn',perrWith='quiet')
+    
+    index_o2x_So_blt        = mct_avect_indexra(o2x,'So_blt')
+    index_o2x_So_bls        = mct_avect_indexra(o2x,'So_bls')
+    index_o2x_So_htv        = mct_avect_indexra(o2x,'So_htv')
+    index_o2x_So_hsv        = mct_avect_indexra(o2x,'So_hsv')
+    index_o2x_So_phieff     = mct_avect_indexra(o2x,'So_phieff')
+    
     index_x2o_Si_ifrac      = mct_avect_indexra(x2o,'Si_ifrac')
     index_x2o_Sa_pslv       = mct_avect_indexra(x2o,'Sa_pslv')
     index_x2o_So_duu10n     = mct_avect_indexra(x2o,'So_duu10n')
@@ -91,12 +115,12 @@ contains
     index_x2o_Foxx_sen      = mct_avect_indexra(x2o,'Foxx_sen')
     index_x2o_Foxx_lwup     = mct_avect_indexra(x2o,'Foxx_lwup')
     index_x2o_Faxa_lwdn     = mct_avect_indexra(x2o,'Faxa_lwdn')
-    index_x2o_Fioi_melth    = mct_avect_indexra(x2o,'Fioi_melth')   
+    index_x2o_Fioi_melth    = mct_avect_indexra(x2o,'Fioi_melth')
     index_x2o_Fioi_meltw    = mct_avect_indexra(x2o,'Fioi_meltw')
-    index_x2o_Fioi_salt     = mct_avect_indexra(x2o,'Fioi_salt')   
-    index_x2o_Faxa_prec     = mct_avect_indexra(x2o,'Faxa_prec')   
-    index_x2o_Faxa_snow     = mct_avect_indexra(x2o,'Faxa_snow')   
-    index_x2o_Faxa_rain     = mct_avect_indexra(x2o,'Faxa_rain')   
+    index_x2o_Fioi_salt     = mct_avect_indexra(x2o,'Fioi_salt')
+    index_x2o_Faxa_prec     = mct_avect_indexra(x2o,'Faxa_prec')
+    index_x2o_Faxa_snow     = mct_avect_indexra(x2o,'Faxa_snow')
+    index_x2o_Faxa_rain     = mct_avect_indexra(x2o,'Faxa_rain')
     index_x2o_Foxx_evap     = mct_avect_indexra(x2o,'Foxx_evap')
     index_x2o_Foxx_rofl     = mct_avect_indexra(x2o,'Foxx_rofl')
     index_x2o_Foxx_rofi     = mct_avect_indexra(x2o,'Foxx_rofi')
@@ -117,6 +141,15 @@ contains
     index_x2o_Sa_co2prog    = mct_avect_indexra(x2o,'Sa_co2prog',perrWith='quiet')
     index_x2o_Sa_co2diag    = mct_avect_indexra(x2o,'Sa_co2diag',perrWith='quiet')
 
+    index_x2o_Fogx_qicelo = mct_avect_indexra(x2o,'Fogx_qicelo',perrWith='quiet')
+    index_x2o_Fogx_qiceho = mct_avect_indexra(x2o,'Fogx_qiceho',perrWith='quiet')    
+    index_x2o_Sg_blit    = mct_avect_indexra(x2o,'Sg_blit',perrWith='quiet')
+    index_x2o_Sg_blis    = mct_avect_indexra(x2o,'Sg_blis',perrWith='quiet')
+    index_x2o_Sg_lithop  = mct_avect_indexra(x2o,'Sg_lithop',perrWith='quiet')
+    index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask',perrWith='quiet')
+    index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask_grounded',perrWith='quiet')
+    index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask_floating',perrWith='quiet')
+    
     call mct_aVect_clean(x2o)
     call mct_aVect_clean(o2x)
 
