@@ -56,8 +56,8 @@ module CanopyStateType
 
    contains
 
-     procedure, public  :: Init         
-     procedure, private :: InitAllocate 
+     procedure, public  :: Init
+     procedure, private :: InitAllocate
      procedure, private :: InitHistory  
      procedure, private :: InitCold     
      procedure, public  :: InitAccBuffer

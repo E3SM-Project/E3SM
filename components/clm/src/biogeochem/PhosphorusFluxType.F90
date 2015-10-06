@@ -12,7 +12,9 @@ module PhosphorusFluxType
   use abortutils             , only : endrun
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
-  use PatchType              , only : pft                
+  use PatchType              , only : pft
+  !! bgc interface & pflotran:
+  use clm_varctl             , only : use_bgc_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -263,7 +265,7 @@ module PhosphorusFluxType
      real(r8), pointer :: decomp_ppools_transport_tendency_col      (:,:,:) ! col P tendency due to vertical transport in decomposing P pools (gP/m^3/s)
 
      ! all n pools involved in decomposition
-     real(r8), pointer :: decomp_ppools_sourcesink_col              (:,:,:) ! col (gP/m3) change in decomposing n pools 
+     real(r8), pointer :: decomp_ppools_sourcesink_col              (:,:,:) ! col (gP/m3) change in decomposing P pools
                                                                             !     (sum of all additions and subtractions from stateupdate1).  
 
      ! Misc
@@ -271,6 +273,17 @@ module PhosphorusFluxType
      real(r8), pointer :: avail_retransp_patch                      (:)     ! P flux available from retranslocation pool (gP/m2/s)
      real(r8), pointer :: plant_palloc_patch                        (:)     ! total allocated P flux (gP/m2/s)
 
+     ! clm_bgc_interface & pflotran
+     !------------------------------------------------------------------------
+     real(r8), pointer :: plant_pdemand_col                         (:)     ! col P flux required to support initial GPP (gN/m2/s)
+     real(r8), pointer :: plant_pdemand_vr_col                      (:,:)   ! col vertically-resolved P flux required to support initial GPP (gP/m3/s)
+     ! for PF-bgc mass-balance error checking
+     real(r8), pointer :: externalp_to_decomp_ppools_col            (:,:,:) ! col net N fluxes associated with litter/som-adding/removal to decomp pools (gP/m3/s)
+                                                                            ! (sum of all external P additions and removals, excluding decomposition/hr).
+     real(r8), pointer :: externalp_to_decomp_delta_col             (:)     ! col summarized net N i/o changes associated with litter/som-adding/removal to decomp pools  btw time-step (gP/m2)
+     real(r8), pointer :: sminp_net_transport_vr_col                (:,:)   ! col net sminp transport associated with runoff/leaching (gP/m3/s)
+     real(r8), pointer :: sminp_net_transport_delta_col             (:)     ! col summarized net change of column-level sminp leaching bwtn time-step (for balance checking) (gP/m2)
+     !------------------------------------------------------------------------
    contains
 
      procedure , public  :: Init   
@@ -278,9 +291,11 @@ module PhosphorusFluxType
      procedure , public  :: SetValues
      procedure , public  :: ZeroDWT
      procedure , public  :: Summary
-     procedure , private :: InitAllocate 
+     procedure , private :: InitAllocate
      procedure , private :: InitHistory
      procedure , private :: InitCold
+     !! bgc & pflotran interface
+     procedure , private :: PSummary_interface
 
   end type phosphorusflux_type
   !------------------------------------------------------------------------
@@ -577,6 +592,15 @@ contains
     allocate(this%avail_retransp_patch        (begp:endp)) ;    this%avail_retransp_patch        (:) = nan
     allocate(this%plant_palloc_patch          (begp:endp)) ;    this%plant_palloc_patch          (:) = nan
 
+    ! clm_bgc_interface & pflotran
+    !------------------------------------------------------------------------
+    allocate(this%plant_pdemand_col                 (begc:endc))                                    ; this%plant_pdemand_col                 (:)     = nan
+    allocate(this%plant_pdemand_vr_col              (begc:endc,1:nlevdecomp_full))                  ; this%plant_pdemand_vr_col (:,:) = nan
+    allocate(this%externalp_to_decomp_ppools_col    (begc:endc, 1:nlevdecomp_full, 1:ndecomp_pools)); this%externalp_to_decomp_ppools_col    (:,:,:) = spval
+    allocate(this%externalp_to_decomp_delta_col     (begc:endc))                                    ; this%externalp_to_decomp_delta_col     (:)     = spval
+    allocate(this%sminp_net_transport_vr_col        (begc:endc, 1:nlevdecomp_full))                 ; this%sminp_net_transport_vr_col        (:,:)   = spval
+    allocate(this%sminp_net_transport_delta_col     (begc:endc))                                    ; this%sminp_net_transport_delta_col     (:)     = spval
+    !------------------------------------------------------------------------
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -1408,6 +1432,12 @@ contains
          avgflag='A', long_name='total allocated P flux', &
          ptr_patch=this%plant_palloc_patch, default='inactive')
 
+    !! bgc interface
+    this%plant_pdemand_col(begc:endc) = spval
+    call hist_addfld1d (fname='PLANT_PDEMAND_COL', units='gN/m^2/s', &
+        avgflag='A', long_name='P flux required to support initial GPP', &
+        ptr_col=this%plant_pdemand_col)
+
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
@@ -1513,6 +1543,9 @@ contains
     logical :: readvar      ! determine if variable is on initial file
     real(r8), pointer :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
     real(r8), pointer :: ptr1d(:)   ! temp. pointers for slicing larger arrays
+    ! pflotran
+    integer :: k
+    character(len=128) :: varname   ! temporary
     !------------------------------------------------------------------------
 
     if (crop_prog) then
@@ -1584,6 +1617,56 @@ contains
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%plant_palloc_patch) 
 
+    ! clm_bgc_interface & pflotran
+    !------------------------------------------------------------------------
+    if (use_pflotran .and. pf_cmode) then
+       ! externalp_to_decomp_ppools_col
+       do k = 1, ndecomp_pools
+          varname=trim(decomp_cascade_con%decomp_pool_name_restart(k))//'external_p'
+          if (use_vertsoilc) then
+             ptr2d => this%externalp_to_decomp_ppools_col(:,:,k)
+             call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double,  &
+                  dim1name='column', dim2name='levgrnd', switchdim=.true., &
+                  long_name='net organic P adding/removal/transport to soil', units='gP/m3/s', fill_value=spval, &
+                  interpinic_flag='interp', readvar=readvar, data=ptr2d)
+          else
+             ptr1d => this%externalp_to_decomp_ppools_col(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
+             call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
+                  dim1name='column', &
+                  long_name='net organic P adding/removal/transport to soil', units='gP/m3/s', fill_value=spval, &
+                  interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+          end if
+          if (flag=='read' .and. .not. readvar) then
+          !   call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
+          !        errMsg(__FILE__, __LINE__))
+             this%externalp_to_decomp_ppools_col(:,:,k) = 0._r8
+          end if
+       end do
+
+       !sminp_net_transport_vr
+       if (.not.pf_hmode) then
+          if (use_vertsoilc) then
+             ptr2d => this%sminp_net_transport_vr_col(:,:)
+             call restartvar(ncid=ncid, flag=flag, varname='sminp_net_transport_vr', xtype=ncd_double, &
+               dim1name='column', dim2name='levgrnd', switchdim=.true., &
+               long_name='net soil mineral-P transport', units='gP/m3/s', &
+               interpinic_flag='interp', readvar=readvar, data=ptr2d)
+          else
+             ptr1d => this%sminp_net_transport_vr_col(:,1)
+             call restartvar(ncid=ncid, flag=flag, varname='sminp_net_transport_vr', xtype=ncd_double, &
+               dim1name='column', &
+               long_name='net soil  mineral-P transport', units='gP/m3/s', &
+               interpinic_flag='interp', readvar=readvar, data=ptr1d)
+          end if
+          if (flag=='read' .and. .not. readvar) then
+          !   call endrun(msg='ERROR:: no3_net_transport_vr'//' is required on an initialization dataset'//&
+          !     errMsg(__FILE__, __LINE__))
+             this%sminp_net_transport_vr_col(:,:) = 0._r8
+          end if
+       end if
+
+    end if !! if (use_pflotran .and. pf_cmode)
+    !------------------------------------------------------------------------
   end subroutine Restart
 
   !-----------------------------------------------------------------------
@@ -1788,6 +1871,9 @@ contains
           this%gross_pmin_vr_col(i,j)                    = value_column
           this%net_pmin_vr_col(i,j)                      = value_column
           this%biochem_pmin_vr_col(i,j)                  = value_column
+
+          ! bgc interface & pflotran
+          this%plant_pdemand_vr_col(i,j)                 = value_column
        end do
     end do
 
@@ -1821,6 +1907,9 @@ contains
        ! Zero p2c column fluxes
        this%fire_ploss_col(i) = value_column
        this%wood_harvestp_col(i) = value_column
+
+       !! bgc-interface
+       this%plant_pdemand_col(i) = value_column
     end do
 
     do k = 1, ndecomp_pools
@@ -1868,6 +1957,39 @@ contains
        end do
     end do
 
+    ! pflotran
+    do k = 1, ndecomp_pools
+       do j = 1, nlevdecomp_full
+          do fi = 1,num_column
+             i = filter_column(fi)
+             ! only initializing in the first time-step
+             if ( this%externalp_to_decomp_ppools_col(i,j,k) == spval ) then
+                this%externalp_to_decomp_ppools_col(i,j,k) = value_column
+             end if
+          end do
+       end do
+    end do
+
+    do j = 1, nlevdecomp_full
+       do fi = 1,num_column
+          i = filter_column(fi)
+          ! only initializing in the first time-step
+          if ( this%sminp_net_transport_vr_col(i,j) == spval ) then
+             this%sminp_net_transport_vr_col(i,j) = value_column
+          end if
+       end do
+    end do
+
+    do fi = 1,num_column
+       i = filter_column(fi)
+       ! only initializing in the first time-step
+       if ( this%externalp_to_decomp_delta_col(i) == spval ) then
+          this%externalp_to_decomp_delta_col(i) = value_column
+       end if
+       if ( this%sminp_net_transport_delta_col(i) == spval ) then
+          this%sminp_net_transport_delta_col(i)   = value_column
+       end if
+    end do
   end subroutine SetValues
 
   !-----------------------------------------------------------------------
@@ -1911,6 +2033,8 @@ contains
     use clm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
     use clm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c 
+    ! pflotran
+!    use clm_varctl    , only: use_pflotran, pf_cmode
     !
     ! !ARGUMENTS:
     class (phosphorusflux_type) :: this
@@ -1978,6 +2102,9 @@ contains
        this%som_p_leached_col(c)       = 0._r8
     end do
 
+    ! pflotran
+    !----------------------------------------------------------------
+    if (.not.(use_pflotran .and. pf_cmode)) then
     ! vertically integrate decomposing P cascade fluxes and soil mineral P fluxes associated with decomposition cascade
     do k = 1, ndecomp_cascade_transitions
        do j = 1,nlevdecomp
@@ -1994,6 +2121,8 @@ contains
           end do
        end do
     end do
+    end if !!if (.not.(use_pflotran .and. pf_cmode))
+    !-----------------------------------------------------------------
 
     ! vertically integrate inorganic P flux
     do j = 1, nlevdecomp
@@ -2116,7 +2245,173 @@ contains
        end do
     end do
 
+    !! bgc interface & pflotran:
+    !----------------------------------------------------------------
+    if (use_bgc_interface) then
+        call PSummary_interface(this, bounds, num_soilc, filter_soilc)
+    end if
+    !----------------------------------------------------------------
+
   end subroutine Summary
+
+!!-------------------------------------------------------------------------------------------------
+! !INTERFACE:
+subroutine PSummary_interface(this,bounds,num_soilc, filter_soilc)
+!
+! !DESCRIPTION:
+!! bgc interface & pflotran:
+! On the radiation time step, perform olumn-level nitrogen
+! summary calculations, which mainly from PFLOTRAN bgc coupling
+!
+! !USES:
+   use clm_varpar  , only: nlevdecomp, ndecomp_pools
+   use clm_varpar  , only: i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+   use clm_time_manager    , only : get_step_size
+
+!   use clm_varctl    , only: pf_hmode
+!
+! !ARGUMENTS:
+   implicit none
+   class (phosphorusflux_type)     :: this
+   type(bounds_type) ,  intent(in) :: bounds
+   integer,             intent(in) :: num_soilc       ! number of soil columns in filter
+   integer,             intent(in) :: filter_soilc(:) ! filter for soil columns
+!
+! !REVISION HISTORY:
+!!08/26/2015: created by Gangsheng Wang
+!
+! !LOCAL VARIABLES:
+   integer :: c,j, l      ! indices
+   integer :: fc          ! column filter indices
+   real(r8):: dtime             ! radiation time step (seconds)
+
+   ! set time steps
+    dtime = real( get_step_size(), r8 )
+    if (use_pflotran .and. pf_cmode) then
+        !! TODO
+    end if
+
+       ! summarize at column-level vertically-resolved littering/removal for PFLOTRAN bgc input needs
+       ! first it needs to save the total column-level N rate btw plant pool and decomposible pools at previous time step
+       ! for adjusting difference when doing balance check
+
+       do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         this%externalp_to_decomp_delta_col(c) = 0._r8
+         this%sminp_net_transport_delta_col(c)   = 0._r8
+         do j = 1, nlevdecomp
+            do l = 1, ndecomp_pools
+               this%externalp_to_decomp_delta_col(c) =    &
+                  this%externalp_to_decomp_delta_col(c) + &
+                    this%externalp_to_decomp_ppools_col(c,j,l)*dzsoi_decomp(j)
+            end do
+
+            ! sminp leaching/runoff at previous time-step, which may be as source by PFLOTRAN
+            this%sminp_net_transport_delta_col(c) = &
+               this%sminp_net_transport_delta_col(c) + &
+                    this%sminp_net_transport_vr_col(c,j)*dzsoi_decomp(j)
+
+         end do
+       end do
+
+       ! do the initialization for the following 2 variables here.
+       ! DON'T do so in the beginning of CLM-CN time-step (otherwise the above saved will not work)
+       this%externalp_to_decomp_ppools_col(:,:,:) = 0._r8
+       this%sminp_net_transport_vr_col(:,:) = 0._r8
+
+       ! add up all vertically-resolved addition/removal rates (gC/m3/s) of decomp_pools
+       do l = 1, ndecomp_pools
+          do j = 1, nlevdecomp
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+
+                ! for litter C pools
+                if (l==i_met_lit) then
+                   this%externalp_to_decomp_ppools_col(c,j,l) =              &
+                       this%externalp_to_decomp_ppools_col(c,j,l)            &
+                        + this%phenology_p_to_litr_met_p_col(c,j)            &
+                        + this%dwt_frootp_to_litr_met_p_col(c,j)             &
+                        + this%gap_mortality_p_to_litr_met_p_col(c,j)        &
+                        + this%harvest_p_to_litr_met_p_col(c,j)              !!&
+!                        + this%m_p_to_litr_met_fire_col(c,j)                 &
+!                        - this%m_decomp_ppools_to_fire_vr_col(c,j,l)
+
+                elseif (l==i_cel_lit) then
+                   this%externalp_to_decomp_ppools_col(c,j,l) =              &
+                       this%externalp_to_decomp_ppools_col(c,j,l)            &
+                        + this%phenology_p_to_litr_cel_p_col(c,j)            &
+                        + this%dwt_frootp_to_litr_cel_p_col(c,j)             &
+                        + this%gap_mortality_p_to_litr_cel_p_col(c,j)        &
+                        + this%harvest_p_to_litr_cel_p_col(c,j)              !!&
+!                        + this%m_p_to_litr_cel_fire_col(c,j)                 &
+!                        - this%m_decomp_ppools_to_fire_vr_col(c,j,l)
+
+                elseif (l==i_lig_lit) then
+                   this%externalp_to_decomp_ppools_col(c,j,l) =              &
+                       this%externalp_to_decomp_ppools_col(c,j,l)            &
+                        + this%phenology_p_to_litr_lig_p_col(c,j)            &
+                        + this%dwt_frootp_to_litr_lig_p_col(c,j)             &
+                        + this%gap_mortality_p_to_litr_lig_p_col(c,j)        &
+                        + this%harvest_p_to_litr_lig_p_col(c,j)              !!&
+!                        + this%m_p_to_litr_lig_fire_col(c,j)                 &
+!                        - this%m_decomp_ppools_to_fire_vr_col(c,j,l)
+
+                ! for cwd
+                elseif (l==i_cwd) then
+                   this%externalp_to_decomp_ppools_col(c,j,l) =              &
+                       this%externalp_to_decomp_ppools_col(c,j,l)            &
+                        + this%dwt_livecrootp_to_cwdp_col(c,j)               &
+                        + this%dwt_deadcrootp_to_cwdp_col(c,j)               &
+                        + this%gap_mortality_p_to_cwdp_col(c,j)              &
+                        + this%harvest_p_to_cwdp_col(c,j)                    !!&
+!                        + this%fire_mortality_p_to_cwdp_col(c,j)
+!
+             ! for som n
+!                else
+!                   this%externalp_to_decomp_ppools_col(c,j,l) =              &
+!                       this%externalp_to_decomp_ppools_col(c,j,l)            &
+!                        - this%m_decomp_ppools_to_fire_vr_col(c,j,l)
+
+                end if
+
+             ! the following is the net changes of plant N to decompible N poools between time-step
+             ! in pflotran, decomposible N pools increments ARE from previous time-step (saved above);
+             ! while, in CLM-CN all plant N pools are updated with current N fluxes among plant and ground/soil.
+             ! therefore, when do balance check it is needed to adjust the time-lag of changes.
+                this%externalp_to_decomp_delta_col(c) =   &
+                            this%externalp_to_decomp_delta_col(c) - &
+                            this%externalp_to_decomp_ppools_col(c,j,l)*dzsoi_decomp(j)
+
+                if (abs(this%externalp_to_decomp_ppools_col(c,j,l))<=1.e-21_r8) then
+                    this%externalp_to_decomp_ppools_col(c,j,l) = 0._r8
+                end if
+
+             end do
+          end do
+       end do
+
+       ! if pflotran hydrology NOT coupled, need to do adjusting for sminp leaching for balance error checking
+       if (.not. pf_hmode) then
+          do j = 1, nlevdecomp
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%sminp_net_transport_vr_col(c,j) = 0._r8
+!                this%sminp_net_transport_vr_col(c,j) = this%sminp_leached_vr_col(c,j)
+                this%sminp_net_transport_delta_col(c) = &
+                            this%sminp_net_transport_delta_col(c) - &
+                            this%sminp_net_transport_vr_col(c,j)*dzsoi_decomp(j)
+             end do
+          end do
+       end if
+
+       ! change the sign so that it is the increments from the previous time-step (unit: g/m2/s)
+       do fc = 1, num_soilc
+          c = filter_soilc(fc)
+          this%externalp_to_decomp_delta_col(c)     = -this%externalp_to_decomp_delta_col(c)
+          this%sminp_net_transport_delta_col(c)     = -this%sminp_net_transport_delta_col(c)
+       end do
+end subroutine PSummary_interface
+!!-------------------------------------------------------------------------------------------------
 
 end module PhosphorusFluxType
 

@@ -171,7 +171,7 @@ contains
     enddo
 
     if (masterproc) then
-       write(iulog,*) 'Successfully read PFT physiological data'
+       write(iulog,*) 'Successfully read soil order dependent parameters'
        write(iulog,*)
     end if
 

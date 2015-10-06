@@ -189,7 +189,7 @@ module ch4Mod
    contains
 
      procedure, public  :: Init 
-     procedure, private :: InitAllocate 
+     procedure, private :: InitAllocate
      procedure, private :: InitHistory  
      procedure, private :: InitCold     
      procedure, public  :: Restart         

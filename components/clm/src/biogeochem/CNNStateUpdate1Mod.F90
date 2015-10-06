@@ -16,7 +16,9 @@ module CNNStateUpdate1Mod
   use CNStateType            , only : cnstate_type
   use CNNitrogenFluxType     , only : nitrogenflux_type
   use CNNitrogenStateType    , only : nitrogenstate_type
-  use PatchType              , only : pft                
+  use PatchType              , only : pft
+  !! bgc interface & pflotran:
+  use clm_varctl             , only : use_pflotran, pf_cmode
   !
   implicit none
   save
@@ -77,6 +79,11 @@ contains
          ns%seedn_col(c) = ns%seedn_col(c) - nf%dwt_seedn_to_leaf_col(c) * dt
          ns%seedn_col(c) = ns%seedn_col(c) - nf%dwt_seedn_to_deadstem_col(c) * dt
       end do
+
+      !------------------------------------------------------------------
+      ! if coupled with pflotran, the following updates are NOT needed
+      if (.not.(use_pflotran .and. pf_cmode)) then
+      !------------------------------------------------------------------
 
       do j = 1, nlevdecomp
          do fc = 1,num_soilc
@@ -262,6 +269,8 @@ contains
          end do
 
       end if
+      endif ! if (.not.(use_pflotran .and. pf_cmode))
+      !------------------------------------------------------------------
 
       ! patch loop
 

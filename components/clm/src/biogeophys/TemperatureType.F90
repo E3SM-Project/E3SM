@@ -599,7 +599,6 @@ contains
                end if
             else
                this%t_soisno_col(c,1:nlevgrnd) = 274._r8
-
             endif
          endif
       end do

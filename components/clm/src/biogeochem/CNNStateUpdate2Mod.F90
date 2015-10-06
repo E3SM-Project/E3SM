@@ -14,6 +14,8 @@ module CNNStateUpdate2Mod
   use CNNitrogenFLuxType  , only : nitrogenflux_type
   use PatchType           , only : pft
   use pftvarcon           , only : npcropmin
+  !! bgc interface & pflotran:
+  use clm_varctl          , only : use_pflotran, pf_cmode
   !
   implicit none
   save
@@ -58,6 +60,11 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
 
+      !------------------------------------------------------------------
+      ! if coupled with pflotran, the following updates are NOT needed
+      if (.not.(use_pflotran .and. pf_cmode)) then
+      !------------------------------------------------------------------
+
       ! column-level nitrogen fluxes from gap-phase mortality
 
       do j = 1, nlevdecomp
@@ -74,7 +81,8 @@ contains
                  ns%decomp_npools_vr_col(c,j,i_cwd)     + nf%gap_mortality_n_to_cwdn_col(c,j)       * dt
          end do
       end do
-
+      endif ! if (.not.(use_pflotran .and. pf_cmode))
+      !------------------------------------------------------------------
 
       ! patch -level nitrogen fluxes from gap-phase mortality
 
@@ -145,6 +153,11 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
 
+      !------------------------------------------------------------------
+      ! if coupled with pflotran, the following updates are NOT needed
+      if (.not.(use_pflotran .and. pf_cmode)) then
+      !------------------------------------------------------------------
+
       ! column-level nitrogen fluxes from harvest mortality
 
       do j = 1,nlevdecomp
@@ -160,6 +173,8 @@ contains
                  ns%decomp_npools_vr_col(c,j,i_cwd)     + nf%harvest_n_to_cwdn_col(c,j)       * dt
          end do
       end do
+      endif ! if (.not.(use_pflotran .and. pf_cmode))
+      !------------------------------------------------------------------
 
       ! patch-level nitrogen fluxes from harvest mortality
 

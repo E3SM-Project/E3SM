@@ -17,7 +17,9 @@ module CNCStateUpdate1Mod
   use CNStateType            , only : cnstate_type
   use CNDecompCascadeConType , only : decomp_cascade_con
   use EcophysConType         , only : ecophyscon
-  use PatchType              , only : pft                
+  use PatchType              , only : pft
+  ! bgc interface & pflotran:
+  use clm_varctl             , only : use_pflotran, pf_cmode
   !
   implicit none
   save
@@ -121,6 +123,10 @@ contains
          cs%seedc_col(c) = cs%seedc_col(c) - cf%dwt_seedc_to_deadstem_col(c) * dt
       end do
 
+      !------------------------------------------------------------------
+      ! if coupled with pflotran, the following updates are NOT needed
+      if (.not.(use_pflotran .and. pf_cmode)) then
+      !------------------------------------------------------------------
       ! plant to litter fluxes
       do j = 1,nlevdecomp
          ! column loop
@@ -163,6 +169,9 @@ contains
             end do
          end if
       end do
+
+      endif ! if (.not.(use_pflotran .and. pf_cmode))
+      !------------------------------------------------------------------
 
       ! patch loop
       do fp = 1,num_soilp

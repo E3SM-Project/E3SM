@@ -14,6 +14,8 @@ module CNCStateUpdate2Mod
   use CNCarbonFluxType , only : carbonflux_type
   use PatchType        , only : pft
   use pftvarcon        , only : npcropmin
+  ! bgc interface & pflotran:
+  use clm_varctl       , only : use_pflotran, pf_cmode
   !
   implicit none
   save
@@ -56,6 +58,10 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
 
+      !------------------------------------------------------------------
+      ! if coupled with pflotran, the following updates are NOT needed
+      if (.not.(use_pflotran .and. pf_cmode)) then
+      !------------------------------------------------------------------
       ! column level carbon fluxes from gap-phase mortality
       do j = 1,nlevdecomp
          ! column loop
@@ -74,6 +80,8 @@ contains
 
          end do
       end do
+      endif ! if (.not.(use_pflotran .and. pf_cmode))
+      !------------------------------------------------------------------
 
       ! patch loop
       do fp = 1,num_soilp
@@ -141,6 +149,10 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
 
+      !------------------------------------------------------------------
+      ! if coupled with pflotran, the following updates are NOT needed
+      if (.not.(use_pflotran .and. pf_cmode)) then
+      !------------------------------------------------------------------
       ! column level carbon fluxes from harvest mortality
       do j = 1, nlevdecomp
          ! column loop
@@ -160,6 +172,8 @@ contains
             ! wood to product pools - states updated in CNWoodProducts()
          end do
       end do
+      endif ! if (.not.(use_pflotran .and. pf_cmode))
+      !------------------------------------------------------------------
 
       ! patch loop
       do fp = 1,num_soilp

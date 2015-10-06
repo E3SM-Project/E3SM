@@ -17,6 +17,8 @@ module PStateUpdate3Mod
   use PhosphorusStateType , only : phosphorusstate_type
   use PhosphorusFLuxType  , only : phosphorusflux_type
   use soilorder_varcon    , only : smax,ks_sorption
+  !! bgc interface & pflotran:
+  use clm_varctl          , only : use_pflotran, pf_cmode
   !
   implicit none
   save
@@ -70,7 +72,6 @@ contains
 
       ! set time steps
       dt = real( get_step_size(), r8 )
-
 
       !! immobilization/mineralization in litter-to-SOM and SOM-to-SOM fluxes
       !! - X.YANG
@@ -171,6 +172,7 @@ contains
             end do
          end do
       end do
+
 
       ! patch-level phosphorus fluxes 
 
