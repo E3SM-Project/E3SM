@@ -822,9 +822,9 @@ contains
          err = ior(err,err_tmp)
 
          itimestep = itimestep + 1
+
          write(stderrUnit,*) 'Starting timestep number ', iTimeStep
          write(stdoutUnit,*) 'Starting timestep number ', iTimeStep
-
 
          ! ===
          ! === Perform Timestep
@@ -833,6 +833,9 @@ contains
 
          call li_timestep(domain, err_tmp)
          err = ior(err,err_tmp)
+
+         currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, err_tmp)
+         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
 
          ! Write statistics at designated interval
          if (config_stats_interval > 0) then
@@ -866,13 +869,7 @@ contains
          ! === Write Output and/or Restart, if needed
          ! ===
          call mpas_timer_start("write output")
-         ! Update the restart_timestamp file with the new time, if needed.
-         if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
-            open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
-            write(22, *) timeStamp
-            close(22)
-         end if
-         err = ior(err, err_tmp)
+
          ! These calls will handle ALL output streams that need writing.
          ! [Could add them individually, as the ocean does, if some other actions are needed when a
          ! specific alarm is ringing (e.g., global stats calculated only when output stream gets written)]
