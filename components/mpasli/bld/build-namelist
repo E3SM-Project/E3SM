@@ -141,6 +141,7 @@ $cfgdir         = $opts{'cfg_dir'};
 # Validate some of the commandline option values.
 validate_options("commandline", \%opts);
 
+
 # build config_cache.xml file (needed below)
 my $config_cache = "${CASEBUILD}/mpasliconf/config_cache.xml";
 my  $fh = new IO::File;
@@ -368,6 +369,7 @@ my $RUN_STARTDATE          = "$xmlvars{'RUN_STARTDATE'}";
 my $START_TOD              = "$xmlvars{'START_TOD'}";
 my $RUN_REFDATE            = "$xmlvars{'RUN_REFDATE'}";
 my $CONTINUE_RUN           = "$xmlvars{'CONTINUE_RUN'}";
+my $MPASLI_USE_ALBANY      = "$xmlvars{'MPASLI_USE_ALBANY'}";
 
 my $output_r = "./${CASE}.mpasli.r";
 my $output_h = "./${CASE}.mpasli.h";
@@ -394,6 +396,9 @@ if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
 #-----------------------------------------------------------------------------------------------
 # Determine namelist
 #-----------------------------------------------------------------------------------------------
+
+if ($MPASLI_USE_ALBANY eq 'TRUE') {
+    print "Setting up MPASLI namelist to use Albany.\n"; }
 
 ####################################
 # namelist group: time_management  #
@@ -458,8 +463,8 @@ add_default($nl, 'config_always_compute_fem_grid');
 # namelist group: velocity_solver  #
 ####################################
 
-add_default($nl, 'config_velocity_solver');
 add_default($nl, 'config_sia_tangent_slope_calculation');
+add_default($nl, 'config_velocity_solver', 'mpasli_use_albany'=>"$MPASLI_USE_ALBANY");
 add_default($nl, 'config_flowParamA_calculation');
 add_default($nl, 'config_do_velocity_reconstruction_for_external_dycore');
 

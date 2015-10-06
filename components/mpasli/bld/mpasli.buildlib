@@ -24,9 +24,10 @@ my $LIBROOT      = `./xmlquery LIBROOT	    -value`;
 my $GMAKE_J      = `./xmlquery GMAKE_J	    -value`;
 my $GMAKE        = `./xmlquery GMAKE	    -value`;
 my $MACH         = `./xmlquery MACH         -value`;
+my $MPASLI_USE_ALBANY = `./xmlquery MPASLI_USE_ALBANY -value`;
 
 #---------------------------------------------------------------------------
-# Copy MPAS-O source
+# Copy MPASLI source
 #---------------------------------------------------------------------------
 
 my $srccpy = "cp -fpR $CCSMROOT/components/$component/model/src/* $OBJROOT/$component_dir/source/.";
@@ -47,6 +48,15 @@ $bldcmd .= '"';
 if ( $MACH eq "edison" ) {
 	$bldcmd .= ' TOOL_TARGET_ARCH="-target-cpu=sandybridge"';
 }
+
+# Check for Albany build
+if ( $MPASLI_USE_ALBANY eq "TRUE" ) {
+        print "Building MPASLI with Albany support.\n";
+        $bldcmd .= ' ALBANY=true';
+        # Note MPAS_EXTERNAL_LIBS is not needed since ACME is doing the linking!
+}
+
+print "Compiling MPASLI with this command: $bldcmd \n";
 
 system($bldcmd) == 0 or die "ERROR: $component.buildlib $bldcmd failed: $?\n";
 
