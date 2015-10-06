@@ -49,6 +49,16 @@
     <DOUT_S>FALSE</DOUT_S> 
   </test>
 
+  <test NAME="ERR">
+    <DESC>exact restart from startup with resubmit, default 4 days + 3 days</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>7</STOP_N>
+    <DOUT_S>TRUE</DOUT_S> 
+    <RESUBMIT>1</RESUBMIT>
+  </test>
+
   <test NAME="ERT">
     <DESC>exact restart from startup, default 2 month + 1 month (ERS with info dbug = 1)</DESC>
     <INFO_DBUG>1</INFO_DBUG>

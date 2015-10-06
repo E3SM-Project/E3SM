@@ -13,6 +13,13 @@ push(@INC, $perl5lib);
 require Config::SetupTools;
 require Batch::BatchUtils;
 use Cwd;
+require Log::Log4perl;
+
+my $level = Log::Log4perl::Level::to_priority("DEBUG");
+Log::Log4perl->easy_init({level=>$level,
+			  layout=>'%m%n'});
+
+my $logger = Log::Log4perl::get_logger();
 
 #------------------------------------------------------------------------------
 # PE Layout Documentation:
@@ -36,8 +43,8 @@ sub resubmitCheck()
 	my $cwd = getcwd;
 	chdir $config{CASEROOT};
 	my $resubmitcommand = "$submitscript -resubmit -scriptname $config{'CASE'}.st_archive";
-	print "running resubmit check $resubmitcommand\n";
-	qx($resubmitcommand) or warn "could not run CESM submit script, $! $?";
+	$logger->debug( "running resubmit check $resubmitcommand");
+	qx($resubmitcommand) or $logger->warn("could not run CESM submit script, $! $?");
 	chdir $cwd;
     }
 }

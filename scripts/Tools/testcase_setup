@@ -194,7 +194,7 @@ my $testcase_interp = <<END_INTERP;
     # (Don't) Remove test status files! create_test puts the namelist comparision 
     # status and output into these files, respectively.  
     #======================================================================
-    setenv CASEROOT            = $caseroot
+    setenv CASEROOT             $caseroot
     set CASE			=  $case
     set CASEBASEID		=  $casebaseid
     set TEST_TESTID		=  $test_testid 
@@ -247,23 +247,25 @@ my $testcase_begin = <<'END_BEGIN';
     #-------------------------------------------------------------
 
     unset IOP_ON
-
-    # Reset all previous settings: obtain copy of original env_run.xml file
-    if ( -e env_run.orig )  then
-       cp env_run.orig env_run.xml
-    else
-       cp env_run.xml env_run.orig
-    endif
-
-    if ( $?IOP_ON ) then
-       set add_iop = "-add_iop $IOP_TYPE"
-       set msg = "iop_${IOP_TYPE}_test"
-    else
-       set add_iop = ''
-       set testname = `./xmlquery TESTCASE -value`
-       set msg = "${testname}_test"
-    endif
-
+    set testname = `./xmlquery TESTCASE -value`
+    set resubmit =  `./xmlquery RESUBMIT -value`
+    set add_iop = ''
+    set msg = "${testname}_test"
+    if( $testname == "ERR" && $resubmit <= 0 ) then
+       echo "Second pass of ERR test"
+    else    
+      # Reset all previous settings: obtain copy of original env_run.xml file
+      if ( -e env_run.orig )  then
+        cp env_run.orig env_run.xml
+      else
+         cp env_run.xml env_run.orig
+      endif
+      set resubmit =  `./xmlquery RESUBMIT -value`
+      if ( $?IOP_ON ) then
+         set add_iop = "-add_iop $IOP_TYPE"
+         set msg = "iop_${IOP_TYPE}_test"
+      endif
+   endif
 END_BEGIN
 
 print $testfh $testcase_begin;
