@@ -717,8 +717,11 @@ contains
 
        ! compute coefficients needed for reconstructing tracer gradients at cell centers
        ! Note: This field gets a halo update outside the block loop.
-       !TODO - These subroutines assume unrotated vectors. How do we get them to use the rotated vectors?
-       !       One possibility would be to pass an optional rotation argument; if true, then point to rotated vectors.
+       ! Note: The 3D gradient vector that is computed using these coefficients lives in
+       !       Cartesian x-y-z space. If working on a rotated sea ice mesh, a rotation is needed
+       !       before transforming to the local tangent plane.  This is done in the compute_gradient
+       !       subroutines below.
+
        call mpas_rbf_interp_initialize(meshPool)
        call mpas_init_reconstruct(meshPool)
        call mpas_pool_get_array(meshPool, 'coeffs_reconstruct', coeffsReconstruct)
