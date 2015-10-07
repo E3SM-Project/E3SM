@@ -175,6 +175,11 @@ contains
          pkgColumnTracerPondsActive, &
          pkgColumnTracerLidThicknessActive, &
          pkgColumnTracerAerosolsActive
+ 
+    logical, pointer :: &
+         config_use_level_meltponds
+
+    type (mpas_pool_type), pointer :: configPool
 
     type(tracer_type), pointer :: thisTracer  ! diagnostic only
 
@@ -208,8 +213,8 @@ contains
     call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerLidThicknessActive', pkgColumnTracerLidThicknessActive)
     call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerAerosolsActive',     pkgColumnTracerAerosolsActive)
 
-    !TODO - Confirm that parent tracers are correct
-    !       Confirm that this is the best way to get the package logic
+    configPool => domain % blocklist % configs
+    call MPAS_pool_get_config(configPool, "config_use_level_meltponds", config_use_level_meltponds)
 
     if (pkgColumnTracerIceAgeActive) then
        call add_tracer_to_tracer_linked_list(tracersHead, 'iceAge',               'iceVolumeCategory')
@@ -225,7 +230,11 @@ contains
     endif
 
     if (pkgColumnTracerPondsActive) then
-       call add_tracer_to_tracer_linked_list(tracersHead, 'pondArea',             'levelIceArea')
+       if (config_use_level_meltponds) then
+          call add_tracer_to_tracer_linked_list(tracersHead, 'pondArea',             'levelIceArea')
+       else
+          call add_tracer_to_tracer_linked_list(tracersHead, 'pondArea',             'iceAreaCategory')
+       endif
        call add_tracer_to_tracer_linked_list(tracersHead, 'pondDepth',            'pondArea')
     endif
 
