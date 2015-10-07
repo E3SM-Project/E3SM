@@ -27,10 +27,17 @@ use Data::Dumper;
 use XML::LibXML;
 use Exporter qw(import);
 use lib '.';
-require Task::TaskMaker;
-
+use Task::TaskMaker;
+use Config::envBatch;
 #my $cesmRunSuffix = '$config{\'EXEROOT\'}/cesm.exe >> $cesm.log.$LID 2>&1';
 my @requiredargs = qw/caseroot case machroot machine cimeroot/;
+use Log::Log4perl qw(get_logger);
+
+my $logger;
+
+BEGIN{
+    $logger = get_logger();
+}
 
 #==============================================================================
 #  Class constructor.  We need to know where in the filesystem we are, 
@@ -49,6 +56,7 @@ sub new
 	    machroot    => $params{'machroot'}  || ".",
 	    mpilib      => $params{'mpilib'}    || undef,
             threaded    => $params{'threaded'}  || undef,
+	    job => $params{job} || undef,
 	};
 	$self->{'srcroot'} = $self->{'cimeroot'} if defined $self->{'cimeroot'};
 
@@ -69,7 +77,10 @@ sub new
 	# we need ProjectTools. 
 	my $cimeroot = "$self->{'cimeroot'}";
 	push(@INC, "$cimeroot/utils/per5lib");
-	require Project::ProjectTools;
+
+	$self->{envBatch} = Config::envBatch->new();
+	$self->{envBatch}->read("$self->{caseroot}/env_batch.xml");
+
 	$self->{'cwd'} = Cwd::getcwd();
 	bless $self, $class;
 	return $self;
@@ -174,6 +185,7 @@ sub makeBatchScript()
 	
 	$self->getBatchSystemTypeForMachine();
 	$self->setTaskInfo();
+
 	$self->setQueue();
 	$self->setWallTime();
 	$self->setProject();
@@ -217,7 +229,7 @@ sub getBatchDirectives()
 	    $self->setQueue();
 	    $self->setWallTime();
 	    $self->setProject();
-		$self->setBatchDirectives();
+	    $self->setBatchDirectives();
 	}
 	return $self->{'batchdirectives'};
 
@@ -231,12 +243,15 @@ sub getField()
 {
     my $self = shift;
     my $fieldname = shift;
+
     $self->getBatchSystemTypeForMachine();
     $self->setTaskInfo();
     $self->setQueue();
     $self->setWallTime();
     $self->setProject();
     my $field = $self->{$fieldname};
+
+
     if(defined $field)
     {
         return $field;
@@ -374,12 +389,35 @@ sub setTaskInfo()
 	}
 }
 
+
+sub set
+{
+    my ($self, $hash) = @_;
+
+    foreach (keys %$hash){
+	$self->{$_} = $hash->{$_};
+    }
+
+}
+
+
+
 #==============================================================================
 # setwalltime must be called before setqueue, we need the chosen walltime before setting the queue. 
 #==============================================================================
 sub setWallTime()
 {
 	my $self = shift;
+	# Get the wallclock time from env_batch.xml if its defined there
+	# otherwise get the default from config_machines.xml
+	# and set it in env_batch.xml
+
+	if(defined $self->{envBatch}{$self->{job}}{JOB_WALLCLOCK_TIME}){
+	    $self->{wall_time} = $self->{envBatch}{$self->{job}}{JOB_WALLCLOCK_TIME};
+	    return;
+	}
+
+
 	$self->getBatchConfigParser();
 	$self->getConfigMachinesParser();
 	$self->getEstCost();
@@ -422,7 +460,7 @@ sub setWallTime()
 		last if($wtmax[$i] > $wt[$i]);
 	    }
 	}
-
+	$self->{envBatch}->set("JOB_WALLCLOCK_TIME",$self->{job},$self->{wall_time});
 }
 
 #==============================================================================
@@ -431,31 +469,13 @@ sub setWallTime()
 sub setProject()
 {
 	my $self = shift;
-    my $envrunfile = "$self->{'caseroot'}/env_case.xml";
- 	my $envrunparser = XML::LibXML->new(no_blanks => 1);
-    my $envrunxml = $envrunparser->parse_file($envrunfile);
-	my @projelems = $envrunxml->findnodes("//entry[\@id=\'PROJECT\']");
-	my $project; 
 	
-	foreach my $projelem(@projelems)
-	{
-		$project = $projelem->getAttribute('value');
+	if(defined $self->{job}){
+	    if($self->{envBatch}{$self->{job}}{PROJECT_REQUIRED} eq "TRUE"){
+		$self->{project} = $self->{envBatch}{$self->{job}}{PROJECT};
+	    }
 	}
-	if(defined $project)
-	{
-		$self->{'project'} = $project;
-		$self->{'account'} = $project;
-	}
-	if($project =~ /UNSET/)
-	{
-		$self->{'project'} = undef;
-		$self->{'account'} = undef;
-	}
-	elsif(! defined $project)
-	{
-		$self->{'project'} = undef;
-		$self->{'account'} = undef;
-	}
+
 }
 
 #==============================================================================
@@ -476,6 +496,19 @@ sub getEstCost()
 sub setQueue()
 {
 	my $self = shift;
+	
+	# Get the queue from env_batch.xml if its defined there
+	# otherwise get the default from config_machines.xml
+	# and set it in env_batch.xml
+
+
+	if(defined $self->{envBatch}{$self->{job}}{JOB_QUEUE}){
+	    $self->{queue} = $self->{envBatch}{$self->{job}}{JOB_QUEUE};
+	    return;
+	}
+
+
+
 	#get the batch config parser, and the estimated cost of the run. 
 	$self->getBatchConfigParser();	
 	$self->getConfigMachinesParser();
@@ -513,6 +546,9 @@ sub setQueue()
 			$self->{'queue'} = $qelem->textContent();
 		}
 	}
+	$self->{envBatch}->set("JOB_QUEUE",$self->{job},$self->{queue});
+
+
 }
 
 #==============================================================================

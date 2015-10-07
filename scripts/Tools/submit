@@ -8,7 +8,7 @@ my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml");
 my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]"); 
 my $cimeroot = $nodes[0]->getAttribute('value');
 my %opts=(loglevel=>"INFO");
-
+$ENV{CIMEROOT}=$cimeroot;
 unshift @INC, "$cimeroot/utils/perl5lib";
 require Log::Log4perl;
 require Config::SetupTools;
@@ -28,6 +28,7 @@ sub opts()
 sub main
 {
     &opts();
+
     my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
     Log::Log4perl->easy_init({level=>$level,
 			      layout=>'%m%n'});
@@ -48,18 +49,14 @@ sub main
     # Check the case only once..
     if(!$opts{resubmit}){
 	$logger->info( "checking the case..");
-	open(my $CHECKCASE, "-|", "./check_case");
-	while(<$CHECKCASE>)
-	{
-	    $logger->info( "$_");
-	}
-	close $CHECKCASE;
+	qx(./check_case -loglevel $opts{loglevel});
 	if($?)
 	{
 	    $logger->error( "check_case failed");
 	    exit(-1);
 	}
     }
+
     my $moduleloader = Module::ModuleLoader->new(machine  => $machine, 
 						 compiler => $compiler, 
 						 mpilib   => $mpilib, 
@@ -69,9 +66,19 @@ sub main
 						 model    => $model);
 
     $moduleloader->moduleInit();
+
     $moduleloader->findModulesForCase();
     $moduleloader->loadModules();
 
+
+
+    my $job;
+    if(defined $config{TESTCASE}){
+	$job = "test";
+    }else{
+	$job = "run";
+    }
+    $logger->debug( "Job = $job");
     my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case	   => $case, 
 							      caseconfig   => \%config, 
 							      caseroot	   => $caseroot, 
@@ -79,9 +86,10 @@ sub main
 							      compiler	   => $compiler, 
 							      machine	   => $machine, 
 							      machroot	   => $machroot, 
-							      mpilib	   => $mpilib); 
+							      mpilib	   => $mpilib,
+	                                                      job                => $job); 
     
-
+    
     if(defined $opts{'resubmit'})
     {
         if(! defined $opts{'scriptname'})
@@ -119,13 +127,18 @@ sub check_DA_settings
 sub doResubmit()
 {
     my $scriptname = shift;
+    my $job;
+# This gets the extension (everything after the last . ) in $scriptname
+    $scriptname =~ /\.([^\.]+)$/;
+    $job = $1;
     my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case => $config{'CASE'},
                                                               caseconfig => \%config,
                                                               cimeroot => $config{'CIMEROOT'},
                                                               compiler => $config{'COMPILER'},
                                                               machine =>  $config{'MACH'},
                                                               machroot => $config{'MACHDIR'},
-                                                              mpilib   => $config{'MPILIB'} );
+                                                              mpilib   => $config{'MPILIB'},
+	                                                      job => $job);
     
     $batchutils->doResubmit($scriptname);
 }

@@ -46,18 +46,20 @@
     <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
     <depend_pattern>^\#BSUB\s+-w.+\((\d+)\)</depend_pattern>
     <depend_string> -w "done(jobid)"</depend_string>
+    <submit_args>
+      <arg flag="-q" name="queue"/>
+      <arg flag="-W" name="wall_time"/>
+      <arg flag="-P" name="project"/>
+    </submit_args>
     <directives>
       <directive                       > -n {{ totaltasks }} </directive>
       <directive                       > -R "span[ptile={{ ptile }}]"</directive>
-      <directive                       > -q {{ queue }} </directive>
       <directive                       > -N  </directive>
       <directive default="poe"         > -a {{ poe }} </directive>
       <directive                       > -x {{ queue_exclusive }} </directive>
       <directive default="cesm.stdout" > -o {{ cesm_stdout }}.%J  </directive>
       <directive default="cesm.stderr" > -e {{ cesm_stderr }}.%J  </directive>
       <directive                       > -J {{ job_id }} </directive>
-      <directive                       > -W {{ wall_time }} </directive>
-      <directive                       > -P {{ account }}  </directive>
     </directives>
   </batch_system>
 
@@ -67,6 +69,11 @@
     <batch_directive>#PBS</batch_directive>
     <jobid_pattern>^(\d+)\.</jobid_pattern>
     <depend_string> -W depend=afterok:jobid</depend_string>
+    <submit_args>
+      <arg flag="-q" name="queue"/>
+      <arg flag="-l walltime=" name="wall_time"/>
+      <arg flag="-A" name="project"/>
+    </submit_args>
     <directives>
       <directive> -N {{ job_id }}</directive>
       <directive> -q {{ queue }}</directive>
