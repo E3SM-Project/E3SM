@@ -93,6 +93,7 @@ module glc_comp_mct
   integer :: itimestep, &  ! time step number for MPAS
              glc_cpl_dt    ! length of coupling interval in seconds - set by coupler/ESMF
   character (len=*), parameter :: coupleAlarmID = 'coupling'  ! the MPAS alarm for coupling intervals
+  integer, save :: glcStdErrUnit, glcStdOutUnit
 
 !=======================================================================
 
@@ -171,6 +172,8 @@ contains
     type (MPAS_Time_type) :: start_time
     type (MPAS_Time_type) :: ref_time
     type (MPAS_TimeInterval_type) :: filename_interval
+    type (MPAS_TimeInterval_type) :: denInterval, remInterval, zeroInterval
+    integer :: numDivs
     character(len=StrKIND) :: start_timestamp
     character(len=StrKIND) :: iotype
     logical :: streamsExists
@@ -279,9 +282,9 @@ contains
     io_system => shr_pio_getiosys(glcid)
 
     pio_iotype = shr_pio_getiotype(glcid)
-    call MPAS_io_set_iotype(pio_iotype)
+    call MPAS_io_set_iotype(domain % iocontext, pio_iotype)
 
- stdout_shr = shr_file_getUnit()
+    stdout_shr = shr_file_getUnit()
 #ifndef MPAS_DEBUG
     if ( iam /= 0 ) then
        open(stdout_shr, file='/dev/null', position='APPEND')
@@ -301,8 +304,11 @@ contains
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
     call shr_file_setLogUnit (stdout_shr)
+    glcStdErrUnit = stdout_shr
+    glcStdOutUnit = stdout_shr
 
-    write(stderrUnit,*) '=== Beginning glc_init_mct.'
+    ! Write to glcStdErrUnit here, because stderrUnit is not correctly set until the mpas_framework_init_phase1 call
+    write(glcStdErrUnit,*) '=== Beginning glc_init_mct.'
 
     call mpas_framework_init_phase1(domain % dminfo, mpicom_g, stdoutUnit_in=stdout_shr, stderrUnit_in=stdout_shr)
 
@@ -329,7 +335,7 @@ contains
     end if
 
     ! Setup packages (i.e. determine if they should be on or off)
-    ierr = domain % core % setup_packages(domain % configs, domain % packages)
+    ierr = domain % core % setup_packages(domain % configs, domain % packages, domain % iocontext)
     if ( ierr /= 0 ) then
        call mpas_dmpar_global_abort('ERROR: Package setup failed for core ' // trim(domain % core % coreName))
     end if
@@ -441,7 +447,7 @@ contains
     !
     ! Set up run-time streams
     !
-    call MPAS_stream_mgr_init(domain % streamManager, domain % clock, domain % blocklist % allFields, domain % packages, domain % blocklist % allStructs)
+    call MPAS_stream_mgr_init(domain % streamManager, domain % ioContext, domain % clock, domain % blocklist % allFields, domain % packages, domain % blocklist % allStructs)
 
     call add_stream_attributes(domain % streamManager, domain)
 
@@ -549,8 +555,47 @@ contains
     call seq_timemgr_EClockGetData(EClock, dtime=glc_cpl_dt)
     ! convert this dt to a time interval
     call mpas_set_timeInterval(alarmTimeStep, S=glc_cpl_dt, ierr=err_tmp)
+    call mpas_get_timeInterval(alarmTimeStep, timeString=coupleTimeStamp, ierr=ierr)
     ierr = ior(ierr,err_tmp)
     write (stderrUnit,*) 'Applying GLC coupling dt (s) of: ', glc_cpl_dt
+
+    ! Verify the mpas time step fits into a coupling interval
+    call mpas_pool_get_config(domain % configs, 'config_dt', tempCharConfig)
+    call mpas_set_timeInterval(denInterval, timeString=tempCharConfig, ierr=ierr)
+    call mpas_set_timeInterval(zeroInterval, S=0, ierr=ierr)
+    call mpas_interval_division(start_time, alarmTimeStep, denInterval, numDivs, remInterval)
+
+    ierr = 0
+
+    if ( alarmTimeStep < denInterval ) then
+       ierr = 1
+    end if
+    call mpas_dmpar_max_int(domain % dminfo, ierr, ierr)
+
+    if ( ierr == 1 ) then
+       write(stderrUnit, *) ' ERROR: Coupling interval is: ', trim(coupleTimeStamp)
+       write(stderrUnit, *) '        GLC Model time step is: ', trim(tempCharConfig)
+
+       write(stderrUnit, *) '        The model time step cannot be longer then the coupling interval'
+       call mpas_dmpar_global_abort('ERROR: Model is not properly configured for coupling interval.')
+    end if
+
+    if ( remInterval > zeroInterval ) then
+       ierr = 1
+    end if
+
+    call mpas_dmpar_max_int(domain % dminfo, ierr, ierr)
+
+    if ( ierr == 1 ) then
+       write(stderrUnit, *) ' ERROR: Coupling interval is: ', trim(coupleTimeStamp)
+       write(stderrUnit, *) '        GLC Model time step is: ', trim(tempCharConfig)
+
+       write(stderrUnit, *) '        These are not synchronized, so time steps'
+       write(stderrUnit, *) '        will not match to coupling interval boundaries.'
+       write(stderrUnit, *) '        Please reconfigure either the coupling interval, '
+       write(stderrUnit, *) '        or the time step.'
+       call mpas_dmpar_global_abort('ERROR: Model is not properly configured for coupling interval.')
+    end if
 
     ! set coupling alarm
     alarmStartTime = currTime
@@ -574,6 +619,55 @@ contains
     end if
 
     !call mpas_print_alarm(domain % clock, couplealarmID, ierr) ! DEBUG to see alarm details
+
+!-----------------------------------------------------------------------
+!
+!   get initial state from driver
+!
+!-----------------------------------------------------------------------
+
+! GLC CURRENTLY DOES NOT REQUIRE IMPORT OF THE INITIAL STATE
+!    call glc_import_mct(x2g_g, errorCode)
+!    if (errorCode /= 0) then
+!       call mpas_dmpar_global_abort('ERROR in glc_import_mct')
+!    endif
+
+! MPAS-O builds forcing arrays, which we don't have
+!    ! Build forcing arrays.
+!    block_ptr => domain % blocklist
+!    do while(associated(block_ptr))
+!        call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+!        call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+!        call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+!        call ocn_forcing_build_arrays(meshPool, statePool, forcingPool, ierr, 1)
+!        call ocn_forcing_build_transmission_array(meshPool, statePool, forcingPool, ierr, 1)
+!        block_ptr => block_ptr % next
+!    end do
+
+!-----------------------------------------------------------------------
+!
+!   Calculate initial state in MPASLI (velocity, upperSurface, masks, etc.)
+!
+!-----------------------------------------------------------------------
+    err_tmp = li_core_initial_solve(domain)
+    ierr = ior(ierr,err_tmp)  ! li_core_finalize would abort if there was an error, but being safe.
+
+
+    itimestep = 0  ! Initialize this module, save counter variable
+
+! MPAS-O handles an average pool here, which we don't have
+!    block_ptr => domain % blocklist
+!    do while(associated(block_ptr))
+!      call mpas_pool_get_subpool(block_ptr % structs, 'average', averagePool)
+!      call ocn_time_average_init(averagePool)
+!      block_ptr => block_ptr % next
+!    end do
+
+!    call ocn_analysis_compute_startup(domain, stream_manager, ierr) 
+
+    ! Reset all output alarms, to prevent initial time step from writing any output, unless it's ringing.
+    call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+    call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=ierr)
 
 !-----------------------------------------------------------------------
 !
@@ -605,48 +699,6 @@ contains
 
     call seq_infodata_PutData( infodata, glc_prognostic=.true.)
 
-!-----------------------------------------------------------------------
-!
-!   get initial state from driver
-!
-!-----------------------------------------------------------------------
-
-    call glc_import_mct(x2g_g % rAttr, errorCode)
-    if (errorCode /= 0) then
-       call mpas_dmpar_global_abort('ERROR in glc_import_mct')
-    endif
-
-! MPAS-O builds forcing arrays, which we don't have
-!    ! Build forcing arrays.
-!    block_ptr => domain % blocklist
-!    do while(associated(block_ptr))
-!        call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-!        call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-!        call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-!        call ocn_forcing_build_arrays(meshPool, statePool, forcingPool, ierr, 1)
-!        call ocn_forcing_build_transmission_array(meshPool, statePool, forcingPool, ierr, 1)
-!        block_ptr => block_ptr % next
-!    end do
-
-    currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
-    call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
-    write(stderrUnit,*) 'Initial time ', trim(timeStamp)
-
-    itimestep = 0
-
-! MPAS-O handles an average pool here, which we don't have
-!    block_ptr => domain % blocklist
-!    do while(associated(block_ptr))
-!      call mpas_pool_get_subpool(block_ptr % structs, 'average', averagePool)
-!      call ocn_time_average_init(averagePool)
-!      block_ptr => block_ptr % next
-!    end do
-
-!    call ocn_analysis_compute_startup(domain, stream_manager, ierr) 
-
-    ! Reset all output alarms, to prevent initial time step from writing any output, unless it's ringing.
-    call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
-    call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=ierr)
 
 !----------------------------------------------------------------------------
 !
@@ -712,7 +764,6 @@ contains
       integer :: shrloglev, shrlogunit
 
 ! Variable related to MPASLI
-      integer :: itimestep
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool
       integer, pointer :: config_stats_interval   !< interval (number oftimesteps) for writing stats
@@ -724,6 +775,9 @@ contains
       integer :: err, err_tmp, globalErr
       logical :: solveVelo
       integer, dimension(:), pointer :: vertexMask
+
+      call mpas_io_units_set_stdout(glcStdOutUnit)
+      call mpas_io_units_set_stderr(glcStdErrUnit)
 
       err = 0
       err_tmp = 0
@@ -753,16 +807,6 @@ contains
       call glc_import_mct(x2g_g % rAttr, err_tmp)
       err = ior(err,err_tmp)
 
-      ! Handle writing initial state
-      call mpas_pool_get_config(domain % configs, 'config_write_output_on_startup', config_write_output_on_startup)
-      if (config_write_output_on_startup) then
-              call mpas_stream_mgr_write(domain % streamManager, 'output', forceWriteNow=.true., ierr=err_tmp)
-          err = ior(err,err_tmp)
-
-          ! Reset config to false, so we don't write the state every coupling interval.
-          config_write_output_on_startup = .false.
-      endif
-
       ! Initialize time average fields
 !      block_ptr => domain % blocklist
 !      do while(associated(block_ptr))
@@ -771,7 +815,6 @@ contains
 !        block_ptr => block_ptr % next
 !      end do
 
-      itimestep = 0  ! We may want to initialize this in init and make it a module, save variable
 
       ! During integration, time level 1 stores the model state to be solved.
       ! For a variables with a second time level, it is the previous value.
@@ -779,9 +822,9 @@ contains
          err = ior(err,err_tmp)
 
          itimestep = itimestep + 1
+
          write(stderrUnit,*) 'Starting timestep number ', iTimeStep
          write(stdoutUnit,*) 'Starting timestep number ', iTimeStep
-
 
          ! ===
          ! === Perform Timestep
@@ -790,6 +833,9 @@ contains
 
          call li_timestep(domain, err_tmp)
          err = ior(err,err_tmp)
+
+         currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, err_tmp)
+         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
 
          ! Write statistics at designated interval
          if (config_stats_interval > 0) then
@@ -823,13 +869,7 @@ contains
          ! === Write Output and/or Restart, if needed
          ! ===
          call mpas_timer_start("write output")
-         ! Update the restart_timestamp file with the new time, if needed.
-         if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
-            open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
-            write(22, *) timeStamp
-            close(22)
-         end if
-         err = ior(err, err_tmp)
+
          ! These calls will handle ALL output streams that need writing.
          ! [Could add them individually, as the ocean does, if some other actions are needed when a
          ! specific alarm is ringing (e.g., global stats calculated only when output stream gets written)]
@@ -862,6 +902,7 @@ contains
              call mpas_dmpar_global_abort("An error has occurred in mpas_core_run. Aborting...")
          endif
 
+         call shr_sys_flush(stderrUnit)
       end do
       err = ior(err, err_tmp)
 
@@ -955,6 +996,8 @@ contains
 
 !-----------------------------------------------------------------------
 
+    call mpas_io_units_set_stdout(glcStdOutUnit)
+    call mpas_io_units_set_stderr(glcStdErrUnit)
 
     ! Setup I/O logs
     call shr_file_getLogUnit (shrlogunit)
@@ -1258,6 +1301,33 @@ contains
 
    end subroutine check_clocks_sync
 
+   subroutine convert_seconds_to_timestamp(seconds, timeStamp)!{{{
+      integer, intent(in) :: seconds
+      character (len=StrKIND), intent(out) :: timeStamp
+      real (kind=RKIND) :: secondsPerHour, secondsPerMinute, remaining
+      integer :: minutes, hours, secondsLeft
+   
+      secondsPerHour = 3600
+      secondsPerMinute = 60
+   
+      if(seconds < 0 .or. seconds > 86400) then
+        secondsLeft = 00
+        minutes = 00
+        hours = 00
+      else
+        hours = int(seconds/secondsPerHour)
+        remaining = seconds - real(hours) * secondsPerHour
+   
+        minutes = int(remaining/secondsPerMinute)
+        remaining = remaining - real(minutes) * secondsPerMinute
+   
+        secondsLeft = int(remaining)
+      end if
+   
+      write(timeStamp,"(a,i2.2,a,i2.2,a,i2.2)") "00_",hours,":",minutes,":",secondsLeft
+      timeStamp = trim(timeStamp)
+   
+   end subroutine convert_seconds_to_timestamp!}}}
 
    subroutine add_stream_attributes(stream_manager, domain)!{{{
 

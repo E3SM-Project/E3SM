@@ -20,7 +20,8 @@
 <!-- &time_integration -->
 <!--To make this dependent on grid: <config_dt glc_grid="mpas120" >'00:30:00'</config_dt>-->
 <!-- 14 days is ok for the GIS20km grid, but 5 days divides evenly into 1 year -->
-<config_dt>'0000-00-05_00:00:00'</config_dt>
+<!-- 1 day is convenient for working with a 1 day coupling interval but is not efficient. -->
+<config_dt>'0000-00-01_00:00:00'</config_dt>
 <config_time_integration>'forward_euler'</config_time_integration>
 
 <!-- &decomposition -->
