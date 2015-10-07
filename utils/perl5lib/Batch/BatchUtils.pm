@@ -196,9 +196,6 @@ sub submitSingleJob()
 
     $submitargs = $self->getSubmitArguments($scriptname, $dependentJobId);
 
-    print "I am here\n";
-    die("where am i");
-
     if(! defined $submitargs && length($submitargs) <= 0)
     {
 	$submitargs = '' ;
@@ -390,7 +387,12 @@ sub getSubmitArguments()
     	        }
     	        else
     	        {
-    	            $submitargs .= " $argFlag $field";
+		    # if argFlag ends in an = sign dont put any space before field
+		    if($argFlag =~ /=$/){		    
+			$submitargs .= " $argFlag$field";
+		    }else{
+			$submitargs .= " $argFlag $field";
+		    }
     	        }
     	    }
     	    # If the argName isn't defined, just use the argflag, there;s
