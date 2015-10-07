@@ -50,6 +50,7 @@ Each grid is associated with five names
 <GRID sname="T62_tx0.1v2" alias="T62_t12" compset="(DATM|XATM|SATM)">a%T62_l%T62_oi%tx0.1v2_r%rx1_m%tx0.1v2_g%null_w%null</GRID>
 <GRID sname="T62_gx1v6"   alias="T62_g16" compset="(DATM|XATM|SATM)">a%T62_l%T62_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null</GRID>
 <GRID sname="T62_mpas120" alias="T62_m120" compset="(DATM|XATM|SATM)">a%T62_l%T62_oi%mpas120_r%rx1_m%mpas120_g%null_w%null</GRID>
+<GRID sname="T62_mpasgx1" alias="T62_mgx1" compset="(DATM|XATM|SATM)">a%T62_l%T62_oi%mpasgx1_r%rx1_m%mpasgx1_g%null_w%null</GRID>
 <GRID sname="T62_oEC60to30" alias="T62_oEC60to30" compset="(DATM|XATM|SATM)">a%T62_l%T62_oi%oEC60to30_r%rx1_m%oEC60to30_g%null_w%null</GRID>
 
 <!-- finite volume grids -->
@@ -109,6 +110,9 @@ Each grid is associated with five names
 
 <!--- mpasli grids -->
 <GRID sname="0.9x1.25_gx1v6_gis20"    alias="f09_g16_g"  compset="_MPASLI">a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%mpas.gis20km_w%null</GRID>
+
+<!-- mpasli + mpas-o grids -->
+<GRID sname="T62_mpas120_gis20" alias="T62_m120_g" compset="MPASO.*_MPASLI">a%T62_l%T62_oi%mpas120_r%rx1_m%mpas120_g%mpas.gis20km_w%null</GRID>
 
 <!-- new runoff grids for data runoff model DROF -->
 
@@ -356,6 +360,12 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <!-- MPAS grids -->
 <!-- NOTE: desc MUST be the last field in each <gridhorz> -->
 
+<gridhorz name="mpasgx1">
+  <support_level>Experimental, under development</support_level>
+  <nx>86354</nx>  <ny>1</ny>
+  <desc>mpasgx1 is a MPAS cice grid that is roughly 1 degree resolution:</desc>
+</gridhorz>
+
 <gridhorz name="mpas120">
   <support_level>Experimental, under development</support_level>
   <nx>28574</nx>  <ny>1</ny>  
@@ -473,6 +483,11 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <griddom grid="tx0.1v2" mask="tx0.1v2">
   <ICE_DOMAIN_FILE>domain.ocn.tx0.1v2_090218.nc</ICE_DOMAIN_FILE>
   <OCN_DOMAIN_FILE>domain.ocn.tx0.1v2_090218.nc</OCN_DOMAIN_FILE>
+</griddom>
+
+<griddom grid="mpasgx1" mask="mpasgx1">
+  <ICE_DOMAIN_FILE>domain.ocn.mpasgx1.150903.nc</ICE_DOMAIN_FILE>
+  <OCN_DOMAIN_FILE>domain.ocn.mpasgx1.150903.nc</OCN_DOMAIN_FILE>
 </griddom>
 
 <griddom grid="mp120v1" mask="mp120v1">
@@ -1085,6 +1100,11 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <LND_DOMAIN_FILE>domain.lnd.T62_tx0.1v2_090623.nc</LND_DOMAIN_FILE>
 </griddom>
 
+<griddom grid="T62" mask="mpasgx1"> <!--- datm/slnd/drof only -->
+  <ATM_DOMAIN_FILE>domain.lnd.T62_mpasgx1.150903.nc</ATM_DOMAIN_FILE>
+  <LND_DOMAIN_FILE>domain.lnd.T62_mpasgx1.150903.nc</LND_DOMAIN_FILE>
+</griddom>
+
 <griddom grid="T62" mask="mpas120"> <!--- datm/slnd/drof only -->
   <ATM_DOMAIN_FILE>domain.lnd.T62_mpas120.121116.nc</ATM_DOMAIN_FILE>
   <LND_DOMAIN_FILE>domain.lnd.T62_mpas120.121116.nc</LND_DOMAIN_FILE>
@@ -1133,6 +1153,14 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <ATM2OCN_VMAPNAME>cpl/gridmaps/T62/map_T62_TO_mpas120_aave.121116.nc</ATM2OCN_VMAPNAME>
   <OCN2ATM_FMAPNAME>cpl/gridmaps/mpas120/map_mpas120_TO_T62_aave.121116.nc</OCN2ATM_FMAPNAME>
   <OCN2ATM_SMAPNAME>cpl/gridmaps/mpas120/map_mpas120_TO_T62_aave.121116.nc</OCN2ATM_SMAPNAME>
+</gridmap>
+
+<gridmap atm_grid="T62" ocn_grid="mpasgx1">
+  <ATM2OCN_FMAPNAME>cpl/gridmaps/T62/map_T62_TO_mpasgx1_aave.150827.nc</ATM2OCN_FMAPNAME>
+  <ATM2OCN_SMAPNAME>cpl/gridmaps/T62/map_T62_TO_mpasgx1_blin.150827.nc</ATM2OCN_SMAPNAME>
+  <ATM2OCN_VMAPNAME>cpl/gridmaps/T62/map_T62_TO_mpasgx1_blin.150827.nc</ATM2OCN_VMAPNAME>
+  <OCN2ATM_FMAPNAME>cpl/gridmaps/mpasgx1/map_mpasgx1_TO_T62_aave.150827.nc</OCN2ATM_FMAPNAME>
+  <OCN2ATM_SMAPNAME>cpl/gridmaps/mpasgx1/map_mpasgx1_TO_T62_aave.150827.nc</OCN2ATM_SMAPNAME>
 </gridmap>
 
 <gridmap atm_grid="T62" ocn_grid="oEC60to30">
@@ -1375,6 +1403,9 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <gridmap rof_grid="rx1" ocn_grid="tx0.1v2" >
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_tx0.1v2_e1000r200_090624.nc</ROF2OCN_RMAPNAME>
 </gridmap>
+<gridmap rof_grid="rx1" ocn_grid="mpasgx1" >
+  <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_mpasgx1_nn_150910.nc</ROF2OCN_RMAPNAME>
+</gridmap>
 <gridmap rof_grid="rx1" ocn_grid="mpas120" >
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_mpas120_nn_131217.nc</ROF2OCN_RMAPNAME>
 </gridmap>
@@ -1580,4 +1611,8 @@ do not use scientific experiments; use the T62_g16 resolution instead:
    <GLC2OCN_RMAPNAME>cpl/gridmaps/gland20km/map_gland20km_to_gx3v7_nnsm_e1000r300_150514.nc</GLC2OCN_RMAPNAME>
 </gridmap>
 
-</config_compset >
+<gridmap glc_grid="mpas.gis20km" ocn_grid="mpas120">
+  <GLC2OCN_RMAPNAME>cpl/gridmaps/mpas.gis20km/map_mpas.gis20km_to_mpas120_nnsmooth_150924.nc</GLC2OCN_RMAPNAME>
+</gridmap>
+
+</config_compset>
