@@ -979,32 +979,26 @@
       </test>
     </grid>
   </compset>
-  <compset name="ICLM45VIC">
-    <grid name="f09_g16">
-      <test name="ERS">
-        <machine compiler="intel15" testtype="acme_integration">babbageKnc</machine>
-        <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
-        <machine compiler="intel" testtype="acme_integration">edison</machine>
-        <machine compiler="intel" testtype="acme_integration">eos</machine>
-        <machine compiler="intel" testtype="acme_integration">janus</machine>
-        <machine compiler="ibm" testtype="acme_integration">mira</machine>
-        <machine compiler="pgi" testtype="acme_integration">titan</machine>
-        <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
-        <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
-        <machine compiler="pgi" testtype="acme_integration">yellowstone</machine>
-      </test>
-    </grid>
-  </compset>
-  <compset name="ICRUCLM45">
-    <grid name="f09_g16">
+  <compset name="IGCLM45_MLI">
+    <grid name="f09_g16_a">
       <test name="SMS">
+        <machine compiler="intel15" testtype="acme_developer">babbageKnc</machine>
         <machine compiler="intel15" testtype="acme_integration">babbageKnc</machine>
+        <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="intel" testtype="acme_developer">eos</machine>
         <machine compiler="intel" testtype="acme_integration">eos</machine>
+        <machine compiler="intel" testtype="acme_developer">janus</machine>
         <machine compiler="intel" testtype="acme_integration">janus</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
+        <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
+        <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
         <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_integration">yellowstone</machine>
