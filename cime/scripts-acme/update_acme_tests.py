@@ -27,8 +27,11 @@ _TEST_SUITES = {
                          ("PEA_P1_M.f45_g37_rx1.A", None),
                          ("SMS.ne30_f19_g16_rx1.A", None),
                          ("SMS.f19_f19.I1850CLM45CN", None),
-			 ("SMS.f09_g16.I1850CLM45CN", None),
-			 ("SMS.hcru_hcru.I1850CRUCLM45CN", None)]
+                         ("SMS.f09_g16.I1850CLM45CN", None),
+                         ("SMS.hcru_hcru.I1850CRUCLM45CN", None),
+                         ("ERS_Ld5.T62_mpas120.C_MPAS_NORMAL_YEAR", None),
+                         ("ERS.f09_g16_g.MPASLI_ONLY", None),
+                         ("SMS.T62_mpas120_gis20.MPAS_LISIO_TEST", None)]
                         ),
     "acme_integration" : ("acme_developer",
                           [("ERS.ne30_g16.B1850C5", None),
