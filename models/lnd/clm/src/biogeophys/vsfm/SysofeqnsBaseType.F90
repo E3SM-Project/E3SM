@@ -58,6 +58,7 @@ module SystemOfEquationsBaseType
 
     Vec                                  :: soln                                ! solution at current iteration + time step
     Vec                                  :: soln_prev                           ! solution vector at previous time step
+    Vec                                  :: soln_prev_clm                       ! solution vector at previous CLM time step
     Vec                                  :: rhs                                 ! used if SoE is a PETSc TS
     Mat                                  :: jac                                 ! used if SoE is a PETSc TS/SNES
     Mat                                  :: Amat                                ! used if SoE is a PETSc KSP
@@ -74,6 +75,8 @@ module SystemOfEquationsBaseType
     procedure, public :: StepDT                 => SOEBaseStepDT
     procedure, public :: PreSolve               => SOEBasePreSolve
     procedure, public :: PostSolve              => SOEBasePostSolve
+    procedure, public :: PreStepDT              => SOEBasePreStepDT
+    procedure, public :: PostStepDT             => SOEBasePostStepDT
     procedure, public :: PrintInfo              => SOEBasePrintInfo
     procedure, public :: SetPointerToIthGovEqn  => SOEBaseSetPointerToIthGovEqn
     procedure, public :: SetDtime               => SOEBaseSetDtime
@@ -116,6 +119,7 @@ contains
 
     this%soln            = 0
     this%soln_prev       = 0
+    this%soln_prev_clm   = 0
     this%rhs             = 0
     this%jac             = 0
     this%Amat            = 0
@@ -274,6 +278,41 @@ contains
          'SOEBasePreSolve must be extended')
 
   end subroutine SOEBasePreSolve
+
+  !------------------------------------------------------------------------
+  subroutine SOEBasePreStepDT(this)
+    !
+    ! !DESCRIPTION:
+    ! Dummy subroutine that performs any required operations before calling
+    ! StepDT.
+    ! This subroutines needs to be extended by a child class.
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(sysofeqns_base_type)    :: this
+
+    call endrun(msg='ERROR SOEBasePreStepDT: '//&
+         'SOEBasePreStepDT must be extended')
+
+  end subroutine SOEBasePreStepDT
+
+  !------------------------------------------------------------------------
+  subroutine SOEBasePostStepDT(this)
+    !
+    ! !DESCRIPTION:
+    ! Dummy subroutine that performs any required operations post StepDT.
+    ! This subroutines needs to be extended by a child class.
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(sysofeqns_base_type)    :: this
+
+    call endrun(msg='ERROR SOEBasePostStepDT: '//&
+         'SOEBasePostStepDT must be extended')
+
+  end subroutine SOEBasePostStepDT
 
   !------------------------------------------------------------------------
   subroutine SOEBaseStepDT(this, dt, converged, ierr)

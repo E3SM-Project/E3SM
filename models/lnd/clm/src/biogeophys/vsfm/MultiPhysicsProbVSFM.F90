@@ -230,11 +230,13 @@ contains
     call DMCreateMatrix(vsfm_soe%dm, vsfm_soe%jac, ierr); CHKERRQ(ierr)
 
     ! Create solution vector
-    call DMCreateGlobalVector(vsfm_soe%dm, vsfm_soe%soln,      ierr); CHKERRQ(ierr)
-    call DMCreateGlobalVector(vsfm_soe%dm, vsfm_soe%soln_prev, ierr); CHKERRQ(ierr)
+    call DMCreateGlobalVector(vsfm_soe%dm, vsfm_soe%soln,          ierr); CHKERRQ(ierr)
+    call DMCreateGlobalVector(vsfm_soe%dm, vsfm_soe%soln_prev,     ierr); CHKERRQ(ierr)
+    call DMCreateGlobalVector(vsfm_soe%dm, vsfm_soe%soln_prev_clm, ierr); CHKERRQ(ierr)
 
-    call VecZeroEntries(vsfm_soe%soln,      ierr); CHKERRQ(ierr)
-    call VecZeroEntries(vsfm_soe%soln_prev, ierr); CHKERRQ(ierr)
+    call VecZeroEntries(vsfm_soe%soln,          ierr); CHKERRQ(ierr)
+    call VecZeroEntries(vsfm_soe%soln_prev,     ierr); CHKERRQ(ierr)
+    call VecZeroEntries(vsfm_soe%soln_prev_clm, ierr); CHKERRQ(ierr)
 
     ! SNES
     call SNESCreate(PETSC_COMM_SELF, vsfm_soe%snes, ierr); CHKERRQ(ierr)
@@ -717,7 +719,8 @@ contains
     call DMCompositeRestoreAccessArray(vsfm_soe%dm, vsfm_soe%soln, nDM, &
                                        PETSC_NULL_INTEGER, soln_subvecs, ierr)
 
-    call VecCopy(vsfm_soe%soln, vsfm_soe%soln_prev, ierr); CHKERRQ(ierr)
+    call VecCopy(vsfm_soe%soln, vsfm_soe%soln_prev,     ierr); CHKERRQ(ierr)
+    call VecCopy(vsfm_soe%soln, vsfm_soe%soln_prev_clm, ierr); CHKERRQ(ierr)
 
     ! Free memory
     deallocate(dms)
@@ -887,6 +890,7 @@ contains
                                        PETSC_NULL_INTEGER, soln_subvecs, ierr)
 
     call VecCopy(vsfm_soe%soln, vsfm_soe%soln_prev, ierr); CHKERRQ(ierr)
+    call VecCopy(vsfm_soe%soln, vsfm_soe%soln_prev_clm, ierr); CHKERRQ(ierr)
 
   end subroutine VSFMMPPRestart
 

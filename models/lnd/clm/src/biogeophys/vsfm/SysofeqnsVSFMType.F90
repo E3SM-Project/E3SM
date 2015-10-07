@@ -51,6 +51,8 @@ module SystemOfEquationsVSFMType
      procedure, public :: SetDataFromCLM           => VSFMSOESetDataFromCLM
      procedure, public :: GetDataForCLM            => VSFMSOEGetDataForCLM
      procedure, public :: PostSolve                => VSFMSOEPostSolve
+     procedure, public :: PostStepDT               => VSFMSPostStepDT
+     procedure, public :: PreStepDT                => VSFMSPreStepDT
   end type sysofeqns_vsfm_type
 
   public :: VSFMSOESetAuxVars
@@ -985,6 +987,40 @@ contains
     enddo
 
   end subroutine VSFMSOEGetDataForCLM
+
+  !------------------------------------------------------------------------
+  subroutine VSFMSPreStepDT(this)
+    !
+    ! !DESCRIPTION:
+    ! This subroutines copies solution vector at previous CLM time step
+    ! before StepDT is called.
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(sysofeqns_vsfm_type)    :: this
+    PetscErrorCode                :: ierr
+
+    call VecCopy(this%soln_prev_clm, this%soln_prev, ierr); CHKERRQ(ierr)
+
+  end subroutine VSFMSPreStepDT
+
+  !------------------------------------------------------------------------
+  subroutine VSFMSPostStepDT(this)
+    !
+    ! !DESCRIPTION:
+    ! This subroutines make a copy of solution vector post StepDT is
+    ! called.
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(sysofeqns_vsfm_type)    :: this
+    PetscErrorCode                :: ierr
+
+    call VecCopy(this%soln_prev, this%soln_prev_clm, ierr); CHKERRQ(ierr)
+
+  end subroutine VSFMSPostStepDT
 
   !------------------------------------------------------------------------
 

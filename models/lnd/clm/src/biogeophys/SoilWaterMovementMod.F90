@@ -807,7 +807,6 @@ contains
     PetscInt              :: max_f_default
     PetscReal             :: stol
     PetscReal,parameter   :: stol_alternate = 1.d-10
-#if VSFM_DEBUG
     PetscReal             :: mass_beg
     PetscReal             :: mass_end
     PetscReal             :: total_mass_flux_et
@@ -817,7 +816,13 @@ contains
     PetscReal             :: total_mass_flux_snowlyr
     PetscReal             :: total_mass_flux_sub
     PetscReal             :: total_mass_flux
-#endif
+    PetscInt              :: iter_count
+    PetscInt, parameter   :: max_iter_count = 10
+    PetscInt              :: diverged_count
+    PetscInt              :: mass_bal_err_count
+    PetscReal             :: abs_mass_error_col
+    PetscReal, parameter  :: max_abs_mass_error_col  = 1.e-5
+    PetscBool             :: successful_step
 #endif
     !-----------------------------------------------------------------------
 
@@ -933,13 +938,36 @@ contains
       area = 1.d0 ! [m^2]
 
       ! initialize
-      mflx_et_col_1d(:)      = 0.d0
-      mflx_infl_col_1d(:)    = 0.d0
-      mflx_dew_col_1d(:)     = 0.d0
-      mflx_drain_col_1d(:)   = 0.d0
-      mflx_sub_snow_col_1d(:)= 0.d0
-      mflx_snowlyr_col_1d(:) = 0.d0
-      t_soil_col_1d(:)       = 298.15d0
+      mflx_et_col_1d(:)                = 0.d0
+      mflx_infl_col_1d(:)              = 0.d0
+      mflx_dew_col_1d(:)               = 0.d0
+      mflx_drain_col_1d(:)             = 0.d0
+      mflx_sub_snow_col_1d(:)          = 0.d0
+      mflx_snowlyr_col_1d(:)           = 0.d0
+      t_soil_col_1d(:)                 = 298.15d0
+
+      mass_beg                         = 0.d0
+      mass_end                         = 0.d0
+      total_mass_flux                  = 0.d0
+      total_mass_flux_et               = 0.d0
+      total_mass_flux_infl             = 0.d0
+      total_mass_flux_dew              = 0.d0
+      total_mass_flux_drain            = 0.d0
+      total_mass_flux_snowlyr          = 0.d0
+      total_mass_flux_sub              = 0.d0
+
+      mass_beg_col(:)                  = 0.d0
+      mass_end_col(:)                  = 0.d0
+      total_mass_flux_col(:)           = 0.d0
+      total_mass_flux_et_col(:)        = 0.d0
+      total_mass_flux_infl_col(:)      = 0.d0
+      total_mass_flux_dew_col(:)       = 0.d0
+      total_mass_flux_drain_col(:)     = 0.d0
+      total_mass_flux_snowlyr_col(:)   = 0.d0
+      total_mass_flux_sub_col(:)       = 0.d0
+
+      vsfm_mass_prev_col(:,:)          = 0.d0
+      vsfm_dmass_col(:)                = 0.d0
 
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
@@ -1069,31 +1097,6 @@ contains
       soe_auxvar_id = 1;
       call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_INTERNAL, VAR_FRAC_LIQ_SAT, soe_auxvar_id, vsfm_fliq_col_1d)
 
-#ifdef VSFM_DEBUG
-      mass_beg        = 0.d0
-      mass_end        = 0.d0
-      total_mass_flux = 0.d0
-      total_mass_flux_et = 0.d0
-      total_mass_flux_infl = 0.d0
-      total_mass_flux_dew = 0.d0
-      total_mass_flux_drain = 0.d0
-      total_mass_flux_snowlyr = 0.d0
-      total_mass_flux_sub = 0.d0
-
-      mass_beg_col(:)        = 0.d0
-      mass_end_col(:)        = 0.d0
-      total_mass_flux_col(:) = 0.d0
-      total_mass_flux_et_col(:) = 0.d0
-      total_mass_flux_infl_col(:) = 0.d0
-      total_mass_flux_dew_col(:) = 0.d0
-      total_mass_flux_drain_col(:) = 0.d0
-      total_mass_flux_snowlyr_col(:) = 0.d0
-      total_mass_flux_sub_col(:) = 0.d0
-
-
-      vsfm_mass_prev_col(:,:) = 0.d0
-      vsfm_dmass_col(:) = 0.d0
-
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
 
@@ -1106,8 +1109,8 @@ contains
             total_mass_flux_drain        = total_mass_flux_drain        + mflx_drain_col_1d(idx)
             total_mass_flux_drain_col(c) = total_mass_flux_drain_col(c) + mflx_drain_col_1d(idx)
 
-            mass_beg = mass_beg + vsfm_mass_col_1d(idx)
-            mass_beg_col(c) = mass_beg_col(c) + vsfm_mass_col_1d(idx)
+            mass_beg                = mass_beg + vsfm_mass_col_1d(idx)
+            mass_beg_col(c)         = mass_beg_col(c) + vsfm_mass_col_1d(idx)
             vsfm_mass_prev_col(c,j) = vsfm_mass_col_1d(idx)
          end do
 
@@ -1127,166 +1130,194 @@ contains
          total_mass_flux_col(c) = total_mass_flux_et_col(c) + total_mass_flux_infl_col(c) + total_mass_flux_dew_col(c) + total_mass_flux_drain_col(c) + &
                                   total_mass_flux_snowlyr_col(c) + &
                                   total_mass_flux_sub_col(c)
-       end do
-       total_mass_flux        = total_mass_flux_et        + total_mass_flux_infl        + total_mass_flux_dew        + total_mass_flux_drain + &
-                                total_mass_flux_snowlyr + &
-                                total_mass_flux_sub
-#endif
+      end do
+      total_mass_flux        = total_mass_flux_et        + total_mass_flux_infl        + total_mass_flux_dew        + total_mass_flux_drain + &
+                               total_mass_flux_snowlyr + &
+                               total_mass_flux_sub
 
+      call vsfm_mpp%sysofeqns%PreStepDT()
+
+      call SNESGetTolerances(vsfm_mpp%sysofeqns%snes, atol_default, rtol_default, stol_default, &
+                             max_it_default, max_f_default, ierr); CHKERRQ(ierr)
+      stol = stol_default
 
       !
       ! Solve the VSFM.
       !
-      call SNESGetTolerances(vsfm_mpp%sysofeqns%snes, atol_default, rtol_default, stol_default, &
-                             max_it_default, max_f_default, ierr); CHKERRQ(ierr)
-      call vsfm_mpp%sysofeqns%StepDT(dtime, converged, ierr); CHKERRQ(ierr)
+      iter_count           = 0
+      diverged_count       = 0
+      mass_bal_err_count   = 0
+      abs_mass_error_col   = 0.d0
+      successful_step      = PETSC_FALSE
 
-      if (.not. converged) then
-         ! Solve VSFM with loose solution tolerance
-         stol    = stol_alternate
+      do
+
+         iter_count = iter_count + 1
+
          call SNESSetTolerances(vsfm_mpp%sysofeqns%snes, atol_default, rtol_default, stol, &
                                 max_it_default, max_f_default, ierr); CHKERRQ(ierr)
-
-         ! Reduce total run length time by the amount VSFM ran successfully
-         ! with previous solver settings
-         dtime = dtime - vsfm_mpp%sysofeqns%time
 
          call vsfm_mpp%sysofeqns%StepDT(dtime, converged, ierr); CHKERRQ(ierr)
 
          if (.not. converged) then
 
-            ! Set frac_liq
-            vsfm_fliq_col_1d(:) = 1.d0
-            soe_auxvar_id = 1;
-            call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_INTERNAL, VAR_FRAC_LIQ_SAT, &
-                                                   soe_auxvar_id, vsfm_fliq_col_1d)
+            ! VSFM solver did not converge, so let's try again with different
+            ! solver settings.
 
-            ! Solve VSFM with tight solution tolerance + no reduction in kr
-            stol    = stol_default
+            stol             = stol_alternate
+            diverged_count   = diverged_count + 1
+            successful_step  = PETSC_FALSE
 
             ! Reduce total run length time by the amount VSFM ran successfully
             ! with previous solver settings
             dtime = dtime - vsfm_mpp%sysofeqns%time
 
-            call SNESSetTolerances(vsfm_mpp%sysofeqns%snes, atol_default, rtol_default, stol, &
-                                   max_it_default, max_f_default, ierr); CHKERRQ(ierr)
-            call vsfm_mpp%sysofeqns%StepDT(dtime, converged, ierr); CHKERRQ(ierr)
+            if (diverged_count > 1) then
+               ! Set frac_liq
+               vsfm_fliq_col_1d(:) = 1.d0
+               soe_auxvar_id = 1;
 
-               if (.not. converged) then
-                  ! Solve VSFM with loose solution tolerance + no reduction in kr
-                  stol    = stol_alternate
-                  call SNESSetTolerances(vsfm_mpp%sysofeqns%snes, atol_default, rtol_default, stol, &
-                                         max_it_default, max_f_default, ierr); CHKERRQ(ierr)
+               call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_INTERNAL,   &
+                                                      VAR_FRAC_LIQ_SAT,  &
+                                                      soe_auxvar_id,     &
+                                                      vsfm_fliq_col_1d )
+            end if
+         else
 
-                  ! Reduce total run length time by the amount VSFM ran successfully
-                  ! with previous solver settings
-                  dtime = dtime - vsfm_mpp%sysofeqns%time
+            ! Solver converged, so let's copy data from VSFM model to
+            ! CLM's data structure.
 
-                  call vsfm_mpp%sysofeqns%StepDT(dtime, converged, ierr); CHKERRQ(ierr)
+            ! Get Liquid saturation
+            soe_auxvar_id = 1;
+            call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL, VAR_LIQ_SAT, soe_auxvar_id, vsfm_sat_col_1d)
 
-                  if (.not. converged) then
-                     write(iulog,*)'In soilwater_vsfm: VSFM failed to converge after multiple attempts.'
-                     call endrun(msg=errMsg(__FILE__, __LINE__))
+            ! Get total mass
+            soe_auxvar_id = 1;
+            call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL, VAR_MASS, soe_auxvar_id, vsfm_mass_col_1d)
+
+            ! Get liquid soil matrix potential
+            soe_auxvar_id = 1;
+            call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL, VAR_SOIL_MATRIX_POT, soe_auxvar_id, vsfm_smpl_col_1d)
+
+            ! Get soil liquid pressure. This is the prognostic state of VSFM and is required
+            ! for restart netcdf.
+            soe_auxvar_id = 1;
+            call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL, VAR_PRESSURE, soe_auxvar_id, vsfm_soilp_col_1d)
+
+            ! Put the data in CLM's data structure
+            mass_end        = 0.d0
+            do fc = 1,num_hydrologyc
+               c = filter_hydrologyc(fc)
+
+               ! initialization
+               jwt = -1
+
+               ! Loops in decreasing j so WTD can be computed in the same loop
+               do j = nlevgrnd, 1, -1
+                  idx = (c-bounds%begc)*nlevgrnd + j
+
+                  h2osoi_liq(c,j) = (1.d0 - frac_ice(c,j))*vsfm_mass_col_1d(idx)
+                  h2osoi_ice(c,j) = frac_ice(c,j)         *vsfm_mass_col_1d(idx)
+
+                  mass_end = mass_end + vsfm_mass_col_1d(idx)
+                  mass_end_col(c) = mass_end_col(c) + vsfm_mass_col_1d(idx)
+
+                  vsfm_dmass_col(c) = vsfm_dmass_col(c) + (vsfm_mass_col_1d(idx)-vsfm_mass_prev_col(c,j))
+
+                  smp_l(c,j)        = vsfm_smpl_col_1d(idx)*1.000_r8      ! [m] --> [mm]
+
+                  if (jwt == -1) then
+                  ! Find the first soil that is unsaturated
+                  if (smp_l(c,j) < 0._r8) jwt = j
                   end if
-              end if
+
+               end do
+
+               ! Find maximum water balance error over the column
+               abs_mass_error_col = max(abs_mass_error_col,                     &
+                                        abs(mass_beg_col(c) - mass_end_col(c) + &
+                                            total_mass_flux_col(c)*get_step_size()))
+
+               qcharge(c) = 0._r8
+
+               if (jwt == -1 .or. jwt == nlevgrnd) then
+                  ! Water table below or in the last layer
+                  zwt(c) = zi(c,nlevgrnd)
+               else
+                  z_dn = (zi(c,jwt-1) + zi(c,jwt  ))/2._r8
+                  z_up = (zi(c,jwt ) + zi(c,jwt+1))/2._r8
+                  zwt(c) = (0._r8 - smp_l(c,jwt))/(smp_l(c,jwt) - smp_l(c,jwt+1))*(z_dn - z_up) + z_dn
+               endif
+            end do
+
+            ! Save soil liquid pressure from VSFM for all (active+nonactive) cells.
+            ! soilp_col is used for restarting VSFM.
+            do c = bounds%begc, bounds%endc
+               do j = 1, nlevgrnd
+                  idx = (c-bounds%begc)*nlevgrnd + j
+                  soilp_col(c,j) = vsfm_soilp_col_1d(idx)
+               end do
+            end do
+
+            ! For the solution that did converge, is the mass error acceptable?
+            if (abs_mass_error_col >= max_abs_mass_error_col) then
+
+               ! For the solution that converged, the mass error
+               ! is unacceptable. So let's try again with tighter
+               ! solution tolerance (stol) for SNES.
+
+               mass_bal_err_count  = mass_bal_err_count + 1
+               stol                = stol/10._r8
+               dtime               = get_step_size()
+               successful_step     = PETSC_FALSE
+               abs_mass_error_col  = 0._r8
+               mass_end_col(:)     = 0._r8
+
+               ! Copy
+               call vsfm_mpp%sysofeqns%PreStepDT()
+
+            else
+
+               successful_step  = PETSC_TRUE
+
+            endif
+
+         endif
+
+         if (successful_step) exit
+
+         if (iter_count >= max_iter_count) then
+            write(iulog,*)'In soilwater_vsfm: VSFM failed to converge after multiple attempts.'
+            call endrun(msg=errMsg(__FILE__, __LINE__))
          end if
-      end if
+
+      end do
 
       call SNESSetTolerances(vsfm_mpp%sysofeqns%snes, atol_default, rtol_default, stol_default, &
                              max_it_default, max_f_default, ierr); CHKERRQ(ierr)
 
-      ! Get Liquid saturation
-      soe_auxvar_id = 1;
-      call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL, VAR_LIQ_SAT, soe_auxvar_id, vsfm_sat_col_1d)
-
-      ! Get total mass
-      soe_auxvar_id = 1;
-      call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL, VAR_MASS, soe_auxvar_id, vsfm_mass_col_1d)
-
-      ! Get liquid soil matrix potential
-      soe_auxvar_id = 1;
-      call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL, VAR_SOIL_MATRIX_POT, soe_auxvar_id, vsfm_smpl_col_1d)
-
-      ! Get soil liquid pressure. This is the prognostic state of VSFM and is required
-      ! for restart netcdf.
-      soe_auxvar_id = 1;
-      call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL, VAR_PRESSURE, soe_auxvar_id, vsfm_soilp_col_1d)
-
-      ! Put the data in CLM's data structure
-#if VSFM_DEBUG
-      mass_end        = 0.d0
-#endif
-      do fc = 1,num_hydrologyc
-         c = filter_hydrologyc(fc)
-
-         ! initialization
-         jwt = -1
-
-         ! Loops in decreasing j so WTD can be computed in the same loop
-         do j = nlevgrnd, 1, -1
-            idx = (c-bounds%begc)*nlevgrnd + j
-
-            h2osoi_liq(c,j) = (1.d0 - frac_ice(c,j))*vsfm_mass_col_1d(idx)
-            h2osoi_ice(c,j) = frac_ice(c,j)         *vsfm_mass_col_1d(idx)
-
+      call vsfm_mpp%sysofeqns%PostStepDT()
 
 #if VSFM_DEBUG
-            mass_end = mass_end + vsfm_mass_col_1d(idx)
-            mass_end_col(c) = mass_end_col(c) + vsfm_mass_col_1d(idx)
-#endif
-            vsfm_dmass_col(c) = vsfm_dmass_col(c) + (vsfm_mass_col_1d(idx)-vsfm_mass_prev_col(c,j))
-
-            smp_l(c,j)      = vsfm_smpl_col_1d(idx)*1.000_r8      ! [m] --> [mm]
-
-            if (jwt == -1) then
-               ! Find the first soil that is unsaturated
-               if (smp_l(c,j) < 0._r8) jwt = j
-            end if
-
-         end do
-
-         qcharge(c) = 0._r8
-
-         if (jwt == -1 .or. jwt == nlevgrnd) then
-            ! Water table below or in the last layer
-            zwt(c) = zi(c,nlevgrnd)
-         else
-            z_dn = (zi(c,jwt-1) + zi(c,jwt  ))/2._r8
-            z_up = (zi(c,jwt ) + zi(c,jwt+1))/2._r8
-            zwt(c) = (0._r8 - smp_l(c,jwt))/(smp_l(c,jwt) - smp_l(c,jwt+1))*(z_dn - z_up) + z_dn
-         endif
-
-      end do
-
-      ! Save soil liquid pressure from VSFM for all (active+nonactive) cells.
-      ! soilp_col is used for restarting VSFM.
-      do c = bounds%begc, bounds%endc
-         do j = 1, nlevgrnd
-            idx = (c-bounds%begc)*nlevgrnd + j
-            soilp_col(c,j) = vsfm_soilp_col_1d(idx)
-         end do
-      end do
-
-#if VSFM_DEBUG
-      write(*,*)'VSFM-DEBUG: nstep                      = ',get_nstep()
-      write(*,*)'VSFM-DEBUG: dtime                      = ',get_step_size()
-      write(*,*)'VSFM-DEBUG: change in mass between dt  = ',-(mass_beg - mass_end)
-      write(*,*)'VSFM-DEBUG: change in mass due to flux = ',total_mass_flux*get_step_size()
-      write(*,*)'VSFM-DEBUG: Error in mass conservation = ',mass_beg - mass_end + total_mass_flux*get_step_size()
-      write(*,*)'VSFM-DEBUG: et_flux    * dtime         = ',total_mass_flux_et*get_step_size()
-      write(*,*)'VSFM-DEBUG: infil_flux * dtime         = ',total_mass_flux_infl*get_step_size()
-      write(*,*)'VSFM-DEBUG: dew_flux   * dtime         = ',total_mass_flux_dew*get_step_size()
-      write(*,*)'VSFM-DEBUG: drain_flux * dtime         = ',total_mass_flux_drain*get_step_size()
-      write(*,*)'VSFM-DEBUG: snow_flux  * dtime         = ',total_mass_flux_snowlyr*get_step_size()
-      write(*,*)'VSFM-DEBUG: sub_flux   * dtime         = ',total_mass_flux_sub*get_step_size()
-      write(*,*)'VSFM-DEBUG: total_mass_flux            = ',total_mass_flux/flux_unit_conversion
-      write(*,*)'VSFM-DEBUG: et_flux                    = ',total_mass_flux_et
-      write(*,*)'VSFM-DEBUG: infil_flux                 = ',total_mass_flux_infl
-      write(*,*)'VSFM-DEBUG: dew_flux                   = ',total_mass_flux_dew
-      write(*,*)'VSFM-DEBUG: drain_flux                 = ',total_mass_flux_drain
-      write(*,*)'VSFM-DEBUG: snow_flux                  = ',total_mass_flux_snowlyr
-      write(*,*)'VSFM-DEBUG: sub_flux                   = ',total_mass_flux_sub
-      write(*,*)''
+      write(iulog,*)'VSFM-DEBUG: nstep                      = ',get_nstep()
+      write(iulog,*)'VSFM-DEBUG: dtime                      = ',get_step_size()
+      write(iulog,*)'VSFM-DEBUG: change in mass between dt  = ',-(mass_beg - mass_end)
+      write(iulog,*)'VSFM-DEBUG: change in mass due to flux = ',total_mass_flux*get_step_size()
+      write(iulog,*)'VSFM-DEBUG: Error in mass conservation = ',mass_beg - mass_end + total_mass_flux*get_step_size()
+      write(iulog,*)'VSFM-DEBUG: et_flux    * dtime         = ',total_mass_flux_et*get_step_size()
+      write(iulog,*)'VSFM-DEBUG: infil_flux * dtime         = ',total_mass_flux_infl*get_step_size()
+      write(iulog,*)'VSFM-DEBUG: dew_flux   * dtime         = ',total_mass_flux_dew*get_step_size()
+      write(iulog,*)'VSFM-DEBUG: drain_flux * dtime         = ',total_mass_flux_drain*get_step_size()
+      write(iulog,*)'VSFM-DEBUG: snow_flux  * dtime         = ',total_mass_flux_snowlyr*get_step_size()
+      write(iulog,*)'VSFM-DEBUG: sub_flux   * dtime         = ',total_mass_flux_sub*get_step_size()
+      write(iulog,*)'VSFM-DEBUG: total_mass_flux            = ',total_mass_flux/flux_unit_conversion
+      write(iulog,*)'VSFM-DEBUG: et_flux                    = ',total_mass_flux_et
+      write(iulog,*)'VSFM-DEBUG: infil_flux                 = ',total_mass_flux_infl
+      write(iulog,*)'VSFM-DEBUG: dew_flux                   = ',total_mass_flux_dew
+      write(iulog,*)'VSFM-DEBUG: drain_flux                 = ',total_mass_flux_drain
+      write(iulog,*)'VSFM-DEBUG: snow_flux                  = ',total_mass_flux_snowlyr
+      write(iulog,*)'VSFM-DEBUG: sub_flux                   = ',total_mass_flux_sub
+      write(iulog,*)''
 #endif
 
 #endif
