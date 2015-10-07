@@ -215,6 +215,7 @@ if [ $? -ne 0 ]; then
     archive_list="${archive_list} user_nl_cpl"
     archive_list="${archive_list} user_nl_pop"
     archive_list="${archive_list} user_nl_rtm"
+    archive_list="${archive_list} user_nl_mosart"
 
     for item in ${archive_list}; do
 	if [ -e $item ]; then

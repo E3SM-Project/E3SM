@@ -195,7 +195,7 @@ if (! $clean ) {
     }
 
     my $sysmod = "./xmlchange -noecho BUILD_THREADED=$build_threaded";
-    system($sysmod) == 0 or $logger->logdie("ERROR cesm_setup: $sysmod failed: $?");
+    system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
 
     if (-f "$caseroot/$case.run") {
 	$logger->info( "Machine/Decomp/Pes configuration has already been done ...skipping ");
@@ -336,7 +336,7 @@ if (! $clean ) {
     my $fh = new IO::File;
     $fh->open(">>CaseStatus") or $logger->logdie("can't open file: CaseStatus");
     my $sdate = `date +"%Y-%m-%d %H:%M:%S"`;
-    print $fh "cesm_setup $sdate $eol";
+    print $fh "case_setup $sdate $eol";
     $fh->close();
 
 }

@@ -330,11 +330,23 @@ sub setGridMaps
     @nodes = $xml->findnodes(".//gridmap[\@glc_grid=\"$glc_grid\" and \@lnd_grid=\"$lnd_grid\"]/GLC2LND_FMAPNAME");
     if (@nodes) {$config->set('GLC2LND_FMAPNAME',$nodes[0]->textContent())}
 
-    @nodes = $xml->findnodes(".//gridmap[\@glc_grid=\"$glc_grid\" and \@ice_grid=\"$ice_grid\"]/GLC2ICE_RMAPNAME");
+    @nodes = $xml->findnodes(".//gridmap[\@glc_grid=\"$glc_grid\" and \@ocn_grid=\"$ocn_grid\"]/GLC2ICE_RMAPNAME");
     if (@nodes) {$config->set('GLC2ICE_RMAPNAME',$nodes[0]->textContent())}
 
     @nodes = $xml->findnodes(".//gridmap[\@glc_grid=\"$glc_grid\" and \@ocn_grid=\"$ocn_grid\"]/GLC2OCN_RMAPNAME");
     if (@nodes) {$config->set('GLC2OCN_RMAPNAME',$nodes[0]->textContent())}
+
+    @nodes = $xml->findnodes(".//gridmap[\@atm_grid=\"$atm_grid\" and \@wav_grid=\"$wav_grid\"]/ATM2WAV_SMAPNAME");
+    if (@nodes) {$config->set('ATM2WAV_SMAPNAME',$nodes[0]->textContent())}
+
+    @nodes = $xml->findnodes(".//gridmap[\@ocn_grid=\"$ocn_grid\" and \@wav_grid=\"$wav_grid\"]/ICE2WAV_SMAPNAME");
+    if (@nodes) {$config->set('ICE2WAV_SMAPNAME',$nodes[0]->textContent())}
+
+    @nodes = $xml->findnodes(".//gridmap[\@ocn_grid=\"$ocn_grid\" and \@wav_grid=\"$wav_grid\"]/OCN2WAV_SMAPNAME");
+    if (@nodes) {$config->set('OCN2WAV_SMAPNAME',$nodes[0]->textContent())}
+
+    @nodes = $xml->findnodes(".//gridmap[\@ocn_grid=\"$ocn_grid\" and \@wav_grid=\"$wav_grid\"]/WAV2OCN_SMAPNAME");
+    if (@nodes) {$config->set('WAV2OCN_SMAPNAME',$nodes[0]->textContent())}
 }
 
 #-------------------------------------------------------------------------------

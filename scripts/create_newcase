@@ -412,6 +412,7 @@ my @setup_comp_files;
 foreach my $name ('CONFIG_ATM_FILE', 'CONFIG_ICE_FILE', 'CONFIG_GLC_FILE', 'CONFIG_LND_FILE', 
 		  'CONFIG_ROF_FILE', 'CONFIG_OCN_FILE', 'CONFIG_WAV_FILE') {
     my $file = $config->get($name);	
+    (-f $file) || die "ERROR create_newcase: config_file $file does not exist";
     $config->add_config_variables($file, $srcroot, $cimeroot);
     ConfigCompsetGrid::setComponent($file, $config);
 }
@@ -482,14 +483,19 @@ if (!$opts{'user_compset'}) {
 # Special case - if land and river grids are different AND there is no mapping file
 # between land and river then set the river mode  to null if the river component is rtm
 my $rof_comp = $config->get('COMP_ROF');
-if ($rof_comp eq 'rtm') {
+if ($rof_comp eq 'rtm' || $rof_comp eq 'mosart') {
     my $lnd_grid    = $config->get('LND_GRID');
     my $rof_grid    = $config->get('ROF_GRID');
     my $map_lnd2rof = $config->get('LND2ROF_FMAPNAME');
     
     if (($lnd_grid ne $rof_grid) && ($map_lnd2rof eq 'idmap')) {
-	$logger->warn("No lnd2rof_fmapname exists - RTM mode set to null \n");
-	$config->set('RTM_MODE', 'NULL');     
+	$logger->warn("No lnd2rof_fmapname exists - RTM/MOSART mode set to null \n");
+	if ($rof_comp eq 'rtm') {
+	    $config->set('RTM_MODE', 'NULL');     
+	}
+	if ($rof_comp eq 'mosart') {
+	    $config->set('MOSART_MODE', 'NULL');     
+	}
     }
 }
 
