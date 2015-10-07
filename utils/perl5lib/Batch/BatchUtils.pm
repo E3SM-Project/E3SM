@@ -714,15 +714,16 @@ sub getSubmitArguments()
     # We need the script name and the dependent job id. 
     my $scriptname = shift;
     my $dependentjobid = shift;
-    my $sta_ok = shift;
-
+    $scriptname =~ /\.([^\.]+)$/;
+    my $job = $1;
     my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot}, 
 							 cimeroot => $self->{cimeroot},
 							 case => $self->{case},
 							 mpilib => $self->{mpilib}, 
 							 machroot => $self->{machroot}, 
 							 machine => $self->{machine},
-							 compiler => $self->{compiler} );
+							 compiler => $self->{compiler},
+                                                         job => $job );
     
     # Set the node count to 1 if this is the short-term archive script. 
     if(defined $scriptname && $scriptname =~ /archive/)

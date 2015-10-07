@@ -583,7 +583,8 @@ sub _resolveValues
     }
     else
     {
-	$logger->debug( "returning $value\n");
+# too verbose
+#	$logger->debug( "returning $value\n");
 	return $value;
     }
 }
