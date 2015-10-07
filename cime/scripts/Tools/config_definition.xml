@@ -1886,6 +1886,38 @@
 	 sdesc="true => do surface mass balance, false => PDD, nec_glc is set to 1" 
 	 ></entry>
 
+
+  <!-- ======================================================================= -->
+  <!-- MPASLI                                                                 -->
+  <!-- ======================================================================= -->
+
+  <entry id="MPASLI_CONFIG_OPTS"
+        type="char"
+        valid_values=""
+        value=""
+        group="build_component_mpasli"
+        sdesc="MPASLI configure options"
+        ldesc="
+        Currently not used"
+        ></entry>
+
+  <entry id="MPASLI_USE_ALBANY"
+	 type="logical"
+	 valid_values="TRUE,FALSE"
+	 value="FALSE"
+	 group="build_component_mpasli"
+	 sdesc="TRUE implies MPASLI is built with support for the Albany library"
+	 ldesc="
+                The first-order velocity solver in MPASLI uses the Albany library.
+                In order to use that velocity solver, MPASLI must be built with Albany
+                support and linking to Albany must occur when building the ACME executable.
+                This occurs if this variable is set to TRUE.
+                Note that is only available on a limited set of machines/compilers.
+                This must remain FALSE to run MPASLI on a machine that does not have Albany,
+                or for which the CIME scripts are not aware of the existence of Albany."
+	 ></entry>
+
+
   <!-- ======================================================================= -->
   <!-- DATM                                                                    -->
   <!-- ======================================================================= -->
@@ -2898,6 +2930,19 @@
 		Flag to turn on linking to the trilinos library. Currently this is
 		used by CISM. Note that trilinos is a C++ library, so setting this
 		variable to TRUE will involve the inclusion of C++ code in the CESM
+		executable. This is currently only supported for certain machines."
+	 ></entry>
+
+  <entry id="USE_ALBANY"
+	 type="logical"
+	 valid_values="TRUE,FALSE"
+	 value="FALSE"
+	 group="build_def"
+	 sdesc="TRUE implies linking to the Albany library - set automatically by XXX_USE_ALBANY options (do not edit)"
+	 ldesc="
+		Flag to turn on linking to the Albany library. Currently this is
+		used by MPASLI. Note that Albany is a C++ library, so setting this
+		variable to TRUE will involve the inclusion of C++ code in the MPASLI
 		executable. This is currently only supported for certain machines."
 	 ></entry>
 
