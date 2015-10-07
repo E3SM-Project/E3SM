@@ -18,7 +18,7 @@
 
   <entry id="CASEFILE_HEADERS"> 
     <type>char</type>
-    <default_value>$CIMEROOT/cime_config/$MODEL/config_headers.xml</default_value>
+    <default_value>$CIMEROOT/cime_config/config_headers.xml</default_value>
     <group>case_der</group>
     <file>env_case.xml</file>
     <desc>contains both header and group information for all the case env_*.xml files </desc>

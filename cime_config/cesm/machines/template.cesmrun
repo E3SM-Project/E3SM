@@ -488,7 +488,10 @@ sub resubmitCheck()
 	my $cwd = getcwd;
 	chdir $config{'CASEROOT'};
 	my $resubmitcommand = "$submitscript -resubmit -scriptname $config{'CASE'}.";
-	if(defined $config{TESTCASE} && $config{TESTCASE} eq "ERR"){
+	if($config{MACH} eq "mira" && $config{DOUT_S} eq "TRUE") {
+   	   $resubmitcommand .= "st_archive"; 
+	}
+	elsif(defined $config{TESTCASE} && $config{TESTCASE} eq "ERR"){
 	    $resubmitcommand .= "test"; 
 	}else{
 	    $resubmitcommand .= "run"; 
