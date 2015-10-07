@@ -45,6 +45,7 @@ my $MPILIB;
 my $SMP_VALUE;
 my $NINST_BUILD;
 my $CISM_USE_TRILINOS;
+my $MPASLI_USE_ALBANY;
 my $SHAREDPATH;
 my $CLM_CONFIG_OPTS;
 my $CAM_CONFIG_OPTS;
@@ -100,6 +101,7 @@ sub main {
     $NINST_BUILD        = `./xmlquery  NINST_BUILD	-value `;
     $SMP_VALUE          = `./xmlquery  SMP_VALUE	-value `;
     $CISM_USE_TRILINOS  = `./xmlquery  CISM_USE_TRILINOS -value`; 
+    $MPASLI_USE_ALBANY  = `./xmlquery  MPASLI_USE_ALBANY -value`;
     $CLM_CONFIG_OPTS    = `./xmlquery  CLM_CONFIG_OPTS   -value`;
     $CAM_CONFIG_OPTS    = `./xmlquery  CAM_CONFIG_OPTS   -value`;
 
@@ -151,9 +153,19 @@ sub main {
 
     my $use_trilinos = 'FALSE';
     if ($CISM_USE_TRILINOS eq 'TRUE') {$use_trilinos = 'TRUE'};
-    my $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_TRILINOS -val ${use_trilinos}";
     $ENV{USE_TRILINOS} = ${use_trilinos};
     $ENV{CISM_USE_TRILINOS} = $CISM_USE_TRILINOS;
+
+    # Set the overall USE_ALBANY variable to TRUE if any of the
+    # XXX_USE_ALBANY variables are TRUE.
+    # For now, there is just the one MPASLI_USE_ALBANY variable, but in
+    # the future there may be others -- so USE_ALBANY will be true if
+    # ANY of those are true.
+
+    my $use_albany = 'FALSE';
+    if ($MPASLI_USE_ALBANY eq 'TRUE') {$use_albany = 'TRUE'};
+    $ENV{USE_ALBANY} = ${use_albany};
+    $ENV{MPASLI_USE_ALBANY} = $MPASLI_USE_ALBANY;
 
     print "    .... checking namelists (calling ./preview_namelists) \n";
     $sysmod = "./preview_namelists > /dev/null";
@@ -354,7 +366,17 @@ sub buildChecks()
 
     $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_TRILINOS -val $ENV{'use_trilinos'}";
     system($sysmod) == 0 or die "$sysmod failed: $?\n";
-	
+
+    # set the overall USE_ALBANY variable to TRUE if any of the XXX_USE_ALBANY variables are TRUE.
+    # For now, there is just the one MPASLI_USE_ALBANY variable, but in the future, there may be others,
+    # so USE_ALBANY should be  true if ANY of those are true.
+
+    $ENV{'use_albany'} = 'FALSE';
+    if ( (defined $MPASLI_USE_ALBANY) && ($MPASLI_USE_ALBANY eq 'TRUE')) {$ENV{'use_albany'} = "TRUE";}
+
+    $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_ALBANY -val $ENV{'use_albany'}";
+    system($sysmod) == 0 or die "$sysmod failed: $?\n";
+
     if( ($NINST_BUILD ne $NINST_VALUE) && ($NINST_BUILD != 0)) {
 	print " ERROR, NINST VALUES HAVE CHANGED \n";
 	print " NINST_BUILD = $NINST_BUILD \n";
