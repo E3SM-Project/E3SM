@@ -21,9 +21,13 @@
         <machine compiler="ibm" testtype="acme_developer">mira</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
         <machine compiler="ibm" testtype="acme_tiny">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="pgi" testtype="acme_tiny">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
         <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
         <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
@@ -47,8 +51,12 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="ibm" testtype="acme_developer">mira</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
         <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
         <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
@@ -69,8 +77,12 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="ibm" testtype="acme_developer">mira</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
         <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
         <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
@@ -91,8 +103,12 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="ibm" testtype="acme_developer">mira</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
         <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
         <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
@@ -119,9 +135,13 @@
         <machine compiler="ibm" testtype="acme_developer">mira</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
         <machine compiler="ibm" testtype="acme_tiny">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
         <machine compiler="pgi" testtype="acme_tiny">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
         <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
         <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
@@ -147,8 +167,12 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="ibm" testtype="acme_developer">mira</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
         <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
         <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
@@ -183,8 +207,12 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="ibm" testtype="acme_developer">mira</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
         <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
         <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
@@ -207,8 +235,12 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="ibm" testtype="acme_developer">mira</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
         <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
         <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
@@ -229,8 +261,12 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="ibm" testtype="acme_developer">mira</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
         <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
         <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
@@ -251,8 +287,12 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="ibm" testtype="acme_developer">mira</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
         <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
         <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
@@ -273,8 +313,12 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="ibm" testtype="acme_developer">mira</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
         <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
         <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
@@ -340,8 +384,12 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="ibm" testtype="acme_developer">mira</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
         <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
         <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
@@ -755,6 +803,36 @@
       </test>
     </grid>
   </compset>
+  <compset name="C_MPAS_NORMAL_YEAR">
+    <grid name="T62_mpas120">
+      <test name="ERS_Ld5">
+        <machine compiler="intel15" testtype="acme_developer">babbageKnc</machine>
+        <machine compiler="intel15" testtype="acme_integration">babbageKnc</machine>
+        <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
+        <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="intel" testtype="acme_developer">eos</machine>
+        <machine compiler="intel" testtype="acme_integration">eos</machine>
+        <machine compiler="intel" testtype="acme_developer">janus</machine>
+        <machine compiler="intel" testtype="acme_integration">janus</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
+        <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
+        <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
+        <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
+        <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
+        <machine compiler="pgi" testtype="acme_integration">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
   <compset name="DTEST">
     <grid name="f45_g37_rx1">
       <test name="ERS">
@@ -770,8 +848,12 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="ibm" testtype="acme_developer">mira</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
         <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
         <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
@@ -792,8 +874,12 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="ibm" testtype="acme_developer">mira</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
         <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
         <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
@@ -918,8 +1004,12 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="ibm" testtype="acme_developer">mira</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
         <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
         <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
@@ -942,8 +1032,12 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="ibm" testtype="acme_developer">mira</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
         <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
         <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
@@ -968,8 +1062,12 @@
         <machine compiler="intel" testtype="acme_integration">janus</machine>
         <machine compiler="ibm" testtype="acme_developer">mira</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
         <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
         <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
         <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
@@ -979,32 +1077,60 @@
       </test>
     </grid>
   </compset>
-  <compset name="ICLM45VIC">
-    <grid name="f09_g16">
+  <compset name="MPASLI_ONLY">
+    <grid name="f09_g16_g">
       <test name="ERS">
+        <machine compiler="intel15" testtype="acme_developer">babbageKnc</machine>
         <machine compiler="intel15" testtype="acme_integration">babbageKnc</machine>
+        <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="intel" testtype="acme_developer">eos</machine>
         <machine compiler="intel" testtype="acme_integration">eos</machine>
+        <machine compiler="intel" testtype="acme_developer">janus</machine>
         <machine compiler="intel" testtype="acme_integration">janus</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
+        <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
+        <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
         <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_integration">yellowstone</machine>
       </test>
     </grid>
   </compset>
-  <compset name="ICRUCLM45">
-    <grid name="f09_g16">
+  <compset name="MPAS_LISIO_TEST">
+    <grid name="T62_mpas120_gis20">
       <test name="SMS">
+        <machine compiler="intel15" testtype="acme_developer">babbageKnc</machine>
         <machine compiler="intel15" testtype="acme_integration">babbageKnc</machine>
+        <machine compiler="pgi" testtype="acme_developer">bluewaters</machine>
         <machine compiler="pgi" testtype="acme_integration">bluewaters</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="intel" testtype="acme_developer">eos</machine>
         <machine compiler="intel" testtype="acme_integration">eos</machine>
+        <machine compiler="intel" testtype="acme_developer">janus</machine>
         <machine compiler="intel" testtype="acme_integration">janus</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
         <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_developer">yellowstone</machine>
+        <machine compiler="intel" testtype="acme_developer">yellowstone</machine>
+        <machine compiler="pgi" testtype="acme_developer">yellowstone</machine>
         <machine compiler="gnu" testtype="acme_integration">yellowstone</machine>
         <machine compiler="intel" testtype="acme_integration">yellowstone</machine>
         <machine compiler="pgi" testtype="acme_integration">yellowstone</machine>
