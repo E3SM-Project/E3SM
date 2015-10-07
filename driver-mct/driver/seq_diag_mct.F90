@@ -67,6 +67,7 @@ module seq_diag_mct
    public seq_diag_sum0_mct
    public seq_diag_print_mct
    public seq_diag_avect_mct
+   public seq_diag_avloc_mct
    public seq_diag_avdiff_mct
 
 !EOP
@@ -198,7 +199,10 @@ module seq_diag_mct
    integer :: index_l2x_Fall_lat
    integer :: index_l2x_Fall_sen
    integer :: index_l2x_Fall_evap
-   integer :: index_l2x_Flrl_rofl
+   integer :: index_l2x_Flrl_rofsur
+   integer :: index_l2x_Flrl_rofgwl
+   integer :: index_l2x_Flrl_rofsub
+   integer :: index_l2x_Flrl_rofdto
    integer :: index_l2x_Flrl_rofi
 
    integer :: index_x2l_Faxa_lwdn
@@ -213,7 +217,10 @@ module seq_diag_mct
    integer :: index_r2x_Firr_rofi
    integer :: index_r2x_Flrr_flood
 
-   integer :: index_x2r_Flrl_rofl
+   integer :: index_x2r_Flrl_rofsur
+   integer :: index_x2r_Flrl_rofgwl
+   integer :: index_x2r_Flrl_rofsub
+   integer :: index_x2r_Flrl_rofdto
    integer :: index_x2r_Flrl_rofi
 
    integer :: index_o2x_Fioo_q
@@ -638,7 +645,10 @@ subroutine seq_diag_lnd_mct( lnd, frac_l, do_l2x, do_x2l)
          index_l2x_Fall_lat    = mct_aVect_indexRA(l2x_l,'Fall_lat')
          index_l2x_Fall_sen    = mct_aVect_indexRA(l2x_l,'Fall_sen')
          index_l2x_Fall_evap   = mct_aVect_indexRA(l2x_l,'Fall_evap')
-         index_l2x_Flrl_rofl   = mct_aVect_indexRA(l2x_l,'Flrl_rofl')
+         index_l2x_Flrl_rofsur = mct_aVect_indexRA(l2x_l,'Flrl_rofsur')
+         index_l2x_Flrl_rofgwl = mct_aVect_indexRA(l2x_l,'Flrl_rofgwl')
+         index_l2x_Flrl_rofsub = mct_aVect_indexRA(l2x_l,'Flrl_rofsub')
+         index_l2x_Flrl_rofdto = mct_aVect_indexRA(l2x_l,'Flrl_rofdto')
          index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_l,'Flrl_rofi')
       end if
 
@@ -652,7 +662,10 @@ subroutine seq_diag_lnd_mct( lnd, frac_l, do_l2x, do_x2l)
          if = f_hlatv ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dl*l2x_l%rAttr(index_l2x_Fall_lat,n)
          if = f_hsen  ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dl*l2x_l%rAttr(index_l2x_Fall_sen,n)
          if = f_wevap ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dl*l2x_l%rAttr(index_l2x_Fall_evap,n)
-         if = f_wroff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dl*l2x_l%rAttr(index_l2x_Flrl_rofl,n)
+         if = f_wroff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dl*l2x_l%rAttr(index_l2x_Flrl_rofsur,n) &
+                                                                    - dl*l2x_l%rAttr(index_l2x_Flrl_rofgwl,n) &
+                                                                    - dl*l2x_l%rAttr(index_l2x_Flrl_rofsub,n) &
+                                                                    - dl*l2x_l%rAttr(index_l2x_Flrl_rofdto,n)
          if = f_wioff ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - dl*l2x_l%rAttr(index_l2x_Flrl_rofi,n)
       end do
       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
@@ -735,8 +748,11 @@ subroutine seq_diag_rof_mct( rof, frac_r)
    x2r_r => component_get_x2c_cx(rof)  
 
    if (first_time) then
-      index_x2r_Flrl_rofl  = mct_aVect_indexRA(x2r_r,'Flrl_rofl')
-      index_x2r_Flrl_rofi  = mct_aVect_indexRA(x2r_r,'Flrl_rofi')
+      index_x2r_Flrl_rofsur = mct_aVect_indexRA(x2r_r,'Flrl_rofsur')
+      index_x2r_Flrl_rofgwl = mct_aVect_indexRA(x2r_r,'Flrl_rofgwl')
+      index_x2r_Flrl_rofsub = mct_aVect_indexRA(x2r_r,'Flrl_rofsub')
+      index_x2r_Flrl_rofdto = mct_aVect_indexRA(x2r_r,'Flrl_rofdto')
+      index_x2r_Flrl_rofi   = mct_aVect_indexRA(x2r_r,'Flrl_rofi')
    end if
 
    ip = p_inst
@@ -745,7 +761,10 @@ subroutine seq_diag_rof_mct( rof, frac_r)
    lSize = mct_avect_lSize(x2r_r)
    do n=1,lSize
       dr =  dom_r%data%rAttr(kArea,n)
-      if = f_wroff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dr*x2r_r%rAttr(index_x2r_Flrl_rofl,n)
+      if = f_wroff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dr*x2r_r%rAttr(index_x2r_Flrl_rofsur,n) &
+                                                                + dr*x2r_r%rAttr(index_x2r_Flrl_rofgwl,n) &
+                                                                + dr*x2r_r%rAttr(index_x2r_Flrl_rofsub,n) &
+                                                                + dr*x2r_r%rAttr(index_x2r_Flrl_rofdto,n)
       if = f_wioff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + dr*x2r_r%rAttr(index_x2r_Flrl_rofi,n)
    end do
    budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
@@ -1646,6 +1665,85 @@ SUBROUTINE seq_diag_avect_mct(infodata, id, av, dom, gsmap, comment)
 101  format('comm_diag ',a3,1x,a4,1x,i3,es26.19,1x,a)
 
 end subroutine seq_diag_avect_mct
+
+!===============================================================================
+!BOP ===========================================================================
+!
+! !IROUTINE: seq_diag_avloc_mct - print local budget diagnostics
+!
+! !DESCRIPTION:
+!   Print local diagnostics for AV/ID.
+!
+! !REVISION HISTORY:
+!
+! !INTERFACE: ------------------------------------------------------------------
+
+SUBROUTINE seq_diag_avloc_mct(av, comment)
+
+   use seq_infodata_mod
+
+   implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   type(mct_aVect) , intent(in)           :: av
+   character(len=*), intent(in), optional :: comment
+
+!EOP
+
+   !--- local ---
+   integer(in)                      :: n,k         ! counters
+   integer(in)                      :: npts        ! number of local/global pts in AV
+   integer(in)                      :: kflds       ! number of fields in AV
+   real(r8),                pointer :: sumbuf (:)  ! sum buffer
+   type(mct_string)                 :: mstring     ! mct char type
+   character(CL)                    :: lcomment    ! should be long enough
+   character(CL)                    :: itemc       ! string converted to char
+
+   !----- formats -----
+   character(*),parameter :: subName = '(seq_diag_avloc_mct) '
+   character(*),parameter :: F00   = "('(seq_diag_avloc_mct) ',4a)"
+
+!-------------------------------------------------------------------------------
+! print instantaneous budget data
+!-------------------------------------------------------------------------------
+
+   lcomment = ''
+   if (present(comment)) then
+      lcomment=trim(comment)
+   endif
+
+   npts = mct_aVect_lsize(AV)
+   kflds = mct_aVect_nRattr(AV)
+   allocate(sumbuf(kflds))
+
+   sumbuf = 0.0_r8
+   do n = 1,npts
+   do k = 1,kflds
+!      if (.not. shr_const_isspval(AV%rAttr(k,n))) then
+         sumbuf(k) = sumbuf(k) + AV%rAttr(k,n)
+!      endif
+   enddo
+   enddo
+
+   do k = 1,kflds
+      call mct_aVect_getRList(mstring,k,AV)
+      itemc = mct_string_toChar(mstring)
+      call mct_string_clean(mstring)
+      if (len_trim(lcomment) > 0) then
+         write(logunit,100) 'xxx','sorr',k,sumbuf(k),trim(lcomment),trim(itemc)
+      else
+         write(logunit,101) 'xxx','sorr',k,sumbuf(k),trim(itemc)
+      endif
+   enddo
+   call shr_sys_flush(logunit)
+
+   deallocate(sumbuf)
+
+100  format('avloc_diag ',a3,1x,a4,1x,i3,es26.19,1x,a,1x,a)
+101  format('avloc_diag ',a3,1x,a4,1x,i3,es26.19,1x,a)
+
+end subroutine seq_diag_avloc_mct
 
 !===============================================================================
 !BOP ===========================================================================
