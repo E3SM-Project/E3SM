@@ -206,8 +206,8 @@ Modules required for installation depend on your prefered compiler. Issue the co
   %> module load torque
   %> module load git
   %> module load cmake
-  %> module load cray-hdf5-parallel/1.8.13
-  %> module load cray-netcdf-hdf5parallel/4.3.2
+  %> module load cray-hdf5-parallel/1.8.14
+  %> module load cray-netcdf-hdf5parallel/4.3.3.1
   %> module load cray-parallel-netcdf/1.6.0
 
 <li>Environment Variables
