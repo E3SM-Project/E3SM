@@ -175,7 +175,7 @@ contains
     class(sysofeqns_vsfm_type),pointer                  :: vsfm_soe
     PetscReal, parameter                                :: atol    = PETSC_DEFAULT_REAL
     PetscReal, parameter                                :: rtol    = PETSC_DEFAULT_REAL
-    PetscReal, parameter                                :: stol    = 1.d-30
+    PetscReal, parameter                                :: stol    = 1.d-10
     PetscInt, parameter                                 :: max_it  = PETSC_DEFAULT_INTEGER
     PetscInt, parameter                                 :: max_f   = PETSC_DEFAULT_INTEGER
 
