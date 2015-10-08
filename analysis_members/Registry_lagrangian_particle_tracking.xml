@@ -15,6 +15,14 @@
 					description="Name of the stream that the lagrPartTrack analysis member should be tied to."
 					possible_values="Any existing stream name or 'none'"
 		/>
+		<nml_option name="config_AM_lagrPartTrack_restart_stream" type="character" default_value="lagrPartTrackRestart" units="unitless"
+					description="Name of the stream that the lagrPartTrack analysis member should use to perform restarts."
+					possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_lagrPartTrack_input_stream" type="character" default_value="lagrPartTrackInput" units="unitless"
+					description="Name of the stream that the lagrPartTrack analysis member should read only in a non-restart run."
+					possible_values="Any existing stream name or 'none'"
+		/>
 		<nml_option name="config_AM_lagrPartTrack_write_on_startup" type="logical" default_value=".true." units="unitless"
 					description="Logical flag determining if an analysis member write occurs on start-up."
 					possible_values=".true. or .false."
@@ -86,13 +94,14 @@
 
 		<stream name="lagrPartTrackRestart" type="input;output"
 				mode="forward"
+				runtime_format="single_file"
 				filename_template="analysis_members/lagrangianParticleTrackingRestart.$Y-$M-$D_$h.$m.$s.nc"
 				filename_interval="output_interval"
 				clobber_mode="truncate"
 				input_interval="initial_only"
 				output_interval="0030_00:00:00"
 				packages="lagrPartTrackAMPKG"
-		  immutable="true">
+		  immutable="false">
 
 			<var name="xtime"/>
 			<var name="indexToParticleID"/>
@@ -119,11 +128,12 @@
 	  </stream>
 
 		<stream name="lagrPartTrackInput" type="input"
+						runtime_format="single_file"
 						mode="forward;analysis"
 						filename_template="analysis_members/lagrangianParticleTrackingInput.nc"
 						input_interval="initial_only"
 						packages="lagrPartTrackAMPKG"
-						immutable="true">
+						immutable="false">
 			<var name="indexToParticleID"/>
 			<var name="currentBlock"/>
 			<var name="currentCell"/>

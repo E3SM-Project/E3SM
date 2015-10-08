@@ -117,7 +117,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: buoyancyMidRef
       real (kind=RKIND), dimension(:), pointer :: buoyancyInterfaceRef
 
-      logical, pointer :: amEPFTActive, config_AM_eliassenPalm_do_restart
+      logical, pointer :: amEPFTActive
       logical, pointer :: config_AM_eliassenPalm_compute_on_startup
       integer, pointer :: config_AM_eliassenPalm_nBuoyancyLayers
       real (kind=RKIND), pointer :: config_AM_eliassenPalm_rhomax_buoycoor
@@ -145,8 +145,6 @@ contains
 
       err = 0
 
-      call mpas_pool_get_config(domain % configs, 'config_AM_eliassenPalm_do_restart', &
-        config_AM_eliassenPalm_do_restart)
       call mpas_pool_get_config(domain % configs, 'config_AM_eliassenPalm_compute_on_startup', &
         config_AM_eliassenPalm_compute_on_startup)
       call mpas_pool_get_config(domain % configs, 'config_AM_eliassenPalm_nBuoyancyLayers', &
@@ -200,53 +198,6 @@ contains
          potentialDensityMidRef(k) = 0.5*(potentialDensityTopRef(k) + config_AM_eliassenPalm_rhomax_buoycoor)
          buoyancyMidRef(k) = 0.5*(buoyancyInterfaceRef(k) + buoyancyInterfaceRef(k+1))
          
-         !-----------------------------------------------------------------
-         ! initialize ensemble averages when it is not a restart
-         !-----------------------------------------------------------------
-         if (.not. config_AM_eliassenPalm_do_restart) then
-            call mpas_pool_get_array(amEPFTPool, 'nSamplesEA', nSamplesEA)
-            call mpas_pool_get_array(amEPFTPool, 'buoyancyMaskEA', buoyancyMaskEA)
-            call mpas_pool_get_array(amEPFTPool, 'sigmaEA', sigmaEA)
-            call mpas_pool_get_array(amEPFTPool, 'heightMidBuoyCoorEA', heightMidBuoyCoorEA)
-            call mpas_pool_get_array(amEPFTPool, 'montgPotBuoyCoorEA', montgPotBuoyCoorEA)
-            call mpas_pool_get_array(amEPFTPool, 'montgPotGradZonalEA', montgPotGradZonalEA)
-            call mpas_pool_get_array(amEPFTPool, 'montgPotGradMeridEA', montgPotGradMeridEA)
-            call mpas_pool_get_array(amEPFTPool, 'heightMidBuoyCoorSqEA', heightMidBuoyCoorSqEA)
-            call mpas_pool_get_array(amEPFTPool, 'heightMGradZonalEA', heightMGradZonalEA)
-            call mpas_pool_get_array(amEPFTPool, 'heightMGradMeridEA', heightMGradMeridEA)
-            call mpas_pool_get_array(amEPFTPool, 'usigmaEA', usigmaEA)
-            call mpas_pool_get_array(amEPFTPool, 'vsigmaEA', vsigmaEA)
-            call mpas_pool_get_array(amEPFTPool, 'varpisigmaEA', varpisigmaEA)
-            call mpas_pool_get_array(amEPFTPool, 'uusigmaEA', uusigmaEA)
-            call mpas_pool_get_array(amEPFTPool, 'vvsigmaEA', vvsigmaEA)
-            call mpas_pool_get_array(amEPFTPool, 'uvsigmaEA', uvsigmaEA)
-            call mpas_pool_get_array(amEPFTPool, 'uvarpisigmaEA', uvarpisigmaEA)
-            call mpas_pool_get_array(amEPFTPool, 'vvarpisigmaEA', vvarpisigmaEA)
-
-            nSamplesEA = 0.0
-            buoyancyMaskEA = 0.0
-            sigmaEA = 0.0
-            heightMidBuoyCoorEA = 0.0
-            montgPotGradZonalEA = 0.0
-            montgPotGradMeridEA = 0.0
-            heightMidBuoyCoorSqEA = 0.0
-            montgPotBuoyCoorEA = 0.0
-            heightMGradZonalEA = 0.0
-            heightMGradMeridEA = 0.0
-            usigmaEA = 0.0
-            vsigmaEA = 0.0
-            varpisigmaEA = 0.0
-            uusigmaEA = 0.0
-            vvsigmaEA = 0.0
-            uvsigmaEA = 0.0
-            uvarpisigmaEA = 0.0
-            vvarpisigmaEA = 0.0
-         end if
-
-         if (config_AM_eliassenPalm_do_restart .and. config_AM_eliassenPalm_compute_on_startup) then
-            write(stderrUnit,*) ' *** WARNING:: Compute on startup was requested on a restart of AM eliassen_palm.'
-         end if
-
          block => block % next
 
       end do

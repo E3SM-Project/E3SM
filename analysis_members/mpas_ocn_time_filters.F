@@ -17,6 +17,8 @@
 !>
 !-----------------------------------------------------------------------
 
+!#define TIME_FILTERS_DEBUG
+
 module ocn_time_filters
 
    use mpas_derived_types
@@ -27,7 +29,7 @@ module ocn_time_filters
 
    use ocn_constants
    use ocn_diagnostics_routines
-#ifdef MPAS_DEBUG
+#ifdef TIME_FILTERS_DEBUG
    use mpas_constants
 #endif
 
@@ -57,9 +59,9 @@ module ocn_time_filters
    ! Private module variables
    !
    !--------------------------------------------------------------------
-#ifdef MPAS_DEBUG
+#ifdef TIME_FILTERS_DEBUG
    integer :: iEdgeOutput = 0, iBlockOutput = 0, iklevel = 1
-   real (kind=RKIND) :: lonEdgePoint = (360.0_RKIND-7.5_RKIND)*pii/180.0_RKIND, latEdgePoint = 32.5_RKIND*pii/180.0_RKIND
+   real (kind=RKIND) :: lonEdgePoint = 10.0_RKIND*pii/180.0_RKIND, latEdgePoint = 30.0_RKIND*pii/180.0_RKIND
 #endif
 
 !***********************************************************************
@@ -112,9 +114,8 @@ contains
       logical, pointer :: initializeFilters
       type (mpas_pool_type), pointer :: timeFiltersAMPool, statePool
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalVelocityLowPass, normalVelocityHighPass
-      logical, pointer :: config_AM_timeFilters_do_restart
 
-#ifdef MPAS_DEBUG
+#ifdef TIME_FILTERS_DEBUG
       real (kind=RKIND), dimension(:), pointer :: lonEdge, latEdge
       real (kind=RKIND) :: dist, distmax = 1e9
       integer :: i, iBlock
@@ -123,15 +124,9 @@ contains
 
       err = 0
 
-      ! read in data on restart
-      call mpas_pool_get_config(domain % configs, 'config_AM_timeFilters_do_restart', config_AM_timeFilters_do_restart)
-      if ( config_AM_timeFilters_do_restart ) then
-        call MPAS_stream_mgr_read(domain % streamManager, streamID='timeFiltersRestart', ierr=err)
-      end if
-
       call mpas_pool_get_config(ocnConfigs, 'config_AM_timeFilters_initialize_filters', initializeFilters)
       if (initializeFilters) then
-#ifdef MPAS_DEBUG
+#ifdef TIME_FILTERS_DEBUG
         write(stderrUnit,*) 'initializing time filters'
 #endif
 
@@ -157,7 +152,7 @@ contains
 
       end if
 
-#ifdef MPAS_DEBUG
+#ifdef TIME_FILTERS_DEBUG
       ! get index for edge nearest to a location
       block => domain % blocklist
       iBlock = 0
@@ -188,10 +183,10 @@ contains
       call mpas_pool_get_subpool(block % structs, 'mesh', statePool)
       call mpas_pool_get_array(statePool, 'latEdge', latEdge)
       call mpas_pool_get_array(statePool, 'lonEdge', lonEdge)
-      write(stderrUnit,*) 'lon = ', 180.0_RKIND/pii*lonEdge(iEdgeOutput), ' lat = ', 180.0_RKIND/pii*latEdge(iEdgeOutput), ' iklevel=',iklevel
+      write(stderrUnit,*) 'lon = ', 180.0_RKIND/pii*lonEdge(iEdgeOutput), ' lat = ', 180.0_RKIND/pii*latEdge(iEdgeOutput), ' iklevel=',iklevel, ' iEdgeOutput=',iEdgeOutput, ' iBlockOutput = ', iBlockOutput
 #endif
 
-#ifdef MPAS_DEBUG
+#ifdef TIME_FILTERS_DEBUG
         write(stderrUnit,*) 'finished initializing time filters'
 #endif
 
@@ -258,7 +253,7 @@ contains
       type (MPAS_timeInterval_type) :: timeStepESMF
       character(len=StrKIND), pointer :: config_dt
       real (kind=RKIND) :: dt, tau
-#ifdef MPAS_DEBUG
+#ifdef TIME_FILTERS_DEBUG
       integer :: iBlock
 #endif
 
@@ -266,7 +261,7 @@ contains
 
       dminfo = domain % dminfo
 
-#ifdef MPAS_DEBUG
+#ifdef TIME_FILTERS_DEBUG
         write(stderrUnit,*) 'start computing time filters'
 #endif
 
@@ -279,16 +274,16 @@ contains
       call mpas_set_timeInterval(timeStepESMF, timeString=config_dt, ierr=err)
       call mpas_get_timeInterval(timeStepESMF, dt=tau)
 
-#ifdef MPAS_DEBUG
+#ifdef TIME_FILTERS_DEBUG
           !write(stderrUnit,*) 'dt = ', dt, ' tau = ', tau
 #endif
 
       block => domain % blocklist
-#ifdef MPAS_DEBUG
+#ifdef TIME_FILTERS_DEBUG
       iBlock = 0
 #endif
       do while (associated(block))
-#ifdef MPAS_DEBUG
+#ifdef TIME_FILTERS_DEBUG
          iBlock = iBlock + 1
 #endif
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
@@ -316,7 +311,7 @@ contains
               ! normalVelocityTest line can possibly be removed (needed for testing purposes)
               normalVelocityTest(k,iEdge) = normalVelocity(k,iEdge)
             end do
-#ifdef MPAS_DEBUG
+#ifdef TIME_FILTERS_DEBUG
             if (iEdge == iEdgeOutput .and. iBlock == iBlockOutput) then
                 write(stderrUnit,*) 'vl=', normalVelocityLowPass(iklevel, iEdge), ' v=', normalVelocity(iklevel, iEdge)
             end if
@@ -326,7 +321,7 @@ contains
          block => block % next
       end do
 
-#ifdef MPAS_DEBUG
+#ifdef TIME_FILTERS_DEBUG
         write(stderrUnit,*) 'finished computing time filters'
 #endif
 

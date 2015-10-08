@@ -266,14 +266,19 @@ contains
             timerName = trim(initReadTimerPrefix) // poolItr % memberName(1:nameLength)
             call mpas_timer_start(timerName, .false.)
             configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_restart_stream'
+            nullify(config_AM_restart_stream)
             call mpas_pool_get_config(domain % configs, configName, config_AM_restart_stream)
 
             configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_input_stream'
+            nullify(config_AM_input_stream)
             call mpas_pool_get_config(domain % configs, configName, config_AM_input_stream)
 
             ! Verify the restart stream exists
             if ( associated(config_AM_restart_stream) ) then
-               if ( .not. mpas_stream_mgr_stream_exists(domain % streamManager, config_AM_restart_stream) ) then
+               if ( trim(config_AM_restart_stream) == 'none' ) then
+                  ! If the stream is set to 'none' nullify the config, so it doesn't get read in
+                  nullify(config_AM_restart_stream)
+               else if ( .not. mpas_stream_mgr_stream_exists(domain % streamManager, config_AM_restart_stream) ) then
                   call mpas_dmpar_global_abort('ERROR: Stream named ''' // trim(config_AM_restart_stream) // &
                                                ''' does not exist in config for analysis member ''' // &
                                                trim(poolItr % memberName(1:nameLength)) // '''')
@@ -282,7 +287,10 @@ contains
 
             ! Verify the input stream exists
             if ( associated(config_AM_input_stream) ) then
-               if ( .not. mpas_stream_mgr_stream_exists(domain % streamManager, config_AM_input_stream) ) then
+               if ( trim(config_AM_input_stream) == 'none' ) then
+                  ! If the stream is set to 'none' nullify the config, so it doesn't get read in
+                  nullify(config_AM_input_stream)
+               else if ( .not. mpas_stream_mgr_stream_exists(domain % streamManager, config_AM_input_stream) ) then
                   call mpas_dmpar_global_abort('ERROR: Stream named ''' // trim(config_AM_input_stream) // &
                                                ''' does not exist in config for analysis member ''' // &
                                                trim(poolItr % memberName(1:nameLength)) // '''')
