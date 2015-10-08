@@ -48,6 +48,11 @@ interface compute_div_C0
     module procedure compute_div_C0_hybrid
     module procedure compute_div_C0_par
 end interface
+interface make_c0
+    module procedure make_c0_hybrid
+    module procedure make_c0_par
+end interface
+
 
 public :: compute_zeta_C0_contra    ! for older versions of sweq which carry
 public :: compute_div_C0_contra     ! velocity around in contra-coordinates
@@ -479,10 +484,31 @@ end subroutine
 
 
 
+subroutine make_C0_par(zeta,elem,par)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! apply DSS (aka assembly procedure) to zeta.  
+! this is a low-performance routine used for I/O and analysis.
+! no need to optimize
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+type (parallel_t), intent(in) :: par
+type (element_t)     , intent(in), target :: elem(:)
+integer :: nets,nete
+real (kind=real_kind), dimension(np,np,nlev,nelemd) :: zeta
+
+! local
+integer :: k,i,j,ie,ic,kptr,nthread_save
+type (hybrid_t)   :: hybrid
+
+hybrid = hybrid_create(par,0,1)
+call make_c0_hybrid(zeta,elem,hybrid,1,nelemd)
+
+
+end subroutine
 
 
 
-subroutine make_C0(zeta,elem,hybrid,nets,nete)
+
+subroutine make_C0_hybrid(zeta,elem,hybrid,nets,nete)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! apply DSS (aka assembly procedure) to zeta.  
 ! this is a low-performance routine used for I/O and analysis.
