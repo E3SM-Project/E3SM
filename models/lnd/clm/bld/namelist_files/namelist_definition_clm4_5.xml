@@ -1411,4 +1411,15 @@ and pct_nat_pft read from the surface dataset.
 Runtime flag to turn on/off VSFM.
 </entry>
 
+<entry id="vsfm_satfunc_type" type="char*32" category="clm_physics"
+       group="clm_inparm"
+       valid_values="brooks_corey,smooth_brooks_corey_bz2,smooth_brooks_corey_bz3,van_genuchten" >
+Type of saturation function used in VSFM.
+    brooks_corey             = use the Brooks Corey model
+    smooth_brooks_corey_bz2  = use the smooth approximation of Brooks Corey Model with no quadratic term
+    smooth_brooks_corey_bz3  = use the smooth approximation of Brooks Corey Model with no cubic term
+    van_genuchten            = use the van Genuchten model
+</entry>
+
+
 </namelist_definition>

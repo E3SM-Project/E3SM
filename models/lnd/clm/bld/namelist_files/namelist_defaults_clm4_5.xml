@@ -68,6 +68,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 
 <!-- VSFM default -->
 <use_vsfm>.false.</use_vsfm>
+<vsfm_satfunc_type>smooth_brooks_corey_bz3</vsfm_satfunc_type>
 
 <!-- ================================================================== -->
 <!-- The default filenames are given relative to the root directory

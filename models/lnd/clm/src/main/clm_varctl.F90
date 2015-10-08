@@ -273,7 +273,12 @@ module clm_varctl
   logical, public :: use_vancouver       = .false.
   logical, public :: use_mexicocity      = .false.
   logical, public :: use_noio            = .false.
-  logical, public :: use_vsfm            = .false.
+
+  !----------------------------------------------------------
+  ! VSFM switches
+  !----------------------------------------------------------
+  logical          , public :: use_vsfm          = .false.
+  character(len=32), public :: vsfm_satfunc_type = 'smooth_brooks_corey_bz3'
 
   !----------------------------------------------------------
   ! To retrieve namelist

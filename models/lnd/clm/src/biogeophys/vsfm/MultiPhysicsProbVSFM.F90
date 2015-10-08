@@ -394,6 +394,9 @@ contains
     use GoveqnRichardsODEPressureType     , only : goveqn_richards_ode_pressure_type
     use RichardsODEPressureAuxType        , only : rich_ode_pres_auxvar_type
     use SaturationFunction                , only : SatFunc_Set_BC
+    use SaturationFunction                , only : SatFunc_Set_SBC_bz2
+    use SaturationFunction                , only : SatFunc_Set_SBC_bz3
+    use SaturationFunction                , only : SatFunc_Set_VG
     use PorosityFunctionMod               , only : PorosityFunctionSetConstantModel
     use ConditionType                     , only : condition_type
     use ConnectionSetType                 , only : connection_set_type
@@ -403,6 +406,7 @@ contains
     use landunit_varcon                   , only : istcrop, istsoil
     use column_varcon                     , only : icol_road_perv
     use clm_varcon                        , only : grav, denh2o
+    use clm_varctl                        , only : vsfm_satfunc_type
     !
     implicit none
     !
@@ -535,8 +539,32 @@ contains
              call PorosityFunctionSetConstantModel(ode_aux_vars_in(icell)%porParams, &
                   ode_aux_vars_in(icell)%por)
 
-             call SatFunc_Set_BC(ode_aux_vars_in(icell)%satParams,  &
-                 sat_res, alpha, lambda)
+             if (vsfm_satfunc_type == 'brooks_corey') then
+                call SatFunc_Set_BC(ode_aux_vars_in(icell)%satParams,  &
+                                    sat_res,                           &
+                                    alpha,                             &
+                                    lambda)
+             elseif (vsfm_satfunc_type == 'smooth_brooks_corey_bz2') then
+                call SatFunc_Set_SBC_bz2(ode_aux_vars_in(icell)%satParams,  &
+                                         sat_res,                           &
+                                         alpha,                             &
+                                         lambda,                            &
+                                         -0.9d0/alpha)
+             elseif (vsfm_satfunc_type == 'smooth_brooks_corey_bz3') then
+                call SatFunc_Set_SBC_bz3(ode_aux_vars_in(icell)%satParams,  &
+                                         sat_res,                           &
+                                         alpha,                             &
+                                         lambda,                            &
+                                         -0.9d0/alpha)
+             elseif (vsfm_satfunc_type == 'van_genuchten') then
+                call SatFunc_Set_VG(ode_aux_vars_in(icell)%satParams,  &
+                                    sat_res,                           &
+                                    alpha,                             &
+                                    lambda)
+             else
+                call endrun(msg='ERROR:: Unknown vsfm_satfunc_type = '//vsfm_satfunc_type//&
+                  errMsg(__FILE__, __LINE__))
+             endif
 
           enddo
        enddo
