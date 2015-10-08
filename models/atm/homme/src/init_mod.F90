@@ -297,7 +297,7 @@ contains
     ! =================================================================
     ! Run the checksum to verify communication schedule
     ! =================================================================
-!    call testchecksum(par,GridEdge)
+    call testchecksum(elem,par,GridEdge)
 
     
 

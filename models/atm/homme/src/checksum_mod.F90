@@ -91,12 +91,12 @@ contains
 
 
     if(PrChecksum) then
-       print *,'testchecksum:  The GLOBAL pattern is: '
+       if (par%masterproc) print *,'testchecksum:  The GLOBAL pattern is: '
        call PrintCheckSum(TestPattern_g,Checksum_g)
     endif
 
     if(PrChecksum) then
-       print *,'testchecksum:  The LOCAL pattern is: '
+       if (par%masterproc) print *,'testchecksum:  The LOCAL pattern is: '
        call PrintCheckSum(TestPattern_l,Checksum_l)
     endif
 
@@ -107,7 +107,7 @@ contains
     !  Allocate the communication Buffers
     !=======================================
 
-    call initEdgeBuffer(par,buffer,elem,1)
+    call initEdgeBuffer(par,buffer,elem,nlev)
 
 
     !=======================================
@@ -125,7 +125,7 @@ contains
        numlev=nlev
        call edgeVpack(buffer,TestPattern_l(1,1,1,ie),numlev,kptr,ie)
     enddo
-    print *,'testchecksum: after call to edgeVpack'
+    if (par%masterproc) print *,'testchecksum: after call to edgeVpack'
 
     !==================================================
     !  Perform the boundary exchange
@@ -142,7 +142,7 @@ contains
        numlev = nlev
        call edgeVunpack(buffer,Checksum_l(1,1,1,ie),numlev,kptr,ie)
     enddo
-    print *,'testchecksum: after call to edgeVunpack'
+    if (par%masterproc) print *,'testchecksum: after call to edgeVunpack'
 
     !=====================================
     !  Printout the distributed checksum
@@ -182,13 +182,13 @@ contains
     !   Pack up the communication buffer
     !==================================================
 
-    print *,'testchecksum: before call to edgeVpack'
+    if (par%masterproc) print *,'testchecksum: before call to edgeVpack'
     do ielem=1,nelemd
        kptr=0
        numlev=nlev
        call edgeDGVpack(buffer,Checksum_l(1,1,1,ielem),numlev,kptr,ielem)
     enddo
-    print *,'testchecksum: after call to edgeVpack'
+    if (par%masterproc) print *,'testchecksum: after call to edgeVpack'
 
     !==================================================
     !  Perform the boundary exchange
@@ -200,13 +200,13 @@ contains
     !   UnPack and accumulate the communication buffer
     !==================================================
 
-    print *,'testchecksum: before call to edgeVunpack'
+    if (par%masterproc) print *,'testchecksum: before call to edgeVunpack'
     do ielem=1,nelemd
        kptr   = 0
        numlev = nlev
        call edgeDGVunpack(buffer,Checksum_dg_l(0,0,1,ielem),numlev,kptr,ielem)
     enddo
-    print *,'testchecksum: after call to edgeDGVunpack'
+    if (par%masterproc) print *,'testchecksum: after call to edgeDGVunpack'
 
     !==================================================
     !   Check Correctness for DG communication
