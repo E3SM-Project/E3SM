@@ -30,6 +30,7 @@
      <jobid_pattern>(\d+)</jobid_pattern>
      <depend_string> --dependencies</depend_string>
      <submit_args>
+       <arg flag="--cwd" name="cwd"/>
        <arg flag="-A" name="project"/>
        <arg flag="-t" name="wall_time"/>
        <arg flag="-n" name="num_nodes"/>

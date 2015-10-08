@@ -181,6 +181,9 @@ foreach my $model (@modelsorder) {
     } else {
        qx($file $CASEROOT);
     }
+    if($? != 0){
+	$logger->logdie("$file failed $?");
+    }
 }
 
 # -------------------------------------------------------------------------

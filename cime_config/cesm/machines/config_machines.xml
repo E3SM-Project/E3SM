@@ -1013,7 +1013,7 @@
       </walltimes>
     </batch_system>
     <mpirun mpilib="default">
-      <executable>runjob</executable>
+      <executable>/usr/bin/runjob</executable>
       <arguments>
 	<arg name="label"> --label short</arg>
 	<!-- Ranks per node!! -->

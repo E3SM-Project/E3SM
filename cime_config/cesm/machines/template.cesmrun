@@ -488,13 +488,15 @@ sub resubmitCheck()
 	my $cwd = getcwd;
 	chdir $config{'CASEROOT'};
 	my $resubmitcommand = "$submitscript -resubmit -scriptname $config{'CASE'}.";
+
 	if(defined $config{TESTCASE} && $config{TESTCASE} eq "ERR"){
 	    $resubmitcommand .= "test"; 
 	}else{
 	    $resubmitcommand .= "run"; 
 	}
 	$logger->debug( "running resubmit check $resubmitcommand");    
-	qx($resubmitcommand) or $logger->warn ("could not run CESM submit script, $! $?");
+	qx($resubmitcommand);
+        if($?){ $logger->warn ("could not run CESM submit script, $! $?");}
 	chdir $cwd;
     }
 }

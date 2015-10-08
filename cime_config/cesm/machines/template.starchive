@@ -33,7 +33,22 @@ my $logger = Log::Log4perl::get_logger();
 # First, get the configuration from every xml file.
 my %config = SetupTools::getAllResolved();
 
+
+my $testlog = "$config{CASEROOT}/TestStatus.log";
+if(-e $testlog){
+    open(TL,">>$testlog");
+    print TL "st_archive starting\n";
+    close(TL);
+}
+$logger->info("st_archive starting");
 qx(./st_archive >> stArchiveStatus 2>&1);
+if(-e $testlog){
+    open(TL,">>$testlog");
+    print TL "st_archive complete\n";
+    close(TL);
+}
+$logger->info("st_archive complete");
+print TL "st_archive complete\n";
 resubmitCheck();
 
 sub resubmitCheck()
@@ -44,7 +59,13 @@ sub resubmitCheck()
 	chdir $config{CASEROOT};
 	my $resubmitcommand = "$submitscript -resubmit -scriptname $config{'CASE'}.st_archive";
 	$logger->debug( "running resubmit check $resubmitcommand");
-	qx($resubmitcommand) or $logger->warn("could not run CESM submit script, $! $?");
+	if(-e $testlog){
+	    open(TL,">>$testlog");
+	    print TL "running resubmit check $resubmitcommand\n";
+	    close(TL);
+	}
+	qx($resubmitcommand);
+        if($?){ $logger->warn ("could not run CESM submit script, $! $?");}
 	chdir $cwd;
     }
 }

@@ -176,7 +176,7 @@ print $testfh " $eol cd $caseroot  $eol";
 my $testcase_interp = <<END_INTERP;
 
     source .env_mach_specific.csh
-
+    setenv CIMEROOT `./xmlquery CIMEROOT -value`
     # valid test output states are:  
     #   PASS      Test passed
     #   FAIL      Test failed

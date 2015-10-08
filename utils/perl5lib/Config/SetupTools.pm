@@ -540,7 +540,8 @@ sub _resolveValues
     # the value can come from the 
     if($value =~ /(\$[\w_]+)/)
     {
-	$logger->debug( "in _resolveValues: value: $value\n");
+# too noisy
+#	$logger->debug( "in _resolveValues: value: $value\n");
 	my $unresolved = $1;
 	
 	#print "need to resolve: $unresolved\n";
@@ -559,7 +560,8 @@ sub _resolveValues
 		    my $rid = $r->getAttribute('id');
 		    my $rvalue = $r->getAttribute('value');
 		    $value =~ s/\$$needed/$rvalue/g;
-		    $logger->debug( "value after substitution: $value\n");
+# too noisy
+#		    $logger->debug( "value after substitution: $value\n");
 		}
 	    }
 	}
@@ -583,7 +585,8 @@ sub _resolveValues
     }
     else
     {
-	$logger->debug( "returning $value\n");
+# too verbose
+#	$logger->debug( "returning $value\n");
 	return $value;
     }
 }

@@ -382,11 +382,17 @@ sub getSubmitArguments()
     	        my $field = $batchmaker->getField($argName);
     	        if(! defined $field)
     	        {
-    	            $logger->logdie ("$argName not defined! Aborting...");
+		    # some machines dont use the project flag
+    	            $logger->warn("$argName not defined! ...");
     	        }
     	        else
     	        {
-    	            $submitargs .= " $argFlag $field";
+		    # if argFlag ends in an = sign dont put any space before field
+		    if($argFlag =~ /=$/){		    
+			$submitargs .= " $argFlag$field";
+		    }else{
+			$submitargs .= " $argFlag $field";
+		    }
     	        }
     	    }
     	    # If the argName isn't defined, just use the argflag, there;s
@@ -576,6 +582,7 @@ sub submitSingleJob()
     my $dependarg = '';
     my $submitargs = '';
     $submitargs = $self->getSubmitArguments($scriptname);
+
     if(! defined $submitargs && length($submitargs <= 0))
     {
         $submitargs = '';
@@ -624,8 +631,13 @@ sub doResubmit()
         my $submitargs = $self->getSubmitArguments($scriptname);
         
         my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $scriptname ";
-        
-        qx($runcmd) or $logger->logdie ("could not exec command $runcmd, $!");
+        $logger->info("1: $runcmd");
+        qx($runcmd);
+        if($? != 0)
+        {
+            $logger->logdie( "could not execute runcmd $runcmd, $! $?");
+            exit(1);
+        }
 
         #chdir $owd;
 	$self->_decrementResubmitCounter(\%config);
@@ -638,32 +650,48 @@ sub doResubmit()
     {
         chdir $config{'CASEROOT'};
         my $starchivescript = $scriptname;
-        $starchivescript =~ s/run/st_archive/g;
+	# replace .run or .test with .st_archive
+	$starchivescript =~ s/\.[^\.+]$/st_archive/g;
         my $submitargs = $self->getSubmitArguments($starchivescript);
         
         my $submitstuff = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $starchivescript";
         
         my $runcmd = "ssh cooleylogin1 $submitstuff";
 	
-        qx($runcmd) or $logger->logdie (" could not exec cmd $runcmd, $! $?");
+        $logger->info("2: $runcmd");
+        qx($runcmd);
+        if($? != 0)
+        {
+            $logger->logdie( "could not execute runcmd $runcmd, $! $?");
+            exit(1);
+        }
         
     }
 
     
     # If we're post run and we need to run the short-term archiver AND resubmit, then run the short-term archiver
     # on cooley
-    if( ! $issta && $config{'RESUBMIT'} > 0 && $config{'DOUT_S'} eq 'TRUE')
+    if(! $issta && $config{'RESUBMIT'} > 0 && $config{'DOUT_S'} eq 'TRUE')
     {
         chdir $config{'CASEROOT'};
         my $starchivescript = $scriptname;
-        $starchivescript =~ s/run/st_archive/g;
-        
+	if($scriptname =~ /\.run$/){
+	    $starchivescript =~ s/run/st_archive/g;
+	}else{
+	    $starchivescript =~ s/test/st_archive/g;
+        }
         my $submitargs = $self->getSubmitArguments($starchivescript);
 	
         my $submitstuff = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $starchivescript";
         my $runcmd = "ssh cooleylogin1 $submitstuff";
-        qx($runcmd) or $logger->logdie( "could not exec cmd $runcmd, $!");
-	$self->_decrementResubmitCounter(\%config);
+        $logger->info("3: $runcmd");
+        qx($runcmd);
+        if($? != 0)
+        {
+            $logger->logdie( "could not execute runcmd $runcmd, $! $?");
+            exit(1);
+        }
+
     }
 
     # If we're being called by the short-term archiver, and we actually need to resubmit
@@ -674,7 +702,12 @@ sub doResubmit()
         chdir $config{'CASEROOT'};
         
         my $runscript = $scriptname;
-        $runscript =~ s/st_archive/run/g;
+	if(defined $config{TESTCASE}){
+	    $runscript =~ s/st_archive/test/g;
+	}else{
+	    $runscript =~ s/st_archive/run/g;
+	}
+
         
         my $submitargs = $self->getSubmitArguments($runscript);
 	
@@ -692,12 +725,15 @@ sub doResubmit()
             $runhost = "cetuslac1";
         }
         my $runcmd = "ssh cooleylogin1 ssh $runhost $submitstuff ";
-        qx($runcmd) or $logger->logdie( "could not exec cmd $runcmd, $!");
-        if($?)
+    #     my $runcmd =  "ssh $runhost $submitstuff ";
+         $logger->info("4: $runcmd");
+        qx($runcmd);
+        if($? != 0)
         {
             $logger->logdie( "could not execute runcmd $runcmd, $! $?");
             exit(1);
         }
+	$self->_decrementResubmitCounter(\%config);
         
     }
     
@@ -714,15 +750,16 @@ sub getSubmitArguments()
     # We need the script name and the dependent job id. 
     my $scriptname = shift;
     my $dependentjobid = shift;
-    my $sta_ok = shift;
-
+    $scriptname =~ /\.([^\.]+)$/;
+    my $job = $1;
     my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot}, 
 							 cimeroot => $self->{cimeroot},
 							 case => $self->{case},
 							 mpilib => $self->{mpilib}, 
 							 machroot => $self->{machroot}, 
 							 machine => $self->{machine},
-							 compiler => $self->{compiler} );
+							 compiler => $self->{compiler},
+                                                         job => $job );
     
     # Set the node count to 1 if this is the short-term archive script. 
     if(defined $scriptname && $scriptname =~ /archive/)
@@ -772,13 +809,7 @@ sub getSubmitArguments()
         my $dependArg = $self->getDependString($dependentjobid);
         $submitargs .= " $dependArg";
     }
-    # Need to add the --cwd argument to the submit args if this is the st_archive script
-    # so the archive script will run out of the CASEROOT
-    if(defined $scriptname && $scriptname =~ /archive/)
-    {
-        $submitargs .= " --cwd $self->{'caseroot'} ";
-    }
-    
+
     return $submitargs;
 }
 
