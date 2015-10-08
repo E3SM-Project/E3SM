@@ -37,7 +37,7 @@
 		/>
 		<nml_option name="config_AM_mixedLayerDepths_reference_pressure" type="real" default_value="1.0E5" units="N m^-2"
 					description="reference pressure for threshold computation"
-					possible_values="any positive real, suggested range .25E5 less than or equal to value <= 2E5"
+					possible_values="any positive real, suggested range .25E5 less than or equal to value less than or equal to 2E5"
 		/>
 		<nml_option name="config_AM_mixedLayerDepths_Tgradient" type="logical" default_value=".true." units="unitless"
 					description="Logical flag controlling whether or not to compute MLDs via the temperature gradient"
