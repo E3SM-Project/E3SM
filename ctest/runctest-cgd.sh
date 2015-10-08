@@ -1,5 +1,4 @@
 #!/bin/sh
-set -x
 #==============================================================================
 #
 #  This script defines how to run CTest on the Argonne Leadership Computing
