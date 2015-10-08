@@ -5,6 +5,8 @@
     <xs:complexType>
       <xs:sequence>
 
+	<xs:element name="header" type="xs:string"/>
+
 	<xs:element name="components">
 	  <xs:complexType>
 	    <xs:sequence>
@@ -22,8 +24,7 @@
 			    <xs:complexType>
 			      <xs:sequence>
 				<xs:element name="subdir" type="xs:string"/>
-				<xs:element name="dispose" type="xs:string"/>
-				<xs:element name="keepLast" type="xs:string"/>
+				<xs:element name="keep_last_in_rundir" type="xs:string"/>
 			      </xs:sequence>
 			      <xs:attribute name="suffix" type="xs:string" use="required"/>
 			    </xs:complexType>
