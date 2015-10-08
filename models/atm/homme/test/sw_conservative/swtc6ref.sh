@@ -12,10 +12,11 @@
 #  Shallow water test case 6 "referece" test described in
 #  homme/README 
 #
-set wdir = ~/scratch1/sweqx
-set src = ~/codes/homme/build/sweqx
-set input = ~/codes/homme/test/sw_conservative
 
+set HOMME = ~/codes/homme
+set input = $HOMME/test/sw_conservative
+set MACH = $HOMME/cmake/machineFiles/redsky.cmake
+set wdir = ~/scratch1/sweqx
 
 set builddir = $wdir/bld
 set rundir = $wdir/swtc6ref
@@ -43,7 +44,7 @@ echo NCPU = $NCPU
 set test_case = swtc6
 set sub_case = 1 # default
 
-set build = 0
+set build = 1
 set make = 1
 if ( $#argv >= 1) then
   if ( $1 == 'build' ) set build = 1
@@ -136,6 +137,6 @@ sed s/statefreq.\*/"statefreq = $sfreq"/  \
 > input.nl
 
 date
-mpirun -np $NCPU $src/sweqx < input.nl tee  sweq.out
+mpirun -np $NCPU $exe < input.nl tee  sweq.out
 date
 

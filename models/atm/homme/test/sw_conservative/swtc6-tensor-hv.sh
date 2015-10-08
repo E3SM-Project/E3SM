@@ -30,6 +30,7 @@ mkdir -p $rundir
 cd $builddir
 if ! ([ -e  CMakeCache.txt ]) then
   rm -rf CMakeFiles CMakeCache.txt
+  #cmake -C $MACH -DSWEQX_USE_PIO=1 -DSWEQX_PLEV=1  -DSWEQX_NP=4 $HOMME
   cmake -C $MACH -DSWEQX_PLEV=1  -DSWEQX_NP=4 $HOMME
   exit
 fi
