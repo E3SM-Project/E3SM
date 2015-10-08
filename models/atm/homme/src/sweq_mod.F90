@@ -209,9 +209,6 @@ contains
     ! begin executable code
     ! ==========================
     call t_startf('sweq')
-    if (NThreads>1) then
-       call abortmp('Shallow water model cannot use threads')
-    endif
     hybrid = hybrid_create(par,ithr,NThreads)
     simday=0
     if (topology == "cube") then
@@ -505,8 +502,11 @@ contains
           ! ==============================================
           ! Output initial picture of geopotential...
           ! ============================================== 
-          ! these routines are not threaded and cant be called in a threaded
-          ! region. shallow water model DOES NOT WORK with threads 
+          ! I/O routines are not thread safe
+          ! we need to stop threads and restart after I/O
+          if (NThreads>1) then
+             call abortmp('Shallow water model I/O can not be called with threads')
+          endif
 #ifdef PIO_INTERP
 	  call interp_movie_init(elem,par,tl=tl)
           call interp_movie_output(elem,tl, par, pmean, fvm)     
