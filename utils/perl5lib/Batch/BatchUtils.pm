@@ -633,7 +633,7 @@ sub doResubmit()
         my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $scriptname ";
         $logger->info("1: $runcmd");
         qx($runcmd);
-        if($?)
+        if($? != 0)
         {
             $logger->logdie( "could not execute runcmd $runcmd, $! $?");
             exit(1);
@@ -650,7 +650,8 @@ sub doResubmit()
     {
         chdir $config{'CASEROOT'};
         my $starchivescript = $scriptname;
-        $starchivescript =~ s/run/st_archive/g;
+	# replace .run or .test with .st_archive
+	$starchivescript =~ s/\.[^\.+]$/st_archive/g;
         my $submitargs = $self->getSubmitArguments($starchivescript);
         
         my $submitstuff = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $starchivescript";
@@ -659,7 +660,7 @@ sub doResubmit()
 	
         $logger->info("2: $runcmd");
         qx($runcmd);
-        if($?)
+        if($? != 0)
         {
             $logger->logdie( "could not execute runcmd $runcmd, $! $?");
             exit(1);
@@ -685,7 +686,7 @@ sub doResubmit()
         my $runcmd = "ssh cooleylogin1 $submitstuff";
         $logger->info("3: $runcmd");
         qx($runcmd);
-        if($?)
+        if($? != 0)
         {
             $logger->logdie( "could not execute runcmd $runcmd, $! $?");
             exit(1);
@@ -701,7 +702,12 @@ sub doResubmit()
         chdir $config{'CASEROOT'};
         
         my $runscript = $scriptname;
-        $runscript =~ s/st_archive/run/g;
+	if(defined $config{TESTCASE}){
+	    $runscript =~ s/st_archive/test/g;
+	}else{
+	    $runscript =~ s/st_archive/run/g;
+	}
+
         
         my $submitargs = $self->getSubmitArguments($runscript);
 	
@@ -722,7 +728,7 @@ sub doResubmit()
     #     my $runcmd =  "ssh $runhost $submitstuff ";
          $logger->info("4: $runcmd");
         qx($runcmd);
-        if($?)
+        if($? != 0)
         {
             $logger->logdie( "could not execute runcmd $runcmd, $! $?");
             exit(1);
