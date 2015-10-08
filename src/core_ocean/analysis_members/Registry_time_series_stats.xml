@@ -27,14 +27,14 @@
 					description="Interval that determines frequency of computation for the time series stats analysis member."
 					possible_values="Any valid time stamp or 'dt'. This must also be less than or requal to output_interval / 2 (at least two samples in a series)."
 		/>
-		<nml_option name="config_AM_timeSeriesStats_stream_name" 
+		<nml_option name="config_AM_timeSeriesStats_output_stream" 
 					type="character" 
 					default_value="timeSeriesStatsOutput" 
 					units="unitless"
 					description="Name of stream the time series stats analysis member will operate on."
 					possible_values="An existing stream that will be modified (existing fields removed and new ones added) with time series stats outputs. Cannot be 'none', like other analysis members."
 		/>
-		<nml_option name="config_AM_timeSeriesStats_restart_name"
+		<nml_option name="config_AM_timeSeriesStats_restart_stream"
 					type="character"
 					default_value="timeSeriesStatsRestart"
 					units="unitless"

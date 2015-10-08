@@ -106,8 +106,8 @@ module ocn_time_series_stats
     'config_AM_timeSeriesStats'
   character (len=StrKIND), parameter :: FRAMEWORK_PREFIX = 'timeSeriesStats'
 
-  character (len=StrKIND), parameter :: STREAM_NAME_SUFFIX = '_stream_name'
-  character (len=StrKIND), parameter :: RESTART_NAME_SUFFIX = '_restart_name'
+  character (len=StrKIND), parameter :: OUTPUT_STREAM_SUFFIX = '_output_stream'
+  character (len=StrKIND), parameter :: RESTART_STREAM_SUFFIX = '_restart_stream'
   character (len=StrKIND), parameter :: OPERATION_SUFFIX = '_operation'
   character (len=StrKIND), parameter :: ADD_MESH_SUFFIX = '_add_mesh'
 
@@ -500,7 +500,7 @@ subroutine start_init(domain, instance, series, err)
   integer, intent(out) :: err !< Output: error flag
 
   ! local variables
-  character (len=StrKIND), pointer :: config_results, stream_name
+  character (len=StrKIND), pointer :: config_results, output_stream_name
   character (len=StrKIND) :: config, namelist_prefix, storage_prefix, &
     var_identifier, buf_identifier, var_prefix, buf_prefix
   integer :: b, v
@@ -555,20 +555,20 @@ subroutine start_init(domain, instance, series, err)
   !
 
   ! get the stream name
-  config = trim(namelist_prefix) // trim(STREAM_NAME_SUFFIX)
-  call mpas_pool_get_config(domain % configs, config, stream_name)
+  config = trim(namelist_prefix) // trim(OUTPUT_STREAM_SUFFIX)
+  call mpas_pool_get_config(domain % configs, config, output_stream_name)
 
-  if (stream_name == 'none') then
+  if (output_stream_name == 'none') then
     call mpas_dmpar_global_abort('Error: stream cannot be "none" ' // &
       'for time series stats.')
   end if
 
   ! count the number of variables
   call mpas_stream_mgr_begin_iteration(domain % streamManager, &
-    stream_name, err)
+    output_stream_name, err)
   series % number_of_variables = 0
   do while (mpas_stream_mgr_get_next_field(domain % streamManager, &
-    stream_name, config))
+    output_stream_name, config))
     series % number_of_variables = series % number_of_variables + 1
   end do
 
@@ -735,7 +735,7 @@ subroutine modify_stream(domain, instance, series, err)!{{{
 
   ! local variables
   integer :: v, b
-  character (len=StrKIND), pointer :: stream_name, restart_name
+  character (len=StrKIND), pointer :: output_stream_name, restart_stream_name
   type (field0DReal), pointer :: srcReal, dstReal
   logical, pointer :: copy_mesh
   character (len=StrKIND) :: field_name, config, op_name
@@ -749,13 +749,13 @@ subroutine modify_stream(domain, instance, series, err)!{{{
   namelist_prefix = trim(CONFIG_PREFIX) // trim(instance)
   storage_prefix = trim(FRAMEWORK_PREFIX) // trim(instance)
 
-  ! get the stream name
-  config = trim(namelist_prefix) // trim(STREAM_NAME_SUFFIX)
-  call mpas_pool_get_config(domain % configs, config, stream_name)
+  ! get the output stream name
+  config = trim(namelist_prefix) // trim(OUTPUT_STREAM_SUFFIX)
+  call mpas_pool_get_config(domain % configs, config, output_stream_name)
 
-  ! get restart stream
-  config = trim(namelist_prefix) // trim(RESTART_NAME_SUFFIX)
-  call mpas_pool_get_config(domain % configs, config, restart_name)
+  ! get restart stream name
+  config = trim(namelist_prefix) // trim(RESTART_STREAM_SUFFIX)
+  call mpas_pool_get_config(domain % configs, config, restart_stream_name)
 
   ! operator
   if (series % operation == AVG_OP) then
@@ -768,10 +768,10 @@ subroutine modify_stream(domain, instance, series, err)!{{{
 
   ! get the old field names 
   call mpas_stream_mgr_begin_iteration(domain % streamManager, &
-    stream_name, err)
+    output_stream_name, err)
   v = 1
   do while (mpas_stream_mgr_get_next_field(domain % streamManager, &
-    stream_name, field_name))
+    output_stream_name, field_name))
     series % variables(v) % input_name = field_name
     v = v + 1
   end do
@@ -779,7 +779,7 @@ subroutine modify_stream(domain, instance, series, err)!{{{
   ! remove the old ones from the stream 
   do v = 1, series % number_of_variables
     call mpas_stream_mgr_remove_field(domain % streamManager, &
-      stream_name, series % variables(v) % input_name)
+      output_stream_name, series % variables(v) % input_name)
   end do
 
   !
@@ -788,7 +788,7 @@ subroutine modify_stream(domain, instance, series, err)!{{{
 
   ! add xtime to the stream
   call mpas_stream_mgr_add_field(domain % streamManager, &
-    stream_name, TIME_STREAM, ierr=err)
+    output_stream_name, TIME_STREAM, ierr=err)
 
   ! optionally add mesh to stream
   config = trim(namelist_prefix) // trim(ADD_MESH_SUFFIX)
@@ -799,13 +799,13 @@ subroutine modify_stream(domain, instance, series, err)!{{{
     do while (mpas_stream_mgr_get_next_field(domain % streamManager, &
       MESH_STREAM, field_name))
       call mpas_stream_mgr_add_field(domain % streamManager, &
-        stream_name, field_name, ierr=err)
+        output_stream_name, field_name, ierr=err)
     end do
   end if
 
   ! make restart mutable
   call mpas_stream_mgr_set_property(domain % streamManager, &
-    restart_name, MPAS_STREAM_PROPERTY_IMMUTABLE, .false., ierr=err)
+    restart_stream_name, MPAS_STREAM_PROPERTY_IMMUTABLE, .false., ierr=err)
 
   ! create and put the counters in the streams
   do b = 1, series % number_of_buffers
@@ -825,16 +825,16 @@ subroutine modify_stream(domain, instance, series, err)!{{{
 
     ! put it in the output stream
     call mpas_stream_mgr_add_field(domain % streamManager, &
-      stream_name, dstReal % fieldName, ierr=err)
+      output_stream_name, dstReal % fieldName, ierr=err)
 
     ! put it in the restart stream
     call mpas_stream_mgr_add_field(domain % streamManager, &
-      restart_name, dstReal % fieldName, ierr=err)
+      restart_stream_name, dstReal % fieldName, ierr=err)
   end do 
 
   ! set up the variables
   call mpas_stream_mgr_begin_iteration(domain % streamManager, &
-    stream_name, err)
+    output_stream_name, err)
   do v = 1, series % number_of_variables 
     ! get the info of the field
     call mpas_pool_get_field_info(domain % blocklist % allFields, &
@@ -867,34 +867,34 @@ subroutine modify_stream(domain, instance, series, err)!{{{
 
       ! add the field to the stream
       call mpas_stream_mgr_add_field(domain % streamManager, &
-        stream_name, series % variables(v) % output_names(b), ierr=err)
+        output_stream_name, series % variables(v) % output_names(b), ierr=err)
 
       ! put it in the restart stream
       call mpas_stream_mgr_add_field(domain % streamManager, &
-        restart_name, series % variables(v) % output_names(b), ierr=err)
+        restart_stream_name, series % variables(v) % output_names(b), ierr=err)
     end do
   end do ! number_of_variables
 
   ! make restart immutable
   call mpas_stream_mgr_set_property(domain % streamManager, &
-    restart_name, MPAS_STREAM_PROPERTY_IMMUTABLE, .true., ierr=err)
+    restart_stream_name, MPAS_STREAM_PROPERTY_IMMUTABLE, .true., ierr=err)
 
   ! read the restart stream
-  call mpas_stream_mgr_read(domain % streamManager, streamID = restart_name, &
+  call mpas_stream_mgr_read(domain % streamManager, streamID = restart_stream_name, &
     ierr=err)
 
   ! add xtime afterwards because we don't want to clobber the existing xtime
   ! make restart mutable
   call mpas_stream_mgr_set_property(domain % streamManager, &
-    restart_name, MPAS_STREAM_PROPERTY_IMMUTABLE, .false., ierr=err)
+    restart_stream_name, MPAS_STREAM_PROPERTY_IMMUTABLE, .false., ierr=err)
 
   ! add xtime to the restart
   call mpas_stream_mgr_add_field(domain % streamManager, &
-    restart_name, TIME_STREAM, ierr=err)
+    restart_stream_name, TIME_STREAM, ierr=err)
 
   ! make restart immutable
   call mpas_stream_mgr_set_property(domain % streamManager, &
-    restart_name, MPAS_STREAM_PROPERTY_IMMUTABLE, .true., ierr=err)
+    restart_stream_name, MPAS_STREAM_PROPERTY_IMMUTABLE, .true., ierr=err)
 
 end subroutine modify_stream!}}}
 
