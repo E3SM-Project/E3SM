@@ -365,6 +365,7 @@ module atm_time_integration
                allocate(delsq_vorticity(nVertLevels,nVertices+1))
                allocate(dpdz(nVertLevels,nCells+1))
 
+MPAS_GPTL_START('dyn_tend')
 !$OMP PARALLEL DO
                do thread=1,block % nThreads
                   call atm_compute_dyn_tend( tend, state, diag, mesh, block % configs, nVertLevels, rk_step, dt, & 
@@ -376,6 +377,7 @@ module atm_time_integration
                                              block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread))
                end do
 !$OMP END PARALLEL DO
+MPAS_GPTL_STOP('dyn_tend')
 
                deallocate(delsq_theta)
                deallocate(delsq_w)
@@ -2779,6 +2781,9 @@ module atm_time_integration
 
       implicit none
 
+      !
+      ! Dummy arguments
+      !
       type (mpas_pool_type), intent(inout) :: tend
       type (mpas_pool_type), intent(in) :: state
       type (mpas_pool_type), intent(in) :: diag
@@ -2790,16 +2795,12 @@ module atm_time_integration
       integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
       integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
 
-
-      integer :: iEdge, iCell, iVertex, k, cell1, cell2, vertex1, vertex2, eoe, i, j, iq, iAdvCell
-      real (kind=RKIND) :: invDt, flux, workpv
-      real (kind=RKIND) :: edge_sign, pr_scale, r_dc, r_dv, u_mix_scale
-
-      integer, pointer :: nCells, nEdges, nVertices, nCellsSolve, nEdgesSolve, vertexDegree
+      !
+      ! Local variables
+      !
+      integer, pointer :: nCells, nEdges, nVertices, nCellsSolve, nEdgesSolve, vertexDegree, maxEdges, maxEdges2
       integer, pointer :: moist_start, moist_end
-      real (kind=RKIND) :: h_mom_eddy_visc4
-      real (kind=RKIND) :: h_theta_eddy_visc4
-      real (kind=RKIND) :: u_diffusion
+
       real (kind=RKIND), dimension(:), pointer ::  fEdge, dvEdge, dcEdge, invDcEdge, invDvEdge, invAreaCell, invAreaTriangle, &
                                                    meshScalingDel2, meshScalingDel4
       real (kind=RKIND), dimension(:,:), pointer :: weightsOnEdge, zgrid, rho_edge, rho_zz, ru, u, v, tend_u, &
@@ -2823,14 +2824,9 @@ module atm_time_integration
       integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge
       real (kind=RKIND), dimension(:), pointer :: latCell, latEdge, angleEdge, u_init
 
-      real (kind=RKIND), dimension( nVertLevels + 1 ) :: wduz, wdwz, wdtz, dpzx
-      real (kind=RKIND), dimension( nVertLevels ) :: ru_edge_w, q
-      real (kind=RKIND) :: theta_turb_flux, w_turb_flux, r
-
       integer, dimension(:,:), pointer :: advCellsForEdge
       integer, dimension(:), pointer :: nAdvCellsForEdge
       real (kind=RKIND), dimension(:,:), pointer :: adv_coefs, adv_coefs_3rd
-      real (kind=RKIND) :: scalar_weight
 
       real (kind=RKIND), dimension(:), pointer :: rdzu, rdzw, fzm, fzp, qv_init
       real (kind=RKIND), dimension(:,:), pointer :: t_init 
@@ -2838,14 +2834,10 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: pzp, pzm
 
       real (kind=RKIND), pointer :: cf1, cf2, cf3
-      real (kind=RKIND) :: prandtl_inv, r_areaCell, rgas_cprcv
 
       real (kind=RKIND), pointer :: r_earth
-      real (kind=RKIND) :: inv_r_earth
       real (kind=RKIND), dimension(:,:), pointer :: ur_cell, vr_cell
 
-      !real (kind=RKIND), parameter :: c_s = 0.125
-      real (kind=RKIND), dimension( nVertLevels+1 ) :: d_diag, d_off_diag, flux_arr
       real (kind=RKIND), dimension(:,:), pointer :: defc_a, defc_b
 
       real(kind=RKIND), dimension(:,:), pointer :: tend_w_pgf, tend_w_buoy
@@ -2858,16 +2850,6 @@ module atm_time_integration
       real (kind=RKIND), pointer :: config_h_mom_eddy_visc4
       real (kind=RKIND), pointer :: config_visc4_2dsmag
       real (kind=RKIND), pointer :: config_len_disp
-
-      real (kind=RKIND) :: flux3, flux4
-      real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3
-
-      flux4(q_im2, q_im1, q_i, q_ip1, ua) =                     &
-                ua*( 7.*(q_i + q_im1) - (q_ip1 + q_im2) )/12.0
-
-      flux3(q_im2, q_im1, q_i, q_ip1, ua, coef3) =              &
-                flux4(q_im2, q_im1, q_i, q_ip1, ua) +           &
-                coef3*abs(ua)*((q_ip1 - q_im2)-3.*(q_i-q_im1))/12.0
 
 
       call mpas_pool_get_config(mesh, 'sphere_radius', r_earth)
@@ -2972,6 +2954,8 @@ module atm_time_integration
       call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
       call mpas_pool_get_dimension(mesh, 'nEdgesSolve', nEdgesSolve)
       call mpas_pool_get_dimension(mesh, 'vertexDegree', vertexDegree)
+      call mpas_pool_get_dimension(mesh, 'maxEdges', maxEdges)
+      call mpas_pool_get_dimension(mesh, 'maxEdges2', maxEdges2)
 
       call mpas_pool_get_dimension(state, 'moist_start', moist_start)
       call mpas_pool_get_dimension(state, 'moist_end', moist_end)
@@ -2985,6 +2969,191 @@ module atm_time_integration
       call mpas_pool_get_array(mesh, 'cf1', cf1)
       call mpas_pool_get_array(mesh, 'cf2', cf2)
       call mpas_pool_get_array(mesh, 'cf3', cf3)
+
+      call atm_compute_dyn_tend_work(nCells, nEdges, nVertices, nVertLevels, &
+         nCellsSolve, nEdgesSolve, vertexDegree, maxEdges, maxEdges2, moist_start, moist_end, &
+         fEdge, dvEdge, dcEdge, invDcEdge, invDvEdge, invAreaCell, invAreaTriangle, meshScalingDel2, meshScalingDel4, &
+         weightsOnEdge, zgrid, rho_edge, rho_zz, ru, u, v, tend_u, &
+         divergence, vorticity, ke, pv_edge, theta_m, rw, tend_rho, &
+         rt_diabatic_tend, tend_theta, tend_w, w, cqw, rb, rr, pp, pp_old, pressure_b, zz, zxu, cqu, & 
+         h_divergence, kdiff, edgesOnCell_sign, edgesOnVertex_sign, rw_save, ru_save, &
+         theta_m_save, exner, pp_fwd, rr_save, scalars, tend_u_euler, tend_w_euler, tend_theta_euler, deriv_two, &
+         cellsOnEdge, verticesOnEdge, edgesOnCell, edgesOnEdge, cellsOnCell, edgesOnVertex, nEdgesOnCell, nEdgesOnEdge, &
+         latCell, latEdge, angleEdge, u_init, advCellsForEdge, nAdvCellsForEdge, adv_coefs, adv_coefs_3rd, &
+         rdzu, rdzw, fzm, fzp, qv_init, t_init , pzp, pzm, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
+         tend_w_pgf, tend_w_buoy, coef_3rd_order, c_s, smdiv, config_mix_full, config_horiz_mixing, config_del4u_div_factor, &
+         config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, dt, &
+         cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+         cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
+
+
+   end subroutine atm_compute_dyn_tend
+
+
+   subroutine atm_compute_dyn_tend_work(nCells, nEdges, nVertices, nVertLevels, &
+      nCellsSolve, nEdgesSolve, vertexDegree, maxEdges, maxEdges2, moist_start, moist_end, &
+      fEdge, dvEdge, dcEdge, invDcEdge, invDvEdge, invAreaCell, invAreaTriangle, meshScalingDel2, meshScalingDel4, &
+      weightsOnEdge, zgrid, rho_edge, rho_zz, ru, u, v, tend_u, &
+      divergence, vorticity, ke, pv_edge, theta_m, rw, tend_rho, &
+      rt_diabatic_tend, tend_theta, tend_w, w, cqw, rb, rr, pp, pp_old, pressure_b, zz, zxu, cqu, & 
+      h_divergence, kdiff, edgesOnCell_sign, edgesOnVertex_sign, rw_save, ru_save, &
+      theta_m_save, exner, pp_fwd, rr_save, scalars, tend_u_euler, tend_w_euler, tend_theta_euler, deriv_two, &
+      cellsOnEdge, verticesOnEdge, edgesOnCell, edgesOnEdge, cellsOnCell, edgesOnVertex, nEdgesOnCell, nEdgesOnEdge, &
+      latCell, latEdge, angleEdge, u_init, advCellsForEdge, nAdvCellsForEdge, adv_coefs, adv_coefs_3rd, &
+      rdzu, rdzw, fzm, fzp, qv_init, t_init , pzp, pzm, cf1, cf2, cf3, r_earth, ur_cell, vr_cell, defc_a, defc_b, &
+      tend_w_pgf, tend_w_buoy, coef_3rd_order, c_s, smdiv, config_mix_full, config_horiz_mixing, config_del4u_div_factor, &
+      config_h_theta_eddy_visc4, config_h_mom_eddy_visc4, config_visc4_2dsmag, config_len_disp, rk_step, dt, &
+      cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+      cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
+
+
+      implicit none
+
+
+      !
+      ! Dummy arguments
+      !
+      integer :: nCells, nEdges, nVertices, nVertLevels, nCellsSolve, nEdgesSolve, vertexDegree, &
+                 maxEdges, maxEdges2, moist_start, moist_end
+
+      real (kind=RKIND), dimension(:) :: fEdge
+      real (kind=RKIND), dimension(:) :: dvEdge
+      real (kind=RKIND), dimension(:) :: dcEdge
+      real (kind=RKIND), dimension(:) :: invDcEdge
+      real (kind=RKIND), dimension(:) :: invDvEdge
+      real (kind=RKIND), dimension(:) :: invAreaCell
+      real (kind=RKIND), dimension(:) :: invAreaTriangle
+      real (kind=RKIND), dimension(:) :: meshScalingDel2
+      real (kind=RKIND), dimension(:) :: meshScalingDel4
+      real (kind=RKIND), dimension(:,:) :: weightsOnEdge
+      real (kind=RKIND), dimension(:,:) :: zgrid
+      real (kind=RKIND), dimension(:,:) :: rho_edge
+      real (kind=RKIND), dimension(:,:) :: rho_zz
+      real (kind=RKIND), dimension(:,:) :: ru
+      real (kind=RKIND), dimension(:,:) :: u
+      real (kind=RKIND), dimension(:,:) :: v
+      real (kind=RKIND), dimension(:,:) :: tend_u
+      real (kind=RKIND), dimension(:,:) :: divergence
+      real (kind=RKIND), dimension(:,:) :: vorticity
+      real (kind=RKIND), dimension(:,:) :: ke
+      real (kind=RKIND), dimension(:,:) :: pv_edge
+      real (kind=RKIND), dimension(:,:) :: theta_m
+      real (kind=RKIND), dimension(:,:) :: rw
+      real (kind=RKIND), dimension(:,:) :: tend_rho
+      real (kind=RKIND), dimension(:,:) :: rt_diabatic_tend
+      real (kind=RKIND), dimension(:,:) :: tend_theta
+      real (kind=RKIND), dimension(:,:) :: tend_w
+      real (kind=RKIND), dimension(:,:) :: w
+      real (kind=RKIND), dimension(:,:) :: cqw
+      real (kind=RKIND), dimension(:,:) :: rb
+      real (kind=RKIND), dimension(:,:) :: rr
+      real (kind=RKIND), dimension(:,:) :: pp
+      real (kind=RKIND), dimension(:,:) :: pp_old
+      real (kind=RKIND), dimension(:,:) :: pressure_b
+      real (kind=RKIND), dimension(:,:) :: zz
+      real (kind=RKIND), dimension(:,:) :: zxu
+      real (kind=RKIND), dimension(:,:) :: cqu
+      real (kind=RKIND), dimension(:,:) :: h_divergence
+      real (kind=RKIND), dimension(:,:) :: kdiff
+      real (kind=RKIND), dimension(:,:) :: edgesOnCell_sign
+      real (kind=RKIND), dimension(:,:) :: edgesOnVertex_sign
+      real (kind=RKIND), dimension(:,:) :: rw_save
+      real (kind=RKIND), dimension(:,:) :: ru_save
+
+      real (kind=RKIND), dimension(:,:) :: theta_m_save
+      real (kind=RKIND), dimension(:,:) :: exner
+      real (kind=RKIND), dimension(:,:) :: pp_fwd
+      real (kind=RKIND), dimension(:,:) :: rr_save
+      real (kind=RKIND), dimension(:,:,:) :: scalars
+      real (kind=RKIND), dimension(:,:) :: tend_u_euler
+      real (kind=RKIND), dimension(:,:) :: tend_w_euler
+      real (kind=RKIND), dimension(:,:) :: tend_theta_euler
+      real (kind=RKIND), dimension(:,:,:) :: deriv_two
+      integer, dimension(:,:) :: cellsOnEdge
+      integer, dimension(:,:) :: verticesOnEdge
+      integer, dimension(:,:) :: edgesOnCell
+      integer, dimension(:,:) :: edgesOnEdge
+      integer, dimension(:,:) :: cellsOnCell
+      integer, dimension(:,:) :: edgesOnVertex
+      integer, dimension(:) :: nEdgesOnCell
+      integer, dimension(:) :: nEdgesOnEdge
+      real (kind=RKIND), dimension(:) :: latCell
+      real (kind=RKIND), dimension(:) :: latEdge
+      real (kind=RKIND), dimension(:) :: angleEdge
+      real (kind=RKIND), dimension(:) :: u_init
+
+      integer, dimension(:,:) :: advCellsForEdge
+      integer, dimension(:) :: nAdvCellsForEdge
+      real (kind=RKIND), dimension(:,:) :: adv_coefs
+      real (kind=RKIND), dimension(:,:) :: adv_coefs_3rd
+
+      real (kind=RKIND), dimension(:) :: rdzu
+      real (kind=RKIND), dimension(:) :: rdzw
+      real (kind=RKIND), dimension(:) :: fzm
+      real (kind=RKIND), dimension(:) :: fzp
+      real (kind=RKIND), dimension(:) :: qv_init
+      real (kind=RKIND), dimension(:,:) :: t_init 
+
+      real (kind=RKIND), dimension(:,:) :: pzp
+      real (kind=RKIND), dimension(:,:) :: pzm
+
+      real (kind=RKIND) :: cf1, cf2, cf3
+      real (kind=RKIND) :: prandtl_inv, r_areaCell, rgas_cprcv
+
+      real (kind=RKIND) :: r_earth
+      real (kind=RKIND), dimension(:,:) :: ur_cell
+      real (kind=RKIND), dimension(:,:) :: vr_cell
+
+      real (kind=RKIND), dimension(:,:) :: defc_a
+      real (kind=RKIND), dimension(:,:) :: defc_b
+
+      real (kind=RKIND), dimension(:,:) :: tend_w_pgf
+      real (kind=RKIND), dimension(:,:) :: tend_w_buoy
+
+      real (kind=RKIND) :: coef_3rd_order, c_s, smdiv
+      logical :: config_mix_full
+      character (len=StrKIND) :: config_horiz_mixing
+      real (kind=RKIND) :: config_del4u_div_factor
+      real (kind=RKIND) :: config_h_theta_eddy_visc4
+      real (kind=RKIND) :: config_h_mom_eddy_visc4
+      real (kind=RKIND) :: config_visc4_2dsmag
+      real (kind=RKIND) :: config_len_disp
+
+      integer, intent(in) :: rk_step
+      real (kind=RKIND), intent(in) :: dt
+
+      integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
+      integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
+
+
+      !
+      ! Local variables
+      !
+      integer :: iEdge, iCell, iVertex, k, cell1, cell2, vertex1, vertex2, eoe, i, j, iq, iAdvCell
+
+      !real (kind=RKIND), parameter :: c_s = 0.125
+      real (kind=RKIND), dimension( nVertLevels+1 ) :: d_diag, d_off_diag, flux_arr
+      real (kind=RKIND), dimension( nVertLevels + 1 ) :: wduz, wdwz, wdtz, dpzx
+      real (kind=RKIND), dimension( nVertLevels ) :: ru_edge_w, q
+      real (kind=RKIND) :: theta_turb_flux, w_turb_flux, r
+      real (kind=RKIND) :: scalar_weight
+      real (kind=RKIND) :: inv_r_earth
+
+      real (kind=RKIND) :: invDt, flux, workpv
+      real (kind=RKIND) :: edge_sign, pr_scale, r_dc, r_dv, u_mix_scale
+      real (kind=RKIND) :: h_mom_eddy_visc4
+      real (kind=RKIND) :: h_theta_eddy_visc4
+      real (kind=RKIND) :: u_diffusion
+
+      real (kind=RKIND) :: flux3, flux4
+      real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3
+
+      flux4(q_im2, q_im1, q_i, q_ip1, ua) =                     &
+                ua*( 7.*(q_i + q_im1) - (q_ip1 + q_im2) )/12.0
+
+      flux3(q_im2, q_im1, q_i, q_ip1, ua, coef3) =              &
+                flux4(q_im2, q_im1, q_i, q_ip1, ua) +           &
+                coef3*abs(ua)*((q_ip1 - q_im2)-3.*(q_i-q_im1))/12.0
 
 
       prandtl_inv = 1.0_RKIND / prandtl
@@ -3679,7 +3848,7 @@ module atm_time_integration
          end do
       end do
 
-   end subroutine atm_compute_dyn_tend
+   end subroutine atm_compute_dyn_tend_work
 
 
    subroutine atm_compute_solve_diagnostics(dt, state, time_lev, diag, mesh, configs, &
