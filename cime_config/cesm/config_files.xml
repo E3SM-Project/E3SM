@@ -123,6 +123,25 @@
     <desc>directory containing test modifications for primary component tests (for documentation only - DO NOT EDIT)</desc>
   </entry>
 
+  <entry id="USER_MODS_DIR">
+    <type>char</type>
+    <default_value>unset</default_value>
+    <values>
+      <value component="allactive">$CIMEROOT/cime_config/$MODEL/allactive/usermods_dirs</value>
+      <value component="drv"      >$CIMEROOT/driver_cpl/cime_config/usermods_dirs</value>
+      <value component="cam"      >$SRCROOT/components/cam/cime_config/usermods_dirs</value>
+      <value component="cism"     >$SRCROOT/components/cism/cime_config/usermods_dirs</value>
+      <value component="clm"      >$SRCROOT/components/clm/cime_config/usermods_dirs</value>
+      <value component="cice"     >$SRCROOT/components/cice/cime_config/usermods_dirs</value>
+      <value component="rtm"      >$SRCROOT/components/rtm/cime_config/usermods_dirs</value>
+      <value component="mosart"   >$SRCROOT/components/mosart/cime_config/usermods_dirs</value>
+      <value component="pop"      >$SRCROOT/components/pop/cime_config/usermods_dirs</value>
+    </values>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>directory containing user modifications for primary components (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
   <!-- =============================================================== -->
   <!-- File names for all component specific configuration variables -->
   <!-- =============================================================== -->
