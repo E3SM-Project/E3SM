@@ -4,8 +4,10 @@
 
 
 module bndry_mod
-  use parallel_mod, only : abortmp,iam
-  use edgetype_mod, only : Ghostbuffer3D_t
+  use parallel_mod, only : syncmp,parallel_t,abortmp,iam
+  use edgetype_mod, only : Ghostbuffertr_t, Ghostbuffer3D_t,Edgebuffer_t,LongEdgebuffer_t
+  use thread_mod, only : omp_in_parallel, omp_get_thread_num, omp_get_num_threads
+
   implicit none
   private
   public :: bndry_exchangeV, ghost_exchangeVfull, compute_ghost_corner_orientation
@@ -13,7 +15,6 @@ module bndry_mod
   public :: bndry_exchangeS
   public :: bndry_exchangeS_start
   public :: bndry_exchangeS_finish
-!  public :: ghost_exchangev3d
   public :: sort_neighbor_buffer_mapping
 
   interface bndry_exchangeV
@@ -45,15 +46,11 @@ contains
 
   subroutine bndry_exchangeV_core(par,ithr,buffer)
     use kinds, only : log_kind
-    use edgetype_mod, only : Edgebuffer_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
-    use thread_mod, only : omp_in_parallel, omp_get_thread_num
     use perf_mod, only : t_startf, t_stopf
 #ifdef _MPI
-    use parallel_mod, only : parallel_t, abortmp, status, srequest, rrequest, &
+    use parallel_mod, only : status, srequest, rrequest, &
          mpireal_t, mpiinteger_t, mpi_success
-#else
-    use parallel_mod, only : parallel_t, abortmp
 #endif
     use perf_mod, only : t_startf, t_stopf
     type (parallel_t)              :: par
@@ -121,6 +118,10 @@ contains
        endif
     end do    ! icycle
     
+    if ( size(buffer%moveptr).ne.omp_get_num_threads() ) then
+       call abortmp('edgebuffer threads does not match number of active threads')
+    endif
+
     call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
     call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
     !$OMP END MASTER
@@ -139,14 +140,10 @@ contains
 
   subroutine bndry_exchangeS_core(par,ithr,buffer)
     use kinds, only : log_kind
-    use edgetype_mod, only : Edgebuffer_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
-    use thread_mod, only : omp_in_parallel, omp_get_thread_num
 #ifdef _MPI
-    use parallel_mod, only : parallel_t, abortmp, status, srequest, rrequest, &
+    use parallel_mod, only : status, srequest, rrequest, &
          mpireal_t, mpiinteger_t, mpi_success
-#else
-    use parallel_mod, only : parallel_t, abortmp
 #endif
     type (parallel_t)              :: par
     integer                        :: ithr
@@ -213,6 +210,10 @@ contains
        endif
     end do    ! icycle
     
+    if ( size(buffer%moveptr).ne.omp_get_num_threads() ) then
+       call abortmp('edgebuffer threads does not match number of active threads')
+    endif
+
     call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
     call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
 
@@ -231,14 +232,10 @@ contains
 
   subroutine bndry_exchangeS_core_start(par,ithr,buffer)
     use kinds, only : log_kind
-    use edgetype_mod, only : Edgebuffer_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
-    use thread_mod, only : omp_in_parallel, omp_get_thread_num
 #ifdef _MPI
-    use parallel_mod, only : parallel_t, abortmp, status, srequest, rrequest, &
+    use parallel_mod, only : status, srequest, rrequest, &
          mpireal_t, mpiinteger_t, mpi_success
-#else
-    use parallel_mod, only : parallel_t, abortmp
 #endif
     type (parallel_t)              :: par
     integer                        :: ithr
@@ -310,14 +307,10 @@ contains
 
   subroutine bndry_exchangeS_core_finish(par,ithr,buffer)
     use kinds, only : log_kind
-    use edgetype_mod, only : Edgebuffer_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
-    use thread_mod, only : omp_in_parallel, omp_get_thread_num
 #ifdef _MPI
-    use parallel_mod, only : parallel_t, abortmp, status, srequest, rrequest, &
+    use parallel_mod, only : status, srequest, rrequest, &
          mpireal_t, mpiinteger_t, mpi_success
-#else
-    use parallel_mod, only : parallel_t, abortmp
 #endif
     type (parallel_t)              :: par
     integer                        :: ithr
@@ -343,6 +336,10 @@ contains
     nSendCycles = pSchedule%nSendCycles
     nRecvCycles = pSchedule%nRecvCycles
 
+    if ( size(buffer%moveptr).ne.omp_get_num_threads() ) then
+       call abortmp('edgebuffer threads does not match number of active threads')
+    endif
+
     call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
     call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
 
@@ -361,14 +358,10 @@ contains
 
   subroutine long_bndry_exchangeV_nonth(par,buffer)
     use kinds, only : log_kind
-    use edgetype_mod, only : LongEdgebuffer_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
-    use thread_mod, only : omp_in_parallel
 #ifdef _MPI
-    use parallel_mod, only : parallel_t, abortmp, status, srequest, rrequest, &
+    use parallel_mod, only : status, srequest, rrequest, &
          mpireal_t, mpiinteger_t, mpi_success
-#else
-    use parallel_mod, only : parallel_t, abortmp
 #endif
     type (parallel_t)              :: par
     type (LongEdgeBuffer_t)            :: buffer
@@ -464,7 +457,6 @@ contains
   !********************************************************************************
  subroutine bndry_exchangeV_threaded(hybrid,buffer)
     use hybrid_mod, only : hybrid_t
-    use edgetype_mod, only : Edgebuffer_t
     use perf_mod, only: t_startf, t_stopf, t_adj_detailf
     implicit none
 
@@ -486,8 +478,6 @@ contains
   end subroutine bndry_exchangeV_threaded
 
   subroutine bndry_exchangeV_nonthreaded(par,buffer)
-    use parallel_mod, only : parallel_t
-    use edgetype_mod, only : Edgebuffer_t
     use perf_mod, only: t_startf, t_stopf, t_adj_detailf
     implicit none
 
@@ -512,7 +502,6 @@ contains
 
  subroutine bndry_exchangeS_threaded(hybrid,buffer)
     use hybrid_mod, only : hybrid_t
-    use edgetype_mod, only : Edgebuffer_t
     use perf_mod, only: t_startf, t_stopf, t_adj_detailf
     implicit none
 
@@ -535,7 +524,6 @@ contains
 
  subroutine bndry_exchangeS_threaded_start(hybrid,buffer)
     use hybrid_mod, only : hybrid_t
-    use edgetype_mod, only : Edgebuffer_t
     use perf_mod, only: t_startf, t_stopf, t_adj_detailf
     implicit none
 
@@ -558,7 +546,6 @@ contains
 
  subroutine bndry_exchangeS_threaded_finish(hybrid,buffer)
     use hybrid_mod, only : hybrid_t
-    use edgetype_mod, only : Edgebuffer_t
     use perf_mod, only: t_startf, t_stopf, t_adj_detailf
     implicit none
 
@@ -580,8 +567,6 @@ contains
  end subroutine bndry_exchangeS_threaded_finish
 
  subroutine bndry_exchangeS_nonthreaded(par,buffer)
-    use parallel_mod, only : parallel_t
-    use edgetype_mod, only : Edgebuffer_t
     use perf_mod, only: t_startf, t_stopf, t_adj_detailf
     implicit none
 
@@ -605,8 +590,6 @@ contains
   end subroutine bndry_exchangeS_nonthreaded
 
  subroutine bndry_exchangeS_nonthreaded_start(par,buffer)
-    use parallel_mod, only : parallel_t
-    use edgetype_mod, only : Edgebuffer_t
     use perf_mod, only: t_startf, t_stopf, t_adj_detailf
     implicit none
 
@@ -630,8 +613,6 @@ contains
  end subroutine bndry_exchangeS_nonthreaded_start
 
  subroutine bndry_exchangeS_nonthreaded_finish(par,buffer)
-    use parallel_mod, only : parallel_t
-    use edgetype_mod, only : Edgebuffer_t
     use perf_mod, only: t_startf, t_stopf, t_adj_detailf
     implicit none
 
@@ -665,10 +646,8 @@ contains
     use schedtype_mod, only : schedule_t, cycle_t, schedule
     use dimensions_mod, only: nelemd
 #ifdef _MPI
-    use parallel_mod, only : abortmp, status, srequest, rrequest, &
-         mpireal_t, mpiinteger_t, mpi_success, parallel_t
-#else
-    use parallel_mod, only : abortmp, parallel_t
+    use parallel_mod, only : status, srequest, rrequest, &
+         mpireal_t, mpiinteger_t, mpi_success
 #endif
     implicit none
     type (parallel_t)              :: par
@@ -782,14 +761,11 @@ contains
 !
     use hybrid_mod, only : hybrid_t
     use kinds, only : log_kind
-    use edgetype_mod, only : Ghostbuffertr_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
     use dimensions_mod, only: nelemd
 #ifdef _MPI
-    use parallel_mod, only : abortmp, status, srequest, rrequest, &
+    use parallel_mod, only : status, srequest, rrequest, &
          mpireal_t, mpiinteger_t, mpi_success
-#else
-    use parallel_mod, only : abortmp
 #endif
     implicit none
 
@@ -897,10 +873,8 @@ contains
 !
   use kinds, only : real_kind
   use dimensions_mod, only: nelemd, np
-  use parallel_mod, only : syncmp
   use hybrid_mod, only : hybrid_t
   use element_mod, only : element_t
-  use edgetype_mod, only : ghostbuffer3D_t
   use edge_mod, only : ghostvpackfull, ghostvunpackfull, &
        initghostbuffer3D,freeghostbuffer3D
   use control_mod, only : north,south,east,west,neast, nwest, seast, swest
@@ -1036,9 +1010,7 @@ contains
 !
   use kinds, only : real_kind
   use dimensions_mod, only: nelemd, np, max_neigh_edges
-  use parallel_mod, only : syncmp, parallel_t
   use element_mod, only : element_t
-  use edgetype_mod, only : ghostbuffer3D_t
   use edge_mod, only : ghostvpack_unoriented, ghostvunpack_unoriented, &
        initghostbuffer3D,freeghostbuffer3D
   use control_mod, only : north,south,east,west,neast, nwest, seast, swest
