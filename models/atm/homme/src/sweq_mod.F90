@@ -209,7 +209,9 @@ contains
     ! begin executable code
     ! ==========================
     call t_startf('sweq')
-
+    if (NThreads>1) then
+       call abortmp('Shallow water model cannot use threads')
+    endif
     hybrid = hybrid_create(par,ithr,NThreads)
     simday=0
     if (topology == "cube") then
@@ -503,10 +505,11 @@ contains
           ! ==============================================
           ! Output initial picture of geopotential...
           ! ============================================== 
-
+          ! these routines are not threaded and cant be called in a threaded
+          ! region. shallow water model DOES NOT WORK with threads 
 #ifdef PIO_INTERP
-	  call interp_movie_init(elem,hybrid,nets,nete,tl=tl)
-          call interp_movie_output(elem,tl, hybrid, pmean, nets, nete,fvm)     
+	  call interp_movie_init(elem,par,tl=tl)
+          call interp_movie_output(elem,tl, par, pmean, fvm)     
 #else
           call shal_movie_init(elem,hybrid,fvm)
           call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,fvm)
@@ -824,7 +827,7 @@ contains
        ! Shallow Water Test Case output files
        ! ============================================================
 #ifdef PIO_INTERP
-        call interp_movie_output(elem,tl, hybrid, pmean, nets, nete,fvm)
+        call interp_movie_output(elem,tl, par, pmean, fvm)
 #else     
         call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,fvm)
 #endif
@@ -1287,8 +1290,8 @@ contains
           ! Output initial picture of geopotential...
           ! ============================================== 
 #ifdef PIO_INTERP
-	  call interp_movie_init(elem,hybrid,nets,nete,tl=tl)
-          call interp_movie_output(elem,tl, hybrid, pmean, nets, nete)
+	  call interp_movie_init(elem,par,tl=tl)
+          call interp_movie_output(elem,tl, par, pmean )
 #else
 	  call shal_movie_init(elem,hybrid)
           call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
@@ -1374,7 +1377,7 @@ contains
        ! Shallow Water Test Case output files
        ! ============================================================
 #ifdef PIO_INTERP
-       call interp_movie_output(elem, tl, hybrid, pmean, nets, nete)
+       call interp_movie_output(elem, tl, par, pmean)
 #else       
           call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
 #endif

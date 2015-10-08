@@ -579,7 +579,7 @@ end subroutine
 
 
 
-subroutine compute_zeta_C0_contra(zeta,elem,hybrid,nets,nete,nt)
+subroutine compute_zeta_C0_contra(zeta,elem,par,nt)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! compute C0 vorticity.  That is, solve:  
 !     < PHI, zeta > = <PHI, curl(elem%state%v >
@@ -589,10 +589,10 @@ subroutine compute_zeta_C0_contra(zeta,elem,hybrid,nets,nete,nt)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-type (hybrid_t)      , intent(in) :: hybrid
+type (parallel_t)      , intent(in) :: par
 type (element_t)     , intent(in), target :: elem(:)
-integer :: nt,nets,nete
-real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
+integer :: nt
+real (kind=real_kind), dimension(np,np,nlev,nelemd) :: zeta
 real (kind=real_kind), dimension(np,np,2) :: ulatlon
 real (kind=real_kind), dimension(np,np) :: v1,v2
 
@@ -603,7 +603,7 @@ type (derivative_t)          :: deriv
 call derivinit(deriv)
 
 do k=1,nlev
-do ie=nets,nete
+do ie=1,nelemd
     v1 = elem(ie)%state%v(:,:,1,k,nt)
     v2 = elem(ie)%state%v(:,:,2,k,nt)
     ulatlon(:,:,1) = elem(ie)%D(:,:,1,1)*v1 + elem(ie)%D(:,:,1,2)*v2
@@ -613,13 +613,13 @@ do ie=nets,nete
 enddo
 enddo
 
-call make_C0(zeta,elem,hybrid,nets,nete)
+call make_C0(zeta,elem,par)
 
 end subroutine
 
 
 
-subroutine compute_div_C0_contra(zeta,elem,hybrid,nets,nete,nt)
+subroutine compute_div_C0_contra(zeta,elem,par,nt)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! compute C0 divergence. That is, solve:  
 !     < PHI, zeta > = <PHI, div(elem%state%v >
@@ -629,10 +629,10 @@ subroutine compute_div_C0_contra(zeta,elem,hybrid,nets,nete,nt)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-type (hybrid_t)      , intent(in) :: hybrid
+type (parallel_t)      , intent(in) :: par
 type (element_t)     , intent(in), target :: elem(:)
-integer :: nt,nets,nete
-real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
+integer :: nt
+real (kind=real_kind), dimension(np,np,nlev,nelemd) :: zeta
 real (kind=real_kind), dimension(np,np,2) :: ulatlon
 real (kind=real_kind), dimension(np,np) :: v1,v2
 
@@ -643,7 +643,7 @@ type (derivative_t)          :: deriv
 call derivinit(deriv)
 
 do k=1,nlev
-do ie=nets,nete
+do ie=1,nelemd
     v1 = elem(ie)%state%v(:,:,1,k,nt)
     v2 = elem(ie)%state%v(:,:,2,k,nt)
     ulatlon(:,:,1) = elem(ie)%D(:,:,1,1)*v1 + elem(ie)%D(:,:,1,2)*v2
@@ -653,7 +653,7 @@ do ie=nets,nete
 enddo
 enddo
 
-call make_C0(zeta,elem,hybrid,nets,nete)
+call make_C0(zeta,elem,par)
 
 end subroutine
 

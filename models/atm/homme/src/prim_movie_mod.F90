@@ -559,7 +559,7 @@ contains
     real(kind=real_kind),parameter :: dayspersec=1d0/(3600.*24.)
     real (kind=real_kind) :: vartmp(np,np,nlev),arealocal(np,np)
     real (kind=real_kind) :: var2d(nxyp), var3d(nxyp,nlev), ke(np,np,nlev)
-    real (kind=real_kind) :: temp3d(np,np,nlev,nets:nete)
+    real (kind=real_kind) :: temp3d(np,np,nlev,nelemd)
     real (kind=real_kind) :: varphys(nc*nc*nelemd,nlev)
 
     integer :: st, en, kmax, qindex
@@ -641,7 +641,7 @@ contains
              if(nf_selectedvar('zeta', output_varnames)) then
                 if (par%masterproc) print *,'writing zeta...'
                 ! velocities are on sphere for primitive equations
-                call compute_zeta_C0(temp3d,elem,hybrid,nets,nete,tl%n0)
+                call compute_zeta_C0(temp3d,elem,par,tl%n0)
 
                 st=1
                 do ie=1,nelemd
