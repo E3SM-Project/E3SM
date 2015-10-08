@@ -1831,8 +1831,7 @@ contains
 !=======================================================================================================!
 
 
-  subroutine prim_finalize(hybrid)
-    type (hybrid_t), intent(in)           :: hybrid  ! distributed parallel structure (shared)
+  subroutine prim_finalize()
 
 #ifdef TRILINOS
   interface
