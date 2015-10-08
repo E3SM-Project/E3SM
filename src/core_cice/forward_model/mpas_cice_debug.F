@@ -41,7 +41,8 @@ module cice_debug
        cice_writeout_configs, &
        cice_debug_write_out_field, &
        cice_debug_rotate_winds, &
-       cice_debug_processor_number
+       cice_debug_processor_number, &
+       cice_debug_forcing_restart_test
 
   integer, private :: &
        iObject = 2, &
@@ -2945,12 +2946,12 @@ contains
        call cice_debug_write_out_field(domain, "atmos_coupling", "snowfallRate", "fsnow")
        call cice_debug_write_out_field(domain, "atmos_coupling", "uAirVelocity", "uatm")
        call cice_debug_write_out_field(domain, "atmos_coupling", "vAirVelocity", "vatm")
+       call cice_debug_write_out_field(domain, "atmos_coupling", "atmosReferenceTemperature2m", "")
+       call cice_debug_write_out_field(domain, "atmos_coupling", "atmosReferenceHumidity2m", "")
+       call cice_debug_write_out_field(domain, "atmos_coupling", "atmosReferenceSpeed10m", "")
 
        call cice_debug_write_out_field(domain, "atmos_forcing", "windSpeed", "wind")
        call cice_debug_write_out_field(domain, "atmos_forcing", "shortwaveDown", "fsw")
-       call cice_debug_write_out_field(domain, "atmos_forcing", "airReferenceTemperature2m", "")
-       call cice_debug_write_out_field(domain, "atmos_forcing", "airReferenceHumidity2m", "")
-       call cice_debug_write_out_field(domain, "atmos_forcing", "airReferenceSpeed10m", "")
        !call cice_debug_write_out_field(domain, "atmos_forcing", "sensibleTransferCoefficient", "shcoef")
        !call cice_debug_write_out_field(domain, "atmos_forcing", "latentTransferCoefficient", "lhcoef")
 
@@ -3604,6 +3605,191 @@ contains
     enddo
 
   end subroutine cice_debug_processor_number
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_debug_forcing_restart_test
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date April 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_debug_forcing_restart_test(domain)
+
+    type(domain_type) :: domain
+
+    type(block_type), pointer :: block
+
+    type(MPAS_pool_type), pointer :: &
+         atmosCouplingPool, &
+         atmosCouplingRestartTestPool, &
+         oceanCouplingPool, &
+         oceanCouplingRestartTestPool
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         airLevelHeight, &
+         airPotentialTemperature, &
+         airTemperature, &
+         airSpecificHumidity, &
+         airDensity, &
+         shortwaveVisibleDirectDown, &
+         shortwaveVisibleDiffuseDown, &
+         shortwaveIRDirectDown, &
+         shortwaveIRDiffuseDown, &
+         longwaveDown, &
+         rainfallRate, &
+         snowfallRate, &
+         uAirVelocity, &
+         vAirVelocity, &
+         atmosReferenceSpeed10m, &
+         atmosReferenceTemperature2m, &
+         atmosReferenceHumidity2m, &
+         airLevelHeightRestartTest, &
+         airPotentialTemperatureRestartTest, &
+         airTemperatureRestartTest, &
+         airSpecificHumidityRestartTest, &
+         airDensityRestartTest, &
+         shortwaveVisibleDirectDownRestartTest, &
+         shortwaveVisibleDiffuseDownRestartTest, &
+         shortwaveIRDirectDownRestartTest, &
+         shortwaveIRDiffuseDownRestartTest, &
+         longwaveDownRestartTest, &
+         rainfallRateRestartTest, &
+         snowfallRateRestartTest, &
+         uAirVelocityRestartTest, &
+         vAirVelocityRestartTest, &
+         atmosReferenceSpeed10mRestartTest, &
+         atmosReferenceTemperature2mRestartTest, &
+         atmosReferenceHumidity2mRestartTest
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         seaSurfaceTemperature, &
+         seaSurfaceSalinity, &
+         seaFreezingTemperature, &
+         freezingMeltingPotential, &
+         uOceanVelocity, &
+         vOceanVelocity, &
+         seaSurfaceTiltU, &
+         seaSurfaceTiltV, &
+         oceanMixedLayerDepth, &
+         oceanHeatFluxConvergence, &
+         seaSurfaceTemperatureRestartTest, &
+         seaSurfaceSalinityRestartTest, &
+         seaFreezingTemperatureRestartTest, &
+         freezingMeltingPotentialRestartTest, &
+         uOceanVelocityRestartTest, &
+         vOceanVelocityRestartTest, &
+         seaSurfaceTiltURestartTest, &
+         seaSurfaceTiltVRestartTest, &
+         oceanMixedLayerDepthRestartTest, &
+         oceanHeatFluxConvergenceRestartTest
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       ! atmosphere coupling
+       call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCouplingPool)
+       call MPAS_pool_get_subpool(block % structs, "atmos_coupling_restart_test", atmosCouplingRestartTestPool)
+
+       call MPAS_pool_get_array(atmosCouplingPool, "airLevelHeight", airLevelHeight)
+       call MPAS_pool_get_array(atmosCouplingPool, "airPotentialTemperature", airPotentialTemperature)
+       call MPAS_pool_get_array(atmosCouplingPool, "airTemperature", airTemperature)
+       call MPAS_pool_get_array(atmosCouplingPool, "airSpecificHumidity", airSpecificHumidity)
+       call MPAS_pool_get_array(atmosCouplingPool, "airDensity", airDensity)
+       call MPAS_pool_get_array(atmosCouplingPool, "shortwaveVisibleDirectDown", shortwaveVisibleDirectDown)
+       call MPAS_pool_get_array(atmosCouplingPool, "shortwaveVisibleDiffuseDown", shortwaveVisibleDiffuseDown)
+       call MPAS_pool_get_array(atmosCouplingPool, "shortwaveIRDirectDown", shortwaveIRDirectDown)
+       call MPAS_pool_get_array(atmosCouplingPool, "shortwaveIRDiffuseDown", shortwaveIRDiffuseDown)
+       call MPAS_pool_get_array(atmosCouplingPool, "longwaveDown", longwaveDown)
+       call MPAS_pool_get_array(atmosCouplingPool, "rainfallRate", rainfallRate)
+       call MPAS_pool_get_array(atmosCouplingPool, "snowfallRate", snowfallRate)
+       call MPAS_pool_get_array(atmosCouplingPool, "uAirVelocity", uAirVelocity)
+       call MPAS_pool_get_array(atmosCouplingPool, "vAirVelocity", vAirVelocity)
+       call MPAS_pool_get_array(atmosCouplingPool, "atmosReferenceSpeed10m", atmosReferenceSpeed10m)
+       call MPAS_pool_get_array(atmosCouplingPool, "atmosReferenceTemperature2m", atmosReferenceTemperature2m)
+       call MPAS_pool_get_array(atmosCouplingPool, "atmosReferenceHumidity2m", atmosReferenceHumidity2m)
+
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "airLevelHeightRestartTest", airLevelHeightRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "airPotentialTemperatureRestartTest", airPotentialTemperatureRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "airTemperatureRestartTest", airTemperatureRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "airSpecificHumidityRestartTest", airSpecificHumidityRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "airDensityRestartTest", airDensityRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "shortwaveVisibleDirectDownRestartTest", shortwaveVisibleDirectDownRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "shortwaveVisibleDiffuseDownRestartTest", shortwaveVisibleDiffuseDownRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "shortwaveIRDirectDownRestartTest", shortwaveIRDirectDownRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "shortwaveIRDiffuseDownRestartTest", shortwaveIRDiffuseDownRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "longwaveDownRestartTest", longwaveDownRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "rainfallRateRestartTest", rainfallRateRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "snowfallRateRestartTest", snowfallRateRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "uAirVelocityRestartTest", uAirVelocityRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "vAirVelocityRestartTest", vAirVelocityRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "atmosReferenceSpeed10mRestartTest", atmosReferenceSpeed10mRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "atmosReferenceTemperature2mRestartTest", atmosReferenceTemperature2mRestartTest)
+       call MPAS_pool_get_array(atmosCouplingRestartTestPool, "atmosReferenceHumidity2mRestartTest", atmosReferenceHumidity2mRestartTest)
+
+       airLevelHeightRestartTest              = airLevelHeightRestartTest              + airLevelHeight
+       airPotentialTemperatureRestartTest     = airPotentialTemperatureRestartTest     + airPotentialTemperature
+       airTemperatureRestartTest              = airTemperatureRestartTest              + airTemperature
+       airSpecificHumidityRestartTest         = airSpecificHumidityRestartTest         + airSpecificHumidity
+       airDensityRestartTest                  = airDensityRestartTest                  + airDensity
+       shortwaveVisibleDirectDownRestartTest  = shortwaveVisibleDirectDownRestartTest  + shortwaveVisibleDirectDown
+       shortwaveVisibleDiffuseDownRestartTest = shortwaveVisibleDiffuseDownRestartTest + shortwaveVisibleDiffuseDown
+       shortwaveIRDirectDownRestartTest       = shortwaveIRDirectDownRestartTest       + shortwaveIRDirectDown
+       shortwaveIRDiffuseDownRestartTest      = shortwaveIRDiffuseDownRestartTest      + shortwaveIRDiffuseDown
+       longwaveDownRestartTest                = longwaveDownRestartTest                + longwaveDown
+       rainfallRateRestartTest                = rainfallRateRestartTest                + rainfallRate
+       snowfallRateRestartTest                = snowfallRateRestartTest                + snowfallRate
+       uAirVelocityRestartTest                = uAirVelocityRestartTest                + uAirVelocity
+       vAirVelocityRestartTest                = vAirVelocityRestartTest                + vAirVelocity
+       atmosReferenceSpeed10mRestartTest      = atmosReferenceSpeed10mRestartTest      + atmosReferenceSpeed10m
+       atmosReferenceTemperature2mRestartTest = atmosReferenceTemperature2mRestartTest + atmosReferenceTemperature2m
+       atmosReferenceHumidity2mRestartTest    = atmosReferenceHumidity2mRestartTest    + atmosReferenceHumidity2m
+       
+       ! atmosphere coupling
+       call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCouplingPool)
+       call MPAS_pool_get_subpool(block % structs, "ocean_coupling_restart_test", oceanCouplingRestartTestPool)
+
+       call MPAS_pool_get_array(oceanCouplingPool, "seaSurfaceTemperature", seaSurfaceTemperature)
+       call MPAS_pool_get_array(oceanCouplingPool, "seaSurfaceSalinity", seaSurfaceSalinity)
+       call MPAS_pool_get_array(oceanCouplingPool, "seaFreezingTemperature", seaFreezingTemperature)
+       call MPAS_pool_get_array(oceanCouplingPool, "freezingMeltingPotential", freezingMeltingPotential)
+       call MPAS_pool_get_array(oceanCouplingPool, "uOceanVelocity", uOceanVelocity)
+       call MPAS_pool_get_array(oceanCouplingPool, "vOceanVelocity", vOceanVelocity)
+       call MPAS_pool_get_array(oceanCouplingPool, "seaSurfaceTiltU", seaSurfaceTiltU)
+       call MPAS_pool_get_array(oceanCouplingPool, "seaSurfaceTiltV", seaSurfaceTiltV)
+       call MPAS_pool_get_array(oceanCouplingPool, "oceanMixedLayerDepth", oceanMixedLayerDepth)
+       call MPAS_pool_get_array(oceanCouplingPool, "oceanHeatFluxConvergence", oceanHeatFluxConvergence)
+
+       call MPAS_pool_get_array(oceanCouplingRestartTestPool, "seaSurfaceTemperatureRestartTest", seaSurfaceTemperatureRestartTest)
+       call MPAS_pool_get_array(oceanCouplingRestartTestPool, "seaSurfaceSalinityRestartTest", seaSurfaceSalinityRestartTest)
+       call MPAS_pool_get_array(oceanCouplingRestartTestPool, "seaFreezingTemperatureRestartTest", seaFreezingTemperatureRestartTest)
+       call MPAS_pool_get_array(oceanCouplingRestartTestPool, "freezingMeltingPotentialRestartTest", freezingMeltingPotentialRestartTest)
+       call MPAS_pool_get_array(oceanCouplingRestartTestPool, "uOceanVelocityRestartTest", uOceanVelocityRestartTest)
+       call MPAS_pool_get_array(oceanCouplingRestartTestPool, "vOceanVelocityRestartTest", vOceanVelocityRestartTest)
+       call MPAS_pool_get_array(oceanCouplingRestartTestPool, "seaSurfaceTiltURestartTest", seaSurfaceTiltURestartTest)
+       call MPAS_pool_get_array(oceanCouplingRestartTestPool, "seaSurfaceTiltVRestartTest", seaSurfaceTiltVRestartTest)
+       call MPAS_pool_get_array(oceanCouplingRestartTestPool, "oceanMixedLayerDepthRestartTest", oceanMixedLayerDepthRestartTest)
+       call MPAS_pool_get_array(oceanCouplingRestartTestPool, "oceanHeatFluxConvergenceRestartTest", oceanHeatFluxConvergenceRestartTest)
+
+       seaSurfaceTemperatureRestartTest    = seaSurfaceTemperatureRestartTest    + seaSurfaceTemperature
+       seaSurfaceSalinityRestartTest       = seaSurfaceSalinityRestartTest       + seaSurfaceSalinity
+       seaFreezingTemperatureRestartTest   = seaFreezingTemperatureRestartTest   + seaFreezingTemperature
+       freezingMeltingPotentialRestartTest = freezingMeltingPotentialRestartTest + freezingMeltingPotential
+       uOceanVelocityRestartTest           = uOceanVelocityRestartTest           + uOceanVelocity
+       vOceanVelocityRestartTest           = vOceanVelocityRestartTest           + vOceanVelocity
+       seaSurfaceTiltURestartTest          = seaSurfaceTiltURestartTest          + seaSurfaceTiltU
+       seaSurfaceTiltVRestartTest          = seaSurfaceTiltVRestartTest          + seaSurfaceTiltV
+       oceanMixedLayerDepthRestartTest     = oceanMixedLayerDepthRestartTest     + oceanMixedLayerDepth
+       oceanHeatFluxConvergenceRestartTest = oceanHeatFluxConvergenceRestartTest + oceanHeatFluxConvergence
+
+       block => block % next
+    enddo
+
+  end subroutine cice_debug_forcing_restart_test
 
 !-----------------------------------------------------------------------
 

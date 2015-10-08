@@ -81,6 +81,8 @@ contains
   subroutine rescale_mesh(&
        domain)!{{{
 
+    use mpas_stream_manager
+
     use cice_constants, only: &
          earthRadius
 
@@ -88,10 +90,12 @@ contains
          domain !< Input/Output: 
 
     logical, pointer :: &
-         on_a_sphere
+         on_a_sphere, &
+         config_do_restart
 
     real(kind=RKIND), pointer :: &
-         oldRadius
+         oldRadius, &
+         sphere_radius
 
     real(kind=RKIND) :: &
          newRadius
@@ -140,110 +144,152 @@ contains
          iVertex, &
          iEdge, &
          iVertexDegree
+
+    ! stream manipulation
+    character (len=StrKIND) :: &
+         streamID
+
+    integer :: &
+         directionProperty
     
-    block => domain % blocklist
-    do while(associated(block))
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_do_restart", config_do_restart)
 
-       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+    if (.not. config_do_restart) then
 
-       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
+       block => domain % blocklist
+       do while(associated(block))
 
-       if (on_a_sphere) then
+          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
 
-          ! get the old radius
-          call mpas_pool_get_config(meshPool, 'sphere_radius', oldRadius)
+          call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-          ! get the new radius
-          newRadius = earthRadius
+          if (on_a_sphere) then
 
-          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-          call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
-          call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
+             ! get the old radius
+             call mpas_pool_get_config(meshPool, 'sphere_radius', oldRadius)
 
-          call mpas_pool_get_array(meshPool, 'xCell', xCell)
-          call mpas_pool_get_array(meshPool, 'yCell', yCell)
-          call mpas_pool_get_array(meshPool, 'zCell', zCell)
-          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+             write(stderrUnit, *) 'Expanding mesh to a radius of size: ', earthRadius, 'm'
 
-          call mpas_pool_get_array(meshPool, 'xEdge', xEdge)
-          call mpas_pool_get_array(meshPool, 'yEdge', yEdge)
-          call mpas_pool_get_array(meshPool, 'zEdge', zEdge)
-          call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
-
-          call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
-          call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
-          call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
-          call mpas_pool_get_array(meshPool, 'areaTriangle', areaTriangle)
-          call mpas_pool_get_array(meshPool, 'kiteAreasOnVertex', kiteAreasOnVertex)
-          call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
-
-          ! rescale cell quantities
-          do iCell = 1, nCells
-
-             oldX = xCell(iCell)
-             oldY = yCell(iCell)
-             oldZ = zCell(iCell)
-
-             norm = sqrt(oldX**2 + oldY**2 + oldZ**2)
-
-             xCell(iCell) = (oldX / norm) * newRadius
-             yCell(iCell) = (oldY / norm) * newRadius
-             zCell(iCell) = (oldZ / norm) * newRadius
-             areaCell(iCell) = (areaCell(iCell) / (oldRadius**2) )* newRadius**2
-
-          end do
-
-          ! rescale vertex quantities
-          do iVertex = 1, nVertices
-
-             oldX = xVertex(iVertex)
-             oldY = yVertex(iVertex)
-             oldZ = zVertex(iVertex)
-
-             norm = sqrt(oldX**2 + oldY**2 + oldZ**2)
-
-             xVertex(iVertex) = (oldX / norm) * newRadius
-             yVertex(iVertex) = (oldY / norm) * newRadius
-             zVertex(iVertex) = (oldZ / norm) * newRadius
-             areaTriangle(iVertex) = 0.0_RKIND
-
-             do iVertexDegree = 1, vertexDegree
-                if (cellsOnVertex(iVertexDegree, iVertex) < nCells+1) then
-                   kiteAreasOnVertex(iVertexDegree, iVertex) = ( kiteAreasOnVertex(iVertexDegree, iVertex) / oldRadius**2) * newRadius**2
-                else
-                   kiteAreasOnVertex(iVertexDegree, iVertex) = 0.0_RKIND
+             call mpas_stream_mgr_begin_iteration(domain % streamManager)
+             do while (mpas_stream_mgr_get_next_stream(domain % streamManager, streamID, directionProperty))
+                if ( directionProperty == MPAS_STREAM_OUTPUT .or. directionProperty == MPAS_STREAM_INPUT_OUTPUT ) then
+                   call mpas_stream_mgr_add_att(domain % streamManager, 'sphere_radius', earthRadius, streamID)
                 end if
-                areaTriangle(iVertex) = areaTriangle(iVertex) + kiteAreasOnVertex(iVertexDegree, iVertex)
              end do
 
-          end do
+             ! get the new radius
+             newRadius = earthRadius
 
-          ! Expand edge quantities
-          do iEdge = 1, nEdges
+             call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+             call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+             call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
+             call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
 
-             oldX = xEdge(iEdge)
-             oldY = yEdge(iEdge)
-             oldZ = zEdge(iEdge)
+             call mpas_pool_get_array(meshPool, 'xCell', xCell)
+             call mpas_pool_get_array(meshPool, 'yCell', yCell)
+             call mpas_pool_get_array(meshPool, 'zCell', zCell)
+             call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
-             norm = sqrt(oldX**2 + oldY**2 + oldZ**2)
+             call mpas_pool_get_array(meshPool, 'xEdge', xEdge)
+             call mpas_pool_get_array(meshPool, 'yEdge', yEdge)
+             call mpas_pool_get_array(meshPool, 'zEdge', zEdge)
+             call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+             call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
 
-             xEdge(iEdge) = (oldX / norm) * newRadius
-             yEdge(iEdge) = (oldY / norm) * newRadius
-             zEdge(iEdge) = (oldZ / norm) * newRadius
-             dvEdge(iEdge) = (dvEdge(iEdge) / oldRadius) * newRadius
-             dcEdge(iEdge) = (dcEdge(iEdge) / oldRadius) * newRadius
+             call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
+             call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
+             call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
+             call mpas_pool_get_array(meshPool, 'areaTriangle', areaTriangle)
+             call mpas_pool_get_array(meshPool, 'kiteAreasOnVertex', kiteAreasOnVertex)
+             call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
 
-          end do
+             ! rescale cell quantities
+             do iCell = 1, nCells
 
-          ! reset sphere_radius
-          oldRadius = earthRadius
+                oldX = xCell(iCell)
+                oldY = yCell(iCell)
+                oldZ = zCell(iCell)
 
-       endif
+                norm = sqrt(oldX**2 + oldY**2 + oldZ**2)
 
-       block => block % next
-    end do
+                xCell(iCell) = (oldX / norm) * newRadius
+                yCell(iCell) = (oldY / norm) * newRadius
+                zCell(iCell) = (oldZ / norm) * newRadius
+                areaCell(iCell) = (areaCell(iCell) / (oldRadius**2) )* newRadius**2
+
+             end do
+
+             ! rescale vertex quantities
+             do iVertex = 1, nVertices
+
+                oldX = xVertex(iVertex)
+                oldY = yVertex(iVertex)
+                oldZ = zVertex(iVertex)
+
+                norm = sqrt(oldX**2 + oldY**2 + oldZ**2)
+
+                xVertex(iVertex) = (oldX / norm) * newRadius
+                yVertex(iVertex) = (oldY / norm) * newRadius
+                zVertex(iVertex) = (oldZ / norm) * newRadius
+                areaTriangle(iVertex) = 0.0_RKIND
+
+                do iVertexDegree = 1, vertexDegree
+                   kiteAreasOnVertex(iVertexDegree, iVertex) = ( kiteAreasOnVertex(iVertexDegree, iVertex) / oldRadius**2) * newRadius**2
+                   areaTriangle(iVertex) = areaTriangle(iVertex) + kiteAreasOnVertex(iVertexDegree, iVertex)
+                end do
+
+             end do
+
+             ! Expand edge quantities
+             do iEdge = 1, nEdges
+
+                oldX = xEdge(iEdge)
+                oldY = yEdge(iEdge)
+                oldZ = zEdge(iEdge)
+
+                norm = sqrt(oldX**2 + oldY**2 + oldZ**2)
+
+                xEdge(iEdge) = (oldX / norm) * newRadius
+                yEdge(iEdge) = (oldY / norm) * newRadius
+                zEdge(iEdge) = (oldZ / norm) * newRadius
+                dvEdge(iEdge) = (dvEdge(iEdge) / oldRadius) * newRadius
+                dcEdge(iEdge) = (dcEdge(iEdge) / oldRadius) * newRadius
+
+             end do
+
+             ! reset sphere_radius
+             oldRadius = earthRadius
+
+          endif
+
+          block => block % next
+       end do
+
+    else
+
+       block => domain % blocklist
+       do while(associated(block))
+
+          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+
+          ! check with restart that file radius is equal to defined radius
+          call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
+          call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+
+          if (on_a_sphere .and. sphere_radius /= earthRadius) then
+
+             write(stderrUnit,*) "Error: rescale_mesh: inconsistent radii"
+             write(stderrUnit,*) "sphere_radius: ", sphere_radius, ", earthRadius: ", earthRadius
+             call MPAS_dmpar_global_abort('Error: rescale_mesh: inconsistent radii')
+
+          endif
+
+          block => block % next
+       end do
+
+    endif
+
+    close(91)
 
   end subroutine rescale_mesh!}}}
 

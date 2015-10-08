@@ -389,6 +389,7 @@ contains
 
     type(MPAS_pool_type), pointer :: &
          icestatePool, &
+         tracersAggregatePool, &
          meshPool, &
          velocitySolverPool
 
@@ -398,11 +399,38 @@ contains
     real(kind=RKIND), dimension(:), pointer :: &
          iceAreaVertex, &
          iceAreaCellInitial, &
+         iceAreaCell, &
          totalMassVertex, &
          totalMassCell
 
     type(field1DInteger), pointer :: &
          solveVelocityField
+
+    logical, pointer :: &
+         config_use_column_package, &
+         config_use_column_vertical_thermodynamics
+
+    ! set initial ice area if not have column physics
+    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_vertical_thermodynamics", config_use_column_vertical_thermodynamics)
+
+    if (.not. config_use_column_package .or. &
+         (config_use_column_package .and. .not. config_use_column_vertical_thermodynamics)) then
+
+       block => domain % blocklist
+       do while (associated(block))
+
+          call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracersAggregatePool)
+          call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
+          call MPAS_pool_get_array(tracersAggregatePool, "iceAreaCell", iceAreaCell)
+          call MPAS_pool_get_array(icestatePool, "iceAreaCellInitial", iceAreaCellInitial)
+
+          iceAreaCellInitial = iceAreaCell
+
+          block => block % next
+       end do
+
+    endif
 
     ! halo exchange of initial ice area of cell
     call MPAS_pool_get_subpool(domain % blocklist % structs, "icestate", icestatePool)

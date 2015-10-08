@@ -271,8 +271,6 @@
 	    <stream name="mesh"/>
 	    <var name="xtime"/>
 	    <var name="fVertex"/>
-	    <var name="POPindxi"/>
-	    <var name="POPindxj"/>
 	    <var name="iceAreaCategory"/>
 	    <var name="iceVolumeCategory"/>
 	    <var name="snowVolumeCategory"/>
@@ -280,6 +278,17 @@
 	    <var name="iceEnthalpy"/>
 	    <var name="iceSalinity"/>
 	    <var name="snowEnthalpy"/>
+	    <var name="iceAge"/>
+	    <var name="firstYearIceArea"/>
+	    <var name="levelIceArea"/>
+	    <var name="levelIceVolume"/>
+	    <var name="pondArea"/>
+	    <var name="pondDepth"/>
+	    <var name="pondLidThickness"/>
+	    <var name="snowScatteringAerosol"/>
+	    <var name="snowBodyAerosol"/>
+	    <var name="iceScatteringAerosol"/>
+	    <var name="iceBodyAerosol"/>
 	    <var name="uVelocity"/>
 	    <var name="vVelocity"/>
 	    <var name="stress11weak"/>
@@ -288,12 +297,22 @@
 	    <var name="stress11var"/>
 	    <var name="stress22var"/>
 	    <var name="stress12var"/>
-	    <var name="solveStress"/>
-	    <var name="solveVelocity"/>
-	    <var name="airStressVertexU"/>
-	    <var name="airStressVertexV"/>
-	    <var name="airStressCellU"/>
-	    <var name="airStressCellV"/>
+	    <var name="solveVelocityPrevious"/>
+	    <var name="freezeOnset"/>
+	    <var name="snowfallRate"/>
+	    <var name="pondSnowDepthDifference"/>
+	    <var name="pondLidMeltFluxFraction"/>
+	    <var name="solarZenithAngleCosine"/>
+	    <var name="shortwaveScalingFactor"/>
+	    <var name="shortwaveVisibleDirectDown"/>
+	    <var name="shortwaveVisibleDiffuseDown"/>
+	    <var name="shortwaveIRDirectDown"/>
+	    <var name="shortwaveIRDiffuseDown"/>
+	    <var name="oceanStressCellU"/>
+	    <var name="oceanStressCellV"/>
+	    <var name="seaSurfaceTemperature"/>
+	    <var name="freezingMeltingPotential"/>
+	    <var name="airOceanDragCoefficientRatio"/>
 	  </stream>
 
 	  <stream name="output" 				
@@ -355,6 +374,7 @@
 	    filename_template="/Users/akt/Work/MPAS-CICE/forcing/forcing_creation/atmosphere/perform_remap/120km/LYq_six_hourly.$Y.nc"
 	    filename_interval="0001-00-00_00:00:00"
 	    input_interval="none"
+	    reference_time="2000-01-01_00:00:06"
 	    immutable="true">
 	    <var name="airTemperature"/>
 	    <var name="airSpecificHumidity"/>
@@ -583,9 +603,6 @@
 		<var name="latentTransferCoefficient"         type="real"     dimensions="nCells"                   name_in_code="latentTransferCoefficient"/>
 		<var name="uPOPAlongGridVector"               type="real"     dimensions="TWO nCells"               name_in_code="uPOPAlongGridVector"/>
 		<var name="vPOPAlongGridVector"               type="real"     dimensions="TWO nCells"               name_in_code="vPOPAlongGridVector"/>
-		<var name="airReferenceTemperature2m"         type="real"     dimensions="nCells"                   name_in_code="airReferenceTemperature2m"/>
-		<var name="airReferenceHumidity2m"            type="real"     dimensions="nCells"                   name_in_code="airReferenceHumidity2m"/>
-		<var name="airReferenceSpeed10m"              type="real"     dimensions="nCells"                   name_in_code="airReferenceSpeed10m"/>
 	</var_struct>
 
 	<!--alternative atmos forcing -->
@@ -801,8 +818,8 @@
 	<var_struct name="ocean_atmosphere" time_levs="1">
 		<var name="airStressOceanU"                   type="real"     dimensions="nCells"              name_in_code="airStressOceanU"/>
 		<var name="airStressOceanV"                   type="real"     dimensions="nCells"              name_in_code="airStressOceanV"/>
-		<var name="airReferenceTemperature2mOcean"    type="real"     dimensions="nCells"              name_in_code="airReferenceTemperature2mOcean"/>
-		<var name="airReferenceHumidity2mOcean"       type="real"     dimensions="nCells"              name_in_code="airReferenceHumidity2mOcean"/>
+		<var name="atmosReferenceTemperature2mOcean"    type="real"     dimensions="nCells"              name_in_code="atmosReferenceTemperature2mOcean"/>
+		<var name="atmosReferenceHumidity2mOcean"       type="real"     dimensions="nCells"              name_in_code="atmosReferenceHumidity2mOcean"/>
 		<var name="albedoVisibleDirectOcean"          type="real"     dimensions="nCells"              name_in_code="albedoVisibleDirectOcean"/>
 		<var name="albedoVisibleDiffuseOcean"         type="real"     dimensions="nCells"              name_in_code="albedoVisibleDiffuseOcean"/>
 		<var name="albedoIRDirectOcean"               type="real"     dimensions="nCells"              name_in_code="albedoIRDirectOcean"/>

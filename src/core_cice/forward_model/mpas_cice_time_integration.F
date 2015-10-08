@@ -68,10 +68,8 @@ contains
          cice_column_predynamics_time_integration, &
          cice_column_dynamics_time_integration, &
          cice_column_postdynamics_time_integration, &
-         cice_column_reinitialize_fluxes
-
-    use cice_history, only: &
-         cice_init_history_thermodynamics
+         cice_column_reinitialize_fluxes, &
+         cice_column_reinitialize_diagnostics
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output: 
@@ -99,9 +97,8 @@ contains
 
     call store_timestep_counter(domain, itimestep)
 
-    ! init history variables
-    call cice_init_history_thermodynamics(domain)
-
+    ! reinitialize diagnostics
+    call cice_column_reinitialize_diagnostics(domain)
 
     configs => domain % configs
 
@@ -170,7 +167,6 @@ contains
 
     ! reinitialize fluxes
     call cice_column_reinitialize_fluxes(domain)
-
 
   end subroutine cice_timestep!}}}
 
