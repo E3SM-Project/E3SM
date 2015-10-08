@@ -227,9 +227,8 @@ module interp_movie_mod
 
 
 contains
-  subroutine interp_movie_init(elem,hybrid,nets,nete,hvcoord,tl)
+  subroutine interp_movie_init(elem,par,hvcoord,tl)
     use time_mod, only : timelevel_t
-    use hybrid_mod, only : hybrid_t
     use element_mod, only: element_t
     use pio, only : pio_setdebuglevel, PIO_Put_att, pio_put_var, pio_global ! _EXTERNAL
     use parallel_mod, only : parallel_t, haltmp, syncmp
@@ -241,21 +240,20 @@ contains
 
     type (TimeLevel_t), intent(in)         :: tl     ! time level struct
     type(element_t) :: elem(:)
+    type(parallel_t), intent(in) :: par
     
-    type(hybrid_t), target  :: hybrid
 #if defined(_PRIM) || defined(_PRIMDG)
     type(hvcoord_t), intent(in), optional :: hvcoord
 #else
     ! ignored
     integer, optional :: hvcoord
 #endif
-    integer, intent(in) :: nets, nete
     integer :: dimsize(maxdims)   
     integer, pointer :: ldof2d(:),ldof3d(:), iodof2d(:), iodof3d(:)
     integer, pointer :: latdof(:), londof(:), iodoflon(:), iodoflat(:)
 
     integer :: icnt, i, j, k, lcount, iorank, nlat, nlon, tdof(1), tiodof(1), ios, ie
-    type(parallel_t), pointer :: par
+
     integer(kind=nfsizekind) :: start1d(1), count1d(1)
     real(kind=real_kind), allocatable :: lat(:), lon(:), gw(:)
     real(kind=real_kind), allocatable :: lev(:),ilev(:)
@@ -264,12 +262,12 @@ contains
     character(len=9)     :: charnum
     character(len=90)    :: hname
 
+
     allocate(interpdata(nelemd))
+    call setup_latlon_interp(elem,interpdata, par)
 
-    call setup_latlon_interp(elem,interpdata, hybrid%par)
+    lcount = sum(interpdata(1:nelemd)%n_interp)
 
-    lcount = sum(interpdata(nets:nete)%n_interp)
-    par => hybrid%par
 
     nlat = get_interp_parameter('nlat')
     nlon = get_interp_parameter('nlon')
@@ -299,7 +297,7 @@ contains
     allocate(ldof2d(lcount))
     allocate(ldof3d(lcount*nlev))
     icnt=0
-    do ie=nets,nete
+    do ie=1,nelemd
        do i=1,interpdata(ie)%n_interp
           icnt=icnt+1
           ldof2d(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon
@@ -307,7 +305,7 @@ contains
     end do
     icnt=0
     do k=1,nlev
-       do ie=nets,nete
+       do ie=1,nelemd
           do i=1,interpdata(ie)%n_interp
              icnt=icnt+1
              ldof3d(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon+(k-1)*nlat*nlon
@@ -440,7 +438,7 @@ contains
 
 
 
-  subroutine interp_movie_output(elem, tl, hybrid, phimean, nets,nete, fvm, hvcoord)
+  subroutine interp_movie_output(elem, tl, par, phimean, fvm, hvcoord)
 
     use kinds, only : int_kind, real_kind
     use element_mod, only : element_t
@@ -464,6 +462,7 @@ contains
     use time_mod   , only : TimeLevel_Qdp
     ! ---------------------    
     type (element_t),target    :: elem(:)
+    type (parallel_t)     :: par
     
 #if defined(_SPELT)
     type (spelt_struct), optional   :: fvm(:)
@@ -472,7 +471,7 @@ contains
 #endif
     
     type (TimeLevel_t)  :: tl
-    type (parallel_t)     :: par
+
 #if defined(_PRIM)
     type (hvcoord_t)    :: hvcoord
 #elif defined(_PRIMDG)
@@ -481,9 +480,6 @@ contains
     integer,optional    :: hvcoord
 #endif
     real (kind=real_kind), intent(in) :: phimean
-
-    type (hybrid_t)      , intent(in) :: hybrid
-    integer              :: nets,nete
 
     character(len=varname_len), pointer :: output_varnames(:)
     integer :: ie,ios, i, j, k
@@ -506,11 +502,7 @@ contains
 
     type (derivative_t)  :: deriv
 
-
     call t_startf('interp_movie_output')
-    if (hybrid%NThreads /= 1) &
-         call abortmp('Error: interp_movie_output can only be called outside threaded region')
-
     n0 = tl%n0
     call TimeLevel_Qdp(tl, qsplit, n0_fvm, np1_fvm)    
 
@@ -524,7 +516,7 @@ contains
                (output_end_time(ios) .ge. tl%nstep) .and. &
                MODULO(tl%nstep,output_frequency(ios)) .eq. 0) then
 
-             ncnt = sum(interpdata(nets:nete)%n_interp)  ! ncnt not defined if output disabled
+             ncnt = sum(interpdata(1:nelemd)%n_interp)  ! ncnt not defined if output disabled
              output_varnames=>get_current_varnames(ios)
 
              start2d(3)=nf_get_frame(ncdf(ios))
@@ -534,11 +526,11 @@ contains
 
 
              if(nf_selectedvar('ps', output_varnames)) then
-                if (hybrid%par%masterproc) print *,'writing ps...'
+                if (par%masterproc) print *,'writing ps...'
                 st=1
                 allocate (datall(ncnt,1))
 
-                do ie=nets,nete
+                do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
 #ifdef _PRIM
                    call interpolate_scalar(interpdata(ie),elem(ie)%state%ps_v(:,:,n0), &
@@ -564,17 +556,17 @@ contains
 
 
              if(nf_selectedvar('zeta', output_varnames)) then
-                if (hybrid%par%masterproc) print *,'writing zeta...'
+                if (par%masterproc) print *,'writing zeta...'
                 allocate(datall(ncnt,nlev))
-                allocate(var3d(np,np,nlev,nets:nete))
+                allocate(var3d(np,np,nlev,nelemd))
 #ifdef V_IS_LATLON
                 ! velocities are on sphere for primitive equations
-                call compute_zeta_C0(var3d,elem,hybrid,nets,nete,n0)
+                call compute_zeta_C0(var3d,elem,par,n0)
 #else
-                call compute_zeta_C0_contra(var3d,elem,hybrid,nets,nete,n0)
+                call compute_zeta_C0_contra(var3d,elem,par,n0)
 #endif
                 st=1
-                do ie=nets,nete
+                do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_scalar(interpdata(ie), var3d(:,:,:,ie), &
                         np, nlev, datall(st:en,:))
@@ -585,17 +577,17 @@ contains
              end if
 
              if(nf_selectedvar('div', output_varnames)) then
-                if (hybrid%par%masterproc) print *,'writing div...'
+                if (par%masterproc) print *,'writing div...'
                 allocate(datall(ncnt,nlev))
-                allocate(var3d(np,np,nlev,nets:nete))
+                allocate(var3d(np,np,nlev,nelemd))
 #ifdef V_IS_LATLON
                 ! velocities are on sphere for primitive equations
-                call compute_div_C0(var3d,elem,hybrid,nets,nete,n0)
+                call compute_div_C0(var3d,elem,par,n0)
 #else
-                call compute_div_C0_contra(var3d,elem,hybrid,nets,nete,n0)
+                call compute_div_C0_contra(var3d,elem,par,n0)
 #endif
                 st=1
-                do ie=nets,nete
+                do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_scalar(interpdata(ie), var3d(:,:,:,ie), &
                         np, nlev, datall(st:en,:))
@@ -607,11 +599,11 @@ contains
 
              if(nf_selectedvar('u', output_varnames) .or. &
                   nf_selectedvar('v', output_varnames)) then
-                if (hybrid%par%masterproc) print *,'writing u,v...'
+                if (par%masterproc) print *,'writing u,v...'
                 allocate(var3d(ncnt,nlev,2,1))
 #ifdef V_IS_LATLON
                 st=1                
-                do ie=nets,nete
+                do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_vector(interpdata(ie), elem(ie), &
                                         elem(ie)%state%v(:,:,:,:,n0), np, nlev, var3d(st:en,:,:,1), 0)
@@ -621,7 +613,7 @@ contains
                 allocate(varvtmp(np,np,2,nlev))
                 ! I = D^-1 D 
                 st=1
-                do ie=nets,nete
+                do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    do k=1,nlev
                        varvtmp(:,:,1,k) = elem(ie)%D(:,:,1,1)*elem(ie)%state%v(:,:,1,k,n0) + &
@@ -648,10 +640,10 @@ contains
 
 #if defined(_PRIMDG) 
              if(nf_selectedvar('T', output_varnames)) then
-                if (hybrid%par%masterproc) print *,'writing real temperature Y (not potential)...'
+                if (par%masterproc) print *,'writing real temperature Y (not potential)...'
                 allocate(datall(ncnt,nlev))
                 st=1
-                do ie=nets,nete
+                do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_scalar(interpdata(ie), elem(ie)%state%T(:,:,:,n0), &
                         np, nlev, datall(st:en,:))
@@ -661,10 +653,10 @@ contains
                 deallocate(datall)
              end if
              if(nf_selectedvar('Q', output_varnames) .and. qsize>=1) then
-                if (hybrid%par%masterproc) print *,'writing DG moist Q...'
+                if (par%masterproc) print *,'writing DG moist Q...'
                 allocate(datall(ncnt,nlev))
                 st=1
-                do ie=nets,nete
+                do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    ! Not sure if this interpolation is the right one, HOMME-SE uses something different
                    ! but for now we get what we can to the output file.
@@ -679,10 +671,10 @@ contains
 #endif
 
            if(nf_selectedvar('psC', output_varnames)) then
-              if (hybrid%par%masterproc) print *,'writing psC...'
+              if (par%masterproc) print *,'writing psC...'
               st=1
               allocate(datall(ncnt,1))
-              do ie=nets,nete
+              do ie=1,nelemd
                  en=st+interpdata(ie)%n_interp-1
                  call interpol_phys_latlon(interpdata(ie),fvm(ie)%psc, &
                                     fvm(ie),elem(ie)%corners,elem(ie)%desc,datall(st:en,1))
@@ -702,10 +694,10 @@ contains
                write(vname,'(a1,i1)') 'C',cindex
 
                if(nf_selectedvar(vname, output_varnames)) then
-                  if (hybrid%par%masterproc) print *,'writing FVM tracer ',vname
+                  if (par%masterproc) print *,'writing FVM tracer ',vname
                   allocate(datall(ncnt,nlev))
                   st=1
-                  do ie=nets,nete
+                  do ie=1,nelemd
                      en=st+interpdata(ie)%n_interp-1
                      do k=1,nlev                       
                        call interpol_phys_latlon(interpdata(ie),fvm(ie)%c(:,:,k,cindex,n0_fvm), &
@@ -719,10 +711,10 @@ contains
             enddo
 
             if(nf_selectedvar('dp_fvm', output_varnames)) then
-               if (hybrid%par%masterproc) print *,'writing dp_fvm ...'
+               if (par%masterproc) print *,'writing dp_fvm ...'
                allocate(datall(ncnt,nlev))
                st=1
-               do ie=nets,nete
+               do ie=1,nelemd
                   en=st+interpdata(ie)%n_interp-1
                   do k=1,nlev                       
                      call interpol_phys_latlon(interpdata(ie),fvm(ie)%dp_fvm(:,:,k,n0_fvm), &
@@ -735,10 +727,10 @@ contains
             end if
 
             if(nf_selectedvar('div_fvm', output_varnames)) then
-               if (hybrid%par%masterproc) print *,'writing div_fvm ...'
+               if (par%masterproc) print *,'writing div_fvm ...'
                allocate(datall(ncnt,nlev))
                st=1
-               do ie=nets,nete
+               do ie=1,nelemd
                   en=st+interpdata(ie)%n_interp-1
                   do k=1,nlev                       
                      call interpol_phys_latlon(interpdata(ie),fvm(ie)%div_fvm(:,:,k), &
@@ -752,10 +744,10 @@ contains
             
 #if defined(_SPELT) 
            if(nf_selectedvar('psC', output_varnames)) then
-              if (hybrid%par%masterproc) print *,'writing for SPELT: psC...'
+              if (par%masterproc) print *,'writing for SPELT: psC...'
               st=1
               allocate(datall(ncnt,1))
-              do ie=nets,nete
+              do ie=1,nelemd
                  en=st+interpdata(ie)%n_interp-1
                  call interpol_spelt_latlon(interpdata(ie),fvm(ie)%psc, &
                                     fvm(ie),elem(ie)%corners,datall(st:en,1))
@@ -777,12 +769,12 @@ contains
                if (cindex==1) vname='C'
 
                if(nf_selectedvar(vname, output_varnames)) then
-                  if (hybrid%par%masterproc) print *,'writing for SPELT: ',vname
+                  if (par%masterproc) print *,'writing for SPELT: ',vname
                   allocate(datall(ncnt,nlev))
                   st=1
 
 
-                  do ie=nets,nete
+                  do ie=1,nelemd
                      en=st+interpdata(ie)%n_interp-1
                      do k=1,nlev                       
                        call interpol_spelt_latlon(interpdata(ie),fvm(ie)%c(:,:,k,cindex,n0), &
@@ -801,7 +793,7 @@ contains
              if(nf_selectedvar('geop', output_varnames)) then
                 allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))
                 st=1
-                do ie=nets,nete
+                do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    do k=1,nlev
 #ifdef _PRIM
@@ -840,12 +832,12 @@ contains
 #if 0
              ! DEBUG code to output laplace_sphere_wk of surface pressure:
              if(nf_selectedvar('hypervis', output_varnames)) then
-                if (hybrid%par%masterproc) print *,'writing hypervis...'
-                allocate(datall(ncnt,nlev), var3d(np,np,nlev,nets:nete))
+                if (par%masterproc) print *,'writing hypervis...'
+                allocate(datall(ncnt,nlev), var3d(np,np,nlev,nelemd))
 
                 call derivinit(deriv)
 
-                do ie=nets,nete
+                do ie=1,nelemd
                    do k=1,nlev
                       var3d(:,:,k,ie) = 0
 #ifdef _PRIM
@@ -870,10 +862,10 @@ contains
                       var3d(:,:,k,ie)=var3d(:,:,k,ie)*sqrt(nu)
                    enddo
                 enddo
-                call make_C0(var3d,elem,hybrid,nets,nete)
+                call make_C0(var3d,elem,par)
                 print *,'min/max hypervis: ',minval(var3d),maxval(var3d)
                 st=1
-                do ie=nets,nete
+                do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    do k=1,nlev
                       call interpolate_scalar(interpdata(ie), var3d(:,:,k,ie), &
@@ -888,10 +880,10 @@ contains
              ! End hyperviscosity
              ! MNL: output hyperviscosity
              if(nf_selectedvar('hypervis', output_varnames)) then
-                if (hybrid%par%masterproc) print *,'writing hypervis...'
+                if (par%masterproc) print *,'writing hypervis...'
                 allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))
                 st=1
-                do ie=nets,nete
+                do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    do k=1,nlev
                        var3d(:,:,k,1) = nu*elem(ie)%variable_hyperviscosity(:,:)**2
@@ -909,10 +901,10 @@ contains
 
              ! MNL: output hypervis length scale 
              if(nf_selectedvar('max_dx', output_varnames)) then
-                if (hybrid%par%masterproc) print *,'writing max_dx...'
+                if (par%masterproc) print *,'writing max_dx...'
                 allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))
                 st=1
-                do ie=nets,nete
+                do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    do k=1,nlev
                        var3d(:,:,k,1) = elem(ie)%dx_long
@@ -928,10 +920,10 @@ contains
 
              ! MNL: output CFL length scale 
              if(nf_selectedvar('min_dx', output_varnames)) then
-                if (hybrid%par%masterproc) print *,'writing min_dx...'
+                if (par%masterproc) print *,'writing min_dx...'
                 allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))
                 st=1
-                do ie=nets,nete
+                do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    do k=1,nlev
                        var3d(:,:,k,1) = elem(ie)%dx_short 
@@ -956,7 +948,7 @@ contains
                 st=1
                 allocate (datall(ncnt,1))
                 
-                do ie=nets,nete
+                do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_scalar(interpdata(ie),elem(ie)%state%phis(:,:), &
                         np, datall(st:en,1))
@@ -968,10 +960,10 @@ contains
              endif
 
              if(nf_selectedvar('T', output_varnames)) then
-                if (hybrid%par%masterproc) print *,'writing T...'
+                if (par%masterproc) print *,'writing T...'
                 allocate(datall(ncnt,nlev))
                 st=1
-                do ie=nets,nete
+                do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_scalar(interpdata(ie), elem(ie)%state%T(:,:,:,n0), &
                         np, nlev, datall(st:en,:))
@@ -982,10 +974,10 @@ contains
              end if
 
              if(nf_selectedvar('dp3d', output_varnames)) then
-                if (hybrid%par%masterproc) print *,'writing dp3d...'
+                if (par%masterproc) print *,'writing dp3d...'
                 allocate(datall(ncnt,nlev))
                 st=1
-                do ie=nets,nete
+                do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_scalar(interpdata(ie), elem(ie)%state%dp3d(:,:,:,n0), &
                         np, nlev, datall(st:en,:))
@@ -996,10 +988,10 @@ contains
              end if
 
              if(nf_selectedvar('ke', output_varnames)) then
-                if (hybrid%par%masterproc) print *,'writing ke...'
+                if (par%masterproc) print *,'writing ke...'
                 allocate(datall(ncnt,nlev))
                 st=1
-                do ie=nets,nete
+                do ie=1,nelemd
                    do k=1,nlev 
                       ke(:,:,k) = (elem(ie)%state%v(:,:,1,k,n0)**2 + &
         	       elem(ie)%state%v(:,:,2,k,n0)**2 )/2
@@ -1014,11 +1006,11 @@ contains
              end if
 
              if(nf_selectedvar('Th', output_varnames)) then
-                if (hybrid%par%masterproc) print *,'writing Th...'
+                if (par%masterproc) print *,'writing Th...'
                 pr0=1./(p0)
                 st=1
                 allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))
-                do ie=nets,nete
+                do ie=1,nelemd
                    do k=1,nlev
                       do j=1,np
                          do i=1,np
@@ -1044,13 +1036,13 @@ contains
                 if (qindex==1) vname='Q'
 
                 if(nf_selectedvar(vname, output_varnames)) then
-                   if (hybrid%par%masterproc) print *,'writing ',vname
+                   if (par%masterproc) print *,'writing ',vname
                    ! switch to bilinear interpolation for tracers
                    itype=get_interp_parameter("itype")
                    call set_interp_parameter("itype",1)
                    allocate(datall(ncnt,nlev))
                    st=1
-                   do ie=nets,nete
+                   do ie=1,nelemd
                       en=st+interpdata(ie)%n_interp-1
                       call interpolate_scalar(interpdata(ie), elem(ie)%state%Q(:,:,:,qindex), &
                            np, nlev, datall(st:en,:))
@@ -1064,10 +1056,10 @@ contains
 
 
              if(nf_selectedvar('geo', output_varnames)) then
-                if (hybrid%par%masterproc) print *,'writing geo...'
+                if (par%masterproc) print *,'writing geo...'
                 allocate(datall(ncnt,nlev))
                 st=1
-                do ie=nets,nete
+                do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_scalar(interpdata(ie), elem(ie)%derived%phi, &
                         np, nlev, datall(st:en,:))
@@ -1078,9 +1070,9 @@ contains
              end if
 
              if(nf_selectedvar('omega', output_varnames)) then
-                if (hybrid%par%masterproc) print *,'writing omega...'
-                allocate(datall(ncnt,nlev), var3d(np,np,nlev,nets:nete))
-                do ie=nets,nete
+                if (par%masterproc) print *,'writing omega...'
+                allocate(datall(ncnt,nlev), var3d(np,np,nlev,nelemd))
+                do ie=1,nelemd
                    do k=1,nlev
                       do j=1,np
                          do i=1,np
@@ -1091,9 +1083,9 @@ contains
                       end do
                    end do
                 end do
-                call make_C0(var3d,elem,hybrid,nets,nete)
+                call make_C0(var3d,elem,par)
                 st=1
-                do ie=nets,nete
+                do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_scalar(interpdata(ie), var3d(:,:,:,ie), &
                         np, nlev, datall(st:en,:))
@@ -1110,7 +1102,7 @@ contains
                   nf_selectedvar('FV', output_varnames)) then
                 allocate(var3d(ncnt,2,nlev,1))
                 st=1
-                do ie=nets,nete
+                do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_vector(interpdata(ie), elem(ie),  &
                         elem(ie)%derived%FM(:,:,:,:,tl%np1), np, nlev, var3d(st:en,:,:,1), 0)
@@ -1132,7 +1124,7 @@ contains
                   nf_selectedvar('DIFFV', output_varnames)) then
                 allocate(var3d(ncnt,2,nlev,1))
                 st=1
-                do ie=nets,nete
+                do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_vector(interpdata(ie), elem(ie), &
                         elem(ie)%accum%DIFF(:,:,:,:), np, nlev, var3d(st:en,:,:,1), 0)
@@ -1152,7 +1144,7 @@ contains
                   nf_selectedvar('CONVV', output_varnames)) then
                 allocate(var3d(ncnt,2,nlev,1))
                 st=1
-                do ie=nets,nete
+                do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_vector(interpdata(ie), elem(ie), &
                         elem(ie)%accum%CONV(:,:,:,:), np, nlev, var3d(st:en,:,:,1), 0)
@@ -1171,7 +1163,7 @@ contains
              if(nf_selectedvar('DIFFT', output_varnames)) then
                 allocate(datall(ncnt,nlev))
                 st=1
-                do ie=nets,nete
+                do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_scalar(interpdata(ie), elem(ie)%accum%DIFFT, &
                         np, nlev, datall(st:en,:))
@@ -1206,12 +1198,12 @@ contains
              else
                 count2d(3:3)=0
              end if
-             if (hybrid%par%masterproc) print *,'writing time...'
+             if (par%masterproc) print *,'writing time...'
              call nf_put_var(ncdf(ios),real(dayspersec*time_at(tl%nstep),kind=real_kind),&
                   start2d(3:3),count2d(3:3),name='time')
              call nf_advance_frame(ncdf(ios))
              call pio_syncfile(ncdf(ios)%fileid)
-             if (hybrid%par%masterproc) print *,'finished I/O sync'
+             if (par%masterproc) print *,'finished I/O sync'
           end if ! if output needs to be written
        end if ! output stream is enabled
     end do  ! do ios=1,max_output_streams
