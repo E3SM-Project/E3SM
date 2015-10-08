@@ -362,8 +362,6 @@ contains
     if (associated(ncells_for_bc)) deallocate(ncells_for_bc)
     if (associated(ncells_for_ss)) deallocate(ncells_for_ss)
 
-    call vsfm_soe%PrintInfo()
-
   end subroutine VSFMSOERichardsEqnODESetup
 
   !------------------------------------------------------------------------
