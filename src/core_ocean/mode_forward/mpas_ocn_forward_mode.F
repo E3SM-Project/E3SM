@@ -165,6 +165,8 @@ module ocn_forward_mode
          call MPAS_stream_mgr_read(domain % streamManager, streamID='input', ierr=err_tmp)
       end if
 
+      call ocn_analysis_read_init_streams(domain, err=err_tmp)
+
       call mpas_timer_stop('io_read')
       call mpas_timer_start('reset_io_alarms', .false.)
       call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='input', ierr=err_tmp)
