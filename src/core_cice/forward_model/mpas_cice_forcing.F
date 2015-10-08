@@ -166,7 +166,7 @@ contains
          "cice_atmospheric_forcing_sixhrly", &
          domain, &
          config_forcing_start_time, &
-         "none", &
+         config_forcing_cycle_start, &
          config_forcing_cycle_duration, &
          config_do_restart, &
          config_forcing_restart_file, &
