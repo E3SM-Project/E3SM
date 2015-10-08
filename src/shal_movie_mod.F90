@@ -58,14 +58,13 @@ module shal_movie_mod
        nf_variable_attributes, &
        nf_global_attribute, &
        nf_output_init_complete,  &
-       nf_put_var, &
        nf_advance_frame, &
        nf_close_all, &
        nf_get_frame, &
+       nf_put_var => nf_put_var_netcdf, &
        iodesc2d, iodesc3d, iodescT, pio_subsystem, iodesc2d_nc, iodesc3d_nc
 
-  use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_double, pio_closefile ! _EXTERNAL
-
+  use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_double, pio_closefile 
   ! ---------------------
   use dof_mod, only : UniqueNcolsP, Uniquepoints, UniqueCoords, CreateUniqueIndex
   ! ---------------------
@@ -73,7 +72,7 @@ module shal_movie_mod
     use common_movie_mod, only: varrequired, vartype, varnames, varcnt, vardims, &
 	dimnames, maxdims
 
-    use viscosity_mod, only: compute_zeta_C0_2d, compute_div_C0_2d
+    use viscosity_mod, only: compute_zeta_C0_contra, compute_div_C0_contra
 
 
 implicit none
@@ -364,7 +363,7 @@ contains
 	  if(nf_selectedvar('zeta', output_varnames)) then
              if (hybrid%par%masterproc) print *,'output: zeta'
 
-             call compute_zeta_C0_contra(varptmp2, elem, hybrid, nets, nete, tl%n0)
+             call compute_zeta_C0_contra(varptmp2, elem, hybrid%par,tl%n0)
              st=1
              do ie=1,nelemd
                  en=st+elem(ie)%idxp%NumUniquePts-1
@@ -383,7 +382,7 @@ contains
 	  if(nf_selectedvar('div', output_varnames)) then
              if (hybrid%par%masterproc) print *,'output: divergence'
 
-             call compute_div_C0_contra(varptmp2, elem, hybrid, nets, nete, tl%n0)
+             call compute_div_C0_contra(varptmp2, elem, hybrid%par, tl%n0)
              st=1
              do ie=1,nelemd
                  en=st+elem(ie)%idxp%NumUniquePts-1
@@ -466,8 +465,8 @@ contains
              do ie=1,nelemd
                 en=st+elem(ie)%idxp%NumUniquePts-1
                    do k=1,nlev
-                      varptmp(:,:,k) = elem(ie)%D(1,1,:,:)*elem(ie)%state%v(:,:,1,k,tl%n0)+ &
-                           elem(ie)%D(1,2,:,:)*elem(ie)%state%v(:,:,2,k,tl%n0)
+                      varptmp(:,:,k) = elem(ie)%D(:,:,1,1)*elem(ie)%state%v(:,:,1,k,tl%n0)+ &
+                           elem(ie)%D(:,:,1,2)*elem(ie)%state%v(:,:,2,k,tl%n0)
                    end do
                    call UniquePoints(elem(ie)%idxp,nlev,varptmp,var3d(st:en,:))
                 st=en+1
