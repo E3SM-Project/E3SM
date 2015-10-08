@@ -230,7 +230,7 @@ module cice_core
       use mpas_kind_types
       use mpas_stream_manager
       use mpas_timer
-      use cice_forcing, only: cice_forcing_get
+      use cice_forcing, only: cice_forcing_get, cice_forcing_write_restart
       use cice_initialize, only: cice_init_post_clock_advance
       use cice_debug, only: istep
       
@@ -302,6 +302,7 @@ module cice_core
             open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
             write(22, *) timeStamp
             close(22)
+            call cice_forcing_write_restart(domain)
          end if
 
          ! update analysis members

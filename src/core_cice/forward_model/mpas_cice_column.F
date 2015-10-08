@@ -38,7 +38,8 @@ module cice_column
        cice_init_column_shortwave, &
        cice_column_aggregate, &
        cice_column_initial_air_drag_coefficient, &
-       cice_column_reinitialize_fluxes
+       cice_column_reinitialize_fluxes, &
+       cice_column_reinitialize_diagnostics
        
   ! tracer object
   type, private :: ciceTracerObjectType
@@ -390,6 +391,7 @@ contains
     if (trim(config_shortwave_type) == "dEdd") then
 
        abortFlag = .false.
+       abortMessage = ""
 
        call colpkg_init_orbit(&
             stdoutUnit, &
@@ -463,8 +465,6 @@ contains
           albedoVisibleDiffuseCell(iCell) = 0.0_RKIND
           albedoIRDirectCell(iCell)       = 0.0_RKIND
           albedoIRDiffuseCell(iCell)      = 0.0_RKIND
-
-          shortwaveScalingFactor(iCell)   = 1.0_RKIND
 
           do iCategory = 1, nCategories
 
@@ -634,7 +634,8 @@ contains
     type(domain_type), intent(inout) :: domain
 
     logical, pointer :: &
-         config_use_level_ice
+         config_use_level_ice, &
+         config_do_restart
 
     type(block_type), pointer :: &
          block
@@ -647,8 +648,9 @@ contains
          levelIceVolume
 
     call MPAS_pool_get_config(domain % configs, "config_use_level_ice", config_use_level_ice)
+    call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
 
-    if (config_use_level_ice) then
+    if (config_use_level_ice .and. .not. config_do_restart) then
        
        block => domain % blocklist
        do while (associated(block))
@@ -1252,6 +1254,8 @@ contains
 
           allocate(specificSnowAerosol(1, 1, 1))
           allocate(specificIceAerosol(1, 1, 1))
+          specificSnowAerosol = 0.0_RKIND
+          specificIceAerosol  = 0.0_RKIND
        
        endif
           
@@ -1294,6 +1298,7 @@ contains
           endif
 
           abortFlag = .false.
+          abortMessage = ""
 
           call colpkg_step_therm1(&
                config_dt, &
@@ -1647,6 +1652,7 @@ contains
           call set_cice_tracer_array_category(block, ciceTracerObject, iCell)
 
           abortFlag = .false.
+          abortMessage = ""
 
           call colpkg_step_therm2(&
                config_dt, &
@@ -2298,6 +2304,7 @@ contains
           call set_cice_tracer_array_category(block, ciceTracerObject, iCell)
 
           abortFlag = .false.
+          abortMessage = ""
 
           call colpkg_step_ridge(&
                dynamicsTimeStep, &
@@ -3196,8 +3203,8 @@ contains
          oceanShortwaveFlux, &
          airStressOceanU, &
          airStressOceanV, &
-         airReferenceTemperature2mOcean, &
-         airReferenceHumidity2mOcean, &
+         atmosReferenceTemperature2mOcean, &
+         atmosReferenceHumidity2mOcean, &
          longwaveUpOcean, &
          sensibleHeatFluxOcean, &
          latentHeatFluxOcean, &
@@ -3267,8 +3274,8 @@ contains
 
        call MPAS_pool_get_array(oceanAtmosphere, "airStressOceanU", airStressOceanU)
        call MPAS_pool_get_array(oceanAtmosphere, "airStressOceanV", airStressOceanV)
-       call MPAS_pool_get_array(oceanAtmosphere, "airReferenceTemperature2mOcean", airReferenceTemperature2mOcean)
-       call MPAS_pool_get_array(oceanAtmosphere, "airReferenceHumidity2mOcean", airReferenceHumidity2mOcean)
+       call MPAS_pool_get_array(oceanAtmosphere, "atmosReferenceTemperature2mOcean", atmosReferenceTemperature2mOcean)
+       call MPAS_pool_get_array(oceanAtmosphere, "atmosReferenceHumidity2mOcean", atmosReferenceHumidity2mOcean)
        call MPAS_pool_get_array(oceanAtmosphere, "albedoVisibleDirectOcean", albedoVisibleDirectOcean)
        call MPAS_pool_get_array(oceanAtmosphere, "albedoVisibleDiffuseOcean", albedoVisibleDiffuseOcean)
        call MPAS_pool_get_array(oceanAtmosphere, "albedoIRDirectOcean", albedoIRDirectOcean)
@@ -3292,8 +3299,8 @@ contains
                airDensity(iCell), &
                airStressOceanU(iCell), &
                airStressOceanV(iCell), &
-               airReferenceTemperature2mOcean(iCell), &
-               airReferenceHumidity2mOcean(iCell), &
+               atmosReferenceTemperature2mOcean(iCell), &
+               atmosReferenceHumidity2mOcean(iCell), &
                potentialTemperatureDifference, &
                specificHumidityDifference, &
                latentTransferCoefficient, &
@@ -5889,7 +5896,7 @@ contains
          atmosReferenceTemperature2m, &
          atmosReferenceHumidity2m, &
          atmosReferenceSpeed10m
-    
+
     block => domain % blocklist
     do while (associated(block))
 
@@ -5974,6 +5981,244 @@ contains
     end do
 
   end subroutine cice_column_reinitialize_oceanic_fluxes
+
+!-----------------------------------------------------------------------
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_column_reinitialize_diagnostics
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 27th September 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_column_reinitialize_diagnostics(domain)
+
+    use ice_constants_colpkg, only: &
+         dragio
+
+    type(domain_type) :: domain
+
+    type(block_type), pointer :: block
+
+    type(MPAS_pool_type), pointer :: &
+         atmosFluxesPool, &
+         meltGrowthRatesPool, &
+         diagnosticsPool, &
+         tracersAggregatePool, &
+         pondsPool, &
+         dragPool, &
+         shortwavePool
+
+    ! atmospheric fluxes
+    real(kind=RKIND), dimension(:), pointer :: &
+         surfaceHeatFlux, &
+         surfaceConductiveFlux
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         surfaceHeatFluxCategory, &
+         surfaceConductiveFluxCategory, &
+         latentHeatFluxCategory, &
+         sensibleHeatFluxCategory
+
+    ! melt growth rates
+    real(kind=RKIND), dimension(:), pointer :: &
+         congelation, &
+         frazilFormation, &
+         snowiceFormation, &
+         snowThicknessChange, &
+         surfaceIceMelt, &
+         snowMelt, &
+         basalIceMelt, &
+         lateralIceMelt
+
+    ! diagnostic tendencies
+    real(kind=RKIND), dimension(:), pointer :: &
+         iceAreaTendencyTransport, &
+         iceVolumeTendencyTransport, &
+         iceAgeTendencyTransport, &
+         iceAreaCell, &
+         iceVolumeCell, &
+         iceAgeCell
+
+    ! pond fluxes
+    real(kind=RKIND), dimension(:), pointer :: &
+         pondFreshWaterFlux
+
+    ! shortwave
+    real(kind=RKIND), dimension(:), pointer :: &
+         bareIceAlbedoCell, &
+         snowAlbedoCell, &
+         pondAlbedoCell
+
+    ! drag variables
+    real(kind=RKIND), dimension(:), pointer :: &
+         airOceanDragCoefficientRatio, &
+         oceanDragCoefficient, &
+         oceanDragCoefficientSkin, &
+         oceanDragCoefficientFloe, &
+         oceanDragCoefficientKeel, &
+         airDragCoefficient, &
+         airDragCoefficientSkin, &
+         airDragCoefficientFloe, &
+         airDragCoefficientPond, &
+         airDragCoefficientRidge, &
+         dragFreeboard, &
+         dragIceSnowDraft, &
+         dragRidgeHeight, &
+         dragRidgeSeparation, &
+         dragKeelDepth, &
+         dragKeelSeparation, &
+         dragFloeLength, &
+         dragFloeSeparation
+
+    logical, pointer :: &
+         config_use_ice_age, &
+         config_use_form_drag
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       ! atmospheric fluxes
+       call MPAS_pool_get_subpool(block % structs, "atmos_fluxes", atmosFluxesPool)
+
+       call MPAS_pool_get_array(atmosFluxesPool, "surfaceHeatFlux", surfaceHeatFlux)
+       call MPAS_pool_get_array(atmosFluxesPool, "surfaceConductiveFlux", surfaceConductiveFlux)
+       call MPAS_pool_get_array(atmosFluxesPool, "surfaceHeatFluxCategory", surfaceHeatFluxCategory)
+       call MPAS_pool_get_array(atmosFluxesPool, "surfaceConductiveFluxCategory", surfaceConductiveFluxCategory)
+       call MPAS_pool_get_array(atmosFluxesPool, "latentHeatFluxCategory", latentHeatFluxCategory)
+       call MPAS_pool_get_array(atmosFluxesPool, "sensibleHeatFluxCategory", sensibleHeatFluxCategory)
+
+       surfaceHeatFlux               = 0.0_RKIND
+       surfaceConductiveFlux         = 0.0_RKIND
+       surfaceHeatFluxCategory       = 0.0_RKIND
+       surfaceConductiveFluxCategory = 0.0_RKIND
+       latentHeatFluxCategory        = 0.0_RKIND
+       sensibleHeatFluxCategory      = 0.0_RKIND
+
+       ! melt growth rates
+       call MPAS_pool_get_subpool(block % structs, "melt_growth_rates", meltGrowthRatesPool)
+
+       call MPAS_pool_get_array(meltGrowthRatesPool, "congelation", congelation)
+       call MPAS_pool_get_array(meltGrowthRatesPool, "frazilFormation", frazilFormation)
+       call MPAS_pool_get_array(meltGrowthRatesPool, "snowiceFormation", snowiceFormation)
+       call MPAS_pool_get_array(meltGrowthRatesPool, "snowThicknessChange", snowThicknessChange)
+       call MPAS_pool_get_array(meltGrowthRatesPool, "surfaceIceMelt", surfaceIceMelt)
+       call MPAS_pool_get_array(meltGrowthRatesPool, "snowMelt", snowMelt)
+       call MPAS_pool_get_array(meltGrowthRatesPool, "basalIceMelt", basalIceMelt)
+       call MPAS_pool_get_array(meltGrowthRatesPool, "lateralIceMelt", lateralIceMelt)
+
+       congelation         = 0.0_RKIND
+       frazilFormation     = 0.0_RKIND
+       snowiceFormation    = 0.0_RKIND
+       snowThicknessChange = 0.0_RKIND
+       surfaceIceMelt      = 0.0_RKIND
+       snowMelt            = 0.0_RKIND
+       basalIceMelt        = 0.0_RKIND
+       lateralIceMelt      = 0.0_RKIND
+
+       ! tendancies
+       call MPAS_pool_get_config(block % configs, "config_use_ice_age", config_use_ice_age)
+
+       call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnosticsPool)
+       call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracersAggregatePool)
+
+       call MPAS_pool_get_array(diagnosticsPool, "iceAreaTendencyTransport", iceAreaTendencyTransport)
+       call MPAS_pool_get_array(diagnosticsPool, "iceVolumeTendencyTransport", iceVolumeTendencyTransport)
+       call MPAS_pool_get_array(diagnosticsPool, "iceAgeTendencyTransport", iceAgeTendencyTransport)
+
+       call MPAS_pool_get_array(tracersAggregatePool, "iceAreaCell", iceAreaCell)
+       call MPAS_pool_get_array(tracersAggregatePool, "iceVolumeCell", iceVolumeCell)
+       call MPAS_pool_get_array(tracersAggregatePool, "iceAgeCell", iceAgeCell)
+
+       iceAreaTendencyTransport   = iceAreaCell
+       iceVolumeTendencyTransport = iceVolumeCell
+       if (config_use_ice_age) then
+          iceAgeTendencyTransport = iceAgeCell
+       else
+          iceAgeTendencyTransport = 0.0_RKIND
+       endif
+
+       ! ponds
+       call MPAS_pool_get_subpool(block % structs, "ponds", pondsPool)
+
+       call MPAS_pool_get_array(pondsPool, "pondFreshWaterFlux", pondFreshWaterFlux)
+
+       pondFreshWaterFlux(:) = 0.0_RKIND
+
+       !fresh_ai  (:,:,:) = c0
+       !fsalt_ai  (:,:,:) = c0
+       !fhocn_ai  (:,:,:) = c0
+       !fswthru_ai(:,:,:) = c0
+
+       ! shortwave
+       call MPAS_pool_get_subpool(block % structs, "shortwave", shortwavePool)
+
+       call MPAS_pool_get_array(shortwavePool, "bareIceAlbedoCell", bareIceAlbedoCell)
+       call MPAS_pool_get_array(shortwavePool, "snowAlbedoCell", snowAlbedoCell)
+       call MPAS_pool_get_array(shortwavePool, "pondAlbedoCell", pondAlbedoCell)
+
+       bareIceAlbedoCell = 0.0_RKIND
+       snowAlbedoCell    = 0.0_RKIND
+       pondAlbedoCell    = 0.0_RKIND
+
+       ! form drag
+       call MPAS_pool_get_subpool(block % structs, "drag", dragPool)
+
+       call MPAS_pool_get_array(dragPool, "oceanDragCoefficient", oceanDragCoefficient)
+       call MPAS_pool_get_array(dragPool, "airDragCoefficient", airDragCoefficient)
+
+       oceanDragCoefficient = dragio
+       airDragCoefficient   = cice_column_initial_air_drag_coefficient()
+
+       call MPAS_pool_get_config(block % configs, "config_use_form_drag", config_use_form_drag)
+
+       if (config_use_form_drag) then
+
+          call MPAS_pool_get_array(dragPool, "airOceanDragCoefficientRatio", airOceanDragCoefficientRatio)
+          call MPAS_pool_get_array(dragPool, "oceanDragCoefficientSkin", oceanDragCoefficientSkin)
+          call MPAS_pool_get_array(dragPool, "oceanDragCoefficientFloe", oceanDragCoefficientFloe)
+          call MPAS_pool_get_array(dragPool, "oceanDragCoefficientKeel", oceanDragCoefficientKeel)
+          call MPAS_pool_get_array(dragPool, "airDragCoefficientSkin", airDragCoefficientSkin)
+          call MPAS_pool_get_array(dragPool, "airDragCoefficientFloe", airDragCoefficientFloe)
+          call MPAS_pool_get_array(dragPool, "airDragCoefficientPond", airDragCoefficientPond)
+          call MPAS_pool_get_array(dragPool, "airDragCoefficientRidge", airDragCoefficientRidge)
+          call MPAS_pool_get_array(dragPool, "dragFreeboard", dragFreeboard)
+          call MPAS_pool_get_array(dragPool, "dragIceSnowDraft", dragIceSnowDraft)
+          call MPAS_pool_get_array(dragPool, "dragRidgeHeight", dragRidgeHeight)
+          call MPAS_pool_get_array(dragPool, "dragRidgeSeparation", dragRidgeSeparation)
+          call MPAS_pool_get_array(dragPool, "dragKeelDepth", dragKeelDepth)
+          call MPAS_pool_get_array(dragPool, "dragKeelSeparation", dragKeelSeparation)
+          call MPAS_pool_get_array(dragPool, "dragFloeLength", dragFloeLength)
+          call MPAS_pool_get_array(dragPool, "dragFloeSeparation", dragFloeSeparation)
+
+          airOceanDragCoefficientRatio = 0.0_RKIND
+          oceanDragCoefficientSkin     = 0.0_RKIND
+          oceanDragCoefficientFloe     = 0.0_RKIND
+          oceanDragCoefficientKeel     = 0.0_RKIND
+          airDragCoefficientSkin       = 0.0_RKIND
+          airDragCoefficientFloe       = 0.0_RKIND
+          airDragCoefficientPond       = 0.0_RKIND
+          airDragCoefficientRidge      = 0.0_RKIND
+          dragFreeboard                = 0.0_RKIND
+          dragIceSnowDraft             = 0.0_RKIND
+          dragRidgeHeight              = 0.0_RKIND
+          dragRidgeSeparation          = 0.0_RKIND
+          dragKeelDepth                = 0.0_RKIND
+          dragKeelSeparation           = 0.0_RKIND
+          dragFloeLength               = 0.0_RKIND
+          dragFloeSeparation           = 0.0_RKIND
+
+       endif ! config_use_form_drag
+
+       block => block % next
+    end do
+
+  end subroutine cice_column_reinitialize_diagnostics
 
 !-----------------------------------------------------------------------
 
