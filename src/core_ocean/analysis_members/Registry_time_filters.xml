@@ -11,16 +11,16 @@
 					description="Name of the stream that the timeFilters analysis member should be tied to."
 					possible_values="Any existing stream name or 'none'"
 		/>
+		<nml_option name="config_AM_timeFilters_restart_stream" type="character" default_value="timeFiltersRestart" units="unitless"
+					description="Name of the stream that the timeFilters analysis member should use to perform restarts."
+					possible_values="Any existing stream name or 'none'"
+		/>
 		<nml_option name="config_AM_timeFilters_compute_on_startup" type="logical" default_value=".true." units="unitless"
 					description="Logical flag determining if an analysis member computation occurs on start-up."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_timeFilters_write_on_startup" type="logical" default_value=".true." units="unitless"
 					description="Logical flag determining if an analysis member write occurs on start-up."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_AM_timeFilters_do_restart" type="logical" default_value=".false." units="unitless"
-					description="Logical flag determining if an analysis member restart occurs on start-up."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_timeFilters_initialize_filters" type="logical" default_value=".true." units="unitless"

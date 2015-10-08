@@ -144,6 +144,7 @@
 		</stream>
 
 		<stream name="timeSeriesStatsRestart"
+				runtime_format="single_file"
 				type="input;output"
 				filename_template="restarts/restart.AM.timeSeriesStats.$Y-$M-$D_$h.$m.$s.nc"
 				filename_interval="output_interval"
@@ -151,7 +152,7 @@
 				clobber_mode="truncate"
 				input_interval="initial_only"
 				output_interval="0005_00:00:00"
-				immutable="true"
+				immutable="false"
 				mode="forward;analysis" />
 
 	</streams>

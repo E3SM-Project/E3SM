@@ -735,7 +735,9 @@ subroutine modify_stream(domain, instance, series, err)!{{{
 
   ! local variables
   integer :: v, b
+  logical :: emptyRestartStream
   character (len=StrKIND), pointer :: output_stream_name, restart_stream_name
+  character (len=StrKIND) :: fieldName
   type (field0DReal), pointer :: srcReal, dstReal
   logical, pointer :: copy_mesh
   character (len=StrKIND) :: field_name, config, op_name
@@ -803,9 +805,20 @@ subroutine modify_stream(domain, instance, series, err)!{{{
     end do
   end if
 
-  ! make restart mutable
-  call mpas_stream_mgr_set_property(domain % streamManager, &
-    restart_stream_name, MPAS_STREAM_PROPERTY_IMMUTABLE, .false., ierr=err)
+  ! ensure restart stream is empty
+  emptyRestartStream = .true.
+  call mpas_stream_mgr_begin_iteration(domain % streamManager, streamID=restart_stream_name, ierr=err)
+  do while ( mpas_stream_mgr_get_next_field(domain % streamManager, streamID=restart_stream_name, fieldName=fieldName) )
+    emptyRestartStream = .false.
+  end do
+
+  if ( .not. emptyRestartStream ) then
+    write(stderrUnit, *) 'ERROR: Stream named ''' // trim(restart_stream_name) // ''' is not empty, but is used in '
+    write(stderrUnit, *) '       an instance of teh time series stats analysis member. This stream will be built'
+    write(stderrUnit, *) '       based on the contents of the ''' // trim(output_stream_name) // ''' stream.'
+    write(stderrUnit, *) '       Please ensure it is empty in the streams file.'
+    call mpas_dmpar_global_abort('ERROR: Misconfigured streams for time series stats analysis member.')
+  end if
 
   ! create and put the counters in the streams
   do b = 1, series % number_of_buffers
@@ -875,26 +888,9 @@ subroutine modify_stream(domain, instance, series, err)!{{{
     end do
   end do ! number_of_variables
 
-  ! make restart immutable
-  call mpas_stream_mgr_set_property(domain % streamManager, &
-    restart_stream_name, MPAS_STREAM_PROPERTY_IMMUTABLE, .true., ierr=err)
-
-  ! read the restart stream
-  call mpas_stream_mgr_read(domain % streamManager, streamID = restart_stream_name, &
-    ierr=err)
-
-  ! add xtime afterwards because we don't want to clobber the existing xtime
-  ! make restart mutable
-  call mpas_stream_mgr_set_property(domain % streamManager, &
-    restart_stream_name, MPAS_STREAM_PROPERTY_IMMUTABLE, .false., ierr=err)
-
   ! add xtime to the restart
   call mpas_stream_mgr_add_field(domain % streamManager, &
     restart_stream_name, TIME_STREAM, ierr=err)
-
-  ! make restart immutable
-  call mpas_stream_mgr_set_property(domain % streamManager, &
-    restart_stream_name, MPAS_STREAM_PROPERTY_IMMUTABLE, .true., ierr=err)
 
 end subroutine modify_stream!}}}
 
