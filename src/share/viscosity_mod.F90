@@ -11,7 +11,7 @@ module viscosity_mod
 !  by element)
 !
 !
-use thread_mod
+use thread_mod, only : nthreadshoriz,omp_get_num_threads
 use kinds, only : real_kind, iulog
 use dimensions_mod, only : np, nc, nlev,qsize,nelemd, ntrac
 use hybrid_mod, only : hybrid_t, hybrid_create
@@ -485,23 +485,22 @@ end subroutine
 subroutine make_C0(zeta,elem,hybrid,nets,nete)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! apply DSS (aka assembly procedure) to zeta.  
+! this is a low-performance routine used for I/O and analysis.
+! no need to optimize
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
 integer :: nets,nete
 real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 
 ! local
-integer :: k,i,j,ie,ic,kptr
+integer :: k,i,j,ie,ic,kptr,nthread_save
 
-
-    call initEdgeBuffer(hybrid%par,edge1,elem,nlev)
+nthread_save=nthreadshoriz
+nthreadshoriz = omp_get_num_threads()
+call initEdgeBuffer(hybrid%par,edge1,elem,nlev)
 
 do ie=nets,nete
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
    do k=1,nlev
       zeta(:,:,k,ie)=zeta(:,:,k,ie)*elem(ie)%spheremp(:,:)
    enddo
@@ -512,24 +511,23 @@ call bndry_exchangeV(hybrid,edge1)
 do ie=nets,nete
    kptr=0
    call edgeVunpack(edge1, zeta(1,1,1,ie),nlev,kptr, ie)
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
    do k=1,nlev
       zeta(:,:,k,ie)=zeta(:,:,k,ie)*elem(ie)%rspheremp(:,:)
    enddo
 enddo
-#ifdef DEBUGOMP
-#if (defined HORIZ_OPENMP)
-!$OMP BARRIER
-#endif
-#endif
 
 call FreeEdgeBuffer(edge1) 
+nthreadshoriz=nthread_save
+
 end subroutine
 
 
 subroutine make_C0_vector(v,elem,hybrid,nets,nete)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! apply DSS to a velocity vector
+! this is a low-performance routine used for I/O and analysis.
+! no need to optimize
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
 integer :: nets,nete
@@ -538,40 +536,16 @@ real (kind=real_kind), dimension(np,np,2,nlev,nets:nete) :: v
 ! local
 integer :: k,i,j,ie,ic,kptr
 type (EdgeBuffer_t)          :: edge2
+real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: v1
 
+v1(:,:,:,:) = v(:,:,1,:,:)
+call make_C0(v1,elem,hybrid,nets,nete)
+v(:,:,1,:,:) = v1(:,:,:,:) 
 
-    call initEdgeBuffer(hybrid%par,edge2,elem,2*nlev)
+v1(:,:,:,:) = v(:,:,2,:,:)
+call make_C0(v1,elem,hybrid,nets,nete)
+v(:,:,2,:,:) = v1(:,:,:,:) 
 
-do ie=nets,nete
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
-   do k=1,nlev
-      v(:,:,1,k,ie)=v(:,:,1,k,ie)*elem(ie)%spheremp(:,:)
-      v(:,:,2,k,ie)=v(:,:,2,k,ie)*elem(ie)%spheremp(:,:)
-   enddo
-   kptr=0
-   call edgeVpack(edge2, v(1,1,1,1,ie),2*nlev,kptr,ie)
-enddo
-call bndry_exchangeV(hybrid,edge2)
-do ie=nets,nete
-   kptr=0
-   call edgeVunpack(edge2, v(1,1,1,1,ie),2*nlev,kptr,ie)
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
-   do k=1,nlev
-      v(:,:,1,k,ie)=v(:,:,1,k,ie)*elem(ie)%rspheremp(:,:)
-      v(:,:,2,k,ie)=v(:,:,2,k,ie)*elem(ie)%rspheremp(:,:)
-   enddo
-enddo
-#ifdef DEBUGOMP
-#if (defined HORIZ_OPENMP)
-!$OMP BARRIER
-#endif
-#endif
-
-call FreeEdgeBuffer(edge2) 
 end subroutine
 
 
