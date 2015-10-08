@@ -142,7 +142,7 @@ program prim_main
   !$OMP END PARALLEL
 #endif
   
-! back to single threaded
+  ! setup fake threading so we can call routines that require 'hybrid'
   ithr=omp_get_thread_num()
   hybrid = hybrid_create(par,ithr,1)
   nets=1
@@ -183,9 +183,14 @@ program prim_main
 #if (defined HORIZ_OPENMP)
   !$OMP END PARALLEL
 #endif
-
+  ! setup fake threading so we can call routines that require 'hybrid'
   ithr=omp_get_thread_num()
   hybrid = hybrid_create(par,ithr,1)
+  nets=1
+  nete=nelemd 
+
+
+
   
   ! Here we get sure the directory specified
   ! in the input namelist file in the 
@@ -193,7 +198,7 @@ program prim_main
   ! this avoids a abort deep within the PIO 
   ! library (SIGABRT:signal 6) which in most
   ! architectures produces a core dump.
-  if (hybrid%masterthread) then 
+  if (par%masterproc) then 
      open(unit=447,file=trim(output_dir) // "/output_dir_test",iostat=ierr)
      if ( ierr==0 ) then
         print *,'Directory ',trim(output_dir), ' does exist: initialing IO'
@@ -207,9 +212,9 @@ program prim_main
   this ALWAYS fails on lustre filesystems.  replaced with the check above
   inquire( file=output_dir, exist=dir_e )
   if ( dir_e ) then
-     if(hybrid%masterthread) print *,'Directory ',output_dir, ' does exist: initialing IO'
+     if(par%masterproc) print *,'Directory ',output_dir, ' does exist: initialing IO'
   else
-     if(hybrid%masterthread) print *,'Directory ',output_dir, ' does not exist: stopping'
+     if(par%masterproc) print *,'Directory ',output_dir, ' does not exist: stopping'
      call haltmp("Please get sure the directory exist or specify one via output_dir in the namelist file.")
   end if
 #endif
@@ -237,7 +242,7 @@ program prim_main
   ! advance_si not yet upgraded to be self-starting.  use leapfrog bootstrap procedure:
   if(integration == 'semi_imp') then
      if (runtype /= 1 ) then
-        if(hybrid%masterthread) print *,"Leapfrog bootstrap initialization..."
+        if(par%masterproc) print *,"Leapfrog bootstrap initialization..."
         call leapfrog_bootstrap(elem, hybrid,1,nelemd,tstep,tl,hvcoord)
      endif
   endif
@@ -270,9 +275,13 @@ program prim_main
 #if (defined HORIZ_OPENMP)
      !$OMP END PARALLEL
 #endif
-
+     ! setup fake threading so we can call routines that require 'hybrid'
      ithr=omp_get_thread_num()
      hybrid = hybrid_create(par,ithr,1)
+     nets=1
+     nete=nelemd 
+
+
 #ifdef PIO_INTERP
      if (ntrac>0) call fvm_init3(elem,fvm,hybrid,nets,nete,n0_fvm)
      call interp_movie_output(elem, tl, par, 0d0,fvm=fvm, hvcoord=hvcoord)
@@ -294,7 +303,7 @@ program prim_main
   call t_stopf('prim_main_loop')
 
   if(par%masterproc) print *,"Finished main timestepping loop",tl%nstep
-  call prim_finalize(hybrid)
+  call prim_finalize()
   if(par%masterproc) print *,"closing history files"
 #ifdef PIO_INTERP
   call interp_movie_finish
