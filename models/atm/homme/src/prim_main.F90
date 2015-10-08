@@ -218,7 +218,7 @@ program prim_main
 #ifdef PIO_INTERP
   ! initialize history files.  filename constructed with restart time
   ! so we have to do this after ReadRestart in prim_init2 above
-  call interp_movie_init( elem, hybrid, 1, nelemd, hvcoord, tl )
+  call interp_movie_init( elem, par,  hvcoord, tl )
 #else
   call prim_movie_init( elem, par, hvcoord, tl )
 #endif
@@ -227,9 +227,9 @@ program prim_main
   ! output initial state for NEW runs (not restarts or branch runs)
   if (runtype == 0 ) then
 #ifdef PIO_INTERP
-     call interp_movie_output(elem, tl, hybrid, 0d0, 1, nelemd,fvm=fvm, hvcoord=hvcoord)
+     call interp_movie_output(elem, tl, par, 0d0, fvm=fvm, hvcoord=hvcoord)
 #else
-     call prim_movie_output(elem, tl, hvcoord, hybrid, 1,nelemd, fvm)
+     call prim_movie_output(elem, tl, hvcoord, par, fvm)
 #endif
   endif
 
@@ -275,9 +275,9 @@ program prim_main
      hybrid = hybrid_create(par,ithr,1)
 #ifdef PIO_INTERP
      if (ntrac>0) call fvm_init3(elem,fvm,hybrid,nets,nete,n0_fvm)
-     call interp_movie_output(elem, tl, hybrid, 0d0, 1, nelemd,fvm=fvm, hvcoord=hvcoord)
+     call interp_movie_output(elem, tl, par, 0d0,fvm=fvm, hvcoord=hvcoord)
 #else
-     call prim_movie_output(elem, tl, hvcoord, hybrid, 1,nelemd, fvm)
+     call prim_movie_output(elem, tl, hvcoord, par, fvm)
 #endif
 
 #ifdef _REFSOLN

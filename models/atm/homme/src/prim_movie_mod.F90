@@ -535,7 +535,7 @@ contains
     end if
  end function nextoutputstep
 
-  subroutine prim_movie_output(elem, tl, hvcoord, hybrid, nets,nete, fvm)
+  subroutine prim_movie_output(elem, tl, hvcoord, par, fvm)
     use piolib_mod, only : Pio_SetDebugLevel !_EXTERNAL
     use perf_mod, only : t_startf, t_stopf !_EXTERNAL
     use viscosity_mod, only : compute_zeta_C0
@@ -550,8 +550,7 @@ contains
 
     type (TimeLevel_t)  :: tl
     type (hvcoord_t)    :: hvcoord
-    type (hybrid_t)      , intent(in) :: hybrid
-    integer              :: nets,nete
+    type (parallel_t)   :: par
 
     real*8              :: st_write, et_write, dt_write, dt_write_global
     character(len=varname_len), pointer :: output_varnames(:)
@@ -573,7 +572,6 @@ contains
 !    call unbind()
 #endif
 
-
     do ios=1,max_output_streams
        if((output_frequency(ios) .gt. 0)) then
           if ((output_start_time(ios) .le. tl%nstep) .and. &
@@ -591,7 +589,7 @@ contains
              count(3)=1
 
              if(nf_selectedvar('ps', output_varnames)) then
-                if (hybrid%masterthread) print *,'writing ps...'
+                if (par%masterproc) print *,'writing ps...'
                 st=1
                 do ie=1,nelemd
                    vartmp(:,:,1) = exp(elem(ie)%state%lnps(:,:,tl%n0))
@@ -603,7 +601,7 @@ contains
              endif
 
              if(nf_selectedvar('hypervis', output_varnames)) then
-                if (hybrid%masterthread) print *,'writing hypervis...'
+                if (par%masterproc) print *,'writing hypervis...'
                 st=1
                 do ie=1,nelemd
                    vartmp(:,:,1) = elem(ie)%variable_hyperviscosity(:,:)
@@ -618,7 +616,7 @@ contains
 
 
              if(nf_selectedvar('geos', output_varnames)) then
-                if (hybrid%masterthread) print *,'writing geos...'
+                if (par%masterproc) print *,'writing geos...'
                 st=1
                 do ie=1,nelemd
                    en=st+elem(ie)%idxp%NumUniquePts-1
@@ -641,7 +639,7 @@ contains
 
 
              if(nf_selectedvar('zeta', output_varnames)) then
-                if (hybrid%masterthread) print *,'writing zeta...'
+                if (par%masterproc) print *,'writing zeta...'
                 ! velocities are on sphere for primitive equations
                 call compute_zeta_C0(temp3d,elem,hybrid,nets,nete,tl%n0)
 
@@ -656,7 +654,7 @@ contains
 
 
              if(nf_selectedvar('T', output_varnames)) then
-                if (hybrid%masterthread) print *,'writing T...'
+                if (par%masterproc) print *,'writing T...'
                 st=1
                 do ie=1,nelemd
                    en=st+elem(ie)%idxp%NumUniquePts-1
@@ -688,7 +686,7 @@ contains
                 call nf_put_var(ncdf(ios),var3d,start, count, name='Th')
              end if
              if(nf_selectedvar('u', output_varnames)) then
-                if (hybrid%masterthread) print *,'writing u...'
+                if (par%masterproc) print *,'writing u...'
                 st=1
                 do ie=1,nelemd
                    do k=1,nlev
@@ -702,7 +700,7 @@ contains
              end if
 
              if(nf_selectedvar('v', output_varnames)) then
-                if (hybrid%masterthread) print *,'writing v...'
+                if (par%masterproc) print *,'writing v...'
                 st=1
                 do ie=1,nelemd
                    do k=1,nlev
@@ -733,7 +731,7 @@ contains
                 write(vname,'(a1,i1)') 'Q',qindex
                 if (qindex==1) vname='Q'
                 if(nf_selectedvar(vname, output_varnames)) then
-                   if (hybrid%masterthread) print *,'writing ',vname
+                   if (par%masterproc) print *,'writing ',vname
                    st=1
                    do ie=1,nelemd
                       en=st+elem(ie)%idxp%NumUniquePts-1
@@ -751,7 +749,7 @@ contains
                 if(nf_selectedvar(vname, output_varnames)) then
 
                    
-                   if (hybrid%masterthread) print *,'writing ',vname
+                   if (par%masterproc) print *,'writing ',vname
                    do k=1,nlev
                       jj=0
                       do ie=1,nelemd
