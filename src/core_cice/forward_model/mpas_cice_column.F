@@ -234,7 +234,7 @@ contains
        
 !nj-bgc+
        ! initialize biogoechemistry profiles
-       call init_column_biogeochemistry_profiles(domain, ciceTracerObject)
+       !call init_column_biogeochemistry_profiles(domain, ciceTracerObject)
 !nj-bgc-
        
        ! history variables
