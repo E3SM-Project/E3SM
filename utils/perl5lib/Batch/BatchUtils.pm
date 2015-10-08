@@ -632,7 +632,12 @@ sub doResubmit()
         
         my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $scriptname ";
         $logger->info("1: $runcmd");
-        qx($runcmd) or $logger->logdie ("could not exec command $runcmd, $!");
+        qx($runcmd);
+        if($?)
+        {
+            $logger->logdie( "could not execute runcmd $runcmd, $! $?");
+            exit(1);
+        }
 
         #chdir $owd;
 	$self->_decrementResubmitCounter(\%config);
@@ -653,7 +658,12 @@ sub doResubmit()
         my $runcmd = "ssh cooleylogin1 $submitstuff";
 	
         $logger->info("2: $runcmd");
-        qx($runcmd) or $logger->logdie (" could not exec cmd $runcmd, $! $?");
+        qx($runcmd);
+        if($?)
+        {
+            $logger->logdie( "could not execute runcmd $runcmd, $! $?");
+            exit(1);
+        }
         
     }
 
@@ -674,7 +684,13 @@ sub doResubmit()
         my $submitstuff = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $starchivescript";
         my $runcmd = "ssh cooleylogin1 $submitstuff";
         $logger->info("3: $runcmd");
-        qx($runcmd) or $logger->logdie( "could not exec cmd $runcmd, $!");
+        qx($runcmd);
+        if($?)
+        {
+            $logger->logdie( "could not execute runcmd $runcmd, $! $?");
+            exit(1);
+        }
+
     }
 
     # If we're being called by the short-term archiver, and we actually need to resubmit
@@ -703,8 +719,9 @@ sub doResubmit()
             $runhost = "cetuslac1";
         }
         my $runcmd = "ssh cooleylogin1 ssh $runhost $submitstuff ";
-        $logger->info("4: $runcmd");
-        qx($runcmd) or $logger->logdie( "could not exec cmd $runcmd, $!");
+    #     my $runcmd =  "ssh $runhost $submitstuff ";
+         $logger->info("4: $runcmd");
+        qx($runcmd);
         if($?)
         {
             $logger->logdie( "could not execute runcmd $runcmd, $! $?");
