@@ -59,6 +59,7 @@ module ocn_analysis_driver
    !--------------------------------------------------------------------
 
    public :: ocn_analysis_setup_packages, &
+             ocn_analysis_read_init_streams, &
              ocn_analysis_init, &
              ocn_analysis_compute_startup, &
              ocn_analysis_compute, &
@@ -73,6 +74,7 @@ module ocn_analysis_driver
    !--------------------------------------------------------------------
 
 
+   character (len=*), parameter :: initReadTimerPrefix = 'init_read_'
    character (len=*), parameter :: initTimerPrefix = 'init_'
    character (len=*), parameter :: computeTimerPrefix = 'compute_'
    character (len=*), parameter :: computeStartupTimerPrefix = 'compute_startup_'
@@ -176,6 +178,146 @@ contains
       end do
 
    end subroutine ocn_analysis_setup_packages!}}}
+
+!***********************************************************************
+!
+!  routine ocn_analysis_read_init_streams
+!
+!> \brief   Setup packages for MPAS-Ocean analysis driver
+!> \author  Doug Jacobsen
+!> \date    10/08/2015
+!> \details
+!>  This routine will read either a restart or an input stream for each analysis member.
+!>  The stream names that will be read are controlled via the analysis member's
+!>     - config_AM_${AM}_restart_stream
+!>     - config_AM_${AM}_input_stream
+!>  namelist options.
+!>
+!>  If the AM doesn't specify either of these, it will be ignored. If the AM
+!>  specifies only the restart stream, it will only be read if the config_do_restart flag
+!>  for the model is set to true. If the AM specifies both, the restart_stream will be read if
+!>  config_do_restart is true, and the input_stream will be read if config_do_restart is false.
+!>
+!>  After this call, alarms on both streams are reset.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_analysis_read_init_streams(domain, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: err_tmp
+
+      character (len=StrKIND) :: configName, alarmName, restartStreamName, inputStreamName, timerName
+      logical, pointer :: config_AM_enable, config_do_restart
+      character (len=StrKIND), pointer :: config_AM_restart_stream, config_AM_input_stream
+      integer :: nameLength
+      type (mpas_pool_iterator_type) :: poolItr
+
+      logical :: streamFound
+      character  (len=StrKIND) :: referenceTimeString, outputIntervalString
+      type (MPAS_Time_Type) :: referenceTime 
+      type (MPAS_TimeInterval_type) :: alarmTimeStep
+
+      integer :: poolErrorLevel
+
+      err = 0
+
+      poolErrorLevel = mpas_pool_get_error_level()
+      call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+
+      call mpas_timer_start('analysis_read_init_streams', .false.)
+
+      call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
+
+      call mpas_pool_begin_iteration(analysisMemberList)
+      do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
+         nameLength = len_trim(poolItr % memberName)
+         configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_enable'
+         call mpas_pool_get_config(domain % configs, configName, config_AM_enable)
+
+         if ( config_AM_enable ) then
+            timerName = trim(initReadTimerPrefix) // poolItr % memberName(1:nameLength)
+            call mpas_timer_start(timerName, .false.)
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_restart_stream'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_restart_stream)
+
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_input_stream'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_input_stream)
+
+            ! Verify the restart stream exists
+            if ( associated(config_AM_restart_stream) ) then
+               if ( .not. mpas_stream_mgr_stream_exists(domain % streamManager, config_AM_restart_stream) ) then
+                  call mpas_dmpar_global_abort('ERROR: Stream named ''' // trim(config_AM_restart_stream) // &
+                                               ''' does not exist in config for analysis member ''' // &
+                                               trim(poolItr % memberName(1:nameLength)) // '''')
+               end if
+            end if
+
+            ! Verify the input stream exists
+            if ( associated(config_AM_input_stream) ) then
+               if ( .not. mpas_stream_mgr_stream_exists(domain % streamManager, config_AM_input_stream) ) then
+                  call mpas_dmpar_global_abort('ERROR: Stream named ''' // trim(config_AM_input_stream) // &
+                                               ''' does not exist in config for analysis member ''' // &
+                                               trim(poolItr % memberName(1:nameLength)) // '''')
+               end if
+            end if
+
+            ! Handle reading of streams that exist.
+            if ( associated(config_AM_restart_stream) .and. associated(config_AM_input_stream) ) then
+               if ( config_do_restart ) then
+                  call mpas_stream_mgr_read(domain % streamManager, streamID=config_AM_restart_stream, ierr=err)
+               else
+                  call mpas_stream_mgr_read(domain % streamManager, streamID=config_AM_input_stream, ierr=err)
+               end if
+               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_restart_stream, direction=MPAS_STREAM_INPUT, ierr=err)
+               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_input_stream, direction=MPAS_STREAM_INPUT, ierr=err)
+            else if ( associated(config_AM_restart_stream) ) then
+               if ( config_do_restart ) then
+                  call mpas_stream_mgr_read(domain % streamManager, streamID=config_AM_restart_stream, ierr=err)
+               end if
+               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_restart_stream, direction=MPAS_STREAM_INPUT, ierr=err)
+            else if ( associated(config_AM_input_stream) ) then
+               if ( .not. config_do_restart ) then
+                  call mpas_stream_mgr_read(domain % streamManager, streamID=config_AM_input_stream, ierr=err)
+               end if
+               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_input_stream, direction=MPAS_STREAM_INPUT, ierr=err)
+            end if
+            call mpas_timer_stop(timerName)
+         end if
+      end do
+
+      call mpas_timer_stop('analysis_read_init_streams')
+
+      call mpas_pool_set_error_level(poolErrorLevel)
+
+   end subroutine ocn_analysis_read_init_streams!}}}
 
 !***********************************************************************
 !
