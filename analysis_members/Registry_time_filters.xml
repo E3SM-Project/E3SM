@@ -7,7 +7,7 @@
 					description="Timestamp determining how often analysis member computation should be performed."
 					possible_values="'dt' because filtering should be performed at each time step."
 		/>
-		<nml_option name="config_AM_timeFilters_stream_name" type="character" default_value="timeFiltersOutput" units="unitless"
+		<nml_option name="config_AM_timeFilters_output_stream" type="character" default_value="timeFiltersOutput" units="unitless"
 					description="Name of the stream that the timeFilters analysis member should be tied to."
 					possible_values="Any existing stream name or 'none'"
 		/>
