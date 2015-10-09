@@ -11,7 +11,7 @@ if ($OS != AIX) then
   echo "${0}:  running APT test on AIX system - Error" >>& $TESTSTATUS_LOG
   echo "ERROR: APT test must be run on AIX system" >>& $TESTSTATUS_LOG
   set basestatus = "ERROR"
-  echo "$basestatus ${CASEBASEID} " >&! $TESTSTATUS_OUT
+  echo "$basestatus ${CASEBASEID} " >>& $TESTSTATUS_OUT
   exit -1
 else
   echo "${0}:  running APT test on AIX system - OK" >>& $TESTSTATUS_LOG
@@ -118,11 +118,6 @@ $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -su
 #======================================================================
 
 set CPLLOG = $CplLogFile
-
-if ! ( $?IOP_ON ) then
-    echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >&! $TESTSTATUS_OUT
-    echo "--- Test Functionality  ---:" >>& $TESTSTATUS_OUT
-endif
 
 echo "done ${CASEBASEID} : ($msg finished, successful coupler log) " >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
