@@ -2799,7 +2799,7 @@ MPAS_GPTL_STOP('dyn_tend')
       ! Local variables
       !
       integer, pointer :: nCells, nEdges, nVertices, nCellsSolve, nEdgesSolve, vertexDegree, maxEdges, maxEdges2
-      integer, pointer :: moist_start, moist_end
+      integer, pointer :: moist_start, moist_end, num_scalars
 
       real (kind=RKIND), dimension(:), pointer ::  fEdge, dvEdge, dcEdge, invDcEdge, invDvEdge, invAreaCell, invAreaTriangle, &
                                                    meshScalingDel2, meshScalingDel4
@@ -2957,6 +2957,7 @@ MPAS_GPTL_STOP('dyn_tend')
       call mpas_pool_get_dimension(mesh, 'maxEdges', maxEdges)
       call mpas_pool_get_dimension(mesh, 'maxEdges2', maxEdges2)
 
+      call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
       call mpas_pool_get_dimension(state, 'moist_start', moist_start)
       call mpas_pool_get_dimension(state, 'moist_end', moist_end)
 
@@ -2971,7 +2972,7 @@ MPAS_GPTL_STOP('dyn_tend')
       call mpas_pool_get_array(mesh, 'cf3', cf3)
 
       call atm_compute_dyn_tend_work(nCells, nEdges, nVertices, nVertLevels, &
-         nCellsSolve, nEdgesSolve, vertexDegree, maxEdges, maxEdges2, moist_start, moist_end, &
+         nCellsSolve, nEdgesSolve, vertexDegree, maxEdges, maxEdges2, num_scalars, moist_start, moist_end, &
          fEdge, dvEdge, dcEdge, invDcEdge, invDvEdge, invAreaCell, invAreaTriangle, meshScalingDel2, meshScalingDel4, &
          weightsOnEdge, zgrid, rho_edge, rho_zz, ru, u, v, tend_u, &
          divergence, vorticity, ke, pv_edge, theta_m, rw, tend_rho, &
@@ -2991,7 +2992,7 @@ MPAS_GPTL_STOP('dyn_tend')
 
 
    subroutine atm_compute_dyn_tend_work(nCells, nEdges, nVertices, nVertLevels, &
-      nCellsSolve, nEdgesSolve, vertexDegree, maxEdges, maxEdges2, moist_start, moist_end, &
+      nCellsSolve, nEdgesSolve, vertexDegree, maxEdges, maxEdges2, num_scalars, moist_start, moist_end, &
       fEdge, dvEdge, dcEdge, invDcEdge, invDvEdge, invAreaCell, invAreaTriangle, meshScalingDel2, meshScalingDel4, &
       weightsOnEdge, zgrid, rho_edge, rho_zz, ru, u, v, tend_u, &
       divergence, vorticity, ke, pv_edge, theta_m, rw, tend_rho, &
@@ -3014,101 +3015,101 @@ MPAS_GPTL_STOP('dyn_tend')
       ! Dummy arguments
       !
       integer :: nCells, nEdges, nVertices, nVertLevels, nCellsSolve, nEdgesSolve, vertexDegree, &
-                 maxEdges, maxEdges2, moist_start, moist_end
+                 maxEdges, maxEdges2, num_scalars, moist_start, moist_end
 
-      real (kind=RKIND), dimension(:) :: fEdge
-      real (kind=RKIND), dimension(:) :: dvEdge
-      real (kind=RKIND), dimension(:) :: dcEdge
-      real (kind=RKIND), dimension(:) :: invDcEdge
-      real (kind=RKIND), dimension(:) :: invDvEdge
-      real (kind=RKIND), dimension(:) :: invAreaCell
-      real (kind=RKIND), dimension(:) :: invAreaTriangle
-      real (kind=RKIND), dimension(:) :: meshScalingDel2
-      real (kind=RKIND), dimension(:) :: meshScalingDel4
-      real (kind=RKIND), dimension(:,:) :: weightsOnEdge
-      real (kind=RKIND), dimension(:,:) :: zgrid
-      real (kind=RKIND), dimension(:,:) :: rho_edge
-      real (kind=RKIND), dimension(:,:) :: rho_zz
-      real (kind=RKIND), dimension(:,:) :: ru
-      real (kind=RKIND), dimension(:,:) :: u
-      real (kind=RKIND), dimension(:,:) :: v
-      real (kind=RKIND), dimension(:,:) :: tend_u
-      real (kind=RKIND), dimension(:,:) :: divergence
-      real (kind=RKIND), dimension(:,:) :: vorticity
-      real (kind=RKIND), dimension(:,:) :: ke
-      real (kind=RKIND), dimension(:,:) :: pv_edge
-      real (kind=RKIND), dimension(:,:) :: theta_m
-      real (kind=RKIND), dimension(:,:) :: rw
-      real (kind=RKIND), dimension(:,:) :: tend_rho
-      real (kind=RKIND), dimension(:,:) :: rt_diabatic_tend
-      real (kind=RKIND), dimension(:,:) :: tend_theta
-      real (kind=RKIND), dimension(:,:) :: tend_w
-      real (kind=RKIND), dimension(:,:) :: w
-      real (kind=RKIND), dimension(:,:) :: cqw
-      real (kind=RKIND), dimension(:,:) :: rb
-      real (kind=RKIND), dimension(:,:) :: rr
-      real (kind=RKIND), dimension(:,:) :: pp
-      real (kind=RKIND), dimension(:,:) :: pp_old
-      real (kind=RKIND), dimension(:,:) :: pressure_b
-      real (kind=RKIND), dimension(:,:) :: zz
-      real (kind=RKIND), dimension(:,:) :: zxu
-      real (kind=RKIND), dimension(:,:) :: cqu
-      real (kind=RKIND), dimension(:,:) :: h_divergence
-      real (kind=RKIND), dimension(:,:) :: kdiff
-      real (kind=RKIND), dimension(:,:) :: edgesOnCell_sign
-      real (kind=RKIND), dimension(:,:) :: edgesOnVertex_sign
-      real (kind=RKIND), dimension(:,:) :: rw_save
-      real (kind=RKIND), dimension(:,:) :: ru_save
+      real (kind=RKIND), dimension(nEdges+1) :: fEdge
+      real (kind=RKIND), dimension(nEdges+1) :: dvEdge
+      real (kind=RKIND), dimension(nEdges+1) :: dcEdge
+      real (kind=RKIND), dimension(nEdges+1) :: invDcEdge
+      real (kind=RKIND), dimension(nEdges+1) :: invDvEdge
+      real (kind=RKIND), dimension(nCells+1) :: invAreaCell
+      real (kind=RKIND), dimension(nVertices+1) :: invAreaTriangle
+      real (kind=RKIND), dimension(nCells+1) :: meshScalingDel2
+      real (kind=RKIND), dimension(nCells+1) :: meshScalingDel4
+      real (kind=RKIND), dimension(maxEdges2,nEdges+1) :: weightsOnEdge
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: zgrid
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: rho_edge
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rho_zz
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: ru
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: u
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: v
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: tend_u
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: divergence
+      real (kind=RKIND), dimension(nVertLevels,nVertices+1) :: vorticity
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: ke
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: pv_edge
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: theta_m
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: tend_rho
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rt_diabatic_tend
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: tend_theta
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: tend_w
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: w
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: cqw
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rb
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rr
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pp
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pp_old
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pressure_b
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: zz
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: zxu
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: cqu
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: h_divergence
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: kdiff
+      real (kind=RKIND), dimension(maxEdges,nCells+1) :: edgesOnCell_sign
+      real (kind=RKIND), dimension(vertexDegree,nVertices+1) :: edgesOnVertex_sign
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw_save
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: ru_save
 
-      real (kind=RKIND), dimension(:,:) :: theta_m_save
-      real (kind=RKIND), dimension(:,:) :: exner
-      real (kind=RKIND), dimension(:,:) :: pp_fwd
-      real (kind=RKIND), dimension(:,:) :: rr_save
-      real (kind=RKIND), dimension(:,:,:) :: scalars
-      real (kind=RKIND), dimension(:,:) :: tend_u_euler
-      real (kind=RKIND), dimension(:,:) :: tend_w_euler
-      real (kind=RKIND), dimension(:,:) :: tend_theta_euler
-      real (kind=RKIND), dimension(:,:,:) :: deriv_two
-      integer, dimension(:,:) :: cellsOnEdge
-      integer, dimension(:,:) :: verticesOnEdge
-      integer, dimension(:,:) :: edgesOnCell
-      integer, dimension(:,:) :: edgesOnEdge
-      integer, dimension(:,:) :: cellsOnCell
-      integer, dimension(:,:) :: edgesOnVertex
-      integer, dimension(:) :: nEdgesOnCell
-      integer, dimension(:) :: nEdgesOnEdge
-      real (kind=RKIND), dimension(:) :: latCell
-      real (kind=RKIND), dimension(:) :: latEdge
-      real (kind=RKIND), dimension(:) :: angleEdge
-      real (kind=RKIND), dimension(:) :: u_init
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: theta_m_save
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: exner
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pp_fwd
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rr_save
+      real (kind=RKIND), dimension(num_scalars,nVertLevels,nCells+1) :: scalars
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: tend_u_euler
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: tend_w_euler
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: tend_theta_euler
+      real (kind=RKIND), dimension(15,2,nEdges+1) :: deriv_two
+      integer, dimension(2,nEdges+1) :: cellsOnEdge
+      integer, dimension(2,nEdges+1) :: verticesOnEdge
+      integer, dimension(maxEdges,nCells+1) :: edgesOnCell
+      integer, dimension(maxEdges2,nEdges+1) :: edgesOnEdge
+      integer, dimension(maxEdges,nCells+1) :: cellsOnCell
+      integer, dimension(vertexDegree,nVertices+1) :: edgesOnVertex
+      integer, dimension(nCells+1) :: nEdgesOnCell
+      integer, dimension(nEdges+1) :: nEdgesOnEdge
+      real (kind=RKIND), dimension(nCells+1) :: latCell
+      real (kind=RKIND), dimension(nEdges+1) :: latEdge
+      real (kind=RKIND), dimension(nEdges+1) :: angleEdge
+      real (kind=RKIND), dimension(nVertLevels) :: u_init
 
-      integer, dimension(:,:) :: advCellsForEdge
-      integer, dimension(:) :: nAdvCellsForEdge
-      real (kind=RKIND), dimension(:,:) :: adv_coefs
-      real (kind=RKIND), dimension(:,:) :: adv_coefs_3rd
+      integer, dimension(15,nEdges+1) :: advCellsForEdge
+      integer, dimension(nEdges+1) :: nAdvCellsForEdge
+      real (kind=RKIND), dimension(15,nEdges+1) :: adv_coefs
+      real (kind=RKIND), dimension(15,nEdges+1) :: adv_coefs_3rd
 
-      real (kind=RKIND), dimension(:) :: rdzu
-      real (kind=RKIND), dimension(:) :: rdzw
-      real (kind=RKIND), dimension(:) :: fzm
-      real (kind=RKIND), dimension(:) :: fzp
-      real (kind=RKIND), dimension(:) :: qv_init
-      real (kind=RKIND), dimension(:,:) :: t_init 
+      real (kind=RKIND), dimension(nVertLevels) :: rdzu
+      real (kind=RKIND), dimension(nVertLevels) :: rdzw
+      real (kind=RKIND), dimension(nVertLevels) :: fzm
+      real (kind=RKIND), dimension(nVertLevels) :: fzp
+      real (kind=RKIND), dimension(nVertLevels) :: qv_init
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: t_init 
 
-      real (kind=RKIND), dimension(:,:) :: pzp
-      real (kind=RKIND), dimension(:,:) :: pzm
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pzp
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pzm
 
       real (kind=RKIND) :: cf1, cf2, cf3
       real (kind=RKIND) :: prandtl_inv, r_areaCell, rgas_cprcv
 
       real (kind=RKIND) :: r_earth
-      real (kind=RKIND), dimension(:,:) :: ur_cell
-      real (kind=RKIND), dimension(:,:) :: vr_cell
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: ur_cell
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: vr_cell
 
-      real (kind=RKIND), dimension(:,:) :: defc_a
-      real (kind=RKIND), dimension(:,:) :: defc_b
+      real (kind=RKIND), dimension(maxEdges,nCells+1) :: defc_a
+      real (kind=RKIND), dimension(maxEdges,nCells+1) :: defc_b
 
-      real (kind=RKIND), dimension(:,:) :: tend_w_pgf
-      real (kind=RKIND), dimension(:,:) :: tend_w_buoy
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: tend_w_pgf
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: tend_w_buoy
 
       real (kind=RKIND) :: coef_3rd_order, c_s, smdiv
       logical :: config_mix_full
