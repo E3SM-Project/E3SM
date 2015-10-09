@@ -159,7 +159,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
         if (os.path.isdir("Testing")):
             shutil.rmtree("Testing")
 
-        test_id_root = "jenkins_testid"
+        test_id_root = "jenkins_%s" % baseline_name
         for old_dir in glob.glob("%s/*%s*" % (testroot, test_id_root)):
             shutil.rmtree(old_dir)
 
