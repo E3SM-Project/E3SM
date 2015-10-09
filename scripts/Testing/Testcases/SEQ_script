@@ -116,9 +116,6 @@ $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -su
 echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >>& $TESTSTATUS_LOG
 echo '**********************************************' >>& $TESTSTATUS_LOG
 
-echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >&! $TESTSTATUS_OUT
-echo "--- Test Functionality: ---" >>& $TESTSTATUS_OUT
-
 echo "obtaining test functionality from history files with commands " >>& $TESTSTATUS_LOG
 echo "$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 seq -msg compare .base and .seq files" >> >>& $TESTSTATUS_LOG
 echo ""	>>& $TESTSTATUS_LOG
