@@ -113,24 +113,48 @@ sub add_config_variables
 	foreach my $define_node ($node->childNodes()) 
 	{
 	    my $node_name  = $define_node->nodeName();
-	    my $node_value = $define_node->textContent();
-	    if (defined $node_value) {
-		$node_value =~ s/\$MODEL/$model/;
-		$node_value =~ s/\$CIMEROOT/$cimeroot/;
-		if (-d $srcroot) {
-		    $node_value =~ s/\$SRCROOT/$srcroot/;
+	    #
+            # This creates a hash of values with attribute name and id as keys
+            #
+	    if($node_name eq "values"){
+		foreach my $val_node ($define_node->childNodes()){
+                    if($val_node->hasAttributes()){		 
+                    my @att = $val_node->attributes();
+		    foreach my $attstr (@att){
+			$attstr =~ /(\w+)=\"(.*)\"/;
+	                my $att = $1;
+	                my $att_val = $2;
+			my $val =  $val_node->textContent();		
+			$val =~ s/\$MODEL/$model/;
+			$val =~ s/\$CIMEROOT/$cimeroot/;
+			if (-d $srcroot) {
+			    $val =~ s/\$SRCROOT/$srcroot/;
+			}			
+			$self->{$id}{$att}{$att_val} = $val;
+		    }
+}
 		}
 
-		# now set the initial value to the default value - this can get overwritten
-		if ($node_name eq 'default_value') {
-		    $self->{$id}->{'value'} = $node_value;
-		} else {
-		    $self->{$id}->{$node_name} = $node_value;
+	    }else{
+		my $node_value = $define_node->textContent();
+		if (defined $node_value) {
+		    $node_value =~ s/\$MODEL/$model/;
+		    $node_value =~ s/\$CIMEROOT/$cimeroot/;
+		    if (-d $srcroot) {
+			$node_value =~ s/\$SRCROOT/$srcroot/;
+		    }
+
+		    # now set the initial value to the default value - this can get overwritten
+		    if ($node_name eq 'default_value') {
+			$self->{$id}{'value'} = $node_value;
+		    } else {
+			$self->{$id}{$node_name} = $node_value;
+		    }
+		    $logger->debug("id= $id name = $node_name value = $node_value\n");
 		}
-		$logger->debug("id= $id name = $node_name value = $node_value\n");
 	    }
 	}
-	if (! defined $self->{$id}->{'value'} ) {
+	if (! defined $self->{$id}{'value'} ) {
 	    $logger->logdie( "ERROR add_config_variables: default_value must be set for $id in $file\n");
 	}
     }
@@ -176,12 +200,34 @@ sub set
 sub get
 {
     # Return requested value.
-    my ($self, $name) = @_;
+    my ($self, $name, $attribute, $id ) = @_;
 
-    defined($self->{$name}) or $logger->logde( "ERROR ConfigCase.pm::get: unknown parameter name: $name\n");
+    defined($self->{$name}) or $logger->logdie( "ERROR ConfigCase.pm::get: unknown parameter name: $name\n");
     $logger->debug("GET: $name $self->{$name}->{value}\n");
-    return $self->{$name}->{'value'};
+    if(defined $attribute && defined $id){
+	if(defined $self->{$name}{$attribute}){
+	    my $val = $self->{$name}{$attribute}{$id};
+	    if(! defined $val){
+		$logger->warn("No match for $attribute and $id in $name");
+	    }
+	    return $val;
+	}else{
+	    $logger->warn("No values found for $name");
+	}
+    }
+    return $self->{$name}{'value'};
 }
+
+sub getkeys{
+    my ($self, $name,$attribute) = @_;
+    my @keys;
+    defined($self->{$name}) 
+	or $logger->logdie( "ERROR ConfigCase.pm::getkeys: unknown parameter name: $name");
+    defined($self->{$name}{$attribute}) 
+	or $logger->logdie( "ERROR ConfigCase.pm::getkeys: unknown attribute $attribute for parameter name: $name");
+    return(keys %{$self->{$name}{$attribute}});
+}
+
 
 #-----------------------------------------------------------------------------------------------
 sub get_valid_values
