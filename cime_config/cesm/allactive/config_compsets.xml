@@ -44,6 +44,11 @@
   </compset>
 
   <compset>
+    <alias>BGM1850</alias>
+    <lname>1850_CAM5_CLM50%BGC_CICE_POP2_MOSART_CISM1_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>BM1850</alias>
     <lname>1850_CAM5_CLM50%BGC_CICE_POP2_MOSART_SGLC_SWAV</lname>
   </compset>
@@ -54,7 +59,7 @@
   </compset>
 
   <compset>
-    <alias>BMW1850</alias>
+    <alias>BWM1850</alias>
     <lname>1850_CAM5_CLM50%BGC_CICE_POP2_MOSART_SGLC_DWAV</lname>
   </compset>
 
@@ -121,7 +126,7 @@
   </compset>
 
   <compset> 
-    <alias>B1850C4L4</alias>
+    <alias>B1850</alias>
     <lname>1850_CAM4_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV</lname>
   </compset>
 

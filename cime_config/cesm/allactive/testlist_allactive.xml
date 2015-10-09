@@ -1,5 +1,18 @@
 <?xml version="1.0"?>
 <testlist>
+  <compset name="BGM1850">
+    <grid name="f09_g16_gl5">
+      <test name="ERS_Ld11">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/cesm2dev01">yellowstone</machine>
+      </test>
+      <test name="SMS_Ld7">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/cesm2dev01">yellowstone</machine>
+      </test>
+      <test name="PFS">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/cesm2dev01">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
   <compset name="B">
     <grid name="f19_g16">
       <test name="STA_N2">
