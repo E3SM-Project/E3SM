@@ -1250,39 +1250,9 @@ contains
        ! compute surface friction velocity
          surfaceFrictionVelocity(iCell) = sqrt(surfaceStressMagnitude(iCell) / rho_sw)
 
-       ! zero the bulk Richardson number within the ocean surface layer
-       ! this prevent CVMix/KPP from mis-diagnosing the OBL to be within the surface layer
-        bulkRichardsonNumberBuoy (:,iCell) = 1.0e8_RKIND
-        bulkRichardsonNumberShear(:,iCell) = 1.0_RKIND
-
-       ! loop over vertical to compute bulk Richardson number
-        do k=1,maxLevelCell(iCell)
-
-        ! find deltaVelocitySquared defined at cell centers based on velocity at levels 1 and k
-         deltaVelocitySquared = 0.0_RKIND
-         do i = 1, nEdgesOnCell(iCell)
-           iEdge = edgesOnCell(i, iCell)
-           factor = 0.5 * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
-           delU2 = (normalVelocitySurfaceLayer(iEdge) - normalVelocity(k,iEdge))**2 
-           deltaVelocitySquared = deltaVelocitySquared + factor * delU2
-         enddo
-
-         buoyContribution = gravity * (density(k,iCell) - densitySurfaceDisplaced(k,iCell)) / rho_sw
-         shearContribution = max(deltaVelocitySquared,1.0e-15_RKIND)
-
-         ! store the buoyancy and resolved shear contributions to bulk Richardson number
-         bulkRichardsonNumberBuoy(k,iCell) = buoyContribution
-         bulkRichardsonNumberShear(k,iCell) = shearContribution
-
-        enddo ! do k=1,maxLevelCell(iCell)
-
-       ! set bulkRichardsonNumberBuoy to a negative value within surface layer to prevent CVMix/KPP from
-       ! incorrectly diagnosing OBL to be within surface layer
-       ! require boundary layer to be below the top layer
-       k=max(int(indexSurfaceLayerDepth(iCell)),1)
-       bulkRichardsonNumberBuoy(1:k,iCell) = 0.0_RKIND
 
       enddo
+
 
       ! deallocate scratch space
       call mpas_deallocate_scratch_field(densitySurfaceDisplacedField, .true.)
