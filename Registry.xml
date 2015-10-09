@@ -1144,7 +1144,8 @@
                         <var name="velocityZonal"/>
                         <var name="velocityMeridional"/>
                         <var name="bulkRichardsonNumber"/>
-                        <var name="bulkRichardsonNumberBuoy"/>
+			<var name="bulkRichardsonNumberBuoy"/>
+			<var name="potentialDensity"/>
                         <var name="unresolvedShear"/>
                         <var name="boundaryLayerDepth"/>
                         <var name="boundaryLayerDepthEdge"/>
@@ -2048,7 +2049,7 @@
 		<var name="bulkRichardsonNumber" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
 			 description="CVMix/KPP: bulk Richardson number"
 			 packages="forwardMode;analysisMode"
-		/>
+			 />
 		<var name="bulkRichardsonNumberBuoy" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
 			 description="CVMix/KPP: contribution of buoyancy to bulk Richardson number"
 			 packages="forwardMode;analysisMode"
