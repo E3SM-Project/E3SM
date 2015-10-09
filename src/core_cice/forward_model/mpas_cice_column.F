@@ -234,7 +234,7 @@ contains
        
 !nj-bgc+
        ! initialize biogoechemistry profiles
-       !call init_column_biogeochemistry_profiles(domain, ciceTracerObject)
+       call init_column_biogeochemistry_profiles(domain, ciceTracerObject)
 !nj-bgc-
        
        ! history variables
@@ -9258,7 +9258,7 @@ contains
              enddo
           enddo
 
-          call get_cice_tracer_array_category(block, tracerObject, iCell, getPhysicsTracers, &
+          call get_cice_tracer_array_category(block, tracerObject, iCell, .false., &
                config_use_column_biogeochemistry)
 
        enddo    ! iCell
