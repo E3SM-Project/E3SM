@@ -74,71 +74,66 @@ sub main {
 
     $CASEROOT = abs_path(".");
     print "CASEROOT: $CASEROOT\n";
+
     chdir "$CASEROOT" or die "Could not cd to $CASEROOT: $!\n";
 
-    $CIMEROOT = `./xmlquery  CIMEROOT		-value `;
-
-    if(! -d "$CIMEROOT"){
-	die("Could not find cimeroot in \"$CIMEROOT\""); 
-    }
-    my @dirs = ("$CIMEROOT/utils/perl5lib");
-    unshift @INC, @dirs;
+    $CIMEROOT		= `./xmlquery  CIMEROOT		-value `;
+    my $perl5libdir = "$CIMEROOT/utils/perl5lib";
+    push(@INC, $perl5libdir);
     require Log::Log4perl;
     require Module::ModuleLoader;
-    require Config::SetupTools;
-
+    
     my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
     Log::Log4perl->easy_init({level=>$level,
 			      layout=>'%m%n'});
 
 
     $logger = Log::Log4perl::get_logger();
-    my %xmlvars = SetupTools::getAllResolved();
 
-    $CASE = $xmlvars{CASE};
+    $CASE = `./xmlquery  CASE -value `;
     if (! -f "$CASE.run") {
 	$logger->logdie ("ERROR: must invoke case_setup script before calling build script ");
     }
 
-    $sysmod = "./Tools/check_lockedfiles -cimeroot $CIMEROOT";
+    $sysmod = "./Tools/check_lockedfiles";
     system($sysmod) == 0 or $logger->logdie ("$sysmod failed: $?");
 
-    $BUILD_THREADED	= $xmlvars{ BUILD_THREADED};
-    $CASEBUILD	        = $xmlvars{ CASEBUILD};
-    $CASETOOLS          = $xmlvars{ CASETOOLS};
-    $EXEROOT	        = $xmlvars{ EXEROOT	};
-    $INCROOT		= $xmlvars{ INCROOT	};
-    $LIBROOT		= $xmlvars{ LIBROOT	};
-    $SHAREDLIBROOT	= $xmlvars{ SHAREDLIBROOT};
-    $COMP_ATM		= $xmlvars{ COMP_ATM	};
-    $COMP_LND		= $xmlvars{ COMP_LND	};
-    $COMP_ICE		= $xmlvars{ COMP_ICE	};
-    $COMP_OCN		= $xmlvars{ COMP_OCN	};
-    $COMP_GLC		= $xmlvars{ COMP_GLC	};
-    $COMP_WAV		= $xmlvars{ COMP_WAV	};
-    $COMP_ROF		= $xmlvars{ COMP_ROF	};
-    $COMPILER		= $xmlvars{ COMPILER	};
-    $COMP_INTERFACE	= $xmlvars{ COMP_INTERFACE};
-    $MPILIB		= $xmlvars{ MPILIB	};
-    $USE_ESMF_LIB	= $xmlvars{ USE_ESMF_LIB};
-    $DEBUG		= $xmlvars{ DEBUG	};
-    $NINST_BUILD        = $xmlvars{ NINST_BUILD};
-    $SMP_VALUE          = $xmlvars{ SMP_VALUE};
-    $MODEL              = $xmlvars{ MODEL};
-    my $NINST_VALUE	= $xmlvars{ NINST_VALUE};
-    my $MACH		= $xmlvars{ MACH	};
-    my $OS	        = $xmlvars{ OS	};
-    my $COMP_CPL	= $xmlvars{ COMP_CPL	};
-    my $machines_file   = $xmlvars{ MACHINES_SPEC_FILE};
+    $BUILD_THREADED	= `./xmlquery  BUILD_THREADED	-value `;
+    $CASEBUILD	        = `./xmlquery  CASEBUILD	-value `;
+    $CASETOOLS          = `./xmlquery  CASETOOLS	-value `;
+    $EXEROOT	        = `./xmlquery  EXEROOT		-value `;
+    $INCROOT		= `./xmlquery  INCROOT		-value `;
+    $LIBROOT		= `./xmlquery  LIBROOT		-value `;
+    $SHAREDLIBROOT	= `./xmlquery  SHAREDLIBROOT	-value `;
+    $COMP_ATM		= `./xmlquery  COMP_ATM		-value `;
+    $COMP_LND		= `./xmlquery  COMP_LND		-value `;
+    $COMP_ICE		= `./xmlquery  COMP_ICE		-value `;
+    $COMP_OCN		= `./xmlquery  COMP_OCN		-value `;
+    $COMP_GLC		= `./xmlquery  COMP_GLC		-value `;
+    $COMP_WAV		= `./xmlquery  COMP_WAV		-value `;
+    $COMP_ROF		= `./xmlquery  COMP_ROF		-value `;
+    $COMPILER		= `./xmlquery  COMPILER		-value `;
+    $COMP_INTERFACE	= `./xmlquery  COMP_INTERFACE	-value `;
+    $MPILIB		= `./xmlquery  MPILIB		-value `;
+    $USE_ESMF_LIB	= `./xmlquery  USE_ESMF_LIB	-value `;
+    $DEBUG		= `./xmlquery  DEBUG		-value `;
+    $NINST_BUILD        = `./xmlquery  NINST_BUILD	-value `;
+    $SMP_VALUE          = `./xmlquery  SMP_VALUE	-value `;
+    $MODEL              = `./xmlquery  MODEL            -value `;
+    my $NINST_VALUE	= `./xmlquery  NINST_VALUE	-value `;
+    my $MACH		= `./xmlquery  MACH		-value `;
+    my $OS	        = `./xmlquery  OS		-value `;
+    my $COMP_CPL	= `./xmlquery  COMP_CPL		-value `;
+    my $machines_file   = `./xmlquery  MACHINES_SPEC_FILE -value `;
     $machines_dir       = dirname($machines_file);
 
-    my $CONFIG_ATM_FILE	= $xmlvars{ CONFIG_ATM_FILE};
-    my $CONFIG_LND_FILE	= $xmlvars{ CONFIG_LND_FILE};
-    my $CONFIG_ICE_FILE	= $xmlvars{ CONFIG_ICE_FILE};
-    my $CONFIG_OCN_FILE	= $xmlvars{ CONFIG_OCN_FILE};
-    my $CONFIG_GLC_FILE	= $xmlvars{ CONFIG_GLC_FILE};
-    my $CONFIG_WAV_FILE	= $xmlvars{ CONFIG_WAV_FILE};
-    my $CONFIG_ROF_FILE	= $xmlvars{ CONFIG_ROF_FILE};
+    my $CONFIG_ATM_FILE	= `./xmlquery  CONFIG_ATM_FILE	-value `;
+    my $CONFIG_LND_FILE	= `./xmlquery  CONFIG_LND_FILE	-value `;
+    my $CONFIG_ICE_FILE	= `./xmlquery  CONFIG_ICE_FILE	-value `;
+    my $CONFIG_OCN_FILE	= `./xmlquery  CONFIG_OCN_FILE	-value `;
+    my $CONFIG_GLC_FILE	= `./xmlquery  CONFIG_GLC_FILE	-value `;
+    my $CONFIG_WAV_FILE	= `./xmlquery  CONFIG_WAV_FILE	-value `;
+    my $CONFIG_ROF_FILE	= `./xmlquery  CONFIG_ROF_FILE	-value `;
     $CONFIG_ATM_DIR	= dirname($CONFIG_ATM_FILE);
     $CONFIG_LND_DIR	= dirname($CONFIG_LND_FILE);
     $CONFIG_ICE_DIR	= dirname($CONFIG_ICE_FILE);
@@ -172,16 +167,16 @@ sub main {
     $ENV{COMP_WAV}		= $COMP_WAV		;	
     $ENV{COMP_ROF}		= $COMP_ROF		;	
     
-    $ENV{OCN_SUBMODEL}        = $xmlvars{ OCN_SUBMODEL};
-    $ENV{PROFILE_PAPI_ENABLE} = $xmlvars{ PROFILE_PAPI_ENABLE};
+    $ENV{OCN_SUBMODEL}        = `./xmlquery  OCN_SUBMODEL	 -value `;
+    $ENV{PROFILE_PAPI_ENABLE} = `./xmlquery  PROFILE_PAPI_ENABLE -value `;
     $ENV{LID}  =  "`date +%y%m%d-%H%M%S`";
 
     if ($COMP_ATM eq 'cam') {
-	$CAM_CONFIG_OPTS = $xmlvars{ CAM_CONFIG_OPTS};
+	$CAM_CONFIG_OPTS = `./xmlquery  CAM_CONFIG_OPTS   -value`;
 	$ENV{CAM_CONFIG_OPTS} = $CAM_CONFIG_OPTS      ;
     }
     if ($COMP_LND eq 'clm') {
-	$CLM_CONFIG_OPTS = $xmlvars{ CLM_CONFIG_OPTS};
+	$CLM_CONFIG_OPTS = `./xmlquery  CLM_CONFIG_OPTS   -value`;
 	$ENV{CLM_CONFIG_OPTS} = $CLM_CONFIG_OPTS      ;
     }
 
@@ -190,14 +185,15 @@ sub main {
     # For now, there is just the one CISM_USE_TRILINOS variable, but in
     # the future there may be others -- so USE_TRILINOS will be true if
     # ANY of those are true.
-    $CISM_USE_TRILINOS = $xmlvars{CISM_USE_TRILINOS};
+    $CISM_USE_TRILINOS = `./xmlquery CISM_USE_TRILINOS -value`;
     my $use_trilinos = 'FALSE';
     if ($CISM_USE_TRILINOS) {
 	if ($CISM_USE_TRILINOS eq 'TRUE') {$use_trilinos = 'TRUE'};
-	my $sysmod = "./xmlchange USE_TRILINOS=${use_trilinos}";
+	my $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_TRILINOS -val ${use_trilinos}";
 	$ENV{USE_TRILINOS} = ${use_trilinos};
 	$ENV{CISM_USE_TRILINOS} = $CISM_USE_TRILINOS;
     }
+
 
     my $moduleloader = Module::ModuleLoader->new(machine   => $MACH, 
 						 compiler  => $COMPILER, 
@@ -214,29 +210,28 @@ sub main {
     $sysmod = "./preview_namelists -loglevel $opts{loglevel}";
     system($sysmod) == 0 or $logger->logdie ("$sysmod failed: $?");
     
-    checkInputData(\%xmlvars);
-    buildChecks(\%xmlvars);
-    buildLibraries(\%xmlvars);
-    buildModel(\%xmlvars);
+    checkInputData();
+    buildChecks();
+    buildLibraries();
+    buildModel();
 }
 
 
 #-----------------------------------------------------------------------------------------------
 sub checkInputData()
 {
-    my($xmlvars) = @_;
     $logger->info( "    .... calling data prestaging  ");
 
     chdir "$CASEROOT" or $logger->logdie( "Could not cd to $CASEROOT: $!");
 
-    my $DIN_LOC_ROOT	= $xmlvars->{DIN_LOC_ROOT	};
-    my $GET_REFCASE	= $xmlvars->{GET_REFCASE	};
-    my $RUN_TYPE	= $xmlvars->{RUN_TYPE		};
-    my $RUN_REFDATE	= $xmlvars->{RUN_REFDATE	};
-    my $RUN_REFCASE	= $xmlvars->{RUN_REFCASE	};
-    my $RUN_REFDIR	= $xmlvars->{RUN_REFDIR	};
-    my $RUNDIR		= $xmlvars->{RUNDIR		};
-    my $CONTINUE_RUN	= $xmlvars->{CONTINUE_RUN	}; 
+    my $DIN_LOC_ROOT	= `./xmlquery DIN_LOC_ROOT	-value`;
+    my $GET_REFCASE	= `./xmlquery GET_REFCASE	-value`;
+    my $RUN_TYPE	= `./xmlquery RUN_TYPE		-value`;
+    my $RUN_REFDATE	= `./xmlquery RUN_REFDATE	-value`;
+    my $RUN_REFCASE	= `./xmlquery RUN_REFCASE	-value`;
+    my $RUN_REFDIR	= `./xmlquery RUN_REFDIR	-value`;
+    my $RUNDIR		= `./xmlquery RUNDIR		-value`;
+    my $CONTINUE_RUN	= `./xmlquery CONTINUE_RUN	-value`;
 
     my @inputdatacheck = qx(./check_input_data -inputdata $DIN_LOC_ROOT -check);
 
@@ -323,29 +318,28 @@ sub checkInputData()
 #-----------------------------------------------------------------------------------------------
 sub buildChecks()
 {
-    my($xmlvars) = @_;
     $logger->info("    .... calling build checks ");
 	
     chdir "$CASEROOT" or $logger->logdie("Could not cd to $CASEROOT: $!");
 	
-    my $NTHRDS_CPL   = $xmlvars->{ NTHRDS_CPL	};
-    my $NTHRDS_ATM   = $xmlvars->{ NTHRDS_ATM	};
-    my $NTHRDS_LND   = $xmlvars->{ NTHRDS_LND	};
-    my $NTHRDS_ICE   = $xmlvars->{ NTHRDS_ICE	};
-    my $NTHRDS_OCN   = $xmlvars->{ NTHRDS_OCN	};
-    my $NTHRDS_GLC   = $xmlvars->{ NTHRDS_GLC	};
-    my $NTHRDS_WAV   = $xmlvars->{ NTHRDS_WAV	};
-    my $NTHRDS_ROF   = $xmlvars->{ NTHRDS_ROF	};
-    my $NINST_ATM    = $xmlvars->{ NINST_ATM	};
-    my $NINST_LND    = $xmlvars->{ NINST_LND	};
-    my $NINST_ICE    = $xmlvars->{ NINST_ICE	};
-    my $NINST_OCN    = $xmlvars->{ NINST_OCN	};
-    my $NINST_GLC    = $xmlvars->{ NINST_GLC	};
-    my $NINST_WAV    = $xmlvars->{ NINST_WAV	};
-    my $NINST_ROF    = $xmlvars->{ NINST_ROF	};
-    my $NINST_VALUE  = $xmlvars->{ NINST_VALUE	};
-    my $SMP_BUILD    = $xmlvars->{ SMP_BUILD	};
-    my $BUILD_STATUS = $xmlvars->{ BUILD_STATUS};
+    my $NTHRDS_CPL   = `./xmlquery  NTHRDS_CPL		-value `;
+    my $NTHRDS_ATM   = `./xmlquery  NTHRDS_ATM		-value `;
+    my $NTHRDS_LND   = `./xmlquery  NTHRDS_LND		-value `;
+    my $NTHRDS_ICE   = `./xmlquery  NTHRDS_ICE		-value `;
+    my $NTHRDS_OCN   = `./xmlquery  NTHRDS_OCN		-value `;
+    my $NTHRDS_GLC   = `./xmlquery  NTHRDS_GLC		-value `;
+    my $NTHRDS_WAV   = `./xmlquery  NTHRDS_WAV		-value `;
+    my $NTHRDS_ROF   = `./xmlquery  NTHRDS_ROF		-value `;
+    my $NINST_ATM    = `./xmlquery  NINST_ATM		-value `;
+    my $NINST_LND    = `./xmlquery  NINST_LND		-value `;
+    my $NINST_ICE    = `./xmlquery  NINST_ICE		-value `;
+    my $NINST_OCN    = `./xmlquery  NINST_OCN		-value `;
+    my $NINST_GLC    = `./xmlquery  NINST_GLC		-value `;
+    my $NINST_WAV    = `./xmlquery  NINST_WAV		-value `;
+    my $NINST_ROF    = `./xmlquery  NINST_ROF		-value `;
+    my $NINST_VALUE  = `./xmlquery  NINST_VALUE		-value `;
+    my $SMP_BUILD    = `./xmlquery  SMP_BUILD		-value `;
+    my $BUILD_STATUS = `./xmlquery  BUILD_STATUS	-value `;
 
     my $atmstr = 0;
     my $lndstr = 0;
@@ -370,14 +364,14 @@ sub buildChecks()
 
     my $smpstr = "a$atmstr"."l$lndstr"."r$rofstr"."i$icestr"."o$ocnstr". "g$glcstr"."w$wavstr"."c$cplstr";
 
-    $sysmod = "./xmlchange SMP_VALUE=$smpstr";
+    $sysmod = "./xmlchange -noecho -file env_build.xml -id SMP_VALUE -val $smpstr";
     system($sysmod) == 0 or $logger->logdie( "$sysmod failed: $?");
 
     $ENV{'SMP_VALUE'} = $smpstr;
 	
     my $inststr = "a$NINST_ATM"."l$NINST_LND"."r$NINST_ROF"."i$NINST_ICE"."o$NINST_OCN"."g$NINST_GLC"."w$NINST_WAV";
 
-    $sysmod = "./xmlchange NINST_VALUE=$inststr";
+    $sysmod = "./xmlchange -noecho -file env_build.xml -id NINST_VALUE -val $inststr";
     system($sysmod) == 0 or $logger->logdie( "$sysmod failed: $?");
 
     $ENV{'NINST_VALUE'} = $inststr;
@@ -393,7 +387,7 @@ sub buildChecks()
 	}
     }
 
-    $sysmod = "./xmlchange USE_TRILINOS=$ENV{'use_trilinos'}";
+    $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_TRILINOS -val $ENV{'use_trilinos'}";
     system($sysmod) == 0 or $logger->logdie( "$sysmod failed: $?");
 	
     if( ($NINST_BUILD ne $NINST_VALUE) && ($NINST_BUILD != 0)) {
@@ -406,7 +400,7 @@ sub buildChecks()
 	$msg .= " Then rerun the build script interactively \n";
 	$msg .= " ---- OR ---- \n";
 	$msg .= " You can override this error message at your own risk by executing:  \n";
-	$msg .= "./xmlchange NINST_BUILD=0 \n";
+	$msg .= "./xmlchange -file env_build.xml -id NINST_BUILD -val 0 \n";
 	$msg .= " Then rerun the build script interactively \n";
 	$logger->logdie($msg);
     }
@@ -421,7 +415,7 @@ sub buildChecks()
 	$msg .= "  Then rerun the build script interactively\n";
 	$msg .= "  ---- OR ----\n";
 	$msg .= "  You can override this error message at your own risk by executing\n";
-	$msg .= "    ./xmlchange SMP_BUILD=0\n";
+	$msg .= "    ./xmlchange -file env_build.xml -id SMP_BUILD -val 0\n";
 	$msg .= "  Then rerun the build script interactively\n";
 	$logger->logdie($msg);
     }
@@ -442,7 +436,7 @@ sub buildChecks()
     if ($COMP_INTERFACE eq 'ESMF' && $USE_ESMF_LIB ne 'TRUE') {
 	my $msg = " ERROR COMP_INTERFACE IS ESMF BUT USE_ESMF_LIB IS NOT TRUE \n";
 	$msg .= " SET USE_ESMF_LIB to TRUE with  \n";
-	$msg .= "     ./xmlchange USE_ESMF_LIB=TRUE \n";
+	$msg .= "     ./xmlchange -file env_build.xml -id USE_ESMF_LIB -value TRUE \n";
 	$logger->logdie($msg);
 
     }
@@ -451,15 +445,15 @@ sub buildChecks()
 	my $msg = "  ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE \n";
 	$msg .= "    MPILIB can only be used with an ESMF library built with mpiuni on \n";
 	$msg .= "  Set USE_ESMF_LIB to FALSE with  \n";
-	$msg .= "    ./xmlchange USE_ESMF_LIB=FALSE \n";
+	$msg .= "    ./xmlchange -file env_build.xml -id USE_ESMF_LIB -val FALSE \n";
 	$msg .= "  ---- OR ---- \n";
-	$msg .= "  Make sure the ESMF_LIBDIR used was built with mpi-serial (or change it to one that was) \n";
+	$msg .= "  Make suer the ESMF_LIBDIR used was built with mipuni (or change it to one that was) \n";
 	$msg .= "  And comment out this if block in Tools/models_buildexe \n";
 	$logger->logdie($msg);
 
     }
 
-    $sysmod = "./xmlchange BUILD_COMPLETE=FALSE";
+    $sysmod = "./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val FALSE";
     system($sysmod) == 0 or $logger->logdie ("$sysmod failed: $?");
 
     my @lockedfiles = glob("LockedFiles/env_build*");
@@ -472,7 +466,6 @@ sub buildChecks()
 #-----------------------------------------------------------------------------------------------
 sub buildLibraries()
 {
-    my($xmlvars) = @_;
     $logger->info("    .... calling builds for utility libraries (compiler is $COMPILER) ");
 
     chdir $EXEROOT;
@@ -508,11 +501,9 @@ sub buildLibraries()
 	my $file_build = "$SHAREDPATH/$lib.bldlog.$LID";
 	my $now = localtime;
 	$logger->info( "      $now $file_build");
-
-# Possibly useful for debug but should not be used by default
-#	open my $FB, ">", $file_build or $logger->logdie ($!);
-#	map { print $FB "$_: $ENV{$_}\n"} sort keys %ENV;
-#	close $FB;
+	open my $FB, ">", $file_build or die $!;
+	map { print $FB "$_: $ENV{$_}\n"} sort keys %ENV;
+	close $FB;
 	
 	my $file = "${machines_dir}/buildlib.${lib}";
 	eval {system("$file $SHAREDPATH $CASEROOT >> $file_build 2>&1")};
@@ -528,12 +519,11 @@ sub buildLibraries()
 #-----------------------------------------------------------------------------------------------
 sub buildModel()
 {
-    my($xmlvars) = @_;
     $logger->info( "    .... calling builds for component libraries  ");
 
     chdir "$CASEROOT" or $logger->logdie ("Could not cd to $CASEROOT: $!");
 
-    my $LOGDIR          = $xmlvars->{LOGDIR};
+    my $LOGDIR          = `./xmlquery LOGDIR          -value `;
 
     my @modelsbuildorder = qw( atm lnd ice ocn glc wav rof );
     my %models = ( atm => $COMP_ATM, lnd => $COMP_LND, ice => $COMP_ICE,
@@ -646,16 +636,16 @@ sub buildModel()
 	
     chdir "$CASEROOT" or $logger->logdie("Could not cd to $CASEROOT: $!");
     
-    $sysmod = "./xmlchange BUILD_COMPLETE=TRUE";
+    $sysmod = "./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val TRUE";
     system($sysmod) == 0 or $logger->logdie("$sysmod failed: $?");
     
-    $sysmod = "./xmlchange BUILD_STATUS=0";
+    $sysmod = "./xmlchange -noecho -file env_build.xml -id BUILD_STATUS -val 0";
     system($sysmod) == 0 or $logger->logdie("$sysmod failed: $?");
     
-    $sysmod = "./xmlchange SMP_BUILD=$SMP_VALUE";
+    $sysmod = "./xmlchange -noecho -file env_build.xml -id SMP_BUILD -val $SMP_VALUE";
     system($sysmod) == 0 or $logger->logdie("$sysmod failed: $?");
     
-    $sysmod = "./xmlchange NINST_BUILD=$NINST_BUILD";
+    $sysmod = "./xmlchange -noecho -file env_build.xml -id NINST_BUILD -val $NINST_BUILD";
     system($sysmod) == 0 or $logger->logdie("$sysmod failed: $?");
     
     my @files2unlink = glob("./LockedFiles/env_build*");
