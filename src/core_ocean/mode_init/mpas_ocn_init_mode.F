@@ -47,6 +47,7 @@ module ocn_init_mode
    use ocn_init_iso
    use ocn_init_soma
    use ocn_init_ziso
+   use ocn_init_sub_ice_shelf_2D
    use ocn_init_periodic_planar
    use ocn_init_ecosys_column
 
@@ -257,6 +258,7 @@ module ocn_init_mode
       call ocn_init_setup_iso(domain, ierr)
       call ocn_init_setup_soma(domain, ierr)
       call ocn_init_setup_ziso(domain, ierr)
+      call ocn_init_setup_sub_ice_shelf_2D(domain, ierr)
       call ocn_init_setup_periodic_planar(domain, ierr)
       call ocn_init_setup_ecosys_column(domain, ierr)
       !call ocn_init_setup_TEMPLATE(domain, ierr)
@@ -349,6 +351,8 @@ module ocn_init_mode
       call ocn_init_validate_soma(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
       call ocn_init_validate_ziso(configPool, packagePool, iErr=err_tmp)
+      iErr = ior(iErr, err_tmp)
+      call ocn_init_validate_sub_ice_shelf_2D(configPool, packagePool,iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
       call ocn_init_validate_periodic_planar(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
