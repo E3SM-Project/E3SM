@@ -2342,7 +2342,6 @@
 			 ********************************************************************* -->
 		<var name="seaSurfacePressure" type="real" dimensions="nCells Time" units="Pa"
 			 description="Pressure defined at the sea surface."
-			 packages="forwardMode;analysisMode"
 		/>
 		<var name="seaIceEnergy" type="real" dimensions="nCells Time" units="J m^{-2}"
 			 description="Energy per unit area trapped in frazil ice formation. Always $\ge$ 0.0."
