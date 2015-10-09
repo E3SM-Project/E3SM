@@ -45,6 +45,18 @@ module CNDecompCascadeBGCMod
      real(r8):: cn_s2_bgc     !C:N for SOM 2
      real(r8):: cn_s3_bgc     !C:N for SOM 3
 
+     real(r8):: np_s1_new_bgc        !C:P for SOM 1
+     real(r8):: np_s2_new_bgc        !C:P for SOM 2
+     real(r8):: np_s3_new_bgc        !C:P for SOM 3
+     real(r8):: np_s4_new_bgc        !C:P for SOM 4
+
+     real(r8):: cp_s1_new_bgc        !C:P for SOM 1
+     real(r8):: cp_s2_new_bgc        !C:P for SOM 2
+     real(r8):: cp_s3_new_bgc        !C:P for SOM 3
+     real(r8):: cp_s4_new_bgc        !C:P for SOM 4
+
+
+
      real(r8):: rf_l1s1_bgc   !respiration fraction litter 1 -> SOM 1
      real(r8):: rf_l2s1_bgc
      real(r8):: rf_l3s2_bgc
@@ -148,6 +160,24 @@ contains
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     CNDecompBgcParamsInst%cn_s3_bgc=tempr
 
+!!! read in phosphorus variables - note that these NP ratio parameters for BGC  will have
+!!! to be added in the parameter file
+ 
+    tString='np_s1_new'
+    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    CNDecompCnParamsInst%np_s1_new_bgc=tempr
+
+    tString='np_s2_new'
+    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    CNDecompCnParamsInst%np_s2_new_bgc=tempr
+
+    tString='np_s3_new'
+    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    CNDecompCnParamsInst%np_s3_new_bgc=tempr
+
     tString='rf_l1s1_bgc'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
@@ -244,6 +274,11 @@ contains
     real(r8) :: cn_s1
     real(r8) :: cn_s2
     real(r8) :: cn_s3
+    real(r8) :: np_s1_new
+    real(r8) :: np_s2_new
+    real(r8) :: np_s3_new
+
+
     !real(r8) :: f_s1s2(bounds%begc:bounds%endc,1:nlevdecomp)
     !real(r8) :: f_s1s3(bounds%begc:bounds%endc,1:nlevdecomp)
     real(r8), allocatable :: f_s1s2(:,:)
@@ -281,6 +316,7 @@ contains
          cascade_donor_pool             => decomp_cascade_con%cascade_donor_pool             , & ! Output: [integer           (:)     ]  which pool is C taken from for a given decomposition step 
          cascade_receiver_pool          => decomp_cascade_con%cascade_receiver_pool          , & ! Output: [integer           (:)     ]  which pool is C added to for a given decomposition step   
          floating_cn_ratio_decomp_pools => decomp_cascade_con%floating_cn_ratio_decomp_pools , & ! Output: [logical           (:)     ]  TRUE => pool has fixed C:N ratio                          
+         floating_cp_ratio_decomp_pools => decomp_cascade_con%floating_cp_ratio_decomp_pools , & ! Output: [logical           (:)     ]  TRUE => pool has fixed C:N ratio                          
          decomp_pool_name_restart       => decomp_cascade_con%decomp_pool_name_restart       , & ! Output: [character(len=8)  (:)     ]  name of pool for restart files                   
          decomp_pool_name_history       => decomp_cascade_con%decomp_pool_name_history       , & ! Output: [character(len=8)  (:)     ]  name of pool for history files                   
          decomp_pool_name_long          => decomp_cascade_con%decomp_pool_name_long          , & ! Output: [character(len=20) (:)     ]  name of pool for netcdf long names              
@@ -289,6 +325,7 @@ contains
          is_soil                        => decomp_cascade_con%is_soil                        , & ! Output: [logical           (:)     ]  TRUE => pool is a soil pool                               
          is_cwd                         => decomp_cascade_con%is_cwd                         , & ! Output: [logical           (:)     ]  TRUE => pool is a cwd pool                                
          initial_cn_ratio               => decomp_cascade_con%initial_cn_ratio               , & ! Output: [real(r8)          (:)     ]  c:n ratio for initialization of pools                    
+         initial_cp_ratio               => decomp_cascade_con%initial_cp_ratio               , & ! Output: [real(r8)          (:)     ]  c:n ratio for initialization of pools                    
          initial_stock                  => decomp_cascade_con%initial_stock                  , & ! Output: [real(r8)          (:)     ]  initial concentration for seeding at spinup              
          is_metabolic                   => decomp_cascade_con%is_metabolic                   , & ! Output: [logical           (:)     ]  TRUE => pool is metabolic material                        
          is_cellulose                   => decomp_cascade_con%is_cellulose                   , & ! Output: [logical           (:)     ]  TRUE => pool is cellulose                                 
@@ -306,6 +343,11 @@ contains
       cn_s1 = CNDecompBgcParamsInst%cn_s1_bgc
       cn_s2 = CNDecompBgcParamsInst%cn_s2_bgc
       cn_s3 = CNDecompBgcParamsInst%cn_s3_bgc
+
+      ! set soil organic matter C:P ratios -X. YANG 
+      np_s1_new=CNDecompCnParamsInst%np_s1_new_bgc
+      np_s2_new=CNDecompCnParamsInst%np_s2_new_bgc
+      np_s3_new=CNDecompCnParamsInst%np_s3_new_bgc
 
       ! set respiration fractions for fluxes between compartments
       rf_l1s1 = CNDecompBgcParamsInst%rf_l1s1_bgc
@@ -340,6 +382,7 @@ contains
       !-------------------  list of pools and their attributes  ------------
       i_litr1 = i_met_lit
       floating_cn_ratio_decomp_pools(i_litr1) = .true.
+      floating_cp_ratio_decomp_pools(i_litr1) = .true.
       decomp_pool_name_restart(i_litr1) = 'litr1'
       decomp_pool_name_history(i_litr1) = 'LITR1'
       decomp_pool_name_long(i_litr1) = 'litter 1'
@@ -348,6 +391,7 @@ contains
       is_soil(i_litr1) = .false.
       is_cwd(i_litr1) = .false.
       initial_cn_ratio(i_litr1) = 90._r8
+      initial_cp_ratio(i_litr1) = 900._r8
       initial_stock(i_litr1) = 0._r8
       is_metabolic(i_litr1) = .true.
       is_cellulose(i_litr1) = .false.
@@ -355,6 +399,7 @@ contains
 
       i_litr2 = i_cel_lit
       floating_cn_ratio_decomp_pools(i_litr2) = .true.
+      floating_cp_ratio_decomp_pools(i_litr2) = .true.
       decomp_pool_name_restart(i_litr2) = 'litr2'
       decomp_pool_name_history(i_litr2) = 'LITR2'
       decomp_pool_name_long(i_litr2) = 'litter 2'
@@ -363,6 +408,7 @@ contains
       is_soil(i_litr2) = .false.
       is_cwd(i_litr2) = .false.
       initial_cn_ratio(i_litr2) = 90._r8
+      initial_cp_ratio(i_litr2) = 900._r8
       initial_stock(i_litr2) = 0._r8
       is_metabolic(i_litr2) = .false.
       is_cellulose(i_litr2) = .true.
@@ -370,6 +416,7 @@ contains
 
       i_litr3 = i_lig_lit
       floating_cn_ratio_decomp_pools(i_litr3) = .true.
+      floating_cp_ratio_decomp_pools(i_litr3) = .true.
       decomp_pool_name_restart(i_litr3) = 'litr3'
       decomp_pool_name_history(i_litr3) = 'LITR3'
       decomp_pool_name_long(i_litr3) = 'litter 3'
@@ -378,6 +425,7 @@ contains
       is_soil(i_litr3) = .false.
       is_cwd(i_litr3) = .false.
       initial_cn_ratio(i_litr3) = 90._r8
+      initial_cp_ratio(i_litr3) = 900._r8
       initial_stock(i_litr3) = 0._r8
       is_metabolic(i_litr3) = .false.
       is_cellulose(i_litr3) = .false.
@@ -385,6 +433,7 @@ contains
 
       ! CWD
       floating_cn_ratio_decomp_pools(i_cwd) = .true.
+      floating_cp_ratio_decomp_pools(i_cwd) = .true.
       decomp_pool_name_restart(i_cwd) = 'cwd'
       decomp_pool_name_history(i_cwd) = 'CWD'
       decomp_pool_name_long(i_cwd) = 'coarse woody debris'
@@ -393,6 +442,7 @@ contains
       is_soil(i_cwd) = .false.
       is_cwd(i_cwd) = .true.
       initial_cn_ratio(i_cwd) = 90._r8
+      initial_cp_ratio(i_cwd) = 900._r8
       initial_stock(i_cwd) = 0._r8
       is_metabolic(i_cwd) = .false.
       is_cellulose(i_cwd) = .false.
@@ -400,6 +450,7 @@ contains
 
       i_soil1 = 5
       floating_cn_ratio_decomp_pools(i_soil1) = .false.
+      floating_cp_ratio_decomp_pools(i_soil1) = .true.
       decomp_pool_name_restart(i_soil1) = 'soil1'
       decomp_pool_name_history(i_soil1) = 'SOIL1'
       decomp_pool_name_long(i_soil1) = 'soil 1'
@@ -408,6 +459,7 @@ contains
       is_soil(i_soil1) = .true.
       is_cwd(i_soil1) = .false.
       initial_cn_ratio(i_soil1) = cn_s1
+      initial_cp_ratio(i_soil1) = cn_s1*np_s1_new 
       initial_stock(i_soil1) = 20._r8
       is_metabolic(i_soil1) = .false.
       is_cellulose(i_soil1) = .false.
@@ -415,6 +467,7 @@ contains
 
       i_soil2 = 6
       floating_cn_ratio_decomp_pools(i_soil2) = .false.
+      floating_cp_ratio_decomp_pools(i_soil2) = .true.
       decomp_pool_name_restart(i_soil2) = 'soil2'
       decomp_pool_name_history(i_soil2) = 'SOIL2'
       decomp_pool_name_long(i_soil2) = 'soil 2'
@@ -423,6 +476,7 @@ contains
       is_soil(i_soil2) = .true.
       is_cwd(i_soil2) = .false.
       initial_cn_ratio(i_soil2) = cn_s2
+      initial_cp_ratio(i_soil2) = cn_s2*np_s2_new
       initial_stock(i_soil2) = 20._r8
       is_metabolic(i_soil2) = .false.
       is_cellulose(i_soil2) = .false.
@@ -430,6 +484,7 @@ contains
 
       i_soil3 = 7
       floating_cn_ratio_decomp_pools(i_soil3) = .false.
+      floating_cp_ratio_decomp_pools(i_soil3) = .true.
       decomp_pool_name_restart(i_soil3) = 'soil3'
       decomp_pool_name_history(i_soil3) = 'SOIL3'
       decomp_pool_name_long(i_soil3) = 'soil 3'
@@ -438,6 +493,7 @@ contains
       is_soil(i_soil3) = .true.
       is_cwd(i_soil3) = .false.
       initial_cn_ratio(i_soil3) = cn_s3
+      initial_cp_ratio(i_soil3) = cn_s3*np_s3_new
       initial_stock(i_soil3) = 20._r8
       is_metabolic(i_soil3) = .false.
       is_cellulose(i_soil3) = .false.
