@@ -255,14 +255,6 @@ $logger->info( "Setting configuration directory to $cfgdir\n");
 _check_input_options ();
 
 #------------------------------------------------------------------------------------------
-# *** Determine user_mods_dir ***
-#------------------------------------------------------------------------------------------
-my $user_mods_dir = $opts{'user_mods_dir'};
-if ($user_mods_dir) {
-    (-d "$user_mods_dir") or  $logger->logdie ("** Cannot find user_mods_dir directory $user_mods_dir **");
-}
-
-#------------------------------------------------------------------------------------------
 # *** Set hard-wired paths ***
 #------------------------------------------------------------------------------------------
 my $srcroot = abs_path("$cimeroot/../"); 
@@ -599,8 +591,20 @@ if (defined $opts{'sharedlibroot'}) {
 # create the caseroot directory and necessary subdirectories
 _create_caseroot($caseroot, $cimeroot, $config);
 
-# Copy the user_mods_dir files in and apply them
-if ( defined($user_mods_dir) ) {
+#------------------------------------------------------------------------------------------
+# *** Determine user_mods_dir ***
+#------------------------------------------------------------------------------------------
+my $user_mods_dir = $opts{'user_mods_dir'};
+if ($user_mods_dir) {
+    if($user_mods_dir =~ /^\//){
+	# complete path specified
+	(-d "$user_mods_dir") or  $logger->logdie ("** Cannot find user_mods_dir directory $user_mods_dir **");
+    }else{
+	# relative path specified
+	my $user_mods_path = $config->get('USER_MODS_DIR', 'component', $pes_setby);
+	$user_mods_dir = "$user_mods_path/$user_mods_dir";
+    }	
+
    my $is_test = 0;
    if ($testname) {$is_test = 1;}
    UserModsTools::apply_mods($user_mods_dir, $caseroot, $is_test);
