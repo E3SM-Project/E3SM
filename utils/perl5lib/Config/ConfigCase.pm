@@ -118,18 +118,21 @@ sub add_config_variables
             #
 	    if($node_name eq "values"){
 		foreach my $val_node ($define_node->childNodes()){
-		    my @att = $val_node->attributes();
-		    foreach(@att){
-			/(\w+)=\"(.*)\"/;
+                    if($val_node->hasAttributes()){		 
+                    my @att = $val_node->attributes();
+		    foreach my $attstr (@att){
+			$attstr =~ /(\w+)=\"(.*)\"/;
+	                my $att = $1;
+	                my $att_val = $2;
 			my $val =  $val_node->textContent();		
 			$val =~ s/\$MODEL/$model/;
 			$val =~ s/\$CIMEROOT/$cimeroot/;
 			if (-d $srcroot) {
 			    $val =~ s/\$SRCROOT/$srcroot/;
 			}			
-			$self->{$id}{$1}{$2} = $val;
+			$self->{$id}{$att}{$att_val} = $val;
 		    }
-
+}
 		}
 
 	    }else{
@@ -222,7 +225,7 @@ sub getkeys{
 	or $logger->logdie( "ERROR ConfigCase.pm::getkeys: unknown parameter name: $name");
     defined($self->{$name}{$attribute}) 
 	or $logger->logdie( "ERROR ConfigCase.pm::getkeys: unknown attribute $attribute for parameter name: $name");
-    return(keys $self->{$name}{$attribute});
+    return(keys %{$self->{$name}{$attribute}});
 }
 
 
