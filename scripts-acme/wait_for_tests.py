@@ -130,7 +130,7 @@ NightlyStartTime: %s UTC
 
     # Make tag file
     tag_fd = open("Testing/TAG", "w")
-    tag_fd.write("%s\n%s" % (subdir_name, cdash_build_group))
+    tag_fd.write("%s\n%s\n" % (subdir_name, cdash_build_group))
     tag_fd.close()
 
     #
@@ -214,7 +214,7 @@ NightlyStartTime: %s UTC
 
     etree.write(os.path.join(data_rel_path, "Test.xml"))
 
-    acme_util.run_cmd("ctest -D NightlySubmit", verbose=True)
+    acme_util.run_cmd("ctest -VV -D NightlySubmit", verbose=True)
 
 ###############################################################################
 def reduce_stati(stati):
