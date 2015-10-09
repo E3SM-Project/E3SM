@@ -602,7 +602,6 @@ if ($user_mods_dir) {
     }else{
 	# relative path specified
 	my $user_mods_path = $config->get('USER_MODS_DIR', 'component', $pes_setby);
-	print "HERE $user_mods_dir $pes_setby $user_mods_path\n";
 	$user_mods_dir = "$user_mods_path/$user_mods_dir";
     }	
 

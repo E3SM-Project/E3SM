@@ -215,6 +215,17 @@ sub get
     return $self->{$name}{'value'};
 }
 
+sub getkeys{
+    my ($self, $name,$attribute) = @_;
+    my @keys;
+    defined($self->{$name}) 
+	or $logger->logdie( "ERROR ConfigCase.pm::getkeys: unknown parameter name: $name");
+    defined($self->{$name}{$attribute}) 
+	or $logger->logdie( "ERROR ConfigCase.pm::getkeys: unknown attribute $attribute for parameter name: $name");
+    return(keys $self->{$name}{$attribute});
+}
+
+
 #-----------------------------------------------------------------------------------------------
 sub get_valid_values
 {
