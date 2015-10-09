@@ -7,7 +7,8 @@
 cd $CASEROOT # CASEROOT is always assumed to be an environment variable
 
 set CIMEROOT	= `./xmlquery  CIMEROOT	-value `
-set GMAKE	= `./xmlquery  GMAKE	-value ` 
+set GMAKE	= `./xmlquery  GMAKE	-value `
+set GMAKE_J	= `./xmlquery  GMAKE_J	-value `
 
 # NOTE- (mv, 2015-01-02) SHAREDPATH is an environment variable set in 
 # the $CASE.build script
@@ -20,6 +21,6 @@ echo "Copying source to CESM EXEROOT..."
 
 cd $GPTL_LIBDIR
 
-$GMAKE  -f $GPTL_DIR/Makefile install  MACFILE=$CASEROOT/Macros || exit 1
+$GMAKE  -j $GMAKE_J  -f $GPTL_DIR/Makefile install  MACFILE=$CASEROOT/Macros || exit 1
 
 exit 0

@@ -231,7 +231,7 @@ def check_minimum_python_version(major, minor):
 def normalize_case_id(case_id):
 ###############################################################################
     """
-    Given an ACME case_id, return it in form TEST.GRID.COMPSET.PLATFORM
+    Given an ACME case_id, return it in form TESTCASE.GRID.COMPSET.PLATFORM
 
     >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel')
     'ERT.ne16_g37.B1850C5.skybridge_intel'
@@ -240,11 +240,75 @@ def normalize_case_id(case_id):
     """
     sep_count = case_id.count(".")
     expect(sep_count in [3, 5],
-           "Case needs to be in form: TEST.GRID.COMPSET.PLATFORM  or  TEST.GRID.COMPSET.PLATFORM.GC.TESTID")
+           "Case needs to be in form: TESTCASE.GRID.COMPSET.PLATFORM  or  TESTCASE.GRID.COMPSET.PLATFORM.GC.TESTID")
     if (sep_count == 5):
         return ".".join(case_id.split(".")[:-2])
     else:
         return case_id
+
+###############################################################################
+def parse_test_name(test_name):
+###############################################################################
+    """
+    Given an ACME test name TESTCASE[_CASEOPTS].GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]],
+    return each component of the testname with machine and compiler split
+
+    >>> parse_test_name('ERS.fe12_123.JGF')
+    ['ERS', None, 'fe12_123', 'JGF', None, None, None]
+    >>> parse_test_name('ERS_D.fe12_123.JGF')
+    ['ERS', 'D', 'fe12_123', 'JGF', None, None, None]
+    >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler')
+    ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', None]
+    >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler.test/mods')
+    ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', 'test/mods']
+    """
+    rv = [None] * 6
+    num_dots = test_name.count(".")
+    expect(num_dots >= 2 and num_dots <= 4,
+           "'%s' does not look like an ACME test name, expect TESTCASE.GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]]")
+
+    rv[0:num_dots+1] = test_name.split(".")
+    testcase_field_underscores = rv[0].count("_")
+    expect(testcase_field_underscores in [0, 1],
+           "Testcase field of test_name '%s', '%s', needs to be in form 'TESTCASE[_CASEOPTS]'" % (test_name, rv[0]))
+    rv.insert(1, None)
+    if (testcase_field_underscores == 1):
+        rv[0:2] = rv[0].split("_")
+
+    if (num_dots >= 3):
+        expect(rv[4].count("_") == 1,
+               "Expected 4th item of '%s' ('%s') to be in form machine_compiler" % (test_name, rv[4]))
+        rv[4:5] = rv[4].split("_")
+        rv.pop()
+
+    return rv
+
+###############################################################################
+def get_full_test_name(test, machine, compiler, testmod=None):
+###############################################################################
+    """
+    Given an ACME test name, return in form TESTCASE.GRID.COMPSET.MACHINE_COMPILER[.TESTMODS]
+    Use the machine, compiler, and testmod provided to fill out the name if needed
+
+    >>> get_full_test_name("ERS.ne16_fe16.JGF", "melvin", "gnu")
+    'ERS.ne16_fe16.JGF.melvin_gnu'
+    >>> get_full_test_name("ERS.ne16_fe16.JGF.melvin_gnu.mods", "melvin", "gnu")
+    'ERS.ne16_fe16.JGF.melvin_gnu.mods'
+    >>> get_full_test_name("ERS.ne16_fe16.JGF", "melvin", "gnu", "mods")
+    'ERS.ne16_fe16.JGF.melvin_gnu.mods'
+    """
+    if (test.count(".") == 2):
+        return "%s.%s_%s%s" % (test, machine, compiler, "" if testmod is None else ".%s" % testmod)
+    else:
+        _, _, _, _, test_machine, test_compiler, test_testmod = parse_test_name(test)
+        expect(machine == test_machine,
+               "Found testname/machine mismatch, test is '%s', your current machine is '%s'" % (test, machine))
+        expect(compiler == test_compiler,
+               "Found testname/compiler mismatch, test is '%s', your current compiler is '%s'" % (test, compiler))
+        if (test_testmod is None):
+            return "%s%s" % (test, "" if testmod is None else ".%s" % testmod)
+        else:
+            return test
 
 ###############################################################################
 def probe_machine_name():

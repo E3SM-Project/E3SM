@@ -6,14 +6,17 @@ import acme_util
 from acme_util import expect, warning, verbose_print
 
 TEST_STATUS_FILENAME      = "TestStatus"
-TEST_NOT_FINISHED_STATUS  = ["GEN", "BUILD", "RUN", "PEND"]
+TEST_PENDING_STATUS       = "PEND"
+TEST_NOT_FINISHED_STATUS  = ["GEN", "BUILD", "RUN", TEST_PENDING_STATUS]
 TEST_PASSED_STATUS        = "PASS"
+TEST_FAIL_STATUS          = "FAIL"
 NAMELIST_FAIL_STATUS      = "NLFAIL"
+COMMENT_STATUS            = "COMMENT"
 BUILD_FAIL_STATUS         = "CFAIL"
-SLEEP_INTERVAL_SEC        = 60
-THROUGHPUT_TEST_STR       = ".tputcomp."
-MEMORY_TEST_STR           = ".memcomp."
-NAMELIST_TEST_STR         = ".nlcomp"
+SLEEP_INTERVAL_SEC        = .1
+THROUGHPUT_TEST_STR       = "tputcomp"
+MEMORY_TEST_STR           = "memcomp"
+NAMELIST_TEST_STR         = "nlcomp"
 SIGNAL_RECEIVED           = False
 ACME_MAIN_CDASH           = "ACME_Climate"
 CDASH_DEFAULT_BUILD_GROUP = "ACME_Latest"
@@ -119,9 +122,8 @@ NightlyStartTime: %s UTC
 """ % (os.getcwd(), os.getcwd(), hostname,
        cdash_build_name, cdash_project, distutils.spawn.find_executable("scp"), cdash_timestamp)
 
-    dart_fd = open("DartConfiguration.tcl", "w")
-    dart_fd.write(dart_config)
-    dart_fd.close()
+    with open("DartConfiguration.tcl", "w") as dart_fd:
+        dart_fd.write(dart_config)
 
     # Make necessary dirs
     subdir_name = time.strftime('%Y%m%d-%H%M', utc_time_tuple)
@@ -129,9 +131,8 @@ NightlyStartTime: %s UTC
     os.makedirs(data_rel_path)
 
     # Make tag file
-    tag_fd = open("Testing/TAG", "w")
-    tag_fd.write("%s\n%s" % (subdir_name, cdash_build_group))
-    tag_fd.close()
+    with open("Testing/TAG", "w") as tag_fd:
+        tag_fd.write("%s\n%s" % (subdir_name, cdash_build_group))
 
     #
     # Make XML
@@ -238,59 +239,66 @@ def reduce_stati(stati):
     return rv
 
 ###############################################################################
-def parse_test_status_file(file_contents, status_file_path, check_throughput=False, check_memory=False, ignore_namelists=False):
+def parse_test_status_file(file_contents):
 ###############################################################################
-    r"""
-    >>> parse_test_status_file('PASS testname', '')
-    ('testname', 'PASS')
-    >>> parse_test_status_file('PASS testname \nGEN testname2', '')
-    ('testname', 'GEN')
-    >>> parse_test_status_file('FAIL testname \nGEN testname2', '')
-    ('testname', 'GEN')
-    >>> parse_test_status_file('PASS testname\nPASS testname2', '')
-    ('testname', 'PASS')
-    >>> parse_test_status_file('PASS testname\nFAIL testname2.tputcomp.foo', '')
-    ('testname', 'PASS')
-    >>> parse_test_status_file('PASS testname\nFAIL testname2.tputcomp.foo', '', True)
-    ('testname', 'FAIL')
-    >>> parse_test_status_file('PASS testname\nFAIL testname2.nlcomp', '')
-    ('testname', 'NLFAIL')
-    >>> parse_test_status_file('PASS testname\nFAIL testname2.nlcomp', '', ignore_namelists=True)
-    ('testname', 'PASS')
-    """
-    real_test_name = None
-    stati = []
+    rv = {}
+    test_name = None
     for line in file_contents.splitlines():
-        if (len(line.split()) == 2):
-            status, test_name = line.split()
-            # just take the first one
-            if (real_test_name is None):
-                try:
-                    real_test_name = acme_util.normalize_case_id(test_name)
-                except:
-                    real_test_name = test_name
-
-            verbose_print("Test: '%s' has status '%s'" % (test_name, status))
-
-            # A non-pass is OK if the failure is due to throughput and we
-            # aren't checking throughput
-            if (status != TEST_PASSED_STATUS and not
-                (not check_throughput and THROUGHPUT_TEST_STR in test_name or
-                 not check_memory and MEMORY_TEST_STR in test_name or
-                 ignore_namelists and NAMELIST_TEST_STR in test_name)):
-                if (NAMELIST_TEST_STR in test_name):
-                    stati.append(NAMELIST_FAIL_STATUS)
-                else:
-                    stati.append(status)
-            else:
-                stati.append(TEST_PASSED_STATUS)
+        if (line.split()[0] == COMMENT_STATUS):
+            pass # skip comments
+        elif (len(line.split()) == 3):
+            status, curr_test_name, phase = line.split()
+            if (test_name is None):
+                test_name = curr_test_name
+            rv[phase] = status
         else:
             warning("In '%s', line '%s' not in expected format" % (status_file_path, line))
 
-    if (real_test_name is None):
+    return rv, test_name
+
+###############################################################################
+def interpret_status_file(file_contents, status_file_path, check_throughput=False, check_memory=False, ignore_namelists=False):
+###############################################################################
+    r"""
+    >>> interpret_status_file('PASS testname RUN1', '')
+    ('testname', 'PASS')
+    >>> interpret_status_file('PASS testname RUN1\nGEN testname RUN2', '')
+    ('testname', 'GEN')
+    >>> interpret_status_file('FAIL testname RUN1\nGEN testname RUN2', '')
+    ('testname', 'GEN')
+    >>> interpret_status_file('PASS testname RUN1\nPASS testname RUN2', '')
+    ('testname', 'PASS')
+    >>> interpret_status_file('PASS testname RUN1\nFAIL testname tputcomp', '')
+    ('testname', 'PASS')
+    >>> interpret_status_file('PASS testname RUN1\nFAIL testname tputcomp', '', check_throughput=True)
+    ('testname', 'FAIL')
+    >>> interpret_status_file('PASS testname RUN1\nFAIL testname nlcomp', '')
+    ('testname', 'NLFAIL')
+    >>> interpret_status_file('PASS testname RUN1\nFAIL testname nlcomp', '', ignore_namelists=True)
+    ('testname', 'PASS')
+    """
+    statuses, test_name = parse_test_status_file(file_contents)
+    adjusted_statuses = []
+    for phase, status in statuses.iteritems():
+        verbose_print("Test: '%s' had status '%s' for phase '%s'" % (test_name, status, phase))
+
+        # A non-pass is OK if the failure is due to throughput and we
+        # aren't checking throughput
+        if (status != TEST_PASSED_STATUS and not
+            (not check_throughput and THROUGHPUT_TEST_STR in phase or
+             not check_memory and MEMORY_TEST_STR in phase or
+             ignore_namelists and NAMELIST_TEST_STR in phase)):
+            if (NAMELIST_TEST_STR in phase):
+                adjusted_statuses.append(NAMELIST_FAIL_STATUS)
+            else:
+                adjusted_statuses.append(status)
+        else:
+            adjusted_statuses.append(TEST_PASSED_STATUS)
+
+    if (not adjusted_statuses):
         warning("Empty status file: %s" % status_file_path)
 
-    return real_test_name, reduce_stati(stati)
+    return test_name, reduce_stati(adjusted_statuses)
 
 ###############################################################################
 def wait_for_test(test_path, results, wait, check_throughput, check_memory, ignore_namelists):
@@ -305,7 +313,7 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
         if (os.path.exists(test_status_filepath)):
             test_status_fd = open(test_status_filepath, "r")
             test_status_contents = test_status_fd.read()
-            test_name, test_status = parse_test_status_file(test_status_contents, test_status_filepath, check_throughput, check_memory, ignore_namelists)
+            test_name, test_status = interpret_status_file(test_status_contents, test_status_filepath, check_throughput, check_memory, ignore_namelists)
 
             if (test_status in TEST_NOT_FINISHED_STATUS and (wait and not SIGNAL_RECEIVED)):
                 time.sleep(SLEEP_INTERVAL_SEC)
