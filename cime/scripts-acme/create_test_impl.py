@@ -155,7 +155,7 @@ class CreateTest(object):
                               (os.path.join(self._cime_root, "scripts", "create_newcase"),
                                test_dir, grid, machine, compiler, compset, test_case, self._project)
         if (case_opts is not None):
-            create_newcase_cmd += " -confopts %s" % case_opts
+            create_newcase_cmd += " -confopts _%s" % ("_".join(case_opts))
         if (test_mods is not None):
             test_mod_file = os.path.join(self._cime_root, "scripts", "Testing", "Testlistxml", "testmods_dirs", test_mods)
             if (not os.path.exists(test_mod_file)):
@@ -242,7 +242,7 @@ class CreateTest(object):
             xml_to_write += "    <grid>%s</grid>\n" % grid
             xml_to_write += "    <mach>%s</mach>\n" % machine
             xml_to_write += "    <testname>%s</testname>\n" % test_case
-            xml_to_write += "    <fullname>%s</fullname>\n" % (test_case if case_opts is None else "_".join([test_case, case_opts]))
+            xml_to_write += "    <fullname>%s%s</fullname>\n" % (test_case, "" if case_opts is None else ("_%s" % "_".join(case_opts)))
             if (case_opts is not None):
                 xml_to_write += "    <confopts>%s</confopts>\n" % case_opts
             xml_to_write += "    <compiler>%s</compiler>\n" % compiler

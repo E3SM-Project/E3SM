@@ -256,7 +256,9 @@ def parse_test_name(test_name):
     >>> parse_test_name('ERS.fe12_123.JGF')
     ['ERS', None, 'fe12_123', 'JGF', None, None, None]
     >>> parse_test_name('ERS_D.fe12_123.JGF')
-    ['ERS', 'D', 'fe12_123', 'JGF', None, None, None]
+    ['ERS', ['D'], 'fe12_123', 'JGF', None, None, None]
+    >>> parse_test_name('ERS_D_P1.fe12_123.JGF')
+    ['ERS', ['D', 'P1'], 'fe12_123', 'JGF', None, None, None]
     >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler')
     ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', None]
     >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler.test/mods')
@@ -269,11 +271,11 @@ def parse_test_name(test_name):
 
     rv[0:num_dots+1] = test_name.split(".")
     testcase_field_underscores = rv[0].count("_")
-    expect(testcase_field_underscores in [0, 1],
-           "Testcase field of test_name '%s', '%s', needs to be in form 'TESTCASE[_CASEOPTS]'" % (test_name, rv[0]))
-    rv.insert(1, None)
-    if (testcase_field_underscores == 1):
-        rv[0:2] = rv[0].split("_")
+    rv.insert(1, None) # Make room for caseopts
+    if (testcase_field_underscores > 0):
+        full_str = rv[0]
+        rv[0]    = full_str.split("_")[0]
+        rv[1]    = full_str.split("_")[1:]
 
     if (num_dots >= 3):
         expect(rv[4].count("_") == 1,
