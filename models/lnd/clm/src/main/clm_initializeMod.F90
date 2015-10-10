@@ -1062,6 +1062,8 @@ contains
     use decompMod              , only : get_proc_clumps
     use clm_varpar             , only : nlevgrnd
     use clm_varctl             , only : finidat
+    use shr_infnan_mod         , only : shr_infnan_isnan
+    use abortutils             , only : endrun
 #ifdef USE_PETSC_LIB
     use MultiPhysicsProbVSFM   , only : vsfm_mpp
     use MultiPhysicsProbConstants, only : VAR_MASS
@@ -1172,6 +1174,17 @@ contains
        ! Save data in 1D array for VSFM
        do c = bounds_proc%begc, bounds_proc%endc
           do j = 1, nlevgrnd
+
+             ! Ensure that soilp_col has valid values
+             if (shr_infnan_isnan(soilp_col(c,j))) then
+                write(iulog, *) 'VSFM is on and soilp_col = NaN for: '
+                write(iulog, *) 'c = ',c
+                write(iulog, *) 'j = ',j
+                write(iulog, *) 'Possible source of error: The finidat or restart file being ' // &
+                   'used may have been produced with VSFM turned off.'
+                call endrun(msg=errMsg(__FILE__, __LINE__))
+             endif
+
              idx = (c-bounds_proc%begc)*nlevgrnd + j
              vsfm_soilp_col_1d(idx) = soilp_col(c,j)
           end do
