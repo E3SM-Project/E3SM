@@ -166,8 +166,11 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
             shutil.rmtree(old_dir)
 
         # Remove the old cases
-        for old_dir in glob.glob("%s/*%s*" % (casearea, test_id_root)):
-            shutil.rmtree(old_dir)
+        for old_file in glob.glob("%s/*%s*" % (casearea, test_id_root)):
+            if (os.path.isdir(old_file)):
+                shutil.rmtree(old_file)
+            else:
+                os.remove(old_file)
 
         #
         # Make note of things already in the queue so we know not to delete
