@@ -2991,8 +2991,8 @@ MPAS_GPTL_STOP('dyn_tend')
    end subroutine atm_compute_dyn_tend
 
 
-   subroutine atm_compute_dyn_tend_work(nCells, nEdges, nVertices, nVertLevels, &
-      nCellsSolve, nEdgesSolve, vertexDegree, maxEdges, maxEdges2, num_scalars, moist_start, moist_end, &
+   subroutine atm_compute_dyn_tend_work(nCells, nEdges, nVertices, nVertLevels_dummy, &
+      nCellsSolve, nEdgesSolve, vertexDegree, maxEdges_dummy, maxEdges2_dummy, num_scalars_dummy, moist_start, moist_end, &
       fEdge, dvEdge, dcEdge, invDcEdge, invDvEdge, invAreaCell, invAreaTriangle, meshScalingDel2, meshScalingDel4, &
       weightsOnEdge, zgrid, rho_edge, rho_zz, ru, u, v, tend_u, &
       divergence, vorticity, ke, pv_edge, theta_m, rw, tend_rho, &
@@ -3008,14 +3008,17 @@ MPAS_GPTL_STOP('dyn_tend')
       cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
 
 
+      use mpas_dimensions
+
+
       implicit none
 
 
       !
       ! Dummy arguments
       !
-      integer :: nCells, nEdges, nVertices, nVertLevels, nCellsSolve, nEdgesSolve, vertexDegree, &
-                 maxEdges, maxEdges2, num_scalars, moist_start, moist_end
+      integer :: nCells, nEdges, nVertices, nVertLevels_dummy, nCellsSolve, nEdgesSolve, vertexDegree, &
+                 maxEdges_dummy, maxEdges2_dummy, num_scalars_dummy, moist_start, moist_end
 
       real (kind=RKIND), dimension(nEdges+1) :: fEdge
       real (kind=RKIND), dimension(nEdges+1) :: dvEdge
