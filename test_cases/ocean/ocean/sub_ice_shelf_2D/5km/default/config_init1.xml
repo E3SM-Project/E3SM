@@ -13,9 +13,10 @@
 
 	<namelist name="namelist.ocean" mode="init">
 		<option name="config_init_configuration">'sub_ice_shelf_2D'</option>
-		<option name="config_vert_levels">1</option>
+		<option name="config_vert_levels">-1</option>
 		<option name="config_ocean_run_mode">'init'</option>
 		<option name="config_write_cull_cell_mask">.true.</option>
+		<option name="config_land_ice_flux_mode">'standalone'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">

@@ -11,7 +11,7 @@
 		<option name="config_vert_levels">-1</option>
 		<option name="config_ocean_run_mode">'init'</option>
 		<option name="config_write_cull_cell_mask">.false.</option>
-		<option name="config_sub_ice_shelf_2D_seaSurfacePressure_factor">1.02</option>
+		<option name="config_land_ice_flux_mode">'standalone'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">
