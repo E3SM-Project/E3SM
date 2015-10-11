@@ -664,7 +664,7 @@
 			possible_values="Any positive real number."
 		/>
 	</nml_record>
-	<nml_record name="land_ice_fluxes" mode="forward">
+	<nml_record name="land_ice_fluxes" mode="init;forward">
 		<nml_option name="config_land_ice_flux_mode" type="character" default_value="off" units="unitless"
 					description="Selects the mode in which land-ice fluxes are computed."
 					possible_values="'off','standalone','coupled'"
