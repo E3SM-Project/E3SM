@@ -7,5 +7,5 @@
 	url = git@github.com:ACME-Climate/MPAS.git
 [submodule "mpas-cice"]
 	path = components/mpas-cice/model
-	url = git@github.com:ACME-Climate/MPAS
+	url = git@github.com:ACME-Climate/MPAS.git
 	branch = cice/develop
