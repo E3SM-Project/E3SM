@@ -138,6 +138,10 @@ class CreateTest(object):
             self._log_output(test_name,
                              "%s FAILED for test '%s'.\nCommand: %s\nOutput: %s\n\nErrput: %s" %
                              (phase, test_name, cmd, output, errput))
+        else:
+            self._log_output(test_name,
+                             "%s PASSED for test '%s'.\nCommand: %s\nOutput: %s\n\nErrput: %s" %
+                             (phase, test_name, cmd, output, errput))
 
         self._update_test_status(test_name, phase, pass_status if rc == 0 else TEST_FAIL_STATUS)
         return rc == 0
