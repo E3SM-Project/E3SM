@@ -32,7 +32,7 @@ BATCH_INFO = \
 
 # TODO: Get these values from ACME XML files instead of duplicating here.
 
-# machine -> defaults (compiler, test_suite, use_batch, project, testroot, baseline_root, proxy, maintain_baselines)
+# machine -> defaults (0 compiler, 1 test_suite, 2 use_batch, 3 project, 4 scratch area, 5 baseline_root, 6 proxy, 7 maintain_baselines)
 MACHINE_INFO = {
     "redsky"    : (
         "intel",

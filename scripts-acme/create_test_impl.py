@@ -152,12 +152,14 @@ class CreateTest(object):
         print "Creating case for", test_name
 
         test_case, case_opts, grid, compset, machine, compiler, test_mods = acme_util.parse_test_name(test_name)
+        scratch_dir = acme_util.get_machine_info(machine=machine, project=self._project)[4]
 
         test_dir = self._get_test_dir(test_name)
 
-        create_newcase_cmd = "%s -silent -case %s -res %s -mach %s -compiler %s -compset %s -testname %s -project %s -nosavetiming" % \
+        create_newcase_cmd = "%s -silent -case %s -res %s -mach %s -compiler %s -compset %s -testname %s -project %s -nosavetiming -sharedlibroot %s" % \
                               (os.path.join(self._cime_root, "scripts", "create_newcase"),
-                               test_dir, grid, machine, compiler, compset, test_case, self._project)
+                               test_dir, grid, machine, compiler, compset, test_case, self._project,
+                               os.path.join(scratch_dir, "sharedlibroot.%s" % self._test_id))
         if (case_opts is not None):
             create_newcase_cmd += " -confopts _%s" % ("_".join(case_opts))
         if (test_mods is not None):
@@ -211,61 +213,6 @@ class CreateTest(object):
         xml_bridge_cmd += " COMPARE_BASELINE,%s" % ("TRUE" if self._compare else "FALSE")
 
         return self._run_phase_command(test_name, xml_bridge_cmd, XML_PHASE)
-
-    ###########################################################################
-    def _write_test_spec_xml(self):
-    ###########################################################################
-        xml_to_write = \
-"""
-<?xml version="1.0"?>
-<!-- ========================================================================== -->
-<!-- This file contains the needed configuration information for a suite of     -->
-<!-- CESM tests.                                                                -->
-<!-- ========================================================================== -->
-
-<testlist>
-  <testroot>$opts{'testroot'}</testroot>
-  <scriptsroot>$scriptsroot</scriptsroot>
-  <cimeroot>$opts{'cimeroot'}</cimeroot>
-  <baselinetag>$baselinetag</baselinetag>
-  <compiler>$compiler</compiler>
-  <nobatch>$opts{'nobatch'}</nobatch>
-  <nobuild>$opts{'nobuild'}</nobuild>
-  <autosubmit>$opts{'autosubmit'}</autosubmit>
-  <clean>$opts{'clean'}</clean>
-  <reruntests>$opts{'reruntests'}</reruntests>
-  <sharedlibroot>$opts{'sharedlibroot'}</sharedlibroot>
-
-"""
-
-        for test_name in self._test_names:
-            test_case, case_opts, grid, compset, machine, compiler, _ = acme_util.parse_test_name(test_name)
-
-            xml_to_write += '  <test case="%s">\n' % self._get_case_id(test_name)
-            xml_to_write += "    <compset>%s</compset>\n" % compset
-            xml_to_write += "    <grid>%s</grid>\n" % grid
-            xml_to_write += "    <mach>%s</mach>\n" % machine
-            xml_to_write += "    <testname>%s</testname>\n" % test_case
-            xml_to_write += "    <fullname>%s%s</fullname>\n" % (test_case, "" if case_opts is None else ("_%s" % "_".join(case_opts)))
-            if (case_opts is not None):
-                xml_to_write += "    <confopts>%s</confopts>\n" % case_opts
-            xml_to_write += "    <compiler>%s</compiler>\n" % compiler
-            xml_to_write += "    <compset>%s</compset>\n" % compset
-            xml_to_write += "    <casebaseid>%s</casebaseid>\n" % test_name
-            if (self._generate or self._compare):
-                xml_to_write += "    <baselineroot>%s</baselineroot>\n" % self._baseline_root
-            if (self._generate):
-                xml_to_write += "    <basegen_case>%s</basegen_case>\n" % os.path.join(self._baseline_name, test_name)
-            if (self._compare):
-                xml_to_write += "    <basecmp_case>%s</basecmp_case>\n" % os.path.join(self._baseline_name, test_name)
-            xml_to_write += "  </test>\n"
-
-        xml_to_write += "</testlist>\n"
-
-        xml_file = os.path.join(self._test_root, "testspec.%s.%s.xml" % (self._test_id, acme_util.probe_machine_name()))
-
-        with open(xml_file, 'w') as fd:
-            fd.write(xml_to_write)
 
     ###########################################################################
     def _setup_test(self, test_name):
@@ -409,12 +356,6 @@ class CreateTest(object):
 
         # Set up XML
         self._run_catch_exceptions(XML_PHASE, self._set_up_xml)
-
-        # writeTestListXML
-        try:
-            self._write_test_spec_xml()
-        except Exception as e:
-            warning("Exception while writing test specification XML: '%s'" % str(e))
 
         # Setup
         self._run_catch_exceptions(SETUP_PHASE, self._setup_test)
