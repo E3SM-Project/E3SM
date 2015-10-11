@@ -125,7 +125,7 @@ ifort:
 	"FC_SERIAL = ifort" \
 	"CC_SERIAL = icc" \
 	"CXX_SERIAL = icpc" \
-	"FFLAGS_OPT = -openmp -real-size 64 -O3 -convert big_endian -FR" \
+	"FFLAGS_OPT = -align array64byte -openmp -real-size 64 -O3 -convert big_endian -FR" \
 	"CFLAGS_OPT = -openmp -O3" \
 	"CXXFLAGS_OPT = -openmp -O3" \
 	"LDFLAGS_OPT = -openmp -O3" \
