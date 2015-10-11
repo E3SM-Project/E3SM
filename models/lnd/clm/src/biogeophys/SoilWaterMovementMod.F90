@@ -787,7 +787,7 @@ contains
     real(r8) :: vsfm_dmass_col(bounds%begc:bounds%endc)
     real(r8) :: mass_beg_col(bounds%begc:bounds%endc)
     real(r8) :: mass_end_col(bounds%begc:bounds%endc)
-    integer           :: ier                     ! error status
+    integer  :: ier                     ! error status
     !
 #ifdef USE_PETSC_LIB
     PetscInt              :: jwt                             ! index of first unsaturated soil layer
@@ -799,85 +799,81 @@ contains
     PetscReal             :: qflx_drain_layer                ! Drainage flux from a soil layer (mm H2O/s)
     PetscReal             :: qflx_drain_tot                  ! Cummulative drainage flux from soil layers within a column (mm H2O/s)
     PetscErrorCode        :: ierr                            ! PETSc return error code
-    PetscBool             :: converged
-    PetscReal             :: atol_default
-    PetscReal             :: rtol_default
-    PetscReal             :: stol_default
-    PetscInt              :: max_it_default
-    PetscInt              :: max_f_default
-    PetscReal             :: stol
-    PetscReal,parameter   :: stol_alternate = 1.d-10
-    PetscReal             :: mass_beg
-    PetscReal             :: mass_end
-    PetscReal             :: total_mass_flux_et
-    PetscReal             :: total_mass_flux_infl
-    PetscReal             :: total_mass_flux_dew
-    PetscReal             :: total_mass_flux_drain
-    PetscReal             :: total_mass_flux_snowlyr
-    PetscReal             :: total_mass_flux_sub
-    PetscReal             :: total_mass_flux
-    PetscInt              :: iter_count
-    PetscInt, parameter   :: max_iter_count = 10
-    PetscInt              :: diverged_count
-    PetscInt              :: mass_bal_err_count
-    PetscReal             :: abs_mass_error_col
-    PetscReal, parameter  :: max_abs_mass_error_col  = 1.e-5
-    PetscBool             :: successful_step
+    PetscBool             :: converged                       ! Did VSFM solver converge to a solution with given PETSc SNES tolerances
+    PetscReal             :: atol_default                    ! Default SNES absolute convergance tolerance
+    PetscReal             :: rtol_default                    ! Default SNES relative convergance tolerance
+    PetscReal             :: stol_default                    ! Default SNES solution convergance tolerance
+    PetscInt              :: max_it_default                  ! Default SNES maximum number of iteration
+    PetscInt              :: max_f_default                   ! Default SNES maximum number of function evaluation
+    PetscReal             :: stol                            ! solution convergance tolerance
+    PetscReal,parameter   :: stol_alternate = 1.d-10         ! Alternate solution convergance tolerance
+    PetscReal             :: mass_beg                        ! Sum of mass of water for all active soil columns before VSFM is called
+    PetscReal             :: mass_end                        ! Sum of mass of water for all active soil columns after VSFM is called
+    PetscReal             :: total_mass_flux_et              ! Sum of mass ET mass flux of water for all active soil columns
+    PetscReal             :: total_mass_flux_infl            ! Sum of mass infiltration mass flux of water for all active soil columns
+    PetscReal             :: total_mass_flux_dew             ! Sum of mass dew mass flux of water for all active soil columns
+    PetscReal             :: total_mass_flux_drain           ! Sum of mass drainage mass flux of water for all active soil columns
+    PetscReal             :: total_mass_flux_snowlyr         ! Sum of mass snow layer disappearance mass flux of water for all active soil columns
+    PetscReal             :: total_mass_flux_sub             ! Sum of mass sublimation mass flux of water for all active soil columns
+    PetscReal             :: total_mass_flux                 ! Sum of mass ALL mass flux of water for all active soil columns
+    PetscInt              :: iter_count                      ! How many times VSFM solver is called
+    PetscInt, parameter   :: max_iter_count = 10             ! Maximum number of times VSFM can be called
+    PetscInt              :: diverged_count                  ! Number of time VSFM solver diverged
+    PetscInt              :: mass_bal_err_count              ! Number of time VSFM solver returns a solution that isn't within acceptable mass balance error threshold
+    PetscReal             :: abs_mass_error_col              ! Maximum absolute error for any active soil column
+    PetscReal, parameter  :: max_abs_mass_error_col  = 1.e-5 ! Acceptable mass balance error
+    PetscBool             :: successful_step                 ! Is the solution return by VSFM acceptable
 #endif
     !-----------------------------------------------------------------------
 
     associate(& 
-         z                 =>    col%z                              , & ! Input:  [real(r8) (:,:) ]  layer depth (m)
-         zi                =>    col%zi                             , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
-         dz                =>    col%dz                             , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)
-         snl              =>    col%snl                             , & ! Input:  [integer  (:)   ]  minus number of snow layers
+         z                            =>    col%z                                      , & ! Input:  [real(r8) (:,:) ]  layer depth (m)
+         zi                           =>    col%zi                                     , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
+         dz                           =>    col%dz                                     , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)
+         snl                          =>    col%snl                                    , & ! Input:  [integer  (:)   ]  minus number of snow layers
 
-         qcharge           =>    soilhydrology_vars%qcharge_col     , & ! Input:  [real(r8) (:)   ]  aquifer recharge rate (mm/s)
-         zwt               =>    soilhydrology_vars%zwt_col         , & ! Input:  [real(r8) (:)   ]  water table depth (m)
+         qcharge                      =>    soilhydrology_vars%qcharge_col             , & ! Input:  [real(r8) (:)   ]  aquifer recharge rate (mm/s)
+         zwt                          =>    soilhydrology_vars%zwt_col                 , & ! Input:  [real(r8) (:)   ]  water table depth (m)
 
-         watsat            =>    soilstate_vars%watsat_col          , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
-         rootr_col         =>    soilstate_vars%rootr_col           , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer
-         rootr_pft         =>    soilstate_vars%rootr_patch         , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer
-         smp_l             =>    soilstate_vars%smp_l_col           , & ! Output: [real(r8) (:,:) ]  soil matrix potential [mm]
-         hk_l              =>    soilstate_vars%hk_l_col            , & ! Output: [real(r8) (:,:) ]  hydraulic conductivity (mm/s)
+         watsat                       =>    soilstate_vars%watsat_col                  , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
+         rootr_col                    =>    soilstate_vars%rootr_col                   , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer
+         rootr_pft                    =>    soilstate_vars%rootr_patch                 , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer
+         smp_l                        =>    soilstate_vars%smp_l_col                   , & ! Output: [real(r8) (:,:) ]  soil matrix potential [mm]
+         hk_l                         =>    soilstate_vars%hk_l_col                    , & ! Output: [real(r8) (:,:) ]  hydraulic conductivity (mm/s)
 
-         h2osoi_ice        =>    waterstate_vars%h2osoi_ice_col     , & ! Input:  [real(r8) (:,:) ]  ice water (kg/m2)
-         h2osoi_liq        =>    waterstate_vars%h2osoi_liq_col     , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
-         h2osoi_vol        =>    waterstate_vars%h2osoi_vol_col     , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
-         frac_h2osfc       =>    waterstate_vars%frac_h2osfc_col    , & ! Input:  [real(r8) (:)   ]
-         frac_sno          =>    waterstate_vars%frac_sno_eff_col   , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
+         h2osoi_ice                   =>    waterstate_vars%h2osoi_ice_col             , & ! Input:  [real(r8) (:,:) ]  ice water (kg/m2)
+         h2osoi_liq                   =>    waterstate_vars%h2osoi_liq_col             , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
+         h2osoi_vol                   =>    waterstate_vars%h2osoi_vol_col             , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         frac_h2osfc                  =>    waterstate_vars%frac_h2osfc_col            , & ! Input:  [real(r8) (:)   ]
+         frac_sno                     =>    waterstate_vars%frac_sno_eff_col           , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
+         vsfm_fliq_col_1d             =>    waterstate_vars%vsfm_fliq_col_1d           , & ! Output: [real(r8) (:)   ]  1D fraction of liquid saturation for VSFM [-]
+         vsfm_sat_col_1d              =>    waterstate_vars%vsfm_sat_col_1d            , & ! Output: [real(r8) (:)   ]  1D liquid saturation from VSFM [-]
+         vsfm_mass_col_1d             =>    waterstate_vars%vsfm_mass_col_1d           , & ! Output: [real(r8) (:)   ]  1D liquid mass per unit area from VSFM [kg H2O/m^2]
+         vsfm_smpl_col_1d             =>    waterstate_vars%vsfm_smpl_col_1d           , & ! Output: [real(r8) (:)   ]  1D soil matrix potential liquid from VSFM [m]
+         vsfm_soilp_col_1d            =>    waterstate_vars%vsfm_soilp_col_1d          , & ! Output: [real(r8) (:)   ]  1D soil water pressure from VSFM [Pa]
+         soilp_col                    =>    waterstate_vars%soilp_col                  , & ! Output: [real(r8) (:,:) ]  soil water pressure (Pa)
 
-         qflx_deficit      =>    waterflux_vars%qflx_deficit_col    , & ! Input:  [real(r8) (:)   ]  water deficit to keep non-negative liquid water content
-         qflx_infl         =>    waterflux_vars%qflx_infl_col       , & ! Input:  [real(r8) (:)   ]  infiltration (mm H2O /s)
-         qflx_tran_veg_col =>    waterflux_vars%qflx_tran_veg_col   , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)
-         qflx_tran_veg_pft =>    waterflux_vars%qflx_tran_veg_patch , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)
-         qflx_dew_snow     =>    waterflux_vars%qflx_dew_snow_col   , & ! Input:  [real(r8) (:)   ]  surface dew added to snow pack (mm H2O /s) [+]
-         qflx_dew_grnd     =>    waterflux_vars%qflx_dew_grnd_col   , & ! Input:  [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]
-         qflx_sub_snow     =>    waterflux_vars%qflx_sub_snow_col   , & ! Input:  [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]
+         qflx_deficit                 =>    waterflux_vars%qflx_deficit_col            , & ! Input:  [real(r8) (:)   ]  water deficit to keep non-negative liquid water content
+         qflx_infl                    =>    waterflux_vars%qflx_infl_col               , & ! Input:  [real(r8) (:)   ]  infiltration (mm H2O /s)
+         qflx_tran_veg_col            =>    waterflux_vars%qflx_tran_veg_col           , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)
+         qflx_tran_veg_pft            =>    waterflux_vars%qflx_tran_veg_patch         , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)
+         qflx_dew_snow                =>    waterflux_vars%qflx_dew_snow_col           , & ! Input:  [real(r8) (:)   ]  surface dew added to snow pack (mm H2O /s) [+]
+         qflx_dew_grnd                =>    waterflux_vars%qflx_dew_grnd_col           , & ! Input:  [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]
+         qflx_sub_snow                =>    waterflux_vars%qflx_sub_snow_col           , & ! Input:  [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]
+         qflx_drain                   =>    waterflux_vars%qflx_drain_col              , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)
+         qflx_drain_perched           =>    waterflux_vars%qflx_drain_perched_col      , & ! Input:  [real(r8) (:)   ]  perched wt sub-surface runoff (mm H2O /s)
+         mflx_infl_col_1d             =>    waterflux_vars%mflx_infl_col_1d            , & ! Input:  [real(r8) (:)   ]  infiltration source in top soil control volume (kg H2O /s)
+         mflx_dew_col_1d              =>    waterflux_vars%mflx_dew_col_1d             , & ! Input:  [real(r8) (:)   ]  (liquid+snow) dew source in top soil control volume (kg H2O /s)
+         mflx_et_col_1d               =>    waterflux_vars%mflx_et_col_1d              , & ! Input:  [real(r8) (:)   ]  evapotranspiration sink from all soil coontrol volumes (kg H2O /s) (+ = to atm)
+         mflx_snowlyr_col_1d          =>    waterflux_vars%mflx_snowlyr_col_1d         , & ! Input:  [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
+         mflx_sub_snow_col_1d         =>    waterflux_vars%mflx_sub_snow_col_1d        , & ! Output: [real(r8) (:)   ]  mass flux from top soil layer due to sublimation of snow (kg H2O /s)
+         mflx_snowlyr_col             =>    waterflux_vars%mflx_snowlyr_col            , & ! Input:  [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
+         mflx_drain_col_1d            =>    waterflux_vars%mflx_drain_col_1d           , & ! Input:  [real(r8) (:)   ]  drainage from groundwater and perched water table (kg H2O /s)
+         mflx_drain_perched_col_1d    =>    waterflux_vars%mflx_drain_perched_col_1d   , & ! Input:  [real(r8) (:)   ]  drainage from perched water table (kg H2O /s)
+         mflx_neg_snow_col_1d         =>    waterflux_vars%mflx_neg_snow_col_1d        , & ! Input:  [real(r8) (:)   ]  mass flux from top soil layer due to negative water content in snow layers (kg H2O /s)
 
-         qflx_drain         =>    waterflux_vars%qflx_drain_col         , & ! Input: [real(r8) (:)   ] sub-surface runoff (mm H2O /s)
-         qflx_drain_perched =>    waterflux_vars%qflx_drain_perched_col , & ! Input: [real(r8) (:)   ] perched wt sub-surface runoff (mm H2O /s)
-
-         mflx_infl_col_1d          =>    waterflux_vars%mflx_infl_col_1d    , & ! Input:  [real(r8) (:)   ]  infiltration source in top soil control volume (kg H2O /s)
-         mflx_dew_col_1d           =>    waterflux_vars%mflx_dew_col_1d     , & ! Input:  [real(r8) (:)   ]  (liquid+snow) dew source in top soil control volume (kg H2O /s)
-         mflx_et_col_1d            =>    waterflux_vars%mflx_et_col_1d      , & ! Input:  [real(r8) (:)   ]  evapotranspiration sink from all soil coontrol volumes (kg H2O /s) (+ = to atm)
-         mflx_snowlyr_col_1d       =>    waterflux_vars%mflx_snowlyr_col_1d , & ! Input:  [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
-         mflx_sub_snow_col_1d      =>    waterflux_vars%mflx_sub_snow_col_1d, & ! Output: [real(r8) (:)   ]  mass flux from top soil layer due to sublimation of snow (kg H2O /s)
-         mflx_snowlyr_col          =>    waterflux_vars%mflx_snowlyr_col    , & ! Input: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
-         mflx_drain_col_1d         =>    waterflux_vars%mflx_drain_col_1d   , & ! Input:  [real(r8) (:)   ]  drainage from groundwater and perched water table (kg H2O /s)
-         mflx_drain_perched_col_1d =>    waterflux_vars%mflx_drain_perched_col_1d   , & ! Input:  [real(r8) (:)   ]  drainage from perched water table (kg H2O /s)
-         mflx_neg_snow_col_1d      =>    waterflux_vars%mflx_neg_snow_col_1d , & ! Input:  [real(r8) (:)   ]  mass flux from top soil layer due to negative water content in snow layers (kg H2O /s)
-
-         vsfm_fliq_col_1d  =>    waterstate_vars%vsfm_fliq_col_1d   , & ! Output: [real(r8) (:)   ]  1D fraction of liquid saturation for VSFM [-]
-         vsfm_sat_col_1d   =>    waterstate_vars%vsfm_sat_col_1d    , & ! Output: [real(r8) (:)   ]  1D liquid saturation from VSFM [-]
-         vsfm_mass_col_1d  =>    waterstate_vars%vsfm_mass_col_1d   , & ! Output: [real(r8) (:)   ]  1D liquid mass per unit area from VSFM [kg H2O/m^2]
-         vsfm_smpl_col_1d  =>    waterstate_vars%vsfm_smpl_col_1d   , & ! Output: [real(r8) (:)   ]  1D soil matrix potential liquid from VSFM [m]
-         vsfm_soilp_col_1d =>    waterstate_vars%vsfm_soilp_col_1d  , & ! Output: [real(r8) (:)   ]  1D soil water pressure from VSFM [Pa]
-         soilp_col         =>    waterstate_vars%soilp_col          , & ! Output: [real(r8) (:,:) ]  soil water pressure (Pa)
-
-         t_soil_col_1d     =>    temperature_vars%t_soil_col_1d     , & ! Input:  [real(r8) (:)   ]  1D soil temperature (Kelvin)
-
-         t_soisno          =>    temperature_vars%t_soisno_col        & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
+         t_soil_col_1d                =>    temperature_vars%t_soil_col_1d             , & ! Input:  [real(r8) (:)   ]  1D soil temperature (Kelvin)
+         t_soisno                     =>    temperature_vars%t_soisno_col                & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
          )
 
       ! Get time step
@@ -1042,43 +1038,77 @@ contains
          ! The mass flux associated with disapperance of snow layer over the
          ! last time step.
          idx = c-bounds%begc+1
-         mflx_snowlyr_col_1d(c-bounds%begc+1) = mflx_snowlyr_col(c) + mflx_neg_snow_col_1d(c-bounds%begc+1)
+         mflx_snowlyr_col_1d(c-bounds%begc+1) = mflx_snowlyr_col(c) + &
+                                                mflx_neg_snow_col_1d(c-bounds%begc+1)
          mflx_snowlyr_col(c) = 0._r8
 
       end do
 
       ! Set temperature
       soe_auxvar_id = 1;
-      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_INTERNAL, VAR_TEMPERATURE, soe_auxvar_id, t_soil_col_1d)
+      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_INTERNAL , &
+                                             VAR_TEMPERATURE , &
+                                             soe_auxvar_id   , &
+                                             t_soil_col_1d     &
+                                            )
 
       ! Set Infiltration
       soe_auxvar_id = 1;
-      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS, VAR_BC_SS_CONDITION, soe_auxvar_id, mflx_infl_col_1d)
+      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS           , &
+                                             VAR_BC_SS_CONDITION , &
+                                             soe_auxvar_id       , &
+                                             mflx_infl_col_1d      &
+                                            )
 
       ! Set ET
       soe_auxvar_id = 2;
-      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS, VAR_BC_SS_CONDITION, soe_auxvar_id, mflx_et_col_1d)
+      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS           , &
+                                             VAR_BC_SS_CONDITION , &
+                                             soe_auxvar_id       , &
+                                             mflx_et_col_1d        &
+                                            )
 
       ! Set Dew
       soe_auxvar_id = 3;
-      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS, VAR_BC_SS_CONDITION, soe_auxvar_id, mflx_dew_col_1d)
+      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS           , &
+                                             VAR_BC_SS_CONDITION , &
+                                             soe_auxvar_id       , &
+                                             mflx_dew_col_1d       &
+                                            )
 
       ! Set Drainage sink
       soe_auxvar_id = 4;
       mflx_drain_col_1d(:) = mflx_drain_col_1d(:) + mflx_drain_perched_col_1d(:)
-      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS, VAR_BC_SS_CONDITION, soe_auxvar_id, mflx_drain_col_1d)
+      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS           , &
+                                             VAR_BC_SS_CONDITION , &
+                                             soe_auxvar_id       , &
+                                             mflx_drain_col_1d     &
+                                            )
 
-      ! Set mass flux associated with disappearance of snow layer from last time step
+      ! Set mass flux associated with disappearance of snow layer
+      ! from last time step
       soe_auxvar_id = 5;
-      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS, VAR_BC_SS_CONDITION, soe_auxvar_id, mflx_snowlyr_col_1d)
+      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS           , &
+                                             VAR_BC_SS_CONDITION , &
+                                             soe_auxvar_id       , &
+                                             mflx_snowlyr_col_1d   &
+                                            )
 
       ! Set mass flux associated with sublimation of snow
       soe_auxvar_id = 6;
-      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS, VAR_BC_SS_CONDITION, soe_auxvar_id, mflx_sub_snow_col_1d)
+      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS            , &
+                                             VAR_BC_SS_CONDITION  , &
+                                             soe_auxvar_id        , &
+                                             mflx_sub_snow_col_1d   &
+                                            )
 
       ! Get total mass
       soe_auxvar_id = 1;
-      call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL, VAR_MASS, soe_auxvar_id, vsfm_mass_col_1d)
+      call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL , &
+                                            VAR_MASS        , &
+                                            soe_auxvar_id   , &
+                                            vsfm_mass_col_1d  &
+                                           )
 
       frac_ice(:,:) = 0.d0
       vsfm_fliq_col_1d(:) = 1.d0
@@ -1095,7 +1125,11 @@ contains
 
       ! Set frac_liq
       soe_auxvar_id = 1;
-      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_INTERNAL, VAR_FRAC_LIQ_SAT, soe_auxvar_id, vsfm_fliq_col_1d)
+      call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_INTERNAL  , &
+                                             VAR_FRAC_LIQ_SAT , &
+                                             soe_auxvar_id    , &
+                                             vsfm_fliq_col_1d   &
+                                            )
 
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
@@ -1109,7 +1143,7 @@ contains
             total_mass_flux_drain        = total_mass_flux_drain        + mflx_drain_col_1d(idx)
             total_mass_flux_drain_col(c) = total_mass_flux_drain_col(c) + mflx_drain_col_1d(idx)
 
-            mass_beg                = mass_beg + vsfm_mass_col_1d(idx)
+            mass_beg                = mass_beg        + vsfm_mass_col_1d(idx)
             mass_beg_col(c)         = mass_beg_col(c) + vsfm_mass_col_1d(idx)
             vsfm_mass_prev_col(c,j) = vsfm_mass_col_1d(idx)
          end do
@@ -1127,18 +1161,34 @@ contains
          total_mass_flux_sub        = total_mass_flux_sub        + mflx_sub_snow_col_1d(idx)
          total_mass_flux_sub_col(c) = total_mass_flux_sub_col(c) + mflx_sub_snow_col_1d(idx)
 
-         total_mass_flux_col(c) = total_mass_flux_et_col(c) + total_mass_flux_infl_col(c) + total_mass_flux_dew_col(c) + total_mass_flux_drain_col(c) + &
+         total_mass_flux_col(c) = total_mass_flux_et_col(c)      + &
+                                  total_mass_flux_infl_col(c)    + &
+                                  total_mass_flux_dew_col(c)     + &
+                                  total_mass_flux_drain_col(c)   + &
                                   total_mass_flux_snowlyr_col(c) + &
                                   total_mass_flux_sub_col(c)
       end do
-      total_mass_flux        = total_mass_flux_et        + total_mass_flux_infl        + total_mass_flux_dew        + total_mass_flux_drain + &
-                               total_mass_flux_snowlyr + &
+      total_mass_flux        = total_mass_flux_et        + &
+                               total_mass_flux_infl      + &
+                               total_mass_flux_dew       + &
+                               total_mass_flux_drain     + &
+                               total_mass_flux_snowlyr   + &
                                total_mass_flux_sub
 
+      ! Preform Pre-StepDT operations
       call vsfm_mpp%sysofeqns%PreStepDT()
 
-      call SNESGetTolerances(vsfm_mpp%sysofeqns%snes, atol_default, rtol_default, stol_default, &
-                             max_it_default, max_f_default, ierr); CHKERRQ(ierr)
+      ! Get default SNES settings
+      call SNESGetTolerances(vsfm_mpp%sysofeqns%snes , &
+                             atol_default            , &
+                             rtol_default            , &
+                             stol_default            , &
+                             max_it_default          , &
+                             max_f_default           , &
+                             ierr                      &
+                            )
+      CHKERRQ(ierr)
+
       stol = stol_default
 
       !
@@ -1154,8 +1204,15 @@ contains
 
          iter_count = iter_count + 1
 
-         call SNESSetTolerances(vsfm_mpp%sysofeqns%snes, atol_default, rtol_default, stol, &
-                                max_it_default, max_f_default, ierr); CHKERRQ(ierr)
+         call SNESSetTolerances(vsfm_mpp%sysofeqns%snes , &
+                                atol_default            , &
+                                rtol_default            , &
+                                stol                    , &
+                                max_it_default          , &
+                                max_f_default           , &
+                                ierr                      &
+                               );
+         CHKERRQ(ierr)
 
          call vsfm_mpp%sysofeqns%StepDT(dtime, converged, ierr); CHKERRQ(ierr)
 
@@ -1177,10 +1234,11 @@ contains
                vsfm_fliq_col_1d(:) = 1.d0
                soe_auxvar_id = 1;
 
-               call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_INTERNAL,   &
-                                                      VAR_FRAC_LIQ_SAT,  &
-                                                      soe_auxvar_id,     &
-                                                      vsfm_fliq_col_1d )
+               call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_INTERNAL  , &
+                                                      VAR_FRAC_LIQ_SAT , &
+                                                      soe_auxvar_id    , &
+                                                      vsfm_fliq_col_1d   &
+                                                     )
             end if
          else
 
@@ -1189,20 +1247,36 @@ contains
 
             ! Get Liquid saturation
             soe_auxvar_id = 1;
-            call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL, VAR_LIQ_SAT, soe_auxvar_id, vsfm_sat_col_1d)
+            call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL , &
+                                                  VAR_LIQ_SAT     , &
+                                                  soe_auxvar_id   , &
+                                                  vsfm_sat_col_1d   &
+                                                 )
 
             ! Get total mass
             soe_auxvar_id = 1;
-            call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL, VAR_MASS, soe_auxvar_id, vsfm_mass_col_1d)
+            call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL  , &
+                                                  VAR_MASS         , &
+                                                  soe_auxvar_id    , &
+                                                  vsfm_mass_col_1d   &
+                                                 )
 
             ! Get liquid soil matrix potential
             soe_auxvar_id = 1;
-            call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL, VAR_SOIL_MATRIX_POT, soe_auxvar_id, vsfm_smpl_col_1d)
+            call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL     , &
+                                                  VAR_SOIL_MATRIX_POT , &
+                                                  soe_auxvar_id       , &
+                                                  vsfm_smpl_col_1d      &
+                                                 )
 
-            ! Get soil liquid pressure. This is the prognostic state of VSFM and is required
-            ! for restart netcdf.
+            ! Get soil liquid pressure. This is the prognostic state of VSFM
+            ! and needs to be saved in the restart file.
             soe_auxvar_id = 1;
-            call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL, VAR_PRESSURE, soe_auxvar_id, vsfm_soilp_col_1d)
+            call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL   , &
+                                                  VAR_PRESSURE      , &
+                                                  soe_auxvar_id     , &
+                                                  vsfm_soilp_col_1d   &
+                                                 )
 
             ! Put the data in CLM's data structure
             mass_end        = 0.d0
@@ -1219,16 +1293,17 @@ contains
                   h2osoi_liq(c,j) = (1.d0 - frac_ice(c,j))*vsfm_mass_col_1d(idx)
                   h2osoi_ice(c,j) = frac_ice(c,j)         *vsfm_mass_col_1d(idx)
 
-                  mass_end = mass_end + vsfm_mass_col_1d(idx)
+                  mass_end        = mass_end        + vsfm_mass_col_1d(idx)
                   mass_end_col(c) = mass_end_col(c) + vsfm_mass_col_1d(idx)
 
-                  vsfm_dmass_col(c) = vsfm_dmass_col(c) + (vsfm_mass_col_1d(idx)-vsfm_mass_prev_col(c,j))
+                  vsfm_dmass_col(c) = vsfm_dmass_col(c) + &
+                                      (vsfm_mass_col_1d(idx)-vsfm_mass_prev_col(c,j))
 
                   smp_l(c,j)        = vsfm_smpl_col_1d(idx)*1.000_r8      ! [m] --> [mm]
 
                   if (jwt == -1) then
-                  ! Find the first soil that is unsaturated
-                  if (smp_l(c,j) < 0._r8) jwt = j
+                     ! Find the first soil that is unsaturated
+                     if (smp_l(c,j) < 0._r8) jwt = j
                   end if
 
                end do
@@ -1273,7 +1348,7 @@ contains
                abs_mass_error_col  = 0._r8
                mass_end_col(:)     = 0._r8
 
-               ! Copy
+               ! Perform Pre-StepDT operations
                call vsfm_mpp%sysofeqns%PreStepDT()
 
             else

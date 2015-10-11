@@ -1065,7 +1065,7 @@ contains
     use shr_infnan_mod         , only : shr_infnan_isnan
     use abortutils             , only : endrun
 #ifdef USE_PETSC_LIB
-    use MultiPhysicsProbVSFM   , only : vsfm_mpp
+    use MultiPhysicsProbVSFM     , only : vsfm_mpp
     use MultiPhysicsProbConstants, only : VAR_MASS
     use MultiPhysicsProbConstants, only : VAR_SOIL_MATRIX_POT
     use MultiPhysicsProbConstants, only : VAR_PRESSURE
@@ -1095,30 +1095,30 @@ contains
     real(r8), pointer     :: vsfm_smpl_col_1d(:)   ! 1D soil matrix potential liquid from VSFM [m]
     real(r8), pointer     :: mflx_snowlyr_col_1d(:)! mass flux to top soil layer due to disappearance of snow (kg H2O /s)
     real(r8), pointer     :: mflx_snowlyr_col(:)   ! mass flux to top soil layer due to disappearance of snow (kg H2O /s)
-    real(r8), pointer     :: soilp_col(:,:)
-    real(r8), pointer     :: vsfm_soilp_col_1d(:)
-    logical               :: restart_vsfm
+    real(r8), pointer     :: soilp_col(:,:)        ! soil liquid pressure [Pa]
+    real(r8), pointer     :: vsfm_soilp_col_1d(:)  ! 1D soil liquid pressure for VSFM [Pa]
+    logical               :: restart_vsfm          ! does VSFM need to be restarted
 #ifdef USE_PETSC_LIB
     PetscInt              :: jwt                   ! index of first unsaturated soil layer
     PetscInt              :: idx                   ! 1D index for (c,j)
     PetscInt              :: soe_auxvar_id         ! Index of system-of-equation's (SoE's) auxvar
-    PetscErrorCode        :: ierr
+    PetscErrorCode        :: ierr                  ! get error code from PETSc
 #endif
     character(len=32)     :: subname = 'initialize3'
     !----------------------------------------------------------------------
 
-    zi                =>    col%zi                             ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
+    zi                   =>    col%zi                             ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
 
-    h2osoi_liq        =>    waterstate_vars%h2osoi_liq_col     ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)
-    h2osoi_ice        =>    waterstate_vars%h2osoi_ice_col     ! Output: [real(r8) (:,:) ]  ice water (kg/m2)
-    smp_l             =>    soilstate_vars%smp_l_col           ! Output: [real(r8) (:,:) ]  soil matrix potential [mm]
-    zwt               =>    soilhydrology_vars%zwt_col         ! Output: [real(r8) (:)   ]  water table depth (m)
-    vsfm_mass_col_1d  =>    waterstate_vars%vsfm_mass_col_1d   ! Output: [real(r8) (:)   ]  1D liquid mass per unit area from VSFM [kg H2O/m^2]
-    vsfm_smpl_col_1d  =>    waterstate_vars%vsfm_smpl_col_1d   ! Output: [real(r8) (:)   ]  1D soil matrix potential liquid from VSFM [m]
-    mflx_snowlyr_col_1d  => waterflux_vars%mflx_snowlyr_col_1d ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
-    mflx_snowlyr_col  =>     waterflux_vars%mflx_snowlyr_col      ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
-    vsfm_soilp_col_1d =>     waterstate_vars%vsfm_soilp_col_1d ! Output: [real(r8) (:)   ] 1D soil liquid pressure from VSFM [Pa]
-    soilp_col         =>     waterstate_vars%soilp_col         ! Input:  [real(r8) (:)   ] col soil liquid pressure
+    h2osoi_liq           =>    waterstate_vars%h2osoi_liq_col     ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)
+    h2osoi_ice           =>    waterstate_vars%h2osoi_ice_col     ! Output: [real(r8) (:,:) ]  ice water (kg/m2)
+    smp_l                =>    soilstate_vars%smp_l_col           ! Output: [real(r8) (:,:) ]  soil matrix potential [mm]
+    zwt                  =>    soilhydrology_vars%zwt_col         ! Output: [real(r8) (:)   ]  water table depth (m)
+    vsfm_mass_col_1d     =>    waterstate_vars%vsfm_mass_col_1d   ! Output: [real(r8) (:)   ]  1D liquid mass per unit area from VSFM [kg H2O/m^2]
+    vsfm_smpl_col_1d     =>    waterstate_vars%vsfm_smpl_col_1d   ! Output: [real(r8) (:)   ]  1D soil matrix potential liquid from VSFM [m]
+    mflx_snowlyr_col_1d  =>    waterflux_vars%mflx_snowlyr_col_1d ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
+    mflx_snowlyr_col     =>    waterflux_vars%mflx_snowlyr_col    ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
+    vsfm_soilp_col_1d    =>    waterstate_vars%vsfm_soilp_col_1d  ! Output: [real(r8) (:)   ]  1D soil liquid pressure from VSFM [Pa]
+    soilp_col            =>    waterstate_vars%soilp_col          ! Input:  [real(r8) (:)   ]  col soil liquid pressure
 
     call t_startf('clm_init3')
 
