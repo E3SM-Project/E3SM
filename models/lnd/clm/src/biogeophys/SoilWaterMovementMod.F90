@@ -1299,7 +1299,7 @@ contains
                   vsfm_dmass_col(c) = vsfm_dmass_col(c) + &
                                       (vsfm_mass_col_1d(idx)-vsfm_mass_prev_col(c,j))
 
-                  smp_l(c,j)        = vsfm_smpl_col_1d(idx)*1.000_r8      ! [m] --> [mm]
+                  smp_l(c,j)        = vsfm_smpl_col_1d(idx)*1000.0_r8      ! [m] --> [mm]
 
                   if (jwt == -1) then
                      ! Find the first soil that is unsaturated
