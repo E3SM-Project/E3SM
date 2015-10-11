@@ -83,7 +83,7 @@ echo "MCT_LIBDIR   $MCT_LIBDIR"
 
   cp -p Makefile.conf Makefile.conf.old
 
-  $GMAKE -j $GMAKE_J ./Buildconf/cesm_build.plSRCDIR=$MCT_DIR   || exit 1
+  $GMAKE  SRCDIR=$MCT_DIR   || exit 1
 
 
   cp -p mct/lib*.a $LIBDIR/lib
