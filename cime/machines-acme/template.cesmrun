@@ -465,7 +465,7 @@ sub resubmitCheck()
                                                               ccsmroot => $config{'CIMEROOT'}, compiler => $config{'COMPILER'}, machine => $config{'MACH'},
                                                               machroot => $config{'CCSM_MACHDIR'}, mpilib => $config{'MPILIB'},
                                                               scriptsroot => $config{'SCRIPTSROOT'} );
-    $batchutils->doResubmit($ENV{'islastjob'}, $config{'RESUBMIT'}, $scriptname, "sta_ok");
+    $batchutils->doResubmit($islastjob, $resubmit, $scriptname, "sta_ok");
 }
 sub Debug
 {
