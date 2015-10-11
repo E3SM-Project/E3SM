@@ -33,6 +33,8 @@ module ocn_init_mode
 
    use ocn_init_routines
 
+   use ocn_equation_of_state
+
    use ocn_constants
 
    use ocn_init_spherical_utils
