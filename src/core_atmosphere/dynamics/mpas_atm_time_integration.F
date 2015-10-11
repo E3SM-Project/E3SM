@@ -3182,11 +3182,12 @@ MPAS_GPTL_STOP('dyn_tend')
                                                 + defc_a(iEdge,iCell)*v(k,EdgesOnCell(iEdge,iCell))
                end do
             end do
+!DIR$ IVDEP
             do k=1, nVertLevels
                ! here is the Smagorinsky formulation, 
                ! followed by imposition of an upper bound on the eddy viscosity
-               kdiff(k,iCell) = (c_s * config_len_disp)**2 * sqrt(d_diag(k)**2 + d_off_diag(k)**2)
-               kdiff(k,iCell) = min(kdiff(k,iCell),(0.01*config_len_disp**2) * invDt)
+               kdiff(k,iCell) = min((c_s * config_len_disp)**2 * sqrt(d_diag(k)**2 + d_off_diag(k)**2),(0.01*config_len_disp**2) * invDt)
+!               kdiff(k,iCell) = min(kdiff(k,iCell),(0.01*config_len_disp**2) * invDt)
             end do
          end do
 
@@ -3208,6 +3209,7 @@ MPAS_GPTL_STOP('dyn_tend')
          do i=1,nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i,iCell)
             edge_sign = edgesOnCell_sign(i,iCell) * dvEdge(iEdge)
+!DIR$ IVDEP
             do k=1,nVertLevels
                h_divergence(k,iCell) = h_divergence(k,iCell) + edge_sign * ru(k,iEdge)
             end do
@@ -3242,6 +3244,7 @@ MPAS_GPTL_STOP('dyn_tend')
         rgas_cprcv = rgas*cp/cv
         do iCell = cellStart,cellEnd
 
+!DIR$ IVDEP
           do k = 1,nVertLevels
             tend_rho(k,iCell) = -h_divergence(k,iCell)-rdzw(k)*(rw(k+1,iCell)-rw(k,iCell))
 !            pp_fwd(k,iCell) = pp(k,iCell) + smdiv*rgas_cprcv*theta_m(k,iCell)*exner(k,iCell)*tend_rho(k,iCell)
@@ -3277,6 +3280,7 @@ MPAS_GPTL_STOP('dyn_tend')
 
       if(rk_step == 1) then
 !  first push to tend_u_euler
+!DIR$ IVDEP
          do k=1,nVertLevels
             tend_u_euler(k,iEdge) =  - cqu(k,iEdge)*((pp_fwd(k,cell2)-pp_fwd(k,cell1)) * invDcEdge(iEdge)   &
                                         - zxu(k,iEdge)*(dpdz(k,cell1)+dpdz(k,cell2)) ) / (.5*(zz(k,cell2)+zz(k,cell1)))
@@ -3297,6 +3301,7 @@ MPAS_GPTL_STOP('dyn_tend')
 
          wduz(nVertLevels+1) = 0.
 
+!DIR$ IVDEP
          do k=1,nVertLevels
 !            tend_u(k,iEdge) = tend_u(k,iEdge) - rdzw(k)*(wduz(k+1)-wduz(k)) 
             tend_u(k,iEdge) = - rdzw(k)*(wduz(k+1)-wduz(k)) !  first use of tend_u
@@ -3316,6 +3321,7 @@ MPAS_GPTL_STOP('dyn_tend')
             end do
          end do
 
+!DIR$ IVDEP
          do k=1,nVertLevels
 
             ! horizontal ke gradient and vorticity terms in the vector invariant formulation
@@ -3383,6 +3389,7 @@ MPAS_GPTL_STOP('dyn_tend')
             r_dc = invDcEdge(iEdge)
             r_dv = min(invDvEdge(iEdge), 4*invDcEdge(iEdge))
 
+!DIR$ IVDEP
             do k=1,nVertLevels
 
                !
@@ -3451,6 +3458,7 @@ MPAS_GPTL_STOP('dyn_tend')
             r_dc = u_mix_scale * config_del4u_div_factor * invDcEdge(iEdge)
             r_dv = u_mix_scale * min(invDvEdge(iEdge), 4*invDcEdge(iEdge))
 
+!DIR$ IVDEP
             do k=1,nVertLevels
 
                !
@@ -3484,6 +3492,7 @@ MPAS_GPTL_STOP('dyn_tend')
 !  add in mixing for u
 
       do iEdge=edgeSolveStart,edgeSolveEnd
+!DIR$ IVDEP
          do k=1,nVertLevels
             tend_u(k,iEdge) = tend_u(k,iEdge) + tend_u_euler(k,iEdge)
          end do
@@ -3519,6 +3528,7 @@ MPAS_GPTL_STOP('dyn_tend')
                end do
             end do
 
+!DIR$ IVDEP
             do k=2,nVertLevels
                tend_w(k,iCell) = tend_w(k,iCell) - edgesOnCell_sign(i,iCell) * ru_edge_w(k)*flux_arr(k)
             end do
@@ -3528,6 +3538,7 @@ MPAS_GPTL_STOP('dyn_tend')
 
 #ifdef CURVATURE
       do iCell = cellSolveStart, cellSolveEnd
+!DIR$ IVDEP
          do k=2,nVertLevels
             tend_w(k,iCell) = tend_w(k,iCell) + (rho_zz(k,iCell)*fzm(k)+rho_zz(k-1,iCell)*fzp(k))*          &
                                       ( (fzm(k)*ur_cell(k,iCell)+fzp(k)*ur_cell(k-1,iCell))**2.             &
@@ -3588,6 +3599,7 @@ MPAS_GPTL_STOP('dyn_tend')
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
 
+!DIR$ IVDEP
               do k=2,nVertLevels
 
 !                  delsq_w(k,iCell) = delsq_w(k,iCell) + 0.5*edge_sign*(rho_edge(k,iEdge)+rho_edge(k-1,iEdge))*(w(k,cell2) - w(k,cell1))
@@ -3657,6 +3669,7 @@ MPAS_GPTL_STOP('dyn_tend')
 
       !  Note: next we are also dividing through by the cell area after the horizontal flux divergence
 
+!DIR$ IVDEP
          do k=2,nVertLevels
             tend_w(k,iCell) = tend_w(k,iCell) * invAreaCell(iCell) -rdzu(k)*(wdwz(k+1)-wdwz(k))
          end do
@@ -3665,6 +3678,7 @@ MPAS_GPTL_STOP('dyn_tend')
 !  vertical pressure gradient held at time t.  We will pull buoyance term over later
 
          if(rk_step == 1) then
+!DIR$ IVDEP
             do k=2,nVertLevels
               tend_w_euler(k,iCell) = tend_w_euler(k,iCell)- cqw(k,iCell)*rdzu(k)*(pp(k,iCell)-pp(k-1,iCell)) &
                                   - cqw(k,iCell)*(        &
@@ -3681,6 +3695,7 @@ MPAS_GPTL_STOP('dyn_tend')
 ! add in mixing terms for w
 
       do iCell = cellSolveStart,cellSolveEnd
+!DIR$ IVDEP
          do k=2,nVertLevels
             tend_w(k,iCell) = tend_w(k,iCell) + tend_w_euler(k,iCell)
          end do
@@ -3710,6 +3725,7 @@ MPAS_GPTL_STOP('dyn_tend')
                end do
             end do
 
+!DIR$ IVDEP
             do k=1,nVertLevels
                tend_theta(k,iCell) = tend_theta(k,iCell) - edgesOnCell_sign(i,iCell) * ru(k,iEdge) * flux_arr(k)
             end do
@@ -3725,9 +3741,10 @@ MPAS_GPTL_STOP('dyn_tend')
             iEdge = edgesOnCell(i,iCell)
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
+!DIR$ IVDEP
             do k=1,nVertLevels
-               flux = edgesOnCell_sign(i,iCell)*dvEdge(iEdge)*(ru_save(k,iEdge)-ru(k,iEdge))
-               flux = flux*0.5*(theta_m_save(k,cell2)+theta_m_save(k,cell1))
+               flux = edgesOnCell_sign(i,iCell)*dvEdge(iEdge)*(ru_save(k,iEdge)-ru(k,iEdge))*0.5*(theta_m_save(k,cell2)+theta_m_save(k,cell1))
+!               flux = flux*0.5*(theta_m_save(k,cell2)+theta_m_save(k,cell1))
 !               tend_theta(k,iCell) = tend_theta(k,iCell)-flux/areaCell(iCell)
                tend_theta(k,iCell) = tend_theta(k,iCell)-flux  ! division by areaCell picked up down below
             end do
@@ -3771,6 +3788,7 @@ MPAS_GPTL_STOP('dyn_tend')
                pr_scale = prandtl_inv * meshScalingDel2(iEdge)
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
+!DIR$ IVDEP
                do k=1,nVertLevels
 !!                  delsq_theta(k,iCell) = delsq_theta(k,iCell) + edge_sign * rho_edge(k,iEdge) * (theta_m(k,cell2) - theta_m(k,cell1))
 
@@ -3839,14 +3857,16 @@ MPAS_GPTL_STOP('dyn_tend')
 
          wdtz(nVertLevels+1) = 0.0
 
+!DIR$ IVDEP
          do k=1,nVertLevels
-            tend_theta(k,iCell) = tend_theta(k,iCell)*invAreaCell(iCell) -rdzw(k)*(wdtz(k+1)-wdtz(k))
-            tend_theta(k,iCell) = tend_theta(k,iCell) + rho_zz(k,iCell)*rt_diabatic_tend(k,iCell)
+            tend_theta(k,iCell) = tend_theta(k,iCell)*invAreaCell(iCell) -rdzw(k)*(wdtz(k+1)-wdtz(k)) + rho_zz(k,iCell)*rt_diabatic_tend(k,iCell)
+!            tend_theta(k,iCell) = tend_theta(k,iCell) + rho_zz(k,iCell)*rt_diabatic_tend(k,iCell)
          end do
       end do
 
 
       do iCell = cellSolveStart,cellSolveEnd
+!DIR$ IVDEP
          do k=1,nVertLevels
             tend_theta(k,iCell) = tend_theta(k,iCell) + tend_theta_euler(k,iCell)
          end do
