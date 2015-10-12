@@ -32,11 +32,12 @@ jobid=`qsub -l nodes=1:ppn=4 \
 	runctest.sh`
 
 # Wait for the job to complete before exiting
-while true; do
-	status=`qstat $jobid`
-	if [ "$status" == "" ]; then
-		break
-	else
-		sleep 10
-	fi
-done
+#while true; do
+#	status=`qstat $jobid`
+#	echo $status
+#	if [ "$status" == "" ]; then
+#		break
+#	else
+#		sleep 10
+#	fi
+#done
