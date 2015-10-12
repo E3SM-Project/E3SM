@@ -23,7 +23,7 @@ fi
 cd "$PIO_DASHBOARD_ROOT"
 
 if [ ! -d src ]; then
-  git clone https://github.com/PARALLELIO/ParallelIO src
+  git clone https://github.com/Katetc/ParallelIO src
 fi
 
 cd src
