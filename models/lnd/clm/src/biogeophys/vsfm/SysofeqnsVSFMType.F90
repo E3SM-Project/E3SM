@@ -53,6 +53,7 @@ module SystemOfEquationsVSFMType
      procedure, public :: PostSolve                => VSFMSOEPostSolve
      procedure, public :: PostStepDT               => VSFMSPostStepDT
      procedure, public :: PreStepDT                => VSFMSPreStepDT
+     procedure, public :: GetConditionNames        => VSFMSGetConditionNames
   end type sysofeqns_vsfm_type
 
   public :: VSFMSOESetAuxVars
@@ -187,7 +188,7 @@ contains
 
     ! Set BCs/SSs for each governing equation
     ss               => ConditionNew()
-    ss%name          = 'Infiltration'
+    ss%name          = 'Infiltration_Flux'
     ss%units         = 'kg/s'
     ss%itype         = COND_MASS_RATE
     ss%region_itype  = SOIL_TOP_CELLS
@@ -202,7 +203,7 @@ contains
     nullify(ss)
 
     ss => ConditionNew()
-    ss%name          = 'Evapotranspiration'
+    ss%name          = 'Evapotranspiration_Flux'
     ss%units         = 'kg/s'
     ss%itype         = COND_MASS_RATE
     ss%region_itype  = SOIL_CELLS
@@ -217,7 +218,7 @@ contains
     nullify(ss)
 
     ss               => ConditionNew()
-    ss%name          = 'Liquid + Ice Dew'
+    ss%name          = 'Dew_Flux'
     ss%units         = 'kg/s'
     ss%itype         = COND_MASS_RATE
     ss%region_itype  = SOIL_TOP_CELLS
@@ -232,7 +233,7 @@ contains
     nullify(ss)
 
     ss               => ConditionNew()
-    ss%name          = 'Drainage from groundwater and perched water table'
+    ss%name          = 'Drainage_Flux'
     ss%units         = 'kg/s'
     ss%itype         = COND_MASS_RATE
     ss%region_itype  = SOIL_CELLS
@@ -247,7 +248,7 @@ contains
     nullify(ss)
 
     ss               => ConditionNew()
-    ss%name          = 'Flux associated with disappearance of snow layer'
+    ss%name          = 'Snow_Disappearance_Flux'
     ss%units         = 'kg/s'
     ss%itype         = COND_MASS_RATE
     ss%region_itype  = SOIL_TOP_CELLS
@@ -262,7 +263,7 @@ contains
     nullify(ss)
 
     ss               => ConditionNew()
-    ss%name          = 'Sublimation flux'
+    ss%name          = 'Sublimation_Flux'
     ss%units         = 'kg/s'
     ss%itype         = COND_MASS_RATE
     ss%region_itype  = SOIL_TOP_CELLS
@@ -1032,6 +1033,68 @@ contains
 
   end subroutine VSFMSPostStepDT
 
+  !------------------------------------------------------------------------
+  subroutine VSFMSGetConditionNames(this, cond_type, cond_type_to_exclude, &
+                num_conds, cond_names)
+    !
+    ! !DESCRIPTION:
+    ! Returns the total number and names of conditions (eg. boundary condition
+    ! or source-sink) present
+    !
+    use GoverningEquationBaseType        , only : goveqn_base_type
+    use GoveqnRichardsODEPressureType    , only : goveqn_richards_ode_pressure_type
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(sysofeqns_vsfm_type)         :: this
+    PetscInt, intent(in)               :: cond_type
+    PetscInt, intent(in)               :: cond_type_to_exclude
+    character (len=256), pointer       :: cond_names(:)
+    PetscInt                           :: num_conds
+    !
+    class(goveqn_base_type),pointer    :: cur_goveq
+    PetscInt                           :: nn
+    PetscErrorCode                     :: ierr
+    PetscInt                           :: num_conds_tmp
+    character (len=256), pointer       :: cond_names_tmp(:)
+
+    num_conds = 0
+    cur_goveq => this%goveqns
+    do
+       if (.not.associated(cur_goveq)) exit
+       select type(cur_goveq)
+       class is (goveqn_richards_ode_pressure_type)
+          call cur_goveq%NumConditions(cond_type, cond_type_to_exclude, num_conds_tmp)
+       class default
+          write(iulog,*) 'VSFMSGetConditionNames: Supported for only goveqn_richards_ode_pressure_type'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       end select
+       num_conds = num_conds + num_conds_tmp
+       cur_goveq => cur_goveq%next
+    enddo
+
+    allocate(cond_names(num_conds))
+
+    num_conds = 0
+    cur_goveq => this%goveqns
+    do
+       if (.not.associated(cur_goveq)) exit
+       select type(cur_goveq)
+       class is (goveqn_richards_ode_pressure_type)
+         call cur_goveq%GetConditionNames(cond_type, cond_type_to_exclude, num_conds_tmp, cond_names_tmp)
+         if (num_conds_tmp > 0) then
+            do nn = 1, num_conds_tmp
+               num_conds = num_conds + 1
+               cond_names(num_conds) = cond_names_tmp(nn)
+            enddo
+            deallocate(cond_names_tmp)
+         endif
+       end select
+       cur_goveq => cur_goveq%next
+    enddo
+
+  end subroutine VSFMSGetConditionNames
   !------------------------------------------------------------------------
 
 end module SystemOfEquationsVSFMType

@@ -1064,6 +1064,7 @@ contains
     use clm_varctl             , only : finidat
     use shr_infnan_mod         , only : shr_infnan_isnan
     use abortutils             , only : endrun
+    use SoilWaterMovementMod   , only : init_vsfm_condition_ids
 #ifdef USE_PETSC_LIB
     use MultiPhysicsProbVSFM     , only : vsfm_mpp
     use MultiPhysicsProbConstants, only : VAR_MASS
@@ -1151,6 +1152,10 @@ contains
                         soilstate_vars,              &
                         waterstate_vars,             &
                         soilhydrology_vars)
+
+    ! Determing the source-sinks IDs of VSFM to map forcing data from
+    ! CLM to VSFM.
+    call init_vsfm_condition_ids()
 
     restart_vsfm = .false.
 

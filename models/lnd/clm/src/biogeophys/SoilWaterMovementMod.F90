@@ -12,11 +12,20 @@ module SoilWaterMovementMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: SoilWater            ! Calculate soil hydrology   
   public :: init_soilwater_movement
+  public :: init_vsfm_condition_ids
   !
   ! !PRIVATE DATA MEMBERS:
   integer, parameter :: zengdecker_2009 = 0
   integer, parameter :: vsfm = 1
   integer :: soilroot_water_method     !0: use the Zeng and deck method, this will be readin from namelist in the future
+
+  ! IDs to indentify the conditions for VSFM
+  integer :: vsfm_cond_id_for_infil
+  integer :: vsfm_cond_id_for_et
+  integer :: vsfm_cond_id_for_dew
+  integer :: vsfm_cond_id_for_drainage
+  integer :: vsfm_cond_id_for_snow
+  integer :: vsfm_cond_id_for_sublimation
   !-----------------------------------------------------------------------
 
 contains
@@ -35,6 +44,14 @@ contains
     !------------------------------------------------------------------------------
 
     soilroot_water_method = zengdecker_2009
+
+    ! Initialize condition id for VSFM
+    vsfm_cond_id_for_infil         = -1
+    vsfm_cond_id_for_et            = -1
+    vsfm_cond_id_for_dew           = -1
+    vsfm_cond_id_for_drainage      = -1
+    vsfm_cond_id_for_snow          = -1
+    vsfm_cond_id_for_sublimation   = -1
 
     ! GB-FIX-ME: The call to control_spmd() [in subroutine control_init()] before
     !            call to init_hydrology() would avoid the mpi broadcast
@@ -713,6 +730,97 @@ contains
    end subroutine soilwater_zengdecker2009
 
   !-----------------------------------------------------------------------
+  subroutine init_vsfm_condition_ids()
+    !
+    !DESCRIPTION
+    !  Determines the IDs of various source-sink conditions in VSFM
+    !
+    use clm_varctl, only : use_vsfm
+#ifdef USE_PETSC_LIB
+    use MultiPhysicsProbVSFM             , only : vsfm_mpp
+    use MultiPhysicsProbConstants        , only : COND_SS
+    use MultiPhysicsProbConstants        , only : COND_NULL
+    use clm_varctl                       , only : iulog
+    use abortutils                       , only : endrun
+    use shr_log_mod                      , only : errMsg => shr_log_errMsg
+#endif
+    ! !ARGUMENTS:
+    implicit none
+    integer :: ier ! error status
+    character (len=256), pointer :: cond_names(:)
+    integer                      :: num_conds
+    integer                      :: nn
+    integer                      :: kk
+    character (len=256)          :: cond_name
+    !------------------------------------------------------------------------------
+
+#ifdef USE_PETSC_LIB
+
+    ! Get the number of
+    call vsfm_mpp%sysofeqns%GetConditionNames(COND_SS, COND_NULL, num_conds, cond_names)
+
+    if (num_conds /= 6) then
+      write(iulog,*)'In init_vsfm_condition_ids: Source-sink conditions /= 6'
+      call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    do nn = 1, num_conds
+       select case(trim(cond_names(nn)))
+       case ("Infiltration_Flux")
+         vsfm_cond_id_for_infil = nn
+       case ("Evapotranspiration_Flux")
+         vsfm_cond_id_for_et = nn
+       case ("Dew_Flux")
+         vsfm_cond_id_for_dew = nn
+       case ("Drainage_Flux")
+         vsfm_cond_id_for_drainage = nn
+       case ("Snow_Disappearance_Flux")
+         vsfm_cond_id_for_snow = nn
+       case ("Sublimation_Flux")
+         vsfm_cond_id_for_sublimation = nn
+       case default
+         write(iulog,*)'In init_vsfm_condition_ids: Unknown flux.'
+         call endrun(msg=errMsg(__FILE__, __LINE__))
+       end select
+    enddo
+
+    if (vsfm_cond_id_for_infil == -1) then
+      write(iulog,*)'In init_vsfm_condition_ids: vsfm_cond_id_for_infil not defined.'
+      call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    if (vsfm_cond_id_for_et == -1) then
+      write(iulog,*)'In init_vsfm_condition_ids: vsfm_cond_id_for_et not defined.'
+      call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    if (vsfm_cond_id_for_dew == -1) then
+      write(iulog,*)'In init_vsfm_condition_ids: vsfm_cond_id_for_dew not defined.'
+      call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    if (vsfm_cond_id_for_drainage == -1) then
+      write(iulog,*)'In init_vsfm_condition_ids: vsfm_cond_id_for_drainage not defined.'
+      call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    if (vsfm_cond_id_for_snow == -1) then
+      write(iulog,*)'In init_vsfm_condition_ids: vsfm_cond_id_for_snow not defined.'
+      call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    if (vsfm_cond_id_for_sublimation == -1) then
+      write(iulog,*)'In init_vsfm_condition_ids: vsfm_cond_id_for_sublimation not defined.'
+      call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    deallocate(cond_names)
+
+#endif
+
+  end subroutine init_vsfm_condition_ids
+
+  !-----------------------------------------------------------------------
   subroutine soilwater_vsfm(bounds, num_hydrologyc, filter_hydrologyc, &
        num_urbanc, filter_urbanc, soilhydrology_vars, soilstate_vars, &
        waterflux_vars, waterstate_vars, temperature_vars)
@@ -1053,7 +1161,7 @@ contains
                                             )
 
       ! Set Infiltration
-      soe_auxvar_id = 1;
+      soe_auxvar_id = vsfm_cond_id_for_infil;
       call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS           , &
                                              VAR_BC_SS_CONDITION , &
                                              soe_auxvar_id       , &
@@ -1061,7 +1169,7 @@ contains
                                             )
 
       ! Set ET
-      soe_auxvar_id = 2;
+      soe_auxvar_id = vsfm_cond_id_for_et;
       call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS           , &
                                              VAR_BC_SS_CONDITION , &
                                              soe_auxvar_id       , &
@@ -1069,7 +1177,7 @@ contains
                                             )
 
       ! Set Dew
-      soe_auxvar_id = 3;
+      soe_auxvar_id = vsfm_cond_id_for_dew;
       call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS           , &
                                              VAR_BC_SS_CONDITION , &
                                              soe_auxvar_id       , &
@@ -1077,7 +1185,7 @@ contains
                                             )
 
       ! Set Drainage sink
-      soe_auxvar_id = 4;
+      soe_auxvar_id = vsfm_cond_id_for_drainage;
       mflx_drain_col_1d(:) = mflx_drain_col_1d(:) + mflx_drain_perched_col_1d(:)
       call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS           , &
                                              VAR_BC_SS_CONDITION , &
@@ -1087,7 +1195,7 @@ contains
 
       ! Set mass flux associated with disappearance of snow layer
       ! from last time step
-      soe_auxvar_id = 5;
+      soe_auxvar_id = vsfm_cond_id_for_snow;
       call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS           , &
                                              VAR_BC_SS_CONDITION , &
                                              soe_auxvar_id       , &
@@ -1095,7 +1203,7 @@ contains
                                             )
 
       ! Set mass flux associated with sublimation of snow
-      soe_auxvar_id = 6;
+      soe_auxvar_id = vsfm_cond_id_for_sublimation;
       call vsfm_mpp%sysofeqns%SetDataFromCLM(AUXVAR_SS            , &
                                              VAR_BC_SS_CONDITION  , &
                                              soe_auxvar_id        , &

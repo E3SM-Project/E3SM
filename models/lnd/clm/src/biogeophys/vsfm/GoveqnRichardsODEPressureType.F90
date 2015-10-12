@@ -53,6 +53,7 @@ module GoveqnRichardsODEPressureType
      procedure, public :: PreSolve                  => RichardsODEPressurePreSolve
      procedure, public :: NumConditions             => RichardsODEPressureNumConditions
      procedure, public :: NumCellsInConditions      => RichardsODEPressureNumCellsInConditions
+     procedure, public :: GetConditionNames         => RichardsODEPressureGetConditionNames
   end type
 
   !------------------------------------------------------------------------
@@ -305,6 +306,69 @@ contains
     enddo
 
   end subroutine RichardsODEPressureNumCellsInConditions
+
+  !------------------------------------------------------------------------
+  subroutine RichardsODEPressureGetConditionNames(this, cond_type, &
+                cond_type_to_exclude, num_conds, cond_names)
+    !
+    ! !DESCRIPTION:
+    ! Returns the total number and names of conditions (eg. boundary condition
+    ! or source-sink) present.
+    !
+    ! !USES:
+    use ConditionType                    , only : condition_type
+    use MultiPhysicsProbConstants        , only : COND_BC
+    use MultiPhysicsProbConstants        , only : COND_SS
+    use MultiPhysicsProbConstants        , only : COND_NULL
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(goveqn_richards_ode_pressure_type)    :: this
+    PetscInt, intent(in)                        :: cond_type
+    PetscInt, intent(in)                        :: cond_type_to_exclude
+    PetscInt, intent(out)                       :: num_conds
+    character (len=256), pointer                :: cond_names(:)
+    !
+    type(condition_type),pointer                :: cur_cond
+    PetscInt                                    :: ncells_cond
+    PetscInt                                    :: icond
+    PetscInt                                    :: kk
+    character(len=256)                          :: string
+
+    ! Find number of BCs
+    call this%NumConditions(cond_type, COND_NULL, num_conds)
+
+    if (num_conds == 0) then
+       nullify(cond_names)
+       return
+    endif
+
+    allocate(cond_names(num_conds))
+
+    ! Choose the condition type
+    select case (cond_type)
+    case (COND_BC)
+       cur_cond => this%boundary_conditions%first
+    case (COND_SS)
+      cur_cond => this%source_sinks%first
+    case default
+       write(string,*) cond_type
+       write(iulog,*) 'Unknown cond_type = ' // trim(string)
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end select
+
+    num_conds = 0
+    do
+       if (.not.associated(cur_cond)) exit
+       if (cur_cond%itype /= cond_type_to_exclude) then
+          num_conds = num_conds + 1
+          cond_names(num_conds) = cur_cond%name
+       endif
+       cur_cond => cur_cond%next
+    enddo
+
+  end subroutine RichardsODEPressureGetConditionNames
 
   !------------------------------------------------------------------------
   subroutine RichardsODERes(this, X, F, ierr)
