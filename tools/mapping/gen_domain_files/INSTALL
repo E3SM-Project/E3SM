@@ -4,9 +4,13 @@ HOW TO BUILD
 
 Prior to building, you must make sure $CIMEROOT is set.
 
-$ cd src
-$ $CIMEROOT/machines/configure -mach [machine name]
-$ gmake
+(1) $ cd src
+(2) $ $CIMEROOT/tools/configure -mach [machine name]
+(3) Bash users:
+    $ . .env_mach_specific.sh
+    csh users:
+    $ source .env_mach_specific.csh
+(4) $ gmake
 
 Note: in the second step, replace [machine name] with the machine you are
 building on. Also, some machines (such as janus) have dedicated build nodes,
