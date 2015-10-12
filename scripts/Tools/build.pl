@@ -95,7 +95,7 @@ sub main {
 	$logger->logdie ("ERROR: must invoke case_setup script before calling build script ");
     }
 
-    $sysmod = "./Tools/check_lockedfiles";
+    $sysmod = "./Tools/check_lockedfiles -cimeroot $CIMEROOT";
     system($sysmod) == 0 or $logger->logdie ("$sysmod failed: $?");
 
     $BUILD_THREADED	= `./xmlquery  BUILD_THREADED	-value `;
