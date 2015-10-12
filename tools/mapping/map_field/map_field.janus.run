@@ -1,0 +1,17 @@
+#!/bin/bash
+#PBS -N map_field
+#PBS -l walltime=0:01:00
+#PBS -l nodes=1:ppn=1
+#PBS -q janus-debug
+#PBS -m ae
+#PBS -M mlevy@ucar.edu
+#PBS -j oe
+
+MAP_FILE=$CESM_DIR/inputdata/cpl/gridmaps/gx3v7/map_gx3v7_TO_ne16np4_aave.120406.nc
+INPUT_FILE=[user specify]
+OUTPUT_FILE=[user specify]
+VARNAME_IN=[user specify]
+VARNAME_OUT=${VARNAME_IN}
+
+cd $CIMEROOT/tools/mapping/gen_domain_files
+./map_field -m $MAP_FILE -if $INPUT_FILE -iv $VARNAME_IN -of $OUTPUT_FILE -ov $VARNAME_OUT

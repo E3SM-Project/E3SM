@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -N gen_domain
+#PBS -N runoff_map
 #PBS -l walltime=0:01:00
 #PBS -l nodes=1:ppn=1
 #PBS -q janus-debug
