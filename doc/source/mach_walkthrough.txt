@@ -191,7 +191,50 @@ Building PIO requires running the CMake configure and then make. In the PIO_buil
 
 <a name="BlueWat"></a>
 ### Blue Waters ###
-Instructions to come.
+<ol>
+<li>Directory setup
+
+Download a copy of the PIO source into a sub-directory of your working directory (refered to here as the PIO_source directory). Create another sub-directory for the build (refered to here as the PIO_build directory) and 'cd' into it. 
+
+<li>Modules
+
+Modules required for installation depend on your prefered compiler. Issue the commands below to set the module environment for building PIO on Hobart. 
+
++ Intel
+
+  %> module swap PrgEnv-cray PrgEnv-intel
+  %> module load torque
+  %> module load git
+  %> module load cmake
+  %> module load cray-hdf5-parallel/1.8.14
+  %> module load cray-netcdf-hdf5parallel/4.3.3.1
+  %> module load cray-parallel-netcdf/1.6.0
+
+<li>Environment Variables
+
+The appropriate compiler wrappers must be chosen for cmake, so the environment variables CC and FC must be set as:<br>
+    CC=cc<br>
+    FC=ftn<br>
+
+<li>Build
+
+Building PIO requires running the CMake configure and then make. In the PIO_build directory type<br>
+  %> cmake -DCMAKE_VERBOSE_MAKEFILE=TRUE \\<br>
+     -DPREFER_STATIC=TRUE \\<br>
+     -DNetCDF_PATH=${NETCDF_DIR} \\<br>
+     -DPnetCDF_PATH=${PARALLEL_NETCDF_DIR} \\<br>
+     -DHDF5_PATH=${HDF5_DIR} \\<br>
+     -DMPI_C_INCLUDE_PATH=${MPICH_DIR}/include \\<br>
+     -DMPI_Fortran_INCLUDE_PATH=${MPICH_DIR}/include \\<br>
+     -DMPI_C_LIBRARIES=${MPICH_DIR}/lib/libmpich.a \\<br>
+     -DMPI_Fortran_LIBRARIES=${MPICH_DIR}/lib/libmpichf90.a \\<br>
+     -DCMAKE_SYSTEM_NAME=Catamount \\<br>
+     ../PIO_source/<br>
+  %> make
+
+</ol>
+
+
 
 <a name="Hobart"></a>
 ### Hobart ###
@@ -240,5 +283,5 @@ ParallelIO does not require Parallel netcdf to run, so if you decide to use the 
 
 </ol>
 
-_Last updated: 09-11-2015_
+_Last updated: 10-05-2015_
 */

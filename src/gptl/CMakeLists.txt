@@ -44,9 +44,10 @@ endif ()
 target_compile_definitions (gptl
     PUBLIC ${CMAKE_Fortran_COMPILER_DIRECTIVE})
 
-if (CMAKE_Fortran_COMPILER_ID MATCHES "NAG")
-    target_compile_options (gptl
-        PUBLIC -mismatch_all)
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "NAG")
+   set ( CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -mismatch_all" )
+#    target_compile_options (gptl
+#        PRIVATE -mismatch_all)
 endif ()
 
 #==============================================================================

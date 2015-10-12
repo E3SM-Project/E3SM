@@ -123,6 +123,46 @@ endfunction ()
 
 
 #______________________________________________________________________________
+# - Initialize a list of paths from a list of includes and libraries
+#
+# Input:
+#   INCLUDE_DIRECTORIES
+#   LIBRARIES
+#
+# Ouput:
+#   ${PATHLIST}
+#
+function (initialize_paths PATHLIST)
+
+    # Parse the input arguments
+    set (multiValueArgs INCLUDE_DIRECTORIES LIBRARIES)
+    cmake_parse_arguments (INIT "" "" "${multiValueArgs}" ${ARGN})
+    
+    set (paths)
+    foreach (inc IN LISTS INIT_INCLUDE_DIRECTORIES)
+        list (APPEND paths ${inc})
+        get_filename_component (dname ${inc} NAME)
+        if (dname MATCHES "include")
+            get_filename_component (prefx ${inc} PATH)
+            list (APPEND paths ${prefx})
+        endif ()
+    endforeach ()
+    foreach (lib IN LISTS INIT_LIBRARIES)
+        get_filename_component (libdir ${lib} PATH)
+        list (APPEND paths ${libdir})
+        get_filename_component (dname ${libdir} PATH)
+        if (dname MATCHES "lib")
+            get_filename_component (prefx ${libdir} PATH)
+            list (APPEND paths ${prefx})
+        endif ()
+    endforeach ()
+    
+    set (${PATHLIST} ${paths} PARENT_SCOPE)
+
+endfunction ()
+
+
+#______________________________________________________________________________
 # - Basic find package macro for a specific component
 #
 # Assumes pre-defined variables:
@@ -272,20 +312,14 @@ function (find_package_component PKG)
             set (${PKGCOMP}_INCLUDE_DIRS ${${PKGCOMP}_INCLUDE_DIR})
             set (${PKGCOMP}_LIBRARIES ${${PKGCOMP}_LIBRARY})
         endif ()
-        
-        # Set cache variables
-        set (${PKGCOMP}_FOUND        ${${PKGCOMP}_FOUND}
-             CACHE BOOL "Whether the ${PKGCOMP} package was found" FORCE)
-        set (${PKGCOMP}_INCLUDE_DIR  ${${PKGCOMP}_INCLUDE_DIR}
-             CACHE PATH "Directory containing the ${PKGCOMP} include file" FORCE)
-        set (${PKGCOMP}_INCLUDE_DIRS ${${PKGCOMP}_INCLUDE_DIRS}
-             CACHE STRING "Include path for the ${PKGCOMP} package" FORCE)
-        set (${PKGCOMP}_LIBRARY      ${${PKGCOMP}_LIBRARY}
-             CACHE FILEPATH "Location of the ${PKGCOMP} library file" FORCE)
-        set (${PKGCOMP}_LIBRARIES    ${${PKGCOMP}_LIBRARIES}
-             CACHE STRING "Libraries for the ${PKGCOMP} package" FORCE)
-        set (${PKGCOMP}_IS_SHARED    ${${PKGCOMP}_IS_SHARED}
-             CACHE BOOL "Whether the ${PKGCOMP} library is dynamic" FORCE)
+
+        # Set variables in parent scope
+        set (${PKGCOMP}_FOUND        ${${PKGCOMP}_FOUND}         PARENT_SCOPE)
+        set (${PKGCOMP}_INCLUDE_DIR  ${${PKGCOMP}_INCLUDE_DIR}   PARENT_SCOPE)
+        set (${PKGCOMP}_INCLUDE_DIRS ${${PKGCOMP}_INCLUDE_DIRS}  PARENT_SCOPE)
+        set (${PKGCOMP}_LIBRARY      ${${PKGCOMP}_LIBRARY}       PARENT_SCOPE)
+        set (${PKGCOMP}_LIBRARIES    ${${PKGCOMP}_LIBRARIES}     PARENT_SCOPE)
+        set (${PKGCOMP}_IS_SHARED    ${${PKGCOMP}_IS_SHARED}     PARENT_SCOPE)
         
     endif ()
 

@@ -52,29 +52,26 @@ foreach (HDF5_comp IN LISTS HDF5_FIND_VALID_COMPONENTS)
     if (NOT HDF5_${HDF5_comp}_FOUND)
 
         # Manually add the MPI include and library dirs to search paths
-        if (HDF5_comp STREQUAL C OR HDF5_comp STREQUAL HL)
-            if (MPI_C_FOUND)
-                set (HDF5_${HDF5_comp}_PATHS ${MPI_C_INCLUDE_PATH})
-                foreach (lib IN LISTS MPI_C_LIBRARIES)
-                    get_filename_component (libdir ${lib} PATH)
-                    list (APPEND HDF5_${HDF5_comp}_PATHS ${libdir})
-                    unset (libdir)
-                endforeach ()
-            endif ()
-        else ()
-            if (MPI_Fortran_FOUND)
-                set (HDF5_${HDF5_comp}_PATHS ${MPI_Fortran_INCLUDE_PATH})
-                foreach (lib IN LISTS MPI_Fortran_LIBRARIES)
-                    get_filename_component (libdir ${lib} PATH)
-                    list (APPEND HDF5_${HDF5_comp}_PATHS ${libdir})
-                    unset (libdir)
-                endforeach ()
-            endif ()
+        if ( (HDF5_comp STREQUAL C OR HDF5_comp STREQUAL HL) AND MPI_C_FOUND)
+            set (mpiincs ${MPI_C_INCLUDE_PATH})
+            set (mpilibs ${MPI_C_LIBRARIES})
+            set (mpifound ${MPI_C_FOUND})
+        elseif (MPI_Fortran_FOUND)
+            set (mpiincs ${MPI_Fortran_INCLUDE_PATH})
+            set (mpilibs ${MPI_Fortran_LIBRARIES})
+            set (mpifound ${MPI_Fortran_FOUND})
         endif ()
 
         # Search for the package component
-        find_package_component(HDF5 COMPONENT ${HDF5_comp}
-                               PATHS ${HDF5_${HDF5_comp}_PATHS})
+        if (mpifound)
+            initialize_paths (HDF5_${HDF5_comp}_PATHS
+                              INCLUDE_DIRECTORIES ${mpiincs}
+                              LIBRARIES ${mpilibs})
+            find_package_component(HDF5 COMPONENT ${HDF5_comp}
+                                   PATHS ${HDF5_${HDF5_comp}_PATHS})
+        else ()
+            find_package_component(HDF5 COMPONENT ${HDF5_comp})
+        endif ()
 
         # Continue only if found
         if (HDF5_${HDF5_comp}_FOUND)

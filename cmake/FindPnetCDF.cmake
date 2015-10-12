@@ -41,18 +41,16 @@ foreach (PNCDFcomp IN LISTS PnetCDF_FIND_VALID_COMPONENTS)
     if (NOT PnetCDF_${PNCDFcomp}_FOUND)
 
         # Manually add the MPI include and library dirs to search paths
+        # and search for the package component
         if (MPI_${PNCDFcomp}_FOUND)
-            set (PnetCDF_${PNCDFcomp}_PATHS ${MPI_${PNCDFcomp}_INCLUDE_PATH})
-            foreach (lib IN LISTS MPI_${PNCDFcomp}_LIBRARIES)
-                get_filename_component (libdir ${lib} PATH)
-                list (APPEND PnetCDF_${PNCDFcomp}_PATHS ${libdir})
-                unset (libdir)
-            endforeach ()
+            initialize_paths (PnetCDF_${PNCDFcomp}_PATHS
+                              INCLUDE_DIRECTORIES ${MPI_${PNCDFcomp}_INCLUDE_PATH}
+                              LIBRARIES ${MPI_${PNCDFcomp}_LIBRARIES})
+            find_package_component(PnetCDF COMPONENT ${PNCDFcomp}
+                                   PATHS ${PnetCDF_${PNCDFcomp}_PATHS})
+        else ()
+            find_package_component(PnetCDF COMPONENT ${PNCDFcomp})
         endif ()
-        
-        # Search for the package component
-        find_package_component(PnetCDF COMPONENT ${PNCDFcomp}
-                               PATHS ${PnetCDF_${PNCDFcomp}_PATHS})
 
         # Continue only if component found
         if (PnetCDF_${PNCDFcomp}_FOUND)

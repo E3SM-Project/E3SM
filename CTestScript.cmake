@@ -59,8 +59,18 @@ elseif (HOSTNAME MATCHES "^edison" OR
         HOSTNAME MATCHES "^hopper" OR
         HOSTNAME MATCHES "^nid")
     set (HOSTNAME_ID "nersc")
+# Blue Waters at NCSA
+elseif (HOSTNAME MATCHES "^h2ologin" )
+    set (HOSTNAME_ID "ncsa")
+# CGD local linux cluster
+elseif (HOSTNAME MATCHES "^hobart")
+    set (HOSTNAME_ID "cgd")
 else ()
-    set (HOSTNAME_ID "unknown")
+     if (CMAKE_SYSTEM_NAME MATCHES "Catamount")
+        set (HOSTNAME_ID "ncsa")
+     else ()
+     	set (HOSTNAME_ID "unknown")
+     endif ()
 endif ()
 
 ## -- Get system info
@@ -122,6 +132,7 @@ set (ENV{PIO_DASHBOARD_BINARY_DIR}  ${CTEST_BINARY_DIRECTORY})
 ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 
 ## -- Start
+message (" -- Hostname_id = ${HOSTNAME_ID}")
 message (" -- Start dashboard - ${CTEST_BUILD_NAME} --")
 ctest_start("${CTEST_SCRIPT_ARG}")
 

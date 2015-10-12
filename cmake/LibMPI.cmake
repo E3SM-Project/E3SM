@@ -35,6 +35,11 @@ function (platform_name RETURN_VARIABLE)
         SITENAME MATCHES "^hopper")
         
         set (${RETURN_VARIABLE} "nersc" PARENT_SCOPE)
+
+    # NCSA Machine (Blue Waters)
+    elseif (SITENAME MATCHES "^h2ologin")
+
+        set (${RETURN_VARIABLE} "ncsa" PARENT_SCOPE)
         
     else ()
 

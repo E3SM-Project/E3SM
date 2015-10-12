@@ -22,18 +22,16 @@ define_package_component (LIBZ
 # SEARCH FOR PACKAGE
 if (NOT LIBZ_FOUND)
 
-    # Manually add the MPI include and library dirs to search paths
+    # Manually add the MPI include and library dirs to search paths 
+    # and search for the package component
     if (MPI_C_FOUND)
-        set (LIBZ_PATHS ${MPI_C_INCLUDE_PATH})
-        foreach (lib IN LISTS MPI_C_LIBRARIES)
-            get_filename_component (libdir ${lib} PATH)
-            list (APPEND LIBZ_PATHS ${libdir})
-            unset (libdir)
-        endforeach ()
+        initialize_paths (LIBZ_PATHS
+                          INCLUDE_DIRECTORIES ${MPI_C_INCLUDE_PATH}
+                          LIBRARIES ${MPI_C_LIBRARIES})
+        find_package_component(LIBZ
+                               PATHS ${LIBZ_PATHS})
+    else ()
+        find_package_component(LIBZ)
     endif ()
-    
-    # Search for the package
-    find_package_component(LIBZ
-                           PATHS ${LIBZ_PATHS})
 
 endif ()

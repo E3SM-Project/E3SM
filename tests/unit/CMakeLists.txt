@@ -25,6 +25,13 @@ if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
     target_compile_options (pio_unit_test
         PRIVATE -ffree-line-length-none)
 endif()
+
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "NAG")
+   set ( CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -mismatch_all" )
+#    target_compile_options (gptl
+#        PRIVATE -mismatch_all)
+endif ()
+
 add_dependencies (tests pio_unit_test)
 
 # Test Timeout (4 min = 240 sec)

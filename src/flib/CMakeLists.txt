@@ -51,9 +51,10 @@ target_compile_definitions (piof
 if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
     target_compile_options (piof
         PRIVATE -ffree-line-length-none)
-elseif (CMAKE_Fortran_COMPILER_ID MATCHES "NAG")
-   target_compile_options (piof
-       PUBLIC -mismatch_all)
+elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "NAG")
+    set ( CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -mismatch_all" )
+#    target_compile_options (piof
+#        PRIVATE -mismatch_all)
 endif()
 
 # Look for c_sizeof capability
@@ -180,13 +181,17 @@ if (MPIMOD_PATH)
         message (STATUS "MPI Fortran module verified and enabled.")
     else ()
         message (STATUS "MPI Fortran module failed verification and therefore disabled.")
-        target_compile_definitions (gptl
+        if (PIO_ENABLE_TIMING)
+          target_compile_definitions (gptl
             PUBLIC NO_MPIMOD)
+        endif()
     endif ()
 else ()
     message (STATUS "MPI Fortran module not detected and therefore disabled.")
-    target_compile_definitions (gptl
+    if (PIO_ENABLE_TIMING)
+      target_compile_definitions (gptl
         PUBLIC NO_MPIMOD)
+    endif()
 endif ()
 
 #===== GPTL =====
