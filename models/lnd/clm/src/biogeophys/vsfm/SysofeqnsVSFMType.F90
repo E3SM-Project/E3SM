@@ -142,6 +142,9 @@ contains
     use ConditionType                   , only : ConditionListAddCondition
     use MultiPhysicsProbConstants       , only : SOIL_TOP_CELLS, SOIL_CELLS
     use MultiPhysicsProbConstants       , only : COND_MASS_RATE, COND_MASS_FLUX
+    use MultiPhysicsProbConstants       , only : COND_BC
+    use MultiPhysicsProbConstants       , only : COND_SS
+    use MultiPhysicsProbConstants       , only : COND_NULL
     use GoveqnRichardsODEPressureType   , only : goveqn_richards_ode_pressure_type
     use EOSWaterMod                     , only : DENSITY_TGDPB01
     use SystemOfEquationsBaseType       , only : SOESetMeshesOfGoveqns
@@ -286,8 +289,17 @@ contains
        vsfm_soe%aux_vars_in(iauxvar)%goveqn_id  = 1
     enddo
 
-    call goveq_richards_pres%NumCellsInBC(num_bc, ncells_for_bc)
-    call goveq_richards_pres%NumCellsInSS(num_ss, ncells_for_ss)
+    call goveq_richards_pres%NumCellsInConditions(COND_BC      , & ! Boundary condition ID
+                                                  COND_NULL    , & ! ID of any condition to be excluded
+                                                  num_bc       , & ! Num. of BCs
+                                                  ncells_for_bc  & ! Num. of control volumes in each BC
+                                                 )
+
+    call goveq_richards_pres%NumCellsInConditions(COND_SS      , &  ! Source-sink condition ID
+                                                  COND_NULL    , &  ! ID of any condition to be excluded
+                                                  num_ss       , &  ! Num. of source-sink conditions
+                                                  ncells_for_ss  &  ! Num. of control volumes in each source-sink condition
+                                                 )
 
     allocate(vsfm_soe%soe_auxvars_bc_offset(num_bc))
     allocate(vsfm_soe%soe_auxvars_ss_offset(num_ss))

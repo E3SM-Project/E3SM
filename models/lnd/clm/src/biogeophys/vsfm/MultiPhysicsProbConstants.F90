@@ -39,15 +39,17 @@ module MultiPhysicsProbConstants
   PetscInt, parameter, public :: DEFINED_BY_CELL_ID                = 408
   PetscInt, parameter, public :: FACE_TOP                          = 409
   PetscInt, parameter, public :: FACE_BOTTOM                       = 410
-  
+
   ! condition%itype
   PetscInt, parameter, public :: COND_NULL                         = 500
-  PetscInt, parameter, public :: COND_MASS_RATE                    = 501
-  PetscInt, parameter, public :: COND_MASS_FLUX                    = 502
-  PetscInt, parameter, public :: COND_DIRICHLET                    = 503
-  PetscInt, parameter, public :: COND_DIRICHLET_FRM_OTR_GOVEQ      = 504
-  PetscInt, parameter, public :: COND_HEAT_FLUX                    = 505
-  PetscInt, parameter, public :: COND_DARCY_RATE                   = 506
+  PetscInt, parameter, public :: COND_BC                           = 501
+  PetscInt, parameter, public :: COND_SS                           = 502
+  PetscInt, parameter, public :: COND_MASS_RATE                    = 503
+  PetscInt, parameter, public :: COND_MASS_FLUX                    = 504
+  PetscInt, parameter, public :: COND_DIRICHLET                    = 505
+  PetscInt, parameter, public :: COND_DIRICHLET_FRM_OTR_GOVEQ      = 506
+  PetscInt, parameter, public :: COND_HEAT_FLUX                    = 507
+  PetscInt, parameter, public :: COND_DARCY_RATE                   = 508
 
   !
   PetscInt, parameter, public :: VAR_XI                            = 601

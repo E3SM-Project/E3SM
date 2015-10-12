@@ -51,9 +51,8 @@ module GoveqnRichardsODEPressureType
      procedure, public :: UpdateAuxVarsBC           => RichardsODEPressureUpdateAuxVarsBC
      procedure, public :: UpdateAuxVarsSS           => RichardsODEPressureUpdateAuxVarsSS
      procedure, public :: PreSolve                  => RichardsODEPressurePreSolve
-     procedure, public :: NumCellsInBC              => RichardsODEPressureNumCellsInBC
-     procedure, public :: NCellsInBCExclOtrGov      => RichardsODEPressureNCellsInBCExclOtrGov
-     procedure, public :: NumCellsInSS              => RichardsODEPressureNumCellsInSS
+     procedure, public :: NumConditions             => RichardsODEPressureNumConditions
+     procedure, public :: NumCellsInConditions      => RichardsODEPressureNumCellsInConditions
   end type
 
   !------------------------------------------------------------------------
@@ -200,154 +199,112 @@ contains
   end subroutine RichardsODEPressureSetDensityType
 
   !------------------------------------------------------------------------
-  subroutine RichardsODEPressureNumCellsInBC(this, num_bc, ncells_for_bc)
+  subroutine RichardsODEPressureNumConditions(this, cond_type, &
+              cond_type_to_exclude, num_conds)
     !
     ! !DESCRIPTION:
-    ! Returns number of BCs and control volumes associated with each BC
+    ! Returns the total number of conditions
     !
     ! !USES:
-    use ConditionType, only : condition_type
+    use ConditionType                    , only : condition_type
+    use MultiPhysicsProbConstants        , only : COND_BC
+    use MultiPhysicsProbConstants        , only : COND_SS
     !
     implicit none
     !
     ! !ARGUMENTS
     class(goveqn_richards_ode_pressure_type)    :: this
-    PetscInt                                    :: num_bc
-    PetscInt, pointer                           :: ncells_for_bc(:)
+    PetscInt                                    :: cond_type
+    PetscInt                                    :: cond_type_to_exclude
+    PetscInt, intent(out)                       :: num_conds
     !
     type(condition_type),pointer                :: cur_cond
-    PetscInt                                    :: ncells_cond
-    PetscInt                                    :: icond
+    character(len=256)                          :: string
 
-    ! Find number of BCs
-    num_bc = 0
-    cur_cond => this%boundary_conditions%first
+    ! Choose the condition type
+    select case (cond_type)
+    case (COND_BC)
+       cur_cond => this%boundary_conditions%first
+    case (COND_SS)
+      cur_cond => this%source_sinks%first
+    case default
+       write(string,*) cond_type
+       write(iulog,*) 'Unknown cond_type = ' // trim(string)
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end select
+
+    num_conds = 0
     do
        if (.not.associated(cur_cond)) exit
-       num_bc = num_bc + 1
-       ncells_cond = ncells_cond + cur_cond%ncells
-       cur_cond => cur_cond%next
-    enddo
-
-    if (num_bc == 0) then
-       nullify(ncells_for_bc)
-       return
-    endif
-
-    allocate(ncells_for_bc(num_bc))
-
-    num_bc = 0
-    cur_cond => this%boundary_conditions%first
-    do
-       if (.not.associated(cur_cond)) exit
-       num_bc = num_bc + 1
-       ncells_for_bc(num_bc) = cur_cond%ncells
-       cur_cond => cur_cond%next
-    enddo
-
-  end subroutine RichardsODEPressureNumCellsInBC
-
-  !------------------------------------------------------------------------
-  subroutine RichardsODEPressureNCellsInBCExclOtrGov(this, num_bc, ncells_for_bc)
-    !
-    ! !DESCRIPTION:
-    ! For BC associated with coupling to another governing equation, returns
-    ! number of BCs and control volumes associated with each BC.
-    !
-    ! !USES:
-    use ConditionType, only                 : condition_type
-    use MultiPhysicsProbConstants, only     : COND_DIRICHLET_FRM_OTR_GOVEQ
-    !
-    implicit none
-    !
-    ! !ARGUMENTS
-    class(goveqn_richards_ode_pressure_type)    :: this
-    PetscInt                                    :: num_bc
-    PetscInt, pointer                           :: ncells_for_bc(:)
-    !
-    type(condition_type),pointer                :: cur_cond
-    PetscInt                                    :: ncells_cond
-    PetscInt                                    :: icond
-
-    ! Find number of BCs
-    num_bc = 0
-    cur_cond => this%boundary_conditions%first
-    do
-       if (.not.associated(cur_cond)) exit
-       if (cur_cond%itype /= COND_DIRICHLET_FRM_OTR_GOVEQ) then
-          num_bc = num_bc + 1
-          ncells_cond = ncells_cond + cur_cond%ncells
+       if (cur_cond%itype /= cond_type_to_exclude) then
+          num_conds = num_conds + 1
        endif
        cur_cond => cur_cond%next
     enddo
 
-    if (num_bc == 0) then
-       nullify(ncells_for_bc)
-       return
-    endif
-
-    allocate(ncells_for_bc(num_bc))
-
-    num_bc = 0
-    cur_cond => this%boundary_conditions%first
-    do
-       if (.not.associated(cur_cond)) exit
-       if (cur_cond%itype /= COND_DIRICHLET_FRM_OTR_GOVEQ) then
-          num_bc = num_bc + 1
-          ncells_for_bc(num_bc) = cur_cond%ncells
-       endif
-       cur_cond => cur_cond%next
-    enddo
-
-  end subroutine RichardsODEPressureNCellsInBCExclOtrGov
+  end subroutine RichardsODEPressureNumConditions
 
   !------------------------------------------------------------------------
-  subroutine RichardsODEPressureNumCellsInSS(this, num_ss, ncells_for_ss)
+  subroutine RichardsODEPressureNumCellsInConditions(this, cond_type, &
+                cond_type_to_exclude, num_conds, ncells_for_conds)
     !
     ! !DESCRIPTION:
-    ! Returns number of SSs and control volumes associated with each SS
+    ! Returns the total number of conditions (eg. boundary condition or
+    ! source-sink) and number of control volumes associated with each condition
     !
     ! !USES:
-    use ConditionType, only : condition_type
+    use ConditionType                    , only : condition_type
+    use MultiPhysicsProbConstants        , only : COND_BC
+    use MultiPhysicsProbConstants        , only : COND_SS
+    use MultiPhysicsProbConstants        , only : COND_NULL
     !
     implicit none
     !
     ! !ARGUMENTS
     class(goveqn_richards_ode_pressure_type)    :: this
-    PetscInt                                    :: num_ss
-    PetscInt, pointer                           :: ncells_for_ss(:)
+    PetscInt, intent(in)                        :: cond_type
+    PetscInt, intent(in)                        :: cond_type_to_exclude
+    PetscInt, intent(out)                       :: num_conds
+    PetscInt, intent(out), pointer              :: ncells_for_conds(:)
     !
     type(condition_type),pointer                :: cur_cond
     PetscInt                                    :: ncells_cond
     PetscInt                                    :: icond
+    character(len=256)                          :: string
 
     ! Find number of BCs
-    num_ss = 0
-    cur_cond => this%source_sinks%first
-    do
-       if (.not.associated(cur_cond)) exit
-       num_ss = num_ss + 1
-       ncells_cond = ncells_cond + cur_cond%ncells
-       cur_cond => cur_cond%next
-    enddo
+    call this%NumConditions(cond_type, COND_NULL, num_conds)
 
-    if (num_ss == 0) then
-       nullify(ncells_for_ss)
+    if (num_conds == 0) then
+       nullify(ncells_for_conds)
        return
     endif
 
-    allocate(ncells_for_ss(num_ss))
+    allocate(ncells_for_conds(num_conds))
 
-    num_ss = 0
-    cur_cond => this%source_sinks%first
+    ! Choose the condition type
+    select case (cond_type)
+    case (COND_BC)
+       cur_cond => this%boundary_conditions%first
+    case (COND_SS)
+      cur_cond => this%source_sinks%first
+    case default
+       write(string,*) cond_type
+       write(iulog,*) 'Unknown cond_type = ' // trim(string)
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end select
+
+    num_conds = 0
     do
        if (.not.associated(cur_cond)) exit
-       num_ss = num_ss + 1
-       ncells_for_ss(num_ss) = cur_cond%ncells
+       if (cur_cond%itype /= cond_type_to_exclude) then
+          num_conds = num_conds + 1
+          ncells_for_conds(num_conds) = cur_cond%ncells
+       endif
        cur_cond => cur_cond%next
     enddo
 
-  end subroutine RichardsODEPressureNumCellsInSS
+  end subroutine RichardsODEPressureNumCellsInConditions
 
   !------------------------------------------------------------------------
   subroutine RichardsODERes(this, X, F, ierr)
