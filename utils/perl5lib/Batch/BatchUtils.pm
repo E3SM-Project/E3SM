@@ -11,6 +11,7 @@ use warnings;
 package Batch::BatchUtils;
 use Cwd;
 use Data::Dumper;
+use File::Basename;
 use Exporter qw(import);
 use XML::LibXML;
 require Batch::BatchMaker;
@@ -649,9 +650,11 @@ sub doResubmit()
     if(! $issta && $config{'DOUT_S'} eq 'TRUE' && $config{'RESUBMIT'} == 0)
     {
         chdir $config{'CASEROOT'};
-        my $starchivescript = $scriptname;
+
 	# replace .run or .test with .st_archive
-	$starchivescript =~ s/\.[^\.+]$/st_archive/g;
+
+	my($basename, $path) = fileparse($scriptname);
+        my $starchivescript = "$path/$basename.st_archive";	
         my $submitargs = $self->getSubmitArguments($starchivescript);
         
         my $submitstuff = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $starchivescript";
