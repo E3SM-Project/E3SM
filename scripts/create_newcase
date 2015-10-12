@@ -871,8 +871,8 @@ sub _create_caseroot_tools
     my $sysmod;
 
     my @files = (
-	"$cimeroot/scripts/Tools/case_setup", 
-	"$cimeroot/scripts/Tools/testcase_setup", 
+	"$cimeroot/scripts/Tools/case.setup", 
+	"$cimeroot/scripts/Tools/testcase.setup", 
 	"$cimeroot/scripts/Tools/check_input_data", 
 	"$cimeroot/scripts/Tools/archive_metadata.sh", 
 	"$cimeroot/scripts/Tools/check_case", 
@@ -940,17 +940,17 @@ sub _create_caseroot_files
     }
 
     # Create $caseroot/Buildconf/build.pl
-    $sysmod = "cp $cimeroot/scripts/Tools/build.pl  $caseroot/$case.build";
+    $sysmod = "cp $cimeroot/scripts/Tools/case.build  $caseroot/case.build";
     system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-    $sysmod = "chmod 755 $caseroot/$case.build";
+    $sysmod = "chmod 755 $caseroot/case.build";
     system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
     
     # Create $case.clean_build
-    $sysmod = "cp $cimeroot/scripts/Tools/clean_build $caseroot/$case.clean_build"; 
+    $sysmod = "cp $cimeroot/scripts/Tools/clean_build $caseroot/case.clean_build"; 
     system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
     
     # Create $case.submit
-    $sysmod = "cp  $cimeroot/scripts/Tools/submit $caseroot/$case.submit"; 
+    $sysmod = "cp  $cimeroot/scripts/Tools/submit $caseroot/case.submit"; 
     system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
 
     # Create machine specific module files (env_mach_specific)
