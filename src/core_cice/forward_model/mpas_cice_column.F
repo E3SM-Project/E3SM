@@ -234,7 +234,8 @@ contains
        
 !nj-bgc+
        ! initialize biogoechemistry profiles
-       call init_column_biogeochemistry_profiles(domain, ciceTracerObject)
+       if (config_use_column_biogeochemistry) &
+            call init_column_biogeochemistry_profiles(domain, ciceTracerObject)
 !nj-bgc-
        
        ! history variables
@@ -9079,7 +9080,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry",config_use_column_biogeochemistry)
 
     abortFlag = .false.
-    getPhysicsTracers = .true.
+    getPhysicsTracers = .false.
 
     block => domain % blocklist
     do while (associated(block))
@@ -9258,7 +9259,7 @@ contains
              enddo
           enddo
 
-          call get_cice_tracer_array_category(block, tracerObject, iCell, .false., &
+          call get_cice_tracer_array_category(block, tracerObject, iCell, getPhysicsTracers, &
                config_use_column_biogeochemistry)
 
        enddo    ! iCell
