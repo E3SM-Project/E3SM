@@ -75,7 +75,7 @@
       <test name="ERS_E_Ld7">
         <machine compiler="intel" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
       </test>
-      <test name="NCR_P4x1D">
+      <test name="NCR_P15x1D">
         <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
       </test>
     </grid>
