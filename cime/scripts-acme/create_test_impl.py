@@ -307,7 +307,7 @@ class CreateTest(object):
             return self._run_phase_command(test_name, "./%s.submit" % case_id, RUN_PHASE, from_dir=test_dir, pass_status=TEST_PENDING_STATUS)
 
     ###########################################################################
-    def _create_test_status_file(self, test_name):
+    def _test_status_phase(self, test_name):
     ###########################################################################
         str_to_write = ""
         made_it_to_phase = PHASES.index(self._get_test_phase(test_name))
@@ -389,9 +389,9 @@ class CreateTest(object):
                     try:
                         test_status_file = os.path.join(self._get_test_dir(test_name), TEST_STATUS_FILENAME)
                         with open(test_status_file, "r") as fd:
-                            statuses = wait_for_tests.parse_test_status_file(fd.read())[0]
+                            statuses = wait_for_tests.parse_test_status_file(fd.read(), test_status_file)[0]
                         if (RUN_PHASE not in statuses or statuses[RUN_PHASE] != TEST_FAIL_STATUS):
-                            self._create_test_status_file(test_name)
+                            self._test_status_phase(test_name)
                     except Exception as e:
                         self._log_output(test_name, "VERY BAD! Could not read TestStatus file '%s': '%s'" % (test_status_file, str(e)))
 
