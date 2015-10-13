@@ -6,21 +6,22 @@ project (PIOC C)
 #  DEFINE THE TARGET
 #==============================================================================
 
-set (PIO_C_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/topology.c
-                ${CMAKE_CURRENT_BINARY_DIR}/pio_nc.c
-                ${CMAKE_CURRENT_SOURCE_DIR}/pio_file.c
-                ${CMAKE_CURRENT_SOURCE_DIR}/pioc_support.c
-                ${CMAKE_CURRENT_SOURCE_DIR}/pio_lists.c
-                ${CMAKE_CURRENT_SOURCE_DIR}/pioc.c
-                ${CMAKE_CURRENT_SOURCE_DIR}/pioc_sc.c
-                ${CMAKE_CURRENT_SOURCE_DIR}/pio_spmd.c
-                ${CMAKE_CURRENT_SOURCE_DIR}/pio_rearrange.c
-                ${CMAKE_CURRENT_SOURCE_DIR}/pio_darray.c
-                ${CMAKE_CURRENT_BINARY_DIR}/pio_put_nc.c 
-                ${CMAKE_CURRENT_BINARY_DIR}/pio_get_nc.c
-                ${CMAKE_CURRENT_SOURCE_DIR}/bget.c)
+set (PIO_C_SRCS topology.c
+                pio_file.c
+                pioc_support.c
+                pio_lists.c
+                pioc.c
+                pioc_sc.c
+                pio_spmd.c
+                pio_rearrange.c
+                pio_darray.c
+                bget.c)
 
-add_library (pioc ${PIO_C_SRCS})
+set (PIO_GENNC_SRCS ${CMAKE_CURRENT_BINARY_DIR}/pio_nc.c
+                    ${CMAKE_CURRENT_BINARY_DIR}/pio_put_nc.c 
+                    ${CMAKE_CURRENT_BINARY_DIR}/pio_get_nc.c)
+
+add_library (pioc ${PIO_C_SRCS} ${PIO_GENNC_SRCS})
 
 # Include the clib source directory
 target_include_directories (pioc
@@ -160,32 +161,38 @@ if (PnetCDF_C_FOUND AND NetCDF_C_FOUND AND PIO_GENERATE_SOURCES_FROM_TEMPLATES)
     # Find perl
     find_package (Perl REQUIRED)
     if (Perl_FOUND)
-        execute_process (
+        add_custom_command (OUTPUT ${PIO_GENNC_SRCS}
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_c_put_template.c
-                                             ${CMAKE_CURRENT_BINARY_DIR}/pio_c_put_template.c
+                                             pio_c_put_template.c
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_c_get_template.c
-                                             ${CMAKE_CURRENT_BINARY_DIR}/pio_c_get_template.c
+                                             pio_c_get_template.c
             COMMAND ${PERL_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/ncputgetparser.pl 
                                        ${NetCDF_C_INCLUDE_DIR} ${PnetCDF_C_INCLUDE_DIR}
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_c_template.c
-                                             ${CMAKE_CURRENT_BINARY_DIR}/pio_c_template.c
+                                             pio_c_template.c
             COMMAND ${PERL_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/ncparser.pl
                                        ${NetCDF_C_INCLUDE_DIR} ${PnetCDF_C_INCLUDE_DIR}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/pio_c_put_template.c
+                    ${CMAKE_CURRENT_SOURCE_DIR}/pio_c_get_template.c
+                    ${CMAKE_CURRENT_SOURCE_DIR}/ncputgetparser.pl
+                    ${CMAKE_CURRENT_SOURCE_DIR}/pio_c_template.c
+                    ${CMAKE_CURRENT_SOURCE_DIR}/ncparser.pl)
     else ()
         message (FATAL_ERROR "Need Perl to create PIO C source files from templates")
     endif ()
     
 # If both NetCDF and PnetCDF are NOT found, then just copy existing source files
 else ()
-        execute_process (
+        add_custom_command (OUTPUT ${PIO_GENNC_SRCS}
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_put_nc.c
-                                             ${CMAKE_CURRENT_BINARY_DIR}/pio_put_nc.c
+                                             pio_put_nc.c
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_get_nc.c
-                                             ${CMAKE_CURRENT_BINARY_DIR}/pio_get_nc.c
+                                             pio_get_nc.c
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_nc.c
-                                             ${CMAKE_CURRENT_BINARY_DIR}/pio_nc.c
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+                                             pio_nc.c
+            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/pio_put_nc.c
+                    ${CMAKE_CURRENT_SOURCE_DIR}/pio_get_nc.c
+                    ${CMAKE_CURRENT_SOURCE_DIR}/pio_nc.c)
 endif ()
 
 
