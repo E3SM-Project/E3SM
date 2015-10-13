@@ -15,7 +15,7 @@
   </compset>
   <compset name="B">
     <grid name="f19_g16">
-      <test name="STA_N2">
+      <test name="ERR_N2">
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
       </test>
