@@ -1,4 +1,4 @@
-import os, shutil, tempfile
+import os, tempfile
 
 import acme_util
 from acme_util import expect, warning
@@ -149,12 +149,11 @@ def update_acme_tests(xml_file, categories, platform=None):
         platforms = [tuple(platform.split(","))]
     else:
         platforms = find_all_platforms(xml_file)
-
-    # Prune the non-supported platforms from our list.
-    for p in platforms:
-        if p not in supported_platforms:
-            acme_util.verbose_print("pruning unsupported platform %s"%repr(p))
-    platforms = [p for p in platforms if p in supported_platforms]
+        # Prune the non-supported platforms from our list.
+        for p in platforms:
+            if p not in supported_platforms:
+                acme_util.verbose_print("pruning unsupported platform %s"%repr(p))
+        platforms = [p for p in platforms if p in supported_platforms]
 
     manage_xml_entries = os.path.join(acme_util.get_cime_root(), "scripts", "manage_testlists")
 
@@ -164,16 +163,16 @@ def update_acme_tests(xml_file, categories, platform=None):
     for category in categories:
         # Remove any existing acme test category from the file.
         if (platform is None):
-            output = acme_util.run_cmd("%s -component allactive -removetests -category %s" % (manage_xml_entries, category), verbose=True)
+            acme_util.run_cmd("%s -component allactive -removetests -category %s" % (manage_xml_entries, category), verbose=True)
         else:
-            output = acme_util.run_cmd("%s -component allactive -removetests -category %s -machine %s -compiler %s"
-                                       % (manage_xml_entries, category, platforms[0][0], platforms[0][1]), verbose=True)
+            acme_util.run_cmd("%s -component allactive -removetests -category %s -machine %s -compiler %s"
+                              % (manage_xml_entries, category, platforms[0][0], platforms[0][1]), verbose=True)
 
         # Generate a list of test entries corresponding to our suite at the top
         # of the file.
         new_test_file = generate_acme_test_entries(category, platforms)
-        output = acme_util.run_cmd("%s -component allactive -addlist -file %s -category %s" %
-                                   (manage_xml_entries, new_test_file, category), verbose=True)
+        acme_util.run_cmd("%s -component allactive -addlist -file %s -category %s" %
+                          (manage_xml_entries, new_test_file, category), verbose=True)
         os.unlink(new_test_file)
 
     print "SUCCESS"
