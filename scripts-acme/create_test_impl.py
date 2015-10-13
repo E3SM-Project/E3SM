@@ -374,7 +374,7 @@ class CreateTest(object):
 
         # Make status files
         for test_name in self._test_names:
-            self._create_test_status_file(test_name)
+            self._test_status_phase(test_name)
 
         # Run
         if (not self._no_run):
