@@ -288,6 +288,13 @@ endif
 #===============================================================================
 INCLDIR += -I$(SHAREDPATH)/include -I$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share
 
+#
+#  Tell gmake to look in the csm_share directory for shr_*.mod files
+#
+
+vpath  shr%.mod $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share
+
+
 ifdef INC_NETCDF
   INCLDIR += -I$(INC_NETCDF)
 endif
