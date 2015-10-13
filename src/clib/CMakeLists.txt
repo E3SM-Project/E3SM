@@ -160,7 +160,9 @@ if (PnetCDF_C_FOUND AND NetCDF_C_FOUND AND PIO_GENERATE_SOURCES_FROM_TEMPLATES)
     # Find perl
     find_package (Perl REQUIRED)
     if (Perl_FOUND)
-        add_custom_target (gennc
+        add_custom_command (OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pio_put_nc.c
+                                   ${CMAKE_CURRENT_BINARY_DIR}/pio_get_nc.c
+                                   ${CMAKE_CURRENT_BINARY_DIR}/pio_nc.c
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_c_put_template.c
                                              ${CMAKE_CURRENT_BINARY_DIR}/pio_c_put_template.c
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_c_get_template.c
@@ -188,7 +190,9 @@ if (PnetCDF_C_FOUND AND NetCDF_C_FOUND AND PIO_GENERATE_SOURCES_FROM_TEMPLATES)
     
 # If both NetCDF and PnetCDF are NOT found, then just copy existing source files
 else ()
-        add_custom_target (gennc
+        add_custom_command (OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pio_put_nc.c
+                                   ${CMAKE_CURRENT_BINARY_DIR}/pio_get_nc.c
+                                   ${CMAKE_CURRENT_BINARY_DIR}/pio_nc.c
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_put_nc.c
                                              ${CMAKE_CURRENT_BINARY_DIR}/pio_put_nc.c
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_get_nc.c
@@ -203,7 +207,6 @@ else ()
                     ${CMAKE_CURRENT_SOURCE_DIR}/pio_get_nc.c
                     ${CMAKE_CURRENT_SOURCE_DIR}/pio_nc.c)
 endif ()
-add_dependencies (pioc gennc)
 
 
 #===== Check for necessities =====
