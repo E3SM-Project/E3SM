@@ -45,7 +45,7 @@ endif
 ./case.setup -clean
 ./case.setup
 
-./case.build
+./case.build -testmode
 if ($status != 0) then
    echo "Error: build failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus

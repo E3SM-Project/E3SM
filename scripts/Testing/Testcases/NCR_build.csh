@@ -87,7 +87,7 @@ endif
 
 ./case.clean_build 
 
-./case.build
+./case.build -testmode
 if ($status != 0) then
    echo "Error: build for single instance failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus
@@ -158,7 +158,7 @@ set NTASKS_CPL  = `./xmlquery NTASKS_CPL	-value`
 
 ./case.cleanbuild
 
-./case.build
+./case.build -testmode
 if ($status != 0) then
    echo "Error: build for single instance failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus

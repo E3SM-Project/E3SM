@@ -21,7 +21,7 @@ cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml.locked
 ./xmlchange -file env_run.xml -id BFBFLAG -val TRUE
 echo "b4b_flag=.true." >> user_nl_pop
 
-./case.build
+./case.build -testmode
 if ($status != 0) then
    echo "Error: build for default PE layout failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus
@@ -106,7 +106,7 @@ endif
 ./case.setup
 ./case.clean_build -all 
 
-./case.build
+./case.build -testmode
 if ($status != 0) then
    echo "Error: build for default half tasks twice threads failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus
