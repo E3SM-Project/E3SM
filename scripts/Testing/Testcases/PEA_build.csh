@@ -19,8 +19,8 @@ set EXEROOT = `./xmlquery EXEROOT -value`
 if(-e mpilib.original) then
   set mpiliborig=`cat mpilib.original`
   ./xmlchange -file env_build.xml -id MPILIB -val $mpiliborig
-  ./case_setup -clean
-  ./case_setup
+  ./case.setup -clean
+  ./case.setup
 else
   set MPILIB  = `./xmlquery MPILIB  -value`
   echo $MPILIB > mpilib.original
@@ -30,8 +30,8 @@ endif
 # Build with mpi
 #----------------------------
 
-./$CASE.clean_build
-./$CASE.build
+./case.clean_build
+./case.build
 if ($status != 0) then
    echo "Error: build with MPI failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus
@@ -48,11 +48,11 @@ mv -f Macros Macros.1
 
 ./xmlchange -file env_build.xml -id MPILIB -val mpi-serial
 
-./case_setup -clean 
-./case_setup
+./case.setup -clean 
+./case.setup
 
-./$CASE.clean_build
-./$CASE.build
+./case.clean_build
+./case.build
 if ($status != 0) then
    echo "Error: build with mpi-serial failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus

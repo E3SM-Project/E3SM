@@ -19,8 +19,8 @@ else
   cp -f env_build.xml env_build.xml.1
 endif
 
-./case_setup -clean -testmode
-./case_setup 
+./case.setup -clean -testmode
+./case.setup 
 
 #-----------------------------------------------------
 # Build with default PE layout
@@ -28,7 +28,7 @@ endif
 
 ./xmlchange -file env_build.xml -id SMP_BUILD -val 0
 
-./$CASE.build
+./case.build
 if ($status != 0) then
    echo "Error: build for default PE layout failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus
@@ -133,12 +133,12 @@ if ( $NTHRDS_CPL > 1 ) then
 endif
 
 # Build with half the tasks and threads
-./case_setup -clean -testmode
-./case_setup
+./case.setup -clean -testmode
+./case.setup
 
 ./xmlchange -file env_build.xml -id SMP_BUILD -val 0
 
-./$CASE.build
+./case.build
 if ($status != 0) then
    echo "Error: build for half tasks/threads failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus

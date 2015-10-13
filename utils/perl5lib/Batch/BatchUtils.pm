@@ -280,21 +280,21 @@ sub dependencyCheck()
     
     $self->{dependencyqueue} = undef;
     # we always want to run the test or run again..
-    if(-e "$config{'CASE'}.test")
+    if(-e "case.test")
     {
-	my $jobname = "$config{'CASE'}.test";
+	my $jobname = "case.test";
 	$self->addDependentJob($jobname);
     }
     else
     {
-	my $jobname = "$config{'CASE'}.run";
+	my $jobname = "case.run";
 	$self->addDependentJob($jobname);
     }
     
     # do we add the short-term archiver to the dependency queue? 
     if($config{'DOUT_S'} eq 'TRUE')
     {
-	my $jobname = "$config{'CASE'}.st_archive";
+	my $jobname = "case.st_archive";
 	$self->addDependentJob($jobname);
     }
     

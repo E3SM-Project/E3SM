@@ -13,10 +13,10 @@ if ( -e env_mach_pes.xml.1 )  then
   cp -f env_mach_pes.xml.1 env_mach_pes.xml
 endif
 
-./case_setup -clean
-./case_setup
+./case.setup -clean
+./case.setup
 
-./$CASE.build
+./case.build
 if ($status != 0) then
    echo "Error: build default PE layout failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus
@@ -69,10 +69,10 @@ if ( $NTASKS_CPL > 1 ) then
   ./xmlchange -file env_mach_pes.xml -id NTASKS_CPL  -val $ntask
 endif
 
-./case_setup -clean -testmode
-./case_setup
+./case.setup -clean -testmode
+./case.setup
 
-./$CASE.build
+./case.build
 if ($status != 0) then
    echo "Error: build for half tasks layout failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus
