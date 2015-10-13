@@ -7,24 +7,25 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_high_frequency_output
+!  cice_temperatures
 !
-!> \brief MPAS CICE analysis mode member: high_frequency_output
-!> \author Todd Ringler
-!> \date   2015/06/12
+!> \brief MPAS cice analysis mode member: temperatures
+!> \author Adrian K. Turner
+!> \date   6th September 2015
 !> \details
-!>  MPAS CICE analysis mode member: high_frequency_output
+!>  MPAS cice analysis mode member: temperatures
+!>  Calculates ice and snow temperatures using the CICE column
+!>  package routines.
 !>
 !-----------------------------------------------------------------------
 
-module cice_high_frequency_output
+module cice_temperatures
 
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
-   use ice_constants_colpkg
 
    implicit none
    private
@@ -42,11 +43,11 @@ module cice_high_frequency_output
    !
    !--------------------------------------------------------------------
 
-   public :: cice_init_high_frequency_output, &
-             cice_precompute_high_frequency_output, &
-             cice_compute_high_frequency_output, &
-             cice_restart_high_frequency_output, &
-             cice_finalize_high_frequency_output
+   public :: cice_init_temperatures, &
+             cice_precompute_temperatures, &
+             cice_compute_temperatures, &
+             cice_restart_temperatures, &
+             cice_finalize_temperatures
 
    !--------------------------------------------------------------------
    !
@@ -60,18 +61,18 @@ contains
 
 !***********************************************************************
 !
-!  routine cice_init_high_frequency_output
+!  routine cice_init_temperatures
 !
 !> \brief   Initialize MPAS-CICE analysis member
-!> \author  Todd Ringler
-!> \date    2015/06/12
+!> \author  Adrian K. Turner
+!> \date    6th September 2015
 !> \details
 !>  This routine conducts all initializations required for the
 !>  MPAS-CICE analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_high_frequency_output(domain, err)!{{{
+   subroutine cice_init_temperatures(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -103,22 +104,21 @@ contains
 
       err = 0
 
-   end subroutine cice_init_high_frequency_output!}}}
+   end subroutine cice_init_temperatures!}}}
 
 !***********************************************************************
 !
-!  routine cice_precompute_high_frequency_output
+!  routine cice_precompute_temperatures
 !
 !> \brief   Precompute MPAS-CICE analysis member
 !> \author  Adrian K. Turner
-!> \date    2015/09/09
+!> \date    9th September 2015
 !> \details
-!>  This routine conducts all precomputation required for this
-!>  MPAS-CICE analysis member.
+!>
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_high_frequency_output(domain, timeLevel, err)!{{{
+   subroutine cice_precompute_temperatures(domain, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -152,22 +152,28 @@ contains
 
       err = 0
 
-   end subroutine cice_precompute_high_frequency_output!}}}
+   end subroutine cice_precompute_temperatures!}}}
 
 !***********************************************************************
 !
-!  routine cice_compute_high_frequency_output
+!  routine cice_compute_temperatures
 !
 !> \brief   Compute MPAS-CICE analysis member
-!> \author  Todd Ringler
-!> \date    2015/06/12
+!> \author  Adrian K. Turner
+!> \date    6th September 2015
 !> \details
 !>  This routine conducts all computation required for this
-!>  MPAS-CICE analysis member.
+!>  MPAS-CICE analysis member. It computes ice and snow layer 
+!>  temperatures from enthalpies and salinities using CICE column
+!>  package routines.
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_high_frequency_output(domain, timeLevel, err)!{{{
+   subroutine cice_compute_temperatures(domain, timeLevel, err)!{{{
+
+      use ice_colpkg, only: &
+           colpkg_ice_temperature, &
+           colpkg_snow_temperature
 
       !-----------------------------------------------------------------
       !
@@ -199,56 +205,108 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (dm_info) :: dminfo
-      type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: tracersPool
-      type (mpas_pool_type), pointer :: highFrequencyOutputAMPool
+      type (block_type), pointer :: &
+           block
 
-      real (kind=RKIND), dimension(:), pointer :: iceAreaCellCategory1
-      real (kind=RKIND), dimension(:,:,:), pointer :: iceAreaCategory
+      type (mpas_pool_type), pointer :: &
+           tracersPool, &
+           temperaturesAMPool
+
+      real(kind=RKIND), dimension(:,:,:), pointer :: &
+           iceAreaCategory, &
+           snowVolumeCategory, &
+           iceTemperature, &
+           snowTemperature, &
+           iceEnthalpy, &
+           snowEnthalpy, &
+           iceSalinity
+
+      integer, pointer :: &
+           nCellsSolve, &
+           nCategories, &
+           nIceLayers, &
+           nSnowLayers
+
+      integer :: &
+           iCell, &
+           iCategory, &
+           iIceLayer, &
+           iSnowLayer
 
       err = 0
-
-      dminfo = domain % dminfo
 
       block => domain % blocklist
       do while (associated(block))
-         ! get dimensions
 
-         ! get pointers to pools
-         call mpas_pool_get_subpool(block % structs, 'tracers', tracersPool)
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(domain % blocklist % structs, 'highFrequencyOutputAM', highFrequencyOutputAMPool)
+         call MPAS_pool_get_subpool(block % structs, 'temperaturesAM', temperaturesAMPool)
+         call MPAS_pool_get_subpool(block % structs, 'tracers', tracersPool)
 
-         ! get arrays that will be 'sliced' and put into high frequency output
-         call mpas_pool_get_array(tracersPool, 'iceAreaCategory', iceAreaCategory, timeLevel)
+         call MPAS_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
+         call MPAS_pool_get_dimension(block % dimensions, 'nCategories', nCategories)
+         call MPAS_pool_get_dimension(block % dimensions, 'nIceLayers', nIceLayers)
+         call MPAS_pool_get_dimension(block % dimensions, 'nSnowLayers', nSnowLayers)
 
-         ! get arrays that can be written to output at high freqency
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'iceAreaCellCategory1', iceAreaCellCategory1)
+         call MPAS_pool_get_array(temperaturesAMPool, 'iceTemperature', iceTemperature)
+         call MPAS_pool_get_array(temperaturesAMPool, 'snowTemperature', snowTemperature)
 
-         ! copy data into high frequency output fields
-         iceAreaCellCategory1(:) = iceAreaCategory(1,1,:)
+         call MPAS_pool_get_array(tracersPool, 'iceAreaCategory', iceAreaCategory, 1)
+         call MPAS_pool_get_array(tracersPool, 'snowVolumeCategory', snowVolumeCategory, 1)
+         call MPAS_pool_get_array(tracersPool, 'iceEnthalpy', iceEnthalpy, 1)
+         call MPAS_pool_get_array(tracersPool, 'snowEnthalpy', snowEnthalpy, 1)
+         call MPAS_pool_get_array(tracersPool, 'iceSalinity', iceSalinity, 1)
+
+         ! initialize
+         iceTemperature = 0.0_RKIND
+         snowTemperature = 0.0_RKIND
+                  
+         ! compute temperatures
+         do iCell = 1, nCellsSolve
+            do iCategory = 1, nCategories
+
+               ! check if ice present
+               if (iceAreaCategory(1,iCategory,iCell) > 1e-11_RKIND) then
+               
+                  ! ice layers
+                  do iIceLayer = 1, nIceLayers
+                     iceTemperature(iIceLayer, iCategory, iCell) = &
+                          colpkg_ice_temperature(iceEnthalpy(iIceLayer,iCategory,iCell), &
+                                                 iceSalinity(iIceLayer,iCategory,iCell))
+                  enddo ! iIceLayer
+               
+                  ! snow layers
+                  if (snowVolumeCategory(1,iCategory,iCell) > 1e-11_RKIND) then
+
+                     do iSnowLayer = 1, nSnowLayers
+                        snowTemperature(iSnowLayer, iCategory, iCell) = &
+                             colpkg_snow_temperature(snowEnthalpy(iSnowLayer,iCategory,iCell))
+                     enddo ! iIceLayer
+
+                  endif ! snowVolumeCategory
+
+               endif ! iceAreaCategory
+
+            enddo ! iCategory
+         enddo ! iCell
 
          block => block % next
-      end do
+      enddo
 
-   end subroutine cice_compute_high_frequency_output!}}}
+   end subroutine cice_compute_temperatures!}}}
 
 !***********************************************************************
 !
-!  routine cice_restart_high_frequency_output
+!  routine cice_restart_temperatures
 !
 !> \brief   Save restart for MPAS-CICE analysis member
-!> \author  Todd Ringler
-!> \date    2015/06/12
+!> \author  Adrian K. Turner
+!> \date    6th September 2015
 !> \details
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-CICE analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_high_frequency_output(domain, err)!{{{
+   subroutine cice_restart_temperatures(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -280,22 +338,22 @@ contains
 
       err = 0
 
-   end subroutine cice_restart_high_frequency_output!}}}
+   end subroutine cice_restart_temperatures!}}}
 
 !***********************************************************************
 !
-!  routine cice_finalize_high_frequency_output
+!  routine cice_finalize_temperatures
 !
 !> \brief   Finalize MPAS-CICE analysis member
-!> \author  Todd Ringler
-!> \date    2015/06/12
+!> \author  Adrian K. Turner
+!> \date    6th September 2015
 !> \details
 !>  This routine conducts all finalizations required for this
 !>  MPAS-CICE analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_high_frequency_output(domain, err)!{{{
+   subroutine cice_finalize_temperatures(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -327,8 +385,10 @@ contains
 
       err = 0
 
-   end subroutine cice_finalize_high_frequency_output!}}}
+   end subroutine cice_finalize_temperatures!}}}
 
-end module cice_high_frequency_output
+!-----------------------------------------------------------------------
+
+end module cice_temperatures
 
 ! vim: foldmethod=marker

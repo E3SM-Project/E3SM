@@ -1633,7 +1633,7 @@ contains
          latentHeatFlux, &
          absorbedShortwaveFlux, &
          longwaveUp, &
-         evaporativeHeatFlux, &
+         evaporativeWaterFlux, &
          airStressCellU, &
          airStressCellV, &
          atmosReferenceSpeed10m, &
@@ -1651,7 +1651,7 @@ contains
        call MPAS_pool_get_array(atmosFluxes, "sensibleHeatFlux", sensibleHeatFlux)
        call MPAS_pool_get_array(atmosFluxes, "latentHeatFlux", latentHeatFlux)
        call MPAS_pool_get_array(atmosFluxes, "longwaveUp", longwaveUp)
-       call MPAS_pool_get_array(atmosFluxes, "evaporativeHeatFlux", evaporativeHeatFlux)
+       call MPAS_pool_get_array(atmosFluxes, "evaporativeWaterFlux", evaporativeWaterFlux)
 
        call MPAS_pool_get_array(velocitySolver, "airStressCellU", airStressCellU)
        call MPAS_pool_get_array(velocitySolver, "airStressCellV", airStressCellV)
@@ -1665,7 +1665,7 @@ contains
        sensibleHeatFlux            = 0.0_RKIND
        latentHeatFlux              = 0.0_RKIND
        longwaveUp                  = 0.0_RKIND
-       evaporativeHeatFlux         = 0.0_RKIND
+       evaporativeWaterFlux        = 0.0_RKIND
        
        airStressCellU              = 0.0_RKIND
        airStressCellV              = 0.0_RKIND

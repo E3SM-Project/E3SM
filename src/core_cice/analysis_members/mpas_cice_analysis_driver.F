@@ -26,6 +26,10 @@ module cice_analysis_driver
    use mpas_stream_manager
 
    use cice_high_frequency_output
+   use cice_temperatures
+   use cice_regional_statistics
+   use cice_ridging_diagnostics
+   use cice_conservation_check
 !   use cice_TEMP_LATE
 
    implicit none
@@ -47,6 +51,7 @@ module cice_analysis_driver
    public :: cice_analysis_setup_packages, &
              cice_analysis_init, &
              cice_analysis_compute_startup, &
+             cice_analysis_precompute, &
              cice_analysis_compute, &
              cice_analysis_write, &
              cice_analysis_restart, &
@@ -61,6 +66,7 @@ module cice_analysis_driver
 
    character (len=*), parameter :: initTimerPrefix = 'init_'
    character (len=*), parameter :: computeTimerPrefix = 'compute_'
+   character (len=*), parameter :: precomputeTimerPrefix = 'precompute_'
    character (len=*), parameter :: writeTimerPrefix = 'write_'
    character (len=*), parameter :: alarmTimerPrefix = 'reset_alarm_'
    character (len=*), parameter :: restartTimerPrefix = 'restart_'
@@ -128,7 +134,11 @@ contains
 
       call mpas_pool_create_pool(analysisMemberList)
       call mpas_pool_add_config(analysisMemberList, 'highFrequencyOutput', 1)
-      write(6,*) ' debug:  mpas_pool_add_config'
+      call mpas_pool_add_config(analysisMemberList, 'temperatures', 1)
+      call mpas_pool_add_config(analysisMemberList, 'regionalStatistics', 1)
+      call mpas_pool_add_config(analysisMemberList, 'ridgingDiagnostics', 1)
+      call mpas_pool_add_config(analysisMemberList, 'conservationCheck', 1)
+   !   write(6,*) ' debug:  mpas_pool_add_config'
    !  call mpas_pool_add_config(analysisMemberList, 'surfaceAreaWeightedAverages', 1)
    !  call mpas_pool_add_config(analysisMemberList, 'TEMPLATE', 1)
 
@@ -139,12 +149,12 @@ contains
       do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
          nameLength = len_trim(poolItr % memberName)
          configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_enable'
-         write(6,*) ' debug : ', configName
+         !write(6,*) ' debug : ', configName
          call mpas_pool_get_config(configPool, configName, config_AM_enable)
 
          if ( config_AM_enable ) then
             packageName = poolItr % memberName(1:nameLength) // 'AMPKGActive'
-            write(6,*) ' debug : ', packageName
+            !write(6,*) ' debug : ', packageName
             call mpas_pool_get_package(packagePool, packageName, AMPackageActive)
             AMPackageActive = .true.
          end if
@@ -366,6 +376,99 @@ contains
 
 !***********************************************************************
 !
+!  routine cice_analysis_precompute
+!
+!> \brief   Driver for MPAS-CICE analysis computations
+!> \author  MPAS-Ocean/CICE development team
+!> \date    November 2013
+!> \details
+!>  This routine calls all pre timestep computation subroutines 
+!>  required for the MPAS-CICE analysis driver.
+!
+!-----------------------------------------------------------------------
+
+   subroutine cice_analysis_precompute(domain, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: timeLevel, err_tmp
+
+      character (len=StrKIND) :: configName, alarmName, timerName
+      character (len=StrKIND), pointer :: config_AM_stream_name, config_AM_compute_interval
+      logical, pointer :: config_AM_enable
+      type (mpas_pool_iterator_type) :: poolItr
+      integer :: nameLength
+
+      err = 0
+
+      call mpas_timer_start('analysis_precompute', .false.)
+
+      timeLevel=1
+
+      call mpas_pool_begin_iteration(analysisMemberList)
+      do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
+         nameLength = len_trim(poolItr % memberName)
+         configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_enable'
+         call mpas_pool_get_config(domain % configs, configName, config_AM_enable)
+
+         if ( config_AM_enable ) then
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_compute_interval'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_compute_interval)
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_stream_name'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_stream_name)
+
+            ! Build name of alarm for analysis member
+            alarmName = poolItr % memberName(1:nameLength) // computeAlarmSuffix
+            timerName = trim(precomputeTimerPrefix) // poolItr % memberName(1:nameLength)
+
+            ! Compute analysis member just before output
+            if ( config_AM_compute_interval == 'output_interval' .and. config_AM_stream_name /= 'none') then
+               if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID=config_AM_stream_name, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
+                  call mpas_timer_start(timerName, .false.)
+                  call cice_precompute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
+                  call mpas_timer_stop(timerName)
+               end if
+            else if ( mpas_is_alarm_ringing(domain % clock, alarmName, ierr=err_tmp) ) then
+               !call mpas_reset_clock_alarm(domain % clock, alarmName, ierr=err_tmp) ! not needed in precompute
+               call mpas_timer_start(timerName, .false.)
+               call cice_precompute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
+               call mpas_timer_stop(timerName)
+            end if
+         end if
+      end do
+
+      call mpas_timer_stop('analysis_precompute')
+
+   end subroutine cice_analysis_precompute!}}}
+
+!***********************************************************************
+!
 !  routine cice_analysis_compute
 !
 !> \brief   Driver for MPAS-CICE analysis computations
@@ -445,6 +548,7 @@ contains
                   call mpas_timer_stop(timerName)
                end if
             else if ( mpas_is_alarm_ringing(domain % clock, alarmName, ierr=err_tmp) ) then
+
                call mpas_reset_clock_alarm(domain % clock, alarmName, ierr=err_tmp)
                call mpas_timer_start(timerName, .false.)
                call cice_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
@@ -711,6 +815,14 @@ contains
 
       if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
          call cice_init_high_frequency_output(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
+         call cice_init_temperatures(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
+         call cice_init_regional_statistics(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
+         call cice_init_ridging_diagnostics(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
+         call cice_init_conservation_check(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_init_surface_area_weighted_averages(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -720,6 +832,49 @@ contains
       iErr = ior(iErr, err_tmp)
 
    end subroutine cice_init_analysis_members!}}}
+
+!***********************************************************************
+!
+!  routine cice_precompute_analysis_members
+!
+!> \brief Analysis member compute driver
+!> \author Adrian K. Turner
+!> \date 09/09/2015
+!> \details
+!>  This private routine calls the correct precompute routine for each analysis member.
+!
+!-----------------------------------------------------------------------
+   subroutine cice_precompute_analysis_members(domain, timeLevel, analysisMemberName, iErr)!{{{
+      type (domain_type), intent(inout) :: domain !< Input: Domain information
+      integer, intent(in) :: timeLevel !< Input: Time level to compute with in analysis member
+      character (len=*), intent(in) :: analysisMemberName !< Input: Name of analysis member
+      integer, intent(out) :: iErr !< Output: Error code
+
+      integer :: nameLength, err_tmp
+
+      iErr = 0
+
+      nameLength = len_trim(analysisMemberName)
+
+      if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
+         call cice_precompute_high_frequency_output(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
+         call cice_precompute_temperatures(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
+         call cice_precompute_regional_statistics(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
+         call cice_precompute_ridging_diagnostics(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
+         call cice_precompute_conservation_check(domain, timeLevel, err_tmp)
+!     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
+!        call cice_precompute_surface_area_weighted_averages(domain, timeLevel, err_tmp)
+!     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
+!        call cice_precompute_TEMP_LATE(domain, timeLevel, err_tmp)
+      end if
+
+      iErr = ior(iErr, err_tmp)
+
+   end subroutine cice_precompute_analysis_members!}}}
 
 !***********************************************************************
 !
@@ -746,6 +901,14 @@ contains
 
       if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
          call cice_compute_high_frequency_output(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
+         call cice_compute_temperatures(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
+         call cice_compute_regional_statistics(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
+         call cice_compute_ridging_diagnostics(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
+         call cice_compute_conservation_check(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_compute_surface_area_weighted_averages(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -780,6 +943,14 @@ contains
 
       if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
          call cice_restart_high_frequency_output(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
+         call cice_restart_temperatures(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
+         call cice_restart_regional_statistics(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
+         call cice_restart_ridging_diagnostics(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
+         call cice_restart_conservation_check(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_restart_surface_area_weighted_averages(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -814,6 +985,14 @@ contains
 
       if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
          call cice_finalize_high_frequency_output(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
+         call cice_finalize_temperatures(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
+         call cice_finalize_regional_statistics(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
+         call cice_finalize_ridging_diagnostics(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
+         call cice_finalize_conservation_check(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_finalize_surface_area_weighted_averages(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -823,6 +1002,8 @@ contains
       iErr = ior(iErr, err_tmp)
 
    end subroutine cice_finalize_analysis_members!}}}
+
+!-----------------------------------------------------------------------
 
 end module cice_analysis_driver
 

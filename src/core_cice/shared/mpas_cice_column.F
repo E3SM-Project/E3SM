@@ -993,7 +993,7 @@ contains
          solarZenithAngleCosine, & 
          sensibleHeatFlux, &
          latentHeatFlux, &
-         evaporativeHeatFlux, &
+         evaporativeWaterFlux, &
          oceanFreshWaterFlux, &
          oceanSaltFlux, &
          oceanHeatFlux, &
@@ -1219,7 +1219,7 @@ contains
        call MPAS_pool_get_array(atmos_fluxes, "sensibleHeatFluxCategory", sensibleHeatFluxCategory)
        call MPAS_pool_get_array(atmos_fluxes, "latentHeatFlux", latentHeatFlux)
        call MPAS_pool_get_array(atmos_fluxes, "latentHeatFluxCategory", latentHeatFluxCategory)
-       call MPAS_pool_get_array(atmos_fluxes, "evaporativeHeatFlux", evaporativeHeatFlux)
+       call MPAS_pool_get_array(atmos_fluxes, "evaporativeWaterFlux", evaporativeWaterFlux)
 
        call MPAS_pool_get_array(ocean_fluxes, "oceanFreshWaterFlux", oceanFreshWaterFlux)
        call MPAS_pool_get_array(ocean_fluxes, "oceanSaltFlux", oceanSaltFlux)
@@ -1389,7 +1389,7 @@ contains
                sensibleHeatFluxCategory(:,iCell), &
                latentHeatFlux(iCell), &
                latentHeatFluxCategory(:,iCell), &
-               evaporativeHeatFlux(iCell), &
+               evaporativeWaterFlux(iCell), &
                oceanFreshWaterFlux(iCell), &
                oceanSaltFlux(iCell), &
                oceanHeatFlux(iCell), &
@@ -2791,6 +2791,8 @@ contains
          config_include_pond_freshwater_feedback
 
     type(MPAS_pool_type), pointer :: &
+         oceanCoupling, &
+         diagnostics, &
          shortwave, &
          atmosCoupling, &
          tracers, &
@@ -2798,6 +2800,8 @@ contains
          oceanFluxes
 
     real(kind=RKIND), dimension(:), pointer :: &
+         freezingMeltingPotential, &
+         freezingMeltingPotentialInitial, &
          albedoVisibleDirectCell, &
          albedoVisibleDiffuseCell, &
          albedoIRDirectCell, &
@@ -2817,7 +2821,14 @@ contains
          shortwaveIRDirectDown, &
          shortwaveIRDiffuseDown, &
          pondFreshWaterFlux, &
-         oceanFreshWaterFlux
+         oceanFreshWaterFlux, &
+         oceanSaltFlux, &
+         oceanHeatFlux, &
+         oceanShortwaveFlux, &
+         oceanFreshWaterFluxArea, &
+         oceanSaltFluxArea, &
+         oceanHeatFluxArea, &
+         oceanShortwaveFluxArea
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          albedoVisibleDirectCategory, &
@@ -2855,6 +2866,8 @@ contains
     block => domain % blocklist
     do while (associated(block))
 
+       call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCoupling)
+       call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnostics)
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
        call MPAS_pool_get_subpool(block % structs, "shortwave", shortwave)
        call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCoupling)
@@ -2863,6 +2876,9 @@ contains
 
        call MPAS_pool_get_dimension(tracers, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(tracers, "nCategories", nCategories)
+
+       call MPAS_pool_get_array(oceanCoupling, "freezingMeltingPotential", freezingMeltingPotential)
+       call MPAS_pool_get_array(diagnostics, "freezingMeltingPotentialInitial", freezingMeltingPotentialInitial)
 
        call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
 
@@ -2900,8 +2916,21 @@ contains
        call MPAS_pool_get_array(ponds, "pondFreshWaterFlux", pondFreshWaterFlux)
 
        call MPAS_pool_get_array(oceanFluxes, "oceanFreshWaterFlux", oceanFreshWaterFlux)
+       call MPAS_pool_get_array(oceanFluxes, "oceanSaltFlux", oceanSaltFlux)
+       call MPAS_pool_get_array(oceanFluxes, "oceanHeatFlux", oceanHeatFlux)
+       call MPAS_pool_get_array(oceanFluxes, "oceanShortwaveFlux", oceanShortwaveFlux)
+       call MPAS_pool_get_array(oceanFluxes, "oceanFreshWaterFluxArea", oceanFreshWaterFluxArea)
+       call MPAS_pool_get_array(oceanFluxes, "oceanSaltFluxArea", oceanSaltFluxArea)
+       call MPAS_pool_get_array(oceanFluxes, "oceanHeatFluxArea", oceanHeatFluxArea)
+       call MPAS_pool_get_array(oceanFluxes, "oceanShortwaveFluxArea", oceanShortwaveFluxArea)
 
        do iCell = 1, nCellsSolve
+
+          !-------------------------------------------------------------------
+          ! store initial freezing melting potential
+          !-------------------------------------------------------------------
+
+          freezingMeltingPotentialInitial(iCell) = freezingMeltingPotential(iCell)
 
           !-------------------------------------------------------------------
           ! aggregate albedos
@@ -2963,6 +2992,10 @@ contains
           albedoVisibleDiffuseArea(iCell) = albedoVisibleDiffuseCell(iCell)
           albedoIRDirectArea(iCell)       = albedoIRDirectCell(iCell)
           albedoIRDiffuseArea(iCell)      = albedoIRDiffuseCell(iCell)
+          oceanFreshWaterFluxArea(iCell)  = oceanFreshWaterFlux(iCell)
+          oceanSaltFluxArea(iCell)        = oceanSaltFlux(iCell)
+          oceanHeatFluxArea(iCell)        = oceanHeatFlux(iCell)
+          oceanShortwaveFluxArea(iCell)   = oceanShortwaveFlux(iCell)
 
           !-----------------------------------------------------------------
           ! Save net shortwave for scaling factor in shortwaveScalingFactor
@@ -3025,7 +3058,7 @@ contains
          latentHeatFlux, &
          absorbedShortwaveFlux, &
          longwaveUp, &
-         evaporativeHeatFlux, &
+         evaporativeWaterFlux, &
          atmosReferenceHumidity2m, &
          atmosReferenceTemperature2m, &
          oceanFreshWaterFlux, &
@@ -3069,7 +3102,7 @@ contains
 
        call MPAS_pool_get_array(atmosFluxes, "sensibleHeatFlux", sensibleHeatFlux)
        call MPAS_pool_get_array(atmosFluxes, "latentHeatFlux", latentHeatFlux)
-       call MPAS_pool_get_array(atmosFluxes, "evaporativeHeatFlux", evaporativeHeatFlux)
+       call MPAS_pool_get_array(atmosFluxes, "evaporativeWaterFlux", evaporativeWaterFlux)
        call MPAS_pool_get_array(atmosFluxes, "longwaveUp", longwaveUp)
 
        call MPAS_pool_get_array(shortwave, "absorbedShortwaveFlux", absorbedShortwaveFlux)
@@ -3102,7 +3135,7 @@ contains
              latentHeatFlux(iCell)              = latentHeatFlux(iCell)              * iceAreaInverse
              absorbedShortwaveFlux(iCell)       = absorbedShortwaveFlux(iCell)       * iceAreaInverse
              longwaveUp(iCell)                  = longwaveUp(iCell)                  * iceAreaInverse
-             evaporativeHeatFlux(iCell)         = evaporativeHeatFlux(iCell)         * iceAreaInverse
+             evaporativeWaterFlux(iCell)         = evaporativeWaterFlux(iCell)         * iceAreaInverse
              atmosReferenceTemperature2m(iCell) = atmosReferenceTemperature2m(iCell) * iceAreaInverse
              atmosReferenceHumidity2m(iCell)    = atmosReferenceHumidity2m(iCell)    * iceAreaInverse
              oceanFreshWaterFlux(iCell)         = oceanFreshWaterFlux(iCell)         * iceAreaInverse
@@ -3123,7 +3156,7 @@ contains
              absorbedShortwaveFlux(iCell)       = 0.0_RKIND
              longwaveUp(iCell)                  = &
                   -ciceStefanBoltzmann * (seaFreezingTemperature(iCell) + ciceFreshWaterFreezingPoint)**4
-             evaporativeHeatFlux(iCell)         = 0.0_RKIND
+             evaporativeWaterFlux(iCell)         = 0.0_RKIND
              atmosReferenceTemperature2m(iCell) = airTemperature(iCell)
              atmosReferenceHumidity2m(iCell)    = airSpecificHumidity(iCell)
              oceanFreshWaterFlux(iCell)         = 0.0_RKIND
@@ -3208,7 +3241,7 @@ contains
          longwaveUpOcean, &
          sensibleHeatFluxOcean, &
          latentHeatFluxOcean, &
-         evaporativeHeatFluxOcean, &
+         evaporativeWaterFluxOcean, &
          albedoVisibleDirectOcean, &
          albedoIRDirectOcean, &
          albedoVisibleDiffuseOcean, &
@@ -3283,7 +3316,7 @@ contains
        call MPAS_pool_get_array(oceanAtmosphere, "longwaveUpOcean", longwaveUpOcean)
        call MPAS_pool_get_array(oceanAtmosphere, "sensibleHeatFluxOcean", sensibleHeatFluxOcean)
        call MPAS_pool_get_array(oceanAtmosphere, "latentHeatFluxOcean", latentHeatFluxOcean)
-       call MPAS_pool_get_array(oceanAtmosphere, "evaporativeHeatFluxOcean", evaporativeHeatFluxOcean)
+       call MPAS_pool_get_array(oceanAtmosphere, "evaporativeWaterFluxOcean", evaporativeWaterFluxOcean)
 
        do iCell = 1, nCellsSolve
 
@@ -3328,7 +3361,7 @@ contains
                sensibleTransferCoefficient, &
                latentHeatFluxOcean(iCell), &
                latentTransferCoefficient, &
-               evaporativeHeatFluxOcean(iCell), &
+               evaporativeWaterFluxOcean(iCell), &
                longwaveDown(iCell), &
                potentialTemperatureDifference, &
                specificHumidityDifference, &
@@ -5890,7 +5923,7 @@ contains
          airStressCellV, &
          sensibleHeatFlux, &
          latentHeatFlux, &
-         evaporativeHeatFlux, &
+         evaporativeWaterFlux, &
          longwaveUp, &
          absorbedShortwaveFlux, &
          atmosReferenceTemperature2m, &
@@ -5910,7 +5943,7 @@ contains
 
        call MPAS_pool_get_array(atmosFluxesPool, "sensibleHeatFlux", sensibleHeatFlux)
        call MPAS_pool_get_array(atmosFluxesPool, "latentHeatFlux", latentHeatFlux)
-       call MPAS_pool_get_array(atmosFluxesPool, "evaporativeHeatFlux", evaporativeHeatFlux)
+       call MPAS_pool_get_array(atmosFluxesPool, "evaporativeWaterFlux", evaporativeWaterFlux)
        call MPAS_pool_get_array(atmosFluxesPool, "longwaveUp", longwaveUp)
 
        call MPAS_pool_get_array(shortwavePool, "absorbedShortwaveFlux", absorbedShortwaveFlux)
@@ -5923,7 +5956,7 @@ contains
        airStressCellV(:)              = 0.0_RKIND
        sensibleHeatFlux(:)            = 0.0_RKIND
        latentHeatFlux(:)              = 0.0_RKIND
-       evaporativeHeatFlux(:)         = 0.0_RKIND
+       evaporativeWaterFlux(:)        = 0.0_RKIND
        longwaveUp(:)                  = 0.0_RKIND
        absorbedShortwaveFlux(:)       = 0.0_RKIND
        atmosReferenceTemperature2m(:) = 0.0_RKIND

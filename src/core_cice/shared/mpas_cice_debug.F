@@ -3007,7 +3007,7 @@ contains
        call cice_debug_write_out_field(domain, "atmos_fluxes", "sensibleHeatFlux", "fsens")
        call cice_debug_write_out_field(domain, "atmos_fluxes", "latentHeatFlux", "flat")
        call cice_debug_write_out_field(domain, "atmos_fluxes", "latentHeatFluxCategory", "flatn")
-       call cice_debug_write_out_field(domain, "atmos_fluxes", "evaporativeHeatFlux", "evap")
+       call cice_debug_write_out_field(domain, "atmos_fluxes", "evaporativeWaterFlux", "evap")
 
        call cice_debug_write_out_field(domain, "ocean_fluxes", "oceanFreshWaterFlux", "fresh")
        call cice_debug_write_out_field(domain, "ocean_fluxes", "oceanSaltFlux", "fsalt")

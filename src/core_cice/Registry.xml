@@ -21,6 +21,7 @@
 		<dim name="nAerosols"          definition="1"/>
 		<dim name="nSpectralIntervals" definition="3"/>
 		<dim name="nZBGCTracers"       definition="0"/>
+		<dim name="nRegions"       definition="3"/>
 	</dims>
 	<nml_record name="cice_model" in_defaults="true">
 		<nml_option name="config_dt"                         type="real"          default_value="3600.0"/>
@@ -803,7 +804,7 @@
 		<var name="sensibleHeatFluxCategory"          type="real"     dimensions="nCategories nCells"  name_in_code="sensibleHeatFluxCategory"/>
 		<var name="latentHeatFlux"                    type="real"     dimensions="nCells"              name_in_code="latentHeatFlux"/>
 		<var name="latentHeatFluxCategory"            type="real"     dimensions="nCategories nCells"  name_in_code="latentHeatFluxCategory"/>
-		<var name="evaporativeHeatFlux"               type="real"     dimensions="nCells"              name_in_code="evaporativeHeatFlux"/>
+		<var name="evaporativeWaterFlux"               type="real"     dimensions="nCells"              name_in_code="evaporativeWaterFlux"/>
 	</var_struct>
 
 	<!-- fluxes with the ocean -->
@@ -812,6 +813,10 @@
 		<var name="oceanSaltFlux"                     type="real"     dimensions="nCells"              name_in_code="oceanSaltFlux"/>
 		<var name="oceanHeatFlux"                     type="real"     dimensions="nCells"              name_in_code="oceanHeatFlux"/>
 		<var name="oceanShortwaveFlux"                type="real"     dimensions="nCells"              name_in_code="oceanShortwaveFlux"/>
+		<var name="oceanFreshWaterFluxArea"               type="real"     dimensions="nCells"              name_in_code="oceanFreshWaterFluxArea"/>
+		<var name="oceanSaltFluxArea"                     type="real"     dimensions="nCells"              name_in_code="oceanSaltFluxArea"/>
+		<var name="oceanHeatFluxArea"                     type="real"     dimensions="nCells"              name_in_code="oceanHeatFluxArea"/>
+		<var name="oceanShortwaveFluxArea"                type="real"     dimensions="nCells"              name_in_code="oceanShortwaveFluxArea"/>
 	</var_struct>
 
 	<!-- ocean atmosphere interaction -->
@@ -827,7 +832,7 @@
 		<var name="longwaveUpOcean"                   type="real"     dimensions="nCells"              name_in_code="longwaveUpOcean"/>
 		<var name="sensibleHeatFluxOcean"             type="real"     dimensions="nCells"              name_in_code="sensibleHeatFluxOcean"/>
 		<var name="latentHeatFluxOcean"               type="real"     dimensions="nCells"              name_in_code="latentHeatFluxOcean"/>
-		<var name="evaporativeHeatFluxOcean"          type="real"     dimensions="nCells"              name_in_code="evaporativeHeatFluxOcean"/>
+		<var name="evaporativeWaterFluxOcean"          type="real"     dimensions="nCells"              name_in_code="evaporativeWaterFluxOcean"/>
 	</var_struct>
 
 	<!-- shortwave radiation -->
@@ -925,6 +930,11 @@
 		<var name="snowThickness"                     type="real"     dimensions="nCells Time"          name_in_code="snowThickness"/>
 	</var_struct>
 
+	<!-- Regions -->
+	<var_struct name="regions" time_levs="1">
+		<var name="regionMask" type="integer" dimensions="nRegions nCells" name_in_code="regionMask"/>
+	</var_struct>
+
 	<!-- Diagnostics -->
 	<var_struct name="diagnostics" time_levs="1">
 	        <var name="meltOnset"                         type="real"     dimensions="nCells"              name_in_code="meltOnset"/>
@@ -932,6 +942,7 @@
 	        <var name="iceAreaTendencyTransport"          type="real"     dimensions="nCells"              name_in_code="iceAreaTendencyTransport"/>
 	        <var name="iceVolumeTendencyTransport"        type="real"     dimensions="nCells"              name_in_code="iceVolumeTendencyTransport"/>
 	        <var name="iceAgeTendencyTransport"           type="real"     dimensions="nCells"              name_in_code="iceAgeTendencyTransport"/>
+	        <var name="freezingMeltingPotentialInitial"           type="real"     dimensions="nCells"              name_in_code="freezingMeltingPotentialInitial"/>
 	</var_struct>
 
 	<!-- Global diagnostics -->

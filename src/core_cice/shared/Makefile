@@ -1,8 +1,6 @@
 .SUFFIXES: .F .o
 
-OBJS = 	mpas_cice_core.o \
-	mpas_cice_core_interface.o \
-	mpas_cice_time_integration.o \
+OBJS = 	mpas_cice_time_integration.o \
 	mpas_cice_advection.o \
 	mpas_cice_velocity_solver_unit_tests.o \
 	mpas_cice_velocity_solver.o \

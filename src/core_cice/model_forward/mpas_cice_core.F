@@ -289,6 +289,9 @@ module cice_core
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
          write(0,*) 'Doing timestep ', trim(timeStamp)
 
+         ! pre-timestep analysis computation
+         call cice_analysis_precompute(domain, ierr)
+
          ! do the time integration
          call mpas_timer_start("time integration")
          call mpas_timestep(domain, itimestep, dt, timeStamp)
