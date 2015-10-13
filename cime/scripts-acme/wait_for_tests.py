@@ -239,7 +239,7 @@ def reduce_stati(stati):
     return rv
 
 ###############################################################################
-def parse_test_status_file(file_contents):
+def parse_test_status_file(file_contents, status_file_path=None):
 ###############################################################################
     rv = {}
     test_name = None
@@ -277,7 +277,7 @@ def interpret_status_file(file_contents, status_file_path, check_throughput=Fals
     >>> interpret_status_file('PASS testname RUN1\nFAIL testname nlcomp', '', ignore_namelists=True)
     ('testname', 'PASS')
     """
-    statuses, test_name = parse_test_status_file(file_contents)
+    statuses, test_name = parse_test_status_file(file_contents, status_file_path)
     adjusted_statuses = []
     for phase, status in statuses.iteritems():
         verbose_print("Test: '%s' had status '%s' for phase '%s'" % (test_name, status, phase))
