@@ -196,7 +196,7 @@
       </test>
     </grid>
   </compset>
-  <compset name="B1850C5L45BG">
+  <compset name="B1850C5L45BGC">
     <grid name="T31_g37">
       <test name="ERS_Ld5">
         <machine compiler="intel" testtype="prealpha" testmods="allactive/cism/test_coupling">yellowstone</machine>
