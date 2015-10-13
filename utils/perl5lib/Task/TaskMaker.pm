@@ -275,7 +275,7 @@ sub _computeValues
 	if($self->{'COMPILER'} eq "intel" && $taskpernode > 1)
 	{
 		my $taskpernuma = ceil($taskpernode / 2);
-		$aprun .= " -S $taskpernuma -cc numa_mode ";
+		$aprun .= " -S $taskpernuma -cc numa_node ";
 	}
 
 	# add all the calculated numbers as instance data. 

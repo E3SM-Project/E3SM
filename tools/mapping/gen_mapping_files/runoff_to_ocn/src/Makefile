@@ -30,7 +30,7 @@
 #-------------------------------------------------------------------------------
 
 EXEC     := ../runoff_map
-MACFILE  := Macros
+MACFILE  := Macros.make
 MODEL    := NONE 
 VPFILE   := NONE
 VPATH    := $(shell pwd)
@@ -136,7 +136,7 @@ realclean: clean
 	$(RM) -f $(EXEC)
 
 distclean: realclean
-	$(RM) -f Macros env_mach_specific Depends* makdep build.csh
+	$(RM) -f $(MACFILE) env_mach_specific Depends* makdep build.csh
 
 #-------------------------------------------------------------------------------
 # Build & include dependency files
@@ -164,7 +164,7 @@ distclean: realclean
 	@ $(DEPGEN) -f $(INCS) $<  > $@
 
 $(DEPGEN) :
-	cc -o $(DEPGEN) ../tools/makdep.c
+	$(SCC) -o $(DEPGEN) ../tools/makdep.c
 
 # the if-tests prevent DEPS files from being created when they're not needed
 ifneq ($(MAKECMDGOALS), db_files)
