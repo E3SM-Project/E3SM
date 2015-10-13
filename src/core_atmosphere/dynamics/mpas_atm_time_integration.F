@@ -3027,8 +3027,8 @@ MPAS_GPTL_STOP('dyn_tend')
       real (kind=RKIND), dimension(nEdges+1) :: invDvEdge
       real (kind=RKIND), dimension(nCells+1) :: invAreaCell
       real (kind=RKIND), dimension(nVertices+1) :: invAreaTriangle
-      real (kind=RKIND), dimension(nCells+1) :: meshScalingDel2
-      real (kind=RKIND), dimension(nCells+1) :: meshScalingDel4
+      real (kind=RKIND), dimension(nEdges+1) :: meshScalingDel2
+      real (kind=RKIND), dimension(nEdges+1) :: meshScalingDel4
       real (kind=RKIND), dimension(maxEdges2,nEdges+1) :: weightsOnEdge
       real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: zgrid
       real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: rho_edge
