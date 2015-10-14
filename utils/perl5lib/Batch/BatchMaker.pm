@@ -187,11 +187,11 @@ sub makeBatchScript()
     
     $self->getBatchSystemTypeForMachine();
     $self->setTaskInfo();
-
     $self->setQueue();
     $self->setWallTime();
     $self->setProject();
     $self->setBatchDirectives();
+    $self->getLtArchiveOptions();
     $self->setCESMRun();
     $self->writeBatchScript($inputfilename, $outputfilename);
 }
@@ -755,6 +755,42 @@ sub writeBatchScript()
     print $RUNSCRIPT $templatetext;
     close $RUNSCRIPT;
     chmod 0755, $outputfilename;
+}
+
+#==============================================================================
+# Get the long-term archiver options from $CIMEROOT/cime_config/cesm/machines 
+# These options will be used when creating the lt_archive run scrip
+#==============================================================================
+sub getLtArchiveOptions()
+{
+    my $self = shift;
+    
+    my $lt_archive_file = $self->{machroot} . "/config_lt_archive.xml";
+    my $ltarchxml = XML::LibXML->new(no_blanks => 1);
+    my $ltarchparser = $ltarchxml->parse_file($lt_archive_file) or die "could not parse $lt_archive_file, $! $?";
+    my $ltarchroot = $ltarchparser->getDocumentElement();
+    
+    my $lt_archive_args;
+    my @argnodes;
+    
+    @argnodes = $ltarchroot->findnodes("//machine[\@name=\'$self->{machine}\']/lt_archive_args");
+    
+    # First, search for the machine-specific lt_archive_args
+    if(! @argnodes)
+    {
+        @argnodes = $ltarchroot->findnodes("//machine[\@name=\'default\']/lt_archive_args");
+    }
+    
+    # if no default is found, then set lt_archive_args to empty
+    if(! @argnodes)
+    {
+        $lt_archive_args = '';
+    }
+    else
+    {
+        my $argnode = $argnodes[0];
+        $self->{lt_archive_args} = $argnode->textContent();
+    }
 }
 
 #==============================================================================
