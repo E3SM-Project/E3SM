@@ -1418,6 +1418,20 @@
 		This is an advanced flag and should only be used by expert users."
 	 ></entry> 
 
+  <entry id="CLM_USE_PETSC"
+	 type="logical"
+	 valid_values="TRUE,FALSE"
+	 value="FALSE"
+	 group="build_component_clm"
+	 sdesc="TRUE implies CLM is built with support for the PETSc library"
+	 ldesc="
+                The Variably Saturated Flow Model (VSFM) solver in CLM uses the PETSc library.
+                In order to use the VSFM solver, CLM must be built with PETSc
+                support and linking to PETSc must occur when building the ACME executable.
+                This occurs if this variable is set to TRUE.
+                Note that is only available on a limited set of machines/compilers."
+	 ></entry>
+
   <!-- ======================================================================= -->
   <!-- VIC                                                                     -->
   <!-- ======================================================================= -->
@@ -2919,6 +2933,17 @@
 		If TRUE, the component libraries are always built with OpenMP capability. 
 		The default is FALSE."
 	 ></entry> 
+
+  <entry id="USE_PETSC"
+	 type="logical"
+	 valid_values="TRUE,FALSE"
+	 value="FALSE"
+	 group="build_def"
+	 sdesc="TRUE implies linking to the PETSc library - set automatically by XXX_USE_PETSC options (do not edit)"
+	 ldesc="
+		Flag to turn on linking to the PETSc library. Currently this is
+		used by CLM. This is currently only supported for certain machines."
+	 ></entry>
 
   <entry id="USE_TRILINOS"
 	 type="logical"
