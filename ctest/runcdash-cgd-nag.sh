@@ -15,6 +15,7 @@ export CC=mpicc
 export FC=mpif90
 export PIO_DASHBOARD_SITE="CGD"
 export PIO_DASHBOARD_ROOT=/scratch/cluster/katec/dashboard
+export CTEST_SCRIPT_DIRECTORY=${PIO_DASHBOARD_ROOT}/src
 export PIO_COMPILER_ID=Nag-6.0-gcc-`gcc --version | head -n 1 | cut -d' ' -f3`
 
 if [ ! -d "$PIO_DASHBOARD_ROOT" ]; then

@@ -107,6 +107,7 @@ set (CTEST_BUILD_NAME "${osname}-${osrel}-${cpu}-${compid}")
 
 ## -- SRC Dir (where this script exists)
 set (CTEST_SOURCE_DIRECTORY   "${CTEST_SCRIPT_DIRECTORY}")
+message (" -- CTest Script Dir = ${CTEST_SCRIPT_DIRECTORY}")
 
 ## -- BIN Dir 
 set (CTEST_BINARY_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/build-${CTEST_BUILD_NAME}-${CTEST_BUILD_GROUP}")
