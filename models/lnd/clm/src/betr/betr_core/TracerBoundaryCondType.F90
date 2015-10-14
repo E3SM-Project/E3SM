@@ -1,9 +1,12 @@
 module TracerBoundaryCondType
-
+!
+! !DESCRIPTION:
+! data type to specify boundary conditions for tracer tranpsort
+!
+! !USES:
    use shr_kind_mod   , only : r8 => shr_kind_r8
    use decompMod      , only : bounds_type
-  !
-  ! !PUBLIC TYPES:
+
   implicit none
   save
   private
@@ -33,11 +36,13 @@ contains
  !------------------------------------------------------------------------
   subroutine Init(this, bounds, betrtracer_vars)
     !
-    ! USES
+    ! !DESCRIPTION:
+    ! Initialize the datatype
     !
+    ! !USES:
     use BeTRTracerType, only : BeTRTracer_Type
     !
-    ! Arguments
+    ! !ARGUMENTS:
     class(tracerboundarycond_type) :: this
     type(bounds_type), intent(in) :: bounds
     type(BeTRTracer_Type), intent(in) :: betrtracer_vars
@@ -52,7 +57,7 @@ contains
   subroutine InitAllocate(this, bounds, betrtracer_vars)
     use BeTRTracerType, only : BeTRTracer_Type
   !
-  !DESCRIPTION
+  ! !DESCRIPTION:
   ! allocate memories to relevant variables
   !
   ! !ARGUMENTS:
@@ -77,46 +82,49 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine InitHistory(this, bounds)
-    !
-    ! History fields initialization
-    !
-    ! !USES:
-    !use shr_infnan_mod, only: nan => shr_infnan_nan, assignment(=)
-    use clm_varcon    , only: spval
-    use clm_varpar    , only: nlevsno
-    !use histFileMod   , only: hist_addfld1d, hist_addfld2d
-    !use histFileMod   , only: no_snow_normal, no_snow_zero
-    !
-    ! !ARGUMENTS:
-    class(tracerboundarycond_type) :: this
-    type(bounds_type), intent(in) :: bounds
-    !
-    ! !LOCAL VARIABLES:
-    integer :: begc, endc
-    real(r8), pointer :: data2dptr_col(:,:) ! temp. pointers for slicing larger arrays
+  !
+  ! !DESCRIPTION:
+  ! History fields initialization
+  !
+  ! !USES:
+  use clm_varcon    , only: spval
+  use clm_varpar    , only: nlevsno
+
+  !
+  ! !ARGUMENTS:
+  class(tracerboundarycond_type) :: this
+  type(bounds_type), intent(in) :: bounds
+  !
+  ! !LOCAL VARIABLES:
+  integer :: begc, endc
+  real(r8), pointer :: data2dptr_col(:,:) ! temp. pointers for slicing larger arrays
+
+
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
   subroutine InitCold(this, bounds)
-    !
-    ! !USES:
-    !
-    use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
-    implicit none
-   ! !ARGUMENTS:
-    class(tracerboundarycond_type) :: this
-    type(bounds_type) , intent(in) :: bounds
-    !
-    ! !LOCAL VARIABLES:
+  !
+  ! !DESCRIPTION:
+  ! do cold initialization
+  ! !USES:
+  !
+  use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
+  implicit none
+  ! !ARGUMENTS:
+  class(tracerboundarycond_type) :: this
+  type(bounds_type) , intent(in) :: bounds
+  !
+  ! !LOCAL VARIABLES:
 
 
-    !-----------------------------------------------------------------------
-    this%topbc_type(:)                  = -1
-    this%botbc_type(:)                  = -1
-    this%tracer_gwdif_concflux_top_col(:,:,:) = nan
-    this%condc_toplay_col(:,:)          = nan
-    this%bot_concflux_col(:,:,:)        = 0._r8
-    this%jtops_col(:) = 1
+  !-----------------------------------------------------------------------
+  this%topbc_type(:)                  = -1
+  this%botbc_type(:)                  = -1
+  this%tracer_gwdif_concflux_top_col(:,:,:) = nan
+  this%condc_toplay_col(:,:)          = nan
+  this%bot_concflux_col(:,:,:)        = 0._r8
+  this%jtops_col(:) = 1
   end subroutine InitCold
 
   !------------------------------------------------------------------------
@@ -129,8 +137,6 @@ contains
     use clm_varpar , only : nlevsno, nlevsoi
     use clm_varcon , only : spval
     use clm_varctl , only : iulog
-    !use spmdMod    , only : masterproc
-    !use restUtilMod
     use ncdio_pio
     !
     ! !ARGUMENTS:

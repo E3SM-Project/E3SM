@@ -1,4 +1,9 @@
 module BGCCenturyParMod
+!
+! !DESCRIPTION:
+!  parameterization module for century bgc
+!
+! !USES:
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use abortutils                         , only : endrun
   use shr_log_mod                        , only : errMsg => shr_log_errMsg
@@ -31,11 +36,11 @@ implicit none
      real(r8) :: compet_denit      ! (unitless) relative competitiveness of denitrifiers for NO3
      real(r8) :: compet_nit        ! (unitless) relative competitiveness of nitrifiers for NH4
   end type NutrientCompetitionParamsType
-  
-  ! NutrientCompetitionParamsInst is populated in readCNAllocParams which is called in 
+
+  ! NutrientCompetitionParamsInst is populated in readCNAllocParams which is called in
   type(NutrientCompetitionParamsType),protected ::  NutrientCompetitionParamsInst
-  
-  
+
+
   type, private :: CNDecompBgcParamsType
      real(r8) :: cn_s1_bgc     !C:N for SOM 1
      real(r8) :: cn_s2_bgc     !C:N for SOM 2
@@ -45,11 +50,11 @@ implicit none
      real(r8) :: rf_l2s1_bgc
      real(r8) :: rf_l3s2_bgc
 
-     real(r8) :: rf_s2s1_bgc    
-     real(r8) :: rf_s2s3_bgc    
-     real(r8) :: rf_s3s1_bgc    
+     real(r8) :: rf_s2s1_bgc
+     real(r8) :: rf_s2s3_bgc
+     real(r8) :: rf_s3s1_bgc
 
-     real(r8) :: rf_cwdl2_bgc 
+     real(r8) :: rf_cwdl2_bgc
      real(r8) :: rf_cwdl3_bgc
 
      real(r8) :: tau_l1_bgc    ! turnover time of  litter 1 (yr)
@@ -66,13 +71,13 @@ implicit none
      real(r8) :: k_decay_som2
      real(r8) :: k_decay_som3
      real(r8) :: k_decay_cwd
-     
+
      real(r8) :: cwd_fcel_bgc !cellulose fraction for CWD
      real(r8) :: cwd_flig_bgc !
 
      real(r8) :: k_frag_bgc   !fragmentation rate for CWD
      real(r8) :: minpsi_bgc   !minimum soil water potential for heterotrophic resp
-     
+
      integer  :: nsompools = 3
      real(r8),allocatable :: spinup_vector(:) ! multipliers for soil decomp during accelerated spinup
 
@@ -80,15 +85,18 @@ implicit none
 
   type(CNDecompBgcParamsType),protected ::  CNDecompBgcParamsInst
 
-  
+
   contains
 
 
 !-------------------------------------------------------------------------------
   subroutine readCentNitrifDenitrifParams ( ncid )
     !
+    ! !DESCRIPTION:
+    ! read in nitrification denitrification parameters:
+
+    ! !USES:
     use ncdio_pio    , only: file_desc_t,ncd_io
-   
     use clm_varcon   , only : secspday
     use clm_time_manager , only : get_days_per_year
     !
@@ -141,11 +149,12 @@ implicit none
     CNNitrifDenitrifParamsInst%rij_kro_delta=tempr
 
   end subroutine readCentNitrifDenitrifParams
-  
+
   !-----------------------------------------------------------------------
   subroutine readCentDecompBgcParams ( ncid, nelms, betrtracer_vars )
     !
     ! !DESCRIPTION:
+    ! read in decomposition parameters for century bgc
     !
     ! !USES:
     use ncdio_pio              , only: file_desc_t,ncd_io
@@ -153,7 +162,7 @@ implicit none
     use clm_varctl             , only : spinup_state
     use clm_varpar             , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
     use clm_time_manager       , only : get_days_per_year
-    use BeTRTracerType         , only : BeTRTracer_Type    
+    use BeTRTracerType         , only : BeTRTracer_Type
     use CNDecompCascadeConType , only : decomp_cascade_con
     !
     ! !ARGUMENTS:
@@ -167,12 +176,12 @@ implicit none
     logical            :: readv   ! has variable been read in or not
     real(r8)           :: tempr   ! temporary to read in constant
     character(len=100) :: tString ! temp. var for reading
-    
-    real(r8) :: tau_l1  
-    real(r8) :: tau_l2_l3 
-    real(r8) :: tau_s1  
-    real(r8) :: tau_s2  
-    real(r8) :: tau_s3     
+
+    real(r8) :: tau_l1
+    real(r8) :: tau_l2_l3
+    real(r8) :: tau_s1
+    real(r8) :: tau_s2
+    real(r8) :: tau_s3
     real(r8) :: days_per_year
     real(r8) :: tau_cwd
     real(r8) :: cn_s1
@@ -187,19 +196,19 @@ implicit none
     integer  :: ii, jj, kk
     !-----------------------------------------------------------------------
     associate(                                                                                 & !
-         floating_cn_ratio_decomp_pools => decomp_cascade_con%floating_cn_ratio_decomp_pools , & ! Output: [logical           (:)     ]  TRUE => pool has fixed C:N ratio                          
-         decomp_pool_name_restart       => decomp_cascade_con%decomp_pool_name_restart       , & ! Output: [character(len=8)  (:)     ]  name of pool for restart files                   
-         decomp_pool_name_history       => decomp_cascade_con%decomp_pool_name_history       , & ! Output: [character(len=8)  (:)     ]  name of pool for history files                   
-         decomp_pool_name_long          => decomp_cascade_con%decomp_pool_name_long          , & ! Output: [character(len=20) (:)     ]  name of pool for netcdf long names              
-         decomp_pool_name_short         => decomp_cascade_con%decomp_pool_name_short         , & ! Output: [character(len=8)  (:)     ]  name of pool for netcdf short names              
-         is_litter                      => decomp_cascade_con%is_litter                      , & ! Output: [logical           (:)     ]  TRUE => pool is a litter pool                             
-         is_soil                        => decomp_cascade_con%is_soil                        , & ! Output: [logical           (:)     ]  TRUE => pool is a soil pool                               
-         is_cwd                         => decomp_cascade_con%is_cwd                         , & ! Output: [logical           (:)     ]  TRUE => pool is a cwd pool                                
-         initial_cn_ratio               => decomp_cascade_con%initial_cn_ratio               , & ! Output: [real(r8)          (:)     ]  c:n ratio for initialization of pools                    
-         initial_stock                  => decomp_cascade_con%initial_stock                  , & ! Output: [real(r8)          (:)     ]  initial concentration for seeding at spinup              
-         is_metabolic                   => decomp_cascade_con%is_metabolic                   , & ! Output: [logical           (:)     ]  TRUE => pool is metabolic material                        
-         is_cellulose                   => decomp_cascade_con%is_cellulose                   , & ! Output: [logical           (:)     ]  TRUE => pool is cellulose                                 
-         is_lignin                      => decomp_cascade_con%is_lignin                      , & ! Output: [logical           (:)     ]  TRUE => pool is lignin                                    
+         floating_cn_ratio_decomp_pools => decomp_cascade_con%floating_cn_ratio_decomp_pools , & ! Output: [logical           (:)     ]  TRUE => pool has fixed C:N ratio
+         decomp_pool_name_restart       => decomp_cascade_con%decomp_pool_name_restart       , & ! Output: [character(len=8)  (:)     ]  name of pool for restart files
+         decomp_pool_name_history       => decomp_cascade_con%decomp_pool_name_history       , & ! Output: [character(len=8)  (:)     ]  name of pool for history files
+         decomp_pool_name_long          => decomp_cascade_con%decomp_pool_name_long          , & ! Output: [character(len=20) (:)     ]  name of pool for netcdf long names
+         decomp_pool_name_short         => decomp_cascade_con%decomp_pool_name_short         , & ! Output: [character(len=8)  (:)     ]  name of pool for netcdf short names
+         is_litter                      => decomp_cascade_con%is_litter                      , & ! Output: [logical           (:)     ]  TRUE => pool is a litter pool
+         is_soil                        => decomp_cascade_con%is_soil                        , & ! Output: [logical           (:)     ]  TRUE => pool is a soil pool
+         is_cwd                         => decomp_cascade_con%is_cwd                         , & ! Output: [logical           (:)     ]  TRUE => pool is a cwd pool
+         initial_cn_ratio               => decomp_cascade_con%initial_cn_ratio               , & ! Output: [real(r8)          (:)     ]  c:n ratio for initialization of pools
+         initial_stock                  => decomp_cascade_con%initial_stock                  , & ! Output: [real(r8)          (:)     ]  initial concentration for seeding at spinup
+         is_metabolic                   => decomp_cascade_con%is_metabolic                   , & ! Output: [logical           (:)     ]  TRUE => pool is metabolic material
+         is_cellulose                   => decomp_cascade_con%is_cellulose                   , & ! Output: [logical           (:)     ]  TRUE => pool is cellulose
+         is_lignin                      => decomp_cascade_con%is_lignin                      , & ! Output: [logical           (:)     ]  TRUE => pool is lignin
          spinup_factor                  => decomp_cascade_con%spinup_factor                    & ! Output: [real(r8)          (:)
     )
     ! These are not read off of netcdf file
@@ -207,7 +216,7 @@ implicit none
     CNDecompBgcParamsInst%spinup_vector(:) = (/ 1.0_r8, 15.0_r8, 675.0_r8 /)
 
 
-      
+
     ! Read off of netcdf file
     tString='tau_l1'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
@@ -267,7 +276,7 @@ implicit none
     tString='rf_l3s2_bgc'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%rf_l3s2_bgc=tempr   
+    CNDecompBgcParamsInst%rf_l3s2_bgc=tempr
 
     tString='rf_s2s1_bgc'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
@@ -307,12 +316,12 @@ implicit none
     tString='minpsi_hr'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%minpsi_bgc=tempr 
+    CNDecompBgcParamsInst%minpsi_bgc=tempr
 
     tString='cwd_flig'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompBgcParamsInst%cwd_flig_bgc=tempr 
+    CNDecompBgcParamsInst%cwd_flig_bgc=tempr
 
     !------- time-constant coefficients ---------- !
     ! set soil organic matter compartment C:N ratios
@@ -433,15 +442,15 @@ implicit none
     spinup_factor(i_soil1) = CNDecompBgcParamsInst%spinup_vector(1)
     spinup_factor(i_soil2) = CNDecompBgcParamsInst%spinup_vector(2)
     spinup_factor(i_soil3) = CNDecompBgcParamsInst%spinup_vector(3)
-    
+
     tau_l1 = 1./18.5
     tau_l2_l3 = 1./4.9
     tau_s1 = 1./7.3
     tau_s2 = 1./0.2
     tau_s3 = 1./.0045
     ! century leaves wood decomposition rates open, within range of 0 - 0.5 yr^-1
-    tau_cwd  = 1./0.3    
-    days_per_year = get_days_per_year()    
+    tau_cwd  = 1./0.3
+    days_per_year = get_days_per_year()
 
     CNDecompBgcParamsInst%k_decay_lit1=1._r8/(secspday * days_per_year * tau_l1)        ![1/s]
     CNDecompBgcParamsInst%k_decay_lit2=1._r8/(secspday * days_per_year * tau_l2_l3)
@@ -450,14 +459,12 @@ implicit none
     CNDecompBgcParamsInst%k_decay_som2=1._r8/(secspday * days_per_year * tau_s2)
     CNDecompBgcParamsInst%k_decay_som3=1._r8/(secspday * days_per_year * tau_s3)
     CNDecompBgcParamsInst%k_decay_cwd =1._r8/(secspday * days_per_year * tau_cwd)
-    
-    !codes below needs some change
+
+
     kk = 1
     betrtracer_vars%tracer_solid_passive_diffus_scal_group(kk) = 1._r8
     betrtracer_vars%tracer_solid_passive_diffus_thc_group(kk) = 1.e-30_r8
 
-
-    
     if ( spinup_state .eq. 1 ) then
       CNDecompBgcParamsInst%k_decay_som1 = CNDecompBgcParamsInst%k_decay_som1 * CNDecompBgcParamsInst%spinup_vector(1)
       CNDecompBgcParamsInst%k_decay_som2 = CNDecompBgcParamsInst%k_decay_som2 * CNDecompBgcParamsInst%spinup_vector(2)
@@ -467,35 +474,38 @@ implicit none
       kk = 2
       do jj = 1, nelms
         betrtracer_vars%tracer_solid_passive_diffus_scal_group(kk) = betrtracer_vars%tracer_solid_passive_diffus_scal_group(kk) * spinup_factor(ii)
-      enddo     
+      enddo
 
       ii=i_soil2
-      kk = 3 
+      kk = 3
       do jj = 1, nelms
         betrtracer_vars%tracer_solid_passive_diffus_scal_group(kk) = betrtracer_vars%tracer_solid_passive_diffus_scal_group(kk) * spinup_factor(ii)
-      enddo     
+      enddo
 
       ii=i_soil3
-      kk = 4 
+      kk = 4
       do jj = 1, nelms
         betrtracer_vars%tracer_solid_passive_diffus_scal_group(kk) = betrtracer_vars%tracer_solid_passive_diffus_scal_group(kk) * spinup_factor(ii)
-      enddo     
-    
+      enddo
+
     endif
     end associate
-    
-    
-  end subroutine readCentDecompBgcParams
-  
-  
 
-  
+
+  end subroutine readCentDecompBgcParams
+
+
+
+
 !-----------------------------------------------------------------------
   subroutine readCentCNAllocParams ( ncid )
     !
+    ! !DESCRIPTION:
+    ! read in allocation parameters.
+    !
     ! !USES:
     use ncdio_pio , only : file_desc_t,ncd_io
-    
+
     ! !ARGUMENTS:
     implicit none
     type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
@@ -520,7 +530,7 @@ implicit none
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     NutrientCompetitionParamsInst%compet_plant_nh4=tempr
-   
+
     tString='compet_decomp_no3'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
@@ -530,7 +540,7 @@ implicit none
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     NutrientCompetitionParamsInst%compet_decomp_nh4=tempr
-   
+
     tString='compet_denit'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
@@ -539,10 +549,10 @@ implicit none
     tString='compet_nit'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    NutrientCompetitionParamsInst%compet_nit=tempr   
+    NutrientCompetitionParamsInst%compet_nit=tempr
 
-    
+
   end subroutine readCentCNAllocParams
-  
-           
+
+
 end module BGCCenturyParMod

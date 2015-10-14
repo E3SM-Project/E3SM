@@ -1,13 +1,13 @@
 module BGCReactionsFactoryMod
 !
-! DESCRIPTION
-! factory to load the specific bgc reaction modules
+! !DESCRIPTION:
+!  factory to load the specific bgc reaction modules
 !
 ! History:
 !  Created by Jinyun Tang, Oct 2, 2014
 !
   !
-  ! USES
+  ! !USES:
   !
   use shr_kind_mod          , only : r8 => shr_kind_r8
   use decompMod             , only : bounds_type
@@ -22,10 +22,10 @@ implicit none
 
   function ctreate_bgc_reaction_type(method) result(bgc_reaction)
   !
-  ! ! DESCRIPTION
+  ! !DESCRIPTION:
   ! create and return an object of bgc_reaction
   !
-  ! USES
+  ! !USES:
   use BGCReactionsMod              , only : bgc_reaction_type
   use BGCReactionsMockRunType      , only : bgc_reaction_mock_run_type
   use BGCReactionsCenturyType      , only : bgc_reaction_CENTURY_type
@@ -34,13 +34,12 @@ implicit none
   use BGCReactionsSminNType        , only : bgc_reaction_sminn_type
   use BGCReactionsCenturyCLM3Type  , only : bgc_reaction_CENTURY_clm3_type
   use BGCReactionsCenturyCLMOType  , only : bgc_reaction_CENTURY_clmo_type
-
 !  use BGCReactionsO18IsotopeType, only : bgc_reaction_O18ISO_type
   use abortutils                , only : endrun
   use clm_varctl                , only : iulog
   use tracer_varcon             , only : is_active_betr_bgc, do_betr_leaching
-  ! !ARGUMENTS
 
+  ! !ARGUMENTS:
   class(bgc_reaction_type), allocatable :: bgc_reaction
 
   character(len=*), intent(in) :: method

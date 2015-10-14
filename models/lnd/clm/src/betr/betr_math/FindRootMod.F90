@@ -1,8 +1,11 @@
 module FindRootMod
-!module contains functions to solve simple equations
-!created by Jinyun Tang, 2013
+  !
+  ! !DESCRIPTION:
+  !  Functions to solve simple equations
+  !  History: created by Jinyun Tang, 2013
 
-  use shr_kind_mod        , only : r8 => shr_kind_r8 
+  ! !USES:
+  use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use abortutils          , only : endrun
   use clm_varctl          , only : iulog
@@ -10,30 +13,32 @@ module FindRootMod
 implicit none
   interface hybrid_findroot
      module procedure hybrid_findroot_np, hybrid_findroot_p
-  end interface hybrid_findroot   
-  
+  end interface hybrid_findroot
+
   interface brent
      module procedure brent_np, brent_p
   end interface brent
-  
+
 contains
-  
+!-------------------------------------------------------------------------------
   function quadrootbnd(a,b,c, xl, xr)result(x)
   !
-  !return a root of the qudratic equation
-  !within bound xl and xr
-  
+  ! !DESCRIPTION:
+  ! return a root of the qudratic equation
+  ! within bound xl and xr
+
   implicit none
+  ! !ARGUMENTS:
   real(r8), intent(in) :: a, b, c
   real(r8), intent(in) :: xl, xr
+
+  ! !LOCAL VARIABLES:
   real(r8) :: x
-  
   real(r8) :: delta
-  
+  character(len=32) :: subname ='quadrootbnd'
+
   delta = b * b -4._r8 * a * c
-  
   if(delta>=0._r8)then
-    
     x = (-b + sqrt(delta))/2._r8
     if(is_bounded(x,xl,xr))then
       return
@@ -43,34 +48,38 @@ contains
         return
       else
         write(iulog,*)'no bounded solution for the given quadratic equation'
-        call endrun(msg=errmsg(__FILE__, __LINE__))          
+        call endrun(msg=errmsg(__FILE__, __LINE__))
       endif
     endif
   else
     write(iulog,*)'no real solution for the given quadratic equation'
-    call endrun(msg=errmsg(__FILE__, __LINE__))    
+    call endrun(msg=errmsg(__FILE__, __LINE__))
   endif
   return
   end function quadrootbnd
-  
-  
+
+!-------------------------------------------------------------------------------
+
   function quadproot(a,b,c)result(x)
   !
-  !return positive root of the qudratic equation
-  
+  ! !DESCRIPTION:
+  ! return positive root of the qudratic equation
+
   implicit none
+  ! !ARGUMENTS:
   real(r8), intent(in) :: a, b, c
+
+  ! !LOCAL VARIABLES:
   real(r8) :: x
-  
   real(r8) :: delta
-  
+  character(len=32) :: subname ='quadproot'
+
   delta = b * b -4._r8 * a * c
-  
   if(delta>=0._r8)then
     x = (-b + sqrt(delta))/2._r8
   else
     write(iulog,*)'no positive solution for the given quadratic equation'
-    call endrun(msg=errmsg(__FILE__, __LINE__))    
+    call endrun(msg=errmsg(__FILE__, __LINE__))
   endif
   return
   end function quadproot
@@ -78,26 +87,31 @@ contains
 
   function cubicrootbnd(a,b,c,d, xl, xr)result(x)
   !
+  ! !DESCRIPTION:
   ! return positive root of the cubic equation
   !
+  ! !USES:
   use clm_varcon , only : rpi
   implicit none
+  ! !ARGUMENTS:
   real(r8), intent(in) :: a, b, c, d
   real(r8), intent(in) :: xl, xr
 
+  ! !LOCAL VARIABLES:
   real(r8) :: x
   real(r8) :: p, q
   real(r8) :: b1, c1, d1
   real(r8) :: n, u, f, y
   real(r8) :: delta
-  
+  character(len=32) :: subname ='cubicrootbnd'
+
   b1 = b/a
   c1 = c/a
   d1 = d/a
-  
+
   p = c1 - b1 * b1 /3._r8
   q = d1 - b1 / 3._r8 * (c1 - 2._r8 * b1**2._r8/9._r8)
-  
+
   delta =-4._r8 * p**3._r8 - 27._r8 * q ** 2._r8
   if(delta<0._r8)then
     write(iulog,*)'no real solution for the given cubic equation'
@@ -106,7 +120,7 @@ contains
     n = sqrt(-4._r8*p/3._r8)
     f = -q/2._r8 * (-p/3._r8)**(-1.5_r8)
     u = acos(f)/3._r8
-    
+
     y = n * cos(u)
     x = y - b1 / 3._r8
     if(is_bounded(x,xl,xr))then
@@ -116,29 +130,33 @@ contains
       x = y - b1 /3._r8
       if(is_bounded(x,xl,xr))then
         return
-      else      
+      else
         y = n * cos(u-rpi*2._r8/3._r8)
         x = y - b1 / 3._r8
         if(is_bounded(x,xl,xr))then
           return
         else
         write(iulog,*)'no bounded solution for the given cubic equation'
-        call endrun(msg=errmsg(__FILE__, __LINE__))                   
+        call endrun(msg=errmsg(__FILE__, __LINE__))
         endif
-      endif  
+      endif
     endif
-    
+
   endif
   end function cubicrootbnd
-  
-!===============================================================================  
+
+!===============================================================================
   function cubicproot(a,b,c,d)result(x)
   !
+  ! !DESCRIPTION:
   ! return positive root of the cubic equation
   !
+  ! !USES:
   use clm_varcon , only : rpi
   implicit none
+  ! !ARGUMENTS:
   real(r8), intent(in) :: a, b, c, d
+  ! !LOCAL VARIABLES:
   real(r8) :: x
   real(r8) :: p, q
   real(r8) :: b1, c1, d1
@@ -147,10 +165,10 @@ contains
   b1 = b/a
   c1 = c/a
   d1 = d/a
-  
+
   p = c1 - b1 * b1 /3._r8
   q = d1 - b1 / 3._r8 * (c1 - 2._r8 * b1**2._r8/9._r8)
-  
+
   delta =-4._r8 * p**3._r8 - 27._r8 * q ** 2._r8
   if(delta<0._r8)then
     write(iulog,*)'no real solution for the given cubic equation'
@@ -159,7 +177,7 @@ contains
     n = sqrt(-4._r8*p/3._r8)
     f = -q/2._r8 * (-p/3._r8)**(-1.5_r8)
     u = acos(f)/3._r8
-    
+
     if(u<=rpi/3._r8)then
       y = n * cos(u)
     elseif(u>rpi/3._r8 .and. u < rpi/2._r8)then
@@ -170,46 +188,51 @@ contains
     endif
     x = y - b1 / 3._r8
   endif
-  end function cubicproot  
- 
+  end function cubicproot
+
 !===============================================================================
-  
+
    subroutine LUsolvAxr(a,r, n)
+   ! !DESCRIPTION:
    !solve linear equation Ax=r, using the LU decomposition
    implicit none
-   real(r8), intent(inout) :: a(n,n)
-   real(r8),  intent(inout) :: r(n)
-   integer, intent(in) :: n
-   
+   ! !ARGUMENTS:
+   real(r8) , intent(inout) :: a(n,n)
+   real(r8) , intent(inout) :: r(n)
+   integer  , intent(in) :: n
+
+   ! !LOCAL VARIABLES:
    real(r8) :: d(n)
    integer :: indx(n)
-   
-   !first do lu decomposition
+
+   !do lu decomposition
    call ludcmp(a,indx,d,n)
-   
-   !then solve for the equation
-   
+
+   !solve for the equation
+
    call lubksb(a,indx,r,n)
    end subroutine LUsolvAxr
 !===============================================================================
 
    subroutine lubksb(a,indx,b,n)
 !
-! Solves the set of N linear equations A á X = B. Here the N x N matrix a is input, not
-!as the original matrix A, but rather as its LU decomposition, determined by the routine
-!ludcmp. indx is input as the permutation vector of length N returned by ludcmp. b is
-!input as the right-hand-side vector B, also of length N, and returns with the solution vector
-!X. a and indx are not modified by this routine and can be left in place for successive calls
-!with different right-hand sides b. This routine takes into account the possibility that b will
-!begin with many zero elements, so it is efficient for use in matrix inversion.
-!*******************************************************************************
+! !DESCRIPTION:
+! Solves the set of N linear equations A X = B. Here the N x N matrix a is input, not
+! as the original matrix A, but rather as its LU decomposition, determined by the routine
+! ludcmp. indx is input as the permutation vector of length N returned by ludcmp. b is
+! input as the right-hand-side vector B, also of length N, and returns with the solution vector
+! X. a and indx are not modified by this routine and can be left in place for successive calls
+! with different right-hand sides b. This routine takes into account the possibility that b will
+! begin with many zero elements, so it is efficient for use in matrix inversion.
+
    implicit none
-   real(r8), intent(in) :: a(n,n)
-   integer,  intent(in) :: indx(n)
-   real(r8), intent(inout) :: b(n)
-   integer, intent(in) :: n
+   ! !ARGUMENTS:
+   real(r8) ,    intent(in) :: a(n,n)
+   integer  ,    intent(in) :: indx(n)
+   real(r8) , intent(inout) :: b(n)
+   integer  ,    intent(in) :: n
 
-
+   ! !LOCAL VARIABLES:
    integer :: i,ii,ll
    real(r8) :: summ
 
@@ -236,26 +259,31 @@ contains
 
 
    subroutine ludcmp(a,indx,d,n)
-!     do L-U docomposition
-!     adapted from Numerical recipe, chptB2
-!     Given an N by N input matrix a, this routine replaces it by the LU decomposition of a
-!     rowwise permutation of itself. On output, a is arranged as in equation (2.3.14); indx is an
-!     output vector of length N that records the row permutation effected by the partial pivoting;
-!     d is output as ±1 depending on whether the number of row interchanges was even or odd,
-!     respectively. This routine is used in combination with lubksb to solve linear equations or
-!     invert a matrix.
-!******************************************************************************************
+   ! !DESCRIPTION:
+   !
+   !   LU docomposition
+   ! adapted from Numerical recipe, chptB2
+   ! Given an N by N input matrix a, this routine replaces it by the LU decomposition of a
+   ! rowwise permutation of itself. On output, a is arranged as in equation (2.3.14); indx is an
+   ! output vector of length N that records the row permutation effected by the partial pivoting;
+   ! d is output as ï¿½1 depending on whether the number of row interchanges was even or odd,
+   ! respectively. This routine is used in combination with lubksb to solve linear equations or
+   ! invert a matrix.
+   !
+   ! !USES:
    use MathfuncMod, only : swap
    implicit none
+   ! !ARGUMENTS:
    real(r8), intent(inout) :: a(n,n)
-   integer,  intent(out) :: indx(n)
-   real(r8), intent(out) :: d(n)
-   integer,  intent(in)  :: n
+   integer   , intent(out) :: indx(n)
+   real(r8)  , intent(out) :: d(n)
+   integer  ,  intent(in)  :: n
 
+   ! !LOCAL VARIABLES:
    real(r8), dimension(size(a,1)) :: vv !vv stores the implicit scaling of each row.
    real(r8), parameter :: TINY=1.0e-20  !A small number.
    integer :: j,imax
-   
+
 
    d=1.0 !No row interchanges yet.
    vv=maxval(abs(a),dim=2) !Loop over rows to get the implicit scaling
@@ -282,25 +310,36 @@ contains
 !Reduce remaining submatrix.
    end do
    end subroutine ludcmp
-!=============================================================================== 
+!===============================================================================
    function imaxloc(arr)
-!*******************************************************************************
+   !
+   ! !DESCRIPTION:
+   ! locate the maximum in a vector
+
    implicit none
-   real*8, dimension(:), intent(in) :: arr
+   ! !ARGUMENTS:
+   real(r8), dimension(:), intent(in) :: arr
+
+   ! !LOCAL VARIABLES:
    integer  :: imaxloc
    integer, dimension(1) :: imax
 
    imax=maxloc(arr(:))
    imaxloc=imax(1)
-      
+
    end function imaxloc
 
-!===============================================================================  
+!===============================================================================
 
    function outerprod(a,b)
-!*******************************************************************************
+   ! !DESCRIPTION:
+   ! do out product of two vectors
+
    implicit none
+   ! !ARGUMENTS:
    real(r8), dimension(:), intent(in) :: a,b
+
+   ! !LOCAL VARIABLES:
    real(r8), dimension(size(a),size(b)) :: outerprod
 
    outerprod = spread(a,dim=2,ncopies=size(b)) * &
@@ -315,18 +354,18 @@ contains
 ! !INTERFACE:
 
    subroutine brent_p(x, x1,x2,f1, f2, macheps, tol, pp, func)
-      
+
    !
    !!DESCRIPTION:
    !Use Brent's method to find the root of a single variable function func, which is known to exist between x1 and x2.
    !The found root will be updated until its accuracy is tol.
-   
+
    !!REVISION HISTORY:
    !Dec 14/2012: Jinyun Tang, modified from numerical recipes in F90 by press et al. 1188-1189
    !
    !!USES:
 
-   
+
    !
    !!ARGUMENTS:
    implicit none
@@ -334,7 +373,7 @@ contains
    real(r8), intent(in) :: macheps           !machine precision
    integer,  intent(in) :: pp                !index argument used by subroutine func
    real(r8), intent(in) :: tol               !the error tolerance
-   real(r8), intent(out):: x                !indepedent variable of the single value function func(x)   
+   real(r8), intent(out):: x                !indepedent variable of the single value function func(x)
 
    interface
       subroutine func(x,f, pp)
@@ -346,14 +385,12 @@ contains
       end subroutine func
    end interface
 
-! !CALLED FROM:
-! whenever it is needed
-
+   ! !LOCAL VARIABLES:
    integer, parameter :: ITMAX = 40            !maximum number of iterations
    integer :: iter
    real(r8)  :: a,b,c,d,e,fa,fb,fc,p,q,r,s,xm,tol1
 
-   
+
    a=x1
    b=x2
    fa=f1
@@ -361,9 +398,8 @@ contains
    if((fa > 0._r8 .and. fb > 0._r8).or.(fa < 0._r8 .and. fb < 0._r8))then
       write(iulog,*) 'root must be bracketed for brent'
       write(iulog,*) 'a=',a,' b=',b,' fa=',fa,' fb=',fb
-      !call endrun()
       call endrun(msg=errmsg(__FILE__, __LINE__))
-   endif 
+   endif
    c=b
    fc=fb
    iter = 0
@@ -384,7 +420,7 @@ contains
          fb=fc
          fc=fa
       endif
-      tol1=2._r8*macheps*abs(b)+0.5_r8*tol  !Convergence check.   
+      tol1=2._r8*macheps*abs(b)+0.5_r8*tol  !Convergence check.
       xm=0.5_r8*(c-b)
       if(abs(xm) <= tol1 .or. fb == 0.)then
          x=b
@@ -426,7 +462,7 @@ contains
    enddo
    if(iter==ITMAX)write(iulog,*) 'brent exceeding maximum iterations', b, fb
    x=b
-   
+
    end subroutine brent_p
 !------------------------------------------------------------------------------
 !BOP
@@ -436,18 +472,17 @@ contains
 ! !INTERFACE:
 
    subroutine brent_np(x, x1,x2,f1, f2, macheps, tol,func)
-      
+
    !
    !!DESCRIPTION:
-   !Use Brent's method to find the root of a single variable function func, which is known to exist between x1 and x2.
+   !Use Brent's method to find the root to a single variable function func, which is known to exist between x1 and x2.
    !The found root will be updated until its accuracy is tol.
-   
+
    !!REVISION HISTORY:
    !Dec 14/2012: Jinyun Tang, modified from numerical recipes in F90 by press et al. 1188-1189
    !
    !!USES:
 
-   
    !
    !!ARGUMENTS:
    implicit none
@@ -472,7 +507,7 @@ contains
    integer :: iter
    real(r8)  :: a,b,c,d,e,fa,fb,fc,p,q,r,s,xm,tol1
 
-   
+
    a=x1
    b=x2
    fa=f1
@@ -481,7 +516,7 @@ contains
       write(iulog,*) 'root must be bracketed for brent'
       write(iulog,*) 'a=',a,' b=',b,' fa=',fa,' fb=',fb
       call endrun(msg=errmsg(__FILE__, __LINE__))
-   endif 
+   endif
    c=b
    fc=fb
    iter = 0
@@ -502,7 +537,7 @@ contains
          fb=fc
          fc=fa
       endif
-      tol1=2._r8*macheps*abs(b)+0.5_r8*tol  !Convergence check.   
+      tol1=2._r8*macheps*abs(b)+0.5_r8*tol  !Convergence check.
       xm=0.5_r8*(c-b)
       if(abs(xm) <= tol1 .or. fb == 0.)then
          x=b
@@ -546,25 +581,25 @@ contains
    x=b
 
    end subroutine brent_np
-   
+
 !------------------------------------------------------------------------------------
    subroutine hybrid_findroot_p(x0, p, iter, func)
    !
    !! DESCRIPTION:
-   ! use a hybrid solver to find the root of equation  
+   ! use a hybrid solver to find the root of equation
    ! f(x) = x- h(x),
-   !we want to find x, s.t. f(x) = 0.
+  !  s.t. f(x) = 0.
    !the hybrid approach combines the strength of the newton secant approach (find the solution domain)
    !and the bisection approach implemented with the Brent's method to guarrantee convergence.
-   
    !
    !! REVISION HISTORY:
    !Apr 14/2013: created by Jinyun Tang
-   
+
    implicit none
-   real(r8), intent(inout) :: x0           !solution's initial guess
-   integer,  intent(in) :: p               !index used in the function
-   integer,  intent(out) :: iter
+   ! !ARGUMENTS:
+   real(r8) , intent(inout) :: x0           !solution's initial guess
+   integer    ,  intent(in) :: p            !index used in the function
+   integer    , intent(out) :: iter         !number of used iterations
    interface
       subroutine func(x,f,p)
       use shr_kind_mod       , only : r8 => shr_kind_r8
@@ -574,8 +609,8 @@ contains
       integer,  intent(in)  :: p
       end subroutine func
    end interface
-   
-   !local variables
+
+   ! !LOCAL VARIABLES:
    real(r8) :: a, b
    real(r8) :: fa, fb
    real(r8) :: x1, f0, f1
@@ -585,10 +620,10 @@ contains
    integer,  parameter :: itmax = 40          !maximum number of iterations
    real(r8) :: tol,minx,minf
 
-   
+
    call func(x0, f0, p)
    if(f0 == 0._r8)return
-   
+
    minx=x0
    minf=f0
    x1 = x0 * 0.99_r8
@@ -601,8 +636,8 @@ contains
    if(f1<minf)then
       minx=x1
       minf=f1
-   endif   
-   
+   endif
+
    !first use the secant approach, then use the brent approach as a backup
    iter = 0
    do
@@ -616,32 +651,32 @@ contains
       endif
       x0 = x1
       f0 = f1
-      x1 = x   
+      x1 = x
       call func(x1,f1, p)
       if(f1<minf)then
          minx=x1
          minf=f1
-      endif         
+      endif
       if(abs(f1)<=eps1)then
          x0 = x1
          exit
       endif
-      
+
       !if a root zone is found, use the brent method for a robust backup strategy
       if(f1 * f0 < 0._r8)then
          call brent_p(x, x0,x1,f0,f1, eps, tol, p, func)
          x0=x
          exit
       endif
-      if(iter>itmax)then 
+      if(iter>itmax)then
          !in case of failing to converge within itmax iterations
          !stop at the minimum function
          !this happens because of some other issues besides the stomatal conductance calculation
          !and it happens usually in very dry places and more likely with c4 plants.
          call func(minx,f1, p)
          exit
-      endif   
-   enddo   
+      endif
+   enddo
    end subroutine hybrid_findroot_p
 
 
@@ -649,17 +684,18 @@ contains
    subroutine hybrid_findroot_np(x0, iter, func)
    !
    !! DESCRIPTION:
-   ! use a hybrid solver to find the root of equation  
+   ! use a hybrid solver to find the root of equation
    ! f(x) = x- h(x),
-   !we want to find x, s.t. f(x) = 0.
+   ! s.t. f(x) = 0.
    !the hybrid approach combines the strength of the newton secant approach (find the solution domain)
    !and the bisection approach implemented with the Brent's method to guarrantee convergence.
-   
+
    !
    !! REVISION HISTORY:
    !Apr 14/2013: created by Jinyun Tang
-   
+
    implicit none
+   ! !ARGUMENTS:
    real(r8), intent(inout) :: x0           !solution's initial guess
    integer,  intent(out) :: iter
    interface
@@ -670,8 +706,8 @@ contains
       real(r8), intent(out) :: f
       end subroutine func
    end interface
-   
-   !local variables
+
+   ! !LOCAL VARIABLES:
    real(r8) :: a, b
    real(r8) :: fa, fb
    real(r8) :: x1, f0, f1
@@ -681,10 +717,9 @@ contains
    integer,  parameter :: itmax = 40          !maximum number of iterations
    real(r8) :: tol,minx,minf
 
-   
    call func(x0, f0)
    if(f0 == 0._r8)return
-   
+
    minx=x0
    minf=f0
    x1 = x0 * 0.99_r8
@@ -697,8 +732,8 @@ contains
    if(f1<minf)then
       minx=x1
       minf=f1
-   endif   
-   
+   endif
+
    !first use the secant approach, then use the brent approach as a backup
    iter = 0
    do
@@ -712,281 +747,189 @@ contains
       endif
       x0 = x1
       f0 = f1
-      x1 = x   
+      x1 = x
       call func(x1,f1)
       if(f1<minf)then
          minx=x1
          minf=f1
-      endif         
+      endif
       if(abs(f1)<=eps1)then
          x0 = x1
          exit
       endif
-      
+
       !if a root zone is found, use the brent method for a robust backup strategy
       if(f1 * f0 < 0._r8)then
          call brent_np(x, x0,x1,f0,f1, eps, tol, func)
          x0=x
          exit
       endif
-      if(iter>itmax)then 
+      if(iter>itmax)then
          !in case of failing to converge within itmax iterations
          !stop at the minimum function
          !this happens because of some other issues besides the stomatal conductance calculation
          !and it happens usually in very dry places and more likely with c4 plants.
          call func(minx,f1)
          exit
-      endif   
-   enddo   
-   end subroutine hybrid_findroot_np   
+      endif
+   enddo
+   end subroutine hybrid_findroot_np
 
 !--------------------------------------------------------------------------
    SUBROUTINE gaussian_solve(a,b,error)
-
+   ! !DESCRIPTION:
+  ! This subroutine solves the linear system Ax = b
 !  Copyright 1994, Miles Ellis, Ivor Philips and Tom Lahey
-
 !  Copyright 1994, Addison-Wesley Publishers Ltd.
-
 !  Copyright 1994, Addison-Wesley Publishing Company Inc.
-
 !  Permission is granted for the use of this code for the purpose of teaching
-
 !  and/or learning the Fortran 90 language provided that the above copyright
-
 !  notices are included in any copies made.
-
 !  Neither the authors nor the publishers accept any responsibility for
-
 !  any results obtained by use of this code.
-
 !  modified by Jinyun Tang
 
-      ! This subroutine solves the linear system Ax = b      
+  ! !ARGUMENTS:
+   real(r8), dimension(:,:), intent(inout) :: a  !coefficients of A
+   real(r8), dimension(:)  , intent(inout) :: b    !right handside and solution on returning.
+   integer, intent(out) :: error  ! indicates if errors are found
 
-      ! where the coefficients of A are stored in the array a      
+   ! Reduce the equations by Gaussian elimination
+   call gaussian_elimination(a,b,error)
 
-      ! The solution is put in the array b      
+   ! If reduction was successful, calculate solution by
+   ! back substitution
+   if (error == 0) call back_substitution(a,b,error)
 
-      ! error indicates if errors are found      
-
-
-
-      ! Dummy arguments      
-   real(r8), dimension(:,:), intent(inout) :: a     
-   real(r8), dimension(:), intent(inout) :: b     
-   integer, intent(out) :: error      
-      
-   ! Reduce the equations by Gaussian elimination      
-
-   call gaussian_elimination(a,b,error)      
-
-      
-
-   ! If reduction was successful, calculate solution by       
-
-   ! back substitution      
-
-   if (error == 0) call back_substitution(a,b,error)   
-
-   end subroutine gaussian_solve   
+   end subroutine gaussian_solve
 
 !---------------------------------------------------------------------------
 
    subroutine gaussian_elimination(a,b,error)
 
+   ! !DESCRIPTION:
+   ! This subroutine performs Gaussian elimination on a
+   ! system of linear equations
 !  Copyright 1994, Miles Ellis, Ivor Philips and Tom Lahey
-
 !  Copyright 1994, Addison-Wesley Publishers Ltd.
-
 !  Copyright 1994, Addison-Wesley Publishing Company Inc.
-
 !  Permission is granted for the use of this code for the purpose of teaching
-
 !  and/or learning the Fortran 90 language provided that the above copyright
-
 !  notices are included in any copies made.
-
 !  Neither the authors nor the publishers accept any responsibility for
-
 !  any results obtained by use of this code.
 
-
-
-      ! This subroutine performs Gaussian elimination on a       
-
-      ! system of linear equations      
-
-      
+   ! !USES:
    use MathfuncMod, only : swap
    implicit none
-      
-      ! Dummy arguments      
+   ! !ARGUMENTS:
+   real(r8), dimension(:,:), intent(inout) :: a !contains the coefficients
+   real(r8), dimension(:)  , intent(inout) :: b  !contains the right-hand side
+   integer,  intent(out) :: error
 
-      ! a contains the coefficients      
-
-      ! b contains the right-hand side      
-   real(r8), dimension(:,:), intent(inout) :: a     
-   real(r8), dimension(:), intent(inout) :: b     
-   integer,  intent(out) :: error      
-
-      
-
-   ! Local variables      
-   real(r8), dimension(size(a,1)) :: temp_array ! Automatic array      
-   integer, dimension(1) :: ksave      
-
-   integer :: i, j, k, n      
+   ! !LOCAL VARIABLES:
+   real(r8), dimension(size(a,1)) :: temp_array ! Automatic array
+   integer, dimension(1) :: ksave
+   integer :: i, j, k, n
    real(r8) :: temp, m
 
+   ! Validity checks
+   n = size(a,1)
 
-
-   ! Validity checks      
-
-   n = size(a,1)      
-
-   if (n == 0) then        
-      error = -1              ! There is no problem to solve         
-      return      
-   endif
-
-   if (n /= size(a,2))then         
-      error = -2              ! a is not square         
-      return      
-   endif
-
-   if (n/=size(b))then         
-      error = -3              ! Size of b does not match a         
+   if (n == 0) then
+      error = -1              ! There is no problem to solve
       return
-   endif   
-      
+   endif
 
-      
+   if (n /= size(a,2))then
+      error = -2              ! a is not square
+      return
+   endif
 
-   ! Dimensions of arrays are OK, so go ahead with Gaussian      
+   if (n/=size(b))then
+      error = -3              ! Size of b does not match a
+      return
+   endif
 
-   ! elimination      
+   ! Dimensions of arrays are OK, so go ahead with Gaussian
+   ! elimination
+   error = 0
 
-   error = 0      
-
-   do i = 1, n-1         
-      ! Find row with largest value of |a(j,i)|, j=i, ..., n         
-
+   do i = 1, n-1
+      ! Find row with largest value of |a(j,i)|, j=i, ..., n
       ksave = maxloc(abs(a(i:n, i)))
 
+      ! Check whether largest |a(j,i)| is near zero
+      k = ksave(1) + i - 1
 
-      ! Check whether largest |a(j,i)| is near zero         
-
-      k = ksave(1) + i - 1         
-
-      if ( abs(a(k,i)) <= 1.e-5_r8 ) then           
-         error = -4            ! No solution possible            
-         return         
-      endif         
-         !Interchange row i and row k, if necessary         
-
-      if(k /= i) then            
-
-         call swap(a(i,:),a(k,:))          
-
-            ! Interchange corresponding elements of b            
-         call swap(b(i), b(k))  
+      if ( abs(a(k,i)) <= 1.e-5_r8 ) then
+         error = -4            ! No solution possible
+         return
       endif
-         
-      ! Subtract multiples of row i from subsequent rows to         
 
-      ! zero all subsequent coefficients of x sub i         
+         !Interchange row i and row k, if necessary
+      if(k /= i) then
+         call swap(a(i,:),a(k,:))
+            ! Interchange corresponding elements of b
+         call swap(b(i), b(k))
+      endif
 
+      ! Subtract multiples of row i from subsequent rows to
+      ! zero all subsequent coefficients of x sub i
       do j = i + 1, n
-         m = a(j,i)/a(i,i)            
+         m = a(j,i)/a(i,i)
+         a(j,:) = a(j,:) - m*a(i,:)
+         b(j) = b(j) - m*b(i)
+      enddo
+   enddo
 
-         a(j,:) = a(j,:) - m*a(i,:)            
+   end subroutine gaussian_elimination
 
-         b(j) = b(j) - m*b(i)         
 
-      enddo      
-
-   enddo   
-
-   end subroutine gaussian_elimination   
-
-   
 !-----------------------------------------------------------------
    SUBROUTINE back_substitution(a,b,error)
 
+   ! !DESCRIPTION:
+   !
+   ! This subroutine performs back substition once a system
+   ! of equations has been reduced by Gaussian elimination
 !  Copyright 1994, Miles Ellis, Ivor Philips and Tom Lahey
-
 !  Copyright 1994, Addison-Wesley Publishers Ltd.
-
 !  Copyright 1994, Addison-Wesley Publishing Company Inc.
-
 !  Permission is granted for the use of this code for the purpose of teaching
-
 !  and/or learning the Fortran 90 language provided that the above copyright
-
 !  notices are included in any copies made.
-
 !  Neither the authors nor the publishers accept any responsibility for
-
 !  any results obtained by use of this code.
 !  Modified by Jinyun Tang, Apr, 2013
+
    implicit none
 
-      ! This subroutine performs back substition once a system      
+  ! !ARGUMENTS:
+   real(r8), dimension(:,:), intent(in) :: a !contains the coefficients
+   real(r8), dimension(:), intent(inout):: b !contains the right-hand side coefficients, will contain the solution on exit
+   integer , intent(out) :: error            ! will be set non-zero if an error is found
 
-      ! of equations has been reduced by Gaussian elimination      
+  ! !LOCAL VARIABLES:
+   real(r8) :: sum
+   integer :: i,j,n
 
-      
 
-      ! Dummy arguments      
-
-      ! The array a contains the coefficients      
-
-      ! The array b contains the right-hand side coefficients.      
-
-      ! and will contain the solution on exit      
-
-      ! error will be set non-zero if an error is found      
-   real(r8), dimension(:,:), intent(in) :: a     
-   real(r8), dimension(:), intent(inout):: b      
-   integer, intent(out) :: error      
-
-      
-
-      ! Local variables
-
-   real(r8) :: sum      
-
-   integer :: i,j,n      
-
-      
-
-   error = 0      
-
-   n = size(b)      
-
-      
-      ! Solve for each variable in turn      
-
-   do i = n,1,-1         
-
-         ! Check for zero coefficient         
-
-     if ( abs(a(i,i)) <= 1.e-5_r8 ) then            
-        error = -4            
+   error = 0
+   n = size(b)
+  ! Solve for each variable in turn
+   do i = n,1,-1
+         ! Check for zero coefficient
+     if ( abs(a(i,i)) <= 1.e-5_r8 ) then
+        error = -4
         return
-     endif   
+     endif
+     sum = b(i)
+     do j = i+1,n
+        sum = sum - a(i,j)*b(j)
+     enddo
+     b(i) = sum/a(i,i)
+   enddo
 
-         
-     sum = b(i)         
-
-     do j = i+1,n            
-        sum = sum - a(i,j)*b(j)         
-
-     enddo         
-
-     b(i) = sum/a(i,i)      
-
-   enddo   
-
-   end subroutine back_substitution      
+   end subroutine back_substitution
 end module FindRootMod

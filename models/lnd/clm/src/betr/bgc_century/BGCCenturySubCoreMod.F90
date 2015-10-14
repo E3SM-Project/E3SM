@@ -1,8 +1,9 @@
 module BGCCenturySubCoreMod
 #include "shr_assert.h"
 !
-! DESCRIPTION
+! !DESCRIPTION:
 ! module contains subroutine for the century bgc implementation
+! !USES:
   use shr_kind_mod       , only : r8 => shr_kind_r8
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use decompMod          , only : bounds_type
@@ -131,17 +132,18 @@ module BGCCenturySubCoreMod
 
   subroutine Init(this, bounds, lbj, ubj, do_mpc)
   !
-  ! DESCRIPTION
+  ! DESCRIPTION:
   ! Initialize centurybgc type
-
+  ! !USES:
   use ncdio_pio    , only: file_desc_t
 
+  ! !ARGUMENTS:
   class(centurybgc_type) :: this
   type(bounds_type),                intent(in) :: bounds
   integer,                          intent(in) :: lbj, ubj                           ! lower and upper bounds, make sure they are > 0
 
+  ! !LOCAL VARIABLES:
   logical, optional :: do_mpc
-
   logical :: do_mpc_loc
 
   if(present(do_mpc))then
@@ -159,10 +161,9 @@ module BGCCenturySubCoreMod
 !-------------------------------------------------------------------------------
 
   subroutine Init_pars(this, do_mpc)
-
   !
-  !DESCRIPTION
-  !describe the layout of the stoichiometric matrix for the reactions
+  ! !DESCRIPTION:
+  !  describe the layout of the stoichiometric matrix for the reactions
   !           r{1} r{2} r{3} r{4} ... r{n}
   ! s{1}
   ! s{2}
@@ -179,13 +180,16 @@ module BGCCenturySubCoreMod
   ! each reaction is associated with a primary species, the secondary species follows after primary species
   ! for the century model, the primary species are seven om pools and nh4, no3 and plant nitrogen
   !
+  ! !USES:
   use MathfuncMod            , only : addone
   class(centurybgc_type) :: this
   logical   , intent(in) :: do_mpc
 
+  ! !LOCAL VARIABLES:
   integer :: itemp
   integer :: ireac   !counter of reactions
   integer :: itemp1
+
   itemp = 0
   ireac = 0
   this%nom_pools = 7   !not include coarse wood debris
@@ -275,8 +279,11 @@ module BGCCenturySubCoreMod
 !-------------------------------------------------------------------------------
 
   subroutine InitAllocate(this, bounds, lbj, ubj)
-
-
+  !
+  ! !DESCRIPTION:
+  ! memory allocation for the data type specified by this
+  !
+  ! !ARGUMENTS:
   class(centurybgc_type)                       :: this
   type(bounds_type)               , intent(in) :: bounds
   integer                         , intent(in) :: lbj, ubj                           ! lower and upper bounds, make sure they are > 0
@@ -292,11 +299,13 @@ module BGCCenturySubCoreMod
 !-------------------------------------------------------------------------------
   subroutine init_state_vector(bounds, lbj, ubj, numf, filter, jtops, neq, tracerstate_vars, betrtracer_vars, centurybgc_vars, y0)
   !
+  ! !DESCRIPTION:
   ! number of equations, total number of carbon pools + o2 + co2
+  !
+  ! !USES:
   use tracerstatetype       , only : tracerstate_type
   use BeTRTracerType        , only : betrtracer_type
-
-
+  ! !ARGUMENTS:
   type(bounds_type)            , intent(in) :: bounds
   integer                      , intent(in) :: lbj, ubj
   integer                      , intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
@@ -308,7 +317,9 @@ module BGCCenturySubCoreMod
   type(centurybgc_type)        , intent(in) :: centurybgc_vars
   real(r8)                     , intent(out):: y0(neq, bounds%begc:bounds%endc, lbj:ubj)
 
+  ! !LOCAL VARIABLES:
   integer :: fc, c, j
+
   ! all organic matter pools are distributed into solid passive tracers
   do j = lbj, ubj
     do fc = 1, numf
@@ -344,8 +355,10 @@ module BGCCenturySubCoreMod
   subroutine calc_som_deacyK(bounds, lbj, ubj, numf, filter, jtops, nom_pools, tracercoeff_vars, tracerstate_vars, &
     betrtracer_vars, centurybgc_vars, carbonflux_vars, dtime, k_decay)
   !
-  ! DESCRIPTION
+  ! !DESCRIPTION:
   ! calculate decay coefficients for different pools
+  !
+  ! !USES:
   use tracercoeffType       , only : tracercoeff_type
   use BetrTracerType        , only : betrtracer_type
   use tracerstatetype       , only : tracerstate_type
@@ -365,8 +378,8 @@ module BGCCenturySubCoreMod
   type(tracercoeff_type)    ,  intent(in) :: tracercoeff_vars
   type(tracerstate_type)    ,  intent(inout) :: tracerstate_vars
   real(r8)                  ,  intent(out) :: k_decay(nom_pools, bounds%begc:bounds%endc, lbj:ubj)
-
-  !local variables
+  !
+  ! !LOCAL VARIABLES:
   integer :: fc, c, j
   real(r8):: dtimei
   associate(                                              &
@@ -412,9 +425,10 @@ module BGCCenturySubCoreMod
 !-------------------------------------------------------------------------------
   subroutine calc_sompool_decay(bounds, lbj, ubj, numf, filter, jtops, centurybgc_vars,  k_decay, om_pools, decay_rates)
   !
-  ! DESCRIPTION
+  ! !DESCRIPTION:
   ! calculate degradation for all different pools
-
+  !
+  ! !USES:
   type(centurybgc_type)        , intent(in) :: centurybgc_vars
   type(bounds_type)            , intent(in) :: bounds
   integer                      , intent(in) :: lbj, ubj
@@ -425,6 +439,7 @@ module BGCCenturySubCoreMod
   real(r8)                     , intent(in) :: om_pools(centurybgc_vars%nom_totelms,bounds%begc:bounds%endc, lbj:ubj)
   real(r8)                     , intent(out):: decay_rates(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)
 
+  ! !LOCAL VARIABLES:
   integer :: jj, fc, c, j
   integer :: kc, kn
   associate(                                    &
@@ -461,19 +476,22 @@ module BGCCenturySubCoreMod
   subroutine retrieve_flux_vars(bounds, lbj, ubj, numf, filter, jtops, neq, dtime, yf, y0,  &
     centurybgc_vars, betrtracer_vars, tracerflux_vars, carbonflux_vars, nitrogenflux_vars, plantsoilnutrientflux_vars)
   !
-  ! DESCRIPTION
+  ! !DESCRIPTION:
+  !
   ! retrieve the fluxes
+  ! !USES:
   use tracerfluxType           , only : tracerflux_type
   use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
   use CNCarbonFluxType         , only : carbonflux_type
   use CNNitrogenFluxType       , only : nitrogenflux_type
   use BeTRTracerType           , only : betrtracer_type
+
+  ! !ARGUMENTS:
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
   integer,                intent(in) :: numf
   integer,                intent(in) :: filter(:)
-
   integer                          , intent(in) :: neq
   real(r8)                         , intent(in) :: dtime
   real(r8)                         , intent(in) :: yf(neq, bounds%begc:bounds%endc, lbj:ubj) !
@@ -485,6 +503,7 @@ module BGCCenturySubCoreMod
   type(tracerflux_type)            , intent(inout) :: tracerflux_vars
   type(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars
 
+  ! !LOCAL VARIABLES:
   real(r8) :: deltac, fnit
   real(r8) :: delta_nh4, delta_no3
   real(r8) :: delta_nh4_m,delta_no3_m
@@ -553,10 +572,8 @@ module BGCCenturySubCoreMod
 
         tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_nh3x   )                          + &
                                                                  yf(centurybgc_vars%lid_nh4       ,c, j)  - y0(centurybgc_vars%lid_nh4      , c, j)
-
         tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   ) = tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   )                          + &
                                                                  yf(centurybgc_vars%lid_no3       ,c, j)    - y0(centurybgc_vars%lid_no3      , c, j)
-
         tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_n2     ) = yf(centurybgc_vars%lid_n2        ,c, j)  - y0(centurybgc_vars%lid_n2       , c, j)
 
         tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_co2x   ) = yf(centurybgc_vars%lid_co2        ,c, j)  - y0(centurybgc_vars%lid_co2     , c, j)
@@ -586,24 +603,27 @@ module BGCCenturySubCoreMod
 
   subroutine retrieve_state_vars(bounds, lbj, ubj, numf, filter, jtops, neq, yf, centurybgc_vars, betrtracer_vars, tracerstate_vars)
   !
+  ! !DESCRIPTION:
+  ! retrieve state variables
   ! number of equations, total number of carbon pools + o2 + co2
+  ! !USES:
   use tracerstatetype       , only : tracerstate_type
   use BeTRTracerType        , only : betrtracer_type
   use MathfuncMod           , only : addone
 
+  ! !ARGUMENTS:
   type(bounds_type)       , intent(in) :: bounds
   integer                 , intent(in) :: lbj, ubj
   integer                 , intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
   integer                 , intent(in) :: numf
   integer                 , intent(in) :: filter(:)
-
   integer                 , intent(in) :: neq
   type(betrtracer_type)   , intent(in) :: betrtracer_vars                          ! betr configuration information
   type(centurybgc_type)   , intent(in) :: centurybgc_vars
   real(r8)                , intent(in) :: yf(neq, bounds%begc:bounds%endc, lbj:ubj) !
   type(tracerstate_type)  , intent(inout) :: tracerstate_vars
 
-
+  ! !LOCAL VARIABLES:
   integer :: fc, c, j, k1, k2, k, ll, l
   real(r8):: totsomc
   ! all organic matter pools are distributed into solid passive tracers
@@ -651,8 +671,12 @@ module BGCCenturySubCoreMod
 
   subroutine assign_A2B(bounds, lbj, ubj, neq, ngwtracers,  numf, filter, jtops, k1, k2, yf, tracer_conc_mobile_col)
 
-
+  !
+  ! !DESCRIPTION:
+  ! assign state variables
+  !
   implicit none
+  ! !ARGUMENTS:
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
@@ -662,8 +686,7 @@ module BGCCenturySubCoreMod
   real(r8),               intent(in)    :: yf(neq, bounds%begc:bounds%endc, lbj:ubj)
   real(r8),               intent(inout) :: tracer_conc_mobile_col(bounds%begc:bounds%endc,lbj:ubj,ngwtracers)
 
-
-
+  ! !LOCAL VARIABLES:
   integer :: j, fc, c
 
   do j = lbj, ubj   !currently, om is added only to soil layers
@@ -681,9 +704,12 @@ module BGCCenturySubCoreMod
     pot_co2_hr, anaerobic_frac, smin_nh4_vr, smin_no3_vr, soilstate_vars, waterstate_vars, carbonflux_vars, &
     n2_n2o_ratio_denit, nh4_no3_ratio, decay_nh4, decay_no3)
   !
+  ! !DESCRIPTION:
   ! calculate nitrification denitrification rate
   ! the actual nitrification rate will be f_nitr * [nh4]
   ! and the actual denitri rate will be of f_denit * [no3]
+  !
+  ! !USES:
   use clm_varcon          , only : rpi, secspday
   use SoilStatetype       , only : soilstate_type
   use WaterStateType      , only : waterstate_type
@@ -691,6 +717,7 @@ module BGCCenturySubCoreMod
   use shr_const_mod       , only : SHR_CONST_TKFRZ
   use CNCarbonFluxType    , only : carbonflux_type
 
+  ! !ARGUMENTS:
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: jtops(bounds%begc: )        ! top label of each column
@@ -711,10 +738,8 @@ module BGCCenturySubCoreMod
   real(r8)             , intent(out) :: decay_nh4(bounds%begc: ,lbj: )            !1/s, decay rate of nh4
   real(r8)             , intent(out) :: decay_no3(bounds%begc: ,lbj: )            !1/s, decay rate of no3
 
-
+  ! !LOCAL VARIABLES:
   logical, parameter :: no_frozen_nitrif_denitrif = .false.                     !this is a testing parameter, just to make the model run
-
-  !local variables
   real(r8) :: soil_hr_vr(bounds%begc:bounds%endc,   lbj:ubj)
   real(r8) :: k_nitr_t_vr(bounds%begc:bounds%endc,  lbj:ubj)
   real(r8) :: k_nitr_ph_vr(bounds%begc:bounds%endc, lbj:ubj)
@@ -865,14 +890,17 @@ module BGCCenturySubCoreMod
   subroutine calc_anaerobic_frac(bounds, lbj, ubj, numf, filter, jtops, t_soisno, soilstate_vars, &
     h2osoi_vol, o2_decomp_depth_unsat, conc_o2_unsat, anaerobic_frac)
   !
-  ! DESCRIPTIONS
+  ! !DESCRIPTION:
+  !
   ! calculate soil anoxia state for doing nitrification and denitrification
   ! Rewritten based on Charlie Koven's code by Jinyun Tang
+  ! !USES:
   use CNSharedParamsMod   , only : CNParamsShareInst
   use clm_varcon          , only : d_con_g, grav, d_con_w
   use SoilStatetype       , only : soilstate_type
   use BGCCenturyParMod    , only : CNNitrifDenitrifParamsInst
 
+  ! !ARGUMENTS:
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: jtops(bounds%begc: )            ! top label of each column
@@ -884,7 +912,7 @@ module BGCCenturySubCoreMod
   real(r8),               intent(in) :: o2_decomp_depth_unsat(bounds%begc: ,lbj: )    !potential o2 consumption, as deduced from aerobic heteorotrophic decomposition, mol o2/m3/s
   real(r8),               intent(in) :: conc_o2_unsat(bounds%begc: , lbj: )           !bulk soil o2 concentration, mol/m3
   real(r8),              intent(out) :: anaerobic_frac(bounds%begc: , lbj: )          !fraction of aerobic soil
-
+  ! !LOCAL VARIABLES:
   real(r8), parameter :: rho_w  = 1.e3_r8        ![kg/m3]
   real(r8) :: f_a
   real(r8) :: eps
@@ -904,7 +932,6 @@ module BGCCenturySubCoreMod
   real(r8) :: r_psi(bounds%begc:bounds%endc, lbj:ubj)
   real(r8) :: anaerobic_frac_sat
   real(r8) :: ratio_diffusivity_water_gas(bounds%begc:bounds%endc, lbj:ubj)
-
   integer  :: fc, c, j
 
   SHR_ASSERT_ALL((ubound(jtops) == (/bounds%endc/)), errMsg(__FILE__,__LINE__))
@@ -922,9 +949,7 @@ module BGCCenturySubCoreMod
     soilpsi                       =>    soilstate_vars%soilpsi_col , &
     cellorg                       =>    soilstate_vars%cellorg_col   &
   )
-  ! Todo:  FIX(SPM,032414) - the explicit divide gives different results than when that
-  ! value is placed in the parameters netcdf file.  To get bfb, keep the
-  ! divide in source.
+
   !k_nitr_max = CNNitrifDenitrifParamsInst%k_nitr_max
 
   surface_tension_water = CNNitrifDenitrifParamsInst%surface_tension_water
@@ -986,13 +1011,16 @@ module BGCCenturySubCoreMod
 
   subroutine calc_potential_aerobic_hr(bounds, lbj, ubj, numf, filter, jtops, cn_ratios, cp_ratios, centurybgc_vars, pot_decay_rates, pct_sand, pot_co2_hr, pot_nh3_immob)
   !
-  ! DESCRIPTION
+  ! DESCRIPTION:
   ! calculate potential aerobic heteorotrophic respiration, and potential oxygen consumption based on cascade_matrix
+  ! !USES:
   use MathfuncMod         , only : dot_sum
   use CNSharedParamsMod   , only : CNParamsShareInst
   use CNSharedParamsMod   , only : CNParamsShareInst
   use BGCCenturyParMod    , only : CNDecompBgcParamsInst
   use MathfuncMod         , only : safe_div
+
+  ! !ARGUMENTS:
   type(bounds_type)       , intent(in) :: bounds
   integer                 , intent(in) :: lbj, ubj
   integer                 , intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
@@ -1006,6 +1034,7 @@ module BGCCenturySubCoreMod
   real(r8)                , intent(out):: pot_co2_hr(bounds%begc:bounds%endc, lbj:ubj)
   real(r8)                , intent(out):: pot_nh3_immob(bounds%begc:bounds%endc, lbj:ubj)
 
+  ! !LOCAL VARIABLES:
   real(r8) :: ftxt, f1, f2
   real(r8) :: cascade_matrix_hr(centurybgc_vars%nom_pools)
   real(r8) :: cascade_matrix_nh3(centurybgc_vars%nom_pools)
@@ -1107,17 +1136,19 @@ module BGCCenturySubCoreMod
   subroutine calc_decompK_multiply_scalar(bounds, lbj, ubj, numf, filter, jtops, finundated, zsoi, &
     t_soisno, o2_bulk, o2_aqu2bulkcef, soilstate_vars, centurybgc_vars, carbonflux_vars)
   !
-  ! DESCRIPTION
+  ! !DESCRIPTION:
   ! compute scalar multipliers for aerobic om decomposition
   ! because temperature and moisture scalars will not be independent from each other for microbe explicit models,
-  ! I decide to put temp_scalar and moist_scalar as private variables
+  ! temp_scalar and moist_scalar are used as private variables
 
-  ! uses
+  ! !USES:
   !
   use CNSharedParamsMod   , only : CNParamsShareInst
   use shr_const_mod       , only : SHR_CONST_TKFRZ, SHR_CONST_PI
   use SoilStatetype       , only : soilstate_type
   use CNCarbonFluxType    , only : carbonflux_type
+  !
+  ! !ARGUMENTS:
   type(bounds_type),         intent(in) :: bounds
   integer,                   intent(in) :: lbj, ubj
   integer,                   intent(in) :: jtops(bounds%begc:bounds%endc)        ! top label of each column
@@ -1132,14 +1163,12 @@ module BGCCenturySubCoreMod
   type(centurybgc_type)  , intent(inout) :: centurybgc_vars
   type(carbonflux_type)  , intent(inout) :: carbonflux_vars
 
+  ! !LOCAL VARIABLES:
   integer :: fc, c, j  !indices
   real(r8), parameter :: normalization_tref = 15._r8        ! reference temperature for normalizaion (degrees C)
-
   real(r8) :: decomp_depth_efolding      ! [m] a testing parameter, which will be replaced,
   real(r8) :: Q10                                           ! a number taken from CLM4.5bgc
   real(r8) :: froz_q10
-
-  !local variables
   real(r8) :: minpsi
   real(r8) :: maxpsi
   real(r8) :: normalization_factor
@@ -1148,6 +1177,7 @@ module BGCCenturySubCoreMod
   real(r8) :: t1
   real(r8) :: o2w
   real(r8) :: psi
+
   !----- CENTURY T response function
   catanf(t1) = 11.75_r8 +(29.7_r8 / SHR_CONST_PI) * atan( SHR_CONST_PI * 0.031_r8  * ( t1 - 15.4_r8 ))
 
@@ -1214,15 +1244,13 @@ module BGCCenturySubCoreMod
 
 
   !-----------------------------------------------------------------------
-
-
   subroutine calc_nuptake_prof(bounds, nlevdecomp, num_soilc, filter_soilc, sminn_nh4_vr, sminn_no3_vr, &
      dzsoi, nfixation_prof, nuptake_prof)
   !
-  !DESCRIPTION
+  ! !DESCRIPTION:
   ! calculate the nitrogen uptake profile
   !
-
+  ! !ARGUMENTS:
   type(bounds_type)        , intent(in)   :: bounds
   integer                  , intent(in)   :: nlevdecomp                        ! number of vertical layers
   integer                  , intent(in)   :: num_soilc                         ! number of soil columns in filter
@@ -1233,7 +1261,7 @@ module BGCCenturySubCoreMod
   real(r8)                 , intent(in)   :: nfixation_prof(bounds%begc: , 1: )                  ! nitrogen fixation profile
   real(r8)                 , intent(inout):: nuptake_prof(bounds%begc: , 1: ) ! nitrogen uptake profile
 
-  !local variables
+  ! !LOCAL VARIABLES:
   integer :: fc, j, c      ! indices
   real(r8):: sminn_tot(bounds%begc:bounds%endc)  !vertically integrated mineral nitrogen
 
@@ -1278,10 +1306,13 @@ module BGCCenturySubCoreMod
 
   subroutine calc_plant_nitrogen_uptake_prof(bounds, nlevdecomp, num_soilc, filter_soilc, &
     dzsoi, plant_totn_demand_flx_col, nuptake_prof, plant_demand_vr)
-
+  !
+  ! !DESCRIPTION:
+  !
   !caluate depth specific demand
+  ! !USES:
   use clm_varcon           , only : natomw
-
+  ! !ARGUMENTS:
   type(bounds_type)        , intent(in)    :: bounds
   integer                  , intent(in)    :: nlevdecomp                        ! number of vertical layers
   integer                  , intent(in)    :: num_soilc                         ! number of soil columns in filter
@@ -1290,7 +1321,7 @@ module BGCCenturySubCoreMod
   real(r8)                 , intent(in)    :: plant_totn_demand_flx_col(bounds%begc:bounds%endc)
   real(r8)                 , intent(in)    :: nuptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
   real(r8)                 , intent(inout) :: plant_demand_vr(1,bounds%begc:bounds%endc, 1:nlevdecomp)      !mol N/m3/s
-
+  ! !LOCAL VARIABLES:
   integer :: fc, c, j
 
 
@@ -1309,8 +1340,10 @@ module BGCCenturySubCoreMod
 
   subroutine bgcstate_ext_update_bfdecomp(bounds, lbj, ubj, num_soilc, filter_soilc, carbonflux_vars, nitrogenflux_vars, &
     centurybgc_vars, betrtracer_vars, tracerflux_vars, y0, cn_ratios, cp_ratios)
-
-
+  ! !DESCRIPTION:
+  ! update om pools with external input before doing decomposition
+  !
+  ! !USES:
   use MathfuncMod              , only :  safe_div
   use CNCarbonFluxType         , only : carbonflux_type
   use CNNitrogenFluxType       , only : nitrogenflux_type
@@ -1318,7 +1351,8 @@ module BGCCenturySubCoreMod
   use tracerstatetype          , only : tracerstate_type
   use tracerfluxType           , only : tracerflux_type
   use CNDecompCascadeConType , only : decomp_cascade_con
-
+  !
+  ! !ARGUMENTS:
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
   integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
   integer                            , intent(in) :: filter_soilc(:)                          ! column filter
@@ -1331,7 +1365,7 @@ module BGCCenturySubCoreMod
   real(r8)                           , intent(inout) :: y0(centurybgc_vars%nstvars, bounds%begc:bounds%endc, lbj:ubj)
   real(r8)                           , intent(inout) :: cn_ratios(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)
   real(r8)                           , intent(inout) :: cp_ratios(centurybgc_vars%nom_pools, bounds%begc:bounds%endc, lbj:ubj)
-
+  ! !LOCAL VARIABLES:
   real(r8) :: delta_no3, delta_nh4
   real(r8) :: delta_somn
   integer :: k, fc, c, j
@@ -1396,13 +1430,17 @@ module BGCCenturySubCoreMod
   subroutine bgcstate_ext_update_afdecomp(bounds, lbj, ubj, num_soilc, filter_soilc, carbonflux_vars, nitrogenflux_vars, &
     centurybgc_vars, betrtracer_vars, tracerflux_vars, yf)
 
-
+  ! !DESCRIPTION:
+  ! update om state variables after doing decomposition.
+  ! !USES:
   use MathfuncMod              , only :  safe_div
   use CNCarbonFluxType         , only : carbonflux_type
   use CNNitrogenFluxType       , only : nitrogenflux_type
   use BetrTracerType           , only : betrtracer_type
   use tracerstatetype          , only : tracerstate_type
   use tracerfluxType           , only : tracerflux_type
+  !
+  ! !ARGUMENTS:
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
   integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
   integer                            , intent(in) :: filter_soilc(:)                          ! column filter
@@ -1414,6 +1452,7 @@ module BGCCenturySubCoreMod
   type(tracerflux_type)              , intent(inout) :: tracerflux_vars
   real(r8)                           , intent(inout) :: yf(centurybgc_vars%nstvars, bounds%begc:bounds%endc, lbj:ubj)
 
+  ! !LOCAL VARIABLES:
   real(r8) :: delta_no3, delta_nh4
   real(r8) :: delta_somn
   integer :: k, fc, c, j
@@ -1445,7 +1484,11 @@ module BGCCenturySubCoreMod
  !-----------------------------------------------------------------------
   subroutine apply_plant_root_respiration_prof(bounds, ubj, num_soilc, filter_soilc, &
     rr_col, root_prof_col, rr_col_vr)
-
+  !
+  ! !DESCRIPTION:
+  ! obtain root respiration profile
+  !
+  ! !ARGUMENTS:
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
   integer                            , intent(in) :: ubj
   integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
@@ -1453,7 +1496,7 @@ module BGCCenturySubCoreMod
   real(r8)                           , intent(in) :: rr_col(bounds%begc:bounds%endc)
   real(r8)                           , intent(in) :: root_prof_col(bounds%begc:bounds%endc, 1:ubj)
   real(r8)                           , intent(inout):: rr_col_vr(1,bounds%begc:bounds%endc, 1:ubj)
-
+  ! !LOCAL VARIABLES:
   integer :: fc, c, j
 
   do j = 1, ubj
@@ -1467,7 +1510,11 @@ module BGCCenturySubCoreMod
 
  !-----------------------------------------------------------------------
   subroutine set_reaction_order( nreact, centurybgc_vars, is_zero_order)
-
+  !
+  ! !DESCRIPTION:
+  ! set order of the reactions, 0 or 1
+  !
+  ! !ARGUMENTS:
   integer                      , intent(in)  :: nreact
   type(centurybgc_type)        , intent(in)  :: centurybgc_vars
   logical                      , intent(out) :: is_zero_order(nreact)
@@ -1496,8 +1543,12 @@ module BGCCenturySubCoreMod
   subroutine calc_nutrient_compet_rescal(bounds, ubj, num_soilc, filter_soilc, dtime, centurybgc_vars, &
      k_nit, decomp_nh4_immob, plant_ndemand, smin_nh4_vr, nh4_compet)
 
+  !
+  ! !DESCRIPTION:
+  ! scaling factor for nitrogen competition
+  ! !USES:
   use MathfuncMod               , only : safe_div
-
+  ! !ARGUMENTS:
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
   integer                            , intent(in) :: ubj
   integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
@@ -1509,7 +1560,7 @@ module BGCCenturySubCoreMod
   real(r8)                           , intent(in) :: plant_ndemand(bounds%begc: , 1: )
   real(r8)                           , intent(in) :: smin_nh4_vr(bounds%begc: , 1: )
   real(r8)                           , intent(inout):: nh4_compet(bounds%begc:bounds%endc,1:ubj)
-
+  ! !LOCAL VARIABLES:
   integer :: j, fc, c
   real(r8):: tot_demand
 
@@ -1534,15 +1585,19 @@ module BGCCenturySubCoreMod
   enddo
   end subroutine calc_nutrient_compet_rescal
 
-
+ !-----------------------------------------------------------------------
   subroutine assign_OM_CNpools(bounds, num_soilc, filter_soilc,  carbonstate_vars, nitrogenstate_vars, tracerstate_vars, betrtracer_vars, centurybgc_vars)
-
+  ! !DESCRIPTION:
+  ! update OM pools
+  ! !USES:
   use clm_varpar               , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use CNCarbonStateType        , only : carbonstate_type
   use CNNitrogenStateType      , only : nitrogenstate_type
   use tracerstatetype          , only : tracerstate_type
   use BetrTracerType           , only : betrtracer_type
   use clm_varpar               , only : nlevtrc_soil
+
+  ! !ARGUMENTS:
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
   integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
   integer                            , intent(in) :: filter_soilc(:)                          ! column filter
@@ -1552,7 +1607,7 @@ module BGCCenturySubCoreMod
   type(carbonstate_type)             , intent(inout) :: carbonstate_vars
   type(nitrogenstate_type)           , intent(inout) :: nitrogenstate_vars
 
-
+  ! !LOCAL VARIABLES:
   integer, parameter :: i_soil1 = 5
   integer, parameter :: i_soil2 = 6
   integer, parameter :: i_soil3 = 7
@@ -1614,12 +1669,16 @@ module BGCCenturySubCoreMod
   subroutine assign_nitrogen_hydroloss(bounds, num_soilc, filter_soilc, tracerflux_vars, nitrogenflux_vars, betrtracer_vars)
 
   !
-  ! DESCRIPTION
-  ! feedback the nitrogen hydrological fluxes, this comes after tracer mass balance, so the flux is with the unit of st/m2/s
+  ! !DESCRIPTION:
+  ! feedback the nitrogen hydrological fluxes, this comes after tracer mass balance, so the flux is with the unit of gN/m2/s
+  !
+  ! !USES:
   use tracerfluxType           , only : tracerflux_type
   use BetrTracerType           , only : betrtracer_type
   use CNNitrogenFluxType       , only : nitrogenflux_type
   use clm_varcon               , only : natomw
+
+  ! !ARGUMENTS:
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
   integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
   integer                            , intent(in) :: filter_soilc(:)                          ! column filter
@@ -1627,6 +1686,7 @@ module BGCCenturySubCoreMod
   type(betrtracer_type)              , intent(in) :: betrtracer_vars                    ! betr configuration information
   type(nitrogenflux_type)            , intent(inout) :: nitrogenflux_vars
 
+  ! !LOCAL VARIABLES:
   integer :: fc, c
   !get nitrogen leaching, and loss through surface runoff
 
@@ -1645,17 +1705,21 @@ module BGCCenturySubCoreMod
 !-------------------------------------------------------------------------------
   subroutine apply_plant_root_nuptake_prof(bounds, ubj, num_soilc, filter_soilc, &
    root_prof_col, plantsoilnutrientflux_vars)
-
+  !
+  ! !DESCRIPTION:
+  ! nitroge uptake profile
+  ! !USES:
   use PlantSoilnutrientFluxType, only : plantsoilnutrientflux_type
   implicit none
-
+  ! !ARGUMENTS:
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
   integer                            , intent(in) :: ubj
   integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
   integer                            , intent(in) :: filter_soilc(:)                          ! column filter
   real(r8)                           , intent(in) :: root_prof_col(bounds%begc:bounds%endc, 1:ubj)
   type(plantsoilnutrientflux_type)   , intent(inout) :: plantsoilnutrientflux_vars
-
+  
+  ! !LOCAL VARIABLES:
   integer :: fc, c, j
 
   associate(                                                            &

@@ -3,15 +3,11 @@ module BGCReactionsCenturyType
 #include "shr_assert.h"
 
 !
-! !DESCRIPTION
-! This is an example on how to use polymorphism to create your own bgc modules that will be run with BeTR
-!
+! !DESCRIPTION:
+! this code uses the operator automated down-regulation scheme described in Tang and Riley, 2015, BG
 ! HISTORY:
 ! Created by Jinyun Tang, Oct 2nd, 2014
-! Questions for thought/things to do: Should I consider redox flucutation here (specifically redox lag)? It also
-! seems necessary to create a separate subroutine to account for that, rather than using the ch4 code.
 
-! this code uses the operator automated down-regulation scheme
 ! !USES
 !
   use shr_log_mod           , only : errMsg => shr_log_errMsg
@@ -86,6 +82,11 @@ contains
 
    subroutine Init_Allocate(this, nompools, nreacts, nprimstvars)
 
+   !
+   ! !DESCRIPTION:
+   ! do memory allocation for the data type specified by this
+   !
+   ! !ARGUMENTS:
    class(Extra_type) :: this
 
    integer, intent(in) :: nompools
@@ -106,7 +107,10 @@ contains
 !-------------------------------------------------------------------------------
 
    subroutine DDeallocate(this)
-
+   !
+   ! !DESCRIPTION:
+   ! deallocate memory for the data type specified by this
+   ! !ARGUMENTS:
    class(Extra_type) :: this
 
 
@@ -121,8 +125,12 @@ contains
 !-------------------------------------------------------------------------------
 
    subroutine AAssign(this, cn_r,cp_r, k_d,  n2_n2o_r_denit, cell_sand, betrtracer_vars, gas2bulkcef, aere_cond, tracer_conc_atm)
+   !
+   ! !DESCRIPTION:
+   ! assign memmber values for the data type specified by this
+   ! !USES:
    use BeTRTracerType              , only : betrtracer_type
-
+   ! !ARGUMENTS:
    class(Extra_type) :: this
    real(r8), dimension(:), intent(in) :: cn_r
    real(r8), dimension(:), intent(in) :: cp_r
@@ -133,6 +141,8 @@ contains
    real(r8)              , intent(in) :: gas2bulkcef(1:betrtracer_vars%nvolatile_tracers)
    real(r8)              , intent(in) :: aere_cond(1:betrtracer_vars%nvolatile_tracers)
    real(r8)              , intent(in) :: tracer_conc_atm(1:betrtracer_vars%nvolatile_tracers)
+
+   ! !LOCAL VARIABLES:
    integer :: n1, n2, n3, j
 
 
@@ -186,9 +196,10 @@ contains
 !-------------------------------------------------------------------------------
   type(bgc_reaction_CENTURY_type) function constructor()
   !
-  ! ! DESCRIPTION
+  ! !DESCRIPTION:
+  !
   ! create an object of type bgc_reaction_CENTURY_type.
-  ! Right now it is purposely left empty
+  ! Right now it is purposely empty
 
   end function constructor
 
@@ -196,20 +207,20 @@ contains
 !-------------------------------------------------------------------------------
   subroutine init_boundary_condition_type(this, bounds, betrtracer_vars, tracerboundarycond_vars )
   !
-  ! DESCRIPTIONS
+  ! !DESCRIPTION:
   ! initialize boundary condition types
-
+  ! !USES:
   use TracerBoundaryCondType      , only : tracerboundarycond_type
   use BeTRTracerType              , only : betrtracer_type
 
-
+  ! !ARGUMENTS:
   class(bgc_reaction_CENTURY_type), intent(in) :: this
   type(bounds_type)               , intent(in) :: bounds
   type(BeTRtracer_type )          ,  intent(in) :: betrtracer_vars
   type(tracerboundarycond_type)   ,  intent(in) :: tracerboundarycond_vars
 
 
-
+  ! !LOCAL VARIABLES:
   integer :: c
 
 
@@ -228,30 +239,28 @@ contains
 
   subroutine Init_betrbgc(this, bounds, lbj, ubj, betrtracer_vars)
   !
-  ! DESCRIPTION
+  ! !DESCRIPTION:
   ! initialize the betrbgc
+  ! !USES:
   use CNSharedParamsMod     , only : CNParamsReadShared
   use ncdio_pio             , only : file_desc_t
   use BeTRTracerType        , only : betrtracer_type
   use MathfuncMod           , only : addone
   use clm_varctl            , only : cnallocate_carbon_only_set
-
+  ! !ARGUMENTS:
   class(bgc_reaction_CENTURY_type), intent(in) :: this
   type(bounds_type)               , intent(in) :: bounds
   integer                         , intent(in) :: lbj, ubj                           ! lower and upper bounds, make sure they are > 0
   type(BeTRtracer_type )          , intent(inout) :: betrtracer_vars
 
-  !local variables
-  character(len=*)                 , parameter :: subname ='Init_betrbgc'
-
+  ! !LOCAL VARIABLES:
+  character(len=32)               , parameter :: subname ='Init_betrbgc'
   integer :: jj
   integer :: nelm, itemp_mem
   integer :: itemp, itemp_vgrp, itemp_v, itemp_grp
   integer :: c_loc, n_loc, trcid
   logical :: carbon_only = .false.
-  !type(file_desc_t) :: ncid
 
-  !ncid%fh=10
   call cnallocate_carbon_only_set(carbon_only)
   call centurybgc_vars%Init(bounds, lbj, ubj)
 
@@ -423,8 +432,6 @@ contains
     trc_group_mem= addone(itemp_mem))
 
 
-  !comment following lines out when it is hooked to CLM at the moment
-  !call CNParamsReadShared(ncid)
 
 
   end subroutine Init_betrbgc
@@ -433,17 +440,17 @@ contains
   subroutine set_boundary_conditions(this, bounds, num_soilc, filter_soilc, dz_top, betrtracer_vars, &
     waterflux_vars, tracerboundarycond_vars)
   !
-  ! DESCRIPTION
+  ! !DESCRIPTION:
   ! set up boundary conditions for tracer movement
   !
-
+  ! !USES:
   use TracerBoundaryCondType, only : tracerboundarycond_type
   use abortutils            , only : endrun
   use shr_log_mod           , only : errMsg => shr_log_errMsg
   use BeTRTracerType        , only : betrtracer_type
   use WaterfluxType         , only : waterflux_type
 
-
+  ! !ARGUMENTS:
   class(bgc_reaction_CENTURY_type), intent(in) :: this
   type(bounds_type)               , intent(in) :: bounds
   integer                         , intent(in) :: num_soilc                 ! number of columns in column filter
@@ -454,8 +461,8 @@ contains
   type(tracerboundarycond_type)   , intent(inout) :: tracerboundarycond_vars
 
 
-  !local variables
-  character(len=255) :: subname = 'set_boundary_conditions'
+  ! !LOCAL VARIABLES:
+  character(len=32) :: subname = 'set_boundary_conditions'
   integer :: fc, c
 
   SHR_ASSERT_ALL((ubound(dz_top)                == (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
@@ -494,12 +501,13 @@ contains
     cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars, tracerstate_vars, &
     tracerflux_vars, plantsoilnutrientflux_vars)
   !
+  ! !DESCRIPTION:
   ! do bgc reaction
   ! this returns net carbon fluxes from decay and translocation
   ! and also update the related carbon/nitrogen/phosphorus(potentially) pools of OM
   ! note it is assumed the stoichiometry of the om pools are not changed during decomposition
   !
-  !USES
+  ! !USES:
   !
   use tracerfluxType           , only : tracerflux_type
   use tracerstatetype          , only : tracerstate_type
@@ -517,7 +525,7 @@ contains
   use CNCarbonFluxType         , only : carbonflux_type
   use CNNitrogenFluxType       , only : nitrogenflux_type
   use CNNitrogenStateType      , only : nitrogenstate_type
-  !ARGUMENTS
+  ! !ARGUMENTS:
   class(bgc_reaction_CENTURY_type)   , intent(in) :: this
   type(bounds_type)                  , intent(in) :: bounds                             ! bounds
   integer                            , intent(in) :: num_soilc                               ! number of columns in column filter
@@ -542,8 +550,8 @@ contains
   type(tracerflux_type)              , intent(inout) :: tracerflux_vars
   type(plantsoilnutrientflux_type)   , intent(inout) :: plantsoilnutrientflux_vars
 
-  character(len=*), parameter :: subname ='calc_bgc_reaction'
-
+  ! !LOCAL VARIABLES:
+  character(len=32), parameter :: subname ='calc_bgc_reaction'
   integer :: fc, c, j, k
   real(r8) :: time
   real(r8) :: y0(centurybgc_vars%nstvars, bounds%begc:bounds%endc, lbj:ubj)
@@ -577,9 +585,6 @@ contains
 
   !update the initial vector from external input
   !calculate elemental stoichiometry for different om pools and add mineral nutrient input from other than decaying process
-  !ideally, this should be done within the ode operator. However, since it is not possible to do it consistently for centurybgc (it requires
-  ! an reformulation of the nitrogen fixation cycle)
-  !I did this in a quick and dirty way.
 
   call bgcstate_ext_update_bfdecomp(bounds, 1, ubj, num_soilc, filter_soilc, carbonflux_vars, nitrogenflux_vars, &
     centurybgc_vars, betrtracer_vars, tracerflux_vars, y0, cn_ratios, cp_ratios)
@@ -665,9 +670,9 @@ contains
       call ode_ebbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j), pscal)
 
       if(pscal<5.e-1_r8)then
-        write(*,*)'lat, lon=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
-        write(*,*)'col, lev, pscal=',c, j, pscal
-        write(*,*)'nstep =',get_nstep()
+        write(iulog,*)'lat, lon=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
+        write(iulog,*)'col, lev, pscal=',c, j, pscal
+        write(iulog,*)'nstep =',get_nstep()
         call endrun()
       endif
 
@@ -695,18 +700,18 @@ contains
 !-------------------------------------------------------------------------------
   subroutine do_tracer_equilibration(this, bounds, lbj, ubj, jtops, num_soilc, filter_soilc, betrtracer_vars, tracercoeff_vars, tracerstate_vars)
   !
-  ! DESCRIPTIONS
-  ! requilibrate tracers that has solid and mobile phases
+  ! !DESCRIPTION:
+  ! equilibrate tracers that has solid and mobile phases
   ! using the theory of mass action. When the redox-ladder is on, this
   ! subroutine will update the change of pH due to tracer transport, or
-  ! USES
+  ! !USES:
   !
   use tracerstatetype       , only : tracerstate_type
   use tracercoeffType       , only : tracercoeff_type
   use BeTRTracerType        , only : betrtracer_type
 
+  ! !ARGUMENTS:
   class(bgc_reaction_CENTURY_type),    intent(in) :: this
-
   type(bounds_type),      intent(in) :: bounds
   integer,                intent(in) :: lbj, ubj
   integer,                intent(in) :: jtops(bounds%begc: )        ! top label of each column
@@ -715,7 +720,8 @@ contains
   type(betrtracer_type),  intent(in) :: betrtracer_vars
   type(tracercoeff_type), intent(in) :: tracercoeff_vars
   type(tracerstate_type), intent(inout) :: tracerstate_vars
-  character(len=255) :: subname = 'do_tracer_equilibration'
+  ! !LOCAL VARIABLES:
+  character(len=32) :: subname = 'do_tracer_equilibration'
 
 
   SHR_ASSERT_ALL((ubound(jtops) == (/bounds%endc/)), errMsg(__FILE__,__LINE__))
@@ -730,12 +736,17 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine readParams(this, ncid, betrtracer_vars )
+  !
+  ! !DESCRIPTION:
+  ! read in model parameters
+  !
+  ! !USES:
   use BeTRTracerType           , only : BeTRTracer_Type
   use ncdio_pio               , only : file_desc_t
   use BGCCenturyParMod        , only : readCentDecompBgcParams, readCentNitrifDenitrifParams, readCentCNAllocParams
   class(bgc_reaction_CENTURY_type) , intent(in)    :: this
   type(BeTRTracer_Type)            , intent(inout) :: betrtracer_vars
-  type(file_desc_t)  :: ncid  ! pio netCDF file id
+  type(file_desc_t)                , intent(inout) :: ncid  ! pio netCDF file id
 
 
 
@@ -750,6 +761,8 @@ contains
   !-----------------------------------------------------------------------
   subroutine InitCold(this, bounds, betrtracer_vars,  waterstate_vars, tracerstate_vars)
     !
+    ! !DESCRIPTION:
+    ! cold initialization
     ! !USES:
     !
     use BeTRTracerType           , only : BeTRTracer_Type
@@ -832,8 +845,11 @@ contains
 !--------------------------------------------------------------------------------------------------------------------
   subroutine betr_alm_flux_statevar_feedback(this, bounds, num_soilc, filter_soilc, &
              carbonstate_vars, nitrogenstate_vars, nitrogenflux_vars, tracerstate_vars, tracerflux_vars,  betrtracer_vars)
-
-
+  !
+  ! !DESCRIPTION:
+  ! do state and flux variable exchange between betr and alm
+  !
+  ! !USES:
    use shr_kind_mod             , only : r8 => shr_kind_r8
    use tracerfluxType           , only : tracerflux_type
    use tracerstatetype          , only : tracerstate_type
@@ -867,6 +883,10 @@ contains
 !---------------------------------------------------------------
   subroutine init_betr_alm_bgc_coupler(this, bounds, carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
 
+  !
+  ! !DESCRIPTION:
+  ! state variable exchange between betr and alm
+  ! !USES:
   use clm_varcon               , only : natomw, catomw
   use clm_varpar               , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use CNCarbonStateType        , only : carbonstate_type
@@ -884,7 +904,7 @@ contains
   type(carbonstate_type)             , intent(in) :: carbonstate_vars
   type(nitrogenstate_type)           , intent(in) :: nitrogenstate_vars
 
-
+  ! !LOCAL VARIABLES:
   integer, parameter :: i_soil1 = 5
   integer, parameter :: i_soil2 = 6
   integer, parameter :: i_soil3 = 7
@@ -945,17 +965,18 @@ contains
 
   subroutine one_box_century_bgc(ystate, dtime, time, nprimvars, nstvars, dydt)
   !
-  ! DESCRIPTIONS
-  !do single box bgc
+  ! !DESCRIPTION:
+  ! do single box bgc
   !
   !the equations to be solved are in the form
   !
   ! dx/dt=I+A*R, where I is the input, A is the stoichiometric matrix, and R is the reaction vector
-  !
   ! the input only contains litter input and mineral nutrient, som is assumed to be of fixed stoichiometry
+  ! !USES:
   use SOMStateVarUpdateMod  , only : calc_dtrend_som_bgc
   use BGCCenturySubMod      , only : calc_cascade_matrix
   implicit none
+  ! !ARGUMENTS:
   integer,  intent(in)  :: nstvars
   integer,  intent(in)  :: nprimvars
   real(r8), intent(in)  :: dtime
@@ -963,14 +984,14 @@ contains
   real(r8), intent(in)  :: ystate(nstvars)
   real(r8), intent(out) :: dydt(nstvars)
 
-  !local variables
+  ! !LOCAL VARIABLES:
   integer :: lk, jj
   real(r8) :: cascade_matrix(nstvars, Extra_inst%nr)
   logical  :: nitrogen_limit_flag(centurybgc_vars%nom_pools)
   real(r8) :: reaction_rates(Extra_inst%nr)
   real(r8) :: o2_consump, o2_limit
 
-    !calculate cascade matrix, which contains the stoichiometry for all reactions
+  !calculate cascade matrix, which contains the stoichiometry for all reactions
   call calc_cascade_matrix(nstvars, Extra_inst%nr, Extra_inst%cn_ratios, Extra_inst%cp_ratios, &
       Extra_inst%n2_n2o_ratio_denit, Extra_inst%cellsand, centurybgc_vars, nitrogen_limit_flag, cascade_matrix)
 
@@ -1053,12 +1074,15 @@ contains
 
   subroutine apply_nutrient_down_regulation(nstvars, nreactions, nitrogen_limit_flag, smin_nh4, smin_no3, dtime, cascade_matrix, reaction_rates)
 
+  ! !DESCRIPTION:
+  !
   ! this down-regulation considers nitrogen made available from gross mineralization
   ! this implements is corresponding to the CLM-2 approach as described in Tang and Riley (2015), BG, tehcnique note.
+  ! !USES:
   use clm_varctl,   only : CNAllocate_Carbon_only
   use MathfuncMod,  only : safe_div
 
-
+  ! !ARGUMENTS:
   integer , intent(in) :: nstvars
   integer , intent(in) :: nreactions
   logical , intent(in) :: nitrogen_limit_flag(centurybgc_vars%nom_pools)
@@ -1067,7 +1091,7 @@ contains
   real(r8), intent(in) :: dtime
   real(r8), intent(inout) :: cascade_matrix(nstvars, nreactions)
   real(r8), intent(inout) :: reaction_rates(nreactions)
-
+  ! !LOCAL VARIABLES:
   real(r8) :: decomp_plant_minn_demand_flx
   real(r8) :: tot_nh4_demand_flx
   real(r8) :: tot_no3_demand_flx

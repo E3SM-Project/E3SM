@@ -1,7 +1,7 @@
 module BeTRTracerType
   !------------------------------------------------------------------------------
   ! !DESCRIPTION:
-  ! Module variables for calculating the tracer transport and bgc reactions.
+  ! data type to configure betr simulations
   !
   ! !USES:
   use shr_kind_mod       , only: r8 => shr_kind_r8
@@ -114,9 +114,10 @@ module BeTRTracerType
   end subroutine Init
 !--------------------------------------------------------------------------------
   subroutine init_scalars(this)
-  !
-  ! DESCRIPTIONS
-  !
+
+  ! !DESCRIPTION:
+  ! initilaize scalar variables within the type
+
   implicit none
   class(BeTRtracer_type) :: this
 
@@ -171,9 +172,9 @@ module BeTRTracerType
 
 !--------------------------------------------------------------------------------
   subroutine InitAllocate(this)
-  !
-  ! DESCRIPTIONS
-  !
+
+  ! !DESCRIPTION:
+  ! allocate memories for vectors
 
   implicit none
   class(BeTRtracer_type) :: this
@@ -215,6 +216,10 @@ module BeTRTracerType
   subroutine set_tracer(this, trc_id, trc_name, is_trc_mobile, is_trc_advective, trc_group_id, &
      trc_group_mem, is_trc_diffusive, is_trc_volatile, trc_volatile_id, trc_volatile_group_id,trc_vtrans_scal)
 
+  ! !DESCRIPTION:
+  ! set up tracer property based on input configurations
+
+     ! !ARGUMENTS:
     class(BeTRtracer_type) :: this
     integer            , intent(in) :: trc_id
     character(len=*)   , intent(in) :: trc_name

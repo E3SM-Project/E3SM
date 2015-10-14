@@ -16,16 +16,16 @@ module Tracer_varcon
   implicit none
   save
 
-   logical,  public  :: l2ndadvsolver = .false. ! by default use 1st order solver for advection  
+   logical,  public  :: l2ndadvsolver = .false. ! by default use 1st order solver for advection
 
    real(r8),public, parameter :: SHR_CONST_VSMOW_O18 = 2005.20e-6_R8 ! ratio of 18O/16O in Vienna Standard Mean Ocean Water (VSMOW)
    real(r8),public, parameter :: SHR_CONST_VSMOW_O17 = 379.9e-6_R8   ! ratio of 17O/16O in Vienna Standard Mean Ocean Water (VSMOW)
    real(r8),public, parameter :: SHR_CONST_VSMOW_D = 155.76e-6_R8    ! ratio of D/H in Vienna Standard Mean Ocean Water (VSMOW)
    real(r8),public, parameter :: SHR_CONST_VSMOW_T = 1.85e-6_R8      ! ratio of T/H in Vienna Standard Mean Ocean Water (VSMOW)
 
-! underground Tracer transport logics, Jinyun Tang, 07/15/2011
+   ! underground tracer transport logical switches
    logical, public :: ltracer_offline=.true.              ! true=> do not pass volatile tracers from/to atmosphere
-   logical, public :: ltrcunsat=.false.                    ! ture=> swith on tracer transport for specified underground processes in unsaturated upland soil
+   logical, public :: ltrcunsat=.false.                   ! ture=> swith on tracer transport for specified underground processes in unsaturated upland soil
    logical, public :: ltrcsat  =.false.                   ! ture=> swith on tracer transport for specified underground processes in unsaturated wetland soil
    logical, public :: ltrclake =.false.                   ! ture=> swith on tracer transport for specified underground processes in lake water and lake soil
    logical, public :: laquadv_off =.false.                ! true=> turn off aqueous advection
@@ -42,12 +42,13 @@ module Tracer_varcon
                                                           ! where, dice is the change of ice content during to free-thaw cyles
    logical, public :: is_active_betr_bgc = .false.
    logical, public :: do_betr_leaching = .false.
-   logical, public :: liceseal = .true.                   ! true => allow ice to seal the surface soil and keep the gas tracer                                                       
+   logical, public :: liceseal = .true.                   ! true => allow ice to seal the surface soil and keep the gas tracer
    real(r8),public :: rr_dif_scal = 1._r8                       ! scaling factor for how much root respiration is diffused out into soil
    real(r8),public :: mr_dif_scal = 0._r8                       ! how much fraction of stem respiration is back into xylem
    real(r8),public :: co2_refix_scal = 0.0_r8                   ! how much fraction of co2 in the xylem is refixed in leaf
-   real(r8),public :: site_pH = 7._r8                           ! pH value of the site   
-!  atmospheric compositions, (v/v)   
+   real(r8),public :: site_pH = 7._r8                           ! pH value of the site
+
+!  atmospheric compositions, (v/v)
    real(r8),public :: atm_n2  = 0.78084_r8
    real(r8),public :: atm_o2  = 0.20946_r8
    real(r8),public :: atm_ar  = 0.009340_r8
@@ -62,7 +63,7 @@ module Tracer_varcon
 !  the zeros will be replaced with updated value from literature searching.
    real(r8),public :: atm_deld_h2 = 0._r8       !relative to VSMOW
    real(r8),public :: atm_delt_h2 = 0._r8       !relative to VSMOW
-   real(r8),public :: atm_del13c_co2 =-6._r8    !set to pre-industrial value by default, it will be used to set the value of c13ratio, PDB 
+   real(r8),public :: atm_del13c_co2 =-6._r8    !set to pre-industrial value by default, it will be used to set the value of c13ratio, PDB
    real(r8),public :: atm_del13c_ch4 = 0._r8    !relative to PDB
    real(r8),public :: atm_del14c_co2 = 0._r8    !relative to what?
    real(r8),public :: atm_del14c_ch4 = 0._r8    !relative to what?
@@ -78,11 +79,11 @@ module Tracer_varcon
    integer, parameter, public :: bndcond_as_conc = 1   !top boundary conditions as tracer concentration
    integer, parameter, public :: bndcond_as_flux=2      !top boundary condition as tracer flux
 
-   
+
    !true fractions of the isotopologues in the atmosphere
    real(r8),public :: atm_dratio_h2, atm_tratio_h2
    real(r8),public :: atm_c13rc12_co2, atm_c14rc12_co2, atm_o18ro16_co2, atm_o17ro16_co2
    real(r8),public :: atm_drh_h2o,atm_tratio_h2o,atm_o18ro16_h2o, atm_o17ro16_h2o
    real(r8),public :: atm_c13rc12_ch4, atm_c14rc12_ch4, atm_drh_ch4
-   
+
 end module Tracer_varcon

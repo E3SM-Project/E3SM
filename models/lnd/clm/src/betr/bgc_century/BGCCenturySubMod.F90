@@ -1,8 +1,10 @@
 module BGCCenturySubMod
 #include "shr_assert.h"
 !
-! DESCRIPTION
-! module contains subroutine for the century bgc implementation
+! !DESCRIPTION:
+! subroutines for stoichiometric configuration of the century bgc
+! !History, created by Jinyun Tang, Dec, 2014. 
+! !USES:
   use shr_kind_mod       , only : r8 => shr_kind_r8
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use decompMod          , only : bounds_type
@@ -25,14 +27,16 @@ module BGCCenturySubMod
   subroutine calc_cascade_matrix(nstvars, nreactions, cn_ratios, cp_ratios, n2_n2o_ratio_denit, pct_sand, &
      centurybgc_vars, nitrogen_limit_flag, cascade_matrix)
   !
-  ! DESCRIPTION
+  ! !DESCRIPTION:
   ! calculate cascade matrix for the decomposition model
   !
+  ! !USES:
   use clm_varcon                , only : nitrif_n2o_loss_frac
   use BGCCenturyParMod          , only : CNDecompBgcParamsInst, NutrientCompetitionParamsInst
   use MathfuncMod               , only : safe_div
   use BGCCenturySubCoreMod      , only : centurybgc_type
 
+  ! !ARGUMENTS:
   integer                       , intent(in) :: nstvars
   integer                       , intent(in) :: nreactions
   type(centurybgc_type)         , intent(in) :: centurybgc_vars
@@ -43,6 +47,7 @@ module BGCCenturySubMod
   real(r8)                      , intent(out) :: cascade_matrix(nstvars, nreactions)
   logical                       , intent(out) :: nitrogen_limit_flag(centurybgc_vars%nom_pools)
 
+  ! !LOCAL VARIABLES:
   real(r8) :: ftxt, f1, f2
   real(r8) :: compet_plant_no3
   real(r8) :: compet_plant_nh4
@@ -147,7 +152,6 @@ module BGCCenturySubMod
   is_aerobic_reac(reac) = .true.
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
 
-    !Note: Jinyun Tang, Dec 26, 2014
     !When a reaction needs mineral nitrogen to balance the elements, it takes mineral nitrogen proportionally from nh4 and no3.
     !This formulation assumes that the nitrogen mineralized from om decomposition is equally accessible to plants and decomposers. Such
     !a formulation is different from the century BGC in CLM4.5. Rather, CLM4.5 bgc assumes that the nitrogen mineralized from nitrogen releasing

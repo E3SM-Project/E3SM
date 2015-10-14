@@ -1,11 +1,15 @@
 module KineticsMod
-!Module contains code to do substrate kinetics
-!Created by Jinyun Tang, Apr 11, 2013
+! !DESCRIPTION:
+! Subroutines to do substrate kinetics
+! Created by Jinyun Tang, Apr 11, 2013
+! !USES:
+
   use shr_kind_mod, only: r8 => shr_kind_r8
   use abortutils,   only: endrun
   use clm_varctl,   only: iulog
 implicit none
-  real(r8), parameter :: kd_infty = 1.e40_r8
+  real(r8),private, parameter :: kd_infty = 1.e40_r8      !internal parameter
+
   interface mmcomplex   !the m-m kinetics
      module procedure mmcomplex_v1s,mmcomplex_v1e, mmcomplex_m
   end interface mmcomplex
@@ -21,15 +25,22 @@ end interface ecacomplex_cell_norm
 contains
 !-------------------------------------------------------------------------------
    subroutine mmcomplex_v1s(kd,ee,ss,siej)
-   !compute concentrations of the enzyme substrate complexes
-   !many microbes vs single substrate
-   !using the traditional M-M kinetics
+
+   ! !DESCRIPTION:
+   ! Compute concentrations of the enzyme substrate complexes
+   ! many microbes vs single substrate
+   ! using the traditional M-M kinetics
+
+   ! !USES:
+
    implicit none
+   ! !ARGUMENTS:
    real(r8), dimension(:), intent(in) :: kd
    real(r8), dimension(:), intent(in) :: ee
    real(r8), intent(in) :: ss
    real(r8), dimension(:), intent(out) :: siej
 
+   ! !LOCAL VARIABLES:
    integer :: jj, j
    real(r8) :: dS
    jj = size(ee)
@@ -50,15 +61,19 @@ contains
    end subroutine mmcomplex_v1s
 !-------------------------------------------------------------------------------
    subroutine mmcomplex_v1e(kd,ee,ss,siej)
+   ! !DESCRIPTION:
    !compute concentrations of the enzyme substrate complexes
    !using the traditional M-M kinetics
-   !many substrate vs single microbe
+   !many substrates vs single microbe
+
    implicit none
+   ! !ARGUMENTS:
    real(r8), dimension(:), intent(in) :: kd
    real(r8), dimension(:), intent(in) :: ss
    real(r8), intent(in) :: ee
    real(r8), dimension(:), intent(out) :: siej
 
+   ! !LOCAL VARIABLES
    integer :: ii
    integer :: i
    real(r8) :: dE
@@ -80,17 +95,22 @@ contains
    end subroutine mmcomplex_v1e
 !-------------------------------------------------------------------------------
    subroutine mmcomplex_m(kd,ee,ss,siej)
+   ! !DESCRIPTION:
    !compute concentrations of the enzyme substrate complexes
    !using the traditional M-M kinetics
    !many substrates vs many microbes
+
    implicit none
+   ! !ARGUMENTS:
    real(r8), dimension(:,:), intent(in) :: kd
    real(r8), dimension(:), intent(in) :: ee, ss
    real(r8), dimension(:,:), intent(out) :: siej
 
+   ! !LOCAL VARIABLES:
    integer :: ii,jj
    integer :: i, j
    real(r8) :: dS, dE
+
    ii = size(ss)
    jj = size(ee)
    siej = 0._r8
@@ -119,15 +139,18 @@ contains
    end subroutine mmcomplex_m
 !-------------------------------------------------------------------------------
    subroutine ecacomplex_v1s(kd,ss,ee,siej)
+   ! !DESCRIPTION:
    !compute concentrations of the enzyme substrate complexes
    !using the first order accurate ECA kinetics
    !many microbes vs one substrate
    implicit none
+   ! !ARGUMENTS:
    real(r8), dimension(:), intent(in) :: kd
    real(r8), dimension(:), intent(in) :: ee
    real(r8), intent(in) :: ss
    real(r8), dimension(:), intent(out) :: siej
 
+   ! !LOCAL VARIABLES:
    integer :: jj
    integer :: j
    real(r8) :: dnm2
@@ -149,15 +172,18 @@ contains
    end subroutine ecacomplex_v1s
 !-------------------------------------------------------------------------------
    subroutine ecacomplex_v1e(kd,ss,ee,siej)
+   ! !DESCRIPTION:
    !compute concentrations of the enzyme substrate complexes
    !using the first order accurate ECA kinetics
    !many substrate vs single microbe
    implicit none
+   ! !ARGUMENTS:
    real(r8), dimension(:), intent(in) :: kd
    real(r8), dimension(:), intent(in) :: ss
    real(r8), intent(in) :: ee
    real(r8), dimension(:), intent(out) :: siej
 
+   ! !LOCAL VARIABLES:
    integer :: ii
    integer :: i
    real(r8) :: dnm1
@@ -178,13 +204,17 @@ contains
    end subroutine ecacomplex_v1e
 !-------------------------------------------------------------------------------
    subroutine ecacomplex_m(kd,ss,ee,siej)
+   ! !DESCRIPTION:
    !compute concentrations of the enzyme substrate complexes
    !using the first order accurate ECA kinetics
+   ! many substrate vs many enzymes
    implicit none
+   ! !ARGUMENTS:
    real(r8), dimension(:,:), intent(in) :: kd
    real(r8), dimension(:), intent(in) :: ee, ss
    real(r8), dimension(:,:), intent(out) :: siej
 
+   ! !LOCAL VARIABLES:
    integer :: ii,jj
    integer :: i, j, k
    real(r8) :: dnm1, dnm2
@@ -219,13 +249,17 @@ contains
    end subroutine ecacomplex_m
 !-------------------------------------------------------------------------------
    subroutine ecacomplex_cell_norm_m(kd,ss,ee,siej)
-   !compute concentrations of the enzyme substrate complexes
-   !using the first order accurate ECA kinetics
+   ! !DESCRIPTION:
+   ! compute concentrations of the enzyme substrate complexes
+   ! using the first order accurate ECA kinetics
+   ! and noramlize the return value with cell abundance
+   ! many substrates vs many enzymes
    implicit none
+   ! !ARGUMENTS:
    real(r8), dimension(:,:), intent(in) :: kd
    real(r8), dimension(:), intent(in) :: ee, ss
    real(r8), dimension(:,:), intent(out) :: siej
-
+   ! !LOCAL VARIABLES:
    integer :: ii,jj
    integer :: i, j, k
    real(r8) :: dnm1, dnm2
@@ -261,15 +295,19 @@ contains
 
 !-------------------------------------------------------------------------------
    subroutine ecacomplex_cell_norm_v1s(kd,ss,ee,siej)
+   ! !DESCRIPTION:
    !compute concentrations of the enzyme substrate complexes
    !using the first order accurate ECA kinetics
    !many microbes vs one substrate
+   !and normalize return value with cell abundance
+
    implicit none
+   ! !ARGUMENTS:
    real(r8), dimension(:), intent(in) :: kd
    real(r8), dimension(:), intent(in) :: ee
    real(r8), intent(in) :: ss
    real(r8), dimension(:), intent(out) :: siej
-
+   ! !LOCAL VARIABLES:
    integer :: jj
    integer :: j
    real(r8) :: dnm2
@@ -291,15 +329,18 @@ contains
    end subroutine ecacomplex_cell_norm_v1s
 !-------------------------------------------------------------------------------
    subroutine ecacomplex_cell_norm_v1e(kd,ss,ee,siej)
-   !compute concentrations of the enzyme substrate complexes
-   !using the first order accurate ECA kinetics
-   !many substrate vs single microbe
+   ! !DESCRIPTION:
+   ! compute concentrations of the enzyme substrate complexes
+   ! using the first order accurate ECA kinetics
+   ! many substrate vs single microbe
+   ! and normalize the return value with cell abundance
    implicit none
+   ! !ARGUMENTS:
    real(r8), dimension(:), intent(in) :: kd
    real(r8), dimension(:), intent(in) :: ss
    real(r8), intent(in) :: ee
    real(r8), dimension(:), intent(out) :: siej
-
+   ! !LOCAL VARIABLES:
    integer :: ii
    integer :: i
    real(r8) :: dnm1

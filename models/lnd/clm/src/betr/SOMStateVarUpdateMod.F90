@@ -1,8 +1,9 @@
 module SOMStateVarUpdateMod
 !
-! DESCRIPTION
+! DESCRIPTION:
 ! subroutines to update state variables of any
 ! reaction based bgc module
+! !USES:
   use shr_kind_mod       , only: r8 => shr_kind_r8
   implicit none
   public :: calc_dtrend_som_bgc
@@ -11,8 +12,10 @@ contains
   !-----------------------------------------------------------------------
   subroutine calc_dtrend_som_bgc(nx, ny, cascade_matrix, reaction_rates, dxdt)
   !
+  ! !DESCRIPTION:
   ! return the temporal trend of the state variables
   implicit none
+  ! !ARGUMENTS:
   integer,  intent(in) :: nx, ny
   real(r8), intent(in) :: cascade_matrix(1:nx,1:ny)
   real(r8), intent(in) :: reaction_rates(1:ny)

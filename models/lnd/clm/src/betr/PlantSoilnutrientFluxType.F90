@@ -1,11 +1,13 @@
 module PlantSoilnutrientFluxType
 #include "shr_assert.h"
-  !DESCRIPTIONS
-  !
+  !!DESCRIPTION:
   ! data structure for above/below ground nutrient coupling.
   ! The vision is beyond nitrogen, which probably extends to P, S and ect.
   ! This is part of BeTRbgc
   ! Created by Jinyun Tang, Jan 11, 2015
+  !
+  ! !USES:
+  !
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_infnan_mod         , only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod            , only : errMsg => shr_log_errMsg
@@ -50,7 +52,11 @@ module PlantSoilnutrientFluxType
  contains
   !------------------------------------------------------------------------
   subroutine Init(this, bounds, lbj, ubj)
-
+   !
+   ! !DESCRIPTION:
+   ! initialize data type
+   !
+   ! !ARGUMENTS:
     class(plantsoilnutrientflux_type) :: this
     type(bounds_type), intent(in) :: bounds
 
@@ -180,7 +186,6 @@ module PlantSoilnutrientFluxType
     ! Set nitrogen flux variables
     !
     ! !ARGUMENTS:
-    ! !ARGUMENTS:
     class (plantsoilnutrientflux_type) :: this
     integer , intent(in) :: num_patch
     integer , intent(in) :: filter_patch(:)
@@ -231,7 +236,7 @@ module PlantSoilnutrientFluxType
     integer :: num_special_patch                         ! number of good values in special_patch filter
     integer :: special_col(bounds%endc-bounds%begc+1)    ! special landunit filter - columns
     integer :: special_patch(bounds%endp-bounds%begp+1)  ! special landunit filter - patches
-    !---------------------------------------------------------------------
+
 
     ! Set column filters
 
@@ -261,15 +266,17 @@ module PlantSoilnutrientFluxType
          num_column=num_special_col, filter_column=special_col, value_column=0._r8)
   end subroutine InitCold
 
-
+  !-----------------------------------------------------------------------
   subroutine summary(this, bounds, ubj,  num_soilc, filter_soilc, dz, nh4_transp, no3_transp)
   !
-  !
-
+  ! !DESCRIPTION:
+  ! summarize state variables from different subpools/subfluxes
+  ! !USES:
   use MathfuncMod              , only : dot_sum
   use clm_time_manager         , only : get_step_size
   use clm_varcon               , only : natomw
-    ! !ARGUMENTS:
+
+  ! !ARGUMENTS:
   class(plantsoilnutrientflux_type) :: this
   type(bounds_type), intent(in) :: bounds
   integer,  intent(in) :: num_soilc
@@ -279,6 +286,7 @@ module PlantSoilnutrientFluxType
   real(r8), intent(in) :: nh4_transp(bounds%begc:bounds%endc)
   real(r8), intent(in) :: no3_transp(bounds%begc:bounds%endc)
 
+  ! !LOCAL VARIABLES:
   integer :: fc, c, j
   real(r8) :: dtime
 
@@ -300,9 +308,16 @@ module PlantSoilnutrientFluxType
 !--------------------------------------------------------------------------------
 
   subroutine calc_nutrient_uptake_potential(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, frootc_patch)
-
+  !
+  ! !DESCRIPTION:
+  ! diagnose the vmax for nutrient uptake, with the vision to use ECA or something alike.
+  !
+  ! !USES:
   use subgridAveMod       , only : p2c
   use GridcellType        , only : grc
+
+  !
+  ! !ARGUMENTS:
   class(plantsoilnutrientflux_type) :: this
   type(bounds_type), intent(in) :: bounds
   integer,  intent(in) :: num_soilc
@@ -311,7 +326,7 @@ module PlantSoilnutrientFluxType
   integer,  intent(in) :: filter_soilp(:)
   real(r8), intent(in) :: frootc_patch(bounds%begp:bounds%endp)
 
-
+  ! !LOCAL VARIABLES:
   real(r8) :: Vmax_minn = 1.e-6_r8  ! gN/gC/s
   integer  :: fp, p, fc, c
   real(r8) :: nscal = 1._r8

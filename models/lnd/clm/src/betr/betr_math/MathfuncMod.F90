@@ -1,14 +1,14 @@
 module MathfuncMod
 #include "shr_assert.h"
-
-!Module contains mathematical functions for some elementary manipulations
-!Created by Jinyun Tang
+! !DESCRIPTION:
+! mathematical functions for some elementary manipulations
+! History: Created by Jinyun Tang
+!
+! !USES:
    use shr_kind_mod    , only : r8 => shr_kind_r8
    use clm_varctl      , only : iulog
    use abortutils      , only : endrun
    use shr_log_mod     , only : errMsg => shr_log_errMsg
-   !contains subroutines for array manipulation
-   !and some useful functions
 implicit none
    save
    private
@@ -34,8 +34,13 @@ implicit none
 contains
 !-------------------------------------------------------------------------------
    function heviside(x)result(ans)
+   !
+   ! !DESCRIPTION:
+   !  heviside function
    implicit none
+   ! !ARGUMENTS:
    real(r8), intent(in) :: x
+   ! !LOCAL VARIABLES:
    real(r8) :: ans
 
    if(x>0._r8)then
@@ -48,8 +53,14 @@ contains
 
 !-------------------------------------------------------------------------------
    subroutine swap_i(a,b)
+   !
+   ! !DESCRIPTION:
+   ! swap two integers
    implicit none
+   ! !ARGUMENTS:
    integer, intent(inout) :: a, b
+
+   ! !LOCAL VARIABLES:
    integer :: c
 
    c = a
@@ -59,8 +70,14 @@ contains
    end subroutine swap_i
 !-------------------------------------------------------------------------------
    subroutine swap_r(a,b)
+   !
+   ! !DESCRIPTION:
+   ! swap two real numbers
    implicit none
+   ! !ARGUMENTS:
    real(r8), intent(inout) :: a, b
+
+   ! !LOCAL VARIABLES:
    real(r8) :: c
 
    c = a
@@ -70,8 +87,13 @@ contains
    end subroutine swap_r
 !-------------------------------------------------------------------------------
    subroutine swap_rv(a,b)
+   !
+   ! !DESCRIPTION:
+   ! swap two vectors
    implicit none
+   ! !ARGUMENTS:
    real(r8), dimension(:), intent(inout) :: a, b
+   ! !LOCAL VARIABLES:
    real(r8), dimension(size(a)) :: c
 
    integer :: n
@@ -89,10 +111,14 @@ contains
    end subroutine swap_rv
 !-------------------------------------------------------------------------------
    function minmax(x)result(ans)
+   !
+   ! !DESCRIPTION:
    !returnd the minimum and maximum of the input vector
    implicit none
+   ! !ARGUMENTS:
    real(r8), dimension(:), intent(in) :: x
 
+   ! !LOCAL VARIABLES:
    integer :: n, j
    real(r8) :: ans(2)
    n = size(x)
@@ -113,10 +139,15 @@ contains
    end function minmax
 !-------------------------------------------------------------------------------
    subroutine cumsum_v(x, y)
+   !
+   ! !DESCRIPTION:
+   ! cumulative sum of a vector x
    implicit none
-   real(r8), dimension(:), intent(in)  :: x
-   real(r8), dimension(:), intent(out) :: y
+   ! !ARGUMENTS:
+   real(r8), dimension(:), intent(in)  :: x  !input vector
+   real(r8), dimension(:), intent(out) :: y  !sum
 
+   ! !LOCAL VARIABLES:
    integer :: n
    integer :: j
    SHR_ASSERT_ALL((size(x)   == size(y)),        errMsg(__FILE__,__LINE__))
@@ -131,11 +162,16 @@ contains
    end subroutine cumsum_v
 !-------------------------------------------------------------------------------
    subroutine cumsum_m(x, y, idim)
+   !
+   ! !DESCRIPTION:
+   ! do cumulative summation for maxtrix x along dimnension idim
    implicit none
-   real(r8), dimension(:,:), intent(in)  :: x
-   real(r8), dimension(:,:), intent(out) :: y
-   integer , optional,     intent(in)  :: idim
+   ! !ARGUMENTS:
+   real(r8), dimension(:,:), intent(in)  :: x   !input array
+   real(r8), dimension(:,:), intent(out) :: y   !output cum sum
+   integer , optional,     intent(in)  :: idim  !dimension to be summed
 
+   ! !LOCAL VARIABLES:
    integer :: n
    integer :: j
    integer :: idim_loc
@@ -144,7 +180,6 @@ contains
 
    SHR_ASSERT_ALL((size(x,1)   == size(y,1)),        errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((size(x,2)   == size(y,2)),        errMsg(__FILE__,__LINE__))
-
 
    if(idim_loc == 1)then
      !summation along dimension 1
@@ -165,10 +200,16 @@ contains
 
 !-------------------------------------------------------------------------------
    subroutine cumdif(x, y)
+   !
+   ! !DESCRIPTION:
+   ! do nearest neighbor finite difference
+   !
    implicit none
-   real(r8), dimension(:), intent(in)  :: x
-   real(r8), dimension(:), intent(out) :: y
+   ! !ARGUMENTS:
+   real(r8), dimension(:), intent(in)  :: x   !input array
+   real(r8), dimension(:), intent(out) :: y   !output dif
 
+   ! !LOCAL VARIABLES:
    integer :: n
    integer :: j
 
@@ -181,9 +222,14 @@ contains
 !-------------------------------------------------------------------------------
 
    subroutine diff(x,y)
+   !
+   ! !DESCRIPTION:
+   ! do nearest neighbor forward difference
+   !
    implicit none
-   real(r8), dimension(:), intent(in)  :: x
-   real(r8), dimension(:), intent(out) :: y
+   ! !ARGUMENTS:
+   real(r8), dimension(:), intent(in)  :: x  !input array
+   real(r8), dimension(:), intent(out) :: y  !output array
 
    integer :: n
    integer :: j
@@ -198,12 +244,15 @@ contains
 !-------------------------------------------------------------------------------
    function safe_div(a,b,eps)result(ans)
    !
-   !DESCRIPTION
-   !avoid division by zero when calculate a/b
+   ! !DESCRIPTION:
+   ! avoid division by zero when calculate a/b
    implicit none
-   real(r8), intent(in) :: a
-   real(r8), intent(in) :: b
-   real(r8), optional, intent(in) :: eps
+   ! !ARGUMENTS:
+   real(r8), intent(in) :: a      !numerator
+   real(r8), intent(in) :: b      !denominator
+   real(r8), optional, intent(in) :: eps  !screening threshold
+   !
+   ! !LOCAL VARIABLES:
    real(r8) :: ans
    real(r8) :: loc_eps
    if(present(eps))then
@@ -222,13 +271,16 @@ contains
 !--------------------------------------------------------------------------------
   function dot_sum(x,y)result(ans)
   !
-  !DESCRIPTIONS
+  ! !DESCRIPTION:
   ! calculate the dot product
+  !
+  ! !USES:
   use shr_kind_mod, only: r8 => shr_kind_r8
   implicit none
+  ! !ARGUMENTS:
   real(r8), dimension(:), intent(in) :: x
   real(r8), dimension(:), intent(in) :: y
-
+  ! !LOCAL VARIABLES:
   integer  :: n, j
   real(r8) :: ans
   SHR_ASSERT_ALL((size(x)           == size(y)), errMsg(__FILE__,__LINE__))
@@ -238,20 +290,21 @@ contains
   !DOUBLE PRECISION FUNCTION ddot(N,DX,INCX,DY,INCY)
   !
   ans=dot_product(x,y)
-  !ans = 0._r8
-  !do j = 1, n
-  !  ans = ans + x(j)*y(j)
-  !enddo
+
   end function dot_sum
 !--------------------------------------------------------------------------------
   function addone(a)result(ans)
+  ! !DESCRIPTION:
+  ! return a variable with a + 1
   !
-  !return a variable with a + 1
+  ! !USES:
   use shr_kind_mod, only: r8 => shr_kind_r8
   implicit none
+  ! !ARGUMENTS:
   integer, intent(inout) :: a
-
+  ! !LOCAL VARIABLES:
   integer :: ans
+
   a = a + 1
   ans = a
   end function
@@ -259,11 +312,12 @@ contains
 !--------------------------------------------------------------------------------
   subroutine asc_sort_vec(zvec)
   !
+  ! !DESCRIPTION:
   ! sort an array into ascending order
   implicit none
+  ! !ARGUMENTS:
   real(r8), dimension(:), intent(inout) :: zvec
-
-
+  ! !LOCAL VARIABLES:
   integer :: n, j, k
   logical :: lswap
 
@@ -285,9 +339,13 @@ contains
 !--------------------------------------------------------------------------------
   function is_bounded(x, xl, xr)result(ans)
   !
+  ! !DESCRIPTION:
   ! test if x is bounded within xl and xr
   implicit none
+  ! !ARGUMENTS:
   real(r8), intent(in) :: x, xl, xr
+
+  ! !LOCAL VARIABLES:
   logical :: ans
   if(x>=xl .and. x<=xr)then
     ans = .true.
@@ -298,13 +356,16 @@ contains
 
 !--------------------------------------------------------------------------------
   function minp(p,v)result(ans)
+  !
+  ! !DESCRIPTION:
   !find the minimum of the nonzero p entries, with the entry determined by
   !nonzero values of v
 
   implicit none
+  ! !ARGUMENTS:
   real(r8), dimension(:), intent(in) :: p
   real(r8), dimension(:), intent(in) :: v
-
+  ! !LOCAL VARIABLES:
   integer  :: j, sz
   real(r8) :: ans      !(<=1._r8)
 
@@ -322,14 +383,18 @@ contains
 !--------------------------------------------------------------------------------
   subroutine pd_decomp(m, n, A, AP, AD)
   !
+  ! !DESCRIPTION:
   !separate a input matrix A into AP and AD with positive
   !and negative entries respectively.
 
   implicit none
-  integer, intent(in)  :: n, m
-  real(r8), intent(in) :: A(1: ,  1: )
-  real(r8), intent(out):: AP(1: , 1: )
-  real(r8), intent(out):: AD(1: , 1: )
+  ! !ARGUMENTS:
+  integer  , intent(in) :: n, m
+  real(r8) , intent(in) :: A(1: ,  1: )
+  real(r8) , intent(out):: AP(1: , 1: )
+  real(r8) , intent(out):: AD(1: , 1: )
+
+  ! !LOCAL VARIABLES:
   integer :: i, j
 
 
@@ -349,10 +414,15 @@ contains
   !--------------------------------------------------------------------------------
 
   function num2str(a,fmt)result(ans)
+  !
+  ! !DESCRIPTION:
   !turn a number into a string using the specified format
   implicit none
+  ! !ARGUMENTS:
   integer, intent(in) :: a
+  character(len=*), intent(in) :: fmt
 
+  ! !LOCAL VARIABLES:
   character(len=32) :: ans
   character(len=32) :: str
 
