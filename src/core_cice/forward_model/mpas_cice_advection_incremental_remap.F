@@ -943,17 +943,17 @@ contains
 
     ! global x
     unitVectorGlobal(1,1) = 1.0_RKIND
-    unitVectorGlobal(1,2) = 0.0_RKIND
-    unitVectorGlobal(1,3) = 0.0_RKIND
+    unitVectorGlobal(2,1) = 0.0_RKIND
+    unitVectorGlobal(3,1) = 0.0_RKIND
 
     ! global y
-    unitVectorGlobal(2,1) = 0.0_RKIND
+    unitVectorGlobal(1,2) = 0.0_RKIND
     unitVectorGlobal(2,2) = 1.0_RKIND
-    unitVectorGlobal(2,3) = 0.0_RKIND
+    unitVectorGlobal(3,2) = 0.0_RKIND
 
     ! global z
-    unitVectorGlobal(3,1) = 0.0_RKIND
-    unitVectorGlobal(3,2) = 0.0_RKIND
+    unitVectorGlobal(1,3) = 0.0_RKIND
+    unitVectorGlobal(2,3) = 0.0_RKIND
     unitVectorGlobal(3,3) = 1.0_RKIND
        
     do iElement = 1, nElements
@@ -963,10 +963,10 @@ contains
 
        ! local vertical
        ! this is the same as the vector from the center of the sphere to the point on the surface
-       unitVectorLocal(3,1) = xGlobal(iElement)
-       unitVectorLocal(3,2) = yGlobal(iElement)
+       unitVectorLocal(1,3) = xGlobal(iElement)
+       unitVectorLocal(2,3) = yGlobal(iElement)
        unitVectorLocal(3,3) = zGlobal(iElement)
-       call unit_vector_3d(unitVectorLocal(3,:))
+       call unit_vector_3d(unitVectorLocal(:,3))
        
        if (abs(xGlobal(iElement)**2 + yGlobal(iElement)**2) > eps11) then  ! not at a pole
           
@@ -974,32 +974,32 @@ contains
           ! this is obtained by a 90-degree rotation of (xGlobal, yGlobal) in a plane of constant latitude
 
           unitVectorLocal(1,1) = -yGlobal(iElement)
-          unitVectorLocal(1,2) =  xGlobal(iElement)
-          unitVectorLocal(1,3) =  0.0_RKIND
-          call unit_vector_3d(unitVectorLocal(1,:))
+          unitVectorLocal(2,1) =  xGlobal(iElement)
+          unitVectorLocal(3,1) =  0.0_RKIND
+          call unit_vector_3d(unitVectorLocal(:,1))
 
           ! local north
           ! this is found by taking the cross product of the local vertical and local east unit vectors
-          call cross_product_3d(unitVectorLocal(3,:), unitVectorLocal(1,:), unitVectorLocal(2,:))
+          call cross_product_3d(unitVectorLocal(:,3), unitVectorLocal(:,1), unitVectorLocal(:,2))
 
        else  ! xGlobal = yGlobal = 0; at a pole
 
           ! take local east and local north to lie in a plane parallel to the equator, as in unitVectorGlobal
           if (zGlobal(iElement) > 0.0_RKIND) then  ! North Pole
-             unitVectorLocal(1,:) = unitVectorGlobal(1,:)
-             unitVectorLocal(2,:) = unitVectorGlobal(2,:)
+             unitVectorLocal(:,1) = unitVectorGlobal(:,1)
+             unitVectorLocal(:,2) = unitVectorGlobal(:,2)
           else   ! South Pole (reverse the order of east and north to obtain right-handed coordinates)
-             unitVectorLocal(1,:) = unitVectorGlobal(2,:)
-             unitVectorLocal(2,:) = unitVectorGlobal(1,:)
+             unitVectorLocal(:,1) = unitVectorGlobal(:,2)
+             unitVectorLocal(:,2) = unitVectorGlobal(:,1)
           endif
 
        endif   ! at the pole or not
           
        ! compute matrix for transforming from local to global coordinates
-       transLocalToGlobal(:,:,iElement) = matmul(unitVectorGlobal, transpose(unitVectorLocal))
+       transLocalToGlobal(:,:,iElement) = matmul(transpose(unitVectorGlobal), unitVectorLocal)
 
        ! compute matrix for transforming from local to global coordinates
-       transGlobalToLocal(:,:,iElement) = matmul(unitVectorLocal, transpose(unitVectorGlobal))
+       transGlobalToLocal(:,:,iElement) = matmul(transpose(unitVectorLocal), unitVectorGlobal)
 
     enddo   ! iElement
 
