@@ -18,9 +18,9 @@ set STOP_OPTION = `./xmlquery STOP_OPTION -value`
 cd $CASEROOT
 echo "doing a ${STOP_N} ${STOP_OPTION} test with no restart files" >>& $TESTSTATUS_LOG 
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 

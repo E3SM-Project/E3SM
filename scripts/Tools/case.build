@@ -68,7 +68,8 @@ my $logger;
 #-----------------------------------------------------------------------------------------------
  
 my %opts = (loglevel => "INFO");
-GetOptions("loglevel=s" => \$opts{loglevel});
+GetOptions("loglevel=s" => \$opts{loglevel}, 
+                    "testmode" => \$opts{testmode});
 
 sub main {
 
@@ -90,10 +91,15 @@ sub main {
 
     $logger = Log::Log4perl::get_logger();
 
-    $CASE = `./xmlquery  CASE -value `;
-    if (! -f "$CASE.run") {
-	$logger->logdie ("ERROR: must invoke case_setup script before calling build script ");
+    if (! -f "case.run") {
+	$logger->logdie ("ERROR: must invoke case.setup script before calling build script ");
     }
+
+    my $TESTCASE  = `./xmlquery -value TESTCASE`;
+    if(defined $TESTCASE && -e "$CIMEROOT/scripts/Testing/Testcases/${TESTCASE}_build.csh" && ! $opts{testmode}){
+	$logger->logdie("$TESTCASE build must be invoked via case.testbuild script");
+    }
+
 
     $sysmod = "./Tools/check_lockedfiles -cimeroot $CIMEROOT";
     system($sysmod) == 0 or $logger->logdie ("$sysmod failed: $?");
@@ -396,7 +402,7 @@ sub buildChecks()
 	$msg .= " NINST_VALUE = $NINST_VALUE \n";
 	$msg .= " A manual clean of your obj directories is strongly recommended \n";
 	$msg .= " You should execute the following: \n";
-	$msg .= " ./$CASE.clean_build \n";
+	$msg .= " ./case.clean_build \n";
 	$msg .= " Then rerun the build script interactively \n";
 	$msg .= " ---- OR ---- \n";
 	$msg .= " You can override this error message at your own risk by executing:  \n";
@@ -411,7 +417,7 @@ sub buildChecks()
 	$msg .= "  SMP_VALUE = $SMP_VALUE \n";
 	$msg .= "  A manual clean of your obj directories is strongly recommended\n";
 	$msg .= "  You should execute the following: \n";
-	$msg .= "    ./$CASE.clean_build\n";
+	$msg .= "    ./case.clean_build\n";
 	$msg .= "  Then rerun the build script interactively\n";
 	$msg .= "  ---- OR ----\n";
 	$msg .= "  You can override this error message at your own risk by executing\n";
@@ -424,7 +430,7 @@ sub buildChecks()
 	my $msg = "  ERROR env_build HAS CHANGED \n";
 	$msg .= "  A manual clean of your obj directories is strongly recommended \n";
 	$msg .= "  You should execute the following:  \n";
-	$msg .= "      ./$CASE.clean_build \n";
+	$msg .= "      ./case.clean_build \n";
 	$msg .= "  Then rerun the build script interactively \n";
 	$msg .= "    ---- OR ---- \n";
 	$msg .= "  You can override this error message at your own risk by executing  \n";

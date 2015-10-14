@@ -56,12 +56,12 @@ endif
 
 ./xmlchange -file env_build.xml -id NINST_BUILD -val 0
 
-./case_setup -clean -testmode
-./case_setup
+./case.setup -clean -testmode
+./case.setup
 
-./$CASE.clean_build
+./case.clean_build
 
-./$CASE.build
+./case.build -testmode
 if ($status != 0) then
    echo "Error: build for single instance failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus
@@ -107,12 +107,12 @@ set NTASKS_CPL  = `./xmlquery NTASKS_CPL -value`
 
 ./xmlchange -file env_build.xml -id NINST_BUILD -val 0
 
-./case_setup -clean -testmode
-./case_setup
+./case.setup -clean -testmode
+./case.setup
 
-./$CASE.clean_build 
+./case.clean_build 
 
-./$CASE.build
+./case.build -testmode
 if ($status != 0) then
    echo "Error: build for multi instance failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus

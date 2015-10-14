@@ -54,10 +54,10 @@ resubmitCheck();
 sub resubmitCheck()
 {
     if($config{RESUBMIT} > 0){
-	my $submitscript = "$config{'CASEROOT'}/$config{'CASE'}.submit";
+	my $submitscript = "$config{'CASEROOT'}/case.submit";
 	my $cwd = getcwd;
 	chdir $config{CASEROOT};
-	my $resubmitcommand = "$submitscript -resubmit -scriptname $config{'CASE'}.st_archive";
+	my $resubmitcommand = "$submitscript -resubmit -scriptname case.st_archive";
 	$logger->debug( "running resubmit check $resubmitcommand");
 	if(-e $testlog){
 	    open(TL,">>$testlog");

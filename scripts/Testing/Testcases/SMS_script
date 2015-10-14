@@ -29,9 +29,9 @@ cd $CASEROOT
 
 echo "doing an ${STOP_N} ${STOP_OPTION} initial test, no restarts written" >>& $TESTSTATUS_LOG 
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 
