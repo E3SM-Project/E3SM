@@ -103,7 +103,7 @@ sub getOptions()
             my $out = "You are not calling the run script via the submit script. ";
 	    $out.= "As a result, short-term archiving will not be called automatically.";
 	    $out.= "Please submit your run by running the submit script like so: ";
-	    $out.= "./$case.submit";
+	    $out.= "./case.submit";
 	    $logger->logdie($out);
     }
     else
@@ -484,10 +484,10 @@ sub resubmitCheck()
 # Mira requires special logic
 #
     if(($config{DOUT_S} eq 'FALSE' && $config{RESUBMIT} > 0) || ($config{MACH} eq "mira" && $config{DOUT_S} eq "TRUE")) {
-	my $submitscript = "$config{'CASEROOT'}/$config{'CASE'}.submit";
+	my $submitscript = "$config{'CASEROOT'}/case.submit";
 	my $cwd = getcwd;
 	chdir $config{'CASEROOT'};
-	my $resubmitcommand = "$submitscript -resubmit -scriptname $config{'CASE'}.";
+	my $resubmitcommand = "$submitscript -resubmit -scriptname case.";
 
 	if(defined $config{TESTCASE} && $config{TESTCASE} eq "ERR"){
 	    $resubmitcommand .= "test"; 

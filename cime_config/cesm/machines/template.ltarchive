@@ -43,8 +43,8 @@ sub main
 
 sub resubmitCheck()
 {
-    my $submitscript = "$config{'CASEROOT'}/$config{'CASE'}.submit";
-    my $resubmitcommand = "$submitscript -resubmit -scriptname $config{'CASE'}.lt_archive";
+    my $submitscript = "$config{'CASEROOT'}/case.submit";
+    my $resubmitcommand = "$submitscript -resubmit -scriptname case.lt_archive";
     my $cwd = getcwd;
     chdir $config{CASEROOT};
     qx($resubmitcommand);

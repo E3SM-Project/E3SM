@@ -54,17 +54,17 @@ set CASE                 = `./xmlquery CASE -value`
 ./xmlchange -file env_run.xml -id STOP_N          -val ${stopn1}                || exit -1
 ./xmlchange -file env_run.xml -id CLM_BLDNML_OPTS -val "-bgc_spinup on" -append || exit -1
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 
 # Run the short-term archiver.. this is a short-term hack until
 # a better solution can be found.
-./$CASE.st_archive
+./case.st_archive
 if($status != 0) then
-    echo " ERROR: $CASE.st_archive failed ">>& $TESTSTATUS_LOG
+    echo " ERROR: case.st_archive failed ">>& $TESTSTATUS_LOG
     exit -1
 endif 
 
@@ -119,9 +119,9 @@ ln -s ${DOUTSR0}/rest/${refdate}-00000/*${refdate}*  $RUNDIR/.
 
 set CASE = `./xmlquery CASE -value`
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 

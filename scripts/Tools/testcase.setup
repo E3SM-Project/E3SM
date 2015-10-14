@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #-----------------------------------------------------------------------------------------------
-# testcase_setup - create the $caseroot/$case.test script 
+# testcase_setup - create the $caseroot/case.test script 
 #-----------------------------------------------------------------------------------------------
 
 use strict;
@@ -154,7 +154,7 @@ my $batchdirectives = $batchmaker->getBatchDirectives();
 
 ## create test file
 my $sysmod;
-my $testfile = "$caseroot/${case}.test";
+my $testfile = "$caseroot/case.test";
 my $testfh = new IO::File;
 $testfh->open(">>$testfile") or $logger->logdie ("can't open file: $testfile ");
 print $testfh "#!/bin/csh -f $eol";
@@ -567,11 +567,10 @@ print $testfh $testcase_end;
 
 $testfh->close();
 
-$sysmod= "chmod 755 $case* *pl";
-system ($sysmod); if ($? == -1) {$logger->logdie ("$sysmod failed: $!");};
+chmod 0755 ,"case.test_build";
 
-$sysmod = "chmod 755 $testfile";
-system($sysmod) == 0 or $logger->logdie ("ERROR: $sysmod failed: $? ");
+chmod 0755, "$testfile";
+
 
 chdir($caseroot);
 
