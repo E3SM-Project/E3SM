@@ -309,10 +309,6 @@ contains
   SHR_ASSERT_ALL((size(x) == size(di)),  errMsg(__FILE__,__LINE__))  
   SHR_ASSERT_ALL((size(xi) == size(yi)), errMsg(__FILE__,__LINE__))
 
-!  print*,'interp'
-!  do j = 1, size(fx)
-!    print*,j,x(j),fx(j)
-!  enddo
   n=size(xi)  !total number of points to be interpolated
 
   yi(:)=0._r8

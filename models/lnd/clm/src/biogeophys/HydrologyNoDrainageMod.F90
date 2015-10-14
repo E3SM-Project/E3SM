@@ -414,22 +414,6 @@ contains
          end do
       end if
 
-      ! Update smp_l for history and for ch4Mod.
-      ! ZMS: Note, this form, which seems to be the same as used in SoilWater, DOES NOT distinguish between
-      ! ice and water volume, in contrast to the soilpsi calculation above. It won't be used in ch4Mod if
-      ! t_soisno <= tfrz, though.
-      !do j = 1, nlevgrnd
-      !   do fc = 1, num_hydrologyc
-      !      c = filter_hydrologyc(fc)
-
-      !      s_node = max(h2osoi_vol(c,j)/watsat(c,j), 0.01_r8)
-      !      s_node = min(1.0_r8, s_node)
-
-      !      smp_l(c,j) = -sucsat(c,j)*s_node**(-bsw(c,j))
-      !      smp_l(c,j) = max(smpmin(c), smp_l(c,j))
-      !   end do
-      !end do
-
       if (use_cn) then
          ! Available soil water up to a depth of 0.05 m.
          ! Potentially available soil water (=whc) up to a depth of 0.05 m.

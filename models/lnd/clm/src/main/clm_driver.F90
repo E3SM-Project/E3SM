@@ -268,13 +268,11 @@ contains
        call get_clump_bounds(nc, bounds_clump)
 
        if(use_betr .and. (.not. do_betr_leaching))then
-          !call t_startf('beg betr bal')
 
           call begin_betr_tracer_massbalance(bounds_clump, 1, nlevtrc_soil, &
                filter(nc)%num_soilc, filter(nc)%soilc, betrtracer_vars  , &
                tracerstate_vars, tracerflux_vars)
 
-          !call t_stopf('end betr bal')
        endif
        
        if (use_cn) then
@@ -784,12 +782,10 @@ contains
               call bgc_reaction%init_betr_alm_bgc_coupler(bounds_proc, carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
 
              !the following is dirty hack, I'll reconsider this in later modifcations, Jinyun Tang May 14, 2015
-             !call t_startf('beg betr bal')
               call begin_betr_tracer_massbalance(bounds_clump, 1, nlevtrc_soil, &
                   filter(nc)%num_soilc, filter(nc)%soilc, betrtracer_vars  , &
                   tracerstate_vars, tracerflux_vars)
 
-              !call t_stopf('end betr bal')
            endif
            !this is used for non-online bgc with betr
            call run_betr_one_step_without_drainage(bounds_clump, 1, nlevtrc_soil,    &
@@ -907,25 +903,6 @@ contains
        if(.not. use_ed)then
           if (use_cn) then
              nstep = get_nstep()
-             !c = 4689
-             !print*,'-------------------------------------------------------'
-             !print*,'soiln',nitrogenstate_vars%totcoln_col(c)-nitrogenstate_vars%totabgn_col (c)
-
-             !print*,'nflx',sum(nitrogenflux_vars%bgc_npool_inputs_col(c,:))+nitrogenflux_vars%sminn_input_col(c)-&
-             !  (nitrogenflux_vars%denit_col(c)+nitrogenflux_vars%smin_no3_leached_col(c)+nitrogenflux_vars%smin_no3_runoff_col(c)+&
-             !  nitrogenflux_vars%f_n2o_nit_col(c))*get_step_size()
-             
-             !print*,'nimmob',nitrogenflux_vars%actual_immob_col(c)*get_step_size()
-             !print*,'nbgcinput',sum(nitrogenflux_vars%bgc_npool_inputs_col(c,:))
-             !print*,'bgcnpool',nitrogenstate_vars%totblgn_col(c)-nitrogenstate_vars%sminn_col(c)
-             !print*,'----------'
-             !print*,'sminn',nitrogenstate_vars%sminn_col(c)
-             !print*,'minn input',nitrogenflux_vars%sminn_input_col(c)
-             !print*,'min nh4 input',nitrogenflux_vars%sminn_nh4_input_col(c)
-             !print*,'min no3 input',nitrogenflux_vars%sminn_no3_input_col(c)
-             !print*,'minneralization',nitrogenflux_vars%actual_immob_col(c)*get_step_size()
-             !print*,'minn output', (nitrogenflux_vars%denit_col(c)+nitrogenflux_vars%smin_no3_leached_col(c)+nitrogenflux_vars%smin_no3_runoff_col(c)+&
-             !  nitrogenflux_vars%f_n2o_nit_col(c))*get_step_size()
              if (nstep < 2 )then
                 if (masterproc) then
                    write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'

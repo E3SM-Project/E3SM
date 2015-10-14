@@ -647,7 +647,6 @@ contains
     k_decay(centurybgc_vars%lid_at_rt_reac, bounds%begc:bounds%endc, 1:ubj))
 
   !do ode integration and update state variables for each layer
-  !print*,get_nstep()
   do j = lbj, ubj
     do fc = 1, num_soilc
       c = filter_soilc(fc)
@@ -660,27 +659,9 @@ contains
         aere_cond=tracercoeff_vars%aere_cond_col(c,:), tracer_conc_atm=tracerstate_vars%tracer_conc_atm_col(c,:))
       !update state variables
       time = 0._r8
-!      if(c==11817 .and. get_nstep()>=29310.and. j<=2)then
 
-!        ldebug=.true.
-!      else
-!        ldebug=.false.
-!      endif
-!      if(get_nstep()==8584 .and. c==8077)write(iulog,*)'nh4_comp',nh4_compet(c,j)
       yf(:,c,j)=y0(:,c,j) !this will allow to turn off the bgc reaction for debugging purpose
-      !print*,c,grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
-!      if(c==554 .and. j==1)then
-!         ldebug=.true.
-!         ldebug_bgc=.true.
-!        print*,'grd',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
-!        print*,'lido2',centurybgc_vars%lid_o2
-!      else
-!        ldebug=.false.
-!        ldebug_bgc=.false.
-!      endif
-!      ldebug_ode=ldebug
-!      print*,c,j,ldebug_ode
-!      print*,'nit den=',k_decay(centurybgc_vars%lid_nh4_nit_reac,c,j),k_decay(centurybgc_vars%lid_no3_den_reac,c,j)
+
       call ode_ebbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j),pscal)
       if(pscal<5.e-1_r8)then
         write(*,*)'lat, lon=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
@@ -688,18 +669,6 @@ contains
         write(*,*)'nstep =',get_nstep()
         call endrun()
       endif
-      !if(ldebug)then
-      !  print*,'cj',c,j,pscal,get_nstep()
-      !endif
-!      print*,'cjp',c,j,pscal
-!      if(ldebug)then
-!        write(iulog,*)'cj',c,j,y0(centurybgc_vars%lid_nh4_supp,c,j),yf(centurybgc_vars%lid_nh4_supp,c,j),k_decay(centurybgc_vars%lid_plant_minn_up_reac,c,j)
-!      endif
-      !if(pscal>0._r8)pause
-      !if(c==21192 .and. get_nstep()==43939 .and. j==9)then
-      !  write(iulog,*)'y0',(k,y0(k,c,j),k=1,centurybgc_vars%nstvars)
-      !  write(iulog,*)'yf',(k,yf(k,c,j),k=1,centurybgc_vars%nstvars)
-      !endif
     enddo
   enddo
   call bgcstate_ext_update_afdecomp(bounds, 1, ubj, num_soilc, filter_soilc, carbonflux_vars, nitrogenflux_vars, &
@@ -999,16 +968,7 @@ contains
     !calculate cascade matrix, which contains the stoichiometry for all reactions
   call calc_cascade_matrix(nstvars, Extra_inst%nr, Extra_inst%cn_ratios, Extra_inst%cp_ratios, &
       Extra_inst%n2_n2o_ratio_denit, Extra_inst%cellsand, centurybgc_vars, nitrogen_limit_flag, cascade_matrix)
-  !if(ldebug)then
-  !  do lk = 1, centurybgc_vars%nom_pools
-  !    write(iulog,*)'lk cn',lk,Extra_inst%cn_ratios(lk),ystate((lk-1)*centurybgc_vars%nelms+centurybgc_vars%c_loc),&
-  !       ystate((lk-1)*centurybgc_vars%nelms+centurybgc_vars%n_loc)
-  !  enddo
-  !  print*,'reac',centurybgc_vars%lid_no3,reaction_rates(centurybgc_vars%lid_no3_den_reac)
-  !endif
-  !if(lpr)then
-  !  print*,reaction_rates
-  !endif
+
  !do pool degradation
   do lk = 1, Extra_inst%nr
     if(Extra_inst%is_zero_order(lk))then
@@ -1020,9 +980,6 @@ contains
           reaction_rates(lk) = Extra_inst%scal_f(jj) *(Extra_inst%conv_f(jj)*ystate(jj) - Extra_inst%conc_f(jj))
           !I add the following line to disconnect the nitrogen and oxygen interaction
           reaction_rates(lk) = min(reaction_rates(lk),ystate(jj)/dtime)
-!          if(ldebug)then
-!            write(*,*)'o2',jj,Extra_inst%conv_f(jj),ystate(jj),Extra_inst%conc_f(jj)
-!          endif
         else
           reaction_rates(lk) = Extra_inst%k_decay(lk)            !this effective defines the plant nitrogen demand
         endif
@@ -1065,21 +1022,13 @@ contains
     else
 
       reaction_rates(lk)=ystate(centurybgc_vars%primvarid(lk))*Extra_inst%k_decay(lk)
-!      reaction_rates(lk)=min(reaction_rates(lk),ystate(centurybgc_vars%primvarid(lk))/dtime)
-      !if(ldebug)then
-      !  write(*,'(A,2(X,I4),3(X,E20.10))')'lk',lk,centurybgc_vars%primvarid(lk),ystate(centurybgc_vars%primvarid(lk)),Extra_inst%k_decay(lk),reaction_rates(lk)
-      !endif
     endif
   enddo
-!  if(lpr)then
-!    print*,'reac',centurybgc_vars%lid_nh4,reaction_rates(centurybgc_vars%lid_nh4_nit_reac)
-!    print*,reaction_rates
-!  endif
+
   !obtain total oxygen consumption rate
   o2_consump = DOT_PRODUCT(cascade_matrix(centurybgc_vars%lid_o2,1:Extra_inst%nr),reaction_rates(1:Extra_inst%nr))
   if(-o2_consump*dtime > ystate(centurybgc_vars%lid_o2))then
     o2_limit=-ystate(centurybgc_vars%lid_o2)/(o2_consump*dtime)
-!    if(ldebug)print*,'o2lim',o2_limit,ystate(centurybgc_vars%lid_o2),o2_consump
     do lk = 1, Extra_inst%nr
       if(centurybgc_vars%is_aerobic_reac(lk))then
         reaction_rates(lk) = reaction_rates(lk)*o2_limit
@@ -1092,19 +1041,7 @@ contains
 
   call calc_dtrend_som_bgc(nstvars, Extra_inst%nr, cascade_matrix(1:nstvars, 1:Extra_inst%nr), reaction_rates(1:Extra_inst%nr), dydt)
 
-!  if(ldebug)then
-!    do lk = 1, centurybgc_vars%nprimvars
-!      write(*,'(I4,4(X,E20.10))')lk,dydt(lk),ystate(lk),dtime,ystate(lk)+dydt(lk)*dtime
-!    enddo
-!    print*,'dydt',dydt(centurybgc_vars%lid_nh4_supp),ystate(centurybgc_vars%lid_nh4_supp),centurybgc_vars%lid_nh4_supp
-!    print*,reaction_rates(1:Extra_inst%nr)
-!    print*,'totno3',DOT_PRODUCT(cascade_matrix(16,1:Extra_inst%nr),reaction_rates(1:Extra_inst%nr))
-!    do lk = 1, Extra_inst%nr
-!      write(*,'(I4,2(X,E20.10))')lk,cascade_matrix(16,lk),reaction_rates(lk)
-!    enddo
-!    print*,reaction_rates(centurybgc_vars%lid_nh4_nit_reac),reaction_rates(centurybgc_vars%lid_no3_den_reac)
-!    print*,centurybgc_vars%lid_nh4_nit_reac,Extra_inst%k_decay(centurybgc_vars%lid_nh4_nit_reac),ystate(centurybgc_vars%primvarid(centurybgc_vars%lid_nh4_nit_reac))
-!  endif
+
   end subroutine one_box_century_bgc
 !-------------------------------------------------------------------------------
 
@@ -1217,9 +1154,7 @@ contains
       endif
       reaction_rates(lid_no3_den_reac ) = reaction_rates(lid_no3_den_reac )*min(alpha,1._r8)
       smin_no3_to_decomp_plant_flx = smin_no3/dtime + reaction_rates(lid_no3_den_reac ) * cascade_matrix(lid_no3 ,reac)
-!      if(ldebug)then
-!        write(*,'(A,3(X,E20.10))')'alpha=',alpha, reaction_rates(lid_no3_den_reac ),smin_no3_to_decomp_plant_flx
-!      endif
+
     else
       !denitrifiers, decomposers and plants are no3 limited
       alpha = smin_no3/(tot_no3_demand_flx*dtime)
@@ -1233,11 +1168,7 @@ contains
   endif
   !avoid negative smin_no3 due to roundoff
   smin_no3_to_decomp_plant_flx = max(smin_no3_to_decomp_plant_flx-1.e-21_r8, 0._r8)
-!  if(ldebug)print*,'no3dem',smin_no3_to_decomp_plant_flx,reaction_rates(lid_no3_den_reac ),smin_no3
-!  if(ldebug)then
-!    print*,'carbon_only=',CNAllocate_Carbon_only()
-!    write(*,'(A,3(X,E20.10))')'ld',tot_no3_demand_flx * dtime,smin_no3,reaction_rates(lid_no3_den_reac )+smin_no3_to_decomp_plant_flx
-!  endif
+
   tot_sminn_to_decomp_plant_flx = smin_nh4_to_decomp_plant_flx + smin_no3_to_decomp_plant_flx
   if(CNAllocate_Carbon_only())then
     supp_nh4_to_decomp_plant_flx = decomp_plant_minn_demand_flx - tot_sminn_to_decomp_plant_flx
@@ -1272,9 +1203,7 @@ contains
       reaction_rates(reac) = reaction_rates(reac) * alpha
 
       cascade_matrix(lid_no3, reac) = cascade_matrix(lid_nh4, reac) * (1._r8-frac_nh4_to_decomp_plant-frac_supp_nh4_to_decomp_plant)
-  !    if(ldebug)then
-  !      write(iulog,*)'nomnh4',reac,cascade_matrix(lid_nh4,reac)
-  !    endif
+
       if(lid_nh4_supp>0)then
         cascade_matrix(lid_nh4_supp, reac) = cascade_matrix(lid_nh4, reac) * frac_supp_nh4_to_decomp_plant
         cascade_matrix(lid_nh4,reac) = cascade_matrix(lid_nh4, reac) - cascade_matrix(lid_no3, reac) - cascade_matrix(lid_nh4_supp, reac)
@@ -1302,11 +1231,7 @@ contains
     cascade_matrix(lid_minn_nh4_plant, reac) = -cascade_matrix(lid_nh4, reac)
   endif
   cascade_matrix(lid_minn_no3_plant, reac) = -cascade_matrix(lid_no3, reac)
-!  if(ldebug)then
-!    write(*,*)'supp nh4 sum',frac_supp_nh4_to_decomp_plant,frac_nh4_to_decomp_plant,frac_supp_nh4_to_decomp_plant+frac_nh4_to_decomp_plant
-!    write(*,*),'casc',cascade_matrix(lid_no3, :)
-!    write(*,*)'casc supp',cascade_matrix(lid_nh4_supp,:)
-!  endif
+
   end associate
   end subroutine apply_nutrient_down_regulation
 end module BGCReactionsCenturyCLMType

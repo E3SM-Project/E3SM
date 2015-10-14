@@ -293,7 +293,6 @@ module PlantSoilnutrientFluxType
     else
       this%fppnd_col(c) = 1._r8
     endif
-!    if(c==917)print*,'fpnnd',this%fppnd_col(c)
   enddo
 
   end subroutine summary

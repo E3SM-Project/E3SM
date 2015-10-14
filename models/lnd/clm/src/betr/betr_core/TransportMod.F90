@@ -371,13 +371,8 @@ module TransportMod
         condc_toplay, topbc_type, bot_flux, update_col, source_only=.false.,&
         rt=rt, at=at,bt=bt,ct=ct)
    endif     
-   !do fc = 1, numfl
-   !  c = filter(fc)
-   !  do kk = lbj, ubj
-   !    write(*,'(A,4(X,E18.10))'),'tri',at(c,kk),bt(c,kk),ct(c,kk),rt(c,kk)
-   !  enddo
-   !enddo      
-   !calculate the change to tracer      
+
+   !calculate the change to tracer
    call Tridiagonal (bounds, lbj, ubj, jtop, numfl, filter, ntrcs, at, bt, ct, rt, dtracer, update_col)
   
    end subroutine DiffusTransp_gw
@@ -710,7 +705,6 @@ module TransportMod
        !ensure no negative leaching
        call cmass_mono_smoother(cmass_new(0:length, ntr),cmass_curve(ubj-lbn(c)+3, ntr))
 
-       !write(iulog,*)c,ntr,'semlg0',cmass_new(length,ntr),cmass_curve(ubj-lbn(c)+3, ntr)   
        !diagnose the leaching flux
        if(present(leaching_mass))then
          leaching_mass(c, ntr) = cmass_curve(ubj-lbn(c)+3, ntr)-cmass_new(length, ntr) !add the numerical error to leaching
@@ -719,7 +713,6 @@ module TransportMod
 
        !obtain the grid concentration
        call cumdif(cmass_new(0:length, ntr), mass_new(0:length, ntr))
-       !write(iulog,*)c,ntr,'semlg1',cmass_new(length,ntr),cmass_curve(ubj-lbn(c)+3, ntr)   
        do k = lbn(c), ubj
          j = k - lbn(c) + 1      
          !correct for small negative values

@@ -143,7 +143,6 @@ module BGCCenturySubMod
 
   cascade_matrix(lid_minn_nh4_immob     ,reac)  = -cascade_matrix(lid_nh4         ,reac)
   cascade_matrix(lid_co2_hr             ,reac)  = CNDecompBgcParamsInst%rf_l1s1_bgc
-!  if(ldebug_bgc)  print*,'reac1',cascade_matrix(lid_co2_hr             ,reac)+cascade_matrix((som1-1)*nelms+c_loc   ,reac)
   primvarid(reac) = (lit1-1)*nelms+c_loc
   is_aerobic_reac(reac) = .true.
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
@@ -173,7 +172,6 @@ module BGCCenturySubMod
   cascade_matrix(lid_minn_nh4_immob     ,reac)   = -cascade_matrix(lid_nh4         ,reac)
   cascade_matrix(lid_co2_hr             ,reac)   = CNDecompBgcParamsInst%rf_l2s1_bgc
 
-!  if(ldebug_bgc) print*,'reac2',cascade_matrix(lid_co2_hr             ,reac)+cascade_matrix((som1-1)*nelms+c_loc   ,reac)
   primvarid(reac) = (lit2-1)*nelms+c_loc
   is_aerobic_reac(reac) = .true.
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
@@ -197,7 +195,6 @@ module BGCCenturySubMod
   cascade_matrix(lid_minn_nh4_immob     ,reac) = -cascade_matrix(lid_nh4         ,reac)
   cascade_matrix(lid_co2_hr             ,reac) = CNDecompBgcParamsInst%rf_l3s2_bgc
 
-!  if(ldebug_bgc) print*,'reac3',cascade_matrix(lid_co2_hr             ,reac)+cascade_matrix((som2-1)*nelms+c_loc   ,reac)
   primvarid(reac) = (lit3-1)*nelms+c_loc
   is_aerobic_reac(reac) = .true.
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
@@ -210,9 +207,7 @@ module BGCCenturySubMod
   !double check those stoichiometry parameters
   !reaction 4, the partition into som2 and som3 is soil texture dependent
   reac = som1_dek_reac
-  !som1 + f(txt) o2 -> f1*som2 + f2*som3 + f(txt) co2 + (1/cn_ratios(som1)-f1/cn_ratios(som2)-f2/cn_ratios(som3)) +(1/cp_ratios(som1)-f1/cp_ratios(som2)-f2/cp_ratios(som3))
-  !f(txt) = 0.85_r8 - 0.68_r8 * 0.01_r8 * (100._r8 - sand)
-  !f1+f2+f(txt)=1._r8
+
   ftxt = 0.85_r8 - 0.68_r8 * 0.01_r8 * (100._r8 - pct_sand)
   f1 = 0.996*(1._r8-ftxt)
   f2 = 0.004*(1._r8-ftxt)
@@ -232,7 +227,6 @@ module BGCCenturySubMod
   cascade_matrix(lid_minn_nh4_immob     ,reac) = -cascade_matrix(lid_nh4         ,reac)
   cascade_matrix(lid_co2_hr             ,reac) = ftxt
 
-!  if(ldebug_bgc) print*,'reac4',cascade_matrix(lid_co2_hr             ,reac)+cascade_matrix((som2-1)*nelms+c_loc   ,reac)+cascade_matrix((som3-1)*nelms+c_loc   ,reac)
   primvarid(reac) = (som1-1)*nelms+c_loc
   is_aerobic_reac(reac) = .true.
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
@@ -260,7 +254,6 @@ module BGCCenturySubMod
   cascade_matrix(lid_minn_nh4_immob     ,reac)   = -cascade_matrix(lid_nh4         ,reac)
   cascade_matrix(lid_co2_hr             ,reac)   = CNDecompBgcParamsInst%rf_s2s1_bgc
 
-!  if(ldebug_bgc)  print*,'reac5',cascade_matrix(lid_co2_hr             ,reac)+cascade_matrix((som1-1)*nelms+c_loc   ,reac)+cascade_matrix((som3-1)*nelms+c_loc   ,reac)
   primvarid(reac) = (som2-1)*nelms+c_loc
   is_aerobic_reac(reac) = .true.
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
@@ -283,7 +276,6 @@ module BGCCenturySubMod
   cascade_matrix(lid_nh4                ,reac) = safe_div(1._r8,cn_ratios(som3)) - safe_div(1._r8-CNDecompBgcParamsInst%rf_s3s1_bgc,cn_ratios(som1))
   cascade_matrix(lid_minn_nh4_immob     ,reac) = -cascade_matrix(lid_nh4         ,reac)
   cascade_matrix(lid_co2_hr             ,reac) = CNDecompBgcParamsInst%rf_s3s1_bgc
-!  if(ldebug_bgc)  print*,'reac6',cascade_matrix(lid_co2_hr             ,reac)+cascade_matrix((som1-1)*nelms+c_loc   ,reac)
   primvarid(reac) = (som3-1)*nelms+c_loc
   is_aerobic_reac(reac) = .true.
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
@@ -308,8 +300,6 @@ module BGCCenturySubMod
                                                  safe_div(CNDecompBgcParamsInst%cwd_flig_bgc,cn_ratios(lit3))
   cascade_matrix(lid_minn_nh4_immob     ,reac) = -cascade_matrix(lid_nh4         ,reac)
 
-!  if(ldebug_bgc)  print*,'reac7',cascade_matrix((lit2-1)*nelms+c_loc   ,reac)+cascade_matrix((lit3-1)*nelms+c_loc   ,reac)
-
   primvarid(reac) = (cwd-1)*nelms+c_loc
   is_aerobic_reac(reac) = .true.
   if(cascade_matrix(lid_nh4, reac)<0._r8)then
@@ -317,7 +307,7 @@ module BGCCenturySubMod
     nitrogen_limit_flag(reac) = .true.
 
   endif
-!  if(ldebug_bgc)print*,'' 
+
   !----------------------------------------------------------------------
   !reaction 8, nitrification
   reac = lid_nh4_nit_reac

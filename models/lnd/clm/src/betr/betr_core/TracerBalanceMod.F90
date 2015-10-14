@@ -48,13 +48,6 @@ implicit none
 
   call betr_tracer_mass_summary(bounds, lbj, ubj, numf, filter, betrtracer_vars, tracerstate_vars, &
      tracerstate_vars%beg_tracer_molarmass_col)
-!  do fc = 1, numf
-!    c =filter(fc)
-!    if(c==12954)then
-!      write(iulog,*)get_nstep(),'beg nh3',tracerstate_vars%beg_tracer_molarmass_col(c,betrtracer_vars%id_trc_nh3x),&
-!       'no3',tracerstate_vars%beg_tracer_molarmass_col(c,betrtracer_vars%id_trc_no3x)
-!    endif
-!  enddo
 
   end subroutine begin_betr_tracer_massbalance
   
@@ -114,20 +107,12 @@ implicit none
   !do mass balance check and write error messages if any  
   do fc = 1, numf
     c = filter(fc)
-!    if(c==12954)then
-!      write(iulog,*)get_nstep(),'end nh3',tracerstate_vars%beg_tracer_molarmass_col(c,betrtracer_vars%id_trc_nh3x),&
-!       'no3',tracerstate_vars%beg_tracer_molarmass_col(c,betrtracer_vars%id_trc_no3x)
-!    endif
-    !summarize the fluxes 
+    !summarize the fluxes
     call tracerflux_vars%flux_summary(c, betrtracer_vars)
     
     do kk = 1, ngwmobile_tracers
-      !dstorage = netpro -surface fluxes - lateral fluxes, note at this step all fluxes have not been temporally averaged
-      !print*,c,tracer_flx_netpro(c,kk),tracer_flx_netphyloss(c,kk)
-      !print*,beg_tracer_molarmass(c,kk),end_tracer_molarmass(c,kk)
       errtracer(c,kk) = beg_tracer_molarmass(c,kk)-end_tracer_molarmass(c,kk)  &
          + tracer_flx_netpro(c,kk)-tracer_flx_netphyloss(c,kk)           
-      !print*,beg_tracer_molarmass(c,kk)-end_tracer_molarmass(c,kk),errtracer(c,kk)
       if(abs(errtracer(c,kk))<err_min)then
         err_rel=1.e-4_r8
       else
@@ -148,11 +133,6 @@ implicit none
     bal_flx=0._r8
     do kk = ngwmobile_tracers+1, ntracers
       errtracer(c,kk) = beg_tracer_molarmass(c,kk)-end_tracer_molarmass(c,kk) + tracer_flx_netpro(c,kk)
-      !if(mod(kk,2)==0)then
-      !  bal_beg = bal_beg + beg_tracer_molarmass(c,kk)
-      !  bal_end = bal_end + end_tracer_molarmass(c,kk)
-      !  bal_flx = bal_flx + tracer_flx_netpro(c,kk)
-      !endif
       if(abs(errtracer(c,kk))>err_min)then
         write(iulog,*)'error exceeds the tolerance for tracer '//tracernames(kk), 'err=',errtracer(c,kk), 'col=',c
         write(iulog,*)get_nstep(),is_mobile(kk)
@@ -160,30 +140,7 @@ implicit none
         call endrun(decomp_index=c, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
       endif
     enddo
-    !if(c==15695)then
-    !  atw=natomw
-    !  print*,'------'
-    !  print*,'somn',bal_beg*atw,bal_end*atw
-    !  print*,'netpsomn',bal_flx *atw 
-    !  bal_beg=bal_beg+beg_tracer_molarmass(c,betrtracer_vars%id_trc_no3x) + beg_tracer_molarmass(c,betrtracer_vars%id_trc_nh3x)
-    !  bal_end=bal_end+end_tracer_molarmass(c,betrtracer_vars%id_trc_no3x) + end_tracer_molarmass(c,betrtracer_vars%id_trc_nh3x)
-    !  bal_flx=bal_flx+tracer_flx_netpro(c,betrtracer_vars%id_trc_nh3x)+tracer_flx_netpro(c,betrtracer_vars%id_trc_no3x)-&
-    !        (tracer_flx_netphyloss(c,betrtracer_vars%id_trc_no3x) + tracer_flx_netphyloss(c,betrtracer_vars%id_trc_nh3x))
-    !  print*,'totn',bal_beg*atw,bal_end*atw
-    !  print*,'netloss',bal_flx*atw
-    !  print*,'------'
-    !  print*,'begminn',(beg_tracer_molarmass(c,betrtracer_vars%id_trc_no3x) + beg_tracer_molarmass(c,betrtracer_vars%id_trc_nh3x))*atw
-    !  print*,'endminn',(end_tracer_molarmass(c,betrtracer_vars%id_trc_no3x) + end_tracer_molarmass(c,betrtracer_vars%id_trc_nh3x))*atw
-    !  print*,'nflxminn',(tracer_flx_netpro(c,betrtracer_vars%id_trc_no3x) + tracer_flx_netpro(c,betrtracer_vars%id_trc_nh3x))*atw
-    !  print*,'netpro nh4',tracer_flx_netpro(c,betrtracer_vars%id_trc_nh3x)*atw
-    !  print*,'netpro no3',tracer_flx_netpro(c,betrtracer_vars%id_trc_no3x)*atw
-    !  print*,'netpro n2',tracer_flx_netpro(c,betrtracer_vars%id_trc_n2) * atw *2._r8
-    !  print*,'netpro n2o',tracer_flx_netpro(c,betrtracer_vars%id_trc_n2o) *atw * 2._r8
 
-    !  print*,'nflxloss',(tracer_flx_netphyloss(c,betrtracer_vars%id_trc_no3x) + tracer_flx_netphyloss(c,betrtracer_vars%id_trc_nh3x))*atw
-    !  print*,'nflxloss no3 nh4',tracer_flx_netphyloss(c,betrtracer_vars%id_trc_no3x)*atw, tracer_flx_netphyloss(c,betrtracer_vars%id_trc_nh3x)*atw
-    !endif
-    
     call tracerflux_vars%Temporal_average(c,dtime)
   enddo
   

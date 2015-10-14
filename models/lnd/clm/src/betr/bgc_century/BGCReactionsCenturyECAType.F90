@@ -657,8 +657,7 @@ contains
    plantsoilnutrientflux_vars)
 
   !do ode integration and update state variables for each layer
-  !print*,get_nstep()
-  !lpr = .true.
+
   do j = lbj, ubj
     do fc = 1, num_soilc
       c = filter_soilc(fc)
@@ -675,27 +674,20 @@ contains
       !update state variables
       time = 0._r8
       ldebug=.false.
-!      if(c==619 .and. get_nstep()==494)ldebug=.true.
       if(ldebug)print*,'cj',c,j
-!      if(get_nstep()==8584 .and. c==8077)write(iulog,*)'nh4_comp',nh4_compet(c,j)
       yf(:,c,j)=y0(:,c,j) !this will allow to turn off the bgc reaction for debugging purpose
-!      print*,'nit den=',k_decay(centurybgc_vars%lid_nh4_nit_reac,c,j),k_decay(centurybgc_vars%lid_no3_den_reac,c,j)
       call ode_ebbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j), pscal)
-!      print*,'cjp',c,j,pscal
+
       if(pscal<1.e-1_r8)then
         write(*,*)'lat, lon=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
         write(*,*)'col, lev, pscal=',c, j, pscal
         write(*,*)'nstep =',get_nstep()
         call endrun()
       endif
-      !if(pscal>0._r8)pause
-      !if(c==21192 .and. get_nstep()==43939 .and. j==9)then
-      !  write(iulog,*)'y0',(k,y0(k,c,j),k=1,centurybgc_vars%nstvars)
-      !  write(iulog,*)'yf',(k,yf(k,c,j),k=1,centurybgc_vars%nstvars)
-      !endif
+
     enddo
   enddo
-!  pause
+
   call bgcstate_ext_update_afdecomp(bounds, 1, ubj, num_soilc, filter_soilc, carbonflux_vars, nitrogenflux_vars, &
     centurybgc_vars, betrtracer_vars, tracerflux_vars, yf)
 
@@ -1005,11 +997,6 @@ contains
       Extra_inst%n2_n2o_ratio_denit, Extra_inst%pct_sand, centurybgc_vars, nitrogen_limit_flag,  cascade_matrix)
 
 
-
-  !if(lpr)then
-  !  print*,'reac',centurybgc_vars%lid_no3,reaction_rates(centurybgc_vars%lid_no3_den_reac)
-  !  print*,reaction_rates
-  !endif
  !obtain reaction rates
   do lk = 1, Extra_inst%nr
     if(Extra_inst%is_zero_order(lk))then
@@ -1126,7 +1113,6 @@ contains
         if(pscal(j)<0._r8)then
            call endrun('ngeative p in calc_pscal')
         endif
-!        if(ldebug)write(*,'(A,X,I4,4(X,E20.10))')'j',j,pscal(j),yt,p_dt(j)*dtime,dtime*d_dt(j)
      else
         pscal(j) = 1._r8
      endif

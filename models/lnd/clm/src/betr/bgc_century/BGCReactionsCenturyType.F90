@@ -647,7 +647,6 @@ contains
     k_decay(centurybgc_vars%lid_at_rt_reac, bounds%begc:bounds%endc, 1:ubj))
 
   !do ode integration and update state variables for each layer
-  !print*,get_nstep()
   !lpr = .true.
   do j = lbj, ubj
     do fc = 1, num_soilc
@@ -662,25 +661,18 @@ contains
       !update state variables
       time = 0._r8
 
-!      if(get_nstep()==8584 .and. c==8077)write(iulog,*)'nh4_comp',nh4_compet(c,j)
       yf(:,c,j)=y0(:,c,j) !this will allow to turn off the bgc reaction for debugging purpose
-!      print*,'nit den=',k_decay(centurybgc_vars%lid_nh4_nit_reac,c,j),k_decay(centurybgc_vars%lid_no3_den_reac,c,j)
       call ode_ebbks1(one_box_century_bgc, y0(:,c,j), centurybgc_vars%nprimvars,centurybgc_vars%nstvars, time, dtime, yf(:,c,j), pscal)
-!      print*,'cjp',c,j,pscal
+
       if(pscal<5.e-1_r8)then
         write(*,*)'lat, lon=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
         write(*,*)'col, lev, pscal=',c, j, pscal
         write(*,*)'nstep =',get_nstep()
         call endrun()
       endif
-      !if(pscal>0._r8)pause
-      !if(c==21192 .and. get_nstep()==43939 .and. j==9)then
-      !  write(iulog,*)'y0',(k,y0(k,c,j),k=1,centurybgc_vars%nstvars)
-      !  write(iulog,*)'yf',(k,yf(k,c,j),k=1,centurybgc_vars%nstvars)
-      !endif
+
     enddo
   enddo
-!  pause
   call bgcstate_ext_update_afdecomp(bounds, 1, ubj, num_soilc, filter_soilc, carbonflux_vars, nitrogenflux_vars, &
     centurybgc_vars, betrtracer_vars, tracerflux_vars, yf)
 
@@ -982,11 +974,6 @@ contains
   call calc_cascade_matrix(nstvars, Extra_inst%nr, Extra_inst%cn_ratios, Extra_inst%cp_ratios, &
       Extra_inst%n2_n2o_ratio_denit, Extra_inst%cellsand, centurybgc_vars, nitrogen_limit_flag, cascade_matrix)
 
-
-  !if(lpr)then
-  !  print*,'reac',centurybgc_vars%lid_no3,reaction_rates(centurybgc_vars%lid_no3_den_reac)
-  !  print*,reaction_rates
-  !endif
  !do pool degradation
   do lk = 1, Extra_inst%nr
     if(Extra_inst%is_zero_order(lk))then
@@ -1042,10 +1029,7 @@ contains
       reaction_rates(lk)=ystate(centurybgc_vars%primvarid(lk))*Extra_inst%k_decay(lk)
     endif
   enddo
-!  if(lpr)then
-!    print*,'reac',centurybgc_vars%lid_nh4,reaction_rates(centurybgc_vars%lid_nh4_nit_reac)
-!    print*,reaction_rates
-!  endif
+
   !obtain total oxygen consumption rate
   o2_consump = DOT_PRODUCT(cascade_matrix(centurybgc_vars%lid_o2,1:Extra_inst%nr),reaction_rates(1:Extra_inst%nr))
   if(-o2_consump*dtime > ystate(centurybgc_vars%lid_o2))then

@@ -215,9 +215,7 @@ contains
       if(f(n)<0._r8)then
          nJ = nJ  + 1
          pm = -y0(n)/(f(n)*dt)
-!         if(abs(y0(n))<1.e-30)then
-!           write(iulog,*)'n=',n,' y0=',y0(n),' f=',f(n),' dt=',dt,' pm=',pm
-!         endif
+
          pm = min(pm,1.e30_r8)
          aj(nJ) = -safe_div(1._r8,pm)
          if(nJ==1)then
@@ -242,20 +240,10 @@ contains
       endif
       !reduce the chance of negative y(n) from roundoff error
       pscal=pscal*0.9999_r8
-
-
-      !do n = 1, neq
-      !   y(n) = y0(n) + f(n) * dt * pscal
-!         if(y(n)<0._r8 .and. n<nprimeq)then
-!           write(iulog,*)'n=',n,' y=',y(n),'y0=',y0(n),'f=',f(n),'ps=',pscal,'dt=',dt, 'pmax=',pmax,' nJ=',nJ
-!         endif
-      !enddo
    else
       pscal=1._r8
-!      do n = 1, neq
-!         y(n) = y0(n) + f(n) * dt
-!      enddo
    endif
+
    y(:)=y0(:)      
    a=pscal*dt
    !daxpy(N,DA,DX,INCX,DY,INCY)

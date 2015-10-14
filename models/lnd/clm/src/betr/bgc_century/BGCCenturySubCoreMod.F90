@@ -526,18 +526,7 @@ module BGCCenturySubCoreMod
   do j = lbj, ubj
     do fc = 1, numf
       c = filter(fc)
-    !err = 0._r8
-    !hr = 0._r8
-    !delta_nh4_m=0._r8
-    !delta_no3_m=0._r8
-    !immob = 0._r8
-    !fnit = 0._r8
-    !delta_nh4 = 0._r8
-    !delta_no3 = 0._r8
-    !sminn_plant = 0._r8
-    !sminn_plant2= 0._r8
-    !f_den = 0._r8
-    !f_nit_n2o=0._r8
+
       if(j>=jtops(c))then
         plantsoilnutrientflux_vars%plant_minn_active_yield_flx_vr_col(c,j) = (yf(centurybgc_vars%lid_plant_minn, c, j) - y0(centurybgc_vars%lid_plant_minn, c, j))*natomw
         smin_no3_to_plant_vr(c,j) = (yf(centurybgc_vars%lid_minn_no3_plant, c, j) - y0(centurybgc_vars%lid_minn_no3_plant, c, j))*natomw/dtime
@@ -585,36 +574,10 @@ module BGCCenturySubCoreMod
         do k = 1, nom_pools
           tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+c_loc) + yf((k-1)*nelms+c_loc, c, j) - y0((k-1)*nelms+c_loc, c, j)
           tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelms+n_loc) + yf((k-1)*nelms+n_loc, c, j) - y0((k-1)*nelms+n_loc, c, j)
-        !deltac = deltac + yf((k-1)*nelms+c_loc, c, j) - y0((k-1)*nelms+c_loc, c, j)
         enddo
-      !if(c==15695)then
-      !  hr = hr + col%dz(c,j)*hr_vr(c,j)
-      !  err=err+col%dz(c,j)*(deltac*catomw+hr_vr(c,j)*dtime)
-      !  delta_no3 = delta_no3+tracer_flx_netpro_vr(c,j,betrtracer_vars%id_trc_no3x   )*natomw*col%dz(c,j)
-
-      !  delta_no3_m = delta_no3_m +  (actual_immob_no3_vr(c,j)+smin_no3_to_plant_vr(c,j)+f_denit_vr(c,j)-(f_nit_vr(c,j)-f_n2o_nit_vr(c,j)))*dtime*col%dz(c,j)
-
-      !  sminn_plant = sminn_plant + (smin_nh4_to_plant_vr(c,j) + smin_no3_to_plant_vr(c,j))*dtime*col%dz(c,j)
-
-      !  delta_nh4 = delta_nh4+tracer_flx_netpro_vr(c,j, betrtracer_vars%id_trc_nh3x)*natomw*col%dz(c,j)
-
-      !  delta_nh4_m=delta_nh4_m +  (actual_immob_nh4_vr(c,j)+smin_nh4_to_plant_vr(c,j)+f_nit_vr(c,j))*dtime*col%dz(c,j)
-      !  fnit = fnit+f_nit_vr(c,j)*dtime*col%dz(c,j)
-      !  immob = immob + (actual_immob_nh4_vr(c,j) + actual_immob_no3_vr(c,j))*dtime*col%dz(c,j)
-      !  sminn_plant2 = sminn_plant2 + plantsoilnutrientflux_vars%plant_minn_active_yield_flx_vr_col(c,j)*col%dz(c,j)
-      !  f_nit_n2o=f_nit_n2o+f_n2o_nit_vr(c,j)*col%dz(c,j)*dtime
-      !  f_den = f_den + f_denit_vr(c,j)*col%dz(c,j)*dtime
-      !endif
       endif
     enddo
-    !if(c==15695)then
-    !  print*,'xxxxxxxx'
-    !  print*,'err_no3, err_nh4',delta_no3,delta_nh4
-    !  print*,'no3_m, nh4_m', delta_no3_m,delta_nh4_m
-    !  print*,'immob fnit',immob,fnit
-    !  print*,'sminnplt',sminn_plant,sminn_plant2
-    !  print*,'fden fnit_n2o',f_den,f_nit_n2o
-    !endif
+
   enddo
 
   end associate
@@ -664,15 +627,7 @@ module BGCCenturySubCoreMod
       enddo
     enddo
   enddo
-!  c = 947
-!  do k = 1, ndecomp_pools
-!  ll = (k-1)*centurybgc_vars%nelms + 2
-!  do j = jtops(c),ubj
-!    if(tracerstate_vars%tracer_conc_solid_passive_col(c, j, ll)>0._r8)then
-!      print*,'cn ret',k,tracerstate_vars%tracer_conc_solid_passive_col(c, j, ll-1)/tracerstate_vars%tracer_conc_solid_passive_col(c, j, ll)*catomw/natomw
-!    endif
-!  enddo
-!  enddo
+
   k1 = betrtracer_vars%id_trc_o2   ; k2 = centurybgc_vars%lid_o2  ;
   call assign_A2B(bounds, lbj, ubj, neq, ngwtracers, numf, filter, jtops, k1, k2, yf(:,bounds%begc:bounds%endc, lbj:ubj), tracer_conc_mobile_col(bounds%begc:bounds%endc,lbj:ubj,:))
   k1 = betrtracer_vars%id_trc_co2x ; k2 = centurybgc_vars%lid_co2 ;
@@ -689,15 +644,7 @@ module BGCCenturySubCoreMod
   call assign_A2B(bounds, lbj, ubj, neq, ngwtracers, numf, filter, jtops, k1, k2, yf(:,bounds%begc:bounds%endc, lbj:ubj), tracer_conc_mobile_col(bounds%begc:bounds%endc,lbj:ubj,:))
   k1 =  betrtracer_vars%id_trc_n2o ; k2 = centurybgc_vars%lid_n2o ;
   call assign_A2B(bounds, lbj, ubj, neq, ngwtracers, numf, filter, jtops, k1, k2, yf(:,bounds%begc:bounds%endc, lbj:ubj), tracer_conc_mobile_col(bounds%begc:bounds%endc,lbj:ubj,:))
-!  totsomc=0._r8
-!  c = 1394
-!  do k = 1, ndecomp_pools
-!  do j = jtops(c),ubj
-!    ll = (k-1)*centurybgc_vars%nelms + 1
-!    totsomc = totsomc+tracerstate_vars%tracer_conc_solid_passive_col(c, j, ll)*col%dz(c,j)
-!  enddo
-!  enddo
-!  print*,'rtsv',totsomc*catomw
+
   end associate
   end subroutine retrieve_state_vars
 !-------------------------------------------------------------------------------
@@ -1410,8 +1357,6 @@ module BGCCenturySubCoreMod
 
 
 
-
-!  delta_somn = 0._r8
   do k = 1, ndecomp_pools
     do j = 1, ubj
       do fc = 1, num_soilc
@@ -1422,23 +1367,16 @@ module BGCCenturySubCoreMod
           cn_ratios(k, c,j) = safe_div(y0((k-1)*nelm+c_loc,c,j), y0((k-1)*nelm+n_loc,c,j))
         else
           cn_ratios(k,c,j) = initial_cn_ratio(k)*natomw/catomw
-!          if(c==582)then
-!            write(*,'(A,2(X,I3),3(X,E20.10))'),'bfdecomp',k,j,y0((k-1)*nelm+c_loc,c,j),y0((k-1)*nelm+n_loc,c,j),cn_ratios(k,c,j)
-!          endif
+
         endif
-!        if(c==947)then
-!          print*,'kk',k,cn_ratios(k,c,j)*catomw/natomw
-!        endif
+
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+c_loc) - bgc_cpool_ext_loss_vr(c,j,k)/catomw
         tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) = tracer_flx_netpro_vr(c,j,ngwmobile_tracers+(k-1)*nelm+n_loc) - bgc_npool_ext_loss_vr(c,j,k)/natomw
-        !delta_somn = delta_somn + bgc_npool_ext_inputs_vr(c,j,k)*col%dz(c,j)
-!        if(c==1394)then
-!          delta_somn = delta_somn+y0((k-1)*nelm+c_loc,c,j)*catomw*col%dz(c,j)
-!        endif
+
       enddo
     enddo
   enddo
-!  print*,'bfdecom',delta_somn
+
   do j = 1, ubj
     do fc = 1, num_soilc
       c = filter_soilc(fc)
@@ -1490,30 +1428,18 @@ module BGCCenturySubCoreMod
   )
 
 
-
-    !delta_nh4 =0._r8
-    !delta_no3 =0._r8
-!    delta_somn =0._r8
-
   do k = 1, ndecomp_pools
     do j = 1, ubj
       do fc = 1, num_soilc
         c = filter_soilc(fc)
-!        if(c==1394)then
-!          delta_somn=delta_somn + yf((k-1)*nelm+c_loc,c,j) * catomw*col%dz(c,j)
-!        endif
+
         yf((k-1)*nelm+c_loc,c,j) = yf((k-1)*nelm+c_loc,c,j) + bgc_cpool_ext_inputs_vr(c,j,k)/catomw
         yf((k-1)*nelm+n_loc,c,j) = yf((k-1)*nelm+n_loc,c,j) + bgc_npool_ext_inputs_vr(c,j,k)/natomw
-!        if(c==947)then
-!          if(yf((k-1)*nelm+n_loc,c,j)>0._r8)then
-!            print*,'afd cn k',k,yf((k-1)*nelm+c_loc,c,j)/yf((k-1)*nelm+n_loc,c,j)*catomw/natomw
-!          endif
-!        endif
+
       enddo
     enddo
   enddo
 
-!  print*,'afdecom',delta_somn
   end associate
   end subroutine bgcstate_ext_update_afdecomp
  !-----------------------------------------------------------------------
@@ -1678,16 +1604,6 @@ module BGCCenturySubCoreMod
         k = som1; decomp_npools_vr(c,j,i_soil1  ) = tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) * natomw
         k = som2; decomp_npools_vr(c,j,i_soil2  ) = tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) * natomw
         k = som3; decomp_npools_vr(c,j,i_soil3  ) = tracer_conc_solid_passive(c,j,(k-1)*nelms+n_loc) * natomw
-!        if(c==947)then
-!          print*,'lay',j
-!          if(decomp_npools_vr(c,j,i_met_lit)>0)print*,'cn l1',decomp_cpools_vr(c,j,i_met_lit)/decomp_npools_vr(c,j,i_met_lit)
-!          if(decomp_npools_vr(c,j,i_cel_lit)>0)print*,'cn l2',decomp_cpools_vr(c,j,i_cel_lit)/decomp_npools_vr(c,j,i_cel_lit)
-!          if(decomp_npools_vr(c,j,i_lig_lit)>0)print*,'cn l3',decomp_cpools_vr(c,j,i_lig_lit)/decomp_npools_vr(c,j,i_lig_lit)
-!          if(decomp_npools_vr(c,j,i_cwd)>0)print*,'cn cwd',decomp_cpools_vr(c,j,i_cwd)/decomp_npools_vr(c,j,i_cwd)
-!          if(decomp_npools_vr(c,j,i_soil1)>0)print*,'cn s1',decomp_cpools_vr(c,j,i_soil1)/decomp_npools_vr(c,j,i_soil1)
-!          if(decomp_npools_vr(c,j,i_soil2)>0)print*,'cn s2',decomp_cpools_vr(c,j,i_soil2)/decomp_npools_vr(c,j,i_soil2)
-!          if(decomp_npools_vr(c,j,i_soil3)>0)print*,'cn s3',decomp_cpools_vr(c,j,i_soil3)/decomp_npools_vr(c,j,i_soil3)
-!        endif
       enddo
     enddo
 
