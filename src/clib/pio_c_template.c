@@ -1,10 +1,3 @@
-///
-/// PIO interface to nc_function
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 int PIO_function()
 {
   int ierr;

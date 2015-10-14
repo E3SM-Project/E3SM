@@ -55,10 +55,12 @@ print F
 * \@file   pio_nc.c
 * \@author Jim Edwards (jedwards\@ucar.edu)
 * \@date     Feburary 2014 
-* \@brief    PIO interfaces to  <A HREF=\"http://www.unidata.ucar.edu/software/netcdf/docs/modules.html\" target=\"_blank\">netcdf</A> support functions
+* \@brief    PIO interfaces to [NetCDF](http://www.unidata.ucar.edu/software/netcdf/docs/modules.html) support functions
 * \@details
-* This file provides an interface to the <A HREF=\"http://www.unidata.ucar.edu/software/netcdf/docs/modules.html\" target=\"_blank\"> netcdf </A> support functions.
-*  It calls the underlying netcdf or pnetcdf or netcdf4 functions from the appropriate subset of mpi tasks (io_comm), it must be called collectively from union_comm
+*  This file provides an interface to the [NetCDF](http://www.unidata.ucar.edu/software/netcdf/docs/modules.html) support functions.
+*  Each subroutine calls the underlying netcdf or pnetcdf or netcdf4 functions from 
+*  the appropriate subset of mpi tasks (io_comm). Each routine must be called 
+*  collectively from union_comm.
 *  
 */
 #include <pio.h>
@@ -72,6 +74,15 @@ my $typemap = {text=>"MPI_CHAR", short=>"MPI_SHORT", uchar=>"MPI_UNSIGNED_CHAR",
                schar =>"MPI_CHAR", float=>"MPI_FLOAT", ushort=>"MPI_UNSIGNED_SHORT",
                ulonglong=>"MPI_UNSIGNED_LONG_LONG",longlong=>"MPI_LONG_LONG",ubyte=>"MPI_BYTE",
                double=>"MPI_DOUBLE",uint=>"MPI_UNSIGNED",int=>"MPI_INT",long=>"MPI_LONG"};
+
+my $urls    = {files=>"http://www.unidata.ucar.edu/software/netcdf/docs/group__datasets.html",
+               dims=>"http://www.unidata.ucar.edu/software/netcdf/docs/group__dimensions.html",
+               vars=>"http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html",
+               atts=>"http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html",
+               groups=>"http://www.unidata.ucar.edu/software/netcdf/docs/group__groups.html",
+               utypes=>"http://www.unidata.ucar.edu/software/netcdf/docs/group__user__types.html",
+               other=>"http://www.unidata.ucar.edu/software/netcdf/docs/modules.html"};
+my $currurl = $urls->{other};
 
 
 foreach my $func (keys %{$functions}){
@@ -112,9 +123,27 @@ foreach my $func (keys %{$functions}){
 		  $line =~ s/MPI_Offset/PIO_Offset/g;
 		  $line =~ s/\;//;
 
+		  if($func=~/.*var/){
+		      $currurl = $urls->{vars};
+		  } elsif ($func=~/.*att/) {
+		      $currurl = $urls->{atts};
+		  } elsif ($func=~/.*dim/){
+		      $currurl = $urls->{dims};
+		  } elsif ($func=~/.*grp/){
+		      $currurl = $urls->{groups};
+		  } elsif ($func=~/.*def/ || $func=~/.*fill/ || $func=~/.*inq/) {
+		      $currurl = $urls->{files};
+		  } else {
+		      $currurl = $urls->{other}; }
+
 		  print F 
 "/** 
  * \@name    PIOc_$func
+ * \@brief   The PIO-C interface for the NetCDF function nc_$func.
+ * \@details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           ".$currurl."
  */\n";
 
 	      }else{
