@@ -39,9 +39,8 @@ endif
 
 if ( $COMPILER == "intel" ) then
     module load PrgEnv-intel 
-#    module switch intel      intel/14.0.2.144  
-     module switch intel intel/15.0.1.133
-    module rm cray-libsci
+    module switch intel intel/15.0.1.133
+    module load mkl/13.0.3
     module use /global/project/projectdirs/ccsm1/modulefiles/edison
     if( $DEBUG == "TRUE" ) then
          module load esmf/6.2.0-defio-mpi-g
