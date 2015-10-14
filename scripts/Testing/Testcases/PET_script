@@ -11,7 +11,7 @@ if ( -e env_mach_pes.xml.1 )  then
   cp -f env_mach_pes.xml.1  LockedFiles/env_mach_pes.xml.locked
 else
   echo " ERROR: env_mach_pes.xml.1 does not exists" 
-  echo "   this would been produced in the build - must run $CASE.test_build"
+  echo "   this would been produced in the build - must run case.test_build"
   exit -1
 endif
 
@@ -20,8 +20,8 @@ endif
 # settings are in the run script
 # note that the following two commands will eliminate all the batch files except
 # for the test file and copy the env_mach_pes.xml to the LockedFiles directory
-./case_setup -clean -testmode
-./case_setup
+./case.setup -clean -testmode
+./case.setup
 
 # Set env_run.xml values for run
 set STOP_N      = `./xmlquery STOP_N      -value`
@@ -43,9 +43,9 @@ echo "" >>& $TESTSTATUS_LOG
 echo " doing a ${STOP_N} ${STOP_OPTION} multi threaded test" >>& $TESTSTATUS_LOG 
 echo "   no restarts are written" >>& $TESTSTATUS_LOG 
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 
@@ -96,9 +96,9 @@ echo "   no restarts are written" >>& $TESTSTATUS_LOG
 
 cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml.locked
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 

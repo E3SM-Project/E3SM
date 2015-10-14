@@ -32,9 +32,9 @@ if ($status != 0) then
    echo "Error: problem sourcing env_mach_specific"; exit -2
 endif 
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 
@@ -75,9 +75,9 @@ if ($status != 0) then
    echo "Error: problem sourcing env_mach_specific"; exit -2
 endif 
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 

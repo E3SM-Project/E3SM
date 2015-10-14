@@ -1369,7 +1369,7 @@ sub writeEnvTestXML
 }
 
 #-----------------------------------------------------------------------------------------------
-# Post create_newcase testcase setup.  Set up the environment properly for testcase_setup.csh, 
+# Post create_newcase testcase setup.  Set up the environment properly for testcase.setup, 
 # and call it. 
 #-----------------------------------------------------------------------------------------------
 sub testcaseSetup
@@ -1400,18 +1400,18 @@ sub testcaseSetup
     my $case     = $xmlvars{'CASE'};
 
     if (-e "$cimeroot/scripts/Testing/Testcases/${testcase}_build.csh") {
-	$sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/${testcase}_build.csh ${caseroot}/${case}.test_build";
+	$sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/${testcase}_build.csh ${caseroot}/case.test_build";
 	$logger->debug("sysmod is $sysmod");
 	system($sysmod) == 0 or $logger->logdie( "$sysmod failed: $?");
     } else {
-	$sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/tests_build.csh ${caseroot}/${case}.test_build";
+	$sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/tests_build.csh ${caseroot}/case.test_build";
 	$logger->debug("sysmod is $sysmod");
 	system($sysmod) == 0 or $logger->logdie( "$sysmod failed: $?");
     }
 
     $logger->info( "Setting up test case ");
     chdir ($caseroot);
-    $sysmod = "./case_setup -loglevel $opts{loglevel}";
+    $sysmod = "./case.setup -loglevel $opts{loglevel}";
     $logger->debug("sysmod is $sysmod");
     system($sysmod) == 0 or $logger->warn ("$sysmod failed: $?");
 

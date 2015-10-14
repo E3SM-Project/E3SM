@@ -60,12 +60,12 @@ endif
 
 cp -f env_mach_pes.xml env_mach_pes.xml.1
 
-# Since possibly changed the PE layout as above - must run case_setup -clean WITHOUT the -testmode flag
-# in order for the $CASE.test script to be regenerated with the correct batch processor settings
-./case_setup -clean 
-./case_setup 
+# Since possibly changed the PE layout as above - must run case.setup -clean WITHOUT the -testmode flag
+# in order for the case.test script to be regenerated with the correct batch processor settings
+./case.setup -clean 
+./case.setup 
 
-./$CASE.build
+./case.build -testmode
 if ($status != 0) then
    echo "Error: build failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus
