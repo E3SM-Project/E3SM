@@ -2,25 +2,25 @@
 * @file   pio_nc.c
 * @author Jim Edwards (jedwards@ucar.edu)
 * @date     Feburary 2014 
-* @brief    PIO interfaces to  <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank">netcdf</A> support functions
+* @brief    PIO interfaces to [NetCDF](http://www.unidata.ucar.edu/software/netcdf/docs/modules.html) support functions
 * @details
-* This file provides an interface to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> support functions.
-*  It calls the underlying netcdf or pnetcdf or netcdf4 functions from the appropriate subset of mpi tasks (io_comm), it must be called collectively from union_comm
+*  This file provides an interface to the [NetCDF](http://www.unidata.ucar.edu/software/netcdf/docs/modules.html) support functions.
+*  Each subroutine calls the underlying netcdf or pnetcdf or netcdf4 functions from 
+*  the appropriate subset of mpi tasks (io_comm). Each routine must be called 
+*  collectively from union_comm.
 *  
 */
 #include <pio.h>
 #include <pio_internal.h>
 
-///
-/// PIO interface to nc_inq_att
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_inq_att
-*/
+ * @name    PIOc_inq_att
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_att.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Offset *lenp) 
 {
   int ierr;
@@ -79,16 +79,14 @@ int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Of
   return ierr;
 }
 
-///
-/// PIO interface to nc_inq_format
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_inq_format
-*/
+ * @name    PIOc_inq_format
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_format.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__datasets.html
+ */
 int PIOc_inq_format (int ncid, int *formatp) 
 {
   int ierr;
@@ -146,16 +144,14 @@ int PIOc_inq_format (int ncid, int *formatp)
   return ierr;
 }
 
-///
-/// PIO interface to nc_inq_varid
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_inq_varid
-*/
+ * @name    PIOc_inq_varid
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_varid.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ */
 int PIOc_inq_varid (int ncid, const char *name, int *varidp) 
 {
   int ierr;
@@ -213,16 +209,14 @@ int PIOc_inq_varid (int ncid, const char *name, int *varidp)
   return ierr;
 }
 
-///
-/// PIO interface to nc_inq_varnatts
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_inq_varnatts
-*/
+ * @name    PIOc_inq_varnatts
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_varnatts.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ */
 int PIOc_inq_varnatts (int ncid, int varid, int *nattsp) 
 {
   int ierr;
@@ -280,16 +274,14 @@ int PIOc_inq_varnatts (int ncid, int varid, int *nattsp)
   return ierr;
 }
 
-///
-/// PIO interface to nc_def_var
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_def_var
-*/
+ * @name    PIOc_def_var
+ * @brief   The PIO-C interface for the NetCDF function nc_def_var.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ */
 int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims, const int *dimidsp, int *varidp) 
 {
   int ierr;
@@ -347,21 +339,21 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims, const in
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
   }
+
   ierr = check_netcdf(file, ierr, errstr,__LINE__);
-  mpierr = MPI_Bcast(varidp , 1, MPI_INT, ios->ioroot, ios->my_comm);
+    mpierr = MPI_Bcast(varidp , 1, MPI_INT, ios->ioroot, ios->my_comm);
+
   return ierr;
 }
 
-///
-/// PIO interface to nc_inq_var
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_inq_var
-*/
+ * @name    PIOc_inq_var
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_var.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ */
 int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp, int *dimidsp, int *nattsp) 
 {
   int ierr;
@@ -433,16 +425,14 @@ int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
   return ierr;
 }
 
-///
-/// PIO interface to nc_inq_varname
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_inq_varname
-*/
+ * @name    PIOc_inq_varname
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_varname.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ */
 int PIOc_inq_varname (int ncid, int varid, char *name) 
 {
   int ierr;
@@ -506,16 +496,14 @@ int PIOc_inq_varname (int ncid, int varid, char *name)
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_att_double
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_put_att_double
-*/
+ * @name    PIOc_put_att_double
+ * @brief   The PIO-C interface for the NetCDF function nc_put_att_double.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_put_att_double (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const double *op) 
 {
   int ierr;
@@ -572,16 +560,14 @@ int PIOc_put_att_double (int ncid, int varid, const char *name, nc_type xtype, P
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_att_int
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_put_att_int
-*/
+ * @name    PIOc_put_att_int
+ * @brief   The PIO-C interface for the NetCDF function nc_put_att_int.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_put_att_int (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const int *op) 
 {
   int ierr;
@@ -638,16 +624,14 @@ int PIOc_put_att_int (int ncid, int varid, const char *name, nc_type xtype, PIO_
   return ierr;
 }
 
-///
-/// PIO interface to nc_rename_att
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_rename_att
-*/
+ * @name    PIOc_rename_att
+ * @brief   The PIO-C interface for the NetCDF function nc_rename_att.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_rename_att (int ncid, int varid, const char *name, const char *newname) 
 {
   int ierr;
@@ -704,16 +688,14 @@ int PIOc_rename_att (int ncid, int varid, const char *name, const char *newname)
   return ierr;
 }
 
-///
-/// PIO interface to nc_get_att_ubyte
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_get_att_ubyte
-*/
+ * @name    PIOc_get_att_ubyte
+ * @brief   The PIO-C interface for the NetCDF function nc_get_att_ubyte.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_get_att_ubyte (int ncid, int varid, const char *name, unsigned char *ip) 
 {
   int ierr;
@@ -775,82 +757,14 @@ int PIOc_get_att_ubyte (int ncid, int varid, const char *name, unsigned char *ip
   return ierr;
 }
 
-///
-/// PIO interface to nc_del_att
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_del_att
-*/
-int PIOc_del_att (int ncid, int varid, const char *name) 
-{
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  char errstr[160];
-
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_DEL_ATT;
-  sprintf(errstr,"in file %s",__FILE__);
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_del_att(file->fh, varid, name);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_del_att(file->fh, varid, name);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      ierr = ncmpi_del_att(file->fh, varid, name);;
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
-
-  return ierr;
-}
-
-///
-/// PIO interface to nc_inq_natts
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
-/** 
-* @name    PIOc_inq_natts
-*/
+ * @name    PIOc_inq_natts
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_natts.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_inq_natts (int ncid, int *ngattsp) 
 {
   int ierr;
@@ -908,16 +822,78 @@ int PIOc_inq_natts (int ncid, int *ngattsp)
   return ierr;
 }
 
-///
-/// PIO interface to nc_inq
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_inq
-*/
+ * @name    PIOc_del_att
+ * @brief   The PIO-C interface for the NetCDF function nc_del_att.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
+int PIOc_del_att (int ncid, int varid, const char *name) 
+{
+  int ierr;
+  int msg;
+  int mpierr;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+  char errstr[160];
+
+
+  ierr = PIO_NOERR;
+
+  file = pio_get_file_from_id(ncid);
+  if(file == NULL)
+    return PIO_EBADID;
+  ios = file->iosystem;
+  msg = PIO_MSG_DEL_ATT;
+  sprintf(errstr,"in file %s",__FILE__);
+
+  if(ios->async_interface && ! ios->ioproc){
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
+  }
+
+
+  if(ios->ioproc){
+    switch(file->iotype){
+#ifdef _NETCDF
+#ifdef _NETCDF4
+    case PIO_IOTYPE_NETCDF4P:
+      ierr = nc_del_att(file->fh, varid, name);;
+      break;
+    case PIO_IOTYPE_NETCDF4C:
+#endif
+    case PIO_IOTYPE_NETCDF:
+      if(ios->io_rank==0){
+	ierr = nc_del_att(file->fh, varid, name);;
+      }
+      break;
+#endif
+#ifdef _PNETCDF
+    case PIO_IOTYPE_PNETCDF:
+      ierr = ncmpi_del_att(file->fh, varid, name);;
+      break;
+#endif
+    default:
+      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
+    }
+  }
+
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
+
+  return ierr;
+}
+
+/** 
+ * @name    PIOc_inq
+ * @brief   The PIO-C interface for the NetCDF function nc_inq.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__datasets.html
+ */
 int PIOc_inq (int ncid, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp) 
 {
   int ierr;
@@ -982,16 +958,14 @@ int PIOc_inq (int ncid, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp
   return ierr;
 }
 
-///
-/// PIO interface to nc_get_att_text
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_get_att_text
-*/
+ * @name    PIOc_get_att_text
+ * @brief   The PIO-C interface for the NetCDF function nc_get_att_text.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_get_att_text (int ncid, int varid, const char *name, char *ip) 
 {
   int ierr;
@@ -1053,16 +1027,14 @@ int PIOc_get_att_text (int ncid, int varid, const char *name, char *ip)
   return ierr;
 }
 
-///
-/// PIO interface to nc_get_att_short
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_get_att_short
-*/
+ * @name    PIOc_get_att_short
+ * @brief   The PIO-C interface for the NetCDF function nc_get_att_short.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_get_att_short (int ncid, int varid, const char *name, short *ip) 
 {
   int ierr;
@@ -1124,16 +1096,14 @@ int PIOc_get_att_short (int ncid, int varid, const char *name, short *ip)
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_att_long
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_put_att_long
-*/
+ * @name    PIOc_put_att_long
+ * @brief   The PIO-C interface for the NetCDF function nc_put_att_long.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_put_att_long (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const long *op) 
 {
   int ierr;
@@ -1190,16 +1160,14 @@ int PIOc_put_att_long (int ncid, int varid, const char *name, nc_type xtype, PIO
   return ierr;
 }
 
-///
-/// PIO interface to nc_redef
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_redef
-*/
+ * @name    PIOc_redef
+ * @brief   The PIO-C interface for the NetCDF function nc_redef.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__datasets.html
+ */
 int PIOc_redef (int ncid) 
 {
   int ierr;
@@ -1256,16 +1224,14 @@ int PIOc_redef (int ncid)
   return ierr;
 }
 
-///
-/// PIO interface to nc_set_fill
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_set_fill
-*/
+ * @name    PIOc_set_fill
+ * @brief   The PIO-C interface for the NetCDF function nc_set_fill.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__datasets.html
+ */
 int PIOc_set_fill (int ncid, int fillmode, int *old_modep) 
 {
   int ierr;
@@ -1309,7 +1275,7 @@ int PIOc_set_fill (int ncid, int fillmode, int *old_modep)
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      //      ierr = ncmpi_set_fill(file->fh, fillmode, old_modep);;
+      ierr = ncmpi_set_fill(file->fh, fillmode, old_modep);;
       break;
 #endif
     default:
@@ -1322,16 +1288,14 @@ int PIOc_set_fill (int ncid, int fillmode, int *old_modep)
   return ierr;
 }
 
-///
-/// PIO interface to nc_enddef
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_enddef
-*/
+ * @name    PIOc_enddef
+ * @brief   The PIO-C interface for the NetCDF function nc_enddef.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__datasets.html
+ */
 int PIOc_enddef (int ncid) 
 {
   int ierr;
@@ -1388,16 +1352,14 @@ int PIOc_enddef (int ncid)
   return ierr;
 }
 
-///
-/// PIO interface to nc_rename_var
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_rename_var
-*/
+ * @name    PIOc_rename_var
+ * @brief   The PIO-C interface for the NetCDF function nc_rename_var.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ */
 int PIOc_rename_var (int ncid, int varid, const char *name) 
 {
   int ierr;
@@ -1454,16 +1416,14 @@ int PIOc_rename_var (int ncid, int varid, const char *name)
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_att_short
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_put_att_short
-*/
+ * @name    PIOc_put_att_short
+ * @brief   The PIO-C interface for the NetCDF function nc_put_att_short.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_put_att_short (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const short *op) 
 {
   int ierr;
@@ -1520,16 +1480,14 @@ int PIOc_put_att_short (int ncid, int varid, const char *name, nc_type xtype, PI
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_att_text
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_put_att_text
-*/
+ * @name    PIOc_put_att_text
+ * @brief   The PIO-C interface for the NetCDF function nc_put_att_text.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_put_att_text (int ncid, int varid, const char *name, PIO_Offset len, const char *op) 
 {
   int ierr;
@@ -1586,16 +1544,14 @@ int PIOc_put_att_text (int ncid, int varid, const char *name, PIO_Offset len, co
   return ierr;
 }
 
-///
-/// PIO interface to nc_inq_attname
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_inq_attname
-*/
+ * @name    PIOc_inq_attname
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_attname.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_inq_attname (int ncid, int varid, int attnum, char *name) 
 {
   int ierr;
@@ -1659,16 +1615,14 @@ int PIOc_inq_attname (int ncid, int varid, int attnum, char *name)
   return ierr;
 }
 
-///
-/// PIO interface to nc_get_att_ulonglong
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_get_att_ulonglong
-*/
+ * @name    PIOc_get_att_ulonglong
+ * @brief   The PIO-C interface for the NetCDF function nc_get_att_ulonglong.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_get_att_ulonglong (int ncid, int varid, const char *name, unsigned long long *ip) 
 {
   int ierr;
@@ -1730,16 +1684,14 @@ int PIOc_get_att_ulonglong (int ncid, int varid, const char *name, unsigned long
   return ierr;
 }
 
-///
-/// PIO interface to nc_get_att_ushort
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_get_att_ushort
-*/
+ * @name    PIOc_get_att_ushort
+ * @brief   The PIO-C interface for the NetCDF function nc_get_att_ushort.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_get_att_ushort (int ncid, int varid, const char *name, unsigned short *ip) 
 {
   int ierr;
@@ -1801,16 +1753,14 @@ int PIOc_get_att_ushort (int ncid, int varid, const char *name, unsigned short *
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_att_ulonglong
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_put_att_ulonglong
-*/
+ * @name    PIOc_put_att_ulonglong
+ * @brief   The PIO-C interface for the NetCDF function nc_put_att_ulonglong.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_put_att_ulonglong (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned long long *op) 
 {
   int ierr;
@@ -1867,16 +1817,14 @@ int PIOc_put_att_ulonglong (int ncid, int varid, const char *name, nc_type xtype
   return ierr;
 }
 
-///
-/// PIO interface to nc_inq_dimlen
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_inq_dimlen
-*/
+ * @name    PIOc_inq_dimlen
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_dimlen.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__dimensions.html
+ */
 int PIOc_inq_dimlen (int ncid, int dimid, PIO_Offset *lenp) 
 {
   int ierr;
@@ -1934,16 +1882,150 @@ int PIOc_inq_dimlen (int ncid, int dimid, PIO_Offset *lenp)
   return ierr;
 }
 
-///
-/// PIO interface to nc_get_att_uint
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_get_att_uint
-*/
+ * @name    PIOc_inq_var_fill
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_var_fill.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ */
+int PIOc_inq_var_fill (int ncid, int varid, int *no_fill, void *fill_value) 
+{
+  int ierr;
+  int msg;
+  int mpierr;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+  char errstr[160];
+
+
+  ierr = PIO_NOERR;
+
+  file = pio_get_file_from_id(ncid);
+  if(file == NULL)
+    return PIO_EBADID;
+  ios = file->iosystem;
+  msg = PIO_MSG_INQ_VAR_FILL;
+  sprintf(errstr,"in file %s",__FILE__);
+
+  if(ios->async_interface && ! ios->ioproc){
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
+  }
+
+
+  if(ios->ioproc){
+    switch(file->iotype){
+#ifdef _NETCDF
+#ifdef _NETCDF4
+    case PIO_IOTYPE_NETCDF4P:
+      ierr = nc_inq_var_fill(file->fh, varid, no_fill, fill_valuep);;
+      break;
+    case PIO_IOTYPE_NETCDF4C:
+#endif
+    case PIO_IOTYPE_NETCDF:
+      if(ios->io_rank==0){
+	ierr = nc_inq_var_fill(file->fh, varid, no_fill, fill_valuep);;
+      }
+      break;
+#endif
+#ifdef _PNETCDF
+    case PIO_IOTYPE_PNETCDF:
+      ierr = ncmpi_inq_var_fill(file->fh, varid, no_fill, fill_value);;
+      break;
+#endif
+    default:
+      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
+    }
+  }
+
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
+
+  return ierr;
+}
+
+/** 
+ * @name    PIOc_def_var_fill
+ * @brief   The PIO-C interface for the NetCDF function nc_def_var_fill.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ */
+int PIOc_def_var_fill (int ncid, int varid, int no_fill, void *fill_value) 
+{
+  int ierr;
+  int msg;
+  int mpierr;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+  char errstr[160];
+
+
+  ierr = PIO_NOERR;
+
+  file = pio_get_file_from_id(ncid);
+  if(file == NULL)
+    return PIO_EBADID;
+  ios = file->iosystem;
+  msg = PIO_MSG_DEF_VAR_FILL;
+  sprintf(errstr,"in file %s",__FILE__);
+
+  if(ios->async_interface && ! ios->ioproc){
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
+  }
+
+
+  if(ios->ioproc){
+    switch(file->iotype){
+#ifdef _NETCDF
+#ifdef _NETCDF4
+    case PIO_IOTYPE_NETCDF4P:
+      ierr = nc_def_var_fill(file->fh, varid, no_fill, fill_value);;
+      break;
+    case PIO_IOTYPE_NETCDF4C:
+      if(ios->io_rank==0){
+        ierr = nc_def_var(file->fh, name, xtype, ndims, dimidsp, varidp);
+        if(ierr == PIO_NOERR){
+          ierr = nc_def_var_deflate(file->fh, *varidp, 0,1,1);
+        }
+      }
+      break;
+#endif
+    case PIO_IOTYPE_NETCDF:
+      if(ios->io_rank==0){
+	ierr = nc_def_var_fill(file->fh, varid, no_fill, fill_value);;
+      }
+      break;
+#endif
+#ifdef _PNETCDF
+    case PIO_IOTYPE_PNETCDF:
+      ierr = ncmpi_def_var_fill(file->fh, varid, no_fill, fill_value);;
+      break;
+#endif
+    default:
+      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
+    }
+  }
+
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
+    mpierr = MPI_Bcast(varidp , 1, MPI_INT, ios->ioroot, ios->my_comm);
+
+  return ierr;
+}
+
+/** 
+ * @name    PIOc_get_att_uint
+ * @brief   The PIO-C interface for the NetCDF function nc_get_att_uint.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_get_att_uint (int ncid, int varid, const char *name, unsigned int *ip) 
 {
   int ierr;
@@ -2005,16 +2087,14 @@ int PIOc_get_att_uint (int ncid, int varid, const char *name, unsigned int *ip)
   return ierr;
 }
 
-///
-/// PIO interface to nc_get_att_longlong
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_get_att_longlong
-*/
+ * @name    PIOc_get_att_longlong
+ * @brief   The PIO-C interface for the NetCDF function nc_get_att_longlong.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_get_att_longlong (int ncid, int varid, const char *name, long long *ip) 
 {
   int ierr;
@@ -2076,16 +2156,14 @@ int PIOc_get_att_longlong (int ncid, int varid, const char *name, long long *ip)
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_att_schar
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_put_att_schar
-*/
+ * @name    PIOc_put_att_schar
+ * @brief   The PIO-C interface for the NetCDF function nc_put_att_schar.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_put_att_schar (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const signed char *op) 
 {
   int ierr;
@@ -2142,16 +2220,14 @@ int PIOc_put_att_schar (int ncid, int varid, const char *name, nc_type xtype, PI
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_att_float
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_put_att_float
-*/
+ * @name    PIOc_put_att_float
+ * @brief   The PIO-C interface for the NetCDF function nc_put_att_float.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_put_att_float (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const float *op) 
 {
   int ierr;
@@ -2208,16 +2284,14 @@ int PIOc_put_att_float (int ncid, int varid, const char *name, nc_type xtype, PI
   return ierr;
 }
 
-///
-/// PIO interface to nc_inq_nvars
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_inq_nvars
-*/
+ * @name    PIOc_inq_nvars
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_nvars.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ */
 int PIOc_inq_nvars (int ncid, int *nvarsp) 
 {
   int ierr;
@@ -2275,16 +2349,14 @@ int PIOc_inq_nvars (int ncid, int *nvarsp)
   return ierr;
 }
 
-///
-/// PIO interface to nc_rename_dim
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_rename_dim
-*/
+ * @name    PIOc_rename_dim
+ * @brief   The PIO-C interface for the NetCDF function nc_rename_dim.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__dimensions.html
+ */
 int PIOc_rename_dim (int ncid, int dimid, const char *name) 
 {
   int ierr;
@@ -2341,16 +2413,14 @@ int PIOc_rename_dim (int ncid, int dimid, const char *name)
   return ierr;
 }
 
-///
-/// PIO interface to nc_inq_varndims
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_inq_varndims
-*/
+ * @name    PIOc_inq_varndims
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_varndims.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ */
 int PIOc_inq_varndims (int ncid, int varid, int *ndimsp) 
 {
   int ierr;
@@ -2413,16 +2483,14 @@ int PIOc_inq_varndims (int ncid, int varid, int *ndimsp)
   return ierr;
 }
 
-///
-/// PIO interface to nc_get_att_long
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_get_att_long
-*/
+ * @name    PIOc_get_att_long
+ * @brief   The PIO-C interface for the NetCDF function nc_get_att_long.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_get_att_long (int ncid, int varid, const char *name, long *ip) 
 {
   int ierr;
@@ -2484,16 +2552,14 @@ int PIOc_get_att_long (int ncid, int varid, const char *name, long *ip)
   return ierr;
 }
 
-///
-/// PIO interface to nc_inq_dim
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_inq_dim
-*/
+ * @name    PIOc_inq_dim
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_dim.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__dimensions.html
+ */
 int PIOc_inq_dim (int ncid, int dimid, char *name, PIO_Offset *lenp) 
 {
   int ierr;
@@ -2558,16 +2624,14 @@ int PIOc_inq_dim (int ncid, int dimid, char *name, PIO_Offset *lenp)
   return ierr;
 }
 
-///
-/// PIO interface to nc_inq_dimid
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_inq_dimid
-*/
+ * @name    PIOc_inq_dimid
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_dimid.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__dimensions.html
+ */
 int PIOc_inq_dimid (int ncid, const char *name, int *idp) 
 {
   int ierr;
@@ -2625,16 +2689,14 @@ int PIOc_inq_dimid (int ncid, const char *name, int *idp)
   return ierr;
 }
 
-///
-/// PIO interface to nc_inq_unlimdim
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_inq_unlimdim
-*/
+ * @name    PIOc_inq_unlimdim
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_unlimdim.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__dimensions.html
+ */
 int PIOc_inq_unlimdim (int ncid, int *unlimdimidp) 
 {
   int ierr;
@@ -2691,16 +2753,14 @@ int PIOc_inq_unlimdim (int ncid, int *unlimdimidp)
   return ierr;
 }
 
-///
-/// PIO interface to nc_inq_vardimid
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_inq_vardimid
-*/
+ * @name    PIOc_inq_vardimid
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_vardimid.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ */
 int PIOc_inq_vardimid (int ncid, int varid, int *dimidsp) 
 {
   int ierr;
@@ -2762,16 +2822,14 @@ int PIOc_inq_vardimid (int ncid, int varid, int *dimidsp)
   return ierr;
 }
 
-///
-/// PIO interface to nc_inq_attlen
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_inq_attlen
-*/
+ * @name    PIOc_inq_attlen
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_attlen.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_inq_attlen (int ncid, int varid, const char *name, PIO_Offset *lenp) 
 {
   int ierr;
@@ -2829,16 +2887,14 @@ int PIOc_inq_attlen (int ncid, int varid, const char *name, PIO_Offset *lenp)
   return ierr;
 }
 
-///
-/// PIO interface to nc_inq_dimname
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_inq_dimname
-*/
+ * @name    PIOc_inq_dimname
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_dimname.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__dimensions.html
+ */
 int PIOc_inq_dimname (int ncid, int dimid, char *name) 
 {
   int ierr;
@@ -2902,16 +2958,14 @@ int PIOc_inq_dimname (int ncid, int dimid, char *name)
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_att_ushort
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_put_att_ushort
-*/
+ * @name    PIOc_put_att_ushort
+ * @brief   The PIO-C interface for the NetCDF function nc_put_att_ushort.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_put_att_ushort (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned short *op) 
 {
   int ierr;
@@ -2968,16 +3022,14 @@ int PIOc_put_att_ushort (int ncid, int varid, const char *name, nc_type xtype, P
   return ierr;
 }
 
-///
-/// PIO interface to nc_get_att_float
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_get_att_float
-*/
+ * @name    PIOc_get_att_float
+ * @brief   The PIO-C interface for the NetCDF function nc_get_att_float.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_get_att_float (int ncid, int varid, const char *name, float *ip) 
 {
   int ierr;
@@ -3039,16 +3091,14 @@ int PIOc_get_att_float (int ncid, int varid, const char *name, float *ip)
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_att_longlong
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_put_att_longlong
-*/
+ * @name    PIOc_put_att_longlong
+ * @brief   The PIO-C interface for the NetCDF function nc_put_att_longlong.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_put_att_longlong (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const long long *op) 
 {
   int ierr;
@@ -3105,16 +3155,14 @@ int PIOc_put_att_longlong (int ncid, int varid, const char *name, nc_type xtype,
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_att_uint
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_put_att_uint
-*/
+ * @name    PIOc_put_att_uint
+ * @brief   The PIO-C interface for the NetCDF function nc_put_att_uint.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_put_att_uint (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned int *op) 
 {
   int ierr;
@@ -3171,16 +3219,14 @@ int PIOc_put_att_uint (int ncid, int varid, const char *name, nc_type xtype, PIO
   return ierr;
 }
 
-///
-/// PIO interface to nc_get_att_schar
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_get_att_schar
-*/
+ * @name    PIOc_get_att_schar
+ * @brief   The PIO-C interface for the NetCDF function nc_get_att_schar.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_get_att_schar (int ncid, int varid, const char *name, signed char *ip) 
 {
   int ierr;
@@ -3242,16 +3288,14 @@ int PIOc_get_att_schar (int ncid, int varid, const char *name, signed char *ip)
   return ierr;
 }
 
-///
-/// PIO interface to nc_inq_attid
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_inq_attid
-*/
+ * @name    PIOc_inq_attid
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_attid.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_inq_attid (int ncid, int varid, const char *name, int *idp) 
 {
   int ierr;
@@ -3309,16 +3353,14 @@ int PIOc_inq_attid (int ncid, int varid, const char *name, int *idp)
   return ierr;
 }
 
-///
-/// PIO interface to nc_def_dim
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_def_dim
-*/
+ * @name    PIOc_def_dim
+ * @brief   The PIO-C interface for the NetCDF function nc_def_dim.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__dimensions.html
+ */
 int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp) 
 {
   int ierr;
@@ -3376,16 +3418,14 @@ int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp)
   return ierr;
 }
 
-///
-/// PIO interface to nc_inq_ndims
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_inq_ndims
-*/
+ * @name    PIOc_inq_ndims
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_ndims.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__dimensions.html
+ */
 int PIOc_inq_ndims (int ncid, int *ndimsp) 
 {
   int ierr;
@@ -3443,16 +3483,14 @@ int PIOc_inq_ndims (int ncid, int *ndimsp)
   return ierr;
 }
 
-///
-/// PIO interface to nc_inq_vartype
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_inq_vartype
-*/
+ * @name    PIOc_inq_vartype
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_vartype.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ */
 int PIOc_inq_vartype (int ncid, int varid, nc_type *xtypep) 
 {
   int ierr;
@@ -3510,16 +3548,14 @@ int PIOc_inq_vartype (int ncid, int varid, nc_type *xtypep)
   return ierr;
 }
 
-///
-/// PIO interface to nc_get_att_int
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_get_att_int
-*/
+ * @name    PIOc_get_att_int
+ * @brief   The PIO-C interface for the NetCDF function nc_get_att_int.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_get_att_int (int ncid, int varid, const char *name, int *ip) 
 {
   int ierr;
@@ -3581,16 +3617,14 @@ int PIOc_get_att_int (int ncid, int varid, const char *name, int *ip)
   return ierr;
 }
 
-///
-/// PIO interface to nc_get_att_double
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_get_att_double
-*/
+ * @name    PIOc_get_att_double
+ * @brief   The PIO-C interface for the NetCDF function nc_get_att_double.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_get_att_double (int ncid, int varid, const char *name, double *ip) 
 {
   int ierr;
@@ -3652,16 +3686,14 @@ int PIOc_get_att_double (int ncid, int varid, const char *name, double *ip)
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_att_ubyte
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_put_att_ubyte
-*/
+ * @name    PIOc_put_att_ubyte
+ * @brief   The PIO-C interface for the NetCDF function nc_put_att_ubyte.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_put_att_ubyte (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned char *op) 
 {
   int ierr;
@@ -3718,16 +3750,14 @@ int PIOc_put_att_ubyte (int ncid, int varid, const char *name, nc_type xtype, PI
   return ierr;
 }
 
-///
-/// PIO interface to nc_inq_atttype
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_inq_atttype
-*/
+ * @name    PIOc_inq_atttype
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_atttype.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_inq_atttype (int ncid, int varid, const char *name, nc_type *xtypep) 
 {
   int ierr;
@@ -3785,16 +3815,14 @@ int PIOc_inq_atttype (int ncid, int varid, const char *name, nc_type *xtypep)
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_att_uchar
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_put_att_uchar
-*/
+ * @name    PIOc_put_att_uchar
+ * @brief   The PIO-C interface for the NetCDF function nc_put_att_uchar.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_put_att_uchar (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned char *op) 
 {
   int ierr;
@@ -3851,16 +3879,14 @@ int PIOc_put_att_uchar (int ncid, int varid, const char *name, nc_type xtype, PI
   return ierr;
 }
 
-///
-/// PIO interface to nc_get_att_uchar
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
-* @name    PIOc_get_att_uchar
-*/
+ * @name    PIOc_get_att_uchar
+ * @brief   The PIO-C interface for the NetCDF function nc_get_att_uchar.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
 int PIOc_get_att_uchar (int ncid, int varid, const char *name, unsigned char *ip) 
 {
   int ierr;
