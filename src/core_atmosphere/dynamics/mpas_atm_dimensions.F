@@ -1,4 +1,4 @@
-module mpas_dimensions
+module mpas_atm_dimensions
 
 integer, parameter :: nVertLevels = 55
 integer, parameter :: maxEdges = 10
@@ -7,4 +7,4 @@ integer, parameter :: num_scalars = 6
 
 contains
 
-end module mpas_dimensions
+end module mpas_atm_dimensions

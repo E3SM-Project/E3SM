@@ -3008,7 +3008,7 @@ MPAS_GPTL_STOP('dyn_tend')
       cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
 
 
-      use mpas_dimensions
+      use mpas_atm_dimensions
 
 
       implicit none
