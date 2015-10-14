@@ -352,6 +352,7 @@ contains
   !turn a number into a string using the specified format
   implicit none
   integer, intent(in) :: a
+  character(len=*), intent(in) :: fmt
 
   character(len=32) :: ans
   character(len=32) :: str
