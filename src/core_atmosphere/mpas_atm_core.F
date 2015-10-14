@@ -23,6 +23,7 @@ module atm_core
       use mpas_kind_types
       use mpas_stream_manager
       use mpas_performance, only : mpas_performance_init
+      use mpas_atm_dimensions, only : mpas_atm_set_dims
 
       implicit none
 
@@ -44,7 +45,19 @@ module atm_core
       character (len=StrKIND), pointer :: xtime
       type (MPAS_Time_Type) :: startTime
 
+      integer, pointer :: nVertLevels, maxEdges, maxEdges2, num_scalars
+
       ierr = 0
+
+      !
+      ! Set up inner dimensions used by arrays in optimized dynamics routines
+      !
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
+      call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(state, 'maxEdges', maxEdges)
+      call mpas_pool_get_dimension(state, 'maxEdges2', maxEdges2)
+      call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
+      call mpas_atm_set_dims(nVertLevels, maxEdges, maxEdges2, num_scalars)
 
       !
       ! Initialize performance module
