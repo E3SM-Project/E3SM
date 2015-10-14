@@ -236,9 +236,9 @@ contains
     end if
 
     if (use_betr) then
-      call tracerstate_vars%Restart(bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
-      call tracerflux_vars%Restart(bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
-      call tracercoeff_vars%Restart(bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
+       call tracerstate_vars%Restart(bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
+       call tracerflux_vars%Restart( bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
+       call tracercoeff_vars%Restart(bounds, ncid, flag='define', betrtracer_vars=betrtracer_vars)
     endif
 
     if (present(rdate)) then 
@@ -327,9 +327,9 @@ contains
             carbonflux_vars=carbonflux_vars) 
     end if
 
-    if(use_betr) then
+    if (use_betr) then
        call tracerstate_vars%Restart(bounds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
-       call tracerflux_vars%Restart(bounds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
+       call tracerflux_vars%Restart( bounds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
        call tracercoeff_vars%Restart(bounds, ncid, flag='write', betrtracer_vars=betrtracer_vars)
     endif
 
@@ -502,7 +502,7 @@ contains
 
     if (use_betr) then
       call tracerstate_vars%Restart(bounds, ncid, flag='read',betrtracer_vars=betrtracer_vars)
-      call tracerflux_vars%Restart(bounds, ncid, flag='read',betrtracer_vars=betrtracer_vars)
+      call tracerflux_vars%Restart( bounds, ncid, flag='read',betrtracer_vars=betrtracer_vars)
       call tracercoeff_vars%Restart(bounds, ncid, flag='read', betrtracer_vars=betrtracer_vars)
     endif
         

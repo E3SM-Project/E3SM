@@ -56,44 +56,45 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
 
-      if( .not. is_active_betr_bgc )then
-        ! column level carbon fluxes from gap-phase mortality
-        do j = 1,nlevdecomp
-         ! column loop
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
+      if ( .not. is_active_betr_bgc ) then
+         ! column level carbon fluxes from gap-phase mortality
+         do j = 1,nlevdecomp
+            ! column loop
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)               
 
-            ! column gap mortality fluxes
-            cs%decomp_cpools_vr_col(c,j,i_met_lit) = &
-                 cs%decomp_cpools_vr_col(c,j,i_met_lit) + cf%gap_mortality_c_to_litr_met_c_col(c,j) * dt
-            cs%decomp_cpools_vr_col(c,j,i_cel_lit) = &
-                 cs%decomp_cpools_vr_col(c,j,i_cel_lit) + cf%gap_mortality_c_to_litr_cel_c_col(c,j) * dt
-            cs%decomp_cpools_vr_col(c,j,i_lig_lit) = &
-                 cs%decomp_cpools_vr_col(c,j,i_lig_lit) + cf%gap_mortality_c_to_litr_lig_c_col(c,j) * dt
-            cs%decomp_cpools_vr_col(c,j,i_cwd) = &
-                 cs%decomp_cpools_vr_col(c,j,i_cwd) + cf%gap_mortality_c_to_cwdc_col(c,j) * dt
+               ! column gap mortality fluxes
+               cs%decomp_cpools_vr_col(c,j,i_met_lit) = &
+                    cs%decomp_cpools_vr_col(c,j,i_met_lit) + cf%gap_mortality_c_to_litr_met_c_col(c,j) * dt
+               cs%decomp_cpools_vr_col(c,j,i_cel_lit) = &
+                    cs%decomp_cpools_vr_col(c,j,i_cel_lit) + cf%gap_mortality_c_to_litr_cel_c_col(c,j) * dt
+               cs%decomp_cpools_vr_col(c,j,i_lig_lit) = &
+                    cs%decomp_cpools_vr_col(c,j,i_lig_lit) + cf%gap_mortality_c_to_litr_lig_c_col(c,j) * dt
+               cs%decomp_cpools_vr_col(c,j,i_cwd) = &
+                    cs%decomp_cpools_vr_col(c,j,i_cwd) + cf%gap_mortality_c_to_cwdc_col(c,j) * dt
 
+            end do
          end do
-        end do
       else
          do j = 1,nlevdecomp
-         ! column loop
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
+            ! column loop
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
 
-            ! column gap mortality fluxes
-            cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) = &
-                 cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) + cf%gap_mortality_c_to_litr_met_c_col(c,j) * dt
-            cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) = &
-                 cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) + cf%gap_mortality_c_to_litr_cel_c_col(c,j) * dt
-            cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) = &
-                 cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) + cf%gap_mortality_c_to_litr_lig_c_col(c,j) * dt
-            cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) = &
-                 cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) + cf%gap_mortality_c_to_cwdc_col(c,j) * dt
+               ! column gap mortality fluxes
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) = &
+                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) + cf%gap_mortality_c_to_litr_met_c_col(c,j) * dt
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) = &
+                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) + cf%gap_mortality_c_to_litr_cel_c_col(c,j) * dt
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) = &
+                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) + cf%gap_mortality_c_to_litr_lig_c_col(c,j) * dt
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) = &
+                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) + cf%gap_mortality_c_to_cwdc_col(c,j) * dt
 
+            end do
          end do
-        end do  
       endif
+
       ! patch loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)
@@ -159,42 +160,43 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
 
-      if( .not. is_active_betr_bgc )then
-        ! column level carbon fluxes from harvest mortality
-        do j = 1, nlevdecomp
-         ! column loop
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
+      if (.not. is_active_betr_bgc) then
+         ! column level carbon fluxes from harvest mortality
+         do j = 1, nlevdecomp
+            ! column loop
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
 
-            ! column harvest fluxes
-            cs%decomp_cpools_vr_col(c,j,i_met_lit) = &
-                 cs%decomp_cpools_vr_col(c,j,i_met_lit) + cf%harvest_c_to_litr_met_c_col(c,j) * dt
-            cs%decomp_cpools_vr_col(c,j,i_cel_lit) = &
-                 cs%decomp_cpools_vr_col(c,j,i_cel_lit) + cf%harvest_c_to_litr_cel_c_col(c,j) * dt
-            cs%decomp_cpools_vr_col(c,j,i_lig_lit) = &
-                 cs%decomp_cpools_vr_col(c,j,i_lig_lit) + cf%harvest_c_to_litr_lig_c_col(c,j) * dt
-            cs%decomp_cpools_vr_col(c,j,i_cwd) = &
-                 cs%decomp_cpools_vr_col(c,j,i_cwd) + cf%harvest_c_to_cwdc_col(c,j)  * dt
+               ! column harvest fluxes
+               cs%decomp_cpools_vr_col(c,j,i_met_lit) = &
+                    cs%decomp_cpools_vr_col(c,j,i_met_lit) + cf%harvest_c_to_litr_met_c_col(c,j) * dt
+               cs%decomp_cpools_vr_col(c,j,i_cel_lit) = &
+                    cs%decomp_cpools_vr_col(c,j,i_cel_lit) + cf%harvest_c_to_litr_cel_c_col(c,j) * dt
+               cs%decomp_cpools_vr_col(c,j,i_lig_lit) = &
+                    cs%decomp_cpools_vr_col(c,j,i_lig_lit) + cf%harvest_c_to_litr_lig_c_col(c,j) * dt
+               cs%decomp_cpools_vr_col(c,j,i_cwd) = &
+                    cs%decomp_cpools_vr_col(c,j,i_cwd) + cf%harvest_c_to_cwdc_col(c,j)  * dt
 
-            ! wood to product pools - states updated in CNWoodProducts()
-          end do
-        end do
+               ! wood to product pools - states updated in CNWoodProducts()
+            end do
+         end do
       else
-        do j = 1, nlevdecomp
-         ! column loop
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)          
-            cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) = &
-                 cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) + cf%harvest_c_to_litr_met_c_col(c,j) * dt
-            cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) = &
-                 cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) + cf%harvest_c_to_litr_cel_c_col(c,j) * dt
-            cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) = &
-                 cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) + cf%harvest_c_to_litr_lig_c_col(c,j) * dt
-            cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) = &
-                 cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) + cf%harvest_c_to_cwdc_col(c,j)  * dt
-          end do
-        end do
+         do j = 1, nlevdecomp
+            ! column loop
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)          
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) = &
+                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) + cf%harvest_c_to_litr_met_c_col(c,j) * dt
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) = &
+                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) + cf%harvest_c_to_litr_cel_c_col(c,j) * dt
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) = &
+                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) + cf%harvest_c_to_litr_lig_c_col(c,j) * dt
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) = &
+                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) + cf%harvest_c_to_cwdc_col(c,j)  * dt
+            end do
+         end do
       endif
+
       ! patch loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)

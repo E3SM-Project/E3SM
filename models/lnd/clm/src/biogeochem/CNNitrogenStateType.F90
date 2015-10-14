@@ -1557,8 +1557,8 @@ contains
    end do
 
  end subroutine Summary
-
  
+  !-----------------------------------------------------------------------
  
   subroutine nbuffer_update(this, bounds, num_soilc, filter_soilc,  &
       plant_minn_active_yield_flx_col, plant_minn_passive_yield_flx_col)
@@ -1580,8 +1580,11 @@ contains
     
     do fc = 1, num_soilc
       c = filter_soilc(fc)
-      this%plant_nbuffer_col(c) =this%plant_nbuffer_col(c)+ (plant_minn_active_yield_flx_col(c) + plant_minn_passive_yield_flx_col(c))*dtime
+      this%plant_nbuffer_col(c) = this%plant_nbuffer_col(c)           + &
+                                  (plant_minn_active_yield_flx_col(c) + &
+                                   plant_minn_passive_yield_flx_col(c))*dtime
     enddo
       
   end subroutine nbuffer_update      
+
 end module CNNitrogenStateType

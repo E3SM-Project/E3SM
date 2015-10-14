@@ -494,11 +494,11 @@ contains
     !-----------------------------------------------------------------------
   
     ! only do if ed is off
-    if( .not. use_ed ) then
+    if (.not. use_ed) then
 
-       if(.not. do_betr_leaching)then
-         call CNNLeaching(bounds, num_soilc, filter_soilc, &
-            waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)         
+       if (.not. do_betr_leaching) then
+          call CNNLeaching(bounds, num_soilc, filter_soilc, &
+               waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)         
        endif
        call t_startf('CNUpdate3')
 

@@ -58,37 +58,36 @@ contains
       dt = real( get_step_size(), r8 )
 
       ! column-level nitrogen fluxes from gap-phase mortality
-      if( .not. is_active_betr_bgc  )then
-      do j = 1, nlevdecomp
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-
-            ns%decomp_npools_vr_col(c,j,i_met_lit) = &
-                 ns%decomp_npools_vr_col(c,j,i_met_lit) + nf%gap_mortality_n_to_litr_met_n_col(c,j) * dt
-            ns%decomp_npools_vr_col(c,j,i_cel_lit) = &
-                 ns%decomp_npools_vr_col(c,j,i_cel_lit) + nf%gap_mortality_n_to_litr_cel_n_col(c,j) * dt
-            ns%decomp_npools_vr_col(c,j,i_lig_lit) = &
-                 ns%decomp_npools_vr_col(c,j,i_lig_lit) + nf%gap_mortality_n_to_litr_lig_n_col(c,j) * dt
-            ns%decomp_npools_vr_col(c,j,i_cwd)     = &
-                 ns%decomp_npools_vr_col(c,j,i_cwd)     + nf%gap_mortality_n_to_cwdn_col(c,j)       * dt
+      if (.not. is_active_betr_bgc) then
+         do j = 1, nlevdecomp
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               
+               ns%decomp_npools_vr_col(c,j,i_met_lit) = &
+                    ns%decomp_npools_vr_col(c,j,i_met_lit) + nf%gap_mortality_n_to_litr_met_n_col(c,j) * dt
+               ns%decomp_npools_vr_col(c,j,i_cel_lit) = &
+                    ns%decomp_npools_vr_col(c,j,i_cel_lit) + nf%gap_mortality_n_to_litr_cel_n_col(c,j) * dt
+               ns%decomp_npools_vr_col(c,j,i_lig_lit) = &
+                    ns%decomp_npools_vr_col(c,j,i_lig_lit) + nf%gap_mortality_n_to_litr_lig_n_col(c,j) * dt
+               ns%decomp_npools_vr_col(c,j,i_cwd)     = &
+                    ns%decomp_npools_vr_col(c,j,i_cwd)     + nf%gap_mortality_n_to_cwdn_col(c,j)       * dt
+            end do
          end do
-      end do
-     else
-      do j = 1, nlevdecomp
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-
-            nf%bgc_npool_ext_inputs_vr_col(c,j,i_met_lit) = &
-                 nf%bgc_npool_ext_inputs_vr_col(c,j,i_met_lit) + nf%gap_mortality_n_to_litr_met_n_col(c,j) * dt
-            nf%bgc_npool_ext_inputs_vr_col(c,j,i_cel_lit) = &
-                 nf%bgc_npool_ext_inputs_vr_col(c,j,i_cel_lit) + nf%gap_mortality_n_to_litr_cel_n_col(c,j) * dt
-            nf%bgc_npool_ext_inputs_vr_col(c,j,i_lig_lit) = &
-                 nf%bgc_npool_ext_inputs_vr_col(c,j,i_lig_lit) + nf%gap_mortality_n_to_litr_lig_n_col(c,j) * dt
-            nf%bgc_npool_ext_inputs_vr_col(c,j,i_cwd)     = &
-                 nf%bgc_npool_ext_inputs_vr_col(c,j,i_cwd)     + nf%gap_mortality_n_to_cwdn_col(c,j)       * dt
-         end do
-      end do    
-     
+      else
+         do j = 1, nlevdecomp
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               
+               nf%bgc_npool_ext_inputs_vr_col(c,j,i_met_lit) = &
+                    nf%bgc_npool_ext_inputs_vr_col(c,j,i_met_lit) + nf%gap_mortality_n_to_litr_met_n_col(c,j) * dt
+               nf%bgc_npool_ext_inputs_vr_col(c,j,i_cel_lit) = &
+                    nf%bgc_npool_ext_inputs_vr_col(c,j,i_cel_lit) + nf%gap_mortality_n_to_litr_cel_n_col(c,j) * dt
+               nf%bgc_npool_ext_inputs_vr_col(c,j,i_lig_lit) = &
+                    nf%bgc_npool_ext_inputs_vr_col(c,j,i_lig_lit) + nf%gap_mortality_n_to_litr_lig_n_col(c,j) * dt
+               nf%bgc_npool_ext_inputs_vr_col(c,j,i_cwd)     = &
+                    nf%bgc_npool_ext_inputs_vr_col(c,j,i_cwd)     + nf%gap_mortality_n_to_cwdn_col(c,j)       * dt
+            end do
+         end do         
      endif
 
       ! patch -level nitrogen fluxes from gap-phase mortality
@@ -160,37 +159,36 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
 
-      if( .not. is_active_betr_bgc  )then
-      ! column-level nitrogen fluxes from harvest mortality
+      if (.not. is_active_betr_bgc) then
+         ! column-level nitrogen fluxes from harvest mortality
 
-        do j = 1,nlevdecomp
-          do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            ns%decomp_npools_vr_col(c,j,i_met_lit) = &
-                 ns%decomp_npools_vr_col(c,j,i_met_lit) + nf%harvest_n_to_litr_met_n_col(c,j) * dt
-            ns%decomp_npools_vr_col(c,j,i_cel_lit) = &
-                 ns%decomp_npools_vr_col(c,j,i_cel_lit) + nf%harvest_n_to_litr_cel_n_col(c,j) * dt
-            ns%decomp_npools_vr_col(c,j,i_lig_lit) = &
-                 ns%decomp_npools_vr_col(c,j,i_lig_lit) + nf%harvest_n_to_litr_lig_n_col(c,j) * dt
-            ns%decomp_npools_vr_col(c,j,i_cwd)     = &
-                 ns%decomp_npools_vr_col(c,j,i_cwd)     + nf%harvest_n_to_cwdn_col(c,j)       * dt
-          end do
-        end do
+         do j = 1,nlevdecomp
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               ns%decomp_npools_vr_col(c,j,i_met_lit) = &
+                    ns%decomp_npools_vr_col(c,j,i_met_lit) + nf%harvest_n_to_litr_met_n_col(c,j) * dt
+               ns%decomp_npools_vr_col(c,j,i_cel_lit) = &
+                    ns%decomp_npools_vr_col(c,j,i_cel_lit) + nf%harvest_n_to_litr_cel_n_col(c,j) * dt
+               ns%decomp_npools_vr_col(c,j,i_lig_lit) = &
+                    ns%decomp_npools_vr_col(c,j,i_lig_lit) + nf%harvest_n_to_litr_lig_n_col(c,j) * dt
+               ns%decomp_npools_vr_col(c,j,i_cwd)     = &
+                    ns%decomp_npools_vr_col(c,j,i_cwd)     + nf%harvest_n_to_cwdn_col(c,j)       * dt
+            end do
+         end do
       else
-        do j = 1,nlevdecomp
-          do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            nf%bgc_npool_ext_inputs_vr_col(c,j,i_met_lit) = &
-                 nf%bgc_npool_ext_inputs_vr_col(c,j,i_met_lit) + nf%harvest_n_to_litr_met_n_col(c,j) * dt
-            nf%bgc_npool_ext_inputs_vr_col(c,j,i_cel_lit) = &
-                 nf%bgc_npool_ext_inputs_vr_col(c,j,i_cel_lit) + nf%harvest_n_to_litr_cel_n_col(c,j) * dt
-            nf%bgc_npool_ext_inputs_vr_col(c,j,i_lig_lit) = &
-                 nf%bgc_npool_ext_inputs_vr_col(c,j,i_lig_lit) + nf%harvest_n_to_litr_lig_n_col(c,j) * dt
-            nf%bgc_npool_ext_inputs_vr_col(c,j,i_cwd)     = &
-                 nf%bgc_npool_ext_inputs_vr_col(c,j,i_cwd)     + nf%harvest_n_to_cwdn_col(c,j)       * dt
-          end do
-        end do
-      
+         do j = 1,nlevdecomp
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               nf%bgc_npool_ext_inputs_vr_col(c,j,i_met_lit) = &
+                    nf%bgc_npool_ext_inputs_vr_col(c,j,i_met_lit) + nf%harvest_n_to_litr_met_n_col(c,j) * dt
+               nf%bgc_npool_ext_inputs_vr_col(c,j,i_cel_lit) = &
+                    nf%bgc_npool_ext_inputs_vr_col(c,j,i_cel_lit) + nf%harvest_n_to_litr_cel_n_col(c,j) * dt
+               nf%bgc_npool_ext_inputs_vr_col(c,j,i_lig_lit) = &
+                    nf%bgc_npool_ext_inputs_vr_col(c,j,i_lig_lit) + nf%harvest_n_to_litr_lig_n_col(c,j) * dt
+               nf%bgc_npool_ext_inputs_vr_col(c,j,i_cwd)     = &
+                    nf%bgc_npool_ext_inputs_vr_col(c,j,i_cwd)     + nf%harvest_n_to_cwdn_col(c,j)       * dt
+            end do
+         end do         
       endif
       ! patch-level nitrogen fluxes from harvest mortality
 

@@ -123,9 +123,9 @@ contains
               soilhydrology_vars, waterstate_vars)
       endif
 
-      if(use_betr)then
-        call pre_diagnose_soilcol_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-          h2osoi_liq(bounds%begc:bounds%endc, 1:nlevsoi))
+      if (use_betr) then
+         call pre_diagnose_soilcol_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
+              h2osoi_liq(bounds%begc:bounds%endc, 1:nlevsoi))
       endif
 
       call Drainage(bounds, num_hydrologyc, filter_hydrologyc, &
@@ -133,9 +133,9 @@ contains
            temperature_vars, soilhydrology_vars, soilstate_vars, &
            waterstate_vars, waterflux_vars)
 
-      if(use_betr)then
-        call diagnose_drainage_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-          h2osoi_liq(bounds%begc:bounds%endc, 1:nlevsoi), waterflux_vars)
+      if (use_betr) then
+         call diagnose_drainage_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
+              h2osoi_liq(bounds%begc:bounds%endc, 1:nlevsoi), waterflux_vars)
       endif
 
       do j = 1, nlevgrnd

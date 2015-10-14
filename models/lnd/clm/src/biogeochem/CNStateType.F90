@@ -122,8 +122,8 @@ module CNStateType
      real(r8), pointer :: downreg_patch                (:)     ! patch fractional reduction in GPP due to N limitation (DIM)
      real(r8), pointer :: rc14_atm_patch               (:)     ! patch C14O2/C12O2 in atmosphere
      real(r8), pointer :: frootc_nfix_scalar_col       (:)     ! col scalar for nitrogen fixation
-     real(r8), pointer :: decomp_litpool_rcn_col       (:,:,:)   ! cn ratios of the decomposition pools
-     integer           :: CropRestYear                        ! restart year from initial conditions file - increment as time elapses
+     real(r8), pointer :: decomp_litpool_rcn_col       (:,:,:) ! cn ratios of the decomposition pools
+     integer           :: CropRestYear                         ! restart year from initial conditions file - increment as time elapses
 
    contains
 
@@ -271,9 +271,7 @@ contains
     allocate(this%tempmax_retransn_patch      (begp:endp)) ;    this%tempmax_retransn_patch      (:) = nan
     allocate(this%annmax_retransn_patch       (begp:endp)) ;    this%annmax_retransn_patch       (:) = nan
     allocate(this%downreg_patch               (begp:endp)) ;    this%downreg_patch               (:) = nan
-    allocate(this%rc14_atm_patch              (begp:endp)) ;    this%rc14_atm_patch              (:) = nan
-
-    
+    allocate(this%rc14_atm_patch              (begp:endp)) ;    this%rc14_atm_patch              (:) = nan    
 
   end subroutine InitAllocate
 
