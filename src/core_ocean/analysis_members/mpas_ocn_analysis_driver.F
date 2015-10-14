@@ -59,7 +59,7 @@ module ocn_analysis_driver
    !--------------------------------------------------------------------
 
    public :: ocn_analysis_setup_packages, &
-             ocn_analysis_read_init_streams, &
+             ocn_analysis_bootstrap, &
              ocn_analysis_init, &
              ocn_analysis_compute_startup, &
              ocn_analysis_compute, &
@@ -181,9 +181,9 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_analysis_read_init_streams
+!  routine ocn_analysis_bootstrap
 !
-!> \brief   Setup packages for MPAS-Ocean analysis driver
+!> \brief   Bootstrap analysis members (pre-init configuration)
 !> \author  Doug Jacobsen
 !> \date    10/08/2015
 !> \details
@@ -199,10 +199,13 @@ contains
 !>  config_do_restart is true, and the input_stream will be read if config_do_restart is false.
 !>
 !>  After this call, alarms on both streams are reset.
+!>
+!>  Additionally, if a bootstrap subroutine has been defined properly for the
+!>  analysis member, it will be called here.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_analysis_read_init_streams(domain, err)!{{{
+   subroutine ocn_analysis_bootstrap(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -252,7 +255,7 @@ contains
       poolErrorLevel = mpas_pool_get_error_level()
       call mpas_pool_set_error_level(MPAS_POOL_SILENT)
 
-      call mpas_timer_start('analysis_read_init_streams', .false.)
+      call mpas_timer_start('analysis_bootstrap', .false.)
 
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
 
@@ -265,6 +268,9 @@ contains
          if ( config_AM_enable ) then
             timerName = trim(initReadTimerPrefix) // poolItr % memberName(1:nameLength)
             call mpas_timer_start(timerName, .false.)
+
+            call ocn_bootstrap_analysis_members(domain, poolItr % memberName(1:nameLength), ierr=err)
+
             configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_restart_stream'
             nullify(config_AM_restart_stream)
             call mpas_pool_get_config(domain % configs, configName, config_AM_restart_stream)
@@ -321,11 +327,11 @@ contains
          end if
       end do
 
-      call mpas_timer_stop('analysis_read_init_streams')
+      call mpas_timer_stop('analysis_bootstrap')
 
       call mpas_pool_set_error_level(poolErrorLevel)
 
-   end subroutine ocn_analysis_read_init_streams!}}}
+   end subroutine ocn_analysis_bootstrap!}}}
 
 !***********************************************************************
 !
@@ -860,6 +866,41 @@ contains
       call mpas_timer_stop('analysis_finalize')
 
    end subroutine ocn_analysis_finalize!}}}
+
+!***********************************************************************
+!
+!  routine ocn_bootstrap_analysis_members
+!
+!> \brief Analysis member initialization driver
+!> \author Doug Jacobsen
+!> \date 07/01/2015
+!> \details
+!>  This private routine calls the correct init routine for each analysis member.
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_bootstrap_analysis_members(domain, analysisMemberName, iErr)!{{{
+      type (domain_type), intent(inout) :: domain !< Input: Domain information
+      character (len=*), intent(in) :: analysisMemberName !< Input: Name of analysis member
+      integer, intent(out) :: iErr !< Output: Error code
+
+      integer :: nameLength, err_tmp
+
+      iErr = 0
+      err_tmp = 0
+
+      nameLength = len_trim(analysisMemberName)
+
+      !if ( analysisMemberName(1:nameLength) == 'testComputeInterval' ) then
+      !   call ocn_bootstrap_test_compute_interval(domain, err_tmp)
+      if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
+         call ocn_bootstrap_time_series_stats(domain, err_tmp)
+!     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
+!        call ocn_init_TEM_PLATE(domain, err_tmp)
+      end if
+
+      iErr = ior(iErr, err_tmp)
+
+   end subroutine ocn_bootstrap_analysis_members!}}}
 
 !***********************************************************************
 !
