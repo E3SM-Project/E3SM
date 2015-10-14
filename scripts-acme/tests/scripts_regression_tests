@@ -48,11 +48,10 @@ class RunUnitTests(unittest.TestCase):
         self.assertEqual(stat, 0, msg=output)
 
 ###############################################################################
-def make_fake_teststatus(path, testname, status):
+def make_fake_teststatus(path, testname, status, phase):
 ###############################################################################
-    fd = open(path, "w")
-    fd.write("%s %s\n" % (status, testname))
-    fd.close()
+    with open(path, "w") as fd:
+        fd.write("%s %s %s\n" % (status, testname, phase))
 
 ###############################################################################
 def parse_test_status(line):
@@ -121,13 +120,13 @@ class TestWaitForTests(unittest.TestCase):
         self._testdir_unfinished   = tempfile.mkdtemp()
 
         for r in range(10):
-            make_fake_teststatus(os.path.join(self._testdir_all_pass, "TestStatus_%d" % r), "Test_%d" % r, "PASS")
+            make_fake_teststatus(os.path.join(self._testdir_all_pass, "TestStatus_%d" % r), "Test_%d" % r, "PASS", "PHASE_%s" % r)
 
         for r in range(10):
-            make_fake_teststatus(os.path.join(self._testdir_with_fail, "TestStatus_%d" % r), "Test_%d" % r, "PASS" if r % 2 == 0 else "FAIL")
+            make_fake_teststatus(os.path.join(self._testdir_with_fail, "TestStatus_%d" % r), "Test_%d" % r, "PASS" if r % 2 == 0 else "FAIL", "PHASE_%s" % r)
 
         for r in range(10):
-            make_fake_teststatus(os.path.join(self._testdir_unfinished, "TestStatus_%d" % r), "Test_%d" % r, "RUN" if r == 5 else "PASS")
+            make_fake_teststatus(os.path.join(self._testdir_unfinished, "TestStatus_%d" % r), "Test_%d" % r, "RUN" if r == 5 else "PASS", "PHASE_%s" % r)
 
         # Set up proxy if possible
         self._unset_proxy = setup_proxy()
@@ -205,7 +204,7 @@ class TestWaitForTests(unittest.TestCase):
 
         self.assertTrue(run_thread.isAlive(), msg="wait_for_tests should have waited")
 
-        make_fake_teststatus(os.path.join(self._testdir_unfinished, "TestStatus_5"), "Test_5", "PASS")
+        make_fake_teststatus(os.path.join(self._testdir_unfinished, "TestStatus_5"), "Test_5", "PASS", "PHASE_5")
 
         run_thread.join(timeout=130)
 
@@ -288,6 +287,78 @@ class TestWaitForTests(unittest.TestCase):
         # TODO: Any further checking of xml output worth doing?
 
 ###############################################################################
+class TestCreateTest(unittest.TestCase):
+###############################################################################
+
+    ###########################################################################
+    def setUp(self):
+    ###########################################################################
+        self._baseline_name = "fake_testing_only_%s" % acme_util.get_utc_timestamp()
+
+    ###########################################################################
+    def tearDown(self):
+    ###########################################################################
+        baseline_area = acme_util.get_machine_info()[5]
+        compiler      = acme_util.get_machine_info()[0]
+        baselines = os.path.join(baseline_area, compiler, self._baseline_name)
+        if (os.path.isdir(baselines)):
+            shutil.rmtree(baselines)
+
+    ###########################################################################
+    def simple_test(self, expect_works, extra_args):
+    ###########################################################################
+        stat, output, errput = run_cmd("%s/create_test acme_tiny %s" % (SCRIPT_DIR, extra_args), ok_to_fail=True)
+        if (expect_works):
+            self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s" % (output, errput))
+        else:
+            self.assertNotEqual(stat, 0, msg="COMMAND SHOULD HAVE FAILED\ncreate_test output:\n%s\n\nerrput:\n%s" % (output, errput))
+
+    ###############################################################################
+    def test_create_test_rebless_namelist(self):
+    ###############################################################################
+        # Generate some namelist baselines
+        self.simple_test(True, "-g -n -b %s" % self._baseline_name)
+
+        # Basic namelist compare
+        self.simple_test(True, "-c -n -b %s" % self._baseline_name)
+
+        # Modify namelist
+        fake_nl = """
+ &fake_nml
+   fake_item = 'fake'
+   fake = .true.
+/"""
+        baseline_area = acme_util.get_machine_info()[5]
+        compiler = acme_util.get_machine_info()[0]
+        baseline_glob = glob.glob(os.path.join(baseline_area, compiler, self._baseline_name, "ERS*"))
+        self.assertEqual(len(baseline_glob), 1, msg="Expected one match, got:\n%s" % "\n".join(baseline_glob))
+
+        baseline_dir = baseline_glob[0]
+        nl_path = os.path.join(baseline_dir, "CaseDocs", "datm_in")
+        self.assertTrue(os.path.isfile(nl_path), msg="Missing file %s" % nl_path)
+
+        import stat
+        os.chmod(nl_path, stat.S_IRUSR | stat.S_IWUSR)
+        with open(nl_path, "a") as nl_file:
+            nl_file.write(fake_nl)
+
+        # Basic namelist compare should now fail
+        self.simple_test(False, "-c -n -b %s" % self._baseline_name)
+
+        # Regen
+        self.simple_test(True, "-g -n -b %s" % self._baseline_name)
+
+        # Basic namelist compare should now pass again
+        self.simple_test(True, "-c -n -b %s" % self._baseline_name)
+
+    ###########################################################################
+    def test_create_test_failed_test(self):
+    ###########################################################################
+        # TODO
+        # Need to ensure that TestStatus not being left in RUN/PEND state
+        pass
+
+###############################################################################
 class TestJenkinsGenericJob(unittest.TestCase):
 ###############################################################################
 
@@ -311,7 +382,8 @@ class TestJenkinsGenericJob(unittest.TestCase):
             del os.environ["http_proxy"]
 
         baseline_area = acme_util.get_machine_info()[5]
-        baselines = os.path.join(baseline_area, self._baseline_name)
+        compiler      = acme_util.get_machine_info()[0]
+        baselines = os.path.join(baseline_area, compiler, self._baseline_name)
         if (os.path.isdir(baselines)):
             shutil.rmtree(baselines)
 
@@ -376,46 +448,6 @@ class TestJenkinsGenericJob(unittest.TestCase):
         assert_dashboard_has_build(self, build_name)
         self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
 
-    ###############################################################################
-    def test_jenkins_generic_job_rebless_namelist(self):
-    ###############################################################################
-        # Generate some namelist baselines
-        self.simple_test(True, "-g -n -b %s" % self._baseline_name)
-
-        # Basic namelist compare
-        self.simple_test(True, "-n -b %s" % self._baseline_name)
-
-        # Modify namelist
-        fake_nl = """
- &fake_nml
-   fake_item = 'fake'
-   fake = .true.
-/"""
-        baseline_area = acme_util.get_machine_info()[5]
-        compiler = acme_util.get_machine_info()[0]
-        baseline_glob = glob.glob(os.path.join(baseline_area, compiler, self._baseline_name, "ERS*"))
-        self.assertEqual(len(baseline_glob), 1, msg="Expected one match, got:\n%s" % "\n".join(baseline_glob))
-
-        baseline_dir = baseline_glob[0]
-        nl_path = os.path.join(baseline_dir, "CaseDocs", "datm_in")
-        self.assertTrue(os.path.isfile(nl_path), msg="Missing file %s" % nl_path)
-
-        import stat
-        os.chmod(nl_path, stat.S_IRUSR | stat.S_IWUSR)
-        nl_file = open(nl_path, "a")
-        nl_file.write(fake_nl)
-        nl_file.close()
-
-        # Basic namelist compare should now fail
-        self.simple_test(False, "-n -b %s" % self._baseline_name)
-
-        # Bless
-        stat, output, errput = run_cmd("%s/bless_test_results -n -f -b %s" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True)
-        self.assertEqual(stat, 0, msg="bless_test_results output:\n%s\n\nerrput:\n%s" % (output, errput))
-
-        # Basic namelist compare should now pass again
-        self.simple_test(True, "-n -b %s" % self._baseline_name)
-
 ###############################################################################
 class TestUpdateACMETests(unittest.TestCase):
 ###############################################################################
@@ -447,7 +479,7 @@ class TestUpdateACMETests(unittest.TestCase):
             self.assertTrue(False, str(sys.exc_info()[1]))
 
         stat = run_cmd("grep 'test/test_mod' %s" % self._testlist_allactive, ok_to_fail=True)[0]
-        self.assertEqual(stat, 0, msg="Missing test_mod")
+        self.assertEqual(stat, 0, msg="update_acme_tests did not update XML")
 
 ###########################################################################
 

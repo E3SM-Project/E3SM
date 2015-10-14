@@ -18,7 +18,7 @@ set DOUT_S_ROOT = `./xmlquery DOUT_S_ROOT -value`
 
 if (${STOP_N} < 3) then
   echo "ERROR in ${0}:  stop_n too short" >>& $TESTSTATUS_LOG
-  echo "TFAIL ${CASE} " >&! $TESTSTATUS_OUT
+  echo "TFAIL ${CASE} " >>& $TESTSTATUS_OUT
   exit -1
 endif
 
@@ -182,9 +182,6 @@ endif
 
 echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
-
-echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >&! $TESTSTATUS_OUT
-echo " --- Test Functionality: ---" >>& $TESTSTATUS_OUT
 
 if ($NINST_ATM == 1) then
   $SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 rest_sta -msg "sta test .base and .rest_sta files" >>& $TESTSTATUS_OUT
