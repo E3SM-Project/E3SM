@@ -52,9 +52,9 @@ module CNAllocationBetrMod
   type(CNAllocParamsType),protected ::  CNAllocParamsInst
   !
   ! !PUBLIC DATA MEMBERS:
-  character(len=*), parameter, public :: suplnAll='ALL'  ! Supplemental Nitrogen for all PFT's
-  character(len=*), parameter, public :: suplnNon='NONE' ! No supplemental Nitrogen
-  character(len=15), public :: suplnitro = suplnNon      ! Supplemental Nitrogen mode
+  character(len=*), parameter, public :: suplnAll='ALL'       ! Supplemental Nitrogen for all PFT's
+  character(len=*), parameter, public :: suplnNon='NONE'      ! No supplemental Nitrogen
+  character(len=15)          , public :: suplnitro = suplnNon ! Supplemental Nitrogen mode
   !
   ! !PRIVATE DATA MEMBERS:
   real(r8)              :: dt                   !decomp timestep (seconds)
@@ -62,7 +62,6 @@ module CNAllocationBetrMod
   real(r8)              :: dayscrecover         !number of days to recover negative cpool
   real(r8), allocatable :: arepr(:)             !reproduction allocation coefficient
   real(r8), allocatable :: aroot(:)             !root allocation coefficient
-  !logical :: crop_supln  = .false.             !Prognostic crop receives supplemental Nitrogen
   !-----------------------------------------------------------------------
 
 contains
@@ -78,11 +77,11 @@ contains
     type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
     !
     ! !LOCAL VARIABLES:
-    character(len=32)  :: subname = 'CNAllocParamsType'
-    character(len=100) :: errCode = '-Error reading in parameters file:'
-    logical            :: readv ! has variable been read in or not
-    real(r8)           :: tempr ! temporary to read in parameter
-    character(len=100) :: tString ! temp. var for reading
+    character(len=32)  :: subname = 'CNAllocParamsType'                  !
+    character(len=100) :: errCode = '-Error reading in parameters file:' !
+    logical            :: readv                                          ! has variable been read in or not
+    real(r8)           :: tempr                                          ! temporary to read in parameter
+    character(len=100) :: tString                                        ! temp. var for reading
     !-----------------------------------------------------------------------
 
     ! read in parameters
@@ -147,7 +146,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     character(len=32) :: subname = 'CNAllocationInit'
-    logical :: carbon_only
+    logical           :: carbon_only
     !-----------------------------------------------------------------------
 
     if ( crop_prog )then
@@ -176,8 +175,6 @@ contains
             errMsg(__FILE__, __LINE__))
     end select
 
-!    call cnallocate_carbon_only_set(carbon_only)
-
   end subroutine CNAllocationBetrInit
 
   
@@ -202,7 +199,7 @@ contains
   use clm_varcon       , only: nitrif_n2o_loss_frac, secspday
   use landunit_varcon  , only: istsoil, istcrop
   use clm_time_manager , only: get_step_size
-  use clm_varctl          , only : use_c13, use_c14
+  use clm_varctl       , only: use_c13, use_c14
  implicit none
   !
   ! !ARGUMENTS:
@@ -236,7 +233,7 @@ contains
   real(r8):: cng                                                     !C:N ratio for grain (= cnlw for now; slevis)   
     !-----------------------------------------------------------------------
 
-  associate(                                                                                 &
+  associate(                                                                               &
      ivt                          => pft%itype                                           , & ! Input:  [integer  (:) ]  pft vegetation type                                
          
      woody                        => ecophyscon%woody                                    , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
@@ -506,24 +503,22 @@ contains
 
   implicit none
   ! !ARGUMENTS:
-  type(bounds_type)        , intent(in)    :: bounds
-  integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
-  integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
-  integer                  , intent(in)    :: num_soilp        ! number of soil patches in filter
-  integer                  , intent(in)    :: filter_soilp(:)  ! filter for soil patches
-  type(photosyns_type)     , intent(in)    :: photosyns_vars
-  type(crop_type)          , intent(in)    :: crop_vars
-  type(canopystate_type)   , intent(in)    :: canopystate_vars
-  type(carbonstate_type)   , intent(in)    :: carbonstate_vars
-  type(cnstate_type)       , intent(inout) :: cnstate_vars
-  type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-  type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
-  type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
-  type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-  type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-  type(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars 
-
-  
+  type(bounds_type)        , intent(in)           :: bounds                     !
+  integer                  , intent(in)           :: num_soilc                  ! number of soil columns in filter
+  integer                  , intent(in)           :: filter_soilc(:)            ! filter for soil columns
+  integer                  , intent(in)           :: num_soilp                  ! number of soil patches in filter
+  integer                  , intent(in)           :: filter_soilp(:)            ! filter for soil patches
+  type(photosyns_type)     , intent(in)           :: photosyns_vars             !
+  type(crop_type)          , intent(in)           :: crop_vars                  !
+  type(canopystate_type)   , intent(in)           :: canopystate_vars           !
+  type(carbonstate_type)   , intent(in)           :: carbonstate_vars           !
+  type(cnstate_type)       , intent(inout)        :: cnstate_vars               !
+  type(carbonflux_type)    , intent(inout)        :: carbonflux_vars            !
+  type(carbonflux_type)    , intent(inout)        :: c13_carbonflux_vars        !
+  type(carbonflux_type)    , intent(inout)        :: c14_carbonflux_vars        !
+  type(nitrogenstate_type) , intent(inout)        :: nitrogenstate_vars         !
+  type(nitrogenflux_type)  , intent(inout)        :: nitrogenflux_vars          !
+  type(plantsoilnutrientflux_type), intent(inout) :: plantsoilnutrientflux_vars !
   
   call calc_plant_nitrogen_demand(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
     photosyns_vars, canopystate_vars, crop_vars, carbonstate_vars, &
@@ -554,35 +549,35 @@ contains
   implicit none
  
   ! !ARGUMENTS:
-  type(bounds_type)        , intent(in)    :: bounds
-  integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
-  integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
-  integer                  , intent(in)    :: num_soilp        ! number of soil patches in filter
-  integer                  , intent(in)    :: filter_soilp(:)  ! filter for soil patches
-  type(photosyns_type)     , intent(in)    :: photosyns_vars
-  type(crop_type)          , intent(in)    :: crop_vars
-  type(canopystate_type)   , intent(in)    :: canopystate_vars
-  type(carbonstate_type)   , intent(in)    :: carbonstate_vars
-  type(cnstate_type)       , intent(inout) :: cnstate_vars
-  type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-  type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
-  type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
-  type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-  type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-  real(r8)                 , intent(inout) :: plant_totn_demand_flx_col(bounds%begc:bounds%endc)  
-  integer :: c,p,l,pi,j                                              !indices
-  integer :: fp                                                      !lake filter pft index
-  integer :: fc                                                      !lake filter column index
-  real(r8):: mr                                                      !maintenance respiration (gC/m2/s)
-  real(r8):: f1,f2,f3,f4,g1,g2                                       !allocation parameters
-  real(r8):: cnl,cnfr,cnlw,cndw                                      !C:N ratios for leaf, fine root, and wood
-  real(r8):: curmr, curmr_ratio                                      !xsmrpool temporary variables
-  real(r8):: f5                                                      !grain allocation parameter
-  real(r8):: cng                                                     !C:N ratio for grain (= cnlw for now; slevis)
-  real(r8):: fleaf                                                   !fraction allocated to leaf
-  real(r8):: t1                                                      !temporary variable
-  real(r8):: dt                                                      ! model time step
-  real(r8):: dayscrecover  
+  type(bounds_type)        , intent(in)    :: bounds                                             !
+  integer                  , intent(in)    :: num_soilc                                          ! number of soil columns in filter
+  integer                  , intent(in)    :: filter_soilc(:)                                    ! filter for soil columns
+  integer                  , intent(in)    :: num_soilp                                          ! number of soil patches in filter
+  integer                  , intent(in)    :: filter_soilp(:)                                    ! filter for soil patches
+  type(photosyns_type)     , intent(in)    :: photosyns_vars                                     !
+  type(crop_type)          , intent(in)    :: crop_vars                                          !
+  type(canopystate_type)   , intent(in)    :: canopystate_vars                                   !
+  type(carbonstate_type)   , intent(in)    :: carbonstate_vars                                   !
+  type(cnstate_type)       , intent(inout) :: cnstate_vars                                       !
+  type(carbonflux_type)    , intent(inout) :: carbonflux_vars                                    !
+  type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars                                !
+  type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars                                !
+  type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars                                 !
+  type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars                                  !
+  real(r8)                 , intent(inout) :: plant_totn_demand_flx_col(bounds%begc:bounds%endc) !
+  integer                                  :: c,p,l,pi,j                                         ! indices
+  integer                                  :: fp                                                 ! lake filter pft index
+  integer                                  :: fc                                                 ! lake filter column index
+  real(r8)                                 :: mr                                                 ! maintenance respiration (gC/m2/s)
+  real(r8)                                 :: f1,f2,f3,f4,g1,g2                                  ! allocation parameters
+  real(r8)                                 :: cnl,cnfr,cnlw,cndw                                 ! C:N ratios for leaf, fine root, and wood
+  real(r8)                                 :: curmr, curmr_ratio                                 ! xsmrpool temporary variables
+  real(r8)                                 :: f5                                                 ! grain allocation parameter
+  real(r8)                                 :: cng                                                ! C:N ratio for grain (= cnlw for now; slevis)
+  real(r8)                                 :: fleaf                                              ! fraction allocated to leaf
+  real(r8)                                 :: t1                                                 ! temporary variable
+  real(r8)                                 :: dt                                                 ! model time step
+  real(r8)                                 :: dayscrecover                                       !
   
   associate(                                                                              &
     ivt                          => pft%itype                                           , & ! Input:  [integer  (:) ]  pft vegetation type                                       
@@ -972,8 +967,6 @@ contains
            plant_totn_demand_flx_col(bounds%begc:bounds%endc))
            
   ! obtain the nutrient uptake potential based on fine root profile
-  
-
            
   end associate 
  end subroutine calc_plant_nitrogen_demand

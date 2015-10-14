@@ -172,43 +172,41 @@ contains
        !
        ! populate each module with private parameters
        !       
-       if(is_active_betr_bgc)then
-         call readCNAllocBetrParams(ncid) 
+       if (is_active_betr_bgc)then
+
+          call readCNAllocBetrParams(ncid) 
+
        else
-         call readCNAllocParams(ncid)
+          call readCNAllocParams(ncid)
 
-         call readCNDecompParams(ncid)
-         if (use_century_decomp) then
-           call readCNDecompBgcParams(ncid)
-         else
-           call readCNDecompCnParams(ncid)
-         end if
-         if (use_nitrif_denitrif) then
-           call readCNNitrifDenitrifParams(ncid)
-         end if
-       
-         call readCNSoilLittVertTranspParams(ncid)
+          call readCNDecompParams(ncid)
+          if (use_century_decomp) then
+            call readCNDecompBgcParams(ncid)
+          else
+            call readCNDecompCnParams(ncid)
+          end if
+          if (use_nitrif_denitrif) then
+            call readCNNitrifDenitrifParams(ncid)
+          end if
 
-         if (use_lch4) then
-           call readCH4Params (ncid)
-         end if
+          call readCNSoilLittVertTranspParams(ncid)
+
+          if (use_lch4) then
+            call readCH4Params (ncid)
+          end if
        endif
        
-       
-       
-
        call readCNPhenolParams(ncid)
        call readCNMRespParams (ncid)
        call readCNNDynamicsParams (ncid)
        call readCNGapMortParams (ncid)
 
-
-
-
     end if
+
     !
     ! close CN params file
     !
     call ncd_pio_closefile(ncid)
+
   end subroutine readPrivateParameters
 end module readParamsMod

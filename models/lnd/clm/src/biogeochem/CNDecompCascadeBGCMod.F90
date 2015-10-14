@@ -308,7 +308,7 @@ contains
       cn_s3 = CNDecompBgcParamsInst%cn_s3_bgc
 
 
-        ! set respiration fractions for fluxes between compartments
+      ! set respiration fractions for fluxes between compartments
       rf_l1s1 = CNDecompBgcParamsInst%rf_l1s1_bgc
       rf_l2s1 = CNDecompBgcParamsInst%rf_l2s1_bgc
       rf_l3s2 = CNDecompBgcParamsInst%rf_l3s2_bgc
@@ -319,7 +319,7 @@ contains
       rf_cwdl2 = CNDecompBgcParamsInst%rf_cwdl2_bgc
       rf_cwdl3 = CNDecompBgcParamsInst%rf_cwdl3_bgc
 
-        ! set the cellulose and lignin fractions for coarse woody debris
+      ! set the cellulose and lignin fractions for coarse woody debris
       cwd_fcel = CNDecompBgcParamsInst%cwd_fcel_bgc
       cwd_flig = CNDecompBgcParamsInst%cwd_flig_bgc
 
@@ -327,16 +327,17 @@ contains
       f_s2s1 = 0.42_r8/(0.45_r8)
       f_s2s3 = 0.03_r8/(0.45_r8)
 
-        ! some of these are dependent on the soil texture properties
+      ! some of these are dependent on the soil texture properties
       do c = bounds%begc, bounds%endc
          do j = 1, nlevdecomp
-           t = 0.85_r8 - 0.68_r8 * 0.01_r8 * (100._r8 - cellsand(c,j))
-           f_s1s2(c,j) = 1._r8 - .004_r8 / (1._r8 - t)
-           f_s1s3(c,j) = .004_r8 / (1._r8 - t)
-           rf_s1s2(c,j) = t
-           rf_s1s3(c,j) = t
+            t = 0.85_r8 - 0.68_r8 * 0.01_r8 * (100._r8 - cellsand(c,j))
+            f_s1s2(c,j) = 1._r8 - .004_r8 / (1._r8 - t)
+            f_s1s3(c,j) = .004_r8 / (1._r8 - t)
+            rf_s1s2(c,j) = t
+            rf_s1s3(c,j) = t
          end do
       end do
+
       !-------------------  list of pools and their attributes  ------------
       i_litr1 = i_met_lit
       floating_cn_ratio_decomp_pools(i_litr1) = .true.

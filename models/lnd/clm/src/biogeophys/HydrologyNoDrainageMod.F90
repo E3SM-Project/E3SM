@@ -194,7 +194,7 @@ contains
            energyflux_vars, soilhydrology_vars, soilstate_vars, temperature_vars, &
            waterflux_vars, waterstate_vars)
 
-      if(use_betr)then
+      if (use_betr) then
         call pre_diagnose_soilcol_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
           waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc, 1:nlevsoi))
       endif
@@ -203,10 +203,10 @@ contains
             soilhydrology_vars, soilstate_vars, waterflux_vars, waterstate_vars, temperature_vars, &
             soil_water_retention_curve)
             
-      if(use_betr)then
+      if (use_betr) then
         call diagnose_advect_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-          waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc, 1:nlevsoi), &
-          soilhydrology_vars%qcharge_col(bounds%begc:bounds%endc), waterflux_vars)                
+             waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc, 1:nlevsoi),                              &
+             soilhydrology_vars%qcharge_col(bounds%begc:bounds%endc), waterflux_vars)                
       endif
         
       call calc_smp_l(bounds, 1, nlevgrnd, num_hydrologyc, filter_hydrologyc, &
@@ -222,10 +222,11 @@ contains
       call WaterTable(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
            soilhydrology_vars, soilstate_vars, temperature_vars, waterstate_vars, waterflux_vars) 
 
-      if(use_betr)then
-        !apply dew and sublimation fluxes, this is a temporary work aroud for tracking water isotope
-        !Jinyun Tang, Feb 4, 2015
-        call calc_dew_sub_flux(bounds, num_hydrologyc, filter_hydrologyc, waterstate_vars, waterflux_vars, betrtracer_vars, tracerflux_vars, tracerstate_vars)      
+      if (use_betr) then
+         !apply dew and sublimation fluxes, this is a temporary work aroud for tracking water isotope
+         !Jinyun Tang, Feb 4, 2015
+         call calc_dew_sub_flux(bounds, num_hydrologyc, filter_hydrologyc, &
+              waterstate_vars, waterflux_vars, betrtracer_vars, tracerflux_vars, tracerstate_vars)      
       endif           
       ! Natural compaction and metamorphosis.
       call SnowCompaction(bounds, num_snowc, filter_snowc, &

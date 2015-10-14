@@ -181,38 +181,38 @@ contains
 
       dayspyr = get_days_per_year()
 
-      if(do_et_bnf)then
-        secspyr = dayspyr * 86400._r8
-        do fc = 1, num_soilc
-          c =filter_soilc(fc)
-          !use the cleveland equation
-          t = 0.00102_r8*(qflx_evap_veg(c)+qflx_tran_veg(c))+0.0524_r8/secspyr
-          nfix_to_sminn(c) = max(0._r8, t)
-        enddo
+      if (do_et_bnf) then
+         secspyr = dayspyr * 86400._r8
+         do fc = 1, num_soilc
+            c =filter_soilc(fc)
+            !use the cleveland equation
+            t = 0.00102_r8*(qflx_evap_veg(c)+qflx_tran_veg(c))+0.0524_r8/secspyr
+            nfix_to_sminn(c) = max(0._r8, t)
+         enddo
       else
-        if ( nfix_timeconst > 0._r8 .and. nfix_timeconst < 500._r8 ) then
-         ! use exponential relaxation with time constant nfix_timeconst for NPP - NFIX relation
-         ! Loop through columns
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)         
-
-            if (col_lag_npp(c) /= spval) then
-               ! need to put npp in units of gC/m^2/year here first
-               t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * col_lag_npp(c)*(secspday * dayspyr))))/(secspday * dayspyr)  
+         if ( nfix_timeconst > 0._r8 .and. nfix_timeconst < 500._r8 ) then
+            ! use exponential relaxation with time constant nfix_timeconst for NPP - NFIX relation
+            ! Loop through columns
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)         
+               
+               if (col_lag_npp(c) /= spval) then
+                  ! need to put npp in units of gC/m^2/year here first
+                  t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * col_lag_npp(c)*(secspday * dayspyr))))/(secspday * dayspyr)  
+                  nfix_to_sminn(c) = max(0._r8,t)
+               else
+                  nfix_to_sminn(c) = 0._r8
+               endif
+            end do
+         else
+            ! use annual-mean values for NPP-NFIX relation
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               
+               t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * cannsum_npp(c))))/(secspday * dayspyr)
                nfix_to_sminn(c) = max(0._r8,t)
-            else
-               nfix_to_sminn(c) = 0._r8
-            endif
-         end do
-        else
-         ! use annual-mean values for NPP-NFIX relation
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-
-            t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * cannsum_npp(c))))/(secspday * dayspyr)
-            nfix_to_sminn(c) = max(0._r8,t)
-         end do
-        endif
+            end do
+         endif
       endif
 
     end associate

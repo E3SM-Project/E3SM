@@ -135,7 +135,7 @@ contains
     allocate(this%dewmx_patch              (begp:endp))           ; this%dewmx_patch              (:)   = nan
 
     allocate(this%rscanopy_patch           (begp:endp))           ; this%rscanopy_patch           (:)   = nan
-    allocate(this%lbl_rsc_h2o_patch         (begp:endp))          ; this%lbl_rsc_h2o_patch         (:)   = nan
+    allocate(this%lbl_rsc_h2o_patch        (begp:endp))           ; this%lbl_rsc_h2o_patch        (:)   = nan
 
   end subroutine InitAllocate
 

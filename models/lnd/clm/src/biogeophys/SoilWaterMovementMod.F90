@@ -71,8 +71,8 @@ contains
     class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
     !
     ! !LOCAL VARIABLES:
-    character(len=32)              :: subname = 'SoilWater' ! subroutine name
-    real(r8) :: xs(bounds%begc:bounds%endc)                !excess soil water above urban ponding limit
+    character(len=32)                        :: subname = 'SoilWater'       ! subroutine name
+    real(r8)                                 :: xs(bounds%begc:bounds%endc) !excess soil water above urban ponding limit
 
     integer  :: fc, c, j
     
@@ -105,8 +105,8 @@ contains
     !critical for a meaningufl tracer transport in betr. Jinyun Tang, Jan 14, 2015
 
     do j = 1, nlevsoi-1
-      do fc = 1, num_hydrologyc
-        c = filter_hydrologyc(fc)
+       do fc = 1, num_hydrologyc
+          c = filter_hydrologyc(fc)
           if (h2osoi_liq(c,j) < 0._r8) then
              xs(c) = watmin - h2osoi_liq(c,j)
           else
@@ -119,25 +119,26 @@ contains
 
     j = nlevsoi
     do fc = 1, num_hydrologyc
-      c = filter_hydrologyc(fc)
-      if (h2osoi_liq(c,j) < watmin) then
-        xs(c) = watmin-h2osoi_liq(c,j)
-      else
-        xs(c) = 0._r8
-      end if
-      h2osoi_liq(c,j) = h2osoi_liq(c,j) + xs(c)
-      wa(c) = wa(c) - xs(c)
+       c = filter_hydrologyc(fc)
+       if (h2osoi_liq(c,j) < watmin) then
+          xs(c) = watmin-h2osoi_liq(c,j)
+        else
+          xs(c) = 0._r8
+       end if
+       h2osoi_liq(c,j) = h2osoi_liq(c,j) + xs(c)
+       wa(c) = wa(c) - xs(c)
     end do
     
     !update volumetric soil moisture for bgc calculation
     do j = 1, nlevsoi
-      do fc = 1, num_hydrologyc
-        c = filter_hydrologyc(fc)
-        h2osoi_vol(c,j) = h2osoi_liq(c,j)/(dz(c,j)*denh2o) &
-                     + h2osoi_ice(c,j)/(dz(c,j)*denice)
-      enddo               
+       do fc = 1, num_hydrologyc
+          c = filter_hydrologyc(fc)
+          h2osoi_vol(c,j) = h2osoi_liq(c,j)/(dz(c,j)*denh2o) &
+                            + h2osoi_ice(c,j)/(dz(c,j)*denice)
+       enddo
     enddo
-   end associate
+
+  end associate
 
   end subroutine SoilWater
 
@@ -751,15 +752,15 @@ contains
          enddo
       enddo
 
-
-    do j = 1, nlevsoi
-      do fc = 1, num_hydrologyc
-        c = filter_hydrologyc(fc)
-        qflx_rootsoi(c,j) = qflx_tran_veg_col(c) * rootr_col(c,j) * 1.e-3_r8       ![m H2O/s]
-      enddo  
-    enddo
+      do j = 1, nlevsoi
+         do fc = 1, num_hydrologyc
+            c = filter_hydrologyc(fc)
+            qflx_rootsoi(c,j) = qflx_tran_veg_col(c) * rootr_col(c,j) * 1.e-3_r8       ![m H2O/s]
+         enddo
+      enddo
 
     end associate 
-   end subroutine soilwater_zengdecker2009
+
+  end subroutine soilwater_zengdecker2009
 
  end module SoilWaterMovementMod

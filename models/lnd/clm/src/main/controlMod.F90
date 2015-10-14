@@ -353,9 +353,10 @@ contains
 
     call control_spmd()
 
-    if(use_betr)then
-      call betr_readNL( NLFilename )
+    if (use_betr) then
+       call betr_readNL( NLFilename )
     endif    
+
     ! ----------------------------------------------------------------------
     ! consistency checks
     ! ----------------------------------------------------------------------
@@ -798,7 +799,5 @@ contains
                    'as compared with 0.60, 0.40 for cold frozen lakes with no snow.'
 
   end subroutine control_print
-
-  
 
 end module controlMod
