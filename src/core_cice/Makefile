@@ -44,3 +44,4 @@ clean:
 	@# This removes them during the clean process
 	$(RM) *.i
 	$(RM) -r default_inputs
+	$(RM) -r inc
