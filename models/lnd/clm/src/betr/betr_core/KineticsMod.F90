@@ -8,7 +8,7 @@ module KineticsMod
   use abortutils,   only: endrun
   use clm_varctl,   only: iulog
 implicit none
-  real(r8),private, parameter :: kd_infty = 1.e40_r8      !internal parameter
+  real(r8),public, parameter :: kd_infty = 1.e40_r8      !internal parameter
 
   interface mmcomplex   !the m-m kinetics
      module procedure mmcomplex_v1s,mmcomplex_v1e, mmcomplex_m
