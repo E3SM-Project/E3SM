@@ -2996,6 +2996,7 @@ module init_atm_cases
                tempField % recvList => parinfo % cellsToRecv
                tempField % copyList => parinfo % cellsToCopy
                tempField % array => hs
+               tempField % isActive = .true.
                tempField % prev => null()
                tempField % next => null()
 

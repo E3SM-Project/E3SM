@@ -13,6 +13,7 @@
 module mpas_forcing
 
 #define COMMA ,
+#define FORCING_DEBUG_DO(M) !M
 #define FORCING_DEBUG_WRITE(M) !write(stderrUnit,*) M
 #define FORCING_WARNING_WRITE(M) write(stderrUnit,*) 'WARNING: '//M
 #define FORCING_ERROR_WRITE(M) write(stderrUnit,*) 'ERROR: '//M
@@ -1000,6 +1001,7 @@ contains
 
     integer :: &
          iTime, & ! index of the forcing time stops
+         iTime2, &
          ierr
 
     FORCING_DEBUG_WRITE('-------------------------------------------')
@@ -1059,13 +1061,41 @@ contains
        endif
 
        ! other initialization types
-       if (trim(forcingStream % forcingInitializationType) == "next" .and. &
-            iTime <= forcingStream % nTimeStencilLower) then
-          forcingTimeCycle = forcingStream % forcingTimes(forcingStream % nTimeStencilLower+1)
+       if (trim(forcingStream % forcingInitializationType) == "next") then
+
+          if (forcingGroup % forcingCycleStartInclusive) then
+
+             if (forcingTimeCycle .lt. forcingGroup % forcingCycleStart) then
+
+                do iTime2 = 1, forcingStream % nTimeStencil
+                   if (forcingStream % forcingTimes(iTime2) .ge. forcingGroup % forcingCycleStart) then
+                      forcingTimeCycle = forcingStream % forcingTimes(iTime2)
+                      exit
+                   endif
+                enddo ! iTime2
+
+             endif
+
+          else
+
+             if (forcingTimeCycle .le. forcingGroup % forcingCycleStart) then
+
+                do iTime2 = 1, forcingStream % nTimeStencil
+                   if (forcingStream % forcingTimes(iTime2) .gt. forcingGroup % forcingCycleStart) then
+                      forcingTimeCycle = forcingStream % forcingTimes(iTime2)
+                      exit
+                   endif
+                enddo ! iTime2
+
+             endif
+
+          endif
+
        endif
 
        ! load the data into the slot
        call mpas_get_time(forcingTimeCycle, dateTimeString=forcingTimeStr)
+       FORCING_DEBUG_WRITE('-- Forcing: get_initial_forcing_data: READ ATTEMPT: ' COMMA trim(forcingTimeStr))
        call MPAS_stream_mgr_read(&
             streamManager, &
             forcingStream % forcingStreamID, &
@@ -1080,7 +1110,7 @@ contains
           call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_read')
        endif
 
-       FORCING_DEBUG_WRITE('-- Forcing: get_initial_forcing_data: ' COMMA iTime COMMA trim(forcingStream % forcingStreamID) COMMA " " COMMA trim(forcingTimeStr) COMMA ierr)
+       FORCING_DEBUG_WRITE('-- Forcing: get_initial_forcing_data: ' COMMA iTime COMMA trim(forcingStream % forcingStreamID) COMMA " " COMMA trim(forcingTimeStr))
 
     enddo ! iTime
 
@@ -1340,7 +1370,8 @@ contains
          forcingTimeNew ! the next forcing time 
 
     character(len=strKIND) :: &
-         forcingTimeCycleStr ! the cycled forcing time
+         forcingTimeCycleStr, & ! the cycled forcing time
+         forcingTimeStr         ! time string of forcing
 
     integer :: &
          iTime, & ! forcing times index
@@ -1401,9 +1432,12 @@ contains
           call MPAS_dmpar_global_abort('Forcing: Error: MPAS_stream_mgr_read')
        endif
 
-       FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_get_forcing: READ: '//trim(forcingTimeCycleStr)//' ' COMMA ierr)
+       FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_get_forcing: READ: ' COMMA trim(forcingStream % forcingStreamID) COMMA " " COMMA trim(forcingTimeCycleStr))
 
     endif ! forcingAlarmID ringing
+
+    FORCING_DEBUG_DO(call mpas_get_time(currentTime, dateTimeString=forcingTimeStr))
+    FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_get_forcing: FORCING: ' COMMA trim(forcingStream % forcingStreamID) COMMA " " COMMA trim(forcingTimeStr) COMMA " " COMMA trim(forcingTimeStrAll))
 
     ! interpolate data
     call forcing_data_interpolation(&
@@ -2545,7 +2579,7 @@ contains
        if (trim(forcingGroup % forcingGroupName) == trim(forcingGroupName)) then
 
           ! set the forcing group time
-          FORCING_DEBUG_WRITE('-- Forcing: read_restart_times: set time')
+          FORCING_DEBUG_WRITE('-- Forcing: read_restart_times: set time' COMMA " " COMMA trim(forcingClockTimeStr))
           call MPAS_set_time(forcingClockTime, dateTimeString=trim(forcingClockTimeStr))
           FORCING_DEBUG_WRITE('-- Forcing: read_restart_times: create clock')
           call mpas_create_clock(forcingGroup % forcingClock, startTime=forcingClockTime, timeStep=timeStep, stopTime=stopTime)
