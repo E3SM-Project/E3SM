@@ -135,6 +135,7 @@ ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 ## -- Start
 message (" -- Hostname_id = ${HOSTNAME_ID}")
 message (" -- Start dashboard - ${CTEST_BUILD_NAME} --")
+message (" -- PIO_DASHBOARD_SOURCE_DIR = ${PIO_DASHBOARD_SOURCE_DIR}")
 ctest_start("${CTEST_SCRIPT_ARG}")
 
 ## -- Update
