@@ -38,6 +38,7 @@ module glc_cpl_indices
   integer, public :: index_g2x_Sg_blis = 0 !Boundary layer interface salinity for ocean
   integer, public :: index_g2x_Sg_blit = 0 !Boundary layer interface temperature for ocean
   integer, public :: index_g2x_Sg_icemask = 0 !complete grounded/floating ice mask
+  integer, public :: index_g2x_Sg_ice_covered = 0 !ice covered ice mask
   integer, public :: index_g2x_Sg_icemask_grounded = 0 !grounded mask
   integer, public :: index_g2x_Sg_icemask_floating = 0 !floating mask
   integer, public :: index_g2x_Sg_icemask_coupled_fluxes = 0 !ice mask for coupled fluxes
