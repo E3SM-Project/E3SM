@@ -23,6 +23,8 @@ if [ ! -d "$PIO_DASHBOARD_ROOT" ]; then
 fi
 cd "$PIO_DASHBOARD_ROOT"
 
+echo "CTEST_SCRIPT_DIRECTORY="${CTEST_SCRIPT_DIRECTORY}
+
 if [ ! -d src ]; then
   git clone https://github.com/Katetc/ParallelIO src
 fi

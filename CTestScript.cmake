@@ -151,17 +151,17 @@ ctest_configure ()
 ## -- BUILD
 message (" -- Build - ${CTEST_BUILD_NAME} --")
 set (CTEST_BUILD_COMMAND "${MAKE} tests")
-ctest_build ()
+# ctest_build ()
 
 ## -- TEST
 message (" -- Test - ${CTEST_BUILD_NAME} --")
-execute_process (COMMAND ${CTEST_EXTRA_SCRIPT_PATH}/runctest-${HOSTNAME_ID}.sh
-                         ${CTEST_EXTRA_SCRIPT_PATH} ${CTEST_SCRIPT_ARG}
-                 WORKING_DIRECTORY ${CTEST_BINARY_DIRECTORY})
+#execute_process (COMMAND ${CTEST_EXTRA_SCRIPT_PATH}/runctest-${HOSTNAME_ID}.sh
+#                         ${CTEST_EXTRA_SCRIPT_PATH} ${CTEST_SCRIPT_ARG}
+#                 WORKING_DIRECTORY ${CTEST_BINARY_DIRECTORY})
 
 ## -- SUBMIT
 message (" -- Submit to dashboard - ${CTEST_BUILD_NAME} --")
-ctest_submit ()
+#ctest_submit ()
 
 # -----------------------------------------------------------  
 # -- Clear environment
