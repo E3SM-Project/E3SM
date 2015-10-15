@@ -18,7 +18,7 @@ find_library(NetcdfF_LIBRARY
 
 find_library(Pnetcdf_LIBRARY
              NAMES libpnetcdf.a pnetcdf
-             HINTS ${Netcdf_INCLUDE_DIR}/../lib
+             HINTS ${PNETCDF_DIR}/lib
              NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
 find_path(Netcdf_NC_CONFIG_BIN
@@ -48,6 +48,7 @@ else()
   set(HAS_PNETCDF "yes")
   MESSAGE("NETCDF built with Pnetcdf")
   set(Netcdf_LIBRARIES ${NetcdfF_LIBRARY} ${Netcdf_LIBRARY} ${Pnetcdf_LIBRARY})
+  set(Netcdf_INCLUDE_DIR ${Netcdf_INCLUDE_DIR} ${PNETCDF_DIR}/include)
 endif()
 
 IF (NOT ${Netcdf_NC_CONFIG_BIN} STREQUAL Netcdf_NC_CONFIG_BIN-NOTFOUND)
