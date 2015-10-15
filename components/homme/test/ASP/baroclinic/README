@@ -1,0 +1,33 @@
+Jablonowski and Williamson Baroclinic Instability Test
+
+This test is the same as the baroclinic instability test in
+homme/test/jw_baroclnic except that is uses the actual test code
+from Jablonowski and advects 4 tracers.
+
+It is a good test of advection schemes in HOMME
+
+See "run.job" for a sample run script.  That script was used with
+NE=30, NPTS=4, hyperviscoity 9.6e14 to create the sample plots included 
+here.  The plots are created with the Q.ncl script.
+Make sure the interpolation grid is at least 256x512.
+
+Tracers 1,2 and 3 at day 9 are plotted.  The 4'th tracer is Q=1 which
+tests if tracer advection is consistent with mass advection.
+
+
+PURE-LEAPFROG (tstep_type = 0 option in run.job)
+   tadv1.out    (stdout)
+   q1-tadv1.png
+   q2-tadv1.png
+   q3-tadv1.png
+
+
+FORWARD-IN_TIME (CAM-style, tstep_type=1 option in run.job)
+   sub4.out    (stdout)
+   q1-sub4.png
+   q2-sub4.png
+   q3-sub4.png
+
+
+
+
