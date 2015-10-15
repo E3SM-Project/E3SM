@@ -107,7 +107,6 @@ set (CTEST_BUILD_NAME "${osname}-${osrel}-${cpu}-${compid}")
 
 ## -- SRC Dir (where this script exists)
 set (CTEST_SOURCE_DIRECTORY   "${CTEST_SCRIPT_DIRECTORY}")
-message (" -- CTest Script Dir = ${CTEST_SCRIPT_DIRECTORY}")
 
 ## -- BIN Dir 
 set (CTEST_BINARY_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/build-${CTEST_BUILD_NAME}-${CTEST_BUILD_GROUP}")
@@ -115,6 +114,7 @@ set (CTEST_BINARY_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/build-${CTEST_BUILD_NAME}
 ## -- Add the CTest script directory to the module path
 set (CTEST_EXTRA_SCRIPT_PATH "${CTEST_SOURCE_DIRECTORY}/ctest")
 list (APPEND CMAKE_MODULE_PATH ${CTEST_EXTRA_SCRIPT_PATH})
+message (" -- CTest Source Dir = ${CTEST_SOURCE_DIRECTORY}")
 
 # -----------------------------------------------------------  
 # -- Store Build-Specific Info (environment variables)
