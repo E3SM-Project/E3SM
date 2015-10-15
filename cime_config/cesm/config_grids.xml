@@ -217,14 +217,6 @@
       <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%ww3a</lname>
     </grid>
 
-
-
-    <grid>
-      <sname>1.9x2.5_gx1v6</sname>
-      <alias>f19_g16</alias>
-      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</lname>
-    </grid>
-
     <grid>
       <sname>4x5_gx3v7</sname>
       <alias>f45_g37</alias>
