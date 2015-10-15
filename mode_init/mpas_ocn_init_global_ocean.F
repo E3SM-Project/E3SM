@@ -1070,11 +1070,12 @@ print *, 'config_alter_ICs_for_pbcs',config_alter_ICs_for_pbcs,config_pbc_altera
        real (kind=RKIND) :: currentLat, currentLon, counter
        real (kind=RKIND) :: minDist, dist
        real (kind=RKIND) :: x, x1, x2, y, y1, y2, coef, coef11, coef12, coef21, coef22
+       real (kind=RKIND) :: zMidPBC
        integer :: iLat, iLon, iSmooth, j, coc
        integer :: latSearch, lonSearch
-       integer :: iCell, k
+       integer :: iCell, k, km1
        integer :: xInd1, xInd2, yInd1, yInd2
-       integer, pointer :: idxSalinity, idxTemperature, nCells, nCellsSolve, idxTracer1
+       integer, pointer :: idxSalinity, idxTemperature, nCells, nVertLevels, nCellsSolve, idxTracer1
 
        type (field2DReal), pointer :: smoothedTemperatureField, smoothedSalinityField
        type (field3DReal), pointer :: activeTracersField
@@ -1092,6 +1093,15 @@ print *, 'config_alter_ICs_for_pbcs',config_alter_ICs_for_pbcs,config_pbc_altera
        integer, pointer ::  config_global_ocean_smooth_TS_iterations
        real (kind=RKIND), pointer :: config_global_ocean_piston_velocity
        real (kind=RKIND), pointer :: config_global_ocean_interior_restore_rate
+
+       ! These variables needed to interpolate tracers for partial bottom cells.
+       ! Might remove once we interpolate to an arbitrary vertical grid.
+       logical, pointer :: config_alter_ICs_for_pbcs
+       character (len=StrKIND), pointer :: config_pbc_alteration_type
+       type (mpas_pool_iterator_type) :: groupItr
+       real (kind=RKIND), dimension(:), pointer :: bottomDepth, refBottomDepth
+       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
+       real (kind=RKIND), dimension(:), allocatable :: zMidZLevel
 
        iErr = 0
 
@@ -1343,6 +1353,62 @@ print *, 'config_alter_ICs_for_pbcs',config_alter_ICs_for_pbcs,config_pbc_altera
           call mpas_deallocate_scratch_field(smoothedTemperatureField, .false.)
           call mpas_deallocate_scratch_field(smoothedSalinityField, .false.)
        endif
+
+       ! Interpolate tracers for partial bottom cells.
+       ! This can be removed once we interpolate to an arbitrary vertical grid.
+       call mpas_pool_get_config(domain % configs, 'config_alter_ICs_for_pbcs', config_alter_ICs_for_pbcs)
+       call mpas_pool_get_config(domain % configs, 'config_pbc_alteration_type', config_pbc_alteration_type)
+       if (config_alter_ICs_for_pbcs.and.config_pbc_alteration_type .eq. 'partial_cell') then
+
+          block_ptr => domain % blocklist
+          do while(associated(block_ptr))
+             call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+             call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+             call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+
+             call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+             call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+             call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+             call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+             call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+
+             call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
+
+             allocate(zMidZLevel(nVertLevels))
+             zMidZLevel(1) = - 0.5*(refBottomDepth(1)) ! could add SSH here
+             do k = 2, nVertLevels
+                zMidZLevel(k) = - 0.5*(refBottomDepth(k) + refBottomDepth(k-1))
+             end do
+
+             call mpas_pool_begin_iteration(tracersPool)
+             do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
+                if ( groupItr % memberType == MPAS_POOL_FIELD ) then
+                   call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroup, 1)
+
+
+                   if ( associated(tracersGroup) ) then
+                      do iCell = 1, nCells
+                         ! Linearly interpolate the initial tracers for new location of bottom cell for PBCs
+                         k = maxLevelCell(iCell)
+                         if (k>1) then
+                            zMidPBC = -0.5_RKIND * (bottomDepth(iCell) + refBottomDepth(k-1))
+                            km1 = max(k-1,1)
+                            tracersGroup(:, k, iCell) = tracersGroup(:, k, iCell) &
+                                 + (tracersGroup(:, km1, iCell) - tracersGroup(:, k, iCell)) &
+                                 /(zMidZLevel(km1) - zMidZLevel(k) + 1.0e-16_RKIND) &
+                                 *(zMidPBC - zMidZLevel(k))
+                         endif
+                      end do
+                   end if
+                end if
+             end do
+
+             deallocate(zMidZLevel)
+             block_ptr => block_ptr % next
+          end do
+       endif
+       ! end: Interpolate tracers for partial bottom cells.
 
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
