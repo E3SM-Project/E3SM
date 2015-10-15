@@ -287,41 +287,32 @@ contains
             err_found = .true.
             err_index = c
          end if
-         !if(c==15695)then
-         !  print*,'-----------',get_nstep()
-         !  print*,'abgn',nitrogenstate_vars%totabgn_col(c)
-         !  print*,'blgn',nitrogenstate_vars%totblgn_col(c)
-         !endif
-!         if(c==2603 .and. get_nstep()==890)then
-!           err_index=c
-!           err_found = .true.
-!         endif
       end do ! end of columns loop
 
       if (err_found) then
          c = err_index
          write(iulog,*)'column nbalance error = ', col_errnb(c), c, get_nstep()
-         write(iulog,*)'Latdeg,Londeg=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
-         write(iulog,*)'begnb       = ',col_begnb(c)
-         write(iulog,*)'endnb       = ',col_endnb(c)
-         write(iulog,*)'delta store = ',col_endnb(c)-col_begnb(c)
-         write(iulog,*)'input mass  = ',col_ninputs(c)*dt
-         write(iulog,*)'output mass = ',col_noutputs(c)*dt
-         write(iulog,*)'net flux    = ',(col_ninputs(c)-col_noutputs(c))*dt
-         write(iulog,*)'denit=',denit(c)*dt
-         write(iulog,*)'n2onit=',f_n2o_nit(c)*dt
-         write(iulog,*)'no3 leach=', smin_no3_leached(c)*dt 
-         write(iulog,*)'no3 runof=', smin_no3_runoff(c)*dt
-         write(iulog,*)'ndep=',ndep_to_sminn(c)*dt
-         write(iulog,*)'nfix=', nfix_to_sminn(c)*dt
-         write(iulog,*)'nsup=',supplement_to_sminn(c)*dt
+         write(iulog,*)'Latdeg,Londeg         = ',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
+         write(iulog,*)'begnb                 = ',col_begnb(c)
+         write(iulog,*)'endnb                 = ',col_endnb(c)
+         write(iulog,*)'delta store           = ',col_endnb(c)-col_begnb(c)
+         write(iulog,*)'input mass            = ',col_ninputs(c)*dt
+         write(iulog,*)'output mass           = ',col_noutputs(c)*dt
+         write(iulog,*)'net flux              = ',(col_ninputs(c)-col_noutputs(c))*dt
+         write(iulog,*)'denit                 = ',denit(c)*dt
+         write(iulog,*)'n2onit                = ',f_n2o_nit(c)*dt
+         write(iulog,*)'no3 leach             = ', smin_no3_leached(c)*dt 
+         write(iulog,*)'no3 runof             = ', smin_no3_runoff(c)*dt
+         write(iulog,*)'ndep                  = ',ndep_to_sminn(c)*dt
+         write(iulog,*)'nfix                  = ', nfix_to_sminn(c)*dt
+         write(iulog,*)'nsup                  = ',supplement_to_sminn(c)*dt
          if(crop_prog) then
-           write(iulog,*)'fertm=',fert_to_sminn(c)*dt
-           write(iulog,*)'soyfx=',soyfixn_to_sminn(c)*dt
+            write(iulog,*)'fertm                 = ',fert_to_sminn(c)*dt
+            write(iulog,*)'soyfx                 = ',soyfixn_to_sminn(c)*dt
          endif
-         write(iulog,*)'fire', col_fire_nloss(c)*dt
-         write(iulog,*)'dwt',  dwt_nloss(c)*dt 
-         write(iulog,*)'prod', product_nloss(c)*dt
+         write(iulog,*)'fire                  = ',col_fire_nloss(c)*dt
+         write(iulog,*)'dwt                   = ',dwt_nloss(c)*dt 
+         write(iulog,*)'prod                  = ',product_nloss(c)*dt
          call endrun(msg=errMsg(__FILE__, __LINE__))
       end if
 

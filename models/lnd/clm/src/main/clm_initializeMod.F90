@@ -701,15 +701,16 @@ contains
     call readPrivateParameters()
     
     if (use_cn) then
-       if(.not. is_active_betr_bgc)then
-         if (use_century_decomp) then
-          ! Note that init_decompcascade_bgc needs cnstate_vars to be initialized
-            call init_decompcascade_bgc(bounds_proc, cnstate_vars, soilstate_vars)
-         else 
-          ! Note that init_decompcascade_cn needs cnstate_vars to be initialized
-            call init_decompcascade_cn(bounds_proc, cnstate_vars)
-         end if
+       if (.not. is_active_betr_bgc)then
+          if (use_century_decomp) then
+           ! Note that init_decompcascade_bgc needs cnstate_vars to be initialized
+             call init_decompcascade_bgc(bounds_proc, cnstate_vars, soilstate_vars)
+          else 
+           ! Note that init_decompcascade_cn needs cnstate_vars to be initialized
+             call init_decompcascade_cn(bounds_proc, cnstate_vars)
+          end if
        endif
+
        ! Note - always initialize the memory for the c13_carbonstate_vars and
        ! c14_carbonstate_vars data structure so that they can be used in 
        ! associate statements (nag compiler complains otherwise)
@@ -807,9 +808,9 @@ contains
 
     if (use_cn) then
        if(is_active_betr_bgc)then
-         call CNEcosystemDynBetrInit(bounds_proc)         
+          call CNEcosystemDynBetrInit(bounds_proc)         
        else
-         call CNEcosystemDynInit(bounds_proc)
+          call CNEcosystemDynInit(bounds_proc)
        endif
     else
        call SatellitePhenologyInit(bounds_proc)
@@ -859,8 +860,8 @@ contains
                carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
                ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
                nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-               soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-               waterflux_vars, waterstate_vars, EDbio_vars,                     &    
+               soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
+               waterflux_vars, waterstate_vars, EDbio_vars,                                   &    
                betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars )
        end if
 
@@ -873,14 +874,15 @@ contains
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
             ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-            waterflux_vars, waterstate_vars, EDbio_vars,                     &
+            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
+            waterflux_vars, waterstate_vars, EDbio_vars,                                   &
             betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
     end if
        
-    if(use_betr)then
-      call bgc_reaction%init_betr_alm_bgc_coupler(bounds_proc, carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
+    if (use_betr)then
+       call bgc_reaction%init_betr_alm_bgc_coupler(bounds_proc, &
+            carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
     endif
     ! ------------------------------------------------------------------------
     ! Initialize filters and weights
@@ -916,8 +918,8 @@ contains
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
             ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-            waterflux_vars, waterstate_vars, EDbio_vars,                     &
+            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
+            waterflux_vars, waterstate_vars, EDbio_vars,                                   &
            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
        ! Interpolate finidat onto new template file
@@ -930,8 +932,8 @@ contains
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
             ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-            waterflux_vars, waterstate_vars, EDbio_vars,  &
+            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
+            waterflux_vars, waterstate_vars, EDbio_vars,                                   &
             betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
        ! Reset finidat to now be finidat_interp_dest 

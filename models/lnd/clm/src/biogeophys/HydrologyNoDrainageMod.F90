@@ -194,7 +194,7 @@ contains
            energyflux_vars, soilhydrology_vars, soilstate_vars, temperature_vars, &
            waterflux_vars, waterstate_vars)
 
-      if(use_betr)then
+      if (use_betr) then
         call pre_diagnose_soilcol_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
           waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc, 1:nlevsoi))
       endif
@@ -203,10 +203,10 @@ contains
             soilhydrology_vars, soilstate_vars, waterflux_vars, waterstate_vars, temperature_vars, &
             soil_water_retention_curve)
             
-      if(use_betr)then
+      if (use_betr) then
         call diagnose_advect_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-          waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc, 1:nlevsoi), &
-          soilhydrology_vars%qcharge_col(bounds%begc:bounds%endc), waterflux_vars)                
+             waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc, 1:nlevsoi),                              &
+             soilhydrology_vars%qcharge_col(bounds%begc:bounds%endc), waterflux_vars)                
       endif
         
       call calc_smp_l(bounds, 1, nlevgrnd, num_hydrologyc, filter_hydrologyc, &
@@ -222,10 +222,11 @@ contains
       call WaterTable(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
            soilhydrology_vars, soilstate_vars, temperature_vars, waterstate_vars, waterflux_vars) 
 
-      if(use_betr)then
-        !apply dew and sublimation fluxes, this is a temporary work aroud for tracking water isotope
-        !Jinyun Tang, Feb 4, 2015
-        call calc_dew_sub_flux(bounds, num_hydrologyc, filter_hydrologyc, waterstate_vars, waterflux_vars, betrtracer_vars, tracerflux_vars, tracerstate_vars)      
+      if (use_betr) then
+         !apply dew and sublimation fluxes, this is a temporary work aroud for tracking water isotope
+         !Jinyun Tang, Feb 4, 2015
+         call calc_dew_sub_flux(bounds, num_hydrologyc, filter_hydrologyc, &
+              waterstate_vars, waterflux_vars, betrtracer_vars, tracerflux_vars, tracerstate_vars)      
       endif           
       ! Natural compaction and metamorphosis.
       call SnowCompaction(bounds, num_snowc, filter_snowc, &
@@ -413,22 +414,6 @@ contains
             end do
          end do
       end if
-
-      ! Update smp_l for history and for ch4Mod.
-      ! ZMS: Note, this form, which seems to be the same as used in SoilWater, DOES NOT distinguish between
-      ! ice and water volume, in contrast to the soilpsi calculation above. It won't be used in ch4Mod if
-      ! t_soisno <= tfrz, though.
-      !do j = 1, nlevgrnd
-      !   do fc = 1, num_hydrologyc
-      !      c = filter_hydrologyc(fc)
-
-      !      s_node = max(h2osoi_vol(c,j)/watsat(c,j), 0.01_r8)
-      !      s_node = min(1.0_r8, s_node)
-
-      !      smp_l(c,j) = -sucsat(c,j)*s_node**(-bsw(c,j))
-      !      smp_l(c,j) = max(smpmin(c), smp_l(c,j))
-      !   end do
-      !end do
 
       if (use_cn) then
          ! Available soil water up to a depth of 0.05 m.

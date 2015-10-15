@@ -54,59 +54,63 @@ contains
 
       ! set time steps
       dt = real( get_step_size(), r8 )
-      if( .not. is_active_betr_bgc )then
-        ! column level carbon fluxes from fire
-        do j = 1, nlevdecomp
-          do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            ! pft-level wood to column-level CWD (uncombusted wood)
-            cs%decomp_cpools_vr_col(c,j,i_cwd) = cs%decomp_cpools_vr_col(c,j,i_cwd) + cf%fire_mortality_c_to_cwdc_col(c,j) * dt
 
-            ! pft-level wood to column-level litter (uncombusted wood)
-            cs%decomp_cpools_vr_col(c,j,i_met_lit) = cs%decomp_cpools_vr_col(c,j,i_met_lit) + cf%m_c_to_litr_met_fire_col(c,j)* dt
-            cs%decomp_cpools_vr_col(c,j,i_cel_lit) = cs%decomp_cpools_vr_col(c,j,i_cel_lit) + cf%m_c_to_litr_cel_fire_col(c,j)* dt
-            cs%decomp_cpools_vr_col(c,j,i_lig_lit) = cs%decomp_cpools_vr_col(c,j,i_lig_lit) + cf%m_c_to_litr_lig_fire_col(c,j)* dt
-          end do
-        end do
-
-        ! litter and CWD losses to fire
-        do l = 1, ndecomp_pools
-          do j = 1, nlevdecomp
+      if ( .not.is_active_betr_bgc )then
+         ! column level carbon fluxes from fire
+         do j = 1, nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               cs%decomp_cpools_vr_col(c,j,l) = cs%decomp_cpools_vr_col(c,j,l) - cf%m_decomp_cpools_to_fire_vr_col(c,j,l) * dt
+               ! pft-level wood to column-level CWD (uncombusted wood)
+               cs%decomp_cpools_vr_col(c,j,i_cwd) = cs%decomp_cpools_vr_col(c,j,i_cwd) + cf%fire_mortality_c_to_cwdc_col(c,j) * dt
+
+               ! pft-level wood to column-level litter (uncombusted wood)
+               cs%decomp_cpools_vr_col(c,j,i_met_lit) = cs%decomp_cpools_vr_col(c,j,i_met_lit) + cf%m_c_to_litr_met_fire_col(c,j)* dt
+               cs%decomp_cpools_vr_col(c,j,i_cel_lit) = cs%decomp_cpools_vr_col(c,j,i_cel_lit) + cf%m_c_to_litr_cel_fire_col(c,j)* dt
+               cs%decomp_cpools_vr_col(c,j,i_lig_lit) = cs%decomp_cpools_vr_col(c,j,i_lig_lit) + cf%m_c_to_litr_lig_fire_col(c,j)* dt
             end do
-          end do
-        end do
+         end do
+
+         ! litter and CWD losses to fire
+         do l = 1, ndecomp_pools
+            do j = 1, nlevdecomp
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  cs%decomp_cpools_vr_col(c,j,l) = cs%decomp_cpools_vr_col(c,j,l) - cf%m_decomp_cpools_to_fire_vr_col(c,j,l) * dt
+               end do
+            end do
+         end do
+
       else
-      ! column level carbon fluxes from fire
-        do j = 1, nlevdecomp
-          do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            ! pft-level wood to column-level CWD (uncombusted wood)
-            cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) = cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) + cf%fire_mortality_c_to_cwdc_col(c,j) * dt
 
-            ! pft-level wood to column-level litter (uncombusted wood)
-            cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) = cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) + cf%m_c_to_litr_met_fire_col(c,j)* dt
-            cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) = cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) + cf%m_c_to_litr_cel_fire_col(c,j)* dt
-            cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) = cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) + cf%m_c_to_litr_lig_fire_col(c,j)* dt
-          end do
-        end do
-
-        ! litter and CWD losses to fire
-        do l = 1, ndecomp_pools
-          do j = 1, nlevdecomp
+         ! column level carbon fluxes from fire
+         do j = 1, nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               cf%bgc_cpool_ext_loss_vr_col(c,j,l) = cf%bgc_cpool_ext_loss_vr_col(c,j,l) + cf%m_decomp_cpools_to_fire_vr_col(c,j,l) * dt
+               ! pft-level wood to column-level CWD (uncombusted wood)
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) = cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) + cf%fire_mortality_c_to_cwdc_col(c,j) * dt
+               
+               ! pft-level wood to column-level litter (uncombusted wood)
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) = cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) + cf%m_c_to_litr_met_fire_col(c,j)* dt
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) = cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) + cf%m_c_to_litr_cel_fire_col(c,j)* dt
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) = cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) + cf%m_c_to_litr_lig_fire_col(c,j)* dt
             end do
-          end do
-        end do      
+         end do
+         
+         ! litter and CWD losses to fire
+         do l = 1, ndecomp_pools
+            do j = 1, nlevdecomp
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  cf%bgc_cpool_ext_loss_vr_col(c,j,l) = cf%bgc_cpool_ext_loss_vr_col(c,j,l) + cf%m_decomp_cpools_to_fire_vr_col(c,j,l) * dt
+               end do
+            end do
+         end do
       endif
+
       ! patch loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)
-
+         
          ! pft-level carbon fluxes from fire
          ! displayed pools
          cs%leafc_patch(p)              = cs%leafc_patch(p)               - cf%m_leafc_to_fire_patch(p)            * dt
@@ -163,9 +167,3 @@ contains
   end subroutine CStateUpdate3
 
 end module CNCStateUpdate3Mod
-
-
-
-           
-
-   

@@ -15,7 +15,8 @@ module ChemStateType
   ! column chemical state variables structure
   !----------------------------------------------------
   type, public :: chemstate_type
-    real(r8), pointer :: soil_pH(:,:)    ! soil pH (-nlevsno+1:nlevgrnd)
+
+     real(r8), pointer :: soil_pH(:,:)    ! soil pH (-nlevsno+1:nlevgrnd)
     
   contains
     procedure, public  :: Init         
@@ -27,7 +28,7 @@ module ChemStateType
   !------------------------------------------------------------------------
   subroutine Init(this, bounds)
 
-    class(chemstate_type) :: this
+    class(chemstate_type)         :: this
     type(bounds_type), intent(in) :: bounds  
 
     call this%InitAllocate(bounds)
@@ -40,10 +41,12 @@ module ChemStateType
     ! !DESCRIPTION:
     ! Initialize module data structure
     !
-    ! !ARGUMENTS:
+    ! !USES:
     use clm_varpar            , only : nlevsoi
-    class(chemstate_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    !
+    ! !ARGUMENTS:
+    class(chemstate_type)            :: this
+    type(bounds_type), intent(in)    :: bounds  
     !
     ! !LOCAL VARIABLES:
     integer :: begp, endp
@@ -51,8 +54,10 @@ module ChemStateType
     integer :: begg, endg
     integer :: lbj,  ubj
     !------------------------------------------------------------------------
-    begc = bounds%begc; endc= bounds%endc
-    lbj  = 1; ubj = nlevsoi
+    begc = bounds%begc;
+    endc = bounds%endc
+    lbj  = 1;
+    ubj  = nlevsoi
     
     allocate(this%soil_pH(begc:endc, lbj:ubj))
     

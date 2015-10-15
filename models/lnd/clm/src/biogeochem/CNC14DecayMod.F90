@@ -101,22 +101,23 @@ contains
          seedc(c) = seedc(c) *  (1._r8 - decay_const * dt)
       end do ! end of columns loop
 
-      if( is_active_betr_bgc)then
-      do l = 1, ndecomp_pools
-         if ( spinup_state .eq. 1) then
-            ! speed up radioactive decay by the same factor as decomposition so tat SOM ages prematurely in all respects
-            spinup_term = spinup_factor(l) 
-         else
-            spinup_term = 1.
-         endif
-         do j = 1, nlevdecomp
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               decomp_cpools_vr(c,j,l) = decomp_cpools_vr(c,j,l) * (1._r8 - decay_const * spinup_term * dt)
+      if (is_active_betr_bgc) then
+         do l = 1, ndecomp_pools
+            if ( spinup_state .eq. 1) then
+               ! speed up radioactive decay by the same factor as decomposition so tat SOM ages prematurely in all respects
+               spinup_term = spinup_factor(l) 
+            else
+               spinup_term = 1.
+            endif
+            do j = 1, nlevdecomp
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  decomp_cpools_vr(c,j,l) = decomp_cpools_vr(c,j,l) * (1._r8 - decay_const * spinup_term * dt)
+               end do
             end do
-         end do
-      end do ! end of columns loop
+         end do ! end of columns loop
       endif
+
       ! patch loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)
