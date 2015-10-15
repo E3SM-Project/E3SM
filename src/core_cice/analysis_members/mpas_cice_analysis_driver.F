@@ -30,6 +30,7 @@ module cice_analysis_driver
    use cice_regional_statistics
    use cice_ridging_diagnostics
    use cice_conservation_check
+   use cice_geographical_vectors
 !   use cice_TEMP_LATE
 
    implicit none
@@ -138,6 +139,7 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'regionalStatistics', 1)
       call mpas_pool_add_config(analysisMemberList, 'ridgingDiagnostics', 1)
       call mpas_pool_add_config(analysisMemberList, 'conservationCheck', 1)
+      call mpas_pool_add_config(analysisMemberList, 'geographicalVectors', 1)
    !   write(6,*) ' debug:  mpas_pool_add_config'
    !  call mpas_pool_add_config(analysisMemberList, 'surfaceAreaWeightedAverages', 1)
    !  call mpas_pool_add_config(analysisMemberList, 'TEMPLATE', 1)
@@ -823,6 +825,8 @@ contains
          call cice_init_ridging_diagnostics(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
          call cice_init_conservation_check(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
+         call cice_init_geographical_vectors(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_init_surface_area_weighted_averages(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -866,6 +870,8 @@ contains
          call cice_precompute_ridging_diagnostics(domain, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
          call cice_precompute_conservation_check(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
+         call cice_precompute_geographical_vectors(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_precompute_surface_area_weighted_averages(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -909,6 +915,8 @@ contains
          call cice_compute_ridging_diagnostics(domain, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
          call cice_compute_conservation_check(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
+         call cice_compute_geographical_vectors(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_compute_surface_area_weighted_averages(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -951,6 +959,8 @@ contains
          call cice_restart_ridging_diagnostics(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
          call cice_restart_conservation_check(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
+         call cice_restart_geographical_vectors(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_restart_surface_area_weighted_averages(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -993,6 +1003,8 @@ contains
          call cice_finalize_ridging_diagnostics(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
          call cice_finalize_conservation_check(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
+         call cice_finalize_geographical_vectors(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_finalize_surface_area_weighted_averages(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then

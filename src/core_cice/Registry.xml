@@ -706,21 +706,6 @@
 		<var name="basisGradientV"                    type="real"     dimensions="maxEdges maxEdges nCells Time" name_in_code="basisGradientV"/>
 	</var_struct>
 
-	<!-- geographical output -->
-	<var_struct name="velocity_geographical" time_levs="1">
-		<var name="uVelocityGeo"                      type="real"     dimensions="nVertices Time"                name_in_code="uVelocityGeo"/>
-		<var name="vVelocityGeo"                      type="real"     dimensions="nVertices Time"                name_in_code="vVelocityGeo"/>
-		<var name="stressDivergenceUGeo"              type="real"     dimensions="nVertices Time"                name_in_code="stressDivergenceUGeo"/>
-		<var name="stressDivergenceVGeo"              type="real"     dimensions="nVertices Time"                name_in_code="stressDivergenceVGeo"/>
-		<var name="airStressVertexUGeo"               type="real"     dimensions="nVertices Time"                name_in_code="airStressVertexUGeo"/>
-		<var name="airStressVertexVGeo"               type="real"     dimensions="nVertices Time"                name_in_code="airStressVertexVGeo"/>
-		<var name="oceanStressUGeo"                   type="real"     dimensions="nVertices Time"                name_in_code="oceanStressUGeo"/>
-		<var name="oceanStressVGeo"                   type="real"     dimensions="nVertices Time"                name_in_code="oceanStressVGeo"/>
-		<var name="surfaceTiltForceUGeo"              type="real"     dimensions="nVertices Time"                name_in_code="surfaceTiltForceUGeo"/>
-		<var name="surfaceTiltForceVGeo"              type="real"     dimensions="nVertices Time"                name_in_code="surfaceTiltForceVGeo"/>
-		<var name="uOceanVelocityVertexGeo"           type="real"     dimensions="nVertices Time"                name_in_code="uOceanVelocityVertexGeo"/>
-		<var name="vOceanVelocityVertexGeo"           type="real"     dimensions="nVertices Time"                name_in_code="vOceanVelocityVertexGeo"/>
-	</var_struct>
 <!--
 	<var_struct name="mesh_test" time_levs="1">
 		<var name="vectorCellU"                          type="real"     dimensions="nCells Time"  name_in_code="vectorCellU"/>
