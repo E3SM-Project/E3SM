@@ -13,11 +13,11 @@
       </test>
     </grid>
   </compset>
-  <compset name="BC4L40SPR">
+  <compset name="B1850">
     <grid name="f19_g16">
       <test name="ERR_N2">
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
-        <machine compiler="intel" testtype="prebeta">yellowstone</machine>
+        <machine compiler="intel" testtype="prebeta">eos</machine>
       </test>
     </grid>
     <grid name="f45_g37">
@@ -34,7 +34,7 @@
       </test>
     </grid>
   </compset>
-  <compset name="B1850C5L45BGCRBPRP">
+  <compset name="B1850RW">
     <grid name="f19_g16">
       <test name="ERS_Ld11">
         <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
@@ -55,7 +55,7 @@
       </test>
     </grid>
   </compset>
-  <compset name="B1850C5L40CNR">
+  <compset name="B1850W">
     <grid name="f09_g16">
       <test name="ERS">
         <machine compiler="pgi" testtype="prealpha" testmods="allactive/default">bluewaters</machine>
@@ -64,7 +64,7 @@
       </test>
     </grid>
   </compset>
-  <compset name="B1850C5L45BGCR">
+  <compset name="B1850R">
     <grid name="f19_g16">
       <test name="CME_D_Ld5">
         <machine compiler="intel" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
@@ -134,7 +134,7 @@
       </test>
     </grid>
   </compset>
-  <compset name="B1850C4L40CNR">
+  <compset name="B1850R">
     <grid name="f09_g16">
       <test name="NOC">
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>

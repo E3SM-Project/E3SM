@@ -137,6 +137,7 @@ sub getGridLongname
     my $compset_match;
 
     my $grids_file = $config->get('GRIDS_SPEC_FILE');
+    my $compset_longname = $config->get('COMPSET');
 
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($grids_file);
     my @nodes_alias = $xml->findnodes(".//grid[alias=\"$grid_input\"]");
@@ -144,12 +145,35 @@ sub getGridLongname
     my @nodes_lname = $xml->findnodes(".//grid[lname=\"$grid_input\"]");
 
     my $grid_node;
-    if (@nodes_alias) {
-	$grid_node = $nodes_alias[0];
-    } elsif (@nodes_lname) {
+    if (@nodes_lname) {
+	if($#nodes_lname > 0){
+	    $logger->logdie("ERROR: more than one grid longname match in file $grids_file");
+	}
 	$grid_node = $nodes_lname[0];
+    }elsif (@nodes_alias) {
+	foreach my $node (@nodes_alias){
+	    if($node->hasAttributes()){
+		my $attr = $node->getAttribute('compset');		
+		if($compset_longname =~ m/$attr/){
+		    $grid_node = $node;
+		}
+	    }elsif(! defined $grid_node){    
+#           This is the default value, it is overwritten by any compset match value
+		$grid_node = $node;
+	    }
+	}
     } elsif (@nodes_sname) {
-	$grid_node = $nodes_sname[0];
+	foreach my $node (@nodes_sname){
+	    if($node->hasAttributes()){
+		my $attr = $node->getAttribute('compset');		
+		if($compset_longname =~ m/$attr/){
+		    $grid_node = $node;
+		}
+	    }elsif(! defined $grid_node){    
+#           This is the default value, it is overwritten by any compset match value
+		$grid_node = $node;
+	    }
+	}
     } else { 
 	die " ERROR: no supported grid match for target grid $grid_input ";
     }
@@ -180,13 +204,14 @@ sub getGridLongname
 	die "ERROR ConfigCompsetGrid::checkGrid : no match found for $grid_longname \n";
     } 
     my $attr = $nodes[0]->getAttribute('compset');
+
     if (defined $attr) {
 	my $compset = $config->get('COMPSET');
 	if ($compset !~ m/$attr/) {
 	    die "ERROR ConfigCompsetGrid::getGridLongame $grid_longname is not supported for $compset \n";
 	}
     }
-
+    $logger->info("grid longname is : $grid_longname");
     return ($grid_longname);
 }
 

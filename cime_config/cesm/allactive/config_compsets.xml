@@ -50,6 +50,11 @@
   </compset>
 
   <compset>
+    <alias>B1850GW</alias>
+    <lname>1850_CAM55_CLM50%BGC-CROP_CICE_POP2_MOSART_CISM1_DWAV</lname>
+  </compset>
+
+  <compset>
     <alias>B1850W</alias>
     <lname>1850_CAM55_CLM50%BGC-CROP_CICE_POP2_MOSART_SGLC_DWAV</lname>
   </compset>
