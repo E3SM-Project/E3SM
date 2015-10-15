@@ -971,8 +971,8 @@ contains
   end subroutine init_betr_alm_bgc_coupler
 
   !-------------------------------------------------------------------------------
-
-
+  
+  
   subroutine one_box_century_bgc(ystate, dtime, time, nprimvars, nstvars, dydt)
     !
     ! !DESCRIPTION:
