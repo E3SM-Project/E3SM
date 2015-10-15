@@ -1649,7 +1649,8 @@ contains
 
     logical :: &
          abortFlag, &
-         getPhysicsTracers
+         setGetPhysicsTracers, &
+         setGetBGCTracers
 
     character(len=strKIND) :: &
          abortMessage
@@ -1739,7 +1740,8 @@ contains
 !nj-bgc+
        allocate(oceanBioConcentrationsUsed(ciceTracerObject % nBioTracers))
 
-       getPhysicsTracers = .true.
+       setGetPhysicsTracers = .true.
+       setGetBGCTracers     = config_use_column_biogeochemistry
 !nj-bgc-
        
        do iCell = 1, nCellsSolve
@@ -1758,7 +1760,7 @@ contains
 !nj-bgc-
 
           ! set the category tracer array
-          call set_cice_tracer_array_category(block, ciceTracerObject, iCell)
+          call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           abortFlag = .false.
 
@@ -1824,8 +1826,7 @@ contains
 
 !nj-bgc+
           ! get category tracer array
-          call get_cice_tracer_array_category(block, ciceTracerObject, iCell, getPhysicsTracers, &
-               config_use_column_biogeochemistry)
+          call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
 !nj-bgc-
 
           ! code abort
@@ -2028,7 +2029,8 @@ contains
          config_use_shortwave_bioabsorption, &
          config_use_brine, &
          config_use_modal_aerosols, &
-         config_use_zaerosols
+         config_use_zaerosols, &
+         config_use_column_biogeochemistry
 !nj-bgc-
 
     ! dimensions
@@ -2099,6 +2101,7 @@ contains
          snowBodyAerosol, &
          iceScatteringAerosol, &
          iceBodyAerosol, &
+         brineFraction, &
 !nj-bgc+
          ModalBCabsorptionParameter, &
          bioTracerShortwave
@@ -2106,8 +2109,8 @@ contains
     
     ! aerosols array
     real(kind=RKIND), dimension(:,:), allocatable :: &
-         aerosolsArray, &
-         ztracerArray
+         aerosolsArray!, &
+         !ztracerArray
 
     real(kind=RKIND), dimension(:), allocatable :: &
          brineheightfraction
@@ -2126,6 +2129,10 @@ contains
     integer :: &
          secondsIntoDay, &
          daysInYear
+
+    logical :: &
+         setGetPhysicsTracers, &
+         setGetBGCTracers
 
     ! CCSM coupled variables
     character(len=strKIND), parameter :: &
@@ -2149,6 +2156,7 @@ contains
    call MPAS_pool_get_config(domain % configs, "config_use_shortwave_bioabsorption", config_use_shortwave_bioabsorption)
    call MPAS_pool_get_config(domain % configs, "config_use_modal_aerosols",config_use_modal_aerosols)
    call MPAS_pool_get_config(domain % configs, "config_use_zaerosols",config_use_zaerosols)
+   call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry",config_use_column_biogeochemistry)
 
     block => domain % blocklist
     do while (associated(block))
@@ -2191,6 +2199,7 @@ contains
        call MPAS_pool_get_array(tracers, "snowBodyAerosol", snowBodyAerosol, 1)
        call MPAS_pool_get_array(tracers, "iceScatteringAerosol", iceScatteringAerosol, 1)
        call MPAS_pool_get_array(tracers, "iceBodyAerosol", iceBodyAerosol, 1)
+       call MPAS_pool_get_array(tracers, "brineFraction", brineFraction, 1)
 
        call MPAS_pool_get_array(atmos_coupling, "shortwaveVisibleDirectDown", shortwaveVisibleDirectDown)
        call MPAS_pool_get_array(atmos_coupling, "shortwaveVisibleDiffuseDown", shortwaveVisibleDiffuseDown)
@@ -2234,9 +2243,12 @@ contains
        ! aerosols array
        allocate(aerosolsArray(4*nAerosols,nCategories))
 !nj-bgc+
-       allocate(ztracerArray(ciceTracerObject % nTracers,nCategories))
+       !allocate(ztracerArray(ciceTracerObject % nTracers,nCategories))
        allocate(brineheightfraction(nCategories))
 !nj-bgc-
+
+       setGetPhysicsTracers = .true.
+       setGetBGCTracers     = config_use_column_biogeochemistry
 
        do iCell = 1, nCellsSolve
 
@@ -2253,16 +2265,19 @@ contains
 
              enddo ! iAerosol
 !nj-bgc+
-             do iTracer = 1, ciceTracerObject % nTracers
-                 ztracerArray(iTracer,iCategory) = ciceTracerObject% TracerArrayCategory(iTracer, iCategory)
-             enddo ! iTracer
-             if (config_use_brine) brineheightfraction(iCategory) = &
-               ciceTracerObject% TracerArrayCategory(ciceTracerObject  % index_brineFraction, iCategory)
+             !do iTracer = 1, ciceTracerObject % nTracers
+             !    ztracerArray(iTracer,iCategory) = ciceTracerObject% TracerArrayCategory(iTracer, iCategory)
+             !enddo ! iTracer
+             !if (config_use_brine) brineheightfraction(iCategory) = &
+             !  ciceTracerObject % tracerArrayCategory(ciceTracerObject  % index_brineFraction, iCategory)
 !nj-bgc-
           enddo ! iCategory   
 
           lonCellColumn = lonCell(iCell)
           if (lonCellColumn > pii) lonCellColumn = lonCellColumn - 2.0 * pii
+
+          ! set the category tracer array
+          call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           call colpkg_step_radiation(&
                config_dt, &
@@ -2285,7 +2300,8 @@ contains
                ciceTracerObject % index_verticalAerosolsConcShortwave(:), &
                verticalShortwaveGrid(:), &
                verticalGrid(:), &
-               brineheightfraction(:), &
+               !brineheightfraction(:), &
+               brineFraction(1,:,iCell), &
 !nj-bgc-
                iceAreaCategory(1,:,iCell), &
                iceVolumeCategory(1,:,iCell), &
@@ -2298,7 +2314,7 @@ contains
                aerosolsArray, &
 !nj-bgc+
                bioTracerShortwave(:,:,iCell), &
-               ciceTracerObject% TracerArrayCategory(:,:), &
+               ciceTracerObject % tracerArrayCategory(:,:), &
               ! ztracerArray(:,:), &
 !nj-bgc-
                latCell(iCell), & 
@@ -2346,9 +2362,12 @@ contains
 
        enddo ! iCell
 
+       ! set the category tracer array
+       call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
+
        ! aerosols array
        deallocate(aerosolsArray)
-       deallocate(ztracerArray)
+       !deallocate(ztracerArray)
        deallocate(brineheightfraction)
 
        block => block % next
@@ -2464,7 +2483,8 @@ contains
 
     logical :: &
          abortFlag, &
-         getPhysicsTracers
+         setGetPhysicsTracers, &
+         setGetBGCTracers
 
     character(len=strKIND) :: &
          abortMessage
@@ -2540,7 +2560,9 @@ contains
 
        ! newly formed ice
        allocate(newlyFormedIceLogical(nCategories))
-       getPhysicsTracers = .true.
+
+       setGetPhysicsTracers = .true.
+       setGetBGCTracers     = config_use_column_biogeochemistry
 
        do iCell = 1, nCellsSolve
 
@@ -2550,7 +2572,7 @@ contains
           enddo ! iCategory
 
           ! set the category tracer array
-          call set_cice_tracer_array_category(block, ciceTracerObject, iCell)
+          call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           abortFlag = .false.
 
@@ -2605,10 +2627,9 @@ contains
              newlyFormedIce(iCategory,iCell) = 0
              if (newlyFormedIceLogical(iCategory)) newlyFormedIce(iCategory,iCell) = 1
           enddo ! iCategory
-          ! get category tracer array
-          call get_cice_tracer_array_category(block, ciceTracerObject, iCell,getPhysicsTracers, &
-               config_use_column_biogeochemistry)
 
+          ! get category tracer array
+          call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           ! code abort
           if (abortFlag) then
@@ -2739,10 +2760,11 @@ contains
          bioDiffusivity, &
          bioPermeability, &
          bioShortwaveFlux, &
-         iceAreaCategory, &   ! tracers  (1,ncat,ncell)
-         iceVolumeCategory, & ! tracers  (1,ncat,ncell)
-         snowVolumeCategory   ! tracers  (1,ncat,ncell)
-         
+         iceAreaCategory, &    ! tracers  (1,ncat,ncell)
+         iceVolumeCategory, &  ! tracers  (1,ncat,ncell)
+         snowVolumeCategory, & ! tracers  (1,ncat,ncell)
+         skeletalAlgaeConc
+
     integer, dimension(:,:),pointer :: &
          newlyFormedIce
  
@@ -2764,7 +2786,8 @@ contains
     logical :: &
          abortFlag, &
          rayleighCriteria, &
-         getPhysicsTracers
+         setGetPhysicsTracers, &
+         setGetBGCTracers
 
     character(len=strKIND) :: &
          abortMessage
@@ -2861,12 +2884,14 @@ contains
        call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
        call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
        call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
+       call MPAS_pool_get_array(tracers, "skeletalAlgaeConc", skeletalAlgaeConc, 1)
 
        ! newly formed ice
        allocate(newlyFormedIceLogical(nCategories))
        allocate(oceanBioConcentrationsUsed(ciceTracerObject % nBioTracers))
 
-       getPhysicsTracers = .false.
+       setGetPhysicsTracers = .false.
+       setGetBGCTracers     = config_use_column_biogeochemistry
 
        do iCell = 1, nCellsSolve
 
@@ -2883,6 +2908,8 @@ contains
           enddo ! iBioTracers           
 
           abortFlag = .false.
+
+          call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           call colpkg_biogeochemistry( &
                config_dt, &
@@ -2964,6 +2991,8 @@ contains
              call MPAS_dmpar_global_abort(trim(abortMessage))
           endif
 
+          call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
+
           ! update 
           totalSkeletalAlgae(iCell) = 0.0_RKIND
 
@@ -2971,18 +3000,21 @@ contains
              if (config_use_skeletal_biochemistry .and. iceAreaCategory(1,iCategory,iCell) > puny) then
                do iAlgae = 1, nAlgae
                    totalSkeletalAlgae(iCell) = totalSkeletalAlgae(iCell) + &
-                      ciceTracerObject % tracerArrayCategory(ciceTracerObject % index_algaeConc(iAlgae), iCategory) *&
+                      !ciceTracerObject % tracerArrayCategory(ciceTracerObject % index_algaeConc(iAlgae), iCategory) *&
+                      skeletalAlgaeConc(iAlgae,iCategory,iCell) * &
                       iceAreaCategory(1,iCategory,iCell)
                enddo
-             endif
+            endif
+          enddo ! iCategory
+
+          do iCategory = 1, nCategories
              newlyFormedIce(iCategory,iCell) = 0
              if (newlyFormedIceLogical(iCategory)) newlyFormedIce(iCategory,iCell) = 1
           enddo ! iCategory
 
           if (.not. rayleighCriteria) rayleighCriteriaReal(iCell) =   0.0_RKIND
 
-          call get_cice_tracer_array_category(block, ciceTracerObject, iCell, getPhysicsTracers, &
-               config_use_column_biogeochemistry)
+          !call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
        enddo ! iCell
 
@@ -3338,7 +3370,8 @@ contains
          nCategories
 
     logical :: &
-         getPhysicsTracers
+         setGetPhysicsTracers, &
+         setGetBGCTracers
 
     block => domain % blocklist
     do while (associated(block))
@@ -3363,12 +3396,13 @@ contains
 
        call MPAS_pool_get_array(icestate, "openWaterArea", openWaterArea)
 
-       getPhysicsTracers = .true.
+       setGetPhysicsTracers = .true.
+       setGetBGCTracers     = config_use_column_biogeochemistry
 
        do iCell = 1, nCellsSolve
 
           ! set the category tracer array
-          call set_cice_tracer_array_category(block, ciceTracerObject, iCell)
+          call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           call colpkg_aggregate(&
                nCategories, &
@@ -3388,8 +3422,7 @@ contains
                ciceTracerObject % ancestorIndices) ! nt_strata
 
           ! set the cell tracer array
-          call get_cice_tracer_array_cell(block, ciceTracerObject, iCell,getPhysicsTracers, &
-              config_use_column_biogeochemistry)
+          call get_cice_tracer_array_cell(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
        enddo ! iCell
 
@@ -4710,8 +4743,156 @@ contains
 !>  
 !
 !-----------------------------------------------------------------------
+
+  subroutine set_cice_tracer_array_category(block, tracerObject, iCell, setPhysicsTracers, setBGCTracers)
+
+    type(block_type), intent(inout) :: &
+         block
+
+    type(ciceTracerObjectType), intent(inout) :: &
+         tracerObject
+
+    integer, intent(in) :: &
+         iCell
+
+    logical, intent(in) :: &
+         setPhysicsTracers, &
+         setBGCTracers
+
+    ! get physics tracers
+    if (setPhysicsTracers) &
+         call set_cice_physics_tracer_array_category(block, tracerObject, iCell)
+
+    ! get BGC tracers
+    if (setBGCTracers) &
+         call set_cice_biogeochemistry_tracer_array_category(block, tracerObject, iCell)
+
+  end subroutine set_cice_tracer_array_category
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  get_cice_tracer_array_category
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 4th Feburary 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine get_cice_tracer_array_category(block, tracerObject, iCell, getPhysicsTracers, getBGCTracers)
+
+    type(block_type), intent(inout) :: &
+         block
+
+    type(ciceTracerObjectType), intent(in) :: &
+         tracerObject
+
+    integer, intent(in) :: &
+         iCell
+
+    logical, intent(in) :: &
+         getPhysicsTracers, &
+         getBGCTracers
+
+    ! get physics tracers
+    if (getPhysicsTracers) &
+         call get_cice_physics_tracer_array_category(block, tracerObject, iCell)
+
+    ! get BGC tracers
+    if (getBGCTracers) &
+         call get_cice_biogeochemistry_tracer_array_category(block, tracerObject, iCell)
+
+  end subroutine get_cice_tracer_array_category
   
-  subroutine set_cice_tracer_array_category(block, tracerObject, iCell)
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  set_cice_tracer_array_cell
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 4th Feburary 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine set_cice_tracer_array_cell(block, tracerObject, iCell, setPhysicsTracers, setBGCTracers)
+
+    type(block_type), intent(inout) :: &
+         block
+
+    type(ciceTracerObjectType), intent(inout) :: &
+         tracerObject
+
+    integer, intent(in) :: &
+         iCell
+
+    logical, intent(in) :: &
+         setPhysicsTracers, &
+         setBGCTracers
+
+    ! get physics tracers
+    if (setPhysicsTracers) &
+         call set_cice_physics_tracer_array_cell(block, tracerObject, iCell)
+
+    ! get BGC tracers
+    if (setBGCTracers) &
+         call set_cice_biogeochemistry_tracer_array_cell(block, tracerObject, iCell)
+
+  end subroutine set_cice_tracer_array_cell
+  
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  get_cice_tracer_array_cell
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 4th Feburary 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine get_cice_tracer_array_cell(block, tracerObject, iCell, getPhysicsTracers, getBGCTracers)
+
+    type(block_type), intent(inout) :: &
+         block
+
+    type(ciceTracerObjectType), intent(in) :: &
+         tracerObject
+
+    integer, intent(in) :: &
+         iCell
+
+    logical, intent(in) :: &
+         getPhysicsTracers, &
+         getBGCTracers
+
+    ! get physics tracers
+    if (getPhysicsTracers) &
+         call get_cice_physics_tracer_array_cell(block, tracerObject, iCell)
+
+    ! get BGC tracers
+    if (getBGCTracers) &
+         call get_cice_biogeochemistry_tracer_array_cell(block, tracerObject, iCell)
+
+  end subroutine get_cice_tracer_array_cell
+  
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  set_cice_physics_tracer_array_category
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 4th Feburary 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+  
+  subroutine set_cice_physics_tracer_array_category(block, tracerObject, iCell)
 
     type(block_type), intent(in) :: &
          block
@@ -4856,81 +5037,7 @@ contains
     endif
 
 
-  end subroutine set_cice_tracer_array_category
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  get_cice_tracer_array_category
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 4th Feburary 2015
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  subroutine get_cice_tracer_array_category(block, tracerObject, iCell, getPhysicsTracers, getGBCTRacers)
-
-    type(block_type), intent(inout) :: &
-         block
-
-    type(ciceTracerObjectType), intent(in) :: &
-         tracerObject
-
-    integer, intent(in) :: &
-         iCell
-
-    logical, intent(in) :: &
-         getPhysicsTracers, &
-         getGBCTRacers
-
-    ! get physics tracers
-    if (getPhysicsTracers) &
-         call get_cice_physics_tracer_array_category(block, tracerObject, iCell)
-
-    ! get BGC tracers
-    if (getGBCTRacers) &
-         call get_cice_biogeochemistry_tracer_array_category(block, tracerObject, iCell)
-
-  end subroutine get_cice_tracer_array_category
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  get_cice_tracer_array_cell
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 4th Feburary 2015
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  subroutine get_cice_tracer_array_cell(block, tracerObject, iCell, getPhysicsTracers, getGBCTRacers)
-
-    type(block_type), intent(inout) :: &
-         block
-
-    type(ciceTracerObjectType), intent(in) :: &
-         tracerObject
-
-    integer, intent(in) :: &
-         iCell
-
-    logical, intent(in) :: &
-         getPhysicsTracers, &
-         getGBCTRacers
-
-    ! get physics tracers
-    if (getPhysicsTracers) &
-         call get_cice_physics_tracer_array_cell(block, tracerObject, iCell)
-
-    ! get BGC tracers
-    if (getGBCTRacers) &
-         call get_cice_biogeochemistry_tracer_array_cell(block, tracerObject, iCell)
-
-  end subroutine get_cice_tracer_array_cell
+  end subroutine set_cice_physics_tracer_array_category
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -5093,7 +5200,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  set_cice_tracer_array_cell
+!  set_cice_physics_tracer_array_cell
 !
 !> \brief 
 !> \author Adrian K. Turner, LANL
@@ -5103,7 +5210,7 @@ contains
 !
 !-----------------------------------------------------------------------
   
-  subroutine set_cice_tracer_array_cell(block, tracerObject, iCell)
+  subroutine set_cice_physics_tracer_array_cell(block, tracerObject, iCell)
 
     type(block_type), intent(in) :: &
          block
@@ -5250,7 +5357,7 @@ contains
     endif
 
 
-  end subroutine set_cice_tracer_array_cell
+  end subroutine set_cice_physics_tracer_array_cell
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
