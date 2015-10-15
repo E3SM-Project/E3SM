@@ -1,39 +1,35 @@
-# - Try to find Netcdf
-# Once done this will define
-#  NETCDF_FOUND - System has Netcdf
-#  NETCDF_INCLUDE_DIRS - The Netcdf include directories
-# NETCDF_C_LIBRARIES - The C libraries needed to use Netcdf
-# NETCDF_Fortran_LIBRARIES - The Fortran libraries needed to use Netcdf
-#  NETCDF_LIBRARIES - All the libraries needed to use Netcdf
-#  NETCDF_DEFINITIONS - Compiler switches required for using Netcdf
 
-# If we weren't given a hint via a CMake variable, check the environment.
-if(NOT NETCDF_DIR)
-  set(NETCDF_DIR $ENV{NETCDF})
-endif()
 
-find_path(NETCDF_INCLUDE_DIR netcdf.h
-          HINTS ${NETCDF_DIR}/include )
+find_path(Netcdf_INCLUDE_DIR
+          NAMES netcdf.h
+          PATHS ${NETCDF_DIR}
+          PATH_SUFFIXES include
+          NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
-find_path(NETCDF_LIB_DIR NAMES libnetcdf.a libnetcdf.so
-          HINTS ${NETCDF_DIR}/lib ${NETCDF_DIR}/lib64 )
+find_library(Netcdf_LIBRARY
+             NAMES libnetcdf.a netcdf
+             HINTS ${Netcdf_INCLUDE_DIR}/../lib
+             NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
-find_path(NETCDF_FORTRAN_LIB_DIR NAMES libnetcdff.a libnetcdff.so
-          HINTS ${NETCDF_DIR}/lib ${NETCDF_DIR}/lib64 )
+find_library(NetcdfF_LIBRARY
+             NAMES libnetcdff.a netcdff
+             HINTS ${Netcdf_INCLUDE_DIR}/../lib
+             NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
+find_library(Pnetcdf_LIBRARY
+             NAMES libpnetcdf.a pnetcdf
+             HINTS ${Netcdf_INCLUDE_DIR}/../lib
+             NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+
+find_path(Netcdf_NC_CONFIG_BIN
+          NAMES nc-config
+          HINTS ${Netcdf_INCLUDE_DIR}/../bin
+          NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
 find_file(NETCDF4_PAR_H netcdf_par.h
-          HINTS ${NETCDF_INCLUDE_DIR}
+          HINTS ${Netcdf_INCLUDE_DIR}
           NO_DEFAULT_PATH )
 
-#MESSAGE("PAR_H: ${NETCDF4_PAR_H}")
-find_library(NETCDF_C_LIBRARY NAMES libnetcdf.a netcdf HINTS ${NETCDF_LIB_DIR})
-
-if(NOT NETCDF_FORTRAN_LIB_DIR)
-  MESSAGE(WARNING "Did not find netCDF Fortran library.")
-else()
-  find_library(NETCDF_Fortran_LIBRARY NAMES libnetcdff.a netcdff HINTS ${NETCDF_FORTRAN_LIB_DIR})
-endif()
 if(NOT NETCDF4_PAR_H)
   set(NETCDF4_PARALLEL "no")
   MESSAGE("NETCDF built without MPIIO")
@@ -42,45 +38,190 @@ else()
   MESSAGE("NETCDF built with hdf5 MPIIO support")
 endif()
 
-set(NETCDF_INCLUDE_DIRS ${NETCDF_INCLUDE_DIR} )
+# Store libraries in Netcdf_LIBRARIES
+set(Netcdf_LIBRARIES ${NetcdfF_LIBRARY} ${Netcdf_LIBRARY})
 
-FIND_PACKAGE(HDF5 COMPONENTS C HL CONFIG)
-
-if(${HDF5_FOUND})
-  MESSAGE(STATUS "Adding hdf5 libraries ")
- set(NETCDF_C_LIBRARY ${NETCDF_C_LIBRARY} ${HDF5_LIBRARIES}
-                      ${SZIP_LIBRARIES} ${ZLIB_LIBRARIES})
+if(NOT Pnetcdf_LIBRARY)
+  set(HAS_PNETCDF "no")
+  MESSAGE("NETCDF built without Pnetcdf")
+else()
+  set(HAS_PNETCDF "yes")
+  MESSAGE("NETCDF built with Pnetcdf")
+  set(Netcdf_LIBRARIES ${NetcdfF_LIBRARY} ${Netcdf_LIBRARY} ${Pnetcdf_LIBRARY})
 endif()
 
-# If netCDF was configured with DAP, it depends on libcurl.
-find_program(NETCDF_NC_CONFIG nc-config HINTS ${NETCDF_INCLUDE_DIR}/../bin)
-if(NETCDF_NC_CONFIG)
-  execute_process(COMMAND ${NETCDF_NC_CONFIG} --has-dap
-    OUTPUT_VARIABLE nc_config_output)
-  if(nc_config_output MATCHES yes)
-    find_package(CURL)
-    if(CURL_FOUND)
-      MESSAGE(STATUS "Adding curl libraries for netCDF DAP.")
-      set(NETCDF_C_LIBRARY ${NETCDF_C_LIBRARY} ${CURL_LIBRARIES})
+IF (NOT ${Netcdf_NC_CONFIG_BIN} STREQUAL Netcdf_NC_CONFIG_BIN-NOTFOUND)
+
+  # Probe nc-config to determine dependencies of Netcdf
+  MESSAGE(STATUS "nc-config found at ${Netcdf_NC_CONFIG_BIN}")
+
+  # use nc-confg --has-nc4 to determine if Netcdf depends upon HDF5
+  EXECUTE_PROCESS(COMMAND ${Netcdf_NC_CONFIG_BIN}/nc-config --has-nc4
+    RESULT_VARIABLE NCCONFIG_RESULT
+    OUTPUT_VARIABLE NCCONFIG_OUTPUT
+    ERROR_VARIABLE NCCONFIG_ERROR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  IF (${NCCONFIG_ERROR})
+    MESSAGE(FATAL_ERROR "${Netcdf_NC_CONFIG_BIN}/nc-config --has-nc4 produced an error")
+  ELSE ()
+    IF (${NCCONFIG_OUTPUT} STREQUAL yes)
+      SET (NETCDF_REQUIRE_HDF5 TRUE)
+      MESSAGE(STATUS "nc-config: Netcdf depends upon HDF5")
+    ELSE ()
+      SET (NETCDF_REQUIRE_HDF5 FALSE)
+      MESSAGE(STATUS "nc-config: Netcdf does not depend upon HDF5")
+    ENDIF ()
+  ENDIF ()
+
+  # use nc-confg --has-dap to determine if Netcdf depends upon CURL
+  EXECUTE_PROCESS(COMMAND ${Netcdf_NC_CONFIG_BIN}/nc-config --has-dap
+    RESULT_VARIABLE NCCONFIG_RESULT
+    OUTPUT_VARIABLE NCCONFIG_OUTPUT
+    ERROR_VARIABLE NCCONFIG_ERROR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  IF (${NCCONFIG_ERROR})
+    MESSAGE(FATAL_ERROR "${Netcdf_NC_CONFIG_BIN}/nc-config --has-dap produced an error")
+  ELSE ()
+    IF (${NCCONFIG_OUTPUT} STREQUAL yes)
+      SET (NETCDF_REQUIRE_CURL TRUE)
+      MESSAGE(STATUS "nc-config: Netcdf depends upon CURL")
+    ELSE ()
+      SET (NETCDF_REQUIRE_CURL FALSE)
+      MESSAGE(STATUS "nc-config: Netcdf does not depend upon CURL")
+    ENDIF ()
+  ENDIF ()
+
+ELSE ()
+  SET (NETCDF_REQUIRE_HDF5 TRUE)
+  SET (NETCDF_REQUIRE_CURL TRUE)
+  MESSAGE(STATUS "nc-config not found assuming hdf5 and curl dependencies")
+ENDIF ()
+
+IF (${NETCDF_REQUIRE_CURL})
+
+  # For some reasone CURL uses CURL_ROOT rather than CURL_DIR
+  #   - change the variable for consistency
+  SET(CURL_ROOT ${CURL_DIR})
+  find_package(CURL)
+
+  IF (${CURL_FOUND})
+    MESSAGE(STATUS "Found CURL: ${CURL_LIBRARY}")
+    set(Netcdf_LIBRARIES ${Netcdf_LIBRARIES} ${CURL_LIBRARY})
+  ELSE ()
+    MESSAGE(FATAL_ERROR "CURL Not found")
+  ENDIF ()
+ENDIF ()
+
+IF (${NETCDF_REQUIRE_HDF5})
+
+  IF (HDF5_DIR)
+    find_path(HDF5_INCLUDE_DIR
+              hdf5.h
+              PATHS ${HDF5_DIR}
+              PATH_SUFFIXES include
+              NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+
+    find_library(HDF5_LIBRARY
+                 NAMES libhdf5.a hdf5
+                 PATHS ${HDF5_DIR}
+                 PATH_SUFFIXES lib lib64
+                 NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+
+    find_library(HDF5hl_LIBRARY
+                 NAMES libhdf5_hl.a hdf5_hl
+                 PATHS ${HDF5_DIR}
+                 PATH_SUFFIXES lib lib64
+                 NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+
+
+    if(${HDF5_LIBRARY} STREQUAL "HDF5_LIBRARY-NOTFOUND" OR ${HDF5hl_LIBRARY} STREQUAL "HDF5hl_LIBRARY-NOTFOUND")
+      set(HDF5_FOUND OFF)
+      MESSAGE(FATAL_ERROR "HDF5 not found, set HDF5_DIR to appropriate installation")
     else()
-      MESSAGE(WARNING "netCDF DAP appears enabled, but libcurl was not found.")
+      set(HDF5_FOUND ON)
+      MESSAGE(STATUS "Found HDF5: ${HDF5hl_LIBRARY} ${HDF5_LIBRARY}")
+      set(Netcdf_LIBRARIES ${Netcdf_LIBRARIES} ${HDF5hl_LIBRARY} ${HDF5_LIBRARY})
+    endif()
+
+  else()
+    FIND_PACKAGE(HDF5 COMPONENTS C HL)
+
+    if(${HDF5_FOUND})
+      MESSAGE(STATUS "Adding hdf5 libraries ")
+    set(NETCDF_C_LIBRARY ${NETCDF_C_LIBRARY} ${HDF5_LIBRARIES})
     endif()
   endif()
-endif()
 
-set(NETCDF_LIBRARIES ${NETCDF_Fortran_LIBRARY} ${NETCDF_C_LIBRARY})
 
-# Export variables so other projects can use them as well
-#  ie. if pio is added with add_subdirectory
-SET(NETCDF_INCLUDE_DIR ${NETCDF_INCLUDE_DIR} CACHE STRING "Location of NetCDF include files.")
-SET(NETCDF_LIBRARIES ${NETCDF_LIBRARIES} CACHE STRING "Link line for NetCDF.")
+  # Check to see which dependencies (ZLIB, SZIP) hdf5 has
+  INCLUDE(CheckSymbolExists)
+  CHECK_SYMBOL_EXISTS(H5_HAVE_SZLIB_H "${HDF5_INCLUDE_DIR}/H5pubconf.h" HDF5_REQUIRE_SZ)
+  CHECK_SYMBOL_EXISTS(H5_HAVE_ZLIB_H "${HDF5_INCLUDE_DIR}/H5pubconf.h" HDF5_REQUIRE_ZLIB)
 
-include(FindPackageHandleStandardArgs)
-# handle the QUIETLY and REQUIRED arguments and set NETCDF_FOUND to TRUE
-# if all listed variables are TRUE
-# (Note that the Fortran interface is not always a separate library, so
-# don't require it to be found.)
-find_package_handle_standard_args(NETCDF  DEFAULT_MSG NETCDF_LIBRARIES
-                                  NETCDF_C_LIBRARY NETCDF_INCLUDE_DIR)
+  IF (${HDF5_REQUIRE_ZLIB})
 
-mark_as_advanced(NETCDF_INCLUDE_DIR NETCDF_LIBRARIES NETCDF_C_LIBRARY NETCDF_Fortran_LIBRARY NETCDF4_PARALLEL )
+    MESSAGE(STATUS "This HDF5 library requires ZLIB")
+    # Find package always finds the shared object
+    #find_package(ZLIB REQUIRED)
+    find_library(ZLIB_LIBRARY
+                 NAMES libz.a z
+                 PATHS ${ZLIB_DIR}
+                 PATH_SUFFIXES lib lib64
+                 NO_SYSTEM_ENVIRONMENT_PATH)
+
+    IF(${ZLIB_LIBRARY} STREQUAL "ZLIB_LIBRARY-NOTFOUND")
+      SET(ZLIB_FOUND OFF)
+      MESSAGE(FATAL_ERROR "ZLIB Not found")
+    ELSE()
+      SET(ZLIB_FOUND ON)
+    ENDIF ()
+    MESSAGE(STATUS "Found ZLIB_LIBRARY: ${ZLIB_LIBRARY}")
+    MESSAGE(STATUS "ZLIB_LIBRARIES: ${ZLIB_LIBRARIES}")
+    IF (${ZLIB_FOUND})
+      MESSAGE(STATUS "Found ZLIB: ${ZLIB_LIBRARY}")
+      set(Netcdf_LIBRARIES ${Netcdf_LIBRARIES} ${ZLIB_LIBRARY})
+    ELSE ()
+      MESSAGE(FATAL_ERROR "ZLIB Not found, set ZLIB_DIR to appropriate installation")
+    ENDIF ()
+  ENDIF ()
+
+  IF (${HDF5_REQUIRE_SZ})
+    MESSAGE(STATUS "This HDF5 library requires SZIP")
+
+    find_library(SZIP_LIBRARY
+                 NAMES libsz.a sz
+                 PATHS ${SZIP_DIR}
+                 PATH_SUFFIXES lib lib64
+                 NO_SYSTEM_ENVIRONMENT_PATH)
+
+    IF(${SZIP_LIBRARY} STREQUAL "SZIP_LIBRARY-NOTFOUND")
+      SET(SZIP_FOUND OFF)
+      MESSAGE(FATAL_ERROR "SZIP Not found, set SZIP_DIR to appropriate installation")
+    ELSE()
+      SET(SZIP_FOUND ON)
+      MESSAGE(STATUS "Found SZIP: ${SZIP_LIBRARY}")
+      SET(Netcdf_LIBRARIES ${Netcdf_LIBRARIES} ${SZIP_LIBRARY})
+    ENDIF()
+  ENDIF ()
+
+ENDIF()
+
+# If we haven't had a FATAL_ERROR then we have found Netcdf and all dependencies
+set(Netcdf_FOUND ON)
+
+# Set all caps vars too
+set(NETCDF_FOUND ON)
+set(NETCDF_INCLUDE_DIR ${Netcdf_INCLUDE_DIR})
+set(NETCDF_LIBRARIES ${Netcdf_LIBRARIES})
+
+MESSAGE(STATUS "Found Netcdf:")
+MESSAGE(STATUS "  Libraries: ${Netcdf_LIBRARIES}")
+MESSAGE(STATUS "  Includes:  ${Netcdf_INCLUDE_DIR}")
+
+IF(Netcdf_FIND_REQUIRED AND NOT Netcdf_FOUND)
+  MESSAGE(FATAL_ERROR "Did not find required library Netcdf")
+ELSEIF(Netcdf_FOUND)
+  MESSAGE(STATUS "Found Netcdf and all dependencies")
+ENDIF()
