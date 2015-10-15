@@ -41,8 +41,32 @@
 
   <compset>
     <alias>B1850G</alias>
-    <lname>1850_CAM55_CLM50%BGC_CICE_POP2_MOSART_CISM1_SWAV</lname>
+    <lname>1850_CAM55_CLM50%BGC-CROP_CICE_POP2_MOSART_CISM1_SWAV</lname>
   </compset>
+
+  <compset>
+    <alias>B1850RW</alias>
+    <lname>1850_CAM55_CLM50%BGC-CROP_CICE_POP2_RTM_SGLC_DWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>B1850W</alias>
+    <lname>1850_CAM55_CLM50%BGC-CROP_CICE_POP2_MOSART_SGLC_DWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>B1850</alias>
+    <lname>1850_CAM55_CLM50%BGC-CROP_CICE_POP2_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>B1850R</alias>
+    <lname>1850_CAM55_CLM50%BGC-CROP_CICE_POP2_RTM_SGLC_SWAV</lname>
+  </compset>
+
+
+
+
 
 
 
