@@ -14,7 +14,7 @@ module TridiagonalMod
   interface Tridiagonal
     module procedure :: Tridiagonal_sr, Tridiagonal_mr
   end interface Tridiagonal
-  
+
   !-----------------------------------------------------------------------
 
 contains
@@ -24,7 +24,8 @@ contains
     !
     ! !DESCRIPTION:
     ! Tridiagonal matrix solution
-    !
+    ! A x = r
+    ! where x and r are vectors
     ! !USES:
     use shr_kind_mod   , only: r8 => shr_kind_r8
     use clm_varctl     , only : iulog
@@ -48,7 +49,7 @@ contains
     logical                           :: l_is_col_active(bounds%begc:bounds%endc) !
     real(r8)                          :: gam(bounds%begc:bounds%endc,lbj:ubj)     ! temporary
     real(r8)                          :: bet(bounds%begc:bounds%endc)             ! temporary
-    
+
     character(len=255)                :: subname ='Tridiagonal_sr'
     !-----------------------------------------------------------------------
 
@@ -59,7 +60,7 @@ contains
     else
        l_is_col_active(:) = .true.
     endif
-    
+
     do fc = 1,numf
         ci = filter(fc)
         if(l_is_col_active(ci))then
@@ -70,7 +71,7 @@ contains
     do j = lbj, ubj
        do fc = 1,numf
            ci = filter(fc)
-           if(l_is_col_active(ci))then             
+           if(l_is_col_active(ci))then
              if (j >= jtop(ci)) then
                if (j == jtop(ci)) then
                  u(ci,j) = r(ci,j) / bet(ci)
@@ -80,29 +81,30 @@ contains
                  u(ci,j) = (r(ci,j) - a(ci,j)*u(ci,j-1)) / bet(ci)
                end if
              end if
-           endif   
+           endif
         end do
     end do
 
     do j = ubj-1,lbj,-1
         do fc = 1,numf
            ci = filter(fc)
-           if(l_is_col_active(ci))then             
+           if(l_is_col_active(ci))then
              if (j >= jtop(ci)) then
                u(ci,j) = u(ci,j) - gam(ci,j+1) * u(ci,j+1)
              end if
-           endif   
+           endif
         end do
     end do
 
-    
+
   end subroutine Tridiagonal_sr
   !-----------------------------------------------------------------------
   subroutine Tridiagonal_mr (bounds, lbj, ubj, jtop, numf, filter, ntrcs, a, b, c, r, u, is_col_active)
     !
     ! !DESCRIPTION:
     ! Tridiagonal matrix solution
-    !
+    ! A X = R
+    ! where A, X and R are all matrices.
     ! !USES:
     use shr_kind_mod   , only: r8 => shr_kind_r8
     use clm_varctl     , only : iulog
@@ -127,7 +129,7 @@ contains
     logical                           :: l_is_col_active(bounds%begc:bounds%endc)       !
     real(r8)                          :: gam(bounds%begc:bounds%endc,lbj:ubj)           ! temporary
     real(r8)                          :: bet(bounds%begc:bounds%endc)                   ! temporary
-    
+
     character(len=255) :: subname ='Tridiagonal_sr'
     !-----------------------------------------------------------------------
 
@@ -137,7 +139,7 @@ contains
     else
        l_is_col_active(:) = .true.
     endif
-    
+
     do fc = 1,numf
        ci = filter(fc)
        if (l_is_col_active(ci))then
@@ -148,13 +150,13 @@ contains
     do j = lbj, ubj
        do fc = 1,numf
           ci = filter(fc)
-          if (l_is_col_active(ci))then             
+          if (l_is_col_active(ci))then
              if (j >= jtop(ci)) then
                 if (j == jtop(ci))then
                    do k = 1, ntrcs
                      u(ci,j,k) = r(ci,j,k)/bet(ci)
                    enddo
-                else                
+                else
                    gam(ci,j) = c(ci,j-1) / bet(ci)
                    bet(ci) = b(ci,j) - a(ci,j) * gam(ci,j)
                    do k = 1, ntrcs
@@ -166,23 +168,23 @@ contains
        end do
     end do
 
-    
+
     do j = ubj-1,lbj,-1
        do fc = 1,numf
           ci = filter(fc)
-          if (l_is_col_active(ci)) then             
+          if (l_is_col_active(ci)) then
              if (j >= jtop(ci)) then
                 do k = 1, ntrcs
                   u(ci,j, k) = u(ci,j, k) - gam(ci,j+1) * u(ci,j+1, k)
                 end do
              end if
-          end if   
+          end if
        end do
-    end do  
+    end do
 
-    
+
   end subroutine Tridiagonal_mr
-  
+
 !----------------
   subroutine Trisim(bounds, lbj, ubj, numf, filter, a1,b1,c1,d1,e1,a2,b2,c2,d2,e2,w1, w2)
      !
@@ -199,7 +201,7 @@ contains
      ! Reference:
      ! Deshpande, M. D. and Giddens, D. P. (1977), Direct solution of two linear systems of equations
      ! forming coupled tridiagonal-type matrices. Int. J. Numer. Meth. Engng.,
-     ! 11: 1049Ð1052. doi: 10.1002/nme.1620110612
+     ! 11: 1049ï¿½1052. doi: 10.1002/nme.1620110612
      !Created by Jinyun Tang
      !Attention: Now the code is specifically written for the soil water coupling with hydraulic
      !redistribution. Idealy, the code should fit well with the purpose of solving coupled heat and
@@ -211,7 +213,7 @@ contains
      type(bounds_type) , intent(in)  :: bounds                                 ! bounds
      integer           , intent(in)  :: lbj, ubj                               ! lbinning and ubing level indices
      integer           , intent(in)  :: numf                                   ! filter dimension
-     integer           , intent(in)  :: filter(:)                              ! filter   
+     integer           , intent(in)  :: filter(:)                              ! filter
      real(r8)          , intent(in)  :: a1(bounds%begc:bounds%endc, lbj:ubj)   !
      real(r8)          , intent(in)  :: b1(bounds%begc:bounds%endc, lbj:ubj)   !
      real(r8)          , intent(in)  :: c1(bounds%begc:bounds%endc, lbj:ubj)   !
@@ -221,7 +223,7 @@ contains
      real(r8)          , intent(in)  :: b2(bounds%begc:bounds%endc, lbj:ubj)   !
      real(r8)          , intent(in)  :: c2(bounds%begc:bounds%endc, lbj:ubj)   !
      real(r8)          , intent(in)  :: d2(bounds%begc:bounds%endc, lbj:ubj)   !
-     real(r8)          , intent(in)  :: e2(bounds%begc:bounds%endc, lbj:ubj)   !  
+     real(r8)          , intent(in)  :: e2(bounds%begc:bounds%endc, lbj:ubj)   !
      real(r8)          , intent(out) :: w1(bounds%begc:bounds%endc, lbj:ubj-1) !
      real(r8)          , intent(out) :: w2(bounds%begc:bounds%endc, lbj:ubj-1) !
      !local variables
@@ -236,11 +238,11 @@ contains
      integer                         :: m, l1, j, j2, k, fc, ci                !
      character(len=255)              :: subname='Trisim'
 
-   m = ubj  
+   m = ubj
      l1= ubj - 1
      j = lbj + 1
      do fc = 1,numf
-        ci = filter(fc)      
+        ci = filter(fc)
 
         bp1 = b1(ci,j)
         dg1 = d1(ci,j)
@@ -314,7 +316,7 @@ contains
            ci = filter(fc)
            w1 (ci, k )=-phi1(ci, j) *w1(ci, k+ 1) + gam1(ci, j)*w2(ci, k+1)+xi1(ci, j)
            w2 (ci, k )=-phi2(ci, j) *w2(ci, k+ 1) + gam2(ci, j)*w1(ci, k+1)+xi2(ci, j)
-        enddo   
+        enddo
      enddo
 
    end subroutine trisim

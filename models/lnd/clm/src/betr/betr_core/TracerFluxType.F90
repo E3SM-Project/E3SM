@@ -1,14 +1,17 @@
 module TracerFluxType
-   use shr_kind_mod   , only : r8 => shr_kind_r8
-   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-   use decompMod      , only : bounds_type
-   use LandunitType   , only : lun
-   use ColumnType     , only : col
-   use PatchType      , only : pft
-   use clm_varcon     , only : spval, ispval
-   use clm_varpar     , only : nlevtrc_soil
-   use landunit_varcon, only : istsoil, istcrop
-   use clm_varctl     , only : iulog
+  !!DESCRIPTION:
+  ! tracer flux type
+  ! !USES:
+  use shr_kind_mod   , only : r8 => shr_kind_r8
+  use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
+  use decompMod      , only : bounds_type
+  use LandunitType   , only : lun
+  use ColumnType     , only : col
+  use PatchType      , only : pft
+  use clm_varcon     , only : spval, ispval
+  use clm_varpar     , only : nlevtrc_soil
+  use landunit_varcon, only : istsoil, istcrop
+  use clm_varctl     , only : iulog
   !
   ! !PUBLIC TYPES:
 
@@ -21,42 +24,42 @@ module TracerFluxType
 
   type, public :: TracerFlux_type
 
-    !tracer flux defined at the column level
-    real(r8), pointer :: tracer_flx_top_soil_col(:,:)         !tracer fluxes available for infiltration+runoff
-    real(r8), pointer :: tracer_flx_can_loss_col(:,:)         !tracer loss from canopy
-    real(r8), pointer :: tracer_flx_snowmelt_col(:,:)          !tracer loss from snow melting
-    real(r8), pointer :: tracer_flx_infl_col(:,:)             !tracer fluxes available for infiltration
-    real(r8), pointer :: tracer_flx_netphyloss_col(:,:)       !total tracer loos through all possible physical pathways: drainage (+ runoff), leaching, ebullition, diffusion, minus precipitation/infiltration
-    real(r8), pointer :: tracer_flx_netpro_col(:,:)           !total tracer production through chemical processes
-    real(r8), pointer :: tracer_flx_dstor_col(:,:)            !net storage of tracer due to input-output, ideally, dstor=netpro-netloss at various scales
-    real(r8), pointer :: tracer_flx_ebu_col(:,:)              !tracer emitted as bubbles, mol, lake, volatile
-    real(r8), pointer :: tracer_flx_prec_col(:,:)             !tracer added to a column from precipitation, mol
-    real(r8), pointer :: tracer_flx_dif_col(:,:)              !tracer emitted through diffusion, unsat, volatile
+     !tracer flux defined at the column level
+     real(r8), pointer :: tracer_flx_top_soil_col(:,:)    !tracer fluxes available for infiltration+runoff
+     real(r8), pointer :: tracer_flx_can_loss_col(:,:)    !tracer loss from canopy
+     real(r8), pointer :: tracer_flx_snowmelt_col(:,:)    !tracer loss from snow melting
+     real(r8), pointer :: tracer_flx_infl_col(:,:)        !tracer fluxes available for infiltration
+     real(r8), pointer :: tracer_flx_netphyloss_col(:,:)  !total tracer loos through all possible physical pathways: drainage (+ runoff), leaching, ebullition, diffusion, minus precipitation/infiltration
+     real(r8), pointer :: tracer_flx_netpro_col(:,:)      !total tracer production through chemical processes
+     real(r8), pointer :: tracer_flx_dstor_col(:,:)       !net storage of tracer due to input-output, ideally, dstor=netpro-netloss at various scales
+     real(r8), pointer :: tracer_flx_ebu_col(:,:)         !tracer emitted as bubbles, mol, lake, volatile
+     real(r8), pointer :: tracer_flx_prec_col(:,:)        !tracer added to a column from precipitation, mol
+     real(r8), pointer :: tracer_flx_dif_col(:,:)         !tracer emitted through diffusion, unsat, volatile
 
-    real(r8), pointer :: tracer_flx_drain_col(:,:)            !tracer removal through subface drainage
-    real(r8), pointer :: tracer_flx_surfemi_col(:,:)          !total emitted tracer fluxes at surface, volatile, including ebullition, diffusion, arenchyma transport
-    real(r8), pointer :: tracer_flx_leaching_col(:,:)         !leaching fluxes
-    real(r8), pointer :: tracer_flx_surfrun_col(:,:)          !tracer loss thru runoff, mol tracer / second
-    real(r8), pointer :: tracer_flx_netpro_vr_col(:,:,:)      !total source strength for the tracers, chemical production, root exudation, excludes incoming root transport (by exchange with air) and (infiltration?)
-    real(r8), pointer :: tracer_flx_tparchm_col(:,:)          !total tracer flux through plant aerenchyma transport, for volatile species only, mol/m^2/s
-    real(r8), pointer :: tracer_flx_parchm_vr_col(:,:,:)      !vertical resolved tracer flux through aerenchyma transport, for volatile species only, mol/m^3/s
-    real(r8), pointer :: tracer_flx_totleached_col(:,:)       !total leaching flux, vertical + lateral leaching
+     real(r8), pointer :: tracer_flx_drain_col(:,:)       !tracer removal through subface drainage
+     real(r8), pointer :: tracer_flx_surfemi_col(:,:)     !total emitted tracer fluxes at surface, volatile, including ebullition, diffusion, arenchyma transport
+     real(r8), pointer :: tracer_flx_leaching_col(:,:)    !leaching fluxes
+     real(r8), pointer :: tracer_flx_surfrun_col(:,:)     !tracer loss thru runoff, mol tracer / second
+     real(r8), pointer :: tracer_flx_netpro_vr_col(:,:,:) !total source strength for the tracers, chemical production, root exudation, excludes incoming root transport (by exchange with air) and (infiltration?)
+     real(r8), pointer :: tracer_flx_tparchm_col(:,:)     !total tracer flux through plant aerenchyma transport, for volatile species only, mol/m^2/s
+     real(r8), pointer :: tracer_flx_parchm_vr_col(:,:,:) !vertical resolved tracer flux through aerenchyma transport, for volatile species only, mol/m^3/s
+     real(r8), pointer :: tracer_flx_totleached_col(:,:)  !total leaching flux, vertical + lateral leaching
 
-    real(r8), pointer :: tracer_flx_vtrans_col(:,:)            !column level tracer flux through transpiration
-    !real(r8), pointer :: tracer_flx_snowloss_col(:,:)         !tracer flux lost from snow dynamics, I forget what it is for, but I will figure it out later
+     real(r8), pointer :: tracer_flx_vtrans_col(:,:)      !column level tracer flux through transpiration
+     !real(r8), pointer :: tracer_flx_snowloss_col(:,:)    !tracer flux lost from snow dynamics, place holder
 
-    !tracer fluxes defined at the pft level
-    real(r8), pointer :: tracer_flx_vtrans_patch(:,:)          !tracer goes to the pathway of plant transpiration, currently not released, if it is nutrient, assumed it is taken by plants completely
-    real(r8), pointer :: tracer_flx_snowfall_grnd_patch(:,:)
-    real(r8), pointer :: tracer_flx_rainfall_grnd_patch(:,:)
-    real(r8), pointer :: tracer_flx_prec_intr_patch(:,:)       !interception of tracer from wet deposition [mol/s]
-    real(r8), pointer :: tracer_flx_prec_grnd_patch(:,:)       !tracer onto ground including from canopy runoff [mol /s]
-    real(r8), pointer :: tracer_flx_snwcp_liq_patch(:,:)       !excess rainfall tracer due to snow capping [mol /s]
-    real(r8), pointer :: tracer_flx_snwcp_ice_patch(:,:)       !excess snowfall tracer due to snow capping [mol /s], this is used for aerosol type and water type tracer input
-    real(r8), pointer :: tracer_flx_dew_grnd_col(:,:)          !tracer flux to ground coming from dew formation
-    real(r8), pointer :: tracer_flx_dew_snow_col(:,:)          !tracer flux to snow coming from dew formation
-    real(r8), pointer :: tracer_flx_sub_snow_col(:,:)          !tracer flux loss from snow sublimation
-    real(r8), pointer :: tracer_flx_h2osfc_snow_residual_col(:,:) !tracer flux coming from residual standing water and residual snow
+     !tracer fluxes defined at the pft level
+     real(r8), pointer :: tracer_flx_vtrans_patch(:,:)             !tracer goes to the pathway of plant transpiration, currently not released, if it is nutrient, assumed it is taken by plants completely
+     real(r8), pointer :: tracer_flx_snowfall_grnd_patch(:,:)
+     real(r8), pointer :: tracer_flx_rainfall_grnd_patch(:,:)
+     real(r8), pointer :: tracer_flx_prec_intr_patch(:,:)          !interception of tracer from wet deposition [mol/s]
+     real(r8), pointer :: tracer_flx_prec_grnd_patch(:,:)          !tracer onto ground including from canopy runoff [mol /s]
+     real(r8), pointer :: tracer_flx_snwcp_liq_patch(:,:)          !excess rainfall tracer due to snow capping [mol /s]
+     real(r8), pointer :: tracer_flx_snwcp_ice_patch(:,:)          !excess snowfall tracer due to snow capping [mol /s], this is used for aerosol type and water type tracer input
+     real(r8), pointer :: tracer_flx_dew_grnd_col(:,:)             !tracer flux to ground coming from dew formation
+     real(r8), pointer :: tracer_flx_dew_snow_col(:,:)             !tracer flux to snow coming from dew formation
+     real(r8), pointer :: tracer_flx_sub_snow_col(:,:)             !tracer flux loss from snow sublimation
+     real(r8), pointer :: tracer_flx_h2osfc_snow_residual_col(:,:) !tracer flux coming from residual standing water and residual snow
 
    contains
      procedure, public  :: Init
@@ -73,12 +76,16 @@ module TracerFluxType
 contains
   !------------------------------------------------------------------------
   subroutine Init(this, bounds, lbj, ubj, betrtracer_vars)
+    ! !DESCRIPTION:
+    ! initialize data type
+    !
+    ! !USES:
     use BeTRTracerType, only : BeTRTracer_Type
     implicit none
-
-    class(TracerFlux_type) :: this
-    type(bounds_type), intent(in) :: bounds
-    integer, intent(in) :: lbj, ubj
+    ! !ARGUMENTS:
+    class(TracerFlux_type)            :: this
+    type(bounds_type), intent(in)     :: bounds
+    integer, intent(in)               :: lbj, ubj
     type(BeTRTracer_Type), intent(in) :: betrtracer_vars
 
 
@@ -90,15 +97,17 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine InitAllocate(this, bounds, lbj, ubj, betrtracer_vars)
-
+    ! !DESCRIPTION:
+    ! memory allocation
+    !
+    ! !USES:
     use BeTRTracerType, only : BeTRTracer_Type
     implicit none
-
     !
     ! !ARGUMENTS:
-    class(TracerFlux_type) :: this
-    type(bounds_type), intent(in) :: bounds
-    integer, intent(in) :: lbj, ubj
+    class(TracerFlux_type)            :: this
+    type(bounds_type), intent(in)     :: bounds
+    integer, intent(in)               :: lbj, ubj
     type(BeTRTracer_Type), intent(in) :: betrtracer_vars
     !
     ! !LOCAL VARIABLES:
@@ -127,27 +136,27 @@ contains
     allocate(this%tracer_flx_snwcp_ice_patch      (begp:endp, 1:ntracers)); this%tracer_flx_snwcp_ice_patch    (:,:) = nan
 
     if(ngwmobile_tracers>0)then
-      allocate(this%tracer_flx_drain_col       (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_drain_col    (:,:) = nan
-      allocate(this%tracer_flx_top_soil_col    (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_top_soil_col (:,:) = nan
-      allocate(this%tracer_flx_can_loss_col    (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_can_loss_col (:,:) = nan
-      allocate(this%tracer_flx_snowmelt_col    (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_snowmelt_col (:,:) = nan
-      allocate(this%tracer_flx_infl_col        (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_infl_col     (:,:) = nan
-      allocate(this%tracer_flx_leaching_col    (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_leaching_col (:,:) = nan
-      allocate(this%tracer_flx_surfrun_col     (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_surfrun_col  (:,:) = nan
-      allocate(this%tracer_flx_vtrans_col      (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_vtrans_col   (:,:) = nan
-      allocate(this%tracer_flx_dew_grnd_col    (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_dew_grnd_col (:,:) = nan
-      allocate(this%tracer_flx_dew_snow_col    (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_dew_snow_col (:,:) = nan
-      allocate(this%tracer_flx_sub_snow_col    (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_sub_snow_col (:,:) = nan
+       allocate(this%tracer_flx_drain_col       (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_drain_col    (:,:) = nan
+       allocate(this%tracer_flx_top_soil_col    (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_top_soil_col (:,:) = nan
+       allocate(this%tracer_flx_can_loss_col    (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_can_loss_col (:,:) = nan
+       allocate(this%tracer_flx_snowmelt_col    (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_snowmelt_col (:,:) = nan
+       allocate(this%tracer_flx_infl_col        (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_infl_col     (:,:) = nan
+       allocate(this%tracer_flx_leaching_col    (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_leaching_col (:,:) = nan
+       allocate(this%tracer_flx_surfrun_col     (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_surfrun_col  (:,:) = nan
+       allocate(this%tracer_flx_vtrans_col      (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_vtrans_col   (:,:) = nan
+       allocate(this%tracer_flx_dew_grnd_col    (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_dew_grnd_col (:,:) = nan
+       allocate(this%tracer_flx_dew_snow_col    (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_dew_snow_col (:,:) = nan
+       allocate(this%tracer_flx_sub_snow_col    (begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_sub_snow_col (:,:) = nan
 
-      allocate(this%tracer_flx_h2osfc_snow_residual_col(begc:endc, 1:ngwmobile_tracers));this%tracer_flx_h2osfc_snow_residual_col(:,:) = nan
-      allocate(this%tracer_flx_totleached_col(begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_totleached_col(:,:) = nan
+       allocate(this%tracer_flx_h2osfc_snow_residual_col(begc:endc, 1:ngwmobile_tracers));this%tracer_flx_h2osfc_snow_residual_col(:,:) = nan
+       allocate(this%tracer_flx_totleached_col(begc:endc, 1:ngwmobile_tracers)); this%tracer_flx_totleached_col(:,:) = nan
     endif
     if(nvolatile_tracers>0)then
-      allocate(this%tracer_flx_ebu_col         (begc:endc, 1:nvolatile_tracers)); this%tracer_flx_ebu_col      (:,:) = nan
-      allocate(this%tracer_flx_dif_col         (begc:endc, 1:nvolatile_tracers)); this%tracer_flx_dif_col      (:,:) = nan
-      allocate(this%tracer_flx_tparchm_col     (begc:endc, 1:nvolatile_tracers)); this%tracer_flx_tparchm_col  (:,:) = nan
-      allocate(this%tracer_flx_surfemi_col     (begc:endc, 1:nvolatile_tracers)); this%tracer_flx_surfemi_col  (:,:) = nan
-      allocate(this%tracer_flx_parchm_vr_col   (begc:endc, lbj:ubj, 1:nvolatile_tracers)); this%tracer_flx_parchm_vr_col(:,:,:) = nan
+       allocate(this%tracer_flx_ebu_col         (begc:endc, 1:nvolatile_tracers)); this%tracer_flx_ebu_col      (:,:) = nan
+       allocate(this%tracer_flx_dif_col         (begc:endc, 1:nvolatile_tracers)); this%tracer_flx_dif_col      (:,:) = nan
+       allocate(this%tracer_flx_tparchm_col     (begc:endc, 1:nvolatile_tracers)); this%tracer_flx_tparchm_col  (:,:) = nan
+       allocate(this%tracer_flx_surfemi_col     (begc:endc, 1:nvolatile_tracers)); this%tracer_flx_surfemi_col  (:,:) = nan
+       allocate(this%tracer_flx_parchm_vr_col   (begc:endc, lbj:ubj, 1:nvolatile_tracers)); this%tracer_flx_parchm_vr_col(:,:,:) = nan
     endif
 
     allocate(this%tracer_flx_netpro_vr_col  (begc:endc, lbj:ubj, 1:ntracers)); this%tracer_flx_netpro_vr_col (:,:,:) = nan
@@ -161,6 +170,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine InitHistory(this, bounds, betrtracer_vars)
     !
+    ! !DESCRIPTION:
     ! History fields initialization
     !
     ! !USES:
@@ -342,6 +352,9 @@ contains
   !-----------------------------------------------------------------------
   subroutine InitCold(this, bounds)
     !
+    ! !DESCRIPTION:
+    ! cold initialization
+    !
     ! !USES:
     !
     ! !ARGUMENTS:
@@ -508,10 +521,11 @@ contains
 
 !----------------------------------------
   subroutine Temporal_average(this, column, dtime)
-  !
-  ! DESCRIPTION
-  ! do temporal average for different fluxes
+    !
+    ! !DESCRIPTION
+    ! do temporal average for different fluxes
 
+    !!ARGUMENTS:
     class(TracerFlux_type)             :: this
     integer              , intent(in)  :: column     ! column index
     real(r8)             , intent(in)  :: dtime
@@ -540,108 +554,108 @@ contains
     this%tracer_flx_totleached_col(column,:) = this%tracer_flx_drain_col(column,:) + this%tracer_flx_leaching_col(column,:)
   end subroutine temporal_average
 
- !----------------------------------------------------------------
+  !----------------------------------------------------------------
   subroutine Flux_summary(this, c, betrtracer_vars)
-  !
-  ! aggregate fluxes for mass balance check
+    !
+    ! aggregate fluxes for mass balance check
 
-  use BetrTracerType        , only : betrtracer_type
-  use clm_time_manager      , only : get_step_size
-  use clm_varpar            , only : nlevtrc_soil
-  use MathfuncMod           , only : dot_sum
-  class(TracerFlux_type)               :: this
-  type(BeTRTracer_Type)  , intent(in)  :: betrtracer_vars
-  integer                , intent(in)  :: c     ! column index
+    use BetrTracerType        , only : betrtracer_type
+    use clm_time_manager      , only : get_step_size
+    use clm_varpar            , only : nlevtrc_soil
+    use MathfuncMod           , only : dot_sum
+    class(TracerFlux_type)               :: this
+    type(BeTRTracer_Type)  , intent(in)  :: betrtracer_vars
+    integer                , intent(in)  :: c     ! column index
 
-  !local variables
-  integer :: jj, kk
-  real(r8):: dtime
-  associate(                                                          &
-    ntracers               => betrtracer_vars%ntracers              , &
-    nvolatile_tracers      => betrtracer_vars%nvolatile_tracers     , &
-    ngwmobile_tracers      => betrtracer_vars%ngwmobile_tracers     , &
-    is_volatile            => betrtracer_vars%is_volatile           , &
-    tracernames            => betrtracer_vars%tracernames           , &
-    volatileid             => betrtracer_vars%volatileid              &
-  )
-  dtime = get_step_size()
-  do jj = 1, ngwmobile_tracers
-    !the total net physical loss currently includes infiltration, surface runoff, transpiration aided transport,
-    !lateral drainage, vertical leaching
-    !for volatile tracers, this includes surface emission surface three different pathways
-    this%tracer_flx_infl_col(c,jj) = this%tracer_flx_infl_col(c,jj)*dtime
+    !local variables
+    integer :: jj, kk
+    real(r8):: dtime
+    associate(                                                          &
+         ntracers               => betrtracer_vars%ntracers              , &
+         nvolatile_tracers      => betrtracer_vars%nvolatile_tracers     , &
+         ngwmobile_tracers      => betrtracer_vars%ngwmobile_tracers     , &
+         is_volatile            => betrtracer_vars%is_volatile           , &
+         tracernames            => betrtracer_vars%tracernames           , &
+         volatileid             => betrtracer_vars%volatileid              &
+         )
+      dtime = get_step_size()
+      do jj = 1, ngwmobile_tracers
+         !the total net physical loss currently includes infiltration, surface runoff, transpiration aided transport,
+         !lateral drainage, vertical leaching
+         !for volatile tracers, this includes surface emission surface three different pathways
+         this%tracer_flx_infl_col(c,jj) = this%tracer_flx_infl_col(c,jj)*dtime
 
-    this%tracer_flx_netphyloss_col(c,jj) = - this%tracer_flx_infl_col(c,jj) - this%tracer_flx_dew_grnd_col(c,jj) &
-      - this%tracer_flx_dew_snow_col(c,jj) - this%tracer_flx_h2osfc_snow_residual_col(c,jj) &
-      + this%tracer_flx_sub_snow_col(c,jj) + this%tracer_flx_drain_col(c,jj) + &
-      this%tracer_flx_surfrun_col(c,jj) + this%tracer_flx_vtrans_col(c,jj) + this%tracer_flx_leaching_col(c,jj)
+         this%tracer_flx_netphyloss_col(c,jj) = - this%tracer_flx_infl_col(c,jj) - this%tracer_flx_dew_grnd_col(c,jj) &
+              - this%tracer_flx_dew_snow_col(c,jj) - this%tracer_flx_h2osfc_snow_residual_col(c,jj) &
+              + this%tracer_flx_sub_snow_col(c,jj) + this%tracer_flx_drain_col(c,jj) + &
+              this%tracer_flx_surfrun_col(c,jj) + this%tracer_flx_vtrans_col(c,jj) + this%tracer_flx_leaching_col(c,jj)
 
 
 
-    if(is_volatile(jj))then
-      kk = volatileid(jj)
-      this%tracer_flx_tparchm_col(c,kk) = dot_sum(x=this%tracer_flx_parchm_vr_col(c,1:nlevtrc_soil,kk), y=col%dz(c,1:nlevtrc_soil))
+         if(is_volatile(jj))then
+            kk = volatileid(jj)
+            this%tracer_flx_tparchm_col(c,kk) = dot_sum(x=this%tracer_flx_parchm_vr_col(c,1:nlevtrc_soil,kk), y=col%dz(c,1:nlevtrc_soil))
 
-      this%tracer_flx_surfemi_col(c,kk) = this%tracer_flx_tparchm_col(c,kk) + this%tracer_flx_dif_col(c,kk) + &
-        this%tracer_flx_ebu_col(c,kk)
+            this%tracer_flx_surfemi_col(c,kk) = this%tracer_flx_tparchm_col(c,kk) + this%tracer_flx_dif_col(c,kk) + &
+                 this%tracer_flx_ebu_col(c,kk)
 
-      this%tracer_flx_netphyloss_col(c,jj) = this%tracer_flx_netphyloss_col(c,jj)  +  this%tracer_flx_surfemi_col(c,kk)
+            this%tracer_flx_netphyloss_col(c,jj) = this%tracer_flx_netphyloss_col(c,jj)  +  this%tracer_flx_surfemi_col(c,kk)
 
-    endif
-  enddo
+         endif
+      enddo
 
-  do jj = 1, ntracers
-    this%tracer_flx_netpro_col(c,jj) = dot_sum(x=this%tracer_flx_netpro_vr_col(c,1:nlevtrc_soil,jj),y=col%dz(c,1:nlevtrc_soil))
-    if(jj<=ngwmobile_tracers)then
-      if(is_volatile(jj))then
-        kk = volatileid(jj)
-        this%tracer_flx_netpro_col(c,jj) = this%tracer_flx_netpro_col(c,jj) + this%tracer_flx_tparchm_col(c,kk)
-      endif
-    endif
-  enddo
-  end associate
+      do jj = 1, ntracers
+         this%tracer_flx_netpro_col(c,jj) = dot_sum(x=this%tracer_flx_netpro_vr_col(c,1:nlevtrc_soil,jj),y=col%dz(c,1:nlevtrc_soil))
+         if(jj<=ngwmobile_tracers)then
+            if(is_volatile(jj))then
+               kk = volatileid(jj)
+               this%tracer_flx_netpro_col(c,jj) = this%tracer_flx_netpro_col(c,jj) + this%tracer_flx_tparchm_col(c,kk)
+            endif
+         endif
+      enddo
+    end associate
   end subroutine Flux_summary
 
-
- !----------------------------------------------------------------
+  
+  !----------------------------------------------------------------
   subroutine Flux_display(this, c, jj, betrtracer_vars)
-  !
-  ! aggregate fluxes for mass balance check
+    !
+    ! aggregate fluxes for mass balance check
 
-  use BetrTracerType        , only : betrtracer_type
+    use BetrTracerType        , only : betrtracer_type
 
-  class(TracerFlux_type)               :: this
-  type(BeTRTracer_Type)  , intent(in)  :: betrtracer_vars
-  integer                , intent(in)  :: c     ! column index
-  integer                , intent(in)  :: jj
-  !local variables
-  integer :: kk
+    class(TracerFlux_type)               :: this
+    type(BeTRTracer_Type)  , intent(in)  :: betrtracer_vars
+    integer                , intent(in)  :: c     ! column index
+    integer                , intent(in)  :: jj
+    !local variables
+    integer :: kk
 
-  associate(                                                          &
-    ntracers               => betrtracer_vars%ntracers              , &
-    nvolatile_tracers      => betrtracer_vars%nvolatile_tracers     , &
-    ngwmobile_tracers      => betrtracer_vars%ngwmobile_tracers     , &
-    is_volatile            => betrtracer_vars%is_volatile           , &
-    tracernames            => betrtracer_vars%tracernames           , &
-    volatileid             => betrtracer_vars%volatileid              &
-  )
+    associate(                                                          &
+         ntracers               => betrtracer_vars%ntracers              , &
+         nvolatile_tracers      => betrtracer_vars%nvolatile_tracers     , &
+         ngwmobile_tracers      => betrtracer_vars%ngwmobile_tracers     , &
+         is_volatile            => betrtracer_vars%is_volatile           , &
+         tracernames            => betrtracer_vars%tracernames           , &
+         volatileid             => betrtracer_vars%volatileid              &
+         )
+      
+      !the total net physical loss currently includes infiltration, surface runoff, transpiration aided transport,
+      !lateral drainage, vertical leaching
+      !for volatile tracers, this includes surface emission surface three different pathways
+      write(iulog,*)tracernames(jj)
+      write(iulog,*),'infl=',this%tracer_flx_infl_col(c,jj),' drain=',  this%tracer_flx_drain_col(c,jj),    &
+           ' surfrun=',this%tracer_flx_surfrun_col(c,jj),' vtrans=', this%tracer_flx_vtrans_col(c,jj),&
+           ' leaching=', this%tracer_flx_leaching_col(c,jj)
 
-    !the total net physical loss currently includes infiltration, surface runoff, transpiration aided transport,
-    !lateral drainage, vertical leaching
-    !for volatile tracers, this includes surface emission surface three different pathways
-   write(*,*)tracernames(jj)
-   write(*,*),'infl=',this%tracer_flx_infl_col(c,jj),' drain=',  this%tracer_flx_drain_col(c,jj),    &
-      ' surfrun=',this%tracer_flx_surfrun_col(c,jj),' vtrans=', this%tracer_flx_vtrans_col(c,jj),&
-      ' leaching=', this%tracer_flx_leaching_col(c,jj)
-
-   if(is_volatile(jj))then
-     kk = volatileid(jj)
-     write(*,*),'tpartm=', this%tracer_flx_tparchm_col(c,kk),' dif=', this%tracer_flx_dif_col(c,kk),  &
-       ' ebu=',this%tracer_flx_ebu_col(c,kk)
-   endif
+      if(is_volatile(jj))then
+         kk = volatileid(jj)
+         write(iulog,*),'tpartm=', this%tracer_flx_tparchm_col(c,kk),' dif=', this%tracer_flx_dif_col(c,kk),  &
+              ' ebu=',this%tracer_flx_ebu_col(c,kk)
+      endif
 
 
-  end associate
+    end associate
   end subroutine Flux_display
 
 end module TracerFluxType

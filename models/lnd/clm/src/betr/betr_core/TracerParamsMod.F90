@@ -1,325 +1,321 @@
 module TracerParamsMod
 #include "shr_assert.h"
 
-
-   !-----------------------------------------------------------------------
-   ! !DESCRIPTION:
-   ! Module holding routines used to compute solubility, and phase conversion parameters
-   ! to be used for BeTR 1D vertical tracer transport
-   !
-   ! When I wrote the code, I enforce the guideline that no function should return
-   ! an array. Whenever a variable is modifed in a subroutine, it is declared as
-   ! intent(inout) and therefore, the initialization of such variable should be done
-   ! before it is modified elsewhere.
-   !
-   ! History
-   ! Jinyun Tang created May 2014.
-
-   use shr_kind_mod          , only : r8 => shr_kind_r8
-   use shr_log_mod           , only : errMsg => shr_log_errMsg
-   use decompMod             , only : bounds_type
-   use clm_varpar            , only : nlevsoi
-   use clm_varcon            , only : spval
-   use PatchType             , only : pft
-   use ColumnType            , only : col
-   use tracer_varcon
-   implicit none
-   save
-   private
-   !
-   ! !PUBLIC MEMBER FUNCTIONS:
-   public :: tracer_param_init
-   public :: set_multi_phase_diffusion
-   public :: get_gas_diffusivity
-   public :: get_diffusivity_ratio_gas2h2o, get_henrycef
-   public :: convert_mobile2gas
-   public :: set_phase_convert_coeff
-   public :: calc_tracer_infiltration
-   public :: pre_diagnose_soilcol_water_flux
-   public :: diagnose_advect_water_flux
-   public :: diagnose_drainage_water_flux
-   public :: calc_smp_l
-   public :: get_zwt
-   public :: calc_aerecond
-   public :: betr_annualupdate
-   !parameters
-   real(r8), parameter :: minval_diffus = 1.e-20_r8   !minimum diffusivity, m2/s
-   real(r8), parameter :: minval_airvol = 1.e-10_r8   !minimum air-filled volume
+  ! !DESCRIPTION:
+  ! Module holding routines used to compute solubility, and phase conversion parameters
+  ! to be used for BeTR 1D vertical tracer transport
+  !
+  !
+  ! History
+  ! Jinyun Tang created May 2014.
+  ! !USES:
+  use shr_kind_mod          , only : r8 => shr_kind_r8
+  use shr_log_mod           , only : errMsg => shr_log_errMsg
+  use decompMod             , only : bounds_type
+  use clm_varpar            , only : nlevsoi
+  use clm_varcon            , only : spval
+  use PatchType             , only : pft
+  use ColumnType            , only : col
+  use tracer_varcon
+  implicit none
+  save
+  private
+  !
+  ! !PUBLIC MEMBER FUNCTIONS:
+  public :: tracer_param_init
+  public :: set_multi_phase_diffusion
+  public :: get_gas_diffusivity
+  public :: get_diffusivity_ratio_gas2h2o, get_henrycef
+  public :: convert_mobile2gas
+  public :: set_phase_convert_coeff
+  public :: calc_tracer_infiltration
+  public :: pre_diagnose_soilcol_water_flux
+  public :: diagnose_advect_water_flux
+  public :: diagnose_drainage_water_flux
+  public :: calc_smp_l
+  public :: get_zwt
+  public :: calc_aerecond
+  public :: betr_annualupdate
+  !parameters
+  real(r8), parameter :: minval_diffus = 1.e-20_r8   !minimum diffusivity, m2/s
+  real(r8), parameter :: minval_airvol = 1.e-10_r8   !minimum air-filled volume
 
 
-   !declare a private tortuosity type
-   type :: soil_tortuosity_type
+  !declare a private tortuosity type
+  type :: soil_tortuosity_type
      real(r8), pointer :: tau_gas(:,:)      !soil tortuosity for gaseous phase diffusion
      real(r8), pointer :: tau_liq(:,:)      !soil tortuosity for aqueous phase diffusion
-   end type soil_tortuosity_type
-   type(soil_tortuosity_type), target :: tau_soil
-   real(r8), private, pointer :: h2osoi_liq_copy(:,:)
-   !!
-   contains
+  end type soil_tortuosity_type
+  type(soil_tortuosity_type), target :: tau_soil
+  real(r8), private, pointer :: h2osoi_liq_copy(:,:)
+  !!
+contains
 
 
-   subroutine tracer_param_init(bounds)
+  subroutine tracer_param_init(bounds)
 
-   !
-   ! DESCRIPTION
-   !
-   ! initialize the tracerParamsMod
-   !
-   use clm_varpar         , only : nlevtrc_soil
+    !
+    ! !DESCRIPTION:
+    !
+    ! initialize the tracerParamsMod
+    !
+    ! !USES:
+    use clm_varpar         , only : nlevtrc_soil
 
-   implicit none
-   type(bounds_type), intent(in) :: bounds   !bounds
-   character(len=255) :: subname ='tracer_param_init'
+    implicit none
+    type(bounds_type), intent(in) :: bounds   !bounds
+    character(len=32)             :: subname ='tracer_param_init'
 
-   allocate(tau_soil%tau_gas(bounds%begc:bounds%endc, 1 : nlevtrc_soil))
-   tau_soil%tau_gas(:,:) = 0._r8
-   allocate(tau_soil%tau_liq(bounds%begc:bounds%endc, 1 : nlevtrc_soil))
-   tau_soil%tau_liq(:,:) = 0._r8
+    allocate(tau_soil%tau_gas(bounds%begc:bounds%endc, 1 : nlevtrc_soil))
+    tau_soil%tau_gas(:,:) = 0._r8
+    allocate(tau_soil%tau_liq(bounds%begc:bounds%endc, 1 : nlevtrc_soil))
+    tau_soil%tau_liq(:,:) = 0._r8
 
 
-   end subroutine tracer_param_init
+  end subroutine tracer_param_init
 
-!--------------------------------------------------------------------------------------------------------------
-   subroutine Calc_gaseous_diffusion_soil_tortuosity(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, soilstate_vars, waterstate_vars, tau_gas)
-   !
-   ! DESCRIPTIONS
-   ! compute soil tortuosity for gasesous diffusion
+  !--------------------------------------------------------------------------------------------------------------
+  subroutine Calc_gaseous_diffusion_soil_tortuosity(bounds, lbj, ubj, jtops, num_soilc, filter_soilc, soilstate_vars, waterstate_vars, tau_gas)
+    !
+    ! !DESCRIPTION:
+    !
+    ! compute soil tortuosity for gasesous diffusion
 
-   ! USES
-   use SoilStateType      , only : soilstate_type
-   use WaterStateType     , only : Waterstate_Type
+    ! !USES:
+    use SoilStateType      , only : soilstate_type
+    use WaterStateType     , only : Waterstate_Type
 
-   implicit none
-   !arguments
-   type(bounds_type),        intent(in) :: bounds                             ! bounds
-   integer,                  intent(in) :: num_soilc                          ! number of column soil points in column filter
-   integer,                  intent(in) :: filter_soilc(:)                    ! column filter for soil points
-   integer,                  intent(in) :: lbj, ubj                           ! lower and upper bounds, make sure they are > 0
-   integer,                  intent(in) :: jtops(bounds%begc: )               ! top label of each column
-   type(soilstate_type),     intent(in) :: soilstate_vars                     ! column soil physical state variables
-   type(Waterstate_Type),    intent(in) :: waterstate_vars                    ! column soil water state variables
-   real(r8),              intent(inout) :: tau_gas(bounds%begc: , lbj: )      !output variable
+    implicit none
+    !arguments
+    type(bounds_type),        intent(in) :: bounds                             ! bounds
+    integer,                  intent(in) :: num_soilc                          ! number of column soil points in column filter
+    integer,                  intent(in) :: filter_soilc(:)                    ! column filter for soil points
+    integer,                  intent(in) :: lbj, ubj                           ! lower and upper bounds, make sure they are > 0
+    integer,                  intent(in) :: jtops(bounds%begc: )               ! top label of each column
+    type(soilstate_type),     intent(in) :: soilstate_vars                     ! column soil physical state variables
+    type(Waterstate_Type),    intent(in) :: waterstate_vars                    ! column soil water state variables
+    real(r8),              intent(inout) :: tau_gas(bounds%begc: , lbj: )      !output variable
 
-   !local variables
-   integer :: n, fc, c     !indices
-   character(len=255) :: subname = 'calc_gaseous_diffusion_soil_tortuosity'
+    !local variables
+    integer :: n, fc, c     !indices
+    character(len=255) :: subname = 'calc_gaseous_diffusion_soil_tortuosity'
 
-   associate( &
-     eff_porosity   => soilstate_vars%eff_porosity_col,                & !effective soil porosity
-     bsw            => soilstate_vars%bsw_col         ,                & !clapp-hornber shape parameters
-     air_vol        => waterstate_vars%air_vol_col                     & !volume possessed by air
-   )
+    associate( &
+         eff_porosity   => soilstate_vars%eff_porosity_col,                & !effective soil porosity
+         bsw            => soilstate_vars%bsw_col         ,                & !clapp-hornber shape parameters
+         air_vol        => waterstate_vars%air_vol_col                     & !volume possessed by air
+         )
 
-   SHR_ASSERT_ALL((ubound(jtops)           == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(tau_gas)         == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-   do n = lbj, ubj
-     do fc = 1, num_soilc
-       c = filter_soilc(fc)
-       if(n>=jtops(c))then
-         tau_gas(c,n) = get_taugas(eff_porosity(c,n), air_vol(c,n),bsw(c,n))
-       endif
-     enddo
-   enddo
-   end associate
-
-   end subroutine Calc_gaseous_diffusion_soil_tortuosity
-!--------------------------------------------------------------------------------------------------------------
-   subroutine Calc_aqueous_diffusion_soil_tortuosity(bounds, lbj, ubj, jtops, numf, filter, soilstate_vars, waterstate_vars, tau_liq)
-   !
-   ! DESCRIPTIONS
-   ! compute soil tortuosity for aquesous diffusion
-   !
-
-   use SoilStateType      , only : soilstate_type
-   use WaterStateType     , only : Waterstate_Type
-
-   implicit none
-
-   !arguments
-   type(bounds_type),        intent(in) :: bounds                                ! bounds
-   integer,                  intent(in) :: numf                                  ! number of columns in column filter
-   integer,                  intent(in) :: filter(:)                             ! column filter
-   integer,                  intent(in) :: lbj, ubj                              ! lower and upper bounds, make sure they are > 0
-   integer,                  intent(in) :: jtops(bounds%begc: )                  ! top label of each column
-   type(soilstate_type),     intent(in) :: soilstate_vars                        ! column soil physical state variables
-   type(Waterstate_Type),    intent(in) :: waterstate_vars                       ! column soil water state variables
-   real(r8),              intent(inout) :: tau_liq(bounds%begc: , lbj: )         !output variable
-
-   !local variables
-   integer :: n, fc, c     !indices
-   character(len=255) :: subname = 'calc_aqueous_diffusion_soil_tortuosity'
-
-   SHR_ASSERT_ALL((ubound(jtops)           == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(tau_liq)         == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-
-   associate( &
-     eff_porosity   => soilstate_vars%eff_porosity_col,                & !effective soil porosity
-     bsw            => soilstate_vars%bsw_col         ,                & !clapp-hornber shape parameters
-     h2osoi_liqvol  => waterstate_vars%h2osoi_liqvol_col               & !soil volume possessed by liquid water
-   )
-
-   do n = lbj, ubj
-     do fc = 1, numf
-       c = filter(fc)
-       if(n>=jtops(c))then
-         tau_liq(c,n)=get_tauliq(eff_porosity(c,n), h2osoi_liqvol(c,n),bsw(c,n))
-       endif
-     enddo
-   enddo
-   end associate
-   end subroutine calc_aqueous_diffusion_soil_tortuosity
-
-!--------------------------------------------------------------------------------------------------------------
-
-   subroutine calc_bulk_diffusivity(bounds, lbj, ubj, jtops, numf, filter, bunsencef_col, &
-      canopystate_vars, waterstate_vars, tau_soi, betrtracer_vars, t_soisno,  bulkdiffus)
-   !
-   ! DESCRIPTION
-   ! compute the weighted bulk diffusivity in soil for dual-phase transport
-   ! Reference: Tang and Riley, 2014, BG,  Simple formulations and solutions of &
-   ! the dual-phase diffusive transport for biogeochemical modeling.
-   !the formula for a volatile species is
-   !D_bulk=(airvol*D_g*tau_g+bunsencef_col*h2osoi_liqvol*D_w*tau_w)
-
-   !USES
-   use WaterStateType        , only : Waterstate_Type
-   use BeTRTracerType        , only : betrtracer_type
-   use CanopyStateType       , only : canopystate_type
-   use clm_varcon            , only : zisoi
-
-   type(bounds_type)          , intent(in) :: bounds                                  ! bounds
-   integer                    , intent(in) :: numf                                    ! number of columns in column filter
-   integer                    , intent(in) :: filter(:)                               ! column filter
-   integer                    , intent(in) :: lbj, ubj                                ! lower and upper bounds, make sure they are > 0
-   integer                    , intent(in) :: jtops(bounds%begc: )                    ! top label of each column
-   real(r8)                   , intent(in) :: t_soisno(bounds%begc: ,  lbj: )         ! soil temperature
-   real(r8)                   , intent(in) :: bunsencef_col(bounds%begc: ,lbj: ,1: )  ! bunsen coefficient for gaseous-aqueous conversion
-   type(betrtracer_type)      , intent(in) :: betrtracer_vars                         ! betr configuration information
-   type(Waterstate_Type)      , intent(in) :: waterstate_vars                         ! water state variables
-   type(canopystate_type)     , intent(in) :: canopystate_vars                        ! canopy state variables
-   type(soil_tortuosity_type) , intent(in) :: tau_soi                                 ! soil tortuosity
-   real(r8)                   ,intent(out) :: bulkdiffus(bounds%begc: ,lbj: , 1: )    ! the returning variable
-
-   !local variables
-   real(r8) :: max_depth_cryoturb         = 3._r8  !m
-   !parameters below will be encapsulated into a structure later
-   real(r8) :: max_altdepth_cryoturbation = 1._r8  ! (m) maximum active layer thickness for cryoturbation to occur
-   real(r8) :: cryoturb_diffusion_k       = 1e-4_r8 / (86400._r8 * 365._r8)  ! [m^2/sec] = 1 cm^2 / yr = 1m^2/1000 yr
-   real(r8) :: som_diffus                 = 5e-4_r8 / (86400._r8 * 365._r8)  ! [m^2/sec] = 1 cm^2 / yr
-   integer :: j, k, n, fc, c , trcid    !indices
-   integer :: nsld
-   real(r8) :: diffaqu, diffgas
-   character(len=255) :: subname = 'calc_bulk_diffusivity'
-
-   !array shape checking will be added later.
-   SHR_ASSERT_ALL((ubound(jtops)           == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(t_soisno)        == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(jtops)           == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(bunsencef_col)   == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(bulkdiffus)      == (/bounds%endc, ubj, betrtracer_vars%ntracer_groups/)),   errMsg(__FILE__,__LINE__))
-
-   associate( &
-     ngwmobile_tracer_groups    => betrtracer_vars%ngwmobile_tracer_groups            , & ! Integer[intent(in)], number of dual phase (gw) tracers
-     tracer_group_memid   => betrtracer_vars%tracer_group_memid           , & !
-     ntracer_groups       => betrtracer_vars%ntracer_groups               , & ! Integer[intent(in)], total number of tracers
-     is_volatile          => betrtracer_vars%is_volatile                  , & ! logical[intent(in)], is a volatile tracer?
-     is_h2o               => betrtracer_vars%is_h2o                       , & ! logical[intent(in)], is a h2o tracer?
-     volatilegroupid      => betrtracer_vars%volatilegroupid              , & ! integer[intent(in)], location in the volatile vector
-     air_vol              => waterstate_vars%air_vol_col                  , & ! volume possessed by air
-     h2osoi_liqvol        => waterstate_vars%h2osoi_liqvol_col            , & ! soil volume possessed by liquid water
-     altmax               => canopystate_vars%altmax_col                  , & ! Input:  [real(r8) (:)   ]  maximum annual depth of thaw
-     altmax_lastyear      => canopystate_vars%altmax_lastyear_col         , & ! Input:  [real(r8) (:)   ]  prior year maximum annual depth o
-     tracer_solid_passive_diffus_scal_group => betrtracer_vars%tracer_solid_passive_diffus_scal_group, & !scaling factor for solid phase diffusivity
-     tracer_solid_passive_diffus_thc_group => betrtracer_vars%tracer_solid_passive_diffus_thc_group  , & !threshold for solid phase diffusivity
-     tau_gas              => tau_soi%tau_gas                              , & ! real(r8)[intent(in)], gaseous tortuosity
-     tau_liq              => tau_soi%tau_liq                                & ! real(r8)[intent(in)], aqueous tortuosity
-   )
-
-   bulkdiffus(:,:,:) = 1.e-40_r8                            !initialize to a very small number
-   do j = 1, ngwmobile_tracer_groups
-     trcid = tracer_group_memid(j,1)
-     if(is_volatile(j))then
-       !it is a volatile tracers
-       k=volatilegroupid(trcid)
-
-       do n=lbj, ubj
-         do fc = 1, numf
-           c = filter(fc)
-           if(n>=jtops(c))then
-             !aqueous diffusivity
-             diffaqu=get_aqueous_diffusivity(trcid, t_soisno(c,n), betrtracer_vars)
-             !gaseous diffusivity
-             diffgas=get_gas_diffusivity(trcid, t_soisno(c,n), betrtracer_vars)
-
-             !bulk diffusivity
-             !the bulk diffusivity is calculated by assuming the diffusion equation is gas-primary
-             !accordingly the retardation factor is gas primary
-             if(is_h2o(trcid))then
-               !for water tracer, the aqueous phase is used as dominant species
-               bulkdiffus(c,n,j)=air_vol(c,n)*tau_gas(c,n)*diffgas/bunsencef_col(c,n,k)+ &
-                           h2osoi_liqvol(c,n)*tau_liq(c,n)*diffaqu
-             else
-               bulkdiffus(c,n,j)=air_vol(c,n)*tau_gas(c,n)*diffgas+ &
-                           h2osoi_liqvol(c,n)*tau_liq(c,n)*diffaqu*bunsencef_col(c,n,k)
-             endif
-             !to prevent division by zero
-             bulkdiffus(c,n,j)=max(bulkdiffus(c,n,j),minval_diffus)
-           endif
+      SHR_ASSERT_ALL((ubound(jtops)           == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
+      SHR_ASSERT_ALL((ubound(tau_gas)         == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
+      do n = lbj, ubj
+         do fc = 1, num_soilc
+            c = filter_soilc(fc)
+            if(n>=jtops(c))then
+               tau_gas(c,n) = get_taugas(eff_porosity(c,n), air_vol(c,n),bsw(c,n))
+            endif
          enddo
-       enddo
+      enddo
+    end associate
 
-     else
-       !it is not a volatile tracer
-       do n = lbj, ubj
+  end subroutine Calc_gaseous_diffusion_soil_tortuosity
+  !--------------------------------------------------------------------------------------------------------------
+  subroutine Calc_aqueous_diffusion_soil_tortuosity(bounds, lbj, ubj, jtops, numf, filter, soilstate_vars, waterstate_vars, tau_liq)
+    !
+    ! DESCRIPTIONS
+    ! compute soil tortuosity for aquesous diffusion
+    !
+
+    use SoilStateType      , only : soilstate_type
+    use WaterStateType     , only : Waterstate_Type
+
+    implicit none
+
+    !arguments
+    type(bounds_type),        intent(in) :: bounds                                ! bounds
+    integer,                  intent(in) :: numf                                  ! number of columns in column filter
+    integer,                  intent(in) :: filter(:)                             ! column filter
+    integer,                  intent(in) :: lbj, ubj                              ! lower and upper bounds, make sure they are > 0
+    integer,                  intent(in) :: jtops(bounds%begc: )                  ! top label of each column
+    type(soilstate_type),     intent(in) :: soilstate_vars                        ! column soil physical state variables
+    type(Waterstate_Type),    intent(in) :: waterstate_vars                       ! column soil water state variables
+    real(r8),              intent(inout) :: tau_liq(bounds%begc: , lbj: )         !output variable
+
+    !local variables
+    integer :: n, fc, c     !indices
+    character(len=255) :: subname = 'calc_aqueous_diffusion_soil_tortuosity'
+
+    SHR_ASSERT_ALL((ubound(jtops)           == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((ubound(tau_liq)         == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
+
+    associate( &
+         eff_porosity   => soilstate_vars%eff_porosity_col,                & !effective soil porosity
+         bsw            => soilstate_vars%bsw_col         ,                & !clapp-hornber shape parameters
+         h2osoi_liqvol  => waterstate_vars%h2osoi_liqvol_col               & !soil volume possessed by liquid water
+         )
+
+      do n = lbj, ubj
          do fc = 1, numf
-           c = filter(fc)
-           if(n>=jtops(c))then
-             !the retardation factor is 1.
-             diffaqu=get_aqueous_diffusivity(trcid, t_soisno(c,n), betrtracer_vars)
-             bulkdiffus(c,n,j)=diffaqu*h2osoi_liqvol(c,n)*tau_liq(c,n)
-             !to prevent division by zero
-             bulkdiffus(c,n,j)=max(bulkdiffus(c,n,j),minval_diffus) !avoid division by zero in following calculations
-           endif
+            c = filter(fc)
+            if(n>=jtops(c))then
+               tau_liq(c,n)=get_tauliq(eff_porosity(c,n), h2osoi_liqvol(c,n),bsw(c,n))
+            endif
          enddo
-       enddo
-     endif
-   enddo
+      enddo
+    end associate
+  end subroutine calc_aqueous_diffusion_soil_tortuosity
 
-   !do solid phase passive tracers
-   do j = ngwmobile_tracer_groups + 1, ntracer_groups
-     nsld = j - ngwmobile_tracer_groups
-     trcid = tracer_group_memid(j,1)
-     do n = 1, ubj
-       do fc = 1,numf
-         c = filter(fc)
+  !--------------------------------------------------------------------------------------------------------------
+  
+  subroutine calc_bulk_diffusivity(bounds, lbj, ubj, jtops, numf, filter, bunsencef_col, &
+       canopystate_vars, waterstate_vars, tau_soi, betrtracer_vars, t_soisno,  bulkdiffus)
+    !
+    ! !DESCRIPTION:
+    ! compute the weighted bulk diffusivity in soil for dual-phase transport
+    ! Reference: Tang and Riley, 2014, BG,  Simple formulations and solutions of &
+    ! the dual-phase diffusive transport for biogeochemical modeling.
+    !the formula for a volatile species is
+    !D_bulk=(airvol*D_g*tau_g+bunsencef_col*h2osoi_liqvol*D_w*tau_w)
 
-         if  ( ( max(altmax(c), altmax_lastyear(c)) <= max_altdepth_cryoturbation ) .and. &
-            ( max(altmax(c), altmax_lastyear(c)) > 0._r8) ) then
-               ! use mixing profile modified slightly from Koven et al. (2009): constant through active layer, linear decrease from base of active layer to zero at a fixed depth
+    ! !USES:
+    use WaterStateType        , only : Waterstate_Type
+    use BeTRTracerType        , only : betrtracer_type
+    use CanopyStateType       , only : canopystate_type
+    use clm_varcon            , only : zisoi
 
-           if ( zisoi(n) < max(altmax(c), altmax_lastyear(c)) ) then
-             bulkdiffus(c,n,j) = cryoturb_diffusion_k * tracer_solid_passive_diffus_scal_group(nsld)
-             bulkdiffus(c,n,j) = max(bulkdiffus(c,n,j), tracer_solid_passive_diffus_thc_group(nsld))
-           else
-             bulkdiffus(c,n,j) = max(cryoturb_diffusion_k * &
+    type(bounds_type)          , intent(in) :: bounds                                  ! bounds
+    integer                    , intent(in) :: numf                                    ! number of columns in column filter
+    integer                    , intent(in) :: filter(:)                               ! column filter
+    integer                    , intent(in) :: lbj, ubj                                ! lower and upper bounds, make sure they are > 0
+    integer                    , intent(in) :: jtops(bounds%begc: )                    ! top label of each column
+    real(r8)                   , intent(in) :: t_soisno(bounds%begc: ,  lbj: )         ! soil temperature
+    real(r8)                   , intent(in) :: bunsencef_col(bounds%begc: ,lbj: ,1: )  ! bunsen coefficient for gaseous-aqueous conversion
+    type(betrtracer_type)      , intent(in) :: betrtracer_vars                         ! betr configuration information
+    type(Waterstate_Type)      , intent(in) :: waterstate_vars                         ! water state variables
+    type(canopystate_type)     , intent(in) :: canopystate_vars                        ! canopy state variables
+    type(soil_tortuosity_type) , intent(in) :: tau_soi                                 ! soil tortuosity
+    real(r8)                   ,intent(out) :: bulkdiffus(bounds%begc: ,lbj: , 1: )    ! the returning variable
+
+    !local variables
+    real(r8) :: max_depth_cryoturb         = 3._r8  !m
+    !parameters below will be encapsulated into a structure later
+    real(r8) :: max_altdepth_cryoturbation = 1._r8  ! (m) maximum active layer thickness for cryoturbation to occur
+    real(r8) :: cryoturb_diffusion_k       = 1e-4_r8 / (86400._r8 * 365._r8)  ! [m^2/sec] = 1 cm^2 / yr = 1m^2/1000 yr
+    real(r8) :: som_diffus                 = 5e-4_r8 / (86400._r8 * 365._r8)  ! [m^2/sec] = 1 cm^2 / yr
+    integer :: j, k, n, fc, c , trcid    !indices
+    integer :: nsld
+    real(r8) :: diffaqu, diffgas
+    character(len=255) :: subname = 'calc_bulk_diffusivity'
+
+    !array shape checking will be added later.
+    SHR_ASSERT_ALL((ubound(jtops)           == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((ubound(t_soisno)        == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((ubound(jtops)           == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((ubound(bunsencef_col)   == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((ubound(bulkdiffus)      == (/bounds%endc, ubj, betrtracer_vars%ntracer_groups/)),   errMsg(__FILE__,__LINE__))
+
+    associate(                                                                                              &
+         ngwmobile_tracer_groups                => betrtracer_vars%ngwmobile_tracer_groups                , & ! Integer[intent(in)], number of dual phase (gw) tracers
+         tracer_group_memid                     => betrtracer_vars%tracer_group_memid                     , & !
+         ntracer_groups                         => betrtracer_vars%ntracer_groups                         , & ! Integer[intent(in)], total number of tracers
+         is_volatile                            => betrtracer_vars%is_volatile                            , & ! logical[intent(in)], is a volatile tracer?
+         is_h2o                                 => betrtracer_vars%is_h2o                                 , & ! logical[intent(in)], is a h2o tracer?
+         volatilegroupid                        => betrtracer_vars%volatilegroupid                        , & ! integer[intent(in)], location in the volatile vector
+         air_vol                                => waterstate_vars%air_vol_col                            , & ! volume possessed by air
+         h2osoi_liqvol                          => waterstate_vars%h2osoi_liqvol_col                      , & ! soil volume possessed by liquid water
+         altmax                                 => canopystate_vars%altmax_col                            , & ! Input:  [real(r8) (:)   ]  maximum annual depth of thaw
+         altmax_lastyear                        => canopystate_vars%altmax_lastyear_col                   , & ! Input:  [real(r8) (:)   ]  prior year maximum annual depth o
+         tracer_solid_passive_diffus_scal_group => betrtracer_vars%tracer_solid_passive_diffus_scal_group , & !scaling factor for solid phase diffusivity
+         tracer_solid_passive_diffus_thc_group  => betrtracer_vars%tracer_solid_passive_diffus_thc_group  , & !threshold for solid phase diffusivity
+         tau_gas                                => tau_soi%tau_gas                                        , & ! real(r8)[intent(in)], gaseous tortuosity
+         tau_liq                                => tau_soi%tau_liq                                          & ! real(r8)[intent(in)], aqueous tortuosity
+         )
+
+      bulkdiffus(:,:,:) = 1.e-40_r8                            !initialize to a very small number
+      do j = 1, ngwmobile_tracer_groups
+         trcid = tracer_group_memid(j,1)
+         if(is_volatile(j))then
+            !it is a volatile tracers
+            k=volatilegroupid(trcid)
+
+            do n=lbj, ubj
+               do fc = 1, numf
+                  c = filter(fc)
+                  if(n>=jtops(c))then
+                     !aqueous diffusivity
+                     diffaqu=get_aqueous_diffusivity(trcid, t_soisno(c,n), betrtracer_vars)
+                     !gaseous diffusivity
+                     diffgas=get_gas_diffusivity(trcid, t_soisno(c,n), betrtracer_vars)
+
+                     !bulk diffusivity
+                     !the bulk diffusivity is calculated by assuming the diffusion equation is gas-primary
+                     !accordingly the retardation factor is gas primary
+                     if(is_h2o(trcid))then
+                        !for water tracer, the aqueous phase is used as dominant species
+                        bulkdiffus(c,n,j)=air_vol(c,n)*tau_gas(c,n)*diffgas/bunsencef_col(c,n,k)+ &
+                             h2osoi_liqvol(c,n)*tau_liq(c,n)*diffaqu
+                     else
+                        bulkdiffus(c,n,j)=air_vol(c,n)*tau_gas(c,n)*diffgas+ &
+                             h2osoi_liqvol(c,n)*tau_liq(c,n)*diffaqu*bunsencef_col(c,n,k)
+                     endif
+                     !to prevent division by zero
+                     bulkdiffus(c,n,j)=max(bulkdiffus(c,n,j),minval_diffus)
+                  endif
+               enddo
+            enddo
+
+         else
+            !it is not a volatile tracer
+            do n = lbj, ubj
+               do fc = 1, numf
+                  c = filter(fc)
+                  if(n>=jtops(c))then
+                     !the retardation factor is 1.
+                     diffaqu=get_aqueous_diffusivity(trcid, t_soisno(c,n), betrtracer_vars)
+                     bulkdiffus(c,n,j)=diffaqu*h2osoi_liqvol(c,n)*tau_liq(c,n)
+                     !to prevent division by zero
+                     bulkdiffus(c,n,j)=max(bulkdiffus(c,n,j),minval_diffus) !avoid division by zero in following calculations
+                  endif
+               enddo
+            enddo
+         endif
+      enddo
+
+      !do solid phase passive tracers
+      do j = ngwmobile_tracer_groups + 1, ntracer_groups
+         nsld = j - ngwmobile_tracer_groups
+         trcid = tracer_group_memid(j,1)
+         do n = 1, ubj
+            do fc = 1,numf
+               c = filter(fc)
+
+               if  ( ( max(altmax(c), altmax_lastyear(c)) <= max_altdepth_cryoturbation ) .and. &
+                    ( max(altmax(c), altmax_lastyear(c)) > 0._r8) ) then
+                  ! use mixing profile modified slightly from Koven et al. (2009): constant through active layer, linear decrease from base of active layer to zero at a fixed depth
+
+                  if ( zisoi(n) < max(altmax(c), altmax_lastyear(c)) ) then
+                     bulkdiffus(c,n,j) = cryoturb_diffusion_k * tracer_solid_passive_diffus_scal_group(nsld)
+                     bulkdiffus(c,n,j) = max(bulkdiffus(c,n,j), tracer_solid_passive_diffus_thc_group(nsld))
+                  else
+                     bulkdiffus(c,n,j) = max(cryoturb_diffusion_k * &
                           ( 1._r8 - ( zisoi(n) - max(altmax(c), altmax_lastyear(c)) ) / &
                           ( max_depth_cryoturb - max(altmax(c), altmax_lastyear(c)) ) ), 0._r8)  ! go linearly to zero between ALT and max_depth_cryoturb
-             bulkdiffus(c,n,j) = bulkdiffus(c,n,j) * tracer_solid_passive_diffus_scal_group(nsld)
-             bulkdiffus(c,n,j) = max(bulkdiffus(c,n,j), tracer_solid_passive_diffus_thc_group(nsld))
-           endif
-         elseif (  max(altmax(c), altmax_lastyear(c)) > 0._r8 ) then
-         ! constant advection, constant diffusion
-           bulkdiffus(c,n,j) = som_diffus * tracer_solid_passive_diffus_scal_group(nsld)
-           bulkdiffus(c,n,j) = max(bulkdiffus(c,n,j), tracer_solid_passive_diffus_thc_group(nsld))
-         else
-         ! completely frozen soils--no mixing
-           bulkdiffus(c,n,j) = 1e-4_r8 / (86400._r8 * 365._r8) * 1.e-36_r8  !set to very small number for numerical purpose
-         endif
-       enddo
-     enddo
-   enddo
-   end associate
-   end subroutine calc_bulk_diffusivity
+                     bulkdiffus(c,n,j) = bulkdiffus(c,n,j) * tracer_solid_passive_diffus_scal_group(nsld)
+                     bulkdiffus(c,n,j) = max(bulkdiffus(c,n,j), tracer_solid_passive_diffus_thc_group(nsld))
+                  endif
+               elseif (  max(altmax(c), altmax_lastyear(c)) > 0._r8 ) then
+                  ! constant advection, constant diffusion
+                  bulkdiffus(c,n,j) = som_diffus * tracer_solid_passive_diffus_scal_group(nsld)
+                  bulkdiffus(c,n,j) = max(bulkdiffus(c,n,j), tracer_solid_passive_diffus_thc_group(nsld))
+               else
+                  ! completely frozen soils--no mixing
+                  bulkdiffus(c,n,j) = 1e-4_r8 / (86400._r8 * 365._r8) * 1.e-36_r8  !set to very small number for numerical purpose
+               endif
+            enddo
+         enddo
+      enddo
+    end associate
+  end subroutine calc_bulk_diffusivity
 !--------------------------------------------------------------------------------------------------------------
 
 
@@ -1877,20 +1873,21 @@ module TracerParamsMod
     logical :: newrun
     !-----------------------------------------------------------------------
 
-    associate(                                                      &
-         agnpp          =>    carbonflux_vars%agnpp_patch         , & ! Input:  [real(r8) (:) ]  (gC/m2/s) aboveground NPP
-         bgnpp          =>    carbonflux_vars%bgnpp_patch         , & ! Input:  [real(r8) (:) ]  (gC/m2/s) belowground NPP
-         tempavg_agnpp  =>    carbonflux_vars%tempavg_agnpp_patch , & ! Output: [real(r8) (:) ]  temporary average above-ground NPP (gC/m2/s)
-         annavg_agnpp   =>    carbonflux_vars%annavg_agnpp_patch  , & ! Output: [real(r8) (:) ]  annual average above-ground NPP (gC/m2/s)
-         tempavg_bgnpp  =>    carbonflux_vars%tempavg_bgnpp_patch , & ! Output: [real(r8) (:) ]  temporary average below-ground NPP (gC/m2/s)
-         annavg_bgnpp   =>    carbonflux_vars%annavg_bgnpp_patch  , & ! Output: [real(r8) (:) ]  annual average below-ground NPP (gC/m2/s)
+    associate(                                                       &
+         agnpp           =>    carbonflux_vars%agnpp_patch         , & ! Input:  [real(r8) (:) ]  (gC/m2/s) aboveground NPP
+         bgnpp           =>    carbonflux_vars%bgnpp_patch         , & ! Input:  [real(r8) (:) ]  (gC/m2/s) belowground NPP
+         tempavg_agnpp   =>    carbonflux_vars%tempavg_agnpp_patch , & ! Output: [real(r8) (:) ]  temporary average above-ground NPP (gC/m2/s)
+         annavg_agnpp    =>    carbonflux_vars%annavg_agnpp_patch  , & ! Output: [real(r8) (:) ]  annual average above-ground NPP (gC/m2/s)
+         tempavg_bgnpp   =>    carbonflux_vars%tempavg_bgnpp_patch , & ! Output: [real(r8) (:) ]  temporary average below-ground NPP (gC/m2/s)
+         annavg_bgnpp    =>    carbonflux_vars%annavg_bgnpp_patch  , & ! Output: [real(r8) (:) ]  annual average below-ground NPP (gC/m2/s)
+         
 
-         !finundated     =>    ch4_vars%finundated_col             , & ! Input:  [real(r8) (:) ]  fractional inundated area in soil column
-         annsum_counter =>    tracercoeff_vars%annsum_counter_col   & ! Output: [real(r8) (:) ]  seconds since last annual accumulator turnover
-         !tempavg_somhr  =>    ch4_vars%tempavg_somhr_col          , & ! Output: [real(r8) (:) ]  temporary average SOM heterotrophic resp. (gC/m2/s)
-         !annavg_somhr   =>    ch4_vars%annavg_somhr_col           , & ! Output: [real(r8) (:) ]  annual average SOM heterotrophic resp. (gC/m2/s)
+         annsum_counter  =>    tracercoeff_vars%annsum_counter_col   & ! Output: [real(r8) (:) ]  seconds since last annual accumulator turnover
+         !finundated    =>    ch4_vars%finundated_col             , & ! Input:  [real(r8) (:) ]  fractional inundated area in soil column
+         !tempavg_somhr =>    ch4_vars%tempavg_somhr_col          , & ! Output: [real(r8) (:) ]  temporary average SOM heterotrophic resp. (gC/m2/s)
+         !annavg_somhr    =>    ch4_vars%annavg_somhr_col           , & ! Output: [real(r8) (:) ]  annual average SOM heterotrophic resp. (gC/m2/s)
          !tempavg_finrw  =>    ch4_vars%tempavg_finrw_col          , & ! Output: [real(r8) (:) ]  respiration-weighted annual average of finundated
-         !annavg_finrw   =>    ch4_vars%annavg_finrw_col             & ! Output: [real(r8) (:) ]  respiration-weighted annual average of finundated
+         !annavg_finrw  =>    ch4_vars%annavg_finrw_col             & ! Output: [real(r8) (:) ]  respiration-weighted annual average of finundated
          )
 
       ! set time steps
