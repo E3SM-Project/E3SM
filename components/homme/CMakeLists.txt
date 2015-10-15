@@ -152,7 +152,7 @@ IF (${ENABLE_NANOTIMERS})
 ENDIF ()
 
 # Use ccsm_utils FindNETCDF path
-SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../../scripts/ccsm_utils/CMake" ${CMAKE_MODULE_PATH})
+SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../cime/externals/CMake" ${CMAKE_MODULE_PATH})
 FIND_PACKAGE(NETCDF)
 # For pio - allow the user to set HDF5_DIR to find libhdf5 etc.
 IF (HDF5_DIR)

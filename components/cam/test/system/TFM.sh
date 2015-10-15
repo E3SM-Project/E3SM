@@ -65,13 +65,6 @@ check_code "$?" "Problem running find_mergeinfo.sh on CAM."
 
 handle_mergeinfo "$mergeinfo_files"
 
-# Check for mergeinfo in CAM externals.
-# Leave out the HOMME external for now, since CAM devs don't manage it.
-# The grep uses extended regex to rule out matches to either absolute or
-# relative path.
-mergeinfo_files=$(${CAM_SCRIPTDIR}/find_mergeinfo.sh -rs "$cam_top_dir" | \
-    grep -Ev "($cam_top_dir|${cam_top_dir#${PWD}/})/src/dynamics/se/share")
-
 # Not checking code because grep will normally return 1.
 
 handle_mergeinfo "$mergeinfo_files"
