@@ -1,0 +1,14 @@
+[namelists]
+forward = FULL_PATH_TO_FORWARD_TEMPLATE_NAMELIST
+
+[streams]
+forward = FULL_PATH_TO_FORWARD_TEMPLATE_STREAMS
+
+[executables]
+model = FULL_PATH_TO_MODEL
+mesh_converter = FULL_PATH_TO_MESH_CONVERTER
+cell_culler = FULL_PATH_TO_CELL_CULLER
+metis = FULL_PATH_TO_METIS
+
+[paths]
+mesh_database = FULL_PATH_TO_LOCAL_MESH_DATABASE
