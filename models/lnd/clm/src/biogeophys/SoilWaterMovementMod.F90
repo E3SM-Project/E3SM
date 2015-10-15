@@ -1111,6 +1111,7 @@ contains
 
             ! Find soil layer just above water table
             jwt = nlevgrnd
+
             ! allow jwt to equal zero when zwt is in top layer
             do j = 1,nlevgrnd
                if (zwt(c) <= zi(c,j)) then
@@ -1118,6 +1119,10 @@ contains
                   exit
                end if
             enddo
+
+            ! Now ensure the soil layer index corresponding to the water table
+            ! is greater than or equal to the first soil layer.
+            jwt = max(jwt,1)
 
             dzsum = 0.d0
             do j = jwt, nlevgrnd
