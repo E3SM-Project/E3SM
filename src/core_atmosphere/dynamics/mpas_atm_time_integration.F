@@ -3898,10 +3898,6 @@ MPAS_GPTL_STOP('dyn_tend')
       integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
 
 
-      integer :: iEdge, iCell, iVertex, k, cell1, cell2, eoe, i, j
-      real (kind=RKIND) :: h_vertex, r, s
-      real (kind=RKIND) :: r1, r2
-
       integer, pointer :: nCells, nEdges, nVertices, nVertLevels, vertexDegree
       real (kind=RKIND), dimension(:), pointer :: fVertex, fEdge, invAreaTriangle, invAreaCell
       real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, invDvEdge, invDcEdge
@@ -3913,10 +3909,7 @@ MPAS_GPTL_STOP('dyn_tend')
       real (kind=RKIND), dimension(:,:), pointer :: edgesOnVertex_sign, edgesOnCell_sign
       integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge
 
-      logical, parameter :: hollingsworth=.true.
-      real (kind=RKIND) :: ke_fact, efac
       real (kind=RKIND), pointer :: config_apvm_upwinding
-      logical :: reconstruct_v
 
 
       call mpas_pool_get_config(configs, 'config_apvm_upwinding', config_apvm_upwinding)
@@ -3965,6 +3958,86 @@ MPAS_GPTL_STOP('dyn_tend')
       call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(mesh, 'vertexDegree', vertexDegree)
 
+      call atm_compute_solve_diagnostics_work(nCells, nEdges, nVertices, &
+               vertexDegree, dt, config_apvm_upwinding, &
+               fVertex, fEdge, invAreaTriangle, invAreaCell, dvEdge, dcEdge, invDvEdge, invDcEdge, &
+               vh, weightsOnEdge, kiteAreasOnVertex, h_edge, h, u, v, vorticity, ke, pv_edge, pv_vertex, pv_cell, &
+               gradPVn, gradPVt, divergence, cellsOnEdge, cellsOnVertex, verticesOnEdge, edgesOnCell, edgesOnEdge, &
+               edgesOnVertex, kiteForCell, verticesOnCell, edgesOnVertex_sign, edgesOnCell_sign, nEdgesOnCell, nEdgesOnEdge, &
+               cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+               rk_step)
+
+   end subroutine atm_compute_solve_diagnostics
+
+
+   subroutine atm_compute_solve_diagnostics_work(nCells, nEdges, nVertices, &
+            vertexDegree, dt, config_apvm_upwinding, &
+            fVertex, fEdge, invAreaTriangle, invAreaCell, dvEdge, dcEdge, invDvEdge, invDcEdge, &
+            vh, weightsOnEdge, kiteAreasOnVertex, h_edge, h, u, v, vorticity, ke, pv_edge, pv_vertex, pv_cell, &
+            gradPVn, gradPVt, divergence, cellsOnEdge, cellsOnVertex, verticesOnEdge, edgesOnCell, edgesOnEdge, &
+            edgesOnVertex, kiteForCell, verticesOnCell, edgesOnVertex_sign, edgesOnCell_sign, nEdgesOnCell, nEdgesOnEdge, &
+            cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+            rk_step)
+
+      use mpas_atm_dimensions
+
+      implicit none
+
+      !
+      ! Dummy arguments
+      !
+      integer, intent(in) :: nCells, nEdges, nVertices, vertexDegree
+      real (kind=RKIND), intent(in) :: dt, config_apvm_upwinding
+      real (kind=RKIND), dimension(nVertices+1) :: fVertex
+      real (kind=RKIND), dimension(nEdges+1) :: fEdge
+      real (kind=RKIND), dimension(nVertices+1) :: invAreaTriangle
+      real (kind=RKIND), dimension(nCells+1) :: invAreaCell
+      real (kind=RKIND), dimension(nEdges+1) :: dvEdge
+      real (kind=RKIND), dimension(nEdges+1) :: dcEdge
+      real (kind=RKIND), dimension(nEdges+1) :: invDvEdge
+      real (kind=RKIND), dimension(nEdges+1) :: invDcEdge
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: vh
+      real (kind=RKIND), dimension(maxEdges2,nEdges+1) :: weightsOnEdge
+      real (kind=RKIND), dimension(3,nVertices+1) :: kiteAreasOnVertex
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: h_edge
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: h
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: u
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: v
+      real (kind=RKIND), dimension(nVertLevels,nVertices+1) :: vorticity
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: ke
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: pv_edge
+      real (kind=RKIND), dimension(nVertLevels,nVertices+1) :: pv_vertex
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pv_cell
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: gradPVn
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: gradPVt
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: divergence
+      integer, dimension(2,nEdges+1) :: cellsOnEdge
+      integer, dimension(3,nVertices+1) :: cellsOnVertex
+      integer, dimension(2,nEdges+1) :: verticesOnEdge
+      integer, dimension(maxEdges,nCells+1) :: edgesOnCell
+      integer, dimension(maxEdges2,nEdges+1) :: edgesOnEdge
+      integer, dimension(3,nVertices+1) :: edgesOnVertex
+      integer, dimension(maxEdges,nCells+1) :: kiteForCell
+      integer, dimension(maxEdges,nCells+1) :: verticesOnCell
+      real (kind=RKIND), dimension(3,nVertices+1) :: edgesOnVertex_sign
+      real (kind=RKIND), dimension(maxEdges,nCells+1) :: edgesOnCell_sign
+      integer, dimension(nCells+1) :: nEdgesOnCell
+      integer, dimension(nEdges+1) :: nEdgesOnEdge
+
+      integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
+
+      integer, intent(in), optional :: rk_step
+
+      !
+      ! Local variables
+      !
+      integer :: iEdge, iCell, iVertex, k, cell1, cell2, eoe, i, j
+      real (kind=RKIND) :: h_vertex, r, s
+      real (kind=RKIND) :: r1, r2
+
+      logical, parameter :: hollingsworth=.true.
+      real (kind=RKIND) :: ke_fact, efac
+      logical :: reconstruct_v
 
 
       !
@@ -3973,6 +4046,7 @@ MPAS_GPTL_STOP('dyn_tend')
       do iEdge=edgeStart,edgeEnd
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
+!DIR$ IVDEP
          do k=1,nVertLevels
             h_edge(k,iEdge) = 0.5 * (h(k,cell1) + h(k,cell2))
          end do
@@ -3995,10 +4069,12 @@ MPAS_GPTL_STOP('dyn_tend')
          do i=1,vertexDegree
             iEdge = edgesOnVertex(i,iVertex)
             s = edgesOnVertex_sign(i,iVertex) * dcEdge(iEdge)
+!DIR$ IVDEP
             do k=1,nVertLevels
                vorticity(k,iVertex) = vorticity(k,iVertex) + s * u(k,iEdge)
             end do
          end do
+!DIR$ IVDEP
          do k=1,nVertLevels
             vorticity(k,iVertex) = vorticity(k,iVertex) * invAreaTriangle(iVertex)
          end do
@@ -4013,6 +4089,7 @@ MPAS_GPTL_STOP('dyn_tend')
          do i=1,nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i,iCell)
             s = edgesOnCell_sign(i,iCell) * dvEdge(iEdge)
+!DIR$ IVDEP
             do k=1,nVertLevels
               divergence(k,iCell) = divergence(k,iCell) + s * u(k,iEdge)
             end do
@@ -4040,6 +4117,7 @@ MPAS_GPTL_STOP('dyn_tend')
                ke(k,iCell) = ke(k,iCell) + 0.25 * ke_edge(k,iEdge)
             end do
          end do
+!DIR$ IVDEP
          do k=1,nVertLevels
             ke(k,iCell) = ke(k,iCell) * invAreaCell(iCell)
          end do
@@ -4087,6 +4165,7 @@ MPAS_GPTL_STOP('dyn_tend')
             do i=1,nEdgesOnCell(iCell)
                iVertex = verticesOnCell(i,iCell)
                j = kiteForCell(i,iCell)
+!DIR$ IVDEP
                do k = 1,nVertLevels
                   ke(k,iCell) = ke(k,iCell) + (1.-ke_fact)*kiteAreasOnVertex(j,iVertex) * ke_vertex(k,iVertex) * r
                end do
@@ -4109,6 +4188,7 @@ MPAS_GPTL_STOP('dyn_tend')
           v(1:nVertLevels,iEdge) = 0.0
           do i=1,nEdgesOnEdge(iEdge)
             eoe = edgesOnEdge(i,iEdge)
+!DIR$ IVDEP
             do k = 1,nVertLevels
               v(k,iEdge) = v(k,iEdge) + weightsOnEdge(i,iEdge) * u(k, eoe)
             end do
@@ -4123,6 +4203,7 @@ MPAS_GPTL_STOP('dyn_tend')
       ! Avoid dividing h_vertex by areaTriangle and move areaTriangle into
       ! numerator for the pv_vertex calculation
       do iVertex = vertexStart,vertexEnd
+!DIR$ IVDEP
          do k=1,nVertLevels
 !
 ! the following commented code is for the PV conserving shallow water solver.  
@@ -4142,6 +4223,7 @@ MPAS_GPTL_STOP('dyn_tend')
       !   ( this computes pv_edge at all edges bounding real cells )
       !
       do iEdge = edgeStart,edgeEnd
+!DIR$ IVDEP
          do k=1,nVertLevels
             pv_edge(k,iEdge) =  0.5 * (pv_vertex(k,verticesOnEdge(1,iEdge)) + pv_vertex(k,verticesOnEdge(2,iEdge)))
          end do
@@ -4160,6 +4242,7 @@ MPAS_GPTL_STOP('dyn_tend')
          do i=1,nEdgesOnCell(iCell)
             iVertex = verticesOnCell(i,iCell)
             j = kiteForCell(i,iCell)
+!DIR$ IVDEP
             do k = 1,nVertLevels
                pv_cell(k,iCell) = pv_cell(k,iCell) + kiteAreasOnVertex(j,iVertex) * pv_vertex(k,iVertex) * r
             end do
@@ -4187,6 +4270,7 @@ MPAS_GPTL_STOP('dyn_tend')
          do iEdge = edgeStart,edgeEnd
             r1 = 1.0_RKIND * invDvEdge(iEdge)
             r2 = 1.0_RKIND * invDcEdge(iEdge)
+!DIR$ IVDEP
             do k = 1,nVertLevels
                gradPVt(k,iEdge) = (pv_vertex(k,verticesOnEdge(2,iEdge)) - pv_vertex(k,verticesOnEdge(1,iEdge))) * r1
                gradPVn(k,iEdge) = (pv_cell(k,cellsOnEdge(2,iEdge)) - pv_cell(k,cellsOnEdge(1,iEdge))) * r2
@@ -4196,7 +4280,7 @@ MPAS_GPTL_STOP('dyn_tend')
 
       end if  ! apvm upwinding
 
-   end subroutine atm_compute_solve_diagnostics
+   end subroutine atm_compute_solve_diagnostics_work
 
 
    subroutine atm_init_coupled_diagnostics(state, time_lev, diag, mesh, configs, &
