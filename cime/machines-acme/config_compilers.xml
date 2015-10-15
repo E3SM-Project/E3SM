@@ -617,10 +617,6 @@ for mct, etc.
   <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
 </compiler>
 
-<compiler COMPILER="gnu" MACH="yellowstone">
-  <LAPACK_LIBDIR> /glade/apps/opt/lib </LAPACK_LIBDIR>
-</compiler>
-
 <compiler COMPILER="gnu" MACH="penn">
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
@@ -632,72 +628,6 @@ for mct, etc.
   <ADD_CPPDEFS MODEL="pop"> -D_USE_FLOW_CONTROL </ADD_CPPDEFS>
 </compiler>
 
-
-<compiler MACH="yellowstone">
-  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
-  <NETCDF_PATH>$(NETCDF)</NETCDF_PATH>
-  <PNETCDF_PATH>$(PNETCDF)</PNETCDF_PATH>
-  <!-- these flags enable nano timers -->
- <GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
-</compiler>
-
-
-
-<compiler MACH="yellowstone" COMPILER="intel" MPILIB="mpich2">
-  <!-- Needed due to the way that netcdf is loaded on yellowstone -->
-  <SCC>$(MPICC)</SCC>
-  <SFC>$(MPIFC)</SFC>
-  <MPICXX>mpiicpc</MPICXX>
-  <ADD_FFLAGS>  -xHost </ADD_FFLAGS>
-  <ADD_CFLAGS>  -xHost </ADD_CFLAGS>
-  <TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
-  <PAPI_INC> /glade/apps/opt/papi/5.3.0/intel/12.1.5/include/</PAPI_INC>
-  <PAPI_LIB>/glade/apps/opt/papi/5.3.0/intel/12.1.5/lib64 </PAPI_LIB>
-  <ADD_SLIBS> -Wl,-rpath $(PAPI_LIB) -L$(PAPI_LIB) -lpapi</ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
-</compiler>
-
-
-
-<compiler MACH="yellowstone" COMPILER="intel">
-  <PFUNIT_PATH>/glade/u/home/sacks/pFUnit/pFUnit3.0.1_Intel14.0.2_Serial</PFUNIT_PATH>
-  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
-</compiler>
-
-<compiler MACH="yellowstone" COMPILER="pgi">
-  <ADD_CFLAGS DEBUG="FALSE"> -O </ADD_CFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O </ADD_FFLAGS>
-  <ADD_SLIBS> -llapack -lblas </ADD_SLIBS>
-</compiler>
-
-<compiler MACH="yellowstone" COMPILER="pathscale">
-  <ADD_CPPDEFS> -DNO_MPIMOD </ADD_CPPDEFS>
-  <SCC>pathcc</SCC>
-  <SFC>pathf95</SFC>
-</compiler>
-
-
-<compiler MACH="erebus">
-<PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
-  <NETCDF_PATH>$(NETCDF)</NETCDF_PATH>
-  <PNETCDF_PATH>$(PNETCDF)</PNETCDF_PATH>
-  <!--The following flag is required due to a bug in mpich2 v1208 --> 
-  <ADD_CPPDEFS MODEL="cam" MPILIB="mpich2"> -DNO_MPI2 </ADD_CPPDEFS>
-  <SCC>mpicc</SCC>
-  <SFC>mpif90</SFC>
-</compiler>
 
 <compiler MACH="oic2" COMPILER="gnu">
   <NETCDF_PATH>/projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4/</NETCDF_PATH>
@@ -759,50 +689,6 @@ for mct, etc.
   <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) </ADD_SLIBS>
   <CXX_LIBS> -lfmpich -lmpichf90_pgi $(PGI_PATH)/linux86-64/$(PGI_VERSION)/lib/f90main.o </CXX_LIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-</compiler>
-
-<compiler  MACH="bluewaters" COMPILER="pgi">
-  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS> 
-  <ADD_FFLAGS> -nofma </ADD_FFLAGS>
-  <ADD_CFLAGS> -nofma </ADD_CFLAGS>
- <CXX_LIBS> -lmpichf90_pgi $(PGI_PATH)/linux86-64/$(PGI_VERSION)/lib/f90main.o </CXX_LIBS>
- <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-</compiler>
-
-<compiler  MACH="bluewaters">
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>  
-  <ADD_GPTL_CPPDEFS> -DHAVE_PAPI </ADD_GPTL_CPPDEFS>
-</compiler>
-
-
-<compiler MACH="janus">
-  <NETCDF_PATH> $(NETCDF)</NETCDF_PATH>
-  <PNETCDF_PATH> $(PNETCDF)</PNETCDF_PATH>
-  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nc-config --flibs) </ADD_SLIBS>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <SFC> mpif90 </SFC>
-  <SCC> mpicc </SCC>
-</compiler>
-
-<compiler COMPILER="intel" MACH="janus">
-  <ADD_FFLAGS> -O2 -xHost </ADD_FFLAGS>
-  <ADD_CFLAGS> -O2 -xHost </ADD_CFLAGS>
-  <ESMF_LIBDIR>/projects/siva7831/esmf_install/esmf-5.3.0-O-intel-openmpi/lib</ESMF_LIBDIR>
-  <PNETCDF_PATH>/home/jimedwards/parallel-netcdf/1.3.0/intel/12.1.4/</PNETCDF_PATH>
-  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
-</compiler>
-
-<compiler COMPILER="pgi" MACH="janus">
-  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
-  <ADD_SLIBS> -llapack -lblas </ADD_SLIBS>
 </compiler>
 
 <compiler COMPILER="ibm" OS="AIX">
@@ -879,22 +765,6 @@ for mct, etc.
 </compiler>
 
 
-<compiler COMPILER="ibm" MACH="tukey">
-  <SFC> mpixlf2003_r </SFC>
-  <MPIFC> mpixlf2003_r </MPIFC>
-  <SCC> mpixlc_r </SCC>
-  <MPICC> mpixlc_r </MPICC>
-  <!-- This LD is a workaround for darshan initialization on tukey?? (Darshan does -->
-  <!-- not run if f90 or higher is used for linking -->
-   <LD> mpixlf77_r </LD>
-  <NETCDF_PATH>/soft/libraries/netcdf/4.3.0-f4.2/cnk-xl/V1R2M0-20131211/</NETCDF_PATH>
-  <PNETCDF_PATH>/soft/libraries/pnetcdf/1.3.1/cnk-xl/current/</PNETCDF_PATH>
-  <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_IBM</PFUNIT_PATH>
-  <HDF5_PATH>/soft/libraries/hdf5/1.8.10/cnk-xl/current/ </HDF5_PATH>
-   <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf -L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </ADD_SLIBS>
-  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-</compiler>
-
 <compiler COMPILER="ibm" MACH="cetus">
   <SFC> mpixlf2003_r </SFC>
   <MPIFC> mpixlf2003_r </MPIFC>
@@ -908,25 +778,6 @@ for mct, etc.
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
   <PETSC_PATH>/soft/libraries/petsc/3.5.3.1</PETSC_PATH>
 </compiler>
-
-<compiler COMPILER="ibm" MACH="juqueen">
-  <SFC> mpixlf2003_r </SFC>
-  <MPIFC> mpixlf2003_r </MPIFC>
-  <SCC> mpixlc_r </SCC>
-  <MPICC> mpixlc_r </MPICC>
-  <NETCDF_PATH> /bgsys/local/netcdf/</NETCDF_PATH>
-  <PNETCDF_PATH> /bgsys/local/parallel-netcdf/v1.3.1</PNETCDF_PATH>
-  <ADD_SLIBS>-L/bgsys/local/netcdf/lib -lnetcdf -L/bgsys/drivers/ppcfloor/comm/lib </ADD_SLIBS>
-  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-</compiler>
-
-<compiler MACH="brutus">
-  <NETCDF_PATH> $(NETCDF)</NETCDF_PATH>
-  <MPI_PATH> $(MPI_ROOT)</MPI_PATH>
-  <MPI_LIB_NAME MPILIB="mpich"> mpich </MPI_LIB_NAME>
-  <MPI_LIB_NAME MPILIB="openmpi"> mpi </MPI_LIB_NAME>
-  <CONFIG_ARGS> --host=LINUX </CONFIG_ARGS>
-</compiler>    
 
 <compiler COMPILER="pgi" MACH="blues">
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
@@ -966,62 +817,6 @@ for mct, etc.
   <MPI_LIB_NAME MPILIB="mpich">mpich</MPI_LIB_NAME>
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas</ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-</compiler>
-
-<compiler COMPILER="pgi" MACH="eastwind">
-  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
-  <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
-  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
-  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi </SLIBS>
-</compiler>
-
-<compiler COMPILER="pgi" MACH="olympus">
-  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
-  <NETCDF_PATH> $(NETCDF_LIB)/..</NETCDF_PATH>
-  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
-  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi </SLIBS>
-</compiler>
-<compiler COMPILER="pgi" MACH="constance">
-  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
-  <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
-  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
-  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi </SLIBS>
-</compiler>
-
-<compiler COMPILER="intel" MACH="constance">
-  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
-  <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
-  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
-  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi </SLIBS>
-</compiler>
-
-<compiler COMPILER="intel" MACH="olympus">
-  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
-  <NETCDF_PATH> $(NETCDF_LIB)/..</NETCDF_PATH>
-  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
-  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi </SLIBS>
-  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
 </compiler>
 
 <compiler COMPILER="intel" MACH="sooty">
@@ -1085,33 +880,6 @@ for mct, etc.
  <ADD_SLIBS> -L$(NETCDF_ROOT)/lib -lnetcdf -lnetcdff -L$(MKL_PATH) -lmkl_rt</ADD_SLIBS>
 </compiler>
  
-<compiler COMPILER="intel" MACH="evergreen">
-  <NETCDF_PATH> $(NETCDFLIB)/..</NETCDF_PATH>
-  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
-  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lcurl </SLIBS>
-  <ADD_FFLAGS> -heap_arrays </ADD_FFLAGS>
-  <ADD_CFLAGS> -heap_arrays </ADD_CFLAGS>
-  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
-</compiler>
-
-<compiler COMPILER="pgi" MACH="hera">
-  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
-  <NETCDF_PATH>/usr/local/tools/netcdf-pgi-4.1.3</NETCDF_PATH>
-  <MPI_PATH>/usr/local/tools/mvapich2-pgi-1.7/</MPI_PATH>
-  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <ADD_SLIBS>$(shell /usr/local/tools/netcdf-pgi-4.1.3/bin/nc-config --flibs)</ADD_SLIBS>    
-  <ADD_LDFLAGS> -Wl,-rpath /usr/local/tools/netcdf-pgi-4.1.3/lib</ADD_LDFLAGS>
-</compiler>
-
 <compiler COMPILER="pgi" MACH="hopper">
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
@@ -1135,255 +903,6 @@ for mct, etc.
 
 <compiler COMPILER="gnu" MACH="hopper">
   <TRILINOS_PATH>/project/projectdirs/ccsm1/Trilinos/trilinos-10.12.2/hopper-gnu/install</TRILINOS_PATH>
-</compiler>
-
-<compiler MACH="pleiades-wes">
-  <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
-  <MPI_PATH>/nasa/sgi/mpt/2.11r13</MPI_PATH>
-  <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
-  <MPICC>icc</MPICC>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 -xSSE4.2 </ADD_FFLAGS>
-  <ADD_SLIBS>-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf</ADD_SLIBS>
-</compiler>
-
-<compiler MACH="pleiades-san">
-  <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
-  <MPI_PATH>/nasa/sgi/mpt/2.11r13</MPI_PATH>
-  <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
-  <MPICC>icc</MPICC>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 -xAVX </ADD_FFLAGS>
-  <ADD_SLIBS>-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf</ADD_SLIBS>
-</compiler>
-
-<compiler MACH="pleiades-ivy">
-  <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
-  <MPI_PATH>/nasa/sgi/mpt/2.11r13</MPI_PATH>
-  <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
-  <MPICC>icc</MPICC>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 -xAVX </ADD_FFLAGS>
-  <ADD_SLIBS>-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf</ADD_SLIBS>
-</compiler>
-
-<compiler MACH="pleiades-has">
-  <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
-  <MPI_PATH>/nasa/sgi/mpt/2.11r13</MPI_PATH>
-  <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
-  <MPICC>icc</MPICC>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 -aCORE-AVX2 -align array32byte </ADD_FFLAGS>
-  <ADD_SLIBS>-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf</ADD_SLIBS>
-</compiler>
-
-<compiler MACH="sierra">
-  <NETCDF_PATH>/usr/local/tools/netcdf-pgi-4.1.3</NETCDF_PATH>
-  <MPI_PATH>/usr/local/tools/mvapich2-pgi-1.7/</MPI_PATH>
-  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <ADD_SLIBS>$(shell /usr/local/tools/netcdf-pgi-4.1.3/bin/nc-config --flibs)</ADD_SLIBS>    
-  <ADD_LDFLAGS> -Wl,-rpath /usr/local/tools/netcdf-pgi-4.1.3/lib</ADD_LDFLAGS>
-</compiler>
-
-<compiler MACH="cab">
-  <NETCDF_PATH>/usr/local/tools/netcdf-pgi-4.1.3</NETCDF_PATH>
-  <MPI_PATH>/usr/local/tools/mvapich2-pgi-1.7/</MPI_PATH>
-  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <ADD_SLIBS>$(shell /usr/local/tools/netcdf-pgi-4.1.3/bin/nc-config --flibs)</ADD_SLIBS>
-  <ADD_LDFLAGS> -Wl,-rpath /usr/local/tools/netcdf-pgi-4.1.3/lib</ADD_LDFLAGS>
-</compiler>
-
-<compiler MACH="goldbach">
- <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
- <LAPACK_LIBDIR> /usr/lib64 </LAPACK_LIBDIR>
- <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs)</ADD_SLIBS>
-<GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
-</compiler>
-
-<compiler COMPILER="intel" MACH="goldbach">
- <ADD_LDFLAGS> -Wl,-rpath,$(NETCDF_PATH)/lib </ADD_LDFLAGS>
- <ADD_LDFLAGS> -Wl,-rpath,$(COMPILER_PATH)/lib/intel64 </ADD_LDFLAGS>
- <ADD_LDFLAGS> -Wl,-rpath,$(COMPILER_PATH)/mkl/lib/intel64 </ADD_LDFLAGS>
- <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_Intel_3_0</PFUNIT_PATH>
- <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
- <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
- <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
- <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
- <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
- <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
- <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
-</compiler>
-
-<compiler COMPILER="pgi" MACH="goldbach">
- <ADD_CFLAGS DEBUG="FALSE"> -O0 </ADD_CFLAGS>
- <ADD_FFLAGS DEBUG="FALSE"> -O0 </ADD_FFLAGS>
- <ADD_LDFLAGS> -lgomp </ADD_LDFLAGS>
- <ADD_LDFLAGS> -Wl,-R$(NETCDF_PATH)/lib</ADD_LDFLAGS>
- <ADD_LDFLAGS> -Wl,-R$(COMPILER_PATH)/lib</ADD_LDFLAGS>
- <ADD_LDFLAGS> -Wl,-R$(COMPILER_PATH)/libso</ADD_LDFLAGS>
-</compiler>
-
-<compiler MACH="hobart">
- <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
- <MPI_LIB_NAME MPILIB="mvapich2"> mpich</MPI_LIB_NAME>
- <LAPACK_LIBDIR> /usr/lib64 </LAPACK_LIBDIR>
- <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs)</ADD_SLIBS>
-<GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
-</compiler>
-
-<compiler COMPILER="intel" MACH="hobart">
- <ADD_LDFLAGS> -lquadmath </ADD_LDFLAGS>
- <ADD_LDFLAGS> -Wl,-rpath,$(NETCDF_PATH)/lib </ADD_LDFLAGS>
- <ADD_LDFLAGS> -Wl,-rpath,$(COMPILER_PATH)/lib/intel64 </ADD_LDFLAGS>
- <ADD_LDFLAGS> -Wl,-rpath,$(COMPILER_PATH)/mkl/lib/intel64 </ADD_LDFLAGS>
- <ADD_LDFLAGS> -Wl,-rpath,$(MPI_PATH)/lib</ADD_LDFLAGS>
- <ADD_SLIBS MPILIB="mvapich2"> -mkl=cluster </ADD_SLIBS>
- <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_Intel_3_0</PFUNIT_PATH>
- <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
- <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
- <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
- <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
- <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
- <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
- <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
-</compiler>
-
-<compiler COMPILER="pgi" MACH="hobart">
- <ADD_CFLAGS DEBUG="FALSE"> -O0 </ADD_CFLAGS>
- <ADD_FFLAGS DEBUG="FALSE"> -O0 </ADD_FFLAGS>
- <ADD_LDFLAGS> -lgomp </ADD_LDFLAGS>
- <ADD_LDFLAGS> -Wl,-R$(NETCDF_PATH)/lib</ADD_LDFLAGS>
- <ADD_LDFLAGS> -Wl,-R$(COMPILER_PATH)/lib</ADD_LDFLAGS>
- <ADD_LDFLAGS> -Wl,-R$(COMPILER_PATH)/libso</ADD_LDFLAGS>
-</compiler>
-
-<compiler COMPILER="nag" MACH="hobart">
- <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_NAG_3_0</PFUNIT_PATH>
- <!-- needed for nag pio build.. -->
- <ADD_CPPDEFS> -DNO_C_SIZEOF </ADD_CPPDEFS>
- <ADD_LDFLAGS> -lpthread</ADD_LDFLAGS>
- <!-- Experimental wrapper for OpenMP. -->
- <!-- <ADD_LDFLAGS compile_threaded="true"> -L/home/santos/lib/fake_omp -lfake_omp -Wl,-Wl,,rpath=/home/santos/lib/fake_omp  -->
-</compiler>
-
-<compiler MACH="logan">
- <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
- <LAPACK_LIBDIR> /usr/lib64 </LAPACK_LIBDIR>
- <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs)</ADD_SLIBS>
-</compiler>
-
-<compiler COMPILER="intel" MACH="logan">
- <ADD_LDFLAGS> -Wl,-rpath,$(NETCDF_PATH)/lib </ADD_LDFLAGS>
- <ADD_LDFLAGS> -Wl,-rpath,$(COMPILER_PATH)/lib/intel64 </ADD_LDFLAGS>
- <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
- <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
- <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
- <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
- <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
- <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
- <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
-</compiler>
-
-<compiler COMPILER="pgi" MACH="logan">
- <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
- <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
- <ADD_LDFLAGS> -lgomp </ADD_LDFLAGS>
- <ADD_LDFLAGS> -Wl,-R$(NETCDF_PATH)/lib</ADD_LDFLAGS>
- <ADD_LDFLAGS> -Wl,-R$(COMPILER_PATH)/lib</ADD_LDFLAGS>
- <ADD_LDFLAGS> -Wl,-R$(COMPILER_PATH)/libso</ADD_LDFLAGS>
-</compiler>
-
-<compiler COMPILER="nag" MACH="goldbach">
- <NETCDF_PATH> /usr/local/netcdf-gcc-nag</NETCDF_PATH>
- <MPI_PATH MPILIB="openmpi"> /usr/local/openmpi-gcc-nag</MPI_PATH>
- <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_NAG_3_0</PFUNIT_PATH>
- <!-- needed for nag pio build.. -->
- <ADD_CPPDEFS> -DNO_C_SIZEOF </ADD_CPPDEFS>
- <!-- Experimental wrapper for OpenMP. -->
- <ADD_LDFLAGS compile_threaded="true"> -L/home/santos/lib/fake_omp -lfake_omp -Wl,-Wl,,--rpath=/home/santos/lib/fake_omp </ADD_LDFLAGS>
-</compiler>
-
-<compiler MACH="stampede">
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <NETCDF_PATH>$(TACC_NETCDF_DIR)</NETCDF_PATH>
-  <!--PNETCDF_PATH>$(TACC_NETCDF_DIR)</PNETCDF_PATH-->
-  <ADD_CPPDEFS> -DHAVE_NANOTIME </ADD_CPPDEFS>
-</compiler>
-
-<compiler MACH="stampede" COMPILER="intel">
-  <MPICC>mpicc</MPICC>
-  <MPIFC>mpif90</MPIFC>
-  <MPICXX>mpicxx</MPICXX>
-  <SFC>ifort</SFC>
-  <SCC>icc</SCC>
-  <SCXX>icpc</SCXX>
-  <ADD_FFLAGS> -xHost </ADD_FFLAGS>
-  <ADD_CFLAGS> -xHost </ADD_CFLAGS>
-  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -L$(TACC_HDF5_LIB) -lhdf5</ADD_SLIBS>
-  <ADD_LDFLAGS>-L$(TACC_HDF5_LIB) -lhdf5</ADD_LDFLAGS>
-  <TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
-  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
-</compiler>
-
-<compiler MACH="babbage">
-  <MPIFC> mpiifort </MPIFC>
-  <MPICC> mpiicc  </MPICC>
-  <MPICXX> mpiicpc </MPICXX>
-  <SFC> ifort </SFC>
-  <SCC> icc </SCC>
-  <ADD_FFLAGS> -xHost -no-save-temps</ADD_FFLAGS>
-  <ADD_CFLAGS> -xHost -no-save-temps</ADD_CFLAGS>
-  <!-- PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS -->
-  <NETCDF_PATH>$(NETCDF_DIR)</NETCDF_PATH>
-  <PNETCDF_PATH>$(PNETCDF_DIR)</PNETCDF_PATH>
-  <ADD_CPPDEFS> -DHAVE_NANOTIME -DCPRINTEL</ADD_CPPDEFS>
-  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
-  <ADD_SLIBS> $(NETCDf) $(MKL)</ADD_SLIBS>
-  <ADD_LDFLAGS> $(NETCDF) </ADD_LDFLAGS>
-</compiler>
-
-<compiler MACH="babbageKnc">
-  <MPIFC> mpiifort </MPIFC>
-  <MPICC> mpiicc  </MPICC>
-  <MPICXX> mpiicpc </MPICXX>
-  <SFC> ifort </SFC>
-  <SCC> icc </SCC>
-  <!-- PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS -->
-  <NETCDF_PATH>$(NETCDF_DIR)</NETCDF_PATH>
-  <PNETCDF_PATH>$(PNETCDF_DIR)</PNETCDF_PATH>
-  <ADD_CPPDEFS> -DHAVE_NANOTIME -DCPRINTELMIC -DCPRINTEL</ADD_CPPDEFS>
-  <ADD_SLIBS> $(NETCDF) $(MKL)</ADD_SLIBS>
-  <ADD_LDFLAGS> $(NETCDF) -mmic </ADD_LDFLAGS>
-  <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
-  <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check all -check noarg_temp_created</ADD_FFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O3 -mP2OPT_hpo_matrix_opt_framework=0 </ADD_FFLAGS>
-  <ADD_FFLAGS> -mmic -fp-model source -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -no-save-temps -no-opt-dynamic-align</ADD_FFLAGS>
-  <ADD_CFLAGS> -mmic -O3 -fp-model precise -DFORTRANUNDERSCORE -no-save-temps</ADD_CFLAGS>
-  <CONFIG_ARGS>--host=x86_64-k1om-linux --build=x86_64-unknown-linux</CONFIG_ARGS>
-  <FFLAGS_NOOPT> -O0 -mmic </FFLAGS_NOOPT>
-</compiler>
-
-<compiler MACH="pronghorn" COMPILER="intel">
-  <MPICC>mpiicc</MPICC>
-  <MPIFC>mpiifort</MPIFC>
-  <MPICXX>mpicpc</MPICXX>
-  <SFC>ifort</SFC>
-  <SCC>icc</SCC>
-  <SCXX>icpc</SCXX>
-  <ADD_FFLAGS> -xHost </ADD_FFLAGS>
-  <ADD_CFLAGS> -xHost </ADD_CFLAGS>
-  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -L$(TACC_HDF5_LIB) -lhdf5</ADD_SLIBS>
-  <ADD_LDFLAGS>-L$(TACC_HDF5_LIB) -lhdf5</ADD_LDFLAGS>
-  <TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
-  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
 </compiler>
 
 <compiler MACH="mustang" COMPILER="pgi">
