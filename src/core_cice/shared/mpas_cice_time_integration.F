@@ -56,12 +56,7 @@ contains
     use cice_advection, only: &
          cice_run_advection
 
-    use cice_diagnostics, only: &
-         cice_run_diagnostics
-
     use cice_debug, only: &
-         cice_prepare_output_variables, &
-         cice_test_case_output, &
          cice_debug_write_out_fields
 
     use cice_column, only: &
@@ -147,33 +142,6 @@ contains
     call mpas_timer_start("Column")
     call cice_column_postdynamics_time_integration(domain, clock)
     call mpas_timer_stop("Column")
-
-    ! prepare output variables
-    call mpas_timer_start("prepare out")
-
-    block => domain % blocklist
-    do while (associated(block))
-       call cice_prepare_output_variables(block)
-       block => block % next
-    end do
-
-    call mpas_timer_stop("prepare out")
-
-    ! test case output
-    block => domain % blocklist
-    do while (associated(block))
-       call cice_test_case_output(block, itimestep)
-       block => block % next
-    end do
-
-    ! diagnostics
-    block => domain % blocklist
-    do while (associated(block))
-       call cice_run_diagnostics(block, clock)
-       block => block % next
-    end do
-
-    call flush (stderrUnit)
 
     call cice_debug_write_out_fields(domain, "cice_timestep", 2)
 

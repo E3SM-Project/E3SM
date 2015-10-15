@@ -103,7 +103,7 @@ module cice_core
       block => domain % blocklist
       do while (associated(block))
 
-         call MPAS_pool_get_subpool(block % structs, "global_diagnostics", diagnosticsPool)
+         call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnosticsPool)
          call MPAS_pool_get_array(diagnosticsPool, "xtime", xtime)
          xtime = startTimeStamp
 
@@ -358,14 +358,14 @@ module cice_core
 
       type (block_type), pointer :: block
 
-      type (MPAS_pool_type), pointer :: globalDiagnostics
+      type (MPAS_pool_type), pointer :: diagnosticsPool
       character(len=strKIND), pointer :: xtime
 
       block => domain % blocklist
       do while (associated(block))
 
-         call MPAS_pool_get_subpool(block % structs, "global_diagnostics", globalDiagnostics)
-         call MPAS_pool_get_array(globalDiagnostics, "xtime", xtime)
+         call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnosticsPool)
+         call MPAS_pool_get_array(diagnosticsPool, "xtime", xtime)
          xtime = timeStamp
 
          block => block % next

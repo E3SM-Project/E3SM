@@ -342,8 +342,6 @@
 	    <var name="iceVolumeCategory"/>
 	    <var name="snowVolumeCategory"/>
 	    <var name="surfaceTemperature"/>
-	    <var name="iceThickness"/>
-	    <var name="snowThickness"/>
 	    <var name="iceAreaCell"/>
 	    <var name="iceAreaVertex"/>
 	    <var name="iceVolumeCell"/>
@@ -706,38 +704,6 @@
 		<var name="basisGradientV"                    type="real"     dimensions="maxEdges maxEdges nCells Time" name_in_code="basisGradientV"/>
 	</var_struct>
 
-<!--
-	<var_struct name="mesh_test" time_levs="1">
-		<var name="vectorCellU"                          type="real"     dimensions="nCells Time"  name_in_code="vectorCellU"/>
-		<var name="vectorCellV"                          type="real"     dimensions="nCells Time"  name_in_code="vectorCellV"/>
-		<var name="vectorVertexU"                        type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexU"/>
-		<var name="vectorVertexV"                        type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexV"/>
-		<var name="vectorCellURotate"                    type="real"     dimensions="nCells Time"  name_in_code="vectorCellURotate"/>
-		<var name="vectorCellVRotate"                    type="real"     dimensions="nCells Time"  name_in_code="vectorCellVRotate"/>
-		<var name="vectorVertexURotate"                  type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexURotate"/>
-		<var name="vectorVertexVRotate"                  type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexVRotate"/>
-		<var name="vectorVertexUInterpolate"             type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexUInterpolate"/>
-		<var name="vectorVertexVInterpolate"             type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexVInterpolate"/>
-		<var name="vectorVertexURotateInterpolate"       type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexURotateInterpolate"/>
-		<var name="vectorVertexVRotateInterpolate"       type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexVRotateInterpolate"/>
-		<var name="vectorCellURotateRotate"              type="real"     dimensions="nCells Time"  name_in_code="vectorCellURotateRotate"/>
-		<var name="vectorCellVRotateRotate"              type="real"     dimensions="nCells Time"  name_in_code="vectorCellVRotateRotate"/>
-		<var name="vectorVertexURotateRotate"            type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexURotateRotate"/>
-		<var name="vectorVertexVRotateRotate"            type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexVRotateRotate"/>
-		<var name="vectorVertexURotateInterpolateRotate" type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexURotateInterpolateRotate"/>
-		<var name="vectorVertexVRotateInterpolateRotate" type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexVRotateInterpolateRotate"/>
-		<var name="vectorCellUDiff"                      type="real"     dimensions="nCells Time"  name_in_code="vectorCellUDiff"/>
-		<var name="vectorCellVDiff"                      type="real"     dimensions="nCells Time"  name_in_code="vectorCellVDiff"/>
-		<var name="vectorVertexUDiff"                    type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexUDiff"/>
-		<var name="vectorVertexVDiff"                    type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexVDiff"/>
-		<var name="vectorVertexUInterpolateDiff"         type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexUInterpolateDiff"/>
-		<var name="vectorVertexVInterpolateDiff"         type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexVInterpolateDiff"/>
-		<var name="vectorVertexUDiffRotate"              type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexUDiffRotate"/>
-                <var name="vectorVertexVDiffRotate"              type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexVDiffRotate"/>
-                <var name="vectorVertexUDiffNoRotate"            type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexUDiffNoRotate"/>
-                <var name="vectorVertexVDiffNoRotate"	         type="real"     dimensions="nVertices Time"  name_in_code="vectorVertexVDiffNoRotate"/>
-        </var_struct>
--->
 	<!-- column physics -->
 
 	<!-- ridging -->
@@ -905,16 +871,6 @@
 		<var name="categoryThicknessLimits"           type="real"     dimensions="nCategoriesP1"                    name_in_code="categoryThicknessLimits"/>
 	</var_struct>
 
-	<!-- Plotting -->
-	<var_struct name="plotting" time_levs="1">
-		<var name="iceAreaCategoryPlot"               type="real"     dimensions="nCells Time"          name_in_code="iceAreaCategoryPlot"/>
-		<var name="iceVolumeCategoryPlot"             type="real"     dimensions="nCells Time"          name_in_code="iceVolumeCategoryPlot"/>
-		<var name="snowVolumeCategoryPlot"            type="real"     dimensions="nCells Time"          name_in_code="snowVolumeCategoryPlot"/>
-		<var name="surfaceTemperaturePlot"            type="real"     dimensions="nCells Time"          name_in_code="surfaceTemperaturePlot"/>
-		<var name="iceThickness"                      type="real"     dimensions="nCells Time"          name_in_code="iceThickness"/>
-		<var name="snowThickness"                     type="real"     dimensions="nCells Time"          name_in_code="snowThickness"/>
-	</var_struct>
-
 	<!-- Regions -->
 	<var_struct name="regions" time_levs="1">
 		<var name="regionMask" type="integer" dimensions="nRegions nCells" name_in_code="regionMask"/>
@@ -922,36 +878,13 @@
 
 	<!-- Diagnostics -->
 	<var_struct name="diagnostics" time_levs="1">
+	        <var name="xtime"                             type="text"     dimensions="Time"/>
 	        <var name="meltOnset"                         type="real"     dimensions="nCells"              name_in_code="meltOnset"/>
 	        <var name="freezeOnset"                       type="real"     dimensions="nCells"              name_in_code="freezeOnset"/>
 	        <var name="iceAreaTendencyTransport"          type="real"     dimensions="nCells"              name_in_code="iceAreaTendencyTransport"/>
 	        <var name="iceVolumeTendencyTransport"        type="real"     dimensions="nCells"              name_in_code="iceVolumeTendencyTransport"/>
 	        <var name="iceAgeTendencyTransport"           type="real"     dimensions="nCells"              name_in_code="iceAgeTendencyTransport"/>
 	        <var name="freezingMeltingPotentialInitial"           type="real"     dimensions="nCells"              name_in_code="freezingMeltingPotentialInitial"/>
-	</var_struct>
-
-	<!-- Global diagnostics -->
-	<var_struct name="global_diagnostics" time_levs="1">
-	        <var name="xtime"                             type="text"     dimensions="Time"/>
-		<var name="iceAreaCategoryMin"                type="real"     dimensions="nCategories Time"  name_in_code="iceAreaCategoryMin"/>
-		<var name="iceAreaCategoryMax"                type="real"     dimensions="nCategories Time"  name_in_code="iceAreaCategoryMax"/>
-		<var name="iceVolumeCategoryMin"              type="real"     dimensions="nCategories Time"  name_in_code="iceVolumeCategoryMin"/>
-		<var name="iceVolumeCategoryMax"              type="real"     dimensions="nCategories Time"  name_in_code="iceVolumeCategoryMax"/>
-		<var name="snowVolumeCategoryMin"             type="real"     dimensions="nCategories Time"  name_in_code="snowVolumeCategoryMin"/>
-		<var name="snowVolumeCategoryMax"             type="real"     dimensions="nCategories Time"  name_in_code="snowVolumeCategoryMax"/>
-		<var name="surfaceTemperatureMin"             type="real"     dimensions="nCategories Time"  name_in_code="surfaceTemperatureMin"/>
-		<var name="surfaceTemperatureMax"             type="real"     dimensions="nCategories Time"  name_in_code="surfaceTemperatureMax"/>
-		<var name="iceThicknessCategoryMin"           type="real"     dimensions="nCategories Time"  name_in_code="iceThicknessCategoryMin"/>
-		<var name="iceThicknessCategoryMax"           type="real"     dimensions="nCategories Time"  name_in_code="iceThicknessCategoryMax"/>
-		<var name="snowThicknessCategoryMin"          type="real"     dimensions="nCategories Time"  name_in_code="snowThicknessCategoryMin"/>
-		<var name="snowThicknessCategoryMax"          type="real"     dimensions="nCategories Time"  name_in_code="snowThicknessCategoryMax"/>
-		<var name="snowThicknessCategoryLocMax"       type="integer"  dimensions="nCategories Time"  name_in_code="snowThicknessCategoryLocMax"/>
-		<var name="globalIceArea"                     type="real"     dimensions="nHemispheres Time" name_in_code="globalIceArea"/>
-		<var name="globalIceExtent"                   type="real"     dimensions="nHemispheres Time" name_in_code="globalIceExtent"/>
-		<var name="globalIceVolume"                   type="real"     dimensions="nHemispheres Time" name_in_code="globalIceVolume"/>
-		<var name="globalIceThickness"                type="real"     dimensions="nHemispheres Time" name_in_code="globalIceThickness"/>
-		<var name="globalSnowVolume"                  type="real"     dimensions="nHemispheres Time" name_in_code="globalSnowVolume"/>
-		<var name="globalSnowThickness"               type="real"     dimensions="nHemispheres Time" name_in_code="globalSnowThickness"/>
 	</var_struct>
 
 #include "analysis_members/Registry_cice_analysis_members.xml"
