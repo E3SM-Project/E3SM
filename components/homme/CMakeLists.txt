@@ -56,8 +56,8 @@ ENDIF ()
 # Some options for conditional builds
 OPTION(BUILD_HOMME_SWEQX "Shallow water equations FEM" ON)
 OPTION(BUILD_HOMME_PREQX "Primitive equations FEM" ON)
-OPTION(BUILD_HOMME_SWDGX "Shallow water equations DG" ON)
-OPTION(BUILD_HOMME_PRIMDGX "Primitive equations DG" ON)
+OPTION(BUILD_HOMME_SWDGX "Shallow water equations DG" OFF)
+OPTION(BUILD_HOMME_PRIMDGX "Primitive equations DG" OFF)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
 
