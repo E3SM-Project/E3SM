@@ -181,6 +181,12 @@ IF (ENABLE_HORIZ_OPENMP OR ENABLE_COLUMN_OPENMP)
     FIND_PACKAGE(OpenMP)
     IF(OPENMP_FOUND)
       MESSAGE(STATUS "Found OpenMP Flags")
+      IF (CMAKE_Fortran_COMPILER_ID STREQUAL XL)
+        SET(OpenMP_C_FLAGS "-qsmp=omp")
+        IF (ENABLE_COLUMN_OPENMP)
+          SET(OpenMP_C_FLAGS "-qsmp=omp:nested_par")
+        ENDIF ()
+      ENDIF ()
       # This file is needed for the timing library - this is currently
       # inaccessible from the timing CMake script
       SET(OpenMP_Fortran_FLAGS "${OpenMP_C_FLAGS}")
