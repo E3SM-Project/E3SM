@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<config case="forward" mode="forward">
+	<add_link source="../init_step2/init.nc" dest="init.nc"/>
+	<add_link source="../init_step2/forcing.nc" dest="forcing.nc"/>
+	<add_link source="../init_step2/mesh.nc" dest="mesh.nc"/>
+	<add_link source="../init_step2/graph.info" dest="graph.info"/>
+
+	<get_file dest="particle_full.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mpas_ocean/test_cases/staging" file_name="particle_full.151029.nc"/>	
+  </get_file>
+
+	<add_executable source="model" dest="ocean_model"/>
+	<add_executable source="metis" dest="metis"/>
+
+	<namelist name="namelist.ocean">
+		<option name="config_ocean_run_mode">'forward'</option>
+		<option name="config_dt">'002:46:40'</option>
+		<option name="config_time_integrator">'RK4'</option>
+		<option name="config_run_duration">'0011_13:46:39'</option>
+		<option name="config_prescribe_velocity">.true.</option>
+		<option name="config_prescribe_thickness">.true.</option>
+		<option name="config_disable_thick_all_tend">.true.</option>
+		<option name="config_disable_vel_all_tend">.true.</option>
+		<option name="config_disable_tr_all_tend">.true.</option>
+		<option name="config_use_active_tracers">.false.</option>
+		<option name="config_AM_lagrPartTrack_enable">.true.</option>
+		<option name="config_AM_lagrPartTrack_compute_on_startup">.false.</option>
+		<option name="config_AM_timeSeriesStats_output_stream">'none'</option>
+		<option name="config_AM_timeSeriesStats_restart_stream">'none'</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="all">
+		<stream name="mesh">
+			<attribute name="filename_template">mesh.nc</attribute>
+		</stream>
+		<stream name="input">
+			<attribute name="filename_template">init.nc</attribute>
+    </stream>
+    <stream name="restart">
+      <attribute name="output_interval">0000-01-00_00:00:00</attribute>
+    </stream>
+		<stream name="output">
+			<attribute name="output_interval">0000-01-00_00:00:00</attribute>
+			<add_contents>
+				<member name="velocityZonal" type="var"/>
+        <member name="velocityMeridional" type="var"/>
+        <member name="divergence" type="var"/>
+      </add_contents>
+      <remove_contents>
+        <member name="areaCellGlobal"/>
+        <member name="areaEdgeGlobal"/>
+        <member name="areaTriangleGlobal"/>
+        <member name="volumeCellGlobal"/>
+        <member name="volumeEdgeGlobal"/>
+        <member name="CFLNumberGlobal"/>
+      </remove_contents>
+    </stream>
+    <stream name="lagrPartTrackOutput">
+      <attribute name="output_interval">0000_02:46:40</attribute>
+    </stream>
+    <stream name="lagrPartTrackInput">
+      <attribute name="filename_template">particle_full.nc</attribute>
+    </stream>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="./metis">
+			<argument flag="graph.info">4</argument>
+		</step>
+		<step executable="mpirun">
+			<argument flag="-n">4</argument>
+			<argument flag="">./ocean_model</argument>
+			<argument flag="-n">namelist.ocean</argument>
+			<argument flag="-s">streams.ocean</argument>
+		</step>
+	</run_script>
+</config>

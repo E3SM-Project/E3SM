@@ -143,6 +143,7 @@
 					soma_value="soma"
 					iso_value="iso"
 					ziso_value="ziso"
+					periodic_planar_value="periodic_planar"
 		/>
 		<nml_option name="config_expand_sphere" type="logical" default_value="false" units="unitless"
 					description="Logical flag that controls if a spherical mesh is expanded to an earth sized sphere or not."
