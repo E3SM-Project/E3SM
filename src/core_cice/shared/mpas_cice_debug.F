@@ -1887,13 +1887,16 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_test_case_output(block, itimestep)!{{{
+  subroutine cice_test_case_output(domain, itimestep)!{{{
 
-    type(block_type), intent(inout) :: &
-         block !< Input/Output:
+    type(domain_type), intent(inout) :: &
+         domain !< Input/Output:
 
     integer, intent(in) :: &
-         itimestep !< Input: 
+         itimestep !< Input:
+
+    type(block_type), pointer :: &
+         block
 
     type (MPAS_pool_type), pointer :: &
          configs
@@ -1904,27 +1907,33 @@ contains
     character(len=strKIND), pointer :: &
          config_test_case_diag_type
 
-    configs => block % configs
+    block => domain % blocklist
+    do while (associated(block))
 
-    call MPAS_pool_get_config(configs, "config_test_case_diag", config_test_case_diag)
+       configs => block % configs
 
-    if (config_test_case_diag) then
+       call MPAS_pool_get_config(configs, "config_test_case_diag", config_test_case_diag)
 
-       call MPAS_pool_get_config(configs, "config_test_case_diag_type", config_test_case_diag_type)
+       if (config_test_case_diag) then
 
-       select case (trim(config_test_case_diag_type))
-       case ("global_velocity")
-          call test_case_output_global_velocity(block, itimestep)
-       case ("square_advection")
-          call test_case_output_square_advection(block, itimestep)
-       case ("advection")
-          !call test_case_output_advection(block, itimestep)
-       case default
-          write(*,*) "Test case diagnostics not implemented!", trim(config_test_case_diag_type)
-          stop
-       end select
+          call MPAS_pool_get_config(configs, "config_test_case_diag_type", config_test_case_diag_type)
 
-    endif
+          select case (trim(config_test_case_diag_type))
+          case ("global_velocity")
+             call test_case_output_global_velocity(block, itimestep)
+          case ("square_advection")
+             call test_case_output_square_advection(block, itimestep)
+          case ("advection")
+             !call test_case_output_advection(block, itimestep)
+          case default
+             write(*,*) "Test case diagnostics not implemented!", trim(config_test_case_diag_type)
+             stop
+          end select
+
+       endif
+
+       block => block % next
+    end do
 
   end subroutine cice_test_case_output!}}}
 

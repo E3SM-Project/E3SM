@@ -50,7 +50,6 @@ contains
     use cice_mesh, only: cice_init_mesh
     use cice_advection, only: cice_init_advection
     use cice_velocity_solver, only: cice_init_velocity_solver
-    use cice_debug, only: cice_test_case_output
     use cice_column, only: &
          cice_init_column_physics_package_parameters, &
          cice_init_column_physics_package_variables
@@ -74,11 +73,8 @@ contains
 
     call MPAS_pool_get_config(domain % configs, "config_use_advection", config_use_advection)
 
-    block => domain % blocklist
-    do while (associated(block))
-       call init_junk_values(block)
-       block => block % next
-    end do
+    ! initialize junk values
+    call init_junk_values(domain)
 
     ! mesh initialization
     call cice_init_mesh(domain)
@@ -109,12 +105,6 @@ contains
 
     ! init ice state
     call init_ice_state(domain, clock)
-
-    block => domain % blocklist
-    do while (associated(block))
-       call cice_test_case_output(block, 0)
-       block => block % next
-    end do
 
     ! initial halo exchange
     call initial_halo_exchanges(domain)
@@ -173,13 +163,13 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine init_junk_values(block)!{{{
+  subroutine init_junk_values(domain)!{{{
 
-    use cice_debug, only: &
-         cice_init_ijpop_from_ivertex
+    type(domain_type), intent(inout) :: &
+         domain !< Input/Output:
 
-    type(block_type), intent(inout) :: &
-         block !< Input/Output: 
+    type(block_type), pointer :: &
+         block
 
     type(MPAS_pool_type), pointer :: &
          mesh
@@ -196,17 +186,21 @@ contains
     real(kind=RKIND), dimension(:), pointer :: &
          areaCell
 
-    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    block => domain % blocklist
+    do while (associated(block))
 
-    !call cice_init_ijpop_from_ivertex(mesh)
+       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
 
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+       call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
-    call MPAS_pool_get_array(mesh, "areaCell", areaCell)
+       call MPAS_pool_get_array(mesh, "areaCell", areaCell)
 
-    njunk = nCells + 1
+       njunk = nCells + 1
     
-    areaCell(njunk) = value_junk
+       areaCell(njunk) = value_junk
+
+       block => block % next
+      end do
 
   end subroutine init_junk_values!}}}
 
