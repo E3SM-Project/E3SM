@@ -33,6 +33,7 @@ core_input_gen:
 	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.iso mode=init configuration=iso)
 	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.ziso mode=init configuration=ziso)
 	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.global_ocean mode=init configuration=global_ocean)
+	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.periodic_planar mode=init configuration=periodic_planar)
 	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean stream_list.ocean. mutable )
 	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean.forward stream_list.ocean.forward. mutable mode=forward )
 	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean.analysis stream_list.ocean.analysis. mutable mode=analysis )
