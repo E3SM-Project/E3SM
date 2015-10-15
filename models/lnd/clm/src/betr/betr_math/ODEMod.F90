@@ -550,7 +550,7 @@ contains
    !
    ! !DESCRIPTION:
    !  2-th order runge-kutta method for ode integration
-      Solve differential equations with a non-adaptive method of order 2.
+   !   Solve differential equations with a non-adaptive method of order 2.
    !   call rk2(y, ODEFUN,t, dt,Y0, neq) integrates
    !   the system of differential equations y' = f(t,y) by stepping from T to
    !   t+dt. Function ODEFUN(T,Y) must return f(t,y) in a column vector.
