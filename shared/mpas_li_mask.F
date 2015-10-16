@@ -39,6 +39,7 @@ module li_mask
    integer, parameter :: li_mask_ValueMargin                =   8  ! This is the last cell with ice.
    integer, parameter :: li_mask_ValueDynamicMargin         =  16  ! This is the last dynamically active cell with ice
    integer, parameter :: li_mask_ValueInitialIceExtent      =   1
+   integer, parameter :: li_mask_ValueAlbanyActive          =  64  ! These are locations that Albany includes in its solution
 
    !--------------------------------------------------------------------
    !
@@ -300,15 +301,17 @@ contains
       end where
 
       ! Identify cells where the ice is above the ice dynamics thickness limit
-      if ( (trim(config_velocity_solver) == 'sia') .or. (trim(config_velocity_solver) == 'none') ) then
-         where ( thickness > config_dynamic_thickness )
-            cellMask = ior(cellMask, li_mask_ValueDynamicIce)
-         end where
-      else  ! HO external FEM dycore
+      where ( thickness > config_dynamic_thickness )
+         cellMask = ior(cellMask, li_mask_ValueDynamicIce)
+      end where
+
+      ! Identify cells that Albany would consider as active
+      if ( .not. ((trim(config_velocity_solver) == 'sia') .or. (trim(config_velocity_solver) == 'none')) ) then
+         ! HO external FEM dycore
          ! Identify cells where the ice is above the ice dynamics thickness limit but not with a dirichletVelocity condition set
          where ( (thickness > config_dynamic_thickness) .and.    &  ! same as for SIA case
                  (maxval(dirichletVelocityMask(1:nVertInterfaces-1, :), dim=1) == 0) )   ! but exclude dirichletVelocityMask locations set as lateral b.c.  We don't want to consider dirichlet b.c. on the basal boundary, so we ignore the basal level
-            cellMask = ior(cellMask, li_mask_ValueDynamicIce)
+            cellMask = ior(cellMask, li_mask_ValueAlbanyActive)
          end where
       endif
 
@@ -388,6 +391,7 @@ contains
           endif
           if (aCellOnVertexHasDynamicIce .and. validVertex) then
              vertexMask(i) = ior(vertexMask(i), li_mask_ValueDynamicIce)
+             vertexMask(i) = ior(vertexMask(i), li_mask_ValueAlbanyActive)  ! Albany should include all dynamic vertices, despite how it defines dynamic cells
           endif
           if (aCellOnVertexIsFloating .and. validVertex) then
              vertexMask(i) = ior(vertexMask(i), li_mask_ValueFloating)
@@ -429,6 +433,7 @@ contains
           endif
           if (aCellOnEdgeHasDynamicIce) then
              edgeMask(i) = ior(edgeMask(i), li_mask_ValueDynamicIce)
+             edgeMask(i) = ior(edgeMask(i), li_mask_ValueAlbanyActive)
           endif
           if (aCellOnEdgeIsFloating) then
              edgeMask(i) = ior(edgeMask(i), li_mask_ValueFloating)
