@@ -79,30 +79,14 @@ def find_all_supported_platforms():
     tree. A platform is defined by a triple (machine name, compiler,
     mpi library).
     """
-    import xml.etree.ElementTree as ET
-    config_machines_xml = os.path.join(acme_util.get_cime_root(), "machines-acme", "config_machines.xml")
-    tree = ET.parse(config_machines_xml)
-    root = tree.getroot()
-    expect(root.tag == "config_machines",
-           "The given XML file is not a valid list of machine configurations.")
+    machines = acme_util.get_machines()
     platform_set = set()
 
-    # Each child of this root is a machine entry.
-    for machine in root:
-        if (machine.tag == "machine"):
-            expect("MACH" in machine.attrib, "Invalid machine entry found")
-            mach_name = machine.attrib["MACH"]
-            expect("COMPILERS" in [item.tag for item in machine],
-                   "COMPILERS entry not found in machine %s"%mach_name)
-            compilers_string = machine.find("COMPILERS").text
-            compilers = [compiler.strip() for compiler in compilers_string.split(",")]
-            mpilibs_string = machine.find("MPILIBS").text
-            mpilibs = [mpilib.strip() for mpilib in mpilibs_string.split(",")]
-            for compiler in compilers:
-                for mpilib in mpilibs:
-                    platform_set.add((mach_name, compiler, mpilib))
-        else:
-            warning("Ignoring unrecognized tag: '%s'" % machine.tag)
+    for machine in machines:
+        compilers, mpilibs = acme_util.get_machine_info(["COMPILERS", "MPILIBS"], machine=machine)
+        for compiler in compilers:
+            for mpilib in mpilibs:
+                platform_set.add((machine, compiler, mpilib))
 
     return list(platform_set)
 

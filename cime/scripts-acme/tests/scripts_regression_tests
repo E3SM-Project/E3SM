@@ -36,7 +36,7 @@ class RunUnitTests(unittest.TestCase):
     def test_update_acme_tests_unit_test(self):
         self.do_unit_tests("update_acme_tests")
 
-    def test_update_acme_tests_unit_test(self):
+    def test_list_acme_tests_unit_test(self):
         self.do_unit_tests("list_acme_tests")
 
     def test_wait_for_tests_unit_test(self):
@@ -101,7 +101,7 @@ def setup_proxy():
     if ("http_proxy" not in os.environ):
         machine = acme_util.probe_machine_name()
         if (machine is not None):
-            proxy = acme_util.get_machine_info(machine)[6]
+            proxy = acme_util.get_machine_info("PROXY")
             if (proxy is not None):
                 os.environ["http_proxy"] = proxy
                 return True
@@ -298,8 +298,8 @@ class TestCreateTest(unittest.TestCase):
     ###########################################################################
     def tearDown(self):
     ###########################################################################
-        baseline_area = acme_util.get_machine_info()[5]
-        compiler      = acme_util.get_machine_info()[0]
+        baseline_area = acme_util.get_machine_info("CCSM_BASELINE")
+        compiler      = acme_util.get_machine_info("COMPILERS")[0]
         baselines = os.path.join(baseline_area, compiler, self._baseline_name)
         if (os.path.isdir(baselines)):
             shutil.rmtree(baselines)
@@ -328,8 +328,8 @@ class TestCreateTest(unittest.TestCase):
    fake_item = 'fake'
    fake = .true.
 /"""
-        baseline_area = acme_util.get_machine_info()[5]
-        compiler = acme_util.get_machine_info()[0]
+        baseline_area = acme_util.get_machine_info("CCSM_BASELINE")
+        compiler      = acme_util.get_machine_info("COMPILERS")[0]
         baseline_glob = glob.glob(os.path.join(baseline_area, compiler, self._baseline_name, "ERS*"))
         self.assertEqual(len(baseline_glob), 1, msg="Expected one match, got:\n%s" % "\n".join(baseline_glob))
 
@@ -381,8 +381,8 @@ class TestJenkinsGenericJob(unittest.TestCase):
         if (self._unset_proxy):
             del os.environ["http_proxy"]
 
-        baseline_area = acme_util.get_machine_info()[5]
-        compiler      = acme_util.get_machine_info()[0]
+        baseline_area = acme_util.get_machine_info("CCSM_BASELINE")
+        compiler      = acme_util.get_machine_info("COMPILERS")[0]
         baselines = os.path.join(baseline_area, compiler, self._baseline_name)
         if (os.path.isdir(baselines)):
             shutil.rmtree(baselines)
@@ -410,7 +410,7 @@ class TestJenkinsGenericJob(unittest.TestCase):
     ###########################################################################
     def assert_no_sentinel(self):
     ###########################################################################
-        testroot = acme_util.get_machine_info()[4]
+        testroot = acme_util.get_machine_info("CESMSCRATCHROOT")
         self.assertFalse(os.path.isfile(os.path.join(testroot, "ONGOING_TEST")),
                          "job did not cleanup successfully")
 
