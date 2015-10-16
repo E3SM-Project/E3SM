@@ -297,6 +297,11 @@ sub dependencyCheck()
 	my $jobname = "case.st_archive";
 	$self->addDependentJob($jobname);
     }
+	if($config{'DOUT_L_MS'} eq 'TRUE')
+	{
+		my $jobname = "case.lt_archive";
+		$self->addDependentJob($jobname);
+	}
     
 }
 
