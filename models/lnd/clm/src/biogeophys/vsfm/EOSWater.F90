@@ -48,7 +48,7 @@ contains
     case (DENSITY_CONSTANT)
        call DensityConstant(p, t_K, den, dden_dp)
     case (DENSITY_TGDPB01)
-       call DensityTGDPB01(p, t_K, den, dden_dp)
+       call DensityTGDPB01 (p , t_K, den, dden_dp)
     case default
        write(iulog,*)'Density: Unknown denity_itype. '
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -63,16 +63,16 @@ contains
     ! Return constant density of water
     !
     ! !USES:
-    use MultiPhysicsProbConstants  , only : FMWH2O
-    use clm_varcon                 , only : denh2o
+    use MultiPhysicsProbConstants , only : FMWH2O
+    use clm_varcon                , only : denh2o
     !
     implicit none
     !
     ! !ARGUMENTS    
-    PetscReal, intent(in)   :: p         ! [Pa]
-    PetscReal, intent(in)   :: t_K       ! [K]
-    PetscReal, intent(out)  :: den       ! [kmol m^{-3}]
-    PetscReal, intent(out)  :: dden_dp   ! [kmol m^{-3} Pa^{-1}]
+    PetscReal, intent(in)  :: p         ! [Pa]
+    PetscReal, intent(in)  :: t_K       ! [K]
+    PetscReal, intent(out) :: den       ! [kmol m^{-3}]
+    PetscReal, intent(out) :: dden_dp   ! [kmol m^{-3} Pa^{-1}]
 
     den     = denh2o/FMWH2O ! [kmol m^{-3}]
     dden_dp = 0.d0
@@ -97,32 +97,32 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    PetscReal, intent(in)   :: p                ! [Pa]
-    PetscReal, intent(in)   :: t_K              ! [K]
-    PetscReal, intent(out)  :: den              ! [kmol m^{-3}]
-    PetscReal, intent(out)  :: dden_dp          ! [kmol m^{-3} Pa^{-1}]
+    PetscReal, intent(in)  :: p                ! [Pa]
+    PetscReal, intent(in)  :: t_K              ! [K]
+    PetscReal, intent(out) :: den              ! [kmol m^{-3}]
+    PetscReal, intent(out) :: dden_dp          ! [kmol m^{-3} Pa^{-1}]
 
     !
-    PetscReal,parameter :: a1 = -3.983035d0     ! [degC]
-    PetscReal,parameter :: a2 = 301.797d0       ! [degC]
-    PetscReal,parameter :: a3 = 522528.9d0      ! [degC^{2}]
-    PetscReal,parameter :: a4 = 69.34881d0      ! [degC]
-    PetscReal,parameter :: a5 = 999.974950d0    ! [kg m^{-3}]
-    PetscReal,parameter :: k0 = 50.74d-11       ! [Pa^{-1}]
-    PetscReal,parameter :: k1 = -0.326d-11      ! [Pa^{-1} degC^{-1}]
-    PetscReal,parameter :: k2 = 0.00416d-11     ! [Pa^{-1} degC^{-2}]
-    PetscReal,parameter :: p0 = 101325.d0       ! [Pa]
-    PetscReal :: t_c
-    PetscReal :: dent
-    PetscReal :: kappa
-    PetscReal :: ddent_dt
-    PetscReal :: ddent_dt_1
-    PetscReal :: ddent_dt_2
-    PetscReal :: ddent_dt_3
-    PetscReal :: ddent_dp
-    PetscReal :: dkappa_dp
-    PetscReal :: dkappa_dt
-    PetscReal :: dden_dt
+    PetscReal,parameter    :: a1 = -3.983035d0     ! [degC]
+    PetscReal,parameter    :: a2 = 301.797d0       ! [degC]
+    PetscReal,parameter    :: a3 = 522528.9d0      ! [degC^{2}]
+    PetscReal,parameter    :: a4 = 69.34881d0      ! [degC]
+    PetscReal,parameter    :: a5 = 999.974950d0    ! [kg m^{-3}]
+    PetscReal,parameter    :: k0 = 50.74d-11       ! [Pa^{-1}]
+    PetscReal,parameter    :: k1 = -0.326d-11      ! [Pa^{-1} degC^{-1}]
+    PetscReal,parameter    :: k2 = 0.00416d-11     ! [Pa^{-1} degC^{-2}]
+    PetscReal,parameter    :: p0 = 101325.d0       ! [Pa]
+    PetscReal              :: t_c
+    PetscReal              :: dent
+    PetscReal              :: kappa
+    PetscReal              :: ddent_dt
+    PetscReal              :: ddent_dt_1
+    PetscReal              :: ddent_dt_2
+    PetscReal              :: ddent_dt_3
+    PetscReal              :: ddent_dp
+    PetscReal              :: dkappa_dp
+    PetscReal              :: dkappa_dt
+    PetscReal              :: dden_dt
 
     t_c = t_K - 273.15d0
 
@@ -136,17 +136,17 @@ contains
     den = dent*kappa/FMWH2O ! [kmol m^{-3}]
 
     ! Derivative
-    ddent_dp = 0.d0
+    ddent_dp   = 0.d0
     ddent_dt_1 = -((t_c + a1)**2.d0)/a3/(t_c + a4)
     ddent_dt_2 = -2.d0*(t_c + a1)*(t_c + a2)/a3/(t_c + a4)
     ddent_dt_3 =  ((t_c + a1)**2.d0)*(t_c + a2)/a3/((t_c + a4)**2.d0)
     ddent_dt   = a5*(ddent_dt_1 + ddent_dt_2 + ddent_dt_3)
 
-    dkappa_dp = (k0 + k1*t_c + k2*t_c**2.d0)
-    dkappa_dt = (k1 + 2.d0*k2*t_c)*(p - p0)
+    dkappa_dp  = (k0 + k1*t_c + k2*t_c**2.d0)
+    dkappa_dt  = (k1 + 2.d0*k2*t_c)*(p - p0)
 
-    dden_dt = (ddent_dt*kappa + dent*dkappa_dt)/FMWH2O
-    dden_dp = (ddent_dp*kappa + dent*dkappa_dp)/FMWH2O
+    dden_dt    = (ddent_dt*kappa + dent*dkappa_dt)/FMWH2O
+    dden_dp    = (ddent_dp*kappa + dent*dkappa_dp)/FMWH2O
 
   end subroutine DensityTGDPB01
 
@@ -159,10 +159,10 @@ contains
     implicit none
     !
     ! !ARGUMENTS    
-    PetscReal, intent(in)   :: p
-    PetscReal, intent(in)   :: t_K
-    PetscReal, intent(out)  :: vis
-    PetscReal, intent(out)  :: dvis_dp
+    PetscReal, intent(in)  :: p
+    PetscReal, intent(in)  :: t_K
+    PetscReal, intent(out) :: vis
+    PetscReal, intent(out) :: dvis_dp
 
     vis     = 8.904156d-4 ! [Pa s]
     dvis_dp = 0.d0

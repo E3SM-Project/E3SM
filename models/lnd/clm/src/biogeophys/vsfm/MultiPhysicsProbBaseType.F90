@@ -17,15 +17,15 @@ module MultiPhysicsProbBaseType
 #include "finclude/petscsys.h"
 
   type, public :: multiphysicsprob_base_type
-    character(len =256)                  :: name            ! name of the multi-physics problem (MPP)
-    PetscInt                             :: id              ! identifier for the MPP
-    class(mesh_type),pointer             :: meshes(:)       ! meshes associated with the MPP
-    PetscInt                             :: nmesh           ! number of meshes in the MPP
-    PetscInt                             :: solver_type     ! identifier for the type of PETSc solver
-  contains
-    procedure, public :: Init
-    procedure, public :: Clean
-  end type
+     character(len =256)      :: name        ! name of the multi-physics problem (MPP)
+     PetscInt                 :: id          ! identifier for the MPP
+     class(mesh_type),pointer :: meshes(:)   ! meshes associated with the MPP
+     PetscInt                 :: nmesh       ! number of meshes in the MPP
+     PetscInt                 :: solver_type ! identifier for the type of PETSc solver
+   contains
+     procedure, public :: Init
+     procedure, public :: Clean
+  end type multiphysicsprob_base_type
 
   public :: MPPBaseInit
   public :: MMPBaseClean
@@ -92,8 +92,8 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(multiphysicsprob_base_type)    :: this
-    PetscInt                             :: imesh
+    class(multiphysicsprob_base_type) :: this
+    PetscInt                          :: imesh
 
     do imesh = 1, this%nmesh
        call this%meshes(imesh)%Clean()

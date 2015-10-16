@@ -4,9 +4,9 @@
 module RichardsMod
 
   ! !USES:
-  use clm_varctl         , only : iulog
-  use abortutils         , only : endrun
-  use shr_log_mod        , only : errMsg => shr_log_errMsg
+  use clm_varctl  , only : iulog
+  use abortutils  , only : endrun
+  use shr_log_mod , only : errMsg => shr_log_errMsg
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -21,33 +21,33 @@ module RichardsMod
 
 contains
 
-  subroutine RichardsFlux(Pres_up,         &
-                          kr_up,           &
-                          dkr_dP_up,       &
-                          den_up,          &
-                          dden_dP_up,      &
-                          vis_up,          &
-                          dvis_dP_up,      &
-                          perm_vec_up,     &
-                          Pres_dn,         &
-                          kr_dn,           &
-                          dkr_dP_dn,       &
-                          den_dn,          &
-                          dden_dP_dn,      &
-                          vis_dn,          &
-                          dvis_dP_dn,      &
-                          perm_vec_dn,     &
-                          area,            &
-                          dist_up,         &
-                          dist_dn,         &
-                          dist_unitvec,    &
-                          compute_deriv,   &
-                          internal_conn,   &
-                          cond_type,       &
-                          flux,            &
-                          dflux_dP_up,     &
-                          dflux_dP_dn      &
-                          )
+  subroutine RichardsFlux(Pres_up, &
+       kr_up,                      &
+       dkr_dP_up,                  &
+       den_up,                     &
+       dden_dP_up,                 &
+       vis_up,                     &
+       dvis_dP_up,                 &
+       perm_vec_up,                &
+       Pres_dn,                    &
+       kr_dn,                      &
+       dkr_dP_dn,                  &
+       den_dn,                     &
+       dden_dP_dn,                 &
+       vis_dn,                     &
+       dvis_dP_dn,                 &
+       perm_vec_dn,                &
+       area,                       &
+       dist_up,                    &
+       dist_dn,                    &
+       dist_unitvec,               &
+       compute_deriv,              &
+       internal_conn,              &
+       cond_type,                  &
+       flux,                       &
+       dflux_dP_up,                &
+       dflux_dP_dn                 &
+       )
 
     !
     ! !DESCRIPTION:
@@ -121,12 +121,12 @@ contains
     PetscReal :: dq_dP_dn
 
     perm_up = dabs(dist_unitvec(1))*perm_vec_up(1) + &
-              dabs(dist_unitvec(2))*perm_vec_up(2) + &
-              dabs(dist_unitvec(3))*perm_vec_up(3)
+         dabs(dist_unitvec(2))*perm_vec_up(2) + &
+         dabs(dist_unitvec(3))*perm_vec_up(3)
 
     perm_dn = dabs(dist_unitvec(1))*perm_vec_dn(1) + &
-              dabs(dist_unitvec(2))*perm_vec_dn(2) + &
-              dabs(dist_unitvec(3))*perm_vec_dn(3)
+         dabs(dist_unitvec(2))*perm_vec_dn(2) + &
+         dabs(dist_unitvec(3))*perm_vec_dn(3)
 
     if (internal_conn) then
        upweight = dist_up/(dist_up + dist_dn)
@@ -153,8 +153,8 @@ contains
     grav_vec(2) = 0.d0
     grav_vec(3) = -GRAVITY_CONSTANT
     udist_dot_ugrav = dist_unitvec(1)*grav_vec(1) + &
-                      dist_unitvec(2)*grav_vec(2) + &
-                      dist_unitvec(3)*grav_vec(3)
+         dist_unitvec(2)*grav_vec(2) + &
+         dist_unitvec(3)*grav_vec(3)
 
     dist_gravity = (dist_up + dist_dn)*udist_dot_ugrav
 
@@ -166,9 +166,9 @@ contains
     dphi         = Pres_up - Pres_dn + gravityterm;
 
     if (dphi>=0.d0) then
-       ukvr        = kr_up/vis_up
+       ukvr = kr_up/vis_up
     else
-       ukvr        = kr_dn/vis_dn
+       ukvr = kr_dn/vis_dn
     endif
 
     if (.not.(internal_conn) .and. (cond_type == COND_MASS_FLUX)) then
@@ -178,19 +178,19 @@ contains
     endif
 
 
-    q       = v_darcy * area
-    flux    = q * den_ave
+    q    = v_darcy * area
+    flux = q * den_ave
 
     if (compute_deriv) then
 
-       dden_ave_dP_up        = upweight*dden_dP_up
-       dden_ave_dP_dn        = upweight*dden_dP_dn
+       dden_ave_dP_up       = upweight*dden_dP_up
+       dden_ave_dP_dn       = upweight*dden_dP_dn
 
-       dgravityterm_dden_up  = upweight*dist_gravity*FMWH2O
-       dgravityterm_dden_dn  = (1.0-upweight)*dist_gravity*FMWH2O
+       dgravityterm_dden_up = upweight*dist_gravity*FMWH2O
+       dgravityterm_dden_dn = (1.0-upweight)*dist_gravity*FMWH2O
 
-       dphi_dP_up            =  1.0 + dgravityterm_dden_up*dden_ave_dP_up;
-       dphi_dP_dn            = -1.0 + dgravityterm_dden_dn*dden_ave_dP_dn;
+       dphi_dP_up           =  1.0 + dgravityterm_dden_up*dden_ave_dP_up;
+       dphi_dP_dn           = -1.0 + dgravityterm_dden_dn*dden_ave_dP_dn;
 
        if (dphi>=0) then
           dukvr_dP_up = dkr_dP_up/vis_up - kr_up/(vis_up*vis_up)*dvis_dP_up

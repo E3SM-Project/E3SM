@@ -29,15 +29,15 @@ module SystemOfEquationsBasePointerType
   ! PFLOTRAN (https://bitbucket.org/pflotran/pflotran-dev).
 
   type, public :: sysofeqns_base_pointer_type
-    class(sysofeqns_base_type), pointer :: ptr
+     class(sysofeqns_base_type), pointer :: ptr
   end type sysofeqns_base_pointer_type
 
   public :: SOEIFunction, &
-            SOEIJacobian, &
-            SOEResidual,  &
-            SOEJacobian,  &
-            SOEComputeRHS, &
-            SOEComputeOperators
+       SOEIJacobian, &
+       SOEResidual,  &
+       SOEJacobian,  &
+       SOEComputeRHS, &
+       SOEComputeOperators
   !------------------------------------------------------------------------
 
 contains
@@ -49,18 +49,18 @@ contains
     ! Wrapper subroutine when SoE uss PETSc TS
     !
     implicit none
-  
-    TS                                  :: ts
-    PetscReal                           :: t
-    Vec                                 :: U
-    Vec                                 :: Udot
-    Vec                                 :: F
-    type(sysofeqns_base_pointer_type)   :: this
-    PetscErrorCode                      :: ierr
-  
+
+    TS                                :: ts
+    PetscReal                         :: t
+    Vec                               :: U
+    Vec                               :: Udot
+    Vec                               :: F
+    type(sysofeqns_base_pointer_type) :: this
+    PetscErrorCode                    :: ierr
+
     call this%ptr%IFunction(ts, t, U, Udot, F, ierr)
 
-end subroutine SOEIFunction
+  end subroutine SOEIFunction
 
   !------------------------------------------------------------------------
   subroutine SOEIJacobian(ts, t, U, Udot, shift, A, B, this, ierr)
@@ -69,16 +69,16 @@ end subroutine SOEIFunction
     ! Wrapper subroutine when SoE uss PETSc TS
     !
     implicit none
-  
-    TS                                  :: ts
-    PetscReal                           :: t
-    Vec                                 :: U
-    Vec                                 :: Udot
-    PetscReal                           :: shift
-    Mat                                 :: A
-    Mat                                 :: B
-    type(sysofeqns_base_pointer_type)   :: this
-    PetscErrorCode                      :: ierr
+
+    TS                                :: ts
+    PetscReal                         :: t
+    Vec                               :: U
+    Vec                               :: Udot
+    PetscReal                         :: shift
+    Mat                               :: A
+    Mat                               :: B
+    type(sysofeqns_base_pointer_type) :: this
+    PetscErrorCode                    :: ierr
 
     call this%ptr%IJacobian(ts, t, U, Udot, shift, A, B, ierr)
 
@@ -91,16 +91,16 @@ end subroutine SOEIFunction
     ! Wrapper subroutine when SoE uss PETSc SNES
     !
     implicit none
-  
-    SNES                                :: snes
-    Vec                                 :: X
-    Vec                                 :: R
-    type(sysofeqns_base_pointer_type)   :: this
-    PetscErrorCode                      :: ierr
-  
+
+    SNES                              :: snes
+    Vec                               :: X
+    Vec                               :: R
+    type(sysofeqns_base_pointer_type) :: this
+    PetscErrorCode                    :: ierr
+
     call this%ptr%Residual(snes, X, R, ierr)
 
-end subroutine SOEResidual
+  end subroutine SOEResidual
 
   !------------------------------------------------------------------------
   subroutine SOEJacobian(snes, X, A, B, this, ierr)
@@ -109,17 +109,17 @@ end subroutine SOEResidual
     ! Wrapper subroutine when SoE uss PETSc SNES
     !
     implicit none
-  
-    SNES                                :: snes
-    Vec                                 :: X
-    Mat                                 :: A
-    Mat                                 :: B
-    type(sysofeqns_base_pointer_type)   :: this
-    PetscErrorCode                      :: ierr
-  
+
+    SNES                              :: snes
+    Vec                               :: X
+    Mat                               :: A
+    Mat                               :: B
+    type(sysofeqns_base_pointer_type) :: this
+    PetscErrorCode                    :: ierr
+
     call this%ptr%Jacobian(snes, X, A, B, ierr)
 
-end subroutine SOEJacobian
+  end subroutine SOEJacobian
 
   !------------------------------------------------------------------------
   subroutine SOEComputeRHS(ksp, R, this, ierr)
@@ -128,15 +128,15 @@ end subroutine SOEJacobian
     ! Wrapper subroutine when SoE uss PETSc TS
     !
     implicit none
-  
-    KSP                                 :: ksp
-    Vec                                 :: R
-    type(sysofeqns_base_pointer_type)   :: this
-    PetscErrorCode                      :: ierr
-  
+
+    KSP                               :: ksp
+    Vec                               :: R
+    type(sysofeqns_base_pointer_type) :: this
+    PetscErrorCode                    :: ierr
+
     call this%ptr%ComputeRHS(ksp, R, ierr)
 
-end subroutine SOEComputeRHS
+  end subroutine SOEComputeRHS
 
   !------------------------------------------------------------------------
   subroutine SOEComputeOperators(ksp, A, B, this, ierr)
@@ -145,16 +145,16 @@ end subroutine SOEComputeRHS
     ! Wrapper subroutine when SoE uss PETSc KSP
     !
     implicit none
-  
-    KSP                                 :: ksp
-    Mat                                 :: A
-    Mat                                 :: B
-    type(sysofeqns_base_pointer_type)   :: this
-    PetscErrorCode                      :: ierr
-  
+
+    KSP                               :: ksp
+    Mat                               :: A
+    Mat                               :: B
+    type(sysofeqns_base_pointer_type) :: this
+    PetscErrorCode                    :: ierr
+
     call this%ptr%ComputeOperators(ksp, A, B, ierr)
 
-end subroutine SOEComputeOperators
+  end subroutine SOEComputeOperators
 
 end module SystemOfEquationsBasePointerType
 #endif
