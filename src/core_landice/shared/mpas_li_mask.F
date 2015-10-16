@@ -40,6 +40,7 @@ module li_mask
    integer, parameter :: li_mask_ValueDynamicMargin         =  16  ! This is the last dynamically active cell with ice
    integer, parameter :: li_mask_ValueInitialIceExtent      =   1
    integer, parameter :: li_mask_ValueAlbanyActive          =  64  ! These are locations that Albany includes in its solution
+   integer, parameter :: li_mask_ValueAlbanyMarginNeighbor  = 128  ! This the first cell beyond the last active albany cell
 
    !--------------------------------------------------------------------
    !
@@ -71,6 +72,12 @@ module li_mask
    end interface
 
 
+   interface li_mask_is_albany_active
+      module procedure li_mask_is_albany_active_logout_1d
+      module procedure li_mask_is_albany_active_logout_0d
+   end interface
+
+
    interface li_mask_is_dynamic_ice_int
       module procedure li_mask_is_dynamic_ice_intout_1d
       module procedure li_mask_is_dynamic_ice_intout_0d
@@ -86,6 +93,12 @@ module li_mask
    interface li_mask_is_dynamic_margin_int
       module procedure li_mask_is_dynamic_margin_logout_1d
       module procedure li_mask_is_dynamic_margin_logout_0d
+   end interface
+
+
+   interface li_mask_is_albany_margin_neighbor
+      module procedure li_mask_is_albany_margin_neighbor_logout_1d
+      module procedure li_mask_is_albany_margin_neighbor_logout_0d
    end interface
 
 
@@ -251,9 +264,11 @@ contains
 
       integer :: i, j, iCell
       logical :: isMargin
-      logical :: aCellOnVertexHasIce, aCellOnVertexHasNoIce, aCellOnVertexHasDynamicIce, aCellOnVertexHasNoDynamicIce, aCellOnVertexIsFloating
+      logical :: isAlbanyMarginNeighbor
+      logical :: aCellOnVertexHasIce, aCellOnVertexHasNoIce, aCellOnVertexHasDynamicIce, aCellOnVertexHasNoDynamicIce, aCellOnVertexIsFloating, aCellOnVertexIsAlbanyActive
       logical :: aCellOnEdgeHasIce, aCellOnEdgeHasNoIce, aCellOnEdgeHasDynamicIce, aCellOnEdgeHasNoDynamicIce, aCellOnEdgeIsFloating 
       integer :: numCellsOnVertex
+      integer :: numDiriDynamicCells, numDiriNondynamicCells, numExtendedCells
       logical :: validVertex
 
       err = 0
@@ -350,6 +365,20 @@ contains
           endif
       enddo
 
+      ! Identify first cell outside of active albany extent
+      if ( .not. ((trim(config_velocity_solver) == 'sia') .or. (trim(config_velocity_solver) == 'none')) ) then
+         do i=1,nCells
+            if ( (.not. li_mask_is_albany_active(cellMask(i)))) then  ! check non albany cells only
+              isAlbanyMarginNeighbor = .false.
+              do j=1,nEdgesOnCell(i) ! Check if any neighbors are dynamic-ice
+                  isAlbanyMarginNeighbor = ( isAlbanyMarginNeighbor .or. (li_mask_is_albany_active(cellMask(cellsOnCell(j,i)))) )
+              enddo
+              if (isAlbanyMarginNeighbor) then
+                 cellMask(i) = ior(cellMask(i), li_mask_ValueAlbanyMarginNeighbor)
+              endif
+          endif
+         enddo
+      endif
 
       ! ====
       ! Calculate vertexMask values based on cellMask values===========================
@@ -370,8 +399,12 @@ contains
           aCellOnVertexHasDynamicIce = .false.
           aCellOnVertexHasNoDynamicIce = .false.
           aCellOnVertexIsFloating = .false.
+          aCellOnVertexIsAlbanyActive = .false.
           numCellsOnVertex = 0
           validVertex = .false.
+          numDiriDynamicCells = 0
+          numDiriNondynamicCells = 0
+          numExtendedCells = 0
           do j = 1, vertexDegree  ! vertexDegree is usually 3 (e.g. CVT mesh) but could be something else (e.g. 4 for quad mesh)
               iCell = cellsOnVertex(j,i)
               if (iCell < nCells+1) then
@@ -382,6 +415,19 @@ contains
               aCellOnVertexHasDynamicIce = (aCellOnVertexHasDynamicIce .or. li_mask_is_dynamic_ice(cellMask(iCell)))
               aCellOnVertexHasNoDynamicIce = (aCellOnVertexHasNoDynamicIce .or. (.not. (li_mask_is_dynamic_ice(cellMask(iCell)))))
               aCellOnVertexIsFloating = (aCellOnVertexIsFloating .or. li_mask_is_floating_ice(cellMask(iCell)))
+              aCellOnVertexIsAlbanyActive = (aCellOnVertexIsAlbanyActive .or. li_mask_is_albany_active(cellMask(iCell)))
+              if ( .not. ((trim(config_velocity_solver) == 'sia') .or. (trim(config_velocity_solver) == 'none')) ) then
+                 !if (li_mask_is_dynamic_ice(cellMask(iCell)) .and. .not. li_mask_is_albany_active(cellMask(iCell))) then ! this finds diri cells
+                 if ( (maxval(dirichletVelocityMask(1:nVertInterfaces-1, iCell)) > 0) .and. &
+                         (li_mask_is_dynamic_ice(cellMask(iCell)) ) ) then
+                         numDiriDynamicCells = numDiriDynamicCells + 1
+                 elseif ( (maxval(dirichletVelocityMask(1:nVertInterfaces-1, iCell)) > 0) .and. &
+                         (.not. li_mask_is_dynamic_ice(cellMask(iCell)) ) ) then
+                         numDiriNondynamicCells = numDiriNondynamicCells + 1
+                 elseif (li_mask_is_albany_margin_neighbor(cellMask(iCell))) then
+                         numExtendedCells = numExtendedCells + 1
+                 endif
+              endif
           end do
           if (numCellsOnVertex == vertexDegree) then
              validVertex = .true.
@@ -391,7 +437,15 @@ contains
           endif
           if (aCellOnVertexHasDynamicIce .and. validVertex) then
              vertexMask(i) = ior(vertexMask(i), li_mask_ValueDynamicIce)
-             vertexMask(i) = ior(vertexMask(i), li_mask_ValueAlbanyActive)  ! Albany should include all dynamic vertices, despite how it defines dynamic cells
+          endif
+          if (aCellOnVertexIsAlbanyActive .and. validVertex) then
+             vertexMask(i) = ior(vertexMask(i), li_mask_ValueAlbanyActive)
+          endif
+          if ( (numDiriDynamicCells == 1) .and. (numDiriNondynamicCells == 1) .and. &
+               (numExtendedCells == 1) .and. validVertex) then
+             ! This is a special case needed for MISMIP
+             vertexMask(i) = ior(vertexMask(i), li_mask_ValueAlbanyActive)
+             vertexMask(i) = ior(vertexMask(i), li_mask_ValueAlbanyMarginNeighbor)
           endif
           if (aCellOnVertexIsFloating .and. validVertex) then
              vertexMask(i) = ior(vertexMask(i), li_mask_ValueFloating)
@@ -433,7 +487,7 @@ contains
           endif
           if (aCellOnEdgeHasDynamicIce) then
              edgeMask(i) = ior(edgeMask(i), li_mask_ValueDynamicIce)
-             edgeMask(i) = ior(edgeMask(i), li_mask_ValueAlbanyActive)
+             edgeMask(i) = ior(edgeMask(i), li_mask_ValueAlbanyActive)  ! Note: Albany does not use edgeMask, but setting this anyway.
           endif
           if (aCellOnEdgeIsFloating) then
              edgeMask(i) = ior(edgeMask(i), li_mask_ValueFloating)
@@ -485,12 +539,13 @@ contains
       !-----------------------------------------------------------------
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
-      integer, dimension(:) :: &
-         vertexMask          !< Input: vertexMask
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
-      integer, dimension(:) :: &
+      integer, dimension(:), intent(inout) :: &
+         vertexMask          !< Input/Output: vertexMask
+
+      integer, dimension(:), intent(inout) :: &
          floatingEdges          !< Input/Output: 0/1 mask of floating edges
 
       !-----------------------------------------------------------------
@@ -507,10 +562,13 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
 
+      ! Build floatingEdges mask that is extended forward one extra edge
       do iEdge = 1, nEdges
          floatingEdges(iEdge) = maxval(li_mask_is_floating_ice_int(vertexMask(verticesOnEdge(:, iEdge))))
       enddo
 
+      ! Now includes vertices that include 2 cells with ice and one extended floating cell
+      ! This will be when the two cells with ice were Dirichlet cells
    end subroutine li_calculate_extrapolate_floating_edgemask
 
 
@@ -585,6 +643,22 @@ contains
    end function li_mask_is_dynamic_ice_intout_0d
 
 
+   ! -- Functions that check for presence of active albany --
+   function li_mask_is_albany_active_logout_1d(mask)
+      integer, dimension(:), intent(in) :: mask
+      logical, dimension(size(mask)) :: li_mask_is_albany_active_logout_1d
+
+      li_mask_is_albany_active_logout_1d = (iand(mask, li_mask_ValueAlbanyActive) == li_mask_ValueAlbanyActive)
+   end function li_mask_is_albany_active_logout_1d
+
+   function li_mask_is_albany_active_logout_0d(mask)
+      integer, intent(in) :: mask
+      logical :: li_mask_is_albany_active_logout_0d
+
+      li_mask_is_albany_active_logout_0d = (iand(mask, li_mask_ValueAlbanyActive) == li_mask_ValueAlbanyActive)
+   end function li_mask_is_albany_active_logout_0d
+
+
    ! -- Functions that check for presence of dynamic margin --
    function li_mask_is_dynamic_margin_logout_1d(mask)
       integer, dimension(:), intent(in) :: mask
@@ -613,6 +687,22 @@ contains
 
       li_mask_is_dynamic_margin_intout_0d = iand(mask, li_mask_ValueDynamicMargin) / li_mask_ValueDynamicMargin
    end function li_mask_is_dynamic_margin_intout_0d
+
+
+   ! -- Functions that check for presence of albany margin neighbor --
+   function li_mask_is_albany_margin_neighbor_logout_1d(mask)
+      integer, dimension(:), intent(in) :: mask
+      logical, dimension(size(mask)) :: li_mask_is_albany_margin_neighbor_logout_1d
+
+      li_mask_is_albany_margin_neighbor_logout_1d = (iand(mask, li_mask_ValueAlbanyMarginNeighbor) == li_mask_ValueAlbanyMarginNeighbor)
+   end function li_mask_is_albany_margin_neighbor_logout_1d
+
+   function li_mask_is_albany_margin_neighbor_logout_0d(mask)
+      integer, intent(in) :: mask
+      logical :: li_mask_is_albany_margin_neighbor_logout_0d
+
+      li_mask_is_albany_margin_neighbor_logout_0d = (iand(mask, li_mask_ValueAlbanyMarginNeighbor) == li_mask_ValueAlbanyMarginNeighbor)
+   end function li_mask_is_albany_margin_neighbor_logout_0d
 
 
    ! -- Functions that check for presence of floating ice --
