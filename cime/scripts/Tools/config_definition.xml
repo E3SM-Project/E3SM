@@ -934,7 +934,42 @@
 	    sdesc="glc2ocn runoff mapping file decomp type"
 	    ></entry>
      -->
+     
+<entry id="GLC2OCN_SMAPNAME" 
+ type="char"
+ valid_values="" 
+ value="idmap" 
+ group="run_domain"
+ sdesc="glc2ocn state mapping file"
+></entry>
 
+<!--- 
+<entry id="GLC2OCN_SMAPTYPE" 
+ type="char"
+ valid_values="X,Y" 
+ value="Y" 
+ group="run_domain"
+ sdesc="glc2ocn state mapping file decomp type"
+></entry>
+-->
+
+<entry id="GLC2OCN_FMAPNAME" 
+ type="char"
+ valid_values="" 
+ value="idmap" 
+ group="run_domain"
+ sdesc="glc2ocn flux mapping file"
+></entry>
+
+<!--- 
+<entry id="GLC2OCN_FMAPTYPE" 
+ type="char"
+ valid_values="X,Y" 
+ value="Y" 
+ group="run_domain"
+ sdesc="glc2ocn flux mapping file decomp type"
+></entry>
+-->
   <entry id="GLC2ICE_RMAPNAME" 
 	 type="char"
 	 valid_values="" 
@@ -1058,6 +1093,42 @@
 	    value="Y" 
 	    group="run_domain"
 	    sdesc="ocn2wav state mapping file decomp type"
+	    ></entry>
+     -->
+     
+<entry id="OCN2GLC_SMAPNAME" 
+ type="char"
+ valid_values="" 
+ value="idmap" 
+ group="run_domain"
+ sdesc="ocn2glc state mapping file"
+></entry>
+
+  <!--- 
+     <entry id="OCN2GLC_SMAPTYPE" 
+	    type="char"
+	    valid_values="X,Y" 
+	    value="Y" 
+	    group="run_domain"
+	    sdesc="ocn2glc state mapping file decomp type"
+	    ></entry>
+     -->
+
+<entry id="OCN2GLC_FMAPNAME" 
+ type="char"
+ valid_values="" 
+ value="idmap" 
+ group="run_domain"
+ sdesc="ocn2glc flux mapping file"
+></entry>
+
+  <!--- 
+     <entry id="OCN2GLC_FMAPTYPE" 
+	    type="char"
+	    valid_values="X,Y" 
+	    value="Y" 
+	    group="run_domain"
+	    sdesc="ocn2glc flux mapping file decomp type"
 	    ></entry>
      -->
 

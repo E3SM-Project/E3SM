@@ -114,7 +114,7 @@ Each grid is associated with five names
 
 <!-- mpasli + mpas-o grids -->
 <GRID sname="T62_mpas120_gis20" alias="T62_m120_g" compset="MPASO.*_MPASLI">a%T62_l%T62_oi%mpas120_r%rx1_m%mpas120_g%mpas.gis20km_w%null</GRID>
-<GRID sname="0.9x1.25_oEC60to30_ais20"    alias="f09_oEC_a"  compset="MPASO.*_MPASLI">a%0.9x1.25_l%0.9x1.25_oi%oEC60to30_r%r05_m%oEC60to30_g%mpas.ais20km_w%null</GRID>
+<GRID sname="0.9x1.25_oEC60to30_ais20"    alias="f09_oEC_a"  compset="MPASO.*_MPASLI">a%0.9x1.25_l%0.9x1.25_oi%oEC60to30_r%rx1_m%gx1v6_g%mpas.ais20km_w%null</GRID>
 
 <!-- new runoff grids for data runoff model DROF -->
 
@@ -548,6 +548,11 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <GLC2LND_FMAPNAME>idmap</GLC2LND_FMAPNAME>
 <GLC2LND_SMAPNAME>idmap</GLC2LND_SMAPNAME>
 
+<OCN2GLC_FMAPNAME>idmap</OCN2GLC_FMAPNAME>
+<OCN2GLC_SMAPNAME>idmap</OCN2GLC_SMAPNAME>
+<GLC2OCN_FMAPNAME>idmap</GLC2OCN_FMAPNAME>
+<GLC2OCN_SMAPNAME>idmap</GLC2OCN_SMAPNAME>
+
 <ATM2WAV_SMAPNAME>idmap</ATM2WAV_SMAPNAME>
 <OCN2WAV_SMAPNAME>idmap</OCN2WAV_SMAPNAME>
 <ICE2WAV_SMAPNAME>idmap</ICE2WAV_SMAPNAME>
@@ -607,6 +612,11 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <LND2GLC_SMAPTYPE BFBFLAG="TRUE">X</LND2GLC_SMAPTYPE>
 <GLC2LND_FMAPTYPE BFBFLAG="TRUE">X</GLC2LND_FMAPTYPE>
 <GLC2LND_SMAPTYPE BFBFLAG="TRUE">X</GLC2LND_SMAPTYPE>
+
+<OCN2GLC_FMAPTYPE BFBFLAG="TRUE">X</OCN2GLC_FMAPTYPE>
+<OCN2GLC_SMAPTYPE BFBFLAG="TRUE">X</OCN2GLC_SMAPTYPE>
+<GLC2OCN_FMAPTYPE BFBFLAG="TRUE">X</GLC2OCN_FMAPTYPE>
+<GLC2OCN_SMAPTYPE BFBFLAG="TRUE">X</GLC2OCN_SMAPTYPE>
 
 <ATM2WAV_SMAPTYPE BFBFLAG="TRUE">X</ATM2WAV_SMAPTYPE>
 <OCN2WAV_SMAPTYPE BFBFLAG="TRUE">X</OCN2WAV_SMAPTYPE>
@@ -1608,6 +1618,7 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 </gridmap>
 
 
+
 <!-- ======================================================== -->
 <!-- GRIDS: glc to ocn mapping                                -->
 <!--                                                          -->
@@ -1665,6 +1676,7 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <gridmap ocn_grid="oEC60to30" glc_grid="mpas.ais20km">
   <GLC2OCN_FMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_TO_oEC60to30_nearestdtos.151005.nc</GLC2OCN_FMAPNAME>
   <GLC2OCN_SMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_TO_oEC60to30_nearestdtos.151005.nc</GLC2OCN_SMAPNAME>
+  <GLC2OCN_RMAPNAME>cpl/gridmaps/oEC60to30/map_oEC60to30_TO_ais20km_nearestdtos.151005.nc</GLC2OCN_RMAPNAME>  
   <OCN2GLC_FMAPNAME>cpl/gridmaps/oEC60to30/map_oEC60to30_TO_ais20km_nearestdtos.151005.nc</OCN2GLC_FMAPNAME>
   <OCN2GLC_SMAPNAME>cpl/gridmaps/oEC60to30/map_oEC60to30_TO_ais20km_nearestdtos.151005.nc</OCN2GLC_SMAPNAME>
 </gridmap>
