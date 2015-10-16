@@ -434,11 +434,20 @@ contains
              ! apply minimum limit to OBL
              if(cvmix_variables % BoundaryLayerDepth .lt. layerThickness(1,iCell)/2.0) then
                 cvmix_variables % BoundaryLayerDepth = layerThickness(1,iCell)/2.0
+               cvmix_variables % kOBL_depth = cvmix_kpp_compute_kOBL_depth(  &
+                          zw_iface = cvmix_variables%zw_iface(1:nVertLevels+1),&
+                          zt_cntr = cvmix_variables%zt_cntr(1:nVertLevels),    &
+                          OBL_depth = cvmix_variables % BoundaryLayerDepth )
              endif
 
              ! apply maximum limit to OBL
              if(cvmix_variables % BoundaryLayerDepth .gt. abs(cvmix_variables%zt_cntr(maxLevelCell(iCell)))) then
                 cvmix_variables % BoundaryLayerDepth = abs(cvmix_variables%zt_cntr(maxLevelCell(iCell)))
+                cvmix_variables % kOBL_depth = cvmix_kpp_compute_kOBL_depth(  &
+                          zw_iface = cvmix_variables%zw_iface(1:nVertLevels+1), &
+                          zt_cntr = cvmix_variables%zt_cntr(1:nVertLevels),    &
+                          OBL_depth = cvmix_variables % BoundaryLayerDepth )
+
              endif
 
             call cvmix_coeffs_kpp(                                              &
