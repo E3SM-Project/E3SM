@@ -2360,10 +2360,10 @@ contains
                .false., &
                lInitialization)
 
-       enddo ! iCell
+          ! set the category tracer array
+          call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
-       ! set the category tracer array
-       call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
+       enddo ! iCell
 
        ! aerosols array
        deallocate(aerosolsArray)
