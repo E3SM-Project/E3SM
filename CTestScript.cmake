@@ -114,7 +114,7 @@ set (CTEST_BINARY_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/build-${CTEST_BUILD_NAME}
 ## -- Add the CTest script directory to the module path
 set (CTEST_EXTRA_SCRIPT_PATH "${CTEST_SOURCE_DIRECTORY}/ctest")
 list (APPEND CMAKE_MODULE_PATH ${CTEST_EXTRA_SCRIPT_PATH})
-message (" -- CTest Source Dir = ${CTEST_SOURCE_DIRECTORY}")
+message (" -- CTest site name = ${CTEST_SITE}")
 
 # -----------------------------------------------------------  
 # -- Store Build-Specific Info (environment variables)
@@ -135,8 +135,7 @@ ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
 ## -- Start
 message (" -- Hostname_id = ${HOSTNAME_ID}")
 message (" -- Start dashboard - ${CTEST_BUILD_NAME} --")
-message (" -- PIO_DASHBOARD_SOURCE_DIR = ${PIO_DASHBOARD_SOURCE_DIR}")
-message (" -- PIO_DASHBOARD_BINARY_DIR = ${PIO_DASHBOARD_BINARY_DIR}")
+message (" -- Ctest site name = ${PIO_DASHBOARD_SITE}")
 ctest_start("${CTEST_SCRIPT_ARG}")
 
 ## -- Update
@@ -157,13 +156,15 @@ ctest_build ()
 
 ## -- TEST
 message (" -- Test - ${CTEST_BUILD_NAME} --")
+message (" -- Ctest site name = ${PIO_DASHBOARD_SITE}")
 execute_process (COMMAND ${CTEST_EXTRA_SCRIPT_PATH}/runctest-${HOSTNAME_ID}.sh
                          ${CTEST_EXTRA_SCRIPT_PATH} ${CTEST_SCRIPT_ARG}
                  WORKING_DIRECTORY ${CTEST_BINARY_DIRECTORY})
 
 ## -- SUBMIT
 message (" -- Submit to dashboard - ${CTEST_BUILD_NAME} --")
-ctest_submit ()
+message (" -- Ctest site name = ${PIO_DASHBOARD_SITE}")
+### ctest_submit ()
 
 # -----------------------------------------------------------  
 # -- Clear environment
