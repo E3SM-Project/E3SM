@@ -207,11 +207,11 @@ contains
         call diagnose_advect_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
              waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc, 1:nlevsoi),                              &
              soilhydrology_vars%qcharge_col(bounds%begc:bounds%endc), waterflux_vars)                
-      endif
         
-      call calc_smp_l(bounds, 1, nlevgrnd, num_hydrologyc, filter_hydrologyc, &
-          temperature_vars%t_soisno_col(bounds%begc:bounds%endc, 1:nlevgrnd), &
-          soilstate_vars, waterstate_vars, soil_water_retention_curve)
+        call calc_smp_l(bounds, 1, nlevgrnd, num_hydrologyc, filter_hydrologyc, &
+             temperature_vars%t_soisno_col(bounds%begc:bounds%endc, 1:nlevgrnd), &
+             soilstate_vars, waterstate_vars, soil_water_retention_curve)
+      endif
              
       if (use_vichydro) then
          ! mapping soilmoist from CLM to VIC layers for runoff calculations
@@ -381,7 +381,6 @@ contains
                h2osoi_vol(c,j) = h2osoi_liq(c,j)/(dz(c,j)*denh2o) + h2osoi_ice(c,j)/(dz(c,j)*denice)
                h2osoi_liqvol(c,j) = h2osoi_liq(c,j)/(dz(c,j)*denh2o)
                h2osoi_icevol(c,j) = h2osoi_ice(c,j)/(dz(c,j)*denice)
-               h2osoi_vol(c,j)    = h2osoi_liqvol(c,j) + h2osoi_icevol(c,j)       
                air_vol(c,j)       = max(1.e-4_r8,watsat(c,j) - h2osoi_vol(c,j))
                eff_porosity(c,j)  = max(0.01_r8,watsat(c,j) - h2osoi_ice(c,j)/(dz(c,j)*denice))
                

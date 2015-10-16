@@ -43,6 +43,7 @@ contains
     ! select one subroutine to do the soil and root water coupling
     !
     !USES
+    use clm_varctl        , only : use_betr
     use shr_kind_mod      , only : r8 => shr_kind_r8
     use clm_varpar        , only : nlevsoi    
     use decompMod         , only : bounds_type   
@@ -100,7 +101,7 @@ contains
 
     end select
 
-    
+    if(use_betr)then
     !a work around of the negative liquid water embarrassment, which is
     !critical for a meaningufl tracer transport in betr. Jinyun Tang, Jan 14, 2015
 
@@ -137,7 +138,7 @@ contains
                             + h2osoi_ice(c,j)/(dz(c,j)*denice)
        enddo
     enddo
-
+    endif
   end associate
 
   end subroutine SoilWater
