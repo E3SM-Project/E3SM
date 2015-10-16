@@ -112,7 +112,8 @@ contains
     use dof_mod, only : PutUniquePoints
     use interpolate_mod, only : get_interp_parameter
     use shr_pio_mod, only : shr_pio_getiosys
-    use edge_mod, only : edgebuffer_t, edgevpack, edgevunpack, initedgebuffer, freeedgebuffer
+    use edge_mod, only : edgevpack, edgevunpack, initedgebuffer, freeedgebuffer
+    use edgetype_mod, only : edgebuffer_t
     use bndry_mod, only : bndry_exchangeV
     use parallel_mod,   only: par
     use cam_abortutils, only : endrun
@@ -203,18 +204,18 @@ contains
 
        end if
        allocate(dest(np,np,numlev,nelemd))
-       call initEdgeBuffer(edgebuf, numlev)
+       call initEdgeBuffer(hybrid%par,edgebuf, elem,numlev)
 
        do ie=1,nelemd
           ncols = elem(ie)%idxp%NumUniquePts
           call putUniquePoints(elem(ie)%idxP, numlev, fld_dyn(1:ncols,:,ie), dest(:,:,:,ie))
-          call edgeVpack(edgebuf, dest(:,:,:,ie), numlev, 0, elem(ie)%desc)
+          call edgeVpack(edgebuf, dest(:,:,:,ie), numlev, 0, ie)
        enddo
        if(iam < par%nprocs) then
           call bndry_exchangeV(par, edgebuf)
        end if
        do ie=1,nelemd
-          call edgeVunpack(edgebuf, dest(:,:,:,ie), numlev, 0, elem(ie)%desc)
+          call edgeVunpack(edgebuf, dest(:,:,:,ie), numlev, 0, ie)
        end do
        call freeEdgeBuffer(edgebuf)
        usefillvalues = any(dest == fillvalue)
@@ -299,7 +300,8 @@ contains
     use dof_mod, only : PutUniquePoints
     use interpolate_mod, only : get_interp_parameter
     use shr_pio_mod, only : shr_pio_getiosys
-    use edge_mod, only : edgebuffer_t, edgevpack, edgevunpack, initedgebuffer, freeedgebuffer
+    use edge_mod, only : edgevpack, edgevunpack, initedgebuffer, freeedgebuffer
+    use edgetype_mod, only : edgebuffer_t
     use bndry_mod, only : bndry_exchangeV
     use parallel_mod,   only: par
     implicit none
@@ -395,20 +397,20 @@ contains
           deallocate( cbuffer )
 
        end if
-       call initEdgeBuffer(edgebuf, 2*numlev)
+       call initEdgeBuffer(hybrid%par,edgebuf,elem, 2*numlev)
 
        do ie=1,nelemd
           ncols = elem(ie)%idxp%NumUniquePts
           call putUniquePoints(elem(ie)%idxP, 2, numlev, fld_dyn(1:ncols,:,:,ie), dest(:,:,:,:,ie))
           
-          call edgeVpack(edgebuf, dest(:,:,:,:,ie), 2*numlev, 0, elem(ie)%desc)
+          call edgeVpack(edgebuf, dest(:,:,:,:,ie), 2*numlev, 0, ie)
        enddo
        if(iam < par%nprocs) then
           call bndry_exchangeV(par, edgebuf)
        end if
 
        do ie=1,nelemd
-          call edgeVunpack(edgebuf, dest(:,:,:,:,ie), 2*numlev, 0, elem(ie)%desc)
+          call edgeVunpack(edgebuf, dest(:,:,:,:,ie), 2*numlev, 0, ie)
        enddo
        call freeEdgeBuffer(edgebuf)
        usefillvalues = any(dest==fillvalue)

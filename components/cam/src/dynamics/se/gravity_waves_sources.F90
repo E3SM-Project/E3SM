@@ -1,7 +1,7 @@
 module gravity_waves_sources
   use derivative_mod, only : derivative_t
   use dimensions_mod, only : np,nlev
-  use edge_mod, only       : EdgeBuffer_t
+  use edgetype_mod, only       : EdgeBuffer_t
   use element_mod, only    : element_t
   use hybrid_mod, only     : hybrid_t
   use kinds, only          : real_kind
@@ -29,14 +29,17 @@ module gravity_waves_sources
 CONTAINS
 !----------------------------------------------------------------------
 
-  subroutine gws_init
+  subroutine gws_init(elem)
     use edge_mod, only       : initEdgeBuffer
     use hycoef, only         : hypi
     use pmgrid, only         : plev
+    use parallel_mod, only    : par
     implicit none
+    type (element_t), intent(inout), dimension(:) :: elem
+
     
     ! Set up variables similar to dyn_comp and prim_driver_mod initializations
-    call initEdgeBuffer(edge3,3*nlev)
+    call initEdgeBuffer(par,edge3,elem,3*nlev)
     allocate(deriv(0:Nthreads-1))
     
     psurf_ref = hypi(plev+1)
@@ -144,13 +147,13 @@ CONTAINS
           
        enddo
        ! pack
-       call edgeVpack(edge3, frontgf(:,:,:,ie),nlev,0,elem(ie)%desc)
-       call edgeVpack(edge3, gradth(:,:,:,:,ie),2*nlev,nlev,elem(ie)%desc)
+       call edgeVpack(edge3, frontgf(:,:,:,ie),nlev,0,ie)
+       call edgeVpack(edge3, gradth(:,:,:,:,ie),2*nlev,nlev,ie)
     enddo
     call bndry_exchangeV(hybrid,edge3)
     do ie=nets,nete
-       call edgeVunpack(edge3, frontgf(:,:,:,ie),nlev,0,elem(ie)%desc)
-       call edgeVunpack(edge3, gradth(:,:,:,:,ie),2*nlev,nlev,elem(ie)%desc)
+       call edgeVunpack(edge3, frontgf(:,:,:,ie),nlev,0,ie)
+       call edgeVunpack(edge3, gradth(:,:,:,:,ie),2*nlev,nlev,ie)
        ! apply inverse mass matrix,
        do k=1,nlev
           gradth(:,:,1,k,ie)=gradth(:,:,1,k,ie)*elem(ie)%rspheremp(:,:)
