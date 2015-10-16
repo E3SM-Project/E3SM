@@ -96,7 +96,7 @@ sub main {
     }
 
     my $TESTCASE  = `./xmlquery -value TESTCASE`;
-    if(defined $TESTCASE && -e "$CIMEROOT/scripts/Testing/Testcases/${TESTCASE}_build.csh" && ! $opts{testmode}){
+    if(defined $TESTCASE && -e "$CIMEROOT/scripts/Testing/Testcases/${TESTCASE}_build.csh" && ! defined $opts{testmode}){
 	$logger->logdie("$TESTCASE build must be invoked via case.testbuild script");
     }
 

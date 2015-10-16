@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <testlist>
   <compset name="B1850G">
-    <grid name="f09_g16_gl5">
+    <grid name="f09_g16">
       <test name="ERS_Ld11">
         <machine compiler="intel" testtype="prealpha" testmods="allactive/cesm2dev01">yellowstone</machine>
       </test>
@@ -219,7 +219,7 @@
     </grid>
   </compset>
   <compset name="BC5L45BGCRG">
-    <grid name="f19_g16_gl5">
+    <grid name="f19_g16">
       <test name="NCK_Ld5">
         <machine compiler="intel" testtype="prealpha" testmods="allactive/cism/test_coupling">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta" testmods="allactive/cism/test_coupling">yellowstone</machine>
