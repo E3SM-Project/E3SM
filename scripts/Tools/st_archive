@@ -581,8 +581,8 @@ sub undoArchive
 	foreach my $file (@archivefiles) {
 	    $linkfile = $file;
 	    $linkfile =~ s/\.locked//g;
-#	    unlink( $linkfile );
 	    move( $file, $config{'RUNDIR'} );
+	    unlink( $linkfile );
 	}
     }
 }
