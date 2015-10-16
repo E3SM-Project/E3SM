@@ -323,7 +323,7 @@ contains
       ! Set physical parameters needed on the other side
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
-      call velocity_solver_set_parameters(config_ice_density, li_mask_ValueDynamicIce, li_mask_ValueIce)
+      call velocity_solver_set_parameters(config_ice_density, li_mask_ValueAlbanyActive, li_mask_ValueIce)
 #endif
 
       ! === error check
