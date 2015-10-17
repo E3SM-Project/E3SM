@@ -217,7 +217,8 @@ ifeq ($(UNAMES),AIX)
 CPPDEF     += -DAIX -DCPRIBM $(NO_CONTIGUOUS_FLAG)
 ifeq ($(SMP),TRUE)
   # THREADED_OMP is used by the timing library
-  CPPDEF   += -DTHREADED_OMP
+  # HOMME uses one of HORIZ_OPENMP or COLUMN_OPENMP
+  CPPDEF   += -DTHREADED_OMP  -DHORIZ_OPENMP
 endif
 
 cpre = $(null)-WF,-D$(null)
