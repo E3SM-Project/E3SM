@@ -45,15 +45,13 @@ module CNDecompCascadeBGCMod
      real(r8):: cn_s2_bgc     !C:N for SOM 2
      real(r8):: cn_s3_bgc     !C:N for SOM 3
 
-     real(r8):: np_s1_new_bgc        !C:P for SOM 1
-     real(r8):: np_s2_new_bgc        !C:P for SOM 2
-     real(r8):: np_s3_new_bgc        !C:P for SOM 3
-     real(r8):: np_s4_new_bgc        !C:P for SOM 4
+     real(r8):: np_s1_new_bgc        !N:P for SOM 1
+     real(r8):: np_s2_new_bgc        !N:P for SOM 2
+     real(r8):: np_s3_new_bgc        !N:P for SOM 3
 
      real(r8):: cp_s1_new_bgc        !C:P for SOM 1
      real(r8):: cp_s2_new_bgc        !C:P for SOM 2
      real(r8):: cp_s3_new_bgc        !C:P for SOM 3
-     real(r8):: cp_s4_new_bgc        !C:P for SOM 4
 
 
 
@@ -166,17 +164,17 @@ contains
     tString='np_s1_new'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompCnParamsInst%np_s1_new_bgc=tempr
+    CNDecompBgcParamsInst%np_s1_new_bgc=tempr
 
     tString='np_s2_new'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompCnParamsInst%np_s2_new_bgc=tempr
+    CNDecompBgcParamsInst%np_s2_new_bgc=tempr
 
     tString='np_s3_new'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNDecompCnParamsInst%np_s3_new_bgc=tempr
+    CNDecompBgcParamsInst%np_s3_new_bgc=tempr
 
     tString='rf_l1s1_bgc'
     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
@@ -316,7 +314,7 @@ contains
          cascade_donor_pool             => decomp_cascade_con%cascade_donor_pool             , & ! Output: [integer           (:)     ]  which pool is C taken from for a given decomposition step 
          cascade_receiver_pool          => decomp_cascade_con%cascade_receiver_pool          , & ! Output: [integer           (:)     ]  which pool is C added to for a given decomposition step   
          floating_cn_ratio_decomp_pools => decomp_cascade_con%floating_cn_ratio_decomp_pools , & ! Output: [logical           (:)     ]  TRUE => pool has fixed C:N ratio                          
-         floating_cp_ratio_decomp_pools => decomp_cascade_con%floating_cp_ratio_decomp_pools , & ! Output: [logical           (:)     ]  TRUE => pool has fixed C:N ratio                          
+         floating_cp_ratio_decomp_pools => decomp_cascade_con%floating_cp_ratio_decomp_pools , & ! Output: [logical           (:)     ]  TRUE => pool has fixed C:P ratio                          
          decomp_pool_name_restart       => decomp_cascade_con%decomp_pool_name_restart       , & ! Output: [character(len=8)  (:)     ]  name of pool for restart files                   
          decomp_pool_name_history       => decomp_cascade_con%decomp_pool_name_history       , & ! Output: [character(len=8)  (:)     ]  name of pool for history files                   
          decomp_pool_name_long          => decomp_cascade_con%decomp_pool_name_long          , & ! Output: [character(len=20) (:)     ]  name of pool for netcdf long names              
@@ -325,7 +323,7 @@ contains
          is_soil                        => decomp_cascade_con%is_soil                        , & ! Output: [logical           (:)     ]  TRUE => pool is a soil pool                               
          is_cwd                         => decomp_cascade_con%is_cwd                         , & ! Output: [logical           (:)     ]  TRUE => pool is a cwd pool                                
          initial_cn_ratio               => decomp_cascade_con%initial_cn_ratio               , & ! Output: [real(r8)          (:)     ]  c:n ratio for initialization of pools                    
-         initial_cp_ratio               => decomp_cascade_con%initial_cp_ratio               , & ! Output: [real(r8)          (:)     ]  c:n ratio for initialization of pools                    
+         initial_cp_ratio               => decomp_cascade_con%initial_cp_ratio               , & ! Output: [real(r8)          (:)     ]  c:p ratio for initialization of pools                    
          initial_stock                  => decomp_cascade_con%initial_stock                  , & ! Output: [real(r8)          (:)     ]  initial concentration for seeding at spinup              
          is_metabolic                   => decomp_cascade_con%is_metabolic                   , & ! Output: [logical           (:)     ]  TRUE => pool is metabolic material                        
          is_cellulose                   => decomp_cascade_con%is_cellulose                   , & ! Output: [logical           (:)     ]  TRUE => pool is cellulose                                 
@@ -345,9 +343,9 @@ contains
       cn_s3 = CNDecompBgcParamsInst%cn_s3_bgc
 
       ! set soil organic matter C:P ratios -X. YANG 
-      np_s1_new=CNDecompCnParamsInst%np_s1_new_bgc
-      np_s2_new=CNDecompCnParamsInst%np_s2_new_bgc
-      np_s3_new=CNDecompCnParamsInst%np_s3_new_bgc
+      np_s1_new=CNDecompBgcParamsInst%np_s1_new_bgc
+      np_s2_new=CNDecompBgcParamsInst%np_s2_new_bgc
+      np_s3_new=CNDecompBgcParamsInst%np_s3_new_bgc
 
       ! set respiration fractions for fluxes between compartments
       rf_l1s1 = CNDecompBgcParamsInst%rf_l1s1_bgc
