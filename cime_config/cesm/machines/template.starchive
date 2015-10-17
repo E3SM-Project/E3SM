@@ -3,6 +3,11 @@
 # Batch system directives
 #------------------------------------------------------------------------------
 {{ batchdirectives }}
+if(defined $ENV{'PBS_O_WORKDIR'})
+{
+	chdir $ENV{'PBS_O_WORKDIR'};
+}
+
 
 my $scriptname = $0;
 my $caseroot = `./xmlquery -value CASEROOT`;

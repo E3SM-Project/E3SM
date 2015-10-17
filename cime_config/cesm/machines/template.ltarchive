@@ -10,6 +10,11 @@ use XML::LibXML;
 #------------------------------------------------------------------------------
 {{ batchdirectives }}
 
+if(defined $ENV{'PBS_O_WORKDIR'})
+{
+    chdir $ENV{'PBS_O_WORKDIR'};
+}
+
 my $scriptname = $0;
 my %config;
 my $caseroot = `./xmlquery -value CASEROOT`;
