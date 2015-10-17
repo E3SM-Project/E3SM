@@ -115,7 +115,7 @@ contains
       write(stderrUnit,*) 'Reading topography data.'
       call ocn_init_setup_global_ocean_read_topo(domain, iErr)
       write(stderrUnit,*) 'Interpolating topography data.'
-      call ocn_init_setup_global_ocean_interpolate_topo(domain, iErr)
+      call ocn_init_setup_global_ocean_create_model_topo(domain, iErr)
       write(stderrUnit,*) 'Cleaning up topography IC fields'
       call ocn_init_global_ocean_destroy_topo_fields()
 
@@ -248,7 +248,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_init_setup_global_ocean_interpolate_topo
+!  routine ocn_init_setup_global_ocean_create_model_topo
 !
 !> \brief   Interpolate the topography IC to MPAS mesh
 !> \author  Doug Jacobsen
@@ -259,7 +259,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_init_setup_global_ocean_interpolate_topo(domain, iErr)!{{{
+    subroutine ocn_init_setup_global_ocean_create_model_topo(domain, iErr)!{{{
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
 
@@ -289,7 +289,7 @@ contains
        real (kind=RKIND), pointer :: config_global_ocean_minimum_depth
 ! mrp note: move to subroutine and different name list later.  change pbc to vertical_cell
        logical, pointer :: config_alter_ICs_for_pbcs
-       real (kind=RKIND), dimension(:), allocatable :: minBottomDepth, minBottomDepthMid
+       real (kind=RKIND) :: minBottomDepth, minBottomDepthMid
        real (kind=RKIND), pointer :: config_min_pbc_fraction
        character (len=StrKIND), pointer :: config_pbc_alteration_type
       call mpas_pool_get_config(domain % configs, 'config_alter_ICs_for_pbcs', config_alter_ICs_for_pbcs)
@@ -438,7 +438,7 @@ contains
           call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
 
 ! move this to subroutine later
-          ! TopOfCell needed where zero depth for the very top may be referenced.
+! call ocn_compute_layerThickness_zMid_from_bottomDepth
           refLayerThickness(1) = refBottomDepth(1)
           refZMid(1) = refBottomDepth(1)/2.0
           do k = 2, nVertLevels
@@ -446,97 +446,55 @@ contains
              refZMid(k) = - refBottomDepth(k-1) - refLayerThickness(k)/2.0
           end do
 
-! initialize minBottomDepth, MinBottomDepthMid
-print *, 'config_alter_ICs_for_pbcs',config_alter_ICs_for_pbcs,config_pbc_alteration_type, config_min_pbc_fraction
-               allocate(minBottomDepth(nVertLevels),minBottomDepthMid(nVertLevels))
-
-               ! min_pbc_fraction restricts pbcs from being too small.
-               ! A typical value is 10%, so pbcs must occupy at least 10% of the cell thickness.
-               ! If min_pbc_fraction = 0.0, bottomDepth gives the actual depth for that cell.
-               ! If min_pbc_fraction = 1.0, bottomDepth reverts to discrete z-level depths, same
-               !    as partial_bottom_cells = .false.
-
-               minBottomDepth(1) = (1.0-config_min_pbc_fraction)*refBottomDepth(1)
-               minBottomDepthMid(1) = 0.5*minBottomDepth(1)
-               do k = 2, nVertLevels
-                  minBottomDepth(k) = refBottomDepth(k) - (1.0-config_min_pbc_fraction)*(refBottomDepth(k) - refBottomDepth(k-1))
-                  minBottomDepthMid(k) = 0.5*(minBottomDepth(k) + refBottomDepth(k-1))
-               end do
-! end: initialize minBottomDepth, MinBottomDepthMid
-
           do iCell = 1, nCellsSolve 
              if (maxLevelCell(iCell) > 0) then
 
-! substitute with a subroutine call later:
-!                call ocn_initialize_z_level_vertical_coord( &
-!                    bottomDepthObserved(iCell), refBottomDepth, ssh, & ! inputs
-!                    alteredBottomDepth(iCell), maxLevelCell(iCell), layerThickness(:,iCell), zMid(:,iCell) ) ! outputs
+                ! substitute with a subroutine call later:
+                !                call ocn_alter_bottomDepth_for_pbcs( &
+                !                    bottomDepthObserved(iCell), refBottomDepth, ssh, & ! inputs
+                !                    alteredBottomDepth(iCell), maxLevelCell(iCell), layerThickness(:,iCell), zMid(:,iCell) ) ! outputs
 
-        if (config_alter_ICs_for_pbcs) then
+                if (config_alter_ICs_for_pbcs) then
 
 !!!!!!!!!!!!! this would be in a subroutine
-!                subroutine ocn_initialize_z_level_vertical_coord
-!   if (not.config_alter_ICs_for_pbcs) return ! but change flag name
+                   !                subroutine ocn_initialize_z_level_vertical_coord
+                   !   if (not.config_alter_ICs_for_pbcs) return ! but change flag name
 
-            if (config_pbc_alteration_type .eq. 'partial_cell') then
-                  ! Change value of maxLevelCell for partial bottom cells
-                  k = maxLevelCell(iCell)
-                  if (bottomDepth(iCell) .lt. minBottomDepthMid(k)) then
-                     ! Round up to cell above
-                     maxLevelCell(iCell) = maxLevelCell(iCell) - 1
-                     bottomDepth(iCell) = refBottomDepth(maxLevelCell(iCell))
-                  else if (bottomDepth(iCell) .lt. minBottomDepth(k)) then
-                     ! Round down cell to the min_pbc_fraction.
-                     bottomDepth(iCell) = minBottomDepth(k)
-                  end if
-                  ! reset k to new value of maxLevelCell
-                  k = maxLevelCell(iCell)
+                   if (config_pbc_alteration_type .eq. 'partial_cell') then
+                      ! Change value of maxLevelCell for partial bottom cells
+                      k = maxLevelCell(iCell)
+                      minBottomDepth = refBottomDepth(k) - (1.0-config_min_pbc_fraction)*(refBottomDepth(k) - refBottomDepth(k-1))
+                      minBottomDepthMid = 0.5*(minBottomDepth + refBottomDepth(k-1))
+                      if (bottomDepth(iCell) .lt. minBottomDepthMid) then
+                         ! Round up to cell above
+                         maxLevelCell(iCell) = maxLevelCell(iCell) - 1
+                         bottomDepth(iCell) = refBottomDepth(maxLevelCell(iCell))
+                      else if (bottomDepth(iCell) .lt. minBottomDepth) then
+                         ! Round down cell to the min_pbc_fraction.
+                         bottomDepth(iCell) = minBottomDepth
+                      end if
+                      ! reset k to new value of maxLevelCell
+                      k = maxLevelCell(iCell)
 
-            elseif (config_pbc_alteration_type .eq. 'full_cell') then
-
-                  bottomDepth(iCell) = refBottomDepth(maxLevelCell(iCell))
-
-            else
-
-                write (stderrUnit,*) ' Incorrect choice of config_pbc_alteration_type.'
-                call mpas_dmpar_abort(domain % dminfo)
-
-            endif
-
-            ! Initialize layerThickness
-            if (maxLevelCell(iCell)==1) then
-               layerThickness(1,iCell) = bottomDepth(iCell)
-            else
-               layerThickness(1, iCell) = refBottomDepth(1)
-               do k = 2, maxLevelCell(iCell)-1
-                  layerThickness(k, iCell) = refBottomDepth(k) - refBottomDepth(k-1)
-               end do
-                 ! Alter thickness of bottom level to account for PBC
-                 k = maxLevelCell(iCell)
-                 layerThickness(k,iCell) = bottomDepth(iCell) - refBottomDepth(k-1) 
-                 layerThickness(k+1:nVertLevels,iCell) = 0.0_RKIND
-            endif
-
-            ! Initialize zMid
-            zMid(1,iCell) = layerThickness(1,iCell)/2.0
-            do k = 2, maxLevelCell(iCell)
-               zMid(k,iCell) = - refBottomDepth(k-1) - layerThickness(k,iCell)/2.0
-            end do
+                   elseif (config_pbc_alteration_type .eq. 'full_cell') then
+                      bottomDepth(iCell) = refBottomDepth(maxLevelCell(iCell))
+                   else
+                      write (stderrUnit,*) ' Incorrect choice of config_pbc_alteration_type.'
+                      call mpas_dmpar_abort(domain % dminfo)
+                   endif
 
 !!!!!!!!!!!!! this would be in a subroutine: end
-        else !if (config_alter_ICs_for_pbcs) then
-                ! By going to maxLevelCell, this loop sets the layer Thickness as the full cell at the bottom.
-                layerThickness(1, iCell) = refBottomDepth(1)
-                do k = 2, maxLevelCell(iCell)
-                   layerThickness(k, iCell) = refBottomDepth(k) - refBottomDepth(k-1)
-                end do
+                endif !if (config_alter_ICs_for_pbcs) then
 
-                ! The following lines could be used for partial bottom cells, but only if the temperature is interpolated in the vertical as well.
-                ! In version 3.0, one may alter the IC for partial bottom cells on start-up in MPAS.
-                !k = maxLevelCell(iCell)
-                !layerThickness(k, iCell) =  bottomDepth(iCell) - refBottomDepth(k-1)
-        endif !if (config_alter_ICs_for_pbcs) then
+                k = maxLevelCell(iCell)
+                layerThickness(1:k-1,iCell) = refLayerThickness(1:k-1)
+                zMid(1:k-1,iCell) = refZMid(1:k-1)
 
+                layerThickness(k,iCell) = bottomDepth(iCell) - refBottomDepth(k-1) 
+                zMid(k,iCell) = - refBottomDepth(k-1) - layerThickness(k,iCell)/2.0
+ 
+                layerThickness(k+1:nVertLevels,iCell) = 0.0_RKIND
+                zMid(k+1:nVertLevels,iCell) = 0.0_RKIND
 
                 restingThickness(:, iCell) = layerThickness(:, iCell)
              end if
@@ -546,9 +504,9 @@ print *, 'config_alter_ICs_for_pbcs',config_alter_ICs_for_pbcs,config_pbc_altera
        end do
 
 !!! this is temp:
-               deallocate(minBottomDepth,minBottomDepthMid)
+!       deallocate(minBottomDepth,minBottomDepthMid)
 
-    end subroutine ocn_init_setup_global_ocean_interpolate_topo!}}}
+     end subroutine ocn_init_setup_global_ocean_create_model_topo!}}}
 
 !***********************************************************************
 !
