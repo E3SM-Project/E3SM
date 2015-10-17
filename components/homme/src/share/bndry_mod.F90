@@ -119,6 +119,8 @@ contains
     end do    ! icycle
     
     if ( size(buffer%moveptr).ne.omp_get_num_threads() ) then
+       print *,'size of moveptr: ',size(buffer%moveptr)
+       print *,'active omp threads:  ',omp_get_num_threads()
        call abortmp('edgebuffer threads does not match number of active threads')
     endif
 
