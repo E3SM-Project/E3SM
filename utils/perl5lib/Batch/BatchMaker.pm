@@ -504,10 +504,12 @@ sub setQueue()
     # and set it in env_batch.xml
 
     my $queue = $self->{envBatch}{$self->{job}}{JOB_QUEUE};
+    
+    
 
     if(defined $queue && ! ($queue =~ /^\s*$/ )){
 	$self->{queue} = $queue;
-	$logger->debug("Using queue $self->{queue} from env_batch.xml");
+	$logger->debug("Using queue $self->{queue} from env_batch.xml for $self->{job}");
 	return;
     }
 

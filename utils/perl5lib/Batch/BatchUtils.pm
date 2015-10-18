@@ -211,8 +211,8 @@ sub submitSingleJob()
     my $output;
 
     eval {
-        open (my $RUN, "-|", $runcmd) or $logger->logdie ("job submission failed, $!");
-        $output = <$RUN>;
+	open (my $RUN, "-|", $runcmd) or $logger->logdie ("job submission failed, $!");
+	$output = <$RUN>;
 	close $RUN or $logger->logdie( "job submission failed: |$?|, |$!|");
     };
     my $exitstatus = ($?>>8);
@@ -354,8 +354,10 @@ sub getSubmitArguments()
     # We need the script name and the dependent job id.
     my $scriptname = shift;
     my $dependentjobid = shift;
-
-    # Get a BatchMaker instance, we need its instance data. 
+    $scriptname =~ /\w+\.(\w+)$/;
+    $self->{job} = $1;
+    $logger->debug(" scriptname: $scriptname job $self->{job}");
+    # Get BatchMaker instance, we need its instance data. 
     my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot}, 
 							 cimeroot => $self->{cimeroot},
 							 case => $self->{case},
