@@ -14,6 +14,7 @@ module cice_velocity_solver_variational
 
   use mpas_derived_types
   use mpas_pool_routines
+  use mpas_timer
 
   implicit none
 
@@ -196,6 +197,7 @@ contains
        call MPAS_pool_get_array(velocityVariationalPool, "basisIntegralsV", basisIntegralsV)
        call MPAS_pool_get_array(velocityVariationalPool, "basisIntegralsMetric", basisIntegralsMetric)
 
+       call mpas_timer_start("Velocity solver strain tensor")
        call cice_strain_tensor_variational(&
             meshPool, &
             strain11, &
@@ -207,7 +209,9 @@ contains
             basisGradientV, &
             tanLatVertexRotatedOverRadius, &
             solveStress)
+       call mpas_timer_stop("Velocity solver strain tensor")
 
+       call mpas_timer_start("Velocity solver stress tensor")
        call cice_stress_tensor_variational(&
             meshPool, &
             stress11, &
@@ -221,7 +225,9 @@ contains
             solveStress, &
             elasticTimeStep, &
             revisedEVP)
+       call mpas_timer_stop("Velocity solver stress tensor")
 
+       call mpas_timer_start("Velocity solver stress divergence")
        call cice_stress_divergence_variational(&
             meshPool, &
             stressDivergenceU, &
@@ -235,6 +241,7 @@ contains
             tanLatVertexRotatedOverRadius, &
             cellVerticesAtVertex, &
             solveVelocity)
+       call mpas_timer_stop("Velocity solver stress divergence")
     
        block => block % next
     end do

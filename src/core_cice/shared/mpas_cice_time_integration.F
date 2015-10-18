@@ -94,6 +94,10 @@ contains
     integer :: &
          iDynamicsSubcycle
 
+    ! set halo timer
+    call mpas_timer_start("Halo")
+    call mpas_timer_stop("Halo")
+
     call cice_debug_write_out_fields(domain, "cice_timestep", 1)
 
     call store_timestep_counter(domain, itimestep)

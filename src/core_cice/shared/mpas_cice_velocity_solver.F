@@ -16,6 +16,7 @@ module cice_velocity_solver
   use mpas_pool_routines
   use mpas_timekeeping
   use mpas_dmpar
+  use mpas_timer
 
   implicit none
 
@@ -208,13 +209,19 @@ contains
        call cice_debug_write_out_fields(domain, "cice_run_velocity_solver", 1)
 
        ! pre subcycle
+       call mpas_timer_start("Velocity solver pre-cycle")
        call velocity_solver_pre_subcycle(domain)
+       call mpas_timer_stop("Velocity solver pre-cycle")
 
        ! subcycle the dynamics
+       call mpas_timer_start("Velocity solver sub-cycle")
        call subcycle_velocity_solver(domain, clock)
+       call mpas_timer_stop("Velocity solver sub-cycle")
 
        ! post subcycle
+       call mpas_timer_start("Velocity solver post-cycle")
        call velocity_solver_post_subcycle(domain)
+       call mpas_timer_stop("Velocity solver post-cycle")
        
        call cice_debug_write_out_fields(domain, "cice_run_velocity_solver", 2)
 
@@ -321,6 +328,8 @@ contains
          iCell
 
     ! halo exchange of mass tracers
+    call mpas_timer_start("Halo")
+
     call MPAS_pool_get_subpool(domain % blocklist % structs, "tracers", tracersPool)
 
     call MPAS_pool_get_field(tracersPool, "iceAreaCategory", iceAreaCategoryField, 1)
@@ -330,6 +339,8 @@ contains
     call MPAS_dmpar_exch_halo_field(iceAreaCategoryField)
     call MPAS_dmpar_exch_halo_field(iceVolumeCategoryField)
     call MPAS_dmpar_exch_halo_field(snowVolumeCategoryField)
+
+    call mpas_timer_stop("Halo")
 
     block => domain % blocklist
     do while (associated(block))
@@ -435,9 +446,11 @@ contains
     endif
 
     ! halo exchange of initial ice area of cell
+    call mpas_timer_start("Halo")
     call MPAS_pool_get_subpool(domain % blocklist % structs, "icestate", icestatePool)
     call MPAS_pool_get_field(icestatePool, "iceAreaCellInitial", iceAreaCellInitialField)
     call MPAS_dmpar_exch_halo_field(iceAreaCellInitialField)
+    call mpas_timer_stop("Halo")
 
     ! interpolate area and mass from cells to vertices
     block => domain % blocklist
@@ -470,9 +483,11 @@ contains
     call velocity_calculation_mask(domain)
 
     ! halo exchange velocity mask
+    call mpas_timer_start("Halo")
     call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolverPool)
     call MPAS_pool_get_field(velocitySolverPool, "solveVelocity", solveVelocityField)
     call MPAS_dmpar_exch_halo_field(solveVelocityField)
+    call mpas_timer_stop("Halo")
 
   end subroutine calculation_masks
 
@@ -792,11 +807,15 @@ contains
     enddo
 
     ! halo exchange velocities
+    call mpas_timer_start("Halo")
+
     call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolverPool)
     call MPAS_pool_get_field(velocitySolverPool, "uVelocity", uVelocityField)
     call MPAS_pool_get_field(velocitySolverPool, "vVelocity", vVelocityField)
     call MPAS_dmpar_exch_halo_field(uVelocityField)
     call MPAS_dmpar_exch_halo_field(vVelocityField)
+
+    call mpas_timer_stop("Halo")
 
   end subroutine new_ice_velocities!}}}
 
@@ -931,9 +950,13 @@ contains
     enddo
 
     ! halo exchange ice strength
+    call mpas_timer_start("Halo")
+
     call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolverPool)
     call MPAS_pool_get_field(velocitySolverPool, "icePressure", icePressureField)
     call MPAS_dmpar_exch_halo_field(icePressureField)
+
+    call mpas_timer_stop("Halo")
 
   end subroutine ice_strength
 
@@ -1003,11 +1026,15 @@ contains
     endif ! .not. config_use_air_stress
 
     ! halo exchange air stress
+    call mpas_timer_start("Halo")
+
     call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolverPool)
     call MPAS_pool_get_field(velocitySolverPool, "airStressCellU", airStressCellUField)
     call MPAS_pool_get_field(velocitySolverPool, "airStressCellV", airStressCellVField)
     call MPAS_dmpar_exch_halo_field(airStressCellUField)
     call MPAS_dmpar_exch_halo_field(airStressCellVField)
+
+    call mpas_timer_stop("Halo")
 
     ! interpolate air stress
     block => domain % blocklist
@@ -1465,11 +1492,15 @@ contains
     ! calculate internal stresses
     if (trim(config_stress_divergence_scheme) == "weak") then
 
+       call mpas_timer_start("Velocity solver internal stress")
        call cice_internal_stress_weak(domain)
+       call mpas_timer_stop("Velocity solver internal stress")
 
     else if (trim(config_stress_divergence_scheme) == "variational") then
 
+       call mpas_timer_start("Velocity solver internal stress")
        call cice_internal_stress_variational(domain)
+       call mpas_timer_stop("Velocity solver internal stress")
 
     endif
 
@@ -1479,15 +1510,22 @@ contains
     ! solve for velocity
     if (.not. config_revised_evp) then
 
+       call mpas_timer_start("Velocity solver compute")
        call solve_velocity(domain)
+       call mpas_timer_stop("Velocity solver compute")
 
     else
 
+       call mpas_timer_start("Velocity solver compute")
        call solve_velocity_revised(domain)
+       call mpas_timer_stop("Velocity solver compute")
 
     endif
 
     ! halo exchange
+    call mpas_timer_start("Halo")
+    call mpas_timer_start("Velocity solver halo")
+
     call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolverPool)
 
     call MPAS_pool_get_field(velocitySolverPool, "uVelocity", uVelocity)
@@ -1495,6 +1533,9 @@ contains
 
     call MPAS_dmpar_exch_halo_field(uVelocity)
     call MPAS_dmpar_exch_halo_field(vVelocity)
+
+    call mpas_timer_stop("Velocity solver halo")
+    call mpas_timer_stop("Halo")
 
   end subroutine single_subcycle_velocity_solver!}}}
 
@@ -2241,6 +2282,8 @@ contains
     if (configUseOceanStress) then
 
        ! halo exchange ocean stress
+       call mpas_timer_start("Halo")
+
        call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolverPool)
 
        call MPAS_pool_get_field(velocitySolverPool, "oceanStressU", oceanStressUField)
@@ -2248,6 +2291,8 @@ contains
 
        call MPAS_dmpar_exch_halo_field(oceanStressUField)
        call MPAS_dmpar_exch_halo_field(oceanStressVField)
+
+       call mpas_timer_stop("Halo")
 
        block => domain % blocklist
        do while (associated(block))
