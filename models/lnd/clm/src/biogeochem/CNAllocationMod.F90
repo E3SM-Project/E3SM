@@ -1978,39 +1978,66 @@ contains
          end do
       
       else     ! use_nitrif_denitrif
+  
+        if( .not.cnallocate_carbonphosphorus_only().and. .not.cnallocate_carbonnitrogen_only().and. .not.cnallocate_carbon_only() )then
 
-        temp_sminn_to_plant = sminn_to_plant
-        temp_sminp_to_plant = sminp_to_plant
+          temp_sminn_to_plant = sminn_to_plant
+          temp_sminp_to_plant = sminp_to_plant
 
-        call p2c(bounds,num_soilc,filter_soilc, &
-              sminn_to_npool(bounds%begp:bounds%endp), &
-              sminn_to_plant(bounds%begc:bounds%endc))
+          call p2c(bounds,num_soilc,filter_soilc, &
+                sminn_to_npool(bounds%begp:bounds%endp), &
+                sminn_to_plant(bounds%begc:bounds%endc))
 
-        call p2c(bounds,num_soilc,filter_soilc, &
-              sminp_to_ppool(bounds%begp:bounds%endp), &
-              sminp_to_plant(bounds%begc:bounds%endc))
+          call p2c(bounds,num_soilc,filter_soilc, &
+                sminp_to_ppool(bounds%begp:bounds%endp), &
+                sminp_to_plant(bounds%begc:bounds%endc))
 
-        
-        do j = 1, nlevdecomp
-             do fc=1,num_soilc
-                c = filter_soilc(fc)
-                if ( temp_sminn_to_plant(c) > 0._r8) then 
-                   sminn_to_plant_vr(c,j)    = sminn_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) )
-                   smin_nh4_to_plant_vr(c,j) = smin_nh4_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) ) 
-                   smin_no3_to_plant_vr(c,j) = smin_no3_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) ) 
-                else
-                   sminn_to_plant_vr(c,j)    = 0._r8
-                   smin_nh4_to_plant_vr(c,j) = 0._r8
-                   smin_no3_to_plant_vr(c,j) = 0._r8
-                endif
-                 
-                if ( temp_sminp_to_plant(c) > 0._r8) then 
-                   sminp_to_plant_vr(c,j) =  sminp_to_plant_vr(c,j) * ( sminp_to_plant(c)/temp_sminp_to_plant(c) )
-                else
-                   sminp_to_plant_vr(c,j) = 0._r8
-                endif 
-             end do
-        end do             
+          
+          do j = 1, nlevdecomp
+               do fc=1,num_soilc
+                  c = filter_soilc(fc)
+                  if ( temp_sminn_to_plant(c) > 0._r8) then 
+                     sminn_to_plant_vr(c,j)    = sminn_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) )
+                     smin_nh4_to_plant_vr(c,j) = smin_nh4_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) ) 
+                     smin_no3_to_plant_vr(c,j) = smin_no3_to_plant_vr(c,j) * ( sminn_to_plant(c)/temp_sminn_to_plant(c) ) 
+                  else
+                     sminn_to_plant_vr(c,j)    = 0._r8
+                     smin_nh4_to_plant_vr(c,j) = 0._r8
+                     smin_no3_to_plant_vr(c,j) = 0._r8
+                  endif
+                   
+                  if ( temp_sminp_to_plant(c) > 0._r8) then 
+                     sminp_to_plant_vr(c,j) =  sminp_to_plant_vr(c,j) * ( sminp_to_plant(c)/temp_sminp_to_plant(c) )
+                  else
+                     sminp_to_plant_vr(c,j) = 0._r8
+                  endif 
+               end do
+          end do             
+
+        end if   ! carbonnitrogenphosphorus
+
+        if( cnallocate_carbonnitrogen_only() )then
+
+          temp_sminp_to_plant = sminp_to_plant
+
+          call p2c(bounds,num_soilc,filter_soilc, &
+                sminp_to_ppool(bounds%begp:bounds%endp), &
+                sminp_to_plant(bounds%begc:bounds%endc))
+
+          
+          do j = 1, nlevdecomp
+               do fc=1,num_soilc
+                  c = filter_soilc(fc)
+
+                  if ( temp_sminp_to_plant(c) > 0._r8) then 
+                     sminp_to_plant_vr(c,j) =  sminp_to_plant_vr(c,j) * ( sminp_to_plant(c)/temp_sminp_to_plant(c) )
+                  else
+                     sminp_to_plant_vr(c,j) = 0._r8
+                  endif 
+               end do
+          end do             
+        end if  ! carbonnitrogen 
+
          
       end if   !  
 
