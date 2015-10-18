@@ -181,7 +181,7 @@ if ( ! defined($settinglist) ) {
 # store these in the hash %id_file
 #-----------------------------------------------------------------------------------------------
 
-my (%id_file, $type, $value, $valid_values, $is_list_value);
+my %id_file;
 foreach my $id ( keys(%idlist) )  
 {
     foreach my $file (@filenames) 
@@ -194,7 +194,8 @@ foreach my $id ( keys(%idlist) )
 	    $id_file{$id} = $file;
 
 	    # Do error checking for requested change
-	    $value = $node->getAttribute('value');
+	    my $value = $node->getAttribute('value');
+	    my($type, $valid_values, $is_list_value);
 	    foreach my $childnode ($node->childNodes()) 
 	    {
 		if ($childnode->nodeName() eq 'type') {
@@ -215,6 +216,7 @@ foreach my $id ( keys(%idlist) )
 	    # Will die in is_valid_values if the check fails
 	    if ($value !~ m/^$/) {
 		my $newvalue = $idlist{$id};
+		$logger->debug("is_valid_value: $id, $newvalue, $valid_values, $is_list_value");
 		SetupTools::is_valid_value($id, $newvalue, $valid_values, $is_list_value);
 	    }
 
