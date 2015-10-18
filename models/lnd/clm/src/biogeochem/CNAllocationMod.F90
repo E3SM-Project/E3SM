@@ -1284,7 +1284,7 @@ contains
                if (sum_no3_demand(c,j)*dt < smin_no3_vr(c,j)) then
                   ! NO3 availability is not limiting immobilization or plant
                   ! uptake, and all can proceed at their potential rates
-                  nlimit_no3(c,j) = 0
+                  nlimit_no3(c,j) = 1
                   fpi_no3_vr(c,j) = 1.0_r8 -  fpi_nh4_vr(c,j)
                   actual_immob_no3_vr(c,j) = (potential_immob_vr(c,j)-actual_immob_nh4_vr(c,j))
                   smin_no3_to_plant_vr(c,j) = (col_plant_ndemand(c)*nuptake_prof(c,j)-smin_nh4_to_plant_vr(c,j))
@@ -1525,7 +1525,7 @@ contains
                if (residual_plant_ndemand(c)  >  0._r8 ) then
                   if (nlimit_nh4(c,j) .eq. 0) then
                      residual_smin_nh4_vr(c,j) = max(smin_nh4_vr(c,j) - (actual_immob_vr(c,j) + &
-                          smin_nh4_to_plant_vr(c,j) + f_nit_vr(c,j) ) * dt, 0._r8)
+                          smin_nh4_to_plant_vr(c,j) ) * dt, 0._r8)
                      residual_smin_nh4(c) = residual_smin_nh4(c) + residual_smin_nh4_vr(c,j) * dzsoi_decomp(j)
                   else
                      residual_smin_nh4_vr(c,j)  = 0._r8
@@ -1566,7 +1566,7 @@ contains
                if (residual_plant_ndemand(c) > 0._r8 ) then
                   if (nlimit_no3(c,j) .eq. 0) then
                      residual_smin_no3_vr(c,j) = max(smin_no3_vr(c,j) - (actual_immob_vr(c,j) + &
-                          smin_no3_to_plant_vr(c,j) + f_denit_vr(c,j) ) * dt, 0._r8)
+                          smin_no3_to_plant_vr(c,j) ) * dt, 0._r8)
                      residual_smin_no3(c) = residual_smin_no3(c) + residual_smin_no3_vr(c,j) * dzsoi_decomp(j)
                   else
                      residual_smin_no3_vr(c,j)  = 0._r8
