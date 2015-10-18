@@ -137,10 +137,6 @@
     <lname>1850_CAM5%WCCM_CLM45%CN_CICE_POP2_RTM_SGLC_SWAV</lname>
   </compset>
 
-  <compset>
-    <alias>BC4WCMAL40SPR</alias>
-    <lname>C2R6_CAM4%WCMA_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV</lname>
-  </compset>
 
   <compset>
     <alias>BC4WCMAL40SPR</alias>

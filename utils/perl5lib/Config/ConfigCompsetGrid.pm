@@ -200,7 +200,7 @@ sub getGridLongname
     $grid_longname =~ /(m%)(.+)(_g%)/ ; $compgrid{'mask'} = $2; 
 
     my @nodes = $xml->findnodes(".//grid[lname=\"$grid_longname\"]");
-    if ($#nodes != 0) {
+    if ($#nodes < 0) {
 	die "ERROR ConfigCompsetGrid::checkGrid : no match found for $grid_longname \n";
     } 
     my $attr = $nodes[0]->getAttribute('compset');
