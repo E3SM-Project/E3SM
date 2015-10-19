@@ -110,9 +110,11 @@ Each grid is associated with five names
 
 <!--- mpasli grids -->
 <GRID sname="0.9x1.25_gx1v6_gis20"    alias="f09_g16_g"  compset="_MPASLI">a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%mpas.gis20km_w%null</GRID>
+<GRID sname="0.9x1.25_gx1v6_ais20"    alias="f09_g16_a"  compset="_MPASLI">a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%mpas.ais20km_w%null</GRID>
 
 <!-- mpasli + mpas-o grids -->
 <GRID sname="T62_mpas120_gis20" alias="T62_m120_g" compset="MPASO.*_MPASLI">a%T62_l%T62_oi%mpas120_r%rx1_m%mpas120_g%mpas.gis20km_w%null</GRID>
+<GRID sname="0.9x1.25_oEC60to30_ais20"    alias="f09_oEC_a"  compset="MPASO.*_MPASLI">a%0.9x1.25_l%0.9x1.25_oi%oEC60to30_r%r05_m%oEC60to30_g%mpas.ais20km_w%null</GRID>
 
 <!-- new runoff grids for data runoff model DROF -->
 
@@ -415,6 +417,7 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 
 <!-- GLC grids -->
 <!-- NOTE: desc MUST be the last field in each <gridhorz> -->
+<!-- GLC: CISM grids -->
 
 <gridhorz name="gland20">
    <nx>76</nx> <ny>141</ny>
@@ -441,6 +444,21 @@ do not use scientific experiments; use the T62_g16 resolution instead:
    <desc>4-km Greenland grid, for use with the glissade dycore</desc>
 </gridhorz>
 
+<!-- GLC grids -->
+<!-- GLC: MPASLI grids -->
+<gridhorz name="mpas.gis20km">
+  <support_level>Experimental, under development</support_level>
+  <nx>7425</nx>  <ny>1</ny>
+  <desc>mpas.gis20km is a uniform-resolution 20km MPASLI grid of the Greenland Ice Sheet.  It is primarily intended for testing.</desc>
+</gridhorz>
+
+<gridhorz name="mpas.ais20km">
+  <support_level>Experimental, under development</support_level>
+  <nx>45675</nx>  <ny>1</ny>
+  <desc>mpas.ais20km is a uniform-resolution 20km MPASLI grid of the Antarctic Ice Sheet.  It is primarily intended for testing.</desc>
+</gridhorz>
+
+
 
 <!-- WW3 grids-->
 <!-- NOTE: desc MUST be the last field in each <gridhorz> -->
@@ -451,13 +469,7 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <desc>WW3 90 x 50 global grid</desc>
 </gridhorz>
 
-<!-- GLC grids -->
-<!-- GLC:MPASLI grids -->
-<gridhorz name="mpas.gis20km">
-  <support_level>Experimental, under development</support_level>
-  <nx>7425</nx>  <ny>1</ny>    
-  <desc>mpas.gis20km is a uniform-resolution 20km MPASLI grid of the Greenland Ice Sheet.  It is primarily intended for testing.</desc>
-</gridhorz>
+
 
 <!-- ======================================================== -->
 <!-- SECTION GRIDS: ocean/ice grids                           -->
@@ -809,7 +821,7 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <OCN2ATM_FMAPNAME>cpl/cpl6/map_mp120v1_to_fv0.9x1.25_aave_da_111004.nc</OCN2ATM_FMAPNAME>
   <OCN2ATM_SMAPNAME>cpl/cpl6/map_mp120v1_to_fv0.9x1.25_aave_da_111004.nc</OCN2ATM_SMAPNAME>>
 </gridmap>
-  
+
 <!-- ====================  -->
 <!--  atm fv: 1.9x2.5      -->
 <!-- ====================  -->
@@ -1439,6 +1451,10 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <!-- ======================================================== -->
 
 <!-- ====================  -->
+<!-- GLC: CISM grids       -->
+<!-- ====================  -->
+
+<!-- ====================  -->
 <!-- GLC: gland4           -->
 <!-- ====================  -->
 
@@ -1565,6 +1581,33 @@ do not use scientific experiments; use the T62_g16 resolution instead:
    <GLC2LND_SMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_T31_aave.150514.nc</GLC2LND_SMAPNAME>
 </gridmap>
 
+<!-- ====================  -->
+<!-- GLC: MPASLI grids     -->
+<!-- ====================  -->
+
+<!-- ====================  -->
+<!-- GLC: mpas.gis20km     -->
+<!-- ====================  -->
+
+<gridmap lnd_grid="0.9x1.25" glc_grid="mpas.gis20km" >
+   <LND2GLC_FMAPNAME>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_mpas.gis20km_aave.150922.nc</LND2GLC_FMAPNAME>
+   <LND2GLC_SMAPNAME>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_mpas.gis20km_bilin.150922.nc</LND2GLC_SMAPNAME>
+   <GLC2LND_FMAPNAME>cpl/gridmaps/mpas.gis20km/map_mpas.gis20km_TO_fv0.9x1.25_aave.150922.nc</GLC2LND_FMAPNAME>
+   <GLC2LND_SMAPNAME>cpl/gridmaps/mpas.gis20km/map_mpas.gis20km_TO_fv0.9x1.25_aave.150922.nc</GLC2LND_SMAPNAME>
+</gridmap>
+
+<!-- ====================  -->
+<!-- GLC: mpas.ais20km     -->
+<!-- ====================  -->
+
+<gridmap lnd_grid="0.9x1.25" glc_grid="mpas.ais20km">
+  <LND2GLC_FMAPNAME>cpl/gridmaps/fv0.9x1.25/map_f09_TO_ais20km_aave.151005.nc</LND2GLC_FMAPNAME>
+  <LND2GLC_SMAPNAME>cpl/gridmaps/fv0.9x1.25/map_f09_TO_ais20km_bilin.151005.nc</LND2GLC_SMAPNAME>
+  <GLC2LND_FMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_TO_f09_aave.151005.nc</GLC2LND_FMAPNAME>
+  <GLC2LND_SMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_TO_f09_aave.151005.nc</GLC2LND_SMAPNAME>
+</gridmap>
+
+
 <!-- ======================================================== -->
 <!-- GRIDS: glc to ocn mapping                                -->
 <!--                                                          -->
@@ -1575,6 +1618,8 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <!-- glc to ocn mapping files. (By default, glc to ice        -->
 <!-- mapping is turned off in the system.)                    -->
 <!-- ======================================================== -->
+
+<!-- CISM / POP -->
 
 <gridmap ocn_grid="gx1v6" glc_grid="gland4" >
    <GLC2OCN_RMAPNAME>cpl/gridmaps/gland4km/map_gland4km_to_gx1v6_nnsm_e1000r300_150512.nc</GLC2OCN_RMAPNAME>
@@ -1611,8 +1656,17 @@ do not use scientific experiments; use the T62_g16 resolution instead:
    <GLC2OCN_RMAPNAME>cpl/gridmaps/gland20km/map_gland20km_to_gx3v7_nnsm_e1000r300_150514.nc</GLC2OCN_RMAPNAME>
 </gridmap>
 
+<!-- MPASO / MPASLI -->
+
 <gridmap glc_grid="mpas.gis20km" ocn_grid="mpas120">
   <GLC2OCN_RMAPNAME>cpl/gridmaps/mpas.gis20km/map_mpas.gis20km_to_mpas120_nnsmooth_150924.nc</GLC2OCN_RMAPNAME>
+</gridmap>
+
+<gridmap ocn_grid="oEC60to30" glc_grid="mpas.ais20km">
+  <GLC2OCN_FMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_TO_oEC60to30_nearestdtos.151005.nc</GLC2OCN_FMAPNAME>
+  <GLC2OCN_SMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_TO_oEC60to30_nearestdtos.151005.nc</GLC2OCN_SMAPNAME>
+  <OCN2GLC_FMAPNAME>cpl/gridmaps/oEC60to30/map_oEC60to30_TO_ais20km_nearestdtos.151005.nc</OCN2GLC_FMAPNAME>
+  <OCN2GLC_SMAPNAME>cpl/gridmaps/oEC60to30/map_oEC60to30_TO_ais20km_nearestdtos.151005.nc</OCN2GLC_SMAPNAME>
 </gridmap>
 
 </config_compset>
