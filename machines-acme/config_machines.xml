@@ -70,6 +70,8 @@
 -->
 <machine MACH="userdefined">
         <DESC>User Defined Machine</DESC>                                 <!-- can be anything -->
+        <NODENAME_REGEX></NODENAME_REGEX>                           <!-- regex for auto-detect that you're on this machine -->
+        <TESTS>acme_developer</TESTS>                               <!-- preferred test suite to run on this machine -->
         <OS>USERDEFINED_required_macros</OS>                              <!-- LINUX,Darwin,CNL,AIX,BGL,BGP -->
         <COMPILERS>intel,ibm,pgi,pathscale,gnu,cray,nag</COMPILERS>     <!-- intel,ibm,pgi,pathscale,gnu,cray,nag -->
         <MPILIBS>openmpi,mpich,mpt,mpt,ibm,mpi-serial</MPILIBS>                <!-- openmpi, mpich, ibm, mpi-serial -->
@@ -93,6 +95,8 @@
 
 <machine MACH="edison">
          <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is PBS</DESC>
+         <NODENAME_REGEX>edison</NODENAME_REGEX>
+         <TESTS>acme_developer</TESTS>
 	 <COMPILERS>intel,gnu,cray</COMPILERS>
 	 <MPILIBS>mpt,mpi-serial</MPILIBS>
          <CESMSCRATCHROOT>$ENV{SCRATCH}/acme_scratch</CESMSCRATCHROOT>
@@ -141,6 +145,8 @@
 
 <machine MACH="hopper">
          <DESC>NERSC XE6, os is CNL, 24 pes/node, batch system is PBS</DESC>
+         <NODENAME_REGEX>hopper</NODENAME_REGEX>
+         <TESTS>acme_developer</TESTS>
 	 <COMPILERS>pgi,intel,gnu,cray,pathscale</COMPILERS>
 	 <MPILIBS>mpt,mpi-serial</MPILIBS>
          <CESMSCRATCHROOT>$ENV{SCRATCH}</CESMSCRATCHROOT>
@@ -182,6 +188,8 @@
 
 <machine MACH="mac">
     <DESC>Mac OS/X workstation or laptop</DESC>
+    <NODENAME_REGEX></NODENAME_REGEX>
+    <TESTS>acme_developer</TESTS>
     <OS>Darwin</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>openmpi,mpich,mpi-serial</MPILIBS>
@@ -206,6 +214,8 @@
 
 <machine MACH="linux-generic">
     <DESC>Linux workstation or laptop</DESC>
+    <NODENAME_REGEX></NODENAME_REGEX>
+    <TESTS>acme_developer</TESTS>
     <OS>Linux</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>openmpi,mpich,mpi-serial</MPILIBS>
@@ -230,6 +240,9 @@
 
 <machine MACH="melvin">
     <DESC>Linux workstation for Jenkins testing</DESC>
+    <NODENAME_REGEX>melvin</NODENAME_REGEX>
+    <PROXY>sonproxy.sandia.gov:80</PROXY>
+    <TESTS>acme_developer</TESTS>
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>openmpi,mpi-serial</MPILIBS>
@@ -265,6 +278,9 @@
 
 <machine MACH="skybridge">
          <DESC>SNL clust</DESC>
+         <NODENAME_REGEX>skybridge-login</NODENAME_REGEX>
+         <PROXY>wwwproxy.sandia.gov:80</PROXY>
+         <TESTS>acme_integration</TESTS>
 	 <COMPILERS>intel</COMPILERS>
 	 <MPILIBS>openmpi,mpi-serial</MPILIBS>
          <OS>LINUX</OS>
@@ -306,6 +322,9 @@
 
 <machine MACH="redsky">
          <DESC>SNL clust</DESC>
+         <NODENAME_REGEX>redsky-login</NODENAME_REGEX>
+         <PROXY>wwwproxy.sandia.gov:80</PROXY>
+         <TESTS>acme_integration</TESTS>
 	 <COMPILERS>intel</COMPILERS>
 	 <MPILIBS>openmpi,mpi-serial</MPILIBS>
          <OS>LINUX</OS>
@@ -347,14 +366,16 @@
 
 <machine MACH="blues">
          <DESC>ANL/LCRC Linux Cluster</DESC>
+         <NODENAME_REGEX>blogin</NODENAME_REGEX>
+         <TESTS>acme_developer</TESTS>
          <COMPILERS>intel,gnu,pgi</COMPILERS>
          <MPILIBS>mpich,openmpi,mpi-serial</MPILIBS>
-         <CESMSCRATCHROOT>/lcrc/project/$PROJECT/$CCSMUSER/acme_scratch</CESMSCRATCHROOT>
+         <CESMSCRATCHROOT>/lcrc/project/$PROJECT/$USER/acme_scratch</CESMSCRATCHROOT>
          <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
          <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/home/ccsm-data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/lcrc/project/$PROJECT/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>/lcrc/project/$PROJECT/$USER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
          <CCSM_BASELINE>/lcrc/group/earthscience/acme_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/home/ccsm-data/tools/cprnc</CCSM_CPRNC>
@@ -384,15 +405,17 @@
 
 <machine MACH="cetus">
          <DESC>ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt</DESC>
+         <NODENAME_REGEX>cetus</NODENAME_REGEX>
+         <TESTS>acme_developer</TESTS>
          <COMPILERS>ibm</COMPILERS>
          <MPILIBS>ibm</MPILIBS>
-         <CESMSCRATCHROOT>/projects/$PROJECT/$ENV{USER}</CESMSCRATCHROOT>
+         <CESMSCRATCHROOT>/projects/$PROJECT/$USER</CESMSCRATCHROOT>
          <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
          <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/projects/$PROJECT/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
-         <DOUT_L_MSROOT>/home/$CCSMUSER/csm/$CASE/</DOUT_L_MSROOT>
+         <DOUT_S_ROOT>/projects/$PROJECT/$USER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_L_MSROOT>/home/$USER/csm/$CASE/</DOUT_L_MSROOT>
          <CCSM_BASELINE>/projects/ccsm/ccsm_baselines/</CCSM_BASELINE>
          <CCSM_CPRNC>/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
          <SAVE_TIMING_DIR>/projects/$PROJECT</SAVE_TIMING_DIR>
@@ -432,6 +455,8 @@
 
 <machine MACH="penn">
     <DESC>Linux workstation: Andy's at SNL</DESC>
+    <NODENAME_REGEX>penn</NODENAME_REGEX>
+    <TESTS>acme_developer</TESTS>
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>openmpi,mpi-serial</MPILIBS>
@@ -455,15 +480,17 @@
 
 <machine MACH="mira">
          <DESC>ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt</DESC>
+         <NODENAME_REGEX>mira</NODENAME_REGEX>
+         <TESTS>acme_developer</TESTS>
          <COMPILERS>ibm</COMPILERS>
          <MPILIBS>ibm</MPILIBS>
-         <CESMSCRATCHROOT>/projects/$PROJECT/usr/$ENV{USER}</CESMSCRATCHROOT>
+         <CESMSCRATCHROOT>/projects/$PROJECT/usr/$USER</CESMSCRATCHROOT>
          <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
          <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/projects/$PROJECT/usr/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
-         <DOUT_L_MSROOT>/home/$CCSMUSER/csm/$CASE/</DOUT_L_MSROOT>
+         <DOUT_S_ROOT>/projects/$PROJECT/usr/$USER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_L_MSROOT>/home/$USER/csm/$CASE/</DOUT_L_MSROOT>
          <CCSM_BASELINE>/projects/ccsm/ccsm_baselines/</CCSM_BASELINE>
          <CCSM_CPRNC>/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
          <SAVE_TIMING_DIR>/projects/$PROJECT</SAVE_TIMING_DIR>
@@ -505,15 +532,17 @@
 
 <machine MACH="sooty">
          <DESC>PNL cluster, os is Linux (pgi,intel,nag), batch system is SLURM</DESC>
+         <NODENAME_REGEX>sooty</NODENAME_REGEX>
+         <TESTS>acme_developer</TESTS>
          <OS>LINUX</OS>
-             <COMPILERS>pgi,intel</COMPILERS>
-             <MPILIBS>mvapich2</MPILIBS>
-         <RUNDIR>/lustre/$CCSMUSER/csmruns/$CASE/run</RUNDIR>
-         <EXEROOT>/lustre/$CCSMUSER/csmruns/$CASE/bld</EXEROOT>
+         <COMPILERS>pgi,intel</COMPILERS>
+         <MPILIBS>mvapich2</MPILIBS>
+         <RUNDIR>/lustre/$USER/csmruns/$CASE/run</RUNDIR>
+         <EXEROOT>/lustre/$USER/csmruns/$CASE/bld</EXEROOT>
          <CESMSCRATCHROOT>/lustre/$USER/csmruns/</CESMSCRATCHROOT>
          <DIN_LOC_ROOT>/lustre/sing201/DATASETS/CAM/InitialCondFilesCam/FromMythos1/CSMDATA_CAM/aerocom/csmdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/lustre/sing201/DATASETS/CAM/InitialCondFilesCam/FromMythos1/CSMDATA_CAM/aerocom/csmdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/lustre/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>/lustre/$USER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/UNSET_BASELINE</CCSM_BASELINE>
          <CCSM_CPRNC>/lustre/sing201/CAM/netcdfComp_cprnc/cprnc/cprnc</CCSM_CPRNC>
@@ -526,14 +555,16 @@
 
 <machine MACH="cascade">
          <DESC>PNL cluster, os is Linux (pgi), batch system is SLURM</DESC>
+         <NODENAME_REGEX>cascade</NODENAME_REGEX>
+         <TESTS>acme_developer</TESTS>
          <OS>LINUX</OS>
          <COMPILERS>intel,nag</COMPILERS>
          <MPILIBS>mpich</MPILIBS>
-         <RUNDIR>/dtemp/$CCSMUSER/csmruns/$CASE/run</RUNDIR>
-         <EXEROOT>/dtemp/$CCSMUSER/csmruns/$CASE/bld</EXEROOT>
+         <RUNDIR>/dtemp/$USER/csmruns/$CASE/run</RUNDIR>
+         <EXEROOT>/dtemp/$USER/csmruns/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/dtemp/sing201/inputdata/CAM/CSMDATA_CAM/aerocom/csmdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/dtemp/sing201/inputdata/CAM/CSMDATA_CAM/aerocom/csmdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/dtemp/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>/dtemp/$USER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/dtemp/sing201/acme_testing/acme_baselines/</CCSM_BASELINE>
              <CESMSCRATCHROOT>/dtemp/$USER/csmruns</CESMSCRATCHROOT>
@@ -547,6 +578,8 @@
 
 <machine MACH="oic2">
          <DESC>ORNL XK6, os is Linux, 8 pes/node, batch system is PBS</DESC>
+         <NODENAME_REGEX>oic2</NODENAME_REGEX>
+         <TESTS>acme_developer</TESTS>
          <COMPILERS>gnu</COMPILERS>
          <MPILIBS>mpich,mpi-serial,openmpi</MPILIBS>
          <RUNDIR>/home/$USER/models/ACME/run/$CASE/run</RUNDIR>
@@ -565,6 +598,8 @@
 
 <machine MACH="oic5">
          <DESC>ORNL XK6, os is Linux, 8 pes/node, batch system is PBS</DESC>
+         <NODENAME_REGEX>oic5</NODENAME_REGEX>
+         <TESTS>acme_developer</TESTS>
          <COMPILERS>gnu</COMPILERS>
          <MPILIBS>mpich,mpi-serial,openmpi</MPILIBS>
          <RUNDIR>/home/$USER/models/ACME/run/$CASE/run</RUNDIR>
@@ -583,6 +618,8 @@
 
 <machine MACH="titan">
          <DESC>ORNL XK6, os is CNL, 16 pes/node, batch system is PBS</DESC>
+         <NODENAME_REGEX>titan</NODENAME_REGEX>
+         <TESTS>acme_developer</TESTS>
 	 <COMPILERS>pgi,pgicuda,intel,cray</COMPILERS>
 	 <MPILIBS>mpich,mpi-serial</MPILIBS>
          <CESMSCRATCHROOT>$ENV{MEMBERWORK}/$PROJECT</CESMSCRATCHROOT>
@@ -621,17 +658,19 @@
 
 <machine MACH="mustang">
 	<DESC>LANL Linux Cluster, 24 pes/node, batch system Moab</DESC>
+        <NODENAME_REGEX>mustang</NODENAME_REGEX>
+        <TESTS>acme_developer</TESTS>
 	<COMPILERS>intel,gnu</COMPILERS>
 	<MPILIBS>openmpi,mvapich,mpi-serial</MPILIBS>
 	<OS>LINUX</OS>
-	<RUNDIR>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
-	<EXEROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
-	<DIN_LOC_ROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data</DIN_LOC_ROOT>
-	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-	<DOUT_S_ROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
+	<RUNDIR>/lustre/scratch1/turquoise/$USER/ACME/cases/$CASE/run</RUNDIR>
+	<EXEROOT>/lustre/scratch1/turquoise/$USER/ACME/cases/$CASE/bld</EXEROOT>
+	<DIN_LOC_ROOT>/lustre/scratch1/turquoise/$USER/ACME/input_data</DIN_LOC_ROOT>
+	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch1/turquoise/$USER/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+	<DOUT_S_ROOT>/lustre/scratch1/turquoise/$USER/ACME/archive/$CASE</DOUT_S_ROOT>
 	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-	<CCSM_BASELINE>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
-	<CESMSCRATCHROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME</CESMSCRATCHROOT>
+	<CCSM_BASELINE>/lustre/scratch1/turquoise/$USER/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
+	<CESMSCRATCHROOT>/lustre/scratch1/turquoise/$USER/ACME</CESMSCRATCHROOT>
 	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/mustang/cprnc/v0.40/cprnc</CCSM_CPRNC>
 	<BATCHQUERY>mshow</BATCHQUERY>
 	<BATCHSUBMIT>msub</BATCHSUBMIT>
@@ -671,17 +710,19 @@
 
 <machine MACH="wolf">
 	<DESC>LANL Linux Cluster, 16 pes/node, batch system Moab</DESC>
+        <NODENAME_REGEX>wolf</NODENAME_REGEX>
+        <TESTS>acme_developer</TESTS>
 	<COMPILERS>intel,gnu</COMPILERS>
 	<MPILIBS>openmpi,mvapich,mpi-serial</MPILIBS>
 	<OS>LINUX</OS>
-	<RUNDIR>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
-	<EXEROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
-	<DIN_LOC_ROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data</DIN_LOC_ROOT>
-	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-	<DOUT_S_ROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
+	<RUNDIR>/lustre/scratch1/turquoise/$USER/ACME/cases/$CASE/run</RUNDIR>
+	<EXEROOT>/lustre/scratch1/turquoise/$USER/ACME/cases/$CASE/bld</EXEROOT>
+	<DIN_LOC_ROOT>/lustre/scratch1/turquoise/$USER/ACME/input_data</DIN_LOC_ROOT>
+	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch1/turquoise/$USER/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+	<DOUT_S_ROOT>/lustre/scratch1/turquoise/$USER/ACME/archive/$CASE</DOUT_S_ROOT>
 	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-	<CCSM_BASELINE>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
-	<CESMSCRATCHROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME</CESMSCRATCHROOT>
+	<CCSM_BASELINE>/lustre/scratch1/turquoise/$USER/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
+	<CESMSCRATCHROOT>/lustre/scratch1/turquoise/$USER/ACME</CESMSCRATCHROOT>
 	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
 	<BATCHQUERY>mshow</BATCHQUERY>
 	<BATCHSUBMIT>msub</BATCHSUBMIT>

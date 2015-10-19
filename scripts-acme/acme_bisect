@@ -36,45 +36,46 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-    default_compiler, _, _, default_project, default_testroot, _, _, _ = acme_util.get_machine_info(raw=True)
+    default_project  = acme_util.get_machine_project()
+    default_compiler = acme_util.get_machine_info("COMPILERS")[0]
 
     parser.add_argument("testname", help="Name of failing test.")
 
-    parser.add_argument("-r", "--test-root", action="store", dest="testroot", default=default_testroot,
+    parser.add_argument("-r", "--test-root",
                         help="Path to testroot to use for testcases for bisect.")
 
-    parser.add_argument("-c", "--compiler", action="store", dest="compiler", default=default_compiler,
+    parser.add_argument("-c", "--compiler", default=default_compiler,
                         help="What compiler to use to build ACME")
 
-    parser.add_argument("-p", "--project", action="store", dest="project", default=default_project,
+    parser.add_argument("-p", "--project", default=default_project,
                         help="Project to be given to create_test.")
 
-    parser.add_argument("-b", "--baseline-name", action="store", dest="baseline_name", default=None,
+    parser.add_argument("-b", "--baseline-name",
                         help="Baseline id for comparing baselines. Not specifying means no comparisons will be done.")
 
-    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False,
+    parser.add_argument("-v", "--verbose", action="store_true",
                         help="Print extra information")
 
-    parser.add_argument("-n", "--check-namelists", action="store_true", dest="check_namelists", default=False,
+    parser.add_argument("-n", "--check-namelists", action="store_true",
                         help="Consider a commit to be broken if namelist check fails")
 
-    parser.add_argument("-t", "--check-throughput", action="store_true", dest="check_throughput", default=False,
+    parser.add_argument("-t", "--check-throughput", action="store_true",
                         help="Consider a commit to be broken if throughput check fails (fail if tests slow down)")
 
-    parser.add_argument("-m", "--check-memory", action="store_true", dest="check_memory", default=False,
+    parser.add_argument("-m", "--check-memory", action="store_true",
                         help="Consider a commit to be broken if memory check fails (fail if tests footprint grows)")
 
-    parser.add_argument("--no-batch", action="store_true", dest="no_batch", default=False,
+    parser.add_argument("--no-batch", action="store_true",
                         help="Force scripts to not submit tests as batch jobs. Default will be to do whatever is standard on the current machine")
 
     args = parser.parse_args(args[1:])
 
     acme_util.set_verbosity(args.verbose)
 
-    if (args.test_root == default_testroot):
-        args.test_root = acme_util.get_machine_info(project=args.project)[4]
+    if (args.test_root is None):
+        args.test_root = acme_util.get_machine_info("CESMSCRATCHROOT", project=args.project)
 
-    return args.testname, args.testroot, args.compiler, args.project, args.baseline_name, args.check_namelists, args.check_throughput, args.check_memory, args.no_batch
+    return args.testname, args.test_root, args.compiler, args.project, args.baseline_name, args.check_namelists, args.check_throughput, args.check_memory, args.no_batch
 
 ###############################################################################
 def acme_bisect(testname, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory, no_batch):
