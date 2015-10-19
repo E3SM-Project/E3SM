@@ -73,7 +73,6 @@ module cice_column
      ! number of ancestor tracers excluding base tracer
      integer, dimension(:), allocatable :: ancestorNumber ! n_trcr_strata
 
-!nj-bgc+
      ! length of tracer array not including biology and biology related tracers
      integer :: nTracersNotBio   !ntrcr - ntrcr(bio)
 
@@ -93,9 +92,47 @@ module cice_column
      integer :: nDOCIndex
      integer :: nDONIndex
      integer :: nDICIndex
-     integer :: ndissolvedIronIndex
-     integer :: nparticulateIronIndex
+     integer :: nDissolvedIronIndex
+     integer :: nParticulateIronIndex
      integer :: nzAerosolsIndex
+
+     ! indexes of physics tracers in tracer array
+     integer :: &
+          index_surfaceTemperature, &    ! nt_Tsfc
+          index_iceEnthalpy, &           ! nt_qice
+          index_snowEnthalpy, &          ! nt_qsno
+          index_iceSalinity, &           ! nt_sice
+          index_iceAge, &                ! nt_iage
+          index_firstYearIceArea, &      ! nt_FY
+          index_levelIceArea, &          ! nt_alvl
+          index_levelIceVolume, &        ! nt_vlvl
+          index_pondArea, &              ! nt_apnd
+          index_pondDepth, &             ! nt_hpnd
+          index_pondLidThickness, &      ! nt_ipnd
+          index_aerosols                 ! nt_aero
+
+     ! indexes of BGC tracers in tracer array
+     integer :: &
+          index_brineFraction, &         ! nt_fbri
+          index_nitrateConc, &           ! nt_bgc_Nit
+          index_ammoniumConc, &          ! nt_bgc_Am
+          index_silicateConc, &          ! nt_bgc_Sil
+          index_DMSPpConc, &             ! nt_bgc_DMSPp
+          index_DMSPdConc, &             ! nt_bgc_DMSPd
+          index_DMSConc, &               ! nt_bgc_DMS
+          index_nonreactiveConc, &       ! nt_bgc_PON
+          index_humicsConc, &            ! nt_bgc_hum
+          index_mobileFraction, &        ! nt_zbgc_frac
+          index_verticalSalinity, &      ! nt_bgc_S
+          index_chlorophyllShortwave, &  ! nlt_chl_sw
+          index_nitrateConcLayer, &      ! nlt_bgc_Nit
+          index_ammoniumConcLayer, &     ! nlt_bgc_Am
+          index_silicateConcLayer, &     ! nlt_bgc_Sil
+          index_DMSPpConcLayer, &        ! nlt_bgc_DMSPp
+          index_DMSPdConcLayer, &        ! nlt_bgc_DMSPd
+          index_DMSConcLayer, &          ! nlt_bgc_DMS
+          index_nonreactiveConcLayer, &  ! nlt_bgc_PON
+          index_humicsConcLayer          ! nlt_bgc_hum
 
      ! indexes of bio tracers with types in tracer array
      integer, dimension(:), allocatable :: &                             
@@ -120,43 +157,7 @@ module cice_column
           index_verticalAerosolsConcShortwave, &   ! nlt_zaero_sw  
           index_LayerIndexToDataArray, &           ! relates nlt to data array  
           index_LayerIndexToBioIndex               ! relates nlt to nt   
-!nj-bgc-
-     ! indexes of tracers in tracer array
-     integer :: &
-          index_surfaceTemperature, &    ! nt_Tsfc
-          index_iceEnthalpy, &           ! nt_qice
-          index_snowEnthalpy, &          ! nt_qsno
-          index_iceSalinity, &           ! nt_sice
-          index_iceAge, &                ! nt_iage
-          index_firstYearIceArea, &      ! nt_FY
-          index_levelIceArea, &          ! nt_alvl
-          index_levelIceVolume, &        ! nt_vlvl
-          index_pondArea, &              ! nt_apnd
-          index_pondDepth, &             ! nt_hpnd
-          index_pondLidThickness, &      ! nt_ipnd
-          index_aerosols, &              ! nt_aero
-!nj-bgc+
-          index_brineFraction, &          ! nt_fbri
-          index_nitrateConc, &            ! nt_bgc_Nit
-          index_ammoniumConc, &               ! nt_bgc_Am
-          index_silicateConc, &           ! nt_bgc_Sil
-          index_DMSPpConc,    &           ! nt_bgc_DMSPp
-          index_DMSPdConc,    &           ! nt_bgc_DMSPd
-          index_DMSConc,      &           ! nt_bgc_DMS
-          index_nonreactiveConc, &        ! nt_bgc_PON
-          index_humicsConc, &             ! nt_bgc_hum
-          mobileFraction, &        ! nt_zbgc_frac
-          index_verticalSalinity, &       ! nt_bgc_S
-          index_chlorophyllShortwave,&    ! nlt_chl_sw
-          index_nitrateConcLayer, &       ! nlt_bgc_Nit
-          index_ammoniumConcLayer,&           ! nlt_bgc_Am
-          index_silicateConcLayer,&       ! nlt_bgc_Sil
-          index_DMSPpConcLayer, &         ! nlt_bgc_DMSPp
-          index_DMSPdConcLayer,    &      ! nlt_bgc_DMSPd
-          index_DMSConcLayer,      &      ! nlt_bgc_DMS
-          index_nonreactiveConcLayer, &   ! nlt_bgc_PON
-          index_humicsConcLayer           ! nlt_bgc_hum
-!nj-bgc-
+
   end type ciceTracerObjectType
 
   type(ciceTracerObjectType), private :: ciceTracerObject
@@ -5747,7 +5748,7 @@ contains
 
         ! Fraction of biogeochemical tracer in the mobile phase
         do iLayers = 1, tracerObject % nBioTracers
-            tracerObject % tracerArrayCategory(tracerObject % mobileFraction+iLayers-1,:) = mobileFraction(iLayers,:,iCell)
+            tracerObject % tracerArrayCategory(tracerObject % index_mobileFraction+iLayers-1,:) = mobileFraction(iLayers,:,iCell)
         enddo
 
         ! algal nitrogen
@@ -6102,7 +6103,7 @@ contains
 
         ! fraction of biogeochemical tracer in the mobile phase
         do iLayers = 1, tracerObject % nBioTracers
-            mobileFraction(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % mobileFraction+iLayers-1,:) 
+            mobileFraction(iLayers,:,iCell) = tracerObject % tracerArrayCategory(tracerObject % index_mobileFraction+iLayers-1,:) 
         enddo
 
         if (config_use_vertical_biochemistry) then
@@ -7594,7 +7595,7 @@ contains
          tracerObject % index_DMSConcLayer, &
          tracerObject % index_humicsConcLayer, &
          tracerObject % index_nonreactiveConcLayer, &
-         tracerObject % mobileFraction, &
+         tracerObject % index_mobileFraction, &
          tracerObject % index_verticalSalinity, &        
          tracerObject % index_chlorophyllShortwave, &
          tracerObject % index_verticalAerosolsConcShortwave, &
@@ -7604,8 +7605,8 @@ contains
          tracerObject % nDOCIndex, &
          tracerObject % nDONIndex, &  
          tracerObject % nDICIndex, &
-         tracerObject % ndissolvedIronIndex, &
-         tracerObject % nparticulateIronIndex, &
+         tracerObject % nDissolvedIronIndex, &
+         tracerObject % nParticulateIronIndex, &
          tracerObject % nzAerosolsIndex, &
          tracerObject % index_LayerIndexToDataArray, &
          tracerObject % index_LayerIndexToBioIndex, &
@@ -7659,7 +7660,7 @@ contains
     !nlt_bgc_DMS  = tracerObject % index_DMSConcLayer
     !nlt_bgc_hum  = tracerObject % index_humicsConcLayer
     !nlt_bgc_PON  = tracerObject % index_nonreactiveConcLayer
-    !nt_zbgc_frac = tracerObject % mobileFraction
+    !nt_zbgc_frac = tracerObject % index_mobileFraction
     !nt_zbgc_S    = tracerObject % index_verticalSalinity
     !nlt_chl_sw   = tracerObject % index_chlorophyllShortwave
     !nlt_zaero_sw = tracerObject % index_verticalAerosolsConcShortwave
@@ -7669,8 +7670,8 @@ contains
     !max_doc      = tracerObject % nDOCIndex
     !max_don      = tracerObject % nDONIndex
     !max_dic      = tracerObject % nDICIndex
-    !max_fe       = tracerObject % ndissolvedIronIndex
-    !max_fe       = tracerObject % nparticulateIronIndex
+    !max_fe       = tracerObject % nDissolvedIronIndex
+    !max_fe       = tracerObject % nParticulateIronIndex
     !max_aero     = tracerObject % nzAerosolsIndex, &
     !bio_index_o  = tracerObject % index_LayerIndexToDataArray
     !bio_index    = tracerObject % index_LayerIndexToBioIndex
@@ -8959,11 +8960,11 @@ contains
 
     allocate(tracerObject % index_particulateIronConc(maxIronType))
     allocate(tracerObject % index_particulateIronConcLayer(maxIronType))
-    tracerObject % nparticulateIronIndex = nParticulateIron
+    tracerObject % nParticulateIronIndex = nParticulateIron
 
     allocate(tracerObject % index_dissolvedIronConc(maxIronType))
     allocate(tracerObject % index_dissolvedIronConcLayer(maxIronType))
-    tracerObject % ndissolvedIronIndex = nDissolvedIron
+    tracerObject % nDissolvedIronIndex = nDissolvedIron
 
     call colpkg_init_zbgc(nBioLayers, &
          nIceLayers, &
@@ -9001,7 +9002,7 @@ contains
          tracerObject % index_DMSPdConc, &
          tracerObject % index_dissolvedIronConc, &
          tracerObject % index_particulateIronConc, &
-         tracerObject % mobileFraction, &
+         tracerObject % index_mobileFraction, &
          config_use_nitrate, &
          config_use_ammonium, &
          config_use_silicate, &
