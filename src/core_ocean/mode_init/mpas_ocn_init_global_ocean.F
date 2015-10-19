@@ -246,6 +246,37 @@ contains
 
     end subroutine ocn_init_setup_global_ocean_read_topo!}}}
 
+
+!***********************************************************************
+!
+!  routine ocn_compute_layerThickness_zMid_from_bottomDepth
+!
+!> \brief   Compute auxiliary z-variables from bottomDepth
+!> \author  Mark Petersen
+!> \date    10/17/2015
+!> \details 
+!>  This routine computes auxiliary z-variables from bottomDepth
+!
+!-----------------------------------------------------------------------
+
+    subroutine ocn_compute_layerThickness_zMid_from_bottomDepth(LayerThicknessCol,ZMidCol,BottomDepthCol,kMax,iErr)!{{{
+      real (kind=RKIND), dimension(kMax), intent(out) :: LayerThicknessCol, ZMidCol
+      real (kind=RKIND), dimension(kMax), intent(in) :: BottomDepthCol
+      integer, intent(in) :: kMax
+      integer, intent(out) :: iErr
+      integer :: k
+
+      iErr = 0
+
+      LayerThicknessCol(1) = BottomDepthCol(1)
+      ZMidCol(1) = BottomDepthCol(1)/2.0
+      do k = 2, kMax
+         LayerThicknessCol(k) = BottomDepthCol(k) - BottomDepthCol(k-1)
+         ZMidCol(k) = - BottomDepthCol(k-1) - LayerThicknessCol(k)/2.0
+      end do
+
+    end subroutine ocn_compute_layerThickness_zMid_from_bottomDepth  !}}}
+
 !***********************************************************************
 !
 !  routine ocn_init_setup_global_ocean_create_model_topo
@@ -438,20 +469,20 @@ contains
           call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
 
 ! move this to subroutine later
-! call ocn_compute_layerThickness_zMid_from_bottomDepth
-          refLayerThickness(1) = refBottomDepth(1)
-          refZMid(1) = refBottomDepth(1)/2.0
-          do k = 2, nVertLevels
-             refLayerThickness(k) = refBottomDepth(k) - refBottomDepth(k-1)
-             refZMid(k) = - refBottomDepth(k-1) - refLayerThickness(k)/2.0
-          end do
+           call ocn_compute_layerThickness_zMid_from_bottomDepth(refLayerThickness,refZMid,refBottomDepth,nVertLevels,iErr)
+!          refLayerThickness(1) = refBottomDepth(1)
+!          refZMid(1) = refBottomDepth(1)/2.0
+!          do k = 2, nVertLevels
+!             refLayerThickness(k) = refBottomDepth(k) - refBottomDepth(k-1)
+!             refZMid(k) = - refBottomDepth(k-1) - refLayerThickness(k)/2.0
+!          end do
 
           do iCell = 1, nCellsSolve 
              if (maxLevelCell(iCell) > 0) then
 
                 ! substitute with a subroutine call later:
                 !                call ocn_alter_bottomDepth_for_pbcs( &
-                !                    bottomDepthObserved(iCell), refBottomDepth, ssh, & ! inputs
+                !                    bottomDepth(iCell), refBottomDepth, ssh, & ! inputs
                 !                    alteredBottomDepth(iCell), maxLevelCell(iCell), layerThickness(:,iCell), zMid(:,iCell) ) ! outputs
 
                 if (config_alter_ICs_for_pbcs) then
@@ -487,11 +518,13 @@ contains
                 endif !if (config_alter_ICs_for_pbcs) then
 
                 k = maxLevelCell(iCell)
-                layerThickness(1:k-1,iCell) = refLayerThickness(1:k-1)
-                zMid(1:k-1,iCell) = refZMid(1:k-1)
+                layerThickness(1:k,iCell) = refLayerThickness(1:k)
+                zMid(1:k,iCell) = refZMid(1:k)
 
-                layerThickness(k,iCell) = bottomDepth(iCell) - refBottomDepth(k-1) 
-                zMid(k,iCell) = - refBottomDepth(k-1) - layerThickness(k,iCell)/2.0
+                if (config_alter_ICs_for_pbcs.and.config_pbc_alteration_type .eq. 'partial_cell') then
+                   layerThickness(k,iCell) = bottomDepth(iCell) - refBottomDepth(k-1) 
+                   zMid(k,iCell) = - refBottomDepth(k-1) - layerThickness(k,iCell)/2.0
+                end if
  
                 layerThickness(k+1:nVertLevels,iCell) = 0.0_RKIND
                 zMid(k+1:nVertLevels,iCell) = 0.0_RKIND
