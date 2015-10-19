@@ -6,16 +6,7 @@ import sys, socket, re, os, time
 
 _VERBOSE = False
 
-MACHINE_NODENAMES = [
-    ("redsky", re.compile(r"redsky-login")),
-    ("skybridge", re.compile(r"skybridge-login")),
-    ("melvin", re.compile(r"melvin")),
-    ("edison", re.compile(r"edison")),
-    ("blues", re.compile(r"blogin")),
-    ("titan", re.compile(r"titan")),
-    ("mira", re.compile(r"mira")),
-    ("cetus", re.compile(r"cetus")),
-]
+_MACHINE_INFO = None
 
 # batch-system-name -> ( cmd-to-list-all-jobs-for-user, cmd-to-delete-job )
 BATCH_INFO = \
@@ -30,90 +21,16 @@ BATCH_INFO = \
     ),
 }
 
-# TODO: Get these values from ACME XML files instead of duplicating here.
-
-# machine -> defaults (0 compiler, 1 test_suite, 2 use_batch, 3 project, 4 scratch area, 5 baseline_root, 6 proxy, 7 maintain_baselines)
-MACHINE_INFO = {
-    "redsky"    : (
-        "intel",
-        "acme_integration",
-        True,
-        "fy150001",
-        "/gscratch/<USER>/acme_scratch",
-        "/projects/ccsm/ccsm_baselines",
-        "wwwproxy.sandia.gov:80",
-        True,
-    ),
-    "skybridge" : (
-        "intel",
-        "acme_integration",
-        True,
-        "fy150001",
-        "/gscratch/<USER>/acme_scratch/skybridge",
-        "/projects/ccsm/ccsm_baselines",
-        "wwwproxy.sandia.gov:80",
-        True,
-    ),
-    "melvin"    : (
-        "gnu",
-        "acme_developer",
-        False,
-        "ignore",
-        "/home/<USER>/acme/scratch",
-        "/home/jgfouca/acme/baselines",
-        "sonproxy.sandia.gov:80",
-        True,
-    ),
-    "edison"    : (
-        "intel",
-        "acme_developer",
-        True,
-        "acme",
-        "/scratch1/scratchdirs/<USER>/acme_scratch",
-        "/project/projectdirs/acme/baselines",
-        None,
-        False,
-    ),
-    "blues"    : (
-        "pgi",
-        "acme_developer",
-        True,
-        "ACME",
-        "/lcrc/project/ACME/<USER>/acme_scratch",
-        "/lcrc/group/earthscience/acme_baselines",
-        None,
-        False,
-    ),
-    "titan"    : (
-        "pgi",
-        "acme_developer",
-        True,
-        "cli115",
-        "/lustre/atlas/scratch/<USER>/<PROJECT>",
-        "/lustre/atlas1/cli900/world-shared/cesm/acme/baselines",
-        None,
-        False,
-    ),
-    "mira"     : (
-        "ibm",
-        "acme_developer",
-        True,
-        "HiRes_EarthSys",
-        "/projects/<PROJECT>/<USER>",
-        "/projects/ccsm/ccsm_baselines",
-        None,
-        False,
-    ),
-    "cetus"     : (
-        "ibm",
-        "acme_developer",
-        True,
-        "HiRes_EarthSys",
-        "/projects/<PROJECT>/<USER>",
-        "/projects/ccsm/ccsm_baselines",
-        None,
-        False,
-    ),
+# Don't know if this belongs here longterm
+# machine -> default project for nightly process
+_MACHINE_PROJECTS = {
+    "redsky"    : "fy150001",
+    "skybridge" : "fy150001",
+    "edison"    : "acme",
+    "blues"     : "ACME",
+    "titan"     : "cli115",
+    "mira"      : "HiRes_EarthSys",
+    "cetus"     : "HiRes_EarthSys",
 }
 
 ###############################################################################
@@ -324,9 +241,13 @@ def probe_machine_name():
     """
     hostname = socket.gethostname().split(".")[0]
 
-    for machine_name, machine_re in MACHINE_NODENAMES:
-        if (machine_re.match(hostname) is not None):
-            return machine_name
+    machines = get_machines()
+    for machine in machines:
+        regex_str = get_machine_info("NODENAME_REGEX", machine=machine)
+        if (regex_str):
+            regex = re.compile(regex_str)
+            if (regex.match(hostname)):
+                return machine
 
     return None
 
@@ -548,30 +469,150 @@ def get_batch_system_info(batch_system=None):
     return BATCH_INFO[batch_system]
 
 ###############################################################################
-def get_machine_info(machine=None, user=None, project=None, raw=False):
+def parse_config_machines():
+###############################################################################
+    """
+    """
+    global _MACHINE_INFO
+    if (_MACHINE_INFO is None):
+        _MACHINE_INFO = {}
+        import xml.etree.ElementTree as ET
+        config_machines_xml = os.path.join(get_cime_root(), "machines-acme", "config_machines.xml")
+        tree = ET.parse(config_machines_xml)
+        root = tree.getroot()
+        expect(root.tag == "config_machines",
+               "The given XML file is not a valid list of machine configurations.")
+
+        # Each child of this root is a machine entry.
+        for machine in root:
+            if (machine.tag == "machine"):
+                expect("MACH" in machine.attrib, "Invalid machine entry found for machine '%s'" % machine)
+                mach_name = machine.attrib["MACH"]
+                expect(mach_name not in _MACHINE_INFO, "Duplicate machine entry '%s'" % mach_name)
+                data = {}
+                for item in machine:
+                    if (item.text is not None):
+                        item_data = item.text.strip()
+                        if (item.tag in ["COMPILERS", "MPILIBS"]):
+                            item_data = [strip_item.strip() for strip_item in item_data.split(",")]
+                        elif(item.tag == "batch_system"):
+                            item_data = item.attrib["type"]
+                    else:
+                        item_data = ""
+
+                    data[item.tag.upper()] = item_data
+
+                _MACHINE_INFO[mach_name] = data
+            else:
+                warning("Ignoring unrecognized tag: '%s'" % machine.tag)
+
+###############################################################################
+def get_machine_info(items, machine=None, user=None, project=None, raw=False):
 ###############################################################################
     """
     Return information on machine. If no arg provided, probe for machine.
 
+    If only asked for one thing, will just return the value. If asked for multiple
+    things, will return list.
+
     Info returned as tuple:
     (compiler, test_suite, use_batch, project, testroot, baseline_root, proxy)
+
+    >>> parse_config_machines()
+    >>> get_machine_info("EXEROOT", machine="melvin") == os.path.join(os.environ["HOME"], "acme/scratch/$CASE/bld")
+    True
+    >>> get_machine_info(["NODENAME_REGEX", "TESTS"], machine="melvin")
+    ['melvin', 'acme_developer']
     """
+    parse_config_machines()
+
     import getpass
     user = getpass.getuser() if user is None else user
 
     if (machine is None):
         machine = probe_machine_name()
-    expect(machine is not None, "Failed to probe machine")
-    expect(machine in MACHINE_INFO, "No info for machine '%s'" % machine)
+    expect(machine is not None, "Failed to probe machine. Please provide machine to whatever script you just ran")
+    expect(machine in _MACHINE_INFO, "No info for machine '%s'" % machine)
 
-    machine_info_copy = list(MACHINE_INFO[machine])
-    machine_info_copy[3] = project if project is not None else machine_info_copy[3]
-    project = machine_info_copy[3]
+    if (type(items) is str):
+        items = [items]
 
+    rv = []
     if (raw):
-        return machine_info_copy
+        for item in items:
+            rv.append(_MACHINE_INFO[machine][item])
     else:
-        return [item.replace("<USER>", user).replace("<PROJECT>", project) if type(item) is str else item for item in machine_info_copy]
+        reference_re = re.compile(r'\$(\w+)')
+        env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
+        for item in items:
+            item_data = _MACHINE_INFO[machine][item] if item in _MACHINE_INFO[machine] else None
+            if (type(item_data) is str):
+                for m in env_ref_re.finditer(item_data):
+                    env_var = m.groups()[0]
+                    expect(env_var in os.environ,
+                           "Field '%s' for machine '%s' refers to undefined env var '%s'" % (item, machine, env_var))
+                    item_data = item_data.replace(m.group(), os.environ[env_var])
+
+                for m in reference_re.finditer(item_data):
+                    ref = m.groups()[0]
+                    if (ref in _MACHINE_INFO[machine]):
+                        item_data = item_data.replace(m.group(), get_machine_info(ref, machine=machine, user=user, project=project))
+
+                item_data = item_data.replace("$USER", user)
+                if ("$PROJECT" in item_data):
+                    project = get_machine_project(machine=machine) if project is None else project
+                    expect(project is not None, "Cannot evaluate '%s' without project information" % item)
+                    item_data = item_data.replace("$PROJECT", project)
+
+            rv.append(item_data)
+
+    if (len(rv) == 1):
+        return rv[0]
+    else:
+        return rv
+
+###############################################################################
+def get_machines():
+###############################################################################
+    """
+    Return all machines defined by the config_machines.xml
+    """
+    parse_config_machines()
+    return _MACHINE_INFO.keys()
+
+###############################################################################
+def get_machine_project(machine=None):
+###############################################################################
+    """
+    Return default project account to use on this machine
+
+    >>> get_machine_project("skybridge")
+    'fy150001'
+    """
+    if ("PROJECT" in os.environ):
+        return os.environ["PROJECT"]
+
+    if (machine is None):
+        machine = probe_machine_name()
+
+    if (machine in _MACHINE_PROJECTS):
+        return _MACHINE_PROJECTS[machine]
+    else:
+        return None
+
+###############################################################################
+def does_machine_have_batch(machine=None):
+###############################################################################
+    """
+    Return if this machine has a batch system
+
+    >>> does_machine_have_batch("melvin")
+    False
+    >>> does_machine_have_batch("skybridge")
+    True
+    """
+    batch_system = get_machine_info("BATCH_SYSTEM", machine=machine)
+    return not (batch_system is None or batch_system == "none")
 
 ###############################################################################
 def get_utc_timestamp(timestamp_format="%Y%m%d_%H%M%S"):

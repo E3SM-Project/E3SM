@@ -45,9 +45,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
     default_baseline_name = acme_util.get_current_branch(repo=acme_util.get_cime_root())
-
-    default_compiler, _, _, _, acme_root, _, _, _ = acme_util.get_machine_info()
-    default_testroot = os.path.join(acme_root, "jenkins")
+    default_compiler      = acme_util.get_machine_info("COMPILERS")[0]
+    scratch_root          = acme_util.get_machine_info("CESMSCRATCHROOT")
+    default_testroot      = os.path.join(scratch_root, "jenkins")
 
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="Print extra information")
@@ -90,7 +90,7 @@ def bless_test_results(baseline_name, test_root, compiler, namelists_only=False,
                                                    False, # don't check throughput
                                                    False) # don't ignore namelist diffs
 
-    baseline_root = acme_util.get_machine_info()[5]
+    baseline_root = acme_util.get_machine_info("CCSM_BASELINE")
     baseline_area = os.path.join(baseline_root, compiler, baseline_name)
 
     for test_name, test_data in test_results.iteritems():
@@ -119,7 +119,7 @@ def bless_test_results(baseline_name, test_root, compiler, namelists_only=False,
 
                 # Get user that test was run as (affects loc of hist files)
                 user = run_cmd(r"""grep CCSMUSER %s/env_case.xml | sed -E 's/.+value="(.+)".+/\1/g'""" % testcase_dir_for_test)
-                acme_root = acme_util.get_machine_info(user=user)[4]
+                acme_root = acme_util.get_machine_info("CESMSCRATCHROOT", user=user)
 
                 # Find files of various types
                 namelist_files = []
