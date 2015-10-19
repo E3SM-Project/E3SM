@@ -127,6 +127,9 @@ set (ENV{PIO_DASHBOARD_SOURCE_DIR}  ${CTEST_SOURCE_DIRECTORY})
 set (ENV{PIO_DASHBOARD_BINARY_DIR}  ${CTEST_BINARY_DIRECTORY})
 message ("** -- CTEST_SITE= ${CTEST_SITE}")
 message ("** -- PIO_DASHBOARD_SITE=${PIO_DASHBOARD_SITE}")
+set (PIO_DASHBOARD_SITE             ${CTEST_SITE})
+message ("** -- PIO_DASHBOARD_SITE=${PIO_DASHBOARD_SITE}")
+
 
 # -----------------------------------------------------------  
 # -- Run CTest
