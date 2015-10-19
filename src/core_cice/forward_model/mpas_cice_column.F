@@ -233,11 +233,9 @@ contains
        ! initialize thermodynamic tracer profiles
        call init_column_thermodynamic_profiles(domain)
        
-!nj-bgc+
        ! initialize biogoechemistry profiles
        if (config_use_column_biogeochemistry) &
             call init_column_biogeochemistry_profiles(domain, ciceTracerObject)
-!nj-bgc-
        
        ! history variables
        call init_column_history_variables(domain)
@@ -1588,9 +1586,7 @@ contains
          nIceLayers, &
          nSnowLayers, &
          nAerosols, &
-!nj-bgc+
          nBioLayers
-!nj-bgc-
 
     ! variables
     real(kind=RKIND), dimension(:), pointer :: &
@@ -1609,13 +1605,10 @@ contains
          oceanHeatFlux, &
          freezeOnset, &
          categoryThicknessLimits, &
-!nj-bgc+
          biologyGrid, &
          verticalGrid, &
          interfaceBiologyGrid, &
-!nj-bgc+
          zSalinityFlux
-!nj-bgc-
    
     real(kind=RKIND), dimension(:,:), pointer :: &
          iceAreaCategoryInitial, &
@@ -1637,16 +1630,14 @@ contains
     integer :: &
          iCell, &
          iCategory, &
-!nj-bgc+
          iBioTracers, &
          iBioData
-!nj-bgc-
 
     logical, dimension(:), allocatable :: &
          newlyFormedIceLogical
 
     real(kind=RKIND), dimension(:), allocatable :: &
-        oceanBioConcentrationsUsed
+         oceanBioConcentrationsUsed
 
     logical :: &
          abortFlag, &
@@ -1683,9 +1674,7 @@ contains
 
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
        call MPAS_pool_get_config(block % configs, "config_update_ocean_fluxes", config_update_ocean_fluxes)
-!nj-bgc+
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
-!nj-bgc-
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
@@ -1721,15 +1710,14 @@ contains
        call MPAS_pool_get_array(ponds, "pondFreshWaterFlux", pondFreshWaterFlux)
 
        call MPAS_pool_get_array(aerosols, "oceanAerosolFlux", oceanAerosolFlux)
-!nj-bgc+
+       
        call MPAS_pool_get_array(biogeochemistry, "newlyFormedIce", newlyFormedIce)
        call MPAS_pool_get_array(biogeochemistry, "oceanBioFluxes", oceanBioFluxes)
        call MPAS_pool_get_array(biogeochemistry, "oceanBioConcentrations", oceanBioConcentrations)
        call MPAS_pool_get_array(biogeochemistry, "biologyGrid", biologyGrid)
        call MPAS_pool_get_array(biogeochemistry, "verticalGrid", verticalGrid)
-       call MPAS_pool_get_array(biogeochemistry, "interfaceBiologyGrid",interfaceBiologyGrid)
-       call MPAS_pool_get_array(biogeochemistry, "zSalinityFlux",zSalinityFlux)
-!nj-bgc-
+       call MPAS_pool_get_array(biogeochemistry, "interfaceBiologyGrid", interfaceBiologyGrid)
+       call MPAS_pool_get_array(biogeochemistry, "zSalinityFlux", zSalinityFlux)
 
        call MPAS_pool_get_array(initial, "initialSalinityProfile", initialSalinityProfile)
        call MPAS_pool_get_array(initial, "categoryThicknessLimits", categoryThicknessLimits)
@@ -1738,12 +1726,10 @@ contains
 
        ! newly formed ice
        allocate(newlyFormedIceLogical(nCategories))
-!nj-bgc+
        allocate(oceanBioConcentrationsUsed(ciceTracerObject % nBioTracers))
 
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
-!nj-bgc-
        
        do iCell = 1, nCellsSolve
 
@@ -1752,13 +1738,11 @@ contains
              newlyFormedIceLogical(iCategory) = (newlyFormedIce(iCategory,iCell) == 1)
           enddo ! iCategory
 
-!nj-bgc+  ! read the required ocean concentration fields into the allocated array
+          ! read the required ocean concentration fields into the allocated array
           do iBioTracers = 1, ciceTracerObject % nBioTracers
              iBioData = ciceTracerObject % index_LayerIndexToDataArray(iBioTracers)
-             oceanBioConcentrationsUsed(iBioTracers) =  &
-                        oceanBioConcentrations(iBioData, iCell)  
+             oceanBioConcentrationsUsed(iBioTracers) = oceanBioConcentrations(iBioData, iCell)  
           enddo ! iBioTracers           
-!nj-bgc-
 
           ! set the category tracer array
           call set_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
@@ -1769,15 +1753,11 @@ contains
                config_dt, &
                nCategories, &
                nAerosols, &
-!nj-bgc+
                ciceTracerObject % nBioTracersLayer, &
-!nj-bgc-
                nIcelayers, &
                nSnowLayers, &
                categoryThicknessLimits(:), &
-!nj-bgc+
                nBioLayers, &
-!nj-bgc-
                iceAreaCategory(1,:,iCell), &
                iceVolumeCategory(1,:,iCell), &
                snowVolumeCategory(1,:,iCell), &
@@ -1803,7 +1783,6 @@ contains
                oceanSaltFlux(iCell), &
                oceanHeatFlux(iCell), &
                config_update_ocean_fluxes, &
-!nj-bgc+
                biologyGrid(:), &
                verticalGrid(:), &
                interfaceBiologyGrid(:), &
@@ -1812,7 +1791,6 @@ contains
                zSalinityFlux(iCell), &
                oceanBioFluxes(:,iCell), &
                oceanBioConcentrationsUsed(:), &
-!nj-bgc-
                abortFlag, &
                abortMessage, &
                stdoutUnit, &
@@ -1825,10 +1803,8 @@ contains
              if (newlyFormedIceLogical(iCategory)) newlyFormedIce(iCategory,iCell) = 1
           enddo ! iCategory
 
-!nj-bgc+
           ! get category tracer array
           call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
-!nj-bgc-
 
           ! code abort
           if (abortFlag) then
@@ -1841,9 +1817,7 @@ contains
 
        ! newly formed ice
        deallocate(newlyFormedIceLogical)
-!nj-bgc+
        deallocate(oceanBioConcentrationsUsed)
-!nj-bgc-
 
        block => block % next
     end do
