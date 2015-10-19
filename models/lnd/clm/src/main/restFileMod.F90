@@ -170,6 +170,8 @@ contains
 
     call soilhydrology_vars%restart (bounds, ncid, flag='define')
 
+    call soilstate_vars%restart (bounds, ncid, flag='define')
+
     call solarabs_vars%restart (bounds, ncid, flag='define')
 
     call temperature_vars%restart (bounds, ncid, flag='define')
@@ -254,6 +256,8 @@ contains
     call photosyns_vars%restart (bounds, ncid, flag='write')
 
     call soilhydrology_vars%restart (bounds, ncid, flag='write')
+
+    call soilstate_vars%restart (bounds, ncid, flag='write')
 
     call solarabs_vars%restart (bounds, ncid, flag='write')
 
@@ -408,6 +412,8 @@ contains
     call photosyns_vars%restart (bounds, ncid, flag='read')
 
     call soilhydrology_vars%restart (bounds, ncid, flag='read')
+
+    call soilstate_vars%restart (bounds, ncid, flag='read')
 
     call solarabs_vars%restart (bounds, ncid, flag='read')
 

@@ -16,7 +16,7 @@ module SoilStateType
   use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv 
   use clm_varcon      , only : zsoi, dzsoi, zisoi, spval
   use clm_varcon      , only : secspday, pc, mu, denh2o, denice, grlnd
-  use clm_varctl      , only : use_cn, use_lch4
+  use clm_varctl      , only : use_cn, use_lch4,use_dynroot
   use clm_varctl      , only : iulog, fsurdat, hist_wrtch4diag
   use ch4varcon       , only : allowlakeprod
   use LandunitType    , only : lun                
@@ -74,13 +74,15 @@ module SoilStateType
      real(r8), pointer :: rootfr_patch         (:,:) ! patch fraction of roots in each soil layer (nlevgrnd)
      real(r8), pointer :: rootr_road_perv_col  (:,:) ! col effective fraction of roots in each soil layer of urban pervious road
      real(r8), pointer :: rootfr_road_perv_col (:,:) ! col effective fraction of roots in each soil layer of urban pervious road
+     real(r8), pointer :: root_depth_patch     (:)   ! rooting depth of each PFT (m)
 
    contains
 
      procedure, public  :: Init         
      procedure, private :: InitAllocate 
      procedure, private :: InitHistory  
-     procedure, private :: InitCold     
+     procedure, private :: InitCold    
+     procedure, public  :: Restart
 
   end type soilstate_type
   !------------------------------------------------------------------------
@@ -160,6 +162,7 @@ contains
     allocate(this%rootfr_patch         (begp:endp,1:nlevgrnd))          ; this%rootfr_patch         (:,:) = nan
     allocate(this%rootfr_col           (begc:endc,1:nlevgrnd))          ; this%rootfr_col           (:,:) = nan 
     allocate(this%rootfr_road_perv_col (begc:endc,1:nlevgrnd))          ; this%rootfr_road_perv_col (:,:) = nan
+    allocate(this%root_depth_patch     (begp:endp))                     ; this%root_depth_patch     (:)   = spval
 
   end subroutine InitAllocate
 
@@ -226,6 +229,13 @@ contains
             avgflag='A', long_name='effective fraction of roots in each soil layer', &
             ptr_col=this%rootr_col, default='inactive')
        
+    end if
+
+    if (use_dynroot) then
+       this%root_depth_patch(begc:endc) = spval
+       call hist_addfld1d (fname='ROOT_DEPTH', units="m", &
+            avgflag='A', long_name='rooting depth', &
+            ptr_patch=this%root_depth_patch, default='inactive' )
     end if
 
     if (use_cn) then
@@ -786,5 +796,48 @@ contains
     deallocate(zisoifl, zsoifl, dzsoifl)
 
   end subroutine InitCold
+
+  !------------------------------------------------------------------------
+  subroutine Restart(this, bounds, ncid, flag)
+    !
+    ! !USES:
+    use shr_log_mod, only : errMsg => shr_log_errMsg
+    use spmdMod    , only : masterproc
+    use abortutils , only : endrun
+    use restUtilMod
+    use ncdio_pio
+    use clm_varctl,  only : use_dynroot
+    use RootBiophysMod      , only : init_vegrootfr
+    !
+    ! !ARGUMENTS:
+    class(soilstate_type) :: this
+    type(bounds_type), intent(in)    :: bounds
+    type(file_desc_t), intent(inout) :: ncid
+    character(len=*) , intent(in)    :: flag
+    !
+    ! !LOCAL VARIABLES:
+    logical          :: readvar   ! determine if variable is on initial file
+    !-----------------------------------------------------------------------
+
+if(use_dynroot) then
+    call restartvar(ncid=ncid, flag=flag, varname='root_depth', xtype=ncd_double,  &
+         dim1name='pft', &
+         long_name='root depth', units='m', &
+         interpinic_flag='interp', readvar=readvar, data=this%root_depth_patch)
+
+    call restartvar(ncid=ncid, flag=flag, varname='rootfr', xtype=ncd_double,  &
+         dim1name='pft', dim2name='levgrnd', switchdim=.true., &
+         long_name='root fraction', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%rootfr_patch)
+    if (flag=='read' .and. .not. readvar) then
+       if (masterproc) then
+          write(iulog,*) "can't find rootfr in restart (or initial) file..."
+          write(iulog,*) "Initialize rootfr to default"
+       end if
+       call init_vegrootfr(bounds, nlevsoi, nlevgrnd, &
+       this%rootfr_patch(bounds%begp:bounds%endp,1:nlevgrnd))
+    end if
+end if
+  end subroutine Restart
 
 end module SoilStateType

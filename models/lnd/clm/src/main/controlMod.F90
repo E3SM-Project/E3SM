@@ -39,6 +39,7 @@ module controlMod
   use SurfaceAlbedoMod        , only: albice, lake_melt_icealb
   use UrbanParamsType         , only: urban_hac, urban_traffic
   use clm_varcon              , only: h2osno_max
+  use clm_varctl              , only: use_dynroot
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -214,6 +215,7 @@ contains
          use_vichydro, use_century_decomp, use_cn, use_cndv, use_crop, use_snicar_frc, &
          use_vancouver, use_mexicocity, use_noio
 
+    namelist /clm_inparm / use_dynroot
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -501,6 +503,8 @@ contains
 
     call mpi_bcast (use_lai_streams, 1, MPI_LOGICAL, 0, mpicom, ier)
 
+    call mpi_bcast (use_dynroot, 1, MPI_LOGICAL, 0, mpicom, ier)
+
     if (use_cn .and. use_vertsoilc) then
        ! vertical soil mixing variables
        call mpi_bcast (som_adv_flux, 1, MPI_REAL8,  0, mpicom, ier)
@@ -688,6 +692,7 @@ contains
        write(iulog, *) '   rootprof_exp                                          : ', rootprof_exp
        write(iulog, *) '   surfprof_exp                                          : ', surfprof_exp
        write(iulog, *) '   pftspecific_rootingprofile                            : ', pftspecific_rootingprofile
+       write(iulog, *) '   dynamic roots                                         : ', use_dynroot
     end if
        
     if (use_cn .and. .not. use_nitrif_denitrif) then

@@ -6,7 +6,7 @@ module CNEcosystemDynMod
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_sys_mod         , only : shr_sys_flush
-  use clm_varctl          , only : flanduse_timeseries, use_c13, use_c14, use_ed
+  use clm_varctl          , only : flanduse_timeseries, use_c13, use_c14, use_ed, use_dynroot
   use decompMod           , only : bounds_type
   use perf_mod            , only : t_startf, t_stopf
   use spmdMod             , only : masterproc
@@ -111,6 +111,7 @@ contains
     use CNDecompCascadeCNMod   , only: decomp_rate_constants_cn
     use CropType               , only: crop_type
     use dynHarvestMod          , only: CNHarvest
+    use CNRootDynMod           , only: CNRootDyn
     use clm_varpar             , only: crop_prog
     !
     ! !ARGUMENTS:
@@ -135,7 +136,7 @@ contains
     type(waterstate_type)    , intent(in)    :: waterstate_vars
     type(waterflux_type)     , intent(in)    :: waterflux_vars
     type(canopystate_type)   , intent(in)    :: canopystate_vars
-    type(soilstate_type)     , intent(in)    :: soilstate_vars
+    type(soilstate_type)     , intent(inout) :: soilstate_vars
     type(temperature_type)   , intent(inout) :: temperature_vars
     type(crop_type)          , intent(inout) :: crop_vars
     type(ch4_type)           , intent(in)    :: ch4_vars
@@ -248,6 +249,19 @@ contains
        call CNGResp(num_soilp, filter_soilp, &
             carbonflux_vars)
        call t_stopf('CNGResp')
+
+       !--------------------------------------------
+       ! Dynamic Roots
+       !--------------------------------------------
+
+       if( use_dynroot ) then
+          call t_startf('CNRootDyn')
+
+          call CNRootDyn(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+               carbonstate_vars, nitrogenstate_vars, carbonflux_vars,  &
+               cnstate_vars, crop_vars,  soilstate_vars)
+          call t_stopf('CNRootDyn')
+       end if
 
        !--------------------------------------------
        ! CNUpdate0
