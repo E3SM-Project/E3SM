@@ -568,7 +568,7 @@ contains
           ! Initialize a non-zero snow thickness where the ice sheet can/potentially operate.
           ! Using glcmask to capture all potential vegetated points around GrIS (ideally
           ! we would use icemask from CISM, but that isn't available until after initialization.)
-          h2osno_col(c) = 0.5_r8 * h2osno_max   ! 50 cm if h2osno_max = 1 m
+          h2osno_col(c) = 1.0_r8 * h2osno_max   ! start with full snow column so +SMB can begin immediately
        else
           h2osno_col(c) = 0._r8
        endif
