@@ -31,7 +31,8 @@ _TEST_SUITES = {
                          ("SMS.hcru_hcru.I1850CRUCLM45CN", None),
                          ("ERS_Ld5.T62_mpas120.C_MPAS_NORMAL_YEAR", None),
                          ("ERS.f09_g16_g.MPASLI_ONLY", None),
-                         ("SMS.T62_mpas120_gis20.MPAS_LISIO_TEST", None)]
+                         ("SMS.T62_mpas120_gis20.MPAS_LISIO_TEST", None),
+                         ("SMS.f09_g16_a.IGCLM45_MLI", None)]
                         ),
     "acme_integration" : ("acme_developer",
                           [("ERS.ne30_g16.B1850C5", None),
