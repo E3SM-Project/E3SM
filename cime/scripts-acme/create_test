@@ -53,10 +53,8 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-    default_compiler, _, _, default_project, default_testroot, default_baseline_root, _, _ = acme_util.get_machine_info(raw=True)
-    if ("PROJECT" in os.environ):
-        default_project = os.environ["PROJECT"]
-
+    default_project = acme_util.get_machine_project()
+    default_compiler = acme_util.get_machine_info("COMPILERS")[0]
     default_baseline_name = acme_util.get_current_branch(repo=acme_util.get_cime_root())
 
     parser.add_argument("testargs", nargs="+", help="Tests or test suites to run. Testnames expect in form CASE.GRID.COMPSET")
@@ -73,10 +71,10 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--no-batch", action="store_true",
                         help="Do not submit jobs to batch system, run locally. If false, will default to machine setting.")
 
-    parser.add_argument("-r", "--test-root", default=default_testroot,
+    parser.add_argument("-r", "--test-root",
                         help="Where test cases will be created. Will default to scratch root XML machine file")
 
-    parser.add_argument("--baseline-root", default=default_baseline_root,
+    parser.add_argument("--baseline-root",
                         help="Specifies an root directory for baseline"
                         "datasets used for Bit-for-bit generate/compare"
                         "testing.")
@@ -129,18 +127,19 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     if (args.no_build):
         args.no_run = True
 
-    _, _, use_batch, _, testroot, baseline_root, _, _ = \
-        acme_util.get_machine_info(project=args.project)
+    use_batch = acme_util.does_machine_have_batch()
+    scratch_root, baseline_root = \
+        acme_util.get_machine_info(["CESMSCRATCHROOT", "CCSM_BASELINE"], project=args.project)
 
     if (not args.no_batch and not use_batch):
         args.no_batch = True
 
     # Couple defaults might need fixup because their values were dependent on
     # information that can't be determined until after args are parsed
-    if (args.test_root == default_testroot):
-        args.test_root = testroot
+    if (args.test_root is None):
+        args.test_root = scratch_root
 
-    if (args.baseline_root == default_baseline_root):
+    if (args.baseline_root is None):
         args.baseline_root = baseline_root
 
     # Convert path-based options to absolute paths

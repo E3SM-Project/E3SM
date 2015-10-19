@@ -152,7 +152,7 @@ class CreateTest(object):
         print "Creating case for", test_name
 
         test_case, case_opts, grid, compset, machine, compiler, test_mods = acme_util.parse_test_name(test_name)
-        scratch_dir = acme_util.get_machine_info(machine=machine, project=self._project)[4]
+        scratch_dir = acme_util.get_machine_info("CESMSCRATCHROOT", machine=machine, project=self._project)
 
         test_dir = self._get_test_dir(test_name)
 
