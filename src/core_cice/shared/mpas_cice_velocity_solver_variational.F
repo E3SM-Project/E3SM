@@ -317,11 +317,11 @@ contains
     ! loop over cells
     do iCell = 1, nCells
 
-       strain11(:,iCell) = 0.0_RKIND
-       strain22(:,iCell) = 0.0_RKIND
-       strain12(:,iCell) = 0.0_RKIND
-
        if (solveStress(iCell) == 1) then
+
+          strain11(:,iCell) = 0.0_RKIND
+          strain22(:,iCell) = 0.0_RKIND
+          strain12(:,iCell) = 0.0_RKIND
 
           ! loop over velocity points surrounding cell - location of stress and derivative
           do iGradientVertex = 1, nEdgesOnCell(iCell)
@@ -469,12 +469,6 @@ contains
              !replacementPressure(iCell) = replacementPressureCell(3) ! for comparison to CICE quads
              replacementPressure(iCell) = sum(replacementPressureCell(1:nEdgesOnCell(iCell))) / real(nEdgesOnCell(iCell),RKIND)
 
-          else
-
-             stress11(:,iCell) = 0.0_RKIND
-             stress22(:,iCell) = 0.0_RKIND
-             stress12(:,iCell) = 0.0_RKIND
-
           endif ! solveStress
 
        enddo ! iCell
@@ -502,12 +496,6 @@ contains
 
              !replacementPressure(iCell) = replacementPressureCell(3) ! for comparison to CICE quads
              replacementPressure(iCell) = sum(replacementPressureCell(1:nEdgesOnCell(iCell))) / real(nEdgesOnCell(iCell),RKIND)
-
-          else
-
-             stress11(:,iCell) = 0.0_RKIND
-             stress22(:,iCell) = 0.0_RKIND
-             stress12(:,iCell) = 0.0_RKIND
 
           endif ! solveStress
 
@@ -609,10 +597,10 @@ contains
     ! loop over velocity positions
     do iVertex = 1, nVertices
 
-       stressDivergenceU(iVertex) = 0.0_RKIND
-       stressDivergenceV(iVertex) = 0.0_RKIND
-
        if (solveVelocity(iVertex) == 1) then
+
+          stressDivergenceU(iVertex) = 0.0_RKIND
+          stressDivergenceV(iVertex) = 0.0_RKIND
 
           ! loop over surrounding cells
           do iSurroundingCell = 1, vertexDegree

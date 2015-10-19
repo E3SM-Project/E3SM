@@ -274,6 +274,9 @@ contains
     ! calculate the surface tilt force
     call surface_tilt(domain)
 
+    ! initialize subcycle variables
+    call init_subcycle_variables(domain)
+
   end subroutine velocity_solver_pre_subcycle
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -1392,6 +1395,97 @@ contains
     end do
 
   end subroutine surface_tilt
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_subcycle_variables
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 18th October 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_subcycle_variables(domain)
+
+    type(domain_type) :: domain
+
+    type(block_type), pointer :: block
+
+    type(MPAS_pool_type), pointer :: &
+         velocitySolverPool, &
+         velocityVariationalPool
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         strain11, &
+         strain22, &
+         strain12, &
+         stress11, &
+         stress22, &
+         stress12
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         stressDivergenceU, &
+         stressDivergenceV
+
+    integer, dimension(:), pointer :: &
+         solveStress
+
+    integer, pointer :: &
+         nCells
+
+    integer :: &
+         iCell
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocityVariationalPool)
+
+       ! strains
+       call MPAS_pool_get_array(velocityVariationalPool, "strain11", strain11)
+       call MPAS_pool_get_array(velocityVariationalPool, "strain22", strain22)
+       call MPAS_pool_get_array(velocityVariationalPool, "strain12", strain12)
+
+       strain11 = 0.0_RKIND
+       strain22 = 0.0_RKIND
+       strain12 = 0.0_RKIND
+
+       ! stresses
+       call MPAS_pool_get_array(velocitySolverPool, "solveStress", solveStress)
+
+       call MPAS_pool_get_array(velocityVariationalPool, "stress11", stress11)
+       call MPAS_pool_get_array(velocityVariationalPool, "stress22", stress22)
+       call MPAS_pool_get_array(velocityVariationalPool, "stress12", stress12)
+
+       call MPAS_pool_get_dimension(block % dimensions, "nCells", nCells)
+
+       do iCell = 1, nCells
+
+          if (solveStress(iCell) /= 1) then
+
+             stress11(:,iCell) = 0.0_RKIND
+             stress22(:,iCell) = 0.0_RKIND
+             stress12(:,iCell) = 0.0_RKIND
+
+          endif
+
+       enddo ! iCell
+
+       ! divergence of stress
+       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceU", stressDivergenceU)
+       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceV", stressDivergenceV)
+
+       stressDivergenceU = 0.0_RKIND
+       stressDivergenceV = 0.0_RKIND
+
+       block => block % next
+    enddo
+
+  end subroutine init_subcycle_variables
 
 !-----------------------------------------------------------------------
 ! Sub-cycle
