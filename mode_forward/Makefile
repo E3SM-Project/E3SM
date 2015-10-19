@@ -13,6 +13,7 @@ OBJS =  mpas_li_core.o \
     mpas_li_velocity.o \
     mpas_li_sia.o \
     mpas_li_mask.o \
+    mpas_li_velocity_simple.o \
     mpas_li_velocity_external.o
 
 ifneq (, $(findstring MPAS_LI_BUILD_INTERFACE,$(CPPFLAGS)))
@@ -52,10 +53,14 @@ mpas_li_diagnostic_vars.o: mpas_li_mask.o \
 
 mpas_li_velocity.o: mpas_li_sia.o \
                     mpas_li_setup.o \
+                    mpas_li_velocity_simple.o \
                     mpas_li_velocity_external.o
 
 mpas_li_sia.o: mpas_li_mask.o \
                mpas_li_setup.o
+
+mpas_li_velocity_simple.o: mpas_li_mask.o \
+                           mpas_li_setup.o
 
 mpas_li_statistics.o: mpas_li_mask.o \
                       mpas_li_setup.o \

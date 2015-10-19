@@ -47,8 +47,8 @@
 
 	<nml_record name="velocity_solver" in_defaults="true">
 		<nml_option name="config_velocity_solver" type="character" default_value="sia" units="unitless"
-		            description="Selection of the method for solving ice velocity. 'L1L2', 'FO', and 'Stokes' require compiling with external dycores. 'none' skips the calculation of velocity so the velocity field will be 0 or set to a field read from an input file."
-		            possible_values="'sia', 'L1L2', 'FO', 'Stokes', 'none'"
+		            description="Selection of the method for solving ice velocity. 'L1L2', 'FO', and 'Stokes' require compiling with external dycores. 'none' skips the calculation of velocity so the velocity field will be 0 or set to a field read from an input file.  'simple' gives a simple prescribed velocity field computed at initialization."
+		            possible_values="'sia', 'L1L2', 'FO', 'Stokes', 'simple', 'none'"
 		/>
 		<nml_option name="config_sia_tangent_slope_calculation" type="character" default_value="from_vertex_barycentric" units="unitless"
 		            description="Selection of the method for calculating the tangent component of surface slope at edges needed by the SIA velocity solver.
@@ -64,6 +64,10 @@
 		<nml_option name="config_do_velocity_reconstruction_for_external_dycore" type="logical" default_value=".false." units="unitless"
 		            description="By default, external, higher-order dycores return the uReconstructX and uReconstructY fields (which are the native locations of their FEM solution).  If this option is set to .true., uReconstructX and uReconstructY will be calculated by MPAS using framework's vector reconstruction routines based on the values of normalVelocity supplied by the external dycore.  This provides a way to test the calculation of normalVelocity in the interface."
 		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_simple_velocity_type" type="character" default_value="uniform" units="unitless"
+		            description="Selection of the type of simple velocity field computed at initialization when config_velocity_solver = 'simple'"
+		            possible_values="'uniform', 'radial'"
 		/>
 	</nml_record>
 
@@ -90,21 +94,21 @@
 		            description="Selection of the method for calving ice."
 		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold'"
 		/>
-		<nml_option name="config_calving_on_startup" type="logical" default_value=".false." units="unitless"
-		            description="If true, then calve ice on startup; if false, wait until the first prognostic step"
-		            possible_values=".true. or .false."
-		/>
-		<nml_option name="config_calving_topographic_threshold" type="real" default_value="-200.0" units="m"
+		<nml_option name="config_calving_topography" type="real" default_value="-500.0" units="m"
 		            description="Defines the topographic height below which ice calves (for topographic_threshold option)."
-		            possible_values="Any real value"
+		            possible_values="Any non-positive real value"
 		/>
-		<nml_option name="config_calving_thickness_threshold" type="real" default_value="200.0" units="m of ice"
-		            description="Defines the ice thickness below which ice calves (for thickness_threshold option). Must be >= config_dynamic_thickness."
+		<nml_option name="config_calving_thickness" type="real" default_value="100.0" units="m of ice"
+		            description="Defines the ice thickness below which ice calves (for thickness_threshold option)."
 		            possible_values="Any positive real value"
 		/>
 		<nml_option name="config_calving_timescale" type="real" default_value="0.0" units="s"
 		            description="Defines the timescale for calving. The fraction of eligible ice that calves is max(dt/calving_timescale, 1.0). A value of 0 means that all eligible ice calves."
 		            possible_values="Any non-negative real value"
+		/>
+		<nml_option name="config_restore_calving_front" type="logical" default_value=".false." units="unitless"
+		            description="If true, then restort the calving front to its initial position"
+		            possible_values=".true. or .false."
 		/>
 	</nml_record>
 
@@ -669,10 +673,13 @@ is the value of that variable from the *previous* time level!
                 <var name="floatingBasalMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
                      description="Basal mass balance on floating regions"
                 />
-
 		<var name="calvingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
 		     description="thickness of ice that calves (<= ice thickness)"
 		/>
+		<var name="restoreThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
+		     description="thickness of ice added to restore the calving front to its initial position"
+		/>
+
 		<!-- Variables only needed by SIA solver or for calculating diffusivity -->
 		<var name="upperSurfaceVertex" type="real" dimensions="nVertices Time" units="m above datum"
 		     description="elevation at top of ice on vertices" packages="SIAvelocity"
@@ -702,6 +709,9 @@ is the value of that variable from the *previous* time level!
 		/>
 		<var name="normalVelocity" type="real" dimensions="nVertInterfaces nEdges Time" units="m s^{-1}"
 		     description="horizonal velocity, normal component to an edge"
+		/>
+		<var name="normalVelocityInitial" type="real" dimensions="nVertInterfaces nEdges Time" units="m s^{-1}"
+		     description="horizonal velocity, normal component to an edge, computed at initialization"
 		/>
 		<var name="uReconstructX"                     type="real"     dimensions="nVertInterfaces nCells Time"
 		     units="m s^{-1}"  description="x-component of velocity reconstructed on cell centers.  Also, for higher-order dycores, on input: value of the x-component of velocity that should be applied where dirichletVelocityMask==1."
@@ -799,6 +809,10 @@ is the value of that variable from the *previous* time level!
 	       persistence="scratch"
 	       />
 	  <var name="iceCellMask2" type="integer" dimensions="nCells" units="none"
+	       description="mask set to 1 in cells where some criterion is satisfied and 0 otherwise"
+	       persistence="scratch"
+	       />
+	  <var name="iceCellMask3" type="integer" dimensions="nCells" units="none"
 	       description="mask set to 1 in cells where some criterion is satisfied and 0 otherwise"
 	       persistence="scratch"
 	       />
