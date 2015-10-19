@@ -1428,16 +1428,22 @@ contains
 
     real(kind=RKIND), dimension(:), pointer :: &
          stressDivergenceU, &
-         stressDivergenceV
+         stressDivergenceV, &
+         uVelocity, &
+         vVelocity, &
+         oceanStressCoeff
 
     integer, dimension(:), pointer :: &
-         solveStress
+         solveStress, &
+         solveVelocity
 
     integer, pointer :: &
-         nCells
+         nCells, &
+         nVerticesSolve
 
     integer :: &
-         iCell
+         iCell, &
+         iVertex
 
     block => domain % blocklist
     do while (associated(block))
@@ -1481,6 +1487,28 @@ contains
 
        stressDivergenceU = 0.0_RKIND
        stressDivergenceV = 0.0_RKIND
+
+       ! sea ice velocity
+       call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
+
+       call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "oceanStressCoeff", oceanStressCoeff)
+
+       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
+
+       do iVertex = 1, nVerticesSolve
+
+          if (solveVelocity(iVertex) /= 1) then
+
+             uVelocity(iVertex) = 0.0_RKIND
+             vVelocity(iVertex) = 0.0_RKIND
+
+             oceanStressCoeff(iVertex) = 0.0_RKIND
+
+          endif
+
+       enddo ! iVertex
 
        block => block % next
     enddo
@@ -1711,10 +1739,6 @@ contains
                      sqrt((uOceanVelocityVertex(iVertex) - uVelocity(iVertex))**2 + &
                           (vOceanVelocityVertex(iVertex) - vVelocity(iVertex))**2)
 
-             else
-
-                oceanStressCoeff(iVertex) = 0.0_RKIND
-
              endif
 
           enddo ! iVertex
@@ -1846,11 +1870,6 @@ contains
 
              uVelocity(iVertex) = (leftMatrix(2,2) * rightHandSide(1) - leftMatrix(1,2) * rightHandSide(2)) / solutionDenominator
              vVelocity(iVertex) = (leftMatrix(1,1) * rightHandSide(2) - leftMatrix(2,1) * rightHandSide(1)) / solutionDenominator
-
-          else
-
-             uVelocity(iVertex) = 0.0_RKIND
-             vVelocity(iVertex) = 0.0_RKIND
 
           endif ! solveVelocity
 
