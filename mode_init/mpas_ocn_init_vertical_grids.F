@@ -519,7 +519,7 @@ contains
          return
       elseif (maxLevelCell==1) then
          layerThickness(1) = bottomDepth
-         zMid(1) = - refBottomDepth(1)/2.0
+         zMid(1) = - bottomDepth/2.0
       else
          layerThickness(1) = refBottomDepth(1)
          zMid(1) = - refBottomDepth(1)/2.0
