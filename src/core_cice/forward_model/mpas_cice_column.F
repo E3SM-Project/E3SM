@@ -9177,18 +9177,27 @@ contains
             config_snow_porosity_at_ice_surface)
 
        do iCell = 1, nCellsSolve
+
+          ! Rayleigh criteria initialization
           rayleighCriteriaReal(iCell) = 1.0_RKIND
           rayleighCriteria = .true.
+
+          ! initialize brine fraction
           tracerObject % tracerArrayCell(tracerObject%index_brineFraction) = 1.0_RKIND
-           
-          newlyFormedIce(:, iCell) = 1
           tracerObject % tracerArrayCategory(tracerObject%index_brineFraction,:) = 1.0_RKIND
-          do iTracers =tracerObject % nTracersNotBio+1,tracerObject % nTracers 
-          do iCategory = 1,nCategories
-              bgcTracerArray(iTracers-tracerObject % nTracersNotBio,iCategory) = &
-                   tracerObject % tracerArrayCategory(iTracers,iCategory)     
+
+          ! initialize newly formed ice
+          newlyFormedIce(:, iCell) = 1
+
+          ! set bgc tracer array
+          do iTracers = tracerObject % nTracersNotBio+1, tracerObject % nTracers 
+             do iCategory = 1,nCategories
+                bgcTracerArray(iTracers-tracerObject % nTracersNotBio,iCategory) = &
+                     tracerObject % tracerArrayCategory(iTracers,iCategory)     
+             enddo
           enddo
-          enddo
+          
+          ! initialize biology
           do iBioLayer = 1, nBioLayersP1
 
              bioPorosity(iBioLayer,:,iCell) = 0.0_RKIND
@@ -9199,8 +9208,8 @@ contains
 
           enddo ! iBioLayer
 
-             bioPorosity(nBioLayersP2,:,iCell) = 0.0_RKIND
-             bioTemperature(nBioLayersP2,:,iCell) = 0.0_RKIND
+          bioPorosity(nBioLayersP2,:,iCell) = 0.0_RKIND
+          bioTemperature(nBioLayersP2,:,iCell) = 0.0_RKIND
 
           do iShortwaveBio = 1, nShortwaveBio
 
@@ -9217,19 +9226,19 @@ contains
 
           enddo !iZBGCTracers
 
-
-          if (config_use_vertical_zsalinity) &
-               call colpkg_init_zsalinity(&
-               nBioLayers, &
-               tracerObject % nTracersNotBio, &
-               config_do_restart_zsalinity, &
-               rayleighCriteria, &
-               rayleighCriteriaReal(iCell), &
-               bgcTracerArray(:,:), &
-               tracerObject % index_verticalSalinity, &
-               nCategories, &
-               seaSurfaceSalinity(iCell))
-
+          if (config_use_vertical_zsalinity) then
+             call colpkg_init_zsalinity(&
+                  nBioLayers, &
+                  tracerObject % nTracersNotBio, &
+                  config_do_restart_zsalinity, &
+                  rayleighCriteria, &
+                  rayleighCriteriaReal(iCell), &
+                  bgcTracerArray(:,:), &
+                  tracerObject % index_verticalSalinity, &
+                  nCategories, &
+                  seaSurfaceSalinity(iCell))
+          endif
+             
           if (config_use_vertical_tracers .or. config_use_skeletal_biochemistry) then
              call colpkg_init_bgc(&
                   config_dt, &
@@ -9277,6 +9286,7 @@ contains
              endif
           endif ! biogeochemistry
 
+          ! set tracer array
           do iTracers = tracerObject % nTracersNotBio+1, tracerObject % nTracers !!!AKT not needed?
              do iCategory = 1,nCategories
                  tracerObject % tracerArrayCategory(iTracers,iCategory) =  &
