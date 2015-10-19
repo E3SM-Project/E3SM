@@ -118,6 +118,11 @@ module li_mask
       module procedure li_mask_is_grounded_ice_logout_0d
    end interface
 
+   interface li_mask_is_initial_ice
+      module procedure li_mask_is_initial_ice_logout_1d
+      module procedure li_mask_is_initial_ice_logout_0d
+   end interface
+
 !! SFP: the 1d versions below have not been tested yet - activate and use at your own risk! 
 !! Also check the corresponding function below.
    interface li_mask_is_grounded_ice_int
@@ -332,7 +337,7 @@ contains
 
       ! Is it floating? (ice thickness equal to floatation is considered floating)
       ! For now floating ice and grounded ice are mutually exclusive.  
-      ! This may change if a ground line parameterization is added.
+      ! This may change if a grounding line parameterization is added.
       where (  li_mask_is_ice(cellMask) .and. (config_ice_density / config_ocean_density * thickness) <= (config_sea_level - bedTopography) )
           cellMask = ior(cellMask, li_mask_ValueFloating)
       end where
@@ -774,7 +779,19 @@ contains
       endif
    end function li_mask_is_grounded_ice_intout_0d
 
+   function li_mask_is_initial_ice_logout_1d(mask)
+      integer, dimension(:), intent(in) :: mask
+      logical, dimension(size(mask)) :: li_mask_is_initial_ice_logout_1d
 
+      li_mask_is_initial_ice_logout_1d = (iand(mask, li_mask_ValueInitialIceExtent) == li_mask_ValueInitialIceExtent)
+   end function li_mask_is_initial_ice_logout_1d
+
+   function li_mask_is_initial_ice_logout_0d(mask)
+      integer, intent(in) :: mask
+      logical :: li_mask_is_initial_ice_logout_0d
+
+      li_mask_is_initial_ice_logout_0d = (iand(mask, li_mask_ValueInitialIceExtent) == li_mask_ValueInitialIceExtent)
+   end function li_mask_is_initial_ice_logout_0d
 
 
 

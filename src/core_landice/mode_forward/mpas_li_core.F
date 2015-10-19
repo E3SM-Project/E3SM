@@ -101,6 +101,8 @@ module li_core
       type (MPAS_TimeInterval_type) :: timeStepInterval
       character (len=StrKIND), pointer :: xtime
 
+      type(field3DReal), pointer :: &
+           coeffsReconstructField   ! field for reconstruction coefficients
 
       err = 0
       err_tmp = 0
@@ -156,7 +158,6 @@ module li_core
          block => block % next
       end do
 
-
       ! ===
       ! === Initialize modules ===
       ! ===
@@ -184,6 +185,12 @@ module li_core
       ! initialize analysis driver
       call li_analysis_init(domain, err_tmp)
       err = ior(err, err_tmp)
+
+      ! halo update for reconstruction coefficients      
+      !WHL - Results on multiple processors may be incorrect without this update
+
+      call mpas_pool_get_field(meshPool, 'coeffs_reconstruct', coeffsReconstructField)
+      call mpas_dmpar_exch_halo_field(coeffsReconstructField)
 
       ! check for errors and exit
 
@@ -730,18 +737,23 @@ module li_core
 !!!      call mpas_ocn_tracer_advection_coefficients(mesh, err_tmp)
 !!!      err = ior(err, err_tmp)
 
+      ! Init for reconstruction of velocity
+      !WHL - Initialize the reconstruction regardless of the velocity solver, because
+      !      these coefficients will be needed later for IR transport.
+!!      if ( (trim(config_velocity_solver) == 'sia') .or.    &
+!!           (trim(config_velocity_solver) == 'simple') .or.    &
+!!            config_do_velocity_reconstruction_for_external_dycore .or.   &
+!!            config_adaptive_timestep_include_DCFL) then
+         call mpas_rbf_interp_initialize(meshPool)
+         call mpas_init_reconstruct(meshPool)
+!!      endif
+
+      ! Initialize velocity solver
+      !WHL - This is now after the call to mpas_init_reconstruct, so that the reconstruction coefficients are available.
       call mpas_timer_start("initialize velocity")
       call li_velocity_block_init(block, err_tmp)
       err = ior(err, err_tmp)
       call mpas_timer_stop("initialize velocity")
-
-      ! Init for reconstruction of velocity
-      if ( (trim(config_velocity_solver) == 'sia') .or.    &
-            config_do_velocity_reconstruction_for_external_dycore .or.   &
-            config_adaptive_timestep_include_DCFL) then
-         call mpas_rbf_interp_initialize(meshPool)
-         call mpas_init_reconstruct(meshPool)
-      endif
 
       ! Mask init identifies initial ice extent
       call li_calculate_mask_init(geometryPool, err=err_tmp)
