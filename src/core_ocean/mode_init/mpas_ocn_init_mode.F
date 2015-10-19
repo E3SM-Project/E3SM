@@ -128,6 +128,23 @@ module ocn_init_mode
    !  call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
       call mpas_timer_stop('reset_io_alarms')
 
+      ! Read the remaining input streams
+      call mpas_timer_start('io_read', .false.)
+      call mpas_stream_mgr_read(domain % streamManager, ierr=err_tmp)
+      ierr = ior(ierr, err_tmp)
+      call mpas_timer_stop('io_read')
+      call mpas_timer_start('reset_io_alarms', .false.)
+      call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
+      ierr = ior(ierr, err_tmp)
+      call mpas_timer_stop('reset_io_alarms')
+
+      ! Initialize submodules before initializing blocks.
+      call ocn_equation_of_state_init(err_tmp)
+      ierr = ior(ierr, err_tmp)
+      if(ierr.eq.1) then
+          call mpas_dmpar_global_abort('ERROR: An error was encountered while initializing the MPAS-Ocean init mode')
+      endif
+
       !
       ! Initialize core
       !
@@ -362,7 +379,7 @@ module ocn_init_mode
       iErr = ior(iErr, err_tmp)
       call ocn_init_validate_sea_mount(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
-      ! call ocn_config_TEMPLATE_validate(configPool, packagePool, iocontext, iErr=err_tmp)
+      ! call ocn_init_validate_TEMPLATE(configPool, packagePool, iocontext, iErr=err_tmp)
       ! iErr = ior(iErr, err_tmp)
    end subroutine ocn_init_mode_validate_configuration!}}}
 
