@@ -1042,10 +1042,10 @@
 		<var name="aerosolMassExtinctionCrossSection" type="real"     dimensions="nSpectralIntervals nAerosols"   name_in_code="aerosolMassExtinctionCrossSection" packages="pkgColumnShortwave"/>
 		<var name="aerosolSingleScatterAlbedo"        type="real"     dimensions="nSpectralIntervals nAerosols"   name_in_code="aerosolSingleScatterAlbedo" packages="pkgColumnShortwave"/>
 		<var name="aerosolAsymmetryParameter"         type="real"     dimensions="nSpectralIntervals nAerosols"   name_in_code="aerosolAsymmetryParameter" packages="pkgColumnShortwave"/>
-		<var name="ModalMassExtinctionCrossSection"   type="real"     dimensions="nSpectralIntervals nModal1"     name_in_code="ModalMassExtinctionCrossSection" packages="pkgColumnShortwave"/>
-		<var name="ModalSingleScatterAlbedo"          type="real"     dimensions="nSpectralIntervals nModal1"     name_in_code="ModalSingleScatterAlbedo" packages="pkgColumnShortwave"/>
-		<var name="ModalAsymmetryParameter"           type="real"     dimensions="nSpectralIntervals nModal1"     name_in_code="ModalAsymmetryParameter" packages="pkgColumnShortwave"/>
-		<var name="ModalBCabsorptionParameter"        type="real"     dimensions="nSpectralIntervals nModal1 nModal2" name_in_code="ModalBCabsorptionParameter" packages="pkgColumnShortwave"/>
+		<var name="modalMassExtinctionCrossSection"   type="real"     dimensions="nSpectralIntervals nModal1"     name_in_code="modalMassExtinctionCrossSection" packages="pkgColumnShortwave"/>
+		<var name="modalSingleScatterAlbedo"          type="real"     dimensions="nSpectralIntervals nModal1"     name_in_code="modalSingleScatterAlbedo" packages="pkgColumnShortwave"/>
+		<var name="modalAsymmetryParameter"           type="real"     dimensions="nSpectralIntervals nModal1"     name_in_code="modalAsymmetryParameter" packages="pkgColumnShortwave"/>
+		<var name="modalBCabsorptionParameter"        type="real"     dimensions="nSpectralIntervals nModal1 nModal2" name_in_code="modalBCabsorptionParameter" packages="pkgColumnShortwave"/>
 	</var_struct>
 
 	<!-- biogeochemistry -->

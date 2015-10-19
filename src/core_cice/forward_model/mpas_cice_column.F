@@ -1992,21 +1992,18 @@ contains
          shortwave, &
          ponds, &
          aerosols, &
-!nj-bgc+
          biogeochemistry
-!nj-bgc-
 
     ! configs
     real(kind=RKIND), pointer :: &
          config_dt
-!nj-bgc+
+
     logical, pointer :: &
          config_use_shortwave_bioabsorption, &
          config_use_brine, &
          config_use_modal_aerosols, &
          config_use_zaerosols, &
          config_use_column_biogeochemistry
-!nj-bgc-
 
     ! dimensions
     integer, pointer :: &
@@ -2015,12 +2012,9 @@ contains
          nIceLayers, &
          nSnowLayers, &
          nAerosols, &
-!nj-bgc+
-         nShortwaveBio, &
          nAlgae, &
          nBioLayers, &
          nzAerosols
-!nj-bgc-
 
     ! variables
     real(kind=RKIND), dimension(:), pointer :: &
@@ -2032,10 +2026,8 @@ contains
          shortwaveIRDiffuseDown, &
          solarZenithAngleCosine, &
          snowfallRate, &
-!nj-bgc+
          verticalShortwaveGrid, & 
          verticalGrid
-!nj-bgc-
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          surfaceShortwaveFlux, &
@@ -2050,11 +2042,9 @@ contains
          aerosolMassExtinctionCrossSection, &
          aerosolSingleScatterAlbedo, &
          aerosolAsymmetryParameter, &
-!nj-bgc+
-         ModalMassExtinctionCrossSection, &
-         ModalSingleScatterAlbedo, &
-         ModalAsymmetryParameter, &
-!nj-bgc-
+         modalMassExtinctionCrossSection, &
+         modalSingleScatterAlbedo, &
+         modalAsymmetryParameter, &
          albedoVisibleDirectCategory, &
          albedoVisibleDiffuseCategory, &
          albedoIRDirectCategory, &
@@ -2077,18 +2067,12 @@ contains
          iceScatteringAerosol, &
          iceBodyAerosol, &
          brineFraction, &
-!nj-bgc+
-         ModalBCabsorptionParameter, &
+         modalBCabsorptionParameter, &
          bioTracerShortwave
-!nj-bgc-
     
     ! aerosols array
     real(kind=RKIND), dimension(:,:), allocatable :: &
-         aerosolsArray!, &
-         !ztracerArray
-
-    real(kind=RKIND), dimension(:), allocatable :: &
-         brineheightfraction
+         aerosolsArray
 
     ! local
     integer :: &
@@ -2127,11 +2111,11 @@ contains
     ! get days in year
     call get_days_in_year(domain, clock, daysInYear)
 
-   call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
-   call MPAS_pool_get_config(domain % configs, "config_use_shortwave_bioabsorption", config_use_shortwave_bioabsorption)
-   call MPAS_pool_get_config(domain % configs, "config_use_modal_aerosols",config_use_modal_aerosols)
-   call MPAS_pool_get_config(domain % configs, "config_use_zaerosols",config_use_zaerosols)
-   call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry",config_use_column_biogeochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
+    call MPAS_pool_get_config(domain % configs, "config_use_shortwave_bioabsorption", config_use_shortwave_bioabsorption)
+    call MPAS_pool_get_config(domain % configs, "config_use_modal_aerosols",config_use_modal_aerosols)
+    call MPAS_pool_get_config(domain % configs, "config_use_zaerosols",config_use_zaerosols)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry",config_use_column_biogeochemistry)
 
     block => domain % blocklist
     do while (associated(block))
@@ -2146,18 +2130,14 @@ contains
 
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
 
-
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
        call MPAS_pool_get_dimension(mesh, "nIceLayers", nIceLayers)
        call MPAS_pool_get_dimension(mesh, "nSnowLayers", nSnowLayers)
        call MPAS_pool_get_dimension(mesh, "nAerosols", nAerosols)
-!nj-bgc+
-       call MPAS_pool_get_dimension(block % dimensions, "nShortwaveBio", nShortwaveBio)
        call MPAS_pool_get_dimension(block % dimensions, "nAlgae", nAlgae)
        call MPAS_pool_get_dimension(block % dimensions, "nBioLayers", nBioLayers)
        call MPAS_pool_get_dimension(block % dimensions, "nzAerosols", nzAerosols)
-!nj-bgc-
 
        call MPAS_pool_get_array(mesh, "latCell", latCell)
        call MPAS_pool_get_array(mesh, "lonCell", lonCell)
@@ -2204,30 +2184,22 @@ contains
        call MPAS_pool_get_array(aerosols, "aerosolMassExtinctionCrossSection", aerosolMassExtinctionCrossSection)
        call MPAS_pool_get_array(aerosols, "aerosolSingleScatterAlbedo", aerosolSingleScatterAlbedo)
        call MPAS_pool_get_array(aerosols, "aerosolAsymmetryParameter", aerosolAsymmetryParameter)
-!nj-bgc+
-       call MPAS_pool_get_array(aerosols, "ModalMassExtinctionCrossSection", ModalMassExtinctionCrossSection)
-       call MPAS_pool_get_array(aerosols, "ModalSingleScatterAlbedo", ModalSingleScatterAlbedo)
-       call MPAS_pool_get_array(aerosols, "ModalAsymmetryParameter", ModalAsymmetryParameter)
-       call MPAS_pool_get_array(aerosols, "ModalBCabsorptionParameter", ModalBCabsorptionParameter)
+       call MPAS_pool_get_array(aerosols, "modalMassExtinctionCrossSection", modalMassExtinctionCrossSection)
+       call MPAS_pool_get_array(aerosols, "modalSingleScatterAlbedo", modalSingleScatterAlbedo)
+       call MPAS_pool_get_array(aerosols, "modalAsymmetryParameter", modalAsymmetryParameter)
+       call MPAS_pool_get_array(aerosols, "modalBCabsorptionParameter", modalBCabsorptionParameter)
 
        call MPAS_pool_get_array(biogeochemistry, "bioTracerShortwave", bioTracerShortwave)
        call MPAS_pool_get_array(biogeochemistry, "verticalShortwaveGrid", verticalShortwaveGrid)
        call MPAS_pool_get_array(biogeochemistry, "verticalGrid", verticalGrid)
-!nj-bgc-
 
        ! aerosols array
        allocate(aerosolsArray(4*nAerosols,nCategories))
-!nj-bgc+
-       !allocate(ztracerArray(ciceTracerObject % nTracers,nCategories))
-       allocate(brineheightfraction(nCategories))
-!nj-bgc-
 
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
 
        do iCell = 1, nCellsSolve
-
-          brineheightfraction(:) = 0.0_RKIND
           
           ! set aerosols array
           do iCategory = 1, nCategories
@@ -2239,13 +2211,6 @@ contains
                 aerosolsArray(4+4*(iAerosol-1), iCategory) = iceBodyAerosol(iAerosol,iCategory,iCell)   
 
              enddo ! iAerosol
-!nj-bgc+
-             !do iTracer = 1, ciceTracerObject % nTracers
-             !    ztracerArray(iTracer,iCategory) = ciceTracerObject% TracerArrayCategory(iTracer, iCategory)
-             !enddo ! iTracer
-             !if (config_use_brine) brineheightfraction(iCategory) = &
-             !  ciceTracerObject % tracerArrayCategory(ciceTracerObject  % index_brineFraction, iCategory)
-!nj-bgc-
           enddo ! iCategory   
 
           lonCellColumn = lonCell(iCell)
@@ -2257,27 +2222,22 @@ contains
           call colpkg_step_radiation(&
                config_dt, &
                nCategories, & 
-!nj-bgc+
                nAlgae, &
                config_use_zaerosols, &
                nBioLayers, &
                ciceTracerObject % nTracers, &
                ciceTracerObject % nBioTracers, &
                ciceTracerObject % nBioTracersShortwave, &
-!nj-bgc-
                nIceLayers, &
                nSnowLayers, &
                nAerosols, &
-!nj-bgc+
                nzAerosols, &
                config_use_modal_aerosols, &
                ciceTracerObject % index_chlorophyllShortwave, &
                ciceTracerObject % index_verticalAerosolsConcShortwave(:), &
                verticalShortwaveGrid(:), &
                verticalGrid(:), &
-               !brineheightfraction(:), &
                brineFraction(1,:,iCell), &
-!nj-bgc-
                iceAreaCategory(1,:,iCell), &
                iceVolumeCategory(1,:,iCell), &
                snowVolumeCategory(1,:,iCell), & 
@@ -2287,11 +2247,8 @@ contains
                pondDepth(1,:,iCell), &
                pondLidThickness(1,:,iCell), &
                aerosolsArray, &
-!nj-bgc+
                bioTracerShortwave(:,:,iCell), &
                ciceTracerObject % tracerArrayCategory(:,:), &
-              ! ztracerArray(:,:), &
-!nj-bgc-
                latCell(iCell), & 
                lonCellColumn, &
                CCSMCalendarType, &
@@ -2302,13 +2259,11 @@ contains
                aerosolMassExtinctionCrossSection(:,:), &
                aerosolSingleScatterAlbedo(:,:), &
                aerosolAsymmetryParameter(:,:), &
-!nj-bgc+
-               ModalMassExtinctionCrossSection(:,:), &
-               ModalSingleScatterAlbedo(:,:), &
-               ModalAsymmetryParameter(:,:), &
-               ModalBCabsorptionParameter(:,:,:), &
+               modalMassExtinctionCrossSection(:,:), &
+               modalSingleScatterAlbedo(:,:), &
+               modalAsymmetryParameter(:,:), &
+               modalBCabsorptionParameter(:,:,:), &
                config_use_modal_aerosols, &
-!nj-bgc-
                shortwaveVisibleDirectDown(iCell), &
                shortwaveVisibleDiffuseDown(iCell), &
                shortwaveIRDirectDown(iCell), & 
@@ -2342,8 +2297,6 @@ contains
 
        ! aerosols array
        deallocate(aerosolsArray)
-       !deallocate(ztracerArray)
-       deallocate(brineheightfraction)
 
        block => block % next
     end do
