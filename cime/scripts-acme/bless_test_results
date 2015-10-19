@@ -91,7 +91,8 @@ def bless_test_results(baseline_name, test_root, compiler, namelists_only=False,
                                                    False) # don't ignore namelist diffs
 
     baseline_root = acme_util.get_machine_info("CCSM_BASELINE")
-    baseline_area = os.path.join(baseline_root, compiler, baseline_name)
+    baseline_tag  = os.path.join(compiler, baseline_name)
+    baseline_area = os.path.join(baseline_root, baseline_tag)
 
     for test_name, test_data in test_results.iteritems():
         if (bless_tests in [[], None] or acme_util.match_any(test_name, bless_tests)):
@@ -123,7 +124,6 @@ def bless_test_results(baseline_name, test_root, compiler, namelists_only=False,
 
                 # Find files of various types
                 namelist_files = []
-                other_files = []
                 for root, _, files in os.walk(baseline_dir_for_test):
                     if (root == baseline_dir_for_test):
                         rel_root = ""
@@ -152,33 +152,31 @@ def bless_test_results(baseline_name, test_root, compiler, namelists_only=False,
                                         (force or raw_input("Update this file (y/n)? ").upper() in ["Y", "YES"])):
                                         namelist_files.append((rel_file, rel_file))
 
-                        elif (not namelists_only and test_result != wait_for_tests.NAMELIST_FAIL_STATUS):
-                            # For now, just do this hist file
-                            if (file_ == "cpl.hi.nc"):
-                                # Hist file will have different name in testcase, need to find it
-                                hist_files = glob.glob("%s/run/%s*.cpl.hi*nc" % (os.path.join(acme_root, case), case))
-                                if (len(hist_files) != 1):
-                                    warning("Expected to find one hist file, instead found: %s" % ", ".join(hist_files))
-                                    warning("This can happen if test failed before running")
-                                    warning("Skipping hist files for this test")
-                                    continue
-                                hist_file = hist_files[0]
-                                hist_compare_script = os.path.join(acme_util.get_cime_root(), "scripts", "Tools", "hist_compare.csh")
-                                stat = run_cmd("%s %s %s" % (hist_compare_script, hist_file, baseline_file), arg_stdout=None, arg_stderr=None, ok_to_fail=True)[0]
-                                if (stat != 0):
-                                    print "Hist files '%s' and '%s' did not match" % (baseline_file, hist_file)
-                                    print
-                                    if (not report_only and
-                                        (force or raw_input("Update this file (y/n)? ").upper() in ["Y", "YES"])):
-                                        other_files.append((hist_file, rel_file))
+                if (not namelists_only and test_result != wait_for_tests.NAMELIST_FAIL_STATUS):
+                    cime_root = acme_util.get_cime_root()
+                    compgen = os.path.join(cime_root, "scripts", "Tools", "component_compgen_baseline.sh")
+                    machine_env = os.path.join(cime_root, "machines-acme", "env_mach_specific.%s" % acme_util.probe_machine_name())
+                    run_dir = os.path.join(acme_root, case, "run")
+                    cprnc_loc = acme_util.get_machine_info("CPRNC_ROOT")
+                    compgen_cmd = "tcsh -c 'source %s && %s -baseline_dir %s -testcase %s -testcase_base %s -test_dir %s -cprnc_exe %s -generate_tag %s'" % \
+                        (machine_env, compgen, baseline_dir_for_test, case, test_name, testcase_dir_for_test, cprnc_loc, baseline_tag)
+
+                    check_compare = os.path.join(cime_root, "scripts", "Tools", "component_write_comparefail.pl")
+                    stat, out, err = run_cmd("%s %s 2>&1" % (check_compare, run_dir), ok_to_fail=True)
+
+                    if (stat != 0):
+                        # found diff, offer rebless
+                        print out
+
+                        if (not report_only and
+                            (force or raw_input("Update this diff (y/n)? ").upper() in ["Y", "YES"])):
+                            stat, out, err = run_cmd(compgen_cmd, ok_to_fail=True, verbose=True)
+                            if (stat != 0):
+                                warning("Hist file bless FAILED for test %s" % test_name)
 
                 # Update namelist files
                 if (namelist_files):
                     acme_util.safe_copy(testcase_dir_for_test, baseline_dir_for_test, namelist_files)
-
-                # Update other files
-                if (other_files):
-                    acme_util.safe_copy(testcase_dir_for_test, baseline_dir_for_test, other_files)
 
 ###############################################################################
 def _main_func(description):
