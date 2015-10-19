@@ -2339,10 +2339,8 @@ contains
 
 
     ! configs
-!nj-bgc+
     logical, pointer :: &
          config_use_column_biogeochemistry
-!nj-bgc-
 
     real(kind=RKIND), pointer :: &
          config_dt
@@ -2357,11 +2355,9 @@ contains
          nIceLayers, &
          nSnowLayers, &
          nAerosols, &
-!nj-bgc+
          nBioLayers
 
     ! variables
-!nj-bgc-
     real(kind=RKIND), dimension(:), pointer :: &
          pondFreshWaterFlux, &
          oceanFreshWaterFlux, &
@@ -2376,9 +2372,7 @@ contains
          iceVolumeRidged, &
          openingRateRidge, &
          categoryThicknessLimits, &
-!nj-bgc+
          zSalinityFlux
-!nj-bgc-
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          oceanAerosolFlux, &
@@ -2435,18 +2429,14 @@ contains
 
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
        call MPAS_pool_get_config(block % configs, "config_dynamics_subcycle_number", config_dynamics_subcycle_number)
-!nj-bgc+
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
-!nj-bgc-
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
        call MPAS_pool_get_dimension(mesh, "nIceLayers", nIceLayers)
        call MPAS_pool_get_dimension(mesh, "nSnowLayers", nSnowLayers)
-!nj-bg+
        call MPAS_pool_get_dimension(mesh, "nAerosols", nAerosols)
        call MPAS_pool_get_dimension(block % dimensions, "nBioLayers", nBioLayers)
-!nj-bgc-
 
        call MPAS_pool_get_array(tracers_aggregate, "iceAreaCell", iceAreaCell)
 
@@ -2579,12 +2569,12 @@ contains
   end subroutine column_ridging
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!nj-bgc+
+!
 !  column_biogeochemistry
 !
 !> \brief 
 !> \author Nicole Jeffery, LANL
-!> \date 20th January 2015
+!> \date 19th October 2015
 !> \details
 !>  
 !
@@ -2693,7 +2683,7 @@ contains
          snowVolumeCategory, & ! tracers  (1,ncat,ncell)
          skeletalAlgaeConc
 
-    integer, dimension(:,:),pointer :: &
+    integer, dimension(:,:), pointer :: &
          newlyFormedIce
  
     ! local
@@ -2769,23 +2759,23 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "interfaceBiologyGrid", interfaceBiologyGrid)
        call MPAS_pool_get_array(biogeochemistry, "interfaceGrid", interfaceGrid)
        call MPAS_pool_get_array(biogeochemistry, "verticalGrid", verticalGrid)
-       call MPAS_pool_get_array(biogeochemistry, "bioDiffusivity",bioDiffusivity)
-       call MPAS_pool_get_array(biogeochemistry, "bioPermeability",bioPermeability)
-       call MPAS_pool_get_array(biogeochemistry, "bioShortwaveFlux",bioShortwaveFlux)
-       call MPAS_pool_get_array(biogeochemistry, "darcyVelocityBio",darcyVelocityBio)
-       call MPAS_pool_get_array(biogeochemistry, "snowIceBioFluxes",snowIceBioFluxes)
-       call MPAS_pool_get_array(biogeochemistry, "atmosIceBioFluxes",atmosIceBioFluxes)
-       call MPAS_pool_get_array(biogeochemistry, "oceanBioConcentrations",oceanBioConcentrations)
-       call MPAS_pool_get_array(biogeochemistry, "totalVerticalBiologyIce",totalVerticalBiologyIce)
-       call MPAS_pool_get_array(biogeochemistry, "totalVerticalBiologySnow",totalVerticalBiologySnow)
-       call MPAS_pool_get_array(biogeochemistry, "zSalinityIceDensity",zSalinityIceDensity)
-       call MPAS_pool_get_array(biogeochemistry, "zSalinityFlux",zSalinityFlux)
-       call MPAS_pool_get_array(biogeochemistry, "zSalinityGDFlux",zSalinityGDFlux)
-       call MPAS_pool_get_array(biogeochemistry, "atmosBioFluxes",atmosBioFluxes)
-       call MPAS_pool_get_array(biogeochemistry, "oceanBioFluxes",oceanBioFluxes)
-       call MPAS_pool_get_array(biogeochemistry, "verticalNitrogenLosses",verticalNitrogenLosses)
-       call MPAS_pool_get_array(biogeochemistry, "bioTemperature",bioTemperature)
-       call MPAS_pool_get_array(biogeochemistry, "totalSkeletalAlgae",totalSkeletalAlgae)
+       call MPAS_pool_get_array(biogeochemistry, "bioDiffusivity", bioDiffusivity)
+       call MPAS_pool_get_array(biogeochemistry, "bioPermeability", bioPermeability)
+       call MPAS_pool_get_array(biogeochemistry, "bioShortwaveFlux", bioShortwaveFlux)
+       call MPAS_pool_get_array(biogeochemistry, "darcyVelocityBio", darcyVelocityBio)
+       call MPAS_pool_get_array(biogeochemistry, "snowIceBioFluxes", snowIceBioFluxes)
+       call MPAS_pool_get_array(biogeochemistry, "atmosIceBioFluxes", atmosIceBioFluxes)
+       call MPAS_pool_get_array(biogeochemistry, "oceanBioConcentrations", oceanBioConcentrations)
+       call MPAS_pool_get_array(biogeochemistry, "totalVerticalBiologyIce", totalVerticalBiologyIce)
+       call MPAS_pool_get_array(biogeochemistry, "totalVerticalBiologySnow", totalVerticalBiologySnow)
+       call MPAS_pool_get_array(biogeochemistry, "zSalinityIceDensity", zSalinityIceDensity)
+       call MPAS_pool_get_array(biogeochemistry, "zSalinityFlux", zSalinityFlux)
+       call MPAS_pool_get_array(biogeochemistry, "zSalinityGDFlux", zSalinityGDFlux)
+       call MPAS_pool_get_array(biogeochemistry, "atmosBioFluxes", atmosBioFluxes)
+       call MPAS_pool_get_array(biogeochemistry, "oceanBioFluxes", oceanBioFluxes)
+       call MPAS_pool_get_array(biogeochemistry, "verticalNitrogenLosses", verticalNitrogenLosses)
+       call MPAS_pool_get_array(biogeochemistry, "bioTemperature", bioTemperature)
+       call MPAS_pool_get_array(biogeochemistry, "totalSkeletalAlgae", totalSkeletalAlgae)
 
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTemperature", seaSurfaceTemperature)
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
@@ -2831,8 +2821,8 @@ contains
 
           ! read required ocean concentrations fields into allocated array 
           do iBioTracers = 1, ciceTracerObject % nBioTracers
-                iBioData = ciceTracerObject % index_LayerIndexToDataArray(iBioTracers)
-                oceanBioConcentrationsUsed(iBioTracers) = oceanBioConcentrations(iBioData, iCell)
+             iBioData = ciceTracerObject % index_LayerIndexToDataArray(iBioTracers)
+             oceanBioConcentrationsUsed(iBioTracers) = oceanBioConcentrations(iBioData, iCell)
           enddo ! iBioTracers           
 
           abortFlag = .false.
@@ -2926,13 +2916,12 @@ contains
 
           do iCategory = 1, nCategories
              if (config_use_skeletal_biochemistry .and. iceAreaCategory(1,iCategory,iCell) > puny) then
-               do iAlgae = 1, nAlgae
+                do iAlgae = 1, nAlgae
                    totalSkeletalAlgae(iCell) = totalSkeletalAlgae(iCell) + &
-                      !ciceTracerObject % tracerArrayCategory(ciceTracerObject % index_algaeConc(iAlgae), iCategory) *&
-                      skeletalAlgaeConc(iAlgae,iCategory,iCell) * &
-                      iceAreaCategory(1,iCategory,iCell)
-               enddo
-            endif
+                        skeletalAlgaeConc(iAlgae,iCategory,iCell) * &
+                        iceAreaCategory(1,iCategory,iCell)
+                enddo
+             endif
           enddo ! iCategory
 
           do iCategory = 1, nCategories
@@ -2940,9 +2929,7 @@ contains
              if (newlyFormedIceLogical(iCategory)) newlyFormedIce(iCategory,iCell) = 1
           enddo ! iCategory
 
-          if (.not. rayleighCriteria) rayleighCriteriaReal(iCell) =   0.0_RKIND
-
-          !call get_cice_tracer_array_category(block, ciceTracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
+          if (.not. rayleighCriteria) rayleighCriteriaReal(iCell) = 0.0_RKIND
 
        enddo ! iCell
 
@@ -2952,11 +2939,10 @@ contains
        block => block % next
     end do
 
-
     call cice_debug_write_out_fields(domain, "column_biogeochemistry", 2)
     
   end subroutine column_biogeochemistry
-!nj-bgc-
+
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  get_day_of_year
@@ -4964,7 +4950,6 @@ contains
        enddo ! iAerosol
     endif
 
-
   end subroutine set_cice_physics_tracer_array_category
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -5284,7 +5269,6 @@ contains
        enddo ! iAerosol
     endif
 
-
   end subroutine set_cice_physics_tracer_array_cell
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -5445,9 +5429,7 @@ contains
        enddo ! iAerosol
     endif
 
-
   end subroutine get_cice_physics_tracer_array_cell
-
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !nj-bgc+
