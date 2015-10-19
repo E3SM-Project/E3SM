@@ -943,8 +943,8 @@ void get_prism_velocity_on_FEdges(double * uNormal,
 
   UInt nPoints3D = nCells_F * (nLayers + 1);
 
-  //Looping through the internal edges of the triangulation
-  for (int i = numBoundaryEdges; i < nEdges; i++) {
+  // Loop over all edges of the triangulation - MPAS will decide which edges it should use.
+  for (int i = 0; i < nEdges; i++) {
 
     //identifying vertices on the edge
     ID lId0 = verticesOnEdge[2 * i];
@@ -984,15 +984,42 @@ void get_prism_velocity_on_FEdges(double * uNormal,
    e_mid[1] =  0.5*(yVertex_F[fVertex0] + yVertex_F[fVertex1]);
 
    if((verticesMask_F[fVertex0] & dynamic_ice_bit_value) && belongToTria(e_mid, t0, bcoords)) {
-    for (int j = 0; j < 3; j++)
-      iCells[j] = cellsOnVertex_F[3 * fVertex0 + j] - 1;
-    }
-    else if((verticesMask_F[fVertex1] & dynamic_ice_bit_value) && belongToTria(e_mid, t1, bcoords)) {
+      // triangle1 is in the mesh  AND midpoint is in triangle1
+      for (int j = 0; j < 3; j++)
+        iCells[j] = cellsOnVertex_F[3 * fVertex0 + j] - 1;
+      }
+   else if((verticesMask_F[fVertex1] & dynamic_ice_bit_value) && belongToTria(e_mid, t1, bcoords)) {
+      //triangle2 is in the mesh  AND midpoint is in triangle2
       for (int j = 0; j < 3; j++)
         iCells[j] = cellsOnVertex_F[3 * fVertex1 + j] - 1;
-    }
-    else { //error, edge midpont does not belong to either triangles
-      std::cout << "Error, edge midpont does not belong to either triangles" << std::endl;
+      }
+   else if(i<numBoundaryEdges) {
+      //edge is on boundary and wasn't found by previous two cases
+      //For boundary edges one of the two triangles sharing the edge won't be part of the velocity solver's mesh and the dynamic_ice_bit_value will be 0.
+
+      //Compute iCells containinig the vertices of the triangle that is part of the mesh and bcoords the corresponding barycentric coordinates
+      if(verticesMask_F[fVertex0] & dynamic_ice_bit_value) { belongToTria(e_mid, t0, bcoords);
+        for (int j = 0; j < 3; j++)
+          iCells[j] = cellsOnVertex_F[3 * fVertex0 + j] - 1;
+        }
+      else {
+        belongToTria(e_mid, t1, bcoords);
+        for (int j = 0; j < 3; j++)
+          iCells[j] = cellsOnVertex_F[3 * fVertex1 + j] - 1;
+        }
+
+      //We modify the barycentric coordinates so that they will be all non-negative (corresponding to a point on the triangle edge).
+      double sum(0);
+      for(int j=0; j<3; j++) {
+        bcoords[j] = std::max(0.,bcoords[j]);
+        sum += bcoords[j];
+        }
+      //Scale the coordinates so that they sum to 1.
+      for(int j=0; j<3; j++)
+        bcoords[j] /= sum;
+      }    
+   else { //error, edge midpont does not belong to either triangle
+      std::cout << "Error, edge midpont does not belong to either triangle" << std::endl;
       for (int j = 0; j < 3; j++)
         std::cout << "("<<t0[0 + 2 * j]<<","<<t0[1 + 2 * j]<<") ";
       std::cout <<std::endl;
@@ -1000,7 +1027,7 @@ void get_prism_velocity_on_FEdges(double * uNormal,
         std::cout << "("<<t1[0 + 2 * j]<<","<<t1[1 + 2 * j]<<") ";
       std::cout <<"\n midpoint: ("<<e_mid[0]<<","<<e_mid[1]<<")"<<std::endl;
       exit(1);
-    }
+   }
 
 
     for (int il = 0; il < nLayers+1; il++) { //loop over layers
@@ -1017,7 +1044,7 @@ void get_prism_velocity_on_FEdges(double * uNormal,
         uNormal[index] += bcoords[j] * ny * velocityOnCells[iCell3D];
       }
     } //end loop over layers
-  }
+  } //loop over edges
 }
 
 void mapVerticesToCells(const std::vector<double>& velocityOnVertices,
@@ -1639,9 +1666,14 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
   }
   double det = (v3[1]-v2[1])*(v3[0]-v1[0]) - (v3[0]-v2[0])*(v3[1]-v1[1]);
   double c1,c2;
-  return ( (bcoords[0] = ((v3[1]-v2[1])*(v3[0]-x[0]) - (v3[0]-v2[0])*(v3[1]-x[1]))/det) > -eps) &&
-         ( (bcoords[1] = (-(v3[1]-v1[1])*(v3[0]-x[0]) + (v3[0]-v1[0])*(v3[1]-x[1]))/det) > -eps) &&
-         ( (bcoords[2] = 1.0 - bcoords[0] - bcoords[1]) > -eps );
+
+  bcoords[0] = ((v3[1]-v2[1])*(v3[0]-x[0]) - (v3[0]-v2[0])*(v3[1]-x[1]))/det;
+  bcoords[1] = (-(v3[1]-v1[1])*(v3[0]-x[0]) + (v3[0]-v1[0])*(v3[1]-x[1]))/det;
+  bcoords[2] = 1.0 - bcoords[0] - bcoords[1];
+
+  return ( bcoords[0] > -eps) &&
+         ( bcoords[1] > -eps) &&
+         ( bcoords[2] > -eps );
 }
 
 int prismType(long long int const* prismVertexMpasIds, int& minIndex)
