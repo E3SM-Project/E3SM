@@ -8980,7 +8980,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine init_column_biogeochemistry_profiles(domain,tracerObject)
+  subroutine init_column_biogeochemistry_profiles(domain, tracerObject)
 
     use ice_colpkg, only: &
          colpkg_init_bgc, &
@@ -8991,6 +8991,14 @@ contains
 
     type(ciceTracerObjectType), intent(inout) :: &
          tracerObject
+
+    type(block_type), pointer :: &
+         block
+
+    type(MPAS_pool_type), pointer :: &
+         biogeochemistry, &
+         ocean_coupling, &
+         tracers
          
     logical, pointer :: &  
          config_use_brine, &
@@ -8998,8 +9006,7 @@ contains
          config_use_vertical_tracers, &
          config_use_skeletal_biochemistry, &
          config_do_restart_zsalinity, &
-         config_do_restart_bgc, &
-         config_use_column_biogeochemistry
+         config_do_restart_bgc
        
     real(kind=RKIND), pointer :: &
          config_dt, &
@@ -9042,15 +9049,8 @@ contains
          bioPermeability, &
          bioShortwaveFlux, &
          bioTracerShortwave, &
-         iceSalinity
-
-    type(block_type), pointer :: &
-         block
-
-    type(MPAS_pool_type), pointer :: &
-         biogeochemistry, &
-         ocean_coupling, &
-         tracers
+         iceSalinity, &
+         brineFraction
 
     integer, pointer :: &
          nCellsSolve, &
@@ -9069,24 +9069,16 @@ contains
          maxIronType
          
     integer :: &
-         iCell, &
-         iCategory, &
-         iBioLayer, &
-         iZBGCTracers, &
-         iShortwaveBio, &
-         iTracers, &
-         ntrcr_bgc
+         iCell
 
    real(kind=RKIND), dimension(:), allocatable :: &
           oceanzAerosols
 
-   real(kind=RKIND), dimension(:,:), allocatable :: &
-          bgcTracerArray
-
     logical :: &
          abortFlag, &
          rayleighCriteria, &
-         getPhysicsTracers
+         setGetPhysicsTracers, &
+         setGetBGCTracers
 
     character(len=strKIND) :: &
          abortMessage
@@ -9099,10 +9091,11 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
     call MPAS_pool_get_config(domain % configs, "config_snow_porosity_at_ice_surface", config_snow_porosity_at_ice_surface)
-    call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
 
     abortFlag = .false.
-    getPhysicsTracers = .false.
+
+    setGetPhysicsTracers = .false.
+    setGetBGCTracers     = .true.
 
     block => domain % blocklist
     do while (associated(block))
@@ -9144,6 +9137,7 @@ contains
 
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
        call MPAS_pool_get_array(tracers, "iceSalinity", iceSalinity, 1)
+       call MPAS_pool_get_array(tracers, "brineFraction", brineFraction, 1)
 
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(block % dimensions, "nCategories", nCategories)
@@ -9160,11 +9154,8 @@ contains
        call MPAS_pool_get_dimension(block % dimensions, "maxDONType", maxDONType)
        call MPAS_pool_get_dimension(block % dimensions, "maxIronType", maxIronType)
        
-       ntrcr_bgc = ciceTracerObject % nTracers - ciceTracerObject % nTracersNotBio
        allocate(oceanzAerosols(maxAerosolType))
-       allocate(bgcTracerArray(ntrcr_bgc,nCategories))
        oceanzAerosols(:) = 0.0_RKIND
-       bgcTracerArray(:,:) = 0.0_RKIND
 
        call colpkg_init_hbrine(&
             biologyGrid, &
@@ -9182,49 +9173,14 @@ contains
           rayleighCriteriaReal(iCell) = 1.0_RKIND
           rayleighCriteria = .true.
 
-          ! initialize brine fraction
-          tracerObject % tracerArrayCell(tracerObject%index_brineFraction) = 1.0_RKIND
-          tracerObject % tracerArrayCategory(tracerObject%index_brineFraction,:) = 1.0_RKIND
-
           ! initialize newly formed ice
           newlyFormedIce(:, iCell) = 1
 
-          ! set bgc tracer array
-          do iTracers = tracerObject % nTracersNotBio+1, tracerObject % nTracers 
-             do iCategory = 1,nCategories
-                bgcTracerArray(iTracers-tracerObject % nTracersNotBio,iCategory) = &
-                     tracerObject % tracerArrayCategory(iTracers,iCategory)     
-             enddo
-          enddo
-          
-          ! initialize biology
-          do iBioLayer = 1, nBioLayersP1
+          ! initialize brine fraction
+          brineFraction = 1.0_RKIND
 
-             bioPorosity(iBioLayer,:,iCell) = 0.0_RKIND
-             bioDiffusivity(iBioLayer,:,iCell) = 0.0_RKIND
-             bioTemperature(iBioLayer,:,iCell) = 0.0_RKIND
-             bioPermeability(iBioLayer,:,iCell) = 0.0_RKIND     
-             bioShortwaveFlux(iBioLayer,:,iCell) = 0.0_RKIND              
-
-          enddo ! iBioLayer
-
-          bioPorosity(nBioLayersP2,:,iCell) = 0.0_RKIND
-          bioTemperature(nBioLayersP2,:,iCell) = 0.0_RKIND
-
-          do iShortwaveBio = 1, nShortwaveBio
-
-             bioTracerShortwave(iShortwaveBio,:,iCell) = 0.0_RKIND
-
-          enddo ! iShortwaveBio
-
-          do iZBGCTracers = 1, nZBGCTracers
-
-             atmosBioConcentrations(iZBGCTracers,iCell) = 0.0_RKIND
-             oceanBioConcentrations(iZBGCTracers,iCell) = 0.0_RKIND
-             totalVerticalBiologyIce(iZBGCTracers,iCell) = 0.0_RKIND
-             totalVerticalBiologySnow(iZBGCTracers,iCell) = 0.0_RKIND
-
-          enddo !iZBGCTracers
+          ! set the category tracer array
+          call set_cice_tracer_array_category(block, tracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           if (config_use_vertical_zsalinity) then
              call colpkg_init_zsalinity(&
@@ -9233,7 +9189,7 @@ contains
                   config_do_restart_zsalinity, &
                   rayleighCriteria, &
                   rayleighCriteriaReal(iCell), &
-                  bgcTracerArray(:,:), &
+                  tracerObject % tracerArrayCategory(tracerObject % nTracersNotBio+1:tracerObject % nTracers,:), &
                   tracerObject % index_verticalSalinity, &
                   nCategories, &
                   seaSurfaceSalinity(iCell))
@@ -9252,7 +9208,7 @@ contains
                   tracerObject % nTracers, &
                   tracerObject % nBiotracers, &
                   iceSalinity(:,:,iCell), &
-                  bgcTracerArray(:,:), & !!! AKT weird way of doing things
+                  tracerObject % tracerArrayCategory(tracerObject % nTracersNotBio+1:tracerObject % nTracers,:), &
                   seaSurfaceSalinity(iCell), &  
                   oceanNitrateConc(iCell), &
                   oceanAmmoniumConc(iCell), &
@@ -9286,21 +9242,13 @@ contains
              endif
           endif ! biogeochemistry
 
-          ! set tracer array
-          do iTracers = tracerObject % nTracersNotBio+1, tracerObject % nTracers !!!AKT not needed?
-             do iCategory = 1,nCategories
-                 tracerObject % tracerArrayCategory(iTracers,iCategory) =  &
-                      bgcTracerArray(iTracers-tracerObject % nTracersNotBio,iCategory) 
-             enddo
-          enddo
+          ! get the category tracer array
+          call get_cice_tracer_array_category(block, tracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
-          call get_cice_tracer_array_category(block, tracerObject, iCell, getPhysicsTracers, &
-               config_use_column_biogeochemistry)
+       enddo ! iCell
 
-       enddo    ! iCell
-
+       ! clean up
        deallocate(oceanzAerosols)
-       deallocate(bgcTracerArray)
 
        block => block % next
     end do
