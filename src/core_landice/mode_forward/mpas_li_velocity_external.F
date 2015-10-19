@@ -405,6 +405,8 @@ contains
       logical, pointer :: config_output_external_velocity_solver_data
       integer, pointer :: anyDynamicVertexMaskChanged
       integer, pointer :: dirichletMaskChanged
+      integer, pointer :: nEdges
+      integer :: iEdge
       real(kind=RKIND), parameter :: secondsInYear = 365.0 * 24.0 * 3600.0  !< The value of seconds in a year assumed by external dycores
 
       err = 0
@@ -417,6 +419,7 @@ contains
       ! Mesh variables
       call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
       call mpas_pool_get_array(meshPool, 'deltat', deltat)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
       ! Geometry variables
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
@@ -536,6 +539,16 @@ contains
       uReconstructX =  uReconstructX  / secondsInYear
       uReconstructY =  uReconstructY  / secondsInYear
 
+      ! The external solver will calculate normalVelocity for all edges,
+      ! but some of those edges are not dynamically active according to MPASLI's
+      ! Voronoi grid conventions.  This zeros velocity on those edges.
+      ! (Note: the choice of edges to get reconstructed used to be controlled
+      !  inside the interface, but as logic got more complicated with Dirichlet
+      !  b.c., that became unwieldly.  Look in the mask routine to see the logic
+      !  for which edges are dynamic.)
+      do iEdge = 1, nEdges
+         if (.not. li_mask_is_dynamic_ice(edgeMask(iEdge)) ) normalVelocity(:,iEdge) = 0.0d0
+      end do
 
 
    !--------------------------------------------------------------------
