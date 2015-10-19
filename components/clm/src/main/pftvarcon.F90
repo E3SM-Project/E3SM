@@ -154,6 +154,7 @@ module pftvarcon
   real(r8), allocatable :: presharv(:)     !porportion of residue harvested
   real(r8), allocatable :: convfact(:)     !conversion factor to bu/acre
   real(r8), allocatable :: fyield(:)       !fraction of grain that is actually harvested
+  real(r8), allocatable :: root_dmx(:)     !maximum root depth
 
   ! pft parameters for CNDV code
   ! from LPJ subroutine pftparameters
@@ -198,7 +199,7 @@ contains
     use ncdio_pio ,  only : ncd_io, ncd_pio_closefile, ncd_pio_openfile, file_desc_t, &
                             ncd_inqdid, ncd_inqdlen
     use clm_varctl,  only : paramfile, use_ed
-    use clm_varctl,  only : use_crop
+    use clm_varctl,  only : use_crop, use_dynroot
     use clm_varcon,  only : tfrz
     use spmdMod   ,  only : masterproc
     use EDPftvarcon, only : EDpftconrd
@@ -357,6 +358,7 @@ contains
     allocate( presharv      (0:mxpft) )
     allocate( convfact      (0:mxpft) )
     allocate( fyield        (0:mxpft) )  
+    allocate( root_dmx      (0:mxpft) )
     allocate( pftpar20      (0:mxpft) )   
     allocate( pftpar28      (0:mxpft) )   
     allocate( pftpar29      (0:mxpft) )   
@@ -505,6 +507,11 @@ contains
        call ncd_io('fyield',fyield, 'read', ncid, readvar=readv, posNOTonfile=.true.)
        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     endif
+    if(use_crop .and. use_dynroot)then
+       call ncd_io('root_dmx',root_dmx, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+       if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+    endif
+
     if (use_vertsoilc) then
        call ncd_io('rootprof_beta',rootprof_beta, 'read', ncid, readvar=readv, posNOTonfile=.true.)
        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
