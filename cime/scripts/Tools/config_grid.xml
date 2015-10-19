@@ -114,7 +114,7 @@ Each grid is associated with five names
 
 <!-- mpasli + mpas-o grids -->
 <GRID sname="T62_mpas120_gis20" alias="T62_m120_g" compset="MPASO.*_MPASLI">a%T62_l%T62_oi%mpas120_r%rx1_m%mpas120_g%mpas.gis20km_w%null</GRID>
-<GRID sname="0.9x1.25_oEC60to30_ais20"    alias="f09_oEC_a"  compset="MPASO.*_MPASLI">a%0.9x1.25_l%0.9x1.25_oi%oEC60to30_r%rx1_m%gx1v6_g%mpas.ais20km_w%null</GRID>
+<GRID sname="0.9x1.25_oEC60to30_ais20"    alias="f09_oEC_a"  compset="MPASO.*_MPASLI">a%0.9x1.25_l%0.9x1.25_oi%oEC60to30_r%rx1_m%oEC60to30_g%mpas.ais20km_w%null</GRID>
 
 <!-- new runoff grids for data runoff model DROF -->
 
@@ -513,6 +513,7 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 </griddom>
 
 <griddom grid="oEC60to30" mask="oEC60to30">
+  <ATM_DOMAIN_FILE>domain.ocn.oEC60to30.150107.nc</ATM_DOMAIN_FILE>
   <ICE_DOMAIN_FILE>domain.ocn.oEC60to30.150107.nc</ICE_DOMAIN_FILE>
   <OCN_DOMAIN_FILE>domain.ocn.oEC60to30.150107.nc</OCN_DOMAIN_FILE>
 </griddom>
@@ -1674,11 +1675,11 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 </gridmap>
 
 <gridmap ocn_grid="oEC60to30" glc_grid="mpas.ais20km">
-  <GLC2OCN_FMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_TO_oEC60to30_nearestdtos.151005.nc</GLC2OCN_FMAPNAME>
-  <GLC2OCN_SMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_TO_oEC60to30_nearestdtos.151005.nc</GLC2OCN_SMAPNAME>
-  <GLC2OCN_RMAPNAME>cpl/gridmaps/oEC60to30/map_oEC60to30_TO_ais20km_nearestdtos.151005.nc</GLC2OCN_RMAPNAME>  
-  <OCN2GLC_FMAPNAME>cpl/gridmaps/oEC60to30/map_oEC60to30_TO_ais20km_nearestdtos.151005.nc</OCN2GLC_FMAPNAME>
-  <OCN2GLC_SMAPNAME>cpl/gridmaps/oEC60to30/map_oEC60to30_TO_ais20km_nearestdtos.151005.nc</OCN2GLC_SMAPNAME>
+  <GLC2OCN_FMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_TO_oEC60to30_aave.151006.nc</GLC2OCN_FMAPNAME>
+  <GLC2OCN_SMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_TO_oEC60to30_bilin.151006.nc</GLC2OCN_SMAPNAME>
+  <GLC2OCN_RMAPNAME>cpl/gridmaps/mpas.ais20km/map_ais20km_to_oEC60to30_nn.151007.nc</GLC2OCN_RMAPNAME>  
+  <OCN2GLC_FMAPNAME>cpl/gridmaps/oEC60to30/map_oEC60to30_TO_ais20km_aave.151006.nc</OCN2GLC_FMAPNAME>
+  <OCN2GLC_SMAPNAME>cpl/gridmaps/oEC60to30/map_oEC60to30_TO_ais20km_bilin.151006.nc</OCN2GLC_SMAPNAME>
 </gridmap>
 
 </config_compset>
