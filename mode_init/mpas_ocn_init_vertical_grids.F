@@ -43,7 +43,9 @@ module ocn_init_vertical_grids
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_generate_vertical_grid
+   public :: ocn_generate_vertical_grid, &
+             ocn_compute_layerThickness_zMid_from_bottomDepth, &
+             ocn_alter_bottomDepth_for_pbcs
 
    !--------------------------------------------------------------------
    !
@@ -489,6 +491,111 @@ contains
       interfaceLocations(:) = interfaceLocations(:) / maxInterfaceLocation
       
    end subroutine ocn_generate_1dCVT_vertical_grid!}}}
+
+
+!***********************************************************************
+!
+!  routine ocn_compute_layerThickness_zMid_from_bottomDepth
+!
+!> \brief   Compute auxiliary z-variables from bottomDepth
+!> \author  Mark Petersen
+!> \date    10/17/2015
+!> \details 
+!>  This routine computes auxiliary z-variables from bottomDepth
+!
+!-----------------------------------------------------------------------
+
+    subroutine ocn_compute_layerThickness_zMid_from_bottomDepth(layerThickness,zMid,refBottomDepth,bottomDepth,maxLevelCell,nVertLevels,iErr)!{{{
+      real (kind=RKIND), dimension(nVertLevels), intent(out) :: layerThickness, zMid
+      real (kind=RKIND), dimension(nVertLevels), intent(in) :: refBottomDepth
+      real (kind=RKIND), intent(in) :: bottomDepth
+      integer, intent(in) :: maxLevelCell, nVertLevels
+      integer, intent(out) :: iErr
+      integer :: k
+
+      iErr = 0
+
+      if (maxLevelCell<=0) then
+         return
+      elseif (maxLevelCell==1) then
+         layerThickness(1) = bottomDepth
+         zMid(1) = - refBottomDepth(1)/2.0
+      else
+         layerThickness(1) = refBottomDepth(1)
+         zMid(1) = - refBottomDepth(1)/2.0
+
+         do k = 2, maxLevelCell-1
+            layerThickness(k) = refBottomDepth(k) - refBottomDepth(k-1)
+            zMid(k) = - refBottomDepth(k-1) - layerThickness(k)/2.0
+         end do
+
+         k = maxLevelCell
+         layerThickness(k) = bottomDepth - refBottomDepth(k-1)
+         zMid(k) = - refBottomDepth(k-1) - layerThickness(k)/2.0
+
+         do k = maxLevelCell+1, nVertLevels
+            layerThickness(k) = 0.0_RKIND
+            zMid(k) = 0.0_RKIND
+         end do
+      endif
+
+    end subroutine ocn_compute_layerThickness_zMid_from_bottomDepth  !}}}
+
+!***********************************************************************
+!
+!  routine ocn_alter_bottomDepth_for_pbcs
+!
+!> \brief   Alter bottom depth for partial bottom cells
+!> \author  Mark Petersen
+!> \date    10/19/2015
+!> \details 
+!>  This routine alters the bottom depth in a single column based on pbc settings
+!
+!-----------------------------------------------------------------------
+    subroutine ocn_alter_bottomDepth_for_pbcs(bottomDepth, refBottomDepth, maxLevelCell, iErr)
+
+      real (kind=RKIND), intent(inout) :: bottomDepth
+      integer, intent(inout) :: maxLevelCell
+      real (kind=RKIND), dimension(maxLevelCell), intent(in) :: refBottomDepth
+      integer, intent(out) :: iErr
+      integer :: k
+
+      logical, pointer :: config_alter_ICs_for_pbcs
+      real (kind=RKIND) :: minBottomDepth, minBottomDepthMid
+      real (kind=RKIND), pointer :: config_min_pbc_fraction
+      character (len=StrKIND), pointer :: config_pbc_alteration_type
+      call mpas_pool_get_config(ocnConfigs, 'config_alter_ICs_for_pbcs', config_alter_ICs_for_pbcs)
+      call mpas_pool_get_config(ocnConfigs, 'config_pbc_alteration_type', config_pbc_alteration_type)
+      call mpas_pool_get_config(ocnConfigs, 'config_min_pbc_fraction', config_min_pbc_fraction)
+
+      iErr = 0
+
+      if (maxLevelCell > 1) then
+         if (config_alter_ICs_for_pbcs) then
+
+            if (config_pbc_alteration_type .eq. 'partial_cell') then
+               ! Change value of maxLevelCell for partial bottom cells
+               k = maxLevelCell
+               minBottomDepth = refBottomDepth(k) - (1.0-config_min_pbc_fraction)*(refBottomDepth(k) - refBottomDepth(k-1))
+               minBottomDepthMid = 0.5*(minBottomDepth + refBottomDepth(k-1))
+               if (bottomDepth .lt. minBottomDepthMid) then
+                  ! Round up to cell above
+                  maxLevelCell = maxLevelCell - 1
+                  bottomDepth = refBottomDepth(maxLevelCell)
+               else if (bottomDepth .lt. minBottomDepth) then
+                  ! Round down cell to the min_pbc_fraction.
+                  bottomDepth = minBottomDepth
+               end if
+            elseif (config_pbc_alteration_type .eq. 'full_cell') then
+               bottomDepth = refBottomDepth(maxLevelCell)
+            else
+               write (stderrUnit,*) ' Error: Incorrect choice of config_pbc_alteration_type: ', config_pbc_alteration_type
+               iErr = 1
+            endif
+         endif
+      endif
+
+    end subroutine ocn_alter_bottomDepth_for_pbcs
 
 !***********************************************************************
 
