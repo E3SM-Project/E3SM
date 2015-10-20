@@ -127,8 +127,6 @@ set (ENV{PIO_DASHBOARD_SOURCE_DIR}  ${CTEST_SOURCE_DIRECTORY})
 set (ENV{PIO_DASHBOARD_BINARY_DIR}  ${CTEST_BINARY_DIRECTORY})
 message ("** -- PIO_DASHBOARD_SOURCE_DIR=$ENV{PIO_DASHBOARD_SOURCE_DIR}")
 message ("** -- PIO_DASHBOARD_SITE=$ENV{PIO_DASHBOARD_SITE}")
-##set (PIO_DASHBOARD_SITE             ${CTEST_SITE})
-##message ("** -- PIO_DASHBOARD_SITE=${PIO_DASHBOARD_SITE}")
 
 
 # -----------------------------------------------------------  
@@ -167,6 +165,7 @@ execute_process (COMMAND ${CTEST_EXTRA_SCRIPT_PATH}/runctest-${HOSTNAME_ID}.sh
 
 ## -- SUBMIT
 message (" -- Submit to dashboard - ${CTEST_BUILD_NAME} --")
+message ("** -- PIO_DASHBOARD_SITE=$ENV{PIO_DASHBOARD_SITE}")
 ### ctest_submit ()
 
 # -----------------------------------------------------------  
