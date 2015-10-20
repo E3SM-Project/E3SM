@@ -328,9 +328,21 @@ if [ -n "$compare_tag" ]; then
     else
 	print_status "$overall_compare_status" "$compare_info : baseline compare summary ($msg)" "${testcase_base}" compare
     fi
+
+    if [[ $overall_compare_status == PASS ]]; then
+        exit 0
+    else
+        exit 2
+    fi
 fi
 if [ -n "$generate_tag" ]; then
     print_status "$overall_generate_status" "$generate_info : baseline generate summary" "${testcase_base}" generate
+
+    if [[ $overall_generate_status == PASS ]]; then
+        exit 0
+    else
+        exit 2
+    fi
 fi
 
 

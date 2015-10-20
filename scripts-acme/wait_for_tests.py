@@ -251,7 +251,10 @@ def parse_test_status_file(file_contents, status_file_path=None):
             status, curr_test_name, phase = line.split()
             if (test_name is None):
                 test_name = curr_test_name
-            rv[phase] = status
+            if (phase in rv):
+                rv[phase] = reduce_stati([status, rv[phase]])
+            else:
+                rv[phase] = status
         else:
             warning("In '%s', line '%s' not in expected format" % (status_file_path, line))
 
