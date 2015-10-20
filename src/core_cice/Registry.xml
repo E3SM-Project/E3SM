@@ -884,6 +884,9 @@
 	        <var name="iceAreaTendencyTransport"          type="real"     dimensions="nCells"              name_in_code="iceAreaTendencyTransport"/>
 	        <var name="iceVolumeTendencyTransport"        type="real"     dimensions="nCells"              name_in_code="iceVolumeTendencyTransport"/>
 	        <var name="iceAgeTendencyTransport"           type="real"     dimensions="nCells"              name_in_code="iceAgeTendencyTransport"/>
+	        <var name="iceAreaTendencyThermodynamics"          type="real"     dimensions="nCells"              name_in_code="iceAreaTendencyThermodynamics"/>
+	        <var name="iceVolumeTendencyThermodynamics"        type="real"     dimensions="nCells"              name_in_code="iceVolumeTendencyThermodynamics"/>
+	        <var name="iceAgeTendencyThermodynamics"           type="real"     dimensions="nCells"              name_in_code="iceAgeTendencyThermodynamics"/>
 	        <var name="freezingMeltingPotentialInitial"           type="real"     dimensions="nCells"              name_in_code="freezingMeltingPotentialInitial"/>
 	</var_struct>
 

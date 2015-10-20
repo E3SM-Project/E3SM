@@ -756,7 +756,7 @@ contains
 
        call cice_debug_write_out_fields(domain, "cice_column_update_state", 1)
        call mpas_timer_start("Column update state")
-       call cice_column_update_state(domain, config_dt, config_dt)
+       call cice_column_update_state(domain, "thermodynamics", config_dt, config_dt)
        call mpas_timer_stop("Column update state")
        call cice_debug_write_out_fields(domain, "cice_column_update_state", 2)
 
@@ -816,7 +816,7 @@ contains
 
        call cice_debug_write_out_fields(domain, "cice_column_update_state", 3)
        call mpas_timer_start("Column update state")
-       call cice_column_update_state(domain, dynamicsTimeStep, 0.0_RKIND)
+       call cice_column_update_state(domain, "transport", dynamicsTimeStep, 0.0_RKIND)
        call mpas_timer_stop("Column update state")
        call cice_debug_write_out_fields(domain, "cice_column_update_state", 4)
 
@@ -2511,9 +2511,12 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_column_update_state(domain, dt, iceAgeTimeOffset)
+  subroutine cice_column_update_state(domain, stateUpdateType, dt, iceAgeTimeOffset)
 
     type(domain_type), intent(inout) :: domain
+
+    character(len=*), intent(in) :: &
+         stateUpdateType
 
     real(kind=RKIND), intent(in) :: &
          dt, &
@@ -2529,9 +2532,9 @@ contains
          iceAreaCell, &
          iceVolumeCell, &
          iceAgeCell, &
-         iceAreaTendencyTransport, &
-         iceVolumeTendencyTransport, &
-         iceAgeTendencyTransport
+         iceAreaTendency, &
+         iceVolumeTendency, &
+         iceAgeTendency
 
     integer, pointer :: &
          nCellsSolve
@@ -2568,28 +2571,41 @@ contains
        call MPAS_pool_get_array(tracers_aggregate, "iceVolumeCell", iceVolumeCell)
        call MPAS_pool_get_array(tracers_aggregate, "iceAgeCell", iceAgeCell)
 
-       call MPAS_pool_get_array(diagnostics, "iceAreaTendencyTransport", iceAreaTendencyTransport)
-       call MPAS_pool_get_array(diagnostics, "iceVolumeTendencyTransport", iceVolumeTendencyTransport)
-       call MPAS_pool_get_array(diagnostics, "iceAgeTendencyTransport", iceAgeTendencyTransport)
+       if (trim(stateUpdateType) == "transport") then
+
+          call MPAS_pool_get_array(diagnostics, "iceAreaTendencyTransport", iceAreaTendency)
+          call MPAS_pool_get_array(diagnostics, "iceVolumeTendencyTransport", iceVolumeTendency)
+          call MPAS_pool_get_array(diagnostics, "iceAgeTendencyTransport", iceAgeTendency)
+
+       else if (trim(stateUpdateType) == "thermodynamics") then
+
+          call MPAS_pool_get_array(diagnostics, "iceAreaTendencyThermodynamics", iceAreaTendency)
+          call MPAS_pool_get_array(diagnostics, "iceVolumeTendencyThermodynamics", iceVolumeTendency)
+          call MPAS_pool_get_array(diagnostics, "iceAgeTendencyThermodynamics", iceAgeTendency)
+
+       else
+
+          COLUMN_ERROR_WRITE("cice_column_update_state: Unknown update type: "//trim(stateUpdateType))
+          call MPAS_dmpar_global_abort("cice_column_update_state: Unknown update type")
+
+       endif
 
        do iCell = 1, nCellsSolve
 
-          iceAreaTendencyTransport(iCell) = &
-               (iceAreaCell(iCell) - iceAreaTendencyTransport(iCell)) / dt
-          iceVolumeTendencyTransport(iCell) = &
-               (iceVolumeCell(iCell) - iceVolumeTendencyTransport(iCell)) / dt
+          iceAreaTendency(iCell)   = (iceAreaCell(iCell)   - iceAreaTendency(iCell))   / dt
+          iceVolumeTendency(iCell) = (iceVolumeCell(iCell) - iceVolumeTendency(iCell)) / dt
 
           if (config_use_ice_age) then
              if (iceAgeTimeOffset > 0.0_RKIND) then
                 
                 if (iceAgeCell(iCell) > 0.0_RKIND) &
-                     iceAgeTendencyTransport(iCell) = &
-                          (iceAgeCell(iCell) - iceAgeTendencyTransport(iCell) - iceAgeTimeOffset) / dt
+                     iceAgeTendency(iCell) = &
+                          (iceAgeCell(iCell) - iceAgeTendency(iCell) - iceAgeTimeOffset) / dt
 
              else
 
-                iceAgeTendencyTransport(iCell) = &
-                     (iceAgeCell(iCell) - iceAgeTendencyTransport(iCell)) / dt
+                iceAgeTendency(iCell) = &
+                     (iceAgeCell(iCell) - iceAgeTendency(iCell)) / dt
           
              endif
           endif
@@ -6074,6 +6090,9 @@ contains
          iceAreaTendencyTransport, &
          iceVolumeTendencyTransport, &
          iceAgeTendencyTransport, &
+         iceAreaTendencyThermodynamics, &
+         iceVolumeTendencyThermodynamics, &
+         iceAgeTendencyThermodynamics, &
          iceAreaCell, &
          iceVolumeCell, &
          iceAgeCell
@@ -6160,6 +6179,10 @@ contains
        call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnosticsPool)
        call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracersAggregatePool)
 
+       call MPAS_pool_get_array(diagnosticsPool, "iceAreaTendencyThermodynamics", iceAreaTendencyThermodynamics)
+       call MPAS_pool_get_array(diagnosticsPool, "iceVolumeTendencyThermodynamics", iceVolumeTendencyThermodynamics)
+       call MPAS_pool_get_array(diagnosticsPool, "iceAgeTendencyThermodynamics", iceAgeTendencyThermodynamics)
+
        call MPAS_pool_get_array(diagnosticsPool, "iceAreaTendencyTransport", iceAreaTendencyTransport)
        call MPAS_pool_get_array(diagnosticsPool, "iceVolumeTendencyTransport", iceVolumeTendencyTransport)
        call MPAS_pool_get_array(diagnosticsPool, "iceAgeTendencyTransport", iceAgeTendencyTransport)
@@ -6168,12 +6191,22 @@ contains
        call MPAS_pool_get_array(tracersAggregatePool, "iceVolumeCell", iceVolumeCell)
        call MPAS_pool_get_array(tracersAggregatePool, "iceAgeCell", iceAgeCell)
 
+       ! transport tendencies
        iceAreaTendencyTransport   = iceAreaCell
        iceVolumeTendencyTransport = iceVolumeCell
        if (config_use_ice_age) then
           iceAgeTendencyTransport = iceAgeCell
        else
           iceAgeTendencyTransport = 0.0_RKIND
+       endif
+
+       ! thermodynamic tendencies
+       iceAreaTendencyThermodynamics   = iceAreaCell
+       iceVolumeTendencyThermodynamics = iceVolumeCell
+       if (config_use_ice_age) then
+          iceAgeTendencyThermodynamics = iceAgeCell
+       else
+          iceAgeTendencyThermodynamics = 0.0_RKIND
        endif
 
        ! ponds
