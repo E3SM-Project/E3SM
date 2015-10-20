@@ -602,10 +602,6 @@
 					description="The length scale of exponential decay of surface fluxes. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
 					possible_values="Any positive real number."
 		/>
-		<nml_option name="config_frazil_ice_formation" type="logical" default_value=".false." units="unitless"
-					description="Logical flag that determines if the formation of frazil ice is allowed."
-					possible_values=".true. or .false."
-		/>
 		<nml_option name="config_sw_absorption_type" type="character" default_value="jerlov" units="unitless"
 					description="Name of shortwave absorption type used in simulation."
 					possible_values="'jerlov'"
@@ -619,6 +615,28 @@
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
+        <nml_record name="frazil_ice" mode="forward">
+                <nml_option name="config_use_frazil_ice_formation" type="logical" default_value=".false." units="unitless"
+                                        description="Controls if fluxes related to frazil ice process are computed."
+                                        possible_values=".true. or .false."
+                />
+                <nml_option name="config_frazil_heat_of_fusion" type="real" default_value="3.34e5" units="J kg^{-1}"
+                                        description="Energy per kilogram released when sea water freezes. NOTE: test and make consistent with ACME."
+                                        possible_values="Any positive real number."
+                />
+                <nml_option name="config_frazil_sea_ice_density" type="real" default_value="1000.0" units="kg m^{-3}"
+                                        description="Assumed density of frazil. NOTE: test and make consistent with ACME."
+                                        possible_values="Any positive real number."
+                />
+                <nml_option name="config_frazil_fractional_thickness_limit" type="real" default_value="0.1" units="non-dimensional"
+                                        description="maximum fraction of layer thickness than can be used or created at an instant by frazil."
+                                        possible_values="Any positive real number between 0 and 1."
+                />
+                <nml_option name="config_specific_heat_sea_water" type="real" default_value="3985.0" units="J kg^{-1} C^{-1}"
+                                        description="Energy per kilogram per C needed to raise ocean temperature 1 C. NOTE: test and make consistent with ACME."
+                                        possible_values="Any positive real number."
+                />
+        </nml_record>
         <nml_record name="land_ice_fluxes" mode="forward">
                 <nml_option name="config_use_land_ice_fluxes" type="logical" default_value=".false." units="unitless"
                                         description="Controls if land-ice fluxes are computed under ice shelves."
@@ -688,11 +706,6 @@
                                         description="constant nondimensional salt transfer coefficient across the ice-ocean boundary layer"
                                         possible_values="Any positive real number"
                 />
-        </nml_record>
-        <nml_record name="frazil_ice" mode="forward">
-                <nml_option name="config_use_frazil_ice_formation" type="logical" default_value=".false." units="unitless"
-                                        description="Controls if fluxes related to frazil ice process are computed."
-                                        possible_values=".true. or .false."
         </nml_record>
 	<nml_record name="advection" mode="forward">
 		<nml_option name="config_vert_tracer_adv" type="character" default_value="stencil" units="unitless"
@@ -950,7 +963,7 @@
 		<package name="windStressBulkPKG" description="This package includes varibles required for bulk wind stress forcing."/>
 		<package name="thicknessBulkPKG" description="This package includes varibles required for bulk thickness forcing."/>
                 <package name="landIceFluxesPKG" description="This package includes varibles required for land ice thickness, momentum and tracer fluxes."/>
-		<package name="frazilPKG" description="This package includes variables required for frazil ice formation."/>
+		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
 		<package name="inSituEOS" description="This package includes variables required for to compute in situ equation of state derivatives, like thermal expansion and haline contraction."/>
 		<package name="forwardMode" description="This package controls variables that are intended to be used within the forward run mode of the ocean model."/>
 		<package name="analysisMode" description="This package controls variables that are intended to be used within the analysis run mode of the ocean model."/>
@@ -1149,7 +1162,8 @@
                         <var name="velocityZonal"/>
                         <var name="velocityMeridional"/>
                         <var name="bulkRichardsonNumber"/>
-                        <var name="bulkRichardsonNumberBuoy"/>
+			<var name="bulkRichardsonNumberBuoy"/>
+			<var name="potentialDensity"/>
                         <var name="unresolvedShear"/>
                         <var name="boundaryLayerDepth"/>
                         <var name="boundaryLayerDepthEdge"/>
@@ -1481,6 +1495,12 @@
 			 packages="thicknessFilter"
 		/>
 
+                <!-- FIELDS FOR FRAZIL ICE -->
+                <var name="accumulatedFrazilIceMass" type="real" dimensions="nCells Time" units="kg m^{-2}"
+                         description="Mass per unit area of frazil ice produced. Reset to zero at each coupling interval"
+                         packages="frazilIce"
+                />
+
 		<!-- FIELDS FOR SPLIT EXPLICIT TIME INTEGRATOR -->
 		<var name="normalBarotropicVelocity" type="real" dimensions="nEdges Time" units="m s^{-1}"
 			 description="barotropic velocity, used in split-explicit time-stepping"
@@ -1498,12 +1518,6 @@
 			 description="baroclinic velocity, used in split-explicit time-stepping"
 			 packages="splitTimeIntegrator"
 		/>
-
-               <!-- FIELDS FRAZIL ICE -->
-                <var name="accumulatedFrazilIceMass" type="real" dimensions="nCells Time" units="kg m^{-2}"
-                         description="Mass per unit area of frazil ice produced. Reset to zero at each coupling interval."
-                         packages="frazilPKG"
-                />
 	</var_struct>
 	<var_struct name="mesh" time_levs="1">
 		<var name="latCell" type="real" dimensions="nCells" units="radians"
@@ -2059,7 +2073,7 @@
 		<var name="bulkRichardsonNumber" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
 			 description="CVMix/KPP: bulk Richardson number"
 			 packages="forwardMode;analysisMode"
-		/>
+			 />
 		<var name="bulkRichardsonNumberBuoy" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
 			 description="CVMix/KPP: contribution of buoyancy to bulk Richardson number"
 			 packages="forwardMode;analysisMode"
@@ -2354,6 +2368,10 @@
 			 description="Pressure defined at the sea surface."
 			 packages="forwardMode;analysisMode"
 		/>
+		<var name="seaIceEnergy" type="real" dimensions="nCells Time" units="J m^{-2}"
+			 description="Energy per unit area trapped in frazil ice formation. Always $\ge$ 0.0."
+			 packages="frazilIce"
+		/>
 		<var name="penetrativeTemperatureFlux" type="real" dimensions="nCells Time" units="^\circ C m s^{-1}"
 			 description="Penetrative temperature flux at the surface due to solar radiation. Positive is into the ocean."
 			 packages="forwardMode;analysisMode"
@@ -2477,6 +2495,26 @@
 			/>
 		</var_array>
 
+                <!-- Input fields for forcing due to frazil ice -->
+
+                <!-- Output fields for forcing due to frazil ice -->
+                <var name="frazilThicknessTendency" type="real" dimensions="nCells Time" units="m s^{-1}"
+                         description="layer thickness tendency due to frazil processes"
+                         packages="frazilIce"
+                />
+                <var name="frazilTemperatureTendency" type="real" dimensions="nCells Time" units="m C s^{-1}"
+                         description="temperature tendency due to frazil processes"
+                         packages="frazilIce"
+                />
+                <var name="frazilsalinityTendency" type="real" dimensions="nCells Time" units="m PSU s^{-1}"
+                         description="salinity tendency due to frazil processes"
+                         packages="frazilIce"
+                />
+                <var name="frazilSurfacePressure" type="real" dimensions="nCells Time" units="Pa"
+                        description="surface pressure forcing due to weight of frazil ice"
+                         packages="frazilIce"
+                />
+
                 <!-- Input fields for forcing under land ice -->
                 <var name="landIceFraction" type="real" dimensions="nCells Time" units="unitless"
                          description="The fraction of each cell covered by land ice"
@@ -2507,23 +2545,6 @@
                          description="Flux of heat out of ice at land ice-ocean interface. Positive into ocean."
                          packages="landIceFluxesPKG"
                 />
-
-                <!-- Input fields for forcing due to frazil ice -->
-
-                <!-- Output fields for forcing due to frazil ice -->
-                <var name="frazilThicknessTendency" type="real" dimensions="nCells Time" units="m s^{-1}"
-                         description="layer thickness tendency due to frazil processes"
-                         packages="frazilPKG"
-                <var name="frazilTemperatureTendency" type="real" dimensions="nCells Time" units="m C s^{-1}"
-                         description="temperature tendency due to frazil processes"
-                         packages="frazilPKG"
-                <var name="frazilsalinityTendency" type="real" dimensions="nCells Time" units="m PSU s^{-1}"
-                         description="salinity tendency due to frazil processes"
-                         packages="frazilPKG"
-                <var name="frazilSurfacePressure" type="real" dimensions="nCells Time" units="Pa"
-                        description="surface pressure forcing due to weight of frazil ice"
-                         packages="frazilPKG"
-
 	</var_struct>
 	<var_struct name="scratch" time_levs="1">
 		<var name="normalThicknessFlux" persistence="scratch" type="real" dimensions="nVertLevels nEdges Time"
