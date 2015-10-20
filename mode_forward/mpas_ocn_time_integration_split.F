@@ -38,8 +38,6 @@ module ocn_time_integration_split
    use ocn_time_average
    use ocn_time_average_coupled
 
-   use ocn_sea_ice
-
    implicit none
    private
    save
@@ -180,9 +178,6 @@ module ocn_time_integration_split
       real (kind=RKIND), dimension(:,:), pointer :: gradSSHX, gradSSHY, gradSSHZ
       real (kind=RKIND), dimension(:,:), pointer :: gradSSHZonal, gradSSHMeridional
       real (kind=RKIND), dimension(:,:), pointer :: surfaceVelocity, SSHGradient
-
-      ! Forcing Array Pointer
-      real (kind=RKIND), dimension(:), pointer :: seaIceEnergy
 
       ! Diagnostics Field Pointers
       type (field2DReal), pointer :: normalizedRelativeVorticityEdgeField, divergenceField, relativeVorticityField
@@ -1487,11 +1482,7 @@ module ocn_time_integration_split
         call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessNew, 2)
         call mpas_pool_get_array(tracersPool, 'activeTracers', tracersGroupNew, 2)
 
-        call mpas_pool_get_array(forcingPool, 'seaIceEnergy', seaIceEnergy)
-
         call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
-        call ocn_sea_ice_formation(meshPool, indexTemperature, indexSalinity, layerThicknessNew, &
-                                   tracersGroupNew, seaIceEnergy, err)
         block => block % next
       end do
 
