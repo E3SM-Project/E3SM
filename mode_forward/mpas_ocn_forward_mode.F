@@ -487,6 +487,11 @@ module ocn_forward_mode
            call ocn_surface_land_ice_fluxes_build_arrays(meshPool, diagnosticsPool, &
                                                          forcingPool, scratchPool, err)
            call mpas_timer_stop("land_ice_build_arrays")
+
+  !! TDR
+           call ocn_frazil_build_arrays(  )
+  !! TDR
+
            block_ptr => block_ptr % next
          end do
 
