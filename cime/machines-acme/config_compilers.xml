@@ -303,13 +303,6 @@ for mct, etc.
   <CXX_LDFLAGS> -cxxlib </CXX_LDFLAGS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
-  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
-  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
 
   <ADD_FFLAGS MPILIB="mpi-serial"> -mcmodel medium </ADD_FFLAGS>
   <ADD_FFLAGS OS="Linux"> -mcmodel medium -shared-intel </ADD_FFLAGS>
@@ -518,6 +511,13 @@ for mct, etc.
 
 <compiler COMPILER="intel" OS="Darwin" >
   <ADD_FFLAGS compile_threaded="false"> -heap-arrays </ADD_FFLAGS>
+  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
 </compiler>
 
 <compiler MACH="userdefined">
@@ -555,10 +555,12 @@ for mct, etc.
   <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>  
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
+  <ADD_SLIBS> ${MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm </ADD_SLIBS>
   <ADD_GPTL_CPPDEFS> -DHAVE_PAPI </ADD_GPTL_CPPDEFS>
   <MPIFC> ftn </MPIFC>
   <MPICC> cc </MPICC>
   <MPICXX> CC </MPICXX>
+  <PETSC_PATH>$(PETSC_DIR)</PETSC_PATH>
   <ALBANY_PATH>/global/project/projectdirs/acme/software/AlbanyTrilinos_09232015/Albany/build/install</ALBANY_PATH>
 </compiler>
 
@@ -594,6 +596,13 @@ for mct, etc.
   <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -L/projects/ccsm/BLAS-intel -lblas_LINUX</ADD_SLIBS>
   <ADD_CPPFLAGS> -DHAVE_COMM_F2C </ADD_CPPFLAGS>
   <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
+  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
 </compiler>
 
 <compiler COMPILER="intel" MACH="redsky">
@@ -651,6 +660,13 @@ for mct, etc.
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) </ADD_SLIBS>  
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
 </compiler>
 
 <compiler COMPILER="pgi" MACH="titan">
@@ -662,6 +678,7 @@ for mct, etc.
   <TRILINOS_PATH>/lustre/atlas/world-shared/cli900/cesm/software/Trilinos/Trilinos-11.10.2_gptl/titan-pgi-ci-nophal/install</TRILINOS_PATH>
   <CXX_LIBS> -lfmpich -lmpichf90_pgi $(PGI_PATH)/linux86-64/$(PGI_VERSION)/lib/f90main.o </CXX_LIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <PETSC_PATH>$(PETSC_DIR)</PETSC_PATH>
 </compiler>
 
 <compiler COMPILER="pgicuda" MACH="titan">
@@ -744,6 +761,7 @@ for mct, etc.
   <HDF5_PATH>/soft/libraries/hdf5/1.8.14/cnk-xl/current/ </HDF5_PATH>
    <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf -L/soft/libraries/hdf5/1.8.14/cnk-xl/current/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
+  <PETSC_PATH>/soft/libraries/petsc/3.5.3.1</PETSC_PATH>
 </compiler>
 
 
@@ -758,6 +776,7 @@ for mct, etc.
   <ADD_LDFLAGS>-L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib -lhdf5 -lhdf5_hl </ADD_LDFLAGS>
    <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf -L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib -lhdf5 -lhdf5_hl -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
+  <PETSC_PATH>/soft/libraries/petsc/3.5.3.1</PETSC_PATH>
 </compiler>
 
 <compiler COMPILER="pgi" MACH="blues">
@@ -780,6 +799,13 @@ for mct, etc.
   <MPI_LIB_NAME MPILIB="mpich">mpich</MPI_LIB_NAME>
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas</ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
+  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
 </compiler>
 
 <compiler COMPILER="gnu" MACH="blues">
@@ -801,6 +827,13 @@ for mct, etc.
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
   <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lpmi </SLIBS>
+  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
 </compiler>
 
 <compiler COMPILER="pgi" MACH="sooty">
@@ -821,6 +854,13 @@ for mct, etc.
   <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
   <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
   <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt </SLIBS>
+  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
 </compiler>
 
 <compiler COMPILER="nag" MACH="cascade">
@@ -852,6 +892,13 @@ for mct, etc.
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs)</ADD_SLIBS>
   <ESMF_LIBDIR DEBUG="FALSE">/project/projectdirs/ccsm1/esmf/ESMF_5_3_0_intel12.1.5/lib/libO/Unicos.intel.64.mpi.default/</ESMF_LIBDIR>
  <ESMF_LIBDIR DEBUG="TRUE">/project/projectdirs/ccsm1/esmf/ESMF_5_3_0_intel12.1.5/lib/libg/Unicos.intel.64.mpi.default/</ESMF_LIBDIR>
+  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
 </compiler>
 
 <compiler COMPILER="gnu" MACH="hopper">
@@ -878,6 +925,13 @@ for mct, etc.
 	<SCXX>icpc</SCXX>
 	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
 	<TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
+  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
 </compiler>
 
 <compiler MACH="mustang" COMPILER="gnu">
@@ -912,6 +966,13 @@ for mct, etc.
 	<SCXX>icpc</SCXX>
 	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
 	<TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
+	<ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
+	<ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
+	<ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
+	<ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
+	<ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
+	<ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
+	<ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
 </compiler>
 
 <compiler MACH="wolf" COMPILER="gnu">
