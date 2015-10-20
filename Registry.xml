@@ -636,6 +636,14 @@
                                         description="Energy per kilogram per C needed to raise ocean temperature 1 C. NOTE: test and make consistent with ACME."
                                         possible_values="Any positive real number."
                 />
+                <nml_option name="config_frazil_maximum_depth" type="real" default_value="100.0" units="m"
+                                        description="maximum depth for the formation of frazil"
+                                        possible_values="Any positive real number."
+                />
+                <nml_option name="config_frazil_ice_reference_salinity" type="real" default_value="4.0" units="PSU"
+                                        description="assumed salinity of frazil ice."
+                                        possible_values="Any positive real number."
+                />
         </nml_record>
         <nml_record name="land_ice_fluxes" mode="forward">
                 <nml_option name="config_use_land_ice_fluxes" type="logical" default_value=".false." units="unitless"
@@ -2498,7 +2506,7 @@
                 <!-- Input fields for forcing due to frazil ice -->
 
                 <!-- Output fields for forcing due to frazil ice -->
-                <var name="frazilThicknessTendency" type="real" dimensions="nCells Time" units="m s^{-1}"
+                <var name="frazilLayerThicknessTendency" type="real" dimensions="nCells Time" units="m s^{-1}"
                          description="layer thickness tendency due to frazil processes"
                          packages="frazilIce"
                 />
