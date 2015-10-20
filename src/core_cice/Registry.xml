@@ -489,8 +489,21 @@
 	    <var name="oceanHeatFluxConvergence"/>
 	</stream>
 
+	<!-- Aerosols input -->
+	  <stream name="ModalAerosolsInput"
+		  type="input"
+		  filename_template="snicar_optics_5bnd_mam_c140303_mpas_cice.nc"
+		  filename_interval="none"
+		  input_interval="initial_only"
+		  immutable="true">
+	    <var name="modalAsymmetryParameter"/>
+	    <var name="modalBCabsorptionParameter"/>
+	    <var name="modalMassExtinctionCrossSection"/>
+	    <var name="modalSingleScatterAlbedo"/>
+	  </stream>
+
 	</streams>
-	
+
 	<var_struct name="mesh" time_levs="1">
 		<var name="latCell"                           type="real"     dimensions="nCells"/>
 		<var name="lonCell"                           type="real"     dimensions="nCells"/>
