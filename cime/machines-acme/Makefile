@@ -219,6 +219,7 @@ ifeq ($(strip $(USE_PETSC)), TRUE)
   include $(PETSC_PATH)/conf/variables
 endif
 
+# Set Trilinos info if it is being used
 ifeq ($(strip $(USE_TRILINOS)), TRUE)
   ifdef TRILINOS_PATH
     ifndef INC_TRILINOS
