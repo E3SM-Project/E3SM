@@ -1,0 +1,3 @@
+#! /bin/bash
+
+<PATH>/cs_status *.<TESTID>/TestStatus
