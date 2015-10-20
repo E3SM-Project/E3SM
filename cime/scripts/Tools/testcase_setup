@@ -527,7 +527,7 @@ my $testcase_end = <<'END_TEST';
 
    #
    # summarize failed differences if any
-   ${SCRIPTSROOT}/Tools/component_write_comparefail.pl $RUNDIR $TESTSTATUS_LOG
+   ${SCRIPTSROOT}/Tools/component_write_comparefail.pl $RUNDIR >>& $TESTSTATUS_LOG
 
    # determine and output test time
    @ testend_sec = `date -u +%s`
