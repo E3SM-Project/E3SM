@@ -100,7 +100,6 @@ find_program (MAKE NAMES make)
 ## -- CTest Site Name
 
 set (CTEST_SITE "${HOSTNAME_ID}-${HOSTNAME}")
-message ("** -- CTEST_SITE= ${CTEST_SITE}")
 
 ## -- CTest Build Name
 
@@ -115,7 +114,6 @@ set (CTEST_BINARY_DIRECTORY   "${CTEST_DASHBOARD_ROOT}/build-${CTEST_BUILD_NAME}
 ## -- Add the CTest script directory to the module path
 set (CTEST_EXTRA_SCRIPT_PATH "${CTEST_SOURCE_DIRECTORY}/ctest")
 list (APPEND CMAKE_MODULE_PATH ${CTEST_EXTRA_SCRIPT_PATH})
-message ("** -- CTEST_SITE= ${CTEST_SITE}")
 
 # -----------------------------------------------------------  
 # -- Store Build-Specific Info (environment variables)
@@ -125,9 +123,6 @@ set (ENV{PIO_DASHBOARD_SITE}        ${CTEST_SITE})
 set (ENV{PIO_DASHBOARD_BUILD_NAME}  ${CTEST_BUILD_NAME})
 set (ENV{PIO_DASHBOARD_SOURCE_DIR}  ${CTEST_SOURCE_DIRECTORY})
 set (ENV{PIO_DASHBOARD_BINARY_DIR}  ${CTEST_BINARY_DIRECTORY})
-message ("** -- PIO_DASHBOARD_SOURCE_DIR=$ENV{PIO_DASHBOARD_SOURCE_DIR}")
-message ("** -- PIO_DASHBOARD_SITE=$ENV{PIO_DASHBOARD_SITE}")
-
 
 # -----------------------------------------------------------  
 # -- Run CTest

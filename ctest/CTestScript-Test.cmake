@@ -11,14 +11,10 @@
 #-- Get the common build information
 #-------------------------------------------
 
-message (" -- CTest Source Dir = ${CTEST_SOURCE_DIRECTORY}")
-
 set (CTEST_SITE              $ENV{PIO_DASHBOARD_SITE})
 set (CTEST_BUILD_NAME        $ENV{PIO_DASHBOARD_BUILD_NAME})
 set (CTEST_SOURCE_DIRECTORY  $ENV{PIO_DASHBOARD_SOURCE_DIR})
 set (CTEST_BINARY_DIRECTORY  $ENV{PIO_DASHBOARD_BINARY_DIR})
-
-message (" -- CTest Source Dir = ${CTEST_SOURCE_DIRECTORY}")
 
 # -----------------------------------------------------------  
 # -- Run CTest- TESTING ONLY (Appended to existing TAG)

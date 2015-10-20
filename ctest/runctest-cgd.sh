@@ -21,7 +21,6 @@ echo "export PIO_DASHBOARD_SITE=${PIO_DASHBOARD_BUILD_NAME}" >> runctest.sh
 echo "export PIO_DASHBOARD_BUILD_NAME=${PIO_DASHBOARD_BUILD_NAME}" >> runctest.sh
 echo "export PIO_DASHBOARD_SOURCE_DIR=${PIO_DASHBOARD_BINARY_DIR}/../src/" >> runctest.sh
 echo "export PIO_DASHBOARD_BINARY_DIR=${PIO_DASHBOARD_BINARY_DIR}" >> runctest.sh
-echo "export PIO_DASHBOARD_SITE=cgd-${HOSTNAME}" >> runctest.sh
 
 echo "CTESTCMD=`which ctest`" >> runctest.sh
 echo "\$CTESTCMD -S ${scrdir}/CTestScript-Test.cmake,${model} -V" >> runctest.sh
