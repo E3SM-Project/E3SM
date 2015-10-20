@@ -505,41 +505,69 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_compute_layerThickness_zMid_from_bottomDepth(layerThickness,zMid,refBottomDepth,bottomDepth,maxLevelCell,nVertLevels,iErr)!{{{
+    subroutine ocn_compute_layerThickness_zMid_from_bottomDepth(layerThickness,zMid,refBottomDepth,bottomDepth, &
+                                                                maxLevelCell,nVertLevels,iErr,restingThickness,ssh)!{{{
       real (kind=RKIND), dimension(nVertLevels), intent(out) :: layerThickness, zMid
       real (kind=RKIND), dimension(nVertLevels), intent(in) :: refBottomDepth
       real (kind=RKIND), intent(in) :: bottomDepth
       integer, intent(in) :: maxLevelCell, nVertLevels
       integer, intent(out) :: iErr
+      real (kind=RKIND), dimension(nVertLevels), intent(out), optional :: restingThickness
+      real (kind=RKIND), intent(in), optional :: ssh
+
       integer :: k
+      real (kind=RKIND) :: layerStretch, zTop
 
       iErr = 0
 
-      if (maxLevelCell<=0) then
+      layerThickness(:) = 0.0_RKIND
+      zMid(:) = 0.0_RKIND
+
+      if(present(ssh) .and. .not. present(restingThickness)) then
+         write (stderrUnit,*) ' Error: ssh present but restingThickness not present in ocn_compute_layerThickness_zMid_from_bottomDepth'
+         iErr = 1
          return
-      elseif (maxLevelCell==1) then
+      end if
+
+      if (maxLevelCell<=0) return
+
+      ! first, compute the resting layer thickness (same as layer thickness if ssh not present)
+      if (maxLevelCell==1) then
          layerThickness(1) = bottomDepth
-         zMid(1) = - bottomDepth/2.0
       else
          layerThickness(1) = refBottomDepth(1)
-         zMid(1) = - refBottomDepth(1)/2.0
 
          do k = 2, maxLevelCell-1
             layerThickness(k) = refBottomDepth(k) - refBottomDepth(k-1)
-            zMid(k) = - refBottomDepth(k-1) - layerThickness(k)/2.0
          end do
 
          k = maxLevelCell
          layerThickness(k) = bottomDepth - refBottomDepth(k-1)
-         zMid(k) = - refBottomDepth(k-1) - layerThickness(k)/2.0
 
-         do k = maxLevelCell+1, nVertLevels
-            layerThickness(k) = 0.0_RKIND
-            zMid(k) = 0.0_RKIND
-         end do
       endif
 
+      zTop = 0.0_RKIND
+      ! copy to layerThickness to restingThickness
+      if (present(restingThickness)) then
+         restingThickness(:) = layerThickness(:)
+         ! stretch layers if ssh is present
+         if(present(ssh)) then
+            layerStretch = (ssh + bottomDepth)/bottomDepth
+            zTop = ssh
+            do k=1,maxLevelCell
+               layerThickness(k) = layerStretch*restingThickness(k)
+            end do
+         end if
+      end if
+
+      ! compute zMid based on the layer thickness
+      do k = 1, maxLevelCell
+         zMid(k) = zTop - 0.5_RKIND*layerThickness(k)
+         zTop = zTop - layerThickness(k)
+      end do
+
     end subroutine ocn_compute_layerThickness_zMid_from_bottomDepth  !}}}
+
 
 !***********************************************************************
 !
