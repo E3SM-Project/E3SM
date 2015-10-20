@@ -46,6 +46,10 @@ module cice_column
   ! tracer object
   type, private :: ciceTracerObjectType
 
+     !-----------------------------------------------------------------------
+     ! base tracer object
+     !-----------------------------------------------------------------------
+
      ! length of tracer array
      integer :: nTracers   !ntrcr
 
@@ -73,28 +77,9 @@ module cice_column
      ! number of ancestor tracers excluding base tracer
      integer, dimension(:), allocatable :: ancestorNumber ! n_trcr_strata
 
-     ! length of tracer array not including biology and biology related tracers
-     integer :: nTracersNotBio   !ntrcr - ntrcr(bio)
-
-     ! length of bio tracer array (does not include biology related tracers), 
-     integer :: nBioTracers   !nbtrcr
-
-     ! number of bio tracers used (does not include brine or mobilefraction)
-     integer :: nBioTracersLayer   !nltrcr
-
-     ! length of shortwave bio tracer array (for aerosols and chlorophyll)
-     integer :: nBioTracersShortwave   !nbtrcr_sw
-
-     ! length of bio indices
-     integer :: nAlgaeIndex
-     integer :: nAlgalCarbonIndex
-     integer :: nAlgalChlorophyllIndex
-     integer :: nDOCIndex
-     integer :: nDONIndex
-     integer :: nDICIndex
-     integer :: nDissolvedIronIndex
-     integer :: nParticulateIronIndex
-     integer :: nzAerosolsIndex
+     !-----------------------------------------------------------------------
+     ! physics
+     !-----------------------------------------------------------------------
 
      ! indexes of physics tracers in tracer array
      integer :: &
@@ -110,6 +95,34 @@ module cice_column
           index_pondDepth, &             ! nt_hpnd
           index_pondLidThickness, &      ! nt_ipnd
           index_aerosols                 ! nt_aero
+
+     !-----------------------------------------------------------------------
+     ! biogeochemistry
+     !-----------------------------------------------------------------------
+
+     ! length of tracer array not including biology and biology related tracers
+     integer :: nTracersNotBio   !ntrcr - ntrcr(bio)
+
+     ! length of bio tracer array (does not include biology related tracers)
+     integer :: nBioTracers   !nbtrcr
+
+     ! number of bio tracers used (does not include brine or mobilefraction)
+     integer :: nBioTracersLayer   !nltrcr
+
+     ! length of shortwave bio tracer array (for aerosols and chlorophyll)
+     integer :: nBioTracersShortwave   !nbtrcr_sw
+
+     ! length of bio indices
+     integer :: &
+          nAlgaeIndex, &
+          nAlgalCarbonIndex, &
+          nAlgalChlorophyllIndex, &
+          nDOCIndex, &
+          nDONIndex, &
+          nDICIndex, &
+          nDissolvedIronIndex, &
+          nParticulateIronIndex, &
+          nzAerosolsIndex
 
      ! indexes of BGC tracers in tracer array
      integer :: &
@@ -3950,7 +3963,6 @@ contains
 
   subroutine init_column_tracer_object(domain, tracerObject)
 
-
     type(domain_type), intent(in) :: &
          domain
 
@@ -3961,13 +3973,13 @@ contains
          nCategories, &
          nZBGCTracers
 
-    ! local
-
-    integer :: &
-        nTracers_temp
+    logical, pointer :: &
+         config_use_column_biogeochemistry
 
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nCategories", nCategories)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nZBGCTracers", nZBGCTracers)
+
+    call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
 
     ! get the number of CICE tracers in trcrn 
     call init_column_tracer_object_tracer_number(domain, tracerObject)
@@ -3995,25 +4007,17 @@ contains
 
     ! set the ancestor indices
     call init_column_tracer_object_ancestor_indices(domain, tracerObject)
+
+    ! biogeochemistry
+    if (config_use_column_biogeochemistry) then
     
-!nj-bgc+
+       allocate(tracerObject % index_LayerIndexToDataArray(nZBGCTracers))
+       allocate(tracerObject % index_LayerIndexToBioIndex(nZBGCTracers))
 
-    allocate(tracerObject % index_LayerIndexToDataArray(nZBGCTracers))
-    allocate(tracerObject % index_LayerIndexToBioIndex(nZBGCTracers))
+       ! set all indices for biogeochemistry including parent, ancestor and ancestor mask
+       call init_column_tracer_object_for_biogeochemistry(domain, tracerObject)
 
-    nTracers_temp = tracerObject % nTracers
-    tracerObject % nTracers = tracerObject % nTracersNotBio
-    
-    ! set all indices for biogeochemistry including parent, ancestor and ancestor mask
-    call init_column_tracer_object_for_biogeochemistry(domain, tracerObject)
-
-    if (nTracers_temp /= tracerObject % nTracers) then
-          COLUMN_ERROR_WRITE("init_column_tracer_object Error: nTracers_temp, nTracers")
-          WRITE (stdoutUnit, *) nTracers_temp
-          WRITE (stdoutUnit, *) tracerObject % nTracers
-          call MPAS_dmpar_global_abort("tracer number error") 
     endif
-!nj_bgc-
 
   end subroutine init_column_tracer_object
 
@@ -4045,8 +4049,8 @@ contains
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
          config_use_aerosols, &
-!nj-bgc+
          config_use_brine, &
+         config_use_column_biogeochemistry, &
          config_use_vertical_zsalinity, &
          config_use_vertical_biochemistry, &
          config_use_vertical_tracers, &
@@ -4062,13 +4066,11 @@ contains
          config_use_DON, &
          config_use_iron, &
          config_use_zaerosols 
-!nj-bgc-
        
     integer, pointer :: &
          nIceLayers, &
          nSnowLayers, &
          nAerosols, &
-!nj-bgc+
          nBioLayers, &
          nBioLayersP3, &
          nAlgae, &
@@ -4078,8 +4080,8 @@ contains
          nParticulateIron, &
          nDissolvedIron, &
          nzAerosols
-!nj-bgc-
- integer :: &
+
+    integer :: &
          iLayers, &
          iBioTracers, &
          nMobileTracers
@@ -4092,7 +4094,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_aerosols", config_use_aerosols)
 
-!nj-bgc+
+    call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
@@ -4109,12 +4111,10 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_DON", config_use_DON)
     call MPAS_pool_get_config(domain % configs, "config_use_iron", config_use_iron)
     call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
-!nj-bgc-
 
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nIceLayers", nIceLayers)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nSnowLayers", nSnowLayers)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nAerosols", nAerosols)
-!nj-bgc+
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nBioLayers", nBioLayers)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nBioLayersP3", nBioLayersP3)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nAlgae", nAlgae)
@@ -4124,7 +4124,10 @@ contains
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nParticulateIron", nParticulateIron)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nDissolvedIron", nDissolvedIron)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nzAerosols", nzAerosols)
-!nj-bgc-
+
+    !-----------------------------------------------------------------------
+    ! physics
+    !-----------------------------------------------------------------------
 
     ! surfaceTemperature
     tracerObject % nTracers = 1
@@ -4162,126 +4165,134 @@ contains
     ! aerosols
     if (config_use_aerosols) &
          tracerObject % nTracers = tracerObject % nTracers + nAerosols*4
-!nj-bgc+
-    ! save tracer number without bio tracers counted
-    tracerObject % nTracersNotBio = tracerObject % nTracers
 
-    ! biogeochemical tracers
-     tracerObject % nBioTracersLayer = 0
-     
-    ! brine height tracer
-    if (config_use_brine) &
-         tracerObject % nTracers = tracerObject % nTracers + 1
+    !-----------------------------------------------------------------------
+    ! biogeochemistry
+    !-----------------------------------------------------------------------
 
-    ! vertical zSalinity
-    if (config_use_vertical_zsalinity) then
-         tracerObject % nTracers = tracerObject % nTracers + nBioLayers
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1
-    endif
-    nMobileTracers = 0
+    if (config_use_column_biogeochemistry) then
 
-    ! Skeletal Biogeochemistry
-    if (config_use_skeletal_biochemistry) then
-         iLayers = 1
-         iBioTracers = 0
+       ! save tracer number without bio tracers counted
+       tracerObject % nTracersNotBio = tracerObject % nTracers
 
-    ! Vertical Biogeochemistry
-    elseif (config_use_vertical_tracers) then
-         iLayers = nBioLayersP3
-         iBioTracers = 1
-    endif
+       ! biogeochemical tracers
+       tracerObject % nBioTracersLayer = 0
 
-    ! Algal nitrogen
-     if (config_use_vertical_biochemistry .or. config_use_skeletal_biochemistry) then
-         tracerObject % nTracers = tracerObject % nTracers + iLayers*nAlgae 
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + nAlgae * iBioTracers
-         nMobileTracers = nMobileTracers + nAlgae
-     endif
-    
-    ! nitrate
-     if (config_use_nitrate) then
-         TracerObject % nTracers = tracerObject % nTracers + iLayers
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1 * iBioTracers
-         nMobileTracers = nMobileTracers + 1
-     endif
+       ! brine height tracer
+       if (config_use_brine) &
+            tracerObject % nTracers = tracerObject % nTracers + 1
 
-    ! carbon 
-     if (config_use_carbon) then
-         TracerObject % nTracers = tracerObject % nTracers + iLayers * nDOC &
-                                 + iLayers * nDIC
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + (nDOC + nDIC) * iBioTracers
-         nMobileTracers = nMobileTracers + nDIC + nDOC
-     endif
-    ! Algal chorophyll
-     if (config_use_chlorophyll) then
-         TracerObject % nTracers = tracerObject % nTracers + iLayers*nAlgae
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + nAlgae * iBioTracers
-         nMobileTracers = nMobileTracers + nAlgae
-     endif
+       ! vertical zSalinity
+       if (config_use_vertical_zsalinity) then
+          tracerObject % nTracers = tracerObject % nTracers + nBioLayers
+          tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1
+       endif
+       nMobileTracers = 0
 
-    ! ammonium
-     if (config_use_ammonium) then
-         TracerObject % nTracers = tracerObject % nTracers + iLayers
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1 * iBioTracers
-         nMobileTracers = nMobileTracers + 1
-     endif
+       ! Skeletal Biogeochemistry
+       if (config_use_skeletal_biochemistry) then
+          iLayers = 1
+          iBioTracers = 0
 
-    ! silicate
-     if (config_use_silicate) then
-         TracerObject % nTracers = tracerObject % nTracers + iLayers
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1 * iBioTracers
-         nMobileTracers = nMobileTracers + 1
-     endif
+          ! Vertical Biogeochemistry
+       elseif (config_use_vertical_tracers) then
+          iLayers = nBioLayersP3
+          iBioTracers = 1
 
-    ! DMS     
-     if (config_use_DMS) then
-         TracerObject % nTracers = tracerObject % nTracers + iLayers * 3
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 3  * iBioTracers
-         nMobileTracers = nMobileTracers + 3
-     endif
+       endif
 
-    ! nonreactive mobile tracer
-     if (config_use_nonreactive) then
-         TracerObject % nTracers = tracerObject % nTracers + iLayers
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1  * iBioTracers
-         nMobileTracers = nMobileTracers + 1
-     endif
+       ! Algal nitrogen
+       if (config_use_vertical_biochemistry .or. config_use_skeletal_biochemistry) then
+          tracerObject % nTracers = tracerObject % nTracers + iLayers*nAlgae
+          tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + nAlgae * iBioTracers
+          nMobileTracers = nMobileTracers + nAlgae
+       endif
 
-    ! DON
-     if (config_use_DON) then
-         TracerObject % nTracers = tracerObject % nTracers + iLayers * nDON
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + nDON  * iBioTracers
-         nMobileTracers = nMobileTracers + nDON
-     endif
+       ! nitrate
+       if (config_use_nitrate) then
+          tracerObject % nTracers = tracerObject % nTracers + iLayers
+          tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1 * iBioTracers
+          nMobileTracers = nMobileTracers + 1
+       endif
 
-    ! iron
-     if (config_use_iron) then
-         TracerObject % nTracers = tracerObject % nTracers + iLayers * nParticulateIron &
-                                 + iLayers * nDissolvedIron
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + &
-                                  (nParticulateIron + nDissolvedIron)  * iBioTracers
-         nMobileTracers = nMobileTracers + nParticulateIron + nDissolvedIron
-     endif
+       ! carbon
+       if (config_use_carbon) then
+          tracerObject % nTracers = tracerObject % nTracers + iLayers * nDOC &
+                                  + iLayers * nDIC
+          tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + (nDOC + nDIC) * iBioTracers
+          nMobileTracers = nMobileTracers + nDIC + nDOC
+       endif
 
-    ! humic material
-     if (config_use_humics) then
-         TracerObject % nTracers = tracerObject % nTracers + iLayers
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1  * iBioTracers
-         nMobileTracers = nMobileTracers + 1
-     endif
+       ! Algal chorophyll
+       if (config_use_chlorophyll) then
+          tracerObject % nTracers = tracerObject % nTracers + iLayers*nAlgae
+          tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + nAlgae * iBioTracers
+          nMobileTracers = nMobileTracers + nAlgae
+       endif
 
-    ! zAerosols
-     if (config_use_zaerosols) then
-         TracerObject % nTracers = tracerObject % nTracers + iLayers * nzAerosols
-         tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + nzAerosols * iBioTracers
-         nMobileTracers = nMobileTracers + nzAerosols
-     endif
-    
-     ! mobile fraction of vertical tracers
-     if (config_use_vertical_tracers) & 
-         TracerObject % nTracers = tracerObject % nTracers + nMobileTracers
+       ! ammonium
+       if (config_use_ammonium) then
+          tracerObject % nTracers = tracerObject % nTracers + iLayers
+          tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1 * iBioTracers
+          nMobileTracers = nMobileTracers + 1
+       endif
 
-!nj-bgc-       
+       ! silicate
+       if (config_use_silicate) then
+          tracerObject % nTracers = tracerObject % nTracers + iLayers
+          tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1 * iBioTracers
+          nMobileTracers = nMobileTracers + 1
+       endif
+
+       ! DMS
+       if (config_use_DMS) then
+          tracerObject % nTracers = tracerObject % nTracers + iLayers * 3
+          tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 3 * iBioTracers
+          nMobileTracers = nMobileTracers + 3
+       endif
+
+       ! nonreactive mobile tracer
+       if (config_use_nonreactive) then
+          tracerObject % nTracers = tracerObject % nTracers + iLayers
+          tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1 * iBioTracers
+          nMobileTracers = nMobileTracers + 1
+       endif
+
+       ! DON
+       if (config_use_DON) then
+          tracerObject % nTracers = tracerObject % nTracers + iLayers * nDON
+          tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + nDON * iBioTracers
+          nMobileTracers = nMobileTracers + nDON
+       endif
+
+       ! iron
+       if (config_use_iron) then
+          tracerObject % nTracers = tracerObject % nTracers + iLayers * nParticulateIron &
+                                  + iLayers * nDissolvedIron
+          tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + &
+                                            (nParticulateIron + nDissolvedIron) * iBioTracers
+          nMobileTracers = nMobileTracers + nParticulateIron + nDissolvedIron
+       endif
+
+       ! humic material
+       if (config_use_humics) then
+          tracerObject % nTracers = tracerObject % nTracers + iLayers
+          tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1 * iBioTracers
+          nMobileTracers = nMobileTracers + 1
+       endif
+
+       ! zAerosols
+       if (config_use_zaerosols) then
+          tracerObject % nTracers = tracerObject % nTracers + iLayers * nzAerosols
+          tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + nzAerosols * iBioTracers
+          nMobileTracers = nMobileTracers + nzAerosols
+       endif
+
+       ! mobile fraction of vertical tracers
+       if (config_use_vertical_tracers) &
+            tracerObject % nTracers = tracerObject % nTracers + nMobileTracers
+
+    endif ! config_use_column_biogeochemistry
 
   end subroutine init_column_tracer_object_tracer_number
 
@@ -4399,6 +4410,10 @@ contains
     if (config_use_aerosols) then
        tracerObject % index_aerosols = nTracers + 1
     endif
+
+    !-----------------------------------------------------------------------
+    ! BGC indices are calculated in the column package
+    !-----------------------------------------------------------------------
     
   end subroutine init_column_tracer_object_child_indices
 
@@ -4513,6 +4528,10 @@ contains
        enddo ! iAerosol
     endif
 
+    !-----------------------------------------------------------------------
+    ! BGC parentIndices are calculated in the column package
+    !-----------------------------------------------------------------------
+
   end subroutine init_column_tracer_object_parent_indices
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -4567,6 +4586,10 @@ contains
        endif
 
     enddo ! iTracer
+
+    !-----------------------------------------------------------------------
+    ! BGC firstAncestorMasks are calculated in the column package
+    !-----------------------------------------------------------------------
 
   end subroutine init_column_tracer_object_first_ancestor_mask
 
@@ -4643,6 +4666,10 @@ contains
        tracerObject % ancestorIndices(tracerObject % index_pondLidThickness,1) = tracerObject % index_pondArea  ! on melt pond area
        
     endif
+
+    !-----------------------------------------------------------------------
+    ! BGC ancestorNumbers and ancestorIndices are calculated in the column package
+    !-----------------------------------------------------------------------
 
   end subroutine init_column_tracer_object_ancestor_indices
 
@@ -4966,7 +4993,6 @@ contains
 
   subroutine get_cice_physics_tracer_array_category(block, tracerObject, iCell)
     
-
     type(block_type), intent(inout) :: &
          block
 
@@ -8800,6 +8826,13 @@ contains
     logical :: &
          use_nitrogen
 
+    integer :: &
+         nTracers_temp
+
+    ! save tracer array size
+    nTracers_temp = tracerObject % nTracers
+    tracerObject % nTracers = tracerObject % nTracersNotBio
+
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
     call MPAS_pool_get_config(domain % configs, "config_use_shortwave_bioabsorption", config_use_shortwave_bioabsorption)
@@ -8965,6 +8998,14 @@ contains
          maxDICType, &
          maxDONType, &
          maxIronType)
+
+    ! check calculated tracer array size
+    if (nTracers_temp /= tracerObject % nTracers) then
+       COLUMN_ERROR_WRITE("init_column_tracer_object Error: nTracers_temp, nTracers")
+       WRITE (stderrUnit,*) nTracers_temp
+       WRITE (stderrUnit,*) tracerObject % nTracers
+       call MPAS_dmpar_global_abort("tracer number error")
+    endif
 
   end subroutine init_column_tracer_object_for_biogeochemistry
 
