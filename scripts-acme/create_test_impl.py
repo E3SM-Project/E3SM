@@ -102,15 +102,15 @@ class CreateTest(object):
     ###########################################################################
     def _get_test_status(self, test_name, phase=None):
     ###########################################################################
-        if (phase is None or phase == self._get_test_phase(test_name)):
+        if (phase == NAMELIST_PHASE and test_name in self._tests_with_nl_problems):
+            return NAMELIST_FAIL_STATUS
+        elif (phase is None or phase == self._get_test_phase(test_name)):
             return self._get_test_data(test_name, 1)
         else:
             expect(phase is None or PHASES.index(phase) < PHASES.index(self._get_test_phase(test_name)),
                    "Tried to see the future")
-            if (phase == NAMELIST_PHASE and test_name in self._tests_with_nl_problems):
-                return NAMELIST_FAIL_STATUS
-            else:
-                return TEST_PASSED_STATUS
+            # Assume all older phases PASSed
+            return TEST_PASSED_STATUS
 
     ###########################################################################
     def _get_test_phase(self, test_name):
@@ -337,6 +337,35 @@ class CreateTest(object):
                 self._update_test_status(test_name, phase, TEST_FAIL_STATUS)
 
     ###########################################################################
+    def _setup_cs_files(self):
+    ###########################################################################
+        try:
+            acme_scripts_root = acme_util.get_acme_scripts_root()
+            template_file = os.path.join(acme_scripts_root, "cs.status.template")
+            template = open(template_file, "r").read()
+            template = template.replace("<PATH>", acme_scripts_root).replace("<TESTID>", self._test_id)
+
+            cs_status_file = os.path.join(self._test_root, "cs.status.%s" % self._test_id)
+            with open(cs_status_file, "w") as fd:
+                fd.write(template)
+            os.chmod(cs_status_file, os.stat(cs_status_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
+
+            template_file = os.path.join(acme_scripts_root, "cs.submit.template")
+            template = open(template_file, "r").read()
+            build_cmd = "./*.test_build" if self._no_build else ":"
+            run_cmd = "./*.test" if self._no_batch else "./*.submit"
+            template = template.replace("<BUILD_CMD>", build_cmd).replace("<RUN_CMD>", run_cmd).replace("<TESTID>", self._test_id)
+
+            if (self._no_build or self._no_run):
+                cs_submit_file = os.path.join(self._test_root, "cs.submit.%s" % self._test_id)
+                with open(cs_submit_file, "w") as fd:
+                    fd.write(template)
+                os.chmod(cs_submit_file, os.stat(cs_submit_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
+
+        except Exception as e:
+            warning("FAILED to set up cs files: %s" % str(e))
+
+    ###########################################################################
     def create_test(self):
     ###########################################################################
         """
@@ -379,6 +408,9 @@ class CreateTest(object):
         # Run
         if (not self._no_run):
             self._run_catch_exceptions(RUN_PHASE, self._run_test)
+
+        # Setup cs files
+        self._setup_cs_files()
 
         # If we failed VERY early on in the run phase, it's possible that
         # the CIME scripts never got a chance to set the state.
