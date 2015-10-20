@@ -38,8 +38,13 @@ endif
 
 if ( $COMPILER == "pgi" ) then
   soft add +pgi-13.9
-  soft add +netcdf-4.3.1-serial-pgi
-  setenv NETCDFROOT /soft/netcdf/4.3.1-serial/pgi-13.9
+#  soft add +netcdf-4.3.1-serial-pgi
+  setenv NETCDFROOT /home/jacob/netcdf-4.3.3.1pg13.9
+  # Get newer netcdf
+  setenv PATH $NETCDFROOT/bin:$PATH
+  setenv LD_LIBRARY_PATH $NETCDFROOT/lib:$LD_LIBRARY_PATH
+  setenv NETCDF_INCLUDES $NETCDFROOT/include
+  setenv NETCDF_LIBS $NETCDFROOT/lib
   if ( $MPILIB == "mpi-serial") then
    setenv PNETCDFROOT ""
   else if ( $MPILIB == "openmpi") then
@@ -79,6 +84,34 @@ if ( $COMPILER == "gnu" ) then
     soft add +mpich2-1.4.1-gcc-4.7.2
     soft add +pnetcdf-1.5.0-mpich2-gcc-4.7.2
     setenv PNETCDFROOT /soft/pnetcdf/1.5.0/gcc-4.7.2/mpich2-1.4.1
+  endif
+endif
+
+if ( $COMPILER == "nag" ) then
+  soft add +nag-6.0
+  soft add +gcc-4.7.2
+#  soft add +netcdf-4.3.1-serial-nag
+  setenv NETCDFROOT /home/jacob/netcdf-4.3.3.1nag6
+  # Get newer netcdf
+  setenv PATH $NETCDFROOT/bin:$PATH
+  setenv LD_LIBRARY_PATH $NETCDFROOT/lib:$LD_LIBRARY_PATH
+  setenv NETCDF_INCLUDES $NETCDFROOT/include
+  setenv NETCDF_LIBS $NETCDFROOT/lib
+  if ( $MPILIB == "openmpi") then
+    echo "ERROR: OpenMPI+pnetcdf is currently not supported with nag compilers"
+    exit 1
+  endif
+  if ( $MPILIB == "mpi-serial") then
+   setenv PNETCDFROOT ""
+  else if ( $MPILIB == "mpich") then
+    soft add +mpich3-3.1.4-nag-6.0
+    soft add +pnetcdf-1.6.1-mpich-3.1.4-nag-6.0
+    setenv PNETCDFROOT /home/robl/soft/pnetcf-trunk-mpich-3.1.4-nag-6.0
+  else
+    # default - mpich + pnetcdf
+    soft add +mpich3-3.1.4-nag-6.0
+    soft add +pnetcdf-1.6.1-mpich-3.1.4-nag-6.0
+    setenv PNETCDFROOT /home/robl/soft/pnetcf-trunk-mpich-3.1.4-nag-6.0
   endif
 endif
 if ( $?PERL ) then
