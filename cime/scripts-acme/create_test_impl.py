@@ -97,7 +97,7 @@ class CreateTest(object):
     ###########################################################################
     def _is_broken(self, test_name):
     ###########################################################################
-        return self._get_test_status(test_name) not in [TEST_PASSED_STATUS, NAMELIST_FAIL_STATUS]
+        return self._get_test_status(test_name) not in [TEST_PASSED_STATUS, NAMELIST_FAIL_STATUS, TEST_PENDING_STATUS]
 
     ###########################################################################
     def _get_test_status(self, test_name, phase=None):
@@ -390,8 +390,11 @@ class CreateTest(object):
                         test_status_file = os.path.join(self._get_test_dir(test_name), TEST_STATUS_FILENAME)
                         with open(test_status_file, "r") as fd:
                             statuses = wait_for_tests.parse_test_status_file(fd.read(), test_status_file)[0]
-                        if (RUN_PHASE not in statuses or statuses[RUN_PHASE] != TEST_FAIL_STATUS):
+                        if (RUN_PHASE not in statuses):
                             self._test_status_phase(test_name)
+                        else:
+                            self._log_output(test_name,
+                                             "VERY BAD! How was infrastructure able to log a TestState but not change it to FAIL?")
                     except Exception as e:
                         self._log_output(test_name, "VERY BAD! Could not read TestStatus file '%s': '%s'" % (test_status_file, str(e)))
 
