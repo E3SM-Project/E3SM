@@ -1007,7 +1007,7 @@
 	<queue waltimemin="0" walltimemax="360" jobmin="512" jobmax="4096" default="true">default</queue>
       </queues>
       <walltimes>
-	<walltime default="true">15</walltime>
+	<walltime default="true">60</walltime>
 	<walltime ccsm_estcost="-3">60</walltime>
 	<walltime ccsm_estcost="0">60</walltime>
       </walltimes>
