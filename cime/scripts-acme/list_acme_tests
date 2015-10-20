@@ -25,11 +25,11 @@ OR
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# List all tested compsets \033[0m
-    > %s testlist.xml compset
+    > %s compset
     \033[1;32m# List all compsets tested by acme_developer \033[0m
-    > %s testlist.xml compset acme_developer
+    > %s compset acme_developer
     \033[1;32m# List all grids tested by acme_developer \033[0m
-    > %s testlist.xml grid acme_developer
+    > %s grid acme_developer
 """ % ((os.path.basename(args[0]), ) * 6),
 
 description=description,
