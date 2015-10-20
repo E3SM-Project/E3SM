@@ -35,6 +35,7 @@
 #include <cmath>
 #include <map>
 
+#ifndef MPASLI_EXTERNAL_INTERFACE_DISABLE_MANGLING
 #define velocity_solver_init_mpi velocity_solver_init_mpi_
 #define velocity_solver_finalize velocity_solver_finalize_
 #define velocity_solver_init_l1l2 velocity_solver_init_l1l2_
@@ -50,6 +51,7 @@
 #define velocity_solver_export_2d_data velocity_solver_export_2d_data_
 #define velocity_solver_export_fo_velocity velocity_solver_export_fo_velocity_
 #define velocity_solver_estimate_SS_SMB velocity_solver_estimate_ss_smb_
+#endif
 
 //#include <lifev/core/algorithm/PreconditionerIfpack.hpp>
 //#include <lifev/core/algorithm/PreconditionerML.hpp>
