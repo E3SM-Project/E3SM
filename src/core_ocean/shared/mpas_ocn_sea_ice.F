@@ -274,16 +274,16 @@ contains
       integer, intent(in) :: nVertLevels !< Input: Number of vertical levels suggested for level cap
       integer, intent(out) :: err !< Output: error flag
 
-      logical, pointer :: config_frazil_ice_formation, config_monotonic
+      logical, pointer :: config_use_frazil_ice_formation, config_monotonic
 
       err = 0
 
-      call mpas_pool_get_config(ocnConfigs, 'config_frazil_ice_formation', config_frazil_ice_formation)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_frazil_ice_formation', config_use_frazil_ice_formation)
       call mpas_pool_get_config(ocnConfigs, 'config_monotonic', config_monotonic)
 
       frazilFormationOn = .false.
 
-      if(config_frazil_ice_formation) then
+      if(config_use_frazil_ice_formation) then
         frazilFormationOn = .true.
       end if
 
