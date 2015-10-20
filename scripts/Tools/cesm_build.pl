@@ -44,6 +44,7 @@ my $USE_ESMF_LIB;
 my $MPILIB;
 my $SMP_VALUE;
 my $NINST_BUILD;
+my $CLM_USE_PETSC;
 my $CISM_USE_TRILINOS;
 my $MPASLI_USE_ALBANY;
 my $SHAREDPATH;
@@ -100,6 +101,7 @@ sub main {
     $DEBUG		= `./xmlquery  DEBUG		-value `;
     $NINST_BUILD        = `./xmlquery  NINST_BUILD	-value `;
     $SMP_VALUE          = `./xmlquery  SMP_VALUE	-value `;
+    $CLM_USE_PETSC = `./xmlquery  CLM_USE_PETSC -value`; 
     $CISM_USE_TRILINOS  = `./xmlquery  CISM_USE_TRILINOS -value`; 
     $MPASLI_USE_ALBANY  = `./xmlquery  MPASLI_USE_ALBANY -value`;
     $CLM_CONFIG_OPTS    = `./xmlquery  CLM_CONFIG_OPTS   -value`;
@@ -144,6 +146,18 @@ sub main {
     my $lid  =  "`date +%y%m%d-%H%M%S`";
     $ENV{LID}  =  $lid;
 #pw--
+
+    # Set the overall USE_PETSC variable to TRUE if any of the
+    # XXX_USE_PETSC variables are TRUE.
+    # For now, there is just the one CLM_USE_PETSC variable, but in
+    # the future there may be others -- so USE_PETSC will be true if
+    # ANY of those are true.
+
+    my $use_petsc = 'FALSE';
+    if ($CLM_USE_PETSC eq 'TRUE') {$use_petsc = 'TRUE'};
+    my $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_PETSC -val ${use_petsc}";
+    $ENV{USE_PETSC} = ${use_petsc};
+    $ENV{CLM_USE_PETSC} = $CLM_USE_PETSC;
 
     # Set the overall USE_TRILINOS variable to TRUE if any of the 
     # XXX_USE_TRILINOS variables are TRUE. 
@@ -357,6 +371,16 @@ sub buildChecks()
 
     $ENV{'NINST_VALUE'} = $inststr;
 	
+    # set the overall USE_PETSC variable to TRUE if any of the XXX_USE_PETSC variables are TRUE.
+    # For now, there is just the one CLM_USE_PETSC variable, but in the future, there may be others,
+    # so USE_PETSC should be  true if ANY of those are true.
+
+    $ENV{'use_petsc'} = 'FALSE';
+    if ( (defined $CLM_USE_PETSC) && ($CLM_USE_PETSC eq 'TRUE')) {$ENV{'use_petsc'} = "TRUE";}
+
+    $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_PETSC -val $ENV{'use_petsc'}";
+    system($sysmod) == 0 or die "$sysmod failed: $?\n";
+
     # set the overall USE_TRILINOS variable to TRUE if any of the XXX_USE_TRILINOS variables are TRUE. 
     # For now, there is just the one CISM_USE_TRILINOS variable, but in the future, there may be others, 
     # so USE_TRILINOS should be  true if ANY of those are true.

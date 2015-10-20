@@ -202,6 +202,23 @@ ifdef PNETCDF_PATH
   endif
 endif
 
+# Set PETSc info if it is being used
+ifeq ($(strip $(USE_PETSC)), TRUE)
+  ifdef PETSC_PATH
+    ifndef INC_PETSC
+      INC_PETSC:=$(PETSC_PATH)/include
+    endif
+    ifndef LIB_PETSC
+      LIB_PETSC:=$(PETSC_PATH)/lib
+    endif
+  else
+    $(error PETSC_PATH must be defined when USE_PETSC is TRUE)
+  endif
+
+  # Get the "PETSC_LIB" list an env var
+  include $(PETSC_PATH)/conf/variables
+endif
+
 # Set Trilinos info if it is being used
 ifeq ($(strip $(USE_TRILINOS)), TRUE)
   ifdef TRILINOS_PATH
@@ -320,6 +337,9 @@ ifdef INC_MPI
 endif 
 ifdef INC_PNETCDF
   INCLDIR += -I$(INC_PNETCDF)
+endif
+ifdef INC_PETSC
+  INCLDIR += -I$(INC_PETSC)
 endif
 ifdef INC_TRILINOS
   INCLDIR += -I$(INC_TRILINOS)
@@ -454,6 +474,11 @@ ifeq ($(USE_ESMF_LIB), TRUE)
   -include $(CCSM_ESMFMKFILE)
   FFLAGS += $(ESMF_F90COMPILEPATHS)
   SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
+endif
+
+# Add PETSc libraries
+ifeq ($(strip $(USE_PETSC)), TRUE)
+  SLIBS += -L${LIB_PETSC} ${PETSC_LIB}
 endif
 
 # Add trilinos libraries; too be safe, we include all libraries included in the trilinos build,
