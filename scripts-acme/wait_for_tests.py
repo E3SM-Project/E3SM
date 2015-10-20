@@ -4,6 +4,7 @@ import xml.etree.ElementTree as xmlet
 
 import acme_util
 from acme_util import expect, warning, verbose_print
+from collections import OrderedDict
 
 TEST_STATUS_FILENAME      = "TestStatus"
 TEST_PENDING_STATUS       = "PEND"
@@ -241,7 +242,7 @@ def reduce_stati(stati):
 ###############################################################################
 def parse_test_status_file(file_contents, status_file_path=None):
 ###############################################################################
-    rv = {}
+    rv = OrderedDict()
     test_name = None
     for line in file_contents.splitlines():
         if (line.split()[0] == COMMENT_STATUS):
@@ -344,7 +345,7 @@ def get_test_results(test_paths, no_wait=False, check_throughput=False, check_me
     while threading.active_count() > 1:
         time.sleep(1)
 
-    test_results = dict()
+    test_results = {}
     completed_test_paths = []
     while (not results.empty()):
         test_name, test_path, test_status = results.get()
