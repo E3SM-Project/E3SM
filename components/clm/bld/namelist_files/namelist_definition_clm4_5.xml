@@ -481,10 +481,6 @@ Toggle for mexico city specific logic.
 Max number of plant functional types in naturally vegetated landunit.
 </entry>
 
-<entry id="use_dynroot" type="logical" category="physics"
-       group="clm_inparm" valid_values="" value=".false.">
-Toggle to turn on the dynamic root model.
-</entry>
 
 <!--                                                   -->
 <!-- mkmapdata  namelist                               -->
