@@ -113,7 +113,7 @@ contains
       real (kind=RKIND), dimension(:), allocatable:: pTop, div_hu,div_huTransport,div_huGMBolus
 
       real (kind=RKIND), dimension(:), pointer :: &
-        bottomDepth, fVertex, dvEdge, dcEdge, areaCell, areaTriangle, ssh, seaSurfacePressure
+        bottomDepth, fVertex, dvEdge, dcEdge, areaCell, areaTriangle, ssh, seaSurfacePressure, frazilSurfacePressure
       real (kind=RKIND), dimension(:,:), pointer :: &
         weightsOnEdge, kiteAreasOnVertex, layerThicknessEdge, layerThickness, normalVelocity, normalTransportVelocity, normalGMBolusVelocity, tangentialVelocity, pressure,&
         circulation, kineticEnergyCell, montgomeryPotential, vertAleTransportTop, zMid, zTop, divergence, &
@@ -221,6 +221,7 @@ contains
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
       call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
+      call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
                   
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
@@ -530,8 +531,10 @@ contains
            ! Pressure for generalized coordinates.
            ! Pressure at top surface may be due to atmospheric pressure
            ! or an ice-shelf depression. 
-           pressure(1,iCell) = seaSurfacePressure(iCell) + density(1,iCell)*gravity &
-              * 0.5*layerThickness(1,iCell)
+           pressure(1,iCell) = 0.0_RKIND
+           pressure(1,iCell) = pressure(1,iCell) + frazilSurfacePressure(iCell)
+           pressure(1,iCell) = pressure(1,iCell) + seaSurfacePressure(iCell)
+           pressure(1,iCell) = pressure(1,iCell) + density(1,iCell)*gravity*0.5*layerThickness(1,iCell)
 
            do k = 2, maxLevelCell(iCell)
               pressure(k,iCell) = pressure(k-1,iCell)  &
