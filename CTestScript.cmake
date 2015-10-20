@@ -166,7 +166,7 @@ execute_process (COMMAND ${CTEST_EXTRA_SCRIPT_PATH}/runctest-${HOSTNAME_ID}.sh
 ## -- SUBMIT
 message (" -- Submit to dashboard - ${CTEST_BUILD_NAME} --")
 message ("** -- PIO_DASHBOARD_SITE=$ENV{PIO_DASHBOARD_SITE}")
-### ctest_submit ()
+ctest_submit ()
 
 # -----------------------------------------------------------  
 # -- Clear environment
