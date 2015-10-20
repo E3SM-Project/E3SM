@@ -29,6 +29,7 @@ module ocn_tendency
 
    use ocn_surface_bulk_forcing
    use ocn_surface_land_ice_fluxes
+   use ocn_frazil_forcing
 
    use ocn_tracer_hmix
    use ocn_high_freq_thickness_hmix_del2
