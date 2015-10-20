@@ -20,9 +20,11 @@
 module ocn_frazil_forcing
 
    use mpas_kind_types
+   use mpas_constants
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_timekeeping
+   use mpas_timer
    use ocn_constants
 
    implicit none
@@ -43,7 +45,7 @@ module ocn_frazil_forcing
 
    public :: ocn_frazil_forcing_build_arrays, &
              ocn_frazil_forcing_tracers, &
-             ocn_frazil_forcing_thickness, &
+             ocn_frazil_forcing_layer_thickness, &
              ocn_frazil_forcing_surface_pressure, &
              ocn_frazil_forcing_init
 
@@ -80,9 +82,6 @@ contains
       ! input variables
       !
       !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
-      type (mpas_pool_type), intent(in) :: forcingPool  !< Input: forcing pool holding frazil-induced tendencies
-      type (mpas_pool_type), intent(in) :: tracersTendPool  !< Input: tracer tendency pool used to time step tracer fields
       character (len=*) :: groupName !< Input: Name of tracer group
 
       !-----------------------------------------------------------------
@@ -90,6 +89,9 @@ contains
       ! input/output variables
       !
       !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(inout) :: meshPool !< Input/Output: mesh information
+      type (mpas_pool_type), intent(inout) :: forcingPool  !< Input/Output: forcing pool holding frazil-induced tendencies
+      type (mpas_pool_type), intent(inout) :: tracersTendPool  !< Input/Output: tracer tendency pool used to time step tracer fields
 
       !-----------------------------------------------------------------
       !
@@ -117,7 +119,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_frazil_forcing_thickness
+!  routine ocn_frazil_forcing_layer_thickness
 !
 !> \brief   Add tendency due to frazil processes
 !> \author  Todd Ringler
@@ -127,7 +129,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_frazil_forcing_thickness(meshPool, forcingPool, tendPool, err)!{{{
+   subroutine ocn_frazil_forcing_layer_thickness(meshPool, forcingPool, tendPool, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -161,6 +163,7 @@ contains
       integer :: iCell, k
       integer, pointer :: nCells
       integer, dimension(:), pointer :: maxLevelCell
+      real (kind=RKIND), dimension(:,:), pointer :: frazilLayerThicknessTendency
       real (kind=RKIND), dimension(:,:), pointer :: layerThicknessTend
 
       err = 0
@@ -177,23 +180,24 @@ contains
       do k = 1, maxLevelCell(iCell)
         layerThicknessTend(k,iCell) = layerThicknessTend(k,iCell) + frazilLayerThicknessTendency(k,iCell)
       end do
+      end do
 
    end subroutine ocn_frazil_forcing_layer_thickness!}}}
 
+
 !***********************************************************************
 !
-!  routine ocn_frazil_forcing_active_tracers
+!  routine ocn_frazil_forcing_surface_pressure
 !
-!> \brief   Adds the active tracers forcing due to frazil
+!> \brief   Add frazil pressure to total pressure
 !> \author  Todd Ringler
 !> \date    18 October 2015
 !> \details
-!>  This routine adds the active tracers forcing due to frazil
-!>  from which tracer tendencies are computed later.
+!>  This routine adds frazil surface pressure to total surface pressure
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_frazil_forcing_active_tracers(meshPool, forcingPool, tracerTendPool, err)!{{{
+   subroutine ocn_frazil_forcing_surface_pressure(meshPool, forcingPool, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -208,7 +212,71 @@ contains
       !
       !-----------------------------------------------------------------
       type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
-      type (mpas_pool_type), intent(inout) :: tracerTendPool !< Input: tendency pool
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: Error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: iCell
+      integer, pointer :: nCells
+      real (kind=RKIND), dimension(:), pointer :: frazilSurfacePressure
+      real (kind=RKIND), dimension(:), pointer :: seaSurfacePressure
+
+      err = 0
+
+      if ( .not. frazilFormationOn ) return
+
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+      call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
+      call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
+
+      ! add frazil surface pressure to total surface pressure
+      do iCell = 1, nCells
+        seaSurfacePressure(iCell) = seaSurfacePressure(iCell) + frazilSurfacePressure(iCell)
+      end do
+
+   end subroutine ocn_frazil_forcing_surface_pressure!}}}
+
+!***********************************************************************
+!
+!  routine ocn_frazil_forcing_active_tracers
+!
+!> \brief   Adds the active tracers forcing due to frazil
+!> \author  Todd Ringler
+!> \date    18 October 2015
+!> \details
+!>  This routine adds the active tracers forcing due to frazil
+!>  from which tracer tendencies are computed later.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_frazil_forcing_active_tracers(meshPool, forcingPool, tracersTendPool, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
+      type (mpas_pool_type), intent(inout) :: tracersTendPool !< Input: tendency pool
 
       !-----------------------------------------------------------------
       !
@@ -226,12 +294,13 @@ contains
 
       integer :: iCell, k
       integer, pointer :: nCells
-      integer, pointer :: indexTemperature, indexSalinity
+      integer, pointer :: indexTemperature
+      integer, pointer :: indexSalinity
       integer, pointer, dimension(:) :: maxLevelCell
 
       real (kind=RKIND), dimension(:,:), pointer :: frazilTemperatureTendency
       real (kind=RKIND), dimension(:,:), pointer :: frazilSalinityTendency
-      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracerTend
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracersTend
 
       err = 0
 
@@ -290,8 +359,6 @@ contains
       !-----------------------------------------------------------------
 
       type (mpas_pool_type), pointer, intent(in) :: meshPool !< Input: Mesh information
-      type (mpas_pool_type), pointer, intent(in) :: forcingPool !< Input: Forcing information
-      type (mpas_pool_type), pointer, intent(in) :: statePool !< Input: State information
       type (mpas_pool_type), pointer, intent(in) :: diagnosticsPool !< Input: Diagnostic information
 
       !-----------------------------------------------------------------
@@ -299,6 +366,7 @@ contains
       ! input/output variables
       !
       !-----------------------------------------------------------------
+      type (mpas_pool_type), pointer, intent(in) :: statePool !< Input: State information
       type (mpas_pool_type), pointer, intent(in) :: forcingPool !< Input: Forcing information
       integer, intent(inout) :: err !< Error flag
 
@@ -313,37 +381,40 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-      type (block_type), pointer :: block
-      type (mpas_pool_type) :: tracerPool
+      type (mpas_pool_type), pointer :: tracersPool
 
       real (kind=RKIND), dimension(:,:), pointer :: frazilLayerThicknessTendency
       real (kind=RKIND), dimension(:,:), pointer :: frazilTemperatureTendency
       real (kind=RKIND), dimension(:,:), pointer :: frazilSalinityTendency
-      real (kind=RKIND), dimension(:), pointer :: frazilSurfacePressure
+      real (kind=RKIND),   dimension(:), pointer :: frazilSurfacePressure
 
-      integer :: iCell, k, kBottomFrazil
+      integer :: iCell, k
       integer, pointer :: nCells, nVertLevels
 
+      real (kind=RKIND), pointer :: config_dt
       real (kind=RKIND), pointer :: config_frazil_heat_of_fusion
       real (kind=RKIND), pointer :: config_frazil_sea_ice_density
       real (kind=RKIND), pointer :: config_frazil_fractional_thickness_limit
+      real (kind=RKIND), pointer :: config_frazil_maximum_depth
+      real (kind=RKIND), pointer :: config_specific_heat_sea_water 
+      real (kind=RKIND), pointer :: config_frazil_ice_reference_salinity
 
       real (kind=RKIND) :: newFrazilIceThickness
       real (kind=RKIND) :: sumNewFrazilIceThickness
       real (kind=RKIND) :: meltedFrazilIceThickness
       real (kind=RKIND) :: oceanFreezingTemperature
 
-      real (kind=RKIND), pointer, dimension(:)   :: accumulatedFrazilIceMassNew
-      real (kind=RKIND), pointer, dimension(:)   :: accumulatedFrazilIceMassOld
-      real (kind=RKIND), pointer, dimension(:,:) :: zMid
-      real (kind=RKIND), pointer, dimension(:,:) :: density
-      real (kind=RKIND), pointer, dimension(:,:) :: layerThickness
+      real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceMassNew
+      real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceMassOld
+      real (kind=RKIND), pointer, dimension(:,:)   :: zMid
+      real (kind=RKIND), pointer, dimension(:,:)   :: layerThickness
+      real (kind=RKIND), pointer, dimension(:,:,:) :: activeTracers
 
       integer, dimension(:), pointer :: maxLevelCell
-      integer :: indexTemperature !< index in tracers array for temperature
-      integer :: indexSalinity !< index in tracers array for salinity
+      integer, pointer :: indexTemperature !< index in tracers array for temperature
+      integer, pointer :: indexSalinity !< index in tracers array for salinity
+      integer :: kBottomFrazil  ! k index where testing for frazil begins
 
-      real (kind=RKIND) :: kBottomFrazil  ! k index where testing for frazil begins
       real (kind=RKIND) :: potential  ! scalar holding freezing/melt potential
       real (kind=RKIND) :: freezingEnergy  ! energy available for freezing, positive definite
       real (kind=RKIND) :: meltingEnergy ! energy available for melting, positive definite
@@ -352,104 +423,101 @@ contains
       if(.not. frazilFormationOn) return
 
       call mpas_timer_start("fazil", .false., timer_frazil)
-      block => domain % blocklist
-      do while (associated(block))
 
-         ! get pool pointers
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
-         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+      ! get pool pointers
+      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
-         ! get dimensions
-         call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
-         call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
-         call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
-         call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
+      ! get dimensions
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
+      call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
-         ! get mesh information
-         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      ! get mesh information
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
-         ! get arrays
-         ! note: state information is used to produce tendencies, so always grab "new" time level
-         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 2)
-         call mpas_pool_get_array(statePool, 'accumulatedFrazilIceMass', accumulatedFrazilIceMassNew, 2)
-         call mpas_pool_get_array(statePool, 'accumulatedFrazilIceMass', accumulatedFrazilIceMassOld, 1)
-         call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 2)
-         call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
-         call mpas_pool_get_array(diagnosticsPool, 'density', density)
-         call mpas_pool_get_array(forcingPool, 'frazilTemperatureTendency', frazilTemperatureTendency)
-         call mpas_pool_get_array(forcingPool,'frazilSalinityTendency', frazilSalinityTendency)
-         call mpas_pool_get_array(forcingPool,'frazilThicknessTendency', frazilThicknessTendency)
-         call mpas_pool_get_array(forcingPool,'frazilSurfacePressure', frazilSurfacePressure)
+      ! get arrays
+      ! note: state information is used to produce tendencies, so always grab "new" time level
+      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 2)
+      call mpas_pool_get_array(statePool, 'accumulatedFrazilIceMass', accumulatedFrazilIceMassNew, 2)
+      call mpas_pool_get_array(statePool, 'accumulatedFrazilIceMass', accumulatedFrazilIceMassOld, 1)
+      call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 2)
+      call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
+      call mpas_pool_get_array(forcingPool, 'frazilTemperatureTendency', frazilTemperatureTendency)
+      call mpas_pool_get_array(forcingPool,'frazilSalinityTendency', frazilSalinityTendency)
+      call mpas_pool_get_array(forcingPool,'frazilLayerThicknessTendency', frazilLayerThicknessTendency)
+      call mpas_pool_get_array(forcingPool,'frazilSurfacePressure', frazilSurfacePressure)
 
-         ! get configure parameters
-         call mpas_pool_get_config(domain % configs, 'config_frazil_maximum_depth', config_frazil_maximum_depth)
-         call mpas_pool_get_config(domain % configs, 'config_frazil_fractional_thickness_limit', config_frazil_fractional_thickness_limit)
-         call mpas_pool_get_config(domain % configs, 'config_specific_heat_sea_water', config_specific_heat_sea_water)
-         call mpas_pool_get_config(domain % configs, 'config_frazil_heat_of_fusion', config_frazil_heat_of_fusion)
-         call mpas_pool_get_config(domain % configs, 'config_frazil_sea_ice_density', config_frazil_sea_ice_density)
+      ! get configure parameters
+      call mpas_pool_get_config(ocnConfigs, 'config_dt', config_dt)
+      call mpas_pool_get_config(ocnConfigs, 'config_frazil_maximum_depth', config_frazil_maximum_depth)
+      call mpas_pool_get_config(ocnConfigs, 'config_frazil_fractional_thickness_limit', config_frazil_fractional_thickness_limit)
+      call mpas_pool_get_config(ocnConfigs, 'config_specific_heat_sea_water', config_specific_heat_sea_water)
+      call mpas_pool_get_config(ocnConfigs, 'config_frazil_heat_of_fusion', config_frazil_heat_of_fusion)
+      call mpas_pool_get_config(ocnConfigs, 'config_frazil_sea_ice_density', config_frazil_sea_ice_density)
+      call mpas_pool_get_config(ocnConfigs, 'config_frazil_ice_reference_salinity', config_frazil_ice_reference_salinity)
 
-         ! initialize frazil tendency fields
-         frazilTemperatureTendency = 0.0_RKIND
-         frazilSalinityTendency = 0.0_RKIND
-         frazilThicknessTendency = 0.0_RKIND
+      ! initialize frazil tendency fields
+      frazilTemperatureTendency = 0.0_RKIND
+      frazilSalinityTendency = 0.0_RKIND
+      frazilLayerThicknessTendency = 0.0_RKIND
 
-         ! loop over all columns
-         do iCell=1,nCells
+      ! loop over all columns
+       do iCell=1,nCells
 
-            ! find deepest level where frazil can be created
-            do k=maxLevelCell(iCell), 1, -1
-               if(-zMid(k,iCell).lt.config_frazil_maximum_depth) then
-                  kBottomFrazil=k
-                  exit
-               endif
-            enddo
+         ! find deepest level where frazil can be created
+          kBottomFrazil=maxLevelCell(iCell)
+          do k=maxLevelCell(iCell), 1, -1
+            if(-zMid(k,iCell).lt.config_frazil_maximum_depth) then
+               kBottomFrazil=k
+               exit
+            endif
+          enddo
 
-            ! zero the sum of new frazil ice created
-            sumNewFrazilIceThickness = 0.0_RKIND
+         ! zero the sum of new frazil ice created
+         sumNewFrazilIceThickness = 0.0_RKIND
 
-            ! loop from maximum depth of frazil creation to surface
-            do k = kBottomFrazil, 1, -1
+         ! loop from maximum depth of frazil creation to surface
+         do k = kBottomFrazil, 1, -1
 
-               ! get freezing temperature
-               oceanFreezingTemperature = ocn_freezing_temperature(activeTracers(indexSalinity,k,iCell))
+            ! get freezing temperature
+            oceanFreezingTemperature = ocn_freezing_temperature(activeTracers(indexSalinity,k,iCell))
 
-               potential =   layerThickness(k,iCell) * config_specific_heat_sea_water &
-                           * density(k,iCell) * (activeTracers(indexTemperature,k,iCell) - oceanFreezingTemperature)
-               freezingEnergy = max(0.0_RKIND, -potential)
-               meltingEnergy = max(0.0_RKIND, potential)
+            potential =   layerThickness(k,iCell) * config_specific_heat_sea_water &
+                        * rho_sw * (activeTracers(indexTemperature,k,iCell) - oceanFreezingTemperature)
+            freezingEnergy = max(0.0_RKIND, -potential)
+            meltingEnergy = max(0.0_RKIND, potential)
 
-              if (freezingEnergy < 0) then
+            if (freezingEnergy < 0) then
 
-                 ! new frazil ice formation measured in meters
-                 newFrazilIceThickness = freezingEnergy / (config_frazil_heat_of_fusion * config_frazil_sea_ice_density)
+              ! new frazil ice formation measured in meters
+              newFrazilIceThickness = freezingEnergy / (config_frazil_heat_of_fusion * config_frazil_sea_ice_density)
 
-                 ! limit the frazil formed appropriately
-                 newFrazilIceThickness = min(newFrazilIceThickness, layerThickness(k,iCell) * config_frazil_fractional_thickness_limit)
+              ! limit the frazil formed appropriately
+              newFrazilIceThickness = min(newFrazilIceThickness, layerThickness(k,iCell) * config_frazil_fractional_thickness_limit)
 
-                 ! compute tendency to thickness, temperature and salinity
-                 ! layerTendency is scaled so that mass of ice created == mass of ocean water removed
+              ! compute tendency to thickness, temperature and salinity
+              ! layerTendency is scaled so that mass of ice created == mass of ocean water removed
 
-                 ! layer thickness decreased due to creation of frazil
-                 frazilThicknessTendency(k,iCell) = - newFrazilIceThickness * config_frazil_sea_ice_density / density(k,iCell) / dt
+              ! layer thickness decreased due to creation of frazil
+              frazilLayerThicknessTendency(k,iCell) = - newFrazilIceThickness * config_frazil_sea_ice_density / rho_sw / config_dt
 
-                 ! salt is extracted with the frazil
-                 frazilSalinityTendency(k,iCell) = - newFrazilIceThickness * config_frazil_iceReferenceSalinity / dt
+              ! salt is extracted with the frazil
+              frazilSalinityTendency(k,iCell) = - newFrazilIceThickness * config_frazil_ice_reference_salinity / config_dt
 
-                 ! ocean fluid temperature is warmed due to creation of frazil
-                 frazilTemperatureTendency(k,iCell) =  &
-                       + ( newFrazilIceThickness * config_frazil_heat_of_fusion * config_frazil_sea_ice_density )  &
-                                         / (config_specific_heat_sea_water * density(k,iCell)) / dt
+              ! ocean fluid temperature is warmed due to creation of frazil
+              frazilTemperatureTendency(k,iCell) =  &
+                    + ( newFrazilIceThickness * config_frazil_heat_of_fusion * config_frazil_sea_ice_density )  &
+                                      / (config_specific_heat_sea_water * rho_sw) / config_dt
 
-                 ! accumulate frazil mass to column total
-                 ! note: accumulatedFrazilIceMass (at both time levels) is reset to zero after being sent to the coupler
-                 accumulatedFrazilIceMassNew(iCell) = accumulatedFrazilIceMassOld(iCell) + newFrazilIceThickness*config_frazil_sea_ice_density
+              ! accumulate frazil mass to column total
+              ! note: accumulatedFrazilIceMass (at both time levels) is reset to zero after being sent to the coupler
+              accumulatedFrazilIceMassNew(iCell) = accumulatedFrazilIceMassOld(iCell) + newFrazilIceThickness*config_frazil_sea_ice_density
 
-                 ! keep track of sum of frazil ice
-                 sumNewFrazilIceThickness = sumNewFrazilIceThickness + newFrazilIceThickness
+              ! keep track of sum of frazil ice
+              sumNewFrazilIceThickness = sumNewFrazilIceThickness + newFrazilIceThickness
 
-              else
+           else
 
               ! ocean water is warm enough to melt frazil
 
@@ -468,15 +536,15 @@ contains
                  ! compute tendency to thickness, temperature and salinity
 
                  ! layer thickness increases due to melting of frazil
-                 frazilThicknessTendency(k,iCell) = + meltedFrazilIceThickness * config_frazil_sea_ice_density / density(k,iCell) / dt
+                 frazilLayerThicknessTendency(k,iCell) = + meltedFrazilIceThickness * config_frazil_sea_ice_density / rho_sw / config_dt
 
                  ! salt is released into ocean with the melting frazil
-                 frazilSalinityTendency(k,iCell) = + meltedFrazilIceThickness * config_frazil_iceReferenceSalinity / dt
+                 frazilSalinityTendency(k,iCell) = + meltedFrazilIceThickness * config_frazil_ice_reference_salinity / config_dt
 
                  ! ocean fluid temperature is cooled due to melting of frazil
                  frazilTemperatureTendency(k,iCell) = &
                        - ( meltedFrazilIceThickness * config_frazil_heat_of_fusion * config_frazil_sea_ice_density )  &
-                                         / (config_specific_heat_sea_water * density(k,iCell)) / dt
+                                         / (config_specific_heat_sea_water * rho_sw) / config_dt
 
                  ! deaccumulate frazil
                  accumulatedFrazilIceMassNew(iCell) = accumulatedFrazilIceMassOld(iCell) - meltedFrazilIceThickness*config_frazil_sea_ice_density
@@ -484,16 +552,17 @@ contains
                  ! keep track of new frazil ice
                  sumNewFrazilIceThickness = sumNewFrazilIceThickness - meltedFrazilIceThickness
 
-              endif  ! if (freezingEnergy < 0)
+              endif  ! if (sumNewFrazilIceThickness > 0.0_RKIND) 
 
-          enddo   ! do k=kBottom,1-1
+           endif  ! if (freezingEnergy < 0)
 
-          ! sea surface pressure due to the net production of frazil ice
-          frazilSurfacePressure(iCell) = accumulatedFrazilIceMass(iCell) * gravity / dt
+       enddo   ! do k=kBottom,1-1
 
-        enddo   ! do iCell = 1, nCells
+       ! sea surface pressure due to the net production of frazil ice
+       frazilSurfacePressure(iCell) = accumulatedFrazilIceMassNew(iCell) * gravity
 
-     enddo  ! iBlock
+     enddo   ! do iCell = 1, nCells
+
      call mpas_timer_stop("frazil", timer_frazil)
 
    end subroutine ocn_frazil_forcing_build_arrays!}}}
@@ -547,7 +616,7 @@ contains
 
 !***********************************************************************
 
-end module ocn_sea_ice
+end module ocn_frazil_forcing
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ! vim: foldmethod=marker
