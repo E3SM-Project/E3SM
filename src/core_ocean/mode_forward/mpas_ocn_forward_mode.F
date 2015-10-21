@@ -491,7 +491,7 @@ module ocn_forward_mode
                                                          forcingPool, scratchPool, err)
            call mpas_timer_stop("land_ice_build_arrays")
 
-           call ocn_frazil_forcing_build_arrays(meshPool, forcingPool, diagnosticsPool, statePool, err)
+           call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, diagnosticsPool, statePool, err)
 
            block_ptr => block_ptr % next
          end do
