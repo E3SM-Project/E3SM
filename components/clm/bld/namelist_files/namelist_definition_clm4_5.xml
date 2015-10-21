@@ -355,6 +355,26 @@ Per tape series history write frequency.
 <default>Default: 0,-24,-24,-24,-24,-24</default>
 </entry>
 
+<entry id="metdata_type" type="char*400" category="datasets"
+       group="clm_inparm" valid_values="">
+</entry>
+
+<entry id="metdata_bypass" type="char*400" category="datasets"
+       group="clm_inparm" valid_values="">
+</entry>
+
+<entry id="metdata_biases" type="char*400" category="datasets"
+       group="clm_inparm" valid_values="">
+</entry>
+
+<entry id="co2_file" type="char*400" category="datasets"
+       group="clm_inparm" valid_values="">
+</entry>
+
+<entry id="aero_file" type="char*400" category="datasets"
+       group="clm_inparm" valid_values="">
+</entry>
+
 <entry id="nsegspc" type="integer" category="clm_performance"
        group="clm_inparm" valid_values="" >
 number of segments per clump for decomposition

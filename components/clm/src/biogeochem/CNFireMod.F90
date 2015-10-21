@@ -85,12 +85,12 @@ contains
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds  
     !-----------------------------------------------------------------------
-
+#ifndef CPL_BYPASS
     call hdm_init(bounds)
     call hdm_interp(bounds)
     call lnfm_init(bounds)
     call lnfm_interp(bounds)
-
+#endif
   end subroutine CNFireInit
 
   !-----------------------------------------------------------------------
@@ -102,10 +102,10 @@ contains
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds  
     !-----------------------------------------------------------------------
-
+#ifndef CPL_BYPASS
     call hdm_interp(bounds)
     call lnfm_interp(bounds)
-
+#endif
   end subroutine CNFireInterp
 
   !-----------------------------------------------------------------------
@@ -189,6 +189,10 @@ contains
          forc_t             =>    atm2lnd_vars%forc_t_downscaled_col        , & ! Input:  [real(r8) (:)     ]  downscaled atmospheric temperature (Kelvin)                  
          forc_rain          =>    atm2lnd_vars%forc_rain_downscaled_col     , & ! Input:  [real(r8) (:)     ]  downscaled rain                                              
          forc_snow          =>    atm2lnd_vars%forc_snow_downscaled_col     , & ! Input:  [real(r8) (:)     ]  downscaled snow                                              
+#ifdef CPL_BYPASS
+         forc_hdm           =>    atm2lnd_vars%forc_hdm                     , & ! Input:  [real(r8) (:)     ]  population density
+         forc_lnfm          =>    atm2lnd_vars%forc_lnfm                    , & ! Input:  [real(r8) (:)     ]  ligntning data 
+#endif 
          prec60             =>    atm2lnd_vars%prec60_patch                 , & ! Input:  [real(r8) (:)     ]  60-day running mean of tot. precipitation         
          prec10             =>    atm2lnd_vars%prec10_patch                 , & ! Input:  [real(r8) (:)     ]  10-day running mean of tot. precipitation         
          

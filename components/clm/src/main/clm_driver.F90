@@ -358,6 +358,7 @@ contains
     ! re-written to go inside.
     ! ============================================================================
 
+#ifndef CPL_BYPASS
     if (use_cn) then
        call t_startf('ndep_interp')
        ! PET: switching CN timestep
@@ -365,6 +366,7 @@ contains
        call CNFireInterp(bounds_proc)
        call t_stopf('ndep_interp')
     end if
+#endif
 
     ! ============================================================================
     ! Initialize variables from previous time step, downscale atm forcings, and
@@ -1495,10 +1497,12 @@ contains
 
     else
 
+#ifndef CPL_BYPASS
        if (masterproc) then
           write(iulog,*)'clm: completed timestep ',nstep
           call shr_sys_flush(iulog)
        end if
+#endif
 
     endif
 

@@ -82,6 +82,7 @@ contains
     integer  :: dtime_clm                            ! clm time-step
     logical  :: exists                               ! true if file exists
     logical  :: atm_aero                             ! Flag if aerosol data sent from atm model
+    logical  :: atm_present                          ! Flag if atmosphere model present
     real(r8) :: scmlat                               ! single-column latitude
     real(r8) :: scmlon                               ! single-column longitude
     real(r8) :: nextsw_cday                          ! calday from clock of next radiation computation
@@ -102,6 +103,7 @@ contains
     logical :: brnch_retain_casename                 ! flag if should retain the case name on a branch start type
     integer :: lbnum                                 ! input to memory diagnostic
     integer :: shrlogunit,shrloglev                  ! old values for log unit and log level
+    integer :: nstep
     type(bounds_type) :: bounds                      ! bounds
     character(len=32), parameter :: sub = 'lnd_init_mct'
     character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
@@ -206,8 +208,10 @@ contains
 
     ! Determine if aerosol and dust deposition come from atmosphere component
 
+    call seq_infodata_GetData(infodata, atm_present=atm_present)
     call seq_infodata_GetData(infodata, atm_aero=atm_aero )
-    if ( .not. atm_aero )then
+    !DMR 6/12/15 - remove this requirement (CPL_BPYASS mode uses SATM)
+    if ( .not. atm_aero .and. atm_present )then
        call endrun( sub//' ERROR: atmosphere model MUST send aerosols to CLM' )
     end if
 
@@ -246,7 +250,9 @@ contains
 
     ! Create land export state 
 
-    call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, l2x_l%rattr)
+    if (atm_present) then 
+      call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, l2x_l%rattr)
+    endif
 
     ! Fill in infodata settings
 
@@ -257,6 +263,15 @@ contains
 
     call seq_infodata_GetData(infodata, nextsw_cday=nextsw_cday )
     call set_nextsw_cday(nextsw_cday)
+
+    if (.not. atm_present) then 
+      !Calculate next radiation calendar day (since atm model did not run to set
+      !this)
+      !DMR:  NOTE this assumes a no-leap calendar and equal input/model timesteps
+      nstep = get_nstep()
+      nextsw_cday = mod((nstep/(86400._r8/dtime_clm))*1.0_r8,365._r8)+1._r8
+      call set_nextsw_cday( nextsw_cday )
+    end if
 
     ! Reset shr logging to original values
 
@@ -339,6 +354,7 @@ contains
     real(r8)     :: eccf                 ! earth orbit eccentricity factor
     real(r8)     :: recip                ! reciprical
     logical,save :: first_call = .true.  ! first call work
+    logical      :: atm_present
     type(seq_infodata_type),pointer :: infodata             ! CESM information from the driver
     type(mct_gGrid),        pointer :: dom_l                ! Land model domain data
     type(bounds_type)               :: bounds               ! bounds
@@ -372,6 +388,15 @@ contains
     call set_nextsw_cday( nextsw_cday )
     dtime = get_step_size()
 
+    call seq_infodata_GetData(infodata, atm_present=atm_present)
+    if (.not. atm_present) then 
+      !Calcualte next radiation calendar day (since atm model did not run to set this)
+      !DMR:  NOTE this assumes a no-leap calendar and equal input/model timesteps
+      nstep = get_nstep()
+      nextsw_cday = mod((nstep/(86400._r8/dtime))*1.0_r8,365._r8)+1._r8 
+      call set_nextsw_cday( nextsw_cday )
+    end if
+ 
     write(rdate,'(i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') yr_sync,mon_sync,day_sync,tod_sync
     nlend_sync = seq_timemgr_StopAlarmIsOn( EClock )
     rstwr_sync = seq_timemgr_RestartAlarmIsOn( EClock )
@@ -383,7 +408,7 @@ contains
     ! Map to clm (only when state and/or fluxes need to be updated)
 
     call t_startf ('lc_lnd_import')
-    call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars )
+    call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars)
     call t_stopf ('lc_lnd_import')
 
     ! Use infodata to set orbital values if updated mid-run
@@ -438,10 +463,12 @@ contains
        call t_stopf ('clm_run')
 
        ! Create l2x_l export state - add river runoff input to l2x_l if appropriate
-       
+
+#ifndef CPL_BYPASS       
        call t_startf ('lc_lnd_export')
        call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, l2x_l%rattr)
        call t_stopf ('lc_lnd_export')
+#endif
 
        ! Advance clm time step
        
