@@ -1703,7 +1703,8 @@ contains
          oceanDICConc, &
          oceanDONConc, &
          oceanParticulateIronConc, &
-         oceanDissolvedIronConc
+         oceanDissolvedIronConc, &
+         oceanZAerosolConc
 
     integer, pointer :: &
          maxAlgaeType, &
@@ -1854,6 +1855,7 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "oceanDMSConc",oceanDMSConc)
        call MPAS_pool_get_array(biogeochemistry, "oceanDMSPConc",oceanDMSPConc)
        call MPAS_pool_get_array(biogeochemistry, "oceanHumicsConc",oceanHumicsConc)
+       call MPAS_pool_get_array(biogeochemistry, "oceanZAerosolConc",oceanZAerosolConc)
 
        do iCell = 1, nCells
        
@@ -1870,6 +1872,7 @@ contains
                oceanHumicsConc(iCell), &
                oceanNitrateConc(iCell), &
                oceanSilicateConc(iCell),&
+               oceanZAerosolConc(:,iCell), &
                maxDICType, &
                maxDONType, &
                maxIronType, &

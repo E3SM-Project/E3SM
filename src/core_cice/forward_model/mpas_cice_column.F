@@ -2245,7 +2245,7 @@ contains
                nSnowLayers, &
                nAerosols, &
                nzAerosols, &
-               config_use_modal_aerosols, &
+               config_use_shortwave_bioabsorption, &
                ciceTracerObject % index_chlorophyllShortwave, &
                ciceTracerObject % index_verticalAerosolsConcShortwave(:), &
                verticalShortwaveGrid(:), &
@@ -9075,6 +9075,7 @@ contains
          oceanDONConc, &
          oceanParticulateIronConc, &
          oceanDissolvedIronConc, &
+         oceanZAerosolConc, &
          atmosBioConcentrations, &
          oceanBioConcentrations, &
          totalVerticalBiologyIce, &
@@ -9111,9 +9112,6 @@ contains
          
     integer :: &
          iCell
-
-   real(kind=RKIND), dimension(:), allocatable :: &
-          oceanzAerosols
 
     logical :: &
          abortFlag, &
@@ -9171,6 +9169,7 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "oceanDMSConc", oceanDMSConc)
        call MPAS_pool_get_array(biogeochemistry, "oceanDMSPConc", oceanDMSPConc)
        call MPAS_pool_get_array(biogeochemistry, "oceanHumicsConc", oceanHumicsConc)
+       call MPAS_pool_get_array(biogeochemistry, "oceanZAerosolConc", oceanZAerosolConc)
        call MPAS_pool_get_array(biogeochemistry, "newlyFormedIce", newlyFormedIce)
 
        call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
@@ -9195,9 +9194,6 @@ contains
        call MPAS_pool_get_dimension(block % dimensions, "maxDONType", maxDONType)
        call MPAS_pool_get_dimension(block % dimensions, "maxIronType", maxIronType)
        
-       allocate(oceanzAerosols(maxAerosolType))
-       oceanzAerosols(:) = 0.0_RKIND
-
        call colpkg_init_hbrine(&
             biologyGrid, &
             interfaceBiologyGrid, &
@@ -9262,7 +9258,7 @@ contains
                   oceanDICConc(:,iCell), &
                   oceanDissolvedIronConc(:,iCell), &
                   oceanParticulateIronConc(:,iCell), &
-                  oceanzAerosols, &
+                  oceanZAerosolConc(:,iCell), &
                   oceanHumicsConc(iCell), &
                   atmosBioConcentrations(:,iCell), &
                   oceanBioConcentrations(:,iCell), & 
@@ -9287,9 +9283,6 @@ contains
           call get_cice_tracer_array_category(block, tracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
        enddo ! iCell
-
-       ! clean up
-       deallocate(oceanzAerosols)
 
        block => block % next
     end do

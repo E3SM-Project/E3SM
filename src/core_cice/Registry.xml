@@ -490,6 +490,17 @@
 	</stream>
 
 	<!-- Aerosols input -->
+	  <stream name="StandardAerosolsInput"
+		  type="input"
+		  filename_template="standard_optics_mpas_cice.nc"
+		  filename_interval="none"
+		  input_interval="initial_only"
+		  immutable="true">
+	    <var name="aerosolAsymmetryParameter"/>
+	    <var name="aerosolMassExtinctionCrossSection"/>
+	    <var name="aerosolSingleScatterAlbedo"/>
+	  </stream>
+
 	  <stream name="ModalAerosolsInput"
 		  type="input"
 		  filename_template="snicar_optics_5bnd_mam_c140303_mpas_cice.nc"
@@ -501,6 +512,7 @@
 	    <var name="modalMassExtinctionCrossSection"/>
 	    <var name="modalSingleScatterAlbedo"/>
 	  </stream>
+
 
 	</streams>
 
@@ -1052,9 +1064,9 @@
 	<var_struct name="aerosols" time_levs="1">
 		<var name="atmosAerosolFlux"                  type="real"     dimensions="nAerosols nCells"               name_in_code="atmosAerosolFlux" packages="pkgColumnVerticalThermodynamics"/>
 		<var name="oceanAerosolFlux"                  type="real"     dimensions="nAerosols nCells"               name_in_code="oceanAerosolFlux" packages="pkgColumnVerticalThermodynamics;pkgColumnITDThermodynamics;pkgColumnRidging"/>
-		<var name="aerosolMassExtinctionCrossSection" type="real"     dimensions="nSpectralIntervals nAerosols"   name_in_code="aerosolMassExtinctionCrossSection" packages="pkgColumnShortwave"/>
-		<var name="aerosolSingleScatterAlbedo"        type="real"     dimensions="nSpectralIntervals nAerosols"   name_in_code="aerosolSingleScatterAlbedo" packages="pkgColumnShortwave"/>
-		<var name="aerosolAsymmetryParameter"         type="real"     dimensions="nSpectralIntervals nAerosols"   name_in_code="aerosolAsymmetryParameter" packages="pkgColumnShortwave"/>
+		<var name="aerosolMassExtinctionCrossSection" type="real"     dimensions="nSpectralIntervals maxAerosolType"   name_in_code="aerosolMassExtinctionCrossSection" packages="pkgColumnShortwave"/>
+		<var name="aerosolSingleScatterAlbedo"        type="real"     dimensions="nSpectralIntervals maxAerosolType"   name_in_code="aerosolSingleScatterAlbedo" packages="pkgColumnShortwave"/>
+		<var name="aerosolAsymmetryParameter"         type="real"     dimensions="nSpectralIntervals maxAerosolType"   name_in_code="aerosolAsymmetryParameter" packages="pkgColumnShortwave"/>
 		<var name="modalMassExtinctionCrossSection"   type="real"     dimensions="nSpectralIntervals nModal1"     name_in_code="modalMassExtinctionCrossSection" packages="pkgColumnShortwave"/>
 		<var name="modalSingleScatterAlbedo"          type="real"     dimensions="nSpectralIntervals nModal1"     name_in_code="modalSingleScatterAlbedo" packages="pkgColumnShortwave"/>
 		<var name="modalAsymmetryParameter"           type="real"     dimensions="nSpectralIntervals nModal1"     name_in_code="modalAsymmetryParameter" packages="pkgColumnShortwave"/>
@@ -1085,6 +1097,7 @@
 		<var name="oceanHumicsConc"	    	      type="real"     dimensions="nCells Time"			 name_in_code="oceanHumicsConc"  packages="pkgColumnBiogeochemistry"/>
 		<var name="oceanParticulateIronConc"	      type="real"     dimensions="maxIronType nCells Time"       name_in_code="oceanParticulateIronConc"  packages="pkgColumnBiogeochemistry"/>
 		<var name="oceanDissolvedIronConc"	      type="real"     dimensions="maxIronType nCells Time"       name_in_code="oceanDissolvedIronConc"  packages="pkgColumnBiogeochemistry"/>
+		<var name="oceanZAerosolConc"	              type="real"     dimensions="maxAerosolType nCells Time"       name_in_code="oceanZAerosolConc"  packages="pkgColumnBiogeochemistry"/>
 		<var name="oceanAlgaeFlux"		      type="real"     dimensions="maxAlgaeType nCells Time"	 name_in_code="oceanAlgaeFlux"  packages="pkgColumnBiogeochemistry"/>
 		<var name="oceanDOCFlux"		      type="real"     dimensions="maxDOCType nCells Time"	 name_in_code="oceanDOCFlux"  packages="pkgColumnBiogeochemistry"/>
 		<var name="oceanDICFlux"		      type="real"     dimensions="maxDICType nCells Time"	 name_in_code="oceanDICFlux"  packages="pkgColumnBiogeochemistry"/>
