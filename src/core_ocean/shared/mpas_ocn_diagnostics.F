@@ -532,7 +532,7 @@ contains
            ! Pressure at top surface may be due to atmospheric pressure
            ! or an ice-shelf depression. 
            pressure(1,iCell) = 0.0_RKIND
-           pressure(1,iCell) = pressure(1,iCell) + frazilSurfacePressure(iCell)
+           if ( associated(frazilSurfacePressure) ) pressure(1,iCell) = pressure(1,iCell) + frazilSurfacePressure(iCell)
            pressure(1,iCell) = pressure(1,iCell) + seaSurfacePressure(iCell)
            pressure(1,iCell) = pressure(1,iCell) + density(1,iCell)*gravity*0.5*layerThickness(1,iCell)
 
