@@ -17,7 +17,6 @@ model=$2
 
 # Write QSUB submission script with the test execution command
 echo "#!/bin/sh" > runctest.sh
-echo "export PIO_DASHBOARD_SITE=${PIO_DASHBOARD_BUILD_NAME}" >> runctest.sh
 echo "export PIO_DASHBOARD_BUILD_NAME=${PIO_DASHBOARD_BUILD_NAME}" >> runctest.sh
 echo "export PIO_DASHBOARD_SOURCE_DIR=${PIO_DASHBOARD_BINARY_DIR}/../src/" >> runctest.sh
 echo "export PIO_DASHBOARD_BINARY_DIR=${PIO_DASHBOARD_BINARY_DIR}" >> runctest.sh
@@ -30,11 +29,11 @@ echo "\$CTESTCMD -S ${scrdir}/CTestScript-Test.cmake,${model} -V" >> runctest.sh
 chmod +x runctest.sh
 
 # Submit the job to the queue
-jobid=`qsub -l nodes=1:ppn=4 runctest.sh`
+jobid=`/usr/local/bin/qsub -l nodes=1:ppn=4 runctest.sh`
 
 # Wait for the job to complete before exiting
 while true; do
-	status=`qstat $jobid`
+	status=`/usr/local/bin/qstat $jobid`
 	echo $status
 	if [ "$status" == "" ]; then
 		break
