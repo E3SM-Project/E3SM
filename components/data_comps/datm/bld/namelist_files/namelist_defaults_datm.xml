@@ -164,7 +164,7 @@ Currently the following streams are supported (term definitions precede the stre
 <streamslist datm_mode="CLMCRUNCEP_V5">CLMCRUNCEP_V5.Solar,CLMCRUNCEP_V5.Precip,CLMCRUNCEP_V5.TPQW</streamslist>
 <streamslist datm_mode="CORE2_NYF" >CORE2_NYF.GISS,CORE2_NYF.GXGXS,CORE2_NYF.NCEP</streamslist>
 <streamslist datm_mode="CORE2_IAF" >CORE2_IAF.GCGCS.PREC,CORE2_IAF.GISS.LWDN,CORE2_IAF.GISS.SWDN,CORE2_IAF.GISS.SWUP,CORE2_IAF.NCEP.DN10,CORE2_IAF.NCEP.Q_10,CORE2_IAF.NCEP.SLP_,CORE2_IAF.NCEP.T_10,CORE2_IAF.NCEP.U_10,CORE2_IAF.NCEP.V_10,CORE2_IAF.CORE2.ArcFactor</streamslist>
-<streamslist datm_mode="CORE2_IAF" atm_grid="01col" >CORE2_IAF.NCEP.DENS.SOFS,CORE2_IAF.NCEP.PSLV.SOFS,CORE2_IAF.SOFS.DAILY,CORE2_IAF.SOFS.6HOUR,CORE2_IAF.CORE2.ArcFactor</streamslist>
+<streamslist datm_mode="CORE2_IAF" atm_grid="01col" >CORE2_IAF.NCEP.DENS.SOFS,CORE2_IAF.NCEP.PSLV.SOFS,CORE2_IAF.PREC.SOFS.DAILY,CORE2_IAF.LWDN.SOFS.DAILY,CORE2_IAF.SWDN.SOFS.DAILY,CORE2_IAF.SWUP.SOFS.DAILY,CORE2_IAF.SOFS.6HOUR,CORE2_IAF.CORE2.ArcFactor</streamslist>
 <streamslist datm_mode="CPLHIST3HrWx">CPLHIST3HrWx.Solar,CPLHIST3HrWx.Precip,CPLHIST3HrWx.nonSolarNonPrecip</streamslist>
 <streamslist datm_mode="WW3"      >WW3</streamslist>
 
@@ -725,7 +725,7 @@ Currently the following streams are supported (term definitions precede the stre
 <!-- =========================================  -->
 
 <!-- == Single Column SOFS forcing -->
-<!-- == dn10 and slp_ from NCEP    -->
+<!-- == dens and pslv from NCEP    -->
 <strm_year_start stream="CORE2_IAF.NCEP.DENS.SOFS">2010</strm_year_start>
 <strm_year_end   stream="CORE2_IAF.NCEP.DENS.SOFS">2011</strm_year_end>
 <strm_year_align stream="CORE2_IAF.NCEP.DENS.SOFS">1</strm_year_align>
@@ -775,34 +775,103 @@ ncep.SOFS.2010.nc
 </strm_datvar>
 
 <!-- == daily lwdn, prec, swdn, swup from SOFS   -->
-<strm_year_start stream="CORE2_IAF.SOFS.DAILY">2010</strm_year_start>
-<strm_year_end   stream="CORE2_IAF.SOFS.DAILY">2011</strm_year_end>
-<strm_year_align stream="CORE2_IAF.SOFS.DAILY">1</strm_year_align>
-<strm_domdir     stream="CORE2_IAF.SOFS.DAILY">$DIN_LOC_ROOT/share/domains</strm_domdir>
-<strm_domfil     stream="CORE2_IAF.SOFS.DAILY">domain.ocn.01col.SOFS.20150828.nc</strm_domfil>
-<strm_datdir     stream="CORE2_IAF.SOFS.DAILY">$DIN_LOC_ROOT/ocn/iaf</strm_datdir>
-<strm_datfil     stream="CORE2_IAF.SOFS.DAILY">
+<strm_year_start stream="CORE2_IAF.PREC.SOFS.DAILY">2010</strm_year_start>
+<strm_year_end   stream="CORE2_IAF.PREC.SOFS.DAILY">2011</strm_year_end>
+<strm_year_align stream="CORE2_IAF.PREC.SOFS.DAILY">1</strm_year_align>
+<strm_domdir     stream="CORE2_IAF.PREC.SOFS.DAILY">$DIN_LOC_ROOT/share/domains</strm_domdir>
+<strm_domfil     stream="CORE2_IAF.PREC.SOFS.DAILY">domain.ocn.01col.SOFS.20150828.nc</strm_domfil>
+<strm_datdir     stream="CORE2_IAF.PREC.SOFS.DAILY">$DIN_LOC_ROOT/ocn/iaf</strm_datdir>
+<strm_datfil     stream="CORE2_IAF.PREC.SOFS.DAILY">
 SOFS.daily.03-09.2010.nc
 </strm_datfil>
 
-<strm_tintalgo   stream="CORE2_IAF.SOFS.DAILY">linear</strm_tintalgo>
-<strm_dtlimit    stream="CORE2_IAF.SOFS.DAILY">1.5</strm_dtlimit>
-<strm_offset     stream="CORE2_IAF.SOFS.DAILY">0</strm_offset>
-<strm_domvar     stream="CORE2_IAF.SOFS.DAILY">
+<strm_tintalgo   stream="CORE2_IAF.PREC.SOFS.DAILY">linear</strm_tintalgo>
+<strm_dtlimit    stream="CORE2_IAF.PREC.SOFS.DAILY">1.5</strm_dtlimit>
+<strm_offset     stream="CORE2_IAF.PREC.SOFS.DAILY">0</strm_offset>
+<strm_domvar     stream="CORE2_IAF.PREC.SOFS.DAILY">
   time    time
   xc      lon
   yc      lat
   area    area
   mask    mask
 </strm_domvar>
-<strm_datvar     stream="CORE2_IAF.SOFS.DAILY">
+<strm_datvar     stream="CORE2_IAF.PREC.SOFS.DAILY">
   prec  prec
+</strm_datvar>
+
+<strm_year_start stream="CORE2_IAF.LWDN.SOFS.DAILY">2010</strm_year_start>
+<strm_year_end   stream="CORE2_IAF.LWDN.SOFS.DAILY">2011</strm_year_end>
+<strm_year_align stream="CORE2_IAF.LWDN.SOFS.DAILY">1</strm_year_align>
+<strm_domdir     stream="CORE2_IAF.LWDN.SOFS.DAILY">$DIN_LOC_ROOT/share/domains</strm_domdir>
+<strm_domfil     stream="CORE2_IAF.LWDN.SOFS.DAILY">domain.ocn.01col.SOFS.20150828.nc</strm_domfil>
+<strm_datdir     stream="CORE2_IAF.LWDN.SOFS.DAILY">$DIN_LOC_ROOT/ocn/iaf</strm_datdir>
+<strm_datfil     stream="CORE2_IAF.LWDN.SOFS.DAILY">
+SOFS.daily.03-09.2010.nc
+</strm_datfil>
+
+<strm_tintalgo   stream="CORE2_IAF.LWDN.SOFS.DAILY">linear</strm_tintalgo>
+<strm_dtlimit    stream="CORE2_IAF.LWDN.SOFS.DAILY">1.5</strm_dtlimit>
+<strm_offset     stream="CORE2_IAF.LWDN.SOFS.DAILY">0</strm_offset>
+<strm_domvar     stream="CORE2_IAF.LWDN.SOFS.DAILY">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CORE2_IAF.LWDN.SOFS.DAILY">
   lwdn  lwdn
+</strm_datvar>
+
+<strm_year_start stream="CORE2_IAF.SWDN.SOFS.DAILY">2010</strm_year_start>
+<strm_year_end   stream="CORE2_IAF.SWDN.SOFS.DAILY">2011</strm_year_end>
+<strm_year_align stream="CORE2_IAF.SWDN.SOFS.DAILY">1</strm_year_align>
+<strm_domdir     stream="CORE2_IAF.SWDN.SOFS.DAILY">$DIN_LOC_ROOT/share/domains</strm_domdir>
+<strm_domfil     stream="CORE2_IAF.SWDN.SOFS.DAILY">domain.ocn.01col.SOFS.20150828.nc</strm_domfil>
+<strm_datdir     stream="CORE2_IAF.SWDN.SOFS.DAILY">$DIN_LOC_ROOT/ocn/iaf</strm_datdir>
+<strm_datfil     stream="CORE2_IAF.SWDN.SOFS.DAILY">
+SOFS.daily.03-09.2010.nc
+</strm_datfil>
+
+<strm_tintalgo   stream="CORE2_IAF.SWDN.SOFS.DAILY">linear</strm_tintalgo>
+<strm_dtlimit    stream="CORE2_IAF.SWDN.SOFS.DAILY">1.5</strm_dtlimit>
+<strm_offset     stream="CORE2_IAF.SWDN.SOFS.DAILY">0</strm_offset>
+<strm_domvar     stream="CORE2_IAF.SWDN.SOFS.DAILY">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CORE2_IAF.SWDN.SOFS.DAILY">
   swdn  swdn 
+</strm_datvar>
+
+<strm_year_start stream="CORE2_IAF.SWUP.SOFS.DAILY">2010</strm_year_start>
+<strm_year_end   stream="CORE2_IAF.SWUP.SOFS.DAILY">2011</strm_year_end>
+<strm_year_align stream="CORE2_IAF.SWUP.SOFS.DAILY">1</strm_year_align>
+<strm_domdir     stream="CORE2_IAF.SWUP.SOFS.DAILY">$DIN_LOC_ROOT/share/domains</strm_domdir>
+<strm_domfil     stream="CORE2_IAF.SWUP.SOFS.DAILY">domain.ocn.01col.SOFS.20150828.nc</strm_domfil>
+<strm_datdir     stream="CORE2_IAF.SWUP.SOFS.DAILY">$DIN_LOC_ROOT/ocn/iaf</strm_datdir>
+<strm_datfil     stream="CORE2_IAF.SWUP.SOFS.DAILY">
+SOFS.daily.03-09.2010.nc
+</strm_datfil>
+
+<strm_tintalgo   stream="CORE2_IAF.SWUP.SOFS.DAILY">linear</strm_tintalgo>
+<strm_dtlimit    stream="CORE2_IAF.SWUP.SOFS.DAILY">1.5</strm_dtlimit>
+<strm_offset     stream="CORE2_IAF.SWUP.SOFS.DAILY">0</strm_offset>
+<strm_domvar     stream="CORE2_IAF.SWUP.SOFS.DAILY">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="CORE2_IAF.SWUP.SOFS.DAILY">
   swup  swup
 </strm_datvar>
 
-<!-- == dn10 from NCEP             -->
+<!-- == 6-hourly shum, tbot, u, v from SOFS   -->
 <strm_year_start stream="CORE2_IAF.SOFS.6HOUR">2010</strm_year_start>
 <strm_year_end   stream="CORE2_IAF.SOFS.6HOUR">2011</strm_year_end>
 <strm_year_align stream="CORE2_IAF.SOFS.6HOUR">1</strm_year_align>
