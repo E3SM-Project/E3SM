@@ -14,6 +14,7 @@ module cice_velocity_solver_wachspress
 
   use mpas_derived_types
   use mpas_pool_routines
+  use mpas_timer
 
   implicit none
 
@@ -106,6 +107,8 @@ contains
          basisIntegralsV, &
          basisIntegralsMetric
 
+    call mpas_timer_start("Velocity solver Wachpress init")
+
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
     call MPAS_pool_get_dimension(mesh, "maxEdges", maxEdges)
 
@@ -175,6 +178,8 @@ contains
     deallocate(wachspressKappa)
     deallocate(wachspressA)
     deallocate(wachspressB)
+
+    call mpas_timer_stop("Velocity solver Wachpress init")
 
   end subroutine cice_init_velocity_solver_wachspress!}}}
 

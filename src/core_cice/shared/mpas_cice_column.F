@@ -2665,11 +2665,15 @@ contains
              ! select tracer rank
              if (tracerInfo % nDims == 3) then
 
+                call mpas_timer_start("Halo")
+
                 ! get the field
                 call MPAS_pool_get_field(tracers, tracersIterator % memberName, tracerField3DReal, 1)
 
                 ! exchange the halo
                 call MPAS_dmpar_exch_halo_field(tracerField3DReal)
+
+                call mpas_timer_stop("Halo")
 
              endif
 

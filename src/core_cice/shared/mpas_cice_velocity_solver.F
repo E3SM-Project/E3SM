@@ -16,6 +16,7 @@ module cice_velocity_solver
   use mpas_pool_routines
   use mpas_timekeeping
   use mpas_dmpar
+  use mpas_timer
 
   implicit none
 
@@ -208,13 +209,19 @@ contains
        call cice_debug_write_out_fields(domain, "cice_run_velocity_solver", 1)
 
        ! pre subcycle
+       call mpas_timer_start("Velocity solver pre-cycle")
        call velocity_solver_pre_subcycle(domain)
+       call mpas_timer_stop("Velocity solver pre-cycle")
 
        ! subcycle the dynamics
+       call mpas_timer_start("Velocity solver sub-cycle")
        call subcycle_velocity_solver(domain, clock)
+       call mpas_timer_stop("Velocity solver sub-cycle")
 
        ! post subcycle
+       call mpas_timer_start("Velocity solver post-cycle")
        call velocity_solver_post_subcycle(domain)
+       call mpas_timer_stop("Velocity solver post-cycle")
        
        call cice_debug_write_out_fields(domain, "cice_run_velocity_solver", 2)
 
@@ -266,6 +273,9 @@ contains
 
     ! calculate the surface tilt force
     call surface_tilt(domain)
+
+    ! initialize subcycle variables
+    call init_subcycle_variables(domain)
 
   end subroutine velocity_solver_pre_subcycle
 
@@ -321,6 +331,8 @@ contains
          iCell
 
     ! halo exchange of mass tracers
+    call mpas_timer_start("Halo")
+
     call MPAS_pool_get_subpool(domain % blocklist % structs, "tracers", tracersPool)
 
     call MPAS_pool_get_field(tracersPool, "iceAreaCategory", iceAreaCategoryField, 1)
@@ -330,6 +342,8 @@ contains
     call MPAS_dmpar_exch_halo_field(iceAreaCategoryField)
     call MPAS_dmpar_exch_halo_field(iceVolumeCategoryField)
     call MPAS_dmpar_exch_halo_field(snowVolumeCategoryField)
+
+    call mpas_timer_stop("Halo")
 
     block => domain % blocklist
     do while (associated(block))
@@ -435,9 +449,11 @@ contains
     endif
 
     ! halo exchange of initial ice area of cell
+    call mpas_timer_start("Halo")
     call MPAS_pool_get_subpool(domain % blocklist % structs, "icestate", icestatePool)
     call MPAS_pool_get_field(icestatePool, "iceAreaCellInitial", iceAreaCellInitialField)
     call MPAS_dmpar_exch_halo_field(iceAreaCellInitialField)
+    call mpas_timer_stop("Halo")
 
     ! interpolate area and mass from cells to vertices
     block => domain % blocklist
@@ -470,9 +486,11 @@ contains
     call velocity_calculation_mask(domain)
 
     ! halo exchange velocity mask
+    call mpas_timer_start("Halo")
     call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolverPool)
     call MPAS_pool_get_field(velocitySolverPool, "solveVelocity", solveVelocityField)
     call MPAS_dmpar_exch_halo_field(solveVelocityField)
+    call mpas_timer_stop("Halo")
 
   end subroutine calculation_masks
 
@@ -792,11 +810,15 @@ contains
     enddo
 
     ! halo exchange velocities
+    call mpas_timer_start("Halo")
+
     call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolverPool)
     call MPAS_pool_get_field(velocitySolverPool, "uVelocity", uVelocityField)
     call MPAS_pool_get_field(velocitySolverPool, "vVelocity", vVelocityField)
     call MPAS_dmpar_exch_halo_field(uVelocityField)
     call MPAS_dmpar_exch_halo_field(vVelocityField)
+
+    call mpas_timer_stop("Halo")
 
   end subroutine new_ice_velocities!}}}
 
@@ -931,9 +953,13 @@ contains
     enddo
 
     ! halo exchange ice strength
+    call mpas_timer_start("Halo")
+
     call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolverPool)
     call MPAS_pool_get_field(velocitySolverPool, "icePressure", icePressureField)
     call MPAS_dmpar_exch_halo_field(icePressureField)
+
+    call mpas_timer_stop("Halo")
 
   end subroutine ice_strength
 
@@ -1003,11 +1029,15 @@ contains
     endif ! .not. config_use_air_stress
 
     ! halo exchange air stress
+    call mpas_timer_start("Halo")
+
     call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolverPool)
     call MPAS_pool_get_field(velocitySolverPool, "airStressCellU", airStressCellUField)
     call MPAS_pool_get_field(velocitySolverPool, "airStressCellV", airStressCellVField)
     call MPAS_dmpar_exch_halo_field(airStressCellUField)
     call MPAS_dmpar_exch_halo_field(airStressCellVField)
+
+    call mpas_timer_stop("Halo")
 
     ! interpolate air stress
     block => domain % blocklist
@@ -1366,6 +1396,125 @@ contains
 
   end subroutine surface_tilt
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_subcycle_variables
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 18th October 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_subcycle_variables(domain)
+
+    type(domain_type) :: domain
+
+    type(block_type), pointer :: block
+
+    type(MPAS_pool_type), pointer :: &
+         velocitySolverPool, &
+         velocityVariationalPool
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         strain11, &
+         strain22, &
+         strain12, &
+         stress11, &
+         stress22, &
+         stress12
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         stressDivergenceU, &
+         stressDivergenceV, &
+         uVelocity, &
+         vVelocity, &
+         oceanStressCoeff
+
+    integer, dimension(:), pointer :: &
+         solveStress, &
+         solveVelocity
+
+    integer, pointer :: &
+         nCells, &
+         nVerticesSolve
+
+    integer :: &
+         iCell, &
+         iVertex
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocityVariationalPool)
+
+       ! strains
+       call MPAS_pool_get_array(velocityVariationalPool, "strain11", strain11)
+       call MPAS_pool_get_array(velocityVariationalPool, "strain22", strain22)
+       call MPAS_pool_get_array(velocityVariationalPool, "strain12", strain12)
+
+       strain11 = 0.0_RKIND
+       strain22 = 0.0_RKIND
+       strain12 = 0.0_RKIND
+
+       ! stresses
+       call MPAS_pool_get_array(velocitySolverPool, "solveStress", solveStress)
+
+       call MPAS_pool_get_array(velocityVariationalPool, "stress11", stress11)
+       call MPAS_pool_get_array(velocityVariationalPool, "stress22", stress22)
+       call MPAS_pool_get_array(velocityVariationalPool, "stress12", stress12)
+
+       call MPAS_pool_get_dimension(block % dimensions, "nCells", nCells)
+
+       do iCell = 1, nCells
+
+          if (solveStress(iCell) /= 1) then
+
+             stress11(:,iCell) = 0.0_RKIND
+             stress22(:,iCell) = 0.0_RKIND
+             stress12(:,iCell) = 0.0_RKIND
+
+          endif
+
+       enddo ! iCell
+
+       ! divergence of stress
+       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceU", stressDivergenceU)
+       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceV", stressDivergenceV)
+
+       stressDivergenceU = 0.0_RKIND
+       stressDivergenceV = 0.0_RKIND
+
+       ! sea ice velocity
+       call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
+
+       call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "oceanStressCoeff", oceanStressCoeff)
+
+       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
+
+       do iVertex = 1, nVerticesSolve
+
+          if (solveVelocity(iVertex) /= 1) then
+
+             uVelocity(iVertex) = 0.0_RKIND
+             vVelocity(iVertex) = 0.0_RKIND
+
+             oceanStressCoeff(iVertex) = 0.0_RKIND
+
+          endif
+
+       enddo ! iVertex
+
+       block => block % next
+    enddo
+
+  end subroutine init_subcycle_variables
+
 !-----------------------------------------------------------------------
 ! Sub-cycle
 !-----------------------------------------------------------------------
@@ -1465,11 +1614,15 @@ contains
     ! calculate internal stresses
     if (trim(config_stress_divergence_scheme) == "weak") then
 
+       call mpas_timer_start("Velocity solver internal stress")
        call cice_internal_stress_weak(domain)
+       call mpas_timer_stop("Velocity solver internal stress")
 
     else if (trim(config_stress_divergence_scheme) == "variational") then
 
+       call mpas_timer_start("Velocity solver internal stress")
        call cice_internal_stress_variational(domain)
+       call mpas_timer_stop("Velocity solver internal stress")
 
     endif
 
@@ -1479,15 +1632,22 @@ contains
     ! solve for velocity
     if (.not. config_revised_evp) then
 
+       call mpas_timer_start("Velocity solver compute")
        call solve_velocity(domain)
+       call mpas_timer_stop("Velocity solver compute")
 
     else
 
+       call mpas_timer_start("Velocity solver compute")
        call solve_velocity_revised(domain)
+       call mpas_timer_stop("Velocity solver compute")
 
     endif
 
     ! halo exchange
+    call mpas_timer_start("Halo")
+    call mpas_timer_start("Velocity solver halo")
+
     call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolverPool)
 
     call MPAS_pool_get_field(velocitySolverPool, "uVelocity", uVelocity)
@@ -1495,6 +1655,9 @@ contains
 
     call MPAS_dmpar_exch_halo_field(uVelocity)
     call MPAS_dmpar_exch_halo_field(vVelocity)
+
+    call mpas_timer_stop("Velocity solver halo")
+    call mpas_timer_stop("Halo")
 
   end subroutine single_subcycle_velocity_solver!}}}
 
@@ -1575,10 +1738,6 @@ contains
                 oceanStressCoeff(iVertex) = ciceIceOceanDragCoefficient * ciceDensitySeaWater * iceAreaVertex(iVertex) * &
                      sqrt((uOceanVelocityVertex(iVertex) - uVelocity(iVertex))**2 + &
                           (vOceanVelocityVertex(iVertex) - vVelocity(iVertex))**2)
-
-             else
-
-                oceanStressCoeff(iVertex) = 0.0_RKIND
 
              endif
 
@@ -1712,11 +1871,6 @@ contains
              uVelocity(iVertex) = (leftMatrix(2,2) * rightHandSide(1) - leftMatrix(1,2) * rightHandSide(2)) / solutionDenominator
              vVelocity(iVertex) = (leftMatrix(1,1) * rightHandSide(2) - leftMatrix(2,1) * rightHandSide(1)) / solutionDenominator
 
-          else
-
-             uVelocity(iVertex) = 0.0_RKIND
-             vVelocity(iVertex) = 0.0_RKIND
-
           endif ! solveVelocity
 
        enddo ! iVertex
@@ -1848,11 +2002,6 @@ contains
 
              uVelocity(iVertex) = (leftMatrix(2,2) * rightHandSide(1) - leftMatrix(1,2) * rightHandSide(2)) / solutionDenominator
              vVelocity(iVertex) = (leftMatrix(1,1) * rightHandSide(2) - leftMatrix(2,1) * rightHandSide(1)) / solutionDenominator
-
-          else
-
-             uVelocity(iVertex) = 0.0_RKIND
-             vVelocity(iVertex) = 0.0_RKIND
 
           endif ! solveVelocity
 
@@ -2241,6 +2390,8 @@ contains
     if (configUseOceanStress) then
 
        ! halo exchange ocean stress
+       call mpas_timer_start("Halo")
+
        call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolverPool)
 
        call MPAS_pool_get_field(velocitySolverPool, "oceanStressU", oceanStressUField)
@@ -2248,6 +2399,8 @@ contains
 
        call MPAS_dmpar_exch_halo_field(oceanStressUField)
        call MPAS_dmpar_exch_halo_field(oceanStressVField)
+
+       call mpas_timer_stop("Halo")
 
        block => domain % blocklist
        do while (associated(block))

@@ -14,6 +14,7 @@ module cice_velocity_solver_variational
 
   use mpas_derived_types
   use mpas_pool_routines
+  use mpas_timer
 
   implicit none
 
@@ -196,6 +197,7 @@ contains
        call MPAS_pool_get_array(velocityVariationalPool, "basisIntegralsV", basisIntegralsV)
        call MPAS_pool_get_array(velocityVariationalPool, "basisIntegralsMetric", basisIntegralsMetric)
 
+       call mpas_timer_start("Velocity solver strain tensor")
        call cice_strain_tensor_variational(&
             meshPool, &
             strain11, &
@@ -207,7 +209,9 @@ contains
             basisGradientV, &
             tanLatVertexRotatedOverRadius, &
             solveStress)
+       call mpas_timer_stop("Velocity solver strain tensor")
 
+       call mpas_timer_start("Velocity solver stress tensor")
        call cice_stress_tensor_variational(&
             meshPool, &
             stress11, &
@@ -221,7 +225,9 @@ contains
             solveStress, &
             elasticTimeStep, &
             revisedEVP)
+       call mpas_timer_stop("Velocity solver stress tensor")
 
+       call mpas_timer_start("Velocity solver stress divergence")
        call cice_stress_divergence_variational(&
             meshPool, &
             stressDivergenceU, &
@@ -235,6 +241,7 @@ contains
             tanLatVertexRotatedOverRadius, &
             cellVerticesAtVertex, &
             solveVelocity)
+       call mpas_timer_stop("Velocity solver stress divergence")
     
        block => block % next
     end do
@@ -310,11 +317,11 @@ contains
     ! loop over cells
     do iCell = 1, nCells
 
-       strain11(:,iCell) = 0.0_RKIND
-       strain22(:,iCell) = 0.0_RKIND
-       strain12(:,iCell) = 0.0_RKIND
-
        if (solveStress(iCell) == 1) then
+
+          strain11(:,iCell) = 0.0_RKIND
+          strain22(:,iCell) = 0.0_RKIND
+          strain12(:,iCell) = 0.0_RKIND
 
           ! loop over velocity points surrounding cell - location of stress and derivative
           do iGradientVertex = 1, nEdgesOnCell(iCell)
@@ -462,12 +469,6 @@ contains
              !replacementPressure(iCell) = replacementPressureCell(3) ! for comparison to CICE quads
              replacementPressure(iCell) = sum(replacementPressureCell(1:nEdgesOnCell(iCell))) / real(nEdgesOnCell(iCell),RKIND)
 
-          else
-
-             stress11(:,iCell) = 0.0_RKIND
-             stress22(:,iCell) = 0.0_RKIND
-             stress12(:,iCell) = 0.0_RKIND
-
           endif ! solveStress
 
        enddo ! iCell
@@ -495,12 +496,6 @@ contains
 
              !replacementPressure(iCell) = replacementPressureCell(3) ! for comparison to CICE quads
              replacementPressure(iCell) = sum(replacementPressureCell(1:nEdgesOnCell(iCell))) / real(nEdgesOnCell(iCell),RKIND)
-
-          else
-
-             stress11(:,iCell) = 0.0_RKIND
-             stress22(:,iCell) = 0.0_RKIND
-             stress12(:,iCell) = 0.0_RKIND
 
           endif ! solveStress
 
@@ -602,10 +597,10 @@ contains
     ! loop over velocity positions
     do iVertex = 1, nVertices
 
-       stressDivergenceU(iVertex) = 0.0_RKIND
-       stressDivergenceV(iVertex) = 0.0_RKIND
-
        if (solveVelocity(iVertex) == 1) then
+
+          stressDivergenceU(iVertex) = 0.0_RKIND
+          stressDivergenceV(iVertex) = 0.0_RKIND
 
           ! loop over surrounding cells
           do iSurroundingCell = 1, vertexDegree
