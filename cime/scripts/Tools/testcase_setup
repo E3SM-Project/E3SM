@@ -270,7 +270,6 @@ my $testcase_begin = <<'END_BEGIN';
     set TESTSTATUS_LOG          = $CASEROOT/TestStatus.log
     set TESTSTATUS_OUT_NLCOMP   = $CASEROOT/TestStatus.nlcomp
 
-    echo "PEND ${CASEBASEID} RUN" >>&! $TESTSTATUS_OUT
     touch $TESTSTATUS_LOG
 
     set sdate = `date +"%Y-%m-%d %H:%M:%S"`

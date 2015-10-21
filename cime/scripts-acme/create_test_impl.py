@@ -314,6 +314,11 @@ class CreateTest(object):
         for phase in PHASES[0:made_it_to_phase+1]:
             str_to_write += "%s %s %s\n" % (self._get_test_status(test_name, phase), test_name, phase)
 
+        if (not self._no_run and not self._is_broken(test_name)):
+            # Ensure PEND state always gets added to TestStatus file if we are
+            # about to run test
+            str_to_write += "%s %s %s\n" % (TEST_PENDING_STATUS, test_name, RUN_PHASE)
+
         try:
             test_status_file = os.path.join(self._get_test_dir(test_name), TEST_STATUS_FILENAME)
             with open(test_status_file, "w") as fd:
