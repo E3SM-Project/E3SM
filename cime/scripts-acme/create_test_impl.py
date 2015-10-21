@@ -7,7 +7,7 @@ import sys, os, shutil, traceback, stat, glob
 import acme_util, compare_namelists, wait_for_tests
 
 from acme_util import expect, warning, verbose_print, run_cmd
-from wait_for_tests import TEST_PASSED_STATUS, TEST_FAIL_STATUS, TEST_PENDING_STATUS, TEST_STATUS_FILENAME, NAMELIST_FAIL_STATUS
+from wait_for_tests import TEST_PASSED_STATUS, TEST_FAIL_STATUS, TEST_PENDING_STATUS, TEST_STATUS_FILENAME, NAMELIST_FAIL_STATUS, RUN_PHASE
 
 INITIAL_PHASE = "INITIAL_PHASE"
 CREATE_NEWCASE_PHASE = "CREATE_NEWCASE"
@@ -15,7 +15,7 @@ XML_PHASE   = "XML_PHASE"
 SETUP_PHASE = "SETUP"
 NAMELIST_PHASE = "nlcomp"
 BUILD_PHASE = "BUILD"
-RUN_PHASE   = "RUN"
+HIST_COMPARE_PHASE = "compare" # Not performed in this script
 PHASES = [INITIAL_PHASE, CREATE_NEWCASE_PHASE, XML_PHASE, SETUP_PHASE, NAMELIST_PHASE, BUILD_PHASE, RUN_PHASE] # Order matters
 
 ###############################################################################
@@ -420,8 +420,7 @@ class CreateTest(object):
                     self._is_broken(test_name)):
                     try:
                         test_status_file = os.path.join(self._get_test_dir(test_name), TEST_STATUS_FILENAME)
-                        with open(test_status_file, "r") as fd:
-                            statuses = wait_for_tests.parse_test_status_file(fd.read(), test_status_file)[0]
+                        statuses = wait_for_tests.parse_test_status_file(test_status_file)[0]
                         if (RUN_PHASE not in statuses):
                             self._test_status_phase(test_name)
                         else:
