@@ -3,12 +3,14 @@ gen_mapping_files/runoff_to_ocn/runoff_map
 **/obj
 **/src/*.o
 **/src/*.mod
+**/src/*.d
 **/src/Macros.make
 **/src/env_mach_specific.xml
 **/src/.env_mach_specific.*
 **/src/makdep
-**/src/*.d
 **/src/Depends*
 map_field/map_field
 check_maps/ESMF_RegridWeightGenCheck
 gen_domain_files/gen_domain
+gen_mapping_files/runoff_to_ocn/src/*
+!gen_mapping_files/runoff_to_ocn/src/*.F90
