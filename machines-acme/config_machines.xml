@@ -877,7 +877,7 @@
 
 <machine MACH="blues">
          <DESC>ANL/LCRC Linux Cluster</DESC>
-         <COMPILERS>intel,gnu,pgi,nag</COMPILERS>
+         <COMPILERS>pgi,intel,gnu,nag</COMPILERS>
          <MPILIBS>mpich,openmpi,mpi-serial</MPILIBS>
          <CESMSCRATCHROOT>/lcrc/project/$PROJECT/$CCSMUSER/acme_scratch</CESMSCRATCHROOT>
          <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
