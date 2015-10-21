@@ -242,7 +242,7 @@ contains
 
                found_temp_mld = .false.
 
-               do k=1, maxLevelCell(iCell)
+               do k=1, maxLevelCell(iCell)-1
                   if(pressure(k+1,iCell) > refPress) then
                      localvals(2:3)=tracers(index_temperature,k:k+1,iCell)
                      localvals(5:6)=pressure(k:k+1,iCell)
@@ -255,7 +255,7 @@ contains
                    endif
                enddo
 
-               do k=refIndex,maxLevelCell(iCell)
+               do k=refIndex,maxLevelCell(iCell)-1
   
                     if(.not. found_temp_mld .and. abs(tracers(index_temperature,k+1,iCell) - temp_ref_lev) .ge. tempThresh) then
                         dVp1 = abs(tracers(index_temperature,k+1,iCell) - temp_ref_lev)
@@ -283,7 +283,7 @@ contains
 
                found_den_mld = .false.
 
-               do k=1, maxLevelCell(iCell)
+               do k=1, maxLevelCell(iCell)-1
                   if(pressure(k+1,iCell) > refPress) then
                      localvals(2:3)=potentialDensity(k:k+1,iCell)
                      localvals(5:6)=pressure(k:k+1,iCell)
@@ -296,7 +296,7 @@ contains
                    endif
                enddo
                
-               do k=refIndex,maxLevelCell(iCell)
+               do k=refIndex,maxLevelCell(iCell)-1
   
                     if(.not. found_den_mld .and. abs(potentialDensity(k+1,iCell) - den_ref_lev) .ge. denThresh) then
                         dVp1 = abs(potentialDensity(k+1,iCell) - den_ref_lev)
@@ -325,17 +325,16 @@ contains
 		if(tGradientFlag) then
 			call mpas_pool_get_array(mixedLayerDepthsAMPool, 'tGradMLD',tGradientMLD)
 
-   
-                   allocate(temperatureGradient(nVertLevels,2))
- 
+            allocate(temperatureGradient(nVertLevels,2))
+
+           do iCell = 1,nCellsSolve
+
             temperatureGradient(:,1) = 0.0_RKIND
             temperatureGradient(1,2) = 1
 
-            do iCell = 1,nCellsSolve
-
                found_temp_mld=.false.
 
-               do k=2,maxLevelCell(iCell)
+               do k=2,maxLevelCell(iCell)-1
                      dz=abs(pressure(k-1,iCell)-pressure(k,iCell))
                      temperatureGradient(k,1) = abs(tracers(index_temperature,k-1,iCell) - tracers(index_temperature,k,iCell)) / dz
                      temperatureGradient(k,2) = k
@@ -369,21 +368,23 @@ contains
 
          enddo !icell
 
+         deallocate(temperatureGradient)
+
        endif !if(temperaturegradientflag)
 
            if(dGradientFlag) then
                  call mpas_pool_get_array(mixedLayerDepthsAMPool, 'dGradMLD',dGradientMLD)
 
              allocate(densityGradient(nVertLevels,2))
+                
+           do iCell = 1,nCellsSolve
 
             densityGradient(:,1)=0.0_RKIND
             densityGradient(1,2) = 1
 
-            do iCell = 1,nCellsSolve
-
                found_den_mld=.false.
 
-               do k=2,maxLevelCell(iCell)
+               do k=2,maxLevelCell(iCell)-1
                      dz=abs(pressure(k-1,iCell)-pressure(k,iCell))
                      densityGradient(k,1) = abs(potentialDensity(k-1,iCell)-potentialDensity(k,iCell)) / dz 
                      densityGradient(k,2) = k
@@ -416,6 +417,7 @@ contains
 
          enddo !icell
 
+         deallocate(densityGradient)
        endif !if(densitygradientflag)
        
          block => block % next
