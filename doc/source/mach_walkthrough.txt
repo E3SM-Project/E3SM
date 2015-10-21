@@ -125,7 +125,7 @@ Modules required for installation depend on your prefered compiler. Issue the co
   %> module load craype-ivybridge<br>
   %> module load cray-shmem<br>
   %> module load cray-mpich<br>
-  %> module swap cce cce/8.4.0.219<br>
+  %> module swap cce cce/8.4.0.223<br>
   %> module load torque<br>
   %> module load git/2.4.6 <br>
   %> module load cmake/3.0.0<br>
@@ -293,5 +293,5 @@ ParallelIO does not require Parallel netcdf to run, so if you decide to use the 
 
 </ol>
 
-_Last updated: 10-13-2015_
+_Last updated: 10-20-2015_
 */
