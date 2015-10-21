@@ -805,7 +805,7 @@ sub setup_cmdl_bgc {
       fatal_error("The namelist variable use_cn is inconsistent with the -bgc option");
     }
     # If the variable has already been set use it, if not set to the value defined by the bgc_mode
-    my @list  = (  "use_lch4", "use_nitrif_denitrif", "use_vertsoilc", "use_century_decomp", "use_dynroot" );
+    my @list  = (  "use_lch4", "use_nitrif_denitrif", "use_vertsoilc", "use_century_decomp" );
     my $ndiff = 0;
     foreach my $var ( @list ) {
        if ( ! defined($nl->get_value($var))  ) {
@@ -817,9 +817,6 @@ sub setup_cmdl_bgc {
           $nl_flags->{$var} = $nl->get_value($var);
        }
        if ($var eq "use_vertsoilc") {
-          $nl_flags->{$var} = ".true.";
-       }
-       if ($var eq "use_dynroot") {
           $nl_flags->{$var} = ".true.";
        }
        $val = $nl_flags->{$var};
@@ -844,6 +841,27 @@ sub setup_cmdl_bgc {
       my @valid_values   = $definition->get_valid_values( $var );
       fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
     }
+
+    # Now set use_dynroot
+    $var = "use_dynroot";
+    $val = $nl_flags->{$var};
+    if ( ! defined($nl->get_value($var))) {
+      if ( $nl_flags->{'bgc_mode'} ne "sp") {
+        $val = ".true.";
+      } else {
+        $val = ".false.";
+      }
+    } else {
+      $nl_flags->{$var} = $nl->get_value($var);
+      $val = $nl_flags->{$var};
+    }
+    $group = $definition->get_group_name($var);
+    $nl->set_variable_value($group, $var, $val);
+    if (  ! $definition->is_valid_value( $var, $val ) ) {
+      my @valid_values   = $definition->get_valid_values( $var );
+      fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+    }
+
   }
 } # end bgc
 
@@ -1863,17 +1881,21 @@ sub setup_logic_use_dynroot {
   #
   my $use_dynroot = $nl->get_value('use_dynroot');
 
-  if ( $physv->as_long() == $physv->as_long("clm4_0") ) {
-    if ( $nl_flags->{'use_dynroot'} eq ".true." ) {
+  if ( $use_dynroot eq ".true.") {
+
+    # use_dynroot not supported for CLM4_0 physics
+    if ( $physv->as_long() == $physv->as_long("clm4_0") ) {
       fatal_error("use_dynroot option used with clm4_0 physics. use_dynroot can ONLY be used with clm4_5/clm5_0 physics");
     }
-  }
 
-  if ( $nl_flags->{'bgc_mode'} eq "sp" ) {
-    fatal_error("Dynamic Roots is set, but neither CN nor CNDV is active!\n");
-  }
-  if ( $nl_flags->{'bgc_mode'} ne "sp" && $nl_flags->{'use_vertsoilc'} eq ".false." ) {
-    warning("Warning, using dynamic roots without vertical soil profile\n");
+    # use_dynroot not supported for SP mode
+    if ( $nl_flags->{'bgc_mode'} eq "sp" ) {
+      fatal_error("Dynamic Roots is set, but neither CN nor CNDV is active!\n");
+    }
+
+    if ( $nl_flags->{'bgc_mode'} ne "sp" && $nl_flags->{'use_vertsoilc'} eq ".false." ) {
+      warning("Warning, using dynamic roots without vertical soil profile\n");
+    }
   }
 
 }
