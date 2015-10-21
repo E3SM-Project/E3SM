@@ -106,6 +106,10 @@ foreach my $func (keys %{$functions}){
       $functions->{$func}{netcdf} =~ s/nattsp/ngattsp/g;
   }
 
+  if($functions->{$func}{pnetcdf} =~ /fill_value/){
+      $functions->{$func}{netcdf} =~ s/fill_valuep/fill_value/g;
+  }
+
   if(defined ($functions->{$func}{pnetcdf}) && defined($functions->{$func}{netcdf})){
 #      && defined($functions->{$func}{pio})){
 
@@ -216,6 +220,8 @@ foreach my $func (keys %{$functions}){
 		  print F "    mpierr = MPI_Bcast(varidp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_ndims/){
 		  print F "    mpierr = MPI_Bcast(ndimsp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";	
+	      }elsif($func =~ /var_fill/){
+                  print F "    mpierr = MPI_Bcast(fill_value, 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /def_var/){
 		  print F "    mpierr = MPI_Bcast(varidp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";	
 	      }elsif($func =~ /def_dim/){
