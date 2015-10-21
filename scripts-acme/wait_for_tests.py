@@ -22,6 +22,8 @@ SIGNAL_RECEIVED           = False
 ACME_MAIN_CDASH           = "ACME_Climate"
 CDASH_DEFAULT_BUILD_GROUP = "ACME_Latest"
 
+RUN_PHASE                 = "RUN"
+
 ###############################################################################
 def signal_handler(*_):
 ###############################################################################
@@ -219,7 +221,7 @@ NightlyStartTime: %s UTC
     acme_util.run_cmd("ctest -VV -D NightlySubmit", verbose=True)
 
 ###############################################################################
-def reduce_stati(stati):
+def reduce_stati(stati, check_throughput=False, check_memory=False, ignore_namelists=False):
 ###############################################################################
     """
     Given a collection of stati for a test, produce a single result. Preference
@@ -227,10 +229,16 @@ def reduce_stati(stati):
     that hasn't finished. Namelist diffs are given the lowest precedence.
     """
     rv = TEST_PASSED_STATUS
-    for status in stati:
+    for phase, status in stati.iteritems():
         if (status in TEST_NOT_FINISHED_STATUS):
             return status
         elif (status != TEST_PASSED_STATUS):
+
+            if ( (not check_throughput and THROUGHPUT_TEST_STR in phase) or
+                 (not check_memory and MEMORY_TEST_STR in phase) or
+                 (ignore_namelists and NAMELIST_TEST_STR in phase) ):
+                continue
+
             if (status == NAMELIST_FAIL_STATUS):
                 if (rv == TEST_PASSED_STATUS):
                     rv = NAMELIST_FAIL_STATUS
@@ -240,8 +248,11 @@ def reduce_stati(stati):
     return rv
 
 ###############################################################################
-def parse_test_status_file(file_contents, status_file_path=None):
+def parse_test_status(file_contents):
 ###############################################################################
+    """
+    Returns {ordered dict of phase->status}, test_name
+    """
     rv = OrderedDict()
     test_name = None
     for line in file_contents.splitlines():
@@ -252,57 +263,52 @@ def parse_test_status_file(file_contents, status_file_path=None):
             if (test_name is None):
                 test_name = curr_test_name
             if (phase in rv):
-                rv[phase] = reduce_stati([status, rv[phase]])
+                rv[phase] = reduce_stati({phase : status, phase : rv[phase]})
             else:
                 rv[phase] = status
         else:
-            warning("In '%s', line '%s' not in expected format" % (status_file_path, line))
+            warning("In TestStatus file for test '%s', line '%s' not in expected format" % (test_name, line))
 
     return rv, test_name
 
 ###############################################################################
-def interpret_status_file(file_contents, status_file_path, check_throughput=False, check_memory=False, ignore_namelists=False):
+def parse_test_status_file(file_name):
+###############################################################################
+    with open(file_name, "r") as fd:
+        return parse_test_status(fd.read())
+
+###############################################################################
+def interpret_status(file_contents, check_throughput=False, check_memory=False, ignore_namelists=False):
 ###############################################################################
     r"""
-    >>> interpret_status_file('PASS testname RUN1', '')
+    >>> interpret_status('PASS testname RUN')
     ('testname', 'PASS')
-    >>> interpret_status_file('PASS testname RUN1\nGEN testname RUN2', '')
-    ('testname', 'GEN')
-    >>> interpret_status_file('FAIL testname RUN1\nGEN testname RUN2', '')
-    ('testname', 'GEN')
-    >>> interpret_status_file('PASS testname RUN1\nPASS testname RUN2', '')
+    >>> interpret_status('PASS testname BUILD\nPEND testname RUN')
+    ('testname', 'PEND')
+    >>> interpret_status('FAIL testname BUILD\nPEND testname RUN')
+    ('testname', 'PEND')
+    >>> interpret_status('PASS testname BUILD\nPASS testname RUN')
     ('testname', 'PASS')
-    >>> interpret_status_file('PASS testname RUN1\nFAIL testname tputcomp', '')
+    >>> interpret_status('PASS testname RUN\nFAIL testname tputcomp')
     ('testname', 'PASS')
-    >>> interpret_status_file('PASS testname RUN1\nFAIL testname tputcomp', '', check_throughput=True)
+    >>> interpret_status('PASS testname RUN\nFAIL testname tputcomp', check_throughput=True)
     ('testname', 'FAIL')
-    >>> interpret_status_file('PASS testname RUN1\nFAIL testname nlcomp', '')
+    >>> interpret_status('PASS testname RUN\nNLFAIL testname nlcomp')
     ('testname', 'NLFAIL')
-    >>> interpret_status_file('PASS testname RUN1\nFAIL testname nlcomp', '', ignore_namelists=True)
+    >>> interpret_status('PASS testname RUN\nNLFAIL testname nlcomp', ignore_namelists=True)
     ('testname', 'PASS')
     """
-    statuses, test_name = parse_test_status_file(file_contents, status_file_path)
-    adjusted_statuses = []
-    for phase, status in statuses.iteritems():
-        verbose_print("Test: '%s' had status '%s' for phase '%s'" % (test_name, status, phase))
+    statuses, test_name = parse_test_status(file_contents)
+    if (RUN_PHASE not in statuses.keys()):
+        warning("Waiting for test '%s' that has no run phase!" % test_name)
 
-        # A non-pass is OK if the failure is due to throughput and we
-        # aren't checking throughput
-        if (status != TEST_PASSED_STATUS and not
-            (not check_throughput and THROUGHPUT_TEST_STR in phase or
-             not check_memory and MEMORY_TEST_STR in phase or
-             ignore_namelists and NAMELIST_TEST_STR in phase)):
-            if (NAMELIST_TEST_STR in phase):
-                adjusted_statuses.append(NAMELIST_FAIL_STATUS)
-            else:
-                adjusted_statuses.append(status)
-        else:
-            adjusted_statuses.append(TEST_PASSED_STATUS)
+    return test_name, reduce_stati(statuses, check_throughput, check_memory, ignore_namelists)
 
-    if (not adjusted_statuses):
-        warning("Empty status file: %s" % status_file_path)
-
-    return test_name, reduce_stati(adjusted_statuses)
+###############################################################################
+def interpret_status_file(file_name, check_throughput=False, check_memory=False, ignore_namelists=False):
+###############################################################################
+    with open(file_name, "r") as fd:
+        return interpret_status(fd.read(), check_throughput, check_memory, ignore_namelists)
 
 ###############################################################################
 def wait_for_test(test_path, results, wait, check_throughput, check_memory, ignore_namelists):
@@ -315,9 +321,7 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
 
     while (True):
         if (os.path.exists(test_status_filepath)):
-            test_status_fd = open(test_status_filepath, "r")
-            test_status_contents = test_status_fd.read()
-            test_name, test_status = interpret_status_file(test_status_contents, test_status_filepath, check_throughput, check_memory, ignore_namelists)
+            test_name, test_status = interpret_status_file(test_status_filepath, check_throughput, check_memory, ignore_namelists)
 
             if (test_status in TEST_NOT_FINISHED_STATUS and (wait and not SIGNAL_RECEIVED)):
                 time.sleep(SLEEP_INTERVAL_SEC)
@@ -336,7 +340,7 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
                 break
 
 ###############################################################################
-def get_test_results(test_paths, no_wait=False, check_throughput=False, check_memory=False, ignore_namelists=False):
+def wait_for_tests_impl(test_paths, no_wait=False, check_throughput=False, check_memory=False, ignore_namelists=False):
 ###############################################################################
     results = Queue.Queue()
 
@@ -383,7 +387,7 @@ def wait_for_tests(test_paths,
     # is terminated
     set_up_signal_handlers()
 
-    test_results = get_test_results(test_paths, no_wait, check_throughput, check_memory, ignore_namelists)
+    test_results = wait_for_tests_impl(test_paths, no_wait, check_throughput, check_memory, ignore_namelists)
 
     all_pass = True
     for test_name, test_data in sorted(test_results.iteritems()):
