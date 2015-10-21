@@ -98,9 +98,11 @@ OPTIONS
                                 bgc   = Carbon Nitrogen with methane, nitrification, vertical soil C,
                                         CENTURY decomposition
                                         (or CLM45BGC if phys=clm4_5/clm5_0, use_cn=true, use_vertsoilc=true,
-                                         use_century_decomp=true, use_nitrif_denitrif=true, and use_lch4=true)
+                                         use_century_decomp=true, use_nitrif_denitrif=true, and use_lch4=true,
+                                         use_dynroot)
                                     This toggles on the namelist variables:
-                                          use_cn, use_lch4, use_nitrif_denitrif, use_vertsoilc, use_century_decomp
+                                          use_cn, use_lch4, use_nitrif_denitrif, use_vertsoilc, use_century_decomp,
+                                          use_dynroot
 
      -bgc_spinup "on|off"     CLM 4.5 Only. For CLM 4.0, spinup is controlled from configure.
                               Turn on given spinup mode for BGC setting of CN
@@ -803,7 +805,7 @@ sub setup_cmdl_bgc {
       fatal_error("The namelist variable use_cn is inconsistent with the -bgc option");
     }
     # If the variable has already been set use it, if not set to the value defined by the bgc_mode
-    my @list  = (  "use_lch4", "use_nitrif_denitrif", "use_vertsoilc", "use_century_decomp" );
+    my @list  = (  "use_lch4", "use_nitrif_denitrif", "use_vertsoilc", "use_century_decomp", "use_dynroot" );
     my $ndiff = 0;
     foreach my $var ( @list ) {
        if ( ! defined($nl->get_value($var))  ) {
@@ -815,6 +817,9 @@ sub setup_cmdl_bgc {
           $nl_flags->{$var} = $nl->get_value($var);
        }
        if ($var eq "use_vertsoilc") {
+          $nl_flags->{$var} = ".true.";
+       }
+       if ($var eq "use_dynroot") {
           $nl_flags->{$var} = ".true.";
        }
        $val = $nl_flags->{$var};
@@ -1420,6 +1425,7 @@ sub process_namelist_inline_logic {
   setup_logic_params_file($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_create_crop_landunit($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_soilstate($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
+  setup_logic_use_dynroot($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_demand($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_surface_dataset($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_initial_conditions($opts, $nl_flags, $definition, $defaults, $nl, $physv);
@@ -1845,6 +1851,31 @@ sub setup_logic_soilstate {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'more_vertlayers', 'hgrid'=>$nl_flags->{'res'} );
     $nl_flags->{'more_vert'} = $nl->get_value('more_vertlayers');
   }
+}
+
+#-------------------------------------------------------------------------------
+
+sub setup_logic_use_dynroot {
+  my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+
+  #
+  # Error checking for dynroot
+  #
+  my $use_dynroot = $nl->get_value('use_dynroot');
+
+  if ( $physv->as_long() == $physv->as_long("clm4_0") ) {
+    if ( $nl_flags->{'use_dynroot'} eq ".true." ) {
+      fatal_error("use_dynroot option used with clm4_0 physics. use_dynroot can ONLY be used with clm4_5/clm5_0 physics");
+    }
+  }
+
+  if ( $nl_flags->{'bgc_mode'} eq "sp" ) {
+    fatal_error("Dynamic Roots is set, but neither CN nor CNDV is active!\n");
+  }
+  if ( $nl_flags->{'bgc_mode'} ne "sp" && $nl_flags->{'use_vertsoilc'} eq ".false." ) {
+    warning("Warning, using dynamic roots without vertical soil profile\n");
+  }
+
 }
 
 #-------------------------------------------------------------------------------
