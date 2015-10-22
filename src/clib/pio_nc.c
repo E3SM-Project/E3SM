@@ -758,6 +758,70 @@ int PIOc_get_att_ubyte (int ncid, int varid, const char *name, unsigned char *ip
 }
 
 /** 
+ * @name    PIOc_del_att
+ * @brief   The PIO-C interface for the NetCDF function nc_del_att.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
+int PIOc_del_att (int ncid, int varid, const char *name) 
+{
+  int ierr;
+  int msg;
+  int mpierr;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+  char errstr[160];
+
+
+  ierr = PIO_NOERR;
+
+  file = pio_get_file_from_id(ncid);
+  if(file == NULL)
+    return PIO_EBADID;
+  ios = file->iosystem;
+  msg = PIO_MSG_DEL_ATT;
+  sprintf(errstr,"in file %s",__FILE__);
+
+  if(ios->async_interface && ! ios->ioproc){
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
+  }
+
+
+  if(ios->ioproc){
+    switch(file->iotype){
+#ifdef _NETCDF
+#ifdef _NETCDF4
+    case PIO_IOTYPE_NETCDF4P:
+      ierr = nc_del_att(file->fh, varid, name);;
+      break;
+    case PIO_IOTYPE_NETCDF4C:
+#endif
+    case PIO_IOTYPE_NETCDF:
+      if(ios->io_rank==0){
+	ierr = nc_del_att(file->fh, varid, name);;
+      }
+      break;
+#endif
+#ifdef _PNETCDF
+    case PIO_IOTYPE_PNETCDF:
+      ierr = ncmpi_del_att(file->fh, varid, name);;
+      break;
+#endif
+    default:
+      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
+    }
+  }
+
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
+
+  return ierr;
+}
+
+/** 
  * @name    PIOc_inq_natts
  * @brief   The PIO-C interface for the NetCDF function nc_inq_natts.
  * @details This routine is called collectively by all tasks in the communicator 
@@ -818,70 +882,6 @@ int PIOc_inq_natts (int ncid, int *ngattsp)
 
   ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(ngattsp,1, MPI_INT, ios->ioroot, ios->my_comm);
-
-  return ierr;
-}
-
-/** 
- * @name    PIOc_del_att
- * @brief   The PIO-C interface for the NetCDF function nc_del_att.
- * @details This routine is called collectively by all tasks in the communicator 
- *           ios.union_comm. For more information on the underlying NetCDF commmand
- *           please read about this function in the NetCDF documentation at: 
- *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
- */
-int PIOc_del_att (int ncid, int varid, const char *name) 
-{
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  char errstr[160];
-
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_DEL_ATT;
-  sprintf(errstr,"in file %s",__FILE__);
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_del_att(file->fh, varid, name);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_del_att(file->fh, varid, name);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      ierr = ncmpi_del_att(file->fh, varid, name);;
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
   return ierr;
 }
@@ -1878,143 +1878,6 @@ int PIOc_inq_dimlen (int ncid, int dimid, PIO_Offset *lenp)
 
   ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
-
-  return ierr;
-}
-
-/** 
- * @name    PIOc_inq_var_fill
- * @brief   The PIO-C interface for the NetCDF function nc_inq_var_fill.
- * @details This routine is called collectively by all tasks in the communicator 
- *           ios.union_comm. For more information on the underlying NetCDF commmand
- *           please read about this function in the NetCDF documentation at: 
- *           http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
- */
-int PIOc_inq_var_fill (int ncid, int varid, int *no_fill, void *fill_value) 
-{
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  char errstr[160];
-
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_INQ_VAR_FILL;
-  sprintf(errstr,"in file %s",__FILE__);
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_inq_var_fill(file->fh, varid, no_fill, fill_value);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_inq_var_fill(file->fh, varid, no_fill, fill_value);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      ierr = ncmpi_inq_var_fill(file->fh, varid, no_fill, fill_value);;
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    mpierr = MPI_Bcast(fill_value, 1, MPI_INT, ios->ioroot, ios->my_comm);
-
-  return ierr;
-}
-
-/** 
- * @name    PIOc_def_var_fill
- * @brief   The PIO-C interface for the NetCDF function nc_def_var_fill.
- * @details This routine is called collectively by all tasks in the communicator 
- *           ios.union_comm. For more information on the underlying NetCDF commmand
- *           please read about this function in the NetCDF documentation at: 
- *           http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
- */
-int PIOc_def_var_fill (int ncid, int varid, int no_fill, void *fill_value) 
-{
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  char errstr[160];
-
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_DEF_VAR_FILL;
-  sprintf(errstr,"in file %s",__FILE__);
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_def_var_fill(file->fh, varid, no_fill, fill_value);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-      if(ios->io_rank==0){
-        ierr = nc_def_var(file->fh, name, xtype, ndims, dimidsp, varidp);
-        if(ierr == PIO_NOERR){
-          ierr = nc_def_var_deflate(file->fh, *varidp, 0,1,1);
-        }
-      }
-      break;
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_def_var_fill(file->fh, varid, no_fill, fill_value);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      ierr = ncmpi_def_var_fill(file->fh, varid, no_fill, fill_value);;
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    mpierr = MPI_Bcast(fill_value, 1, MPI_INT, ios->ioroot, ios->my_comm);
 
   return ierr;
 }
