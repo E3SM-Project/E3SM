@@ -126,7 +126,7 @@ class TestWaitForTests(unittest.TestCase):
             make_fake_teststatus(os.path.join(self._testdir_with_fail, "TestStatus_%d" % r), "Test_%d" % r, "PASS" if r % 2 == 0 else "FAIL", "PHASE_%s" % r)
 
         for r in range(10):
-            make_fake_teststatus(os.path.join(self._testdir_unfinished, "TestStatus_%d" % r), "Test_%d" % r, "RUN" if r == 5 else "PASS", "PHASE_%s" % r)
+            make_fake_teststatus(os.path.join(self._testdir_unfinished, "TestStatus_%d" % r), "Test_%d" % r, "PEND" if r == 5 else "PASS", "PHASE_%s" % r)
 
         # Set up proxy if possible
         self._unset_proxy = setup_proxy()
@@ -190,7 +190,7 @@ class TestWaitForTests(unittest.TestCase):
     ###########################################################################
     def test_wait_for_test_no_wait(self):
     ###########################################################################
-        expected_results = ["RUN" if item == 5 else "PASS" for item in range(10)]
+        expected_results = ["PEND" if item == 5 else "PASS" for item in range(10)]
         self.simple_test(self._testdir_unfinished, expected_results, "-n")
 
     ###########################################################################
@@ -215,7 +215,7 @@ class TestWaitForTests(unittest.TestCase):
     ###########################################################################
     def test_wait_for_test_wait_kill(self):
     ###########################################################################
-        expected_results = ["RUN" if item == 5 else "PASS" for item in range(10)]
+        expected_results = ["PEND" if item == 5 else "PASS" for item in range(10)]
         run_thread = threading.Thread(target=self.threaded_test, args=(self._testdir_unfinished, expected_results))
         run_thread.daemon = True
         run_thread.start()
@@ -251,7 +251,7 @@ class TestWaitForTests(unittest.TestCase):
     ###########################################################################
     def test_wait_for_test_cdash_kill(self):
     ###########################################################################
-        expected_results = ["RUN" if item == 5 else "PASS" for item in range(10)]
+        expected_results = ["PEND" if item == 5 else "PASS" for item in range(10)]
         run_thread = threading.Thread(target=self.threaded_test, args=(self._testdir_unfinished, expected_results, "-d regression_test_kill"))
         run_thread.daemon = True
         run_thread.start()
