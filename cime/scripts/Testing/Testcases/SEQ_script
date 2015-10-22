@@ -117,7 +117,7 @@ echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >>& $TESTST
 echo '**********************************************' >>& $TESTSTATUS_LOG
 
 echo "obtaining test functionality from history files with commands " >>& $TESTSTATUS_LOG
-echo "$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 seq -msg compare .base and .seq files" >> >>& $TESTSTATUS_LOG
+echo "$SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 seq -msg compare .base and .seq files" >>& $TESTSTATUS_LOG
 echo ""	>>& $TESTSTATUS_LOG
 
 $SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 seq -msg "compare .base and .seq files" >>& $TESTSTATUS_OUT
