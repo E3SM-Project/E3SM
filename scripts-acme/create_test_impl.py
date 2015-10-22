@@ -7,15 +7,13 @@ import sys, os, shutil, traceback, stat, glob
 import acme_util, compare_namelists, wait_for_tests
 
 from acme_util import expect, warning, verbose_print, run_cmd
-from wait_for_tests import TEST_PASSED_STATUS, TEST_FAIL_STATUS, TEST_PENDING_STATUS, TEST_STATUS_FILENAME, NAMELIST_FAIL_STATUS, RUN_PHASE
+from wait_for_tests import TEST_PASSED_STATUS, TEST_FAIL_STATUS, TEST_PENDING_STATUS, TEST_STATUS_FILENAME, NAMELIST_FAIL_STATUS, RUN_PHASE, NAMELIST_PHASE
 
 INITIAL_PHASE = "INITIAL_PHASE"
 CREATE_NEWCASE_PHASE = "CREATE_NEWCASE"
 XML_PHASE   = "XML_PHASE"
 SETUP_PHASE = "SETUP"
-NAMELIST_PHASE = "nlcomp"
 BUILD_PHASE = "BUILD"
-HIST_COMPARE_PHASE = "compare" # Not performed in this script
 PHASES = [INITIAL_PHASE, CREATE_NEWCASE_PHASE, XML_PHASE, SETUP_PHASE, NAMELIST_PHASE, BUILD_PHASE, RUN_PHASE] # Order matters
 
 ###############################################################################

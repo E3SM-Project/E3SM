@@ -8,20 +8,20 @@ from collections import OrderedDict
 
 TEST_STATUS_FILENAME      = "TestStatus"
 TEST_PENDING_STATUS       = "PEND"
-TEST_NOT_FINISHED_STATUS  = ["GEN", "BUILD", "RUN", TEST_PENDING_STATUS]
 TEST_PASSED_STATUS        = "PASS"
 TEST_FAIL_STATUS          = "FAIL"
+TEST_DIFF_STATUS          = "DIFF"
 NAMELIST_FAIL_STATUS      = "NLFAIL"
 COMMENT_STATUS            = "COMMENT"
-BUILD_FAIL_STATUS         = "CFAIL"
 SLEEP_INTERVAL_SEC        = .1
 THROUGHPUT_TEST_STR       = "tputcomp"
 MEMORY_TEST_STR           = "memcomp"
-NAMELIST_TEST_STR         = "nlcomp"
 SIGNAL_RECEIVED           = False
 ACME_MAIN_CDASH           = "ACME_Climate"
 CDASH_DEFAULT_BUILD_GROUP = "ACME_Latest"
 
+NAMELIST_PHASE            = "nlcomp"
+HIST_COMPARE_PHASE        = "compare"
 RUN_PHASE                 = "RUN"
 
 ###############################################################################
@@ -194,7 +194,7 @@ NightlyStartTime: %s UTC
             ("text/string",    "Exit Code",         test_status),
             ("text/string",    "Exit Value",        "0" if test_passed else "1"),
             ("numeric_double", "Execution Time",    str(get_test_time(test_norm_path))),
-            ("text/string",    "Completion Status", "Not Completed" if test_status in TEST_NOT_FINISHED_STATUS else "Completed"),
+            ("text/string",    "Completion Status", "Not Completed" if test_status == TEST_PENDING_STATUS else "Completed"),
             ("text/string",    "Command line",      "create_test")
         )
 
@@ -230,18 +230,21 @@ def reduce_stati(stati, check_throughput=False, check_memory=False, ignore_namel
     """
     rv = TEST_PASSED_STATUS
     for phase, status in stati.iteritems():
-        if (status in TEST_NOT_FINISHED_STATUS):
+        if (status == TEST_PENDING_STATUS):
             return status
-        elif (status != TEST_PASSED_STATUS):
 
+        elif (status != TEST_PASSED_STATUS):
             if ( (not check_throughput and THROUGHPUT_TEST_STR in phase) or
                  (not check_memory and MEMORY_TEST_STR in phase) or
-                 (ignore_namelists and NAMELIST_TEST_STR in phase) ):
+                 (ignore_namelists and phase == NAMELIST_PHASE) ):
                 continue
 
-            if (status == NAMELIST_FAIL_STATUS):
-                if (rv == TEST_PASSED_STATUS):
-                    rv = NAMELIST_FAIL_STATUS
+            if (status == NAMELIST_FAIL_STATUS and rv == TEST_PASSED_STATUS):
+                rv = NAMELIST_FAIL_STATUS
+
+            elif (rv in [NAMELIST_FAIL_STATUS, TEST_PASSED_STATUS] and phase == HIST_COMPARE_PHASE):
+                rv = TEST_DIFF_STATUS
+
             else:
                 rv = status
 
@@ -323,7 +326,7 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
         if (os.path.exists(test_status_filepath)):
             test_name, test_status = interpret_status_file(test_status_filepath, check_throughput, check_memory, ignore_namelists)
 
-            if (test_status in TEST_NOT_FINISHED_STATUS and (wait and not SIGNAL_RECEIVED)):
+            if (test_status == TEST_PENDING_STATUS and (wait and not SIGNAL_RECEIVED)):
                 time.sleep(SLEEP_INTERVAL_SEC)
                 verbose_print("Waiting for test to finish")
             else:
