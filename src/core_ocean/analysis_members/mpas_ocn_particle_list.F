@@ -525,6 +525,7 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
 
       ! get a complete list of the processors (including itself)
       call uniqueIntegerList(tempInt,ioProcNeighs)
+      call removeValueFromIntList(ioProcNeighs, domain % dminfo % my_proc_id)
 #ifdef MPAS_DEBUG
       write(stderrUnit,*) 'ioProcNeighs = ', ioProcNeighs
 #endif
@@ -592,7 +593,10 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
 
       ! compute send list now that all particles reside on correct block (processor) 'currentBlock'
       ! didn't show up with serial IO because all computational processors sent data to proc 0
-      call compute_particle_send_list(domain, ioProcSendList)
+      ! note that this could be missing communication where before transfer particle on proc A
+      ! has ioProc of A and is sent to B (must have previously kept a record that B is in A's halo list
+      ! note, may be slightly redundant because we could update ioProcSendList once particles are transfered
+      call compute_additional_particle_send_list(domain, ioProcSendList)
 
 #ifdef MPAS_DEBUG
       ! need to update IO processors as to the change also so that they know where to get data from!!!
@@ -608,6 +612,7 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
       allocate(sendRequestID(nioProcNeighs), recvRequestID(nioProcNeighs))
 
       completeList = .False.
+      recvList = .False.
       ! for each ioProc, send logical array information
       do i = 1, nioProcNeighs
 #ifdef _MPI
@@ -662,6 +667,7 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
       ! now get the desired integer halo list
       deallocate(ioProcNeighs)
       call uniqueIntegerList(intArray, ioProcNeighs)
+      call removeValueFromIntList(ioProcNeighs, domain % dminfo % my_proc_id)
 
       deallocate(intArray, completeList, sendRequestID, recvRequestID)
 
@@ -2336,10 +2342,62 @@ end subroutine empty_list_particlelists!}}}
 
       ! get unique array for complete list
       call uniqueIntegerList(tempIntegerArray, procNeighs)
+      call removeValueFromIntList(procNeighs, domain % dminfo % my_proc_id)
 
       deallocate(tempIntegerArray)
 
    end subroutine compute_procNeighs !}}}
+
+
+!***********************************************************************
+!
+!  routine removeValueFromIntList(list, removeval)
+!
+!> \brief   Remove value removeval from list vector
+!> \author  Phillip Wolfram
+!> \date    10/22/2015
+!> \details
+!>  This routine remotes the removeval value from the list in-place.
+!
+!-----------------------------------------------------------------------
+   subroutine removeValueFromIntList(list, removeval) !{{{
+     implicit none
+     integer, dimension(:), pointer, intent(inout) :: list
+     integer, intent(in) :: removeval
+
+     integer, dimension(:), pointer :: tmparray
+     integer :: nsize, i
+
+     ! get size of new array
+     nsize = 0
+     do i = 1, size(list)
+       if (list(i) /= removeval) then
+         nsize = nsize + 1
+       end if
+     end do
+
+     allocate(tmparray(nsize))
+     nsize = 0
+     do i = 1, size(list)
+       if (list(i) /= removeval) then
+         nsize = nsize + 1
+         tmparray(nsize) = list(i)
+       end if
+     end do
+
+     ! resize the list
+     deallocate(list)
+     allocate(list(nsize))
+
+     ! transfer contents back to list
+     do i = 1, nsize
+       list(i) = tmparray(i)
+     end do
+
+     deallocate(tmparray)
+
+   end subroutine removeValueFromIntList
+
 
 !***********************************************************************
 !
@@ -2820,7 +2878,7 @@ write(stderrUnit,*) 'after 2nd barrier'
 
 !***********************************************************************
 !
-!  routine compute_particle_send_list
+!  routine compute_additional_particle_send_list
 !
 !> \brief   Update send list
 !> \author  Phillip Wolfram
@@ -2828,7 +2886,7 @@ write(stderrUnit,*) 'after 2nd barrier'
 !> \details
 !>  Compute send list for all particles residing on correct block 'currentBlock'
 !-----------------------------------------------------------------------
-   subroutine compute_particle_send_list(domain, ioProcSendList) !{{{
+   subroutine compute_additional_particle_send_list(domain, ioProcSendList) !{{{
      implicit none
      type (domain_type), intent(in) :: domain
      logical, dimension(:), pointer, intent(inout) :: ioProcSendList
@@ -2855,7 +2913,7 @@ write(stderrUnit,*) 'after 2nd barrier'
        block => block % next
      end do !}}}
 
-   end subroutine compute_particle_send_list !}}}
+   end subroutine compute_additional_particle_send_list !}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -3827,7 +3885,7 @@ end subroutine allocate_list_particlelists !}}}
 !
 !-----------------------------------------------------------------------
    subroutine mpas_particle_list_update_computational_halos(domain, block, particle, poolname, iCell, &
-       arrayIndex, ioProcRecvList, gioProcNeighs ) !{{{
+       arrayIndex, ioProcRecvList, ioProcSendList, gioProcNeighs ) !{{{
      implicit none
      type (domain_type), intent(inout) :: domain
      type (block_type), intent(inout), pointer :: block
@@ -3836,6 +3894,7 @@ end subroutine allocate_list_particlelists !}}}
      integer, intent(inout) :: iCell, arrayIndex
      integer, dimension(:), pointer, intent(inout) :: gioProcNeighs
      logical, dimension(:,:), pointer, intent(inout) :: ioProcRecvList
+     logical, dimension(:), pointer, intent(inout) :: ioProcSendList
 
      ! local variables
      integer :: currentProc, ioProc
@@ -3864,8 +3923,15 @@ end subroutine allocate_list_particlelists !}}}
      write(stderrUnit,*) 'g_ioProcNeighs=',gioProcNeighs
      write(stderrUnit,*) 'ioProc=',ioProc
 #endif
-     arrayIndex = find_index(gioProcNeighs, ioProc)
-     ioProcRecvList(arrayIndex, currentProc+1) = .True.
+     ! do not need to transfer information for particles on-processor, this is computed from the send list
+     ! which is dependent upon current, on-processor particles
+     if (ioProc /= domain % dminfo % my_proc_id) then
+       arrayIndex = find_index(gioProcNeighs, ioProc)
+       ioProcRecvList(arrayIndex, currentProc+1) = .True.
+     else
+       ! consider the case where a particle on A has an ioProc of A and is sent to B (need to have B in A's halo).
+       ioProcSendList(currentProc+1) = .True.
+     end if
      ! must be computed after computational particles are transferred (this was a bug left-over from serial IO)
    end subroutine mpas_particle_list_update_computational_halos !}}}
 
