@@ -2842,9 +2842,9 @@ end subroutine cesm_init
                ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
                call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
 
-               call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
+               call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g') !Jer: why are these within lnd_c2_glc, if ocn_c2_glc exists?
 
-            call component_diag(infodata, glc, flow='x2c', comment='send glc', &
+               call component_diag(infodata, glc, flow='x2c', comment='send glc', &
                     info_debug=info_debug, timer_diag='CPL:glcprep_diagav')
             endif
 

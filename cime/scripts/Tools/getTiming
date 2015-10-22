@@ -483,6 +483,7 @@ sub gettiming2 {
     prttime(' CPL:GLCPREP '         ,$coffset,$adays,$m999,$fh);
     prttime(' CPL:glcprep_avg '     ,$coffset,$adays,$m999,$fh);
     prttime(' CPL:glcprep_lnd2glc ' ,$coffset,$adays,$m999,$fh);
+    prttime(' CPL:glcprep_ocn2glc ' ,$coffset,$adays,$m999,$fh);
     prttime(' CPL:glcprep_mrgx2g '  ,$coffset,$adays,$m999,$fh);
     prttime(' CPL:glcprep_diagav '  ,$coffset,$adays,$m999,$fh);
 
