@@ -143,6 +143,8 @@ module seq_flds_mod
    character(len=CXX) :: megan_voc_fields    ! List of MEGAN VOC emission fields
    character(len=CXX) :: fire_emis_fields    ! List of fire emission fields
    character(len=CX)  :: carma_fields        ! List of CARMA fields from lnd->atm
+   integer            :: ice_ncat            ! number of sea ice thickness categories
+   logical            :: seq_flds_i2o_per_cat! .true. if select per ice thickness category fields are passed from ice to ocean
 
    !----------------------------------------------------------------------------
    ! metadata
@@ -151,7 +153,7 @@ module seq_flds_mod
    character(len=*),parameter :: undef     = 'undefined'
    integer         ,parameter :: nmax      = 1000        ! maximum number of entries in lookup_entry
    integer                    :: n_entries = 0           ! actual number of entries in lookup_entry
-   character(len=80), dimension(nmax, 4) :: lookup_entry = undef
+   character(len=CSS), dimension(nmax, 4) :: lookup_entry = undef
 
    !----------------------------------------------------------------------------
    ! for the domain
@@ -330,7 +332,8 @@ module seq_flds_mod
      integer :: glc_nec
 
      namelist /seq_cplflds_inparm/  &
-          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, glc_nec
+          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, glc_nec, &
+          ice_ncat, seq_flds_i2o_per_cat
 
      ! user specified new fields
      integer,  parameter :: nfldmax = 200
@@ -358,6 +361,8 @@ module seq_flds_mod
         flds_co2c = .false.
         flds_co2_dmsa = .false.
         glc_nec   = 0
+        ice_ncat  = 1
+        seq_flds_i2o_per_cat = .true.
 
         unitn = shr_file_getUnit()
         write(logunit,"(A)") subname//': read seq_cplflds_inparm namelist from: '&
@@ -379,6 +384,9 @@ module seq_flds_mod
      call shr_mpi_bcast(flds_co2c    , mpicom)
      call shr_mpi_bcast(flds_co2_dmsa, mpicom)
      call shr_mpi_bcast(glc_nec      , mpicom)
+     call shr_mpi_bcast(ice_ncat     , mpicom)
+     call shr_mpi_bcast(seq_flds_i2o_per_cat, mpicom)
+
      call glc_elevclass_init(glc_nec)
      
      !---------------------------------------------------------------------------
@@ -1963,6 +1971,67 @@ module seq_flds_mod
      endif
 
      !-----------------------------------------------------------------------------
+     ! optional per thickness category fields
+     !-----------------------------------------------------------------------------
+
+     if (seq_flds_i2o_per_cat) then
+        do num = 1, ice_ncat
+           write(cnum,'(i2.2)') num
+
+           ! Fractional ice coverage wrt ocean
+
+           name = 'Si_ifrac_' // cnum
+           call seq_flds_add(i2x_states,name)
+           call seq_flds_add(x2o_states,name)
+           longname = 'fractional ice coverage wrt ocean for thickness category ' // cnum
+           stdname  = 'sea_ice_area_fraction'
+           units    = 'unitless'
+           attname  = name
+           call metadata_set(attname, longname, stdname, units)
+
+           ! Net shortwave radiation
+
+           name = 'PFioi_swpen_ifrac_' // cnum
+           call seq_flds_add(i2x_fluxes,name)
+           call seq_flds_add(x2o_fluxes,name)
+           longname = 'net shortwave radiation penetrating into ice and ocean times ice fraction for thickness category ' // cnum
+           stdname  = 'product_of_net_downward_shortwave_flux_at_sea_water_surface_and_sea_ice_area_fraction'
+           units    = 'W m-2'
+           attname  = name
+           call metadata_set(attname, longname, stdname, units)
+
+        end do
+
+        ! Fractional atmosphere coverage wrt ocean
+
+        name = 'Sf_afrac'
+        call seq_flds_add(x2o_states,name)
+        longname = 'fractional atmosphere coverage wrt ocean'
+        stdname  = 'atmosphere_area_fraction'
+        units    = 'unitless'
+        attname  = name
+        call metadata_set(attname, longname, stdname, units)
+
+        name = 'Sf_afracr'
+        call seq_flds_add(x2o_states,name)
+        longname = 'fractional atmosphere coverage used in radiation computations wrt ocean'
+        stdname  = 'atmosphere_area_fraction'
+        units    = 'unitless'
+        attname  = name
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Net shortwave radiation
+
+        name = 'Foxx_swnet_afracr'
+        call seq_flds_add(x2o_fluxes,name)
+        longname = 'net shortwave radiation times atmosphere fraction'
+        stdname = 'product_of_net_downward_shortwave_flux_at_sea_water_surface_and_atmosphere_area_fraction'
+        units = 'W m-2'
+        attname = name
+        call metadata_set(attname, longname, stdname, units)
+     endif
+
+     !-----------------------------------------------------------------------------
      ! Read namelist for CARMA 
      ! if carma_flds are specified then setup fields for CLM to CAM communication
      !-----------------------------------------------------------------------------
@@ -2372,7 +2441,7 @@ module seq_flds_mod
 
      !--- local ---
      integer :: i,n
-     character(len=80) :: llongname, lstdname, lunits, lshortname  ! local copies
+     character(len=CSS) :: llongname, lstdname, lunits, lshortname  ! local copies
      character(len=*),parameter :: undef = 'undefined'
      character(len=*),parameter :: unknown = 'unknown'
      logical :: found
