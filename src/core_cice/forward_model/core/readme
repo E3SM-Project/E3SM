@@ -1,5 +1,0 @@
-
-This directory contains files comprising the CORE library. Include "core"
-in your own code. It includes the other files, in their proper order. Be
-sure this directory is known to the compiler when you compile your code.
-On many compilers, this is done with the -I option.
