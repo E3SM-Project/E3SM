@@ -257,7 +257,7 @@ default: .false.
 </entry>
 
 <entry id="flux_qacc0" 
-type="logical"  
+type="real"  
 category="dice"
 group="dice_nml" >
 initial water accumulation value
@@ -265,7 +265,7 @@ default: 0.
 </entry>
 
 <entry id="flux_qmin" 
-type="logical"  
+type="real"  
 category="dice"
 group="dice_nml" >
 bound on melt rate
@@ -273,7 +273,7 @@ default: -300.0e0
 </entry>
 
 <entry id="flux_swpf" 
-type="logical"  
+type="real"  
 category="dice"
 group="dice_nml" >
 short-wave penatration factor
