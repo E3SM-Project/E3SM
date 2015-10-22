@@ -1062,6 +1062,7 @@
     <type>integer</type>
     <default_value>1</default_value>
     <group>build_grid</group>
+    <file>env_build.xml</file>
     <desc>number of ice thickness categories - DO NOT EDIT (set by CICE configure)</desc>
   </entry>
 
@@ -2792,6 +2793,7 @@
     <valid_values>TRUE,FALSE</valid_values>  
     <default_value>FALSE</default_value> 
     <group>run_coupling</group>
+    <file>env_run.xml</file>
     <desc>determine if per ice thickness category fields are passed from ice to ocean - DO NOT EDIT (set by POP build-namelist)</desc>
   </entry>
 
