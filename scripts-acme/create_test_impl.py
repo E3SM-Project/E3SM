@@ -426,7 +426,7 @@ class CreateTest(object):
                         statuses = wait_for_tests.parse_test_status_file(test_status_file)[0]
                         if (RUN_PHASE not in statuses):
                             self._test_status_phase(test_name)
-                        else:
+                        elif (statuses[RUN_PHASE] in [TEST_PASSED_STATUS, TEST_PENDING_STATUS]):
                             self._log_output(test_name,
                                              "VERY BAD! How was infrastructure able to log a TestState but not change it to FAIL?")
                     except Exception as e:
