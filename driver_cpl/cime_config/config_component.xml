@@ -1058,6 +1058,13 @@
     <desc>number of ice cells in j direction - DO NOT EDIT (for experts only)</desc>
   </entry>
 
+  <entry id="ICE_NCAT"> 
+    <type>integer</type>
+    <default_value>1</default_value>
+    <group>build_grid</group>
+    <desc>number of ice thickness categories - DO NOT EDIT (set by CICE configure)</desc>
+  </entry>
+
   <entry id="ROF_GRID">
     <type>char</type>
     <default_value>UNSET</default_value>
@@ -2778,6 +2785,14 @@
       cpl_seq_option flags take it's place.
       TIGHT coupling makes no sense with the OPTION5 and OPTION6 flags.
     </desc>
+  </entry>
+
+  <entry id="CPL_I2O_PER_CAT">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>  
+    <default_value>FALSE</default_value> 
+    <group>run_coupling</group>
+    <desc>determine if per ice thickness category fields are passed from ice to ocean - DO NOT EDIT (set by POP build-namelist)</desc>
   </entry>
 
   <entry id="CCSM_BGC"> 
