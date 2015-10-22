@@ -376,7 +376,7 @@ for mct, etc.
   <ADD_CFLAGS DEBUG="TRUE"> -g -O0 </ADD_CFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
   <FFLAGS> -f free -N 255  -h byteswapio -x dir </FFLAGS>
-  <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
+  <FFLAGS_NOOPT> -O1,fp2,ipa0,scalar0,vector0 </FFLAGS_NOOPT>
   <FC_AUTO_R8> -s real64 </FC_AUTO_R8>
   <LDFLAGS> -Wl,--allow-multiple-definition -h byteswapio </LDFLAGS>  
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
