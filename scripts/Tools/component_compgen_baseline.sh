@@ -313,7 +313,7 @@ for model in ${models[*]}; do
 		fi
 		# if ANY teststatus is GFAIL then overall status is GFAIL
 		if [ "$generate_status" = "GFAIL" ]; then
-		    overall_compare_status="GFAIL"
+		    overall_generate_status="GFAIL"
 		fi
 	    fi
 	fi
