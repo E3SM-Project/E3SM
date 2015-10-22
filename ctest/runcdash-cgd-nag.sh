@@ -28,7 +28,7 @@ echo "CTEST_SCRIPT_DIRECTORY="${CTEST_SCRIPT_DIRECTORY}
 echo "PIO_DASHBOARD_SOURCE_DIR="${PIO_DASHBOARD_SOURCE_DIR}
 
 if [ ! -d src ]; then
-  git clone https://github.com/Katetc/ParallelIO src
+  git clone https://github.com/PARALLELIO/ParallelIO src
 fi
 
 cd src
