@@ -20,14 +20,10 @@
 
 module cice_advection_incremental_remap
 
-   use mpas_kind_types
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
-   use mpas_io_units
 
-   use cice_constants
-   use cice_mesh
    use cice_advection_incremental_remap_tracers, only: tracer_type, tracersHead,        &
                                                        cice_add_tracers_to_linked_list, &
                                                        cice_set_tracer_array_pointers,  &

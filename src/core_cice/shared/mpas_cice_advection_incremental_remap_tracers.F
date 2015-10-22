@@ -19,12 +19,9 @@
 !-----------------------------------------------------------------------
 module cice_advection_incremental_remap_tracers
 
-   use mpas_kind_types
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_io_units
-
-   use cice_constants
+   use mpas_dmpar
 
    implicit none
    private
@@ -147,7 +144,7 @@ module cice_advection_incremental_remap_tracers
    type(tracer_type), pointer, public :: tracersHead ! the linked list, but this always points to the first element
 
    logical, parameter :: verboseTracers = .false.
-!!   logical, parameter :: verboseTracers = .true.
+!   logical, parameter :: verboseTracers = .true.
 
 contains
 
