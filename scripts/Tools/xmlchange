@@ -156,7 +156,7 @@ if ( ! defined($settinglist) ) {
 }
 
 # If filename is input as option - check that it is supported
-my @filenames = qw(env_run.xml env_build.xml env_case.xml env_mach_pes.xml);
+my @filenames = qw(env_run.xml env_build.xml env_case.xml env_mach_pes.xml env_batch.xml);
 if ( ! defined($settinglist) ) {
    push (@filenames, $opts{'file'});
    my $status = 0;
