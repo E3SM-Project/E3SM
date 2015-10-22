@@ -226,7 +226,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    errorCode = 0
+    errorCode = 0 
 
     call seq_cdata_setptrs(cdata_g, ID=glcID, mpicom=mpicom_g, &
          gsMap=gsMap_g, dom=dom_g, infodata=infodata)
@@ -239,7 +239,7 @@ contains
 #if (defined _MEMTRACE)
      if(iam == 0) then
          lbnum=1
-         call memmon_dump_fort('memmon.out','glc_init_mct:start::',lbnum)
+         call memmon_dump_fort('memmon.out','glc_init_mct:start::',lbnum) 
      endif
 #endif
 
@@ -248,7 +248,7 @@ contains
 
 !-----------------------------------------------------------------------
 !
-!   initialize the model run
+!   initialize the model run 
 !
 !-----------------------------------------------------------------------
 
@@ -265,7 +265,7 @@ contains
        write(stderrUnit, *) 'Start type is:', trim(starttype)
        call mpas_dmpar_global_abort(' glc_comp_mct ERROR: unknown starttype')
     end if
-
+   
 !-----------------------------------------------------------------------
 !
 !   first initializaiton phase of mpasli
@@ -533,15 +533,15 @@ contains
 
     ! Initialize mct glc domain (needs glc initialization info)
     call glc_domain_mct( lsize, gsMap_g, dom_g )
-
+    
     ! Initialize mct attribute vectors
-
+    
     call mct_aVect_init(x2g_g, rList=seq_flds_x2g_fields, lsize=lsize)
     call mct_aVect_zero(x2g_g)
-
+    
     call mct_aVect_init(g2x_g, rList=seq_flds_g2x_fields, lsize=lsize)
     call mct_aVect_zero(g2x_g)
-
+    
     nsend = mct_avect_nRattr(g2x_g)
     nrecv = mct_avect_nRattr(x2g_g)
 
@@ -663,7 +663,7 @@ contains
 !      block_ptr => block_ptr % next
 !    end do
 
-!    call ocn_analysis_compute_startup(domain, stream_manager, ierr)
+!    call ocn_analysis_compute_startup(domain, stream_manager, ierr) 
 
     ! Reset all output alarms, to prevent initial time step from writing any output, unless it's ringing.
     call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
@@ -712,7 +712,7 @@ contains
 #if defined (_MEMTRACE)
     if(iam  == 0) then
         lbnum=1
-        call memmon_dump_fort('memmon.out','glc_init_mct:end::',lbnum)
+        call memmon_dump_fort('memmon.out','glc_init_mct:end::',lbnum) 
         call memmon_reset_addr()
     endif
 #endif
@@ -821,9 +821,9 @@ contains
          err = ior(err,err_tmp)
 
          itimestep = itimestep + 1
-
          write(stderrUnit,*) 'Starting timestep number ', iTimeStep
          write(stdoutUnit,*) 'Starting timestep number ', iTimeStep
+
 
          ! ===
          ! === Perform Timestep
@@ -1176,7 +1176,7 @@ contains
 
 !-------------------------------------------------------------------
 !
-! Determine domain
+! Determine domain 
 ! Initialize attribute vector with special value
 !
 !-------------------------------------------------------------------
@@ -1209,7 +1209,7 @@ contains
         n = n + 1
         data(n) = lonCell(i) * r2d
       end do
-
+      
       block_ptr => block_ptr % next
     end do
     !write(stderrUnit,*) 'lonrange',minval(data), maxval(data), n
@@ -1233,7 +1233,7 @@ contains
       block_ptr => block_ptr % next
     end do
     !write(stderrUnit,*) 'latrange',minval(data), maxval(data), n
-    call mct_gGrid_importRattr(dom_g,"lat",data,lsize)
+    call mct_gGrid_importRattr(dom_g,"lat",data,lsize) 
 
     n = 0
     block_ptr => domain % blocklist
@@ -1303,6 +1303,13 @@ contains
    type (mpas_pool_type), pointer :: geometryPool
    type (mpas_pool_type), pointer :: thermalPool
 
+   type (field1DReal), pointer :: sfcMassBalField,&
+                                  basalOceanMassBalField,&
+                                  surfaceTemperatureField,&
+                                  basalOceanHeatflxField,&
+                                  OceanDensityField
+   
+   
    integer, pointer :: nCellsSolve
 
    real (kind=RKIND), dimension(:), pointer :: sfcMassBal,&
@@ -1322,31 +1329,46 @@ contains
 
          ! Get variables from pools
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-         !call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+         call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+	 
+         call mpas_pool_get_field(geometryPool, 'sfcMassBal',sfcMassBalField)
+         call mpas_pool_get_field(geometryPool, 'basalOceanMassBal',basalOceanMassBalField)
+         call mpas_pool_get_field(thermalPool, 'surfaceTemperature',surfaceTemperatureField)
+         call mpas_pool_get_field(thermalPool, 'basalOceanHeatflx',basalOceanHeatflxField)
+         !call mpas_pool_get_field(geometryPool, 'OceanDensity',OceanDensityField) !uncomment when field becomes available
+	 
+	 sfcMassBal => sfcMassBalField % array  
+         basalOceanMassBal => basalOceanMassBalField % array
+         surfaceTemperature => surfaceTemperatureField % array 
+         basalOceanHeatflx => basalOceanHeatflxField % array
+         !OceanDensity => OceanDensityField % array
+	 
+	 do i = 1, nCellsSolve
+	    n = n + 1
+	    sfcMassBal(i) =         x2g_g % rAttr(index_x2g_Flgl_qice, n)
+	    surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)
+	    basalOceanMassBal(i) =  x2g_g % rAttr(index_x2g_Fogx_qiceli, n)
+	    basalOceanHeatflx(i) =  x2g_g % rAttr(index_x2g_Fogx_qicehi, n)
+	    !OceanDensity (i) =      x2g_g % rAttr(index_x2g_So_phieff, n) !uncomment when field becomes available
+	 end do
+	 
+	 block => block % next
+      end do
 
-         call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
-         !call mpas_pool_get_array(geometryPool, 'basalOceanMassBal',basalOceanMassBal)
-         !call mpas_pool_get_array(thermalPool, 'surfaceTemperature',surfaceTemperature)
-         !call mpas_pool_get_array(thermalPool, 'basalOceanHeatflx',basalOceanHeatflx)
-         !call mpas_pool_get_array(geometryPool, 'OceanDensity',OceanDensity)
-
-         do i = 1, nCellsSolve
-            n = n + 1
-            sfcMassBal(i) = x2g_g % rAttr(index_x2g_Flgl_qice, n)
-            !basalOceanMassBal(i) = x2g_g % rAttr(index_x2g_Fogo_qicel, n)
-            !surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)
-            !basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogo_qiceh, n)
-            !OceanDensity (i) = x2g_g % rAttr(, n)
-         end do
-
-         block => block % next
-    end do
-
-
-!Need to loop over blocks
-!Jer: Need to define local pointers to MPAS-LI arrays, get these arrays, and point to them with local pointers
-!Jer: Need to assign local pointers to x2g arrays (as in CESM)
-!Jer: then, need to re-get forcingPool fields and call maps_dmpar_exch_halo_field on them
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'thermal', thermalPool)
+      
+      call mpas_pool_get_field(geometryPool, 'sfcMassBal',sfcMassBalField)
+      call mpas_pool_get_field(geometryPool, 'basalOceanMassBal',basalOceanMassBalField)
+      call mpas_pool_get_field(thermalPool,  'surfaceTemperature',surfaceTemperatureField)
+      call mpas_pool_get_field(thermalPool,  'basalOceanHeatflx',basalOceanHeatflxField)
+      !call mpas_pool_get_field(geometryPool, 'OceanDensity',OceanDensityField) !uncomment when field becomes available
+      
+      call mpas_dmpar_exch_halo_field(sfcMassBalField)
+      call mpas_dmpar_exch_halo_field(basalOceanMassBalField)
+      call mpas_dmpar_exch_halo_field(surfaceTemperatureField)
+      call mpas_dmpar_exch_halo_field(basalOceanHeatflxField)
+      !call mpas_dmpar_exch_halo_field(OceanDensityField) !uncomment when field becomes available
 
   end subroutine glc_import_mct
 
@@ -1357,6 +1379,8 @@ contains
   subroutine glc_export_mct(g2x_g, errorCode)
 
    use li_mask
+
+   use shr_const_mod, only: SHR_CONST_RHOICE, SHR_CONST_G
 
    !-------------------------------------------------------------------
 
@@ -1372,11 +1396,12 @@ contains
    real (kind=RKIND), pointer :: config_sea_level
 
    type (mpas_pool_type), pointer :: meshPool
-   type (mpas_pool_type), pointer :: geometryPool
+   type (mpas_pool_type), pointer :: geometryPool, thermalPool
 
    integer, pointer :: nCellsSolve
 
-   real (kind=RKIND), dimension(:), pointer :: upperSurface
+   real (kind=RKIND), dimension(:), pointer :: upperSurface, basalTemperature, Thickness
+   real (kind=RKIND), dimension(:,:), pointer :: layerThickness
    integer, dimension(:), pointer :: cellMask
    !-------------------------------------------------------------------
 
@@ -1388,44 +1413,48 @@ contains
     call mpas_pool_get_config(domain % configs, 'config_sea_level', config_sea_level)
 
     do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+    	call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+    	call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+        call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+	
+        ! Get variables from pools
+        call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+        call mpas_pool_get_subpool(block % structs, 'thermal',  thermalPool)	
 
-         ! Get variables from pools
-         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-
-         call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
-         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-
-         do i = 1, nCellsSolve
-            n = n + 1
-            g2x_g % rAttr(index_g2x_Sg_topo, n) = upperSurface(i)
-            g2x_g % rAttr(index_g2x_Sg_ice_covered, n) = li_mask_is_ice_int(cellMask(i))
-            ! Sg_icemask should be 1 in locations where GLC will use a SMB value
-            ! This is cells with ice or bare land (no ocean cells)
-            ! This can easily be checked by any cells where upperSurface is
-            ! above sea level!
-            if (upperSurface(i) > config_sea_level) then
-               g2x_g % rAttr(index_g2x_Sg_icemask, n) = 1
-            else
-               g2x_g % rAttr(index_g2x_Sg_icemask, n) = 0
-            endif
-
-            ! icemask_coupled_fluxes for now should be the same as icemask
-            ! If we add in the ability to prevent the ice sheet from evolving
-            ! (i.e., to ignore these fluxes) then this should be set to 0 everywhere.
-            g2x_g % rAttr(index_g2x_Sg_icemask_coupled_fluxes, n) = g2x_g % rAttr(index_g2x_Sg_icemask, n)
-
-         end do
+        call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
+        call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
+        call mpas_pool_get_array(geometryPool, 'Thickness', Thickness)	
+	call mpas_pool_get_array(thermalPool, 'basalTemperature', basalTemperature)
+	
+        call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+	
+        do i = 1, nCellsSolve
+           n = n + 1
+	   call route_ice_runoff(0.0, & !Attach to ice calving flux once present
+                                 rofi_to_ocn=g2x(index_g2x_Fogg_rofi, n), &
+                                 rofi_to_ice=g2x(index_g2x_Figg_rofi, n))
+	   g2x_g % rAttr(index_g2x_Fogg_rofl,n) = 0.0 !Attach to subglacial liquid flux once present
+           g2x_g % rAttr(index_g2x_Sg_topo, n) = upperSurface(i)
+	   g2x_g % rAttr(index_g2x_Flgg_hflx, n) = 0.0 !Attach to a surface heat flux once present
+           g2x_g % rAttr(index_g2x_Sg_icemask, n) = li_mask_is_ice_int(cellMask(i))
+	   g2x_g % rAttr(index_g2x_Sg_icemask_grounded, n) = li_mask_is_grounded_ice(cellMask(i))
+	   g2x_g % rAttr(index_g2x_Sg_icemask_floating, n) = li_mask_is_floating_ice(cellMask(i))
+	   g2x_g % rAttr(index_g2x_Sg_icemask_coupled_fluxes, n) = g2x_g % rAttr(index_g2x_Sg_icemask, n)
+           ! icemask_coupled_fluxes for now should be the same as icemask
+	   ! For above: If we add in the ability to prevent the ice sheet from evolving
+           ! (i.e., to ignore these fluxes) then this should be set to 0 everywhere.
+	   
+	   g2x_g % rAttr(index_g2x_Sg_tbot, n) = basalTemperature(i)
+	   g2x_g % rAttr(index_g2x_Sg_dztbot, n) = layerThickness(nVertLevels,i)/ 2.0
+	   g2x_g % rAttr(index_g2x_Sg_lithop, n) = Thickness(i)*SHR_CONST_RHOICE*SHR_CONST_G
+        end do
 
          block => block % next
     end do
 
   end subroutine glc_export_mct
 
-
 !=================================================================================
-
 
   subroutine check_clocks_sync(MPASclock, Eclock, stderrUnit, err)
     type (MPAS_Clock_type), intent(in) :: MPASclock
@@ -1519,7 +1548,7 @@ contains
       else
           write(histAtt, '(A,I6,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % core % coreName), '_model'
       end if
-
+     
 
       call MPAS_stream_mgr_add_att(stream_manager, 'on_a_sphere', domain % on_a_sphere)
       call MPAS_stream_mgr_add_att(stream_manager, 'sphere_radius', domain % sphere_radius)
