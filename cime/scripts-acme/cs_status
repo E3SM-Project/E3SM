@@ -47,7 +47,7 @@ def cs_status(test_paths):
 ###############################################################################
     for test_path in test_paths:
         statuses, test_name = wait_for_tests.parse_test_status_file(test_path)
-        summary = wait_for_tests.reduce_stati(statuses.values())
+        summary = wait_for_tests.reduce_stati(statuses)
         print "%s (Overall: %s), details:" % (test_name, summary)
         for phase, status in statuses.iteritems():
             print "  %s %s" % (status, phase)

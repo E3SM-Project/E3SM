@@ -39,28 +39,13 @@ def set_up_signal_handlers():
 ###############################################################################
 def get_test_time(test_path):
 ###############################################################################
-    cmd = "grep 'TOT Run Time' /dev/null $(find %s -name 'ccsm_timing*') || true" % test_path
-    output = acme_util.run_cmd(cmd)
-
-    tot_time = 0.0
-    for line in output.splitlines():
-        if (line != "" and not line.isspace()):
-            tokens = line.split()
-
-            if (len(tokens) < 5 or tokens[1:4] != ["TOT", "Run", "Time:"]):
-                warning("Line '%s' not in expected format")
-                continue
-
-            try:
-                cur_time = float(tokens[4])
-                tot_time += cur_time
-            except ValueError:
-                warning("Line '%s' not in expected format, '%s' not a valid float" % (line, tokens[4]))
-
-    if (tot_time == 0.0):
+    cmd = "grep TIME %s" % os.path.join(test_path, TEST_STATUS_FILENAME)
+    stat, output, errput = acme_util.run_cmd(cmd, ok_to_fail=True, verbose=True)
+    if (stat == 0):
+        return int(output.split()[-1])
+    else:
         warning("No timing data found in %s" % test_path)
-
-    return tot_time
+        return 0
 
 ###############################################################################
 def get_test_output(test_path):
