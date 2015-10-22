@@ -3,7 +3,8 @@ module prep_glc_mod
   use shr_kind_mod    , only: r8 => SHR_KIND_R8 
   use shr_kind_mod    , only: cl => SHR_KIND_CL
   use shr_sys_mod     , only: shr_sys_abort, shr_sys_flush
-  use seq_comm_mct    , only: num_inst_glc, num_inst_lnd, num_inst_frc
+  use seq_comm_mct    , only: num_inst_glc, num_inst_lnd, num_inst_frc, &
+			      num_inst_ocn  
   use seq_comm_mct    , only: CPLID, GLCID, logunit
   use seq_comm_mct    , only: seq_comm_getData=>seq_comm_setptrs 
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata  
@@ -14,7 +15,7 @@ module prep_glc_mod
   use mct_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
-  use component_type_mod, only: glc, lnd
+  use component_type_mod, only: glc, lnd, ocn
 
   implicit none
   save
@@ -31,13 +32,22 @@ module prep_glc_mod
   public :: prep_glc_accum_avg
 
   public :: prep_glc_calc_l2x_gx
+  public :: prep_glc_calc_o2x_gx
 
   public :: prep_glc_get_l2x_gx
   public :: prep_glc_get_l2gacc_lx
   public :: prep_glc_get_l2gacc_lx_cnt
+
+  public :: prep_glc_get_o2x_gx
+  public :: prep_glc_get_x2gacc_gx
+  public :: prep_glc_get_x2gacc_gx_cnt
+  
   public :: prep_glc_get_mapper_Sl2g
   public :: prep_glc_get_mapper_Fl2g
 
+  public :: prep_glc_get_mapper_So2g
+  public :: prep_glc_get_mapper_Fo2g
+  
   !--------------------------------------------------------------------------
   ! Private interfaces
   !--------------------------------------------------------------------------
@@ -52,13 +62,35 @@ module prep_glc_mod
   ! mappers
   type(seq_map), pointer :: mapper_Sl2g
   type(seq_map), pointer :: mapper_Fl2g
+  type(seq_map), pointer :: mapper_So2g
+  type(seq_map), pointer :: mapper_Fo2g
 
   ! attribute vectors 
   type(mct_aVect), pointer :: l2x_gx(:) ! Lnd export, glc grid, cpl pes - allocated in driver
+  type(mct_aVect), pointer :: o2x_gx(:) ! Ocn export, glc grid, cpl pes - allocated in driver
 
   ! accumulation variables
   type(mct_aVect), pointer :: l2gacc_lx(:) ! Lnd export, lnd grid, cpl pes - allocated in driver
   integer        , target :: l2gacc_lx_cnt ! l2gacc_lx: number of time samples accumulated
+  
+  type(mct_aVect), pointer :: x2gacc_gx(:) ! Lnd export, lnd grid, cpl pes - allocated in driver
+  integer        , target :: x2gacc_gx_cnt ! x2gacc_gx: number of time samples accumulated  
+
+  type(mct_aVect), pointer :: o2gacc_ox(:) ! Ocn export, lnd grid, cpl pes - allocated in driver
+  integer        , target :: o2gacc_ox_cnt ! number of time samples accumulated  
+
+  real(r8), allocatable ::  oceanTemperature(:)
+  real(r8), allocatable ::  oceanSalinity(:)
+  real(r8), allocatable ::  oceanHeatTransferVelocity(:)
+  real(r8), allocatable ::  oceanSaltTransferVelocity(:)
+  real(r8), allocatable ::  interfacePressure(:)
+  real(r8), allocatable ::  iceTemperature(:)
+  real(r8), allocatable ::  iceTemperatureDistance(:)
+  real(r8), allocatable ::  outInterfaceSalinity(:)
+  real(r8), allocatable ::  outInterfaceTemperature(:)
+  real(r8), allocatable ::  outFreshwaterFlux(:)
+  real(r8), allocatable ::  outOceanHeatFlux(:)
+  real(r8), allocatable ::  outIceHeatFlux(:)
 
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
@@ -68,7 +100,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_glc_init(infodata, lnd_c2_glc)
+  subroutine prep_glc_init(infodata, lnd_c2_glc, ocn_c2_glc)
 
     !---------------------------------------------------------------
     ! Description
@@ -77,19 +109,28 @@ contains
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata
     logical                  , intent(in)    :: lnd_c2_glc ! .true.  => lnd to glc coupling on
+    logical                  , intent(in)    :: ocn_c2_glc ! .true.  => ocn to glc coupling on    
     !
     ! Local Variables
-    integer                          :: eli, egi
+    integer                          :: eli, egi, eoi
     integer                          :: lsize_l
     integer                          :: lsize_g
+    integer                         ::  lsize_o
     logical                          :: samegrid_lg   ! samegrid land and glc
+    logical                          :: samegrid_go   ! .true. => samegrid ocean and glc
     logical                          :: esmf_map_flag ! .true. => use esmf for mapping
     logical                          :: iamroot_CPLID ! .true. => CPLID masterproc
     logical                          :: glc_present   ! .true. => glc is present
+    
     character(CL)                    :: lnd_gnam      ! lnd grid
     character(CL)                    :: glc_gnam      ! glc grid
+    character(CL)                    :: ocn_gnam      ! ocn grid
+    
     type(mct_avect), pointer         :: l2x_lx
     type(mct_avect), pointer         :: x2g_gx
+    type(mct_avect), pointer         :: o2x_ox
+    type(mct_avect), pointer         :: g2x_gx
+    
     character(*), parameter          :: subname = '(prep_glc_init)'
     character(*), parameter          :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
@@ -98,24 +139,29 @@ contains
          esmf_map_flag=esmf_map_flag   , &
          glc_present=glc_present       , &
          lnd_gnam=lnd_gnam             , &
-         glc_gnam=glc_gnam)
+         glc_gnam=glc_gnam             , &
+	 ocn_gnam=ocn_gnam)
 
     allocate(mapper_Sl2g)
     allocate(mapper_Fl2g)
+    allocate(mapper_So2g)
+    allocate(mapper_Fo2g)   
 
     if (glc_present .and. lnd_c2_glc) then
 
        call seq_comm_getData(CPLID, &
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
+       g2x_gx => component_get_c2x_cx(lnd(1))
+       x2g_gx => component_get_x2c_cx(glc(1))
+       lsize_g = mct_aVect_lsize(g2x_gx)
+       
        l2x_lx => component_get_c2x_cx(lnd(1))
        lsize_l = mct_aVect_lsize(l2x_lx)
-       
-       x2g_gx => component_get_x2c_cx(glc(1))
-       lsize_g = mct_aVect_lsize(x2g_gx)
-       
+              
        allocate(l2x_gx(num_inst_lnd))
        allocate(l2gacc_lx(num_inst_lnd))
+       
        do eli = 1,num_inst_lnd
           call mct_aVect_init(l2x_gx(eli), rList=seq_flds_x2g_fields, lsize=lsize_g)
           call mct_aVect_zero(l2x_gx(eli))
@@ -125,28 +171,87 @@ contains
        enddo
        l2gacc_lx_cnt = 0
 
-       if (lnd_c2_glc) then
-          samegrid_lg = .true.
-          if (trim(lnd_gnam) /= trim(glc_gnam)) samegrid_lg = .false.
-          
-          if (iamroot_CPLID) then
-             write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Sl2g'
-          end if
-          call seq_map_init_rcfile(mapper_Sl2g, lnd(1), glc(1), &
-               'seq_maps.rc', 'lnd2glc_smapname:', 'lnd2glc_smaptype:', samegrid_lg, &
-               'mapper_Sl2g initialization', esmf_map_flag)
-          if (iamroot_CPLID) then
-             write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Fl2g'
-          end if
-          call seq_map_init_rcfile(mapper_Fl2g, lnd(1), glc(1), &
-               'seq_maps.rc', 'lnd2glc_fmapname:', 'lnd2glc_fmaptype:', samegrid_lg, &
-               'mapper_Fl2g initialization', esmf_map_flag)
+       samegrid_lg = .true.
+       if (trim(lnd_gnam) /= trim(glc_gnam)) samegrid_lg = .false.
+
+       if (iamroot_CPLID) then
+          write(logunit,*) ' '
+          write(logunit,F00) 'Initializing mapper_Sl2g'
        end if
+       call seq_map_init_rcfile(mapper_Sl2g, lnd(1), glc(1), &
+            'seq_maps.rc', 'lnd2glc_smapname:', 'lnd2glc_smaptype:', samegrid_lg, &
+            'mapper_Sl2g initialization', esmf_map_flag)
+       if (iamroot_CPLID) then
+          write(logunit,*) ' '
+          write(logunit,F00) 'Initializing mapper_Fl2g'
+       end if
+       call seq_map_init_rcfile(mapper_Fl2g, lnd(1), glc(1), &
+            'seq_maps.rc', 'lnd2glc_fmapname:', 'lnd2glc_fmaptype:', samegrid_lg, &
+            'mapper_Fl2g initialization', esmf_map_flag)
+
        call shr_sys_flush(logunit)
           
     end if
+    
+    if (glc_present .and. ocn_c2_glc) then
+
+       allocate(o2x_gx(num_inst_ocn))
+       allocate(x2gacc_gx(num_inst_glc))
+
+       o2x_ox => component_get_c2x_cx(ocn(1))
+       lsize_o = mct_aVect_lsize(o2x_ox)
+       
+       allocate(o2x_gx(num_inst_ocn))
+       allocate(x2gacc_gx(num_inst_glc))
+
+       do eoi = 1,num_inst_ocn
+          call mct_aVect_init(o2x_gx(eoi), rList=seq_flds_o2x_fields, lsize=lsize_g)
+          call mct_aVect_zero(o2x_gx(eoi))
+       enddo       
+ 
+       do egi = 1,num_inst_glc
+          call mct_avect_init(x2gacc_gx(egi), x2g_gx, lsize_g)
+          call mct_aVect_zero(x2gacc_gx(egi))
+       end do       
+       x2gacc_gx_cnt = 0
+       
+       samegrid_go = .true.
+       if (trim(ocn_gnam) /= trim(glc_gnam)) samegrid_go = .false.
+
+       if (iamroot_CPLID) then
+          write(logunit,*) ' '
+          write(logunit,F00) 'Initializing mapper_So2g'
+       end if
+       call seq_map_init_rcfile(mapper_So2g, ocn(1), glc(1), &
+       'seq_maps.rc','ocn2glc_smapname:','ocn2glc_smaptype:',samegrid_go, &
+       'mapper_So2g initialization',esmf_map_flag)
+
+       if (iamroot_CPLID) then
+          write(logunit,*) ' '
+          write(logunit,F00) 'Initializing mapper_Fo2g'
+       end if
+       call seq_map_init_rcfile(mapper_Fo2g, ocn(1), glc(1), &
+       'seq_maps.rc','ocn2glc_fmapname:','ocn2glc_fmaptype:',samegrid_go, &
+       'mapper_Fo2g initialization',esmf_map_flag)     
+       
+       !Initialize module-level arrays associated with compute_melt_fluxes
+       allocate(oceanTemperature(lsize_g))
+       allocate(oceanSalinity(lsize_g))
+       allocate(oceanHeatTransferVelocity(lsize_g))
+       allocate(oceanSaltTransferVelocity(lsize_g))
+       allocate(interfacePressure(lsize_g))
+       allocate(iceTemperature(lsize_g))
+       allocate(iceTemperatureDistance(lsize_g))
+       allocate(outInterfaceSalinity(lsize_g))
+       allocate(outInterfaceTemperature(lsize_g))
+       allocate(outFreshwaterFlux(lsize_g))
+       allocate(outOceanHeatFlux(lsize_g))
+       allocate(outIceHeatFlux(lsize_g))
+       
+       call shr_sys_flush(logunit)
+       
+    end if
+    
 
   end subroutine prep_glc_init
 
@@ -162,8 +267,10 @@ contains
     character(len=*), intent(in) :: timer
     !
     ! Local Variables
-    integer :: eli
+    integer :: eli, egi
     type(mct_avect), pointer :: l2x_lx
+    type(mct_avect), pointer :: g2x_gx
+        
     character(*), parameter :: subname = '(prep_glc_accum)'
     !---------------------------------------------------------------
 
@@ -177,6 +284,18 @@ contains
        endif
     end do
     l2gacc_lx_cnt = l2gacc_lx_cnt + 1
+
+    do egi = 1,num_inst_glc
+       x2g_gx => component_get_x2c_cx(glc(egi))
+       if (x2gacc_gx_cnt == 0) then
+	  call mct_avect_copy(x2g_gx, x2gacc_gx(egi))
+       else
+	  call mct_avect_accum(x2g_gx, x2gacc_gx(egi))
+       endif
+    end do
+    x2gacc_gx_cnt = x2gacc_gx_cnt + 1
+    
+
     call t_drvstopf  (trim(timer))
 
   end subroutine prep_glc_accum
@@ -193,7 +312,9 @@ contains
     character(len=*), intent(in) :: timer
     !
     ! Local Variables
-    integer :: eli
+    integer :: eli, egi
+    type(mct_avect), pointer :: x2g_gx  
+    
     character(*), parameter :: subname = '(prep_glc_accum_avg)'
     !---------------------------------------------------------------
 
@@ -204,6 +325,21 @@ contains
        end do
     end if
     l2gacc_lx_cnt = 0
+
+    do egi = 1,num_inst_glc   !!Jer: why was this added here?  For ice shelf coupling?
+       ! temporary formation of average
+       if (x2gacc_gx_cnt > 1) then
+	  call mct_avect_avg(x2gacc_gx(egi), x2gacc_gx_cnt)
+       end if
+       
+       ! ***NOTE***THE FOLLOWING ACTUALLY MODIFIES x2g_gx
+       x2g_gx	=> component_get_x2c_cx(glc(egi)) 
+       call mct_avect_copy(x2gacc_gx(egi), x2g_gx)
+    enddo
+    x2gacc_gx_cnt = 0
+    
+
+    
     call t_drvstopf  (trim(timer))
     
   end subroutine prep_glc_accum_avg
@@ -222,7 +358,7 @@ contains
     character(len=*)        , intent(in)    :: timer_mrg
     !
     ! Local Variables
-    integer :: egi, eli, efi
+    integer :: egi, eli, efi, eoi
     type(mct_avect), pointer :: x2g_gx
     character(*), parameter  :: subname = '(prep_glc_mrg)'
     !---------------------------------------------------------------
@@ -232,9 +368,10 @@ contains
        ! Use fortran mod to address ensembles in merge
        eli = mod((egi-1),num_inst_lnd) + 1
        efi = mod((egi-1),num_inst_frc) + 1
+       eoi = mod((egi-1),num_inst_ocn) + 1
 
        x2g_gx => component_get_x2c_cx(glc(egi)) 
-       call prep_glc_merge(l2x_gx(eli), fractions_gx(efi), x2g_gx)
+       call prep_glc_merge(l2x_gx(eli), fractions_gx(efi), o2x_gx(eoi), x2g_gx)
     enddo
     call t_drvstopf  (trim(timer_mrg))
 
@@ -260,8 +397,8 @@ contains
     type(mct_aVect), intent(inout)  :: x2g_g  ! output
     !----------------------------------------------------------------------- 
 
-    integer       :: num_flux_fields
-    integer       :: num_state_fields
+    integer       :: num_land_to_glc_flux_fields
+    integer       :: num_land_to_glc_state_fields
     integer       :: nflds
     integer       :: i,n
     integer       :: mrgstr_index
@@ -281,15 +418,15 @@ contains
     call seq_comm_getdata(CPLID, iamroot=iamroot)
     lsize = mct_aVect_lsize(x2g_g)
     
-    num_flux_fields = shr_string_listGetNum(trim(seq_flds_x2g_fluxes))
-    num_state_fields = shr_string_listGetNum(trim(seq_flds_x2g_states))
+    num_land_to_glc_flux_fields = shr_string_listGetNum(trim(seq_flds_l2x_fluxes_to_glc))
+    num_land_to_glc_state_fields = shr_string_listGetNum(trim(seq_flds_l2x_states_to_glc))
     
     if (first_time) then
-       nflds = mct_aVect_nRattr(x2g_g)
-       if (nflds /= (num_flux_fields + num_state_fields)) then
-          write(logunit,*) subname,' ERROR: nflds /= num_flux_fields + num_state_fields: ', &
-               nflds, num_flux_fields, num_state_fields
-          call shr_sys_abort(subname//' ERROR: nflds /= num_flux_fields + num_state_fields')
+       nflds = mct_aVect_nRattr(l2x_g)
+       if (nflds /= (num_land_to_glc_flux_fields + num_land_to_glc_state_fields)) then
+          write(logunit,*) subname,' ERROR: nflds /= num_land_to_glc_flux_fields + num_land_to_glc_state_fields: ', &
+               nflds, num_land_to_glc_flux_fields, num_land_to_glc_state_fields
+          call shr_sys_abort(subname//' ERROR: nflds /= num_land_to_glc_flux_fields + num_land_to_glc_state_fields')
        end if
           
        allocate(mrgstr(nflds))
@@ -297,8 +434,8 @@ contains
 
     mrgstr_index = 1
 
-    do i = 1, num_state_fields
-       call seq_flds_getField(field, i, seq_flds_x2g_states)
+    do i = 1, num_land_to_glc_state_fields
+       call seq_flds_getField(field, i, seq_flds_l2x_states_to_glc)
        index_l2x = mct_aVect_indexRA(l2x_g, trim(field))
        index_x2g = mct_aVect_indexRA(x2g_g, trim(field))
 
@@ -315,7 +452,7 @@ contains
     enddo
 
     index_lfrac = mct_aVect_indexRA(fractions_g,"lfrac")
-    do i = 1, num_flux_fields
+    do i = 1, num_land_to_glc_flux_fields
        call seq_flds_getField(field, i, seq_flds_x2g_fluxes)
        index_l2x = mct_aVect_indexRA(l2x_g, trim(field))
        index_x2g = mct_aVect_indexRA(x2g_g, trim(field))

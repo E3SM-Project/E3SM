@@ -345,6 +345,7 @@ module cesm_comp_mod
    logical  :: lnd_c2_glc             ! .true.  => lnd to glc coupling on
    logical  :: ocn_c2_atm             ! .true.  => ocn to atm coupling on
    logical  :: ocn_c2_ice             ! .true.  => ocn to ice coupling on
+   logical  :: ocn_c2_glc             ! .true.  => ocn to glc coupling on   
    logical  :: ocn_c2_wav             ! .true.  => ocn to wav coupling on
    logical  :: ice_c2_atm             ! .true.  => ice to atm coupling on
    logical  :: ice_c2_ocn             ! .true.  => ice to ocn coupling on
@@ -355,6 +356,8 @@ module cesm_comp_mod
    logical  :: glc_c2_lnd             ! .true.  => glc to lnd coupling on
    logical  :: glc_c2_ocn             ! .true.  => glc to ocn coupling on
    logical  :: glc_c2_ice             ! .true.  => glc to ice coupling on
+   logical  :: glcshelf_c2_ocn        ! .true.  => glc ice shelf to ocn coupling on
+   logical  :: glcshelf_c2_ice        ! .true.  => glc ice shelf to ice coupling on   
    logical  :: wav_c2_ocn             ! .true.  => wav to ocn coupling on
 
    logical  :: dead_comps             ! .true.  => dead components 
@@ -789,7 +792,7 @@ subroutine cesm_pre_init2()
    !| Memory test
    !----------------------------------------------------------
 
-!mt   call shr_mem_init(prt=.true.)
+!mt call shr_mem_init(prt=.true.)
    call shr_mem_init(prt=iamroot_CPLID)
 
    !----------------------------------------------------------
@@ -813,7 +816,7 @@ subroutine cesm_pre_init2()
       call seq_infodata_print( infodata )
       write(logunit,*) ' '
    endif
-
+   
    call seq_infodata_GetData(infodata             , &
         read_restart=read_restart                 , &
         restart_file=rest_file                    , &
@@ -938,7 +941,7 @@ subroutine cesm_pre_init2()
         EClock_i, Eclock_g, Eclock_r, Eclock_w)
 
    if (iamroot_CPLID) then
-      call seq_timemgr_clockPrint(seq_SyncClock)
+       call seq_timemgr_clockPrint(seq_SyncClock)
    endif
 
    call seq_infodata_getData(infodata,   &
@@ -953,7 +956,7 @@ subroutine cesm_pre_init2()
       orb_cyear = orb_iyear + (year - orb_iyear_align)
 
       call shr_orb_params(orb_cyear, orb_eccen, orb_obliq, orb_mvelp, &
-           orb_obliqr, orb_lambm0, orb_mvelpp, iamroot_CPLID)
+                          orb_obliqr, orb_lambm0, orb_mvelpp, iamroot_CPLID)
 
       call seq_infodata_putData(infodata, &
            orb_eccen=orb_eccen,           &
@@ -1343,6 +1346,7 @@ subroutine cesm_init()
    lnd_c2_glc = .false.
    ocn_c2_atm = .false.
    ocn_c2_ice = .false.
+   ocn_c2_glc = .false.
    ocn_c2_wav = .false.
    ice_c2_atm = .false.
    ice_c2_ocn = .false.
@@ -1353,6 +1357,8 @@ subroutine cesm_init()
    glc_c2_lnd = .false.
    glc_c2_ocn = .false.
    glc_c2_ice = .false.
+   glcshelf_c2_ocn = .false.
+   glcshelf_c2_ice = .false.   
    wav_c2_ocn = .false.
 
    if (atm_present) then
@@ -1372,6 +1378,7 @@ subroutine cesm_init()
       if (atm_present   ) ocn_c2_atm = .true. ! needed for aoflux calc if aoflux=atm
       if (ice_prognostic) ocn_c2_ice = .true.
       if (wav_prognostic) ocn_c2_wav = .true.
+      if (glc_prognostic) ocn_c2_glc = .true.
    endif
    if (ice_present) then
       if (atm_prognostic) ice_c2_atm = .true.
@@ -1452,6 +1459,7 @@ subroutine cesm_init()
       write(logunit,F0L)'lnd_c2_glc            = ',lnd_c2_glc
       write(logunit,F0L)'ocn_c2_atm            = ',ocn_c2_atm
       write(logunit,F0L)'ocn_c2_ice            = ',ocn_c2_ice
+      write(logunit,F0L)'ocn_c2_glc            = ',ocn_c2_glc      
       write(logunit,F0L)'ocn_c2_wav            = ',ocn_c2_wav
       write(logunit,F0L)'ice_c2_atm            = ',ice_c2_atm
       write(logunit,F0L)'ice_c2_ocn            = ',ice_c2_ocn
@@ -1462,6 +1470,8 @@ subroutine cesm_init()
       write(logunit,F0L)'glc_c2_lnd            = ',glc_c2_lnd
       write(logunit,F0L)'glc_c2_ocn            = ',glc_c2_ocn
       write(logunit,F0L)'glc_c2_ice            = ',glc_c2_ice
+      write(logunit,F0L)'glcshelf_c2_ocn       = ',glc_c2_ocn
+      write(logunit,F0L)'glcshelf_c2_ice       = ',glc_c2_ice      
       write(logunit,F0L)'wav_c2_ocn            = ',wav_c2_ocn
 
       write(logunit,F0L)'dead components       = ',dead_comps
@@ -1572,13 +1582,13 @@ subroutine cesm_init()
       
       call prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd)
 
-      call prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, wav_c2_ocn, glc_c2_ocn) 
+      call prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, wav_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn)
 
-      call prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, rof_c2_ice )
+      call prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, glcshelf_c2_ice, rof_c2_ice )
 
       call prep_rof_init(infodata, lnd_c2_rof)
 
-      call prep_glc_init(infodata, lnd_c2_glc)
+      call prep_glc_init(infodata, lnd_c2_glc, ocn_c2_glc)
 
       call prep_wav_init(infodata, atm_c2_wav, ocn_c2_wav, ice_c2_wav)
 
@@ -1944,12 +1954,18 @@ subroutine cesm_init()
       if (glc_c2_ocn) then
          call prep_ocn_calc_g2x_ox(timer='CPL:init_glc2ocn') 
       endif
+      if (glcshelf_c2_ocn) then
+         call prep_ocn_shelf_calc_g2x_ox(timer='CPL:init_glc2ocn_shelf') 
+      endif
       if (rof_c2_ice) then
          call prep_ice_calc_r2x_ix(timer='CPL:init_rof2ice') 
       endif
       if (glc_c2_ice) then
          call prep_ice_calc_g2x_ix(timer='CPL:init_glc2ice') 
       endif
+      if (glcshelf_c2_ice) then
+         call prep_ice_shelf_calc_g2x_ix(timer='CPL:init_glc2ice_shelf') 
+      endif      
       if (rof_c2_lnd) then
          call prep_lnd_calc_r2x_lx(timer='CPL:init_rof2lnd') 
       endif
@@ -2191,10 +2207,10 @@ end subroutine cesm_init
             if (ocn_c2_atm) call prep_atm_calc_o2x_ax(timer='CPL:atmoca_ocn2atm')
 
             call t_drvstartf ('CPL:atmocna_fluxa',barrier=mpicom_CPLID)
-            do exi = 1,num_inst_xao
-               eai = mod((exi-1),num_inst_atm) + 1
-               eoi = mod((exi-1),num_inst_ocn) + 1
-               efi = mod((exi-1),num_inst_frc) + 1
+         do exi = 1,num_inst_xao
+            eai = mod((exi-1),num_inst_atm) + 1
+            eoi = mod((exi-1),num_inst_ocn) + 1
+            efi = mod((exi-1),num_inst_frc) + 1
                a2x_ax => component_get_c2x_cx(atm(eai))
                o2x_ax => prep_atm_get_o2x_ax()    ! array over all instances
                xao_ax => prep_aoflux_get_xao_ax() ! array over all instances
@@ -2209,7 +2225,7 @@ end subroutine cesm_init
          !| atm/ocn flux on ocn grid (rasm_option1 and aoflux='ocn')
          !----------------------------------------------------------
 
-         if (trim(aoflux_grid) == 'ocn') then
+            if (trim(aoflux_grid) == 'ocn') then
             call t_drvstartf ('CPL:atmocnp_fluxo',barrier=mpicom_CPLID,hashint=hashint(6))
             do exi = 1,num_inst_xao
                eai = mod((exi-1),num_inst_atm) + 1
@@ -2219,7 +2235,7 @@ end subroutine cesm_init
                o2x_ox => component_get_c2x_cx(ocn(eoi))
                xao_ox => prep_aoflux_get_xao_ox()
                call seq_flux_atmocn_mct(infodata, tod, dtime, a2x_ox(eai), o2x_ox, xao_ox(exi))
-            enddo
+         enddo
             call t_drvstopf  ('CPL:atmocnp_fluxo',hashint=hashint(6))
          endif
 
@@ -2242,7 +2258,7 @@ end subroutine cesm_init
          do exi = 1,num_inst_xao
             efi = mod((exi-1),num_inst_frc) + 1
             eai = mod((exi-1),num_inst_atm) + 1
-            xao_ox => prep_aoflux_get_xao_ox()        ! array over all instances
+               xao_ox => prep_aoflux_get_xao_ox()        ! array over all instances
             a2x_ox => prep_ocn_get_a2x_ox()
             call seq_flux_ocnalb_mct(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi))
          enddo
@@ -2294,7 +2310,7 @@ end subroutine cesm_init
             ! reset the value of x2o_ox with the value in x2oacc_ox 
             ! (module variable in prep_ocn_mod)
             call prep_ocn_accum_avg(timer_accum='CPL:ocnprep_avg')
-
+	    
             call component_diag(infodata, ocn, flow='x2c', comment= 'send ocn', &
                  info_debug=info_debug, timer_diag='CPL:ocnprep_diagav')
 
@@ -2681,10 +2697,10 @@ end subroutine cesm_init
             if (ocn_c2_atm) call prep_atm_calc_o2x_ax(timer='CPL:atmoca_ocn2atm')
 
             call t_drvstartf ('CPL:atmocna_fluxa',barrier=mpicom_CPLID)
-            do exi = 1,num_inst_xao
-               eai = mod((exi-1),num_inst_atm) + 1
-               eoi = mod((exi-1),num_inst_ocn) + 1
-               efi = mod((exi-1),num_inst_frc) + 1
+         do exi = 1,num_inst_xao
+            eai = mod((exi-1),num_inst_atm) + 1
+            eoi = mod((exi-1),num_inst_ocn) + 1
+            efi = mod((exi-1),num_inst_frc) + 1
                a2x_ax => component_get_c2x_cx(atm(eai))
                o2x_ax => prep_atm_get_o2x_ax()    ! array over all instances
                xao_ax => prep_aoflux_get_xao_ax() ! array over all instances
@@ -2699,7 +2715,7 @@ end subroutine cesm_init
          !| atm/ocn flux on ocn grid ((cesm1_orig, cesm1_orig_tight, cesm1_mod or cesm1_mod_tight) and aoflux='ocn')
          !----------------------------------------------------------
 
-         if (trim(aoflux_grid) == 'ocn') then
+            if (trim(aoflux_grid) == 'ocn') then
             call t_drvstartf ('CPL:atmocnp_fluxo',barrier=mpicom_CPLID)
             do exi = 1,num_inst_xao
                eai = mod((exi-1),num_inst_atm) + 1
@@ -2711,18 +2727,18 @@ end subroutine cesm_init
                call seq_flux_atmocn_mct(infodata, tod, dtime, a2x_ox(eai), o2x_ox, xao_ox(exi))
             enddo
             call t_drvstopf  ('CPL:atmocnp_fluxo')
-!         else if (trim(aoflux_grid) == 'atm') then
-!            !--- compute later ---
+!            else if (trim(aoflux_grid) == 'atm') then
+!               !--- compute later ---
 !
-!         else if (trim(aoflux_grid) == 'exch') then
-!            xao_ax   => prep_aoflux_get_xao_ax()
-!            xao_ox   => prep_aoflux_get_xao_ox()
+!            else if (trim(aoflux_grid) == 'exch') then
+!               xao_ax   => prep_aoflux_get_xao_ax()
+!               xao_ox   => prep_aoflux_get_xao_ox()
 !
 !            call t_drvstartf ('CPL:atmocnp_fluxe',barrier=mpicom_CPLID)
-!            call seq_flux_atmocnexch_mct( infodata, atm(eai), ocn(eoi), &
-!                 fractions_ax(efi), fractions_ox(efi), xao_ax(exi), xao_ox(exi) )
+!               call seq_flux_atmocnexch_mct( infodata, atm(eai), ocn(eoi), &
+!                    fractions_ax(efi), fractions_ox(efi), xao_ax(exi), xao_ox(exi) )
 !            call t_drvstopf  ('CPL:atmocnp_fluxe')
-         endif  ! aoflux_grid
+            endif  ! aoflux_grid
 
          !----------------------------------------------------------
          !| ocn prep-merge (cesm1_mod or cesm1_mod_tight)
@@ -2749,7 +2765,7 @@ end subroutine cesm_init
          do exi = 1,num_inst_xao
             efi = mod((exi-1),num_inst_frc) + 1
             eai = mod((exi-1),num_inst_atm) + 1
-            xao_ox => prep_aoflux_get_xao_ox()        ! array over all instances
+               xao_ox => prep_aoflux_get_xao_ox()        ! array over all instances
             a2x_ox => prep_ocn_get_a2x_ox()
             call seq_flux_ocnalb_mct(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi))
          enddo
@@ -2816,15 +2832,19 @@ end subroutine cesm_init
             call t_drvstartf ('CPL:GLCPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
+	    call prep_glc_accum_avg(timer='CPL:glcprep_avg')
+	    
+	    if (ocn_c2_glc) then
+	       call prep_glc_calc_o2x_gx(timer='CPL:glcprep_ocn2glc')
+	    end if
+	    
             if (lnd_c2_glc) then
-               call prep_glc_accum_avg(timer='CPL:glcprep_avg')
-
                ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
                call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
 
                call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
 
-               call component_diag(infodata, glc, flow='x2c', comment='send glc', &
+            call component_diag(infodata, glc, flow='x2c', comment='send glc', &
                     info_debug=info_debug, timer_diag='CPL:glcprep_diagav')
             endif
 
@@ -3028,10 +3048,10 @@ end subroutine cesm_init
             if (ocn_c2_atm) call prep_atm_calc_o2x_ax(fractions_ox,timer='CPL:atmoca_ocn2atm')
 
             call t_drvstartf ('CPL:atmocna_fluxa',barrier=mpicom_CPLID)
-            do exi = 1,num_inst_xao
-               eai = mod((exi-1),num_inst_atm) + 1
-               eoi = mod((exi-1),num_inst_ocn) + 1
-               efi = mod((exi-1),num_inst_frc) + 1
+         do exi = 1,num_inst_xao
+            eai = mod((exi-1),num_inst_atm) + 1
+            eoi = mod((exi-1),num_inst_ocn) + 1
+            efi = mod((exi-1),num_inst_frc) + 1
                a2x_ax => component_get_c2x_cx(atm(eai))
                o2x_ax => prep_atm_get_o2x_ax()    ! array over all instances
                xao_ax => prep_aoflux_get_xao_ax() ! array over all instances
@@ -3046,7 +3066,7 @@ end subroutine cesm_init
          !| atm/ocn flux on ocn grid (rasm_option2 and aoflux_grid='ocn')
          !----------------------------------------------------------
 
-         if (trim(aoflux_grid) == 'ocn') then
+            if (trim(aoflux_grid) == 'ocn') then
             call t_drvstartf ('CPL:atmocnp_fluxo',barrier=mpicom_CPLID)
             do exi = 1,num_inst_xao
                eai = mod((exi-1),num_inst_atm) + 1
@@ -3056,7 +3076,7 @@ end subroutine cesm_init
                o2x_ox => component_get_c2x_cx(ocn(eoi))
                xao_ox => prep_aoflux_get_xao_ox()
                call seq_flux_atmocn_mct(infodata, tod, dtime, a2x_ox(eai), o2x_ox, xao_ox(exi))
-            enddo
+         enddo
             call t_drvstopf  ('CPL:atmocnp_fluxo')
          endif  ! aoflux_grid
 
@@ -3079,7 +3099,7 @@ end subroutine cesm_init
          do exi = 1,num_inst_xao
             efi = mod((exi-1),num_inst_frc) + 1
             eai = mod((exi-1),num_inst_atm) + 1
-            xao_ox => prep_aoflux_get_xao_ox()        ! array over all instances
+               xao_ox => prep_aoflux_get_xao_ox()        ! array over all instances
             a2x_ox => prep_ocn_get_a2x_ox()
             call seq_flux_ocnalb_mct(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi))
          enddo
@@ -3332,11 +3352,11 @@ end subroutine cesm_init
 
             if (glc_c2_ice) then
                call prep_ice_calc_g2x_ix(timer='CPL:glcpost_glc2ice')
-            endif
+            endif	    
 
             if (glc_c2_ocn) then
                call prep_ocn_calc_g2x_ox(timer='CPL:glcpost_glc2ocn')
-            endif
+            endif	    
 
             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
             call t_drvstopf  ('CPL:GLCPOST',cplrun=.true.)
@@ -3605,7 +3625,7 @@ end subroutine cesm_init
                max_cplstep_time = -(max_cplstep_time)*cktime
             endif
          endif
-      end if
+      endif
       if (tod == 0 .and. wall_time_limit > 0.0_r8 .and. .not. force_stop) then
          time_erun = mpi_wtime()
          ! time_*run is seconds, wall_time_limit is hours
