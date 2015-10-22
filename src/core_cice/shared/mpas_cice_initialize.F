@@ -92,9 +92,7 @@ contains
     call cice_init_velocity_solver(domain)
 
     ! init advection
-    if (config_use_advection) then
-       call cice_init_advection(domain)
-    endif
+    call cice_init_advection(domain)
 
     ! column physics initialization
     call cice_init_column_physics_package_variables(domain, clock)
@@ -965,25 +963,19 @@ contains
          config_initial_ice_volume, &
          config_initial_snow_volume
 
-    !WHL - added config_rotate_cartesian_grid
     logical, pointer :: &
          config_rotate_cartesian_grid
 
     integer :: &
          iCell
     
-    !WHL - debug - Assume that the surface of the sphere is defined by xCell^2 + yCell^2 = zCell^2 = earthRadius^2
-
     real(kind=RKIND), parameter :: &
-         circle_radius = 0.1_RKIND*earthRadius      ! I often use this radius on the gx3 grid
-!         circle_radius = 0.01_RKIND*earthRadius    ! I sometimes use a smaller radius on the gx1 grid
+         circle_radius = 0.1_RKIND*earthRadius
    
     call MPAS_pool_get_config(configs, "config_initial_ice_area", config_initial_ice_area)
     call MPAS_pool_get_config(configs, "config_initial_ice_volume", config_initial_ice_volume)
     call MPAS_pool_get_config(configs, "config_initial_snow_volume", config_initial_snow_volume)
-
-    !WHL - Get config_rotate_cartesian_grid also, to decide where to put the circle of ice
-    call mpas_pool_get_config(configs, 'config_rotate_cartesian_grid', config_rotate_cartesian_grid)
+    call MPAS_pool_get_config(configs, 'config_rotate_cartesian_grid', config_rotate_cartesian_grid)
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
@@ -1003,7 +995,7 @@ contains
 
        do iCell = 1, nCells
        
-          !WHL - rotated grid; put a circle of ice at the North Pole
+          ! Put a circle of ice at the North Pole (which will be rotated to the grid equator)
           if (zCell(iCell) > 0.0_RKIND .and. sqrt(xCell(iCell)**2 + yCell(iCell)**2) < circle_radius) then
           
              ! has ice
@@ -1028,7 +1020,7 @@ contains
 
        do iCell = 1, nCells
        
-          !WHL - unrotated grid; put a circle of ice on the equator
+          ! Put a circle of ice on the equator
           if (xCell(iCell) > 0.0_RKIND .and. sqrt(yCell(iCell)**2 + zCell(iCell)**2) < circle_radius) then   ! Greenwich meridian
 !          if (xCell(iCell) < 0.0_RKIND .and. sqrt(yCell(iCell)**2 + zCell(iCell)**2) < circle_radius) then  ! Date Line 
 

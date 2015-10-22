@@ -175,11 +175,9 @@ contains
     logical, intent(in) :: &
          rotateCartesianGrid !< Input: 
 
-    !WHL - Rename normalVector3D?
     real(kind=RKIND), dimension(3) :: &
          normalVector3D
 
-    !WHL - Rename normalVector2D?
     real(kind=RKIND), dimension(2) :: &
          normalVector2D
 
@@ -227,25 +225,16 @@ contains
           
           iVertex = verticesOnCell(iVertexOnCell, iCell)
 
-          ! Given the vector from the center of the earth to the vertex, rotate this vector
-          ! into a coordinate system in which the x axis runs through the poles.
-          ! WHL - Rename normalVector3D?  It is the rotated vertex vector.
           call cice_grid_rotation_forward(&
                normalVector3D(1), normalVector3D(2), normalVector3D(3), &
                xVertex(iVertex),  yVertex(iVertex),  zVertex(iVertex), &
                rotateCartesianGrid)
 
-          ! Given the vector from the center of the earth to the center, rotate this vector
-          ! into a coordinate system in which the x axis runs through the poles.
-          !WHL - Can this be called outside the VertexOnCell loop?
           call cice_grid_rotation_forward(&
                xCellRotated, yCellRotated, zCellRotated, &
                xCell(iCell), yCell(iCell), zCell(iCell), &
                rotateCartesianGrid)
 
-          ! Project the rotated vertex vector (normalVector3D) onto the local tangent plane
-          ! at the cell center.  The result (normalVector2D) is a vector pointing from the
-          ! center to the vertex in the local tangent plane, in east/north coordinates.
           call cice_project_3D_vector_onto_local_2D(&
                normalVector2D, &
                normalVector3D, &

@@ -1,4 +1,4 @@
-.SUFFIXES: .F .c .o
+.SUFFIXES: .F .o
 
 OBJS = 	mpas_cice_time_integration.o \
 	mpas_cice_advection_incremental_remap_tracers.o \

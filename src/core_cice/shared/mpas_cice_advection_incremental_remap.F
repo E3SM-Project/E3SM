@@ -717,6 +717,9 @@ contains
        !       Cartesian x-y-z space. If working on a rotated sea ice mesh, a rotation is needed
        !       before transforming to the local tangent plane.  This is done in the compute_gradient
        !       subroutines below.
+       ! Note: The operator subroutines assume this field is called 'coeffs_reconstruct'.
+       !       It would be better to call it 'coeffsReconstruct', but this would require a change
+       !       in the operators.
 
        call mpas_rbf_interp_initialize(meshPool)
        call mpas_init_reconstruct(meshPool)
