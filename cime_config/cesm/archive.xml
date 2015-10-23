@@ -1,7 +1,6 @@
 <components>
   <comp_archive_spec name="cam">
     <rootdir>atm</rootdir>
-    <multi_instance>false</multi_instance>
     <files>
       <file_extension suffix=".log\.+">
 	<subdir>logs</subdir> 
@@ -92,7 +91,6 @@
 
   <comp_archive_spec name="datm">
     <rootdir>atm</rootdir>
-    <multi_instance>false</multi_instance>
     <files>
       <file_extension suffix=".r\.+">
 	<subdir>rest</subdir> 
@@ -111,7 +109,6 @@
 
   <comp_archive_spec name="clm[0-9]+">
     <rootdir>lnd</rootdir>
-    <multi_instance>false</multi_instance>
     <files>
       <file_extension suffix=".log\.+">
 	<subdir>logs</subdir> 
@@ -182,7 +179,6 @@
 
   <comp_archive_spec name="dlnd">
     <rootdir>lnd</rootdir>
-    <multi_instance>false</multi_instance>
     <files>
       <file_extension suffix=".r\.+">
 	<subdir>rest</subdir> 
@@ -201,7 +197,6 @@
 
   <comp_archive_spec name="rtm">
     <rootdir>rof</rootdir>
-    <multi_instance>false</multi_instance>
     <files>
       <file_extension suffix=".log\.+">
 	<subdir>logs</subdir> 
@@ -248,7 +243,6 @@
 
   <comp_archive_spec name="cice">
     <rootdir>ice</rootdir>
-    <multi_instance>false</multi_instance>
     <files>
       <file_extension suffix=".log\.+">
 	<subdir>logs</subdir> 
@@ -271,7 +265,6 @@
 
   <comp_archive_spec name="dice">
     <rootdir>ice</rootdir>
-    <multi_instance>false</multi_instance>
     <files>
       <file_extension suffix=".r\.+">
 	<subdir>rest</subdir> 
@@ -291,7 +284,6 @@
 
   <comp_archive_spec name="pop">
     <rootdir>ocn</rootdir>
-    <multi_instance>false</multi_instance>
     <files>
       <file_extension suffix=".log\.+">
 	<subdir>logs</subdir> 
@@ -362,7 +354,6 @@
 
   <comp_archive_spec name="docn">
     <rootdir>ocn</rootdir>
-    <multi_instance>false</multi_instance>
     <files>
       <file_extension suffix=".r\.+">
 	<subdir>rest</subdir> 
@@ -381,7 +372,6 @@
 
   <comp_archive_spec name="cism">
     <rootdir>glc</rootdir>
-    <multi_instance>false</multi_instance>
     <files>
       <file_extension suffix=".log\.+">
 	<subdir>logs</subdir> 
@@ -408,7 +398,6 @@
 
   <comp_archive_spec name="ww3">
     <rootdir>wav</rootdir>
-    <multi_instance>false</multi_instance>
     <files>
       <file_extension suffix=".log\.+">
 	<subdir>logs</subdir> 
@@ -431,7 +420,6 @@
 
   <comp_archive_spec name="dwav">
     <rootdir>wav</rootdir>
-    <multi_instance>false</multi_instance>
     <files>
       <file_extension suffix=".r\.+">
 	<subdir>rest</subdir> 
@@ -450,7 +438,6 @@
 
   <comp_archive_spec name="dart"> 
     <rootdir>dart</rootdir>
-    <multi_instance>false</multi_instance>
     <files>
       <file_extension suffix="assimilate_\w{3}/\w*/\w*dart_log\.+">
 	<subdir>logs</subdir> 
@@ -464,28 +451,28 @@
 	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix="\w*True_State\.+.nc">
-	<subdir></subdir> 
+      <file_extension suffix="\w*True_State\..*\.nc">
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension suffix="\w*Prior_Diag\.+.nc">
-	<subdir></subdir> 
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension suffix="\w*Posterior_Diag\.+.nc">
-	<subdir></subdir> 
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension suffix="\w*obs_seq\.+.out">
-	<subdir></subdir> 
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension suffix="\w*obs_seq\.+.final">
-	<subdir></subdir> 
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension suffix="\w*obs_seq\.+.perfect">
-	<subdir></subdir> 
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension suffix="cam_\w*pr\w*inflate_restart\w*">
@@ -517,7 +504,6 @@
 
   <comp_archive_spec name="cpl"> 
     <rootdir>cpl</rootdir>
-    <multi_instance>false</multi_instance>
     <files>
       <file_extension suffix="cpl.log\.+">
 	<subdir>logs</subdir> 
