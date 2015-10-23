@@ -27,7 +27,7 @@ module li_tendency
    use mpas_constants
    use mpas_dmpar
    use li_setup
-!!!   use li_mask
+   use li_mask
 !!!   use mpas_tracer_advection
 
    implicit none
@@ -125,8 +125,10 @@ module li_tendency
       !-----------------------------------------------------------------
       integer, pointer :: nVertLevels
       real (kind=RKIND), dimension(:), pointer :: sfcMassBal
+      real (kind=RKIND), dimension(:), pointer :: basalMassBal
+      real (kind=RKIND), dimension(:), pointer :: groundedBasalMassBal
+      real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBal
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThicknessEdge
-!!!      real (kind=RKIND), dimension(:), pointer :: iceArea, areaCell, marineBasalMassBal
       integer, dimension(:), pointer :: cellMask, edgeMask
       character (len=StrKIND), pointer :: config_thickness_advection
       real (kind=RKIND), pointer :: config_ice_density
@@ -138,14 +140,14 @@ module li_tendency
 
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
+      call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
+      call mpas_pool_get_array(geometryPool, 'groundedBasalMassBal', groundedBasalMassBal)
+      call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
       ! Assuming tendency will always be calculated using time level 1!
       call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
       call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
-!!!     marineBasalMassBal => mesh % marineBasalMassBal % array
-!!!     iceArea => state % iceArea % array
-!!!     areaCell => mesh % areaCell % array
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
 
@@ -204,36 +206,34 @@ module li_tendency
       case ('None')  !===================================================
         ! Do nothing - don't add the MB
       case default
-! Commenting BMB out for now.
-!!!        ! Make some potential adjustments to BMB before applying them.
-!!!        !    It's ok to overwrite the values with 0's here, because each time step
-!!!        !    we get a fresh copy of the array from the annual_forcing subroutine.
-!!!        ! 1. make adjustments for where the ice is grounded and floating.
-!!!        !    TODO: more complicated treatment at GL?
-!!!        where ( li_mask_is_grounded_ice(cellMask) )
-!!!           ! Apply marineBasalMassBal to floating ice only.  
-!!!           marineBasalMassBal = 0.0_RKIND
-!!!        elsewhere ( li_mask_is_floating_ice(cellMask) )
-!!!           ! Currently, floating and grounded ice are mutually exclusive.
-!!!           ! This could change if the GL is parameterized, in which case this logic may need adjustment.
-!!!           ! Grounded BMB should come from the temperature solver.
-!!!           ! < PLACEHOLDER >
-!!!        elsewhere ( .not. (li_mask_is_ice(cellMask) )
-!!!              ! We don't allow a positive BMB where ice is not already present.
-!!!              mesh % marineBasalMassBal % array = 0.0_RKIND
-!!!        end where
+
+        ! Combine various basal mass balnce fields based on mask
+        ! 1. make adjustments for where the ice is grounded and floating.
+        !    TODO: more complicated treatment at GL?
+        where ( li_mask_is_grounded_ice(cellMask) )
+           ! Apply marineBasalMassBal to floating ice only.
+           basalMassBal = groundedBasalMassBal
+        elsewhere ( li_mask_is_floating_ice(cellMask) )
+           ! Currently, floating and grounded ice are mutually exclusive.
+           ! This could change if the GL is parameterized, in which case this logic may need adjustment.
+           ! Grounded BMB should come from the temperature solver.
+           basalMassBal = floatingBasalMassBal
+        elsewhere ( .not. (li_mask_is_ice(cellMask) ) )
+           ! We don't allow a positive BMB where ice is not already present.
+           basalMassBal = 0.0_RKIND
+        end where
 
         ! Add surface mass balance to tendency
         ! TODO: Need to decide how to deal with negative SMB that eliminates top layer or all ice (check for negative thickness?)
         layerThickness_tend(1,:) = layerThickness_tend(1,:) + sfcMassBal / config_ice_density  ! (tendency in meters per year)
         ! TODO THIS MIGHT RESULT IN  NEGATIVE LAYER THICKNESS!
 
-!!!        ! Add basal mass balance to tendency
-!!!        ! TODO: Need to decide how to deal with negative BMB that eliminates top layer or all ice (check for negative thickness?)
-!!!        layerThickness_tend(nVertLevels,:) = layerThickness_tend(nVertLevels,:) &
-!!!                                    + mesh % marineBasalMassBal % array    ! (tendency in meters per year)
-!!!        ! TODO Add in grounded ice basal mass balance once temperature diffusion is calculated
-!!!        ! TODO THIS MIGHT RESULT IN  NEGATIVE LAYER THICKNESS!
+        ! Add basal mass balance to tendency
+        ! TODO: Need to decide how to deal with negative BMB that eliminates top layer or all ice (check for negative thickness?)
+        layerThickness_tend(nVertLevels,:) = layerThickness_tend(nVertLevels,:) &
+                                    + basalMassBal / config_ice_density    ! (tendency in meters per year)
+        ! TODO THIS MIGHT RESULT IN  NEGATIVE LAYER THICKNESS!
+
       end select
 
       ! === error check
