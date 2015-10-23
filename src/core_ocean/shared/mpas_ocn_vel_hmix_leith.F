@@ -22,6 +22,7 @@ module ocn_vel_hmix_leith
 
    use mpas_derived_types
    use mpas_pool_routines
+   use mpas_constants
    use ocn_constants
 
    implicit none
@@ -127,7 +128,7 @@ contains
       integer, dimension(:), pointer :: maxLevelEdgeTop
       integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge, edgeMask
 
-      real (kind=RKIND) :: u_diffusion, invLength1, invLength2, visc2
+      real (kind=RKIND) :: u_diffusion, invLength_dc, invLength_dv, visc2
       real (kind=RKIND), dimension(:), pointer :: meshScaling, &
               dcEdge, dvEdge
 
@@ -163,8 +164,8 @@ contains
          vertex1 = verticesOnEdge(1,iEdge)
          vertex2 = verticesOnEdge(2,iEdge)
 
-         invLength1 = 1.0 / dcEdge(iEdge)
-         invLength2 = 1.0 / dvEdge(iEdge)
+         invLength_dc = 1.0_RKIND / dcEdge(iEdge)
+         invLength_dv = 1.0_RKIND / dvEdge(iEdge)
 
          do k = 1, maxLevelEdgeTop(iEdge)
 
@@ -172,14 +173,14 @@ contains
             ! is - \nabla relativeVorticity pointing from vertex 2 to vertex 1, or equivalently 
             !    + k \times \nabla relativeVorticity pointing from cell1 to cell2.
 
-            u_diffusion = ( divergence(k,cell2)  - divergence(k,cell1) ) * invLength1 &
-                         -( relativeVorticity(k,vertex2) - relativeVorticity(k,vertex1) ) * invLength2
+            u_diffusion = ( divergence(k,cell2)  - divergence(k,cell1) ) * invLength_dc &
+                         -( relativeVorticity(k,vertex2) - relativeVorticity(k,vertex1) ) * invLength_dv
 
             ! Here the first line is (\delta x)^3
             ! the second line is |\nabla \omega|
             ! and u_diffusion is \nabla^2 u (see formula for $\bf{D}$ above).
-            visc2 = ( config_leith_parameter * config_leith_dx * meshScaling(iEdge) / 3.14)**3 &
-                     * abs( relativeVorticity(k,vertex2) - relativeVorticity(k,vertex1) ) * invLength1 * sqrt(3.0)
+            visc2 = ( config_leith_parameter * config_leith_dx * meshScaling(iEdge) / pii)**3 &
+                     * abs( relativeVorticity(k,vertex2) - relativeVorticity(k,vertex1) ) * invLength_dc * sqrt(3.0_RKIND)
             visc2 = min(visc2, config_leith_visc2_max)
 
             tend(k,iEdge) = tend(k,iEdge) + edgeMask(k, iEdge) * visc2 * u_diffusion
