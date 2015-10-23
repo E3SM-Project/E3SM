@@ -1080,7 +1080,6 @@
 		<var name="atmosBioFluxes"		      type="real"     dimensions="nZBGCTracers nCells"	         name_in_code="atmosBioFluxes" packages="pkgColumnBiogeochemistry"/>
 		<var name="atmosIceBioFluxes"		      type="real"     dimensions="nZBGCTracers nCells Time"      name_in_code="atmosIceBioFluxes" packages="pkgColumnBiogeochemistry"/>
 		<var name="snowIceBioFluxes"		      type="real"     dimensions="nZBGCTracers nCells Time"      name_in_code="snowIceBioFluxes" packages="pkgColumnBiogeochemistry"/>
-		<var name="atmosBioConcentrations"	      type="real"     dimensions="nZBGCTracers nCells"	         name_in_code="atmosBioConcentrations" packages="pkgColumnBiogeochemistry"/>
 		<var name="atmosBlackCarbonFlux"	      type="real"     dimensions="maxBCType nCells Time"         name_in_code="atmosBlackCarbonFlux"  packages="pkgColumnBiogeochemistry"/>
 		<var name="atmosDustFlux"       	      type="real"     dimensions="maxDustType nCells Time"       name_in_code="atmosDustFlux"  packages="pkgColumnBiogeochemistry"/>
 		<var name="oceanBioFluxes"		      type="real"     dimensions="nZBGCTracers nCells Time"      name_in_code="oceanBioFluxes" packages="pkgColumnITDThermodynamics;pkgColumnRidging;pkgColumnBiogeochemistry"/>

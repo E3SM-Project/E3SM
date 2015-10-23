@@ -1692,7 +1692,7 @@ contains
          oceanAmmoniumConc, &
          oceanDMSConc, &
          oceanDMSPConc, &
-         oceanHumicsConc        
+         oceanHumicsConc 
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          atmosBioFluxes, & 

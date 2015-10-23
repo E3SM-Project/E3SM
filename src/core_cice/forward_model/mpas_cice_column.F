@@ -2595,7 +2595,7 @@ contains
 
   subroutine column_biogeochemistry(domain)
 
-    use ice_colpkg, only: colpkg_biogeochemistry
+    use ice_colpkg, only: colpkg_biogeochemistry, colpkg_init_OceanConcArray
 
     type(domain_type), intent(inout) :: domain
 
@@ -2635,7 +2635,14 @@ contains
          nParticulateIron, &
          nDissolvedIron, & 
          nZBGCTracers, &
-         maxAlgaeType
+         maxAlgaeType, &
+         maxDOCType, &
+         maxDICType, &
+         maxDONType, &
+         maxIronType, &
+         maxBCType, &
+         maxDustType, &
+         maxAerosolType
         
     ! variables
 
@@ -2657,7 +2664,13 @@ contains
          zSalinityFlux, &
          zSalinityGDFlux, &      
          oceanMixedLayerDepth, &
-         totalSkeletalAlgae     
+         totalSkeletalAlgae, &
+         oceanNitrateConc, &
+         oceanSilicateConc, &
+         oceanAmmoniumConc, &
+         oceanDMSConc, &
+         oceanDMSPConc, &
+         oceanHumicsConc      
          
     real(kind=RKIND), dimension(:,:), pointer :: &
          iceAreaCategoryInitial, &
@@ -2681,7 +2694,16 @@ contains
          snowMeltCategory, &       
          initialSalinityProfile, &
          atmosBioFluxes, &
-         oceanBioFluxes
+         atmosBlackCarbonFlux, &
+         atmosDustFlux, &
+         oceanBioFluxes, &
+         oceanAlgaeConc, &
+         oceanDOCConc, &
+         oceanDICConc, &
+         oceanDONConc, &
+         oceanParticulateIronConc, &
+         oceanDissolvedIronConc, &
+         oceanZAerosolConc
          
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          shortwaveLayerPenetration, &   
@@ -2706,7 +2728,8 @@ contains
          iBioTracers, &
          iCategory, &
          iAlgae, &
-         iBioData
+         iBioData, &
+         indexj
         
     real(kind=RKIND), dimension(:), allocatable :: &
          oceanBioConcentrationsUsed
@@ -2742,6 +2765,13 @@ contains
        call MPAS_pool_get_dimension(block % dimensions, "nDissolvedIron", nDissolvedIron)
        call MPAS_pool_get_dimension(block % dimensions, "nZBGCTracers", nZBGCTracers)
        call MPAS_pool_get_dimension(block % dimensions, "maxAlgaeType", maxAlgaeType)
+       call MPAS_pool_get_dimension(block % dimensions, "maxDOCType", maxDOCType)
+       call MPAS_pool_get_dimension(block % dimensions, "maxDICType", maxDICType)
+       call MPAS_pool_get_dimension(block % dimensions, "maxDONType", maxDONType)
+       call MPAS_pool_get_dimension(block % dimensions, "maxAerosolType", maxAerosolType)
+       call MPAS_pool_get_dimension(block % dimensions, "maxIronType", maxIronType)
+       call MPAS_pool_get_dimension(block % dimensions, "maxBCType", maxBCType)
+       call MPAS_pool_get_dimension(block % dimensions, "maxDustType", maxDustType)
 
        call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
@@ -2785,10 +2815,25 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "zSalinityFlux", zSalinityFlux)
        call MPAS_pool_get_array(biogeochemistry, "zSalinityGDFlux", zSalinityGDFlux)
        call MPAS_pool_get_array(biogeochemistry, "atmosBioFluxes", atmosBioFluxes)
+       call MPAS_pool_get_array(biogeochemistry, "atmosBlackCarbonFlux", atmosBlackCarbonFlux)
+       call MPAS_pool_get_array(biogeochemistry, "atmosDustFlux", atmosDustFlux)
        call MPAS_pool_get_array(biogeochemistry, "oceanBioFluxes", oceanBioFluxes)
        call MPAS_pool_get_array(biogeochemistry, "verticalNitrogenLosses", verticalNitrogenLosses)
        call MPAS_pool_get_array(biogeochemistry, "bioTemperature", bioTemperature)
        call MPAS_pool_get_array(biogeochemistry, "totalSkeletalAlgae", totalSkeletalAlgae)
+       call MPAS_pool_get_array(biogeochemistry, "oceanAlgaeConc",oceanAlgaeConc)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDOCConc",oceanDOCConc)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDICConc",oceanDICConc)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDONConc",oceanDONConc)
+       call MPAS_pool_get_array(biogeochemistry, "oceanParticulateIronConc",oceanParticulateIronConc)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDissolvedIronConc",oceanDissolvedIronConc)
+       call MPAS_pool_get_array(biogeochemistry, "oceanNitrateConc",oceanNitrateConc)
+       call MPAS_pool_get_array(biogeochemistry, "oceanSilicateConc",oceanSilicateConc)
+       call MPAS_pool_get_array(biogeochemistry, "oceanAmmoniumConc",oceanAmmoniumConc)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDMSConc",oceanDMSConc)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDMSPConc",oceanDMSPConc)
+       call MPAS_pool_get_array(biogeochemistry, "oceanHumicsConc",oceanHumicsConc)
+       call MPAS_pool_get_array(biogeochemistry, "oceanZAerosolConc",oceanZAerosolConc)
 
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTemperature", seaSurfaceTemperature)
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
@@ -2832,10 +2877,41 @@ contains
           enddo ! iCategory
           rayleighCriteria = (rayleighCriteriaReal(iCell) > 0.5_RKIND)
 
-          ! read required ocean concentrations fields into allocated array 
+          !update ocean concentrations fields and atmospheric fluxes into allocated array 
+#ifdef coupled
+         call colpkg_init_OceanConcArray(nZBGCTracers, &
+                                         maxAlgaeType, &
+                                         maxDONType, &
+                                         maxDOCType, &
+                                         maxDICType, &
+                                         maxAerosolType, &
+                                         maxIronType, &
+                                         oceanNitrateConc(iCell), &
+                                         oceanAmmoniumConc(iCell), &
+                                         oceanSilicateConc(iCell),&
+                                         oceanDMSPConc(iCell), &
+                                         oceanDMSConc(iCell), &
+                                         oceanAlgaeConc(:,iCell), &
+                                         oceanDOCConc(:,iCell), &
+                                         oceanDONConc(:,iCell), &
+                                         oceanDICConc(:,iCell), &
+                                         oceanDissolvedIronConc(:,iCell), &
+                                         oceanParticulateIronConc(:,iCell), &
+                                         oceanZAerosolConc(:,iCell), &
+                                         oceanBioConcentrations(:,iCell), &
+                                         oceanHumicsConc(iCell))
+
+          indexj = 2*maxAlgaeType + maxDOCType + maxDICType + maxDONType + 2*maxIronType + 7
+          do iBioTracers = 1, maxBCType
+             atmosBioFluxes(indexj + iBioTracers,iCell) = atmosBlackCarbonFlux(iBioTracers,iCell)
+          enddo
+          do iBioTracers = 1, maxDustType
+             atmosBioFluxes(indexj + maxBCType + iBioTracers, iCell) = atmosDustFlux(iBioTracers,iCell)
+          enddo
+#endif
           do iBioTracers = 1, ciceTracerObject % nBioTracers
              iBioData = ciceTracerObject % index_LayerIndexToDataArray(iBioTracers)
-             oceanBioConcentrationsUsed(iBioTracers) = oceanBioConcentrations(iBioData, iCell)
+             oceanBioConcentrationsUsed(iBioTracers) = oceanBioConcentrations(iBioData,iCell)
           enddo ! iBioTracers           
 
           abortFlag = .false.
@@ -9047,7 +9123,8 @@ contains
          config_use_vertical_tracers, &
          config_use_skeletal_biochemistry, &
          config_do_restart_zsalinity, &
-         config_do_restart_bgc
+         config_do_restart_bgc, &
+         config_do_restart_hbrine
        
     real(kind=RKIND), pointer :: &
          config_dt, &
@@ -9076,7 +9153,6 @@ contains
          oceanParticulateIronConc, &
          oceanDissolvedIronConc, &
          oceanZAerosolConc, &
-         atmosBioConcentrations, &
          oceanBioConcentrations, &
          totalVerticalBiologyIce, &
          totalVerticalBiologySnow
@@ -9125,6 +9201,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
     call MPAS_pool_get_config(domain % configs, "config_do_restart_zsalinity", config_do_restart_zsalinity)
     call MPAS_pool_get_config(domain % configs, "config_do_restart_bgc", config_do_restart_bgc)
+    call MPAS_pool_get_config(domain % configs, "config_do_restart_hbrine", config_do_restart_hbrine)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
     call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
@@ -9146,7 +9223,6 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "bioTemperature", bioTemperature)
        call MPAS_pool_get_array(biogeochemistry, "bioPermeability", bioPermeability)
        call MPAS_pool_get_array(biogeochemistry, "bioShortwaveFlux", bioShortwaveFlux)
-       call MPAS_pool_get_array(biogeochemistry, "atmosBioConcentrations", atmosBioConcentrations)
        call MPAS_pool_get_array(biogeochemistry, "oceanBioConcentrations", oceanBioConcentrations)
        call MPAS_pool_get_array(biogeochemistry, "totalVerticalBiologyIce", totalVerticalBiologyIce)
        call MPAS_pool_get_array(biogeochemistry, "totalVerticalBiologySnow", totalVerticalBiologySnow)
@@ -9207,14 +9283,16 @@ contains
        do iCell = 1, nCellsSolve
 
           ! Rayleigh criteria initialization
-          rayleighCriteriaReal(iCell) = 1.0_RKIND
-          rayleighCriteria = .true.
+          ! rayleighCriteriaReal(iCell) = 1.0_RKIND
+          ! rayleighCriteria = .true.
 
-          ! initialize newly formed ice
-          newlyFormedIce(:, iCell) = 1
+          if (.not. config_do_restart_hbrine) then
+            ! initialize newly formed ice
+            newlyFormedIce(:,iCell) = 1
 
-          ! initialize brine fraction
-          brineFraction = 1.0_RKIND
+            ! initialize brine fraction
+            brineFraction(:,:,iCell) = 1.0_RKIND
+          endif
 
           ! set the category tracer array
           call set_cice_tracer_array_category(block, tracerObject, iCell, setGetPhysicsTracers, setGetBGCTracers)
@@ -9260,7 +9338,6 @@ contains
                   oceanParticulateIronConc(:,iCell), &
                   oceanZAerosolConc(:,iCell), &
                   oceanHumicsConc(iCell), &
-                  atmosBioConcentrations(:,iCell), &
                   oceanBioConcentrations(:,iCell), & 
                   maxAlgaeType, &
                   maxDOCType, &
