@@ -606,8 +606,8 @@ endif
     integer :: is,ie,in,iw
     integer :: nce
 
-    call t_adj_detailf(+2)
-    call t_startf('edgeVpack')
+    !call t_adj_detailf(+2)
+    !call t_startf('edgeVpack')
 
     is = edge%putmap(south,ielem)
     ie = edge%putmap(east,ielem)
@@ -618,7 +618,7 @@ endif
        print *,'kptr+vlyr = ',kptr+vlyr
        call haltmp('edgeVpack: Buffer overflow: size of the vertical dimension must be increased!')
     endif
-#if (defined COLUMN_OPENMP)
+#if (defined COLUMN_OPENMP && !defined __bg__)
 !$omp parallel do private(k,i,iptr)
 #endif
     do k=1,vlyr
@@ -636,7 +636,7 @@ endif
     !  But since it is so a rare event not real need to spend time optimizing
 
     if(edge%reverse(south,ielem)) then
-#if (defined COLUMN_OPENMP)
+#if (defined COLUMN_OPENMP && !defined __bg__)
 !$omp parallel do private(k,i,ir,iptr)
 #endif
        do k=1,vlyr
@@ -649,7 +649,7 @@ endif
     endif
 
     if(edge%reverse(east,ielem)) then
-#if (defined COLUMN_OPENMP)
+#if (defined COLUMN_OPENMP && !defined __bg__)
 !$omp parallel do private(k,i,ir,iptr)
 #endif
        do k=1,vlyr
@@ -662,7 +662,7 @@ endif
     endif
 
     if(edge%reverse(north,ielem)) then
-#if (defined COLUMN_OPENMP)
+#if (defined COLUMN_OPENMP && !defined __bg__)
 !$omp parallel do private(k,i,ir,iptr)
 #endif
        do k=1,vlyr
@@ -675,7 +675,7 @@ endif
     endif
 
     if(edge%reverse(west,ielem)) then
-#if (defined COLUMN_OPENMP)
+#if (defined COLUMN_OPENMP && !defined __bg__)
 !$omp parallel do private(k,i,ir,iptr)
 #endif
        do k=1,vlyr
@@ -728,8 +728,8 @@ endif
         end if
     end do
 
-    call t_stopf('edgeVpack')
-    call t_adj_detailf(-2)
+    !call t_stopf('edgeVpack')
+    !call t_adj_detailf(-2)
 
   end subroutine edgeVpack
 
@@ -980,8 +980,8 @@ endif
     integer :: ks,ke,kblock
     logical :: done
 
-    call t_adj_detailf(+2)
-    call t_startf('edgeVunpack')
+    !call t_adj_detailf(+2)
+    !call t_startf('edgeVunpack')
 
     is=edge%getmap(south,ielem)
     ie=edge%getmap(east,ielem)
@@ -1003,7 +1003,7 @@ endif
 !       print *,'edgeVunpack: vlyr:= ',vlyr 
 !    endif
 
-#if (defined COLUMN_OPENMP)
+#if (defined COLUMN_OPENMP && !defined __bg__)
 !$omp parallel do private(k,i,iptr)
 #endif
     do k=1,vlyr
@@ -1013,7 +1013,7 @@ endif
        enddo
     enddo
 
-#if (defined COLUMN_OPENMP)
+#if (defined COLUMN_OPENMP && !defined __bg__)
 !$omp parallel do private(k,i,iptr)
 #endif
     do k=1,vlyr
@@ -1023,7 +1023,7 @@ endif
        enddo
     enddo
 
-#if (defined COLUMN_OPENMP)
+#if (defined COLUMN_OPENMP && !defined __bg__)
 !$omp parallel do private(k,i,iptr)
 #endif
     do k=1,vlyr
@@ -1033,7 +1033,7 @@ endif
        enddo
     enddo
 
-#if (defined COLUMN_OPENMP)
+#if (defined COLUMN_OPENMP && !defined __bg__)
 !$omp parallel do private(k,i,iptr)
 #endif
     do k=1,vlyr
@@ -1086,8 +1086,8 @@ endif
 !    endif
 ! enddo
 
-    call t_stopf('edgeVunpack')
-    call t_adj_detailf(-2)
+    !call t_stopf('edgeVunpack')
+    !call t_adj_detailf(-2)
 
   end subroutine edgeVunpack
   subroutine edgeVunpackVert(edge,v,ielem)
