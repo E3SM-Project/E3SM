@@ -108,8 +108,8 @@ sub chem_preprocess
     }
     if ($needtorun) {
 	my $proc_exe_path ;
-	if ( -e "$chem_preprocessor/$chem_proc_exe" ) {
-	    $proc_exe_path = "$chem_preprocessor/$chem_proc_exe" ;
+	if ( -e "$chem_preprocessor/bin/$chem_proc_exe" ) {
+	    $proc_exe_path = "$chem_preprocessor/bin/$chem_proc_exe" ;
 	} else {
 	    $proc_exe_path = "$chem_proc_bld/$chem_proc_exe" ;
 	}
