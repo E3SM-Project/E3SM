@@ -273,6 +273,8 @@ module seq_flds_mod
      character(len=CSS) :: units
      character(len=CSS) :: longname
      character(len=CSS) :: stdname
+     integer            :: num
+     character(len=  2) :: cnum
      character(len=CSS) :: name
 
      character(CXX) :: dom_coord  = ''
