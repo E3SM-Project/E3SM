@@ -223,7 +223,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
    integer :: kptr, ie, ic, i, j, k, tl_f, tl_fQdp
    real(r8) :: rec2dt, dyn_ps0
-   real(r8) :: dp(np,np,nlev),dp_tmp,fq,fq0,qn0, ftmp(npsq,nlev,2)
+   real(r8) :: dp(np,np,nlev),dp_tmp,fq,fq0,qn0, ftmp(npsq,nlev,2) !PMC can remove dp_tmp?
 
    ! copy from phys structures -> dynamics structures
    call t_barrierf('sync_p_d_coupling', mpicom)
@@ -278,93 +278,67 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
       dyn_ps0=ps0
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! ftype=2:  apply forcing to Q,ps.  Return dynamics tendencies
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      if (ftype==2) then
-         ! apply forcing to states tl_f 
-         ! requires forward-in-time timestepping, checked in namelist_mod.F90
+      !CONVERT FQ INTO A MASS-WEIGHTED TENDENCY:
+      !======================================
+      !Because dq/dt is not included in phys_tend, q forcing (=dyn_in%elem(ie)%derived%FQ) can't
+      !be computed in p_d_coupling(). Instead, dyn_in%elem(ie)%derived%FQ returned by p_d_coupling
+      !is actually the q *state* after the most recent physics call. We convert FQ to be a tendency 
+      !below by taking the difference between q before and after the physics call. At the same time, 
+      !we convert Q from being a mixing ratio (as used by physics) to being q*dp (as used by 
+      !dynamics). Note that p_d_coupling only updates dyn_in%elem(ie)%derived%{FT,FM,FQ}... the 
+      !dyn_in%elem(ie)%state variables used below have not been updated since before physics. 
+      !(PMC 10/23/15)
+
+      !Compute dp noting that CAM physics doesn't change ps so it's ok to use
+      !dyn_in%elem(ie)%state%ps_v from before physics.
 !$omp parallel do private(k)
-         do k=1,nlev
-            dp(:,:,k) = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
-                 ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(:,:,tl_f)
-         enddo
+      do k=1,nlev
+         dp(:,:,k) = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
+              ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(:,:,tl_f)
+      enddo
+
+      !Compute the *tendency* FQ noting that dyn_in%elem(ie)%state%Q is 
+      !the Q state from before the last physics call.
+!$omp parallel do private(ic,k, j, i) 
+      !????????? PMC - I added ic to 'do private' above - is this ok????????
+      do ic=1,pcnst
          do k=1,nlev
             do j=1,np
-               do i=1,np
-
-                  do ic=1,pcnst
-                     ! back out tendency: Qdp*dtime 
-                     fq = dp(i,j,k)*(  dyn_in%elem(ie)%derived%FQ(i,j,k,ic,1) - &
-                          dyn_in%elem(ie)%state%Q(i,j,k,ic))
-                     
-                     ! apply forcing to Qdp
-!                     dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) = &
-!                          dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) + fq 
-                     dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) = &
-                          dp(i,j,k)*dyn_in%elem(ie)%derived%FQ(i,j,k,ic,1) 
-
-! BEWARE critical region if using OpenMP over k (AAM)
-                     if (ic==1) then
-                        ! force ps_v to conserve mass:  
-                        dyn_in%elem(ie)%state%ps_v(i,j,tl_f)= &
-                             dyn_in%elem(ie)%state%ps_v(i,j,tl_f) + fq
-                     endif
-                  enddo
+               do i=1,np                  
+                  dyn_in%elem(ie)%derived%FQ(i,j,k,ic,1)=&
+                       (  dyn_in%elem(ie)%derived%FQ(i,j,k,ic,1) - &
+                       dyn_in%elem(ie)%state%Q(i,j,k,ic))*rec2dt*dp(i,j,k)
                end do
             end do
          end do
+      end do
 
-!$omp parallel do private(k, j, i, ic, dp_tmp)
-         do k=1,nlev
-          do ic=1,pcnst
-            do j=1,np
-               do i=1,np
-                  ! make Q consistent now that we have updated ps_v above
-                  ! recompute dp, since ps_v was changed above
-                  dp_tmp = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
-                       ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
-                  dyn_in%elem(ie)%state%Q(i,j,k,ic)= &
-                       dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp)/dp_tmp
-
-               end do
-            end do
-          end do
-         end do
-      endif
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! ftype=1:  apply all forcings as an adjustment
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !UPDATE STATE TO INCLUDE PHYSICS TENDENCIES IF NECESSARY:
+      !=====================================
+      ! If physics and dynamics are split following namelist parameter ftype==0, 
+      ! FT, FM, and FQ are used as constant forcing terms in each remap step of dynamics.
+      ! Since these quantities are already tendencies, there's nothing more to do here. 
+      ! If ftype==1 ("apply physics as an adjustment"), entire physics forcing is applied at 
+      ! the beginning of the step. This requires updating the model state with the most 
+      ! recent physics tendency.
+      !---------------------------------------------------
       if (ftype==1) then
          ! apply forcing to state tl_f
          ! requires forward-in-time timestepping, checked in namelist_mod.F90
-!$omp parallel do private(k)
-         do k=1,nlev
-            dp(:,:,k) = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
-                 ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(:,:,tl_f)
-         enddo
+
+         !???????? PMC shouldn't there be a 'do private' flag here? ??????
          do k=1,nlev
             do j=1,np
                do i=1,np
-
                   do ic=1,pcnst
-                     ! back out tendency: Qdp*dtime 
-                     fq = dp(i,j,k)*(  dyn_in%elem(ie)%derived%FQ(i,j,k,ic,1) - &
-                          dyn_in%elem(ie)%state%Q(i,j,k,ic))
-                     
+                     !PMC ??????? the next line only works if phys_tscale==0 ????????
+                     !PMC ??????? why not delete loop over ic, replace ic with ":" below ???????
                      ! apply forcing to Qdp
                      dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) = &
-                          dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) + fq 
-
-                     ! BEWARE critical region if using OpenMP over k (AAM)
-                     if (ic==1) then
-                        ! force ps_v to conserve mass:  
-                        dyn_in%elem(ie)%state%ps_v(i,j,tl_f)= &
-                             dyn_in%elem(ie)%state%ps_v(i,j,tl_f) + fq
-                     endif
+                          dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) + &
+                          dtime*dyn_in%elem(ie)%derived%FQ(i,j,k,ic,1)
                   enddo
-
+                  
                   ! force V, T, both timelevels
                   dyn_in%elem(ie)%state%v(i,j,:,k,tl_f)= &
                        dyn_in%elem(ie)%state%v(i,j,:,k,tl_f) +  &
@@ -373,17 +347,31 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
                   dyn_in%elem(ie)%state%T(i,j,k,tl_f)= &
                        dyn_in%elem(ie)%state%T(i,j,k,tl_f) + &
                        dtime*dyn_in%elem(ie)%derived%FT(i,j,k,1)
-                  
+ 
+
+                  ! Pressure is assumed to remain constant during physics, but precipitation and 
+                  ! evaporation change column mass. To maintain consistency, we must update surface
+                  ! pressure to account for changes in vertically-integrated water vapor loading  
+                  ! BEWARE critical region if using OpenMP over k (AAM)
+                  dyn_in%elem(ie)%state%ps_v(i,j,tl_f)= &
+                       dyn_in%elem(ie)%state%ps_v(i,j,tl_f) + dyn_in%elem(ie)%derived%FQ(i,j,k,1,1)*dtime
+
                end do
             end do
          end do
+
+         ! Updating ps has the effect of redrawing cell edges in our sigma coordinate system. Because  
+         ! layer boundaries are redrawn, cell-averaged Q values must be recalculated. Qdp is assumed 
+         ! unchanged by this redrawing, so Q can be computed as Qdp divided by the new dp values. I
+         ! (PMC) am not sure why Qdp is constant other than to note that Qdp is proportional to the 
+         ! total mass in the cell and the vertically-integrated total mass must be conserved.
 
 !$omp parallel do private(k, j, i, ic, dp_tmp)
          do k=1,nlev
             do ic=1,pcnst
                do j=1,np
                   do i=1,np
-                     ! make Q consistent now that we have updated ps_v above
+                     ! Now that ps_v is updated, Q must be recalculated for consistency.
                      dp_tmp = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
                           ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
                      dyn_in%elem(ie)%state%Q(i,j,k,ic)= &
@@ -392,36 +380,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
                end do
             end do
          end do
+
       endif
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! ftype=0 and ftype<0 (debugging options):  just return tendencies to dynamics
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      if (ftype<=0) then
-
-         do ic=1,pcnst
-            ! Q  =  data used for forcing, at timelevel nm1   t
-            ! FQ =  adjusted Q returned by forcing,  at time  t+dt
-            ! tendency = (FQ*dp - Q*dp) / dt 
-            ! Convert this to a tendency on Qdp:  CAM physics does not change ps
-            ! so use ps_v at t.  (or, if physics worked with Qdp
-            ! and returned FQdp, tendency = (FQdp-Qdp)/2dt and since physics
-            ! did not change dp, dp would be the same in both terms)
-!$omp parallel do private(k, j, i, dp_tmp)
-            do k=1,nlev
-               do j=1,np
-                  do i=1,np
-                     dp_tmp = ( hyai(k+1) - hyai(k) )*dyn_ps0 + &
-                          ( hybi(k+1) - hybi(k) )*dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
-                     
-                     dyn_in%elem(ie)%derived%FQ(i,j,k,ic,1)=&
-                          (  dyn_in%elem(ie)%derived%FQ(i,j,k,ic,1) - &
-                          dyn_in%elem(ie)%state%Q(i,j,k,ic))*rec2dt*dp_tmp
-                  end do
-               end do
-            end do
-         end do
-      endif
    end do
    call t_stopf('stepon_bndry_exch')
 
