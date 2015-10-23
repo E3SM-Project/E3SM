@@ -112,6 +112,7 @@ module ocn_core_interface
       logical, pointer :: splitTimeIntegratorActive
       logical, pointer :: windStressBulkPKGActive
       logical, pointer :: landIceFluxesPKGActive
+      logical, pointer :: landIceCouplingPKGActive
       logical, pointer :: thicknessBulkPKGActive
       logical, pointer :: frazilIceActive
       logical, pointer :: inSituEOSActive
@@ -142,7 +143,7 @@ module ocn_core_interface
       character (len=StrKIND), pointer :: config_pressure_gradient_type
       logical, pointer :: config_use_bulk_wind_stress
       logical, pointer :: config_use_bulk_thickness_flux
-      logical, pointer :: config_use_land_ice_fluxes
+      character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
        type (mpas_pool_iterator_type) :: groupItr
        character (len=StrKIND) :: tracerGroupName, configName, packageName
@@ -211,11 +212,16 @@ module ocn_core_interface
 
       !
       ! test for land ice fluxes, landIceFluxesPKG
+      ! test for land ice coupling, landIceCouplingPKG
       !
       call mpas_pool_get_package(packagePool, 'landIceFluxesPKGActive', landIceFluxesPKGActive)
-      call mpas_pool_get_config(configPool, 'config_use_land_ice_fluxes', config_use_land_ice_fluxes)
-      if ( config_use_land_ice_fluxes ) then
+      call mpas_pool_get_package(packagePool, 'landIceCouplingPKGActive', landIceCouplingPKGActive)
+      call mpas_pool_get_config(configPool, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
+      if ( trim(config_land_ice_flux_mode) == 'standalone' ) then
          landIceFluxesPKGActive = .true.
+      else if ( trim(config_land_ice_flux_mode) == 'coupled' ) then
+         landIceFluxesPKGActive = .true.
+         landIceCouplingPKGActive = .true.
       end if
 
       !

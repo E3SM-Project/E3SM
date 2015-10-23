@@ -221,7 +221,6 @@ contains
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
       call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
-                  
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
@@ -1300,14 +1299,13 @@ contains
       integer :: iCell, iEdge, cell1, cell2, iLevel, i
       integer, pointer :: nCells, nEdges
 
-      integer, dimension(:,:), pointer :: cellsOnCell, cellsOnEdge
+      integer, dimension(:,:), pointer :: cellsOnCell, cellsOnEdge, cellMask
 
       integer, dimension(:), pointer :: maxLevelCell, nEdgesOnCell
 
-      integer, pointer :: indexT, indexS
+      integer, pointer :: indexT, indexS, indexBLT, indexBLS, indexHeatTrans, indexSaltTrans
 
-      character (len=StrKIND), pointer :: config_land_ice_flux_formulation
-      logical, pointer :: config_use_land_ice_fluxes
+      character (len=StrKIND), pointer :: config_land_ice_flux_formulation, config_land_ice_flux_mode
 
       real (kind=RKIND), pointer :: config_land_ice_flux_boundaryLayerThickness, &
                                     config_land_ice_flux_boundaryLayerNeighborWeight, &
@@ -1317,21 +1315,18 @@ contains
                                     config_land_ice_flux_jenkins_salt_transfer_coefficient, &
                                     config_land_ice_flux_attenuation_coefficient
 
-      real (kind=RKIND) :: blThickness, dz, blWeightSum, h_nu, Gamma_turb, landIceEdgeFraction, velocityMagnitude
+      real (kind=RKIND) :: blThickness, dz, weightSum, h_nu, Gamma_turb, landIceEdgeFraction, velocityMagnitude
 
       real (kind=RKIND), dimension(:), pointer :: landIceFraction, &
                                                   landIceFrictionVelocity, &
-                                                  landIceBoundaryLayerTemperature, &
-                                                  landIceBoundaryLayerSalinity, &
-                                                  landIceHeatTransferVelocity, &
-                                                  landIceSaltTransferVelocity, &
                                                   topDrag, &
                                                   topDragMagnitude, &
                                                   fCell, &
                                                   blTempScratch, blSaltScratch, &
                                                   surfaceFluxAttenuationCoefficient
 
-      real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell, layerThickness, normalVelocity
+      real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell, layerThickness, normalVelocity, &
+                                                    landIceBoundaryLayerTracers, landIceTracerTransferVelocities
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
       type (field1DReal), pointer :: boundaryLayerTemperatureField, boundaryLayerSalinityField
 
@@ -1346,8 +1341,11 @@ contains
          xiN = 0.052_RKIND              ! dimensionless planetary boundary layer constant
 
 
-      call mpas_pool_get_config(ocnConfigs, 'config_use_land_ice_fluxes', config_use_land_ice_fluxes)
-      if(.not. config_use_land_ice_fluxes) return
+      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
+      if ( trim(config_land_ice_flux_mode) == 'off') then
+         return
+      end if
+
 
       jenkinsOn = .false.
       hollandJenkinsOn = .false.
@@ -1376,6 +1374,7 @@ contains
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'cellMask', cellMask)
 
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
@@ -1389,13 +1388,17 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
 
       call mpas_pool_get_array(diagnosticsPool, 'landIceFrictionVelocity', landIceFrictionVelocity)
-      call mpas_pool_get_array(diagnosticsPool, 'landIceBoundaryLayerTemperature', landIceBoundaryLayerTemperature)
-      call mpas_pool_get_array(diagnosticsPool, 'landIceBoundaryLayerSalinity', landIceBoundaryLayerSalinity)
       call mpas_pool_get_array(diagnosticsPool, 'topDrag', topDrag)
       call mpas_pool_get_array(diagnosticsPool, 'topDragMagnitude', topDragMagnitude)
+
+      call mpas_pool_get_array(diagnosticsPool, 'landIceBoundaryLayerTracers', landIceBoundaryLayerTracers)
+      call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceBoundaryLayerTemperature', indexBLT)
+      call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceBoundaryLayerSalinity', indexBLS)
+
       if(jenkinsOn .or. hollandJenkinsOn) then
-        call mpas_pool_get_array(diagnosticsPool, 'landIceHeatTransferVelocity', landIceHeatTransferVelocity)
-        call mpas_pool_get_array(diagnosticsPool, 'landIceSaltTransferVelocity', landIceSaltTransferVelocity)
+        call mpas_pool_get_array(diagnosticsPool, 'landIceTracerTransferVelocities', landIceTracerTransferVelocities)
+        call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceHeatTransferVelocity', indexHeatTrans)
+        call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceSaltTransferVelocity', indexSaltTrans)
       end if
       call mpas_pool_get_array(diagnosticsPool, 'surfaceFluxAttenuationCoefficient', surfaceFluxAttenuationCoefficient)
 
@@ -1405,6 +1408,7 @@ contains
       call mpas_allocate_scratch_field(boundaryLayerSalinityField, .true.)
       blTempScratch => boundaryLayerTemperatureField % array
       blSaltScratch => boundaryLayerSalinityField % array
+
       if(hollandJenkinsOn) then
          call mpas_pool_get_array(meshPool, 'fCell', fCell)
       end if
@@ -1454,32 +1458,28 @@ contains
          end if
       end do
       do iCell = 1, nCells
-         landIceBoundaryLayerTemperature(iCell) = blTempScratch(iCell)
-         landIceBoundaryLayerSalinity(iCell) = blSaltScratch(iCell)
+         landIceBoundaryLayerTracers(indexBLT, iCell) = blTempScratch(iCell)
+         landIceBoundaryLayerTracers(indexBLS, iCell) = blSaltScratch(iCell)
          if(config_land_ice_flux_boundaryLayerNeighborWeight > 0.0_RKIND) then
-            blWeightSum = 1.0_RKIND
+            weightSum = 1.0_RKIND
             do i = 1, nEdgesOnCell(iCell)
                cell2 = cellsOnCell(i,iCell)
-               if(cell2 <= 0 .or. cell2 > nCells) cycle
 
-               landIceBoundaryLayerTemperature(iCell) = landIceBoundaryLayerTemperature(iCell) &
-                 + config_land_ice_flux_boundaryLayerNeighborWeight*blTempScratch(cell2)
-               landIceBoundaryLayerSalinity(iCell) = landIceBoundaryLayerSalinity(iCell) &
-                 + config_land_ice_flux_boundaryLayerNeighborWeight*blSaltScratch(cell2)
-               blWeightSum = blWeightSum + config_land_ice_flux_boundaryLayerNeighborWeight
+               landIceBoundaryLayerTracers(indexBLT, iCell) = landIceBoundaryLayerTracers(indexBLT, iCell) &
+                 + cellMask(1,cell2)*config_land_ice_flux_boundaryLayerNeighborWeight*blTempScratch(cell2)
+               landIceBoundaryLayerTracers(indexBLS, iCell) = landIceBoundaryLayerTracers(indexBLS, iCell) &
+                 + cellMask(1,cell2)*config_land_ice_flux_boundaryLayerNeighborWeight*blSaltScratch(cell2)
+               weightSum = weightSum + cellMask(1,cell2)*config_land_ice_flux_boundaryLayerNeighborWeight
             end do
-            if(blWeightSum > 0.0_RKIND) then
-               landIceBoundaryLayerTemperature(iCell) = landIceBoundaryLayerTemperature(iCell)/blWeightSum
-               landIceBoundaryLayerSalinity(iCell) = landIceBoundaryLayerSalinity(iCell)/blWeightSum
-            end if
+            landIceBoundaryLayerTracers(:, iCell) = landIceBoundaryLayerTracers(:, iCell)/weightSum
          end if
       end do
 
       if(jenkinsOn) then
          do iCell = 1, nCells
             ! transfer coefficients from namelist
-            landIceHeatTransferVelocity(iCell) = landIceFrictionVelocity(iCell)*config_land_ice_flux_jenkins_heat_transfer_coefficient
-            landIceSaltTransferVelocity(iCell) = landIceFrictionVelocity(iCell)*config_land_ice_flux_jenkins_salt_transfer_coefficient
+            landIceTracerTransferVelocities(indexHeatTrans, iCell) = landIceFrictionVelocity(iCell)*config_land_ice_flux_jenkins_heat_transfer_coefficient
+            landIceTracerTransferVelocities(indexSaltTrans, iCell) = landIceFrictionVelocity(iCell)*config_land_ice_flux_jenkins_salt_transfer_coefficient
          end do
       else if(hollandJenkinsOn) then
          do iCell = 1, nCells
@@ -1493,8 +1493,8 @@ contains
                 *xiN/(abs(fCell(iCell))*h_nu))
             end if
      
-            landIceHeatTransferVelocity(iCell) = 1.0_RKIND/(Gamma_turb + 12.5_RKIND*Pr**(2.0_RKIND/3.0_RKIND) - 6.0_RKIND)
-            landIceSaltTransferVelocity(iCell) = 1.0_RKIND/(Gamma_turb + 12.5_RKIND*Sc**(2.0_RKIND/3.0_RKIND) - 6.0_RKIND)
+            landIceTracerTransferVelocities(indexHeatTrans, iCell) = 1.0_RKIND/(Gamma_turb + 12.5_RKIND*Pr**(2.0_RKIND/3.0_RKIND) - 6.0_RKIND)
+            landIceTracerTransferVelocities(indexSaltTrans, iCell) = 1.0_RKIND/(Gamma_turb + 12.5_RKIND*Sc**(2.0_RKIND/3.0_RKIND) - 6.0_RKIND)
          end do
       end if
 
@@ -1503,7 +1503,7 @@ contains
 
       ! recompute the spatially-varying attenuation coefficient based on landIceFraction
       do iCell = 1, nCells
-        surfaceFluxAttenuationCoefficient(iCell) = landIceFraction(iCell)*config_land_ice_flux_attenuation_coefficient &
+         surfaceFluxAttenuationCoefficient(iCell) = landIceFraction(iCell)*config_land_ice_flux_attenuation_coefficient &
            + (1.0_RKIND - landIceFraction(iCell))*surfaceFluxAttenuationCoefficient(iCell)
       end do
 

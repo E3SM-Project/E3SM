@@ -40,6 +40,8 @@ module ocn_time_integration_split
 
    use ocn_sea_ice
 
+   use ocn_effective_density_in_land_ice
+
    implicit none
    private
    save
@@ -132,6 +134,7 @@ module ocn_time_integration_split
       logical, pointer :: config_vel_correction, config_prescribe_velocity, config_prescribe_thickness
       logical, pointer :: config_use_cvmix_kpp
       logical, pointer :: config_use_tracerGroup
+      character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
       real (kind=RKIND), pointer :: config_mom_del4, config_btr_gam1_velWt1, config_btr_gam2_SSHWt1
       real (kind=RKIND), pointer :: config_btr_gam3_velWt2
@@ -186,7 +189,7 @@ module ocn_time_integration_split
 
       ! Diagnostics Field Pointers
       type (field2DReal), pointer :: normalizedRelativeVorticityEdgeField, divergenceField, relativeVorticityField
-      type (field1DReal), pointer :: barotropicThicknessFluxField, boundaryLayerDepthField
+      type (field1DReal), pointer :: barotropicThicknessFluxField, boundaryLayerDepthField, effectiveDensityField
 
       ! State/Tend Field Pointers
       type (field1DReal), pointer :: normalBarotropicVelocitySubcycleField, sshSubcycleField
@@ -228,6 +231,7 @@ module ocn_time_integration_split
 
       call mpas_pool_get_config(domain % configs, 'config_use_standardGM', config_use_standardGM)
       call mpas_pool_get_config(domain % configs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
+      call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
 
       allocate(n_bcl_iter(config_n_ts_iter))
 
@@ -1595,6 +1599,9 @@ module ocn_time_integration_split
 
          call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
 
+         ! Update the effective desnity in land ice if we're coupling to land ice
+         call ocn_effective_density_in_land_ice_update(meshPool, forcingPool, statePool, scratchPool, err)
+
          ! Compute normalGMBolusVelocity; it will be added to normalVelocity in Stage 2 of the next cycle. 
          if (config_use_standardGM) then
             call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
@@ -1617,7 +1624,7 @@ module ocn_time_integration_split
          SSHGradient(indexSSHGradientMeridional, :) = gradSSHMeridional(1, :)
 
          call ocn_time_average_accumulate(averagePool, statePool, diagnosticsPool, 2)
-         call ocn_time_average_coupled_accumulate(diagnosticsPool, forcingPool)
+         call ocn_time_average_coupled_accumulate(diagnosticsPool, statePool, forcingPool, 2)
 
          if (config_use_standardGM) then
             call ocn_reconstruct_gm_vectors(diagnosticsPool, meshPool)
@@ -1625,6 +1632,14 @@ module ocn_time_integration_split
 
          block => block % next
       end do
+
+      if (trim(config_land_ice_flux_mode) == 'coupled') then
+         call mpas_timer_start("se effective density halo")
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
+         call mpas_pool_get_field(statePool, 'effectiveDensityInLandIce', effectiveDensityField, 2)
+         call mpas_dmpar_exch_halo_field(effectiveDensityField)
+         call mpas_timer_stop("se effective density halo")
+      end if
 
       call mpas_timer_stop("se timestep", timer_main)
 
