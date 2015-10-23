@@ -1053,6 +1053,11 @@ void mapVerticesToCells(const std::vector<double>& velocityOnVertices,
   int vertexLayerShift = (ordering == 0) ? 1 : numLayers + 1;
 
   int nVertices3D = nVertices * (numLayers + 1);
+
+  // 0 entire field so no values from previous solve are left behind
+  // if the ice extent has retreated.
+  std::fill(velocityOnCells, velocityOnCells + nCells_F * (numLayers+1) * fieldDim, 0.);
+
   for (UInt j = 0; j < nVertices3D; ++j) {
     int ib = (ordering == 0) * (j % lVertexColumnShift)
         + (ordering == 1) * (j / vertexLayerShift);
