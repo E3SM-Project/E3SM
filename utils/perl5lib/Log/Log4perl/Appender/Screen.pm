@@ -12,9 +12,13 @@ sub new {
 ##################################################
     my($class, @options) = @_;
 
+# JPE - change default to stdout rather than stderr 
+# Compatibility of this module with Logger is questionable
+# should use Log::Dispatcher::Screen instead 
+
     my $self = {
         name   => "unknown name",
-        stderr => 1,
+        stderr => 0,
         utf8   => undef,
         @options,
     };
