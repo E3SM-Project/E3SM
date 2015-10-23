@@ -1,7 +1,12 @@
 package Run::RunChecks;
 use File::Basename;
 my $pkg = 'Run::RunChecks';
+use Log::Log4perl qw(get_logger);
+my $logger;
 
+BEGIN{
+    $logger = get_logger();
+}
 # 
 
 # Check that any files in $CASEROOT/LockedFiles matches the files
@@ -18,25 +23,25 @@ sub checkLockedFiles
 	{
 		$lockedfilesdir = "$caseroot/LockedFiles";
 	}
-	print "Locked files dir: $lockedfilesdir\n";
+	$logger->info( "Locked files dir: $lockedfilesdir");
 	
 	my @lockedfiles = glob("$lockedfilesdir/*");
 	foreach my $lockedfile(@lockedfiles)
 	{
-		print "locked file $lockedfile\n";
+		$logger->info( "locked file $lockedfile");
 		# need to get the file name minus the path and extension. 
 		my ($unlockedfile, $unlockedpath, $unlockedsuffix)  = fileparse($lockedfile);
 	
-		open my $UNLOCKEDFILE, "<", $unlockedfile  or die "cannot open $unlockedfile";
+		open my $UNLOCKEDFILE, "<", $unlockedfile  or $logger->logdie ("cannot open $unlockedfile");
 		my $unlockeddata = <$UNLOCKEDFILE>;
 		close $UNLOCKEDFILE;
-		open my $LOCKEDFILE, "<", $lockedfile  or die "cannot open $lockedfile";
+		open my $LOCKEDFILE, "<", $lockedfile  or $logger->logdie ("cannot open $lockedfile");
 		my $lockeddata = <$LOCKEDFILE>;
 		close $LOCKEDFILE;
 
 		if($unlockeddata ne $lockeddata)
 		{
-			print "locked file $lockedfile has been modified and is different than the LockedFiles version\n";
+			$logger->info( "locked file $lockedfile has been modified and is different than the LockedFiles version");
 			if($unlockedfile =~ /env_build/)
 			{
 				# TODO: Run xmlchange 
@@ -45,13 +50,14 @@ sub checkLockedFiles
 			}
 			elsif($unlockedfile =~ /env_mach_pes/)
 			{
-				print "PE count has been changed!\n";
-				print "please invoke case_setup -clean followed by case_setup\n";
+				$logger->error( "PE count has been changed!");
+				$logger->error("please invoke case_setup -clean followed by case_setup");
 			}
 			else
 			{
-				print "Cannot change $unlockedfile, please recover the original copy from the LockedFiles directory\n";
+				$logger->error( "Cannot change $unlockedfile, please recover the original copy from the LockedFiles directory");
 			}
 		}
 	}
 }
+1;
