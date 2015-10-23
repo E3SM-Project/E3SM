@@ -350,6 +350,7 @@ contains
         call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
         call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
         call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', vertVelocityTop)
+        call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', buoyancyTimeInterp)
 
         ! note, originally this was diagnostics % state % normalVelocity (without time level), but
         ! now there is a time level so selection of the correct time level appears to be tricky
@@ -671,18 +672,11 @@ contains
             !! the particle is in a cell that does not have the proper buoyancy target because this implies
             !! that the buoyancy tracking mode has completely failed.
             !! need to make sure it is validated for buoyancy particles
-#ifdef MPAS_DEBUG
-            !call mpas_timer_start("mpas_get_vertical_idLPT", .false., timerVerticalID)
-#endif
-            !iLevelBuoyancy = mpas_get_vertical_id(maxLevelCell(iCell), buoyancyInterp, buoyancyTimeInterp(:,iCell))
-#ifdef MPAS_DEBUG
-            !call mpas_timer_stop("mpas_get_vertical_idLPT", timerVerticalID)
-#endif
-            !! interpolate the scalars now (assumes that scalar value is constant within a particular cell)
-            !call interp_cell_scalars(iLevelBuoyancy, maxLevelCell(iCell), buoyancyInterp, buoyancyTimeInterp(:,iCell), &
-            !  zMid(:,iCell), zLevelParticle)
-            !deallocate(buoyancyTimeInterp)
-            !!}}}
+            iLevelBuoyancy = mpas_get_vertical_id(maxLevelCell(iCell), buoyancyInterp, buoyancyTimeInterp(:,iCell))
+            ! interpolate the scalars now (assumes that scalar value is constant within a particular cell)
+            call interp_cell_scalars(iLevelBuoyancy, maxLevelCell(iCell), buoyancyInterp, buoyancyTimeInterp(:,iCell), &
+              zMid(:,iCell), zLevelParticle)
+            !}}}
           else
             ! make sure final zLevelParticle is ok so that it can't extent past zMid range
 #ifdef MPAS_DEBUG
@@ -1650,6 +1644,7 @@ contains
         call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
         call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
         call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', vertVelocityTop)
+        call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', buoyancyTimeInterp)
 
         call mpas_pool_get_field(statePool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
         call mpas_dmpar_exch_halo_field(normalVelocity)
@@ -1723,7 +1718,11 @@ contains
 #endif
 
           if(verticalTreatment == 4) then  !('buoyancySurface') !{{{
-            ! pass
+            iLevelBuoyancy = mpas_get_vertical_id(maxLevelCell(iCell), buoyancyParticle, buoyancyTimeInterp(:,iCell))
+
+            ! interpolate the scalars now (assumes that scalar value is constant within a particular cell)
+            call interp_cell_scalars(iLevelBuoyancy, maxLevelCell(iCell), buoyancyParticle, buoyancyTimeInterp(:,iCell), &
+              zMid(:,iCell), zLevelParticle)
           else
             ! make sure final zLevelParticle is ok so that it can't extent past zMid range
 
@@ -2330,20 +2329,30 @@ contains
      integer :: aVertex, theVertex, iHigh, iLow
      real (kind=RKIND) :: eps=1e-14
 
-     call get_bounding_indices(iLow, iHigh, zInterp, zVals, iLevel, nVertLevels)
-
-     ! interpolate to vertical level now
-     if(abs(zVals(iHigh) - zVals(iLow)) < eps) then
-       ! we really can't distinguish between each of these points numerically, just take the
-       ! average of both
-       alpha = 0.5_RKIND
+     if(iLevel < 1) then
+       ! top level
+       if (iLevel == 0) then
+         phiInterp = phiVals(nVertLevels)
+         ! bottom level
+       else if (iLevel == -1) then
+         phiInterp = phiVals(1)
+       end if
      else
-       ! interpolate to vertical level now
-       alpha = (zInterp - zVals(iLow))/(zVals(iHigh) - zVals(iLow))
-     end if
+       call get_bounding_indices(iLow, iHigh, zInterp, zVals, iLevel, nVertLevels)
 
-     ! interpolate to the vertical level
-     phiInterp = alpha * phiVals(iHigh) + (1.0_RKIND - alpha) * phiVals(iLow)
+       ! interpolate to vertical level now
+       if(abs(zVals(iHigh) - zVals(iLow)) < eps) then
+         ! we really can't distinguish between each of these points numerically, just take the
+         ! average of both
+         alpha = 0.5_RKIND
+       else
+         ! interpolate to vertical level now
+         alpha = (zInterp - zVals(iLow))/(zVals(iHigh) - zVals(iLow))
+       end if
+
+       ! interpolate to the vertical level
+       phiInterp = alpha * phiVals(iHigh) + (1.0_RKIND - alpha) * phiVals(iLow)
+     end if
 
    end subroutine interp_cell_scalars!}}}
 
