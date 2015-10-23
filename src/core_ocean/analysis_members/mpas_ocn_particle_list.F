@@ -601,8 +601,9 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
 #ifdef MPAS_DEBUG
       ! need to update IO processors as to the change also so that they know where to get data from!!!
       ! should uncomment for testing when multiple ioProcs are utilized (parallel IO)
-      write(stderrUnit,*) 'ioProcSendList = ', ioProcSendList
-      write(stderrUnit,*) 'ioProcRecvList = ', ioProcRecvList
+      write(stderrUnit,*) 'ioProcSendList before = ', ioProcSendList
+      write(stderrUnit,*) 'ioProcRecvList before = ', ioProcRecvList
+      write(stderrUnit,*) 'ioProcNeighs before = ', ioProcNeighs
 #endif
 
       ! proceed to update the halo
@@ -618,6 +619,10 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
 #ifdef _MPI
         call MPI_ISend(ioProcRecvList(i,:), nProcs, MPI_LOGICAL, ioProcNeighs(i), domain % dminfo % my_proc_id, &
           domain % dminfo % comm, sendRequestID(i), mpi_ierr)
+#endif
+#ifdef MPAS_DEBUG
+        write(stderrUnit,*) 'ioProcNeigh= ', ioProcNeighs(i)
+        write(stderrUnit,*) 'send data = ', ioProcRecvList(i,:)
 #endif
       end do
 
@@ -636,9 +641,16 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
 
         ! aggregate results after wait, making sure that we have the most
         ! comprehensive list of ioProcs for receiving
+#ifdef MPAS_DEBUG
+        write(stderrUnit,*) 'ioProcNeigh= ', ioProcNeighs(i)
+        write(stderrUnit,*) 'recvList before = ', recvList
+        write(stderrUnit,*) 'completeList before = ', completeList
+#endif
         completeList = completeList .or. recvList
-        !write(stderrUnit,*) 'recvList= ', recvList
-        !write(stderrUnit,*) 'completeList = ', completeList
+#ifdef MPAS_DEBUG
+        write(stderrUnit,*) 'recvList after = ', recvList
+        write(stderrUnit,*) 'completeList after = ', completeList
+#endif
       end do
 
       ! wait to make sure (just in case) that all sends have completed
@@ -670,6 +682,13 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
       call removeValueFromIntList(ioProcNeighs, domain % dminfo % my_proc_id)
 
       deallocate(intArray, completeList, sendRequestID, recvRequestID)
+#ifdef MPAS_DEBUG
+      ! need to update IO processors as to the change also so that they know where to get data from!!!
+      ! should uncomment for testing when multiple ioProcs are utilized (parallel IO)
+      write(stderrUnit,*) 'ioProcSendList after = ', ioProcSendList
+      write(stderrUnit,*) 'ioProcRecvList after = ', ioProcRecvList
+      write(stderrUnit,*) 'ioProcNeighs after = ', ioProcNeighs
+#endif
 
    end subroutine mpas_particle_list_update_io_halos !}}}
 
@@ -887,6 +906,12 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
         ! note: orderingVector can be a subset of indexToParticleIDNew because this index can include compute as well as IO particles
         ! however, it must be of the same size as indexToParticleIDOriginal
         call compute_ordering_vector(indexToParticleIDOriginal, indexToParticleIDNew, orderingVector)
+#ifdef MPAS_DEBUG
+              write(stderrUnit,*) 'write halo data'
+              write(stderrUnit,*) 'indexToParticleIDOriginal =', indexToParticleIDOriginal
+              write(stderrUnit,*) 'indexToParticleIDNew =', indexToParticleIDNew
+              write(stderrUnit,*) 'ordering vector=', orderingVector
+#endif
 
         ! iterate over contents of pool and transfer
         call mpas_pool_begin_iteration(lagrPartTrackPool)
@@ -902,6 +927,7 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
               write(stderrUnit,*) 'member name =', trim(dimItr % memberName)
               write(stderrUnit,*) 'particlelistSize= ', count_particlelist(particlelist)
               write(stderrUnit,*) 'memory arraysize= ', size(field1DRealPointer % array)
+              write(stderrUnit,*) trim(dimItr % memberName), ' = ', field1DRealPointer % array
 #endif
               !}}}
               allocate(Array1DRealPointer(count_particlelist(particlelist)))
