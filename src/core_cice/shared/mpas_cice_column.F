@@ -861,6 +861,7 @@ contains
             call column_radiation(domain, clock, .false.)
        call mpas_timer_stop("Column shortwave")
 
+#ifndef CCSMCOUPLED
        !-----------------------------------------------------------------
        ! Coupling prep
        !-----------------------------------------------------------------
@@ -868,6 +869,7 @@ contains
        call mpas_timer_start("Column coupling prep")
        call cice_column_coupling_prep(domain)
        call mpas_timer_stop("Column coupling prep")
+#endif
 
     endif
 
