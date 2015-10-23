@@ -38,6 +38,8 @@ module ocn_time_integration_rk4
    use ocn_time_average_coupled
    use ocn_sea_ice
 
+   use ocn_effective_density_in_land_ice
+
    implicit none
    private
    save
@@ -124,6 +126,7 @@ module ocn_time_integration_rk4
       logical, pointer :: config_use_cvmix_kpp
       logical, pointer :: config_use_tracerGroup
       real (kind=RKIND), pointer :: config_mom_del4
+      character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
       ! State indices
       integer, pointer :: indexTemperature
@@ -170,7 +173,7 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:), pointer :: seaIceEnergy
 
       ! Diagnostics Field Pointers
-      type (field1DReal), pointer :: boundaryLayerDepthField
+      type (field1DReal), pointer :: boundaryLayerDepthField, effectiveDensityField
       type (field2DReal), pointer :: normalizedRelativeVorticityEdgeField, divergenceField, relativeVorticityField
 
       ! State/Tend Field Pointers
@@ -191,6 +194,7 @@ module ocn_time_integration_rk4
       call mpas_pool_get_config(domain % configs, 'config_use_freq_filtered_thickness', config_use_freq_filtered_thickness)
       call mpas_pool_get_config(domain % configs, 'config_use_standardGM', config_use_standardGM)
       call mpas_pool_get_config(domain % configs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
+      call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
 
       !
       ! Initialize time_levs(2) with state at current time
@@ -831,6 +835,9 @@ module ocn_time_integration_rk4
 
          call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
 
+         ! Update the effective desnity in land ice if we're coupling to land ice
+         call ocn_effective_density_in_land_ice_update(meshPool, forcingPool, statePool, scratchPool, err)
+
          ! ------------------------------------------------------------------
          ! Accumulating various parameterizations of the transport velocity
          ! ------------------------------------------------------------------
@@ -865,7 +872,7 @@ module ocn_time_integration_rk4
          SSHGradient(indexSSHGradientMeridional, :) = gradSSHMeridional(1, :)
 
          call ocn_time_average_accumulate(averagePool, statePool, diagnosticsPool, 2)
-         call ocn_time_average_coupled_accumulate(diagnosticsPool, forcingPool)
+         call ocn_time_average_coupled_accumulate(diagnosticsPool, statePool, forcingPool, 2)
 
          if (config_use_standardGM) then
             call ocn_reconstruct_gm_vectors(diagnosticsPool, meshPool)
@@ -873,6 +880,15 @@ module ocn_time_integration_rk4
 
          block => block % next
       end do
+
+      if (trim(config_land_ice_flux_mode) == 'coupled') then
+         call mpas_timer_start("RK4-effective density halo")
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
+         call mpas_pool_get_field(statePool, 'effectiveDensityInLandIce', effectiveDensityField, 2)
+         call mpas_dmpar_exch_halo_field(effectiveDensityField)
+         call mpas_timer_stop("RK4-effective density halo")
+      end if
+
       call mpas_timer_stop("RK4-cleaup phase")
 
       block => domain % blocklist
