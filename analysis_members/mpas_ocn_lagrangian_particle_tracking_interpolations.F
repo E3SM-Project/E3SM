@@ -230,6 +230,8 @@ module ocn_lagrangian_particle_tracking_interpolations
     real (kind=RKIND), dimension(:,:), allocatable :: pointVertex
     real (kind=RKIND), dimension(3) :: pointInterp
     real (kind=RKIND) :: xp,yp,zp , sumArea, kiteArea
+    logical, pointer :: is_periodic
+    real(kind=RKIND), pointer :: x_period, y_period
 
     uvReconstructX = 0.0_RKIND
     uvReconstructY = 0.0_RKIND
@@ -244,16 +246,20 @@ module ocn_lagrangian_particle_tracking_interpolations
     call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
     call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
     call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
-    
+
     call mpas_pool_get_array(meshPool, 'xCell', xCell)
     call mpas_pool_get_array(meshPool, 'yCell', yCell)
     call mpas_pool_get_array(meshPool, 'zCell', zCell)
-    
+
     call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
     call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
     call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
-    
+
     call mpas_pool_get_array(meshPool, 'kiteAreasOnVertex', kiteAreasOnVertex)
+
+    call mpas_pool_get_config(meshPool, 'is_periodic', is_periodic)
+    call mpas_pool_get_config(meshPool, 'x_period', x_period)
+    call mpas_pool_get_config(meshPool, 'y_period', y_period)
 
     ! loop over all vertices
     do aVertex = 1, nVerticesSolve
@@ -262,15 +268,23 @@ module ocn_lagrangian_particle_tracking_interpolations
       if(any(boundaryVertex(:,aVertex) < 1)) then
         ! get vertex location and cell center locations
         do aCell = 1, vertexDegree
-          pointVertex(1,aCell) = xCell(cellsOnVertex(aCell, aVertex))
-          pointVertex(2,aCell) = yCell(cellsOnVertex(aCell, aVertex))
-          pointVertex(3,aCell) = zCell(cellsOnVertex(aCell, aVertex))
+          ! logical could be moved outside of code block as an optimization (then essentially would have two nearly identical code blocks...)
+          if (is_periodic) then
+            ! fix periodicity with respect to pointInterp (xVertex)
+            pointVertex(1,aCell) = mpas_fix_periodicity(xCell(cellsOnVertex(aCell, aVertex)), xVertex(aVertex), x_period)
+            pointVertex(2,aCell) = mpas_fix_periodicity(yCell(cellsOnVertex(aCell, aVertex)), yVertex(aVertex), y_period)
+            pointVertex(3,aCell) = zCell(cellsOnVertex(aCell, aVertex))
+          else
+            pointVertex(1,aCell) = xCell(cellsOnVertex(aCell, aVertex))
+            pointVertex(2,aCell) = yCell(cellsOnVertex(aCell, aVertex))
+            pointVertex(3,aCell) = zCell(cellsOnVertex(aCell, aVertex))
+          end if
         end do
         ! vertex point for reconstruction
         pointInterp(1) = xVertex(aVertex)
         pointInterp(2) = yVertex(aVertex)
         pointInterp(3) = zVertex(aVertex)
-        ! get interpolation constants (could be cached)
+        ! get interpolation constants (could be cached / optimized with areaBin)
         lambda = mpas_wachspress_coordinates(vertexDegree, pointVertex , pointInterp, meshPool)
       else 
         lambda = 0.0_RKIND

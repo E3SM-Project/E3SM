@@ -388,6 +388,7 @@ contains
 #ifdef MPAS_DEBUG
         call mpas_timer_start("reconst_filter_LPT", .false., timerReconstFilter)
 #endif
+        ! need to handle periodicity within functions below for vertex reconstruction
         call ocn_vertex_reconstruction(filterNum, meshPool, lagrPartTrackScratchPool, lagrPartTrackCellsPool, &
           layerThickness % array, normalVelocity % array, &
           uVertexVelocity, vVertexVelocity, wVertexVelocity)
@@ -538,7 +539,7 @@ contains
 #ifdef MPAS_DEBUG
                 call mpas_timer_start("particle_horizontal_movementLPT", .false., timerHorizMovement)
 #endif
-                call particle_horizontal_movement(xSubStep, diffSubStep, onSphere)
+                call particle_horizontal_movement(meshPool, xSubStep, diffSubStep)
 #ifdef MPAS_DEBUG
                 call mpas_timer_stop("particle_horizontal_movementLPT", timerHorizMovement)
 #endif
@@ -563,7 +564,7 @@ contains
               write(stderrUnit, *) 'beginning of substeps'
 #endif
               call get_validated_cell_id(nCells, xCell,yCell,zCell , xVertex,yVertex,zVertex, &
-                xSubStep(1),xSubStep(2),xSubStep(3), onSphere, &
+                xSubStep(1),xSubStep(2),xSubStep(3), meshPool, &
                 nCellVerticesArray, verticesOnCell, iCell, nCellVertices, cellsOnCell)
 #ifdef MPAS_DEBUG
               write(stderrUnit,*) 'iCell=',iCell
@@ -629,7 +630,7 @@ contains
 #ifdef MPAS_DEBUG
             call mpas_timer_start("particle_horizontal_movementLPT", .false., timerHorizMovement)
 #endif
-            call particle_horizontal_movement(particlePosition, diffParticlePosition, onSphere)
+            call particle_horizontal_movement(meshPool, particlePosition, diffParticlePosition)
 #ifdef MPAS_DEBUG
             call mpas_timer_stop("particle_horizontal_movementLPT", timerHorizMovement)
 #endif
@@ -656,7 +657,7 @@ contains
           write(stderrUnit,*) 'do sampling'
 #endif
           call get_validated_cell_id(nCells, xCell,yCell,zCell , xVertex,yVertex,zVertex, &
-            particlePosition(1),particlePosition(2),particlePosition(3), onSphere, &
+            particlePosition(1),particlePosition(2),particlePosition(3), meshPool, &
             nCellVerticesArray, verticesOnCell, iCell, nCellVertices, cellsOnCell)
 #ifdef MPAS_DEBUG
           call mpas_timer_stop("get_validated_cell_idLPT", timerValidatedCell_out)
@@ -1059,7 +1060,7 @@ contains
    ! Phillip Wolfram 06/18/2014
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine get_validated_cell_id(nCells, xCell,yCell,zCell , xVertex,yVertex,zVertex, &
-       xSubStep,ySubStep,zSubStep, onSphere, nCellVerticesArray, verticesOnCell, &
+       xSubStep,ySubStep,zSubStep, meshPool, nCellVerticesArray, verticesOnCell, &
        iCell, nCellVertices, cellsOnCell)
 
      implicit none
@@ -1071,37 +1072,66 @@ contains
      real (kind=RKIND), dimension(:), intent(in) :: xCell,yCell,zCell  !< spatial location of cell centers
      real (kind=RKIND), dimension(:), intent(in) :: xVertex,yVertex,zVertex  !< spatial location of cell vertices
      real (kind=RKIND), intent(in) :: xSubStep,ySubStep,zSubStep
-     logical, intent(in) :: onSphere
+     type (mpas_pool_type), intent(in), pointer :: meshPool   ! meshPool pointer
      integer, dimension(:,:), intent(in) :: cellsOnCell       ! cell connectivity
 
      !intent (out)
      integer, intent(inout) :: iCell
      integer, intent(out) :: nCellVertices
-
+#ifdef MPAS_DEBUG
+     logical, pointer :: is_periodic
+     real(kind=RKIND), pointer :: x_period, y_period
+     logical, pointer :: on_a_sphere
+     real(kind=RKIND), dimension(:), pointer :: xtmp, ytmp
+     integer :: i
+     call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
+     call mpas_pool_get_config(meshPool, 'is_periodic', is_periodic)
+     call mpas_pool_get_config(meshPool, 'x_period', x_period)
+     call mpas_pool_get_config(meshPool, 'y_period', y_period)
+#endif
 
      ! get cell index
 !#ifdef MPAS_DEBUG
 !     iCell = -1
 !#endif
      call mpas_get_nearby_cell_index(nCells, xCell,yCell,zCell ,  &
-       xSubStep,ySubStep,zSubStep, onSphere, iCell, cellsOnCell, nCellVerticesArray)
+       xSubStep,ySubStep,zSubStep, meshPool, iCell, cellsOnCell, nCellVerticesArray)
 
      nCellVertices = nCellVerticesArray(iCell)
 
 #ifdef MPAS_DEBUG
      ! check to make sure the horizontal location is valid, otherwise report an error
      !write(stderrUnit,*) 'max verticesOnCell = ', maxval(verticesOnCell(:,iCell)), 'nVertices = ', size(xVertex)
-     if(.not. point_in_cell(nCellVertices, &
-       xVertex(verticesOnCell(1:nCellVertices,iCell)), &
-       yVertex(verticesOnCell(1:nCellVertices,iCell)), &
-       zVertex(verticesOnCell(1:nCellVertices,iCell)), &
-       xSubStep,ySubStep,zSubStep , onSphere)) then
-       write(stderrUnit,*) 'Point (', xSubStep,ySubStep,zSubStep ,') is horizontally outside cell ', iCell
-       write(stderrUnit,*) 'Cell  (',&
-         xCell(iCell),yCell(iCell),zCell(iCell), ') with index ' , iCell
-       write(stderrUnit,*) 'xVertex = ', xVertex(verticesOnCell(1:nCellVertices,iCell))
-       write(stderrUnit,*) 'yVertex = ', yVertex(verticesOnCell(1:nCellVertices,iCell))
-       write(stderrUnit,*) 'zVertex = ', zVertex(verticesOnCell(1:nCellVertices,iCell))
+     if (on_a_sphere .or. .not. is_periodic) then
+       if(.not. point_in_cell(nCellVertices, &
+         xVertex(verticesOnCell(1:nCellVertices,iCell)), &
+         yVertex(verticesOnCell(1:nCellVertices,iCell)), &
+         zVertex(verticesOnCell(1:nCellVertices,iCell)), &
+         xSubStep,ySubStep,zSubStep , on_a_sphere)) then
+           write(stderrUnit,*) 'Point (', xSubStep,ySubStep,zSubStep ,') is horizontally outside cell ', iCell
+           write(stderrUnit,*) 'Cell  (',&
+             xCell(iCell),yCell(iCell),zCell(iCell), ') with index ' , iCell
+           write(stderrUnit,*) 'xVertex = ', xVertex(verticesOnCell(1:nCellVertices,iCell))
+           write(stderrUnit,*) 'yVertex = ', yVertex(verticesOnCell(1:nCellVertices,iCell))
+           write(stderrUnit,*) 'zVertex = ', zVertex(verticesOnCell(1:nCellVertices,iCell))
+       end if
+     else
+       allocate(xtmp(nCellVertices), ytmp(nCellVertices))
+       do i = 1, nCellVertices
+         xtmp(i) = mpas_fix_periodicity(xVertex(verticesOnCell(i,iCell)), xSubStep, x_period)
+         ytmp(i) = mpas_fix_periodicity(yVertex(verticesOnCell(i,iCell)), ySubStep, y_period)
+       end do
+       if(.not. point_in_cell(nCellVertices, xtmp, ytmp, &
+         zVertex(verticesOnCell(1:nCellVertices,iCell)), &
+         xSubStep,ySubStep,zSubStep , on_a_sphere)) then
+           write(stderrUnit,*) 'Point (', xSubStep,ySubStep,zSubStep ,') is horizontally outside cell ', iCell
+           write(stderrUnit,*) 'Cell  (',&
+             xCell(iCell),yCell(iCell),zCell(iCell), ') with index ' , iCell
+           write(stderrUnit,*) 'xVertex = ', xtmp
+           write(stderrUnit,*) 'yVertex = ', ytmp
+           write(stderrUnit,*) 'zVertex = ', zVertex(verticesOnCell(1:nCellVertices,iCell))
+       end if
+       deallocate(xtmp, ytmp)
      end if
 #endif
 
@@ -1686,7 +1716,7 @@ contains
           write(stderrUnit,*) 'sampling initialization'
 #endif
           call get_validated_cell_id(nCells, xCell,yCell,zCell , xVertex,yVertex,zVertex, &
-            particlePosition(1),particlePosition(2),particlePosition(3), onSphere, &
+            particlePosition(1),particlePosition(2),particlePosition(3), meshPool, &
             nCellVerticesArray, verticesOnCell, iCell, nCellVertices, cellsOnCell)
 #ifdef MPAS_DEBUG
           call mpas_timer_stop("get_validated_cell_idLPT", timerValidatedCell_init)
@@ -1951,9 +1981,16 @@ contains
     real(kind=RKIND), dimension(:), allocatable :: areaB
     real(kind=RKIND), dimension(:,:), allocatable :: vertCoords
     real(kind=RKIND), dimension(:,:), allocatable :: uvCell
+    logical, pointer :: on_a_sphere, is_periodic
+    real(kind=RKIND), pointer :: x_period, y_period
 #ifdef MPAS_DEBUG
     call mpas_timer_start("velocity_time_interpolationLPT", .false., timerVelTimeInterp)
 #endif
+
+    call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
+    call mpas_pool_get_config(meshPool, 'is_periodic', is_periodic)
+    call mpas_pool_get_config(meshPool, 'x_period', x_period)
+    call mpas_pool_get_config(meshPool, 'y_period', y_period)
 
     ! allocations for particular cell !{{{
     allocate(vertCoords(3,nCellVertices), uvCell(3,nCellVertices), areaB(nCellVertices))
@@ -1963,9 +2000,15 @@ contains
     ! bit of error because the particle could be at the top
     ! of the cell or at the bottom of the cell)
     do aVertex = 1, nCellVertices
-      vertCoords(1,aVertex) = xVertex(verticesOnCell(aVertex,iCell))
-      vertCoords(2,aVertex) = yVertex(verticesOnCell(aVertex,iCell))
-      vertCoords(3,aVertex) = zVertex(verticesOnCell(aVertex,iCell))
+      if (on_a_sphere .or. .not. is_periodic) then
+        vertCoords(1,aVertex) = xVertex(verticesOnCell(aVertex,iCell))
+        vertCoords(2,aVertex) = yVertex(verticesOnCell(aVertex,iCell))
+        vertCoords(3,aVertex) = zVertex(verticesOnCell(aVertex,iCell))
+      else
+        vertCoords(1,aVertex) = mpas_fix_periodicity(xVertex(verticesOnCell(aVertex,iCell)), xSubStep(1), x_period)
+        vertCoords(2,aVertex) = mpas_fix_periodicity(yVertex(verticesOnCell(aVertex,iCell)), xSubStep(2), y_period)
+        vertCoords(3,aVertex) = zVertex(verticesOnCell(aVertex,iCell))
+      end if
       areaB(aVertex) = areaBArray(iCell, aVertex)
     end do
 
@@ -2158,7 +2201,7 @@ contains
 !>  shell corresponding to pParticle.
 !
 !-----------------------------------------------------------------------
-  subroutine particle_horizontal_movement(pParticle, dpParticle, onSphere) !{{{
+  subroutine particle_horizontal_movement(meshPool, pParticle, dpParticle) !{{{
 
      implicit none
 
@@ -2166,7 +2209,7 @@ contains
      ! input variables
      !-----------------------------------------------------------------
      real (kind=RKIND), dimension(:), intent(in) :: dpParticle
-     logical, intent(in) :: onSphere
+     type (mpas_pool_type), intent(in), pointer :: meshPool
 
      !-----------------------------------------------------------------
      ! input / output variables
@@ -2182,6 +2225,8 @@ contains
      real (kind=RKIND), dimension(size(pParticle)) :: pParticleInterp
      real (kind=RKIND) :: alpha
      real (kind=RKIND), parameter :: eps=1e-10_RKIND
+     logical, pointer :: onSphere, is_periodic
+     real(kind=RKIND), pointer :: x_period, y_period
      ! choosen based on the parameters, note that we loose about 6 - 7 units of precision because R is so large!
      ! therefore, eps = 1e-10 is conservative, if not too high!  this just helps with numerical stability
      !dpParticle    =   -4.2428037617887103E-011   4.3076544298828060E-011   5.0760704444480953E-011
@@ -2189,6 +2234,10 @@ contains
      !pParticleTemp =    4444887.2990309987       -891565.00525021972        4476665.3916420965
      !mpas_arc_length =    0.0000000000000000      lenPath =    7.8945399869363434E-011
 
+     call mpas_pool_get_config(meshPool, 'on_a_sphere', onSphere)
+     call mpas_pool_get_config(meshPool, 'is_periodic', is_periodic)
+     call mpas_pool_get_config(meshPool, 'x_period', x_period)
+     call mpas_pool_get_config(meshPool, 'y_period', y_period)
 
      ! may need a condition to determine if we need to project back to the sphere
      if(onSphere) then
@@ -2232,8 +2281,14 @@ contains
        ! we are just on a plane so there is no need for spherical interpolation to keep
        ! the new particle location on a spherical shell
        pParticle = pParticle + dpParticle
-     endif
 
+       ! periodic fix to make sure particle advection stays in domain
+       if (is_periodic) then
+         pParticle(1) = mpas_fix_periodicity(pParticle(1), x_period/2.0_RKIND, x_period)
+         pParticle(2) = mpas_fix_periodicity(pParticle(2), y_period/2.0_RKIND, y_period)
+         !pParticle(3) = pParticle(3)
+       end if
+     endif
 
    end subroutine particle_horizontal_movement!}}}
 
