@@ -406,6 +406,7 @@ contains
       integer, pointer :: anyDynamicVertexMaskChanged
       integer, pointer :: dirichletMaskChanged
       integer, dimension(:,:), pointer :: dirichletVelocityMaskOld, dirichletVelocityMaskNew
+      real (kind=RKIND), dimension(:), pointer :: beta, betaSolve
       real (kind=RKIND), pointer :: config_sea_level, config_ice_density, config_ocean_density
       character (len=StrKIND), pointer :: config_velocity_solver, config_sia_tangent_slope_calculation
       logical, pointer :: config_adaptive_timestep_include_DCFL
@@ -599,7 +600,7 @@ contains
           block => block % next
       end do
 
-      ! This information is only needed by external dycores.
+      ! This halo update is only needed by external dycores.
       if (config_velocity_solver /= 'sia') then
          ! Update halos on masks - the outermost cells/edges/vertices may be wrong for mask components that need neighbor information
          call mpas_timer_start("halo updates")
@@ -644,6 +645,16 @@ contains
             endif
             ! Determine if any blocks on this processor had a change to the vertex mask
             procDirichletMaskChanged = max(procDirichletMaskChanged, blockDirichletMaskChanged)
+
+            ! -- Set beta to 0 under floating ice --
+            call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+            call mpas_pool_get_array(velocityPool, 'beta', beta)
+            call mpas_pool_get_array(velocityPool, 'betaSolve', betaSolve)
+            where (li_mask_is_floating_ice(cellMask))
+               betaSolve = 0.0_RKIND
+            elsewhere
+               betaSolve = beta
+            end where
 
             block => block % next
          end do

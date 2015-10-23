@@ -323,7 +323,7 @@ contains
       ! Set physical parameters needed on the other side
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
-      call velocity_solver_set_parameters(config_ice_density, li_mask_ValueDynamicIce, li_mask_ValueIce)
+      call velocity_solver_set_parameters(config_ice_density, li_mask_ValueAlbanyActive, li_mask_ValueIce)
 #endif
 
       ! === error check
@@ -392,19 +392,21 @@ contains
       !-----------------------------------------------------------------
       integer, pointer :: index_temperature
       real (kind=RKIND), dimension(:), pointer :: &
-         thickness, lowerSurface, upperSurface, layerThicknessFractions, beta, sfcMassBal
+         thickness, lowerSurface, upperSurface, layerThicknessFractions, betaSolve, sfcMassBal
       real (kind=RKIND), dimension(:,:), pointer :: &
          normalVelocity, uReconstructX, uReconstructY, uReconstructZ
       real (kind=RKIND), dimension(:,:,:), pointer :: &
          tracers
       real (kind=RKIND), pointer :: deltat
-      integer, dimension(:), pointer :: vertexMask, edgeMask, floatingEdges
+      integer, dimension(:), pointer :: vertexMask, cellMask, edgeMask, floatingEdges
       integer, dimension(:,:), pointer :: dirichletVelocityMask
       character (len=StrKIND), pointer :: config_velocity_solver
       logical, pointer :: config_always_compute_fem_grid
       logical, pointer :: config_output_external_velocity_solver_data
       integer, pointer :: anyDynamicVertexMaskChanged
       integer, pointer :: dirichletMaskChanged
+      integer, pointer :: nEdges
+      integer :: iEdge
       real(kind=RKIND), parameter :: secondsInYear = 365.0 * 24.0 * 3600.0  !< The value of seconds in a year assumed by external dycores
 
       err = 0
@@ -417,12 +419,14 @@ contains
       ! Mesh variables
       call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
       call mpas_pool_get_array(meshPool, 'deltat', deltat)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
       ! Geometry variables
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
       call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
       call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel = 1)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
       call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
 
@@ -435,7 +439,7 @@ contains
       call mpas_pool_get_array(velocityPool, 'uReconstructX', uReconstructX)
       call mpas_pool_get_array(velocityPool, 'uReconstructY', uReconstructY)
       call mpas_pool_get_array(velocityPool, 'uReconstructZ', uReconstructZ)
-      call mpas_pool_get_array(velocityPool, 'beta', beta)
+      call mpas_pool_get_array(velocityPool, 'betaSolve', betaSolve)
       call mpas_pool_get_array(velocityPool, 'anyDynamicVertexMaskChanged', anyDynamicVertexMaskChanged)
       call mpas_pool_get_array(velocityPool, 'dirichletMaskChanged', dirichletMaskChanged)
       call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel = 1)
@@ -453,7 +457,7 @@ contains
          write(stdoutUnit,*) "Generating new external velocity solver FEM grid."
          flush(stdoutUnit)  ! Flush log files before handing control to C++
          flush(stderrUnit)
-         call generate_fem_grid(config_velocity_solver, vertexMask, dirichletVelocityMask, &
+         call generate_fem_grid(config_velocity_solver, vertexMask, cellMask, dirichletVelocityMask, &
               floatingEdges, layerThicknessFractions, lowerSurface, thickness, err)
       endif
 
@@ -475,7 +479,7 @@ contains
       case ('L1L2') ! ===============================================
 #ifdef USE_EXTERNAL_L1L2
           call mpas_timer_start("velocity_solver_solve_L1L2")
-          call velocity_solver_solve_L1L2(lowerSurface, thickness, beta, tracers(index_temperature,:,:), &
+          call velocity_solver_solve_L1L2(lowerSurface, thickness, betaSolve, tracers(index_temperature,:,:), &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, uReconstructX, uReconstructY)  ! return values
 !         call velocity_solver_estimate_SS_SMB(normalVelocity, mesh % sfcMassBal % array)
@@ -484,7 +488,7 @@ contains
           if (config_output_external_velocity_solver_data) then
              ! Optional calls to have LifeV output data files
              call mpas_timer_start("velocity_solver export")
-             call velocity_solver_export_2d_data(lowerSurface, thickness, beta)
+             call velocity_solver_export_2d_data(lowerSurface, thickness, betaSolve)
              call velocity_solver_export_L1L2_velocity();
              call mpas_timer_stop("velocity_solver export")
           endif
@@ -497,7 +501,7 @@ contains
       case ('FO') ! ===============================================
 #ifdef USE_EXTERNAL_FIRSTORDER
           call mpas_timer_start("velocity_solver_solve_FO")
-          call velocity_solver_solve_FO(lowerSurface, thickness, beta, sfcMassBal, tracers(index_temperature,:,:), &
+          call velocity_solver_solve_FO(lowerSurface, thickness, betaSolve, sfcMassBal, tracers(index_temperature,:,:), &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, uReconstructX, uReconstructY, deltat)  ! return values
 !	  call velocity_solver_estimate_SS_SMB(normalVelocity, mesh % sfcMassBal % array)  ! this was used only for some ice2sea experiments, and is not a general routine to use
@@ -517,7 +521,7 @@ contains
       case ('Stokes') ! ===============================================
 #ifdef USE_EXTERNAL_STOKES
           call mpas_timer_start("velocity_solver_solve_stokes")
-          call velocity_solver_solve_stokes(lowerSurface, thickness, beta, tracers(index_temperature,:,:), &
+          call velocity_solver_solve_stokes(lowerSurface, thickness, betaSolve, tracers(index_temperature,:,:), &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, uReconstructX, uReconstructY, uReconstructZ)  ! return values
           uReconstructZ = uReconstructZ / (365.0*24.0*3600.0)  ! convert from m/yr to m/s
@@ -535,6 +539,16 @@ contains
       uReconstructX =  uReconstructX  / secondsInYear
       uReconstructY =  uReconstructY  / secondsInYear
 
+      ! The external solver will calculate normalVelocity for all edges,
+      ! but some of those edges are not dynamically active according to MPASLI's
+      ! Voronoi grid conventions.  This zeros velocity on those edges.
+      ! (Note: the choice of edges to get reconstructed used to be controlled
+      !  inside the interface, but as logic got more complicated with Dirichlet
+      !  b.c., that became unwieldly.  Look in the mask routine to see the logic
+      !  for which edges are dynamic.)
+      do iEdge = 1, nEdges
+         if (.not. li_mask_is_dynamic_ice(edgeMask(iEdge)) ) normalVelocity(:,iEdge) = 0.0d0
+      end do
 
 
    !--------------------------------------------------------------------
@@ -676,14 +690,14 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine generate_fem_grid(config_velocity_solver, vertexMask, dirichletVelocityMask, floatingEdges, &
+   subroutine generate_fem_grid(config_velocity_solver, vertexMask, cellMask, dirichletVelocityMask, floatingEdges, &
               layerThicknessFractions, lowerSurface, thickness, err)
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
       character (len=StrKIND), pointer :: config_velocity_solver
-      integer, pointer, dimension(:), intent(in) :: vertexMask, floatingEdges
+      integer, pointer, dimension(:), intent(in) :: vertexMask, cellMask, floatingEdges
       integer, pointer, dimension(:,:), intent(in) :: dirichletVelocityMask
       real(kind=RKIND), pointer, dimension(:), intent(in) :: layerThicknessFractions, &
              lowerSurface, thickness
@@ -706,7 +720,7 @@ contains
 
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
           call mpas_timer_start("velocity_solver_compute_2d_grid")
-          call velocity_solver_compute_2d_grid(vertexMask, dirichletVelocityMask, floatingEdges)
+          call velocity_solver_compute_2d_grid(vertexMask, cellMask, dirichletVelocityMask, floatingEdges)
           call mpas_timer_stop("velocity_solver_compute_2d_grid")
 #else
           write(stderrUnit,*) "Error: To run with an external velocity solver you must compile MPAS with one."

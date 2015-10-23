@@ -29,7 +29,7 @@ int nVertices, nEdges, nTriangles, nGlobalVertices, nGlobalEdges,
 int maxNEdgesOnCell_F;
 int const *cellsOnEdge_F, *cellsOnVertex_F, *verticesOnCell_F,
     *verticesOnEdge_F, *edgesOnCell_F, *indexToCellID_F, *nEdgesOnCells_F,
-    *dirichletCellsMask_F, *floatingEdgesMask_F, *verticesMask_F;
+    *verticesMask_F, *cellsMask_F, *dirichletCellsMask_F, *floatingEdgesMask_F;
 std::vector<double> layersRatio, levelsNormalizedThickness;
 int nLayers;
 double const *xCell_F, *yCell_F, *zCell_F, *xVertex_F,  *yVertex_F, *zVertex_F, *areaTriangle_F;
@@ -495,9 +495,11 @@ void velocity_solver_finalize() {
  *
  */
 
-void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _dirichletCellsMask_F, int const* _floatingEdgesMask_F) {
+void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cellsMask_F, int const* _dirichletCellsMask_F, int const* _floatingEdgesMask_F) {
   int numProcs, me;
 
+  verticesMask_F = _verticesMask_F;
+  cellsMask_F = _cellsMask_F;
   verticesMask_F = _verticesMask_F;
   dirichletCellsMask_F = _dirichletCellsMask_F;
   floatingEdgesMask_F = _floatingEdgesMask_F;
@@ -941,8 +943,8 @@ void get_prism_velocity_on_FEdges(double * uNormal,
 
   UInt nPoints3D = nCells_F * (nLayers + 1);
 
-  //Looping through the internal edges of the triangulation
-  for (int i = numBoundaryEdges; i < nEdges; i++) {
+  // Loop over all edges of the triangulation - MPAS will decide which edges it should use.
+  for (int i = 0; i < nEdges; i++) {
 
     //identifying vertices on the edge
     ID lId0 = verticesOnEdge[2 * i];
@@ -981,16 +983,43 @@ void get_prism_velocity_on_FEdges(double * uNormal,
    e_mid[0] =  0.5*(xVertex_F[fVertex0] + xVertex_F[fVertex1]);
    e_mid[1] =  0.5*(yVertex_F[fVertex0] + yVertex_F[fVertex1]);
 
-   if(belongToTria(e_mid, t0, bcoords)) {
-    for (int j = 0; j < 3; j++)
-      iCells[j] = cellsOnVertex_F[3 * fVertex0 + j] - 1;
-    }
-    else if(belongToTria(e_mid, t1, bcoords)) {
+   if((verticesMask_F[fVertex0] & dynamic_ice_bit_value) && belongToTria(e_mid, t0, bcoords)) {
+      // triangle1 is in the mesh  AND midpoint is in triangle1
+      for (int j = 0; j < 3; j++)
+        iCells[j] = cellsOnVertex_F[3 * fVertex0 + j] - 1;
+      }
+   else if((verticesMask_F[fVertex1] & dynamic_ice_bit_value) && belongToTria(e_mid, t1, bcoords)) {
+      //triangle2 is in the mesh  AND midpoint is in triangle2
       for (int j = 0; j < 3; j++)
         iCells[j] = cellsOnVertex_F[3 * fVertex1 + j] - 1;
-    }
-    else { //error, edge midpont does not belong to either triangles
-      std::cout << "Error, edge midpont does not belong to either triangles" << std::endl;
+      }
+   else if(i<numBoundaryEdges) {
+      //edge is on boundary and wasn't found by previous two cases
+      //For boundary edges one of the two triangles sharing the edge won't be part of the velocity solver's mesh and the dynamic_ice_bit_value will be 0.
+
+      //Compute iCells containinig the vertices of the triangle that is part of the mesh and bcoords the corresponding barycentric coordinates
+      if(verticesMask_F[fVertex0] & dynamic_ice_bit_value) { belongToTria(e_mid, t0, bcoords);
+        for (int j = 0; j < 3; j++)
+          iCells[j] = cellsOnVertex_F[3 * fVertex0 + j] - 1;
+        }
+      else {
+        belongToTria(e_mid, t1, bcoords);
+        for (int j = 0; j < 3; j++)
+          iCells[j] = cellsOnVertex_F[3 * fVertex1 + j] - 1;
+        }
+
+      //We modify the barycentric coordinates so that they will be all non-negative (corresponding to a point on the triangle edge).
+      double sum(0);
+      for(int j=0; j<3; j++) {
+        bcoords[j] = std::max(0.,bcoords[j]);
+        sum += bcoords[j];
+        }
+      //Scale the coordinates so that they sum to 1.
+      for(int j=0; j<3; j++)
+        bcoords[j] /= sum;
+      }    
+   else { //error, edge midpont does not belong to either triangle
+      std::cout << "Error, edge midpont does not belong to either triangle" << std::endl;
       for (int j = 0; j < 3; j++)
         std::cout << "("<<t0[0 + 2 * j]<<","<<t0[1 + 2 * j]<<") ";
       std::cout <<std::endl;
@@ -998,7 +1027,7 @@ void get_prism_velocity_on_FEdges(double * uNormal,
         std::cout << "("<<t1[0 + 2 * j]<<","<<t1[1 + 2 * j]<<") ";
       std::cout <<"\n midpoint: ("<<e_mid[0]<<","<<e_mid[1]<<")"<<std::endl;
       exit(1);
-    }
+   }
 
 
     for (int il = 0; il < nLayers+1; il++) { //loop over layers
@@ -1015,7 +1044,7 @@ void get_prism_velocity_on_FEdges(double * uNormal,
         uNormal[index] += bcoords[j] * ny * velocityOnCells[iCell3D];
       }
     } //end loop over layers
-  }
+  } //loop over edges
 }
 
 void mapVerticesToCells(const std::vector<double>& velocityOnVertices,
@@ -1024,6 +1053,11 @@ void mapVerticesToCells(const std::vector<double>& velocityOnVertices,
   int vertexLayerShift = (ordering == 0) ? 1 : numLayers + 1;
 
   int nVertices3D = nVertices * (numLayers + 1);
+
+  // 0 entire field so no values from previous solve are left behind
+  // if the ice extent has retreated.
+  std::fill(velocityOnCells, velocityOnCells + nCells_F * (numLayers+1) * fieldDim, 0.);
+
   for (UInt j = 0; j < nVertices3D; ++j) {
     int ib = (ordering == 0) * (j % lVertexColumnShift)
         + (ordering == 1) * (j / vertexLayerShift);
@@ -1301,9 +1335,9 @@ void import2DFields(double const * lowerSurface_F, double const * thickness_F,
   std::set<int>::const_iterator iter;
 
   for (int iV = 0; iV < nVertices; iV++) {
-    if (isVertexBoundary[iV]) {
+    int fCell = vertexToFCell[iV];
+    if (isVertexBoundary[iV] && !(cellsMask_F[fCell] & ice_present_bit_value)) {
       int c;
-      int fCell = vertexToFCell[iV];
       int nEdg = nEdgesOnCells_F[fCell];
       bool isFloating = false;
       for (int j = 0; (j < nEdg)&&(!isFloating); j++) {
@@ -1311,17 +1345,19 @@ void import2DFields(double const * lowerSurface_F, double const * thickness_F,
         isFloating = (floatingEdgesMask_F[fEdge] != 0);
       }
       if(!isFloating) continue;
+
       double elevTemp =1e10;
       for (int j = 0; j < nEdg; j++) {
         int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
-        bool keep = (mask[verticesOnEdge_F[2 * fEdge] - 1] & dynamic_ice_bit_value)
-            && (mask[verticesOnEdge_F[2 * fEdge + 1] - 1] & dynamic_ice_bit_value);
-        if (!keep)
-          continue;
+        // bool keep = (mask[verticesOnEdge_F[2 * fEdge] - 1] & dynamic_ice_bit_value)
+        //     && (mask[verticesOnEdge_F[2 * fEdge + 1] - 1] & dynamic_ice_bit_value);
+        // if (!keep)
+        //   continue;
 
         int c0 = cellsOnEdge_F[2 * fEdge] - 1;
         int c1 = cellsOnEdge_F[2 * fEdge + 1] - 1;
         c = (fCellToVertex[c0] == iV) ? c1 : c0;
+        if(!(cellsMask_F[c] & ice_present_bit_value)) continue;
         double elev = thickness_F[c] + lowerSurface_F[c]; // - 1e-8*std::sqrt(pow(xCell_F[c0],2)+std::pow(yCell_F[c0],2));
 
         if (elevTemp > elev) {
@@ -1635,9 +1671,14 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
   }
   double det = (v3[1]-v2[1])*(v3[0]-v1[0]) - (v3[0]-v2[0])*(v3[1]-v1[1]);
   double c1,c2;
-  return ( (bcoords[0] = ((v3[1]-v2[1])*(v3[0]-x[0]) - (v3[0]-v2[0])*(v3[1]-x[1]))/det) > -eps) &&
-         ( (bcoords[1] = (-(v3[1]-v1[1])*(v3[0]-x[0]) + (v3[0]-v1[0])*(v3[1]-x[1]))/det) > -eps) &&
-         ( (bcoords[2] = 1.0 - bcoords[0] - bcoords[1]) > -eps );
+
+  bcoords[0] = ((v3[1]-v2[1])*(v3[0]-x[0]) - (v3[0]-v2[0])*(v3[1]-x[1]))/det;
+  bcoords[1] = (-(v3[1]-v1[1])*(v3[0]-x[0]) + (v3[0]-v1[0])*(v3[1]-x[1]))/det;
+  bcoords[2] = 1.0 - bcoords[0] - bcoords[1];
+
+  return ( bcoords[0] > -eps) &&
+         ( bcoords[1] > -eps) &&
+         ( bcoords[2] > -eps );
 }
 
 int prismType(long long int const* prismVertexMpasIds, int& minIndex)

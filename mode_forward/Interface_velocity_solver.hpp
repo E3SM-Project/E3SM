@@ -103,7 +103,7 @@ void velocity_solver_solve_fo(double const* lowerSurface_F,
     double* xVelocityOnCell = 0, double* yVelocityOnCell = 0, double const * deltat = 0);
 
 
-void velocity_solver_compute_2d_grid(int const* verticesMask_F, int const* dirichletNodesMask_F, int const* floatingEdgeMask_F);
+void velocity_solver_compute_2d_grid(int const* verticesMask_F, int const* _cellsMask_F, int const* dirichletNodesMask_F, int const* floatingEdgeMask_F);
 
 void velocity_solver_set_grid_data(int const* _nCells_F, int const* _nEdges_F,
     int const* _nVertices_F, int const* _nLayers, int const* _nCellsSolve_F,
