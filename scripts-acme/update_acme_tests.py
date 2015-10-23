@@ -13,7 +13,6 @@ _TEST_SUITES = {
                    ),
     "acme_developer" : (None,
                         [("ERS.f19_g16_rx1.A", None),
-                         ("ERS.f45_g37.B1850C5", None),
                          ("ERS.f45_g37_rx1.DTEST", None),
                          ("ERS.ne30_g16_rx1.A", None),
                          ("ERS_IOP.f19_g16_rx1.A", None),
@@ -38,6 +37,7 @@ _TEST_SUITES = {
                           [("ERS.ne30_g16.B1850C5", None),
                            ("ERS.f19_f19.FAMIPC5", None),
                            ("ERS.ne16_g37.B1850C5", None),
+                           ("ERS.f45_g37.B1850C5", None),
                            ("ERS_D.f45_g37.B1850C5", None),
                            ("ERS_IOP_Ld3.f19_f19.FAMIPC5", None),
                            ("ERS_Ld3.ne16_g37.FC5", None),
@@ -151,16 +151,16 @@ def update_acme_tests(xml_file, categories, platform=None):
     for category in categories:
         # Remove any existing acme test category from the file.
         if (platform is None):
-            acme_util.run_cmd("%s -component allactive -removetests -category %s" % (manage_xml_entries, category), verbose=True)
+            acme_util.run_cmd("%s -component allactive -removetests -category %s" % (manage_xml_entries, category))
         else:
             acme_util.run_cmd("%s -component allactive -removetests -category %s -machine %s -compiler %s"
-                              % (manage_xml_entries, category, platforms[0][0], platforms[0][1]), verbose=True)
+                              % (manage_xml_entries, category, platforms[0][0], platforms[0][1]))
 
         # Generate a list of test entries corresponding to our suite at the top
         # of the file.
         new_test_file = generate_acme_test_entries(category, platforms)
         acme_util.run_cmd("%s -component allactive -addlist -file %s -category %s" %
-                          (manage_xml_entries, new_test_file, category), verbose=True)
+                          (manage_xml_entries, new_test_file, category))
         os.unlink(new_test_file)
 
     print "SUCCESS"
