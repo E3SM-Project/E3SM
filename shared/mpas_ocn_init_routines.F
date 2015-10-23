@@ -325,6 +325,9 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       !
       ! Compute the scaling factors to be used in the del2 and del4 dissipation
       !
+      ! Typical use cases have the minval(meshScaling)==1.
+      ! meshScaling values of approximately 1 indicate the highest resolution of the domain.
+
       meshScalingDel2(:) = 1.0
       meshScalingDel4(:) = 1.0
       meshScaling(:)     = 1.0
