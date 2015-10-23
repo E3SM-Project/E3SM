@@ -490,6 +490,10 @@ sub traverse
     return;
 }
 
+
+#-----------------------------------------------------------------------------------------------
+# get the NINST_[comp] from the config hash to determine if multiple instances are supported
+#-----------------------------------------------------------------------------------------------
 sub getcompninst
 {
     my ($comp) = @_;
@@ -575,14 +579,10 @@ sub undoArchive
 	  }, 
 	  $config{'ARCHIVE_DIR_LOCKED'});
     
-    my $linkfile;
     my $numArchivefiles = @archivefiles;
     if( $numArchivefiles > 0 ) {
 	foreach my $file (@archivefiles) {
-	    $linkfile = $file;
-	    $linkfile =~ s/\.locked//g;
 	    move( $file, $config{'RUNDIR'} );
-	    unlink( $linkfile );
 	}
     }
 }
@@ -936,7 +936,7 @@ sub main
 #
 	    processHardlinks();
 	}
-	$logger->info("st_archive process complete...");
+	$logger->info("st_archive process complete.");
 	exit 0;
     }
     else

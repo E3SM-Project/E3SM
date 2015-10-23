@@ -15,7 +15,6 @@
 		<xs:complexType>
 		  <xs:sequence>
 		    <xs:element name="rootdir" type="xs:string"/>
-		    <xs:element name="multi_instance" type="xs:string"/>
 		    <xs:element name="files" maxOccurs="unbounded">
 		      <xs:complexType>
 			<xs:sequence>

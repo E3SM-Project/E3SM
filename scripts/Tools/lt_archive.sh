@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 msls () {
 
@@ -134,7 +134,7 @@ msput() {
 #   $DOUT_S_ROOT, $DOUT_L_MSROOT, $DOUT_L_HPSS_ACCNT
 #   Above name for $MACH is there just for brief backwards compatibility
 
-mode="unknown"
+mode="copy_dirs_hsi"
 ssh_loc="unknown"
 scp_loc="unknown"
 arc_root="unknown"
@@ -193,13 +193,20 @@ if [ "$mode" == "copy_dirs_hsi" ]; then
 	DOUT_L_HPSS_ACCNT=0
     fi
 
-    # send files to HPSS and delete upon success
+    # check if files on st_archive should be saved or not
+    saveFlag="-dPR"
+    if [ $DOUT_L_SAVE_ALL_ON_DISK == "TRUE" ] ; then
+	saveFlag="-PR"
+    fi
 
+    # send files to HPSS and delete upon success
     cd $DOUT_S_ROOT
+    hsiArgs="mkdir -p $DOUT_L_MSROOT ; chmod +t $DOUT_L_MSROOT ; cd $DOUT_L_MSROOT ; put $saveFlag *"
+    # echo $hsiArgs
     if [ $DOUT_L_HPSS_ACCNT -gt 0 ]; then
-	hsi -a $DOUT_L_HPSS_ACCNT "mkdir -p $DOUT_L_MSROOT ; chmod +t $DOUT_L_MSROOT ; cd $DOUT_L_MSROOT ; put -dPR *"
+	hsi -a $DOUT_L_HPSS_ACCNT "$hsiArgs"
     else
-	hsi "mkdir -p $DOUT_L_MSROOT ; chmod +t $DOUT_L_MSROOT ; cd $DOUT_L_MSROOT ; put -dPR *"
+	hsi "$hsiArgs"
     fi
 
     date
