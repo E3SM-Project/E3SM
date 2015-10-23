@@ -904,6 +904,7 @@ sub _create_caseroot_tools
 	      "$cimeroot/cime_config/${model}/archive.xsd",
 	      "$cimeroot/scripts/Tools/check_lockedfiles", 
 	      "$cimeroot/scripts/Tools/lt_archive.sh", 
+	      "$cimeroot/scripts/Tools/lta_wrapper", 
 	      "$cimeroot/scripts/Tools/st_archive", 
 	      "$cimeroot/scripts/Tools/getTiming", 
 	      "$cimeroot/scripts/Tools/compare_namelists.pl",
