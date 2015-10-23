@@ -38,6 +38,8 @@ if (-e /opt/modules/default/init/csh) then
 endif
 
 if ( $COMPILER == "intel" ) then
+    module unload PrgEnv-cray
+    module unload PrgEnv-gnu
     module load PrgEnv-intel 
 #    module switch intel      intel/14.0.2.144  
      module switch intel intel/15.0.1.133
