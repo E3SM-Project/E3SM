@@ -453,18 +453,6 @@
       directory to the $DOUT_S_ROOT/$CASE directory.</desc>
   </entry> 
 
-  <entry id="DOUT_S_SAVE_HISTORY_FILES"> 
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>run_data_archive</group>
-    <file>env_run.xml</file>
-    <desc>Logical to save history time slice files after the variable time series have been generated
-    If TRUE, none of the history time slice files will be deleted from the $DOUT_S_ROOT/$CASE location after the
-    variable time series files are successfully generated. *WARNING* setting this option to TRUE can
-    more than double the disk space used by the output data for a given job.</desc>
-  </entry> 
-
   <entry id="DOUT_L_MS"> 
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
@@ -482,16 +470,6 @@
     <file>env_run.xml</file>
     <desc></desc>
   </entry>
-
-  <entry id="DOUT_L_HTAR"> 
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>run_data_archive</group>
-    <file>env_run.xml</file>
-    <desc>If true, DOUT_L_HTAR the long-term archiver will store history data in annual tar files. 
-    Not currently implemented</desc>
-  </entry> 
 
   <entry id="DOUT_L_SAVE_ALL_ON_DISK"> 
     <type>logical</type>
