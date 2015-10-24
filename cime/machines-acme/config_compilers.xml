@@ -987,5 +987,12 @@ for mct, etc.
 	<ALBANY_PATH>$(ALBANY_PATH)</ALBANY_PATH>
 </compiler>
 
+<compiler COMPILER="intel" MACH="lawrencium-lr2">
+  <ADD_SLIBS> -lnetcdff -lnetcdf -mkl</ADD_SLIBS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="lawrencium-lr3">
+  <ADD_SLIBS> -lnetcdff -lnetcdf -mkl</ADD_SLIBS>
+</compiler>
 
 </config_compilers>
