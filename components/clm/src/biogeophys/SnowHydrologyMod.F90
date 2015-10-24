@@ -590,6 +590,7 @@ contains
      use landunit_varcon  , only : istsoil, istdlak, istsoil, istwet, istice, istice_mec, istcrop
      use LakeCon          , only : lsadz
      use clm_time_manager , only : get_step_size
+     use clm_varcon       , only : denh2o     
      !
      ! !ARGUMENTS:
      type(bounds_type)      , intent(in)    :: bounds          
@@ -641,6 +642,7 @@ contains
           snw_rds          => waterstate_vars%snw_rds_col         , & ! Output: [real(r8) (:,:) ] effective snow grain radius (col,lyr) [microns, m^-6]
 
           qflx_sl_top_soil => waterflux_vars%qflx_sl_top_soil_col , & ! Output: [real(r8) (:)   ] liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
+          qflx_snow2topsoi => waterflux_vars%qflx_snow2topsoi_col , & ! Output: [real(r8) (:)   ] liquid water merged into top soil from snow
 
           snl              => col%snl                             , & ! Output: [integer  (:)   ] number of snow layers                     
           dz               => col%dz                              , & ! Output: [real(r8) (:,:) ] layer depth (m)                        
@@ -673,6 +675,7 @@ contains
 
           msn_old(c) = snl(c)
           qflx_sl_top_soil(c) = 0._r8
+          qflx_snow2topsoi(c) = 0._r8          
        end do
 
        ! The following loop is NOT VECTORIZED
@@ -807,6 +810,7 @@ contains
                 if (ltype(l) == istsoil .or. urbpoi(l) .or. ltype(l) == istcrop) then
                    h2osoi_liq(c,0) = 0.0_r8
                    h2osoi_liq(c,1) = h2osoi_liq(c,1) + zwliq(c)
+                   qflx_snow2topsoi(c) = zwliq(c)/dtime                   
                 end if
                 if (ltype(l) == istwet) then             
                    h2osoi_liq(c,0) = 0.0_r8

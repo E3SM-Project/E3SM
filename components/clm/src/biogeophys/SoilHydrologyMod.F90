@@ -303,51 +303,53 @@ contains
      real(r8) :: top_icefrac                                ! temporary, ice fraction in top VIC layers
      !-----------------------------------------------------------------------
 
-     associate(                                                        & 
-          snl              =>    col%snl                             , & ! Input:  [integer  (:)   ]  minus number of snow layers                        
-          dz               =>    col%dz                              , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                 
+     associate(                                                                & 
+          snl                  =>    col%snl                                 , & ! Input:  [integer  (:)   ]  minus number of snow layers                        
+          dz                   =>    col%dz                                  , & ! Input:  [real(r8) (:,:) ]  layer depth (m)                                 
 
-          t_soisno         =>    temperature_vars%t_soisno_col       , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                       
+          t_soisno             =>    temperature_vars%t_soisno_col           , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                       
 
-          frac_h2osfc      =>    waterstate_vars%frac_h2osfc_col     , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
-          frac_sno         =>    waterstate_vars%frac_sno_eff_col    , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
-          h2osoi_ice       =>    waterstate_vars%h2osoi_ice_col      , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                                
-          h2osoi_liq       =>    waterstate_vars%h2osoi_liq_col      , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                            
-          h2osno           =>    waterstate_vars%h2osno_col          , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                               
-          snow_depth       =>    waterstate_vars%snow_depth_col      , & ! Input:  [real(r8) (:)   ]  snow height (m)                                   
-          h2osfc           =>    waterstate_vars%h2osfc_col          , & ! Output: [real(r8) (:)   ]  surface water (mm)                                
+          frac_h2osfc          =>    waterstate_vars%frac_h2osfc_col         , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
+          frac_sno             =>    waterstate_vars%frac_sno_eff_col        , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
+          h2osoi_ice           =>    waterstate_vars%h2osoi_ice_col          , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)                                
+          h2osoi_liq           =>    waterstate_vars%h2osoi_liq_col          , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)                            
+          h2osno               =>    waterstate_vars%h2osno_col              , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                               
+          snow_depth           =>    waterstate_vars%snow_depth_col          , & ! Input:  [real(r8) (:)   ]  snow height (m)                                   
+          h2osfc               =>    waterstate_vars%h2osfc_col              , & ! Output: [real(r8) (:)   ]  surface water (mm)                                
 
-          qflx_ev_soil     =>    waterflux_vars%qflx_ev_soil_col     , & ! Input:  [real(r8) (:)   ]  evaporation flux from soil (W/m**2) [+ to atm]    
-          qflx_evap_soi    =>    waterflux_vars%qflx_evap_soi_col    , & ! Input:  [real(r8) (:)   ]  ground surface evaporation rate (mm H2O/s) [+]    
-          qflx_evap_grnd   =>    waterflux_vars%qflx_evap_grnd_col   , & ! Input:  [real(r8) (:)   ]  ground surface evaporation rate (mm H2O/s) [+]    
-          qflx_top_soil    =>    waterflux_vars%qflx_top_soil_col    , & ! Input:  [real(r8) (:)   ]  net water input into soil from top (mm/s)         
-          qflx_ev_h2osfc   =>    waterflux_vars%qflx_ev_h2osfc_col   , & ! Input:  [real(r8) (:)   ]  evaporation flux from h2osfc (W/m**2) [+ to atm]                      
-          qflx_surf        =>    waterflux_vars%qflx_surf_col        , & ! Output: [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
-          qflx_h2osfc_surf =>    waterflux_vars%qflx_h2osfc_surf_col , & ! Output: [real(r8) (:)   ]  surface water runoff (mm/s)                       
-          qflx_infl        =>    waterflux_vars%qflx_infl_col        , & ! Output: [real(r8) (:)   ] infiltration (mm H2O /s)                           
+          qflx_ev_soil         =>    waterflux_vars%qflx_ev_soil_col         , & ! Input:  [real(r8) (:)   ]  evaporation flux from soil (W/m**2) [+ to atm]    
+          qflx_evap_soi        =>    waterflux_vars%qflx_evap_soi_col        , & ! Input:  [real(r8) (:)   ]  ground surface evaporation rate (mm H2O/s) [+]    
+          qflx_evap_grnd       =>    waterflux_vars%qflx_evap_grnd_col       , & ! Input:  [real(r8) (:)   ]  ground surface evaporation rate (mm H2O/s) [+]    
+          qflx_top_soil        =>    waterflux_vars%qflx_top_soil_col        , & ! Input:  [real(r8) (:)   ]  net water input into soil from top (mm/s)         
+          qflx_ev_h2osfc       =>    waterflux_vars%qflx_ev_h2osfc_col       , & ! Input:  [real(r8) (:)   ]  evaporation flux from h2osfc (W/m**2) [+ to atm]                      
+          qflx_surf            =>    waterflux_vars%qflx_surf_col            , & ! Output: [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
+          qflx_h2osfc_surf     =>    waterflux_vars%qflx_h2osfc_surf_col     , & ! Output: [real(r8) (:)   ]  surface water runoff (mm/s)                       
+          qflx_infl            =>    waterflux_vars%qflx_infl_col            , & ! Output: [real(r8) (:)   ] infiltration (mm H2O /s)                           
+          qflx_gross_infl_soil =>    waterflux_vars%qflx_gross_infl_soil_col , & ! Output: [real(r8) (:)] gross infiltration (mm H2O/s)
+          qflx_gross_evap_soil =>    waterflux_vars%qflx_gross_evap_soil_col , & ! Output: [real(r8) (:)] gross evaporation (mm H2O/s)
 
-          smpmin           =>    soilstate_vars%smpmin_col           , & ! Input:  [real(r8) (:)   ]  restriction for min of soil potential (mm)        
-          sucsat           =>    soilstate_vars%sucsat_col           , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
-          watsat           =>    soilstate_vars%watsat_col           , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
-          bsw              =>    soilstate_vars%bsw_col              , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                        
-          hksat            =>    soilstate_vars%hksat_col            , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity at saturation (mm H2O /s)
-          eff_porosity     =>    soilstate_vars%eff_porosity_col     , & ! Output: [real(r8) (:,:) ]  effective porosity = porosity - vol_ice         
+          smpmin               =>    soilstate_vars%smpmin_col               , & ! Input:  [real(r8) (:)   ]  restriction for min of soil potential (mm)        
+          sucsat               =>    soilstate_vars%sucsat_col               , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
+          watsat               =>    soilstate_vars%watsat_col               , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
+          bsw                  =>    soilstate_vars%bsw_col                  , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"                        
+          hksat                =>    soilstate_vars%hksat_col                , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity at saturation (mm H2O /s)
+          eff_porosity         =>    soilstate_vars%eff_porosity_col         , & ! Output: [real(r8) (:,:) ]  effective porosity = porosity - vol_ice         
 
-          h2osfc_thresh    =>    soilhydrology_vars%h2osfc_thresh_col, & ! Input:  [real(r8) (:)   ]  level at which h2osfc "percolates"                
-          zwt              =>    soilhydrology_vars%zwt_col          , & ! Input:  [real(r8) (:)   ]  water table depth (m)                             
-          zwt_perched      =>    soilhydrology_vars%zwt_perched_col  , & ! Input:  [real(r8) (:)   ]  perched water table depth (m)                     
-          fcov             =>    soilhydrology_vars%fcov_col         , & ! Input:  [real(r8) (:)   ]  fractional area with water table at surface       
-          b_infil          =>    soilhydrology_vars%b_infil_col      , & ! Input:  [real(r8) (:)   ]  VIC b infiltration parameter                       
-          frost_table      =>    soilhydrology_vars%frost_table_col  , & ! Input:  [real(r8) (:)   ]  frost table depth (m)                             
-          fsat             =>    soilhydrology_vars%fsat_col         , & ! Input:  [real(r8) (:)   ]  fractional area with water table at surface       
-          moist            =>    soilhydrology_vars%moist_col        , & ! Input:  [real(r8) (:,:) ]  soil moisture in each VIC layers (liq, mm)       
-          max_moist        =>    soilhydrology_vars%max_moist_col    , & ! Input:  [real(r8) (:,:) ]  maximum soil moisture (ice + liq, mm)            
-          max_infil        =>    soilhydrology_vars%max_infil_col    , & ! Input:  [real(r8) (:)   ]  maximum infiltration capacity in VIC (mm)          
-          ice              =>    soilhydrology_vars%ice_col          , & ! Input:  [real(r8) (:,:) ]  ice len in each VIC layers(ice, mm)              
-          i_0              =>    soilhydrology_vars%i_0_col          , & ! Input:  [real(r8) (:)   ]  column average soil moisture in top VIC layers (mm)
-          h2osfcflag       =>    soilhydrology_vars%h2osfcflag       , & ! Input:  logical
-          icefrac          =>    soilhydrology_vars%icefrac_col        & ! Output: [real(r8) (:,:) ]  fraction of ice                                 
-          )
+          h2osfc_thresh        =>    soilhydrology_vars%h2osfc_thresh_col    , & ! Input:  [real(r8) (:)   ]  level at which h2osfc "percolates"                
+          zwt                  =>    soilhydrology_vars%zwt_col              , & ! Input:  [real(r8) (:)   ]  water table depth (m)                             
+          zwt_perched          =>    soilhydrology_vars%zwt_perched_col      , & ! Input:  [real(r8) (:)   ]  perched water table depth (m)                     
+          fcov                 =>    soilhydrology_vars%fcov_col             , & ! Input:  [real(r8) (:)   ]  fractional area with water table at surface       
+          b_infil              =>    soilhydrology_vars%b_infil_col          , & ! Input:  [real(r8) (:)   ]  VIC b infiltration parameter                       
+          frost_table          =>    soilhydrology_vars%frost_table_col      , & ! Input:  [real(r8) (:)   ]  frost table depth (m)                             
+          fsat                 =>    soilhydrology_vars%fsat_col             , & ! Input:  [real(r8) (:)   ]  fractional area with water table at surface       
+          moist                =>    soilhydrology_vars%moist_col            , & ! Input:  [real(r8) (:,:) ]  soil moisture in each VIC layers (liq, mm)       
+          max_moist            =>    soilhydrology_vars%max_moist_col        , & ! Input:  [real(r8) (:,:) ]  maximum soil moisture (ice + liq, mm)            
+          max_infil            =>    soilhydrology_vars%max_infil_col        , & ! Input:  [real(r8) (:)   ]  maximum infiltration capacity in VIC (mm)          
+          ice                  =>    soilhydrology_vars%ice_col              , & ! Input:  [real(r8) (:,:) ]  ice len in each VIC layers(ice, mm)              
+          i_0                  =>    soilhydrology_vars%i_0_col              , & ! Input:  [real(r8) (:)   ]  column average soil moisture in top VIC layers (mm)
+          h2osfcflag           =>    soilhydrology_vars%h2osfcflag           , & ! Input:  logical
+          icefrac              =>    soilhydrology_vars%icefrac_col            & ! Output: [real(r8) (:,:) ]  fraction of ice                                 
+              )
 
        dtime = get_step_size()
 
@@ -380,10 +382,18 @@ contains
              !1. partition surface inputs between soil and h2osfc
              qflx_in_soil(c) = (1._r8 - frac_h2osfc(c)) * (qflx_top_soil(c)  - qflx_surf(c))
              qflx_in_h2osfc(c) = frac_h2osfc(c) * (qflx_top_soil(c)  - qflx_surf(c))          
-
+             qflx_gross_infl_soil(c) = (1._r8 - frac_h2osfc(c)) * (qflx_top_soil(c)  - qflx_surf(c))
+             
              !2. remove evaporation (snow treated in SnowHydrology)
              qflx_in_soil(c) = qflx_in_soil(c) - (1.0_r8 - fsno - frac_h2osfc(c))*qflx_evap(c)
              qflx_in_h2osfc(c) =  qflx_in_h2osfc(c)  - frac_h2osfc(c) * qflx_ev_h2osfc(c)
+
+             if (qflx_evap(c)>0._r8) then
+                qflx_gross_evap_soil(c) = (1.0_r8 - fsno - frac_h2osfc(c))*qflx_evap(c)
+             else
+                qflx_gross_evap_soil(c) = 0._r8
+                qflx_gross_infl_soil(c) = qflx_gross_infl_soil(c)-(1.0_r8 - fsno - frac_h2osfc(c))*qflx_evap(c)
+             endif
 
              !3. determine maximum infiltration rate
              if (use_vichydro) then
@@ -417,6 +427,7 @@ contains
              !4. soil infiltration and h2osfc "run-on"
              qflx_infl(c) = qflx_in_soil(c) - qflx_infl_excess(c)
              qflx_in_h2osfc(c) =  qflx_in_h2osfc(c) + qflx_infl_excess(c)
+             qflx_gross_infl_soil(c) = qflx_gross_infl_soil(c)- qflx_infl_excess(c)
 
              !5. surface runoff from h2osfc
              if (h2osfcflag==1) then
@@ -459,6 +470,7 @@ contains
              !--  if all water evaporates, there will be no bottom drainage
              if (h2osfc(c) < 0.0) then
                 qflx_infl(c) = qflx_infl(c) + h2osfc(c)/dtime
+                qflx_gross_evap_soil(c) = qflx_gross_evap_soil(c) - h2osfc(c)/dtime                
                 h2osfc(c) = 0.0
                 qflx_h2osfc_drain(c)= 0._r8
              else
@@ -472,14 +484,19 @@ contains
              !7. remove drainage from h2osfc and add to qflx_infl
              h2osfc(c) = h2osfc(c) - qflx_h2osfc_drain(c) * dtime
              qflx_infl(c) = qflx_infl(c) + qflx_h2osfc_drain(c)
+             qflx_gross_infl_soil(c) = qflx_gross_infl_soil(c) + qflx_h2osfc_drain(c)             
           else
              ! non-vegetated landunits (i.e. urban) use original CLM4 code
              if (snl(c) >= 0) then
                 ! when no snow present, sublimation is removed in Drainage
                 qflx_infl(c) = qflx_top_soil(c) - qflx_surf(c) - qflx_evap_grnd(c)
+                qflx_gross_infl_soil(c) = qflx_top_soil(c) - qflx_surf(c)
+                qflx_gross_evap_soil(c) = qflx_evap_grnd(c)                
              else
                 qflx_infl(c) = qflx_top_soil(c) - qflx_surf(c) &
                      - (1.0_r8 - frac_sno(c)) * qflx_ev_soil(c)
+                qflx_gross_infl_soil(c) = qflx_top_soil(c) - qflx_surf(c)
+                qflx_gross_evap_soil(c) = (1.0_r8 - frac_sno(c)) * qflx_ev_soil(c)                     
              end if
              qflx_h2osfc_surf(c) = 0._r8
           endif

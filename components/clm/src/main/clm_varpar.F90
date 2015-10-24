@@ -6,7 +6,7 @@ module clm_varpar
   !
   ! !USES:
   use shr_kind_mod , only: r8 => shr_kind_r8
-  use clm_varctl   , only: use_extralakelayers, use_vertsoilc, use_crop
+  use clm_varctl   , only: use_extralakelayers, use_vertsoilc, use_crop, use_betr
   use clm_varctl   , only: use_century_decomp, use_c13, use_c14
   use clm_varctl   , only: iulog, create_crop_landunit, irrigate, flanduse_timeseries
   use clm_varctl   , only: use_vichydro
@@ -30,6 +30,9 @@ module clm_varpar
   integer            :: nlevdecomp            ! number of biogeochemically active soil layers
   integer            :: nlevdecomp_full       ! number of biogeochemical layers 
                                               ! (includes lower layers that are biogeochemically inactive)
+  integer            :: nlevtrc_soil
+  integer            :: nlevtrc_full
+  
   integer, parameter :: nlevsno     =   5     ! maximum number of snow layers
   integer, parameter :: ngases      =   3     ! CH4, O2, & CO2
   integer, parameter :: nlevcan     =   1     ! number of leaf layers in canopy layer
@@ -160,6 +163,11 @@ contains
        nlevdecomp      = 1
        nlevdecomp_full = 1
     end if
+    
+    nlevtrc_full   = nlevsoi
+    if(use_betr) then
+      nlevtrc_soil = nlevsoi
+    endif
 
     if (.not. use_extralakelayers) then
        nlevlak     =  10     ! number of lake layers
