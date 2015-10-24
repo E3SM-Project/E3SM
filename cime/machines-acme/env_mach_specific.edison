@@ -19,12 +19,12 @@ echo "DEBUG=$DEBUG"
 if (-e /opt/modules/default/init/csh) then
   source /opt/modules/default/init/csh
   module rm PrgEnv-intel
-  module rm PrgEnv-cray
+  module rm PrgEnv-cray 
   module rm PrgEnv-gnu
   module rm intel
   module rm cce
   module rm cray-parallel-netcdf
-  module rm cray-parallel-hdf5
+  module rm cray-parallel-hdf5 
   module rm pmi
   module rm cray-libsci
   module rm cray-mpich2
@@ -46,8 +46,8 @@ if ( $COMPILER == "intel" ) then
          module load esmf/6.2.0-defio-mpi-g
     else
          module load esmf/6.2.0-defio-mpi-O
-    endif
-endif
+    endif  
+endif    
 if ( $COMPILER == "cray" ) then
     module load PrgEnv-cray
     module switch cce      cce/8.3.7
@@ -55,7 +55,7 @@ endif
 if ( $COMPILER == "gnu" ) then
     module load PrgEnv-gnu
     module switch gcc       gcc/4.8.0
-endif
+endif    
 
 module load papi/5.3.2
 module swap craype craype/2.1.1

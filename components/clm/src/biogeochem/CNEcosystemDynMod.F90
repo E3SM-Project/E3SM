@@ -356,7 +356,7 @@ contains
        call t_stopf('CNDeposition')
 
        call t_startf('CNFixation')
-       call CNNFixation( num_soilc, filter_soilc, waterflux_vars, &
+       call CNNFixation( num_soilc, filter_soilc, &
             carbonflux_vars, nitrogenflux_vars)
        call t_stopf('CNFixation')
 
@@ -557,7 +557,7 @@ contains
        call CNGResp(num_soilp, filter_soilp, &
             carbonflux_vars)
        call t_stopf('CNGResp')
-       call carbonflux_vars%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
+
        !--------------------------------------------
        ! Dynamic Roots
        !--------------------------------------------
@@ -613,15 +613,15 @@ contains
                isotope='c14')
        end if
 
-       call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call CStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars, carbonflux_vars, carbonstate_vars)
 
        if ( use_c13 ) then
-          call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+          call CStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, c13_carbonflux_vars, c13_carbonstate_vars)
        end if
        if ( use_c14 ) then
-          call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+          call CStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, c14_carbonflux_vars, c14_carbonstate_vars)
        end if
 
@@ -782,5 +782,6 @@ contains
     end if !end of if not use_ed block
 
   end subroutine CNEcosystemDynNoLeaching2
+!!-------------------------------------------------------------------------------------------------
 
 end  module CNEcosystemDynMod

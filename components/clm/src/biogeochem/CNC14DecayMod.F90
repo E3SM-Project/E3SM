@@ -40,7 +40,6 @@ contains
     ! !DESCRIPTION:
     ! On the radiation time step, calculate the radioactive decay of C14
     !
-    use tracer_varcon, only : is_active_betr_bgc      
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -101,22 +100,20 @@ contains
          seedc(c) = seedc(c) *  (1._r8 - decay_const * dt)
       end do ! end of columns loop
 
-      if (is_active_betr_bgc) then
-         do l = 1, ndecomp_pools
-            if ( spinup_state .eq. 1) then
-               ! speed up radioactive decay by the same factor as decomposition so tat SOM ages prematurely in all respects
-               spinup_term = spinup_factor(l) 
-            else
-               spinup_term = 1.
-            endif
-            do j = 1, nlevdecomp
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  decomp_cpools_vr(c,j,l) = decomp_cpools_vr(c,j,l) * (1._r8 - decay_const * spinup_term * dt)
-               end do
+      do l = 1, ndecomp_pools
+         if ( spinup_state .eq. 1) then
+            ! speed up radioactive decay by the same factor as decomposition so tat SOM ages prematurely in all respects
+            spinup_term = spinup_factor(l) 
+         else
+            spinup_term = 1.
+         endif
+         do j = 1, nlevdecomp
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               decomp_cpools_vr(c,j,l) = decomp_cpools_vr(c,j,l) * (1._r8 - decay_const * spinup_term * dt)
             end do
-         end do ! end of columns loop
-      endif
+         end do
+      end do ! end of columns loop
 
       ! patch loop
       do fp = 1,num_soilp
@@ -166,7 +163,7 @@ contains
     ! !ARGUMENTS:
     integer, intent(in) :: num_soilp       ! number of soil patches in filter
     integer, intent(in) :: filter_soilp(:) ! filter for soil patches
-    type(cnstate_type), intent(inout) :: cnstate_vars
+    type(cnstate_type), intent(in) :: cnstate_vars
     !
     ! !LOCAL VARIABLES:
     integer  :: yr, mon, day, tod, offset

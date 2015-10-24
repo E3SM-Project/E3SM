@@ -645,12 +645,7 @@ sub write_filepath_cesmbld
 
 	# source directories under root
 	my @dirs = ( "main", 
-		     "betr",
-		     "betr/betr_math",
-		     "betr/betr_core",
-		     "betr/bgc_century",
-		     "betr/bgc_sminn",
-		     "biogeophys",
+		     "biogeophys", 
 		     "biogeochem", 
 		     "dyn_subgrid",
 		     "ED", 

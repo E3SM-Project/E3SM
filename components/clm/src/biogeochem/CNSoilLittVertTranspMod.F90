@@ -438,6 +438,7 @@ contains
                      end do
                   end do
 
+
                else
                   ! for CWD pools, just add
                   do j = 1,nlevdecomp

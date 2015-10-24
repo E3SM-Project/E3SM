@@ -43,9 +43,6 @@ contains
     ! select one subroutine to do the soil and root water coupling
     !
     !USES
-    use clm_varctl        , only : use_betr
-    use shr_kind_mod      , only : r8 => shr_kind_r8
-    use clm_varpar        , only : nlevsoi    
     use decompMod         , only : bounds_type   
     use abortutils        , only : endrun   
     use SoilHydrologyType , only : soilhydrology_type
@@ -54,8 +51,6 @@ contains
     use WaterFluxType     , only : waterflux_type
     use WaterStateType    , only : waterstate_type
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
-    use clm_varcon        , only : denh2o, denice, watmin
-    use ColumnType        , only : col        
     !
     ! !ARGUMENTS:
     implicit none     
@@ -72,20 +67,8 @@ contains
     class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
     !
     ! !LOCAL VARIABLES:
-    character(len=32)                        :: subname = 'SoilWater'       ! subroutine name
-    real(r8)                                 :: xs(bounds%begc:bounds%endc) !excess soil water above urban ponding limit
-
-    integer  :: fc, c, j
-    
-    
+    character(len=32)              :: subname = 'SoilWater' ! subroutine name   
     !------------------------------------------------------------------------------
-    associate(                                                         &
-      wa                 =>    soilhydrology_vars%wa_col             , & ! Input:  [real(r8) (:)   ] water in the unconfined aquifer (mm)
-      dz                 =>    col%dz                                , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)    
-      h2osoi_ice         =>    waterstate_vars%h2osoi_ice_col        , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
-      h2osoi_vol         =>    waterstate_vars%h2osoi_vol_col        , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
-      h2osoi_liq         =>    waterstate_vars%h2osoi_liq_col          & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
-    )
 
     select case(soilroot_water_method)
 
@@ -100,46 +83,6 @@ contains
        call endrun(subname // ':: a SoilWater implementation must be specified!')          
 
     end select
-
-    if(use_betr)then
-    !a work around of the negative liquid water embarrassment, which is
-    !critical for a meaningufl tracer transport in betr. Jinyun Tang, Jan 14, 2015
-
-    do j = 1, nlevsoi-1
-       do fc = 1, num_hydrologyc
-          c = filter_hydrologyc(fc)
-          if (h2osoi_liq(c,j) < 0._r8) then
-             xs(c) = watmin - h2osoi_liq(c,j)
-          else
-             xs(c) = 0._r8
-          end if
-          h2osoi_liq(c,j  ) = h2osoi_liq(c,j  ) + xs(c)
-          h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) - xs(c)
-       end do
-    end do
-
-    j = nlevsoi
-    do fc = 1, num_hydrologyc
-       c = filter_hydrologyc(fc)
-       if (h2osoi_liq(c,j) < watmin) then
-          xs(c) = watmin-h2osoi_liq(c,j)
-        else
-          xs(c) = 0._r8
-       end if
-       h2osoi_liq(c,j) = h2osoi_liq(c,j) + xs(c)
-       wa(c) = wa(c) - xs(c)
-    end do
-    
-    !update volumetric soil moisture for bgc calculation
-    do j = 1, nlevsoi
-       do fc = 1, num_hydrologyc
-          c = filter_hydrologyc(fc)
-          h2osoi_vol(c,j) = h2osoi_liq(c,j)/(dz(c,j)*denh2o) &
-                            + h2osoi_ice(c,j)/(dz(c,j)*denice)
-       enddo
-    enddo
-    endif
-  end associate
 
   end subroutine SoilWater
 
@@ -325,7 +268,6 @@ contains
          qflx_infl         =>    waterflux_vars%qflx_infl_col       , & ! Input:  [real(r8) (:)   ]  infiltration (mm H2O /s)                          
          qflx_tran_veg_col =>    waterflux_vars%qflx_tran_veg_col   , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)  
          qflx_tran_veg_pft =>    waterflux_vars%qflx_tran_veg_patch , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)  
-         qflx_rootsoi      =>    waterflux_vars%qflx_rootsoi_col    , & ! Output: [real(r8) (:,:) ]  vegetation/soil water exchange (m H2O/s) (+ = to atm)
 
          t_soisno          =>    temperature_vars%t_soisno_col        & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                       
          )
@@ -753,15 +695,8 @@ contains
          enddo
       enddo
 
-      do j = 1, nlevsoi
-         do fc = 1, num_hydrologyc
-            c = filter_hydrologyc(fc)
-            qflx_rootsoi(c,j) = qflx_tran_veg_col(c) * rootr_col(c,j) * 1.e-3_r8       ![m H2O/s]
-         enddo
-      enddo
-
     end associate 
-
-  end subroutine soilwater_zengdecker2009
+         
+   end subroutine soilwater_zengdecker2009
 
  end module SoilWaterMovementMod

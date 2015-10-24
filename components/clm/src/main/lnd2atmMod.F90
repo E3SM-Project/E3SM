@@ -12,7 +12,6 @@ module lnd2atmMod
   use clm_varpar           , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
   use clm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
   use clm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc
-  use tracer_varcon        , only : is_active_betr_bgc
   use seq_drydep_mod       , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
   use subgridAveMod        , only : p2g, c2g 
@@ -263,7 +262,7 @@ contains
 
 
     ! ch4 flux
-    if (use_lch4 .and. (.not. is_active_betr_bgc)) then
+    if (use_lch4) then
        call c2g( bounds,     &
             ch4_vars%ch4_surf_flux_tot_col (bounds%begc:bounds%endc), &
             lnd2atm_vars%flux_ch4_grc      (bounds%begg:bounds%endg), &

@@ -17,7 +17,6 @@ module clm_varctl
   public :: cnallocate_carbonnitrogen_only
   public :: cnallocate_carbonphosphorus_only_set
   public :: cnallocate_carbonphosphorus_only
-  public :: get_carbontag ! get the tag for carbon simulations  
   !
   private
   save
@@ -192,11 +191,6 @@ module clm_varctl
   logical, public :: use_ed_spit_fire = .false.  ! true => use spitfire model
 
   !----------------------------------------------------------
-  !  BeTR switches
-  !----------------------------------------------------------
-  logical, public :: use_betr = .false.          ! true=> use BeTR
-
-  !----------------------------------------------------------
   ! lai streams switch for Sat. Phenology
   !----------------------------------------------------------
 
@@ -369,6 +363,7 @@ contains
     cnallocate_carbon_only = carbon_only
   end function CNAllocate_Carbon_only
 
+
   ! Set module carbonnitrogen_only flag
   subroutine cnallocate_carbonnitrogen_only_set(carbonnitrogen_only_in)
     logical, intent(in) :: carbonnitrogen_only_in
@@ -392,19 +387,6 @@ contains
     cnallocate_carbonphosphorus_only = carbonphosphorus_only
   end function CNAllocate_CarbonPhosphorus_only
 
-  function get_carbontag(carbon_type)result(ctag)
-    implicit none
-    character(len=*) :: carbon_type
-     
-    character(len=3) :: ctag
-  
-    if(carbon_type=='c12')then
-       ctag = 'C'
-    elseif(carbon_type=='c13')then
-       ctag = 'C13'
-    elseif(carbon_type=='c14')then
-       ctag = 'C14'
-    endif
-  end function get_carbontag
-  
+
+
 end module clm_varctl
