@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_itd.F90 1012 2015-06-26 12:34:09Z eclare $
+!  SVN:$Id: ice_itd.F90 1056 2015-09-18 21:52:00Z njeffery $
 !=======================================================================
 
 ! Routines to initialize the ice thickness distribution and
@@ -27,7 +27,7 @@
       module ice_itd
 
       use ice_kinds_mod
-      use ice_constants_colpkg, only: c0, c1, c2, p001, puny, &
+      use ice_constants_colpkg, only: c0, c1, c2, p001, puny, p5, &
           Lfresh, rhos, ice_ref_salinity, hs_min, cp_ice, Tocnfrz, rhoi
 
       implicit none
@@ -725,24 +725,28 @@
                               ncat,        hin_max,    &
                               aicen,       trcrn,      &
                               vicen,       vsnon,      &
-                              aice0,       aice,       &
+                              aice0,       aice,       &   
+                              n_aero,                  &
+                              nbtrcr,      nblyr,      &
+                              l_stop,      stop_label, &
+                              nu_diag,     tr_aero,    &
+                              tr_pond_topo,            &
+                              heat_capacity,           & 
+                              first_ice,               &
                               trcr_depend, trcr_base,  &
                               n_trcr_strata,nt_strata, &
                               fpond,       fresh,      &
                               fsalt,       fhocn,      &
-                              faero_ocn,   tr_aero,    &
-                              tr_pond_topo,            &
-                              heat_capacity,           &
-                              first_ice,  &
-                              flux_bio,    n_aero,     &
-                              l_stop,      stop_label, &
-                              nu_diag,     limit_aice_in)
+                              faero_ocn,   fzsal,      &
+                              flux_bio,    limit_aice_in)
 
       integer (kind=int_kind), intent(in) :: & 
          ncat  , & ! number of thickness categories
          nilyr , & ! number of ice layers
+         nblyr , & ! number of bio layers
          nslyr , & ! number of snow layers
          ntrcr , & ! number of tracers in use
+         nbtrcr, & ! number of bio tracers in use
          n_aero, & ! number of aerosol tracers
          nu_diag   ! diagnostic file unit number
  
@@ -794,7 +798,8 @@
          fpond    , & ! fresh water flux to ponds (kg/m^2/s)
          fresh    , & ! fresh water flux to ocean (kg/m^2/s)
          fsalt    , & ! salt flux to ocean        (kg/m^2/s)
-         fhocn        ! net heat flux to ocean     (W/m^2)
+         fhocn    , & ! net heat flux to ocean     (W/m^2)
+         fzsal        ! net salt flux to ocean from zsalinity (kg/m^2/s)
 
       real (kind=dbl_kind), dimension (:), intent(inout), optional :: &
          flux_bio     ! net tracer flux to ocean from biology (mmol/m^2/s)
@@ -817,10 +822,14 @@
          dfpond   , & ! zapped pond water flux (kg/m^2/s)
          dfresh   , & ! zapped fresh water flux (kg/m^2/s)
          dfsalt   , & ! zapped salt flux   (kg/m^2/s)
-         dfhocn       ! zapped energy flux ( W/m^2)
+         dfhocn   , & ! zapped energy flux ( W/m^2)
+         dfzsal       ! zapped salt flux for zsalinity (kg/m^2/s)
 
       real (kind=dbl_kind), dimension (n_aero) :: &
          dfaero_ocn   ! zapped aerosol flux   (kg/m^2/s)
+
+      real (kind=dbl_kind), dimension (ntrcr) :: &
+         dflux_bio    ! zapped biology flux  (mmol/m^2/s)
 
       logical (kind=log_kind) ::   &
          limit_aice         ! if true, check for aice out of bounds
@@ -842,6 +851,8 @@
       dfsalt = c0
       dfhocn = c0
       dfaero_ocn(:) = c0
+      dflux_bio(:) = c0
+      dfzsal = c0
 
       !-----------------------------------------------------------------
       ! Compute total ice area.
@@ -893,6 +904,7 @@
       if (limit_aice) then
          call zap_small_areas (dt,           ntrcr,         &
                                ncat,         n_aero,        &
+                               nblyr,                       &
                                nilyr,        nslyr,         &
                                aice,         aice0,         &
                                aicen(:),     trcrn(:,:),    &
@@ -901,7 +913,8 @@
                                dfresh,       dfsalt,        &
                                dfhocn,       dfaero_ocn(:), &
                                tr_aero,      tr_pond_topo,  &
-                               first_ice(:), flux_bio,      &
+                               first_ice(:), nbtrcr,        &
+                               dfzsal,       dflux_bio(:),  & 
                                l_stop,       stop_label)
 
          if (l_stop) then
@@ -919,12 +932,14 @@
     !-------------------------------------------------------------------
 
       call zap_snow_temperature(dt,            ncat,     &
-                                heat_capacity,           &
+                                heat_capacity, nblyr,    &
                                 nslyr,         aicen(:), &
                                 trcrn(:,:),    vsnon(:), &
                                 dfresh,        dfhocn,   &
                                 dfaero_ocn(:), tr_aero,  &
-                                n_aero,        nu_diag)
+                                dflux_bio(:),  nbtrcr,   &
+                                n_aero,        nu_diag,  &
+                                ntrcr)
 
     !-------------------------------------------------------------------
     ! Update ice-ocean fluxes for strict conservation
@@ -943,6 +958,13 @@
            faero_ocn(it) = faero_ocn(it) + dfaero_ocn(it)
          enddo
       endif
+      if (present(flux_bio)) then
+         do it = 1, nbtrcr
+           flux_bio (it) = flux_bio(it) + dflux_bio(it)
+         enddo
+      endif
+      if (present(fzsal)) &
+           fzsal        = fzsal         + dfzsal     
 
       !----------------------------------------------------------------
       ! If using zero-layer model (no heat capacity), check that the 
@@ -968,6 +990,7 @@
 
       subroutine zap_small_areas (dt,        ntrcr,        &
                                   ncat,      n_aero,       &
+                                  nblyr,                   &
                                   nilyr,     nslyr,        &
                                   aice,      aice0,        &
                                   aicen,     trcrn,        &
@@ -976,18 +999,25 @@
                                   dfresh,    dfsalt,       &
                                   dfhocn,    dfaero_ocn,   &
                                   tr_aero,   tr_pond_topo, &
-                                  first_ice, flux_bio,     &
+                                  first_ice, nbtrcr,       &
+                                  dfzsal,    dflux_bio,    &
                                   l_stop,    stop_label)
 
       use ice_colpkg_tracers, only: nt_Tsfc, nt_qice, nt_qsno, nt_aero, &
-                             nt_apnd, nt_hpnd, nt_fbri, tr_brine
+                             nt_apnd, nt_hpnd, nt_fbri, tr_brine, nt_bgc_S, &
+                             bio_index
+      use ice_colpkg_shared, only:  solve_zsal, skl_bgc, z_tracers, min_salin, &
+                             sk_l, rhosi
+      use ice_zbgc_shared, only: zap_small_bgc
 
       integer (kind=int_kind), intent(in) :: &
          ncat     , & ! number of thickness categories
          nilyr    , & ! number of ice layers
+         nblyr    , & ! number of bio layers
          nslyr    , & ! number of snow layers
          ntrcr    , & ! number of tracers in use
-         n_aero       ! number of aerosol tracers
+         n_aero   , & ! number of aerosol tracers
+         nbtrcr       ! number of biology tracers
 
       real (kind=dbl_kind), intent(in) :: &
          dt           ! time step
@@ -1008,10 +1038,14 @@
          dfpond   , & ! zapped pond water flux (kg/m^2/s)
          dfresh   , & ! zapped fresh water flux (kg/m^2/s)
          dfsalt   , & ! zapped salt flux   (kg/m^2/s)
-         dfhocn       ! zapped energy flux ( W/m^2)
+         dfhocn   , & ! zapped energy flux ( W/m^2)
+         dfzsal       ! zapped salt flux from zsalinity(kg/m^2/s) 
 
       real (kind=dbl_kind), dimension (:), intent(out) :: &
          dfaero_ocn   ! zapped aerosol flux   (kg/m^2/s)
+
+      real (kind=dbl_kind), dimension (:), intent(inout) :: &
+         dflux_bio     ! zapped bio tracer flux from biology (mmol/m^2/s)
 
       logical (kind=log_kind), intent(in) :: &
          tr_aero, &   ! aerosol flag
@@ -1019,9 +1053,6 @@
 
       logical (kind=log_kind), dimension (:),intent(inout) :: &
          first_ice    ! For bgc tracers.  Set to true if zapping ice 
-
-      real (kind=dbl_kind), dimension (:), intent(out), optional :: &
-         flux_bio     ! Ocean tracer flux from biology (mmol/m^2/s)
 
       logical (kind=log_kind), intent(out) :: &
          l_stop       ! if true, abort on return
@@ -1031,16 +1062,20 @@
       ! local variables
 
       integer (kind=int_kind) :: &
-         n, k, it ! counting indices
+         n, k, it, & !counting indices
+         blevels
 
-      real (kind=dbl_kind) :: xtmp      ! temporary variable
+      real (kind=dbl_kind) :: xtmp      ! temporary variables
+      real (kind=dbl_kind) , dimension (1):: trcr_skl    
+      real (kind=dbl_kind) , dimension (nblyr+1):: bvol     
 
       l_stop = .false.
 
       !-----------------------------------------------------------------
       ! I. Zap categories with very small areas.
       !-----------------------------------------------------------------
-
+      dfzsal = c0
+      
       do n = 1, ncat
 
       !-----------------------------------------------------------------
@@ -1071,6 +1106,35 @@
                   dfaero_ocn(it) = dfaero_ocn(it) + xtmp
                enddo
             endif
+
+           if (solve_zsal) then
+               do it = 1, nblyr
+                  xtmp = rhosi*trcrn(nt_fbri,n)*vicen(n)*p001&
+                        *trcrn(nt_bgc_S+it-1,n)/ &
+                         real(nblyr,kind=dbl_kind)/dt
+                  dfzsal = dfzsal + xtmp
+               enddo                 ! n
+           endif
+
+         if (skl_bgc .and. nbtrcr > 0) then
+               blevels = 1
+               bvol(1) =  aicen(n)*sk_l
+               it = 1
+               do it = 1, nbtrcr
+                  trcr_skl(1) = trcrn(bio_index(it),n)
+                  call zap_small_bgc(blevels, dflux_bio(it), &
+                       dt, bvol(1:blevels), trcr_skl(blevels))
+               enddo
+         elseif (z_tracers .and. nbtrcr > 0) then
+               blevels = nblyr + 1
+               bvol(:) = vicen(n)/real(nblyr,kind=dbl_kind)*trcrn(nt_fbri,n)
+               bvol(1) = p5*bvol(1)
+               bvol(blevels) = p5*bvol(blevels)
+               do it = 1, nbtrcr
+                  call zap_small_bgc(blevels, dflux_bio(it), &
+                       dt, bvol(1:blevels),trcrn(bio_index(it):bio_index(it)+blevels-1,n))
+               enddo
+         endif
 
       !-----------------------------------------------------------------
       ! Zap ice energy and use ocean heat to melt ice
@@ -1105,7 +1169,9 @@
                           trcrn(:,n),    vsnon(n), &
                           dfresh,        dfhocn,   &
                           dfaero_ocn(:), tr_aero,  &
-                          n_aero)
+                          dflux_bio(:),  nbtrcr,   &
+                          n_aero,        ntrcr,    &
+                          aicen(n),      nblyr)
 
       !-----------------------------------------------------------------
       ! Zap tracers
@@ -1194,6 +1260,21 @@
                  * (aice-c1)/aice / dt
             dfsalt = dfsalt + xtmp 
  
+            if (solve_zsal) then
+            do k = 1,nblyr
+               xtmp = rhosi*trcrn(nt_fbri,n)*vicen(n)*p001&
+                    /real(nblyr,kind=dbl_kind)*trcrn(nt_bgc_S+k-1,n) &
+                    * (aice-c1)/aice /dt
+               dfzsal = dfzsal + xtmp
+            enddo
+
+            if (vicen(n) > vicen(n)*trcrn(nt_fbri,n)) then
+               xtmp = (vicen(n)-vicen(n)*trcrn(nt_fbri,n))*(aice-c1)/&
+                      aice*p001*rhosi*min_salin/dt
+               dfzsal = dfzsal + xtmp
+            endif
+            endif ! solve_zsal
+
             aicen(n) = aicen(n) * (c1/aice) 
             vicen(n) = vicen(n) * (c1/aice) 
             vsnon(n) = vsnon(n) * (c1/aice)
@@ -1219,19 +1300,28 @@
                           trcrn,      vsnon,    &
                           dfresh,     dfhocn,   &
                           dfaero_ocn, tr_aero,  &
-                          n_aero)
+                          dflux_bio,  nbtrcr,   &
+                          n_aero,     ntrcr,    &
+                          aicen,      nblyr)
 
-      use ice_colpkg_tracers, only: nt_qsno, nt_aero
+      use ice_colpkg_tracers, only: nt_qsno, nt_aero, bio_index
+      use ice_colpkg_shared, only: hs_ssl, z_tracers
 
       integer (kind=int_kind), intent(in) :: &
          nslyr    , & ! number of snow layers
-         n_aero       ! number of aerosol tracers
+         n_aero   , & ! number of aerosol tracers
+         ntrcr    , & ! number of tracers in use
+         nblyr    , & ! number of bio  layers
+         nbtrcr
  
       real (kind=dbl_kind), intent(in) :: &
          dt           ! time step
 
       real (kind=dbl_kind), dimension (:), intent(inout) :: &
          trcrn        ! ice tracers
+
+      real (kind=dbl_kind), intent(in) :: &
+         aicen        ! ice area fraction
 
       real (kind=dbl_kind), intent(inout) :: &
          vsnon    , & ! volume per unit area of snow         (m)
@@ -1241,6 +1331,9 @@
       real (kind=dbl_kind), dimension (:), intent(inout) :: &
          dfaero_ocn   ! zapped aerosol flux   (kg/m^2/s)
 
+     real (kind=dbl_kind), dimension (:), intent(inout) :: &
+         dflux_bio     ! zapped bio tracer flux from biology (mmol/m^2/s)
+
       logical (kind=log_kind), intent(in) :: &
          tr_aero      ! aerosol flag
 
@@ -1249,7 +1342,7 @@
       integer (kind=int_kind) :: &
          k, it        ! counting indices
 
-      real (kind=dbl_kind) :: xtmp
+      real (kind=dbl_kind) :: xtmp, dvssl, dvint
 
       ! aerosols
       if (tr_aero) then
@@ -1259,6 +1352,18 @@
             dfaero_ocn(it) = dfaero_ocn(it) + xtmp
          enddo                 ! it
       endif ! tr_aero
+
+      if (z_tracers) then
+            dvssl  = min(p5*vsnon, hs_ssl*aicen)   !snow surface layer
+            dvint  = vsnon- dvssl                  !snow interior
+
+            do it = 1, nbtrcr
+               xtmp = (trcrn(bio_index(it)+nblyr+1)*dvssl + &
+                       trcrn(bio_index(it)+nblyr+2)*dvint)/dt
+               dflux_bio(it) = dflux_bio(it) + xtmp
+            enddo                 ! it
+
+      endif ! z_tracers
 
       ! snow enthalpy tracer
       do k = 1, nslyr 
@@ -1279,11 +1384,14 @@
    
       subroutine zap_snow_temperature(dt,         ncat,     &
                                       heat_capacity,        &
+                                      nblyr,                &
                                       nslyr,      aicen,    &
                                       trcrn,      vsnon,    &
                                       dfresh,     dfhocn,   &
                                       dfaero_ocn, tr_aero,  &
-                                      n_aero,     nu_diag)
+                                      dflux_bio,  nbtrcr,   &
+                                      n_aero,     nu_diag,  &
+                                      ntrcr)
 
       use ice_colpkg_tracers, only: nt_qsno 
       use ice_therm_shared, only: Tmin
@@ -1292,6 +1400,9 @@
          ncat  , & ! number of thickness categories
          nslyr , & ! number of snow layers
          n_aero, & ! number of aerosol tracers
+         nbtrcr, & ! number of z-tracers in use
+         nblyr , & ! number of bio  layers in ice
+         ntrcr,  & ! number of tracers in use
          nu_diag   ! diagnostic file unit number
 
       real (kind=dbl_kind), intent(in) :: &
@@ -1315,6 +1426,9 @@
 
       real (kind=dbl_kind), dimension (:), intent(inout) :: &
          dfaero_ocn   ! zapped aerosol flux   (kg/m^2/s)
+
+      real (kind=dbl_kind), dimension (:),intent(inout) :: &
+         dflux_bio    ! zapped biology flux  (mmol/m^2/s)
 
       logical (kind=log_kind), intent(in) :: &
          tr_aero      ! aerosol flag
@@ -1388,7 +1502,9 @@
                           trcrn(:,n),    vsnon(n), &
                           dfresh,        dfhocn,   &
                           dfaero_ocn(:), tr_aero,  &
-                          n_aero)
+                          dflux_bio(:),  nbtrcr,   &
+                          n_aero,        ntrcr,    &
+                          aicen(n),      nblyr)
 
       enddo ! n
 

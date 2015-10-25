@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_zbgc_shared.F90 1012 2015-06-26 12:34:09Z eclare $
+!  SVN:$Id: ice_zbgc_shared.F90 1062 2015-10-02 19:50:29Z njeffery $
 !=======================================================================
 !
 ! Biogeochemistry variables
@@ -10,105 +10,91 @@
       module ice_zbgc_shared
 
       use ice_kinds_mod
-      use ice_constants, only: p01, p1, p5, c0, c1
-      use ice_domain_size, only: ncat, max_blocks, max_nbtrcr, &
-                                 nblyr, nilyr
-      use ice_blocks, only: nx_block, ny_block
+      use ice_constants_colpkg, only: p01, p1, p5, c0, c1
+      use ice_colpkg_shared, only: max_nbtrcr, max_algae, max_doc, &
+                                   max_dic, max_aero, max_don, max_fe
 
       implicit none 
 
       private
-      public :: remap_layers_bgc
-
-      logical (kind=log_kind), public :: & 
-         restart_hbrine ! if true, read hbrine from restart file
-
-      character(char_len_long), public :: & 
-         bgc_data_dir   ! directory for biogeochemistry data
-
-      logical (kind=log_kind), &
-         dimension (nx_block,ny_block,ncat,max_blocks), public :: &
-         first_ice      ! distinguishes ice that disappears (e.g. melts)
-                        ! and reappears (e.g. transport) in a grid cell
-                        ! during a single time step from ice that was
-                        ! there the entire time step (true until ice forms)
-
-      ! coupling fluxes
-      real (kind=dbl_kind), &
-         dimension (nx_block,ny_block,max_nbtrcr,max_blocks), public :: &
-         flux_bio   , & ! all bio fluxes to ocean
-         ocean_bio  , & ! contains all the ocean bgc tracer concentrations
-         flux_bio_ai    ! all bio fluxes to ocean, averaged over grid cell
-
-      !-----------------------------------------------------------------
-      ! general biogeochemistry
-      !-----------------------------------------------------------------
-
-      real (kind=int_kind), dimension(max_nbtrcr), public :: &
-         bgc_tracer_type ! 1  dissolved tracers: mix like salinity
-                         ! 0  tracers that cling: resist brine motion (algae)
-
-      real (kind=dbl_kind), dimension (nx_block,ny_block,max_blocks), public :: &
-         nit        , & ! ocean nitrate (mmol/m^3)          
-         amm        , & ! ammonia/um (mmol/m^3)
-         sil        , & ! silicate (mmol/m^3)
-         dmsp       , & ! dmsp (mmol/m^3)
-         dms        , & ! dms (mmol/m^3)
-         algalN         ! ocean algal nitrogen (mmol/m^3)
-
-      character (char_len_long), public :: &        ! input data file names
-         nit_file   , & ! nitrate input file
-         sil_file       ! silicate input file
-
-      character(char_len), public :: &          
-         sil_data_type  , & ! 'default', 'clim'
-         nit_data_type  , & ! 'default', 'clim'     
-         bgc_flux_type      ! type of ocean-ice piston velocity 
-                            ! 'constant', 'Jin2006' 
-
-      ! ocean sources/sinks
-      integer (kind=int_kind), public :: &
-         nlt_bgc_N      , & ! algae 
-         nlt_bgc_C      , & ! 
-         nlt_bgc_chl    , & ! 
-         nlt_bgc_NO     , & ! nutrients  
-         nlt_bgc_NH     , & ! 
-         nlt_bgc_Sil    , & !
-         nlt_bgc_DMSPp  , & ! trace gases
-         nlt_bgc_DMSPd  , & ! 
-         nlt_bgc_DMS
+      public :: calculate_qin_from_Sin, remap_zbgc, &
+                zap_small_bgc, regrid_stationary
 
       ! bio parameters for algal_dyn
+
+      real (kind=dbl_kind), parameter, dimension(max_algae), public :: &
+         R_Si2N    = (/ 1.4_dbl_kind,      & ! algal C to Sil (mole/mole) 
+                        c0,                &
+                        c0/),              &
+         R_S2N     = (/ 0.03_dbl_kind,     & ! algal S to N (mole/mole)
+                        0.03_dbl_kind,     &
+                        0.03_dbl_kind/),   &
+         ! Marchetti et al 2006, 3 umol Fe/mol C for iron limited Pseudo-nitzschia
+         R_Fe2C    = (/ 3.3e-3_dbl_kind,   & ! algal Fe to carbon (umol/mmol)
+                        3.3e-3_dbl_kind,   &
+                        1.0e-1_dbl_kind/), &
+         R_Fe2N    = (/ 2.3e-2_dbl_kind,   & ! algal Fe to N (umol/mmol)
+                        2.3e-2_dbl_kind,   &
+                        7.0e-1_dbl_kind/)
+
+      real (kind=dbl_kind), dimension(max_don), public :: & 
+         R_Fe2DON  = (/ 2.3e-2_dbl_kind/)    ! Fe to N of DON (nmol/umol)
+
+      real (kind=dbl_kind), dimension(max_doc), public :: &  ! increase compare to algal R_Fe2C
+         R_Fe2DOC  =  (/ 1.0e-1_dbl_kind, &  ! Fe to C of DOC (nmol/umol)
+                         3.3e-2_dbl_kind, &
+                         1.0e-1_dbl_kind/)
+
       real (kind=dbl_kind), parameter, public :: &
-         initbio_frac = c1          , & ! fraction of ocean tracer used for initialization
-         R_C2N      = 7.0_dbl_kind  , & ! algal C to N (mole/mole) 
-                                        ! Kristiansen 1991 (Barents) 9.0
-         R_gC2molC  = 12.01_dbl_kind, & ! mg/mmol C
-         R_chl2N    = 3.0_dbl_kind  , & ! algal chlorophyll to N (mg/mmol)
-         R_S2N      = 0.03_dbl_kind , & ! algal S to N (mole/mole)
-         fr_resp    = 0.05_dbl_kind     ! respiration fraction
+         R_gC2molC  = 12.01_dbl_kind,  & ! mg/mmol C
+         fr_resp    = 0.05_dbl_kind ,  & ! fraction of algal growth lost due to respiration
+         tau_min    = 6.24e4_dbl_kind, & ! rapid mobile to stationary exchanges (s)
+                                         ! 3.12e4_dbl_kind = 6 hours, 1.25e5_dbl_kind s = 1 day
+         tau_max    = 6.25e5_dbl_kind    ! long time mobile to stationary exchanges (s) 
+                                         ! 6.25e5_dbl_kind = 5 days
+
+      real (kind=dbl_kind), parameter, public :: &  !Tagliabue 2009
+         R_dFe2dust  = 0.035_dbl_kind,  & ! g/g (3.5% content)
+         dustFe_sol  = 0.005_dbl_kind     ! solubility fraction              
+
+      ! scavenging coefficient for tracers in snow
+      ! bottom to last 6 are from Flanner et al., 2007
+      ! very last one is for humic material
+      real (kind=dbl_kind), parameter, dimension(max_nbtrcr),  public :: &
+         kscavz    = (/ 0.03_dbl_kind, 0.03_dbl_kind, 0.03_dbl_kind, &
+                        0.03_dbl_kind, 0.03_dbl_kind, 0.03_dbl_kind, &
+                        0.03_dbl_kind, 0.03_dbl_kind, 0.03_dbl_kind, &
+                        0.03_dbl_kind, 0.03_dbl_kind, 0.03_dbl_kind, &
+                        0.03_dbl_kind, 0.03_dbl_kind, 0.03_dbl_kind, &
+                        0.03_dbl_kind, 0.03_dbl_kind, 0.03_dbl_kind, &
+                        0.03_dbl_kind, 0.03_dbl_kind, 0.03_dbl_kind, &
+                        0.03_dbl_kind, &
+                        0.03_dbl_kind, 0.20_dbl_kind, 0.02_dbl_kind, &
+                        0.02_dbl_kind, 0.01_dbl_kind, 0.01_dbl_kind, &
+                        0.03_dbl_kind /)
 
       !-----------------------------------------------------------------
       ! skeletal layer biogeochemistry
       !-----------------------------------------------------------------
 
-      logical (kind=log_kind), public :: & 
-         tr_bgc_N_sk,     & ! if true, nitrogen as algal tracer on ice
-         tr_bgc_C_sk,     & ! if true, carbon as algal tracer on ice
-         tr_bgc_chl_sk,   & ! if true, chlorophyll as algal tracer on ice
-         tr_bgc_Nit_sk,   & ! if true, nitrate as nutrient tracer on ice
-         tr_bgc_Am_sk,    & ! if true, ammonia/um as nutrient tracer on ice
-         tr_bgc_Sil_sk,   & ! if true, silicon as nutrient tracer on ice
-         tr_bgc_DMSPp_sk, & ! if true, DMSPp as algal content tracer on ice
-         tr_bgc_DMSPd_sk, & ! if true, DMSPd as precursor tracer on ice
-         tr_bgc_DMS_sk,   & ! if true, DMS as product tracer on ice
-         restart_bgc,     & ! if true, read bgc restart file
-         restore_bgc,     & ! if true, restore nitrate
-         skl_bgc            ! if true, solve skeletal biochemistry
-
       real (kind=dbl_kind), parameter, public :: &
-         sk_l       = 0.03_dbl_kind,  & ! skeletal layer thickness (m)
          phi_sk     = 0.30_dbl_kind     ! skeletal layer porosity
+
+      !-----------------------------------------------------------------
+      ! general biogeochemistry
+      !-----------------------------------------------------------------
+
+      real (kind=dbl_kind), dimension(max_nbtrcr), public :: &
+         zbgc_frac_init,&! initializes mobile fraction
+         bgc_tracer_type ! described tracer in mobile or stationary phases      
+                         ! < 0 is purely mobile (eg. nitrate)
+                         ! > 0 has timescales for transitions between 
+                         ! phases based on whether the ice is melting or growing
+
+      real (kind=dbl_kind), dimension(max_nbtrcr), public :: & 
+         zbgc_init_frac, &   ! fraction of ocean tracer  concentration in new ice
+         tau_ret,        &   ! retention timescale  (s), mobile to stationary phase
+         tau_rel             ! release timescale    (s), stationary to mobile phase         
 
       !-----------------------------------------------------------------
       ! brine
@@ -119,90 +105,92 @@
 
       real (kind=dbl_kind), parameter, public :: & 
          k_o       = 3.e-8_dbl_kind, & ! permeability scaling factor (m^2)
-         rhosi     = 940.0_dbl_kind, & ! average sea ice density
-                                       ! Cox and Weeks, 1982: 919-974 kg/m^2
-         min_salin = p1            , & ! threshold for brine pocket treatment 
-         hbr_min   = p01           , & ! minimum hbrine thickness
          thinS     = 0.05_dbl_kind     ! minimum ice thickness for brine
 
       real (kind=dbl_kind), public :: & 
-         phi_snow ,  &  ! porosity of snow
-         flood_frac     ! fraction of ocean/meltwater that floods
+         flood_frac     ! fraction of ocean/meltwater that floods  !*****
 
-      real (kind=dbl_kind), & 
-         dimension (nx_block,ny_block,ncat,max_blocks), public :: &
-         dhbr_top     , & ! brine top change
-         dhbr_bot         ! brine bottom change
+      real (kind=dbl_kind), parameter, public :: & 
+         bphimin = 0.03_dbl_kind      ! minimum porosity for zbgc only
 
-      real (kind=dbl_kind), &
-         dimension (nx_block,ny_block,max_blocks), public :: &
-         grow_net       , & ! Specific growth rate (/s) per grid cell
-         PP_net         , & ! Total production (mg C/m^2/s) per grid cell
-         hbri               ! brine height, area-averaged for comparison with hi (m)
+!-----------------------------------------------------------------------
+! Parameters for zsalinity
+!-----------------------------------------------------------------------
 
-      real (kind=dbl_kind), dimension (nblyr+2), public :: &
-         bgrid              ! biology nondimensional vertical grid points
+      real (kind=dbl_kind), parameter, public :: & 
+         viscos_dynamic = 2.2_dbl_kind   , & ! 1.8e-3_dbl_kind (pure water at 0^oC) (kg/m/s)
+         Dm             = 1.0e-9_dbl_kind, & ! molecular diffusion (m^2/s)
+         Ra_c           = 0.05_dbl_kind      ! critical Rayleigh number for bottom convection
 
-      real (kind=dbl_kind), dimension (nblyr+1), public :: &
-         igrid              ! biology vertical interface points
- 
-      real (kind=dbl_kind), dimension (nilyr+1), public :: &
-         cgrid              ! CICE vertical coordinate   
-
-      real (kind=dbl_kind), &
-         dimension (nx_block,ny_block,nblyr+2,ncat,max_blocks), public :: &
-         bphi           , & ! porosity of layers    
-         bTiz               ! layer temperatures interpolated on bio grid (C)
-
-      real (kind=dbl_kind), &
-         dimension (nx_block,ny_block,ncat,max_blocks), public :: &
-         darcy_V            ! darcy velocity positive up (m/s)
-    
 !=======================================================================
 
       contains
+
+!=======================================================================
+! 
+! Compute the internal ice enthalpy using new salinity and Tin
+!
+
+      function calculate_qin_from_Sin (Tin, Tmltk) &
+               result(qin)
+            
+      use ice_constants_colpkg, only: c1, rhoi, cp_ocn, cp_ice, Lfresh  
+
+      real (kind=dbl_kind), intent(in) :: &
+         Tin                ,&  ! internal temperature
+         Tmltk                  ! melting temperature at one level
+
+      ! local variables
+
+      real (kind=dbl_kind) :: &
+         qin                    ! melting temperature at one level   
+
+      qin =-rhoi*(cp_ice*(Tmltk-Tin) + Lfresh*(c1-Tmltk/Tin) - cp_ocn*Tmltk)
+
+      end function calculate_qin_from_Sin
 
 !=======================================================================
 !
 ! Remaps tracer fields in a given category from one set of layers to another.
 ! Grids can be very different and  so can  vertical spaces.  
 
-      subroutine remap_layers_bgc (ntrcr,    nlyrn,    &
-                                   it,                 &
-                                   trcrn,    trtmp,    &
-                                   nr0,      nblyr,    &
-                                   hice,     hinS,     &
-                                   ice_grid, bio_grid, &
-                                   S_min)
-
-      use ice_fileunits, only: nu_diag
-      use ice_exit, only: abort_ice
+      subroutine remap_zbgc(ntrcr,    nlyrn,    &
+                            it,                 &
+                            trcrn,    trtmp,    &
+                            nr0,      nbyrn,    &
+                            hice,     hinS,     &
+                            ice_grid, bio_grid, &
+                            S_min,    l_stop,   &
+                            stop_label)
 
       integer (kind=int_kind), intent(in) :: &
          ntrcr         , & ! number of tracers in use
          it            , & ! tracer index in top layer
          nr0           , & ! receiver category
          nlyrn         , & ! number of ice layers
-         nblyr             ! number of biology layers
+         nbyrn             ! number of biology layers
 
-      real (kind=dbl_kind), dimension (ntrcr), &
-         intent(in) ::       &
+      real (kind=dbl_kind), dimension (:), intent(in) :: &
          trcrn             ! ice tracers
 
-      real (kind=dbl_kind), dimension (nblyr+2), &
-         intent(inout) ::    &
+      real (kind=dbl_kind), dimension (:), intent(inout) :: &
          trtmp             ! temporary, remapped ice tracers
 
-      real (kind=dbl_kind), dimension (nlyrn), intent(in) :: &
+      real (kind=dbl_kind), dimension (:), intent(in) :: &
          ice_grid          ! CICE grid  cgrid(2:nilyr+1)
 
-      real (kind=dbl_kind), dimension (nblyr), intent(in) :: &
-         bio_grid          ! CICE grid  grid(2:nblyr+1)
+      real (kind=dbl_kind), dimension (:), intent(in) :: &
+         bio_grid          ! CICE grid  grid(2:nbyrn+1)
 
       real(kind=dbl_kind), intent(in) :: &
          hice          , & ! CICE ice thickness
          hinS          , & ! brine height 
          S_min             ! for salinity on CICE grid        
+
+      logical (kind=log_kind), intent(inout) :: &
+         l_stop            ! if true, print diagnostics and abort on return
+        
+      character (char_len), intent(inout) :: stop_label
 
       ! local variables
 
@@ -212,32 +200,31 @@
            n_nd        , & ! number of layers in donor
            n_nr, n_plus    ! number of layers in receiver
 
-      real (kind=dbl_kind), dimension (nblyr+3+nlyrn) :: &
+      real (kind=dbl_kind), dimension (nbyrn+3+nlyrn) :: &
            trdr        , & ! combined tracer 
            trgrid          ! combined grid 
 
-      real (kind=dbl_kind), dimension (nblyr+nilyr+3) :: &
-           tracer      , & ! temporary,  ice tracers values
-           dgrid       , & ! temporary,  donor grid dimensional
-           rgrid           !  temporary, receiver grid dimensional
+      real (kind=dbl_kind), dimension (nbyrn+nlyrn+3) :: &
+           tracer      , & ! temporary, ice tracers values
+           dgrid       , & ! temporary, donor grid dimensional
+           rgrid           ! temporary, receiver grid dimensional
 
       if ((hinS < c0) .OR. (hice < c0)) then
-         write(nu_diag, *)'Problem in remap_layers_bgc'
-         write(nu_diag, *) '(hinS < c0) .OR. (hice < c0)'
-         write(nu_diag, *) 'hinS,hice',hinS,hice
-         call abort_ice ('ice: remap_layers_bgc error')
+         l_stop = .true.
+         stop_label = 'ice: remap_layers_bgc error'
+         return
       endif
          
       if (nr0 == 0) then ! cice to bio
 
          n_nd            = nlyrn
-         n_nr            = nblyr
+         n_nr            = nbyrn
          n_plus          = 2
          dgrid (1)       = min(-hice+hinS, -hinS+hice, c0)            
          dgrid (nlyrn+2) = min(hinS, hice) 
 	 tracer(1)       = trcrn(it)
 	 tracer(nlyrn+2) = trcrn(it+nlyrn-1)
-         rgrid (nblyr+2) = min(hinS, hice)
+         rgrid (nbyrn+2) = min(hinS, hice)
          if (hice > hinS) then
             rgrid(1) = c0 
 	    do kr = 1,n_nr
@@ -260,7 +247,7 @@
               
       else               ! bio to cice
 
-         n_nd = nblyr
+         n_nd = nbyrn
          n_nr = nlyrn
          if (hice > hinS) then
             n_plus          = 3
@@ -268,8 +255,8 @@
             tracer(2)       = S_min
             dgrid (1)       = -hice+hinS
             dgrid (2)       = p5*(hinS-hice)
-            dgrid (nblyr+3) = hinS
-            tracer(nblyr+3) = trcrn(it+nblyr-1)
+            dgrid (nbyrn+3) = hinS
+            tracer(nbyrn+3) = trcrn(it+nbyrn-1)
             rgrid (1)       = -hice + hinS
             rgrid (nlyrn+2) = hinS 
             do kd = 1,n_nd
@@ -282,9 +269,9 @@
          else
             n_plus          = 2
             tracer(1)       = trcrn(it)
-            tracer(nblyr+2) = trcrn(it+nblyr-1)
+            tracer(nbyrn+2) = trcrn(it+nbyrn-1)
             dgrid (1)       = hice-hinS
-            dgrid (nblyr+2) = hice
+            dgrid (nbyrn+2) = hice
             rgrid (nlyrn+2) = hice
             rgrid (1)       = c0
             do kd = 1,n_nd
@@ -298,7 +285,7 @@
 
       endif
 
-      kdr = 0  !combined indices
+      kdr = 0  ! combined indices
       kdi = 1  
 
       do kr = 1, n_nr
@@ -311,22 +298,189 @@
                kdr = kdr + 1
                kdi = kd
                trgrid(kdr) = rgrid(kr+1)
-               trtmp (kr)  = trdr(kdr-1) &
+               trtmp (it+kr-1)  = trdr(kdr-1) &
                            + (rgrid(kr+1) - trgrid(kdr-1)) &
                            * (tracer(kd) - trdr(kdr-1)) &
                            / (dgrid(kd) - trgrid(kdr-1))
-               trdr(kdr) = trtmp(kr)
+               trdr(kdr) = trtmp(it+kr-1) 
+               EXIT
             else
                kdr = kdr+1
                kdi = kd+1
                trgrid(kdr) = rgrid(kr+1)
-               trtmp (kr)  = tracer(kd)              
+               trtmp (it+kr-1)  = tracer(kd)              
                trdr  (kdr) = tracer(kd)
+               EXIT
             endif
          enddo
       enddo
 
-      end subroutine remap_layers_bgc
+      end subroutine remap_zbgc
+
+!=======================================================================
+
+! remove tracer for very small fractional areas
+
+      subroutine zap_small_bgc (zlevels,  dflux_bio, &
+                                dt, zvol, btrcr)
+
+      integer (kind=int_kind), intent(in) :: &
+         zlevels    ! number of vertical levels in ice
+
+      real (kind=dbl_kind), intent(in) :: &
+         dt         ! time step (s)
+
+      real (kind=dbl_kind), intent(inout) :: &
+         dflux_bio  ! zapped bio tracer flux from biology (mmol/m^2/s)
+
+      real (kind=dbl_kind), dimension (zlevels), intent(in) :: &
+         btrcr  , & ! zapped bio tracer flux from biology (mmol/m^2/s)
+         zvol       ! ice volume (m)
+
+      ! local variables
+
+      integer (kind=int_kind) :: &
+         k          ! layer index
+
+      do k = 1, zlevels
+         dflux_bio = dflux_bio + btrcr(k)*zvol(k)/dt
+      enddo
+          
+      end subroutine zap_small_bgc
+
+!=======================================================================
+!
+! authors     Nicole Jeffery, LANL
+
+      subroutine regrid_stationary (C_stationary, hbri_old, &
+                                    hbri,         dt,       &
+                                    ntrcr,        nblyr,    &
+                                    top_conc,     igrid,    &
+                                    flux_bio,               &
+                                    l_stop,       stop_label, &
+                                    melt_b)
+      
+      use ice_constants_colpkg, only: c0, c1, p5
+
+      integer (kind=int_kind), intent(in) :: &
+         ntrcr,         & ! number of tracers
+         nblyr            ! number of bio layers
+
+      real (kind=dbl_kind), intent(inout) ::  &
+         flux_bio         ! ocean tracer flux (mmol/m^2/s) positive into ocean
+ 
+      real (kind=dbl_kind), dimension (nblyr+1), intent(inout) ::  &     
+         C_stationary     ! stationary bulk concentration*h (mmol/m^2)
+
+      real (kind=dbl_kind), dimension (nblyr+1), intent(in) :: &
+         igrid            ! CICE bio grid 
+         
+      real(kind=dbl_kind),  intent(in) :: &
+         dt           , & ! time step
+         top_conc     , & ! c0 or frazil concentration
+         hbri_old     , & ! previous timestep brine height
+         hbri             ! brine height 
+
+      logical (kind=log_kind), intent(inout) :: &
+         l_stop            ! if true, print diagnostics and abort on return
+        
+      character (char_len), intent(inout) :: stop_label
+
+      real(kind=dbl_kind), intent(in), optional :: &
+         melt_b           ! bottom melt
+
+      !  local variables
+
+      integer (kind=int_kind) :: k, n, nt
+
+      real (kind=dbl_kind), dimension (ntrcr+2) :: &
+         trtmp0,   &    ! temporary, remapped tracers
+         trtmp
+
+      real (kind=dbl_kind):: &
+         meltb,    &    !
+         htemp,    &    ! ice thickness after melt (m)
+         zspace,   &    ! bio grid spacing
+         sum_old,  &    ! total tracer before melt loss
+         sum_new        ! total tracer after melt
+
+      ! initialize
+
+      zspace = c1/(real(nblyr,kind=dbl_kind))
+      trtmp0(:) = c0
+      trtmp(:) = c0
+      meltb = c0
+      nt = 1
+      if (present(melt_b)) then
+         meltb = melt_b
+      endif
+      if (hbri_old > c0) then
+         do k = 1, nblyr+1
+            trtmp0(nblyr+2-k) = C_stationary(k)/hbri_old  ! reverse order
+         enddo   ! k
+      endif
+      htemp = max(c0,max(hbri,hbri_old - meltb))
+
+      if (meltb > c0) then
+
+      !-----------------------------------------------------------------
+      ! Regrid C_stationary to remove bottom melt
+      !-----------------------------------------------------------------
+         if (hbri_old > htemp) then
+            call remap_zbgc (ntrcr,  nblyr+1,            &
+                             nt,                         &
+                             trtmp0(1:ntrcr),            &
+                             trtmp(:),                   &
+                             0,                nblyr+1,  &
+                             hbri_old,         htemp,    &
+                             igrid(1:nblyr+1),           &
+                             igrid(1:nblyr+1), top_conc, &
+                             l_stop,           stop_label)
+            if (l_stop) return
+    
+            sum_new = (trtmp(1)+trtmp(nblyr+1))*htemp*p5*zspace
+            sum_old = (C_stationary(1) + C_stationary(nblyr+1))*p5*zspace
+            trtmp0(:) = c0
+            trtmp0(nblyr+1) = trtmp(nt)
+            trtmp0(1) = trtmp(nt + nblyr)
+            do k = 2,nblyr
+               sum_old = sum_old + C_stationary(k)*zspace
+               trtmp0(nblyr+2-k) = trtmp(nt + k-1)
+               sum_new = sum_new + trtmp0(nblyr+2-k)*htemp*zspace
+            enddo       !k
+            flux_bio = flux_bio + max(c0,(sum_old - sum_new)/dt)
+            do k = 1, nblyr+1
+               C_stationary(k) = trtmp0(k)*hbri
+            enddo   ! k
+         endif
+
+      elseif (hbri > hbri_old) then
+
+      !-----------------------------------------------------------------
+      ! Regrid C_stationary to migrate if there is bottom growth
+      !-----------------------------------------------------------------
+         call remap_zbgc    (ntrcr,            nblyr+1,  &
+                             nt,                         &
+                             trtmp0(1:ntrcr),            &
+                             trtmp(:),                   &
+                             0,                nblyr+1,  &
+                             hbri_old,         hbri,     &
+                             igrid(1:nblyr+1),           &
+                             igrid(1:nblyr+1), top_conc, &
+                             l_stop,           stop_label)
+         if (l_stop) return
+
+         trtmp0(:) = c0
+         do k = 1,nblyr+1
+            trtmp0(nblyr+2-k) = trtmp(nt+k-1)
+         enddo    ! k
+         flux_bio = flux_bio  - (hbri-hbri_old)*top_conc/dt
+         do k = 1, nblyr+1
+            C_stationary(k) = trtmp0(k)*hbri
+          enddo   ! k
+      endif 
+
+      end subroutine regrid_stationary
 
 !=======================================================================
 

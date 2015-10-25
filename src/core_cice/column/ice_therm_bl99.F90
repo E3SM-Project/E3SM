@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_therm_bl99.F90 1012 2015-06-26 12:34:09Z eclare $
+!  SVN:$Id: ice_therm_bl99.F90 1051 2015-08-28 19:30:11Z njeffery $
 !=========================================================================
 !
 ! Update ice and snow internal temperatures
@@ -15,7 +15,7 @@
       use ice_kinds_mod
       use ice_constants_colpkg, only: c0, c1, c2, p1, p5, puny, &
           rhoi, rhos, hs_min, cp_ice, cp_ocn, depressT, Lfresh, ksno, kice
-      use ice_colpkg_shared, only: conduct, calc_Tsfc
+      use ice_colpkg_shared, only: conduct, calc_Tsfc, solve_zsal
       use ice_therm_shared, only: ferrmax, l_brine, hfrazilmin
 
       implicit none
@@ -59,7 +59,7 @@
                                       hilyr,    hslyr,    &
                                       zqin,     zTin,     &
                                       zqsn,     zTsn,     &
-                                      zSin,               &
+                                      zSin,               & 
                                       Tsf,      Tbot,     &
                                       fsensn,   flatn,    &
                                       flwoutn,  fsurfn,   &
@@ -122,7 +122,10 @@
       real (kind=dbl_kind), dimension (nilyr), &
          intent(inout) :: &
          zqin        , & ! ice layer enthalpy (J m-3)
-         zTin        , & ! internal ice layer temperatures
+         zTin            ! internal ice layer temperatures
+
+      real (kind=dbl_kind), dimension (nilyr), &
+         intent(in) :: &
          zSin            ! internal ice layer salinities
 
       real (kind=dbl_kind), dimension (nslyr), &
@@ -270,6 +273,7 @@
 
       frac = 0.9
       dTemp = 0.02_dbl_kind
+      if (solve_zsal) dTemp = p1  ! lower tolerance with dynamic salinity
       do k = 1, nilyr
 
          Iswabs_tmp = c0 ! all Iswabs is moved into fswsfc

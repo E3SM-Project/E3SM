@@ -8,6 +8,8 @@
       module ice_colpkg_tracers
 
       use ice_kinds_mod
+      use ice_colpkg_shared, only: max_algae, max_dic, max_doc, max_don, &
+          max_fe, max_aero, max_nbtrcr
 
       implicit none
       save
@@ -16,11 +18,9 @@
       public :: colpkg_compute_tracers
 
       integer (kind=int_kind), public :: &
-         ntrcr     ! number of tracers in use
+         ntrcr   , &  ! number of tracers in use
+         ntrcr_o      ! number of non-bio tracers in use
 
-      integer (kind=int_kind), public :: &
-         nbtrcr    ! number of bgc tracers in use
-      
       integer (kind=int_kind), public :: &
          nt_Tsfc  , & ! ice/snow temperature
          nt_qice  , & ! volume-weighted ice enthalpy (in layers)
@@ -35,20 +35,16 @@
          nt_hpnd  , & ! melt pond depth
          nt_ipnd  , & ! melt pond refrozen lid thickness
          nt_aero  , & ! starting index for aerosols in ice
-         nt_bgc_N_sk    , & ! algae (skeletal layer)
-         nt_bgc_C_sk    , & ! 
-         nt_bgc_chl_sk  , & ! 
-         nt_bgc_Nit_sk  , & ! nutrients (skeletal layer) 
-         nt_bgc_Am_sk   , & ! 
-         nt_bgc_Sil_sk  , & !
-         nt_bgc_DMSPp_sk, & ! trace gases (skeletal layer)
-         nt_bgc_DMSPd_sk, & ! 
-         nt_bgc_DMS_sk  , & ! 
-         nt_bgc_Nit_ml  , & ! nutrients (ocean mixed layer) 
-         nt_bgc_Am_ml   , & ! 
-         nt_bgc_Sil_ml  , & !
-         nt_bgc_DMSP_ml , & ! trace gases (ocean mixed layer)
-         nt_bgc_DMS_ml
+         nt_bgc_Nit,   & ! nutrients  
+         nt_bgc_Am,    & ! 
+         nt_bgc_Sil,   & !
+         nt_bgc_DMSPp, & ! trace gases (skeletal layer)
+         nt_bgc_DMSPd, & ! 
+         nt_bgc_DMS,   & ! 
+         nt_bgc_PON,   & ! zooplankton and detritus 
+         nt_bgc_hum,   & ! humic material 
+         nt_zbgc_frac, & ! fraction of tracer in the mobile phase
+         nt_bgc_S        ! Bulk salinity in fraction ice with dynamic salinity (Bio grid)
 
       logical (kind=log_kind), public :: &
          tr_iage     , & ! if .true., use age tracer
@@ -60,6 +56,92 @@
          tr_pond_topo, & ! if .true., use explicit topography-based ponds
          tr_aero     , & ! if .true., use aerosol tracers
          tr_brine        ! if .true., brine height differs from ice thickness
+
+      !-----------------------------------------------------------------
+      !  biogeochemistry
+      !-----------------------------------------------------------------
+
+      logical (kind=log_kind), public :: & 
+         tr_bgc_S,       & ! if .true., use zsalinity
+         tr_zaero,       & ! if .true., black carbon is tracers  (n_zaero)
+         tr_bgc_Nit,     & ! if .true. Nitrate tracer in ice 
+         tr_bgc_N,       & ! if .true., algal nitrogen tracers  (n_algae)
+         tr_bgc_DON,     & ! if .true., DON pools are tracers  (n_don)
+         tr_bgc_C,       & ! if .true., algal carbon tracers + DOC and DIC 
+         tr_bgc_chl,     & ! if .true., algal chlorophyll tracers 
+         tr_bgc_Am,      & ! if .true., ammonia/um as nutrient tracer 
+         tr_bgc_Sil,     & ! if .true., silicon as nutrient tracer 
+         tr_bgc_DMS,     & ! if .true., DMS as  tracer 
+         tr_bgc_Fe,      & ! if .true., Fe as  tracer 
+         tr_bgc_PON,     & ! if .true., PON as tracer 
+         tr_bgc_hum        ! if .true., humic material as tracer 
+
+      integer (kind=int_kind), public :: &
+         nbtrcr,         & ! number of bgc tracers in use
+         nbtrcr_sw,      & ! number of bgc tracers which impact shortwave
+         nlt_chl_sw        ! points to total chla in trcrn_sw
+
+      integer (kind=int_kind), dimension(max_aero), public :: &
+         nlt_zaero_sw       ! points to aerosol in trcrn_sw
+  
+      integer (kind=int_kind), dimension(max_algae), public :: &
+         nlt_bgc_N      , & ! algae 
+         nlt_bgc_C      , & ! 
+         nlt_bgc_chl   
+
+      integer (kind=int_kind), dimension(max_doc), public :: &
+         nlt_bgc_DOC        ! disolved organic carbon
+
+      integer (kind=int_kind), dimension(max_don), public :: &
+         nlt_bgc_DON        !
+
+      integer (kind=int_kind), dimension(max_dic), public :: &
+         nlt_bgc_DIC        ! disolved inorganic carbon
+
+      integer (kind=int_kind), dimension(max_fe), public :: &
+         nlt_bgc_Fed    , & !
+         nlt_bgc_Fep        !
+
+      integer (kind=int_kind), dimension(max_aero), public :: &
+         nlt_zaero          ! non-reacting layer aerosols
+
+      integer (kind=int_kind), public :: &
+         nlt_bgc_Nit   ,   & ! nutrients  
+         nlt_bgc_Am    ,   & ! 
+         nlt_bgc_Sil   ,   & !
+         nlt_bgc_DMSPp ,   & ! trace gases (skeletal layer)
+         nlt_bgc_DMSPd ,   & ! 
+         nlt_bgc_DMS   ,   & ! 
+         nlt_bgc_PON   ,   & ! zooplankton and detritus
+         nlt_bgc_hum         ! humic material
+
+      integer (kind=int_kind), dimension(max_algae), public :: &  
+         nt_bgc_N , & ! diatoms, phaeocystis, pico/small   
+         nt_bgc_C , & ! diatoms, phaeocystis, pico/small   
+         nt_bgc_chl   ! diatoms, phaeocystis, pico/small 
+
+      integer (kind=int_kind), dimension(max_doc), public :: &  
+         nt_bgc_DOC      !  dissolved organic carbon
+
+      integer (kind=int_kind), dimension(max_don), public :: & 
+         nt_bgc_DON         !  dissolved organic nitrogen
+
+      integer (kind=int_kind), dimension(max_dic), public :: &  
+         nt_bgc_DIC         !  dissolved inorganic carbon
+
+      integer (kind=int_kind), dimension(max_fe), public :: & 
+         nt_bgc_Fed,     & !  dissolved iron
+         nt_bgc_Fep        !  particulate iron
+
+      integer (kind=int_kind), dimension(max_aero), public :: &  
+         nt_zaero       !  black carbon and other aerosols
+      
+      integer (kind=int_kind), dimension(max_nbtrcr), public :: &
+         bio_index_o         ! relates nlt_bgc_NO to ocean concentration index
+                             ! see ocean_bio_all
+
+      integer (kind=int_kind), dimension(max_nbtrcr), public :: &
+         bio_index           ! relates bio indices, ie.  nlt_bgc_N to nt_bgc_N 
 
 !=======================================================================
 
@@ -143,10 +225,6 @@
                if (divisor(k) > c0) then
                   work = atrcrn(it) / divisor(k)
                endif
-               if (trcr_base(it,k) > c0) then
-                  ! nonzero default values could be put in an array
-                  if (it == nt_fbri) work = c1       ! brine fraction
-               endif
             enddo
             trcrn(it) = work                ! save
             if (n_trcr_strata(it) > 0) then          ! additional tracer layers
@@ -159,6 +237,7 @@
                   endif
                enddo
             endif
+            if (vicen <= c0 .and. it == nt_fbri) trcrn(it) = c1
 
          endif ! trcr_depend=0
 

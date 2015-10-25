@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_colpkg_shared.F90 1012 2015-06-26 12:34:09Z eclare $
+!  SVN:$Id: ice_colpkg_shared.F90 1056 2015-09-18 21:52:00Z njeffery $
 !=========================================================================
 !
 ! flags for the column package
@@ -8,7 +8,7 @@
       module ice_colpkg_shared
 
       use ice_kinds_mod
-      use ice_constants_colpkg, only: c3
+      use ice_constants_colpkg, only: c3, c0, c1, p5, p1
 
       implicit none
 
@@ -31,17 +31,24 @@
       logical (kind=log_kind), public :: &
          heat_capacity, &! if true, ice has nonzero heat capacity
                          ! if false, use zero-layer thermodynamics
-         calc_Tsfc       ! if true, calculate surface temperature
+         calc_Tsfc   ,  &! if true, calculate surface temperature
                          ! if false, Tsfc is computed elsewhere and
                          ! atmos-ice fluxes are provided to CICE
+         solve_zsal  ,  &! if true, update salinity profile from solve_S_dt
+         modal_aero      ! if true, use modal aerosal optical properties
+                         ! only for use with tr_aero or tr_zaero
 
       real (kind=dbl_kind), parameter, public :: &
          saltmax = 3.2_dbl_kind,   & ! max salinity at ice base for BL99 (ppt)
          ! phi_init and dSin0_frazil are used for mushy thermo, ktherm=2
          phi_init = 0.75_dbl_kind, & ! initial liquid fraction of frazil
+         min_salin = p1          , & ! threshold for brine pocket treatment 
+         salt_loss =0.4_dbl_kind, &  ! fraction of salt retained in zsalinity 
+         min_bgc        = 0.01_dbl_kind, & ! fraction of ocean bgc concentration in surface melt 
          dSin0_frazil = c3 ! bulk salinity reduction of newly formed frazil
 
       real (kind=dbl_kind), public :: &
+         dts_b,   &      ! zsalinity timestep
          ustar_min       ! minimum friction velocity for ice-ocean heat flux
 
       ! mushy thermo
@@ -79,6 +86,10 @@
                       ! radius change (C)
          rsnw_mlt , & ! maximum melting snow grain radius (10^-6 m)
          kalg         ! algae absorption coefficient for 0.5 m thick layer
+
+      real (kind=dbl_kind), parameter, public :: &
+         hi_ssl = 0.050_dbl_kind, & ! ice surface scattering layer thickness (m)
+         hs_ssl = 0.040_dbl_kind    ! snow surface scattering layer thickness (m)
 
 !-----------------------------------------------------------------------
 ! Parameters for ridging and strength
@@ -159,6 +170,134 @@
       ! topo ponds
       real (kind=dbl_kind), public :: &
          hp1             ! critical parameter for pond ice thickness
+
+!-----------------------------------------------------------------------
+! Parameters for biogeochemistry
+!-----------------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! dimensions
+      !-----------------------------------------------------------------
+      integer (kind=int_kind), parameter, public :: &
+         max_algae  =   3       , & ! maximum number of algal types 
+         max_dic    =   1       , & ! maximum number of dissolved inorganic carbon types 
+         max_doc    =   3       , & ! maximum number of dissolved organic carbon types
+         max_don    =   1       , & ! maximum number of dissolved organic nitrogen types
+         max_fe     =   2       , & ! maximum number of iron types
+         nmodal1    =   10      , & ! dimension for modal aerosol radiation parameters
+         nmodal2    =   8       , & ! dimension for modal aerosol radiation parameters
+         max_aero   =   6       , & ! maximum number of aerosols 
+         max_nbtrcr = max_algae*2 & ! algal nitrogen and chlorophyll
+                    + max_dic     & ! dissolved inorganic carbon
+                    + max_doc     & ! dissolved organic carbon
+                    + max_don     & ! dissolved organic nitrogen
+                    + 5           & ! nitrate, ammonium, silicate, PON, and humics
+                    + 3           & ! DMSPp, DMSPd, DMS
+                    + max_fe*2    & ! dissolved Fe and  particulate Fe
+                    + max_aero      ! aerosols
+
+      !-----------------------------------------------------------------
+      ! namelist
+      !-----------------------------------------------------------------
+      character(char_len_long), public :: & 
+         bgc_data_dir   ! directory for biogeochemistry data
+
+      character(char_len), public :: &          
+         sil_data_type  , & ! 'default', 'clim'
+         nit_data_type  , & ! 'default', 'clim'   
+         fe_data_type   , & ! 'default', 'clim'      
+         bgc_flux_type      ! type of ocean-ice piston velocity 
+                            ! 'constant', 'Jin2006' 
+
+      logical (kind=log_kind), public :: &
+         z_tracers,      & ! if .true., bgc or aerosol tracers are vertically resolved
+         scale_bgc,      & ! if .true., initialize bgc tracers proportionally with salinity
+         solve_zbgc,     & ! if .true., solve vertical biochemistry portion of code
+         dEdd_algae        ! if .true., algal absorption of Shortwave is computed in the
+        
+      logical (kind=log_kind), public :: & 
+         skl_bgc            ! if true, solve skeletal biochemistry
+
+      real (kind=dbl_kind), public :: & 
+         grid_o      , & ! for bottom flux        
+         l_sk        , & ! characteristic diffusive scale (zsalinity) (m)
+         grid_o_t    , & ! top grid point length scale 
+         phi_snow    , & ! porosity of snow
+         initbio_frac, & ! fraction of ocean tracer concentration used to initialize tracer 
+         frazil_scav     ! multiple of ocean tracer concentration due to frazil scavenging
+
+      real (kind=dbl_kind), public :: & 
+         grid_oS     , & ! for bottom flux (zsalinity)
+         l_skS           ! 0.02 characteristic skeletal layer thickness (m) (zsalinity)
+
+      logical (kind=log_kind), public :: & 
+         restore_bgc      ! if true, restore nitrate
+
+      !-----------------------------------------------------------------
+      ! Transport type 
+      !-----------------------------------------------------------------
+      ! In delta Eddington, algal particles are assumed to cause no
+      ! significant scattering (Brieglib and Light), only absorption
+      ! in the visible spectral band (200-700 nm)
+      ! Algal types: Diatoms, flagellates, Phaeocycstis
+      ! DOC        : Proteins, EPS, Lipids
+      !-----------------------------------------------------------------
+      real (kind=dbl_kind), parameter, dimension(max_algae), public :: &
+         algaltype = (/c0, c0, c0/)  ! strongly retained 
+
+      real (kind=dbl_kind), parameter, public :: &
+         nitratetype  = -c1, & ! purely mobile
+         ammoniumtype =  p5, & ! fast exchange 
+         silicatetype = -c1, &
+         dmspptype    =  c0, & ! fast exchange (retained and released)
+         dmspdtype    = -c1, & !
+         humtype      =  c0    ! strongly retained   
+
+      real (kind=dbl_kind), parameter, dimension(max_doc), public :: &
+         doctype   = (/ c0, c0, c0/)
+
+      real (kind=dbl_kind), parameter, dimension(max_dic), public :: &
+         dictype   = (/-c1/)
+
+      real (kind=dbl_kind), parameter, dimension(max_don), public :: &
+         dontype   = (/ c0/)
+
+      real (kind=dbl_kind), parameter, dimension(max_fe), public :: &
+         fedtype   = (/ c0, c0/)
+
+      real (kind=dbl_kind), parameter, dimension(max_fe), public :: &
+         feptype   = (/ c0, c0/) 
+
+      !------------------------------------------------------------
+      ! Aerosol order and type should be consistent with order/type 
+      ! specified in delta Eddington:  1) hydrophobic black carbon;
+      ! 2) hydrophilic black carbon; 3) dust (0.05-0.5 micron);
+      ! 4) dust (0.5-1.25 micron); 5) dust (1.25-2.5 micron);
+      ! 6) dust (2.5-5 micron) 
+      !-------------------------------------------------------------
+      real (kind=dbl_kind), parameter, dimension(max_aero), public :: &
+         zaerotype   = (/ 0.1_dbl_kind, 1.0_dbl_kind, 0.5_dbl_kind, &
+                          1.0_dbl_kind, 1.0_dbl_kind, 1.0_dbl_kind/) 
+
+      !-----------------------------------------------------------------
+      ! Forcing input, history and diagnostic output
+      !-----------------------------------------------------------------
+
+      real (kind=dbl_kind), parameter, public :: &
+         rhosi     = 940.0_dbl_kind, & ! average sea ice density
+                                       ! Cox and Weeks, 1982: 919-974 kg/m^2
+         sk_l      = 0.03_dbl_kind     ! skeletal layer thickness (m)
+
+      real (kind=dbl_kind), parameter, dimension(max_algae), public :: &
+         R_C2N     = (/ 7.0_dbl_kind,      & ! algal C to N (mole/mole) 
+                        7.0_dbl_kind,      & ! Kristiansen 1991 (Barents) 9.0
+                        7.0_dbl_kind /),   &
+         R_chl2N   = (/ 2.1_dbl_kind,      & ! 3 algal chlorophyll to N (mg/mmol)
+                        1.1_dbl_kind,      &
+                        0.84_dbl_kind/),   &
+         F_abs_chl = (/ 2.0_dbl_kind,      & ! to scale absorption in Dedd
+                        4.0_dbl_kind,      &
+                        5.0_dbl_kind /)     
 
 !=======================================================================
 

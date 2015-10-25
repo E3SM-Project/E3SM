@@ -995,7 +995,7 @@ contains
     real(kind=RKIND), intent(out) :: &    
          snowfallRate
 
-    real(kind=RKIND), intent(out) :: & 
+    real(kind=RKIND), intent(in) :: & 
          airTemperature
    
     rainfallRate = rainfallRate * precipitationFactor
@@ -1626,7 +1626,8 @@ contains
          atmosFluxes, &
          shortwave, &
          velocitySolver, &
-         atmosCoupling
+         atmosCoupling, &
+         biogeochemistry
 
     real(kind=RKIND), dimension(:), pointer :: &
          sensibleHeatFlux, &
@@ -1640,6 +1641,11 @@ contains
          atmosReferenceTemperature2m, &
          atmosReferenceHumidity2m
 
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         atmosBioFluxes, &
+         atmosBlackCarbonFlux, &
+         atmosDustFlux
+
     block => domain % blocklist
     do while (associated(block))
 
@@ -1647,6 +1653,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "shortwave", shortwave)
        call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolver)
        call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCoupling)
+       call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
 
        call MPAS_pool_get_array(atmosFluxes, "sensibleHeatFlux", sensibleHeatFlux)
        call MPAS_pool_get_array(atmosFluxes, "latentHeatFlux", latentHeatFlux)
@@ -1658,10 +1665,15 @@ contains
 
        call MPAS_pool_get_array(shortwave, "absorbedShortwaveFlux", absorbedShortwaveFlux)
 
-       call mpas_pool_get_array(atmosCoupling, 'atmosReferenceSpeed10m', atmosReferenceSpeed10m)
-       call mpas_pool_get_array(atmosCoupling, 'atmosReferenceTemperature2m', atmosReferenceTemperature2m) 
-       call mpas_pool_get_array(atmosCoupling, 'atmosReferenceHumidity2m', atmosReferenceHumidity2m)
+       call MPAS_pool_get_array(atmosCoupling, 'atmosReferenceSpeed10m', atmosReferenceSpeed10m)
+       call MPAS_pool_get_array(atmosCoupling, 'atmosReferenceTemperature2m', atmosReferenceTemperature2m)
+       call MPAS_pool_get_array(atmosCoupling, 'atmosReferenceHumidity2m', atmosReferenceHumidity2m)
+
+       call MPAS_pool_get_array(biogeochemistry, "atmosBioFluxes", atmosBioFluxes)
+       call MPAS_pool_get_array(biogeochemistry, "atmosBlackCarbonFlux", atmosBlackCarbonFlux)
+       call MPAS_pool_get_array(biogeochemistry, "atmosDustFlux", atmosDustFlux)
      
+       ! physics
        sensibleHeatFlux            = 0.0_RKIND
        latentHeatFlux              = 0.0_RKIND
        longwaveUp                  = 0.0_RKIND
@@ -1675,6 +1687,11 @@ contains
        atmosReferenceSpeed10m      = 0.0_RKIND
        atmosReferenceTemperature2m = 0.0_RKIND
        atmosReferenceHumidity2m    = 0.0_RKIND
+
+       ! biogeochemistry
+       atmosBioFluxes              = 0.0_RKIND
+       atmosBlackCarbonFlux        = 0.0_RKIND
+       atmosDustFlux               = 0.0_RKIND
 
        block => block % next
     end do
@@ -1700,7 +1717,8 @@ contains
     type(block_type), pointer :: block
 
     type(MPAS_pool_type), pointer :: &
-         oceanFluxes
+         oceanFluxes, &
+         biogeochemistry
 
     real(kind=RKIND), dimension(:), pointer :: &
          oceanFreshWaterFlux, &
@@ -1708,25 +1726,74 @@ contains
          oceanHeatFlux, &
          oceanShortwaveFlux
 
+    real(kind=RKIND), dimension(:), pointer :: &
+         oceanNitrateFlux, &
+         oceanSilicateFlux, &
+         oceanAmmoniumFlux, &
+         oceanDMSFlux, &
+         oceanDMSPpFlux, &
+         oceanDMSPdFlux, &
+         oceanHumicsFlux, &
+         oceanDustIronFlux
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         oceanBioFluxes, &
+         oceanAlgaeFlux, &
+         oceanDOCFlux, &
+         oceanDICFlux, &
+         oceanDONFlux, &
+         oceanParticulateIronFlux, &
+         oceanDissolvedIronFlux
+
     block => domain % blocklist
     do while (associated(block))
 
        call MPAS_pool_get_subpool(block % structs, "ocean_fluxes", oceanFluxes)
+       call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
 
        call MPAS_pool_get_array(oceanFluxes, "oceanFreshWaterFlux", oceanFreshWaterFlux)
        call MPAS_pool_get_array(oceanFluxes, "oceanSaltFlux", oceanSaltFlux)
        call MPAS_pool_get_array(oceanFluxes, "oceanHeatFlux", oceanHeatFlux)
        call MPAS_pool_get_array(oceanFluxes, "oceanShortwaveFlux", oceanShortwaveFlux)
 
-       !call MPAS_pool_get_array(aerosols, "oceanAerosolFlux", oceanAerosolFlux)
+       call MPAS_pool_get_array(biogeochemistry, "oceanBioFluxes", oceanBioFluxes)
+       call MPAS_pool_get_array(biogeochemistry, "oceanAlgaeFlux", oceanAlgaeFlux)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDOCFlux", oceanDOCFlux)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDICFlux", oceanDICFlux)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDONFlux", oceanDONFlux)
+       call MPAS_pool_get_array(biogeochemistry, "oceanNitrateFlux", oceanNitrateFlux)
+       call MPAS_pool_get_array(biogeochemistry, "oceanSilicateFlux", oceanSilicateFlux)
+       call MPAS_pool_get_array(biogeochemistry, "oceanAmmoniumFlux", oceanAmmoniumFlux)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDMSPpFlux", oceanDMSPpFlux)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDMSPdFlux", oceanDMSPdFlux)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDMSFlux", oceanDMSFlux)
+       call MPAS_pool_get_array(biogeochemistry, "oceanHumicsFlux", oceanHumicsFlux)
+       call MPAS_pool_get_array(biogeochemistry, "oceanParticulateIronFlux",oceanParticulateIronFlux)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDissolvedIronFlux",oceanDissolvedIronFlux)
+       call MPAS_pool_get_array(biogeochemistry, "oceanDustIronFlux",oceanDustIronFlux)
 
-       !call MPAS_pool_get_array(biogeochemistry, "oceanBioFluxes", oceanBioFluxes)
+       ! physics
+       oceanFreshWaterFlux      = 0.0_RKIND
+       oceanSaltFlux            = 0.0_RKIND
+       oceanHeatFlux            = 0.0_RKIND
+       oceanShortwaveFlux       = 0.0_RKIND
 
-       oceanFreshWaterFlux = 0.0_RKIND
-       oceanSaltFlux       = 0.0_RKIND
-       oceanHeatFlux       = 0.0_RKIND
-       oceanShortwaveFlux  = 0.0_RKIND
-       
+       ! biogeochemistry
+       oceanBioFluxes           = 0.0_RKIND  
+       oceanDOCFlux             = 0.0_RKIND
+       oceanDICFlux             = 0.0_RKIND
+       oceanDONFlux             = 0.0_RKIND
+       oceanNitrateFlux         = 0.0_RKIND
+       oceanSilicateFlux        = 0.0_RKIND
+       oceanAmmoniumFlux        = 0.0_RKIND
+       oceanDMSFlux             = 0.0_RKIND
+       oceanDMSPpFlux           = 0.0_RKIND
+       oceanDMSPdFlux           = 0.0_RKIND
+       oceanHumicsFlux          = 0.0_RKIND
+       oceanParticulateIronFlux = 0.0_RKIND
+       oceanDissolvedIronFlux   = 0.0_RKIND
+       oceanDustIronFlux        = 0.0_RKIND
+
        block => block % next
     end do
     

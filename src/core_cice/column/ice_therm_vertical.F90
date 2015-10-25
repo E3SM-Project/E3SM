@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_therm_vertical.F90 1012 2015-06-26 12:34:09Z eclare $
+!  SVN:$Id: ice_therm_vertical.F90 1051 2015-08-28 19:30:11Z njeffery $
 !=========================================================================
 !
 ! Update ice and snow internal temperatures and compute
@@ -24,12 +24,11 @@
       use ice_constants_colpkg, only: c0, c1, c3, p001, p5, puny, &
           pi, depressT, Lvap, hs_min, cp_ice, &
           cp_ocn, rhow, rhoi, rhos, Lfresh, rhofresh, ice_ref_salinity
-      use ice_colpkg_shared, only: ktherm, heat_capacity, calc_Tsfc
+      use ice_colpkg_shared, only: ktherm, heat_capacity, calc_Tsfc, min_salin
       use ice_therm_shared, only: ferrmax, l_brine, &
                                   calculate_tin_from_qin, Tmin
       use ice_therm_bl99, only: temperature_changes
       use ice_therm_0layer, only: zerolayer_temperature
-      !!!AKT Column!!!use ice_zbgc_shared, only: min_salin
 
       implicit none
       save
@@ -101,7 +100,7 @@
          iage        ! ice age (s)
 
       logical (kind=log_kind), intent(in) :: &
-         tr_pond_topo! if .true., use melt pond tracer
+         tr_pond_topo  !  if .true., use melt pond tracer
 
       real (kind=dbl_kind), dimension (:), intent(inout) :: &
          zqsn    , & ! snow layer enthalpy, zqsn < 0 (J m-3)
@@ -171,7 +170,7 @@
       logical (kind=log_kind), intent(out) :: &
          l_stop          ! if true, print diagnostics and abort on return
 
-    integer (kind=int_kind), intent(in) :: &
+      integer (kind=int_kind), intent(in) :: &
          nu_diag         ! file unit number (diagnostic only)
 
       ! local variables
@@ -666,9 +665,11 @@
 
       real (kind=dbl_kind), dimension (:), intent(inout) :: &
          zqin        , & ! ice layer enthalpy (J m-3)
-         zTin        , & ! internal ice layer temperatures
-         zSin            ! internal ice layer salinities
+         zTin            ! internal ice layer temperatures
 
+      real (kind=dbl_kind), dimension (:), intent(in) :: &
+         zSin            ! internal ice layer salinities
+        
       real (kind=dbl_kind), dimension (:), &
          intent(out) :: &
          zqsn        , & ! snow enthalpy
@@ -693,8 +694,6 @@
          tice_high   , & ! flag for zTin > Tmlt
          tsno_low    , & ! flag for zTsn < Tmin
          tice_low        ! flag for zTin < Tmin
-
-      real(kind=dbl_kind), parameter :: min_salin = p1 !!!AKT Column!!!
 
       !-----------------------------------------------------------------
       ! Initialize
@@ -1222,7 +1221,6 @@
 
          hqtot = dzi(nilyr)*zqin(nilyr) + dhi*qbot
          hstot = c0
-
       endif ! ktherm
 
       dzi(nilyr) = dzi(nilyr) + dhi
