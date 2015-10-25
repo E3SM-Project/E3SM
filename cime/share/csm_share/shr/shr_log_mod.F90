@@ -14,6 +14,7 @@ module shr_log_mod
 ! !USES:
 
   use shr_kind_mod
+  use shr_strconvert_mod, only: toString
 
   use shr_strconvert_mod, only: toString
 

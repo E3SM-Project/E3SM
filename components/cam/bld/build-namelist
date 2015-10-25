@@ -2612,10 +2612,16 @@ add_default($nl, 'demott_ice_nuc');
 # Microphysics scheme
 add_default($nl, 'use_subcol_microp');
 add_default($nl, 'microp_scheme');
+add_default($nl, 'micro_do_icesupersat');
 add_default($nl, 'macrop_scheme');
 if ($cfg->get('microphys') =~ /^mg/) {
     add_default($nl, 'micro_mg_version');
     add_default($nl, 'micro_mg_sub_version');
+    add_default($nl, 'micro_mg_num_steps');
+    add_default($nl, 'nucleate_ice_subgrid');
+    add_default($nl, 'cld_macmic_num_steps');
+    add_default($nl, 'micro_mg_precip_frac_method');
+    add_default($nl, 'micro_mg_berg_eff_factor');
 }
 add_default($nl, 'micro_mg_dcs');
 
@@ -2662,11 +2668,34 @@ else {
 
 # CLUBB_SGS
 add_default($nl, 'do_clubb_sgs');
-add_default($nl, 'clubb_history');
-add_default($nl, 'clubb_rad_history');
+my $clubb_sgs = $nl->get_value('do_clubb_sgs');
+if ($clubb_sgs  =~ /$TRUE/io) {
+   my $clubb_do_adv = $cfg->get('clubb_do_adv');
+   if($clubb_do_adv == '1') {
+       add_default($nl, 'clubb_do_adv', 'val'=>'.true.');
+   }
+   my $clubb_do_deep = $cfg->get('clubb_do_deep');
+   if($clubb_do_deep == '1') {
+       add_default($nl, 'clubb_do_deep', 'val'=>'.true.');
+   }
+   add_default($nl, 'clubb_history');
+   add_default($nl, 'clubb_rad_history');
 
-if ($nl->get_value('clubb_history') =~ "true" &&  $nl->get_value('atm_nthreads') != 1) {
-  die "$ProgName - ERROR: clubb_history = .true. with multiple threads is not supported. \n";
+   # Check compatibility of clubb_do_deep (if set) with deep_scheme
+   my $clubb_do_deep = $nl->get_value('clubb_do_deep');
+   if (defined $clubb_do_deep) {
+      my $deep_scheme = $nl->get_value('deep_scheme');
+      if ($deep_scheme ne "'CLUBB_SGS'" &&  $clubb_do_deep == /$TRUE/io) {
+        die "$ProgName - ERROR: clubb_do_deep = .true. but incompatible deep_scheme=$deep_scheme and needs to be 'CLUBB_SGS'\n";
+      }
+   }
+
+   add_default($nl, 'clubb_expldiff');
+   add_default($nl, 'clubb_rainevap_turb');
+   add_default($nl, 'clubb_cloudtop_cooling');
+   add_default($nl, 'clubb_timestep');
+   add_default($nl, 'clubb_rnevap_effic');
+   add_default($nl, 'clubb_stabcorrect');
 }
 
 #in-cloud scav tuning for cloud-borne aerosol
@@ -2714,6 +2743,13 @@ add_default($nl, 'cldfrc_premit');
 add_default($nl, 'cldfrc_premib');
 add_default($nl, 'cldfrc_iceopt');
 add_default($nl, 'cldfrc_icecrit');
+add_default($nl, 'cldfrc2m_rhmini');
+add_default($nl, 'cldfrc2m_rhmaxi');
+
+my $cldfrc_rhminp = $nl->get_value('cldfrc_rhminp');
+if ($cldfrc_rhminp and !($cfg->get('microphys') eq 'rk')) {
+    die "$ProgName - ERROR: cldfrc_rhminp is valid only for RK microphysics scheme\n";
+}
 
 # condensate to rain autoconversion coefficients
 add_default($nl, 'zmconv_c0_lnd');
@@ -3167,6 +3203,7 @@ add_default($nl, 'history_aero_optics');
 add_default($nl, 'history_budget');
 add_default($nl, 'history_eddy');
 add_default($nl, 'history_waccm');
+add_default($nl, 'history_clubb');
 
 # The history output for the AMWG variability diagnostics assumes that auxilliary history
 # files h1, h2, and h3 contain daily, 6-hrly, and 3-hrly output respectively.  If this output

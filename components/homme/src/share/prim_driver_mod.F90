@@ -966,6 +966,8 @@ contains
        do ie=nets,nete
           elem(ie)%derived%omega_p(:,:,:) = 0D0
        end do
+
+    !  call TimeLevel_Qdp( tl, qsplit, n0_qdp)  !following the update for RRM
        do ie=nets,nete
 #if (defined COLUMN_OPENMP)
 !$omp parallel do default(shared), private(k, t, q, i, j, dp)

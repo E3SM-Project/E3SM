@@ -76,15 +76,21 @@ logical           :: regen_fix            = .false.    ! aerosol regeneration bu
 logical           :: demott_ice_nuc       = .false.    ! use DeMott ice nucleation treatment in microphysics 
 integer           :: history_budget_histfile_num = 1   ! output history file number for budget fields
 logical           :: history_waccm        = .true.     ! output variables of interest for WACCM runs
+logical           :: history_clubb        = .true.     ! output default CLUBB-related variables
 logical           :: do_clubb_sgs
 logical           :: do_tms
+logical           :: micro_do_icesupersat
 logical           :: state_debug_checks   = .false.    ! Extra checks for validity of physics_state objects
                                                        ! in physics_update.
+! Macro/micro-physics co-substeps
+integer           :: cld_macmic_num_steps = 1
 
 logical :: prog_modal_aero ! determines whether prognostic modal aerosols are present in the run.
 
 !BSINGH -  Bugfix flags (Must be removed once the bug fix is accepted for master merge)
 logical :: fix_g1_err_ndrop = .false. !BSINGH - default is false
+! Option to use heterogeneous freezing
+logical, public, protected :: use_hetfrz_classnuc = .false.
 
 ! Which gravity wave sources are used?
 ! Orographic
@@ -139,10 +145,11 @@ subroutine phys_ctl_readnl(nlfile)
       eddy_scheme, microp_scheme,  macrop_scheme, radiation_scheme, srf_flux_avg, &
       use_subcol_microp, atm_dep_flux, history_amwg, history_vdiag, history_aerosol, history_aero_optics, &
       history_eddy, history_budget,  history_budget_histfile_num, history_waccm, & 
-      conv_water_in_rad, do_clubb_sgs, do_tms, state_debug_checks, &
-      use_gw_oro, use_gw_front, use_gw_convect, fix_g1_err_ndrop, &
-      ssalt_tuning, resus_fix, convproc_do_aer, convproc_do_gas, convproc_method_activate, &
-      liqcf_fix, regen_fix, demott_ice_nuc, &                                               
+      conv_water_in_rad, history_clubb, do_clubb_sgs, do_tms, state_debug_checks, &
+      use_hetfrz_classnuc, use_gw_oro, use_gw_front, use_gw_convect, &
+      cld_macmic_num_steps, micro_do_icesupersat, &
+      fix_g1_err_ndrop, ssalt_tuning, resus_fix, convproc_do_aer, &
+      convproc_do_gas, convproc_method_activate, liqcf_fix, regen_fix, demott_ice_nuc, &
       l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag, l_ac_energy_chk, &
       l_bc_energy_fix, l_dry_adj, l_st_mac, l_st_mic, l_rad
    !-----------------------------------------------------------------------------
@@ -183,10 +190,13 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(history_budget,                  1 , mpilog,  0, mpicom)
    call mpibcast(history_budget_histfile_num,     1 , mpiint,  0, mpicom)
    call mpibcast(history_waccm,                   1 , mpilog,  0, mpicom)
+   call mpibcast(history_clubb,                   1 , mpilog,  0, mpicom)
    call mpibcast(do_clubb_sgs,                    1 , mpilog,  0, mpicom)
    call mpibcast(conv_water_in_rad,               1 , mpiint,  0, mpicom)
    call mpibcast(do_tms,                          1 , mpilog,  0, mpicom)
+   call mpibcast(micro_do_icesupersat,            1 , mpilog,  0, mpicom)
    call mpibcast(state_debug_checks,              1 , mpilog,  0, mpicom)
+   call mpibcast(use_hetfrz_classnuc,             1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_oro,                      1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_front,                    1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_convect,                  1 , mpilog,  0, mpicom)
@@ -209,6 +219,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(l_st_mac,                        1 , mpilog,  0, mpicom)
    call mpibcast(l_st_mic,                        1 , mpilog,  0, mpicom)
    call mpibcast(l_rad,                           1 , mpilog,  0, mpicom)
+   call mpibcast(cld_macmic_num_steps,            1 , mpiint,  0, mpicom)
 #endif
 
    ! Error checking:
@@ -266,8 +277,14 @@ subroutine phys_ctl_readnl(nlfile)
          call endrun('CLUBB and eddy, macrop or shallow schemes incompatible')
       endif
    endif
-      
 
+   ! Macro/micro co-substepping support.
+   if (cld_macmic_num_steps > 1) then
+      if (microp_scheme /= "MG" .or. (macrop_scheme /= "park" .and. macrop_scheme /= "CLUBB_SGS")) then
+         call endrun ("Setting cld_macmic_num_steps > 1 is only &
+              &supported with Park or CLUBB macrophysics and MG microphysics.")
+      end if
+   end if
 
    ! prog_modal_aero determines whether prognostic modal aerosols are present in the run.
    prog_modal_aero = (     cam_chempkg_is('trop_mam3') &
@@ -319,9 +336,10 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
                         radiation_scheme_out, use_subcol_microp_out, atm_dep_flux_out, &
                         history_amwg_out, history_vdiag_out, history_aerosol_out, history_aero_optics_out, history_eddy_out, &
                         history_budget_out, history_budget_histfile_num_out, history_waccm_out, &
-                        conv_water_in_rad_out, cam_chempkg_out, prog_modal_aero_out, macrop_scheme_out, &
-                        do_clubb_sgs_out, do_tms_out, state_debug_checks_out, fix_g1_err_ndrop_out,     &
-                        ssalt_tuning_out,resus_fix_out,convproc_do_aer_out,  &
+                        history_clubb_out, conv_water_in_rad_out, cam_chempkg_out, prog_modal_aero_out, macrop_scheme_out, &
+                        do_clubb_sgs_out, do_tms_out, state_debug_checks_out, &
+                        cld_macmic_num_steps_out, micro_do_icesupersat_out, &
+                        fix_g1_err_ndrop_out, ssalt_tuning_out,resus_fix_out,convproc_do_aer_out,  &
                         convproc_do_gas_out, convproc_method_activate_out,   &
                         liqcf_fix_out, regen_fix_out,demott_ice_nuc_out      &
                        ,l_tracer_aero_out, l_vdiff_out, l_rayleigh_out, l_gw_drag_out, l_ac_energy_chk_out  &
@@ -352,7 +370,9 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    logical,           intent(out), optional :: history_budget_out
    integer,           intent(out), optional :: history_budget_histfile_num_out
    logical,           intent(out), optional :: history_waccm_out
+   logical,           intent(out), optional :: history_clubb_out
    logical,           intent(out), optional :: do_clubb_sgs_out
+   logical,           intent(out), optional :: micro_do_icesupersat_out
    integer,           intent(out), optional :: conv_water_in_rad_out
    character(len=32), intent(out), optional :: cam_chempkg_out
    logical,           intent(out), optional :: prog_modal_aero_out
@@ -379,6 +399,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    logical,           intent(out), optional :: l_st_mac_out
    logical,           intent(out), optional :: l_st_mic_out
    logical,           intent(out), optional :: l_rad_out
+   integer,           intent(out), optional :: cld_macmic_num_steps_out
 
    if ( present(deep_scheme_out         ) ) deep_scheme_out          = deep_scheme
    if ( present(shallow_scheme_out      ) ) shallow_scheme_out       = shallow_scheme
@@ -397,7 +418,9 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    if ( present(history_eddy_out        ) ) history_eddy_out         = history_eddy
    if ( present(history_budget_histfile_num_out ) ) history_budget_histfile_num_out = history_budget_histfile_num
    if ( present(history_waccm_out       ) ) history_waccm_out        = history_waccm
+   if ( present(history_clubb_out       ) ) history_clubb_out        = history_clubb
    if ( present(do_clubb_sgs_out        ) ) do_clubb_sgs_out         = do_clubb_sgs
+   if ( present(micro_do_icesupersat_out )) micro_do_icesupersat_out = micro_do_icesupersat
    if ( present(conv_water_in_rad_out   ) ) conv_water_in_rad_out    = conv_water_in_rad
    if ( present(cam_chempkg_out         ) ) cam_chempkg_out          = cam_chempkg
    if ( present(prog_modal_aero_out     ) ) prog_modal_aero_out      = prog_modal_aero
@@ -422,6 +445,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    if ( present(l_st_mac_out            ) ) l_st_mac_out          = l_st_mac
    if ( present(l_st_mic_out            ) ) l_st_mic_out          = l_st_mic
    if ( present(l_rad_out               ) ) l_rad_out             = l_rad
+   if ( present(cld_macmic_num_steps_out) ) cld_macmic_num_steps_out = cld_macmic_num_steps
+
 end subroutine phys_getopts
 
 !===============================================================================

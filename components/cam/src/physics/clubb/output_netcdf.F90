@@ -1,5 +1,6 @@
-! $Id: output_netcdf.F90 5623 2012-01-17 17:55:26Z connork@uwm.edu $
-!-------------------------------------------------------------------------------
+!-----------------------------------------------------------------------
+! $Id: output_netcdf.F90 7169 2014-08-05 21:42:25Z dschanen@uwm.edu $
+!===============================================================================
 module output_netcdf
 #ifdef NETCDF
 
@@ -20,7 +21,7 @@ module output_netcdf
   ! This will truncate all timesteps smaller than 1 mn to a minute for 
   ! the purposes of viewing the data in grads
   logical, parameter, private :: &
-    l_grads_kludge = .true. 
+    l_grads_netcdf_boost_ts = .false. 
 
   private ! Default scope
 
@@ -50,7 +51,11 @@ module output_netcdf
       core_rknd
 
     use constants_clubb, only:  & 
-      fstderr ! Variable(s)
+      fstderr, & ! Variable(s)
+      sec_per_min
+
+    use stats_variables, only: &
+      l_allow_small_stats_tout
 
     implicit none
 
@@ -71,10 +76,10 @@ module output_netcdf
     real( kind = core_rknd ), dimension(nlon), intent(in) ::  & 
       rlon ! Longitudes  [degrees_N]
 
-    real(kind=time_precision), intent(in) :: & 
+    real( kind = core_rknd ), intent(in) :: & 
       dtwrite ! Time between write intervals   [s]
 
-    real(kind=time_precision), intent(in) ::  & 
+    real( kind = time_precision ), intent(in) ::  & 
      time   ! Current time                    [s]
 
     real( kind = core_rknd ), dimension(:), intent(in) ::  & 
@@ -113,6 +118,20 @@ module output_netcdf
 
     ncf%dtwrite = dtwrite
 
+    ! Check to make sure the timestep is appropriate. The GrADS program does not support an
+    ! output timestep less than 1 minute.  Other programs can read netCDF files like this
+    if ( dtwrite < sec_per_min ) then
+      write(fstderr,*) "Warning: GrADS program requires an output timestep of at least &
+                       &one minute, but the requested output timestep &
+                       &(stats_tout) is less than one minute."
+      if ( .not. l_allow_small_stats_tout ) then
+        write(fstderr,*) "To override this warning, set l_allow_small_stats_tout = &
+                         &.true. in the stats_setting namelist in the &
+                         &appropriate *_model.in file."
+        stop "Fatal error in open_netcdf"
+      end if
+    end if ! dtwrite < sec_per_min
+
     ! From open_grads.
     ! This probably for the case of a reversed grid as in COAMPS
     if ( ia <= iz ) then
@@ -138,7 +157,7 @@ module output_netcdf
       write(unit=fstderr,fmt=*) "Error opening file: ",  & 
         trim( fdir )//trim( fname )//'.nc', & 
         trim( nf90_strerror( stat ) )
-      stop
+      stop "Fatal Error"
     end if
 
     call define_netcdf( ncf%iounit, ncf%nlat, ncf%nlon, ncf%iz, & ! In
@@ -202,11 +221,13 @@ module output_netcdf
     end if
 
     allocate( stat( ncf%nvar ) )
-    if ( l_grads_kludge ) then
-      time = real( nint( real( ncf%ntimes, kind=time_precision ) &
-                       * ncf%dtwrite / sec_per_min ), kind=time_precision ) !  minutes(rounded)
+    if ( l_grads_netcdf_boost_ts ) then
+      time = real( nint( real(ncf%ntimes, kind=time_precision) &
+                            * real(ncf%dtwrite / sec_per_min, time_precision) ), &
+                              kind=time_precision ) ! minutes(rounded)
     else
-      time = real( ncf%ntimes, kind=time_precision ) * ncf%dtwrite ! seconds
+      time = real( ncf%ntimes, kind=time_precision ) &
+           * real( ncf%dtwrite, kind=time_precision )  ! seconds
     end if
 
     stat(1) = nf90_put_var( ncid=ncf%iounit, varid=ncf%TimeVarId,  & 
@@ -338,7 +359,7 @@ module output_netcdf
     stat = nf90_def_var( ncid, "latitude", NF90_FLOAT, & 
                          (/LatDimId/), LatVarId )
 
-    ! Altitude = meters above the surfac3 = Z
+    ! Altitude = meters above the surface = Z
     stat = nf90_def_var( ncid, "altitude", NF90_FLOAT, & 
                         (/AltDimId/), AltVarId )
 
@@ -443,7 +464,7 @@ module output_netcdf
     if ( stat /= NF90_NOERR ) then
       write(fstderr,*) "Error closing file "//  & 
         trim( ncf%fname )//": ", trim( nf90_strerror( stat ) )
-      stop
+      stop "Fatal error"
     end if
 
     return
@@ -461,7 +482,8 @@ module output_netcdf
 
     use netcdf, only: & 
       NF90_NOERR,  & ! Constants
-      NF90_FLOAT,  & 
+      NF90_FLOAT,  &
+      NF90_DOUBLE, & 
       NF90_GLOBAL, &
       nf90_def_var,  & ! Procedure(s)
       nf90_strerror, & 
@@ -498,24 +520,30 @@ module output_netcdf
       l_uv_nudge, &
       l_tke_aniso
 
-    use parameters_microphys, only: &
-      micro_scheme, & ! Variable(s)
-      l_local_kk, & ! Logicals
-      l_cloud_sed
-
-    use parameters_radiation, only: &
-      rad_scheme
-
     use clubb_precision, only: &
       core_rknd ! Variable(s)
 
     implicit none
+
+    ! External
+    intrinsic :: date_and_time, huge, selected_real_kind, size, any, trim
+
+    ! Enabling l_output_file_run_date allows the date and time that the netCDF
+    ! output file is created to be included in the netCDF output file.
+    ! Disabling l_output_file_run_date means that this information will not be
+    ! included in the netCDF output file.  The advantage of disabling this
+    ! output is that it allows for a check for binary differences between two
+    ! netCDF output files.
+    logical, parameter :: &
+      l_output_file_run_date = .false.
 
     ! Input/Output Variables
     type (stat_file), intent(inout) :: ncf
 
     ! Local Variables
     integer, dimension(:), allocatable :: stat
+    
+    integer :: netcdf_precision ! Level of precision for netCDF output
 
     real( kind = core_rknd ), dimension(nparams) :: params ! Tunable parameters
 
@@ -530,6 +558,7 @@ module output_netcdf
     ! Dimensions for variables
     integer, dimension(4) :: var_dim
 
+
 !-------------------------------------------------------------------------------
 !      Typical valid ranges (IEEE 754)
 
@@ -539,6 +568,9 @@ module output_netcdf
 
 !      We use a 4 byte data model for NetCDF and GrADS to save disk space
 !-------------------------------------------------------------------------------
+
+    ! ---- Begin Code ----
+
     var_range(1) = -huge( var_range(1) )
     var_range(2) =  huge( var_range(2) )
 
@@ -559,12 +591,22 @@ module output_netcdf
 
     l_error = .false.
 
+
+    select case (core_rknd)
+      case ( selected_real_kind( p=5 ) )
+        netcdf_precision = NF90_FLOAT
+      case ( selected_real_kind( p=12 ) )
+        netcdf_precision = NF90_DOUBLE
+      case default
+        netcdf_precision = NF90_DOUBLE
+    end select
+
     do i = 1, ncf%nvar, 1
 !     stat(i) = nf90_def_var( ncf%iounit, trim( ncf%var(i)%name ), &
 !                  NF90_FLOAT, (/ncf%TimeDimId, ncf%AltDimId, &
 !                  ncf%LatDimId, ncf%LongDimId/), ncf%var(i)%indx )
       stat(i) = nf90_def_var( ncf%iounit, trim( ncf%var(i)%name ), & 
-                NF90_FLOAT, var_dim(:), ncf%var(i)%indx )
+                netcdf_precision, var_dim(:), ncf%var(i)%indx )
       if ( stat(i) /= NF90_NOERR ) then
         write(fstderr,*) "Error defining variable ",  & 
           ncf%var(i)%name //": ", trim( nf90_strerror( stat(i) ) )
@@ -596,31 +638,39 @@ module output_netcdf
       end if
     end do
 
-    if ( l_error ) stop "Error in definition"
+    if ( l_error ) stop "Error in netCDF file definition."
 
     deallocate( stat )
 
-    allocate( stat(5) )
+    if ( l_output_file_run_date ) then
+      allocate( stat(3) )
+    else
+      allocate( stat(2) )
+    end if
 
     ! Define global attributes of the file, for reproducing the results and
     ! determining how a run was configured
     stat(1) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "Conventions", "COARDS" )
     stat(2) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "model", "CLUBB" )
 
-    ! Figure out when the model is producing this file
-    call date_and_time( current_date, current_time )
+    if ( l_output_file_run_date ) then
 
-    stat(3) = nf90_put_att( &
-                         ncf%iounit, NF90_GLOBAL, "created_on", &
-                         current_date(1:4)//'-'//current_date(5:6)//'-'// &
-                         current_date(7:8)//' '// &
-                         current_time(1:2)//':'//current_time(3:4) )
+      ! Enabling l_output_file_run_date allows the date and time that the
+      ! netCDF output file is created to be included in the netCDF output file.
+      ! Disabling l_output_file_run_date means that this information will not
+      ! be included in the netCDF output file.  The advantage of disabling this
+      ! output is that it allows for a check for binary differences between two
+      ! netCDF output files.
 
-    stat(4) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "micro_scheme", &
-                            trim( micro_scheme ) )
+      ! Figure out when the model is producing this file
+      call date_and_time( current_date, current_time )
 
-    stat(5) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "rad_scheme", &
-                            trim( rad_scheme ) )
+      stat(3) = nf90_put_att(ncf%iounit, NF90_GLOBAL, "created_on", &
+                             current_date(1:4)//'-'//current_date(5:6)//'-'// &
+                             current_date(7:8)//' '// &
+                             current_time(1:2)//':'//current_time(3:4) )
+
+    end if ! l_output_file_run_date
 
     if ( any( stat /= NF90_NOERR ) ) then
       write(fstderr,*) "Error writing model information"
@@ -632,21 +682,19 @@ module output_netcdf
 
     ! Write the model flags to the file
     deallocate( stat )
-    allocate( stat(10) ) ! # of model flags
+    allocate( stat(8) ) ! # of model flags
 
-    stat(1) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_local_kk", lchar( l_local_kk ) )
-    stat(2) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_pos_def", lchar( l_pos_def ) )
-    stat(3) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_hole_fill", lchar( l_hole_fill ) )
-    stat(4) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_clip_semi_implicit", &
+    stat(1) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_pos_def", lchar( l_pos_def ) )
+    stat(2) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_hole_fill", lchar( l_hole_fill ) )
+    stat(3) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_clip_semi_implicit", &
       lchar( l_clip_semi_implicit ) )
-    stat(5) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_standard_term_ta", &
+    stat(4) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_standard_term_ta", &
       lchar( l_standard_term_ta ) )
-    stat(6) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_single_C2_Skw", &
+    stat(5) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_single_C2_Skw", &
       lchar( l_single_C2_Skw ) )
-    stat(7) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_gamma_Skw", lchar( l_gamma_Skw ) )
-    stat(8) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_cloud_sed", lchar( l_cloud_sed ) )
-    stat(9) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_uv_nudge", lchar( l_uv_nudge ) )
-    stat(10) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_tke_aniso", lchar( l_tke_aniso ) )
+    stat(6) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_gamma_Skw", lchar( l_gamma_Skw ) )
+    stat(7) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_uv_nudge", lchar( l_uv_nudge ) )
+    stat(8) = nf90_put_att( ncf%iounit, NF90_GLOBAL, "l_tke_aniso", lchar( l_tke_aniso ) )
 
     if ( any( stat /= NF90_NOERR ) ) then
       write(fstderr,*) "Error writing model flags"
@@ -793,7 +841,7 @@ module output_netcdf
                                iyear, & 
                                st_time )
 
-    if ( .not. l_grads_kludge ) then
+    if ( .not. l_grads_netcdf_boost_ts ) then
       date = "seconds since YYYY-MM-DD HH:MM:00.0"
     else
       date = "minutes since YYYY-MM-DD HH:MM:00.0"
@@ -810,7 +858,7 @@ module output_netcdf
 !===============================================================================
   character function lchar( l_input )
 ! Description:
-!   Cast a logical to a character data type
+!   Cast a logical to a character data type.
 !
 ! References:
 !   None
@@ -818,6 +866,7 @@ module output_netcdf
 
     implicit none
 
+    ! Input Variable
     logical, intent(in) :: l_input
 
     ! ---- Begin Code ----

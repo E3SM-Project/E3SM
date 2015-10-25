@@ -3,7 +3,7 @@ module microp_aero
 
 !---------------------------------------------------------------------------------
 ! Purpose:
-!   CAM Interface for aerosol activation 
+!   CAM driver layer for aerosol activation processes.
 !
 ! ***N.B.*** This module is currently hardcoded to recognize only the aerosols/modes that
 !            affect the climate calculation.  This is implemented by using list
@@ -16,30 +16,36 @@ module microp_aero
 !                 Gettelman et al., 2010 J. Geophys. Res. - Atmospheres (G2010)         
 ! for questions contact Andrew Gettelman  (andrew@ucar.edu)
 ! Modifications: A. Gettelman Nov 2010  - changed to support separation of 
-!                microphysics and macrophysics and concentrate aerosol information here
+!                  microphysics and macrophysics and concentrate aerosol information here
+!                B. Eaton, Sep 2014 - Refactored to move CAM interface code into the CAM
+!                  interface modules and preserve just the driver layer functionality here.
 !
 !---------------------------------------------------------------------------------
 
 use shr_kind_mod,     only: r8=>shr_kind_r8
 use spmd_utils,       only: masterproc
 use ppgrid,           only: pcols, pver, pverp
-use physconst,        only: rair, tmelt
-use constituents,     only: cnst_get_ind, pcnst
+use ref_pres,         only: top_lev => trop_cloud_top_lev
+use physconst,        only: rair
+use constituents,     only: cnst_get_ind
 use physics_types,    only: physics_state, physics_ptend, physics_ptend_init
 use physics_buffer,   only: physics_buffer_desc, pbuf_get_index, pbuf_old_tim_idx, pbuf_get_field
-use phys_control,     only: phys_getopts, cam_chempkg_is 
+use phys_control,     only: phys_getopts, cam_chempkg_is, use_hetfrz_classnuc
 use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_mmr, rad_cnst_get_aer_props, &
-                            rad_cnst_get_mode_num, rad_cnst_get_mode_props
-use shr_spfn_mod,     only: erf => shr_spfn_erf, &
-                            erfc => shr_spfn_erfc
-use wv_saturation,    only: qsat_water
-use nucleate_ice,     only: nucleati
+                            rad_cnst_get_mode_num
+
+use nucleate_ice_cam, only: use_preexisting_ice, nucleate_ice_cam_readnl, nucleate_ice_cam_register, &
+                            nucleate_ice_cam_init, nucleate_ice_cam_calc
+
 use ndrop,            only: ndrop_init, dropmixnuc
 use ndrop_bam,        only: ndrop_bam_init, ndrop_bam_run, ndrop_bam_ccn
+
+use hetfrz_classnuc_cam, only: hetfrz_classnuc_cam_readnl, hetfrz_classnuc_cam_register, hetfrz_classnuc_cam_init, &
+                               hetfrz_classnuc_cam_save_cbaero, hetfrz_classnuc_cam_calc
+
 use cam_history,      only: addfld, phys_decomp, add_default, outfld
 use cam_logfile,      only: iulog
 use cam_abortutils,       only: endrun
-use ref_pres,         only: top_lev => trop_cloud_top_lev
 
 implicit none
 private
@@ -49,7 +55,8 @@ public :: microp_aero_init, microp_aero_run, microp_aero_readnl, microp_aero_reg
 
 ! Private module data
 
-character(len=16)   :: eddy_scheme  ! eddy scheme
+character(len=16)   :: eddy_scheme
+logical             :: micro_do_icesupersat
 
 ! contact freezing due to dust
 ! dust number mean radius (m), Zender et al JGR 2003 assuming number mode radius of 0.6 micron, sigma=2
@@ -58,7 +65,7 @@ real(r8), parameter :: rn_dst2 = 0.717e-6_r8
 real(r8), parameter :: rn_dst3 = 1.576e-6_r8
 real(r8), parameter :: rn_dst4 = 3.026e-6_r8
 
-real(r8), public :: bulk_scale    ! prescribed aerosol bulk sulfur scale factor
+real(r8) :: bulk_scale    ! prescribed aerosol bulk sulfur scale factor
 
 ! smallest mixing ratio considered in microphysics
 real(r8), parameter :: qsmall = 1.e-18_r8
@@ -79,7 +86,6 @@ integer :: alst_idx = -1
 integer :: aist_idx = -1
 
 integer :: cldo_idx = -1
-integer :: dgnum_idx    = -1
 integer :: dgnumwet_idx = -1
 
 ! Bulk aerosols
@@ -88,14 +94,11 @@ real(r8), allocatable :: num_to_mass_aer(:)
 
 integer :: naer_all      ! number of aerosols affecting climate
 integer :: idxsul   = -1 ! index in aerosol list for sulfate
-integer :: idxdst1  = -1 ! index in aerosol list for dust1
 integer :: idxdst2  = -1 ! index in aerosol list for dust2
 integer :: idxdst3  = -1 ! index in aerosol list for dust3
 integer :: idxdst4  = -1 ! index in aerosol list for dust4
-integer :: idxbcphi = -1 ! index in aerosol list for Soot (BCPHIL)
 
 ! modal aerosols
-logical :: prog_modal_aero
 logical :: clim_modal_aero
 
 integer :: mode_accum_idx  = -1  ! index of accumulation mode
@@ -110,14 +113,14 @@ integer :: mode_pcarbon_idx  = -1  ! index of dust in accum mode
 integer :: accum_dust_idx    = -1  ! index of dust in accum mode
 logical :: dem_in            = .false.           ! use DeMott IN
 
-integer :: naai_idx, naai_hom_idx, npccn_idx, rndst_idx, nacon_idx
+integer :: npccn_idx, rndst_idx, nacon_idx
 
-real(r8) :: sigmag_aitken
 logical  :: separate_dust = .false.
 logical  :: liqcf_fix
-!===============================================================================
+
 contains
-!===============================================================================
+!=========================================================================================
+
 subroutine microp_aero_register
    !----------------------------------------------------------------------- 
    ! 
@@ -130,14 +133,17 @@ subroutine microp_aero_register
    use ppgrid,         only: pcols
    use physics_buffer, only: pbuf_add_field, dtype_r8
 
-   call pbuf_add_field('NAAI',       'physpkg',dtype_r8,(/pcols,pver/), naai_idx)
-   call pbuf_add_field('NAAI_HOM',   'physpkg',dtype_r8,(/pcols,pver/), naai_hom_idx)
    call pbuf_add_field('NPCCN',      'physpkg',dtype_r8,(/pcols,pver/), npccn_idx)
+
    call pbuf_add_field('RNDST',      'physpkg',dtype_r8,(/pcols,pver,4/), rndst_idx)
    call pbuf_add_field('NACON',      'physpkg',dtype_r8,(/pcols,pver,4/), nacon_idx)
  
+   call nucleate_ice_cam_register()
+   call hetfrz_classnuc_cam_register()
 
 end subroutine microp_aero_register
+
+!=========================================================================================
 
 subroutine microp_aero_init
 
@@ -151,7 +157,7 @@ subroutine microp_aero_init
    !-----------------------------------------------------------------------
 
    ! local variables
-   integer  :: iaer
+   integer  :: iaer, ierr
    integer  :: m, n, nmodes, nspec
 
    character(len=32) :: str32
@@ -162,9 +168,9 @@ subroutine microp_aero_init
    ! Query the PBL eddy scheme
    call phys_getopts(eddy_scheme_out          = eddy_scheme, &
         history_amwg_out = history_amwg, &
-        liqcf_fix_out    = liqcf_fix,    & 
-        demott_ice_nuc_out = dem_in      ) 
-   
+        liqcf_fix_out    = liqcf_fix,    &
+        demott_ice_nuc_out = dem_in      )
+
    if(masterproc)write(iulog,*)'DEMOTT is:', dem_in 
 
    ! Access the physical properties of the aerosols that are affecting the climate
@@ -178,15 +184,12 @@ subroutine microp_aero_init
 
    select case(trim(eddy_scheme))
    case ('diag_TKE')
-      tke_idx      = pbuf_get_index('tke')
+      tke_idx      = pbuf_get_index('tke')   
    case ('CLUBB_SGS')
-      wp2_idx = pbuf_get_index('WP2')
+      wp2_idx = pbuf_get_index('WP2_nadv')
    case default
       kvh_idx      = pbuf_get_index('kvh')
    end select
-
-   ! prog_modal_aero determines whether prognostic modal aerosols are present in the run.
-   call phys_getopts(prog_modal_aero_out=prog_modal_aero)
 
    ! clim_modal_aero determines whether modal aerosols are used in the climate calculation.
    ! The modal aerosols can be either prognostic or prescribed.
@@ -202,7 +205,6 @@ subroutine microp_aero_init
    if (clim_modal_aero) then
 
       cldo_idx     = pbuf_get_index('CLDO')
-      dgnum_idx    = pbuf_get_index('DGNUM' )
       dgnumwet_idx = pbuf_get_index('DGNUMWET')
 
       call ndrop_init()
@@ -282,9 +284,6 @@ subroutine microp_aero_init
          call endrun(routine//': ERROR required mode-species type not found')
       end if
 
-      ! get specific mode properties
-      call rad_cnst_get_mode_props(0, mode_aitken_idx, sigmag=sigmag_aitken)
-
    else
 
       ! Props needed for BAM number concentration calcs.
@@ -301,11 +300,9 @@ subroutine microp_aero_init
 
          ! Look for sulfate, dust, and soot in this list (Bulk aerosol only)
          if (trim(aername(iaer)) == 'SULFATE') idxsul = iaer
-         if (trim(aername(iaer)) == 'DUST1') idxdst1 = iaer
          if (trim(aername(iaer)) == 'DUST2') idxdst2 = iaer
          if (trim(aername(iaer)) == 'DUST3') idxdst3 = iaer
          if (trim(aername(iaer)) == 'DUST4') idxdst4 = iaer
-         if (trim(aername(iaer)) == 'BCPHIL') idxbcphi = iaer
       end do
 
       call ndrop_bam_init()
@@ -316,18 +313,17 @@ subroutine microp_aero_init
 
    call addfld('WSUB     ', 'm/s     ', pver, 'A', 'Diagnostic sub-grid vertical velocity'                   ,phys_decomp)
    call addfld('WSUBI    ', 'm/s     ', pver, 'A', 'Diagnostic sub-grid vertical velocity for ice'           ,phys_decomp)
-   call addfld('NIHF',  '1/m3', pver, 'A', 'Activated Ice Number Concentation due to homogenous freezing',  phys_decomp)
-   call addfld('NIDEP', '1/m3', pver, 'A', 'Activated Ice Number Concentation due to deposition nucleation',phys_decomp)
-   call addfld('NIIMM', '1/m3', pver, 'A', 'Activated Ice Number Concentation due to immersion freezing',   phys_decomp)
-   call addfld('NIMEY', '1/m3', pver, 'A', 'Activated Ice Number Concentation due to meyers deposition',    phys_decomp)
 
    if (history_amwg) then
       call add_default ('WSUB     ', 1, ' ')
    end if
 
+   call nucleate_ice_cam_init(mincld, bulk_scale)
+   call hetfrz_classnuc_cam_init(mincld)
+
 end subroutine microp_aero_init
 
-!===============================================================================
+!=========================================================================================
 
 subroutine microp_aero_readnl(nlfile)
 
@@ -369,9 +365,12 @@ subroutine microp_aero_readnl(nlfile)
    ! set local variables
    bulk_scale = microp_aero_bulk_scale
 
+   call nucleate_ice_cam_readnl(nlfile)
+   call hetfrz_classnuc_cam_readnl(nlfile)
+
 end subroutine microp_aero_readnl
 
-!===============================================================================
+!=========================================================================================
 
 subroutine microp_aero_run ( &
    state, ptend, deltatin, pbuf, liqcldfo )
@@ -383,48 +382,23 @@ subroutine microp_aero_run ( &
    real(r8),                    intent(in)    :: liqcldfo(pcols,pver)  ! old liquid cloud fraction
    type(physics_buffer_desc),   pointer       :: pbuf(:)
 
-
-
-
    ! local workspace
    ! all units mks unless otherwise stated
 
    integer :: i, k, m
    integer :: itim_old
-   integer :: lchnk
-   integer :: ncol
    integer :: nmodes
-   integer :: nucboast
    real(r8):: dst1_num_to_mass 
 
    real(r8), pointer :: ast(:,:)        
    real(r8), pointer :: alst(:,:)        
    real(r8), pointer :: aist(:,:)        
 
-   real(r8)          :: icecldf(pcols,pver)    ! ice cloud fraction   
-   real(r8)          :: liqcldf(pcols,pver)    ! liquid cloud fraction
-
-   real(r8), pointer :: naai(:,:)       ! number of activated aerosol for ice nucleation 
-   real(r8), pointer :: naai_hom(:,:)   ! number of activated aerosol for ice nucleation (homogeneous freezing only)
    real(r8), pointer :: npccn(:,:)      ! number of CCN (liquid activated)
+
    real(r8), pointer :: rndst(:,:,:)    ! radius of 4 dust bins for contact freezing
    real(r8), pointer :: nacon(:,:,:)    ! number in 4 dust bins for contact freezing
 
-   real(r8), pointer :: t(:,:)          ! input temperature (K)
-   real(r8), pointer :: qn(:,:)         ! input water vapor mixing ratio (kg/kg)
-   ! note: all input cloud variables are grid-averaged
-   real(r8), pointer :: qc(:,:)         ! cloud water mixing ratio (kg/kg)
-   real(r8), pointer :: qi(:,:)         ! cloud ice mixing ratio (kg/kg)
-   real(r8), pointer :: nc(:,:)         ! cloud water number conc (1/kg)
-   real(r8), pointer :: ni(:,:)         ! cloud ice number conc (1/kg)
-   real(r8), pointer :: pmid(:,:)       ! pressure at layer midpoints (pa)
-   real(r8), pointer :: pdel(:,:)       ! pressure difference across level (pa)
-   real(r8), pointer :: pint(:,:)       ! air pressure layer interfaces (pa)
-   real(r8), pointer :: rpdel(:,:)      ! inverse pressure difference across level (pa)
-   real(r8), pointer :: zm(:,:)         ! geopotential height of model levels (m)
-   real(r8), pointer :: omega(:,:)      ! vertical velocity (Pa/s)
-   real(r8), pointer :: num_accum(:,:)  ! number m.r. of accumulation mode
-   real(r8), pointer :: num_aitken(:,:) ! number m.r. of aitken mode
    real(r8), pointer :: num_coarse(:,:) ! number m.r. of coarse mode
    real(r8), pointer :: coarse_dust(:,:) ! mass m.r. of coarse dust
    real(r8), pointer :: coarse_nacl(:,:) ! mass m.r. of coarse nacl
@@ -440,17 +414,17 @@ subroutine microp_aero_run ( &
    real(r8), pointer :: cldn(:,:)       ! cloud fraction
    real(r8), pointer :: cldo(:,:)       ! old cloud fraction
 
-   real(r8), pointer :: dgnum(:,:,:)    ! aerosol mode dry diameter
    real(r8), pointer :: dgnumwet(:,:,:) ! aerosol mode diameter
 
    real(r8), pointer :: aer_mmr(:,:)    ! aerosol mass mixing ratio
 
+   real(r8)          :: icecldf(pcols,pver)    ! ice cloud fraction   
+   real(r8)          :: liqcldf(pcols,pver)    ! liquid cloud fraction
+
    real(r8) :: rho(pcols,pver)     ! air density (kg m-3)
-   real(r8) :: relhum(pcols,pver)  ! relative humidity
-   real(r8) :: icldm(pcols,pver)   ! ice cloud fraction
+
    real(r8) :: lcldm(pcols,pver)   ! liq cloud fraction
-   real(r8) :: nfice(pcols,pver)   ! fice variable
-   real(r8) :: dumfice             ! dummy var in fice calc
+
    real(r8) :: lcldn(pcols,pver)   ! fractional coverage of new liquid cloud
    real(r8) :: lcldo(pcols,pver)   ! fractional coverage of old liquid cloud
    real(r8) :: qcld                ! total cloud water
@@ -474,31 +448,21 @@ subroutine microp_aero_run ( &
 
    real(r8) :: wsub(pcols,pver)    ! diagnosed sub-grid vertical velocity st. dev. (m/s)
    real(r8) :: wsubi(pcols,pver)   ! diagnosed sub-grid vertical velocity ice (m/s)
-
-   ! history output for ice nucleation
-   real(r8) :: nihf(pcols,pver)  !output number conc of ice nuclei due to heterogenous freezing (1/m3)
-   real(r8) :: niimm(pcols,pver) !output number conc of ice nuclei due to immersion freezing (hetero nuc) (1/m3)
-   real(r8) :: nidep(pcols,pver) !output number conc of ice nuclei due to deoposion nucleation (hetero nuc) (1/m3)
-   real(r8) :: nimey(pcols,pver) !output number conc of ice nuclei due to meyers deposition (1/m3)
+   real(r8) :: nucboast
 
    real(r8) :: wght
 
+   real(r8), allocatable :: factnum(:,:,:) ! activation fraction for aerosol number
    !-------------------------------------------------------------------------------
 
-   lchnk = state%lchnk
-   ncol  = state%ncol
-   t     => state%t
-   qn    => state%q(:,:,1)
-   qc    => state%q(:,:,cldliq_idx)
-   qi    => state%q(:,:,cldice_idx)
-   nc    => state%q(:,:,numliq_idx)
-   ni    => state%q(:,:,numice_idx)
-   pmid  => state%pmid
-   pdel  => state%pdel
-   pint  => state%pint
-   rpdel => state%rpdel
-   zm    => state%zm
-   omega => state%omega
+   associate( &
+      lchnk => state%lchnk,             &
+      ncol  => state%ncol,              &
+      t     => state%t,                 &
+      qc    => state%q(:,:,cldliq_idx), &
+      qi    => state%q(:,:,cldice_idx), &
+      nc    => state%q(:,:,numliq_idx), &
+      pmid  => state%pmid               )
 
    itim_old = pbuf_old_tim_idx()
    call pbuf_get_field(pbuf, ast_idx,      ast, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
@@ -515,27 +479,34 @@ subroutine microp_aero_run ( &
       icecldf(:ncol,:pver) = ast(:ncol,:pver)
    endif
 
-   call pbuf_get_field(pbuf, naai_idx, naai)
-   call pbuf_get_field(pbuf, naai_hom_idx, naai_hom)
    call pbuf_get_field(pbuf, npccn_idx, npccn)
+
    call pbuf_get_field(pbuf, nacon_idx, nacon)
    call pbuf_get_field(pbuf, rndst_idx, rndst)
 
    if (clim_modal_aero) then
 
       itim_old = pbuf_old_tim_idx()
-      call pbuf_get_field(pbuf, ast_idx,  cldn, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+      
+      if (micro_do_icesupersat) then
+        call pbuf_get_field(pbuf, cldo_idx, cldn, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))        
+      else
+        call pbuf_get_field(pbuf, ast_idx,  cldn, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+      endif
+
       call pbuf_get_field(pbuf, cldo_idx, cldo, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
+
       call rad_cnst_get_info(0, nmodes=nmodes)
-      call pbuf_get_field(pbuf, dgnum_idx,    dgnum,    start=(/1,1,1/), kount=(/pcols,pver,nmodes/) )
       call pbuf_get_field(pbuf, dgnumwet_idx, dgnumwet, start=(/1,1,1/), kount=(/pcols,pver,nmodes/) )
+
+      allocate(factnum(pcols,pver,nmodes))
+
    end if
 
    ! initialize output
-   naai(1:ncol,1:pver)     = 0._r8  
-   naai_hom(1:ncol,1:pver) = 0._r8  
    npccn(1:ncol,1:pver)    = 0._r8  
+
    nacon(1:ncol,1:pver,:)  = 0._r8
 
    ! set default or fixed dust bins for contact freezing
@@ -544,11 +515,10 @@ subroutine microp_aero_run ( &
    rndst(1:ncol,1:pver,3) = rn_dst3
    rndst(1:ncol,1:pver,4) = rn_dst4
 
-   ! initialize history output fields for ice nucleation
-   nihf(1:ncol,1:pver)  = 0._r8  
-   niimm(1:ncol,1:pver) = 0._r8  
-   nidep(1:ncol,1:pver) = 0._r8 
-   nimey(1:ncol,1:pver) = 0._r8 
+   ! save copy of cloud borne aerosols for use in heterogeneous freezing
+   if (use_hetfrz_classnuc) then
+      call hetfrz_classnuc_cam_save_cbaero(state, pbuf)
+   end if
 
    ! initialize time-varying parameters
    do k = top_lev, pver
@@ -559,8 +529,6 @@ subroutine microp_aero_run ( &
 
    if (clim_modal_aero) then
       ! mode number mixing ratios
-      call rad_cnst_get_mode_num(0, mode_accum_idx,  'a', state, pbuf, num_accum)
-      call rad_cnst_get_mode_num(0, mode_aitken_idx, 'a', state, pbuf, num_aitken)
       call rad_cnst_get_mode_num(0, mode_coarse_dst_idx, 'a', state, pbuf, num_coarse)
       if(dem_in)then
          if(mode_fine_dst_idx > 0)call rad_cnst_get_mode_num(0, mode_fine_dst_idx, 'a', state, pbuf, num_fine)
@@ -580,7 +548,7 @@ subroutine microp_aero_run ( &
       do m = 1, naer_all
          call rad_cnst_get_aer_mmr(0, m, state, pbuf, aer_mmr)
          maerosol(:ncol,:,m) = aer_mmr(:ncol,:)*rho(:ncol,:)
-
+         
          if (m .eq. idxsul) then
             naer2(:ncol,:,m) = maerosol(:ncol,:,m)*num_to_mass_aer(m)*bulk_scale
          else
@@ -601,6 +569,7 @@ subroutine microp_aero_run ( &
       call pbuf_get_field(pbuf, wp2_idx, wp2, start=(/1,1,itim_old/),kount=(/pcols,pverp,1/))
       allocate(tke(pcols,pverp))
       tke(:ncol,:) = (3._r8/2._r8)*wp2(:ncol,:)
+
    case default
       call pbuf_get_field(pbuf, kvh_idx, kvh)
    end select
@@ -614,192 +583,59 @@ subroutine microp_aero_run ( &
 
          select case (trim(eddy_scheme))
          case ('diag_TKE', 'CLUBB_SGS')
-               wsub(i,k) = sqrt(0.5_r8*(tke(i,k) + tke(i,k+1))*(2._r8/3._r8))
-               wsub(i,k) = min(wsub(i,k),10._r8)
+            wsub(i,k) = sqrt(0.5_r8*(tke(i,k) + tke(i,k+1))*(2._r8/3._r8))
+            wsub(i,k) = min(wsub(i,k),10._r8)
          case default 
             ! get sub-grid vertical velocity from diff coef.
             ! following morrison et al. 2005, JAS
             ! assume mixing length of 30 m
-               dum = (kvh(i,k) + kvh(i,k+1))/2._r8/30._r8
+            dum = (kvh(i,k) + kvh(i,k+1))/2._r8/30._r8
             ! use maximum sub-grid vertical vel of 10 m/s
-               dum = min(dum, 10._r8)
+            dum = min(dum, 10._r8)
             ! set wsub to value at current vertical level
-               wsub(i,k)  = dum
-	 end select
+            wsub(i,k)  = dum
+         end select
 
-         wsubi(i,k) = max(0.001_r8, wsub(i,k))
-         wsubi(i,k) = min(wsubi(i,k), 0.2_r8)
-	 
-#ifdef CLUBB_SGS
-	 if (wsubi(i,k) .le. 0.04_r8) then
-           nucboast=100._r8
-	   wsubi(i,k)=nucboast*wsubi(i,k)  ! boost ice SGS vertical velocity in CAM-CLUBB
-	   				   ! to force nucleation in upper-level stratiform 
-					   ! clouds.  Temporary fix until cloud-top radiative
-					   ! cooling parameterization is added to CLUBB similar
-					   ! to the one of appendix C of Bretherton and Park (2009).  
-	 endif
-#endif
-	 
+         if (eddy_scheme == 'CLUBB_SGS') then
+            wsubi(i,k) = max(0.2_r8, wsub(i,k))
+            wsubi(i,k) = min(wsubi(i,k), 10.0_r8)
+         else
+            wsubi(i,k) = max(0.001_r8, wsub(i,k))
+            if (.not. use_preexisting_ice) then
+               wsubi(i,k) = min(wsubi(i,k), 0.2_r8)
+            endif
+         endif
+
          wsub(i,k)  = max(0.20_r8, wsub(i,k))
+
       end do
    end do
-   call outfld( 'WSUB'       , wsub,      pcols, lchnk )
-   call outfld( 'WSUBI'      , wsubi,     pcols, lchnk )
+
+   call outfld('WSUB',   wsub, pcols, lchnk)
+   call outfld('WSUBI', wsubi, pcols, lchnk)
 
    if (trim(eddy_scheme) == 'CLUBB_SGS') deallocate(tke)
-
-   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-   !Get humidity and saturation vapor pressures
-
-   ! find wet bulk temperature and saturation value for provisional t and q without
-   ! condensation
-
-   do k = top_lev, pver
-
-      call qsat_water(t(:ncol,k), pmid(:ncol,k), &
-           es(:ncol), qs(:ncol), gam=gammas(:ncol))
-
-      do i = 1, ncol
-
-         relhum(i,k) = qn(i,k)/qs(i)
-
-         ! get cloud fraction, check for minimum
-         icldm(i,k) = max(icecldf(i,k), mincld)
-         lcldm(i,k) = max(liqcldf(i,k), mincld)
-
-         ! calculate nfice based on liquid and ice mmr (no rain and snow mmr available yet)
-         nfice(i,k) = 0._r8
-         dumfice    = qc(i,k) + qi(i,k)
-         if (dumfice > qsmall .and. qi(i,k) > qsmall) then
-            nfice(i,k) = qi(i,k)/dumfice
-         end if
-      end do
-   end do
 
    !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
    !ICE Nucleation
 
+   call nucleate_ice_cam_calc(state, wsubi, pbuf)
+
+   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+   ! get liquid cloud fraction, check for minimum
+
    do k = top_lev, pver
       do i = 1, ncol
-
-         if (t(i,k).lt.tmelt - 5._r8) then
-
-
-            ! compute aerosol number for so4, soot, and dust with units #/cm^3
-            so4_num  = 0._r8
-            soot_num = 0._r8
-            dst1_num = 0._r8
-            dst2_num = 0._r8
-            dst3_num = 0._r8
-            dst4_num = 0._r8
-            dst_num  = 0._r8
-
-            if (clim_modal_aero) then
-               !For modal aerosols, assume for the upper troposphere:
-               ! soot = accumulation mode
-               ! sulfate = aiken mode
-               ! dust = coarse mode
-               ! since modal has internal mixtures.
-               soot_num = num_accum(i,k)*rho(i,k)*1.0e-6_r8
-               dmc  = coarse_dust(i,k)*rho(i,k)
-               ssmc = coarse_nacl(i,k)*rho(i,k)
-
-               if ( separate_dust ) then
-                  ! 7-mode -- has separate dust and seasalt mode types and no need for weighting 
-                  wght = 1._r8
-               else
-                  ! 3-mode -- needs weighting for dust since dust and seasalt are combined in the "coarse" mode type
-                  wght = dmc/(ssmc + dmc)
-               endif
-
-               if (dmc > 0._r8) then
-                  dst_num = wght * num_coarse(i,k)*rho(i,k)*1.0e-6_r8
-               else 
-                  dst_num = 0.0_r8
-               end if
-
-               if(dem_in)  then
-                  dst3_num = dst_num
-                  if(cam_chempkg_is('trop_mam7')) then
-                     dst1_num    = num_fine(i,k)*rho(i,k)*1.0e-6_r8 !#/cm^3
-                  else 
-                     dst1_num_to_mass = 3.484e+15_r8                                         ! #/kg, for dust in accumulation mode
-                     dst1_num         = accum_dust(i,k)*rho(i,k)* dst1_num_to_mass*1.0e-6_r8 ! #/cm^3, dust # in accumulation mode
-                  endif
-                  !BSINGH - If primary carbon mode exists (4mode and 7mode simulation)
-                  if(mode_pcarbon_idx  > 0) then 
-                     organic_num = num_pcarbon(i,k)*rho(i,k)*1.0e-6_r8
-                  else
-                     organic_num = 0.0
-                  endif
-               endif
-
-               if (dgnum(i,k,mode_aitken_idx) > 0._r8) then
-                  ! only allow so4 with D>0.1 um in ice nucleation
-                  so4_num  = num_aitken(i,k)*rho(i,k)*1.0e-6_r8 &
-                     * (0.5_r8 - 0.5_r8*erf(log(0.1e-6_r8/dgnum(i,k,mode_aitken_idx))/  &
-                     (2._r8**0.5_r8*log(sigmag_aitken))))
-               else 
-                  so4_num = 0.0_r8 
-               end if
-               so4_num = max(0.0_r8, so4_num)
-
-            else
-
-               if (idxsul > 0) then 
-                  so4_num = naer2(i,k,idxsul)/25._r8 *1.0e-6_r8
-               end if
-               if (idxbcphi > 0) then 
-                  soot_num = naer2(i,k,idxbcphi)/25._r8 *1.0e-6_r8
-               end if
-               if (idxdst1 > 0) then 
-                  dst1_num = naer2(i,k,idxdst1)/25._r8 *1.0e-6_r8
-               end if
-               if (idxdst2 > 0) then 
-                  dst2_num = naer2(i,k,idxdst2)/25._r8 *1.0e-6_r8
-               end if
-               if (idxdst3 > 0) then 
-                  dst3_num = naer2(i,k,idxdst3)/25._r8 *1.0e-6_r8
-               end if
-               if (idxdst4 > 0) then 
-                  dst4_num = naer2(i,k,idxdst4)/25._r8 *1.0e-6_r8
-               end if
-               dst_num = dst1_num + dst2_num + dst3_num + dst4_num
-
-            end if
-
-            ! *** Turn off soot nucleation ***
-            soot_num = 0.0_r8
-
-            call nucleati( &
-               wsubi(i,k), t(i,k), relhum(i,k), icldm(i,k), qc(i,k), &
-               nfice(i,k), rho(i,k), so4_num, dst_num, soot_num,     &
-               dst1_num,dst2_num,dst3_num,dst4_num,organic_num,pmid(i,k), & 
-               dem_in, clim_modal_aero,                              &      
-               naai(i,k), nihf(i,k), niimm(i,k), nidep(i,k), nimey(i,k))
-
-            naai_hom(i,k) = nihf(i,k)
-
-            ! output activated ice (convert from #/kg -> #/m3)
-            nihf(i,k)     = nihf(i,k) *rho(i,k)
-            niimm(i,k)    = niimm(i,k)*rho(i,k)
-            nidep(i,k)    = nidep(i,k)*rho(i,k)
-            nimey(i,k)    = nimey(i,k)*rho(i,k)
-         end if
+         lcldm(i,k) = max(ast(i,k), mincld)
       end do
    end do
 
-   call outfld('NIHF',   nihf, pcols, lchnk)
-   call outfld('NIIMM', niimm, pcols, lchnk)
-   call outfld('NIDEP', nidep, pcols, lchnk)
-   call outfld('NIMEY', nimey, pcols, lchnk)
-
+   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+   ! Droplet Activation
 
    if (clim_modal_aero) then
 
-      !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      !droplet activation for modal aerosol
+      ! for modal aerosol
 
       ! partition cloud fraction into liquid water part
       lcldn = 0._r8
@@ -823,14 +659,13 @@ subroutine microp_aero_run ( &
 
       call dropmixnuc( &
          state, ptend, deltatin, pbuf, wsub, &
-         lcldn, lcldo, nctend_mixnuc)
+         lcldn, lcldo, nctend_mixnuc, factnum)
 
       npccn(:ncol,:) = nctend_mixnuc(:ncol,:)
 
    else
 
-      !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      !droplet activation for bulk aerosol
+      ! for bulk aerosol
 
       ! no tendencies returned from ndrop_bam_run, so just init ptend here
       call physics_ptend_init(ptend, state%psetcols, 'none')
@@ -851,11 +686,7 @@ subroutine microp_aero_run ( &
                dum = 0._r8
             end if
 
-            ! note: deltatin/2.  accounts for sub step in microphysics
-            ! ***** This assumes two sub-steps in microphysics.  It's dangerous to 
-            ! ***** make that assumption here.  Should move all coding related to 
-            ! ***** microphysics substepping into the microphysics.
-            npccn(i,k) = (dum - nc(i,k)/lcldm(i,k))/(deltatin/2._r8)*lcldm(i,k)
+            npccn(i,k) = (dum*lcldm(i,k) - nc(i,k))/deltatin
          end do
       end do
 
@@ -934,12 +765,21 @@ subroutine microp_aero_run ( &
 
    end if
 
+   ! heterogeneous freezing
+   if (use_hetfrz_classnuc) then
+
+      call hetfrz_classnuc_cam_calc(state, deltatin, factnum, pbuf)
+
+   end if
+
+   if (clim_modal_aero) then
+      deallocate(factnum)
+   end if
+
+   end associate
+
 end subroutine microp_aero_run
 
-!===============================================================================
-
-
-!===============================================================================
+!=========================================================================================
 
 end module microp_aero
-

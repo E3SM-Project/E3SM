@@ -131,6 +131,8 @@ subroutine convect_deep_init(pref_edge)
   select case ( deep_scheme )
   case('off') !     ==> no deep convection
      if (masterproc) write(iulog,*)'convect_deep: no deep convection selected'
+  case('CLUBB_SGS')
+     if (masterproc) write(iulog,*)'convect_deep: CLUBB_SGS selected'
   case('ZM') !    1 ==> Zhang-McFarlane (default)
      if (masterproc) write(iulog,*)'convect_deep initializing Zhang-McFarlane convection'
      call zm_conv_init(pref_edge)
@@ -225,18 +227,19 @@ subroutine convect_deep_tend( &
    real(r8), pointer :: pblh(:)                ! Planetary boundary layer height
    real(r8), pointer :: tpert(:)               ! Thermal temperature excess 
 
-  real(r8) zero(pcols, pver)
-
-  integer i, k
-
+   ! Temperature tendency from deep convection (pbuf pointer).
    real(r8), pointer, dimension(:,:) :: ttend_dp
+
+   real(r8) zero(pcols, pver)
+
+   integer i, k
 
    call pbuf_get_field(pbuf, cldtop_idx,  jctop )
    call pbuf_get_field(pbuf, cldbot_idx,  jcbot )
    call pbuf_get_field(pbuf, icwmrdp_idx, ql    )
 
   select case ( deep_scheme )
-  case('off') !    0 ==> no deep convection
+  case('off', 'CLUBB_SGS') !    0 ==> no deep convection
     zero = 0     
     mcon = 0
     dlf = 0
@@ -278,8 +281,7 @@ subroutine convect_deep_tend( &
           rliq    , &
           ztodt   , &
           jctop, jcbot , &
-          state   ,ptend   ,landfrac, pbuf, mu, eu, &
-          du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath)
+          state   ,ptend   ,landfrac, pbuf)
 
 
   end select
@@ -301,7 +303,7 @@ subroutine convect_deep_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, &
      du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class)
 
 
-   use physics_types, only: physics_state, physics_ptend
+   use physics_types, only: physics_state, physics_ptend, physics_ptend_init
    
    use physics_buffer,  only: physics_buffer_desc
    use constituents, only: pcnst
@@ -339,8 +341,9 @@ subroutine convect_deep_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, &
    integer, intent(in) :: species_class(:)
 
    if ( deep_scheme .eq. 'ZM' ) then  !    1 ==> Zhang-McFarlane (default)
-      call zm_conv_tend_2( state,   ptend,  ztodt,  pbuf,mu, eu, &
-     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class) 
+      call zm_conv_tend_2( state,   ptend,  ztodt,  pbuf, species_class)
+   else
+      call physics_ptend_init(ptend, state%psetcols, 'convect_deep')
    end if
 
 

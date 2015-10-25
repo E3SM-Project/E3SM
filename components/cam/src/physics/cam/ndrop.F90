@@ -26,7 +26,7 @@ use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_mode_num, rad_cnst_g
                             rad_cnst_get_aer_props, rad_cnst_get_mode_props,                &
                             rad_cnst_get_mam_mmr_idx, rad_cnst_get_mode_num_idx
 use cam_history,      only: addfld, add_default, phys_decomp, fieldname_len, outfld
-use cam_abortutils,       only: endrun
+use cam_abortutils,   only: endrun
 use cam_logfile,      only: iulog
 
 implicit none
@@ -295,7 +295,7 @@ end subroutine ndrop_init
 
 subroutine dropmixnuc( &
    state, ptend, dtmicro, pbuf, wsub, &
-   cldn, cldo, tendnd)
+   cldn, cldo, tendnd, factnum)
 
    ! vertical diffusion and nucleation of cloud droplets
    ! assume cloud presence controlled by cloud fraction
@@ -315,7 +315,7 @@ subroutine dropmixnuc( &
 
    ! output arguments
    real(r8), intent(out) :: tendnd(pcols,pver) ! change in droplet number concentration (#/kg/s)
-
+   real(r8), intent(out) :: factnum(:,:,:)     ! activation fraction for aerosol number
    !--------------------Local storage-------------------------------------
 
    integer  :: lchnk               ! chunk identifier
@@ -485,7 +485,8 @@ subroutine dropmixnuc( &
       end do
    end do
 
-   wtke = 0._r8
+   factnum = 0._r8
+   wtke    = 0._r8
 
    if (prog_modal_aero) then
       ! aerosol tendencies
@@ -645,6 +646,8 @@ subroutine dropmixnuc( &
                vaerosol, hygro, fn, fm, fluxn,                      &
                fluxm,flux_fullact(k))
 
+            factnum(i,k,:) = fn
+
             dumc = (cldn_tmp - cldo_tmp)
             do m = 1, ntot_amode
                mm = mam_idx(m,0)
@@ -733,6 +736,8 @@ subroutine dropmixnuc( &
                   temp(i,k), cs(i,k), naermod, ntot_amode, &
                   vaerosol, hygro, fn, fm, fluxn,                      &
                   fluxm, flux_fullact(k))
+
+               factnum(i,k,:) = fn
 
                if (k < pver) then
                   dumc = cldn(i,k) - cldn(i,kp1)
@@ -1196,32 +1201,32 @@ subroutine activate_modal(wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,  &
 
    !      input
 
-   real(r8) :: wbar          ! grid cell mean vertical velocity (m/s)
-   real(r8) :: sigw          ! subgrid standard deviation of vertical vel (m/s)
-   real(r8) :: wdiab         ! diabatic vertical velocity (0 if adiabatic)
-   real(r8) :: wminf         ! minimum updraft velocity for integration (m/s)
-   real(r8) :: wmaxf         ! maximum updraft velocity for integration (m/s)
-   real(r8) :: tair          ! air temperature (K)
-   real(r8) :: rhoair        ! air density (kg/m3)
-   real(r8) :: na(:)      ! aerosol number concentration (/m3)
-   integer  :: nmode      ! number of aerosol modes
-   real(r8) :: volume(:)  ! aerosol volume concentration (m3/m3)
-   real(r8) :: hygro(:)   ! hygroscopicity of aerosol mode
+   real(r8), intent(in) :: wbar          ! grid cell mean vertical velocity (m/s)
+   real(r8), intent(in) :: sigw          ! subgrid standard deviation of vertical vel (m/s)
+   real(r8), intent(in) :: wdiab         ! diabatic vertical velocity (0 if adiabatic)
+   real(r8), intent(in) :: wminf         ! minimum updraft velocity for integration (m/s)
+   real(r8), intent(in) :: wmaxf         ! maximum updraft velocity for integration (m/s)
+   real(r8), intent(in) :: tair          ! air temperature (K)
+   real(r8), intent(in) :: rhoair        ! air density (kg/m3)
+   real(r8), intent(in) :: na(:)      ! aerosol number concentration (/m3)
+   integer,  intent(in) :: nmode      ! number of aerosol modes
+   real(r8), intent(in) :: volume(:)  ! aerosol volume concentration (m3/m3)
+   real(r8), intent(in) :: hygro(:)   ! hygroscopicity of aerosol mode
 
    !      output
 
-   real(r8) :: fn(:)      ! number fraction of aerosols activated
-   real(r8) :: fm(:)      ! mass fraction of aerosols activated
-   real(r8) :: fluxn(:)   ! flux of activated aerosol number fraction into cloud (cm/s)
-   real(r8) :: fluxm(:)   ! flux of activated aerosol mass fraction into cloud (cm/s)
-   real(r8) :: flux_fullact   ! flux of activated aerosol fraction assuming 100% activation (cm/s)
+   real(r8), intent(out) :: fn(:)      ! number fraction of aerosols activated
+   real(r8), intent(out) :: fm(:)      ! mass fraction of aerosols activated
+   real(r8), intent(out) :: fluxn(:)   ! flux of activated aerosol number fraction into cloud (cm/s)
+   real(r8), intent(out) :: fluxm(:)   ! flux of activated aerosol mass fraction into cloud (cm/s)
+   real(r8), intent(out) :: flux_fullact   ! flux of activated aerosol fraction assuming 100% activation (cm/s)
    !    rce-comment
    !    used for consistency check -- this should match (ekd(k)*zs(k))
    !    also, fluxm/flux_fullact gives fraction of aerosol mass flux
    !       that is activated
   
    !      optional
-   real(r8), optional :: smax_prescribed  ! prescribed max. supersaturation for secondary activation 
+   real(r8), optional, intent(in) :: smax_prescribed  ! prescribed max. supersaturation for secondary activation
 
    !      local
 
@@ -1292,8 +1297,7 @@ subroutine activate_modal(wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,  &
 
    if(sigw.le.1.e-5_r8.and.wbar.le.0._r8)return
 
-   
-   if ( present( smax_prescribed ) ) then 
+   if ( present( smax_prescribed ) ) then
       if (smax_prescribed <= 0.0_r8) return
    end if
 
@@ -1582,11 +1586,11 @@ subroutine maxsat(zeta,eta,nmode,smc,smax)
    !      Abdul-Razzak and Ghan, A parameterization of aerosol activation.
    !      2. Multiple aerosol types. J. Geophys. Res., 105, 6837-6844.
 
-   integer  :: nmode ! number of modes
-   real(r8) :: smc(nmode) ! critical supersaturation for number mode radius
-   real(r8) :: zeta(nmode)
-   real(r8) :: eta(nmode)
-   real(r8) :: smax ! maximum supersaturation
+   integer,  intent(in)  :: nmode ! number of modes
+   real(r8), intent(in)  :: smc(nmode) ! critical supersaturation for number mode radius
+   real(r8), intent(in)  :: zeta(nmode)
+   real(r8), intent(in)  :: eta(nmode)
+   real(r8), intent(out) :: smax ! maximum supersaturation
    integer  :: m  ! mode index
    real(r8) :: sum, g1, g2, g1sqrt, g2sqrt
 

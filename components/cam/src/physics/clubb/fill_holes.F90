@@ -1,13 +1,18 @@
 !-----------------------------------------------------------------------
-! $Id: fill_holes.F90 5623 2012-01-17 17:55:26Z connork@uwm.edu $
+! $Id: fill_holes.F90 7315 2014-09-30 20:49:54Z schemena@uwm.edu $
 !===============================================================================
 module fill_holes
 
   implicit none
 
   public :: fill_holes_driver, &
+            fill_holes_vertical, &
+            hole_filling_hm_one_lev, &
+            fill_holes_hydromet, &
+            fill_holes_wv, &
             vertical_avg, &
-            vertical_integral
+            vertical_integral, &
+            setup_stats_indices
 
   private :: fill_holes_multiplicative
 
@@ -16,9 +21,9 @@ module fill_holes
   contains
 
   !=============================================================================
-  subroutine fill_holes_driver( num_pts, threshold, field_grid, &
-                                rho_ds, rho_ds_zm, &
-                                field )
+  subroutine fill_holes_vertical( num_draw_pts, threshold, field_grid, &
+                                  rho_ds, rho_ds_zm, &
+                                  field )
 
     ! Description:
     ! This subroutine clips values of 'field' that are below 'threshold' as much
@@ -46,7 +51,7 @@ module fill_holes
 
     ! Input variables
     integer, intent(in) :: & 
-      num_pts  ! The number of points on either side of the hole;
+      num_draw_pts  ! The number of points on either side of the hole;
                ! Mass is drawn from these points to fill the hole.  []
 
     real( kind = core_rknd ), intent(in) :: & 
@@ -100,10 +105,10 @@ module fill_holes
       ! variables).  For momentum level variables only, the hole-filling scheme
       ! should not alter the set value of 'field' at the upper boundary
       ! level (k=gr%nz).
-      do k = 2+num_pts, upper_hf_level-num_pts, 1
+      do k = 2+num_draw_pts, upper_hf_level-num_draw_pts, 1
 
-        begin_idx = k - num_pts
-        end_idx   = k + num_pts
+        begin_idx = k - num_draw_pts
+        end_idx   = k + num_draw_pts
 
         if ( any( field( begin_idx:end_idx ) < threshold ) ) then
 
@@ -156,7 +161,7 @@ module fill_holes
 
     return
 
-  end subroutine fill_holes_driver
+  end subroutine fill_holes_vertical
 
   !=============================================================================
   subroutine fill_holes_multiplicative &
@@ -483,5 +488,892 @@ module fill_holes
   end function vertical_integral
 
 !===============================================================================
+
+  subroutine hole_filling_hm_one_lev( num_hm_fill, hm_one_lev, & ! Intent(in)
+                                   hm_one_lev_filled ) ! Intent(out)
+
+  ! Description:
+  ! Fills holes between same-phase (i.e. either liquid or frozen) hydrometeors for
+  ! one height level.
+  !
+  ! Warning: Do not input hydrometeors of different phases, e.g. liquid and frozen.
+  ! Otherwise heat will not be conserved.
+  !
+  ! References:
+  !
+  ! None
+  !-----------------------------------------------------------------------
+
+    use constants_clubb, only: &
+        one, & ! Variable(s)
+        zero
+
+    use clubb_precision, only: &
+        core_rknd ! Variable(s)
+
+    use error_code, only: &
+        clubb_at_least_debug_level  ! Procedure(s)
+
+    implicit none
+
+    ! Input Variables
+    integer, intent(in) :: num_hm_fill ! number of hydrometeors involved
+
+    real(kind = core_rknd), dimension(num_hm_fill), intent(in) :: hm_one_lev
+
+    ! Output Variables
+    real(kind = core_rknd), dimension(num_hm_fill), intent(out) :: hm_one_lev_filled
+
+    ! Local Variables
+    integer :: num_neg_hm ! number of holes
+
+    real(kind = core_rknd) :: &
+      total_hole, & ! Size of the hole ( missing mass, less than 0 )
+      total_mass    ! Total mass to fill the hole
+      ! total mass of water substance = total_mass + total_hole
+
+    integer :: i ! loop iterator
+
+  !-----------------------------------------------------------------------
+
+    !----- Begin Code -----
+
+    ! Initialization
+    hm_one_lev_filled = 0._core_rknd
+    total_hole = 0._core_rknd
+    total_mass = 0._core_rknd
+    num_neg_hm = 0
+
+    ! Determine the total size of the hole and the number of neg. hydrometeors
+    ! and the total mass of hole filling material
+    do i=1, num_hm_fill
+!       print *, "hm_one_lev(",i,") = ", hm_one_lev(i)
+       if ( hm_one_lev(i) < zero ) then
+          total_hole = total_hole + hm_one_lev(i) ! less than zero
+          num_neg_hm = num_neg_hm + 1
+       else
+          total_mass = total_mass + hm_one_lev(i)
+       endif
+
+    enddo
+
+!    print *, "total_hole = ", total_hole
+!    print *, "total_mass = ", total_mass
+!    print *, "num_neg_hm = ", num_neg_hm
+
+    ! There is no water substance at all to fill the hole
+    if ( total_mass == zero ) then
+
+       if ( clubb_at_least_debug_level(2) ) then
+          print *, "Warning: One level hole filling was not successful! total_mass = 0"
+       endif
+
+       hm_one_lev_filled = hm_one_lev
+
+       return
+    endif
+
+    ! Fill the holes and adjust the remaining quantities:
+    ! hm_filled(i) = 0, if hm(i) < 0
+    ! or
+    ! hm_filled(i) = (1 + total_hole/total_mass)*hm(i), if hm(i) > 0
+    do i=1, num_hm_fill
+
+       ! if there is not enough material, fill the holes partially with all the material available
+       if ( abs(total_hole) > total_mass ) then
+
+          if ( clubb_at_least_debug_level(2) ) then
+             print *, "Warning: One level hole was not able to fill holes completely!" // &
+                      " The holes were filled partially. |total_hole| > total_mass"
+          endif
+
+          hm_one_lev_filled(i) = min(hm_one_lev(i), zero) * ( one + total_mass / total_hole )
+
+       else ! fill holes completely
+          hm_one_lev_filled(i) = max(hm_one_lev(i), zero) * ( one + total_hole / total_mass )
+
+       endif
+
+    enddo
+
+    ! Assertion checks (water substance conservation, non-negativity)
+    if ( clubb_at_least_debug_level( 2 ) ) then
+
+       if ( sum( hm_one_lev ) /= sum(hm_one_lev_filled) ) then
+          print *, "Warning: Hole filling was not conservative!"
+       endif
+
+       if ( any( hm_one_lev_filled < zero ) ) then
+          print *, "Warning: Hole filling failed! A hole could not be filled."
+       endif
+
+    endif
+
+    return
+
+  end subroutine hole_filling_hm_one_lev
+  !-----------------------------------------------------------------------
+
+  !-----------------------------------------------------------------------
+  subroutine fill_holes_hydromet( nz, hydromet_dim, hydromet, & ! Intent(in)
+                                  hydromet_filled ) ! Intent(out)
+
+  ! Description:
+  ! Fills holes between same-phase hydrometeors(i.e. for frozen hydrometeors).
+  ! The hole filling conserves water substance between all same-phase (frozen or liquid)
+  ! hydrometeors at each height level.
+  !
+  ! Attention: The hole filling for the liquid phase hydrometeors is not yet implemented
+  !
+  ! Attention: l_frozen_hm and l_mix_rat_hm need to be set up before this subroutine is called!
+  !
+  ! References:
+  !
+  ! None
+  !-----------------------------------------------------------------------
+
+    use clubb_precision, only: &
+        core_rknd
+
+    use array_index, only: &
+        l_frozen_hm, & ! Variable(s)
+        l_mix_rat_hm
+
+    use constants_clubb, only: &
+        zero
+
+    implicit none
+
+    ! Input Variables
+    integer, intent(in) :: hydromet_dim, nz
+
+    real( kind = core_rknd ), dimension(nz,hydromet_dim), intent(in) :: &
+      hydromet
+
+    ! Output Variables
+    real( kind = core_rknd ), dimension(nz,hydromet_dim), intent(out) :: &
+      hydromet_filled
+
+    ! Local Variables
+    integer :: i,j ! Loop iterators
+
+    integer :: num_frozen_hm ! Number of frozen hydrometeor mixing ratios
+
+    real( kind = core_rknd ), dimension(:,:), allocatable :: &
+      hydromet_frozen,       & ! Frozen hydrometeor mixing ratios
+      hydromet_frozen_filled   ! Frozen hydrometeor mixing ratios after hole filling
+
+  !-----------------------------------------------------------------------
+
+    !----- Begin Code -----
+
+    ! Determine the number of frozen hydrometeor mixing ratios
+    num_frozen_hm = 0
+    do i=1,hydromet_dim
+       if ( l_frozen_hm(i) .and. l_mix_rat_hm(i) ) then
+          num_frozen_hm = num_frozen_hm + 1
+       endif
+    enddo
+
+    ! Allocation
+    allocate( hydromet_frozen(nz,num_frozen_hm) )
+    allocate( hydromet_frozen_filled(nz,num_frozen_hm) )
+
+    ! Determine frozen hydrometeor mixing ratios
+    j = 1
+    do i = 1,hydromet_dim
+       if ( l_frozen_hm(i) .and. l_mix_rat_hm(i) ) then
+          hydromet_frozen(:,j) = hydromet(:,i)
+          j = j+1
+       endif
+    enddo
+
+    ! Fill holes for the frozen hydrometeors
+    do i=1,nz
+       if ( any( hydromet_frozen(i,:) < zero ) ) then
+          call hole_filling_hm_one_lev( num_frozen_hm, hydromet_frozen(i,:), & ! Intent(in)
+                                     hydromet_frozen_filled(i,:) ) ! Intent(out)
+       else
+          hydromet_frozen_filled(i,:) = hydromet_frozen(i,:)
+       endif
+    enddo
+
+    ! Setup the filled hydromet array
+    j = 1
+    do i=1, hydromet_dim
+       if ( l_frozen_hm(i) .and. l_mix_rat_hm(i) ) then
+          hydromet_filled(:,i) = hydromet_frozen_filled(:,j)
+          j = j+1
+       else
+          hydromet_filled(:,i) = hydromet(:,i)
+       endif
+    enddo
+
+    !!! Here we could do the same hole filling for all the liquid phase hydrometeors
+
+    return
+  end subroutine fill_holes_hydromet
+  !-----------------------------------------------------------------------
+
+    !-----------------------------------------------------------------------
+  subroutine fill_holes_wv( nz, dt, exner, hydromet_name, & ! Intent(in)
+                            rvm_mc, thlm_mc, hydromet )! Intent(inout)
+
+  ! Description:
+  ! Fills holes using the cloud water mixing ratio from the current height level.
+  !
+  ! References:
+  !
+  ! None
+  !-----------------------------------------------------------------------
+
+    use clubb_precision, only: &
+        core_rknd
+
+    use constants_clubb, only: &
+        zero_threshold, &
+        Lv, &
+        Ls, &
+        Cp
+
+    implicit none
+
+    ! Input Variables
+    integer, intent(in) :: nz
+
+    real( kind = core_rknd ), intent(in) ::  &
+      dt           ! Timestep         [s]
+
+    character(len=10), intent(in) :: hydromet_name
+
+    real( kind = core_rknd ), dimension(nz), intent(in) :: &
+      exner        ! Exner function                            [-]
+
+    ! Input/Output Variables
+    real( kind = core_rknd ), dimension(nz), intent(inout) :: &
+      hydromet, &  ! Hydrometeor array                         [units vary]
+      rvm_mc, &
+      thlm_mc
+
+    ! Local Variables
+    integer :: k ! Loop iterator
+
+    real( kind = core_rknd ) :: rvm_clip_tndcy
+  !-----------------------------------------------------------------------
+
+    !----- Begin Code -----
+
+    do k = 2, nz, 1
+
+       if ( hydromet(k) < zero_threshold ) then
+
+          ! Set rvm_clip_tndcy to the time tendency applied to vapor and removed
+          ! from the hydrometeor.
+          rvm_clip_tndcy = hydromet(k) / dt
+
+          ! Adjust the tendency rvm_mc accordingly
+          rvm_mc(k) = rvm_mc(k) + rvm_clip_tndcy
+
+          ! Adjust the tendency of thlm_mc according to whether the
+          ! effect is an evaporation or sublimation tendency.
+          select case ( trim( hydromet_name ) )
+          case( "rrm" )
+             thlm_mc(k) = thlm_mc(k) - rvm_clip_tndcy * ( Lv / ( Cp*exner(k) ) )
+          case( "rim", "rsm", "rgm" )
+             thlm_mc(k) = thlm_mc(k) - rvm_clip_tndcy * ( Ls / ( Cp*exner(k) ) )
+          case default
+             stop "Fatal error in microphys_driver"
+          end select
+
+          ! Set the mixing ratio to 0
+          hydromet(k) = zero_threshold
+
+       endif ! hydromet(k,i) < 0
+
+    enddo ! k = 2..gr%nz
+
+    return
+  end subroutine fill_holes_wv
+  !-----------------------------------------------------------------------
+
+  !-----------------------------------------------------------------------
+  subroutine fill_holes_driver( nz, dt, hydromet_dim,        & ! Intent(in)
+                                l_fill_holes_hm,             & ! Intent(in)
+                                rho_ds_zm, rho_ds_zt, exner, & ! Intent(in)
+                                thlm_mc, rvm_mc, hydromet )    ! Intent(inout)
+
+  ! Description:
+  ! Fills holes between same-phase hydrometeors(i.e. for frozen hydrometeors).
+  ! The hole filling conserves water substance between all same-phase (frozen or liquid)
+  ! hydrometeors at each height level.
+  !
+  ! Attention: The hole filling for the liquid phase hydrometeors is not yet implemented
+  !
+  ! Attention: l_frozen_hm and l_mix_rat_hm need to be set up before this subroutine is called!
+  !
+  ! References:
+  !
+  ! None
+  !-----------------------------------------------------------------------
+
+    use grid_class, only: &
+        gr  ! Variable(s)
+
+    use clubb_precision, only: &
+        core_rknd   ! Variable(s)
+
+    use constants_clubb, only: &
+        pi,              &
+        four_thirds,     &
+        one,             &
+        zero,            &
+        zero_threshold,  &
+        Lv,              &
+        Ls,              &
+        Cp,              &
+        rho_lw,          &
+        rho_ice,         &
+        fstderr
+
+    use array_index, only: &
+        hydromet_list, & ! Names of the hydrometeor species
+        hydromet_tol
+
+    use array_index, only: &
+        l_mix_rat_hm, & ! Variable(s)
+        l_frozen_hm
+
+    use index_mapping, only: &
+        Nx2rx_hm_idx, & ! Procedure(s)
+        mvr_hm_max
+
+    use error_code, only: &
+        clubb_at_least_debug_level ! Procedure(s)
+
+    use stats_type_utilities, only: &
+        stat_begin_update, & ! Subroutines
+        stat_end_update
+
+    use stats_variables, only: &
+        stats_zt, &  ! Variables
+        l_stats_samp
+
+    implicit none
+
+    intrinsic :: trim
+
+    ! Input Variables
+    integer, intent(in) :: hydromet_dim, nz
+
+    logical, intent(in) :: l_fill_holes_hm
+
+    real( kind = core_rknd ), intent(in) ::  &
+      dt           ! Timestep         [s]
+
+    real( kind = core_rknd ), dimension(nz), intent(in) :: &
+      rho_ds_zm, & ! Dry, static density on momentum levels   [kg/m^3]
+      rho_ds_zt    ! Dry, static density on thermo. levels    [kg/m^3]
+
+    real( kind = core_rknd ), dimension(nz), intent(in) :: &
+      exner  ! Exner function                                       [-]
+
+    ! Input/Output Variables
+    real( kind = core_rknd ), dimension(nz, hydromet_dim), intent(inout) :: &
+      hydromet
+
+    real( kind = core_rknd ), dimension(nz), intent(inout) :: &
+      rvm_mc,  & ! Microphysics contributions to vapor water            [kg/kg/s]
+      thlm_mc    ! Microphysics contributions to liquid potential temp. [K/s]
+
+    ! Local Variables
+    integer :: i, k ! Loop iterators
+
+    real( kind = core_rknd ), dimension(nz, hydromet_dim) :: &
+      hydromet_filled   ! Frozen hydrometeor mixing ratios after hole filling
+
+    character( len = 10 ) :: hydromet_name
+
+    real( kind = core_rknd ) :: &
+      Nxm_min_coef, & ! Coefficient for min. mean value of a concentration [1/kg]
+      max_velocity    ! Maximum sedimentation velocity                     [m/s]
+
+    integer :: ixrm_hf, ixrm_wvhf, ixrm_cl, &
+               ixrm_bt, ixrm_mc
+
+    logical :: l_hole_fill = .true.
+
+  !-----------------------------------------------------------------------
+
+    !----- Begin Code -----
+
+    ! Start stats output for the _hf variables (changes in the hydromet array
+    ! due to fill_holes_hydromet and fill_holes_vertical)
+    if ( l_stats_samp ) then
+
+       do i = 1, hydromet_dim
+
+          ! Set up the stats indices for hydrometeor at index i
+          call setup_stats_indices( i,                           & ! Intent(in)
+                                    ixrm_bt, ixrm_hf, ixrm_wvhf, & ! Intent(inout)
+                                    ixrm_cl, ixrm_mc,            & ! Intent(inout)
+                                    max_velocity )                 ! Intent(inout)
+
+          call stat_begin_update( ixrm_hf, hydromet(:,i) &
+                                           / dt, stats_zt )
+
+       enddo ! i = 1, hydromet_dim
+
+    endif ! l_stats_samp
+
+    ! If we're dealing with negative hydrometeors, we first try to fill the
+    ! holes proportionally from other same-phase hydrometeors at each height
+    ! level.
+    if ( any( hydromet < zero_threshold ) .and. l_fill_holes_hm ) then
+
+       call fill_holes_hydromet( nz, hydromet_dim, hydromet, & ! Intent(in)
+                                 hydromet_filled ) ! Intent(out)
+
+       hydromet = hydromet_filled
+
+    endif ! any( hydromet < zero ) .and. l_fill_holes_hm
+
+    hydromet_filled = zero
+
+    do i = 1, hydromet_dim
+
+      ! Set up the stats indices for hydrometeor at index i
+      call setup_stats_indices( i,                           & ! Intent(in)
+                                ixrm_bt, ixrm_hf, ixrm_wvhf, & ! Intent(inout)
+                                ixrm_cl, ixrm_mc,            & ! Intent(inout)
+                                max_velocity )                 ! Intent(inout)
+
+      ! Print warning message if any hydrometeor species has a value < 0.
+      if ( clubb_at_least_debug_level( 1 ) ) then
+         if ( any( hydromet(:,i) < zero_threshold ) ) then
+
+            hydromet_name = hydromet_list(i)
+
+            do k = 1, nz
+               if ( hydromet(k,i) < zero_threshold ) then
+                  write(fstderr,*) trim( hydromet_name ) //" < ", &
+                                   zero_threshold, &
+                                   " in fill_holes_driver at k= ", k
+               endif ! hydromet(k,i) < 0
+            enddo ! k = 1, nz
+         endif ! hydromet(:,i) < 0       
+      endif ! clubb_at_least_debug_level( 1 )
+
+
+      ! Store the previous value of the hydrometeor for the effect of the
+      ! hole-filling scheme.
+!      if ( l_stats_samp ) then
+!         call stat_begin_update( ixrm_hf, hydromet(:,i) &
+!                                          / dt, stats_zt )
+!      endif
+
+      ! If we're dealing with a mixing ratio and hole filling is enabled,
+      ! then we apply the hole filling algorithm
+      if ( any( hydromet(:,i) < zero_threshold ) ) then
+
+         if ( hydromet_name(1:1) == "r" .and. l_hole_fill ) then
+
+            ! Apply the hole filling algorithm
+            call fill_holes_vertical( 2, zero_threshold, "zt", &
+                                      rho_ds_zt, rho_ds_zm, &
+                                      hydromet(:,i) )
+
+         endif ! Variable is a mixing ratio and l_hole_fill is true
+
+      endif ! hydromet(:,i) < 0
+
+      ! Enter the new value of the hydrometeor for the effect of the
+      ! hole-filling scheme.
+      if ( l_stats_samp ) then
+         call stat_end_update( ixrm_hf, hydromet(:,i) &
+                                        / dt, stats_zt )
+      endif
+
+      ! Store the previous value of the hydrometeor for the effect of the water
+      ! vapor hole-filling scheme.
+      if ( l_stats_samp ) then
+         call stat_begin_update( ixrm_wvhf, hydromet(:,i) &
+                                            / dt, stats_zt )
+      endif
+
+      if ( any( hydromet(:,i) < zero_threshold ) ) then
+
+         if ( hydromet_name(1:1) == "r" .and. l_hole_fill ) then
+
+            ! If the hole filling algorithm failed, then we attempt to fill
+            ! the missing mass with water vapor mixing ratio.
+            ! We noticed this is needed for ASEX A209, particularly if Latin
+            ! hypercube sampling is enabled.  -dschanen 11 Nov 2010
+            call fill_holes_wv( nz, dt, exner, hydromet_name, & ! Intent(in)
+                                rvm_mc, thlm_mc, hydromet(:,i) )   ! Intent(out)
+
+         endif ! Variable is a mixing ratio and l_hole_fill is true
+
+      endif ! hydromet(:,i) < 0
+
+      ! Enter the new value of the hydrometeor for the effect of the water vapor
+      ! hole-filling scheme.
+      if ( l_stats_samp ) then
+         call stat_end_update( ixrm_wvhf, hydromet(:,i) &
+                                          / dt, stats_zt )
+      endif
+
+      ! Clipping for hydrometeor mixing ratios.
+      if ( l_mix_rat_hm(i) ) then
+
+         ! Store the previous value of the hydrometeor for the effect of
+         ! clipping.
+         if ( l_stats_samp ) then
+            call stat_begin_update( ixrm_cl, &
+                                    hydromet(:,i) &
+                                    / dt, &
+                                    stats_zt )
+         endif
+
+         if ( any( hydromet(:,i) < zero_threshold ) ) then
+
+            ! Clip any remaining negative values of precipitating hydrometeor
+            ! mixing ratios to 0.
+            where ( hydromet(:,i) < zero_threshold )
+               hydromet(:,i) = zero_threshold
+            end where
+
+         endif ! hydromet(:,i) < 0
+
+         ! Eliminate very small values of mean precipitating hydrometeor mixing
+         ! ratios by setting them to 0.
+         do k = 2, gr%nz, 1
+
+            if ( hydromet(k,i) <= hydromet_tol(i) ) then
+
+               rvm_mc(k) &
+               = rvm_mc(k) &
+                 + ( hydromet(k,i) / dt )
+
+               if ( .not. l_frozen_hm(i) ) then
+
+                  ! Rain water mixing ratio
+   
+                  thlm_mc(k) &
+                  = thlm_mc(k) &
+                    - ( Lv / ( Cp * exner(k) ) ) &
+                      * ( hydromet(k,i) / dt )
+
+               else ! Frozen hydrometeor mixing ratio
+
+                  thlm_mc(k) &
+                  = thlm_mc(k) &
+                    - ( Ls / ( Cp * exner(k) ) ) &
+                      * ( hydromet(k,i) / dt )
+
+               endif ! l_frozen_hm(i)
+
+               hydromet(k,i) = zero
+
+            endif ! hydromet(k,i) <= hydromet_tol(i)
+
+         enddo ! k = 2, gr%nz, 1
+
+
+         ! Enter the new value of the hydrometeor for the effect of clipping.
+         if ( l_stats_samp ) then
+            call stat_end_update( ixrm_cl, hydromet(:,i) &
+                                           / dt, stats_zt )
+         endif
+
+      endif ! l_mix_rat_hm(i)
+
+    enddo ! i = 1, hydromet_dim, 1
+
+    ! Clipping for hydrometeor concentrations.
+    do i = 1, hydromet_dim
+
+      if ( .not. l_mix_rat_hm(i) ) then
+
+         ! Set up the stats indices for hydrometeor at index i
+         call setup_stats_indices( i,                           & ! Intent(in)
+                                   ixrm_bt, ixrm_hf, ixrm_wvhf, & ! Intent(inout)
+                                   ixrm_cl, ixrm_mc,            & ! Intent(inout)
+                                   max_velocity )                 ! Intent(inout)
+
+         ! Store the previous value of the hydrometeor for the effect of
+         ! clipping.
+         if ( l_stats_samp ) then
+            call stat_begin_update( ixrm_cl, &
+                                    hydromet(:,i) &
+                                    / dt, &
+                                    stats_zt )
+         endif
+
+         if ( .not. l_frozen_hm(i) ) then
+
+            ! Clipping for mean rain drop concentration, <Nr>.
+            ! When mean rain water mixing ratio, <rr>, is found at a grid level,
+            ! mean rain drop concentration must be at least a minimum value so
+            ! that average rain drop mean volume radius stays within an upper
+            ! bound.  Otherwise, mean rain drop concentration is 0.
+
+            ! The minimum mean rain drop concentration is given by:
+            !
+            ! <Nr> = <rr> / ( (4/3) * pi * rho_lw * mvr_rain_max^3 ).
+
+            Nxm_min_coef &
+            = one / ( four_thirds * pi * rho_lw * mvr_hm_max(i)**3 )
+
+         else ! l_frozen_hm(i)
+
+            ! Clipping for mean frozen hydrometeor concentration, <Nx>.
+            ! When mean frozen hydrometeor mixing ratio, <rx>, is found at a
+            ! grid level, mean frozen hydrometeor concentration must be at least
+            ! a minimum value so that average frozen hydrometeor mean volume
+            ! radius stays within an upper bound.  Otherwise, mean frozen
+            ! hydrometeor concentration is 0.
+
+            ! The minimum mean frozen hydrometeor concentration is given by:
+            !
+            ! <Nx> = <rx> / ( (4/3) * pi * rho_ice * mvr_x_max^3 ).
+
+            Nxm_min_coef &
+            = one / ( four_thirds * pi * rho_ice * mvr_hm_max(i)**3 )
+
+         endif ! .not. l_frozen_hm(i)
+
+         ! Loop over vertical levels and increase hydrometeor concentrations
+         ! when necessary.
+         do k = 2, gr%nz, 1
+
+            if ( hydromet(k,Nx2rx_hm_idx(i)) > zero ) then
+
+               ! Hydrometeor mixing ratio, <rx>, is found at the grid level.
+               hydromet(k,i) &
+               = max( hydromet(k,i), &
+                      Nxm_min_coef * hydromet(k,Nx2rx_hm_idx(i)) )
+
+            else ! <rx> = 0
+
+               hydromet(k,i) = zero
+
+            endif ! hydromet(k,Nx2rx_hm_idx(i)) > 0
+
+         enddo ! k = 2, gr%nz, 1
+
+         ! Enter the new value of the hydrometeor for the effect of clipping.
+         if ( l_stats_samp ) then
+            call stat_end_update( ixrm_cl, hydromet(:,i) &
+                                           / dt, stats_zt )
+         endif
+
+      endif ! .not. l_mix_rat_hm(i)
+
+    enddo ! i = 1, hydromet_dim, 1
+
+
+    return
+
+  end subroutine fill_holes_driver
+
+  !-----------------------------------------------------------------------
+  subroutine setup_stats_indices( ihm,                         & ! Intent(in)
+                                  ixrm_bt, ixrm_hf, ixrm_wvhf, & ! Intent(inout)
+                                  ixrm_cl, ixrm_mc,            & ! Intent(inout)
+                                  max_velocity )                 ! Intent(inout)
+
+  ! Description:
+  !
+  ! Determines the stats output indices depending on the hydrometeor.
+
+  ! Attention: hydromet_list needs to be set up before this routine is called.
+  !
+  ! Bogus example
+  ! References:
+  !
+  ! None
+  !-----------------------------------------------------------------------
+
+
+    use array_index, only: &
+        hydromet_list  ! Names of the hydrometeor species
+
+    use stats_variables, only: &
+        irrm_bt,   & ! Variable(s)
+        irrm_mc,   &
+        irrm_hf,   &
+        irrm_wvhf, &
+        irrm_cl,   &
+        irim_bt,   &
+        irim_mc,   &
+        irim_hf,   &
+        irim_wvhf, &
+        irim_cl,   &
+        irgm_bt,   &
+        irgm_mc,   &
+        irgm_hf,   &
+        irgm_wvhf, &
+        irgm_cl,   &
+        irsm_bt,   &
+        irsm_mc,   &
+        irsm_hf,   &
+        irsm_wvhf, &
+        irsm_cl
+
+    use stats_variables, only: &
+        iNrm_bt, & ! Variable(s)
+        iNrm_mc, &
+        iNrm_cl, &
+        iNim_bt, &
+        iNim_cl, &
+        iNim_mc, &
+        iNsm_bt, &
+        iNsm_cl, &
+        iNsm_mc, &
+        iNgm_bt, &
+        iNgm_cl, &
+        iNgm_mc, &
+        iNcm_bt, &
+        iNcm_cl, &
+        iNcm_mc
+
+    use clubb_precision, only: &
+        core_rknd
+
+    use constants_clubb, only: &
+        zero
+
+    implicit none
+
+    ! Input Variables
+    integer, intent(in) :: ihm
+
+    ! Input/Output Variables
+    real( kind = core_rknd ), intent(inout) :: &
+      max_velocity ! Maximum sedimentation velocity [m/s]
+
+    integer, intent(inout) :: ixrm_hf, ixrm_wvhf, ixrm_cl, &
+                              ixrm_bt, ixrm_mc
+
+  !-----------------------------------------------------------------------
+
+    !----- Begin Code -----
+
+    ! Initializing max_velocity in order to avoid a compiler warning.
+    ! Regardless of the case, it will be reset in the 'select case'
+    ! statement immediately below.
+    max_velocity = zero
+
+    select case ( trim( hydromet_list(ihm) ) )
+      case ( "rrm" )
+        ixrm_bt   = irrm_bt
+        ixrm_hf   = irrm_hf
+        ixrm_wvhf = irrm_wvhf
+        ixrm_cl   = irrm_cl
+        ixrm_mc   = irrm_mc
+
+        max_velocity = -9.1_core_rknd ! m/s
+
+      case ( "rim" )
+        ixrm_bt   = irim_bt
+        ixrm_hf   = irim_hf
+        ixrm_wvhf = irim_wvhf
+        ixrm_cl   = irim_cl
+        ixrm_mc   = irim_mc
+
+        max_velocity = -1.2_core_rknd ! m/s
+
+      case ( "rsm" )
+        ixrm_bt   = irsm_bt
+        ixrm_hf   = irsm_hf
+        ixrm_wvhf = irsm_wvhf
+        ixrm_cl   = irsm_cl
+        ixrm_mc   = irsm_mc
+
+        ! Morrison limit
+!         max_velocity = -1.2_core_rknd ! m/s
+        ! Made up limit.  The literature suggests that it is quite possible
+        ! that snow flake might achieve a terminal velocity of 2 m/s, and this
+        ! happens in the COAMPS microphysics -dschanen 29 Sept 2009
+        max_velocity = -2.0_core_rknd ! m/s
+
+      case ( "rgm" )
+        ixrm_bt   = irgm_bt
+        ixrm_hf   = irgm_hf
+        ixrm_wvhf = irgm_wvhf
+        ixrm_cl   = irgm_cl
+        ixrm_mc   = irgm_mc
+
+        max_velocity = -20._core_rknd ! m/s
+
+      case ( "Nrm" )
+        ixrm_bt   = iNrm_bt
+        ixrm_hf   = 0
+        ixrm_wvhf = 0
+        ixrm_cl   = iNrm_cl
+        ixrm_mc   = iNrm_mc
+
+        max_velocity = -9.1_core_rknd ! m/s
+
+      case ( "Nim" )
+        ixrm_bt   = iNim_bt
+        ixrm_hf   = 0
+        ixrm_wvhf = 0
+        ixrm_cl   = iNim_cl
+        ixrm_mc   = iNim_mc
+
+        max_velocity = -1.2_core_rknd ! m/s
+
+      case ( "Nsm" )
+        ixrm_bt   = iNsm_bt
+        ixrm_hf   = 0
+        ixrm_wvhf = 0
+        ixrm_cl   = iNsm_cl
+        ixrm_mc   = iNsm_mc
+
+        ! Morrison limit
+!         max_velocity = -1.2_core_rknd ! m/s
+        ! Made up limit.  The literature suggests that it is quite possible
+        ! that snow flake might achieve a terminal velocity of 2 m/s, and this
+        ! happens in the COAMPS microphysics -dschanen 29 Sept 2009
+        max_velocity = -2.0_core_rknd ! m/s
+
+      case ( "Ngm" )
+        ixrm_bt   = iNgm_bt
+        ixrm_hf   = 0
+        ixrm_wvhf = 0
+        ixrm_cl   = iNgm_cl
+        ixrm_mc   = iNgm_mc
+
+        max_velocity = -20._core_rknd ! m/s
+
+      case ( "Ncm" )
+        ixrm_bt   = iNcm_bt
+        ixrm_hf   = 0
+        ixrm_wvhf = 0
+        ixrm_cl   = iNcm_cl
+        ixrm_mc   = iNcm_mc
+
+        ! Use the rain water limit, since Morrison has no explicit limit on
+        ! cloud water.  Presumably these numbers are never large.
+        ! -dschanen 28 Sept 2009
+        max_velocity = -9.1_core_rknd ! m/s
+
+      case default
+        ixrm_bt   = 0
+        ixrm_hf   = 0
+        ixrm_wvhf = 0
+        ixrm_cl   = 0
+        ixrm_mc   = 0
+
+        max_velocity = -9.1_core_rknd ! m/s
+
+    end select
+
+
+    return
+
+  end subroutine setup_stats_indices
+  !-----------------------------------------------------------------------
 
 end module fill_holes
