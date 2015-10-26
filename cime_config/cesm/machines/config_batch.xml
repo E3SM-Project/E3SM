@@ -225,6 +225,7 @@
 
   <!-- all pleiades machines are PBS -->
   <batch_system MACH="pleiades-has" version="x.y">
+    <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list={{ project }} </directive>
       <directive>-l select={{ num_nodes }}:ncpus={{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=has</directive>
@@ -235,6 +236,7 @@
 
   <!-- all pleiades machines are PBS -->
   <batch_system MACH="pleiades-ivy" version="x.y">
+    <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list={{ project }} </directive>
       <directive>-l select={{ num_nodes }}:ncpus={{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=ivy</directive>
@@ -245,6 +247,7 @@
 
   <!-- all pleiades machines are PBS -->
   <batch_system MACH="pleiades-san" version="x.y">
+    <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list={{ project }} </directive>
       <directive>-l select={{ num_nodes }}:ncpus={{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=san</directive>
@@ -255,6 +258,7 @@
 
   <!-- all pleiades machines are PBS -->
   <batch_system MACH="pleiades-wes" version="x.y">
+    <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list={{ project }} </directive>
       <directive>-l select={{ num_nodes }}:ncpus={{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=wes</directive>
