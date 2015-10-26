@@ -1455,10 +1455,6 @@ MPAS_GPTL_STOP('dyn_tend')
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
       real (kind=RKIND), dimension(:,:), pointer :: edgesOnCell_sign
 
-      real (kind=RKIND) :: c2, rcv
-
-      integer :: cell1, cell2, iEdge, iCell, i, k
-      real (kind=RKIND) :: pgrad, flux, resm
       real (kind=RKIND), pointer :: epssm, smdiv
 
       real (kind=RKIND), pointer :: cf1, cf2, cf3
@@ -1533,6 +1529,101 @@ MPAS_GPTL_STOP('dyn_tend')
       call mpas_pool_get_config(configs, 'config_epssm', epssm) 
       call mpas_pool_get_config(configs, 'config_smdiv', smdiv) 
 
+      call atm_advance_acoustic_step_work(nCells, nEdges, nCellsSolve, cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+                                   cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
+                                   rho_zz, theta_m, ru_p, rw_p, rtheta_pp, zz_rtheta_pp_old, zz, exner, cqu, ruAvg, wwAvg, &
+                                   rho_pp, cofwt, coftz, zxu, a_tri, alpha_tri, gamma_tri, dss, tend_ru, tend_rho, tend_rt, &
+                                   tend_rw, zgrid, cofwr, cofwz, w, ru, ru_save, rw, rw_save, fzm, fzp, rdzw, invDcEdge, &
+                                   invAreaCell, cofrz, dvEdge, pzp, pzm, nEdgesOnCell, cellsOnEdge, edgesOnCell, edgesOnCell_sign, &
+                                   dts, small_step, epssm, smdiv, cf1, cf2, cf3 &
+                                   )
+
+   end subroutine atm_advance_acoustic_step
+
+
+   subroutine atm_advance_acoustic_step_work(nCells, nEdges, nCellsSolve, cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+                                   cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
+                                   rho_zz, theta_m, ru_p, rw_p, rtheta_pp, zz_rtheta_pp_old, zz, exner, cqu, ruAvg, wwAvg, &
+                                   rho_pp, cofwt, coftz, zxu, a_tri, alpha_tri, gamma_tri, dss, tend_ru, tend_rho, tend_rt, &
+                                   tend_rw, zgrid, cofwr, cofwz, w, ru, ru_save, rw, rw_save, fzm, fzp, rdzw, invDcEdge, &
+                                   invAreaCell, cofrz, dvEdge, pzp, pzm, nEdgesOnCell, cellsOnEdge, edgesOnCell, edgesOnCell_sign, &
+                                   dts, small_step, epssm, smdiv, cf1, cf2, cf3 &
+                                   )
+
+      use mpas_atm_dimensions
+
+      implicit none
+
+
+      !
+      ! Dummy arguments
+      !
+      integer, intent(in) :: nCells, nEdges, nCellsSolve
+      integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
+      integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
+
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rho_zz
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: theta_m
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: ru_p
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw_p
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_pp
+
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: zz_rtheta_pp_old
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: zz
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: exner
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: cqu
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: ruAvg
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: wwAvg
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rho_pp
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: cofwt
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: coftz
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: zxu
+
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: a_tri
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: alpha_tri
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: gamma_tri
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: dss
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: tend_ru
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: tend_rho
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: tend_rt
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: tend_rw
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: zgrid
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: cofwr
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: cofwz
+
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: w
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: ru
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: ru_save
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw_save
+
+      real (kind=RKIND), dimension(nVertLevels) :: fzm
+      real (kind=RKIND), dimension(nVertLevels) :: fzp
+      real (kind=RKIND), dimension(nVertLevels) :: rdzw
+      real (kind=RKIND), dimension(nEdges+1) :: invDcEdge
+      real (kind=RKIND), dimension(nCells+1) :: invAreaCell
+      real (kind=RKIND), dimension(nVertLevels) :: cofrz
+      real (kind=RKIND), dimension(nEdges+1) :: dvEdge
+
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pzp
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pzm
+
+      integer, dimension(nCells+1) :: nEdgesOnCell
+      integer, dimension(2,nEdges+1) :: cellsOnEdge
+      integer, dimension(maxEdges,nCells+1) :: edgesOnCell
+      real (kind=RKIND), dimension(maxEdges,nCells+1) :: edgesOnCell_sign
+
+      integer, intent(in) :: small_step
+      real (kind=RKIND), intent(in) :: dts, epssm, smdiv, cf1, cf2, cf3
+
+  
+      !
+      ! Local variables
+      !
+      integer :: cell1, cell2, iEdge, iCell, i, k
+      real (kind=RKIND) :: c2, rcv
+      real (kind=RKIND) :: pgrad, flux, resm
+
 
       rcv = rgas / (cp - rgas)
       c2 = cp * rcv
@@ -1550,6 +1641,7 @@ MPAS_GPTL_STOP('dyn_tend')
 
 !  changes for horizontal pressure gradient efficiency, change 1
 
+!DIR$ IVDEP
          do k = 2,nVertLevels
             zz_rtheta_pp_old(k,iCell) = (1.0_RKIND + smdiv) * rtheta_pp(k,iCell) * zz(k,iCell) - smdiv * zz_rtheta_pp_old(k,iCell)
          end do
@@ -1586,6 +1678,7 @@ MPAS_GPTL_STOP('dyn_tend')
          ! update edges for block-owned cells
          if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve ) then
 
+!DIR$ IVDEP
             do k=1,nVertLevels
                pgrad =     ((zz_rtheta_pp_old(k,cell2)                    &
                             -zz_rtheta_pp_old(k,cell1)) * invDcEdge(iEdge)     &
@@ -1593,9 +1686,11 @@ MPAS_GPTL_STOP('dyn_tend')
                pgrad = 0.5*c2*(exner(k,cell1)+exner(k,cell2))*pgrad
 
                ru_p(k,iEdge) = ru_p(k,iEdge) + dts*(tend_ru(k,iEdge) - cqu(k,iEdge) * pgrad) 
+            end do
 
-               ! accumulate ru_p for use later in scalar transport
-
+            ! accumulate ru_p for use later in scalar transport
+!DIR$ IVDEP
+            do k=1,nVertLevels
                ruAvg(k,iEdge) = ruAvg(k,iEdge) + ru_p(k,iEdge)
             end do
 
@@ -1613,8 +1708,12 @@ MPAS_GPTL_STOP('dyn_tend')
          ! update edges for block-owned cells
          if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve ) then
 
+!DIR$ IVDEP
             do k=1,nVertLevels
                ru_p(k,iEdge) = dts*tend_ru(k,iEdge)
+            end do
+!DIR$ IVDEP
+            do k=1,nVertLevels
                ruAvg(k,iEdge) = ruAvg(k,iEdge) + ru_p(k,iEdge)
             end do
 
@@ -1643,7 +1742,13 @@ MPAS_GPTL_STOP('dyn_tend')
 
       ! saving rtheta_pp before update for use in divergence damping in next acoustic step
 
-      zz_rtheta_pp_old(:,cellStart:cellEnd) = rtheta_pp(:,cellStart:cellEnd) * zz(:,cellStart:cellEnd)
+!DIR$ IVDEP
+      do iCell=cellStart,cellEnd
+!DIR$ IVDEP
+         do k=1,nVertLevels
+            zz_rtheta_pp_old(k,iCell) = rtheta_pp(k,iCell) * zz(k,iCell)
+         end do
+      end do
 
 !$OMP BARRIER  ! Why is there a barrier here?????
 
@@ -1661,10 +1766,13 @@ MPAS_GPTL_STOP('dyn_tend')
                                                -coftz(k,iCell)*rw_p(k,iCell))
          end do
 
+!DIR$ IVDEP
          do k=2, nVertLevels
-
             wwavg(k,iCell) = wwavg(k,iCell) + 0.5*(1.0-epssm)*rw_p(k,iCell)
+         end do
 
+!DIR$ IVDEP
+         do k=2, nVertLevels
             rw_p(k,iCell) = rw_p(k,iCell) +  dts*tend_rw(k,iCell)                       &
                        - cofwz(k,iCell)*((zz(k  ,iCell)*ts (k  ,iCell)                  &
                                      -zz(k-1,iCell)*ts (k-1,iCell))                     &
@@ -1678,16 +1786,19 @@ MPAS_GPTL_STOP('dyn_tend')
 
          ! tridiagonal solve sweeping up and then down the column
 
+!MGD VECTOR DEPENDENCE
          do k=2,nVertLevels
             rw_p(k,iCell) = (rw_p(k,iCell)-a_tri(k,iCell)*rw_p(k-1,iCell))*alpha_tri(k,iCell)
          end do
 
+!MGD VECTOR DEPENDENCE
          do k=nVertLevels,1,-1
             rw_p(k,iCell) = rw_p(k,iCell) - gamma_tri(k,iCell)*rw_p(k+1,iCell)     
          end do
 
          ! the implicit Rayleigh damping on w (gravity-wave absorbing) 
 
+!DIR$ IVDEP
          do k=2,nVertLevels
 ! redefine rw_p to be perturbation from time t, change 6
 ! original code
@@ -1701,15 +1812,17 @@ MPAS_GPTL_STOP('dyn_tend')
                         *(fzm(k)*rho_zz(k,iCell)+fzp(k)*rho_zz(k-1,iCell))       &
                                  *w(k,iCell)    )/(1.0+dts*dss(k,iCell)) &
                          - (rw_save(k  ,iCell) - rw(k  ,iCell))
+         end do
 
-            ! accumulate (rho*omega)' for use later in scalar transport
-
+         ! accumulate (rho*omega)' for use later in scalar transport
+!DIR$ IVDEP
+         do k=2,nVertLevels
             wwAvg(k,iCell) = wwAvg(k,iCell) + 0.5*(1.0+epssm)*rw_p(k,iCell)
- 
          end do
 
          ! update rho_pp and theta_pp given updated rw_p
 
+!DIR$ IVDEP
          do k=1,nVertLevels
             rho_pp(k,iCell) = rs(k,iCell) - cofrz(k) *(rw_p(k+1,iCell)-rw_p(k  ,iCell))
             rtheta_pp(k,iCell) = ts(k,iCell) - rdzw(k)*(coftz(k+1,iCell)*rw_p(k+1,iCell)  &
@@ -1718,7 +1831,7 @@ MPAS_GPTL_STOP('dyn_tend')
 
       end do !  end of loop over cells
 
-   end subroutine atm_advance_acoustic_step
+   end subroutine atm_advance_acoustic_step_work
 
 
    subroutine atm_recover_large_step_variables( state, diag, tend, mesh, configs, dt, ns, rk_step, &
