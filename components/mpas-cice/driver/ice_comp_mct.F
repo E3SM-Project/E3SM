@@ -133,7 +133,7 @@ contains
     character(len=StrKIND) :: cpl_seq_option
 
     type (MPAS_Time_Type) :: currTime
-    integer :: iam,ierr 
+    integer :: iam, ierr, ierr_local
     integer :: iyear0, imonth0
     character(len=StrKIND)  :: starttype          ! infodata start type
     character(len=StrKIND)  :: timeStamp
@@ -563,7 +563,8 @@ contains
     if ( alarmTimeStep < denInterval ) then
        ierr = 1
     end if
-    call mpas_dmpar_max_int(domain % dminfo, ierr, ierr)
+    ierr_local = ierr
+    call mpas_dmpar_max_int(domain % dminfo, ierr_local, ierr)
 
     if ( ierr == 1 ) then
        write(stderrUnit, *) ' ERROR: Coupling interval is: ', trim(coupleTimeStamp)
@@ -577,7 +578,8 @@ contains
        ierr = 1
     end if
 
-    call mpas_dmpar_max_int(domain % dminfo, ierr, ierr)
+    ierr_local = ierr
+    call mpas_dmpar_max_int(domain % dminfo, ierr_local, ierr)
 
     if ( ierr == 1 ) then
        write(stderrUnit, *) ' ERROR: Coupling interval is: ', trim(coupleTimeStamp)
