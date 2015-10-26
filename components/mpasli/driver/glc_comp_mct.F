@@ -1308,8 +1308,7 @@ contains
                                   surfaceTemperatureField,&
                                   basalOceanHeatflxField,&
                                   OceanDensityField
-   
-   
+
    integer, pointer :: nCellsSolve
 
    real (kind=RKIND), dimension(:), pointer :: sfcMassBal,&
@@ -1332,23 +1331,24 @@ contains
          call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
 	 
          call mpas_pool_get_field(geometryPool, 'sfcMassBal',sfcMassBalField)
-         call mpas_pool_get_field(geometryPool, 'basalOceanMassBal',basalOceanMassBalField)
-         call mpas_pool_get_field(thermalPool, 'surfaceTemperature',surfaceTemperatureField)
-         call mpas_pool_get_field(thermalPool, 'basalOceanHeatflx',basalOceanHeatflxField)
+         call mpas_pool_get_field(thermalPool, 'surfaceTemperature',surfaceTemperatureField)	 
+         !call mpas_pool_get_field(geometryPool, 'basalOceanMassBal',basalOceanMassBalField)!uncomment when field becomes available
+         !call mpas_pool_get_field(thermalPool, 'basalOceanHeatflx',basalOceanHeatflxField)!uncomment when field becomes available
          !call mpas_pool_get_field(geometryPool, 'OceanDensity',OceanDensityField) !uncomment when field becomes available
 	 
 	 sfcMassBal => sfcMassBalField % array  
          basalOceanMassBal => basalOceanMassBalField % array
          surfaceTemperature => surfaceTemperatureField % array 
-         basalOceanHeatflx => basalOceanHeatflxField % array
-         !OceanDensity => OceanDensityField % array
+	 !basalOceanMassBal => basalOceanMassBalField % array!uncomment when field becomes available
+         !basalOceanHeatflx => basalOceanHeatflxField % array!uncomment when field becomes available
+         !OceanDensity => OceanDensityField % array!uncomment when field becomes available
 	 
 	 do i = 1, nCellsSolve
 	    n = n + 1
 	    sfcMassBal(i) =         x2g_g % rAttr(index_x2g_Flgl_qice, n)
 	    surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)
-	    basalOceanMassBal(i) =  x2g_g % rAttr(index_x2g_Fogx_qiceli, n)
-	    basalOceanHeatflx(i) =  x2g_g % rAttr(index_x2g_Fogx_qicehi, n)
+	    !basalOceanMassBal(i) =  x2g_g % rAttr(index_x2g_Fogx_qiceli, n)!uncomment when field becomes available
+	    !basalOceanHeatflx(i) =  x2g_g % rAttr(index_x2g_Fogx_qicehi, n)!uncomment when field becomes available
 	    !OceanDensity (i) =      x2g_g % rAttr(index_x2g_So_phieff, n) !uncomment when field becomes available
 	 end do
 	 
@@ -1359,15 +1359,15 @@ contains
       call mpas_pool_get_subpool(domain % blocklist % structs, 'thermal', thermalPool)
       
       call mpas_pool_get_field(geometryPool, 'sfcMassBal',sfcMassBalField)
-      call mpas_pool_get_field(geometryPool, 'basalOceanMassBal',basalOceanMassBalField)
       call mpas_pool_get_field(thermalPool,  'surfaceTemperature',surfaceTemperatureField)
-      call mpas_pool_get_field(thermalPool,  'basalOceanHeatflx',basalOceanHeatflxField)
+      !call mpas_pool_get_field(geometryPool, 'basalOceanMassBal',basalOceanMassBalField)  !uncomment when field becomes available
+      !call mpas_pool_get_field(thermalPool,  'basalOceanHeatflx',basalOceanHeatflxField) !uncomment when field becomes available
       !call mpas_pool_get_field(geometryPool, 'OceanDensity',OceanDensityField) !uncomment when field becomes available
       
       call mpas_dmpar_exch_halo_field(sfcMassBalField)
-      call mpas_dmpar_exch_halo_field(basalOceanMassBalField)
-      call mpas_dmpar_exch_halo_field(surfaceTemperatureField)
-      call mpas_dmpar_exch_halo_field(basalOceanHeatflxField)
+      call mpas_dmpar_exch_halo_field(surfaceTemperatureField)      
+      !call mpas_dmpar_exch_halo_field(basalOceanMassBalField) !uncomment when field becomes available
+      !call mpas_dmpar_exch_halo_field(basalOceanHeatflxField) !uncomment when field becomes available
       !call mpas_dmpar_exch_halo_field(OceanDensityField) !uncomment when field becomes available
 
   end subroutine glc_import_mct
@@ -1400,6 +1400,9 @@ contains
 
    integer, pointer :: nCellsSolve, nVertLevels
 
+   real, dimension(nCellsSolve) :: Fogg_rofi_local_copy
+   real, dimension(nCellsSolve) :: Figg_rofi_local_copy
+
    real (kind=RKIND), dimension(:), pointer :: upperSurface, basalTemperature, Thickness
    real (kind=RKIND), dimension(:,:), pointer :: layerThickness
    integer, dimension(:), pointer :: cellMask
@@ -1428,23 +1431,28 @@ contains
 	
         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 	
+	!Jer: make local copies of these, to send to route_to_ice_runoff
+	Fogg_rofi_local_copy = g2x_g % rAttr(index_g2x_Fogg_rofi,:)
+        Figg_rofi_local_copy = g2x_g % rAttr(index_g2x_Figg_rofi,:)
+	!Jer: set these to zero uniformly to be sure (perhaps redundant)
+	g2x_g % rAttr(index_g2x_Sg_icemask_grounded, :)=0.0_RKIND
+	g2x_g % rAttr(index_g2x_Sg_icemask_floating, :)=0.0_RKIND
+	
         do i = 1, nCellsSolve
            n = n + 1
-	   !call route_ice_runoff(0.0, & !Attach to ice calving flux once present
-           !                      rofi_to_ocn=g2x_g % rAttr(index_g2x_Fogg_rofi, n), &
-           !                      rofi_to_ice=g2x_g % rAttr(index_g2x_Figg_rofi, n))
-	   
+	   call route_ice_runoff(0.0, & !Attach to ice calving flux once present
+                                 rofi_to_ocn=Fogg_rofi_local_copy(n), &
+                                 rofi_to_ice=Figg_rofi_local_copy(n))
 	   g2x_g % rAttr(index_g2x_Fogg_rofl,n) = 0.0 !Attach to subglacial liquid flux once present
            g2x_g % rAttr(index_g2x_Sg_topo, n) = upperSurface(i)
 	   g2x_g % rAttr(index_g2x_Flgg_hflx, n) = 0.0 !Attach to a surface heat flux once present
            g2x_g % rAttr(index_g2x_Sg_icemask, n) = li_mask_is_ice_int(cellMask(i))
-	   !g2x_g % rAttr(index_g2x_Sg_icemask_grounded, n) = real(li_mask_is_grounded_ice(cellMask(i)))
-	   !g2x_g % rAttr(index_g2x_Sg_icemask_floating, n) = real(li_mask_is_floating_ice(cellMask(i)))
 	   g2x_g % rAttr(index_g2x_Sg_icemask_coupled_fluxes, n) = g2x_g % rAttr(index_g2x_Sg_icemask, n)
            ! icemask_coupled_fluxes for now should be the same as icemask
 	   ! For above: If we add in the ability to prevent the ice sheet from evolving
-           ! (i.e., to ignore these fluxes) then this should be set to 0 everywhere.
-	   
+           ! (i.e., to ignore these fluxes) then this should be set to 0 everywhere.	   
+	   if li_mask_is_grounded_ice(cellMask(i)) g2x_g % rAttr(index_g2x_Sg_icemask_grounded, n) = 1.0_RKIND
+	   if li_mask_is_floating_ice(cellMask(i)) g2x_g % rAttr(index_g2x_Sg_icemask_floating, n) = 1.0_RKIND
 	   g2x_g % rAttr(index_g2x_Sg_tbot, n) = basalTemperature(i)
 	   g2x_g % rAttr(index_g2x_Sg_dztbot, n) = layerThickness(nVertLevels,i)/ 2.0
 	   g2x_g % rAttr(index_g2x_Sg_lithop, n) = Thickness(i)*SHR_CONST_RHOICE*SHR_CONST_G
