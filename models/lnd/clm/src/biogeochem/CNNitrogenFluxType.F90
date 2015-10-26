@@ -341,16 +341,15 @@ module CNNitrogenFluxType
      real(r8), pointer :: plant_nh4demand_vr_patch                  (:,:)   ! pft-level plant NH4 demand BGC mode
      real(r8), pointer :: plant_no3demand_vr_patch                  (:,:)   ! pft-level plant NO3 demand BGC mode
      real(r8), pointer :: plant_ndemand_vr_patch                    (:,:)   ! pft-level plant N demand CN mode
-     real(r8), pointer :: prev_leafn_to_litter_patch  				(:)     ! previous timestep leaf N litterfall flux (gN/m2/s)
-     real(r8), pointer :: prev_frootn_to_litter_patch 				(:)     ! previous timestep froot N litterfall flux (gN/m2/s)
-         
-     ! debug
- 	 real(r8), pointer :: plant_n_uptake_flux						(:)     ! for the purpose of mass balance check 	 
- 	 real(r8), pointer :: soil_n_immob_flux			 				(:)     ! for the purpose of mass balance check
- 	 real(r8), pointer :: soil_n_immob_flux_vr                      (:,:)   ! for the purpose of mass balance check
- 	 real(r8), pointer :: soil_n_grossmin_flux			 			(:)     ! for the purpose of mass balance check
-	 real(r8), pointer :: plant_to_litter_nflux						(:)     ! for the purpose of mass balance check
-	 real(r8), pointer :: plant_to_cwd_nflux						(:)     ! for the purpose of mass balance check
+     real(r8), pointer :: prev_leafn_to_litter_patch                (:)     ! previous timestep leaf N litterfall flux (gN/m2/s)
+     real(r8), pointer :: prev_frootn_to_litter_patch               (:)     ! previous timestep froot N litterfall flux (gN/m2/s)
+
+     real(r8), pointer :: plant_n_uptake_flux                       (:)     ! for the purpose of mass balance check  
+     real(r8), pointer :: soil_n_immob_flux                         (:)     ! for the purpose of mass balance check
+     real(r8), pointer :: soil_n_immob_flux_vr                      (:,:)   ! for the purpose of mass balance check
+     real(r8), pointer :: soil_n_grossmin_flux                      (:)     ! for the purpose of mass balance check
+     real(r8), pointer :: plant_to_litter_nflux                     (:)     ! for the purpose of mass balance check
+     real(r8), pointer :: plant_to_cwd_nflux                        (:)     ! for the purpose of mass balance check
 
 
    contains
@@ -705,17 +704,16 @@ contains
     allocate(this%prev_leafn_to_litter_patch  (begp:endp)) ;             this%prev_leafn_to_litter_patch  (:) = nan
     allocate(this%prev_frootn_to_litter_patch (begp:endp)) ;             this%prev_frootn_to_litter_patch (:) = nan
 
- 	! debug
- 	allocate(this%plant_n_uptake_flux         (begc:endc)) ;	         this%plant_n_uptake_flux  		  (:) = nan
- 	allocate(this%soil_n_immob_flux           (begc:endc)) ;	         this%soil_n_immob_flux			  (:) = nan
- 	allocate(this%soil_n_immob_flux_vr        (begc:endc,1:nlevdecomp)); this%soil_n_immob_flux_vr        (:,:) = nan
- 	allocate(this%soil_n_grossmin_flux        (begc:endc)) ;	         this%soil_n_grossmin_flux		  (:) = nan
-	allocate(this%actual_immob_no3_col        (begc:endc)) ;	         this%actual_immob_no3_col		  (:) = nan
-	allocate(this%actual_immob_nh4_col		  (begc:endc)) ;	         this%actual_immob_nh4_col		  (:) = nan
-	allocate(this%smin_no3_to_plant_col		  (begc:endc)) ;	         this%smin_no3_to_plant_col		  (:) = nan
-	allocate(this%smin_nh4_to_plant_col		  (begc:endc)) ;	         this%smin_nh4_to_plant_col		  (:) = nan 
-    allocate(this%plant_to_litter_nflux		  (begc:endc)) ;	         this%plant_to_litter_nflux		  (:) = nan
-    allocate(this%plant_to_cwd_nflux		  (begc:endc)) ;	         this%plant_to_cwd_nflux		  (:) = nan
+    allocate(this%plant_n_uptake_flux         (begc:endc)) ;	         this%plant_n_uptake_flux   (:)   = nan
+    allocate(this%soil_n_immob_flux           (begc:endc)) ;	         this%soil_n_immob_flux	    (:)   = nan
+    allocate(this%soil_n_immob_flux_vr        (begc:endc,1:nlevdecomp)); this%soil_n_immob_flux_vr  (:,:) = nan
+    allocate(this%soil_n_grossmin_flux        (begc:endc)) ;	         this%soil_n_grossmin_flux  (:)   = nan
+    allocate(this%actual_immob_no3_col        (begc:endc)) ;             this%actual_immob_no3_col  (:)   = nan
+    allocate(this%actual_immob_nh4_col        (begc:endc)) ;             this%actual_immob_nh4_col  (:)   = nan
+    allocate(this%smin_no3_to_plant_col       (begc:endc)) ;             this%smin_no3_to_plant_col (:)   = nan
+    allocate(this%smin_nh4_to_plant_col       (begc:endc)) ;             this%smin_nh4_to_plant_col (:)   = nan 
+    allocate(this%plant_to_litter_nflux       (begc:endc)) ;             this%plant_to_litter_nflux (:)   = nan
+    allocate(this%plant_to_cwd_nflux          (begc:endc)) ;             this%plant_to_cwd_nflux    (:)   = nan
     
   end subroutine InitAllocate
 
@@ -2653,34 +2651,33 @@ contains
        end do
     end do
     
-    ! debug
     do fc = 1,num_soilc
-        c = filter_soilc(fc)
-        this%smin_no3_to_plant_col(c) = 0._r8
-        this%smin_nh4_to_plant_col(c) = 0._r8
-        this%plant_to_litter_nflux(c) = 0._r8
-        this%plant_to_cwd_nflux(c) = 0._r8
-        do j = 1, nlevdecomp
-            this%smin_no3_to_plant_col(c)= this%smin_no3_to_plant_col(c) + & 
-                this%smin_no3_to_plant_vr_col(c,j) * dzsoi_decomp(j)
-            this%smin_nh4_to_plant_col(c)= this%smin_nh4_to_plant_col(c) + & 
-                this%smin_nh4_to_plant_vr_col(c,j) * dzsoi_decomp(j) 
-            this%plant_to_litter_nflux(c) = &
-                this%plant_to_litter_nflux(c)  + &
-                this%phenology_n_to_litr_met_n_col(c,j)* dzsoi_decomp(j) + &
-                this%phenology_n_to_litr_cel_n_col(c,j)* dzsoi_decomp(j) + &
-                this%phenology_n_to_litr_lig_n_col(c,j)* dzsoi_decomp(j) + &
-                this%gap_mortality_n_to_litr_met_n_col(c,j)* dzsoi_decomp(j) + &
-                this%gap_mortality_n_to_litr_cel_n_col(c,j)* dzsoi_decomp(j) + &
-                this%gap_mortality_n_to_litr_lig_n_col(c,j)* dzsoi_decomp(j) + &
-                this%m_n_to_litr_met_fire_col(c,j)* dzsoi_decomp(j) + &
-                this%m_n_to_litr_cel_fire_col(c,j)* dzsoi_decomp(j) + &
-                this%m_n_to_litr_lig_fire_col(c,j)* dzsoi_decomp(j)
-            this%plant_to_cwd_nflux(c) = &
-                this%plant_to_cwd_nflux(c) + &
-                this%gap_mortality_n_to_cwdn_col(c,j)* dzsoi_decomp(j) + &
-                this%fire_mortality_n_to_cwdn_col(c,j)* dzsoi_decomp(j)
-        end do
+       c = filter_soilc(fc)
+       this%smin_no3_to_plant_col(c) = 0._r8
+       this%smin_nh4_to_plant_col(c) = 0._r8
+       this%plant_to_litter_nflux(c) = 0._r8
+       this%plant_to_cwd_nflux(c) = 0._r8
+       do j = 1, nlevdecomp
+          this%smin_no3_to_plant_col(c)= this%smin_no3_to_plant_col(c) + & 
+               this%smin_no3_to_plant_vr_col(c,j) * dzsoi_decomp(j)
+          this%smin_nh4_to_plant_col(c)= this%smin_nh4_to_plant_col(c) + & 
+               this%smin_nh4_to_plant_vr_col(c,j) * dzsoi_decomp(j) 
+          this%plant_to_litter_nflux(c) = &
+               this%plant_to_litter_nflux(c)  + &
+               this%phenology_n_to_litr_met_n_col(c,j)* dzsoi_decomp(j) + &
+               this%phenology_n_to_litr_cel_n_col(c,j)* dzsoi_decomp(j) + &
+               this%phenology_n_to_litr_lig_n_col(c,j)* dzsoi_decomp(j) + &
+               this%gap_mortality_n_to_litr_met_n_col(c,j)* dzsoi_decomp(j) + &
+               this%gap_mortality_n_to_litr_cel_n_col(c,j)* dzsoi_decomp(j) + &
+               this%gap_mortality_n_to_litr_lig_n_col(c,j)* dzsoi_decomp(j) + &
+               this%m_n_to_litr_met_fire_col(c,j)* dzsoi_decomp(j) + &
+               this%m_n_to_litr_cel_fire_col(c,j)* dzsoi_decomp(j) + &
+               this%m_n_to_litr_lig_fire_col(c,j)* dzsoi_decomp(j)
+          this%plant_to_cwd_nflux(c) = &
+               this%plant_to_cwd_nflux(c) + &
+               this%gap_mortality_n_to_cwdn_col(c,j)* dzsoi_decomp(j) + &
+               this%fire_mortality_n_to_cwdn_col(c,j)* dzsoi_decomp(j)
+       end do
     end do
 
   end subroutine Summary

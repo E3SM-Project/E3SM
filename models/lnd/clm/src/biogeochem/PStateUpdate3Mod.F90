@@ -123,39 +123,39 @@ contains
             c = filter_soilc(fc)
             
             if (nu_com .eq. 'RD') then
-                ! assign read in parameter values
-                smax_c = smax( isoilorder(c) )
-                ks_sorption_c = ks_sorption( isoilorder(c) )
-                temp_solutionp(c,j) = ps%solutionp_vr_col(c,j)
-                ps%solutionp_vr_col(c,j)      = ps%solutionp_vr_col(c,j)  + ( flux_mineralization(c,j) + pf%primp_to_labilep_vr_col(c,j)*dt &
-                                + pf%secondp_to_labilep_vr_col(c,j)*dt &
-                                + pf%supplement_to_sminp_vr_col(c,j)*dt - pf%sminp_to_plant_vr_col(c,j)*dt&
-                                - pf%labilep_to_secondp_vr_col(c,j)*dt - pf%sminp_leached_vr_col(c,j)*dt ) / &
-                                (1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+ps%solutionp_vr_col(c,j))**2._r8)
+               ! assign read in parameter values
+               smax_c = smax( isoilorder(c) )
+               ks_sorption_c = ks_sorption( isoilorder(c) )
+               temp_solutionp(c,j) = ps%solutionp_vr_col(c,j)
+               ps%solutionp_vr_col(c,j)      = ps%solutionp_vr_col(c,j)  + ( flux_mineralization(c,j) + pf%primp_to_labilep_vr_col(c,j)*dt &
+                    + pf%secondp_to_labilep_vr_col(c,j)*dt &
+                    + pf%supplement_to_sminp_vr_col(c,j)*dt - pf%sminp_to_plant_vr_col(c,j)*dt&
+                    - pf%labilep_to_secondp_vr_col(c,j)*dt - pf%sminp_leached_vr_col(c,j)*dt ) / &
+                    (1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+ps%solutionp_vr_col(c,j))**2._r8)
 
-                ps%labilep_vr_col(c,j) = ps%labilep_vr_col(c,j) + ((smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 ) * &
-                             ( flux_mineralization(c,j) + pf%primp_to_labilep_vr_col(c,j)*dt + pf%secondp_to_labilep_vr_col(c,j)*dt &
-                             + pf%supplement_to_sminp_vr_col(c,j)*dt - pf%sminp_to_plant_vr_col(c,j)*dt &
-                             - pf%labilep_to_secondp_vr_col(c,j)*dt - pf%sminp_leached_vr_col(c,j)*dt ) / &
-                             ( 1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 )
+               ps%labilep_vr_col(c,j) = ps%labilep_vr_col(c,j) + ((smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 ) * &
+                    ( flux_mineralization(c,j) + pf%primp_to_labilep_vr_col(c,j)*dt + pf%secondp_to_labilep_vr_col(c,j)*dt &
+                    + pf%supplement_to_sminp_vr_col(c,j)*dt - pf%sminp_to_plant_vr_col(c,j)*dt &
+                    - pf%labilep_to_secondp_vr_col(c,j)*dt - pf%sminp_leached_vr_col(c,j)*dt ) / &
+                    ( 1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 )
                              
-                pf%desorb_to_solutionp_vr(c,j) = ( flux_mineralization(c,j) + pf%primp_to_labilep_vr_col(c,j)*dt &
-                                + pf%secondp_to_labilep_vr_col(c,j)*dt &
-                                + pf%supplement_to_sminp_vr_col(c,j)*dt - pf%sminp_to_plant_vr_col(c,j)*dt&
-                                - pf%labilep_to_secondp_vr_col(c,j)*dt - pf%sminp_leached_vr_col(c,j)*dt ) / &
-                                (1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+ps%solutionp_vr_col(c,j))**2._r8)
+               pf%desorb_to_solutionp_vr(c,j) = ( flux_mineralization(c,j) + pf%primp_to_labilep_vr_col(c,j)*dt &
+                    + pf%secondp_to_labilep_vr_col(c,j)*dt &
+                    + pf%supplement_to_sminp_vr_col(c,j)*dt - pf%sminp_to_plant_vr_col(c,j)*dt&
+                    - pf%labilep_to_secondp_vr_col(c,j)*dt - pf%sminp_leached_vr_col(c,j)*dt ) / &
+                    (1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+ps%solutionp_vr_col(c,j))**2._r8)
             
-                pf%adsorb_to_labilep_vr(c,j) = ((smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 ) * &
-                             ( flux_mineralization(c,j) + pf%primp_to_labilep_vr_col(c,j)*dt + pf%secondp_to_labilep_vr_col(c,j)*dt &
-                             + pf%supplement_to_sminp_vr_col(c,j)*dt - pf%sminp_to_plant_vr_col(c,j)*dt &
-                             - pf%labilep_to_secondp_vr_col(c,j)*dt - pf%sminp_leached_vr_col(c,j)*dt ) / &
-                             ( 1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 )
+               pf%adsorb_to_labilep_vr(c,j) = ((smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 ) * &
+                    ( flux_mineralization(c,j) + pf%primp_to_labilep_vr_col(c,j)*dt + pf%secondp_to_labilep_vr_col(c,j)*dt &
+                    + pf%supplement_to_sminp_vr_col(c,j)*dt - pf%sminp_to_plant_vr_col(c,j)*dt &
+                    - pf%labilep_to_secondp_vr_col(c,j)*dt - pf%sminp_leached_vr_col(c,j)*dt ) / &
+                    ( 1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 )
             else
-                ! ECA and MIC mode assume mineral surface adsorption flux is a potential competitor of solution P
-                ! assume solutionP - labileP not equilibrate within 30 min, due to instantaneous
-                ! plant uptake, microbial uptake
-                ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col(c,j) + pf%supplement_to_sminp_vr_col(c,j)*dt
-                ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col(c,j) - pf%sminp_leached_vr_col(c,j)*dt
+               ! ECA and MIC mode assume mineral surface adsorption flux is a potential competitor of solution P
+               ! assume solutionP - labileP not equilibrate within 30 min, due to instantaneous
+               ! plant uptake, microbial uptake
+               ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col(c,j) + pf%supplement_to_sminp_vr_col(c,j)*dt
+               ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col(c,j) - pf%sminp_leached_vr_col(c,j)*dt
             end if
             
             ps%secondp_vr_col(c,j) = ps%secondp_vr_col(c,j) + ( pf%labilep_to_secondp_vr_col(c,j) - pf%secondp_to_labilep_vr_col(c,j) &
@@ -164,8 +164,6 @@ contains
             ps%occlp_vr_col(c,j)   = ps%occlp_vr_col(c,j) + ( pf%secondp_to_occlp_vr_col(c,j) ) * dt
 
             ps%primp_vr_col(c,j)   = ps%primp_vr_col(c,j) - ( pf%primp_to_labilep_vr_col(c,j) )*dt
-            
-
          end do
       enddo
 

@@ -268,7 +268,6 @@ contains
        end if
        
        print*,"X.YANG debug SUPL NITROGEN and PHOSPHORUS ",suplnitro,suplphos
-       print*,"Q.Zhu debug nu_com,phtase,nfix ", nu_com,nu_com_phosphatase,nu_com_nfix
        call relavu( unitn )
 
        ! ----------------------------------------------------------------------
@@ -698,10 +697,10 @@ contains
        
        write(iulog,*) '   override_bgc_restart_mismatch_dump                     : ', override_bgc_restart_mismatch_dump
     end if
-    if (suplphos /= suplpNon)then
+       if (suplphos /= suplpNon)then
           write(iulog,*) '   Supplemental Phosphorus mode is set to run over Patches: ', &
                trim(suplphos)
-    end if
+       end if
 
     if (use_cn .and. use_vertsoilc) then
        write(iulog, *) '   som_adv_flux, the advection term in soil mixing (m/s) : ', som_adv_flux

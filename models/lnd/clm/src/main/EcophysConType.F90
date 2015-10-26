@@ -90,28 +90,28 @@ module EcophysConType
      real(r8), allocatable :: deadwdcp      (:)   ! dead wood (xylem and heartwood) C:P (gC/gP)
      real(r8), allocatable :: graincp       (:)   ! grain C:P (gC/gP) for prognostic crop model
      
-     ! Q. Zhu add pft dependent parameters for phosphorus for nutrient competition
-     real(r8), allocatable :: vmax_plant_nh4(:)   ! vmax for plant nh4 uptake
-     real(r8), allocatable :: vmax_plant_no3(:)   ! vmax for plant no3 uptake
-     real(r8), allocatable :: vmax_plant_p(:)     ! vmax for plant p uptake
-     real(r8), allocatable :: vmax_minsurf_p_vr(:,:)! vmax for p adsorption
-     real(r8), allocatable :: km_plant_nh4(:)     ! km for plant nh4 uptake
-     real(r8), allocatable :: km_plant_no3(:)     ! km for plant no3 uptake
-     real(r8), allocatable :: km_plant_p(:)       ! km for plant p uptake
-     real(r8), allocatable :: km_minsurf_p_vr(:,:)! km for p adsorption
-     real(r8)              :: km_decomp_nh4       ! km for microbial decomposer nh4 uptake
-     real(r8)              :: km_decomp_no3       ! km for microbial decomposer no3 uptake
-     real(r8)              :: km_decomp_p         ! km for microbial decomposer p uptake
-     real(r8)              :: km_nit              ! km for nitrifier nh4 uptake
-     real(r8)              :: km_den              ! km for denitrifier no3 uptake
-     real(r8), allocatable :: decompmicc_patch_vr(:,:)    ! microbial decomposer biomass gc/m3
-     real(r8)              :: vmax_nfix           ! vmax of symbiotic n2 fixation
-     real(r8)              :: km_nfix             ! km of symbiotic n2 fixation
-     real(r8), allocatable :: vmax_ptase_vr(:)    ! vmax of biochemical p production
-     real(r8)              :: km_ptase            ! km of biochemical p production
-     real(r8)              :: lamda_ptase         ! critical value that incur biochemical production
-     real(r8), allocatable :: i_vc(:)             ! intercept of photosynthesis vcmax ~ leaf n content regression model
-     real(r8), allocatable :: s_vc(:)             ! slope of photosynthesis vcmax ~ leaf n content regression model
+     ! pft dependent parameters for phosphorus for nutrient competition
+     real(r8), allocatable :: vmax_plant_nh4(:)        ! vmax for plant nh4 uptake
+     real(r8), allocatable :: vmax_plant_no3(:)        ! vmax for plant no3 uptake
+     real(r8), allocatable :: vmax_plant_p(:)          ! vmax for plant p uptake
+     real(r8), allocatable :: vmax_minsurf_p_vr(:,:)   ! vmax for p adsorption
+     real(r8), allocatable :: km_plant_nh4(:)          ! km for plant nh4 uptake
+     real(r8), allocatable :: km_plant_no3(:)          ! km for plant no3 uptake
+     real(r8), allocatable :: km_plant_p(:)            ! km for plant p uptake
+     real(r8), allocatable :: km_minsurf_p_vr(:,:)     ! km for p adsorption
+     real(r8)              :: km_decomp_nh4            ! km for microbial decomposer nh4 uptake
+     real(r8)              :: km_decomp_no3            ! km for microbial decomposer no3 uptake
+     real(r8)              :: km_decomp_p              ! km for microbial decomposer p uptake
+     real(r8)              :: km_nit                   ! km for nitrifier nh4 uptake
+     real(r8)              :: km_den                   ! km for denitrifier no3 uptake
+     real(r8), allocatable :: decompmicc_patch_vr(:,:) ! microbial decomposer biomass gc/m3
+     real(r8)              :: vmax_nfix                ! vmax of symbiotic n2 fixation
+     real(r8)              :: km_nfix                  ! km of symbiotic n2 fixation
+     real(r8), allocatable :: vmax_ptase_vr(:)         ! vmax of biochemical p production
+     real(r8)              :: km_ptase                 ! km of biochemical p production
+     real(r8)              :: lamda_ptase              ! critical value that incur biochemical production
+     real(r8), allocatable :: i_vc(:)                  ! intercept of photosynthesis vcmax ~ leaf n content regression model
+     real(r8), allocatable :: s_vc(:)                  ! slope of photosynthesis vcmax ~ leaf n content regression model
   end type Ecophyscon_type
 
   type(ecophyscon_type), public :: ecophyscon ! patch ecophysiological constants structure
@@ -207,18 +207,18 @@ contains
     allocate(ecophyscon%deadwdcp      (0:numpft))        ; ecophyscon%deadwdcp     (:)   =nan
     allocate(ecophyscon%graincp       (0:numpft))        ; ecophyscon%graincp      (:)   =nan
     
-    allocate(ecophyscon%vmax_plant_nh4(0:numpft))        ; ecophyscon%vmax_plant_nh4(:)  =nan
-    allocate(ecophyscon%vmax_plant_no3(0:numpft))        ; ecophyscon%vmax_plant_no3(:)  =nan
-    allocate(ecophyscon%vmax_plant_p(0:numpft))          ; ecophyscon%vmax_plant_p(:)    =nan
-    allocate(ecophyscon%vmax_minsurf_p_vr(0:nsoilorder,1:nlevdecomp)); ecophyscon%vmax_minsurf_p_vr(:,:)=nan
-    allocate(ecophyscon%km_plant_nh4(0:numpft))          ; ecophyscon%km_plant_nh4(:)    =nan
-    allocate(ecophyscon%km_plant_no3(0:numpft))          ; ecophyscon%km_plant_no3(:)    =nan
-    allocate(ecophyscon%km_plant_p(0:numpft))            ; ecophyscon%km_plant_p(:)      =nan
-    allocate(ecophyscon%km_minsurf_p_vr(0:nsoilorder,1:nlevdecomp)); ecophyscon%km_minsurf_p_vr(:,:)=nan
-    allocate(ecophyscon%decompmicc_patch_vr(0:numpft,1:nlevdecomp)); ecophyscon%decompmicc_patch_vr(:,:)=nan
-    allocate(ecophyscon%vmax_ptase_vr(1:nlevdecomp));    ecophyscon%vmax_ptase_vr(:)     =nan
-    allocate(ecophyscon%i_vc(0:numpft));                 ecophyscon%i_vc(:)              =nan
-    allocate(ecophyscon%s_vc(0:numpft));                 ecophyscon%s_vc(:)              =nan
+    allocate( ecophyscon%vmax_plant_nh4(0:numpft))                     ; ecophyscon%vmax_plant_nh4(:)        =nan
+    allocate( ecophyscon%vmax_plant_no3(0:numpft))                     ; ecophyscon%vmax_plant_no3(:)        =nan
+    allocate( ecophyscon%vmax_plant_p(0:numpft))                       ; ecophyscon%vmax_plant_p(:)          =nan
+    allocate( ecophyscon%vmax_minsurf_p_vr(0:nsoilorder,1:nlevdecomp)) ; ecophyscon%vmax_minsurf_p_vr(:,:)   =nan
+    allocate( ecophyscon%km_plant_nh4(0:numpft))                       ; ecophyscon%km_plant_nh4(:)          =nan
+    allocate( ecophyscon%km_plant_no3(0:numpft))                       ; ecophyscon%km_plant_no3(:)          =nan
+    allocate( ecophyscon%km_plant_p(0:numpft))                         ; ecophyscon%km_plant_p(:)            =nan
+    allocate( ecophyscon%km_minsurf_p_vr(0:nsoilorder,1:nlevdecomp))   ; ecophyscon%km_minsurf_p_vr(:,:)     =nan
+    allocate( ecophyscon%decompmicc_patch_vr(0:numpft,1:nlevdecomp))   ; ecophyscon%decompmicc_patch_vr(:,:) =nan
+    allocate( ecophyscon%vmax_ptase_vr(1:nlevdecomp))                  ; ecophyscon%vmax_ptase_vr(:)         =nan
+    allocate( ecophyscon%i_vc(0:numpft))                               ; ecophyscon%i_vc(:)                  =nan
+    allocate( ecophyscon%s_vc(0:numpft))                               ; ecophyscon%s_vc(:)                  =nan
     
     do m = 0,numpft
 
@@ -283,6 +283,7 @@ contains
        ecophyscon%livewdcp(m)     = livewdcp(m)
        ecophyscon%deadwdcp(m)     = deadwdcp(m)
        ecophyscon%graincp(m)      = graincp(m)
+
     end do
     
     do m = 0,numpft
@@ -294,38 +295,43 @@ contains
         ecophyscon%km_plant_p(m)     = km_plant_p(m)
         ecophyscon%i_vc(m)           = i_vc(m)
         ecophyscon%s_vc(m)           = s_vc(m)
+
         do j = 1 , nlevdecomp
-            ecophyscon%decompmicc_patch_vr(m,j) = decompmicc_patch_vr(j,m)
+           ecophyscon%decompmicc_patch_vr(m,j) = decompmicc_patch_vr(j,m)
         end do
+
         if (nu_com .ne. 'RD') then ! use new stoichiometry for eca and mic competition
-            ecophyscon%leafcn(m)     = leafcn_obs(m)
-            ecophyscon%frootcn(m)    = frootcn_obs(m)
-            ecophyscon%livewdcn(m)   = livewdcn_obs(m)
-            ecophyscon%deadwdcn(m)   = deadwdcn_obs(m)
-            ecophyscon%leafcp(m)     = leafcp_obs(m)
-            ecophyscon%frootcp(m)    = frootcp_obs(m)
-            ecophyscon%livewdcp(m)   = livewdcp_obs(m)
-            ecophyscon%deadwdcp(m)   = deadwdcp_obs(m)
+           ecophyscon%leafcn(m)     = leafcn_obs(m)
+           ecophyscon%frootcn(m)    = frootcn_obs(m)
+           ecophyscon%livewdcn(m)   = livewdcn_obs(m)
+           ecophyscon%deadwdcn(m)   = deadwdcn_obs(m)
+           ecophyscon%leafcp(m)     = leafcp_obs(m)
+           ecophyscon%frootcp(m)    = frootcp_obs(m)
+           ecophyscon%livewdcp(m)   = livewdcp_obs(m)
+           ecophyscon%deadwdcp(m)   = deadwdcp_obs(m)
         end if
     end do
+
     do m = 0, nsoilorder
-        do j = 1 , nlevdecomp
-            ecophyscon%vmax_minsurf_p_vr(m,j) = vmax_minsurf_p_vr(j,m)
-            ecophyscon%km_minsurf_p_vr(m,j) = km_minsurf_p_vr(j,m)
-        end do
+       do j = 1 , nlevdecomp
+          ecophyscon%vmax_minsurf_p_vr(m,j) = vmax_minsurf_p_vr(j,m)
+          ecophyscon%km_minsurf_p_vr(m,j) = km_minsurf_p_vr(j,m)
+       end do
     end do
+
     ecophyscon%km_decomp_nh4 = km_decomp_nh4
     ecophyscon%km_decomp_no3 = km_decomp_no3
-    ecophyscon%km_decomp_p = km_decomp_p
-    ecophyscon%km_nit = km_nit
-    ecophyscon%km_den = km_den
-    ecophyscon%vmax_nfix = vmax_nfix
-    ecophyscon%km_nfix = km_nfix
+    ecophyscon%km_decomp_p   = km_decomp_p
+    ecophyscon%km_nit        = km_nit
+    ecophyscon%km_den        = km_den
+    ecophyscon%vmax_nfix     = vmax_nfix
+    ecophyscon%km_nfix       = km_nfix
+    ecophyscon%km_ptase      = km_ptase
+    ecophyscon%lamda_ptase   = lamda_ptase
+
     do j = 1 , nlevdecomp
-        ecophyscon%vmax_ptase_vr(j) = vmax_ptase_vr(j)
+       ecophyscon%vmax_ptase_vr(j) = vmax_ptase_vr(j)
     end do
-    ecophyscon%km_ptase = km_ptase
-    ecophyscon%lamda_ptase = lamda_ptase
      
   end subroutine ecophysconInit
 

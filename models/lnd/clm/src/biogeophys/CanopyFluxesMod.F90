@@ -724,6 +724,7 @@ contains
 
       call t_startf('can_iter')
       ITERATION : do while (itlef <= itmax .and. fn > 0)
+
          ! Determine friction velocity, and potential temperature and humidity
          ! profiles of the surface boundary layer
 
@@ -845,9 +846,9 @@ contains
 
          else ! not use_ed
             call Photosynthesis (bounds, fn, filterp, &
-                svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
-                dayl_factor(begp:endp), atm2lnd_vars, temperature_vars, surfalb_vars, solarabs_vars, &
-                canopystate_vars, photosyns_vars, nitrogenstate_vars, phosphorusstate_vars, phase='sun')
+                 svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
+                 dayl_factor(begp:endp), atm2lnd_vars, temperature_vars, surfalb_vars, solarabs_vars, &
+                 canopystate_vars, photosyns_vars, nitrogenstate_vars, phosphorusstate_vars, phase='sun')
 
             if ( use_c13 ) then
                call Fractionation (bounds, fn, filterp, &
@@ -869,9 +870,9 @@ contains
             end do
 
             call Photosynthesis (bounds, fn, filterp, &
-                svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
-                dayl_factor(begp:endp), atm2lnd_vars, temperature_vars, surfalb_vars, solarabs_vars, &
-                canopystate_vars, photosyns_vars, nitrogenstate_vars, phosphorusstate_vars, phase='sha')
+                 svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
+                 dayl_factor(begp:endp), atm2lnd_vars, temperature_vars, surfalb_vars, solarabs_vars, &
+                 canopystate_vars, photosyns_vars, nitrogenstate_vars, phosphorusstate_vars, phase='sha')
 
             if ( use_c13 ) then
                call Fractionation (bounds, fn, filterp,  &

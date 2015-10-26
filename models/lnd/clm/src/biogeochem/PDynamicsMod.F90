@@ -585,27 +585,27 @@ contains
          pgpp_pleafn      => phosphorusstate_vars%pgpp_pleafn_patch   , &
          vmax_ptase_vr    => ecophyscon%vmax_ptase_vr                 , &
          km_ptase         => ecophyscon%km_ptase                      , &
-         lamda_ptase      => ecophyscon%lamda_ptase  &! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
+         lamda_ptase      => ecophyscon%lamda_ptase                     &! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
          )
 
     do j = 1,nlevdecomp
-        do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            biochem_pmin_vr(c,j) = 0.0_r8
-            do p = col%pfti(c), col%pftf(c)
-                if (pft%active(p).and. (pft%itype(p) .ne. noveg)) then
-                    lamda_up = pgpp_pleafp(p)/pgpp_pleafn(p)
-                    biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + &
-                        vmax_ptase_vr(j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
-                        (km_ptase + lamda_up - lamda_ptase) * froot_prof(p,j) * pft%wtcol(p)
-                end if
-            enddo
-        enddo
-    enddo 
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          biochem_pmin_vr(c,j) = 0.0_r8
+          do p = col%pfti(c), col%pftf(c)
+             if (pft%active(p).and. (pft%itype(p) .ne. noveg)) then
+                lamda_up = pgpp_pleafp(p)/pgpp_pleafn(p)
+                biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + &
+                     vmax_ptase_vr(j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
+                     (km_ptase + lamda_up - lamda_ptase) * froot_prof(p,j) * pft%wtcol(p)
+             end if
+          enddo
+       enddo
+    enddo    
 
-    end associate
+  end associate
 
-  end subroutine PBiochemMin_QZ
+end subroutine PBiochemMin_QZ
   
 end module PDynamicsMod
                

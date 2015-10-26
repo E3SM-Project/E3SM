@@ -341,7 +341,7 @@ contains
          write(iulog,*)'net flux    = ',(col_ninputs(c)-col_noutputs(c))*dt
          call endrun(msg=errMsg(__FILE__, __LINE__))
       end if
-         
+
     end associate
 
   end subroutine NBalanceCheck

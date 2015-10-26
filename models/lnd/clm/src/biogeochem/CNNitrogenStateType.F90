@@ -20,7 +20,6 @@ module CNNitrogenStateType
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
   use PatchType              , only : pft
-  ! <Qing Zhu 2015>
   use clm_varctl             , only : nu_com
                
   ! 
@@ -108,7 +107,6 @@ module CNNitrogenStateType
      real(r8), pointer :: actual_deadwdcn              (:)     ! dynamic dead wood cn ratio
      real(r8), pointer :: actual_graincn               (:)     ! dynamic grain cn ratio
      
-     ! debug 
      real(r8), pointer :: totpftn_beg_col              (:)
      real(r8), pointer :: cwdn_beg_col                 (:)
      real(r8), pointer :: totlitn_beg_col              (:)
@@ -260,28 +258,27 @@ contains
     allocate(this%actual_deadwdcn     (begp:endp))   ; this%actual_deadwdcn     (:) = nan
     allocate(this%actual_graincn      (begp:endp))   ; this%actual_graincn      (:) = nan
 
-    ! debug
-    allocate(this%totpftn_beg_col     (begc:endc))   ; this%totpftn_beg_col	    (:) = nan
-    allocate(this%cwdn_beg_col        (begc:endc))   ; this%cwdn_beg_col		(:) = nan
-    allocate(this%totlitn_beg_col     (begc:endc))   ; this%totlitn_beg_col	    (:) = nan
-    allocate(this%totsomn_beg_col     (begc:endc))   ; this%totsomn_beg_col	    (:) = nan
-    allocate(this%sminn_beg_col       (begc:endc))   ; this%sminn_beg_col	    (:) = nan
+    allocate(this%totpftn_beg_col     (begc:endc))   ; this%totpftn_beg_col     (:) = nan
+    allocate(this%cwdn_beg_col        (begc:endc))   ; this%cwdn_beg_col        (:) = nan
+    allocate(this%totlitn_beg_col     (begc:endc))   ; this%totlitn_beg_col     (:) = nan
+    allocate(this%totsomn_beg_col     (begc:endc))   ; this%totsomn_beg_col     (:) = nan
+    allocate(this%sminn_beg_col       (begc:endc))   ; this%sminn_beg_col       (:) = nan
     allocate(this%smin_no3_beg_col    (begc:endc))   ; this%smin_no3_beg_col    (:) = nan
     allocate(this%smin_nh4_beg_col    (begc:endc))   ; this%smin_nh4_beg_col    (:) = nan
-    allocate(this%totprodn_beg_col    (begc:endc))   ; this%totprodn_beg_col	(:) = nan
-    allocate(this%seedn_beg_col       (begc:endc))   ; this%seedn_beg_col		(:) = nan
-    allocate(this%ntrunc_beg_col      (begc:endc))   ; this%ntrunc_beg_col		(:) = nan
+    allocate(this%totprodn_beg_col    (begc:endc))   ; this%totprodn_beg_col    (:) = nan
+    allocate(this%seedn_beg_col       (begc:endc))   ; this%seedn_beg_col       (:) = nan
+    allocate(this%ntrunc_beg_col      (begc:endc))   ; this%ntrunc_beg_col      (:) = nan
     
-    allocate(this%totpftn_end_col     (begc:endc))   ; this%totpftn_end_col	    (:) = nan
-    allocate(this%cwdn_end_col        (begc:endc))   ; this%cwdn_end_col		(:) = nan
-    allocate(this%totlitn_end_col     (begc:endc))   ; this%totlitn_end_col	    (:) = nan
-    allocate(this%totsomn_end_col     (begc:endc))   ; this%totsomn_end_col	    (:) = nan
-    allocate(this%sminn_end_col       (begc:endc))   ; this%sminn_end_col		(:) = nan
+    allocate(this%totpftn_end_col     (begc:endc))   ; this%totpftn_end_col     (:) = nan
+    allocate(this%cwdn_end_col        (begc:endc))   ; this%cwdn_end_col        (:) = nan
+    allocate(this%totlitn_end_col     (begc:endc))   ; this%totlitn_end_col     (:) = nan
+    allocate(this%totsomn_end_col     (begc:endc))   ; this%totsomn_end_col     (:) = nan
+    allocate(this%sminn_end_col       (begc:endc))   ; this%sminn_end_col       (:) = nan
     allocate(this%smin_no3_end_col    (begc:endc))   ; this%smin_no3_end_col    (:) = nan
     allocate(this%smin_nh4_end_col    (begc:endc))   ; this%smin_nh4_end_col    (:) = nan
-    allocate(this%totprodn_end_col    (begc:endc))   ; this%totprodn_end_col	(:) = nan
-    allocate(this%seedn_end_col       (begc:endc))   ; this%seedn_end_col		(:) = nan
-    allocate(this%ntrunc_end_col      (begc:endc))   ; this%ntrunc_end_col		(:) = nan
+    allocate(this%totprodn_end_col    (begc:endc))   ; this%totprodn_end_col    (:) = nan
+    allocate(this%seedn_end_col       (begc:endc))   ; this%seedn_end_col       (:) = nan
+    allocate(this%ntrunc_end_col      (begc:endc))   ; this%ntrunc_end_col      (:) = nan
 
   end subroutine InitAllocate
 
@@ -454,7 +451,6 @@ contains
          avgflag='A', long_name='total PFT-level nitrogen', &
          ptr_patch=this%totpftn_patch)
 
-    ! <Qing Zhu 2015>
     call hist_addfld1d (fname='actual_leafcn', units='gC/gN', &
          avgflag='A', long_name='flexible leafCN', &
          ptr_patch=this%actual_leafcn)
@@ -722,13 +718,13 @@ contains
           end if
           
           if (nu_com .ne. 'RD') then
-              if (pft%itype(p) == noveg) then
-                  this%frootn_patch(p) = 0._r8
-                  this%frootn_storage_patch(p) = 0._r8
-              else
-                  this%frootn_patch(p) = frootc_patch(p) / ecophyscon%frootcn(pft%itype(p))
-                  this%frootn_storage_patch(p) = frootc_storage_patch(p) / ecophyscon%frootcn(pft%itype(p))
-              end if
+             if (pft%itype(p) == noveg) then
+                this%frootn_patch(p) = 0._r8
+                this%frootn_storage_patch(p) = 0._r8
+             else
+                this%frootn_patch(p) = frootc_patch(p) / ecophyscon%frootcn(pft%itype(p))
+                this%frootn_storage_patch(p) = frootc_storage_patch(p) / ecophyscon%frootcn(pft%itype(p))
+             end if
           end if
 
           this%deadstemn_storage_patch(p)  = 0._r8
@@ -972,7 +968,6 @@ contains
             interpinic_flag='interp', readvar=readvar, data=this%grainn_xfer_patch)
     end if
     
-    ! <Qing Zhu 2015>
     call restartvar(ncid=ncid, flag=flag,  varname='actual_leafcn', xtype=ncd_double,  &
         dim1name='pft',    long_name='flexible leafCN', units='gC/gN', &
         interpinic_flag='interp', readvar=readvar, data=this%actual_leafcn)

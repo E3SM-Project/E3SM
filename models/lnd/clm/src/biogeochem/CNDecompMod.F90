@@ -180,7 +180,6 @@ contains
          phr_vr                           =>    carbonflux_vars%phr_vr_col                             , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)                           
          fphr                             =>    carbonflux_vars%fphr_col                               , & ! Output: [real(r8) (:,:)   ]  fraction of potential SOM + LITTER heterotrophic
          
-         ! debug
          soil_n_immob_flux                =>    nitrogenflux_vars%soil_n_immob_flux                    , &
          soil_n_immob_flux_vr             =>    nitrogenflux_vars%soil_n_immob_flux_vr                 , &
          soil_n_grossmin_flux             =>    nitrogenflux_vars%soil_n_grossmin_flux                 , &
@@ -502,7 +501,6 @@ contains
          end do
       end do
       
-      ! debug
       do fc = 1,num_soilc
           c = filter_soilc(fc)
           soil_n_immob_flux(c) =0.0_r8

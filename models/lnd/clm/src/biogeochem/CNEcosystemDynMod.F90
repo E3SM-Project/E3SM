@@ -199,23 +199,24 @@ contains
 
        ! --------------------------------------------------
        ! Nitrogen Deposition, Fixation and Respiration, phosphorus dynamics
-       ! --------------------------------------------------           
+       ! --------------------------------------------------
+
        call t_startf('CNDeposition')
        call CNNDeposition(bounds, &
             atm2lnd_vars, nitrogenflux_vars)
        call t_stopf('CNDeposition')
 
        if (.not. nu_com_nfix) then 
-           call t_startf('CNFixation')
-           call CNNFixation( num_soilc, filter_soilc, &
+          call t_startf('CNFixation')
+          call CNNFixation( num_soilc, filter_soilc, &
                carbonflux_vars, nitrogenflux_vars)
-           call t_stopf('CNFixation')
+          call t_stopf('CNFixation')
        else
-           ! nu_com_nfix is true
-           call t_startf('CNFixation')
-           call CNNFixation_QZ( num_soilc, filter_soilc, &
+          ! nu_com_nfix is true
+          call t_startf('CNFixation')
+          call CNNFixation_QZ( num_soilc, filter_soilc, &
                cnstate_vars, carbonflux_vars, nitrogenflux_vars, temperature_vars, carbonstate_vars, phosphorusstate_vars)
-           call t_stopf('CNFixation')
+          call t_stopf('CNFixation')
        end if
 
        call t_startf('CNMResp')
@@ -231,6 +232,7 @@ contains
             canopystate_vars, soilstate_vars, temperature_vars, photosyns_vars, &
             carbonflux_vars, nitrogenstate_vars)
        call t_stopf('CNMResp')
+
        
        call t_startf('CNDecompAlloc')
 
@@ -242,39 +244,39 @@ contains
                canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
        end if
 
-       if( nu_com .ne. 'RD') then
-           call t_startf('PWeathering')
-           call PWeathering(num_soilc, filter_soilc, &
+       if ( nu_com .ne. 'RD') then
+          call t_startf('PWeathering')
+          call PWeathering(num_soilc, filter_soilc, &
                cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-           call t_stopf('PWeathering')
-       
-           call t_startf('PAdsorption')
-           call PAdsorption(num_soilc, filter_soilc, &
-               cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-           call t_stopf('PAdsorption')
+          call t_stopf('PWeathering')
 
-           call t_startf('PDesorption')
-           call PDesorption(num_soilc, filter_soilc, &
+          call t_startf('PAdsorption')
+          call PAdsorption(num_soilc, filter_soilc, &
                cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-           call t_stopf('PDesorption')
+          call t_stopf('PAdsorption')
 
-           call t_startf('POcclusion')
-           call POcclusion(num_soilc, filter_soilc, &
+          call t_startf('PDesorption')
+          call PDesorption(num_soilc, filter_soilc, &
                cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-           call t_stopf('POcclusion')
+          call t_stopf('PDesorption')
 
-           if (.not. nu_com_phosphatase) then
-               call t_startf('PBiochemMin')
-               call PBiochemMin(bounds,num_soilc, filter_soilc, &
-                   cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-               call t_stopf('PBiochemMin')
-           else
-               ! nu_com_phosphatase is true
-               call t_startf('PBiochemMin')
-               call PBiochemMin_QZ(bounds,num_soilc, filter_soilc, &
-                   cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-               call t_stopf('PBiochemMin')
-           end if
+          call t_startf('POcclusion')
+          call POcclusion(num_soilc, filter_soilc, &
+               cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+          call t_stopf('POcclusion')
+
+          if (.not. nu_com_phosphatase) then
+             call t_startf('PBiochemMin')
+             call PBiochemMin(bounds,num_soilc, filter_soilc, &
+                  cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+             call t_stopf('PBiochemMin')
+          else
+             ! nu_com_phosphatase is true
+             call t_startf('PBiochemMin')
+             call PBiochemMin_QZ(bounds,num_soilc, filter_soilc, &
+                  cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+             call t_stopf('PBiochemMin')
+          end if
        end if
        
        call CNDecompAlloc(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -315,7 +317,7 @@ contains
        !--------------------------------------------
        ! CNUpdate0
        !--------------------------------------------
-           
+
        call t_startf('CNUpdate0')
        call CStateUpdate0(&
             num_soilp, filter_soilp, &
@@ -520,8 +522,10 @@ contains
                cnstate_vars)
        end if
 
-       if (nu_com .ne. 'RD') call update_plant_stoichiometry(num_soilp, filter_soilp, &
-           carbonstate_vars, nitrogenstate_vars, phosphorusstate_vars)
+       if (nu_com .ne. 'RD') then
+          call update_plant_stoichiometry(num_soilp, filter_soilp, &
+               carbonstate_vars, nitrogenstate_vars, phosphorusstate_vars)
+       end if
            
     end if !end of if not use_ed block
 
@@ -587,48 +591,49 @@ contains
   
     ! only do if ed is off
     if( .not. use_ed) then
-        if ( nu_com .eq. 'RD') then
-           call t_startf('PWeathering')
-           call PWeathering(num_soilc, filter_soilc, &
+       if ( nu_com .eq. 'RD') then
+          call t_startf('PWeathering')
+          call PWeathering(num_soilc, filter_soilc, &
                cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-           call t_stopf('PWeathering')
-       
-           call t_startf('PAdsorption')
-           call PAdsorption(num_soilc, filter_soilc, &
-               cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-           call t_stopf('PAdsorption')
+          call t_stopf('PWeathering')
 
-           call t_startf('PDesorption')
-           call PDesorption(num_soilc, filter_soilc, &
+          call t_startf('PAdsorption')
+          call PAdsorption(num_soilc, filter_soilc, &
                cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-           call t_stopf('PDesorption')
+          call t_stopf('PAdsorption')
 
-           call t_startf('POcclusion')
-           call POcclusion(num_soilc, filter_soilc, &
+          call t_startf('PDesorption')
+          call PDesorption(num_soilc, filter_soilc, &
                cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-           call t_stopf('POcclusion')
+          call t_stopf('PDesorption')
 
-           if (.not. nu_com_phosphatase) then
-               call t_startf('PBiochemMin')
-               call PBiochemMin(bounds,num_soilc, filter_soilc, &
-                   cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-               call t_stopf('PBiochemMin')
-           else
-               ! nu_com_phosphatase is true
-               call t_startf('PBiochemMin')
-               call PBiochemMin_QZ(bounds,num_soilc, filter_soilc, &
-                   cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-               call t_stopf('PBiochemMin')
-           end if
+          call t_startf('POcclusion')
+          call POcclusion(num_soilc, filter_soilc, &
+               cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+          call t_stopf('POcclusion')
+
+          if (.not. nu_com_phosphatase) then
+             call t_startf('PBiochemMin')
+             call PBiochemMin(bounds,num_soilc, filter_soilc, &
+                  cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+             call t_stopf('PBiochemMin')
+          else
+             ! nu_com_phosphatase is true
+             call t_startf('PBiochemMin')
+             call PBiochemMin_QZ(bounds,num_soilc, filter_soilc, &
+                  cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+             call t_stopf('PBiochemMin')
+          end if
        end if
        
        call CNNLeaching(bounds, num_soilc, filter_soilc, &
             waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)
-           
+
        call PLeaching(bounds, num_soilc, filter_soilc, &
-           waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
-           
+            waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
+
        call t_startf('CNUpdate3')
+
        call NStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             nitrogenflux_vars, nitrogenstate_vars)
        call t_stopf('CNUpdate3')

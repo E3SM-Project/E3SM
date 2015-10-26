@@ -13,9 +13,6 @@ module CNNStateUpdate3Mod
   use clm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use CNNitrogenStateType , only : nitrogenstate_type
   use CNNitrogenFLuxType  , only : nitrogenflux_type
-  use abortutils          , only : endrun
-  use PatchType           , only : pft
-  use shr_log_mod         , only : errMsg => shr_log_errMsg
   !
   implicit none
   save

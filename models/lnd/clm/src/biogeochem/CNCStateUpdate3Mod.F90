@@ -12,9 +12,6 @@ module CNCStateUpdate3Mod
   use clm_varpar       , only : nlevdecomp, ndecomp_pools, i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use CNCarbonStateType, only : carbonstate_type
   use CNCarbonFluxType , only : carbonflux_type
-  use clm_varctl          , only : iulog
-  use PatchType           , only : pft
-  use abortutils          , only : endrun
   !
   implicit none
   save
@@ -55,7 +52,7 @@ contains
 
       ! set time steps
       dt = real( get_step_size(), r8 )
-      
+
       ! column level carbon fluxes from fire
       do j = 1, nlevdecomp
          do fc = 1,num_soilc
@@ -130,6 +127,7 @@ contains
          cs%deadcrootc_xfer_patch(p)    = cs%deadcrootc_xfer_patch(p)     - cf%m_deadcrootc_xfer_to_litter_fire_patch(p)* dt
          cs%gresp_xfer_patch(p)         = cs%gresp_xfer_patch(p)          - cf%m_gresp_xfer_to_fire_patch(p)            * dt
          cs%gresp_xfer_patch(p)         = cs%gresp_xfer_patch(p)          - cf%m_gresp_xfer_to_litter_fire_patch(p)     * dt
+
       end do ! end of pft loop
 
     end associate

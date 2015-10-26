@@ -148,25 +148,25 @@ contains
       ! plant uptake, microbial uptake
       ! update solutionp pool after competition
       if (nu_com .ne. 'RD') then
-          do j = 1, nlevdecomp
-              do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  do k = 1, ndecomp_cascade_transitions
-                      if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
-                          ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col(c,j) - &
-                              pf%decomp_cascade_sminp_flux_vr_col(c,j,k)*dt
-                      else  ! terminal transitions
-                          ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col(c,j) + &
-                              pf%decomp_cascade_sminp_flux_vr_col(c,j,k)*dt
-                      end if
-                  end do
-                  ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col(c,j) - pf%sminp_to_plant_vr_col(c,j)*dt
-                  ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col(c,j) - pf%adsorb_to_labilep_vr(c,j)*dt
-                  ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col(c,j) + pf%desorb_to_solutionp_vr(c,j)*dt
-                  ps%labilep_vr_col(c,j) = ps%labilep_vr_col(c,j) + pf%adsorb_to_labilep_vr(c,j)*dt
-                  ps%labilep_vr_col(c,j) = ps%labilep_vr_col(c,j) - pf%desorb_to_solutionp_vr(c,j)*dt
-              end do
-          end do
+         do j = 1, nlevdecomp
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               do k = 1, ndecomp_cascade_transitions
+                  if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
+                     ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col(c,j) - &
+                          pf%decomp_cascade_sminp_flux_vr_col(c,j,k)*dt
+                  else  ! terminal transitions
+                     ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col(c,j) + &
+                          pf%decomp_cascade_sminp_flux_vr_col(c,j,k)*dt
+                  end if
+               end do
+               ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col(c,j) - pf%sminp_to_plant_vr_col(c,j)*dt
+               ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col(c,j) - pf%adsorb_to_labilep_vr(c,j)*dt
+               ps%solutionp_vr_col(c,j) = ps%solutionp_vr_col(c,j) + pf%desorb_to_solutionp_vr(c,j)*dt
+               ps%labilep_vr_col(c,j) = ps%labilep_vr_col(c,j) + pf%adsorb_to_labilep_vr(c,j)*dt
+               ps%labilep_vr_col(c,j) = ps%labilep_vr_col(c,j) - pf%desorb_to_solutionp_vr(c,j)*dt
+            end do
+         end do
       end if
       
       ! patch loop

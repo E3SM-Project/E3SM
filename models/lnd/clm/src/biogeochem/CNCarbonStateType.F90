@@ -18,7 +18,6 @@ module CNCarbonStateType
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
   use PatchType              , only : pft
-  ! <Qing Zhu 2015>
   use clm_varctl             , only : nu_com
   
   ! 
@@ -101,7 +100,6 @@ module CNCarbonStateType
      real(r8), pointer :: errcb_patch              (:)     ! patch carbon balance error for the timestep (gC/m**2)
      real(r8), pointer :: errcb_col                (:)     ! patch carbon balance error for the timestep (gC/m**2)
      
-     ! debug 
      real(r8), pointer :: totpftc_beg_col(:)
      real(r8), pointer :: cwdc_beg_col(:)
      real(r8), pointer :: totlitc_beg_col(:)
@@ -229,7 +227,6 @@ contains
     allocate(this%errcb_patch (begp:endp));     this%errcb_patch (:) = nan
     allocate(this%errcb_col   (begc:endc));     this%errcb_col   (:) = nan
 
-    ! debug
     allocate(this%totpftc_beg_col(begc:endc));  this%totpftc_beg_col (:) = nan
     allocate(this%cwdc_beg_col   (begc:endc));  this%cwdc_beg_col    (:) = nan
     allocate(this%totlitc_beg_col(begc:endc));  this%totlitc_beg_col (:) = nan

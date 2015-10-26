@@ -12,7 +12,7 @@ module PhosphorusFluxType
   use abortutils             , only : endrun
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
-  use PatchType              , only : pft               
+  use PatchType              , only : pft                
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -271,25 +271,22 @@ module PhosphorusFluxType
      real(r8), pointer :: avail_retransp_patch                      (:)     ! P flux available from retranslocation pool (gP/m2/s)
      real(r8), pointer :: plant_palloc_patch                        (:)     ! total allocated P flux (gP/m2/s)
 
-     ! <Qing Zhu 2015>
      real(r8), pointer :: sminp_to_plant_patch                      (:)     ! pft-level plant p uptake (gP/m2/s)
-     real(r8), pointer :: plant_pdemand_vr_patch                    (:,:)   !pft-level plant P demand
-     real(r8), pointer :: prev_leafp_to_litter_patch  				(:)     !previous timestep leaf P litterfall flux (gP/m2/s)
-     real(r8), pointer :: prev_frootp_to_litter_patch 				(:)     !previous timestep froot P litterfall flux (gP/m2/s)
-	 real(r8), pointer :: adsorb_to_labilep_vr                      (:,:)
-	 real(r8), pointer :: desorb_to_solutionp_vr                    (:,:)
-	 real(r8), pointer :: adsorb_to_labilep_col                     (:)
-	 real(r8), pointer :: desorb_to_solutionp_col                   (:)
-	 
-     ! debug
- 	 real(r8), pointer :: plant_p_uptake_flux						(:)     ! for the purpose of mass balance check 	 
- 	 real(r8), pointer :: soil_p_immob_flux			 				(:)     ! for the purpose of mass balance check
- 	 real(r8), pointer :: soil_p_immob_flux_vr                      (:,:)   ! for the purpose of mass balance check
- 	 real(r8), pointer :: soil_p_grossmin_flux			 			(:)     ! for the purpose of mass balance check
- 	 real(r8), pointer :: smin_p_to_plant_col						(:)     ! for the purpose of mass balance check
-	 real(r8), pointer :: plant_to_litter_pflux						(:)     ! for the purpose of mass balance check
-	 real(r8), pointer :: plant_to_cwd_pflux						(:)     ! for the purpose of mass balance check
+     real(r8), pointer :: plant_pdemand_vr_patch                    (:,:)   ! pft-level plant P demand
+     real(r8), pointer :: prev_leafp_to_litter_patch                (:)     ! previous timestep leaf P litterfall flux (gP/m2/s)
+     real(r8), pointer :: prev_frootp_to_litter_patch               (:)     ! previous timestep froot P litterfall flux (gP/m2/s)
+     real(r8), pointer :: adsorb_to_labilep_vr                      (:,:)
+     real(r8), pointer :: desorb_to_solutionp_vr                    (:,:)
+     real(r8), pointer :: adsorb_to_labilep_col                     (:)
+     real(r8), pointer :: desorb_to_solutionp_col                   (:)
 
+     real(r8), pointer :: plant_p_uptake_flux                       (:)     ! for the purpose of mass balance check  
+     real(r8), pointer :: soil_p_immob_flux                         (:)     ! for the purpose of mass balance check
+     real(r8), pointer :: soil_p_immob_flux_vr                      (:,:)   ! for the purpose of mass balance check
+     real(r8), pointer :: soil_p_grossmin_flux                      (:)     ! for the purpose of mass balance check
+     real(r8), pointer :: smin_p_to_plant_col                       (:)     ! for the purpose of mass balance check
+     real(r8), pointer :: plant_to_litter_pflux                     (:)     ! for the purpose of mass balance check
+     real(r8), pointer :: plant_to_cwd_pflux                        (:)     ! for the purpose of mass balance check
 
    contains
 
@@ -468,24 +465,24 @@ contains
     allocate(this%fert_p_patch                      (begp:endp)) ; this%fert_p_patch                      (:) = nan
     allocate(this%fert_counter_patch                (begp:endp)) ; this%fert_counter_patch                (:) = nan
 
-    allocate(this%pdep_to_sminp_col             (begc:endc))    ; this%pdep_to_sminp_col	     (:) = nan
-    allocate(this%fert_p_to_sminp_col             (begc:endc))    ; this%fert_p_to_sminp_col	     (:) = nan
+    allocate(this%pdep_to_sminp_col             (begc:endc))    ; this%pdep_to_sminp_col     (:) = nan
+    allocate(this%fert_p_to_sminp_col             (begc:endc))    ; this%fert_p_to_sminp_col     (:) = nan
     allocate(this%hrv_deadstemp_to_prod10p_col  (begc:endc))    ; this%hrv_deadstemp_to_prod10p_col  (:) = nan
     allocate(this%hrv_deadstemp_to_prod100p_col (begc:endc))    ; this%hrv_deadstemp_to_prod100p_col (:) = nan
-    allocate(this%sminp_to_plant_col            (begc:endc))    ; this%sminp_to_plant_col	     (:) = nan
+    allocate(this%sminp_to_plant_col            (begc:endc))    ; this%sminp_to_plant_col     (:) = nan
     allocate(this%potential_immob_p_col           (begc:endc))    ; this%potential_immob_p_col           (:) = nan
     allocate(this%actual_immob_p_col              (begc:endc))    ; this%actual_immob_p_col              (:) = nan
     allocate(this%gross_pmin_col                (begc:endc))    ; this%gross_pmin_col                (:) = nan
     allocate(this%net_pmin_col                  (begc:endc))    ; this%net_pmin_col                  (:) = nan
     allocate(this%supplement_to_sminp_col       (begc:endc))    ; this%supplement_to_sminp_col       (:) = nan
     allocate(this%prod10p_loss_col              (begc:endc))    ; this%prod10p_loss_col              (:) = nan
-    allocate(this%prod100p_loss_col             (begc:endc))    ; this%prod100p_loss_col	     (:) = nan
-    allocate(this%product_ploss_col             (begc:endc))    ; this%product_ploss_col	     (:) = nan
+    allocate(this%prod100p_loss_col             (begc:endc))    ; this%prod100p_loss_col     (:) = nan
+    allocate(this%product_ploss_col             (begc:endc))    ; this%product_ploss_col     (:) = nan
     allocate(this%pinputs_col                   (begc:endc))    ; this%pinputs_col                   (:) = nan
     allocate(this%poutputs_col                  (begc:endc))    ; this%poutputs_col                  (:) = nan
     allocate(this%fire_ploss_col                (begc:endc))    ; this%fire_ploss_col                (:) = nan
     allocate(this%fire_ploss_p2c_col            (begc:endc))    ; this%fire_ploss_p2c_col            (:) = nan
-    allocate(this%som_p_leached_col             (begc:endc))    ; this%som_p_leached_col	     (:) = nan
+    allocate(this%som_p_leached_col             (begc:endc))    ; this%som_p_leached_col     (:) = nan
 
     allocate(this%m_p_to_litr_met_fire_col   (begc:endc,1:nlevdecomp_full)) ; this%m_p_to_litr_met_fire_col   (:,:) = nan
     allocate(this%m_p_to_litr_cel_fire_col   (begc:endc,1:nlevdecomp_full)) ; this%m_p_to_litr_cel_fire_col   (:,:) = nan
@@ -597,23 +594,22 @@ contains
     allocate(this%avail_retransp_patch        (begp:endp)) ;    this%avail_retransp_patch        (:) = nan
     allocate(this%plant_palloc_patch          (begp:endp)) ;    this%plant_palloc_patch          (:) = nan
     
-    allocate(this%sminp_to_plant_patch        (begp:endp)) ;             this%sminp_to_plant_patch        (:) = nan
-    allocate(this%plant_pdemand_vr_patch      (begp:endp,1:nlevdecomp_full)); this%plant_pdemand_vr_patch (:,:) = nan
-    allocate(this%prev_leafp_to_litter_patch  (begp:endp)) ;             this%prev_leafp_to_litter_patch  (:) = nan
-    allocate(this%prev_frootp_to_litter_patch (begp:endp)) ;             this%prev_frootp_to_litter_patch (:) = nan
-    allocate(this%adsorb_to_labilep_vr        (begc:endc,1:nlevdecomp_full)); this%adsorb_to_labilep_vr   (:,:) = nan
-    allocate(this%desorb_to_solutionp_vr      (begc:endc,1:nlevdecomp_full)); this%desorb_to_solutionp_vr (:,:) = nan
-    allocate(this%adsorb_to_labilep_col       (begc:endc)) ;	         this%adsorb_to_labilep_col      (:) = nan
-    allocate(this%desorb_to_solutionp_col     (begc:endc)) ;	         this%desorb_to_solutionp_col    (:) = nan
+    allocate(this%sminp_to_plant_patch        (begp:endp                   )) ; this%sminp_to_plant_patch        (:)   = nan
+    allocate(this%plant_pdemand_vr_patch      (begp:endp,1:nlevdecomp_full )) ; this%plant_pdemand_vr_patch      (:,:) = nan
+    allocate(this%prev_leafp_to_litter_patch  (begp:endp                   )) ; this%prev_leafp_to_litter_patch  (:)   = nan
+    allocate(this%prev_frootp_to_litter_patch (begp:endp                   )) ; this%prev_frootp_to_litter_patch (:)   = nan
+    allocate(this%adsorb_to_labilep_vr        (begc:endc,1:nlevdecomp_full )) ; this%adsorb_to_labilep_vr        (:,:) = nan
+    allocate(this%desorb_to_solutionp_vr      (begc:endc,1:nlevdecomp_full )) ; this%desorb_to_solutionp_vr      (:,:) = nan
+    allocate(this%adsorb_to_labilep_col       (begc:endc                   )) ; this%adsorb_to_labilep_col       (:)   = nan
+    allocate(this%desorb_to_solutionp_col     (begc:endc                   )) ; this%desorb_to_solutionp_col     (:)   = nan
     
-    ! debug
- 	allocate(this%plant_p_uptake_flux         (begc:endc)) ;	         this%plant_p_uptake_flux  	     (:) = nan
- 	allocate(this%soil_p_immob_flux           (begc:endc)) ;	         this%soil_p_immob_flux			 (:) = nan
- 	allocate(this%soil_p_immob_flux_vr        (begc:endc,1:nlevdecomp_full)); this%soil_p_immob_flux_vr       (:,:) = nan
- 	allocate(this%soil_p_grossmin_flux        (begc:endc)) ;	         this%soil_p_grossmin_flux		 (:) = nan
-	allocate(this%smin_p_to_plant_col		  (begc:endc)) ;	         this%smin_p_to_plant_col		 (:) = nan
-    allocate(this%plant_to_litter_pflux		  (begc:endc)) ;	         this%plant_to_litter_pflux		 (:) = nan
-    allocate(this%plant_to_cwd_pflux		  (begc:endc)) ;	         this%plant_to_cwd_pflux	     (:) = nan
+    allocate(this%plant_p_uptake_flux         (begc:endc                   )) ; this%plant_p_uptake_flux         (:)   = nan
+    allocate(this%soil_p_immob_flux           (begc:endc                   )) ; this%soil_p_immob_flux           (:)   = nan
+    allocate(this%soil_p_immob_flux_vr        (begc:endc,1:nlevdecomp_full )) ; this%soil_p_immob_flux_vr        (:,:) = nan
+    allocate(this%soil_p_grossmin_flux        (begc:endc                   )) ; this%soil_p_grossmin_flux        (:)   = nan
+    allocate(this%smin_p_to_plant_col         (begc:endc                   )) ; this%smin_p_to_plant_col         (:)   = nan
+    allocate(this%plant_to_litter_pflux       (begc:endc                   )) ; this%plant_to_litter_pflux       (:)   = nan
+    allocate(this%plant_to_cwd_pflux          (begc:endc                   )) ; this%plant_to_cwd_pflux          (:)   = nan
 
   end subroutine InitAllocate
 
@@ -2173,60 +2169,61 @@ contains
     end do
     
     do fc = 1,num_soilc
-        c = filter_soilc(fc)
-        this%biochem_pmin_col(c) = 0.0_r8
+       c = filter_soilc(fc)
+       this%biochem_pmin_col(c) = 0.0_r8
     end do
+
     do j = 1, nlevdecomp
-        do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%biochem_pmin_col(c) = this%biochem_pmin_col(c) + &
-                this%biochem_pmin_vr_col(c,j)* dzsoi_decomp(j)
-        end do
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%biochem_pmin_col(c) = this%biochem_pmin_col(c) + &
+               this%biochem_pmin_vr_col(c,j)* dzsoi_decomp(j)
+       end do
     end do
     
     do fc = 1,num_soilc
-        c = filter_soilc(fc)
-        this%adsorb_to_labilep_col(c) = 0._r8
-        this%desorb_to_solutionp_col(c) = 0._r8
-    end do
-    do j = 1, nlevdecomp
-        do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%adsorb_to_labilep_col(c) = this%adsorb_to_labilep_col(c) + &
-                this%adsorb_to_labilep_vr(c,j)* dzsoi_decomp(j)
-            this%desorb_to_solutionp_col(c) = this%desorb_to_solutionp_col(c) + &
-                this%desorb_to_solutionp_vr(c,j)* dzsoi_decomp(j)
-        end do
+       c = filter_soilc(fc)
+       this%adsorb_to_labilep_col(c) = 0._r8
+       this%desorb_to_solutionp_col(c) = 0._r8
     end do
 
-    ! debug
+    do j = 1, nlevdecomp
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%adsorb_to_labilep_col(c) = this%adsorb_to_labilep_col(c) + &
+               this%adsorb_to_labilep_vr(c,j)* dzsoi_decomp(j)
+          this%desorb_to_solutionp_col(c) = this%desorb_to_solutionp_col(c) + &
+               this%desorb_to_solutionp_vr(c,j)* dzsoi_decomp(j)
+       end do
+    end do    
+
     do fc = 1,num_soilc
-        c = filter_soilc(fc)
-        this%actual_immob_p_col(c) = 0._r8
-        this%smin_p_to_plant_col(c) = 0._r8
-        this%plant_to_litter_pflux(c) = 0._r8
-        this%plant_to_cwd_pflux(c) = 0._r8
-        do j = 1, nlevdecomp
-            this%actual_immob_p_col(c)= this%actual_immob_p_col(c) + & 
-                this%actual_immob_p_vr_col(c,j) * dzsoi_decomp(j)
-            this%smin_p_to_plant_col(c)= this%smin_p_to_plant_col(c) + & 
-                this%sminp_to_plant_vr_col(c,j) * dzsoi_decomp(j)
-            this%plant_to_litter_pflux(c) = &
-                this%plant_to_litter_pflux(c)  + &
-                this%phenology_p_to_litr_met_p_col(c,j)* dzsoi_decomp(j) + &
-                this%phenology_p_to_litr_cel_p_col(c,j)* dzsoi_decomp(j) + &
-                this%phenology_p_to_litr_lig_p_col(c,j)* dzsoi_decomp(j) + &
-                this%gap_mortality_p_to_litr_met_p_col(c,j)* dzsoi_decomp(j) + &
-                this%gap_mortality_p_to_litr_cel_p_col(c,j)* dzsoi_decomp(j) + &
-                this%gap_mortality_p_to_litr_lig_p_col(c,j)* dzsoi_decomp(j) + &
-                this%m_p_to_litr_met_fire_col(c,j)* dzsoi_decomp(j) + &
-                this%m_p_to_litr_cel_fire_col(c,j)* dzsoi_decomp(j) + &
-                this%m_p_to_litr_lig_fire_col(c,j)* dzsoi_decomp(j)
-            this%plant_to_cwd_pflux(c) = &
-                this%plant_to_cwd_pflux(c) + &
-                this%gap_mortality_p_to_cwdp_col(c,j)* dzsoi_decomp(j) + &
-                this%fire_mortality_p_to_cwdp_col(c,j)* dzsoi_decomp(j)
-        end do
+       c = filter_soilc(fc)
+       this%actual_immob_p_col(c) = 0._r8
+       this%smin_p_to_plant_col(c) = 0._r8
+       this%plant_to_litter_pflux(c) = 0._r8
+       this%plant_to_cwd_pflux(c) = 0._r8
+       do j = 1, nlevdecomp
+          this%actual_immob_p_col(c)= this%actual_immob_p_col(c) + & 
+               this%actual_immob_p_vr_col(c,j) * dzsoi_decomp(j)
+          this%smin_p_to_plant_col(c)= this%smin_p_to_plant_col(c) + & 
+               this%sminp_to_plant_vr_col(c,j) * dzsoi_decomp(j)
+          this%plant_to_litter_pflux(c) = &
+               this%plant_to_litter_pflux(c)  + &
+               this%phenology_p_to_litr_met_p_col(c,j)* dzsoi_decomp(j) + &
+               this%phenology_p_to_litr_cel_p_col(c,j)* dzsoi_decomp(j) + &
+               this%phenology_p_to_litr_lig_p_col(c,j)* dzsoi_decomp(j) + &
+               this%gap_mortality_p_to_litr_met_p_col(c,j)* dzsoi_decomp(j) + &
+               this%gap_mortality_p_to_litr_cel_p_col(c,j)* dzsoi_decomp(j) + &
+               this%gap_mortality_p_to_litr_lig_p_col(c,j)* dzsoi_decomp(j) + &
+               this%m_p_to_litr_met_fire_col(c,j)* dzsoi_decomp(j) + &
+               this%m_p_to_litr_cel_fire_col(c,j)* dzsoi_decomp(j) + &
+               this%m_p_to_litr_lig_fire_col(c,j)* dzsoi_decomp(j)
+          this%plant_to_cwd_pflux(c) = &
+               this%plant_to_cwd_pflux(c) + &
+               this%gap_mortality_p_to_cwdp_col(c,j)* dzsoi_decomp(j) + &
+               this%fire_mortality_p_to_cwdp_col(c,j)* dzsoi_decomp(j)
+       end do
     end do
 
   end subroutine Summary

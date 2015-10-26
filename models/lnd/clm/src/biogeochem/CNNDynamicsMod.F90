@@ -183,26 +183,27 @@ contains
       dayspyr = get_days_per_year()
 
       if ( nfix_timeconst > 0._r8 .and. nfix_timeconst < 500._r8 ) then
-          ! use exponential relaxation with time constant nfix_timeconst for NPP - NFIX relation
-          ! Loop through columns
-          do fc = 1,num_soilc
-              c = filter_soilc(fc)         
+         ! use exponential relaxation with time constant nfix_timeconst for NPP - NFIX relation
+         ! Loop through columns
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)         
 
-              if (col_lag_npp(c) /= spval) then
-                  ! need to put npp in units of gC/m^2/year here first
-                  t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * col_lag_npp(c)*(secspday * dayspyr))))/(secspday * dayspyr)  
-                  nfix_to_sminn(c) = max(0._r8,t)
-              else
-                  nfix_to_sminn(c) = 0._r8
-              endif
-          end do
+            if (col_lag_npp(c) /= spval) then
+               ! need to put npp in units of gC/m^2/year here first
+               t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * col_lag_npp(c)*(secspday * dayspyr))))/(secspday * dayspyr)  
+               nfix_to_sminn(c) = max(0._r8,t)
+            else
+               nfix_to_sminn(c) = 0._r8
+            endif
+         end do
       else
-          ! use annual-mean values for NPP-NFIX relation
-          do fc = 1,num_soilc
-              c = filter_soilc(fc)
-              t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * cannsum_npp(c))))/(secspday * dayspyr)
-              nfix_to_sminn(c) = max(0._r8,t)
-          end do
+         ! use annual-mean values for NPP-NFIX relation
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+
+            t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * cannsum_npp(c))))/(secspday * dayspyr)
+            nfix_to_sminn(c) = max(0._r8,t)
+         end do
       endif
 
     end associate
@@ -641,24 +642,24 @@ contains
          )
 
       do fc=1,num_soilc
-          c = filter_soilc(fc)
-          nfix_to_sminn(c) = 0.0_r8
-          do p = col%pfti(c), col%pftf(c)
-              if (pft%active(p).and. (pft%itype(p) .ne. noveg)) then
-                  ! calculate c cost of n2 fixation: fisher 2010 gbc doi:10.1029/2009gb003621
-                  r_fix = -6.25*(exp(-3.62 + 0.27*t_soi10cm_col(c)*(1-0.5*t_soi10cm_col(c)/25.15))-2) 
-                  ! calculate c cost of root n uptake: rastetter 2001, ecosystems, 4(4), 369-388.
-                  r_nup = pgpp_pleafc(p) / max(pnup_pfrootc(p),1e-6_r8)
-                  ! calculate fraction of root that is nodulated: wang 2007 gbc doi:10.1029/2006gb002797
-                  f_nodule = 1 - min(1.0_r8,r_fix / r_nup )
-                  ! calculate p limitation factor of n2 fixation
-                  cp_scalar(p) = max((1.0_r8/actual_leafcp(p) - 1.0_r8/leafcp(ivt(p))*2) / &
-                      (1.0_r8/leafcp(ivt(p))*0.5 - 1.0_r8/leafcp(ivt(p))*2),0.0_r8)
-                  ! calculate n2 fixation rate for each pft and add it to column total
-                  nfix_to_sminn(c) = nfix_to_sminn(c) + vmax_nfix * f_nodule * cp_scalar(p) * frootc(p) * &
-                      max(r_nup - r_fix,0.0_r8)/(km_nfix + r_nup - r_fix)*pft%wtcol(p)
-              end if
-          end do
+         c = filter_soilc(fc)
+         nfix_to_sminn(c) = 0.0_r8
+         do p = col%pfti(c), col%pftf(c)
+            if (pft%active(p).and. (pft%itype(p) .ne. noveg)) then
+               ! calculate c cost of n2 fixation: fisher 2010 gbc doi:10.1029/2009gb003621
+               r_fix = -6.25*(exp(-3.62 + 0.27*t_soi10cm_col(c)*(1-0.5*t_soi10cm_col(c)/25.15))-2) 
+               ! calculate c cost of root n uptake: rastetter 2001, ecosystems, 4(4), 369-388.
+               r_nup = pgpp_pleafc(p) / max(pnup_pfrootc(p),1e-6_r8)
+               ! calculate fraction of root that is nodulated: wang 2007 gbc doi:10.1029/2006gb002797
+               f_nodule = 1 - min(1.0_r8,r_fix / r_nup )
+               ! calculate p limitation factor of n2 fixation
+               cp_scalar(p) = max((1.0_r8/actual_leafcp(p) - 1.0_r8/leafcp(ivt(p))*2) / &
+                    (1.0_r8/leafcp(ivt(p))*0.5 - 1.0_r8/leafcp(ivt(p))*2),0.0_r8)
+               ! calculate n2 fixation rate for each pft and add it to column total
+               nfix_to_sminn(c) = nfix_to_sminn(c) + vmax_nfix * f_nodule * cp_scalar(p) * frootc(p) * &
+                    max(r_nup - r_fix,0.0_r8)/(km_nfix + r_nup - r_fix)*pft%wtcol(p)
+            end if
+         end do
       end do
       
     end associate

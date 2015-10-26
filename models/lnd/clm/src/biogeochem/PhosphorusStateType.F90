@@ -739,16 +739,16 @@ contains
              this%deadstemp_patch(p) = 0._r8
           end if
           
-          if (nu_com .ne. 'RD') then ! <Qing Zhu 2015>
-              if (pft%itype(p) == noveg) then
-                  this%frootp_patch(p) = 0._r8
-                  this%frootp_storage_patch(p) = 0._r8
-              else
-                  this%frootp_patch(p) = frootc_patch(p) / ecophyscon%frootcp(pft%itype(p))
-                  this%frootp_storage_patch(p) = frootc_storage_patch(p) / ecophyscon%frootcp(pft%itype(p))
-              end if
-              this%pGPP_pleafn_patch(p) = 1.0_r8
-              this%pGPP_pleafp_patch(p) = 1.0_r8
+          if (nu_com .ne. 'RD') then
+             if (pft%itype(p) == noveg) then
+                this%frootp_patch(p) = 0._r8
+                this%frootp_storage_patch(p) = 0._r8
+             else
+                this%frootp_patch(p) = frootc_patch(p) / ecophyscon%frootcp(pft%itype(p))
+                this%frootp_storage_patch(p) = frootc_storage_patch(p) / ecophyscon%frootcp(pft%itype(p))
+             end if
+             this%pGPP_pleafn_patch(p) = 1.0_r8
+             this%pGPP_pleafp_patch(p) = 1.0_r8
           end if
            
           this%deadstemp_storage_patch(p)  = 0._r8
@@ -1320,7 +1320,7 @@ contains
           i = filter_patch(fi)
           this%grainp_patch(i)          = value_patch
           this%grainp_storage_patch(i)  = value_patch
-          this%grainp_xfer_patch(i)     = value_patch  
+          this%grainp_xfer_patch(i)     = value_patch   
           this%actual_graincp(i)        = value_patch   
        end do
     end if

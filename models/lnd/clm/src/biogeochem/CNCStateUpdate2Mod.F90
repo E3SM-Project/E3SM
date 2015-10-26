@@ -55,7 +55,7 @@ contains
 
       ! set time steps
       dt = real( get_step_size(), r8 )
-      
+
       ! column level carbon fluxes from gap-phase mortality
       do j = 1,nlevdecomp
          ! column loop
@@ -105,7 +105,6 @@ contains
          cs%livecrootc_xfer_patch(p)     = cs%livecrootc_xfer_patch(p)    - cf%m_livecrootc_xfer_to_litter_patch(p)    * dt
          cs%deadcrootc_xfer_patch(p)     = cs%deadcrootc_xfer_patch(p)    - cf%m_deadcrootc_xfer_to_litter_patch(p)    * dt
          cs%gresp_xfer_patch(p)          = cs%gresp_xfer_patch(p)         - cf%m_gresp_xfer_to_litter_patch(p)         * dt
-         
       end do ! end of patch loop
 
     end associate

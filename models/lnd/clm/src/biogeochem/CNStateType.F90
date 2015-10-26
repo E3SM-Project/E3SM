@@ -250,7 +250,7 @@ contains
     allocate(this%annsum_counter_col  (begc:endc))                   ; this%annsum_counter_col  (:)   = nan
     allocate(this%annavg_t2m_col      (begc:endc))                   ; this%annavg_t2m_col      (:)   = nan
     allocate(this%annavg_t2m_patch    (begp:endp))                   ; this%annavg_t2m_patch    (:)   = nan
-    
+
     allocate(this%nfire_col           (begc:endc))                   ; this%nfire_col           (:)   = spval
     allocate(this%fsr_col             (begc:endc))                   ; this%fsr_col             (:)   = nan
     allocate(this%fd_col              (begc:endc))                   ; this%fd_col              (:)   = nan

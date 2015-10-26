@@ -81,14 +81,15 @@ module CNAllocationMod
   
   logical :: crop_supln  = .false.             !Prognostic crop receives supplemental Nitrogen
 
-  real(r8), allocatable :: decompmicc(:,:) ! column-level soil microbial decomposer biomass gC/m3
+  real(r8), allocatable :: decompmicc(:,:)                ! column-level soil microbial decomposer biomass gC/m3
   
-  real(r8)              :: E_plant_scalar ! scaling factor for plant fine root biomass to calculate nutrient carrier enzyme abundance
-  real(r8)              :: E_decomp_scalar ! scaling factor for plant fine root biomass to calculate nutrient carrier enzyme abundance
-  real(r8)              :: E_KM_NH4 ! temp variable of sum(E/KM) for NH4 competition BGC mode
-  real(r8)              :: E_KM_NO3 ! temp variable of sum(E/KM) for NO3 competition BGC mode
-  real(r8)              :: E_KM_P ! temp variable of sum(E/KM) for P competition
-  real(r8)              :: E_KM_N ! temp variable of sum(E/KM) for N competition CN mode
+  real(r8), parameter   :: E_plant_scalar  = 0.0000125_r8 ! scaling factor for plant fine root biomass to calculate nutrient carrier enzyme abundance
+  real(r8), parameter   :: E_decomp_scalar = 0.05_r8      ! scaling factor for plant fine root biomass to calculate nutrient carrier enzyme abundance
+
+  real(r8)              :: E_KM_NH4                       ! temp variable of sum(E/KM) for NH4 competition BGC mode
+  real(r8)              :: E_KM_NO3                       ! temp variable of sum(E/KM) for NO3 competition BGC mode
+  real(r8)              :: E_KM_P                         ! temp variable of sum(E/KM) for P competition
+  real(r8)              :: E_KM_N                         ! temp variable of sum(E/KM) for N competition CN mode                     
 
   !-----------------------------------------------------------------------
 
@@ -235,19 +236,15 @@ contains
     select case(nu_com)
         case('RD') ! relative demand mode, same as CLM-CNP Yang 2014
             nu_com_leaf_physiology = .false.
-            nu_com_root_kinetics = .false.
-            nu_com_phosphatase = .false.
-            nu_com_nfix = .false.
+            nu_com_root_kinetics   = .false.
+            nu_com_phosphatase     = .false.
+            nu_com_nfix            = .false.
         case('ECA') ! ECA competition version of CLM-CNP
             nu_com_leaf_physiology = .true. ! leaf level physiology must be true if using ECA
-            nu_com_root_kinetics = .true.   ! root uptake kinetics must be true if using ECA
-            !nu_com_phosphatase = .true.    ! user define in namelist
-            !nu_com_nfix = .true.           ! user define in namelist
+            nu_com_root_kinetics   = .true. ! root uptake kinetics must be true if using ECA
         case('MIC') ! MIC outcompete plant version of CLM-CNP
             nu_com_leaf_physiology = .true.
-            nu_com_root_kinetics = .true.
-            !nu_com_phosphatase = .true.    ! user define in namelist
-            !nu_com_nfix = .true.           ! user define in namelist
+            nu_com_root_kinetics   = .true.
     end select
     ! phosphorus conditions of plants are needed, in order to use new fixation and phosphatase 
     ! activity subroutines, under carbon only or carbon nitrogen only mode, fixation and phosphatase
@@ -257,9 +254,6 @@ contains
         nu_com_phosphatase = .false.
     end if
     
-    E_plant_scalar = 0.0000125
-    E_decomp_scalar = 0.05
-                     
     call cnallocate_carbon_only_set(carbon_only)
     call cnallocate_carbonnitrogen_only_set(carbonnitrogen_only)
     call cnallocate_carbonphosphorus_only_set(carbonphosphorus_only)
@@ -673,8 +667,8 @@ contains
 
          if (nu_com_nfix) pgpp_pleafc(p) = psnsun_to_cpool(p) / max(leafc(p),1e-6_r8)
          if (nu_com_phosphatase) then
-             pgpp_pleafn(p) = psnsun_to_cpool(p) / max(leafn(p),1e-6_r8)
-             pgpp_pleafp(p) = psnsun_to_cpool(p) / max(leafp(p),1e-6_r8)
+            pgpp_pleafn(p) = psnsun_to_cpool(p) / max(leafn(p),1e-6_r8)
+            pgpp_pleafp(p) = psnsun_to_cpool(p) / max(leafp(p),1e-6_r8)
          end if
          
          if ( use_c13 ) then
@@ -1842,12 +1836,6 @@ contains
                           (smin_nh4_vr(c,j)/dt) - actual_immob_nh4_vr(c,j) - f_nit_vr(c,j) )
 
                   end if
-                  ! debug
-                  !if (smin_nh4_to_plant_vr(c,j) .ne. smin_nh4_to_plant_vr(c,j)) then
-                  !    write(iulog,"(A,8E12.4)") 'DEBUG_NH4UP',smin_nh4_vr(c,j)/dt,sum_nh4_demand_vr(c,j),sum_nh4_demand_scaled(c,j),&
-                  !        col_plant_nh4demand_vr(c,j),potential_immob_vr(c,j),compet_decomp_nh4, pot_f_nit_vr(c,j),compet_nit
-                  !    call endrun(msg=errMsg(__FILE__, __LINE__))
-                  !end if
 
                   ! next compete for no3
                   sum_no3_demand_vr(c,j) = col_plant_no3demand_vr(c,j) + &
@@ -2170,11 +2158,6 @@ contains
                           solutionp_vr(c,j)/dt - actual_immob_p_vr(c,j) - adsorb_to_labilep_vr(c,j) )
 
                   end if
-                  !if (adsorb_to_labilep_vr(c,j) > 1e6 .or. (adsorb_to_labilep_vr(c,j) .ne. adsorb_to_labilep_vr(c,j))) then
-                  !    write(iulog,"(A,2I3,9E12.4)") 'DEBUG_ADSORB', isoilorder(c),j,vmax_minsurf_p_vr(isoilorder(c),j),km_minsurf_p_vr(isoilorder(c),j),solutionp_vr(c,j), &
-                  !        primp_to_labilep_vr_col(c,j), biochem_pmin_vr_col(c,j),secondp_to_labilep_vr_col(c,j), labilep_to_secondp_vr_col(c,j),adsorb_to_labilep_vr(c,j),compet_minsurf_p
-                  !    call endrun(msg=errMsg(__FILE__, __LINE__))
-                  !end if
                end do
             end do
          end if ! end of P competition
@@ -2635,7 +2618,6 @@ contains
              ! ndays_active = days/year.  This prevents the continued storage of C and N.
              ! turning off this correction (PET, 12/11/03), instead using bgtr in
              ! phenology algorithm.
-             !fcur = fcur + (1._r8 - fcur)*lgsf(p)
 
              sminn_to_npool(p) = plant_ndemand(p) * fpg(c)
              sminp_to_ppool(p) = plant_pdemand(p) * fpg_p(c)
@@ -2673,9 +2655,6 @@ contains
                  sminp_to_ppool(p) = plant_palloc(p) - retransp_to_ppool(p)
              endif
   
-
-             !!!          plant_calloc(p) = plant_nalloc(p) * (c_allometry(p)/n_allometry(p))
-
              excess_cflux(p) = availc(p) - plant_calloc(p)
 
              ! reduce gpp fluxes due to N limitation
@@ -2712,8 +2691,6 @@ contains
              f2 = croot_stem(ivt(p))
              f3 = allocation_stem(p) / allocation_leaf(p)
              
-             !f1 = froot_leaf(ivt(p))
-             !f2 = croot_stem(ivt(p))
              ! modified wood allocation to be 2.2 at npp=800 gC/m2/yr, 0.2 at npp=0,
              ! constrained so that it does not go lower than 0.2 (under negative annsum_npp)
              ! There was an error in this formula in previous version, where the coefficient
@@ -2721,11 +2698,6 @@ contains
              ! This variable allocation is only for trees. Shrubs have a constant
              ! allocation as specified in the pft-physiology file.  The value is also used
              ! as a trigger here: -1.0 means to use the dynamic allocation (trees).
-             !if (stem_leaf(ivt(p)) == -1._r8) then
-             !    f3 = (2.7/(1.0+exp(-0.004*(annsum_npp(p) - 300.0)))) - 0.4
-             !else
-             !    f3 = stem_leaf(ivt(p))
-             !end if
              
              f4 = flivewd(ivt(p))
              g1 = grperc(ivt(p))
@@ -2914,10 +2886,6 @@ contains
 
           if( .not. use_nitrif_denitrif) then
 
-      !             call p2c(bounds,num_soilc,filter_soilc, &
-      !                 sminn_to_npool(bounds%begp:bounds%endp), &
-      !                 sminn_to_plant(bounds%begc:bounds%endc))
-
               call p2c(bounds,num_soilc,filter_soilc, &
                   sminp_to_ppool(bounds%begp:bounds%endp), &
                   sminp_to_plant(bounds%begc:bounds%endc))
@@ -2925,7 +2893,6 @@ contains
               do j = 1, nlevdecomp
                   do fc=1,num_soilc
                       c = filter_soilc(fc)
-       !                     sminn_to_plant_vr(c,j) = sminn_to_plant(c) *  nuptake_prof(c,j)
                       sminp_to_plant_vr(c,j) = sminp_to_plant(c) *  puptake_prof(c,j)
                   end do
               end do
@@ -3020,12 +2987,6 @@ contains
     ! final root allocation
     alloc_froot = 1.0_r8 - (alloc_stem + alloc_leaf)
   
-    ! if lai greater than laimax then no allocation to leaf; leaf allocation goes to stem 
-    !if (laindex > laindex_max) then 
-    !   alloc_stem = alloc_stem + alloc_leaf 
-    !   alloc_leaf = 0.0_r8 
-    !end if
-
   end subroutine dynamic_plant_alloc
 
 !-----------------------------------------------------------------------

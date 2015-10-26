@@ -2278,7 +2278,7 @@ contains
     type(carbonstate_type)  , intent(in)    :: carbonstate_vars
     type(carbonflux_type)   , intent(inout) :: carbonflux_vars
     type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars
-    type(phosphorusflux_type) , intent(inout):: phosphorusflux_vars
+    type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
     type(nitrogenstate_type)  , intent(in)   :: nitrogenstate_vars
     type(phosphorusstate_type), intent(in)   :: phosphorusstate_vars
     !
@@ -2365,14 +2365,14 @@ contains
             if (offset_counter(p) == dt) then
                t1 = 1.0_r8 / dt
                if (ivt(p) >= npcropmin) then
-                  ! this assumes that offset_counter == dt for crops
-                  ! if this were ever changed, we'd need to add code to the "else"
+               ! this assumes that offset_counter == dt for crops
+               ! if this were ever changed, we'd need to add code to the "else"
                   leafc_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * leafc(p)) + cpool_to_leafc(p))
                   frootc_to_litter(p) = t1 * frootc(p) + cpool_to_frootc(p)
                   livestemc_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * livestemc(p)) + cpool_to_livestemc(p))
                else
-                  leafc_to_litter(p)  = t1 * leafc(p)  + cpool_to_leafc(p)
-                  frootc_to_litter(p) = t1 * frootc(p) + cpool_to_frootc(p)
+               leafc_to_litter(p)  = t1 * leafc(p)  + cpool_to_leafc(p)
+               frootc_to_litter(p) = t1 * frootc(p) + cpool_to_frootc(p)
                end if
             else
                t1 = dt * 2.0_r8 / (offset_counter(p) * offset_counter(p))
@@ -2381,69 +2381,70 @@ contains
             end if
 
             if ( nu_com .eq. 'RD') then
-                ! calculate the leaf N litterfall and retranslocation
-                leafn_to_litter(p)   = leafc_to_litter(p)  / lflitcn(ivt(p))
-                leafn_to_retransn(p) = (leafc_to_litter(p) / leafcn(ivt(p))) - leafn_to_litter(p)
+               ! calculate the leaf N litterfall and retranslocation
+               leafn_to_litter(p)   = leafc_to_litter(p)  / lflitcn(ivt(p))
+               leafn_to_retransn(p) = (leafc_to_litter(p) / leafcn(ivt(p))) - leafn_to_litter(p)
 
-                ! calculate fine root N litterfall (no retranslocation of fine root N)
-                frootn_to_litter(p) = frootc_to_litter(p) / frootcn(ivt(p))
+               ! calculate fine root N litterfall (no retranslocation of fine root N)
+               frootn_to_litter(p) = frootc_to_litter(p) / frootcn(ivt(p))
 
-                ! calculate the leaf P litterfall and retranslocation
-                leafp_to_litter(p)   = leafc_to_litter(p)  / lflitcp(ivt(p))
-                leafp_to_retransp(p) = (leafc_to_litter(p) / leafcp(ivt(p))) - leafp_to_litter(p)
+               ! calculate the leaf P litterfall and retranslocation
+               leafp_to_litter(p)   = leafc_to_litter(p)  / lflitcp(ivt(p))
+               leafp_to_retransp(p) = (leafc_to_litter(p) / leafcp(ivt(p))) - leafp_to_litter(p)
 
-                ! calculate fine root P litterfall (no retranslocation of fine root N)
-                frootp_to_litter(p) = frootc_to_litter(p) / frootcp(ivt(p))
+               ! calculate fine root P litterfall (no retranslocation of fine root N)
+               frootp_to_litter(p) = frootc_to_litter(p) / frootcp(ivt(p))
                 
-                if (ivt(p) >= npcropmin) then
-                    livestemn_to_litter(p) = livestemc_to_litter(p) / livewdcn(ivt(p))
-                    livestemp_to_litter(p) = livestemc_to_litter(p) / livewdcp(ivt(p))
-                    grainp_to_food(p) = grainc_to_food(p) / graincp(ivt(p))
-                end if
+               if (ivt(p) >= npcropmin) then
+                  livestemn_to_litter(p) = livestemc_to_litter(p) / livewdcn(ivt(p))
+                  livestemp_to_litter(p) = livestemc_to_litter(p) / livewdcp(ivt(p))
+                  grainp_to_food(p) = grainc_to_food(p) / graincp(ivt(p))
+               end if
             else
-                if (offset_counter(p) == dt) then
-                    t1 = 1.0_r8 / dt
-                    if (ivt(p) >= npcropmin) then
-                        ! this assumes that offset_counter == dt for crops
-                        ! if this were ever changed, we'd need to add code to the "else"
-                        leafn_to_litter(p) = min(((1.0_r8 - presharv(ivt(p))) * ((t1 * leafn(p)) + npool_to_leafn(p))),leafn(p))* 0.38_r8 ! 62% N resorption rate; LEONARDUS VERGUTZ 2012 Ecological Monographs 82(2) 205-220.
-                        leafn_to_retransn(p) = min(((1.0_r8 - presharv(ivt(p))) * ((t1 * leafn(p)) + npool_to_leafn(p))),leafn(p))* 0.62_r8
+               if (offset_counter(p) == dt) then
+                  t1 = 1.0_r8 / dt
+                  if (ivt(p) >= npcropmin) then
+                     ! this assumes that offset_counter == dt for crops
+                     ! if this were ever changed, we'd need to add code to the "else"
+                     leafn_to_litter(p) = min(((1.0_r8 - presharv(ivt(p))) * ((t1 * leafn(p)) + npool_to_leafn(p))),leafn(p))* 0.38_r8 ! 62% N resorption rate; LEONARDUS VERGUTZ 2012 Ecological Monographs 82(2) 205-220.
+                     leafn_to_retransn(p) = min(((1.0_r8 - presharv(ivt(p))) * ((t1 * leafn(p)) + npool_to_leafn(p))),leafn(p))* 0.62_r8
 
-                        leafp_to_litter(p) = min(((1.0_r8 - presharv(ivt(p))) * ((t1 * leafp(p)) + ppool_to_leafp(p))),leafp(p))* 0.35_r8 ! 65% N resorption rate; LEONARDUS VERGUTZ 2012 Ecological Monographs 82(2) 205-220.
-                        leafp_to_retransp(p) = min(((1.0_r8 - presharv(ivt(p))) * ((t1 * leafp(p)) + ppool_to_leafp(p))),frootp(p))* 0.65_r8
+                     leafp_to_litter(p) = min(((1.0_r8 - presharv(ivt(p))) * ((t1 * leafp(p)) + ppool_to_leafp(p))),leafp(p))* 0.35_r8 ! 65% N resorption rate; LEONARDUS VERGUTZ 2012 Ecological Monographs 82(2) 205-220.
+                     leafp_to_retransp(p) = min(((1.0_r8 - presharv(ivt(p))) * ((t1 * leafp(p)) + ppool_to_leafp(p))),frootp(p))* 0.65_r8
                         
-                        frootn_to_litter(p) = min(t1 * frootn(p) + npool_to_frootn(p),frootn(p))
-                        frootp_to_litter(p) = min(t1 * frootp(p) + ppool_to_frootp(p),frootp(p))
+                     frootn_to_litter(p) = min(t1 * frootn(p) + npool_to_frootn(p),frootn(p))
+                     frootp_to_litter(p) = min(t1 * frootp(p) + ppool_to_frootp(p),frootp(p))
 
-                        livestemn_to_litter(p) = min((1.0_r8 - presharv(ivt(p))) * ((t1 * livestemn(p)) + npool_to_livestemn(p)),livestemn(p))
-                        livestemp_to_litter(p) = min((1.0_r8 - presharv(ivt(p))) * ((t1 * livestemp(p)) + ppool_to_livestemp(p)),livestemp(p))
+                     livestemn_to_litter(p) = min((1.0_r8 - presharv(ivt(p))) * ((t1 * livestemn(p)) + npool_to_livestemn(p)),livestemn(p))
+                     livestemp_to_litter(p) = min((1.0_r8 - presharv(ivt(p))) * ((t1 * livestemp(p)) + ppool_to_livestemp(p)),livestemp(p))
                         
-                        !grainp_to_food(p) = grainc_to_food(p) / graincp(ivt(p))
-                    else
-                        leafn_to_litter(p)  = (t1 * leafn(p)  + npool_to_leafn(p))*0.38_r8
-                        leafn_to_retransn(p) = (t1 * leafn(p)  + npool_to_leafn(p))*0.62_r8
-                        frootn_to_litter(p) = t1 * frootn(p) + npool_to_frootn(p)
+                     !grainp_to_food(p) = grainc_to_food(p) / graincp(ivt(p))
+                  else
+                     leafn_to_litter(p)  = (t1 * leafn(p)  + npool_to_leafn(p))*0.38_r8
+                     leafn_to_retransn(p) = (t1 * leafn(p)  + npool_to_leafn(p))*0.62_r8
+                     frootn_to_litter(p) = t1 * frootn(p) + npool_to_frootn(p)
 
-                        leafp_to_litter(p)  = (t1 * leafp(p)  + ppool_to_leafp(p))*0.35_r8
-                        leafp_to_retransp(p) = (t1 * leafp(p)  + ppool_to_leafp(p))*0.65_r8
-                        frootp_to_litter(p) = t1 * frootp(p) + ppool_to_frootp(p)
-                    end if
-                else
-                    t1 = dt * 2.0_r8 / (offset_counter(p) * offset_counter(p))
-                    leafn_to_litter(p)  = min((prev_leafn_to_litter(p)  + t1*(leafn(p)  - prev_leafn_to_litter(p)*offset_counter(p))),leafn(p))*0.38_r8
-                    leafn_to_retransn(p) = min((prev_leafn_to_litter(p)  + t1*(leafn(p)  - prev_leafn_to_litter(p)*offset_counter(p))),leafn(p))*0.62_r8
-                    frootn_to_litter(p) = min(prev_frootn_to_litter(p) + t1*(frootn(p) - prev_frootn_to_litter(p)*offset_counter(p)),frootn(p))
+                     leafp_to_litter(p)  = (t1 * leafp(p)  + ppool_to_leafp(p))*0.35_r8
+                     leafp_to_retransp(p) = (t1 * leafp(p)  + ppool_to_leafp(p))*0.65_r8
+                     frootp_to_litter(p) = t1 * frootp(p) + ppool_to_frootp(p)
+                  end if
+               else
+                  t1 = dt * 2.0_r8 / (offset_counter(p) * offset_counter(p))
+                  leafn_to_litter(p)  = min((prev_leafn_to_litter(p)  + t1*(leafn(p)  - prev_leafn_to_litter(p)*offset_counter(p))),leafn(p))*0.38_r8
+                  leafn_to_retransn(p) = min((prev_leafn_to_litter(p)  + t1*(leafn(p)  - prev_leafn_to_litter(p)*offset_counter(p))),leafn(p))*0.62_r8
+                  frootn_to_litter(p) = min(prev_frootn_to_litter(p) + t1*(frootn(p) - prev_frootn_to_litter(p)*offset_counter(p)),frootn(p))
+                  
+                  leafp_to_litter(p)  = min((prev_leafp_to_litter(p)  + t1*(leafp(p)  - prev_leafp_to_litter(p)*offset_counter(p))),leafp(p))*0.35_r8
+                  leafp_to_retransp(p) =min((prev_leafp_to_litter(p)  + t1*(leafp(p)  - prev_leafp_to_litter(p)*offset_counter(p))),leafp(p))*0.65_r8
+                  frootp_to_litter(p) = min(prev_frootp_to_litter(p) + t1*(frootp(p) - prev_frootp_to_litter(p)*offset_counter(p)),frootp(p))
+               end if
 
-                    leafp_to_litter(p)  = min((prev_leafp_to_litter(p)  + t1*(leafp(p)  - prev_leafp_to_litter(p)*offset_counter(p))),leafp(p))*0.35_r8
-                    leafp_to_retransp(p) =min((prev_leafp_to_litter(p)  + t1*(leafp(p)  - prev_leafp_to_litter(p)*offset_counter(p))),leafp(p))*0.65_r8
-                    frootp_to_litter(p) = min(prev_frootp_to_litter(p) + t1*(frootp(p) - prev_frootp_to_litter(p)*offset_counter(p)),frootp(p))
-                end if
-                ! save the current litterfall fluxes
-                prev_leafn_to_litter(p)  = leafn_to_litter(p)
-                prev_frootn_to_litter(p) = frootn_to_litter(p)
+               ! save the current litterfall fluxes
+               prev_leafn_to_litter(p)  = leafn_to_litter(p)
+               prev_frootn_to_litter(p) = frootn_to_litter(p)
                 
-                prev_leafp_to_litter(p)  = leafp_to_litter(p)
-                prev_frootp_to_litter(p) = frootp_to_litter(p)
+               prev_leafp_to_litter(p)  = leafp_to_litter(p)
+               prev_frootp_to_litter(p) = frootp_to_litter(p)
             end if
             
             ! save the current litterfall fluxes
@@ -2527,33 +2528,33 @@ contains
             frootc_to_litter(p) = bglfr(p) * frootc(p)
 
             if ( nu_com .eq. 'RD') then
-                ! calculate the leaf N litterfall and retranslocation
-                leafn_to_litter(p)   = leafc_to_litter(p)  / lflitcn(ivt(p))
-                leafn_to_retransn(p) = (leafc_to_litter(p) / leafcn(ivt(p))) - leafn_to_litter(p)
+               ! calculate the leaf N litterfall and retranslocation
+               leafn_to_litter(p)   = leafc_to_litter(p)  / lflitcn(ivt(p))
+               leafn_to_retransn(p) = (leafc_to_litter(p) / leafcn(ivt(p))) - leafn_to_litter(p)
 
-                ! calculate fine root N litterfall (no retranslocation of fine root N)
-                frootn_to_litter(p) = frootc_to_litter(p) / frootcn(ivt(p))
+               ! calculate fine root N litterfall (no retranslocation of fine root N)
+               frootn_to_litter(p) = frootc_to_litter(p) / frootcn(ivt(p))
 
-                ! calculate the leaf P litterfall and retranslocation
-                leafp_to_litter(p)   = leafc_to_litter(p)  / lflitcp(ivt(p))
-                leafp_to_retransp(p) = (leafc_to_litter(p) / leafcp(ivt(p))) - leafp_to_litter(p)
+               ! calculate the leaf P litterfall and retranslocation
+               leafp_to_litter(p)   = leafc_to_litter(p)  / lflitcp(ivt(p))
+               leafp_to_retransp(p) = (leafc_to_litter(p) / leafcp(ivt(p))) - leafp_to_litter(p)
 
-                ! calculate fine root P litterfall (no retranslocation of fine root P)
-                frootp_to_litter(p) = frootc_to_litter(p) / frootcp(ivt(p))
+               ! calculate fine root P litterfall (no retranslocation of fine root P)
+               frootp_to_litter(p) = frootc_to_litter(p) / frootcp(ivt(p))
             else
-                ! calculate the leaf N litterfall and retranslocation
-                leafn_to_litter(p)   = bglfr(p) * leafn(p) * 0.38_r8 ! 62% N resorption rate; LEONARDUS VERGUTZ 2012 Ecological Monographs 82(2) 205-220.
-                leafn_to_retransn(p) = bglfr(p) * leafn(p) - leafn_to_litter(p)
+               ! calculate the leaf N litterfall and retranslocation
+               leafn_to_litter(p)   = bglfr(p) * leafn(p) * 0.38_r8 ! 62% N resorption rate; LEONARDUS VERGUTZ 2012 Ecological Monographs 82(2) 205-220.
+               leafn_to_retransn(p) = bglfr(p) * leafn(p) - leafn_to_litter(p)
 
-                ! calculate fine root N litterfall (no retranslocation of fine root N)
-                frootn_to_litter(p) = bglfr(p) * frootn(p)
+               ! calculate fine root N litterfall (no retranslocation of fine root N)
+               frootn_to_litter(p) = bglfr(p) * frootn(p)
 
-                ! calculate the leaf P litterfall and retranslocation
-                leafp_to_litter(p)   = bglfr(p) * leafp(p) * 0.35_r8 ! 65% P resorption rate; LEONARDUS VERGUTZ 2012 Ecological Monographs 82(2) 205-220.
-                leafp_to_retransp(p) = bglfr(p) * leafp(p) - leafp_to_litter(p)
+               ! calculate the leaf P litterfall and retranslocation
+               leafp_to_litter(p)   = bglfr(p) * leafp(p) * 0.35_r8 ! 65% P resorption rate; LEONARDUS VERGUTZ 2012 Ecological Monographs 82(2) 205-220.
+               leafp_to_retransp(p) = bglfr(p) * leafp(p) - leafp_to_litter(p)
 
-                ! calculate fine root P litterfall (no retranslocation of fine root P)
-                frootp_to_litter(p) = bglfr(p) * frootp(p) ! fine root P retranslocation occur (but not N retranslocation), why not include it here
+               ! calculate fine root P litterfall (no retranslocation of fine root P)
+               frootp_to_litter(p) = bglfr(p) * frootp(p) ! fine root P retranslocation occur (but not N retranslocation), why not include it here
             end if
          end if
       end do
@@ -2629,55 +2630,55 @@ contains
          ! only calculate these fluxes for woody types
          if (woody(ivt(p)) > 0._r8) then
             if ( nu_com .eq. 'RD') then
-                ! live stem to dead stem turnover
+               ! live stem to dead stem turnover
 
-                ctovr = livestemc(p) * lwtop
-                ntovr = ctovr / livewdcn(ivt(p))
-                ptovr = ctovr / livewdcp(ivt(p))
+               ctovr = livestemc(p) * lwtop
+               ntovr = ctovr / livewdcn(ivt(p))
+               ptovr = ctovr / livewdcp(ivt(p))
 
-                livestemc_to_deadstemc(p) = ctovr
-                livestemn_to_deadstemn(p) = ctovr / deadwdcn(ivt(p))
-                livestemn_to_retransn(p)  = ntovr - livestemn_to_deadstemn(p)
+               livestemc_to_deadstemc(p) = ctovr
+               livestemn_to_deadstemn(p) = ctovr / deadwdcn(ivt(p))
+               livestemn_to_retransn(p)  = ntovr - livestemn_to_deadstemn(p)
+               
+               livestemp_to_deadstemp(p) = ctovr / deadwdcp(ivt(p))
+               livestemp_to_retransp(p)  = ptovr - livestemp_to_deadstemp(p)
+               ! live coarse root to dead coarse root turnover
 
-                livestemp_to_deadstemp(p) = ctovr / deadwdcp(ivt(p))
-                livestemp_to_retransp(p)  = ptovr - livestemp_to_deadstemp(p)
-                ! live coarse root to dead coarse root turnover
+               ctovr = livecrootc(p) * lwtop
+               ntovr = ctovr / livewdcn(ivt(p))
+               ptovr = ctovr / livewdcp(ivt(p))
 
-                ctovr = livecrootc(p) * lwtop
-                ntovr = ctovr / livewdcn(ivt(p))
-                ptovr = ctovr / livewdcp(ivt(p))
+               livecrootc_to_deadcrootc(p) = ctovr
+               livecrootn_to_deadcrootn(p) = ctovr / deadwdcn(ivt(p))
+               livecrootn_to_retransn(p)  = ntovr - livecrootn_to_deadcrootn(p)
 
-                livecrootc_to_deadcrootc(p) = ctovr
-                livecrootn_to_deadcrootn(p) = ctovr / deadwdcn(ivt(p))
-                livecrootn_to_retransn(p)  = ntovr - livecrootn_to_deadcrootn(p)
-
-                livecrootp_to_deadcrootp(p) = ctovr / deadwdcp(ivt(p))
-                livecrootp_to_retransp(p)  = ptovr - livecrootp_to_deadcrootp(p)
+               livecrootp_to_deadcrootp(p) = ctovr / deadwdcp(ivt(p))
+               livecrootp_to_retransp(p)  = ptovr - livecrootp_to_deadcrootp(p)
             else
-                ! live stem to dead stem turnover
+               ! live stem to dead stem turnover
 
-                ctovr = livestemc(p) * lwtop
-                ntovr = livestemn(p) * lwtop
-                ptovr = livestemp(p) * lwtop
+               ctovr = livestemc(p) * lwtop
+               ntovr = livestemn(p) * lwtop
+               ptovr = livestemp(p) * lwtop
 
-                livestemc_to_deadstemc(p) = ctovr
-                livestemn_to_deadstemn(p) = ntovr * 0.1 ! 90%  N retranslocation
-                livestemn_to_retransn(p)  = ntovr - livestemn_to_deadstemn(p)
+               livestemc_to_deadstemc(p) = ctovr
+               livestemn_to_deadstemn(p) = ntovr * 0.1 ! 90%  N retranslocation
+               livestemn_to_retransn(p)  = ntovr - livestemn_to_deadstemn(p)
 
-                livestemp_to_deadstemp(p) = ptovr* 0.1  ! 90%  P retranslocation
-                livestemp_to_retransp(p)  = ptovr - livestemp_to_deadstemp(p)
-                ! live coarse root to dead coarse root turnover
+               livestemp_to_deadstemp(p) = ptovr* 0.1  ! 90%  P retranslocation
+               livestemp_to_retransp(p)  = ptovr - livestemp_to_deadstemp(p)
+               ! live coarse root to dead coarse root turnover
 
-                ctovr = livecrootc(p) * lwtop
-                ntovr = livecrootn(p) * lwtop
-                ptovr = livecrootp(p) * lwtop
+               ctovr = livecrootc(p) * lwtop
+               ntovr = livecrootn(p) * lwtop
+               ptovr = livecrootp(p) * lwtop
 
-                livecrootc_to_deadcrootc(p) = ctovr
-                livecrootn_to_deadcrootn(p) = ntovr * 0.1 ! 90%  N retranslocation
-                livecrootn_to_retransn(p)  = ntovr - livecrootn_to_deadcrootn(p)
+               livecrootc_to_deadcrootc(p) = ctovr
+               livecrootn_to_deadcrootn(p) = ntovr * 0.1 ! 90%  N retranslocation
+               livecrootn_to_retransn(p)  = ntovr - livecrootn_to_deadcrootn(p)
 
-                livecrootp_to_deadcrootp(p) = ptovr * 0.1 ! 90%  P retranslocation
-                livecrootp_to_retransp(p)  = ptovr - livecrootp_to_deadcrootp(p)
+               livecrootp_to_deadcrootp(p) = ptovr * 0.1 ! 90%  P retranslocation
+               livecrootp_to_retransp(p)  = ptovr - livecrootp_to_deadcrootp(p)
             end if
 
          end if
