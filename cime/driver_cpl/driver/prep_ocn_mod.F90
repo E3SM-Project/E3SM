@@ -504,6 +504,8 @@ contains
   subroutine prep_ocn_merge( flux_epbalfact, a2x_o, i2x_o, r2x_o, w2x_o, g2x_o, xao_o, &
        fractions_o, x2o_o )
 
+    use prep_glc_mod, only: prep_glc_calculate_subshelf_boundary_fluxes
+
     !----------------------------------------------------------------------- 
     !
     ! Arguments
@@ -893,6 +895,9 @@ contains
        x2o_o%rAttr(index_x2o_Foxx_rofi, n) = (r2x_o%rAttr(index_r2x_Forr_rofi , n) + &
                                               g2x_o%rAttr(index_g2x_Fogg_rofi , n)) * flux_epbalfact
     end do
+
+    !Experimental: call subshelf boundary flux code here.
+    call prep_glc_calculate_subshelf_boundary_fluxes
 
     do ko = 1,noflds
        !--- document merge ---

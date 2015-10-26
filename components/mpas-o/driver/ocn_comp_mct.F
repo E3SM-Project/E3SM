@@ -1676,7 +1676,8 @@ contains
        o2x_o % rAttr(index_o2x_So_bls, n) = landIceBoundaryLayerSalinity(i)       
        o2x_o % rAttr(index_o2x_So_htv, n) = landIceHeatTransferVelocity(i)       
        o2x_o % rAttr(index_o2x_So_hsv, n) = landIceSaltTransferVelocity(i)       
-!       o2x_o % rAttr(index_o2x_So_phieff, n) = effectiveDensityInLandIce(i)       
+!       o2x_o % rAttr(index_o2x_So_phieff, n) = effectiveDensityInLandIce(i)    
+        o2x_o % rAttr(index_o2x_So_phieff, n) = 0.0_RKIND
 
      end do
 

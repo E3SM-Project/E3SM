@@ -92,7 +92,7 @@ module glc_comp_mct
   integer :: itimestep, &  ! time step number for MPAS
              glc_cpl_dt    ! length of coupling interval in seconds - set by coupler/ESMF
   character (len=*), parameter :: coupleAlarmID = 'coupling'  ! the MPAS alarm for coupling intervals
-  integer, save :: glcStdErrUnit, glcStdOutUnit
+  integer :: glcStdErrUnit, glcStdOutUnit
 
 !=======================================================================
 
@@ -1398,7 +1398,7 @@ contains
    type (mpas_pool_type), pointer :: meshPool
    type (mpas_pool_type), pointer :: geometryPool, thermalPool
 
-   integer, pointer :: nCellsSolve
+   integer, pointer :: nCellsSolve, nVertLevels
 
    real (kind=RKIND), dimension(:), pointer :: upperSurface, basalTemperature, Thickness
    real (kind=RKIND), dimension(:,:), pointer :: layerThickness
@@ -1430,15 +1430,16 @@ contains
 	
         do i = 1, nCellsSolve
            n = n + 1
-	   call route_ice_runoff(0.0, & !Attach to ice calving flux once present
-                                 rofi_to_ocn=g2x(index_g2x_Fogg_rofi, n), &
-                                 rofi_to_ice=g2x(index_g2x_Figg_rofi, n))
+	   !call route_ice_runoff(0.0, & !Attach to ice calving flux once present
+           !                      rofi_to_ocn=g2x_g % rAttr(index_g2x_Fogg_rofi, n), &
+           !                      rofi_to_ice=g2x_g % rAttr(index_g2x_Figg_rofi, n))
+	   
 	   g2x_g % rAttr(index_g2x_Fogg_rofl,n) = 0.0 !Attach to subglacial liquid flux once present
            g2x_g % rAttr(index_g2x_Sg_topo, n) = upperSurface(i)
 	   g2x_g % rAttr(index_g2x_Flgg_hflx, n) = 0.0 !Attach to a surface heat flux once present
            g2x_g % rAttr(index_g2x_Sg_icemask, n) = li_mask_is_ice_int(cellMask(i))
-	   g2x_g % rAttr(index_g2x_Sg_icemask_grounded, n) = li_mask_is_grounded_ice(cellMask(i))
-	   g2x_g % rAttr(index_g2x_Sg_icemask_floating, n) = li_mask_is_floating_ice(cellMask(i))
+	   !g2x_g % rAttr(index_g2x_Sg_icemask_grounded, n) = real(li_mask_is_grounded_ice(cellMask(i)))
+	   !g2x_g % rAttr(index_g2x_Sg_icemask_floating, n) = real(li_mask_is_floating_ice(cellMask(i)))
 	   g2x_g % rAttr(index_g2x_Sg_icemask_coupled_fluxes, n) = g2x_g % rAttr(index_g2x_Sg_icemask, n)
            ! icemask_coupled_fluxes for now should be the same as icemask
 	   ! For above: If we add in the ability to prevent the ice sheet from evolving

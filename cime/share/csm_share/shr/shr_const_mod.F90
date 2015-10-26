@@ -57,6 +57,9 @@ MODULE shr_const_mod
    real(R8),parameter :: SHR_CONST_CONDICE = 2.1_R8          ! thermal conductivity of ice ~ W/m/K
    real(R8),parameter :: SHR_CONST_KAPPA_LAND_ICE = &        ! Diffusivity of heat in land ice ~ 
                          SHR_CONST_CONDICE / (SHR_CONST_RHOICE*SHR_CONST_CPICE)
+   real(R8),parameter :: SHR_CONST_DTF_DP = -7.53e-8_R8      !Jer TODO: add on description
+   real(R8),parameter :: SHR_CONST_DTF_DS = -5.73e-2_R8      !Jer TODO: add on description
+   real(R8),parameter :: SHR_CONST_TF0    = 9.39e-2_R8       !Jer TODO: add on description
    real(R8),parameter :: SHR_CONST_OCN_REF_SAL = 34.7_R8     ! ocn ref salinity (psu)
    real(R8),parameter :: SHR_CONST_ICE_REF_SAL =  4.0_R8     ! ice ref salinity (psu)
 
