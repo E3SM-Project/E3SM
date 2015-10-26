@@ -151,8 +151,61 @@ contains
       !-----------------------------------------------------------------
 
       type (mpas_pool_type), pointer :: ecosysAuxiliary  ! additional forcing fields
+      type (mpas_pool_type), pointer :: ecosysDiagsLevel1  ! diagnostics
 
-      real (kind=RKIND) :: zTop, zBot, convertLengthScale = 1.0_RKIND
+      real (kind=RKIND), dimension(:), pointer :: &
+         ecosys_diag_tot_CaCO3_form_zint, &
+         ecosys_diag_photoC_TOT_zint,  &
+         ecosys_diag_Jint_Ctot,  &
+         ecosys_diag_Jint_100m_Ctot,  &
+         ecosys_diag_Jint_Ntot,  &
+         ecosys_diag_Jint_100m_Ntot,  &
+         ecosys_diag_Jint_Ptot,  &
+         ecosys_diag_Jint_100m_Ptot,  &
+         ecosys_diag_Jint_Sitot,  &
+         ecosys_diag_Jint_100m_Sitot,  &
+         ecosys_diag_O2_ZMIN,  &
+         ecosys_diag_O2_ZMIN_DEPTH
+
+      ! two dimensional arrays
+      real (kind=RKIND), dimension(:,:), pointer :: &
+         ecosys_diag_tot_Nfix,  &
+         ecosys_diag_NITRIF,  &
+         ecosys_diag_DENITRIF,  &
+         ecosys_diag_O2_PRODUCTION,  &
+         ecosys_diag_O2_CONSUMPTION,  &
+         ecosys_diag_PAR_avg,  &
+         ecosys_diag_zoo_loss,  &
+         ecosys_diag_auto_graze_TOT,  &
+         ecosys_diag_photoC_TOT,  &
+         ecosys_diag_DOC_prod,  &
+         ecosys_diag_DOC_remin,  &
+         ecosys_diag_DON_prod,  &
+         ecosys_diag_DON_remin,  &
+         ecosys_diag_DOP_prod,  &
+         ecosys_diag_DOP_remin,  &
+         ecosys_diag_DOFe_prod,  &
+         ecosys_diag_DOFe_remin,  &
+         ecosys_diag_Fe_scavenge,  &
+         ecosys_diag_Fe_scavenge_rate,  &
+         ecosys_diag_POC_FLUX_IN,  &
+         ecosys_diag_POC_PROD,  &
+         ecosys_diag_POC_REMIN,  &
+         ecosys_diag_CaCO3_FLUX_IN,  &
+         ecosys_diag_CaCO3_PROD,  &
+         ecosys_diag_CaCO3_REMIN,  &
+         ecosys_diag_SiO2_FLUX_IN,  &
+         ecosys_diag_SiO2_PROD,  &
+         ecosys_diag_SiO2_REMIN,  &
+         ecosys_diag_dust_FLUX_IN,  &
+         ecosys_diag_dust_REMIN,  &
+         ecosys_diag_P_iron_FLUX_IN,  &
+         ecosys_diag_P_iron_PROD,  &
+         ecosys_diag_P_iron_REMIN
+
+!maltrud i think source/sink wants cm instead of m
+!     real (kind=RKIND) :: zTop, zBot, convertLengthScale = 1.0_RKIND
+      real (kind=RKIND) :: zTop, zBot, convertLengthScale = 100.0_RKIND
 
       integer :: iCell, iLevel, iTracer, numColumns, column
 
@@ -168,21 +221,75 @@ contains
 
       call mpas_pool_get_array(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFlux)
 
+!maltrud change to diagnostics pool at some point (needs to be passed in)
+      call mpas_pool_get_subpool(forcingPool, 'ecosysDiagsLevel1', ecosysDiagsLevel1)
+
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_tot_CaCO3_form_zint', ecosys_diag_tot_CaCO3_form_zint)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_photoC_TOT_zint', ecosys_diag_photoC_TOT_zint)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_Jint_Ctot', ecosys_diag_Jint_Ctot)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_Jint_100m_Ctot', ecosys_diag_Jint_100m_Ctot)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_Jint_Ntot', ecosys_diag_Jint_Ntot)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_Jint_100m_Ntot', ecosys_diag_Jint_100m_Ntot)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_Jint_Ptot', ecosys_diag_Jint_Ptot)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_Jint_100m_Ptot', ecosys_diag_Jint_100m_Ptot)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_Jint_Sitot', ecosys_diag_Jint_Sitot)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_Jint_100m_Sitot', ecosys_diag_Jint_100m_Sitot)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_O2_ZMIN', ecosys_diag_O2_ZMIN)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_O2_ZMIN_DEPTH', ecosys_diag_O2_ZMIN_DEPTH)
+
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_tot_Nfix', ecosys_diag_tot_Nfix)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_NITRIF', ecosys_diag_NITRIF)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_DENITRIF', ecosys_diag_DENITRIF)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_O2_PRODUCTION', ecosys_diag_O2_PRODUCTION)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_O2_CONSUMPTION', ecosys_diag_O2_CONSUMPTION)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_PAR_avg', ecosys_diag_PAR_avg)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_zoo_loss', ecosys_diag_zoo_loss)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_auto_graze_TOT', ecosys_diag_auto_graze_TOT)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_photoC_TOT', ecosys_diag_photoC_TOT)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_DOC_prod', ecosys_diag_DOC_prod)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_DOC_remin', ecosys_diag_DOC_remin)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_DON_prod', ecosys_diag_DON_prod)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_DON_remin', ecosys_diag_DON_remin)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_DOP_prod', ecosys_diag_DOP_prod)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_DOP_remin', ecosys_diag_DOP_remin)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_DOFe_prod', ecosys_diag_DOFe_prod)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_DOFe_remin', ecosys_diag_DOFe_remin)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_Fe_scavenge', ecosys_diag_Fe_scavenge)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_Fe_scavenge_rate', ecosys_diag_Fe_scavenge_rate)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_POC_FLUX_IN', ecosys_diag_POC_FLUX_IN)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_POC_PROD', ecosys_diag_POC_PROD)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_POC_REMIN', ecosys_diag_POC_REMIN)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_CaCO3_FLUX_IN', ecosys_diag_CaCO3_FLUX_IN)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_CaCO3_PROD', ecosys_diag_CaCO3_PROD)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_CaCO3_REMIN', ecosys_diag_CaCO3_REMIN)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_SiO2_FLUX_IN', ecosys_diag_SiO2_FLUX_IN)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_SiO2_PROD', ecosys_diag_SiO2_PROD)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_SiO2_REMIN', ecosys_diag_SiO2_REMIN)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_dust_FLUX_IN', ecosys_diag_dust_FLUX_IN)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_dust_REMIN', ecosys_diag_dust_REMIN)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_P_iron_FLUX_IN', ecosys_diag_P_iron_FLUX_IN)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_P_iron_PROD', ecosys_diag_P_iron_PROD)
+      call mpas_pool_get_array(ecosysDiagsLevel1, 'ecosys_diag_P_iron_REMIN', ecosys_diag_P_iron_REMIN)
+
       numColumns = 1
       column = 1
       do iCell=1,nCellsSolve
          BGC_input%number_of_active_levels(column) = maxLevelCell(iCell)
          BGC_forcing%dust_FLUX_IN(column) = dust_FLUX_IN(iCell)
 !maltrud debug
-!        BGC_forcing%ShortWaveFlux_surface(column)  = shortWaveHeatFlux(iCell)
-         BGC_forcing%ShortWaveFlux_surface(column)  = 200.0_RKIND
+         BGC_forcing%ShortWaveFlux_surface(column)  = shortWaveHeatFlux(iCell)
+!        BGC_forcing%ShortWaveFlux_surface(column)  = 200.0_RKIND
          zTop = 0.0_RKIND
          do iLevel=1,maxLevelCell(iCell)
             BGC_input%PotentialTemperature(iLevel,column) = activeTracers(indexTemperature,iLevel,iCell)
             BGC_input%Salinity(iLevel,column) = activeTracers(indexSalinity,iLevel,iCell)
-            BGC_input%cell_center_depth(iLevel,column) = zMid(iLevel,iCell)*convertLengthScale
+!maltrud debug
+!           BGC_input%cell_center_depth(iLevel,column) = zMid(iLevel,iCell)*convertLengthScale
+            BGC_input%cell_center_depth(iLevel,column) = -1.0_RKIND*zMid(iLevel,iCell)*convertLengthScale
             BGC_input%cell_thickness(iLevel,column)    = layerThickness(iLevel,iCell)*convertLengthScale
-            zBot = zTop - layerThickness(iLevel,iCell)
+!maltrud debug
+!           zBot = zTop - layerThickness(iLevel,iCell)
+            zBot = zTop + layerThickness(iLevel,iCell)
             BGC_input%cell_bottom_depth(iLevel,column) = zBot*convertLengthScale
             zTop = zBot
 
@@ -240,68 +347,160 @@ contains
          do iLevel=1,maxLevelCell(iCell)
 
             ecosysTracersTend(ecosysIndices%po4_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%po4_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%po4_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%po4_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%no3_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%no3_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%no3_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%no3_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%sio3_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%sio3_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%sio3_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%sio3_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%nh4_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%nh4_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%nh4_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%nh4_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%fe_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%fe_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%fe_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%fe_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%o2_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%o2_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%o2_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%o2_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%dic_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%dic_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%dic_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%dic_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%dic_alt_co2_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%dic_alt_co2_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%dic_alt_co2_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%dic_alt_co2_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%alk_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%alk_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%alk_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%alk_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%doc_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%doc_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%doc_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%doc_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%don_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%don_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%don_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%don_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%dofe_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%dofe_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%dofe_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%dofe_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%dop_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%dop_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%dop_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%dop_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%dopr_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%dopr_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%dopr_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%dopr_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%donr_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%donr_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%donr_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%donr_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%zooC_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%zooC_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%zooC_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%zooC_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%spC_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%spC_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%spC_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%spC_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%spChl_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%spChl_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%spChl_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%spChl_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%spFe_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%spFe_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%spFe_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%spFe_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%spCaCO3_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%spCaCO3_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%spCaCO3_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%spCaCO3_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%diatC_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%diatC_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%diatC_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%diatC_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%diatChl_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%diatChl_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%diatChl_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%diatChl_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%diatFe_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%diatFe_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%diatFe_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%diatFe_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%diatSi_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%diatSi_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%diatSi_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%diatSi_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%diazC_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%diazC_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%diazC_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%diazC_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%diazChl_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%diazChl_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%diazChl_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%diazChl_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%diazFe_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%diazFe_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%diazFe_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%diazFe_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%phaeoC_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%phaeoC_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%phaeoC_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%phaeoC_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%phaeoChl_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%phaeoChl_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%phaeoChl_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%phaeoChl_ind)*layerThickness(iLevel,iCell)
             ecosysTracersTend(ecosysIndices%phaeoFe_ind,iLevel,iCell) = ecosysTracersTend(ecosysIndices%phaeoFe_ind,iLevel,iCell)   &
-                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%phaeoFe_ind)
+                                                                    + BGC_output%BGC_tendencies(iLevel,column,BGC_indices%phaeoFe_ind)*layerThickness(iLevel,iCell)
 
             PH_PREV_3D(iLevel,iCell)         = BGC_output%PH_PREV_3D(iLevel,column)
             PH_PREV_ALT_CO2_3D(iLevel,iCell) = BGC_output%PH_PREV_ALT_CO2_3D(iLevel,column)
+
+            ecosys_diag_tot_CaCO3_form_zint(iCell) =  &
+                           BGC_diagnostic_fields%diag_tot_CaCO3_form_zint(column)
+            ecosys_diag_photoC_TOT_zint(iCell) =  &
+                           BGC_diagnostic_fields%diag_photoC_TOT_zint(column)
+            ecosys_diag_Jint_Ctot(iCell) =  &
+                           BGC_diagnostic_fields%diag_Jint_Ctot(column)
+            ecosys_diag_Jint_100m_Ctot(iCell) =  &
+                           BGC_diagnostic_fields%diag_Jint_100m_Ctot(column)
+            ecosys_diag_Jint_Ntot(iCell) =  &
+                           BGC_diagnostic_fields%diag_Jint_Ntot(column)
+            ecosys_diag_Jint_100m_Ntot(iCell) =  &
+                           BGC_diagnostic_fields%diag_Jint_100m_Ntot(column)
+            ecosys_diag_Jint_Ptot(iCell) =  &
+                           BGC_diagnostic_fields%diag_Jint_Ptot(column)
+            ecosys_diag_Jint_100m_Ptot(iCell) =  &
+                           BGC_diagnostic_fields%diag_Jint_100m_Ptot(column)
+            ecosys_diag_Jint_Sitot(iCell) =  &
+                           BGC_diagnostic_fields%diag_Jint_Sitot(column)
+            ecosys_diag_Jint_100m_Sitot(iCell) =  &
+                           BGC_diagnostic_fields%diag_Jint_100m_Sitot(column)
+            ecosys_diag_O2_ZMIN(iCell) =  &
+                           BGC_diagnostic_fields%diag_O2_ZMIN(column)
+            ecosys_diag_O2_ZMIN_DEPTH(iCell) =  &
+                           BGC_diagnostic_fields%diag_O2_ZMIN_DEPTH(column)
+
+            ecosys_diag_tot_Nfix(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_tot_Nfix(iLevel,column)
+            ecosys_diag_NITRIF(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_NITRIF(iLevel,column)
+            ecosys_diag_DENITRIF(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_DENITRIF(iLevel,column)
+            ecosys_diag_O2_PRODUCTION(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_O2_PRODUCTION(iLevel,column)
+            ecosys_diag_O2_CONSUMPTION(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_O2_CONSUMPTION(iLevel,column)
+            ecosys_diag_PAR_avg(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_PAR_avg(iLevel,column)
+            ecosys_diag_zoo_loss(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_zoo_loss(iLevel,column)
+            ecosys_diag_auto_graze_TOT(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_auto_graze_TOT(iLevel,column)
+            ecosys_diag_photoC_TOT(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_photoC_TOT(iLevel,column)
+            ecosys_diag_DOC_prod(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_DOC_prod(iLevel,column)
+            ecosys_diag_DOC_remin(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_DOC_remin(iLevel,column)
+            ecosys_diag_DON_prod(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_DON_prod(iLevel,column)
+            ecosys_diag_DON_remin(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_DON_remin(iLevel,column)
+            ecosys_diag_DOP_prod(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_DOP_prod(iLevel,column)
+            ecosys_diag_DOP_remin(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_DOP_remin(iLevel,column)
+            ecosys_diag_DOFe_prod(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_DOFe_prod(iLevel,column)
+            ecosys_diag_DOFe_remin(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_DOFe_remin(iLevel,column)
+            ecosys_diag_Fe_scavenge(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_Fe_scavenge(iLevel,column)
+            ecosys_diag_Fe_scavenge_rate(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_Fe_scavenge_rate(iLevel,column)
+            ecosys_diag_POC_FLUX_IN(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_POC_FLUX_IN(iLevel,column)
+            ecosys_diag_POC_PROD(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_POC_PROD(iLevel,column)
+            ecosys_diag_POC_REMIN(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_POC_REMIN(iLevel,column)
+            ecosys_diag_CaCO3_FLUX_IN(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_CaCO3_FLUX_IN(iLevel,column)
+            ecosys_diag_CaCO3_PROD(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_CaCO3_PROD(iLevel,column)
+            ecosys_diag_CaCO3_REMIN(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_CaCO3_REMIN(iLevel,column)
+            ecosys_diag_SiO2_FLUX_IN(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_SiO2_FLUX_IN(iLevel,column)
+            ecosys_diag_SiO2_PROD(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_SiO2_PROD(iLevel,column)
+            ecosys_diag_SiO2_REMIN(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_SiO2_REMIN(iLevel,column)
+            ecosys_diag_dust_FLUX_IN(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_dust_FLUX_IN(iLevel,column)
+            ecosys_diag_dust_REMIN(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_dust_REMIN(iLevel,column)
+            ecosys_diag_P_iron_FLUX_IN(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_P_iron_FLUX_IN(iLevel,column)
+            ecosys_diag_P_iron_PROD(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_P_iron_PROD(iLevel,column)
+            ecosys_diag_P_iron_REMIN(iLevel,iCell) =  &
+                           BGC_diagnostic_fields%diag_P_iron_REMIN(iLevel,column)
 
          enddo
 
@@ -404,6 +603,15 @@ contains
          PH_PREV,              &
          PH_PREV_ALT_CO2
 
+      real (kind=RKIND) :: &
+         renormFluxes = 0.01_RKIND, &
+!        PascalsToAtmospheres = 1.0_RKIND/101.325e+3_RKIND,  &
+!        mSquared_to_cmSquared = 1.0e+4_RKIND
+!        PascalsToAtmospheres = 1.0_RKIND,  &
+!        mSquared_to_cmSquared = 1.0_RKIND
+         PascalsToAtmospheres = 0.0_RKIND,  &
+         mSquared_to_cmSquared = 1.0_RKIND
+
       err = 0
 
       call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
@@ -432,6 +640,9 @@ contains
       call mpas_pool_get_array(ecosysAuxiliary, 'CO2_gas_flux', CO2_gas_flux)
       call mpas_pool_get_array(ecosysAuxiliary, 'CO2_alt_gas_flux', CO2_alt_gas_flux)
 
+      BGC_forcing%lcalc_O2_gas_flux  = .true.
+      BGC_forcing%lcalc_CO2_gas_flux = .true.
+
       numColumns = 1
       column = 1
       iLevelSurface = 1
@@ -439,14 +650,16 @@ contains
 
 ! NOTE surface values of BGC_input%BGC_tracers were set in previous call to source-sink routine
 
-         BGC_forcing%surfacePressure(column) = seaSurfacePressure(iCell)
+         BGC_forcing%surfacePressure(column) = seaSurfacePressure(iCell)*PascalsToAtmospheres
          BGC_forcing%iceFraction(column) = iceFraction(iCell)
-         BGC_forcing%windSpeedSquared10m(column) = windSpeedSquared10m(iCell)
-         BGC_forcing%atmCO2(column) = atmosphericCO2(column)
-         BGC_forcing%atmCO2_ALT_CO2(column) = atmosphericCO2_ALT_CO2(column)
+         BGC_forcing%windSpeedSquared10m(column) = windSpeedSquared10m(iCell)*mSquared_to_cmSquared
+         BGC_forcing%atmCO2(column) = atmosphericCO2(iCell)
+         BGC_forcing%atmCO2_ALT_CO2(column) = atmosphericCO2_ALT_CO2(iCell)
          BGC_forcing%surface_pH(column) = PH_PREV(iCell)
          BGC_forcing%surface_pH_alt_co2(column) = PH_PREV_ALT_CO2(iCell)
-         BGC_forcing%surfaceDepth(column) = zMid(iLevelSurface,iCell)
+!maltrud debug
+!        BGC_forcing%surfaceDepth(column) = zMid(iLevelSurface,iCell)
+         BGC_forcing%surfaceDepth(column) = -1.0_RKIND*zMid(iLevelSurface,iCell)
          BGC_forcing%SST(column) = activeTracers(indexTemperature,iLevelSurface,iCell)
          BGC_forcing%SSS(column) = activeTracers(indexSalinity,iLevelSurface,iCell)
 
@@ -477,20 +690,20 @@ contains
          PH_PREV(iCell)         = BGC_forcing%surface_pH(column)
          PH_PREV_ALT_CO2(iCell) = BGC_forcing%surface_pH_alt_co2(column)
 
-         ecosysSurfaceFlux(ecosysIndices%no3_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%no3_ind)
-         ecosysSurfaceFlux(ecosysIndices%po4_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%po4_ind)
-         ecosysSurfaceFlux(ecosysIndices%sio3_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%sio3_ind)
-         ecosysSurfaceFlux(ecosysIndices%nh4_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%nh4_ind)
-         ecosysSurfaceFlux(ecosysIndices%don_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%don_ind)
-         ecosysSurfaceFlux(ecosysIndices%donr_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%donr_ind)
-         ecosysSurfaceFlux(ecosysIndices%dop_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%dop_ind)
-         ecosysSurfaceFlux(ecosysIndices%dopr_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%dopr_ind)
-         ecosysSurfaceFlux(ecosysIndices%fe_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%fe_ind)
-         ecosysSurfaceFlux(ecosysIndices%alk_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%alk_ind)
-         ecosysSurfaceFlux(ecosysIndices%doc_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%doc_ind)
-         ecosysSurfaceFlux(ecosysIndices%o2_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%o2_ind)
-         ecosysSurfaceFlux(ecosysIndices%dic_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%dic_ind)
-         ecosysSurfaceFlux(ecosysIndices%dic_alt_co2_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%dic_alt_co2_ind)
+         ecosysSurfaceFlux(ecosysIndices%no3_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%no3_ind)*renormFluxes
+         ecosysSurfaceFlux(ecosysIndices%po4_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%po4_ind)*renormFluxes
+         ecosysSurfaceFlux(ecosysIndices%sio3_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%sio3_ind)*renormFluxes
+         ecosysSurfaceFlux(ecosysIndices%nh4_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%nh4_ind)*renormFluxes
+         ecosysSurfaceFlux(ecosysIndices%don_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%don_ind)*renormFluxes
+         ecosysSurfaceFlux(ecosysIndices%donr_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%donr_ind)*renormFluxes
+         ecosysSurfaceFlux(ecosysIndices%dop_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%dop_ind)*renormFluxes
+         ecosysSurfaceFlux(ecosysIndices%dopr_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%dopr_ind)*renormFluxes
+         ecosysSurfaceFlux(ecosysIndices%fe_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%fe_ind)*renormFluxes
+         ecosysSurfaceFlux(ecosysIndices%alk_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%alk_ind)*renormFluxes
+         ecosysSurfaceFlux(ecosysIndices%doc_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%doc_ind)*renormFluxes
+         ecosysSurfaceFlux(ecosysIndices%o2_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%o2_ind)*renormFluxes
+         ecosysSurfaceFlux(ecosysIndices%dic_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%dic_ind)*renormFluxes
+         ecosysSurfaceFlux(ecosysIndices%dic_alt_co2_ind,iCell) = BGC_forcing%netFlux(column,BGC_indices%dic_alt_co2_ind)*renormFluxes
 
 !explicitly set the rest to 0
 ! NOTE:  some will not be zero when we get sea ice fluxes
@@ -745,6 +958,11 @@ contains
       allocate ( BGC_forcing%gasFlux(numColumnsMax, BGC_tracer_cnt) )
       allocate ( BGC_forcing%seaIceFlux(numColumnsMax, BGC_tracer_cnt) )
       allocate ( BGC_forcing%netFlux(numColumnsMax, BGC_tracer_cnt) )
+      BGC_forcing%depositionFlux = 0.0_RKIND
+      BGC_forcing%riverFlux      = 0.0_RKIND
+      BGC_forcing%gasFlux        = 0.0_RKIND
+      BGC_forcing%seaIceFlux     = 0.0_RKIND
+      BGC_forcing%netFlux        = 0.0_RKIND
     
       allocate ( BGC_output%BGC_tendencies(nVertLevels, numColumnsMax, BGC_tracer_cnt) )
       allocate ( BGC_output%PH_PREV_3D(nVertLevels, numColumnsMax) )
