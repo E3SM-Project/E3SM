@@ -5,6 +5,7 @@ cd $OBJROOT/rof/obj
 cat >! tmp_filepath << EOF1
 $CASEROOT/SourceMods/src.mosart
 $CODEROOT/rof/mosart/src/riverroute
+$CODEROOT/rof/mosart/src/wrm
 $CODEROOT/rof/mosart/src/cpl
 $CODEROOT/rof/mosart/src/cpl_share
 EOF1

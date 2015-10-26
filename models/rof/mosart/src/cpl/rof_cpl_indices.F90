@@ -32,6 +32,8 @@ module rof_cpl_indices
 
   !TODO - nt_rtm and rtm_tracers need to be removed and set by access to the index array
   integer, parameter, public :: nt_rtm = 2    ! number of tracers
+  integer, parameter, public :: nt_nliq = 1
+  integer, parameter, public :: nt_nice = 2
   character(len=3), parameter, public :: rtm_tracers(nt_rtm) =  (/'LIQ','ICE'/)
 
   ! roff to driver (part of land for now) (optional if ROF is off)

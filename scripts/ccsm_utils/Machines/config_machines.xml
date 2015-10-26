@@ -167,6 +167,28 @@
          <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
 </machine>
 
+<machine MACH="constance">
+         <BFBFLAG>TRUE</BFBFLAG>
+         <DESC>PNL Haswell cluster, OS is Linux, batch system is SLURM</DESC>
+         <OS>LINUX</OS>
+         <COMPILERS>pgi,intel</COMPILERS>
+         <MPILIBS>mpich</MPILIBS>
+         <RUNDIR>/pic/scratch/$CCSMUSER/$CASE/run</RUNDIR>
+         <EXEROOT>/pic/scratch/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/pic/scratch/$USER</CESMSCRATCHROOT>
+         <DIN_LOC_ROOT>/pic/scratch/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/pic/scratch/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>/pic/scratch/$CCSMUSER/cases/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
+         <CCSM_BASELINE>/pic/scratch/tcraig/IRESM/ccsm_baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>/people/tcraig/bin/cprnc</CCSM_CPRNC>
+         <BATCHQUERY>squeue</BATCHQUERY>
+         <BATCHSUBMIT>sbatch</BATCHSUBMIT>
+         <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
+         <GMAKE_J>8</GMAKE_J>
+         <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
+</machine>         
+
 <machine MACH="edison">
          <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is PBS</DESC>
 	 <COMPILERS>intel,gnu,cray</COMPILERS>

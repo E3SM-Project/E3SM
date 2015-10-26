@@ -18,7 +18,7 @@ module RtmMod
   use RtmVar          , only : re, spval, rtmlon, rtmlat, iulog, ice_runoff, &
                                frivinp_rtm, finidat_rtm, nrevsn_rtm, &
                                nsrContinue, nsrBranch, nsrStartup, nsrest, &
-                               inst_index, inst_suffix, inst_name
+                               inst_index, inst_suffix, inst_name, wrmflag
   use RtmFileUtils    , only : getfil, getavu, relavu
   use RtmTimeManager  , only : timemgr_init, get_nstep, get_curr_date
   use RtmHistFlds     , only : RtmHistFldsInit, RtmHistFldsSet 
@@ -31,7 +31,11 @@ module RtmMod
   use RtmRestFile     , only : RtmRestTimeManager, RtmRestGetFile, RtmRestFileRead, &
                                RtmRestFileWrite, RtmRestFileName
   use RunoffMod       , only : RunoffInit, rtmCTL, Tctl, Tunit, TRunoff, Tpara
-  use MOSART_physics_mod
+  use MOSART_physics_mod, only : Euler
+  use MOSART_physics_mod, only : updatestate_hillslope, updatestate_subnetwork, &
+                                 updatestate_mainchannel
+  use WRM_subw_IO_mod , only : WRM_init
+  use WRM_modules     , only : Euler_WRM
   use RtmIO
   use mct_mod
   use perf_mod
@@ -187,7 +191,7 @@ contains
          rtmhist_ndens, rtmhist_mfilt, rtmhist_nhtfrq, &
          rtmhist_fincl1,  rtmhist_fincl2, rtmhist_fincl3, &
          rtmhist_fexcl1,  rtmhist_fexcl2, rtmhist_fexcl3, &
-         rtmhist_avgflag_pertape, decomp_option
+         rtmhist_avgflag_pertape, decomp_option, wrmflag
 
     ! Preset values
     do_rtm      = .true.
@@ -197,6 +201,7 @@ contains
     nrevsn_rtm  = ' '
     rtm_tstep   = -1
     decomp_option = 'basin'
+    wrmflag     = .false.
 
     nlfilename_rof = "mosart_in" // trim(inst_suffix)
     inquire (file = trim(nlfilename_rof), exist = lexist)
@@ -229,6 +234,7 @@ contains
     call mpi_bcast (do_rtm,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (do_rtmflood, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (ice_runoff,  1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (wrmflag,     1, MPI_LOGICAL, 0, mpicom_rof, ier)
 
     call mpi_bcast (rtmhist_nhtfrq, size(rtmhist_nhtfrq), MPI_INTEGER,   0, mpicom_rof, ier)
     call mpi_bcast (rtmhist_mfilt , size(rtmhist_mfilt) , MPI_INTEGER,   0, mpicom_rof, ier)
@@ -254,6 +260,7 @@ contains
        !write(iulog,*) '   case title            = ',trim(ctitle)
        !write(iulog,*) '   username              = ',trim(username)
        !write(iulog,*) '   hostname              = ',trim(hostname)
+       write(iulog,*) 'wrmflag                  = ',wrmflag
        if (nsrest == nsrStartup .and. finidat_rtm /= ' ') then
           write(iulog,*) '   MOSART initial data   = ',trim(finidat_rtm)
        end if
@@ -928,8 +935,8 @@ contains
 
     allocate(rgdc2glo(rtmCTL%numr), stat=ier)
     if (ier /= 0) then
-       write(iulog,*)'Rtmini ERROR allocation of rtmCTL%gdc2glo'
-       call shr_sys_abort('Rtmini ERROR allocate of gdc2glo')
+       write(iulog,*)'Rtmini ERROR allocation of rgdc2glo'
+       call shr_sys_abort('Rtmini ERROR allocate of rgdc2glo')
     end if
 
     ! Set map from local to global index space
@@ -1090,6 +1097,13 @@ contains
     call MOSART_init()
 
     call t_stopf('mosarti_mosart_init')
+
+    call t_startf('mosarti_wrm_init')
+!tcx
+    if (wrmflag) then
+       call WRM_init()
+    endif
+    call t_startf('mosarti_wrm_init')
 
     !-------------------------------------------------------
     ! Read restart/initial info
@@ -1365,9 +1379,15 @@ contains
 
     do ns = 1,nsub
 
-       call t_startf('mosartr_euler')
-       call Euler()
-       call t_stopf('mosartr_euler')
+       if (wrmflag) then
+          call t_startf('mosartr_euler')
+          call Euler_WRM()
+          call t_stopf('mosartr_euler')
+       else
+          call t_startf('mosartr_euler')
+          call Euler()
+          call t_stopf('mosartr_euler')
+       endif
 
        call t_startf('mosartr_SMmult')
        sfluxin = 0._r8

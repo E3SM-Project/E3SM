@@ -16,10 +16,20 @@ MODULE MOSART_physics_mod
   use RunoffMod, only : Tctl, TUnit, TRunoff, TPara, rtmCTL
   use rof_cpl_indices, only : nt_rtm, rtm_tracers
   use perf_mod, only: t_startf, t_stopf
+
   implicit none
+  private
+
   real(r8), parameter :: TINYVALUE = 1.0e-14_r8  ! double precision variable has a significance of about 16 decimal digits
     integer  :: nt               ! loop indices
-  
+  public Euler
+  public updatestate_hillslope
+  public updatestate_subnetwork
+  public updatestate_mainchannel
+  public hillsloperouting
+  public subnetworkrouting
+  public mainchannelrouting
+
 !-----------------------------------------------------------------------
                    
 ! !PUBLIC MEMBER FUNCTIONS:

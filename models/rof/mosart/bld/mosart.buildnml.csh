@@ -9,6 +9,7 @@ set check_grid = "fail"
 if (${ROF_GRID} == "null")set check_grid = "OK"
 if (${ROF_GRID} == "r05") set check_grid = "OK"
 if (${ROF_GRID} == "r01") set check_grid = "OK"
+if (${ROF_GRID} == "NLDAS") set check_grid = "OK"
 
 if (${check_grid} != "OK") then
   echo "ROF_GRID=${ROF_GRID} not supported in mosart"

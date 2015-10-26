@@ -72,10 +72,10 @@ module RunoffMod
 
   
   !== Hongyi
-  ! constrol information 
+  ! control information 
   public :: Tcontrol
   type Tcontrol
-     integer  :: NUnit            ! numer of Grides in the model domain, which is equal to the number of cells, nrows*ncols
+     integer  :: NUnit            ! numer of Gridcells in the model domain, which is equal to the number of cells, nrows*ncols
      integer  :: NSTART           ! the # of the time step to start the routing. Previous NSTART - 1 steps will be passed over.
      integer  :: NSTEPS           ! number of time steps specified in the modeling
      integer  :: NWARMUP          ! time steps for model warming up
@@ -110,7 +110,7 @@ module RunoffMod
   type Tspatialunit
      ! grid properties
      integer , pointer :: mask(:)      ! mask of a cell, 1=land, 2=ocean, 0=excluded cell
-     integer , pointer :: ID0(:)         
+     integer , pointer :: ID0(:)       ! ??
      real(r8), pointer :: lat(:)       ! latitude of the centroid of the cell
      real(r8), pointer :: lon(:)       ! longitude of the centroid of the cell
      real(r8), pointer :: area(:)      ! area of local cell, [m2]
@@ -280,7 +280,7 @@ contains
              rtmCTL%erout(begr:endr,nt_rtm),      &
              stat=ier)
     if (ier /= 0) then
-       write(iulog,*)'Rtmini ERROR allocation of runoff local arrays'
+       write(iulog,*)'RunoffInit ERROR allocation of runoff local arrays'
        call shr_sys_abort
     end if
 

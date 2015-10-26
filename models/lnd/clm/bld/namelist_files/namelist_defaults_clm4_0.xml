@@ -298,6 +298,8 @@ lnd/clm2/surfdata_map/surfdata_ne120np4_simyr2000_c130313.nc</fsurdat>
 <fsurdat hgrid="ne240np4"    sim_year="2000" irrig=".false." >
 lnd/clm2/surfdata_map/surfdata_ne240np4_simyr2000_c130313.nc</fsurdat>
 
+<fsurdat hgrid="NLDAS"    sim_year="2000" irrig=".false." crop="off" >
+lnd/clm2/surfdata/surfdata_nldas2_0224x0464_c131007.nc</fsurdat>
 
 
 

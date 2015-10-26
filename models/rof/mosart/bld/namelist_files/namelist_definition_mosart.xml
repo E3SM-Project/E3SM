@@ -28,6 +28,14 @@ otherwise ice runoff will be zero and all runoff directed to liquid
 stream.
 </entry>
 
+<entry id="wrmflag" 
+       type="logical" 
+       category="mosart"
+       group="mosart_inparm">
+Default: .false.
+If .true., water management model will be turned on.
+</entry>
+
 <entry id="do_rtm" 
        type="logical" 
        category="mosart"
