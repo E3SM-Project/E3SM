@@ -405,4 +405,142 @@
                         />
 
 	        </var_struct>
+
+                <var_struct name="ecosysDiagsLevel1" time_levs="1" packages="ecosysTracersPKG">
+                <var name="ecosys_diag_tot_CaCO3_form_zint" type="real" dimensions="nCells Time" units="something"
+                           description="diag_tot_CaCO3_form_zint"
+                />
+                <var name="ecosys_diag_tot_Nfix" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_tot_Nfix"
+                />
+                <var name="ecosys_diag_NITRIF" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_NITRIF"
+                />
+                <var name="ecosys_diag_DENITRIF" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_DENITRIF"
+                />
+                <var name="ecosys_diag_O2_PRODUCTION" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_O2_PRODUCTION"
+                />
+                <var name="ecosys_diag_O2_CONSUMPTION" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_O2_CONSUMPTION"
+                />
+                <var name="ecosys_diag_PAR_avg" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_PAR_avg"
+                />
+                <var name="ecosys_diag_zoo_loss" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_zoo_loss"
+                />
+                <var name="ecosys_diag_auto_graze_TOT" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_auto_graze_TOT"
+                />
+                <var name="ecosys_diag_photoC_TOT" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_photoC_TOT"
+                />
+                <var name="ecosys_diag_photoC_TOT_zint" type="real" dimensions="nCells Time" units="something"
+                           description="diag_photoC_TOT_zint"
+                />
+                <var name="ecosys_diag_DOC_prod" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_DOC_prod"
+                />
+                <var name="ecosys_diag_DOC_remin" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_DOC_remin"
+                />
+                <var name="ecosys_diag_DON_prod" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_DON_prod"
+                />
+                <var name="ecosys_diag_DON_remin" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_DON_remin"
+                />
+                <var name="ecosys_diag_DOP_prod" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_DOP_prod"
+                />
+                <var name="ecosys_diag_DOP_remin" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_DOP_remin"
+                />
+                <var name="ecosys_diag_DOFe_prod" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_DOFe_prod"
+                />
+                <var name="ecosys_diag_DOFe_remin" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_DOFe_remin"
+                />
+                <var name="ecosys_diag_Fe_scavenge" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_Fe_scavenge"
+                />
+                <var name="ecosys_diag_Fe_scavenge_rate" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_Fe_scavenge_rate"
+                />
+                <var name="ecosys_diag_Jint_Ctot" type="real" dimensions="nCells Time" units="something"
+                           description="diag_Jint_Ctot"
+                />
+                <var name="ecosys_diag_Jint_100m_Ctot" type="real" dimensions="nCells Time" units="something"
+                           description="diag_Jint_100m_Ctot"
+                />
+                <var name="ecosys_diag_Jint_Ntot" type="real" dimensions="nCells Time" units="something"
+                           description="diag_Jint_Ntot"
+                />
+                <var name="ecosys_diag_Jint_100m_Ntot" type="real" dimensions="nCells Time" units="something"
+                           description="diag_Jint_100m_Ntot"
+                />
+                <var name="ecosys_diag_Jint_Ptot" type="real" dimensions="nCells Time" units="something"
+                           description="diag_Jint_Ptot"
+                />
+                <var name="ecosys_diag_Jint_100m_Ptot" type="real" dimensions="nCells Time" units="something"
+                           description="diag_Jint_100m_Ptot"
+                />
+                <var name="ecosys_diag_Jint_Sitot" type="real" dimensions="nCells Time" units="something"
+                           description="diag_Jint_Sitot"
+                />
+                <var name="ecosys_diag_Jint_100m_Sitot" type="real" dimensions="nCells Time" units="something"
+                           description="diag_Jint_100m_Sitot"
+                />
+                <var name="ecosys_diag_O2_ZMIN" type="real" dimensions="nCells Time" units="something"
+                           description="diag_O2_ZMIN"
+                />
+                <var name="ecosys_diag_O2_ZMIN_DEPTH" type="real" dimensions="nCells Time" units="something"
+                           description="diag_O2_ZMIN_DEPTH"
+                />
+                <var name="ecosys_diag_POC_FLUX_IN" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_POC_FLUX_IN"
+                />
+                <var name="ecosys_diag_POC_PROD" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_POC_PROD"
+                />
+                <var name="ecosys_diag_POC_REMIN" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_POC_REMIN"
+                />
+                <var name="ecosys_diag_CaCO3_FLUX_IN" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_CaCO3_FLUX_IN"
+                />
+                <var name="ecosys_diag_CaCO3_PROD" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_CaCO3_PROD"
+                />
+                <var name="ecosys_diag_CaCO3_REMIN" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_CaCO3_REMIN"
+                />
+                <var name="ecosys_diag_SiO2_FLUX_IN" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_SiO2_FLUX_IN"
+                />
+                <var name="ecosys_diag_SiO2_PROD" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_SiO2_PROD"
+                />
+                <var name="ecosys_diag_SiO2_REMIN" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_SiO2_REMIN"
+                />
+                <var name="ecosys_diag_dust_FLUX_IN" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_dust_FLUX_IN"
+                />
+                <var name="ecosys_diag_dust_REMIN" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_dust_REMIN"
+                />
+                <var name="ecosys_diag_P_iron_FLUX_IN" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_P_iron_FLUX_IN"
+                />
+                <var name="ecosys_diag_P_iron_PROD" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_P_iron_PROD"
+                />
+                <var name="ecosys_diag_P_iron_REMIN" type="real" dimensions="nVertLevels nCells Time" units="something"
+                           description="diag_P_iron_REMIN"
+                />
+	        </var_struct>
 	</var_struct>
