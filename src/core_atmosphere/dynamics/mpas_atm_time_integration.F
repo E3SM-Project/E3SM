@@ -1292,13 +1292,11 @@ MPAS_GPTL_STOP('dyn_tend')
       integer, intent(in) :: cellStart, cellEnd, edgeStart, edgeEnd
       integer, intent(in) :: cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd
 
-      integer :: iCell, iEdge, i, k
+      integer, pointer :: nCells, nEdges, nCellsSolve
       real (kind=RKIND), pointer :: coef_3rd_order
-      integer, pointer :: nCellsSolve, nCells, nVertLevels, nEdges
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
       real (kind=RKIND), dimension(:), pointer :: fzm, fzp
-      real (kind=RKIND) :: flux
       real (kind=RKIND), dimension(:,:), pointer :: ruAvg, wwAvg
       real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3, zb_cell, zb3_cell
       real (kind=RKIND), dimension(:,:), pointer :: zz
@@ -1315,7 +1313,6 @@ MPAS_GPTL_STOP('dyn_tend')
       call mpas_pool_get_dimension(mesh, 'nCells', nCells)
       call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
       call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
-      call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
 
       call mpas_pool_get_array(mesh, 'zz', zz)
       call mpas_pool_get_array(mesh, 'zb', zb)
@@ -1352,6 +1349,74 @@ MPAS_GPTL_STOP('dyn_tend')
       call mpas_pool_get_array(diag, 'rw_save', rw_save)
       call mpas_pool_get_array(diag, 'rw', rw)
 
+      call atm_set_smlstep_pert_variables_work(nCells, nEdges, nCellsSolve, coef_3rd_order, &
+                                   nEdgesOnCell, cellsOnEdge, edgesOnCell, fzm, fzp, ruAvg, wwAvg, zb, zb3, zb_cell, zb3_cell, &
+                                   zz, w_tend, u_tend, rho_pp, rho_p_save, rho_p, ru_p, ru, ru_save, &
+                                   rtheta_pp, rtheta_p_save, rtheta_p, zz_rtheta_pp_old, rw_p, rw_save, rw, edgesOnCell_sign, &
+                                   cellStart, cellEnd, edgeStart, edgeEnd, &
+                                   cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd)
+
+
+   end subroutine atm_set_smlstep_pert_variables
+
+
+   subroutine atm_set_smlstep_pert_variables_work(nCells, nEdges, nCellsSolve, coef_3rd_order, &
+                                   nEdgesOnCell, cellsOnEdge, edgesOnCell, fzm, fzp, ruAvg, wwAvg, zb, zb3, zb_cell, zb3_cell, &
+                                   zz, w_tend, u_tend, rho_pp, rho_p_save, rho_p, ru_p, ru, ru_save, &
+                                   rtheta_pp, rtheta_p_save, rtheta_p, zz_rtheta_pp_old, rw_p, rw_save, rw, edgesOnCell_sign, &
+                                   cellStart, cellEnd, edgeStart, edgeEnd, &
+                                   cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd)
+
+      use mpas_atm_dimensions
+
+      implicit none
+
+
+      !
+      ! Dummy arguments
+      !
+      integer, intent(in) :: nCells, nEdges, nCellsSolve
+      real (kind=RKIND), intent(in) :: coef_3rd_order
+
+      integer, intent(in) :: cellStart, cellEnd, edgeStart, edgeEnd
+      integer, intent(in) :: cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd
+
+      integer, dimension(nCells+1) :: nEdgesOnCell
+      integer, dimension(2,nEdges+1) :: cellsOnEdge
+      integer, dimension(maxEdges,nCells+1) :: edgesOnCell
+      real (kind=RKIND), dimension(nVertLevels) :: fzm
+      real (kind=RKIND), dimension(nVertLevels) :: fzp
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: ruAvg
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: wwAvg
+      real (kind=RKIND), dimension(nVertLevels+1,2,nEdges+1) :: zb
+      real (kind=RKIND), dimension(nVertLevels+1,2,nEdges+1) :: zb3
+      real (kind=RKIND), dimension(nVertLevels+1,maxEdges,nCells+1) :: zb_cell
+      real (kind=RKIND), dimension(nVertLevels+1,maxEdges,nCells+1) :: zb3_cell
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: zz
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: w_tend
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: u_tend
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rho_pp
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rho_p_save
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rho_p
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: ru_p
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: ru
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: ru_save
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_pp
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_p_save
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_p
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: zz_rtheta_pp_old
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw_p
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw_save
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw
+      real (kind=RKIND), dimension(maxEdges,nCells+1) :: edgesOnCell_sign
+
+
+      !
+      ! Local variables
+      !
+      integer :: iCell, iEdge, i, k
+      real (kind=RKIND) :: flux
+
 
       ! set the acoustic step perturbation variables by subtracting the RK timestep variables
       ! from their at the previous RK substep.
@@ -1384,6 +1449,7 @@ MPAS_GPTL_STOP('dyn_tend')
       do iCell=cellStart,cellEnd
          do i=1,nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i,iCell)
+!DIR$ IVDEP
             do k = 2, nVertLevels
                flux = edgesOnCell_sign(i,iCell) * (fzm(k) * u_tend(k,iEdge) + fzp(k) * u_tend(k-1,iEdge))
 !               w_tend(k,iCell) = w_tend(k,iCell)   &
@@ -1393,6 +1459,7 @@ MPAS_GPTL_STOP('dyn_tend')
                         - (zb_cell(k,i,iCell) + coef_3rd_order * sign(1.0_RKIND, u_tend(k,iEdge)) * zb3_cell(k,i,iCell)) * flux
             end do
          end do
+!DIR$ IVDEP
          do k = 2, nVertLevels
             w_tend(k,iCell) = ( fzm(k) * zz(k,iCell) + fzp(k) * zz(k-1,iCell)   ) * w_tend(k,iCell)
          end do
@@ -1403,7 +1470,7 @@ MPAS_GPTL_STOP('dyn_tend')
       ruAvg(:,edgeStart:edgeEnd) = 0.0
       wwAvg(:,cellStart:cellEnd) = 0.0
 
-   end subroutine atm_set_smlstep_pert_variables
+   end subroutine atm_set_smlstep_pert_variables_work
 
 
    subroutine atm_advance_acoustic_step( state, diag, tend, mesh, configs, nCells, nVertLevels, dts, small_step, &
