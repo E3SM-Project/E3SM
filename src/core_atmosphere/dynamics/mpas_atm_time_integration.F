@@ -1931,16 +1931,108 @@ MPAS_GPTL_STOP('dyn_tend')
 
       call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
 
+      call atm_recover_large_step_variables_work(nCells, nEdges, nCellsSolve, nEdgesSolve, dt, ns, rk_step, &
+                             wwAvg, rw_save, w, rw, rw_p, rtheta_p, rtheta_pp, rtheta_p_save, rt_diabatic_tend, rho_p, &
+                             rho_p_save, rho_pp, rho_zz, rho_base, ruAvg, ru_save, ru_p, u, ru, exner, exner_base, &
+                             rtheta_base, pressure_p, zz, theta_m, pressure_b, pressure_p_old, scalars, fzm, fzp, &
+                             zb, zb3, zb_cell, zb3_cell, edgesOnCell_sign, cellsOnEdge, edgesOnCell, nEdgesOnCell, &
+                             cf1, cf2, cf3, coef_3rd_order, &
+                             cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+                             cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
+
+   end subroutine atm_recover_large_step_variables
+
+
+   subroutine atm_recover_large_step_variables_work(nCells, nEdges, nCellsSolve, nEdgesSolve, dt, ns, rk_step, &
+                             wwAvg, rw_save, w, rw, rw_p, rtheta_p, rtheta_pp, rtheta_p_save, rt_diabatic_tend, rho_p, &
+                             rho_p_save, rho_pp, rho_zz, rho_base, ruAvg, ru_save, ru_p, u, ru, exner, exner_base, &
+                             rtheta_base, pressure_p, zz, theta_m, pressure_b, pressure_p_old, scalars, fzm, fzp, &
+                             zb, zb3, zb_cell, zb3_cell, edgesOnCell_sign, cellsOnEdge, edgesOnCell, nEdgesOnCell, &
+                             cf1, cf2, cf3, coef_3rd_order, &
+                             cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+                             cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd)
+
+      use mpas_atm_dimensions
+
+      implicit none
+
+
+      !
+      ! Dummy arguments
+      !
+      integer, intent(in) :: nCells, nEdges, nCellsSolve, nEdgesSolve
+      integer, intent(in) :: ns, rk_step
+      real (kind=RKIND), intent(in) :: dt
+
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: wwAvg
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw_save
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: w
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: rw_p
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_p
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_pp
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_p_save
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rt_diabatic_tend
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rho_p
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rho_p_save
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rho_pp
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rho_zz
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rho_base
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: ruAvg
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: ru_save
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: ru_p
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: u
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: ru
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: exner
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: exner_base
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtheta_base
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pressure_p
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: zz
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: theta_m
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pressure_b
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pressure_p_old
+      real (kind=RKIND), dimension(num_scalars,nVertLevels,nCells+1) :: scalars
+      real (kind=RKIND), dimension(nVertLevels) :: fzm
+      real (kind=RKIND), dimension(nVertLevels) :: fzp
+      real (kind=RKIND), dimension(nVertLevels+1,2,nEdges+1) :: zb
+      real (kind=RKIND), dimension(nVertLevels+1,2,nEdges+1) :: zb3
+      real (kind=RKIND), dimension(nVertLevels+1,maxEdges,nCells+1) :: zb_cell
+      real (kind=RKIND), dimension(nVertLevels+1,maxEdges,nCells+1) :: zb3_cell
+      real (kind=RKIND), dimension(maxEdges,nCells+1) :: edgesOnCell_sign
+      integer, dimension(2,nEdges+1) :: cellsOnEdge
+      integer, dimension(maxEdges,nCells+1) :: edgesOnCell
+      integer, dimension(nCells+1) :: nEdgesOnCell
+
+      real (kind=RKIND) :: cf1, cf2, cf3, coef_3rd_order
+
+      integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
+      integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
+
+
+      !
+      ! Local variables
+      !
+      integer :: i, iCell, iEdge, k, cell1, cell2
+      real (kind=RKIND) :: invNs, rcv, p0, flux
+
+
       rcv = rgas/(cp-rgas)
       p0 = 1.0e+05  ! this should come from somewhere else...
 
+      ! Avoid FP errors caused by a potential division by zero below by 
+      ! initializing the "garbage cell" of rho_zz to a non-zero value
+      do k=1,nVertLevels
+         rho_zz(k,nCells+1) = 1.0
+      end do
 
       ! compute new density everywhere so we can compute u from ru.
       ! we will also need it to compute theta_m below
 
       invNs = 1 / real(ns,RKIND)
+
       do iCell=cellStart,cellEnd
 
+!DIR$ IVDEP
          do k = 1, nVertLevels
             rho_p(k,iCell) = rho_p_save(k,iCell) + rho_pp(k,iCell)
 
@@ -1949,6 +2041,7 @@ MPAS_GPTL_STOP('dyn_tend')
 
          w(1,iCell) = 0.0
 
+!DIR$ IVDEP
          do k = 2, nVertLevels
             wwAvg(k,iCell) = rw_save(k,iCell) + (wwAvg(k,iCell) * invNs)
             rw(k,iCell) = rw_save(k,iCell) + rw_p(k,iCell)
@@ -1961,6 +2054,7 @@ MPAS_GPTL_STOP('dyn_tend')
          w(nVertLevels+1,iCell) = 0.0
 
          if (rk_step == 3) then
+!DIR$ IVDEP
             do k = 1, nVertLevels
                rtheta_p(k,iCell) = rtheta_p_save(k,iCell) + rtheta_pp(k,iCell) &
                                  - dt * rho_zz(k,iCell) * rt_diabatic_tend(k,iCell)
@@ -1972,6 +2066,7 @@ MPAS_GPTL_STOP('dyn_tend')
                                                           * (exner(k,iCell)-exner_base(k,iCell)))
             end do
          else
+!DIR$ IVDEP
             do k = 1, nVertLevels
                rtheta_p(k,iCell) = rtheta_p_save(k,iCell) + rtheta_pp(k,iCell)
                theta_m(k,iCell) = (rtheta_p(k,iCell) + rtheta_base(k,iCell))/rho_zz(k,iCell)
@@ -1984,10 +2079,6 @@ MPAS_GPTL_STOP('dyn_tend')
       ! we solved for these in the acoustic-step loop.  
       ! we will compute ru and u here also, given we are here, even though we only need them on nEdgesSolve
 
-      ! Avoid FP errors caused by a potential division by zero below by 
-      ! initializing the "garbage cell" of rho_zz to a non-zero value
-      rho_zz(:,nCells+1) = 1.0
-
 !$OMP BARRIER
 
       do iEdge=edgeStart,edgeEnd
@@ -1995,6 +2086,7 @@ MPAS_GPTL_STOP('dyn_tend')
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
 
+!DIR$ IVDEP
          do k = 1, nVertLevels
             ruAvg(k,iEdge) = ru_save(k,iEdge) + (ruAvg(k,iEdge) * invNs)
             ru(k,iEdge) = ru_save(k,iEdge) + ru_p(k,iEdge)
@@ -2017,6 +2109,7 @@ MPAS_GPTL_STOP('dyn_tend')
             w(1,iCell) = w(1,iCell) + edgesOnCell_sign(i,iCell) * &
                                    (zb_cell(1,i,iCell) + sign(1.0_RKIND,flux)*coef_3rd_order*zb3_cell(1,i,iCell))*flux
 
+!DIR$ IVDEP
             do k = 2, nVertLevels
                flux = (fzm(k)*ru(k,iEdge)+fzp(k)*ru(k-1,iEdge))
                w(k,iCell) = w(k,iCell) + edgesOnCell_sign(i,iCell) * &
@@ -2026,13 +2119,14 @@ MPAS_GPTL_STOP('dyn_tend')
          end do
 
          w(1,iCell) = w(1,iCell)/(cf1*rho_zz(1,iCell)+cf2*rho_zz(2,iCell)+cf3*rho_zz(3,iCell))
+!DIR$ IVDEP
          do k = 2, nVertLevels
            w(k,iCell) = w(k,iCell)/(fzm(k)*rho_zz(k,iCell)+fzp(k)*rho_zz(k-1,iCell))
          end do
 
       end do
 
-   end subroutine atm_recover_large_step_variables
+   end subroutine atm_recover_large_step_variables_work
 
 
    subroutine atm_advance_scalars( tend, state, diag, mesh, configs, num_scalars, nCells, nVertLevels, dt, &
