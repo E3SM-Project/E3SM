@@ -409,7 +409,7 @@ def get_defined_files(config_file, init_path, args, configs):#{{{
 				try:
 					subprocess.check_call(['cp', '-f', '%s'%(path), '%s/%s'%(init_path, dest_name)], stdout=dev_null, stderr=dev_null)
 				except:
-					print "  -- Mirror attempt failed. Trying other mirrors..."
+					print "  -- Local mirror attempt failed. Trying other mirrors..."
 
 			elif protocol == 'wget':
 				if not args.no_download:
@@ -425,7 +425,7 @@ def get_defined_files(config_file, init_path, args, configs):#{{{
 						subprocess.check_call(['wget', '-q', '%s'%(path)], stdout=dev_null, stderr=dev_null)
 						subprocess.check_call(['mv', '%s'%(name), '%s/%s'%(init_path, dest_name)], stdout=dev_null, stderr=dev_null)
 					except:
-						print "  -- Mirror attempt failed. Trying other mirrors..."
+						print "  -- Web mirror attempt failed. Trying other mirrors..."
 
 	
 		try:
