@@ -377,26 +377,21 @@ end subroutine ocn_init_routines_compute_max_level!}}}
          refBottomDepthTopOfCell, vertCoordMovementWeights, bottomDepth, refZMid, refLayerThickness
       real (kind=RKIND), dimension(:), allocatable :: minBottomDepth, minBottomDepthMid, zMidZLevel
 
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
       integer, pointer :: nVertLevels, nCells
       logical :: consistentSSH
 
-      real (kind=RKIND), pointer :: config_min_pbc_fraction
-      logical, pointer :: config_do_restart, config_alter_ICs_for_pbcs, config_check_ssh_consistency
-      logical, pointer :: config_check_zlevel_consistency, config_set_restingThickness_to_IC
-      character (len=StrKIND), pointer :: config_vert_coord_movement, config_pbc_alteration_type
+      logical, pointer :: config_do_restart, config_check_ssh_consistency
+      logical, pointer :: config_check_zlevel_consistency
+      character (len=StrKIND), pointer :: config_vert_coord_movement
 
       type (mpas_pool_iterator_type) :: groupItr
 
       call mpas_pool_get_config(domain % configs, 'config_vert_coord_movement', config_vert_coord_movement)
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
-      call mpas_pool_get_config(domain % configs, 'config_alter_ICs_for_pbcs', config_alter_ICs_for_pbcs)
-      call mpas_pool_get_config(domain % configs, 'config_pbc_alteration_type', config_pbc_alteration_type)
       call mpas_pool_get_config(domain % configs, 'config_check_ssh_consistency', config_check_ssh_consistency)
       call mpas_pool_get_config(domain % configs, 'config_check_zlevel_consistency', config_check_zlevel_consistency)
-      call mpas_pool_get_config(domain % configs, 'config_min_pbc_fraction', config_min_pbc_fraction)
-      call mpas_pool_get_config(domain % configs, 'config_set_restingThickness_to_IC', config_set_restingThickness_to_IC)
 
       ! Initialize z-level mesh variables from h, read in from input file.
       block => domain % blocklist
@@ -414,7 +409,6 @@ end subroutine ocn_init_routines_compute_max_level!}}}
          call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', vertCoordMovementWeights)
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
-         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
          call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
          call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
 
@@ -441,106 +435,6 @@ end subroutine ocn_init_routines_compute_max_level!}}}
             vertCoordMovementWeights = 1.0
 
          endif
-
-         ! Initial condition files (ocean.nc, produced by basin) include a realistic
-         ! bottomDepth variable and h,T,S variables for full thickness cells.
-         ! If running with pbcs, set config_alter_ICs_for_pbc='zlevel_pbcs_on'. Then thin pbc cells
-         !    will be changed, and h,T,S will be altered to match the pbcs.
-         ! If running without pbcs, set config_alter_ICs_for_pbc='zlevel_pbcs_off'. Then
-         !    bottomDepth will be altered so it is full cells everywhere.
-         !    If your input file does not include bottomDepth, the false option will
-         !    initialize bottomDepth correctly for a non-pbc run.
-
-         if (.not. config_do_restart .and. config_alter_ICs_for_pbcs) then
-
-            if (config_pbc_alteration_type .eq. 'partial_cell') then
-
-               write (stdoutUnit,'(a)') ' Altering bottomDepth to avoid very thin cells.'
-               write (stdoutUnit,'(a)') ' Altering layerThickness and tracer initial conditions to conform with partial bottom cells.'
-
-               allocate(minBottomDepth(nVertLevels),minBottomDepthMid(nVertLevels),zMidZLevel(nVertLevels))
-
-               ! min_pbc_fraction restricts pbcs from being too small.
-               ! A typical value is 10%, so pbcs must occupy at least 10% of the cell thickness.
-               ! If min_pbc_fraction = 0.0, bottomDepth gives the actual depth for that cell.
-               ! If min_pbc_fraction = 1.0, bottomDepth reverts to discrete z-level depths, same
-               !    as partial_bottom_cells = .false.
-
-               minBottomDepth(1) = (1.0-config_min_pbc_fraction)*refBottomDepth(1)
-               minBottomDepthMid(1) = 0.5*(minBottomDepth(1) + refBottomDepthTopOfCell(1))
-               zMidZLevel(1) = - 0.5*(refBottomDepth(1) + refBottomDepthTopOfCell(1))
-               do k = 2, nVertLevels
-                  minBottomDepth(k) = refBottomDepth(k) - (1.0-config_min_pbc_fraction)*(refBottomDepth(k) - refBottomDepth(k-1))
-                  minBottomDepthMid(k) = 0.5*(minBottomDepth(k) + refBottomDepthTopOfCell(k))
-                  zMidZLevel(k) = - 0.5*(refBottomDepth(k) + refBottomDepthTopOfCell(k))
-               end do
-
-               do iCell = 1, nCells
-
-                  ! Change value of maxLevelCell for partial bottom cells
-                  k = maxLevelCell(iCell)
-                  if (bottomDepth(iCell) .lt. minBottomDepthMid(k)) then
-                     ! Round up to cell above
-                     maxLevelCell(iCell) = maxLevelCell(iCell) - 1
-                     bottomDepth(iCell) = refBottomDepth(maxLevelCell(iCell))
-                  else if (bottomDepth(iCell) .lt. minBottomDepth(k)) then
-                     ! Round down cell to the min_pbc_fraction.
-                     bottomDepth(iCell) = minBottomDepth(k)
-                  end if
-                  ! reset k to new value of maxLevelCell
-                  k = maxLevelCell(iCell)
-
-                  ! Alter thickness of bottom level to account for PBC
-                  layerThickness(k,iCell) = bottomDepth(iCell) - refBottomDepthTopOfCell(k) 
-               end do
-
-               call mpas_pool_begin_iteration(tracersPool)
-               do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
-                  if ( groupItr % memberType == MPAS_POOL_FIELD ) then
-                     call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroup, 1)
-
-                     if ( associated(tracersGroup) ) then
-                        do iCell = 1, nCells
-                           ! Linearly interpolate the initial T&S for new location of bottom cell for PBCs
-                           k = maxLevelCell(iCell)
-                           zMidPBC = -0.5_RKIND * (bottomDepth(iCell) + refBottomDepthTopOfCell(k))
-                           km1 = max(k-1,1)
-                           tracersGroup(:, k, iCell) = tracersGroup(:, k, iCell) &
-                              + (tracersGroup(:, km1, iCell) - tracersGroup(:, k, iCell)) &
-                               /(zMidZLevel(km1) - zMidZLevel(k) + 1.0e-16_RKIND) &
-                               *(zMidPBC - zMidZLevel(k))
-      
-                        end do
-                     end if
-                  end if
-               end do
-
-               deallocate(minBottomDepth,minBottomDepthMid,zMidZLevel)
-
-            elseif (config_pbc_alteration_type .eq. 'full_cell') then
-
-               do iCell = 1,nCells
-                  bottomDepth(iCell) = refBottomDepth(maxLevelCell(iCell))
-               enddo
-
-            else
-
-                write (stderrUnit,*) ' Incorrect choice of config_pbc_alteration_type.'
-                call mpas_dmpar_abort(dminfo)
-
-            endif
-
-         endif ! .not.config_do_restart
-
-         if (.not. config_do_restart) then
-
-            ! Layer thickness when the ocean is at rest, i.e. without SSH or internal perturbations.
-            ! This is applied only from the initial condition
-            if (config_set_restingThickness_to_IC) then
-                restingThickness = layerThickness
-            endif
-
-         endif ! .not.config_do_restart.and.config_alter_ICs_for_pbcs
 
          if (config_check_ssh_consistency) then
             consistentSSH = .true.

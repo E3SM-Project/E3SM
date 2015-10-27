@@ -29,7 +29,9 @@ module ocn_init_global_ocean
    use mpas_io_streams
    use mpas_dmpar
 
+   use ocn_constants
    use ocn_init_cell_markers
+   use ocn_init_vertical_grids
 
    implicit none
    private
@@ -115,7 +117,7 @@ contains
       write(stderrUnit,*) 'Reading topography data.'
       call ocn_init_setup_global_ocean_read_topo(domain, iErr)
       write(stderrUnit,*) 'Interpolating topography data.'
-      call ocn_init_setup_global_ocean_interpolate_topo(domain, iErr)
+      call ocn_init_setup_global_ocean_create_model_topo(domain, iErr)
       write(stderrUnit,*) 'Cleaning up topography IC fields'
       call ocn_init_global_ocean_destroy_topo_fields()
 
@@ -248,7 +250,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_init_setup_global_ocean_interpolate_topo
+!  routine ocn_init_setup_global_ocean_create_model_topo
 !
 !> \brief   Interpolate the topography IC to MPAS mesh
 !> \author  Doug Jacobsen
@@ -259,20 +261,21 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_init_setup_global_ocean_interpolate_topo(domain, iErr)!{{{
+    subroutine ocn_init_setup_global_ocean_create_model_topo(domain, iErr)!{{{
        type (domain_type), intent(inout) :: domain
        integer, intent(out) :: iErr
 
        type (block_type), pointer :: block_ptr
 
-       type (mpas_pool_type), pointer :: meshPool, scratchPool, statePool, verticalMeshPool
+       type (mpas_pool_type), pointer :: meshPool, scratchPool, statePool, verticalMeshPool, diagnosticsPool
 
        real (kind=RKIND) :: currentLat, currentLon
        real (kind=RKIND) :: dist, minDist
        real (kind=RKIND) :: alpha, beta, depthLat1, depthLat2, proposedDepth
 
-       real (kind=RKIND), dimension(:), pointer :: latCell, lonCell, bottomDepth, bottomDepthObserved, refBottomDepth
-       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
+       real (kind=RKIND), dimension(:), pointer :: latCell, lonCell, bottomDepth, bottomDepthObserved, &
+            refBottomDepth, refLayerThickness, refZMid
+       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness, zMid
 
        integer, pointer :: nCells, nCellsSolve, nVertLevels
 
@@ -406,10 +409,10 @@ contains
        call mpas_pool_get_field(meshPool, 'maxLevelCell', maxLevelCellField)
        call mpas_dmpar_exch_halo_field(maxLevelCellField)
 
-       ! Set layerThickness based on refBottomDepth and bottomDepth
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
           call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
           call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
           call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
 
@@ -420,31 +423,33 @@ contains
           call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
 
           call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
+          call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
+          call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
 
           call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+          call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
+
+          ! Compute refLayerThickness and refZMid
+          call ocn_compute_layerThickness_zMid_from_bottomDepth(refLayerThickness,refZMid, &
+               refBottomDepth,refBottomDepth(nVertLevels), &
+               nVertLevels,nVertLevels,iErr)
 
           do iCell = 1, nCellsSolve 
-             if (maxLevelCell(iCell) > 0) then
+             call ocn_alter_bottomDepth_for_pbcs(bottomDepth(iCell), refBottomDepth, maxLevelCell(iCell), iErr)
 
-                ! By going to maxLevelCell, this loop sets the layer Thickness as the full cell at the bottom.
-                layerThickness(1, iCell) = refBottomDepth(1)
-                do k = 2, maxLevelCell(iCell)
-                   layerThickness(k, iCell) = refBottomDepth(k) - refBottomDepth(k-1)
-                end do
+             ! Compute LayerThickness and zMid
+             call ocn_compute_layerThickness_zMid_from_bottomDepth(layerThickness(:,iCell),zMid(:,iCell), &
+                  refBottomDepth,bottomDepth(iCell), &
+                  maxLevelCell(iCell),nVertLevels,iErr)
 
-                ! The following lines could be used for partial bottom cells, but only if the temperature is interpolated in the vertical as well.
-                ! In version 3.0, one may alter the IC for partial bottom cells on start-up in MPAS.
-                !k = maxLevelCell(iCell)
-                !layerThickness(k, iCell) =  bottomDepth(iCell) - refBottomDepth(k-1)
-
-                restingThickness(:, iCell) = layerThickness(:, iCell)
-             end if
+             ! Compute restingThickness
+             restingThickness(:, iCell) = layerThickness(:, iCell)
           end do
 
           block_ptr => block_ptr % next
        end do
 
-    end subroutine ocn_init_setup_global_ocean_interpolate_topo!}}}
+     end subroutine ocn_init_setup_global_ocean_create_model_topo!}}}
 
 !***********************************************************************
 !
@@ -966,11 +971,12 @@ contains
        real (kind=RKIND) :: currentLat, currentLon, counter
        real (kind=RKIND) :: minDist, dist
        real (kind=RKIND) :: x, x1, x2, y, y1, y2, coef, coef11, coef12, coef21, coef22
+       real (kind=RKIND) :: zMidPBC
        integer :: iLat, iLon, iSmooth, j, coc
        integer :: latSearch, lonSearch
-       integer :: iCell, k
+       integer :: iCell, k, km1
        integer :: xInd1, xInd2, yInd1, yInd2
-       integer, pointer :: idxSalinity, idxTemperature, nCells, nCellsSolve, idxTracer1
+       integer, pointer :: idxSalinity, idxTemperature, nCells, nVertLevels, nCellsSolve, idxTracer1
 
        type (field2DReal), pointer :: smoothedTemperatureField, smoothedSalinityField
        type (field3DReal), pointer :: activeTracersField
@@ -988,6 +994,15 @@ contains
        integer, pointer ::  config_global_ocean_smooth_TS_iterations
        real (kind=RKIND), pointer :: config_global_ocean_piston_velocity
        real (kind=RKIND), pointer :: config_global_ocean_interior_restore_rate
+
+       ! These variables needed to interpolate tracers for partial bottom cells.
+       ! Might remove once we interpolate to an arbitrary vertical grid.
+       logical, pointer :: config_alter_ICs_for_pbcs
+       character (len=StrKIND), pointer :: config_pbc_alteration_type
+       type (mpas_pool_iterator_type) :: groupItr
+       real (kind=RKIND), dimension(:), pointer :: bottomDepth, refBottomDepth
+       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
+       real (kind=RKIND), dimension(:), allocatable :: zMidZLevel
 
        iErr = 0
 
@@ -1241,6 +1256,62 @@ contains
           call mpas_deallocate_scratch_field(smoothedTemperatureField, .false.)
           call mpas_deallocate_scratch_field(smoothedSalinityField, .false.)
        endif
+
+       ! Interpolate tracers for partial bottom cells.
+       ! This can be removed once we interpolate to an arbitrary vertical grid.
+       call mpas_pool_get_config(domain % configs, 'config_alter_ICs_for_pbcs', config_alter_ICs_for_pbcs)
+       call mpas_pool_get_config(domain % configs, 'config_pbc_alteration_type', config_pbc_alteration_type)
+       if (config_alter_ICs_for_pbcs.and.config_pbc_alteration_type .eq. 'partial_cell') then
+
+          block_ptr => domain % blocklist
+          do while(associated(block_ptr))
+             call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+             call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+             call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+
+             call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+             call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+             call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+             call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+             call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+
+             call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
+
+             allocate(zMidZLevel(nVertLevels))
+             zMidZLevel(1) = - 0.5*(refBottomDepth(1)) ! could add SSH here
+             do k = 2, nVertLevels
+                zMidZLevel(k) = - 0.5*(refBottomDepth(k) + refBottomDepth(k-1))
+             end do
+
+             call mpas_pool_begin_iteration(tracersPool)
+             do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
+                if ( groupItr % memberType == MPAS_POOL_FIELD ) then
+                   call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroup, 1)
+
+
+                   if ( associated(tracersGroup) ) then
+                      do iCell = 1, nCells
+                         ! Linearly interpolate the initial tracers for new location of bottom cell for PBCs
+                         k = maxLevelCell(iCell)
+                         if (k>1) then
+                            zMidPBC = -0.5_RKIND * (bottomDepth(iCell) + refBottomDepth(k-1))
+                            km1 = max(k-1,1)
+                            tracersGroup(:, k, iCell) = tracersGroup(:, k, iCell) &
+                                 + (tracersGroup(:, km1, iCell) - tracersGroup(:, k, iCell)) &
+                                 /(zMidZLevel(km1) - zMidZLevel(k) + 1.0e-16_RKIND) &
+                                 *(zMidPBC - zMidZLevel(k))
+                         endif
+                      end do
+                   end if
+                end if
+             end do
+
+             deallocate(zMidZLevel)
+             block_ptr => block_ptr % next
+          end do
+       endif
+       ! end: Interpolate tracers for partial bottom cells.
 
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
