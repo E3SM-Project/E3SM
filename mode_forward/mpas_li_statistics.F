@@ -154,6 +154,10 @@ module li_statistics
      real (kind=RKIND) :: globalVelocityMax, globalBasalVelocityMax
      
      ! diagnostic info for user-specified grid cell
+     integer :: diagnosticCellLocal, diagnosticBlockIDLocal, diagnosticProcIDLocal
+     real (kind=RKIND) :: diagnosticUpperSurfaceLocal, diagnosticThicknessLocal, diagnosticBedTopographyLocal
+     real (kind=RKIND) :: diagnosticSfcMassBalLocal, diagnosticSurfaceTemperatureLocal, diagnosticBasalTemperatureLocal
+
      integer :: diagnosticCell, diagnosticBlockID, diagnosticProcID
      real (kind=RKIND) :: diagnosticUpperSurface, diagnosticThickness, diagnosticBedTopography
      real (kind=RKIND) :: diagnosticSfcMassBal, diagnosticSurfaceTemperature, diagnosticBasalTemperature
@@ -527,17 +531,27 @@ module li_statistics
      ! Note: These reductions are done with global sums rather than broadcasts.
      !       Global sums will work provided that the quantity of interest
      !        has nonzero values on only a single processor.
-     
-     call mpas_dmpar_sum_int  (dminfo, diagnosticCell, diagnosticCell)
-     call mpas_dmpar_sum_int  (dminfo, diagnosticBlockID, diagnosticBlockID)
-     call mpas_dmpar_sum_int  (dminfo, diagnosticProcID, diagnosticProcID)
+     diagnosticCellLocal = diagnosticCell
+     diagnosticBlockIDLocal = diagnosticBlockID
+     diagnosticProcIDLocal = diagnosticProcID
 
-     call mpas_dmpar_sum_real (dminfo, diagnosticUpperSurface, diagnosticUpperSurface)
-     call mpas_dmpar_sum_real (dminfo, diagnosticThickness, diagnosticThickness)
-     call mpas_dmpar_sum_real (dminfo, diagnosticBedTopography, diagnosticBedTopography)
-     call mpas_dmpar_sum_real (dminfo, diagnosticSfcMassBal, diagnosticSfcMassBal)
-     call mpas_dmpar_sum_real (dminfo, diagnosticSurfaceTemperature, diagnosticSurfaceTemperature)
-     call mpas_dmpar_sum_real (dminfo, diagnosticBasalTemperature, diagnosticBasalTemperature)
+     diagnosticUpperSurfaceLocal = diagnosticUpperSurface
+     diagnosticThicknessLocal = diagnosticThickness
+     diagnosticBedTopographyLocal = diagnosticBedTopography
+     diagnosticSfcMassBalLocal = diagnosticSfcMassBal
+     diagnosticSurfaceTemperatureLocal = diagnosticSurfaceTemperature
+     diagnosticBasalTemperatureLocal = diagnosticBasalTemperature
+
+     call mpas_dmpar_sum_int  (dminfo, diagnosticCellLocal, diagnosticCell)
+     call mpas_dmpar_sum_int  (dminfo, diagnosticBlockIDLocal, diagnosticBlockID)
+     call mpas_dmpar_sum_int  (dminfo, diagnosticProcIDLocal, diagnosticProcID)
+
+     call mpas_dmpar_sum_real (dminfo, diagnosticUpperSurfaceLocal, diagnosticUpperSurface)
+     call mpas_dmpar_sum_real (dminfo, diagnosticThicknessLocal, diagnosticThickness)
+     call mpas_dmpar_sum_real (dminfo, diagnosticBedTopographyLocal, diagnosticBedTopography)
+     call mpas_dmpar_sum_real (dminfo, diagnosticSfcMassBalLocal, diagnosticSfcMassBal)
+     call mpas_dmpar_sum_real (dminfo, diagnosticSurfaceTemperatureLocal, diagnosticSurfaceTemperature)
+     call mpas_dmpar_sum_real (dminfo, diagnosticBasalTemperatureLocal, diagnosticBasalTemperature)
 
      allocate (workLevel(nVertInterfaces))
      call mpas_dmpar_sum_real_array(dminfo, nVertInterfaces, diagnosticSpeed, workLevel)
