@@ -177,6 +177,7 @@ contains
 
     logical, pointer :: tempLogicalConfig
     character(len=StrKIND), pointer :: tempCharConfig
+    real (kind=RKIND), pointer :: tempRealConfig
 
     interface
        subroutine xml_stream_parser(xmlname, mgr_p, comm, ierr) bind(c)
@@ -553,8 +554,8 @@ contains
     write (stderrUnit,*) 'Applying ICE coupling dt (s) of: ', ice_cpl_dt
 
     ! Verify the mpas time step fits into a coupling interval
-    call mpas_pool_get_config(domain % configs, 'config_dt', tempCharConfig)
-    call mpas_set_timeInterval(denInterval, timeString=tempCharConfig, ierr=ierr)
+    call mpas_pool_get_config(domain % configs, 'config_dt', tempRealConfig)
+    call mpas_set_timeInterval(denInterval, dt=tempRealConfig, ierr=ierr)
     call mpas_set_timeInterval(zeroInterval, S=0, ierr=ierr)
     call mpas_interval_division(start_time, alarmTimeStep, denInterval, numDivs, remInterval)
 
