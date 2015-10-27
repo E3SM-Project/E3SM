@@ -1,5 +1,5 @@
 !-------------------------------------------------------------------------------
-! $Id: clip_explicit.F90 5623 2012-01-17 17:55:26Z connork@uwm.edu $
+! $Id: clip_explicit.F90 7315 2014-09-30 20:49:54Z schemena@uwm.edu $
 !===============================================================================
 module clip_explicit
 
@@ -9,27 +9,29 @@ module clip_explicit
 
   public :: clip_covars_denom, &
             clip_covar, & 
+            clip_covar_level, & 
             clip_variance, & 
             clip_skewness, &
             clip_skewness_core
 
   ! Named constants to avoid string comparisons
   integer, parameter, public :: &
-    clip_rtp2 = 1, &      ! Named constant for rtp2 clipping
-    clip_thlp2 = 2, &     ! Named constant for thlp2 clipping
-    clip_rtpthlp = 3, &   ! Named constant for rtpthlp clipping
-    clip_up2 = 5, &       ! Named constant for up2 clipping
-    clip_vp2 = 6, &       ! Named constant for vp2 clipping
-!    clip_scalar = 7, &    ! Named constant for scalar clipping
-    clip_wprtp = 8, &     ! Named constant for wprtp clipping
-    clip_wpthlp = 9, &    ! Named constant for wpthlp clipping
-    clip_upwp = 10, &     ! Named constant for upwp clipping
-    clip_vpwp = 11, &     ! Named constant for vpwp clipping
-    clip_wp2 = 12, &      ! Named constant for wp2 clipping
-    clip_wpsclrp = 13, &  ! Named constant for wp scalar clipping
-    clip_sclrp2 = 14, &   ! Named constant for sclrp2 clipping
-    clip_sclrprtp = 15, & ! Named constant for sclrprtp clipping
-    clip_sclrpthlp = 16   ! Named constant for sclrpthlp clipping
+    clip_rtp2 = 1, &         ! Named constant for rtp2 clipping
+    clip_thlp2 = 2, &        ! Named constant for thlp2 clipping
+    clip_rtpthlp = 3, &      ! Named constant for rtpthlp clipping
+    clip_up2 = 5, &          ! Named constant for up2 clipping
+    clip_vp2 = 6, &          ! Named constant for vp2 clipping
+!    clip_scalar = 7, &       ! Named constant for scalar clipping
+    clip_wprtp = 8, &        ! Named constant for wprtp clipping
+    clip_wpthlp = 9, &       ! Named constant for wpthlp clipping
+    clip_upwp = 10, &        ! Named constant for upwp clipping
+    clip_vpwp = 11, &        ! Named constant for vpwp clipping
+    clip_wp2 = 12, &         ! Named constant for wp2 clipping
+    clip_wpsclrp = 13, &     ! Named constant for wp scalar clipping
+    clip_sclrp2 = 14, &      ! Named constant for sclrp2 clipping
+    clip_sclrprtp = 15, &    ! Named constant for sclrprtp clipping
+    clip_sclrpthlp = 16, &   ! Named constant for sclrpthlp clipping
+    clip_wphydrometp = 17    ! Named constant for wphydrometp clipping
 
   contains
 
@@ -68,22 +70,21 @@ module clip_explicit
         l_tke_aniso ! Logical
 
     use clubb_precision, only: & 
-        time_precision, & ! Variable(s)
-        core_rknd
+        core_rknd ! Variable(s)
 
-    use stats_type, only: &
+    use stats_type_utilities, only: &
        stat_modify ! Procedure(s)
 
     use stats_variables, only: & 
         iwprtp_bt, &  ! Variable(s)
         iwpthlp_bt, &
-        zm, &
+        stats_zm, &
         l_stats_samp
 
     implicit none
 
     ! Input Variables
-    real(kind=time_precision), intent(in) :: &
+    real( kind = core_rknd ), intent(in) :: &
       dt ! Timestep [s]
 
     real( kind = core_rknd ), dimension(gr%nz), intent(in) :: &
@@ -158,12 +159,12 @@ module clip_explicit
       
       if ( wprtp_cl_num == 2 ) then
         ! wprtp total time tendency (effect of clipping)
-        call stat_modify( iwprtp_bt,  -wprtp / real( dt, kind = core_rknd ),  & ! intent(in)
-                          zm )                               ! intent(inout)
+        call stat_modify( iwprtp_bt,  -wprtp / dt,  & ! intent(in)
+                          stats_zm )                               ! intent(inout)
       elseif ( wprtp_cl_num == 3 ) then
         ! wprtp total time tendency (effect of clipping)
-        call stat_modify( iwprtp_bt, -wprtp / real( dt, kind = core_rknd ),  & ! intent(in)
-                          zm )                               ! intent(inout)
+        call stat_modify( iwprtp_bt, -wprtp / dt,  & ! intent(in)
+                          stats_zm )                               ! intent(inout)
       endif
     endif
 
@@ -187,12 +188,12 @@ module clip_explicit
     if ( l_stats_samp ) then
       if ( wprtp_cl_num == 1 ) then
         ! wprtp total time tendency (effect of clipping)
-        call stat_modify( iwprtp_bt,  wprtp / real( dt, kind = core_rknd ),  & ! intent(in)
-                          zm )                              ! intent(inout)
+        call stat_modify( iwprtp_bt,  wprtp / dt,  & ! intent(in)
+                          stats_zm )                              ! intent(inout)
       elseif ( wprtp_cl_num == 2 ) then
         ! wprtp total time tendency (effect of clipping)
-        call stat_modify( iwprtp_bt, wprtp / real( dt, kind = core_rknd ),  & ! intent(in)
-                          zm )                              ! intent(inout)
+        call stat_modify( iwprtp_bt, wprtp / dt,  & ! intent(in)
+                          stats_zm )                              ! intent(inout)
       ! if wprtp_cl_num == 3 do nothing since
       ! iwprtp_bt stat_end_update is called outside of this method
       
@@ -227,12 +228,12 @@ module clip_explicit
       
       if ( wpthlp_cl_num == 2 ) then
         ! wpthlp total time tendency (effect of clipping)
-        call stat_modify( iwpthlp_bt, -wpthlp / real( dt, kind = core_rknd ),  & ! intent(in)
-                          zm )                                 ! intent(inout)
+        call stat_modify( iwpthlp_bt, -wpthlp / dt,  & ! intent(in)
+                          stats_zm )                                 ! intent(inout)
       elseif ( wpthlp_cl_num == 3 ) then
         ! wpthlp total time tendency (effect of clipping)
-        call stat_modify( iwpthlp_bt, -wpthlp / real( dt, kind = core_rknd ),  & ! intent(in)
-                          zm )                                 ! intent(inout)
+        call stat_modify( iwpthlp_bt, -wpthlp / dt,  & ! intent(in)
+                          stats_zm )                                 ! intent(inout)
       endif
     endif
 
@@ -257,12 +258,12 @@ module clip_explicit
     if ( l_stats_samp ) then
       if ( wpthlp_cl_num == 1 ) then
         ! wpthlp total time tendency (effect of clipping)
-        call stat_modify( iwpthlp_bt, wpthlp / real( dt, kind = core_rknd ),  & ! intent(in)
-                          zm )                                ! intent(inout)
+        call stat_modify( iwpthlp_bt, wpthlp / dt,  & ! intent(in)
+                          stats_zm )                                ! intent(inout)
       elseif ( wpthlp_cl_num == 2 ) then
         ! wpthlp total time tendency (effect of clipping)
-        call stat_modify( iwpthlp_bt, wpthlp / real( dt, kind = core_rknd ),  & ! intent(in)
-                          zm )                                ! intent(inout)
+        call stat_modify( iwpthlp_bt, wpthlp / dt,  & ! intent(in)
+                          stats_zm )                                ! intent(inout)
                           
       ! if wpthlp_cl_num == 3 do nothing since
       ! iwpthlp_bt stat_end_update is called outside of this method
@@ -439,7 +440,8 @@ module clip_explicit
     !
     ! w'r_t', w'th_l', w'sclr', (computed in advance_xm_wpxp);
     ! r_t'th_l', sclr'r_t', sclr'th_l', (computed in advance_xp2_xpyp);
-    ! u'w', v'w', w'edsclr' (computed in advance_windm_edsclrm).
+    ! u'w', v'w', w'edsclr' (computed in advance_windm_edsclrm);
+    ! and w'hm' (computed in setup_pdf_parameters).
 
     ! References:
     ! None
@@ -452,16 +454,15 @@ module clip_explicit
         max_mag_correlation ! Constant(s)
 
     use clubb_precision, only: & 
-        time_precision, & ! Variable(s)
-        core_rknd
+        core_rknd ! Variable(s)
 
-    use stats_type, only: & 
+    use stats_type_utilities, only: & 
         stat_begin_update,  & ! Procedure(s)
         stat_modify, & 
         stat_end_update
 
     use stats_variables, only: & 
-        zm,  & ! Variable(s)
+        stats_zm,  & ! Variable(s)
         iwprtp_cl, & 
         iwpthlp_cl, & 
         irtpthlp_cl, & 
@@ -477,7 +478,7 @@ module clip_explicit
       l_first_clip_ts, & ! First instance of clipping in a timestep.
       l_last_clip_ts     ! Last instance of clipping in a timestep.
 
-    real(kind=time_precision), intent(in) ::  & 
+    real( kind = core_rknd ), intent(in) ::  & 
       dt     ! Model timestep; used here for STATS           [s]
 
     real( kind = core_rknd ), dimension(gr%nz), intent(in) :: & 
@@ -514,9 +515,9 @@ module clip_explicit
 
     if ( l_stats_samp ) then
       if ( l_first_clip_ts ) then
-        call stat_begin_update( ixpyp_cl, xpyp / real( dt, kind = core_rknd ), zm )
+        call stat_begin_update( ixpyp_cl, xpyp / dt, stats_zm )
       else
-        call stat_modify( ixpyp_cl, -xpyp / real( dt, kind = core_rknd ), zm )
+        call stat_modify( ixpyp_cl, -xpyp / dt, stats_zm )
       endif
     endif
 
@@ -562,15 +563,178 @@ module clip_explicit
 
     if ( l_stats_samp ) then
       if ( l_last_clip_ts ) then
-        call stat_end_update( ixpyp_cl, xpyp / real( dt, kind = core_rknd ), zm )
+        call stat_end_update( ixpyp_cl, xpyp / dt, stats_zm )
       else
-        call stat_modify( ixpyp_cl, xpyp / real( dt, kind = core_rknd ), zm )
+        call stat_modify( ixpyp_cl, xpyp / dt, stats_zm )
       endif
     endif
 
 
     return
   end subroutine clip_covar
+
+  !=============================================================================
+  subroutine clip_covar_level( solve_type, level, l_first_clip_ts,  & 
+                               l_last_clip_ts, dt, xp2, yp2,  & 
+                               xpyp, xpyp_chnge )
+
+    ! Description:
+    ! Clipping the value of covariance x'y' based on the correlation between x
+    ! and y.  This is all done at a single vertical level.
+    !
+    ! The correlation between variables x and y is:
+    !
+    ! corr_(x,y) = x'y' / [ sqrt(x'^2) * sqrt(y'^2) ];
+    !
+    ! where x'^2 is the variance of x, y'^2 is the variance of y, and x'y' is
+    ! the covariance of x and y.
+    !
+    ! The correlation of two variables must always have a value between -1
+    ! and 1, such that:
+    !
+    ! -1 <= corr_(x,y) <= 1.
+    !
+    ! Therefore, there is an upper limit on x'y', such that:
+    !
+    ! x'y' <=  [ sqrt(x'^2) * sqrt(y'^2) ];
+    !
+    ! and a lower limit on x'y', such that:
+    !
+    ! x'y' >= -[ sqrt(x'^2) * sqrt(y'^2) ].
+    !
+    ! The values of x'y', x'^2, and y'^2 are all found on momentum levels.
+    !
+    ! The value of x'y' may need to be clipped whenever x'y', x'^2, or y'^2 is
+    ! updated.
+    !
+    ! The following covariances are found in the code:
+    !
+    ! w'r_t', w'th_l', w'sclr', (computed in advance_xm_wpxp);
+    ! r_t'th_l', sclr'r_t', sclr'th_l', (computed in advance_xp2_xpyp);
+    ! u'w', v'w', w'edsclr' (computed in advance_windm_edsclrm);
+    ! and w'hm' (computed in setup_pdf_parameters).
+
+    ! References:
+    ! None
+    !-----------------------------------------------------------------------
+
+    use constants_clubb, only: &
+        max_mag_correlation, & ! Constant(s)
+        zero
+
+    use clubb_precision, only: & 
+        core_rknd ! Variable(s)
+
+    use stats_type_utilities, only: & 
+        stat_begin_update_pt, & ! Procedure(s)
+        stat_modify_pt,       & 
+        stat_end_update_pt
+
+    use stats_variables, only: & 
+        stats_zm,  & ! Variable(s)
+        iwprtp_cl, & 
+        iwpthlp_cl, & 
+        irtpthlp_cl, & 
+        l_stats_samp
+
+    implicit none
+
+    ! Input Variables
+    integer, intent(in) :: & 
+      solve_type, & ! Variable being solved; used for STATS
+      level         ! Vertical level index
+
+    logical, intent(in) :: & 
+      l_first_clip_ts, & ! First instance of clipping in a timestep.
+      l_last_clip_ts     ! Last instance of clipping in a timestep.
+
+    real( kind = core_rknd ), intent(in) ::  & 
+      dt     ! Model timestep; used here for STATS        [s]
+
+    real( kind = core_rknd ), intent(in) :: & 
+      xp2, & ! Variance of x, <x'^2>                      [{x units}^2]
+      yp2    ! Variance of y, <y'^2>                      [{y units}^2]
+
+    ! Output Variable
+    real( kind = core_rknd ), intent(inout) :: & 
+      xpyp   ! Covariance of x and y, <x'y'>              [{x units}*{y units}]
+
+    real( kind = core_rknd ), intent(out) :: &
+      xpyp_chnge  ! Net change in <x'y'> due to clipping  [{x units}*{y units}]
+
+
+    ! Local Variable
+    integer :: & 
+      ixpyp_cl    ! Statistics index
+
+
+    select case ( solve_type )
+    case ( clip_wprtp )   ! wprtp clipping budget term
+      ixpyp_cl = iwprtp_cl
+    case ( clip_wpthlp )   ! wpthlp clipping budget term
+      ixpyp_cl = iwpthlp_cl
+    case ( clip_rtpthlp )   ! rtpthlp clipping budget term
+      ixpyp_cl = irtpthlp_cl
+    case default   ! scalars (or upwp/vpwp) are involved
+      ixpyp_cl = 0
+    end select
+
+
+    if ( l_stats_samp ) then
+       if ( l_first_clip_ts ) then
+          call stat_begin_update_pt( ixpyp_cl, level, &
+                                     xpyp / dt, stats_zm )
+       else
+          call stat_modify_pt( ixpyp_cl, level, &
+                               -xpyp / dt, stats_zm )
+       endif
+    endif
+
+    ! The value of x'y' at the surface (or lower boundary) is a set value that
+    ! is either specified or determined elsewhere in a surface subroutine.  It
+    ! is ensured elsewhere that the correlation between x and y at the surface
+    ! (or lower boundary) is between -1 and 1.  Thus, the covariance clipping
+    ! code does not need to be invoked at the lower boundary.  Likewise, the
+    ! value of x'y' is set at the upper boundary, so the covariance clipping
+    ! code does not need to be invoked at the upper boundary.
+    ! Note that if clipping were applied at the lower boundary, momentum will
+    ! not be conserved, therefore it should never be added.
+
+    ! Clipping for xpyp at an upper limit corresponding with a correlation
+    ! between x and y of max_mag_correlation.
+    if ( xpyp >  max_mag_correlation * sqrt( xp2 * yp2 ) ) then
+
+        xpyp_chnge =  max_mag_correlation * sqrt( xp2 * yp2 ) - xpyp
+
+        xpyp =  max_mag_correlation * sqrt( xp2 * yp2 )
+
+    ! Clipping for xpyp at a lower limit corresponding with a correlation
+    ! between x and y of -max_mag_correlation.
+    elseif ( xpyp < -max_mag_correlation * sqrt( xp2 * yp2 ) ) then
+
+        xpyp_chnge = -max_mag_correlation * sqrt( xp2 * yp2 ) - xpyp
+
+        xpyp = -max_mag_correlation * sqrt( xp2 * yp2 )
+
+    else
+
+        xpyp_chnge = zero
+
+    endif
+
+    if ( l_stats_samp ) then
+       if ( l_last_clip_ts ) then
+          call stat_end_update_pt( ixpyp_cl, level, &
+                                   xpyp / dt, stats_zm )
+       else
+          call stat_modify_pt( ixpyp_cl, level, &
+                               xpyp / dt, stats_zm )
+       endif
+    endif
+
+
+    return
+  end subroutine clip_covar_level
 
   !=============================================================================
   subroutine clip_variance( solve_type, dt, threshold, &
@@ -595,15 +759,14 @@ module clip_explicit
         gr ! Variable(s)
 
     use clubb_precision, only: & 
-        time_precision, & ! Variable(s)
-        core_rknd
+        core_rknd ! Variable(s)
 
-    use stats_type, only: & 
+    use stats_type_utilities, only: & 
         stat_begin_update,  & ! Procedure(s)
         stat_end_update
 
     use stats_variables, only: & 
-        zm,  & ! Variable(s)
+        stats_zm,  & ! Variable(s)
         iwp2_cl, & 
         irtp2_cl, & 
         ithlp2_cl, & 
@@ -617,7 +780,7 @@ module clip_explicit
     integer, intent(in) :: & 
       solve_type  ! Variable being solved; used for STATS.
 
-    real(kind=time_precision), intent(in) :: & 
+    real( kind = core_rknd ), intent(in) :: & 
       dt          ! Model timestep; used here for STATS     [s]
 
     real( kind = core_rknd ), intent(in) :: & 
@@ -653,7 +816,7 @@ module clip_explicit
 
 
     if ( l_stats_samp ) then
-      call stat_begin_update( ixp2_cl, xp2 / real( dt, kind = core_rknd ), zm )
+      call stat_begin_update( ixp2_cl, xp2 / dt, stats_zm )
     endif
 
     ! Limit the value of x'^2 at threshold.
@@ -662,14 +825,19 @@ module clip_explicit
     ! clipping code does not need to be invoked at the lower boundary.
     ! Likewise, the value of x'^2 is set at the upper boundary, so the variance
     ! clipping code does not need to be invoked at the upper boundary.
-    do k = 2, gr%nz-1, 1
+    !
+    ! charlass on 09/11/2013: I changed the clipping so that also the surface
+    ! level is clipped. I did this because we discovered that there are slightly
+    ! negative values in thlp2(1) and rtp2(1) when running quarter_ss case with
+    ! WRF-CLUBB (see wrf:ticket:51#comment:33) 
+    do k = 1, gr%nz-1, 1
       if ( xp2(k) < threshold ) then
         xp2(k) = threshold
       endif
     enddo
 
     if ( l_stats_samp ) then
-      call stat_end_update( ixp2_cl, xp2 / real( dt, kind = core_rknd ), zm )
+      call stat_end_update( ixp2_cl, xp2 / dt, stats_zm )
     endif
 
 
@@ -722,15 +890,14 @@ module clip_explicit
       gr ! Variable(s)
 
     use clubb_precision, only: & 
-      time_precision, & ! Variable(s)
-      core_rknd
+      core_rknd ! Variable(s)
 
-    use stats_type, only: &
+    use stats_type_utilities, only: &
       stat_begin_update,  & ! Procedure(s)
       stat_end_update
 
     use stats_variables, only: & 
-      zt,  & ! Variable(s)
+      stats_zt,  & ! Variable(s)
       iwp3_cl, & 
       l_stats_samp     
 
@@ -740,7 +907,7 @@ module clip_explicit
     intrinsic :: sign, sqrt, real
 
     ! Input Variables
-    real(kind=time_precision), intent(in) :: & 
+    real( kind = core_rknd ), intent(in) :: & 
       dt               ! Model timestep; used here for STATS        [s]
 
     real( kind = core_rknd ), intent(in) ::  &
@@ -756,13 +923,13 @@ module clip_explicit
     ! ---- Begin Code ----
 
     if ( l_stats_samp ) then
-      call stat_begin_update( iwp3_cl, wp3 / real( dt, kind = core_rknd ), zt )
+      call stat_begin_update( iwp3_cl, wp3 / dt, stats_zt )
     endif
 
     call clip_skewness_core( sfc_elevation, wp2_zt, wp3 )
 
     if ( l_stats_samp ) then
-      call stat_end_update( iwp3_cl, wp3 / real( dt, kind = core_rknd ), zt )
+      call stat_end_update( iwp3_cl, wp3 / dt, stats_zt )
     endif
 
     return

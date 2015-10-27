@@ -1,5 +1,6 @@
-!$Id: saturation.F90 5630 2012-01-18 16:20:31Z connork@uwm.edu $
-!-----------------------------------------------------------------------
+!-------------------------------------------------------------------------
+!$Id: saturation.F90 6849 2014-04-22 21:52:30Z charlass@uwm.edu $
+!===============================================================================
 module saturation
 
 ! Description:
@@ -28,7 +29,6 @@ module saturation
   ! Lookup table of values for saturation 
   real( kind = core_rknd ), private, dimension(188:343) :: &
     svp_liq_lookup_table
-!$omp threadprivate(svp_liq_lookup_table)
 
   data svp_liq_lookup_table(188:343) / &
     0.049560547_core_rknd, 0.059753418_core_rknd, 0.070129395_core_rknd, 0.083618164_core_rknd, &
@@ -71,6 +71,8 @@ module saturation
     22723.592_core_rknd, 23779.273_core_rknd, 24876.709_core_rknd, 26017.258_core_rknd,         &
     27202.3_core_rknd, 28433.256_core_rknd, 29711.578_core_rknd, 31038.766_core_rknd /
 
+!$omp threadprivate(svp_liq_lookup_table)
+
   contains
 
 !-------------------------------------------------------------------------
@@ -84,8 +86,7 @@ module saturation
 !-------------------------------------------------------------------------
 
     use constants_clubb, only: & 
-      ep, & ! Variable
-      fstderr
+      ep    ! Variable
 
     use clubb_precision, only: &
       core_rknd ! Variable(s)
@@ -115,10 +116,10 @@ module saturation
 
     ! GFDL uses specific humidity
     ! Formula for Saturation Specific Humidity
-     if( I_sat_sphum )  then   ! h1g, 2010-06-18 begin mod
-           sat_mixrat_liq = ep * ( esatv / ( p_in_Pa - (1.0_core_rknd-ep) * esatv ) )
+     if ( I_sat_sphum )  then   ! h1g, 2010-06-18 begin mod
+       sat_mixrat_liq = ep * ( esatv / ( p_in_Pa - (1.0_core_rknd-ep) * esatv ) )
      else
-           sat_mixrat_liq = ep * ( esatv / ( p_in_Pa - esatv ) )
+       sat_mixrat_liq = ep * ( esatv / ( p_in_Pa - esatv ) )
      endif                     ! h1g, 2010-06-18 end mod
 #else
     ! Formula for Saturation Mixing Ratio:
@@ -147,8 +148,7 @@ module saturation
 !-------------------------------------------------------------------------
 
     use constants_clubb, only: & 
-      ep, & ! Variable
-      fstderr
+      ep    ! Variable
 
     use clubb_precision, only: &
       core_rknd ! Variable(s)
@@ -237,12 +237,13 @@ module saturation
       ! Using the Flatau, et al. polynomial approximation for SVP over vapor
       esat = sat_vapor_press_liq_flatau( T_in_K )
 
-    ! Add new cases after this
 ! ---> h1g
     case ( saturation_gfdl )
       ! Using GFDL polynomial approximation for SVP with respect to liquid
       esat = sat_vapor_press_liq_gfdl( T_in_K )
 ! <--- h1g
+
+      ! Add new cases after this
 
     end select
 
@@ -311,6 +312,8 @@ module saturation
 
     implicit none
 
+    ! Constant parameters
+
     ! Relative error norm expansion (-50 to 50 deg_C) from
     ! Table 3 of pp. 1510 of Flatau et al. 1992 (Water Vapor)
     ! (The 100 coefficient converts from mb to Pa)
@@ -318,6 +321,7 @@ module saturation
 !   100.* (/ 6.11176750,      0.443986062,     0.143053301E-01, & 
 !            0.265027242E-03, 0.302246994E-05, 0.203886313E-07, & 
 !            0.638780966E-10 /)
+
     ! Relative error norm expansion (-85 to 70 deg_C) from
     ! Table 4 of pp. 1511 of Flatau et al.
     real( kind = core_rknd ), dimension(9), parameter :: a = & 
@@ -325,6 +329,8 @@ module saturation
              (/ 6.11583699_core_rknd,      0.444606896_core_rknd,     0.143177157E-01_core_rknd, &
              0.264224321E-03_core_rknd, 0.299291081E-05_core_rknd, 0.203154182E-07_core_rknd, & 
              0.702620698E-10_core_rknd, 0.379534310E-13_core_rknd,-0.321582393E-15_core_rknd /)
+
+    real( kind = core_rknd ), parameter :: min_T_in_C = -85._core_rknd ! [deg_C]
 
     ! Input Variables
     real( kind = core_rknd ), intent(in) :: T_in_K   ! Temperature   [K]
@@ -343,7 +349,7 @@ module saturation
 
     ! Since this approximation is only good out to -85 degrees Celsius we
     ! truncate the result here (Flatau, et al. 1992)
-    T_in_C = max( T_in_C, -85._core_rknd ) ! Known magic number
+    T_in_C = max( T_in_C, min_T_in_C )
 
     ! Polynomial approx. (Flatau, et al. 1992)
 
@@ -424,7 +430,7 @@ module saturation
     ! Output Variables
     real( kind = core_rknd ) :: esat  ! Saturation vapor pressure over water [Pa]
 
-! Goff Gatch equation, uncertain below -70 C
+    ! Goff Gatch equation, uncertain below -70 C
       
          esat = 10._core_rknd**(-7.90298_core_rknd*(373.16_core_rknd/T_in_K-1._core_rknd)+ &
              5.02808_core_rknd*log10(373.16_core_rknd/T_in_K)- &
@@ -584,6 +590,9 @@ module saturation
               0.402737184E-03_core_rknd, 0.565392987E-05_core_rknd, 0.521693933E-07_core_rknd, &
               0.307839583E-09_core_rknd, 0.105785160E-11_core_rknd, 0.161444444E-14_core_rknd /)
 
+    real( kind = core_rknd ), parameter :: min_T_in_C = -90._core_rknd ! [deg_C]
+
+
     ! Input Variables
     real( kind = core_rknd ), intent(in) :: T_in_K   ! Temperature   [deg_K]
 
@@ -601,7 +610,7 @@ module saturation
 
     ! Since this approximation is only good out to -90 degrees Celsius we
     ! truncate the result here (Flatau, et al. 1992)
-    T_in_C = max( T_in_C, -90._core_rknd ) ! Known magic number
+    T_in_C = max( T_in_C, min_T_in_C )
 
     ! Polynomial approx. (Flatau, et al. 1992)
 !   esati = a(1)
@@ -626,7 +635,6 @@ module saturation
 ! References:
 !   Bolton 1980
 !------------------------------------------------------------------------
-    use constants_clubb, only: T_freeze_K
 
     use clubb_precision, only: &
       core_rknd ! Variable(s)
@@ -674,9 +682,9 @@ module saturation
     ! Output Variables
     real( kind = core_rknd ) :: esati  ! Saturation vapor pressure over ice [Pa]
 
-! Goff Gatch equation (good down to -100 C)
+    ! Goff Gatch equation (good down to -100 C)
 
-          esati = 10._core_rknd**(-9.09718_core_rknd* &
+    esati = 10._core_rknd**(-9.09718_core_rknd* &
             (273.16_core_rknd/T_in_k-1._core_rknd)-3.56654_core_rknd* &
           log10(273.16_core_rknd/T_in_k)+0.876793_core_rknd* &
             (1._core_rknd-T_in_k/273.16_core_rknd)+ &
@@ -688,7 +696,7 @@ module saturation
 ! <--- h1g, 2010-06-16
 
 !-------------------------------------------------------------------------
-  FUNCTION rcm_sat_adj( thlm, rtm, p_in_Pa, exner ) result ( rcm )
+  function rcm_sat_adj( thlm, rtm, p_in_Pa, exner ) result ( rcm )
 
     ! Description:
     !
@@ -740,39 +748,42 @@ module saturation
     ! Default initialization
     theta = thlm
     too_high = 0.0_core_rknd
-    too_low = 0.0_core_rknd
+    too_low  = 0.0_core_rknd
 
-    DO iteration = 1, itermax, 1
+    do iteration = 1, itermax, 1
 
       answer = &
       theta - (Lv/(Cp*exner)) &
              *(MAX( rtm - sat_mixrat_liq(p_in_Pa,theta*exner), zero_threshold ))
 
-      IF ( ABS(answer - thlm) <= tolerance ) THEN
-        EXIT
-      ELSEIF ( answer - thlm > tolerance ) THEN
+      if ( ABS(answer - thlm) <= tolerance ) then
+        exit
+      else if ( answer - thlm > tolerance ) then
         too_high = theta
-      ELSEIF ( thlm - answer > tolerance ) THEN
+      else if ( thlm - answer > tolerance ) THEN
         too_low = theta
-      ENDIF
+      end if
 
       ! For the first timestep, be sure to set a "too_high"
       ! that is "way too high."
-      IF ( iteration == 1 ) THEN
+      if ( iteration == 1 ) then
         too_high = theta + 20.0_core_rknd
-      ENDIF
+      end if
 
       theta = (too_low + too_high)/2.0_core_rknd
 
-    END DO ! 1..itermax
+    end do ! 1..itermax
 
     if ( iteration == itermax ) then
+      ! Magic Eric Raut added to remove compiler warning (clearly this value is not used)
+      rcm = 0.0_core_rknd
+      
       stop "Error in rcm_sat_adj: could not determine rcm"
     else
       rcm = MAX( rtm - sat_mixrat_liq( p_in_Pa, theta*exner), zero_threshold )
       return
     end if
 
-  END FUNCTION rcm_sat_adj
+  end function rcm_sat_adj
 
 end module saturation

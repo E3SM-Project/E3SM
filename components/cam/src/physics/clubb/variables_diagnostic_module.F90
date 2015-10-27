@@ -1,4 +1,6 @@
-! $Id: variables_diagnostic_module.F90 5623 2012-01-17 17:55:26Z connork@uwm.edu $
+!-------------------------------------------------------------------------
+! $Id: variables_diagnostic_module.F90 7376 2014-11-09 02:55:23Z bmg2@uwm.edu $
+!===============================================================================
 module variables_diagnostic_module
 
 ! Description:
@@ -50,9 +52,10 @@ module variables_diagnostic_module
 !$omp threadprivate(rsat)
 
   type(pdf_parameter), allocatable, dimension(:), target, public :: &
-    pdf_params_zm ! pdf_params on momentum levels  [units vary]
+    pdf_params_zm, & ! pdf_params on momentum levels  [units vary]
+    pdf_params_zm_frz !used when l_use_ice_latent = .true.
 
-!$omp threadprivate(pdf_params_zm)
+!$omp threadprivate(pdf_params_zm, pdf_params_zm_frz)
 
   real( kind = core_rknd ), target, allocatable, dimension(:), public :: & 
     Frad,         & ! Radiative flux (momentum point)   [W/m^2]
@@ -106,6 +109,11 @@ module variables_diagnostic_module
 
 !$omp threadprivate(Kh_zt, Kh_zm)
 
+  real( kind = core_rknd ), allocatable, dimension(:,:), public :: &
+    K_hm     ! Eddy diffusivity coefficient for hydrometeors on momentum levels [m^2 s^-1]
+
+!$omp threadprivate(K_hm)
+
 ! Mixing lengths
   real( kind = core_rknd ), target, allocatable, dimension(:), public :: & 
     Lscale, Lscale_up, Lscale_down ! [m]
@@ -119,13 +127,22 @@ module variables_diagnostic_module
 
 !$omp threadprivate(em, tau_zm, tau_zt)
 
-! hydrometeors variable array
-  real( kind = core_rknd ), allocatable, dimension(:,:), public :: hydromet
-!$omp threadprivate(hydromet)
+! hydrometeors variable arrays
+  real( kind = core_rknd ), allocatable, dimension(:,:), public :: &
+    hydromet,    & ! Mean hydrometeor (thermodynamic levels)           [units]
+    hydrometp2,  & ! Variance of a hydrometeor (overall) (m-levs.)     [units^2]
+    wphydrometp    ! Covariance of w and hydrometeor (momentum levels) [(m/s)un]
+!$omp threadprivate( hydromet, hydrometp2, wphydrometp )
+
+! Cloud droplet concentration arrays
+  real( kind = core_rknd ), allocatable, dimension(:), public :: &
+    Ncm,   & ! Mean cloud droplet concentration, <N_c> (thermo. levels) [num/kg]
+    wpNcp    ! Covariance of w and N_c, <w'N_c'> (momentum levels) [(m/s)(#/kg)]
+!$omp threadprivate(Ncm,wpNcp)
 
   real( kind = core_rknd ), target, allocatable, dimension(:), public :: & 
-    Ncnm     ! Cloud nuclei number concentration       [num/m^3]
-!$omp threadprivate(Ncnm)
+    Nccnm     ! Cloud condensation nuclei concentration (COAMPS/MG)   [num/kg]
+!$omp threadprivate(Nccnm)
 
 
 ! Surface data
@@ -183,14 +200,6 @@ module variables_diagnostic_module
 !$omp threadprivate(lh_AKm, AKm, AKstd, AKstd_cld, lh_rcm_avg, AKm_rcm, &
 !$omp   AKm_rcc)
 
-  ! Diagnostics from the pdf_closure subroutine
-  real( kind = core_rknd ), target, allocatable, dimension(:), public :: & 
-    sptp_mellor_1, sptp_mellor_2, &      ! Covariance of s and t[(kg/kg)^2] 
-    tp2_mellor_1, tp2_mellor_2,   &      ! Variance of t [(kg/kg)^2]
-    corr_st_mellor1, corr_st_mellor2 ! Correlation between s and t [-]
-!$omp threadprivate(sptp_mellor_1, sptp_mellor_2, tp2_mellor_1, tp2_mellor_2, &
-!$omp   corr_st_mellor1, corr_st_mellor2 )
-
   real( kind = core_rknd ), target, allocatable, dimension(:), public :: & 
     Skw_velocity, & ! Skewness velocity    [m/s]
     a3_coef,      & ! The a3 coefficient from CLUBB eqns                [-]
@@ -207,27 +216,28 @@ module variables_diagnostic_module
   contains
 
 !-----------------------------------------------------------------------
-  subroutine setup_diagnostic_variables( nzmax )
+  subroutine setup_diagnostic_variables( nz )
 ! Description:
 !   Allocates and initializes prognostic scalar and array variables
 !   for the CLUBB model code
 !-----------------------------------------------------------------------
 
     use constants_clubb, only:  & 
-      em_min ! Variables
+        em_min, & ! Constant(s)
+        zero
 
     use parameters_model, only: & 
-      hydromet_dim, & ! Variables
-      sclr_dim, &
-      edsclr_dim
+        hydromet_dim, & ! Variables
+        sclr_dim, &
+        edsclr_dim
 
     use clubb_precision, only: &
-      core_rknd ! Variable(s)
+        core_rknd ! Variable(s)
 
     implicit none
 
     ! Input Variables
-    integer, intent(in) :: nzmax ! Nunber of grid levels [-]
+    integer, intent(in) :: nz ! Nunber of grid levels [-]
 
     ! Local Variables
     integer :: i
@@ -236,124 +246,122 @@ module variables_diagnostic_module
 
     ! Diagnostic variables
 
-    allocate( sigma_sqd_w_zt(1:nzmax) ) ! PDF width parameter interp. to t-levs.
-    allocate( Skw_zm(1:nzmax) )         ! Skewness of w on momentum levels
-    allocate( Skw_zt(1:nzmax) )         ! Skewness of w on thermodynamic levels
-    allocate( ug(1:nzmax) )             ! u geostrophic wind
-    allocate( vg(1:nzmax) )             ! v geostrophic wind
-    allocate( um_ref(1:nzmax) )         ! Reference u wind for nudging; Michael Falk, 17 Oct 2007
-    allocate( vm_ref(1:nzmax) )         ! Reference v wind for nudging; Michael Falk, 17 Oct 2007
-    allocate( thlm_ref(1:nzmax) )       ! Reference liquid water potential for nudging
-    allocate( rtm_ref(1:nzmax) )        ! Reference total water mixing ratio for nudging
-    allocate( thvm(1:nzmax) )           ! Virtual potential temperature
+    allocate( sigma_sqd_w_zt(1:nz) ) ! PDF width parameter interp. to t-levs.
+    allocate( Skw_zm(1:nz) )         ! Skewness of w on momentum levels
+    allocate( Skw_zt(1:nz) )         ! Skewness of w on thermodynamic levels
+    allocate( ug(1:nz) )             ! u geostrophic wind
+    allocate( vg(1:nz) )             ! v geostrophic wind
+    allocate( um_ref(1:nz) )         ! Reference u wind for nudging; Michael Falk, 17 Oct 2007
+    allocate( vm_ref(1:nz) )         ! Reference v wind for nudging; Michael Falk, 17 Oct 2007
+    allocate( thlm_ref(1:nz) )       ! Reference liquid water potential for nudging
+    allocate( rtm_ref(1:nz) )        ! Reference total water mixing ratio for nudging
+    allocate( thvm(1:nz) )           ! Virtual potential temperature
 
-    allocate( rsat(1:nzmax) )       ! Saturation mixing ratio  ! Brian
+    allocate( rsat(1:nz) )       ! Saturation mixing ratio  ! Brian
 
-    allocate( Frad(1:nzmax) )      ! radiative flux (momentum point)
-    allocate( Frad_SW_up(1:nzmax) )
-    allocate( Frad_LW_up(1:nzmax) )
-    allocate( Frad_SW_down(1:nzmax) )
-    allocate( Frad_LW_down(1:nzmax) )
+    allocate( Frad(1:nz) )      ! radiative flux (momentum point)
+    allocate( Frad_SW_up(1:nz) )
+    allocate( Frad_LW_up(1:nz) )
+    allocate( Frad_SW_down(1:nz) )
+    allocate( Frad_LW_down(1:nz) )
 
-    allocate( radht(1:nzmax) )     ! SW + LW heating rate
+    allocate( radht(1:nz) )     ! SW + LW heating rate
 
     ! pdf_params on momentum levels
-    allocate( pdf_params_zm(1:nzmax) )
+    allocate( pdf_params_zm(1:nz) )
+    allocate( pdf_params_zm_frz(1:nz) )
 
     ! Second order moments
 
-    allocate( thlprcp(1:nzmax) )   ! thl'rc'
-    allocate( rtprcp(1:nzmax) )    ! rt'rc'
-    allocate( rcp2(1:nzmax) )      ! rc'^2
+    allocate( thlprcp(1:nz) )   ! thl'rc'
+    allocate( rtprcp(1:nz) )    ! rt'rc'
+    allocate( rcp2(1:nz) )      ! rc'^2
 
     ! Third order moments
 
-    allocate( wpthlp2(1:nzmax) )   ! w'thl'^2
-    allocate( wp2thlp(1:nzmax) )   ! w'^2thl'
-    allocate( wprtp2(1:nzmax) )    ! w'rt'^2
-    allocate( wp2rtp(1:nzmax) )    ! w'^2rt'
-    allocate( wprtpthlp(1:nzmax) ) ! w'rt'thl'
-    allocate( wp2rcp(1:nzmax) )    ! w'^2rc'
+    allocate( wpthlp2(1:nz) )   ! w'thl'^2
+    allocate( wp2thlp(1:nz) )   ! w'^2thl'
+    allocate( wprtp2(1:nz) )    ! w'rt'^2
+    allocate( wp2rtp(1:nz) )    ! w'^2rt'
+    allocate( wprtpthlp(1:nz) ) ! w'rt'thl'
+    allocate( wp2rcp(1:nz) )    ! w'^2rc'
 
-    allocate( wp3_zm(1:nzmax) )    ! w'^3
+    allocate( wp3_zm(1:nz) )    ! w'^3
 
     ! Fourth order moments
 
-    allocate( wp4(1:nzmax) )
+    allocate( wp4(1:nz) )
 
     ! Buoyancy related moments
 
-    allocate( rtpthvp(1:nzmax) )  ! rt'thv'
-    allocate( thlpthvp(1:nzmax) ) ! thl'thv'
-    allocate( wpthvp(1:nzmax) )   ! w'thv'
-    allocate( wp2thvp(1:nzmax) )  ! w'^2thv'
+    allocate( rtpthvp(1:nz) )  ! rt'thv'
+    allocate( thlpthvp(1:nz) ) ! thl'thv'
+    allocate( wpthvp(1:nz) )   ! w'thv'
+    allocate( wp2thvp(1:nz) )  ! w'^2thv'
 
-    allocate( Kh_zt(1:nzmax) )  ! Eddy diffusivity coefficient: thermo. levels
-    allocate( Kh_zm(1:nzmax) )  ! Eddy diffusivity coefficient: momentum levels
+    allocate( Kh_zt(1:nz) )  ! Eddy diffusivity coefficient: thermo. levels
+    allocate( Kh_zm(1:nz) )  ! Eddy diffusivity coefficient: momentum levels
+    allocate( K_hm(1:nz,1:hydromet_dim) ) ! Eddy diff. coef. for hydromets.: mom. levs.
 
-    allocate( em(1:nzmax) )
-    allocate( Lscale(1:nzmax) )
-    allocate( Lscale_up(1:nzmax) )
-    allocate( Lscale_down(1:nzmax) )
+    allocate( em(1:nz) )
+    allocate( Lscale(1:nz) )
+    allocate( Lscale_up(1:nz) )
+    allocate( Lscale_down(1:nz) )
 
-    allocate( tau_zm(1:nzmax) ) ! Eddy dissipation time scale: momentum levels
-    allocate( tau_zt(1:nzmax) ) ! Eddy dissipation time scale: thermo. levels
+    allocate( tau_zm(1:nz) ) ! Eddy dissipation time scale: momentum levels
+    allocate( tau_zt(1:nz) ) ! Eddy dissipation time scale: thermo. levels
 
 
     ! Interpolated Variables
-    allocate( wp2_zt(1:nzmax) )     ! w'^2 on thermo. grid
-    allocate( thlp2_zt(1:nzmax) )   ! thl'^2 on thermo. grid
-    allocate( wpthlp_zt(1:nzmax) )  ! w'thl' on thermo. grid
-    allocate( wprtp_zt(1:nzmax) )   ! w'rt' on thermo. grid
-    allocate( rtp2_zt(1:nzmax) )    ! rt'^2 on thermo. grid
-    allocate( rtpthlp_zt(1:nzmax) ) ! rt'thl' on thermo. grid
-    allocate( up2_zt(1:nzmax) )     ! u'^2 on thermo. grid
-    allocate( vp2_zt(1:nzmax) )     ! v'^2 on thermo. grid
-    allocate( upwp_zt(1:nzmax) )    ! u'w' on thermo. grid
-    allocate( vpwp_zt(1:nzmax) )    ! v'w' on thermo. grid
+    allocate( wp2_zt(1:nz) )     ! w'^2 on thermo. grid
+    allocate( thlp2_zt(1:nz) )   ! thl'^2 on thermo. grid
+    allocate( wpthlp_zt(1:nz) )  ! w'thl' on thermo. grid
+    allocate( wprtp_zt(1:nz) )   ! w'rt' on thermo. grid
+    allocate( rtp2_zt(1:nz) )    ! rt'^2 on thermo. grid
+    allocate( rtpthlp_zt(1:nz) ) ! rt'thl' on thermo. grid
+    allocate( up2_zt(1:nz) )     ! u'^2 on thermo. grid
+    allocate( vp2_zt(1:nz) )     ! v'^2 on thermo. grid
+    allocate( upwp_zt(1:nz) )    ! u'w' on thermo. grid
+    allocate( vpwp_zt(1:nz) )    ! v'w' on thermo. grid
 
 
     ! Microphysics Variables
-    allocate( Ncnm(1:nzmax) )
-    allocate( hydromet(1:nzmax,1:hydromet_dim) ) ! All hydrometeor fields
+    allocate( Nccnm(1:nz) )
+    allocate( hydromet(1:nz,1:hydromet_dim) )    ! All hydrometeor mean fields
+    allocate( hydrometp2(1:nz,1:hydromet_dim) )  ! All < h_m'^2 > fields
+    allocate( wphydrometp(1:nz,1:hydromet_dim) ) ! All < w'h_m' > fields
+    allocate( Ncm(1:nz) )   ! Mean cloud droplet concentration, < N_c >
+    allocate( wpNcp(1:nz) ) ! < w'N_c' >
 
     ! Variables for Latin hypercube microphysics.  Vince Larson 22 May 2005
-    allocate( lh_AKm(1:nzmax) )    ! Kessler ac estimate
-    allocate( AKm(1:nzmax) )        ! Exact Kessler ac
-    allocate( AKstd(1:nzmax) )      ! St dev of exact Kessler ac
-    allocate( AKstd_cld(1:nzmax) )  ! St dev of exact w/in cloud Kessler ac
-    allocate( lh_rcm_avg(1:nzmax) )      ! Monte Carlo rcm estimate
-    allocate( AKm_rcm(1:nzmax) )      ! Kessler ac based on rcm
-    allocate( AKm_rcc(1:nzmax) )      ! Kessler ac based on rcm/cloud_frac
+    allocate( lh_AKm(1:nz) )    ! Kessler ac estimate
+    allocate( AKm(1:nz) )        ! Exact Kessler ac
+    allocate( AKstd(1:nz) )      ! St dev of exact Kessler ac
+    allocate( AKstd_cld(1:nz) )  ! St dev of exact w/in cloud Kessler ac
+    allocate( lh_rcm_avg(1:nz) )      ! Monte Carlo rcm estimate
+    allocate( AKm_rcm(1:nz) )      ! Kessler ac based on rcm
+    allocate( AKm_rcc(1:nz) )      ! Kessler ac based on rcm/cloud_frac
     ! End of variables for Latin hypercube.
 
     ! High-order passive scalars
-    allocate( sclrpthvp(1:nzmax, 1:sclr_dim) )
-    allocate( sclrprcp(1:nzmax, 1:sclr_dim) )
+    allocate( sclrpthvp(1:nz, 1:sclr_dim) )
+    allocate( sclrprcp(1:nz, 1:sclr_dim) )
 
-    allocate( wp2sclrp(1:nzmax, 1:sclr_dim) )
-    allocate( wpsclrp2(1:nzmax, 1:sclr_dim) )
-    allocate( wpsclrprtp(1:nzmax, 1:sclr_dim) )
-    allocate( wpsclrpthlp(1:nzmax, 1:sclr_dim) )
+    allocate( wp2sclrp(1:nz, 1:sclr_dim) )
+    allocate( wpsclrp2(1:nz, 1:sclr_dim) )
+    allocate( wpsclrprtp(1:nz, 1:sclr_dim) )
+    allocate( wpsclrpthlp(1:nz, 1:sclr_dim) )
 
     ! Eddy Diff. Scalars
-    allocate( wpedsclrp(1:nzmax, 1:edsclr_dim) )
+    allocate( wpedsclrp(1:nz, 1:edsclr_dim) )
 
-    ! Diagnostics for s and t Mellor
-    allocate( sptp_mellor_1(1:nzmax) )
-    allocate( sptp_mellor_2(1:nzmax) )
-    allocate( tp2_mellor_1(1:nzmax) )
-    allocate( tp2_mellor_2(1:nzmax) )
-    allocate( corr_st_mellor1(1:nzmax) )
-    allocate( corr_st_mellor2(1:nzmax) )
+    allocate( Skw_velocity(1:nz) )
 
-    allocate( Skw_velocity(1:nzmax) )
+    allocate( a3_coef(1:nz) )
+    allocate( a3_coef_zt(1:nz) )
 
-    allocate( a3_coef(1:nzmax) )
-    allocate( a3_coef_zt(1:nzmax) )
-
-    allocate( wp3_on_wp2(1:nzmax) )
-    allocate( wp3_on_wp2_zt(1:nzmax) )
+    allocate( wp3_on_wp2(1:nz) )
+    allocate( wp3_on_wp2_zt(1:nz) )
 
     !   --- Initializaton ---
 
@@ -381,37 +389,79 @@ module variables_diagnostic_module
 
 
     ! pdf_params on momentum levels
-    pdf_params_zm%w1          = 0.0_core_rknd
-    pdf_params_zm%w2          = 0.0_core_rknd
-    pdf_params_zm%varnce_w1   = 0.0_core_rknd
-    pdf_params_zm%varnce_w2   = 0.0_core_rknd
-    pdf_params_zm%rt1         = 0.0_core_rknd
-    pdf_params_zm%rt2         = 0.0_core_rknd
-    pdf_params_zm%varnce_rt1  = 0.0_core_rknd
-    pdf_params_zm%varnce_rt2  = 0.0_core_rknd
-    pdf_params_zm%thl1        = 0.0_core_rknd
-    pdf_params_zm%thl2        = 0.0_core_rknd
-    pdf_params_zm%varnce_thl1 = 0.0_core_rknd
-    pdf_params_zm%varnce_thl2 = 0.0_core_rknd
-    pdf_params_zm%mixt_frac   = 0.0_core_rknd
-    pdf_params_zm%rc1         = 0.0_core_rknd
-    pdf_params_zm%rc2         = 0.0_core_rknd
-    pdf_params_zm%rsl1        = 0.0_core_rknd
-    pdf_params_zm%rsl2        = 0.0_core_rknd
-    pdf_params_zm%cloud_frac1 = 0.0_core_rknd
-    pdf_params_zm%cloud_frac2 = 0.0_core_rknd
-    pdf_params_zm%s1          = 0.0_core_rknd
-    pdf_params_zm%s2          = 0.0_core_rknd
-    pdf_params_zm%stdev_s1    = 0.0_core_rknd
-    pdf_params_zm%stdev_s2    = 0.0_core_rknd
-    pdf_params_zm%rrtthl      = 0.0_core_rknd
-    pdf_params_zm%alpha_thl   = 0.0_core_rknd
-    pdf_params_zm%alpha_rt    = 0.0_core_rknd
-    pdf_params_zm%crt1        = 0.0_core_rknd
-    pdf_params_zm%crt2        = 0.0_core_rknd
-    pdf_params_zm%cthl1       = 0.0_core_rknd
-    pdf_params_zm%cthl2       = 0.0_core_rknd
+    pdf_params_zm(:)%w_1              = zero
+    pdf_params_zm(:)%w_2              = zero
+    pdf_params_zm(:)%varnce_w_1       = zero
+    pdf_params_zm(:)%varnce_w_2       = zero
+    pdf_params_zm(:)%rt_1              = zero
+    pdf_params_zm(:)%rt_2              = zero
+    pdf_params_zm(:)%varnce_rt_1       = zero
+    pdf_params_zm(:)%varnce_rt_2       = zero
+    pdf_params_zm(:)%thl_1             = zero
+    pdf_params_zm(:)%thl_2             = zero
+    pdf_params_zm(:)%varnce_thl_1      = zero
+    pdf_params_zm(:)%varnce_thl_2      = zero
+    pdf_params_zm(:)%rrtthl           = zero
+    pdf_params_zm(:)%alpha_thl        = zero
+    pdf_params_zm(:)%alpha_rt         = zero
+    pdf_params_zm(:)%crt_1             = zero
+    pdf_params_zm(:)%crt_2             = zero
+    pdf_params_zm(:)%cthl_1            = zero
+    pdf_params_zm(:)%cthl_2            = zero
+    pdf_params_zm(:)%chi_1            = zero
+    pdf_params_zm(:)%chi_2            = zero
+    pdf_params_zm(:)%stdev_chi_1      = zero
+    pdf_params_zm(:)%stdev_chi_2      = zero
+    pdf_params_zm(:)%stdev_eta_1      = zero
+    pdf_params_zm(:)%stdev_eta_2      = zero
+    pdf_params_zm(:)%covar_chi_eta_1  = zero
+    pdf_params_zm(:)%covar_chi_eta_2  = zero
+    pdf_params_zm(:)%corr_chi_eta_1   = zero
+    pdf_params_zm(:)%corr_chi_eta_2   = zero
+    pdf_params_zm(:)%rsatl_1           = zero
+    pdf_params_zm(:)%rsatl_2           = zero
+    pdf_params_zm(:)%rc_1              = zero
+    pdf_params_zm(:)%rc_2              = zero
+    pdf_params_zm(:)%cloud_frac_1     = zero
+    pdf_params_zm(:)%cloud_frac_2     = zero
+    pdf_params_zm(:)%mixt_frac        = zero
 
+    pdf_params_zm_frz(:)%w_1              = zero
+    pdf_params_zm_frz(:)%w_2              = zero
+    pdf_params_zm_frz(:)%varnce_w_1       = zero
+    pdf_params_zm_frz(:)%varnce_w_2       = zero
+    pdf_params_zm_frz(:)%rt_1              = zero
+    pdf_params_zm_frz(:)%rt_2              = zero
+    pdf_params_zm_frz(:)%varnce_rt_1       = zero
+    pdf_params_zm_frz(:)%varnce_rt_2       = zero
+    pdf_params_zm_frz(:)%thl_1             = zero
+    pdf_params_zm_frz(:)%thl_2             = zero
+    pdf_params_zm_frz(:)%varnce_thl_1      = zero
+    pdf_params_zm_frz(:)%varnce_thl_2      = zero
+    pdf_params_zm_frz(:)%rrtthl           = zero
+    pdf_params_zm_frz(:)%alpha_thl        = zero
+    pdf_params_zm_frz(:)%alpha_rt         = zero
+    pdf_params_zm_frz(:)%crt_1             = zero
+    pdf_params_zm_frz(:)%crt_2             = zero
+    pdf_params_zm_frz(:)%cthl_1            = zero
+    pdf_params_zm_frz(:)%cthl_2            = zero
+    pdf_params_zm_frz(:)%chi_1            = zero
+    pdf_params_zm_frz(:)%chi_2            = zero
+    pdf_params_zm_frz(:)%stdev_chi_1      = zero
+    pdf_params_zm_frz(:)%stdev_chi_2      = zero
+    pdf_params_zm_frz(:)%stdev_eta_1      = zero
+    pdf_params_zm_frz(:)%stdev_eta_2      = zero
+    pdf_params_zm_frz(:)%covar_chi_eta_1  = zero
+    pdf_params_zm_frz(:)%covar_chi_eta_2  = zero
+    pdf_params_zm_frz(:)%corr_chi_eta_1   = zero
+    pdf_params_zm_frz(:)%corr_chi_eta_2   = zero
+    pdf_params_zm_frz(:)%rsatl_1           = zero
+    pdf_params_zm_frz(:)%rsatl_2           = zero
+    pdf_params_zm_frz(:)%rc_1              = zero
+    pdf_params_zm_frz(:)%rc_2              = zero
+    pdf_params_zm_frz(:)%cloud_frac_1     = zero
+    pdf_params_zm_frz(:)%cloud_frac_2     = zero
+    pdf_params_zm_frz(:)%mixt_frac        = zero
 
     ! Second order moments
     thlprcp = 0.0_core_rknd
@@ -441,6 +491,10 @@ module variables_diagnostic_module
     Kh_zt = 0.0_core_rknd  ! Eddy diffusivity coefficient: thermo. levels
     Kh_zm = 0.0_core_rknd  ! Eddy diffusivity coefficient: momentum levels
 
+    do i = 1, hydromet_dim, 1
+      K_hm(1:nz,i)    = 0.0_core_rknd ! Eddy diff. coef. for hydromets.: mom. levs.
+    end do
+
     ! TKE
     em       = em_min
 
@@ -454,11 +508,17 @@ module variables_diagnostic_module
     tau_zt = 0.0_core_rknd ! Eddy dissipation time scale: thermo. levels
 
     ! Hydrometer types
-    Ncnm(1:nzmax) = 0.0_core_rknd ! Cloud nuclei number concentration (COAMPS)
+    Nccnm(1:nz) = 0.0_core_rknd ! CCN concentration (COAMPS/MG)
 
     do i = 1, hydromet_dim, 1
-      hydromet(1:nzmax,i) = 0.0_core_rknd
-    end do
+       hydromet(1:nz,i)    = 0.0_core_rknd
+       hydrometp2(1:nz,i)  = 0.0_core_rknd
+       wphydrometp(1:nz,i) = 0.0_core_rknd
+    enddo
+
+    ! Cloud droplet concentration
+    Ncm(1:nz)   = 0.0_core_rknd
+    wpNcp(1:nz) = 0.0_core_rknd
 
 
     ! Variables for Latin hypercube microphysics.  Vince Larson 22 May 2005
@@ -485,14 +545,6 @@ module variables_diagnostic_module
     if ( edsclr_dim > 0 ) then
       wpedsclrp(:,:)     = 0.0_core_rknd
     end if
-
-    sptp_mellor_1 = 0.0_core_rknd
-    sptp_mellor_2 = 0.0_core_rknd
-    tp2_mellor_1  = 0.0_core_rknd
-    tp2_mellor_2  = 0.0_core_rknd
-
-    corr_st_mellor1 = 0.0_core_rknd
-    corr_st_mellor2 = 0.0_core_rknd
 
     Skw_velocity = 0.0_core_rknd
 
@@ -540,6 +592,7 @@ module variables_diagnostic_module
     deallocate( radht )     ! SW + LW heating rate
 
     deallocate( pdf_params_zm )
+    deallocate( pdf_params_zm_frz )
 
     ! Second order moments
 
@@ -571,6 +624,7 @@ module variables_diagnostic_module
 
     deallocate( Kh_zt )  ! Eddy diffusivity coefficient: thermo. levels
     deallocate( Kh_zm )  ! Eddy diffusivity coefficient: momentum levels
+    deallocate( K_hm )   ! Eddy diff. coef. for hydromets.: mom. levs.
 
     deallocate( em )
     deallocate( Lscale )
@@ -581,10 +635,13 @@ module variables_diagnostic_module
 
     ! Cloud water variables
 
-    deallocate( Ncnm )
+    deallocate( Nccnm )
 
-    deallocate( hydromet )  ! Hydrometeor fields
-
+    deallocate( hydromet )     ! Hydrometeor mean fields
+    deallocate( hydrometp2 )   ! < h_m'^2 > fields
+    deallocate( wphydrometp )  ! < w'h_m' > fields
+    deallocate( Ncm )          ! Mean cloud droplet concentration, < N_c >
+    deallocate( wpNcp )        ! < w'N_c' >
 
     ! Interpolated variables for tuning
     deallocate( wp2_zt )     ! w'^2 on thermo. grid
@@ -617,14 +674,6 @@ module variables_diagnostic_module
     deallocate( wpsclrpthlp )
 
     deallocate( wpedsclrp )
-
-    ! Diagnostics for s and t Mellor
-    deallocate( sptp_mellor_1 )
-    deallocate( sptp_mellor_2 )
-    deallocate( tp2_mellor_1 )
-    deallocate( tp2_mellor_2 )
-    deallocate( corr_st_mellor1 )
-    deallocate( corr_st_mellor2 )
 
     deallocate( Skw_velocity )
 

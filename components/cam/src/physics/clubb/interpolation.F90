@@ -1,5 +1,6 @@
 !-------------------------------------------------------------------------------
-!$Id: interpolation.F90 5623 2012-01-17 17:55:26Z connork@uwm.edu $
+!$Id: interpolation.F90 7200 2014-08-13 15:15:12Z betlej@uwm.edu $
+!===============================================================================
 module interpolation
 
   use clubb_precision, only: &
@@ -9,13 +10,14 @@ module interpolation
 
   private ! Default Scope
 
-  public :: lin_int, binary_search, zlinterp_fnc, & 
-    linear_interpolation, linear_interp_factor, mono_cubic_interp, plinterp_fnc
+  public :: lin_interpolate_two_points, binary_search, zlinterp_fnc, & 
+    lin_interpolate_on_grid, linear_interp_factor, mono_cubic_interp, plinterp_fnc, &
+    pvertinterp
 
   contains
 
 !-------------------------------------------------------------------------------
-  pure function lin_int( height_int, height_high, height_low, &
+  function lin_interpolate_two_points( height_int, height_high, height_low, &
     var_high, var_low )
 
 ! Description:
@@ -55,6 +57,8 @@ module interpolation
     use clubb_precision, only: &
       core_rknd ! Variable(s)
 
+    use constants_clubb, only: fstderr ! Constant
+
     implicit none
 
     ! Input Variables
@@ -67,15 +71,21 @@ module interpolation
       var_low        ! Variable below the interpolation [units vary]
 
     ! Output Variables
-    real( kind = core_rknd ) :: lin_int
+    real( kind = core_rknd ) :: lin_interpolate_two_points
+    
+    ! Check for valid input
+    if ( abs(height_low - height_high) < 1.0e-12_core_rknd ) then
+      write(fstderr,*) "lin_interpolate_two_points: height_high and height_low cannot be equal."
+      stop
+    end if
 
     ! Compute linear interpolation
 
-    lin_int = ( ( height_int - height_low )/( height_high - height_low ) ) &
+    lin_interpolate_two_points = ( ( height_int - height_low )/( height_high - height_low ) ) &
       * ( var_high - var_low ) + var_low
 
     return
-  end function lin_int
+  end function lin_interpolate_two_points
 
   !-------------------------------------------------------------------------------------------------
   elemental real( kind = core_rknd ) function linear_interp_factor( factor, var_high, var_low )
@@ -101,7 +111,7 @@ module interpolation
     return
   end function linear_interp_factor
   !-------------------------------------------------------------------------------------------------
-  pure function mono_cubic_interp &
+  function mono_cubic_interp &
     ( z_in, km1, k00, kp1, kp2, zm1, z00, zp1, zp2, fm1, f00, fp1, fp2 ) result ( f_out )
 
   ! Description:
@@ -125,7 +135,7 @@ module interpolation
       eps
 
     use clubb_precision, only: &
-      core_rknd ! Variable(s)
+      core_rknd ! Constant
     
     use model_flags, only: &
       l_quintic_poly_interp ! Variable(s)
@@ -234,7 +244,7 @@ module interpolation
 
         ! Prevent an underflow by using a linear interpolation
         if ( abs( beta ) < eps ) then 
-          f_out = lin_int( z00, zp1, zm1, &
+          f_out = lin_interpolate_two_points( z00, zp1, zm1, &
                            fp1, fm1 )
 
         else
@@ -482,7 +492,7 @@ module interpolation
       !kp1 = min( k+1, dim_src )
 
       ! Interpolate
-      var_out(kint) = lin_int( grid_out(kint), grid_src(k),  & 
+      var_out(kint) = lin_interpolate_two_points( grid_out(kint), grid_src(k),  & 
         grid_src(km1), var_src(k), var_src(km1) )
 
 !          ( var_src(k) - var_src(km1) ) / &
@@ -501,7 +511,67 @@ module interpolation
   end function zlinterp_fnc
 
 !-------------------------------------------------------------------------------
-  subroutine linear_interpolation & 
+  subroutine pvertinterp & 
+             ( nlev, pmid, pout, arrin, arrout )
+	     
+    implicit none
+    
+    !------------------------------Arguments--------------------------------
+    integer , intent(in)  :: nlev              ! vertical dimension
+    real( kind = core_rknd ), intent(in)  :: pmid(nlev)        ! input level pressure levels
+    real( kind = core_rknd ), intent(in)  :: pout              ! output pressure level
+    real( kind = core_rknd ), intent(in)  :: arrin(nlev)       ! input  array
+    real( kind = core_rknd ), intent(out) :: arrout            ! output array (interpolated)   
+    
+    !---------------------------Local variables-----------------------------
+    integer i,k               ! indices
+    integer kupper            ! Level indices for interpolation
+    real( kind = core_rknd ) dpu              ! upper level pressure difference
+    real( kind = core_rknd ) dpl              ! lower level pressure difference
+    logical found             ! true if input levels found   	
+    logical error             ! true if error     
+    !-----------------------------------------------------------------
+    !
+    ! Initialize index array and logical flags
+    !
+
+    found = .false.
+    kupper = 1
+
+    error = .false.
+    !
+    ! Store level indices for interpolation.
+    ! If all indices for this level have been found,
+    ! do the interpolation
+    !
+    do k=1,nlev-1
+      if ((.not. found) .and. pmid(k)>pout .and. pout>=pmid(k+1)) then
+        found = .true.
+        kupper = k
+      end if
+    end do
+    !
+    ! If we've fallen through the k=1,nlev-1 loop, we cannot interpolate and
+    ! must extrapolate from the bottom or top data level for at least some
+    ! of the longitude points.
+    !
+    if (pout >= pmid(1)) then
+      arrout = arrin(1)
+    else if (pout <= pmid(nlev)) then
+      arrout = arrin(nlev)
+    else if (found) then
+      dpu = pmid(kupper) - pout
+      dpl = pout - pmid(kupper+1)
+      arrout = (arrin(kupper)*dpl + arrin(kupper+1)*dpu)/(dpl + dpu)
+    else
+      error = .true.
+    end if   
+	     
+    return
+  end subroutine pvertinterp
+
+!-------------------------------------------------------------------------------
+  subroutine lin_interpolate_on_grid & 
              ( nparam, xlist, tlist, xvalue, tvalue )
 
 ! Description:
@@ -515,7 +585,9 @@ module interpolation
 ! Author: Michael Falk for COAMPS.
 !-------------------------------------------------------------------------------
 
-    use error_code, only: clubb_debug ! Procedure
+    use error_code, only: & 
+      clubb_debug, & ! Procedure(s)
+      clubb_at_least_debug_level
 
     use constants_clubb, only: fstderr ! Constant
 
@@ -540,42 +612,27 @@ module interpolation
 
     ! Local variables
     integer ::  & 
-      i,  & ! Loop control variable for bubble sort- number of the 
-            ! lowest yet-unsorted data point.
-      j  ! Loop control variable for bubble sort- index of value
-    ! currently being tested
+      i     ! Loop control variable
+ 
     integer ::  & 
       bottombound, & ! Index of the smaller value in the linear interpolation
-      topbound,    & ! Index of the larger value in the linear interpolation
-      smallest       ! Index of the present smallest value, for bubble sort
-
-    real( kind = core_rknd ) :: temp ! A temporary variable used for the bubble sort swap
+      topbound       ! Index of the larger value in the linear interpolation
 
 !-------------------------------------------------------------------------------
 !
-! Bubble Sort algorithm, assuring that the elements are in order so
-! that the interpolation is between the two closest points to the
-! point in question.
+! Assure that the elements are in order so that the interpolation is between 
+! the two closest points to the point in question.
 !
 !-------------------------------------------------------------------------------
 
-    do i=1,nparam
-      smallest = i
-      do j=i,nparam
-        if ( xlist(j) < xlist(smallest) ) then
-          smallest = j
-        end if
-      end do
-
-      temp = xlist(i)
-      xlist(i) = xlist(smallest)
-      xlist(smallest) = temp
-
-      temp = tlist(i)
-      tlist(i) = tlist(smallest)
-      tlist(smallest) = temp
-    end do
-
+     if ( clubb_at_least_debug_level( 2 ) ) then
+       do i=2,nparam
+         if ( xlist(i) <= xlist(i-1) ) then
+           write(fstderr,*) "xlist must be sorted for lin_interpolate_on_grid."
+           stop
+         end if
+       end do
+     end if
 !-------------------------------------------------------------------------------
 !
 ! If the point in question is larger than the largest x-value or
@@ -584,7 +641,7 @@ module interpolation
 !-------------------------------------------------------------------------------
 
     if ( (xvalue < xlist(1)) .or. (xvalue > xlist(nparam)) ) then
-      write(fstderr,*) "linear_interpolation: Value out of range"
+      write(fstderr,*) "lin_interpolate_on_grid: Value out of range"
       stop
     end if
 
@@ -607,14 +664,14 @@ module interpolation
 
     if ( topbound == -1 .or. bottombound == -1 ) then
       call clubb_debug( 1, "Sanity check failed! xlist is not properly sorted" )
-      call clubb_debug( 1, "in linear_interpolation.")
+      call clubb_debug( 1, "in lin_interpolate_on_grid.")
     end if
 
     tvalue =  & 
-    lin_int( xvalue, xlist(topbound), xlist(bottombound),  & 
+    lin_interpolate_two_points( xvalue, xlist(topbound), xlist(bottombound),  & 
             tlist(topbound), tlist(bottombound) )
 
     return
-  end subroutine linear_interpolation
+  end subroutine lin_interpolate_on_grid
 
 end module interpolation

@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------------
-! $Id: constants_clubb.F90 5641 2012-01-19 21:11:17Z bmg2@uwm.edu $
+! $Id: constants_clubb.F90 7140 2014-07-31 19:14:05Z betlej@uwm.edu $
 !=============================================================================
 module constants_clubb
 
@@ -11,8 +11,7 @@ module constants_clubb
   !---------------------------------------------------------------------------
 
   use clubb_precision, only:  & 
-      time_precision, & ! Variable(s)
-      dp, &
+      dp, & ! Variable(s)
       core_rknd
 
 #ifdef CLUBB_CAM /* Set constants as they're set in CAM */
@@ -21,6 +20,22 @@ module constants_clubb
                            shr_const_mwwv, shr_const_stebol, shr_const_tkfrz, &
                            shr_const_mwdair, shr_const_g, shr_const_karman, &
                            shr_const_rhofw
+#elif GFDL
+ ! use GFDL constants, and then rename them to avoid confusion in case 
+ ! that the constants share the same names between GFDL and CLUBB
+  use constants_mod, only:  pi_gfdl                 => PI,          &
+                            radians_per_deg_dp_gfdl => DEG_TO_RAD,  &
+                            Cp_gfdl                 => CP_AIR,      &
+                            Lv_gfdl                 => HLV,         &
+                            Ls_gfdl                 => HLS,         &
+                            Lf_gfdl                 => HLF,         &
+                            Rd_gfdl                 => RDGAS,       &
+                            Rv_gfdl                 => RVGAS,       &
+                            stefan_boltzmann_gfdl   => STEFAN,      &
+                            T_freeze_K_gfdl         => TFREEZE,     &
+                            grav_gfdl               => GRAV,        &
+                            vonk_gfdl               => VONKARM,     &
+                            rho_lw_gfdl             => DENS_H2O
 #endif
 
   implicit none
@@ -53,9 +68,9 @@ module constants_clubb
   ! The largest allowable magnitude of the input to the parabolic cylinder
   ! function (before overflow occurs) is dependent on the order of parabolic
   ! cylinder function.  However, after a lot of testing, it was determined that
-  ! an absolute value of 375 works well for an order of 12 or less.
+  ! an absolute value of 49 works well for an order of 12 or less.
   real( kind = core_rknd ), parameter, public :: &
-    parab_cyl_max_input = 375._core_rknd  ! Largest allowable input to parab. cyl. fnct.
+    parab_cyl_max_input = 49.0_core_rknd  ! Largest allowable input to parab. cyl. fnct.
 
   ! "Over-implicit" weighted time step.
   !
@@ -105,11 +120,20 @@ module constants_clubb
   real( kind = dp ), parameter, public ::  & 
     pi_dp = 3.14159265358979323846_dp
 
+#ifdef GFDL
+  real( kind = core_rknd ), parameter, public ::  & 
+    pi = pi_gfdl ! The ratio of radii to their circumference
+
+  real( kind = dp ), parameter, public :: &
+    radians_per_deg_dp = radians_per_deg_dp_gfdl
+#else
+
   real( kind = core_rknd ), parameter, public ::  & 
     pi = 3.141592654_core_rknd ! The ratio of radii to their circumference
 
   real( kind = dp ), parameter, public :: &
     radians_per_deg_dp = pi_dp / 180._dp
+#endif
 
   real( kind = core_rknd ), parameter, public :: &
     sqrt_2pi = 2.5066282746310005024_core_rknd, &  ! sqrt(2*pi)
@@ -180,6 +204,45 @@ module constants_clubb
     vonk   = shr_const_karman,    & ! Accepted value is 0.40 (+/-) 0.01      [-]
     rho_lw = shr_const_rhofw    ! Density of liquid water                [kg/m^3]
 
+
+#elif GFDL
+  real( kind = core_rknd ), parameter, public ::  & 
+    Cp = Cp_gfdl,    & ! Dry air specific heat at constant p [J/kg/K]
+    Lv = Lv_gfdl,    & ! Latent heat of vaporization         [J/kg]
+    Ls = Ls_gfdl,    & ! Latent heat of sublimation          [J/kg]
+    Lf = Lf_gfdl,    & ! Latent heat of fusion               [J/kg]
+    Rd = Rd_gfdl,    & ! Dry air gas constant                [J/kg/K]
+    Rv = Rv_gfdl       ! Water vapor gas constant            [J/kg/K]
+
+
+  real( kind = core_rknd ), parameter, public :: &
+    stefan_boltzmann = stefan_boltzmann_gfdl ! Stefan-Boltzmann constant [W/(m^2 K^4)]
+
+  real( kind = core_rknd ), parameter, public :: &
+    T_freeze_K = T_freeze_K_gfdl ! Freezing point of water [K]
+
+  ! Useful combinations of Rd and Rv
+  real( kind = core_rknd ), parameter, public ::  & 
+    ep  = Rd / Rv,    & ! ep  = 0.622  [-]
+    ep1 = (1.0-ep)/ep,& ! ep1 = 0.61   [-]
+    ep2 = 1.0/ep        ! ep2 = 1.61   [-]
+
+  real( kind = core_rknd ), parameter, public :: & 
+    kappa = Rd / Cp     ! kappa        [-]
+
+  ! Changed g to grav to make it easier to find in the code 5/25/05
+  ! real, parameter :: grav  = 9.80665 ! Gravitational acceleration [m/s^2]
+  real( kind = core_rknd ), parameter, public :: & 
+    grav = grav_gfdl, & ! Gravitational acceleration     [m/s^2]
+    p0   = 1.0e5   ! Reference pressure             [Pa]
+
+  ! Von Karman's constant
+  ! Constant of the logarithmic wind profile in the surface layer
+  real( kind = core_rknd ), parameter, public :: & 
+    vonk   = vonk_gfdl,    & ! Accepted value is 0.40 (+/-) 0.01      [-]
+    rho_lw = rho_lw_gfdl    ! Density of liquid water                [kg/m^3]
+
+
 #else
 
   real( kind = core_rknd ), parameter, public ::  & 
@@ -220,12 +283,16 @@ module constants_clubb
     
 #endif
 
+  real( kind = core_rknd ), parameter, public :: & 
+    rho_ice = 917.0_core_rknd    ! Density of ice      [kg/m^3]
+
   ! Tolerances below which we consider moments to be zero
   real( kind = core_rknd ), parameter, public ::  & 
-    w_tol        = 2.e-2_core_rknd,  & ! [m/s]
-    thl_tol      = 1.e-2_core_rknd,  & ! [K]
-    rt_tol       = 1.e-8_core_rknd,  & ! [kg/kg]
-    s_mellor_tol = 1.e-8_core_rknd     ! [kg/kg]
+    w_tol        = 2.e-2_core_rknd, & ! [m/s]
+    thl_tol      = 1.e-2_core_rknd, & ! [K]
+    rt_tol       = 1.e-8_core_rknd, & ! [kg/kg]
+    chi_tol = 1.e-8_core_rknd, & ! [kg/kg]
+    eta_tol = chi_tol       ! [kg/kg]
 
   ! Tolerances for use by the monatonic flux limiter.
   ! rt_tol_mfl is larger than rt_tol. rt_tol is extremely small
@@ -255,17 +322,59 @@ module constants_clubb
   ! still officially have a cloud at that level.  This is figured to be about
   ! 1.0_core_rknd x 10^-7 kg/kg.  Brian; February 10, 2007.
   real( kind = core_rknd ), parameter, public :: & 
-    rc_tol = 1.0E-6_core_rknd,  & ! [kg/kg]
-    Nc_tol = 1.0E-10_core_rknd, & ! [#/kg]
-    rr_tol = 1.0E-10_core_rknd, & ! [kg/kg]
-    Nr_tol = 1.0E-10_core_rknd    ! [#/kg]
+    rc_tol  = 1.0E-6_core_rknd, & ! Tolerance value for r_c  [kg/kg]
+    Nc_tol  = 1.0E+2_core_rknd, & ! Tolerance value for N_c  [#/kg]
+    Ncn_tol = 1.0E+2_core_rknd    ! Tolerance value for N_cn [#/kg]
+
+  real( kind = core_rknd ), parameter, public :: & 
+    mvr_cloud_max = 1.6E-5_core_rknd    ! Max. avg. mean vol. rad. cloud    [m]
+
+  real( kind = core_rknd ), parameter, public :: &
+    Nc_in_cloud_min = 2.0e+4_core_rknd
+
+  ! Precipitating hydrometeor tolerances for mixing ratios.
+  real( kind = core_rknd ), parameter, public :: & 
+    rr_tol = 1.0E-10_core_rknd, & ! Tolerance value for r_r [kg/kg]
+    ri_tol = 1.0E-10_core_rknd, & ! Tolerance value for r_i [kg/kg]
+    rs_tol = 1.0E-10_core_rknd, & ! Tolerance value for r_s [kg/kg]
+    rg_tol = 1.0E-10_core_rknd    ! Tolerance value for r_g [kg/kg]
+
+  ! Maximum allowable values for the average mean volume radius of the various
+  ! hydrometeor species.
+  real( kind = core_rknd ), parameter, public :: & 
+    mvr_rain_max    = 5.0E-3_core_rknd, & ! Max. avg. mean vol. rad. rain    [m]
+    mvr_ice_max     = 1.3E-4_core_rknd, & ! Max. avg. mean vol. rad. ice     [m]
+    mvr_snow_max    = 1.0E-2_core_rknd, & ! Max. avg. mean vol. rad. snow    [m]
+    mvr_graupel_max = 2.0E-2_core_rknd    ! Max. avg. mean vol. rad. graupel [m]
+
+  ! Precipitating hydrometeor tolerances for concentrations.
+  ! Tolerance value for N_r [#/kg]
+  real( kind = core_rknd ), parameter, public :: & 
+    Nr_tol = ( one / ( four_thirds * pi * rho_lw * mvr_rain_max**3 ) ) &
+             * rr_tol
+
+  ! Tolerance value for N_i [#/kg]
+  real( kind = core_rknd ), parameter, public :: & 
+    Ni_tol = ( one / ( four_thirds * pi * rho_ice * mvr_ice_max**3 ) ) &
+             * ri_tol
+
+  ! Tolerance value for N_s [#/kg]
+  real( kind = core_rknd ), parameter, public :: & 
+    Ns_tol = ( one / ( four_thirds * pi * rho_ice * mvr_snow_max**3 ) ) &
+             * rs_tol
+
+  ! Tolerance value for N_s [#/kg]
+  real( kind = core_rknd ), parameter, public :: & 
+    Ng_tol = ( one / ( four_thirds * pi * rho_ice * mvr_graupel_max**3 ) ) &
+             * rg_tol
 
   ! Minimum value for em (turbulence kinetic energy)
   ! If anisotropic TKE is enabled, em = (1/2) * ( up2 + vp2 + wp2 );
   ! otherwise, em = (3/2) * wp2.  Since up2, vp2, and wp2 all have
   ! the same minimum threshold value of w_tol_sqd, em cannot be less
   ! than (3/2) * w_tol_sqd.  Thus, em_min = (3/2) * w_tol_sqd.
-  real( kind = core_rknd ), parameter, public :: em_min = 1.5_core_rknd * w_tol_sqd  ! [m^2/s^2]
+  real( kind = core_rknd ), parameter, public :: &
+    em_min = 1.5_core_rknd * w_tol_sqd  ! [m^2/s^2]
 
   real( kind = core_rknd ), parameter, public ::  & 
     eps = 1.0e-10_core_rknd ! Small value to prevent a divide by zero
@@ -285,11 +394,11 @@ module constants_clubb
   !-----------------------------------------------------------------------------
   ! Useful conversion factors.
   !-----------------------------------------------------------------------------
-  real(kind=time_precision), parameter, public ::  & 
-    sec_per_day = 86400.0_time_precision, & ! Seconds in a day.
-    sec_per_hr  = 3600.0_time_precision,  & ! Seconds in an hour.
-    sec_per_min = 60.0_time_precision,    & ! Seconds in a minute.
-    min_per_hr = 60.0_time_precision        ! Minutes in an hour.
+  real(kind=core_rknd), parameter, public ::  & 
+    sec_per_day = 86400.0_core_rknd, & ! Seconds in a day.
+    sec_per_hr  = 3600.0_core_rknd,  & ! Seconds in an hour.
+    sec_per_min = 60.0_core_rknd,    & ! Seconds in a minute.
+    min_per_hr = 60.0_core_rknd        ! Minutes in an hour.
 
   real( kind = core_rknd ), parameter, public :: & 
     g_per_kg = 1000.0_core_rknd     ! Grams in a kilogram.
@@ -298,10 +407,16 @@ module constants_clubb
     pascal_per_mb = 100.0_core_rknd ! Pascals per Millibar
 
   real( kind = core_rknd ), parameter, public :: & 
-    cm3_per_m3   = 1.e6_core_rknd, & ! Cubic centimeters per cubic meter
-    micron_per_m = 1.e6_core_rknd, & ! Micrometers per meter
-    cm_per_m     = 100._core_rknd, & ! Centimeters per meter
-    mm_per_m     = 1000._core_rknd   ! Millimeters per meter  
+    cm3_per_m3   = 1.e6_core_rknd,  & ! Cubic centimeters per cubic meter
+    micron_per_m = 1.e6_core_rknd,  & ! Micrometers per meter
+    cm_per_m     = 100._core_rknd,  & ! Centimeters per meter
+    mm_per_m     = 1000._core_rknd    ! Millimeters per meter
+
+  !-----------------------------------------------------------------------------
+  ! Unused variable
+  !-----------------------------------------------------------------------------
+  real( kind = core_rknd ), parameter, public :: &
+    unused_var = -999._core_rknd      ! The standard value for unused variables
 
 !=============================================================================
 

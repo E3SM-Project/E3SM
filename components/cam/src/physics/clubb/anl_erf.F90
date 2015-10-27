@@ -1,115 +1,175 @@
-! $Id: anl_erf.F90 5324 2011-07-27 21:05:45Z dschanen@uwm.edu $
+!-----------------------------------------------------------------------
+! $Id: anl_erf.F90 7269 2014-09-04 21:00:07Z raut@uwm.edu $
+!===============================================================================
 module anl_erf
 
   implicit none
 
-  public :: erf
+  public :: dp_erf, &
+            dp_erfc, &
+            erf, &
+            erfc
 
+  private :: cr_erf, &
+             cr_erfc
+
+  ! The interfaces allow us to avoid a compiler warning about
+  ! shadowing the intrinsic functions
   interface erf
-    module procedure dp_erf, sp_erf
+    module procedure cr_erf
   end interface
 
-  private :: dp_erf, sp_erf
+  interface erfc
+    module procedure cr_erfc
+  end interface
 
   private ! Default Scope
 
   contains
 
-  function dp_erf( x ) result( erfx )
-!-----------------------------------------------------------------------
-! Description:
-!   DP_ERF evaluates the error function DP_ERF(X).
-!
-!   Original Author:
-!     William Cody,
-!     Mathematics and Computer Science Division,
-!     Argonne National Laboratory,
-!     Argonne, Illinois, 60439.
-!
-!   References:
-!     William Cody,
-!     "Rational Chebyshev approximations for the error function",
-!     Mathematics of Computation,
-!     1969, pages 631-638.
-!
-!  Arguments:
-!    Input, real ( kind = 8 ) X, the argument of ERF.
-!    Output, real ( kind = 8 ) ERFX, the value of ERF(X).
-!-----------------------------------------------------------------------
+  !=============================================================================
+  pure function cr_erf( x ) result( erfx_core_rknd )
+    ! Description:
+    !   Calls dp_erf after casting x to double precision.
+    !   This allows CLUBB to run erf even when core_rknd is in single precision.
+    !
+    !  Arguments:
+    !    Input, real ( kind = dp ) x, the argument of ERF.
+    !    Output, real ( kind = core_rknd ) erfx_core_rknd, the value of ERF(X).
+    !-----------------------------------------------------------------------
+
+    use clubb_precision, only: &
+        dp, & ! Constants
+        core_rknd
 
     implicit none
 
     ! Input Variables(s)
-    double precision, intent(in) :: x
+    real( kind = core_rknd), intent(in) :: x
+
+    ! Return type
+    real( kind = core_rknd ) :: erfx_core_rknd
+
+    ! Local Variables
+    real( kind = dp) :: x_dp, erfx_dp
+
+    ! Cast the input to dp
+    x_dp = real( x, kind = dp )
+
+    ! Call the function with the correct argument
+    erfx_dp = dp_erf( x_dp )
+
+    ! Get the output in core_rknd
+    erfx_core_rknd = real( erfx_dp, kind = core_rknd )
+
+    return
+
+  end function cr_erf
+
+  !=============================================================================
+  pure function dp_erf( x ) result( erfx )
+
+    ! Description:
+    !   DP_ERF evaluates the error function DP_ERF(X).
+    !
+    !   Original Author:
+    !     William Cody,
+    !     Mathematics and Computer Science Division,
+    !     Argonne National Laboratory,
+    !     Argonne, Illinois, 60439.
+    !
+    !   References:
+    !     William Cody,
+    !     "Rational Chebyshev approximations for the error function",
+    !     Mathematics of Computation,
+    !     1969, pages 631-638.
+    !
+    !  Arguments:
+    !    Input, real ( kind = dp ) X, the argument of ERF.
+    !    Output, real ( kind = dp ) ERFX, the value of ERF(X).
+    !
+    ! Modifications:
+    !   kind = 8 was replaced by the more portable sp and dp by UWM.
+    !-----------------------------------------------------------------------
+
+    use clubb_precision, only: &
+        dp, & ! Constants
+        core_rknd
+
+    implicit none
+
+    ! Input Variables(s)
+    real( kind = dp ), intent(in) :: x
 
     ! External
     intrinsic :: epsilon, exp, aint
 
     ! Local Constants
-    real( kind = 8 ), parameter, dimension( 5 ) ::  & 
-    a = (/ 3.16112374387056560D+00, & 
-           1.13864154151050156D+02, & 
-           3.77485237685302021D+02, & 
-           3.20937758913846947D+03, & 
-           1.85777706184603153D-01 /)
-    real( kind = 8 ), parameter, dimension( 4 ) ::  & 
-    b = (/ 2.36012909523441209D+01, & 
-           2.44024637934444173D+02, & 
-           1.28261652607737228D+03, & 
-           2.84423683343917062D+03 /)
-    real( kind = 8 ), parameter, dimension( 9 ) ::  & 
-    c = (/ 5.64188496988670089D-01, & 
-           8.88314979438837594D+00, & 
-           6.61191906371416295D+01, & 
-           2.98635138197400131D+02, & 
-           8.81952221241769090D+02, & 
-           1.71204761263407058D+03, & 
-           2.05107837782607147D+03, & 
-           1.23033935479799725D+03, & 
-           2.15311535474403846D-08 /)
-    real( kind = 8 ), parameter, dimension( 8 ) :: & 
-    d = (/ 1.57449261107098347D+01, & 
-           1.17693950891312499D+02, & 
-           5.37181101862009858D+02,  & 
-           1.62138957456669019D+03, & 
-           3.29079923573345963D+03, & 
-           4.36261909014324716D+03, & 
-           3.43936767414372164D+03, & 
-           1.23033935480374942D+03 /)
-    real( kind = 8 ), parameter, dimension( 6 ) ::  & 
-    p = (/ 3.05326634961232344D-01, & 
-           3.60344899949804439D-01, & 
-           1.25781726111229246D-01, & 
-           1.60837851487422766D-02, & 
-           6.58749161529837803D-04, & 
-           1.63153871373020978D-02 /)
+    real( kind = dp ), parameter, dimension( 5 ) ::  & 
+    a = (/ 3.16112374387056560E+00_dp, &
+           1.13864154151050156E+02_dp, &
+           3.77485237685302021E+02_dp, &
+           3.20937758913846947E+03_dp, &
+           1.85777706184603153E-01_dp /)
+    real( kind = dp ), parameter, dimension( 4 ) ::  & 
+    b = (/ 2.36012909523441209E+01_dp, &
+           2.44024637934444173E+02_dp, &
+           1.28261652607737228E+03_dp, &
+           2.84423683343917062E+03_dp /)
+    real( kind = dp ), parameter, dimension( 9 ) ::  & 
+    c = (/ 5.64188496988670089E-01_dp, &
+           8.88314979438837594E+00_dp, &
+           6.61191906371416295E+01_dp, &
+           2.98635138197400131E+02_dp, &
+           8.81952221241769090E+02_dp, &
+           1.71204761263407058E+03_dp, &
+           2.05107837782607147E+03_dp, &
+           1.23033935479799725E+03_dp, &
+           2.15311535474403846E-08_dp /)
+    real( kind = dp ), parameter, dimension( 8 ) :: & 
+    d = (/ 1.57449261107098347E+01_dp, &
+           1.17693950891312499E+02_dp, &
+           5.37181101862009858E+02_dp,  &
+           1.62138957456669019E+03_dp, &
+           3.29079923573345963E+03_dp, &
+           4.36261909014324716E+03_dp, &
+           3.43936767414372164E+03_dp, &
+           1.23033935480374942E+03_dp /)
+    real( kind = dp ), parameter, dimension( 6 ) ::  & 
+    p = (/ 3.05326634961232344E-01_dp, &
+           3.60344899949804439E-01_dp, &
+           1.25781726111229246E-01_dp, &
+           1.60837851487422766E-02_dp, &
+           6.58749161529837803E-04_dp, &
+           1.63153871373020978E-02_dp /)
 
-    real( kind = 8 ), parameter, dimension( 5 ) ::  & 
-    q = (/ 2.56852019228982242D+00, & 
-           1.87295284992346047D+00, & 
-           5.27905102951428412D-01, & 
-           6.05183413124413191D-02, & 
-           2.33520497626869185D-03 /)
+    real( kind = dp ), parameter, dimension( 5 ) ::  & 
+    q = (/ 2.56852019228982242E+00_dp, &
+           1.87295284992346047E+00_dp, &
+           5.27905102951428412E-01_dp, &
+           6.05183413124413191E-02_dp, &
+           2.33520497626869185E-03_dp /)
 
-    real( kind = 8 ), parameter ::  & 
-    SQRPI  = 0.56418958354775628695D+00, & 
-    THRESH = 0.46875D+00, & 
-    XBIG   = 26.543D+00
+    real( kind = dp ), parameter ::  & 
+    SQRPI  = 0.56418958354775628695E+00_dp, &
+    THRESH = 0.46875E+00_dp, &
+    XBIG   = 26.543E+00_dp
 
     ! Return type
-    real( kind = 8 ) :: erfx
+    real( kind = dp ) :: erfx
 
     ! Local variables
-    real( kind = 8 ) ::  & 
+    real( kind = dp ) ::  & 
     del, & 
-    xabs, & 
+    xabs, &
     xden, & 
     xnum, & 
     xsq
 
     integer :: i ! Index
 
-!-------------------------------------------------------------------------------
+    !-----------------------------------------------------------------------
+    ! Get the abs value of xabs - schemena 20140827
     xabs = abs( x )
 
     !
@@ -120,7 +180,7 @@ module anl_erf
       if ( epsilon( xabs ) < xabs ) then
         xsq = xabs * xabs
       else
-        xsq = 0.0D+00
+        xsq = 0.0E+00_dp
       end if
 
       xnum = a(5) * xsq
@@ -134,7 +194,7 @@ module anl_erf
       !
       !  Evaluate ERFC(X) for 0.46875 <= |X| <= 4.0.
       !
-    else if ( xabs <= 4.0D+00 ) then
+    else if ( xabs <= 4.0E+00_dp ) then
 
       xnum = c(9) * xabs
       xden = xabs
@@ -144,16 +204,16 @@ module anl_erf
       end do
 
       erfx = ( xnum + c(8) ) / ( xden + d(8) )
-      xsq = aint( xabs * 16.0D+00 ) / 16.0D+00
+      xsq = aint( xabs * 16.0E+00_dp ) / 16.0E+00_dp
       del = ( xabs - xsq ) * ( xabs + xsq )
       ! xsq * xsq in the exponential was changed to xsq**2.
       ! This seems to decrease runtime by about a half a percent.
       ! ~~EIHoppe//20090622
       erfx = exp( - xsq**2 ) * exp( - del ) * erfx
 
-      erfx = ( 0.5D+00 - erfx ) + 0.5D+00
+      erfx = ( 0.5E+00_dp - erfx ) + 0.5E+00_dp
 
-      if ( x < 0.0D+00 ) then
+      if ( x < 0.0E+00_dp ) then
         erfx = - erfx
       end if
       !
@@ -163,15 +223,15 @@ module anl_erf
 
       if ( XBIG <= xabs ) then
 
-        if ( 0.0D+00 < x ) then
-          erfx = 1.0D+00
+        if ( 0.0E+00_dp < real(x, kind=dp) ) then
+          erfx = 1.0E+00_dp
         else
-          erfx = -1.0D+00
+          erfx = -1.0E+00_dp
         end if
 
       else
 
-        xsq = 1.0D+00 / ( xabs * xabs )
+        xsq = 1.0E+00_dp / ( xabs * xabs )
 
         xnum = p(6) * xsq
         xden = xsq
@@ -182,12 +242,12 @@ module anl_erf
 
         erfx = xsq * ( xnum + p(5) ) / ( xden + q(5) )
         erfx = ( SQRPI -  erfx ) / xabs
-        xsq = aint( xabs * 16.0D+00 ) / 16.0D+00
+        xsq = aint( xabs * 16.0E+00_dp ) / 16.0E+00_dp
         del = ( xabs - xsq ) * ( xabs + xsq )
         erfx = exp( - xsq * xsq ) * exp( - del ) * erfx
 
-        erfx = ( 0.5D+00 - erfx ) + 0.5D+00
-        if ( x < 0.0D+00 ) then
+        erfx = ( 0.5E+00_dp - erfx ) + 0.5E+00_dp
+        if ( x < 0.0E+00_dp ) then
           erfx = - erfx
         end if
 
@@ -196,33 +256,89 @@ module anl_erf
     end if
 
     return
+
   end function dp_erf
 
-!-----------------------------------------------------------------------
-  function sp_erf( x ) result( erfx )
+  !=============================================================================
+  pure function cr_erfc( x ) result( erfcx_core_rknd )
+    ! Description:
+    !   Calls dp_erfc after casting x to double precision.
+    !   This allows CLUBB to run erfc even when core_rknd is in single precision.
+    !
+    !  Arguments:
+    !    Input, real ( kind = core_rknd ) x, the argument of ERFC.
+    !    Output, real ( kind = core_rknd ) erfcx_core_rknd, the value of ERFC(X).
+    !-----------------------------------------------------------------------
 
-! Description:
-!   Return a truncation of the 64bit approx. of the error function.
-!   Ideally we would probably use a 32bit table for our approx.
-
-! References:
-!   None
-!-----------------------------------------------------------------------
+    use clubb_precision, only: &
+        dp, & ! Constants
+        core_rknd
 
     implicit none
 
-    ! External
-    intrinsic :: real
-
-    ! Input Variables
-    real( kind=4 ), intent(in) :: x
+    ! Input Variables(s)
+    real( kind = core_rknd), intent(in) :: x
 
     ! Return type
-    real( kind=4 ) :: erfx
+    real( kind = core_rknd ) :: erfcx_core_rknd
 
-    erfx = real( dp_erf( real(x, kind=8) ), kind=4 )
+    ! Local Variables
+    real( kind = dp) :: x_dp, erfcx_dp
+
+    ! Cast the input to dp
+    x_dp = real( x, kind = dp )
+
+    ! Call the function with the correct argument
+    erfcx_dp = dp_erfc( x_dp )
+
+    ! Get the output in core_rknd
+    erfcx_core_rknd = real( erfcx_dp, kind = core_rknd )
 
     return
-  end function sp_erf
+
+  end function cr_erfc
+
+  !=============================================================================
+  pure function dp_erfc( x ) result( erfcx )
+
+    ! Description:
+    ! The complimentary error function of x:
+    !
+    ! erfc(x) = 1 - erf(x);
+    !
+    ! where:
+    !
+    ! erf(x) = ( 2 / sqrt(pi) ) INT(0:x) e^-t^2 dt;
+    !
+    ! and
+    !
+    ! erfc(x) = ( 2 / sqrt(pi) ) INT(x:inf) e^-t^2 dt.
+
+    ! References:
+    !-----------------------------------------------------------------------
+
+    use constants_clubb, only: &
+        one_dp  ! Constant(s)
+
+    use clubb_precision, only: &
+        dp    ! Variable(s)
+
+    implicit none
+
+    ! Input Variable
+    real( kind = dp ), intent(in) :: x
+
+    ! Return Variable
+    real( kind = dp ) :: erfcx
+
+
+    erfcx = one_dp - dp_erf( x )
+
+
+    return
+
+  end function dp_erfc
+
+!===============================================================================
 
 end module anl_erf

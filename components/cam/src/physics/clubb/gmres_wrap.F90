@@ -1,5 +1,5 @@
 !----------------------------------------------------------------------------
-! $Id: gmres_wrap.F90 5623 2012-01-17 17:55:26Z connork@uwm.edu $
+! $Id: gmres_wrap.F90 7012 2014-07-07 14:18:31Z schemena@uwm.edu $
 !==============================================================================
 
 module gmres_wrap
@@ -112,13 +112,12 @@ module gmres_wrap
       csr_ia       ! IA-array portion of the matrix description in CSR format.
                    ! This describes the indices of the JA-array that start
                    ! new rows. For more details, check the documentation in
-                   ! the csr_matrix_class module.
+                   ! the csr_matrix_module.
 
     integer, dimension(elements), intent(in) :: &
       csr_ja       ! JA-array portion of the matrix description in CSR format.
                    ! This describes which columns of a are nonzero. For more
-                   ! details, check the documentation in the csr_matrix_class
-                   ! module.
+                   ! details, check the documentation in the csr_matrix_module.
 
     integer, intent(in) :: &
       tempsize     ! Denotes the size of the temporary array used for GMRES
@@ -201,8 +200,8 @@ module gmres_wrap
     err_code = 0
 
     ! Convert our A array and rhs vector to double precision...
-    csr_dbl_a = dble(csr_a)
-    dbl_rhs = dble(rhs)
+    csr_dbl_a = real(csr_a, kind=dp)
+    dbl_rhs = real(rhs, kind=dp)
 
     ! DEBUG: Set our a_array so it represents the identity matrix, and
     ! set the RHS so we can get a meaningful answer.

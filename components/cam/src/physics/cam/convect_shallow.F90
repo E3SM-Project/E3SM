@@ -14,7 +14,7 @@
    use physconst,         only : cpair, zvir
    use ppgrid,            only : pver, pcols, pverp
    use zm_conv,           only : zm_conv_evap
-   use cam_history,       only : outfld, addfld, add_default, phys_decomp
+   use cam_history,       only : outfld, addfld, phys_decomp
    use cam_logfile,       only : iulog
    use phys_control,      only : phys_getopts
 
@@ -57,6 +57,7 @@
    integer    ::         pblh_idx     = 0
    integer    ::      prec_sh_idx     = 0
    integer    ::      snow_sh_idx     = 0
+   integer    ::   cmfmc_sh_idx       = 0
 
    integer :: & ! field index in physics buffer
       sh_flxprc_idx, &
@@ -93,6 +94,8 @@
   call pbuf_add_field('NEVAPR_SHCU','physpkg' ,dtype_r8,(/pcols,pver/),       nevapr_shcu_idx )
   call pbuf_add_field('PREC_SH',    'physpkg' ,dtype_r8,(/pcols/),            prec_sh_idx )
   call pbuf_add_field('SNOW_SH',    'physpkg' ,dtype_r8,(/pcols/),            snow_sh_idx )
+  ! Updraft mass flux by shallow convection [ kg/s/m2 ]
+  call pbuf_add_field('CMFMC_SH',   'physpkg' ,dtype_r8,(/pcols,pverp/),      cmfmc_sh_idx )
 
   if( shallow_scheme .eq. 'UW' ) then
       call pbuf_add_field('shfrc','physpkg' ,dtype_r8,(/pcols,pver/),shfrc_idx )
@@ -136,8 +139,6 @@
   
   use physics_buffer,            only : pbuf_get_index, physics_buffer_desc, pbuf_set_field
    use time_manager,    only :  is_first_step
-
-  implicit none
 
   real(r8), intent(in)       :: pref_edge(plevp)        ! Reference pressures at interfaces
 
@@ -201,7 +202,7 @@
   call addfld( 'PRECSH  '     , 'm/s     ',  1,      'A' , &
        'Shallow Convection precipitation rate'                     ,  phys_decomp )
   call addfld( 'CMFMC   '     , 'kg/m2/s ',  pverp,  'A' , &
-       'Moist shallow convection mass flux'                        ,  phys_decomp )
+       'Moist convection (deep+shallow) mass flux'                 ,  phys_decomp )
   call addfld( 'CMFSL   '     , 'W/m2    ',  pverp,  'A' , &
        'Moist shallow convection liquid water static energy flux'  ,  phys_decomp )
   call addfld( 'CMFLQ   '     , 'W/m2    ',  pverp,  'A' , &
@@ -463,6 +464,8 @@
    real(r8), pointer, dimension(:,:) :: sh_cldliq
    real(r8), pointer, dimension(:,:) :: sh_cldice
 
+   real(r8), pointer, dimension(:,:) :: cmfmc2_sh            ! (pcols,pverp) Updraft mass flux by shallow convection [ kg/s/m2 ]
+
    logical                           :: lq(pcnst)
 
    ! ----------------------- !
@@ -502,6 +505,8 @@
    if( convect_shallow_use_shfrc() ) then ! Park-Bretherton UW Shallow Convection Schemes
        call pbuf_get_field(pbuf, shfrc_idx,  shfrc  )
    endif
+
+   call pbuf_get_field(pbuf, cmfmc_sh_idx,  cmfmc2_sh)
 
    ! Initialization
 
@@ -641,12 +646,14 @@
       ! Convective fluxes of 'sl' and 'qt' in energy unit !
       ! ------------------------------------------------- !
 
-      cmfsl(:ncol,:pverp) = slflx(:ncol,:pverp)
-      cmflq(:ncol,:pverp) = qtflx(:ncol,:pverp) * latvap
+      cmfsl(:ncol,:) = slflx(:ncol,:)
+      cmflq(:ncol,:) = qtflx(:ncol,:) * latvap
 
       call outfld( 'PRECSH' , precc  , pcols, lchnk )
 
    end select
+
+   cmfmc2_sh = cmfmc2
 
    ! --------------------------------------------------------!     
    ! Calculate fractional occurance of shallow convection    !

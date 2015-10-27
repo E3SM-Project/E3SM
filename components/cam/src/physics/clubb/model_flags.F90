@@ -1,6 +1,6 @@
+!-----------------------------------------------------------------------
+! $Id: model_flags.F90 7367 2014-11-06 18:29:49Z schemena@uwm.edu $
 !===============================================================================
-! $Id: model_flags.F90 5585 2011-12-29 21:54:19Z dschanen@uwm.edu $
-
 module model_flags
 
 ! Description:
@@ -18,13 +18,12 @@ module model_flags
   private ! Default Scope
 
   logical, parameter, public ::  & 
-    l_hyper_dfsn         = .false., & ! 4th-order hyper-diffusion
-    l_pos_def            = .false., & ! Flux limiting pos. def. scheme on rtm
-    l_hole_fill          = .true.,  & ! Hole filling pos. def. scheme on wp2,up2,rtp2,etc
-    l_clip_semi_implicit = .false., & ! Semi-implicit clipping scheme on wpthlp and wprtp
-    l_clip_turb_adv      = .false., & ! Corrects thlm/rtm when w'th_l'/w'r_t' is clipped
-    l_gmres              = .false., & ! Use GMRES iterative solver rather than LAPACK
-    l_sat_mixrat_lookup  = .false.    ! Use a lookup table for mixing length
+    l_pos_def                     = .false., & ! Flux limiting positive definite scheme on rtm
+    l_hole_fill                   = .true.,  & ! Hole filling pos def scheme on wp2,up2,rtp2,etc
+    l_clip_semi_implicit          = .false., & ! Semi-implicit clipping scheme on wpthlp and wprtp
+    l_clip_turb_adv               = .false., & ! Corrects thlm/rtm when w'th_l'/w'r_t' is clipped
+    l_gmres                       = .false., & ! Use GMRES iterative solver rather than LAPACK
+    l_sat_mixrat_lookup           = .false.    ! Use a lookup table for mixing length
                                       ! saturation vapor pressure calculations
 
   logical, parameter, public :: &
@@ -39,6 +38,35 @@ module model_flags
     l_use_boussinesq = .false.  ! Flag to use the Boussinesq form of the
                                 ! predictive equations.  The predictive
                                 ! equations are anelastic by default.
+
+  logical, public :: &
+    l_use_precip_frac = .true.   ! Flag to use precipitation fraction in KK
+                                 ! microphysics.  The precipitation fraction
+                                 ! is automatically set to 1 when this flag
+                                 ! is turned off.
+
+!$omp threadprivate( l_use_precip_frac )
+
+  logical, parameter, public :: &
+    l_morr_xp2_mc = .false. !Flag to include the effects of rain evaporation
+                                  !on rtp2 and thlp2.  The moister (rt_1 or rt_2)
+                                  !and colder (thl_1 or thl_2) will be fed into
+                                  !the morrison microphys, and rain evaporation will
+                                  !be allowed to increase variances
+
+  logical, parameter, public :: &
+    l_evaporate_cold_rcm = .false. ! Flag to evaporate cloud water at temperatures
+                                   ! colder than -37C.  This is to be used for 
+                                   ! Morrison microphysics, to prevent excess ice
+
+  logical, parameter, public :: &
+    l_cubic_interp = .false.      ! Flag to convert grid points with cubic monotonic
+                                  ! spline interpolation as opposed to linear interpolation.
+
+  ! See clubb:ticket:632 for details
+  logical, public :: &
+    l_calc_thlp2_rad = .true.         ! Include the contribution of radiation to thlp2
+!$omp threadprivate( l_calc_thlp2_rad )
 
   ! These are the integer constants that represent the various saturation
   ! formulas. To add a new formula, add an additional constant here,
@@ -55,6 +83,14 @@ module model_flags
   ! Options that can be changed at runtime 
   ! The default values are chosen below and overwritten if desired by the user
   !-----------------------------------------------------------------------------
+
+  ! These flags determine whether or not we want CLUBB to do diffusion
+  !   on thlm and rtm and if a stability correction is applied
+  logical, public :: &
+    l_diffuse_rtm_and_thlm        = .false., & ! Diffuses rtm and thlm
+    l_stability_correct_Kh_N2_zm  = .false.    ! Divides Kh_N2_zm by a stability factor
+
+!$omp threadprivate(l_diffuse_rtm_and_thlm, l_stability_correct_Kh_N2_zm)
 
   ! These flags determine whether we want to use an upwind differencing approximation 
   ! rather than a centered differencing for turbulent or mean advection terms.
@@ -75,11 +111,11 @@ module model_flags
 
 
   logical, public :: & 
-    l_uv_nudge = .false., & ! For wind speed nudging. - Michael Falk
-    l_tke_aniso = .true.    ! For anisotropic turbulent kinetic energy, 
-                            ! i.e. TKE = 1/2 (u'^2 + v'^2 + w'^2)
-! OpenMP directives.
-!$omp threadprivate(l_uv_nudge, l_tke_aniso)
+    l_uv_nudge = .false.,  & ! For wind speed nudging. - Michael Falk
+    l_rtm_nudge = .false., & ! For rtm nudging
+    l_tke_aniso = .true.     ! For anisotropic turbulent kinetic energy, 
+                             ! i.e. TKE = 1/2 (u'^2 + v'^2 + w'^2)
+!$omp threadprivate(l_uv_nudge, l_tke_aniso, l_rtm_nudge)
 
   ! Use 2 calls to pdf_closure and the trapezoidal rule to  compute the 
   ! varibles that are output from high order closure
@@ -132,7 +168,22 @@ module model_flags
     saturation_formula = saturation_flatau ! Integer that stores the saturation formula to be used
 
 !$omp threadprivate(saturation_formula)
- 
+
+  ! See clubb:ticket:514 for details
+  logical, public :: &
+    l_diagnose_correlations = .false., & ! Diagnose correlations instead of using fixed ones
+    l_calc_w_corr = .false.    ! Calculate the correlations between w and the hydrometeors
+!$omp threadprivate(l_diagnose_correlations, l_calc_w_corr)
+
+  logical, parameter, public :: &
+    l_silhs_rad = .false.    ! Resolve radiation over subcolumns using SILHS
+
+  logical, public :: &
+    l_const_Nc_in_cloud = .false.,      & ! Use a constant cloud droplet conc. within cloud (K&K)
+    l_fix_chi_eta_correlations = .true.   ! Use a fixed correlation for s and t Mellor(chi/eta) 
+
+!$omp threadprivate( l_const_Nc_in_cloud, l_fix_chi_eta_correlations )
+
 #ifdef GFDL
   logical, public :: &
      I_sat_sphum       ! h1g, 2010-06-15
@@ -142,7 +193,7 @@ module model_flags
   namelist /configurable_model_flags/ &
     l_upwind_wpxp_ta, l_upwind_xpyp_ta, l_upwind_xm_ma, l_quintic_poly_interp, &
     l_tke_aniso, l_vert_avg_closure, l_single_C2_Skw, l_standard_term_ta, &
-    l_use_cloud_cover
+    l_use_cloud_cover, l_calc_thlp2_rad
 
   contains
 
@@ -161,8 +212,6 @@ module model_flags
 ! References:
 !   None
 !-------------------------------------------------------------------------------
-    use constants_clubb, only:  & 
-      fstderr ! Variable(s)
 
     implicit none
 
@@ -216,7 +265,7 @@ module model_flags
   subroutine read_model_flags_from_file( iunit, filename )
 
 ! Description:
-!   Read in some of the model flags of interest from a namelist file.  If the
+!   Read in some of the model flags of interest from a namelist file. If the
 !   variable isn't in the file it will just be the default value.
 !
 ! References:
