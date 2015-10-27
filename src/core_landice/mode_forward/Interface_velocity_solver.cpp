@@ -37,10 +37,9 @@ std::vector<double> xCellProjected, yCellProjected, zCellProjected;
 const double unit_length = 1000;
 const double T0 = 273.15;
 const double secondsInAYear = 31536000.0;  // This may vary slightly in MPAS, but this should be close enough for how this is used.
-const double minThick = 1e-3; //1m
+double minThickness = 1e-3; //[km]
 const double minBeta = 1e-5;
 double rho_ice;
-double rho_ocean;
 //unsigned char dynamic_ice_bit_value;
 //unsigned char ice_present_bit_value;
 int dynamic_ice_bit_value;
@@ -86,12 +85,14 @@ int velocity_solver_init_mpi(int* fComm) {
 }
 
 
-void velocity_solver_set_parameters(double const* rhoi_F, /*double const* rhoo_F,*/ int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce) {
+void velocity_solver_set_parameters(double const* gravity_F, double const* ice_density_F, double const* ocean_density_F, double const* sea_level_F, double const* flowParamA_F, double const* enhancementFactor_F, 
+                         double const* flowLawExponent_F, double const* dynamic_thickness_F, int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce) {
   // This function sets parameter values used by MPAS on the C/C++ side
-  rho_ice = *rhoi_F;
-  //rho_ocean = *rhoo_F;
+  rho_ice = *ice_density_F;
   dynamic_ice_bit_value = *li_mask_ValueDynamicIce;
   ice_present_bit_value = *li_mask_ValueIce;
+  velocity_solver_set_physical_parameters__(*gravity_F, rho_ice, *ocean_density_F, *sea_level_F/unit_length, *flowParamA_F*std::pow(unit_length,4)*secondsInAYear, 
+                                            *enhancementFactor_F, *flowLawExponent_F, *dynamic_thickness_F/unit_length);
 }
 
 
@@ -101,7 +102,7 @@ void velocity_solver_export_2d_data(double const* lowerSurface_F,
   if (isDomainEmpty)
     return;
 #ifdef LIFEV
-  import2DFields(lowerSurface_F, thickness_F, beta_F, minThick);
+  import2DFields(lowerSurface_F, thickness_F, beta_F,  minThickneess);
   velocity_solver_export_2d_data__(reducedComm, elevationData, thicknessData,
       betaData, indexToVertexID);
 #endif
@@ -225,7 +226,7 @@ void velocity_solver_solve_l1l2(double const* lowerSurface_F,
   if (!isDomainEmpty) {
     std::vector<double> temperatureData(nLayers * nVertices);
 
-    import2DFields(lowerSurface_F, thickness_F, beta_F, minThick);
+    import2DFields(lowerSurface_F, thickness_F, beta_F,  minThickness);
 
     for (int index = 0; index < nVertices; index++) {
       int iCell = vertexToFCell[index];
@@ -351,7 +352,7 @@ void velocity_solver_solve_fo(double const* lowerSurface_F,
 
 
 
-    import2DFields(lowerSurface_F, thickness_F, beta_F, smb_F, minThick);
+    import2DFields(lowerSurface_F, thickness_F, beta_F, smb_F,  minThickness);
 
     std::vector<double> regulThk(thicknessData);
     for (int index = 0; index < nVertices; index++)

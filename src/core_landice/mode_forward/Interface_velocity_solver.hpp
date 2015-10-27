@@ -84,7 +84,8 @@ int velocity_solver_init_mpi(int* fComm);
 
 void velocity_solver_finalize();
 
-void velocity_solver_set_parameters(double const* rhoi_F, int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce);
+void velocity_solver_set_parameters(double const* gravity_F, double const* ice_density_F, double const* ocean_density_F, double const* sea_level_F, double const* flowParamA_F, 
+                        double const* enhancementFactor_F, double const* flowLawExponent_F, double const* dynamic_thickness_F, int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce);
 
 void velocity_solver_init_l1l2(double const* levelsRatio);
 
@@ -148,7 +149,8 @@ extern void velocity_solver_export_l1l2_velocity__(const std::vector<double>& la
 
 #endif
 
-
+extern void velocity_solver_set_physical_parameters__(double const& gravity, double const& ice_density, double const& ocean_density, double const& sea_level, double const& flowParamA, 
+                        double const& enhancementFactor, double const& flowLawExponent, double const& dynamic_thickness); 
 
 extern void velocity_solver_solve_fo__(int nLayers, int nGlobalVertices,
     int nGlobalTriangles, bool ordering, bool first_time_step,
