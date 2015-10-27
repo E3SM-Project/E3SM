@@ -1,0 +1,119 @@
+<?xml version="1.0"?>
+<config case="init_step1" mode="init">
+
+	<get_file hash="ph1dyjmvcc" dest="base_mesh.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/" file_name="mesh.QU.10242.151022.nc"/>
+	</get_file>
+
+	<get_file dest="graph.info">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/" file_name="graph.QU.10242.151022.info"/>
+	</get_file>
+
+	<get_file dest="temperature.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/" file_name="PotentialTemperature.01.filled.60levels.PHC.151106.nc"/>
+	</get_file>
+
+	<get_file dest="salinity.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/" file_name="Salinity.01.filled.60levels.PHC.151106.nc"/>
+	</get_file>
+
+	<get_file dest="wind_stress.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/" file_name="windStress.ncep_1958-2000avg.interp3600x2431.151106.nc"/>
+	</get_file>
+
+	<get_file dest="topography.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/" file_name="ETOPO2v2c_f4_151106.nc"/>
+	</get_file>
+
+	<add_executable source="model" dest="ocean_model"/>
+	<add_executable source="cell_culler" dest="MpasCellCuller.x"/>
+
+	<namelist name="namelist.ocean">
+		<option name="config_init_configuration">'global_ocean'</option>
+		<option name="config_vert_levels">-1</option>
+		<option name="config_ocean_run_mode">'init'</option>
+		<option name="config_write_cull_cell_mask">.true.</option>
+
+		<option name="config_global_ocean_minimum_depth">15</option>
+		<option name="config_global_ocean_depth_file">'temperature.nc'</option>
+		<option name="config_global_ocean_depth_dimname">'depth_t'</option>
+		<option name="config_global_ocean_depth_varname">'depth_t'</option>
+		<option name="config_global_ocean_depth_conversion_factor">0.01</option>
+		<option name="config_global_ocean_temperature_file">'temperature.nc'</option>
+		<option name="config_global_ocean_salinity_file">'salinity.nc'</option>
+		<option name="config_global_ocean_tracer_nlat_dimname">'t_lat'</option>
+		<option name="config_global_ocean_tracer_nlon_dimname">'t_lon'</option>
+		<option name="config_global_ocean_temperature_varname">'TEMP'</option>
+		<option name="config_global_ocean_salinity_varname">'SALT'</option>
+		<option name="config_global_ocean_tracer_latlon_degrees">.true.</option>
+		<option name="config_global_ocean_tracer_lat_varname">'t_lat'</option>
+		<option name="config_global_ocean_tracer_lon_varname">'t_lon'</option>
+		<option name="config_global_ocean_tracer_method">'bilinear_interpolation'</option>
+		<option name="config_global_ocean_smooth_TS_iterations">5</option>
+		<option name="config_global_ocean_piston_velocity">5.0e-5</option>
+		<option name="config_global_ocean_interior_restore_rate">1.0e-7</option>
+		<option name="config_global_ocean_topography_file">'topography.nc'</option>
+		<option name="config_global_ocean_topography_nlat_dimname">'y'</option>
+		<option name="config_global_ocean_topography_nlon_dimname">'x'</option>
+		<option name="config_global_ocean_topography_latlon_degrees">.true.</option>
+		<option name="config_global_ocean_topography_lat_varname">'y'</option>
+		<option name="config_global_ocean_topography_lon_varname">'x'</option>
+		<option name="config_global_ocean_topography_varname">'z'</option>
+		<option name="config_global_ocean_smooth_topography">.true.</option>
+		<option name="config_global_ocean_cull_inland_seas">.true.</option>
+		<option name="config_global_ocean_windstress_file">'wind_stress.nc'</option>
+		<option name="config_global_ocean_windstress_nlat_dimname">'u_lat'</option>
+		<option name="config_global_ocean_windstress_nlon_dimname">'u_lon'</option>
+		<option name="config_global_ocean_windstress_latlon_degrees">.true.</option>
+		<option name="config_global_ocean_windstress_lat_varname">'u_lat'</option>
+		<option name="config_global_ocean_windstress_lon_varname">'u_lon'</option>
+		<option name="config_global_ocean_windstress_zonal_varname">'TAUX'</option>
+		<option name="config_global_ocean_windstress_meridional_varname">'TAUY'</option>
+		<option name="config_global_ocean_windstress_method">'bilinear_interpolation'</option>
+		<option name="config_global_ocean_windstress_conversion_factor">1</option>
+
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable">
+		<stream name="input_init">
+			<attribute name="filename_template">base_mesh.nc</attribute>
+		</stream>
+		<stream name="output_init">
+			<attribute name="type">output</attribute>
+			<attribute name="output_interval">0000_00:00:01</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="filename_template">ocean.nc</attribute>
+			<add_contents>
+				<member name="input_init" type="stream"/>
+				<member name="tracers" type="var_struct"/>
+				<member name="refZMid" type="var"/>
+				<member name="normalVelocity" type="var"/>
+				<member name="layerThickness" type="var"/>
+				<member name="restingThickness" type="var"/>
+				<member name="surfaceStress" type="var"/>
+				<member name="seaSurfacePressure" type="var"/>
+				<member name="boundaryLayerDepth" type="var"/>
+				<member name="refBottomDepth" type="var"/>
+				<member name="bottomDepth" type="var"/>
+				<member name="bottomDepthObserved" type="var"/>
+				<member name="maxLevelCell" type="var"/>
+				<member name="vertCoordMovementWeights" type="var"/>
+				<member name="edgeMask" type="var"/>
+				<member name="cullCell" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="mpirun">
+			<argument flag="-n">1</argument>
+			<argument flag="">./ocean_model</argument>
+			<argument flag="-n">namelist.ocean</argument>
+			<argument flag="-s">streams.ocean</argument>
+		</step>
+
+		<step executable="./MpasCellCuller.x">
+			<argument flag="">ocean.nc</argument>
+		</step>
+	</run_script>
+</config>
