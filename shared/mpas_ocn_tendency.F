@@ -42,6 +42,8 @@ module ocn_tendency
    use ocn_tracer_TTD
    use ocn_tracer_surface_flux_to_tend
    use ocn_tracer_ecosys
+   use ocn_tracer_DMS
+   use ocn_tracer_MacroMolecules
 
    use ocn_thick_hadv
    use ocn_thick_vadv
@@ -415,7 +417,8 @@ contains
         tracerGroup, tracerGroupTend, vertNonLocalFlux
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
-        activeTracers  !  need T, S for ecosys
+        activeTracers, &  !  need T, S for ecosys
+        ecosysTracers     !  need ecosys for DMS and MacroMolecules
 
       real (kind=RKIND), dimension(:,:,:), pointer :: tracerGroupInteriorRestoringRate, tracerGroupInteriorRestoringValue
 
@@ -427,7 +430,7 @@ contains
       !
       ! local integers/reals/logicals
       !
-      integer :: err, iEdge, k, timeLevel
+      integer :: err, iEdge, k, timeLevel, nTracersEcosys
 
       !
       ! start timers
@@ -569,6 +572,44 @@ contains
                   call ocn_tracer_ecosys_surface_flux_compute(activeTracers, tracerGroup, forcingPool,  &
                      nTracerGroup, nCellsSolve, zMid, indexTemperature, indexSalinity, tracerGroupSurfaceFlux, err)!{{{
                   call mpas_timer_stop("ecosys surface flux")
+               endif
+
+               !
+               ! compute DMS source-sink tendencies and net surface fluxes
+               ! NOTE: must be called before ocn_tracer_surface_flux_tend
+               !
+               if ( trim(groupItr % memberName) == 'DMSTracers' ) then
+                  call mpas_timer_start("DMS source-sink", .false.)
+                  call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, timeLevel)
+                  nTracersEcosys = size(ecosysTracers, dim=1)
+                  call ocn_tracer_DMS_compute(tracerGroup, nTracerGroup, ecosysTracers, nTracersEcosys, forcingPool, &
+                     nCellsSolve, maxLevelCell, nVertLevels, layerThickness,  &
+                     tracerGroupTend, err)
+                  call mpas_timer_stop("DMS source-sink")
+
+                  call mpas_timer_start("DMS surface flux", .false.)
+                  call ocn_tracer_DMS_surface_flux_compute(activeTracers, tracerGroup, forcingPool,  &
+                     nTracerGroup, nCellsSolve, zMid, indexTemperature, indexSalinity, tracerGroupSurfaceFlux, err)!{{{
+                  call mpas_timer_stop("DMS surface flux")
+               endif
+
+               !
+               ! compute MacroMolecules source-sink tendencies and net surface fluxes
+               ! NOTE: must be called before ocn_tracer_surface_flux_tend
+               !
+               if ( trim(groupItr % memberName) == 'MacroMoleculesTracers' ) then
+                  call mpas_timer_start("MacroMolecules source-sink", .false.)
+                  call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, timeLevel)
+                  nTracersEcosys = size(ecosysTracers, dim=1)
+                  call ocn_tracer_MacroMolecules_compute(tracerGroup, nTracerGroup, ecosysTracers, nTracersEcosys, forcingPool, &
+                     nCellsSolve, maxLevelCell, nVertLevels, layerThickness,  &
+                     tracerGroupTend, err)
+                  call mpas_timer_stop("MacroMolecules source-sink")
+
+                  call mpas_timer_start("MacroMolecules surface flux", .false.)
+                  call ocn_tracer_MacroMolecules_surface_flux_compute(activeTracers, tracerGroup, forcingPool,  &
+                     nTracerGroup, nCellsSolve, zMid, indexTemperature, indexSalinity, tracerGroupSurfaceFlux, err)!{{{
+                  call mpas_timer_stop("MacroMolecules surface flux")
                endif
 
                !
