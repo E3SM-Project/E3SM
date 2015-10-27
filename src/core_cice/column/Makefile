@@ -98,8 +98,13 @@ ice_zbgc_shared.o: ice_kinds_mod.o ice_constants_colpkg.o ice_colpkg_shared.o
 
 .F90.o:
 	$(RM) $@ $*.mod
-	$(FC) $(FFLAGS) -c $*.F90 $(FCINCLUDES)
-	#$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.i90
+ifeq "$(GEN_F90)" "true"
+	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.f
+
+	$(FC) $(FFLAGS) -c $*.f $(FCINCLUDES)
+else
+	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F90 $(CPPINCLUDES) $(FCINCLUDES)
+endif
 
 clean:
 	$(RM) *.o *.mod *.i90
