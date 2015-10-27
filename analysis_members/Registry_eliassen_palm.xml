@@ -7,8 +7,12 @@
 			description="Timestamp determining how often analysis member computation should be performed."
 			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
 		/>
-		<nml_option name="config_AM_eliassenPalm_stream_name" type="character" default_value="eliassenPalmOutput" units="unitless"
+		<nml_option name="config_AM_eliassenPalm_output_stream" type="character" default_value="eliassenPalmOutput" units="unitless"
 			description="Name of the stream that the eliassenPalm analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_eliassenPalm_restart_stream" type="character" default_value="eliassenPalmRestart" units="unitless"
+			description="Name of the stream that the eliassenPalm analysis member will use to performing restarts."
 			possible_values="Any existing stream name or 'none'"
 		/>
 		<nml_option name="config_AM_eliassenPalm_compute_on_startup" type="logical" default_value=".true." units="unitless"
@@ -17,13 +21,6 @@
 		/>
 		<nml_option name="config_AM_eliassenPalm_write_on_startup" type="logical" default_value=".true." units="unitless"
 			description="Logical flag determining if an analysis member write occurs on start-up."
-			possible_values=".true. or .false."
-		/>
-		<nml_option name="config_AM_eliassenPalm_do_restart" 
-			type="logical" 
-			default_value=".false." 
-			units="unitless"
-			description="If true, all EPfT fields are initialized using a restart file"
 			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_eliassenPalm_debug" 

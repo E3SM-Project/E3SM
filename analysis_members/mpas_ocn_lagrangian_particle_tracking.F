@@ -125,19 +125,6 @@ contains
       call mpas_timer_start("totalLPT", .false., timerTotalLPT)
       call mpas_timer_start("initLPT", .false., timerInit)
 
-      ! load in data
-#ifdef MPAS_DEBUG
-      write(stderrUnit,*) 'starting reading stream for lagrPartTrack'
-#endif
-      call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
-      if (config_do_restart) then
-        call MPAS_stream_mgr_read(domain % streamManager, streamID='lagrPartTrackRestart', ierr=err)
-      else
-        call MPAS_stream_mgr_read(domain % streamManager, streamID='lagrPartTrackInput', ierr=err)
-      end if
-#ifdef MPAS_DEBUG
-      write(stderrUnit,*) 'finished reading stream for lagrPartTrack'
-#endif
       ! resets likely are unnecessary
       !call mpas_stream_mgr_reset_alarms(stream_manager, streamID='lagrPartTrackInput', ierr=err)
       !call mpas_stream_mgr_reset_alarms(stream_manager, streamID='lagrPartTrackRestart', ierr=err)

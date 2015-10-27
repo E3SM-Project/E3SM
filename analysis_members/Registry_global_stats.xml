@@ -23,7 +23,7 @@
 			description="subdirectory to write eddy census text files"
 			possible_values="any valid directory name"
 		/>
-		<nml_option name="config_AM_globalStats_stream_name" type="character" default_value="globalStatsOutput" units="unitless"
+		<nml_option name="config_AM_globalStats_output_stream" type="character" default_value="globalStatsOutput" units="unitless"
 			description="Name of the stream that the globalStats analysis member should get information from."
 			possible_values="Any existing stream, or 'none'"
 		/>
