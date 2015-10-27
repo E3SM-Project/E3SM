@@ -15,6 +15,12 @@ use Data::Dumper;
 use Cwd;
 use Getopt::Long;
 my $scriptname = $0;
+
+if(! -e "./xmlquery" and defined $ENV{'PBS_O_WORKDIR'})
+{
+	chdir $ENV{'PBS_O_WORKDIR'};
+}
+
 my $caseroot = `./xmlquery -value CASEROOT`;
 my $cimeroot = `./xmlquery -value CIMEROOT`;
 my %opts=(loglevel=>"INFO");
@@ -30,12 +36,8 @@ require Depends::Checks;
 require Module::ModuleLoader;
 require Batch::BatchUtils;
 require Log::Log4perl;
-
-my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
-Log::Log4perl->easy_init({level=>$level,
-			  layout=>'%m%n'});
-
-my $logger = Log::Log4perl::get_logger();
+require Log::Log4perl::Appender::Screen;
+my $logger;
 
 
 #------------------------------------------------------------------------------
@@ -80,15 +82,23 @@ main(@ARGV) unless caller();
 # -------------------------------------------------------------------------
 sub getOptions()
 {
-    %opts = (
-	debug => undef,
-	#sta_ok => undef,
-	);
-    
     GetOptions(
-	"debug" => \$opts{'debug'},
-	#"sta_ok" => \$opts{'sta_ok'},
+	"loglevel" => \$opts{'loglevel'},
 	);
+
+
+    my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
+    Log::Log4perl->easy_init({level=>$level,
+			  layout=>'%m%n'});
+    
+    $logger = Log::Log4perl::get_logger();
+# By default logger writes to stderr - redirect to stdout
+    my $app = Log::Log4perl::Appender::Screen->new(
+      stderr    => 0,
+    );
+    $logger->add_appender($app);
+
+
 
     # First, get the configuration from xml . 
     %config = SetupTools::getAllResolved();
@@ -108,7 +118,7 @@ sub getOptions()
     }
     else
     {
-        `./xmlchange RUN_WITH_SUBMIT=TRUE`;
+        `./xmlchange -noecho -loglevel $opts{loglevel} RUN_WITH_SUBMIT=TRUE`;
 	$config{RUN_WITH_SUBMIT}='TRUE';
     }
     
