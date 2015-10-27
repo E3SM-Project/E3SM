@@ -952,444 +952,6 @@
 		<package name="cullCells" description="This package controls variables that provide information on what cells should be culled."/>
 	</packages>
 
-	<streams>
-		<!-- Init mode streams -->
-		<stream name="input_init"
-				type="input"
-				filename_template="mesh.nc"
-				immutable="true"
-				input_interval="initial_only"
-				mode="init">
-				
-			<var name="latCell"/>
-			<var name="lonCell"/>
-			<var name="xCell"/>
-			<var name="yCell"/>
-			<var name="zCell"/>
-			<var name="indexToCellID"/>
-			<var name="latEdge"/>
-			<var name="lonEdge"/>
-			<var name="xEdge"/>
-			<var name="yEdge"/>
-			<var name="zEdge"/>
-			<var name="indexToEdgeID"/>
-			<var name="latVertex"/>
-			<var name="lonVertex"/>
-			<var name="xVertex"/>
-			<var name="yVertex"/>
-			<var name="zVertex"/>
-			<var name="indexToVertexID"/>
-			<var name="meshDensity"/>
-			<var name="cellsOnEdge"/>
-			<var name="nEdgesOnCell"/>
-			<var name="nEdgesOnEdge"/>
-			<var name="edgesOnCell"/>
-			<var name="edgesOnEdge"/>
-			<var name="weightsOnEdge"/>
-			<var name="dvEdge"/>
-			<var name="dcEdge"/>
-			<var name="angleEdge"/>
-			<var name="areaCell"/>
-			<var name="areaTriangle"/>
-			<var name="cellsOnCell"/>
-			<var name="verticesOnCell"/>
-			<var name="verticesOnEdge"/>
-			<var name="edgesOnVertex"/>
-			<var name="cellsOnVertex"/>
-			<var name="kiteAreasOnVertex"/>
-			<var name="fEdge"/>
-			<var name="fVertex"/>
-			<var name="fCell"/>
-		</stream>
-
-		<stream name="output_init"
-				type="output"
-				filename_template="ocean.nc"
-				output_interval="0000-00-00_00:00:01"
-				clobber_mode="truncate"
-				runtime_format="single_file"
-				mode="init">
-
-			<stream name="input_init"/>
-			<var name="refZMid"/>
-			<var_struct name="tracers"/>
-			<var name="normalVelocity"/>
-			<var name="layerThickness"/>
-			<var name="restingThickness"/>
-			<var name="surfaceStress"/>
-			<var name="seaSurfacePressure"/>
-			<var name="boundaryLayerDepth"/>
-			<var name="refBottomDepth"/>
-			<var name="bottomDepth"/>
-			<var name="bottomDepthObserved"/>
-			<var name="maxLevelCell"/>
-			<var name="vertCoordMovementWeights"/>
-			<var name="edgeMask"/>
-			<var name="cullCell"/>
-		</stream>
-
-		<stream name="forcing_data_init"
-				type="output"
-				filename_template="init_mode_forcing_data.nc"
-				output_interval="0000-00-00_00:00:01"
-				clobber_mode="truncate"
-				runtime_format="single_file"
-				mode="init">
-
-			<var name="windStressZonal"/>
-			<var name="windStressMeridional"/>
-			<var_struct name="tracersSurfaceRestoringFields"/>
-			<var_struct name="tracersInteriorRestoringFields"/>
-			<var_struct name="tracersExponentialDecayFields"/>
-			<var_struct name="tracersIdealAgeFields"/>
-			<var_struct name="tracersTTDFields"/>
-                        <var name="landIceFraction"/>
-                        <var name="landIceSurfaceTemperature"/>
-		</stream>
-
-		<!-- Forward mode streams -->
-		<stream name="mesh" 
-				type="input"
-				filename_template="mesh.nc"
-				input_interval="initial_only"
-				immutable="true"
-				mode="forward;analysis">
-
-			<var name="latCell"/>
-			<var name="lonCell"/>
-			<var name="xCell"/>
-			<var name="yCell"/>
-			<var name="zCell"/>
-			<var name="indexToCellID"/>
-			<var name="latEdge"/>
-			<var name="lonEdge"/>
-			<var name="xEdge"/>
-			<var name="yEdge"/>
-			<var name="zEdge"/>
-			<var name="indexToEdgeID"/>
-			<var name="latVertex"/>
-			<var name="lonVertex"/>
-			<var name="xVertex"/>
-			<var name="yVertex"/>
-			<var name="zVertex"/>
-			<var name="indexToVertexID"/>
-			<var name="meshDensity"/>
-			<var name="cellsOnEdge"/>
-			<var name="nEdgesOnCell"/>
-			<var name="nEdgesOnEdge"/>
-			<var name="edgesOnCell"/>
-			<var name="edgesOnEdge"/>
-			<var name="weightsOnEdge"/>
-			<var name="dvEdge"/>
-			<var name="dcEdge"/>
-			<var name="angleEdge"/>
-			<var name="areaCell"/>
-			<var name="areaTriangle"/>
-			<var name="cellsOnCell"/>
-			<var name="verticesOnCell"/>
-			<var name="verticesOnEdge"/>
-			<var name="edgesOnVertex"/>
-			<var name="cellsOnVertex"/>
-			<var name="kiteAreasOnVertex"/>
-			<var name="fEdge"/>
-			<var name="fVertex"/>
-			<var name="fCell"/>
-			<var name="bottomDepth"/>
-			<var name="maxLevelCell"/>
-			<var name="refBottomDepth" packages="forwardMode;analysisMode"/>
-			<var name="restingThickness" packages="forwardMode;analysisMode"/>
-		</stream>
-
-		<stream name="input" 
-				type="input"
-				filename_template="init.nc"
-				input_interval="initial_only"
-				immutable="true"
-				mode="forward;analysis">
-
-			<stream name="mesh"/>
-			<var_struct name="tracers"/>
-			<var name="normalVelocity"/>
-			<var name="layerThickness"/>
-			<var name="highFreqThickness"/>
-			<var name="lowFreqDivergence"/>
-			<var name="seaSurfacePressure"/>
-		</stream>
-
-		<stream name="restart"
-				type="input;output"
-				filename_template="restarts/restart.$Y-$M-$D_$h.$m.$s.nc"
-				filename_interval="output_interval"
-				reference_time="0000-01-01_00:00:00"
-				clobber_mode="truncate"
-				input_interval="initial_only"
-				output_interval="0005_00:00:00"
-				immutable="true"
-				mode="forward;analysis">
-
-			<stream name="mesh"/>
-			<var_struct name="tracers"/>
-			<var name="normalVelocity"/>
-			<var name="layerThickness"/>
-			<var name="highFreqThickness"/>
-			<var name="lowFreqDivergence"/>
-			<var name="normalBarotropicVelocity"/>
-			<var name="vertCoordMovementWeights"/>
-			<var name="xtime"/>
-			<var name="seaSurfacePressure"/>
-			<var name="boundaryLayerDepth"/>
-			<var_array name="tracersSurfaceValue"/>
-			<var_array name="surfaceVelocity"/>
-			<var_array name="SSHGradient"/>
-			<var_array name="vertNonLocalFlux"/>
-		</stream>
-
-		<stream name="output" 
-				type="output"
-				filename_template="output/output.$Y-$M-$D_$h.$m.$s.nc"
-				filename_interval="01-00-00_00:00:00"
-				reference_time="0000-01-01_00:00:00"
-				output_interval="0001_00:00:00"
-				clobber_mode="truncate"
-				runtime_format="single_file"
-				mode="forward">
-
-			<stream name="mesh"/>
-			<var_struct name="tracers"/>
-			<var name="layerThickness"/>
-			<var name="ssh"/>
-			<var name="maxLevelEdgeTop"/>
-			<var name="vertCoordMovementWeights"/>
-			<var name="edgeMask"/>
-			<var name="vertexMask"/>
-			<var name="cellMask"/>
-			<var name="refZMid"/>
-			<var name="refLayerThickness"/>
-			<var name="xtime"/>
-			<var name="zMid"/>
-			<var name="zTop"/>
-			<var name="kineticEnergyCell"/>
-			<var name="relativeVorticityCell"/>
-			<var name="areaCellGlobal"/>
-			<var name="areaEdgeGlobal"/>
-			<var name="areaTriangleGlobal"/>
-			<var name="volumeCellGlobal"/>
-			<var name="volumeEdgeGlobal"/>
-			<var name="CFLNumberGlobal"/>
-		</stream>
-
-		<stream name="forcing_data"
-				type="input"
-				filename_template="forcing_data.nc"
-				input_interval="initial_only"
-				runtime_format="single_file"
-				mode="forward">
-
-			<var name="windStressZonal"/>
-			<var name="windStressMeridional"/>
-			<var_struct name="tracersSurfaceRestoringFields"/>
-			<var_struct name="tracersInteriorRestoringFields"/>
-			<var_struct name="tracersExponentialDecayFields"/>
-			<var_struct name="tracersIdealAgeFields"/>
-			<var_struct name="tracersTTDFields"/>
-                        <var name="landIceFraction"/>
-                        <var name="landIceSurfaceTemperature"/>
-		</stream>
-
-		<!-- Diagnostics streams for forward mode -->
-		<stream name="additional_output"
-				type="none"
-				filename_template="output/additional_output.$Y-$M-$D_$h.$m.$s.nc"
-				filename_interval="01-00-00_00:00:00"
-				reference_time="0000-01-01_00:00:00"
-				output_interval="0001_00:00:00"
-				clobber_mode="truncate"
-				runtime_format="single_file"
-				mode="forward">
-
-			<var name="normalVelocity"/>
-			<var name="density"/>
-			<var name="pressure"/>
-			<var name="divergence"/>
-			<var name="viscosity"/>
-			<var name="vertViscTopOfEdge"/>
-			<var name="vertViscTopOfCell"/>
-			<var name="vertDiffTopOfCell"/>
-			<var name="BruntVaisalaFreqTop"/>
-			<var name="RiTopOfCell"/>
-			<var name="bulkRichardsonNumber"/>
-			<var name="vertAleTransportTop"/>
-			<var name="vertVelocityTop"/>
-		</stream>
-
-		<stream name="real_world"
-				type="none"
-				filename_template="output/real_world_variables.$Y-$M-$D_$h.$m.$s.nc"
-				filename_interval="01-00-00_00:00:00"
-				reference_time="0000-01-01_00:00:00"
-				output_interval="0001_00:00:00"
-				clobber_mode="truncate"
-				runtime_format="single_file"
-				mode="forward">
-
-			<stream name="mesh"/>
-			<var name="velocityZonal"/>
-			<var name="velocityMeridional"/>
-			<var name="displacedDensity"/>
-			<var name="potentialDensity"/>
-			<var name="boundaryLayerDepth"/>
-			<var name="boundaryLayerDepthEdge"/>
-			<var name="indexBoundaryLayerDepth"/>
-			<var name="indexSurfaceLayerDepth"/>
-			<var name="surfaceFrictionVelocity"/>
-			<var name="windStressZonalDiag"/>
-			<var name="windStressMeridionalDiag"/>
-			<var name="surfaceBuoyancyForcing"/>
-			<var name="seaSurfacePressure"/>
-		</stream>
-
-		<stream name="averages"
-				type="none"
-				filename_template="output/average_variables.$Y-$M-$D_$h.$m.$s.nc"
-				filename_interval="01-00-00_00:00:00"
-				reference_time="0000-01-01_00:00:00"
-				output_interval="0001_00:00:00"
-				clobber_mode="truncate"
-				runtime_format="single_file"
-				mode="forward">
-
-			<stream name="mesh"/>
-			<var name="nAverage"/>
-			<var_array name="avgTracersSurfaceValue"/>
-			<var_array name="avgSurfaceVelocity"/>
-			<var_array name="avgSSHGradient"/>
-			<var name="avgSSH"/>
-			<var name="avgNormalVelocity"/>
-			<var name="avgVelocityZonal"/>
-			<var name="avgVelocityMeridional"/>
-			<var name="avgVertVelocityTop"/>
-			<var name="avgNormalTransportVelocity"/>
-			<var name="avgTransportVelocityZonal"/>
-			<var name="avgTransportVelocityMeridional"/>
-			<var name="avgVertTransportVelocityTop"/>
-			<var name="varSSH"/>
-			<var name="varNormalVelocity"/>
-			<var name="varVelocityZonal"/>
-			<var name="varVelocityMeridional"/>
-		</stream>
-
-		<stream name="Cartesian"
-				type="none"
-				filename_template="output/Cartesian_variables.$Y-$M-$D_$h.$m.$s.nc"
-				filename_interval="01-00-00_00:00:00"
-				reference_time="0000-01-01_00:00:00"
-				output_interval="0001_00:00:00"
-				clobber_mode="truncate"
-				runtime_format="single_file"
-				mode="forward">
-
-			<stream name="mesh"/>
-			<var name="velocityX"/>
-			<var name="velocityY"/>
-		</stream>
-
-		<stream name="forcing"
-				type="none"
-				filename_template="output/forcing_variables.$Y-$M-$D_$h.$m.$s.nc"
-				filename_interval="01-00-00_00:00:00"
-				reference_time="0000-01-01_00:00:00"
-				output_interval="0001_00:00:00"
-				clobber_mode="truncate"
-				runtime_format="single_file"
-				mode="forward">
-
-			<stream name="mesh"/>
-			<var_struct name="tracersSurfaceFlux"/>
-			<var_array name="tracersSurfaceValue"/>
-			<var_array name="surfaceVelocity"/>
-			<var_array name="SSHGradient"/>
-			<var_array name="vertNonLocalFlux"/>
-			<var name="surfaceStressMagnitude"/>
-			<var name="surfaceStress"/>
-			<var name="surfaceThicknessFlux"/>
-			<var name="seaIceEnergy"/>
-			<var name="penetrativeTemperatureFlux"/>
-			<var name="fractionAbsorbed"/>
-			<var name="windStressZonal"/>
-			<var name="windStressMeridional"/>
-			<var name="latentHeatFlux"/>
-			<var name="sensibleHeatFlux"/>
-			<var name="longWaveHeatFluxUp"/>
-			<var name="longWaveHeatFluxDown"/>
-			<var name="seaIceHeatFlux"/>
-			<var name="shortWaveHeatFlux"/>
-			<var name="evaporationFlux"/>
-			<var name="seaIceSalinityFlux"/>
-			<var name="seaIceFreshWaterFlux"/>
-			<var name="riverRunoffFlux"/>
-			<var name="iceRunoffFlux"/>
-			<var name="rainFlux"/>
-			<var name="snowFlux"/>
-			<var name="iceFraction"/>
-			<var name="nAccumulatedCoupled"/>
-			<var name="thermalExpansionCoeff"/>
-			<var name="salineContractionCoeff"/>
-		</stream>
-
-		<stream name="Gent_McWilliams_spherical"
-				type="none"
-				filename_template="output/Gent_McWilliams_spherical_variables.$Y-$M-$D_$h.$m.$s.nc"
-				filename_interval="01-00-00_00:00:00"
-				reference_time="0000-01-01_00:00:00"
-				output_interval="0001_00:00:00"
-				clobber_mode="truncate"
-				runtime_format="single_file"
-				mode="forward">
-
-			<stream name="mesh"/>
-			<var name="relativeSlopeTopOfCell"/>
-			<var name="relativeSlopeTaperingCell"/>
-			<var name="relativeSlopeTopOfCellZonal"/>
-			<var name="relativeSlopeTopOfCellMeridional"/>
-			<var name="k33"/>
-			<var name="GMBolusVelocityZonal"/>
-			<var name="GMBolusVelocityMeridional"/>
-			<var name="normalGMBolusVelocity"/>
-			<var name="vertGMBolusVelocityTop"/>
-			<var name="gmStreamFuncTopOfEdge"/>
-			<var name="avgNormalGMBolusVelocity"/>
-			<var name="avgGMBolusVelocityZonal"/>
-			<var name="avgGMBolusVelocityMeridional"/>
-			<var name="avgVertGMBolusVelocityTop"/>
-		</stream>
-
-		<stream name="Gent_McWilliams_Cartesian"
-				type="none"
-				filename_template="output/Gent_McWilliams_Cartesian_variables.$Y-$M-$D_$h.$m.$s.nc"
-				filename_interval="01-00-00_00:00:00"
-				reference_time="0000-01-01_00:00:00"
-				output_interval="0001_00:00:00"
-				clobber_mode="truncate"
-				runtime_format="single_file"
-				mode="forward">
-
-			<stream name="mesh"/>
-			<var name="relativeSlopeTopOfCell"/>
-			<var name="relativeSlopeTaperingCell"/>
-			<var name="relativeSlopeTopOfCellX"/>
-			<var name="relativeSlopeTopOfCellY"/>
-			<var name="relativeSlopeTopOfCellZ"/>
-			<var name="k33"/>
-			<var name="GMBolusVelocityX"/>
-			<var name="GMBolusVelocityY"/>
-			<var name="normalGMBolusVelocity"/>
-			<var name="vertGMBolusVelocityTop"/>
-			<var name="gmStreamFuncTopOfEdge"/>
-			<var name="avgNormalGMBolusVelocity"/>
-			<var name="GMStreamFuncX"/>
-			<var name="GMStreamFuncY"/>
-		</stream>
-	</streams>
 
 	<var_struct name="state" time_levs="2">
 		<var name="normalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
@@ -2705,4 +2267,446 @@
 
 #include "tracer_groups/Registry_tracers.xml"
 #include "analysis_members/Registry_analysis_members.xml"
+
+	<streams>
+		<!-- Init mode streams -->
+		<stream name="input_init"
+				type="input"
+				filename_template="mesh.nc"
+				immutable="true"
+				input_interval="initial_only"
+				mode="init">
+				
+			<var name="latCell"/>
+			<var name="lonCell"/>
+			<var name="xCell"/>
+			<var name="yCell"/>
+			<var name="zCell"/>
+			<var name="indexToCellID"/>
+			<var name="latEdge"/>
+			<var name="lonEdge"/>
+			<var name="xEdge"/>
+			<var name="yEdge"/>
+			<var name="zEdge"/>
+			<var name="indexToEdgeID"/>
+			<var name="latVertex"/>
+			<var name="lonVertex"/>
+			<var name="xVertex"/>
+			<var name="yVertex"/>
+			<var name="zVertex"/>
+			<var name="indexToVertexID"/>
+			<var name="meshDensity"/>
+			<var name="cellsOnEdge"/>
+			<var name="nEdgesOnCell"/>
+			<var name="nEdgesOnEdge"/>
+			<var name="edgesOnCell"/>
+			<var name="edgesOnEdge"/>
+			<var name="weightsOnEdge"/>
+			<var name="dvEdge"/>
+			<var name="dcEdge"/>
+			<var name="angleEdge"/>
+			<var name="areaCell"/>
+			<var name="areaTriangle"/>
+			<var name="cellsOnCell"/>
+			<var name="verticesOnCell"/>
+			<var name="verticesOnEdge"/>
+			<var name="edgesOnVertex"/>
+			<var name="cellsOnVertex"/>
+			<var name="kiteAreasOnVertex"/>
+			<var name="fEdge"/>
+			<var name="fVertex"/>
+			<var name="fCell"/>
+		</stream>
+
+		<stream name="output_init"
+				type="output"
+				filename_template="ocean.nc"
+				output_interval="0000-00-00_00:00:01"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="init">
+
+			<stream name="input_init"/>
+			<var name="refZMid"/>
+			<var_struct name="tracers"/>
+			<var name="normalVelocity"/>
+			<var name="layerThickness"/>
+			<var name="restingThickness"/>
+			<var name="surfaceStress"/>
+			<var name="seaSurfacePressure"/>
+			<var name="boundaryLayerDepth"/>
+			<var name="refBottomDepth"/>
+			<var name="bottomDepth"/>
+			<var name="bottomDepthObserved"/>
+			<var name="maxLevelCell"/>
+			<var name="vertCoordMovementWeights"/>
+			<var name="edgeMask"/>
+			<var name="cullCell"/>
+		</stream>
+
+		<stream name="forcing_data_init"
+				type="output"
+				filename_template="init_mode_forcing_data.nc"
+				output_interval="0000-00-00_00:00:01"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="init">
+
+			<var name="windStressZonal"/>
+			<var name="windStressMeridional"/>
+			<var_struct name="tracersSurfaceRestoringFields"/>
+			<var_struct name="tracersInteriorRestoringFields"/>
+			<var_struct name="tracersExponentialDecayFields"/>
+			<var_struct name="tracersIdealAgeFields"/>
+			<var_struct name="tracersTTDFields"/>
+                        <var name="landIceFraction"/>
+                        <var name="landIceSurfaceTemperature"/>
+		</stream>
+
+		<!-- Forward mode streams -->
+		<stream name="mesh" 
+				type="input"
+				filename_template="mesh.nc"
+				input_interval="initial_only"
+				immutable="true"
+				mode="forward;analysis">
+
+			<var name="latCell"/>
+			<var name="lonCell"/>
+			<var name="xCell"/>
+			<var name="yCell"/>
+			<var name="zCell"/>
+			<var name="indexToCellID"/>
+			<var name="latEdge"/>
+			<var name="lonEdge"/>
+			<var name="xEdge"/>
+			<var name="yEdge"/>
+			<var name="zEdge"/>
+			<var name="indexToEdgeID"/>
+			<var name="latVertex"/>
+			<var name="lonVertex"/>
+			<var name="xVertex"/>
+			<var name="yVertex"/>
+			<var name="zVertex"/>
+			<var name="indexToVertexID"/>
+			<var name="meshDensity"/>
+			<var name="cellsOnEdge"/>
+			<var name="nEdgesOnCell"/>
+			<var name="nEdgesOnEdge"/>
+			<var name="edgesOnCell"/>
+			<var name="edgesOnEdge"/>
+			<var name="weightsOnEdge"/>
+			<var name="dvEdge"/>
+			<var name="dcEdge"/>
+			<var name="angleEdge"/>
+			<var name="areaCell"/>
+			<var name="areaTriangle"/>
+			<var name="cellsOnCell"/>
+			<var name="verticesOnCell"/>
+			<var name="verticesOnEdge"/>
+			<var name="edgesOnVertex"/>
+			<var name="cellsOnVertex"/>
+			<var name="kiteAreasOnVertex"/>
+			<var name="fEdge"/>
+			<var name="fVertex"/>
+			<var name="fCell"/>
+			<var name="bottomDepth"/>
+			<var name="maxLevelCell"/>
+			<var name="refBottomDepth" packages="forwardMode;analysisMode"/>
+			<var name="restingThickness" packages="forwardMode;analysisMode"/>
+		</stream>
+
+		<stream name="input" 
+				type="input"
+				filename_template="init.nc"
+				input_interval="initial_only"
+				immutable="true"
+				mode="forward;analysis">
+
+			<stream name="mesh"/>
+			<var_struct name="tracers"/>
+			<var name="normalVelocity"/>
+			<var name="layerThickness"/>
+			<var name="highFreqThickness"/>
+			<var name="lowFreqDivergence"/>
+			<var name="seaSurfacePressure"/>
+			<var_struct name="ecosysAuxiliary"/>
+		</stream>
+
+		<stream name="restart"
+				type="input;output"
+				filename_template="restarts/restart.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="output_interval"
+				reference_time="0000-01-01_00:00:00"
+				clobber_mode="truncate"
+				input_interval="initial_only"
+				output_interval="0005_00:00:00"
+				immutable="true"
+				mode="forward;analysis">
+
+			<stream name="mesh"/>
+			<var_struct name="tracers"/>
+			<var name="normalVelocity"/>
+			<var name="layerThickness"/>
+			<var name="highFreqThickness"/>
+			<var name="lowFreqDivergence"/>
+			<var name="normalBarotropicVelocity"/>
+			<var name="vertCoordMovementWeights"/>
+			<var name="xtime"/>
+			<var name="seaSurfacePressure"/>
+			<var name="boundaryLayerDepth"/>
+			<var_array name="tracersSurfaceValue"/>
+			<var_array name="surfaceVelocity"/>
+			<var_array name="SSHGradient"/>
+			<var_array name="vertNonLocalFlux"/>
+			<var_struct name="ecosysAuxiliary"/>
+		</stream>
+
+		<stream name="output" 
+				type="output"
+				filename_template="output/output.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="forward">
+
+			<stream name="mesh"/>
+			<var_struct name="tracers"/>
+			<var name="layerThickness"/>
+			<var name="ssh"/>
+			<var name="maxLevelEdgeTop"/>
+			<var name="vertCoordMovementWeights"/>
+			<var name="edgeMask"/>
+			<var name="vertexMask"/>
+			<var name="cellMask"/>
+			<var name="refZMid"/>
+			<var name="refLayerThickness"/>
+			<var name="xtime"/>
+			<var name="zMid"/>
+			<var name="zTop"/>
+			<var name="kineticEnergyCell"/>
+			<var name="relativeVorticityCell"/>
+			<var name="areaCellGlobal"/>
+			<var name="areaEdgeGlobal"/>
+			<var name="areaTriangleGlobal"/>
+			<var name="volumeCellGlobal"/>
+			<var name="volumeEdgeGlobal"/>
+			<var name="CFLNumberGlobal"/>
+		</stream>
+
+		<stream name="forcing_data"
+				type="input"
+				filename_template="forcing_data.nc"
+				input_interval="initial_only"
+				runtime_format="single_file"
+				mode="forward">
+
+			<var name="windStressZonal"/>
+			<var name="windStressMeridional"/>
+			<var_struct name="tracersSurfaceRestoringFields"/>
+			<var_struct name="tracersInteriorRestoringFields"/>
+			<var_struct name="tracersExponentialDecayFields"/>
+			<var_struct name="tracersIdealAgeFields"/>
+			<var_struct name="tracersTTDFields"/>
+                        <var name="landIceFraction"/>
+                        <var name="landIceSurfaceTemperature"/>
+		</stream>
+
+		<!-- Diagnostics streams for forward mode -->
+		<stream name="additional_output"
+				type="none"
+				filename_template="output/additional_output.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="forward">
+
+			<var name="normalVelocity"/>
+			<var name="density"/>
+			<var name="pressure"/>
+			<var name="divergence"/>
+			<var name="viscosity"/>
+			<var name="vertViscTopOfEdge"/>
+			<var name="vertViscTopOfCell"/>
+			<var name="vertDiffTopOfCell"/>
+			<var name="BruntVaisalaFreqTop"/>
+			<var name="RiTopOfCell"/>
+			<var name="bulkRichardsonNumber"/>
+			<var name="vertAleTransportTop"/>
+			<var name="vertVelocityTop"/>
+		</stream>
+
+		<stream name="real_world"
+				type="none"
+				filename_template="output/real_world_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="forward">
+
+			<stream name="mesh"/>
+			<var name="velocityZonal"/>
+			<var name="velocityMeridional"/>
+			<var name="displacedDensity"/>
+			<var name="potentialDensity"/>
+			<var name="boundaryLayerDepth"/>
+			<var name="boundaryLayerDepthEdge"/>
+			<var name="indexBoundaryLayerDepth"/>
+			<var name="indexSurfaceLayerDepth"/>
+			<var name="surfaceFrictionVelocity"/>
+			<var name="windStressZonalDiag"/>
+			<var name="windStressMeridionalDiag"/>
+			<var name="surfaceBuoyancyForcing"/>
+			<var name="seaSurfacePressure"/>
+		</stream>
+
+		<stream name="averages"
+				type="none"
+				filename_template="output/average_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="forward">
+
+			<stream name="mesh"/>
+			<var name="nAverage"/>
+			<var_array name="avgTracersSurfaceValue"/>
+			<var_array name="avgSurfaceVelocity"/>
+			<var_array name="avgSSHGradient"/>
+			<var name="avgSSH"/>
+			<var name="avgNormalVelocity"/>
+			<var name="avgVelocityZonal"/>
+			<var name="avgVelocityMeridional"/>
+			<var name="avgVertVelocityTop"/>
+			<var name="avgNormalTransportVelocity"/>
+			<var name="avgTransportVelocityZonal"/>
+			<var name="avgTransportVelocityMeridional"/>
+			<var name="avgVertTransportVelocityTop"/>
+			<var name="varSSH"/>
+			<var name="varNormalVelocity"/>
+			<var name="varVelocityZonal"/>
+			<var name="varVelocityMeridional"/>
+		</stream>
+
+		<stream name="Cartesian"
+				type="none"
+				filename_template="output/Cartesian_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="forward">
+
+			<stream name="mesh"/>
+			<var name="velocityX"/>
+			<var name="velocityY"/>
+		</stream>
+
+		<stream name="forcing"
+				type="none"
+				filename_template="output/forcing_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="forward">
+
+			<stream name="mesh"/>
+			<var_struct name="tracersSurfaceFlux"/>
+			<var_array name="tracersSurfaceValue"/>
+			<var_array name="surfaceVelocity"/>
+			<var_array name="SSHGradient"/>
+			<var_array name="vertNonLocalFlux"/>
+			<var name="surfaceStressMagnitude"/>
+			<var name="surfaceStress"/>
+			<var name="surfaceThicknessFlux"/>
+			<var name="seaIceEnergy"/>
+			<var name="penetrativeTemperatureFlux"/>
+			<var name="fractionAbsorbed"/>
+			<var name="windStressZonal"/>
+			<var name="windStressMeridional"/>
+			<var name="latentHeatFlux"/>
+			<var name="sensibleHeatFlux"/>
+			<var name="longWaveHeatFluxUp"/>
+			<var name="longWaveHeatFluxDown"/>
+			<var name="seaIceHeatFlux"/>
+			<var name="shortWaveHeatFlux"/>
+			<var name="evaporationFlux"/>
+			<var name="seaIceSalinityFlux"/>
+			<var name="seaIceFreshWaterFlux"/>
+			<var name="riverRunoffFlux"/>
+			<var name="iceRunoffFlux"/>
+			<var name="rainFlux"/>
+			<var name="snowFlux"/>
+			<var name="iceFraction"/>
+			<var name="nAccumulatedCoupled"/>
+			<var name="thermalExpansionCoeff"/>
+			<var name="salineContractionCoeff"/>
+		</stream>
+
+		<stream name="Gent_McWilliams_spherical"
+				type="none"
+				filename_template="output/Gent_McWilliams_spherical_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="forward">
+
+			<stream name="mesh"/>
+			<var name="relativeSlopeTopOfCell"/>
+			<var name="relativeSlopeTaperingCell"/>
+			<var name="relativeSlopeTopOfCellZonal"/>
+			<var name="relativeSlopeTopOfCellMeridional"/>
+			<var name="k33"/>
+			<var name="GMBolusVelocityZonal"/>
+			<var name="GMBolusVelocityMeridional"/>
+			<var name="normalGMBolusVelocity"/>
+			<var name="vertGMBolusVelocityTop"/>
+			<var name="gmStreamFuncTopOfEdge"/>
+			<var name="avgNormalGMBolusVelocity"/>
+			<var name="avgGMBolusVelocityZonal"/>
+			<var name="avgGMBolusVelocityMeridional"/>
+			<var name="avgVertGMBolusVelocityTop"/>
+		</stream>
+
+		<stream name="Gent_McWilliams_Cartesian"
+				type="none"
+				filename_template="output/Gent_McWilliams_Cartesian_variables.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				output_interval="0001_00:00:00"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="forward">
+
+			<stream name="mesh"/>
+			<var name="relativeSlopeTopOfCell"/>
+			<var name="relativeSlopeTaperingCell"/>
+			<var name="relativeSlopeTopOfCellX"/>
+			<var name="relativeSlopeTopOfCellY"/>
+			<var name="relativeSlopeTopOfCellZ"/>
+			<var name="k33"/>
+			<var name="GMBolusVelocityX"/>
+			<var name="GMBolusVelocityY"/>
+			<var name="normalGMBolusVelocity"/>
+			<var name="vertGMBolusVelocityTop"/>
+			<var name="gmStreamFuncTopOfEdge"/>
+			<var name="avgNormalGMBolusVelocity"/>
+			<var name="GMStreamFuncX"/>
+			<var name="GMStreamFuncY"/>
+		</stream>
+	</streams>
+
 </registry>
