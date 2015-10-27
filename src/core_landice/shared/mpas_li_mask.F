@@ -41,6 +41,7 @@ module li_mask
    integer, parameter :: li_mask_ValueInitialIceExtent      =   1
    integer, parameter :: li_mask_ValueAlbanyActive          =  64  ! These are locations that Albany includes in its solution
    integer, parameter :: li_mask_ValueAlbanyMarginNeighbor  = 128  ! This the first cell beyond the last active albany cell
+   integer, parameter :: li_mask_ValueGroundingLine         = 256  ! This is grounded cell that has a floating neighbor, or vertex/edge on that boundary
 
    !--------------------------------------------------------------------
    !
@@ -271,7 +272,9 @@ contains
       logical :: isMargin
       logical :: isAlbanyMarginNeighbor
       logical :: aCellOnVertexHasIce, aCellOnVertexHasNoIce, aCellOnVertexHasDynamicIce, aCellOnVertexHasNoDynamicIce, aCellOnVertexIsFloating, aCellOnVertexIsAlbanyActive
+      logical :: aCellOnVertexIsGrounded
       logical :: aCellOnEdgeHasIce, aCellOnEdgeHasNoIce, aCellOnEdgeHasDynamicIce, aCellOnEdgeHasNoDynamicIce, aCellOnEdgeIsFloating 
+      logical :: aCellOnEdgeIsGrounded
       integer :: numCellsOnVertex
       integer :: numDiriDynamicCells, numDiriNondynamicCells, numExtendedCells
       logical :: validVertex
@@ -385,6 +388,19 @@ contains
          enddo
       endif
 
+      ! Identify the grounding line
+      ! For a cell, we define the GL as a grounded cell with ice with at least one neighbor with floating ice
+      do i=1,nCells
+          if (li_mask_is_grounded_ice(cellMask(i))) then  ! only need to check grounded cells
+              do j=1,nEdgesOnCell(i) ! Check if any neighbors are floating
+                 if (li_mask_is_floating_ice(cellMask(cellsOnCell(j,i)))) &
+                    cellMask(i) = ior(cellMask(i), li_mask_ValueGroundingLine)
+                 cycle  ! no need to look at additional neighbors
+              enddo
+          endif
+      enddo
+
+
       ! ====
       ! Calculate vertexMask values based on cellMask values===========================
       ! ====
@@ -397,6 +413,7 @@ contains
       !       cells (i.e., the cells exist in the mesh).  This allows external dycores to use the 
       !       vertexMask to get information about triangles in the Delaunay triangulation.
       !       (This is done in a way which does not assume vertexMask==3.)
+      ! Bit: GL is a vertex with at least one neighboring cell grounded ice and at least one neighboring cell floating ice
       vertexMask = 0
       do i = 1,nVertices
           aCellOnVertexHasIce = .false.
@@ -404,6 +421,7 @@ contains
           aCellOnVertexHasDynamicIce = .false.
           aCellOnVertexHasNoDynamicIce = .false.
           aCellOnVertexIsFloating = .false.
+          aCellOnVertexIsGrounded = .false.
           aCellOnVertexIsAlbanyActive = .false.
           numCellsOnVertex = 0
           validVertex = .false.
@@ -420,6 +438,7 @@ contains
               aCellOnVertexHasDynamicIce = (aCellOnVertexHasDynamicIce .or. li_mask_is_dynamic_ice(cellMask(iCell)))
               aCellOnVertexHasNoDynamicIce = (aCellOnVertexHasNoDynamicIce .or. (.not. (li_mask_is_dynamic_ice(cellMask(iCell)))))
               aCellOnVertexIsFloating = (aCellOnVertexIsFloating .or. li_mask_is_floating_ice(cellMask(iCell)))
+              aCellOnVertexIsGrounded = (aCellOnVertexIsGrounded .or. li_mask_is_grounded_ice(cellMask(iCell)))
               aCellOnVertexIsAlbanyActive = (aCellOnVertexIsAlbanyActive .or. li_mask_is_albany_active(cellMask(iCell)))
               if ( .not. ((trim(config_velocity_solver) == 'sia') .or. (trim(config_velocity_solver) == 'none')) ) then
                  !if (li_mask_is_dynamic_ice(cellMask(iCell)) .and. .not. li_mask_is_albany_active(cellMask(iCell))) then ! this finds diri cells
@@ -437,10 +456,10 @@ contains
           if (numCellsOnVertex == vertexDegree) then
              validVertex = .true.
           endif
-          if (aCellOnVertexHasIce .and. validVertex) then
+          if (aCellOnVertexHasIce) then
              vertexMask(i) = ior(vertexMask(i), li_mask_ValueIce)
           endif
-          if (aCellOnVertexHasDynamicIce .and. validVertex) then
+          if (aCellOnVertexHasDynamicIce) then
              vertexMask(i) = ior(vertexMask(i), li_mask_ValueDynamicIce)
           endif
           if (aCellOnVertexIsAlbanyActive .and. validVertex) then
@@ -452,13 +471,16 @@ contains
              vertexMask(i) = ior(vertexMask(i), li_mask_ValueAlbanyActive)
              vertexMask(i) = ior(vertexMask(i), li_mask_ValueAlbanyMarginNeighbor)
           endif
-          if (aCellOnVertexIsFloating .and. validVertex) then
+          if (aCellOnVertexIsFloating) then
              vertexMask(i) = ior(vertexMask(i), li_mask_ValueFloating)
           endif
-          if (aCellOnVertexHasIce .and. aCellOnVertexHasNoIce .and. validVertex) then
+          if (aCellOnVertexIsFloating .and. aCellOnVertexIsGrounded) then
+             vertexMask(i) = ior(vertexMask(i), li_mask_ValueGroundingLine)
+          endif
+          if (aCellOnVertexHasIce .and. aCellOnVertexHasNoIce) then
              vertexMask(i) = ior(vertexMask(i), li_mask_ValueMargin)     ! vertex with both 1+ ice cell and 1+ non-ice cell as neighbors
           endif
-          if (aCellOnVertexHasDynamicIce .and. aCellOnVertexHasNoDynamicIce .and. validVertex) then
+          if (aCellOnVertexHasDynamicIce .and. aCellOnVertexHasNoDynamicIce) then
              vertexMask(i) = ior(vertexMask(i), li_mask_ValueDynamicMargin)     ! vertex with both 1+ dynamic ice cell(s) and 1+ non-dynamic cell(s) as neighbors
           endif
       end do       
@@ -472,6 +494,7 @@ contains
       ! Bit: Floating Edges have at least one neighboring cell floating
       ! Bit: Edges on margin are edges with one neighboring cell with ice and one neighboring cell without ice
       ! Bit: Edges on dynamic margin are edges with one neighboring cell with dynamic ice and one neighboring cell without dynamic ice
+      ! Bit: GL is an edge with one cell grounded ice and one cell floating ice
       edgeMask = 0
       do i = 1,nEdges
           aCellOnEdgeHasIce = .false.
@@ -479,6 +502,7 @@ contains
           aCellOnEdgeHasDynamicIce = .false.
           aCellOnEdgeHasNoDynamicIce = .false.
           aCellOnEdgeIsFloating = .false.
+          aCellOnEdgeIsGrounded = .false.
           do j = 1, 2
               iCell = cellsOnEdge(j,i)
               aCellOnEdgeHasIce = (aCellOnEdgeHasIce .or. li_mask_is_ice(cellMask(iCell)))
@@ -486,6 +510,7 @@ contains
               aCellOnEdgeHasDynamicIce = (aCellOnEdgeHasDynamicIce .or. li_mask_is_dynamic_ice(cellMask(iCell)))
               aCellOnEdgeHasNoDynamicIce = (aCellOnEdgeHasNoDynamicIce .or. (.not. (li_mask_is_dynamic_ice(cellMask(iCell)))))
               aCellOnEdgeIsFloating = (aCellOnEdgeIsFloating .or. li_mask_is_floating_ice(cellMask(iCell)))
+              aCellOnEdgeIsGrounded = (aCellOnEdgeIsGrounded .or. li_mask_is_grounded_ice(cellMask(iCell)))
           end do
           if (aCellOnEdgeHasIce) then
              edgeMask(i) = ior(edgeMask(i), li_mask_ValueIce)
@@ -496,6 +521,9 @@ contains
           endif
           if (aCellOnEdgeIsFloating) then
              edgeMask(i) = ior(edgeMask(i), li_mask_ValueFloating)
+          endif
+          if (aCellOnEdgeIsFloating .and. aCellOnEdgeIsGrounded) then
+             edgeMask(i) = ior(edgeMask(i), li_mask_ValueGroundingLine)
           endif
           if (aCellOnEdgeHasIce .and. aCellOnEdgeHasNoIce) then
              edgeMask(i) = ior(edgeMask(i), li_mask_ValueMargin)
