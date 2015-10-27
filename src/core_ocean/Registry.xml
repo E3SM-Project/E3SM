@@ -585,7 +585,7 @@
 					possible_values="Any positive value"
 		/>
 	</nml_record>
-	<nml_record name="forcing" mode="forward">
+	<nml_record name="forcing" mode="init;forward">
 		<nml_option name="config_use_bulk_wind_stress" type="logical" default_value=".false." units="unitless"
 					description="Controls if zonal and meridional components of windstress are used to build surface wind stress."
 					possible_values=".true. or .false."
