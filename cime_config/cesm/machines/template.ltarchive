@@ -64,6 +64,8 @@ sub main
     
     $ENV{'DOUT_S_ROOT'} = $config{'DOUT_S_ROOT'};
     $ENV{'DOUT_L_MSROOT'} = $config{'DOUT_L_MSROOT'};
+    $ENV{'DOUT_L_HPSS_ACCNT'} = $config{'DOUT_L_HPSS_ACCNT'};
+
     my $LID = strftime("%y%m%d-%H%M%S", localtime);
 
     qx($config{'CASEROOT'}/Tools/lt_archive.sh {{ lt_archive_args }} > ltArchiveStatus.$LID 2>&1);
