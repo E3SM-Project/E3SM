@@ -213,10 +213,6 @@
 					description="Determines if the positive Z axis is aligned with the positive K index direction."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_check_ssh_consistency" type="logical" default_value=".true." units="unitless"
-					description="Enables a check to determine if the SSH is within 2m of the surface.  See equation for $\zeta_i$."
-					possible_values=".true. or .false."
-		/>
 	</nml_record>
 	<nml_record name="ALE_frequency_filtered_thickness" mode="forward">
 		<nml_option name="config_use_freq_filtered_thickness" type="logical" default_value=".false." units="unitless"
@@ -843,6 +839,10 @@
 		/>
 		<nml_option name="config_check_zlevel_consistency" type="logical" default_value=".false." units="unitless"
 					description="Enables a run-time check for consistency for a zlevel grid. Ensures relevant variables correctly define the bottom of the ocean."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_check_ssh_consistency" type="logical" default_value=".true." units="unitless"
+					description="Enables a run-time check to determine if the SSH is within 2m of the surface.  See equation for $\zeta_i$."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_filter_btr_mode" type="logical" default_value=".false." units="unitless"
