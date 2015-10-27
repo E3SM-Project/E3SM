@@ -120,7 +120,7 @@
 
 	<streams>
 		<stream name="timeSeriesStatsOutput" 
-				type="none"
+				type="output"
 				mode="forward;analysis"
 				filename_template="analysis_members/timeSeriesStats.$Y-$M-$D.nc"
 				filename_interval="00-01-00_00:00:00"
@@ -151,6 +151,7 @@
 				reference_time="0000-01-01_00:00:00"
 				clobber_mode="truncate"
 				input_interval="initial_only"
+				packages="timeSeriesStatsAMPKG"
 				output_interval="0005_00:00:00"
 				immutable="false"
 				mode="forward;analysis" />
