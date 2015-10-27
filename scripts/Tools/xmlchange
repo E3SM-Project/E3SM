@@ -156,7 +156,7 @@ if ( ! defined($settinglist) ) {
 }
 
 # If filename is input as option - check that it is supported
-my @filenames = qw(env_run.xml env_build.xml env_case.xml env_mach_pes.xml env_batch.xml);
+my @filenames = qw(env_run.xml env_build.xml env_case.xml env_mach_pes.xml env_batch.xml env_test.xml);
 if ( ! defined($settinglist) ) {
    push (@filenames, $opts{'file'});
    my $status = 0;
@@ -186,13 +186,14 @@ foreach my $id ( keys(%idlist) )
 {
     foreach my $file (@filenames) 
     {
+	next unless(-e $file);
 	# Loop over all nodes in the file
 	my $xml_file = XML::LibXML->new( no_blanks => 1)->parse_file($file); 
 	foreach my $node ($xml_file->findnodes(".//entry[\@id=\"$id\"]")) 
 	{
 	    # Store this in %id_file hash - this will be used below
 	    $id_file{$id} = $file;
-
+	    
 	    # Do error checking for requested change
 	    my $value = $node->getAttribute('value');
 	    my($type, $valid_values, $is_list_value);
