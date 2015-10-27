@@ -28,9 +28,9 @@ int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Of
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -78,7 +78,7 @@ int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Of
   }
   if(xtypep != NULL) mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);
   if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -97,9 +97,9 @@ int PIOc_inq_format (int ncid, int *formatp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -146,7 +146,7 @@ int PIOc_inq_format (int ncid, int *formatp)
     sprintf(errstr,"in file %s",__FILE__);
   }
     mpierr = MPI_Bcast(formatp , 1, MPI_INT, ios->ioroot, ios->my_comm);
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -165,9 +165,9 @@ int PIOc_inq_varid (int ncid, const char *name, int *varidp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -214,7 +214,7 @@ int PIOc_inq_varid (int ncid, const char *name, int *varidp)
     sprintf(errstr,"in file %s",__FILE__);
   }
     mpierr = MPI_Bcast(varidp,1, MPI_INT, ios->ioroot, ios->my_comm);
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -233,9 +233,9 @@ int PIOc_inq_varnatts (int ncid, int varid, int *nattsp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -282,7 +282,7 @@ int PIOc_inq_varnatts (int ncid, int varid, int *nattsp)
     sprintf(errstr,"in file %s",__FILE__);
   }
     mpierr = MPI_Bcast(nattsp,1, MPI_INT, ios->ioroot, ios->my_comm);
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -301,9 +301,9 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims, const in
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -357,7 +357,7 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims, const in
     sprintf(errstr,"in file %s",__FILE__);
   }
     mpierr = MPI_Bcast(varidp , 1, MPI_INT, ios->ioroot, ios->my_comm);
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -376,9 +376,9 @@ int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -439,7 +439,7 @@ int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
       PIOc_inq_varndims(file->fh, varid, &ndims);
       mpierr = MPI_Bcast(dimidsp , ndims, MPI_INT, ios->ioroot, ios->my_comm);
      }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -458,9 +458,9 @@ int PIOc_inq_varname (int ncid, int varid, char *name)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -513,7 +513,7 @@ int PIOc_inq_varname (int ncid, int varid, char *name)
       mpierr = MPI_Bcast(&slen, 1, MPI_INT, ios->ioroot, ios->my_comm);
       mpierr = MPI_Bcast(name, slen, MPI_CHAR, ios->ioroot, ios->my_comm);
     }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -532,9 +532,9 @@ int PIOc_put_att_double (int ncid, int varid, const char *name, nc_type xtype, P
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -580,7 +580,7 @@ int PIOc_put_att_double (int ncid, int varid, const char *name, nc_type xtype, P
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -599,9 +599,9 @@ int PIOc_put_att_int (int ncid, int varid, const char *name, nc_type xtype, PIO_
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -647,7 +647,7 @@ int PIOc_put_att_int (int ncid, int varid, const char *name, nc_type xtype, PIO_
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -666,9 +666,9 @@ int PIOc_rename_att (int ncid, int varid, const char *name, const char *newname)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -714,7 +714,7 @@ int PIOc_rename_att (int ncid, int varid, const char *name, const char *newname)
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -733,9 +733,9 @@ int PIOc_get_att_ubyte (int ncid, int varid, const char *name, unsigned char *ip
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -786,7 +786,7 @@ int PIOc_get_att_ubyte (int ncid, int varid, const char *name, unsigned char *ip
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
         mpierr = MPI_Bcast(ip , (int) attlen, MPI_BYTE, ios->ioroot, ios->my_comm);
       }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -805,9 +805,9 @@ int PIOc_del_att (int ncid, int varid, const char *name)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -853,7 +853,7 @@ int PIOc_del_att (int ncid, int varid, const char *name)
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -872,9 +872,9 @@ int PIOc_inq_natts (int ncid, int *ngattsp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -921,7 +921,7 @@ int PIOc_inq_natts (int ncid, int *ngattsp)
     sprintf(errstr,"in file %s",__FILE__);
   }
     mpierr = MPI_Bcast(ngattsp,1, MPI_INT, ios->ioroot, ios->my_comm);
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -940,9 +940,9 @@ int PIOc_inq (int ncid, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -996,7 +996,7 @@ int PIOc_inq (int ncid, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp
         mpierr = MPI_Bcast(ngattsp, 1, MPI_INT, ios->ioroot, ios->my_comm);
        if(unlimdimidp != NULL)
         mpierr = MPI_Bcast(unlimdimidp, 1, MPI_INT, ios->ioroot, ios->my_comm);
- 
+   if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -1015,9 +1015,9 @@ int PIOc_get_att_text (int ncid, int varid, const char *name, char *ip)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -1068,7 +1068,7 @@ int PIOc_get_att_text (int ncid, int varid, const char *name, char *ip)
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
         mpierr = MPI_Bcast(ip , (int) attlen, MPI_CHAR, ios->ioroot, ios->my_comm);
       }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -1087,9 +1087,9 @@ int PIOc_get_att_short (int ncid, int varid, const char *name, short *ip)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -1140,7 +1140,7 @@ int PIOc_get_att_short (int ncid, int varid, const char *name, short *ip)
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
         mpierr = MPI_Bcast(ip , (int) attlen, MPI_SHORT, ios->ioroot, ios->my_comm);
       }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -1159,9 +1159,9 @@ int PIOc_put_att_long (int ncid, int varid, const char *name, nc_type xtype, PIO
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -1207,7 +1207,7 @@ int PIOc_put_att_long (int ncid, int varid, const char *name, nc_type xtype, PIO
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -1226,9 +1226,9 @@ int PIOc_redef (int ncid)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -1274,7 +1274,7 @@ int PIOc_redef (int ncid)
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -1293,9 +1293,9 @@ int PIOc_set_fill (int ncid, int fillmode, int *old_modep)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -1341,7 +1341,7 @@ int PIOc_set_fill (int ncid, int fillmode, int *old_modep)
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -1360,9 +1360,9 @@ int PIOc_enddef (int ncid)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -1408,7 +1408,7 @@ int PIOc_enddef (int ncid)
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -1427,9 +1427,9 @@ int PIOc_rename_var (int ncid, int varid, const char *name)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -1475,7 +1475,7 @@ int PIOc_rename_var (int ncid, int varid, const char *name)
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -1494,9 +1494,9 @@ int PIOc_put_att_short (int ncid, int varid, const char *name, nc_type xtype, PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -1542,7 +1542,7 @@ int PIOc_put_att_short (int ncid, int varid, const char *name, nc_type xtype, PI
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -1561,9 +1561,9 @@ int PIOc_put_att_text (int ncid, int varid, const char *name, PIO_Offset len, co
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -1609,7 +1609,7 @@ int PIOc_put_att_text (int ncid, int varid, const char *name, PIO_Offset len, co
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -1628,9 +1628,9 @@ int PIOc_inq_attname (int ncid, int varid, int attnum, char *name)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -1683,7 +1683,7 @@ int PIOc_inq_attname (int ncid, int varid, int attnum, char *name)
       mpierr = MPI_Bcast(&slen, 1, MPI_INT, ios->ioroot, ios->my_comm);
       mpierr = MPI_Bcast(name, slen, MPI_CHAR, ios->ioroot, ios->my_comm);
     }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -1702,9 +1702,9 @@ int PIOc_get_att_ulonglong (int ncid, int varid, const char *name, unsigned long
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -1755,7 +1755,7 @@ int PIOc_get_att_ulonglong (int ncid, int varid, const char *name, unsigned long
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
         mpierr = MPI_Bcast(ip , (int) attlen, MPI_UNSIGNED_LONG_LONG, ios->ioroot, ios->my_comm);
       }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -1774,9 +1774,9 @@ int PIOc_get_att_ushort (int ncid, int varid, const char *name, unsigned short *
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -1827,7 +1827,7 @@ int PIOc_get_att_ushort (int ncid, int varid, const char *name, unsigned short *
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
         mpierr = MPI_Bcast(ip , (int) attlen, MPI_UNSIGNED_SHORT, ios->ioroot, ios->my_comm);
       }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -1846,9 +1846,9 @@ int PIOc_put_att_ulonglong (int ncid, int varid, const char *name, nc_type xtype
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -1894,7 +1894,7 @@ int PIOc_put_att_ulonglong (int ncid, int varid, const char *name, nc_type xtype
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -1913,9 +1913,9 @@ int PIOc_inq_dimlen (int ncid, int dimid, PIO_Offset *lenp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -1962,7 +1962,7 @@ int PIOc_inq_dimlen (int ncid, int dimid, PIO_Offset *lenp)
     sprintf(errstr,"in file %s",__FILE__);
   }
     mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -1981,9 +1981,9 @@ int PIOc_get_att_uint (int ncid, int varid, const char *name, unsigned int *ip)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -2034,7 +2034,7 @@ int PIOc_get_att_uint (int ncid, int varid, const char *name, unsigned int *ip)
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
         mpierr = MPI_Bcast(ip , (int) attlen, MPI_UNSIGNED, ios->ioroot, ios->my_comm);
       }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -2053,9 +2053,9 @@ int PIOc_get_att_longlong (int ncid, int varid, const char *name, long long *ip)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -2106,7 +2106,7 @@ int PIOc_get_att_longlong (int ncid, int varid, const char *name, long long *ip)
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
         mpierr = MPI_Bcast(ip , (int) attlen, MPI_LONG_LONG, ios->ioroot, ios->my_comm);
       }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -2125,9 +2125,9 @@ int PIOc_put_att_schar (int ncid, int varid, const char *name, nc_type xtype, PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -2173,7 +2173,7 @@ int PIOc_put_att_schar (int ncid, int varid, const char *name, nc_type xtype, PI
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -2192,9 +2192,9 @@ int PIOc_put_att_float (int ncid, int varid, const char *name, nc_type xtype, PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -2240,7 +2240,7 @@ int PIOc_put_att_float (int ncid, int varid, const char *name, nc_type xtype, PI
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -2259,9 +2259,9 @@ int PIOc_inq_nvars (int ncid, int *nvarsp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -2308,7 +2308,7 @@ int PIOc_inq_nvars (int ncid, int *nvarsp)
     sprintf(errstr,"in file %s",__FILE__);
   }
     mpierr = MPI_Bcast(nvarsp,1, MPI_INT, ios->ioroot, ios->my_comm);
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -2327,9 +2327,9 @@ int PIOc_rename_dim (int ncid, int dimid, const char *name)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -2375,7 +2375,7 @@ int PIOc_rename_dim (int ncid, int dimid, const char *name)
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -2394,9 +2394,9 @@ int PIOc_inq_varndims (int ncid, int varid, int *ndimsp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -2448,7 +2448,7 @@ int PIOc_inq_varndims (int ncid, int varid, int *ndimsp)
   }
     mpierr = MPI_Bcast(ndimsp,1, MPI_INT, ios->ioroot, ios->my_comm);
     file->varlist[varid].ndims = (*ndimsp);
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -2467,9 +2467,9 @@ int PIOc_get_att_long (int ncid, int varid, const char *name, long *ip)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -2520,7 +2520,7 @@ int PIOc_get_att_long (int ncid, int varid, const char *name, long *ip)
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
         mpierr = MPI_Bcast(ip , (int) attlen, MPI_LONG, ios->ioroot, ios->my_comm);
       }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -2539,9 +2539,9 @@ int PIOc_inq_dim (int ncid, int dimid, char *name, PIO_Offset *lenp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -2595,7 +2595,7 @@ int PIOc_inq_dim (int ncid, int dimid, char *name, PIO_Offset *lenp)
       mpierr = MPI_Bcast(name, slen, MPI_CHAR, ios->ioroot, ios->my_comm);
     }
       if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -2614,9 +2614,9 @@ int PIOc_inq_dimid (int ncid, const char *name, int *idp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -2663,7 +2663,7 @@ int PIOc_inq_dimid (int ncid, const char *name, int *idp)
     sprintf(errstr,"in file %s",__FILE__);
   }
     mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -2682,9 +2682,9 @@ int PIOc_inq_unlimdim (int ncid, int *unlimdimidp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -2730,7 +2730,7 @@ int PIOc_inq_unlimdim (int ncid, int *unlimdimidp)
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -2749,9 +2749,9 @@ int PIOc_inq_vardimid (int ncid, int varid, int *dimidsp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -2802,7 +2802,7 @@ int PIOc_inq_vardimid (int ncid, int varid, int *dimidsp)
       PIOc_inq_varndims(file->fh, varid, &ndims);
       mpierr = MPI_Bcast(dimidsp , ndims, MPI_INT, ios->ioroot, ios->my_comm);
      }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -2821,9 +2821,9 @@ int PIOc_inq_attlen (int ncid, int varid, const char *name, PIO_Offset *lenp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -2870,7 +2870,7 @@ int PIOc_inq_attlen (int ncid, int varid, const char *name, PIO_Offset *lenp)
     sprintf(errstr,"in file %s",__FILE__);
   }
     mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -2889,9 +2889,9 @@ int PIOc_inq_dimname (int ncid, int dimid, char *name)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -2944,7 +2944,7 @@ int PIOc_inq_dimname (int ncid, int dimid, char *name)
       mpierr = MPI_Bcast(&slen, 1, MPI_INT, ios->ioroot, ios->my_comm);
       mpierr = MPI_Bcast(name, slen, MPI_CHAR, ios->ioroot, ios->my_comm);
     }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -2963,9 +2963,9 @@ int PIOc_put_att_ushort (int ncid, int varid, const char *name, nc_type xtype, P
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -3011,7 +3011,7 @@ int PIOc_put_att_ushort (int ncid, int varid, const char *name, nc_type xtype, P
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -3030,9 +3030,9 @@ int PIOc_get_att_float (int ncid, int varid, const char *name, float *ip)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -3083,7 +3083,7 @@ int PIOc_get_att_float (int ncid, int varid, const char *name, float *ip)
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
         mpierr = MPI_Bcast(ip , (int) attlen, MPI_FLOAT, ios->ioroot, ios->my_comm);
       }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -3102,9 +3102,9 @@ int PIOc_put_att_longlong (int ncid, int varid, const char *name, nc_type xtype,
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -3150,7 +3150,7 @@ int PIOc_put_att_longlong (int ncid, int varid, const char *name, nc_type xtype,
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -3169,9 +3169,9 @@ int PIOc_put_att_uint (int ncid, int varid, const char *name, nc_type xtype, PIO
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -3217,7 +3217,7 @@ int PIOc_put_att_uint (int ncid, int varid, const char *name, nc_type xtype, PIO
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -3236,9 +3236,9 @@ int PIOc_get_att_schar (int ncid, int varid, const char *name, signed char *ip)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -3289,7 +3289,7 @@ int PIOc_get_att_schar (int ncid, int varid, const char *name, signed char *ip)
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
         mpierr = MPI_Bcast(ip , (int) attlen, MPI_CHAR, ios->ioroot, ios->my_comm);
       }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -3308,9 +3308,9 @@ int PIOc_inq_attid (int ncid, int varid, const char *name, int *idp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -3357,7 +3357,7 @@ int PIOc_inq_attid (int ncid, int varid, const char *name, int *idp)
     sprintf(errstr,"in file %s",__FILE__);
   }
     mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -3376,9 +3376,9 @@ int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -3425,7 +3425,7 @@ int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp)
     sprintf(errstr,"in file %s",__FILE__);
   }
     mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -3444,9 +3444,9 @@ int PIOc_inq_ndims (int ncid, int *ndimsp)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -3493,7 +3493,7 @@ int PIOc_inq_ndims (int ncid, int *ndimsp)
     sprintf(errstr,"in file %s",__FILE__);
   }
     mpierr = MPI_Bcast(ndimsp , 1, MPI_INT, ios->ioroot, ios->my_comm);
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -3512,9 +3512,9 @@ int PIOc_inq_vartype (int ncid, int varid, nc_type *xtypep)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -3561,7 +3561,7 @@ int PIOc_inq_vartype (int ncid, int varid, nc_type *xtypep)
     sprintf(errstr,"in file %s",__FILE__);
   }
     mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -3580,9 +3580,9 @@ int PIOc_get_att_int (int ncid, int varid, const char *name, int *ip)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -3633,7 +3633,7 @@ int PIOc_get_att_int (int ncid, int varid, const char *name, int *ip)
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
         mpierr = MPI_Bcast(ip , (int) attlen, MPI_INT, ios->ioroot, ios->my_comm);
       }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -3652,9 +3652,9 @@ int PIOc_get_att_double (int ncid, int varid, const char *name, double *ip)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -3705,7 +3705,7 @@ int PIOc_get_att_double (int ncid, int varid, const char *name, double *ip)
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
         mpierr = MPI_Bcast(ip , (int) attlen, MPI_DOUBLE, ios->ioroot, ios->my_comm);
       }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -3724,9 +3724,9 @@ int PIOc_put_att_ubyte (int ncid, int varid, const char *name, nc_type xtype, PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -3772,7 +3772,7 @@ int PIOc_put_att_ubyte (int ncid, int varid, const char *name, nc_type xtype, PI
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -3791,9 +3791,9 @@ int PIOc_inq_atttype (int ncid, int varid, const char *name, nc_type *xtypep)
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -3840,7 +3840,7 @@ int PIOc_inq_atttype (int ncid, int varid, const char *name, nc_type *xtypep)
     sprintf(errstr,"in file %s",__FILE__);
   }
     mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -3859,9 +3859,9 @@ int PIOc_put_att_uchar (int ncid, int varid, const char *name, nc_type xtype, PI
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -3907,7 +3907,7 @@ int PIOc_put_att_uchar (int ncid, int varid, const char *name, nc_type xtype, PI
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
@@ -3926,9 +3926,9 @@ int PIOc_get_att_uchar (int ncid, int varid, const char *name, unsigned char *ip
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -3979,7 +3979,7 @@ int PIOc_get_att_uchar (int ncid, int varid, const char *name, unsigned char *ip
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
         mpierr = MPI_Bcast(ip , (int) attlen, MPI_UNSIGNED_CHAR, ios->ioroot, ios->my_comm);
       }
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
 
