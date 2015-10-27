@@ -15,6 +15,7 @@ module cice_constants
   use mpas_derived_types
 
   use ice_constants_colpkg, only: &
+       gravit, &
        rhoi, &
        rhos, &
        rhow, &
@@ -24,6 +25,7 @@ module cice_constants
        Tffresh, &
        cp_air, &
        Lsub, &
+       Lfresh, &
        Pstar, &
        Cstar, &
        dragio
@@ -41,6 +43,7 @@ module cice_constants
 
   ! Earth constants
   real (kind=RKIND), parameter, public :: &
+       ciceGravity = gravit, &    ! gravitational acceleration (m/s^2)
        earthRadius = 6371229.0, & ! radius of Earth in [m]
        omega       = 7.29212e-5   ! angular rotation rate of the Earth [s-1]
 
@@ -62,7 +65,8 @@ module cice_constants
        ciceIceSnowEmissivity       = emissivity, &       ! emissivity of snow and ice
        ciceFreshWaterFreezingPoint = Tffresh, &          ! freezing temp of fresh ice (K)
        ciceAirSpecificHeat         = cp_air, &           ! specific heat of air (J/kg/K)
-       ciceLatentHeatSublimation   = Lsub                ! latent heat, sublimation freshwater (J/kg)
+       ciceLatentHeatSublimation   = Lsub, &             ! latent heat, sublimation freshwater (J/kg)
+       ciceLatentHeatMelting       = Lfresh              ! latent heat of melting of fresh ice (J/kg)
 
   ! dynamics constants
   real(kind=RKIND), parameter, public :: &
