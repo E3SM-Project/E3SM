@@ -197,13 +197,6 @@ foreach my $func (keys %{$functions}){
 	      printf F "      break;\n";  
 	  }
 	  if($line =~ /msg =/){
-	      if($func =~ /get_att/){
-		  print F "  sprintf(errstr,\"name %s in file %s\",name,__FILE__);\n";
-	      }else{
-		  print F "  sprintf(errstr,\"in file %s\",__FILE__);\n";
-	      }	      
-
-
 	      if($func =~ /inq_varndims/){
 		  print F "  if(file->varlist[varid].ndims > 0){\n";
 		  print F "    (*ndimsp) = file->varlist[varid].ndims;\n";
@@ -215,6 +208,16 @@ foreach my $func (keys %{$functions}){
 	  }
 
 	  if($line =~ /check_netcdf/){
+	      print F "   if(ierr != PIO_NOERR){\n";
+	      if($func =~ /get_att/){
+		  print F "    errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));\n";
+		  print F "    sprintf(errstr,\"name %s in file %s\",name,__FILE__);\n";
+	      }else{
+		  print F "    errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));\n";
+		  print F "    sprintf(errstr,\"in file %s\",__FILE__);\n";
+	      }	      
+              print F "  }\n";
+
 
 	      if($func =~ /inq_varid/){
 		  print F "    mpierr = MPI_Bcast(varidp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
