@@ -46,7 +46,6 @@ module ocn_frazil_forcing
    public :: ocn_frazil_forcing_build_arrays, &
              ocn_frazil_forcing_tracers, &
              ocn_frazil_forcing_layer_thickness, &
-             ocn_frazil_forcing_surface_pressure, &
              ocn_frazil_forcing_init
 
    !--------------------------------------------------------------------
@@ -185,69 +184,6 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_frazil_forcing_surface_pressure
-!
-!> \brief   Add frazil pressure to total pressure
-!> \author  Todd Ringler
-!> \date    18 October 2015
-!> \details
-!>  This routine adds frazil surface pressure to total surface pressure
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_frazil_forcing_surface_pressure(meshPool, forcingPool, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: Error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      integer :: iCell
-      integer, pointer :: nCells
-      real (kind=RKIND), dimension(:), pointer :: frazilSurfacePressure
-      real (kind=RKIND), dimension(:), pointer :: seaSurfacePressure
-
-      err = 0
-
-      if ( .not. frazilFormationOn ) return
-
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-
-      call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
-      call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
-
-      ! add frazil surface pressure to total surface pressure
-      do iCell = 1, nCells
-        seaSurfacePressure(iCell) = seaSurfacePressure(iCell) + frazilSurfacePressure(iCell)
-      end do
-
-   end subroutine ocn_frazil_forcing_surface_pressure!}}}
-
-!***********************************************************************
-!
 !  routine ocn_frazil_forcing_active_tracers
 !
 !> \brief   Adds the active tracers forcing due to frazil
@@ -336,8 +272,7 @@ contains
 !>
 !>   these tendencies can be retrieved at any point by calling into ocn_frazil_forcing_{tracers, thickness} routines
 !>
-!>   the pressure exerted by the frazil on the ocean "surface" can be retrieved by calling into
-!> 	ocn_frazil_forcing_surface_pressure
+!>   the pressure exerted by the frazil on the ocean "surface" is added to the pressure computation in diagnostics
 !>
 !>   this routine should be call at the beginning of whatever time stepping method is utilized
 !>      and the tendencies should be retieved when building up the RHS of the thickess, temperature

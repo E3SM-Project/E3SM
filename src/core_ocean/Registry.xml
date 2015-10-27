@@ -2085,7 +2085,7 @@
 		<var name="bulkRichardsonNumber" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
 			 description="CVMix/KPP: bulk Richardson number"
 			 packages="forwardMode;analysisMode"
-			 />
+		/>
 		<var name="bulkRichardsonNumberBuoy" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
 			 description="CVMix/KPP: contribution of buoyancy to bulk Richardson number"
 			 packages="forwardMode;analysisMode"
@@ -2507,25 +2507,25 @@
 			/>
 		</var_array>
 
-                <!-- Input fields for forcing due to frazil ice -->
-
-                <!-- Output fields for forcing due to frazil ice -->
-                <var name="frazilLayerThicknessTendency" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-                         description="layer thickness tendency due to frazil processes"
-                         packages="frazilIce"
-                />
-                <var name="frazilTemperatureTendency" type="real" dimensions="nVertLevels nCells Time" units="m C s^{-1}"
-                         description="temperature tendency due to frazil processes"
-                         packages="frazilIce"
-                />
-                <var name="frazilSalinityTendency" type="real" dimensions="nVertLevels nCells Time" units="m PSU s^{-1}"
-                         description="salinity tendency due to frazil processes"
-                         packages="frazilIce"
-                />
-                <var name="frazilSurfacePressure" type="real" dimensions="nCells Time" units="Pa"
-                        description="surface pressure forcing due to weight of frazil ice"
-                         packages="frazilIce"
-                />
+		<!-- Input fields for forcing due to frazil ice -->
+		
+		<!-- Output fields for forcing due to frazil ice -->
+		<var name="frazilLayerThicknessTendency" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+         		description="layer thickness tendency due to frazil processes"
+         		packages="frazilIce"
+		/>
+		<var name="frazilTemperatureTendency" type="real" dimensions="nVertLevels nCells Time" units="m C s^{-1}"
+         		description="temperature tendency due to frazil processes"
+         		packages="frazilIce"
+		/>
+		<var name="frazilSalinityTendency" type="real" dimensions="nVertLevels nCells Time" units="m PSU s^{-1}"
+         		description="salinity tendency due to frazil processes"
+         		packages="frazilIce"
+		/>
+		<var name="frazilSurfacePressure" type="real" dimensions="nCells Time" units="Pa"
+        		description="surface pressure forcing due to weight of frazil ice"
+         		packages="frazilIce"
+		/>
 
                 <!-- Input fields for forcing under land ice -->
                 <var name="landIceFraction" type="real" dimensions="nCells Time" units="unitless"
