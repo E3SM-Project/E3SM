@@ -178,6 +178,9 @@ def modify_stream_definition(streams_file, stream_conf):#{{{
 				member_type = member.attrib['type']
 				sub_member = ET.SubElement(stream_to_modify, member_type)
 				sub_member.set('name', member_name)
+				if 'packages' in member.attrib.keys():
+					member_packages = member.attrib['packages']
+					sub_member.set('packages', member_packages)
 		elif child.tag == 'remove_contents':
 			for member in child.findall('member'):
 				member_name = member.attrib['name']
@@ -190,7 +193,7 @@ def modify_stream_definition(streams_file, stream_conf):#{{{
 
 #}}}
 
-def apply_stream_template(streams_file, template_name, template_path):#{{{ 
+def apply_stream_template(streams_file, template_name, template_path):#{{{
 	template_file = '%s/%s.xml'%(template_path, template_name)
 
 	template_tree = ET.parse(template_file)
@@ -265,19 +268,39 @@ def write_streams_file(streams, config_file, init_path):#{{{
 
 		for substream in stream.findall('stream'):
 			substream_name = substream.attrib['name']
-			stream_file.write('\t<stream name="%s"/>\n'%(substream_name))
+			if 'packages' in substream.attrib.keys():
+				package_name = substream.attrib['packages']
+				entry = '\t<stream name="%s"'%(substream_name) + ' packages="%s" '%(package_name) +'/>\n'
+                        else:
+				entry = '\t<stream name="%s"'%(substream_name) +'/>\n'
+			stream_file.write(entry)
 
 		for var_struct in stream.findall('var_struct'):
 			var_struct_name = var_struct.attrib['name']
-			stream_file.write('\t<var_struct name="%s"/>\n'%(var_struct_name))
+			if 'packages' in var_struct.attrib.keys():
+				package_name = var_struct.attrib['packages']
+				entry = '\t<var_struct name="%s"'%(var_struct_name) + ' packages="%s" '%(package_name) +'/>\n'
+                        else:
+				entry = '\t<var_struct name="%s"'%(var_struct_name) +'/>\n'
+			stream_file.write(entry)
 
 		for var_array in stream.findall('var_array'):
 			var_array_name = var_array.attrib['name']
-			stream_file.write('\t<var_array name="%s"/>\n'%(var_array_name))
+			if 'packages' in var_array.attrib.keys():
+				package_name = var_array.attrib['packages']
+				entry = '\t<var_array name="%s"'%(var_array_name) + ' packages="%s" '%(package_name) +'/>\n'
+                        else:
+				entry = '\t<var_array name="%s"'%(var_array_name) +'/>\n'
+			stream_file.write(entry)
 
 		for var in stream.findall('var'):
 			var_name = var.attrib['name']
-			stream_file.write('\t<var name="%s"/>\n'%(var_name))
+			if 'packages' in var.attrib.keys():
+				package_name = var.attrib['packages']
+				entry = '\t<var name="%s"'%(var_name) + ' packages="%s" '%(package_name) +'/>\n'
+                        else:
+				entry = '\t<var name="%s"'%(var_name) +'/>\n'
+			stream_file.write(entry)
 
 		stream_file.write('</stream>\n')
 
@@ -518,7 +541,7 @@ for file in os.listdir('%s'%(base_path)):
 		else:
 			case_streams = config.get("streams", case_mode)
 			case_namelist = config.get("namelists", case_mode)
-			
+
 		namelist_dict = defaultdict(lambda : defaultdict(list))
 
 		ingest_namelist(case_namelist, namelist_dict)
