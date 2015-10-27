@@ -34,7 +34,8 @@ module ocn_time_series_stats
 
   ! Public member functions
   !--------------------------------------------------------------------
-  public :: ocn_init_time_series_stats, &
+  public :: ocn_bootstrap_time_series_stats, &
+         ocn_init_time_series_stats, &
          ocn_compute_time_series_stats, &
          ocn_restart_time_series_stats, &
          ocn_finalize_time_series_stats
@@ -106,8 +107,8 @@ module ocn_time_series_stats
     'config_AM_timeSeriesStats'
   character (len=StrKIND), parameter :: FRAMEWORK_PREFIX = 'timeSeriesStats'
 
-  character (len=StrKIND), parameter :: STREAM_NAME_SUFFIX = '_stream_name'
-  character (len=StrKIND), parameter :: RESTART_NAME_SUFFIX = '_restart_name'
+  character (len=StrKIND), parameter :: OUTPUT_STREAM_SUFFIX = '_output_stream'
+  character (len=StrKIND), parameter :: RESTART_STREAM_SUFFIX = '_restart_stream'
   character (len=StrKIND), parameter :: OPERATION_SUFFIX = '_operation'
   character (len=StrKIND), parameter :: ADD_MESH_SUFFIX = '_add_mesh'
 
@@ -158,7 +159,52 @@ module ocn_time_series_stats
 !***********************************************************************
 contains
 
+!***********************************************************************
+! routine ocn_bootstrap_time_series_stats
+!
+!> \brief Bootstrap time_series_stats analysis member
+!> \author  Doug Jacobsen
+!> \date    10/08/2015
+!> \details
+!>  This routine performs pre-init configuration of the analysis member.
+!>  Specifically, it ensures the streams used for this instance are correctly
+!>  configured.
+!-----------------------------------------------------------------------
+subroutine ocn_bootstrap_time_series_stats(domain, err)!{{{
+  ! input variables
 
+  ! input/output variables
+  type (domain_type), intent(inout) :: domain
+
+  ! output variables
+  integer, intent(out) :: err !< Output: error flag
+
+  ! local variables
+  integer :: v
+  character (len=StrKIND) :: instance ! TODO intent(in)
+  type (time_series_type) :: series
+  type (time_series_alarms_type), allocatable, dimension(:) :: alarms
+
+  ! start procedure
+  err = 0
+
+  ! TODO placeholder for some unique ID if this code is replicated
+  instance = '' ! TODO to be passed in
+
+  ! initial allocation of instance state for this AM from the namelist
+  call start_state(domain, instance, series, err)
+
+  ! modify the output and restart streams for this AM instance
+  ! driver will do a restart read, after this, if necessary to fill values
+  call modify_stream(domain, instance, series, err)
+
+  ! clean up the instance memory
+  do v = 1, series % number_of_variables
+    deallocate(series % variables(v) % output_names)
+  end do
+  deallocate(series % variables)
+  deallocate(series % buffers)
+end subroutine ocn_bootstrap_time_series_stats!}}}
 
 !***********************************************************************
 ! routine ocn_init_time_series_stats
@@ -166,8 +212,8 @@ contains
 !> \brief Initialize MPAS-Ocean analysis member
 !> \author  Jon Woodring
 !> \date    September 1, 2015
-!> \details 
-!>  This routine conducts all initializations required for the 
+!> \details
+!>  This routine conducts all initializations required for the
 !>  MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
 subroutine ocn_init_time_series_stats(domain, err)!{{{
@@ -184,28 +230,26 @@ subroutine ocn_init_time_series_stats(domain, err)!{{{
   character (len=StrKIND) :: instance ! TODO intent(in)
   type (time_series_type) :: series
   type (time_series_alarms_type), allocatable, dimension(:) :: alarms
- 
+
   ! start procedure
   err = 0
 
   ! TODO placeholder for some unique ID if this code is replicated
   instance = '' ! TODO to be passed in
 
-  ! get the basic configuration of this stream
-  call start_init(domain, instance, series, err) 
+  ! coming back from a potential restart read
+  ! get all of the state for this instance
+  call get_state(domain, instance, series)
 
-  ! modify the output and restart streams and read restart
-  call modify_stream(domain, instance, series, err)
-
-  ! get all of the timing and configuration
+  ! get all of the timing configurations from namelist
   allocate(alarms(series % number_of_buffers))
   call get_alarms(domain, instance, series, alarms, err)
 
-  ! set all of the alarms and current flag state based on timers
+  ! set the values of the alarms and current flag states based on timers
   call set_alarms(domain, instance, series, alarms, err)
   deallocate(alarms)
 
-  ! clean up the memory
+  ! clean up the instance memory
   do v = 1, series % number_of_variables
     deallocate(series % variables(v) % output_names)
   end do
@@ -214,14 +258,13 @@ subroutine ocn_init_time_series_stats(domain, err)!{{{
 end subroutine ocn_init_time_series_stats!}}}
 
 
-
 !***********************************************************************
 ! routine ocn_compute_time_series_stats
 !
 !> \brief Compute MPAS-Ocean analysis member
 !> \author  Jon Woodring
 !> \date    September 1, 2015
-!> \details 
+!> \details
 !>  This routine conducts all computation required for this
 !>  MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
@@ -246,7 +289,7 @@ subroutine ocn_compute_time_series_stats(domain, timeLevel, err)!{{{
   ! TODO placeholder for some unique ID if this code is replicated
   instance = '' ! TODO to be passed in
 
-  ! get all of the state
+  ! get all of the state for this instance to be able to compute
   call get_state(domain, instance, series)
 
   ! update the counter
@@ -254,14 +297,14 @@ subroutine ocn_compute_time_series_stats(domain, timeLevel, err)!{{{
     if (series % buffers(b) % accumulate_flag == 1) then
       if (series % buffers(b) % reset_flag == 1) then
         series % buffers(b) % counter = 1
-      else 
+      else
         series % buffers(b) % counter = series % buffers(b) % counter + 1
       end if
     end if
   end do
 
   ! do all of the operations
-  do v = 1, series % number_of_variables 
+  do v = 1, series % number_of_variables
     call typed_operate(domain % blocklist, &
       series % variables(v), &
       series % buffers, &
@@ -271,7 +314,7 @@ subroutine ocn_compute_time_series_stats(domain, timeLevel, err)!{{{
   ! do all of the time checking and flag setting
   call timer_checking(series, domain % clock, err)
 
-  ! clean up the memory
+  ! clean up the instance memory
   do v = 1, series % number_of_variables
     deallocate(series % variables(v) % output_names)
   end do
@@ -287,7 +330,7 @@ end subroutine ocn_compute_time_series_stats!}}}
 !> \brief Save restart for MPAS-Ocean analysis member
 !> \author  Jon Woodring
 !> \date    September 1, 2015
-!> \details 
+!> \details
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
@@ -315,7 +358,7 @@ end subroutine ocn_restart_time_series_stats!}}}
 !> \brief Finalize MPAS-Ocean analysis member
 !> \author  Jon Woodring
 !> \date    September 1, 2015
-!> \details 
+!> \details
 !>  This routine conducts all finalizations required for this
 !>  MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
@@ -345,7 +388,7 @@ end subroutine ocn_finalize_time_series_stats!}}}
 !> \brief Get all of the state for this instance.
 !> \author  Jon Woodring
 !> \date    September 1, 2015
-!> \details 
+!> \details
 !> This will allocate and fetch all of the state necessary for this
 !> instance that is being run.
 !-----------------------------------------------------------------------
@@ -391,7 +434,7 @@ subroutine get_state(domain, instance, series)
     op_name = AVG_TOKEN
   else if (series % operation == MIN_OP) then
     op_name = MIN_TOKEN
-  else 
+  else
     op_name = MAX_TOKEN
   end if
 
@@ -402,7 +445,7 @@ subroutine get_state(domain, instance, series)
     allocate(series % variables(v) % output_names(series % number_of_buffers))
   end do
 
-  ! 
+  !
   ! get the instance values for variables
   !
 
@@ -479,16 +522,16 @@ subroutine get_state(domain, instance, series)
 end subroutine get_state
 
 !***********************************************************************
-! routine start_init
+! routine start_state
 !
 !> \brief Begin the initialization of this analysis member
 !> \author  Jon Woodring
 !> \date    September 1, 2015
-!> \details 
+!> \details
 !> This will count the number of variables, number of buffers, and
 !> also get the stream name and operation strings.
 !-----------------------------------------------------------------------
-subroutine start_init(domain, instance, series, err)
+subroutine start_state(domain, instance, series, err)
   ! input variables
   character (len=StrKIND), intent(in) :: instance
 
@@ -500,13 +543,13 @@ subroutine start_init(domain, instance, series, err)
   integer, intent(out) :: err !< Output: error flag
 
   ! local variables
-  character (len=StrKIND), pointer :: config_results, stream_name
+  character (len=StrKIND), pointer :: config_results, output_stream_name
   character (len=StrKIND) :: config, namelist_prefix, storage_prefix, &
     var_identifier, buf_identifier, var_prefix, buf_prefix
   integer :: b, v
   type (field0DChar), pointer :: srcString, dstString
   type (field0DInteger), pointer :: srcInteger, dstInteger
- 
+
   ! start procedure
   err = 0
 
@@ -514,8 +557,8 @@ subroutine start_init(domain, instance, series, err)
   storage_prefix = trim(FRAMEWORK_PREFIX) // trim(instance)
 
   !
-  ! allocate some framework memory
-  ! 
+  ! allocate some framework memory for instance state
+  !
 
   ! number_of_variables
   call mpas_pool_get_field(domain % blocklist % allFields, &
@@ -555,20 +598,20 @@ subroutine start_init(domain, instance, series, err)
   !
 
   ! get the stream name
-  config = trim(namelist_prefix) // trim(STREAM_NAME_SUFFIX)
-  call mpas_pool_get_config(domain % configs, config, stream_name)
+  config = trim(namelist_prefix) // trim(OUTPUT_STREAM_SUFFIX)
+  call mpas_pool_get_config(domain % configs, config, output_stream_name)
 
-  if (stream_name == 'none') then
+  if (output_stream_name == 'none') then
     call mpas_dmpar_global_abort('Error: stream cannot be "none" ' // &
       'for time series stats.')
   end if
 
   ! count the number of variables
   call mpas_stream_mgr_begin_iteration(domain % streamManager, &
-    stream_name, err)
+    output_stream_name, err)
   series % number_of_variables = 0
   do while (mpas_stream_mgr_get_next_field(domain % streamManager, &
-    stream_name, config))
+    output_stream_name, config))
     series % number_of_variables = series % number_of_variables + 1
   end do
 
@@ -607,7 +650,7 @@ subroutine start_init(domain, instance, series, err)
   end do
 
   !
-  ! duplicate memory for storing data in the framework
+  ! duplicate memory for storing AM instance state in the framework
   !
 
   ! create variable space
@@ -704,10 +747,13 @@ subroutine start_init(domain, instance, series, err)
       dstString % fieldName, series % buffers(b) % reset_alarm_ID, 1)
 
     !
-    ! counter is not done here, because it is part of the restart stream
+    ! counter is not allocated here, because it is part of the restart stream,
+    ! and not just the internal AM state
+    !
+    ! it is allocated in modify_stream
     !
   end do
-end subroutine start_init
+end subroutine start_state
 
 
 
@@ -717,7 +763,7 @@ end subroutine start_init
 !> \brief Remove existing variables and replace them with new ones
 !> \author  Jon Woodring
 !> \date    September 1, 2015
-!> \details 
+!> \details
 !>  Given a stream name, this will remove the existing variables
 !>  in a stream and replace them with similiarly named ones for
 !>  their accumulation. It will also add xtime and optionally the mesh.
@@ -735,7 +781,9 @@ subroutine modify_stream(domain, instance, series, err)!{{{
 
   ! local variables
   integer :: v, b
-  character (len=StrKIND), pointer :: stream_name, restart_name
+  logical :: emptyRestartStream
+  character (len=StrKIND), pointer :: output_stream_name, restart_stream_name
+  character (len=StrKIND) :: fieldName
   type (field0DReal), pointer :: srcReal, dstReal
   logical, pointer :: copy_mesh
   character (len=StrKIND) :: field_name, config, op_name
@@ -749,48 +797,48 @@ subroutine modify_stream(domain, instance, series, err)!{{{
   namelist_prefix = trim(CONFIG_PREFIX) // trim(instance)
   storage_prefix = trim(FRAMEWORK_PREFIX) // trim(instance)
 
-  ! get the stream name
-  config = trim(namelist_prefix) // trim(STREAM_NAME_SUFFIX)
-  call mpas_pool_get_config(domain % configs, config, stream_name)
+  ! get the output stream name
+  config = trim(namelist_prefix) // trim(OUTPUT_STREAM_SUFFIX)
+  call mpas_pool_get_config(domain % configs, config, output_stream_name)
 
-  ! get restart stream
-  config = trim(namelist_prefix) // trim(RESTART_NAME_SUFFIX)
-  call mpas_pool_get_config(domain % configs, config, restart_name)
+  ! get restart stream name
+  config = trim(namelist_prefix) // trim(RESTART_STREAM_SUFFIX)
+  call mpas_pool_get_config(domain % configs, config, restart_stream_name)
 
   ! operator
   if (series % operation == AVG_OP) then
     op_name = AVG_TOKEN
   else if (series % operation == MIN_OP) then
     op_name = MIN_TOKEN
-  else 
+  else
     op_name = MAX_TOKEN
   end if
 
-  ! get the old field names 
+  ! get the old field names
   call mpas_stream_mgr_begin_iteration(domain % streamManager, &
-    stream_name, err)
+    output_stream_name, err)
   v = 1
   do while (mpas_stream_mgr_get_next_field(domain % streamManager, &
-    stream_name, field_name))
+    output_stream_name, field_name))
     series % variables(v) % input_name = field_name
     v = v + 1
   end do
-  
-  ! remove the old ones from the stream 
+
+  ! remove the old ones from the stream
   do v = 1, series % number_of_variables
     call mpas_stream_mgr_remove_field(domain % streamManager, &
-      stream_name, series % variables(v) % input_name)
+      output_stream_name, series % variables(v) % input_name)
   end do
 
   !
   ! create memory and modify the stream
   !
 
-  ! add xtime to the stream
+  ! add xtime to the output stream
   call mpas_stream_mgr_add_field(domain % streamManager, &
-    stream_name, TIME_STREAM, ierr=err)
+    output_stream_name, TIME_STREAM, ierr=err)
 
-  ! optionally add mesh to stream
+  ! optionally add mesh to output stream
   config = trim(namelist_prefix) // trim(ADD_MESH_SUFFIX)
   call mpas_pool_get_config(domain % configs, config, copy_mesh)
   if (copy_mesh) then
@@ -799,13 +847,24 @@ subroutine modify_stream(domain, instance, series, err)!{{{
     do while (mpas_stream_mgr_get_next_field(domain % streamManager, &
       MESH_STREAM, field_name))
       call mpas_stream_mgr_add_field(domain % streamManager, &
-        stream_name, field_name, ierr=err)
+        output_stream_name, field_name, ierr=err)
     end do
   end if
 
-  ! make restart mutable
-  call mpas_stream_mgr_set_property(domain % streamManager, &
-    restart_name, MPAS_STREAM_PROPERTY_IMMUTABLE, .false., ierr=err)
+  ! ensure restart stream is empty
+  emptyRestartStream = .true.
+  call mpas_stream_mgr_begin_iteration(domain % streamManager, streamID=restart_stream_name, ierr=err)
+  do while (mpas_stream_mgr_get_next_field(domain % streamManager, streamID=restart_stream_name, fieldName=fieldName) .and. emptyRestartStream)
+    emptyRestartStream = .false.
+  end do
+
+  if (.not. emptyRestartStream) then
+    write(stderrUnit, *) 'ERROR: Stream named ''' // trim(restart_stream_name) // ''' is not empty, but is used in '
+    write(stderrUnit, *) '       an instance of the time series stats analysis member. This stream will be built'
+    write(stderrUnit, *) '       based on the contents of the ''' // trim(output_stream_name) // ''' stream.'
+    write(stderrUnit, *) '       Please ensure it is empty in the streams file.'
+    call mpas_dmpar_global_abort('ERROR: Misconfigured streams for time series stats analysis member.')
+  end if
 
   ! create and put the counters in the streams
   do b = 1, series % number_of_buffers
@@ -825,17 +884,17 @@ subroutine modify_stream(domain, instance, series, err)!{{{
 
     ! put it in the output stream
     call mpas_stream_mgr_add_field(domain % streamManager, &
-      stream_name, dstReal % fieldName, ierr=err)
+      output_stream_name, dstReal % fieldName, ierr=err)
 
     ! put it in the restart stream
     call mpas_stream_mgr_add_field(domain % streamManager, &
-      restart_name, dstReal % fieldName, ierr=err)
-  end do 
+      restart_stream_name, dstReal % fieldName, ierr=err)
+  end do
 
   ! set up the variables
   call mpas_stream_mgr_begin_iteration(domain % streamManager, &
-    stream_name, err)
-  do v = 1, series % number_of_variables 
+    output_stream_name, err)
+  do v = 1, series % number_of_variables
     ! get the info of the field
     call mpas_pool_get_field_info(domain % blocklist % allFields, &
       series % variables(v) % input_name, info)
@@ -865,36 +924,15 @@ subroutine modify_stream(domain, instance, series, err)!{{{
         series % variables(v) % output_names(b), &
         domain % blocklist % allFields)
 
-      ! add the field to the stream
+      ! add the field to the output stream
       call mpas_stream_mgr_add_field(domain % streamManager, &
-        stream_name, series % variables(v) % output_names(b), ierr=err)
+        output_stream_name, series % variables(v) % output_names(b), ierr=err)
 
       ! put it in the restart stream
       call mpas_stream_mgr_add_field(domain % streamManager, &
-        restart_name, series % variables(v) % output_names(b), ierr=err)
+        restart_stream_name, series % variables(v) % output_names(b), ierr=err)
     end do
   end do ! number_of_variables
-
-  ! make restart immutable
-  call mpas_stream_mgr_set_property(domain % streamManager, &
-    restart_name, MPAS_STREAM_PROPERTY_IMMUTABLE, .true., ierr=err)
-
-  ! read the restart stream
-  call mpas_stream_mgr_read(domain % streamManager, streamID = restart_name, &
-    ierr=err)
-
-  ! add xtime afterwards because we don't want to clobber the existing xtime
-  ! make restart mutable
-  call mpas_stream_mgr_set_property(domain % streamManager, &
-    restart_name, MPAS_STREAM_PROPERTY_IMMUTABLE, .false., ierr=err)
-
-  ! add xtime to the restart
-  call mpas_stream_mgr_add_field(domain % streamManager, &
-    restart_name, TIME_STREAM, ierr=err)
-
-  ! make restart immutable
-  call mpas_stream_mgr_set_property(domain % streamManager, &
-    restart_name, MPAS_STREAM_PROPERTY_IMMUTABLE, .true., ierr=err)
 
 end subroutine modify_stream!}}}
 
@@ -905,7 +943,7 @@ end subroutine modify_stream!}}}
 !> \brief Given an input name, create a cooresponding output name
 !> \author  Jon Woodring
 !> \date    September 1, 2015
-!> \details 
+!> \details
 !> Code to create consistent output names from input names.
 !-----------------------------------------------------------------------
 character (len=StrKIND) function output_naming &
@@ -924,13 +962,13 @@ end function output_naming
 !> \brief Given an buffer number, create a cooresponding counter name
 !> \author  Jon Woodring
 !> \date    September 1, 2015
-!> \details 
+!> \details
 !> Code to create consistent counter names from buffer numbers.
 !-----------------------------------------------------------------------
 character (len=StrKIND) function counter_naming &
 (storage_prefix, buf_identifier)
   character (len=StrKIND), intent(in) :: storage_prefix, buf_identifier
-  
+
   counter_naming = trim(storage_prefix) // trim(COUNTER_SUFFIX) // &
     trim(buf_identifier)
 end function counter_naming
@@ -943,7 +981,7 @@ end function counter_naming
 !> \brief Read the namelist for timings
 !> \author  Jon Woodring
 !> \date    September 1, 2015
-!> \details 
+!> \details
 !> This will read the namelist and get the strings and set the clocks
 !> for the different timers to be used. The actual alarms are not set.
 !-----------------------------------------------------------------------
@@ -974,7 +1012,7 @@ subroutine get_alarms(domain, instance, series, alarms, err)
   config = trim(namelist_prefix) // trim(REFERENCE_TIMES_SUFFIX)
   call mpas_pool_get_config(domain % configs, config, config_results)
   call set_times(series, alarms, domain % clock, START_TIMES, &
-    config_results, ok, err) 
+    config_results, ok, err)
 
   ! order matters, don't reorder these following ones!
   ! it matters because times/intervals can be configured to be equal
@@ -984,7 +1022,7 @@ subroutine get_alarms(domain, instance, series, alarms, err)
   config = trim(namelist_prefix) // trim(RESET_INTERVALS_SUFFIX)
   call mpas_pool_get_config(domain % configs, config, config_results)
   call set_times(series, alarms, domain % clock, RESET_INTERVALS, &
-    config_results, ok, err) 
+    config_results, ok, err)
   if (.not. ok) then
     call mpas_dmpar_global_abort('Error: number of times in ' // &
       'reset_intervals is not consistent with number of times ' // &
@@ -996,7 +1034,7 @@ subroutine get_alarms(domain, instance, series, alarms, err)
   config = trim(namelist_prefix) // trim(REPEAT_INTERVALS_SUFFIX)
   call mpas_pool_get_config(domain % configs, config, config_results)
   call set_times(series, alarms, domain % clock, REPEAT_INTERVALS, &
-    config_results, ok, err) 
+    config_results, ok, err)
   if (.not. ok) then
     call mpas_dmpar_global_abort('Error: number of times in ' // &
       'repeat_intervals is not consistent with number of times ' // &
@@ -1008,7 +1046,7 @@ subroutine get_alarms(domain, instance, series, alarms, err)
   config = trim(namelist_prefix) // trim(DURATION_INTERVALS_SUFFIX)
   call mpas_pool_get_config(domain % configs, config, config_results)
   call set_times(series, alarms, domain % clock, DURATION_INTERVALS, &
-    config_results, ok, err) 
+    config_results, ok, err)
   if (.not. ok) then
     call mpas_dmpar_global_abort('Error: number of times in ' // &
       'duration_intervals is not consistent with number of times ' // &
@@ -1022,7 +1060,7 @@ subroutine get_alarms(domain, instance, series, alarms, err)
   do b = 1, series % number_of_buffers
     call mpas_interval_division(alarms(b) % start_time, &
        alarms(b) % repeat_interval, &
-       alarms(b) % reset_interval, n, rem) 
+       alarms(b) % reset_interval, n, rem)
 
     if (n > 1 .or. (n == 1 .and. rem /= zero)) then
       write(stderrUnit,*) 'Warning: repeat_interval > ' // &
@@ -1033,7 +1071,7 @@ subroutine get_alarms(domain, instance, series, alarms, err)
 
     call mpas_interval_division(alarms(b) % start_time, &
        alarms(b) % duration_interval, &
-       alarms(b) % repeat_interval, n, rem) 
+       alarms(b) % repeat_interval, n, rem)
 
     if (n > 1 .or. (n == 1 .and. rem /= zero)) then
       write(stderrUnit,*) 'Warning: duration_interval > ' // &
@@ -1052,7 +1090,7 @@ end subroutine get_alarms
 !> \brief Set the alarms based on the clocks
 !> \author  Jon Woodring
 !> \date    September 1, 2015
-!> \details 
+!> \details
 !> Alarms for the different timers are set, such that temporal
 !> window alarms are configured.
 !-----------------------------------------------------------------------
@@ -1204,7 +1242,7 @@ end subroutine set_alarms
 !> \brief Walk a semicolon delimited string to find substrings
 !> \author  Jon Woodring
 !> \date    September 1, 2015
-!> \details 
+!> \details
 !>  Walk a string delimited by semicolons and return the first substring
 !>  from start index, and modify start to point at the next candidate.
 !-----------------------------------------------------------------------
@@ -1230,12 +1268,12 @@ subroutine walk_string(next, substr, ok)!{{{
   ok = i > 0
   if (.not. ok) then
     return
-  end if 
+  end if
   copy = trim(next(i:))
 
   ! find the first semicolon and split
   i = scan(copy, ';')
-  
+
   ! return that substring and the remainder
   if (i > 0) then
     substr = trim(copy(1:i-1))
@@ -1244,7 +1282,7 @@ subroutine walk_string(next, substr, ok)!{{{
     substr = trim(copy)
     next = ''
   end if
-    
+
 end subroutine walk_string!}}}
 
 
@@ -1255,7 +1293,7 @@ end subroutine walk_string!}}}
 !> \brief Set a list of times
 !> \author  Jon Woodring
 !> \date    September 1, 2015
-!> \details 
+!> \details
 !>  Walk a list of times delimited by spaces and set the time info
 !>  for the buffer structure so that alarms can be set.
 !-----------------------------------------------------------------------
@@ -1271,11 +1309,11 @@ subroutine set_times(series, alarms, clock, which, config, ok, err)
 
   ! output variables
   logical, intent(out) :: ok
-  integer, intent(out) :: err 
+  integer, intent(out) :: err
 
   ! local variables
   character (len=StrKIND) :: next, time
-  integer :: b 
+  integer :: b
 
   ! find the first time in the list
   next = config
@@ -1316,7 +1354,7 @@ subroutine set_times(series, alarms, clock, which, config, ok, err)
     else
       call mpas_set_timeInterval(alarms(b) % reset_interval, &
           timeString=time, ierr=err)
-    end if 
+    end if
 
     ! get the next time string
     call walk_string(next, time, ok)
@@ -1334,7 +1372,7 @@ subroutine set_times(series, alarms, clock, which, config, ok, err)
 !> \brief Function to create a new field from an existing field
 !> \author  Jon Woodring
 !> \date    September 1, 2015
-!> \details 
+!> \details
 !>  This routine conducts all initializations required for
 !>  duplicating a field and adding it to the allFields pool.
 !-----------------------------------------------------------------------
@@ -1344,7 +1382,7 @@ subroutine add_new_field(info, inname, outname, pool)!{{{
   character (len=StrKIND), intent(in) :: inname, outname
 
   ! input/output variables
-  type (mpas_pool_type), intent(inout) :: pool 
+  type (mpas_pool_type), intent(inout) :: pool
 
   ! output variables
 
@@ -1382,21 +1420,21 @@ end subroutine add_new_field!}}}
 
 
 !***********************************************************************
-! routine timer_checking 
+! routine timer_checking
 !
 !> \brief Timer functions to determine when to run
 !> \author  Jon Woodring
 !> \date    September 1, 2015
-!> \details 
-!>  This routine conducts timer checking to determine if it 
-!>  needs to run at this particular time. 
+!> \details
+!>  This routine conducts timer checking to determine if it
+!>  needs to run at this particular time.
 !-----------------------------------------------------------------------
 subroutine timer_checking(series, clock, err)!{{{
   ! input variables
 
   ! input/output variables
   type (time_series_type), intent(inout) :: series
-  type (mpas_clock_type), intent(inout) :: clock 
+  type (mpas_clock_type), intent(inout) :: clock
 
   ! output variables
   integer, intent(out) :: err
@@ -1445,7 +1483,7 @@ subroutine timer_checking(series, clock, err)!{{{
 
     ! turn off accumulation
     !
-    ! duration needs to be >= 2 * compute_interval 
+    ! duration needs to be >= 2 * compute_interval
     ! (a series can only be 2 or more)
     if (mpas_is_alarm_ringing(clock, &
         series % buffers(b) % duration_alarm_ID, ierr=err)) then
@@ -1454,7 +1492,7 @@ subroutine timer_checking(series, clock, err)!{{{
       series % buffers(b) % accumulate_flag = 0
     end if
 
-    ! turn on accumulation 
+    ! turn on accumulation
     ! (this is second, in case the duration and repeat
     ! overlaps on the same timer)
     if (mpas_is_alarm_ringing(clock, &
@@ -1475,7 +1513,7 @@ end subroutine timer_checking!}}}
 !> \brief Do the operation, but switch on run-time type
 !> \author  Jon Woodring
 !> \date    September 1, 2015
-!> \details 
+!> \details
 !>  Since we don't know the type of the array, we need to do some
 !>  run-time type switching based on the type of the array.
 !-----------------------------------------------------------------------
@@ -1505,7 +1543,7 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
         call operate0r_min(block, variable, buffers)
       else
         call operate0r_max(block, variable, buffers)
-      end if 
+      end if
     else if (info % nDims == 1) then
       if (operation == AVG_OP) then
         call operate1r_avg(block, variable, buffers)
@@ -1513,7 +1551,7 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
         call operate1r_min(block, variable, buffers)
       else
         call operate1r_max(block, variable, buffers)
-      end if 
+      end if
     else if (info % nDims == 2) then
       if (operation == AVG_OP) then
         call operate2r_avg(block, variable, buffers)
@@ -1521,7 +1559,7 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
         call operate2r_min(block, variable, buffers)
       else
         call operate2r_max(block, variable, buffers)
-      end if 
+      end if
     else if (info % nDims == 3) then
       if (operation == AVG_OP) then
         call operate3r_avg(block, variable, buffers)
@@ -1529,7 +1567,7 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
         call operate3r_min(block, variable, buffers)
       else
         call operate3r_max(block, variable, buffers)
-      end if 
+      end if
     else if (info % nDims == 4) then
       if (operation == AVG_OP) then
         call operate4r_avg(block, variable, buffers)
@@ -1537,7 +1575,7 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
         call operate4r_min(block, variable, buffers)
       else
         call operate4r_max(block, variable, buffers)
-      end if 
+      end if
     else
       if (operation == AVG_OP) then
         call operate5r_avg(block, variable, buffers)
@@ -1545,9 +1583,9 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
         call operate5r_min(block, variable, buffers)
       else
         call operate5r_max(block, variable, buffers)
-      end if 
+      end if
     end if
-  else 
+  else
     if (info % nDims == 0) then
       if (operation == AVG_OP) then
         call operate0i_avg(block, variable, buffers)
@@ -1555,7 +1593,7 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
         call operate0i_min(block, variable, buffers)
       else
         call operate0i_max(block, variable, buffers)
-      end if 
+      end if
     else if (info % nDims == 1) then
       if (operation == AVG_OP) then
         call operate1i_avg(block, variable, buffers)
@@ -1563,7 +1601,7 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
         call operate1i_min(block, variable, buffers)
       else
         call operate1i_max(block, variable, buffers)
-      end if 
+      end if
     else if (info % nDims == 2) then
       if (operation == AVG_OP) then
         call operate2i_avg(block, variable, buffers)
@@ -1571,7 +1609,7 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
         call operate2i_min(block, variable, buffers)
       else
         call operate2i_max(block, variable, buffers)
-      end if 
+      end if
     else
       if (operation == AVG_OP) then
         call operate3i_avg(block, variable, buffers)
@@ -1579,7 +1617,7 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
         call operate3i_min(block, variable, buffers)
       else
         call operate3i_max(block, variable, buffers)
-      end if 
+      end if
     end if
   end if
 end subroutine typed_operate!}}}
@@ -1587,12 +1625,12 @@ end subroutine typed_operate!}}}
 
 
 !***********************************************************************
-! routine copy_field_X 
+! routine copy_field_X
 !
 !> \brief Functions to create a new field from an existing field
 !> \author  Jon Woodring
 !> \date    September 1, 2015
-!> \details 
+!> \details
 !>  This routine conducts initializations required for
 !>  duplicating a field and adding it to the allFields pool based on type.
 !-----------------------------------------------------------------------
@@ -1824,7 +1862,7 @@ end subroutine copy_field_3i!}}}
 !> \brief Series of subroutines to support operations on run-time types
 !> \author  Jon Woodring
 !> \date    September 1, 2015
-!> \details 
+!> \details
 !>  These subroutines encapsulate the different opertions that can occur
 !>  based on the run-time types. (This would likely be
 !>  instantiated generics/templates in other languages.)
@@ -1844,7 +1882,7 @@ subroutine operate0r_avg (start_block, variable, buffers)
 
   real (kind=RKIND), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -1861,18 +1899,18 @@ subroutine operate0r_avg (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
         out_array = (out_array * &
                 (buffers(b) % counter - 1) + in_array) &
                 / buffers(b) % counter ;
 !        out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate0r_avg
 
 subroutine operate1r_avg (start_block, variable, buffers)
@@ -1882,7 +1920,7 @@ subroutine operate1r_avg (start_block, variable, buffers)
 
   real (kind=RKIND), dimension(:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -1899,18 +1937,18 @@ subroutine operate1r_avg (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
         out_array = (out_array * &
                 (buffers(b) % counter - 1) + in_array) &
                 / buffers(b) % counter ;
 !        out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate1r_avg
 
 subroutine operate2r_avg (start_block, variable, buffers)
@@ -1920,7 +1958,7 @@ subroutine operate2r_avg (start_block, variable, buffers)
 
   real (kind=RKIND), dimension(:,:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -1937,18 +1975,18 @@ subroutine operate2r_avg (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
         out_array = (out_array * &
                 (buffers(b) % counter - 1) + in_array) &
                 / buffers(b) % counter ;
 !        out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate2r_avg
 
 subroutine operate3r_avg (start_block, variable, buffers)
@@ -1958,7 +1996,7 @@ subroutine operate3r_avg (start_block, variable, buffers)
 
   real (kind=RKIND), dimension(:,:,:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -1975,18 +2013,18 @@ subroutine operate3r_avg (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
         out_array = (out_array * &
                 (buffers(b) % counter - 1) + in_array) &
                 / buffers(b) % counter ;
 !        out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate3r_avg
 
 subroutine operate4r_avg (start_block, variable, buffers)
@@ -1996,7 +2034,7 @@ subroutine operate4r_avg (start_block, variable, buffers)
 
   real (kind=RKIND), dimension(:,:,:,:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2013,18 +2051,18 @@ subroutine operate4r_avg (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
         out_array = (out_array * &
                 (buffers(b) % counter - 1) + in_array) &
                 / buffers(b) % counter ;
 !        out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate4r_avg
 
 subroutine operate5r_avg (start_block, variable, buffers)
@@ -2034,7 +2072,7 @@ subroutine operate5r_avg (start_block, variable, buffers)
 
   real (kind=RKIND), dimension(:,:,:,:,:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2051,18 +2089,18 @@ subroutine operate5r_avg (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
         out_array = (out_array * &
                 (buffers(b) % counter - 1) + in_array) &
                 / buffers(b) % counter ;
 !        out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate5r_avg
 
 subroutine operate0i_avg (start_block, variable, buffers)
@@ -2072,7 +2110,7 @@ subroutine operate0i_avg (start_block, variable, buffers)
 
   integer, pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2089,18 +2127,18 @@ subroutine operate0i_avg (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
         out_array = (out_array * &
                 (buffers(b) % counter - 1) + in_array) &
                 / buffers(b) % counter ;
 !        out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate0i_avg
 
 subroutine operate1i_avg (start_block, variable, buffers)
@@ -2110,7 +2148,7 @@ subroutine operate1i_avg (start_block, variable, buffers)
 
   integer, dimension(:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2127,18 +2165,18 @@ subroutine operate1i_avg (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
         out_array = (out_array * &
                 (buffers(b) % counter - 1) + in_array) &
                 / buffers(b) % counter ;
 !        out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate1i_avg
 
 subroutine operate2i_avg (start_block, variable, buffers)
@@ -2148,7 +2186,7 @@ subroutine operate2i_avg (start_block, variable, buffers)
 
   integer, dimension(:,:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2165,18 +2203,18 @@ subroutine operate2i_avg (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
         out_array = (out_array * &
                 (buffers(b) % counter - 1) + in_array) &
                 / buffers(b) % counter ;
 !        out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate2i_avg
 
 subroutine operate3i_avg (start_block, variable, buffers)
@@ -2186,7 +2224,7 @@ subroutine operate3i_avg (start_block, variable, buffers)
 
   integer, dimension(:,:,:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2203,18 +2241,18 @@ subroutine operate3i_avg (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
         out_array = (out_array * &
                 (buffers(b) % counter - 1) + in_array) &
                 / buffers(b) % counter ;
 !        out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate3i_avg
 
 subroutine operate0r_min (start_block, variable, buffers)
@@ -2224,7 +2262,7 @@ subroutine operate0r_min (start_block, variable, buffers)
 
   real (kind=RKIND), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2241,18 +2279,18 @@ subroutine operate0r_min (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
 !        out_array = (out_array * &
 !                (buffers(b) % counter - 1) + in_array) &
 !                / buffers(b) % counter ;
         out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate0r_min
 
 subroutine operate1r_min (start_block, variable, buffers)
@@ -2262,7 +2300,7 @@ subroutine operate1r_min (start_block, variable, buffers)
 
   real (kind=RKIND), dimension(:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2279,18 +2317,18 @@ subroutine operate1r_min (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
 !        out_array = (out_array * &
 !                (buffers(b) % counter - 1) + in_array) &
 !                / buffers(b) % counter ;
         out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate1r_min
 
 subroutine operate2r_min (start_block, variable, buffers)
@@ -2300,7 +2338,7 @@ subroutine operate2r_min (start_block, variable, buffers)
 
   real (kind=RKIND), dimension(:,:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2317,18 +2355,18 @@ subroutine operate2r_min (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
 !        out_array = (out_array * &
 !                (buffers(b) % counter - 1) + in_array) &
 !                / buffers(b) % counter ;
         out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate2r_min
 
 subroutine operate3r_min (start_block, variable, buffers)
@@ -2338,7 +2376,7 @@ subroutine operate3r_min (start_block, variable, buffers)
 
   real (kind=RKIND), dimension(:,:,:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2355,18 +2393,18 @@ subroutine operate3r_min (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
 !        out_array = (out_array * &
 !                (buffers(b) % counter - 1) + in_array) &
 !                / buffers(b) % counter ;
         out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate3r_min
 
 subroutine operate4r_min (start_block, variable, buffers)
@@ -2376,7 +2414,7 @@ subroutine operate4r_min (start_block, variable, buffers)
 
   real (kind=RKIND), dimension(:,:,:,:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2393,18 +2431,18 @@ subroutine operate4r_min (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
 !        out_array = (out_array * &
 !                (buffers(b) % counter - 1) + in_array) &
 !                / buffers(b) % counter ;
         out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate4r_min
 
 subroutine operate5r_min (start_block, variable, buffers)
@@ -2414,7 +2452,7 @@ subroutine operate5r_min (start_block, variable, buffers)
 
   real (kind=RKIND), dimension(:,:,:,:,:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2431,18 +2469,18 @@ subroutine operate5r_min (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
 !        out_array = (out_array * &
 !                (buffers(b) % counter - 1) + in_array) &
 !                / buffers(b) % counter ;
         out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate5r_min
 
 subroutine operate0i_min (start_block, variable, buffers)
@@ -2452,7 +2490,7 @@ subroutine operate0i_min (start_block, variable, buffers)
 
   integer, pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2469,18 +2507,18 @@ subroutine operate0i_min (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
 !        out_array = (out_array * &
 !                (buffers(b) % counter - 1) + in_array) &
 !                / buffers(b) % counter ;
         out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate0i_min
 
 subroutine operate1i_min (start_block, variable, buffers)
@@ -2490,7 +2528,7 @@ subroutine operate1i_min (start_block, variable, buffers)
 
   integer, dimension(:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2507,18 +2545,18 @@ subroutine operate1i_min (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
 !        out_array = (out_array * &
 !                (buffers(b) % counter - 1) + in_array) &
 !                / buffers(b) % counter ;
         out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate1i_min
 
 subroutine operate2i_min (start_block, variable, buffers)
@@ -2528,7 +2566,7 @@ subroutine operate2i_min (start_block, variable, buffers)
 
   integer, dimension(:,:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2545,18 +2583,18 @@ subroutine operate2i_min (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
 !        out_array = (out_array * &
 !                (buffers(b) % counter - 1) + in_array) &
 !                / buffers(b) % counter ;
         out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate2i_min
 
 subroutine operate3i_min (start_block, variable, buffers)
@@ -2566,7 +2604,7 @@ subroutine operate3i_min (start_block, variable, buffers)
 
   integer, dimension(:,:,:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2583,18 +2621,18 @@ subroutine operate3i_min (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
 !        out_array = (out_array * &
 !                (buffers(b) % counter - 1) + in_array) &
 !                / buffers(b) % counter ;
         out_array = min(out_array, in_array) ;
 !        out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate3i_min
 
 subroutine operate0r_max (start_block, variable, buffers)
@@ -2604,7 +2642,7 @@ subroutine operate0r_max (start_block, variable, buffers)
 
   real (kind=RKIND), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2621,18 +2659,18 @@ subroutine operate0r_max (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
 !        out_array = (out_array * &
 !                (buffers(b) % counter - 1) + in_array) &
 !                / buffers(b) % counter ;
 !        out_array = min(out_array, in_array) ;
         out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate0r_max
 
 subroutine operate1r_max (start_block, variable, buffers)
@@ -2642,7 +2680,7 @@ subroutine operate1r_max (start_block, variable, buffers)
 
   real (kind=RKIND), dimension(:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2659,18 +2697,18 @@ subroutine operate1r_max (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
 !        out_array = (out_array * &
 !                (buffers(b) % counter - 1) + in_array) &
 !                / buffers(b) % counter ;
 !        out_array = min(out_array, in_array) ;
         out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate1r_max
 
 subroutine operate2r_max (start_block, variable, buffers)
@@ -2680,7 +2718,7 @@ subroutine operate2r_max (start_block, variable, buffers)
 
   real (kind=RKIND), dimension(:,:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2697,18 +2735,18 @@ subroutine operate2r_max (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
 !        out_array = (out_array * &
 !                (buffers(b) % counter - 1) + in_array) &
 !                / buffers(b) % counter ;
 !        out_array = min(out_array, in_array) ;
         out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate2r_max
 
 subroutine operate3r_max (start_block, variable, buffers)
@@ -2718,7 +2756,7 @@ subroutine operate3r_max (start_block, variable, buffers)
 
   real (kind=RKIND), dimension(:,:,:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2735,18 +2773,18 @@ subroutine operate3r_max (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
 !        out_array = (out_array * &
 !                (buffers(b) % counter - 1) + in_array) &
 !                / buffers(b) % counter ;
 !        out_array = min(out_array, in_array) ;
         out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate3r_max
 
 subroutine operate4r_max (start_block, variable, buffers)
@@ -2756,7 +2794,7 @@ subroutine operate4r_max (start_block, variable, buffers)
 
   real (kind=RKIND), dimension(:,:,:,:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2773,18 +2811,18 @@ subroutine operate4r_max (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
 !        out_array = (out_array * &
 !                (buffers(b) % counter - 1) + in_array) &
 !                / buffers(b) % counter ;
 !        out_array = min(out_array, in_array) ;
         out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate4r_max
 
 subroutine operate5r_max (start_block, variable, buffers)
@@ -2794,7 +2832,7 @@ subroutine operate5r_max (start_block, variable, buffers)
 
   real (kind=RKIND), dimension(:,:,:,:,:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2811,18 +2849,18 @@ subroutine operate5r_max (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
 !        out_array = (out_array * &
 !                (buffers(b) % counter - 1) + in_array) &
 !                / buffers(b) % counter ;
 !        out_array = min(out_array, in_array) ;
         out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate5r_max
 
 subroutine operate0i_max (start_block, variable, buffers)
@@ -2832,7 +2870,7 @@ subroutine operate0i_max (start_block, variable, buffers)
 
   integer, pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2849,18 +2887,18 @@ subroutine operate0i_max (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
 !        out_array = (out_array * &
 !                (buffers(b) % counter - 1) + in_array) &
 !                / buffers(b) % counter ;
 !        out_array = min(out_array, in_array) ;
         out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate0i_max
 
 subroutine operate1i_max (start_block, variable, buffers)
@@ -2870,7 +2908,7 @@ subroutine operate1i_max (start_block, variable, buffers)
 
   integer, dimension(:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2887,18 +2925,18 @@ subroutine operate1i_max (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
 !        out_array = (out_array * &
 !                (buffers(b) % counter - 1) + in_array) &
 !                / buffers(b) % counter ;
 !        out_array = min(out_array, in_array) ;
         out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate1i_max
 
 subroutine operate2i_max (start_block, variable, buffers)
@@ -2908,7 +2946,7 @@ subroutine operate2i_max (start_block, variable, buffers)
 
   integer, dimension(:,:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2925,18 +2963,18 @@ subroutine operate2i_max (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
 !        out_array = (out_array * &
 !                (buffers(b) % counter - 1) + in_array) &
 !                / buffers(b) % counter ;
 !        out_array = min(out_array, in_array) ;
         out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate2i_max
 
 subroutine operate3i_max (start_block, variable, buffers)
@@ -2946,7 +2984,7 @@ subroutine operate3i_max (start_block, variable, buffers)
 
   integer, dimension(:,:,:), pointer :: in_array, out_array
   integer :: b
-  type (block_type), pointer :: block 
+  type (block_type), pointer :: block
 
   block => start_block
   do while (associated(block))
@@ -2963,18 +3001,18 @@ subroutine operate3i_max (start_block, variable, buffers)
 
       if (buffers(b) % reset_flag == 1) then
         out_array = in_array
-      else 
+      else
 !        out_array = (out_array * &
 !                (buffers(b) % counter - 1) + in_array) &
 !                / buffers(b) % counter ;
 !        out_array = min(out_array, in_array) ;
         out_array = max(out_array, in_array) ;
 
-      end if 
-    end do 
+      end if
+    end do
 
-    block => block % next 
-  end do 
+    block => block % next
+  end do
 end subroutine operate3i_max
 
 end module ocn_time_series_stats
