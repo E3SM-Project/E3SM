@@ -791,7 +791,7 @@ for mct, etc.
 
 <compiler MACH="pleiades-wes">
   <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
-  <MPI_PATH>/nasa/sgi/mpt/2.11r13</MPI_PATH>
+  <MPI_PATH>$(MPI_ROOT)</MPI_PATH>
   <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
   <MPICC>icc</MPICC>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -xSSE4.2 </ADD_FFLAGS>
@@ -800,7 +800,7 @@ for mct, etc.
 
 <compiler MACH="pleiades-san">
   <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
-  <MPI_PATH>/nasa/sgi/mpt/2.11r13</MPI_PATH>
+  <MPI_PATH>$(MPI_ROOT)</MPI_PATH>
   <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
   <MPICC>icc</MPICC>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -xAVX </ADD_FFLAGS>
@@ -809,7 +809,7 @@ for mct, etc.
 
 <compiler MACH="pleiades-ivy">
   <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
-  <MPI_PATH>/nasa/sgi/mpt/2.11r13</MPI_PATH>
+  <MPI_PATH>$(MPI_ROOT)</MPI_PATH>
   <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
   <MPICC>icc</MPICC>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -xAVX </ADD_FFLAGS>
@@ -818,7 +818,7 @@ for mct, etc.
 
 <compiler MACH="pleiades-has">
   <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
-  <MPI_PATH>/nasa/sgi/mpt/2.11r13</MPI_PATH>
+  <MPI_PATH>$(MPI_ROOT)</MPI_PATH>
   <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
   <MPICC>icc</MPICC>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -aCORE-AVX2 -align array32byte </ADD_FFLAGS>
