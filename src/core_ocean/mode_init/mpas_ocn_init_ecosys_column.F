@@ -87,6 +87,7 @@ contains
 
       type (mpas_pool_type), pointer :: meshPool, verticalMeshPool, statePool
       type (mpas_pool_type), pointer :: diagnosticsPool, forcingPool
+      type (mpas_pool_type), pointer :: ecosysAuxiliary  ! additional forcing fields
 
       type (mpas_pool_type), pointer :: tracersPool
 
@@ -96,7 +97,10 @@ contains
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth, refZMid, vertCoordMovementWeights
       real (kind=RKIND), dimension(:), pointer :: bottomDepth
       real (kind=RKIND), dimension(:, :), pointer :: layerThickness, restingThickness
-      real (kind=RKIND), dimension(:, :, :), pointer :: activeTracers, ecosysTracers
+      real (kind=RKIND), dimension(:), pointer :: PH_PREV, PH_PREV_ALT_CO2
+      real (kind=RKIND), dimension(:, :), pointer :: PH_PREV_3D, PH_PREV_ALT_CO2_3D
+      real (kind=RKIND), dimension(:, :, :), pointer :: activeTracers, ecosysTracers, DMSTracers,  &
+         MacroMoleculesTracers
 
       real (kind=RKIND), dimension(:), pointer :: interfaceLocations
 
@@ -162,7 +166,16 @@ contains
 
         call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
         call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, 1)
+        call mpas_pool_get_array(tracersPool, 'DMSTracers', DMSTracers, 1)
+        call mpas_pool_get_array(tracersPool, 'MacroMoleculesTracers', MacroMoleculesTracers, 1)
         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+
+        call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
+
+        call mpas_pool_get_array(ecosysAuxiliary, 'PH_PREV', PH_PREV)
+        call mpas_pool_get_array(ecosysAuxiliary, 'PH_PREV_ALT_CO2', PH_PREV_ALT_CO2)
+        call mpas_pool_get_array(ecosysAuxiliary, 'PH_PREV_3D', PH_PREV_3D)
+        call mpas_pool_get_array(ecosysAuxiliary, 'PH_PREV_ALT_CO2_3D', PH_PREV_ALT_CO2_3D)
 
         ! Set refBottomDepth and refBottomDepthTopOfCell
         do k = 1, nVertLevels
@@ -362,7 +375,45 @@ contains
               end do
            end do
 
+           do iCell = 1, nCellsSolve
+              PH_PREV(iCell) = 8.0_RKIND
+              PH_PREV_ALT_CO2(iCell) = 8.0_RKIND
+              do k = 1, nVertLevels
+                 PH_PREV_3D(k, iCell) = 8.0_RKIND
+                 PH_PREV_ALT_CO2_3D(k, iCell) = 8.0_RKIND
+              end do
+           end do
+
         end if  !  associated(ecosysTracers)
+
+        if ( associated(DMSTracers) ) then
+           call mpas_pool_get_dimension(tracersPool, 'index_DMS', index_dummy)
+           indexField(1) = index_dummy
+           call mpas_pool_get_dimension(tracersPool, 'index_DMSP', index_dummy)
+           indexField(2) = index_dummy
+           do iCell = 1, nCellsSolve
+              do k = 1, nVertLevels
+                 DMSTracers(indexField(1), k, iCell) = 0.0_RKIND
+                 DMSTracers(indexField(2), k, iCell) = 0.0_RKIND
+              end do
+           end do
+        end if  !  associated(DMSTracers)
+
+        if ( associated(MacroMoleculesTracers) ) then
+           call mpas_pool_get_dimension(tracersPool, 'index_PROT', index_dummy)
+           indexField(1) = index_dummy
+           call mpas_pool_get_dimension(tracersPool, 'index_POLY', index_dummy)
+           indexField(2) = index_dummy
+           call mpas_pool_get_dimension(tracersPool, 'index_LIP', index_dummy)
+           indexField(3) = index_dummy
+           do iCell = 1, nCellsSolve
+              do k = 1, nVertLevels
+                 MacroMoleculesTracers(indexField(1), k, iCell) = 0.0_RKIND
+                 MacroMoleculesTracers(indexField(2), k, iCell) = 0.0_RKIND
+                 MacroMoleculesTracers(indexField(3), k, iCell) = 0.0_RKIND
+              end do
+           end do
+        end if  !  associated(MacroMoleculesTracers)
 
         do iCell = 1, nCellsSolve
            ! Set layerThickness
