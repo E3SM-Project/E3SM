@@ -21,6 +21,7 @@ module CNNitrogenStateType
   use ColumnType             , only : col                
   use PatchType              , only : pft
   use clm_varctl             , only : use_pflotran, pf_cmode
+
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -755,7 +756,8 @@ contains
   end subroutine InitCold
 
   !-----------------------------------------------------------------------
-  subroutine Restart ( this,  bounds, ncid, flag )
+
+  subroutine Restart ( this,  bounds, ncid, flag, cnstate_vars )
     !
     ! !DESCRIPTION: 
     ! Read/write CN restart data for carbon state
@@ -763,6 +765,8 @@ contains
     ! !USES:
     use shr_infnan_mod      , only : isnan => shr_infnan_isnan, nan => shr_infnan_nan, assignment(=)
     use clm_time_manager    , only : is_restart, get_nstep
+    use clm_varctl          , only : spinup_mortality_factor
+    use CNStateType         , only : cnstate_type
     use restUtilMod
     use ncdio_pio
     !
@@ -770,6 +774,7 @@ contains
     class (nitrogenstate_type) :: this
     type(bounds_type)          , intent(in)    :: bounds 
     type(file_desc_t)          , intent(inout) :: ncid   
+    type(cnstate_type)         , intent(in)    :: cnstate_vars
     character(len=*)           , intent(in)    :: flag   !'read' or 'write' or 'define'
     !
     ! !LOCAL VARIABLES:
@@ -778,7 +783,7 @@ contains
     integer            :: idata
     logical            :: exit_spinup = .false.
     logical            :: enter_spinup = .false.
-    real(r8)           :: m          ! multiplier for the exit_spinup code
+    real(r8)           :: m, m_veg          ! multiplier for the exit_spinup code
     real(r8), pointer  :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
     real(r8), pointer  :: ptr1d(:)   ! temp. pointers for slicing larger arrays
     character(len=128) :: varname    ! temporary
@@ -1142,16 +1147,27 @@ contains
                errMsg(__FILE__, __LINE__))
        endif
        do k = 1, ndecomp_pools
-          if ( exit_spinup ) then
-             m = decomp_cascade_con%spinup_factor(k)
-          else if ( enter_spinup ) then
-             m = 1. / decomp_cascade_con%spinup_factor(k)
-          end if
           do c = bounds%begc, bounds%endc
              do j = 1, nlevdecomp
-                this%decomp_npools_vr_col(c,j,k) = this%decomp_npools_vr_col(c,j,k) * m
+	       if ( exit_spinup ) then
+		 m = decomp_cascade_con%spinup_factor(k)
+                 if (decomp_cascade_con%spinup_factor(k) > 1) m = m / cnstate_vars%scalaravg_col(c)
+               else if ( enter_spinup ) then 
+                 m = 1. / decomp_cascade_con%spinup_factor(k)
+		 if (decomp_cascade_con%spinup_factor(k) > 1) m = m * cnstate_vars%scalaravg_col(c)
+               end if 
+               this%decomp_npools_vr_col(c,j,k) = this%decomp_npools_vr_col(c,j,k) * m
              end do
           end do
+       end do
+       do i = bounds%begp, bounds%endp
+         if (exit_spinup) then
+            m_veg = spinup_mortality_factor
+         else if (enter_spinup) then
+            m_veg = 1._r8 / spinup_mortality_factor
+         end if
+         this%deadstemn_patch(i)  = this%deadstemn_patch(i) * m_veg
+         this%deadcrootn_patch(i) = this%deadcrootn_patch(i) * m_veg
        end do
     end if
 
@@ -1227,7 +1243,6 @@ contains
        if (use_nitrif_denitrif) then
           this%smin_no3_col(i) = value_column
           this%smin_nh4_col(i) = value_column
-
           if(use_pflotran .and. pf_cmode) then
              this%smin_nh4sorb_col(i) = value_column
           end if
@@ -1248,7 +1263,6 @@ contains
           if (use_nitrif_denitrif) then
              this%smin_no3_vr_col(i,j) = value_column
              this%smin_nh4_vr_col(i,j) = value_column
-
              if(use_pflotran .and. pf_cmode) then
                this%smin_nh4sorb_vr_col(i,j) = value_column
              end if
@@ -1388,7 +1402,6 @@ contains
          c = filter_soilc(fc)
          this%smin_no3_col(c) = 0._r8
          this%smin_nh4_col(c) = 0._r8
-
          if(use_pflotran .and. pf_cmode) then
             this%smin_nh4sorb_col(c) = 0._r8
          end if
@@ -1403,7 +1416,6 @@ contains
             this%smin_nh4_col(c) = &
                  this%smin_nh4_col(c) + &
                  this%smin_nh4_vr_col(c,j) * dzsoi_decomp(j)
-
             if(use_pflotran .and. pf_cmode) then
                this%smin_nh4sorb_col(c) = &
                  this%smin_nh4sorb_col(c) + &

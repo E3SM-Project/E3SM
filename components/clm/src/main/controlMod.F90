@@ -158,6 +158,8 @@ contains
          nfix_timeconst
     namelist /clm_inparm/ &
          spinup_state, override_bgc_restart_mismatch_dump
+    namelist /clm_inparm/ &
+         nyears_ad_carbon_only, spinup_mortality_factor
 
     namelist /clm_inparm / &
          co2_type
@@ -518,6 +520,8 @@ contains
        call mpi_bcast (suplnitro, len(suplnitro), MPI_CHARACTER, 0, mpicom, ier)
        call mpi_bcast (nfix_timeconst, 1, MPI_REAL8, 0, mpicom, ier)
        call mpi_bcast (spinup_state, 1, MPI_INTEGER, 0, mpicom, ier)
+       call mpi_bcast (nyears_ad_carbon_only, 1, MPI_INTEGER, 0, mpicom, ier)
+       call mpi_bcast (spinup_mortality_factor, 1, MPI_REAL8, 0, mpicom, ier)
        call mpi_bcast (override_bgc_restart_mismatch_dump, 1, MPI_LOGICAL, 0, mpicom, ier)
     end if
     call mpi_bcast (suplphos, len(suplphos), MPI_CHARACTER, 0, mpicom, ier)
@@ -625,6 +629,7 @@ contains
     call mpi_bcast (use_clm_bgc, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_pflotran, 1, MPI_LOGICAL, 0, mpicom, ier)
 
+
   end subroutine control_spmd
 
   !------------------------------------------------------------------------
@@ -709,6 +714,8 @@ contains
           write(iulog,*) '   model is currently NOT in AD spinup mode.'
        else if ( spinup_state .eq. 1 ) then
           write(iulog,*) '   model is currently in AD spinup mode.'
+          write(iulog,*) '   nyears in carbon only mode = ', nyears_ad_carbon_only
+          write(iulog,*) '   dead wood mortality acceleration = ',spinup_mortality_factor
        else
           call endrun(msg=' error: spinup_state can only have integer value of 0 or 1'//&
                errMsg(__FILE__, __LINE__))

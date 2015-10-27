@@ -36,6 +36,9 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <spinup_state bgc_spinup="on" >1</spinup_state>
 <spinup_state bgc_spinup="off">0</spinup_state>
 
+<nyears_ad_carbon_only  >20</nyears_ad_carbon_only>
+<spinup_mortality_factor>10</spinup_mortality_factor>
+
 <!-- Irrigation default -->
 <irrig>.false.</irrig>
 

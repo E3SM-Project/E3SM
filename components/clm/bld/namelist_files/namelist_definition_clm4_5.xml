@@ -1133,6 +1133,14 @@ Flag for setting the state of the Accelerated decomposition spinup state for the
 Entering and exiting spinup mode occurs automatically by comparing the namelist and restart file values for this variable.
 </entry>
 
+<entry id="nyears_ad_carbon_only" type="integer" category="clm_vertcn"
+       group="clm_inparm" valid_values="" >
+</entry>
+
+<entry id="spinup_mortality_factor" type="real" category="clm_vertcn"
+       group="clm_inparm" valid_values="" >
+</entry>
+
 <!-- vertical mixing switches    -->
 <entry id="som_adv_flux" type="real" category="clm_vertcn"
        group="clm_inparm" valid_values="" >

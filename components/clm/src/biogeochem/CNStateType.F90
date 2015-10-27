@@ -83,6 +83,7 @@ module CNStateType
      real(r8) , pointer :: tempavg_t2m_patch           (:)     ! patch temporary average 2m air temperature (K)
      real(r8) , pointer :: annavg_t2m_patch            (:)     ! patch annual average 2m air temperature (K)
      real(r8) , pointer :: annavg_t2m_col              (:)     ! col annual average of 2m air temperature, averaged from pft-level (K)
+     real(r8) , pointer :: scalaravg_col               (:)     ! column average scalar for decompostion (for ad_spinup)
      real(r8) , pointer :: annsum_counter_col          (:)     ! col seconds since last annual accumulator turnover
 
      ! Fire
@@ -244,6 +245,7 @@ contains
     allocate(this%tempavg_t2m_patch   (begp:endp))                   ; this%tempavg_t2m_patch   (:)   = nan
     allocate(this%annsum_counter_col  (begc:endc))                   ; this%annsum_counter_col  (:)   = nan
     allocate(this%annavg_t2m_col      (begc:endc))                   ; this%annavg_t2m_col      (:)   = nan
+    allocate(this%scalaravg_col       (begc:endc))                   ; this%scalaravg_col       (:)   = nan
     allocate(this%annavg_t2m_patch    (begp:endp))                   ; this%annavg_t2m_patch    (:)   = nan
 
     allocate(this%nfire_col           (begc:endc))                   ; this%nfire_col           (:)   = spval
@@ -420,6 +422,11 @@ contains
     call hist_addfld1d (fname='CANNAVG_T2M', units='K', &
          avgflag='A', long_name='annual average of 2m air temperature', &
          ptr_col=this%annavg_t2m_col, default='inactive')
+
+    this%scalaravg_col(begc:endc) = spval
+    call hist_addfld1d(fname='SCALARAVG', units='fraction', &
+         avgflag='A', long_name='average of decomposition scalar', &
+         ptr_col=this%scalaravg_col)
 
     this%nfire_col(begc:endc) = spval
     call hist_addfld1d (fname='NFIRE',  units='counts/km2/sec', &
@@ -722,6 +729,7 @@ contains
        if (lun%ifspecial(l)) then
           this%annsum_counter_col (c) = spval
           this%annavg_t2m_col     (c) = spval
+          this%scalaravg_col      (c) = spval
           this%nfire_col          (c) = spval
           this%baf_crop_col       (c) = spval
           this%baf_peatf_col      (c) = spval
@@ -1091,6 +1099,11 @@ contains
          dim1name='column', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%annavg_t2m_col) 
+
+    call restartvar(ncid=ncid, flag=flag, varname='scalaravg_col', xtype=ncd_double, &
+         dim1name='column', &
+         long_name='', units='', &
+         interpinic_flag = 'interp', readvar=readvar, data=this%scalaravg_col)
 
     if (crop_prog) then
 
