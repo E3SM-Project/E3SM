@@ -232,7 +232,7 @@ contains
     end if
 
     if (use_dynroot) then
-       this%root_depth_patch(begc:endc) = spval
+       this%root_depth_patch(begp:endp) = spval
        call hist_addfld1d (fname='ROOT_DEPTH', units="m", &
             avgflag='A', long_name='rooting depth', &
             ptr_patch=this%root_depth_patch, default='inactive' )
