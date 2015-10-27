@@ -1607,10 +1607,10 @@ module ocn_time_integration_split
             call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
          end if
 
-         call mpas_reconstruct(meshPool, normalVelocityNew,                  &
-                          velocityX, velocityY, velocityZ, &
-                          velocityZonal, velocityMeridional      &
-                         )
+         call mpas_reconstruct(meshPool, normalVelocityNew,  &
+                          velocityX, velocityY, velocityZ,   &
+                          velocityZonal, velocityMeridional, &
+                          includeHalos = .true. )
 
          call mpas_reconstruct(meshPool, gradSSH,         &
                           gradSSHX, gradSSHY, gradSSHZ,   &
