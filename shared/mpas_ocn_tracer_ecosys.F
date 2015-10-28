@@ -779,6 +779,9 @@ contains
       call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
       call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, 1)
+
+      if (associated(ecosysTracers)) then
+
       nTracers = size(ecosysTracers, dim=1)
       if (BGC_tracer_cnt /= nTracers) then
          err = 1
@@ -1101,6 +1104,8 @@ contains
       allocate (BGC_diagnostic_fields%diag_O2_ZMIN(numColumnsMax) )
       allocate (BGC_diagnostic_fields%diag_O2_ZMIN_DEPTH(numColumnsMax) )
   
+      end if  !  associated(ecosysTracers)
+
    !--------------------------------------------------------------------
 
    end subroutine ocn_tracer_ecosys_init!}}}
