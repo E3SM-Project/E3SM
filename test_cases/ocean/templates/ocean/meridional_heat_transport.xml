@@ -4,7 +4,7 @@
 		<option name="config_AM_meridionalHeatTransport_compute_interval">'output_interval'</option>
 		<option name="config_AM_meridionalHeatTransport_compute_on_startup">.true.</option>
 		<option name="config_AM_meridionalHeatTransport_write_on_startup">.true.</option>
-		<option name="config_AM_meridionalHeatTransport_stream_name">'meridionalHeatTransportOutput'</option>
+		<option name="config_AM_meridionalHeatTransport_output_stream">'meridionalHeatTransportOutput'</option>
 		<option name="config_AM_meridionalHeatTransport_num_bins">180</option>
 		<option name="config_AM_meridionalHeatTransport_min_bin">-1.0e34</option>
 		<option name="config_AM_meridionalHeatTransport_max_bin">-1.0e34</option>

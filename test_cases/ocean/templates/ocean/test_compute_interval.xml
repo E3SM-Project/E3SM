@@ -4,7 +4,7 @@
 		<option name="config_AM_testComputeInterval_compute_interval">'00-00-01_00:00:00'</option>
 		<option name="config_AM_testComputeInterval_compute_on_startup">.true.</option>
 		<option name="config_AM_testComputeInterval_write_on_startup">.true.</option>
-		<option name="config_AM_testComputeInterval_stream_name">'testComputeIntervalOutput'</option>
+		<option name="config_AM_testComputeInterval_output_stream">'testComputeIntervalOutput'</option>
 	</namelist>
 
 	<streams>

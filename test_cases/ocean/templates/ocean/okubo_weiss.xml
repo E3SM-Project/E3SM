@@ -4,7 +4,7 @@
 		<option name="config_AM_okuboWeiss_compute_on_startup">.true.</option>
 		<option name="config_AM_okuboWeiss_write_on_startup">.true.</option>
 		<option name="config_AM_okuboWeiss_compute_interval">'output_interval'</option>
-		<option name="config_AM_okuboWeiss_stream_name">'okuboWeissOutput'</option>
+		<option name="config_AM_okuboWeiss_output_stream">'okuboWeissOutput'</option>
 		<option name="config_AM_okuboWeiss_directory">'analysis_members'</option>
 		<option name="config_AM_okuboWeiss_threshold_value">-0.2</option>
 		<option name="config_AM_okuboWeiss_normalization">1e-10</option>

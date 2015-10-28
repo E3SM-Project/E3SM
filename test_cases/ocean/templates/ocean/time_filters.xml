@@ -2,10 +2,10 @@
 	<namelist>
 		<option name="config_AM_timeFilters_enable">.true.</option>
 		<option name="config_AM_timeFilters_compute_interval">'dt'</option>
-		<option name="config_AM_timeFilters_stream_name">'timeFiltersOutput'</option>
+		<option name="config_AM_timeFilters_output_stream">'timeFiltersOutput'</option>
+		<option name="config_AM_timeFilters_restart_stream">'timeFiltersRestart'</option>
 		<option name="config_AM_timeFilters_compute_on_startup">.true.</option>
 		<option name="config_AM_timeFilters_write_on_startup">.true.</option>
-		<option name="config_AM_timeFilters_do_restart">.false.</option>
 		<option name="config_AM_timeFilters_initialize_filters">.true.</option>
 		<option name="config_AM_timeFilters_tau">'90_00:00:00'</option>
 	</namelist>

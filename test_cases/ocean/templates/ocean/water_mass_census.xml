@@ -2,7 +2,7 @@
 	<namelist>
 		<option name="config_AM_waterMassCensus_enable">.true.</option>
 		<option name="config_AM_waterMassCensus_compute_interval">'output_interval'</option>
-		<option name="config_AM_waterMassCensus_stream_name">'waterMassCensusOutput'</option>
+		<option name="config_AM_waterMassCensus_output_stream">'waterMassCensusOutput'</option>
 		<option name="config_AM_waterMassCensus_compute_on_startup">.false.</option>
 		<option name="config_AM_waterMassCensus_write_on_startup">.false.</option>
 		<option name="config_AM_waterMassCensus_minTemperature">-2.0</option>

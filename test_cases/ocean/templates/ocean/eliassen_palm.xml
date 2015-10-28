@@ -2,10 +2,10 @@
 	<namelist>
 		<option name="config_AM_eliassenPalm_enable">.true.</option>
 		<option name="config_AM_eliassenPalm_compute_interval">'output_interval'</option>
-		<option name="config_AM_eliassenPalm_stream_name">'eliassenPalmOutput'</option>
+		<option name="config_AM_eliassenPalm_output_stream">'eliassenPalmOutput'</option>
+		<option name="config_AM_eliassenPalm_restart_stream">'eliassenPalmRestart'</option>
 		<option name="config_AM_eliassenPalm_compute_on_startup">.true.</option>
 		<option name="config_AM_eliassenPalm_write_on_startup">.true.</option>
-		<option name="config_AM_eliassenPalm_do_restart">.false.</option>
 		<option name="config_AM_eliassenPalm_debug">.false.</option>
 		<option name="config_AM_eliassenPalm_nBuoyancyLayers">45</option>
 		<option name="config_AM_eliassenPalm_rhomin_buoycoor">900</option>
