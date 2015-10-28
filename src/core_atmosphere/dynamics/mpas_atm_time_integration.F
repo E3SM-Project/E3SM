@@ -1164,18 +1164,14 @@ MPAS_GPTL_STOP('dyn_tend')
       integer, intent(in) :: cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd
 
 
-      integer :: iCell, k, iq
-
       real (kind=RKIND), dimension(:,:), pointer :: zz, cqw, p, t, rb, rtb, pb, rt
       real (kind=RKIND), dimension(:,:), pointer :: cofwr, cofwz, coftz, cofwt, a_tri, alpha_tri, gamma_tri
       real (kind=RKIND), dimension(:), pointer :: cofrz, rdzw, fzm, fzp, rdzu
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
 
-      real (kind=RKIND), dimension( nVertLevels ) :: b_tri,c_tri
       real (kind=RKIND), pointer :: epssm
-      real (kind=RKIND) :: dtseps, c2, qtotal, rcv
 
-      integer, pointer :: moist_start, moist_end
+      integer, pointer :: nCells, moist_start, moist_end
 
 
       call mpas_pool_get_config(configs, 'config_epssm', epssm)
@@ -1204,8 +1200,72 @@ MPAS_GPTL_STOP('dyn_tend')
 
       call mpas_pool_get_array(state, 'theta_m', t, 2)
       call mpas_pool_get_array(state, 'scalars', scalars, 2)
+
+      call mpas_pool_get_dimension(state, 'nCells', nCells)
       call mpas_pool_get_dimension(state, 'moist_start', moist_start)
       call mpas_pool_get_dimension(state, 'moist_end', moist_end)
+
+
+      call atm_compute_vert_imp_coefs_work(nCells, moist_start, moist_end, dts, epssm, &
+                                   zz, cqw, p, t, rb, rtb, pb, rt, cofwr, cofwz, coftz, cofwt, &
+                                   a_tri, alpha_tri, gamma_tri, cofrz, rdzw, fzm, fzp, rdzu, scalars, &
+                                   cellStart, cellEnd, edgeStart, edgeEnd, &
+                                   cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd)
+
+
+   end subroutine atm_compute_vert_imp_coefs
+
+
+   subroutine atm_compute_vert_imp_coefs_work(nCells, moist_start, moist_end, dts, epssm, &
+                                   zz, cqw, p, t, rb, rtb, pb, rt, cofwr, cofwz, coftz, cofwt, &
+                                   a_tri, alpha_tri, gamma_tri, cofrz, rdzw, fzm, fzp, rdzu, scalars, &
+                                   cellStart, cellEnd, edgeStart, edgeEnd, &
+                                   cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd)
+
+      use mpas_atm_dimensions
+ 
+      implicit none
+
+
+      !
+      ! Dummy arguments
+      !
+      integer, intent(in) :: nCells, moist_start, moist_end
+      real (kind=RKIND), intent(in) :: dts
+      real (kind=RKIND), intent(in) :: epssm
+
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: zz
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: cqw
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: p
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: t
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rb
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rtb
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pb
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rt
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: cofwr
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: cofwz
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1) :: coftz
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: cofwt
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: a_tri
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: alpha_tri
+      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: gamma_tri
+      real (kind=RKIND), dimension(nVertLevels) :: cofrz
+      real (kind=RKIND), dimension(nVertLevels) :: rdzw
+      real (kind=RKIND), dimension(nVertLevels) :: fzm
+      real (kind=RKIND), dimension(nVertLevels) :: fzp
+      real (kind=RKIND), dimension(nVertLevels) :: rdzu
+      real (kind=RKIND), dimension(num_scalars,nVertLevels,nCells+1) :: scalars
+
+      integer, intent(in) :: cellStart, cellEnd, edgeStart, edgeEnd
+      integer, intent(in) :: cellSolveStart, cellSolveEnd, edgeSolveStart, edgeSolveEnd
+
+
+      !
+      ! Local variables
+      !
+      integer :: iCell, k, iq
+      real (kind=RKIND) :: dtseps, c2, qtotal, rcv
+      real (kind=RKIND), dimension( nVertLevels ) :: b_tri, c_tri
 
 
       !  set coefficients
@@ -1220,16 +1280,19 @@ MPAS_GPTL_STOP('dyn_tend')
 
       do iCell = cellSolveStart,cellSolveEnd  !  we only need to do cells we are solving for, not halo cells
 
+!DIR$ IVDEP
          do k=2,nVertLevels
             cofwr(k,iCell) =.5*dtseps*gravity*(fzm(k)*zz(k,iCell)+fzp(k)*zz(k-1,iCell))
          end do
          coftz(1,iCell) = 0.0
+!DIR$ IVDEP
          do k=2,nVertLevels
             cofwz(k,iCell) = dtseps*c2*(fzm(k)*zz(k,iCell)+fzp(k)*zz(k-1,iCell))  &
                  *rdzu(k)*cqw(k,iCell)*(fzm(k)*p (k,iCell)+fzp(k)*p (k-1,iCell))
             coftz(k,iCell) = dtseps*   (fzm(k)*t (k,iCell)+fzp(k)*t (k-1,iCell))
          end do
          coftz(nVertLevels+1,iCell) = 0.0
+!DIR$ IVDEP
          do k=1,nVertLevels
 
 !            qtotal = 0.
@@ -1249,6 +1312,7 @@ MPAS_GPTL_STOP('dyn_tend')
          gamma_tri(1,iCell) = 0.
          alpha_tri(1,iCell) = 0.  ! note, this value is never used
 
+!DIR$ IVDEP
          do k=2,nVertLevels
             a_tri(k,iCell) = -cofwz(k  ,iCell)* coftz(k-1,iCell)*rdzw(k-1)*zz(k-1,iCell)   &
                          +cofwr(k  ,iCell)* cofrz(k-1  )                       &
@@ -1263,6 +1327,7 @@ MPAS_GPTL_STOP('dyn_tend')
                          -cofwr(k  ,iCell)* cofrz(k    )                       &
                          +cofwt(k  ,iCell)* coftz(k+1,iCell)*rdzw(k  )
          end do
+!MGD VECTOR DEPENDENCE
          do k=2,nVertLevels
             alpha_tri(k,iCell) = 1./(b_tri(k)-a_tri(k,iCell)*gamma_tri(k-1,iCell))
             gamma_tri(k,iCell) = c_tri(k)*alpha_tri(k,iCell)
@@ -1270,7 +1335,7 @@ MPAS_GPTL_STOP('dyn_tend')
 
       end do ! loop over cells
 
-   end subroutine atm_compute_vert_imp_coefs
+   end subroutine atm_compute_vert_imp_coefs_work
 
 
    subroutine atm_set_smlstep_pert_variables( tend, diag, mesh, configs, &
