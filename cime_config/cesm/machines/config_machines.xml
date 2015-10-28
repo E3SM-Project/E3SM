@@ -1439,7 +1439,7 @@
 	<walltime default="true">2:00</walltime>
 	<walltime ccsm_estcost="-1">2:00</walltime>
 	<walltime ccsm_estcost="0">4:00</walltime>
-	<walltime ccsm_estcost="1">8:00</walltime>
+	<walltime ccsm_estcost="1">12:00</walltime>
       </walltimes>
     </batch_system>
     <mpirun mpilib="mpi-serial">

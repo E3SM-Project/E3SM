@@ -69,7 +69,8 @@ sub getCompsetLongname
 	my @alias_nodes = $xml2->findnodes(".//compset[alias=\"$input_compset\"]");
 	if (@alias_nodes) {
 	    if ($#alias_nodes > 0) {
-		die "ERROR create_newcase: more than one match for alias element in file $file \n";
+		
+		$logger->logdie ("ERROR create_newcase: more than one match for compset alias $input_compset in file $file ");
 	    } else {
 		my @name_nodes = $alias_nodes[0]->childNodes();
 		foreach my $name_node (@name_nodes) {
