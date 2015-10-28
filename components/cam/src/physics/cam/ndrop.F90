@@ -1226,7 +1226,7 @@ subroutine activate_modal(wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,  &
    !       that is activated
   
    !      optional
-   real(r8), optional, intent(in) :: smax_prescribed  ! prescribed max. supersaturation for secondary activation
+   real(r8), optional :: smax_prescribed  ! prescribed max. supersaturation for secondary activation
 
    !      local
 

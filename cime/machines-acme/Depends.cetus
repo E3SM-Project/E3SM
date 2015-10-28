@@ -10,10 +10,6 @@ mo_sethet.o: mo_sethet.F90
 mo_drydep.o: mo_drydep.F90
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) $(QSMPFLAGS) $<
 time_management.o: time_management.F90
-<<<<<<< HEAD:cime/machines-acme/Depends.cetus
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) $(QSMPFLAGS) $<
-
-=======
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -qsmp=noauto:noomp $<
 advance_clubb_core_module.o: advance_clubb_core_module.F90
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -qsmp=omp:noopt -qinitauto=7FF7FFFF $<
