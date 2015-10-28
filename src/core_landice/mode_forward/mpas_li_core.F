@@ -170,7 +170,6 @@ module li_core
 !!!      call mpas_tracer_advection_init(err_tmp)  ! Calling signature may be incorrect here.
 !!!      err = ior(err,err_tmp)
 
-
       ! ===
       ! === Initialize blocks ===
       ! ===
@@ -187,7 +186,7 @@ module li_core
       err = ior(err, err_tmp)
 
       ! halo update for reconstruction coefficients      
-      !WHL - Results on multiple processors may be incorrect without this update
+      ! Note: Results on multiple processors may be incorrect without this update
 
       call mpas_pool_get_field(meshPool, 'coeffs_reconstruct', coeffsReconstructField)
       call mpas_dmpar_exch_halo_field(coeffsReconstructField)
@@ -738,15 +737,18 @@ module li_core
 !!!      err = ior(err, err_tmp)
 
       ! Init for reconstruction of velocity
-      !WHL - Initialize the reconstruction regardless of the velocity solver, because
-      !      these coefficients will be needed later for IR transport.
-!!      if ( (trim(config_velocity_solver) == 'sia') .or.    &
-!!           (trim(config_velocity_solver) == 'simple') .or.    &
-!!            config_do_velocity_reconstruction_for_external_dycore .or.   &
-!!            config_adaptive_timestep_include_DCFL) then
+      !TODO - Initialize the reconstruction regardless of the velocity solver, because
+      !        these coefficients will be needed in the future for IR transport.
+      !       For now, we avoid calling these subroutines when using the external FO solver,
+      !        because mpas_init_reconstruct fails with the MISMIP periodic mesh
+      !        (since x_period and y_period are not set properly).
+      if ( (trim(config_velocity_solver) == 'sia') .or.    &
+           (trim(config_velocity_solver) == 'simple') .or.    &
+           config_do_velocity_reconstruction_for_external_dycore .or.   &
+           config_adaptive_timestep_include_DCFL) then
          call mpas_rbf_interp_initialize(meshPool)
          call mpas_init_reconstruct(meshPool)
-!!      endif
+      endif
 
       ! Initialize velocity solver
       !WHL - This is now after the call to mpas_init_reconstruct, so that the reconstruction coefficients are available.
