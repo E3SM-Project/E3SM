@@ -282,9 +282,7 @@ contains
                 * areaCell(iCell) * basalMassBal(iCell) * scyr
 
             ! mass lass due do calving (kg yr^{-1})
-            !SFP: These calculations need to be tested still
-            blockSumCalvingFlux = blockSumCalvingFlux + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
-                * areaCell(iCell) * calvingThickness(iCell) * config_ice_density / ( deltat * scyr )     
+            blockSumCalvingFlux = blockSumCalvingFlux + calvingThickness(iCell) * areaCell(iCell) * config_ice_density / ( deltat * scyr )     
 
          end do ! end loop over cells
 
