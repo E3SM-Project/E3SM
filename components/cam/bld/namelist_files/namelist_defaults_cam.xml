@@ -171,6 +171,7 @@
 <ncdata dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_sooberingoax4x8v1np4_L30_c141110.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  nlev="30" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_sooberingoax4x8v1np4_L30_ape_c000000.nc</ncdata>
 
+
 <ncdata dyn="se" hgrid="ne5np8"   nlev="26"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne5np8_L26_ape_c061102.nc</ncdata>
 <ncdata dyn="se" hgrid="ne16np4"  nlev="26"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne16np4_L26_ape_c071213.nc</ncdata>
 <ncdata dyn="se" hgrid="ne16np8"  nlev="26"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne16np8_L26_ape_c110222.nc</ncdata>
@@ -1200,6 +1201,7 @@
 <nu_p hgrid="ne0np4_svalbard_x8v1_lowcon"  > 8.0e-8</nu_p>
 <nu_p hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 8.0e-8</nu_p>
 
+
 <nu_div>                   2.5e15 </nu_div>
 <nu_div hgrid="ne11np4" >  5.0e16 </nu_div>
 <nu_div hgrid="ne16np4" > 15.5e15 </nu_div>
@@ -1270,6 +1272,7 @@
 <se_ne hgrid="ne0np4_conus_x4v1_lowcon"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_svalbard_x8v1_lowcon"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 0 </se_ne>
+
 
 <se_ftype> 0 </se_ftype>
 

@@ -93,6 +93,7 @@ Each grid is associated with five names
 <GRID sname="ne0np4_svalbard_x8v1_lowcon_ne0np4_svalbard_x8v1_lowcon"     alias="svalbardx8v1_svalbardx8v1"  compset="(DOCN|XOCN|SOCN|AQUAP)">    a%ne0np4_svalbard_x8v1_lowcon_l%ne0np4_svalbard_x8v1_lowcon_oi%ne0np4_svalbard_x8v1_lowcon_r%r01_m%tx0.1v2_g%null_w%null</GRID>
 <GRID sname="ne0np4_sooberingoa_x4x8v1_lowcon_ne0np4_sooberingoa_x4x8v1_lowcon"     alias="sooberingoax4x8v1_sooberingoax4x8v1"  compset="(DOCN|XOCN|SOCN|AQUAP)">    a%ne0np4_sooberingoa_x4x8v1_lowcon_l%ne0np4_sooberingoa_x4x8v1_lowcon_oi%ne0np4_sooberingoa_x4x8v1_lowcon_r%r01_m%tx0.1v2_g%null_w%null</GRID>
 
+
 <!--- cism grids --> 
 
 <GRID sname="1.9x2.5_1.9x2.5_gland10"   alias="f19_f19_gl10" compset="DOCN.*_CISM">a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland10_w%null</GRID>
@@ -329,6 +330,7 @@ Each grid is associated with five names
   <nx>105707</nx> <ny>1</ny>   
   <desc>1-deg with 1/4-deg to 1/8-deg over Sea of Okhotsk, Bering Sea, Gulf of Alaska to ARM-NSA site (version 1):</desc> 
 </gridhorz>
+
 
 <!-- displaced pole/tripole grids-->
 <!-- NOTE: desc MUST be the last field in each <gridhorz> -->
@@ -1031,6 +1033,7 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <OCN_DOMAIN_FILE>domain.ocn.ne240np4_tx0.1v2.121113.nc</OCN_DOMAIN_FILE>
 </griddom>
 
+
 <gridmap atm_grid="ne240np4" ocn_grid="gx1v6">
   <ATM2OCN_FMAPNAME>cpl/gridmaps/ne240np4/map_ne240np4_to_gx1v6_aave_110428.nc</ATM2OCN_FMAPNAME>
   <ATM2OCN_SMAPNAME>cpl/gridmaps/ne240np4/map_ne240np4_to_gx1v6_aave_110428.nc</ATM2OCN_SMAPNAME>
@@ -1082,6 +1085,8 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <ICE_DOMAIN_FILE>domain.ocn.sooberingoax4x8v1_tx0.1v2.141022.nc</ICE_DOMAIN_FILE>
   <OCN_DOMAIN_FILE>domain.ocn.sooberingoax4x8v1_tx0.1v2.141022.nc</OCN_DOMAIN_FILE>
 </griddom>
+
+
 
 <!-- ====================  -->
 <!--  atm eul: T62         -->

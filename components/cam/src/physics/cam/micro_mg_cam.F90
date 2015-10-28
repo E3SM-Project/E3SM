@@ -530,6 +530,7 @@ subroutine micro_mg_cam_register
      call pbuf_add_field('NSNOW',   'global',dtype_r8,(/pcols,pver/), nsnow_idx)
   end if
    
+
 end subroutine micro_mg_cam_register
 
 !===============================================================================
