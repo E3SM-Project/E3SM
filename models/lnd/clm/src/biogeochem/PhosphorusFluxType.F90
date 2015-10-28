@@ -1929,7 +1929,7 @@ contains
     do fp = 1,num_soilp
        p = filter_soilp(fp)
 
-       ! total N deployment (from sminn and retranslocated N pool) (NDEPLOY)
+       ! total P deployment (from sminn and retranslocated P pool) (PDEPLOY)
        this%pdeploy_patch(p) = &
             this%sminp_to_ppool_patch(p) + &
             this%retransp_to_ppool_patch(p)
@@ -1939,7 +1939,7 @@ contains
             this%hrv_deadstemp_to_prod10p_patch(p) + &
             this%hrv_deadstemp_to_prod100p_patch(p)
 
-       ! total pft-level fire N losses
+       ! total pft-level fire P losses
        this%fire_ploss_patch(p) = &
             this%m_leafp_to_fire_patch(p)               + &
             this%m_leafp_storage_to_fire_patch(p)       + &
