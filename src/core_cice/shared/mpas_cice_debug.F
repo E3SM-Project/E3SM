@@ -2333,8 +2333,8 @@ contains
          iceVolumeCategoryPlot, &
          snowVolumeCategoryPlot, &
          surfaceTemperaturePlot, &
-         iceThickness, &
-         snowThickness, &
+         iceThicknessPlot, &
+         snowThicknessPlot, &
          netBrineHeight, &
          totalVerticalSalinity, &
          totalSkeletalAlgae
@@ -2363,8 +2363,8 @@ contains
     call MPAS_pool_get_array(plotting, "iceVolumeCategoryPlot", iceVolumeCategoryPlot)
     call MPAS_pool_get_array(plotting, "snowVolumeCategoryPlot", snowVolumeCategoryPlot)
     call MPAS_pool_get_array(plotting, "surfaceTemperaturePlot", surfaceTemperaturePlot)
-    call MPAS_pool_get_array(plotting, "iceThickness", iceThickness)
-    call MPAS_pool_get_array(plotting, "snowThickness", snowThickness)
+    call MPAS_pool_get_array(plotting, "iceThicknessPlot", iceThicknessPlot)
+    call MPAS_pool_get_array(plotting, "snowThicknessPlot", snowThicknessPlot)
 
     call MPAS_pool_get_array(biogeochemistry, "netBrineHeight", netBrineHeight)
     call MPAS_pool_get_array(biogeochemistry, "totalSkeletalAlgae", totalSkeletalAlgae)
@@ -2382,15 +2382,15 @@ contains
     do iCell = 1, nCells
 
        if (iceAreaCategoryPlot(iCell) > 0.0_RKIND) then
-          iceThickness(iCell)  = iceVolumeCategoryPlot(iCell)  / iceAreaCategoryPlot(iCell)
-          snowThickness(iCell) = snowVolumeCategoryPlot(iCell) / iceAreaCategoryPlot(iCell)
+          iceThicknessPlot(iCell)  = iceVolumeCategoryPlot(iCell)  / iceAreaCategoryPlot(iCell)
+          snowThicknessPlot(iCell) = snowVolumeCategoryPlot(iCell) / iceAreaCategoryPlot(iCell)
        else
-          iceThickness(iCell)  = 0.0_RKIND
-          snowThickness(iCell) = 0.0_RKIND
           netBrineHeight(iCell) = 0.0_RKIND
           totalVerticalSalinity(iCell) = 0.0_RKIND
           totalVerticalBiologyIce(:,iCell) = 0.0_RKIND
           totalVerticalBiologySnow(:,iCell) = 0.0_RKIND
+          iceThicknessPlot(iCell)  = 0.0_RKIND
+          snowThicknessPlot(iCell) = 0.0_RKIND
        endif
     enddo ! iCell
 
