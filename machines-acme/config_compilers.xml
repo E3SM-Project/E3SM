@@ -918,6 +918,31 @@ for mct, etc.
  <ADD_FFLAGS DEBUG="TRUE" MODEL="cam">  -gline  -C=all  -g  -nan -O0 -v  </ADD_FFLAGS>
  <ADD_SLIBS> -L$(NETCDF_ROOT)/lib -lnetcdf -lnetcdff -L$(MKL_PATH) -lmkl_rt</ADD_SLIBS>
 </compiler>
+
+<compiler COMPILER="pgi" MACH="constance">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <ADD_FFLAGS DEBUG="TRUE">-C -Mbounds -traceback -Mchkfpstk -Mchkstk -Mdalign  -Mdepchk  -Mextend -Miomutex -Mrecursive -Msave -Ktrap=fp -O0 -g -byteswapio -Meh_frame</ADD_FFLAGS>
+  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt -L$(MPI_LIB) -lmpich</SLIBS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="constance">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
+  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt</SLIBS>
+</compiler>
+
  
 <compiler COMPILER="pgi" MACH="hopper">
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
