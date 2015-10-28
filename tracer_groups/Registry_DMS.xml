@@ -1,0 +1,94 @@
+	<nml_record name="tracer_forcing_DMSTracers">
+		<nml_option name="config_use_DMSTracers" type="logical" default_value=".false." units="unitless"
+					description="if true, the 'DMSGRP' category is enabled for the run"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_DMSTracers_surface_bulk_forcing" type="logical" default_value=".false." units="unitless"
+					description="if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'DMSGRP' category"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_DMSTracers_surface_restoring" type="logical" default_value=".false." units="unitless"
+					description="if true, surface restoring source is applied to tracers in 'DMSGRP' category"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_DMSTracers_interior_restoring" type="logical" default_value=".false." units="unitless"
+					description="if true, interior restoring source is applied to tracers in 'DMSGRP' category"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_DMSTracers_exponential_decay" type="logical" default_value=".false." units="unitless"
+					description="if true, exponential decay source is applied to tracers in 'DMSGRP' category"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_DMSTracers_idealAge_forcing" type="logical" default_value=".false." units="unitless"
+					description="if true, idealAge forcing source is applied to tracers in 'DMSGRP' category"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_DMSTracers_ttd_forcing" type="logical" default_value=".false." units="unitless"
+					description="if true, transit time distribution forcing source is applied to tracers in 'DMSGRP' category"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_DMSTracers_surface_value" type="logical" default_value=".false." units="unitless"
+					description="if true, surface value is computed for 'DMSGRP' category"
+					possible_values=".true. or .false."
+		/>
+	</nml_record>
+
+	<packages>
+		<package name="DMSTracersPKG" description="This package includes variables required to include DMSGRP."/>
+	</packages>
+
+	<var_struct name="state" time_levs="2">
+		<var_struct name="tracers" time_levs="2">
+			<var_array name="DMSTracers" dimensions="nVertLevels nCells Time" type="real" packages="DMSTracersPKG" >
+				<!-- Add constituents of tracer group -->
+                                <var name="DMS" array_group="DMSGRP" units="mmol m^{-3}"
+                                         description="Dimethyl Sulfide"
+                                />
+                                <var name="DMSP" array_group="DMSGRP" units="mmol m^{-3}"
+                                         description="Dimethyl Sulfoniopropionate"
+                                />
+		   </var_array>
+		</var_struct>
+	</var_struct>
+
+	<var_struct name="tend" time_levs="1">
+		<var_struct name="tracersTend" time_levs="1">
+			<var_array name="DMSTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="DMSTracersPKG">
+				<!-- Add constituents of tracer group -->
+                                <var name="DMSTend" array_group="DMSGRP" units="mmol m^{-3} s^{-1}"
+                                         description="Dimethyl Sulfide Tendency"
+                                />
+                                <var name="DMSPTend" array_group="DMSGRP" units="mmol m^{-3} s^{-1}"
+                                         description="Dimethyl Sulfoniopropionate Tendency"
+                                />
+			</var_array>
+		</var_struct>
+	</var_struct>
+
+	<var_struct name="forcing" time_levs="1">
+		<var_struct name="tracersSurfaceFlux" time_levs="1">
+			<var_array name="DMSTracersSurfaceFlux" type="real" dimensions="nCells Time" packages="DMSTracersPKG">
+				<!-- Add constituents of tracer group -->
+                                <var name="DMSSurfaceFlux" array_group="DMSGRP" units="mmol m^{-3} m s^{-1}"
+                                         description="Dimethyl Sulfide Surface Flux"
+                                />
+                                <var name="DMSPSurfaceFlux" array_group="DMSGRP" units="mmol m^{-3} m s^{-1}"
+                                         description="Dimethyl Sulfoniopropionate Surface Flux"
+                                />
+			</var_array>
+		</var_struct>
+	        <var_struct name="DMSSeaIceCoupling" time_levs="1" packages="DMSTracersPKG">
+                        <var name="oceanSurfaceDMS" type="real" dimensions="nCells Time" units="mmolS m^{-3}"
+                                 description="Ocean Surface DMS concentration"
+                        />
+                        <var name="oceanSurfaceDMSP" type="real" dimensions="nCells Time" units="mmolS m^{-3}"
+                                 description="Ocean Surface DMSP concentration"
+                        />
+                        <var name="iceFluxDMS" type="real" dimensions="nCells Time" units="mmolS m^{-2} s"
+                                 description="Surface DMS flux from sea ice"
+                        />
+                        <var name="iceFluxDMSP" type="real" dimensions="nCells Time" units="mmolS m^{-2} s"
+                                 description="Surface DMSP flux from sea ice"
+                        />
+		</var_struct>
+	</var_struct>
