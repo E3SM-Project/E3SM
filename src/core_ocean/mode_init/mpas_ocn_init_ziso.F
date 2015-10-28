@@ -118,8 +118,11 @@ contains
     real (kind=RKIND), pointer :: config_ziso_wind_stress_shelf_front_max
     logical, pointer :: config_ziso_add_easterly_wind_stress_ASF
 
-    integer, pointer :: config_ziso_vert_levels
+    ! configure settings related to frazil
+    logical, pointer :: config_ziso_frazil_enable
+    real (kind=RKIND), pointer :: config_ziso_frazil_temperature_anomaly
 
+    integer, pointer :: config_ziso_vert_levels
 
     ! Define dimension pointers
     integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, nVertLevelsP1
@@ -143,9 +146,11 @@ contains
     character (len=StrKIND) :: streamID
     integer :: directionProperty
 
+    ! Local variable related to frazil
+    real (kind=RKIND) :: distanceX, distanceY, distance, frazil_temperature, scaleFactor
+
     ! assume no error
     iErr = 0
-
 
     ! test if ZISO is the desired configuration
     call mpas_pool_get_config(ocnConfigs, 'config_init_configuration', config_init_configuration)
@@ -182,6 +187,10 @@ contains
     call mpas_pool_get_config(domain % configs, 'config_ziso_wind_transition_position', config_ziso_wind_transition_position)
     call mpas_pool_get_config(domain % configs, 'config_ziso_antarctic_shelf_front_width', config_ziso_antarctic_shelf_front_width)
     call mpas_pool_get_config(domain % configs, 'config_ziso_wind_stress_shelf_front_max', config_ziso_wind_stress_shelf_front_max)
+
+    ! frazil configures
+    call mpas_pool_get_config(domain % configs, 'config_ziso_frazil_enable', config_ziso_frazil_enable)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_frazil_temperature_anomaly', config_ziso_frazil_temperature_anomaly)
     !}}}
 
     ! Determine vertical grid for configuration
@@ -456,7 +465,49 @@ contains
             end if
           enddo
 
+!****************************************************************************************************************************************
+! this test case is overloaded with the ability to evaluate the frazil algorithm
+! if config_ziso_enable_frazil is true, some of the configure options are over written to make the test useful for frazil
+!****************************************************************************************************************************************
+
+          if(config_ziso_frazil_enable) then
+             config_ziso_initial_temp_t1 = 0.0_RKIND
+             config_ziso_initial_temp_t2 = -1.0_RKIND
+             config_ziso_initial_temp_h1 = 300.0_RKIND
+             config_ziso_initial_temp_mt = 0.0_RKIND
+
+             ! recompute initial temperature with altered parameters
+             idx = index_temperature
+             do k = 1, nVertLevels
+                activeTracers(idx, k, iCell) = config_ziso_initial_temp_t1 + &
+                  config_ziso_initial_temp_t2*tanh(refZMid(k)/config_ziso_initial_temp_h1) + config_ziso_initial_temp_mt*refZMid(k)
+             end do
+
+             distanceX = config_ziso_meridional_extent/4.0_RKIND-xCell(iCell)
+             distanceY = config_ziso_meridional_extent/2.0_RKIND-yCell(iCell)
+             distance = sqrt(distanceY**2+distanceX**2)
+             scaleFactor = exp(-distance/config_ziso_meridional_extent*20.0_RKIND)
+             if (scaleFactor.gt.0.9_RKIND) write(stderrUnit,*) ' frazil production likely at this cell: ', iCell
+             do k = 1, nVertLevels
+                frazil_temperature = config_ziso_frazil_temperature_anomaly + &
+                    config_ziso_initial_temp_t2*tanh(refZMid(k)/config_ziso_initial_temp_h1) + config_ziso_initial_temp_mt*refZMid(k)
+                if (refZMid(k).gt.-50.0) frazil_temperature = frazil_temperature + 1.0_RKIND*cos( refZMid(k) / 50.0_RKIND * pii / 2.0_RKIND)
+                activeTracers(idx, k, iCell) = (1.0_RKIND-scaleFactor)* activeTracers(idx, k, iCell) + scaleFactor*frazil_temperature
+             end do
+          end if
+
+!****************************************************************************************************************************************
+! end frazil overload
+!****************************************************************************************************************************************
+
        end do  ! do iCell
+
+       ! write warning to stderrUnit
+       if(config_ziso_frazil_enable) then
+         write(stderrUnit,*)
+         write(stderrUnit,*) ' this test case is configured for the testing of the frazil algorithm'
+         write(stderrUnit,*)
+       endif
 
        ! Set Coriolis parameters, if other than zero
        do iCell = 1, nCellsSolve

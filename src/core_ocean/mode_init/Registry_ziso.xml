@@ -103,4 +103,12 @@
     description="Initial temperature profile constant $m_T$ in $T(z,t=0) = T_1 + T_2 \tanh(z/h_1) + m_T z$."
     possible_values="Any real number."
     />
+  <nml_option name="config_ziso_frazil_enable" type="logical" default_value="false" units="logical"
+    description="A logical to overload (and largely overwrite) this test case to evaluate frazil. In almost all uses of this test case, this configure option should be false."
+    possible_values="true or false"
+    />
+  <nml_option name="config_ziso_frazil_temperature_anomaly" type="real" default_value="-3.0" units="^{circ} C"
+    description="Temperature anomaly to produce frazil"
+    possible_values="Any real number."
+    />
 </nml_record>
