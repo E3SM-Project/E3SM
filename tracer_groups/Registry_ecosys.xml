@@ -406,6 +406,60 @@
 
 	        </var_struct>
 
+	        <var_struct name="ecosysSeaIceCoupling" time_levs="1" packages="ecosysTracersPKG">
+                        <var name="oceanSurfacePhytoC" type="real" dimensions="R3 nCells Time" units="mmolC m^{-3}"
+                                 description="Ocean Surface phytoplankton carbon concentration: (1,2,3)=>(diat,sp,phaeo)"
+                        />
+                        <var name="oceanSurfaceDIC" type="real" dimensions="nCells Time" units="mmolC m^{-3}"
+                                 description="Ocean Surface DIC concentration"
+                        />
+                        <var name="oceanSurfaceNO3" type="real" dimensions="nCells Time" units="mmolN m^{-3}"
+                                 description="Ocean Surface NO3 concentration"
+                        />
+                        <var name="oceanSurfaceSiO3" type="real" dimensions="nCells Time" units="mmolSi m^{-3}"
+                                 description="Ocean Surface SiO3 concentration"
+                        />
+                        <var name="oceanSurfaceNH4" type="real" dimensions="nCells Time" units="mmolN m^{-3}"
+                                 description="Ocean Surface NH4 concentration"
+                        />
+                        <var name="oceanSurfaceDOCr" type="real" dimensions="nCells Time" units="mmolC m^{-3}"
+                                 description="Ocean Surface DOCr (Humics) concentration"
+                        />
+                        <var name="oceanSurfaceFeParticulate" type="real" dimensions="nCells Time" units="mmolFe m^{-3}"
+                                 description="Ocean Surface particulate Fe concentration (set to zero)"
+                        />
+                        <var name="oceanSurfaceFeDissolved" type="real" dimensions="nCells Time" units="mmolFe m^{-3}"
+                                 description="Ocean Surface dissolved bioavailable Fe concentration"
+                        />
+                        <var name="iceFluxPhytoC" type="real" dimensions="R3 nCells Time" units="mmolC m^{-2} s"
+                                 description="Surface phytoplankton carbon flux from sea ice: (1,2,3)=>(diat,sp,phaeo)"
+                        />
+                        <var name="iceFluxDIC" type="real" dimensions="nCells Time" units="mmolC m^{-2} s"
+                                 description="Surface DIC flux from sea ice"
+                        />
+                        <var name="iceFluxNO3" type="real" dimensions="nCells Time" units="mmolN m^{-2} s"
+                                 description="Surface NO3 flux from sea ice"
+                        />
+                        <var name="iceFluxSiO3" type="real" dimensions="nCells Time" units="mmolSi m^{-2} s"
+                                 description="Surface SiO3 flux from sea ice"
+                        />
+                        <var name="iceFluxNH4" type="real" dimensions="nCells Time" units="mmolN m^{-2} s"
+                                 description="Surface NH4 flux from sea ice"
+                        />
+                        <var name="iceFluxDOCr" type="real" dimensions="nCells Time" units="mmolC m^{-2} s"
+                                 description="Surface DOCr (Humics) flux from sea ice"
+                        />
+                        <var name="iceFluxFeParticulate" type="real" dimensions="nCells Time" units="mmolFe m^{-2} s"
+                                 description="Surface particulate Fe flux from sea ice (set to zero)"
+                        />
+                        <var name="iceFluxFeDissolved" type="real" dimensions="nCells Time" units="mmolFe m^{-2} s"
+                                 description="Surface dissolved bioavailable Fe flux from sea ice"
+                        />
+                        <var name="iceFluxDust" type="real" dimensions="nCells Time" units="kg m^{-2} s"
+                                 description="Surface dust flux from sea ice"
+                        />
+	        </var_struct>
+
                 <var_struct name="ecosysDiagsLevel1" time_levs="1" packages="ecosysTracersPKG">
                 <var name="ecosys_diag_tot_CaCO3_form_zint" type="real" dimensions="nCells Time" units="something"
                            description="diag_tot_CaCO3_form_zint"
