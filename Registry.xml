@@ -300,6 +300,10 @@
 					description="Coefficient for horizontal biharmonic operator on momentum."
 					possible_values="any positive real"
 		/>
+                <nml_option name="config_mom_del4_div_factor" type="real" default_value="1.0" units="non-dimensional"
+                                        description="The divergence portion of the del4 operator is scaled by this factor."
+                                        possible_values="any positive real"
+                />
 		<nml_option name="config_tracer_del4" type="real" default_value="0.0" units="m^4 s^{-1}"
 					description="Coefficient for horizontal biharmonic operator on tracers."
 					possible_values="any positive real"

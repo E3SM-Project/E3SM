@@ -134,13 +134,14 @@ contains
       real (kind=RKIND), dimension(:,:), allocatable :: delsq_divergence, &
             delsq_circulation, delsq_relativeVorticity, delsq_u
 
-      real (kind=RKIND), pointer :: config_mom_del4
+      real (kind=RKIND), pointer :: config_mom_del4, config_mom_del4_div_factor
 
       err = 0
 
       if(.not.hmixDel4On) return
 
       call mpas_pool_get_config(ocnConfigs, 'config_mom_del4', config_mom_del4)
+      call mpas_pool_get_config(ocnConfigs, 'config_mom_del4_div_factor', config_mom_del4_div_factor)
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
@@ -183,12 +184,12 @@ contains
          vertex2 = verticesOnEdge(2,iEdge)
 
          invDcEdge = 1.0 / dcEdge(iEdge)
-         invDvEdge = 1.0 / dvEdge(iEdge)
+         invDvEdge = 1.0 / max(dvEdge(iEdge), 0.25_RKIND*dcEdge(iEdge))
 
          do k=1,maxLevelEdgeTop(iEdge)
             ! Compute \nabla^2 u = \nabla divergence + k \times \nabla relativeVorticity
             delsq_u(k, iEdge) = ( divergence(k,cell2)  - divergence(k,cell1) ) * invDcEdge  &
-                               -( relativeVorticity(k,vertex2) - relativeVorticity(k,vertex1)) * invDcEdge * sqrt(3.0)   
+                               -( relativeVorticity(k,vertex2) - relativeVorticity(k,vertex1)) * invDvEdge
          end do
       end do
 
@@ -227,8 +228,8 @@ contains
          r_tmp = config_mom_del4 * meshScalingDel4(iEdge)
 
          do k=1,maxLevelEdgeTop(iEdge)
-            u_diffusion = (delsq_divergence(k,cell2) - delsq_divergence(k,cell1)) * invDcEdge  &
-                        - (delsq_relativeVorticity(k,vertex2) - delsq_relativeVorticity(k,vertex1) ) * invDcEdge * sqrt(3.0) 
+            u_diffusion = config_mom_del4_div_factor*(delsq_divergence(k,cell2) - delsq_divergence(k,cell1)) * invDcEdge  &
+                        - (delsq_relativeVorticity(k,vertex2) - delsq_relativeVorticity(k,vertex1) ) * invDvEdge
 
             tend(k,iEdge) = tend(k,iEdge) - edgeMask(k, iEdge) * u_diffusion * r_tmp
          end do
