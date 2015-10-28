@@ -2499,7 +2499,6 @@ contains
     ! pools
     type (mpas_pool_type), pointer :: tracerPool
     type (mpas_pool_type), pointer :: meshPool
-    type (mpas_pool_type), pointer :: rotatedMeshPool
     type (mpas_pool_type), pointer :: velocityPool
     type (mpas_pool_type), pointer :: incrementalRemapPool
     type (mpas_pool_type), pointer :: configPool
@@ -2611,7 +2610,6 @@ contains
 
     ! get pools
     call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-    call mpas_pool_get_subpool(block % structs, 'rotated_mesh', rotatedMeshPool)
     call mpas_pool_get_subpool(block % structs, 'velocity_solver', velocityPool)
     call mpas_pool_get_subpool(block % structs, 'tracers', tracerPool)       
     call mpas_pool_get_subpool(block % structs, 'incremental_remap', incrementalRemapPool)       
@@ -2741,7 +2739,9 @@ contains
 
     if (verboseRun) write(stderrUnit,*) 'Make masks'
 
-    call make_masks (tracersHead)
+    call make_masks(&
+         nCells,    &
+         tracersHead)
 
     if (monotonicityCheck) then
 
@@ -3008,9 +3008,9 @@ contains
 
     endif
 
-    !WHL - Optionally, zero out the ice area and tracers in cells with very small ice areas
-    !TODO - Turn off this call if not needed (for example, if very small areas are zapped
-    !       in the column-physics calculation).
+    ! Optionally, zero out the ice area and tracers in cells with very small ice areas
+    ! TODO - Turn off this call if not needed (for example, if very small areas are zapped
+    !        in the column-physics calculation).
 
     if (zapSmallMass) then
 
@@ -3121,7 +3121,12 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine make_masks (tracersHead)
+  subroutine make_masks(&
+       nCells,          &
+       tracersHead)
+
+    integer, intent(in) ::  &
+         nCells       ! number of cells on block
 
     type(tracer_type), pointer :: &
          tracersHead  !< Input/output: pointer to first element of linked list of tracers
@@ -3133,27 +3138,46 @@ contains
     type(tracer_type), pointer :: &
          parentTracer ! pointer to parent of this tracer
 
-    integer :: nCategories, nCells, nLayers
+    integer :: nCategories, nLayers
     integer :: iCat, iCell, iLayer
 
-    ! set tracer masks
+    ! Set tracer masks.
     ! The mask is set to 1 where tracer values are physically meaningful, else the mask = 0.
     ! For the mass-like field (fractional ice concentration for CICE), the value is deemed physically meaningful everywhere.
     ! For tracers with parents, the value is deemed physically meaningful wherever the parent tracer is > 0.
     !
     ! Note: This is different from the convention in standard CICE, where tracer values are deemed meaningful
     !       wherever the *parent* tracer mask = 1.
+    !
+    ! Note: An earlier version of this subroutine used 'where' statements instead of do loops.
+    !       However, this led to errors when the pondArea mask was set to 1 for iCell = nCells+1 (i.e., non-existent cells),
+    !        as a result of its parent, levelIceArea, being initialized to 1.0 everywhere (including non-existent cells).
+    !       The masks are now initialized to 0 everywhere, and then set to 1 only in the range 1:nCells.
 
     thisTracer => tracersHead
 
     do while (associated(thisTracer))
 
+       !  initialize
+       if (associated(thisTracer % array2D)) then
+          thisTracer % arrayMask2D(:,:) = 0
+          nCategories = size(thisTracer % array2D, 1)
+       elseif (associated(thisTracer % array3D)) then
+          thisTracer % arrayMask3D(:,:,:) = 0
+          nLayers = size(thisTracer % array3D, 1)
+          nCategories = size(thisTracer % array3D, 2)
+       endif
+
        if (thisTracer % nParents == 0) then  ! mass-like field; value is meaningful everywhere
 
           if (associated(thisTracer % array2D)) then
-             thisTracer % arrayMask2D(:,:) = 1
+             do iCell = 1, nCells
+                thisTracer % arrayMask2D(:,iCell) = 1
+             enddo
           elseif (associated(thisTracer % array3D)) then
-             thisTracer % arrayMask3D(:,:,:) = 1
+             do iCell = 1, nCells
+                thisTracer % arrayMask3D(:,:,iCell) = 1
+             enddo
           endif
 
        else   ! nParents = 1, 2 or 3; value is meaningful where parent value > 0
@@ -3164,36 +3188,37 @@ contains
 
           if (associated(thisTracer % array2D)) then  ! parent must also be 2D
 
-             where (parentTracer % array2D > eps11)
-                thisTracer % arrayMask2D = 1
-             elsewhere
-                thisTracer % arrayMask2D = 0
-             endwhere
+             do iCell = 1, nCells
+                do iCat = 1, nCategories
+                   if (parentTracer % array2D(iCat,iCell) > eps11) then
+                      thisTracer % arrayMask2D(iCat,iCell) = 1
+                   endif
+                enddo
+             enddo
 
           elseif (associated(thisTracer % array3D)) then  ! parent can be 2D or 3D
 
              if (parentTracer % ndims == 2) then
 
-                nCategories = size(thisTracer % array3D, 2)
-                nCells = size(thisTracer % array3D, 3)
-
                 do iCell = 1, nCells
                    do iCat = 1, nCategories
                       if (parentTracer % array2D(iCat,iCell) > eps11) then
                          thisTracer % arrayMask3D(:,iCat,iCell) = 1
-                      else
-                         thisTracer % arrayMask3D(:,iCat,iCell) = 0
                       endif
                    enddo
                 enddo
                 
              else   ! parent tracer is 3D
                 
-                where (parentTracer % array3D > eps11)
-                   thisTracer % arrayMask3D = 1
-                elsewhere
-                   thisTracer % arrayMask3D = 0
-                endwhere
+                do iCell = 1, nCells
+                   do iCat = 1, nCategories
+                      do iLayer = 1, nLayers
+                         if (parentTracer % array3D(iLayer,iCat,iCell) > eps11) then
+                            thisTracer % arrayMask3D(iLayer,iCat,iCell) = 1
+                         endif
+                      enddo
+                   enddo
+                enddo
                 
              endif  ! parentTracer % ndims
 
@@ -8418,10 +8443,10 @@ contains
        intersectionPoint(1) = x1 + t1*rx
        intersectionPoint(2) = y1 + t1*ry
 
-       !WHL - Using > and < rather than >= and <=
-       !      This means that if a vertex of one segment lies exactly on the other segment,
-       !       the segments are deemed not to intersect.
-       !      In this way we avoid creating triangles with degenerate vertices and zero area. 
+       ! Note: The algorithm uses  > and < rather than >= and <=
+       !       This means that if a vertex of one segment lies exactly on the other segment,
+       !        the segments are deemed not to intersect.
+       !       In this way we avoid creating triangles with degenerate vertices and zero area. 
 !!       if (t1 >= 0.0_RKIND .and. t1 <= 1.0_RKIND .and. t2 >= 0.0_RKIND .and. t2 <= 1.0_RKIND) then
        if (t1 > 0.0_RKIND .and. t1 < 1.0_RKIND .and. t2 > 0.0_RKIND .and. t2 < 1.0_RKIND) then
           lineIntersect = .true.
