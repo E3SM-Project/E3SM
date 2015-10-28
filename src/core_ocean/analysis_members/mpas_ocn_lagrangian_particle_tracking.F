@@ -29,7 +29,7 @@ module ocn_lagrangian_particle_tracking
 
    use ocn_particle_list
    use ocn_lagrangian_particle_tracking_interpolations
-   !use ocn_lagrangian_particle_tracking_reset
+   use ocn_lagrangian_particle_tracking_reset
 
    implicit none
    private
@@ -118,7 +118,8 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-      logical, pointer :: config_do_restart
+      logical :: config_AM_lagrPartTrack_reset_particles
+      character (len=StrKIND), pointer :: config_AM_lagrPartTrack_reset_criteria
 
       err = 0
 
@@ -178,8 +179,13 @@ contains
       ! at initialization time we need to build the initial halo for the reset
       ! (could be anywhere so we'll need to make a connection between the
       ! 'currentBlock' and 'currentBlockReset'
-      ! if reset () then
-      !
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_reset_criteria', config_AM_lagrPartTrack_reset_criteria)
+      if (trim(config_AM_lagrPartTrack_reset_criteria) == 'none') then
+        config_AM_lagrPartTrack_reset_particles = .False.
+      else
+        config_AM_lagrPartTrack_reset_particles = .True.
+      end if
+      if (config_AM_lagrPartTrack_reset_particles) then
          ! build halos to reset blocks
          ! AllToAll Computation!
          call mpas_particle_list_build_halos(domain, err, 'currentBlockReset', g_compProcNeighs)
@@ -192,7 +198,7 @@ contains
 #if MPAS_DEBUG
      write(stderrUnit,*) 'Neighs: self end = ', g_compProcNeighs
 #endif
-      ! end if
+      end if
 
       ! tests to make sure all the values are ok !{{{
 #ifdef MPAS_DEBUG
@@ -214,8 +220,8 @@ contains
       call initialize_particle_properties(domain,2,err)
       call write_lagrangian_particle_tracking(domain, err)
 
-      !! set up particle reset condition
-      !call ocn_setup_particle_reset_condition(domain, err)
+      ! set up particle reset condition
+      call ocn_setup_particle_reset_condition(domain, err)
 
       write(stderrunit,*) 'finished ocn_init_lagrangian_particle_tracking'
       call mpas_timer_stop("initLPT", timerInit)
@@ -308,6 +314,8 @@ contains
       logical, dimension(:,:), pointer :: compProcRecvList
       logical, dimension(:), pointer :: compProcSendList
       logical, pointer :: onSphere
+      logical :: config_AM_lagrPartTrack_reset_particles
+      character (len=StrKIND), pointer :: config_AM_lagrPartTrack_reset_criteria
 
       real (kind=RKIND), dimension(4) :: kWeightK, kWeightKVert
       real (kind=RKIND), dimension(3,4) :: kWeightX
@@ -325,6 +333,7 @@ contains
       integer, pointer :: verticalTreatment, vertexReconstMethod, timeIntegration, indexLevel, filterNum
       character(len=StrKIND), pointer :: config_dt
       type (MPAS_timeInterval_type) :: timeStepESMF
+      logical :: resetParticle
       integer :: err_tmp
 
       err = 0
@@ -340,6 +349,13 @@ contains
       call mpas_timer_start("computeLPT", .false., timerCompute)
 
       call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_filter_number', filterNum)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_reset_criteria', config_AM_lagrPartTrack_reset_criteria)
+
+      if (trim(config_AM_lagrPartTrack_reset_criteria) == 'none') then
+        config_AM_lagrPartTrack_reset_particles = .False.
+      else
+        config_AM_lagrPartTrack_reset_particles = .True.
+      end if
 
       allocate(ioProcRecvList(domain % dminfo % nprocs, size(g_ioProcNeighs)))
       allocate(ioProcSendList(domain % dminfo % nprocs))
@@ -797,23 +813,24 @@ contains
           call mpas_timer_start("particleAssignments", .false., timerParticleAssignment)
 #endif
 
-          ! if (reset criteria is met) then
-          ! update currentBlock to be reset value, setting iCell = -1
-          !
-          ! else
-          ! update halo fields for particles moving from adjacent computational halos
-          call mpas_particle_list_update_particle_block(domain, block, particle, 'lagrPartTrackCells', iCell)
-          ! end if
+          resetParticle = .False.
+          if (config_AM_lagrPartTrack_reset_particles) then   ! need to link to currentBlockReset for communication
+            ! determine if particles should be reset based on different criteria.  If so, reset them.
+            call ocn_evaluate_particle_reset_condition(domain, block, particle, dtSim, iCell, err)
+          else
+            ! update halo fields for particles moving from adjacent computational halos
+            call mpas_particle_list_update_particle_block(domain, block, particle, 'lagrPartTrackCells', iCell)
+          end if
 
           !! update IO halos based on particle movement
           call mpas_particle_list_update_halos_start(domain, block, particle, 'lagrPartTrackCells', iCell, &
             arrayIndex, 'ioBlock', ioProcRecvList, ioProcSendList, g_ioProcNeighs)
 
-          ! if (particle reset) then   ! need to link to currentBlockReset for communication
-          ! update computational halos (to account for non block halo communication caused by resets, etc)
+          if (config_AM_lagrPartTrack_reset_particles) then   ! need to link to currentBlockReset for communication
+            ! update computational halos (to account for non block halo communication caused by resets, etc)
             call mpas_particle_list_update_halos_start(domain, block, particle, 'lagrPartTrackCells', iCell, &
               arrayIndex, 'currentBlockReset', compProcRecvList, compProcSendList, g_compProcNeighs)
-          ! end if
+          end if
 #ifdef MPAS_DEBUG
           call mpas_timer_stop("particleAssignments", timerParticleAssignment)
 #endif
@@ -859,10 +876,10 @@ contains
 #endif
       ! update io halo
       call mpas_particle_list_update_halos_end(domain, err, 'ioBlock', g_ioProcNeighs, ioProcSendList, ioProcRecvList)
-      ! if (doing a particle reset) then
+      if (config_AM_lagrPartTrack_reset_particles) then   ! need to link to currentBlockReset for communication
         ! update computational halo
         call mpas_particle_list_update_halos_end(domain, err, 'currentBlockReset', g_compProcNeighs, compProcSendList, compProcRecvList)
-      ! end if
+      end if
 #ifdef MPAS_DEBUG
       write(stderrUnit,*) 'g_compProcNeighs after halo updates  = ', g_compProcNeighs
       write(stderrUnit,*) 'compProcSendList after last halo updates = ', compProcSendList
