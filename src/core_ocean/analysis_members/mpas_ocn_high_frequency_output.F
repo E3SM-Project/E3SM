@@ -162,8 +162,10 @@ contains
 
       integer :: iLevel, iLevelTarget
       integer, pointer :: nVertLevels
-      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, kineticEnergyAt100m, relativeVorticityAt100m
+      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, kineticEnergyAt100m, relativeVorticityAt100m 
+      real (kind=RKIND), dimension(:), pointer :: divergenceAt100m, relativeVorticityVertexAt100m
       real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell, relativeVorticityCell, activeTracersAtSurface
+      real (kind=RKIND), dimension(:,:), pointer :: relativeVorticity, divergence
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
       err = 0
@@ -189,12 +191,16 @@ contains
          ! get arrays that will be 'sliced' and put into high frequency output
          call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell, timeLevel)
          call mpas_pool_get_array(diagnosticsPool, 'relativeVorticityCell', relativeVorticityCell, timeLevel)
+         call mpas_pool_get_array(diagnosticsPool, 'relativeVorticity', relativeVorticity, timeLevel)
+         call mpas_pool_get_array(diagnosticsPool, 'divergence', divergence, timeLevel)
          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
 
          ! get arrays that can be written to output at high freqency
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'kineticEnergyAt100m', kineticEnergyAt100m)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'relativeVorticityAt100m', relativeVorticityAt100m)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'activeTracersAtSurface', activeTracersAtSurface)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'divergenceAt100m', divergenceAt100m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'relativeVorticityVertexAt100m', relativeVorticityVertexAt100m)
 
          !
          ! note for future build out
@@ -214,6 +220,8 @@ contains
          ! tracer data will be converted to new tracer infrastrcture (and this line removed) before June 23 2015.
          kineticEnergyAt100m(:) = kineticEnergyCell(iLevelTarget,:)
          relativeVorticityAt100m(:) = relativeVorticityCell(iLevelTarget,:)
+         divergenceAt100m(:) = divergence(iLevelTarget,:)
+         relativeVorticityVertexAt100m = relativeVorticity(iLevelTarget,:)
          activeTracersAtSurface(1,:) = activeTracers(1,1,:)
          activeTracersAtSurface(2,:) = activeTracers(2,1,:)
 
