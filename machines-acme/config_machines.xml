@@ -576,6 +576,49 @@
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
 </machine>
 
+<machine MACH="constance">
+         <DESC>PNL Haswell cluster, OS is Linux, batch system is SLURM</DESC>
+         <OS>LINUX</OS>
+         <COMPILERS>pgi,intel</COMPILERS>
+         <MPILIBS>mpich</MPILIBS>
+         <RUNDIR>/pic/scratch/$CCSMUSER/csmruns/$CASE/run</RUNDIR>
+         <EXEROOT>/pic/scratch/$CCSMUSER/csmruns/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/pic/scratch/$USER</CESMSCRATCHROOT>
+         <DIN_LOC_ROOT>/pic/projects/climate/csmdata/</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/pic/projects/climate/csmdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>/pic/scratch/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
+         <CCSM_BASELINE>/pic/projects/climate/acme_baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>/pic/projects/climate/acme_baselines/cprnc</CCSM_CPRNC>
+         <BATCHQUERY>squeue</BATCHQUERY>
+         <BATCHSUBMIT>sbatch</BATCHSUBMIT>
+	 <BATCHREDIRECT></BATCHREDIRECT>
+         <SUPPORTED_BY>balwinder.singh -at- pnnl.gov</SUPPORTED_BY>
+         <GMAKE_J>8</GMAKE_J>
+	 <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
+	 <batch_system type="slurm" version="x.y">
+	   <queues>
+	     <queue jobmin="1" jobmax="9999" default="true">batch</queue>
+	   </queues>
+	   <walltimes>
+	     <walltime default="true">0:59:00</walltime>
+	   </walltimes>
+	 </batch_system>
+	 <mpirun mpilib="mpich">
+	   <executable>srun</executable>
+	   <arguments>
+	     <arg name="mpinone"> --mpi=none</arg>
+	     <arg name="num_tasks"> --ntasks={{ num_tasks }}</arg>
+	     <arg name="cpubind"> --cpu_bind=sockets</arg>
+	     <arg name="cpubind"> --cpu_bind=verbose</arg>
+             <arg name="killonbadexit"> --kill-on-bad-exit</arg>
+	   </arguments>
+	 </mpirun>
+	 <mpirun mpilib="mpi-serial">
+           <executable></executable>
+	 </mpirun>
+
+</machine>
 <machine MACH="oic2">
          <DESC>ORNL XK6, os is Linux, 8 pes/node, batch system is PBS</DESC>
          <NODENAME_REGEX>oic2</NODENAME_REGEX>
