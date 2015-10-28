@@ -2160,7 +2160,6 @@ end if
      end if !l_st_mac
 
     elseif( microp_scheme == 'MG' ) then
-
        ! Start co-substepping of macrophysics and microphysics
        cld_macmic_ztodt = ztodt/cld_macmic_num_steps
 
@@ -2203,7 +2202,7 @@ end if
                   cmfmc,           cmfmc2,                           &
                   cam_in%ts,       cam_in%sst,     zdu,              &
                   pbuf,            det_s,          det_ice,          &
-                  lcldo )
+                  lcldo)
 
              !  Since we "added" the reserved liquid back in this routine, we need 
              !    to account for it in the energy checker

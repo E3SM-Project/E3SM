@@ -144,7 +144,7 @@ subroutine phys_ctl_readnl(nlfile)
    namelist /phys_ctl_nl/ cam_physpkg, cam_chempkg, waccmx_opt, deep_scheme, shallow_scheme, &
       eddy_scheme, microp_scheme,  macrop_scheme, radiation_scheme, srf_flux_avg, &
       use_subcol_microp, atm_dep_flux, history_amwg, history_vdiag, history_aerosol, history_aero_optics, &
-      history_eddy, history_budget,  history_budget_histfile_num, history_waccm, & 
+      history_eddy, history_budget,  history_budget_histfile_num, history_waccm, &
       conv_water_in_rad, history_clubb, do_clubb_sgs, do_tms, state_debug_checks, &
       use_hetfrz_classnuc, use_gw_oro, use_gw_front, use_gw_convect, &
       cld_macmic_num_steps, micro_do_icesupersat, &
@@ -345,6 +345,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
                        ,l_tracer_aero_out, l_vdiff_out, l_rayleigh_out, l_gw_drag_out, l_ac_energy_chk_out  &
                        ,l_bc_energy_fix_out, l_dry_adj_out, l_st_mac_out, l_st_mic_out, l_rad_out  &
                         )
+
 !-----------------------------------------------------------------------
 ! Purpose: Return runtime settings
 !          deep_scheme_out   : deep convection scheme
@@ -426,12 +427,12 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    if ( present(prog_modal_aero_out     ) ) prog_modal_aero_out      = prog_modal_aero
    if ( present(do_tms_out              ) ) do_tms_out               = do_tms
    if ( present(state_debug_checks_out  ) ) state_debug_checks_out   = state_debug_checks
-   if ( present(fix_g1_err_ndrop_out    ) ) fix_g1_err_ndrop_out     = fix_g1_err_ndrop 
+   if ( present(fix_g1_err_ndrop_out    ) ) fix_g1_err_ndrop_out     = fix_g1_err_ndrop
    if ( present(ssalt_tuning_out        ) ) ssalt_tuning_out         = ssalt_tuning   
    if ( present(resus_fix_out           ) ) resus_fix_out            = resus_fix      
    if ( present(convproc_do_aer_out     ) ) convproc_do_aer_out      = convproc_do_aer
    if ( present(convproc_do_gas_out     ) ) convproc_do_gas_out      = convproc_do_gas
-   if ( present(convproc_method_activate_out))convproc_method_activate_out= convproc_method_activate 
+   if ( present(convproc_method_activate_out))convproc_method_activate_out= convproc_method_activate
    if ( present(liqcf_fix_out           ) ) liqcf_fix_out            = liqcf_fix      
    if ( present(regen_fix_out           ) ) regen_fix_out            = regen_fix      
    if ( present(demott_ice_nuc_out      ) ) demott_ice_nuc_out       = demott_ice_nuc 

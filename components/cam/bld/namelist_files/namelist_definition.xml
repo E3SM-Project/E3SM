@@ -5245,6 +5245,7 @@ Only "cube" is supported in CAM.
 Default: Set by build-namelist.
 </entry>
 
+
 <entry id="fine_ne" type="integer" category="se"
        group="ctl_nl" valid_values="" >
 baseline ne for scalar hypervis tuning
@@ -5271,6 +5272,8 @@ Default: Set by build-namelist.
        group="ctl_nl" valid_values="" >
 Default: Set by build-namelist.
 </entry>
+
+
 
 <!-- CAM I/O  -->
 

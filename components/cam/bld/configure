@@ -138,7 +138,7 @@ OPTIONS
 			in degrees for latitude and longitude respectively); nexnp for
                         se grids.
      -max_n_rad_cnst <n> Maximum number of constituents that are either radiatively
-                        active, or in any single diagnostic list for the radiation.
+                        active, or in any single diagnostic list for the radiation.    
      -microphys <name>  Specify the microphysics option [mg1 | mg1.5 | mg2 | rk].
      -nadv <n>          Set total number of advected species to <n>.
      -nadv_tt <n>       Set number of advected test tracers <n>.
@@ -2705,7 +2705,7 @@ sub write_filepath
 
     print $fh "$camsrcdir/cam/src/dynamics/$dyn\n";
     if($dyn eq 'se') {
-	print $fh "$camsrcdir/homme/src/share\n";
+	print $fh "$camsrcdir/cam/src/dynamics/se/share\n";
     }
 
     # Parallelization utilies

@@ -442,7 +442,7 @@ subroutine nucleate_ice_cam_calc( &
    icecldf(:ncol,:pver) = ast(:ncol,:pver)
 
    if (clim_modal_aero) then
-      call pbuf_get_field(pbuf, dgnum_idx, dgnum, start=(/1,1,1/), kount=(/pcols,pver,    nmodes/) )
+      call pbuf_get_field(pbuf, dgnum_idx, dgnum)
    end if
 
    ! naai and naai_hom are the outputs from this parameterization

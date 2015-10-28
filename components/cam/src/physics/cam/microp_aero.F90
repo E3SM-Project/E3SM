@@ -1,4 +1,3 @@
-
 module microp_aero
 
 !---------------------------------------------------------------------------------
@@ -168,9 +167,10 @@ subroutine microp_aero_init
    ! Query the PBL eddy scheme
    call phys_getopts(eddy_scheme_out          = eddy_scheme, &
         history_amwg_out = history_amwg, &
-        liqcf_fix_out    = liqcf_fix,    &
-        demott_ice_nuc_out = dem_in      )
-
+        micro_do_icesupersat_out = micro_do_icesupersat, &
+        liqcf_fix_out    = liqcf_fix,    & 
+        demott_ice_nuc_out = dem_in      ) 
+   
    if(masterproc)write(iulog,*)'DEMOTT is:', dem_in 
 
    ! Access the physical properties of the aerosols that are affecting the climate
