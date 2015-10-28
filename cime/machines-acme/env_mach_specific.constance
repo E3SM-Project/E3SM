@@ -1,54 +1,49 @@
 #! /bin/csh -f
-
-set CESM_REPO = `./xmlquery CCSM_REPOTAG -value`
-if($status == 0) then
-  set COMPILER = `./xmlquery COMPILER -value`
-  set MPILIB   = `./xmlquery MPILIB   -value`
-else
-  echo $0 using settings from environment:
-endif
-echo "COMPILER=$COMPILER"
-echo "MPILIB=$MPILIB"
-
 #--- set modules
 source /etc/profile.d/modules.csh
-#source /share/apps/modules/Modules/3.2.7/init/csh
+
+#--- unload all modules
 module purge
+unsetenv LD_LIBRARY_PATH
 module load perl/5.20.0
-module load cmake/2.8.12
+module load cmake/3.3.0
+
 
 if ( $COMPILER == "intel") then
-module load intel/15.0.1
-module load mvapich2/2.1
-module load netcdf/4.3.2
-module load mkl/15.0.1
-setenv NETCDF_HOME /share/apps/netcdf/4.3.2/intel/15.0.1
+    module load intel/15.0.1
+    module load mvapich2/2.1
+    module load netcdf/4.3.2
+
+    setenv MPI_LIB $MPI_ROOT/lib
+    
+    module load pnetcdf/1.6.1
+    setenv PNETCDFROOT $PNETCDF_LIB/../
+
+    module load mkl/15.0.1
+    setenv MKL_PATH $MLIB_LIB
+    setenv NETCDF_HOME $NETCDF_LIB/../
 endif
 
 if ( $COMPILER == "pgi") then
-module load pgi/14.10
-module load mvapich2/2.1
-module load netcdf/4.3.2
-setenv NETCDF_HOME /share/apps/netcdf/4.3.2/pgi/14.10
-#module list
+    module load pgi/14.10
+    module load mvapich2/2.1
+    module load netcdf/4.3.2
+
+    module load pnetcdf/1.6.1
+    setenv PNETCDFROOT $NETCDF_LIB/../
+
+    module load mkl/15.0.1
+    setenv MKL_PATH $MLIB_LIB
+    setenv NETCDF_HOME $NETCDF_LIB/../
 endif
-
-#--- set paths
-#setenv PGI_PATH /share/apps/pgi/linux86-64/9.0-4
-#setenv MPICH_PATH /share/apps/mvapich-1.0.1/pgi
-#setenv MPICH_PATH /share/apps/mvapich2-1.0.3/pgi
-#setenv MPICH_PATH /share/apps/openmpi-1.2.6/pgi
-#setenv PATH ${PGI_PATH}/bin:${MPICH_PATH}/bin:${PATH}
-#setenv LD_LIBRARY_PATH ${MPICH_PATH}/lib:${LD_LIBRARY_PATH}
-
-#--- set env variables for Macros if needed
-#setenv NETCDF ${NETCDF_HOME}
-#setenv PNETCDF /share/apps/pnetcdf/mvapich-1.0.1/pgi
-#setenv LD_LIBRARY_PATH ${NETCDF}/lib:${LD_LIBRARY_PATH}
 
 #-------------------------------------------------------------------------------
 
 limit coredumpsize 1000000
 limit stacksize unlimited
+
+if ( $?PERL ) then
+  printenv
+endif
 
 
