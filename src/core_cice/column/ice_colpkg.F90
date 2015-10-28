@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_colpkg.F90 1068 2015-10-23 21:14:19Z njeffery $
+!  SVN:$Id: ice_colpkg.F90 1069 2015-10-26 20:15:16Z njeffery $
 !=========================================================================
 !
 ! flags and interface routines for the column package
@@ -589,15 +589,6 @@
                                  ocean_bio_all(:),    hum)
 
       if (.not. restart_bgc) then  ! not restarting
-
-         call colpkg_init_OceanConcArray(max_nbtrcr,                     &
-                                 max_algae, max_don,  max_doc,   &
-                                 max_dic,   max_aero, max_fe,    &
-                                 nit,       amm,      sil,       &
-                                 dmsp,      dms,      algalN(:), &
-                                 doc(:),    don(:),   dic(:),    &
-                                 fed(:),    fep(:),   zaeros(:), &
-                                 ocean_bio_all(:),    hum)
 
       !-----------------------------------------------------------------------------   
       !     Skeletal Layer Model
