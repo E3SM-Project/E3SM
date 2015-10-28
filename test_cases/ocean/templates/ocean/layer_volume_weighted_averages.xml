@@ -4,7 +4,7 @@
 		<option name="config_AM_layerVolumeWeightedAverage_compute_interval">'output_interval'</option>
 		<option name="config_AM_layerVolumeWeightedAverage_compute_on_startup">.false.</option>
 		<option name="config_AM_layerVolumeWeightedAverage_write_on_startup">.false.</option>
-		<option name="config_AM_layerVolumeWeightedAverage_stream_name">'layerVolumeWeightedAverageOutput'</option>
+		<option name="config_AM_layerVolumeWeightedAverage_output_stream">'layerVolumeWeightedAverageOutput'</option>
 	</namelist>
 
 	<streams>

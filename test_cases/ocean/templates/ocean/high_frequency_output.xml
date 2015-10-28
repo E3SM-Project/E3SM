@@ -2,7 +2,7 @@
 	<namelist>
 		<option name="config_AM_highFrequencyOutput_enable">.true.</option>
 		<option name="config_AM_highFrequencyOutput_compute_interval">'output_interval'</option>
-		<option name="config_AM_highFrequencyOutput_stream_name">'highFrequencyOutput'</option>
+		<option name="config_AM_highFrequencyOutput_output_stream">'highFrequencyOutput'</option>
 		<option name="config_AM_highFrequencyOutput_compute_on_startup">.true.</option>
 		<option name="config_AM_highFrequencyOutput_write_on_startup">.true.</option>
 	</namelist>

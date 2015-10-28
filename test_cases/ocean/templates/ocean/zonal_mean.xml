@@ -4,7 +4,7 @@
 		<option name="config_AM_zonalMean_compute_on_startup">.true.</option>
 		<option name="config_AM_zonalMean_write_on_startup">.true.</option>
 		<option name="config_AM_zonalMean_compute_interval">'output_interval'</option>
-		<option name="config_AM_zonalMean_stream_name">'zonalMeanOutput'</option>
+		<option name="config_AM_zonalMean_output_stream">'zonalMeanOutput'</option>
 		<option name="config_AM_zonalMean_num_bins">180</option>
 		<option name="config_AM_zonalMean_min_bin">-1.0e34</option>
 		<option name="config_AM_zonalMean_max_bin">-1.0e34</option>

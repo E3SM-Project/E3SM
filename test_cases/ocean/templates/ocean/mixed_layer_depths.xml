@@ -2,7 +2,7 @@
 	<namelist>
 		<option name="config_AM_mixedLayerDepths_enable">.true.</option>
 		<option name="config_AM_mixedLayerDepths_compute_interval">'output_interval'</option>
-		<option name="config_AM_mixedLayerDepths_stream_name">'mixedLayerDepthsOutput'</option>
+		<option name="config_AM_mixedLayerDepths_output_stream">'mixedLayerDepthsOutput'</option>
 		<option name="config_AM_mixedLayerDepths_write_on_startup">.true.</option>
 		<option name="config_AM_mixedLayerDepths_compute_on_startup">.true.</option>
 		<option name="config_AM_mixedLayerDepths_Tthreshold">.true.</option>

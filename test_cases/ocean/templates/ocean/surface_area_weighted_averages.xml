@@ -4,7 +4,7 @@
 		<option name="config_AM_surfaceAreaWeightedAverages_compute_on_startup">.true.</option>
 		<option name="config_AM_surfaceAreaWeightedAverages_write_on_startup">.true.</option>
 		<option name="config_AM_surfaceAreaWeightedAverages_compute_interval">'output_interval'</option>
-		<option name="config_AM_surfaceAreaWeightedAverages_stream_name">'surfaceAreaWeightedAveragesOutput'</option>
+		<option name="config_AM_surfaceAreaWeightedAverages_output_stream">'surfaceAreaWeightedAveragesOutput'</option>
 	</namelist>
 
 	<streams>
