@@ -158,7 +158,7 @@ CONTAINS
        write(iulog,*) "dyn_init1: number of OpenMP threads = ", nthreads
        write(iulog,*) " "
     endif
-#if defined (ELEMENT_OPENMP)
+#ifdef COLUMN_OPENMP
     if(par%masterproc) then
        write(iulog,*) " "
        write(iulog,*) "dyn_init1: using OpenMP within element instead of across elements"
@@ -284,7 +284,7 @@ CONTAINS
     end do
     if(iam < par%nprocs) then
 
-#if (! defined ELEMENT_OPENMP)
+#ifdef HORIZ_OPENMP
        !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ie,ithr,nets,nete,hybrid)
 #endif
        ithr=omp_get_thread_num()
@@ -347,7 +347,7 @@ CONTAINS
        ! This subroutine is used to create nc_topo files, if requested
        ! 
        call nctopo_util_driver(elem,hybrid,nets,nete)
-#if (! defined ELEMENT_OPENMP)
+#ifdef HORIZ_OPENMP
        !$OMP END PARALLEL 
 #endif
     end if
@@ -387,7 +387,7 @@ CONTAINS
     ! !DESCRIPTION:
     !
     if(iam < par%nprocs) then
-#if (! defined ELEMENT_OPENMP)
+#ifdef HORIZ_OPENMP
        !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,n)
 #endif
        ithr=omp_get_thread_num()
@@ -402,7 +402,7 @@ CONTAINS
        end do
 
 
-#if (! defined ELEMENT_OPENMP)
+#ifdef HORIZ_OPENMP
        !$OMP END PARALLEL
 #endif
     end if

@@ -196,7 +196,7 @@ contains
   ! create an Real based communication buffer
   ! =========================================
 !IDEA   subroutine initEdgeBuffer(par,edge,elem,nlyr,buf_ptr, receive_ptr, NewMethod)
-  subroutine initEdgeBuffer(par,edge,elem,nlyr, NewMethod)
+  subroutine initEdgeBuffer(par,edge,elem,nlyr, NewMethod, numthreads_in )
     use dimensions_mod, only : np, nelemd, max_corner_elem
     use schedtype_mod, only : cycle_t, schedule_t, schedule
     implicit none
@@ -204,30 +204,18 @@ contains
     type (EdgeBuffer_t),intent(out), target :: edge
     type (element_t),intent(in)  :: elem(:)
     integer,intent(in)                :: nlyr
-!    real (kind=real_kind), optional, pointer :: buf_ptr(:), receive_ptr(:)
     logical (kind=log_kind), intent(in), optional :: NewMethod
-    ! integer, intent(in)  :: globalid(:)
-
-    ! Notes about the buf_ptr/receive_ptr options:
+    integer,intent(in), optional :: numthreads_in
     !
-    ! You can pass in 1D pointers to this function. If they are not
-    ! associated, they will be allocated and used as buffer space. If they
-    ! are associated, their targets will be used as buffer space.
+    ! Note: this routine is now thread safe.  but 'edge' should be shared by 
+    ! all threads and should be instantiated outside the threaded region
     !
-    ! The pointers must not be thread-private.
+    ! edge buffer must be intialized for the number of threads that will be
+    ! active when calling bndry_exchange.  
+    ! default is 'nthreadshoriz', which can be overriden with the optional
+    ! numthreads argument.  
     !
-    ! If an EdgeBuffer_t object is initialized from pre-existing storage
-    ! (i.e. buf_ptr is provided and not null), it must *not* be freed,
-    ! and must not be used if the underlying storage has been deallocated.
-    !
-    ! All these restrictions also applied to the old newbuf and newreceive
-    ! options.
-
-    ! Workaround for NAG bug.
-    ! NAG 5.3.1 dies if you use pointer bounds remapping to set
-    ! a pointer that is also a component. So remap to temporary,
-    ! then use that to set component pointer.
-
+    ! 
     ! Local variables
     integer :: nbuf,ith
     integer :: nSendCycles, nRecvCycles
@@ -235,6 +223,7 @@ contains
     integer :: iam,ie, i 
     integer :: edgeid,elemid
     integer :: ptr,llen,moveLength, mLen, tlen 
+    integer :: numthreads
     type (Cycle_t), pointer :: pCycle
     type (Schedule_t), pointer :: pSchedule
     integer :: dest, source, length, tag, iptr
@@ -248,6 +237,12 @@ contains
     else 
         nbuf=nlyr*4*(np+max_corner_elem)*nelemd
     endif
+
+    if (present(numthreads_in)) then
+       numthreads = numthreads_in
+    else
+       numthreads = nthreadshoriz
+    end if
 
 ! DO NOT REMOVE THIS NEXT BARRIER
 ! MT: This initial barrier fixes a long standing issue with Intel compilers on
@@ -342,26 +337,26 @@ if(present(NewMethod)) then
     enddo
 endif
 #endif
-    if(nthreadshoriz<=0) then 
+    if(numthreads<=0) then 
        nlen=1
     else
-       nlen=nthreadshoriz
+       nlen=numthreads
     endif
      
     allocate(edge%moveLength(nlen))
     allocate(edge%movePtr(nlen))
 
-    if (nthreadshoriz > 1) then 
+    if (numthreads > 1) then 
        ! the master thread performs no data movement because it is busy with the
        ! MPI messaging 
        edge%moveLength(1) = -1
        edge%movePtr(1) = 0
        
        ! Calculate the length of the local copy in bndy_exchange
-       llen = ceiling(real(moveLength,kind=real_kind)/real(nthreadshoriz-1,kind=real_kind))
+       llen = ceiling(real(moveLength,kind=real_kind)/real(numthreads-1,kind=real_kind))
        iptr = ptr
        mLen = 0
-       do i=2,nthreadshoriz
+       do i=2,numthreads
          if( (mLen+llen) <= moveLength)  then 
             tlen = llen 
          else

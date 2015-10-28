@@ -11,7 +11,7 @@ module viscosity_mod
 !  by element)
 !
 !
-use thread_mod, only : nthreadshoriz,omp_get_num_threads
+use thread_mod, only : omp_get_num_threads
 use kinds, only : real_kind, iulog
 use dimensions_mod, only : np, nc, nlev,qsize,nelemd, ntrac
 use hybrid_mod, only : hybrid_t, hybrid_create
@@ -496,7 +496,7 @@ integer :: nets,nete
 real (kind=real_kind), dimension(np,np,nlev,nelemd) :: zeta
 
 ! local
-integer :: k,i,j,ie,ic,kptr,nthread_save
+integer :: k,i,j,ie,ic,kptr
 type (hybrid_t)   :: hybrid
 
 hybrid = hybrid_create(par,0,1)
@@ -520,11 +520,9 @@ integer :: nets,nete
 real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 
 ! local
-integer :: k,i,j,ie,ic,kptr,nthread_save
+integer :: k,i,j,ie,ic,kptr
 
-nthread_save=nthreadshoriz
-nthreadshoriz = omp_get_num_threads()
-call initEdgeBuffer(hybrid%par,edge1,elem,nlev)
+call initEdgeBuffer(hybrid%par,edge1,elem,nlev, numthreads_in=omp_get_num_threads())
 
 do ie=nets,nete
    do k=1,nlev
@@ -543,7 +541,6 @@ do ie=nets,nete
 enddo
 
 call FreeEdgeBuffer(edge1) 
-nthreadshoriz=nthread_save
 
 end subroutine
 

@@ -97,7 +97,7 @@ subroutine stepon_init( gw, etamid, dyn_in, dyn_out )
 
   ! This is not done in dyn_init due to a circular dependency issue.
   if(iam < par%nprocs) then
-     call initEdgeBuffer(par, edgebuf, dyn_in%elem, (3+pcnst)*nlev)
+     call initEdgeBuffer(par, edgebuf, dyn_in%elem, (3+pcnst)*nlev, numthreads_in=1)
      if (use_gw_front) call gws_init(dyn_in%elem)
   end if
 

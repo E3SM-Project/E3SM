@@ -293,7 +293,7 @@ contains
     ! once we've read all the fields we do a boundary exchange to 
     ! update the redundent columns in the dynamics
     if(iam < par%nprocs) then
-       call initEdgeBuffer(par, edge, elem, (3+pcnst)*nlev+2)
+       call initEdgeBuffer(par, edge, elem, (3+pcnst)*nlev+2, numthreads_in=1)
     end if
     do ie=1,nelemd
        kptr=0
