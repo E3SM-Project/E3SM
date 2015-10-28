@@ -145,6 +145,18 @@
      </directives>
    </batch_system>
 
+   <!-- Constance is slurm -->
+
+   <batch_system MACH="constance" version="x.y">
+    <directives>
+       <directive>-A  climate</directive>
+       <directive>--mail-type=END</directive>
+       <directive>--mail-user=email@pnnl.gov</directive>
+       <directive>--output=slurm.out</directive>
+       <directive>--error=slurm.err</directive>
+    </directives>
+   </batch_system>
+
    <batch_system MACH="redsky" version="x.y">
      <directives>
        <directive>--account={{ project }}</directive>
