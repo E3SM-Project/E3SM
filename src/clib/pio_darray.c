@@ -58,15 +58,18 @@ void compute_buffer_init(iosystem_desc_t ios)
 #endif
 }
 
-/** @brief Write a single distributed field to output.  This routine is only used if aggregation is off.
+/**  @defgroup PIO_write_darray PIO_write_darray
+ *   @brief Write a distributed field to output.
+ */
+
+/**  @ingroup PIO_write_darray 
+ *   @brief Write a single distributed field to output.  This routine is only used if aggregation is off.
  *   @param[in] file: a pointer to the open file descriptor for the file that will be written to
  *   @param[in] iodesc: a pointer to the defined iodescriptor for the buffer
  *   @param[in] vid: the variable id to be written
  *   @param[in] IOBUF: the buffer to be written from this mpi task
  *   @param[in] fillvalue: the optional fillvalue to be used for missing data in this buffer
  */
-
-
  int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void *IOBUF, void *fillvalue)
  {
    iosystem_desc_t *ios;
@@ -313,6 +316,7 @@ void compute_buffer_init(iosystem_desc_t ios)
  }
 
 /** @brief Write a set of one or more aggregated arrays to output file
+ *   @ingroup PIO_write_darray
  *        
  *   This routine is used if aggregation is enabled, data is already on the
  *   io-tasks
@@ -330,7 +334,6 @@ void compute_buffer_init(iosystem_desc_t ios)
  *   @param[in] IOBUF: the buffer to be written from this mpi task
  *   @param[in] frame : the frame or record dimension for each of the nvars variables in IOBUF  
  */
-
 int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[], 
 			      const int iodesc_ndims, MPI_Datatype basetype, const PIO_Offset gsize[],
 			      const int maxregions, io_region *firstregion, const PIO_Offset llen,
@@ -606,11 +609,9 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
  }
 
 /** @brief Write one or more arrays with the same IO decomposition to the file
- *
+ *  @ingroup PIO_write_darray
  *
  */
-
-
 int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, const int nvars, const PIO_Offset arraylen, void *array, const int frame[], void *fillvalue[], bool flushtodisk)
  {
    iosystem_desc_t *ios;
@@ -730,13 +731,14 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    return ierr;
 
  }
+
 #ifdef PIO_WRITE_BUFFERING
 /** @brief Write a distributed array to the output file. 
+ *  @ingroup PIO_write_darray
  *
  *  This routine aggregates output on the compute nodes and only sends it to the IO nodes when the
  *  compute buffer is full or when a flush is triggered.  
  */ 
-
  int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_Offset arraylen, void *array, void *fillvalue)
  {
    iosystem_desc_t *ios;
@@ -937,13 +939,13 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
  
  }
 #else
+
 /** @brief Write a distributed array to the output file 
+ *  @ingroup PIO_write_darray
  *
  *  This version of the routine does not buffer, all data is communicated to the io tasks 
  *  before the routine returns
  */
-
-
  int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_Offset arraylen, void *array, void *fillvalue)
  {
    iosystem_desc_t *ios;
@@ -1013,10 +1015,13 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
  }
 #endif
 
-/** @brief read interface to io library
- *
+/** @defgroup PIO_read_darray PIO_read_darray
+ *  @brief Read a distributed field from a file.
  */
 
+/** @brief Read an array of data from a file to the IO library.
+ *  @ingroup PIO_read_darray
+ */
 int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void *IOBUF)
 {
   int ierr=PIO_NOERR;
@@ -1240,6 +1245,11 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
   return ierr;
 }
 
+
+/** @brief Read a field from a file to the IO library.
+ *  @ingroup PIO_read_darray
+ *  
+ */
 int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Offset arraylen, void *array)
 {
   iosystem_desc_t *ios;
