@@ -1,0 +1,103 @@
+	<nml_record name="tracer_forcing_MacroMoleculesTracers">
+		<nml_option name="config_use_MacroMoleculesTracers" type="logical" default_value=".false." units="unitless"
+					description="if true, the 'MacroMoleculesGRP' category is enabled for the run"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_MacroMoleculesTracers_surface_bulk_forcing" type="logical" default_value=".false." units="unitless"
+					description="if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'MacroMoleculesGRP' category"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_MacroMoleculesTracers_surface_restoring" type="logical" default_value=".false." units="unitless"
+					description="if true, surface restoring source is applied to tracers in 'MacroMoleculesGRP' category"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_MacroMoleculesTracers_interior_restoring" type="logical" default_value=".false." units="unitless"
+					description="if true, interior restoring source is applied to tracers in 'MacroMoleculesGRP' category"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_MacroMoleculesTracers_exponential_decay" type="logical" default_value=".false." units="unitless"
+					description="if true, exponential decay source is applied to tracers in 'MacroMoleculesGRP' category"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_MacroMoleculesTracers_idealAge_forcing" type="logical" default_value=".false." units="unitless"
+					description="if true, idealAge forcing source is applied to tracers in 'MacroMoleculesGRP' category"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_MacroMoleculesTracers_ttd_forcing" type="logical" default_value=".false." units="unitless"
+					description="if true, transit time distribution forcing source is applied to tracers in 'MacroMoleculesGRP' category"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_MacroMoleculesTracers_surface_value" type="logical" default_value=".false." units="unitless"
+					description="if true, surface value is computed for 'MacroMoleculesGRP' category"
+					possible_values=".true. or .false."
+		/>
+	</nml_record>
+
+	<packages>
+		<package name="MacroMoleculesTracersPKG" description="This package includes variables required to include MacroMoleculesGRP."/>
+	</packages>
+
+	<var_struct name="state" time_levs="2">
+		<var_struct name="tracers" time_levs="2">
+			<var_array name="MacroMoleculesTracers" dimensions="nVertLevels nCells Time" type="real" packages="MacroMoleculesTracersPKG" >
+				<!-- Add constituents of tracer group -->
+                                <var name="PROT" array_group="MacroMoleculesGRP" units="mmol m^{-3}"
+                                         description="Proteins"
+                                />
+                                <var name="POLY" array_group="MacroMoleculesGRP" units="mmol m^{-3}"
+                                         description="Polysaccharides"
+                                />
+                                <var name="LIP" array_group="MacroMoleculesGRP" units="mmol m^{-3}"
+                                         description="Lipids"
+                                />
+		   </var_array>
+		</var_struct>
+	</var_struct>
+
+	<var_struct name="tend" time_levs="1">
+		<var_struct name="tracersTend" time_levs="1">
+			<var_array name="MacroMoleculesTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="MacroMoleculesTracersPKG">
+				<!-- Add constituents of tracer group -->
+                                <var name="PROTTend" array_group="MacroMoleculesGRP" units="mmol m^{-3} s^{-1}"
+                                         description="Proteins Tendency"
+                                />
+                                <var name="POLYTend" array_group="MacroMoleculesGRP" units="mmol m^{-3} s^{-1}"
+                                         description="Polysaccharides Tendency"
+                                />
+                                <var name="LIPTend" array_group="MacroMoleculesGRP" units="mmol m^{-3} s^{-1}"
+                                         description="Lipids Tendency"
+                                />
+			</var_array>
+		</var_struct>
+	</var_struct>
+
+	<var_struct name="forcing" time_levs="1">
+		<var_struct name="tracersSurfaceFlux" time_levs="1">
+			<var_array name="MacroMoleculesTracersSurfaceFlux" type="real" dimensions="nCells Time" packages="MacroMoleculesTracersPKG">
+				<!-- Add constituents of tracer group -->
+                                <var name="PROTSurfaceFlux" array_group="MacroMoleculesGRP" units="mmol m^{-3} m s^{-1}"
+                                         description="Proteins Surface Flux"
+                                />
+                                <var name="POLYSurfaceFlux" array_group="MacroMoleculesGRP" units="mmol m^{-3} m s^{-1}"
+                                         description="Polysaccharides Surface Flux"
+                                />
+                                <var name="LIPSurfaceFlux" array_group="MacroMoleculesGRP" units="mmol m^{-3} m s^{-1}"
+                                         description="Lipids Surface Flux"
+                                />
+			</var_array>
+		</var_struct>
+	        <var_struct name="MacroMoleculesSeaIceCoupling" time_levs="1" packages="MacroMoleculesTracersPKG">
+                        <var name="oceanSurfaceDOC" type="real" dimensions="TWO nCells Time" units="mmolC m^{-3}"
+                                 description="Ocean Surface Organics concentration: (1,2)=>(polysaccharides,lipids)"
+                        />
+                        <var name="oceanSurfaceDON" type="real" dimensions="nCells Time" units="mmolN m^{-3}"
+                                 description="Ocean Surface Organic Proteins concentration"
+                        />
+                        <var name="iceFluxDOC" type="real" dimensions="TWO nCells Time" units="mmolC m^{-2} s"
+                                 description="Surface Organics flux from sea ice: (1,2)=>(polysaccharides,lipids)"
+                        />
+                        <var name="iceFluxDON" type="real" dimensions="nCells Time" units="mmolN m^{-2} s"
+                                 description="Surface Organic Proteins flux from sea ice"
+                        />
+		</var_struct>
+	</var_struct>
