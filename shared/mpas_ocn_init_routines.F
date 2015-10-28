@@ -633,7 +633,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       call mpas_rbf_interp_initialize(meshPool)
       call mpas_initialize_tangent_vectors(meshPool, edgeTangentVectors)
 
-      call mpas_init_reconstruct(meshPool)
+      call mpas_init_reconstruct(meshPool, includeHalos=.true.)
 
       call mpas_reconstruct(meshPool, normalVelocity,        &
                        velocityX,            &
