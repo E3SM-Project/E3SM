@@ -404,7 +404,8 @@
 	    <var name="verticalAerosolsConc"/>
 	    <var name="verticalSalinity"/>               
 	    <var name="brineFraction"/>                    
-	    <var name="mobileFraction"/>            
+	    <var name="mobileFraction"/>   
+            <var name="newlyFormedIce"/>        
 	  </stream>
 
 	  <stream name="output" 				
@@ -461,7 +462,8 @@
 	    <var name="totalVerticalBiologyIce"/>
 	    <var name="totalVerticalBiologySnow"/>
 	    <var name="totalVerticalSalinity"/>               
-	    <var name="brineFractionCell"/>         
+	    <var name="brineFractionCell"/>    
+            <var name="newlyFormedIce"/>         
 	  </stream>
 
         <!-- forcing streams -->
@@ -1049,7 +1051,7 @@
 
 	<!-- biogeochemistry -->
 	<var_struct name="biogeochemistry" time_levs="1">
-		<var name="newlyFormedIce"                    type="integer"  dimensions="nCategories nCells"            name_in_code="newlyFormedIce" packages="pkgColumnITDThermodynamics;pkgColumnRidging"/>
+		<var name="newlyFormedIce"                    type="integer"  dimensions="nCategories nCells Time"       name_in_code="newlyFormedIce" packages="pkgColumnITDThermodynamics;pkgColumnRidging"/>
 		<var name="rayleighCriteriaReal"              type="real"     dimensions="nCells"            name_in_code="rayleighCriteriaReal" packages="pkgColumnBiogeochemistry"/>
 		<var name="atmosBioFluxes"		      type="real"     dimensions="nZBGCTracers nCells"	         name_in_code="atmosBioFluxes" packages="pkgColumnBiogeochemistry"/>
 		<var name="atmosIceBioFluxes"		      type="real"     dimensions="nZBGCTracers nCells Time"      name_in_code="atmosIceBioFluxes" packages="pkgColumnBiogeochemistry"/>

@@ -590,15 +590,6 @@
 
       if (.not. restart_bgc) then  ! not restarting
 
-         call colpkg_init_OceanConcArray(max_nbtrcr,                     &
-                                 max_algae, max_don,  max_doc,   &
-                                 max_dic,   max_aero, max_fe,    &
-                                 nit,       amm,      sil,       &
-                                 dmsp,      dms,      algalN(:), &
-                                 doc(:),    don(:),   dic(:),    &
-                                 fed(:),    fep(:),   zaeros(:), &
-                                 ocean_bio_all(:),    hum)
-
       !-----------------------------------------------------------------------------   
       !     Skeletal Layer Model
       !  All bgc tracers are Bulk quantities in units of mmol or mg per m^3
