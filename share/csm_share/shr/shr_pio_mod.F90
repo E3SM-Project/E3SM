@@ -639,7 +639,6 @@ contains
     call mpi_comm_rank(comm, rank, ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_rank comm_world')
 
-    ! FIXME: Is there a easy way to send a userdefined type in Fortran?
     buf = 0
     ! buf(1) = comm_type
     ! buf(2) = comm_fcd
@@ -687,7 +686,6 @@ contains
         buf(3) = pio_rearr_comm_max_pend_req
       end if
 
-      ! FIXME: Is there a easy way to convert logicals to integers ?
       ! buf(4) = enable_hs
       if(pio_rearr_comm_enable_hs) then
         buf(4) = 1
