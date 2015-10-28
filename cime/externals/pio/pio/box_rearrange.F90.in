@@ -280,7 +280,6 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, niodof, &
       endif
     end do
 
-#ifdef _USE_ALLTOALLW
     if (pio_option == COLLECTIVE) then
 
       call MPI_ALLTOALLW(src,  a2a_sendcounts, a2a_displs, a2a_sendtypes, &
@@ -288,14 +287,11 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, niodof, &
                          IOsystem%union_comm, ierror                       )
       call CheckMPIReturn('box_rearrange', ierror)
     else
-#endif
       call pio_swapm( nprocs, myrank,                            &
         src,  ndof,   a2a_sendcounts, a2a_displs, a2a_sendtypes, &
         dest, niodof, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
         IOsystem%union_comm, pio_hs, pio_isend, pio_maxreq        )
-#ifdef _USE_ALLTOALLW
     endif
-#endif
     call dealloc_check(a2a_sendcounts)
     call dealloc_check(a2a_displs)
     call dealloc_check(a2a_sendtypes)
@@ -567,21 +563,17 @@ subroutine box_rearrange_io2comp_{TYPE} (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
       end do
     endif
 
-#ifdef _USE_ALLTOALLW
     if (pio_option == COLLECTIVE) then
       call MPI_ALLTOALLW(iobuf,   a2a_sendcounts, a2a_displs, a2a_sendtypes, &
                          compbuf, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
                          IOsystem%union_comm, ierror                          )
       call CheckMPIReturn(subName, ierror)
     else
-#endif
       call pio_swapm( nprocs, myrank,                               &
         iobuf,   niodof, a2a_sendcounts, a2a_displs, a2a_sendtypes, &
         compbuf, ndof,   a2a_recvcounts, a2a_displs, a2a_recvtypes, &
         IOsystem%union_comm, pio_hs, pio_isend, pio_maxreq           )
-#ifdef _USE_ALLTOALLW
     endif
-#endif
     call dealloc_check(a2a_sendcounts)
     call dealloc_check(a2a_displs)
     call dealloc_check(a2a_sendtypes)
