@@ -985,7 +985,7 @@ contains
          !-------------------------------------------------------------
          call mpas_reconstruct(meshPool, montgPotNormalGradOnEdge, &
             montgPotGradX, montgPotGradY, montgPotGradZ, &
-            montgPotGradZonal, montgPotGradMerid)
+            montgPotGradZonal, montgPotGradMerid, includeHalos=.true.)
 
          !-------------------------------------------------------------
          ! Increment first-order running ensemble average fields
@@ -1145,7 +1145,7 @@ contains
          ! reconstruct full gradient vector at cell centers
          !-------------------------------------------------------------
          call mpas_reconstruct(meshPool, ErtelPVNormalGradOnEdge, &
-            ErtelPVGradX, ErtelPVGradY, ErtelPVGradZ, ErtelPVGradZonal, ErtelPVGradMerid)
+            ErtelPVGradX, ErtelPVGradY, ErtelPVGradZ, ErtelPVGradZonal, ErtelPVGradMerid, includeHalos=.true.)
 
          !-------------------------------------------------------------
          ! compute the vertical derivative of uTWA
@@ -2642,7 +2642,7 @@ contains
         meshPool, uCell, velNormalGradOnEdge)
       call mpas_reconstruct(meshPool, velNormalGradOnEdge, &
         velGradX, velGradY, velGradZ, &
-        velGradZonal, velGradMerid)
+        velGradZonal, velGradMerid, includeHalos=.true.)
       uGradMerid = velGradMerid
 
       ! calculate derivative of vTWA with respect to the zonal direction
@@ -2650,7 +2650,7 @@ contains
         meshPool, vCell, velNormalGradOnEdge)
       call mpas_reconstruct(meshPool, velNormalGradOnEdge, &
         velGradX, velGradY, velGradZ, &
-        velGradZonal, velGradMerid)
+        velGradZonal, velGradMerid, includeHalos=.true.)
       vGradZonal = velGradZonal
 
       ErtelPV = 0.0
