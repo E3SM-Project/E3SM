@@ -29,6 +29,7 @@ module ocn_tendency
 
    use ocn_surface_bulk_forcing
    use ocn_surface_land_ice_fluxes
+   use ocn_frazil_forcing
 
    use ocn_tracer_hmix
    use ocn_high_freq_thickness_hmix_del2
@@ -175,6 +176,13 @@ contains
       call mpas_timer_start("surface flux", .false.)
       call ocn_thick_surface_flux_tend(meshPool, fractionAbsorbed, layerThickness, surfaceThicknessFlux, tend_layerThickness, err)
       call mpas_timer_stop("surface flux")
+
+      !
+      ! surface flux tendency
+      !
+      call mpas_timer_start("frazil thickness tendency", .false.)
+      call ocn_frazil_forcing_layer_thickness(meshPool, forcingPool, tend_layerThickness, err)
+      call mpas_timer_stop("frazil thickness tendency")
 
       call mpas_timer_stop("ocn_tend_thick")
    
@@ -361,7 +369,7 @@ contains
       type (mpas_pool_type), intent(in)    :: statePool       !< Input: State information
       type (mpas_pool_type), intent(inout) :: forcingPool     !< Input: Forcing information
       type (mpas_pool_type), intent(in)    :: diagnosticsPool !< Input: Diagnostic information
-      type (mpas_pool_type), intent(in)    :: meshPool        !< Input: Mesh information
+      type (mpas_pool_type), intent(inout)    :: meshPool        !< Input: Mesh information
       type (mpas_pool_type), intent(in)    :: scratchPool     !< Input: Scratch information
       real (kind=RKIND), intent(in) :: dt                     !< Input: Time step
       integer, intent(in), optional :: timeLevelIn            !< Input/Optional: Time Level Indes
@@ -672,6 +680,14 @@ contains
                  call ocn_tracer_nonlocalflux_tend(meshPool, vertNonLocalFlux, tracerGroupSurfaceFlux, tracerGroupTend, err)
                  call mpas_timer_stop("non-local flux from KPP")
                end if
+
+               !
+               ! Compute tracer tendency due to production/destruction of frazil ice
+               !
+               call mpas_timer_start("frazil", .false.)
+               call ocn_frazil_forcing_tracers(meshPool, tracersPool, groupItr%memberName, forcingPool, tracerGroupTend, err)
+               call mpas_timer_stop("frazil")
+
             end if
          end if
       end do

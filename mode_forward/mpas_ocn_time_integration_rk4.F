@@ -36,7 +36,6 @@ module ocn_time_integration_rk4
    use ocn_vmix
    use ocn_time_average
    use ocn_time_average_coupled
-   use ocn_sea_ice
 
    use ocn_effective_density_in_land_ice
 
@@ -168,9 +167,6 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:), pointer :: sshCur, sshNew
 
       real (kind=RKIND), dimension(:,:,:), pointer :: tracerGroup, tracersCur, tracersNew
-
-      ! Forcing Array pointers
-      real (kind=RKIND), dimension(:), pointer :: seaIceEnergy
 
       ! Diagnostics Field Pointers
       type (field1DReal), pointer :: boundaryLayerDepthField, effectiveDensityField
@@ -698,8 +694,6 @@ module ocn_time_integration_rk4
 
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
-        call mpas_pool_get_array(forcingPool, 'seaIceEnergy', seaIceEnergy)
-
         call mpas_pool_begin_iteration(tracersPool)
         do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
            if ( groupItr % memberType == MPAS_POOL_FIELD ) then
@@ -715,7 +709,6 @@ module ocn_time_integration_rk4
         end do
 
         call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
-        call ocn_sea_ice_formation(meshPool, indexTemperature, indexSalinity, layerThicknessNew, tracersNew, seaIceEnergy, err)
         block => block % next
       end do
 

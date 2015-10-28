@@ -137,7 +137,7 @@ module ocn_core_interface
       logical, pointer :: config_use_tracerGroup_ttd_forcing
 
       logical, pointer :: config_use_freq_filtered_thickness
-      logical, pointer :: config_frazil_ice_formation
+      logical, pointer :: config_use_frazil_ice_formation
       character (len=StrKIND), pointer :: config_time_integrator
       character (len=StrKIND), pointer :: config_ocean_run_mode
       character (len=StrKIND), pointer :: config_pressure_gradient_type
@@ -227,10 +227,9 @@ module ocn_core_interface
       !
       ! test for use of frazil ice formation, frazilIceActive
       !
-      ! TDR: need to add PKG
       call mpas_pool_get_package(packagePool, 'frazilIceActive', frazilIceActive)
-      call mpas_pool_get_config(configPool, 'config_frazil_ice_formation', config_frazil_ice_formation)      
-      if (config_frazil_ice_formation) then
+      call mpas_pool_get_config(configPool, 'config_use_frazil_ice_formation', config_use_frazil_ice_formation)      
+      if (config_use_frazil_ice_formation) then
          frazilIceActive = .true.
       end if
 
