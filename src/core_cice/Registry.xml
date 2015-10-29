@@ -1784,6 +1784,8 @@
 		<var name="verticalGrid"                      type="real"     dimensions="nIceLayersP1"             name_in_code="verticalGrid"/>
 		<var name="interfaceGrid"                     type="real"     dimensions="nIceLayersP1"             name_in_code="interfaceGrid"/>
 		<var name="verticalShortwaveGrid"             type="real"     dimensions="nIceLayersP1"             name_in_code="verticalShortwaveGrid"/>
+		<var name="carbonToNitrogenRatioAlgae"        type="real"     dimensions="maxAlgaeType"             name_in_code="carbonToNitrogenRatioAlgae"/>
+		<var name="carbonToNitrogenRatioDON"          type="real"     dimensions="maxDONType"               name_in_code="carbonToNitrogenRatioDON"/>
 	</var_struct>
 
 	<!-- initial profiles -->
