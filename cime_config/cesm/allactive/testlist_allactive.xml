@@ -354,4 +354,12 @@
       </test>
     </grid>
   </compset>
+  <compset name="E1850C5L40CNRTEST">
+    <grid name="f19_g16">
+      <test name="ERS_Ld5">
+	<machine compiler="pgi" testtype="prebeta" testmods="cice/default">yellowstone</machine>
+	</test>
+    </grid>
+  </compset>
+
 </testlist>
