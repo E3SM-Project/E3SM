@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_zbgc_shared.F90 1062 2015-10-02 19:50:29Z njeffery $
+!  SVN:$Id: ice_zbgc_shared.F90 1071 2015-10-28 22:12:56Z njeffery $
 !=======================================================================
 !
 ! Biogeochemistry variables
@@ -430,7 +430,7 @@
             call remap_zbgc (ntrcr,  nblyr+1,            &
                              nt,                         &
                              trtmp0(1:ntrcr),            &
-                             trtmp(:),                   &
+                             trtmp,                      &
                              0,                nblyr+1,  &
                              hbri_old,         htemp,    &
                              igrid(1:nblyr+1),           &
@@ -462,7 +462,7 @@
          call remap_zbgc    (ntrcr,            nblyr+1,  &
                              nt,                         &
                              trtmp0(1:ntrcr),            &
-                             trtmp(:),                   &
+                             trtmp,                      &
                              0,                nblyr+1,  &
                              hbri_old,         hbri,     &
                              igrid(1:nblyr+1),           &

@@ -149,16 +149,16 @@
 
       call solve_zsalinity        (nilyr, nblyr, n_cat, dt,          &
                                    bgrid,      cgrid,    igrid,      &
-                                   trcrn_S(:),         trcrn_q(:),   &
-                                   trcrn_Si(:),        ntrcr,        &
-                                   bSin(:),            bTin(:),      &
-                                   bphin(:),           iphin(:),     &
-                                   ikin(:),            hbr_old,      &
+                                   trcrn_S,            trcrn_q,      &
+                                   trcrn_Si,           ntrcr,        &
+                                   bSin,               bTin,         &
+                                   bphin,              iphin,        &
+                                   ikin,               hbr_old,      &
                                    hbrin,              hin,          &
-                                   hin_old,            iDin(:),      &
-                                   darcy_V,            brine_sal(:), &
-                                   brine_rho(:),       ibrine_sal(:),&
-                                   ibrine_rho(:),                    &
+                                   hin_old,            iDin,         &
+                                   darcy_V,            brine_sal,    &
+                                   brine_rho,          ibrine_sal,   &
+                                   ibrine_rho,                       &
                                    Rayleigh_criteria,                &
                                    first_ice,          sss,          &
                                    sst,                dh_top,       &
@@ -170,7 +170,7 @@
          zsal_totn = c0
 
          call column_sum_zsal    (zsal_totn,          nblyr,      &
-                                  vicen,              trcrn_S(:), &
+                                  vicen,              trcrn_S,    &
                                   fbri)
 
          call merge_zsal_fluxes (aicen, &
@@ -371,20 +371,20 @@
 
       call solve_S_dt (cflag,         nblyr,         &
                        nint         , dts          , &
-                       bSin      (:), bTin      (:), &
-                       bphin     (:), iphin     (:), &
+                       bSin         , bTin         , &
+                       bphin        , iphin        , &
                        igrid        , bgrid        , &
-                       ikin      (:),                &
+                       ikin         ,                &
                        hbr_old      , hbrin        , &
                        hin          , hin_old      , &
-                       iDin      (:), darcy_V      , &
-                       brine_sal (:), Rayleigh     , &
+                       iDin         , darcy_V      , &
+                       brine_sal    , Rayleigh     , &
                        first_ice    , sss          , &
                        dt           , dh_top       , &
-                       dh_bot       , brine_rho (:), &
-                       ibrine_sal(:), ibrine_rho(:), &
+                       dh_bot       , brine_rho    , &
+                       ibrine_sal   , ibrine_rho   , &
                        fzsaln       , fzsaln_g     , &
-                       S_bot     (:), l_stop       , &
+                       S_bot        , l_stop       , &
                        stop_label   , nu_diag) 
 
       if (l_stop) return
@@ -402,7 +402,7 @@
       call remap_zbgc   (ntrcr,     nilyr, &
                          nt_sice,          &
                          trtmp0(1:ntrcr),  &
-                         trtmp(:),         &
+                         trtmp,            &
                          1,         nblyr, &
                          hin,       hbrin, &
                          cgrid(2:nilyr+1), &
@@ -592,8 +592,8 @@
       ! Find brine density gradient for gravity drainage parameterization
       !-----------------------------------------------------------------
 
-      call calculate_drho(nblyr, igrid,bgrid,&
-                          brine_rho(:),ibrine_rho(:),drho(:))
+      call calculate_drho(nblyr, igrid, bgrid,&
+                          brine_rho, ibrine_rho, drho)   
 
       !-----------------------------------------------------------------
       ! Calculate bphi diffusivity on the grid points
@@ -803,9 +803,9 @@
             Ssum_tmp = Ssum_old
 
             call calc_salt_fluxes (nint, m, nblyr, igrid, &
-                 Ui_s(:),dh,dbgrid,hbri_old,Sintemp(:), &
-                 pre_sin(:),fluxb,fluxg,fluxm,V_s(:), &
-                 C_s(:),F_s(:),Ssum_corr,fzsaln_g,fzsaln, &
+                 Ui_s,   dh,dbgrid,hbri_old,Sintemp,    &
+                 pre_sin,   fluxb,fluxg,fluxm,V_s,    &
+                 C_s,   F_s,   Ssum_corr,fzsaln_g,fzsaln, &
                  Ssum_tmp,fluxcorr,dts, Ssum_new)
 
             if (test_conservation) then

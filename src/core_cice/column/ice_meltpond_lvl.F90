@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_meltpond_lvl.F90 1012 2015-06-26 12:34:09Z eclare $
+!  SVN:$Id: ice_meltpond_lvl.F90 1071 2015-10-28 22:12:56Z njeffery $
 !=======================================================================
 
 ! Level-ice meltpond parameterization
@@ -244,8 +244,8 @@
                deltah = hpondn + hi - draft
                pressure_head = gravit * rhow * max(deltah, c0)
                Tmlt(:) = -sicen(:) * depressT
-               call brine_permeability(nilyr, qicen(:), &
-                    vicen, sicen(:), Tmlt, perm)
+               call brine_permeability(nilyr, qicen, &
+                    vicen, sicen, Tmlt, perm)
                drain = perm*pressure_head*dt / (viscosity_dyn*hi) * dpscale
                deltah = min(drain, hpondn)
                dvn = -deltah*apondn

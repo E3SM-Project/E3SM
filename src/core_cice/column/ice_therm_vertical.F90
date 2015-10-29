@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_therm_vertical.F90 1051 2015-08-28 19:30:11Z njeffery $
+!  SVN:$Id: ice_therm_vertical.F90 1071 2015-10-28 22:12:56Z njeffery $
 !=========================================================================
 !
 ! Update ice and snow internal temperatures and compute
@@ -246,9 +246,9 @@
                                   vicen,    vsnon,   &
                                   hin,      hilyr,   &
                                   hsn,      hslyr,   &
-                                  zqin(:),  zTin(:), &
-                                  zqsn(:),  zTsn(:), &
-                                  zSin(:),           &
+                                  zqin,     zTin,    &
+                                  zqsn,     zTsn,    &
+                                  zSin,              &
                                   einit,    Tbot,    &
                                   nu_diag,  l_stop)
 
@@ -274,12 +274,12 @@
                                               potT,      Qa,        &
                                               shcoef,    lhcoef,    &
                                               fswsfc,    fswint,    &
-                                              Sswabs(:), Iswabs(:), &
+                                              Sswabs,    Iswabs,    &
                                               hilyr,     hslyr,     &
                                               apond,     hpond,     &
-                                              zqin(:),   zTin(:),   &
-                                              zqsn(:),   zTsn(:),   &
-                                              zSin(:),              &
+                                              zqin,      zTin,      &
+                                              zqsn,      zTsn,      &
+                                              zSin,                 &
                                               Tsf,       Tbot,      &
                                               sss,                  &
                                               fsensn,    flatn,     &
@@ -299,11 +299,11 @@
                                      potT,      Qa,        &
                                      shcoef,    lhcoef,    &
                                      fswsfc,    fswint,    &
-                                     Sswabs(:), Iswabs(:), &
+                                     Sswabs,    Iswabs,    &
                                      hilyr,     hslyr,     &
-                                     zqin(:),   zTin(:),   &
-                                     zqsn(:),   zTsn(:),   &
-                                     zSin(:),              &
+                                     zqin,      zTin,      &
+                                     zqsn,      zTsn,      &
+                                     zSin,                 &
                                      Tsf,       Tbot,      &
                                      fsensn,    flatn,     &
                                      flwoutn,   fsurfn,    &
@@ -369,7 +369,7 @@
                              efinal,                 &
                              hin,         hilyr,     &
                              hsn,         hslyr,     &
-                             zqin(:),     zqsn(:),   &
+                             zqin,        zqsn,      &
                              fbot,        Tbot,      &
                              flatn,       fsurfn,    &
                              fcondtopn,   fcondbot,  &
@@ -379,7 +379,7 @@
                              meltb,       iage,      &
                              congel,      snoice,    &
                              mlt_onset,   frz_onset, &
-                             zSin(:),     sss,       &
+                             zSin,        sss,       &
                              dsnow)
 
       !-----------------------------------------------------------------
@@ -434,8 +434,8 @@
       call update_state_vthermo(nilyr,   nslyr,   &
                                 Tbot,    Tsf,     &     
                                 hin,     hsn,     &
-                                zqin(:), zSin(:), &
-                                zqsn(:),          &
+                                zqin,    zSin,    &
+                                zqsn,             &
                                 aicen,            &
                                 vicen,   vsnon)
 
@@ -1417,8 +1417,8 @@
            call freeboard (nslyr,    dt,       &
                            snoice,   iage,     &
                            hin,      hsn,      &
-                           zqin(:),  zqsn(:),  &
-                           dzi(:),   dzs(:),   &
+                           zqin,     zqsn,     &
+                           dzi,      dzs,      &
                            dsnow)
 
 !---!-------------------------------------------------------------------
@@ -1466,15 +1466,15 @@
         !-----------------------------------------------------------------
             
          call adjust_enthalpy (nilyr,              &
-                               zi1(:),   zi2(:),   &
+                               zi1,      zi2,      &
                                hilyr,    hin,      &
-                               zqin(:))
+                               zqin)   
 
          if (ktherm == 2) &
               call adjust_enthalpy (nilyr,              &
-                                    zi1(:),   zi2(:),   &
+                                    zi1,      zi2,      &
                                     hilyr,    hin,      &
-                                    zSin(:))
+                                    zSin)   
 
       else ! zero layer (nilyr=1)
 
@@ -1506,9 +1506,9 @@
       !-----------------------------------------------------------------
 
          call adjust_enthalpy (nslyr,              &
-                               zs1(:),   zs2(:),   &
+                               zs1,      zs2,      &
                                hslyr,    hsn,      &
-                               zqsn(:))
+                               zqsn)   
 
       endif   ! nslyr > 1
 

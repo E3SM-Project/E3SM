@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_therm_itd.F90 1056 2015-09-18 21:52:00Z njeffery $
+!  SVN:$Id: ice_therm_itd.F90 1071 2015-10-28 22:12:56Z njeffery $
 !=======================================================================
 !
 ! Thermo calculations after call to coupler, related to ITD:
@@ -235,12 +235,12 @@
 
       enddo ! n
 
-      call column_sum (ncat, vicen(:), vice_init)
-      call column_sum (ncat, vsnon(:), vsno_init)
-      call column_sum (ncat, eicen(:), eice_init)
-      call column_sum (ncat, esnon(:), esno_init)
-      call column_sum (ncat, sicen(:), sice_init)
-      call column_sum (ncat, vbrin(:), vbri_init)
+      call column_sum (ncat, vicen, vice_init)
+      call column_sum (ncat, vsnon, vsno_init)
+      call column_sum (ncat, eicen, eice_init)
+      call column_sum (ncat, esnon, esno_init)
+      call column_sum (ncat, sicen, sice_init)
+      call column_sum (ncat, vbrin, vbri_init)
 
       endif ! l_conservation_check
 
@@ -527,10 +527,10 @@
                          trcr_base,             &
                          n_trcr_strata,         &
                          nt_strata,             &
-                         aicen(:), trcrn(:,:),  &
-                         vicen(:), vsnon(:),    &
-                         hicen(:), donor(:),    &
-                         daice(:), dvice(:),    &
+                         aicen,    trcrn,       &
+                         vicen,    vsnon,       &
+                         hicen,    donor,       &
+                         daice,    dvice,       &
                          l_stop,   stop_label,  &
                          nu_diag)
          if (l_stop) return
@@ -563,7 +563,7 @@
       ! Update fractional ice area in each grid cell.
       !-----------------------------------------------------------------
 
-      call aggregate_area (ncat, aicen(:), aice, aice0)
+      call aggregate_area (ncat, aicen, aice, aice0)
 
       !-----------------------------------------------------------------
       ! Check volume and energy conservation.
@@ -599,12 +599,12 @@
 
       enddo ! n
 
-      call column_sum (ncat, vicen(:), vice_final)
-      call column_sum (ncat, vsnon(:), vsno_final)
-      call column_sum (ncat, eicen(:), eice_final)
-      call column_sum (ncat, esnon(:), esno_final)
-      call column_sum (ncat, sicen(:), sice_final)
-      call column_sum (ncat, vbrin(:), vbri_final)
+      call column_sum (ncat, vicen, vice_final)
+      call column_sum (ncat, vsnon, vsno_final)
+      call column_sum (ncat, eicen, eice_final)
+      call column_sum (ncat, esnon, esno_final)
+      call column_sum (ncat, sicen, sice_final)
+      call column_sum (ncat, vbrin, vbri_final)
 
       fieldid = 'vice, ITD remap'
       call column_conservation_check (fieldid,               &
@@ -956,9 +956,9 @@
          if (solve_zsal .or. z_tracers) &
             call lateral_melt_bgc(dt,                         &
                                   ncat,        nblyr,         &
-                                  rside,       vicen_init(:), &
-                                  trcrn(:,:),  fzsal,         &
-                                  flux_bio(:), nbtrcr)
+                                  rside,       vicen_init,    &
+                                  trcrn,       fzsal,         &
+                                  flux_bio,    nbtrcr)
 
       endif          ! rside
 
@@ -1173,8 +1173,8 @@
                      * vicen(n)/real(nilyr,kind=dbl_kind)
          enddo
          enddo
-         call column_sum (ncat, vicen(:), vice_init)
-         call column_sum (ncat, eicen(:), eice_init)
+         call column_sum (ncat, vicen, vice_init)
+         call column_sum (ncat, eicen, eice_init)
 
       endif ! l_conservation_check
 
@@ -1430,8 +1430,8 @@
                         * vicen(n)/real(nilyr,kind=dbl_kind)
             enddo
          enddo
-         call column_sum (ncat, vicen(:), vice_final)
-         call column_sum (ncat, eicen(:), eice_final)
+         call column_sum (ncat, vicen, vice_final)
+         call column_sum (ncat, eicen, eice_final)
 
          fieldid = 'vice, add_new_ice'
          call column_conservation_check (fieldid,               &

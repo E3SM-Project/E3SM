@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_colpkg.F90 1069 2015-10-26 20:15:16Z njeffery $
+!  SVN:$Id: ice_colpkg.F90 1072 2015-10-29 15:36:55Z njeffery $
 !=========================================================================
 !
 ! flags and interface routines for the column package
@@ -579,14 +579,14 @@
       zspace(nblyr+1) = p5*zspace(nblyr+1)
       ntrcr_bgc       = ntrcr-ntrcr_o
 
-      call colpkg_init_OceanConcArray(max_nbtrcr,             &
+      call colpkg_init_OceanConcArray(max_nbtrcr,                &
                                  max_algae, max_don,  max_doc,   &
                                  max_dic,   max_aero, max_fe,    &
                                  nit,       amm,      sil,       &
-                                 dmsp,      dms,      algalN(:), &
-                                 doc(:),    don(:),   dic(:),    &
-                                 fed(:),    fep(:),   zaeros(:), &
-                                 ocean_bio_all(:),    hum)
+                                 dmsp,      dms,      algalN,    &
+                                 doc,       don,      dic,       &  
+                                 fed,       fep,      zaeros,    &
+                                 ocean_bio_all,       hum)
 
       if (.not. restart_bgc) then  ! not restarting
 
@@ -635,7 +635,7 @@
                do n = 1,ncat     
                   call remap_zbgc(nilyr,            nilyr,    &
                                   1,                          &
-                                  sicen(:,n),       trtmp(:), &
+                                  sicen(:,n),       trtmp,    &
                                   0,                nblyr+1,  &
                                   c1,               c1,       &
                                   cgrid(2:nilyr+1),           &
@@ -1699,8 +1699,8 @@
       call frzmlt_bottom_lateral (dt,        ncat,      &
                                   nilyr,     nslyr,     &
                                   aice,      frzmlt,    &
-                                  vicen (:), vsnon (:), &
-                                  zqin(:,:), zqsn(:,:), &
+                                  vicen,     vsnon,     &
+                                  zqin,      zqsn,      &
                                   sst,       Tf,        &
                                   ustar_min,            &
                                   fbot_xfer_type,       &
@@ -1714,12 +1714,12 @@
       !-----------------------------------------------------------------
 
       if (formdrag) then
-         call neutral_drag_coeffs (apnd      (:), &
-                                   hpnd     (:), ipnd      (:), &
-                                   alvl     (:), vlvl      (:), &
+         call neutral_drag_coeffs (apnd         , &
+                                   hpnd        , ipnd         , &
+                                   alvl        , vlvl         , &
                                    aice        , vice,          &
-                                   vsno        , aicen     (:), &
-                                   vicen    (:), vsnon     (:), &
+                                   vsno        , aicen        , &
+                                   vicen       , vsnon        , &
                                    Cdn_ocn     , Cdn_ocn_skin, &
                                    Cdn_ocn_floe, Cdn_ocn_keel, &
                                    Cdn_atm     , Cdn_atm_skin, &
@@ -1875,7 +1875,7 @@
                                     vsnon_init (n),                 &
                                     vicen      (n), vsnon      (n), &
                                     aicen      (n),                 &
-                                    faero_atm  (:),  faero_ocn(:),  &
+                                    faero_atm     ,  faero_ocn   ,  &
                                     nu_diag)
             endif
 
@@ -1985,14 +1985,14 @@
       if (tr_pond_topo) then
          call compute_ponds_topo(dt,       ncat,      nilyr,     &
                                  ktherm,   heat_capacity,        &
-                                 aice,     aicen (:),            &
-                                 vice,     vicen (:),            &
-                                 vsno,     vsnon (:),            &
+                                 aice,     aicen,                &
+                                 vice,     vicen,                &
+                                 vsno,     vsnon,                &
                                  potT,     meltt,                &
                                  fsurf,    fpond,                &
-                                 Tsfc (:), Tf,                   &
-                                 zqin(:,:),zSin(:,:),            &
-                                 apnd (:), hpnd  (:), ipnd(:),   &
+                                 Tsfc,     Tf,                   &
+                                 zqin,     zSin,                 &
+                                 apnd,     hpnd,      ipnd,      &
                                  l_stop,   stop_label)
       endif
       !call ice_timer_stop(timer_ponds)
@@ -2140,7 +2140,7 @@
       ! Compute fractional ice area in each grid cell.
       !-----------------------------------------------------------------
 
-      call aggregate_area (ncat, aicen(:), aice, aice0)
+      call aggregate_area (ncat, aicen, aice, aice0)
 
       if (kitd == 1) then
 
@@ -2152,16 +2152,16 @@
 
             call linear_itd (ncat,     hin_max,        &
                              nilyr,    nslyr,          &
-                             ntrcr,    trcr_depend(:), &
-                             trcr_base (:,:),  & 
-                             n_trcr_strata(:),&
-                             nt_strata (:,:),          &
-                             aicen_init(:),         &
-                             vicen_init(:),         &
-                             aicen     (:),         &
-                             trcrn     (:,:), & 
-                             vicen     (:),         &
-                             vsnon     (:),         &
+                             ntrcr,    trcr_depend,    &
+                             trcr_base,        & 
+                             n_trcr_strata,   &
+                             nt_strata,                &
+                             aicen_init,            &
+                             vicen_init,            &
+                             aicen,                 &
+                             trcrn,           & 
+                             vicen,                 &
+                             vsnon,                 &
                              aice      ,         &
                              aice0     ,         &
                              fpond,       l_stop,      &
@@ -2185,20 +2185,20 @@
                            nblyr,                       &
                            n_aero,        dt,           &
                            ntrcr,         nltrcr,       &
-                           hin_max   (:), ktherm,       &
-                           aicen     (:), trcrn (:,:),  &
-                           vicen     (:), vsnon(1),     &
+                           hin_max,       ktherm,       &
+                           aicen,         trcrn,        &
+                           vicen,         vsnon(1),     &
                            aice0,         aice,         &
                            frzmlt,        frazil,       &
                            frz_onset,     yday,         &
                            update_ocn_f,                &
                            fresh,         fsalt,        &
                            Tf,            sss,          &
-                           salinz    (:), phi_init,     &
+                           salinz,        phi_init,     &
                            dSin0_frazil,  bgrid,        &
                            cgrid,         igrid,        &
-                           nbtrcr,        flux_bio (:), &
-                           ocean_bio (:), fzsal,        &
+                           nbtrcr,        flux_bio,     &
+                           ocean_bio,     fzsal,        &
                            nu_diag,                     &
                            l_stop,        stop_label)
 
@@ -2212,11 +2212,11 @@
                          nilyr,     nslyr,         &
                          n_aero,    fpond,         &
                          fresh,     fsalt,         &
-                         fhocn,     faero_ocn (:), &
+                         fhocn,     faero_ocn,     &
                          rside,     meltl,         &
-                         aicen (:), vicen     (:), &
-                         vsnon (:), trcrn   (:,:), &
-                         fzsal,     flux_bio (:) , &
+                         aicen,     vicen,         &
+                         vsnon,     trcrn,         &
+                         fzsal,     flux_bio,      &
                          nbtrcr,    nblyr)
 
       !-----------------------------------------------------------------
@@ -2238,22 +2238,22 @@
 
       call cleanup_itd (dt,                   ntrcr,            &
                         nilyr,                nslyr,            &
-                        ncat,                 hin_max(:),       &
-                        aicen(:),             trcrn(1:ntrcr,:), &
-                        vicen(:),             vsnon(:),         &
+                        ncat,                 hin_max,          &
+                        aicen,                trcrn(1:ntrcr,:), &
+                        vicen,                vsnon,            &
                         aice0,                aice,             & 
                         n_aero,                                 &
                         nbtrcr,               nblyr,            &
                         l_stop,               stop_label,       &
                         nu_diag,              tr_aero,          &
                         tr_pond_topo,         heat_capacity,    &
-                        first_ice(:),                           &
-                        trcr_depend(:),       trcr_base(:,:),   &
-                        n_trcr_strata(:),     nt_strata(:,:),   &
+                        first_ice,                              &
+                        trcr_depend,          trcr_base,        &
+                        n_trcr_strata,        nt_strata,        &
                         fpond,                fresh,            &
                         fsalt,                fhocn,            &
-                        faero_ocn(:),         fzsal,            &
-                        flux_bio(:))
+                        faero_ocn,            fzsal,            &
+                        flux_bio)   
 
       end subroutine colpkg_step_therm2
 
@@ -2585,15 +2585,15 @@
                           tr_pond_topo,                 &
                           ncat,         n_aero,         &
                           n_zaero,      dEdd_algae,     &
-                          nlt_chl_sw,   nlt_zaero_sw(:),&
+                          nlt_chl_sw,   nlt_zaero_sw,   &
                           tr_bgc_N,     tr_zaero,       &
                           nilyr,        nslyr,          &
-                          aicen(:),     vicen(:),       &
-                          vsnon(:),     Tsfcn(:),       &
-                          alvln(:),     apndn(:),       &
-                          hpndn(:),     ipndn(:),       &
-                          aeron(:,:),   kalg,           &
-                          zbion(:,:),                   &
+                          aicen,        vicen,          &
+                          vsnon,        Tsfcn,          &
+                          alvln,        apndn,          &
+                          hpndn,        ipndn,          &
+                          aeron,        kalg,           &
+                          zbion,                        &
                           heat_capacity,                &
                           TLAT,         TLON,           &
                           calendar_type,days_per_year,  &
@@ -2605,30 +2605,30 @@
                           hp1,          pndaspect,      &
                           kaer_tab,     waer_tab,       &
                           gaer_tab,                     &
-                          kaer_bc_tab(:,:),             &
-                          waer_bc_tab(:,:),             &
-                          gaer_bc_tab(:,:),             &
-                          bcenh(:,:,:),                 &
+                          kaer_bc_tab,                  &
+                          waer_bc_tab,                  &
+                          gaer_bc_tab,                  &
+                          bcenh,                        &
                           modal_aero,                   &
                           swvdr,        swvdf,          &
                           swidr,        swidf,          &
                           coszen,       fsnow,          &
-                          alvdrn(:),    alvdfn(:),      &
-                          alidrn(:),    alidfn(:),      &
-                          fswsfcn(:),   fswintn(:),     &
-                          fswthrun(:),  fswpenln(:,:),  &
-                          Sswabsn(:,:), Iswabsn(:,:),   &
-                          albicen(:),   albsnon(:),     &
-                          albpndn(:),   apeffn(:),      &
-                          dhsn(:),      ffracn(:),      &
+                          alvdrn,       alvdfn,         &
+                          alidrn,       alidfn,         &
+                          fswsfcn,      fswintn,        &
+                          fswthrun,     fswpenln,       &
+                          Sswabsn,      Iswabsn,        &
+                          albicen,      albsnon,        &
+                          albpndn,      apeffn,         &
+                          dhsn,         ffracn,         &
                           nu_diag,      l_print_point,  &
                           initonly)
  
          else  ! .not. dEdd
 
-            call shortwave_ccsm3(aicen(:),   vicen(:),   &
-                                 vsnon(:),               &
-                                 Tsfcn(:),               &
+            call shortwave_ccsm3(aicen,      vicen,      &
+                                 vsnon,                  &
+                                 Tsfcn,                  &
                                  swvdr,      swvdf,      &
                                  swidr,      swidf,      &
                                  heat_capacity,          &
@@ -2636,14 +2636,14 @@
                                  albicev,    albicei,    &
                                  albsnowv,   albsnowi,   &
                                  ahmax,                  &
-                                 alvdrn(:),  alidrn(:),  &
-                                 alvdfn(:),  alidfn(:),  &
-                                 fswsfcn(:), fswintn(:), &
-                                 fswthrun(:),            &
-                                 fswpenln(:,:),          &
-                                 Iswabsn(:,:),           &
-                                 Sswabsn(:,:),           &
-                                 albicen(:), albsnon(:), &
+                                 alvdrn,     alidrn,     &
+                                 alvdfn,     alidfn,     &
+                                 fswsfcn,    fswintn,    &
+                                 fswthrun,               &
+                                 fswpenln,               &
+                                 Iswabsn,                &
+                                 Sswabsn,                &
+                                 albicen,    albsnon,    &
                                  coszen,     ncat)
 
          endif   ! shortwave
@@ -2817,16 +2817,16 @@
          call ridge_ice (dt,           ndtd,           &
                          ncat,         n_aero,         &
                          nilyr,        nslyr,          &
-                         ntrcr,        hin_max(:),     &
+                         ntrcr,        hin_max,        &
                          rdg_conv,     rdg_shear,      &
-                         aicen    (:),                 &
-                         trcrn    (:,:),         &
-                         vicen    (:), vsnon     (:),  &
+                         aicen,                        &
+                         trcrn,                        &
+                         vicen,        vsnon,          &
                          aice0,                        &
-                         trcr_depend  (:),       &
-                         trcr_base    (:,:),       &
-                         n_trcr_strata(:),       &
-                         nt_strata    (:,:),       &
+                         trcr_depend,                  &
+                         trcr_base,                    &
+                         n_trcr_strata,                &
+                         nt_strata,                    &
                          l_stop,                       &
                          stop_label,   nu_diag,        &
                          krdg_partic, krdg_redist, &
@@ -2835,12 +2835,12 @@
                          dvirdgdt,     opening,        &
                          fpond,                        &
                          fresh,        fhocn,          &
-                         tr_brine,     faero_ocn(:),   &
-                         aparticn (:), krdgn     (:),  &
-                         aredistn (:), vredistn  (:),  &
-                         dardg1ndt(:), dardg2ndt (:),  &
-                         dvirdgndt(:),                 &
-                         araftn   (:), vraftn    (:))
+                         tr_brine,     faero_ocn,      &
+                         aparticn,     krdgn,          &
+                         aredistn,     vredistn,       &
+                         dardg1ndt,    dardg2ndt,      &
+                         dvirdgndt,                    &
+                         araftn,       vraftn)        
 
          if (l_stop) return
 
@@ -2852,22 +2852,22 @@
       dtt = dt * ndtd  ! for proper averaging over thermo timestep
       call cleanup_itd (dtt,                  ntrcr,            &
                         nilyr,                nslyr,            &
-                        ncat,                 hin_max(:),       &
-                        aicen(:),             trcrn(:,:),       &
-                        vicen(:),             vsnon(:),         &
+                        ncat,                 hin_max,          &
+                        aicen,                trcrn,            &
+                        vicen,                vsnon,            &
                         aice0,                aice,             &          
                         n_aero,                                 &
                         nbtrcr,               nblyr,            &
                         l_stop,               stop_label,       &
                         nu_diag,              tr_aero,          &
                         tr_pond_topo,         heat_capacity,    &  
-                        first_ice(:),                           &                
-                        trcr_depend(:),       trcr_base(:,:),   &
-                        n_trcr_strata(:),     nt_strata(:,:),   &
+                        first_ice,                              &                
+                        trcr_depend,          trcr_base,        &
+                        n_trcr_strata,        nt_strata,        &
                         fpond,                fresh,            &
                         fsalt,                fhocn,            &
-                        faero_ocn(:),         fzsal,            &
-                        flux_bio(:))
+                        faero_ocn,            fzsal,            &
+                        flux_bio)
 
       if (l_stop) then
          stop_label = 'ice: ITD cleanup error in colpkg_step_ridge'
@@ -2985,10 +2985,10 @@
 
       ! Tracers
       call colpkg_compute_tracers (ntrcr,     trcr_depend,   &
-                                   atrcr(:),  aice,          &
+                                   atrcr,     aice,          &
                                    vice ,     vsno,          &
                                    trcr_base, n_trcr_strata, &
-                                   nt_strata, trcr(:))
+                                   nt_strata, trcr)   
 
       deallocate (atrcr)
 
@@ -3066,15 +3066,15 @@
       ! Compute thickness distribution of ridging and ridged ice.
       !-----------------------------------------------------------------
 
-         call asum_ridging (ncat, aicen(:), aice0, asum)
+         call asum_ridging (ncat, aicen, aice0, asum)
 
          call ridge_itd (ncat,     aice0,      &
-                         aicen(:), vicen(:),   &
+                         aicen,    vicen,      &
                          krdg_partic, krdg_redist, &
                          mu_rdg,                   &
-                         aksum,    apartic(:), &
-                         hrmin(:), hrmax(:),   &
-                         hrexp(:), krdg(:))
+                         aksum,    apartic,    &
+                         hrmin,    hrmax,      &
+                         hrexp,    krdg)   
 
       !-----------------------------------------------------------------
       ! Compute ice strength based on change in potential energy,
@@ -4365,11 +4365,11 @@
                                 bgrid,            cgrid,       igrid,             &
                                 trcrn(1:ntrcr,n), hin_old(n),  hbr_old,           &
                                 sss,              sst,         bTiz(:,n),         &
-                                iTin(:),          bphi(:,n),   kavg,              &
+                                iTin,             bphi(:,n),   kavg,              &
                                 bphi_o,           phi_snow,    Rayleigh_criteria, &
-                                first_ice(n),     bSin(:),     brine_sal(:),      &
-                                brine_rho(:),     iphin(:),    ibrine_rho(:),     &
-                                ibrine_sal(:),    sice_rho(n), sloss,             &
+                                first_ice(n),     bSin,        brine_sal,         &
+                                brine_rho,        iphin,       ibrine_rho,        &
+                                ibrine_sal,       sice_rho(n), sloss,             &
                                 salinz(1:nilyr),  l_stop,      stop_label)
 
                   if (l_stop) return
@@ -4418,14 +4418,14 @@
                                   trcrn(nt_qice:nt_qice+nilyr-1,n),   &
                                   trcrn(nt_sice:nt_sice+nilyr-1,n),   &
                                   ntrcr,         trcrn(nt_fbri,n),    &
-                                  bSin(:),       bTiz(:,n),           &
-                                  bphi(:,n),     iphin(:),            &
+                                  bSin,          bTiz(:,n),           &
+                                  bphi(:,n),     iphin,               &
                                   iki(:,n),      hbr_old,             &
                                   hbrin,         hin,                 &
                                   hin_old(n),    iDi(:,n),            &
-                                  darcy_V(n),    brine_sal(:),        & 
-                                  brine_rho(:),  ibrine_sal(:),       & 
-                                  ibrine_rho(:),                      &
+                                  darcy_V(n),    brine_sal,           & 
+                                  brine_rho,     ibrine_sal,          & 
+                                  ibrine_rho,                         &
                                   Rayleigh_criteria,                  &
                                   first_ice(n),  sss,                 &
                                   sst,           dhbr_top(n),         &
@@ -4465,7 +4465,7 @@
                           n_fed,                 n_fep,                  &
                           n_zaero,               first_ice(n),           &
                           hin_old(n),            ocean_bio(1:nbtrcr),    &
-                          bphi(:,n),             iphin(:),               &     
+                          bphi(:,n),             iphin,                  &     
                           iDi(:,n),              sss,                    &
                           fswpenln(:,n),                                 &
                           dhbr_top(n),           dhbr_bot(n),            &
@@ -4476,11 +4476,11 @@
                           bgrid,                 cgrid,                  &
                           igrid,                 icgrid,                 &
                           bphi_o,                                        &
-                          dhice,                 iTin(:),                &
+                          dhice,                 iTin,                   &
                           Zoo(:,n),                                      &
                           flux_bio(1:nbtrcr),                            &
                           upNO,                   upNH,                  &
-                          fbio_snoice(:),         fbio_atmice(:),        &
+                          fbio_snoice,            fbio_atmice,           &
                           PP_net,                 ice_bio_net (1:nbtrcr),&
                           snow_bio_net(1:nbtrcr), grow_net,              &
                           l_stop,                 stop_label,            &
@@ -4615,9 +4615,11 @@
 !  Initialize ocean concentration
 
       subroutine colpkg_init_ocean_conc (amm, dmsp, dms, algalN, doc, dic, don, &
-             fed, fep, hum, nit, sil, zaeros, max_dic, max_don, max_fe, max_aero)
+             fed, fep, hum, nit, sil, zaeros, max_dic, max_don, max_fe, max_aero,&
+             CToN, CToN_DON)
 
       use ice_constants_colpkg, only: c1,  c2, p5, c0, p1
+      use ice_colpkg_shared, only: R_C2N, R_C2N_DON
  
       integer (kind=int_kind), intent(in) :: &
         max_dic, &
@@ -4642,8 +4644,22 @@
        fep      , & ! Particulate Iron
        zaeros       ! BC and dust
 
+      real (kind=dbl_kind), dimension(:), intent(inout), optional :: &
+       CToN     , & ! carbon to nitrogen ratio for algae
+       CToN_DON     ! nitrogen to carbon ratio for proteins
+
       integer (kind=int_kind) :: &
         k 
+
+       if (present(CToN)) then
+         CToN(1) = R_C2N(1)
+         CToN(2) = R_C2N(2)    
+         CToN(3) = R_C2N(3)     
+       endif
+
+       if (present(CToN_DON)) then
+         CToN_DON(1) = R_C2N_DON(1)
+       endif
 
        amm  = c1 ! ISPOL < 1 mmol/m^3 
        dmsp = p1  
@@ -4670,7 +4686,7 @@
             fep(k) = c2 ! (nM) van der Merwe 2011
                         ! (0.6 to 2.9 nM ocean)
        enddo 
-       hum  = c1     
+       hum  = c1        ! mmol C/m^3
        nit  = 12.0_dbl_kind
        sil  = 25.0_dbl_kind
        do k = 1, max_aero

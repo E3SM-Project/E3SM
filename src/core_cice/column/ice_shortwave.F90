@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_shortwave.F90 1068 2015-10-23 21:14:19Z njeffery $
+!  SVN:$Id: ice_shortwave.F90 1071 2015-10-28 22:12:56Z njeffery $
 !=======================================================================
 !
 ! The albedo and absorbed/transmitted flux parameterizations for
@@ -905,7 +905,7 @@
                                          aicen(n),   vsnon(n), &
                                          Tsfcn(n),   fsn,      &
                                          hs0,        hsn,      &
-                                         rhosnwn(:), rsnwn(:))
+                                         rhosnwn,    rsnwn)    
 
             ! set pond properties
             if (tr_pond_cesm) then
@@ -1015,16 +1015,16 @@
                              coszen,        heat_capacity,  &
                              aicen(n),      vicen(n),       &
                              hsn,           fsn,            &
-                             rhosnwn(:),    rsnwn(:),       &
+                             rhosnwn,       rsnwn,          &
                              fpn,           hpn,            &
                              aeron(:,n),    tr_aero,        &
                              R_ice,         R_pnd,          &
                              kaer_tab,      waer_tab,       &
                              gaer_tab,                      &
-                             kaer_bc_tab(:,:),              &
-                             waer_bc_tab(:,:),              &
-                             gaer_bc_tab(:,:),              &
-                             bcenh(:,:,:),  modal_aero,     &   
+                             kaer_bc_tab,                   &
+                             waer_bc_tab,                   &
+                             gaer_bc_tab,                   &
+                             bcenh,         modal_aero,     &   
                              kalg,                          &
                              swvdr,         swvdf,          &
                              swidr,         swidf,          &
@@ -1290,7 +1290,7 @@
                srftyp = 0
                call compute_dEdd(nilyr,       nslyr,   klev,   klevp,   & 
                       n_zaero,   zbio,        dEdd_algae,               &
-                      nlt_chl_sw,nlt_zaero_sw(:),      tr_bgc_N,        &
+                      nlt_chl_sw,nlt_zaero_sw,         tr_bgc_N,        &
                       tr_zaero,                                         &
                       heat_capacity,          fnidr,   coszen,          &
                       n_aero,    tr_aero,     R_ice,   R_pnd,           &
@@ -1298,12 +1298,12 @@
                       kaer_bc_tab, waer_bc_tab, gaer_bc_tab,            &
                       bcenh,     modal_aero,  kalg,                     &
                       swvdr,     swvdf,       swidr,   swidf,  srftyp,  &
-                      hstmp,     rhosnw(:),   rsnw(:), hi,     hp,      &
-                      fi,        aero_mp(:),  avdrl,   avdfl,           &
+                      hstmp,     rhosnw,      rsnw,    hi,     hp,      &
+                      fi,        aero_mp,     avdrl,   avdfl,           &
                       aidrl,     aidfl,                                 &
                       fswsfc,    fswint,                                &
-                      fswthru,   Sswabs(:),                             &
-                      Iswabs(:), fswpenl(:), nu_diag)
+                      fswthru,   Sswabs,                                &
+                      Iswabs,    fswpenl,    nu_diag)
                
                alvdr   = alvdr   + avdrl *fi
                alvdf   = alvdf   + avdfl *fi
@@ -1325,7 +1325,7 @@
                srftyp = 1
                call compute_dEdd(nilyr,       nslyr,   klev,   klevp,   & 
                       n_zaero,   zbio,        dEdd_algae,               &
-                      nlt_chl_sw,nlt_zaero_sw(:),      tr_bgc_N,        &
+                      nlt_chl_sw,nlt_zaero_sw,         tr_bgc_N,        &
                       tr_zaero,                                         &
                       heat_capacity,          fnidr,   coszen,          &
                       n_aero,    tr_aero,     R_ice,   R_pnd,           &
@@ -1333,12 +1333,12 @@
                       kaer_bc_tab, waer_bc_tab, gaer_bc_tab,            &
                       bcenh,     modal_aero,  kalg,                     &
                       swvdr,     swvdf,       swidr,   swidf,  srftyp,  &
-                      hs,        rhosnw(:),   rsnw(:), hi,     hp,      &
-                      fs,        aero_mp(:),  avdrl,   avdfl,           &
+                      hs,        rhosnw,      rsnw,    hi,     hp,      &
+                      fs,        aero_mp,     avdrl,   avdfl,           &
                       aidrl,     aidfl,                                 &
                       fswsfc,    fswint,                                &
-                      fswthru,   Sswabs(:),                             &
-                      Iswabs(:), fswpenl(:), nu_diag)
+                      fswthru,   Sswabs,                                &
+                      Iswabs,    fswpenl,    nu_diag)
                
                alvdr   = alvdr   + avdrl *fs
                alvdf   = alvdf   + avdfl *fs
@@ -1363,7 +1363,7 @@
                srftyp = 2
                call compute_dEdd(nilyr,       nslyr,   klev,   klevp,   & 
                       n_zaero,   zbio,        dEdd_algae,               &
-                      nlt_chl_sw,nlt_zaero_sw(:),      tr_bgc_N,        &
+                      nlt_chl_sw,nlt_zaero_sw,         tr_bgc_N,        &
                       tr_zaero,                                         &
                       heat_capacity,          fnidr,   coszen,          &
                       n_aero,    tr_aero,     R_ice,   R_pnd,           &
@@ -1371,12 +1371,12 @@
                       kaer_bc_tab, waer_bc_tab, gaer_bc_tab,            &
                       bcenh,     modal_aero,  kalg,                     &
                       swvdr,     swvdf,       swidr,   swidf,  srftyp,  & 
-                      hs,        rhosnw(:),   rsnw(:), hi,     hp,      &
-                      fp,        aero_mp(:),  avdrl,   avdfl,           &
+                      hs,        rhosnw,      rsnw,    hi,     hp,      &
+                      fp,        aero_mp,     avdrl,   avdfl,           &
                       aidrl,     aidfl,                                 &
                       fswsfc,    fswint,                                &
-                      fswthru,   Sswabs(:),                             &
-                      Iswabs(:), fswpenl(:), nu_diag)
+                      fswthru,   Sswabs,                                &
+                      Iswabs,    fswpenl,    nu_diag)
                
                alvdr   = alvdr   + avdrl *fp
                alvdf   = alvdf   + avdfl *fp
@@ -2701,9 +2701,9 @@
          
          call solution_dEdd &
                (coszen,     srftyp,     klev,       klevp,      nslyr,     &
-                tau(:),     w0(:),      g(:),       albodr,     albodf,    &
-                trndir(:),  trntdr(:),  trndif(:),  rupdir(:),  rupdif(:), &
-                rdndif(:))
+                tau,        w0,         g,          albodr,     albodf,    &
+                trndir,     trntdr,     trndif,     rupdir,     rupdif,    &
+                rdndif)   
 
          ! the interface reflectivities and transmissivities required
          ! to evaluate interface fluxes are returned from solution_dEdd;

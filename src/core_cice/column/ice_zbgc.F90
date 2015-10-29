@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_zbgc.F90 1062 2015-10-02 19:50:29Z njeffery $
+!  SVN:$Id: ice_zbgc.F90 1071 2015-10-28 22:12:56Z njeffery $
 !=======================================================================
 !
 ! Biogeochemistry driver
@@ -142,7 +142,7 @@
          if (tr_brine) vbrin(n) =  trcrn(nt_fbri,n)*vicen_init(n)
       enddo
      
-      call column_sum (ncat,  vbrin(:),   vbri_init)
+      call column_sum (ncat,  vbrin,  vbri_init)
 
       vbri_init = vbri_init + vi0_init
       do k = 1, nbtrcr  
@@ -187,7 +187,7 @@
                                        nilyr,        nblyr, &
                                        solve_zsal,   bgrid, & 
                                        cgrid,               &
-                                       ocean_bio(:), igrid, &
+                                       ocean_bio,    igrid, &
                                        location,            &
                                        l_stop,     stop_label)
             if (l_stop) return
@@ -225,7 +225,7 @@
                                        nilyr,           nblyr,  &
                                        solve_zsal,      bgrid,  &
                                        cgrid,                   &
-                                       ocean_bio(:),    igrid,  &
+                                       ocean_bio,       igrid,  &
                                        location,                &
                                        l_stop,     stop_label)
             if (l_stop) return
@@ -238,7 +238,7 @@
       endif              ! vi0new > 0
 
       if (tr_brine .and. l_conservation_check) then
-         call column_sum (ncat,   vbrin(:),   vbri_final)
+         call column_sum (ncat,   vbrin,  vbri_final)
 
          fieldid = 'vbrin, add_new_ice_bgc'
          call column_conservation_check (fieldid,                  &
@@ -471,7 +471,7 @@
             temp_S    = min_salin   ! bio to cice
             call remap_zbgc(ntrcr,           nilyr,    &
                             nt_sice,                   &
-                            trtmp0(1:ntrcr), trtmp(:), &
+                            trtmp0(1:ntrcr), trtmp,    &
                             1,               nblyr,    &
                             hin,             hinS_new, &
                             cgrid(2:nilyr+1),          &
@@ -507,7 +507,7 @@
             temp_S    = min_salin   ! bio to cice
             call remap_zbgc(ntrcr,        nilyr,    &
                          nt_sice,                   &
-                         trtmp0(1:ntrcr), trtmp(:), &
+                         trtmp0(1:ntrcr), trtmp,    &
                          1,               nblyr,    &
                          hin,             hinS_new, &
                          cgrid(2:nilyr+1),          &        

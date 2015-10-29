@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_mechred.F90 1012 2015-06-26 12:34:09Z eclare $
+!  SVN:$Id: ice_mechred.F90 1071 2015-10-28 22:12:56Z njeffery $
 !=======================================================================
 
 ! Driver for ice mechanical redistribution (ridging)
@@ -275,7 +275,7 @@
       ! Compute area of ice plus open water before ridging.
       !-----------------------------------------------------------------
 
-      call asum_ridging (ncat, aicen(:), aice0, asum)
+      call asum_ridging (ncat, aicen, aice0, asum)
 
       !-----------------------------------------------------------------
       ! Compute the area opening and closing.
@@ -314,17 +314,17 @@
          enddo ! n
 
          call column_sum (ncat,                     &
-                          vicen(:), vice_init)
+                          vicen, vice_init)
          call column_sum (ncat,                     &
-                          vsnon(:), vsno_init)
+                          vsnon, vsno_init)
          call column_sum (ncat,                     &
-                          eicen(:), eice_init)
+                          eicen, eice_init)
          call column_sum (ncat,                     &
-                          esnon(:), esno_init)
+                          esnon, esno_init)
          call column_sum (ncat,                     &
-                          sicen(:), sice_init)
+                          sicen, sice_init)
          call column_sum (ncat,                     &
-                          vbrin(:), vbri_init)
+                          vbrin, vbri_init)
 
       endif            
 
@@ -336,40 +336,40 @@
       !-----------------------------------------------------------------
 
          call ridge_itd (ncat,        aice0,      &
-                         aicen(:),    vicen(:),   &
+                         aicen,       vicen,      &
                          krdg_partic, krdg_redist, &
                          mu_rdg,                   &
-                         aksum,       apartic(:), &
-                         hrmin(:),    hrmax(:),   &
-                         hrexp(:),    krdg(:),    &
-                         aparticn(:), krdgn(:),   &
-                         mraftn(:))
+                         aksum,       apartic,    &
+                         hrmin,       hrmax,      &
+                         hrexp,       krdg,       &
+                         aparticn,    krdgn,      &
+                         mraftn)    
 
       !-----------------------------------------------------------------
       ! Redistribute area, volume, and energy.
       !-----------------------------------------------------------------
 
          call ridge_shift (ntrcr,       dt,          &
-                           ncat,        hin_max(:),  &
-                           aicen(:),    trcrn(:,:),  &
-                           vicen(:),    vsnon(:),    &
+                           ncat,        hin_max,     &
+                           aicen,       trcrn,       &
+                           vicen,       vsnon,       &
                            aice0,       trcr_depend, &
                            trcr_base,   n_trcr_strata,&
                            nt_strata,   krdg_redist, &
-                           aksum,       apartic(:),  &
-                           hrmin(:),    hrmax(:),    &
-                           hrexp(:),    krdg(:),     &
+                           aksum,       apartic,     &
+                           hrmin,       hrmax,       &
+                           hrexp,       krdg,        &
                            closing_net, opning,      &
                            ardg1,       ardg2,       &
                            virdg,       aopen,       &
-                           ardg1n(:),   ardg2n(:),   &
-                           virdgn(:),                &
+                           ardg1n,      ardg2n,      &
+                           virdgn,                   &
                            nslyr,       n_aero,      &
                            msnow_mlt,   esnow_mlt,   &
-                           maero(:),    mpond,       &
+                           maero,       mpond,       &
                            l_stop,      stop_label,  &
                            nu_diag,                  &
-                           aredistn(:), vredistn(:))
+                           aredistn,    vredistn)    
 
          if (l_stop) return
 
@@ -379,7 +379,7 @@
       ! with new rates.
       !-----------------------------------------------------------------
 
-         call asum_ridging (ncat, aicen(:), aice0, asum)
+         call asum_ridging (ncat, aicen, aice0, asum)
 
          if (abs(asum - c1) < puny) then
             iterate_ridging = .false.
@@ -440,17 +440,17 @@
          enddo ! n
 
          call column_sum (ncat,                     &
-                          vicen(:), vice_final)
+                          vicen, vice_final)
          call column_sum (ncat,                     &
-                          vsnon(:), vsno_final)
+                          vsnon, vsno_final)
          call column_sum (ncat,                     &
-                          eicen(:), eice_final)
+                          eicen, eice_final)
          call column_sum (ncat,                     &
-                          esnon(:), esno_final)
+                          esnon, esno_final)
          call column_sum (ncat,                     &
-                          sicen(:), sice_final)
+                          sicen, sice_final)
          call column_sum (ncat,                     &
-                          vbrin(:), vbri_final)
+                          vbrin, vbri_final)
 
          vsno_final = vsno_final + msnow_mlt/rhos
          esno_final = esno_final + esnow_mlt

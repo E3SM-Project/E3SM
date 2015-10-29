@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_meltpond_topo.F90 1012 2015-06-26 12:34:09Z eclare $
+!  SVN:$Id: ice_meltpond_topo.F90 1071 2015-10-28 22:12:56Z njeffery $
 !=======================================================================
 
 ! Melt pond evolution based on the ice topography as inferred from
@@ -169,11 +169,11 @@
          call pond_area(dt,         ncat,     nilyr,    &
                         ktherm,     heat_capacity,      &
                         aice,       vice,     vsno,     &
-                        aicen(:),   vicen(:), vsnon(:), &
-                        qicen(:,:), sicen(:,:),         &
-                        volpn(:),   volp,               &
-                        Tsfcn(:),   Tf,                 & 
-                        apondn(:),  hpondn(:), dvn,     &
+                        aicen,      vicen,    vsnon,    &
+                        qicen,      sicen,              &
+                        volpn,      volp,               &
+                        Tsfcn,      Tf,                 & 
+                        apondn,     hpondn,    dvn,     &
                         l_stop,     stop_label)
 
          fpond = fpond - dvn

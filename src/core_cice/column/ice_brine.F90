@@ -257,7 +257,7 @@
 
       call remap_zbgc(ntrcr,            nilyr,          &
                       nt_sice,                          &
-                      trcrn(:),         trtmp_s(:),     &
+                      trcrn,            trtmp_s,        &
                       0,                nblyr,          &
                       hinc_old,         hinc_old,       &
                       cgrid(2:nilyr+1),                 &
@@ -267,7 +267,7 @@
      
       call remap_zbgc(ntrcr,            nilyr,          &
                       nt_qice,                          &
-                      trcrn(:),         trtmp_q(:),     &
+                      trcrn,            trtmp_q,        &
                       0,                nblyr,          &
                       hinc_old,         hinc_old,       &
                       cgrid(2:nilyr+1),                 &
@@ -295,16 +295,16 @@
       !-----------------------------------------------------------------
      
       call prepare_hbrine (nblyr, &
-                           bSin(:),       bTin(:),       iTin(:),    &
-                           brine_sal(:),  brine_rho(:),              &
-                           ibrine_sal(:), ibrine_rho(:),             &
+                           bSin,          bTin,          iTin,       &
+                           brine_sal,     brine_rho,                 &
+                           ibrine_sal,    ibrine_rho,                &
                            sice_rho,                                 &
-                           bphin(:),      iphin(:),                  &
+                           bphin,         iphin,                     &
                            kperm,         bphi_min,      phi_snow,   &
-                           igrid(:),      sss)
+                           igrid,         sss)
 
       call calculate_drho(nblyr, igrid, bgrid,             &
-                          brine_rho(:), ibrine_rho, drho(:))
+                          brine_rho,    ibrine_rho, drho)   
 
       do k= 2, nblyr+1
          ikin(k) = k_o*iphin(k)**exp_h 
@@ -705,7 +705,7 @@
 
             call remap_zbgc(ntrcr,            nilyr,     &
                             nt_sice,                     &
-                            trcrn(:),         trtmp(:),  &
+                            trcrn,            trtmp,     &
                             0,                nblyr,     &
                             hinc_old,         hinc_old,  &
                             cgrid(2:nilyr+1),            &
@@ -726,7 +726,7 @@
 
             call remap_zbgc(ntrcr,            nblyr,    &
                             nt_bgc_S,                   &
-                            trcrn(:),         trtmp(:), &
+                            trcrn,            trtmp,    &
                             0,                nblyr,    &
                             hbr_old,                    &
                             maxhbr*hinc_old,            &
@@ -773,7 +773,7 @@
       ! CICE to Bio: remap temperatures
       call remap_zbgc (ntrcr,                       &
                        nilyr,            nt_qice,   &
-                       trtmp0(1:ntrcr),  trtmp(:),  &
+                       trtmp0(1:ntrcr),  trtmp,     &
                        0,                nblyr,     &
                        hinc_old,         hbr_old,   &
                        cgrid(2:nilyr+1),            & 
@@ -796,13 +796,13 @@
       !-----------------------------------------------------------------
      
       call prepare_hbrine (nblyr, &
-                           bSin(:),       bTin(:),       iTin(:),    &
-                           brine_sal(:),  brine_rho(:),              &
-                           ibrine_sal(:), ibrine_rho(:),             &
+                           bSin,          bTin,          iTin,       &
+                           brine_sal,     brine_rho,                 &
+                           ibrine_sal,    ibrine_rho,                &
                            sice_rho,                                 &
-                           bphin(:),      iphin(:),                  &
+                           bphin,         iphin,                     &
                            kperm,         bphi_min,      phi_snow,   &
-                           igrid(:),      sss)
+                           igrid,         sss)
 
       if (l_stop) then
          stop_label = 'CICE ice_brine:zsalin < min_salin'

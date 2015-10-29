@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_itd.F90 1056 2015-09-18 21:52:00Z njeffery $
+!  SVN:$Id: ice_itd.F90 1071 2015-10-28 22:12:56Z njeffery $
 !=======================================================================
 
 ! Routines to initialize the ice thickness distribution and
@@ -208,10 +208,10 @@
                             trcr_base,            &
                             n_trcr_strata,        &
                             nt_strata,            &
-                            aicen(:), trcrn(:,:), &
-                            vicen(:), vsnon(:),   &
-                            hicen(:), donor(:),   &
-                            daice(:), dvice(:),   &
+                            aicen,    trcrn,      &
+                            vicen,    vsnon,      &
+                            hicen,    donor,      &
+                            daice,    dvice,      &
                             l_stop,   stop_label, &
                             nu_diag)
 
@@ -257,10 +257,10 @@
                             trcr_base,            &
                             n_trcr_strata,        &
                             nt_strata,            &
-                            aicen(:), trcrn(:,:), &
-                            vicen(:), vsnon(:),   &
-                            hicen(:), donor(:),   &
-                            daice(:), dvice(:),   &
+                            aicen,    trcrn,      &
+                            vicen,    vsnon,      &
+                            hicen,    donor,      &
+                            daice,    dvice,      &
                             l_stop,   stop_label, &
                             nu_diag)
 
@@ -858,7 +858,7 @@
       ! Compute total ice area.
       !-----------------------------------------------------------------
 
-      call aggregate_area (ncat, aicen(:), aice, aice0)
+      call aggregate_area (ncat, aicen, aice, aice0)
 
       if (limit_aice) then  ! check for aice out of bounds
          if (aice > c1+puny .or. aice < -puny) then
@@ -889,9 +889,9 @@
                      trcr_base,               &
                      n_trcr_strata,           &
                      nt_strata,               &
-                     aicen(:),   trcrn(:,:),  &
-                     vicen(:),   vsnon(:),    &
-                     ncat,       hin_max(:),  &
+                     aicen,      trcrn,       &
+                     vicen,      vsnon,       &
+                     ncat,       hin_max,     &
                      l_stop,     stop_label,  &
                      nu_diag)
 
@@ -907,14 +907,14 @@
                                nblyr,                       &
                                nilyr,        nslyr,         &
                                aice,         aice0,         &
-                               aicen(:),     trcrn(:,:),    &
-                               vicen(:),     vsnon(:),      &
+                               aicen,        trcrn,         &
+                               vicen,        vsnon,         &
                                dfpond,                      &
                                dfresh,       dfsalt,        &
-                               dfhocn,       dfaero_ocn(:), &
+                               dfhocn,       dfaero_ocn,    &
                                tr_aero,      tr_pond_topo,  &
-                               first_ice(:), nbtrcr,        &
-                               dfzsal,       dflux_bio(:),  & 
+                               first_ice,    nbtrcr,        &
+                               dfzsal,       dflux_bio,     & 
                                l_stop,       stop_label)
 
          if (l_stop) then
@@ -933,11 +933,11 @@
 
       call zap_snow_temperature(dt,            ncat,     &
                                 heat_capacity, nblyr,    &
-                                nslyr,         aicen(:), &
-                                trcrn(:,:),    vsnon(:), &
+                                nslyr,         aicen,    &
+                                trcrn,         vsnon,    &
                                 dfresh,        dfhocn,   &
-                                dfaero_ocn(:), tr_aero,  &
-                                dflux_bio(:),  nbtrcr,   &
+                                dfaero_ocn,    tr_aero,  &
+                                dflux_bio,     nbtrcr,   &
                                 n_aero,        nu_diag,  &
                                 ntrcr)
 
@@ -973,9 +973,9 @@
 
       if ((.not. heat_capacity) .and. aice > puny) then
          call zerolayer_check (ncat,       nilyr,    &
-                               nslyr,      aicen(:), &
-                               vicen(:),   vsnon(:), &
-                               trcrn(:,:), l_stop,   &
+                               nslyr,      aicen,    &
+                               vicen,      vsnon,    &
+                               trcrn,      l_stop,   &
                                stop_label, nu_diag)
       endif
 
@@ -1168,8 +1168,8 @@
             call zap_snow(dt,            nslyr,    &
                           trcrn(:,n),    vsnon(n), &
                           dfresh,        dfhocn,   &
-                          dfaero_ocn(:), tr_aero,  &
-                          dflux_bio(:),  nbtrcr,   &
+                          dfaero_ocn,    tr_aero,  &
+                          dflux_bio,     nbtrcr,   &
                           n_aero,        ntrcr,    &
                           aicen(n),      nblyr)
 
@@ -1501,8 +1501,8 @@
             call zap_snow(dt,            nslyr,    &
                           trcrn(:,n),    vsnon(n), &
                           dfresh,        dfhocn,   &
-                          dfaero_ocn(:), tr_aero,  &
-                          dflux_bio(:),  nbtrcr,   &
+                          dfaero_ocn,    tr_aero,  &
+                          dflux_bio,     nbtrcr,   &
                           n_aero,        ntrcr,    &
                           aicen(n),      nblyr)
 
