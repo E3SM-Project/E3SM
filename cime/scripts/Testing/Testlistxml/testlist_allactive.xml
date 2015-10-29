@@ -919,6 +919,74 @@
       </test>
     </grid>
   </compset>
+  <compset name="FC5MAM4">
+    <grid name="ne16_ne16">
+      <test name="ERS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="FC5PLMOD">
+    <grid name="ne16_ne16">
+      <test name="ERS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="FC5PM">
+    <grid name="ne16_ne16">
+      <test name="ERS">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
   <compset name="I1850CLM45CN">
     <grid name="f09_g16">
       <test name="SMS">
