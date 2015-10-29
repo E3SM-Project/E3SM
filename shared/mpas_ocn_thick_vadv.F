@@ -126,11 +126,13 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
+      !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells
          do k = 1, maxLevelCell(iCell)
             tend(k,iCell) = tend(k,iCell) + vertAleTransportTop(k+1,iCell) - vertAleTransportTop(k,iCell)
          end do
       end do
+      !$omp end do
 
    !--------------------------------------------------------------------
 

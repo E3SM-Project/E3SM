@@ -5,7 +5,13 @@
 		<dim name="nCells" units="unitless"
 			 description="The number of polygons in the primary grid."
 		/>
+		<dim name="nCellsP1" definition="nCells+1" units="unitless"
+			 description="The number of polygons in the primary grid."
+		/>
 		<dim name="nEdges" units="unitless"
+			 description="The number of edge midpoints in either the primary or dual grid."
+		/>
+		<dim name="nEdgesP1" definition="nEdges+1" units="unitless"
 			 description="The number of edge midpoints in either the primary or dual grid."
 		/>
 		<dim name="maxEdges" units="unitless"
@@ -18,6 +24,9 @@
 			 description="The largest number of advection cells for any edge."
 		/>
 		<dim name="nVertices" units="unitless"
+			 description="The total number of cells in the dual grid. Also the number of corners in the primary grid."
+		/>
+		<dim name="nVerticesP1" definition="nVertices+1" units="unitless"
 			 description="The total number of cells in the dual grid. Also the number of corners in the primary grid."
 		/>
 		<dim name="TWO" definition="2" units="unitless"
@@ -1336,39 +1345,6 @@
 			<var name="seaSurfacePressure"/>
 		</stream>
 
-		<stream name="averages"
-				type="none"
-				filename_template="output/average_variables.$Y-$M-$D_$h.$m.$s.nc"
-				filename_interval="01-00-00_00:00:00"
-				reference_time="0000-01-01_00:00:00"
-				output_interval="0001_00:00:00"
-				clobber_mode="truncate"
-				runtime_format="single_file"
-				mode="forward">
-
-			<stream name="mesh"/>
-			<var name="nAverage"/>
-			<var_array name="avgTracersSurfaceValue"/>
-			<var_array name="avgSurfaceVelocity"/>
-			<var_array name="avgSSHGradient"/>
-			<var name="avgSSH"/>
-			<var name="avgNormalVelocity"/>
-			<var name="avgVelocityZonal"/>
-			<var name="avgVelocityMeridional"/>
-			<var name="avgVertVelocityTop"/>
-			<var name="avgNormalTransportVelocity"/>
-			<var name="avgTransportVelocityZonal"/>
-			<var name="avgTransportVelocityMeridional"/>
-			<var name="avgVertTransportVelocityTop"/>
-			<var name="varSSH"/>
-			<var name="varNormalVelocity"/>
-			<var name="varVelocityZonal"/>
-			<var name="varVelocityMeridional"/>
-			<var_array name="avgLandIceBoundaryLayerTracers"/>
-			<var_array name="avgLandIceTracerTransferVelocities"/>
-			<var name="avgEffectiveDensityInLandIce"/>
-		</stream>
-
 		<stream name="Cartesian"
 				type="none"
 				filename_template="output/Cartesian_variables.$Y-$M-$D_$h.$m.$s.nc"
@@ -1463,10 +1439,6 @@
 			<var name="normalGMBolusVelocity"/>
 			<var name="vertGMBolusVelocityTop"/>
 			<var name="gmStreamFuncTopOfEdge"/>
-			<var name="avgNormalGMBolusVelocity"/>
-			<var name="avgGMBolusVelocityZonal"/>
-			<var name="avgGMBolusVelocityMeridional"/>
-			<var name="avgVertGMBolusVelocityTop"/>
 		</stream>
 
 		<stream name="Gent_McWilliams_Cartesian"
@@ -1491,7 +1463,6 @@
 			<var name="normalGMBolusVelocity"/>
 			<var name="vertGMBolusVelocityTop"/>
 			<var name="gmStreamFuncTopOfEdge"/>
-			<var name="avgNormalGMBolusVelocity"/>
 			<var name="GMStreamFuncX"/>
 			<var name="GMStreamFuncY"/>
 		</stream>
@@ -2271,80 +2242,6 @@
 			/>
 		</var_array>
 	</var_struct>
-	<var_struct name="average" time_levs="1">
-		<var name="nAverage" type="real" dimensions="Time" units="unitless"
-			 description="number of timesteps in time-averaged variables"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="avgSSH" type="real" dimensions="nCells Time" units="m"
-			 description="time-averaged sea surface height"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="varSSH" type="real" dimensions="nCells Time" units="m"
-			 description="variance of sea surface height"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="avgNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
-			 description="time-averaged velocity, normal to cell edge"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="avgVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-			 description="time-averaged velocity in the eastward direction"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="avgVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-			 description="time-averaged velocity in the northward direction"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="varNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
-			 description="variance of velocity, normal to cell edge"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="varVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-			 description="variance of velocity in the eastward direction"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="varVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-			 description="variance of velocity in the northward direction"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="avgNormalTransportVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
-			 description="time-averaged total tracer-transport velocity, normal to cell edge"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="avgTransportVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-			 description="time-averaged total tracer-transport velocity in the eastward direction"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="avgTransportVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-			 description="time-averaged total tracer-transport velocity in the northward direction"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="avgVertVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
-			 description="time-averaged vertical velocity at top of cell"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="avgVertTransportVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
-			 description="time-averaged vertical total tracer-transport velocity at top of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal total tracer-transport velocity."
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="avgNormalGMBolusVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
-			 description="time-averaged GM Bolus velocity, normal to cell edge"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="avgGMBolusVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-			 description="time-averaged GM Bolus velocity in the eastward direction"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="avgGMBolusVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-			 description="time-averaged GM Bolus velocity in the northward direction"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="avgVertGMBolusVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
-			 description="time-averaged vertical GM Bolus velocity at top of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal GM Bolus velocity."
-			 packages="forwardMode;analysisMode"
-		/>
-	</var_struct>
 	<var_struct name="forcing" time_levs="1">
 		<!-- *********************************************************************
 
@@ -2807,7 +2704,82 @@
 		<var name="yGMBolusVelocitySolution" persistence="scratch" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, y-direction, for analytic solution"
 		/>
+
 		<!-- defined to enable openmp -->
+		<var_array name="delsq_tracer" type="real" dimensions="nVertLevels nCells">
+			<var name="delsq_temperature" array_group="dynamics" units="degrees Celsius"
+				 description="potential temperature"
+			/>
+			<var name="delsq_salinity" array_group="dynamics" units="grams salt per kilogram seawater"
+				 description="salinity"
+			/>
+			<var name="delsq_tracer1" array_group="dynamics" units="na"
+				 description="tracer"
+			/>
+		</var_array>
+		<var name="div_hu" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="div_hu"
+		/>
+		<var name="div_hu_btr" persistence="scratch" type="real" dimensions="nCells" units=""
+			 description="div_hu_btr"
+		/>
+		<var name="ALE_Thickness" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="ALE_Thickness"
+		/>
+		<var name="TQ" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="TQ"
+		/>
+		<var name="SQ" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="SQ"
+		/>
+		<var name="BULK_MOD" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="BULK_MOD"
+		/>
+		<var name="SQR" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="SQR"
+		/>
+		<var name="DENOMK" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="DENOMK"
+		/>
+		<var name="RHO_S" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="RHO_S"
+		/>
+		<var name="WORK1" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="WORK1"
+		/>
+		<var name="WORK2" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="WORK2"
+		/>
+		<var name="WORK3" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="WORK3"
+		/>
+		<var name="WORK4" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="WORK4"
+		/>
+		<var name="T2" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
+			 description="T2"
+		/>
+		<var name="delsq_u" persistence="scratch" type="real" dimensions="nVertLevels nEdgesP1" units=""
+			 description="delsq_u"
+		/>
+		<var name="delsq_divergence" persistence="scratch" type="real" dimensions="nVertLevels nCellsP1" units=""
+			 description="delsq_divergence"
+		/>
+		<var name="delsq_relativeVorticity" persistence="scratch" type="real" dimensions="nVertLevels nVerticesP1" units=""
+			 description="delsq_relativeVorticity"
+		/>
+		<var name="ddensityTopOfCell" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCellsP1" units=""
+			 description="ddensityTopOfCell"
+		/>
+		<var name="ddensityTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges" units=""
+			 description="ddensityTopOfEdge"
+		/>
+		<var name="du2TopOfCell" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCellsP1" units=""
+			 description="du2TopOfCell"
+		/>
+		<var name="du2TopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges" units=""
+			 description="du2TopOfEdge"
+		/>
 		<var name="highOrderHorizFlux" persistence="scratch" type="real" dimensions="nVertLevels nEdges" units=""
 			 description="High order horizontal flux for advection"
 		/>
@@ -2835,6 +2807,7 @@
 		<var name="highOrderVertFlux" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells" units=""
 			 description="High order vertical flux for advection"
 		/>
+
 		<!-- FIELDS FOR LAND-ICE FORCING -->
 		<var name="boundaryLayerTemperatureScratch" 
 			persistence="scratch" 
@@ -2876,6 +2849,10 @@
 			type="real" dimensions="nCells" units="kg m^{-3}"
 			description="effective seawater density in land ice before horizontal averaging"
 		/>
+		<var name="btrvel_temp" persistence="scratch" type="real" dimensions="nEdgesP1" units=""
+			 description="btrvel_temp"
+		/>
+
 	</var_struct>
 
 <!-- Include init mode's registry file -->

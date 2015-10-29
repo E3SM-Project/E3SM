@@ -199,6 +199,7 @@ contains
       call mpas_allocate_scratch_field(divTensorLonLatRCellSolutionField, .false.)
       call mpas_allocate_scratch_field(outerProductEdgeField, .false.)
 
+
       call mpas_test_tensor(domain, config_tensor_test_function, &
          edgeSignOnCellField, &
          edgeTangentVectorsField, &
@@ -215,6 +216,7 @@ contains
          divTensorLonLatRCellField, &
          divTensorLonLatRCellSolutionField, &
          outerProductEdgeField )
+
 
       call mpas_deallocate_scratch_field(normalVelocityTestField, .false.)
       call mpas_deallocate_scratch_field(tangentialVelocityTestField, .false.)
@@ -328,6 +330,7 @@ contains
       c1 = R*(1-exp(-zBot/L))/(exp(zBot/L) - exp(-zBot/L))
       c2 = R-c1
 
+      !$omp do schedule(runtime) private(k, zTop)
       do iCell = 1, nCells
 
          do k = 1, maxLevelCell(iCell)
@@ -343,11 +346,12 @@ contains
          end do
 
          k = maxLevelCell(iCell)+1
-            ! placed at top interface, cell center.
-            zTop = zBot
-            yGMStreamFuncSolution(k,iCell) = c1*exp(zTop/L) + c2*exp(-zTop/L) - R;
+         ! placed at top interface, cell center.
+         zTop = zBot
+         yGMStreamFuncSolution(k,iCell) = c1*exp(zTop/L) + c2*exp(-zTop/L) - R;
 
       end do
+      !$omp end do
 
    end subroutine ocn_init_gm_test_functions!}}}
 

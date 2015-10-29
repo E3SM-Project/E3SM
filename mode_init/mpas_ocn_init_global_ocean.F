@@ -1724,14 +1724,13 @@ contains
 !
 !-----------------------------------------------------------------------
 
+
    subroutine ocn_init_validate_global_ocean(configPool, packagePool, iocontext, iErr)!{{{
 
    !--------------------------------------------------------------------
 
       type (mpas_pool_type), intent(inout) :: configPool, packagePool
       type (mpas_io_context_type), intent(inout), target :: iocontext
-
-      type (mpas_io_context_type), pointer :: iocontext_ptr
 
       integer, intent(out) :: iErr
       type (MPAS_IO_Handle_type) :: inputFile
@@ -1745,6 +1744,9 @@ contains
                                           config_global_ocean_windstress_nlon_dimname
 
       integer, pointer :: config_vert_levels
+      type (mpas_io_context_type), pointer :: iocontext_ptr
+
+      iocontext_ptr => iocontext
 
       iocontext_ptr => iocontext
 
@@ -1755,6 +1757,7 @@ contains
       if(config_init_configuration .ne. trim('global_ocean')) return
 
       call mpas_pool_get_config(configPool, 'config_vert_levels', config_vert_levels)
+
       call mpas_pool_get_config(configPool, 'config_global_ocean_depth_file', config_global_ocean_depth_file)
       call mpas_pool_get_config(configPool, 'config_global_ocean_depth_dimname', config_global_ocean_depth_dimname)
       call mpas_pool_get_config(configPool, 'config_global_ocean_temperature_file', config_global_ocean_temperature_file)

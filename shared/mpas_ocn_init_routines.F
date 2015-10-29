@@ -33,7 +33,6 @@ module ocn_init_routines
    use mpas_vector_reconstruction
    use mpas_tracer_advection_helpers
 
-   use ocn_time_average
    use ocn_diagnostics
    use ocn_gm
    use ocn_constants
@@ -131,6 +130,7 @@ subroutine ocn_init_routines_compute_max_level(domain)!{{{
             min( maxLevelCell(cellsOnEdge(1,iEdge)), &
                  maxLevelCell(cellsOnEdge(2,iEdge)) )
       end do
+
       maxLevelEdgeTop(nEdges+1) = 0
 
       ! maxLevelEdgeBot is the maximum (deepest) of the surrounding cells
@@ -139,6 +139,7 @@ subroutine ocn_init_routines_compute_max_level(domain)!{{{
             max( maxLevelCell(cellsOnEdge(1,iEdge)), &
                  maxLevelCell(cellsOnEdge(2,iEdge)) )
       end do
+
       maxLevelEdgeBot(nEdges+1) = 0
 
       ! maxLevelVertexBot is the maximum (deepest) of the surrounding cells
@@ -150,6 +151,7 @@ subroutine ocn_init_routines_compute_max_level(domain)!{{{
                     maxLevelCell(cellsOnVertex(i,iVertex)))
          end do
       end do
+
       maxLevelVertexBot(nVertices+1) = 0
 
       ! maxLevelVertexTop is the minimum (shallowest) of the surrounding cells
@@ -161,11 +163,14 @@ subroutine ocn_init_routines_compute_max_level(domain)!{{{
                     maxLevelCell(cellsOnVertex(i,iVertex)))
          end do
       end do
+
       maxLevelVertexTop(nVertices+1) = 0
 
       ! set boundary edge
       boundaryEdge(:,1:nEdges+1)=1
       edgeMask(:,1:nEdges+1)=0
+
+
       do iEdge = 1, nEdges
          boundaryEdge(1:maxLevelEdgeTop(iEdge),iEdge)=0
          edgeMask(1:maxLevelEdgeTop(iEdge),iEdge)=1
@@ -178,6 +183,8 @@ subroutine ocn_init_routines_compute_max_level(domain)!{{{
       cellMask(:,1:nCells+1) = 0
       boundaryVertex(:,1:nVertices+1) = 0
       vertexMask(:,1:nVertices+1) = 0
+
+
       do iEdge = 1, nEdges
          do k = 1, nVertLevels
             if (boundaryEdge(k,iEdge).eq.1) then
@@ -331,6 +338,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       meshScalingDel2(:) = 1.0
       meshScalingDel4(:) = 1.0
       meshScaling(:)     = 1.0
+
       if (scaleHmixWithMesh) then
          do iEdge = 1, nEdges
             cell1 = cellsOnEdge(1,iEdge)
@@ -495,7 +503,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       real (kind=RKIND), intent(in) :: dt
       integer, intent(out) :: err
 
-      type (mpas_pool_type), pointer :: meshPool, averagePool, statePool, tracersPool
+      type (mpas_pool_type), pointer :: meshPool, statePool, tracersPool
       type (mpas_pool_type), pointer :: forcingPool, diagnosticsPool, scratchPool
       integer :: i, iEdge, iCell, k
       integer :: err1
@@ -531,7 +539,6 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
       call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
       call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-      call mpas_pool_get_subpool(block % structs, 'average', averagePool)
 
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
@@ -576,8 +583,6 @@ end subroutine ocn_init_routines_compute_max_level!}}}
           boundaryCell)
       err = ior(err, err1)
 
-      call ocn_time_average_init(averagePool)
-
       if (.not. config_do_restart) then
          do iCell=1,nCells
             boundaryLayerDepth(iCell) = layerThickness(1, iCell) * 0.5
@@ -592,6 +597,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       areaCell(nCells+1) = -1.0e34
 
       layerThickness(:, nCells+1) = 0.0
+
 
       do iEdge=1, nEdges
          normalVelocity(maxLevelEdgeTop(iEdge)+1:maxLevelEdgeBot(iEdge), iEdge) = 0.0
@@ -616,14 +622,18 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       ! ------------------------------------------------------------------
       normalTransportVelocity(:,:) = normalVelocity(:,:)
 
+
       ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
       if (config_use_standardGM) then
+          !$omp parallel
           call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
+          !$omp end parallel
       end if
 
       if (config_use_standardGM) then
          normalTransportVelocity(:,:) = normalTransportVelocity(:,:) + normalGMBolusVelocity(:,:)
        end if
+
       ! ------------------------------------------------------------------
       ! End: Accumulating various parametrizations of the transport velocity
       ! ------------------------------------------------------------------

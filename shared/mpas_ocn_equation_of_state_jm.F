@@ -80,7 +80,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_jm_density(meshPool, k_displaced, displacement_type, &
+   subroutine ocn_equation_of_state_jm_density(meshPool, scratchPool, k_displaced, displacement_type, &
        indexT, indexS, tracers, density, err, &
        tracersSurfaceLayerValue, thermalExpansionCoeff, salineContractionCoeff)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -107,6 +107,7 @@ contains
       implicit none
 
       type (mpas_pool_type), intent(in) :: meshPool
+      type (mpas_pool_type), intent(in) :: scratchPool !< Input/Output: Scratch structure
       integer, intent(in) :: k_displaced, indexT, indexS
       character(len=*), intent(in) :: displacement_type
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers
@@ -117,7 +118,6 @@ contains
          thermalExpansionCoeff,  &! Thermal expansion coefficient (alpha), defined as $-1/\rho d\rho/dT$ (note negative sign)
          salineContractionCoeff   ! Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$
 
-      type (dm_info) :: dminfo
       integer :: iEdge, iCell, iVertex, k, k_displaced_local
       integer, pointer :: nCells, nEdges, nVertices, nVertLevels
       integer, dimension(:), pointer :: maxLevelCell
@@ -137,14 +137,20 @@ contains
         refBottomDepth, pRefEOS
       real (kind=RKIND), dimension(:), allocatable :: &
          p, p2 ! temporary pressure scalars
-      real (kind=RKIND), dimension(:,:), allocatable :: &
+      real (kind=RKIND), dimension(:,:), pointer :: &
          TQ,SQ,             &! adjusted T,S
          BULK_MOD,          &! Bulk modulus
          SQR,DENOMK,        &! work arrays
          RHO_S,             &! density at the surface
          WORK1, WORK2, WORK3, WORK4, T2
-      real (kind=RKIND), dimension(:,:,:), allocatable :: &
-         tracerTS
+      type (field2DReal), pointer :: &
+         TQField,SQField,             &! adjusted T,S
+         BULK_MODField,          &! Bulk modulus
+         SQRField,DENOMKField,        &! work arrays
+         RHO_SField,             &! density at the surface
+         WORK1Field, WORK2Field, WORK3Field, WORK4Field, T2Field
+      real (kind=RKIND), dimension(:), allocatable :: &
+         tracerTemp, tracerSalt
 
 !-----------------------------------------------------------------------
 !
@@ -225,28 +231,9 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
-!  allocate local T,S tracer field
-      allocate(tracerTS(2,nVertLevels,nCells+1))
+      allocate(tracerTemp(nVertLevels))
+      allocate(tracerSalt(nVertLevels))
 
-!  fill tracerTS
-      if (displacement_type == 'surfaceDisplaced') then
-        if(present(tracersSurfaceLayerValue)) then
-          do k=1,nVertLevels
-            tracerTS(1,k,:) = tracersSurfaceLayerValue(indexT,:)
-            tracerTS(2,k,:) = tracersSurfaceLayerValue(indexS,:)
-          enddo
-          displacement_type_local = 'relative'
-          k_displaced_local = 0
-        else
-          write (stderrUnit,*) 'Abort: tracersSurfaceLayerValue must be present'
-          call mpas_dmpar_abort(dminfo)
-        endif
-      else
-        tracerTS(1,:,:) = tracers(indexT,:,:)
-        tracerTS(2,:,:) = tracers(indexS,:,:)
-        displacement_type_local = trim(displacement_type)
-        k_displaced_local = k_displaced
-      endif
 
 !  Jackett and McDougall
       tmin = -2.0  ! valid pot. temp. range
@@ -260,9 +247,43 @@ contains
 !  integrating using hydrostatic balance.
 
       allocate(pRefEOS(nVertLevels),p(nVertLevels),p2(nVertLevels))
-      allocate(TQ(nVertLevels,nCells),SQ(nVertLevels,nCells),BULK_MOD(nVertLevels,nCells),SQR(nVertLevels,nCells),DENOMK(nVertLevels,nCells), RHO_S(nVertLevels,nCells), &
-         WORK1(nVertLevels,nCells), WORK2(nVertLevels,nCells), WORK3(nVertLevels,nCells), WORK4(nVertLevels,nCells), T2(nVertLevels,nCells))
+      call mpas_pool_get_field(scratchPool, 'TQ', TQField)
+      call mpas_pool_get_field(scratchPool, 'SQ', SQField)
+      call mpas_pool_get_field(scratchPool, 'BULK_MOD', BULK_MODField)
+      call mpas_pool_get_field(scratchPool, 'SQR', SQRField)
+      call mpas_pool_get_field(scratchPool, 'DENOMK', DENOMKField)
+      call mpas_pool_get_field(scratchPool, 'RHO_S', RHO_SField)
+      call mpas_pool_get_field(scratchPool, 'WORK1', WORK1Field)
+      call mpas_pool_get_field(scratchPool, 'WORK2', WORK2Field)
+      call mpas_pool_get_field(scratchPool, 'WORK3', WORK3Field)
+      call mpas_pool_get_field(scratchPool, 'WORK4', WORK4Field)
+      call mpas_pool_get_field(scratchPool, 'T2', T2Field)
 
+      call mpas_allocate_scratch_field(TQField, .true.)
+      call mpas_allocate_scratch_field(SQField, .true.)
+      call mpas_allocate_scratch_field(BULK_MODField, .true.)
+      call mpas_allocate_scratch_field(SQRField, .true.)
+      call mpas_allocate_scratch_field(DENOMKField, .true.)
+      call mpas_allocate_scratch_field(RHO_SField, .true.)
+      call mpas_allocate_scratch_field(WORK1Field, .true.)
+      call mpas_allocate_scratch_field(WORK2Field, .true.)
+      call mpas_allocate_scratch_field(WORK3Field, .true.)
+      call mpas_allocate_scratch_field(WORK4Field, .true.)
+      call mpas_allocate_scratch_field(T2Field, .true.)
+
+      call mpas_threading_barrier()
+
+      TQ => TQField % array
+      SQ => SQField % array
+      BULK_MOD => BULK_MODField % array
+      SQR => SQRField % array
+      DENOMK => DENOMKField % array
+      RHO_S => RHO_SField % array
+      WORK1 => WORK1Field % array
+      WORK2 => WORK2Field % array
+      WORK3 => WORK3Field % array
+      WORK4 => WORK4Field % array
+      T2 => T2Field % array
 
       ! This could be put in the init routine.
       ! Note I am using refBottomDepth, so pressure on top level does
@@ -286,14 +307,25 @@ contains
       !     referenced to level k_displaced for all k
       !  NOTE: k_displaced = 0 or > nVertLevels is incompatible with 'absolute'
       !     so abort if necessary
+      if (displacement_type == 'surfaceDisplaced') then
+        if(present(tracersSurfaceLayerValue)) then
+          displacement_type_local = 'relative'
+          k_displaced_local = 0
+        else
+          call mpas_dmpar_global_abort('ERROR: tracersSurfaceLayerValue must be present when displacement_type is ''surfaceDisplaced'' in JM EOS')
+        endif
+      else
+        displacement_type_local = trim(displacement_type)
+        k_displaced_local = k_displaced
+      endif
 
       if (displacement_type_local == 'absolute' .and.   &
          (k_displaced_local <= 0 .or. k_displaced_local > nVertLevels) ) then
 
          write (stderrUnit,*) 'Abort: In equation_of_state_jm', &
              ' k_displaced must be between 1 and nVertLevels for ', &
-             'displacement_type = absolute'
-         call mpas_dmpar_abort(dminfo)
+             'displacement_type = absolute.'
+         call mpas_dmpar_global_abort('ERROR: k_displaced value invalide for JM EOS')
       endif
 
       if (k_displaced_local == 0) then
@@ -315,10 +347,29 @@ contains
          enddo
       endif
 
+      !$omp do schedule(runtime) private(k)
       do iCell=1,nCells
+         if (displacement_type == 'surfaceDisplaced') then
+           if(present(tracersSurfaceLayerValue)) then
+             do k=1,nVertLevels
+               tracerTemp(k) = tracersSurfaceLayerValue(indexT,iCell)
+               tracerSalt(k) = tracersSurfaceLayerValue(indexS,iCell)
+             enddo
+             displacement_type_local = 'relative'
+             k_displaced_local = 0
+           else
+             write (stderrUnit,*) 'Abort: tracersSurfaceLayerValue must be present'
+             call mpas_dmpar_global_abort('ERROR: tracersSurfaceLayerValue must be present in JM EOS call')
+           endif
+         else
+           tracerTemp(:) = tracers(indexT,:,iCell)
+           tracerSalt(:) = tracers(indexS,:,iCell)
+           displacement_type_local = trim(displacement_type)
+           k_displaced_local = k_displaced
+         endif
          do k=1,maxLevelCell(iCell)
-            SQ(k,iCell)  = max(min(tracerTS(2,k,iCell),smax),smin)
-            TQ(k,iCell)  = max(min(tracerTS(1,k,iCell),tmax),tmin)
+            SQ(k,iCell)  = max(min(tracerSalt(k),smax),smin)
+            TQ(k,iCell)  = max(min(tracerTemp(k),tmax),tmin)
    
             SQR(k,iCell) = sqrt(SQ(k,iCell))
             T2(k,iCell)  = TQ(k,iCell)*TQ(k,iCell)
@@ -359,8 +410,10 @@ contains
 
          end do
       end do
+      !$omp end do
 
       if (present(thermalExpansionCoeff)) then
+         !$omp do schedule(runtime) private(k, DRDT0, DKDT, DRHODT)
          do iCell=1,nCells
             do k=1,maxLevelCell(iCell)
                DRDT0 =  unt1 + 2.0*unt2*TQ(k,iCell) +                      &
@@ -386,9 +439,11 @@ contains
 
             end do
          end do
+         !$omp end do
       endif
 
       if (present(salineContractionCoeff)) then
+         !$omp do schedule(runtime) private(k, DRDS0, DKDS, DRHODS)
          do iCell=1,nCells
             do k=1,maxLevelCell(iCell)
                DRDS0  = 2.0*uns2t0*SQ(k,iCell) + WORK1(k,iCell) + 1.5*WORK2(k,iCell)
@@ -401,11 +456,26 @@ contains
 
             end do
          end do
+         !$omp end do
       endif
 
       deallocate(pRefEOS,p,p2)
-      deallocate(tracerTS)
-      deallocate(TQ,SQ,T2,BULK_MOD,SQR,DENOMK,RHO_S, WORK1, WORK2, WORK3, WORK4)
+      deallocate(tracerTemp)
+      deallocate(tracerSalt)
+
+      call mpas_threading_barrier()
+
+      call mpas_deallocate_scratch_field(TQField, .true.)
+      call mpas_deallocate_scratch_field(SQField, .true.)
+      call mpas_deallocate_scratch_field(BULK_MODField, .true.)
+      call mpas_deallocate_scratch_field(SQRField, .true.)
+      call mpas_deallocate_scratch_field(DENOMKField, .true.)
+      call mpas_deallocate_scratch_field(RHO_SField, .true.)
+      call mpas_deallocate_scratch_field(WORK1Field, .true.)
+      call mpas_deallocate_scratch_field(WORK2Field, .true.)
+      call mpas_deallocate_scratch_field(WORK3Field, .true.)
+      call mpas_deallocate_scratch_field(WORK4Field, .true.)
+      call mpas_deallocate_scratch_field(T2Field, .true.)
 
    end subroutine ocn_equation_of_state_jm_density!}}}
 

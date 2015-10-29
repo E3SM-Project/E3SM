@@ -143,7 +143,7 @@ contains
       call ocn_tracer_hmix_del2_tend(meshPool, layerThicknessEdge, tracers, tend, err1)
       call mpas_timer_stop("del2", del2Timer)
       call mpas_timer_start("del4", .false., del4Timer)
-      call ocn_tracer_hmix_del4_tend(meshPool, layerThicknessEdge, tracers, tend, err2)
+      call ocn_tracer_hmix_del4_tend(meshPool, scratchPool, layerThicknessEdge, tracers, tend, err2)
       call mpas_timer_stop("del4", del4Timer)
       call mpas_timer_start("redi", .false., rediTimer)
       call ocn_tracer_hmix_redi_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &

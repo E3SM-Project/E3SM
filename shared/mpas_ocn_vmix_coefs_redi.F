@@ -185,7 +185,9 @@ contains
 
       if(.not.rediDiffOn) return
 
+      !$omp workshare
       vertDiffTopOfCell = vertDiffTopOfCell + vertRediDiff
+      !$omp end workshare
 
    !--------------------------------------------------------------------
 

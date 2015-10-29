@@ -143,6 +143,7 @@ contains
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
+      !$omp do schedule(runtime) private(invAreaCell, i, iEdge, k, flux)
       do iCell = 1, nCells
         invAreaCell = 1.0 / areaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)
@@ -153,6 +154,7 @@ contains
           end do
         end do
       end do
+      !$omp end do
 
    !--------------------------------------------------------------------
 

@@ -158,6 +158,7 @@ contains
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
 
+      !$omp do schedule(runtime) private(cell1, cell2, vertex1, vertex2, invLength_dc, invLength_dv, k, u_diffusion, visc2)
       do iEdge = 1, nEdgesSolve
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
@@ -189,6 +190,7 @@ contains
 
          end do
       end do
+      !$omp end do
 
    !--------------------------------------------------------------------
 

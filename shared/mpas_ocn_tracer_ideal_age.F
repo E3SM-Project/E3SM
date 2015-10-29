@@ -118,19 +118,21 @@ contains
 
       err = 0
 
-      ! zero tracers at surface to zero where idealAgeMask == zero
-      ! idealAgeMask should be equal to 1.0 elsewhere
-      tracers(:,1,:) = idealAgeMask(:,:) * tracers(:,1,:)
-
-      ! add a tendency increment equivalent to "dt" to entire domain
+      !$omp do schedule(runtime) private(iLevel, iTracer)
       do iCell=1,nCellsSolve
         do iLevel=1,maxLevelCell(iCell)
           do iTracer=1,nTracers
+             ! zero tracers at surface to zero where idealAgeMask == zero
+             ! idealAgeMask should be equal to 1.0 elsewhere
+             tracers(iTracer, iLevel, iCell) = idealAgeMask(iTracer, iCell) * tracers(iTracer, iLevel, iCell)
+
+             ! add a tendency increment equivalent to "dt" to entire domain
              tracer_tend(iTracer, iLevel, iCell) =   tracer_tend(iTracer, iLevel, iCell) +  &
                                                      layerThickness(iLevel,iCell) * c1 
           enddo
         enddo
       enddo
+      !$omp end do
 
    !--------------------------------------------------------------------
 

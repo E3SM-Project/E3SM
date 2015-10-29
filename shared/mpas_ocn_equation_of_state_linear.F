@@ -142,6 +142,7 @@ contains
 
       ! if surfaceDisplaced, then compute density at all levels based on surface values
       if (displacement_type_local == 'surfaceDisplaced') then
+         !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
             do k = 1, maxLevelCell(iCell)
                ! Linear equation of state
@@ -150,12 +151,14 @@ contains
                      + config_eos_linear_beta  * (tracersSurfaceLayerValue(indexS,iCell) - config_eos_linear_Sref)
             end do
          end do
+         !$omp end do
       endif
 
 
       ! if absolute, then compute density at all levels based on pressure of k_displaced value
       ! but since linear EOS does not (at present) have a pressure dependency, this just returns density
       if (displacement_type_local == 'absolute') then
+         !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
             do k = 1, maxLevelCell(iCell)
                ! Linear equation of state
@@ -164,11 +167,13 @@ contains
                      + config_eos_linear_beta  * (tracers(indexS,k,iCell) - config_eos_linear_Sref)
             end do
          end do
+         !$omp end do
       endif
 
       ! if relative, then compute density at all levels based on k+k_displaced pressure value
       ! but since (at present) linear EOS has not dependence on pressure, it returns density
       if (displacement_type_local == 'relative') then
+         !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
             do k = 1, maxLevelCell(iCell)
                ! Linear equation of state
@@ -177,22 +182,27 @@ contains
                      + config_eos_linear_beta  * (tracers(indexS,k,iCell) - config_eos_linear_Sref)
             end do
          end do
+         !$omp end do
       endif
 
       if (present(thermalExpansionCoeff)) then
+         !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
             do k = 1, maxLevelCell(iCell)
                thermalExpansionCoeff(k,iCell) = config_eos_linear_alpha / density(k,iCell)
             end do
          end do
+         !$omp end do
       endif
 
       if (present(salineContractionCoeff)) then
+         !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
             do k = 1, maxLevelCell(iCell)
                salineContractionCoeff(k,iCell) = config_eos_linear_beta / density(k,iCell)
             end do
          end do
+         !$omp end do
       endif
 
    end subroutine ocn_equation_of_state_linear_density!}}}

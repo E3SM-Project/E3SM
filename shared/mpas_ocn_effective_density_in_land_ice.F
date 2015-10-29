@@ -145,6 +145,7 @@ contains
       call mpas_allocate_scratch_field(effectiveDensityField, .true.)
       effectiveDensityScratch => effectiveDensityField % array
 
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
          ! TODO: should only apply to floating land ice, once wetting/drying is supported
          if(landIceFraction(iCell) >= 0.5) then
@@ -155,6 +156,9 @@ contains
             effectiveDensityScratch(iCell) = effectiveDensityCur(iCell)
          end if
       end do
+      !$omp end do
+
+      !$omp do schedule(runtime) private(weightSum, i, cell2)
       do iCell = 1, nCells
          ! smooth/extrapolate by averaging with nearest neighbors
          weightSum = 1.0_RKIND
@@ -167,6 +171,7 @@ contains
          end do
          effectiveDensityNew(iCell) = effectiveDensityNew(iCell)/weightSum
       end do
+      !$omp end do
       call mpas_deallocate_scratch_field(effectiveDensityField, .true.)
 
    !--------------------------------------------------------------------

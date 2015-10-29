@@ -115,6 +115,8 @@ contains
       err = 0
 
       iLevel = 1  ! base surface flux restoring on tracer fields in the top layer
+
+      !$omp do schedule(runtime) private(iTracer)
       do iCell=1,nCellsSolve
         do iTracer=1,nTracers
           tracersSurfaceFlux(iTracer, iCell) =   tracersSurfaceFlux(iTracer, iCell) - &
@@ -122,6 +124,7 @@ contains
                                                  (tracers(iTracer, iLevel, iCell) - tracersSurfaceRestoringValue(iTracer,iCell))
         enddo
       enddo
+      !$omp end do
 
    !--------------------------------------------------------------------
 
