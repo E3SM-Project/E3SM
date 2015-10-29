@@ -145,12 +145,14 @@ module mpas_field_routines
              do while(associated(f_cursor))
                 if(.not.associated(f_cursor % array)) then
                    allocate(f_cursor % array(f_cursor % dimSizes(1)))
+                   f_cursor % array(:) = f_cursor % defaultValue
                 end if
                 f_cursor => f_cursor % next
              end do
           else
              if(.not.associated(f % array)) then
                allocate(f % array(f % dimSizes(1)))
+               f % array(:) = f % defaultValue
              end if
           end if
        end if
@@ -194,12 +196,14 @@ module mpas_field_routines
              do while(associated(f_cursor))
                 if(.not.associated(f_cursor % array)) then
                    allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2)))
+                   f_cursor % array(:, :) = f_cursor % defaultValue
                 end if
                 f_cursor => f_cursor % next
              end do
           else
              if(.not.associated(f % array)) then
                allocate(f % array(f % dimSizes(1), f % dimSizes(2)))
+               f % array(:, :) = f % defaultValue
              end if
           end if
        end if
@@ -243,12 +247,14 @@ module mpas_field_routines
              do while(associated(f_cursor))
                 if(.not.associated(f_cursor % array)) then
                    allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2), f_cursor % dimSizes(3)))
+                   f_cursor % array(:, :, :) = f_cursor % defaultValue
                 end if
                 f_cursor => f_cursor % next
              end do
           else
              if(.not.associated(f % array)) then
                allocate(f % array(f % dimSizes(1), f % dimSizes(2), f % dimSizes(3)))
+               f % array(:, :, :) = f % defaultValue
              end if
           end if
        end if
@@ -292,12 +298,14 @@ module mpas_field_routines
              do while(associated(f_cursor))
                 if(.not.associated(f_cursor % array)) then
                    allocate(f_cursor % array(f_cursor % dimSizes(1)))
+                   f_cursor % array(:) = f_cursor % defaultValue
                 end if
                 f_cursor => f_cursor % next
              end do
           else
              if(.not.associated(f % array)) then
                allocate(f % array(f % dimSizes(1)))
+               f % array(:) = f % defaultValue
              end if
           end if
        end if
@@ -341,12 +349,14 @@ module mpas_field_routines
              do while(associated(f_cursor))
                 if(.not.associated(f_cursor % array)) then
                    allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2)))
+                   f_cursor % array(:, :) = f_cursor % defaultValue
                 end if
                 f_cursor => f_cursor % next
              end do
           else
              if(.not.associated(f % array)) then
                allocate(f % array(f % dimSizes(1), f % dimSizes(2)))
+               f % array(:, :) = f % defaultValue
              end if
           end if
        end if
@@ -390,12 +400,14 @@ module mpas_field_routines
              do while(associated(f_cursor))
                 if(.not.associated(f_cursor % array)) then
                    allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2), f_cursor % dimSizes(3)))
+                   f_cursor % array(:, :, :) = f_cursor % defaultValue
                 end if
                 f_cursor => f_cursor % next
              end do
           else
              if(.not.associated(f % array)) then
                allocate(f % array(f % dimSizes(1), f % dimSizes(2), f % dimSizes(3)))
+               f % array(:, :, :) = f % defaultValue
              end if
           end if
        end if
@@ -439,12 +451,14 @@ module mpas_field_routines
              do while(associated(f_cursor))
                 if(.not.associated(f_cursor % array)) then
                    allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2), f_cursor % dimSizes(3), f_cursor % dimSizes(4)))
+                   f_cursor % array(:, :, :, :) = f_cursor % defaultValue
                 end if
                 f_cursor => f_cursor % next
              end do
           else
              if(.not.associated(f % array)) then
                allocate(f % array(f % dimSizes(1), f % dimSizes(2), f % dimSizes(3), f % dimSizes(4)))
+               f % array(:, :, :, :) = f % defaultValue
              end if
           end if
        end if
@@ -488,12 +502,14 @@ module mpas_field_routines
              do while(associated(f_cursor))
                 if(.not.associated(f_cursor % array)) then
                    allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2), f_cursor % dimSizes(3), f_cursor % dimSizes(4), f_cursor % dimSizes(5)))
+                   f_cursor % array(:, :, :, :, :) = f_cursor % defaultValue
                 end if
                 f_cursor => f_cursor % next
              end do
           else
              if(.not.associated(f % array)) then
                allocate(f % array(f % dimSizes(1), f % dimSizes(2), f % dimSizes(3), f % dimSizes(4), f % dimSizes(5)))
+               f % array(:, :, :, :, :) = f % defaultValue
              end if
           end if
        end if
@@ -537,12 +553,14 @@ module mpas_field_routines
              do while(associated(f_cursor))
                 if(.not.associated(f_cursor % array)) then
                    allocate(f_cursor % array(f_cursor % dimSizes(1)))
+                   f_cursor % array(:) = f_cursor % defaultValue
                 end if
                 f_cursor => f_cursor % next
              end do
           else
              if(.not.associated(f % array)) then
                allocate(f % array(f % dimSizes(1)))
+               f % array(:) = f % defaultValue
              end if
           end if
        end if
