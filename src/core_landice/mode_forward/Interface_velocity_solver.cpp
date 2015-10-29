@@ -37,7 +37,7 @@ std::vector<double> xCellProjected, yCellProjected, zCellProjected;
 const double unit_length = 1000;
 const double T0 = 273.15;
 const double secondsInAYear = 31536000.0;  // This may vary slightly in MPAS, but this should be close enough for how this is used.
-const double minThick = 1e-3; //1m
+double minThickness = 1e-3; //[km]
 const double minBeta = 1e-5;
 double rho_ice;
 //unsigned char dynamic_ice_bit_value;
@@ -52,7 +52,7 @@ std::vector<int> edgesToReceive, fCellsToReceive, indexToTriangleID,
 std::vector<int> indexToVertexID, vertexToFCell, indexToEdgeID, edgeToFEdge,
     mask, fVertexToTriangleID, fCellToVertex, floatingEdgesIds, dirichletNodesIDs;
 std::vector<double> temperatureOnTetra, velocityOnVertices, velocityOnCells,
-    elevationData, thicknessData, betaData, smbData, thicknessOnCells;
+    elevationData, thicknessData, betaData, bedTopographyData, smbData, thicknessOnCells;
 std::vector<bool> isVertexBoundary, isBoundaryEdge;
 ;
 int numBoundaryEdges;
@@ -85,16 +85,14 @@ int velocity_solver_init_mpi(int* fComm) {
 }
 
 
-void velocity_solver_set_parameters(double const* rhoi_F, int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce) {
+void velocity_solver_set_parameters(double const* gravity_F, double const* ice_density_F, double const* ocean_density_F, double const* sea_level_F, double const* flowParamA_F, double const* enhancementFactor_F, 
+                         double const* flowLawExponent_F, double const* dynamic_thickness_F, int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce) {
   // This function sets parameter values used by MPAS on the C/C++ side
-  rho_ice = *rhoi_F;
-  //std::cout << "rhoi Fortran value:" << *rhoi_F << std::endl;
-  //std::cout << "rhoi C++ value:" << rho_ice << std::endl;
+  rho_ice = *ice_density_F;
   dynamic_ice_bit_value = *li_mask_ValueDynamicIce;
   ice_present_bit_value = *li_mask_ValueIce;
-  //std::cout << "mask dynamic Fortran value:" << *li_mask_ValueDynamicIce << std::endl;
-  //std::cout << "mask dynamic C++ value:" << dynamic_ice_bit_value << std::endl;
-  // Could add seconds in a year, but that can change from time step to time step on the MPAS side, so leaving it out for now.
+  velocity_solver_set_physical_parameters__(*gravity_F, rho_ice, *ocean_density_F, *sea_level_F/unit_length, *flowParamA_F*std::pow(unit_length,4)*secondsInAYear, 
+                                            *enhancementFactor_F, *flowLawExponent_F, *dynamic_thickness_F/unit_length);
 }
 
 
@@ -104,7 +102,7 @@ void velocity_solver_export_2d_data(double const* lowerSurface_F,
   if (isDomainEmpty)
     return;
 #ifdef LIFEV
-  import2DFields(lowerSurface_F, thickness_F, beta_F, minThick);
+  import2DFields(lowerSurface_F, thickness_F, beta_F,  minThickneess);
   velocity_solver_export_2d_data__(reducedComm, elevationData, thicknessData,
       betaData, indexToVertexID);
 #endif
@@ -228,7 +226,7 @@ void velocity_solver_solve_l1l2(double const* lowerSurface_F,
   if (!isDomainEmpty) {
     std::vector<double> temperatureData(nLayers * nVertices);
 
-    import2DFields(lowerSurface_F, thickness_F, beta_F, minThick);
+    import2DFields(lowerSurface_F, thickness_F, beta_F,  minThickness);
 
     for (int index = 0; index < nVertices; index++) {
       int iCell = vertexToFCell[index];
@@ -354,7 +352,7 @@ void velocity_solver_solve_fo(double const* lowerSurface_F,
 
 
 
-    import2DFields(lowerSurface_F, thickness_F, beta_F, smb_F, minThick);
+    import2DFields(lowerSurface_F, thickness_F, beta_F, smb_F,  minThickness);
 
     std::vector<double> regulThk(thicknessData);
     for (int index = 0; index < nVertices; index++)
@@ -368,7 +366,7 @@ void velocity_solver_solve_fo(double const* lowerSurface_F,
     velocity_solver_solve_fo__(nLayers, nGlobalVertices, nGlobalTriangles,
         Ordering, first_time_step, indexToVertexID, indexToTriangleID, minBeta,
         regulThk, levelsNormalizedThickness, elevationData, thicknessData,
-        betaData, smbData, temperatureOnTetra, velocityOnVertices, dt);
+        betaData, bedTopographyData, smbData, temperatureOnTetra, velocityOnVertices, dt);
 
     std::vector<int> mpasIndexToVertexID(nVertices);
     for (int i = 0; i < nVertices; i++) {
@@ -1020,6 +1018,7 @@ void get_prism_velocity_on_FEdges(double * uNormal,
       }    
    else { //error, edge midpont does not belong to either triangle
       std::cout << "Error, edge midpont does not belong to either triangle" << std::endl;
+
       for (int j = 0; j < 3; j++)
         std::cout << "("<<t0[0 + 2 * j]<<","<<t0[1 + 2 * j]<<") ";
       std::cout <<std::endl;
@@ -1313,6 +1312,7 @@ void import2DFields(double const * lowerSurface_F, double const * thickness_F,
     double const * beta_F, double const * smb_F, double eps) {
   elevationData.assign(nVertices, 1e10);
   thicknessData.assign(nVertices, 1e10);
+  bedTopographyData.assign(nVertices, 1e10);
   if (beta_F != 0)
     betaData.assign(nVertices, 1e10);
   if (smb_F != 0)
@@ -1324,7 +1324,8 @@ void import2DFields(double const * lowerSurface_F, double const * thickness_F,
   for (int index = 0; index < nVertices; index++) {
     int iCell = vertexToFCell[index];
     thicknessData[index] = std::max(thickness_F[iCell] / unit_length, eps);
-    elevationData[index] = (lowerSurface_F[iCell] / unit_length) + thicknessData[index];
+    bedTopographyData[index] = lowerSurface_F[iCell] / unit_length;
+    elevationData[index] = bedTopographyData[index] + thicknessData[index];
     if (beta_F != 0)
       betaData[index] = beta_F[iCell] / unit_length;
     if (smb_F != 0)
@@ -1373,7 +1374,8 @@ void import2DFields(double const * lowerSurface_F, double const * thickness_F,
     int iv = it->first;
     int ic = it->second;
     thicknessData[iv] = std::max(thickness_F[ic] / unit_length, eps);
-    elevationData[iv] = thicknessData[iv] + lowerSurface_F[ic] / unit_length;
+    bedTopographyData[iv] = lowerSurface_F[ic] / unit_length;
+    elevationData[iv] = thicknessData[iv] + bedTopographyData[iv];
     if (beta_F != 0)
       betaData[iv] = beta_F[ic] / unit_length;
     if (smb_F != 0)

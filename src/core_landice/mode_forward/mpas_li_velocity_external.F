@@ -22,6 +22,7 @@ module li_velocity_external
    use mpas_timer
    use li_setup
    use, intrinsic :: iso_c_binding
+   use mpas_constants, only: gravity
 
    implicit none
    private
@@ -47,10 +48,13 @@ module li_velocity_external
    interface
       ! Note: Could add all interface routines to this interface...
       ! For now, just trying it with this new routine.
-      subroutine velocity_solver_set_parameters(config_ice_density, li_mask_ValueDynamicIce, li_mask_ValueIce) bind(C, name="velocity_solver_set_parameters")
+      subroutine velocity_solver_set_parameters(gravity, config_ice_density, config_ocean_density, config_sea_level, config_default_flowParamA, config_enhancementFactor, &
+                         config_flowLawExponent, config_dynamic_thickness, li_mask_ValueDynamicIce, li_mask_ValueIce) bind(C, name="velocity_solver_set_parameters")
          use iso_c_binding, only: C_INT, C_DOUBLE
+         
          INTEGER(C_INT) :: li_mask_ValueDynamicIce, li_mask_ValueIce
-         REAL(C_DOUBLE) :: config_ice_density
+         REAL(C_DOUBLE) :: config_ice_density, config_ocean_density, config_sea_level, config_default_flowParamA, &
+                           config_enhancementFactor, config_flowLawExponent, config_dynamic_thickness
       end subroutine velocity_solver_set_parameters
 
    end interface
@@ -236,7 +240,8 @@ contains
       real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell, xVertex, yVertex, zVertex, areaTriangle
       real (kind=RKIND), pointer :: radius
       type (field1DInteger), pointer :: indexToCellIDField, indexToEdgeIDField, indexToVertexIDField
-      real (kind=RKIND), pointer :: config_ice_density
+      real (kind=RKIND), pointer :: config_ice_density, config_ocean_density,  config_sea_level, config_default_flowParamA, &
+                                    config_enhancementFactor, config_flowLawExponent, config_dynamic_thickness
 
       ! halo exchange arrays
       integer, dimension(:), pointer :: sendCellsArray, &
@@ -322,9 +327,17 @@ contains
 
       ! Set physical parameters needed on the other side
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
+      call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+      call mpas_pool_get_config(liConfigs, 'config_default_flowParamA', config_default_flowParamA)
+      call mpas_pool_get_config(liConfigs, 'config_enhancementFactor', config_enhancementFactor)
+      call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', config_flowLawExponent)
+      call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
-      call velocity_solver_set_parameters(config_ice_density, li_mask_ValueAlbanyActive, li_mask_ValueIce)
+      call velocity_solver_set_parameters(gravity, config_ice_density, config_ocean_density, config_sea_level, config_default_flowParamA, config_enhancementFactor, &
+                                          config_flowLawExponent, config_dynamic_thickness, li_mask_ValueAlbanyActive, li_mask_ValueIce)
 #endif
+
 
       ! === error check
       if (err > 0) then
