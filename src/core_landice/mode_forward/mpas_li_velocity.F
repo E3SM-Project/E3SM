@@ -27,6 +27,7 @@ module li_velocity
    use mpas_pool_routines
    use mpas_timer
    use li_velocity_external
+   use li_velocity_simple
    use li_sia
    use li_setup
 
@@ -115,6 +116,8 @@ contains
          ! Do nothing
       case ('sia')
           call li_sia_init(domain, err)
+      case ('simple')
+          call li_velocity_simple_init(domain, err)
       case ('L1L2', 'FO', 'Stokes')
           call li_velocity_external_init(domain, err)
       case default
@@ -173,8 +176,8 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-      character (len=StrKIND), pointer :: config_velocity_solver
 
+      character (len=StrKIND), pointer :: config_velocity_solver
 
       err = 0
 
@@ -185,6 +188,8 @@ contains
          ! Do nothing
       case ('sia')
           call li_sia_block_init(block, err)
+      case ('simple')
+          call li_velocity_simple_block_init(block, err)
       case ('L1L2', 'FO', 'Stokes')
           call li_velocity_external_block_init(block, err)
       case default
@@ -251,7 +256,8 @@ contains
       integer, pointer :: nEdgesSolve
       integer, pointer :: nVertInterfaces
       integer, dimension(:), pointer :: edgeMask, cellMask
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalVelocityInitial
+      real (kind=RKIND), dimension(:,:), pointer :: uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: surfaceSpeed, basalSpeed
       integer, dimension(:,:), pointer :: cellsOnEdge
@@ -325,10 +331,15 @@ contains
          ! Solve velocity
          select case (config_velocity_solver)
          case ('none')
+
             ! Do nothing
+
          case ('sia')
+
              call li_sia_solve(meshPool, geometryPool, velocityPool, err_tmp)
+
          case ('L1L2', 'FO', 'Stokes')
+
              if (maxThicknessAllProcs < config_dynamic_thickness) then
                 ! External dycores may not be able to handle case when there is no ice
                 call mpas_pool_get_array(velocityPool, 'uReconstructX', uReconstructX)
@@ -342,14 +353,31 @@ contains
              else
                 call li_velocity_external_solve(meshPool, geometryPool, thermalPool, velocityPool, err_tmp)
              endif
-         case default
+
+         case('simple')
+
+            ! Set the normal velocities to the values computed at initialization
+            ! Note: The reason these velocities are reset to the initial values during each time step is that 
+            !       they may have been altered during the previous time step (e.g., set to zero for non-dynamic edges).
+            call mpas_pool_get_array(velocityPool, 'normalVelocityInitial', normalVelocityInitial)
+            normalVelocity = normalVelocityInitial
+
+            ! Fix up these velocities by setting them to zero on non-dynamic edges
+            do iEdge = 1, nEdgesSolve
+               if (.not.(li_mask_is_dynamic_ice(edgeMask(iEdge)))) then
+                  normalVelocity(:,iEdge) = 0.0_RKIND
+               endif
+            enddo
+
+        case default
+
              write(stderrUnit,*) 'Error: ', trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
              err = 1
              call mpas_timer_stop("velocity solve")
              return
+
          end select
          err = ior(err, err_tmp)
-
 
          ! Some "quality control" of normalVelocity
          do iEdge = 1, nEdgesSolve
@@ -421,10 +449,11 @@ contains
          call mpas_pool_get_array(velocityPool, 'surfaceSpeed', surfaceSpeed)
          call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed)
 
-         ! Native SIA dycore needs to have reconstructed velocities calculated.
+         ! Velocities need to be reconstructed at cell centers for the native SIA dycore and for prescribed simple velocities.
          ! External dycores return their native velocities at cell center locations,
          ! but these can optionally be overwritten by reconstructed velocities for testing.
-         if ( (trim(config_velocity_solver) == 'sia') .or.    &
+         if ( (trim(config_velocity_solver) == 'sia') .or.       &
+              (trim(config_velocity_solver) == 'simple') .or.    &
                config_do_velocity_reconstruction_for_external_dycore ) then
             call mpas_reconstruct(meshPool, normalVelocity,               &
                              uReconstructX, uReconstructY, uReconstructZ, &
@@ -434,7 +463,6 @@ contains
             uReconstructZonal = uReconstructX
             uReconstructMeridional = uReconstructY
          end if
-
 
          ! ---
          ! --- Calculate diagnostic speed arrays
@@ -509,6 +537,8 @@ contains
          ! Do nothing
       case ('sia')
           call li_sia_finalize(domain, err)
+      case ('simple')
+          call li_velocity_simple_finalize(err)
       case ('L1L2', 'FO', 'Stokes')
           call li_velocity_external_finalize(err)
       case default

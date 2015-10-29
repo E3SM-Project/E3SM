@@ -57,6 +57,9 @@
 		<var name="totalBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
 			description="total, area integrated basal mass balance"
 		/>
+		<var name="totalCalvingFlux" type="real" dimensions="Time" units="kg yr^{-1}^"
+			description="total, area integrated mass loss due to calving"
+		/>
  	</var_struct>
 	<streams>
 		<stream name="globalStatsOutput" type="output"
@@ -80,5 +83,6 @@
 			<var name="iceThicknessMean"/>
 			<var name="totalSfcMassBal"/> 
 			<var name="totalBasalMassBal"/>
+			<var name="totalCalvingFlux"/>
 		</stream>
 	</streams>

@@ -120,7 +120,7 @@ module li_time_integration
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
 
       ! ===
-      ! === Non-adpative timestep: Get dt in seconds
+      ! === Non-adaptive timestep: Get dt in seconds
       ! ===
       if (.not. config_adaptive_timestep) then
          ! Get the interval at this point in time - will be fixed for nonadaptive timestep, but need to get it out of the clock
