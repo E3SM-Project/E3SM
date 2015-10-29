@@ -203,8 +203,7 @@ contains
          ecosys_diag_P_iron_PROD,  &
          ecosys_diag_P_iron_REMIN
 
-!maltrud i think source/sink wants cm instead of m
-!     real (kind=RKIND) :: zTop, zBot, convertLengthScale = 1.0_RKIND
+      ! source/sink wants cm instead of m
       real (kind=RKIND) :: zTop, zBot, convertLengthScale = 100.0_RKIND
 
       integer :: iCell, iLevel, iTracer, numColumns, column
@@ -276,19 +275,13 @@ contains
       do iCell=1,nCellsSolve
          BGC_input%number_of_active_levels(column) = maxLevelCell(iCell)
          BGC_forcing%dust_FLUX_IN(column) = dust_FLUX_IN(iCell)
-!maltrud debug
          BGC_forcing%ShortWaveFlux_surface(column)  = shortWaveHeatFlux(iCell)
-!        BGC_forcing%ShortWaveFlux_surface(column)  = 200.0_RKIND
          zTop = 0.0_RKIND
          do iLevel=1,maxLevelCell(iCell)
             BGC_input%PotentialTemperature(iLevel,column) = activeTracers(indexTemperature,iLevel,iCell)
             BGC_input%Salinity(iLevel,column) = activeTracers(indexSalinity,iLevel,iCell)
-!maltrud debug
-!           BGC_input%cell_center_depth(iLevel,column) = zMid(iLevel,iCell)*convertLengthScale
             BGC_input%cell_center_depth(iLevel,column) = -1.0_RKIND*zMid(iLevel,iCell)*convertLengthScale
             BGC_input%cell_thickness(iLevel,column)    = layerThickness(iLevel,iCell)*convertLengthScale
-!maltrud debug
-!           zBot = zTop - layerThickness(iLevel,iCell)
             zBot = zTop + layerThickness(iLevel,iCell)
             BGC_input%cell_bottom_depth(iLevel,column) = zBot*convertLengthScale
             zTop = zBot
@@ -301,11 +294,6 @@ contains
             BGC_forcing%NO3_CLIM(iLevel,column) = 0.0_RKIND
             BGC_forcing%PO4_CLIM(iLevel,column) = 0.0_RKIND
             BGC_forcing%SiO3_CLIM(iLevel,column) = 0.0_RKIND
-
-!maltrud NOT GOING TO WORK--do each separately
-!           do iTracer=1,nTracers
-!              BGC_input%BGC_tracers(iLevel,column,iTracer) = ecosysTracers(iTracer,iLevel,iCell)
-!           enddo
 
             BGC_input%BGC_tracers(iLevel,column,BGC_indices%po4_ind)         = ecosysTracers(ecosysIndices%po4_ind,iLevel,iCell)
             BGC_input%BGC_tracers(iLevel,column,BGC_indices%no3_ind)         = ecosysTracers(ecosysIndices%no3_ind,iLevel,iCell)
@@ -648,8 +636,6 @@ contains
       iLevelSurface = 1
       do iCell=1,nCellsSolve
 
-! NOTE surface values of BGC_input%BGC_tracers were set in previous call to source-sink routine
-
          BGC_forcing%surfacePressure(column) = seaSurfacePressure(iCell)*PascalsToAtmospheres
          BGC_forcing%iceFraction(column) = iceFraction(iCell)
          BGC_forcing%windSpeedSquared10m(column) = windSpeedSquared10m(iCell)*mSquared_to_cmSquared
@@ -657,13 +643,11 @@ contains
          BGC_forcing%atmCO2_ALT_CO2(column) = atmosphericCO2_ALT_CO2(iCell)
          BGC_forcing%surface_pH(column) = PH_PREV(iCell)
          BGC_forcing%surface_pH_alt_co2(column) = PH_PREV_ALT_CO2(iCell)
-!maltrud debug
-!        BGC_forcing%surfaceDepth(column) = zMid(iLevelSurface,iCell)
          BGC_forcing%surfaceDepth(column) = -1.0_RKIND*zMid(iLevelSurface,iCell)
          BGC_forcing%SST(column) = activeTracers(indexTemperature,iLevelSurface,iCell)
          BGC_forcing%SSS(column) = activeTracers(indexSalinity,iLevelSurface,iCell)
 
-!maltrud NOTE pass in total Fe and mult by parm_Fe_bioavail inside the flux routine
+! NOTE pass in total Fe and mult by parm_Fe_bioavail inside the flux routine
 !             divide river Fe by bioavail since it is already the available to make it total
 
          BGC_forcing%depositionFlux(column,BGC_indices%no3_ind) = depositionFluxNO3(iCell)
@@ -812,7 +796,7 @@ contains
 
    call BGC_parms_init(BGC_indices, autotrophs)
 
-!maltrud modify autotroph values here....
+! modify autotroph values here....
 !  for example to change sp_kFe
 !  autotrophs(BGC_indices%sp_ind)%kFe = 0.05e-3_BGC_r8
 

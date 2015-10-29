@@ -2,9 +2,9 @@
 
 
 OCEAN_SHARED_INCLUDES = -I$(PWD)/../framework -I$(PWD)/../external/esmf_time_f90 -I$(PWD)/../operators
-OCEAN_SHARED_INCLUDES += -I$(PWD)/shared -I$(PWD)/analysis_members -I$(PWD)/cvmix -I$(PWD)/mode_forward -I$(PWD)/mode_analysis -I$(PWD)/mode_init
+OCEAN_SHARED_INCLUDES += -I$(PWD)/shared -I$(PWD)/analysis_members -I$(PWD)/cvmix -I$(PWD)/mode_forward -I$(PWD)/mode_analysis -I$(PWD)/mode_init -I$(PWD)/BGC
 
-all: shared libcvmix analysis_members
+all: shared libcvmix analysis_members libBGC
 	(cd mode_forward; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" all )
 	(cd mode_analysis; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" all )
 	(cd mode_init; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" all )
@@ -60,6 +60,10 @@ cvmix_source: get_cvmix.sh
 	(chmod a+x get_cvmix.sh; ./get_cvmix.sh)
 	(cd cvmix; make clean)
 
+BGC_source: get_BGC.sh
+	(chmod a+x get_BGC.sh; ./get_BGC.sh)
+	(cd BGC; make clean)
+
 libcvmix: cvmix_source
 	if [ -d cvmix ]; then \
 		(cd cvmix; make all FC="$(FC)" FCFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
@@ -67,7 +71,14 @@ libcvmix: cvmix_source
 		(exit 1) \
 	fi
 
-shared: libcvmix
+libBGC: BGC_source
+	if [ -d BGC ]; then \
+		(cd BGC; make all FC="$(FC)" FCFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
+	else \
+		(exit 1) \
+	fi
+
+shared: libcvmix libBGC
 	(cd shared; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)")
 
 analysis_members: libcvmix shared
@@ -76,6 +87,9 @@ analysis_members: libcvmix shared
 clean:
 	if [ -d cvmix ]; then \
 		(cd cvmix; make clean) \
+	fi
+	if [ -d BGC ]; then \
+		(cd BGC; make clean) \
 	fi
 	(cd mode_forward; $(MAKE) clean)
 	(cd mode_analysis; $(MAKE) clean)

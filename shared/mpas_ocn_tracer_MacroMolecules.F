@@ -143,8 +143,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-!maltrud i think source/sink wants cm instead of m
-!     real (kind=RKIND) :: zTop, zBot, convertLengthScale = 1.0_RKIND
+      ! source/sink wants cm instead of m
+
       real (kind=RKIND) :: zTop, zBot, convertLengthScale = 100.0_RKIND
 
       integer :: iCell, iLevel, iTracer, numColumns, column
@@ -326,10 +326,13 @@ contains
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
       call mpas_pool_get_array(tracersPool, 'MacroMoleculesTracers', MacroMoleculesTracers, 1)
 
+      ! make sure MacrosMolecules is turned on
+
       if (associated(MacroMoleculesTracers)) then
 
+      ! cannot use MacroMolecules_tracer_cnt since it has poly, prot, lip and 5 ecosys fields
+
       nTracers = size(MacroMoleculesTracers, dim=1)
-!maltrud cannot use MacroMolecules_tracer_cnt since it has poly, prot, lip and 5 ecosys fields
       if (nTracers /= 3) then
          err = 1
          return
@@ -358,10 +361,7 @@ contains
 
    call MACROS_parms_init
 
-!maltrud modify namelist values here....
-
-!maltrud how to handle this?
-   T0_Kelvin_BGC = T0_Kelvin
+! modify namelist values here....
 
       !
       ! for now only do 1 column at a time
