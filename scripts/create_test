@@ -1415,25 +1415,23 @@ sub testcaseSetup
     $logger->debug("sysmod is $sysmod");
     system($sysmod) == 0 or $logger->warn ("$sysmod failed: $?");
 
-    if(defined $opts{walltime}){
-	qx(./xmlchange -file env_batch.xml -id JOB_WALLCLOCK_TIME -val $opts{walltime});
-    }
-    if(defined $opts{queue}){
-	qx(./xmlchange -file env_batch.xml -id JOB_QUEUE -val $opts{queue});
-    }
-
-    
-    
     if($? != 0)
     {
 	$test->{'status'}="SFAIL";
-	$logger->warn("create_test invocation of testcase_setup.csh failed; $!");
+	$logger->warn("create_test invocation of testcase.setup failed; $!");
 	open my $TESTSTATUS, ">", "$caseroot/TestStatus" or print $!;
 	print $TESTSTATUS "SFAIL ".$test->{'case'}."\n";
 	close $TESTSTATUS;
     }
     else
     {
+	if(defined $opts{walltime}){
+	    qx(./xmlchange -file env_batch.xml -id JOB_WALLCLOCK_TIME -val $opts{walltime});
+	}
+	if(defined $opts{queue}){
+	    qx(./xmlchange -file env_batch.xml -id JOB_QUEUE -val $opts{queue});
+	}
+    
 	$test->{'status'}="GEN";
 	open my $TESTSTATUS, ">", "$caseroot/TestStatus" or print $!;
 	print $TESTSTATUS "GEN ".$test->{'case'}."\n";
