@@ -18,8 +18,6 @@ module CNCarbonStateType
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
   use PatchType              , only : pft
-  use clm_varctl             , only : nu_com
-  
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -99,16 +97,6 @@ module CNCarbonStateType
      real(r8), pointer :: endcb_col                (:)     ! patch carbon mass, end of time step (gC/m**2)
      real(r8), pointer :: errcb_patch              (:)     ! patch carbon balance error for the timestep (gC/m**2)
      real(r8), pointer :: errcb_col                (:)     ! patch carbon balance error for the timestep (gC/m**2)
-     
-     real(r8), pointer :: totpftc_beg_col(:)
-     real(r8), pointer :: cwdc_beg_col(:)
-     real(r8), pointer :: totlitc_beg_col(:)
-     real(r8), pointer :: totsomc_beg_col(:)
-     
-     real(r8), pointer :: totpftc_end_col(:)
-     real(r8), pointer :: cwdc_end_col(:)
-     real(r8), pointer :: totlitc_end_col(:)
-     real(r8), pointer :: totsomc_end_col(:)
 
    contains
 
@@ -227,16 +215,6 @@ contains
     allocate(this%errcb_patch (begp:endp));     this%errcb_patch (:) = nan
     allocate(this%errcb_col   (begc:endc));     this%errcb_col   (:) = nan
 
-    allocate(this%totpftc_beg_col(begc:endc));  this%totpftc_beg_col (:) = nan
-    allocate(this%cwdc_beg_col   (begc:endc));  this%cwdc_beg_col    (:) = nan
-    allocate(this%totlitc_beg_col(begc:endc));  this%totlitc_beg_col (:) = nan
-    allocate(this%totsomc_beg_col(begc:endc));  this%totsomc_beg_col (:) = nan
-    
-    allocate(this%totpftc_end_col(begc:endc));  this%totpftc_end_col (:) = nan
-    allocate(this%cwdc_end_col   (begc:endc));  this%cwdc_end_col    (:) = nan
-    allocate(this%totlitc_end_col(begc:endc));  this%totlitc_end_col (:) = nan
-    allocate(this%totsomc_end_col(begc:endc));  this%totsomc_end_col (:) = nan
-
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -282,7 +260,7 @@ contains
           this%grainc_patch(begp:endp) = spval
           call hist_addfld1d (fname='GRAINC', units='gC/m^2', &
                avgflag='A', long_name='grain C', &
-               ptr_patch=this%grainc_patch, default='inactive')
+               ptr_patch=this%grainc_patch)
        end if
        
        this%woodc_patch(begp:endp) = spval
@@ -398,12 +376,12 @@ contains
        this%xsmrpool_patch(begp:endp) = spval
        call hist_addfld1d (fname='XSMRPOOL', units='gC/m^2', &
             avgflag='A', long_name='temporary photosynthate C pool', &
-            ptr_patch=this%xsmrpool_patch, default='inactive')
+            ptr_patch=this%xsmrpool_patch)
 
        this%ctrunc_patch(begp:endp) = spval
        call hist_addfld1d (fname='PFT_CTRUNC', units='gC/m^2', &
             avgflag='A', long_name='patch-level sink for C truncation', &
-            ptr_patch=this%ctrunc_patch, default='inactive')
+            ptr_patch=this%ctrunc_patch)
 
        this%dispvegc_patch(begp:endp) = spval
        call hist_addfld1d (fname='DISPVEGC', units='gC/m^2', &
@@ -762,12 +740,12 @@ contains
        this%ctrunc_col(begc:endc) = spval
        call hist_addfld1d (fname='COL_CTRUNC', units='gC/m^2',  &
             avgflag='A', long_name='column-level sink for C truncation', &
-            ptr_col=this%ctrunc_col, default='inactive')
+            ptr_col=this%ctrunc_col)
 
        this%seedc_col(begc:endc) = spval
        call hist_addfld1d (fname='SEEDC', units='gC/m^2', &
             avgflag='A', long_name='pool for seeding new Patches', &
-            ptr_col=this%seedc_col, default='inactive')
+            ptr_col=this%seedc_col)
 
        this%totlitc_col(begc:endc) = spval
        call hist_addfld1d (fname='LITTERC', units='gC/m^2', &
@@ -798,27 +776,27 @@ contains
        this%prod10c_col(begc:endc) = spval
        call hist_addfld1d (fname='PROD10C', units='gC/m^2', &
             avgflag='A', long_name='10-yr wood product C', &
-            ptr_col=this%prod10c_col, default='inactive')
+            ptr_col=this%prod10c_col)
 
        this%prod100c_col(begc:endc) = spval
        call hist_addfld1d (fname='PROD100C', units='gC/m^2', &
             avgflag='A', long_name='100-yr wood product C', &
-            ptr_col=this%prod100c_col, default='inactive')
+            ptr_col=this%prod100c_col)
 
        this%prod1c_col(begc:endc) = spval
        call hist_addfld1d (fname='PROD1C', units='gC/m^2', &
             avgflag='A', long_name='1-yr crop product C', &
-            ptr_col=this%prod1c_col, default='inactive')
+            ptr_col=this%prod1c_col)
 
        this%totprodc_col(begc:endc) = spval
        call hist_addfld1d (fname='TOTPRODC', units='gC/m^2', &
             avgflag='A', long_name='total wood product C', &
-            ptr_col=this%totprodc_col, default='inactive')
+            ptr_col=this%totprodc_col)
 
        this%fuelc_col(begc:endc) = spval
        call hist_addfld1d (fname='FUELC', units='gC/m^2', &
             avgflag='A', long_name='fuel load', &
-            ptr_col=this%fuelc_col, default='inactive')
+            ptr_col=this%fuelc_col)
 
     end if
 
@@ -1056,7 +1034,7 @@ contains
     !-----------------------------------------------
     ! initialize patch-level carbon state variables
     !-----------------------------------------------
-    
+
     do p = bounds%begp,bounds%endp
 
        this%leafcmax_patch(p) = 0._r8
@@ -1095,30 +1073,8 @@ contains
              this%deadstemc_patch(p) = 0._r8 
           end if
           this%deadstemc_storage_patch(p)  = 0._r8 
-          this%deadstemc_xfer_patch(p)     = 0._r8
-          
-          if (nu_com .ne. 'RD') then
-              ! eca competition calculate root NP uptake as a function of fine root biomass
-              ! better to initialize frootc(p) with a non-zero value
-              if (pft%itype(p) == noveg) then
-                  this%frootc_patch(p) = 0._r8
-                  this%frootc_storage_patch(p) = 0._r8
-              else
-                  if (ecophyscon%evergreen(pft%itype(p)) == 1._r8) then
-                      this%leafc_patch(p) = 20._r8 * ratio
-                      this%frootc_patch(p) = 20._r8 * ratio
-                      this%frootc_storage_patch(p) = 0._r8
-                  else if (pft%itype(p) >= npcropmin) then ! prognostic crop types
-                      this%frootc_patch(p) = 0._r8
-                      this%frootc_storage_patch(p) = 0._r8
-                  else
-                      this%leafc_storage_patch(p) = 20._r8 * ratio
-                      this%frootc_patch(p) = 0._r8
-                      this%frootc_storage_patch(p) = 20._r8 * ratio
-                  end if
-              end if
-          end if
-           
+          this%deadstemc_xfer_patch(p)     = 0._r8 
+
           this%livecrootc_patch(p)         = 0._r8 
           this%livecrootc_storage_patch(p) = 0._r8 
           this%livecrootc_xfer_patch(p)    = 0._r8 
@@ -1176,8 +1132,9 @@ contains
                   this%grainc_storage_patch(p)                    + &
                   this%grainc_xfer_patch(p)
           end if
+
        endif
-       
+
     end do
 
     ! initialize column-level variables

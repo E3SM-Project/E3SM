@@ -45,8 +45,6 @@ module CanopyFluxesMod
   use ColumnType            , only : col                
   use PatchType             , only : pft                
   use EDtypesMod            , only : site, numpft_ed
-  use PhosphorusStateType   , only : phosphorusstate_type
-  use CNNitrogenStateType   , only : nitrogenstate_type
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -71,7 +69,7 @@ contains
        atm2lnd_vars, canopystate_vars, cnstate_vars, energyflux_vars, &
        frictionvel_vars, soilstate_vars, solarabs_vars, surfalb_vars, &
        temperature_vars, waterflux_vars, waterstate_vars, ch4_vars, photosyns_vars, &
-       EDbio_vars, soil_water_retention_curve, nitrogenstate_vars, phosphorusstate_vars) 
+       EDbio_vars, soil_water_retention_curve) 
     !
     ! !DESCRIPTION:
     ! 1. Calculates the leaf temperature:
@@ -132,9 +130,6 @@ contains
     type(photosyns_type)      , intent(inout) :: photosyns_vars
     type(EDbio_type)          , intent(inout) :: EDbio_vars
     class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
-    type(nitrogenstate_type)  , intent(inout) :: nitrogenstate_vars
-    type(phosphorusstate_type), intent(inout) :: phosphorusstate_vars
-    
     !
     ! !LOCAL VARIABLES:
     real(r8), parameter :: btran0 = 0.0_r8  ! initial value
@@ -845,10 +840,11 @@ contains
             call t_stopf('edpsn')
 
          else ! not use_ed
+
             call Photosynthesis (bounds, fn, filterp, &
                  svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
                  dayl_factor(begp:endp), atm2lnd_vars, temperature_vars, surfalb_vars, solarabs_vars, &
-                 canopystate_vars, photosyns_vars, nitrogenstate_vars, phosphorusstate_vars, phase='sun')
+                 canopystate_vars, photosyns_vars, phase='sun')
 
             if ( use_c13 ) then
                call Fractionation (bounds, fn, filterp, &
@@ -872,7 +868,7 @@ contains
             call Photosynthesis (bounds, fn, filterp, &
                  svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
                  dayl_factor(begp:endp), atm2lnd_vars, temperature_vars, surfalb_vars, solarabs_vars, &
-                 canopystate_vars, photosyns_vars, nitrogenstate_vars, phosphorusstate_vars, phase='sha')
+                 canopystate_vars, photosyns_vars, phase='sha')
 
             if ( use_c13 ) then
                call Fractionation (bounds, fn, filterp,  &
