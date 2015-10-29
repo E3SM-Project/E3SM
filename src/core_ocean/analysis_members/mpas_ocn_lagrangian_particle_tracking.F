@@ -757,7 +757,7 @@ contains
           call mpas_timer_start("particleAssignments", .false., timerParticleAssignment)
 #endif
           ! update halo fields
-          call mpas_particle_list_update_computational_halos(domain, block, particle, 'lagrPartTrackCells', iCell, arrayIndex, ioProcRecvList, g_ioProcNeighs)
+          call mpas_particle_list_update_computational_halos(domain, block, particle, 'lagrPartTrackCells', iCell, arrayIndex, ioProcRecvList, ioProcSendList, g_ioProcNeighs)
 #ifdef MPAS_DEBUG
             call mpas_timer_stop("particleAssignments", timerParticleAssignment)
 #endif
