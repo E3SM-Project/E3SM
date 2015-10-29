@@ -51,18 +51,18 @@ module atm_time_integration
    real (kind=RKIND), allocatable, dimension(:,:) :: drthetadz
 
    ! Used in atm_advance_scalars
-   real (kind=RKIND), dimension(:,:,:), pointer :: horiz_flux_arr_p
+   real (kind=RKIND), dimension(:,:,:), allocatable :: horiz_flux_array
 
    ! Used in atm_advance_scalars_mono
-   real (kind=RKIND), dimension(:,:), pointer :: scalar_old, scalar_new
-   real (kind=RKIND), dimension(:,:), pointer :: s_max, s_min
-   real (kind=RKIND), dimension(:,:,:), pointer :: scale_arr
-   real (kind=RKIND), dimension(:,:), pointer :: flux_arr
-   real (kind=RKIND), dimension(:,:), pointer :: flux_upwind_tmp
-   real (kind=RKIND), dimension(:,:), pointer :: flux_tmp
-   real (kind=RKIND), dimension(:,:), pointer :: wdtn
-   real (kind=RKIND), dimension(:,:), pointer :: rho_zz_int
-   real (kind=RKIND), dimension(:,:,:), pointer :: scalar_tend
+   real (kind=RKIND), dimension(:,:), allocatable :: scalar_old_arr, scalar_new_arr
+   real (kind=RKIND), dimension(:,:), allocatable :: s_max_arr, s_min_arr
+   real (kind=RKIND), dimension(:,:,:), allocatable :: scale_array
+   real (kind=RKIND), dimension(:,:), allocatable :: flux_array
+   real (kind=RKIND), dimension(:,:), allocatable :: flux_upwind_tmp_arr
+   real (kind=RKIND), dimension(:,:), allocatable :: flux_tmp_arr
+   real (kind=RKIND), dimension(:,:), allocatable :: wdtn_arr
+   real (kind=RKIND), dimension(:,:), allocatable :: rho_zz_int
+   real (kind=RKIND), dimension(:,:,:), allocatable :: scalar_tend_array
 
    ! Used in compute_solve_diagnostics
    real (kind=RKIND), allocatable, dimension(:,:) :: ke_vertex
@@ -566,6 +566,7 @@ MPAS_GPTL_STOP('dyn_tend')
                   call mpas_timer_start('atm_advance_scalars')
                else
                   call mpas_timer_start('atm_advance_scalars_mono')
+MPAS_GPTL_START('atm_advance_scalars_mono')
                end if
                block => domain % blocklist
                do while (associated(block))
@@ -579,18 +580,18 @@ MPAS_GPTL_STOP('dyn_tend')
                   call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
                   call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
 
-                  allocate(scalar_old(nVertLevels,nCells+1))
-                  allocate(scalar_new(nVertLevels,nCells+1))
-                  allocate(s_max(nVertLevels,nCells+1))
-                  allocate(s_min(nVertLevels,nCells+1))
-                  allocate(scale_arr(2,nVertLevels,nCells+1))
-                  allocate(flux_arr(nVertLevels,nEdges+1))
-                  allocate(wdtn(nVertLevels+1,nCells+1))
+                  allocate(scalar_old_arr(nVertLevels,nCells+1))
+                  allocate(scalar_new_arr(nVertLevels,nCells+1))
+                  allocate(s_max_arr(nVertLevels,nCells+1))
+                  allocate(s_min_arr(nVertLevels,nCells+1))
+                  allocate(scale_array(nVertLevels,2,nCells+1))
+                  allocate(flux_array(nVertLevels,nEdges+1))
+                  allocate(wdtn_arr(nVertLevels+1,nCells+1))
                   if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
-                     allocate(horiz_flux_arr_p(num_scalars,nVertLevels,nEdges+1))
+                     allocate(horiz_flux_array(num_scalars,nVertLevels,nEdges+1))
                   else
-                     allocate(flux_upwind_tmp(nVertLevels,nEdges+1))
-                     allocate(flux_tmp(nVertLevels,nEdges+1))
+                     allocate(flux_upwind_tmp_arr(nVertLevels,nEdges+1))
+                     allocate(flux_tmp_arr(nVertLevels,nEdges+1))
                   end if
 
                   !
@@ -608,7 +609,7 @@ MPAS_GPTL_STOP('dyn_tend')
                                                 block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
                                                 block % vertexSolveThreadStart(thread), block % vertexSolveThreadEnd(thread), &
                                                 block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread), &
-                                                horiz_flux_arr_p, advance_density=.false. )
+                                                horiz_flux_array, advance_density=.false. )
                      else
          
                         block % domain = domain 
@@ -619,23 +620,25 @@ MPAS_GPTL_STOP('dyn_tend')
                                                 block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
                                                 block % vertexSolveThreadStart(thread), block % vertexSolveThreadEnd(thread), &
                                                 block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread), &
+                                                scalar_old_arr, scalar_new_arr, s_max_arr, s_min_arr, wdtn_arr, &
+                                                scale_array, flux_array, flux_upwind_tmp_arr, flux_tmp_arr, &
                                                 advance_density=.false.)
                      end if
                   end do
 !$OMP END PARALLEL DO
 
-                  deallocate(scalar_old)
-                  deallocate(scalar_new)
-                  deallocate(s_max)
-                  deallocate(s_min)
-                  deallocate(scale_arr)
-                  deallocate(flux_arr)
-                  deallocate(wdtn)
+                  deallocate(scalar_old_arr)
+                  deallocate(scalar_new_arr)
+                  deallocate(s_max_arr)
+                  deallocate(s_min_arr)
+                  deallocate(scale_array)
+                  deallocate(flux_array)
+                  deallocate(wdtn_arr)
                   if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
-                     deallocate(horiz_flux_arr_p)
+                     deallocate(horiz_flux_array)
                   else
-                     deallocate(flux_upwind_tmp)
-                     deallocate(flux_tmp)
+                     deallocate(flux_upwind_tmp_arr)
+                     deallocate(flux_tmp_arr)
                   end if
 
                   block => block % next
@@ -643,6 +646,7 @@ MPAS_GPTL_STOP('dyn_tend')
                if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
                   call mpas_timer_stop('atm_advance_scalars')
                else
+MPAS_GPTL_STOP('atm_advance_scalars_mono')
                   call mpas_timer_stop('atm_advance_scalars_mono')
                end if
 
@@ -759,6 +763,7 @@ MPAS_GPTL_STOP('dyn_tend')
                call mpas_timer_start('atm_advance_scalars')
             else
                call mpas_timer_start('atm_advance_scalars_mono')
+MPAS_GPTL_START('atm_advance_scalars_mono')
             end if
             block => domain % blocklist
             do while (associated(block))
@@ -772,20 +777,20 @@ MPAS_GPTL_STOP('dyn_tend')
                call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
                call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
 
-               allocate(scalar_old(nVertLevels,nCells+1))
-               allocate(scalar_new(nVertLevels,nCells+1))
-               allocate(s_max(nVertLevels,nCells+1))
-               allocate(s_min(nVertLevels,nCells+1))
-               allocate(scale_arr(2,nVertLevels,nCells+1))
-               allocate(flux_arr(nVertLevels,nEdges+1))
-               allocate(wdtn(nVertLevels+1,nCells+1))
+               allocate(scalar_old_arr(nVertLevels,nCells+1))
+               allocate(scalar_new_arr(nVertLevels,nCells+1))
+               allocate(s_max_arr(nVertLevels,nCells+1))
+               allocate(s_min_arr(nVertLevels,nCells+1))
+               allocate(scale_array(nVertLevels,2,nCells+1))
+               allocate(flux_array(nVertLevels,nEdges+1))
+               allocate(wdtn_arr(nVertLevels+1,nCells+1))
                allocate(rho_zz_int(nVertLevels,nCells+1))
-               allocate(scalar_tend(num_scalars,nVertLevels,nCells+1))
+               allocate(scalar_tend_array(num_scalars,nVertLevels,nCells+1))
                if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
-                  allocate(horiz_flux_arr_p(num_scalars,nVertLevels,nEdges+1))
+                  allocate(horiz_flux_array(num_scalars,nVertLevels,nEdges+1))
                else
-                  allocate(flux_upwind_tmp(nVertLevels,nEdges+1))
-                  allocate(flux_tmp(nVertLevels,nEdges+1))
+                  allocate(flux_upwind_tmp_arr(nVertLevels,nEdges+1))
+                  allocate(flux_tmp_arr(nVertLevels,nEdges+1))
                end if
 
                !
@@ -803,7 +808,7 @@ MPAS_GPTL_STOP('dyn_tend')
                                              block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
                                              block % vertexSolveThreadStart(thread), block % vertexSolveThreadEnd(thread), &
                                              block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread), &
-                                             horiz_flux_arr_p, advance_density=.true., scalar_tend=scalar_tend, rho_zz_int=rho_zz_int )
+                                             horiz_flux_array, advance_density=.true., scalar_tend=scalar_tend_array, rho_zz_int=rho_zz_int )
                   else
       
                      block % domain = domain 
@@ -814,25 +819,27 @@ MPAS_GPTL_STOP('dyn_tend')
                                              block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
                                              block % vertexSolveThreadStart(thread), block % vertexSolveThreadEnd(thread), &
                                              block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread), &
+                                             scalar_old_arr, scalar_new_arr, s_max_arr, s_min_arr, wdtn_arr, &
+                                             scale_array, flux_array, flux_upwind_tmp_arr, flux_tmp_arr, &
                                              advance_density=.true., rho_zz_int=rho_zz_int)
                   end if
                end do
 !$OMP END PARALLEL DO
 
-               deallocate(scalar_old)
-               deallocate(scalar_new)
-               deallocate(s_max)
-               deallocate(s_min)
-               deallocate(scale_arr)
-               deallocate(flux_arr)
-               deallocate(wdtn)
+               deallocate(scalar_old_arr)
+               deallocate(scalar_new_arr)
+               deallocate(s_max_arr)
+               deallocate(s_min_arr)
+               deallocate(scale_array)
+               deallocate(flux_array)
+               deallocate(wdtn_arr)
                deallocate(rho_zz_int)
-               deallocate(scalar_tend)
+               deallocate(scalar_tend_array)
                if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
-                  deallocate(horiz_flux_arr_p)
+                  deallocate(horiz_flux_array)
                else
-                  deallocate(flux_upwind_tmp)
-                  deallocate(flux_tmp)
+                  deallocate(flux_upwind_tmp_arr)
+                  deallocate(flux_tmp_arr)
                end if
 
                block => block % next
@@ -840,6 +847,7 @@ MPAS_GPTL_STOP('dyn_tend')
             if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
                call mpas_timer_stop('atm_advance_scalars')
             else
+MPAS_GPTL_STOP('atm_advance_scalars_mono')
                call mpas_timer_stop('atm_advance_scalars_mono')
             end if
 
@@ -1948,7 +1956,7 @@ MPAS_GPTL_STOP('dyn_tend')
       integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
       integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
       logical, intent(in), optional :: advance_density
-      real (kind=RKIND), dimension(:,:,:), pointer, optional :: scalar_tend
+      real (kind=RKIND), dimension(:,:,:), intent(inout), optional :: scalar_tend
       real (kind=RKIND), dimension(:,:), intent(inout), optional :: rho_zz_int
 
       integer :: i, j, iCell, iAdvCell, iEdge, k, iScalar, cell1, cell2
@@ -1962,7 +1970,7 @@ MPAS_GPTL_STOP('dyn_tend')
       real (kind=RKIND), dimension(:,:), pointer :: uhAvg, rho_zz_old, rho_zz_new, wwAvg, rho_edge, zgrid, kdiff
       real (kind=RKIND), dimension(:), pointer :: dvEdge, qv_init
       integer, dimension(:,:), pointer :: cellsOnEdge
-      real (kind=RKIND), dimension(:,:,:), pointer :: horiz_flux_arr
+      real (kind=RKIND), dimension(:,:,:), intent(inout) :: horiz_flux_arr
 
       integer, dimension(:,:), pointer :: advCellsForEdge, edgesOnCell
       integer, dimension(:), pointer :: nAdvCellsForEdge, nEdgesOnCell
@@ -2320,15 +2328,117 @@ MPAS_GPTL_STOP('dyn_tend')
    end subroutine atm_advance_scalars_work
 
 
-   subroutine atm_advance_scalars_mono(block, tend, state, diag, mesh, configs, nCells, nEdges, nVertLevels, dt, &
+   subroutine atm_advance_scalars_mono(block, tend, state, diag, mesh, configs, nCells, nEdges, nVertLevels_dummy, dt, &
                                    cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
                                    cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
+                                   scalar_old, scalar_new, s_max, s_min, wdtn, scale_arr, flux_arr, &
+                                   flux_upwind_tmp, flux_tmp, advance_density, rho_zz_int)
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+   !
+   ! Integrate scalar equations - transport plus other tendencies
+   !
+   !  wrapper routine for atm_advance_scalars_mono_work
+   !
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+
+      use mpas_atm_dimensions
+
+      implicit none
+
+      type (block_type), intent(inout), target :: block
+      type (mpas_pool_type), intent(in)    :: tend
+      type (mpas_pool_type), intent(inout) :: state
+      type (mpas_pool_type), intent(in)    :: diag
+      type (mpas_pool_type), intent(in)    :: mesh
+      type (mpas_pool_type), intent(in)    :: configs
+      integer, intent(in)                  :: nCells           ! for allocating stack variables
+      integer, intent(in)                  :: nEdges           ! for allocating stack variables
+      integer, intent(in)                  :: nVertLevels_dummy      ! for allocating stack variables
+      real (kind=RKIND), intent(in)        :: dt
+      integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
+      integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
+      real (kind=RKIND), dimension(nVertLevels,nCells+1), intent(inout) :: scalar_old, scalar_new
+      real (kind=RKIND), dimension(nVertLevels,nCells+1), intent(inout) :: s_max, s_min
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1), intent(inout) :: wdtn
+      real (kind=RKIND), dimension(nVertLevels,2,nCells+1), intent(inout) :: scale_arr
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1), intent(inout) :: flux_arr
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1), intent(inout) :: flux_upwind_tmp, flux_tmp
+      logical, intent(in), optional :: advance_density
+      real (kind=RKIND), dimension(nVertLevels,nCells+1), intent(inout), optional :: rho_zz_int
+
+      real (kind=RKIND), dimension(:,:,:), pointer :: scalar_tend
+      real (kind=RKIND), dimension(:,:), pointer :: uhAvg, rho_zz_old, rho_zz_new, wwAvg
+      real (kind=RKIND), dimension(:), pointer :: dvEdge, invAreaCell
+      integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell, edgesOnCell
+      real (kind=RKIND), dimension(:,:), pointer :: edgesOnCell_sign
+
+      integer, dimension(:,:), pointer :: advCellsForEdge
+      integer, dimension(:), pointer :: nAdvCellsForEdge
+      real (kind=RKIND), dimension(:,:), pointer :: adv_coefs, adv_coefs_3rd
+      real (kind=RKIND), dimension(:,:,:), pointer :: scalars_old, scalars_new
+
+      integer, pointer :: nCellsSolve
+
+      real (kind=RKIND), dimension(:), pointer :: fnm, fnp, rdnw
+      integer, dimension(:), pointer :: nEdgesOnCell
+      real (kind=RKIND), pointer :: coef_3rd_order
+
+      call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
+
+      call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
+
+      call mpas_pool_get_array(diag, 'ruAvg', uhAvg)
+      call mpas_pool_get_array(diag, 'wwAvg', wwAvg)
+
+      call mpas_pool_get_array(tend, 'scalars_tend', scalar_tend)
+
+      call mpas_pool_get_array(state, 'rho_zz', rho_zz_old, 1)
+      call mpas_pool_get_array(state, 'rho_zz', rho_zz_new, 2)
+      call mpas_pool_get_array(state, 'scalars', scalars_old, 1)
+      call mpas_pool_get_array(state, 'scalars', scalars_new, 2)
+
+      call mpas_pool_get_array(mesh, 'invAreaCell', invAreaCell)
+      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(mesh, 'edgesOnCell_sign', edgesOnCell_sign)
+      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(mesh, 'fzm', fnm)
+      call mpas_pool_get_array(mesh, 'fzp', fnp)
+      call mpas_pool_get_array(mesh, 'rdzw', rdnw)
+      call mpas_pool_get_array(mesh, 'nAdvCellsForEdge', nAdvCellsForEdge)
+      call mpas_pool_get_array(mesh, 'advCellsForEdge', advCellsForEdge)
+      call mpas_pool_get_array(mesh, 'adv_coefs', adv_coefs)
+      call mpas_pool_get_array(mesh, 'adv_coefs_3rd', adv_coefs_3rd)
+
+      call atm_advance_scalars_mono_work(block, state, nCells, nEdges, nVertLevels, dt, &
+                                   cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+                                   cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
+                                   coef_3rd_order, nCellsSolve, num_scalars, uhAvg, wwAvg, scalar_tend, rho_zz_old, &
+                                   rho_zz_new, scalars_old, scalars_new, invAreaCell, dvEdge, cellsOnEdge, cellsOnCell, &
+                                   edgesOnCell, edgesOnCell_sign, nEdgesOnCell, fnm, fnp, rdnw, nAdvCellsForEdge, &
+                                   advCellsForEdge, adv_coefs, adv_coefs_3rd, scalar_old, scalar_new, s_max, s_min, &
+                                   wdtn, scale_arr, flux_arr, flux_upwind_tmp, flux_tmp, &
+                                   advance_density, rho_zz_int)
+
+   end subroutine atm_advance_scalars_mono
+
+
+   subroutine atm_advance_scalars_mono_work(block, state, nCells, nEdges, nVertLevels_dummy, dt, &
+                                   cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
+                                   cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd, &
+                                   coef_3rd_order, nCellsSolve, num_scalars_dummy, uhAvg, wwAvg, scalar_tend, rho_zz_old, &
+                                   rho_zz_new, scalars_old, scalars_new, invAreaCell, dvEdge, cellsOnEdge, cellsOnCell, &
+                                   edgesOnCell, edgesOnCell_sign, nEdgesOnCell, fnm, fnp, rdnw, nAdvCellsForEdge, &
+                                   advCellsForEdge, adv_coefs, adv_coefs_3rd, scalar_old, scalar_new, s_max, s_min, &
+                                   wdtn, scale_arr, flux_arr, flux_upwind_tmp, flux_tmp, &
                                    advance_density, rho_zz_int)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
    !
    ! Integrate scalar equations - transport plus other tendencies
    !
-   !  this transport routine is similar to the original atm_advance_scalars_mono, except it also advances
+   !  this transport routine is similar to the original atm_advance_scalars_mono_work, except it also advances
    !  (re-integrates) the density.  This re-integration allows the scalar transport routine to use a different 
    !  timestep than the dry dynamics, and also makes possible a spatial splitting of the scalar transport integration
    !  (and density integration).  The current integration is, however, not spatially split.
@@ -2353,17 +2463,15 @@ MPAS_GPTL_STOP('dyn_tend')
    !   as used in the RK3 scheme as described in Wang et al MWR 2009
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
 
+      use mpas_atm_dimensions
+
       implicit none
 
       type (block_type), intent(inout), target :: block
-      type (mpas_pool_type), intent(in)    :: tend
       type (mpas_pool_type), intent(inout) :: state
-      type (mpas_pool_type), intent(in)    :: diag
-      type (mpas_pool_type), intent(in)    :: mesh
-      type (mpas_pool_type), intent(in)    :: configs
       integer, intent(in)                  :: nCells           ! for allocating stack variables
       integer, intent(in)                  :: nEdges           ! for allocating stack variables
-      integer, intent(in)                  :: nVertLevels      ! for allocating stack variables
+      integer, intent(in)                  :: nVertLevels_dummy ! for allocating stack variables
       real (kind=RKIND), intent(in)        :: dt
       integer, intent(in) :: cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd
       integer, intent(in) :: cellSolveStart, cellSolveEnd, vertexSolveStart, vertexSolveEnd, edgeSolveStart, edgeSolveEnd
@@ -2377,17 +2485,24 @@ MPAS_GPTL_STOP('dyn_tend')
       integer :: i, iCell, iEdge, k, iScalar, cell1, cell2
       real (kind=RKIND) :: flux, scalar_weight
 
-      real (kind=RKIND), dimension(:,:,:), pointer :: scalar_tend
-      real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
-      real (kind=RKIND), dimension(:,:), pointer :: uhAvg, rho_zz_old, rho_zz_new, wwAvg, rho_edge, rho_zz, zgrid, kdiff
-      real (kind=RKIND), dimension(:), pointer :: dvEdge, invAreaCell, qv_init
-      integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell, edgesOnCell
-      real (kind=RKIND), dimension(:,:), pointer :: edgesOnCell_sign
+      real (kind=RKIND), dimension(num_scalars,nVertLevels,nCells+1), intent(inout) :: scalar_tend
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1), intent(in) :: uhAvg
+      real (kind=RKIND), dimension(nVertLevels,nCells+1), intent(in) :: rho_zz_old, rho_zz_new
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1), intent(in) :: wwAvg
+      real (kind=RKIND), dimension(:), intent(in) :: dvEdge, invAreaCell
+      integer, dimension(:,:), intent(in) :: cellsOnEdge, cellsOnCell, edgesOnCell
+      real (kind=RKIND), dimension(:,:), intent(in) :: edgesOnCell_sign
 
-      integer, dimension(:,:), pointer :: advCellsForEdge
-      integer, dimension(:), pointer :: nAdvCellsForEdge
-      real (kind=RKIND), dimension(:,:), pointer :: adv_coefs, adv_coefs_3rd
-      real (kind=RKIND), dimension(:,:,:), pointer :: scalars_old, scalars_new
+      integer, dimension(:,:), intent(in) :: advCellsForEdge
+      integer, dimension(:), intent(in) :: nAdvCellsForEdge
+      real (kind=RKIND), dimension(:,:), intent(in) :: adv_coefs, adv_coefs_3rd
+      real (kind=RKIND), dimension(num_scalars,nVertLevels,nCells+1), intent(inout) :: scalars_old, scalars_new
+      real (kind=RKIND), dimension(nVertLevels,nCells+1), intent(inout) :: scalar_old, scalar_new
+      real (kind=RKIND), dimension(nVertLevels,nCells+1), intent(inout) :: s_max, s_min
+      real (kind=RKIND), dimension(nVertLevels+1,nCells+1), intent(inout) :: wdtn
+      real (kind=RKIND), dimension(nVertLevels,2,nCells+1), intent(inout), target :: scale_arr
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1), intent(inout) :: flux_arr
+      real (kind=RKIND), dimension(nVertLevels,nEdges+1), intent(inout) :: flux_upwind_tmp, flux_tmp
       type (field3DReal), pointer :: scalars_old_field
 
       type (field3DReal), pointer :: tempField
@@ -2396,12 +2511,12 @@ MPAS_GPTL_STOP('dyn_tend')
 
       integer, parameter :: SCALE_IN = 1, SCALE_OUT = 2
 
-      integer, pointer :: nCellsSolve, num_scalars
+      integer, intent(in) :: nCellsSolve, num_scalars_dummy
       integer :: icellmax, kmax
 
-      real (kind=RKIND), dimension(:), pointer :: fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4
-      integer, dimension(:), pointer :: nEdgesOnCell
-      real (kind=RKIND), pointer :: coef_3rd_order
+      real (kind=RKIND), dimension(nVertLevels), intent(in) :: fnm, fnp, rdnw
+      integer, dimension(:), intent(in) :: nEdgesOnCell
+      real (kind=RKIND), intent(in) :: coef_3rd_order
 
 
       real (kind=RKIND) :: flux3, flux4, flux_upwind
@@ -2426,44 +2541,7 @@ MPAS_GPTL_STOP('dyn_tend')
          local_advance_density = .true.
       end if
 
-      call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
-
-      call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
-      call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
-
-      call mpas_pool_get_array(diag, 'kdiff', kdiff)
-      call mpas_pool_get_array(diag, 'ruAvg', uhAvg)
-      call mpas_pool_get_array(diag, 'wwAvg', wwAvg)
-      call mpas_pool_get_array(diag, 'rho_edge', rho_edge)
-
-      call mpas_pool_get_array(tend, 'scalars_tend', scalar_tend)
-
-      call mpas_pool_get_array(state, 'rho_zz', rho_zz_old, 1)
-      call mpas_pool_get_array(state, 'rho_zz', rho_zz_new, 2)
-      call mpas_pool_get_array(state, 'rho_zz', rho_zz, 2)
-      call mpas_pool_get_array(state, 'scalars', scalars_old, 1)
-      call mpas_pool_get_array(state, 'scalars', scalars_new, 2)
       call mpas_pool_get_field(state, 'scalars', scalars_old_field, 1)
-
-      call mpas_pool_get_array(mesh, 'invAreaCell', invAreaCell)
-      call mpas_pool_get_array(mesh, 'deriv_two', deriv_two)
-      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
-      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
-      call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
-      call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
-      call mpas_pool_get_array(mesh, 'edgesOnCell_sign', edgesOnCell_sign)
-      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
-      call mpas_pool_get_array(mesh, 'fzm', fnm)
-      call mpas_pool_get_array(mesh, 'fzp', fnp)
-      call mpas_pool_get_array(mesh, 'rdzw', rdnw)
-      call mpas_pool_get_array(mesh, 'meshScalingDel2', meshScalingDel2)
-      call mpas_pool_get_array(mesh, 'meshScalingDel4', meshScalingDel4)
-      call mpas_pool_get_array(mesh, 'nAdvCellsForEdge', nAdvCellsForEdge)
-      call mpas_pool_get_array(mesh, 'advCellsForEdge', advCellsForEdge)
-      call mpas_pool_get_array(mesh, 'adv_coefs', adv_coefs)
-      call mpas_pool_get_array(mesh, 'adv_coefs_3rd', adv_coefs_3rd)
-      call mpas_pool_get_array(mesh, 'qv_init', qv_init)
-      call mpas_pool_get_array(mesh, 'zgrid', zgrid)
 
       !  for positive-definite or monotonic option, we first update scalars using the tendency from sources other than
       !  the resolved transport (these should constitute a positive definite update).  
@@ -2471,11 +2549,15 @@ MPAS_GPTL_STOP('dyn_tend')
       !  The transport will maintain this positive definite solution and optionally, shape preservation (monotonicity).
 
       do iCell=cellSolveStart,cellSolveEnd
+!DIR$ IVDEP
       do k = 1,nVertLevels
+!DIR$ IVDEP
       do iScalar = 1,num_scalars
 
 #ifndef DO_PHYSICS
-         scalar_tend(:,:,iCell) = 0.0  !  testing purposes - we have no sources or sinks
+!TBH:  Michael, would you please check this change?  Our test uses -DDO_PHYSICS
+!TBH:  so this code is not executed.  The change avoids redundant work.  
+         scalar_tend(iScalar,k,iCell) = 0.0  !  testing purposes - we have no sources or sinks
 #endif
          scalars_old(iScalar,k,iCell) = scalars_old(iScalar,k,iCell)+dt*scalar_tend(iScalar,k,iCell) / rho_zz_old(k,iCell)
          scalar_tend(iScalar,k,iCell) = 0.0
@@ -2486,7 +2568,9 @@ MPAS_GPTL_STOP('dyn_tend')
 
 !$OMP BARRIER
 !$OMP MASTER
+MPAS_GPTL_START('mono_exch_1')
       call mpas_dmpar_exch_halo_field(scalars_old_field)
+MPAS_GPTL_STOP('mono_exch_1')
 !$OMP END MASTER
 !$OMP BARRIER
 
@@ -2496,7 +2580,7 @@ MPAS_GPTL_STOP('dyn_tend')
 
       if (local_advance_density) then
          if (.not.present(rho_zz_int)) then
-            call mpas_dmpar_global_abort('Error: rho_zz_int not supplied to atm_advance_scalars_mono( ) when advance_density=.true.')
+            call mpas_dmpar_global_abort('Error: rho_zz_int not supplied to atm_advance_scalars_mono_work( ) when advance_density=.true.')
          end if
 
          !  begin with update of density
@@ -2508,6 +2592,7 @@ MPAS_GPTL_STOP('dyn_tend')
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
    
+!DIR$ IVDEP
                do k=1,nVertLevels
                   rho_zz_int(k,iCell) = rho_zz_int(k,iCell) - edgesOnCell_sign(i,iCell) * uhAvg(k,iEdge) * dvEdge(iEdge) * invAreaCell(iCell)
                end do
@@ -2515,6 +2600,7 @@ MPAS_GPTL_STOP('dyn_tend')
             end do
          end do
          do iCell=cellSolveStart,cellSolveEnd
+!DIR$ IVDEP
             do k=1,nVertLevels
                rho_zz_int(k,iCell) = rho_zz_old(k,iCell) + dt*( rho_zz_int(k,iCell) - rdnw(k)*(wwAvg(k+1,iCell)-wwAvg(k,iCell)) )
             end do
@@ -2527,6 +2613,7 @@ MPAS_GPTL_STOP('dyn_tend')
       do iScalar = 1, num_scalars
 
          do iCell=cellStart,cellEnd
+!DIR$ IVDEP
             do k=1,nVertLevels
                scalar_old(k,iCell) = scalars_old(iScalar,k,iCell)
                scalar_new(k,iCell) = scalars_new(iScalar,k,iCell)
@@ -2576,6 +2663,7 @@ MPAS_GPTL_STOP('dyn_tend')
             s_max(k,iCell) = max(scalar_old(k-1,iCell),scalar_old(k,iCell),scalar_old(k+1,iCell))
             s_min(k,iCell) = min(scalar_old(k-1,iCell),scalar_old(k,iCell),scalar_old(k+1,iCell))
              
+!DIR$ IVDEP
             do k=3,nVertLevels-1
                wdtn(k,iCell) = flux3( scalar_new(k-2,iCell),scalar_new(k-1,iCell),  &
                                       scalar_new(k  ,iCell),scalar_new(k+1,iCell),  &
@@ -2597,6 +2685,7 @@ MPAS_GPTL_STOP('dyn_tend')
             ! original code retained in select "default" case
             select case(nEdgesOnCell(iCell))
             case(6)
+!DIR$ IVDEP
                do k=1, nVertLevels
                   s_max(k,iCell) = max(s_max(k,iCell), &
                        scalar_old(k, cellsOnCell(1,iCell)), &
@@ -2616,6 +2705,7 @@ MPAS_GPTL_STOP('dyn_tend')
 
             case default
                do i=1, nEdgesOnCell(iCell)
+!DIR$ IVDEP
                   do k=1, nVertLevels
                      s_max(k,iCell) = max(s_max(k,iCell),scalar_old(k, cellsOnCell(i,iCell)))
                      s_min(k,iCell) = min(s_min(k,iCell),scalar_old(k, cellsOnCell(i,iCell)))
@@ -2665,6 +2755,7 @@ MPAS_GPTL_STOP('dyn_tend')
                   enddo
                   do i=1,nAdvCellsForEdge(iEdge)
                      iCell = advCellsForEdge(i,iEdge)
+!DIR$ IVDEP
                      do k=1,nVertLevels
                         scalar_weight = uhAvg(k,iEdge)*(adv_coefs(i,iEdge) + coef_3rd_order*sign(1.0_RKIND,uhAvg(k,iEdge))*adv_coefs_3rd(i,iEdge))
                         flux_arr(k,iEdge) = flux_arr(k,iEdge) + scalar_weight* scalar_new(k,iCell)
@@ -2687,6 +2778,9 @@ MPAS_GPTL_STOP('dyn_tend')
             k = 1
             scalar_new(k,iCell) = scalar_old(k,iCell) * rho_zz_old(k,iCell)
 
+!TBH:  for some reason compiler ignores IVDEP here, so use a bigger hammer
+!!DIR$ IVDEP
+!DIR$ SIMD
             do k = 2, nVertLevels
                scalar_new(k,iCell) = scalar_old(k,iCell)*rho_zz_old(k,iCell)
                flux_upwind = dt*(max(0.0_RKIND,wwAvg(k,iCell))*scalar_old(k-1,iCell) + min(0.0_RKIND,wwAvg(k,iCell))*scalar_old(k,iCell))
@@ -2701,9 +2795,10 @@ MPAS_GPTL_STOP('dyn_tend')
             ! contributions to the update:  first the vertical flux component, then the horizontal
             !
 
+!DIR$ IVDEP
             do k=1,nVertLevels
-               scale_arr(SCALE_IN, k,iCell) = - rdnw(k)*(min(0.0_RKIND,wdtn(k+1,iCell))-max(0.0_RKIND,wdtn(k,iCell)))
-               scale_arr(SCALE_OUT,k,iCell) = - rdnw(k)*(max(0.0_RKIND,wdtn(k+1,iCell))-min(0.0_RKIND,wdtn(k,iCell)))
+               scale_arr(k,SCALE_IN, iCell) = - rdnw(k)*(min(0.0_RKIND,wdtn(k+1,iCell))-max(0.0_RKIND,wdtn(k,iCell)))
+               scale_arr(k,SCALE_OUT,iCell) = - rdnw(k)*(max(0.0_RKIND,wdtn(k+1,iCell))-min(0.0_RKIND,wdtn(k,iCell)))
             end do
 
          end do
@@ -2716,6 +2811,7 @@ MPAS_GPTL_STOP('dyn_tend')
          do iEdge=edgeStart,edgeEnd
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
+!DIR$ IVDEP
             do k=1, nVertLevels
                flux_upwind_tmp(k,iEdge) = dvEdge(iEdge) * dt *   &
                       (max(0.0_RKIND,uhAvg(k,iEdge))*scalar_old(k,cell1) + min(0.0_RKIND,uhAvg(k,iEdge))*scalar_old(k,cell2))
@@ -2727,12 +2823,13 @@ MPAS_GPTL_STOP('dyn_tend')
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
 
+!DIR$ IVDEP
                do k=1, nVertLevels
                   scalar_new(k,iCell) = scalar_new(k,iCell) - edgesOnCell_sign(i,iCell) * flux_upwind_tmp(k,iEdge) * invAreaCell(iCell)
  
-                  scale_arr(SCALE_OUT,k,iCell) = scale_arr(SCALE_OUT,k,iCell) &
+                  scale_arr(k,SCALE_OUT,iCell) = scale_arr(k,SCALE_OUT,iCell) &
                                                  - max(0.0_RKIND,edgesOnCell_sign(i,iCell)*flux_tmp(k,iEdge)) * invAreaCell(iCell)
-                  scale_arr(SCALE_IN, k,iCell) = scale_arr(SCALE_IN, k,iCell) &
+                  scale_arr(k,SCALE_IN, iCell) = scale_arr(k,SCALE_IN, iCell) &
                                                  - min(0.0_RKIND,edgesOnCell_sign(i,iCell)*flux_tmp(k,iEdge)) * invAreaCell(iCell)
                end do
 
@@ -2748,28 +2845,30 @@ MPAS_GPTL_STOP('dyn_tend')
          ! added benefit that it should address ifort single prec overflow issue
       if (local_advance_density) then
          do iCell=cellSolveStart,cellSolveEnd
+!DIR$ IVDEP
             do k = 1, nVertLevels
 
                scale_factor = (s_max(k,iCell)*rho_zz_int(k,iCell) - scalar_new(k,iCell)) / &
-                    (scale_arr(SCALE_IN,k,iCell)  + eps)
-               scale_arr(SCALE_IN,k,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
+                    (scale_arr(k,SCALE_IN,iCell)  + eps)
+               scale_arr(k,SCALE_IN,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
 
                scale_factor = (s_min(k,iCell)*rho_zz_int(k,iCell) - scalar_new(k,iCell)) / &
-                    (scale_arr(SCALE_OUT,k,iCell) - eps)
-               scale_arr(SCALE_OUT,k,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
+                    (scale_arr(k,SCALE_OUT,iCell) - eps)
+               scale_arr(k,SCALE_OUT,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
             end do
          end do
       else
          do iCell=cellSolveStart,cellSolveEnd
+!DIR$ IVDEP
             do k = 1, nVertLevels
 
                scale_factor = (s_max(k,iCell)*rho_zz_new(k,iCell) - scalar_new(k,iCell)) / &
-                    (scale_arr(SCALE_IN,k,iCell)  + eps)
-               scale_arr(SCALE_IN,k,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
+                    (scale_arr(k,SCALE_IN,iCell)  + eps)
+               scale_arr(k,SCALE_IN,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
 
                scale_factor = (s_min(k,iCell)*rho_zz_new(k,iCell) - scalar_new(k,iCell)) / &
-                    (scale_arr(SCALE_OUT,k,iCell) - eps)
-               scale_arr(SCALE_OUT,k,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
+                    (scale_arr(k,SCALE_OUT,iCell) - eps)
+               scale_arr(k,SCALE_OUT,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
             end do
          end do
       end if
@@ -2780,11 +2879,12 @@ MPAS_GPTL_STOP('dyn_tend')
          !
 !$OMP BARRIER
 !$OMP MASTER
+MPAS_GPTL_START('mono_exch_2')
          tempField => tempFieldTarget
 
          tempField % block => block
-         tempField % dimSizes(1) = 2
-         tempField % dimSizes(2) = nVertLevels
+         tempField % dimSizes(1) = nVertLevels
+         tempField % dimSizes(2) = 2
          tempField % dimSizes(3) = nCells
          tempField % sendList => block % parinfo % cellsToSend
          tempField % recvList => block % parinfo % cellsToRecv
@@ -2794,6 +2894,7 @@ MPAS_GPTL_STOP('dyn_tend')
 
          tempField % array => scale_arr
          call mpas_dmpar_exch_halo_field(tempField, (/ 1 /))
+MPAS_GPTL_STOP('mono_exch_2')
 !$OMP END MASTER
 !$OMP BARRIER
 
@@ -2801,6 +2902,7 @@ MPAS_GPTL_STOP('dyn_tend')
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then  ! only for owned cells
+!DIR$ IVDEP
                do k=1, nVertLevels
                   flux_upwind = dvEdge(iEdge) * dt *   &
                          (max(0.0_RKIND,uhAvg(k,iEdge))*scalar_old(k,cell1) + min(0.0_RKIND,uhAvg(k,iEdge))*scalar_old(k,cell2))
@@ -2819,10 +2921,11 @@ MPAS_GPTL_STOP('dyn_tend')
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then
+!DIR$ IVDEP
                do k = 1, nVertLevels
                   flux = flux_arr(k,iEdge)
-                  flux = max(0.0_RKIND,flux) * min(scale_arr(SCALE_OUT,k,cell1), scale_arr(SCALE_IN, k,cell2)) &
-                       + min(0.0_RKIND,flux) * min(scale_arr(SCALE_IN, k,cell1), scale_arr(SCALE_OUT,k,cell2))
+                  flux = max(0.0_RKIND,flux) * min(scale_arr(k,SCALE_OUT,cell1), scale_arr(k,SCALE_IN, cell2)) &
+                       + min(0.0_RKIND,flux) * min(scale_arr(k,SCALE_IN, cell1), scale_arr(k,SCALE_OUT,cell2))
                   flux_arr(k,iEdge) = flux
                end do
             end if
@@ -2834,10 +2937,11 @@ MPAS_GPTL_STOP('dyn_tend')
 !$OMP BARRIER
  
          do iCell=cellSolveStart,cellSolveEnd
+!DIR$ IVDEP
             do k = 2, nVertLevels
                flux = wdtn(k,iCell)
-               flux = max(0.0_RKIND,flux) * min(scale_arr(SCALE_OUT,k-1,iCell), scale_arr(SCALE_IN,k  ,iCell)) &
-                    + min(0.0_RKIND,flux) * min(scale_arr(SCALE_OUT,k  ,iCell), scale_arr(SCALE_IN,k-1,iCell))
+               flux = max(0.0_RKIND,flux) * min(scale_arr(k-1,SCALE_OUT,iCell), scale_arr(k  ,SCALE_IN,iCell)) &
+                    + min(0.0_RKIND,flux) * min(scale_arr(k  ,SCALE_OUT,iCell), scale_arr(k-1,SCALE_IN,iCell))
                wdtn(k,iCell) = flux
             end do
          end do
@@ -2849,16 +2953,19 @@ MPAS_GPTL_STOP('dyn_tend')
          do iCell=cellSolveStart,cellSolveEnd
             do i=1,nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i,iCell)
+!DIR$ IVDEP
                do k=1,nVertLevels
                   scalar_new(k,iCell) = scalar_new(k,iCell) - edgesOnCell_sign(i,iCell)*flux_arr(k,iEdge) * invAreaCell(iCell)
                end do
             end do
 
       if (local_advance_density) then
+!DIR$ IVDEP
             do k=1,nVertLevels
                scalar_new(k,iCell) = (   scalar_new(k,iCell) + (-rdnw(k)*(wdtn(k+1,iCell)-wdtn(k,iCell)) ) )/rho_zz_int(k,iCell)
             end do
       else
+!DIR$ IVDEP
             do k=1,nVertLevels
                scalar_new(k,iCell) = (   scalar_new(k,iCell) + (-rdnw(k)*(wdtn(k+1,iCell)-wdtn(k,iCell)) ) )/rho_zz_new(k,iCell)
             end do
@@ -2869,6 +2976,7 @@ MPAS_GPTL_STOP('dyn_tend')
          scmin = scalar_new(1,1)
          scmax = scalar_new(1,1)
          do iCell = 1, nCellsSolve
+!DIR$ IVDEP
          do k=1, nVertLevels
             scmax = max(scmax,scalar_new(k,iCell))
             scmin = min(scmin,scalar_new(k,iCell))
@@ -2896,7 +3004,7 @@ MPAS_GPTL_STOP('dyn_tend')
 
       end do !  loop over scalars
 
-   end subroutine atm_advance_scalars_mono
+   end subroutine atm_advance_scalars_mono_work
 
 
    subroutine atm_compute_dyn_tend(tend, state, diag, mesh, configs, nVertLevels, rk_step, dt, &
