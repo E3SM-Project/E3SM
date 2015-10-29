@@ -647,7 +647,7 @@ add_default($nl, 'config_cvmix_kpp_stop_OBL_search');
 # Namelist group: forcing #
 ###########################
 
-add_default($nl, 'config_use_bulk_wind_stress');
+add_default($nl, 'config_use_bulk_wind_stress', 'val'=>".true.");
 add_default($nl, 'config_use_bulk_thickness_flux');
 add_default($nl, 'config_flux_attenuation_coefficient');
 add_default($nl, 'config_frazil_ice_formation');
