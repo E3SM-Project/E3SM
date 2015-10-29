@@ -147,8 +147,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-!maltrud i think source/sink wants cm instead of m
-!     real (kind=RKIND) :: zTop, zBot, convertLengthScale = 1.0_RKIND
+      ! source/sink wants cm instead of m
       real (kind=RKIND) :: zTop, zBot, convertLengthScale = 100.0_RKIND
 
       integer :: iCell, iLevel, iTracer, numColumns, column
@@ -357,10 +356,13 @@ contains
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
       call mpas_pool_get_array(tracersPool, 'DMSTracers', DMSTracers, 1)
 
+      ! make sure DMS is turned on
+
       if (associated(DMSTracers)) then
 
+      ! cannot use DMS_tracer_cnt since it has dms, dmsp, and 12 ecosys fields
+
       nTracers = size(DMSTracers, dim=1)
-!maltrud cannot use DMS_tracer_cnt since it has dms, dmsp, and 12 ecosys fields
       if (nTracers /= 2) then
          err = 1
          return
@@ -389,10 +391,7 @@ contains
 
    call DMS_parms_init
 
-!maltrud modify namelist values here....
-
-!maltrud how to handle this?
-   T0_Kelvin_BGC = T0_Kelvin
+      ! modify namelist values here....
 
       !
       ! for now only do 1 column at a time
