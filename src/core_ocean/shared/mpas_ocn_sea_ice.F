@@ -131,8 +131,10 @@ contains
       allocate(iceTracer(nTracers))
       iceTracer = 0.0_RKIND
       iceTracer(indexSalinity) = sea_ice_salinity * ppt_to_salt
+
       density_ice = rho_ice
 
+      !$omp do schedule(runtime) private(maxLevel, netEnergyChange, k, freezingTemp, availableEnergyChange, energyChange, temperatureChange, thicknessChange, iceThicknessChange, iTracer)
       do iCell = 1, nCellsSolve ! Check performance of these two loop definitions
 !     do iCell = nCellsSolve, 1, -1
          maxLevel = min(maxLevelCell(iCell), verticalLevelCap)
@@ -233,6 +235,7 @@ contains
             seaIceEnergy(iCell) = seaIceEnergy(iCell) + energyChange
          end if
       end do
+      !$omp end do
 
       deallocate(iceTracer)
 

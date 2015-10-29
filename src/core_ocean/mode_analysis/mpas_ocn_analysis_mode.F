@@ -36,7 +36,6 @@ module ocn_analysis_mode
    use ocn_diagnostics
    use ocn_equation_of_state
    use ocn_constants
-   use ocn_time_average
 
    private
 

@@ -118,6 +118,7 @@ contains
 
       err = 0
 
+      !$omp do schedule(runtime) private(iLevel, iTracer)
       do iCell=1,nCellsSolve
          do iLevel=1,maxLevelCell(iCell)
             do iTracer=1,nTracers
@@ -128,6 +129,7 @@ contains
             enddo
          enddo
       enddo 
+      !$omp end do
 
    !--------------------------------------------------------------------
 

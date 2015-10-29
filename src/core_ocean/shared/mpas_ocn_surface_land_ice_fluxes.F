@@ -177,14 +177,18 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'topDrag', topDrag)
       call mpas_pool_get_array(diagnosticsPool, 'topDragMagnitude', topDragMagnitude)
 
+      !$omp do schedule(runtime)
       do iEdge = 1, nEdges
         surfaceStress(iEdge) = surfaceStress(iEdge) + topDrag(iEdge)
       end do
+      !$omp end do
 
       ! Build surface stress magnitude at cell centers
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
         surfaceStressMagnitude(iCell) = surfaceStressMagnitude(iCell) + topDragMagnitude(iCell)
       end do
+      !$omp end do
 
    !--------------------------------------------------------------------
 
@@ -248,9 +252,11 @@ contains
       call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
 
       ! Build surface fluxes at cell centers
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
         surfaceThicknessFlux(iCell) = surfaceThicknessFlux(iCell) + landIceFreshwaterFlux(iCell) / rho_sw
       end do
+      !$omp end do
 
    end subroutine ocn_surface_land_ice_fluxes_thick!}}}
 
@@ -312,9 +318,11 @@ contains
       call mpas_pool_get_array(forcingPool, 'landIceHeatFlux', landIceHeatFlux)
 
       ! add to surface fluxes at cell centers
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
         tracersSurfaceFlux(1, iCell) = tracersSurfaceFlux(1, iCell) + landIceHeatFlux(iCell)/(rho_sw*cp_sw)
       end do
+      !$omp end do
 
    end subroutine ocn_surface_land_ice_fluxes_active_tracers!}}}
 
@@ -452,6 +460,7 @@ contains
       end if
 
       if(isomipOn) then
+         !$omp do schedule(runtime) private(heatFlux)
          do iCell = 1, nCellsSolve
             ! linearized equaiton for the S and p dependent potential freezing temperature
             landIceInterfaceTracers(indexIT,iCell) = Tf0 &
@@ -477,6 +486,7 @@ contains
             heatFluxToLandIce(iCell) = 0.0_RKIND
 
          end do
+         !$omp end do
       end if
 
       if(jenkinsOn .or. hollandJenkinsOn) then
@@ -726,6 +736,8 @@ contains
     coupled = present(iceTemperature) .and. present(iceTemperatureDistance) &
             .and. present(kappa_land_ice)
     Tlatent = latent_heat_fusion_mks/cp_sw
+
+    !$omp do schedule(runtime) private(iceHeatFluxCoeff, nu, iceDeltaT, T0, transferVelocityRatio, a, b, c)
     do iCell = 1, nCells
       if(coupled) then 
         iceHeatFluxCoeff = rho_land_ice*cp_land_ice*kappa_land_ice/iceTemperatureDistance(iCell)
@@ -746,9 +758,9 @@ contains
       ! The positive root is the one we want (salinity is strictly positive)
       outInterfaceSalinity(iCell) = (-b + sqrt(b**2 - 4.0_RKIND*a*c*oceanSalinity(iCell)))/(2.0_RKIND*a)
       if (outInterfaceSalinity(iCell) .le. 0.0_RKIND) then
-         write(stderrUnit, *) "ERROR: interfaceSalinity <= 0", outInterfaceSalinity(iCell), oceanSalinity(iCell), a, b, c
+        write(stderrUnit, *) "ERROR: interfaceSalinity <= 0", outInterfaceSalinity(iCell), oceanSalinity(iCell), a, b, c
         err = 1
-        return
+        call mpas_dmpar_global_abort('ERROR: interfaceSalinity is negative...')
       end if
       outInterfaceTemperature(iCell) = dTf_dS*outInterfaceSalinity(iCell)+T0
 
@@ -773,6 +785,7 @@ contains
           - iceHeatFluxCoeff*(iceTemperature(iCell) - outInterfaceTemperature(iCell))
       end if
     end do
+    !$omp end do
 
   !--------------------------------------------------------------------
 
@@ -870,6 +883,7 @@ contains
 
     err = 0
     cpRatio = cp_land_ice/cp_sw
+    !$omp do schedule(runtime) private(T0, transferVelocityRatio, Tlatent, eta, TlatentStar, a, b, c)
     do iCell = 1, nCells
       T0 = Tf0 + dTf_dp*interfacePressure(iCell)
       transferVelocityRatio = (rho_fw/rho_sw)*oceanSaltTransferVelocity(iCell)/oceanHeatTransferVelocity(iCell)
@@ -887,7 +901,7 @@ contains
       outInterfaceSalinity(iCell) = (-b + sqrt(b**2 - 4.0_RKIND*a*c*oceanSalinity(iCell)))/(2.0_RKIND*a)
       if (outInterfaceSalinity(iCell) .le. 0.0_RKIND) then
         err = 1
-        return
+        call mpas_dmpar_global_abort('ERROR: interfaceSalinity is negative...')
       end if
       outInterfaceTemperature(iCell) = dTf_dS*outInterfaceSalinity(iCell)+T0
 
@@ -905,6 +919,7 @@ contains
       ! (surface?) ice temperature
       outIceHeatFlux(iCell) = -cp_land_ice*outFreshwaterFlux(iCell)*iceTemperature(iCell)
     end do
+    !$omp end do
 
   !--------------------------------------------------------------------
 

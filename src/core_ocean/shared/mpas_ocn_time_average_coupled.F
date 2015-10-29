@@ -58,9 +58,11 @@ module ocn_time_average_coupled
         call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
         call mpas_pool_get_array(forcingPool, 'nAccumulatedCoupled', nAccumulatedCoupled)
 
+        !$omp workshare
         avgTracersSurfaceValue(:,:) = 0.0_RKIND
         avgSurfaceVelocity(:,:) = 0.0_RKIND
         avgSSHGradient(:,:) = 0.0_RKIND
+        !$omp end workshare
 
         call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
         if(trim(config_land_ice_flux_mode) == 'coupled') then
@@ -68,9 +70,11 @@ module ocn_time_average_coupled
            call mpas_pool_get_array(forcingPool, 'avgLandIceTracerTransferVelocities', avgLandIceTracerTransferVelocities)
            call mpas_pool_get_array(forcingPool, 'avgEffectiveDensityInLandIce', avgEffectiveDensityInLandIce)
 
+           !$omp workshare
            avgLandIceBoundaryLayerTracers(:,:) = 0.0_RKIND
            avgLandIceTracerTransferVelocities(:,:) = 0.0_RKIND
            avgEffectiveDensityInLandIce(:) = 0.0_RKIND
+           !$omp end workshare
         end if
 
         nAccumulatedCoupled = 0
@@ -119,8 +123,7 @@ module ocn_time_average_coupled
 
         call mpas_pool_get_array(forcingPool, 'nAccumulatedCoupled', nAccumulatedCoupled)
 
-
-
+        !$omp workshare
         avgTracersSurfaceValue(:,:) = avgTracersSurfaceValue(:,:) * nAccumulatedCoupled + tracersSurfaceValue(:,:)
         avgTracersSurfaceValue(index_temperature,:) = avgTracersSurfaceValue(index_temperature,:) + T0_Kelvin
         avgTracersSurfaceValue(:,:) = avgTracersSurfaceValue(:,:) / ( nAccumulatedCoupled + 1 )
@@ -129,6 +132,7 @@ module ocn_time_average_coupled
 
         avgSSHGradient(index_SSHzonal,:)      = ( avgSSHGradient(index_SSHzonal,:)      * nAccumulatedCoupled + gradSSHZonal(1,:) ) / ( nAccumulatedCoupled + 1 )
         avgSSHGradient(index_SSHmeridional,:) = ( avgSSHGradient(index_SSHmeridional,:) * nAccumulatedCoupled + gradSSHMeridional(1,:) ) / ( nAccumulatedCoupled + 1 )
+        !$omp end workshare
 
         call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
         if(trim(config_land_ice_flux_mode) == 'coupled') then
@@ -140,46 +144,18 @@ module ocn_time_average_coupled
            call mpas_pool_get_array(forcingPool, 'avgLandIceTracerTransferVelocities', avgLandIceTracerTransferVelocities)
            call mpas_pool_get_array(forcingPool, 'avgEffectiveDensityInLandIce', avgEffectiveDensityInLandIce)
 
+           !$omp workshare
            avgLandIceBoundaryLayerTracers(:,:) = ( avgLandIceBoundaryLayerTracers(:,:) * nAccumulatedCoupled &
               + landIceBoundaryLayerTracers(:,:) ) / ( nAccumulatedCoupled + 1 )
            avgLandIceTracerTransferVelocities(:,:) = ( avgLandIceTracerTransferVelocities(:,:) * nAccumulatedCoupled &
               + landIceTracerTransferVelocities(:,:) ) / ( nAccumulatedCoupled + 1)
            avgEffectiveDensityInLandIce(:) = ( avgEffectiveDensityInLandIce(:) * nAccumulatedCoupled &
               + effectiveDensityInLandIce(:) ) / ( nAccumulatedCoupled + 1)
+           !$omp end workshare
         end if
 
         nAccumulatedCoupled = nAccumulatedCoupled + 1
 
     end subroutine ocn_time_average_coupled_accumulate!}}}
-
-!***********************************************************************
-!
-!  routine ocn_time_average_coupled_normalize
-!
-!> \brief   Coupled time averager normalization
-!> \author  Doug Jacobsen
-!> \date    06/08/2013
-!> \details 
-!>  This routine normalizes the coupled time averaging fields
-!
-!-----------------------------------------------------------------------
-    subroutine ocn_time_average_coupled_normalize(forcingPool)!{{{
-
-        type (mpas_pool_type), intent(inout) :: forcingPool
-
-!       real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, avgSSHGradient
-
-!       avgTracersSurfaceValue => forcing % avgTracersSurfaceValue % array
-!       avgSurfaceVelocity => forcing % avgSurfaceVelocity % array
-!       avgSSHGradient => forcing % avgSSHGradient % array
-
-!       if(forcing % nAccumulatedCoupled % scalar > 0) then
-!          avgTracersSurfaceValue = avgTracersSurfaceValue / forcing % nAccumulatedCoupled % scalar
-!          avgSurfaceVelocity = avgSurfaceVelocity / forcing % nAccumulatedCoupled % scalar
-!          avgSSHGradient = avgSSHGradient / forcing % nAccumulatedCoupled % scalar
-!          forcing % nAccumulatedCoupled % scalar = 0
-!       end if
-
-    end subroutine ocn_time_average_coupled_normalize!}}}
 
 end module ocn_time_average_coupled

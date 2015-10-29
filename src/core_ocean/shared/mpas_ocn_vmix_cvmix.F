@@ -58,7 +58,6 @@ module ocn_vmix_cvmix
    type(cvmix_bkgnd_params_type)  :: cvmix_background_params
    type(cvmix_shear_params_type)  :: cvmix_shear_params
    type(cvmix_tidal_params_type)  :: cvmix_tidal_params
-   type(cvmix_data_type) :: cvmix_variables
 
    logical :: cvmixOn, cvmixBackgroundOn, cvmixConvectionOn, cvmixKPPOn
    real (kind=RKIND) :: backgroundVisc, backgroundDiff
@@ -119,6 +118,8 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
+
+      type(cvmix_data_type) :: cvmix_variables
 
       integer, dimension(:), pointer :: &
         maxLevelCell, nEdgesOnCell
@@ -248,8 +249,10 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfCell', vertViscTopOfCell)
       call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
 
+      !$omp workshare
       vertViscTopOfCell = 0.0
       vertDiffTopOfCell = 0.0
+      !$omp end workshare
 
       !
       ! set pointers for nonlocal flux and intialize to zero
@@ -257,14 +260,18 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'vertNonLocalFlux', vertNonLocalFlux)
       call mpas_pool_get_dimension(diagnosticsPool, 'index_vertNonLocalFluxTemp', index_vertNonLocalFluxTemp)
 
+      !$omp workshare
       vertNonLocalFlux = 0.0
+      !$omp end workshare
 
       !
       ! start by adding the mininum background values to the visocity/diffusivity arrays
       !
       if (cvmixBackgroundOn) then
+         !$omp workshare
          vertViscTopOfCell(:,:) = vertViscTopOfCell(:,:) + config_cvmix_background_viscosity
          vertDiffTopOfCell(:,:) = vertDiffTopOfCell(:,:) + config_cvmix_background_diffusion
+         !$omp end workshare
       endif
 
       !
@@ -287,6 +294,7 @@ contains
       allocate(RiSmoothed(nVertLevels+1))
       allocate(BVFSmoothed(nVertLevels+1))
 
+      !$omp do schedule(runtime) private(k, bulkRichardsonNumberStop, kIndexOBL, bulkRichardsonFlag)
       do iCell = 1, nCells
 
          ! specify geometry/location
@@ -555,6 +563,7 @@ contains
          vertDiffTopOfCell(maxLevelCell(iCell)+1:nVertLevels,iCell)=0.0
 
       end do  ! do iCell=1,mesh%nCells
+      !$omp end do
 
       ! dellocate cmvix variables
       deallocate(cvmix_variables % Mdiff_iface)

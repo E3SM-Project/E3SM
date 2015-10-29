@@ -67,8 +67,6 @@ module ocn_forward_mode
 
    use ocn_vmix
 
-   use ocn_time_average
-
    use ocn_forcing
    use ocn_sea_ice
 
@@ -298,6 +296,7 @@ module ocn_forward_mode
       block => domain % blocklist
       do while (associated(block))
          call ocn_init_routines_block(block, dt, ierr)
+
          if(ierr.eq.1) then
              call mpas_dmpar_global_abort('ERROR: An error was encountered in ocn_init_routines_block')
          endif
@@ -446,16 +445,10 @@ module ocn_forward_mode
           call mpas_timer_stop('io_write')
       endif
 
-      block_ptr => domain % blocklist
-      do while(associated(block_ptr))
-        call mpas_pool_get_subpool(block_ptr % structs, 'average', averagePool)
-        call ocn_time_average_init(averagePool)
-        block_ptr => block_ptr % next
-      end do
-
       ! During integration, time level 1 stores the model state at the beginning of the
       !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
       itimestep = 0
+
       do while (.not. mpas_is_clock_stop_time(domain % clock))
          call mpas_timer_start('io_read', .false.)
          call mpas_stream_mgr_read(domain % streamManager, ierr=ierr)
@@ -490,7 +483,13 @@ module ocn_forward_mode
          end do
 
          call mpas_timer_start("time integration", .false., timeIntTimer)
+
+         !$omp parallel default(firstprivate) shared(domain, dt, timeStamp)
+
          call ocn_timestep(domain, dt, timeStamp)
+
+         !$omp end parallel
+
          call mpas_timer_stop("time integration", timeIntTimer)
 
          ! Move time level 2 fields back into time level 1 for next time step
@@ -533,6 +532,7 @@ module ocn_forward_mode
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
          call mpas_timer_stop('reset_io_alarms')
       end do
+
    end function ocn_forward_mode_run!}}}
 
 !***********************************************************************

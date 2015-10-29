@@ -72,7 +72,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, k_displaced, displacement_type, density, err, &
+   subroutine ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, k_displaced, displacement_type, density, err, &
       thermalExpansionCoeff, salineContractionCoeff, timeLevelIn)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !  This module contains routines necessary for computing the density
@@ -96,6 +96,7 @@ contains
       type (mpas_pool_type), intent(in) :: statePool
       type (mpas_pool_type), intent(inout) :: diagnosticsPool
       type (mpas_pool_type), intent(in) :: meshPool
+      type (mpas_pool_type), intent(in) :: scratchPool !< Input/Output: Scratch structure
       integer, intent(in), optional :: timeLevelIn
       type (mpas_pool_type), pointer :: tracersPool
       integer :: k_displaced
@@ -135,7 +136,7 @@ contains
 
       elseif (jmEos) then
 
-         call ocn_equation_of_state_jm_density(meshPool, k_displaced, displacement_type, indexT, indexS, activeTracers, density, err, &
+         call ocn_equation_of_state_jm_density(meshPool, scratchPool, k_displaced, displacement_type, indexT, indexS, activeTracers, density, err, &
             tracersSurfaceValue, thermalExpansionCoeff, salineContractionCoeff)
 
       endif

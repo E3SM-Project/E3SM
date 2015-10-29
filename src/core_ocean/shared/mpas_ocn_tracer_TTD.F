@@ -120,7 +120,9 @@ contains
 
       ! zero tracers at surface to TTDMask at top-most layer
       ! TTDMask should be 1 within region of interest and zero elsewhere
+      !$omp workshare
       tracers(:,1,:) = TTDMask(:,:)
+      !$omp end workshare
 
    !--------------------------------------------------------------------
 

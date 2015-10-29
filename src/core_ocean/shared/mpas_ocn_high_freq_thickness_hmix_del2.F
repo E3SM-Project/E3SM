@@ -137,6 +137,7 @@ contains
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
+      !$omp do schedule(runtime) private(invAreaCell, i, iEdge, cell1, cell2, r_tmp, k, hhf_turb_flux, flux)
       do iCell = 1, nCells
          invAreaCell = 1.0 / areaCell(iCell)
          do i = 1, nEdgesOncell(iCell)
@@ -158,6 +159,7 @@ contains
 
          end do
       end do
+      !$omp end do
 
    end subroutine ocn_high_freq_thickness_hmix_del2_tend!}}}
 

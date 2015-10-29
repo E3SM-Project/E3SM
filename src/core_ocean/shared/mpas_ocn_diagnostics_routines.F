@@ -122,8 +122,12 @@ contains
 
       err = 0
 
+      !$omp workshare
       circulation(:,:) = 0.0
       relativeVorticity(:,:) = 0.0
+      !$omp end workshare
+
+      !$omp do schedule(runtime) private(invAreaTri1, i, iEdge, k, r_tmp)
       do iVertex = 1, nVertices
          invAreaTri1 = 1.0 / areaTriangle(iVertex)
          do i = 1, vertexDegree
@@ -136,7 +140,7 @@ contains
             end do
          end do
       end do
-
+      !$omp end do
 
    !--------------------------------------------------------------------
 
