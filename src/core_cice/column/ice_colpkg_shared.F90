@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_colpkg_shared.F90 1056 2015-09-18 21:52:00Z njeffery $
+!  SVN:$Id: ice_colpkg_shared.F90 1072 2015-10-29 15:36:55Z njeffery $
 !=========================================================================
 !
 ! flags for the column package
@@ -298,6 +298,9 @@
          F_abs_chl = (/ 2.0_dbl_kind,      & ! to scale absorption in Dedd
                         4.0_dbl_kind,      &
                         5.0_dbl_kind /)     
+
+      real (kind=dbl_kind), dimension(max_don), public :: &  ! increase compare to algal R_Fe2C
+         R_C2N_DON  =  (/ 7.0_dbl_kind /)  !  
 
 !=======================================================================
 

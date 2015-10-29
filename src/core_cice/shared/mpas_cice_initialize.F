@@ -1728,7 +1728,9 @@ contains
          oceanAmmoniumConc, &
          oceanDMSConc, &
          oceanDMSPConc, &
-         oceanHumicsConc 
+         oceanHumicsConc, &
+         carbonToNitrogenRatioAlgae, &
+         carbonToNitrogenRatioDON  
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          atmosBioFluxes, & 
@@ -1896,6 +1898,8 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "oceanDMSPConc", oceanDMSPConc)
        call MPAS_pool_get_array(biogeochemistry, "oceanHumicsConc", oceanHumicsConc)
        call MPAS_pool_get_array(biogeochemistry, "oceanZAerosolConc", oceanZAerosolConc)
+       call MPAS_pool_get_array(biogeochemistry, "carbonToNitrogenRatioAlgae", carbonToNitrogenRatioAlgae)
+       call MPAS_pool_get_array(biogeochemistry, "carbonToNitrogenRatioDON", carbonToNitrogenRatioDON)    
 
        do iCell = 1, nCells
        
@@ -1916,7 +1920,9 @@ contains
                maxDICType, &
                maxDONType, &
                maxIronType, &
-               maxAerosolType)
+               maxAerosolType, &
+               carbonToNitrogenRatioAlgae, &
+               carbonToNitrogenRatioDON)
 
        enddo ! iCell
 

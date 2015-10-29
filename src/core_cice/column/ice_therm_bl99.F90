@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_therm_bl99.F90 1051 2015-08-28 19:30:11Z njeffery $
+!  SVN:$Id: ice_therm_bl99.F90 1071 2015-10-28 22:12:56Z njeffery $
 !=========================================================================
 !
 ! Update ice and snow internal temperatures
@@ -256,7 +256,7 @@
       call conductivity (l_snow,                    &
                          nilyr,    nslyr,           &
                          hilyr,    hslyr,           &
-                         zTin(:),  kh(:),   zSin(:))
+                         zTin,     kh,      zSin)    
 
       !-----------------------------------------------------------------
       ! Check for excessive absorbed solar radiation that may result in
@@ -418,23 +418,23 @@
                                    l_snow,      l_cold,      &
                                    Tsf,         Tbot,        &
                                    fsurfn,      dfsurf_dT,   &
-                                   Tin_init(:), Tsn_init(:), &
-                                   kh(:),       Sswabs(:),   &
-                                   Iswabs(:),                &
-                                   etai(:),     etas(:),     &
-                                   sbdiag(:),   diag(:),     &
-                                   spdiag(:),   rhs(:))
+                                   Tin_init,    Tsn_init,    &
+                                   kh,          Sswabs,      &
+                                   Iswabs,                   &
+                                   etai,        etas,        &
+                                   sbdiag,      diag,        &
+                                   spdiag,      rhs)   
 
             else
                
                call get_matrix_elements_know_Tsfc (nilyr, nslyr, &
                                    l_snow,      Tbot,        &
-                                   Tin_init(:), Tsn_init(:), &
-                                   kh(:),       Sswabs(:),   &
-                                   Iswabs(:),                &
-                                   etai(:),     etas(:),     &
-                                   sbdiag(:),   diag(:),     &
-                                   spdiag(:),   rhs(:),      &
+                                   Tin_init,    Tsn_init,    &
+                                   kh,          Sswabs,      &
+                                   Iswabs,                   &
+                                   etai,        etas,        &
+                                   sbdiag,      diag,        &
+                                   spdiag,      rhs,         &
                                    fcondtopn)
 
             endif  ! calc_Tsfc

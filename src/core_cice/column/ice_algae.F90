@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_algae.F90 1062 2015-10-02 19:50:29Z njeffery $
+!  SVN:$Id: ice_algae.F90 1071 2015-10-28 22:12:56Z njeffery $
 !=======================================================================
 !
 ! Compute sea ice biogeochemistry (vertical or skeletal layer)
@@ -565,11 +565,11 @@
       call algal_dyn (dt,              &
                       n_zaero, n_doc, n_dic,  n_don, n_fed, n_fep, &
                       dEdd_algae, &
-                      fswthru,         react (:), & 
-                      cinit_v     (:), nbtrcr,    &
-                      grow_alg_skl(:), n_algae,   &
+                      fswthru,         react,     & 
+                      cinit_v,         nbtrcr,    &
+                      grow_alg_skl,    n_algae,   &
                       iTin,                       &
-                      upNOn       (:), upNHn (:), &
+                      upNOn,           upNHn,     &
                       Zoo_skl,                    &
                       Nerror,          conserve_N)
 
@@ -1011,9 +1011,9 @@
                                 (initcons,sbdiagz, dt, nblyr,  &
                                 diagz, spdiagz, rhsz, bgrid,   & 
                                 i_grid, darcyV,    dhtop,      &
-                                dhbot,   iphin_N(:),           &
+                                dhbot,   iphin_N,              &
                                 Diff, hbri_old,                &
-                                atm_add_cons(mm), bphin_N(:),  &
+                                atm_add_cons(mm), bphin_N,     &
                                 C_top(mm), C_bot(mm),          &
                                 Source_bot(mm), Source_top(mm),&
                                 Sink_bot(mm),Sink_top(mm),     &
@@ -1043,7 +1043,7 @@
 
             top_conc = c0        ! or frazil ice concentration 
             call regrid_stationary &
-                                (initcons_stationary(:), hbri_old,    &
+                                (initcons_stationary,    hbri_old,    &
                                  hbri,                   dt,          &
                                  ntrcr,                               &
                                  nblyr,                  top_conc,    &
@@ -1088,7 +1088,7 @@
             if (l_stop) return
 
          else
-            Call thin_ice_flux(hbri,hbri_old,iphin_N(:),biomat_cons(:,mm), &
+            Call thin_ice_flux(hbri,hbri_old,iphin_N, biomat_cons(:,mm), &
                                flux_bio(mm),zbgc_snow(mm),zbgc_atm(mm),    &
                                i_grid, dt, nblyr,ocean_bio(mm))
          endif ! thin or not

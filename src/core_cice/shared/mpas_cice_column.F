@@ -40,6 +40,7 @@ module cice_column
        cice_column_initial_air_drag_coefficient, &
        cice_column_reinitialize_fluxes, &
        cice_column_reinitialize_diagnostics, &
+       cice_column_coupling_prep, &
        cice_column_finalize
        
   ! tracer object
