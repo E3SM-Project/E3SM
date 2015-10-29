@@ -24,6 +24,7 @@
         use mpas_derived_types
         use mpas_io_units
         use mpas_dmpar
+        use mpas_threading
 
 #ifdef MPAS_PERF_MOD_TIMERS
         use perf_mod
@@ -75,7 +76,11 @@
           logical :: timer_added, timer_found, string_equal, check_flag
           type (timer_node), pointer :: current, temp
 
-          integer :: clock, hz, usecs, nlen, iErr
+          integer :: clock, hz, usecs, nlen, iErr, threadNum
+          logical :: threaded
+
+          threadNum = mpas_threading_get_thread_num()
+
           trimed_name = trim(timer_name)
           nlen = len(trimed_name)
 
@@ -92,113 +97,116 @@
 #endif
 
 #ifdef MPAS_NATIVE_TIMERS
-          timer_added = .false.
-          timer_found = .false.
+          if ( threadNum == 0 ) then
+             timer_added = .false.
+             timer_found = .false.
 
-          if(.not.associated(all_timers)) then
-            timer_added = .true.
-            allocate(all_timers)
-            allocate(all_timers%next)
-            levels = 0
+             if(.not.associated(all_timers)) then
+               timer_added = .true.
+               allocate(all_timers)
+               allocate(all_timers%next)
+               levels = 0
 
-            all_timers%timer_name = ''
-            all_timers%nlen = 0
-            current => all_timers%next
-            nullify(current%next)
-          else 
-            current => all_timers%next
-            timer_search: do while ((.not.timer_found) .and. associated(current))
-              string_equal = (current%timer_name(1:current%nlen) == trimed_name)
-              if(string_equal) then
-                timer_found = .true.
-              else
-                current => current%next
-              endif
-            end do timer_search
-          endif
+               all_timers%timer_name = ''
+               all_timers%nlen = 0
+               current => all_timers%next
+               nullify(current%next)
+             else 
+               current => all_timers%next
+               timer_search: do while ((.not.timer_found) .and. associated(current))
+                 string_equal = (current%timer_name(1:current%nlen) == trimed_name)
+                 if(string_equal) then
+                   timer_found = .true.
+                 else
+                   current => current%next
+                 endif
+               end do timer_search
+             endif
 
-          if(present(timer_ptr)) then
-            timer_found = .true.
-            if(.not.associated(timer_ptr)) then
-              current => all_timers
-              find_end_ptr: do while((.not.timer_added) .and. (associated(current%next)))
-                current => current%next
-              end do find_end_ptr
+             if(present(timer_ptr)) then
+               timer_found = .true.
+               if(.not.associated(timer_ptr)) then
+                 current => all_timers
+                 find_end_ptr: do while((.not.timer_added) .and. (associated(current%next)))
+                   current => current%next
+                 end do find_end_ptr
 
-              allocate(timer_ptr)
+                 allocate(timer_ptr)
 
-              current%next => timer_ptr
-              current => timer_ptr
-              nullify(timer_ptr%next)
-              current%levels = levels
-              current%timer_name = trimed_name
-              current%nlen = nlen
-              current%running = .false.
-              current%total_time = 0.0
-              current%max_time = 0.0
-              current%min_time = 100000000.0
-              current%avg_time = 0.0
-              current%calls = 0
-              current%efficiency = 0.0
-            else
-              current => timer_ptr
-            endif
-          endif
+                 current%next => timer_ptr
+                 current => timer_ptr
+                 nullify(timer_ptr%next)
+                 current%levels = levels
+                 current%timer_name = trimed_name
+                 current%nlen = nlen
+                 current%running = .false.
+                 current%total_time = 0.0
+                 current%max_time = 0.0
+                 current%min_time = 100000000.0
+                 current%avg_time = 0.0
+                 current%calls = 0
+                 current%efficiency = 0.0
+               else
+                 current => timer_ptr
+               endif
+             endif
 
-          if(.not.timer_found) then
-            current => all_timers
-            find_end: do while((.not.timer_added) .and. (associated(current%next)))
-              current => current%next
-            end do find_end
+             if(.not.timer_found) then
+               current => all_timers
+               find_end: do while((.not.timer_added) .and. (associated(current%next)))
+                 current => current%next
+               end do find_end
 
-            allocate(current%next)
-            current => current%next
+               allocate(current%next)
+               current => current%next
 
-            nullify(current%next)
-            timer_added = .true.
-          endif
+               nullify(current%next)
+               timer_added = .true.
+             endif
 
-          if(timer_added .and. (.not.timer_found)) then
-            current%levels = levels
-            current%timer_name = trimed_name
-            current%nlen = nlen
-            current%running = .false.
-            current%total_time = 0.0
-            current%max_time = 0.0
-            current%min_time = 100000000.0
-            current%avg_time = 0.0
-            current%calls = 0
-            current%efficiency = 0.0
-          endif
+             if(timer_added .and. (.not.timer_found)) then
+               current%levels = levels
+               current%timer_name = trimed_name
+               current%nlen = nlen
+               current%running = .false.
+               current%total_time = 0.0
+               current%max_time = 0.0
+               current%min_time = 100000000.0
+               current%avg_time = 0.0
+               current%calls = 0
+               current%efficiency = 0.0
+             endif
 
-          if((timer_added .or. timer_found) .and. (.not.current%running)) then
-            current%running = .true.
-            levels = levels + 1
+             if((timer_added .or. timer_found) .and. (.not.current%running)) then
+               current%running = .true.
+               levels = levels + 1
 
 #ifdef _PAPI
-            call PAPIF_get_real_usec(usecs, check_flag)
-            current%start_time = usecs/1.0e6
+               call PAPIF_get_real_usec(usecs, check_flag)
+               current%start_time = usecs/1.0e6
 #else
-            call mpas_dmpar_get_time(current % start_time)
+               call mpas_dmpar_get_time(current % start_time)
 #endif
-          endif
-
-          if(present(clear_timer)) then
-            if(clear_timer) then
-              current%start_time = 0.0
-              current%end_time = 0.0
-              current%total_time = 0.0
-              current%max_time = 0.0
-              current%min_time = 0.0
-              current%avg_time = 0.0
-              current%calls = 0
-              current%running = .false.
-            endif
-          endif
-
-          if(present(timer_ptr)) then
-              timer_ptr => current
-          endif
+             endif
+   
+             if(present(clear_timer)) then
+               if(clear_timer) then
+                 current%start_time = 0.0
+                 current%end_time = 0.0
+                 current%total_time = 0.0
+                 current%max_time = 0.0
+                 current%min_time = 0.0
+                 current%avg_time = 0.0
+                 current%calls = 0
+                 current%running = .false.
+               endif
+             endif
+   
+             if(present(timer_ptr)) then
+                 timer_ptr => current
+             endif
+          end if
+          !$omp barrier
 #endif
           
         end subroutine mpas_timer_start!}}}
@@ -225,7 +233,10 @@
           
           real (kind=R8KIND) :: time_temp
           logical :: timer_found, string_equal, check_flag
-          integer :: clock, hz, usecs, nlen, iErr
+          integer :: clock, hz, usecs, nlen, iErr, threadNum
+
+          threadNum = mpas_threading_get_thread_num()
+
           trimed_name = trim(timer_name)
           nlen = len(trimed_name)
 
@@ -242,57 +253,60 @@
 #endif
  
 #ifdef MPAS_NATIVE_TIMERS
-          timer_found = .false.
- 
-          if(present(timer_ptr)) then
-            timer_found = .true.
-            current => timer_ptr
-          endif
- 
-          if(.not.associated(all_timers)) then
-            print *,' timer_stop :: timer_stop called with no timers initialized'
-          else if(.not. timer_found) then
-            current => all_timers
-            timer_find: do while(.not.timer_found .and. associated(current))
-              string_equal = (current%timer_name(1:current%nlen) == trimed_name)
-
-              if(string_equal) then
-                timer_found = .true.
-              else
-                current => current%next
-              endif
-            end do timer_find
-          endif
-
-          if(.not.timer_found) then
-            print *,' timer_stop :: timer_stop called with timer_name =', timer_name,' when timer has not been started.'
-            call mpas_dmpar_global_abort('ERROR: in subroutine mpas_timer_stop()')
-          endif
-
-          if(current%running) then
-            current%running = .false.
-            levels = levels - 1
-
+          if ( threadNum == 0 ) then
+            timer_found = .false.
+    
+            if(present(timer_ptr)) then
+              timer_found = .true.
+              current => timer_ptr
+            endif
+    
+            if(.not.associated(all_timers)) then
+              print *,' timer_stop :: timer_stop called with no timers initialized'
+            else if(.not. timer_found) then
+              current => all_timers
+              timer_find: do while(.not.timer_found .and. associated(current))
+                string_equal = (current%timer_name(1:current%nlen) == trimed_name)
+   
+                if(string_equal) then
+                  timer_found = .true.
+                else
+                  current => current%next
+                endif
+              end do timer_find
+            endif
+   
+            if(.not.timer_found) then
+              print *,' timer_stop :: timer_stop called with timer_name =', timer_name,' when timer has not been started.'
+              call mpas_dmpar_global_abort('ERROR: in subroutine mpas_timer_stop()')
+            endif
+   
+            if(current%running) then
+              current%running = .false.
+              levels = levels - 1
+   
 #ifdef _PAPI
-            call PAPIF_get_real_usec(usecs, check_flag)
-            current%end_time = usecs/1.0e6
+              call PAPIF_get_real_usec(usecs, check_flag)
+              current%end_time = usecs/1.0e6
 #else
-            call mpas_dmpar_get_time(current % end_time)
+              call mpas_dmpar_get_time(current % end_time)
 #endif
             
-            time_temp = current%end_time - current%start_time
-            current%total_time = current%total_time + time_temp
-
-            if(real(time_temp,RKIND) > current%max_time) then
-              current%max_time = real(time_temp,RKIND)
+              time_temp = current%end_time - current%start_time
+              current%total_time = current%total_time + time_temp
+   
+              if(real(time_temp,RKIND) > current%max_time) then
+                current%max_time = real(time_temp,RKIND)
+              endif
+   
+              if(real(time_temp,RKIND) < current%min_time) then
+                current%min_time = real(time_temp,RKIND)
+              endif
+   
+              current%calls = current%calls + 1
             endif
-
-            if(real(time_temp,RKIND) < current%min_time) then
-              current%min_time = real(time_temp,RKIND)
-            endif
-
-            current%calls = current%calls + 1
           endif
+          !$omp barrier
 #endif
 
         end subroutine mpas_timer_stop!}}}

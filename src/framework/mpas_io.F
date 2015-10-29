@@ -82,6 +82,10 @@ module mpas_io
       type (iosystem_desc_t), optional, pointer :: io_system
       integer, intent(out), optional :: ierr
 
+      integer :: local_ierr
+
+      local_ierr = 0
+
 !      write(stderrUnit,*) 'Called MPAS_io_init()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
@@ -89,6 +93,28 @@ module mpas_io
          ioContext % pio_iosystem => io_system
       else
 !write(stderrUnit,*) 'MGD PIO_init'
+         if ( io_task_count < 0 .or. io_task_count > ioContext % dminfo % nprocs ) then
+            write(stderrUnit, *) ' ERROR: PIO io_task_count has a value of ', io_task_count
+            write(stderrUnit, *) '        It must be between 1 and ', ioContext % dminfo % nprocs
+            local_ierr = 1
+         end if
+
+         if ( io_task_stride <= 0 .or. io_task_stride > ioContext % dminfo % nprocs ) then
+            write(stderrUnit, *) ' ERROR: PIO io_task_stride has a value of ', io_task_stride
+            write(stderrUnit, *) '        It must be between 1 and ', ioContext % dminfo % nprocs
+            local_ierr = 1
+         end if
+
+         if ( io_task_stride * io_task_count > ioContext % dminfo % nprocs ) then
+            write(stderrUnit, *) ' ERROR: PIO io_task_stride * io_task_count has a value of ', io_task_stride * io_task_count
+            write(stderrUnit, *) '        It must be between 1 and ', ioContext % dminfo % nprocs
+            local_ierr = 1
+         end if
+
+         if ( local_ierr /= 0 ) then
+            call mpas_dmpar_global_abort('ERROR: Invalid PIO configuration.')
+         end if
+
          allocate(ioContext % pio_iosystem)
          call PIO_init(ioContext % dminfo % my_proc_id, &  ! comp_rank
                        ioContext % dminfo % comm,       &  ! comp_comm
