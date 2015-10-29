@@ -1182,8 +1182,8 @@
 			<var name="surfaceFrictionVelocity"/>
 			<var name="penetrativeTemperatureFluxOBL"/>
 			<var name="surfaceBuoyancyForcing"/>
-			<var name="windStressZonalDiag"/>
-			<var name="windStressMeridionalDiag"/>
+			<var name="windStressZonal"/>
+			<var name="windStressMeridional"/>
 			<var name="transportVelocityZonal"/>
 			<var name="transportVelocityMeridional"/>
 			<var name="RiTopOfCell"/>
@@ -1329,8 +1329,8 @@
 			<var name="indexBoundaryLayerDepth"/>
 			<var name="indexSurfaceLayerDepth"/>
 			<var name="surfaceFrictionVelocity"/>
-			<var name="windStressZonalDiag"/>
-			<var name="windStressMeridionalDiag"/>
+			<var name="windStressZonal"/>
+			<var name="windStressMeridional"/>
 			<var name="surfaceBuoyancyForcing"/>
 			<var name="seaSurfacePressure"/>
 		</stream>
@@ -2134,14 +2134,6 @@
 		/>
 		<var name="surfaceFrictionVelocity" type="real" dimensions="nCells Time"  units="m s^{-1}"
 			 description="CVMix/KPP: diagnosed surface friction velocity defined as square root of (mag(wind stress) / reference density)"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="windStressZonalDiag" type="real" dimensions="nCells Time" units="N m^{-2}"
-			 description="reconstructed surface wind stress in the eastward direction. Used for diagnostics."
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="windStressMeridionalDiag" type="real" dimensions="nCells Time" units="N m^{-2}"
-			 description="reconstructed surface wind stress in the northward direction. User for diagnostics."
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="penetrativeTemperatureFluxOBL" type="real" dimensions="nCells Time" units="^\circ C m s^{-1}"
