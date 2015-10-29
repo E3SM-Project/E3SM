@@ -46,7 +46,7 @@ module li_constants
 
    !  conversion factors
    real (kind=RKIND), parameter, public :: kelvin_to_celsius = 273.15_RKIND    !< factor to convert Kelvin to Celsius
-
+   real (kind=RKIND), parameter, public :: scyr = 31536000.0_RKIND       !< seconds in a 365-day year; used for diagnostics
 
 !***********************************************************************
 

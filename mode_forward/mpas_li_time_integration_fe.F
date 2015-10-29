@@ -29,6 +29,7 @@ module li_time_integration_fe
    use mpas_vector_reconstruction
    use li_velocity, only: li_velocity_solve
    use li_tendency
+   use li_calving, only: li_calve_ice, li_restore_calving_front
    use li_diagnostic_vars
    use li_setup
 
@@ -96,6 +97,9 @@ module li_time_integration_fe
       type (block_type), pointer :: block
       integer :: err_tmp
 
+      logical, pointer :: config_restore_calving_front
+
+      call mpas_pool_get_config(liConfigs, 'config_restore_calving_front', config_restore_calving_front)
 
       ! During integration, time level 1 stores the model state at the beginning of the
       !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
@@ -112,7 +116,6 @@ module li_time_integration_fe
       err = ior(err, err_tmp)
       call mpas_timer_stop("calculate tendencies")
 
-
 ! === Compute new state for prognostic variables ==================================
 ! (once implicit column physics are added (i.e. temp diffusion), these calculations will need to be adjusted to apply to the new values as needed)
       call mpas_timer_start("calc. new prognostic vars")
@@ -120,6 +123,24 @@ module li_time_integration_fe
       err = ior(err, err_tmp)
       call mpas_timer_stop("calc. new prognostic vars")
 
+! === Calve ice ========================                                                                                                                                             
+      call mpas_timer_start("calve_ice")
+
+      if (config_restore_calving_front) then
+
+         ! restore the calving front to its initial position; calving options are ignored
+         call li_restore_calving_front(domain, err_tmp)
+         err = ior(err, err_tmp)
+
+      else
+
+         ! ice calving
+         call li_calve_ice(domain, deltat, err_tmp)
+         err = ior(err, err_tmp)
+
+      endif
+
+      call mpas_timer_stop("calve_ice")
 
 ! === Calculate diagnostic variables for new state =====================
 
