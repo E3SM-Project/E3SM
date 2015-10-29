@@ -69,30 +69,36 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
   }
   
   if(ios->ioproc){
+
     switch(file->iotype){
 #ifdef _NETCDF
 #ifdef _NETCDF4
+
     case PIO_IOTYPE_NETCDF4P:
-#ifdef _MPISERIAL      
+#ifdef _MPISERIAL   
       ierr = nc_open(filename, file->mode, &(file->fh));
 #else
       file->mode = file->mode |  NC_MPIIO;
-      // printf("%s %d %d %d\n",__FILE__,__LINE__,file->mode, NC_MPIIO);
       ierr = nc_open_par(filename, file->mode, ios->io_comm,ios->info, &(file->fh));
 #endif
       break;
+
     case PIO_IOTYPE_NETCDF4C:
       file->mode = file->mode | NC_NETCDF4;
+      // *** Note the INTENTIONAL FALLTHROUGH ***
 #endif
+
     case PIO_IOTYPE_NETCDF:
       if(ios->io_rank==0){
 	ierr = nc_open(filename, file->mode, &(file->fh));
       }
       break;
 #endif
+
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
       ierr = ncmpi_open(ios->io_comm, filename, file->mode, ios->info, &(file->fh));
+
       // This should only be done with a file opened to append
       if(ierr == PIO_NOERR && (file->mode & PIO_WRITE)){
 	if(ios->iomaster) printf("%d Setting IO buffer %ld\n",__LINE__,PIO_BUFFER_SIZE_LIMIT);
@@ -100,9 +106,28 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
       }
       break;
 #endif
+
     default:
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
+      break;
     }
+
+    // If we failed to open a file due to an incompatible type of NetCDF, try it 
+    // once with just plain old basic NetCDF
+#ifdef _NETCDF
+    if(ierr == NC_ENOTNC && (file->iotype != PIO_IOTYPE_NETCDF)) {
+        if(ios->iomaster) printf("PIO2 pio_file.c retry NETCDF\n"); 
+	// reset ierr on all tasks
+	ierr = PIO_NOERR;
+	// reset file markers for NETCDF on all tasks
+	file->iotype = PIO_IOTYPE_NETCDF;
+
+	// open netcdf file serially on main task
+        if(ios->io_rank==0){
+	  ierr = nc_open(filename, file->mode, &(file->fh)); }
+
+    }
+#endif
   }
 
   file->nreq=0;
