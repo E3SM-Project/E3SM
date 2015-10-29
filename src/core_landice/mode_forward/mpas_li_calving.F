@@ -138,7 +138,7 @@ module li_calving
       integer, pointer :: nCells
 
       integer, dimension(:), pointer :: &
-           nCellsOnCell,     & ! number of cells that border each cell
+           nEdgesOnCell,     & ! number of cells that border each cell
            cellMask            ! bit mask describing whether ice is floating, dynamically active, etc.
       
       integer, dimension(:), pointer :: &
@@ -207,7 +207,7 @@ module li_calving
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
          ! get required fields from the mesh pool
-         call mpas_pool_get_array(meshPool, 'nCellsOnCell', nCellsOnCell)
+         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
          call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
          call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)  ! diagnostic only
 
@@ -338,9 +338,7 @@ module li_calving
                if (activeForCalvingMask(iCell) == 0) then   ! inactive
 
                   ! check whether any neighbor cells are active
-                  !WHL - TODO - Add nCellsOnCell to circular shelf test case.  For now, assume nCellsOnCell = 6 for all cells
-!!                  do iCellOnCell = 1, nCellsOnCell(iCell)
-                  do iCellOnCell = 1, 6    
+                  do iCellOnCell = 1, nEdgesOnCell(iCell)    
                      iCellNeighbor = cellsOnCell(iCellOnCell,iCell)
                      if (activeForCalvingMask(iCellNeighbor) == 1) then  ! neighbor cell is active
                         inactiveMarginMask(iCell) = 1
