@@ -381,7 +381,11 @@ module CNCarbonFluxType
      real(r8), pointer :: annsum_litfall_patch        (:) ! annual sum of litfall (gC/m2/yr) (CNDV)
      real(r8), pointer :: annsum_npp_patch            (:) ! patch annual sum of NPP (gC/m2/yr)
      real(r8), pointer :: annsum_npp_col              (:) ! col annual sum of NPP, averaged from pft-level (gC/m2/yr)
-     real(r8), pointer :: lag_npp_col                 (:) ! col lagged net primary production (gC/m2/s) 
+     real(r8), pointer :: lag_npp_col                 (:) ! col lagged net primary production (gC/m2/s)
+     
+     ! debug
+     real(r8), pointer :: plant_to_litter_cflux		  (:) ! for the purpose of mass balance check
+	 real(r8), pointer :: plant_to_cwd_cflux		  (:) ! for the purpose of mass balance check
 
      ! new variables for clm_bgc_interface & pflotran
      !------------------------------------------------------------------------
@@ -758,6 +762,10 @@ contains
      allocate(this%annsum_litfall_patch  (begp:endp)) ; this%annsum_litfall_patch  (:) = nan
      allocate(this%annsum_npp_col        (begc:endc)) ; this%annsum_npp_col        (:) = nan
      allocate(this%lag_npp_col           (begc:endc)) ; this%lag_npp_col           (:) = spval
+     
+     ! debug
+     allocate(this%plant_to_litter_cflux (begc:endc)) ;	this%plant_to_litter_cflux (:) = nan
+     allocate(this%plant_to_cwd_cflux    (begc:endc)) ;	this%plant_to_cwd_cflux	   (:) = nan
 
      ! clm_bgc_interface & pflotran
      !------------------------------------------------------------------------
@@ -817,7 +825,7 @@ contains
            this%grainc_to_food_patch(begp:endp) = spval
            call hist_addfld1d (fname='GRAINC_TO_FOOD', units='gC/m^2/s', &
                 avgflag='A', long_name='grain C to food', &
-                ptr_patch=this%grainc_to_food_patch)
+                ptr_patch=this%grainc_to_food_patch, default='inactive')
         end if
 
         this%woodc_alloc_patch(begp:endp) = spval
@@ -1205,7 +1213,7 @@ contains
         this%leafc_to_litter_patch(begp:endp) = spval
         call hist_addfld1d (fname='LEAFC_TO_LITTER', units='gC/m^2/s', &
              avgflag='A', long_name='leaf C litterfall', &
-             ptr_patch=this%leafc_to_litter_patch, default='inactive')
+             ptr_patch=this%leafc_to_litter_patch, default='active')
 
         this%frootc_to_litter_patch(begp:endp) = spval
         call hist_addfld1d (fname='FROOTC_TO_LITTER', units='gC/m^2/s', &
@@ -1525,12 +1533,12 @@ contains
         this%availc_patch(begp:endp) = spval
         call hist_addfld1d (fname='AVAILC', units='gC/m^2/s', &
              avgflag='A', long_name='C flux available for allocation', &
-             ptr_patch=this%availc_patch, default='inactive')
+             ptr_patch=this%availc_patch, default='active')
 
         this%plant_calloc_patch(begp:endp) = spval
         call hist_addfld1d (fname='PLANT_CALLOC', units='gC/m^2/s', &
              avgflag='A', long_name='total allocated C flux', &
-             ptr_patch=this%plant_calloc_patch, default='inactive')
+             ptr_patch=this%plant_calloc_patch, default='active')
 
         this%excess_cflux_patch(begp:endp) = spval
         call hist_addfld1d (fname='EXCESS_CFLUX', units='gC/m^2/s', &
@@ -1550,7 +1558,7 @@ contains
         this%xsmrpool_recover_patch(begp:endp) = spval
         call hist_addfld1d (fname='XSMRPOOL_RECOVER', units='gC/m^2/s', &
              avgflag='A', long_name='C flux assigned to recovery of negative xsmrpool', &
-             ptr_patch=this%xsmrpool_recover_patch)
+             ptr_patch=this%xsmrpool_recover_patch, default='inactive')
 
      end if  ! end of if-c12
 
@@ -2715,12 +2723,12 @@ contains
         this%lf_conv_cflux_col(begc:endc) = spval
         call hist_addfld1d (fname='LF_CONV_CFLUX', units='gC/m^2/s', &
              avgflag='A', long_name='conversion carbon due to BET and BDT area decreasing', &
-             ptr_col=this%lf_conv_cflux_col)   
+             ptr_col=this%lf_conv_cflux_col, default='inactive')   
 
         this%somc_fire_col(begc:endc) = spval
         call hist_addfld1d (fname='SOMC_FIRE', units='gC/m^2/s', &
              avgflag='A', long_name='C loss due to peat burning', &
-             ptr_col=this%somc_fire_col)
+             ptr_col=this%somc_fire_col, default='inactive')
 
 
         this%m_decomp_cpools_to_fire_col(begc:endc,:)      = spval
@@ -2955,47 +2963,47 @@ contains
         this%fire_closs_col(begc:endc) = spval
         call hist_addfld1d (fname='COL_FIRE_CLOSS', units='gC/m^2/s', &
              avgflag='A', long_name='total column-level fire C loss for non-peat fires outside land-type converted region', &
-             ptr_col=this%fire_closs_col)
+             ptr_col=this%fire_closs_col, default='inactive')
 
         this%dwt_seedc_to_leaf_col(begc:endc) = spval
         call hist_addfld1d (fname='DWT_SEEDC_TO_LEAF', units='gC/m^2/s', &
              avgflag='A', long_name='seed source to patch-level leaf', &
-             ptr_col=this%dwt_seedc_to_leaf_col)
+             ptr_col=this%dwt_seedc_to_leaf_col, default='inactive')
 
         this%dwt_seedc_to_deadstem_col(begc:endc) = spval
         call hist_addfld1d (fname='DWT_SEEDC_TO_DEADSTEM', units='gC/m^2/s', &
              avgflag='A', long_name='seed source to patch-level deadstem', &
-             ptr_col=this%dwt_seedc_to_deadstem_col)
+             ptr_col=this%dwt_seedc_to_deadstem_col, default='inactive')
 
         this%dwt_conv_cflux_col(begc:endc) = spval
         call hist_addfld1d (fname='DWT_CONV_CFLUX', units='gC/m^2/s', &
              avgflag='A', long_name='conversion C flux (immediate loss to atm)', &
-             ptr_col=this%dwt_conv_cflux_col)
+             ptr_col=this%dwt_conv_cflux_col, default='inactive')
 
         this%dwt_prod10c_gain_col(begc:endc) = spval
         call hist_addfld1d (fname='DWT_PROD10C_GAIN', units='gC/m^2/s', &
              avgflag='A', long_name='landcover change-driven addition to 10-yr wood product pool', &
-             ptr_col=this%dwt_prod10c_gain_col)
+             ptr_col=this%dwt_prod10c_gain_col, default='inactive')
 
         this%prod10c_loss_col(begc:endc) = spval
         call hist_addfld1d (fname='PROD10C_LOSS', units='gC/m^2/s', &
              avgflag='A', long_name='loss from 10-yr wood product pool', &
-             ptr_col=this%prod10c_loss_col)
+             ptr_col=this%prod10c_loss_col, default='inactive')
 
         this%dwt_prod100c_gain_col(begc:endc) = spval
         call hist_addfld1d (fname='DWT_PROD100C_GAIN', units='gC/m^2/s', &
              avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
-             ptr_col=this%dwt_prod100c_gain_col)
+             ptr_col=this%dwt_prod100c_gain_col, default='inactive')
 
         this%prod100c_loss_col(begc:endc) = spval
         call hist_addfld1d (fname='PROD100C_LOSS', units='gC/m^2/s', &
              avgflag='A', long_name='loss from 100-yr wood product pool', &
-             ptr_col=this%prod100c_loss_col)
+             ptr_col=this%prod100c_loss_col, default='inactive')
 
         this%prod1c_loss_col(begc:endc) = spval
         call hist_addfld1d (fname='PROD1C_LOSS', units='gC/m^2/s', &
              avgflag='A', long_name='loss from 1-yr crop product pool', &
-             ptr_col=this%prod1c_loss_col)
+             ptr_col=this%prod1c_loss_col, default='inactive')
 
         this%dwt_frootc_to_litr_met_c_col(begc:endc,:) = spval
         call hist_addfld_decomp (fname='DWT_FROOTC_TO_LITR_MET_C', units='gC/m^2/s',  type2d='levdcmp', &
@@ -3025,12 +3033,12 @@ contains
         this%dwt_closs_col(begc:endc) = spval
         call hist_addfld1d (fname='DWT_CLOSS', units='gC/m^2/s', &
              avgflag='A', long_name='total carbon loss from land cover conversion', &
-             ptr_col=this%dwt_closs_col)
+             ptr_col=this%dwt_closs_col, default='inactive')
 
         this%product_closs_col(begc:endc) = spval
         call hist_addfld1d (fname='PRODUCT_CLOSS', units='gC/m^2/s', &
              avgflag='A', long_name='total carbon loss from wood product pools', &
-             ptr_col=this%product_closs_col)
+             ptr_col=this%product_closs_col, default='inactive')
 
         this%landuseflux_col(begc:endc) = spval
         call hist_addfld1d (fname='LAND_USE_FLUX', units='gC/m^2/s', &
@@ -4927,7 +4935,31 @@ contains
                this%decomp_cpools_leached_col(c,l)
        end do
     end do
-
+    
+    ! debug
+    do fc = 1,num_soilc
+        c = filter_soilc(fc)
+        this%plant_to_litter_cflux(c) = 0._r8
+        this%plant_to_cwd_cflux(c) = 0._r8
+        do j = 1, nlevdecomp
+            this%plant_to_litter_cflux(c) = &
+                this%plant_to_litter_cflux(c)  + &
+                this%phenology_c_to_litr_met_c_col(c,j)* dzsoi_decomp(j) + &
+                this%phenology_c_to_litr_cel_c_col(c,j)* dzsoi_decomp(j) + &
+                this%phenology_c_to_litr_lig_c_col(c,j)* dzsoi_decomp(j) + &
+                this%gap_mortality_c_to_litr_met_c_col(c,j)* dzsoi_decomp(j) + &
+                this%gap_mortality_c_to_litr_cel_c_col(c,j)* dzsoi_decomp(j) + &
+                this%gap_mortality_c_to_litr_lig_c_col(c,j)* dzsoi_decomp(j) + &
+                this%m_c_to_litr_met_fire_col(c,j)* dzsoi_decomp(j) + &
+                this%m_c_to_litr_cel_fire_col(c,j)* dzsoi_decomp(j) + &
+                this%m_c_to_litr_lig_fire_col(c,j)* dzsoi_decomp(j)
+            this%plant_to_cwd_cflux(c) = &
+                this%plant_to_cwd_cflux(c) + &
+                this%gap_mortality_c_to_cwdc_col(c,j)* dzsoi_decomp(j) + &
+                this%fire_mortality_c_to_cwdc_col(c,j)* dzsoi_decomp(j)
+        end do
+    end do
+    
   end associate
   end subroutine Summary
 

@@ -476,7 +476,7 @@ contains
             atm2lnd_vars, canopystate_vars, cnstate_vars, energyflux_vars,               &
             frictionvel_vars, soilstate_vars, solarabs_vars, surfalb_vars,               &
             temperature_vars, waterflux_vars, waterstate_vars, ch4_vars, photosyns_vars, &
-            EDbio_vars, soil_water_retention_curve) 
+            EDbio_vars, soil_water_retention_curve, nitrogenstate_vars,phosphorusstate_vars) 
        call t_stopf('canflux')
 
        ! Fluxes for all urban landunits

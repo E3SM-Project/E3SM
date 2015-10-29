@@ -19,7 +19,9 @@ module PhosphorusStateType
   use spmdMod                , only : masterproc 
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
-  use PatchType              , only : pft                
+  use PatchType              , only : pft
+  use clm_varctl             , only : nu_com
+              
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -102,6 +104,31 @@ module PhosphorusStateType
      real(r8), pointer :: endpb_col                    (:)     ! col phosphorus mass, end of time step (gP/m**2)
      real(r8), pointer :: errpb_col                    (:)     ! colphosphorus balance error for the timestep (gP/m**2)
 
+     real(r8), pointer :: actual_leafcp                (:)     ! dynamic leaf cp ratio
+     real(r8), pointer :: actual_frootcp               (:)     ! dynamic fine root cp ratio
+     real(r8), pointer :: actual_livewdcp              (:)     ! dynamic live wood cp ratio
+     real(r8), pointer :: actual_deadwdcp              (:)     ! dynamic dead wood cp ratio
+     real(r8), pointer :: actual_graincp               (:)     ! dynamic grain cp ratio
+     real(r8), pointer :: pGPP_pleafn_patch            (:)     ! carbon benefit of nitrogen uptake
+     real(r8), pointer :: pGPP_pleafp_patch            (:)     ! carbon benefit of phosphorus uptake
+     
+     ! debug
+     real(r8), pointer :: totpftp_beg_col              (:)
+     real(r8), pointer :: solutionp_beg_col            (:)
+     real(r8), pointer :: labilep_beg_col              (:)
+     real(r8), pointer :: secondp_beg_col              (:)
+     real(r8), pointer :: totlitp_beg_col              (:)
+     real(r8), pointer :: cwdp_beg_col                 (:)
+     real(r8), pointer :: totsomp_beg_col              (:)
+         
+     real(r8), pointer :: totlitp_end_col              (:)
+     real(r8), pointer :: totpftp_end_col              (:)
+     real(r8), pointer :: solutionp_end_col            (:)
+     real(r8), pointer :: labilep_end_col              (:)
+     real(r8), pointer :: secondp_end_col              (:)
+     real(r8), pointer :: cwdp_end_col                 (:)
+     real(r8), pointer :: totsomp_end_col              (:)
+     
    contains
 
      procedure , public  :: Init   
@@ -120,13 +147,15 @@ contains
 
   !------------------------------------------------------------------------
   subroutine Init(this, bounds,                           &
-       leafc_patch, leafc_storage_patch, deadstemc_patch, &
-       decomp_cpools_vr_col, decomp_cpools_col, decomp_cpools_1m_col)
+       leafc_patch, leafc_storage_patch, frootc_patch, frootc_storage_patch, &
+       deadstemc_patch, decomp_cpools_vr_col, decomp_cpools_col, decomp_cpools_1m_col)
 
     class(phosphorusstate_type)         :: this
     type(bounds_type) , intent(in)    :: bounds  
     real(r8)          , intent(in)    :: leafc_patch          (bounds%begp:)
     real(r8)          , intent(in)    :: leafc_storage_patch  (bounds%begp:)
+    real(r8)          , intent(in)    :: frootc_patch         (bounds%begp:)
+    real(r8)          , intent(in)    :: frootc_storage_patch (bounds%begp:)
     real(r8)          , intent(in)    :: deadstemc_patch      (bounds%begp:)
     real(r8)          , intent(in)    :: decomp_cpools_vr_col (bounds%begc:, 1:, 1:)
     real(r8)          , intent(in)    :: decomp_cpools_col    (bounds%begc:, 1:)
@@ -136,7 +165,8 @@ contains
 
     call this%InitHistory (bounds)
 
-    call this%InitCold ( bounds, leafc_patch, leafc_storage_patch, deadstemc_patch, &
+    call this%InitCold ( bounds, leafc_patch, leafc_storage_patch, &
+         frootc_patch, frootc_storage_patch, deadstemc_patch, &
          decomp_cpools_vr_col, decomp_cpools_col, decomp_cpools_1m_col)
 
   end subroutine Init
@@ -227,6 +257,31 @@ contains
     allocate(this%errpb_patch (begp:endp));     this%errpb_patch (:) =nan
     allocate(this%errpb_col   (begc:endc));     this%errpb_col   (:) =nan 
 
+    allocate(this%actual_leafcp       (begp:endp)); this%actual_leafcp       (:) = nan
+    allocate(this%actual_frootcp      (begp:endp)); this%actual_frootcp      (:) = nan
+    allocate(this%actual_livewdcp     (begp:endp)); this%actual_livewdcp     (:) = nan
+    allocate(this%actual_deadwdcp     (begp:endp)); this%actual_deadwdcp     (:) = nan
+    allocate(this%actual_graincp      (begp:endp)); this%actual_graincp      (:) = nan
+    allocate(this%pGPP_pleafn_patch   (begp:endp)); this%pGPP_pleafn_patch   (:) = nan
+    allocate(this%pGPP_pleafp_patch   (begp:endp)); this%pGPP_pleafp_patch   (:) = nan
+    
+    ! debug
+    allocate(this%totpftp_beg_col    (begc:endc)); this%totpftp_beg_col      (:) = nan
+    allocate(this%solutionp_beg_col  (begc:endc)); this%solutionp_beg_col    (:) = nan
+    allocate(this%labilep_beg_col    (begc:endc)); this%labilep_beg_col      (:) = nan
+    allocate(this%secondp_beg_col    (begc:endc)); this%secondp_beg_col      (:) = nan
+    allocate(this%totlitp_beg_col    (begc:endc)); this%totlitp_beg_col      (:) = nan
+    allocate(this%cwdp_beg_col       (begc:endc)); this%cwdp_beg_col         (:) = nan
+    allocate(this%totsomp_beg_col    (begc:endc)); this%totsomp_beg_col      (:) = nan
+         
+    allocate(this%totlitp_end_col    (begc:endc)); this%totlitp_end_col      (:) = nan
+    allocate(this%totpftp_end_col    (begc:endc)); this%totpftp_end_col      (:) = nan
+    allocate(this%labilep_end_col    (begc:endc)); this%labilep_end_col      (:) = nan
+    allocate(this%secondp_end_col    (begc:endc)); this%secondp_end_col      (:) = nan
+    allocate(this%solutionp_end_col  (begc:endc)); this%solutionp_end_col    (:) = nan
+    allocate(this%cwdp_end_col       (begc:endc)); this%cwdp_end_col         (:) = nan
+    allocate(this%totsomp_end_col    (begc:endc)); this%totsomp_end_col      (:) = nan
+    
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -270,7 +325,7 @@ contains
        this%grainp_patch(begp:endp) = spval
        call hist_addfld1d (fname='GRAINP', units='gP/m^2', &
             avgflag='A', long_name='grain P', &
-            ptr_patch=this%grainp_patch)
+            ptr_patch=this%grainp_patch, default='inactive')
     end if
 
     this%leafp_patch(begp:endp) = spval
@@ -376,7 +431,7 @@ contains
     this%ptrunc_patch(begp:endp) = spval
     call hist_addfld1d (fname='PFT_PTRUNC', units='gP/m^2', &
          avgflag='A', long_name='pft-level sink for P truncation', &
-         ptr_patch=this%ptrunc_patch)
+         ptr_patch=this%ptrunc_patch, default='inactive')
 
     this%dispvegp_patch(begp:endp) = spval
     call hist_addfld1d (fname='DISPVEGP', units='gP/m^2', &
@@ -398,6 +453,22 @@ contains
          avgflag='A', long_name='total PFT-level phosphorus', &
          ptr_patch=this%totpftp_patch)
 
+    call hist_addfld1d (fname='actual_leafcp', units='gC/gP', &
+         avgflag='A', long_name='flexible leafCP', &
+         ptr_patch=this%actual_leafcp)
+    call hist_addfld1d (fname='actual_frootcp', units='gC/gP', &
+         avgflag='A', long_name='flexible frootCP', &
+         ptr_patch=this%actual_frootcp)
+    call hist_addfld1d (fname='actual_livewdcp', units='gC/gP', &
+         avgflag='A', long_name='flexible livewdCP', &
+         ptr_patch=this%actual_livewdcp)
+    call hist_addfld1d (fname='actual_deadwdcp', units='gC/gP', &
+         avgflag='A', long_name='flexible deadwdCP', &
+         ptr_patch=this%actual_deadwdcp)
+    call hist_addfld1d (fname='actual_graincp', units='gC/gP', &
+         avgflag='A', long_name='flexible grainCP', &
+         ptr_patch=this%actual_graincp)
+         
     !-------------------------------
     ! P state variables - native to column
     !-------------------------------
@@ -546,29 +617,29 @@ contains
     this%seedp_col(begc:endc) = spval
     call hist_addfld1d (fname='SEEDP', units='gP/m^2', &
          avgflag='A', long_name='P pool for seeding new PFTs ', &
-         ptr_col=this%seedp_col)
+         ptr_col=this%seedp_col, default='inactive')
 
     this%prod10p_col(begc:endc) = spval
     call hist_addfld1d (fname='PROD10P', units='gP/m^2', &
          avgflag='A', long_name='10-yr wood product P', &
-         ptr_col=this%prod10p_col)
+         ptr_col=this%prod10p_col, default='inactive')
 
     this%prod100p_col(begc:endc) = spval
     call hist_addfld1d (fname='PROD100P', units='gP/m^2', &
          avgflag='A', long_name='100-yr wood product P', &
-         ptr_col=this%prod100p_col)
+         ptr_col=this%prod100p_col, default='inactive')
 
     this%totprodp_col(begc:endc) = spval
     call hist_addfld1d (fname='TOTPRODP', units='gP/m^2', &
          avgflag='A', long_name='total wood product P', &
-         ptr_col=this%totprodp_col)
+         ptr_col=this%totprodp_col, default='inactive')
 
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
   subroutine InitCold(this, bounds, &
-       leafc_patch, leafc_storage_patch, deadstemc_patch, &
-       decomp_cpools_vr_col, decomp_cpools_col, decomp_cpools_1m_col)
+       leafc_patch, leafc_storage_patch, frootc_patch, frootc_storage_patch, &
+       deadstemc_patch, decomp_cpools_vr_col, decomp_cpools_col, decomp_cpools_1m_col)
     !
     ! !DESCRIPTION:
     ! Initializes time varying variables used only in coupled carbon-phosphorus mode (CN):
@@ -583,6 +654,8 @@ contains
     type(bounds_type) , intent(in) :: bounds  
     real(r8)          , intent(in) :: leafc_patch(bounds%begp:)
     real(r8)          , intent(in) :: leafc_storage_patch(bounds%begp:)
+    real(r8)          , intent(in) :: frootc_patch(bounds%begp:)
+    real(r8)          , intent(in) :: frootc_storage_patch(bounds%begp:)
     real(r8)          , intent(in) :: deadstemc_patch(bounds%begp:)
     real(r8)          , intent(in) :: decomp_cpools_vr_col(bounds%begc:,:,:)
     real(r8)          , intent(in) :: decomp_cpools_col(bounds%begc:,:)
@@ -598,6 +671,8 @@ contains
 
     SHR_ASSERT_ALL((ubound(leafc_patch)          == (/bounds%endp/)),                               errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(leafc_storage_patch)  == (/bounds%endp/)),                               errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(frootc_patch)         == (/bounds%endp/)),                               errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(frootc_storage_patch) == (/bounds%endp/)),                               errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(deadstemc_patch)      == (/bounds%endp/)),                               errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(decomp_cpools_col)    == (/bounds%endc,ndecomp_pools/)),                 errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(decomp_cpools_1m_col) == (/bounds%endc,ndecomp_pools/)),                 errMsg(__FILE__, __LINE__))
@@ -663,7 +738,19 @@ contains
           else
              this%deadstemp_patch(p) = 0._r8
           end if
-
+          
+          if (nu_com .ne. 'RD') then
+             if (pft%itype(p) == noveg) then
+                this%frootp_patch(p) = 0._r8
+                this%frootp_storage_patch(p) = 0._r8
+             else
+                this%frootp_patch(p) = frootc_patch(p) / ecophyscon%frootcp(pft%itype(p))
+                this%frootp_storage_patch(p) = frootc_storage_patch(p) / ecophyscon%frootcp(pft%itype(p))
+             end if
+             this%pGPP_pleafn_patch(p) = 1.0_r8
+             this%pGPP_pleafp_patch(p) = 1.0_r8
+          end if
+           
           this%deadstemp_storage_patch(p)  = 0._r8
           this%deadstemp_xfer_patch(p)     = 0._r8
           this%livecrootp_patch(p)         = 0._r8
@@ -680,6 +767,13 @@ contains
           this%totvegp_patch(p)            = 0._r8
           this%totpftp_patch(p)            = 0._r8
        end if
+       
+       this%actual_leafcp(p)       = ecophyscon%leafcp(pft%itype(p))
+       this%actual_frootcp(p)      = ecophyscon%frootcp(pft%itype(p))
+       this%actual_livewdcp(p)     = ecophyscon%livewdcp(pft%itype(p))
+       this%actual_deadwdcp(p)     = ecophyscon%deadwdcp(pft%itype(p))
+       this%actual_graincp(p)      = ecophyscon%graincp(pft%itype(p))
+       
     end do
 
     !-------------------------------------------
@@ -779,7 +873,7 @@ contains
     ! !ARGUMENTS:
     class (phosphorusstate_type) :: this
     type(bounds_type)          , intent(in)    :: bounds 
-    type(file_desc_t)          , intent(inout) :: ncid   
+    type(file_desc_t)          , intent(inout) :: ncid
     character(len=*)           , intent(in)    :: flag   !'read' or 'write' or 'define'
     !
     ! !LOCAL VARIABLES:
@@ -902,6 +996,22 @@ contains
             interpinic_flag='interp', readvar=readvar, data=this%grainp_xfer_patch)
     end if
 
+    call restartvar(ncid=ncid, flag=flag,  varname='actual_leafcp', xtype=ncd_double,  &
+        dim1name='pft',    long_name='flexible leafCP', units='gC/gP', &
+        interpinic_flag='interp', readvar=readvar, data=this%actual_leafcp)
+    call restartvar(ncid=ncid, flag=flag,  varname='actual_frootcp', xtype=ncd_double,  &
+        dim1name='pft',    long_name='flexible frootCP', units='gC/gP', &
+        interpinic_flag='interp', readvar=readvar, data=this%actual_frootcp)
+    call restartvar(ncid=ncid, flag=flag,  varname='actual_livewdcp', xtype=ncd_double,  &
+        dim1name='pft',    long_name='flexible livewdCP', units='gC/gP', &
+        interpinic_flag='interp', readvar=readvar, data=this%actual_livewdcp)
+    call restartvar(ncid=ncid, flag=flag,  varname='actual_deadwdcp', xtype=ncd_double,  &
+        dim1name='pft',    long_name='flexible deadwdCP', units='gC/gP', &
+        interpinic_flag='interp', readvar=readvar, data=this%actual_deadwdcp)
+    call restartvar(ncid=ncid, flag=flag,  varname='actual_graincp', xtype=ncd_double,  &
+        dim1name='pft',    long_name='flexible grainCP', units='gC/gP', &
+        interpinic_flag='interp', readvar=readvar, data=this%actual_graincp)
+    
     !--------------------------------
     ! column phosphorus state variables
     !--------------------------------
@@ -1198,6 +1308,11 @@ contains
        this%storvegp_patch(i)           = value_patch
        this%totvegp_patch(i)            = value_patch
        this%totpftp_patch(i)            = value_patch
+       
+       this%actual_leafcp(i)            = value_patch  
+       this%actual_frootcp(i)           = value_patch  
+       this%actual_livewdcp(i)          = value_patch  
+       this%actual_deadwdcp(i)          = value_patch  
     end do
 
     if ( crop_prog )then
@@ -1206,6 +1321,7 @@ contains
           this%grainp_patch(i)          = value_patch
           this%grainp_storage_patch(i)  = value_patch
           this%grainp_xfer_patch(i)     = value_patch   
+          this%actual_graincp(i)        = value_patch   
        end do
     end if
 
