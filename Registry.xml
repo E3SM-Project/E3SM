@@ -330,7 +330,6 @@
 			<var name="zVertex"/>
 			<var name="indexToVertexID"/>
 			<var name="cellsOnEdge"/>
-			<var name="nCellsOnCell"/>
 			<var name="nEdgesOnCell"/>
 			<var name="nEdgesOnEdge"/>
 			<var name="edgesOnCell"/>
