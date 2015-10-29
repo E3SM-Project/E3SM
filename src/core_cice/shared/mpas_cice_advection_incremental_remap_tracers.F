@@ -174,7 +174,8 @@ contains
          pkgColumnTracerAerosolsActive
  
     logical, pointer :: &
-         config_use_level_meltponds
+         config_use_level_meltponds, &
+         config_use_column_biogeochemistry
 
     type (mpas_pool_type), pointer :: configPool
 
@@ -244,6 +245,45 @@ contains
        call add_tracer_to_tracer_linked_list(tracersHead, 'snowBodyAerosol',      'snowVolumeCategory')
        call add_tracer_to_tracer_linked_list(tracersHead, 'iceScatteringAerosol', 'iceVolumeCategory')
        call add_tracer_to_tracer_linked_list(tracersHead, 'iceBodyAerosol',       'iceVolumeCategory')
+    endif
+
+    !if (pkgColumnBiogeochemistry) then
+    call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+    if (config_use_column_biogeochemistry) then
+
+       call add_tracer_to_tracer_linked_list(tracersHead, 'brineFraction',               'iceVolumeCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'mobileFraction',              'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalAlgaeConc',           'iceAreaCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDOCConc',             'iceAreaCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDICConc',             'iceAreaCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDONConc',             'iceAreaCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalNitrateConc',         'iceAreaCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalSilicateConc',        'iceAreaCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalAmmoniumConc',        'iceAreaCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDMSConc',             'iceAreaCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDMSPpConc',           'iceAreaCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDMSPdConc',           'iceAreaCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalNonreactiveConc',     'iceAreaCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalHumicsConc',          'iceAreaCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalParticulateIronConc', 'iceAreaCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDissolvedIronConc',   'iceAreaCategory')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAlgaeConc',           'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDOCConc',             'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDICConc',             'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDONConc',             'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalNitrateConc',         'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalSilicateConc',        'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAmmoniumConc',        'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDMSConc',             'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDMSPpConc',           'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDMSPdConc',           'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalNonreactiveConc',     'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalHumicsConc',          'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalParticulateIronConc', 'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDissolvedIronConc',   'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAerosolsConc',        'brineFraction')
+       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalSalinity',            'brineFraction')
+
     endif
 
     if (verboseTracers) then

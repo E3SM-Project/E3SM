@@ -771,6 +771,38 @@
 		<var name="snowBodyAerosolMask"               type="integer"  dimensions="nAerosols nCategories nCells"    name_in_code="snowBodyAerosolMask"              packages="pkgColumnTracerAerosols"/>
 		<var name="iceScatteringAerosolMask"          type="integer"  dimensions="nAerosols nCategories nCells"    name_in_code="iceScatteringAerosolMask"              packages="pkgColumnTracerAerosols"/>
 		<var name="iceBodyAerosolMask"                type="integer"  dimensions="nAerosols nCategories nCells"    name_in_code="iceBodyAerosolMask"              packages="pkgColumnTracerAerosols"/>
+		<var name="brineFractionMask"		      type="integer"     dimensions="ONE nCategories nCells"          name_in_code="brineFractionMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="mobileFractionMask"		      type="integer"     dimensions="nZBGCTracers nCategories nCells" name_in_code="mobileFractionMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAlgaeConcMask"		      type="integer"     dimensions="nAlgae nCategories nCells"  name_in_code="skeletalAlgaeConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDOCConcMask"		      type="integer"     dimensions="nDOC nCategories nCells"  name_in_code="skeletalDOCConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDICConcMask"		      type="integer"     dimensions="nDIC nCategories nCells"  name_in_code="skeletalDICConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDONConcMask"		      type="integer"     dimensions="nDON nCategories nCells"  name_in_code="skeletalDONConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNitrateConcMask"		      type="integer"     dimensions="ONE nCategories nCells"   name_in_code="skeletalNitrateConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalSilicateConcMask"	      type="integer"     dimensions="ONE nCategories nCells"   name_in_code="skeletalSilicateConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAmmoniumConcMask"	      type="integer"     dimensions="ONE nCategories nCells"   name_in_code="skeletalAmmoniumConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSConcMask"		      type="integer"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPpConcMask"		      type="integer"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSPpConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPdConcMask"		      type="integer"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSPdConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNonreactiveConcMask"	      type="integer"     dimensions="ONE nCategories nCells"   name_in_code="skeletalNonreactiveConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalHumicsConcMask"		      type="integer"     dimensions="ONE nCategories nCells"   name_in_code="skeletalHumicsConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalParticulateIronConcMask"	      type="integer"     dimensions="nParticulateIron nCategories nCells"   name_in_code="skeletalParticulateIronConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDissolvedIronConcMask" 	      type="integer"     dimensions="nDissolvedIron nCategories nCells"   name_in_code="skeletalDissolvedIronConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAlgaeConcMask"		      type="integer"     dimensions="nAlgaeLayers nCategories nCells"   name_in_code="verticalAlgaeConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDOCConcMask"		      type="integer"     dimensions="nDOCLayers nCategories nCells"   name_in_code="verticalDOCConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDICConcMask"		      type="integer"     dimensions="nDICLayers nCategories nCells"   name_in_code="verticalDICConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDONConcMask"		      type="integer"     dimensions="nDONLayers nCategories nCells"   name_in_code="verticalDONConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNitrateConcMask"		      type="integer"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalNitrateConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalSilicateConcMask"	      type="integer"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalSilicateConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAmmoniumConcMask"	      type="integer"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalAmmoniumConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSConcMask"		      type="integer"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPpConcMask"		      type="integer"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSPpConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPdConcMask"		      type="integer"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSPdConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNonreactiveConcMask"	      type="integer"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalNonreactiveConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalHumicsConcMask"		      type="integer"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalHumicsConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalParticulateIronConcMask"	      type="integer"     dimensions="nParticulateIronLayers nCategories nCells"   name_in_code="verticalParticulateIronConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDissolvedIronConcMask"	      type="integer"     dimensions="nDissolvedIronLayers nCategories nCells"   name_in_code="verticalDissolvedIronConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAerosolsConcMask"	      type="integer"     dimensions="nzAerosolsLayers nCategories nCells"   name_in_code="verticalAerosolsConcMask"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalSalinityMask"		      type="integer"     dimensions="nBioLayers nCategories nCells"   name_in_code="verticalSalinityMask"  packages="pkgColumnBiogeochemistry;pkgColumnVerticalThermodynamics"/>
 	</var_struct>
 
 	<var_struct name="tracer_edge_fluxes" time_levs="1">
@@ -792,6 +824,39 @@
 		<var name="snowBodyAerosolEdgeFlux"           type="real"     dimensions="nAerosols nCategories nEdges"    name_in_code="snowBodyAerosolEdgeFlux"              packages="pkgColumnTracerAerosols"/>
 		<var name="iceScatteringAerosolEdgeFlux"      type="real"     dimensions="nAerosols nCategories nEdges"    name_in_code="iceScatteringAerosolEdgeFlux"              packages="pkgColumnTracerAerosols"/>
 		<var name="iceBodyAerosolEdgeFlux"            type="real"     dimensions="nAerosols nCategories nEdges"    name_in_code="iceBodyAerosolEdgeFlux"              packages="pkgColumnTracerAerosols"/>
+		<var name="brineFractionEdgeFlux"		      type="real"     dimensions="ONE nCategories nEdges"          name_in_code="brineFractionEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="mobileFractionEdgeFlux"		      type="real"     dimensions="nZBGCTracers nCategories nEdges" name_in_code="mobileFractionEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAlgaeConcEdgeFlux"		      type="real"     dimensions="nAlgae nCategories nEdges"  name_in_code="skeletalAlgaeConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDOCConcEdgeFlux"		      type="real"     dimensions="nDOC nCategories nEdges"  name_in_code="skeletalDOCConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDICConcEdgeFlux"		      type="real"     dimensions="nDIC nCategories nEdges"  name_in_code="skeletalDICConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDONConcEdgeFlux"		      type="real"     dimensions="nDON nCategories nEdges"  name_in_code="skeletalDONConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNitrateConcEdgeFlux"		      type="real"     dimensions="ONE nCategories nEdges"   name_in_code="skeletalNitrateConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalSilicateConcEdgeFlux"	      type="real"     dimensions="ONE nCategories nEdges"   name_in_code="skeletalSilicateConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAmmoniumConcEdgeFlux"	      type="real"     dimensions="ONE nCategories nEdges"   name_in_code="skeletalAmmoniumConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSConcEdgeFlux"		      type="real"     dimensions="ONE nCategories nEdges"   name_in_code="skeletalDMSConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPpConcEdgeFlux"		      type="real"     dimensions="ONE nCategories nEdges"   name_in_code="skeletalDMSPpConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPdConcEdgeFlux"		      type="real"     dimensions="ONE nCategories nEdges"   name_in_code="skeletalDMSPdConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNonreactiveConcEdgeFlux"	      type="real"     dimensions="ONE nCategories nEdges"   name_in_code="skeletalNonreactiveConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalHumicsConcEdgeFlux"		      type="real"     dimensions="ONE nCategories nEdges"   name_in_code="skeletalHumicsConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalParticulateIronConcEdgeFlux"	      type="real"     dimensions="nParticulateIron nCategories nEdges"   name_in_code="skeletalParticulateIronConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDissolvedIronConcEdgeFlux" 	      type="real"     dimensions="nDissolvedIron nCategories nEdges"   name_in_code="skeletalDissolvedIronConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAlgaeConcEdgeFlux"		      type="real"     dimensions="nAlgaeLayers nCategories nEdges"   name_in_code="verticalAlgaeConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDOCConcEdgeFlux"		      type="real"     dimensions="nDOCLayers nCategories nEdges"   name_in_code="verticalDOCConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDICConcEdgeFlux"		      type="real"     dimensions="nDICLayers nCategories nEdges"   name_in_code="verticalDICConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDONConcEdgeFlux"		      type="real"     dimensions="nDONLayers nCategories nEdges"   name_in_code="verticalDONConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNitrateConcEdgeFlux"		      type="real"     dimensions="nBioLayersP3 nCategories nEdges"   name_in_code="verticalNitrateConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalSilicateConcEdgeFlux"	      type="real"     dimensions="nBioLayersP3 nCategories nEdges"   name_in_code="verticalSilicateConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAmmoniumConcEdgeFlux"	      type="real"     dimensions="nBioLayersP3 nCategories nEdges"   name_in_code="verticalAmmoniumConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSConcEdgeFlux"		      type="real"     dimensions="nBioLayersP3 nCategories nEdges"   name_in_code="verticalDMSConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPpConcEdgeFlux"		      type="real"     dimensions="nBioLayersP3 nCategories nEdges"   name_in_code="verticalDMSPpConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPdConcEdgeFlux"		      type="real"     dimensions="nBioLayersP3 nCategories nEdges"   name_in_code="verticalDMSPdConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNonreactiveConcEdgeFlux"	      type="real"     dimensions="nBioLayersP3 nCategories nEdges"   name_in_code="verticalNonreactiveConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalHumicsConcEdgeFlux"		      type="real"     dimensions="nBioLayersP3 nCategories nEdges"   name_in_code="verticalHumicsConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalParticulateIronConcEdgeFlux"	      type="real"     dimensions="nParticulateIronLayers nCategories nEdges"   name_in_code="verticalParticulateIronConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDissolvedIronConcEdgeFlux"	      type="real"     dimensions="nDissolvedIronLayers nCategories nEdges"   name_in_code="verticalDissolvedIronConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAerosolsConcEdgeFlux"	      type="real"     dimensions="nzAerosolsLayers nCategories nEdges"   name_in_code="verticalAerosolsConcEdgeFlux"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalSalinityEdgeFlux"		      type="real"     dimensions="nBioLayers nCategories nEdges"   name_in_code="verticalSalinityEdgeFlux"  packages="pkgColumnBiogeochemistry;pkgColumnVerticalThermodynamics"/>
+
 	</var_struct>
 	<var_struct name="tracer_products" time_levs="1">
 		<var name="iceAreaCategoryProduct"            type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceAreaCategoryProduct"/>
@@ -812,6 +877,38 @@
 		<var name="snowBodyAerosolProduct"            type="real"     dimensions="nAerosols nCategories nCells"    name_in_code="snowBodyAerosolProduct"              packages="pkgColumnTracerAerosols"/>
 		<var name="iceScatteringAerosolProduct"       type="real"     dimensions="nAerosols nCategories nCells"    name_in_code="iceScatteringAerosolProduct"              packages="pkgColumnTracerAerosols"/>
 		<var name="iceBodyAerosolProduct"             type="real"     dimensions="nAerosols nCategories nCells"    name_in_code="iceBodyAerosolProduct"              packages="pkgColumnTracerAerosols"/>
+		<var name="brineFractionProduct"		      type="real"     dimensions="ONE nCategories nCells"          name_in_code="brineFractionProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="mobileFractionProduct"		      type="real"     dimensions="nZBGCTracers nCategories nCells" name_in_code="mobileFractionProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAlgaeConcProduct"		      type="real"     dimensions="nAlgae nCategories nCells"  name_in_code="skeletalAlgaeConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDOCConcProduct"		      type="real"     dimensions="nDOC nCategories nCells"  name_in_code="skeletalDOCConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDICConcProduct"		      type="real"     dimensions="nDIC nCategories nCells"  name_in_code="skeletalDICConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDONConcProduct"		      type="real"     dimensions="nDON nCategories nCells"  name_in_code="skeletalDONConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNitrateConcProduct"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalNitrateConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalSilicateConcProduct"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalSilicateConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAmmoniumConcProduct"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalAmmoniumConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSConcProduct"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPpConcProduct"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSPpConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPdConcProduct"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSPdConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNonreactiveConcProduct"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalNonreactiveConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalHumicsConcProduct"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalHumicsConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalParticulateIronConcProduct"	      type="real"     dimensions="nParticulateIron nCategories nCells"   name_in_code="skeletalParticulateIronConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDissolvedIronConcProduct" 	      type="real"     dimensions="nDissolvedIron nCategories nCells"   name_in_code="skeletalDissolvedIronConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAlgaeConcProduct"		      type="real"     dimensions="nAlgaeLayers nCategories nCells"   name_in_code="verticalAlgaeConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDOCConcProduct"		      type="real"     dimensions="nDOCLayers nCategories nCells"   name_in_code="verticalDOCConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDICConcProduct"		      type="real"     dimensions="nDICLayers nCategories nCells"   name_in_code="verticalDICConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDONConcProduct"		      type="real"     dimensions="nDONLayers nCategories nCells"   name_in_code="verticalDONConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNitrateConcProduct"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalNitrateConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalSilicateConcProduct"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalSilicateConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAmmoniumConcProduct"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalAmmoniumConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSConcProduct"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPpConcProduct"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSPpConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPdConcProduct"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSPdConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNonreactiveConcProduct"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalNonreactiveConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalHumicsConcProduct"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalHumicsConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalParticulateIronConcProduct"	      type="real"     dimensions="nParticulateIronLayers nCategories nCells"   name_in_code="verticalParticulateIronConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDissolvedIronConcProduct"	      type="real"     dimensions="nDissolvedIronLayers nCategories nCells"   name_in_code="verticalDissolvedIronConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAerosolsConcProduct"	      type="real"     dimensions="nzAerosolsLayers nCategories nCells"   name_in_code="verticalAerosolsConcProduct"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalSalinityProduct"		      type="real"     dimensions="nBioLayers nCategories nCells"   name_in_code="verticalSalinityProduct"  packages="pkgColumnBiogeochemistry;pkgColumnVerticalThermodynamics"/>
 	</var_struct>
 	<var_struct name="tracer_triangles" time_levs="1">
 		<var name="iceAreaCategoryTriangle"           type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdgeRemap nEdges"          name_in_code="iceAreaCategoryTriangle"/>
@@ -832,6 +929,38 @@
 		<var name="snowBodyAerosolTriangle"           type="real"     dimensions="nAerosols nCategories nQuadPoints nTriPerEdgeRemap nEdges"    name_in_code="snowBodyAerosolTriangle"              packages="pkgColumnTracerAerosols"/>
 		<var name="iceScatteringAerosolTriangle"      type="real"     dimensions="nAerosols nCategories nQuadPoints nTriPerEdgeRemap nEdges"    name_in_code="iceScatteringAerosolTriangle"              packages="pkgColumnTracerAerosols"/>
 		<var name="iceBodyAerosolTriangle"            type="real"     dimensions="nAerosols nCategories nQuadPoints nTriPerEdgeRemap nEdges"    name_in_code="iceBodyAerosolTriangle"              packages="pkgColumnTracerAerosols"/>
+		<var name="brineFractionTriangle"		      type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdgeRemap nEdges"          name_in_code="brineFractionTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="mobileFractionTriangle"		      type="real"     dimensions="nZBGCTracers nCategories nQuadPoints nTriPerEdgeRemap nEdges" name_in_code="mobileFractionTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAlgaeConcTriangle"		      type="real"     dimensions="nAlgae nCategories nQuadPoints nTriPerEdgeRemap nEdges"  name_in_code="skeletalAlgaeConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDOCConcTriangle"		      type="real"     dimensions="nDOC nCategories nQuadPoints nTriPerEdgeRemap nEdges"  name_in_code="skeletalDOCConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDICConcTriangle"		      type="real"     dimensions="nDIC nCategories nQuadPoints nTriPerEdgeRemap nEdges"  name_in_code="skeletalDICConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDONConcTriangle"		      type="real"     dimensions="nDON nCategories nQuadPoints nTriPerEdgeRemap nEdges"  name_in_code="skeletalDONConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNitrateConcTriangle"		      type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="skeletalNitrateConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalSilicateConcTriangle"	      type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="skeletalSilicateConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAmmoniumConcTriangle"	      type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="skeletalAmmoniumConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSConcTriangle"		      type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="skeletalDMSConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPpConcTriangle"		      type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="skeletalDMSPpConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPdConcTriangle"		      type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="skeletalDMSPdConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNonreactiveConcTriangle"	      type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="skeletalNonreactiveConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalHumicsConcTriangle"		      type="real"     dimensions="ONE nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="skeletalHumicsConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalParticulateIronConcTriangle"	      type="real"     dimensions="nParticulateIron nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="skeletalParticulateIronConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDissolvedIronConcTriangle" 	      type="real"     dimensions="nDissolvedIron nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="skeletalDissolvedIronConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAlgaeConcTriangle"		      type="real"     dimensions="nAlgaeLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="verticalAlgaeConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDOCConcTriangle"		      type="real"     dimensions="nDOCLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="verticalDOCConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDICConcTriangle"		      type="real"     dimensions="nDICLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="verticalDICConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDONConcTriangle"		      type="real"     dimensions="nDONLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="verticalDONConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNitrateConcTriangle"		      type="real"     dimensions="nBioLayersP3 nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="verticalNitrateConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalSilicateConcTriangle"	      type="real"     dimensions="nBioLayersP3 nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="verticalSilicateConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAmmoniumConcTriangle"	      type="real"     dimensions="nBioLayersP3 nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="verticalAmmoniumConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSConcTriangle"		      type="real"     dimensions="nBioLayersP3 nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="verticalDMSConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPpConcTriangle"		      type="real"     dimensions="nBioLayersP3 nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="verticalDMSPpConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPdConcTriangle"		      type="real"     dimensions="nBioLayersP3 nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="verticalDMSPdConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNonreactiveConcTriangle"	      type="real"     dimensions="nBioLayersP3 nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="verticalNonreactiveConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalHumicsConcTriangle"		      type="real"     dimensions="nBioLayersP3 nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="verticalHumicsConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalParticulateIronConcTriangle"	      type="real"     dimensions="nParticulateIronLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="verticalParticulateIronConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDissolvedIronConcTriangle"	      type="real"     dimensions="nDissolvedIronLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="verticalDissolvedIronConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAerosolsConcTriangle"	      type="real"     dimensions="nzAerosolsLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="verticalAerosolsConcTriangle"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalSalinityTriangle"		      type="real"     dimensions="nBioLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="verticalSalinityTriangle"  packages="pkgColumnBiogeochemistry;pkgColumnVerticalThermodynamics"/>
 	</var_struct>
 	<var_struct name="tracer_barycenter" time_levs="1">
 		<var name="iceAreaCategoryBarycenterx"        type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceAreaCategoryBarycenterx"/>
@@ -870,6 +999,70 @@
 		<var name="iceScatteringAerosolBarycentery"   type="real"     dimensions="nAerosols nCategories nCells"    name_in_code="iceScatteringAerosolBarycentery"              packages="pkgColumnTracerAerosols"/>
 		<var name="iceBodyAerosolBarycenterx"         type="real"     dimensions="nAerosols nCategories nCells"    name_in_code="iceBodyAerosolBarycenterx"              packages="pkgColumnTracerAerosols"/>
 		<var name="iceBodyAerosolBarycentery"         type="real"     dimensions="nAerosols nCategories nCells"    name_in_code="iceBodyAerosolBarycentery"              packages="pkgColumnTracerAerosols"/>
+		<var name="brineFractionBarycenterx"		      type="real"     dimensions="ONE nCategories nCells"          name_in_code="brineFractionBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="brineFractionBarycentery"		      type="real"     dimensions="ONE nCategories nCells"          name_in_code="brineFractionBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="mobileFractionBarycenterx"		      type="real"     dimensions="nZBGCTracers nCategories nCells" name_in_code="mobileFractionBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="mobileFractionBarycentery"		      type="real"     dimensions="nZBGCTracers nCategories nCells" name_in_code="mobileFractionBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAlgaeConcBarycenterx"		      type="real"     dimensions="nAlgae nCategories nCells"  name_in_code="skeletalAlgaeConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAlgaeConcBarycentery"		      type="real"     dimensions="nAlgae nCategories nCells"  name_in_code="skeletalAlgaeConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDOCConcBarycenterx"		      type="real"     dimensions="nDOC nCategories nCells"  name_in_code="skeletalDOCConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDOCConcBarycentery"		      type="real"     dimensions="nDOC nCategories nCells"  name_in_code="skeletalDOCConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDICConcBarycenterx"		      type="real"     dimensions="nDIC nCategories nCells"  name_in_code="skeletalDICConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDICConcBarycentery"		      type="real"     dimensions="nDIC nCategories nCells"  name_in_code="skeletalDICConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDONConcBarycenterx"		      type="real"     dimensions="nDON nCategories nCells"  name_in_code="skeletalDONConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDONConcBarycentery"		      type="real"     dimensions="nDON nCategories nCells"  name_in_code="skeletalDONConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNitrateConcBarycenterx"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalNitrateConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNitrateConcBarycentery"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalNitrateConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalSilicateConcBarycenterx"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalSilicateConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalSilicateConcBarycentery"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalSilicateConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAmmoniumConcBarycenterx"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalAmmoniumConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAmmoniumConcBarycentery"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalAmmoniumConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSConcBarycenterx"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSConcBarycentery"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPpConcBarycenterx"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSPpConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPpConcBarycentery"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSPpConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPdConcBarycenterx"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSPdConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPdConcBarycentery"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSPdConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNonreactiveConcBarycenterx"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalNonreactiveConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNonreactiveConcBarycentery"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalNonreactiveConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalHumicsConcBarycenterx"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalHumicsConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalHumicsConcBarycentery"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalHumicsConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalParticulateIronConcBarycenterx"	      type="real"     dimensions="nParticulateIron nCategories nCells"   name_in_code="skeletalParticulateIronConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalParticulateIronConcBarycentery"	      type="real"     dimensions="nParticulateIron nCategories nCells"   name_in_code="skeletalParticulateIronConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDissolvedIronConcBarycenterx" 	      type="real"     dimensions="nDissolvedIron nCategories nCells"   name_in_code="skeletalDissolvedIronConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDissolvedIronConcBarycentery" 	      type="real"     dimensions="nDissolvedIron nCategories nCells"   name_in_code="skeletalDissolvedIronConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAlgaeConcBarycenterx"		      type="real"     dimensions="nAlgaeLayers nCategories nCells"   name_in_code="verticalAlgaeConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAlgaeConcBarycentery"		      type="real"     dimensions="nAlgaeLayers nCategories nCells"   name_in_code="verticalAlgaeConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDOCConcBarycenterx"		      type="real"     dimensions="nDOCLayers nCategories nCells"   name_in_code="verticalDOCConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDOCConcBarycentery"		      type="real"     dimensions="nDOCLayers nCategories nCells"   name_in_code="verticalDOCConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDICConcBarycenterx"		      type="real"     dimensions="nDICLayers nCategories nCells"   name_in_code="verticalDICConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDICConcBarycentery"		      type="real"     dimensions="nDICLayers nCategories nCells"   name_in_code="verticalDICConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDONConcBarycenterx"		      type="real"     dimensions="nDONLayers nCategories nCells"   name_in_code="verticalDONConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDONConcBarycentery"		      type="real"     dimensions="nDONLayers nCategories nCells"   name_in_code="verticalDONConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNitrateConcBarycenterx"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalNitrateConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNitrateConcBarycentery"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalNitrateConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalSilicateConcBarycenterx"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalSilicateConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalSilicateConcBarycentery"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalSilicateConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAmmoniumConcBarycenterx"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalAmmoniumConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAmmoniumConcBarycentery"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalAmmoniumConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSConcBarycenterx"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSConcBarycentery"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPpConcBarycenterx"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSPpConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPpConcBarycentery"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSPpConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPdConcBarycenterx"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSPdConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPdConcBarycentery"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSPdConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNonreactiveConcBarycenterx"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalNonreactiveConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNonreactiveConcBarycentery"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalNonreactiveConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalHumicsConcBarycenterx"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalHumicsConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalHumicsConcBarycentery"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalHumicsConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalParticulateIronConcBarycenterx"	      type="real"     dimensions="nParticulateIronLayers nCategories nCells"   name_in_code="verticalParticulateIronConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalParticulateIronConcBarycentery"	      type="real"     dimensions="nParticulateIronLayers nCategories nCells"   name_in_code="verticalParticulateIronConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDissolvedIronConcBarycenterx"	      type="real"     dimensions="nDissolvedIronLayers nCategories nCells"   name_in_code="verticalDissolvedIronConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDissolvedIronConcBarycentery"	      type="real"     dimensions="nDissolvedIronLayers nCategories nCells"   name_in_code="verticalDissolvedIronConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAerosolsConcBarycenterx"	      type="real"     dimensions="nzAerosolsLayers nCategories nCells"   name_in_code="verticalAerosolsConcBarycenterx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAerosolsConcBarycentery"	      type="real"     dimensions="nzAerosolsLayers nCategories nCells"   name_in_code="verticalAerosolsConcBarycentery"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalSalinityBarycenterx"		      type="real"     dimensions="nBioLayers nCategories nCells"   name_in_code="verticalSalinityBarycenterx"  packages="pkgColumnBiogeochemistry;pkgColumnVerticalThermodynamics"/>
+		<var name="verticalSalinityBarycentery"		      type="real"     dimensions="nBioLayers nCategories nCells"   name_in_code="verticalSalinityBarycentery"  packages="pkgColumnBiogeochemistry;pkgColumnVerticalThermodynamics"/>
 	</var_struct>
 	<var_struct name="tracer_reconstruction" time_levs="1">
 		<var name="iceAreaCategoryCenter"             type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceAreaCategoryCenter"/>
@@ -926,6 +1119,102 @@
 		<var name="iceBodyAerosolCenter"              type="real"     dimensions="nAerosols nCategories nCells"    name_in_code="iceBodyAerosolCenter"              packages="pkgColumnTracerAerosols"/>
 		<var name="iceBodyAerosolGradx"               type="real"     dimensions="nAerosols nCategories nCells"    name_in_code="iceBodyAerosolGradx"              packages="pkgColumnTracerAerosols"/>
 		<var name="iceBodyAerosolGrady"               type="real"     dimensions="nAerosols nCategories nCells"    name_in_code="iceBodyAerosolGrady"              packages="pkgColumnTracerAerosols"/>
+		<var name="brineFractionCenter"		      type="real"     dimensions="ONE nCategories nCells"          name_in_code="brineFractionCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="brineFractionGradx"		      type="real"     dimensions="ONE nCategories nCells"          name_in_code="brineFractionGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="brineFractionGrady"		      type="real"     dimensions="ONE nCategories nCells"          name_in_code="brineFractionGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="mobileFractionCenter"		      type="real"     dimensions="nZBGCTracers nCategories nCells" name_in_code="mobileFractionCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="mobileFractionGradx"		      type="real"     dimensions="nZBGCTracers nCategories nCells" name_in_code="mobileFractionGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="mobileFractionGrady"		      type="real"     dimensions="nZBGCTracers nCategories nCells" name_in_code="mobileFractionGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAlgaeConcCenter"		      type="real"     dimensions="nAlgae nCategories nCells"  name_in_code="skeletalAlgaeConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAlgaeConcGradx"		      type="real"     dimensions="nAlgae nCategories nCells"  name_in_code="skeletalAlgaeConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAlgaeConcGrady"		      type="real"     dimensions="nAlgae nCategories nCells"  name_in_code="skeletalAlgaeConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDOCConcCenter"		      type="real"     dimensions="nDOC nCategories nCells"  name_in_code="skeletalDOCConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDOCConcGradx"		      type="real"     dimensions="nDOC nCategories nCells"  name_in_code="skeletalDOCConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDOCConcGrady"		      type="real"     dimensions="nDOC nCategories nCells"  name_in_code="skeletalDOCConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDICConcCenter"		      type="real"     dimensions="nDIC nCategories nCells"  name_in_code="skeletalDICConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDICConcGradx"		      type="real"     dimensions="nDIC nCategories nCells"  name_in_code="skeletalDICConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDICConcGrady"		      type="real"     dimensions="nDIC nCategories nCells"  name_in_code="skeletalDICConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDONConcCenter"		      type="real"     dimensions="nDON nCategories nCells"  name_in_code="skeletalDONConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDONConcGradx"		      type="real"     dimensions="nDON nCategories nCells"  name_in_code="skeletalDONConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDONConcGrady"		      type="real"     dimensions="nDON nCategories nCells"  name_in_code="skeletalDONConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNitrateConcCenter"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalNitrateConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNitrateConcGradx"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalNitrateConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNitrateConcGrady"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalNitrateConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalSilicateConcCenter"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalSilicateConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalSilicateConcGradx"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalSilicateConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalSilicateConcGrady"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalSilicateConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAmmoniumConcCenter"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalAmmoniumConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAmmoniumConcGradx"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalAmmoniumConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAmmoniumConcGrady"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalAmmoniumConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSConcCenter"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSConcGradx"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSConcGrady"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPpConcCenter"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSPpConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPpConcGradx"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSPpConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPpConcGrady"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSPpConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPdConcCenter"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSPdConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPdConcGradx"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSPdConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPdConcGrady"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSPdConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNonreactiveConcCenter"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalNonreactiveConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNonreactiveConcGradx"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalNonreactiveConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNonreactiveConcGrady"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalNonreactiveConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalHumicsConcCenter"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalHumicsConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalHumicsConcGradx"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalHumicsConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalHumicsConcGrady"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalHumicsConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalParticulateIronConcCenter"	      type="real"     dimensions="nParticulateIron nCategories nCells"   name_in_code="skeletalParticulateIronConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalParticulateIronConcGradx"	      type="real"     dimensions="nParticulateIron nCategories nCells"   name_in_code="skeletalParticulateIronConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalParticulateIronConcGrady"	      type="real"     dimensions="nParticulateIron nCategories nCells"   name_in_code="skeletalParticulateIronConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDissolvedIronConcCenter" 	      type="real"     dimensions="nDissolvedIron nCategories nCells"   name_in_code="skeletalDissolvedIronConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDissolvedIronConcGradx" 	      type="real"     dimensions="nDissolvedIron nCategories nCells"   name_in_code="skeletalDissolvedIronConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDissolvedIronConcGrady" 	      type="real"     dimensions="nDissolvedIron nCategories nCells"   name_in_code="skeletalDissolvedIronConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAlgaeConcCenter"		      type="real"     dimensions="nAlgaeLayers nCategories nCells"   name_in_code="verticalAlgaeConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAlgaeConcGradx"		      type="real"     dimensions="nAlgaeLayers nCategories nCells"   name_in_code="verticalAlgaeConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAlgaeConcGrady"		      type="real"     dimensions="nAlgaeLayers nCategories nCells"   name_in_code="verticalAlgaeConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDOCConcCenter"		      type="real"     dimensions="nDOCLayers nCategories nCells"   name_in_code="verticalDOCConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDOCConcGradx"		      type="real"     dimensions="nDOCLayers nCategories nCells"   name_in_code="verticalDOCConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDOCConcGrady"		      type="real"     dimensions="nDOCLayers nCategories nCells"   name_in_code="verticalDOCConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDICConcCenter"		      type="real"     dimensions="nDICLayers nCategories nCells"   name_in_code="verticalDICConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDICConcGradx"		      type="real"     dimensions="nDICLayers nCategories nCells"   name_in_code="verticalDICConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDICConcGrady"		      type="real"     dimensions="nDICLayers nCategories nCells"   name_in_code="verticalDICConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDONConcCenter"		      type="real"     dimensions="nDONLayers nCategories nCells"   name_in_code="verticalDONConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDONConcGradx"		      type="real"     dimensions="nDONLayers nCategories nCells"   name_in_code="verticalDONConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDONConcGrady"		      type="real"     dimensions="nDONLayers nCategories nCells"   name_in_code="verticalDONConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNitrateConcCenter"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalNitrateConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNitrateConcGradx"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalNitrateConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNitrateConcGrady"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalNitrateConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalSilicateConcCenter"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalSilicateConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalSilicateConcGradx"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalSilicateConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalSilicateConcGrady"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalSilicateConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAmmoniumConcCenter"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalAmmoniumConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAmmoniumConcGradx"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalAmmoniumConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAmmoniumConcGrady"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalAmmoniumConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSConcCenter"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSConcGradx"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSConcGrady"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPpConcCenter"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSPpConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPpConcGradx"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSPpConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPpConcGrady"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSPpConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPdConcCenter"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSPdConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPdConcGradx"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSPdConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPdConcGrady"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSPdConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNonreactiveConcCenter"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalNonreactiveConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNonreactiveConcGradx"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalNonreactiveConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNonreactiveConcGrady"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalNonreactiveConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalHumicsConcCenter"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalHumicsConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalHumicsConcGradx"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalHumicsConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalHumicsConcGrady"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalHumicsConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalParticulateIronConcCenter"	      type="real"     dimensions="nParticulateIronLayers nCategories nCells"   name_in_code="verticalParticulateIronConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalParticulateIronConcGradx"	      type="real"     dimensions="nParticulateIronLayers nCategories nCells"   name_in_code="verticalParticulateIronConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalParticulateIronConcGrady"	      type="real"     dimensions="nParticulateIronLayers nCategories nCells"   name_in_code="verticalParticulateIronConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDissolvedIronConcCenter"	      type="real"     dimensions="nDissolvedIronLayers nCategories nCells"   name_in_code="verticalDissolvedIronConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDissolvedIronConcGradx"	      type="real"     dimensions="nDissolvedIronLayers nCategories nCells"   name_in_code="verticalDissolvedIronConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDissolvedIronConcGrady"	      type="real"     dimensions="nDissolvedIronLayers nCategories nCells"   name_in_code="verticalDissolvedIronConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAerosolsConcCenter"	      type="real"     dimensions="nzAerosolsLayers nCategories nCells"   name_in_code="verticalAerosolsConcCenter"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAerosolsConcGradx"	      type="real"     dimensions="nzAerosolsLayers nCategories nCells"   name_in_code="verticalAerosolsConcGradx"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAerosolsConcGrady"	      type="real"     dimensions="nzAerosolsLayers nCategories nCells"   name_in_code="verticalAerosolsConcGrady"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalSalinityCenter"		      type="real"     dimensions="nBioLayers nCategories nCells"   name_in_code="verticalSalinityCenter"  packages="pkgColumnBiogeochemistry;pkgColumnVerticalThermodynamics"/>
+		<var name="verticalSalinityGradx"		      type="real"     dimensions="nBioLayers nCategories nCells"   name_in_code="verticalSalinityGradx"  packages="pkgColumnBiogeochemistry;pkgColumnVerticalThermodynamics"/>
+		<var name="verticalSalinityGrady"		      type="real"     dimensions="nBioLayers nCategories nCells"   name_in_code="verticalSalinityGrady"  packages="pkgColumnBiogeochemistry;pkgColumnVerticalThermodynamics"/>
 	</var_struct>
 	<var_struct name="tracer_conservation" time_levs="2">
 		<var name="iceAreaCategoryCons"               type="real"     dimensions="ONE nCategories"          name_in_code="iceAreaCategoryCons"/>
@@ -946,6 +1235,38 @@
 		<var name="snowBodyAerosolCons"               type="real"     dimensions="nAerosols nCategories"    name_in_code="snowBodyAerosolCons"              packages="pkgColumnTracerAerosols"/>
 		<var name="iceScatteringAerosolCons"          type="real"     dimensions="nAerosols nCategories"    name_in_code="iceScatteringAerosolCons"              packages="pkgColumnTracerAerosols"/>
 		<var name="iceBodyAerosolCons"                type="real"     dimensions="nAerosols nCategories"    name_in_code="iceBodyAerosolCons"              packages="pkgColumnTracerAerosols"/>
+		<var name="brineFractionCons"		      type="real"     dimensions="ONE nCategories"          name_in_code="brineFractionCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="mobileFractionCons"		      type="real"     dimensions="nZBGCTracers nCategories" name_in_code="mobileFractionCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAlgaeConcCons"		      type="real"     dimensions="nAlgae nCategories"  name_in_code="skeletalAlgaeConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDOCConcCons"		      type="real"     dimensions="nDOC nCategories"  name_in_code="skeletalDOCConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDICConcCons"		      type="real"     dimensions="nDIC nCategories"  name_in_code="skeletalDICConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDONConcCons"		      type="real"     dimensions="nDON nCategories"  name_in_code="skeletalDONConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNitrateConcCons"		      type="real"     dimensions="ONE nCategories"   name_in_code="skeletalNitrateConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalSilicateConcCons"	      type="real"     dimensions="ONE nCategories"   name_in_code="skeletalSilicateConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAmmoniumConcCons"	      type="real"     dimensions="ONE nCategories"   name_in_code="skeletalAmmoniumConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSConcCons"		      type="real"     dimensions="ONE nCategories"   name_in_code="skeletalDMSConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPpConcCons"		      type="real"     dimensions="ONE nCategories"   name_in_code="skeletalDMSPpConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPdConcCons"		      type="real"     dimensions="ONE nCategories"   name_in_code="skeletalDMSPdConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNonreactiveConcCons"	      type="real"     dimensions="ONE nCategories"   name_in_code="skeletalNonreactiveConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalHumicsConcCons"		      type="real"     dimensions="ONE nCategories"   name_in_code="skeletalHumicsConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalParticulateIronConcCons"	      type="real"     dimensions="nParticulateIron nCategories"   name_in_code="skeletalParticulateIronConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDissolvedIronConcCons" 	      type="real"     dimensions="nDissolvedIron nCategories"   name_in_code="skeletalDissolvedIronConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAlgaeConcCons"		      type="real"     dimensions="nAlgaeLayers nCategories"   name_in_code="verticalAlgaeConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDOCConcCons"		      type="real"     dimensions="nDOCLayers nCategories"   name_in_code="verticalDOCConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDICConcCons"		      type="real"     dimensions="nDICLayers nCategories"   name_in_code="verticalDICConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDONConcCons"		      type="real"     dimensions="nDONLayers nCategories"   name_in_code="verticalDONConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNitrateConcCons"		      type="real"     dimensions="nBioLayersP3 nCategories"   name_in_code="verticalNitrateConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalSilicateConcCons"	      type="real"     dimensions="nBioLayersP3 nCategories"   name_in_code="verticalSilicateConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAmmoniumConcCons"	      type="real"     dimensions="nBioLayersP3 nCategories"   name_in_code="verticalAmmoniumConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSConcCons"		      type="real"     dimensions="nBioLayersP3 nCategories"   name_in_code="verticalDMSConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPpConcCons"		      type="real"     dimensions="nBioLayersP3 nCategories"   name_in_code="verticalDMSPpConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPdConcCons"		      type="real"     dimensions="nBioLayersP3 nCategories"   name_in_code="verticalDMSPdConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNonreactiveConcCons"	      type="real"     dimensions="nBioLayersP3 nCategories"   name_in_code="verticalNonreactiveConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalHumicsConcCons"		      type="real"     dimensions="nBioLayersP3 nCategories"   name_in_code="verticalHumicsConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalParticulateIronConcCons"	      type="real"     dimensions="nParticulateIronLayers nCategories"   name_in_code="verticalParticulateIronConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDissolvedIronConcCons"	      type="real"     dimensions="nDissolvedIronLayers nCategories"   name_in_code="verticalDissolvedIronConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAerosolsConcCons"	      type="real"     dimensions="nzAerosolsLayers nCategories"   name_in_code="verticalAerosolsConcCons"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalSalinityCons"		      type="real"     dimensions="nBioLayers nCategories"   name_in_code="verticalSalinityCons"  packages="pkgColumnBiogeochemistry;pkgColumnVerticalThermodynamics"/>
 	</var_struct>
 	<var_struct name="tracer_monotonicity" time_levs="1">
 		<var name="iceAreaCategoryLocalMin"           type="real"     dimensions="ONE nCategories nCells"   name_in_code="iceAreaCategoryLocalMin"/>
@@ -984,6 +1305,70 @@
 		<var name="iceScatteringAerosolLocalMax"      type="real"     dimensions="nAerosols nCategories nCells"    name_in_code="iceScatteringAerosolLocalMax"              packages="pkgColumnTracerAerosols"/>
 		<var name="iceBodyAerosolLocalMin"            type="real"     dimensions="nAerosols nCategories nCells"    name_in_code="iceBodyAerosolLocalMin"              packages="pkgColumnTracerAerosols"/>
 		<var name="iceBodyAerosolLocalMax"            type="real"     dimensions="nAerosols nCategories nCells"    name_in_code="iceBodyAerosolLocalMax"              packages="pkgColumnTracerAerosols"/>
+		<var name="brineFractionLocalMin"		      type="real"     dimensions="ONE nCategories nCells"          name_in_code="brineFractionLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="brineFractionLocalMax"		      type="real"     dimensions="ONE nCategories nCells"          name_in_code="brineFractionLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="mobileFractionLocalMin"		      type="real"     dimensions="nZBGCTracers nCategories nCells" name_in_code="mobileFractionLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="mobileFractionLocalMax"		      type="real"     dimensions="nZBGCTracers nCategories nCells" name_in_code="mobileFractionLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAlgaeConcLocalMin"		      type="real"     dimensions="nAlgae nCategories nCells"  name_in_code="skeletalAlgaeConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAlgaeConcLocalMax"		      type="real"     dimensions="nAlgae nCategories nCells"  name_in_code="skeletalAlgaeConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDOCConcLocalMin"		      type="real"     dimensions="nDOC nCategories nCells"  name_in_code="skeletalDOCConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDOCConcLocalMax"		      type="real"     dimensions="nDOC nCategories nCells"  name_in_code="skeletalDOCConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDICConcLocalMin"		      type="real"     dimensions="nDIC nCategories nCells"  name_in_code="skeletalDICConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDICConcLocalMax"		      type="real"     dimensions="nDIC nCategories nCells"  name_in_code="skeletalDICConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDONConcLocalMin"		      type="real"     dimensions="nDON nCategories nCells"  name_in_code="skeletalDONConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDONConcLocalMax"		      type="real"     dimensions="nDON nCategories nCells"  name_in_code="skeletalDONConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNitrateConcLocalMin"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalNitrateConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNitrateConcLocalMax"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalNitrateConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalSilicateConcLocalMin"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalSilicateConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalSilicateConcLocalMax"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalSilicateConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAmmoniumConcLocalMin"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalAmmoniumConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalAmmoniumConcLocalMax"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalAmmoniumConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSConcLocalMin"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSConcLocalMax"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPpConcLocalMin"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSPpConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPpConcLocalMax"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSPpConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPdConcLocalMin"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSPdConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDMSPdConcLocalMax"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalDMSPdConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNonreactiveConcLocalMin"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalNonreactiveConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalNonreactiveConcLocalMax"	      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalNonreactiveConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalHumicsConcLocalMin"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalHumicsConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalHumicsConcLocalMax"		      type="real"     dimensions="ONE nCategories nCells"   name_in_code="skeletalHumicsConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalParticulateIronConcLocalMin"	      type="real"     dimensions="nParticulateIron nCategories nCells"   name_in_code="skeletalParticulateIronConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalParticulateIronConcLocalMax"	      type="real"     dimensions="nParticulateIron nCategories nCells"   name_in_code="skeletalParticulateIronConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDissolvedIronConcLocalMin" 	      type="real"     dimensions="nDissolvedIron nCategories nCells"   name_in_code="skeletalDissolvedIronConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="skeletalDissolvedIronConcLocalMax" 	      type="real"     dimensions="nDissolvedIron nCategories nCells"   name_in_code="skeletalDissolvedIronConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAlgaeConcLocalMin"		      type="real"     dimensions="nAlgaeLayers nCategories nCells"   name_in_code="verticalAlgaeConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAlgaeConcLocalMax"		      type="real"     dimensions="nAlgaeLayers nCategories nCells"   name_in_code="verticalAlgaeConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDOCConcLocalMin"		      type="real"     dimensions="nDOCLayers nCategories nCells"   name_in_code="verticalDOCConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDOCConcLocalMax"		      type="real"     dimensions="nDOCLayers nCategories nCells"   name_in_code="verticalDOCConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDICConcLocalMin"		      type="real"     dimensions="nDICLayers nCategories nCells"   name_in_code="verticalDICConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDICConcLocalMax"		      type="real"     dimensions="nDICLayers nCategories nCells"   name_in_code="verticalDICConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDONConcLocalMin"		      type="real"     dimensions="nDONLayers nCategories nCells"   name_in_code="verticalDONConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDONConcLocalMax"		      type="real"     dimensions="nDONLayers nCategories nCells"   name_in_code="verticalDONConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNitrateConcLocalMin"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalNitrateConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNitrateConcLocalMax"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalNitrateConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalSilicateConcLocalMin"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalSilicateConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalSilicateConcLocalMax"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalSilicateConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAmmoniumConcLocalMin"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalAmmoniumConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAmmoniumConcLocalMax"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalAmmoniumConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSConcLocalMin"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSConcLocalMax"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPpConcLocalMin"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSPpConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPpConcLocalMax"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSPpConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPdConcLocalMin"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSPdConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDMSPdConcLocalMax"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalDMSPdConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNonreactiveConcLocalMin"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalNonreactiveConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalNonreactiveConcLocalMax"	      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalNonreactiveConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalHumicsConcLocalMin"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalHumicsConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalHumicsConcLocalMax"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalHumicsConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalParticulateIronConcLocalMin"	      type="real"     dimensions="nParticulateIronLayers nCategories nCells"   name_in_code="verticalParticulateIronConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalParticulateIronConcLocalMax"	      type="real"     dimensions="nParticulateIronLayers nCategories nCells"   name_in_code="verticalParticulateIronConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDissolvedIronConcLocalMin"	      type="real"     dimensions="nDissolvedIronLayers nCategories nCells"   name_in_code="verticalDissolvedIronConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalDissolvedIronConcLocalMax"	      type="real"     dimensions="nDissolvedIronLayers nCategories nCells"   name_in_code="verticalDissolvedIronConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAerosolsConcLocalMin"	      type="real"     dimensions="nzAerosolsLayers nCategories nCells"   name_in_code="verticalAerosolsConcLocalMin"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalAerosolsConcLocalMax"	      type="real"     dimensions="nzAerosolsLayers nCategories nCells"   name_in_code="verticalAerosolsConcLocalMax"  packages="pkgColumnBiogeochemistry"/>
+		<var name="verticalSalinityLocalMin"		      type="real"     dimensions="nBioLayers nCategories nCells"   name_in_code="verticalSalinityLocalMin"  packages="pkgColumnBiogeochemistry;pkgColumnVerticalThermodynamics"/>
+		<var name="verticalSalinityLocalMax"		      type="real"     dimensions="nBioLayers nCategories nCells"   name_in_code="verticalSalinityLocalMax"  packages="pkgColumnBiogeochemistry;pkgColumnVerticalThermodynamics"/>
 	</var_struct>
 
 	<var_struct name="rotated_mesh" time_levs="1">
