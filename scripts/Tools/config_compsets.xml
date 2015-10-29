@@ -197,6 +197,9 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="F_1850_CAM5_CLM45BGC"       alias="F1850C5L45BGC"   >1850_CAM5_CLM45%BGC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000"                     alias="F"               >2000_CAM4_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5"                alias="FC5"             >2000_CAM5_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="F_2000_CAM5_MAM4"           alias="FC5MAM4"         >2000_CAM5%MAM4_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="F_2000_CAM5_PLMOD"          alias="FC5PLMOD"        >2000_CAM5%MAM4%PLMOD_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="F_2000_CAM5_COSP"           alias="FC5COSP"         >2000_CAM5%COSP_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_AMIP"                     alias="FAMIP"           >AMIP_CAM4_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_AMIP_CAM5"                alias="FAMIPC5"         >AMIP_CAM5_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_AMIP_CAM5_L60"            alias="FAMIPC5L60"      >AMIP_CAM5%L60_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
@@ -561,6 +564,8 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 
 <CAM_CONFIG_OPTS compset="_CAM4"          >-phys cam4</CAM_CONFIG_OPTS>              
 <CAM_CONFIG_OPTS compset="_CAM5"          >-phys cam5</CAM_CONFIG_OPTS> 
+<CAM_CONFIG_OPTS compset="_CAM5%MAM4"     >-chem trop_mam4</CAM_CONFIG_OPTS> 
+<CAM_CONFIG_OPTS compset="_CAM5%COSP"     >-cosp</CAM_CONFIG_OPTS> 
 <CAM_CONFIG_OPTS compset="_CAM5%CLB"      >-clubb_sgs</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM4%TBAM"     >-chem trop_bam</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM4%TMOZ"     >-chem trop_mozart</CAM_CONFIG_OPTS>
@@ -627,6 +632,8 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 <CAM_NML_USE_CASE compset="2000_CAM5%TMOZ"   >2000_cam4_trop_chem</CAM_NML_USE_CASE> 
 <CAM_NML_USE_CASE compset="2000_CAM5%MOZM"   >2000_cam5_trop_moz_mam3</CAM_NML_USE_CASE> 
 <CAM_NML_USE_CASE compset="1850_CAM5%PM"     >1850_cam5_pm</CAM_NML_USE_CASE> 
+<CAM_NML_USE_CASE compset="2000_CAM5.*PLMOD" >2000_cam5_plmod</CAM_NML_USE_CASE>
+<CAM_NML_USE_CASE compset="2000_CAM5%COSP"   >2000_cam5_cosp</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="2000_CAM4%WCMX"   >waccmx_2000_cam4</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="1996_CAM4%WCMX"   >waccmx_1996_cam4</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="5505_CAM4%WCCM"   >waccm_1955-2005_cam4</CAM_NML_USE_CASE>
@@ -680,6 +687,9 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 
 <desc compset="_CAM4"  >cam4 physics:</desc>
 <desc compset="_CAM5"  >cam5 physics:</desc>
+<desc compset="_CAM5%MAM4"   >CAM trop_mam4 chemistry:</desc>
+<desc compset="_CAM5%COSP"   >CAM with COSP turned on:</desc>
+<desc compset="_CAM5.*PLMOD" >CAM with all polar mods:</desc>
 <desc compset="_CAM5%CLB"    >CAM CLUBB:</desc>
 <desc compset="_CAM5%PM"     >CAM prescribed modal aerosols:</desc>
 <desc compset="_CAM[45]%WCCM">CAM WACCM with daily solar data and SPEs:</desc>
