@@ -75,9 +75,10 @@
                                   l_stop,      nu_diag)
 
       use ice_therm_mushy, only: temperature_changes_salinity
-#ifdef CCSMCOUPLED
-      use ice_prescribed_mod, only: prescribed_ice
-#endif
+!!!AKT: prescribed ice not implemented in ACME
+!!!#ifdef CCSMCOUPLED
+!!!      use ice_prescribed_mod, only: prescribed_ice
+!!!#endif
 
       integer (kind=int_kind), intent(in) :: &
          nilyr   , & ! number of ice layers
@@ -401,13 +402,13 @@
       !-----------------------------------------------------------------
       ! If prescribed ice, set hi back to old values
       !-----------------------------------------------------------------
-
-#ifdef CCSMCOUPLED
-      if (prescribed_ice) then
-            hin    = worki
-            fhocnn = c0             ! for diagnostics
-      endif
-#endif
+!!!AKT: prescribed ice not implemented in ACME
+!!!#ifdef CCSMCOUPLED
+!!!      if (prescribed_ice) then
+!!!            hin    = worki
+!!!            fhocnn = c0             ! for diagnostics
+!!!      endif
+!!!#endif
 
       !-----------------------------------------------------------------
       ! Compute fluxes of water and salt from ice to ocean.

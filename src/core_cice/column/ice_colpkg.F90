@@ -379,10 +379,15 @@
       iyear_AD  = 1950
       log_print = .false.   ! if true, write out orbital parameters
 
+#ifdef CCSMCOUPLED
+      call shr_orb_params( iyear_AD, eccen , obliq , mvelp    , &
+                           obliqr  , lambm0, mvelpp, log_print)
+#else
       call shr_orb_params( iyear_AD, eccen , obliq , mvelp    , &
                            obliqr  , lambm0, mvelpp, log_print, &
                            nu_diag , l_stop, stop_label)
- 
+#endif
+
       end subroutine colpkg_init_orbit
  
 !=======================================================================

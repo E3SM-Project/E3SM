@@ -14,8 +14,12 @@
 
       implicit none
       private
+#ifdef CCSMCOUPLED
+      public :: compute_coszen
+#else
       public :: shr_orb_params, compute_coszen
-     
+#endif
+
 !=======================================================================
  
       contains
