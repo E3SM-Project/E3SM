@@ -24,9 +24,9 @@
 		<option name="config_disable_vel_all_tend">.true.</option>
 		<option name="config_disable_tr_all_tend">.true.</option>
 		<option name="config_use_active_tracers">.false.</option>
-
+		<option name="config_AM_lagrPartTrack_enable">.true.</option>
 		<option name="config_AM_lagrPartTrack_compute_on_startup">.false.</option>
-		<option name="config_AM_lagrPartTrack_write_on_startup">.false.</option>
+		<option name="config_AM_lagrPartTrack_write_on_startup">.true.</option>
 		<option name="config_AM_timeSeriesStats_output_stream">'none'</option>
 		<option name="config_AM_timeSeriesStats_restart_stream">'none'</option>
 	</namelist>
@@ -68,10 +68,10 @@
 
 	<run_script name="run.py">
 		<step executable="./metis">
-			<argument flag="graph.info">4</argument>
+			<argument flag="graph.info">16</argument>
 		</step>
 		<step executable="mpirun">
-			<argument flag="-n">4</argument>
+			<argument flag="-n">16</argument>
 			<argument flag="">./ocean_model</argument>
 			<argument flag="-n">namelist.ocean</argument>
 			<argument flag="-s">streams.ocean</argument>
