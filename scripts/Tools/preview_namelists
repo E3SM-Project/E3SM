@@ -209,7 +209,11 @@ system($sysmod) == 0 or $logger->logdie ("ERROR preview_namelists: $sysmod faile
 
 foreach my $rfile (@runfiles){
     my $copied=0;
-    if($rfile =~ /_in_?/){
+    if($rfile =~ /_in$/){
+	copy("$RUNDIR/$rfile","$docdir/$rfile") or $logger->logdie("Could not copy $rfile to $docdir");
+	$copied = 1;
+    }
+    if($rfile =~ /_in_\d+$/){
 	copy("$RUNDIR/$rfile","$docdir/$rfile") or $logger->logdie("Could not copy $rfile to $docdir");
 	$copied = 1;
     }
