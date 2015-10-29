@@ -1024,7 +1024,7 @@ module mpas_geometry_utils
 !>  searches over all the neighbors of the lastCell index and finds the
 !>  nearest point.
 !-----------------------------------------------------------------------
-   subroutine mpas_get_nearby_cell_index(nCells, xc,yc,zc , xp,yp,zp, on_a_sphere, lastCell, cellsOnCell, nEdgesOnCell) !{{{
+   subroutine mpas_get_nearby_cell_index(nCells, xc,yc,zc , xp,yp,zp, meshPool, lastCell, cellsOnCell, nEdgesOnCell) !{{{
       implicit none
 
       integer, intent(in) :: nCells                            ! number of cells
@@ -1032,7 +1032,7 @@ module mpas_geometry_utils
       integer, dimension(:), intent(in) :: nEdgesOnCell        ! number of edges bordering cell
       real (kind=RKIND), dimension(:), intent(in) :: xc,yc,zc  ! center cell locations
       real (kind=RKIND), intent(in) :: xp,yp,zp                ! point to find cell locations
-      logical, intent(in) :: on_a_sphere                         ! flag designating if we are on a sphere
+      type (mpas_pool_type), intent(in), pointer :: meshPool   ! meshPool pointer
 
       real (kind=RKIND) :: pointRadius   ! magnitude of a point radius
       integer :: iPoint, aPoint, cellGuess, cellID
@@ -1041,8 +1041,16 @@ module mpas_geometry_utils
       real (kind=RKIND) :: dx,dy,dz      ! differences between two points
       real (kind=RKIND) :: r2Min         ! minimum squared distance found thus far
       real (kind=RKIND) :: r2            ! squared distance
+      logical, pointer :: on_a_sphere    ! flag designating if we are on a sphere
+      logical, pointer :: is_periodic    ! flag designating if periodicity is important
+      real(kind=RKIND), pointer :: x_period, y_period
 
       integer, intent(inout) :: lastCell                          ! last known cell number
+
+      call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
+      call mpas_pool_get_config(meshPool, 'is_periodic', is_periodic)
+      call mpas_pool_get_config(meshPool, 'x_period', x_period)
+      call mpas_pool_get_config(meshPool, 'y_period', y_period)
 
       ! could also be last than 1 for greater use in other cases (used in general since first index is 1)
       if (lastCell < 1) then
@@ -1059,7 +1067,11 @@ module mpas_geometry_utils
          else
             xPoint = (/ xp,yp,zp /)
             do aPoint = 1, nCells
-               xCell(:, aPoint) = (/ xc(aPoint), yc(aPoint), zc(aPoint) /)
+               if (is_periodic) then
+                  xCell(:, aPoint) = (/ mpas_fix_periodicity(xc(aPoint), xp, x_period), mpas_fix_periodicity(yc(aPoint), yp, y_period), zc(aPoint) /)
+               else
+                  xCell(:, aPoint) = (/ xc(aPoint), yc(aPoint), zc(aPoint) /)
+               end if
             end do
          end if
          !}}}
@@ -1117,12 +1129,20 @@ module mpas_geometry_utils
             else
                xPoint = (/ xp,yp,zp /)
                ! for point itself
-               xCell(:, cellID) = (/ xc(cellID), yc(cellID), zc(cellID) /)
+               if (is_periodic) then
+                  xCell(:, cellID) = (/ mpas_fix_periodicity(xc(cellID), xp, x_period), mpas_fix_periodicity(yc(cellID), yp, y_period), zc(cellID) /)
+               else
+                  xCell(:, cellID) = (/ xc(cellID), yc(cellID), zc(cellID) /)
+               end if
                ! for point neighbors
                do iPoint = 1, nEdgesOnCell(cellID)
                   aPoint = cellsOnCell(iPoint, cellID)
                   if (aPoint > nCells) cycle
-                  xCell(:, aPoint) = (/ xc(aPoint), yc(aPoint), zc(aPoint) /)
+                  if (is_periodic) then
+                     xCell(:, aPoint) = (/ mpas_fix_periodicity(xc(aPoint), xp, x_period), mpas_fix_periodicity(yc(aPoint), yp, y_period), zc(aPoint) /)
+                  else
+                     xCell(:, aPoint) = (/ xc(aPoint), yc(aPoint), zc(aPoint) /)
+                  end if
                end do
             end if
             !}}}
