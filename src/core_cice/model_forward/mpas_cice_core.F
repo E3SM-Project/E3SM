@@ -391,7 +391,9 @@ module cice_core
    
       use mpas_derived_types
       use mpas_decomp
-   
+      use cice_column, only: &
+           cice_column_finalize
+
       implicit none
 
       type (domain_type), intent(inout) :: domain 
@@ -399,13 +401,16 @@ module cice_core
 
       iErr = 0
 
+      ! finalize column
+      call cice_column_finalize(domain)
+
       call cice_analysis_finalize(domain, ierr)
- 
+
       call mpas_destroy_clock(clock, ierr)
+
       call mpas_decomp_destroy_decomp_list(domain % decompositions)
 
    end function cice_core_finalize
-
 
    !-----------------------------------------------------------------------
 

@@ -304,11 +304,11 @@ module cice_core_interface
         pkgColumnRidgingActive                = .false.
      endif
 
-     pkgColumnShortwaveActive              = .true.
-     pkgColumnVerticalThermodynamicsActive = .true.
-     pkgColumnBiogeochemistryActive        = .true.
-     pkgColumnITDThermodynamicsActive      = .true.
-     pkgColumnRidgingActive                = .true.
+     !pkgColumnShortwaveActive              = .true.
+     !pkgColumnVerticalThermodynamicsActive = .true.
+     !pkgColumnBiogeochemistryActive        = .true.
+     !pkgColumnITDThermodynamicsActive      = .true.
+     !pkgColumnRidgingActive                = .true.
 
      !-----------------------------------------------------------------------
      ! tracers
@@ -364,13 +364,13 @@ module cice_core_interface
         pkgColumnTracerArrayStandInActive = .true.
      endif
 
-     pkgColumnTracerIceAgeActive       = .true.
-     pkgColumnTracerFirstYearIceActive = .true.
-     pkgColumnTracerLevelIceActive     = .true.
-     pkgColumnTracerPondsActive        = .true.
-     pkgColumnTracerLidThicknessActive = .true.
-     pkgColumnTracerAerosolsActive     = .true.
-     pkgColumnTracerArrayStandInActive = .true.
+     !pkgColumnTracerIceAgeActive       = .true.
+     !pkgColumnTracerFirstYearIceActive = .true.
+     !pkgColumnTracerLevelIceActive     = .true.
+     !pkgColumnTracerPondsActive        = .true.
+     !pkgColumnTracerLidThicknessActive = .true.
+     !pkgColumnTracerAerosolsActive     = .true.
+     !pkgColumnTracerArrayStandInActive = .true.
 
      !-----------------------------------------------------------------------
      ! other column packages
@@ -383,7 +383,7 @@ module cice_core_interface
      call MPAS_pool_get_package(packagePool, "pkgColumnFormDragActive", pkgColumnFormDragActive)
      pkgColumnFormDragActive = (config_use_column_package .and. config_use_column_vertical_thermodynamics .and.config_use_form_drag)
 
-     pkgColumnFormDragActive = .true.
+     !pkgColumnFormDragActive = .true.
 
    end subroutine setup_packages_column_physics!}}}
 

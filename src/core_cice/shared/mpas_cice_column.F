@@ -39,7 +39,8 @@ module cice_column
        cice_column_aggregate, &
        cice_column_initial_air_drag_coefficient, &
        cice_column_reinitialize_fluxes, &
-       cice_column_reinitialize_diagnostics
+       cice_column_reinitialize_diagnostics, &
+       cice_column_finalize
        
   ! tracer object
   type, private :: ciceTracerObjectType
@@ -758,6 +759,29 @@ contains
     endif
 
   end subroutine init_column_level_ice_tracers
+
+!-----------------------------------------------------------------------
+! finalize
+!-----------------------------------------------------------------------
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_column_finalize
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 29th October 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_column_finalize(domain)
+
+    type(domain_type), intent(inout) :: domain
+
+    call finalize_column_non_activated_pointers(domain)
+
+  end subroutine cice_column_finalize
 
 !-----------------------------------------------------------------------
 ! runtime
@@ -8840,7 +8864,8 @@ contains
 
     type(MPAS_pool_type), pointer :: &
          mesh, &
-         drag
+         drag, &
+         tracers
 
     ! packages
     logical, pointer :: &
@@ -8851,20 +8876,21 @@ contains
          pkgColumnTracerLidThicknessActive, &
          pkgColumnTracerAerosolsActive, &
          pkgColumnFormDragActive, &
-         pkgColumnBiogeochemistryActive
+         pkgColumnBiogeochemistryActive, &
+         pkgColumnVerticalThermodynamicsActive
 
     ! mesh stand-ins
     type(field1DReal), pointer :: &
-         latCell ! nCells array
+         latCell, lonCell ! nCells array
+
+    type(field3DReal), pointer :: &
+         iceAreaCategory
 
     ! drag variables
     type(field1DReal), pointer :: &
-         airOceanDragCoefficientRatio, &
-         oceanDragCoefficient, &
          oceanDragCoefficientSkin, &
          oceanDragCoefficientFloe, &
          oceanDragCoefficientKeel, &
-         airDragCoefficient, &
          airDragCoefficientSkin, &
          airDragCoefficientFloe, &
          airDragCoefficientPond, &
@@ -8892,6 +8918,7 @@ contains
        call MPAS_pool_get_package(block % packages, "pkgColumnTracerLidThicknessActive", pkgColumnTracerLidThicknessActive)
        call MPAS_pool_get_package(block % packages, "pkgColumnTracerAerosolsActive", pkgColumnTracerAerosolsActive)
        call MPAS_pool_get_package(block % packages, "pkgColumnBiogeochemistryActive", pkgColumnBiogeochemistryActive)
+       call MPAS_pool_get_package(block % packages, "pkgColumnVerticalThermodynamicsActive", pkgColumnVerticalThermodynamicsActive)
 
        ! ice age
        if (.not. pkgColumnTracerIceAgeActive) then
@@ -8939,7 +8966,7 @@ contains
           call set_stand_in_tracer_array(block, "skeletalAmmoniumConc")
           call set_stand_in_tracer_array(block, "skeletalDMSConc")
           call set_stand_in_tracer_array(block, "skeletalDMSPpConc")
-          call set_stand_in_tracer_array(block, "skeletalDMSPdpConc")
+          call set_stand_in_tracer_array(block, "skeletalDMSPdConc")
           call set_stand_in_tracer_array(block, "skeletalNonreactiveConc")
           call set_stand_in_tracer_array(block, "skeletalHumicsConc")
           call set_stand_in_tracer_array(block, "skeletalParticulateIronConc")
@@ -8953,15 +8980,18 @@ contains
           call set_stand_in_tracer_array(block, "verticalAmmoniumConc")
           call set_stand_in_tracer_array(block, "verticalDMSConc")
           call set_stand_in_tracer_array(block, "verticalDMSPpConc")
-          call set_stand_in_tracer_array(block, "verticalDMSPdpConc")
+          call set_stand_in_tracer_array(block, "verticalDMSPdConc")
           call set_stand_in_tracer_array(block, "verticalNonreactiveConc")
           call set_stand_in_tracer_array(block, "verticalHumicsConc")
           call set_stand_in_tracer_array(block, "verticalParticulateIronConc")
           call set_stand_in_tracer_array(block, "verticalDissolvedIronConc")
           call set_stand_in_tracer_array(block, "verticalAerosolsConc")
-          call set_stand_in_tracer_array(block, "verticalSalinityConc")
           call set_stand_in_tracer_array(block, "brineFraction")
-          call set_stand_in_tracer_array(block, "mobileFaction")
+          call set_stand_in_tracer_array(block, "mobileFraction")
+       endif
+
+       if (.not. pkgColumnBiogeochemistryActive .and. .not. pkgColumnVerticalThermodynamicsActive) then
+          call set_stand_in_tracer_array(block, "verticalSalinity")
        endif
 
        !-----------------------------------------------------------------------
@@ -8976,15 +9006,12 @@ contains
           ! get mesh stand-ins if have ones of right dimensions
           call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
           call MPAS_pool_get_field(mesh, "latCell", latCell) ! nCells real array
-          
+
           call MPAS_pool_get_subpool(block % structs, "drag", drag)
 
-          call MPAS_pool_get_field(drag, "airOceanDragCoefficientRatio", airOceanDragCoefficientRatio)
-          call MPAS_pool_get_field(drag, "oceanDragCoefficient", oceanDragCoefficient)
           call MPAS_pool_get_field(drag, "oceanDragCoefficientSkin", oceanDragCoefficientSkin)
           call MPAS_pool_get_field(drag, "oceanDragCoefficientFloe", oceanDragCoefficientFloe)
           call MPAS_pool_get_field(drag, "oceanDragCoefficientKeel", oceanDragCoefficientKeel)
-          call MPAS_pool_get_field(drag, "airDragCoefficient", airDragCoefficient)
           call MPAS_pool_get_field(drag, "airDragCoefficientSkin", airDragCoefficientSkin)
           call MPAS_pool_get_field(drag, "airDragCoefficientFloe", airDragCoefficientFloe)
           call MPAS_pool_get_field(drag, "airDragCoefficientPond", airDragCoefficientPond)
@@ -8998,12 +9025,9 @@ contains
           call MPAS_pool_get_field(drag, "dragFloeLength", dragFloeLength)
           call MPAS_pool_get_field(drag, "dragFloeSeparation", dragFloeSeparation)
 
-          airOceanDragCoefficientRatio % array => latCell % array
-          oceanDragCoefficient % array         => latCell % array
           oceanDragCoefficientSkin % array     => latCell % array
           oceanDragCoefficientFloe % array     => latCell % array
           oceanDragCoefficientKeel % array     => latCell % array
-          airDragCoefficient % array           => latCell % array
           airDragCoefficientSkin % array       => latCell % array
           airDragCoefficientFloe % array       => latCell % array
           airDragCoefficientPond % array       => latCell % array
@@ -9023,6 +9047,199 @@ contains
     end do
 
   end subroutine init_column_non_activated_pointers
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  finalize_column_non_activated_pointers
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 29th October 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine finalize_column_non_activated_pointers(domain)
+
+    type(domain_type) :: domain
+
+    type(block_type), pointer :: block
+
+    type(MPAS_pool_type), pointer :: &
+         drag, &
+         tracers
+
+    ! packages
+    logical, pointer :: &
+         pkgColumnTracerIceAgeActive, &
+         pkgColumnTracerFirstYearIceActive, &
+         pkgColumnTracerLevelIceActive, &
+         pkgColumnTracerPondsActive, &
+         pkgColumnTracerLidThicknessActive, &
+         pkgColumnTracerAerosolsActive, &
+         pkgColumnFormDragActive, &
+         pkgColumnBiogeochemistryActive, &
+         pkgColumnVerticalThermodynamicsActive
+
+    ! drag variables
+    type(field1DReal), pointer :: &
+         oceanDragCoefficientSkin, &
+         oceanDragCoefficientFloe, &
+         oceanDragCoefficientKeel, &
+         airDragCoefficientSkin, &
+         airDragCoefficientFloe, &
+         airDragCoefficientPond, &
+         airDragCoefficientRidge, &
+         dragFreeboard, &
+         dragIceSnowDraft, &
+         dragRidgeHeight, &
+         dragRidgeSeparation, &
+         dragKeelDepth, &
+         dragKeelSeparation, &
+         dragFloeLength, &
+         dragFloeSeparation
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       !-----------------------------------------------------------------------
+       ! tracers
+       !-----------------------------------------------------------------------
+
+       call MPAS_pool_get_package(block % packages, "pkgColumnTracerIceAgeActive", pkgColumnTracerIceAgeActive)
+       call MPAS_pool_get_package(block % packages, "pkgColumnTracerFirstYearIceActive", pkgColumnTracerFirstYearIceActive)
+       call MPAS_pool_get_package(block % packages, "pkgColumnTracerLevelIceActive", pkgColumnTracerLevelIceActive)
+       call MPAS_pool_get_package(block % packages, "pkgColumnTracerPondsActive", pkgColumnTracerPondsActive)
+       call MPAS_pool_get_package(block % packages, "pkgColumnTracerLidThicknessActive", pkgColumnTracerLidThicknessActive)
+       call MPAS_pool_get_package(block % packages, "pkgColumnTracerAerosolsActive", pkgColumnTracerAerosolsActive)
+       call MPAS_pool_get_package(block % packages, "pkgColumnBiogeochemistryActive", pkgColumnBiogeochemistryActive)
+       call MPAS_pool_get_package(block % packages, "pkgColumnVerticalThermodynamicsActive", pkgColumnVerticalThermodynamicsActive)
+
+       ! ice age
+       if (.not. pkgColumnTracerIceAgeActive) then
+          call finalize_stand_in_tracer_array(block, "iceAge")
+       endif
+
+       ! first year ice
+       if (.not. pkgColumnTracerFirstYearIceActive) then
+          call finalize_stand_in_tracer_array(block, "firstYearIceArea")
+       endif
+
+       ! level ice
+       if (.not. pkgColumnTracerLevelIceActive) then
+          call finalize_stand_in_tracer_array(block, "levelIceArea")
+          call finalize_stand_in_tracer_array(block, "levelIceVolume")
+       endif
+
+       ! ponds
+       if (.not. pkgColumnTracerPondsActive) then
+          call finalize_stand_in_tracer_array(block, "pondArea")
+          call finalize_stand_in_tracer_array(block, "pondDepth")
+       endif
+
+       ! pond lids
+       if (.not. pkgColumnTracerLidThicknessActive) then
+          call finalize_stand_in_tracer_array(block, "pondLidThickness")
+       endif
+
+       ! aerosols
+       if (.not. pkgColumnTracerAerosolsActive) then
+          call finalize_stand_in_tracer_array(block, "snowScatteringAerosol")
+          call finalize_stand_in_tracer_array(block, "snowBodyAerosol")
+          call finalize_stand_in_tracer_array(block, "iceScatteringAerosol")
+          call finalize_stand_in_tracer_array(block, "iceBodyAerosol")
+       endif
+
+       ! biogeochemistry
+       if (.not. pkgColumnBiogeochemistryActive) then
+          call finalize_stand_in_tracer_array(block, "skeletalAlgaeConc")
+          call finalize_stand_in_tracer_array(block, "skeletalDOCConc")
+          call finalize_stand_in_tracer_array(block, "skeletalDICConc")
+          call finalize_stand_in_tracer_array(block, "skeletalDONConc")
+          call finalize_stand_in_tracer_array(block, "skeletalNitrateConc")
+          call finalize_stand_in_tracer_array(block, "skeletalSilicateConc")
+          call finalize_stand_in_tracer_array(block, "skeletalAmmoniumConc")
+          call finalize_stand_in_tracer_array(block, "skeletalDMSConc")
+          call finalize_stand_in_tracer_array(block, "skeletalDMSPpConc")
+          call finalize_stand_in_tracer_array(block, "skeletalDMSPdConc")
+          call finalize_stand_in_tracer_array(block, "skeletalNonreactiveConc")
+          call finalize_stand_in_tracer_array(block, "skeletalHumicsConc")
+          call finalize_stand_in_tracer_array(block, "skeletalParticulateIronConc")
+          call finalize_stand_in_tracer_array(block, "skeletalDissolvedIronConc")
+          call finalize_stand_in_tracer_array(block, "verticalAlgaeConc")
+          call finalize_stand_in_tracer_array(block, "verticalDOCConc")
+          call finalize_stand_in_tracer_array(block, "verticalDICConc")
+          call finalize_stand_in_tracer_array(block, "verticalDONConc")
+          call finalize_stand_in_tracer_array(block, "verticalNitrateConc")
+          call finalize_stand_in_tracer_array(block, "verticalSilicateConc")
+          call finalize_stand_in_tracer_array(block, "verticalAmmoniumConc")
+          call finalize_stand_in_tracer_array(block, "verticalDMSConc")
+          call finalize_stand_in_tracer_array(block, "verticalDMSPpConc")
+          call finalize_stand_in_tracer_array(block, "verticalDMSPdConc")
+          call finalize_stand_in_tracer_array(block, "verticalNonreactiveConc")
+          call finalize_stand_in_tracer_array(block, "verticalHumicsConc")
+          call finalize_stand_in_tracer_array(block, "verticalParticulateIronConc")
+          call finalize_stand_in_tracer_array(block, "verticalDissolvedIronConc")
+          call finalize_stand_in_tracer_array(block, "verticalAerosolsConc")
+          call finalize_stand_in_tracer_array(block, "verticalSalinity")
+          call finalize_stand_in_tracer_array(block, "brineFraction")
+          call finalize_stand_in_tracer_array(block, "mobileFraction")
+       endif
+
+       if (.not. pkgColumnBiogeochemistryActive .and. .not. pkgColumnVerticalThermodynamicsActive) then
+          call finalize_stand_in_tracer_array(block, "verticalSalinity")
+       endif
+
+       !-----------------------------------------------------------------------
+       ! other column packages
+       !-----------------------------------------------------------------------
+
+       ! form drag
+       call MPAS_pool_get_package(block % packages, "pkgColumnFormDragActive", pkgColumnFormDragActive)
+
+       if (.not. pkgColumnFormDragActive) then
+
+          call MPAS_pool_get_subpool(block % structs, "drag", drag)
+
+          call MPAS_pool_get_field(drag, "oceanDragCoefficientSkin", oceanDragCoefficientSkin)
+          call MPAS_pool_get_field(drag, "oceanDragCoefficientFloe", oceanDragCoefficientFloe)
+          call MPAS_pool_get_field(drag, "oceanDragCoefficientKeel", oceanDragCoefficientKeel)
+          call MPAS_pool_get_field(drag, "airDragCoefficientSkin", airDragCoefficientSkin)
+          call MPAS_pool_get_field(drag, "airDragCoefficientFloe", airDragCoefficientFloe)
+          call MPAS_pool_get_field(drag, "airDragCoefficientPond", airDragCoefficientPond)
+          call MPAS_pool_get_field(drag, "airDragCoefficientRidge", airDragCoefficientRidge)
+          call MPAS_pool_get_field(drag, "dragFreeboard", dragFreeboard)
+          call MPAS_pool_get_field(drag, "dragIceSnowDraft", dragIceSnowDraft)
+          call MPAS_pool_get_field(drag, "dragRidgeHeight", dragRidgeHeight)
+          call MPAS_pool_get_field(drag, "dragRidgeSeparation", dragRidgeSeparation)
+          call MPAS_pool_get_field(drag, "dragKeelDepth", dragKeelDepth)
+          call MPAS_pool_get_field(drag, "dragKeelSeparation", dragKeelSeparation)
+          call MPAS_pool_get_field(drag, "dragFloeLength", dragFloeLength)
+          call MPAS_pool_get_field(drag, "dragFloeSeparation", dragFloeSeparation)
+
+          oceanDragCoefficientSkin % array     => null()
+          oceanDragCoefficientFloe % array     => null()
+          oceanDragCoefficientKeel % array     => null()
+          airDragCoefficientSkin % array       => null()
+          airDragCoefficientFloe % array       => null()
+          airDragCoefficientPond % array       => null()
+          airDragCoefficientRidge % array      => null()
+          dragFreeboard % array                => null()
+          dragIceSnowDraft % array             => null()
+          dragRidgeHeight % array              => null()
+          dragRidgeSeparation % array          => null()
+          dragKeelDepth % array                => null()
+          dragKeelSeparation % array           => null()
+          dragFloeLength % array               => null()
+          dragFloeSeparation % array           => null()
+
+       endif
+
+       block => block % next
+    end do
+
+  end subroutine finalize_column_non_activated_pointers
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -9058,6 +9275,40 @@ contains
     tracerArray % array => iceAreaCategory % array
 
   end subroutine set_stand_in_tracer_array
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  finalize_stand_in_tracer_array
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 29th October 2015
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine finalize_stand_in_tracer_array(block, tracerName)
+
+    type(block_type) :: block
+
+    character(len=*), intent(in) :: &
+         tracerName
+
+    type(MPAS_pool_type), pointer :: &
+         tracers
+
+    type(field3DReal), pointer :: &
+         tracerArray, &
+         iceAreaCategory
+
+    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+
+    call MPAS_pool_get_field(tracers, trim(tracerName), tracerArray, 1)
+
+    tracerArray % array => null()
+
+  end subroutine finalize_stand_in_tracer_array
 
 !-----------------------------------------------------------------------
 ! other initialization
@@ -9912,7 +10163,8 @@ contains
     logical, pointer :: &
          config_use_ice_age, &
          config_use_form_drag, &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_column_shortwave
 
     block => domain % blocklist
     do while (associated(block))
@@ -10080,7 +10332,6 @@ contains
           call MPAS_pool_get_array(biogeochemistryPool, "snowIceBioFluxes", snowIceBioFluxes)
           call MPAS_pool_get_array(biogeochemistryPool, "totalVerticalBiologyIce", totalVerticalBiologyIce)
           call MPAS_pool_get_array(biogeochemistryPool, "totalVerticalBiologySnow", totalVerticalBiologySnow)
-          call MPAS_pool_get_array(biogeochemistryPool, "bioTracerShortwave", bioTracerShortwave)
           
           primaryProduction          = 0.0_RKIND
           netSpecificAlgalGrowthRate = 0.0_RKIND
@@ -10092,6 +10343,15 @@ contains
           snowIceBioFluxes           = 0.0_RKIND
           totalVerticalBiologyIce    = 0.0_RKIND
           totalVerticalBiologySnow   = 0.0_RKIND
+
+       endif
+
+       call MPAS_pool_get_config(block % configs, "config_use_column_shortwave", config_use_column_shortwave)
+
+       if (config_use_column_biogeochemistry .or. config_use_column_shortwave) then
+
+          call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistryPool)
+          call MPAS_pool_get_array(biogeochemistryPool, "bioTracerShortwave", bioTracerShortwave)
           bioTracerShortwave         = 0.0_RKIND
 
        endif

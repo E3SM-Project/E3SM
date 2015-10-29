@@ -1754,7 +1754,8 @@ contains
          nZBGCTracers         
 
     logical, pointer :: &
-         config_do_restart
+         config_do_restart, &
+         config_use_column_biogeochemistry
     
     integer, pointer :: &
          nCells
@@ -1844,6 +1845,10 @@ contains
        ! Bio fluxes received from atmosphere
        !-------------------------------------------------------------
 
+       call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+
+       if (config_use_column_biogeochemistry) then
+
        call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
 
        call MPAS_pool_get_array(biogeochemistry, "atmosBioFluxes", atmosBioFluxes)
@@ -1914,6 +1919,8 @@ contains
                maxAerosolType)
 
        enddo ! iCell
+
+       endif ! config_use_column_biogeochemistry
 
        block => block % next
     enddo
