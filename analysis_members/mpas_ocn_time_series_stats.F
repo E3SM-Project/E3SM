@@ -65,7 +65,7 @@ module ocn_time_series_stats
       duration_alarm_ID, reset_alarm_ID
 
     ! counter for accumulation
-    real, pointer :: counter
+    real (kind=RKIND), pointer :: counter
   end type time_series_buffer_type
 
   type time_series_type
