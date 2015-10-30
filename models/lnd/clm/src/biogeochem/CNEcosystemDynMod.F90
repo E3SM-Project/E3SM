@@ -386,7 +386,8 @@ contains
 
        if (flanduse_timeseries /= ' ') then
           call CNHarvest(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               cnstate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars)
+               cnstate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
+               phosphorusstate_vars, phosphorusflux_vars)
        end if
 
        if ( use_c13 ) then

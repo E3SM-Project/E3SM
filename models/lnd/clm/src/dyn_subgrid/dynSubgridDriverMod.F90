@@ -155,7 +155,7 @@ contains
     type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
     type(glc2lnd_type)       , intent(inout) :: glc2lnd_vars
 
-    type(phosphorusstate_type) , intent(in)    :: phosphorusstate_vars
+    type(phosphorusstate_type) , intent(inout)    :: phosphorusstate_vars
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
 
     !

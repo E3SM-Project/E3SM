@@ -312,13 +312,13 @@ contains
    hrv_livestemn_xfer_to_litter        =>    nitrogenflux_vars%hrv_livestemn_xfer_to_litter_patch            , & ! Output: [real(r8) (:)]                                                    
    hrv_deadstemn_xfer_to_litter        =>    nitrogenflux_vars%hrv_deadstemn_xfer_to_litter_patch            , & ! Output: [real(r8) (:)]                                                    
    hrv_livecrootn_xfer_to_litter       =>    nitrogenflux_vars%hrv_livecrootn_xfer_to_litter_patch           , & ! Output: [real(r8) (:)]                                                    
-   hrv_deadcrootn_xfer_to_litter       =>    nitrogenflux_vars%hrv_deadcrootn_xfer_to_litter_patch             & ! Output: [real(r8) (:)]                                                    
+   hrv_deadcrootn_xfer_to_litter       =>    nitrogenflux_vars%hrv_deadcrootn_xfer_to_litter_patch           , & ! Output: [real(r8) (:)]                                                    
 
    hrv_leafp_to_litter                 =>    phosphorusflux_vars%hrv_leafp_to_litter_patch                     , & ! Output: [real(r8) (:)]                                                    
    hrv_frootp_to_litter                =>    phosphorusflux_vars%hrv_frootp_to_litter_patch                    , & ! Output: [real(r8) (:)]                                                    
    hrv_livestemp_to_litter             =>    phosphorusflux_vars%hrv_livestemp_to_litter_patch                 , & ! Output: [real(r8) (:)]                                                    
-   hrv_deadstemp_to_prod10n            =>    phosphorusflux_vars%hrv_deadstemp_to_prod10n_patch                , & ! Output: [real(r8) (:)]                                                    
-   hrv_deadstemp_to_prod100n           =>    phosphorusflux_vars%hrv_deadstemp_to_prod100n_patch               , & ! Output: [real(r8) (:)]                                                    
+   hrv_deadstemp_to_prod10p            =>    phosphorusflux_vars%hrv_deadstemp_to_prod10p_patch                , & ! Output: [real(r8) (:)]                                                    
+   hrv_deadstemp_to_prod100p           =>    phosphorusflux_vars%hrv_deadstemp_to_prod100p_patch               , & ! Output: [real(r8) (:)]                                                    
    hrv_livecrootp_to_litter            =>    phosphorusflux_vars%hrv_livecrootp_to_litter_patch                , & ! Output: [real(r8) (:)]                                                    
    hrv_deadcrootp_to_litter            =>    phosphorusflux_vars%hrv_deadcrootp_to_litter_patch                , & ! Output: [real(r8) (:)]                                                    
    hrv_retransp_to_litter              =>    phosphorusflux_vars%hrv_retransp_to_litter_patch                  , & ! Output: [real(r8) (:)]                                                    
@@ -421,9 +421,9 @@ contains
          hrv_leafp_to_litter(p)               = leafp(p)               * m
          hrv_frootp_to_litter(p)              = frootp(p)              * m
          hrv_livestemp_to_litter(p)           = livestemp(p)           * m
-         hrv_deadstemp_to_prod10n(p)          = deadstemp(p)           * m * &
+         hrv_deadstemp_to_prod10p(p)          = deadstemp(p)           * m * &
                                                 pprodharv10(ivt(p))
-         hrv_deadstemp_to_prod100n(p)         = deadstemp(p)           * m * &
+         hrv_deadstemp_to_prod100p(p)         = deadstemp(p)           * m * &
                                                 (1.0_r8 - pprodharv10(ivt(p)))
          hrv_livecrootp_to_litter(p)          = livecrootp(p)          * m
          hrv_deadcrootp_to_litter(p)          = deadcrootp(p)          * m
@@ -562,8 +562,8 @@ contains
         hrv_leafp_to_litter              =>    phosphorusflux_vars%hrv_leafp_to_litter_patch              , & ! Input:  [real(r8) (:)   ]                                                    
         hrv_frootp_to_litter             =>    phosphorusflux_vars%hrv_frootp_to_litter_patch             , & ! Input:  [real(r8) (:)   ]                                                    
         hrv_livestemp_to_litter          =>    phosphorusflux_vars%hrv_livestemp_to_litter_patch          , & ! Input:  [real(r8) (:)   ]                                                    
-        phrv_deadstemp_to_prod10n        =>    phosphorusflux_vars%hrv_deadstemp_to_prod10n_patch         , & ! Input:  [real(r8) (:)   ]                                                    
-        phrv_deadstemp_to_prod100n       =>    phosphorusflux_vars%hrv_deadstemp_to_prod100n_patch        , & ! Input:  [real(r8) (:)   ]                                                    
+        phrv_deadstemp_to_prod10p        =>    phosphorusflux_vars%hrv_deadstemp_to_prod10p_patch         , & ! Input:  [real(r8) (:)   ]                                                    
+        phrv_deadstemp_to_prod100p       =>    phosphorusflux_vars%hrv_deadstemp_to_prod100p_patch        , & ! Input:  [real(r8) (:)   ]                                                    
         hrv_livecrootp_to_litter         =>    phosphorusflux_vars%hrv_livecrootp_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
         hrv_deadcrootp_to_litter         =>    phosphorusflux_vars%hrv_deadcrootp_to_litter_patch         , & ! Input:  [real(r8) (:)   ]                                                    
         hrv_retransp_to_litter           =>    phosphorusflux_vars%hrv_retransp_to_litter_patch           , & ! Input:  [real(r8) (:)   ]                                                    
@@ -579,8 +579,8 @@ contains
         hrv_deadstemp_xfer_to_litter     =>    phosphorusflux_vars%hrv_deadstemp_xfer_to_litter_patch     , & ! Input:  [real(r8) (:)   ]                                                    
         hrv_livecrootp_xfer_to_litter    =>    phosphorusflux_vars%hrv_livecrootp_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
         hrv_deadcrootp_xfer_to_litter    =>    phosphorusflux_vars%hrv_deadcrootp_xfer_to_litter_patch    , & ! Input:  [real(r8) (:)   ]                                                    
-        chrv_deadstemp_to_prod10n        =>    phosphorusflux_vars%hrv_deadstemp_to_prod10n_col           , & ! InOut:  [real(r8) (:)   ]                                                    
-        chrv_deadstemp_to_prod100n       =>    phosphorusflux_vars%hrv_deadstemp_to_prod100n_col          , & ! InOut:  [real(r8) (:)   ]                                                    
+        chrv_deadstemp_to_prod10p        =>    phosphorusflux_vars%hrv_deadstemp_to_prod10p_col           , & ! InOut:  [real(r8) (:)   ]                                                    
+        chrv_deadstemp_to_prod100p       =>    phosphorusflux_vars%hrv_deadstemp_to_prod100p_col          , & ! InOut:  [real(r8) (:)   ]                                                    
         harvest_p_to_litr_met_p          =>    phosphorusflux_vars%harvest_p_to_litr_met_p_col            , & ! InOut:  [real(r8) (:,:) ]  P fluxes associated with harvest to litter metabolic pool (gP/m3/s)
         harvest_p_to_litr_cel_p          =>    phosphorusflux_vars%harvest_p_to_litr_cel_p_col            , & ! InOut:  [real(r8) (:,:) ]  P fluxes associated with harvest to litter cellulose pool (gP/m3/s)
         harvest_p_to_litr_lig_p          =>    phosphorusflux_vars%harvest_p_to_litr_lig_p_col            , & ! InOut:  [real(r8) (:,:) ]  P fluxes associated with harvest to litter lignin pool (gP/m3/s)

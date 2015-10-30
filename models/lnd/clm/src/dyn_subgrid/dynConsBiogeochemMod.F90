@@ -115,6 +115,7 @@ contains
     real(r8), allocatable, target :: prod10_pflux(:)               ! pft-level mass loss due to weight shift
     real(r8), allocatable, target :: prod100_pflux(:)              ! pft-level mass loss due to weight shift
     real(r8)                      :: leafp_seed
+    real(r8)                      :: deadstemp_seed
 
 
 
@@ -160,7 +161,7 @@ contains
          c13_cf => c13_carbonflux_vars , &
          c14_cf => c14_carbonflux_vars , &
          ns     => nitrogenstate_vars  , &
-         nf     => nitrogenflux_vars     &
+         nf     => nitrogenflux_vars   ,  &
          ps     => phosphorusstate_vars  , &
          pf     => phosphorusflux_vars     &
          )
@@ -245,6 +246,48 @@ contains
     allocate(prod100_nflux(bounds%begp:bounds%endp), stat=ier)
     if (ier /= 0) then
           write(iulog,*)subname,' allocation error for prod100_nflux'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+
+    ! Allocate P arrays
+    allocate(dwt_leafp_seed(bounds%begp:bounds%endp), stat=ier)
+    if (ier /= 0) then
+          write(iulog,*)subname,' allocation error for dwt_leafp_seed'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+    allocate(dwt_deadstemp_seed(bounds%begp:bounds%endp), stat=ier)
+    if (ier /= 0) then
+          write(iulog,*)subname,' allocation error for dwt_deadstemp_seed'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+    allocate(dwt_frootp_to_litter(bounds%begp:bounds%endp), stat=ier)
+    if (ier /= 0) then
+          write(iulog,*)subname,' allocation error for dwt_frootp_to_litter'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+    allocate(dwt_livecrootp_to_litter(bounds%begp:bounds%endp), stat=ier)
+    if (ier /= 0) then
+          write(iulog,*)subname,' allocation error for dwt_livecrootp_to_litter'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+    allocate(dwt_deadcrootp_to_litter(bounds%begp:bounds%endp), stat=ier)
+    if (ier /= 0) then
+          write(iulog,*)subname,' allocation error for dwt_deadcrootp_to_litter'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+    allocate(conv_pflux(bounds%begp:bounds%endp), stat=ier)
+    if (ier /= 0) then
+          write(iulog,*)subname,' allocation error for conv_pflux'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+    allocate(prod10_pflux(bounds%begp:bounds%endp), stat=ier)
+    if (ier /= 0) then
+          write(iulog,*)subname,' allocation error for prod10_pflux'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+    allocate(prod100_pflux(bounds%begp:bounds%endp), stat=ier)
+    if (ier /= 0) then
+          write(iulog,*)subname,' allocation error for prod100_pflux'
           call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
@@ -356,6 +399,15 @@ contains
        prod10_nflux(p) = 0._r8
        prod100_nflux(p) = 0._r8
        
+       dwt_leafp_seed(p) = 0._r8
+       dwt_deadstemp_seed(p) = 0._r8
+       dwt_frootp_to_litter(p) = 0._r8
+       dwt_livecrootp_to_litter(p) = 0._r8
+       dwt_deadcrootp_to_litter(p) = 0._r8
+       conv_pflux(p) = 0._r8
+       prod10_pflux(p) = 0._r8
+       prod100_pflux(p) = 0._r8
+
        if ( use_c13 ) then
           dwt_leafc13_seed(p) = 0._r8
           dwt_deadstemc13_seed(p) = 0._r8
@@ -613,6 +665,7 @@ contains
              ! leaf source is split later between leaf, leaf_storage, leaf_xfer
              leafc_seed   = 0._r8
              leafn_seed   = 0._r8
+             leafp_seed   = 0._r8
              deadstemc_seed   = 0._r8
              deadstemn_seed   = 0._r8
              deadstemp_seed   = 0._r8
@@ -865,9 +918,9 @@ contains
              pstor = 0._r8
              pxfer = 0._r8
              if (tot_leaf /= 0._r8) then
-                pleaf = ps%leafn_patch(p)/tot_leaf
-                pstor = ps%leafn_storage_patch(p)/tot_leaf
-                pxfer = ps%leafn_xfer_patch(p)/tot_leaf
+                pleaf = ps%leafp_patch(p)/tot_leaf
+                pstor = ps%leafp_storage_patch(p)/tot_leaf
+                pxfer = ps%leafp_xfer_patch(p)/tot_leaf
              else
                 ! when initiating from zero leaf state, use evergreen flag to set proportions
                 if (ecophyscon%evergreen(pft%itype(p)) == 1._r8) then
@@ -2546,8 +2599,8 @@ contains
                      nf%dwt_deadcrootn_to_cwdn_col(c,j) + &
                      (dwt_deadcrootn_to_litter(p))/dt * cnstate_vars%croot_prof_patch(p,j)
              
-                nf%dwt_deadcrootp_to_cwdn_col(c,j) = &
-                     nf%dwt_deadcrootp_to_cwdp_col(c,j) + &
+                pf%dwt_deadcrootp_to_cwdp_col(c,j) = &
+                     pf%dwt_deadcrootp_to_cwdp_col(c,j) + &
                      (dwt_deadcrootp_to_litter(p))/dt * cnstate_vars%croot_prof_patch(p,j)
 
                 if ( use_c13 ) then
@@ -2642,6 +2695,7 @@ contains
              nf%dwt_prod100n_gain_col(c) = nf%dwt_prod100n_gain_col(c) - prod100_nflux(p)/dt
              
              ! column-level P flux updates
+
              pf%dwt_conv_pflux_col(c) = pf%dwt_conv_pflux_col(c) - conv_pflux(p)/dt
              pf%dwt_prod10p_gain_col(c) = pf%dwt_prod10p_gain_col(c) - prod10_pflux(p)/dt
              pf%dwt_prod100p_gain_col(c) = pf%dwt_prod100p_gain_col(c) - prod100_pflux(p)/dt
