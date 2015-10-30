@@ -2858,6 +2858,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       real (kind=RKIND), intent(in) :: coef_3rd_order
 
 
+      real (kind=RKIND), dimension(nVertLevels) :: flux_upwind_arr
       real (kind=RKIND) :: flux3, flux4, flux_upwind
       real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3, scmin,scmax
       real (kind=RKIND) :: scale_factor
@@ -3117,15 +3118,18 @@ MPAS_GPTL_STOP('mono_exch_1')
             k = 1
             scalar_new(k,iCell) = scalar_old(k,iCell) * rho_zz_old(k,iCell)
 
-!TBH:  for some reason compiler ignores IVDEP here, so use a bigger hammer
-!!DIR$ IVDEP
-!DIR$ SIMD
+!DIR$ IVDEP
             do k = 2, nVertLevels
                scalar_new(k,iCell) = scalar_old(k,iCell)*rho_zz_old(k,iCell)
-               flux_upwind = dt*(max(0.0_RKIND,wwAvg(k,iCell))*scalar_old(k-1,iCell) + min(0.0_RKIND,wwAvg(k,iCell))*scalar_old(k,iCell))
-               scalar_new(k-1,iCell) = scalar_new(k-1,iCell) - flux_upwind*rdnw(k-1)
-               scalar_new(k  ,iCell) = scalar_new(k  ,iCell) + flux_upwind*rdnw(k)
-               wdtn(k,iCell) = dt*wdtn(k,iCell) - flux_upwind
+               flux_upwind_arr(k) = dt*(max(0.0_RKIND,wwAvg(k,iCell))*scalar_old(k-1,iCell) + min(0.0_RKIND,wwAvg(k,iCell))*scalar_old(k,iCell))
+            end do
+            do k = 1, nVertLevels-1
+               scalar_new(k,iCell) = scalar_new(k,iCell) - flux_upwind_arr(k+1)*rdnw(k)
+            end do
+!DIR$ IVDEP
+            do k = 2, nVertLevels
+               scalar_new(k  ,iCell) = scalar_new(k  ,iCell) + flux_upwind_arr(k)*rdnw(k)
+               wdtn(k,iCell) = dt*wdtn(k,iCell) - flux_upwind_arr(k)
             end do
 
 
@@ -3315,7 +3319,6 @@ MPAS_GPTL_STOP('mono_exch_2')
          scmin = scalar_new(1,1)
          scmax = scalar_new(1,1)
          do iCell = 1, nCellsSolve
-!DIR$ IVDEP
          do k=1, nVertLevels
             scmax = max(scmax,scalar_new(k,iCell))
             scmin = min(scmin,scalar_new(k,iCell))
