@@ -98,6 +98,7 @@ value of RUN_STARTDATE will be date2.
 
 <COMPSET sname="B_1850"                alias="B1850"         >1850_CAM4_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="B_1850_CAM5"           alias="B1850C5"       >1850_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="B_1850_C5UNI"        alias="B1850C5UNI">1850_CAM5%UNI_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="B_1850_CN"             alias="B1850CN"       >1850_CAM4_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="B_1850_CAM5_CN"        alias="B1850C5CN"     >1850_CAM5_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="B_1850_CAM5_CLM45BGC"  alias="B1850C5L45BGC" >1850_CAM5_CLM45%BGC_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
@@ -197,8 +198,10 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="F_1850_CAM5_CLM45BGC"       alias="F1850C5L45BGC"   >1850_CAM5_CLM45%BGC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000"                     alias="F"               >2000_CAM4_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5"                alias="FC5"             >2000_CAM5_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="F_2000_C5UNI"         alias="FC5UNI"     >2000_CAM5%UNI_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_AMIP"                     alias="FAMIP"           >AMIP_CAM4_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_AMIP_CAM5"                alias="FAMIPC5"         >AMIP_CAM5_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="F_AMIP_C5UNI"         alias="FAMIPC5UNI" >AMIP_CAM5%UNI_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_AMIP_CAM5_L60"            alias="FAMIPC5L60"      >AMIP_CAM5%L60_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_1850-PDAY_CAM5"           alias="F1850PDC5"       >PIPD_CAM5_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_1850-PDAY_CAM5_CLM45BGC"  alias="F1850PDC5L45BGC" >20TR_CAM5_CLM45%BGC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
@@ -418,6 +421,9 @@ value of RUN_STARTDATE will be date2.
 <!-- SECTION COMPSET COMPONENTS -->
 <!-- ================================================================================== -->
 
+<desc compset="_CAM5%MG1M"   >MG1.0 w/ modified activation:</desc>
+<desc compset="_CAM5%UNI"    >UNICON (modified mg1.0):</desc>
+
 <!-- desc match is additive -->
 
 <COMP_ATM compset="_CAM" >cam </COMP_ATM> 
@@ -562,6 +568,7 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 <CAM_CONFIG_OPTS compset="_CAM4"          >-phys cam4</CAM_CONFIG_OPTS>              
 <CAM_CONFIG_OPTS compset="_CAM5"          >-phys cam5</CAM_CONFIG_OPTS> 
 <CAM_CONFIG_OPTS compset="_CAM5%CLB"      >-clubb_sgs</CAM_CONFIG_OPTS>
+<CAM_CONFIG_OPTS compset="_CAM5%UNI"      >-unicon -cppdefs -DMODIFY_ACTIVATE</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM4%TBAM"     >-chem trop_bam</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM4%TMOZ"     >-chem trop_mozart</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM4%MOZS"     >-chem trop_mozart_soa -age_of_air_trcs</CAM_CONFIG_OPTS>
