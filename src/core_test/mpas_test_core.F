@@ -10,6 +10,9 @@ module test_core
    use mpas_framework
    use mpas_timekeeping
 
+   use test_core_halo_exch
+   use mpas_stream_manager
+
    type (MPAS_Clock_type), pointer :: clock
 
    contains
@@ -53,6 +56,9 @@ module test_core
       startTime = mpas_get_clock_time(clock, MPAS_START_TIME, iErr)
       call mpas_get_time(startTime, dateTimeString=startTimeStamp) 
 
+      call mpas_stream_mgr_read(domain % streamManager, ierr=iErr)
+      call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=iErr)
+
    end function test_core_init!}}}
 
 
@@ -84,7 +90,12 @@ module test_core
 
       type (mpas_pool_type), pointer :: pool
       type (mpas_pool_iterator_type) :: itr
+      integer :: numThreads, threadLimit, maxThreads
+      integer, dimension(:), allocatable :: threadErrs
 
+      maxThreads = mpas_threading_get_max_threads()
+      allocate(threadErrs(maxThreads))
+      threadErrs(:) = 0
 
       iErr = 0
 
@@ -94,6 +105,17 @@ module test_core
       call mpas_unit_test_velocity_conversion(iErr)
       call mpas_unit_test_wachspress_hexagon(iErr)
       call mpas_unit_test_wachspress_triangle(iErr)
+
+      !$omp parallel default(firstprivate) shared(domain, threadErrs)
+      call test_core_halo_exch_test(domain, threadErrs, iErr)
+      !$omp end parallel
+      if ( iErr == 0 ) then
+         write(stderrUnit, *) ' * Halo Exchange Test: SUCCESS'
+      else
+         write(stderrUnit, *) ' * Halo Exchange Test: FAILURE'
+      end if
+
+      deallocate(threadErrs)
 
    end function test_core_run!}}}
 
