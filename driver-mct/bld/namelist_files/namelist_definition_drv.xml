@@ -107,6 +107,19 @@ If CCSM_BGC is set to 'CO2_DMSA', then flds_co2_dmsa will be set to .true.
 </entry>
 
 <entry 
+id="flds_bgc"
+type="logical" 
+category="seq_flds" 
+group="seq_cplflds_inparm" >
+Previously, new fields that were needed to be passed between components
+for certain compsets were specified by cpp-variables. This has been
+modified to now be use cases. This use cases are specified in the
+namelist cpl_flds_inparm and are currently triggered by the xml variable ACME_BGC.
+This is a new master switch for turning ACME BGC off and on, just for testing.
+If ACME_BGC is set to 'TRUE', then flds_bgc will be set to .true.
+</entry>
+
+<entry 
 id="glc_nec"
 type="integer" 
 category="seq_flds" 
