@@ -45,7 +45,8 @@ module ocn_init_vertical_grids
 
    public :: ocn_generate_vertical_grid, &
              ocn_compute_layerThickness_zMid_from_bottomDepth, &
-             ocn_alter_bottomDepth_for_pbcs
+             ocn_alter_bottomDepth_for_pbcs, &
+             ocn_linear_interp_vert 
 
    !--------------------------------------------------------------------
    !
@@ -624,6 +625,56 @@ contains
       endif
 
     end subroutine ocn_alter_bottomDepth_for_pbcs
+
+!***********************************************************************
+!
+!  routine ocn_linear_interp_vert
+!
+!> \brief   linearly interpolate a filed in the vertical
+!> \author  Xylar Asay-Davis
+!> \date    10/12/2015
+!> \details 
+!>  Perform vertical linear interpolation of a field from a reference field 
+!>  with data located at inZ to new locations outZ.  
+
+!-----------------------------------------------------------------------
+
+   subroutine ocn_linear_interp_vert(inZ, inField, inNVertLevels, outZ, outField, outNVertLevels)!{{{
+
+   !--------------------------------------------------------------------
+
+      integer, intent(in) :: inNVertLevels, outNVertLevels
+      real (kind=RKIND), dimension(inNVertLevels), intent(in) :: inZ, inField
+      real (kind=RKIND), dimension(outNVertLevels), intent(in) :: outZ
+      real (kind=RKIND), dimension(outNVertLevels), intent(out) :: outField
+
+      ! Define variable pointers
+      integer :: outK, inK
+      real (kind=RKIND) :: z, frac
+
+      if(outNVertLevels <= 0) return
+
+      do outK=1,outNVertLevels
+        z = outZ(outK)
+        if(z >= inZ(1)) then
+          inK = 1
+          frac = 0.0_RKIND 
+        else if(z <= inZ(inNVertLevels)) then
+          inK = inNVertLevels-1
+          frac = 1.0_RKIND
+        else
+          do inK = 1, inNVertLevels-1
+            if(z >= inZ(inK+1)) exit
+          end do
+          frac = (z - inZ(inK))/(inZ(inK+1) - inZ(inK))
+        end if
+        outField(outK) = (1.0_RKIND - frac)*inField(inK) + frac*inField(inK+1)
+      end do
+
+   !--------------------------------------------------------------------
+
+   end subroutine ocn_linear_interp_vert!}}}
+
 
 !***********************************************************************
 
