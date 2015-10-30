@@ -1,4 +1,5 @@
-UQ Workflow scripts that helps analyse ALM outputs via UQTk.
+UQ Workflow scripts that helps analyze ALM outputs via UQTk.
+This script set is completely non-intrusive with the ACME code - it simply uses a stored NetCDF file of ensemble outputs to generate results/plots for demonstration.
 
 Start with
 ./install_uqtk.x
