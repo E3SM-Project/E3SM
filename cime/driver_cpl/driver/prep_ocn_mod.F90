@@ -680,7 +680,7 @@ contains
        call mct_aVect_setSharedIndices(r2x_o, x2o_o, r2x_SharedIndices)
        call mct_aVect_setSharedIndices(w2x_o, x2o_o, w2x_SharedIndices)
        call mct_aVect_setSharedIndices(xao_o, x2o_o, xao_SharedIndices)
-       call mct_aVect_setSharedIndices(g2x_o, x2o_o, g2x_SharedIndices)       
+       call mct_aVect_setSharedIndices(g2x_o, x2o_o, g2x_SharedIndices)
 
        do ko = 1,noflds
           !--- document merge ---
@@ -896,7 +896,7 @@ contains
                                               g2x_o%rAttr(index_g2x_Fogg_rofi , n)) * flux_epbalfact
     end do
 
-    !Experimental: call subshelf boundary flux code here.
+    !Experimental: call subshelf boundary flux code here.  Note this is called on atmospheric timestep.
     call prep_glc_calculate_subshelf_boundary_fluxes
 
     do ko = 1,noflds

@@ -182,6 +182,7 @@ contains
     character(len=StrKIND), pointer :: tempCharConfig
 
 
+
     interface
        subroutine xml_stream_parser(xmlname, mgr_p, comm, ierr) bind(c)
           use iso_c_binding, only : c_char, c_ptr, c_int
@@ -1373,15 +1374,13 @@ contains
   end subroutine glc_import_mct
 
 
-!=================================================================================
-
-
   subroutine glc_export_mct(g2x_g, errorCode)
 
    use li_mask
 
    use shr_const_mod, only: SHR_CONST_RHOICE, SHR_CONST_G
 
+   use glc_route_ice_runoff, only: route_ice_runoff
    !-------------------------------------------------------------------
 
    type(mct_aVect) , intent(inout) :: g2x_g
@@ -1400,12 +1399,10 @@ contains
 
    integer, pointer :: nCellsSolve, nVertLevels
 
-   real, dimension(nCellsSolve) :: Fogg_rofi_local_copy
-   real, dimension(nCellsSolve) :: Figg_rofi_local_copy
-
    real (kind=RKIND), dimension(:), pointer :: upperSurface, basalTemperature, Thickness
    real (kind=RKIND), dimension(:,:), pointer :: layerThickness
    integer, dimension(:), pointer :: cellMask
+   real (kind=RKIND) :: Fogg_rofi, Figg_rofi
    !-------------------------------------------------------------------
 
     errorCode = 0
@@ -1431,18 +1428,17 @@ contains
 	
         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 	
-	!Jer: make local copies of these, to send to route_to_ice_runoff
-	Fogg_rofi_local_copy = g2x_g % rAttr(index_g2x_Fogg_rofi,:)
-        Figg_rofi_local_copy = g2x_g % rAttr(index_g2x_Figg_rofi,:)
 	!Jer: set these to zero uniformly to be sure (perhaps redundant)
 	g2x_g % rAttr(index_g2x_Sg_icemask_grounded, :)=0.0_RKIND
 	g2x_g % rAttr(index_g2x_Sg_icemask_floating, :)=0.0_RKIND
 	
         do i = 1, nCellsSolve
            n = n + 1
-	   call route_ice_runoff(0.0, & !Attach to ice calving flux once present
-                                 rofi_to_ocn=Fogg_rofi_local_copy(n), &
-                                 rofi_to_ice=Figg_rofi_local_copy(n))
+	   call route_ice_runoff(0.0_RKIND, & !Attach to ice calving flux once present
+                                 rofi_to_ocn=Fogg_rofi, &
+                                 rofi_to_ice=Figg_rofi)
+           g2x_g % rAttr(index_g2x_Fogg_rofi,n)=Fogg_rofi
+           g2x_g % rAttr(index_g2x_Figg_rofi,n)=Figg_rofi
 	   g2x_g % rAttr(index_g2x_Fogg_rofl,n) = 0.0 !Attach to subglacial liquid flux once present
            g2x_g % rAttr(index_g2x_Sg_topo, n) = upperSurface(i)
 	   g2x_g % rAttr(index_g2x_Flgg_hflx, n) = 0.0 !Attach to a surface heat flux once present
@@ -1451,8 +1447,10 @@ contains
            ! icemask_coupled_fluxes for now should be the same as icemask
 	   ! For above: If we add in the ability to prevent the ice sheet from evolving
            ! (i.e., to ignore these fluxes) then this should be set to 0 everywhere.	   
-	   if li_mask_is_grounded_ice(cellMask(i)) g2x_g % rAttr(index_g2x_Sg_icemask_grounded, n) = 1.0_RKIND
-	   if li_mask_is_floating_ice(cellMask(i)) g2x_g % rAttr(index_g2x_Sg_icemask_floating, n) = 1.0_RKIND
+	   if (li_mask_is_grounded_ice(cellMask(i))) &
+              g2x_g % rAttr(index_g2x_Sg_icemask_grounded, n) = 1.0_RKIND
+	   if (li_mask_is_floating_ice(cellMask(i))) &
+              g2x_g % rAttr(index_g2x_Sg_icemask_floating, n) = 1.0_RKIND
 	   g2x_g % rAttr(index_g2x_Sg_tbot, n) = basalTemperature(i)
 	   g2x_g % rAttr(index_g2x_Sg_dztbot, n) = layerThickness(nVertLevels,i)/ 2.0
 	   g2x_g % rAttr(index_g2x_Sg_lithop, n) = Thickness(i)*SHR_CONST_RHOICE*SHR_CONST_G

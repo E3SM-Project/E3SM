@@ -271,7 +271,7 @@ contains
     ! Local Variables
     integer :: eli, egi
     type(mct_avect), pointer :: l2x_lx
-    type(mct_avect), pointer :: x2g_gx   !Jer: is this right to accumulate this here?
+    type(mct_avect), pointer :: x2g_gx
         
     character(*), parameter :: subname = '(prep_glc_accum)'
     !---------------------------------------------------------------
@@ -292,7 +292,7 @@ contains
        if (x2gacc_gx_cnt == 0) then
 	  call mct_avect_copy(x2g_gx, x2gacc_gx(egi))
        else
-	  call mct_avect_accum(x2g_gx, x2gacc_gx(egi))
+	  call mct_avect_accum(x2g_gx, x2gacc_gx(egi))  !This is accumulating into x2gacc_gx
        endif
     end do
     x2gacc_gx_cnt = x2gacc_gx_cnt + 1
@@ -328,7 +328,7 @@ contains
     end if
     l2gacc_lx_cnt = 0
 
-    do egi = 1,num_inst_glc   !!Jer: why was this added here?  For ice shelf coupling?
+    do egi = 1,num_inst_glc
        ! temporary formation of average
        if (x2gacc_gx_cnt > 1) then
 	  call mct_avect_avg(x2gacc_gx(egi), x2gacc_gx_cnt)
@@ -584,19 +584,20 @@ contains
     type(seq_map), intent(inout) :: mapper
     !
     ! Local Variables
-    type(mct_avect), pointer :: g2x_gx
+    type(mct_avect), pointer :: g2x_gx, l2x_lx
     type(vertical_gradient_calculator_2nd_order_type) :: gradient_calculator
     !---------------------------------------------------------------
 
     g2x_gx => component_get_c2x_cx(glc(egi))
+    l2x_lx => component_get_c2x_cx(lnd(eli))
 
     gradient_calculator = vertical_gradient_calculator_2nd_order_type( &
-         attr_vect = l2gacc_lx(eli), &
+         attr_vect = l2x_lx, &
          fieldname = fieldname, &
          toponame = 'Sl_topo', &
          min_elevation_class = 1, &
          max_elevation_class = glc_get_num_elevation_classes())
-    call map_lnd2glc(l2x_l = l2gacc_lx(eli), &
+    call map_lnd2glc(l2x_l = l2x_lx, &
          landfrac_l = fractions_lx, &
          g2x_g = g2x_gx, &
          fieldname = fieldname, &
@@ -626,7 +627,7 @@ contains
     type(mct_aVect), pointer :: x2g_gx ! Glc import, glc grid, cpl pes
     type(mct_aVect), pointer :: g2x_gx ! Glc import, glc grid, cpl pes
     
-    character(*), parameter :: subname = '(prep_glc_calc_calculate_subshelf_boundary_fluxes)'
+    character(*), parameter :: subname = '(prep_glc_calculate_subshelf_boundary_fluxes)'
     !--------------------------------------------------------------- 
 
     gsize = mct_aVect_lsize(o2x_gx(1))
@@ -683,12 +684,11 @@ contains
       !Assign outputs from compute_melt_fluxes back into coupler attributes
       g2x_gx%rAttr(index_g2x_Sg_blis,n) =     outInterfaceSalinity(n)    !to ocean
       g2x_gx%rAttr(index_g2x_Sg_blit,n) =     outInterfaceTemperature(n) !to ocean
-      g2x_gx%rAttr(index_g2x_Fogx_qiceho,n) = outOceanHeatFlux(n)    !to ocean
-      g2x_gx%rAttr(index_g2x_Fogx_qicelo,n)=  outFreshwaterFlux(n)   !to ocean... need unit conversion?
+      g2x_gx%rAttr(index_g2x_Fogx_qiceho,n) = outOceanHeatFlux(n)        !to ocean
+      g2x_gx%rAttr(index_g2x_Fogx_qicelo,n)=  outFreshwaterFlux(n)       !to ocean
       
-      !For latter two: still need averaging and unit conversion presumably...
-      x2g_gx%rAttr(index_x2g_Fogx_qicehi,n) = x2g_gx%rAttr(index_x2g_Fogx_qicehi,n) + outIceHeatFlux(n)!to ice sheet 
-      x2g_gx%rAttr(index_x2g_Fogx_qiceli,n) = x2g_gx%rAttr(index_x2g_Fogx_qiceli,n) + outFreshwaterFlux(n)!to ice sheet
+      x2g_gx%rAttr(index_x2g_Fogx_qicehi,n) = outIceHeatFlux(n)          !to ice sheet 
+      x2g_gx%rAttr(index_x2g_Fogx_qiceli,n) = outFreshwaterFlux(n)       !to ice sheet
     end do
 
     !Remap ocean-side outputs back onto ocean grid done in call to prep_ocn_shelf_calc_g2x_ox

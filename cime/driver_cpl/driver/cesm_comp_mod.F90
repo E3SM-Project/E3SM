@@ -2648,7 +2648,7 @@ end subroutine cesm_init
 
             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
             call t_drvstopf  ('CPL:OCNPOSTT',cplrun=.true.)
-        endif
+         endif
 
       endif
 
@@ -2697,10 +2697,10 @@ end subroutine cesm_init
             if (ocn_c2_atm) call prep_atm_calc_o2x_ax(timer='CPL:atmoca_ocn2atm')
 
             call t_drvstartf ('CPL:atmocna_fluxa',barrier=mpicom_CPLID)
-         do exi = 1,num_inst_xao
-            eai = mod((exi-1),num_inst_atm) + 1
-            eoi = mod((exi-1),num_inst_ocn) + 1
-            efi = mod((exi-1),num_inst_frc) + 1
+            do exi = 1,num_inst_xao
+               eai = mod((exi-1),num_inst_atm) + 1
+               eoi = mod((exi-1),num_inst_ocn) + 1
+               efi = mod((exi-1),num_inst_frc) + 1
                a2x_ax => component_get_c2x_cx(atm(eai))
                o2x_ax => prep_atm_get_o2x_ax()    ! array over all instances
                xao_ax => prep_aoflux_get_xao_ax() ! array over all instances
@@ -2715,7 +2715,7 @@ end subroutine cesm_init
          !| atm/ocn flux on ocn grid ((cesm1_orig, cesm1_orig_tight, cesm1_mod or cesm1_mod_tight) and aoflux='ocn')
          !----------------------------------------------------------
 
-            if (trim(aoflux_grid) == 'ocn') then
+         if (trim(aoflux_grid) == 'ocn') then
             call t_drvstartf ('CPL:atmocnp_fluxo',barrier=mpicom_CPLID)
             do exi = 1,num_inst_xao
                eai = mod((exi-1),num_inst_atm) + 1
@@ -2738,7 +2738,7 @@ end subroutine cesm_init
 !               call seq_flux_atmocnexch_mct( infodata, atm(eai), ocn(eoi), &
 !                    fractions_ax(efi), fractions_ox(efi), xao_ax(exi), xao_ox(exi) )
 !            call t_drvstopf  ('CPL:atmocnp_fluxe')
-            endif  ! aoflux_grid
+         endif  ! aoflux_grid
 
          !----------------------------------------------------------
          !| ocn prep-merge (cesm1_mod or cesm1_mod_tight)
@@ -2749,10 +2749,10 @@ end subroutine cesm_init
                 cpl_seq_option == 'CESM1_MOD_TIGHT') then
 
                xao_ox => prep_aoflux_get_xao_ox()
-               call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
+               call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o') !this copies all needed fields to x2o_ox
 
                ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn) 
-               call prep_ocn_accum(timer='CPL:atmocnp_accum') 
+               call prep_ocn_accum(timer='CPL:atmocnp_accum') !...which are then accumulated here.
             endif
          endif
 
@@ -2808,9 +2808,6 @@ end subroutine cesm_init
             if (lnd_c2_rof) then
                call prep_rof_accum(timer='CPL:lndpost_accl2r')
             endif
-            if (lnd_c2_glc) then
-               call prep_glc_accum(timer='CPL:lndpost_accl2g' )
-            endif
 
             if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
             call t_drvstopf  ('CPL:LNDPOST',cplrun=.true.)
@@ -2820,7 +2817,38 @@ end subroutine cesm_init
       !----------------------------------------------------------
       !| GLC SETUP-SEND
       !----------------------------------------------------------
-
+      if (glc_present) then
+      
+         if (ocn_c2_glc) then
+	    call prep_glc_calc_o2x_gx(timer='CPL:glcprep_ocn2glc') !remap ocean fields to o2x_g at atmospheric timestep
+	 end if
+	 if (lnd_c2_glc) then                
+	    ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
+	    call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc') !...and then here is where Bill S. does the new in-coupler downscaling.  I changed this so it's downscaling non-accumulated fields.  This means (in theory) that it is called more frequently, but then can be merged and averaged with the other stuff, below.
+	 end if
+	 call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
+	 if (glc_c2_ocn) then
+            call prep_glc_calculate_subshelf_boundary_fluxes! this outputs
+                                              !x2g_g/g2x_g, where latter is going
+                                              !to ocean, so should get remapped to
+                                              !ocean grid in prep_ocn_shelf_calc_g2x_ox
+            call prep_ocn_shelf_calc_g2x_ox(timer='CPL:glcpost_glcshelf2ocn')
+                                              !Map g2x_gx shelf fields that were updated above, to g2x_ox.
+                                              !Do this at intrinsic coupling
+                                              !frequency
+            call prep_ice_shelf_calc_g2x_ix(timer='CPL:glcpost_glcshelf2ice')
+                                              !Map g2x_gx shelf fields to g2x_ix.
+                                              !Do this at intrinsic coupling
+                                              !frequency.  This is perhaps an
+                                              !unnecessary place to put this
+                                              !call, since these fields aren't
+                                              !changing on the intrinsic
+                                              !timestep.  But I don't think it's
+                                              !unsafe to do it here.
+            call prep_glc_accum(timer='CPL:glcprep_accum') !accum x2g_g fields here into x2g_gacc, along with l2gacc_lx
+         endif
+      endif
+      
       if (glc_present .and. glcrun_alarm) then
 
          !----------------------------------------------------
@@ -2832,18 +2860,10 @@ end subroutine cesm_init
             call t_drvstartf ('CPL:GLCPREP',cplrun=.true.,barrier=mpicom_CPLID)
             if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-	    call prep_glc_accum_avg(timer='CPL:glcprep_avg')
-	    
-	    if (ocn_c2_glc) then
-	       call prep_glc_calc_o2x_gx(timer='CPL:glcprep_ocn2glc')
-	    end if
-	    
-            if (lnd_c2_glc) then
-               ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
-               call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
+	    call prep_glc_accum_avg(timer='CPL:glcprep_avg') !Here, x2g_g and l2g_l fields are averaged.
 
-               call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g') !Jer: why are these within lnd_c2_glc, if ocn_c2_glc exists?
-
+            if (lnd_c2_glc .or. ocn_c2_glc) then
+	    
                call component_diag(infodata, glc, flow='x2c', comment='send glc', &
                     info_debug=info_debug, timer_diag='CPL:glcprep_diagav')
             endif
@@ -3352,6 +3372,7 @@ end subroutine cesm_init
 
             if (glc_c2_ice) then
                call prep_ice_calc_g2x_ix(timer='CPL:glcpost_glc2ice')
+
             endif	    
 
             if (glc_c2_ocn) then
