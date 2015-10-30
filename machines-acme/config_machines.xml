@@ -430,7 +430,7 @@
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
          <batch_system type="cobalt">
            <queues>
-             <queue waltimemin="5" walltimemax="59" jobmin="64" jobmax="2048" default="true">default</queue>
+             <queue walltimemin="5" walltimemax="59" jobmin="64" jobmax="2048" default="true">default</queue>
            </queues>
            <walltimes>
              <walltime default="true">59</walltime>
@@ -484,7 +484,7 @@
          <TESTS>acme_developer</TESTS>
          <COMPILERS>ibm</COMPILERS>
          <MPILIBS>ibm</MPILIBS>
-         <CESMSCRATCHROOT>/projects/$PROJECT/usr/$USER</CESMSCRATCHROOT>
+         <CESMSCRATCHROOT>/projects/$PROJECT/$USER</CESMSCRATCHROOT>
          <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
          <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
@@ -505,10 +505,10 @@
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
          <batch_system type="cobalt">
            <queues>
-             <queue waltimemin="0" walltimemax="360" jobmin="512" jobmax="4096" default="true">default</queue>
+             <queue walltimemin="0" walltimemax="360" jobmin="512" jobmax="4096" default="true">default</queue>
            </queues>
            <walltimes>
-             <walltime default="true">15</walltime>
+             <walltime default="true">30</walltime>
              <walltime ccsm_estcost="-3">60</walltime>
              <walltime ccsm_estcost="0">60</walltime>
            </walltimes>
