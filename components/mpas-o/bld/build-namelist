@@ -478,11 +478,7 @@ add_default($nl, 'config_vert_coord_movement');
 add_default($nl, 'config_use_min_max_thickness');
 add_default($nl, 'config_min_thickness');
 add_default($nl, 'config_max_thickness_factor');
-if ($CONTINUE_RUN eq 'TRUE') {
-	add_default($nl, 'config_set_restingThickness_to_IC', 'val'=>'.false.');
-} else {
-	add_default($nl, 'config_set_restingThickness_to_IC', 'val'=>'.true.');
-}
+add_default($nl, 'config_set_restingThickness_to_IC', 'val'=>'.false.');
 add_default($nl, 'config_dzdk_positive');
 
 ####################################################
@@ -501,11 +497,7 @@ add_default($nl, 'config_highFreqThick_del2');
 ########################################
 
 # if ($RUN_TYPE eq 'startup' && $topography_opt eq 'bathymetry') {
-if ($CONTINUE_RUN eq 'TRUE' ) {
-	add_default($nl, 'config_alter_ICs_for_pbcs', 'val'=>".false.");
-} else {
-	add_default($nl, 'config_alter_ICs_for_pbcs', 'val'=>".true.");
-}
+add_default($nl, 'config_alter_ICs_for_pbcs', 'val'=>".false.");
 add_default($nl, 'config_pbc_alteration_type');
 add_default($nl, 'config_min_pbc_fraction');
 add_default($nl, 'config_check_ssh_consistency');
@@ -655,7 +647,7 @@ add_default($nl, 'config_cvmix_kpp_stop_OBL_search');
 # Namelist group: forcing #
 ###########################
 
-add_default($nl, 'config_use_bulk_wind_stress');
+add_default($nl, 'config_use_bulk_wind_stress', 'val'=>".true.");
 add_default($nl, 'config_use_bulk_thickness_flux');
 add_default($nl, 'config_flux_attenuation_coefficient');
 add_default($nl, 'config_frazil_ice_formation');
