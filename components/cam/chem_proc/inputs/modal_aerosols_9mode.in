@@ -1,47 +1,47 @@
    SPECIES
 
       Solution
- H2O2, H2SO4, SO2, DMS -> CH3SCH3, NH3, 
+ H2O2, H2SO4, SO2, DMS -> CH3SCH3, NH3
  SOAG -> C
- so4_a1 -> SO4, 
+ so4_a1 -> SO4
  nh4_a1 -> NH4
- pom_a1 -> C, 
- soa_a1 -> C, 
- bc_a1 -> C, 
+ pom_a1 -> C
+ soa_a1 -> C
+ bc_a1 -> C
  ncl_a1 -> NaCl
  mpoly_a1 -> C8520H11360O8520
  mprot_a1 -> C5539
  mlip_a1 -> C18H36O2
  num_a1 -> H
- so4_a2 -> SO4, 
+ so4_a2 -> SO4
  nh4_a2 -> NH4
- soa_a2 -> C, 
+ soa_a2 -> C
  ncl_a2 -> NaCl
  mpoly_a2 -> C8520H11360O8520
  mprot_a2 -> C5539
  mlip_a2 -> C18H36O2
  num_a2 -> H
- pom_a3 -> C, 
+ pom_a3 -> C
  bc_a3 -> C
  mpoly_a3 -> C8520H11360O8520
  mprot_a3 -> C5539
  mlip_a3 -> C18H36O2
  num_a3 -> H
- ncl_a4 -> NaCl, 
+ ncl_a4 -> NaCl
  so4_a4 -> SO4
- nh4_a4 -> NH4, 
+ nh4_a4 -> NH4
  num_a4 -> H
- dst_a5 -> AlSiO5, 
+ dst_a5 -> AlSiO5
  so4_a5 -> SO4
- nh4_a5 -> NH4, 
+ nh4_a5 -> NH4
  num_a5 -> H
- ncl_a6 -> NaCl, 
+ ncl_a6 -> NaCl
  so4_a6 -> SO4
- nh4_a6 -> NH4, 
+ nh4_a6 -> NH4
  num_a6 -> H
- dst_a7 -> AlSiO5, 
+ dst_a7 -> AlSiO5
  so4_a7 -> SO4
- nh4_a7 -> NH4, 
+ nh4_a7 -> NH4
  num_a7 -> H
  mpoly_a8 -> C8520H11360O8520
  mprot_a8 -> C5539

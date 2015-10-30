@@ -121,7 +121,7 @@ OPTIONS
                         [ waccm_mozart | waccmx_mozart | waccm_mozart_sulfur | waccm_mozart_mam3 | waccm_sc | 
 			  waccm_sc_mam3 | waccm_tsmlt | waccm_tsmlt_mam3 | waccm_tsmlt_sulfur |
                           trop_mozart | trop_mozart_mam3 | trop_mozart_soa | trop_strat_soa | trop_ghg | trop_bam |
-                          trop_mam3 | trop_mam4 | trop_mam7 | super_fast_llnl | super_fast_llnl_mam3 |
+                          trop_mam3 | trop_mam4 | trop_mam4_mom | trop_mam7 | trop_mam9 | super_fast_llnl | super_fast_llnl_mam3 |
                           trop_strat_soa | trop_strat_mam3 | trop_strat_mam7 | none ].  Default: trop_mam3.
      -clubb_sgs         Turns on CLUBB_SGS
      -clubb_opts <list> Comma separated list of CLUBB options to turn on/off.  By default they are all off.  Current
@@ -1341,10 +1341,14 @@ if (($chem_pkg ne 'none') || ($prog_species)) {
 }
 if ($chem_pkg =~ '_mam3') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_3MODE ';
+} elsif ($chem_pkg =~ '_mam4_mom') {
+    $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE_MOM ';
 } elsif ($chem_pkg =~ '_mam4') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE ';
 } elsif ($chem_pkg =~ '_mam7') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_7MODE ';
+} elsif ($chem_pkg =~ '_mam9') {
+    $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_9MODE ';
 }
 
 my $carma_nadv = 0;

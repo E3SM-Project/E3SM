@@ -177,6 +177,9 @@ end function chem_is
     use mo_chem_utls,        only : get_spc_ndx
     use short_lived_species, only : slvd_index, short_lived_map=>map, register_short_lived_species
     use cfc11star,           only : register_cfc11star
+#if ( defined MODAL_AERO)
+    use modal_aero_initialize_data, only : modal_aero_register
+#endif
     use phys_control,        only : waccmx_is   ! WACCM-X switch query function
     use mo_photo,            only : photo_register
     use mo_aurora,           only : aurora_register
@@ -410,6 +413,9 @@ end function chem_is
     use tracer_srcs,      only: tracer_srcs_defaultopts, tracer_srcs_setopts
     use aero_model,       only: aero_model_readnl
     use dust_model,       only: dust_readnl
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
+    use seasalt_model,    only: ocean_data_readnl
+#endif
     use gas_wetdep_opts,  only: gas_wetdep_readnl
 
 #ifdef WACCM_MOZART
@@ -806,6 +812,9 @@ end function chem_is
 
    call aero_model_readnl(nlfile)
    call dust_readnl(nlfile)     
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
+   call ocean_data_readnl(nlfile)
+#endif
 !
    call gas_wetdep_readnl(nlfile)
 
@@ -1138,6 +1147,9 @@ end function chem_is_active
 
     use physconst,     only : mwdry, mwch4, mwn2o, mwf11, mwf12, mwh2o, mwo3
     use chem_surfvals, only : chem_surfvals_get
+#if ( defined MODAL_AERO )
+    use modal_aero_initialize_data, only : modal_aero_initialize_q
+#endif
 
     implicit none
 
@@ -1187,6 +1199,10 @@ end function chem_is_active
           q = rmwf12 * chem_surfvals_get('F12VMR')
        end select
     endif
+
+#if ( defined MODAL_AERO )
+    call modal_aero_initialize_q( name, q )
+#endif
 
   end subroutine chem_init_cnst
 

@@ -14,6 +14,9 @@
  dst_a3 -> AlSiO5, ncl_a3 -> NaCl
  so4_a3 -> NH4HSO4
  num_a3 -> H
+ pom_a4 -> C, bc_a4 -> C
+ mom_a4 -> C8520H11360O8520
+ num_a4 -> H
       End Solution
 
       Fixed
@@ -36,10 +39,13 @@
         soa_a1, bc_a1, dst_a1, ncl_a1
 	mom_a1
         num_a1
-        so4_a2, soa_a2, ncl_a2,
+        so4_a2, soa_a2, ncl_a2
 	mom_a2
 	num_a2
         dst_a3, ncl_a3, so4_a3, num_a3
+        pom_a4, bc_a4
+	mom_a4
+	num_a4
       End Implicit
    End Solution Classes
 
@@ -61,10 +67,11 @@
           SO2 <- dataset
           so4_a1 <- dataset
           so4_a2 <- dataset
-          pom_a1 <- dataset
-          bc_a1 <- dataset
+          pom_a4 <- dataset
+          bc_a4 <- dataset
           num_a1 <- dataset
           num_a2 <- dataset
+          num_a4 <- dataset
       End Ext Forcing
 
    END CHEMISTRY
