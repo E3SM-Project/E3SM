@@ -2568,6 +2568,12 @@ boundary layer).
 Default: 100.e3 (hPa)
 </entry>
 
+<entry id="eddy_moist_entrain_a2l" type="real" category="conv"
+       group="vert_diff_nl" valid_values="" >
+Moist entrainment enhancement parameter.
+Default: set by build-namelist
+</entry>
+
 <entry id="kv_top_pressure" type="real" category="conv"
        group="vert_diff_nl" valid_values="" >
 Pressure (Pa) that defined the upper atmosphere for adjustment of
@@ -3854,6 +3860,18 @@ Default: set by build-namelist.
 <entry id="aer_drydep_list" type="char*16(1000)" category="cam_chem"
        group="aerosol_nl" valid_values="" >
 List of aerosol species that undergo sediment (dry deposition).
+Default: set by build-namelist.
+</entry>
+
+<entry id="sol_factb_interstitial" type="real" category="cam_chem"
+       group="aerosol_nl" valid_values="" >
+Tuning for below cloud scavenging of interstitial modal aerosols.
+Default: set by build-namelist.
+</entry>
+
+<entry id="sol_factic_interstitial" type="real" category="cam_chem"
+       group="aerosol_nl" valid_values="" >
+Tuning for in-cloud scavenging of interstitial modal aerosols.
 Default: set by build-namelist.
 </entry>
 

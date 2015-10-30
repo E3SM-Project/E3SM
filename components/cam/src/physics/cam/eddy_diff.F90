@@ -89,7 +89,7 @@
   real(r8),         parameter :: wstar3factcrit =   0.5_r8      ! 1/wstar3factcrit is the maximally allowed enhancement of
                                                                 ! 'wstar3' due to entrainment.
 
-  real(r8),         parameter :: a2l            =   30._r8      ! Moist entrainment enhancement param (recommended range : 10~30 )
+  real(r8)                    :: a2l                            ! Moist entrainment enhancement param (recommended range : 10~30 )
   real(r8),         parameter :: a3l            =   0.8_r8      ! Approximation to a complicated thermodynamic parameters
 
   real(r8),         parameter :: jbumin         =   .001_r8     ! Minimum buoyancy jump at an entrainment jump, [m/s2]
@@ -181,7 +181,8 @@
   
   subroutine init_eddy_diff( kind, pver, gravx, cpairx, rairx, zvirx, & 
                              latvapx, laticex, ntop_eddy, nbot_eddy, vkx, &
-                             eddy_lbulk_max, eddy_leng_max, eddy_max_bot_pressure)
+                             eddy_lbulk_max, eddy_leng_max, eddy_max_bot_pressure, &
+                             eddy_moist_entrain_a2l)
     !---------------------------------------------------------------- ! 
     ! Purpose:                                                        !
     ! Initialize time independent constants/variables of PBL package. !
@@ -208,6 +209,7 @@
     real(r8), intent(in) :: eddy_leng_max  ! Maximum dissipation length scale
     real(r8), intent(in) :: eddy_max_bot_pressure  ! Bottom pressure level (hPa) at which namelist leng_max and lbulk_max
                                                    ! are applied
+    real(r8), intent(in) :: eddy_moist_entrain_a2l ! Moist entrainment enhancement param
 
     integer              :: k          ! Vertical loop index
 
@@ -232,6 +234,7 @@
     ntop_turb = ntop_eddy
     nbot_turb = nbot_eddy
     b123      = b1**(2._r8/3._r8)
+    a2l       = eddy_moist_entrain_a2l
     
     lbulk_max = eddy_lbulk_max
     do k = 1,pver
@@ -334,6 +337,8 @@
     call addfld('UW_sm',            'no',      pver+1, 'A',  'sm at all interfaces, I',                               phys_decomp )
     call addfld('UW_ria',           'no',      pver+1, 'A',  'ri at all interfaces, I',                               phys_decomp )
     call addfld('UW_leng',          'm/s',     pver+1, 'A',  'Turbulence length scale, I',                            phys_decomp )
+    ! For sedimentation-entrainment feedback analysis
+    call addfld('UW_wsed',          'm/s',     pver+1, 'A',  'Sedimentation velocity at CL top, CL',                  phys_decomp )
 
   return
 
@@ -352,7 +357,7 @@
                                 cgh    , cgs    , tpert    , qpert   , wpert    , tke     , bprod , &
                                 sprod  , sfi    , kvinit   ,                                        &
                                 tauresx, tauresy, ksrftms  ,                                        &
-                                ipbl   , kpblh  , wstarPBL , turbtype, sm_aw )
+                                ipbl   , kpblh  , wstarPBL , tkes    , went     ,turbtype, sm_aw )
        
     !-------------------------------------------------------------------- ! 
     ! Purpose: Interface to compute eddy diffusivities.                   !
@@ -436,9 +441,11 @@
     real(r8), intent(out)   :: sm_aw(pcols,pver+1)       ! Normalized Galperin instability function for momentum [ no unit ]
                                                          ! This is 1 when neutral condition (Ri=0),
                                                          ! 4.964 for maximum unstable case, and 0 when Ri > Ricrit=0.19. 
-    real(r8), intent(out)   :: ipbl(pcols)               ! If 1, PBL is CL, while if 0, PBL is STL.
-    real(r8), intent(out)   :: kpblh(pcols)              ! Layer index containing PBL top within or at the base interface
+    integer(i4), intent(out) :: ipbl(pcols)              ! If 1, PBL is CL, while if 0, PBL is STL.
+    integer(i4), intent(out) :: kpblh(pcols)             ! Layer index containing PBL top within or at the base interface
     real(r8), intent(out)   :: wstarPBL(pcols)           ! Convective velocity within PBL [ m/s ]
+    real(r8), intent(out)   :: tkes(pcols)               ! TKE at surface interface [ m2/s2 ]
+    real(r8), intent(out)   :: went(pcols)               ! Entrainment rate at the PBL top interface [ m/s ]
 
     ! ---------------------- !
     ! Input-Output Variables !
@@ -507,7 +514,6 @@
     ! Variables for diagnostic output !
     ! ------------------------------- !
 
-    real(r8)                :: tkes(pcols)               ! TKE at surface interface [ m2/s2 ]
     real(r8)                :: kbase_o(pcols,ncvmax)     ! Original external base interface index of CL from 'exacol'
     real(r8)                :: ktop_o(pcols,ncvmax)      ! Original external top  interface index of CL from 'exacol'
     real(r8)                :: ncvfin_o(pcols)           ! Original number of CLs from 'exacol'
@@ -549,6 +555,8 @@
     real(r8)                :: lengi(pcols,pver+1)       ! Turbulence length scale at all interfaces [ m ]
     real(r8)                :: wcap(pcols,pver+1)        ! Normalized TKE at all interfaces [ m2/s2 ]
     real(r8)                :: rairi(pcols,pver+1)       ! interface gas constant needed for compute_vdiff
+    ! For sedimentation-entrainment feedback
+    real(r8)                :: wsed(pcols,ncvmax)        ! Sedimentation velocity at the top of each CL [ m/s ]
 
     ! ---------- !
     ! Initialize !
@@ -641,7 +649,7 @@
                      kvh       , kvm       , kvh_out   , kvm_out  ,          &
                      tpert     , qpert     , qrl       , kvf      , tke    , &
                      wstarent  , bprod     , sprod     , minpblh  , wpert  , &
-                     tkes      , turbtype  , sm_aw     ,                     & 
+                     tkes      , went      , turbtype  , sm_aw    ,          & 
                      kbase_o   , ktop_o    , ncvfin_o  ,                     &
                      kbase_mg  , ktop_mg   , ncvfin_mg ,                     &                  
                      kbase_f   , ktop_f    , ncvfin_f  ,                     &                  
@@ -652,7 +660,7 @@
                      ebrk      , wbrk      , lbrk      , ricl     , ghcl   , & 
                      shcl      , smcl      , ghi       , shi      , smi    , &
                      rii       , lengi     , wcap      , pblhp    , cldn   , &
-                     ipbl      , kpblh     , wsedl)
+                     ipbl      , kpblh     , wsedl     , wsed)
 
      ! Calculate errorPBL to check whether PBL produced convergent solutions or not.
 
@@ -767,7 +775,7 @@
   ! Compute 'wstar' within the PBL for use in the future convection scheme.
 
     do i = 1, ncol
-       if( ipbl(i) .eq. 1._r8 ) then 
+       if( ipbl(i) .eq. 1 ) then 
            wstarPBL(i) = max( 0._r8, wstar(i,1) )
        else
            wstarPBL(i) = 0._r8
@@ -856,6 +864,8 @@
     call outfld( 'UW_sm',          smi,        pcols,   lchnk )
     call outfld( 'UW_ria',         rii,        pcols,   lchnk )
     call outfld( 'UW_leng',        lengi,      pcols,   lchnk )
+
+    call outfld( 'UW_wsed',        wsed,       pcols,   lchnk )
 
     return
     
@@ -1365,7 +1375,7 @@
                         kvh_in       , kvm_in       , kvh         , kvm        ,                &
                         tpert        , qpert        , qrlin       , kvf        , tke          , & 
                         wstarent     , bprod        , sprod       , minpblh    , wpert        , &
-                        tkes         , turbtype     , sm_aw       ,                             &
+                        tkes         , went         , turbtype    , sm_aw      ,                &
                         kbase_o      , ktop_o       , ncvfin_o    ,                             & 
                         kbase_mg     , ktop_mg      , ncvfin_mg   ,                             & 
                         kbase_f      , ktop_f       , ncvfin_f    ,                             & 
@@ -1376,7 +1386,7 @@
                         shcl         , smcl         ,                                           &
                         gh_a         , sh_a         , sm_a        , ri_a       , leng         , & 
                         wcap         , pblhp        , cld         , ipbl       , kpblh        , &
-                        wsedl        )
+                        wsedl        , wsed_CL)
 
     !--------------------------------------------------------------------------------- !
     !                                                                                  !
@@ -1469,6 +1479,8 @@
     real(r8), intent(out) :: tpert(pcols)             ! Convective temperature excess [ K ]
     real(r8), intent(out) :: qpert(pcols)             ! Convective humidity excess [ kg/kg ]
     real(r8), intent(out) :: wpert(pcols)             ! Turbulent velocity excess [ m/s ]
+    real(r8), intent(out) :: tkes(pcols)              ! TKE at surface [ m2/s2 ] 
+    real(r8), intent(out) :: went(pcols)              ! Entrainment rate at the PBL top interface [ m/s ] 
     real(r8), intent(out) :: tke(pcols,pver+1)        ! Turbulent kinetic energy [ m2/s2 ], 'tkes' at surface, pver+1.
     real(r8), intent(out) :: bprod(pcols,pver+1)      ! Buoyancy production [ m2/s3 ],     'bflxs' at surface, pver+1.
     real(r8), intent(out) :: sprod(pcols,pver+1)      ! Shear production [ m2/s3 ], (ustar(i)**3)/(vk*z(i,pver))
@@ -1482,14 +1494,14 @@
                                                       ! 5. = Double entraining CL external interface 
     real(r8), intent(out) :: sm_aw(pcols,pver+1)      ! Galperin instability function of momentum for use in the microphysics
                                                       ! [ no unit ]
-    real(r8), intent(out) :: ipbl(pcols)              ! If 1, PBL is CL, while if 0, PBL is STL.
-    real(r8), intent(out) :: kpblh(pcols)             ! Layer index containing PBL within or at the base interface
+    integer(i4), intent(out) :: ipbl(pcols)           ! If 1, PBL is CL, while if 0, PBL is STL.
+    integer(i4), intent(out) :: kpblh(pcols)          ! Layer index containing PBL within or at the base interface
+    real(r8), intent(out) :: wsed_CL(pcols,ncvmax)    ! Sedimentation velocity at the top of each CL [ m/s ]
 
     ! --------------------------- !
     ! Diagnostic output variables !
     ! --------------------------- !
 
-    real(r8) :: tkes(pcols)                           ! TKE at surface [ m2/s2 ] 
     real(r8) :: kbase_o(pcols,ncvmax)                 ! Original external base interface index of CL just after 'exacol'
     real(r8) :: ktop_o(pcols,ncvmax)                  ! Original external top  interface index of CL just after 'exacol'
     real(r8) :: ncvfin_o(pcols)                       ! Original number of CLs just after 'exacol'
@@ -1696,6 +1708,7 @@
     !
 
     do i = 1, ncol
+       went(i)                  = 0._r8
        wet_CL(i,:ncvmax)        = 0._r8
        web_CL(i,:ncvmax)        = 0._r8
        jtbu_CL(i,:ncvmax)       = 0._r8
@@ -1722,8 +1735,9 @@
        sm_a(i,:pver+1)          = 0._r8
        ri_a(i,:pver+1)          = 0._r8
        sm_aw(i,:pver+1)         = 0._r8
-       ipbl(i)                  = 0._r8
-       kpblh(i)                 = real(pver,r8)
+       ipbl(i)                  = 0
+       kpblh(i)                 = pver
+       wsed_CL(i,:ncvmax)       = 0._r8
     end do  
 
     ! kvh and kvm are stored over timesteps in 'vertical_diffusion.F90' and 
@@ -2369,6 +2383,7 @@
           if( id_sedfact ) then
             ! wsed    = 7.8e5_r8*(ql(i,kt)/ncliq(i,kt))**(2._r8/3._r8)
               sedfact = exp(-ased*wsedl(i,kt)/(wstar3**(1._r8/3._r8)+1.e-6_r8))
+              wsed_CL(i,ncv) = wsedl(i,kt)
               if( choice_evhc .eq. 'orig' ) then
                   if (ql(i,kt).gt.qmin .and. ql(i,kt-1).lt.qmin) then
                       jt2slv = slv(i,max(kt-2,1)) - slv(i,kt)
@@ -2745,9 +2760,9 @@
                turbtype(i,pver+1) = 3 ! CL external base interface
            endif
 
-           ipbl(i)  = 1._r8
-           kpblh(i) = ktopbl(i) - 1._r8
-
+           ipbl(i)  = 1
+           kpblh(i) = max(ktopbl(i)-1, 1)
+           went(i)  = wet_CL(i,ncvsurf)
        end if ! End of the calculationf of te properties of surface-based CL.
 
        ! -------------------------------------------- !
@@ -2844,7 +2859,7 @@
            tpert(i) = max(shflx(i)*rrho(i)/cpair*fak/ustar(i),0._r8) ! CCM stable-layer forms
            qpert(i) = max(qflx(i)*rrho(i)*fak/ustar(i),0._r8)
 
-           ipbl(i)  = 0._r8
+           ipbl(i)  = 0
            kpblh(i) = ktopbl(i)
 
        end if

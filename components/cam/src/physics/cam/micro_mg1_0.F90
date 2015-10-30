@@ -830,6 +830,10 @@ real(r8) :: frztmp
 
 logical  :: do_clubb_sgs
 
+#ifdef MODIFY_ACTIVATE || USE_UNICON
+! Move droplet activation
+real(r8) :: ncold(pcols,pver)
+#endif
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 ! Return error message
@@ -911,6 +915,13 @@ mincld=0.0001_r8
 q(1:ncol,1:pver)=qn(1:ncol,1:pver)
 t(1:ncol,1:pver)=tn(1:ncol,1:pver)
 
+#ifdef MODIFY_ACTIVATE || USE_UNICON
+!++ag/hm 8/17/12
+!initialize aerosol number
+dum2l(1:ncol,1:pver) = 0._r8
+dum2i(1:ncol,1:pver) = 0._r8
+#endif
+
 ! initialize time-varying parameters
 
 do k=1,pver
@@ -937,6 +948,37 @@ do k=1,pver
 
       dz(i,k)= pdel(i,k)/(rho(i,k)*g)
 
+#ifdef MODIFY_ACTIVATE || USE_UNICON
+      ! droplet activation
+      ! hm, modify 5/12/11 
+      ! get provisional droplet number after activation. This is used for
+      ! all microphysical process calculations, for consistency with update of
+      ! droplet mass before microphysics 
+
+      ! calculate potential for droplet activation if cloud water is present
+      ! tendency from activation (npccnin) is read in from companion routine
+
+      ! hm note: npccn and ncmax are no longer needed below this code - so this can  
+      ! be rewwritten and these parameters can be removed
+
+      !NOTE: cldm not set yet, need to set it...
+
+      if (qc(i,k).ge.qsmall) then
+         npccn(k) = max(0._r8,npccnin(i,k))
+         dum2l(i,k)=(nc(i,k)+npccn(k)*deltat)/max(cldn(i,k),mincld)  !cldm(i,k)
+         dum2l(i,k)=max(dum2l(i,k),cdnl/rho(i,k)) ! sghan minimum in #/cm3  
+         ncmax = dum2l(i,k)*max(cldn(i,k),mincld)  !cldm(i,k)
+
+      else
+         npccn(k)=0._r8
+         dum2l(i,k)=0._r8
+         ncmax = 0._r8
+      end if
+
+      ! hm update with activation tendency, keep old nc for later
+      ncold(i,k)=nc(i,k)
+      nc(i,k)=nc(i,k)+npccn(k)*deltat
+#endif
    end do
 end do
 
@@ -988,10 +1030,14 @@ rainrt1(1:ncol,1:pver) = 0._r8
 ! initialize precip fraction and output tendencies
 cldmax(1:ncol,1:pver)=mincld
 
+#ifdef MODIFY_ACTIVATE || USE_UNICON
+!++ag/hm 8/17/12: Activation moved above
+#else
 !initialize aerosol number
 !        naer2(1:ncol,1:pver,:)=0._r8
 dum2l(1:ncol,1:pver)=0._r8
 dum2i(1:ncol,1:pver)=0._r8
+#endif
 
 ! initialize avg precip rate
 prect1(1:ncol)=0._r8
@@ -1555,6 +1601,9 @@ do i=1,ncol
 
          cmeout(i,k) = cmeout(i,k)+cmei(i,k)
 
+#ifdef MODIFY_ACTIVATE || USE_UNICON
+         !--ag/hm 8/12/2012  Activation moved above.
+#else
          !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
          ! droplet activation
          ! calculate potential for droplet activation if cloud water is present
@@ -1574,6 +1623,7 @@ do i=1,ncol
             dum2l(i,k)=0._r8
             ncmax = 0._r8
          end if
+#endif
 
          !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
          ! get size distribution parameters based on in-cloud cloud water/ice 
@@ -2315,7 +2365,12 @@ do i=1,ncol
          ! include mixing timescale  (mtime)
 
          qce=(qc(i,k) - berg(i,k)*deltat)
+#ifdef MODIFY_ACTIVATE || USE_UNICON
+         !++ag/hm 8/17/12, modify for moving activation before microphysics
+         nce=nc(i,k)
+#else
          nce=(nc(i,k)+npccn(k)*deltat*mtime)
+#endif
          qie=(qi(i,k)+(cmei(i,k)+berg(i,k))*deltat)
          nie=(ni(i,k)+nnuccd(k)*deltat*mtime)
 
@@ -2536,7 +2591,12 @@ do i=1,ncol
 
          ! multiply activation/nucleation by mtime to account for fast timescale
 
+#ifdef MODIFY_ACTIVATE || USE_UNICON
+         !++ag/hm 8/17/12, don't include activation tendency (already included earlier)
+         nctend(i,k) = nctend(i,k)+ &
+#else
          nctend(i,k) = nctend(i,k)+ npccn(k)*mtime+&
+#endif
               (-nnuccc(k)-nnucct(k)-npsacws(k)+nsubc(k) & 
               -npra(k)-nprc1(k))*lcldm(i,k)      
 
@@ -2560,9 +2620,14 @@ do i=1,ncol
          ! maximum (existing N + source terms*dt), which is possible due to
          ! fast nucleation timescale
 
+#ifdef MODIFY_ACTIVATE || USE_UNICON
+         !++ag/hm 8/17/12, don't include timescale for droplet activation - not needed with
+         ! Ghan formulation based on mixing 
+#else
          if (nctend(i,k).gt.0._r8.and.nc(i,k)+nctend(i,k)*deltat.gt.ncmax) then
             nctend(i,k)=max(0._r8,(ncmax-nc(i,k))/deltat)
          end if
+#endif
 
          if (do_cldice .and. nitend(i,k).gt.0._r8.and.ni(i,k)+nitend(i,k)*deltat.gt.nimax) then
             nitend(i,k)=max(0._r8,(nimax-ni(i,k))/deltat)
@@ -3183,6 +3248,12 @@ do i=1,ncol
 
    do k=top_lev,pver
 
+#ifdef MODIFY_ACTIVATE || USE_UNICON
+      !++ag/hm 8/17/12, modify for activation tendency
+      ! *note: this still includes conditional on npccnin that should be removed
+      nctend(i,k)=nctend(i,k)+max(0._r8,npccnin(i,k))
+      nc(i,k)=ncold(i,k)
+#endif
       dumc(i,k) = max(qc(i,k)+qctend(i,k)*deltat,0._r8)
       dumi(i,k) = max(qi(i,k)+qitend(i,k)*deltat,0._r8)
       dumnc(i,k) = max(nc(i,k)+nctend(i,k)*deltat,0._r8)

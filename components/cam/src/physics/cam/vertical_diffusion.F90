@@ -114,12 +114,24 @@ module vertical_diffusion
 
   integer              :: pblh_idx, tpert_idx, qpert_idx
 
+  ! pbuf fields for unicon
+  integer              :: bprod_idx    = -1
+  integer              :: ipbl_idx     = -1
+  integer              :: kpblh_idx    = -1
+  integer              :: wstarPBL_idx = -1
+  integer              :: tkes_idx     = -1
+  integer              :: went_idx     = -1
+  integer              :: qtl_flx_idx  = -1            ! for use in cloud macrophysics when UNICON is on
+  integer              :: qti_flx_idx  = -1            ! for use in cloud macrophysics when UNICON is on
+
+  real(r8), parameter  :: unset_r8 = huge(1._r8)
   real(r8)             :: kv_top_pressure              ! Pressure defining the bottom of the upper atmosphere for kvh scaling (Pa)
   real(r8)             :: kv_top_scale                 ! Eddy diffusivity scale factor for upper atmosphere
   real(r8)             :: kv_freetrop_scale            ! Eddy diffusivity scale factor for the free troposphere
   real(r8)             :: eddy_lbulk_max               ! Maximum master length for diag_TKE
   real(r8)             :: eddy_leng_max                ! Maximum dissipation length for diag_TKE
   real(r8)             :: eddy_max_bot_pressure        ! Bottom pressure level (hPa) for eddy_leng_max
+  real(r8)             :: eddy_moist_entrain_a2l = unset_r8 ! Moist entrainment enhancement param
   logical              :: diff_cnsrv_mass_check        ! do mass conservation check
   logical              :: do_tms                       ! switch for turbulent mountain stress
   logical              :: do_iss                       ! switch for implicit turbulent surface stress
@@ -146,7 +158,7 @@ contains
     character(len=*), parameter :: subname = 'vd_readnl'
   
     namelist /vert_diff_nl/ kv_top_pressure, kv_top_scale, kv_freetrop_scale, eddy_lbulk_max, eddy_leng_max, &
-         eddy_max_bot_pressure, diff_cnsrv_mass_check, do_iss
+         eddy_max_bot_pressure, eddy_moist_entrain_a2l, diff_cnsrv_mass_check, do_iss
     !-----------------------------------------------------------------------------
   
     if (masterproc) then
@@ -171,6 +183,7 @@ contains
     call mpibcast(eddy_lbulk_max,                  1 , mpir8,   0, mpicom)
     call mpibcast(eddy_leng_max,                   1 , mpir8,   0, mpicom)
     call mpibcast(eddy_max_bot_pressure,           1 , mpir8,   0, mpicom)
+    call mpibcast(eddy_moist_entrain_a2l,          1 , mpir8,   0, mpicom)
     call mpibcast(diff_cnsrv_mass_check,           1 , mpilog,  0, mpicom)
     call mpibcast(do_iss,                          1 , mpilog,  0, mpicom)
 #endif
@@ -214,6 +227,17 @@ contains
 
     call pbuf_add_field('tpert', 'global', dtype_r8, (/pcols/),                       tpert_idx)
     call pbuf_add_field('qpert', 'global', dtype_r8, (/pcols,pcnst/),                 qpert_idx)
+
+    if (trim(shallow_scheme) == 'UNICON') then
+       call pbuf_add_field('bprod',    'global', dtype_r8, (/pcols,pverp/), bprod_idx)
+       call pbuf_add_field('ipbl',     'global', dtype_i4, (/pcols/),       ipbl_idx)
+       call pbuf_add_field('kpblh',    'global', dtype_i4, (/pcols/),       kpblh_idx)
+       call pbuf_add_field('wstarPBL', 'global', dtype_r8, (/pcols/),       wstarPBL_idx)
+       call pbuf_add_field('tkes',     'global', dtype_r8, (/pcols/),       tkes_idx)
+       call pbuf_add_field('went',     'global', dtype_r8, (/pcols/),       went_idx)
+       call pbuf_add_field('qtl_flx',  'global', dtype_r8, (/pcols, pverp/), qtl_flx_idx)
+       call pbuf_add_field('qti_flx',  'global', dtype_r8, (/pcols, pverp/), qti_flx_idx)
+    end if
 
   end subroutine vd_register
 
@@ -343,13 +367,14 @@ contains
         if( masterproc ) write(iulog,*) &
              'vertical_diffusion_init: eddy_diffusivity scheme: UW Moist Turbulence Scheme by Bretherton and Park'
         ! Check compatibility of eddy and shallow scheme
-        if( shallow_scheme .ne. 'UW' .and. shallow_scheme .ne. 'off' ) then
+        if( masterproc ) write(iulog,*) 'vertical_diffusion: nturb, ntop_eddy, nbot_eddy ', nturb, ntop_eddy, nbot_eddy
+        if( shallow_scheme .ne. 'UW' .and. shallow_scheme .ne. 'off' .and. shallow_scheme .ne. 'UNICON' ) then
             write(iulog,*) 'ERROR: shallow convection scheme ', shallow_scheme,' is incompatible with eddy scheme ', eddy_scheme
             call endrun( 'convect_shallow_init: shallow_scheme and eddy_scheme are incompatible' )
         endif
         call init_eddy_diff( r8, pver, gravit, cpair, rair, zvir, latvap, latice, &
                              ntop_eddy, nbot_eddy, karman, eddy_lbulk_max, eddy_leng_max, &
-                             eddy_max_bot_pressure )
+                             eddy_max_bot_pressure, eddy_moist_entrain_a2l)
         if( masterproc ) write(iulog,*) 'vertical_diffusion: nturb, ntop_eddy, nbot_eddy ', nturb, ntop_eddy, nbot_eddy
     case ( 'HB', 'HBR')
         if( masterproc ) write(iulog,*) 'vertical_diffusion_init: eddy_diffusivity scheme:  Holtslag and Boville'
@@ -572,6 +597,16 @@ contains
         call pbuf_set_field(pbuf2d, smaw_idx,     0._r8)
         call pbuf_set_field(pbuf2d, tauresx_idx,  0._r8)
         call pbuf_set_field(pbuf2d, tauresy_idx,  0._r8)
+        if (trim(shallow_scheme) == 'UNICON') then
+           call pbuf_set_field(pbuf2d, bprod_idx,    1.0e-5_r8)
+           call pbuf_set_field(pbuf2d, ipbl_idx,     0    )
+           call pbuf_set_field(pbuf2d, kpblh_idx,    1    )
+           call pbuf_set_field(pbuf2d, wstarPBL_idx, 0.0_r8)
+           call pbuf_set_field(pbuf2d, tkes_idx,     0.0_r8)
+           call pbuf_set_field(pbuf2d, went_idx,     0.0_r8)
+           call pbuf_set_field(pbuf2d, qtl_flx_idx,  0.0_r8)
+           call pbuf_set_field(pbuf2d, qti_flx_idx,  0.0_r8)
+        end if
      end if
 
   end subroutine vertical_diffusion_init
@@ -680,6 +715,10 @@ contains
     integer(i4),pointer :: turbtype(:,:)                            ! Turbulent interface types [ no unit ]
     real(r8), pointer   :: smaw(:,:)                                ! Normalized Galperin instability function
                                                                     ! ( 0<= <=4.964 and 1 at neutral )
+
+    real(r8), pointer   :: qtl_flx(:,:)                             ! overbar(w'qtl') where qtl = qv + ql
+    real(r8), pointer   :: qti_flx(:,:)                             ! overbar(w'qti') where qti = qv + qi
+
     real(r8) :: cgs(pcols,pverp)                                    ! Counter-gradient star  [ cg/flux ]
     real(r8) :: cgh(pcols,pverp)                                    ! Counter-gradient term for heat
     real(r8) :: rztodt                                              ! 1./ztodt [ 1/s ]
@@ -695,7 +734,7 @@ contains
     real(r8) :: kvq(pcols,pverp)                                    ! Eddy diffusivity for constituents [ m2/s ]
     real(r8) :: kvh(pcols,pverp)                                    ! Eddy diffusivity for heat [ m2/s ]
     real(r8) :: kvm(pcols,pverp)                                    ! Eddy diffusivity for momentum [ m2/s ]
-    real(r8) :: bprod(pcols,pverp)                                  ! Buoyancy production of tke [ m2/s3 ]
+    real(r8), pointer :: bprod(:,:)                                 ! Buoyancy production of tke [ m2/s3 ]
     real(r8) :: sprod(pcols,pverp)                                  ! Shear production of tke [ m2/s3 ]
     real(r8) :: sfi(pcols,pverp)                                    ! Saturation fraction at interfaces [ fraction ]
     real(r8) :: sl(pcols,pver)
@@ -749,9 +788,11 @@ contains
     real(r8) :: t_pro(pcols,pver)
     real(r8), pointer :: tauresx(:)                                      ! Residual stress to be added in vdiff to correct
     real(r8), pointer :: tauresy(:)                                      ! for turb stress mismatch between sfc and atm accumulated.
-    real(r8) :: ipbl(pcols)
-    real(r8) :: kpblh(pcols)
-    real(r8) :: wstarPBL(pcols)
+    integer(i4), pointer :: ipbl(:)
+    integer(i4), pointer :: kpblh(:)
+    real(r8), pointer :: wstarPBL(:)
+    real(r8), pointer :: tkes(:)
+    real(r8), pointer :: went(:)
     real(r8) :: tpertPBL(pcols)
     real(r8) :: qpertPBL(pcols)
     real(r8) :: rairi(pcols,pver+1)                                 ! interface gas constant needed for compute_vdiff
@@ -847,6 +888,18 @@ contains
 
        call pbuf_get_field(pbuf, wsedl_idx, wsedl )
 
+       ! These fields are put into the pbuf for UNICON only.
+       if (trim(shallow_scheme) == 'UNICON') then
+          call pbuf_get_field(pbuf, bprod_idx,    bprod)
+          call pbuf_get_field(pbuf, ipbl_idx,     ipbl)
+          call pbuf_get_field(pbuf, kpblh_idx,    kpblh)
+          call pbuf_get_field(pbuf, wstarPBL_idx, wstarPBL)
+          call pbuf_get_field(pbuf, tkes_idx,     tkes)
+          call pbuf_get_field(pbuf, went_idx,     went)
+       else
+          allocate(bprod(pcols,pverp), ipbl(pcols), kpblh(pcols), wstarPBL(pcols), tkes(pcols), went(pcols))
+       end if
+
        ! Retrieve eddy diffusivities for heat and momentum from physics buffer
        ! from last timestep ( if first timestep, has been initialized by inidat.F90 )
 
@@ -861,7 +914,8 @@ contains
                                cgs      , tpert       , qpert      , wpert      , tke            , bprod   , &
                                sprod    , sfi         , kvinit     ,                                         &
                                tauresx  , tauresy     , ksrftms    ,                                         &
-                               ipbl(:)  , kpblh(:)    , wstarPBL(:), turbtype   , smaw )
+                               ipbl     , kpblh       , wstarPBL   , tkes       , went           , turbtype, &
+                               smaw )
 
        ! The diag_TKE scheme does not calculate the Monin-Obukhov length, which is used in dry deposition calculations.
        ! Use the routines from pbl_utils to accomplish this. Assumes ustar and rrho have been set.
@@ -912,9 +966,13 @@ contains
 
        ! Write out fields that are only used by this scheme
 
-       call outfld( 'BPROD   ', bprod(1,1), pcols, lchnk )
-       call outfld( 'SPROD   ', sprod(1,1), pcols, lchnk )
-       call outfld( 'SFI     ', sfi,        pcols, lchnk )
+       call outfld( 'BPROD   ', bprod, pcols, lchnk )
+       call outfld( 'SPROD   ', sprod, pcols, lchnk )
+       call outfld( 'SFI     ', sfi,   pcols, lchnk )
+
+       if (trim(shallow_scheme) /= 'UNICON') then
+          deallocate(bprod, ipbl, kpblh, wstarPBL, tkes, went)
+       end if
 
     case ( 'HB', 'HBR' )
 
@@ -1086,6 +1144,28 @@ contains
     qtflx_cg(:ncol,1) = 0._r8
     uflx_cg(:ncol,1)  = 0._r8
     vflx_cg(:ncol,1)  = 0._r8
+
+    if (trim(shallow_scheme) == 'UNICON') then
+       call pbuf_get_field(pbuf, qtl_flx_idx,  qtl_flx)
+       call pbuf_get_field(pbuf, qti_flx_idx,  qti_flx)
+       qtl_flx(:ncol,1) = 0._r8
+       qti_flx(:ncol,1) = 0._r8
+       do k = 2, pver
+          do i = 1, ncol
+             ! For use in the cloud macrophysics
+             ! Note that density is not addd here. Also, only consider local transport term.
+             qtl_flx(i,k) = - kvh(i,k)*(q_tmp(i,k-1,1)-q_tmp(i,k,1)+q_tmp(i,k-1,ixcldliq)-q_tmp(i,k,ixcldliq))/&
+                                       (state%zm(i,k-1)-state%zm(i,k))
+             qti_flx(i,k) = - kvh(i,k)*(q_tmp(i,k-1,1)-q_tmp(i,k,1)+q_tmp(i,k-1,ixcldice)-q_tmp(i,k,ixcldice))/&
+                                       (state%zm(i,k-1)-state%zm(i,k))
+          end do
+       end do
+       do i = 1, ncol
+          rhoair = state%pint(i,pverp)/(rair*((slv(i,pver)-gravit*state%zi(i,pverp))/cpair))
+          qtl_flx(i,pverp) = cflx(i,1)/rhoair
+          qti_flx(i,pverp) = cflx(i,1)/rhoair
+       end do
+    end if
 
     do k = 2, pver
        do i = 1, ncol
