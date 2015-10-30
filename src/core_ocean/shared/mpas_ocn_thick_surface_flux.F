@@ -127,6 +127,7 @@ contains
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
+      !$omp do schedule(runtime) private(remainingFlux, k)
       do iCell = 1, nCells
         remainingFlux = 1.0_RKIND
         do k = 1, maxLevelCell(iCell)
@@ -139,6 +140,7 @@ contains
           tend(maxLevelCell(iCell), iCell) = tend(maxLevelCell(iCell), iCell) + remainingFlux * surfaceThicknessFlux(iCell)
         end if
       end do
+      !$omp end do
 
    !--------------------------------------------------------------------
 

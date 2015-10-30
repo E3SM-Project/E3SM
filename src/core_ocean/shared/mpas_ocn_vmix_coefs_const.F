@@ -199,7 +199,9 @@ contains
 
       if ( .not. constViscOn ) return
 
+      !$omp workshare
       vertViscTopOfEdge = vertViscTopOfEdge + constVisc
+      !$omp end workshare
 
    !--------------------------------------------------------------------
 
@@ -254,7 +256,9 @@ contains
 
       if ( .not. constDiffOn ) return
 
+      !$omp workshare
       vertDiffTopOfCell = vertDiffTopOfCell + constDiff
+      !$omp end workshare
 
    !--------------------------------------------------------------------
 

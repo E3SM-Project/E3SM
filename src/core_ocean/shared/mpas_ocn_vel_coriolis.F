@@ -135,6 +135,7 @@ contains
 
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
 
+      !$omp do schedule(runtime) private(cell1, cell2, invLength, k, q, j, eoe, workVorticity)
       do iEdge = 1, nEdgesSolve
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
@@ -156,6 +157,7 @@ contains
 
          end do
       end do
+      !$omp end do
 
    !--------------------------------------------------------------------
 

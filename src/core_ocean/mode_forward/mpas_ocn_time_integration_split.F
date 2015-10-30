@@ -28,6 +28,7 @@ module ocn_time_integration_split
    use mpas_vector_reconstruction
    use mpas_spline_interpolation
    use mpas_timer
+   use mpas_threading
 
    use ocn_tendency
    use ocn_diagnostics
@@ -35,7 +36,6 @@ module ocn_time_integration_split
 
    use ocn_equation_of_state
    use ocn_vmix
-   use ocn_time_average
    use ocn_time_average_coupled
 
    use ocn_effective_density_in_land_ice
@@ -72,7 +72,7 @@ module ocn_time_integration_split
 !> \author Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date   September 2011
 !> \details
-!>  This routine integrates a single time step (dt) using a
+!>  This routine integrates a master time step (dt) using a
 !>  split explicit time integrator.
 !
 !-----------------------------------------------------------------------
@@ -101,7 +101,6 @@ module ocn_time_integration_split
       type (mpas_pool_type), pointer :: tendPool
       type (mpas_pool_type), pointer :: tracersTendPool
       type (mpas_pool_type), pointer :: forcingPool
-      type (mpas_pool_type), pointer :: averagePool
       type (mpas_pool_type), pointer :: scratchPool
 
       type (dm_info) :: dminfo
@@ -117,6 +116,8 @@ module ocn_time_integration_split
                  vertViscTopOfEdge, vertDiffTopOfCell
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
       real (kind=RKIND), dimension(:), allocatable:: uTemp
+      real (kind=RKIND), dimension(:), pointer :: btrvel_temp
+      type (field1DReal), pointer :: btrvel_tempField
       real (kind=RKIND), dimension(:,:), allocatable:: tracersTemp
 
       integer :: tsIter
@@ -197,6 +198,7 @@ module ocn_time_integration_split
       type (mpas_pool_iterator_type) :: groupItr
       character (len=StrKIND) :: modifiedGroupName
       character (len=StrKIND) :: configName
+      integer :: threadNum
 
       call mpas_timer_start("se timestep", .false., timer_main)
 
@@ -236,6 +238,7 @@ module ocn_time_integration_split
       !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       call mpas_timer_start("se prep", .false., timer_prep)
+
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
@@ -269,6 +272,8 @@ module ocn_time_integration_split
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
          ! Initialize * variables that are used to compute baroclinic tendencies below.
+
+         !$omp do schedule(runtime) private(k)
          do iEdge = 1, nEdges
             do k = 1, nVertLevels !maxLevelEdgeTop % array(iEdge)
 
@@ -283,21 +288,24 @@ module ocn_time_integration_split
                normalVelocityNew(k,iEdge) = normalVelocityCur(k,iEdge)
 
                normalBaroclinicVelocityNew(k,iEdge) = normalBaroclinicVelocityCur(k,iEdge)
-
-               ! DWJ-POOL What's this for?
-!                block % diagnostics % layerThicknessEdge % array(k,iEdge) &
-!              = block % diagnostics % layerThicknessEdge % array(k,iEdge)
             end do 
          end do 
+         !$omp end do
 
+         !$omp workshare
          sshNew(:) = sshCur(:)
+         !$omp end workshare
 
+         !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells  
             do k = 1, maxLevelCell(iCell)
                layerThicknessNew(k,iCell) = layerThicknessCur(k,iCell)
             end do
          end do
+         !$omp end do
 
+
+         threadnum = mpas_threading_get_thread_num()
 
          call mpas_pool_begin_iteration(tracersPool)
          do while ( mpas_pool_get_next_member(tracersPool, groupItr))
@@ -306,28 +314,35 @@ module ocn_time_integration_split
                call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroupNew, 2)
 
                if ( associated(tracersGroupCur) .and. associated(tracersGroupNew) ) then
+                  !$omp do schedule(runtime) private(k)
                   do iCell = 1, nCells  
                      do k = 1, maxLevelCell(iCell)
                         tracersGroupNew(:,k,iCell) = tracersGroupCur(:,k,iCell) 
                      end do
                   end do
+                  !$omp end do
                end if
             end if
          end do
 
 
          if (associated(highFreqThicknessNew)) then
+            !$omp workshare
             highFreqThicknessNew(:,:) = highFreqThicknessCur(:,:)
+            !$omp end workshare
          end if
 
          if (associated(lowFreqDivergenceNew)) then
+            !$omp workshare
             lowFreqDivergenceNew(:,:) = lowFreqDivergenceCur(:,:)
+            !$omp end workshare
          endif
 
          block => block % next
       end do
 
       call mpas_timer_stop("se prep", timer_prep)
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! BEGIN large iteration loop 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -340,6 +355,7 @@ module ocn_time_integration_split
 
          call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
 
+         call mpas_threading_barrier()
          ! ---  update halos for diagnostic ocean boundayr layer depth
          call mpas_timer_start("se halo diag obd", .false., timer_halo_diagnostic)
          if (config_use_cvmix_kpp) then
@@ -360,6 +376,7 @@ module ocn_time_integration_split
            call mpas_dmpar_exch_halo_field(relativeVorticityField)
          end if
          call mpas_timer_stop("se halo diag", timer_halo_diagnostic)
+         call mpas_threading_barrier()
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !
@@ -369,6 +386,7 @@ module ocn_time_integration_split
 
          if (config_use_freq_filtered_thickness) then
             call mpas_timer_start("se freq-filtered-thick computations")
+
             block => domain % blocklist
             do while (associated(block))
                call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
@@ -383,6 +401,8 @@ module ocn_time_integration_split
             end do
             call mpas_timer_stop("se freq-filtered-thick computations")
 
+            call mpas_threading_barrier()
+
             call mpas_timer_start("se freq-filtered-thick halo update")
             call mpas_pool_get_subpool(domain % blocklist % structs, 'tend', tendPool)
             call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
@@ -393,6 +413,7 @@ module ocn_time_integration_split
             call mpas_dmpar_exch_halo_field(highFreqThicknessField)
             call mpas_dmpar_exch_halo_field(lowFreqDivergenceField)
             call mpas_timer_stop("se freq-filtered-thick halo update")
+            call mpas_threading_barrier()
 
             block => domain % blocklist
             do while (associated(block))
@@ -411,20 +432,22 @@ module ocn_time_integration_split
 
                call mpas_pool_get_array(tendPool, 'highFreqThickness', highFreqThicknessTend)
 
+               !$omp do schedule(runtime) private(k)
                do iCell = 1, nCells
                   do k = 1, maxLevelCell(iCell)
                      ! this is h^{hf}_{n+1}
                      highFreqThicknessNew(k,iCell) = highFreqThicknessCur(k,iCell) + dt * highFreqThicknessTend(k,iCell) 
                   end do
                end do
+               !$omp end do
+
                block => block % next
             end do
 
          endif
 
-
          ! compute velocity tendencies, T(u*,w*,p*)
-         call mpas_timer_start("se bcl vel", .false., timer_bcl_vel)
+         call mpas_timer_start("se_bcl_vel", .false., timer_bcl_vel)
 
          block => domain % blocklist
          do while (associated(block))
@@ -450,11 +473,11 @@ module ocn_time_integration_split
            ! compute vertAleTransportTop.  Use u (rather than normalTransportVelocity) for momentum advection.
            ! Use the most recent time level available.
            if (associated(highFreqThicknessNew)) then
-              call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+              call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
                  layerThicknessCur, layerThicknessEdge, normalVelocityCur, &
                  sshCur, dt, vertAleTransportTop, err, highFreqThicknessNew)
             else
-               call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+               call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
                   layerThicknessCur, layerThicknessEdge, normalVelocityCur, &
                   sshCur, dt, vertAleTransportTop, err)
             endif
@@ -502,11 +525,12 @@ module ocn_time_integration_split
                call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
                call mpas_pool_get_array(diagnosticsPool, 'barotropicForcing', barotropicForcing)
 
-               allocate(uTemp(nVertLevels))
-
                ! Put f*normalBaroclinicVelocity^{perp} in normalVelocityNew as a work variable
                call ocn_fuperp(statePool, meshPool, 2)
 
+               allocate(uTemp(nVertLevels))
+
+               !$omp do schedule(runtime) private(cell1, cell2, k, normalThicknessFluxSum, thicknessSum)
                do iEdge = 1, nEdges
                   cell1 = cellsOnEdge(1,iEdge)
                   cell2 = cellsOnEdge(2,iEdge)
@@ -547,11 +571,14 @@ module ocn_time_integration_split
                   enddo
  
                enddo ! iEdge
+               !$omp end do
 
                deallocate(uTemp)
 
                block => block % next
             end do
+
+            call mpas_threading_barrier()
 
             call mpas_timer_start("se halo normalBaroclinicVelocity", .false., timer_halo_normalBaroclinicVelocity)
             call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
@@ -560,21 +587,23 @@ module ocn_time_integration_split
             call mpas_dmpar_exch_halo_field(normalBaroclinicVelocityField)
             call mpas_timer_stop("se halo normalBaroclinicVelocity", timer_halo_normalBaroclinicVelocity)
 
+            call mpas_threading_barrier()
+
          end do  ! do j=1,config_n_bcl_iter
 
-         call mpas_timer_stop("se bcl vel", timer_bcl_vel)
+         call mpas_timer_stop("se_bcl_vel", timer_bcl_vel)
+
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          ! END baroclinic iterations on linear Coriolis term
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
-
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !
          !  Stage 2: Barotropic velocity (2D) prediction, explicitly subcycled
          !
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         call mpas_timer_start("se btr vel", .false., timer_btr_vel)
+         call mpas_timer_start("se_btr_vel", .false., timer_btr_vel)
 
          oldBtrSubcycleTime = 1
          newBtrSubcycleTime = 2
@@ -601,10 +630,13 @@ module ocn_time_integration_split
                call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
 
                ! For Split_Explicit unsplit, simply set normalBarotropicVelocityNew=0, normalBarotropicVelocitySubcycle=0, and uNew=normalBaroclinicVelocityNew
+
+               !$omp workshare
                normalBarotropicVelocityNew(:) = 0.0
-
                normalVelocityNew(:,:)  = normalBaroclinicVelocityNew(:,:) 
+               !$omp end workshare
 
+               !$omp do schedule(runtime) private(k)
                do iEdge = 1, nEdges
                   do k = 1, nVertLevels
 
@@ -616,7 +648,8 @@ module ocn_time_integration_split
 
                   enddo
                end do  ! iEdge
-   
+               !$omp end do
+
                block => block % next
             end do  ! block
 
@@ -642,14 +675,19 @@ module ocn_time_integration_split
                call mpas_pool_get_array(statePool, 'normalBarotropicVelocity', normalBarotropicVelocityNew, 2)
 
                if (config_filter_btr_mode) then
+                  !$omp workshare
                   barotropicForcing(:) = 0.0
+                  !$omp end workshare
                endif
 
+               !$omp do schedule(runtime)
                do iCell = 1, nCells
                   ! sshSubcycleOld = sshOld  
                   sshSubcycleCur(iCell) = sshCur(iCell)  
                end do
+               !$omp end do
 
+               !$omp do schedule(runtime)
                do iEdge = 1, nEdges
 
                   ! normalBarotropicVelocitySubcycleOld = normalBarotropicVelocityOld 
@@ -661,6 +699,7 @@ module ocn_time_integration_split
                   ! barotropicThicknessFlux = 0  
                   barotropicThicknessFlux(iEdge) = 0.0
                end do
+               !$omp end do
 
                block => block % next
             end do  ! block
@@ -699,6 +738,7 @@ module ocn_time_integration_split
 
                      call mpas_pool_get_array(diagnosticsPool, 'barotropicForcing', barotropicForcing)
 
+                     !$omp do schedule(runtime) private(cell1, cell2, CoriolisTerm, i, eoe)
                      do iEdge = 1, nEdges
 
                         cell1 = cellsOnEdge(1,iEdge)
@@ -719,9 +759,12 @@ module ocn_time_integration_split
                           * (sshSubcycleCur(cell2) - sshSubcycleCur(cell1) ) &
                           / dcEdge(iEdge) + barotropicForcing(iEdge))) * edgeMask(1, iEdge)
                      end do
+                     !$omp end do
 
                      block => block % next
                   end do  ! block
+
+                call mpas_threading_barrier()
 
                 !   boundary update on normalBarotropicVelocityNew
                 call mpas_timer_start("se halo normalBarotropicVelocity", .false., timer_halo_normalBarotropicVelocity)
@@ -731,6 +774,8 @@ module ocn_time_integration_split
                 call mpas_pool_get_field(statePool, 'normalBarotropicVelocitySubcycle', normalBarotropicVelocitySubcycleField, newBtrSubcycleTime)
                 call mpas_dmpar_exch_halo_field(normalBarotropicVelocitySubcycleField)
                 call mpas_timer_stop("se halo normalBarotropicVelocity", timer_halo_normalBarotropicVelocity)
+
+                call mpas_threading_barrier()
               endif ! config_btr_gam1_velWt1>1.0e-12
 
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -766,8 +811,10 @@ module ocn_time_integration_split
                 call mpas_pool_get_array(statePool, 'normalBarotropicVelocitySubcycle', normalBarotropicVelocitySubcycleNew, newBtrSubcycleTime)
 
                 call mpas_pool_get_array(diagnosticsPool, 'barotropicThicknessFlux', barotropicThicknessFlux)
-      
+
+                !$omp workshare
                 sshTend(:) = 0.0
+                !$omp end workshare
       
                 if (config_btr_solve_SSH2) then
                    ! If config_btr_solve_SSH2=.true., then do NOT accumulate barotropicThicknessFlux in this SSH predictor 
@@ -783,6 +830,7 @@ module ocn_time_integration_split
                 ! config_btr_gam1_velWt1=0.5     flux = 1/2*(normalBarotropicVelocityNew+normalBarotropicVelocityOld)*H
                 ! config_btr_gam1_velWt1=  0     flux = normalBarotropicVelocityOld*H
 
+                !$omp do schedule(runtime) private(i, iEdge, cell1, cell2, sshEdge, thicknessSum, flux)
                 do iCell = 1, nCells
                   do i = 1, nEdgesOnCell(iCell)
                     iEdge = edgesOnCell(i, iCell)
@@ -812,7 +860,9 @@ module ocn_time_integration_split
 
                   end do
                 end do
+                !$omp end do
 
+                !$omp do schedule(runtime) private(cell1, cell2, sshEdge, thicknessSum, flux)
                 do iEdge = 1, nEdges
                    cell1 = cellsOnEdge(1,iEdge)
                    cell2 = cellsOnEdge(2,iEdge)
@@ -837,15 +887,20 @@ module ocn_time_integration_split
 
                    barotropicThicknessFlux(iEdge) = barotropicThicknessFlux(iEdge) + barotropicThicknessFlux_coeff * flux
                 end do
+                !$omp end do
       
                 ! SSHnew = SSHold + dt/J*(-div(Flux))
+                !$omp do schedule(runtime)
                 do iCell = 1, nCells 
                    sshSubcycleNew(iCell) = sshSubcycleCur(iCell) + dt / config_n_btr_subcycles * sshTend(iCell) / areaCell(iCell)
                 end do
-      
+                !$omp end do
+
                 block => block % next
               end do  ! block
       
+              call mpas_threading_barrier()
+
               !   boundary update on SSHnew
               call mpas_timer_start("se halo ssh", .false., timer_halo_ssh)
               call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
@@ -853,6 +908,7 @@ module ocn_time_integration_split
               call mpas_pool_get_field(statePool, 'sshSubcycle', sshSubcycleField, newBtrSubcycleTime)
               call mpas_dmpar_exch_halo_field(sshSubcycleField)
               call mpas_timer_stop("se halo ssh", timer_halo_ssh)
+              call mpas_threading_barrier()
       
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
               ! Barotropic subcycle: VELOCITY CORRECTOR STEP
@@ -868,6 +924,7 @@ module ocn_time_integration_split
                    call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
                    call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
                    call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+                   call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
 
                    call mpas_pool_get_array(statePool, 'normalBarotropicVelocitySubcycle', normalBarotropicVelocitySubcycleCur, oldBtrSubcycleTime)
                    call mpas_pool_get_array(statePool, 'normalBarotropicVelocitySubcycle', normalBarotropicVelocitySubcycleNew, newBtrSubcycleTime)
@@ -884,9 +941,16 @@ module ocn_time_integration_split
 
                    call mpas_pool_get_array(diagnosticsPool, 'barotropicForcing', barotropicForcing)
 
-                   allocate(utemp(nEdges+1))
+                   call mpas_pool_get_field(scratchPool, 'btrvel_temp', btrvel_tempField)
+                   call mpas_allocate_scratch_field(btrvel_tempField, .true.)
+                   call mpas_threading_barrier()
+                   btrvel_temp => btrvel_tempField % array
 
-                   uTemp(:) = normalBarotropicVelocitySubcycleNew(:)
+                   !$omp workshare
+                   btrvel_temp(:) = normalBarotropicVelocitySubcycleNew(:)
+                   !$omp end workshare
+
+                   !$omp do schedule(runtime) private(cell1, cell2, eoe, CoriolisTerm, i, sshCell1, sshCell2)
                    do iEdge = 1, nEdges 
                      cell1 = cellsOnEdge(1,iEdge)
                      cell2 = cellsOnEdge(2,iEdge)
@@ -897,7 +961,7 @@ module ocn_time_integration_split
                         eoe = edgesOnEdge(i,iEdge)
                         CoriolisTerm = CoriolisTerm + weightsOnEdge(i,iEdge) &
                              !* normalBarotropicVelocitySubcycleNew(eoe) &
-                             * uTemp(eoe) * fEdge(eoe) 
+                             * btrvel_temp(eoe) * fEdge(eoe) 
                      end do
       
                      ! In this final solve for velocity, SSH is a linear
@@ -910,10 +974,16 @@ module ocn_time_integration_split
                          + dt / config_n_btr_subcycles *(CoriolisTerm - gravity *(sshCell2 - sshCell1) / dcEdge(iEdge) &
                          + barotropicForcing(iEdge))) * edgeMask(1,iEdge)
                    end do
-                   deallocate(uTemp)
+                   !$omp end do
+
+                   call mpas_threading_barrier()
+                   call mpas_deallocate_scratch_field(btrvel_tempField, .true.)
+                   call mpas_threading_barrier()
       
                    block => block % next
                 end do  ! block
+
+                call mpas_threading_barrier()
       
                 !   boundary update on normalBarotropicVelocityNew
                 call mpas_timer_start("se halo normalBarotropicVelocity", .false., timer_halo_normalBarotropicVelocity)
@@ -924,6 +994,8 @@ module ocn_time_integration_split
 
                 call mpas_dmpar_exch_halo_field(normalBarotropicVelocitySubcycleField)
                 call mpas_timer_stop("se halo normalBarotropicVelocity", timer_halo_normalBarotropicVelocity)
+
+                call mpas_threading_barrier()
               end do !do BtrCorIter=1,config_n_btr_cor_iter
       
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -960,14 +1032,16 @@ module ocn_time_integration_split
                    call mpas_pool_get_array(statePool, 'normalBarotropicVelocitySubcycle', normalBarotropicVelocitySubcycleNew, newBtrSubcycleTime)
 
                    call mpas_pool_get_array(diagnosticsPool, 'barotropicThicknessFlux', barotropicThicknessFlux)
-                
+                   !$omp workshare
                    sshTend(:) = 0.0
+                   !$omp end workshare
       
                    ! config_btr_gam3_velWt2 sets the forward weighting of velocity in the SSH computation
                    ! config_btr_gam3_velWt2=  1     flux = normalBarotropicVelocityNew*H
                    ! config_btr_gam3_velWt2=0.5     flux = 1/2*(normalBarotropicVelocityNew+normalBarotropicVelocityOld)*H
                    ! config_btr_gam3_velWt2=  0     flux = normalBarotropicVelocityOld*H
 
+                   !$omp do schedule(runtime) private(i, iEdge, cell1, cell2, sshCell1, sshCell2, sshEdge, thicknessSum, flux)
                    do iCell = 1, nCells
                      do i = 1, nEdgesOnCell(iCell)
                        iEdge = edgesOnCell(i, iCell)
@@ -1002,7 +1076,9 @@ module ocn_time_integration_split
 
                      end do
                    end do
+                   !$omp end do
 
+                   !$omp do schedule(runtime) private(cell1, cell2, sshCell1, sshCell2, sshEdge, thicknessSum, flux)
                    do iEdge = 1, nEdges
                       cell1 = cellsOnEdge(1,iEdge)
                       cell2 = cellsOnEdge(2,iEdge)
@@ -1028,15 +1104,20 @@ module ocn_time_integration_split
       
                       barotropicThicknessFlux(iEdge) = barotropicThicknessFlux(iEdge) + flux
                    end do
+                   !$omp end do
       
                    ! SSHnew = SSHold + dt/J*(-div(Flux))
+                   !$omp do schedule(runtime)
                    do iCell = 1, nCells 
                       sshSubcycleNew(iCell) = sshSubcycleCur(iCell) & 
                            + dt / config_n_btr_subcycles * sshTend(iCell) / areaCell(iCell)
                    end do
-      
+                   !$omp end do
+
                    block => block % next
                 end do  ! block
+
+                call mpas_threading_barrier()
       
                 !   boundary update on SSHnew
                 call mpas_timer_start("se halo ssh", .false., timer_halo_ssh)
@@ -1047,6 +1128,8 @@ module ocn_time_integration_split
 
                 call mpas_dmpar_exch_halo_field(sshSubcycleField)
                 call mpas_timer_stop("se halo ssh", timer_halo_ssh)
+
+                call mpas_threading_barrier()
                endif ! config_btr_solve_SSH2
       
                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1067,9 +1150,13 @@ module ocn_time_integration_split
                   ! This accumulates the sum.
                   ! If the Barotropic Coriolis iteration is limited to one, this could 
                   ! be merged with the above code.
+
+                  !$omp do schedule(runtime)
                   do iEdge = 1, nEdges 
                        normalBarotropicVelocityNew(iEdge) = normalBarotropicVelocityNew(iEdge) + normalBarotropicVelocitySubcycleNew(iEdge)  
                   end do  ! iEdge
+                  !$omp end do
+
                   block => block % next
                end do  ! block
       
@@ -1094,7 +1181,8 @@ module ocn_time_integration_split
                call mpas_pool_get_array(statePool, 'normalBarotropicVelocity', normalBarotropicVelocityNew, 2)
 
                call mpas_pool_get_array(diagnosticsPool, 'barotropicThicknessFlux', barotropicThicknessFlux)
-      
+ 
+               !$omp do schedule(runtime)
                do iEdge = 1, nEdges
                   barotropicThicknessFlux(iEdge) = barotropicThicknessFlux(iEdge) &
                       / (config_n_btr_subcycles * config_btr_subcycle_loop_factor)
@@ -1102,10 +1190,12 @@ module ocn_time_integration_split
                   normalBarotropicVelocityNew(iEdge) = normalBarotropicVelocityNew(iEdge) & 
                      / (config_n_btr_subcycles * config_btr_subcycle_loop_factor + 1)
                end do
-      
+               !$omp end do
+
                block => block % next
             end do  ! block
-      
+
+            call mpas_threading_barrier()
       
             ! boundary update on F
             call mpas_timer_start("se halo F", .false., timer_halo_f)
@@ -1116,6 +1206,7 @@ module ocn_time_integration_split
             call mpas_dmpar_exch_halo_field(barotropicThicknessFluxField)
             call mpas_timer_stop("se halo F", timer_halo_f)
 
+            call mpas_threading_barrier()
 
             ! Check that you can compute SSH using the total sum or the individual increments
             ! over the barotropic subcycles.
@@ -1156,6 +1247,7 @@ module ocn_time_integration_split
                   useVelocityCorrection = 0
                endif
 
+               !$omp do schedule(runtime) private(k, normalThicknessFluxSum, thicknessSum, normalVelocityCorrection)
                do iEdge = 1, nEdges
 
                   ! velocity for normalVelocityCorrectionection is normalBarotropicVelocity + normalBaroclinicVelocity + uBolus
@@ -1188,6 +1280,7 @@ module ocn_time_integration_split
                   enddo
 
                end do ! iEdge
+               !$omp end do
 
                deallocate(uTemp)
 
@@ -1196,7 +1289,7 @@ module ocn_time_integration_split
 
          endif ! split_explicit  
 
-         call mpas_timer_stop("se btr vel", timer_btr_vel)
+         call mpas_timer_stop("se_btr_vel", timer_btr_vel)
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !
@@ -1214,6 +1307,7 @@ module ocn_time_integration_split
             call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
             call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
             call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
+            call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
             call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
             call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
 
@@ -1229,11 +1323,11 @@ module ocn_time_integration_split
             ! Use time level 1 values of layerThickness and layerThicknessEdge because 
             ! layerThickness has not yet been computed for time level 2.
            if (associated(highFreqThicknessNew)) then
-              call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+              call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
                  layerThicknessCur, layerThicknessEdge, normalTransportVelocity, &
                  sshCur, dt, vertAleTransportTop, err, highFreqThicknessNew)
             else
-               call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+               call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
                  layerThicknessCur, layerThicknessEdge, normalTransportVelocity, &
                  sshCur, dt, vertAleTransportTop, err)
             endif
@@ -1242,6 +1336,8 @@ module ocn_time_integration_split
 
             block => block % next
          end do
+
+         call mpas_threading_barrier()
 
          ! update halo for thickness tendencies
          call mpas_timer_start("se halo thickness", .false., timer_halo_thickness)
@@ -1253,6 +1349,8 @@ module ocn_time_integration_split
          call mpas_dmpar_exch_halo_field(layerThicknessField)
          call mpas_timer_stop("se halo thickness", timer_halo_thickness)
 
+         call mpas_threading_barrier()
+
          block => domain % blocklist
          do while (associated(block))
             call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
@@ -1262,10 +1360,13 @@ module ocn_time_integration_split
             call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
             call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+            call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
             call ocn_tend_tracer(tendPool, statePool, forcingPool, diagnosticsPool, meshPool, scratchPool, dt, 2)
 
             block => block % next
          end do
+
+         call mpas_threading_barrier()
 
          ! update halo for tracer tendencies
          call mpas_timer_start("se halo tracers", .false., timer_halo_tracers)
@@ -1283,6 +1384,8 @@ module ocn_time_integration_split
             end if
          end do
          call mpas_timer_stop("se halo tracers", timer_halo_tracers)
+
+         call mpas_threading_barrier()
 
          block => domain % blocklist
          do while (associated(block))
@@ -1338,6 +1441,8 @@ module ocn_time_integration_split
 
                ! Only need T & S for earlier iterations,
                ! then all the tracers needed the last time through.
+
+               !$omp do schedule(runtime) private(k, temp_h, temp)
                do iCell = 1, nCells
                   ! sshNew is a pointer, defined above.
                   do k = 1, maxLevelCell(iCell)
@@ -1357,8 +1462,10 @@ module ocn_time_integration_split
                      end do
                   end do
                end do ! iCell
+               !$omp end do
 
                if (config_use_freq_filtered_thickness) then
+                  !$omp do schedule(runtime) private(k, temp)
                   do iCell = 1, nCells
                      do k = 1, maxLevelCell(iCell)
 
@@ -1375,8 +1482,10 @@ module ocn_time_integration_split
                         lowFreqDivergenceNew(k,iCell) = 0.5 * (lowFreqDivergenceCur(k,iCell) + temp)
                      end do
                   end do
+                  !$omp end do
                end if
 
+               !$omp do schedule(runtime) private(k)
                do iEdge = 1, nEdges
 
                   do k = 1, nVertLevels
@@ -1389,6 +1498,7 @@ module ocn_time_integration_split
                   enddo
 
                end do ! iEdge
+               !$omp end do
 
                ! Efficiency note: We really only need this to compute layerThicknessEdge, density, pressure, and SSH 
                ! in this diagnostics solve.
@@ -1401,12 +1511,14 @@ module ocn_time_integration_split
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             elseif (split_explicit_step == config_n_ts_iter) then
 
+               !$omp do schedule(runtime) private(k)
                do iCell = 1, nCells
                   do k = 1, maxLevelCell(iCell)
                      ! this is h_{n+1}
                      layerThicknessNew(k,iCell) = layerThicknessCur(k,iCell) + dt * layerThicknessTend(k,iCell) 
                   end do
                end do
+               !$omp end do
 
                call mpas_pool_begin_iteration(tracersPool)
                do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
@@ -1421,17 +1533,20 @@ module ocn_time_integration_split
                         modifiedGroupName = trim(groupItr % memberName) // 'Tend'
                         call mpas_pool_get_array(tracersTendPool, modifiedGroupName, tracersGroupTend)
 
+                        !$omp do schedule(runtime) private(k)
                         do iCell = 1, nCells
                            do k = 1, maxLevelCell(iCell)
                               tracersGroupNew(:,k,iCell) = (tracersGroupCur(:,k,iCell) * layerThicknessCur(k,iCell) + dt * tracersGroupTend(:,k,iCell) ) &
                                / layerThicknessNew(k,iCell)
                            end do
                         end do
+                        !$omp end do
                      end if
                   end if
                end do
 
                if (config_use_freq_filtered_thickness) then
+                  !$omp do schedule(runtime) private(k)
                   do iCell = 1, nCells
                      do k = 1, maxLevelCell(iCell)
 
@@ -1441,6 +1556,7 @@ module ocn_time_integration_split
                         lowFreqDivergenceNew(k,iCell) = lowFreqDivergenceCur(k,iCell) + dt * lowFreqDivergenceTend(k,iCell) 
                      end do
                   end do
+                  !$omp end do
                end if
 
                ! Recompute final u to go on to next step.
@@ -1452,11 +1568,13 @@ module ocn_time_integration_split
                ! note that normalBaroclinicVelocity is recomputed at the beginning of the next timestep due to Imp Vert mixing,
                ! so normalBaroclinicVelocity does not have to be recomputed here.
       
+               !$omp do schedule(runtime) private(k)
                do iEdge = 1, nEdges
                   do k = 1, maxLevelEdgeTop(iEdge)
                      normalVelocityNew(k,iEdge) = normalBarotropicVelocityNew(iEdge) + 2 * normalBaroclinicVelocityNew(k,iEdge) - normalBaroclinicVelocityCur(k,iEdge)
                   end do
                end do ! iEdges
+               !$omp end do
 
             endif ! split_explicit_step
 
@@ -1491,6 +1609,7 @@ module ocn_time_integration_split
       end do
 
       call mpas_timer_start("se implicit vert mix")
+
       block => domain % blocklist
       do while(associated(block))
         call mpas_pool_get_subpool(block % structs, 'state', statePool)
@@ -1512,10 +1631,12 @@ module ocn_time_integration_split
         if (config_use_standardGM) then
            call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
         end if
-        call ocn_vmix_implicit(dt, meshPool, diagnosticsPool, statePool, err, 2)
+        call ocn_vmix_implicit(dt, meshPool, diagnosticsPool, statePool, scratchPool, err, 2)
 
         block => block % next
       end do
+
+      call mpas_threading_barrier()
 
       ! Update halo on u and tracers, which were just updated for implicit vertical mixing.  If not done, 
       ! this leads to lack of volume conservation.  It is required because halo updates in stage 3 are only
@@ -1543,6 +1664,8 @@ module ocn_time_integration_split
 
       call mpas_timer_stop("se implicit vert mix")
 
+      call mpas_threading_barrier()
+
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
@@ -1551,7 +1674,6 @@ module ocn_time_integration_split
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-         call mpas_pool_get_subpool(block % structs, 'average', averagePool)
 
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityCur, 1)
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityNew, 2)
@@ -1581,11 +1703,15 @@ module ocn_time_integration_split
          call mpas_pool_get_dimension(diagnosticsPool, 'index_SSHGradientMeridional', indexSSHGradientMeridional)
 
          if (config_prescribe_velocity) then
+            !$omp workshare
             normalVelocityNew(:,:) = normalVelocityCur(:,:)
+            !$omp end workshare
          end if
 
          if (config_prescribe_thickness) then
+            !$omp workshare
             layerThicknessNew(:,:) = layerThicknessCur(:,:)
+            !$omp end workshare
          end if
 
          call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
@@ -1598,24 +1724,30 @@ module ocn_time_integration_split
             call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
          end if
 
+         call mpas_threading_barrier()
+         !$omp master
          call mpas_reconstruct(meshPool, normalVelocityNew,  &
                           velocityX, velocityY, velocityZ,   &
                           velocityZonal, velocityMeridional, &
-                          includeHalos = .true. )
+                          includeHalos = .true.)
 
          call mpas_reconstruct(meshPool, gradSSH,         &
                           gradSSHX, gradSSHY, gradSSHZ,   &
                           gradSSHZonal, gradSSHMeridional &
                          )
+         !$omp end master
+         call mpas_threading_barrier()
 
+         !$omp workshare
          surfaceVelocity(indexSurfaceVelocityZonal, :) = velocityZonal(1, :)
          surfaceVelocity(indexSurfaceVelocityMeridional, :) = velocityMeridional(1, :)
 
          SSHGradient(indexSSHGradientZonal, :) = gradSSHZonal(1, :)
          SSHGradient(indexSSHGradientMeridional, :) = gradSSHMeridional(1, :)
+         !$omp end workshare
 
-         call ocn_time_average_accumulate(averagePool, statePool, diagnosticsPool, 2)
          call ocn_time_average_coupled_accumulate(diagnosticsPool, statePool, forcingPool, 2)
+         call mpas_threading_barrier()
 
          if (config_use_standardGM) then
             call ocn_reconstruct_gm_vectors(diagnosticsPool, meshPool)
@@ -1633,6 +1765,7 @@ module ocn_time_integration_split
       end if
 
       call mpas_timer_stop("se timestep", timer_main)
+      call mpas_threading_barrier()
 
       deallocate(n_bcl_iter)
 
@@ -1698,8 +1831,8 @@ module ocn_time_integration_split
          ! This is only done upon start-up.
          if (trim(config_time_integrator) == 'unsplit_explicit') then
             call mpas_pool_get_array(statePool, 'normalBarotropicVelocity', normalBarotropicVelocity)
-            normalBarotropicVelocity(:) = 0.0
 
+            normalBarotropicVelocity(:) = 0.0
             normalBaroclinicVelocity(:,:) = normalVelocity(:,:)
 
          elseif (trim(config_time_integrator) == 'split_explicit') then
@@ -1751,9 +1884,10 @@ module ocn_time_integration_split
 
             if (config_filter_btr_mode) then
                ! filter normalBarotropicVelocity out of initial condition
-                normalVelocity(:,:) = normalBaroclinicVelocity(:,:)
 
+                normalVelocity(:,:) = normalBaroclinicVelocity(:,:)
                 normalBarotropicVelocity(:) = 0.0
+
             endif
 
          endif

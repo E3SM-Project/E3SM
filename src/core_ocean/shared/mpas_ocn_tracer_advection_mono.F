@@ -22,6 +22,7 @@ module ocn_tracer_advection_mono
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_io_units
+   use mpas_threading
 
    use mpas_tracer_advection_helpers
 
@@ -134,7 +135,7 @@ module ocn_tracer_advection_mono
       call mpas_allocate_scratch_field(fluxIncomingField, .true.)
       call mpas_allocate_scratch_field(fluxOutgoingField, .true.)
       call mpas_allocate_scratch_field(highOrderVertFluxField, .true.)
-
+      call mpas_threading_barrier()
 
       ! Setup high order horizontal flux field
       high_order_horiz_flux => highOrderHorizFluxField % array
@@ -152,15 +153,18 @@ module ocn_tracer_advection_mono
       ! allocate nVertLevels+1 and nCells arrays
       high_order_vert_flux => highOrderVertFluxField % array
 
+      !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells
         do k=1, maxLevelCell(iCell)
           inv_h_new(k, iCell) = 1.0 / (layerThickness(k, iCell) + dt * tend_layerThickness(k, iCell))
         end do
       end do
+      !$omp end do
 
       ! Loop over tracers. One tracer is advected at a time. It is copied into a temporary array in order to improve locality
       do iTracer = 1, num_tracers
         ! Initialize variables for use in this iTracer iteration
+        !$omp do schedule(runtime) private(k)
         do iCell = 1, nCells
           do k=1, maxLevelCell(iCell)
             tracer_cur(k,iCell) = tracers(iTracer,k,iCell)
@@ -172,11 +176,15 @@ module ocn_tracer_advection_mono
             end if
           end do ! k loop
         end do ! iCell loop
+        !$omp end do
 
+        !$omp workshare
         high_order_vert_flux = 0.0_RKIND
         high_order_horiz_flux = 0.0_RKIND
+        !$omp end workshare
 
         !  Compute the high order vertical flux. Also determine bounds on tracer_cur. 
+        !$omp do schedule(runtime) private(k, verticalWeightK, verticalWeightKm1, i)
         do iCell = 1, nCells
           k = 1
           tracer_max(k,iCell) = max(tracer_cur(k,iCell),tracer_cur(k+1,iCell))
@@ -220,8 +228,10 @@ module ocn_tracer_advection_mono
             end do ! k loop
           end do ! i loop over nEdgesOnCell
         end do ! iCell Loop
+        !$omp end do
 
         !  Compute the high order horizontal flux
+        !$omp do schedule(runtime) private(cell1, cell2, k, tracer_weight, i, iCell)
         do iEdge = 1, nEdges
           cell1 = cellsOnEdge(1, iEdge)
           cell2 = cellsOnEdge(2, iEdge)
@@ -244,19 +254,16 @@ module ocn_tracer_advection_mono
             end do ! k loop
           end do ! i loop over nAdvCellsForEdge
         end do ! iEdge loop
+        !$omp end do
 
         !  low order upwind vertical flux (monotonic and diffused)
         !  Remove low order flux from the high order flux.
         !  Store left over high order flux in high_order_vert_flux array.
         !  Upwind fluxes are accumulated in upwind_tendency
+        !$omp do schedule(runtime) private(k, flux_upwind)
         do iCell = 1, nCells
           do k = 2, maxLevelCell(iCell)
-            ! dwj 02/03/12 and Atmosphere are different in vertical
-            if(positiveDzDk) then
-              flux_upwind = max(0.0_RKIND,w(k,iCell))*tracer_cur(k-1,iCell) + min(0.0_RKIND,w(k,iCell))*tracer_cur(k,iCell)
-            else
-              flux_upwind = min(0.0_RKIND,w(k,iCell))*tracer_cur(k-1,iCell) + max(0.0_RKIND,w(k,iCell))*tracer_cur(k,iCell)
-            end if
+            flux_upwind = min(0.0_RKIND,w(k,iCell))*tracer_cur(k-1,iCell) + max(0.0_RKIND,w(k,iCell))*tracer_cur(k,iCell)
             upwind_tendency(k-1,iCell) = upwind_tendency(k-1,iCell) + flux_upwind
             upwind_tendency(k  ,iCell) = upwind_tendency(k  ,iCell) - flux_upwind
             high_order_vert_flux(k,iCell) = high_order_vert_flux(k,iCell) - flux_upwind
@@ -267,21 +274,17 @@ module ocn_tracer_advection_mono
           ! flux_outgoing contains the total remaining high order flux out of iCell
           !           it is negative
           do k = 1, maxLevelCell(iCell)
-            ! dwj 02/03/12 and Atmosphere are different in vertical
-            if(positiveDzDk) then
-              flux_incoming (k,iCell) = -(min(0.0_RKIND,high_order_vert_flux(k+1,iCell))-max(0.0_RKIND,high_order_vert_flux(k,iCell)))
-              flux_outgoing(k,iCell) = -(max(0.0_RKIND,high_order_vert_flux(k+1,iCell))-min(0.0_RKIND,high_order_vert_flux(k,iCell)))
-            else
-              flux_incoming (k, iCell) = max(0.0_RKIND, high_order_vert_flux(k+1, iCell)) - min(0.0_RKIND, high_order_vert_flux(k, iCell))
-              flux_outgoing(k, iCell) = min(0.0_RKIND, high_order_vert_flux(k+1, iCell)) - max(0.0_RKIND, high_order_vert_flux(k, iCell))
-            end if
+            flux_incoming (k, iCell) = max(0.0_RKIND, high_order_vert_flux(k+1, iCell)) - min(0.0_RKIND, high_order_vert_flux(k, iCell))
+            flux_outgoing(k, iCell) = min(0.0_RKIND, high_order_vert_flux(k+1, iCell)) - max(0.0_RKIND, high_order_vert_flux(k, iCell))
           end do ! k Loop
         end do ! iCell Loop
+        !$omp end do
 
         !  low order upwind horizontal flux (monotinc and diffused)
         !  Remove low order flux from the high order flux
         !  Store left over high order flux in high_order_horiz_flux array
         !  Upwind fluxes are accumulated in upwind_tendency
+        !$omp do schedule(runtime) private(cell1, cell2, invAreaCell1, invAreaCell2, k, flux_upwind)
         do iEdge = 1, nEdges
           cell1 = cellsOnEdge(1,iEdge)
           cell2 = cellsOnEdge(2,iEdge)
@@ -294,7 +297,9 @@ module ocn_tracer_advection_mono
             high_order_horiz_flux(k,iEdge) = high_order_horiz_flux(k,iEdge) - flux_upwind
           end do ! k loop
         end do ! iEdge loop
+        !$omp end do
 
+        !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, cell1, cell2, k, flux_upwind)
         do iCell = 1, nCells
           invAreaCell1 = 1.0_RKIND / areaCell(iCell)
           do i = 1, nEdgesOnCell(iCell)
@@ -312,10 +317,12 @@ module ocn_tracer_advection_mono
             end do
           end do
         end do
+        !$omp end do
 
         ! Build the factors for the FCT
         ! Computed using the bounds that were computed previously, and the bounds on the newly updated value
         ! Factors are placed in the flux_incoming and flux_outgoing arrays
+        !$omp do schedule(runtime) private(k, tracer_max_new, tracer_min_new, tracer_upwind_new, scale_factor)
         do iCell = 1, nCells
           do k = 1, maxLevelCell(iCell)
             tracer_min_new = (tracer_cur(k,iCell)*layerThickness(k,iCell) + dt*(upwind_tendency(k,iCell)+flux_outgoing(k,iCell))) * inv_h_new(k,iCell)
@@ -329,8 +336,10 @@ module ocn_tracer_advection_mono
             flux_outgoing(k,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
           end do ! k loop
         end do ! iCell loop
+        !$omp end do
 
         !  rescale the high order horizontal fluxes
+        !$omp do schedule(runtime) private(cell1, cell2, k, flux)
         do iEdge = 1, nEdges
           cell1 = cellsOnEdge(1,iEdge)
           cell2 = cellsOnEdge(2,iEdge)
@@ -341,24 +350,22 @@ module ocn_tracer_advection_mono
             high_order_horiz_flux(k,iEdge) = flux
           end do ! k loop
         end do ! iEdge loop
+        !$omp end do
 
         ! rescale the high order vertical flux
+        !$omp do schedule(runtime) private(k, flux)
         do iCell = 1, nCellsSolve
           do k = 2, maxLevelCell(iCell)
             flux =  high_order_vert_flux(k,iCell)
-            ! dwj 02/03/12 and Atmosphere are different in vertical.
-            if(positiveDzDk) then
-              flux = max(0.0_RKIND,flux) * min(flux_outgoing(k-1,iCell), flux_incoming(k  ,iCell)) &
-                   + min(0.0_RKIND,flux) * min(flux_outgoing(k  ,iCell), flux_incoming(k-1,iCell))
-            else
-              flux = max(0.0_RKIND,flux) * min(flux_outgoing(k  ,iCell), flux_incoming(k-1,iCell)) &
-                   + min(0.0_RKIND,flux) * min(flux_outgoing(k-1,iCell), flux_incoming(k  ,iCell))
-            end if
+            flux = max(0.0_RKIND,flux) * min(flux_outgoing(k  ,iCell), flux_incoming(k-1,iCell)) &
+                 + min(0.0_RKIND,flux) * min(flux_outgoing(k-1,iCell), flux_incoming(k  ,iCell))
             high_order_vert_flux(k,iCell) = flux
           end do ! k loop
         end do ! iCell loop
+        !$omp end do
 
         ! Accumulate the scaled high order horizontal tendencies
+        !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, k)
         do iCell = 1, nCells
           invAreaCell1 = 1.0 / areaCell(iCell)
           do i = 1, nEdgesOnCell(iCell)
@@ -372,8 +379,10 @@ module ocn_tracer_advection_mono
             end do
           end do
         end do
+        !$omp end do
 
         ! Accumulate the scaled high order vertical tendencies, and the upwind tendencies
+        !$omp do schedule(runtime) private(k)
         do iCell = 1, nCellsSolve
           do k = 1,maxLevelCell(iCell)
             tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + verticalDivergenceFactor(k) * (high_order_vert_flux(k+1, iCell) - high_order_vert_flux(k, iCell)) + upwind_tendency(k,iCell)
@@ -387,9 +396,11 @@ module ocn_tracer_advection_mono
             end if
           end do ! k loop
         end do ! iCell loop
+        !$omp end do
 
         if (monotonicityCheck) then
           !build min and max bounds on old and new tracer for check on monotonicity.
+          !$omp do schedule(runtime) private(k)
           do iCell = 1, nCellsSolve
             do k = 1, maxLevelCell(iCell)
               if(tracer_new(k,iCell) < tracer_min(k, iCell)-eps) then
@@ -401,9 +412,11 @@ module ocn_tracer_advection_mono
               end if
             end do
           end do
+          !$omp end do
         end if
       end do ! iTracer loop
 
+      call mpas_threading_barrier()
       call mpas_deallocate_scratch_field(highOrderHorizFluxField, .true.)
       call mpas_deallocate_scratch_field(tracerNewField, .true.)
       call mpas_deallocate_scratch_field(tracerCurField, .true.)

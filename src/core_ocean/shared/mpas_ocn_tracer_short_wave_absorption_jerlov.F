@@ -142,6 +142,7 @@ contains
       weights(1) = 1.0_RKIND
 
       if ( config_fixed_jerlov_weights ) then
+         !$omp do schedule(runtime) private(depth, k)
          do iCell = 1, nCells
            depth = 0.0_RKIND
            do k = 1, maxLevelCell(iCell)
@@ -151,7 +152,9 @@ contains
              tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell)*(weights(k) - weights(k+1))
            end do
          end do
+         !$omp end do
       else
+         !$omp do schedule(runtime) private(depth, k)
          do iCell = 1, nCells
            depth = 0.0_RKIND
            do k = 1, maxLevelCell(iCell)
@@ -161,6 +164,7 @@ contains
              tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell)*(weights(k) - weights(k+1))
            end do
          end do
+         !$omp end do
       end if
 
       deallocate(weights)

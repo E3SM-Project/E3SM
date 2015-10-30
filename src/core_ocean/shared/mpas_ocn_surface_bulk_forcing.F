@@ -180,6 +180,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional)
 
       ! Convert CESM wind stress to MPAS-O wind stress
+      !$omp do schedule(runtime) private(cell1, cell2, zonalAverage, meridionalAverage)
       do iEdge = 1, nEdges
         cell1 = cellsOnEdge(1, iEdge)
         cell2 = cellsOnEdge(2, iEdge)
@@ -189,12 +190,14 @@ contains
 
         surfaceStress(iEdge) = surfaceStress(iEdge) + cos(angleEdge(iEdge)) * zonalAverage + sin(angleEdge(iEdge)) * meridionalAverage
       end do
-
+      !$omp end do
 
       ! Build surface fluxes at cell centers
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
         surfaceStressMagnitude(iCell) = surfaceStressMagnitude(iCell) + sqrt(windStressZonal(iCell)**2 + windStressMeridional(iCell)**2)
       end do
+      !$omp end do
 
    end subroutine ocn_surface_bulk_forcing_vel!}}}
 
@@ -265,11 +268,13 @@ contains
 
 
       ! Build surface fluxes at cell centers
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
         surfaceThicknessFlux(iCell) = surfaceThicknessFlux(iCell) + ( snowFlux(iCell) + rainFlux(iCell) + evaporationFlux(iCell) &
                                     + seaIceFreshWaterFlux(iCell) + iceRunoffFlux(iCell) &
                                     + riverRunoffFlux(iCell) ) / rho_sw
       end do
+      !$omp end do
 
    end subroutine ocn_surface_bulk_forcing_thick!}}}
 
@@ -382,6 +387,7 @@ contains
 
       ! Build surface fluxes at cell centers
       ! CLEANUP
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
         tracersSurfaceFlux(1, iCell) = tracersSurfaceFlux(1, iCell) &
                                                            + (latentHeatFlux(iCell) + sensibleHeatFlux(iCell) + longWaveHeatFluxUp(iCell) + longWaveHeatFluxDown(iCell) &
@@ -390,6 +396,7 @@ contains
         tracersSurfaceFlux(2, iCell) = tracersSurfaceFlux(2, iCell)  &
                                                         + seaIceSalinityFlux(iCell) * sflux_factor
       end do
+      !$omp end do
 
       ! TRACER-CLEAN-UP
       ! Do we want this here still?

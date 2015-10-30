@@ -126,6 +126,7 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
+      !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdgesSolve
         do k = 1, maxLevelEdgeTop(iEdge)
 
@@ -133,7 +134,7 @@ contains
 
         enddo
       enddo
-
+      !$omp end do
 
    !--------------------------------------------------------------------
 

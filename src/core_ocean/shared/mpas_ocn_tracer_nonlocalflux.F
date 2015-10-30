@@ -122,6 +122,7 @@ contains
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
+      !$omp do schedule(runtime) private(k, iTracer, fluxTopOfCell, fluxBottomOfCell)
       do iCell = 1, nCells
         do k = 2, maxLevelCell(iCell)-1
 
@@ -150,6 +151,7 @@ contains
         end do
 
       end do
+      !$omp end do
 
    !--------------------------------------------------------------------
 

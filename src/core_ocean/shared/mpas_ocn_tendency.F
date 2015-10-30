@@ -24,6 +24,7 @@ module ocn_tendency
    use mpas_pool_routines
    use mpas_constants
    use mpas_timer
+   use mpas_threading
 
    use ocn_constants
 
@@ -120,8 +121,6 @@ contains
 
       logical, pointer :: config_disable_thick_all_tend
 
-      call mpas_timer_start("ocn_tend_thick")
-
       call mpas_pool_get_config(ocnConfigs, 'config_disable_thick_all_tend', config_disable_thick_all_tend)
 
       call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
@@ -136,10 +135,14 @@ contains
       !
       ! height tendency: start accumulating tendency terms
       !
-      tend_layerThickness = 0.0
+      !$omp workshare
+      tend_layerThickness(:,:) = 0.0
       surfaceThicknessFlux(:) = 0.0_RKIND
+      !$omp end workshare
 
       if(config_disable_thick_all_tend) return
+
+      call mpas_timer_start("ocn_tend_thick")
 
       ! Build suface mass flux array from bulk
       call mpas_timer_start("bulk_thick", .false.)
@@ -230,10 +233,6 @@ contains
       logical, pointer :: config_disable_vel_all_tend
       character (len=StrKIND), pointer :: config_pressure_gradient_type
 
-      call mpas_timer_start("ocn_tend_vel")
-
-      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-
       if (present(timeLevelIn)) then
          timeLevel = timeLevelIn
       else
@@ -242,6 +241,8 @@ contains
 
       call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_all_tend', config_disable_vel_all_tend)
       call mpas_pool_get_config(ocnConfigs, 'config_pressure_gradient_type', config_pressure_gradient_type)
+
+      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
@@ -273,11 +274,15 @@ contains
       !
       ! velocity tendency: start accumulating tendency terms
       !
+      !$omp workshare
       tend_normalVelocity(:,:) = 0.0
       surfaceStress(:) = 0.0_RKIND
       surfaceStressMagnitude(:) = 0.0_RKIND
+      !$omp end workshare
 
       if(config_disable_vel_all_tend) return
+
+      call mpas_timer_start("ocn_tend_vel")
 
       ! Build bulk forcing suface stress
       call mpas_timer_start("bulk_ws", .false.)
@@ -329,22 +334,23 @@ contains
       !   strictly only valid for config_mom_del2 == constant
       !
       call mpas_timer_start("hmix", .false., velHmixTimer)
-      call ocn_vel_hmix_tend(meshPool, divergence, relativeVorticity, normalVelocity, tangentialVelocity, viscosity, &
-         tend_normalVelocity, scratchPool, err)
+      call ocn_vel_hmix_tend(meshPool, scratchPool, divergence, relativeVorticity, normalVelocity, tangentialVelocity, viscosity, &
+         tend_normalVelocity, err)
       call mpas_timer_stop("hmix", velHmixTimer)
 
       !
       ! velocity tendency: forcing and bottom drag
       !
-
       call mpas_timer_start("forcings", .false., velForceTimer)
       call ocn_vel_forcing_tend(meshPool, normalVelocity, surfaceFluxAttenuationCoefficient, surfaceStress, layerThicknessEdge, tend_normalVelocity, err)
       call mpas_timer_stop("forcings", velForceTimer)
+
 
       !
       ! velocity tendency: vertical mixing d/dz( nu_v du/dz))
       !
       call mpas_timer_stop("ocn_tend_vel")
+      call mpas_threading_barrier()
 
    end subroutine ocn_tend_vel!}}}
 
@@ -434,18 +440,6 @@ contains
       integer :: err, iEdge, k, timeLevel
 
       !
-      ! start timers
-      !
-      call mpas_timer_start("ocn_tend_tracer")
-
-      !
-      ! get tracers pools
-      !
-      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-      call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
-      call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
-
-      !
       ! set time level of optional argument is present
       !
       if (present(timeLevelIn)) then
@@ -455,12 +449,18 @@ contains
       end if
 
       !
+      ! get tracers pools
+      !
+      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+      call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
+      call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
+
+      !
       ! get dimensions
       !
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
-
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
 
       !
@@ -487,20 +487,30 @@ contains
       call mpas_pool_get_array(tendPool, 'layerThickness', tend_layerThickness)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
-      call mpas_pool_get_field(scratchPool, 'normalThicknessFlux', normalThicknessFluxField)
-      call mpas_allocate_scratch_field(normalThicknessFluxField, .true.)
-      normalThicknessFlux => normalThicknessFluxField % array
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
       if(config_disable_tr_all_tend) return
+
+      call mpas_timer_start("ocn_tend_tracer")
+
+      !allocate(normalThicknessFlux(nVertLevels, nEdges+1))
+      call mpas_pool_get_field(scratchPool, 'normalThicknessFlux', normalThicknessFluxField)
+      call mpas_allocate_scratch_field(normalThicknessFluxField, .true.)
+      call mpas_threading_barrier()
+
+      normalThicknessFlux => normalThicknessFluxField % array
 
       !
       ! transport velocity for the tracer.
       !
+      !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
          do k = 1, nVertLevels
             normalThicknessFlux(k, iEdge) = normalTransportVelocity(k, iEdge) * layerThicknessEdge(k, iEdge)
          end do
       end do
+      !$omp end do
 
       !
       ! begin iterate over tracer categories
@@ -544,8 +554,10 @@ contains
                !
                ! initialize tracer surface flux and tendency to zero.
                !
+               !$omp workshare
                tracerGroupTend(:,:,:) = 0.0
                tracerGroupSurfaceFlux(:,:) = 0.0
+               !$omp end workshare
 
                !
                ! fill components of surface tracer flux
@@ -705,6 +717,8 @@ contains
       !
       call mpas_timer_stop("ocn_tend_tracer")
 
+      call mpas_threading_barrier()
+      call mpas_deallocate_scratch_field(normalThicknessFluxField, .true.)
 
    end subroutine ocn_tend_tracer!}}}
 
@@ -747,6 +761,7 @@ contains
       real (kind=RKIND), pointer :: config_thickness_filter_timescale, config_highFreqThick_restore_time
 
       call mpas_timer_start("ocn_tend_freq_filtered_thickness")
+
       err = 0
 
       if (present(timeLevelIn)) then
@@ -779,17 +794,21 @@ contains
       call mpas_pool_get_array(tendPool, 'lowFreqDivergence', tend_lowFreqDivergence)
       call mpas_pool_get_array(tendPool, 'highFreqThickness', tend_highFreqThickness)
 
-      allocate(div_hu(nVertLevels))
-
       !
       ! Low Frequency Divergence and high frequency thickness Tendency
       !
+      !$omp workshare
       tend_lowFreqDivergence = 0.0
       tend_highFreqThickness = 0.0
+      !$omp end workshare
 
       ! Convert restore time from days to seconds
       thickness_filter_timescale_sec = config_thickness_filter_timescale*86400.0
       highFreqThick_restore_time_sec = config_highFreqThick_restore_time*86400.0
+
+      allocate(div_hu(nVertLevels))
+
+      !$omp do schedule(runtime) private(div_hu_btr, invAreaCell, i, iEdge, k, totalThickness)
       do iCell = 1, nCells
         div_hu(:) = 0.0
         div_hu_btr = 0.0
@@ -818,8 +837,8 @@ contains
               + use_highFreqThick_restore*( -2.0 * pii / highFreqThick_restore_time_sec * highFreqThickness(k,iCell) )
 
         end do
-
       end do
+      !$omp end do
 
       deallocate(div_hu)
 

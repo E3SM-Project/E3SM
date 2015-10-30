@@ -24,6 +24,7 @@ module ocn_tracer_hmix_del2
 
    use mpas_derived_types
    use mpas_pool_routines
+   use mpas_threading
 
    use ocn_constants
 
@@ -145,6 +146,7 @@ contains
       !
       ! compute a boundary mask to enforce insulating boundary conditions in the horizontal
       !
+      !$omp do schedule(runtime) private(invAreaCell, i, iEdge, cell1, cell2, r_tmp, k, iTracer, tracer_turb_flux, flux)
       do iCell = 1, nCells
         invAreaCell = 1.0 / areaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)
@@ -168,6 +170,7 @@ contains
 
         end do
       end do
+      !$omp end do
 
    !--------------------------------------------------------------------
 

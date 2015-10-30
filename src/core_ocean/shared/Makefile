@@ -52,23 +52,20 @@ OBJS = mpas_ocn_init_routines.o \
 	   mpas_ocn_effective_density_in_land_ice.o \
 	   mpas_ocn_frazil_forcing.o \
 	   mpas_ocn_forcing_restoring.o \
-	   mpas_ocn_time_average.o \
 	   mpas_ocn_time_average_coupled.o \
 	   mpas_ocn_sea_ice.o
 
 all: $(OBJS)
 
-mpas_ocn_init_routines.o: mpas_ocn_constants.o mpas_ocn_time_average.o mpas_ocn_diagnostics.o mpas_ocn_gm.o
+mpas_ocn_init_routines.o: mpas_ocn_constants.o mpas_ocn_diagnostics.o mpas_ocn_gm.o
 
-mpas_ocn_tendency.o: mpas_ocn_time_average.o mpas_ocn_high_freq_thickness_hmix_del2.o mpas_ocn_tracer_surface_restoring.o mpas_ocn_thick_surface_flux.o mpas_ocn_tracer_short_wave_absorption.o mpas_ocn_tracer_advection.o mpas_ocn_tracer_hmix.o mpas_ocn_tracer_nonlocalflux.o mpas_ocn_surface_bulk_forcing.o mpas_ocn_surface_land_ice_fluxes.o mpas_ocn_tracer_surface_flux_to_tend.o mpas_ocn_tracer_interior_restoring.o mpas_ocn_tracer_exponential_decay.o mpas_ocn_tracer_ideal_age.o mpas_ocn_tracer_TTD.o mpas_ocn_vmix.o mpas_ocn_constants.o mpas_ocn_frazil_forcing.o
+mpas_ocn_tendency.o: mpas_ocn_high_freq_thickness_hmix_del2.o mpas_ocn_tracer_surface_restoring.o mpas_ocn_thick_surface_flux.o mpas_ocn_tracer_short_wave_absorption.o mpas_ocn_tracer_advection.o mpas_ocn_tracer_hmix.o mpas_ocn_tracer_nonlocalflux.o mpas_ocn_surface_bulk_forcing.o mpas_ocn_surface_land_ice_fluxes.o mpas_ocn_tracer_surface_flux_to_tend.o mpas_ocn_tracer_interior_restoring.o mpas_ocn_tracer_exponential_decay.o mpas_ocn_tracer_ideal_age.o mpas_ocn_tracer_TTD.o mpas_ocn_vmix.o mpas_ocn_constants.o mpas_ocn_frazil_forcing.o
 
 mpas_ocn_diagnostics_routines.o: mpas_ocn_constants.o
 
 mpas_ocn_diagnostics.o: mpas_ocn_thick_ale.o mpas_ocn_diagnostics_routines.o mpas_ocn_equation_of_state.o mpas_ocn_gm.o mpas_ocn_constants.o
 
 mpas_ocn_thick_ale.o: mpas_ocn_constants.o
-
-mpas_ocn_time_average.o:
 
 mpas_ocn_time_average_coupled.o: mpas_ocn_constants.o
 

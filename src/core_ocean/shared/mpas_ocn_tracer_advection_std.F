@@ -22,6 +22,7 @@ module ocn_tracer_advection_std
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_io_units
+   use mpas_threading
 
    use mpas_tracer_advection_helpers
 
@@ -116,6 +117,7 @@ module ocn_tracer_advection_std
       call mpas_allocate_scratch_field(highOrderHorizFluxField, .true.)
       call mpas_allocate_scratch_field(tracerCurField, .true.)
       call mpas_allocate_scratch_field(highOrderVertFluxField, .true.)
+      call mpas_threading_barrier()
 
       high_order_horiz_flux => highOrderHorizFluxField % array
       tracer_cur => tracerCurField % array
@@ -124,12 +126,15 @@ module ocn_tracer_advection_std
       ! Loop over tracers. One tracer is advected at a time. It is copied into a temporary array in order to improve locality
       do iTracer = 1, num_tracers
         ! Initialize variables for use in this iTracer iteration
+        !$omp workshare
         tracer_cur(:, :) = tracers(iTracer, :, :)
 
         high_order_vert_flux = 0.0_RKIND
         high_order_horiz_flux = 0.0_RKIND
+        !$omp end workshare
 
         !  Compute the high order vertical flux. Also determine bounds on tracer_cur. 
+        !$omp do schedule(runtime) private(k, verticalWeightK, verticalWeightKm1)
         do iCell = 1, nCells
           k = max(1, min(maxLevelCell(iCell), 2))
           verticalWeightK = verticalCellSize(k-1, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
@@ -155,8 +160,10 @@ module ocn_tracer_advection_std
           verticalWeightKm1 = verticalCellSize(k, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
           high_order_vert_flux(k,iCell) = w(k,iCell)*(verticalWeightK*tracer_cur(k,iCell)+verticalWeightKm1*tracer_cur(k-1,iCell))
         end do ! iCell Loop
+        !$omp end do
 
         !  Compute the high order horizontal flux
+        !$omp do schedule(runtime) private(cell1, cell2, k, tracer_weight, i, iCell)
         do iEdge = 1, nEdges
           cell1 = cellsOnEdge(1, iEdge)
           cell2 = cellsOnEdge(2, iEdge)
@@ -179,8 +186,10 @@ module ocn_tracer_advection_std
             end do ! k loop
           end do ! i loop over nAdvCellsForEdge
         end do ! iEdge loop
+        !$omp end do
 
         ! Accumulate the scaled high order horizontal tendencies
+        !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, k)
         do iCell = 1, nCells
           invAreaCell1 = 1.0 / areaCell(iCell)
           do i = 1, nEdgesOnCell(iCell)
@@ -190,18 +199,23 @@ module ocn_tracer_advection_std
             end do
           end do
         end do
+        !$omp end do
 
         ! Accumulate the scaled high order vertical tendencies.
+        !$omp do schedule(runtime) private(k)
         do iCell = 1, nCellsSolve
           do k = 1,maxLevelCell(iCell)
             tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + verticalDivergenceFactor(k) * (high_order_vert_flux(k+1, iCell) - high_order_vert_flux(k, iCell))
           end do ! k loop
         end do ! iCell loop
+        !$omp end do
       end do ! iTracer loop
 
+      call mpas_threading_barrier()
       call mpas_deallocate_scratch_field(highOrderHorizFluxField, .true.)
       call mpas_deallocate_scratch_field(tracerCurField, .true.)
       call mpas_deallocate_scratch_field(highOrderVertFluxField, .true.)
+
       deallocate(verticalDivergenceFactor)
 
    end subroutine ocn_tracer_advection_std_tend!}}}

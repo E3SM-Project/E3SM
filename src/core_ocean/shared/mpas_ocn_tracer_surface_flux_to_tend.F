@@ -127,6 +127,7 @@ contains
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
+      !$omp do schedule(runtime) private(remainingFlux, k, iTracer)
       do iCell = 1, nCells
         remainingFlux = 1.0_RKIND
         do k = 1, maxLevelCell(iCell)
@@ -143,6 +144,7 @@ contains
           end do
         end if
       end do
+      !$omp end do
 
    !--------------------------------------------------------------------
 

@@ -83,7 +83,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vmix_coefs(meshPool, statePool, diagnosticsPool, err, timeLevelIn)!{{{
+   subroutine ocn_vmix_coefs(meshPool, statePool, diagnosticsPool, scratchPool, err, timeLevelIn)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -93,6 +93,8 @@ contains
 
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
+
+      type (mpas_pool_type), intent(in) :: scratchPool !< Input/Output: Scratch structure
       
       integer, intent(in), optional :: timeLevelIn !< Input: Time level for state pool
 
@@ -143,12 +145,14 @@ contains
 
       call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfEdge', vertViscTopOfEdge)
       call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
+      !$omp workshare
       vertViscTopOfEdge = 0.0_RKIND
       vertDiffTopOfCell = 0.0_RKIND
+      !$omp end workshare
 
       call ocn_vmix_coefs_const_build(meshPool, statePool, diagnosticsPool, err1, timeLevel)
       call ocn_vmix_coefs_tanh_build(meshPool, statePool, diagnosticsPool, err2, timeLevel)
-      call ocn_vmix_coefs_rich_build(meshPool, statePool, diagnosticsPool, err3, timeLevel)
+      call ocn_vmix_coefs_rich_build(meshPool, statePool, diagnosticsPool, scratchPool, err3, timeLevel)
       call ocn_vmix_coefs_cvmix_build(meshPool, statePool, diagnosticsPool, err4, timeLevel)
       call ocn_vmix_coefs_redi_build(meshPool, statePool, diagnosticsPool, err5, timeLevel)
 
@@ -246,6 +250,7 @@ contains
       allocate(A(nVertLevels),B(nVertLevels),C(nVertLevels),velTemp(nVertLevels)) 
       A(1)=0
 
+      !$omp do schedule(runtime) private(N, cell1, cell2, k)
       do iEdge = 1, nEdges
         N = maxLevelEdgeTop(iEdge)
         if (N .gt. 0) then
@@ -291,6 +296,7 @@ contains
 
         end if
       end do
+      !$omp end do
 
       deallocate(A,B,C,velTemp)
 
@@ -374,6 +380,7 @@ contains
 
       allocate(A(nVertLevels),B(nVertLevels),C(nVertLevels),tracersTemp(num_tracers,nVertLevels))
 
+      !$omp do schedule(runtime) private(N, k)
       do iCell = 1, nCells
          ! Compute A(k), B(k), C(k) for tracers
          N = maxLevelCell(iCell)
@@ -403,6 +410,7 @@ contains
          tracers(:,1:N,iCell) = tracersTemp(:,1:N)
          tracers(:,N+1:nVertLevels,iCell) = -1e34
       end do
+      !$omp end do
 
       deallocate(A, B, C, tracersTemp)
 
@@ -424,11 +432,12 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vmix_implicit(dt, meshPool, diagnosticsPool, statePool, err, timeLevelIn)!{{{
+   subroutine ocn_vmix_implicit(dt, meshPool, diagnosticsPool, statePool, scratchPool, err, timeLevelIn)!{{{
       real (kind=RKIND), intent(in) :: dt
       type (mpas_pool_type), intent(in) :: meshPool
       type (mpas_pool_type), intent(inout) :: diagnosticsPool
       type (mpas_pool_type), intent(inout) :: statePool
+      type (mpas_pool_type), intent(in) :: scratchPool !< Input/Output: Scratch structure
       integer, intent(out) :: err
       integer, intent(in), optional :: timeLevelIn
 
@@ -472,11 +481,14 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
-      call ocn_vmix_coefs(meshPool, statePool, diagnosticsPool, err, timeLevel)
+      call ocn_vmix_coefs(meshPool, statePool, diagnosticsPool, scratchPool, err, timeLevel)
 
       ! if using CVMix, then viscosity has to be averaged from cell centers to cell edges
       if ( config_use_cvmix ) then
+      !$omp workshare
       vertViscTopOfEdge(:,:) = 0.0
+      !$omp end workshare
+      !$omp do schedule(runtime) private(cell1, cell2, k)
       do iEdge=1,nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
@@ -484,6 +496,7 @@ contains
            vertViscTopOfEdge(k,iEdge) = 0.5*(vertViscTopOfCell(k,cell2)+vertViscTopOfCell(k,cell1))
          enddo
       enddo
+      !$omp end do
       endif
 
       !

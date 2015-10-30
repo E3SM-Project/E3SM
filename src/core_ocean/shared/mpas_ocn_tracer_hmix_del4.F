@@ -24,6 +24,7 @@ module ocn_tracer_hmix_del4
 
    use mpas_derived_types
    use mpas_pool_routines
+   use mpas_threading
    use ocn_constants
 
    implicit none
@@ -73,7 +74,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_hmix_del4_tend(meshPool, layerThicknessEdge, tracers, tend, err)!{{{
+   subroutine ocn_tracer_hmix_del4_tend(meshPool, scratchPool, layerThicknessEdge, tracers, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -86,6 +87,8 @@ contains
 
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
+
+      type (mpas_pool_type), intent(in) :: scratchPool !< Input: scratch variables
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
         tracers !< Input: tracer quantities
@@ -122,7 +125,9 @@ contains
 
       real (kind=RKIND) :: invAreaCell1, invAreaCell2, tracer_turb_flux, flux, invdcEdge, r_tmp1, r_tmp2
 
-      real (kind=RKIND), dimension(:,:,:), allocatable :: delsq_tracer
+      !real (kind=RKIND), dimension(:,:,:), allocatable :: delsq_tracer
+      real (kind=RKIND), dimension(:,:,:), pointer :: delsq_tracer
+      type (field3DReal), pointer :: delsq_tracerField
 
       real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell, meshScalingDel4
 
@@ -159,11 +164,21 @@ contains
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
-      allocate(delsq_tracer(num_tracers,nVertLevels, nCells+1))
+      !allocate(delsq_tracer(num_tracers,nVertLevels, nCells+1))
+      call mpas_pool_get_field(scratchPool, 'delsq_tracer', delsq_tracerField)
 
+      call mpas_allocate_scratch_field(delsq_tracerField, .true.)
+
+      call mpas_threading_barrier()
+
+      delsq_tracer => delsq_tracerField % array
+
+      !$omp workshare
       delsq_tracer(:,:,:) = 0.0
+      !$omp end workshare
 
       ! first del2: div(h \nabla \phi) at cell center
+      !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, invdcEdge, cell1, cell2, k, iTracer, r_tmp1, r_tmp2)
       do iCell = 1, nCells
         invAreaCell1 = 1.0 / areaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)
@@ -183,8 +198,10 @@ contains
           end do
         end do
       end do
+      !$omp end do
 
       ! second del2: div(h \nabla [delsq_tracer]) at cell center
+      !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, cell1, cell2, invdcEdge, k, iTracer, tracer_turb_flux, flux)
       do iCell = 1, nCells
         invAreaCell1 = 1.0 / areaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)
@@ -205,8 +222,11 @@ contains
           end do
         end do
       end do
+      !$omp end do
 
-      deallocate(delsq_tracer)
+      call mpas_threading_barrier()
+      call mpas_deallocate_scratch_field(delsq_tracerField, .true.)
+
    !--------------------------------------------------------------------
 
    end subroutine ocn_tracer_hmix_del4_tend!}}}
