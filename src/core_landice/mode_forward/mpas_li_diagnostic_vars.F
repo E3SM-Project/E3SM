@@ -354,6 +354,9 @@ contains
 
       use mpas_geometry_utils, only: mpas_cells_to_points_using_baryweights
       use mpas_vector_operations, only: mpas_tangential_vector_1d
+      
+      !TODO - Move li_heat_dissipation_sia to a different module?
+      use li_thermal, only: li_heat_dissipation_sia
 
       !-----------------------------------------------------------------
       !
@@ -409,6 +412,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: beta, betaSolve
       real (kind=RKIND), pointer :: config_sea_level, config_ice_density, config_ocean_density
       character (len=StrKIND), pointer :: config_velocity_solver, config_sia_tangent_slope_calculation
+      character (len=StrKIND), pointer :: config_thermal_solver
       logical, pointer :: config_adaptive_timestep_include_DCFL
       ! truly local variables
       real (kind=RKIND) :: thisThk
@@ -476,6 +480,7 @@ contains
           call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
           call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
           call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
+          call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
           call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
 
           call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
@@ -585,6 +590,7 @@ contains
 
 
           ! Do vertical remapping of layerThickness and tracers
+          !WHL - I think the last argument should be err_tmp.
           call vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err)
           err = ior(err, err_tmp)
 
@@ -669,6 +675,17 @@ contains
          !print *,'dirichletMaskChanged', dirichletMaskChanged
       end if
 
+      ! Calculate heat dissipation, as needed by the thermal solver during the next time step.
+      !TODO - Make sure heat dissipation is computed for the FO solver.
+
+      if (trim(config_thermal_solver) == 'temperature' .or. trim(config_thermal_solver) == 'enthalpy') then
+
+         if (trim(config_velocity_solver) == 'sia') then
+            call li_heat_dissipation_sia(domain, err_tmp)
+            err = ior(err, err_tmp)
+         endif
+
+      endif
 
       ! === error check
       if (err > 0) then

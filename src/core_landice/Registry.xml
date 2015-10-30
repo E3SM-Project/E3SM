@@ -112,6 +112,21 @@
 		/>
 	</nml_record>
 
+	<nml_record name="thermal_solver" in_defaults="true">
+		<nml_option name="config_thermal_solver" type="character" default_value="none" units="unitless"
+		            description="Selection of the method for the vertical thermal solver."
+		            possible_values="'none', 'temperature', 'enthalpy'"
+		/>
+		<nml_option name="config_thermal_init" type="character" default_value="linear" units="unitless"
+		            description="Selection of the method for initializing the ice temperature."
+		            possible_values="'linear', 'file'"
+		/>
+		<nml_option name="config_thermal_thickness" type="real" default_value="1.0" units="m of ice"
+		            description="Defines the minimum thickness for thermal calculations"
+		            possible_values="Any positive real value"
+		/>
+	</nml_record>
+
 	<nml_record name="physical_parameters" in_defaults="true">
 		<nml_option name="config_ice_density" type="real" default_value="910.0" units="kg m^{-3}"
 		            description="ice density to use"
@@ -275,6 +290,10 @@
 		/>
 		<nml_option name="config_print_calving_info" type="logical" default_value=".false." units="unitless"
 		            description="Prints additional information about calving."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_print_thermal_info" type="logical" default_value=".false." units="unitless"
+		            description="Prints additional information about thermal calculations."
 		            possible_values=".true. or .false."
 		/>
 		<nml_option name="config_always_compute_fem_grid" type="logical" default_value=".false." units="unitless"
@@ -517,9 +536,6 @@ is the value of that variable from the *previous* time level!
 		<var name="indexToVertexID" type="integer" dimensions="nVertices" units="unitless"
 		     description="List of global vertex IDs."
 		/>
-		<var name="nCellsOnCell" type="integer" dimensions="nCells" units="unitless"
-		     description="Number of cells that border each cell."
-		/>
 		<var name="nEdgesOnCell" type="integer" dimensions="nCells" units="unitless"
 		     description="Number of edges that border each cell."
 		/>
@@ -678,7 +694,6 @@ is the value of that variable from the *previous* time level!
 		<var name="restoreThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
 		     description="thickness of ice added to restore the calving front to its initial position"
 		/>
-
 		<!-- Variables only needed by SIA solver or for calculating diffusivity -->
 		<var name="upperSurfaceVertex" type="real" dimensions="nVertices Time" units="m above datum"
 		     description="elevation at top of ice on vertices" packages="SIAvelocity"
@@ -768,20 +783,41 @@ is the value of that variable from the *previous* time level!
 
 	<!-- Variables related to thermal state -->
 	<var_struct name="thermal" time_levs="1">
-		<var name="basalTemperature" type="real" dimensions="nCells Time" units="K"
-		     description="lower surface ice temperature"
-		/>
+		<!-- Note: putting tracers in this pool is a bit awkward since additional tracers may not be thermally-related -->
 		<var_array name="tracers" type="real" dimensions="nVertLevels nCells Time">
 			<var name="temperature" array_group="dynamics" units="K"
 			     description="interior ice temperature"
 			/>
+			<var name="waterfrac" array_group="dynamics" units="unitless"
+			     description="interior water fraction"
+			/>
+			<var name="enthalpy" array_group="dynamics" units="J m^{-3}"
+			     description="interior ice enthalpy"
+			/>
 		</var_array>
-		<!-- Note: putting tracers in this pool is a bit awkward since additional tracers may not be thermally-related -->
+		<var name="surfaceAirTemperature" type="real" dimensions="nCells Time" units="K"
+		     description="surface air temperature"
+		/>
 		<var name="surfaceTemperature" type="real" dimensions="nCells Time" units="K"
 		     description="upper surface ice temperature"
 		/>
+		<var name="basalTemperature" type="real" dimensions="nCells Time" units="K"
+		     description="lower surface ice temperature"
+		/>
+		<var name="surfaceConductiveFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+		     description="conductive heat flux at the upper surface (positive downward)"
+		/>
+		<var name="basalConductiveFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+		     description="conductive heat flux at the lower surface (positive downward)"
+		/>
 		<var name="basalHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
 		     description="basal heat flux into the ice (positive upward)"
+		/>
+		<var name="basalFrictionFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+		     description="basal frictional flux into the ice (positive upward)"
+		/>
+		<var name="heatDissipation" type="real" dimensions="nVertLevels nCells Time" units="deg s"
+		     description="interior heat dissipation rate, divided by rhoi*cp_ice"
 		/>
 	</var_struct>
 
@@ -821,6 +857,10 @@ is the value of that variable from the *previous* time level!
 	       />
 	  <var name="workLevelCell" type="real" dimensions="nVertLevels nCells" units="none"
 	       description="generic work array with dimensions of (nVertLevels nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="workLevelEdge" type="real" dimensions="nVertLevels nEdges" units="none"
+	       description="generic work array with dimensions of (nVertLevels nEdges)"
 	       persistence="scratch"
 	       />
 	  <var name="workCell" type="real" dimensions="nCells" units="none"
