@@ -50,6 +50,7 @@ my $MPASLI_USE_ALBANY;
 my $SHAREDPATH;
 my $CLM_CONFIG_OPTS;
 my $CAM_CONFIG_OPTS;
+my $PIO_CONFIG_OPTS;
 my $sysmod;
 
 # Stash the build log paths here..
@@ -106,6 +107,7 @@ sub main {
     $MPASLI_USE_ALBANY  = `./xmlquery  MPASLI_USE_ALBANY -value`;
     $CLM_CONFIG_OPTS    = `./xmlquery  CLM_CONFIG_OPTS   -value`;
     $CAM_CONFIG_OPTS    = `./xmlquery  CAM_CONFIG_OPTS   -value`;
+    $PIO_CONFIG_OPTS    = `./xmlquery  PIO_CONFIG_OPTS   -value`;
 
     my $NINST_VALUE	= `./xmlquery  NINST_VALUE	-value `;
     my $MACH		= `./xmlquery  MACH		-value `;
@@ -138,6 +140,7 @@ sub main {
     $ENV{COMP_ROF}		= $COMP_ROF		;	
     $ENV{CLM_CONFIG_OPTS}       = $CLM_CONFIG_OPTS      ;
     $ENV{CAM_CONFIG_OPTS}       = $CAM_CONFIG_OPTS      ;
+    $ENV{PIO_CONFIG_OPTS}       = $PIO_CONFIG_OPTS      ;
     
     $ENV{OCN_SUBMODEL}        = `./xmlquery  OCN_SUBMODEL	 -value `;
     $ENV{PROFILE_PAPI_ENABLE} = `./xmlquery  PROFILE_PAPI_ENABLE -value `;
