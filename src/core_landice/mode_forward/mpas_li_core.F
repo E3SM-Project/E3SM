@@ -60,6 +60,7 @@ module li_core
       use mpas_pool_routines
       use mpas_stream_manager
       use li_velocity
+      use li_thermal
       use li_setup
 !!!      use mpas_tracer_advection
 !!!      use li_global_diagnostics
@@ -180,6 +181,11 @@ module li_core
 
          block => block % next
       end do
+
+      ! initialize thermal solver
+      ! Note: This subroutine includes a loop over blocks
+      call li_thermal_init(domain, err_tmp)
+      err = ior(err, err_tmp)
 
       ! initialize analysis driver
       call li_analysis_init(domain, err_tmp)

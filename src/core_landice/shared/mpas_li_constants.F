@@ -36,13 +36,23 @@ module li_constants
    save
 
    ! physical constants
-   real (kind=RKIND), parameter, public :: cp_ice = 2009.0_RKIND       !< heat capacity of ice (J/kg/K)
-   real (kind=RKIND), parameter, public :: latent_heat_ice = 335.0d3   !< Latent heat of melting of ice (J/kg)
+   real (kind=RKIND), parameter, public :: cp_ice = 2009.0_RKIND        !< heat capacity of ice (J/kg/K)
+   real (kind=RKIND), parameter, public :: latent_heat_ice = 335.0d3    !< Latent heat of melting of ice (J/kg)
    real (kind=RKIND), parameter, public :: triple_point = 273.16_RKIND  !< Triple point of water (K)
 
 #endif
 
    real (kind=RKIND), parameter, public :: idealGasConstant = 8.314_RKIND  !< ideal gas constant (J mol^-1 K^-1)
+   real (kind=RKIND), parameter, public :: iceConductivity = 2.1_RKIND  !< thermal conductivity of ice (W m^-1 K^-1)
+
+   real (kind=RKIND), parameter, public :: &
+        oceanFreezingTempSurface = -1.92_RKIND,  &         !< Freezing temperature of seawater (deg C) at surface pressure, given S = 35 PSU
+        oceanFreezingTempDepthDependence = -7.53e-4_RKIND  !< Rate of change of freezing temperature of seawater with depth (deg m^-1), given S = 35 PSU
+                                                           !< These values are from the Ocean Water Freezing Point Calculator,
+                                                           !< http://www.csgnetwork.com/h2ofreezecalc.html (25 Nov. 2014)
+
+   real (kind=RKIND), parameter, public :: &
+        iceMeltingPointPressureDependence = 9.7456e-8_RKIND  ! Dependence of ice melting point on pressure (K Pa^-1)
 
    !  conversion factors
    real (kind=RKIND), parameter, public :: kelvin_to_celsius = 273.15_RKIND    !< factor to convert Kelvin to Celsius
