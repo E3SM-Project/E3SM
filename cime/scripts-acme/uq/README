@@ -1,0 +1,87 @@
+UQ Workflow scripts that helps analyse ALM outputs via UQTk.
+
+Start with
+./install_uqtk.x
+to install UQTk.
+
+Then run 
+./uq_workflow.x 
+to get help and see options.
+
+
+File descriptions :
+===================
+uq_workflow.x     : the main file to run, the rest is 'under-the-hood'
+prepare_env.x     : prepares the necessary env variables
+install_uqtk.x    : automatic UQTk installer
+cleandir.x        : cleanup of the directory from unnecessary files
+
+prepr.py          : generates input ensemble
+postp.py          : main engine behind analysis and plotting
+
+thisutils.py      : set of useful functions
+uqtools.py        : set of generic UQ functions
+uqregr.py         : set of useful functions specific for regression 
+
+uqmulti.py        : script to run several cases (for a set of outputs and sites) by multithreading
+create_tasks.x    : creates a task list for uq_multi.py
+srun.x            : a single-run script needed for uq_multi.py
+
+I/O description for options: (all outputs written to the outfig/ folder)
+================
+
+uq_workflow.x -2  : prepares N input samples and domain files
+----------------
+Inputs:    Parameters_TitanUQ_ACME.csv : spreadsheet with full set of input parameters,
+										 ranges, defaults, and names.
+
+Outputs:   input_clm.dat  :  Nxp matrix for CLM inputs (N samples, p parameters)
+		   input_x.dat    :  Nx(p-2) matrix for surrogate input (N samples, p-2 parameters,
+		   					 since two are completely determined by others)
+		   pnames_clm.dat :  Names of p parameters
+		   pnames_x.dat   :  Same list except the two removed parameters
+		   pdomain_x.dat  :  Ranges of the p-2 parameters over which surrogate will be built
+
+		   prepr.tar      : tarball with all the files above.
+
+uq_workflow.x -1  : reads precomputed N input samples and domain files
+----------------
+Inputs:    None
+Outputs:   same as above.
+
+uq_workflow.x 0  : reads netcdf file with ALM results for multiple sites and output variables (QoIs)
+---------------
+Inputs:   FLUXNETUQ_8001-10000.nc : ALM ensemble results 
+Outputs:  <varname>.out           : Vectorized file of all Y x N x S outputs
+          <varname>.npy           : Output is numpy array of rank 3, in the format (Y,N,S)=(nyear,nsam,nsites)
+
+uq_workflow.x 1  : plots certain output diagnostic results
+---------------
+Outputs:  pcoord*.png                 : parallel coordinates visualization of non-vanishing samples
+		  xxy__<par1>__<par2>.png     : visualizing vanishing-output samples with respect to two parameters
+		  <varname>_s<site>_<par>.png : given output versus a given parameter at a given site
+		  <varname>_s<site>_ss.dat    : Steady state (last year) values for a given output at a given site N x 1
+		  <varname>_s<site>_ss.png    : Visualization of the steady state
+		  <varname>_s<site>_ave.dat   : Average (over all years) values for a given output at a given site N x 1
+		  <varname>_s<site>_ave.png   : Visualization of the average
+		  <varname>_s<site>.dat       : Matrix data for all years and all samples Y x N, given a variable and a site
+
+uq_workflow.x 2  : Surrogate construction for all sites and output variables
+---------------
+Output:  results_<varname>_s<site>.pk  : Python pickle file with surrogate information for each variable and site
+
+uq_workflow.x 3  : Computes sensitivities and plots surrogate and sensitivities, for each variable and each site
+---------------
+Outputs:  res_surr_<varname>_s<site>.png      :  Surrogate and ALM versus sample id
+		  res_xy_<varname>_s<site>.png        :  Surrogate vs ALM
+		  res_senscirc_<varname>_s<site>.png  :  Main and joint sensitivities in a circular diagram
+
+uq_workflow.x 4  : Plot sensitivities across all sites for each output
+---------------
+Outputs:	sens_all_<varname>.dat  : Sensitivity matrix S x p for all S sites with respect to all p parameters
+	        sens*_<varname>.png     : Two different ways of illustrating sensitivity results
+	        
+uq_workflow.x 5  : Plot sensitivities across all outputs for each site
+---------------
+Outputs:	sens_all_s<site>.dat    : Sensitivity matrix V x p for all V output variables with respect to all p parameters
+	        sens*_s<site>.png       : Two different ways of illustrating sensitivity results
