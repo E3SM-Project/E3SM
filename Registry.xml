@@ -2445,7 +2445,7 @@
 		/>
 		<var name="iceRunoffFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from ice runoff at cell centers from coupler. Positive into the ocean."
-			 packages="activeTracersBulkRestoringPKG"
+			 packages="thicknessBulkPKG;activeTracersBulkRestoringPKG"
 		/>
 		<var name="rainFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from rain at cell centers from coupler. Positive into the ocean."
