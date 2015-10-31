@@ -11,10 +11,10 @@ module clm_initializeMod
   use abortutils       , only : endrun
   use clm_varctl       , only : nsrest, nsrStartup, nsrContinue, nsrBranch
   use clm_varctl       , only : create_glacier_mec_landunit, iulog
-  use clm_varctl       , only : use_lch4, use_cn, use_cndv, use_voc, use_c13, use_c14, use_ed
+  use clm_varctl       , only : use_lch4, use_cn, use_cndv, use_voc, use_c13, use_c14, use_ed, use_betr  
   use clm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
   use perf_mod         , only : t_startf, t_stopf
-  use readParamsMod    , only : readParameters
+  use readParamsMod    , only : readSharedParameters, readPrivateParameters
   use ncdio_pio       , only : file_desc_t
   ! 
   !-----------------------------------------
@@ -65,6 +65,8 @@ module clm_initializeMod
   use EDBioType              , only : EDbio_type         ! ED type used to interact with CLM variables
   use EDVecPatchType         , only : EDpft                   
   use EDVecCohortType        , only : coh                ! unique to ED, used for domain decomp
+  use ChemStateType          , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh
+  
   !
   implicit none
   save
@@ -111,6 +113,7 @@ module clm_initializeMod
   type(glc_diagnostics_type)  :: glc_diagnostics_vars
   class(soil_water_retention_curve_type), allocatable :: soil_water_retention_curve
   type(EDbio_type)            :: EDbio_vars
+  type(chemstate_type)        :: chemstate_vars  
   !
   public :: initialize1  ! Phase one initialization
   public :: initialize2  ! Phase two initialization
@@ -360,7 +363,7 @@ contains
     use shr_orb_mod           , only : shr_orb_decl
     use shr_scam_mod          , only : shr_scam_getCloseLatLon
     use seq_drydep_mod        , only : n_drydep, drydep_method, DD_XLND
-    use clm_varpar            , only : nlevsno, numpft, crop_prog
+    use clm_varpar            , only : nlevsno, numpft, crop_prog, nlevsoi    
     use clm_varcon            , only : h2osno_max, bdsno, c13ratio, c14ratio, spval
     use landunit_varcon       , only : istice, istice_mec, istsoil
     use clm_varctl            , only : finidat, finidat_interp_source, finidat_interp_dest, fsurdat
@@ -385,7 +388,8 @@ contains
     use restFileMod           , only : restFile_read, restFile_write 
     use accumulMod            , only : print_accum_fields 
     use ndepStreamMod         , only : ndep_init, ndep_interp
-    use CNEcosystemDynMod     , only : CNEcosystemDynInit 
+    use CNEcosystemDynMod     , only : CNEcosystemDynInit
+    use CNEcosystemDynBetrMod , only : CNEcosystemDynBetrInit    
     use CNDecompCascadeBGCMod , only : init_decompcascade_bgc
     use CNDecompCascadeCNMod  , only : init_decompcascade_cn
     use CNDecompCascadeContype, only : init_decomp_cascade_constants
@@ -401,6 +405,10 @@ contains
     use glc2lndMod            , only : glc2lnd_type
     use lnd2glcMod            , only : lnd2glc_type 
     use SoilWaterRetentionCurveFactoryMod, only : create_soil_water_retention_curve
+    use betr_initializeMod    , only : betr_initialize
+    use betr_initializeMod    , only : betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars
+    use betr_initializeMod    , only : bgc_reaction
+    use tracer_varcon         , only : is_active_betr_bgc    
     !
     ! !ARGUMENTS    
     implicit none
@@ -449,11 +457,10 @@ contains
     nclumps = get_proc_clumps()
 
     ! ------------------------------------------------------------------------
-    ! Read in parameters files
+    ! Read in shared parameters files
     ! ------------------------------------------------------------------------
 
-    call readParameters()
-
+    call readSharedParameters()
     ! ------------------------------------------------------------------------
     ! Initialize time manager
     ! ------------------------------------------------------------------------
@@ -624,8 +631,10 @@ contains
          soilstate_vars%watsat_col(begc:endc, 1:), &
          temperature_vars%t_soisno_col(begc:endc, -nlevsno+1:) )
 
+    
     call waterflux_vars%init(bounds_proc)
 
+    call chemstate_vars%Init(bounds_proc)    
     ! WJS (6-24-14): Without the following write statement, the assertion in
     ! energyflux_vars%init fails with pgi 13.9 on yellowstone. So for now, I'm leaving
     ! this write statement in place as a workaround for this problem.
@@ -657,6 +666,16 @@ contains
     allocate(soil_water_retention_curve, &
          source=create_soil_water_retention_curve())
 
+
+    ! --------------------------------------------------------------
+    ! Initialise the BeTR 
+    ! --------------------------------------------------------------
+
+    if(use_betr)then
+      !state variables will be initialized inside betr_initialize
+      call betr_initialize(bounds_proc, 1, nlevsoi, waterstate_vars)
+    endif
+    
     call SnowOptics_init( ) ! SNICAR optical parameters:
 
     call SnowAge_init( )    ! SNICAR aging   parameters:
@@ -671,16 +690,26 @@ contains
        call vocemis_vars%Init(bounds_proc)
     end if
 
-    if (use_cn) then
-
+    ! ------------------------------------------------------------------------
+    ! Read in private parameters files, this should be preferred for mulitphysics
+    ! implementation, jinyun Tang, Feb. 11, 2015
+    ! ------------------------------------------------------------------------
+    if(use_cn) then
        call init_decomp_cascade_constants()
-       if (use_century_decomp) then
-          ! Note that init_decompcascade_bgc needs cnstate_vars to be initialized
-          call init_decompcascade_bgc(bounds_proc, cnstate_vars, soilstate_vars)
-       else 
-          ! Note that init_decompcascade_cn needs cnstate_vars to be initialized
-          call init_decompcascade_cn(bounds_proc, cnstate_vars)
-       end if
+    endif
+    !read bgc implementation specific parameters when needed
+    call readPrivateParameters()
+    
+    if (use_cn) then
+       if (.not. is_active_betr_bgc)then
+          if (use_century_decomp) then
+           ! Note that init_decompcascade_bgc needs cnstate_vars to be initialized
+             call init_decompcascade_bgc(bounds_proc, cnstate_vars, soilstate_vars)
+          else 
+           ! Note that init_decompcascade_cn needs cnstate_vars to be initialized
+             call init_decompcascade_cn(bounds_proc, cnstate_vars)
+          end if
+       endif
 
        ! Note - always initialize the memory for the c13_carbonstate_vars and
        ! c14_carbonstate_vars data structure so that they can be used in 
@@ -778,7 +807,11 @@ contains
     ! ------------------------------------------------------------------------
 
     if (use_cn) then
-       call CNEcosystemDynInit(bounds_proc)
+       if(is_active_betr_bgc)then
+          call CNEcosystemDynBetrInit(bounds_proc)         
+       else
+          call CNEcosystemDynInit(bounds_proc)
+       endif
     else
        call SatellitePhenologyInit(bounds_proc)
     end if
@@ -827,8 +860,9 @@ contains
                carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
                ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
                nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-               soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-               waterflux_vars, waterstate_vars, EDbio_vars )
+               soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
+               waterflux_vars, waterstate_vars, EDbio_vars,                                   &    
+               betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars )
        end if
 
     else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
@@ -840,11 +874,16 @@ contains
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
             ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-            waterflux_vars, waterstate_vars, EDbio_vars)
+            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
+            waterflux_vars, waterstate_vars, EDbio_vars,                                   &
+            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
     end if
-
+       
+    if (use_betr)then
+       call bgc_reaction%init_betr_alm_bgc_coupler(bounds_proc, &
+            carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
+    endif
     ! ------------------------------------------------------------------------
     ! Initialize filters and weights
     ! ------------------------------------------------------------------------
@@ -879,8 +918,9 @@ contains
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
             ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-            waterflux_vars, waterstate_vars, EDbio_vars)
+            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
+            waterflux_vars, waterstate_vars, EDbio_vars,                                   &
+           betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
        ! Interpolate finidat onto new template file
        call getfil( finidat_interp_source, fnamer,  0 )
@@ -892,8 +932,9 @@ contains
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
             ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-            waterflux_vars, waterstate_vars, EDbio_vars)
+            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
+            waterflux_vars, waterstate_vars, EDbio_vars,                                   &
+            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
        ! Reset finidat to now be finidat_interp_dest 
        ! (to be compatible with routines still using finidat)

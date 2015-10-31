@@ -216,6 +216,7 @@ OPTIONS
      -version                 Echo the SVN tag name used to check out this CLM distribution.
      -vichydro                Toggle to turn on VIC hydrologic parameterizations (default is off)
                               This turns on the namelist variable: use_vichydro
+     -betr_mode               Turn on betr model for tracer transport in soil. [on|off] default is off.
 
 
 Note: The precedence for setting the values of namelist variables is (highest to lowest):
@@ -277,6 +278,7 @@ sub process_commandline {
                envxml_dir            => ".",
                vichydro              => 0,
                maxpft                => "default",
+               betr_mode             => "default",               
              );
 
   GetOptions(
@@ -321,6 +323,7 @@ sub process_commandline {
              "maxpft=i"                  => \$opts{'maxpft'},
              "v|verbose"                 => \$opts{'verbose'},
              "version"                   => \$opts{'version'},
+             "betr_mode=s"               => \$opts{'betr_mode'},             
             )  or usage();
 
   # Give usage message.
@@ -637,6 +640,7 @@ sub process_namelist_commandline_options {
   setup_cmdl_dynamic_vegetation($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_cmdl_ed_mode($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_cmdl_vichydro($opts, $nl_flags, $definition, $defaults, $nl, $physv);
+  setup_cmdl_betr_mode($opts, $nl_flags, $definition, $defaults, $nl, $physv);  
 }
 
 #-------------------------------------------------------------------------------
@@ -757,6 +761,49 @@ sub setup_cmdl_ed_mode {
     }
   }
 }
+
+#-------------------------------------------------------------------------------
+sub setup_cmdl_betr_mode {
+  #
+  # call this at least after crop check is called
+  #
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+
+  my $val;
+  my $var = "betr_mode";
+
+  $val = $opts->{$var};
+  $nl_flags->{'betr_mode'} = $val;
+
+  if ( $physv->as_long() == $physv->as_long("clm4_0") || $nl_flags->{'crop'} eq "on" ) {
+    if ( $nl_flags->{'ed_mode'} == 1 ) {
+       # ED is not a clm4_0 option and should not be used with crop and not with clm4_0
+       fatal_error("** Cannot turn betr mode on with crop or with clm4_0 physics.\n" );
+    }
+  } else {
+
+    $var = "use_betr";
+    $nl_flags->{$var} = ".false.";
+    if ($nl_flags->{'betr_mode'} eq "on") {
+      message("Using BETR (Reactive Transport).");
+      $val = ".true.";
+      $nl_flags->{$var} = $val;
+    }
+    if ( defined($nl->get_value($var)) && $nl->get_value($var) ne $val ) {
+      fatal_error("$var is inconsistent with the commandline setting of -betr_mode");
+    }
+    if ( $nl_flags->{$var} eq ".true." ) {
+      my $group = $definition->get_group_name($var);
+      $nl->set_variable_value($group, $var, $val);
+      if (  ! $definition->is_valid_value( $var, $val ) ) {
+        my @valid_values   = $definition->get_valid_values( $var );
+        fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+      }
+
+    }
+  }
+}
+
 
 #-------------------------------------------------------------------------------
 sub setup_cmdl_bgc {
@@ -2430,7 +2477,7 @@ sub write_output_files {
     #}
   } else {
     @groups = qw(clm_inparm ndepdyn_nml popd_streams light_streams lai_streams clm_canopyhydrology_inparm 
-                 clm_soilhydrology_inparm finidat_consistency_checks dynpft_consistency_checks);
+                 clm_soilhydrology_inparm finidat_consistency_checks dynpft_consistency_checks betr_inparm);                 
     #@groups = qw(clm_inparm clm_canopyhydrology_inparm clm_soilhydrology_inparm 
     #             finidat_consistency_checks dynpft_consistency_checks);
     # Eventually only list namelists that are actually used when CN on

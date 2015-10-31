@@ -649,7 +649,8 @@ sub write_filepath_cesmbld
 	if ( ! &is_valid_directory( "$srcdir", %opts )  ) { die "** source directory does not exist: $srcdir\n"; }
 
 	# source directories under root
-	my @dirs = ( "main", "biogeophys", "biogeochem", "dyn_subgrid", "ED", "ED/main", "ED/biogeophys", "ED/biogeochem", "ED/fire", "utils", "cpl" );
+	my @dirs = ( "main", "biogeophys", "biogeochem", "dyn_subgrid", "ED", "ED/main", "ED/biogeophys", "ED/biogeochem",
+		    "ED/fire", "utils", "cpl", "betr", "betr/betr_math","betr/betr_core","betr/bgc_century","betr/bgc_sminn" );
 	foreach my $dir ( @dirs ) {
 	    if ( &is_valid_directory( "$srcdir/$dir", %opts )  ) {
 		print $fh "$srcdir/$dir\n";

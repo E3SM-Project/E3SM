@@ -48,6 +48,7 @@ module controlMod
   public :: control_setNL ! Set namelist filename
   public :: control_init  ! initial run control information
   public :: control_print ! print run control information
+
   !
   !
   ! !PRIVATE TYPES:
@@ -100,9 +101,10 @@ contains
     ! Initialize CLM run control information
     !
     ! !USES:
-    use clm_time_manager , only : set_timemgr_init, get_timemgr_defaults
-    use fileutils        , only : getavu, relavu
-    use shr_string_mod   , only : shr_string_getParentDir
+    use clm_time_manager  , only : set_timemgr_init, get_timemgr_defaults
+    use fileutils         , only : getavu, relavu
+    use shr_string_mod    , only : shr_string_getParentDir
+    use betr_initializeMod, only : betr_readNL
     implicit none
     !
     ! !LOCAL VARIABLES:
@@ -198,7 +200,9 @@ contains
     namelist /clm_inparm / use_c13, use_c14
 
     namelist /clm_inparm / use_ed, use_ed_spit_fire
-
+    
+    namelist /clm_inparm / use_betr
+        
     namelist /clm_inparm / use_lai_streams
 
     namelist /clm_inparm/  &
@@ -348,7 +352,11 @@ contains
     ! ----------------------------------------------------------------------
 
     call control_spmd()
-    
+
+    if (use_betr) then
+       call betr_readNL( NLFilename )
+    endif    
+
     ! ----------------------------------------------------------------------
     ! consistency checks
     ! ----------------------------------------------------------------------
@@ -498,6 +506,8 @@ contains
 
     call mpi_bcast (use_ed, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_ed_spit_fire, 1, MPI_LOGICAL, 0, mpicom, ier)
+
+    call mpi_bcast (use_betr, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     call mpi_bcast (use_lai_streams, 1, MPI_LOGICAL, 0, mpicom, ier)
 

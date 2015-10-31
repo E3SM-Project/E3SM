@@ -100,7 +100,7 @@ contains
     !
     ! !USES:
     use shr_const_mod      , only : SHR_CONST_TKFRZ, SHR_CONST_RGAS
-    use clm_time_manager   , only : get_step_size, get_prev_date
+    use clm_time_manager   , only : get_step_size, get_prev_date, get_nstep
     use clm_varcon         , only : sb, cpair, hvap, vkc, grav, denice
     use clm_varcon         , only : denh2o, tfrz, csoilc, tlsai_crit, alpha_aero
     use clm_varcon         , only : isecspday, degpsec
@@ -110,6 +110,7 @@ contains
     use QSatMod            , only : QSat
     use FrictionVelocityMod, only : FrictionVelocity, MoninObukIni
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
+    use SurfaceResistanceMod, only : getlblcef
     !
     ! !ARGUMENTS:
     type(bounds_type)         , intent(in)    :: bounds 
@@ -341,6 +342,7 @@ contains
 
          sabv                 => solarabs_vars%sabv_patch                  , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by vegetation (W/m**2)                       
 
+         lbl_rsc_h2o          => canopystate_vars%lbl_rsc_h2o_patch        , & ! Output: [real(r8) (:)   ] laminar boundary layer resistance for h2o
          frac_veg_nosno       => canopystate_vars%frac_veg_nosno_patch     , & ! Input:  [integer  (:)   ]  fraction of vegetation not covered by snow (0 OR 1) [-]
          elai                 => canopystate_vars%elai_patch               , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow                        
          esai                 => canopystate_vars%esai_patch               , & ! Input:  [real(r8) (:)   ]  one-sided stem area index with burying by snow                        
@@ -456,6 +458,7 @@ contains
             cf_bare  = forc_pbot(c)/(SHR_CONST_RGAS*0.001_r8*thm(p))*1.e06_r8
             rssun(p) = 1._r8/1.e15_r8 * cf_bare
             rssha(p) = 1._r8/1.e15_r8 * cf_bare
+            lbl_rsc_h2o(p)=0._r8
             do j = 1, nlevgrnd
                rootr(p,j)  = 0._r8
                rresis(p,j) = 0._r8
@@ -746,6 +749,7 @@ contains
             ! Bulk boundary layer resistance of leaves
 
             uaf(p) = um(p)*sqrt( 1._r8/(ram1(p)*um(p)) )
+
             cf  = 0.01_r8/(sqrt(uaf(p))*sqrt(dleaf(pft%itype(p))))
             rb(p)  = 1._r8/(cf*uaf(p))
             rb1(p) = rb(p)
@@ -1084,6 +1088,11 @@ contains
 
          end do   ! end of filtered pft loop
 
+         do f = 1, fn
+           p = filterp(f)
+           lbl_rsc_h2o(p) = getlblcef(forc_rho(c),t_veg(p))*uaf(p)/(uaf(p)**2._r8+1.e-10_r8)   !laminar boundary resistance for h2o over leaf, should I make this consistent for latent heat calculation?
+         enddo
+            
          ! Test for convergence
 
          itlef = itlef+1

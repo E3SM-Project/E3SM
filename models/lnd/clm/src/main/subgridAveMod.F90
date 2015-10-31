@@ -787,7 +787,7 @@ contains
              l = col%landunit(c)
              if (sumwt(l) == 0._r8) larr(l) = 0._r8
              larr(l) = larr(l) + carr(c) * scale_c2l(c) * col%wtlunit(c)
-             sumwt(l) = sumwt(l) + co%wtlunit(c)
+             sumwt(l) = sumwt(l) + col%wtlunit(c)
           end if
        end if
     end do

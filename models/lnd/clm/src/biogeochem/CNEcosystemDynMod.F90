@@ -186,7 +186,7 @@ contains
        call t_stopf('CNDeposition')
 
        call t_startf('CNFixation')
-       call CNNFixation( num_soilc, filter_soilc, &
+       call CNNFixation( num_soilc, filter_soilc, waterflux_vars, &
             carbonflux_vars, nitrogenflux_vars)
        call t_stopf('CNFixation')
 
@@ -247,7 +247,7 @@ contains
        call CNGResp(num_soilp, filter_soilp, &
             carbonflux_vars)
        call t_stopf('CNGResp')
-
+       call carbonflux_vars%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
        !--------------------------------------------
        ! CNUpdate0
        !--------------------------------------------
@@ -290,15 +290,15 @@ contains
                isotope='c14')
        end if
 
-       call CStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars, carbonflux_vars, carbonstate_vars)
 
        if ( use_c13 ) then
-          call CStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+          call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, c13_carbonflux_vars, c13_carbonstate_vars)
        end if
        if ( use_c14 ) then
-          call CStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+          call CStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars, c14_carbonflux_vars, c14_carbonstate_vars)
        end if
 
@@ -466,6 +466,7 @@ contains
     use CNPrecisionControlMod, only: CNPrecisionControl
     use perf_mod             , only: t_startf, t_stopf
     use shr_sys_mod          , only: shr_sys_flush
+    use tracer_varcon        , only: do_betr_leaching
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds  
@@ -493,11 +494,12 @@ contains
     !-----------------------------------------------------------------------
   
     ! only do if ed is off
-    if( .not. use_ed ) then
+    if (.not. use_ed) then
 
-       call CNNLeaching(bounds, num_soilc, filter_soilc, &
-            waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)
-
+       if (.not. do_betr_leaching) then
+          call CNNLeaching(bounds, num_soilc, filter_soilc, &
+               waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)         
+       endif
        call t_startf('CNUpdate3')
 
        call NStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, &

@@ -152,7 +152,6 @@ contains
 
     allocate(this%vocflx_tot_patch  (begp:endp));  this%vocflx_tot_patch  (:)   = nan
     allocate(this%efisop_grc      (6,begg:endg));  this%efisop_grc        (:,:) = nan
-
     allocate(meg_out(shr_megan_megcomps_n)) 
     do i=1,shr_megan_megcomps_n
        allocate(meg_out(i)%flux_out(begp:endp))
@@ -196,7 +195,6 @@ contains
           call hist_addfld1d ( fname='MEG_'//trim(meg_cmp%name), units='kg/m2/sec',  &
                avgflag='A', long_name='MEGAN flux', &
                ptr_patch=meg_out(imeg)%flux_out, set_lake=0._r8, set_urb=0._r8 )
-          meg_out(imeg)%flux_out(begp:endp) = 0._r8
 
           meg_cmp => meg_cmp%next_megcomp
        enddo
@@ -325,7 +323,6 @@ contains
 
     call getfil (fsurdat, locfn, 0)
     call ncd_pio_openfile (ncid, locfn, 0)
-
     call ncd_io(ncid=ncid, varname='EF1_BTR', flag='read', data=temp_ef, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg='iniTimeConst: errror reading EF1_BTR'//errMsg(__FILE__, __LINE__))

@@ -12,6 +12,7 @@ module CNCStateUpdate2Mod
   use clm_varpar       , only : nlevdecomp, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use CNCarbonStateType, only : carbonstate_type
   use CNCarbonFluxType , only : carbonflux_type
+  use PatchType           , only : pft   
   !
   implicit none
   save
@@ -32,12 +33,13 @@ contains
     ! On the radiation time step, update all the prognostic carbon state
     ! variables affected by gap-phase mortality fluxes
     !
+    use tracer_varcon, only : is_active_betr_bgc      
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    type(carbonflux_type)  , intent(in)    :: carbonflux_vars
+    type(carbonflux_type)  , intent(inout) :: carbonflux_vars
     type(carbonstate_type) , intent(inout) :: carbonstate_vars
     !
     ! !LOCAL VARIABLES:
@@ -54,24 +56,44 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
 
-      ! column level carbon fluxes from gap-phase mortality
-      do j = 1,nlevdecomp
-         ! column loop
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
+      if ( .not. is_active_betr_bgc ) then
+         ! column level carbon fluxes from gap-phase mortality
+         do j = 1,nlevdecomp
+            ! column loop
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)               
 
-            ! column gap mortality fluxes
-            cs%decomp_cpools_vr_col(c,j,i_met_lit) = &
-                 cs%decomp_cpools_vr_col(c,j,i_met_lit) + cf%gap_mortality_c_to_litr_met_c_col(c,j) * dt
-            cs%decomp_cpools_vr_col(c,j,i_cel_lit) = &
-                 cs%decomp_cpools_vr_col(c,j,i_cel_lit) + cf%gap_mortality_c_to_litr_cel_c_col(c,j) * dt
-            cs%decomp_cpools_vr_col(c,j,i_lig_lit) = &
-                 cs%decomp_cpools_vr_col(c,j,i_lig_lit) + cf%gap_mortality_c_to_litr_lig_c_col(c,j) * dt
-            cs%decomp_cpools_vr_col(c,j,i_cwd) = &
-                 cs%decomp_cpools_vr_col(c,j,i_cwd) + cf%gap_mortality_c_to_cwdc_col(c,j) * dt
+               ! column gap mortality fluxes
+               cs%decomp_cpools_vr_col(c,j,i_met_lit) = &
+                    cs%decomp_cpools_vr_col(c,j,i_met_lit) + cf%gap_mortality_c_to_litr_met_c_col(c,j) * dt
+               cs%decomp_cpools_vr_col(c,j,i_cel_lit) = &
+                    cs%decomp_cpools_vr_col(c,j,i_cel_lit) + cf%gap_mortality_c_to_litr_cel_c_col(c,j) * dt
+               cs%decomp_cpools_vr_col(c,j,i_lig_lit) = &
+                    cs%decomp_cpools_vr_col(c,j,i_lig_lit) + cf%gap_mortality_c_to_litr_lig_c_col(c,j) * dt
+               cs%decomp_cpools_vr_col(c,j,i_cwd) = &
+                    cs%decomp_cpools_vr_col(c,j,i_cwd) + cf%gap_mortality_c_to_cwdc_col(c,j) * dt
 
+            end do
          end do
-      end do
+      else
+         do j = 1,nlevdecomp
+            ! column loop
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+
+               ! column gap mortality fluxes
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) = &
+                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) + cf%gap_mortality_c_to_litr_met_c_col(c,j) * dt
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) = &
+                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) + cf%gap_mortality_c_to_litr_cel_c_col(c,j) * dt
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) = &
+                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) + cf%gap_mortality_c_to_litr_lig_c_col(c,j) * dt
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) = &
+                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) + cf%gap_mortality_c_to_cwdc_col(c,j) * dt
+
+            end do
+         end do
+      endif
 
       ! patch loop
       do fp = 1,num_soilp
@@ -85,7 +107,6 @@ contains
          cs%deadstemc_patch(p)           = cs%deadstemc_patch(p)          - cf%m_deadstemc_to_litter_patch(p)          * dt
          cs%livecrootc_patch(p)          = cs%livecrootc_patch(p)         - cf%m_livecrootc_to_litter_patch(p)         * dt
          cs%deadcrootc_patch(p)          = cs%deadcrootc_patch(p)         - cf%m_deadcrootc_to_litter_patch(p)         * dt
-
          ! storage pools
          cs%leafc_storage_patch(p)       = cs%leafc_storage_patch(p)      - cf%m_leafc_storage_to_litter_patch(p)      * dt
          cs%frootc_storage_patch(p)      = cs%frootc_storage_patch(p)     - cf%m_frootc_storage_to_litter_patch(p)     * dt
@@ -116,12 +137,13 @@ contains
     ! Update all the prognostic carbon state
     ! variables affected by harvest mortality fluxes
     !
+    use tracer_varcon,  only : is_active_betr_bgc      
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    type(carbonflux_type)  , intent(in)    :: carbonflux_vars
+    type(carbonflux_type)  , intent(inout) :: carbonflux_vars
     type(carbonstate_type) , intent(inout) :: carbonstate_vars
     !
     ! !LOCAL VARIABLES:
@@ -138,25 +160,42 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
 
-      ! column level carbon fluxes from harvest mortality
-      do j = 1, nlevdecomp
-         ! column loop
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
+      if (.not. is_active_betr_bgc) then
+         ! column level carbon fluxes from harvest mortality
+         do j = 1, nlevdecomp
+            ! column loop
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
 
-            ! column harvest fluxes
-            cs%decomp_cpools_vr_col(c,j,i_met_lit) = &
-                 cs%decomp_cpools_vr_col(c,j,i_met_lit) + cf%harvest_c_to_litr_met_c_col(c,j) * dt
-            cs%decomp_cpools_vr_col(c,j,i_cel_lit) = &
-                 cs%decomp_cpools_vr_col(c,j,i_cel_lit) + cf%harvest_c_to_litr_cel_c_col(c,j) * dt
-            cs%decomp_cpools_vr_col(c,j,i_lig_lit) = &
-                 cs%decomp_cpools_vr_col(c,j,i_lig_lit) + cf%harvest_c_to_litr_lig_c_col(c,j) * dt
-            cs%decomp_cpools_vr_col(c,j,i_cwd) = &
-                 cs%decomp_cpools_vr_col(c,j,i_cwd) + cf%harvest_c_to_cwdc_col(c,j)  * dt
+               ! column harvest fluxes
+               cs%decomp_cpools_vr_col(c,j,i_met_lit) = &
+                    cs%decomp_cpools_vr_col(c,j,i_met_lit) + cf%harvest_c_to_litr_met_c_col(c,j) * dt
+               cs%decomp_cpools_vr_col(c,j,i_cel_lit) = &
+                    cs%decomp_cpools_vr_col(c,j,i_cel_lit) + cf%harvest_c_to_litr_cel_c_col(c,j) * dt
+               cs%decomp_cpools_vr_col(c,j,i_lig_lit) = &
+                    cs%decomp_cpools_vr_col(c,j,i_lig_lit) + cf%harvest_c_to_litr_lig_c_col(c,j) * dt
+               cs%decomp_cpools_vr_col(c,j,i_cwd) = &
+                    cs%decomp_cpools_vr_col(c,j,i_cwd) + cf%harvest_c_to_cwdc_col(c,j)  * dt
 
-            ! wood to product pools - states updated in CNWoodProducts()
+               ! wood to product pools - states updated in CNWoodProducts()
+            end do
          end do
-      end do
+      else
+         do j = 1, nlevdecomp
+            ! column loop
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)          
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) = &
+                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_met_lit) + cf%harvest_c_to_litr_met_c_col(c,j) * dt
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) = &
+                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cel_lit) + cf%harvest_c_to_litr_cel_c_col(c,j) * dt
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) = &
+                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_lig_lit) + cf%harvest_c_to_litr_lig_c_col(c,j) * dt
+               cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) = &
+                    cf%bgc_cpool_ext_inputs_vr_col(c,j,i_cwd) + cf%harvest_c_to_cwdc_col(c,j)  * dt
+            end do
+         end do
+      endif
 
       ! patch loop
       do fp = 1,num_soilp
@@ -174,7 +213,6 @@ contains
 
          ! xsmrpool
          cs%xsmrpool_patch(p)            = cs%xsmrpool_patch(p)           - cf%hrv_xsmrpool_to_atm_patch(p)              * dt
-
          ! storage pools
          cs%leafc_storage_patch(p)       = cs%leafc_storage_patch(p)      - cf%hrv_leafc_storage_to_litter_patch(p)      * dt
          cs%frootc_storage_patch(p)      = cs%frootc_storage_patch(p)     - cf%hrv_frootc_storage_to_litter_patch(p)     * dt
