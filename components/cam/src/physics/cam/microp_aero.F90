@@ -459,9 +459,9 @@ subroutine microp_aero_run ( &
       lchnk => state%lchnk,             &
       ncol  => state%ncol,              &
       t     => state%t,                 &
-      qc    => state%q(:,:,cldliq_idx), &
-      qi    => state%q(:,:,cldice_idx), &
-      nc    => state%q(:,:,numliq_idx), &
+      qc    => state%q(:pcols,:pver,cldliq_idx), &
+      qi    => state%q(:pcols,:pver,cldice_idx), &
+      nc    => state%q(:pcols,:pver,numliq_idx), &
       pmid  => state%pmid               )
 
    itim_old = pbuf_old_tim_idx()
