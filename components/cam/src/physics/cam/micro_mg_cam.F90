@@ -107,6 +107,7 @@ public :: &
    micro_mg_cam_implements_cnst, &
    micro_mg_cam_init,            &
    micro_mg_cam_tend,            &
+   micro_mg_dcs_tdep,            &
    micro_mg_version
 
 integer :: micro_mg_version     = 1      ! Version number for MG.
@@ -115,6 +116,11 @@ integer :: micro_mg_sub_version = 0      ! Second part of version number.
 real(r8) :: micro_mg_dcs = -1._r8
 
 logical :: microp_uniform
+
+!!== KZ_DCS
+logical :: micro_mg_dcs_tdep  = .false.! if set to true, use temperature dependent dcs
+!!== KZ_DCS
+
 
 character(len=16) :: micro_mg_precip_frac_method = 'max_overlap' ! type of precipitation fraction method
 
@@ -260,6 +266,9 @@ subroutine micro_mg_cam_readnl(nlfile)
 
   namelist /micro_mg_nl/ micro_mg_version, micro_mg_sub_version, &
        micro_mg_do_cldice, micro_mg_do_cldliq, micro_mg_num_steps, &
+!!== KZ_DCS
+       micro_mg_dcs_tdep, & 
+!!== KZ_DCS
        microp_uniform, micro_mg_dcs, micro_mg_precip_frac_method, micro_mg_berg_eff_factor
 
   !-----------------------------------------------------------------------------
@@ -314,6 +323,7 @@ subroutine micro_mg_cam_readnl(nlfile)
   call mpibcast(micro_mg_sub_version,        1, mpiint, 0, mpicom)
   call mpibcast(do_cldice,                   1, mpilog, 0, mpicom)
   call mpibcast(do_cldliq,                   1, mpilog, 0, mpicom)
+  call mpibcast(micro_mg_dcs_tdep,           1, mpilog, 0, mpicom)
   call mpibcast(num_steps,                   1, mpiint, 0, mpicom)
   call mpibcast(microp_uniform,              1, mpilog, 0, mpicom)
   call mpibcast(micro_mg_dcs,                1, mpir8,  0, mpicom)
@@ -628,7 +638,7 @@ subroutine micro_mg_cam_init(pbuf2d)
          call micro_mg_init1_0( &
               r8, gravit, rair, rh2o, cpair, &
               rhoh2o, tmelt, latvap, latice, &
-              rhmini, micro_mg_dcs, use_hetfrz_classnuc, &
+              rhmini, micro_mg_dcs, micro_mg_dcs_tdep, use_hetfrz_classnuc, &
               micro_mg_precip_frac_method, micro_mg_berg_eff_factor, errstring)
       case (5)
          ! MG 1 does not initialize micro_mg_utils, so have to do it here.
@@ -640,6 +650,7 @@ subroutine micro_mg_cam_init(pbuf2d)
               r8, gravit, rair, rh2o, cpair, &
               tmelt, latvap, latice, rhmini, &
               micro_mg_dcs,                  &
+              micro_mg_dcs_tdep,             &
               microp_uniform, do_cldice, use_hetfrz_classnuc, &
               micro_mg_precip_frac_method, micro_mg_berg_eff_factor, errstring)
       end select
@@ -653,6 +664,7 @@ subroutine micro_mg_cam_init(pbuf2d)
               r8, gravit, rair, rh2o, cpair, &
               tmelt, latvap, latice, rhmini, &
               micro_mg_dcs,                  &
+              micro_mg_dcs_tdep,             &
               microp_uniform, do_cldice, use_hetfrz_classnuc, &
               micro_mg_precip_frac_method, micro_mg_berg_eff_factor, &
               allow_sed_supersat, errstring)
@@ -789,6 +801,9 @@ subroutine micro_mg_cam_init(pbuf2d)
    call addfld ('CV_REFFLIQ', 'micron', pver, 'A', 'convective cloud liq effective radius', phys_decomp)
    call addfld ('CV_REFFICE', 'micron', pver, 'A', 'convective cloud ice effective radius', phys_decomp)
 
+!!== KZ_DCS
+   call addfld ('DCST','m',pver, 'A','dcs',phys_decomp)
+!!== KZ_DCS
    ! diagnostic precip
    call addfld ('QRAIN   ','kg/kg   ',pver, 'A','Diagnostic grid-mean rain mixing ratio'         ,phys_decomp)
    call addfld ('QSNOW   ','kg/kg   ',pver, 'A','Diagnostic grid-mean snow mixing ratio'         ,phys_decomp)

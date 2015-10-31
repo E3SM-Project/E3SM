@@ -155,6 +155,10 @@ real(r8), parameter :: minrefl = 1.26e-10_r8    ! minrefl = 10._r8**(mindbz/10._
 ! autoconversion size threshold for cloud ice to snow (m)
 real(r8) :: dcs
 
+!!== KZ_DCS 
+logical :: dcs_tdep
+!!== KZ_DCS 
+
 ! minimum mass of new crystal due to freezing of cloud droplets done
 ! externally (kg)
 real(r8), parameter :: mi0l_min = 4._r8/3._r8*pi*rhow*(4.e-6_r8)**3
@@ -211,7 +215,9 @@ contains
 subroutine micro_mg_init( &
      kind, gravit, rair, rh2o, cpair,    &
      tmelt_in, latvap, latice,           &
-     rhmini_in, micro_mg_dcs,            &
+!!== KZ_DCS 
+     rhmini_in, micro_mg_dcs, micro_mg_dcs_tdep, &
+!!== KZ_DCS 
      microp_uniform_in, do_cldice_in, use_hetfrz_classnuc_in, &
      micro_mg_precip_frac_method_in, micro_mg_berg_eff_factor_in, &
      allow_sed_supersat_in, errstring)
@@ -237,6 +243,9 @@ subroutine micro_mg_init( &
   real(r8), intent(in)  :: latice
   real(r8), intent(in)  :: rhmini_in    ! Minimum rh for ice cloud fraction > 0.
   real(r8), intent(in)  :: micro_mg_dcs
+!!== KZ_DCS 
+  logical,  intent(in)  :: micro_mg_dcs_tdep
+!!== KZ_DCS 
 
   logical,  intent(in)  :: microp_uniform_in    ! .true. = configure uniform for sub-columns
                                             ! .false. = use w/o sub-columns (standard)
@@ -255,6 +264,10 @@ subroutine micro_mg_init( &
   !-----------------------------------------------------------------------
 
   dcs = micro_mg_dcs
+
+!!== KZ_DCS 
+  dcs_tdep = micro_mg_dcs_tdep 
+!!== KZ_DCS 
 
   ! Initialize subordinate utilities module.
   call micro_mg_utils_init(kind, rh2o, cpair, tmelt_in, latvap, latice, &
@@ -376,6 +389,9 @@ subroutine micro_mg_tend ( &
   ! Size calculation functions.
   use micro_mg_utils, only: &
        size_dist_param_liq, &
+!!== KZ_DCS 
+       size_dist_param_ice, &
+!!== KZ_DCS 
        size_dist_param_basic, &
        avg_diameter
 
@@ -703,6 +719,10 @@ subroutine micro_mg_tend ( &
   ! relative humidity
   real(r8) :: relhum(mgncol,nlev)
 
+!!== KZ_DCS 
+  real(r8) :: dcst(mgncol,nlev)        ! t-dependent dcs
+!!== KZ_DCS 
+
   ! parameters for cloud water and cloud ice sedimentation calculations
   real(r8) :: fc(nlev)
   real(r8) :: fnc(nlev)
@@ -799,6 +819,11 @@ subroutine micro_mg_tend ( &
   nr = nrn
   qs = qsn
   ns = nsn
+
+!!== KZ_DCS
+  call get_dcst(mgncol,nlev,t,dcst)
+!!== KZ_DCS
+
 
   ! cldn: used to set cldm, unused for subcolumns
   ! liqcldf: used to set lcldm, unused for subcolumns
@@ -1247,10 +1272,17 @@ subroutine micro_mg_tend ( &
 
      nric(:,k)=max(nric(:,k),0._r8)
 
-     ! Get size distribution parameters for cloud ice
-
-     call size_dist_param_basic(mg_ice_props, qiic(:,k), niic(:,k), &
-          lami(:,k), n0i(:,k))
+!!== KZ_DCS
+     if(dcs_tdep) then
+        ! Get size distribution parameters for cloud ice
+        call size_dist_param_ice(mg_ice_props, dcst(:,k), qiic(:,k), niic(:,k), &
+             lami(:,k), n0i(:,k))
+     else 
+        ! Get size distribution parameters for cloud ice
+        call size_dist_param_basic(mg_ice_props, qiic(:,k), niic(:,k), &
+             lami(:,k), n0i(:,k))
+     end if
+!!== KZ_DCS 
 
      !.......................................................................
      ! Autoconversion of cloud ice to snow
@@ -1258,7 +1290,9 @@ subroutine micro_mg_tend ( &
 
      if (do_cldice) then
         call ice_autoconversion(t(:,k), qiic(:,k), lami(:,k), n0i(:,k), &
-             dcs, prci(:,k), nprci(:,k))
+!!== KZ_DCS 
+             dcs, dcst(:,k), dcs_tdep, prci(:,k), nprci(:,k))
+!!== KZ_DCS 
      else
         ! Add in the particles that we have already converted to snow, and
         ! don't do any further autoconversion of ice.
@@ -1441,7 +1475,9 @@ subroutine micro_mg_tend ( &
      if (do_cldice) then
 
         call ice_deposition_sublimation(t(:,k), q(:,k), qi(:,k), ni(:,k), &
-             icldm(:,k), rho(:,k), dv(:,k), qvl(:,k), qvi(:,k), &
+!!== KZ_DCS 
+             icldm(:,k), rho(:,k), dv(:,k), qvl(:,k), qvi(:,k), dcst(:,k), dcs_tdep, &
+!!== KZ_DCS 
              berg(:,k), vap_dep(:,k), ice_sublim(:,k))
 
         berg(:,k)=berg(:,k)*micro_mg_berg_eff_factor
@@ -2958,5 +2994,42 @@ pure subroutine micro_mg_get_cols(ncol, nlev, top_lev, qcn, qin, &
   end do
 
 end subroutine micro_mg_get_cols
+
+
+!!== KZ_DCS
+subroutine get_dcst(ncol,pver,temp,dcst)
+
+implicit none
+
+integer,  intent(in) :: ncol
+integer,  intent(in) :: pver                 ! number of layers in columns
+real(r8), intent(in) :: temp(ncol,pver)       ! input temperature (K)
+real(r8), intent(out) :: dcst(ncol,pver)      ! temperature dependent dcs
+
+integer :: i,k
+real(r8) :: st
+
+
+dcst = 400.e-6_r8
+
+do k=1,pver
+   do i=1,ncol
+      st = temp(i,k) - 273.15
+      if(st.le.-70.) then
+         dcst(i,k) = 100.e-6_r8
+      elseif(st.gt.-70. .and. st.le.-10.) then
+         dcst(i,k) = 5.e-6_r8 * st  + 450.e-6_r8
+      elseif(st.gt.-10.) then
+         dcst(i,k) = 400.e-6_r8
+      end if
+   end do
+end do
+
+return
+
+end subroutine get_dcst
+!!== KZ_DCS
+
+
 
 end module micro_mg2_0

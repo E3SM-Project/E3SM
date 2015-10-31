@@ -2124,6 +2124,12 @@ Autoconversion size threshold for cloud ice to snow (m)
 Default: set by build-namelist
 </entry>
 
+<entry id="micro_mg_dcs_tdep" type="logical" category="microphysics"
+       group="micro_mg_nl" valid_values="" >
+Switch to turn on temperature dependent DCS.
+Default: .false.
+</entry>
+
 <!-- micro_aero -->
 <entry id="microp_aero_bulk_scale" type="real" category="microphysics"
        group="microp_aero_nl" valid_values="" >

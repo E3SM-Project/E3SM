@@ -170,6 +170,10 @@ real(r8), parameter :: eii = 0.1_r8
 ! autoconversion size threshold for cloud ice to snow (m)
 real(r8) :: dcs 
 
+!!== KZ_DCS 
+logical :: dcs_tdep 
+!!== KZ_DCS 
+
 ! smallest mixing ratio considered in microphysics
 real(r8), parameter :: qsmall = 1.e-18_r8
 
@@ -252,7 +256,9 @@ contains
 subroutine micro_mg_init( &
      kind, gravit, rair, rh2o, cpair,    &
      tmelt_in, latvap, latice,           &
-     rhmini_in, micro_mg_dcs, microp_uniform_in, do_cldice_in, use_hetfrz_classnuc_in, &
+!!== KZ_DCS 
+     rhmini_in, micro_mg_dcs, micro_mg_dcs_tdep, microp_uniform_in, do_cldice_in, use_hetfrz_classnuc_in, &
+!!== KZ_DCS 
      micro_mg_precip_frac_method_in, micro_mg_berg_eff_factor_in, errstring)
 
   !-----------------------------------------------------------------------
@@ -274,6 +280,9 @@ subroutine micro_mg_init( &
   real(r8), intent(in)  :: latice
   real(r8), intent(in)  :: rhmini_in    ! Minimum rh for ice cloud fraction > 0.
   real(r8), intent(in)  :: micro_mg_dcs
+!!== KZ_DCS 
+  logical,  intent(in)  :: micro_mg_dcs_tdep 
+!!== KZ_DCS 
 
   logical,  intent(in)  :: microp_uniform_in    ! .true. = configure for sub-columns
                                             ! .false. = use w/o sub-columns (standard)
@@ -292,6 +301,8 @@ subroutine micro_mg_init( &
   !-----------------------------------------------------------------------
 
   dcs = micro_mg_dcs
+
+  dcs_tdep = micro_mg_dcs_tdep
 
   errstring = ' '
 
@@ -533,6 +544,8 @@ subroutine micro_mg_tend ( &
   real(r8) :: qi(mgncol,nlev)          ! cloud ice mixing ratio (kg/kg)
   real(r8) :: nc(mgncol,nlev)          ! cloud liquid number concentration (1/kg)
   real(r8) :: ni(mgncol,nlev)          ! cloud liquid number concentration (1/kg)
+
+  real(r8) :: dcst(mgncol,nlev)        ! t-dependent dcs
 
   real(r8) :: nevapr2(mgncol,nlev) 
 
@@ -962,6 +975,11 @@ subroutine micro_mg_tend ( &
   ! initialize limiter for output
   qcrat = 1._r8
 
+
+!!== KZ_DCS
+  call get_dcst(mgncol,nlev,t,dcst)
+!!== KZ_DCS
+
   !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   ! droplet activation
   ! hm, modify 5/12/11
@@ -1193,14 +1211,18 @@ subroutine micro_mg_tend ( &
 
         ! Get size distribution parameters for cloud ice
 
-        call size_dist_param_ice(qiic(:,k), niic(:,k), lami(:,k), n0i(:,k))
+!!== KZ_DCS
+        call size_dist_param_ice(qiic(:,k), dcst(:,k), niic(:,k), lami(:,k), n0i(:,k))
+!!== KZ_DCS
 
         !.......................................................................
         ! Autoconversion of cloud ice to snow
         ! similar to Ferrier (1994)
 
         if (do_cldice) then
-           call ice_autoconversion(t(:,k), qiic(:,k), lami(:,k), n0i(:,k), &
+!!== KZ_DCS
+           call ice_autoconversion(t(:,k), qiic(:,k), lami(:,k), n0i(:,k), dcst(:,k),  &
+!!== KZ_DCS
                 prci(:,k), nprci(:,k))
         else
            ! Add in the particles that we have already converted to snow, and
@@ -1402,7 +1424,9 @@ subroutine micro_mg_tend ( &
         if (do_cldice) then
 
            call ice_deposition_sublimation(deltat, t(:,k), q(:,k), qc(:,k), qi(:,k), ni(:,k), &
-                lcldm(:,k),icldm(:,k), naai(:,k), rho(:,k), dv(:,k), qvl(:,k), qvi(:,k), &
+!!== KZ_DCS
+                lcldm(:,k),icldm(:,k), naai(:,k), rho(:,k), dv(:,k), qvl(:,k), qvi(:,k), dcst(:,k), &
+!!== KZ_DCS
                 berg(:,k), vap_dep(:,k), ice_sublim(:,k))
 
            where (vap_dep(:,k) < 0._r8 .and. qi(:,k) > qsmall .and. icldm(:,k) > mincld)
@@ -2088,8 +2112,9 @@ subroutine micro_mg_tend ( &
         end if
 
         ! obtain new slope parameter to avoid possible singularity
-
-        call size_dist_param_ice(dumi(i,k), dumni(i,k), lami(i,k), n0i(i,k))
+!!== KZ_DCS 
+        call size_dist_param_ice(dumi(i,k), dcst(i,k), dumni(i,k), lami(i,k), n0i(i,k)) 
+!!== KZ_DCS 
 
         call size_dist_param_liq(dumc(i,k), dumnc(i,k), cdnl, rho(i,k), .true., &
              pgam(i,k), lamc(i,k))
@@ -2413,6 +2438,7 @@ subroutine micro_mg_tend ( &
         dumc(i,k)=min(dumc(i,k),5.e-3_r8)
         dumi(i,k)=min(dumi(i,k),5.e-3_r8)
 
+
         ! cloud ice effective radius
         !-----------------------------------------------------------------
 
@@ -2420,7 +2446,9 @@ subroutine micro_mg_tend ( &
            if (dumi(i,k).ge.qsmall) then
 
               dum_2D(i,k) = dumni(i,k)
-              call size_dist_param_ice(dumi(i,k), dumni(i,k), lami(i,k), n0i(i,k))
+!!== KZ_DCS 
+              call size_dist_param_ice(dumi(i,k), dcst(i,k), dumni(i,k), lami(i,k), n0i(i,k))
+!!== KZ_DCS 
 
               if (dumni(i,k) /=dum_2D(i,k)) then
                  ! adjust number conc if needed to keep mean size in reasonable range
@@ -2756,8 +2784,13 @@ elemental subroutine size_dist_param_liq(qcic, ncic, cdnl, rho, nadjflag, pgam, 
 end subroutine size_dist_param_liq
 
 ! get ice size distribution parameters
-elemental subroutine size_dist_param_ice(qiic, niic, lami, n0i)
+!!== KZ_DCS 
+elemental subroutine size_dist_param_ice(qiic, dcst, niic, lami, n0i)
+!!== KZ_DCS 
   real(r8), intent(in) :: qiic
+!!== KZ_DCS 
+  real(r8), intent(in) :: dcst 
+!!== KZ_DCS 
   real(r8), intent(inout) :: niic
 
   real(r8), intent(out) :: lami
@@ -2773,7 +2806,13 @@ elemental subroutine size_dist_param_ice(qiic, niic, lami, n0i)
   real(r8), parameter :: lammaxi = 1._r8/10.e-6_r8
   real(r8) :: lammini
 
-  lammini = 1._r8/(2._r8*dcs)
+!!== KZ_DCS 
+  if(dcs_tdep) then 
+     lammini = 1._r8/(2._r8*dcst)
+  else
+     lammini = 1._r8/(2._r8*dcs)
+  end if 
+!!== KZ_DCS 
 
   if (qiic > qsmall) then
 
@@ -2923,7 +2962,9 @@ end function var_coef
 ! This subroutine written by Peter Caldwell
 
 elemental subroutine ice_deposition_sublimation(deltat, t, qv, qc, qi, ni, lcldm, &
-                                                icldm, naai, rho, dv,qvl, qvi, &
+!!== KZ_DCS 
+                                                icldm, naai, rho, dv,qvl, qvi, dcst, &
+!!== KZ_DCS 
                                                 berg, vap_dep, ice_sublim)
 
   !INPUT VARS:
@@ -2941,6 +2982,9 @@ elemental subroutine ice_deposition_sublimation(deltat, t, qv, qc, qi, ni, lcldm
   real(r8), intent(in) :: dv
   real(r8), intent(in) :: qvl
   real(r8), intent(in) :: qvi
+!!== KZ_DCS 
+  real(r8), intent(in) :: dcst
+!!== KZ_DCS 
 
   !OUTPUT VARS:
   !===============================================
@@ -2967,8 +3011,11 @@ elemental subroutine ice_deposition_sublimation(deltat, t, qv, qc, qi, ni, lcldm
 
      !Compute linearized condensational heating correction
      ab=calc_ab(t, qvi, xxls)
+
      !Get slope and intercept of gamma distn for ice.
-     call size_dist_param_ice(qiic, niic, lami, n0i)
+!!== KZ_DCS
+     call size_dist_param_ice(qiic, dcst, niic, lami, n0i)
+!!== KZ_DCS
      !Get depletion timescale=1/eps
      epsi = 2._r8*pi*n0i*rho*Dv/(lami*lami)
 
@@ -3059,12 +3106,17 @@ end subroutine kk2000_liq_autoconversion
 ! Autoconversion of cloud ice to snow
 ! similar to Ferrier (1994)
 
-elemental subroutine ice_autoconversion(t, qiic, lami, n0i, prci, nprci)
+!!== KZ_DCS 
+elemental subroutine ice_autoconversion(t, qiic, lami, n0i, dcst, prci, nprci)
+!!== KZ_DCS 
 
   real(r8), intent(in) :: t
   real(r8), intent(in) :: qiic
   real(r8), intent(in) :: lami
   real(r8), intent(in) :: n0i
+!!== KZ_DCS 
+  real(r8), intent(in) :: dcst
+!!== KZ_DCS 
 
   real(r8), intent(out) :: prci
   real(r8), intent(out) :: nprci
@@ -3073,11 +3125,21 @@ elemental subroutine ice_autoconversion(t, qiic, lami, n0i, prci, nprci)
 
      ! note: assumes autoconversion timescale of 180 sec
 
-     nprci = n0i/(lami*180._r8)*exp(-lami*dcs)
+!!== KZ_DCS 
+     if(dcs_tdep) then 
+        nprci = n0i/(lami*180._r8)*exp(-lami*dcst)
 
-     prci = pi*rhoi*n0i/(6._r8*180._r8)* &
-          (cons23/lami+3._r8*cons24/lami**2+ &
-          6._r8*dcs/lami**3+6._r8/lami**4)*exp(-lami*dcs)
+        prci = pi*rhoi*n0i/(6._r8*180._r8)* &
+             (cons23/lami+3._r8*cons24/lami**2+ &
+             6._r8*dcst/lami**3+6._r8/lami**4)*exp(-lami*dcst)
+!!== KZ_DCS 
+     else 
+        nprci = n0i/(lami*180._r8)*exp(-lami*dcs)
+
+        prci = pi*rhoi*n0i/(6._r8*180._r8)* &
+             (cons23/lami+3._r8*cons24/lami**2+ &
+             6._r8*dcs/lami**3+6._r8/lami**4)*exp(-lami*dcs)
+     end if 
 
   else
      prci=0._r8
@@ -3800,6 +3862,45 @@ pure subroutine micro_mg_get_cols(ncol, nlev, top_lev, qcn, qin, &
   end do
 
 end subroutine micro_mg_get_cols
+
+
+!!== KZ_DCS
+subroutine get_dcst(ncol,pver,temp,dcst)
+
+implicit none
+
+integer,  intent(in) :: ncol
+integer,  intent(in) :: pver                 ! number of layers in columns
+real(r8), intent(in) :: temp(ncol,pver)       ! input temperature (K)
+real(r8), intent(out) :: dcst(ncol,pver)      ! temperature dependent dcs
+
+integer :: i,k
+real(r8) :: st
+
+
+dcst = 400.e-6_r8
+
+do k=1,pver
+   do i=1,ncol
+      st = temp(i,k) - 273.15
+      if(st.le.-70.) then
+         dcst(i,k) = 100.e-6_r8
+      elseif(st.gt.-70. .and. st.le.-10.) then
+         dcst(i,k) = 5.e-6_r8 * st  + 450.e-6_r8
+      elseif(st.gt.-10.) then
+         dcst(i,k) = 400.e-6_r8
+      end if
+   end do
+end do
+
+return
+
+end subroutine get_dcst
+!!== KZ_DCS
+
+
+
+
 
 pure function interp_to_mid(orig_val, weights) result(new_val)
   ! Linear interpolation, here used to move from interfaces to midlevel
