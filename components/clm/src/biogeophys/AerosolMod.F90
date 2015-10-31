@@ -280,6 +280,48 @@ contains
       !  set aerosol deposition fluxes from forcing array
       !  The forcing array is either set from an external file 
       !  or from fluxes received from the atmosphere model
+!mgf++
+#ifdef MODAL_AER
+    ! Mapping for modal aerosol scheme where within-hydrometeor and
+    ! interstitial aerosol fluxes are differentiated. Here, "phi"
+    ! flavors of BC and OC correspond to within-hydrometeor
+    ! (cloud-borne) aerosol, and "pho" flavors are interstitial
+    ! aerosol. "wet" and "dry" fluxes of BC and OC specified here are
+    ! purely diagnostic
+    do c = bounds%begc,bounds%endc
+       g = col%gridcell(c)
+
+       flx_bc_dep_dry(c)   = forc_aer(g,2)
+       flx_bc_dep_wet(c)   = forc_aer(g,1) + forc_aer(g,3)
+       flx_bc_dep_phi(c)   = forc_aer(g,3)
+       flx_bc_dep_pho(c)   = forc_aer(g,1) + forc_aer(g,2)
+       flx_bc_dep(c)       = forc_aer(g,1) + forc_aer(g,2) + forc_aer(g,3)
+
+       flx_oc_dep_dry(c)   = forc_aer(g,5)
+       flx_oc_dep_wet(c)   = forc_aer(g,4) + forc_aer(g,6)
+       flx_oc_dep_phi(c)   = forc_aer(g,6)
+       flx_oc_dep_pho(c)   = forc_aer(g,4) + forc_aer(g,5)
+       flx_oc_dep(c)       = forc_aer(g,4) + forc_aer(g,5) + forc_aer(g,6)
+
+       flx_dst_dep_wet1(c) = forc_aer(g,7)
+       flx_dst_dep_dry1(c) = forc_aer(g,8)
+       flx_dst_dep_wet2(c) = forc_aer(g,9)
+       flx_dst_dep_dry2(c) = forc_aer(g,10)
+       flx_dst_dep_wet3(c) = forc_aer(g,11)
+       flx_dst_dep_dry3(c) = forc_aer(g,12)
+       flx_dst_dep_wet4(c) = forc_aer(g,13)
+       flx_dst_dep_dry4(c) = forc_aer(g,14)
+       flx_dst_dep(c)      = forc_aer(g,7) + forc_aer(g,8) + forc_aer(g,9) + &
+                             forc_aer(g,10) + forc_aer(g,11) + forc_aer(g,12) + &
+                             forc_aer(g,13) + forc_aer(g,14)
+
+    end do
+
+#else
+
+    ! Original mapping for bulk aerosol deposition. phi and pho BC/OC
+    ! species are distinguished in model, other fluxes (e.g., dry and
+    ! wet BC/OC) are purely diagnostic.
 
       do c = bounds%begc,bounds%endc
          g = col%gridcell(c)
@@ -308,6 +350,8 @@ contains
                                forc_aer(g,10) + forc_aer(g,11) + forc_aer(g,12) + &
                                forc_aer(g,13) + forc_aer(g,14)
       end do
+#endif
+!mgf--
 
       ! aerosol deposition fluxes into top layer
       ! This is done after the inter-layer fluxes so that some aerosol
