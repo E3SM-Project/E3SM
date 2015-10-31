@@ -637,7 +637,7 @@ contains
           
           if (tstep_type>0) then  !no longer support tracer advection with tstep_type = 0
              do q=1,qsize
-                write(iulog,'(a,i1,a,E22.14,a,2E15.7)') "Q",q,",Q diss, dQ^2/dt:",Qmass(q,2)," kg/m^2",&
+                write(iulog,'(a,i3,a,E22.14,a,2E15.7)') "Q",q,",Q diss, dQ^2/dt:",Qmass(q,2)," kg/m^2",&
                      (Qmass(q,2)-Qmass(q,1))/dt,(Qvar(q,2)-Qvar(q,1))/dt
              enddo
           endif

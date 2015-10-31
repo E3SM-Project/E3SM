@@ -66,11 +66,12 @@ logical           :: history_budget       = .false.    ! output tendencies and s
                                                        ! liquid budgets.
 logical           :: ssalt_tuning         = .false.    ! sea salt tuning flag for progseasalts_intr.F90
 logical           :: resus_fix            = .false.    ! to address resuspension bug fix in wetdep.F90 
-logical           :: convproc_do_aer      = .false.    ! to apply unified convective transport for aerosols
-logical           :: convproc_do_gas      = .false.    ! to apply unified convective transport for gasses  
+logical           :: convproc_do_aer      = .false.    ! to apply unified convective transport/removal for aerosols
+logical           :: convproc_do_gas      = .false.    ! to apply unified convective transport/removal for trace gases  
+                                                       ! *** the unified conv. trans/removal currently does not do gases ***
 !  convproc_method_activate - 1=apply abdulrazzak-ghan to entrained aerosols for lowest nlayers
 !                             2=do secondary activation with prescribed supersat
-integer           :: convproc_method_activate = 2      ! unified convective transport method               
+integer           :: convproc_method_activate = 2      ! controls activation in the unified convective transport/removal
 logical           :: liqcf_fix            = .false.    ! liq cld fraction fix calc.                     
 logical           :: regen_fix            = .false.    ! aerosol regeneration bug fix for ndrop.F90 
 logical           :: demott_ice_nuc       = .false.    ! use DeMott ice nucleation treatment in microphysics 
