@@ -607,8 +607,8 @@ subroutine hetfrz_classnuc_cam_calc( &
       lchnk => state%lchnk,             &
       ncol  => state%ncol,              &
       t     => state%t,                 &
-      qc    => state%q(:,:,cldliq_idx), &
-      nc    => state%q(:,:,numliq_idx), &
+      qc    => state%q(:pcols,:pver,cldliq_idx), &
+      nc    => state%q(:pcols,:pver,numliq_idx), &
       pmid  => state%pmid               )
 
    itim_old = pbuf_old_tim_idx()
