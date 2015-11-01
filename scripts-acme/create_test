@@ -111,6 +111,10 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         "If no testid is specified, then a time stamp will be"
                         "used.")
 
+    parser.add_argument("-j", "--parallel-jobs", type=int, default=None,
+                        help="Number of tasks create_test should perform simultaneously. Default "
+                        "will be min(num_cores, num_tests).")
+
     parser.add_argument("--old", action="store_true", help="Use CIME Perl impl")
 
     args = parser.parse_args(args[1:])
@@ -123,6 +127,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
            "Provided baseline name but did not specify compare or generate")
     expect(not (args.namelists_only and not (args.generate or args.compare)),
            "Must provide either --compare or --generate with --namelists-only")
+    if (args.parallel_jobs is not None):
+        expect(args.parallel_jobs > 0,
+               "Invalid value for parallel_jobs: %d" % args.parallel_jobs)
 
     if (args.no_build):
         args.no_run = True
@@ -163,7 +170,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
         args.test_id = acme_util.get_utc_timestamp()
 
     return args.testargs, args.compiler, args.no_run, args.no_build, args.no_batch, args.test_root, args.baseline_root, \
-        args.clean, args.compare, args.generate, args.baseline_name, args.namelists_only, args.project, args.test_id, args.old
+        args.clean, args.compare, args.generate, args.baseline_name, args.namelists_only, args.project, args.test_id, args.old, args.parallel_jobs
 
 ###############################################################################
 def get_tests_from_args(testargs, machine, compiler):
@@ -205,11 +212,14 @@ def get_tests_from_args(testargs, machine, compiler):
 ###############################################################################
 def create_test(testargs, compiler, no_run, no_build, no_batch, test_root,
                 baseline_root, clean, compare, generate,
-                baseline_name, namelists_only, project, test_id, old):
+                baseline_name, namelists_only, project, test_id, old, parallel_jobs):
 ###############################################################################
     machine = acme_util.probe_machine_name()
 
     tests_to_run = get_tests_from_args(testargs, machine, compiler)
+
+    if (parallel_jobs is None):
+        parallel_jobs = min(len(tests_to_run), int(acme_util.get_machine_info("MAX_TASKS_PER_NODE")))
 
     expect(len(tests_to_run) > 0, "No tests to run")
 
@@ -220,7 +230,7 @@ def create_test(testargs, compiler, no_run, no_build, no_batch, test_root,
                                            baseline_root, baseline_name,
                                            clean,
                                            compare, generate, namelists_only,
-                                           project)
+                                           project, parallel_jobs)
         return 0 if impl.create_test() else 1
     else:
 
@@ -274,11 +284,11 @@ def _main_func(description):
     acme_util.stop_buffering_output()
 
     testargs, compiler, no_run, no_build, no_batch, test_root, baseline_root, clean, \
-        compare, generate, baseline_name, namelists_only, project, test_id, old = \
+        compare, generate, baseline_name, namelists_only, project, test_id, old, parallel_jobs = \
         parse_command_line(sys.argv, description)
 
     sys.exit(create_test(testargs, compiler, no_run, no_build, no_batch, test_root, baseline_root, clean,
-                         compare, generate, baseline_name, namelists_only, project, test_id, old))
+                         compare, generate, baseline_name, namelists_only, project, test_id, old, parallel_jobs))
 
 ###############################################################################
 
