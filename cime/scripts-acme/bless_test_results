@@ -148,8 +148,8 @@ def bless_test_results(baseline_name, test_root, compiler, namelists_only=False,
             expect(create_test_impl.NAMELIST_PHASE in test_result,
                    "Test '%s' had no namelist phase" % test_name)
 
-            run_phase_pass = test_result[wait_for_tests.RUN_PHASE] == wait_for_tests.TEST_PASSED_STATUS
-            nl_pass        = test_result[create_test_impl.NAMELIST_PHASE] == wait_for_tests.TEST_PASSED_STATUS
+            run_phase_pass = test_result[wait_for_tests.RUN_PHASE] == wait_for_tests.TEST_PASS_STATUS
+            nl_pass        = test_result[create_test_impl.NAMELIST_PHASE] == wait_for_tests.TEST_PASS_STATUS
 
             if (not run_phase_pass):
                 warning("Test '%s' did not run successfully, it is not safe to bless results" % test_name)
@@ -157,7 +157,7 @@ def bless_test_results(baseline_name, test_root, compiler, namelists_only=False,
             else:
                 expect(wait_for_tests.HIST_COMPARE_PHASE in test_result,
                        "Test '%s' had no history compare phase" % test_name)
-                hist_pass = test_result[wait_for_tests.HIST_COMPARE_PHASE] == wait_for_tests.TEST_PASSED_STATUS
+                hist_pass = test_result[wait_for_tests.HIST_COMPARE_PHASE] == wait_for_tests.TEST_PASS_STATUS
 
                 if ( (nl_pass and hist_pass) or (nl_pass and namelists_only) or (hist_pass and hist_only) ):
                     print "Nothing to bless for test:", test_name, " overall status:", overall_result
