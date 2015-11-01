@@ -1625,7 +1625,6 @@ contains
      call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
      call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
      call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)     
-
      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
      call mpas_pool_get_dimension(forcingPool, 'index_avgTemperatureSurfaceValue', index_temperatureSurfaceValue)
@@ -1649,16 +1648,15 @@ contains
      call mpas_pool_get_array(diagnosticsPool,'landIceBoundaryLayerSalinity',landIceBoundaryLayerSalinity)
      call mpas_pool_get_array(diagnosticsPool,'landIceHeatTransferVelocity',landIceHeatTransferVelocity)
      call mpas_pool_get_array(diagnosticsPool,'landIceSaltTransferVelocity',landIceSaltTransferVelocity)
+     
 !     call mpas_pool_get_array(diagnosticsPool,'effectiveDensityInLandIce',effectiveDensityInLandIce)
 
      do i = 1, nCellsSolve
        n = n + 1
-
        o2x_o % rAttr(index_o2x_So_t, n) = avgTracersSurfaceValue(index_temperatureSurfaceValue, i)
        o2x_o % rAttr(index_o2x_So_s, n) = avgTracersSurfaceValue(index_salinitySurfaceValue, i)
        o2x_o % rAttr(index_o2x_So_u, n) = avgSurfaceVelocity(index_avgZonalSurfaceVelocity, i)
        o2x_o % rAttr(index_o2x_So_v, n) = avgSurfaceVelocity(index_avgMeridionalSurfaceVelocity, i)
-
        o2x_o % rAttr(index_o2x_So_dhdx, n) = avgSSHGradient(index_avgZonalSSHGradient, i)
        o2x_o % rAttr(index_o2x_So_dhdy, n) = avgSSHGradient(index_avgMeridionalSSHGradient, i)
        if ( frazilIceActive ) then
@@ -1667,18 +1665,23 @@ contains
           ! Reset SeaIce Energy
           seaIceEnergy(i) = 0.0_RKIND
        end if
-
 !      o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = CO2Flux(i)
 !      o2x_o % rAttr(index_o2x_Faoo_fdms_ocn, n) = DMSFlux(i)
 !      o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = surfaceUpwardCO2Flux(i)
 
-       o2x_o % rAttr(index_o2x_So_blt, n) = landIceBoundaryLayerTemperature(i)
-       o2x_o % rAttr(index_o2x_So_bls, n) = landIceBoundaryLayerSalinity(i)       
-       o2x_o % rAttr(index_o2x_So_htv, n) = landIceHeatTransferVelocity(i)       
-       o2x_o % rAttr(index_o2x_So_hsv, n) = landIceSaltTransferVelocity(i)       
-!       o2x_o % rAttr(index_o2x_So_phieff, n) = effectiveDensityInLandIce(i)    
-        o2x_o % rAttr(index_o2x_So_phieff, n) = 0.0_RKIND
+!JGF 311015 TODO: Figure out why accessing these fields causes segfault, and replace the
+!0.0_RKIND set.a
 
+       !!o2x_o % rAttr(index_o2x_So_blt, n) = landIceBoundaryLayerTemperature(i)
+       o2x_o % rAttr(index_o2x_So_blt, n) = 0.0_RKIND
+       !!o2x_o % rAttr(index_o2x_So_bls, n) = landIceBoundaryLayerSalinity(i)
+       o2x_o % rAttr(index_o2x_So_bls, n) = 0.0_RKIND
+       !!o2x_o % rAttr(index_o2x_So_htv, n) = landIceHeatTransferVelocity(i)
+       o2x_o % rAttr(index_o2x_So_bls, n) = 0.0_RKIND
+       !!o2x_o % rAttr(index_o2x_So_hsv, n) = landIceSaltTransferVelocity(i)
+       o2x_o % rAttr(index_o2x_So_hsv, n) = 0.0_RKIND
+!       o2x_o % rAttr(index_o2x_So_phieff, n) = effectiveDensityInLandIce(i)
+        o2x_o % rAttr(index_o2x_So_phieff, n) = 0.0_RKIND
      end do
 
      block_ptr => block_ptr % next

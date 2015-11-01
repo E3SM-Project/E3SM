@@ -1338,7 +1338,7 @@ contains
          !call mpas_pool_get_field(geometryPool, 'OceanDensity',OceanDensityField) !uncomment when field becomes available
 	 
 	 sfcMassBal => sfcMassBalField % array  
-         basalOceanMassBal => basalOceanMassBalField % array
+         !basalOceanMassBal => basalOceanMassBalField % array
          surfaceTemperature => surfaceTemperatureField % array 
 	 !basalOceanMassBal => basalOceanMassBalField % array!uncomment when field becomes available
          !basalOceanHeatflx => basalOceanHeatflxField % array!uncomment when field becomes available
@@ -1347,8 +1347,8 @@ contains
 	 do i = 1, nCellsSolve
 	    n = n + 1
 	    sfcMassBal(i) =         x2g_g % rAttr(index_x2g_Flgl_qice, n)
-	    surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)
 	    !basalOceanMassBal(i) =  x2g_g % rAttr(index_x2g_Fogx_qiceli, n)!uncomment when field becomes available
+	    surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)	    
 	    !basalOceanHeatflx(i) =  x2g_g % rAttr(index_x2g_Fogx_qicehi, n)!uncomment when field becomes available
 	    !OceanDensity (i) =      x2g_g % rAttr(index_x2g_So_phieff, n) !uncomment when field becomes available
 	 end do
@@ -1381,6 +1381,11 @@ contains
    use shr_const_mod, only: SHR_CONST_RHOICE, SHR_CONST_G
 
    use glc_route_ice_runoff, only: route_ice_runoff
+   
+   use li_mask, only: li_mask_is_grounded_ice, &
+                      li_mask_is_floating_ice, &
+		      li_mask_is_ice_int
+   
    !-------------------------------------------------------------------
 
    type(mct_aVect) , intent(inout) :: g2x_g
@@ -1403,10 +1408,17 @@ contains
    real (kind=RKIND), dimension(:,:), pointer :: layerThickness
    integer, dimension(:), pointer :: cellMask
    real (kind=RKIND) :: Fogg_rofi, Figg_rofi
+   
+    integer :: shrloglev, shrlogunit, stdout_shr
+   
    !-------------------------------------------------------------------
 
     errorCode = 0
-
+    
+    call shr_file_getLogUnit (shrlogunit)
+    call shr_file_getLogLevel(shrloglev)
+    call shr_file_setLogUnit (stdout_shr)
+    
     n = 0
     block => domain % blocklist
 
@@ -1423,20 +1435,21 @@ contains
 
         call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
         call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
-        call mpas_pool_get_array(geometryPool, 'Thickness', Thickness)	
+        call mpas_pool_get_array(geometryPool, 'thickness', Thickness)	
 	call mpas_pool_get_array(thermalPool, 'basalTemperature', basalTemperature)
 	
         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 	
 	!Jer: set these to zero uniformly to be sure (perhaps redundant)
 	g2x_g % rAttr(index_g2x_Sg_icemask_grounded, :)=0.0_RKIND
-	g2x_g % rAttr(index_g2x_Sg_icemask_floating, :)=0.0_RKIND
-	
+	g2x_g % rAttr(index_g2x_Sg_icemask_floating, :)=0.0_RKIND	
+	Fogg_rofi=0.0_RKIND
+	Figg_rofi=0.0_RKIND
         do i = 1, nCellsSolve
            n = n + 1
-	   call route_ice_runoff(0.0_RKIND, & !Attach to ice calving flux once present
-                                 rofi_to_ocn=Fogg_rofi, &
-                                 rofi_to_ice=Figg_rofi)
+	   !call route_ice_runoff(0.0_RKIND, & !Attach to ice calving flux once present
+           !                      rofi_to_ocn=Fogg_rofi, &
+           !                      rofi_to_ice=Figg_rofi)
            g2x_g % rAttr(index_g2x_Fogg_rofi,n)=Fogg_rofi
            g2x_g % rAttr(index_g2x_Figg_rofi,n)=Figg_rofi
 	   g2x_g % rAttr(index_g2x_Fogg_rofl,n) = 0.0 !Attach to subglacial liquid flux once present
