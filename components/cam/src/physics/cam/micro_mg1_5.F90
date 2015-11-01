@@ -1239,7 +1239,11 @@ subroutine micro_mg_tend ( &
            ! hm 11-16-11 modify for mid-point-type method, see comments above
 
            if (k == 1) then
-              dum=(asn(i,k)*cons25)
+              if(dcs_tdep) then 
+                 dum=(asn(i,k)*dcst(i,k)**bs)
+              else
+                 dum=(asn(i,k)*cons25)
+              end if 
               qsic(i,k)=prci(i,k)*icldm(i,k)*dz(i,k)/2._r8/cldmax(i,k)/dum
               nsic(i,k)=nprci(i,k)*icldm(i,k)*dz(i,k)/2._r8/cldmax(i,k)/dum
            else
@@ -1247,7 +1251,11 @@ subroutine micro_mg_tend ( &
                  dum=ums(i,k-1)
                  dum1=uns(i,k-1)
               else
+              if(dcs_tdep) then 
+                 dum = asn(i,k)*dcst(i,k)**bs
+              else
                  dum = asn(i,k)*cons25
+              end if 
                  dum1 = dum
               end if
 
@@ -3130,7 +3138,7 @@ elemental subroutine ice_autoconversion(t, qiic, lami, n0i, dcst, prci, nprci)
         nprci = n0i/(lami*180._r8)*exp(-lami*dcst)
 
         prci = pi*rhoi*n0i/(6._r8*180._r8)* &
-             (cons23/lami+3._r8*cons24/lami**2+ &
+             (dcst**3/lami+3._r8*dcst**2/lami**2+ &
              6._r8*dcst/lami**3+6._r8/lami**4)*exp(-lami*dcst)
 !!== KZ_DCS 
      else 
