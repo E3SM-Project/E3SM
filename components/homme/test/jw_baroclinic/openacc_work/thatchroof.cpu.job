@@ -28,6 +28,18 @@ limit stacksize unlimited
 setenv MPSTKZ 64M
 setenv OMP_STACKSIZE 64M
 
+
+
+
+
+
+
+
+
+
+
+
+
 set NCORES = 12
 setenv OMP_NUM_THREADS 1
 set NCPU = 1
@@ -90,6 +102,7 @@ set sfreq = 8   # number of hours
 @ sfreq /= $tstep
 
 mkdir -p $run/movies
+
 cd $run
 
 if ( $nlev == 26 ) then
