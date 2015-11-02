@@ -110,7 +110,7 @@ if($dryrun){
 	$sysmod = "mkdir -p $RUNDIR";
 	if(system($sysmod) == 0){
 	    print "Success! Setting RUNDIR=$RUNDIR\n";
-	    system("./xmlchange -file env_run.xml -id RUNDIR -val $RUNDIR");
+	    system("./xmlchange -noecho -file env_run.xml -id RUNDIR -val $RUNDIR");
 	}else{
 	    die "Could not create $RUNDIR";
 	}

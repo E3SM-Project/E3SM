@@ -301,7 +301,7 @@ my $testcase_iop = <<'END_IOP';
     endif
     # ********turn on IOP case***************
     set IOP_ON 
-    ./xmlchange -file env_run.xml -id PIO_TYPENAME -val $IOP_TYPE
+    ./xmlchange -noecho -file env_run.xml -id PIO_TYPENAME -val $IOP_TYPE
     # ***************************************
 
     if ( $?IOP_ON ) then

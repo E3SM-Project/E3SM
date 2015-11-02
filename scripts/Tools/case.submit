@@ -98,7 +98,7 @@ sub main
         }
         else
         {
-            `./xmlchange RUN_WITH_SUBMIT=TRUE`;
+            `./xmlchange -noecho RUN_WITH_SUBMIT=TRUE`;
             $config{RUN_WITH_SUBMIT}='TRUE';
             $batchutils->doResubmit($opts{'scriptname'});
         }
@@ -107,7 +107,7 @@ sub main
     {
         $batchutils->dependencyCheck();
         check_DA_settings();
-        `./xmlchange RUN_WITH_SUBMIT=TRUE`;
+        `./xmlchange -noecho RUN_WITH_SUBMIT=TRUE`;
 	$config{RUN_WITH_SUBMIT}='TRUE';
         $batchutils->submitJobs();
     }
