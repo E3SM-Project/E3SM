@@ -61,7 +61,7 @@ public qsat_water     ! SVP over water only
 public qsat_ice       ! SVP over ice only
 
 ! Wet bulb temperature solver
-public findsp_vc
+public findsp_vc, findsp
 
 ! Data
 
