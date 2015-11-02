@@ -351,7 +351,7 @@ contains
       enddo
       call limiter2d_zero(state_Qdp,2,nt_qdp)
       call t_startf('ah_scalar_PEU')
-      call edgeVpack(edgeAdv%buf,edgeAdv%nlyr,state_qdp,qsize*nlev,0,elem(:),1,nelemd,2,nt_qdp)
+      call edgeVpack(edgeAdv,state_qdp,qsize*nlev,0,elem(:),1,nelemd,2,nt_qdp)
       !$omp end master
       !$omp barrier
 
@@ -671,7 +671,7 @@ contains
   ! note: eta_dot_dpdn is actually dimension nlev+1, but nlev+1 data is
   ! all zero so we only have to DSS 1:nlev
   call t_startf('eus_PEU')
-  call edgeVpack(edgeAdv%buf , edgeAdv%nlyr , state_Qdp , nlev*qsize , 0 , elem(:) , 1 , nelemd , 2 , np1_qdp )
+  call edgeVpack(edgeAdv , state_Qdp , nlev*qsize , 0 , elem(:) , 1 , nelemd , 2 , np1_qdp )
   !$omp end master
   !$omp barrier
 

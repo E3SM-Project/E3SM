@@ -61,7 +61,7 @@ contains
     if (.not. tracer_pack_allocated) call allocate_tracer_pack_arrays()
     call laplace_sphere_wk(qtens,grads,deriv,elem,var_coef1,qtens,nlev*qsize,nets,nete,1,1)
     call t_startf('biwksc_PEU')
-    call edgeVpack(edgeq%buf,edgeq%nlyr,qtens,qsize*nlev,0,elem(:),nets,nete,1,1)
+    call edgeVpack(edgeq,qtens,qsize*nlev,0,elem(:),nets,nete,1,1)
     !$omp end master
     !$omp barrier
 
@@ -132,9 +132,9 @@ contains
     call minmax_pack(qmin_pack,qmax_pack,emin,emax,nets,nete)
     call laplace_sphere_wk(qtens,grads,deriv,elem,var_coef1,qtens,nlev*qsize,nets,nete,1,1)
     call t_startf('biwkscmm_PEU')
-    call edgeVpack(edgeq%buf,edgeq%nlyr,    qtens,qsize*nlev,0           ,elem(:),nets,nete,1,1)
-    call edgeVpack(edgeq%buf,edgeq%nlyr,Qmin_pack,nlev*qsize,nlev*qsize  ,elem(:),nets,nete,1,1)
-    call edgeVpack(edgeq%buf,edgeq%nlyr,Qmax_pack,nlev*qsize,2*nlev*qsize,elem(:),nets,nete,1,1)
+    call edgeVpack(edgeq,    qtens,qsize*nlev,0           ,elem(:),nets,nete,1,1)
+    call edgeVpack(edgeq,Qmin_pack,nlev*qsize,nlev*qsize  ,elem(:),nets,nete,1,1)
+    call edgeVpack(edgeq,Qmax_pack,nlev*qsize,2*nlev*qsize,elem(:),nets,nete,1,1)
     !$omp end master
     !$omp barrier
 
@@ -189,8 +189,8 @@ contains
     if (.not. tracer_pack_allocated) call allocate_tracer_pack_arrays()
     call minmax_pack(qmin_pack,qmax_pack,min_neigh,max_neigh,nets,nete)
     call t_startf('nmm_PEU')
-    call edgeVpack(edgeMinMax%buf,edgeMinMax%nlyr,Qmin_pack,nlev*qsize,0         ,elem(:),nets,nete,1,1)
-    call edgeVpack(edgeMinMax%buf,edgeMinMax%nlyr,Qmax_pack,nlev*qsize,nlev*qsize,elem(:),nets,nete,1,1)
+    call edgeVpack(edgeMinMax,Qmin_pack,nlev*qsize,0         ,elem(:),nets,nete,1,1)
+    call edgeVpack(edgeMinMax,Qmax_pack,nlev*qsize,nlev*qsize,elem(:),nets,nete,1,1)
     !$omp end master
     !$omp barrier
 
