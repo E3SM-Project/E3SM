@@ -1,6 +1,7 @@
 ##############################################################################
 # Compiler specific options
 ##############################################################################
+SET(CMAKE_Fortran_FLAGS "")
 MESSAGE(STATUS "CMAKE_Fortran_COMPILER_ID = ${CMAKE_Fortran_COMPILER_ID}")
 # Need this for a fix in repro_sum_mod
 IF (${CMAKE_Fortran_COMPILER_ID} STREQUAL XL)
@@ -13,7 +14,7 @@ ELSE ()
   IF (CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
     SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ffree-line-length-none")
   ELSEIF (CMAKE_Fortran_COMPILER_ID STREQUAL PGI)
-    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Mextend -Kieee -Mflushz")
+    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Mextend -Mflushz")
     # Needed by csm_share
     ADD_DEFINITIONS(-DCPRPGI)
   ELSEIF (CMAKE_Fortran_COMPILER_ID STREQUAL PathScale)
