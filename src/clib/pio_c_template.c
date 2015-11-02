@@ -5,9 +5,9 @@ int PIO_function()
   int mpierr;
   iosystem_desc_t *ios;
   file_desc_t *file;
-  char errstr[160];
+  char *errstr;
 
-
+  errstr = NULL;
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
@@ -49,6 +49,6 @@ int PIO_function()
   }
 
   ierr = check_netcdf(file, ierr, errstr,__LINE__);
-
+  if(errstr != NULL) free(errstr);
   return ierr;
 }
