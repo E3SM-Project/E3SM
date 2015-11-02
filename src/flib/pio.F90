@@ -68,7 +68,11 @@ module pio
 contains
 !>
 !! @public
-!! ingroup PIO_set_blocksize
+!! @defgroup PIO_set_blocksize
+!<
+!>
+!! @public
+!! @ingroup PIO_set_blocksize
 !! @brief Set the target blocksize for the box rearranger
 !<
   subroutine pio_set_blocksize(blocksize)

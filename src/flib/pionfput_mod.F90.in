@@ -111,42 +111,6 @@ contains
     character(len=*), intent(in) :: ival
     character, allocatable :: cval(:)
     integer :: i
-#ifdef DOTHIS
-    integer :: clen, i
-    integer(C_SIZE_T), allocatable :: cindex(:)
-    interface
-       integer(C_INT) function PIOc_put_var1_text(ncid, varid, index, op) &
-            bind(C,name="PIOc_put_var1_text")
-         use iso_c_binding
-         integer(C_INT), intent(in), value :: ncid
-         integer(C_INT), intent(in), value :: varid
-         integer(C_SIZE_T), intent(in) :: index(*)
-         character(C_CHAR) :: op(*)
-       end function PIOc_put_var1_text
-    end interface
-
-#ifdef TIMING
-    call t_startf("PIO:put_var1_text")
-#endif 
-    clen = len(ival)
-    allocate(cval(clen+1))
-    cval = C_NULL_CHAR
-    do i=1,len_trim(ival)
-       cval(i) = ival(i:i)
-    end do
-
-    clen = size(index)    
-    allocate(cindex(clen))
-    do i=1,clen
-       cindex(i) = index(clen-i+1)-1
-    enddo
-    ierr = PIOc_put_var1_text(file%fh, varid-1, cindex, cval)
-    deallocate(cindex)
-    deallocate(cval)
-#ifdef TIMING
-    call t_stopf("PIO:put_var1_text")
-#endif 
-#else
     integer, allocatable :: count(:)
     integer :: ndims
     
@@ -163,7 +127,6 @@ contains
 !print *,__FILE__,__LINE__,index,count,ival
      ierr = put_vara_1d_text(File,varid, index, count, cval)
     deallocate(count)
-#endif
   end function put_var1_text
 ! TYPE int,real,double
 !>
