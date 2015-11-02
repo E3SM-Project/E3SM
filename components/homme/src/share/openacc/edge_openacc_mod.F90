@@ -224,10 +224,10 @@ contains
             k = (kc-1)*kchunk+kk
             if (k <= vlyr) then
               ir = np-i+1
-              if(elem(el)%desc%reverse(south)) edge%buf(edge%putmap(south,el)+np*(kptr+k-1)+ir) = v(i ,1 ,k,tl,el)
-              if(elem(el)%desc%reverse(east )) edge%buf(edge%putmap(east ,el)+np*(kptr+k-1)+ir) = v(np,i ,k,tl,el)
-              if(elem(el)%desc%reverse(north)) edge%buf(edge%putmap(north,el)+np*(kptr+k-1)+ir) = v(i ,np,k,tl,el)
-              if(elem(el)%desc%reverse(west )) edge%buf(edge%putmap(west ,el)+np*(kptr+k-1)+ir) = v(1 ,i ,k,tl,el)
+              if(edge%reverse(south,el)) edge%buf(edge%putmap(south,el)+np*(kptr+k-1)+ir) = v(i ,1 ,k,tl,el)
+              if(edge%reverse(east ,el)) edge%buf(edge%putmap(east ,el)+np*(kptr+k-1)+ir) = v(np,i ,k,tl,el)
+              if(edge%reverse(north,el)) edge%buf(edge%putmap(north,el)+np*(kptr+k-1)+ir) = v(i ,np,k,tl,el)
+              if(edge%reverse(west ,el)) edge%buf(edge%putmap(west ,el)+np*(kptr+k-1)+ir) = v(1 ,i ,k,tl,el)
             endif
           enddo
         enddo

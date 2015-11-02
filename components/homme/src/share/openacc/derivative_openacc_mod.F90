@@ -35,7 +35,7 @@ contains
     ! Local
     real(kind=real_kind) :: oldgrads(2)
     call gradient_sphere(s,deriv,elem(:),grads,len,nets,nete,ntl,tl)
-    !$acc parallel loop gang vector collapse(4) present(grads,elem(:))
+    !$acc parallel loop gang vector collapse(4) present(grads,elem(:)) private(oldgrads)
     do ie = nets , nete
       do k = 1 , len
         do j = 1 , np
@@ -82,7 +82,7 @@ contains
     integer :: i,j,l,k,ie,kc,kk
     real(kind=real_kind) :: vtemp(np,np,2,kchunk), tmp, deriv_tmp(np,np)
     ! latlon- > contra
-    !$acc parallel loop gang collapse(2) present(v,elem(:),div) private(vtemp,deriv_tmp)
+    !$acc parallel loop gang collapse(2) present(v,elem(:),div,deriv) private(vtemp,deriv_tmp)
     do ie = nets , nete
       do kc = 1 , len/kchunk+1
         !$acc cache(vtemp,deriv_tmp)

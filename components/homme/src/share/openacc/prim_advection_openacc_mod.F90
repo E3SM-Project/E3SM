@@ -309,7 +309,7 @@ contains
     do ic = 1 , hypervis_subcycle_q
       !$omp barrier
       !$omp master
-      !$acc parallel loop gang vector collapse(4) present(elem(:),derived_divdp_proj,state_qdp)
+      !$acc parallel loop gang vector collapse(4) present(elem(:),derived_divdp_proj,state_qdp,dp0,qtens_biharmonic,qtens)
       do ie = 1 , nelemd
         ! Qtens = Q/dp   (apply hyperviscsoity to dp0 * Q, not Qdp)
         do k = 1 , nlev
@@ -504,7 +504,7 @@ contains
     ! initialize dp, and compute Q from Qdp (and store Q in Qtens_biharmonic)
     !$omp barrier
     !$omp master
-    !$acc parallel loop gang vector collapse(4) private(tmp) present(elem(:),derived_divdp_proj,state_qdp)
+    !$acc parallel loop gang vector collapse(4) private(tmp) present(elem(:),derived_divdp_proj,state_qdp,qtens_biharmonic)
     do ie = 1 , nelemd
       ! add hyperviscosity to RHS.  apply to Q at timelevel n0, Qdp(n0)/dp
       do k = 1 , nlev    !  Loop index added with implicit inversion (AAM)
@@ -725,7 +725,7 @@ contains
     real (kind=real_kind) :: mass,mass_new
     real (kind=real_kind) :: qtmp(np,np)
     integer i,j,k,q,ie
-    !$acc parallel loop gang vector collapse(3) private(qtmp)
+    !$acc parallel loop gang vector collapse(3) present(qdp) private(qtmp)
     do ie = 1 , nelemd
       do q = 1 , qsize
         do k = nlev , 1 , -1
