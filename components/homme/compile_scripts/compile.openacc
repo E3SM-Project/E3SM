@@ -1,10 +1,10 @@
 #!/bin/bash
 
-do_cmake=0
-do_clean=0
+do_cmake=1
+do_clean=1
 do_make=1
  
-HOMME_ROOT=/ccs/home/imn/ACME/models/atm/homme
+HOMME_ROOT=/ccs/home/$USER/ACME/models/atm/homme
 NTRACERS=50
 NLEVELS=64
 
@@ -40,7 +40,7 @@ cmake                                                                          \
   -DCMAKE_EXE_LINKER_FLAGS:STRING='-ta=tesla,pin -Mcuda=6.5,cc35 -acc'         \
                                                                                \
                                                                                \
-  -DPREQX_CUSTOM_FLAGS_FILE=/ccs/home/imn/NEW_HOMME_ACME/customFlags.cmake.openacc \
+  -DPREQX_CUSTOM_FLAGS_FILE=${HOMME_ROOT}/compile_scripts/customFlags.cmake.openacc \
   $HOMME_ROOT                                               
 fi
 # -DOPT_FLAGS="-fastsse -Mvect"                                                \
