@@ -4,7 +4,7 @@ do_cmake=1
 do_clean=1
 do_make=1
  
-HOMME_ROOT=/ccs/home/$USER/ACME/models/atm/homme
+HOMME_ROOT=/ccs/home/$USER/ACME/components/homme
 NTRACERS=50
 NLEVELS=64
 
