@@ -84,7 +84,7 @@ contains
         length =  nlyr * pCycle%lengthP
         tag    =  pCycle%tag
         iptr   =  pCycle%ptrP
-        call MPI_Irecv(buffer%receive(1+nlyr*iptr),length,MPIreal_t,source,tag,hybrid%par%comm,Rrequest(icycle),ierr)
+        call MPI_Irecv(buffer%receive(1+nlyr*(iptr-1)),length,MPIreal_t,source,tag,hybrid%par%comm,Rrequest(icycle),ierr)
         if(ierr .ne. MPI_SUCCESS) then
           errorcode=ierr
           call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
@@ -96,7 +96,7 @@ contains
       do icycle = 1 , nSendCycles
         pCycle => pSchedule%SendCycle(icycle)
         iptr   =  pCycle%ptrP
-        if (pCycle%lengthP > 0) call update_host_async(buffer%buf(1+nlyr*iptr),nlyr*pCycle%lengthP,icycle)
+        if (pCycle%lengthP > 0) call update_host_async(buffer%buf(1+nlyr*(iptr-1)),nlyr*pCycle%lengthP,icycle)
       enddo
       !Initiate polling loop for MPI_Isend and PCI-e returns after data is received
       do while (nUpdateDev < nRecvCycles .or. nRecvComp < nRecvCycles .or. nSendComp < nSendCycles .or. nUpdateHost < nSendCycles)
@@ -110,7 +110,7 @@ contains
                 length =  nlyr * pCycle%lengthP
                 tag    =  pCycle%tag
                 iptr   =  pCycle%ptrP
-                call MPI_Isend(buffer%buf(1+nlyr*iptr),length,MPIreal_t,dest,tag,hybrid%par%comm,Srequest(icycle),ierr)
+                call MPI_Isend(buffer%buf(1+nlyr*(iptr-1)),length,MPIreal_t,dest,tag,hybrid%par%comm,Srequest(icycle),ierr)
                 updateHost(icycle) = .true.
                 nUpdateHost = nUpdateHost + 1
               endif
@@ -137,7 +137,7 @@ contains
               if (mpiflag) then
                 pCycle => pSchedule%RecvCycle(icycle)
                 iptr   =  pCycle%ptrP
-                call update_device_async(buffer%receive(1+nlyr*iptr),nlyr*pCycle%lengthP,maxCycles+icycle)
+                call update_device_async(buffer%receive(1+nlyr*(iptr-1)),nlyr*pCycle%lengthP,maxCycles+icycle)
                 recvComp(icycle) = .true.
                 nRecvComp = nRecvComp + 1
               endif
@@ -153,7 +153,7 @@ contains
                 if (recvComp(icycle)) then
                   pCycle => pSchedule%RecvCycle(icycle)
                   iptr   =  pCycle%ptrP
-                  call copy_ondev_async(buffer%buf(1+nlyr*iptr),buffer%receive(1+nlyr*iptr),nlyr*pCycle%lengthP,maxCycles+icycle)
+                  call copy_ondev_async(buffer%buf(1+nlyr*(iptr-1)),buffer%receive(1+nlyr*(iptr-1)),nlyr*pCycle%lengthP,maxCycles+icycle)
                   updateDev(icycle) = .true.
                   nUpdateDev = nUpdateDev + 1
                 endif
@@ -215,7 +215,7 @@ contains
         tag    =  pCycle%tag
         iptr   =  pCycle%ptrP
         nchunks = int(ceiling(length/chunk_denom))
-        dummy = mpi_irecv_openacc_stage(buffer%receive(1+nlyr*iptr), length, source, tag, hybrid%par%comm, ierr, nchunks, maxCycles+icycle, .true. , icycle , .false. , buffer%buf(1+nlyr*iptr) )
+        dummy = mpi_irecv_openacc_stage(buffer%receive(1+nlyr*(iptr-1)), length, source, tag, hybrid%par%comm, ierr, nchunks, maxCycles+icycle, .true. , icycle , .false. , buffer%buf(1+nlyr*(iptr-1)) )
       enddo    ! icycle
 
       !Launch PCI-e copies
@@ -226,7 +226,7 @@ contains
         dest   =  pCycle%dest - 1
         tag    =  pCycle%tag
         nchunks = int(ceiling(length/chunk_denom))
-        dummy = mpi_isend_openacc_stage(buffer%buf(1+nlyr*iptr), length, dest, tag, hybrid%par%comm, ierr, nchunks, icycle, .true. , icycle)
+        dummy = mpi_isend_openacc_stage(buffer%buf(1+nlyr*(iptr-1)), length, dest, tag, hybrid%par%comm, ierr, nchunks, icycle, .true. , icycle)
       enddo
 
       !Initiate polling loop for MPI_Isend and PCI-e returns after data is received
@@ -241,7 +241,7 @@ contains
               dest   =  pCycle%dest - 1
               tag    =  pCycle%tag
               nchunks = int(ceiling(length/chunk_denom))
-              if (mpi_isend_openacc_stage(buffer%buf(1+nlyr*iptr), length, dest, tag, hybrid%par%comm, ierr, nchunks, icycle, .false. , icycle )) then
+              if (mpi_isend_openacc_stage(buffer%buf(1+nlyr*(iptr-1)), length, dest, tag, hybrid%par%comm, ierr, nchunks, icycle, .false. , icycle )) then
                 sendComp(icycle) = .true.
                 nSendComp = nSendComp + 1
               endif
@@ -258,8 +258,8 @@ contains
               tag    =  pCycle%tag
               iptr   =  pCycle%ptrP
               nchunks = int(ceiling(length/chunk_denom))
-              if (mpi_irecv_openacc_stage(buffer%receive(1+nlyr*iptr), length, source, tag, hybrid%par%comm, ierr, nchunks, maxCycles+icycle, .false. , icycle , &
-                                        & nSendComp == nSendCycles , buffer%buf(1+nlyr*iptr) )) then
+              if (mpi_irecv_openacc_stage(buffer%receive(1+nlyr*(iptr-1)), length, source, tag, hybrid%par%comm, ierr, nchunks, maxCycles+icycle, .false. , icycle , &
+                                        & nSendComp == nSendCycles , buffer%buf(1+nlyr*(iptr-1)) )) then
                 recvComp(icycle) = .true.
                 nRecvComp = nRecvComp + 1
               endif

@@ -875,7 +875,7 @@ module prim_advection_mod
   private
   save
 
-  public :: Prim_Advec_Init1, Prim_Advec_Init2
+  public :: Prim_Advec_Init1, Prim_Advec_Init2, prim_advec_init_deriv
   public :: Prim_Advec_Tracers_remap, Prim_Advec_Tracers_remap_rk2, Prim_Advec_Tracers_remap_ALE
   public :: prim_advec_tracers_fvm
 #if defined(_SPELT)
@@ -948,15 +948,11 @@ contains
 
   end subroutine Prim_Advec_Init1
 
-  subroutine Prim_Advec_Init2(elem,hvcoord,hybrid,fvm_corners, fvm_points, spelt_refnep)
+  subroutine Prim_Advec_Init_deriv(hybrid,fvm_corners, fvm_points, spelt_refnep)
     use kinds,          only : longdouble_kind
     use dimensions_mod, only : nc, nep
     use derivative_mod, only : derivinit
-    use element_mod   , only : element_t
-    use hybvcoord_mod , only : hvcoord_t
-
-    type(element_t)   , intent(in) :: elem(:)
-    type(hvcoord_t)   , intent(in) :: hvcoord
+    implicit none
     type (hybrid_t), intent(in) :: hybrid
     real(kind=longdouble_kind), intent(in) :: fvm_corners(nc+1)
     real(kind=longdouble_kind), intent(in) :: fvm_points(nc)
@@ -966,6 +962,16 @@ contains
     ! Initialize derivative structure
     ! ==================================
     call derivinit(deriv(hybrid%ithr),fvm_corners, fvm_points, spelt_refnep)
+  end subroutine Prim_Advec_Init_deriv
+
+  subroutine Prim_Advec_Init2(elem,hvcoord,hybrid)
+    use element_mod   , only : element_t
+    use hybvcoord_mod , only : hvcoord_t
+    implicit none
+    type(element_t)   , intent(in) :: elem(:)
+    type(hvcoord_t)   , intent(in) :: hvcoord
+    type (hybrid_t)   , intent(in) :: hybrid
+    !Nothing to do
   end subroutine Prim_Advec_Init2
 
 #if defined(_SPELT)

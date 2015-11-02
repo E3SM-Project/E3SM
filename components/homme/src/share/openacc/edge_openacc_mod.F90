@@ -42,14 +42,15 @@ contains
     maps_allocated = .true.
   end subroutine alloc_maps
 
-  subroutine edgeVpack(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+  subroutine edgeVpack(edgebuf,nlyr,v,vlyr,kptr,elem,nets,nete,tdim,tl)
     use dimensions_mod, only : max_corner_elem
     use control_mod   , only : north, south, east, west, neast, nwest, seast, swest
     use perf_mod      , only : t_startf, t_stopf
     use parallel_mod  , only : haltmp
     use element_mod   , only : Element_t
     use edgetype_mod  , only : EdgeBuffer_t
-    type (EdgeBuffer_t)    ,intent(inout) :: edge
+    real(kind=real_kind)  , intent(inout) :: edgebuf(nlyr,nbuf)
+    integer               , intent(in   ) :: nlyr
     integer                ,intent(in   ) :: vlyr
     real (kind=real_kind)  ,intent(in   ) :: v(np,np,vlyr,tdim,nelemd)
     integer                ,intent(in   ) :: kptr
@@ -60,8 +61,8 @@ contains
     integer, parameter :: kchunk = 32
     if (.not. maps_allocated) call alloc_maps(elem)
     call t_startf('edge_pack')
-    if (edge%nlyr < (kptr+vlyr) ) call haltmp('edgeVpack: Buffer overflow: size of the vertical dimension must be increased!')
-    !$acc parallel loop gang collapse(2) present(v,putmapP,reverse,edge%buf) vector_length(kchunk*np)
+    if (nlyr < (kptr+vlyr) ) call haltmp('edgeVpack: Buffer overflow: size of the vertical dimension must be increased!')
+    !$acc parallel loop gang collapse(2) present(v,putmapP,reverse,edgebuf) vector_length(kchunk*np)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
         !$acc loop vector collapse(2)
@@ -69,10 +70,10 @@ contains
           do i = 1 , np
             k = (kc-1)*kchunk+kk
             if (k <= vlyr) then
-              edge%buf(kptr+k+edge%nlyr*(putmapP(south,el)+i)) = v(i ,1 ,k,tl,el)
-              edge%buf(kptr+k+edge%nlyr*(putmapP(east ,el)+i)) = v(np,i ,k,tl,el)
-              edge%buf(kptr+k+edge%nlyr*(putmapP(north,el)+i)) = v(i ,np,k,tl,el)
-              edge%buf(kptr+k+edge%nlyr*(putmapP(west ,el)+i)) = v(1 ,i ,k,tl,el)
+              edgebuf(kptr+k,putmapP(south,el)+i) = v(i ,1 ,k,tl,el)
+              edgebuf(kptr+k,putmapP(east ,el)+i) = v(np,i ,k,tl,el)
+              edgebuf(kptr+k,putmapP(north,el)+i) = v(i ,np,k,tl,el)
+              edgebuf(kptr+k,putmapP(west ,el)+i) = v(1 ,i ,k,tl,el)
             endif
           enddo
         enddo
@@ -82,10 +83,10 @@ contains
             k = (kc-1)*kchunk+kk
             if (k <= vlyr) then
               ir = np-i+1
-              if(reverse(south,el)) edge%buf(kptr+k+edge%nlyr*(putmapP(south,el)+ir)) = v(i ,1 ,k,tl,el)
-              if(reverse(east ,el)) edge%buf(kptr+k+edge%nlyr*(putmapP(east ,el)+ir)) = v(np,i ,k,tl,el)
-              if(reverse(north,el)) edge%buf(kptr+k+edge%nlyr*(putmapP(north,el)+ir)) = v(i ,np,k,tl,el)
-              if(reverse(west ,el)) edge%buf(kptr+k+edge%nlyr*(putmapP(west ,el)+ir)) = v(1 ,i ,k,tl,el)
+              if(reverse(south,el)) edgebuf(kptr+k,putmapP(south,el)+ir) = v(i ,1 ,k,tl,el)
+              if(reverse(east ,el)) edgebuf(kptr+k,putmapP(east ,el)+ir) = v(np,i ,k,tl,el)
+              if(reverse(north,el)) edgebuf(kptr+k,putmapP(north,el)+ir) = v(i ,np,k,tl,el)
+              if(reverse(west ,el)) edgebuf(kptr+k,putmapP(west ,el)+ir) = v(1 ,i ,k,tl,el)
             endif
           enddo
         enddo
@@ -94,10 +95,10 @@ contains
           do i = 1 , max_corner_elem
             k = (kc-1)*kchunk+kk
             if (k <= vlyr) then
-              ll = swest+0*max_corner_elem+i-1; if(putmapP(ll,el) /= -1) edge%buf(kptr+k+edge%nlyr*(putmapP(ll,el)+1)) = v(1 ,1 ,k,tl,el)
-              ll = swest+1*max_corner_elem+i-1; if(putmapP(ll,el) /= -1) edge%buf(kptr+k+edge%nlyr*(putmapP(ll,el)+1)) = v(np,1 ,k,tl,el)
-              ll = swest+2*max_corner_elem+i-1; if(putmapP(ll,el) /= -1) edge%buf(kptr+k+edge%nlyr*(putmapP(ll,el)+1)) = v(1 ,np,k,tl,el)
-              ll = swest+3*max_corner_elem+i-1; if(putmapP(ll,el) /= -1) edge%buf(kptr+k+edge%nlyr*(putmapP(ll,el)+1)) = v(np,np,k,tl,el)
+              ll = swest+0*max_corner_elem+i-1; if(putmapP(ll,el) /= -1) edgebuf(kptr+k,putmapP(ll,el)+1) = v(1 ,1 ,k,tl,el)
+              ll = swest+1*max_corner_elem+i-1; if(putmapP(ll,el) /= -1) edgebuf(kptr+k,putmapP(ll,el)+1) = v(np,1 ,k,tl,el)
+              ll = swest+2*max_corner_elem+i-1; if(putmapP(ll,el) /= -1) edgebuf(kptr+k,putmapP(ll,el)+1) = v(1 ,np,k,tl,el)
+              ll = swest+3*max_corner_elem+i-1; if(putmapP(ll,el) /= -1) edgebuf(kptr+k,putmapP(ll,el)+1) = v(np,np,k,tl,el)
             endif
           enddo
         enddo

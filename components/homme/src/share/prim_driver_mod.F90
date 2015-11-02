@@ -607,7 +607,7 @@ contains
     use derivative_mod, only : derivinit, interpolate_gll2fvm_points, interpolate_gll2spelt_points, v2pinit
     use global_norms_mod, only : test_global_integral, print_cfl
     use hybvcoord_mod, only : hvcoord_t
-    use arch_switch_mod, only: prim_advec_init2, deriv, arch_init2
+    use arch_switch_mod, only: prim_advec_init2, prim_advec_init_deriv, deriv, arch_init2
 #ifdef CAM
 #else
     use column_model_mod, only : InitColumnModel
@@ -762,8 +762,7 @@ contains
     ! ==================================
     ! Initialize derivative structure
     ! ==================================
-    call arch_init2(elem(:), deriv(hybrid%ithr))
-    call Prim_Advec_Init2(elem(:), hvcoord, hybrid, fvm_corners, fvm_points, spelt_refnep)
+    call Prim_Advec_Init_deriv(hybrid, fvm_corners, fvm_points, spelt_refnep)
 
     ! ================================================
     ! fvm initialization
@@ -1099,6 +1098,9 @@ contains
 
     if (hybrid%masterthread) write(iulog,*) "initial state:"
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete, fvm)
+
+    call arch_init2(elem(:), deriv(hybrid%ithr))
+    call Prim_Advec_Init2(elem(:), hvcoord, hybrid)
 
   end subroutine prim_init2
 

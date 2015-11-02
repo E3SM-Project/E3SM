@@ -30,6 +30,7 @@ module prim_advection_openacc_mod
   public :: Prim_Advec_Tracers_remap
   public :: prim_advec_init1
   public :: prim_advec_init2
+  public :: prim_advec_init_deriv
 
 contains
 
@@ -210,24 +211,32 @@ contains
     allocate(deriv(0:n_domains-1))
   end subroutine prim_advec_init1
 
-  subroutine prim_advec_init2(elem,hvcoord,hybrid,fvm_corners, fvm_points, spelt_refnep)
-    use kinds         , only: longdouble_kind
-    use element_mod   , only: element_t, state_Qdp, derived_vn0, derived_divdp, derived_divdp_proj
+  subroutine Prim_Advec_Init_deriv(hybrid,fvm_corners, fvm_points, spelt_refnep)
+    use kinds         , only : longdouble_kind
+    use dimensions_mod, only : nc, nep
     use derivative_mod, only : derivinit
+    use hybrid_mod    , only : hybrid_t
+    implicit none
+    type (hybrid_t), intent(in) :: hybrid
+    real(kind=longdouble_kind), intent(in) :: fvm_corners(nc+1)
+    real(kind=longdouble_kind), intent(in) :: fvm_points(nc)
+    real(kind=longdouble_kind), intent(in) :: spelt_refnep(1:nep)
+
+    ! ==================================
+    ! Initialize derivative structure
+    ! ==================================
+    call derivinit(deriv(hybrid%ithr),fvm_corners, fvm_points, spelt_refnep)
+  end subroutine Prim_Advec_Init_deriv
+
+  subroutine prim_advec_init2(elem,hvcoord,hybrid)
+    use element_mod   , only: element_t, state_Qdp, derived_vn0, derived_divdp, derived_divdp_proj
     use hybvcoord_mod , only: hvcoord_t
     use hybrid_mod    , only: hybrid_t
-    use edge_mod      , only: initEdgeBuffer
-    use dimensions_mod, only: nc,nep
     implicit none
     type(element_t)   , intent(in) :: elem(:)
     type(hvcoord_t)   , intent(in) :: hvcoord
     type(hybrid_t)    , intent(in) :: hybrid
-    real(kind=longdouble_kind), intent(in) :: fvm_corners(nc+1)
-    real(kind=longdouble_kind), intent(in) :: fvm_points(nc)
-    real(kind=longdouble_kind), intent(in) :: spelt_refnep(1:nep)
     integer :: k, ie
-
-    call derivinit(deriv(hybrid%ithr),fvm_corners, fvm_points, spelt_refnep)
 
     !$omp barrier
     !$omp master
@@ -342,7 +351,7 @@ contains
       enddo
       call limiter2d_zero(state_Qdp,2,nt_qdp)
       call t_startf('ah_scalar_PEU')
-      call edgeVpack(edgeAdv,state_qdp,qsize*nlev,0,elem(:),1,nelemd,2,nt_qdp)
+      call edgeVpack(edgeAdv%buf,edgeAdv%nlyr,state_qdp,qsize*nlev,0,elem(:),1,nelemd,2,nt_qdp)
       !$omp end master
       !$omp barrier
 
@@ -662,7 +671,7 @@ contains
   ! note: eta_dot_dpdn is actually dimension nlev+1, but nlev+1 data is
   ! all zero so we only have to DSS 1:nlev
   call t_startf('eus_PEU')
-  call edgeVpack(edgeAdv , state_Qdp , nlev*qsize , 0 , elem(:) , 1 , nelemd , 2 , np1_qdp )
+  call edgeVpack(edgeAdv%buf , edgeAdv%nlyr , state_Qdp , nlev*qsize , 0 , elem(:) , 1 , nelemd , 2 , np1_qdp )
   !$omp end master
   !$omp barrier
 
