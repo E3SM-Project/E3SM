@@ -98,10 +98,10 @@ contains
         do kk = 1 , kchunk
           k = (kc-1)*kchunk+kk
           if (k <= vlyr) then
-            vtmp(kk) = min( vtmp(kk) , edge%buf(edge%getmap(south,el)+kptr+k) )
-            vtmp(kk) = min( vtmp(kk) , edge%buf(edge%getmap(east ,el)+kptr+k) )
-            vtmp(kk) = min( vtmp(kk) , edge%buf(edge%getmap(north,el)+kptr+k) )
-            vtmp(kk) = min( vtmp(kk) , edge%buf(edge%getmap(west ,el)+kptr+k) )
+            vtmp(kk) = min( vtmp(kk) , edge%receive(edge%getmap(south,el)+kptr+k) )
+            vtmp(kk) = min( vtmp(kk) , edge%receive(edge%getmap(east ,el)+kptr+k) )
+            vtmp(kk) = min( vtmp(kk) , edge%receive(edge%getmap(north,el)+kptr+k) )
+            vtmp(kk) = min( vtmp(kk) , edge%receive(edge%getmap(west ,el)+kptr+k) )
           endif
         enddo
         !$acc loop vector collapse(2)
@@ -109,10 +109,10 @@ contains
           do i = 1 , max_corner_elem
             k = (kc-1)*kchunk+kk
             if (k <= vlyr) then
-              ll = swest+0*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = min( vtmp(kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
-              ll = swest+1*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = min( vtmp(kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
-              ll = swest+2*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = min( vtmp(kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
-              ll = swest+3*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = min( vtmp(kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+0*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = min( vtmp(kk) , edge%receive(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+1*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = min( vtmp(kk) , edge%receive(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+2*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = min( vtmp(kk) , edge%receive(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+3*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = min( vtmp(kk) , edge%receive(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
             endif
           enddo
         enddo
@@ -157,10 +157,10 @@ contains
         do kk = 1 , kchunk
           k = (kc-1)*kchunk+kk
           if (k <= vlyr) then
-            vtmp(kk) = max( vtmp(kk) , edge%buf(edge%getmap(south,el)+kptr+k) )
-            vtmp(kk) = max( vtmp(kk) , edge%buf(edge%getmap(east ,el)+kptr+k) )
-            vtmp(kk) = max( vtmp(kk) , edge%buf(edge%getmap(north,el)+kptr+k) )
-            vtmp(kk) = max( vtmp(kk) , edge%buf(edge%getmap(west ,el)+kptr+k) )
+            vtmp(kk) = max( vtmp(kk) , edge%receive(edge%getmap(south,el)+kptr+k) )
+            vtmp(kk) = max( vtmp(kk) , edge%receive(edge%getmap(east ,el)+kptr+k) )
+            vtmp(kk) = max( vtmp(kk) , edge%receive(edge%getmap(north,el)+kptr+k) )
+            vtmp(kk) = max( vtmp(kk) , edge%receive(edge%getmap(west ,el)+kptr+k) )
           endif
         enddo
         !$acc loop vector collapse(2)
@@ -168,10 +168,10 @@ contains
           do i = 1 , max_corner_elem
             k = (kc-1)*kchunk+kk
             if (k <= vlyr) then
-              ll = swest+0*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = max( vtmp(kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
-              ll = swest+1*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = max( vtmp(kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
-              ll = swest+2*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = max( vtmp(kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
-              ll = swest+3*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = max( vtmp(kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+0*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = max( vtmp(kk) , edge%receive(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+1*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = max( vtmp(kk) , edge%receive(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+2*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = max( vtmp(kk) , edge%receive(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+3*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = max( vtmp(kk) , edge%receive(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
             endif
           enddo
         enddo
@@ -288,10 +288,10 @@ contains
           do i = 1 , np
             k = (kc-1)*kchunk+kk
             if (k <= vlyr) then
-              vtmp(i ,1 ,kk) = vtmp(i ,1 ,kk) + edge%buf(edge%getmap(south,el)+np*(kptr+k-1)+i)
-              vtmp(np,i ,kk) = vtmp(np,i ,kk) + edge%buf(edge%getmap(east ,el)+np*(kptr+k-1)+i)
-              vtmp(i ,np,kk) = vtmp(i ,np,kk) + edge%buf(edge%getmap(north,el)+np*(kptr+k-1)+i)
-              vtmp(1 ,i ,kk) = vtmp(1 ,i ,kk) + edge%buf(edge%getmap(west ,el)+np*(kptr+k-1)+i)
+              vtmp(i ,1 ,kk) = vtmp(i ,1 ,kk) + edge%receive(edge%getmap(south,el)+np*(kptr+k-1)+i)
+              vtmp(np,i ,kk) = vtmp(np,i ,kk) + edge%receive(edge%getmap(east ,el)+np*(kptr+k-1)+i)
+              vtmp(i ,np,kk) = vtmp(i ,np,kk) + edge%receive(edge%getmap(north,el)+np*(kptr+k-1)+i)
+              vtmp(1 ,i ,kk) = vtmp(1 ,i ,kk) + edge%receive(edge%getmap(west ,el)+np*(kptr+k-1)+i)
             endif
           enddo
         enddo
@@ -300,10 +300,10 @@ contains
           do i = 1 , max_corner_elem
             k = (kc-1)*kchunk+kk
             if (k <= vlyr) then
-              ll = swest+0*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(1  ,1 ,kk) = vtmp(1 ,1 ,kk) + edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i)
-              ll = swest+1*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(np ,1 ,kk) = vtmp(np,1 ,kk) + edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i)
-              ll = swest+2*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(1  ,np,kk) = vtmp(1 ,np,kk) + edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i)
-              ll = swest+3*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(np ,np,kk) = vtmp(np,np,kk) + edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i)
+              ll = swest+0*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(1  ,1 ,kk) = vtmp(1 ,1 ,kk) + edge%receive(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i)
+              ll = swest+1*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(np ,1 ,kk) = vtmp(np,1 ,kk) + edge%receive(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i)
+              ll = swest+2*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(1  ,np,kk) = vtmp(1 ,np,kk) + edge%receive(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i)
+              ll = swest+3*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(np ,np,kk) = vtmp(np,np,kk) + edge%receive(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i)
             endif
           enddo
         enddo
@@ -365,10 +365,10 @@ contains
           do i = 1 , np
             k = (kc-1)*kchunk+kk
             if (k <= vlyr) then
-              vtmp(i ,1 ,kk) = min( vtmp(i ,1 ,kk) , edge%buf(edge%getmap(south,el)+np*(kptr+k-1)+i) )
-              vtmp(np,i ,kk) = min( vtmp(np,i ,kk) , edge%buf(edge%getmap(east ,el)+np*(kptr+k-1)+i) )
-              vtmp(i ,np,kk) = min( vtmp(i ,np,kk) , edge%buf(edge%getmap(north,el)+np*(kptr+k-1)+i) )
-              vtmp(1 ,i ,kk) = min( vtmp(1 ,i ,kk) , edge%buf(edge%getmap(west ,el)+np*(kptr+k-1)+i) )
+              vtmp(i ,1 ,kk) = min( vtmp(i ,1 ,kk) , edge%receive(edge%getmap(south,el)+np*(kptr+k-1)+i) )
+              vtmp(np,i ,kk) = min( vtmp(np,i ,kk) , edge%receive(edge%getmap(east ,el)+np*(kptr+k-1)+i) )
+              vtmp(i ,np,kk) = min( vtmp(i ,np,kk) , edge%receive(edge%getmap(north,el)+np*(kptr+k-1)+i) )
+              vtmp(1 ,i ,kk) = min( vtmp(1 ,i ,kk) , edge%receive(edge%getmap(west ,el)+np*(kptr+k-1)+i) )
             endif
           enddo
         enddo
@@ -377,10 +377,10 @@ contains
           do i = 1 , max_corner_elem
             k = (kc-1)*kchunk+kk
             if (k <= vlyr) then
-              ll = swest+0*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(1  ,1 ,kk) = min( vtmp(1 ,1 ,kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
-              ll = swest+1*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(np ,1 ,kk) = min( vtmp(np,1 ,kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
-              ll = swest+2*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(1  ,np,kk) = min( vtmp(1 ,np,kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
-              ll = swest+3*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(np ,np,kk) = min( vtmp(np,np,kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+0*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(1  ,1 ,kk) = min( vtmp(1 ,1 ,kk) , edge%receive(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+1*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(np ,1 ,kk) = min( vtmp(np,1 ,kk) , edge%receive(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+2*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(1  ,np,kk) = min( vtmp(1 ,np,kk) , edge%receive(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+3*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(np ,np,kk) = min( vtmp(np,np,kk) , edge%receive(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
             endif
           enddo
         enddo
@@ -442,10 +442,10 @@ contains
           do i = 1 , np
             k = (kc-1)*kchunk+kk
             if (k <= vlyr) then
-              vtmp(i ,1 ,kk) = max( vtmp(i ,1 ,kk) , edge%buf(edge%getmap(south,el)+np*(kptr+k-1)+i) )
-              vtmp(np,i ,kk) = max( vtmp(np,i ,kk) , edge%buf(edge%getmap(east ,el)+np*(kptr+k-1)+i) )
-              vtmp(i ,np,kk) = max( vtmp(i ,np,kk) , edge%buf(edge%getmap(north,el)+np*(kptr+k-1)+i) )
-              vtmp(1 ,i ,kk) = max( vtmp(1 ,i ,kk) , edge%buf(edge%getmap(west ,el)+np*(kptr+k-1)+i) )
+              vtmp(i ,1 ,kk) = max( vtmp(i ,1 ,kk) , edge%receive(edge%getmap(south,el)+np*(kptr+k-1)+i) )
+              vtmp(np,i ,kk) = max( vtmp(np,i ,kk) , edge%receive(edge%getmap(east ,el)+np*(kptr+k-1)+i) )
+              vtmp(i ,np,kk) = max( vtmp(i ,np,kk) , edge%receive(edge%getmap(north,el)+np*(kptr+k-1)+i) )
+              vtmp(1 ,i ,kk) = max( vtmp(1 ,i ,kk) , edge%receive(edge%getmap(west ,el)+np*(kptr+k-1)+i) )
             endif
           enddo
         enddo
@@ -454,10 +454,10 @@ contains
           do i = 1 , max_corner_elem
             k = (kc-1)*kchunk+kk
             if (k <= vlyr) then
-              ll = swest+0*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(1  ,1 ,kk) = max( vtmp(1 ,1 ,kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
-              ll = swest+1*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(np ,1 ,kk) = max( vtmp(np,1 ,kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
-              ll = swest+2*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(1  ,np,kk) = max( vtmp(1 ,np,kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
-              ll = swest+3*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(np ,np,kk) = max( vtmp(np,np,kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+0*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(1  ,1 ,kk) = max( vtmp(1 ,1 ,kk) , edge%receive(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+1*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(np ,1 ,kk) = max( vtmp(np,1 ,kk) , edge%receive(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+2*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(1  ,np,kk) = max( vtmp(1 ,np,kk) , edge%receive(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+3*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(np ,np,kk) = max( vtmp(np,np,kk) , edge%receive(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
             endif
           enddo
         enddo

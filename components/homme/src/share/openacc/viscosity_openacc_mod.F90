@@ -23,7 +23,7 @@ contains
     use perf_mod              , only: t_startf, t_stopf
     use derivative_openacc_mod, only: laplace_sphere_wk
     use edge_openacc_mod      , only: edgeVpack, edgeVunpack
-    use bndry_openacc_mod     , only: bndry_exchangeV => bndry_exchangeV_finer_overlap
+    use bndry_openacc_mod     , only: bndry_exchangeV => bndry_exchangeV_simple_overlap
     implicit none
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! compute weak biharmonic operator

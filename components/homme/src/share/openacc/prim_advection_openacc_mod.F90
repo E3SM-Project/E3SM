@@ -278,7 +278,7 @@ contains
     use control_mod          , only: nu_q, hypervis_order, hypervis_subcycle_q, nu_p
     use viscosity_openacc_mod, only: biharmonic_wk_scalar
     use edge_openacc_mod     , only: edgeVpack, edgeVunpack
-    use bndry_openacc_mod    , only: bndry_exchangeV => bndry_exchangeV_finer_overlap
+    use bndry_openacc_mod    , only: bndry_exchangeV => bndry_exchangeV_simple_overlap
     implicit none
     type (EdgeBuffer_t)  , intent(inout)         :: edgeAdv_dontuse
     type (element_t)     , intent(inout), target :: elem(:)
@@ -442,7 +442,7 @@ contains
   use derivative_openacc_mod, only: divergence_sphere
   use viscosity_openacc_mod , only: biharmonic_wk_scalar, neighbor_minmax
   use edge_openacc_mod      , only: edgeVpack, edgeVunpack
-  use bndry_openacc_mod     , only: bndry_exchangeV => bndry_exchangeV_finer_overlap
+  use bndry_openacc_mod     , only: bndry_exchangeV => bndry_exchangeV_simple_overlap
   implicit none
   integer              , intent(in   )         :: np1_qdp, n0_qdp
   real (kind=real_kind), intent(in   )         :: dt

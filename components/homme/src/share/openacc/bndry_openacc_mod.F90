@@ -51,9 +51,9 @@ contains
     integer                   :: nSendCycles,nRecvCycles
     integer                   :: errorcode,errorlen
     character*(80) errorstring
-    integer        :: i
-    integer :: nUpdateHost, nSendComp, nRecvComp, nUpdateDev
-    logical :: updateHost(maxCycles), sendComp(maxCycles), recvComp(maxCycles), updateDev(maxCycles)
+    integer        :: i, ithr
+    integer :: nUpdateHost, nSendComp, nRecvComp
+    logical :: updateHost(maxCycles), sendComp(maxCycles), recvComp(maxCycles)
     logical :: mpiflag
     !$OMP BARRIER
     if(hybrid%ithr == 0) then 
@@ -69,11 +69,9 @@ contains
       nUpdateHost = 0
       nSendComp   = 0
       nRecvComp   = 0
-      nUpdateDev  = 0
       updateHost(1:nSendCycles) = .false.
       sendComp  (1:nSendCycles) = .false.
       recvComp  (1:nRecvCycles) = .false.
-      updateDev (1:nRecvCycles) = .false.
       buffer%Srequest(:) = MPI_REQUEST_NULL
       buffer%Rrequest(:) = MPI_REQUEST_NULL
       !==================================================
@@ -94,6 +92,13 @@ contains
         endif
       enddo    ! icycle
 
+      !Copy internal data to receive buffer
+      do ithr = 1 , hybrid%NThreads
+        iptr   = buffer%moveptr(ithr)
+        length = buffer%moveLength(ithr)
+        if(length>0) call copy_ondev_async(buffer%receive(iptr),buffer%buf(iptr),length,maxCycles*2+ithr)
+      enddo
+
       !Launch PCI-e copies
       do icycle = 1 , nSendCycles
         pCycle => pSchedule%SendCycle(icycle)
@@ -101,7 +106,7 @@ contains
         if (pCycle%lengthS > 0) call update_host_async(buffer%buf(1+nlyr*(iptr-1)),nlyr*pCycle%lengthS,icycle)
       enddo
       !Initiate polling loop for MPI_Isend and PCI-e returns after data is received
-      do while (nUpdateDev < nRecvCycles .or. nRecvComp < nRecvCycles .or. nSendComp < nSendCycles .or. nUpdateHost < nSendCycles)
+      do while (nRecvComp < nRecvCycles .or. nSendComp < nSendCycles .or. nUpdateHost < nSendCycles)
         !If there are host updates yet pending, test to see if each cycle is done. If a cycle is done, so the mpi_isend
         if (nUpdateHost < nSendCycles) then
           do icycle = 1 , nSendCycles
@@ -147,23 +152,6 @@ contains
             endif
           enddo
         endif
-        !if there are device updates yet pending, test to see if both (1) the device update is finished and (2) the mpi_isends are ALL completed.
-        !If both true, then send from buffer%receive to buffer%buf
-        if (nUpdateDev < nRecvCycles) then
-          if (nSendComp == nSendCycles) then
-            do icycle = 1 , nRecvCycles
-              if (.not. updateDev(icycle)) then
-                if (recvComp(icycle)) then
-                  pCycle => pSchedule%RecvCycle(icycle)
-                  iptr   =  pCycle%ptrS
-                  call copy_ondev_async(buffer%buf(1+nlyr*(iptr-1)),buffer%receive(1+nlyr*(iptr-1)),nlyr*pCycle%lengthS,maxCycles+icycle)
-                  updateDev(icycle) = .true.
-                  nUpdateDev = nUpdateDev + 1
-                endif
-              endif
-            enddo
-          endif
-        endif
       enddo
       !$acc wait
     endif  ! if (hybrid%ithr == 0)
@@ -193,6 +181,7 @@ contains
     integer :: nUpdateHost, nSendComp, nRecvComp, nUpdateDev
     logical :: updateHost(maxCycles), sendComp(maxCycles), recvComp(maxCycles), updateDev(maxCycles)
     logical :: mpiflag
+    integer :: ithr
     !$OMP BARRIER
     if(hybrid%ithr == 0) then 
       !$acc wait
@@ -231,6 +220,13 @@ contains
         endif
       enddo    ! icycle
 
+      !Copy internal data to receive buffer
+      do ithr = 1 , hybrid%NThreads
+        iptr   = buffer%moveptr(ithr)
+        length = buffer%moveLength(ithr)
+        if(length>0) call copy_ondev_async(buffer%receive(iptr),buffer%buf(iptr),length,maxCycles*2+ithr)
+      enddo
+
       !Launch PCI-e copies
       do icycle = 1 , nSendCycles
         pCycle => pSchedule%SendCycle(icycle)
@@ -238,7 +234,7 @@ contains
         if (pCycle%lengthP > 0) call update_host_async(buffer%buf(1+nlyr*(iptr-1)),nlyr*pCycle%lengthP,icycle)
       enddo
       !Initiate polling loop for MPI_Isend and PCI-e returns after data is received
-      do while (nUpdateDev < nRecvCycles .or. nRecvComp < nRecvCycles .or. nSendComp < nSendCycles .or. nUpdateHost < nSendCycles)
+      do while (nRecvComp < nRecvCycles .or. nSendComp < nSendCycles .or. nUpdateHost < nSendCycles)
         !If there are host updates yet pending, test to see if each cycle is done. If a cycle is done, so the mpi_isend
         if (nUpdateHost < nSendCycles) then
           do icycle = 1 , nSendCycles
@@ -282,23 +278,6 @@ contains
               endif
             endif
           enddo
-        endif
-        !if there are device updates yet pending, test to see if both (1) the device update is finished and (2) the mpi_isends are ALL completed.
-        !If both true, then send from buffer%receive to buffer%buf
-        if (nUpdateDev < nRecvCycles) then
-          if (nSendComp == nSendCycles) then
-            do icycle = 1 , nRecvCycles
-              if (.not. updateDev(icycle)) then
-                if (recvComp(icycle)) then
-                  pCycle => pSchedule%RecvCycle(icycle)
-                  iptr   =  pCycle%ptrP
-                  call copy_ondev_async(buffer%buf(1+nlyr*(iptr-1)),buffer%receive(1+nlyr*(iptr-1)),nlyr*pCycle%lengthP,maxCycles+icycle)
-                  updateDev(icycle) = .true.
-                  nUpdateDev = nUpdateDev + 1
-                endif
-              endif
-            enddo
-          endif
         endif
       enddo
       !$acc wait
