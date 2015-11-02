@@ -948,11 +948,15 @@ contains
 
   end subroutine Prim_Advec_Init1
 
-  subroutine Prim_Advec_Init2(hybrid,fvm_corners, fvm_points, spelt_refnep)
+  subroutine Prim_Advec_Init2(elem,hvcoord,hybrid,fvm_corners, fvm_points, spelt_refnep)
     use kinds,          only : longdouble_kind
     use dimensions_mod, only : nc, nep
     use derivative_mod, only : derivinit
+    use element_mod   , only : element_t
+    use hybvcoord_mod , only : hvcoord_t
 
+    type(element_t)   , intent(in) :: elem(:)
+    type(hvcoord_t)   , intent(in) :: hvcoord
     type (hybrid_t), intent(in) :: hybrid
     real(kind=longdouble_kind), intent(in) :: fvm_corners(nc+1)
     real(kind=longdouble_kind), intent(in) :: fvm_points(nc)
@@ -2206,9 +2210,6 @@ end subroutine ALE_parametric_coords
 !-----------------------------------------------------------------------------
 
   subroutine precompute_divdp( elem , hybrid , deriv , dt , nets , nete , n0_qdp )
-#if USE_CUDA_FORTRAN
-    use cuda_mod, only: precompute_divdp_cuda
-#endif
     implicit none
     type(element_t)      , intent(inout) :: elem(:)
     type (hybrid_t)      , intent(in   ) :: hybrid
@@ -2216,10 +2217,6 @@ end subroutine ALE_parametric_coords
     real(kind=real_kind) , intent(in   ) :: dt
     integer              , intent(in   ) :: nets , nete , n0_qdp
     integer :: ie , k
-#if USE_CUDA_FORTRAN
-    call precompute_divdp_cuda( elem , hybrid , deriv , dt , nets , nete , n0_qdp )
-    return 
-#endif 
     do ie = nets , nete 
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k)
@@ -2234,19 +2231,12 @@ end subroutine ALE_parametric_coords
 !-----------------------------------------------------------------------------
 
   subroutine qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
-#if USE_CUDA_FORTRAN
-    use cuda_mod, only: qdp_time_avg_cuda
-#endif
     implicit none
     type(element_t)     , intent(inout) :: elem(:)
     integer             , intent(in   ) :: rkstage , n0_qdp , np1_qdp , nets , nete , limiter_option
     real(kind=real_kind), intent(in   ) :: nu_p
     integer :: ie,q,k
     real(kind=real_kind) :: rrkstage
-#if USE_CUDA_FORTRAN
-    call qdp_time_avg_cuda( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
-    return
-#endif
 #ifdef NEWEULER_B4B
     do ie=nets,nete
       elem(ie)%state%Qdp(:,:,:,1:qsize,np1_qdp) =               &
@@ -2291,9 +2281,6 @@ end subroutine ALE_parametric_coords
   use bndry_mod      , only : bndry_exchangev
   use hybvcoord_mod  , only : hvcoord_t
   use parallel_mod, only : abortmp, iam
-#if USE_CUDA_FORTRAN
-  use cuda_mod, only: euler_step_cuda
-#endif
   implicit none
   integer              , intent(in   )         :: np1_qdp, n0_qdp
   real (kind=real_kind), intent(in   )         :: dt
@@ -2319,10 +2306,6 @@ end subroutine ALE_parametric_coords
   integer :: ie,q,i,j,k, kptr
   integer :: rhs_viss = 0
 
-#if USE_CUDA_FORTRAN
-  call euler_step_cuda( np1_qdp , n0_qdp , dt , elem , hvcoord , hybrid , deriv , nets , nete , DSSopt , rhs_multiplier )
-  ! PGI 14.7.0 and up segfault if we have a return statement here'
-#else
 !  call t_barrierf('sync_euler_step', hybrid%par%comm)
   do k = 1 , nlev
     dp0(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
@@ -2611,8 +2594,6 @@ end subroutine ALE_parametric_coords
 #endif
 #endif
    call t_stopf('euler_step')
-!This terminates the #ifdef USE_CUDA_FORTRAN
-#endif   
   end subroutine euler_step
 !-----------------------------------------------------------------------------
 
@@ -2675,9 +2656,6 @@ end subroutine ALE_parametric_coords
   !          Q(:,:,:,np) = Q(:,:,:,np) +  dt2*nu*laplacian**order ( Q )
   !
   !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
-#if USE_CUDA_FORTRAN
-  use cuda_mod       , only : advance_hypervis_scalar_cuda
-#endif
   use kinds          , only : real_kind
   use dimensions_mod , only : np, nlev
   use hybrid_mod     , only : hybrid_t
@@ -2715,10 +2693,6 @@ end subroutine ALE_parametric_coords
   integer :: density_scaling = 0
   if ( nu_q           == 0 ) return
   if ( hypervis_order /= 2 ) return
-#if USE_CUDA_FORTRAN
-  call advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , deriv , nt , nt_qdp , nets , nete , dt2 )
-  return
-#endif
 !   call t_barrierf('sync_advance_hypervis_scalar', hybrid%par%comm)
   call t_startf('advance_hypervis_scalar')
 
@@ -2840,9 +2814,6 @@ end subroutine ALE_parametric_coords
 #else
   use fvm_control_volume_mod, only : fvm_struct
 #endif
-!#if USE_CUDA_FORTRAN
-!  use cuda_mod, only: vertical_remap_cuda
-!#endif
   use control_mod, only : se_prescribed_wind_2d
 
   type (hybrid_t), intent(in) :: hybrid  ! distributed parallel structure (shared)
@@ -2865,11 +2836,6 @@ end subroutine ALE_parametric_coords
   integer :: q
   real (kind=real_kind), dimension(np,np,nlev)  :: dp,dp_star
   real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
-
-!#if USE_CUDA_FORTRAN
-!  call vertical_remap_cuda(elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
-!  return
-!#endif
 
   call t_startf('vertical_remap')
 

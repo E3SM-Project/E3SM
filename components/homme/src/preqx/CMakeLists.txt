@@ -16,6 +16,13 @@ SET (PREQX_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
                         ${SRC_SHARE_DIR} CACHE INTERNAL "include directories for preqx")
 
 SET(PREQX_SRCS_F90
+  ${SRC_SHARE_DIR}/openacc/bndry_openacc_mod.F90
+  ${SRC_SHARE_DIR}/openacc/derivative_openacc_mod.F90
+  ${SRC_SHARE_DIR}/openacc/edge_openacc_mod.F90
+  ${SRC_SHARE_DIR}/openacc/openacc_utils_mod.F90
+  ${SRC_SHARE_DIR}/openacc/prim_advection_openacc_mod.F90
+  ${SRC_SHARE_DIR}/openacc/viscosity_openacc_mod.F90
+  ${SRC_SHARE_DIR}/arch_switch_mod.F90
   ${SRC_SHARE_DIR}/kinds.F90
   ${SRC_SHARE_DIR}/dimensions_mod.F90
   ${SRC_SHARE_DIR}/control_mod.F90
@@ -24,7 +31,6 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/params_mod.F90
   ${SRC_SHARE_DIR}/gridgraph_mod.F90
   ${SRC_SHARE_DIR}/edge_mod.F90
-  ${SRC_SHARE_DIR}/cuda_mod.F90
   ${SRC_SHARE_DIR}/element_mod.F90
   ${SRC_SHARE_DIR}/parallel_mod.F90
   ${SRC_SHARE_DIR}/hybrid_mod.F90
