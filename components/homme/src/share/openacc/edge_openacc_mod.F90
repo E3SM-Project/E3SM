@@ -8,12 +8,10 @@ module edge_openacc_mod
   use dimensions_mod, only: max_neigh_edges,nelemd,np,max_corner_elem
   implicit none
   private
-  integer(kind=int_kind), allocatable :: putmapP(:,:)
-  integer(kind=int_kind), allocatable :: getmapP(:,:)
-  logical(kind=log_kind), allocatable :: reverse(:,:)
-  logical :: maps_allocated = .false.
-  integer :: nbuf
 
+  public :: edgeSpack
+  public :: edgeSunpackMin
+  public :: edgeSunpackMax
   public :: edgeVpack
   public :: edgeVunpack
   public :: edgeVunpackMin
@@ -21,26 +19,171 @@ module edge_openacc_mod
 
 contains
 
-  subroutine alloc_maps(elem)
-    use element_mod, only: element_t
-    implicit none
-    type(element_t), intent(in) :: elem(:)
-    integer :: ie
-    nbuf = 4*(np+max_corner_elem)*nelemd
-
-    allocate(putmapP(max_neigh_edges,nelemd))
-    allocate(getmapP(max_neigh_edges,nelemd))
-    allocate(reverse(max_neigh_edges,nelemd))
-    do ie = 1 , nelemd
-      putmapP(:,ie) = elem(ie)%desc%putmapP
-      getmapP(:,ie) = elem(ie)%desc%getmapP
-      reverse(:,ie) = elem(ie)%desc%reverse
+  subroutine edgeSpack(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+    use dimensions_mod, only : max_corner_elem
+    use control_mod   , only : north, south, east, west, neast, nwest, seast, swest
+    use perf_mod      , only : t_startf, t_stopf
+    use parallel_mod  , only : haltmp
+    use element_mod   , only : Element_t
+    use edgetype_mod  , only : EdgeBuffer_t
+    type(EdgeBuffer_t)     ,intent(inout) :: edge
+    integer                ,intent(in   ) :: vlyr
+    real (kind=real_kind)  ,intent(in   ) :: v(vlyr,tdim,nelemd)
+    integer                ,intent(in   ) :: kptr
+    type(element_t)        ,intent(in   ) :: elem(:)
+    integer                ,intent(in   ) :: nets,nete,tdim,tl
+    ! Local variables
+    integer :: i,k,ir,ll,is,ie,in,iw,el,kc,kk
+    integer, parameter :: kchunk = 64
+    call t_startf('edge_s_pack')
+    if (edge%nlyr < (kptr+vlyr) ) call haltmp('edgeSpack: Buffer overflow: size of the vertical dimension must be increased!')
+    !$acc parallel loop gang collapse(2) present(v,edge) vector_length(kchunk)
+    do el = nets , nete
+      do kc = 1 , vlyr/kchunk+1
+        !$acc loop vector
+        do kk = 1 , kchunk
+          k = (kc-1)*kchunk+kk
+          if (k <= vlyr) then
+            edge%buf(edge%putmap(south,el)+kptr+k) = v(k,tl,el)
+            edge%buf(edge%putmap(east ,el)+kptr+k) = v(k,tl,el)
+            edge%buf(edge%putmap(north,el)+kptr+k) = v(k,tl,el)
+            edge%buf(edge%putmap(west ,el)+kptr+k) = v(k,tl,el)
+          endif
+        enddo
+        !$acc loop vector collapse(2)
+        do kk = 1 , kchunk
+          do i = 1 , max_corner_elem
+            k = (kc-1)*kchunk+kk
+            if (k <= vlyr) then
+              ll = swest+0*max_corner_elem+i-1; if(edge%putmap(ll,el) /= -1) edge%buf(edge%putmap(ll,el)+max_corner_elem*(kptr+k-1)+i) = v(k,tl,el)
+              ll = swest+1*max_corner_elem+i-1; if(edge%putmap(ll,el) /= -1) edge%buf(edge%putmap(ll,el)+max_corner_elem*(kptr+k-1)+i) = v(k,tl,el)
+              ll = swest+2*max_corner_elem+i-1; if(edge%putmap(ll,el) /= -1) edge%buf(edge%putmap(ll,el)+max_corner_elem*(kptr+k-1)+i) = v(k,tl,el)
+              ll = swest+3*max_corner_elem+i-1; if(edge%putmap(ll,el) /= -1) edge%buf(edge%putmap(ll,el)+max_corner_elem*(kptr+k-1)+i) = v(k,tl,el)
+            endif
+          enddo
+        enddo
+      enddo
     enddo
-    !$acc enter data pcreate(putmapP,getmapP,reverse)
-    !$acc update device(putmapP,getmapP,reverse)
+    call t_stopf('edge_s_pack')
+  end subroutine edgeSpack
 
-    maps_allocated = .true.
-  end subroutine alloc_maps
+  subroutine edgeSunpackMin(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+    use dimensions_mod, only : np, max_corner_elem
+    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    use perf_mod, only: t_startf, t_stopf
+    use element_mod   , only : Element_t
+    use edgetype_mod  , only : EdgeBuffer_t
+    type(EdgeBuffer_t)    , intent(in   ) :: edge
+    integer               , intent(in   ) :: vlyr
+    real(kind=real_kind)  , intent(inout) :: v(vlyr,tdim,nelemd)
+    integer               , intent(in   ) :: kptr
+    type(element_t)        ,intent(in   ) :: elem(:)
+    integer                ,intent(in   ) :: nets,nete,tdim,tl
+    ! Local
+    integer :: i,k,ll,is,ie,in,iw,el,kc,kk
+    integer, parameter :: kchunk = 64
+    real(kind=real_kind) :: vtmp(kchunk)
+    call t_startf('edge_s_unpack_min')
+    !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp) vector_length(kchunk)
+    do el = nets , nete
+      do kc = 1 , vlyr/kchunk+1
+        !$acc cache(vtmp)
+        !$acc loop vector
+        do kk = 1 , kchunk
+          k = (kc-1)*kchunk+kk
+          if (k > vlyr) k = vlyr
+          vtmp(kk) = v(k,tl,el)
+        enddo
+        !$acc loop vector
+        do kk = 1 , kchunk
+          k = (kc-1)*kchunk+kk
+          if (k <= vlyr) then
+            vtmp(kk) = min( vtmp(kk) , edge%buf(edge%getmap(south,el)+kptr+k) )
+            vtmp(kk) = min( vtmp(kk) , edge%buf(edge%getmap(east ,el)+kptr+k) )
+            vtmp(kk) = min( vtmp(kk) , edge%buf(edge%getmap(north,el)+kptr+k) )
+            vtmp(kk) = min( vtmp(kk) , edge%buf(edge%getmap(west ,el)+kptr+k) )
+          endif
+        enddo
+        !$acc loop vector collapse(2)
+        do kk = 1 , kchunk
+          do i = 1 , max_corner_elem
+            k = (kc-1)*kchunk+kk
+            if (k <= vlyr) then
+              ll = swest+0*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = min( vtmp(kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+1*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = min( vtmp(kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+2*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = min( vtmp(kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+3*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = min( vtmp(kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+            endif
+          enddo
+        enddo
+        !$acc loop vector
+        do kk = 1 , kchunk
+          k = (kc-1)*kchunk+kk
+          if (k <= vlyr) v(k,tl,el) = vtmp(kk)
+        enddo
+      enddo
+    enddo
+    call t_stopf('edge_s_unpack_min')
+  end subroutine edgeSunpackMin
+
+  subroutine edgeSunpackMax(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+    use dimensions_mod, only : np, max_corner_elem
+    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    use perf_mod, only: t_startf, t_stopf
+    use element_mod   , only : Element_t
+    use edgetype_mod  , only : EdgeBuffer_t
+    type(EdgeBuffer_t)    , intent(in   ) :: edge
+    integer               , intent(in   ) :: vlyr
+    real(kind=real_kind)  , intent(inout) :: v(vlyr,tdim,nelemd)
+    integer               , intent(in   ) :: kptr
+    type(element_t)        ,intent(in   ) :: elem(:)
+    integer                ,intent(in   ) :: nets,nete,tdim,tl
+    ! Local
+    integer :: i,k,ll,is,ie,in,iw,el,kc,kk
+    integer, parameter :: kchunk = 64
+    real(kind=real_kind) :: vtmp(kchunk)
+    call t_startf('edge_s_unpack_max')
+    !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp) vector_length(kchunk)
+    do el = nets , nete
+      do kc = 1 , vlyr/kchunk+1
+        !$acc cache(vtmp)
+        !$acc loop vector
+        do kk = 1 , kchunk
+          k = (kc-1)*kchunk+kk
+          if (k > vlyr) k = vlyr
+          vtmp(kk) = v(k,tl,el)
+        enddo
+        !$acc loop vector
+        do kk = 1 , kchunk
+          k = (kc-1)*kchunk+kk
+          if (k <= vlyr) then
+            vtmp(kk) = max( vtmp(kk) , edge%buf(edge%getmap(south,el)+kptr+k) )
+            vtmp(kk) = max( vtmp(kk) , edge%buf(edge%getmap(east ,el)+kptr+k) )
+            vtmp(kk) = max( vtmp(kk) , edge%buf(edge%getmap(north,el)+kptr+k) )
+            vtmp(kk) = max( vtmp(kk) , edge%buf(edge%getmap(west ,el)+kptr+k) )
+          endif
+        enddo
+        !$acc loop vector collapse(2)
+        do kk = 1 , kchunk
+          do i = 1 , max_corner_elem
+            k = (kc-1)*kchunk+kk
+            if (k <= vlyr) then
+              ll = swest+0*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = max( vtmp(kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+1*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = max( vtmp(kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+2*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = max( vtmp(kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+3*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(kk) = max( vtmp(kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+            endif
+          enddo
+        enddo
+        !$acc loop vector
+        do kk = 1 , kchunk
+          k = (kc-1)*kchunk+kk
+          if (k <= vlyr) v(k,tl,el) = vtmp(kk)
+        enddo
+      enddo
+    enddo
+    call t_stopf('edge_s_unpack_max')
+  end subroutine edgeSunpackMax
 
   subroutine edgeVpack(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
     use dimensions_mod, only : max_corner_elem
@@ -59,7 +202,6 @@ contains
     integer :: i,k,ir,ll,is,ie,in,iw,el,kc,kk
     integer, parameter :: kchunk = 32
     call t_startf('edge_pack')
-    if (.not. maps_allocated) call alloc_maps(elem)
     if (edge%nlyr < (kptr+vlyr) ) call haltmp('edgeVpack: Buffer overflow: size of the vertical dimension must be increased!')
     !$acc parallel loop gang collapse(2) present(v,edge) vector_length(kchunk*np)
     do el = nets , nete
@@ -69,10 +211,10 @@ contains
           do i = 1 , np
             k = (kc-1)*kchunk+kk
             if (k <= vlyr) then
-              edge%buf(kptr+k+(elem(el)%desc%putmapP(south)+i-1)*edge%nlyr) = v(i ,1 ,k,tl,el)
-              edge%buf(kptr+k+(elem(el)%desc%putmapP(east )+i-1)*edge%nlyr) = v(np,i ,k,tl,el)
-              edge%buf(kptr+k+(elem(el)%desc%putmapP(north)+i-1)*edge%nlyr) = v(i ,np,k,tl,el)
-              edge%buf(kptr+k+(elem(el)%desc%putmapP(west )+i-1)*edge%nlyr) = v(1 ,i ,k,tl,el)
+              edge%buf(edge%putmap(south,el)+np*(kptr+k-1)+i) = v(i ,1 ,k,tl,el)
+              edge%buf(edge%putmap(east ,el)+np*(kptr+k-1)+i) = v(np,i ,k,tl,el)
+              edge%buf(edge%putmap(north,el)+np*(kptr+k-1)+i) = v(i ,np,k,tl,el)
+              edge%buf(edge%putmap(west ,el)+np*(kptr+k-1)+i) = v(1 ,i ,k,tl,el)
             endif
           enddo
         enddo
@@ -82,10 +224,10 @@ contains
             k = (kc-1)*kchunk+kk
             if (k <= vlyr) then
               ir = np-i+1
-              if(elem(el)%desc%reverse(south)) edge%buf(kptr+k+(elem(el)%desc%putmapP(south)+ir-1)*edge%nlyr) = v(i ,1 ,k,tl,el)
-              if(elem(el)%desc%reverse(east )) edge%buf(kptr+k+(elem(el)%desc%putmapP(east )+ir-1)*edge%nlyr) = v(np,i ,k,tl,el)
-              if(elem(el)%desc%reverse(north)) edge%buf(kptr+k+(elem(el)%desc%putmapP(north)+ir-1)*edge%nlyr) = v(i ,np,k,tl,el)
-              if(elem(el)%desc%reverse(west )) edge%buf(kptr+k+(elem(el)%desc%putmapP(west )+ir-1)*edge%nlyr) = v(1 ,i ,k,tl,el)
+              if(elem(el)%desc%reverse(south)) edge%buf(edge%putmap(south,el)+np*(kptr+k-1)+ir) = v(i ,1 ,k,tl,el)
+              if(elem(el)%desc%reverse(east )) edge%buf(edge%putmap(east ,el)+np*(kptr+k-1)+ir) = v(np,i ,k,tl,el)
+              if(elem(el)%desc%reverse(north)) edge%buf(edge%putmap(north,el)+np*(kptr+k-1)+ir) = v(i ,np,k,tl,el)
+              if(elem(el)%desc%reverse(west )) edge%buf(edge%putmap(west ,el)+np*(kptr+k-1)+ir) = v(1 ,i ,k,tl,el)
             endif
           enddo
         enddo
@@ -94,10 +236,10 @@ contains
           do i = 1 , max_corner_elem
             k = (kc-1)*kchunk+kk
             if (k <= vlyr) then
-              ll = swest+0*max_corner_elem+i-1; if(elem(el)%desc%putmapP(ll) /= -1) edge%buf(kptr+k+(elem(el)%desc%putmapP(ll)+1-1)*edge%nlyr) = v(1 ,1 ,k,tl,el)
-              ll = swest+1*max_corner_elem+i-1; if(elem(el)%desc%putmapP(ll) /= -1) edge%buf(kptr+k+(elem(el)%desc%putmapP(ll)+1-1)*edge%nlyr) = v(np,1 ,k,tl,el)
-              ll = swest+2*max_corner_elem+i-1; if(elem(el)%desc%putmapP(ll) /= -1) edge%buf(kptr+k+(elem(el)%desc%putmapP(ll)+1-1)*edge%nlyr) = v(1 ,np,k,tl,el)
-              ll = swest+3*max_corner_elem+i-1; if(elem(el)%desc%putmapP(ll) /= -1) edge%buf(kptr+k+(elem(el)%desc%putmapP(ll)+1-1)*edge%nlyr) = v(np,np,k,tl,el)
+              ll = swest+0*max_corner_elem+i-1; if(edge%putmap(ll,el) /= -1) edge%buf(edge%putmap(ll,el)+max_corner_elem*(kptr+k-1)+i) = v(1 ,1 ,k,tl,el)
+              ll = swest+1*max_corner_elem+i-1; if(edge%putmap(ll,el) /= -1) edge%buf(edge%putmap(ll,el)+max_corner_elem*(kptr+k-1)+i) = v(np,1 ,k,tl,el)
+              ll = swest+2*max_corner_elem+i-1; if(edge%putmap(ll,el) /= -1) edge%buf(edge%putmap(ll,el)+max_corner_elem*(kptr+k-1)+i) = v(1 ,np,k,tl,el)
+              ll = swest+3*max_corner_elem+i-1; if(edge%putmap(ll,el) /= -1) edge%buf(edge%putmap(ll,el)+max_corner_elem*(kptr+k-1)+i) = v(np,np,k,tl,el)
             endif
           enddo
         enddo
@@ -106,13 +248,13 @@ contains
     call t_stopf('edge_pack')
   end subroutine edgeVpack
 
-  subroutine edgeVunpack(edgebuf,nlyr,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+  subroutine edgeVunpack(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     use perf_mod, only: t_startf, t_stopf
     use element_mod   , only : Element_t
-    real(kind=real_kind)  , intent(in   ) :: edgebuf(nlyr,nbuf)
-    integer               , intent(in   ) :: nlyr
+    use edgetype_mod  , only : EdgeBuffer_t
+    type(EdgeBuffer_t)    , intent(in   ) :: edge
     integer               , intent(in   ) :: vlyr
     real(kind=real_kind)  , intent(inout) :: v(np,np,vlyr,tdim,nelemd)
     integer               , intent(in   ) :: kptr
@@ -123,7 +265,7 @@ contains
     integer, parameter :: kchunk = 32
     real(kind=real_kind) :: vtmp(np,np,kchunk)
     call t_startf('edge_unpack')
-    !$acc parallel loop gang collapse(2) present(v,edgebuf) private(vtmp)
+    !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
         !$acc cache(vtmp)
@@ -146,10 +288,10 @@ contains
           do i = 1 , np
             k = (kc-1)*kchunk+kk
             if (k <= vlyr) then
-              vtmp(i ,1 ,kk) = vtmp(i ,1 ,kk) + edgebuf(kptr+k,elem(el)%desc%getmapP(south)+i)
-              vtmp(np,i ,kk) = vtmp(np,i ,kk) + edgebuf(kptr+k,elem(el)%desc%getmapP(east )+i)
-              vtmp(i ,np,kk) = vtmp(i ,np,kk) + edgebuf(kptr+k,elem(el)%desc%getmapP(north)+i)
-              vtmp(1 ,i ,kk) = vtmp(1 ,i ,kk) + edgebuf(kptr+k,elem(el)%desc%getmapP(west )+i)
+              vtmp(i ,1 ,kk) = vtmp(i ,1 ,kk) + edge%buf(edge%getmap(south,el)+np*(kptr+k-1)+i)
+              vtmp(np,i ,kk) = vtmp(np,i ,kk) + edge%buf(edge%getmap(east ,el)+np*(kptr+k-1)+i)
+              vtmp(i ,np,kk) = vtmp(i ,np,kk) + edge%buf(edge%getmap(north,el)+np*(kptr+k-1)+i)
+              vtmp(1 ,i ,kk) = vtmp(1 ,i ,kk) + edge%buf(edge%getmap(west ,el)+np*(kptr+k-1)+i)
             endif
           enddo
         enddo
@@ -158,10 +300,10 @@ contains
           do i = 1 , max_corner_elem
             k = (kc-1)*kchunk+kk
             if (k <= vlyr) then
-              ll = swest+0*max_corner_elem+i-1; if(elem(el)%desc%getmapP(ll) /= -1) vtmp(1  ,1 ,kk) = vtmp(1 ,1 ,kk) + edgebuf(kptr+k,elem(el)%desc%getmapP(ll)+1)
-              ll = swest+1*max_corner_elem+i-1; if(elem(el)%desc%getmapP(ll) /= -1) vtmp(np ,1 ,kk) = vtmp(np,1 ,kk) + edgebuf(kptr+k,elem(el)%desc%getmapP(ll)+1)
-              ll = swest+2*max_corner_elem+i-1; if(elem(el)%desc%getmapP(ll) /= -1) vtmp(1  ,np,kk) = vtmp(1 ,np,kk) + edgebuf(kptr+k,elem(el)%desc%getmapP(ll)+1)
-              ll = swest+3*max_corner_elem+i-1; if(elem(el)%desc%getmapP(ll) /= -1) vtmp(np ,np,kk) = vtmp(np,np,kk) + edgebuf(kptr+k,elem(el)%desc%getmapP(ll)+1)
+              ll = swest+0*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(1  ,1 ,kk) = vtmp(1 ,1 ,kk) + edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i)
+              ll = swest+1*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(np ,1 ,kk) = vtmp(np,1 ,kk) + edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i)
+              ll = swest+2*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(1  ,np,kk) = vtmp(1 ,np,kk) + edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i)
+              ll = swest+3*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(np ,np,kk) = vtmp(np,np,kk) + edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i)
             endif
           enddo
         enddo
@@ -183,13 +325,13 @@ contains
     call t_stopf('edge_unpack')
   end subroutine edgeVunpack
 
-  subroutine edgeVunpackMin(edgebuf,nlyr,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+  subroutine edgeVunpackMin(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     use perf_mod, only: t_startf, t_stopf
     use element_mod   , only : Element_t
-    real(kind=real_kind)  , intent(in   ) :: edgebuf(nlyr,nbuf)
-    integer               , intent(in   ) :: nlyr
+    use edgetype_mod  , only : EdgeBuffer_t
+    type(EdgeBuffer_t)    , intent(in   ) :: edge
     integer               , intent(in   ) :: vlyr
     real(kind=real_kind)  , intent(inout) :: v(np,np,vlyr,tdim,nelemd)
     integer               , intent(in   ) :: kptr
@@ -200,7 +342,7 @@ contains
     integer, parameter :: kchunk = 32
     real(kind=real_kind) :: vtmp(np,np,kchunk)
     call t_startf('edge_unpack_min')
-    !$acc parallel loop gang collapse(2) present(v,edgebuf) private(vtmp)
+    !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
         !$acc cache(vtmp)
@@ -223,10 +365,10 @@ contains
           do i = 1 , np
             k = (kc-1)*kchunk+kk
             if (k <= vlyr) then
-              vtmp(i ,1 ,kk) = min( vtmp(i ,1 ,kk) , edgebuf(kptr+k,elem(el)%desc%getmapP(south)+i) )
-              vtmp(np,i ,kk) = min( vtmp(np,i ,kk) , edgebuf(kptr+k,elem(el)%desc%getmapP(east )+i) )
-              vtmp(i ,np,kk) = min( vtmp(i ,np,kk) , edgebuf(kptr+k,elem(el)%desc%getmapP(north)+i) )
-              vtmp(1 ,i ,kk) = min( vtmp(1 ,i ,kk) , edgebuf(kptr+k,elem(el)%desc%getmapP(west )+i) )
+              vtmp(i ,1 ,kk) = min( vtmp(i ,1 ,kk) , edge%buf(edge%getmap(south,el)+np*(kptr+k-1)+i) )
+              vtmp(np,i ,kk) = min( vtmp(np,i ,kk) , edge%buf(edge%getmap(east ,el)+np*(kptr+k-1)+i) )
+              vtmp(i ,np,kk) = min( vtmp(i ,np,kk) , edge%buf(edge%getmap(north,el)+np*(kptr+k-1)+i) )
+              vtmp(1 ,i ,kk) = min( vtmp(1 ,i ,kk) , edge%buf(edge%getmap(west ,el)+np*(kptr+k-1)+i) )
             endif
           enddo
         enddo
@@ -235,10 +377,10 @@ contains
           do i = 1 , max_corner_elem
             k = (kc-1)*kchunk+kk
             if (k <= vlyr) then
-              ll = swest+0*max_corner_elem+i-1; if(elem(el)%desc%getmapP(ll) /= -1) vtmp(1  ,1 ,kk) = min( vtmp(1 ,1 ,kk) , edgebuf(kptr+k,elem(el)%desc%getmapP(ll)+1) )
-              ll = swest+1*max_corner_elem+i-1; if(elem(el)%desc%getmapP(ll) /= -1) vtmp(np ,1 ,kk) = min( vtmp(np,1 ,kk) , edgebuf(kptr+k,elem(el)%desc%getmapP(ll)+1) )
-              ll = swest+2*max_corner_elem+i-1; if(elem(el)%desc%getmapP(ll) /= -1) vtmp(1  ,np,kk) = min( vtmp(1 ,np,kk) , edgebuf(kptr+k,elem(el)%desc%getmapP(ll)+1) )
-              ll = swest+3*max_corner_elem+i-1; if(elem(el)%desc%getmapP(ll) /= -1) vtmp(np ,np,kk) = min( vtmp(np,np,kk) , edgebuf(kptr+k,elem(el)%desc%getmapP(ll)+1) )
+              ll = swest+0*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(1  ,1 ,kk) = min( vtmp(1 ,1 ,kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+1*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(np ,1 ,kk) = min( vtmp(np,1 ,kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+2*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(1  ,np,kk) = min( vtmp(1 ,np,kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+3*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(np ,np,kk) = min( vtmp(np,np,kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
             endif
           enddo
         enddo
@@ -260,13 +402,13 @@ contains
     call t_stopf('edge_unpack_min')
   end subroutine edgeVunpackMin
 
-  subroutine edgeVunpackMax(edgebuf,nlyr,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+  subroutine edgeVunpackMax(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     use perf_mod, only: t_startf, t_stopf
     use element_mod   , only : Element_t
-    real(kind=real_kind)  , intent(in   ) :: edgebuf(nlyr,nbuf)
-    integer               , intent(in   ) :: nlyr
+    use edgetype_mod  , only : EdgeBuffer_t
+    type(EdgeBuffer_t)    , intent(in   ) :: edge
     integer               , intent(in   ) :: vlyr
     real(kind=real_kind)  , intent(inout) :: v(np,np,vlyr,tdim,nelemd)
     integer               , intent(in   ) :: kptr
@@ -277,7 +419,7 @@ contains
     integer, parameter :: kchunk = 32
     real(kind=real_kind) :: vtmp(np,np,kchunk)
     call t_startf('edge_unpack_max')
-    !$acc parallel loop gang collapse(2) present(v,edgebuf) private(vtmp)
+    !$acc parallel loop gang collapse(2) present(v,edge) private(vtmp)
     do el = nets , nete
       do kc = 1 , vlyr/kchunk+1
         !$acc cache(vtmp)
@@ -300,10 +442,10 @@ contains
           do i = 1 , np
             k = (kc-1)*kchunk+kk
             if (k <= vlyr) then
-              vtmp(i ,1 ,kk) = max( vtmp(i ,1 ,kk) , edgebuf(kptr+k,elem(el)%desc%getmapP(south)+i) )
-              vtmp(np,i ,kk) = max( vtmp(np,i ,kk) , edgebuf(kptr+k,elem(el)%desc%getmapP(east )+i) )
-              vtmp(i ,np,kk) = max( vtmp(i ,np,kk) , edgebuf(kptr+k,elem(el)%desc%getmapP(north)+i) )
-              vtmp(1 ,i ,kk) = max( vtmp(1 ,i ,kk) , edgebuf(kptr+k,elem(el)%desc%getmapP(west )+i) )
+              vtmp(i ,1 ,kk) = max( vtmp(i ,1 ,kk) , edge%buf(edge%getmap(south,el)+np*(kptr+k-1)+i) )
+              vtmp(np,i ,kk) = max( vtmp(np,i ,kk) , edge%buf(edge%getmap(east ,el)+np*(kptr+k-1)+i) )
+              vtmp(i ,np,kk) = max( vtmp(i ,np,kk) , edge%buf(edge%getmap(north,el)+np*(kptr+k-1)+i) )
+              vtmp(1 ,i ,kk) = max( vtmp(1 ,i ,kk) , edge%buf(edge%getmap(west ,el)+np*(kptr+k-1)+i) )
             endif
           enddo
         enddo
@@ -312,10 +454,10 @@ contains
           do i = 1 , max_corner_elem
             k = (kc-1)*kchunk+kk
             if (k <= vlyr) then
-              ll = swest+0*max_corner_elem+i-1; if(elem(el)%desc%getmapP(ll) /= -1) vtmp(1  ,1 ,kk) = max( vtmp(1 ,1 ,kk) , edgebuf(kptr+k,elem(el)%desc%getmapP(ll)+1) )
-              ll = swest+1*max_corner_elem+i-1; if(elem(el)%desc%getmapP(ll) /= -1) vtmp(np ,1 ,kk) = max( vtmp(np,1 ,kk) , edgebuf(kptr+k,elem(el)%desc%getmapP(ll)+1) )
-              ll = swest+2*max_corner_elem+i-1; if(elem(el)%desc%getmapP(ll) /= -1) vtmp(1  ,np,kk) = max( vtmp(1 ,np,kk) , edgebuf(kptr+k,elem(el)%desc%getmapP(ll)+1) )
-              ll = swest+3*max_corner_elem+i-1; if(elem(el)%desc%getmapP(ll) /= -1) vtmp(np ,np,kk) = max( vtmp(np,np,kk) , edgebuf(kptr+k,elem(el)%desc%getmapP(ll)+1) )
+              ll = swest+0*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(1  ,1 ,kk) = max( vtmp(1 ,1 ,kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+1*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(np ,1 ,kk) = max( vtmp(np,1 ,kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+2*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(1  ,np,kk) = max( vtmp(1 ,np,kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
+              ll = swest+3*max_corner_elem+i-1; if(edge%getmap(ll,el) /= -1) vtmp(np ,np,kk) = max( vtmp(np,np,kk) , edge%buf(edge%getmap(ll,el)+max_corner_elem*(kptr+k-1)+i) )
             endif
           enddo
         enddo

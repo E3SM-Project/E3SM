@@ -21,7 +21,7 @@ module prim_advection_openacc_mod
   real(kind=real_kind), allocatable :: Qtens(:,:,:,:,:)
   real(kind=real_kind), allocatable :: grads_tracer(:,:,:,:,:,:)
   real(kind=real_kind), allocatable :: dp_star(:,:,:,:)
-  type (EdgeBuffer_t) :: edgeAdv, edgeAdvQ3, edgeAdv_p1, edgeAdvQ2, edgeAdv1, edgeAdv3
+  type (EdgeBuffer_t) :: edgeAdv, edgeAdvQ3, edgeAdv_p1, edgeAdvQ2, edgeAdv1, edgeAdv3, edgeMinMax
   integer,parameter :: DSSeta = 1
   integer,parameter :: DSSomega = 2
   integer,parameter :: DSSdiv_vdp_ave = 3
@@ -187,19 +187,20 @@ contains
   end subroutine prim_advec_tracers_remap_rk2
 
   subroutine prim_advec_init1(par, elem, n_domains)
-    use edge_mod    , only: initEdgeBuffer
+    use edge_mod    , only: initEdgeBuffer,initEdgeSBuffer
     use parallel_mod, only: parallel_t
     use element_mod , only: element_t
     implicit none
     type(parallel_t), intent(in) :: par
     integer         , intent(in) :: n_domains
     type (element_t), intent(in) :: elem(:)
-    call initEdgeBuffer(par,edgeAdvQ3 ,elem(:),max(nlev,qsize*nlev*3))
-    call initEdgeBuffer(par,edgeAdv1  ,elem(:),nlev                  )
-    call initEdgeBuffer(par,edgeAdv   ,elem(:),qsize*nlev            )
-    call initEdgeBuffer(par,edgeAdv_p1,elem(:),qsize*nlev + nlev     ) 
-    call initEdgeBuffer(par,edgeAdvQ2 ,elem(:),qsize*nlev*2          )
-    call initEdgeBuffer(par,edgeAdv3  ,elem(:),nlev*3                )
+    call initEdgeBuffer (par,edgeAdvQ3 ,elem(:),max(nlev,qsize*nlev*3))
+    call initEdgeBuffer (par,edgeAdv1  ,elem(:),nlev                  )
+    call initEdgeBuffer (par,edgeAdv   ,elem(:),qsize*nlev            )
+    call initEdgeBuffer (par,edgeAdv_p1,elem(:),qsize*nlev + nlev     ) 
+    call initEdgeBuffer (par,edgeAdvQ2 ,elem(:),qsize*nlev*2          )
+    call initEdgeBuffer (par,edgeAdv3  ,elem(:),nlev*3                )
+    call initEdgeSBuffer(par,edgeMinMax,elem(:),qsize*nlev*2          )
 
     allocate(dp_star(np,np,nlev,nelemd))
     allocate(qmin(nlev,qsize,nelemd))
@@ -247,9 +248,15 @@ contains
 
     !$acc enter data pcreate(qmin,qmax,qtens_biharmonic,grads_tracer,dp_star,qtens)
     !$acc enter data pcopyin(dp0)
-    !$acc enter data pcopyin(edgeAdvQ3,edgeAdv1,edgeAdv,edgeAdv_p1,edgeAdvQ2)
-    !$acc enter data pcopyin(edgeAdvQ3%buf,edgeAdv1%buf,edgeAdv%buf,edgeAdv_p1%buf,edgeAdvQ2%buf)
-    !$acc enter data pcopyin(edgeAdvQ3%receive,edgeAdv1%receive,edgeAdv%receive,edgeAdv_p1%receive,edgeAdvQ2%receive)
+    !$acc enter data pcopyin(edgeMinMax         ,edgeAdvQ3         ,edgeAdv1,edgeAdv,edgeAdv_p1,edgeAdvQ2)
+    !$acc enter data pcopyin(edgeMinMax%buf     ,edgeAdvQ3%buf     ,edgeAdv1%buf,edgeAdv%buf,edgeAdv_p1%buf,edgeAdvQ2%buf)
+    !$acc enter data pcopyin(edgeMinMax%receive ,edgeAdvQ3%receive ,edgeAdv1%receive,edgeAdv%receive,edgeAdv_p1%receive,edgeAdvQ2%receive)
+    !$acc enter data pcopyin(edgeMinMax%putmap  ,edgeAdvQ3%putmap  ,edgeAdv1%putmap,edgeAdv%putmap,edgeAdv_p1%putmap,edgeAdvQ2%putmap)
+    !$acc enter data pcopyin(edgeMinMax%getmap  ,edgeAdvQ3%getmap  ,edgeAdv1%getmap,edgeAdv%getmap,edgeAdv_p1%getmap,edgeAdvQ2%getmap)
+    !$acc enter data pcopyin(edgeMinMax%reverse ,edgeAdvQ3%reverse ,edgeAdv1%reverse,edgeAdv%reverse,edgeAdv_p1%reverse,edgeAdvQ2%reverse)
+    !$acc enter data pcopyin(edgeMinMax%tag     ,edgeAdvQ3%tag     ,edgeAdv1%tag,edgeAdv%tag,edgeAdv_p1%tag,edgeAdvQ2%tag)
+    !$acc enter data pcopyin(edgeMinMax%srequest,edgeAdvQ3%srequest,edgeAdv1%srequest,edgeAdv%srequest,edgeAdv_p1%srequest,edgeAdvQ2%srequest)
+    !$acc enter data pcopyin(edgeMinMax%rrequest,edgeAdvQ3%rrequest,edgeAdv1%rrequest,edgeAdv%rrequest,edgeAdv_p1%rrequest,edgeAdvQ2%rrequest)
 
     !$omp end master
     !$omp barrier
@@ -361,7 +368,7 @@ contains
       
       !$omp barrier
       !$omp master
-      call edgeVunpack(edgeAdv%buf,edgeAdv%nlyr,state_qdp,qsize*nlev,0,elem(:),1,nelemd,2,nt_qdp)
+      call edgeVunpack(edgeAdv,state_qdp,qsize*nlev,0,elem(:),1,nelemd,2,nt_qdp)
       call t_stopf('ah_scalar_PEU')
       !$acc parallel loop gang vector collapse(5) present(state_qdp,elem(:))
       do ie = 1 , nelemd
@@ -433,7 +440,7 @@ contains
   use perf_mod              , only: t_startf, t_stopf
   use element_mod           , only: derived_divdp_proj, state_qdp, derived_vn0, derived_divdp
   use derivative_openacc_mod, only: divergence_sphere
-  use viscosity_openacc_mod , only: biharmonic_wk_scalar_minmax, neighbor_minmax
+  use viscosity_openacc_mod , only: biharmonic_wk_scalar, neighbor_minmax
   use edge_openacc_mod      , only: edgeVpack, edgeVunpack
   use bndry_openacc_mod     , only: bndry_exchangeV => bndry_exchangeV_finer_overlap
   implicit none
@@ -535,7 +542,7 @@ contains
     enddo
     !$omp end master
     !$omp barrier
-    if ( rhs_multiplier == 0 ) call neighbor_minmax(elem,hybrid,edgeAdvQ2,1,nelemd,qmin,qmax)
+    if ( rhs_multiplier == 0 ) call neighbor_minmax(elem,hybrid,edgeMinMax,1,nelemd,qmin,qmax)
     ! compute biharmonic mixing term
     if ( rhs_multiplier == 2 ) then
       rhs_viss = 3
@@ -562,7 +569,8 @@ contains
         !$omp end master
         !$omp barrier
       endif
-      call biharmonic_wk_scalar_minmax( elem , qtens_biharmonic , grads_tracer , deriv , edgeAdvQ3 , hybrid , 1 , nelemd , qmin , qmax )
+      call biharmonic_wk_scalar( elem , qtens_biharmonic , grads_tracer , deriv , edgeAdv , hybrid , 1 , nelemd )
+      call neighbor_minmax( elem , hybrid , edgeMinMax , 1 , nelemd , qmin , qmax )
       !$omp barrier
       !$omp master
       !$acc parallel loop gang vector collapse(4) present(qtens_biharmonic,dp0,elem(:))
@@ -681,7 +689,7 @@ contains
 
   !$omp barrier
   !$omp master
-  call edgeVunpack( edgeAdv%buf , edgeAdv%nlyr , state_Qdp , nlev*qsize , 0 , elem(:) , 1 , nelemd , 2 , np1_qdp )
+  call edgeVunpack( edgeAdv , state_Qdp , nlev*qsize , 0 , elem(:) , 1 , nelemd , 2 , np1_qdp )
   call t_stopf('eus_PEU')
   !$acc parallel loop gang vector collapse(4) present(state_Qdp,elem(:))
   do ie = 1 , nelemd

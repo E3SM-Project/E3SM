@@ -1,6 +1,6 @@
 #!/bin/tcsh -f
 #PBS -A STF006
-#PBS -l nodes=12
+#PBS -l nodes=3
 #PBS -l walltime=0:10:00
 #PBS -N baroclinic
 #PBS -j oe
@@ -42,7 +42,7 @@ set exe    = preqx.cpu
   module rm cray-netcdf-hdf5parallel
   module rm cray-parallel-netcdf
     module load PrgEnv-pgi
-    module switch pgi pgi/15.7.lustre
+    module switch pgi pgi/15.10.lustre
     module switch cray-mpich cray-mpich/7.2.2
     module switch cray-libsci cray-libsci/13.0.4
     module load esmf/5.2.0rp2
