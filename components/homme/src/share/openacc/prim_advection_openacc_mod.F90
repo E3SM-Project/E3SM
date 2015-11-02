@@ -26,6 +26,7 @@ module prim_advection_openacc_mod
   integer,parameter :: DSSomega = 2
   integer,parameter :: DSSdiv_vdp_ave = 3
   integer,parameter :: DSSno_var = -1
+  real(kind=real_kind), allocatable :: data_pack(:,:,:,:), data_pack2(:,:,:,:)
 
   public :: Prim_Advec_Tracers_remap
   public :: prim_advec_init1
@@ -34,34 +35,70 @@ module prim_advection_openacc_mod
 
 contains
 
-  subroutine copy_qdp1_h2d( elem , tl )
+  subroutine copy_qdp1_h2d( elem , tl , nets , nete )
     use element_mod, only: element_t, state_qdp
+    use perf_mod, only: t_startf, t_stopf
     implicit none
     type(element_t), intent(in) :: elem(:)
-    integer        , intent(in) :: tl
-    integer :: ie
+    integer        , intent(in) :: tl, nets , nete
+    integer :: ie, k, j, i
+    call t_startf('qdp1_pcie')
+    do ie = nets , nete
+      data_pack(:,:,:,ie) = state_qdp(:,:,:,1,tl,ie)
+    enddo
     !$omp barrier
     !$omp master
+!   do ie = 1 , nelemd
+!     !$acc update device(state_qdp(:,:,:,1,tl,ie))
+!   enddo
+    !$acc update device(data_pack) async(1)
+    !$acc parallel loop gang vector collapse(4) async(1) present(state_qdp,data_pack)
     do ie = 1 , nelemd
-      !$acc update device(state_qdp(:,:,:,1,tl,ie))
+      do k = 1 , nlev
+        do j = 1 , np
+          do i = 1 , np
+            state_qdp(i,j,k,1,tl,ie) = data_pack(i,j,k,ie)
+          enddo
+        enddo
+      enddo
     enddo
+    !$acc wait(1)
     !$omp end master
     !$omp barrier
+    call t_stopf('qdp1_pcie')
   end subroutine copy_qdp1_h2d
 
-  subroutine copy_qdp1_d2h( elem , tl )
+  subroutine copy_qdp1_d2h( elem , tl , nets , nete )
     use element_mod, only: element_t, state_qdp
+    use perf_mod, only: t_startf, t_stopf
     implicit none
     type(element_t), intent(in) :: elem(:)
-    integer        , intent(in) :: tl
-    integer :: ie
+    integer        , intent(in) :: tl, nets , nete
+    integer :: ie, k, j, i
+    call t_startf('qdp1_pcie')
     !$omp barrier
     !$omp master
+    !$acc parallel loop gang vector collapse(4) async(1) present(state_qdp,data_pack)
     do ie = 1 , nelemd
-      !$acc update host(state_qdp(:,:,:,1,tl,ie))
+      do k = 1 , nlev
+        do j = 1 , np
+          do i = 1 , np
+            data_pack(i,j,k,ie) = state_qdp(i,j,k,1,tl,ie)
+          enddo
+        enddo
+      enddo
     enddo
+    !$acc update host(data_pack) async(1)
+    !$acc wait(1)
+!   do ie = 1 , nelemd
+!     !$acc update host(state_qdp(:,:,:,1,tl,ie))
+!   enddo
     !$omp end master
     !$omp barrier
+    do ie = nets , nete
+      state_qdp(:,:,:,1,tl,ie) = data_pack(:,:,:,ie)
+    enddo
+    call t_stopf('qdp1_pcie')
   end subroutine copy_qdp1_d2h
 
   subroutine Prim_Advec_Tracers_remap( elem , deriv , hvcoord , flt , hybrid , dt , tl , nets , nete )
@@ -210,6 +247,8 @@ contains
     allocate(grads_tracer(np,np,2,nlev,qsize,nelemd))
     allocate(dp0(nlev))
     allocate(deriv(0:n_domains-1))
+    allocate(data_pack(np,np,nlev,nelemd))
+    allocate(data_pack2(np,np,nlev,nelemd))
   end subroutine prim_advec_init1
 
   subroutine Prim_Advec_Init_deriv(hybrid,fvm_corners, fvm_points, spelt_refnep)
@@ -246,7 +285,7 @@ contains
       dp0(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
     enddo
 
-    !$acc enter data pcreate(qmin,qmax,qtens_biharmonic,grads_tracer,dp_star,qtens)
+    !$acc enter data pcreate(qmin,qmax,qtens_biharmonic,grads_tracer,dp_star,qtens,data_pack,data_pack2)
     !$acc enter data pcopyin(dp0)
     !$acc enter data pcopyin(edgeMinMax         ,edgeAdvQ3         ,edgeAdv1,edgeAdv,edgeAdv_p1,edgeAdvQ2)
     !$acc enter data pcopyin(edgeMinMax%buf     ,edgeAdvQ3%buf     ,edgeAdv1%buf,edgeAdv%buf,edgeAdv_p1%buf,edgeAdvQ2%buf)
@@ -386,7 +425,7 @@ contains
       !$omp end master
       !$omp barrier
     enddo
-    call copy_qdp1_d2h( elem , nt_qdp )
+    call copy_qdp1_d2h( elem , nt_qdp , nets , nete )
     call t_stopf('advance_hypervis_scalar')
   end subroutine advance_hypervis_scalar
 
@@ -414,7 +453,7 @@ contains
     enddo
     !$omp end master
     !$omp barrier
-    if (limiter_option == 8) call copy_qdp1_d2h( elem , np1_qdp )
+    if (limiter_option == 8) call copy_qdp1_d2h( elem , np1_qdp , nets , nete )
     
   end subroutine qdp_time_avg
 
@@ -460,12 +499,27 @@ contains
   integer :: ie,q,i,j,k
   integer :: rhs_viss
 
+
+  do ie = nets , nete
+    data_pack (:,:,:,ie) = elem(ie)%derived%dpdiss_ave
+    data_pack2(:,:,:,ie) = elem(ie)%derived%dp       
+  enddo
   !$omp barrier
   !$omp master
-  !$acc update device(derived_divdp_proj,derived_vn0)
+  !$acc update device(data_pack,data_pack2) async(1)
+  !$acc update device(derived_divdp_proj,derived_vn0) async(2)
+  !$acc parallel loop gang vector collapse(4) present(data_pack,elem) async(1)
   do ie = 1 , nelemd
-    !$acc update device(elem(ie)%derived%dpdiss_ave,elem(ie)%derived%dp)
+    do k = 1 , nlev
+      do j = 1 , np
+        do i = 1 , np
+          elem(ie)%derived%dpdiss_ave(i,j,k) = data_pack (i,j,k,ie)
+          elem(ie)%derived%dp        (i,j,k) = data_pack2(i,j,k,ie)
+        enddo
+      enddo
+    enddo
   enddo
+  !$acc wait
   !$omp end master
   !$omp barrier
 
@@ -597,15 +651,33 @@ contains
   !   2D Advection step
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! Compute velocity used to advance Qdp 
+
+  if ( limiter_option == 8 .and. nu_p > 0 .and. rhs_viss /= 0 ) then
+    do ie = nets , nete
+      data_pack(:,:,:,ie) = elem(ie)%derived%dpdiss_biharmonic
+    enddo
+    !$omp barrier
+    !$omp master
+    !$acc update device(data_pack) async(1)
+    !$acc parallel loop gang vector collapse(4) present(elem,data_pack) async(1)
+    do ie = 1 , nelemd
+      do k = 1 , nlev
+        do j = 1 , np
+          do i = 1 , np
+            elem(ie)%derived%dpdiss_biharmonic(i,j,k) = data_pack(i,j,k,ie)
+          enddo
+        enddo
+      enddo
+    enddo
+    !$acc wait(1)
+    !$omp end master
+    !$omp barrier
+  endif
+
   !$omp barrier
   !$omp master
   if (limiter_option == 8) then
     !$acc update device(derived_divdp)
-    if ( nu_p > 0 .and. rhs_viss /= 0 ) then
-      do ie = 1 , nelemd
-        !$acc update device(elem(ie)%derived%dpdiss_biharmonic)
-      enddo
-    endif
   endif
   !$acc parallel loop gang vector collapse(4) present(elem(:),derived_divdp_proj,derived_vn0,dp_star,derived_divdp,grads_tracer,state_qdp) &
   !$acc& private(dp,vstar)
@@ -868,7 +940,7 @@ contains
     integer              , intent(in   ) :: nets , nete , n0_qdp
     integer :: ie , k
     real(kind=real_kind), pointer, dimension(:,:,:) :: DSSvar
-    call copy_qdp1_h2d(elem,n0_qdp)
+    call copy_qdp1_h2d(elem,n0_qdp,nets,nete)
     !$omp barrier
     !$omp master
     !$acc update device(derived_vn0)
