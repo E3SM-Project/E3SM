@@ -428,7 +428,8 @@ class CreateTest(object):
                 status  = (TEST_PENDING_STATUS if test_phase == RUN_PHASE and not self._no_batch else TEST_PASS_STATUS) if success else TEST_FAIL_STATUS
 
                 with self._mutex:
-                    self._update_test_status(test_name, test_phase, status)
+                    if (status != TEST_PENDING_STATUS):
+                        self._update_test_status(test_name, test_phase, status)
                     self._proc_pool += procs_needed
                     self._handle_test_status_file(test_name, test_phase, success)
 
