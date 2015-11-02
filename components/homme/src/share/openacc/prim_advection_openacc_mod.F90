@@ -770,140 +770,70 @@ contains
     real (kind=real_kind), intent(inout) :: maxp  (      nlev,qsize,nelemd)
     real (kind=real_kind), intent(in   ) :: dpmass(np*np,nlev      ,nelemd)
     integer :: k1, k, i, j, iter, i1, i2, q, ie
-    integer :: whois_neg(np*np), whois_pos(np*np), neg_counter, pos_counter
-    real (kind=real_kind) :: addmass, weightssum, mass, mintmp, maxtmp
+    real (kind=real_kind) :: addmass, weightssum, mass, mintmp, maxtmp, sumc
     real (kind=real_kind) :: x(np*np),c(np*np)
-    real (kind=real_kind) :: al_neg(np*np), al_pos(np*np), howmuch
-    real (kind=real_kind) :: tol_limiter = 1e-15
-    integer, parameter :: maxiter = 5
+    integer :: maxiter = np*np-1
+    real (kind=real_kind) :: tol_limiter = 5e-14
 
-    !$acc parallel loop gang vector collapse(3) present(ptens,elem(:),minp,maxp,dpmass) private(c,x,whois_neg,whois_pos,al_neg,al_pos) vector_length(512)
+    !$acc parallel loop gang vector collapse(3) present(ptens,elem(:),minp,maxp,dpmass) private(c,x,mintmp,maxtmp,addmass,weightssum,mass,sumc) vector_length(512)
     do ie = 1 , nelemd
       do q = 1 , qsize
         do k = 1 , nlev
-          !$acc cache(c,x,whois_neg,whois_pos,al_neg,al_pos)
+          !$acc cache(c,x)
           do k1 = 1 , np*np
             i = modulo(k1-1,np)+1
             j = (k1-1)/np+1
             c(k1) = elem(ie)%spheremp(i,j) * dpmass(k1,k,ie)
             x(k1) = ptens(k1,k,q,ie) / dpmass(k1,k,ie)
           enddo
-
-          mass = sum(c*x)
+          sumc = sum(c)
           mintmp = minp(k,q,ie)
           maxtmp = maxp(k,q,ie)
-
+          if (sumc <= 0 ) CYCLE   ! this should never happen, but if it does, dont limit
+          mass=sum(c*x)
           ! relax constraints to ensure limiter has a solution:
-          ! This is only needed if runnign with the SSP CFL>1 or 
+          ! This is only needed if runnign with the SSP CFL>1 or
           ! due to roundoff errors
-          if( (mass / sum(c)) < mintmp ) then
-            mintmp = mass / sum(c)
-          endif
-          if( (mass / sum(c)) > maxtmp ) then
-            maxtmp = mass / sum(c)
-          endif
-
-          addmass = 0.0d0
-          pos_counter = 0;
-          neg_counter = 0;
-          
-          ! apply constraints, compute change in mass caused by constraints 
-          do k1 = 1 , np*np
-            if ( ( x(k1) >= maxtmp ) ) then
-              addmass = addmass + ( x(k1) - maxtmp ) * c(k1)
-              x(k1) = maxtmp
-              whois_pos(k1) = -1
-            else
-              pos_counter = pos_counter+1;
-              whois_pos(pos_counter) = k1;
-            endif
-            if ( ( x(k1) <= mintmp ) ) then
-              addmass = addmass - ( mintmp - x(k1) ) * c(k1)
-              x(k1) = mintmp
-              whois_neg(k1) = -1
-            else
-              neg_counter = neg_counter+1;
-              whois_neg(neg_counter) = k1;
-            endif
-          enddo
-          
-          ! iterate to find field that satifies constraints and is l2-norm closest to original 
-          weightssum = 0.0d0
-          if ( addmass > 0 ) then
-            do i2 = 1 , maxIter
-              weightssum = 0.0
-              do k1 = 1 , pos_counter
-                i1 = whois_pos(k1)
-                weightssum = weightssum + c(i1)
-                al_pos(i1) = maxtmp - x(i1)
-              enddo
-              
-              if( ( pos_counter > 0 ) .and. ( addmass > tol_limiter * abs(mass) ) ) then
-                do k1 = 1 , pos_counter
-                  i1 = whois_pos(k1)
-                  howmuch = addmass / weightssum
-                  if ( howmuch > al_pos(i1) ) then
-                    howmuch = al_pos(i1)
-                    whois_pos(k1) = -1
-                  endif
-                  addmass = addmass - howmuch * c(i1)
-                  weightssum = weightssum - c(i1)
-                  x(i1) = x(i1) + howmuch
-                enddo
-                !now sort whois_pos and get a new number for pos_counter
-                !here neg_counter and whois_neg serve as temp vars
-                neg_counter = pos_counter
-                whois_neg = whois_pos
-                whois_pos = -1
-                pos_counter = 0
-                do k1 = 1 , neg_counter
-                  if ( whois_neg(k1) .ne. -1 ) then
-                    pos_counter = pos_counter+1
-                    whois_pos(pos_counter) = whois_neg(k1)
-                  endif
-                enddo
-              else
-                exit
+          if( mass < mintmp*sumc ) mintmp = mass / sumc
+          if( mass > maxtmp*sumc ) maxtmp = mass / sumc
+          do iter=1,maxiter
+            addmass=0.0d0
+            do k1=1,np*np
+              if((x(k1)>maxtmp)) then
+                addmass=addmass+(x(k1)-maxtmp)*c(k1)
+                x(k1)=maxtmp
               endif
-            enddo
-          else
-             do i2 = 1 , maxIter
-               weightssum = 0.0
-               do k1 = 1 , neg_counter
-                 i1 = whois_neg(k1)
-                 weightssum = weightssum + c(i1)
-                 al_neg(i1) = x(i1) - mintmp
-               enddo
-               
-               if ( ( neg_counter > 0 ) .and. ( (-addmass) > tol_limiter * abs(mass) ) ) then
-                 do k1 = 1 , neg_counter
-                   i1 = whois_neg(k1)
-                   howmuch = -addmass / weightssum
-                   if ( howmuch > al_neg(i1) ) then
-                     howmuch = al_neg(i1)
-                     whois_neg(k1) = -1
-                   endif
-                   addmass = addmass + howmuch * c(i1)
-                   weightssum = weightssum - c(i1)
-                   x(i1) = x(i1) - howmuch
-                 enddo
-                 !now sort whois_pos and get a new number for pos_counter
-                 !here pos_counter and whois_pos serve as temp vars
-                 pos_counter = neg_counter
-                 whois_pos = whois_neg
-                 whois_neg = -1
-                 neg_counter = 0
-                 do k1 = 1 , pos_counter
-                   if ( whois_pos(k1) .ne. -1 ) then
-                     neg_counter = neg_counter+1
-                     whois_neg(neg_counter) = whois_pos(k1)
-                   endif
-                 enddo
-               else
-                 exit
-               endif
-             enddo
-          endif
+              if((x(k1)<mintmp)) then
+                addmass=addmass-(mintmp-x(k1))*c(k1)
+                x(k1)=mintmp
+              endif
+            enddo !k1
+            if(abs(addmass)<=tol_limiter*abs(mass)) exit
+            weightssum=0.0d0
+            if(addmass>0)then
+              do k1=1,np*np
+                if(x(k1)<maxtmp)then
+                  weightssum=weightssum+c(k1)
+                endif
+              enddo !k1
+              do k1=1,np*np
+                if(x(k1)<maxtmp)then
+                  x(k1)=x(k1)+addmass/weightssum
+                endif
+              enddo
+            else
+              do k1=1,np*np
+                if(x(k1)>mintmp)then
+                  weightssum=weightssum+c(k1)
+                endif
+              enddo
+              do k1=1,np*np
+                if(x(k1)>mintmp)then
+                  x(k1)=x(k1)+addmass/weightssum
+                endif
+              enddo
+            endif
+          enddo!end of iteration
           minp(k,q,ie) = mintmp
           maxp(k,q,ie) = maxtmp
           ptens(:,k,q,ie) = x * dpmass(:,k,ie)
