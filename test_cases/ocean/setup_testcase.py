@@ -15,6 +15,24 @@ except ImportError:
 	from utils import defaultdict
 
 # *** Namelist setup functions *** #{{{
+def generate_namelist_files(config_file, case_path, template_namelist, templates_path):#{{{
+	config_tree = ET.parse(config_file)
+	config_root = config_tree.getroot()
+
+	for namelists in config_root.iter('namelist'):
+		# -- Generate namelist
+		namelist_file = '%s/%s'%(case_path, namelists.attrib['name'])
+
+		namelist_dict = defaultdict(lambda : defaultdict(list))
+		ingest_namelist(template_namelist, namelist_dict)
+		configure_namelist(namelist_dict, templates_path, namelists)
+		write_namelist(namelist_dict, namelist_file, template_namelist)
+		del namelist_dict
+
+	del config_root
+	del config_tree
+#}}}
+
 def ingest_namelist(namelist_file, namelist_dict):#{{{
 	namelistfile = open(namelist_file, 'r+')
 	lines = namelistfile.readlines()
@@ -50,36 +68,18 @@ def apply_namelist_template(namelist_dict, template_name, template_path):#{{{
 			set_namelist_val(namelist_dict, option_name, option_val)
 #}}}
 
-def configure_namelist(namelist_dict, template_path, config_file):#{{{
-	config_tree = ET.parse(config_file)
-	config_root = config_tree.getroot()
-
-
-	for namelists in config_root.iter('namelist'):
-		for child in namelists.iter('*'):
-			if child.tag == 'option':
-				option_name = child.attrib['name']
-				option_val = child.text
-				set_namelist_val(namelist_dict, option_name, option_val)
-			elif child.tag == 'template':
-				apply_namelist_template(namelist_dict, child.attrib['name'], template_path)
+def configure_namelist(namelist_dict, template_path, namelist_tag):#{{{
+	for child in namelist_tag.iter('*'):
+		if child.tag == 'option':
+			option_name = child.attrib['name']
+			option_val = child.text
+			set_namelist_val(namelist_dict, option_name, option_val)
+		elif child.tag == 'template':
+			apply_namelist_template(namelist_dict, child.attrib['name'], template_path)
 	
-	del config_root
-	del config_tree
 #}}}
 
-def write_namelist(namelist_dict, config_file, infilename, init_path):#{{{
-	config_tree = ET.parse(config_file)
-	config_root = config_tree.getroot()
-
-	outfilename = ''
-
-	for namelist in config_root.findall('namelist'):
-		outfilename = "%s/%s"%(init_path, namelist.attrib['name'])
-
-	del config_tree
-	del config_root
-
+def write_namelist(namelist_dict, outfilename, infilename):#{{{
 	in_namelist = open(infilename, 'r')
 	lines = in_namelist.readlines()
 	in_namelist.close()
@@ -115,6 +115,23 @@ def write_namelist(namelist_dict, config_file, infilename, init_path):#{{{
 #}}}
 
 # *** Streams setup functions *** #{{{
+
+def generate_streams_files(config_file, case_path, template_streams, templates_path):#{{{
+	config_tree = ET.parse(config_file)
+	config_root = config_tree.getroot()
+
+	for streams in config_root.iter('streams'):
+		streams_filename = '%s/%s'%(case_path, streams.attrib['name'])
+
+		streams_tree = ET.parse(template_streams)
+		streams_root = streams_tree.getroot()
+
+		configure_streams_file(streams_root, templates_path, streams)
+		write_streams_file(streams_root, config_file, streams_filename, '%s'%(case_path))
+
+		del streams_root
+		del streams_tree
+#}}}
 
 def flush_all_streams(streams):#{{{
 	for stream in streams.findall('stream'):
@@ -207,37 +224,27 @@ def apply_stream_template(streams_file, template_name, template_path):#{{{
 	del template_root
 #}}}
 
-def configure_streams_file(streams_file, template_path, config_file):#{{{
-	config_tree = ET.parse(config_file)
-	config_root = config_tree.getroot()
+def configure_streams_file(streams_file, template_path, streams_tag):#{{{
+	keep_mode = streams_tag.attrib['keep']
 
-	for streams in config_root.findall('streams'):
-		keep_mode = streams.attrib['keep']
+	if ( keep_mode.strip() == 'immutable' ):
+		flush_mutable_streams(streams_file)
+	if ( keep_mode.strip() == 'none' ):
+		flush_all_streams(streams_file)
+	if ( keep_mode.strip() == 'mutable' ):
+		flush_immutable_streams(streams_file)
 
-		if ( keep_mode.strip() == 'immutable' ):
-			flush_mutable_streams(streams_file)
-		if ( keep_mode.strip() == 'none' ):
-			flush_all_streams(streams_file)
-		if ( keep_mode.strip() == 'mutable' ):
-			flush_immutable_streams(streams_file)
+	for template in streams_tag.findall('template'):
+		template_name = template.attrib['name']
+		apply_stream_template(streams_file, template_name, template_path)
 
-		for template in streams.findall('template'):
-			template_name = template.attrib['name']
-			apply_stream_template(streams_file, template_name, template_path)
-
-		for stream in streams.findall('stream'):
-			modify_stream_definition(streams_file, stream)
-
-	del config_root
-	del config_tree
+	for stream in streams_tag.findall('stream'):
+		modify_stream_definition(streams_file, stream)
 #}}}
 
-def write_streams_file(streams, config_file, init_path):#{{{
+def write_streams_file(streams, config_file, filename, init_path):#{{{
 	config_tree = ET.parse(config_file)
 	config_root = config_tree.getroot()
-
-	for stream in config_root.findall('streams'):
-		filename = "%s/%s"%(init_path, stream.attrib['name'])
 
 	stream_file = open(filename, 'w')
 
@@ -539,29 +546,18 @@ for file in os.listdir('%s'%(base_path)):
 			print "Error. Configuration file %s is requires paths for streams and namelist files for %s mode."%(args.config_file, case_mode)
 			quit(1)
 		else:
-			case_streams = config.get("streams", case_mode)
-			case_namelist = config.get("namelists", case_mode)
+			case_streams_template = config.get("streams", case_mode)
+			case_namelist_template = config.get("namelists", case_mode)
+			
+		generate_namelist_files(config_file, case_path, case_namelist_template, template_path)
 
-		namelist_dict = defaultdict(lambda : defaultdict(list))
-
-		ingest_namelist(case_namelist, namelist_dict)
-		configure_namelist(namelist_dict, template_path, config_file)
-		write_namelist(namelist_dict, config_file, case_namelist, '%s'%(case_path))
-
-		streams_tree = ET.parse(case_streams)
-		streams_root = streams_tree.getroot()
-		configure_streams_file(streams_root, template_path, config_file)
-		write_streams_file(streams_root, config_file, '%s'%(case_path))
+		generate_streams_files(config_file, case_path, case_streams_template, template_path)
 
 		add_links(config_file, args, config)
 
 		get_defined_files(config_file, '%s'%(case_path), args, config)
 
 		generate_run_scripts(config_file, '%s'%(case_path))
-
-		del namelist_dict
-		del streams_tree
-		del streams_root
 
 		print " -- Set up case: %s/%s"%(base_path, case_dir)
 
