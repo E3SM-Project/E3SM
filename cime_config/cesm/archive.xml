@@ -2,47 +2,47 @@
   <comp_archive_spec name="cam">
     <rootdir>atm</rootdir>
     <files>
-      <file_extension suffix=".log\.+">
+      <file_extension suffix=".log\..*">
 	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".r\.+">
+      <file_extension suffix=".r\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rs\.+">
+      <file_extension suffix=".rs\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".ra\.+">
+      <file_extension suffix=".ra\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rh0\.+">
+      <file_extension suffix=".rh0\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rh1\.+">
+      <file_extension suffix=".rh1\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rh2\.+">
+      <file_extension suffix=".rh2\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rh3\.+">
+      <file_extension suffix=".rh3\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rh4\.+">
+      <file_extension suffix=".rh4\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rh5\.+">
+      <file_extension suffix=".rh5\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".i\.+">
+      <file_extension suffix=".i\..*">
 	<subdir>init</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -54,35 +54,35 @@
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h2\.+">      
+      <file_extension suffix=".h2\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h3\.+">      
+      <file_extension suffix=".h3\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h4\.+">      
+      <file_extension suffix=".h4\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h5\.+">      
+      <file_extension suffix=".h5\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h6\.+">      
+      <file_extension suffix=".h6\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h7\.+">      
+      <file_extension suffix=".h7\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h8\.+">      
+      <file_extension suffix=".h8\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".hs\.+">      
+      <file_extension suffix=".hs\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -92,15 +92,15 @@
   <comp_archive_spec name="datm">
     <rootdir>atm</rootdir>
     <files>
-      <file_extension suffix=".r\.+">
+      <file_extension suffix=".r\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rs\.+">
+      <file_extension suffix=".rs\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h\.+">      
+      <file_extension suffix=".h\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -110,39 +110,39 @@
   <comp_archive_spec name="clm[0-9]+">
     <rootdir>lnd</rootdir>
     <files>
-      <file_extension suffix=".log\.+">
+      <file_extension suffix=".log\..*">
 	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".r\.+">
+      <file_extension suffix=".r\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rh0\.+">
+      <file_extension suffix=".rh0\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rh1\.+">
+      <file_extension suffix=".rh1\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rh2\.+">
+      <file_extension suffix=".rh2\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rh3\.+">
+      <file_extension suffix=".rh3\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rh4\.+">
+      <file_extension suffix=".rh4\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rh5\.+">
+      <file_extension suffix=".rh5\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".i\.+">
+      <file_extension suffix=".i\..*">
 	<subdir>init</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -150,27 +150,27 @@
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h1\.+">      
+      <file_extension suffix=".h1\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h2\.+">      
+      <file_extension suffix=".h2\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h3\.+">      
+      <file_extension suffix=".h3\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h4\.+">      
+      <file_extension suffix=".h4\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h5\.+">      
+      <file_extension suffix=".h5\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".hv\.+">      
+      <file_extension suffix=".hv\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -180,15 +180,15 @@
   <comp_archive_spec name="dlnd">
     <rootdir>lnd</rootdir>
     <files>
-      <file_extension suffix=".r\.+">
+      <file_extension suffix=".r\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rs\.+">
+      <file_extension suffix=".rs\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h\.+">      
+      <file_extension suffix=".h\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -198,43 +198,43 @@
   <comp_archive_spec name="rtm">
     <rootdir>rof</rootdir>
     <files>
-      <file_extension suffix=".log\.+">
+      <file_extension suffix=".log\..*">
 	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".r\.+">
+      <file_extension suffix=".r\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rh0\.+">
+      <file_extension suffix=".rh0\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rh1\.+">
+      <file_extension suffix=".rh1\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rh2\.+">
+      <file_extension suffix=".rh2\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rh3\.+">
+      <file_extension suffix=".rh3\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h0\.+">      
+      <file_extension suffix=".h0\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h1\.+">      
+      <file_extension suffix=".h1\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h2\.+">      
+      <file_extension suffix=".h2\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h3\.+">      
+      <file_extension suffix=".h3\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -244,7 +244,7 @@
   <comp_archive_spec name="cice">
     <rootdir>ice</rootdir>
     <files>
-      <file_extension suffix=".log\.+">
+      <file_extension suffix=".log\..*">
 	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
@@ -252,7 +252,7 @@
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".i\.+">
+      <file_extension suffix=".i\..*">
 	<subdir>init</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
@@ -266,15 +266,15 @@
   <comp_archive_spec name="dice">
     <rootdir>ice</rootdir>
     <files>
-      <file_extension suffix=".r\.+">
+      <file_extension suffix=".r\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rs\.+">
+      <file_extension suffix=".rs\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h\.+">      
+      <file_extension suffix=".h\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -285,11 +285,11 @@
   <comp_archive_spec name="pop">
     <rootdir>ocn</rootdir>
     <files>
-      <file_extension suffix=".log\.+">
+      <file_extension suffix=".log\..*">
 	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".r\.+\.hdr">
+      <file_extension suffix=".r\..*\.hdr">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -313,7 +313,7 @@
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rh\.+\.hdr">
+      <file_extension suffix=".rh\..*\.hdr">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -325,7 +325,7 @@
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".ro\.+">
+      <file_extension suffix=".ro\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -333,15 +333,15 @@
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h.\d{4}-\d{2}\.+">      
+      <file_extension suffix=".h.\d{4}-\d{2}\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h.nday1\.+">      
+      <file_extension suffix=".h.nday1\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h.nyear1\.+">      
+      <file_extension suffix=".h.nyear1\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
@@ -355,15 +355,15 @@
   <comp_archive_spec name="docn">
     <rootdir>ocn</rootdir>
     <files>
-      <file_extension suffix=".r\.+">
+      <file_extension suffix=".r\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rs\.+">
+      <file_extension suffix=".rs\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h\.+">      
+      <file_extension suffix=".h\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
@@ -373,7 +373,7 @@
   <comp_archive_spec name="cism">
     <rootdir>glc</rootdir>
     <files>
-      <file_extension suffix=".log\.+">
+      <file_extension suffix=".log\..*">
 	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
@@ -385,7 +385,7 @@
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".i\.+">
+      <file_extension suffix=".i\..*">
 	<subdir>init</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
@@ -399,7 +399,7 @@
   <comp_archive_spec name="ww3">
     <rootdir>wav</rootdir>
     <files>
-      <file_extension suffix=".log\.+">
+      <file_extension suffix=".log\..*">
 	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
@@ -407,11 +407,11 @@
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".i\.+">
+      <file_extension suffix=".i\..*">
 	<subdir>init</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h\.+">      
+      <file_extension suffix=".h\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
@@ -421,15 +421,15 @@
   <comp_archive_spec name="dwav">
     <rootdir>wav</rootdir>
     <files>
-      <file_extension suffix=".r\.+">
+      <file_extension suffix=".r\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".rs\.+">
+      <file_extension suffix=".rs\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h\.+">      
+      <file_extension suffix=".h\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
@@ -439,15 +439,7 @@
   <comp_archive_spec name="dart"> 
     <rootdir>dart</rootdir>
     <files>
-      <file_extension suffix="assimilate_\w{3}/\w*/\w*dart_log\.+">
-	<subdir>logs</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
-      </file_extension>
-      <file_extension suffix="assimilate_\w{3}/\w*/output\.+">
-	<subdir>logs</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
-      </file_extension>
-      <file_extension suffix="\w*dart_log\.+">
+      <file_extension suffix="\w*dart_log\..*">
 	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
@@ -455,23 +447,23 @@
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix="\w*Prior_Diag\.+.nc">
+      <file_extension suffix="\w*Prior_Diag\..*.nc">
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix="\w*Posterior_Diag\.+.nc">
+      <file_extension suffix="\w*Posterior_Diag\..*.nc">
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix="\w*obs_seq\.+.out">
+      <file_extension suffix="\w*obs_seq\..*.out">
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix="\w*obs_seq\.+.final">
+      <file_extension suffix="\w*obs_seq\..*.final">
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix="\w*obs_seq\.+.perfect">
+      <file_extension suffix="\w*obs_seq\..*.perfect">
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
@@ -505,15 +497,15 @@
   <comp_archive_spec name="cpl"> 
     <rootdir>cpl</rootdir>
     <files>
-      <file_extension suffix="cpl.log\.+">
+      <file_extension suffix="cpl.log\..*">
 	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".r\.+">
+      <file_extension suffix=".r\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix="cesm*.log\.+">
+      <file_extension suffix="cesm*.log\..*">
 	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>

@@ -126,10 +126,6 @@ ENV_ARCHIVE.XML SCHEMA AND DOCUMENT TYPE DEFINITION (DTD)
         $\DOUT_S_ROOT location.  These may not correspond to the model
         component name.
 
-        <multi_instance>[string] (true|false)</multi_instance> 
-        True or false if model component supports multiple instances
-	in a given run directory.
-
         <files> <file_extension suffix="[regular expression string]">
 	Perl regular expression specification for "globbing" filenames
 	for matching. Run the command "\$CASEROOT/st_archive -input"
@@ -217,7 +213,7 @@ OPTIONS
 
     -undo move all the files from the \$ARCHIVE_DIR_LOCKED back into the \$RUNDIR
 
-    - loglevel - set level of output from this script DEBUG, INFO, WARN, ERROR, FATAL (default INFO)
+    -loglevel - set level of output from this script DEBUG, INFO, WARN, ERROR, FATAL (default INFO)
 
 EOF
 #" added per for emacs perl mode parsing
@@ -382,7 +378,6 @@ EOF
 
 	my $compname = $comp->getAttribute('name');
 	my $rootdir = $comp->findvalue('./rootdir');
-#	my $multi = $comp->findvalue('./multi_instance');
 	my $ninst = getcompninst($compname);
 	my $multi = "false";
 	if($ninst > 1){
@@ -498,9 +493,14 @@ sub getcompninst
 {
     my ($comp) = @_;
 
-    $comp = substr($comp,0,3);
+    # the comp variable corresponds to the name attribute of the comp_archive_spec
+    # in the env_archive.xml. Only need the first word of the comp and not the
+    # regex punctuation
+    $comp = (split('\[',$comp))[0];
 
-
+    # this loop is only executed the first time the subroutine is called
+    # in order to load the compmap hash with all the actual model names
+    # for a given component
     if(! defined $compmap){
 	foreach( qw(ATM CPL OCN WAV GLC ICE ROF LND )){
 	    if($comp = $config{"COMP_".$_}){
@@ -508,6 +508,8 @@ sub getcompninst
 	    }
 	}
     }
+
+    # with the compmap hash, look for the NINST value in the global config hash
     my $ninstname = "NINST_".$compmap->{$comp};
     $logger->debug("Looking for $ninstname in config");
     if(defined $config{$ninstname}){
@@ -515,10 +517,7 @@ sub getcompninst
     }else{
 	return 1;
     }
-
-
 }
-
 
 
 #-----------------------------------------------------------------------------------------------
@@ -719,15 +718,10 @@ sub archiveProcess
 	$str =~ s/\s+$//;
 	my $compname = $str;
 	my $rootdir = $xmlcomp->findvalue('./rootdir');
-#	my $multi = $xmlcomp->findvalue('./multi_instance');
 #
 # get the number of instances running for each component that supports multiple instances
 #
-	my $multi = "false";
 	my $ninst = getcompninst($compname);
-	if($ninst > 1){
-	    $multi = "true";
-	}
 #
 # loop through the file extensions for this component to copy over files with those matching extensions to the ARCHIVE_DIR locations
 #
