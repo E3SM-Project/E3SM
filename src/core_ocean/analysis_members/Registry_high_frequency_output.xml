@@ -30,6 +30,12 @@
 		<var name="relativeVorticityAt100m" type="real" dimensions="nCells Time" units="s^{-1}"
 			description="relative vorticity at cell centers at a depth of approximately 100 m"
 		/>
+                <var name="divergenceAt100m" type="real" dimensions="nCells Time" units="s^{-1}"
+                        description="divergence at cell centers at a depth of approximately 100 m"
+                />
+                <var name="relativeVorticityVertexAt100m" type="real" dimensions="nVertices Time" units="s^{-1}"
+                        description="relative vorticity at cell vertices at a depth of approximately 100 m"
+                />
 		<var_array name="activeTracersAtSurface" type="real" dimensions="nCells Time">
 			<var name="temperatureAtSurface" array_group="activeTracersAtSurface" units="^\circ C" name_in_code="temperatureAtSurface"
 				description="sea surface temperature"
