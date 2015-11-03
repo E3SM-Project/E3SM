@@ -2,24 +2,19 @@
 <config case="test" mode="forward">
 
 	<get_file hash="vbz0hlsy84" dest="base_mesh.nc">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mpas_ocean/test_cases/staging" file_name="mesh.QU.642.151008.nc"/>	
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database" file_name="mesh.QU.642.151008.nc"/>	
 		<mirror protocol="local" path_name="mesh_database" file_name="mesh.QU.642.151008.nc"/>
 	</get_file>
 
 	<get_file dest="graph.info">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mpas_ocean/test_cases/staging" file_name="graph.QU.642.151008.info"/>	
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database" file_name="graph.QU.642.151008.info"/>	
 		<mirror protocol="local" path_name="mesh_database" file_name="graph.QU.642.151008.info"/>
 	</get_file>
 
 	<add_executable source="model" dest="test_model"/>
 	<add_executable source="metis" dest="metis"/>
 
-	<namelist name="namelist.test">
-		<option name="config_init_configuration">'baroclinic_channel'</option>
-		<option name="config_vert_levels">1</option>
-		<option name="config_ocean_run_mode">'init'</option>
-		<option name="config_write_cull_cell_mask">.true.</option>
-	</namelist>
+	<namelist name="namelist.test"/>
 
 	<streams name="streams.test" keep="immutable">
 		<stream name="input">
