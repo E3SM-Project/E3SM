@@ -257,16 +257,18 @@ end subroutine macrop_driver_readnl
 
   ! Sungsu added for use in the macrophysics
 
-    tke_idx      = pbuf_get_index('tke')
-    qtl_flx_idx  = pbuf_get_index('qtl_flx')
-    qti_flx_idx  = pbuf_get_index('qti_flx')
-    cmfr_det_idx = pbuf_get_index('cmfr_det')
-    qlr_det_idx  = pbuf_get_index('qlr_det')
-    qir_det_idx  = pbuf_get_index('qir_det')
-    rqcr_l_idx   = pbuf_get_index('rqcr_l')
-    rqcr_i_idx   = pbuf_get_index('rqcr_i')
-    rncr_l_idx   = pbuf_get_index('rncr_l')
-    rncr_i_idx   = pbuf_get_index('rncr_i')
+    if( shallow_scheme .eq. 'UNICON' ) then
+        tke_idx      = pbuf_get_index('tke')
+        qtl_flx_idx  = pbuf_get_index('qtl_flx')
+        qti_flx_idx  = pbuf_get_index('qti_flx')
+        cmfr_det_idx = pbuf_get_index('cmfr_det')
+        qlr_det_idx  = pbuf_get_index('qlr_det')
+        qir_det_idx  = pbuf_get_index('qir_det')
+        rqcr_l_idx   = pbuf_get_index('rqcr_l')
+        rqcr_i_idx   = pbuf_get_index('rqcr_i')
+        rncr_l_idx   = pbuf_get_index('rncr_l')
+        rncr_i_idx   = pbuf_get_index('rncr_i')
+    endif
 
   ! Sungsu added for use in the macrophysics
 
