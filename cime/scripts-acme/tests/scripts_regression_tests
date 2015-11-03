@@ -368,8 +368,7 @@ class TestJenkinsGenericJob(unittest.TestCase):
         self._thread_error      = None
         self._unset_proxy       = setup_proxy()
         self._baseline_name     = "fake_testing_only_%s" % acme_util.get_utc_timestamp()
-        self._fake_test_id      = "fakest_testing_only_%s" % acme_util.get_utc_timestamp()
-        self._testroot          = acme_util.get_machine_info()[4]
+        self._testroot          = acme_util.get_machine_info("CESMSCRATCHROOT")
         self._jenkins_root      = os.path.join(self._testroot, "jenkins")
 
         # wait_for_tests could blow away our dart config, need to back it up
@@ -391,9 +390,11 @@ class TestJenkinsGenericJob(unittest.TestCase):
             shutil.rmtree(baselines)
 
         for root in [self._testroot, self._jenkins_root]:
-            for test_id in [self._baseline_name, self._fake_test_id]:
-                for leftover in glob.glob(os.path.join(root, "%s*" % test_id)):
+            for test_id in ["master", self._baseline_name]:
+                for leftover in glob.glob(os.path.join(root, "*%s*/" % test_id)):
                     shutil.rmtree(leftover)
+                for leftover in glob.glob(os.path.join(root, "*%s*" % test_id)):
+                    os.remove(leftover)
 
         if (os.path.exists(DART_BACKUP)):
             shutil.move(DART_BACKUP, DART_CONFIG)
@@ -422,27 +423,29 @@ class TestJenkinsGenericJob(unittest.TestCase):
                          "job did not cleanup successfully")
 
     ###########################################################################
-    def assert_num_leftovers(self, test_id=self._baseline_name):
+    def assert_num_leftovers(self, test_id=None):
     ###########################################################################
         # There should only be two directories matching the test_id in both
         # the testroot (bld/run dump area) and jenkins root
+        if (test_id is None):
+            test_id = self._baseline_name
         num_tests_in_tiny = len(update_acme_tests.get_test_suite("acme_tiny"))
 
-        self.assertEqual(num_tests_in_tiny, len(glob.glob("%s/%s*" % (self._jenkins_root, test_id))),
-                         msg="Wrong number of leftover directories in %s" % self._jenkins_root)
+        jenkins_dirs = glob.glob("%s/*%s*/" % (self._jenkins_root, test_id))
+        scratch_dirs = glob.glob("%s/*%s*/" % (self._testroot, test_id))
 
-        self.assertEqual(num_tests_in_tiny, len(glob.glob("%s/%s*" % (self._testroot, self._test_id))),
-                         msg="Wrong number of leftover directories in %s" % self._test_root)
+        self.assertEqual(num_tests_in_tiny, len(jenkins_dirs),
+                         msg="Wrong number of leftover directories in %s, expected %d, see %s" % \
+                             (self._jenkins_root, num_tests_in_tiny, jenkins_dirs))
+
+        self.assertEqual(num_tests_in_tiny, len(scratch_dirs),
+                         msg="Wrong number of leftover directories in %s, expected %d, see %s" % \
+                             (self._testroot, num_tests_in_tiny, scratch_dirs))
 
     ###########################################################################
     def test_jenkins_generic_job(self):
     ###########################################################################
         # Unfortunately, this test is very long-running
-
-        # Make some fake results to simulate a run of a different branch
-        for idx in xrange(len(update_acme_tests.get_test_suite("acme_tiny"))):
-            os.makedirs(os.path.join(self._testroot, self._fake_test_id, "_%d" % idx))
-            os.makedirs(os.path.join(self._jenkins_root, self._fake_test_id, "_%d" % idx))
 
         # Generate fresh baselines so that this test is not impacted by
         # unresolved diffs
@@ -452,9 +455,7 @@ class TestJenkinsGenericJob(unittest.TestCase):
         build_name = "jenkins_generic_job_pass_%s" % acme_util.get_utc_timestamp()
         self.simple_test(True, "-p ACME_test -b %s -d -c %s --cdash-build-group=Nightly" % (self._baseline_name, build_name))
         self.assert_num_leftovers()
-
         self.assert_no_sentinel()
-        self.assert_num_leftovers(test_id=self._fake_test_id)
         assert_dashboard_has_build(self, build_name)
 
     ###########################################################################

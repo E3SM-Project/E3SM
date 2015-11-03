@@ -521,8 +521,8 @@ def get_machine_info(items, machine=None, user=None, project=None, raw=False):
     >>> parse_config_machines()
     >>> get_machine_info("EXEROOT", machine="melvin") == os.path.join(os.environ["HOME"], "acme/scratch/$CASE/bld")
     True
-    >>> get_machine_info(["NODENAME_REGEX", "TESTS"], machine="melvin")
-    ['melvin', 'acme_developer']
+    >>> get_machine_info(["NODENAME_REGEX", "TESTS"], machine="skybridge")
+    ['skybridge-login', 'acme_integration']
     """
     parse_config_machines()
 
