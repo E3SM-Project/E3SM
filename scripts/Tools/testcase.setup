@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #-----------------------------------------------------------------------------------------------
-# testcase_setup - create the $caseroot/case.test script 
+# testcase.setup - create the $caseroot/case.test script 
 #-----------------------------------------------------------------------------------------------
 
 use strict;
@@ -23,7 +23,7 @@ SYNOPSIS
      Creates batch test script (case.test) for target machine
 
 USAGE
-     testcase_setup [options]
+     testcase.setup [options]
 OPTIONS
      -help [or -h]        Print usage to STDOUT.
      -caseroot            Full pathname of directory that contains this script
@@ -272,7 +272,7 @@ END_BEGIN
 print $testfh $testcase_begin;
 
 my $file = "${cimeroot}/scripts/Testing/Testcases/${testcase}" . "_script";
-(-f $file) or $logger->logdie ("ERROR testcase_setup: $file does not exist"); 
+(-f $file) or $logger->logdie ("ERROR testcase.setup: $file does not exist"); 
 
 $sysmod = "cat ${cimeroot}/scripts/Testing/Testcases/${testcase}" . "_script" . " >> $testfile";
 system($sysmod) == 0 or $logger->logdie ("ERROR: $sysmod failed: $?");
