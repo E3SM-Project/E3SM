@@ -171,6 +171,10 @@ module pio_nf
   end interface
 
 contains
+
+!>
+!! @defgroup PIO_inq_dimid PIO_inq_dimid
+!<
 !>
 !! @public 
 !! @ingroup PIO_inq_dimid
@@ -182,13 +186,18 @@ contains
 !! @retval ierr @copydoc error_return
 !!
 !! Note that we do not want internal error checking for this function.
-!>
+!<
   integer function inq_dimid_desc(File                      ,name,dimid) result(ierr)
     type (File_desc_t)                                      , intent(in) :: File
     character(len=*)                                        , intent(in)   :: name
     integer                                                 , intent(out)           :: dimid        !dimension ID
     ierr = inq_dimid_id(file%fh                             ,name,dimid)
   end function inq_dimid_desc
+!>
+!! @public 
+!! @ingroup PIO_inq_dimid
+!! @brief Returns the netcdf dimension id for the name.
+!<
   integer function inq_dimid_id(ncid                        ,name,dimid) result(ierr)
     integer                                                 , intent(in) :: ncid
     character(len=*)                                        , intent(in)   :: name
@@ -206,7 +215,9 @@ contains
     dimid=dimid+1
   end function inq_dimid_id
 
-
+!>
+!! @defgroup PIO_inquire_dimension PIO_inquire_dimension
+!<
 !>
 !! @public 
 !! @ingroup PIO_inquire_dimension
@@ -217,7 +228,7 @@ contains
 !! @param name : The name of the dimension.
 !! @param len : The length of the dimesions name.
 !! @retval ierr @copydoc error_return
-!>
+!<
   integer function inquire_dimension_desc(file              , dimid, name, len) result(ierr)
     type(file_desc_T)                                       ,             intent(in)  :: file
     integer                                                 ,                       intent( in) :: dimid
@@ -225,7 +236,11 @@ contains
     integer                                                 ,             optional, intent(out) :: len
     ierr = Inquire_dimension_id(file%fh                     , dimid, name, len)
   end function inquire_dimension_desc
-
+!>
+!! @public 
+!! @ingroup PIO_inquire_dimension
+!! @brief  Get information about a particular dimension in netcdf file 
+!<
   integer function inquire_dimension_id(ncid                , dimid, name, len) result(ierr)
     integer                                                 , intent(in) :: ncid
     integer                                                 ,                       intent( in) :: dimid
@@ -241,21 +256,41 @@ contains
   end function inquire_dimension_id
 
 
-
+!>
+!! @defgroup PIO_inq_dimlen PIO_inq_dimlen
+!<
+!>
+!! @public 
+!! @ingroup PIO_inq_dimlen
+!! @brief  Get information about the length of a particular dimension in netcdf file 
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param dimid : The netcdf dimension ID.
+!! @param len : The length of the dimesion.
+!! @retval ierr @copydoc error_return
+!<
   integer function inq_dimlen_desc(File                     , dimid, len) result(ierr)
     type(file_desc_t)                                       , intent(in) :: File
     integer                                                 , intent(in) :: dimid
     integer                                                 , intent(out) :: len
     ierr = inq_dimlen_id(file%fh                            ,dimid,len)
   end function inq_dimlen_desc
-
+!>
+!! @public 
+!! @ingroup PIO_inq_dimlen
+!! @brief  Get information about the length of a particular dimension in netcdf file 
+!<
   integer function inq_dimlen_desc_long(File                , dimid, len) result(ierr)
     type(file_desc_t)                                       , intent(in) :: File
     integer                                                 , intent(in) :: dimid
     integer(PIO_OFFSET_KIND)                                , intent(out) :: len
     ierr = inq_dimlen_id_long(file%fh                       ,dimid,len)
   end function inq_dimlen_desc_long
-
+!>
+!! @public 
+!! @ingroup PIO_inq_dimlen
+!! @brief  Get information about the length of a particular dimension in netcdf file 
+!<
   integer function inq_dimlen_id(ncid                       , dimid, len) result(ierr)
     integer                                                 , intent(in) :: ncid
     integer                                                 , intent(in) :: dimid
@@ -264,7 +299,11 @@ contains
     ierr = inq_dimlen_id_long(ncid                          ,dimid,llen)
     len = int(llen)
   end function inq_dimlen_id
-
+!>
+!! @public 
+!! @ingroup PIO_inq_dimlen
+!! @brief  Get information about the length of a particular dimension in netcdf file 
+!<
   integer function inq_dimlen_id_long(ncid                  , dimid, len) result(ierr)
     integer                                                 , intent(in) :: ncid
     integer                                                 , intent(in) :: dimid
@@ -282,13 +321,31 @@ contains
     ierr = PIOc_inq_dimlen(ncid                             ,dimid-1,len)
   end function inq_dimlen_id_long
 
+
+!>
+!! @defgroup PIO_inq_dimname PIO_inq_dimname
+!<
+!>
+!! @public 
+!! @ingroup PIO_inq_dimname
+!! @brief  Get information about the name of of a dimension. 
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param dimid : The netcdf dimension ID.
+!! @param len : The length of the dimesion.
+!! @retval ierr @copydoc error_return
+!<
   integer function inq_dimname_desc(File                    , dimid, name) result(ierr)
     type(file_desc_t)                                       , intent(in) :: File
     integer                                                 , intent(in) :: dimid
     character(len=*)                                        , intent(out) :: name
     ierr = inq_dimname_id(file%fh                           ,dimid,name)
   end function inq_dimname_desc
-
+!>
+!! @public 
+!! @ingroup PIO_inq_dimname
+!! @brief  Get information about the name of of a dimension. 
+!<
   integer function inq_dimname_id(ncid                      , dimid, name) result(ierr)
     integer                                                 , intent(in) :: ncid
     integer                                                 , intent(in) :: dimid
@@ -310,12 +367,28 @@ contains
   end function inq_dimname_id
 
 
-
+!>
+!! @defgroup PIO_inq_ndims PIO_inq_ndims
+!<
+!>
+!! @public 
+!! @ingroup PIO_inq_ndims
+!! @brief  Get information about the number of dimensions of a file or group.
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param ndims : The number of dimensions in the file.
+!! @retval ierr @copydoc error_return
+!<
   integer function inq_ndims_desc(File                      , ndims) result(ierr)
     type (File_desc_t)                                      , intent(inout) :: File
     integer                                                 , intent(out) :: ndims
     ierr = inq_ndims_id(file%fh                             , ndims)
   end function inq_ndims_desc
+!>
+!! @public 
+!! @ingroup PIO_inq_ndims
+!! @brief  Get information about the number of dimensions of a file or group.
+!<
   integer function inq_ndims_id(ncid                        , ndims) result(ierr)
     integer                                                 , intent(in) :: ncid
     integer                                                 , intent(out) :: ndims
@@ -329,11 +402,29 @@ contains
     end interface
     ierr = PIOc_inq_ndims(ncid                              ,ndims)
   end function inq_ndims_id
+
+!>
+!! @defgroup PIO_inq_nvars PIO_inq_nvars
+!<
+!>
+!! @public 
+!! @ingroup PIO_inq_nvars
+!! @brief  Get information about the number of variables in a file or group.
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param nvars : The number of variables in the file.
+!! @retval ierr @copydoc error_return
+!<
   integer function inq_nvars_desc(File                      , nvars) result(ierr)
     type (File_desc_t)                                      , intent(inout) :: File
     integer                                                 , intent(out) :: nvars
     ierr = inq_nvars_id(file%fh                             , nvars)
   end function inq_nvars_desc
+!>
+!! @public 
+!! @ingroup PIO_inq_nvars
+!! @brief  Get information about the number of variables in a file or group.
+!<
   integer function inq_nvars_id(ncid                        , nvars) result(ierr)
     integer                                                 , intent(in) :: ncid
     integer                                                 , intent(out) :: nvars
@@ -348,11 +439,28 @@ contains
     ierr = PIOc_inq_nvars(ncid                              ,nvars)
   end function inq_nvars_id
 
+!>
+!! @defgroup PIO_inq_natts PIO_inq_natts
+!<
+!>
+!! @public 
+!! @ingroup PIO_inq_natts
+!! @brief  Get information about the number of global attributes in a file or group.
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param natts : The number of attributes in the file.
+!! @retval ierr @copydoc error_return
+!<
   integer function inq_natts_desc(File                      , natts) result(ierr)
     type (File_desc_t)                                      , intent(inout) :: File
     integer                                                 , intent(out) :: natts
     ierr = inq_natts_id(file%fh                             , natts)
   end function inq_natts_desc
+!>
+!! @public 
+!! @ingroup PIO_inq_natts
+!! @brief  Get information about the number of global attributes in a file or group.
+!<
   integer function inq_natts_id(ncid                        , natts) result(ierr)
     integer                                                 , intent(in) :: ncid
     integer                                                 , intent(out) :: natts
@@ -366,11 +474,29 @@ contains
     end interface
     ierr = PIOc_inq_natts(ncid                              ,natts)
   end function inq_natts_id
+
+!>
+!! @defgroup PIO_inq_unlimdim PIO_inq_unlimdim
+!<
+!>
+!! @public 
+!! @ingroup PIO_inq_unlimdm
+!! @brief  Get information about the unlimited dimension in a file.
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param unlimdim : Pointer to the unlimted dimension. If no unlimited dimension, this will be -1.
+!! @retval ierr @copydoc error_return
+!<
   integer function inq_unlimdim_desc(File                   , unlimdim) result(ierr)
     type (File_desc_t)                                      , intent(inout) :: File
     integer                                                 , intent(out) :: unlimdim
     ierr = inq_unlimdim_id(file%fh                          , unlimdim)
   end function inq_unlimdim_desc
+!>
+!! @public 
+!! @ingroup PIO_inq_unlimdm
+!! @brief  Get information about the unlimited dimension in a file.
+!<
   integer function inq_unlimdim_id(ncid                     ,unlimdim) result(ierr)
     integer                                                 , intent(in) :: ncid
     integer                                                 , intent(out) :: unlimdim
@@ -386,7 +512,9 @@ contains
     unlimdim=unlimdim+1
   end function inq_unlimdim_id
 
-
+!>
+!! @defgroup PIO_inquire PIO_inquire
+!<
 !>
 !! @public 
 !! @ingroup PIO_inquire
@@ -398,7 +526,7 @@ contains
 !! @param nAttributes : Number of attributes defined for the netcdf file
 !! @param unlimitedDimID : the Unlimited dimension ID
 !! @retval ierr @copydoc error_return
-!>
+!<
   integer function inquire_desc(File                        ,nDimensions,nVariables,nAttributes,unlimitedDimID) result(ierr)
     type (File_desc_t)                                      , intent(in) :: File
 
@@ -410,6 +538,11 @@ contains
     
     ierr = inquire_id(file%fh                               ,ndimensions,nvariables,nattributes,unlimitedDimID)
   end function inquire_desc
+!>
+!! @public 
+!! @ingroup PIO_inquire
+!! @brief Gets metadata information for netcdf file.
+!<
   integer function inquire_id(ncid                          ,nDimensions,nVariables,nAttributes,unlimitedDimID) result(ierr)
     integer                                                 ,intent(in) :: ncid
     integer                                                 , optional, intent(out) :: &
@@ -424,6 +557,9 @@ contains
     if(present(unlimitedDimID)) ierr = inq_unlimdim_id(ncid ,unlimitedDimID)
   end function inquire_id
 
+!>
+!! @defgroup PIO_enddef PIO_enddef
+!<
 !> 
 !! @public
 !! @ingroup PIO_enddef
@@ -436,6 +572,11 @@ contains
     type (File_desc_t)                                      , intent(inout) :: File
     ierr = enddef_id(file%fh)
   end function enddef_desc
+!> 
+!! @public
+!! @ingroup PIO_enddef
+!! @brief Wrapper for the C function \ref PIOc_enddef .
+!<
   integer function enddef_id(ncid) result(ierr)
     integer                                                 ,intent(in) :: ncid
     interface
@@ -447,6 +588,9 @@ contains
     end interface
     ierr = PIOc_enddef(ncid)
   end function enddef_id
+!>
+!! @defgroup PIO_redef PIO_redef
+!<
 !> 
 !! @public
 !! @ingroup PIO_redef
@@ -459,6 +603,11 @@ contains
     type (File_desc_t)                                      , intent(inout) :: File
     ierr = redef_id(file%fh)
   end function redef_desc
+!> 
+!! @public
+!! @ingroup PIO_redef
+!! @brief Wrapper for the C function \ref PIOc_redef .
+!<
   integer function redef_id(ncid) result(ierr)
     integer                                                 ,intent(in) :: ncid
     interface
@@ -471,10 +620,14 @@ contains
     ierr = PIOc_redef(ncid)
   end function redef_id
 
+!>
+!! @defgroup PIO_def_dim PIO_def_dim
+!! @brief A set of functions to define dimensions and their attributes in NetCDF files.
+!<
 !> 
 !! @public
 !! @ingroup PIO_def_dim
-!! @brief Defines the netcdf dimension
+!! @brief Defines the netcdf dimension.
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param name : The name of the dimension to define
@@ -490,6 +643,11 @@ contains
 
     ierr = def_dim_id(file%fh                               ,name,int(len,pio_offset_kind),dimid)
   end function def_dim_int_desc
+!> 
+!! @public
+!! @ingroup PIO_def_dim
+!! @brief  Defines the netcdf dimension.
+!<
   integer function def_dim_int_id(ncid                      ,name,len,dimid) result(ierr)
     integer                                                 , intent(in) :: ncid
     character(len=*)                                        , intent(in)    :: name
@@ -498,6 +656,11 @@ contains
 
     ierr = def_dim_id(ncid                                  ,name,int(len,pio_offset_kind),dimid)
   end function def_dim_int_id
+!> 
+!! @public
+!! @ingroup PIO_def_dim
+!! @brief  Defines the netcdf dimension.
+!<
   integer function def_dim_desc(File                        ,name,len,dimid) result(ierr)
 
     type (File_desc_t)                                      , intent(in)  :: File
@@ -507,6 +670,11 @@ contains
 
     ierr = def_dim_id(file%fh                               ,name,len,dimid)
   end function def_dim_desc
+!> 
+!! @public
+!! @ingroup PIO_def_dim
+!! @brief  Defines the netcdf dimension.
+!<
   integer function def_dim_id(ncid                          ,name,len,dimid) result(ierr)
     integer                                                 , intent(in)         :: ncid
     character(len=*)                                        , intent(in)    :: name
@@ -529,6 +697,9 @@ contains
 
 
 !>
+!! @defgroup PIO_inquire_variable PIO_inquire_variable
+!<
+!>
 !! @public 
 !! @ingroup PIO_inquire_variable
 !! @brief Inquires if a NetCDF variable is present and returns its attributes  
@@ -541,7 +712,7 @@ contains
 !! @param dimids : The dimension identifier returned by \ref PIO_def_dim
 !! @param natts : Number of attributes associated with the variable
 !! @retval ierr @copydoc error_return
-!>
+!<
   integer function inquire_variable_desc(file               , vardesc, name, xtype, ndims, dimids, natts) result(ierr)
     type(file_desc_t)                                       ,               intent(in) :: file
     type(var_desc_t)                                        ,                intent( in) :: vardesc
@@ -552,6 +723,11 @@ contains
 
     ierr = pio_inquire_variable(file%fh                     ,vardesc%varid,name,xtype,ndims,dimids,natts)
   end function inquire_variable_desc
+!>
+!! @public 
+!! @ingroup PIO_inquire_variable
+!! @brief Inquires if a NetCDF variable is present and returns its attributes  
+!<
   integer function inquire_variable_vid(file                , varid, name, xtype, ndims, dimids, natts) result(ierr)
     type(file_desc_t)                                       ,               intent(in) :: file
     integer                                                 ,                intent( in) :: varid
@@ -562,6 +738,11 @@ contains
 
     ierr = pio_inquire_variable(file%fh                     ,varid,name,xtype,ndims,dimids,natts)
   end function inquire_variable_vid
+!>
+!! @public 
+!! @ingroup PIO_inquire_variable
+!! @brief Inquires if a NetCDF variable is present and returns its attributes  
+!<
   integer function inquire_variable_id(ncid                 , varid, name, xtype, ndims, dimids, natts) result(ierr)
     integer                                                 ,                intent( in) :: ncid
     integer                                                 ,                intent( in) :: varid
@@ -578,6 +759,9 @@ contains
   end function inquire_variable_id
 
 !>
+!! @defgroup PIO_inq_vardimid PIO_inq_vardimid
+!<
+!>
 !! @public 
 !! @ingroup PIO_inq_vardimid
 !! @brief returns the dimids of the variable as an interger array
@@ -586,7 +770,7 @@ contains
 !! @param vardesc @copydoc var_desc_t
 !! @param dimids : The dimension identifier returned by \ref PIO_def_dim
 !! @retval ierr @copydoc error_return
-!>
+!<
   integer function inq_vardimid_desc(File                   ,vardesc,dimids) result(ierr)
 
     type (File_desc_t)                                      , intent(in)   :: File
@@ -596,6 +780,11 @@ contains
 
     ierr = pio_inq_vardimid(File%fh                         , vardesc%varid, dimids)
   end function inq_vardimid_desc
+!>
+!! @public 
+!! @ingroup PIO_inq_vardimid
+!! @brief returns the dimids of the variable as an interger array
+!<
   integer function inq_vardimid_vid(File                    ,varid,dimids) result(ierr)
 
     type (File_desc_t)                                      , intent(in)   :: File
@@ -605,7 +794,11 @@ contains
 
     ierr = pio_inq_vardimid(File%fh                         , varid, dimids)
   end function inq_vardimid_vid
-    
+!>
+!! @public 
+!! @ingroup PIO_inq_vardimid
+!! @brief returns the dimids of the variable as an interger array
+!<    
   integer function inq_vardimid_id(ncid                     ,varid,dimids) result(ierr)
     integer                                                 , intent(in) :: ncid
     integer                                                 , intent(in) :: varid
@@ -633,8 +826,9 @@ contains
 
   end function inq_vardimid_id
 
-
-
+!>
+!! @defgroup PIO_inq_varndims PIO_inq_varndims
+!<
 !>
 !! @public 
 !! @ingroup PIO_inq_varndims
@@ -644,7 +838,7 @@ contains
 !! @param vardesc @copydoc var_desc_t
 !! @param ndims : The number of dimensions for the variable 
 !! @retval ierr @copydoc error_return
-!>
+!<
   integer function inq_varndims_desc(File                   ,vardesc,ndims) result(ierr)
 
     type (File_desc_t)                                      , intent(in)   :: File
@@ -653,6 +847,11 @@ contains
 
     ierr = pio_inq_varndims(File%fh                         , vardesc%varid, ndims)
   end function inq_varndims_desc
+!>
+!! @public 
+!! @ingroup PIO_inq_varndims
+!! @brief Gets the number of dimension associated with a netcdf variable
+!<
   integer function inq_varndims_vid(File                    ,varid,ndims) result(ierr)
 
     type (File_desc_t)                                      , intent(in)   :: File
@@ -661,6 +860,11 @@ contains
 
     ierr = pio_inq_varndims(File%fh                         , varid, ndims)
   end function inq_varndims_vid
+!>
+!! @public 
+!! @ingroup PIO_inq_varndims
+!! @brief Gets the number of dimension associated with a netcdf variable
+!<
   integer function inq_varndims_id(ncid                     ,varid,ndims) result(ierr)
     integer                                                 , intent(in) :: ncid
     integer                                                 , intent(in) :: varid
@@ -678,6 +882,9 @@ contains
   end function inq_varndims_id
 
 !>
+!! @defgroup PIO_inq_vartype PIO_inq_vartype
+!<
+!>
 !! @public 
 !! @ingroup PIO_inq_vartype
 !! @brief Gets metadata information for netcdf file.
@@ -686,7 +893,7 @@ contains
 !! @param vardesc @copydoc var_desc_t
 !! @param type : The type of variable
 !! @retval ierr @copydoc error_return
-!>
+!<
   integer function inq_vartype_desc(File                    ,vardesc,type) result(ierr)
 
     type (File_desc_t)                                      , intent(in)   :: File
@@ -695,6 +902,11 @@ contains
 
     ierr = pio_inq_vartype(File%fh                          , vardesc%varid, type)
   end function inq_vartype_desc
+!>
+!! @public 
+!! @ingroup PIO_inq_vartype
+!! @brief Gets metadata information for netcdf file.
+!<
   integer function inq_vartype_vid(File                     ,varid,type) result(ierr)
 
     type (File_desc_t)                                      , intent(in)   :: File
@@ -703,6 +915,11 @@ contains
 
     ierr = pio_inq_vartype(File%fh                          , varid, type)
   end function inq_vartype_vid
+!>
+!! @public 
+!! @ingroup PIO_inq_vartype
+!! @brief Gets metadata information for netcdf file.
+!<
   integer function inq_vartype_id(ncid                      ,varid,type) result(ierr)
     integer                                                 , intent(in) :: ncid
     integer                                                 , intent(in) :: varid
@@ -722,6 +939,9 @@ contains
   end function inq_vartype_id
 
 !>
+!!  @defgroup PIO_inq_varnatts PIO_inq_varnatts
+!<
+!>
 !! @public 
 !! @ingroup PIO_inq_varnatts
 !! @brief Gets metadata information for netcdf file.
@@ -730,7 +950,7 @@ contains
 !! @param vardesc @copydoc var_desc_t
 !! @param type : The type of variable
 !! @retval ierr @copydoc error_return
-!>
+!<
   integer function inq_varnatts_desc(File                   ,vardesc,natts) result(ierr)
 
     type (File_desc_t)                                      , intent(in)   :: File
@@ -739,6 +959,11 @@ contains
 
     ierr = pio_inq_varnatts(File%fh                         , vardesc%varid,natts)
   end function inq_varnatts_desc
+!>
+!! @public 
+!! @ingroup PIO_inq_varnatts
+!! @brief Gets metadata information for netcdf file.
+!<
   integer function inq_varnatts_vid(File                    ,varid,natts) result(ierr)
 
     type (File_desc_t)                                      , intent(in)   :: File
@@ -747,6 +972,11 @@ contains
 
     ierr = pio_inq_varnatts(File%fh                         , varid, natts)
   end function inq_varnatts_vid
+!>
+!! @public 
+!! @ingroup PIO_inq_varnatts
+!! @brief Gets metadata information for netcdf file.
+!<
   integer function inq_varnatts_id(ncid                     ,varid,natts) result(ierr)
     integer                                                 , intent(in) :: ncid
     integer                                                 , intent(in) :: varid
@@ -765,7 +995,9 @@ contains
     ierr = PIOc_inq_varnatts(ncid                           ,varid-1,natts)
   end function inq_varnatts_id
     
-
+!>
+!! @defgroup PIO_inq_varname
+!<
 !>
 !! @public 
 !! @ingroup PIO_inq_varname
@@ -775,7 +1007,7 @@ contains
 !! @param vardesc @copydoc var_desc_t
 !! @param name : The name of the netcdf variable.
 !! @retval ierr @copydoc error_return
-!>
+!<
   integer function inq_varname_desc(File                    ,vardesc,name) result(ierr)
 
     type (File_desc_t)                                      , intent(in)   :: File
@@ -785,6 +1017,11 @@ contains
     ierr = pio_inq_varname(file%fh                          ,vardesc%varid,name)
 
   end function inq_varname_desc
+!>
+!! @public 
+!! @ingroup PIO_inq_varname
+!! @brief Get the name associated with a variable
+!<
   integer function inq_varname_vid(File                     ,varid,name) result(ierr)
 
     type (File_desc_t)                                      , intent(in)   :: File
@@ -794,6 +1031,11 @@ contains
     ierr = pio_inq_varname(file%fh                          ,varid,name)
 
   end function inq_varname_vid
+!>
+!! @public 
+!! @ingroup PIO_inq_varname
+!! @brief Get the name associated with a variable
+!<
   integer function inq_varname_id(ncid                      ,varid,name) result(ierr)
     integer                                                 ,intent(in) :: ncid
     integer                                                 , intent(in) :: varid
@@ -814,6 +1056,9 @@ contains
   end function inq_varname_id
 
 
+!>
+!! @defgroup PIO_inq_varid
+!<
 !> 
 !! @public 
 !! @ingroup PIO_inq_varid
@@ -832,6 +1077,11 @@ contains
 
     ierr = pio_inq_varid(File%fh, name, vardesc%varid)
   end function inq_varid_desc
+!> 
+!! @public 
+!! @ingroup PIO_inq_varid
+!! @brief Returns the ID of a netcdf variable given its name 
+!<
   integer function inq_varid_vid(File,name,varid) result(ierr)
 
     type (File_desc_t), intent(in)   :: File
@@ -840,6 +1090,11 @@ contains
 
     ierr = pio_inq_varid(File%fh, name, varid)
   end function inq_varid_vid
+!> 
+!! @public 
+!! @ingroup PIO_inq_varid
+!! @brief Returns the ID of a netcdf variable given its name 
+!<
   integer function inq_varid_id(ncid,name,varid) result(ierr)
 
     integer, intent(in)   :: ncid
@@ -861,7 +1116,9 @@ contains
     varid = varid+1
   end function inq_varid_id
 
-
+!>
+!! @defgroup PIO_inq_attlen
+!<
 !>
 !! @public 
 !! @ingroup PIO_inq_attlen
@@ -883,6 +1140,11 @@ contains
     ierr = pio_inq_attlen(file%fh, vardesc%varid, name, len)
 
   end function inq_attlen_desc
+!>
+!! @public 
+!! @ingroup PIO_inq_attlen
+!! @brief  Gets the attribute length 
+!<
   integer function inq_attlen_vid(File,varid,name,len) result(ierr)
 
     type (File_desc_t), intent(inout) :: File
@@ -893,6 +1155,11 @@ contains
     ierr = pio_inq_attlen(file%fh, varid, name, len)
 
   end function inq_attlen_vid
+!>
+!! @public 
+!! @ingroup PIO_inq_attlen
+!! @brief  Gets the attribute length 
+!<
   integer function inq_attlen_id(ncid,varid,name,len) result(ierr)
     integer, intent(in) :: ncid
     integer, intent(in) :: varid
@@ -913,19 +1180,21 @@ contains
   end function inq_attlen_id
 
 
-
-  !>
-  !! @public 
-  !! @ingroup PIO_inq_att
-  !! @brief  Gets information about attributes
-  !! @details
-  !! @param File @copydoc file_desc_t
-  !! @param vardesc @copydoc var_desc_t
-  !! @param name : Name of the attribute 
-  !! @param xtype : The type of attribute
-  !! @param len : The length of the attribute 
-  !! @retval ierr @copydoc error_return
-  !>
+!>
+!! @defgroup PIO_inq_att PIO_inq_att
+!<
+!>
+!! @public 
+!! @ingroup PIO_inq_att
+!! @brief  Gets information about attributes
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param vardesc @copydoc var_desc_t
+!! @param name : Name of the attribute 
+!! @param xtype : The type of attribute
+!! @param len : The length of the attribute 
+!! @retval ierr @copydoc error_return
+!<
   integer function inq_att_desc(File,vardesc,name,xtype,len) result(ierr)
 
     type (File_desc_t), intent(inout) :: File
@@ -937,6 +1206,11 @@ contains
     ierr = pio_inq_att(file%fh, vardesc%varid, name, xtype, len)
 
   end function inq_att_desc
+!>
+!! @public 
+!! @ingroup PIO_inq_att
+!! @brief  Gets information about attributes
+!<
   integer function inq_att_vid(File,varid,name,xtype,len) result(ierr)
 
     type (File_desc_t), intent(in) :: File
@@ -948,7 +1222,11 @@ contains
     ierr = pio_inq_att(file%fh, varid, name, xtype, len)
 
   end function inq_att_vid
-
+!>
+!! @public 
+!! @ingroup PIO_inq_att
+!! @brief  Gets information about attributes
+!<
   integer function inq_att_id(ncid,varid,name,xtype,len) result(ierr)
 
     integer, intent(in) :: ncid
@@ -977,8 +1255,14 @@ contains
     if(present(xtype)) xtype = ixtype
 
   end function inq_att_id
-
-
+!> 
+!! @defgroup PIO_inq_attname
+!<
+!>
+!! @public 
+!! @ingroup PIO_inq_attname
+!! @brief  Gets the name of an attribute
+!<
   integer function inq_attname_desc(File,vdesc,attnum,name) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type (var_desc_t), intent(in)           :: vdesc
@@ -988,6 +1272,11 @@ contains
     ierr = inq_attname_id(file%fh,vdesc%varid,attnum,name)
 
   end function inq_attname_desc
+!>
+!! @public 
+!! @ingroup PIO_inq_attname
+!! @brief   Gets the name of an attribute
+!<
   integer function inq_attname_vid(File,varid,attnum,name) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in)           :: varid
@@ -997,6 +1286,11 @@ contains
     ierr = inq_attname_id(file%fh,varid,attnum,name)
 
   end function inq_attname_vid
+!>
+!! @public 
+!! @ingroup PIO_inq_attname
+!! @brief   Gets the name of an attribute
+!<
   integer function inq_attname_id(ncid,varid,attnum,name) result(ierr)
     integer, intent(in) :: ncid
     integer, intent(in) :: varid
@@ -1020,19 +1314,21 @@ contains
   end function inq_attname_id
 
 
+!>
+!! @defgroup PIO_def_var PIO_def_var
+!<
 
-
-  !> 
-  !! @public 
-  !! @defgroup PIO_def_var PIO_def_var
-  !! @brief Defines a netcdf variable
-  !! @details
-  !! @param File @copydoc file_desc_t
-  !! @param name : The name of the variable to define
-  !! @param type : The type of variable 
-  !! @param vardesc @copydoc var_desc_t
-  !! @retval ierr @copydoc error_return
-  !<
+!> 
+!! @public 
+!! @ingroup PIO_def_var
+!! @brief Defines a netcdf variable
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param name : The name of the variable to define
+!! @param type : The type of variable 
+!! @param vardesc @copydoc var_desc_t
+!! @retval ierr @copydoc error_return
+!<
   integer function def_var_0d_desc(File,name,type,vardesc) result(ierr)
 
     type (File_desc_t), intent(in)  :: File
@@ -1044,6 +1340,11 @@ contains
     ierr = def_var_md_id(File%fh,name,type,dimids,vardesc%varid)
 
   end function def_var_0d_desc
+!> 
+!! @public 
+!! @ingroup PIO_def_var
+!! @brief Defines a netcdf variable
+!<
   integer function def_var_0d_id(ncid,name,type,varid) result(ierr)
 
     integer,intent(in) :: ncid
@@ -1056,19 +1357,18 @@ contains
 
   end function def_var_0d_id
 
-  !> 
-  !! @public
-  !! @ingroup PIO_def_var
-  !! @brief Defines the a netcdf variable
-  !! @details
-  !! @param File @copydoc file_desc_t
-  !! @param name : The name of the variable to define
-  !! @param type : The type of variable 
-  !! @param dimids : The dimension identifier returned by \ref PIO_def_dim
-  !! @param vardesc @copydoc var_desc_t
-  !! @retval ierr @copydoc error_return
-  !<
-
+!> 
+!! @public
+!! @ingroup PIO_def_var
+!! @brief Defines the a netcdf variable
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param name : The name of the variable to define
+!! @param type : The type of variable 
+!! @param dimids : The dimension identifier returned by \ref PIO_def_dim
+!! @param vardesc @copydoc var_desc_t
+!! @retval ierr @copydoc error_return
+!<
   integer function def_var_md_desc(File,name,type,dimids,vardesc) result(ierr)
     type (File_desc_t), intent(in)  :: File
     character(len=*), intent(in)    :: name
@@ -1078,7 +1378,11 @@ contains
 
     ierr = def_var_md_id(file%fh,name,type,dimids,vardesc%varid)
   end function def_var_md_desc
-
+!> 
+!! @public 
+!! @ingroup PIO_def_var
+!! @brief Defines a netcdf variable
+!<
   integer function def_var_md_id(ncid,name,type,dimids,varid) result(ierr)
     integer,intent(in) :: ncid
     character(len=*), intent(in)    :: name

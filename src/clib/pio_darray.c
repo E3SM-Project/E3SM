@@ -58,10 +58,6 @@ void compute_buffer_init(iosystem_desc_t ios)
 #endif
 }
 
-/**  @defgroup PIO_write_darray PIO_write_darray
- *   @brief Write a distributed field to output.
- */
-
 /**  @ingroup PIO_write_darray 
  *   @brief Write a single distributed field to output.  This routine is only used if aggregation is off.
  *   @param[in] file: a pointer to the open file descriptor for the file that will be written to
@@ -1014,10 +1010,6 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 
  }
 #endif
-
-/** @defgroup PIO_read_darray PIO_read_darray
- *  @brief Read a distributed field from a file.
- */
 
 /** @brief Read an array of data from a file to the IO library.
  *  @ingroup PIO_read_darray

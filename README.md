@@ -4,7 +4,7 @@ A high-level Parallel I/O Library for structured grid applications
 
 ## Website
 
-For complete documentation, see our website at [http://parallelio.github.io/ParallelIO/](http://parallelio.github.io/ParallelIO/).
+For complete documentation, see our website at [http://ncar.github.io/ParallelIO/](http://ncar.github.io/ParallelIO/).
 
 ## Nightly Tests
 
