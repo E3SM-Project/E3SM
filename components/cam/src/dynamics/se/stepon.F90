@@ -223,7 +223,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
    integer :: kptr, ie, ic, i, j, k, tl_f, tl_fQdp
    real(r8) :: rec2dt, dyn_ps0
-   real(r8) :: dp(np,np,nlev),dp_tmp,fq,fq0,qn0, ftmp(npsq,nlev,2) !PMC can remove dp_tmp?
+   real(r8) :: dp(np,np,nlev),dp_tmp,fq,fq0,qn0, ftmp(npsq,nlev,2) 
 
    ! copy from phys structures -> dynamics structures
    call t_barrierf('sync_p_d_coupling', mpicom)
@@ -280,13 +280,13 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
       !CONVERT FQ INTO A MASS-WEIGHTED TENDENCY:
       !======================================
-      !Because dq/dt is not included in phys_tend, q forcing (=dyn_in%elem(ie)%derived%FQ) can't
-      !be computed in p_d_coupling(). Instead, dyn_in%elem(ie)%derived%FQ returned by p_d_coupling
-      !is actually the q *state* after the most recent physics call. We convert FQ to be a tendency 
-      !below by taking the difference between q before and after the physics call. At the same time, 
-      !we convert Q from being a mixing ratio (as used by physics) to being q*dp (as used by 
-      !dynamics). Note that p_d_coupling only updates dyn_in%elem(ie)%derived%{FT,FM,FQ}... the 
-      !dyn_in%elem(ie)%state variables used below have not been updated since before physics. 
+      !Because dq/dt is not included in phys_tend and p_d_coupling only knows q at a single time, q forcing 
+      !(=dyn_in%elem(ie)%derived%FQ) can't be computed in p_d_coupling(). As a kludge, 
+      !dyn_in%elem(ie)%derived%FQ returned by p_d_coupling is actually the q *state* after the most recent 
+      !physics call. Below, we convert FQ to be a tendency by taking the difference between q before and 
+      !after the physics call. At the same time, we convert Q from being a mixing ratio (as used by physics) to 
+      !being q*dp (as used by dynamics). Note that p_d_coupling only updated dyn_in%elem(ie)%derived%{FT,FM,FQ}... 
+      !the dyn_in%elem(ie)%state variables used below have not been updated since before physics. 
       !(PMC 10/23/15)
 
       !Compute dp noting that CAM physics doesn't change ps so it's ok to use
@@ -299,8 +299,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
       !Compute the *tendency* FQ noting that dyn_in%elem(ie)%state%Q is 
       !the Q state from before the last physics call.
-!$omp parallel do private(ic,k, j, i) 
-      !????????? PMC - I added ic to 'do private' above - is this ok????????
+!$omp parallel do private(ic,k, j, i) !PMC added ic to 'do private'
       do ic=1,pcnst
          do k=1,nlev
             do j=1,np
@@ -332,7 +331,6 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
                do i=1,np
                   do ic=1,pcnst
                      !PMC ??????? the next line only works if phys_tscale==0 ????????
-                     !PMC ??????? why not delete loop over ic, replace ic with ":" below ???????
                      ! apply forcing to Qdp
                      dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) = &
                           dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) + &

@@ -1491,7 +1491,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      enddo
      
      if (wet .and. qsize>0) then
-        ! to conserve dry mass in the precese of Q1 forcing:
+        ! to conserve dry mass in the presence of Q1 forcing:
         elem(ie)%state%ps_v(:,:,np1) = elem(ie)%state%ps_v(:,:,np1) + &
              dt_q*elem(ie)%derived%FQps(:,:,1)
      endif
