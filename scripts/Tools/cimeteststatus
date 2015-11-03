@@ -1,0 +1,248 @@
+#!/usr/bin/env python
+
+import xml.etree.ElementTree as ET
+import xml.dom
+import argparse
+import os, glob, re
+import urllib2
+import json
+testdburl = "https://csegweb.cgd.ucar.edu/testdb/cgi-bin/processXMLtest.cgi"
+
+class CimeTestStatus():
+    def __init__(self, testname):
+        self.testname = testname
+        self.testcomparestatus = ''
+        self.baselinecomparestatus = ''
+    #def setStatus(self, status):
+    #    self.overallstatus = status
+    #def getStatus(self):
+    #    return self.overallstatus
+    #def setOutput(self, output):
+    #    self.output = output
+    #def getOutput(self):
+    #    return self.output
+    def testLine(self):
+        return self.overallstatus + " " + self.testname
+    def testStatus(self):
+        return self.overallstatus +  " " + self.testname  + "\n" + self.output
+
+class CimeTestStatusEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, CimeTestStatus):
+            return {"testname" : obj.testname, "status" : obj.overallstatus, "output" : obj.output}
+        return json.JSONEncoder.default(self, obj)
+        
+#------------------------------------------------------------------------------
+# Read the test spec, get relevant test info 
+#------------------------------------------------------------------------------
+def getSuiteInfo(testid):
+    
+    
+    if testid: 
+        xmlfile = "testspec." + testid + ".xml"
+        print xmlfile
+    else:
+        for file in glob.glob("testspec*xml"):
+            xmlfile = file
+    
+    tree = ET.parse(xmlfile)
+    root = tree.getroot()
+    suiteinfo = {}
+    testlist = []
+    
+    for tr in root.findall('testroot'):
+        suiteinfo['testroot'] = tr.text    
+    
+    for cr in root.findall('cimeroot'):
+        suiteinfo['cimeroot'] = cr.text
+    
+    for bltag in root.findall('baselinetag'):
+        suiteinfo['baselinetag'] = bltag.text
+    
+    for compiler in root.findall("./testlist/compiler"):
+        suiteinfo['compiler'] = compiler.text
+    
+    for mpilib in root.findall('mpilib'):
+        suiteinfo['mpilib'] = mpilib.text
+    
+    for t in root.findall('test'):
+        testlist.append(t.attrib['case'])
+    
+    suiteinfo['testlist'] = testlist
+    return suiteinfo
+            
+#------------------------------------------------------------------------------
+# Get the status of each test
+#------------------------------------------------------------------------------
+def getTestStatuses(suiteinfo):
+    
+    cimetests = []
+    for test in suiteinfo['testlist']:
+        cimeteststatus = CimeTestStatus(test)
+        statusfilename = test + "/TestStatus"
+
+        
+        # Read only the first line, then split the first line by 
+        # whitespace, set the status as the first field of the split
+        with open(statusfilename, 'r') as f:
+            first_line = f.readline()
+            #cimeteststatus.setStatus(first_line.split()[0])
+            cimeteststatus.overallstatus = first_line.split()[0]
+            rest_of_file = f.read()
+            cimeteststatus.output = rest_of_file
+            cimetests.append(cimeteststatus)
+        f.close()
+    
+        lines = cimeteststatus.output.splitlines()
+        
+        testcompareoutput = ''
+        baselinecompareoutput = ''
+        for line in lines:
+            if "test compare" in line:
+                testcompareoutput += (line + "\n")
+            if "baseline compare" in line:
+                baselinecompareoutput += (line + "\n")
+        cimeteststatus.testcompareoutput = testcompareoutput
+        cimeteststatus.baselinecompareoutput = baselinecompareoutput
+    
+        testcomparefailoutput = ''
+        for line in cimeteststatus.testcompareoutput.splitlines():
+            if "FAIL" in line:
+                cimeteststatus.overallstatus = 'FAIL'
+                cimeteststatus.testcomparestatus = 'FAIL'
+                testcomparefailoutput += (line + "\n")
+        cimeteststatus.testcomparefailoutput = testcomparefailoutput
+    
+        baselinecomparefailoutput = ''
+        for line in cimeteststatus.baselinecompareoutput.splitlines():
+            if "FAIL" in line:
+                cimeteststatus.baselinecomparestatus = 'FAIL'
+                baselinecomparefailoutput += (line + "\n")
+        cimeteststatus.baselinecomparefailoutput = baselinecomparefailoutput
+
+    return cimetests
+
+def printStatus(cimetests):
+    for test in cimetests:
+        #print CimeTestStatusEncoder().encode(test)
+        print test.testStatus()    
+
+def printExecutiveSummary(suiteinfo, cimetests):
+
+    banner = '=' * 80
+    
+    testcomparefails = []
+    baselinecomparefails = []
+    for t in cimetests:
+        if t.testcomparestatus == 'FAIL':
+            testcomparefails.append(t)
+        if t.baselinecomparestatus == 'FAIL':
+            baselinecomparefails.append(t)
+    cfails = [t for t in cimetests if t.overallstatus == 'CFAIL']
+    passes = [t for t in cimetests if t.overallstatus == 'DONE']
+    sfails = [t for t in cimetests if t.overallstatus == 'SFAIL']
+    runs =   [r for r in cimetests if r.overallstatus == 'RUN' ]
+    print banner
+    print "Test Summary "
+    if passes: 
+        print "{} Tests passed".format(len(passes))
+    if testcomparefails:
+        print "{} Tests failed the history file comparison".format(len(testcomparefails))
+    if baselinecomparefails:
+        print "{} Tests failed the baseline comparison".format(len(baselinecomparefails))
+    if sfails:
+        print "{} Tests had script errors".format(len(sfails))
+    if cfails:
+        print "{} Tests had compile fails".format(len(cfails))
+    if runs:
+        print "{} Tests failed to finish running".format(len(runs))
+    print banner
+    
+    if testcomparefails:
+        print banner
+        print "The following tests failed the history file comparison:"
+        print banner
+        for t in testcomparefails:
+            print t.testLine()
+            print t.baselinecomparefailoutput
+        print banner
+    
+    if baselinecomparefails: 
+        print banner
+        print "The following tests failed the baseline comparison:"
+        for t in baselinecomparefails:
+            print t.testLine()
+        print banner
+    
+    for test in cimetests:
+        if test.testcomparestatus == 'FAIL':
+            testcomparefails.append(test)
+        if test.baselinecomparestatus == 'FAIL':
+            baselinecomparefails.append(test)
+    
+    
+    if passes:
+        print banner
+        print "These tests passed "
+        print banner
+        for p in passes:
+            print p.testLine()
+        print banner
+
+    if runs:
+        print banner
+        print "These tests failed to finish running"
+        print banner
+        for r in runs:
+            print r.testLine()
+        print banner
+
+    if sfails:
+        print banner
+        print "These tests had script errors" 
+        print banner
+        for s in sfails:
+            print s.testLine()
+        print banner
+
+    if cfails:
+        print banner
+        print "These tests failed to compile"
+        print banner
+        for c in cfails:
+            print c.testLine()
+        print banner
+
+def sendTestReport(suiteinfo, cimetests):
+    pass
+#------------------------------------------------------------------------------
+# main function
+#------------------------------------------------------------------------------
+def main():
+    parser = argparse.ArgumentParser(description='cs.status options')
+
+    parser.add_argument('-i', '--testid', help='test id of the particular test suite', required=False)
+    parser.add_argument('-s', '--summary', action='store_true', help='Generate test summary', required=False)
+    parser.add_argument('-e', '--expectedfails', help='Specify expected fails file', required=False)
+    
+    args = parser.parse_args()
+    #print args
+    
+    # get info needed to process the test status
+    suiteinfo = getSuiteInfo(args.testid)
+    
+    # Now check each test, get the status of each test. 
+    cimetests = getTestStatuses(suiteinfo)
+    #print cimetests
+    
+    if(args.executivesummary==True):
+        printExecutiveSummary(suiteinfo, cimetests)
+    else:
+        printStatus(cimetests)
+    #print args
+    
+    #makeXMLReport(suiteinfo, cimetests)
+    
+if __name__ == "__main__":
+    main()
+
