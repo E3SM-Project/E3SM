@@ -1053,6 +1053,12 @@ module seq_flds_mod
      ! Aerodynamical resistance (land/atm only)
      call seq_flds_add(l2x_states,"Sl_ram1")
      call seq_flds_add(x2a_states,"Sl_ram1")
+     longname = 'aerodynamic resistance'
+     stdname = 'aerodynamic_resistance'
+     attname = 'SI_ram1'
+     units = 's/m'
+     call metadata_set(attname, longname, stdname, units)
+
 
      ! Surface snow water equivalent (land/atm only) 
      call seq_flds_add(l2x_states,"Sl_snowh")
@@ -1971,9 +1977,9 @@ module seq_flds_mod
      if (carma_fields /= ' ') then
         call seq_flds_add(l2x_fluxes, trim(carma_fields))
         call seq_flds_add(x2a_fluxes, trim(carma_fields))
-        longname = ''
-        stdname  = ''
-        units    = ''
+        longname = 'Volumetric soil water'
+        stdname  = 'soil_water'
+        units    = 'm3/m3'
         attname = trim(carma_fields)
         call metadata_set(attname, longname, stdname, units)
      endif
