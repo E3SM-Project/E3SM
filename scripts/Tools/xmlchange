@@ -192,8 +192,8 @@ foreach my $id ( keys(%idlist) )
 	{
 	    # Store this in %id_file hash - this will be used below
 	    $id_file{$id} = $file;
-        print "id: $id: id_file{id}: $id_file{$id}\n";
-        print "file $file\n";
+        #print "id: $id: id_file{id}: $id_file{$id}\n";
+        #print "file $file\n";
 
 	    # Do error checking for requested change
 	    my $value = $node->getAttribute('value');
@@ -212,18 +212,19 @@ foreach my $id ( keys(%idlist) )
 	    }
 
 	    # Determine if requested change is a value
-	    # Only do this if the variable does not start with $
-	    # TODO - must generalize this check - so you substitute first then check
-	    # for valid values even if the value starts with $
-	    # Will die in is_valid_values if the check fails
+        
+        # If we are setting a value to another unresolved value
+        # such as ./xmlchange REST_OPTION=\$STOP_OPTION, 
+        # we want to resolve STOP_OPTION, make sure whatever 
+        # it is set to is a valid_value, then set 
+        # $value to $unresolved_value if is_valid_values passes
         my $unresolved_value = $idlist{$id};
 	    if($unresolved_value =~ m/^\$/) {
             $logger->debug("UNRESOLVED VALUE: $unresolved_value");
-            my $newvalue = SetupTools::getSingleResolved($unresolved_value); 
-            $logger->debug("RESOLVED VALUE: $newvalue");
-		    $logger->debug("is_valid_value: $id, $newvalue, $valid_values, $is_list_value");
-            SetupTools::is_valid_value($id, $newvalue, $valid_values, $is_list_value);
-            $value = $newvalue;
+            my $resolved_value = SetupTools::getSingleResolved($unresolved_value); 
+		    $logger->debug("is_valid_value: $id, $resolved_value, $valid_values, $is_list_value");
+            SetupTools::is_valid_value($id, $resolved_value, $valid_values, $is_list_value);
+            $value = $unresolved_value;
         }
 	    elsif ($value !~ m/^$/) {
 		    my $newvalue = $idlist{$id};
