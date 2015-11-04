@@ -3809,8 +3809,20 @@ contains
 
        endif            ! thisTracer % ndims
 
-       if (associated(dummyTracer)) nullify(dummyTracer)
+       ! clean up
+       if (associated(dummyTracer)) then
 
+          if (dummyTracer % ndims == 2) then
+             if (associated(dummyTracer%xBarycenter2D)) deallocate(dummyTracer % xBarycenter2D)
+             if (associated(dummyTracer%yBarycenter2D)) deallocate(dummyTracer % yBarycenter2D)
+          elseif (dummyTracer % ndims == 3) then
+             if (associated(dummyTracer%xBarycenter3D)) deallocate(dummyTracer % xBarycenter3D)
+             if (associated(dummyTracer%yBarycenter3D)) deallocate(dummyTracer % yBarycenter3D)
+          endif
+          deallocate(dummyTracer)
+
+       endif
+             
        thisTracer => thisTracer % next
 
     enddo   ! while(associated)
@@ -6539,7 +6551,16 @@ contains
 
        endif   ! ndims
 
-       if (associated(dummyTracer)) nullify(dummyTracer)
+       if (associated(dummyTracer)) then
+
+          if (dummyTracer % ndims == 2) then
+             if (associated(dummyTracer % triangleValue2D)) deallocate(dummyTracer % triangleValue2D)
+          elseif (dummyTracer % ndims == 3) then
+             if (associated(dummyTracer % triangleValue3D)) deallocate(dummyTracer % triangleValue3D)
+          endif
+          deallocate(dummyTracer)
+
+       endif
 
        thisTracer => thisTracer % next
 
@@ -6673,6 +6694,16 @@ contains
 
        endif  ! ndims
        
+       ! clean up
+       if (associated(dummyTracer)) then
+          if (dummyTracer % ndims == 2) then
+             if (associated(dummyTracer % massTracerProduct2D)) deallocate(dummyTracer % massTracerProduct2D)
+          elseif (dummyTracer % ndims == 3) then
+             if (associated(dummyTracer % massTracerProduct3D)) deallocate(dummyTracer % massTracerProduct3D)
+          endif
+          deallocate(dummyTracer)
+       endif
+
        thisTracer => thisTracer % next
 
     enddo  ! while(associated)
@@ -7051,8 +7082,14 @@ contains
        endif      ! nParents
 
        ! clean up
-
-       if (associated(dummyTracer)) nullify(dummyTracer)
+       if (associated(dummyTracer)) then
+          if (dummyTracer % ndims == 2) then
+             if (associated(dummyTracer % massTracerProduct2D)) deallocate(dummyTracer % massTracerProduct2D)
+          elseif (dummyTracer % ndims == 3) then
+             if (associated(dummyTracer % massTracerProduct3D)) deallocate(dummyTracer % massTracerProduct3D)
+          endif
+          deallocate(dummyTracer)
+       endif
 
        thisTracer => thisTracer % next
 
@@ -7486,7 +7523,14 @@ contains
 
        endif  ! ndims
 
-       if (associated(dummyTracer)) nullify(dummyTracer)
+       if (associated(dummyTracer)) then
+          if (dummyTracer % ndims == 2) then
+             if (associated(dummyTracer % valueQP2D)) deallocate(dummyTracer % valueQP2D)
+          elseif (dummyTracer % ndims == 3) then
+             if (associated(dummyTracer % valueQP3D)) deallocate(dummyTracer % valueQP3D)
+          endif
+          deallocate(dummyTracer)
+       endif
 
        thisTracer => thisTracer % next
 
