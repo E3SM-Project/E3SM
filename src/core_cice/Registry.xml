@@ -1419,6 +1419,7 @@
                 <var name="xyyyAvgCell"                       type="real"     dimensions="nCells"                   name_in_code="xyyyAvgCell"/>
                 <var name="yyyyAvgCell"                       type="real"     dimensions="nCells"                   name_in_code="yyyyAvgCell"/>
 	        <var name="workCategoryCell"                  type="real"     dimensions="nCategories nCells"       name_in_code="workCategoryCell"/>
+                <var name="maskCategoryCell"                  type="integer"  dimensions="nCategories nCells"       name_in_code="maskCategoryCell"/>
 	</var_struct>
 
 	<!--atmos coupling -->
@@ -1812,12 +1813,6 @@
 	        <var name="iceVolumeTendencyThermodynamics"        type="real"     dimensions="nCells"              name_in_code="iceVolumeTendencyThermodynamics"/>
 	        <var name="iceAgeTendencyThermodynamics"           type="real"     dimensions="nCells"              name_in_code="iceAgeTendencyThermodynamics"/>
 	        <var name="freezingMeltingPotentialInitial"           type="real"     dimensions="nCells"              name_in_code="freezingMeltingPotentialInitial"/>
-	</var_struct>
-
-	<!-- Scratch arrays -->
-        <var_struct name="scratch" time_levs="1">
-                <var name="iceCellMask"                       type="integer"  dimensions="nCells"                      persistence="scratch"/>
-                <var name="iceCellCategoryMask"               type="integer"  dimensions="nCategories nCells"          persistence="scratch"/>
 	</var_struct>
 
 #include "analysis_members/Registry_cice_analysis_members.xml"

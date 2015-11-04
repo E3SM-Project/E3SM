@@ -2590,6 +2590,9 @@ contains
     real(kind=RKIND), dimension(:,:), pointer ::  &
          workCategoryCell        ! work array with dimensions (nCategories,nCells)
 
+    integer, dimension(:,:), pointer ::  &
+         maskCategoryCell        ! mask array with dimensions (nCategories,nCells)
+
     integer :: timeLevel
 
     logical, parameter :: zapSmallMass = .true.  ! if true, remove mass values (i.e., fractional ice area in CICE)
@@ -2672,6 +2675,7 @@ contains
     call mpas_pool_get_array(incrementalRemapPool, 'transGlobalToCell',   transGlobalToCell)
     call mpas_pool_get_array(incrementalRemapPool, 'minLengthEdgesOnVertex', minLengthEdgesOnVertex)
     call mpas_pool_get_array(incrementalRemapPool, 'workCategoryCell', workCategoryCell)
+    call mpas_pool_get_array(incrementalRemapPool, 'maskCategoryCell', maskCategoryCell)
 
     ! Optional initial diagnostics: Write a list of cells with ice
     ! If verboseGlobal = true, then this info is also written at the end of each time step.
@@ -3019,7 +3023,7 @@ contains
        call zap_small_mass(&
             tracersHead,   &
             nCellsSolve,   &
-            block)
+            maskCategoryCell)
 
     endif
 
@@ -8261,7 +8265,7 @@ contains
   subroutine zap_small_mass(&
        tracersHead,   &
        nCellsSolve,   &
-       block)
+       maskCategoryCell)
 
     type(tracer_type), pointer :: &
          tracersHead     !< Input/output: pointer to first element of linked list of tracers
@@ -8270,21 +8274,17 @@ contains
     integer, intent(in) ::  &
          nCellsSolve     !< Input: number of locally owned cells
 
-    type(block_type), intent(in) :: &
-         block           !< Input: local block (for allocating a scratch field)
+    integer, dimension(:,:), intent(out) ::  &
+         maskCategoryCell   !< Output: work array with dimensions (nCategories,nCells)
+                            !  Here, it is a mask indicating which cells and categories are zeroed out
 
     ! local variables
 
     type(tracer_type), pointer :: thisTracer
 
-    type (mpas_pool_type), pointer :: scratchPool
+    integer :: nCategories
 
-    type (field2dInteger), pointer :: iceCellCategoryMaskField
-    integer, dimension(:,:), pointer :: iceCellCategoryMask
-
-    integer :: nCategories, nLayers
-
-    integer :: iCell, iCat, iLayer
+    integer :: iCell, iCat
 
     ! Make the threshold very small (<< eps11) so as not to sweep potential problems under the rug
 
@@ -8292,14 +8292,7 @@ contains
 !!         smallMassThreshold = eps11
          smallMassThreshold = 1.0e-22_RKIND
 
-    ! allocate and initialize a scratch field with dimensions (nCategories, nCells)
-       
-    call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-    
-    call mpas_pool_get_field(scratchPool, 'iceCellCategoryMask', iceCellCategoryMaskField)
-    call mpas_allocate_scratch_field(iceCellCategoryMaskField, .true.)
-    iceCellCategoryMask => iceCellCategoryMaskField % array
-    iceCellCategoryMask(:,:) = 0
+    maskCategoryCell(:,:) = 0
 
     ! Starting with the mass-like field, loop over each cell and category.
     ! Zap those whose mass is below a small threshold.
@@ -8323,7 +8316,7 @@ contains
                 thisTracer % arrayMask2D(iCat,iCell) = 0
 
                 ! for future reference, set a mask = 1 for this category and cell
-                iceCellCategoryMask(iCat,iCell) = 1
+                maskCategoryCell(iCat,iCell) = 1
 
              endif
 
@@ -8351,7 +8344,7 @@ contains
           do iCell = 1, nCellsSolve
              do iCat = 1, nCategories
                 
-                if (iceCellCategoryMask(iCat,iCell) == 1) then
+                if (maskCategoryCell(iCat,iCell) == 1) then
 
                    ! zero out the tracer and mask
                    thisTracer % array2D(iCat,iCell) = 0.0_RKIND
@@ -8371,7 +8364,7 @@ contains
           do iCell = 1, nCellsSolve
              do iCat = 1, nCategories
 
-                if (iceCellCategoryMask(iCat,iCell) == 1) then
+                if (maskCategoryCell(iCat,iCell) == 1) then
 
                    ! zero the tracer value and mask in each layer
                    thisTracer % array3D(:,iCat,iCell) = 0.0_RKIND
@@ -8389,9 +8382,6 @@ contains
        thisTracer => thisTracer % next
 
     enddo  ! associated(thisTracer)
-
-    ! clean up
-    call mpas_deallocate_scratch_field(iceCellCategoryMaskField, .true.)
 
   end subroutine zap_small_mass
 
