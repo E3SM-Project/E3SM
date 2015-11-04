@@ -1395,8 +1395,8 @@ void importP0Temperature(double const * temperature_F) {
       int nPoints = 0;
       for (int iVertex = 0; iVertex < 3; iVertex++) {
         int v = verticesOnTria[iVertex + 3 * index];
-        if (!isVertexBoundary[v]) {
-          int iCell = vertexToFCell[v];
+        int iCell = vertexToFCell[v];
+        if (cellsMask_F[iCell] & ice_present_bit_value) {
           temperature += temperature_F[iCell * nLayers + ilReversed];
           nPoints++;
         }
