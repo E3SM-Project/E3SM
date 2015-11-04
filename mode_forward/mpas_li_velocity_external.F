@@ -54,7 +54,7 @@ module li_velocity_external
          
          INTEGER(C_INT) :: li_mask_ValueDynamicIce, li_mask_ValueIce
          REAL(C_DOUBLE) :: config_ice_density, config_ocean_density, config_sea_level, config_default_flowParamA, &
-                           config_enhancementFactor, config_flowLawExponent, config_dynamic_thickness
+                           config_enhancementFactor, config_flowLawExponent, config_dynamic_thickness, gravity
       end subroutine velocity_solver_set_parameters
 
    end interface
