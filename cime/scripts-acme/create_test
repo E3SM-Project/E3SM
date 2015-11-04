@@ -160,11 +160,14 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
         args.no_batch = True
 
     # If comparing against baselines
-    args.baseline_name = os.path.join(args.compiler, args.baseline_name)
-    if (args.compare):
-        full_baseline_dir = os.path.join(args.baseline_root, args.baseline_name)
-        expect(os.path.isdir(full_baseline_dir),
-               "Missing baseline comparison directory %s" % full_baseline_dir)
+    if (args.compare or args.generate):
+        expect(args.baseline_name is not None,
+               "Must provide baseline name if doing compare/generate")
+        args.baseline_name = os.path.join(args.compiler, args.baseline_name)
+        if (args.compare):
+            full_baseline_dir = os.path.join(args.baseline_root, args.baseline_name)
+            expect(os.path.isdir(full_baseline_dir),
+                   "Missing baseline comparison directory %s" % full_baseline_dir)
 
     if (args.test_id is None):
         args.test_id = acme_util.get_utc_timestamp()
