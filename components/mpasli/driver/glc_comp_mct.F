@@ -1350,7 +1350,7 @@ contains
 	    !basalOceanMassBal(i) =  x2g_g % rAttr(index_x2g_Fogx_qiceli, n)!uncomment when field becomes available
 	    surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)	    
 	    !basalOceanHeatflx(i) =  x2g_g % rAttr(index_x2g_Fogx_qicehi, n)!uncomment when field becomes available
-	    !OceanDensity (i) =      x2g_g % rAttr(index_x2g_So_phieff, n) !uncomment when field becomes available
+	    !OceanDensity (i) =      x2g_g % rAttr(index_x2g_So_rhoeff, n) !uncomment when field becomes available
 	 end do
 	 
 	 block => block % next

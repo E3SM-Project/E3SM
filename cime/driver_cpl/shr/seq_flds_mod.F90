@@ -1822,22 +1822,22 @@ module seq_flds_mod
      attname  = 'So_htv'
      call metadata_set(attname, longname, stdname, units)
 
-     name = 'So_hsv'
+     name = 'So_stv'
      call seq_flds_add(o2x_states,trim(name))
      call seq_flds_add(x2g_states,trim(name))
      longname = 'Ice shelf ocean salinity transfer velocity'
      stdname  = 'Ice_shelf_ocean_salinity_transfer_velocity'
      units    = 'm/s'
-     attname  = 'So_hsv'
+     attname  = 'So_stv'
      call metadata_set(attname, longname, stdname, units)
 
-     name = 'So_phieff'
+     name = 'So_rhoeff'
      call seq_flds_add(o2x_states,trim(name))
      call seq_flds_add(x2g_states,trim(name))
      longname = 'Ocean effective pressure'
      stdname  = 'Ocean_effective_pressure'
      units    = 'Pa'
-     attname  = 'So_phieff'
+     attname  = 'So_rhoeff'
      call metadata_set(attname, longname, stdname, units)
 
      name = 'Fogx_qicelo'

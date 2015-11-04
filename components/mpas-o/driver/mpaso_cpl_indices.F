@@ -25,8 +25,8 @@ module mpaso_cpl_indices
   integer :: index_o2x_So_blt !boundary layer temperature
   integer :: index_o2x_So_bls !boundary layer salinity
   integer :: index_o2x_So_htv !ocean heat-transfer velocity
-  integer :: index_o2x_So_hsv !ocean salt-transfer velocity
-  integer :: index_o2x_So_phieff !ocean effective density  
+  integer :: index_o2x_So_stv !ocean salt-transfer velocity
+  integer :: index_o2x_So_rhoeff !ocean effective density  
 
   ! drv -> ocn
 
@@ -101,8 +101,8 @@ contains
     index_o2x_So_blt        = mct_avect_indexra(o2x,'So_blt')
     index_o2x_So_bls        = mct_avect_indexra(o2x,'So_bls')
     index_o2x_So_htv        = mct_avect_indexra(o2x,'So_htv')
-    index_o2x_So_hsv        = mct_avect_indexra(o2x,'So_hsv')
-    index_o2x_So_phieff     = mct_avect_indexra(o2x,'So_phieff')
+    index_o2x_So_stv        = mct_avect_indexra(o2x,'So_stv')
+    index_o2x_So_rhoeff     = mct_avect_indexra(o2x,'So_rhoeff')
     
     index_x2o_Si_ifrac      = mct_avect_indexra(x2o,'Si_ifrac')
     index_x2o_Sa_pslv       = mct_avect_indexra(x2o,'Sa_pslv')

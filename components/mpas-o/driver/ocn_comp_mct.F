@@ -1672,16 +1672,11 @@ contains
 !JGF 311015 TODO: Figure out why accessing these fields causes segfault, and replace the
 !0.0_RKIND set.a
 
-       !!o2x_o % rAttr(index_o2x_So_blt, n) = landIceBoundaryLayerTemperature(i)
-       o2x_o % rAttr(index_o2x_So_blt, n) = 0.0_RKIND
-       !!o2x_o % rAttr(index_o2x_So_bls, n) = landIceBoundaryLayerSalinity(i)
-       o2x_o % rAttr(index_o2x_So_bls, n) = 0.0_RKIND
-       !!o2x_o % rAttr(index_o2x_So_htv, n) = landIceHeatTransferVelocity(i)
-       o2x_o % rAttr(index_o2x_So_bls, n) = 0.0_RKIND
-       !!o2x_o % rAttr(index_o2x_So_hsv, n) = landIceSaltTransferVelocity(i)
-       o2x_o % rAttr(index_o2x_So_hsv, n) = 0.0_RKIND
-!       o2x_o % rAttr(index_o2x_So_phieff, n) = effectiveDensityInLandIce(i)
-        o2x_o % rAttr(index_o2x_So_phieff, n) = 0.0_RKIND
+       o2x_o % rAttr(index_o2x_So_blt, n) = landIceBoundaryLayerTemperature(i)
+       o2x_o % rAttr(index_o2x_So_bls, n) = landIceBoundaryLayerSalinity(i)
+       o2x_o % rAttr(index_o2x_So_htv, n) = landIceHeatTransferVelocity(i)
+       o2x_o % rAttr(index_o2x_So_stv, n) = landIceSaltTransferVelocity(i)
+       o2x_o % rAttr(index_o2x_So_rhoeff, n) = 0.0_RKIND
      end do
 
      block_ptr => block_ptr % next

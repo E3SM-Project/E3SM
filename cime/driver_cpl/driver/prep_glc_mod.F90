@@ -504,7 +504,7 @@ contains
     do eoi = 1,num_inst_ocn
       o2x_ox => component_get_c2x_cx(ocn(eoi))
       call seq_map_map(mapper_So2g, o2x_ox, o2x_gx(eoi), &
-	   fldlist='So_blt:So_bls:So_htv:So_hsv:So_phieff',norm=.true.)
+	   fldlist='So_blt:So_bls:So_htv:So_stv:So_rhoeff',norm=.true.)
     enddo
     
     call t_drvstopf  (trim(timer))     
@@ -622,7 +622,7 @@ contains
 
     ! Local Variables
 
-    integer :: gsize, n, err
+    integer :: gsize, n
     type(mct_aVect), pointer :: o2x_ox ! Ocn export, ocn grid, cpl pes
     type(mct_aVect), pointer :: x2g_gx ! Glc import, glc grid, cpl pes
     type(mct_aVect), pointer :: g2x_gx ! Glc import, glc grid, cpl pes
@@ -631,7 +631,6 @@ contains
     !--------------------------------------------------------------- 
 
     gsize = mct_aVect_lsize(o2x_gx(1))
-    err = 0
 
     o2x_ox => component_get_c2x_cx(ocn(1))
     g2x_gx => component_get_c2x_cx(glc(1))
@@ -642,22 +641,22 @@ contains
     !Remap relevant ocean variables to ice sheet grid.
     !Done here instead of in glc-frequency mapping so it happens within ocean coupling interval.
     call seq_map_map(mapper_So2g, o2x_ox, o2x_gx(1), &
-    fldlist='So_blt:So_bls:So_htv:So_hsv:So_phieff',norm=.true.)
+    fldlist='So_blt:So_bls:So_htv:So_stv:So_rhoeff',norm=.true.)
 
     do n=1,gsize
       !Extract coupler fields used as input to compute_melt_fluxes to local arrays...
 
       oceanTemperature(n) =               o2x_gx(1)%rAttr(index_o2x_So_blt,n)
-      oceanSalinity(n) =	          o2x_gx(1)%rAttr(index_o2x_So_bls,n)
+      oceanSalinity(n) =                  o2x_gx(1)%rAttr(index_o2x_So_bls,n)
       oceanHeatTransferVelocity(n) =      o2x_gx(1)%rAttr(index_o2x_So_htv,n)
-      oceanSaltTransferVelocity(n) =      o2x_gx(1)%rAttr(index_o2x_So_hsv,n)
-      interfacePressure(n) =              o2x_gx(1)%rAttr(index_o2x_So_phieff,n)
+      oceanSaltTransferVelocity(n) =      o2x_gx(1)%rAttr(index_o2x_So_stv,n)
+      interfacePressure(n) =              o2x_gx(1)%rAttr(index_o2x_So_rhoeff,n)
 
-      iceTemperature(n) =	          g2x_gx%rAttr(index_g2x_Sg_tbot,n)
+      iceTemperature(n) =                 g2x_gx%rAttr(index_g2x_Sg_tbot,n)
       iceTemperatureDistance(n) =         g2x_gx%rAttr(index_g2x_Sg_dztbot,n)
 
       !...and initialize local compute_melt_fluxes output arrays.
-      outInterfaceSalinity(n)	  =       0.0_r8
+      outInterfaceSalinity(n)     =       0.0_r8
       outInterfaceTemperature(n)  =       0.0_r8
       outFreshwaterFlux(n)  =             0.0_r8
       outOceanHeatFlux(n) =               0.0_r8
@@ -665,20 +664,18 @@ contains
     end do
 
     call compute_melt_fluxes(oceanTemperature,&
-			     oceanSalinity,&
-			     oceanHeatTransferVelocity,&
-			     oceanSaltTransferVelocity,&
-			     interfacePressure,&
-			     outInterfaceSalinity,&
-			     outInterfaceTemperature,&
-			     outFreshwaterFlux,&
-			     outOceanHeatFlux,&
-			     outIceHeatFlux,&
-			     gsize,&
-			     err,&
-			     iceTemperature,&
-			     iceTemperatureDistance,&
-			     SHR_CONST_KAPPA_LAND_ICE)
+                             oceanSalinity,&
+                             oceanHeatTransferVelocity,&
+                             oceanSaltTransferVelocity,&
+                             interfacePressure,&
+                             iceTemperature,&
+                             iceTemperatureDistance, &
+                             outInterfaceSalinity,&
+                             outInterfaceTemperature,&
+                             outFreshwaterFlux,&
+                             outOceanHeatFlux,&
+                             outIceHeatFlux,&
+                             gsize)
 
     do n=1,gsize
       !Assign outputs from compute_melt_fluxes back into coupler attributes
@@ -720,12 +717,12 @@ contains
   function prep_glc_get_x2gacc_gx()
     type(mct_aVect), pointer :: prep_glc_get_x2gacc_gx(:)
     prep_glc_get_x2gacc_gx => x2gacc_gx(:)   
-  end function prep_glc_get_x2gacc_gx	 
+  end function prep_glc_get_x2gacc_gx
 
   function prep_glc_get_x2gacc_gx_cnt()
     integer, pointer :: prep_glc_get_x2gacc_gx_cnt
     prep_glc_get_x2gacc_gx_cnt => x2gacc_gx_cnt
-  end function prep_glc_get_x2gacc_gx_cnt	 
+  end function prep_glc_get_x2gacc_gx_cnt
 
   function prep_glc_get_mapper_Sl2g()
     type(seq_map), pointer :: prep_glc_get_mapper_Sl2g
@@ -768,7 +765,7 @@ contains
 !>  The iceTemperatureDistance is the distance between the location
 !>  where the iceTemperature is supplied and the ice-ocean interface,
 !>  used to compute a temperature gradient.  The ice thermal conductivity,
-!>  kappa_land_ice, is zero for the freezing solution from Holland and Jenkins
+!>  SHR_CONST_KAPPA_LAND_ICE, is zero for the freezing solution from Holland and Jenkins
 !>  (1999) in which the ice is purely insulating.
 !
 !-----------------------------------------------------------------------
@@ -779,25 +776,24 @@ contains
     oceanHeatTransferVelocity, &
     oceanSaltTransferVelocity, &
     interfacePressure, &
+    iceTemperature, &
+    iceTemperatureDistance, &
     outInterfaceSalinity, &
     outInterfaceTemperature, &
     outFreshwaterFlux, &
     outOceanHeatFlux, &
     outIceHeatFlux, &
-    nCells, &
-    err, &
-    iceTemperature, &
-    iceTemperatureDistance, &
-    kappa_land_ice) !{{{
+    nCells) !{{{
 
     use shr_const_mod    , only: SHR_CONST_CPICE,  &
                                  SHR_CONST_CPSW,   &
-				 SHR_CONST_LATICE, &
-				 SHR_CONST_RHOICE, &
-				 SHR_CONST_RHOSW,  &
-				 SHR_CONST_DTF_DP, &
-				 SHR_CONST_DTF_DS, &
-				 SHR_CONST_TF0
+                                 SHR_CONST_LATICE, &
+                                 SHR_CONST_RHOICE, &
+                                 SHR_CONST_RHOSW,  &
+                                 SHR_CONST_DTF_DP, &
+                                 SHR_CONST_DTF_DS, &
+                                 SHR_CONST_TF0,    &
+                                 SHR_CONST_KAPPA_LAND_ICE
 
     !-----------------------------------------------------------------
     !
@@ -810,16 +806,11 @@ contains
       oceanSalinity, &             !< Input: ocean salinity in top layer
       oceanHeatTransferVelocity, & !< Input: ocean heat transfer velocity
       oceanSaltTransferVelocity, & !< Input: ocean salt transfer velocity
-      interfacePressure            !< Input: pressure at the ice-ocean interface
+      interfacePressure, &         !< Input: pressure at the ice-ocean interface
+      iceTemperature, &            !< Input: ice temperature in bottom layer
+      iceTemperatureDistance       !< Input: distance to ice temperature from ice-ocean interface      
 
     integer, intent(in) :: nCells !< Input: number of cells in each array
-
-    real (kind=r8), dimension(:), intent(in), optional:: &
-      iceTemperature, &            !< Input: ice temperature in bottom layer
-      iceTemperatureDistance       !< Input: distance to ice temperature from ice-ocean interface
-
-    real (kind=r8), intent(in), optional:: &
-      kappa_land_ice     !< Input: the diffusivity of heat in land ice
 
     !-----------------------------------------------------------------
     !
@@ -834,8 +825,6 @@ contains
       outOceanHeatFlux, & !< Output: the temperature flux into the ocean
       outIceHeatFlux      !< Output: the temperature flux into the ice
 
-    integer, intent(out) :: err !< Output: Error flag
-
     !-----------------------------------------------------------------
     !
     ! local variables
@@ -845,22 +834,15 @@ contains
     real (kind=r8) :: T0, transferVelocityRatio, Tlatent, nu, a, b, c, eta, &
                          iceHeatFluxCoeff, iceDeltaT
     integer :: iCell
-
-    logical :: coupled
-
-    err = 0
-    coupled = present(iceTemperature) .and. present(iceTemperatureDistance) &
-            .and. present(kappa_land_ice)
+    character(*), parameter :: subname = '(compute_melt_fluxes)'
+  
     Tlatent = SHR_CONST_LATICE/SHR_CONST_CPSW
     do iCell = 1, nCells
-      if(coupled) then 
-        iceHeatFluxCoeff = SHR_CONST_RHOICE*SHR_CONST_CPICE*kappa_land_ice/iceTemperatureDistance(iCell)
-        nu = iceHeatFluxCoeff/(SHR_CONST_RHOSW*SHR_CONST_CPSW*oceanHeatTransferVelocity(iCell))
-        iceDeltaT = T0 - iceTemperature(iCell)
-      else
-        nu = 0.0_r8
-        iceDeltaT = 0.0_r8
-      end if 
+
+      iceHeatFluxCoeff = SHR_CONST_RHOICE*SHR_CONST_CPICE*SHR_CONST_KAPPA_LAND_ICE/iceTemperatureDistance(iCell)
+      nu = iceHeatFluxCoeff/(SHR_CONST_RHOSW*SHR_CONST_CPSW*oceanHeatTransferVelocity(iCell))
+      iceDeltaT = T0 - iceTemperature(iCell)
+
       T0 = SHR_CONST_TF0 + SHR_CONST_DTF_DP*interfacePressure(iCell)
       transferVelocityRatio = oceanSaltTransferVelocity(iCell)/oceanHeatTransferVelocity(iCell)
 
@@ -872,8 +854,9 @@ contains
       ! The positive root is the one we want (salinity is strictly positive)
       outInterfaceSalinity(iCell) = (-b + sqrt(b**2 - 4.0_r8*a*c*oceanSalinity(iCell)))/(2.0_r8*a)
       if (outInterfaceSalinity(iCell) .le. 0.0_r8) then
-        err = 1
-        return
+	write(logunit,*) subname,' ERROR: Negative interface salinity in subshelf boundary calculation: ', &
+	                           'iCell,outInterfaceSalinity(iCell)=', iCell,outInterfaceSalinity(iCell)
+        call shr_sys_abort(subname//' ERROR: Negative interface salinity in subshelf boundary calculation.')
       end if
       outInterfaceTemperature(iCell) = SHR_CONST_DTF_DS*outInterfaceSalinity(iCell)+T0
 
@@ -893,10 +876,10 @@ contains
       !      the reference point in the ice (either the surface or the middle of the bottom layer)
       !      and the interface
       outIceHeatFlux(iCell) = -SHR_CONST_CPICE*outFreshwaterFlux(iCell)*outInterfaceTemperature(iCell)
-      if(coupled) then
-        outIceHeatFlux(iCell) = outIceHeatFlux(iCell) &
-          - iceHeatFluxCoeff*(iceTemperature(iCell) - outInterfaceTemperature(iCell))
-      end if
+
+      outIceHeatFlux(iCell) = outIceHeatFlux(iCell) &
+        - iceHeatFluxCoeff*(iceTemperature(iCell) - outInterfaceTemperature(iCell))
+
     end do
 
   !--------------------------------------------------------------------

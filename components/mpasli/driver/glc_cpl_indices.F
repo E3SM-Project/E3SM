@@ -20,8 +20,8 @@ module glc_cpl_indices
   integer, public :: index_x2g_So_blt    = 0 !Ice shelf boundary layer ocean temperature
   integer, public :: index_x2g_So_bls    = 0 !Ice shelf boundary layer ocean salinity
   integer, public :: index_x2g_So_htv    = 0 !Ice shelf ocean heat transfer velocity
-  integer, public :: index_x2g_So_hsv    = 0 !Ice shelf ocean salinity transfer velocity
-  integer, public :: index_x2g_So_phieff = 0 !Ocean effective pressure
+  integer, public :: index_x2g_So_stv    = 0 !Ice shelf ocean salinity transfer velocity
+  integer, public :: index_x2g_So_rhoeff = 0 !Ocean effective pressure
   integer, public :: index_x2g_Fogx_qiceli = 0 !Subshelf mass flux
   integer, public :: index_x2g_Fogx_qicehi = 0 !Subshelf heat flux for the ice sheet
 
@@ -69,14 +69,14 @@ contains
 
     index_x2g_Fogx_qiceli =               mct_avect_indexra(x2g,'Fogx_qiceli',perrwith='quiet')
     index_x2g_Fogx_qicehi =               mct_avect_indexra(x2g,'Fogx_qicehi',perrwith='quiet')
-    index_x2g_So_phieff =                 mct_avect_indexra(x2g,'So_phieff',perrwith='quiet')
+    index_x2g_So_rhoeff =                 mct_avect_indexra(x2g,'So_rhoeff',perrwith='quiet')
 
     !Following block of x2g/g2x vectors are used internally within coupler for subshelf melt flux
     !calculations (and so do not have directly-related export-side arrays)
     index_x2g_So_blt =                    mct_avect_indexra(x2g,'So_blt',perrwith='quiet')
     index_x2g_So_bls =                    mct_avect_indexra(x2g,'So_bls',perrwith='quiet')
     index_x2g_So_htv =                    mct_avect_indexra(x2g,'So_htv',perrwith='quiet')
-    index_x2g_So_hsv =                    mct_avect_indexra(x2g,'So_hsv',perrwith='quiet')
+    index_x2g_So_stv =                    mct_avect_indexra(x2g,'So_stv',perrwith='quiet')
     index_g2x_Sg_tbot =                   mct_avect_indexra(g2x,'Sg_tbot',perrwith='quiet')
     index_g2x_Sg_dztbot =                 mct_avect_indexra(g2x,'Sg_dztbot',perrwith='quiet')
     index_g2x_Sg_lithop =                 mct_avect_indexra(g2x,'Sg_lithop',perrwith='quiet')
