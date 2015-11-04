@@ -409,6 +409,11 @@ sub initialize()
 	usage();
     }
 
+    # if one and only one argument is provided assume its the testname    
+    if($#ARGV == 0){
+	$opts{testname} = $ARGV[0];
+    }
+
 
 }
 
@@ -417,6 +422,7 @@ sub initialize()
 #-----------------------------------------------------------------------------------------------
 sub options
 {
+
     GetOptions(
 	"autosubmit=s"        => \$opts{'autosubmit'},
 	"baselineroot=s"      => \$opts{'baselineroot'},
