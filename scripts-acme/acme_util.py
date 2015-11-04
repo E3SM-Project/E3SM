@@ -271,7 +271,6 @@ def get_current_branch(repo=None):
     else:
         stat, output, errput = run_cmd("git symbolic-ref HEAD", from_dir=repo, ok_to_fail=True)
         if (stat != 0):
-            warning("Couldn't get current git branch, error: '%s'" % errput)
             return None
         else:
             return output.replace("refs/heads/", "")
