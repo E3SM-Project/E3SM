@@ -191,8 +191,11 @@ sub set
 		"ERROR: value of $value is not a valid value for parameter $id: valid values are $valid_values\n");
     }
     # Add the new value to the object's internal data structure.
-    $self->{$id}->{'value'} = $value;
-
+    if($id eq "ATM_GRID" && $self->{$id}{value} ne "UNSET"){
+	$self->{$id}{value} = $value.$self->{$id}{value};
+    }else{
+	$self->{$id}->{'value'} = $value;
+    }
     return 1;
 }
 
