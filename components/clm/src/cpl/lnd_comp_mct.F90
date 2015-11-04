@@ -76,7 +76,7 @@ contains
     type(mct_gsMap),         pointer :: GSMap_lnd    ! Land model MCT GS map
     type(mct_gGrid),         pointer :: dom_l        ! Land model domain
     type(seq_infodata_type), pointer :: infodata     ! CESM driver level info data
-    integer  :: lsize                                ! size of attribute vector
+    integer  :: lsz                                  ! size of attribute vector
     integer  :: g,i,j                                ! indices
     integer  :: dtime_sync                           ! coupling time-step from the input synchronization clock
     integer  :: dtime_clm                            ! clm time-step
@@ -216,14 +216,14 @@ contains
     call get_proc_bounds( bounds )
 
     call lnd_SetgsMap_mct( bounds, mpicom_lnd, LNDID, gsMap_lnd ) 	
-    lsize = mct_gsMap_lsize(gsMap_lnd, mpicom_lnd)
+    lsz = mct_gsMap_lsize(gsMap_lnd, mpicom_lnd)
 
-    call lnd_domain_mct( bounds, lsize, gsMap_lnd, dom_l )
+    call lnd_domain_mct( bounds, lsz, gsMap_lnd, dom_l )
 
-    call mct_aVect_init(x2l_l, rList=seq_flds_x2l_fields, lsize=lsize)
+    call mct_aVect_init(x2l_l, rList=seq_flds_x2l_fields, lsize=lsz)
     call mct_aVect_zero(x2l_l)
 
-    call mct_aVect_init(l2x_l, rList=seq_flds_l2x_fields, lsize=lsize)
+    call mct_aVect_init(l2x_l, rList=seq_flds_l2x_fields, lsize=lsz)
     call mct_aVect_zero(l2x_l)
 
     ! Finish initializing clm
@@ -332,7 +332,7 @@ contains
     real(r8)     :: caldayp1             ! clm calday plus dtime offset
     integer      :: shrlogunit,shrloglev ! old values for share log unit and log level
     integer      :: lbnum                ! input to memory diagnostic
-    integer      :: g,i,lsize            ! counters
+    integer      :: g,i,lsz              ! counters
     real(r8)     :: calday               ! calendar day for nstep
     real(r8)     :: declin               ! solar declination angle in radians for nstep
     real(r8)     :: declinp1             ! solar declination angle in radians for nstep+1
@@ -551,7 +551,7 @@ contains
 
   !====================================================================================
 
-  subroutine lnd_domain_mct( bounds, lsize, gsMap_l, dom_l )
+  subroutine lnd_domain_mct( bounds, lsz, gsMap_l, dom_l )
     !
     ! !DESCRIPTION:
     ! Send the land model domain information to the coupler
@@ -566,7 +566,7 @@ contains
     !
     ! !ARGUMENTS: 
     type(bounds_type), intent(in)  :: bounds  ! bounds
-    integer        , intent(in)    :: lsize   ! land model domain data size
+    integer        , intent(in)    :: lsz     ! land model domain data size
     type(mct_gsMap), intent(inout) :: gsMap_l ! Output land model MCT GS map
     type(mct_ggrid), intent(out)   :: dom_l   ! Output domain information for land model
     !
@@ -581,27 +581,27 @@ contains
     ! Note that in addition land carries around landfrac for the purposes of domain checking
     ! 
     call mct_gGrid_init( GGrid=dom_l, CoordChars=trim(seq_flds_dom_coord), &
-       OtherChars=trim(seq_flds_dom_other), lsize=lsize )
+       OtherChars=trim(seq_flds_dom_other), lsize=lsz )
     !
     ! Allocate memory
     !
-    allocate(data(lsize))
+    allocate(data(lsz))
     !
     ! Determine global gridpoint number attribute, GlobGridNum, which is set automatically by MCT
     !
     call mct_gsMap_orderedPoints(gsMap_l, iam, idata)
-    call mct_gGrid_importIAttr(dom_l,'GlobGridNum',idata,lsize)
+    call mct_gGrid_importIAttr(dom_l,'GlobGridNum',idata,lsz)
     !
     ! Determine domain (numbering scheme is: West to East and South to North to South pole)
     ! Initialize attribute vector with special value
     !
     data(:) = -9999.0_R8 
-    call mct_gGrid_importRAttr(dom_l,"lat"  ,data,lsize) 
-    call mct_gGrid_importRAttr(dom_l,"lon"  ,data,lsize) 
-    call mct_gGrid_importRAttr(dom_l,"area" ,data,lsize) 
-    call mct_gGrid_importRAttr(dom_l,"aream",data,lsize) 
+    call mct_gGrid_importRAttr(dom_l,"lat"  ,data,lsz)
+    call mct_gGrid_importRAttr(dom_l,"lon"  ,data,lsz)
+    call mct_gGrid_importRAttr(dom_l,"area" ,data,lsz)
+    call mct_gGrid_importRAttr(dom_l,"aream",data,lsz)
     data(:) = 0.0_R8     
-    call mct_gGrid_importRAttr(dom_l,"mask" ,data,lsize) 
+    call mct_gGrid_importRAttr(dom_l,"mask" ,data,lsz)
     !
     ! Fill in correct values for domain components
     ! Note aream will be filled in in the atm-lnd mapper
@@ -610,31 +610,31 @@ contains
        i = 1 + (g - bounds%begg)
        data(i) = ldomain%lonc(g)
     end do
-    call mct_gGrid_importRattr(dom_l,"lon",data,lsize) 
+    call mct_gGrid_importRattr(dom_l,"lon",data,lsz)
 
     do g = bounds%begg,bounds%endg
        i = 1 + (g - bounds%begg)
        data(i) = ldomain%latc(g)
     end do
-    call mct_gGrid_importRattr(dom_l,"lat",data,lsize) 
+    call mct_gGrid_importRattr(dom_l,"lat",data,lsz)
 
     do g = bounds%begg,bounds%endg
        i = 1 + (g - bounds%begg)
        data(i) = ldomain%area(g)/(re*re)
     end do
-    call mct_gGrid_importRattr(dom_l,"area",data,lsize) 
+    call mct_gGrid_importRattr(dom_l,"area",data,lsz)
 
     do g = bounds%begg,bounds%endg
        i = 1 + (g - bounds%begg)
        data(i) = real(ldomain%mask(g), r8)
     end do
-    call mct_gGrid_importRattr(dom_l,"mask",data,lsize) 
+    call mct_gGrid_importRattr(dom_l,"mask",data,lsz)
 
     do g = bounds%begg,bounds%endg
        i = 1 + (g - bounds%begg)
        data(i) = real(ldomain%frac(g), r8)
     end do
-    call mct_gGrid_importRattr(dom_l,"frac",data,lsize) 
+    call mct_gGrid_importRattr(dom_l,"frac",data,lsz)
 
     deallocate(data)
     deallocate(idata)
