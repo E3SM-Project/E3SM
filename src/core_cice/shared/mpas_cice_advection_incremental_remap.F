@@ -3018,7 +3018,8 @@ contains
 
        call zap_small_mass(&
             tracersHead,   &
-            nCellsSolve)
+            nCellsSolve,   &
+            block)
 
     endif
 
@@ -8259,17 +8260,27 @@ contains
 
   subroutine zap_small_mass(&
        tracersHead,   &
-       nCellsSolve)
+       nCellsSolve,   &
+       block)
 
     type(tracer_type), pointer :: &
-         tracersHead  !< Input/output: pointer to first element of linked list of tracers
-                      ! The pointer stays attached to the first tracer
+         tracersHead     !< Input/output: pointer to first element of linked list of tracers
+                         ! The pointer stays attached to the first tracer
 
     integer, intent(in) ::  &
-         nCellsSolve  !< Input: number of locally owned cells
+         nCellsSolve     !< Input: number of locally owned cells
+
+    type(block_type), intent(in) :: &
+         block           !< Input: local block (for allocating a scratch field)
 
     ! local variables
+
     type(tracer_type), pointer :: thisTracer
+
+    type (mpas_pool_type), pointer :: scratchPool
+
+    type (field2dInteger), pointer :: iceCellCategoryMaskField
+    integer, dimension(:,:), pointer :: iceCellCategoryMask
 
     integer :: nCategories, nLayers
 
@@ -8281,101 +8292,106 @@ contains
 !!         smallMassThreshold = eps11
          smallMassThreshold = 1.0e-22_RKIND
 
-    !NOTE - This loop has pointer assignments inside loop over cells and categories, which is inefficient.
-    !TODO - Find a more efficient method. (Or simply do not call this subroutine, but rely on a similar
-    !       subroutine in the column package.)
+    ! allocate and initialize a scratch field with dimensions (nCategories, nCells)
+       
+    call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+    
+    call mpas_pool_get_field(scratchPool, 'iceCellCategoryMask', iceCellCategoryMaskField)
+    call mpas_allocate_scratch_field(iceCellCategoryMaskField, .true.)
+    iceCellCategoryMask => iceCellCategoryMaskField % array
+    iceCellCategoryMask(:,:) = 0
 
-    do iCell = 1, nCellsSolve
+    ! Starting with the mass-like field, loop over each cell and category.
+    ! Zap those whose mass is below a small threshold.
 
-       thisTracer => tracersHead   ! point to mass-like field initially
+    thisTracer => tracersHead   ! point to mass-like field
+    
+    if (thisTracer % ndims == 2) then
+       
+       nCategories = size(thisTracer % array2D, 1)
 
-       if (thisTracer % ndims == 2) then
-
-          nCategories = size(thisTracer % array2D, 1)
-
+       do iCell = 1, nCellsSolve
           do iCat = 1, nCategories
 
              if (thisTracer % array2D(iCat,iCell) > 0.0_RKIND .and. &
                  thisTracer % array2D(iCat,iCell) < smallMassThreshold) then
 
-!!                write(stderrUnit,*) 'ZAP: iCell, iCat =', iCell, iCat
+!!                write(stderrUnit,*) 'Zap mass: iCell, iCat =', iCell, iCat
 
-                ! zero out the mass and mask for this category
+                ! zero out the mass and mask for this category and cell
                 thisTracer % array2D(iCat,iCell) = 0.0_RKIND
                 thisTracer % arrayMask2D(iCat,iCell) = 0
 
-                ! zero out all tracers too
+                ! for future reference, set a mask = 1 for this category and cell
+                iceCellCategoryMask(iCat,iCell) = 1
 
-                thisTracer => thisTracer % next
-
-                do while (associated(thisTracer))
-
-                   if (thisTracer % ndims == 2) then
-
-                      ! zero out the tracer and mask
-                      thisTracer % array2D(iCat,iCell) = 0.0_RKIND
-                      thisTracer % arrayMask2D(iCat,iCell) = 0
-
-                   elseif (thisTracer % ndims == 3) then
-
-                      thisTracer % array3D(:,iCat,iCell) = 0.0_RKIND
-                      thisTracer % arrayMask3D(iLayer,iCat,iCell) = 0
-
-                   endif
-
-                   thisTracer => thisTracer % next
-
-                enddo   ! associated(thisTracer)
-
-                ! end of tracer list; point back to mass-like field
-                thisTracer => tracersHead
-
-             endif  ! array2D > eps11
+             endif
 
           enddo  ! iCat
+       enddo   ! iCell
 
-       elseif (thisTracer % ndims == 3) then  ! unlikely for mass field to be 3D, but allowing it just in case
+    elseif (thisTracer % ndims == 3) then
 
-          nLayers = size(thisTracer % array3D, 1)
+       ! mass-like field must be 2D
+       write(stderrUnit,*) 'ERROR: mass-like field must be 2D'
+       call mpas_dmpar_global_abort('Aborting with IR error')
+
+    endif   ! ndims
+
+    ! Now loop through the tracers, setting tracer = 0 wherever iceCellCategoryMask = 1
+
+    thisTracer => thisTracer % next
+
+    do while (associated(thisTracer))
+
+       if (thisTracer % ndims == 2) then
+
+          nCategories = size(thisTracer % array2D, 1)
+
+          do iCell = 1, nCellsSolve
+             do iCat = 1, nCategories
+                
+                if (iceCellCategoryMask(iCat,iCell) == 1) then
+
+                   ! zero out the tracer and mask
+                   thisTracer % array2D(iCat,iCell) = 0.0_RKIND
+                   thisTracer % arrayMask2D(iCat,iCell) = 0
+
+!!                   write(stderrUnit,*) 'Zap tracer: name, iCell, iCat = ', trim(thisTracer % tracerName), iCell, iCat
+
+                endif
+
+             enddo   ! iCat
+          enddo  ! iCell
+
+       elseif (thisTracer % ndims == 3) then
+
           nCategories = size(thisTracer % array3D, 2)
 
-          do iCat = 1, nCategories
+          do iCell = 1, nCellsSolve
+             do iCat = 1, nCategories
 
-             do iLayer = 1, nLayers
+                if (iceCellCategoryMask(iCat,iCell) == 1) then
 
-                if (thisTracer % array3D(iLayer,iCat,iCell) > 0.0_RKIND .and. &
-                    thisTracer % array3D(iLayer,iCat,iCell) < smallMassThreshold) then
+                   ! zero the tracer value and mask in each layer
+                   thisTracer % array3D(:,iCat,iCell) = 0.0_RKIND
+                   thisTracer % arrayMask3D(:,iCat,iCell) = 0
 
-!!                   write(stderrUnit,*) 'ZAP: iCell, iCat, iLayer =', iCell, iCat, iLayer
+!!                   write(stderrUnit,*) 'Zap tracer: name, iCell, iCat = ', trim(thisTracer % tracerName), iCell, iCat
 
-                   ! zero out the mass and mask for this category
-                   thisTracer % array3D(iLayer,iCat,iCell) = 0.0_RKIND
-                   thisTracer % arrayMask3D(iLayer,iCat,iCell) = 0
+                endif
 
-                   ! zero out all tracers too
-                   thisTracer => thisTracer % next
-                   
-                   do while (associated(thisTracer))
-                      
-                      thisTracer % array3D(iLayer,iCat,iCell) = 0.0_RKIND
-                      thisTracer % arrayMask3D(iLayer,iCat,iCell) = 0
-                      
-                      thisTracer => thisTracer % next
-                      
-                   enddo   ! associated(thisTracer)
-                   
-                   ! end of tracer list; point back to mass-like field
-                   thisTracer => tracersHead
+             enddo
+          enddo
 
-                endif  ! array3D > eps11
-                
-             enddo  ! iLayer
-             
-          enddo  ! iCat
-          
-       endif  ! ndims
+       endif   ! ndims
 
-    enddo  ! iCell
+       thisTracer => thisTracer % next
+
+    enddo  ! associated(thisTracer)
+
+    ! clean up
+    call mpas_deallocate_scratch_field(iceCellCategoryMaskField, .true.)
 
   end subroutine zap_small_mass
 

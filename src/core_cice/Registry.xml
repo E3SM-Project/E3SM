@@ -1814,5 +1814,11 @@
 	        <var name="freezingMeltingPotentialInitial"           type="real"     dimensions="nCells"              name_in_code="freezingMeltingPotentialInitial"/>
 	</var_struct>
 
+	<!-- Scratch arrays -->
+        <var_struct name="scratch" time_levs="1">
+                <var name="iceCellMask"                       type="integer"  dimensions="nCells"                      persistence="scratch"/>
+                <var name="iceCellCategoryMask"               type="integer"  dimensions="nCategories nCells"          persistence="scratch"/>
+	</var_struct>
+
 #include "analysis_members/Registry_cice_analysis_members.xml"
 </registry>
