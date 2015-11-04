@@ -93,12 +93,16 @@
      <batch_directive>#SBATCH</batch_directive>
      <jobid_pattern>(\d+)$</jobid_pattern>
      <depend_string> --dependency=afterok:jobid</depend_string>
+     <submit_args>
+       <arg flag="--time" name="wall_time"/>
+       <arg flag="-p" name="queue"/>
+       <arg flag="--account" name="project"/>
+     </submit_args>
      <directives>
-       <directive> -J {{ job_id }}</directive>
-       <directive> --time={{ wall_time }} </directive>
+       <directive> --job-name={{ job_id }}</directive>
        <directive> --nodes={{ num_nodes }}</directive>
        <directive> --ntasks-per-node={{ tasks_per_node }}</directive>
-       <directive> --qos={{ queue }}</directive>
+       <directive> --output={{ output_error_path }} </directive>
      </directives>
    </batch_system>
 
