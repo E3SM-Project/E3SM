@@ -194,8 +194,10 @@ module li_core
       ! halo update for reconstruction coefficients      
       ! Note: Results on multiple processors may be incorrect without this update
 
+      call mpas_timer_start("halo updates")
       call mpas_pool_get_field(meshPool, 'coeffs_reconstruct', coeffsReconstructField)
       call mpas_dmpar_exch_halo_field(coeffsReconstructField)
+      call mpas_timer_stop("halo updates")
 
       ! check for errors and exit
 
@@ -448,6 +450,8 @@ module li_core
       !-----------------------------------------------------------------
       integer :: err, err_tmp, globalErr
  
+      call mpas_timer_start("land ice finalize")
+
       err = 0
       err_tmp = 0
       globalErr = 0
@@ -471,6 +475,8 @@ module li_core
       if (globalErr > 0) then
           call mpas_dmpar_global_abort("An error has occurred in li_core_finalize. Aborting...")
       endif
+
+      call mpas_timer_stop("land ice finalize")
 
    end function li_core_finalize
    !--------------------------------------------------------------------

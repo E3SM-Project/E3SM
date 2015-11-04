@@ -26,6 +26,7 @@ module li_thermal
    use mpas_pool_routines
    use mpas_constants
    use mpas_dmpar
+   use mpas_timer
    use li_setup
    use li_mask
    use li_constants
@@ -381,7 +382,7 @@ module li_thermal
       !       E.g., make sure the temperature read from a file is in Kelvin and not Celsius
 
       ! halo updates
-
+      call mpas_timer_start("halo updates")
       call mpas_pool_get_field(thermalPool, 'surfaceTemperature', surfaceTemperatureField)
       call mpas_dmpar_exch_halo_field(surfaceTemperatureField)
 
@@ -396,6 +397,7 @@ module li_thermal
 !!         call mpas_pool_get_field(thermalPool, 'waterfrac', waterfracField)
 !!         call mpas_dmpar_exch_halo_field(waterfracField)
       endif
+      call mpas_timer_stop("halo updates")
 
       ! === error check
       if (err > 0) then
@@ -1025,7 +1027,7 @@ module li_thermal
       enddo   ! associated(block)
 
       ! halo updates
-
+      call mpas_timer_start("halo updates")
       call mpas_pool_get_field(thermalPool, 'surfaceTemperature', surfaceTemperatureField)
       call mpas_dmpar_exch_halo_field(surfaceTemperatureField)
 
@@ -1040,6 +1042,7 @@ module li_thermal
 !!         call mpas_pool_get_field(thermalPool, 'waterfrac', waterfracField)
 !!         call mpas_dmpar_exch_halo_field(waterfracField)
       endif
+      call mpas_timer_stop("halo updates")
 
       ! === error check
       if (err > 0) then

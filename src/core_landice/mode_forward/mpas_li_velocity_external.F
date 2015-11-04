@@ -518,9 +518,9 @@ contains
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, uReconstructX, uReconstructY, deltat)  ! return values
 !	  call velocity_solver_estimate_SS_SMB(normalVelocity, mesh % sfcMassBal % array)  ! this was used only for some ice2sea experiments, and is not a general routine to use
+          call mpas_timer_stop("velocity_solver_solve_FO")
 
           if (config_output_external_velocity_solver_data) then
-             call mpas_timer_stop("velocity_solver_solve_FO")
              call mpas_timer_start("velocity_solver export")
              call velocity_solver_export_FO_velocity()
              call mpas_timer_stop("velocity_solver export")
