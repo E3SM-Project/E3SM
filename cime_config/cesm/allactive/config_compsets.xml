@@ -45,6 +45,11 @@
   </compset>
 
   <compset>
+    <alias>B1850RG</alias>
+    <lname>1850_CAM55_CLM50%BGC-CROP_CICE_POP2_RTM_CISM1%NOEVOLVE_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>B1850RW</alias>
     <lname>1850_CAM55_CLM50%BGC-CROP_CICE_POP2_RTM_SGLC_DWAV</lname>
   </compset>

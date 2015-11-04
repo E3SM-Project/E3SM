@@ -60,7 +60,7 @@ sub set
     
     $self->{$job}{$id} = $value;
 
-    qx(./xmlchange -file env_batch.xml -id $id -val $value -subgroup $job);
+    qx(./xmlchange -noecho -file env_batch.xml -id $id -val $value -subgroup $job);
 
 }
 
