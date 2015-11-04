@@ -376,7 +376,7 @@ for mct, etc.
   <ADD_CFLAGS DEBUG="TRUE"> -g -O0 </ADD_CFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
   <FFLAGS> -f free -N 255  -h byteswapio -x dir </FFLAGS>
-  <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
+  <FFLAGS_NOOPT> -O1,fp2,ipa0,scalar0,vector0 </FFLAGS_NOOPT>
   <FC_AUTO_R8> -s real64 </FC_AUTO_R8>
   <LDFLAGS> -Wl,--allow-multiple-definition -h byteswapio </LDFLAGS>  
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
@@ -791,7 +791,7 @@ for mct, etc.
 
 <compiler MACH="pleiades-wes">
   <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
-  <MPI_PATH>/nasa/sgi/mpt/2.11r13</MPI_PATH>
+  <MPI_PATH>$(MPI_ROOT)</MPI_PATH>
   <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
   <MPICC>icc</MPICC>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -xSSE4.2 </ADD_FFLAGS>
@@ -800,7 +800,7 @@ for mct, etc.
 
 <compiler MACH="pleiades-san">
   <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
-  <MPI_PATH>/nasa/sgi/mpt/2.11r13</MPI_PATH>
+  <MPI_PATH>$(MPI_ROOT)</MPI_PATH>
   <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
   <MPICC>icc</MPICC>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -xAVX </ADD_FFLAGS>
@@ -809,7 +809,7 @@ for mct, etc.
 
 <compiler MACH="pleiades-ivy">
   <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
-  <MPI_PATH>/nasa/sgi/mpt/2.11r13</MPI_PATH>
+  <MPI_PATH>$(MPI_ROOT)</MPI_PATH>
   <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
   <MPICC>icc</MPICC>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -xAVX </ADD_FFLAGS>
@@ -818,7 +818,7 @@ for mct, etc.
 
 <compiler MACH="pleiades-has">
   <NETCDF_PATH>/nasa/netcdf/4.1.3/intel/mpt</NETCDF_PATH>
-  <MPI_PATH>/nasa/sgi/mpt/2.11r13</MPI_PATH>
+  <MPI_PATH>$(MPI_ROOT)</MPI_PATH>
   <MPI_LIB_NAME>mpi</MPI_LIB_NAME>
   <MPICC>icc</MPICC>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -aCORE-AVX2 -align array32byte </ADD_FFLAGS>

@@ -1,18 +1,19 @@
 #! /usr/bin/env perl
+#------------------------------------------------------------------------------
+# Batch system directives
+#------------------------------------------------------------------------------
+{{ batchdirectives }}
+
 use POSIX qw(strftime);
 use File::Path;
 use File::Copy;
 use File::Spec;
 use File::Basename;
 use XML::LibXML;
-#------------------------------------------------------------------------------
-# Batch system directives
-#------------------------------------------------------------------------------
-{{ batchdirectives }}
 
-if(defined $ENV{'PBS_O_WORKDIR'})
+if(! -e "./xmlquery" and defined $ENV{'PBS_O_WORKDIR'})
 {
-    chdir $ENV{'PBS_O_WORKDIR'};
+	chdir $ENV{'PBS_O_WORKDIR'};
 }
 
 my $scriptname = $0;
@@ -61,7 +62,27 @@ sub main
     }
     $logger->info("lt_archive starting");
     
-    qx($config{'BATCHSUBMIT'} $config{'CASEROOT'}/Tools/lt_archive.sh {{ lt_archive_args }} >> ltArchiveStatus 2>&1);
+    # set up envrionment vars and call the lt_archive.sh script                               
+    my $runComplete = checkRun( "$config{'CASEROOT'}/CaseStatus" );
+    my $staComplete = checkSta( "$config{'CASEROOT'}/stArchiveStatus" );
+
+    if( $runComplete && $staComplete )
+    {
+	$ENV{DOUT_S_ROOT} = $config{'DOUT_S_ROOT'};
+	$ENV{DOUT_L_MSROOT} = $config{'DOUT_L_MSROOT'};
+	$ENV{DOUT_L_HPSS_ACCNT} = $config{'DOUT_L_HPSS_ACCNT'};
+	$ENV{DOUT_L_SAVE_ALL_ON_DISK} = $config{'DOUT_L_SAVE_ALL_ON_DISK'};
+
+	my $LID = strftime("%y%m%d-%H%M%S", localtime);
+
+	qx($config{'CASEROOT'}/Tools/lt_archive.sh {{ lt_archive_args }} >> ltArchiveStatus.$LID 2>&1);
+    }
+    else
+    {
+	$logger->info("lt_archive: run or st_archive is not yet complete or was not successful. Unable to perform long term archive...");
+	exit 1;
+    }
+
     if(-e $testlog)
     {
         open(TL, ">>$testlog");

@@ -180,13 +180,13 @@
     <grid compset="CISM1.+SWAV">
       <sname>0.9x1.25_gx1v6</sname>
       <alias>f09_g16</alias>
-      <lname>a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5_w%null</lname>
+      <lname>a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
     </grid>
 
     <grid compset="CISM1.+DWAV">
       <sname>0.9x1.25_gx1v6</sname>
       <alias>f09_g16</alias>
-      <lname>a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5_w%ww3a</lname>
+      <lname>a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%ww3a</lname>
     </grid>
 
     <grid compset="SGLC.+DWAV">
@@ -204,12 +204,12 @@
     <grid compset="CISM1.+SWAV">
       <sname>1.9x2.5_gx1v6</sname>
       <alias>f19_g16</alias>
-      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5_w%null</lname>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
     </grid>
     <grid compset="CISM1.+DWAV">
       <sname>1.9x2.5_gx1v6</sname>
       <alias>f19_g16</alias>
-      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5_w%ww3a</lname>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%ww3a</lname>
     </grid>
     <grid compset="SGLC.+DWAV">
       <sname>1.9x2.5_gx1v6</sname>

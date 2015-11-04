@@ -70,6 +70,9 @@ sub new
     }
     # set up paths to the template files, this could and should be extracted out somehow??
     $self->{'job_id'} = $self->{'case'};
+    if ($self->{'machine'} =~ /pleiades/) { # pleiades jobname needs to be limited to 15 chars
+	$self->{'job_id'} = substr( $self->{'job_id'}, 0, 15 );
+    }
     $self->{'output_error_path'} = $self->{'case'};
     $self->{'configbatch'} = "$self->{'machroot'}/config_batch.xml";
     $self->{'configmachines'} = "$self->{'machroot'}/config_machines.xml";

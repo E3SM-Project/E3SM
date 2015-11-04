@@ -790,6 +790,7 @@
     <BATCHQUERY>qstat</BATCHQUERY>
     <BATCHREDIRECT></BATCHREDIRECT>
     <BATCHSUBMIT>qsub </BATCHSUBMIT>
+    <GMAKE>gmake --output-sync</GMAKE>
     <GMAKE_J>4</GMAKE_J>
     <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>24</PES_PER_NODE>
@@ -1007,7 +1008,7 @@
 	<queue waltimemin="0" walltimemax="360" jobmin="512" jobmax="4096" default="true">default</queue>
       </queues>
       <walltimes>
-	<walltime default="true">15</walltime>
+	<walltime default="true">60</walltime>
 	<walltime ccsm_estcost="-3">60</walltime>
 	<walltime ccsm_estcost="0">60</walltime>
       </walltimes>
@@ -1113,7 +1114,7 @@
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <DOUT_L_MSROOT>/u/$USER/csm/$CASE</DOUT_L_MSROOT>
     <BATCHQUERY>qstat</BATCHQUERY>
     <BATCHSUBMIT>qsub</BATCHSUBMIT>
     <BATCHREDIRECT></BATCHREDIRECT>
@@ -1125,30 +1126,31 @@
     <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
     <batch_system type="pbs">
       <queues>
-	<queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">ldan</queue>
+	<queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">normal</queue>
       </queues>
       <walltimes>
-	<walltime default="true">04:00:00</walltime>
+	<walltime default="true">08:00:00</walltime>
       </walltimes>
-      <mpirun mpilib="mpi-serial">
-	<executable></executable>
-      </mpirun>
-      <mpirun mpilib="default">
-	<executable>mpiexec_mpt</executable>
-	<arguments>
-          <arg name="num_tasks">-n {{ num_tasks }}</arg>
-	</arguments>
-      </mpirun>
     </batch_system>
+    <mpirun mpilib="mpi-serial">
+      <executable></executable>
+    </mpirun>
+    <mpirun mpilib="default">
+      <executable>mpiexec_mpt</executable>
+      <arguments>
+        <arg name="num_tasks">-n {{ num_tasks }}</arg>
+      </arguments>
+    </mpirun>
     <module_system type="module">
-      <init_path lang="perl">/usr/share/modules/init/perl.pm</init_path>
-      <init_path lang="csh">/usr/share/modules/init/csh</init_path>
-      <init_path lang="sh">/usr/share/modules/init/sh</init_path>
-      <cmd_path lang="perl">/usr/share/modules/bin/modulecmd perl</cmd_path>
+      <init_path lang="perl">/usr/share/Modules/3.2.10/init/perl.pm</init_path>
+      <init_path lang="sh">/usr/share/Modules/3.2.10/init/sh</init_path>
+      <init_path lang="csh">/usr/share/Modules/3.2.10/init/csh</init_path>
+      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <modules>
 	<command name="purge"/>
+	<command name="load">perl/5.20.1</command>
 	<command name="load">comp-intel/2015.0.090</command>
 	<command name="load">mpi-sgi/mpt.2.11r13</command>
 	<command name="load">netcdf/4.1.3/intel/mpt</command>
@@ -1175,7 +1177,7 @@
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <DOUT_L_MSROOT>/u/$USER/csm/$CASE</DOUT_L_MSROOT>
     <BATCHQUERY>qstat</BATCHQUERY>
     <BATCHSUBMIT>qsub</BATCHSUBMIT>
     <BATCHREDIRECT></BATCHREDIRECT>
@@ -1187,10 +1189,10 @@
     <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
     <batch_system type="pbs">
       <queues>
-	<queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">ldan</queue>
+	<queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">normal</queue>
       </queues>
       <walltimes>
-	<walltime default="true">04:00:00</walltime>
+	<walltime default="true">08:00:00</walltime>
       </walltimes>
     </batch_system>
     <mpirun mpilib="mpi-serial">
@@ -1203,14 +1205,15 @@
       </arguments>
     </mpirun>
     <module_system type="module">
-      <init_path lang="perl">/usr/share/modules/init/perl.pm</init_path>
-      <init_path lang="csh">/usr/share/modules/init/csh</init_path>
-      <init_path lang="sh">/usr/share/modules/init/sh</init_path>
-      <cmd_path lang="perl">/usr/share/modules/bin/modulecmd perl</cmd_path>
+      <init_path lang="perl">/usr/share/Modules/3.2.10/init/perl.pm</init_path>
+      <init_path lang="sh">/usr/share/Modules/3.2.10/init/sh</init_path>
+      <init_path lang="csh">/usr/share/Modules/3.2.10/init/csh</init_path>
+      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <modules>
 	<command name="purge"/>
+	<command name="load">perl/5.20.1</command>
 	<command name="load">comp-intel/2015.0.090</command>
 	<command name="load">mpi-sgi/mpt.2.11r13</command>
 	<command name="load">netcdf/4.1.3/intel/mpt</command>
@@ -1237,7 +1240,7 @@
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <DOUT_L_MSROOT>/u/$USER/csm/$CASE</DOUT_L_MSROOT>
     <BATCHQUERY>qstat</BATCHQUERY>
     <BATCHSUBMIT>qsub</BATCHSUBMIT>
     <BATCHREDIRECT></BATCHREDIRECT>
@@ -1249,30 +1252,31 @@
     <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
     <batch_system type="pbs">
       <queues>
-	<queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">ldan</queue>
+	<queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">normal</queue>
       </queues>
       <walltimes>
-	<walltime default="true">04:00:00</walltime>
+	<walltime default="true">08:00:00</walltime>
       </walltimes>
-      <mpirun mpilib="mpi-serial">
-	<executable></executable>
-      </mpirun>
-      <mpirun mpilib="default">
-	<executable>mpiexec_mpt</executable>
-	<arguments>
-          <arg name="num_tasks">-n {{ num_tasks }}</arg>
-	</arguments>
-      </mpirun>
     </batch_system>
+    <mpirun mpilib="mpi-serial">
+      <executable></executable>
+    </mpirun>
+    <mpirun mpilib="default">
+      <executable>mpiexec_mpt</executable>
+      <arguments>
+        <arg name="num_tasks">-n {{ num_tasks }}</arg>
+      </arguments>
+    </mpirun>
     <module_system type="module">
-      <init_path lang="perl">/usr/share/modules/init/perl.pm</init_path>
-      <init_path lang="csh">/usr/share/modules/init/csh</init_path>
-      <init_path lang="sh">/usr/share/modules/init/sh</init_path>
-      <cmd_path lang="perl">/usr/share/modules/bin/modulecmd perl</cmd_path>
+      <init_path lang="perl">/usr/share/Modules/3.2.10/init/perl.pm</init_path>
+      <init_path lang="sh">/usr/share/Modules/3.2.10/init/sh</init_path>
+      <init_path lang="csh">/usr/share/Modules/3.2.10/init/csh</init_path>
+      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <modules>
 	<command name="purge"/>
+	<command name="load">perl/5.20.1</command>
 	<command name="load">comp-intel/2015.0.090</command>
 	<command name="load">mpi-sgi/mpt.2.11r13</command>
 	<command name="load">netcdf/4.1.3/intel/mpt</command>
@@ -1299,7 +1303,7 @@
     <DIN_LOC_ROOT>/nobackup/mjmills2/ccsmdata/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/nobackup/mjmills2/ccsmdata/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/nobackup/$USER/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <DOUT_L_MSROOT>/u/$USER/csm/$CASE</DOUT_L_MSROOT>
     <BATCHQUERY>qstat</BATCHQUERY>
     <BATCHSUBMIT>qsub</BATCHSUBMIT>
     <BATCHREDIRECT></BATCHREDIRECT>
@@ -1311,30 +1315,31 @@
     <CCSM_CPRNC>/u/fvitt/bin/cprnc</CCSM_CPRNC>
     <batch_system type="pbs">
       <queues>
-	<queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">ldan</queue>
+	<queue walltimemin="" walltimemax="" jobmin="0" jobmax="9999" default="true">normal</queue>
       </queues>
       <walltimes>
-	<walltime default="true">04:00:00</walltime>
+	<walltime default="true">08:00:00</walltime>
       </walltimes>
-      <mpirun mpilib="mpi-serial">
-	<executable></executable>
-      </mpirun>
-      <mpirun mpilib="default">
-	<executable>mpiexec_mpt</executable>
-	<arguments>
-          <arg name="num_tasks">-n {{ num_tasks }}</arg>
-	</arguments>
-      </mpirun>
     </batch_system>
+    <mpirun mpilib="mpi-serial">
+      <executable></executable>
+    </mpirun>
+    <mpirun mpilib="default">
+      <executable>mpiexec_mpt</executable>
+      <arguments>
+        <arg name="num_tasks">-n {{ num_tasks }}</arg>
+      </arguments>
+    </mpirun>
     <module_system type="module">
-      <init_path lang="perl">/usr/share/modules/init/perl.pm</init_path>
-      <init_path lang="csh">/usr/share/modules/init/csh</init_path>
-      <init_path lang="sh">/usr/share/modules/init/sh</init_path>
-      <cmd_path lang="perl">/usr/share/modules/bin/modulecmd perl</cmd_path>
+      <init_path lang="perl">/usr/share/Modules/3.2.10/init/perl.pm</init_path>
+      <init_path lang="sh">/usr/share/Modules/3.2.10/init/sh</init_path>
+      <init_path lang="csh">/usr/share/Modules/3.2.10/init/csh</init_path>
+      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <modules>
 	<command name="purge"/>
+	<command name="load">perl/5.20.1</command>
 	<command name="load">comp-intel/2015.0.090</command>
 	<command name="load">mpi-sgi/mpt.2.11r13</command>
 	<command name="load">netcdf/4.1.3/intel/mpt</command>
@@ -1434,7 +1439,7 @@
 	<walltime default="true">2:00</walltime>
 	<walltime ccsm_estcost="-1">2:00</walltime>
 	<walltime ccsm_estcost="0">4:00</walltime>
-	<walltime ccsm_estcost="1">8:00</walltime>
+	<walltime ccsm_estcost="1">12:00</walltime>
       </walltimes>
     </batch_system>
     <mpirun mpilib="mpi-serial">

@@ -45,6 +45,11 @@
   </compset>
 
   <compset>
+    <alias>B1850RG</alias>
+    <lname>1850_CAM55_CLM50%BGC-CROP_CICE_POP2_RTM_CISM1%NOEVOLVE_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>B1850RW</alias>
     <lname>1850_CAM55_CLM50%BGC-CROP_CICE_POP2_RTM_SGLC_DWAV</lname>
   </compset>
@@ -241,6 +246,28 @@
 
   <!-- SOM compsets -->
 
+
+  <compset>
+    <alias>ETEST</alias>
+    <lname>2000_CAM55_CLM50%CROP_CICE_DOCN%SOM_MOSART_SGLC_SWAV_TEST</lname>
+  </compset>
+
+  <compset>
+    <alias>E1850C5L40CNR</alias>
+    <lname>1850_CAM5_CLM40%SP_CICE_DOCN%SOM_RTM_SGLC_SWAV</lname>
+    <support>Requires additional user-supplied datasets></support>
+  </compset>
+
+  <compset>
+    <alias>E1850C5L40CNRTEST</alias>
+    <lname>1850_CAM5_CLM40%SP_CICE_DOCN%SOM_RTM_SGLC_SWAV_TEST</lname>
+  </compset>
+
+  <compset>
+    <alias>E1850C4L40CNR</alias>
+    <support>Requires additional user-supplied datasets</support>
+    <lname>1850_CAM4_CLM40%CN_CICE_DOCN%SOM_RTM_SGLC_SWAV</lname>
+  </compset>
 
   <entries>
 <!-- Reference cases from older cesm versions are no longer valid

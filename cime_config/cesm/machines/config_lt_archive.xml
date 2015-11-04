@@ -20,6 +20,6 @@
       <lt_archive_args></lt_archive_args>
     </machine>
     <machine name="yellowstone">
-      <lt_archive_args></lt_archive_args>
+      <lt_archive_args>--mode copy_files</lt_archive_args>
     </machine>
 </config_lt_archive>

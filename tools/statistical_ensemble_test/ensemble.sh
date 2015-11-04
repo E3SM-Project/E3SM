@@ -224,8 +224,8 @@ create_cases ()
     else
       cd $CASE
     fi
-    EXE=`./xmlquery EXEROOT -valonly`
-    EXEROOT=${EXE#"EXEROOT = "}
+    EXE=`./xmlquery EXEROOT -value`
+    EXEROOT="$(echo -e "$EXE" | sed -e 's/[[:space:]]*$//')"
 
     # Edit env_build in cloned case
     if [ $test_suite = 'TRUE' ]; then
@@ -233,9 +233,12 @@ create_cases ()
     else
       cd $CASE1
     fi
-    ./xmlchange -file env_build.xml -id EXEROOT -val $EXEROOT
-    ./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE
-    ./case_setup
+	echo "running ./xmlchange EXEROOT=\"$EXEROOT\""
+    ./xmlchange EXEROOT="$EXEROOT"
+    echo "running ./xmlchange BUILD_COMPLETE=\"TRUE\""
+    ./xmlchange BUILD_COMPLETE="TRUE"
+    echo "running case.setup"
+    `./case.setup`
 
     # For validations, subsequent cloned cases will have the pertlim from the
     # parent case. We neet to remove the original case's pertlim before we set
@@ -249,11 +252,12 @@ create_cases ()
     ./preview_namelists
 
     # Adjust walltime, account number and ptile in clone
-    fix_run_script $CASE1_NAME
+    #fix_run_script $CASE1_NAME
+    fix_run_script case
 
     # Only submit the cloned case if --nosubmit is off
     if [ $nosubmit != 'on' ]; then
-      ./$CASE1_NAME.submit
+      ./case.submit
     fi
 
   done
