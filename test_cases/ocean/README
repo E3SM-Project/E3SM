@@ -174,3 +174,17 @@ Within each XML file, the following XML description is available:
 		  the argument after the flag. In the example "mpirun -n 4" the flag
 		  would be -n, and the text would be 4.
 
+<driver_script> - This tag defines a driver script for a set of case directories.
+	- Attributes:
+		* name: The name of the driver script that will be generated
+	- Children:
+		* <case>
+
+<case> - This tag defines the case that will be used for part of a driver
+		 script. It implies the driver script should `cd` into the case directory before
+		 executing the steps / arguments defined within.
+	- Attributes:
+		* name: The name of the case directory that will be used for this
+				portion of the driver script.
+	- Children:
+		* <step>

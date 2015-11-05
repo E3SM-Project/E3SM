@@ -509,6 +509,50 @@ def generate_run_scripts(config_file, init_path):#{{{
 	del config_tree
 	del config_root
 #}}}
+
+def generate_driver_scripts(config_file, init_path):#{{{
+	config_tree = ET.parse(config_file)
+	config_root = config_tree.getroot()
+	dev_null = open('/dev/null', 'r+')
+
+	if config_root.tag == 'driver_script':
+		name = config_root.attrib['name']
+		script = open('%s/%s'%(init_path, name), 'w')
+
+		script.write('#!/usr/bin/env python\n')
+		script.write('import os, subprocess\n')
+
+		script.write('\n')
+		script.write('base_path = os.getcwd()')
+		script.write('\n')
+
+		for child in config_root.iter('*'):
+			if child.tag == 'case':
+				case = child.attrib['name']
+				script.write('os.chdir(base_path)\n')
+				script.write('os.chdir(' + "'%s')\n"%(case))
+				for grandchild in child.iter('*'):
+					if grandchild.tag == 'step':
+						executable = grandchild.attrib['executable']
+						script.write('subprocess.check_call([' + "'%s'"%(executable) + '])\n')
+
+		script.close()
+		subprocess.check_call(['chmod', 'a+x', '%s/%s'%(init_path, name)], stdout=dev_null, stderr=dev_null)
+#}}}
+
+def is_config_case_file(config_file):#{{{
+	config_tree = ET.parse(config_file)
+	config_root = config_tree.getroot()
+
+	is_case = False
+	if config_root.tag == 'config':
+		is_case = True
+
+	del config_root
+	del config_tree
+
+	return is_case
+#}}}
 #}}}
 
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
@@ -537,27 +581,31 @@ for file in os.listdir('%s'%(base_path)):
 	if fnmatch.fnmatch(file, '*.xml'):
 		config_file = '%s/%s'%(base_path, file)
 
-		case_dir = make_case_dir(config_file, base_path)
-		case_mode = get_case_mode(config_file)
+		if is_config_case_file(config_file):
+			case_dir = make_case_dir(config_file, base_path)
+			case_mode = get_case_mode(config_file)
 
-		case_path = '%s/%s'%(base_path, case_dir)
+			case_path = '%s/%s'%(base_path, case_dir)
 
-		if not config.has_option("streams", case_mode) or not config.has_option("namelists", case_mode):
-			print "Error. Configuration file %s is requires paths for streams and namelist files for %s mode."%(args.config_file, case_mode)
-			quit(1)
+			if not config.has_option("streams", case_mode) or not config.has_option("namelists", case_mode):
+				print "Error. Configuration file %s is requires paths for streams and namelist files for %s mode."%(args.config_file, case_mode)
+				quit(1)
+			else:
+				case_streams_template = config.get("streams", case_mode)
+				case_namelist_template = config.get("namelists", case_mode)
+				
+			generate_namelist_files(config_file, case_path, case_namelist_template, template_path)
+
+			generate_streams_files(config_file, case_path, case_streams_template, template_path)
+
+			add_links(config_file, args, config)
+
+			get_defined_files(config_file, '%s'%(case_path), args, config)
+
+			generate_run_scripts(config_file, '%s'%(case_path))
+
+			print " -- Set up case: %s/%s"%(base_path, case_dir)
 		else:
-			case_streams_template = config.get("streams", case_mode)
-			case_namelist_template = config.get("namelists", case_mode)
-			
-		generate_namelist_files(config_file, case_path, case_namelist_template, template_path)
-
-		generate_streams_files(config_file, case_path, case_streams_template, template_path)
-
-		add_links(config_file, args, config)
-
-		get_defined_files(config_file, '%s'%(case_path), args, config)
-
-		generate_run_scripts(config_file, '%s'%(case_path))
-
-		print " -- Set up case: %s/%s"%(base_path, case_dir)
+			generate_driver_scripts(config_file, base_path)
+			print " -- Set up driver script in %s"%(base_path)
 
