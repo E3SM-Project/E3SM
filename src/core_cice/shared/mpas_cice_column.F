@@ -3271,11 +3271,6 @@ contains
     logical, pointer :: &
          config_use_ice_age
 
-    ! halo update of state variables
-    call mpas_timer_start("Column halo update")
-    call cice_column_state_halo_update(domain)
-    call mpas_timer_stop("Column halo update")
-
     ! aggregate state variables
     call mpas_timer_start("Column aggregate")
     call cice_column_aggregate(domain)
@@ -3342,74 +3337,6 @@ contains
     enddo
 
   end subroutine cice_column_update_state
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  cice_column_state_halo_update
-!
-!> \brief 
-!> \author Adrian K. Turner, LANL
-!> \date 31st March 2015
-!> \details
-!>  
-!
-!-----------------------------------------------------------------------
-
-  subroutine cice_column_state_halo_update(domain)
-
-    use mpas_dmpar
-
-    type(domain_type), intent(inout) :: domain
-
-    type(MPAS_pool_type), pointer :: &
-         tracers
-
-    type(MPAS_pool_iterator_type) :: &
-         tracersIterator
-
-    type(MPAS_pool_field_info_type) :: &
-         tracerInfo
-    
-    type(field3DReal), pointer :: &
-         tracerField3DReal
-
-    ! get the tracers pool
-    call MPAS_pool_get_subpool(domain % blocklist % structs, "tracers", tracers)
-
-    ! iterate over the members of the tracers pool
-    call MPAS_pool_begin_iteration(tracers)
-    do while (MPAS_pool_get_next_member(tracers, tracersIterator))
-
-       if (tracersIterator % memberType == MPAS_POOL_FIELD) then
-
-          ! get the tracer info type
-          call MPAS_pool_get_field_info(tracers, tracersIterator % memberName, tracerInfo)
-
-          ! only exchange halos if tracer is active
-          if (tracerInfo % isActive) then
-
-             ! select tracer rank
-             if (tracerInfo % nDims == 3) then
-
-                call mpas_timer_start("Halo")
-
-                ! get the field
-                call MPAS_pool_get_field(tracers, tracersIterator % memberName, tracerField3DReal, 1)
-
-                ! exchange the halo
-                call MPAS_dmpar_exch_halo_field(tracerField3DReal)
-
-                call mpas_timer_stop("Halo")
-
-             endif
-
-          endif
-
-       endif
-
-    end do ! tracers pool iterator
-
-  end subroutine cice_column_state_halo_update
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
