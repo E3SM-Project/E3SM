@@ -451,7 +451,7 @@
     <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
-	<arg name="list"> --list </arg>
+	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n {{ num_tasks }}</arg>
 
 	<arg name="thread_count" > -c {{ thread_count }}</arg>
