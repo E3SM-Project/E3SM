@@ -505,14 +505,30 @@ def generate_run_scripts(config_file, init_path):#{{{
 #}}}
 
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-parser.add_argument("-o", "--core", dest="core", help="Core that contains configurations", metavar="CORE", required=True)
-parser.add_argument("-c", "--configuration", dest="configuration", help="Configuration to setup", metavar="CONFIG", required=True)
-parser.add_argument("-r", "--resolution", dest="resolution", help="Resolution of configuration to setup", metavar="RES", required=True)
+parser.add_argument("-o", "--core", dest="core", help="Core that contains configurations", metavar="CORE")
+parser.add_argument("-c", "--configuration", dest="configuration", help="Configuration to setup", metavar="CONFIG")
+parser.add_argument("-r", "--resolution", dest="resolution", help="Resolution of configuration to setup", metavar="RES")
+parser.add_argument("-n", "--case_number", dest="case_num", help="Case number to setup, as listed from list_testcases.py.", metavar="NUM")
 parser.add_argument("-f", "--config_file", dest="config_file", help="Configuration file for test case setup", metavar="FILE", required=True)
 parser.add_argument("--no_download", dest="no_download", help="If set, script will not auto-download base_mesh files", action="store_true")
 parser.add_argument("--copy_instead_of_symlink", dest="nolink_copy", help="If set, script will replace symlinks with copies of files.", action="store_true")
 
 args = parser.parse_args()
+
+if not args.case_num and ( not args.core and not args.configuration and not args.resolution):
+	print 'Must be run with either the --case_number argument, or the core, configuration, and resolution arguments.'
+	parser.error(' Invalid configuration. Exiting...')
+
+if args.case_num and args.core and args.configuration and args.resoltuion:
+	print 'Can only be configured with either --case_number (-n) or --core (-o), --configuration (-c), and --resolution (-r).'
+	parser.error(' Invalid configuration. Too many options used. Exiting...')
+
+if args.case_num:
+	core_configuration = subprocess.check_output(['./list_testcases.py', '-n', '%d'%(int(args.case_num))])
+	config_options = core_configuration.strip('\n').split(' ')
+	args.core = config_options[1]
+	args.configuration = config_options[3]
+	args.resolution = config_options[5]
 
 config = ConfigParser.SafeConfigParser()
 config.read(args.config_file)
