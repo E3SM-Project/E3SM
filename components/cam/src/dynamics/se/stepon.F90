@@ -319,18 +319,18 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       ! Since these quantities are already tendencies, there's nothing more to do here. 
       ! If ftype==1 ("apply physics as an adjustment"), entire physics forcing is applied at 
       ! the beginning of the step. This requires updating the model state with the most 
-      ! recent physics tendency.
+      ! recent physics tendency. Note that ftype<0 exists for debugging but doesn't require 
+      ! any work here and I'm removing ftype=2 per agreement with MT. (PMC 11/5/15)
       !---------------------------------------------------
       if (ftype==1) then
          ! apply forcing to state tl_f
          ! requires forward-in-time timestepping, checked in namelist_mod.F90
 
-         !???????? PMC shouldn't there be a 'do private' flag here? ??????
+         !???????? Wouldn't a 'do private' flag be beneficial here? ??????
          do k=1,nlev
             do j=1,np
                do i=1,np
                   do ic=1,pcnst
-                     !PMC ??????? the next line only works if phys_tscale==0 ????????
                      ! apply forcing to Qdp
                      dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) = &
                           dyn_in%elem(ie)%state%Qdp(i,j,k,ic,tl_fQdp) + &
@@ -361,8 +361,8 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
          ! Updating ps has the effect of redrawing cell edges in our sigma coordinate system. Because  
          ! layer boundaries are redrawn, cell-averaged Q values must be recalculated. Qdp is assumed 
          ! unchanged by this redrawing, so Q can be computed as Qdp divided by the new dp values. I
-         ! (PMC) am not sure why Qdp is constant other than to note that Qdp is proportional to the 
-         ! total mass in the cell and the vertically-integrated total mass must be conserved.
+         ! (PMC) think it's probably inappropriate to assume Qdp is constant when cell edges are redrawn
+	 ! but leave this for future work.
 
 !$omp parallel do private(k, j, i, ic, dp_tmp)
          do k=1,nlev

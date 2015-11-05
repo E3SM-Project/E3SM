@@ -15,7 +15,7 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_si, prim_advance_init, preq_robert3,&
-       applyCAMforcing_dynamics, applyCAMforcing, smooth_phis, overwrite_SEdensity
+       applyCAMforcing, smooth_phis, overwrite_SEdensity
 
   type (EdgeBuffer_t) :: edge1
   type (EdgeBuffer_t) :: edge2
@@ -1552,34 +1552,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           dt_q*elem(ie)%derived%FM(:,:,:,:,1)
   enddo
   end subroutine applyCAMforcing
-
-
-
-  subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,dt_q,nets,nete)
-  use dimensions_mod, only : np, nlev, qsize
-  use element_mod, only : element_t
-  use hybvcoord_mod, only : hvcoord_t
-  
-  implicit none
-  type (element_t)     , intent(inout) :: elem(:)
-  real (kind=real_kind), intent(in) :: dt_q
-  type (hvcoord_t), intent(in)      :: hvcoord
-  integer,  intent(in) :: np1,nets,nete
-  
-  ! local
-  integer :: i,j,k,ie,q
-  real (kind=real_kind) :: v1,dp
-  logical :: wet  
-  
-  do ie=nets,nete
-     elem(ie)%state%T(:,:,:,np1) = elem(ie)%state%T(:,:,:,np1) + &
-          dt_q*elem(ie)%derived%FT(:,:,:,1)
-     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + &
-          dt_q*elem(ie)%derived%FM(:,:,:,:,1)
-  enddo
-  end subroutine applyCAMforcing_dynamics
-
-
 
   subroutine advance_hypervis(edge3,elem,hvcoord,hybrid,deriv,nt,nets,nete,dt2,eta_ave_w)
   !
