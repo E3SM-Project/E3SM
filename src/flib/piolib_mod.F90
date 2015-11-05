@@ -877,6 +877,7 @@ contains
     if(present(base)) lbase=base
     ierr = PIOc_Init_Intracomm_from_F90(comp_comm,num_iotasks,stride,lbase,rearr,iosystem%iosysid)
 
+    call CheckMPIReturn("Bad Initialization in PIO_Init_Intracomm:  ", ierr,__FILE__,__LINE__)
 #ifdef TIMING
     call t_stopf("PIO:init")
 #endif

@@ -156,8 +156,9 @@ iosystem_desc_t *pio_get_iosystem_from_id(int iosysid)
   iosystem_desc_t *ciosystem;
 
   ciosystem = pio_iosystem_list;
+
   while(ciosystem != NULL){
-    // printf("%d ciosystem %ld %ld %d\n",__LINE__,pio_iosystem_list, ciosystem,iosysid);
+    // fprintf(stderr, "%d ciosystem %ld %ld %d\n",__LINE__,pio_iosystem_list, ciosystem,iosysid);
     if(ciosystem->iosysid == iosysid){
       return ciosystem;
     }

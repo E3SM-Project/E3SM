@@ -111,8 +111,15 @@ CONTAINS
     !   --stride
 
     CALL Read_input()
+    IF (pio_tf_world_sz_ < pio_tf_num_io_tasks_) THEN
+       pio_tf_num_io_tasks_ = pio_tf_world_sz_
+    END IF
+    IF (pio_tf_num_io_tasks_ <= 1 .AND. pio_tf_stride_ > 1) THEN
+       pio_tf_stride_ = 1
+    END IF
     IF (pio_tf_num_io_tasks_ == 0) THEN
-      pio_tf_num_io_tasks_ = pio_tf_world_sz_ / pio_tf_stride_;
+      pio_tf_num_io_tasks_ = pio_tf_world_sz_ / pio_tf_stride_
+      IF (pio_tf_num_io_tasks_ < 1) pio_tf_num_io_tasks_ = 1
     END IF
     !IF (pio_tf_world_rank_ == 0) THEN
     !  PRINT *, "PIO_TF: stride=", pio_tf_stride_, ", io_tasks=",&

@@ -1,10 +1,10 @@
-////
-/// @file pio_spmd.c
-/// @author Algorithms modeled after spmd_utils in the Community Atmosphere Model; C translation Jim Edwards
-/// @date 2014
-/// @brief MPI_Gather, MPI_Gatherv, and MPI_Alltoallw with flow control options
-///
-/// 
+/**
+ * @file pio_spmd.c
+ * @author Algorithms modeled after spmd_utils in the Community Atmosphere Model; C translation Jim Edwards
+ * @date 2014
+ * @brief MPI_Gather, MPI_Gatherv, and MPI_Alltoallw with flow control options
+ */
+ 
 #ifdef TESTSWAPM
 #include <mpi.h>
 #include <stdlib.h>
@@ -22,9 +22,9 @@
 #include <pio_internal.h>
 #endif
 
-/// 
-/// Wrapper for MPI calls to print the Error string on error
-/// 
+/** 
+ ** @brief Wrapper for MPI calls to print the Error string on error
+ */
 void CheckMPIReturn(const int ierr,const char file[],const int line)
 {
   
@@ -39,9 +39,9 @@ void CheckMPIReturn(const int ierr,const char file[],const int line)
 }
 
 
-///
-///  pio_fc_gather provides the functionality of MPI_Gather with flow control options
-///
+/**
+ **  @brief Provides the functionality of MPI_Gather with flow control options
+ */
 
 int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype,
 		   void *recvbuf, const int recvcnt, const MPI_Datatype recvtype, const int root, 
@@ -126,10 +126,9 @@ int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype
   
 
 
-///
-///  pio_fc_gatherv provides the functionality of MPI_Gatherv with flow control options
-///
-
+/**
+ **  @brief Provides the functionality of MPI_Gatherv with flow control options
+ */
 
 int pio_fc_gatherv( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype,
 		    void *recvbuf, const int recvcnts[], const int displs[],
@@ -211,7 +210,7 @@ int pio_fc_gatherv( void *sendbuf, const int sendcnt, const MPI_Datatype sendtyp
 }
 
 ///
-///  Returns the smallest power of 2 greater than i
+///  @brief Returns the smallest power of 2 greater than i
 ///  
 int ceil2(const int i)
 {
@@ -223,8 +222,8 @@ int ceil2(const int i)
 }
 
 ///
-///  Given integers p and k between 0 and np-1  
-///  
+///  @brief Given integers p and k between 0 and np-1,  
+///  if (p+1)^k <= np-1 then return (p+1)^k else -1
 int pair(const int np, const int p, const int k)
 {
   int q = (p+1) ^ k ;
@@ -232,11 +231,9 @@ int pair(const int np, const int p, const int k)
   return pair;
 }
 
-
-///
-///  pio_swapm provides the functionality of MPI_Alltoallw with flow control options
-///
-
+/**
+ **  @brief Provides the functionality of MPI_Alltoallw with flow control options
+ */
 int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes[], 
 	      void *rcvbuf,  int rcvlths[],  int rdispls[],  MPI_Datatype rtypes[], 
 	       MPI_Comm comm,const  bool handshake, bool isend,const  int max_requests)
