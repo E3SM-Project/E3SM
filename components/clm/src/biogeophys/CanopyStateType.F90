@@ -54,6 +54,7 @@ module CanopyStateType
 
      real(r8) , pointer :: rscanopy_patch           (:)   ! patch canopy stomatal resistance (s/m) (ED specific)
 
+     real(r8),  pointer :: lbl_rsc_h2o_patch        (:)   ! laminar boundary layer resistance for water over dry leaf (s/m)
    contains
 
      procedure, public  :: Init
@@ -134,6 +135,7 @@ contains
     allocate(this%dewmx_patch              (begp:endp))           ; this%dewmx_patch              (:)   = nan
 
     allocate(this%rscanopy_patch           (begp:endp))           ; this%rscanopy_patch           (:)   = nan
+    allocate(this%lbl_rsc_h2o_patch        (begp:endp))           ; this%lbl_rsc_h2o_patch        (:)   = nan
 
   end subroutine InitAllocate
 
