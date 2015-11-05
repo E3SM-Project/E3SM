@@ -206,8 +206,6 @@ contains
 
     if (config_use_velocity_solver) then
 
-       call cice_debug_write_out_fields(domain, "cice_run_velocity_solver", 1)
-
        ! pre subcycle
        call mpas_timer_start("Velocity solver pre-cycle")
        call velocity_solver_pre_subcycle(domain)
@@ -222,8 +220,6 @@ contains
        call mpas_timer_start("Velocity solver post-cycle")
        call velocity_solver_post_subcycle(domain)
        call mpas_timer_stop("Velocity solver post-cycle")
-       
-       call cice_debug_write_out_fields(domain, "cice_run_velocity_solver", 2)
 
     endif ! config_use_velocity_solver
 

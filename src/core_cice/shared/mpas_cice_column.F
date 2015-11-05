@@ -868,11 +868,9 @@ contains
        ! Update the aggregated state variables
        !-----------------------------------------------------------------
 
-       call cice_debug_write_out_fields(domain, "cice_column_update_state", 1)
        call mpas_timer_start("Column update state")
        call cice_column_update_state(domain, "thermodynamics", config_dt, config_dt)
        call mpas_timer_stop("Column update state")
-       call cice_debug_write_out_fields(domain, "cice_column_update_state", 2)
 
     endif
 
@@ -928,11 +926,9 @@ contains
        ! Update the aggregated state variables
        !-----------------------------------------------------------------
 
-       call cice_debug_write_out_fields(domain, "cice_column_update_state", 3)
        call mpas_timer_start("Column update state")
        call cice_column_update_state(domain, "transport", dynamicsTimeStep, 0.0_RKIND)
        call mpas_timer_stop("Column update state")
-       call cice_debug_write_out_fields(domain, "cice_column_update_state", 4)
 
     endif
 
@@ -1191,8 +1187,6 @@ contains
 
     real(kind=RKIND) :: &
          dayOfYear
-
-    call cice_debug_write_out_fields(domain, "column_vertical_thermodynamics", 1)
 
     ! day of year
     call get_day_of_year(clock, dayOfYear)
@@ -1579,8 +1573,6 @@ contains
 
        block => block % next
     end do
-
-    call cice_debug_write_out_fields(domain, "column_vertical_thermodynamics", 2)
     
   end subroutine column_vertical_thermodynamics
 
@@ -1699,8 +1691,6 @@ contains
 
     real(kind=RKIND) :: &
          dayOfYear
-
-    call cice_debug_write_out_fields(domain, "column_itd_thermodynamics", 1)
 
     ! day of year
     call get_day_of_year(clock, dayOfYear)
@@ -1873,8 +1863,6 @@ contains
        block => block % next
     end do
 
-    call cice_debug_write_out_fields(domain, "column_itd_thermodynamics", 2)
-
   end subroutine column_itd_thermodynamics
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -1939,8 +1927,6 @@ contains
     integer :: &
          iCell
 
-    call cice_debug_write_out_fields(domain, "column_prep_radiation", 1)
-
     block => domain % blocklist
     do while (associated(block))
 
@@ -2004,8 +1990,6 @@ contains
 
        block => block % next
     end do
-
-    call cice_debug_write_out_fields(domain, "column_prep_radiation", 2)
 
   end subroutine column_prep_radiation
 
@@ -2154,8 +2138,6 @@ contains
 
     real(kind=RKIND), parameter :: &
          CCSMDayNextShortwaveCalculation = 0.0_RKIND
-
-    call cice_debug_write_out_fields(domain, "column_radiation", 1)
 
     ! day of year
     call get_day_of_year(clock, dayOfYear)
@@ -2366,8 +2348,6 @@ contains
        block => block % next
     end do
 
-    call cice_debug_write_out_fields(domain, "column_radiation", 2)
-
   end subroutine column_radiation
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -2478,8 +2458,6 @@ contains
 
     character(len=strKIND) :: &
          abortMessage
-
-    call cice_debug_write_out_fields(domain, "column_ridging", 1)
 
     block => domain % blocklist
     do while (associated(block))
@@ -2634,8 +2612,6 @@ contains
 
        block => block % next
     end do
-
-    call cice_debug_write_out_fields(domain, "column_ridging", 2)
 
   end subroutine column_ridging
 
@@ -2809,8 +2785,6 @@ contains
 
     character(len=strKIND) :: &
          abortMessage
-
-    call cice_debug_write_out_fields(domain, "column_biogeochemistry", 1)
 
     block => domain % blocklist
     do while (associated(block))
@@ -3093,8 +3067,6 @@ contains
 
        block => block % next
     end do
-
-    call cice_debug_write_out_fields(domain, "column_biogeochemistry", 2)
     
   end subroutine column_biogeochemistry
 
@@ -3571,8 +3543,6 @@ contains
     real(kind=RKIND), dimension(:), allocatable :: &
          oceanBioFluxesAll
 
-    call cice_debug_write_out_fields(domain, "cice_column_coupling_prep", 1)
-
     call MPAS_pool_get_config(domain % configs, "config_use_ocean_mixed_layer", config_use_ocean_mixed_layer)
     call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
     call MPAS_pool_get_config(domain % configs, "config_include_pond_freshwater_feedback", config_include_pond_freshwater_feedback)
@@ -3869,8 +3839,6 @@ contains
     enddo
 
     call cice_column_scale_fluxes(domain)
-
-    call cice_debug_write_out_fields(domain, "cice_column_coupling_prep", 2)
 
   end subroutine cice_column_coupling_prep
 

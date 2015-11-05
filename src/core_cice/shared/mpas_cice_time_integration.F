@@ -56,9 +56,6 @@ contains
     use cice_advection, only: &
          cice_run_advection
 
-    use cice_debug, only: &
-         cice_debug_write_out_fields
-
     use cice_column, only: &
          cice_column_predynamics_time_integration, &
          cice_column_dynamics_time_integration, &
@@ -97,8 +94,6 @@ contains
     ! set halo timer
     call mpas_timer_start("Halo")
     call mpas_timer_stop("Halo")
-
-    call cice_debug_write_out_fields(domain, "cice_timestep", 1)
 
     call store_timestep_counter(domain, itimestep)
 
@@ -146,8 +141,6 @@ contains
     call mpas_timer_start("Column")
     call cice_column_postdynamics_time_integration(domain, clock)
     call mpas_timer_stop("Column")
-
-    call cice_debug_write_out_fields(domain, "cice_timestep", 2)
 
     ! reinitialize fluxes
     call cice_column_reinitialize_fluxes(domain)
