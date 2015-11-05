@@ -1188,8 +1188,14 @@ contains
        ! compute the cross product and dot with normal, if negative we are outside cell
        ! we only need to fail on a single test!
        call mpas_cross_product_in_r3(vec1,vec2,crossProd)
-       if(sum(crossProd*pVertices(:,v0)) < 0) then
-         point_in_cell = .false.
+       if (on_a_sphere) then
+         if(sum(crossProd*pVertices(:,v0)) < 0) then
+           point_in_cell = .false.
+         end if
+       else
+         if(crossProd(3) < 0) then
+           point_in_cell = .false.
+         end if
        end if
 
      end do
