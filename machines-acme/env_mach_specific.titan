@@ -45,7 +45,7 @@ if (-e /opt/modules/default/init/csh) then
     module load PrgEnv-pgi
     module switch pgi pgi/15.3.0
     #module switch pgi       pgi/14.2.0 
-    module switch cray-mpich cray-mpich/7.2.2
+    module switch cray-mpich cray-mpich/7.2.5
     module switch cray-libsci cray-libsci/13.0.4
     module load esmf/5.2.0rp2
     module switch atp atp/1.7.5
@@ -58,7 +58,7 @@ if (-e /opt/modules/default/init/csh) then
   if ( $COMPILER == "pgi" ) then
       module load PrgEnv-pgi
       module switch pgi pgi/15.3.0 
-      module switch cray-mpich cray-mpich/7.2.2
+      module switch cray-mpich cray-mpich/7.2.5
       module switch cray-libsci cray-libsci/13.0.4
       module load esmf/5.2.0rp2
       module switch atp atp/1.7.5
@@ -71,14 +71,14 @@ if (-e /opt/modules/default/init/csh) then
       module load PrgEnv-intel 
       module switch intel intel/14.0.2.144
       module switch cray-libsci cray-libsci/13.0.4
-      module switch cray-mpich cray-mpich/7.2.2
+      module switch cray-mpich cray-mpich/7.2.5
       module switch atp atp/1.7.5
   endif
   
   if ( $COMPILER == "cray" ) then
       module load PrgEnv-cray
       module load cce
-      module swap cray-mpich cray-mpich/7.2.2
+      module swap cray-mpich cray-mpich/7.2.5
   endif
 
   if ( $MPILIB == "mpi-serial") then
