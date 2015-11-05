@@ -1080,7 +1080,8 @@ contains
                      else
                         write(iulog,*),'mass bal error dif '//tracernames(trcid), mass1,'col=',c,get_cntheta()
                         write(iulog,*)'err=',err_tracer(c,k),dmass(c,k), ' dif=',diff_surf(c,k)*dtime_loc(c), ' prod=',dot_sum(x=local_source(c,jtops(c):ubj,k),y=dz(c,jtops(c):ubj))*dtime_loc(c)
-                        call endrun('mass balance error for tracer '//tracernames(trcid)//' in '//trim(subname)//errMsg(__FILE__, __LINE__))
+                        call endrun('mass balance error for tracer '//tracernames(trcid)//' in ' &
+                           //trim(subname)//errMsg(__FILE__, __LINE__))
                      endif
 
                   enddo
