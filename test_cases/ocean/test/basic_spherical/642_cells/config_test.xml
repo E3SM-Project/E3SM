@@ -1,18 +1,19 @@
 <?xml version="1.0"?>
 <config case="test" mode="forward">
 
-	<get_file hash="vbz0hlsy84" dest="base_mesh.nc">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database" file_name="mesh.QU.642.151008.nc"/>	
-		<mirror protocol="local" path_name="mesh_database" file_name="mesh.QU.642.151008.nc"/>
+	<get_file hash="vbz0hlsy84" dest_path="mesh_database" file_name="mesh.QU.642.151008.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database"/>
 	</get_file>
 
-	<get_file dest="graph.info">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database" file_name="graph.QU.642.151008.info"/>	
-		<mirror protocol="local" path_name="mesh_database" file_name="graph.QU.642.151008.info"/>
+	<get_file dest="graph.info" dest_path="mesh_database" file_name="graph.QU.642.151008.info">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database"/>
 	</get_file>
 
 	<add_executable source="model" dest="test_model"/>
 	<add_executable source="metis" dest="metis"/>
+
+	<add_link source_path="mesh_database" source="graph.QU.642.151008.info" dest="graph.info"/>
+	<add_link source_path="mesh_database" source="mesh.QU.642.151008.nc" dest="base_mesh.nc"/>
 
 	<namelist name="namelist.test"/>
 

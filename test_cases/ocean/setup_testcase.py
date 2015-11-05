@@ -331,11 +331,27 @@ def add_links(config_file, args, configs):#{{{
 	base_path = '%s/%s/%s/%s'%(args.core, args.configuration, args.resolution, case)
 
 	for link in config_root.findall('add_link'):
-		source = link.attrib['source']
+		try:
+			source = link.attrib['source']
+		except:
+			print " add_link tag missing a 'source' attribute."
+			print " Exiting..."
+			quit(1)
+
+		try:
+			source_path_name = link.attrib['source_path']
+			source_path = configs.get('paths', source_path_name)
+			source_file = '%s/%s'%(source_path, source)
+		except:
+			source_file = '%s'%(source)
+
 		dest = link.attrib['dest']
 		old_cwd = os.getcwd()
 		os.chdir(base_path)
-		subprocess.check_call(['ln', '-sf', '%s'%(source), '%s'%(dest)], stdout=dev_null, stderr=dev_null)
+		if args.nolink_copy:
+			subprocess.check_call(['cp', '%s'%(source_file), '%s'%(dest)], stdout=dev_null, stderr=dev_null)
+		else:
+			subprocess.check_call(['ln', '-sf', '%s'%(source_file), '%s'%(dest)], stdout=dev_null, stderr=dev_null)
 		os.chdir(old_cwd)
 		del source
 		del dest
@@ -393,68 +409,87 @@ def get_defined_files(config_file, init_path, args, configs):#{{{
 	dev_null = open('/dev/null', 'w')
 
 	for get_file in config_root.findall('get_file'):
-		dest_name = get_file.attrib['dest']
+		try:
+			dest_path_name = get_file.attrib['dest_path']
+		except:
+			print " get_file tag is missing the 'dest_path' attribute."
+			print " Exiting..."
+			quit(1)
 
-		for mirror in get_file.findall('mirror'):
+		try:
+			file_name = get_file.attrib['file_name']
+		except:
+			print " get_file tag is missing a 'file_name' attribute."
+			print " Exiting..."
+			quit(1)
+
+		if dest_path_name == 'case':
+			dest_path = init_path
+		else:
 			try:
-				protocol = mirror.attrib['protocol']
+				dest_path = '%s'%(configs.get('paths', dest_path_name))
 			except:
-				print "Mirror is missing the 'protocol' attribute."
-				print "Exiting..."
+				print " Path '%s' is not defined in the config file, but is required to get a file."%(dest_path_name)
+				print " Exiting..."
 				quit(1)
 
-			if protocol == 'local':
-
-				try:
-					path = '%s/%s'%( configs.get('paths', mirror.attrib['path_name']), mirror.attrib['file_name'])
-				except:
-					print " Mirror with protocol 'local' is missing one or more attribute of 'path_name' or 'file_name'"
-					print " Or paths.%s doesn't exist in the configuration file."%(mirror.attrib['path_name'])
-					print " Exiting..."
-					quit(1)
-
-				try:
-					subprocess.check_call(['cp', '-f', '%s'%(path), '%s/%s'%(init_path, dest_name)], stdout=dev_null, stderr=dev_null)
-				except:
-					print "  -- Local mirror attempt failed. Trying other mirrors..."
-
-			elif protocol == 'wget':
-				if not args.no_download:
+		if not os.path.exists('%s/%s'%(dest_path, file_name)):
+			file_found = False
+			if not file_found:
+				for mirror in get_file.findall('mirror'):
 					try:
-						name = mirror.attrib['file_name']
-						path = '%s/%s'%( mirror.attrib['url'], mirror.attrib['file_name'])
+						protocol = mirror.attrib['protocol']
 					except:
-						print " Mirror with protocol 'wget' is missing one or more attribute of 'url' or 'file_name'"
-						print " Exiting..."
+						print "Mirror is missing the 'protocol' attribute."
+						print "Exiting..."
 						quit(1)
 
-					try:
-						subprocess.check_call(['wget', '-q', '%s'%(path)], stdout=dev_null, stderr=dev_null)
-						subprocess.check_call(['mv', '%s'%(name), '%s/%s'%(init_path, dest_name)], stdout=dev_null, stderr=dev_null)
-					except:
-						print "  -- Web mirror attempt failed. Trying other mirrors..."
+					if protocol == 'wget':
+						if not args.no_download:
+							try:
+								path = '%s/%s'%( mirror.attrib['url'], file_name)
+							except:
+								print " Mirror with protocol 'wget' is missing a 'url' attribute"
+								print " Exiting..."
+								quit(1)
+
+							try:
+								subprocess.check_call(['wget', '-q', '%s'%(path)], stdout=dev_null, stderr=dev_null)
+								subprocess.check_call(['mv', '%s'%(file_name), '%s/%s'%(dest_path, file_name)], stdout=dev_null, stderr=dev_null)
+							except:
+								print "  -- Web mirror attempt failed. Trying other mirrors..."
 
 	
-		try:
-			expected_hash = get_file.attrib['hash']
-			validate_file = True
-		except:
-			validate_file = False
+					if os.path.exists('%s/%s'%(dest_path, file_name)):
+						try:
+							expected_hash = get_file.attrib['hash']
+							validate_file = True
+						except:
+							validate_file = False
 
-		if validate_file:
-			if os.path.exists('%s/base_mesh.nc'%(init_path)):
-				nc = netCDF4.Dataset('%s/base_mesh.nc'%(init_path), 'r')
-				try:
-					file_hash = nc.file_id
-				except:
-					nc.close()
-					print " base_mesh does not have file_id attribute. Exiting..."
+						if validate_file:
+							if os.path.exists('%s/%s'%(dest_path, file_name)):
+								nc = netCDF4.Dataset('%s/%s'%(dest_path, file_name), 'r')
+								try:
+									file_hash = nc.file_id
+								except:
+									nc.close()
+									print " Downloaded file '%s' does not have a 'file_id' attribute."%(file_name)
+									print " Deleting file and exiting..."
+									subprocess.check_call(['rm', '-f', '%s/%s'%(dest_path, file_name)], stdout=dev_null, stderr=dev_null)
+									quit(1)
+
+								nc.close()
+
+								if not file_hash.strip() == expected_hash.strip():
+									print "*** ERROR: Base mesh has hash of '%s' which does not match expected hash of '%s'."%(file_hash, expected_hash)
+									print " Deleting file..."
+									subprocess.check_call(['rm', '-f', '%s/%s'%(dest_path, file_name)], stdout=dev_null, stderr=dev_null)
+
+				if not os.path.exists('%s/%s'%(dest_path, file_name)):
+					print " Failed to acquire required file '%s'."%(file_name)
+					print " Exiting..."
 					quit(1)
-
-				nc.close()
-
-				if not file_hash.strip() == expected_hash.strip():
-					print "*** ERROR: Base mesh has hash of '%s' which does not match expected hash of '%s'."%(file_hash, expected_hash)
 
 	del config_tree
 	del config_root
