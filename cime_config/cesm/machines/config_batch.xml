@@ -102,9 +102,14 @@
        <directive> --job-name={{ job_id }}</directive>
        <directive> --nodes={{ num_nodes }}</directive>
        <directive> --ntasks-per-node={{ tasks_per_node }}</directive>
-       <directive> --output={{ output_error_path }} </directive>
+       <directive> --output={{ output_error_path }}   </directive>
+       <directive> --exclusive                        </directive>
      </directives>
    </batch_system>
+
+
+
+
 
   <!-- babbage is PBS -->
   <batch_system MACH="babbage" version="x.y">
@@ -163,13 +168,6 @@
 
   <!-- erebus is PBS -->
   <batch_system MACH="erebus" version="x.y">
-    <directives>
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
-    </directives>
-  </batch_system>
-
-  <!-- evergreen is PBS -->
-  <batch_system MACH="evergreen" version="x.y">
     <directives>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
