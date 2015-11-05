@@ -353,6 +353,7 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
 {
   iosystem_desc_t *iosys;
   int ierr;
+  int ustride;
   MPI_Group compgroup, iogroup;
   int lbase;
   iosys = (iosystem_desc_t *) malloc(sizeof(iosystem_desc_t));
@@ -370,10 +371,13 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
   iosys->default_rearranger = rearr;
   iosys->num_iotasks = num_iotasks;
 
+  ustride = stride;
+ 
   CheckMPIReturn(MPI_Comm_rank(comp_comm, &(iosys->comp_rank)),__FILE__,__LINE__);
   CheckMPIReturn(MPI_Comm_size(comp_comm, &(iosys->num_comptasks)),__FILE__,__LINE__);
   if(iosys->comp_rank==0)
     iosys->compmaster = true;  
+
 #ifdef BGQxxx
   lbase = base;
   determineiotasks(comp_comm, &(iosys->num_iotasks), &lbase, &stride, &rearr, &(iosys->ioproc));
@@ -383,12 +387,20 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
     printf("%s %d %d\n",__FILE__,__LINE__,iosys->comp_rank);
     
 #else
-  if((num_iotasks < 1) || ((num_iotasks*stride) > iosys->num_comptasks)){
+  if((iosys->num_comptasks == 1) && (num_iotasks*ustride > 1)) {
+    // This is a serial run with a bad configuration. Set up a single task.
+    fprintf(stderr, "PIO_TP PIOc_Init_Intracomm reset stride and tasks.\n");
+    iosys->num_iotasks = 1;
+    ustride = 1;
+  }
+  if((iosys->num_iotasks < 1) || ((iosys->num_iotasks*ustride) > iosys->num_comptasks)){
+    fprintf(stderr, "PIO_TP PIOc_Init_Intracomm error\n");
+    fprintf(stderr, "num_iotasks=%d, ustride=%d, num_comptasks=%d\n", num_iotasks, ustride, iosys->num_comptasks);
     return PIO_EBADID;
   }
   iosys->ioranks = (int *) calloc(sizeof(int), iosys->num_iotasks);
-  for(int i=0;i< num_iotasks; i++){
-    iosys->ioranks[i] = (base + i*stride) % iosys->num_comptasks;
+  for(int i=0;i< iosys->num_iotasks; i++){
+    iosys->ioranks[i] = (base + i*ustride) % iosys->num_comptasks;
     if(iosys->ioranks[i] == iosys->comp_rank)
       iosys->ioproc = true;
   }
@@ -403,7 +415,7 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
 
   CheckMPIReturn(MPI_Comm_group(comp_comm, &compgroup),__FILE__,__LINE__);
 			
-  CheckMPIReturn(MPI_Group_incl(compgroup, num_iotasks, iosys->ioranks, &iogroup),__FILE__,__LINE__);
+  CheckMPIReturn(MPI_Group_incl(compgroup, iosys->num_iotasks, iosys->ioranks, &iogroup),__FILE__,__LINE__);
 
   CheckMPIReturn(MPI_Comm_create(comp_comm, iogroup, &(iosys->io_comm)),__FILE__,__LINE__);
   if(iosys->ioproc)
@@ -412,7 +424,7 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
     iosys->io_rank = -1;
 
   iosys->union_rank = iosys->comp_rank;
-  
+
   *iosysidp = pio_add_to_iosystem_list(iosys);
 
   pio_get_env();
