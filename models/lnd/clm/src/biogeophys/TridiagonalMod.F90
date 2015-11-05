@@ -12,8 +12,7 @@ module TridiagonalMod
   public :: Tridiagonal
   public :: trisim
   interface Tridiagonal
-    module procedure :: Tridiagonal_sr
-    module procedure :: Tridiagonal_mr
+    module procedure :: Tridiagonal_sr, Tridiagonal_mr
   end interface Tridiagonal
 
   !-----------------------------------------------------------------------
