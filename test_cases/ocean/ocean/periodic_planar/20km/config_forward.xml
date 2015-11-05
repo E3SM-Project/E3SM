@@ -66,6 +66,10 @@
 		</stream>
 	</streams>
 
+	<!--  Currently, this will only run with 16 processors because
+	      the particle file is decomposed with 16 processors and we
+	      currently do not have an online way of redecomposing particles.
+	-->
 	<run_script name="run.py">
 		<step executable="./metis">
 			<argument flag="graph.info">16</argument>
