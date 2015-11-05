@@ -97,8 +97,8 @@
 	</nml_record>
 	<nml_record name="use_sections" in_defaults="true">
 		<nml_option name="config_use_velocity_solver"         type="logical"       default_value="true"/>
-		<nml_option name="config_use_advection"               type="logical"       default_value="false"/>
-		<nml_option name="config_use_forcing"                 type="logical"       default_value="false"/>
+		<nml_option name="config_use_advection"               type="logical"       default_value="true"/>
+		<nml_option name="config_use_forcing"                 type="logical"       default_value="true"/>
 		<nml_option name="config_use_column_package"          type="logical"       default_value="true"/>
 	</nml_record>
 	<nml_record name="forcing" in_defaults="true">
@@ -135,7 +135,7 @@
 	  	<nml_option name="config_limit_ice_concentration"               type="logical"       default_value="true"/>
 	  	<nml_option name="config_conservation_check"                    type="logical"       default_value="true"/>
 	  	<nml_option name="config_clean_tracers"                         type="logical"       default_value="true"/>
-		<nml_option name="config_advection_type" type="character" default_value="upwind" units="unitless"
+		<nml_option name="config_advection_type" type="character" default_value="incremental_remap" units="unitless"
 					description="Type of advection scheme (upwind or incremental remapping)"
 					possible_values="'upwind' and 'incremental_remap'"
 		/>
