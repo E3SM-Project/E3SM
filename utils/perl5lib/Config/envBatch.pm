@@ -57,11 +57,13 @@ sub get
 sub set
 {
     my($self, $id, $job, $value)  = @_;
-    
+  
+    if(defined $value){
+  
     $self->{$job}{$id} = $value;
-
+   
     qx(./xmlchange -noecho -file env_batch.xml -id $id -val $value -subgroup $job);
-
+  }
 }
 
 
