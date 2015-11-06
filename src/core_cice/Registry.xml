@@ -477,7 +477,7 @@
 	    filename_template="120km/LYq_six_hourly.$Y.nc"
 	    filename_interval="0001-00-00_00:00:00"
 	    input_interval="none"
-	    reference_time="2000-01-01_00:00:06"
+	    reference_time="2000-01-01_03:00:00"
 	    immutable="true">
 	    <var name="airTemperature"/>
 	    <var name="airSpecificHumidity"/>
