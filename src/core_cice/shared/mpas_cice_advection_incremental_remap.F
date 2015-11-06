@@ -24,10 +24,12 @@ module cice_advection_incremental_remap
    use mpas_pool_routines
    use mpas_dmpar
 
-   use cice_advection_incremental_remap_tracers, only: tracer_type, tracersHead,        &
-                                                       cice_add_tracers_to_linked_list, &
-                                                       cice_set_tracer_array_pointers,  &
-                                                       cice_update_tracer_halo
+   use cice_advection_incremental_remap_tracers, only: &
+        tracer_type, &
+        tracersHead, &
+        cice_add_tracers_to_linked_list, &
+        cice_set_tracer_array_pointers, &
+        cice_update_tracer_halo
 
    implicit none
    private
@@ -271,6 +273,9 @@ contains
     integer :: i, n, iCell, iEdge, iVertex, iCellNeighbor, iEdgeNeighbor
     integer :: iVertexOnCell, iEdgeOnCell, iCellOnEdge, iCellOnCell, iVertexOnEdge, iEdgeOnEdge, iEdgeOnVertex
     integer :: nCellsOnEdgeRemap, nEdgesOnEdgeRemap, nVerticesOnEdgeRemap
+
+    ! check the number of halos against the vertex degree
+    call check_halo_layer_number(domain)
 
     if (verboseInit) then
        write(stderrUnit,*) ' '
@@ -793,6 +798,64 @@ contains
     endif
 
   end subroutine cice_init_advection_incremental_remap
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  routine check_halo_layer_number
+!
+!> \brief Checks the number of halo layers against vertex degree
+!> \author Adrian K. Turner
+!> \date   5th November 2015
+!> \details
+!>  
+!-----------------------------------------------------------------------
+
+  subroutine check_halo_layer_number(domain)
+
+    type (domain_type), intent(inout) :: &
+         domain !< Input/Output:
+
+    integer, pointer :: &
+         config_num_halos, &
+         vertexDegree
+
+    integer :: &
+         numHalosOptimal
+
+    ! get the number of halo layers
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_num_halos", config_num_halos)
+
+    ! get the vertex degree
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "vertexDegree", vertexDegree)
+
+    ! determine the optimal number of halo layers
+    if (vertexDegree == 3) then
+       numHalosOptimal = 2 ! SCVT grids
+    else if (vertexDegree == 4) then
+       numHalosOptimal = 3 ! Quad grids
+    endif
+
+    ! check the number of halo layers against the vertex degree
+    if (config_num_halos < numHalosOptimal) then
+
+       ! too few layers
+       write(stderrUnit,*) "Error: too few halo layers for incremental remapping"
+       write(stderrUnit,*) "-- vertexDegree:     ", vertexDegree
+       write(stderrUnit,*) "-- config_num_halos: ", config_num_halos
+       write(stderrUnit,*) "-- numHalosOptimal:  ", numHalosOptimal
+       call MPAS_dmpar_global_abort("Error: incremental remapping advection")
+
+    else if (config_num_halos > numHalosOptimal) then
+
+       ! too many layers
+       write(stderrUnit,*) "Warning: too many halo layers for incremental remapping"
+       write(stderrUnit,*) "-- vertexDegree:     ", vertexDegree
+       write(stderrUnit,*) "-- config_num_halos: ", config_num_halos
+       write(stderrUnit,*) "-- numHalosOptimal:  ", numHalosOptimal
+
+    endif
+
+  end subroutine check_halo_layer_number
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
