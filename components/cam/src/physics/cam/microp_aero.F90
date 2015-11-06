@@ -849,6 +849,16 @@ end subroutine microp_aero_run
 
 subroutine subgrid_mean_updraft(ncol, w0, wsig, ww)
 
+!---------------------------------------------------------------------------------
+! Purpose: Calculate the mean updraft velocity inside a GCM grid assuming the 
+!          vertical velocity distribution is Gaussian and peaks at the 
+!          GCM resolved large-scale vertical velocity. 
+!          When icenul_wsub_scheme = 2, the model uses the mean updraft velocity as the 
+!          characteristic updraft velocity to calculate the ice nucleation rate. 
+! Author:  Kai Zhang (kai.zhang@pnnl.gov) 
+! Last Modified: Oct, 2015 
+!---------------------------------------------------------------------------------
+
    !! interface 
 
    integer,  intent(in) :: ncol              ! number of cols 
@@ -899,7 +909,7 @@ subroutine subgrid_mean_updraft(ncol, w0, wsig, ww)
          !! wbar = integrator < w * f(w) * dw > 
          ww(i,k) = sum(wa)
       else 
-         ww(i,k) = 0._r8
+         ww(i,k) = 0.001_r8
       end if 
 
       !!write(6,*) 'i, k, w0, wsig, ww : ', i, k, w0(i,k), wsig(i,k), ww(i,k) 
