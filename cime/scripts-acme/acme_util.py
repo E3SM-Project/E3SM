@@ -184,7 +184,7 @@ def parse_test_name(test_name):
     rv = [None] * 6
     num_dots = test_name.count(".")
     expect(num_dots >= 2 and num_dots <= 4,
-           "'%s' does not look like an ACME test name, expect TESTCASE.GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]]")
+           "'%s' does not look like an ACME test name, expect TESTCASE.GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]]" % test_name)
 
     rv[0:num_dots+1] = test_name.split(".")
     testcase_field_underscores = rv[0].count("_")
