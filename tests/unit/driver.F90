@@ -28,6 +28,7 @@ Program pio_unit_test_driver
   call MPI_Init(ierr)
   call MPI_Comm_rank(MPI_COMM_WORLD, my_rank, ierr)
   call MPI_Comm_size(MPI_COMM_WORLD, ntasks , ierr)
+  !! call MPI_Errhandler_set(MPI_COMM_WORLD, MPI_ERRORS_RETURN, ierr)
   master_task = my_rank.eq.0
 
   if (master_task) then
