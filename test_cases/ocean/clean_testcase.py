@@ -12,7 +12,6 @@ parser.add_argument("-r", "--resolution", dest="resolution", help="Resolution of
 
 args = parser.parse_args()
 
-
 base_path = '%s/%s/%s'%(args.core, args.configuration, args.resolution)
 for file in os.listdir('%s'%(base_path)):
 	if fnmatch.fnmatch(file, '*.xml'):
@@ -21,11 +20,20 @@ for file in os.listdir('%s'%(base_path)):
 		config_tree = ET.parse(config_file)
 		config_root = config_tree.getroot()
 
-		case_dir = config_root.attrib['case']
+		if config_root.tag == 'config':
+			case_dir = config_root.attrib['case']
+
+
+			if os.path.exists('%s/%s'%(base_path, case_dir)):
+				if os.path.isdir('%s/%s'%(base_path, case_dir)):
+					shutil.rmtree('%s/%s'%(base_path, case_dir))
+					print ' -- Removed case %s/%s'%(base_path, case_dir)
+		elif config_root.tag == 'driver_script':
+			script_name = config_root.attrib['name']
+
+			if os.path.exists('%s/%s'%(base_path, script_name)):
+				os.remove('%s/%s'%(base_path, script_name))
+				print ' -- Removed driver script %s/%s'%(base_path, script_name)
 
 		del config_tree
 		del config_root
-
-		if os.path.exists('%s/%s'%(base_path, case_dir)):
-			shutil.rmtree('%s/%s'%(base_path, case_dir))
-			print " -- Removed case %s/%s"%(base_path, case_dir)
