@@ -668,11 +668,11 @@
 	<command name="rm">cray-libsci</command>
 	<command name="use">/global/project/projectdirs/ccsm1/modulefiles/edison</command>
       </modules>
-      <modules compiler="intel" debug="true">
-	<command name="load">esmf/6.2.0-defio-mpi-g</command>
+      <modules compiler="intel" mpilib="!mpi-serial" >
+	<command name="load">esmf/6.3.0rp1-defio-intel15.0-mpi-0</command>
       </modules>
-      <modules compiler="intel" debug="false">
-	<command name="load">esmf/6.2.0-defio-mpi-O</command>
+      <modules compiler="intel" mpilib="mpi-serial" >
+        <command name="load">esmf/6.3.0rp1-defio-intel15.0-mpiuni-0</command>
       </modules>
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
