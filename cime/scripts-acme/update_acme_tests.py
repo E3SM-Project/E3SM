@@ -11,7 +11,12 @@ _TEST_SUITES = {
                    [("ERS.f19_g16_rx1.A", None),
                     ("NCK.f19_g16_rx1.A", None)]
                    ),
-    "acme_developer" : (None,
+    "acme_land_developer" : (None,
+                             [("SMS.f19_f19.I1850CLM45CN", None),
+                              ("SMS.f09_g16.I1850CLM45CN", None),
+                              ("SMS.hcru_hcru.I1850CRUCLM45CN", None)]
+                             ),
+    "acme_developer" : ("acme_land_developer",
                         [("ERS.f19_g16_rx1.A", None),
                          ("ERS.f45_g37_rx1.DTEST", None),
                          ("ERS.ne16_ne16.FC5PLMOD", None),
@@ -27,9 +32,6 @@ _TEST_SUITES = {
                          ("NCK.f19_g16_rx1.A", None),
                          ("PEA_P1_M.f45_g37_rx1.A", None),
                          ("SMS.ne30_f19_g16_rx1.A", None),
-                         ("SMS.f19_f19.I1850CLM45CN", None),
-                         ("SMS.f09_g16.I1850CLM45CN", None),
-                         ("SMS.hcru_hcru.I1850CRUCLM45CN", None),
                          ("ERS_Ld5.T62_mpas120.C_MPAS_NORMAL_YEAR", None),
                          ("ERS.f09_g16_g.MPASLI_ONLY", None),
                          ("SMS.T62_mpas120_gis20.MPAS_LISIO_TEST", None),
