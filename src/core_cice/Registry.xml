@@ -326,8 +326,6 @@
 		  immutable="true">
 	    <stream name="mesh"/>
 	    <var name="fVertex"/>
-	    <var name="POPindxi"/>
-	    <var name="POPindxj"/>
 	  </stream>
 
 	  <stream name="restart" 
@@ -427,8 +425,6 @@
 	    <var name="xtime"/>
 	    <stream name="mesh"/>
 	    <var name="fVertex"/>
-	    <var name="POPindxi"/>
-	    <var name="POPindxj"/>
 	    <var name="uVelocity"/>
 	    <var name="vVelocity"/>
 	    <var name="stressDivergenceU"/>
@@ -587,10 +583,6 @@
 		<var name="kiteAreasOnVertex"                 type="real"     dimensions="vertexDegree nVertices"/>
 		<var name="fVertex"                           type="real"     dimensions="nVertices"/>
 		<var name="coeffs_reconstruct"                type="real"     dimensions="R3 maxEdges nCells"/>
-		<var name="POPindxi"                          type="integer"  dimensions="nCells"/>
-		<var name="POPindxj"                          type="integer"  dimensions="nCells"/>
-		<var name="POPindxiv"                         type="integer"  dimensions="nVertices"/>
-		<var name="POPindxjv"                         type="integer"  dimensions="nVertices"/>
 		<var name="itimestep"                         type="integer"  dimensions="ONE"/>
 	</var_struct>
 
@@ -1445,8 +1437,6 @@
 
 	<!--atmos forcing -->
 	<var_struct name="atmos_forcing" time_levs="1">
-		<var name="uAirVelocityPOP"                   type="real"     dimensions="nCells Time"              name_in_code="uAirVelocityPOP"/>
-		<var name="vAirVelocityPOP"                   type="real"     dimensions="nCells Time"              name_in_code="vAirVelocityPOP"/>
 		<var name="windSpeed"                         type="real"     dimensions="nCells"                   name_in_code="windSpeed"/>
 		<var name="uAirStress"                        type="real"     dimensions="nCells"                   name_in_code="uAirStress"/>
 		<var name="vAirStress"                        type="real"     dimensions="nCells"                   name_in_code="vAirStress"/>
@@ -1454,8 +1444,6 @@
 		<var name="cloudFraction"                     type="real"     dimensions="nCells Time"              name_in_code="cloudFraction"/>
 		<var name="sensibleTransferCoefficient"       type="real"     dimensions="nCells"                   name_in_code="sensibleTransferCoefficient"/>
 		<var name="latentTransferCoefficient"         type="real"     dimensions="nCells"                   name_in_code="latentTransferCoefficient"/>
-		<var name="uPOPAlongGridVector"               type="real"     dimensions="TWO nCells"               name_in_code="uPOPAlongGridVector"/>
-		<var name="vPOPAlongGridVector"               type="real"     dimensions="TWO nCells"               name_in_code="vPOPAlongGridVector"/>
 	</var_struct>
 
 	<!--alternative atmos forcing -->
