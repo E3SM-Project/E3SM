@@ -464,7 +464,7 @@ module namelist_mod
        end do
        close( unitn )
        call freeunit( unitn )
-#elif defined(OSF1) || defined(_BGL) || defined(_NAMELIST_FROM_FILE)
+#elif defined(OSF1) || defined(__bg__) || defined(_NAMELIST_FROM_FILE)
        open(unit=7,file="input.nl",status="OLD")
        read(unit=7,nml=ctl_nl)
 #else
@@ -533,7 +533,7 @@ module namelist_mod
        end do
        close( unitn )
        call freeunit( unitn )
-#elif defined(OSF1) || defined(_BGL) || defined(_NAMELIST_FROM_FILE)
+#elif defined(OSF1) || defined(__bg__) || defined(_NAMELIST_FROM_FILE)
           read(unit=7,nml=solver_nl)
 #else
           read(*,nml=solver_nl)
@@ -571,7 +571,7 @@ module namelist_mod
 !       close( unitn )
 !       call freeunit( unitn )
 
-#elif defined(OSF1) || defined(_BGL) || defined(_NAMELIST_FROM_FILE)
+#elif defined(OSF1) || defined(__bg__) || defined(_NAMELIST_FROM_FILE)
        read(unit=7,nml=filter_nl)
 #else
        read(*,nml=filter_nl)
@@ -583,7 +583,7 @@ module namelist_mod
 
 #ifdef _PRIMDG
        write(iulog,*)"reading vert_nl namelist..."
-#if defined(OSF1) || defined(_BGL) || defined(_NAMELIST_FROM_FILE)
+#if defined(OSF1) || defined(__bg__) || defined(_NAMELIST_FROM_FILE)
        read(unit=7,nml=vert_nl)
 #else
        read(*,nml=vert_nl)
@@ -597,7 +597,7 @@ module namelist_mod
            test_case(1:12)=="dcmip2_schar" .or. &
            test_case(1:4)=="asp_") then
          write(iulog,*) "reading vertical namelist..."
-#if defined(OSF1) || defined(_BGL) || defined(_NAMELIST_FROM_FILE)
+#if defined(OSF1) || defined(__bg__) || defined(_NAMELIST_FROM_FILE)
          read(unit=7,nml=vert_nl)
 #else
          read(*,nml=vert_nl)
@@ -669,7 +669,7 @@ module namelist_mod
        close( unitn )
        call freeunit( unitn )
 #else
-#if defined(OSF1) || defined(_BGL) || defined(_NAMELIST_FROM_FILE)
+#if defined(OSF1) || defined(__bg__) || defined(_NAMELIST_FROM_FILE)
        read(unit=7,nml=analysis_nl)
 #else
        read(*,nml=analysis_nl)
@@ -720,7 +720,7 @@ module namelist_mod
 !=======================================================================================================!
 #ifdef _SWDG
       write(iulog,*)"reading dg namelist..."
-#if defined(OSF1) || defined(_BGL) || defined(_NAMELIST_FROM_FILE)
+#if defined(OSF1) || defined(__bg__) || defined(_NAMELIST_FROM_FILE)
       read(unit=7,nml=dg_nl)
 #else
       read(*,nml=dg_nl)
@@ -737,7 +737,7 @@ module namelist_mod
 #endif
 !=======================================================================================================!
 
-#if defined(OSF1) || defined(_BGL) || defined(_NAMELIST_FROM_FILE)
+#if defined(OSF1) || defined(__bg__) || defined(_NAMELIST_FROM_FILE)
        close(unit=7)
 #endif
 #endif

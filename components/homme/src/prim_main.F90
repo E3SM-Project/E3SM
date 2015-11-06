@@ -110,9 +110,11 @@ program prim_main
   ! =====================================
 #if (defined HORIZ_OPENMP && defined COLUMN_OPENMP)
    call omp_set_nested(.true.)
-   if (omp_get_nested() == 0) then
+#ifndef __bg__
+   if (.not. omp_get_nested()) then
      call haltmp("Nested threading required but not available. Set OMP_NESTED=true")
    endif
+#endif
 #endif
 
   ! =====================================
