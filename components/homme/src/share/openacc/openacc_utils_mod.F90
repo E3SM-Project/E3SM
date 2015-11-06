@@ -4,6 +4,7 @@
 #endif
 
 module openacc_utils_mod
+#if USE_OPENACC
   use kinds, only: real_kind
   use dimensions_mod, only: nelemd
   implicit none
@@ -21,16 +22,12 @@ module openacc_utils_mod
 contains
 
   function acc_async_test_wrap( asyncid )  result(rslt)
-#if USE_OPENACC
     use openacc, only: acc_async_test
-#endif
     implicit none
     integer, intent(in) :: asyncid
     logical             :: rslt
     rslt = .false.
-#if USE_OPENACC
     rslt = acc_async_test(asyncid)
-#endif
   end function acc_async_test_wrap
 
   subroutine arch_init2( elem , deriv )
@@ -122,5 +119,6 @@ contains
     enddo
   end subroutine copy_ondev_async
 
+#endif
 end module openacc_utils_mod
 

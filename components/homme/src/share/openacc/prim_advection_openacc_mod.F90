@@ -7,6 +7,7 @@
 #endif
 
 module prim_advection_openacc_mod
+#if USE_OPENACC
   use kinds          , only: real_kind, int_kind, log_kind
   use dimensions_mod , only: np,nlevp,nlev,qsize,qsize_d,max_corner_elem,max_neigh_edges,nelemd
   use element_mod    , only: timelevels
@@ -978,6 +979,7 @@ contains
     call t_stopf('derived PEU')
   end subroutine precompute_divdp
 
+#endif
 end module prim_advection_openacc_mod
 
 

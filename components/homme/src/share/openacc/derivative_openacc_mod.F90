@@ -4,6 +4,7 @@
 #endif
 
 module derivative_openacc_mod
+#if USE_OPENACC
   use kinds, only: real_kind
   use dimensions_mod, only: np, nelemd
   implicit none
@@ -228,5 +229,6 @@ contains
     enddo
   end subroutine divergence_sphere
 
+#endif
 end module derivative_openacc_mod
 

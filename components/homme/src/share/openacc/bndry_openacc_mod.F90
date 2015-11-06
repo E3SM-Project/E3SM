@@ -4,6 +4,7 @@
 #endif
 
 module bndry_openacc_mod
+#if USE_OPENACC
   use kinds     , only: real_kind
   implicit none
   private
@@ -521,5 +522,6 @@ contains
     if (stg_recv(myid)%nUpdateDev == nchunks) finished = .true.
   end function mpi_irecv_openacc_stage
 
+#endif
 end module bndry_openacc_mod
 

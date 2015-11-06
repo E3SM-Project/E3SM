@@ -4,6 +4,7 @@
 #endif
 
 module viscosity_openacc_mod
+#if USE_OPENACC
   use kinds, only: real_kind
   use dimensions_mod, only: np,nlev,qsize,nelemd
   implicit none
@@ -117,5 +118,6 @@ contains
     !$omp barrier
   end subroutine neighbor_minmax
 
+#endif
 end module viscosity_openacc_mod
 

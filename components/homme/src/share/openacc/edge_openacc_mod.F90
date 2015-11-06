@@ -4,6 +4,7 @@
 #endif
 
 module edge_openacc_mod
+#if USE_OPENACC
   use kinds, only: real_kind, int_kind, log_kind
   use dimensions_mod, only: max_neigh_edges,nelemd,np,max_corner_elem
   implicit none
@@ -479,5 +480,6 @@ contains
     call t_stopf('edge_unpack_max')
   end subroutine edgeVunpackMax
 
+#endif
 end module edge_openacc_mod
 
