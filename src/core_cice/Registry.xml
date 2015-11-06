@@ -678,7 +678,7 @@
 		<var name="verticalParticulateIronConc"	      type="real"     dimensions="nParticulateIronLayers nCategories nCells Time"   name_in_code="verticalParticulateIronConc"  packages="pkgColumnBioGeochemistry"/>
 		<var name="verticalDissolvedIronConc"	      type="real"     dimensions="nDissolvedIronLayers nCategories nCells Time"   name_in_code="verticalDissolvedIronConc"  packages="pkgColumnBioGeochemistry"/>
 		<var name="verticalAerosolsConc"	      type="real"     dimensions="nzAerosolsLayers nCategories nCells Time"   name_in_code="verticalAerosolsConc"  packages="pkgColumnBioGeochemistry"/>
-		<var name="verticalSalinity"		      type="real"     dimensions="nBioLayers nCategories nCells Time"   name_in_code="verticalSalinity"  packages="pkgColumnBioGeochemistry;pkgColumnVerticalThermodynamics"/>
+		<var name="verticalSalinity"		      type="real"     dimensions="nBioLayers nCategories nCells Time"   name_in_code="verticalSalinity"  packages="pkgColumnBioGeochemistry"/>
 	</var_struct>
 	<var_struct name="tracers_aggregate" time_levs="1">
 		<var name="iceAreaCell"                       type="real"     dimensions="nCells Time"          name_in_code="iceAreaCell"/>
