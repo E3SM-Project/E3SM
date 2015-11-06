@@ -165,6 +165,8 @@ Within each XML file, the following XML description is available:
 <step> - This tag defines a step in a run script
 	- Attributes:
 		* executable: The base executable for this step of the run script. e.g. mpirun
+		* executable_name: The name of the executable that has been defined in
+						   the configuration file to be used for this step of the run script.
 	- Children:
 		* <argument>
 

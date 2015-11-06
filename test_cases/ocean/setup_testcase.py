@@ -496,7 +496,7 @@ def get_defined_files(config_file, init_path, args, configs):#{{{
 	dev_null.close()
 #}}}
 
-def generate_run_scripts(config_file, init_path):#{{{
+def generate_run_scripts(config_file, init_path, configs):#{{{
 	config_tree = ET.parse(config_file)
 	config_root = config_tree.getroot()
 	dev_null = open('/dev/null', 'r+')
@@ -510,7 +510,16 @@ def generate_run_scripts(config_file, init_path):#{{{
 		script.write("import subprocess\n")
 
 		for step in run_script.findall('step'):
-			executable = step.attrib['executable']
+			if 'executable_name' in step.attrib.keys() and 'executable' in step.attrib.keys():
+				print "ERROR: <step> tag has both an 'executable' and 'executable_name' attribute. Only one is allowed per step."
+				print "Exiting..."
+				quit(1)
+
+			try:
+				executable_name = step.attrib['executable_name']
+				executable = configs.get('executables', executable_name)
+			except:
+				executable = step.attrib['executable']
 
 			script.write("\n")
 			script.write("# Run command is:\n")
@@ -545,7 +554,7 @@ def generate_run_scripts(config_file, init_path):#{{{
 	del config_root
 #}}}
 
-def generate_driver_scripts(config_file, init_path):#{{{
+def generate_driver_scripts(config_file, init_path, configs):#{{{
 	config_tree = ET.parse(config_file)
 	config_root = config_tree.getroot()
 	dev_null = open('/dev/null', 'r+')
@@ -568,7 +577,11 @@ def generate_driver_scripts(config_file, init_path):#{{{
 				script.write('os.chdir(' + "'%s')\n"%(case))
 				for grandchild in child.iter('*'):
 					if grandchild.tag == 'step':
-						executable = grandchild.attrib['executable']
+						try:
+							executable_name = grandchild.attrib['executable_name']
+							excetuable = configs.get('executables', executable_name)
+						except:
+							executable = grandchild.attrib['executable']
 						script.write('subprocess.check_call([' + "'%s'"%(executable) + '])\n')
 
 		script.close()
@@ -637,10 +650,10 @@ for file in os.listdir('%s'%(base_path)):
 
 			get_defined_files(config_file, '%s'%(case_path), args, config)
 
-			generate_run_scripts(config_file, '%s'%(case_path))
+			generate_run_scripts(config_file, '%s'%(case_path), config)
 
 			print " -- Set up case: %s/%s"%(base_path, case_dir)
 		else:
-			generate_driver_scripts(config_file, base_path)
+			generate_driver_scripts(config_file, base_path, config)
 			print " -- Set up driver script in %s"%(base_path)
 

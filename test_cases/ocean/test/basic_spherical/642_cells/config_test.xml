@@ -29,7 +29,7 @@
 			<argument flag="">4</argument>
 		</step>
 
-		<step executable="mpirun">
+		<step executable_name="mpi_runtime">
 			<argument flag="-n">4</argument>
 			<argument flag="">./test_model</argument>
 			<argument flag="-n">namelist.test</argument>
