@@ -2045,7 +2045,7 @@ function cartesian_parametric_coordinates(sphere, corners3D) result (ref)
   dsdx = 0
   dxds = 0
 
-  /*-------------------------------------------------------------------------*/
+  !*-------------------------------------------------------------------------*!
 
   ! Initial guess, center of element
   dist = 9999999.                         
