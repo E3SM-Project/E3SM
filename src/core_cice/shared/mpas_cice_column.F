@@ -230,7 +230,8 @@ contains
     logical, pointer :: &
          config_use_column_package, &
          config_do_restart, &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_column_shortwave
 
     call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
@@ -255,7 +256,8 @@ contains
 
        ! shortwave
        call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
-       if (config_do_restart) &
+       call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
+       if (config_do_restart .and. config_use_column_shortwave) &
             call cice_init_column_shortwave(domain, clock)
        
     endif
@@ -971,7 +973,6 @@ contains
             call column_radiation(domain, clock, .false.)
        call mpas_timer_stop("Column shortwave")
 
-#ifndef CCSMCOUPLED
        !-----------------------------------------------------------------
        ! Coupling prep
        !-----------------------------------------------------------------
@@ -979,7 +980,6 @@ contains
        call mpas_timer_start("Column coupling prep")
        call cice_column_coupling_prep(domain)
        call mpas_timer_stop("Column coupling prep")
-#endif
 
     endif
 

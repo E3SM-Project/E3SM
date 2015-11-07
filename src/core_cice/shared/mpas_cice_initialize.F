@@ -134,12 +134,14 @@ contains
     
     logical, pointer :: &
          config_use_column_package, &
+         config_use_column_shortwave, &
          config_do_restart
     
     call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
     
-    if (config_use_column_package .and. .not. config_do_restart) &
+    if (config_use_column_package .and. config_use_column_shortwave .and. .not. config_do_restart) &
          call cice_init_column_shortwave(domain, clock)
 
   end subroutine cice_init_post_clock_advance
