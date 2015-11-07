@@ -1,0 +1,4 @@
+&betr_inparm
+ bgc_method = 'mock_run'
+/
+
