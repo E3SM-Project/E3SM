@@ -409,6 +409,11 @@ contains
           close(unitn)
           call shr_file_freeUnit( unitn )
 
+          if(npes .eq. 1 .and. pio_typename .eq. "pnetcdf" .or. &
+               pio_typename .eq. "netcdf4p") then
+             pio_typename = "netcdf"
+          endif
+
           call shr_pio_getiotypefromname(pio_typename, pio_iotype, pio_iotype_netcdf)
        end if
     end if
@@ -484,6 +489,12 @@ contains
           end do
           close(unitn)
           call shr_file_freeUnit( unitn )
+
+          if(npes .eq. 1 .and. pio_typename .eq. "pnetcdf" .or. &
+               pio_typename .eq. "netcdf4p") then
+             pio_typename = "netcdf"
+          endif
+
 
           call shr_pio_getiotypefromname(pio_typename, pio_iotype, pio_default_iotype)
 
