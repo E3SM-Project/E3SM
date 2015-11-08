@@ -144,7 +144,7 @@ contains
 
     ! reinitialize fluxes
     call cice_column_reinitialize_fluxes(domain)
-    
+
   end subroutine cice_timestep!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||

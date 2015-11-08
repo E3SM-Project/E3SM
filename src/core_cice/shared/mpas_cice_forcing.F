@@ -1599,8 +1599,17 @@ contains
 
     type(domain_type) :: domain
 
-    call reset_atmospheric_coupler_fluxes(domain)
-    call reset_ocean_coupler_fluxes(domain)
+    logical, pointer :: &
+         config_use_column_package
+
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
+
+    if (config_use_column_package) then
+
+       call reset_atmospheric_coupler_fluxes(domain)
+       call reset_ocean_coupler_fluxes(domain)
+
+    endif
 
   end subroutine cice_reset_coupler_fluxes
 
