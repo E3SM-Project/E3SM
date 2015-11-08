@@ -25,7 +25,9 @@ public :: ShrIntrinsicRandGen
 public :: ShrKissRandGen
 public :: ShrF95MtRandGen
 public :: ShrDsfmtRandGen
+#ifdef INTEL_MKL
 public :: ShrMklMtRandGen
+#endif
 
 integer, parameter :: r8 = selected_real_kind(12)
 integer, parameter :: i8 = selected_int_kind(12)
@@ -54,8 +56,8 @@ end interface
 type, extends(ShrRandGen) :: ShrIntrinsicRandGen
    integer, allocatable, private :: seed(:,:)
  contains
-   procedure :: random => intrinsic_random
-   procedure :: finalize => intrinsic_finalize
+   procedure, non_overridable :: random => intrinsic_random
+   procedure, non_overridable :: finalize => intrinsic_finalize
 end type ShrIntrinsicRandGen
 
 interface ShrIntrinsicRandGen
@@ -66,8 +68,8 @@ end interface ShrIntrinsicRandGen
 type, extends(ShrRandGen) :: ShrKissRandGen
    integer, allocatable, private :: seed(:,:)
  contains
-   procedure :: random => kiss_random
-   procedure :: finalize => kiss_finalize
+   procedure, non_overridable :: random => kiss_random
+   procedure, non_overridable :: finalize => kiss_finalize
 end type ShrKissRandGen
 
 interface ShrKissRandGen
@@ -78,8 +80,8 @@ end interface ShrKissRandGen
 type, extends(ShrRandGen) :: ShrF95MtRandGen
    type(randomNumberSequence), allocatable, private :: wrapped(:)
  contains
-   procedure :: random => f95_mt_random
-   procedure :: finalize => f95_mt_finalize
+   procedure, non_overridable :: random => f95_mt_random
+   procedure, non_overridable :: finalize => f95_mt_finalize
 end type ShrF95MtRandGen
 
 interface ShrF95MtRandGen
@@ -90,8 +92,8 @@ end interface ShrF95MtRandGen
 type, extends(ShrRandGen) :: ShrDsfmtRandGen
    type(dSFMT_t), allocatable, private :: wrapped(:)
  contains
-   procedure :: random => dsfmt_random
-   procedure :: finalize => dsfmt_finalize
+   procedure, non_overridable :: random => dsfmt_random
+   procedure, non_overridable :: finalize => dsfmt_finalize
 end type ShrDsfmtRandGen
 
 interface ShrDsfmtRandGen
@@ -103,14 +105,14 @@ end interface ShrDsfmtRandGen
 type, extends(ShrRandGen) :: ShrMklMtRandGen
   type (VSL_STREAM_STATE), allocatable :: wrapped(:)
  contains
-   procedure :: random => mkl_mt_random
-   procedure :: finalize => mkl_mt_finalize
+   procedure, non_overridable :: random => mkl_mt_random
+   procedure, non_overridable :: finalize => mkl_mt_finalize
 end type ShrMklMtRandGen
-#endif
 
 interface ShrMklMtRandGen
    module procedure ShrMklMtRandGen_constructor
 end interface ShrMklMtRandGen
+#endif
 
 contains
 
@@ -157,11 +159,13 @@ subroutine kiss_random(self, array)
   class(ShrKissRandGen), intent(inout) :: self
   real(r8), dimension(:,:), intent(out) :: array
 
-  integer :: i
+  integer :: nstream, i
+
+  nstream = size(self%seed, 1)
 
   do i = 1, size(array, 2)
      call kissvec(self%seed(:,1), self%seed(:,2), self%seed(:,3), &
-          self%seed(:,4), array(:,i), size(self%seed, 1))
+          self%seed(:,4), array(:,i), nstream)
   end do
 
 end subroutine kiss_random
@@ -190,10 +194,12 @@ subroutine f95_mt_random(self, array)
   class(ShrF95MtRandGen), intent(inout) :: self
   real(r8), dimension(:,:), intent(out) :: array
 
-  integer :: i, j
+  integer :: nstream, i, j
+
+  nstream = size(self%wrapped)
 
   do i = 1, size(array, 2)
-     do j = 1, size(self%wrapped)
+     do j = 1, nstream
         array(j,i) = getRandomReal(self%wrapped(j))
      end do
   end do
@@ -232,10 +238,12 @@ subroutine dsfmt_random(self, array)
   class(ShrDsfmtRandGen), intent(inout) :: self
   real(r8), dimension(:,:), intent(out) :: array
 
-  integer :: i
+  integer :: nrandom, i
+
+  nrandom = size(array, 2)
 
   do i = 1, size(self%wrapped)
-     call get_rand_arr_close_open(self%wrapped(i), array(i,:), size(array, 2))
+     call get_rand_arr_close_open(self%wrapped(i), array(i,:), nrandom)
   end do
 
 end subroutine dsfmt_random
@@ -254,6 +262,7 @@ subroutine dsfmt_finalize(self)
 
 end subroutine dsfmt_finalize
 
+#ifdef INTEL_MKL
 function ShrMklMtRandGen_constructor(seed) result(rand_gen)
   integer, intent(in) :: seed(:)
   type(ShrMklMtRandGen) :: rand_gen
@@ -277,11 +286,13 @@ subroutine mkl_mt_random(self, array)
 
   integer :: err
 
-  integer :: i
+  integer :: nrandom, i
+
+  nrandom = size(array, 2)
 
   do i = 1, size(self%wrapped)
      err = vdrnguniform(VSL_RNG_METHOD_UNIFORM_STD, self%wrapped(i), &
-          size(array, 2), array(i,:), range_start, range_end)
+          nrandom, array(i,:), range_start, range_end)
   end do
 
 end subroutine mkl_mt_random
@@ -301,5 +312,6 @@ subroutine mkl_mt_finalize(self)
   end if
 
 end subroutine mkl_mt_finalize
+#endif
 
 end module shr_RandNum_mod
