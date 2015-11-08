@@ -15,233 +15,291 @@ use kissvec_mod,         only : kissvec
 use mkl_vsl_type
 use mkl_vsl
 #endif
- implicit none
+implicit none
+
+private
+
+public :: ShrRandGen
+
+public :: ShrIntrinsicRandGen
+public :: ShrKissRandGen
+public :: ShrF95MtRandGen
+public :: ShrDsfmtRandGen
+public :: ShrMklMtRandGen
 
 integer, parameter :: r8 = selected_real_kind(12)
 integer, parameter :: i8 = selected_int_kind(12)
 
-integer :: errcode
+! Abstract base class for random number generators
+type, abstract :: ShrRandGen
+ contains
+   procedure(gen_random), deferred :: random
+   procedure(gen_finalize), deferred :: finalize
+end type ShrRandGen
 
-real(r8) :: a=0.0_r8, b=1.0_r8
-integer  :: brng, method
+abstract interface
+   subroutine gen_random(self, array)
+     import
+     class(ShrRandGen), intent(inout) :: self
+     real(r8), dimension(:,:), intent(out) :: array
+   end subroutine gen_random
 
-type shr_rand_t
-  character(len=32) :: type
-  integer           :: nstream
-  integer           :: nrandom
-  integer, allocatable :: seed(:,:)
+   subroutine gen_finalize(self)
+     import
+     class(ShrRandGen), intent(inout) :: self
+   end subroutine gen_finalize
+end interface
+
+! Fortran 90 "random_number" intrinsic
+type, extends(ShrRandGen) :: ShrIntrinsicRandGen
+   integer, allocatable, private :: seed(:,:)
+ contains
+   procedure :: random => intrinsic_random
+   procedure :: finalize => intrinsic_finalize
+end type ShrIntrinsicRandGen
+
+interface ShrIntrinsicRandGen
+   module procedure ShrIntrinsicRandGen_constructor
+end interface ShrIntrinsicRandGen
+
+! KISS (Keep It Simple Stupid) pseudorandom number generator
+type, extends(ShrRandGen) :: ShrKissRandGen
+   integer, allocatable, private :: seed(:,:)
+ contains
+   procedure :: random => kiss_random
+   procedure :: finalize => kiss_finalize
+end type ShrKissRandGen
+
+interface ShrKissRandGen
+   module procedure ShrKissRandGen_constructor
+end interface ShrKissRandGen
+
+! Fortran 95 implementation of Mersene Twister 19937
+type, extends(ShrRandGen) :: ShrF95MtRandGen
+   type(randomNumberSequence), allocatable, private :: wrapped(:)
+ contains
+   procedure :: random => f95_mt_random
+   procedure :: finalize => f95_mt_finalize
+end type ShrF95MtRandGen
+
+interface ShrF95MtRandGen
+   module procedure ShrF95MtRandGen_constructor
+end interface ShrF95MtRandGen
+
+! Double precision SIMD Fast Mersene Twister 19937
+type, extends(ShrRandGen) :: ShrDsfmtRandGen
+   type(dSFMT_t), allocatable, private :: wrapped(:)
+ contains
+   procedure :: random => dsfmt_random
+   procedure :: finalize => dsfmt_finalize
+end type ShrDsfmtRandGen
+
+interface ShrDsfmtRandGen
+   module procedure ShrDsfmtRandGen_constructor
+end interface ShrDsfmtRandGen
+
+! Intel Math Kernel Library Mersenne Twister
 #ifdef INTEL_MKL
-  type (VSL_STREAM_STATE), allocatable :: vsl_stream(:)
+type, extends(ShrRandGen) :: ShrMklMtRandGen
+  type (VSL_STREAM_STATE), allocatable :: wrapped(:)
+ contains
+   procedure :: random => mkl_mt_random
+   procedure :: finalize => mkl_mt_finalize
+end type ShrMklMtRandGen
 #endif
-  type (dSFMT_t),              allocatable :: rng(:)
-  type (randomNumberSequence), allocatable :: randomseq(:)
-end type
 
-public shr_genRandNum, shr_RandNum_init, shr_RandNum_term, shr_rand_t
+interface ShrMklMtRandGen
+   module procedure ShrMklMtRandGen_constructor
+end interface ShrMklMtRandGen
 
 contains
 
-subroutine shr_genRandNum(randStream, array, nrandom_reset)
+function ShrIntrinsicRandGen_constructor(seed) result(rand_gen)
+  integer, intent(in) :: seed(:,:)
+  type(ShrIntrinsicRandGen) :: rand_gen
 
-  type (shr_rand_t),        intent(inout) :: randStream
-  real(r8), dimension(:,:), intent(inout) :: array
-  integer, optional,         intent(in)   :: nrandom_reset
+  allocate(rand_gen%seed(size(seed, 1),size(seed, 2)))
+  rand_gen%seed = seed
 
-  integer :: i, n, nstream, nrandom
-  integer, dimension(1) :: seed
+end function ShrIntrinsicRandGen_constructor
 
-  nstream = randStream%nstream
-  nrandom = randStream%nrandom
+subroutine intrinsic_random(self, array)
+  class(ShrIntrinsicRandGen), intent(inout) :: self
+  real(r8), dimension(:,:), intent(out) :: array
 
-  select case (randStream%type)
+  integer :: i
 
-#ifdef INTEL_MKL
-! intel math kernel library SIMD fast merseene twister 19937
-    case ("SFMT_MKL")
-    do n=1,nstream
-      errcode = vdrnguniform( method, randStream%vsl_stream(n), nrandom, array(n,:), a, b)
-    enddo
-#endif
+  do i = 1, size(self%seed, 1)
+     call random_seed(put=self%seed(i,:))
+     call random_number(array(i,:))
+     call random_seed(get=self%seed(i,:))
+  end do
 
-! keep it simple stupid
-    case("KISSVEC")
-    if (present(nrandom_reset)) then
-      nrandom = nrandom_reset
-    endif
-    do i=1,nrandom
-       call kissvec( randStream%seed(:,1), randStream%seed(:,2), &
-            randStream%seed(:,3), randStream%seed(:,4), array(:,i), nstream )
-    enddo
+end subroutine intrinsic_random
 
-! fortran-95 implementation of merseene twister 19937
-    case("MT19937")
-    do i=1,nrandom
-      do n=1,nstream
-        array(n,i) = getRandomReal( randStream%randomseq(n) )
-      enddo
-    enddo
+subroutine intrinsic_finalize(self)
+  class(ShrIntrinsicRandGen), intent(inout) :: self
 
-! fortran-90 intrinsic pseudorandom number generator
-    case("F90_INTRINSIC")
-    do n=1,nstream
-      call random_seed( put=randStream%seed(n,:) )
-      call random_number( array(n,:) )
-    enddo
+  if ( allocated(self%seed) ) deallocate(self%seed)
 
-! SIMD-oriented fast mersenne twister 19937
-  case("DSFMT_F03")
-  do n=1,nstream
-    call get_rand_arr_close_open( randStream%rng(n), array(n,:), nrandom )
-  enddo
+end subroutine intrinsic_finalize
 
-end select
+function ShrKissRandGen_constructor(seed) result(rand_gen)
+  integer, intent(in) :: seed(:,:)
+  type(ShrKissRandGen) :: rand_gen
 
-end subroutine shr_genRandNum
+  allocate(rand_gen%seed(size(seed, 1),4))
+  rand_gen%seed = seed
 
-integer function shr_RandNum_seed_size(type)
-  character(len=*),  intent(in)    :: type
+end function ShrKissRandGen_constructor
 
-  select case (to_upper(type))
-#ifdef INTEL_MKL
-  case ("SFMT_MKL")
-     shr_RandNum_seed_size = 1
-#endif
-  case("KISSVEC")
-     shr_RandNum_seed_size = 4
-  case("MT19937", "DSFMT_F03")
-     shr_RandNum_seed_size = 1
-  case("F90_INTRINSIC")
-     call random_seed(size=shr_RandNum_seed_size)
-  end select
-end function shr_RandNum_seed_size
+subroutine kiss_random(self, array)
+  class(ShrKissRandGen), intent(inout) :: self
+  real(r8), dimension(:,:), intent(out) :: array
 
-subroutine shr_RandNum_init( randStream, nstream, nrandom, type, seed )
+  integer :: i
 
-  type (shr_rand_t), intent(inout) :: randStream
-  integer,           intent(in)    :: nstream  ! number of streams of random numbers
-  integer,           intent(in)    :: nrandom  ! number of random numbers in streams
-  character(len=*),  intent(in)    :: type
-  integer,           intent(in)    :: seed(:,:)
+  do i = 1, size(array, 2)
+     call kissvec(self%seed(:,1), self%seed(:,2), self%seed(:,3), &
+          self%seed(:,4), array(:,i), size(self%seed, 1))
+  end do
 
-  integer :: i, n
+end subroutine kiss_random
 
-  randStream%nstream = nstream
-  randStream%nrandom = nrandom
-  randStream%type    = to_upper(type)
+subroutine kiss_finalize(self)
+  class(ShrKissRandGen), intent(inout) :: self
 
-  ! It might be useful to assert that the "seed" argument is of shape
-  ! [nstream, shr_Randnum_seed_size(type)]
+  if ( allocated(self%seed) ) deallocate(self%seed)
 
-  select case (randStream%type)
+end subroutine kiss_finalize
 
-#ifdef INTEL_MKL
-! intel math kernel library SIMD fast merseene twister 19937
-  case ("SFMT_MKL")
-     method = VSL_RNG_METHOD_UNIFORM_STD
-     brng   = VSL_BRNG_SFMT19937
+function ShrF95MtRandGen_constructor(seed) result(rand_gen)
+  integer, intent(in) :: seed(:)
+  type(ShrF95MtRandGen) :: rand_gen
 
-     if( .NOT. allocated(randStream%vsl_stream) ) allocate(randStream%vsl_stream(nstream))
-     do n=1,nstream
-        errcode = vslnewstream( randStream%vsl_stream(n), brng, seed=seed(n,1) )
-     enddo
-#endif
+  integer :: i
 
-! keep it simple stupid
-  case("KISSVEC")
+  allocate(rand_gen%wrapped(size(seed)))
+  do i = 1, size(seed)
+     rand_gen%wrapped(i) = new_RandomNumberSequence(seed=seed(i))
+  end do
 
-     if (allocated(randStream%seed)) deallocate(randStream%seed)
-     allocate(randStream%seed(nstream,4))
+end function ShrF95MtRandGen_constructor
 
-     randStream%seed = seed
+subroutine f95_mt_random(self, array)
+  class(ShrF95MtRandGen), intent(inout) :: self
+  real(r8), dimension(:,:), intent(out) :: array
 
-! fortran-95 implementation of mersenne twister 19937
-  case("MT19937")
-     if( .NOT. allocated(randStream%randomseq) ) allocate(randStream%randomseq(nstream))
+  integer :: i, j
 
-     do n=1,nstream
-        randStream%randomseq(n) = new_RandomNumberSequence( seed=seed(n,1) )
-     enddo
-
-! fortran-90 intrinsic pseudorandom number generator
-  case("F90_INTRINSIC")
-     if (allocated(randStream%seed)) deallocate(randStream%seed)
-     allocate(randStream%seed(nstream,size(seed, 2)))
-
-     randStream%seed = seed
-
-! SIMD-oriented fast merseene twister 19937
-  case("DSFMT_F03")
-     if( .NOT. allocated(randStream%rng) ) allocate(randStream%rng(nstream))
-     do n=1,nstream
-        call dSFMT_init(seed(n,1), nrandom, randStream%rng(n) )
-     enddo
-
-  end select
-
-end subroutine shr_RandNum_init
-
-subroutine shr_RandNum_term( randStream )
-
-type (shr_rand_t), intent(inout) :: randStream
-
-integer :: n, nstream,ierr
-
-  nstream = randStream%nstream
-
-  select case (randStream%type)
-
-#ifdef INTEL_MKL
-! intel math kernel library SIMD fast merseene twister 19937
-  case ("SFMT_MKL")
-     if( allocated (randStream%vsl_stream) ) then
-        do n=1,nstream
-           ierr = vslDeleteStream(randStream%vsl_stream(n))
-        enddo
-        deallocate (randStream%vsl_stream)
-     endif
-#endif
-
-! keep it simple stupid
-  case("KISSVEC")
-     if ( allocated (randStream%seed) ) deallocate (randStream%seed)
-
-! fortran-95 implementation of merseene twister 19937
-  case("MT19937")
-     do n=1,nstream
-        call finalize_RandomNumberSequence(randStream%randomseq(n))
-     enddo
-     if ( allocated(randStream%randomseq) ) deallocate (randStream%randomseq)
-
-! fortran-90 intrinsic pseudorandom number generator
-  case("F90_INTRINSIC")
-     if ( allocated(randStream%seed) ) deallocate(randStream%seed)
-
-! SIMD-oriented fast merseene twister 19937
-  case("DSFMT_F03")
-     do n=1,nstream
-        call dSFMT_end(randStream%rng(n))
-     enddo
-     if ( allocated (randStream%rng) ) deallocate (randStream%rng)
-
-  end select
-
-end subroutine shr_RandNum_term
-
-function to_upper(strIn) result(strOut)
-
-     character(len=*), intent(in) :: strIn
-     character(len=len(strIn)) :: strOut
-     integer :: i, j
-
-     do i = 1,len(strIn)
-          j = iachar(strIn(i:i))
-          if (j>= iachar("a") .and. j<=iachar("z") ) then
-               strOut(i:i) = achar(iachar(strIn(i:i))-32)
-          else
-               strOut(i:i) = strIn(i:i)
-          end if
+  do i = 1, size(array, 2)
+     do j = 1, size(self%wrapped)
+        array(j,i) = getRandomReal(self%wrapped(j))
      end do
+  end do
 
-end function to_upper
+end subroutine f95_mt_random
+
+subroutine f95_mt_finalize(self)
+  class(ShrF95MtRandGen), intent(inout) :: self
+
+  integer :: i
+
+  if (allocated(self%wrapped)) then
+     do i = 1, size(self%wrapped)
+        call finalize_RandomNumberSequence(self%wrapped(i))
+     end do
+     deallocate(self%wrapped)
+  end if
+
+end subroutine f95_mt_finalize
+
+function ShrDsfmtRandGen_constructor(seed, cache_size) result(rand_gen)
+  integer, intent(in) :: seed(:)
+  integer, intent(in) :: cache_size
+  type(ShrDsfmtRandGen) :: rand_gen
+
+  integer :: i
+
+  allocate(rand_gen%wrapped(size(seed)))
+  do i = 1, size(seed)
+     call dSFMT_init(seed(i), cache_size, rand_gen%wrapped(i))
+  end do
+
+end function ShrDsfmtRandGen_constructor
+
+subroutine dsfmt_random(self, array)
+  class(ShrDsfmtRandGen), intent(inout) :: self
+  real(r8), dimension(:,:), intent(out) :: array
+
+  integer :: i
+
+  do i = 1, size(self%wrapped)
+     call get_rand_arr_close_open(self%wrapped(i), array(i,:), size(array, 2))
+  end do
+
+end subroutine dsfmt_random
+
+subroutine dsfmt_finalize(self)
+  class(ShrDsfmtRandGen), intent(inout) :: self
+
+  integer :: i
+
+  if (allocated(self%wrapped)) then
+     do i = 1, size(self%wrapped)
+        call dSFMT_end(self%wrapped(i))
+     end do
+     deallocate(self%wrapped)
+  end if
+
+end subroutine dsfmt_finalize
+
+function ShrMklMtRandGen_constructor(seed) result(rand_gen)
+  integer, intent(in) :: seed(:)
+  type(ShrMklMtRandGen) :: rand_gen
+
+  integer :: err
+
+  integer :: i
+
+  allocate(rand_gen%wrapped(size(seed)))
+  do i = 1, size(seed)
+     err = vslnewstream(rand_gen%wrapped(i), VSL_BRNG_SFMT19937, seed=seed(i))
+  end do
+
+end function ShrMklMtRandGen_constructor
+
+subroutine mkl_mt_random(self, array)
+  class(ShrMklMtRandGen), intent(inout) :: self
+  real(r8), dimension(:,:), intent(out) :: array
+
+  real(r8), parameter :: range_start = 0.0_r8, range_end = 1.0_r8
+
+  integer :: err
+
+  integer :: i
+
+  do i = 1, size(self%wrapped)
+     err = vdrnguniform(VSL_RNG_METHOD_UNIFORM_STD, self%wrapped(i), &
+          size(array, 2), array(i,:), range_start, range_end)
+  end do
+
+end subroutine mkl_mt_random
+
+subroutine mkl_mt_finalize(self)
+  class(ShrMklMtRandGen), intent(inout) :: self
+
+  integer :: err
+
+  integer :: i
+
+  if (allocated(self%wrapped)) then
+     do i = 1, size(self%wrapped)
+        err = vslDeleteStream(self%wrapped(i))
+     end do
+     deallocate(self%wrapped)
+  end if
+
+end subroutine mkl_mt_finalize
 
 end module shr_RandNum_mod
