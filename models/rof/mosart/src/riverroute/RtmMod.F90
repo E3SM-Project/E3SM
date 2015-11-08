@@ -1963,6 +1963,9 @@ contains
      if (masterproc) write(iulog,FORMR) trim(subname),' read hslp ',minval(Tunit%hslp),maxval(Tunit%hslp)
      call shr_sys_flush(iulog)
 
+     allocate(TUnit%hslpsqrt(begr:endr))  
+     TUnit%hslpsqrt = 0._r8
+
      allocate(TUnit%gxr(begr:endr))  
      ier = pio_inq_varid(ncid, name='gxr', vardesc=vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%gxr, ier)
@@ -1977,6 +1980,9 @@ contains
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%tslp, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read tslp ',minval(Tunit%tslp),maxval(Tunit%tslp)
      call shr_sys_flush(iulog)
+
+     allocate(TUnit%tslpsqrt(begr:endr))  
+     TUnit%tslpsqrt = 0._r8
 
      allocate(TUnit%tlen(begr:endr))
      TUnit%tlen = 0._r8
@@ -2004,6 +2010,9 @@ contains
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%rslp, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read rslp ',minval(Tunit%rslp),maxval(Tunit%rslp)
      call shr_sys_flush(iulog)
+
+     allocate(TUnit%rslpsqrt(begr:endr))  
+     TUnit%rslpsqrt = 0._r8
 
      allocate(TUnit%rwidth(begr:endr))  
      ier = pio_inq_varid(ncid, name='rwid', vardesc=vardesc)
@@ -2196,6 +2205,9 @@ contains
         if(TUnit%hslp(iunit) <= 0._r8) then
            TUnit%hslp(iunit) = 0.005_r8
         end if
+        TUnit%rslpsqrt(iunit) = sqrt(Tunit%rslp(iunit))
+        TUnit%tslpsqrt(iunit) = sqrt(Tunit%tslp(iunit))
+        TUnit%hslpsqrt(iunit) = sqrt(Tunit%hslp(iunit))
      end do
 
 #ifdef NO_MCT

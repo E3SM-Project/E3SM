@@ -193,11 +193,9 @@ MODULE MOSART_physics_mod
     
     integer, intent(in) :: iunit, nt
     real(r8), intent(in) :: theDeltaT    
-    real(r8) :: sqrthslp
 
-    sqrthslp = sqrt(TUnit%hslp(iunit))
 !  !TRunoff%ehout(iunit,nt) = -CREHT(TUnit%hslp(iunit), TUnit%nh(iunit), TUnit%Gxr(iunit), TRunoff%yh(iunit,nt))
-    TRunoff%ehout(iunit,nt) = -CREHT_nosqrt(sqrthslp, TUnit%nh(iunit), TUnit%Gxr(iunit), TRunoff%yh(iunit,nt))
+    TRunoff%ehout(iunit,nt) = -CREHT_nosqrt(TUnit%hslpsqrt(iunit), TUnit%nh(iunit), TUnit%Gxr(iunit), TRunoff%yh(iunit,nt))
     if(TRunoff%ehout(iunit,nt) < 0._r8 .and. &
        TRunoff%wh(iunit,nt) + (TRunoff%qsur(iunit,nt) + TRunoff%ehout(iunit,nt)) * theDeltaT < TINYVALUE) then
        TRunoff%ehout(iunit,nt) = -(TRunoff%qsur(iunit,nt) + TRunoff%wh(iunit,nt) / theDeltaT)  
@@ -222,15 +220,13 @@ MODULE MOSART_physics_mod
     implicit none    
     integer, intent(in) :: iunit,nt
     real(r8), intent(in) :: theDeltaT
-    real(r8) :: sqrttslp
 
-    sqrttslp = sqrt(TUnit%tslp(iunit))
 !  !if(TUnit%tlen(iunit) <= 1e100_r8) then ! if no tributaries, not subnetwork channel routing
     if(TUnit%tlen(iunit) <= TUnit%hlen(iunit)) then ! if no tributaries, not subnetwork channel routing
        TRunoff%etout(iunit,nt) = -TRunoff%etin(iunit,nt)
     else
 !     !TRunoff%vt(iunit,nt) = CRVRMAN(TUnit%tslp(iunit), TUnit%nt(iunit), TRunoff%rt(iunit,nt))
-       TRunoff%vt(iunit,nt) = CRVRMAN_nosqrt(sqrttslp, TUnit%nt(iunit), TRunoff%rt(iunit,nt))
+       TRunoff%vt(iunit,nt) = CRVRMAN_nosqrt(TUnit%tslpsqrt(iunit), TUnit%nt(iunit), TRunoff%rt(iunit,nt))
        TRunoff%etout(iunit,nt) = -TRunoff%vt(iunit,nt) * TRunoff%mt(iunit,nt)
        if(TRunoff%wt(iunit,nt) + (TRunoff%etin(iunit,nt) + TRunoff%etout(iunit,nt)) * theDeltaT < TINYVALUE) then
           TRunoff%etout(iunit,nt) = -(TRunoff%etin(iunit,nt) + TRunoff%wt(iunit,nt)/theDeltaT)
@@ -280,11 +276,9 @@ MODULE MOSART_physics_mod
     real(r8), intent(in) :: theDeltaT    
     integer  :: k
     real(r8) :: temp_gwl, temp_dwr, temp_gwl0
-    real(r8) :: sqrtrslp
 
     ! estimate the inflow from upstream units
     TRunoff%erin(iunit,nt) = 0._r8
-    sqrtrslp = sqrt(TUnit%rslp(iunit))
 
 ! tcraig, moved this out of the inner main channel loop to before main channel call
 ! now it's precomputed as Trunoff%eroutUp
@@ -302,7 +296,7 @@ MODULE MOSART_physics_mod
           TRunoff%erout(iunit,nt) = -TRunoff%erin(iunit,nt)-TRunoff%erlateral(iunit,nt)
        else
 !        !TRunoff%vr(iunit,nt) = CRVRMAN(TUnit%rslp(iunit), TUnit%nr(iunit), TRunoff%rr(iunit,nt))
-          TRunoff%vr(iunit,nt) = CRVRMAN_nosqrt(sqrtrslp, TUnit%nr(iunit), TRunoff%rr(iunit,nt))
+          TRunoff%vr(iunit,nt) = CRVRMAN_nosqrt(TUnit%rslpsqrt(iunit), TUnit%nr(iunit), TRunoff%rr(iunit,nt))
           TRunoff%erout(iunit,nt) = -TRunoff%vr(iunit,nt) * TRunoff%mr(iunit,nt)
           if(-TRunoff%erout(iunit,nt) > TINYVALUE .and. TRunoff%wr(iunit,nt) + (TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%erout(iunit,nt)) * theDeltaT < TINYVALUE) then
              TRunoff%erout(iunit,nt) = -(TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%wr(iunit,nt) / theDeltaT)

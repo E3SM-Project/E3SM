@@ -132,10 +132,12 @@ module RunoffMod
      ! hillslope properties
      real(r8), pointer :: nh(:)        ! manning's roughness of the hillslope (channel network excluded) 
      real(r8), pointer :: hslp(:)      ! slope of hillslope, [-]
+     real(r8), pointer :: hslpsqrt(:)  ! sqrt of slope of hillslope, [-]
      real(r8), pointer :: hlen(:)      ! length of hillslope within the cell, [m] 
 
      ! subnetwork channel properties
      real(r8), pointer :: tslp(:)      ! average slope of tributaries, [-]
+     real(r8), pointer :: tslpsqrt(:)  ! sqrt of average slope of tributaries, [-]
      real(r8), pointer :: tlen(:)      ! length of all sub-network reach within the cell, [m] 
      real(r8), pointer :: twidth(:)    ! bankfull width of the sub-reach, [m]
      real(r8), pointer :: nt(:)        ! manning's roughness of the subnetwork at hillslope  
@@ -144,6 +146,7 @@ module RunoffMod
      integer , pointer :: fdir(:)      ! flow direction, currently considering single direction only;
      real(r8), pointer :: rlen(:)      ! length of main river reach, [m]
      real(r8), pointer :: rslp(:)      ! slope of main river reach, [-]
+     real(r8), pointer :: rslpsqrt(:)  ! sqrt of slope of main river reach, [-]
      real(r8), pointer :: rwidth(:)    ! bankfull width of main reach, [m]
      real(r8), pointer :: rwidth0(:)   ! total width of the flood plain, [m]
      real(r8), pointer :: rdepth(:)    ! bankfull depth of river cross section, [m]
