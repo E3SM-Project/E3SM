@@ -325,14 +325,16 @@ else {
     # Set Initial conditions if there is a file for this grid and sim-yr
     add_default($nl, 'do_rtm', 'val'=>".true.");
     add_default($nl, 'decomp_option');
+    add_default($nl, 'smat_option');
     add_default($nl, 'frivinp_rtm' , 'rof_grid'=>$ROF_GRID );
     add_default($nl, 'ice_runoff'  , 'lnd_grid'=>$LND_GRID );
     add_default($nl, 'rtmhist_mfilt');
     add_default($nl, 'rtmhist_nhtfrq');
     add_default($nl, 'rtmhist_ndens');
+    add_default($nl, 'delt_mosart');
 #    add_default($nl, 'finidat_rtm' , 'rof_grid'=>$ROF_GRID, 'simyr'=>$opts{'simyr'}, 'nofail'=>1 );
     my $val = ( 3600 * 24 ) / $ROF_NCPL;
-    add_default($nl, 'rtm_tstep', 'val'=>$val);
+    add_default($nl, 'coupling_period', 'val'=>$val);
     if ($print>=2) { 
         print "River Transport Model (MOSART) mode is $MOSART_MODE \n"; 
         print "  MOSART lnd grid is $LND_GRID \n";

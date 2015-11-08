@@ -8,14 +8,24 @@
 <!-- MOSART Namelist -->
 <!-- ========================================================================================  -->
 
-<entry id="rtm_tstep" 
+<entry id="coupling_period" 
+       type="integer" 
+       category="mosart"
+       group="mosart_inparm" 
+       valid_values="" >
+MOSART coupling period (sec).
+Default: 10800
+Can ONLY be set by modifying the value of the xml variable ROF_NCPL in env_run.xml.
+</entry>
+
+<entry id="delt_mosart" 
        type="integer" 
        category="mosart"
        group="mosart_inparm" 
        valid_values="" >
 MOSART time step (sec).
-Default: 10800
-Can ONLY be set by modifying the value of the xml variable ROF_NCPL in env_run.xml.
+Default: 3600
+Internal mosart timestep, will be adjusted down to be integer multiple of coupling_period if necessary
 </entry>
 
 <entry id="ice_runoff" 
@@ -63,9 +73,18 @@ Note that mosart flood is not supported in CESM1.1
        type="char*32" 
        category="mosart"
        group="mosart_inparm" 
-       valid_values="" >
+       valid_values="basin,1d,roundrobin" >
 Decomposition Option for mosart
 Default: 'basin'
+</entry>
+
+<entry id="smat_option" 
+       type="char*32" 
+       category="mosart"
+       group="mosart_inparm" 
+       valid_values="opt,Xonly,Yonly" >
+sparse matrix multiply Option for mosart
+Default: 'opt'
 </entry>
 
 <entry id="finidat_rtm" 

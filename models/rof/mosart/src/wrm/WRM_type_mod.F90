@@ -46,12 +46,13 @@ MODULE WRM_type_mod
      integer , pointer :: INVicell(:)       ! (b:e) give the reservoir ID 1->NDAM located in icell
      integer , pointer :: INVisubw(:)       ! (??) need the equivilent for subw for the extraction module
      integer           :: NUnitID           ! max ID number of the units - needed by WRM
-     integer , pointer :: isDam(:)          ! (b:e) unit id
+     integer , pointer :: isDam(:)          ! (b:e) Dam ID
      character(len=100), pointer :: DamName(:) ! (nd) dam name
      integer , pointer :: dam_depend(:,:)   ! (nd,b:e) dependence of each dam to subbasins - array of IDs
      integer , pointer :: dam_Ndepend(:)    ! (b:e) give the number of dependent subbasins to each reservoir
      integer , pointer :: subw_depend(:,:)  ! (b:e,nd) dependence of each subbasin to a certain number of dams, map IDs
-     integer , pointer :: subw_Ndepend(:)   ! (b:e) number of reservoir from which the subbasin depends               
+     integer , pointer :: subw_Ndepend(:)   ! (b:e) number of reservoir from which the subbasin depends
+     integer , pointer :: subw_damlist(:)   ! (1:Ndams) global dams needed on this pe
      real(r8), pointer :: Surfarea(:)       ! (nd) surface area of the reservoir
      real(r8), pointer :: InstCap(:)        ! (nd) instance energy capacity (MW)
      real(r8), pointer :: StorCap(:)        ! (nd) maximum storage capacity of the reservoir

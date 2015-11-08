@@ -25,7 +25,7 @@ module RtmSpmd
   integer, public :: npes            ! number of processors for rtm
   integer, public :: mpicom_rof      ! communicator group for rtm
   integer, public :: ROFID           ! mct compid
-  integer, parameter :: DEFAULT_MASTERPROC=0 ! the value of iam which is assigned 
+  integer, public, parameter :: MASTERTASK=0 ! the value of iam which is assigned 
                                              ! the masterproc duties
 
   !
@@ -76,7 +76,7 @@ contains
     ! Get my processor id
 
     call mpi_comm_rank(mpicom_rof, iam, ier)
-    if (iam == DEFAULT_MASTERPROC) then 
+    if (iam == MASTERTASK) then 
        masterproc = .true.
     else
        masterproc = .false.

@@ -33,28 +33,30 @@ MODULE WRM_subw_IO_mod
      ! !DESCRIPTION: initilization of WRM model
      implicit none
 
-     integer :: nr, nd, iunit, j , mth, nsub, i, n      ! local loop indices
-     integer :: cnt, nn, idam, ntotal
+     integer :: nr, nd, ng, mth        ! local loop indices
+     integer :: cnt, idam, ntotal
      integer :: begr, endr, maxnumdependentgrid
-     integer :: ncdfid, did, dids(2), dsizes(2), ier, varid
+     integer :: ncdfid, did, dids(2), dsize(1), dsizes(2), ier, varid
      type(file_desc_t):: ncid       ! netcdf file
      type(var_desc_t) :: vardesc    ! netCDF variable description
-     type(io_desc_t)  :: iodesc_int ! pio io desc
-     type(io_desc_t)  :: iodesc_dbl ! pio io desc
-     type(io_desc_t)  :: iodesc_int_dam ! pio io desc
-     type(io_desc_t)  :: iodesc_dbl_dam ! pio io desc
+     type(io_desc_t)  :: iodesc_int_grd2grd ! pio io desc, global grid to local grid
+     type(io_desc_t)  :: iodesc_dbl_grd2grd ! pio io desc, global grid to local grid
+     type(io_desc_t)  :: iodesc_int_grd2dam  ! pio io desc, global grid to local dam
+     type(io_desc_t)  :: iodesc_dbl_grd2dam  ! pio io desc, global grid to local dam
+     type(io_desc_t)  :: iodesc_int_dam2dam   ! pio io desc, global dam to local dam
+     type(io_desc_t)  :: iodesc_dbl_dam2dam   ! pio io desc, global dam to local dam
      integer(kind=pio_offset) :: frame
      real(r8) :: peak, prorata , mn, mx                  ! peak value to define the start of operationalyr
      integer :: sgn,curr_sgn, nsc, ct, ct_mx, mth_op , idepend      ! number of sign change
-     integer, pointer  :: compDOF(:)     ! pio decomp
-     integer, pointer  :: idam_global(:) ! local to global dams mapping
-     integer, pointer  :: idam_glo2dam(:) ! global to local dams mapping
-     integer, pointer  :: UnitID_1D(:)   ! 1d to 2d dam mapping
-!     integer, pointer  :: temp1D_int(:), temp2D_nc_int(:,:), temp2D_local_int(:,:), temp2D_int(:,:), temp3D_int(:,:,:) ! temporary
-!     real(r8), pointer :: temp1D_dbl(:), temp2D_nc_dbl(:,:), temp2D_local_dbl(:,:), temp2D_dbl(:,:), temp3D_dbl(:,:,:) ! temporary
+     integer, pointer  :: compDOF(:)           ! pio decomp
+     integer, pointer  :: idam_ldam2gdam(:)    ! local dam index to global dam index
+     integer, pointer  :: idam_ldam2ggrd(:)    ! local dam index to global grid index
+     integer, pointer  :: UnitID_1D(:)         ! list of dam IDs, 1:ndams
      integer, pointer  :: temp_gridID_from_Dam(:,:)
+     integer, pointer  :: temp_subw_Ndepend(:) 
+     integer, pointer  :: dependcnt(:)
      character(len=*),parameter :: subname='WRM_init'
-     character(len=*),parameter :: FORMI = '(2A,2i10)'
+     character(len=*),parameter :: FORMI = '(2A,6i13)'
      character(len=*),parameter :: FORMR = '(2A,2g15.7)'
 
      begr = rtmCTL%begr
@@ -68,7 +70,7 @@ MODULE WRM_subw_IO_mod
      ctlSubwWRM%demandPath = '/pic/scratch/tcraig/wm_data/NLDAS2_GCAM_water_demand_'
 
      !-------------------
-     ! dam count
+     ! read input dataset
      !-------------------
 
      ! start by opening and reading the dam IDs, can't use pio yet, need decomp first
@@ -94,11 +96,11 @@ MODULE WRM_subw_IO_mod
      call ncd_pio_openfile(ncid, trim(ctlSubwWRM%paraPath)//trim(ctlSubwWRM%paraFile), 0)
      allocate(compdof(rtmCTL%lnumr))
      cnt = 0
-     do n = begr,endr
+     do nr = begr,endr
         cnt = cnt + 1
-!tcx, tcraig which of these is correct/better?
-        compDOF(cnt) = rtmCTL%gindex(n)
-!        compDOF(cnt) = TUnit%ID0(n)
+!tcx, read in data based on mosart decomposition
+! THIS ASSUMES mosart and wrm use same grid indexing
+        compDOF(cnt) = rtmCTL%gindex(nr)
      enddo
      ier = pio_inq_varid   (ncid, name='unit_ID', vardesc=vardesc)
      ier = pio_inq_vardimid(ncid, vardesc, dids)
@@ -110,30 +112,25 @@ MODULE WRM_subw_IO_mod
      call shr_sys_flush(iulog)
 
 ! decomp for lon/lat to local gridcells
-     call pio_initdecomp(pio_subsystem, pio_double, dsizes, compDOF, iodesc_dbl)
-     call pio_initdecomp(pio_subsystem, pio_int   , dsizes, compDOF, iodesc_int)
+     call pio_initdecomp(pio_subsystem, pio_double, dsizes, compDOF, iodesc_dbl_grd2grd)
+     call pio_initdecomp(pio_subsystem, pio_int   , dsizes, compDOF, iodesc_int_grd2grd)
      deallocate(compdof)
 
-! handled above in standard netcdf
-!     ier = pio_inq_varid   (ncid, name='Dams', vardesc=vardesc)
-!     ier = pio_inq_vardimid(ncid, vardesc, dids)
-!     ier = pio_inq_dimlen  (ncid, dids(1), CtlSubwWRM%NDam)
-!     ier = pio_inq_varid   (ncid, name='DependentGrids', vardesc=vardesc)
-!     ier = pio_inq_vardimid(ncid, vardesc, dids)
-!     ier = pio_inq_dimlen  (ncid, dids(1), maxNumDependentGrid)
+     !--- read in DamIDs
 
      allocate (WRMUnit%isDam(begr:endr))
      WRMUnit%isDam = 0
      ier = pio_inq_varid (ncid, name='unit_ID', vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_int, WRMUnit%isDam, ier)
+     call pio_read_darray(ncid, vardesc, iodesc_int_grd2grd, WRMUnit%isDam, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read unit_ID ',minval(WRMunit%isDam),maxval(WRMUnit%isDam)
      call shr_sys_flush(iulog)
 
      !--- count dams and set up dam indexing
 
      ctlSubwWRM%localNumDam = 0
-     do nr=begr,endr
+     do nr = begr,endr
         if (WRMUnit%isDam(nr) > 0) then
+           ! tcx tcraig, this is not the right check.  the damID should be independent of the grid at some future time
            if (WRMUnit%isDam(nr) /= Tunit%ID0(nr)) then
               write(iulog,*) subname,' ERROR: Dam unit_ID does not match mosart ',nr,WRMUnit%isDam(nr),Tunit%ID0(nr)
               call shr_sys_abort(subname//' ERROR: Dam unit_ID does not match mosart')
@@ -145,28 +142,32 @@ MODULE WRM_subw_IO_mod
      end do
      write(iulog,*) subname,' localNumDam = ',ctlSubwWRM%localNumDam
 
-     !initialize INCVicell 
-! tcx tcraig check this loop for correctness
+     !--- initialize icell, INVicell and dam indexing
+
      allocate(WRMUnit%INVicell(begr:endr))
      WRMUnit%INVicell =-99 
      allocate(WRMUnit%icell(ctlsubwWRM%localNumDam))
      WRMUnit%icell = 0
-     allocate(idam_global(ctlSubwWRM%localNumDam))
-     allocate(idam_glo2dam(ctlSubwWRM%localNumDam))
-     idam_global = -99
-     idam_glo2dam = -99
-     nn = 0
-     do nr=begr,endr
+     allocate(idam_ldam2gdam(ctlSubwWRM%localNumDam))
+     idam_ldam2gdam = -99
+     allocate(idam_ldam2ggrd(ctlSubwWRM%localNumDam))
+     idam_ldam2ggrd = -99
+     cnt = 0
+     do nr = begr,endr
         if (WRMUnit%isDam(nr) > 0) then
-           nn = nn + 1
-           WRMUnit%INVicell(nr) = nn
-           WRMUnit%icell(nn) = nr
-           do nd=1,ctlSubwWRM%NDam
+           cnt = cnt + 1
+           WRMUnit%INVicell(nr) = cnt  ! local gridcell index to local dam index
+           WRMUnit%icell(cnt) = nr     ! local dam index to local gridcell index
+           do nd = 1,ctlSubwWRM%NDam
               if (WRMUnit%isDam(nr) .eq. UnitID_1D(nd)) then
-!                 write(iulog,'(a,5i10)') subname//' idam_glo=',nr,nn,WRMUnit%isDam(nr),nd,UnitID_1D(nd)
-                 idam_global(nn) = nd
-                 idam_glo2dam(nn) = WRMUnit%isDam(nr)
-                 exit
+!                 write(iulog,'(a,5i10)') subname//' idam_glo=',nr,cnt,WRMUnit%isDam(nr),nd,UnitID_1D(nd)
+                 ! check if a dam was already found, if so abort
+                 if (idam_ldam2ggrd(cnt) > 0) then
+                    write(iulog,*) subname,' ERROR: dam ID appears twice in UnitID_1D'
+                    call shr_sys_abort(subname//' ERROR dam ID appears twice in UnitID_1D')
+                 endif
+                 idam_ldam2gdam(cnt) = nd                 ! local dam index to global dam index
+                 idam_ldam2ggrd(cnt) = WRMUnit%isDam(nr)  ! local dam index to global gridcell index
               end if
            end do
         end if
@@ -174,74 +175,157 @@ MODULE WRM_subw_IO_mod
 
      write(iulog,*) subname,' icell    = ',minval(WRMUnit%icell),maxval(WRMUnit%icell)
      write(iulog,*) subname,' INVicell = ',minval(WRMUnit%INVicell),maxval(WRMUnit%INVicell)
-     write(iulog,*) subname,' idam_global  = ',minval(idam_global),maxval(idam_global)
-     write(iulog,*) subname,' idam_glo2dam = ',minval(idam_glo2dam),maxval(idam_glo2dam)
+     write(iulog,*) subname,' idam_ldam2gdam = ',minval(idam_ldam2gdam),maxval(idam_ldam2gdam)
+     write(iulog,*) subname,' idam_ldam2ggrd = ',minval(idam_ldam2ggrd),maxval(idam_ldam2ggrd)
 
-! decomp for ndam to local ndam
-!     call pio_initdecomp(pio_subsystem, pio_double, ctlSubwWRM%NDam, idam_global, iodesc_dbl_dam)
-!     call pio_initdecomp(pio_subsystem, pio_int   , ctlSubwWRM%NDam, idam_global, iodesc_int_dam)
-! decomp for lon/lat to local ndam
-     call pio_initdecomp(pio_subsystem, pio_double, dsizes, idam_glo2dam, iodesc_dbl_dam)
-     call pio_initdecomp(pio_subsystem, pio_int   , dsizes, idam_glo2dam, iodesc_int_dam)
+     ! --- initialize iodesc for grid2dam and dam2dam
+     ! decomp for lon/lat to local dam
+     call pio_initdecomp(pio_subsystem, pio_double, dsizes, idam_ldam2ggrd, iodesc_dbl_grd2dam)
+     call pio_initdecomp(pio_subsystem, pio_int   , dsizes, idam_ldam2ggrd, iodesc_int_grd2dam)
+     ! decomp for global dam to local dam
+     dsize(1) = ctlSubwWRM%NDam
+     call pio_initdecomp(pio_subsystem, pio_double, dsize , idam_ldam2gdam, iodesc_dbl_dam2dam)
+     call pio_initdecomp(pio_subsystem, pio_int   , dsize , idam_ldam2gdam, iodesc_int_dam2dam)
 
-     !initialize dam dependencies
+     !--- initialize dam dependencies
+
      allocate (WRMUnit%dam_Ndepend(ctlSubwWRM%localNumDam))
      WRMUnit%dam_Ndepend = 0        !
-     allocate (WRMUnit%dam_depend(ctlSubwWRM%localNumDam,maxNumDependentGrid))
-     WRMUnit%dam_depend = 0        !
 
      ier = pio_inq_varid (ncid, name='numGrid_from_Dam', vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_int_dam , WRMUnit%dam_Ndepend, ier)
+     call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam , WRMUnit%dam_Ndepend, ier)
      write(iulog,FORMI) trim(subname),' read numGrid_from_Dam',minval(WRMUnit%dam_Ndepend),maxval(WRMUnit%dam_Ndepend)
      call shr_sys_flush(iulog)
 
-! initialize dam_depend
      do idam = 1,ctlSubwWRM%localNumDam
-        nn = idam_global(idam)
+        nd = idam_ldam2gdam(idam)
         ntotal = 0
-        do nd=1,maxNumDependentGrid
-           if (temp_gridID_from_Dam(nn,nd) > 0) then
+        do ng = 1,maxNumDependentGrid
+           if (temp_gridID_from_Dam(nd,ng) > 0) then
               ntotal = ntotal + 1
-              WRMUnit%dam_depend(idam,ntotal) = temp_gridID_from_Dam(nn,nd)
            endif
         enddo
-        write(iulog,*) subname,' compute dam_depend ntotal ',idam,ntotal,WRMUnit%dam_Ndepend(idam)
-        if (ntotal > WRMUnit%dam_Ndepend(idam) .or. ntotal < WRMUnit%dam_Ndepend(idam)-1) then ! sometimes in the dependency data, the basin outlet is included for a dam as its dependent grid
-           write(iulog,"(a,3i8)"), subname//" Attention check gridID_from_Dam ",idam, WRMUnit%dam_Ndepend(idam), ntotal
-           !call endrun
+!tcx        write(iulog,*) subname,' compute dam_depend ntotal ',idam,ntotal
+        ! check that Ndepend and dam_depend are consistent
+        ! sometimes in the dependency data, the basin outlet is included for a dam as its dependent grid
+        if (ntotal > WRMUnit%dam_Ndepend(idam) .or. ntotal < WRMUnit%dam_Ndepend(idam)-1) then
+           write(iulog,"(a,3i8)"), subname//"ERROR: Ndepend/dam_depend inconsistency1",idam, ntotal,WRMUnit%dam_Ndepend(idam)
+           call shr_sys_abort(subname//' ERROR: numGrid_from_Dam not consistent with gridID_from_Dam list')
         end if
         WRMUnit%dam_Ndepend(idam) = ntotal
      enddo
-     deallocate(temp_gridID_from_Dam)
 
-!tcx tcraig need to update this!
-     !initialize INVsubw
-! tcx deprecated by hongyi
-!     allocate (WRMUnit%INVisubw(nsub))
-!     WRMUnit%INVisubw = -99
-!     WRMUnit%NUnitID = 0
-!     do iunit=1,ctlSubWRM%NUnit
-!        j = TUnit%icell(iunit, 1) ! cell number where dam is located, need indice
-!        if ( j > WRMUnit%NUnitID ) then
-!           WRMUnit%NUnitID = j
-!        endif
-!        WRMUnit%INVisubw(j)=iunit
-!     end do
-!     if ( WRMUnit%NUnitID > nsub ) then
-!        write(iulog,*) subname,"ATTENTION, ID max number is larger than the hard coded value of %d, adjust in full knowledge, nsub "
-!        call shr_sys_abort(subname//' ERROR: ID max number too large')
-!     endif
+     allocate (WRMUnit%dam_depend(ctlSubwWRM%localNumDam,maxval(WRMUnit%dam_Ndepend)))
+     WRMUnit%dam_depend = 0        !
 
-     ! max subw id number, tcx
-!     nsub = maxval(rglo2gdc)??
+     do idam = 1,ctlSubwWRM%localNumDam
+        nd = idam_ldam2gdam(idam)
+        ntotal = 0
+        do ng = 1,maxNumDependentGrid
+           if (temp_gridID_from_Dam(nd,ng) > 0) then
+              ntotal = ntotal + 1
+              if (ntotal > WRMUnit%dam_Ndepend(idam)) then
+                 write(iulog,"(a,3i8)"), subname//"ERROR: Ndepend/dam_depend inconsistency2",idam, WRMUnit%dam_Ndepend(idam), ntotal
+                 call shr_sys_abort(subname//' ERROR: ntotal gt dam_Ndepend')
+              end if
+              WRMUnit%dam_depend(idam,ntotal) = temp_gridID_from_Dam(nd,ng)
+           endif
+        enddo
+        if (ntotal /= WRMUnit%dam_Ndepend(idam)) then
+           write(iulog,"(a,3i8)"), subname//"ERROR: Ndepend/dam_depend inconsistency3",idam, WRMUnit%dam_Ndepend(idam), ntotal
+           call shr_sys_abort(subname//' ERROR: ntotal ne dam_Ndepend')
+        end if
+     enddo
+
+     do idam = 1,ctlSubwWRM%localNumDam
+        do ng = 1,WRMUnit%dam_Ndepend(idam)
+           if (WRMUnit%dam_depend(idam,ng) <= 0) then
+              write(iulog,'(2a,4i12)') subname,' ERROR dam_depend check1 ',idam,WRMUnit%dam_Ndepend(idam),ng,WRMUnit%dam_depend(idam,ng)
+           endif
+        enddo
+     enddo
+
+     !--- initialize inverse of dam_depend
+
+     allocate(temp_subw_Ndepend(begr:endr))
+     ier = pio_inq_varid (ncid, name='num_Dam2Grid', vardesc=vardesc)
+     call pio_read_darray(ncid, vardesc, iodesc_int_grd2grd , temp_subw_Ndepend, ier)
+     write(iulog,FORMI) trim(subname),' read num_Dam2Grid',minval(temp_subw_Ndepend),maxval(temp_subw_Ndepend)
+     call shr_sys_flush(iulog)
+
+     allocate (dependcnt(begr:endr))
+     dependcnt = 0
+     do nd = 1,ctlSubwWRM%NDam
+        do ng = 1,maxNumDependentGrid
+           if (temp_gridID_from_Dam(nd,ng) > 0) then
+              do nr = begr,endr
+                 if (temp_gridID_from_Dam(nd,ng) == rtmCTL%gindex(nr)) then
+                    dependcnt(nr) = dependcnt(nr) + 1
+                 endif
+              enddo
+           endif
+        enddo
+     enddo
+     write(iulog,FORMI) trim(subname),' compute dependcnt',minval(dependcnt),maxval(dependcnt)
 
      allocate (WRMUnit%subw_Ndepend(begr:endr))
-     WRMUnit%subw_Ndepend = 0        ! 
-!tcx get rid of subw_depend?
-!     allocate (WRMUnit%subw_depend(begr:endr,ctlSubwWRM%localNumDam))
-!     WRMUnit%subw_depend = 0        !
+     WRMUnit%subw_Ndepend = 0
+     allocate (WRMUnit%subw_depend(begr:endr,maxval(dependcnt)))
+     WRMUnit%subw_depend = 0
+     allocate (WRMUnit%subw_damlist(ctlSubwWRM%NDam))
+     WRMUnit%subw_damlist = 0
+
+     WRMUnit%subw_Ndepend = 0
+     do nd = 1,ctlSubwWRM%NDam
+        do ng = 1,maxNumDependentGrid
+           if (temp_gridID_from_Dam(nd,ng) > 0) then
+              do nr = begr,endr
+                 if (temp_gridID_from_Dam(nd,ng) == rtmCTL%gindex(nr)) then
+                    WRMUnit%subw_Ndepend(nr) = WRMUnit%subw_Ndepend(nr) + 1
+                    if (WRMUnit%subw_Ndepend(nr) > dependcnt(nr)) then
+                       write(iulog,*) subname,' ERROR: dependcnt ',nd,ng,nr,dependcnt(nr),WRMUnit%subw_Ndepend(nr)
+                       call shr_sys_abort(subname//' ERROR: dependcnt')
+                    endif
+                    WRMUnit%subw_depend(nr,WRMUnit%subw_Ndepend(nr)) = nd
+                    WRMUnit%subw_damlist(nd) = 1
+                 endif
+              enddo
+           endif
+        enddo
+     enddo
+     do nr = begr,endr
+        if (WRMUnit%subw_Ndepend(nr) /= dependcnt(nr)) then
+           write(iulog,*) subname,' ERROR: dependcnt,subw_Ndepend error ',nr,dependcnt(nr),WRMUnit%subw_Ndepend(nr)
+           call shr_sys_abort(subname//' ERROR: dependcnt,subw_Ndepend')
+        endif
+     enddo
+     deallocate(dependcnt)
+
+     write(iulog,FORMI) trim(subname),' compute WRMUnit%subw_Ndepend',minval(WRMUnit%subw_Ndepend),maxval(WRMUnit%subw_Ndepend),sum(WRMUnit%subw_Ndepend)
+     write(iulog,FORMI) trim(subname),' compute WRMUnit%subw_damlist',minval(WRMUnit%subw_damlist),maxval(WRMUnit%subw_damlist),sum(WRMUnit%subw_damlist)
+     write(iulog,FORMI) trim(subname),' compute WRMUnit%subw_depend',minval(WRMUnit%subw_depend),maxval(WRMUnit%subw_depend),sum(WRMUnit%subw_depend)
+     do nr = begr,endr
+        if (WRMUnit%subw_Ndepend(nr) > 0) then
+!tcx           write(iulog,*) trim(subname),' compute subw_depend',nr,WRMUnit%subw_Ndepend(nr),minval(WRMUnit%subw_depend(nr,1:WRMUnit%subw_Ndepend(nr))),maxval(WRMUnit%subw_depend(nr,1:WRMUnit%subw_Ndepend(nr)))
+        else
+!tcx           write(iulog,*) trim(subname),' compute subw_depend',nr,WRMUnit%subw_Ndepend(nr)
+        endif
+     enddo
+
+     ! compare num_Dam2Grid to subw_Ndepend computed from temp_gridID_from_Dam
+     ! tcx, tcraig this should probabaly be removed and num_Dam2Grid does not need to be on input file
+     do nr = begr,endr
+        if (temp_subw_Ndepend(nr) /= WRMUnit%subw_Ndepend(nr)) then
+           write(iulog,*) subname,' ERROR: num_Dam2Grid not consistent with temp_gridID_from_Dam'
+        endif
+     enddo
+     deallocate(temp_subw_Ndepend)
+     deallocate(temp_gridID_from_Dam)
+
+     !--- initial dam data
 
      allocate (WRMUnit%DamName(ctlSubwWRM%localNumDam))
+     WRMUnit%DamName = 'undefined'
      allocate (WRMUnit%TotStorCapDepend(begr:endr))
      WRMUnit%TotStorCapDepend = 0._r8
      allocate (WRMUnit%TotInflowDepend(begr:endr))
@@ -354,37 +438,37 @@ MODULE WRM_subw_IO_mod
      ! read the wm para
 
      ier = pio_inq_varid (ncid, name='DamID_Spatial', vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_int_dam , WRMUnit%mask, ier)
+     call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam , WRMUnit%mask, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read DamID_Spatial',minval(WRMUnit%mask),maxval(WRMUnit%mask)
      call shr_sys_flush(iulog)
 
      ier = pio_inq_varid (ncid, name='RUNOFF_CAP'   , vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl_dam , WRMUnit%INVc, ier)
+     call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%INVc, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read RUNOFF_CAP',minval(WRMUnit%INVc),maxval(WRMUnit%INVc)
      call shr_sys_flush(iulog)
 
      ier = pio_inq_varid (ncid, name='Year'         , vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_int_dam , WRMUnit%YEAR, ier)
+     call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam , WRMUnit%YEAR, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read Year',minval(WRMUnit%YEAR),maxval(WRMUnit%YEAR)
      call shr_sys_flush(iulog)
 
      ier = pio_inq_varid (ncid, name='dam_hgt'      , vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl_dam , WRMUnit%Height, ier)
+     call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%Height, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read dam_hgt',minval(WRMUnit%Height),maxval(WRMUnit%Height)
      call shr_sys_flush(iulog)
 
      ier = pio_inq_varid (ncid, name='dam_len'      , vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl_dam , WRMUnit%Length, ier)
+     call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%Length, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read dam_len',minval(WRMUnit%Length),maxval(WRMUnit%Length)
      call shr_sys_flush(iulog)
 
      ier = pio_inq_varid (ncid, name='area_skm'     , vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl_dam , WRMUnit%SurfArea, ier)
+     call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%SurfArea, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read area_skm',minval(WRMUnit%SurfArea),maxval(WRMUnit%SurfArea)
      call shr_sys_flush(iulog)
 
      ier = pio_inq_varid (ncid, name='cap_mcm'      , vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl_dam , WRMUnit%StorCap, ier)
+     call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%StorCap, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read cap_mcm',minval(WRMUnit%StorCap),maxval(WRMUnit%StorCap)
      call shr_sys_flush(iulog)
 
@@ -395,273 +479,165 @@ MODULE WRM_subw_IO_mod
      !WRMUnit%StorMthStOp = WRMUnit%StorCap*0.9
 
      ier = pio_inq_varid (ncid, name='depth_m'       , vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl_dam  , WRMUnit%Depth, ier)
+     call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam  , WRMUnit%Depth, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read depth_m',minval(WRMUnit%Depth),maxval(WRMUnit%Depth)
      call shr_sys_flush(iulog)
 
      ier = pio_inq_varid (ncid, name='use_irri'      , vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_int_dam  , WRMUnit%use_Irrig, ier)
+     call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam  , WRMUnit%use_Irrig, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read use_irri',minval(WRMUnit%use_Irrig),maxval(WRMUnit%use_Irrig)
      call shr_sys_flush(iulog)
 
      ier = pio_inq_varid (ncid, name='use_elec'      , vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_int_dam  , WRMUnit%use_Elec, ier)
+     call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam  , WRMUnit%use_Elec, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read use_elec',minval(WRMUnit%use_Elec),maxval(WRMUnit%use_Elec)
      call shr_sys_flush(iulog)
 
      ier = pio_inq_varid (ncid, name='use_supp'      , vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_int_dam  , WRMUnit%use_Supp, ier)
+     call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam  , WRMUnit%use_Supp, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read use_supp',minval(WRMUnit%use_Supp),maxval(WRMUnit%use_Supp)
      call shr_sys_flush(iulog)
 
      ier = pio_inq_varid (ncid, name='use_fcon'      , vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_int_dam  , WRMUnit%use_FCon, ier)
+     call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam  , WRMUnit%use_FCon, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read use_fcon',minval(WRMUnit%use_FCon),maxval(WRMUnit%use_FCon)
      call shr_sys_flush(iulog)
 
      ier = pio_inq_varid (ncid, name='use_recr'      , vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_int_dam  , WRMUnit%use_Rec, ier)
+     call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam  , WRMUnit%use_Rec, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read use_recr',minval(WRMUnit%use_Rec),maxval(WRMUnit%use_Rec)
      call shr_sys_flush(iulog)
 
      ier = pio_inq_varid (ncid, name='use_navi'      , vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_int_dam  , WRMUnit%use_Navi, ier)
+     call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam  , WRMUnit%use_Navi, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read use_navi',minval(WRMUnit%use_Navi),maxval(WRMUnit%use_Navi)
      call shr_sys_flush(iulog)
 
      ier = pio_inq_varid (ncid, name='use_fish'      , vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_int_dam  , WRMUnit%use_Fish, ier)
+     call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam  , WRMUnit%use_Fish, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read use_fish',minval(WRMUnit%use_Fish),maxval(WRMUnit%use_Fish)
      call shr_sys_flush(iulog)
 
      ier = pio_inq_varid (ncid, name='withdraw'      , vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl_dam  , WRMUnit%Withdrawal, ier)
+     call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam  , WRMUnit%Withdrawal, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read withdraw',minval(WRMUnit%Withdrawal),maxval(WRMUnit%Withdrawal)
      call shr_sys_flush(iulog)
 
      ier = pio_inq_varid (ncid, name='conveyance'    , vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl_dam  , WRMUnit%Conveyance, ier)
+     call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam  , WRMUnit%Conveyance, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read conveyance',minval(WRMUnit%Conveyance),maxval(WRMUnit%Conveyance)
      call shr_sys_flush(iulog)
 
+
 ! tcx should this flag be here?
-     if ( ctlSubwWRM%RegulationFlag > 0 ) then
+!     if ( ctlSubwWRM%RegulationFlag > 0 ) then
 
-! tcx, hongyi code, delete
-!        ! reading mean monthly flow data
-!        allocate(temp2D_local_dbl(ctlSubwWRM%NDam,12))
-!        call mosart_wm_readnc_dbl_2D(ncid, 'Qmon', temp2D_local_dbl, ctlSubwWRM%NDam,12)
-!        do nr=begr,endr
-!           if(WRMUnit%isDam(nr)>0) then
-!              idam = WRMUnit%INVicell(nr)
-!              nn=idam_global(idam)
-!              WRMUnit%MeanMthFlow(idam,1:12) = temp2D_local_dbl(nn,1:12)
-!              WRMUnit%MeanMthFlow(idam,13) = sum(WRMUnit%MeanMthFlow(idam,1:12))/12.0_r8
-!            end if
-!        end do
-!        deallocate(temp2D_local_dbl)
-!
-!        ! reading in mean monthly water demand
-!        allocate(temp2D_local_dbl(ctlSubwWRM%NDam,12))
-!        call mosart_wm_readnc_dbl_2D(ncid, 'demand', temp2D_local_dbl, ctlSubwWRM%NDam,12)
-!        do nr=begr,endr
-!           if(WRMUnit%isDam(nr)>0) then
-!              idam = WRMUnit%INVicell(nr)
-!              nn=idam_global(idam)
-!              WRMUnit%MeanMthDemand(idam,1:12) = temp2D_local_dbl(nn,1:12)
-!              WRMUnit%MeanMthDemand(idam,1:12) = WRMUnit%MeanMthDemand(idam,1:12) * WRMUnit%Withdrawal(idam)
-!              WRMUnit%MeanMthDemand(idam,13) = sum(WRMUnit%MeanMthDemand(idam,1:12))/12.0_r8
-!           end if
-!        end do
-!        deallocate(temp2D_local_dbl)
-
-        ! reading mean monthly flow data
-        do n = 1,12
+        !--- read mean monthly flow data
+        do mth = 1,12
            ier = pio_inq_varid (ncid, name='Qmon', vardesc=vardesc)
-           frame = n
+           frame = mth
            call pio_setframe(vardesc,frame)
-           call pio_read_darray(ncid, vardesc, iodesc_dbl_dam, WRMUnit%MeanMthFlow(:,n), ier)
-           if (masterproc) write(iulog,FORMR) trim(subname),' read Qmon',minval(WRMUnit%MeanMthFlow(:,n)),maxval(WRMUnit%MeanMthFlow(:,n))
+           call pio_read_darray(ncid, vardesc, iodesc_dbl_dam2dam, WRMUnit%MeanMthFlow(:,mth), ier)
+           if (masterproc) write(iulog,FORMR) trim(subname),' read Qmon',minval(WRMUnit%MeanMthFlow(:,mth)),maxval(WRMUnit%MeanMthFlow(:,mth))
            call shr_sys_flush(iulog)
         enddo
-        WRMUnit%MeanMthFlow(idam,13) = sum(WRMUnit%MeanMthFlow(idam,1:12))/12.0_r8
+        do idam = 1,ctlSubwWRM%LocalNumDam
+           WRMUnit%MeanMthFlow(idam,13) = sum(WRMUnit%MeanMthFlow(idam,1:12))/12.0_r8
+        enddo
         if (masterproc) write(iulog,FORMR) trim(subname),' MeanMthFlow avg',minval(WRMUnit%MeanMthFlow(:,13)),maxval(WRMUnit%MeanMthFlow(:,13))
 
-        ! reading in mean monthly water demand
-        do n = 1,12
+        !--- read in mean monthly water demand
+        do mth = 1,12
            ier = pio_inq_varid (ncid, name='demand', vardesc=vardesc)
-           frame = n
+           frame = mth
            call pio_setframe(vardesc,frame)
-           call pio_read_darray(ncid, vardesc, iodesc_dbl_dam, WRMUnit%MeanMthDemand(:,n), ier)
-           if (masterproc) write(iulog,FORMR) trim(subname),' read demand',minval(WRMUnit%MeanMthDemand(:,n)),maxval(WRMUnit%MeanMthDemand(:,n))
+           call pio_read_darray(ncid, vardesc, iodesc_dbl_dam2dam, WRMUnit%MeanMthDemand(:,mth), ier)
+           if (masterproc) write(iulog,FORMR) trim(subname),' read demand',minval(WRMUnit%MeanMthDemand(:,mth)),maxval(WRMUnit%MeanMthDemand(:,mth))
            call shr_sys_flush(iulog)
         enddo
-        WRMUnit%MeanMthDemand(idam,13) = sum(WRMUnit%MeanMthDemand(idam,1:12))/12.0_r8
+        do idam = 1,ctlSubwWRM%LocalNumDam
+           WRMUnit%MeanMthDemand(idam,13) = sum(WRMUnit%MeanMthDemand(idam,1:12))/12.0_r8
+        enddo
         if (masterproc) write(iulog,FORMR) trim(subname),' MeanMthDemand avg',minval(WRMUnit%MeanMthDemand(:,13)),maxval(WRMUnit%MeanMthDemand(:,13))
 
-        !initialize constant monthly pre-release based on longterm mean flow and demand (Biemans 2011) 
-        do iunit=1,ctlSubwWRM%NDam
+        !--- initialize constant monthly pre-release based on longterm mean flow and demand (Biemans 2011) 
+
+        do idam=1,ctlSubwWRM%LocalNumDam
            do mth=1,12
-              StorWater%pre_release(iunit,mth) = WRMUnit%MeanMthFlow(iunit,13)
+              StorWater%pre_release(idam,mth) = WRMUnit%MeanMthFlow(idam,13)
            end do
-           if ( WRMUnit%MeanMthDemand(iunit,13) >= (0.5_r8*WRMUnit%MeanMthFlow(iunit,13)) .and. WRMUnit%MeanMthFlow(iunit,13)>0._r8 ) then
+           if ( WRMUnit%MeanMthDemand(idam,13) >= (0.5_r8*WRMUnit%MeanMthFlow(idam,13)) .and. WRMUnit%MeanMthFlow(idam,13) > 0._r8 ) then
               do mth=1,12
-                 StorWater%pre_release(iunit,mth) = WRMUnit%MeanMthDemand(iunit,mth)/10._r8 + 9._r8/10._r8*WRMUnit%MeanMthFlow(iunit,13)*WRMUnit%MeanMthDemand(iunit,mth)/WRMUnit%MeanMthDemand(iunit, 13)
+                 StorWater%pre_release(idam,mth) = WRMUnit%MeanMthDemand(idam,mth)/10._r8 + 9._r8/10._r8*WRMUnit%MeanMthFlow(idam,13)*WRMUnit%MeanMthDemand(idam,mth)/WRMUnit%MeanMthDemand(idam, 13)
                  !TEST
-                 !StorWater%pre_release(iunit,mth) = WRMUnit%MeanMthDemand(iunit,mth)/10._r8 + 9._r8/10._r8*WRMUnit%MeanMthFlow(iunit,13)*WRMUnit%MeanMthDemand(iunit,mth)/WRMUnit%MeanMthDemand(iunit, 13)*.5_r8
+                 !StorWater%pre_release(idam,mth) = WRMUnit%MeanMthDemand(idam,mth)/10._r8 + 9._r8/10._r8*WRMUnit%MeanMthFlow(idam,13)*WRMUnit%MeanMthDemand(idam,mth)/WRMUnit%MeanMthDemand(idam, 13)*.5_r8
               end do
            else 
               do mth=1,12
-                 if ( (WRMUnit%MeanMthFlow(iunit,13) + WRMUnit%MeanMthDemand(iunit,mth) - WRMUnit%MeanMthDemand(iunit,13))>0 ) then
-                    StorWater%pre_release(iunit, mth) = WRMUnit%MeanMthFlow(iunit,13) + WRMUnit%MeanMthDemand(iunit,mth) - WRMUnit%MeanMthDemand(iunit,13)
+                 if ( (WRMUnit%MeanMthFlow(idam,13) + WRMUnit%MeanMthDemand(idam,mth) - WRMUnit%MeanMthDemand(idam,13))>0 ) then
+                    StorWater%pre_release(idam, mth) = WRMUnit%MeanMthFlow(idam,13) + WRMUnit%MeanMthDemand(idam,mth) - WRMUnit%MeanMthDemand(idam,13)
                  endif 
                  ! test 2
-                 !StorWater%pre_release(iunit, mth) = WRMUnit%MeanMthFlow(iunit,13)*0.5_r8 + WRMUnit%MeanMthDemand(iunit,mth) - WRMUnit%MeanMthDemand(iunit,13)
+                 !StorWater%pre_release(idam, mth) = WRMUnit%MeanMthFlow(idam,13)*0.5_r8 + WRMUnit%MeanMthDemand(idam,mth) - WRMUnit%MeanMthDemand(idam,13)
                  !TEST use pseudo regulated flow
-                 !StorWater%pre_release(iunit, mth) = WRMUnit%MeanMthFlow(iunit,13)*.5_r8 + WRMUnit%MeanMthDemand(iunit,mth) - WRMUnit%MeanMthDemand(iunit,13)
+                 !StorWater%pre_release(idam, mth) = WRMUnit%MeanMthFlow(idam,13)*.5_r8 + WRMUnit%MeanMthDemand(idam,mth) - WRMUnit%MeanMthDemand(idam,13)
               end do
            end if
 
-           ! initialize storage in each reservoir - arbitrary 50%
-           StorWater%storage(iunit) = 0.9_r8 * WRMUnit%StorCap(iunit)   
-           if (WRMUnit%StorageCalibFlag(iunit).eq.1) then
-              StorWater%storage(iunit)  = WRMUnit%StorTarget(iunit,13)
+           !--- initialize storage in each reservoir - arbitrary 50%
+
+           StorWater%storage(idam) = 0.9_r8 * WRMUnit%StorCap(idam)   
+           if (WRMUnit%StorageCalibFlag(idam).eq.1) then
+              StorWater%storage(idam)  = WRMUnit%StorTarget(idam,13)
            endif
-           if ( WRMUnit%StorCap(iunit) <= 0 ) then
-              write(iulog,*) subname, "Error negative max cap for reservoir ", iunit, WRMUnit%StorCap(iunit)
+           if ( WRMUnit%StorCap(idam) <= 0 ) then
+              write(iulog,*) subname, "Error negative max cap for reservoir ", idam, WRMUnit%StorCap(idam)
               call shr_sys_abort(subname//' ERROR: negative max cap for reservoir')
            end if
+           if (idam == 1) then
+              write(iulog,*) subname, "storage ",StorWater%pre_release(idam,1), StorWater%storage(idam)
+           endif
         end do
-        write(iulog,*) subname, "storage ",StorWater%pre_release(1,1), StorWater%storage(1)
 
-        ! initialize start of the operationnal year based on long term simulation
+        !--- initialize start of the operational year based on long term simulation
+
         call WRM_init_StOp_FC
 
-!tcx, move read of gridID_from_Dam and initialization to netcdf part, global data on all tasks
-!        allocate(temp_gridID_from_Dam(ctlSubwWRM%NDam, maxNumDependentGrid))
-!        call mosart_wm_readnc_int_2D(ncid, 'gridID_from_Dam', temp_gridID_from_Dam, ctlSubwWRM%NDam, maxNumDependentGrid)
-!        do idam = 1,ctlSubwWRM%localNumDam
-!           nn = idam_global(idam)
-!           ntotal = 0
-!           do nd=1,maxNumDependentGrid
-!              if (temp_gridID_from_Dam(nn,nd) > 0) then
-!                 ntotal = ntotal + 1
-!                 WRMUnit%dam_depend(idam,ntotal) = temp_gridID_from_Dam(nn,nd)
-!              endif
-!           enddo
-!           if (ntotal > WRMUnit%dam_Ndepend(idam) .or. ntotal < WRMUnit%dam_Ndepend(idam)-1) then ! sometimes in the dependency data, the basin outlet is included for a dam as its dependent grid
-!              write(iulog,"(a,e12.6,i6,i6)"), "Attention reading gridID_from_Dam ", WRMUnit%StorCap(idam),WRMUnit%dam_Ndepend(idam), ntotal
-!              !call endrun
-!           end if
-!           WRMUnit%dam_Ndepend(idam) = ntotal
-!        enddo
-
-! tcx old code looks wrong, seems to be grabbing local dams only
-!        do nr=begr,endr
-!           if(WRMUnit%isDam(nr)>0) then
-!              idam = WRMUnit%INVicell(nr)
-!              nn=idam_global(idam)
-!              ntotal = 0
-!              do nd=1,maxNumDependentGrid
-!                 iunit = temp_gridID_from_Dam(nn,nd)
-!                 if(iunit > 0) then
-!                    n = rglo2gdc(iunit)
-!                    if(n >= begr .and. n <= endr) then
-!                       ntotal = ntotal + 1
-!                       WRMUnit%dam_depend(idam,ntotal) = n
-!                    end if
-!                end if
-!             end do
-!             if(ntotal > WRMUnit%dam_Ndepend(idam) .or. ntotal < WRMUnit%dam_Ndepend(idam)-1) then ! sometimes in the dependency data, the basin outlet is included for a dam as its dependent grid
-!                write(iulog,"(a,e12.6,i6,i6)"), "Attention reading gridID_from_Dam ", WRMUnit%StorCap(idam),WRMUnit%dam_Ndepend(idam), ntotal
-!                !call endrun
-!             end if
-!             WRMUnit%dam_Ndepend(idam) = ntotal
-!          end if
-!        end do
-
-! tcraig above is hongyi, below is what's left of Nathalie. reconcile this???
+! tcraig below is from Nathalie. need to add this check back at some point for performance
 !! need to adjust for reservoir with zero inflow, do not  need to read the remaining
-!           if ( WRMUnit%MeanMthFlow(iunit,13) <= 0._r8 ) then
-!              WRMUnit%dam_Ndepend(iunit) = 0 ! this reservoir will not provide water to any subw, relieve database
+!           if ( WRMUnit%MeanMthFlow(idam,13) <= 0._r8 ) then
+!              WRMUnit%dam_Ndepend(idam) = 0 ! this reservoir will not provide water to any subw, relieve database
 !           end if
 !
-!           do j=1,WRMUnit%dam_Ndepend(iunit)
+!           do ng = 1,WRMUnit%dam_Ndepend(idam)
 !              call split(stemp,' ',stmp1)
 !              call str2num(stmp1, ctlSubwWRM%localNumDam, ierror) 
-!!need additionnal check due to regionalization, need to remove non existing grid cell NV
+!!need additional check due to regionalization, need to remove non existing grid cell NV
 !              if (  WRMUnit%INVisubw(ctlSubwWRM%localNumDam) .lt. 1 ) then
-!                 WRMUnit%dam_Ndepend(iunit) = WRMUnit%dam_Ndepend(iunit) - 1
+!                 WRMUnit%dam_Ndepend(idam) = WRMUnit%dam_Ndepend(idam) - 1
 !              else
-!                 WRMUnit%dam_depend(iunit,j) = nd 
+!                 WRMUnit%dam_depend(idam,ng) = nd 
 !              endif
 !           end do
 
-        !initialize subw dependencies
-        ier = pio_inq_varid (ncid, name='num_Dam2Grid', vardesc=vardesc)
-        call pio_read_darray(ncid, vardesc, iodesc_int , WRMUnit%subw_Ndepend, ier)
-        if (masterproc) write(iulog,FORMI) trim(subname),' read num_Dam2Grid',minval(WRMUnit%subw_Ndepend),maxval(WRMUnit%subw_Ndepend)
-        call shr_sys_flush(iulog)
-
-!        call MOSART_read_int(ncid, 'num_Dam2Grid', WRMUnit%subw_Ndepend)
-!tcx this is highly suspicious
-!tcx check this, it looks like it's operating only local decomp, should operate across all pes
-!tcx this looks like an optimization to reduce cost later for gridpoints that have no MeanMthFlow
-!tcx defer and review
-        do idam=1,ctlSubwWRM%localNumDam
-           ! need to adjust for reservoir with zero inflow, do not  need to read the remaining
-           if (WRMUnit%MeanMthFlow(idam,13) <= 0._r8 .and. WRMUnit%dam_Ndepend(idam) > 1) then
-              write(iulog,"(a,i8,i8)"), "Attention: Reservoir with zero inflow while non-zero dependent grids", WRMUnit%icell(idam), WRMUnit%dam_Ndepend(idam)
-     !tcx         do nn=1,WRMUnit%dam_Ndepend(idam)
-     !tcx            nr = WRMUnit%dam_depend(idam,nn)
-     !tcx            if(nr >= begr .and. nr <= endr) then
-     !tcx               WRMUnit%subw_Ndepend(nr) = WRMUnit%subw_Ndepend(nr) - 1
-     !tcx            end if
-     !tcx         end do
-     !tcx         WRMUnit%dam_Ndepend(idam) = 0 ! this reservoir will not provide water to any subw, relieve database
-           end if
-        end do
-
-!        allocate(temp1D_int(begr:endr))
-!        temp1D_int = 0
-!        do idam=1,ctlSubwWRM%localNumDam
-!           do nn=1,WRMUnit%dam_Ndepend(idam)
-!              nr = WRMUnit%dam_depend(idam,nn)
-!              if(nr >= begr .and. nr <= endr) then
-!                 temp1D_int(nr) = temp1D_int(nr) + 1
-!! tcx not used anywhere as far as i can tell, so get rid of this block
-!                 WRMUnit%subw_depend(nr,temp1D_int(nr)) = inverse_INVicell(idam)
-!              else
-!                 write(iulog,"(a15,i8,i6,i6)"), "Inconsistent dam_depend and subw_depend  ", begr, endr, nr
-!              end if
-!           end do
-!        end do
-
-!        !check the dependence database consistencies
-!        do nr=begr,endr
-!           if(.not.(temp1D_int(nr).eq.WRMUnit%subw_Ndepend(nr))) then
-!              write(iulog,"(a35,i8,i6,i6)"), "Attention processing gridID_Dam2Grid ", TUnit%ID0(nr), WRMUnit%subw_Ndepend(nr), temp1D_int(nr)
-!           end if
-!        end do
-
         !check the dependence database consistencies
-        do idam=1,ctlSubwWRM%localNumDam
-           do j=1,WRMUnit%dam_Ndepend(idam)
-              !if(WRMUnit%dam_depend(idam,j).eq.0) then
-              !   WRMUnit%dam_depend(idam,j) = WRMUnit%dam_depend(idam,j) * 1
+        do idam = 1,ctlSubwWRM%localNumDam
+           do ng = 1,WRMUnit%dam_Ndepend(idam)
+              !if(WRMUnit%dam_depend(idam,ng).eq.0) then
+              !   WRMUnit%dam_depend(idam,ng) = WRMUnit%dam_depend(idam,ng) * 1
               !end if
-              idepend = WRMUnit%dam_depend(idam,j)
-              if ( idepend .lt. 0 ) then
-                 write(iulog,*) subname,"Error checking dependency, zero idepend", idam, WRMUnit%dam_Ndepend(idam), j, idepend , WRMUnit%dam_depend(idam,j)
+              idepend = WRMUnit%dam_depend(idam,ng)
+              if ( idepend <= 0 ) then
+                 write(iulog,'(2a,4i12)') subname," Error: checking dependency, zero idepend", idam, WRMUnit%dam_Ndepend(idam), ng, idepend
                  call shr_sys_abort(subname//' ERROR: zero idepend')
               endif
 !tcx this should be accumlating global data, not just local data, idepend could be outside begr:endr
-              WRMUnit%TotStorCapDepend(idepend) = WRMUnit%TotStorCapDepend(idepend) + WRMUnit%StorCap(idam)
-              WRMUnit%TotInflowDepend(idepend) = WRMUnit%TotInflowDepend(idepend) + WRMUnit%MeanMthFlow(idam,13)
+!              WRMUnit%TotStorCapDepend(idepend) = WRMUnit%TotStorCapDepend(idepend) + WRMUnit%StorCap(idam)
+!              WRMUnit%TotInflowDepend(idepend) = WRMUnit%TotInflowDepend(idepend) + WRMUnit%MeanMthFlow(idam,13)
            end do
         end do
 
-     end if !Regulation Flag
+!     end if !Regulation Flag
 
      call ncd_pio_closefile(ncid)
 

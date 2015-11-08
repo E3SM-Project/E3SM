@@ -16,6 +16,7 @@ module RtmVar
   real(r8), public, parameter :: spval    = 1.e36_r8        ! special value for real data
   integer , public, parameter :: ispval   = -9999           ! special value for int data
   real(r8) :: re = SHR_CONST_REARTH*0.001_r8                ! radius of earth (km)
+  logical, public :: barrier_timers = .false.                       ! barrier timers
 
   ! Run control variables
   character(len=256), public :: caseid  = ' '          ! case id
@@ -28,6 +29,11 @@ module RtmVar
                                                        ! by default this is not allowed
   logical, public :: noland = .false.                  ! true => no valid land points -- do NOT run
   logical, public :: wrmflag = .false.                 ! water management model flag
+  character(len=32) , public :: decomp_option          ! decomp option
+  character(len=32) , public :: smat_option            ! smatrix multiply option (opt, Xonly, Yonly)
+                                                       ! opt   = XandY in MCT
+                                                       ! Xonly = Xonly in MCT, should be bfb on different pe counts
+                                                       ! Yonly = Yonly in MCT
   character(len=256), public :: hostname = ' '         ! Hostname of machine running on
   character(len=256), public :: username = ' '         ! username of user running program
   character(len=256), public :: version  = " "         ! version of program

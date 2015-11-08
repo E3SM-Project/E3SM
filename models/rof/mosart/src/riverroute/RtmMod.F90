@@ -13,12 +13,13 @@ module RtmMod
   use shr_sys_mod     , only : shr_sys_flush
   use shr_const_mod   , only : SHR_CONST_PI, SHR_CONST_CDAY
   use rof_cpl_indices , only : nt_rtm, rtm_tracers 
-  use RtmSpmd         , only : masterproc, npes, iam, mpicom_rof, ROFID, &
+  use RtmSpmd         , only : masterproc, npes, iam, mpicom_rof, ROFID, mastertask, &
                                MPI_REAL8,MPI_INTEGER,MPI_CHARACTER,MPI_LOGICAL,MPI_MAX
   use RtmVar          , only : re, spval, rtmlon, rtmlat, iulog, ice_runoff, &
                                frivinp_rtm, finidat_rtm, nrevsn_rtm, &
                                nsrContinue, nsrBranch, nsrStartup, nsrest, &
-                               inst_index, inst_suffix, inst_name, wrmflag
+                               inst_index, inst_suffix, inst_name, wrmflag, &
+                               smat_option, decomp_option, barrier_timers
   use RtmFileUtils    , only : getfil, getavu, relavu
   use RtmTimeManager  , only : timemgr_init, get_nstep, get_curr_date
   use RtmHistFlds     , only : RtmHistFldsInit, RtmHistFldsSet 
@@ -30,12 +31,17 @@ module RtmMod
                                max_tapes, max_namlen
   use RtmRestFile     , only : RtmRestTimeManager, RtmRestGetFile, RtmRestFileRead, &
                                RtmRestFileWrite, RtmRestFileName
-  use RunoffMod       , only : RunoffInit, rtmCTL, Tctl, Tunit, TRunoff, Tpara
+  use RunoffMod       , only : RunoffInit, rtmCTL, Tctl, Tunit, TRunoff, Tpara, &
+                               gsmap_r, &
+                               SMatP_dnstrm, avsrc_dnstrm, avdst_dnstrm, &
+                               SMatP_eroutUp, avsrc_eroutUp, avdst_eroutUp
   use MOSART_physics_mod, only : Euler
   use MOSART_physics_mod, only : updatestate_hillslope, updatestate_subnetwork, &
                                  updatestate_mainchannel
+#ifdef INCLUDE_WRM
   use WRM_subw_IO_mod , only : WRM_init
   use WRM_modules     , only : Euler_WRM
+#endif
   use RtmIO
   use mct_mod
   use perf_mod
@@ -61,11 +67,11 @@ module RtmMod
   character(len=256) :: rtm_trstr   ! tracer string
 
 ! RTM naemlists
-  integer, save :: rtm_tstep              ! RTM time step
+  integer, save :: coupling_period   ! mosart coupling period
+  integer, save :: delt_mosart       ! mosart internal timestep (->nsub)
 
 ! RTM constants
-  real(r8),save :: delt_rtm_max     ! RTM max timestep
-  real(r8) :: cfl_scale = 0.1_r8    ! cfl scale factor, must be <= 1.0
+  real(r8) :: cfl_scale = 1.0_r8    ! cfl scale factor, must be <= 1.0
 
 !global (glo)
   integer , pointer :: dwnstrm_index(:)! downstream index
@@ -86,10 +92,6 @@ module RtmMod
 
   logical :: do_rtmflood
   logical :: do_rtm
-
-  type(mct_sMatP)  :: sMatP       ! sparse matrix plus for SM mult
-  type(mct_avect)  :: avsrc       ! avect for SM mult
-  type(mct_avect)  :: avdst       ! avect for SM mult
 
   character(len=256) :: nlfilename_rof = 'mosart_in' 
 !
@@ -126,9 +128,10 @@ contains
 !
 ! !LOCAL VARIABLES:
 !EOP
-    real(r8) :: effvel0 = 0.35_r8             ! default velocity
+    real(r8) :: effvel0 = 10.0_r8             ! default velocity (m/s)
     real(r8) :: effvel(nt_rtm)                ! downstream velocity (m/s)
     integer  :: i,j,k,n,ng,g,n2,nt,nn         ! loop indices
+    integer  :: i1,j1,i2,j2
     integer  :: im1,ip1,jm1,jp1,ir,jr,nr      ! neighbor indices
     real(r8) :: deg2rad                       ! pi/180
     real(r8) :: dx,dx1,dx2,dx3                ! lon dist. betn grid cells (m)
@@ -169,7 +172,7 @@ contains
     character(len=256):: fnamer               ! name of netcdf restart file 
     character(len=256):: pnamer               ! full pathname of netcdf restart file
     character(len=256):: locfn                ! local file name
-    character(len=32) :: decomp_option        ! decomp option
+    character(len=16384) :: rList             ! list of fields for SM multiply
     integer           :: unitn                ! unit for namelist file
     integer,parameter :: dbug = 3             ! 0 = none, 1=normal, 2=much, 3=max
     logical :: lexist                         ! File exists
@@ -177,8 +180,8 @@ contains
     integer ,allocatable :: gindex(:)         ! global index
     integer           :: cnt, lsize, gsize    ! counter
     integer           :: igrow,igcol,iwgt     ! mct field indices
+    type(mct_avect)   :: avtmp, avtmpG        ! temporary avects
     type(mct_sMat)    :: sMat                 ! temporary sparse matrix, needed for sMatP
-    type(mct_gsmap)   :: gsmap_r              ! temporary global seg map, needed for sMatP
     character(*),parameter :: subname = '(Rtmini) '
 !-----------------------------------------------------------------------
 
@@ -187,11 +190,12 @@ contains
     !-------------------------------------------------------
 
     namelist /mosart_inparm / ice_runoff, do_rtm, do_rtmflood, &
-         frivinp_rtm, finidat_rtm, nrevsn_rtm, rtm_tstep, &
+         frivinp_rtm, finidat_rtm, nrevsn_rtm, coupling_period, &
          rtmhist_ndens, rtmhist_mfilt, rtmhist_nhtfrq, &
          rtmhist_fincl1,  rtmhist_fincl2, rtmhist_fincl3, &
          rtmhist_fexcl1,  rtmhist_fexcl2, rtmhist_fexcl3, &
-         rtmhist_avgflag_pertape, decomp_option, wrmflag
+         rtmhist_avgflag_pertape, decomp_option, wrmflag, &
+         smat_option, delt_mosart
 
     ! Preset values
     do_rtm      = .true.
@@ -199,9 +203,11 @@ contains
     ice_runoff  = .true.
     finidat_rtm = ' '
     nrevsn_rtm  = ' '
-    rtm_tstep   = -1
+    coupling_period   = -1
+    delt_mosart = 3600
     decomp_option = 'basin'
     wrmflag     = .false.
+    smat_option = 'opt'
 
     nlfilename_rof = "mosart_in" // trim(inst_suffix)
     inquire (file = trim(nlfilename_rof), exist = lexist)
@@ -224,12 +230,14 @@ contains
        call relavu( unitn )
     end if
 
-    call mpi_bcast (rtm_tstep,   1, MPI_INTEGER, 0, mpicom_rof, ier)
+    call mpi_bcast (coupling_period,   1, MPI_INTEGER, 0, mpicom_rof, ier)
+    call mpi_bcast (delt_mosart    ,   1, MPI_INTEGER, 0, mpicom_rof, ier)
 
     call mpi_bcast (finidat_rtm  , len(finidat_rtm)  , MPI_CHARACTER, 0, mpicom_rof, ier)
     call mpi_bcast (frivinp_rtm  , len(frivinp_rtm)  , MPI_CHARACTER, 0, mpicom_rof, ier)
     call mpi_bcast (nrevsn_rtm   , len(nrevsn_rtm)   , MPI_CHARACTER, 0, mpicom_rof, ier)
     call mpi_bcast (decomp_option, len(decomp_option), MPI_CHARACTER, 0, mpicom_rof, ier)
+    call mpi_bcast (smat_option  , len(smat_option)  , MPI_CHARACTER, 0, mpicom_rof, ier)
 
     call mpi_bcast (do_rtm,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (do_rtmflood, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
@@ -257,10 +265,14 @@ contains
     if (masterproc) then
        write(iulog,*) 'define run:'
        write(iulog,*) '   run type              = ',runtyp(nsrest+1)
-       !write(iulog,*) '   case title            = ',trim(ctitle)
-       !write(iulog,*) '   username              = ',trim(username)
-       !write(iulog,*) '   hostname              = ',trim(hostname)
-       write(iulog,*) 'wrmflag                  = ',wrmflag
+      !write(iulog,*) '   case title            = ',trim(ctitle)
+      !write(iulog,*) '   username              = ',trim(username)
+      !write(iulog,*) '   hostname              = ',trim(hostname)
+       write(iulog,*) '   coupling_period       = ',coupling_period
+       write(iulog,*) '   delt_mosart           = ',delt_mosart
+       write(iulog,*) '   decomp option         = ',trim(decomp_option)
+       write(iulog,*) '   smat option           = ',trim(smat_option)
+       write(iulog,*) '   wrmflag               = ',wrmflag
        if (nsrest == nsrStartup .and. finidat_rtm /= ' ') then
           write(iulog,*) '   MOSART initial data   = ',trim(finidat_rtm)
        end if
@@ -284,16 +296,21 @@ contains
        RETURN
     end if
 
-    if (rtm_tstep <= 0) then
-       write(iulog,*) subname,': ERROR MOSART step invalid',rtm_tstep
-       call shr_sys_abort( subname//' ERROR: rtm_tstep invalid' )
+    if (coupling_period <= 0) then
+       write(iulog,*) subname,': ERROR MOSART coupling_period invalid',coupling_period
+       call shr_sys_abort( subname//' ERROR: coupling_period invalid' )
+    endif
+
+    if (delt_mosart <= 0) then
+       write(iulog,*) subname,': ERROR MOSART delt_mosart invalid',delt_mosart
+       call shr_sys_abort( subname//' ERROR: delt_mosart invalid' )
     endif
        
     do i = 1, max_tapes
        if (rtmhist_nhtfrq(i) == 0) then
           rtmhist_mfilt(i) = 1
        else if (rtmhist_nhtfrq(i) < 0) then
-          rtmhist_nhtfrq(i) = nint(-rtmhist_nhtfrq(i)*SHR_CONST_CDAY/(24._r8*rtm_tstep))
+          rtmhist_nhtfrq(i) = nint(-rtmhist_nhtfrq(i)*SHR_CONST_CDAY/(24._r8*coupling_period))
        endif
     end do
 
@@ -313,7 +330,7 @@ contains
 
     ! Initialize time manager
     if (nsrest == nsrStartup) then  
-       call timemgr_init(dtime_in=rtm_tstep)
+       call timemgr_init(dtime_in=coupling_period)
     else
        call RtmRestTimeManager(file=fnamer)
     end if
@@ -426,6 +443,14 @@ contains
     do i=1,rtmlon
        n = (j-1)*rtmlon + i
        TUnit%ID0(n) = itempr(i,j)
+       ! tcraig, there is an assumption that ID0 and all other global indices
+       ! are consistent with the i/j global indexing order assumed here.
+       ! lets just check to make sure.  if this fails, then need to add more
+       ! code to convert input file global indexing to model global indexing
+       if (TUnit%ID0(n) /= n) then
+          write(iulog,*) subname,' ERROR inconsistency in ID0 global index order',i,j,n,TUnit%ID0(n)
+          call shr_sys_abort(subname//' ERROR inconsistent ID0 indexing')
+       endif
     end do
     end do
     if (masterproc) write(iulog,*) 'ID ',minval(itempr),maxval(itempr)
@@ -733,7 +758,6 @@ contains
     endif  ! decomp_option
 
     if (masterproc) then
-       write(iulog,*) 'MOSART decomp option           = ',trim(decomp_option)
        write(iulog,*) 'MOSART cells and basins total  = ',nrof,nbas
        write(iulog,*) 'MOSART cells per basin avg/max = ',nrof/nbas,maxval(nupstrm)
        write(iulog,*) 'MOSART cells per pe    min/max = ',minval(nop),maxval(nop)
@@ -797,8 +821,6 @@ contains
     !-------------------------------------------------------
 
     do n=1,rtmlon*rtmlat
-       nr = rglo2gdc(n)
-!       write(iulog,*) 'tcx area1 ',n,nr,TUnit%area(n)
        if (TUnit%area(n) <= 0._r8) then
           i = mod(n-1,rtmlon) + 1
           j = (n-1)/rtmlon + 1
@@ -808,34 +830,27 @@ contains
           if (masterproc .and. TUnit%area(n) <= 0) then
              write(iulog,*) 'Warning! Zero area for unit ', n, TUnit%area(n),dx,dy,re
           end if
-!          write(iulog,*) 'tcx area2 ',n,nr,TUnit%area(n),i,j,dx,dy
        end if
-       if (TUnit%rlen(n) <= 0._r8) then
           nn = dwnstrm_index(n)
           if (nn > 0) then
-             g = rglo2gdc(nn)
-          else
-             g = -99
-          end if
-
-          if (g <= 0) then
-             TUnit%rlen(n) = 0._r8
-          elseif (g < rtmCTL%begr .or. g > rtmCTL%endr) then
-             write(iulog,*) 'Rtmini: error in ddist calc ',nr,g,rtmCTL%begr,rtmCTL%endr
-             call shr_sys_abort('Rtmini: error in ddist calc')
-          else
-             dy = deg2rad * abs(rtmCTL%latc(nr)-rtmCTL%latc(g)) * re*1000._r8
-             dx = rtmCTL%lonc(nr)-rtmCTL%lonc(g)
+             i1 = mod(n-1,rtmlon) + 1
+             j1 = (n-1)/rtmlon + 1
+             i2 = mod(nn-1,rtmlon) + 1
+             j2 = (nn-1)/rtmlon + 1
+             dy = deg2rad * abs(rlatc(j1)-rlatc(j2)) * re*1000._r8
+             dx = rlonc(i1)-rlonc(i2)
              dx1 = abs(dx)
              dx2 = abs(dx+360._r8)
              dx3 = abs(dx-360._r8)
              dx = min(dx1,dx2,dx3)
              dx = deg2rad * dx * re*1000._r8 * &
-                  0.5_r8*(cos(rtmCTL%latc(nr)*deg2rad)+ &
-                          cos(rtmCTL%latc(g)*deg2rad))
+                  0.5_r8*(cos(rlatc(j1)*deg2rad)+ &
+                          cos(rlatc(j2)*deg2rad))
              TUnit%rlen(n) = sqrt(dx*dx + dy*dy)
-          endif
-       end if
+          else
+             TUnit%rlen(n) = 0._r8
+          end if
+!       end if
     end do
 
     call t_stopf('mosarti_decomp')
@@ -1002,7 +1017,6 @@ contains
           rtmCTL%dsig(nr) = dwnstrm_index(n)
           rtmCTL%dsil(nr) = rglo2gdc(dwnstrm_index(n))
        endif
-
     enddo
     deallocate(dwnstrm_index)
     deallocate(rglo2gdc)
@@ -1012,7 +1026,7 @@ contains
     if (masterproc) write(iulog,*) 'Rtmini MOSART area ',rtmCTL%totarea
 
     !-------------------------------------------------------
-    ! Compute Sparse Matrix
+    ! Compute Sparse Matrix for downstream advection
     !-------------------------------------------------------
 
     lsize = rtmCTL%lnumr
@@ -1024,63 +1038,165 @@ contains
     call mct_gsMap_init( gsMap_r, gindex, mpicom_rof, ROFID, lsize, gsize )
     deallocate(gindex)
 
-    ! mct_sMat_init must be given the number of rows and columns that
-    ! would be in the full matrix.  Nrows= size of output vector=nb.
-    ! Ncols = size of input vector = na.
-    call mct_sMat_init(sMat, gsize, gsize, cnt)
-    igrow = mct_sMat_indexIA(sMat,'grow')
-    igcol = mct_sMat_indexIA(sMat,'gcol')
-    iwgt  = mct_sMat_indexRA(sMat,'weight')
-    cnt = 0
-    do nr = rtmCTL%begr,rtmCTL%endr
-       if (rtmCTL%dsig(nr) > 0) then
-          cnt = cnt + 1
-          sMat%data%rAttr(iwgt ,cnt) = 1.0
-          sMat%data%iAttr(igrow,cnt) = rtmCTL%dsig(nr)
-          sMat%data%iAttr(igcol,cnt) = rtmCTL%gindex(nr)
-       endif
-    enddo
+    if (smat_option == 'opt') then
+       ! distributed smat initialization
+       ! mct_sMat_init must be given the number of rows and columns that
+       ! would be in the full matrix.  Nrows= size of output vector=nb.
+       ! Ncols = size of input vector = na.
 
-    call mct_sMatP_Init(sMatP, sMat, gsMap_r, gsMap_r, 0, mpicom_rof, ROFID)
-    lsize = mct_smat_gNumEl(sMatP%Matrix,mpicom_rof)
-    if (masterproc) write(iulog,*) "Rtmini Done initializing SmatP, nElements = ",lsize
+       cnt = 0
+       do nr=rtmCTL%begr,rtmCTL%endr
+          if(rtmCTL%dsig(nr) > 0) cnt = cnt + 1
+       enddo
+
+       call mct_sMat_init(sMat, gsize, gsize, cnt)
+       igrow = mct_sMat_indexIA(sMat,'grow')
+       igcol = mct_sMat_indexIA(sMat,'gcol')
+       iwgt  = mct_sMat_indexRA(sMat,'weight')
+       cnt = 0
+       do nr = rtmCTL%begr,rtmCTL%endr
+          if (rtmCTL%dsig(nr) > 0) then
+             cnt = cnt + 1
+             sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
+             sMat%data%iAttr(igrow,cnt) = rtmCTL%dsig(nr)
+             sMat%data%iAttr(igcol,cnt) = rtmCTL%gindex(nr)
+          endif
+       enddo
+
+       call mct_sMatP_Init(sMatP_dnstrm, sMat, gsMap_r, gsMap_r, 0, mpicom_rof, ROFID)
+
+    elseif (smat_option == 'Xonly' .or. smat_option == 'Yonly') then
+
+       ! root initialization
+
+       call mct_aVect_init(avtmp,rList='f1:f2',lsize=lsize)
+       call mct_aVect_zero(avtmp)
+       cnt = 0
+       do nr = rtmCTL%begr,rtmCTL%endr
+          cnt = cnt + 1
+          avtmp%rAttr(1,cnt) = rtmCTL%gindex(nr)
+          avtmp%rAttr(2,cnt) = rtmCTL%dsig(nr)
+       enddo
+       call mct_avect_gather(avtmp,avtmpG,gsmap_r,mastertask,mpicom_rof)
+       if (masterproc) then
+          cnt = 0
+          do n = 1,rtmlon*rtmlat
+             if (avtmpG%rAttr(2,n) > 0) then
+                cnt = cnt + 1
+             endif
+          enddo
+
+          call mct_sMat_init(sMat, gsize, gsize, cnt)
+          igrow = mct_sMat_indexIA(sMat,'grow')
+          igcol = mct_sMat_indexIA(sMat,'gcol')
+          iwgt  = mct_sMat_indexRA(sMat,'weight')
+
+          cnt = 0
+          do n = 1,rtmlon*rtmlat
+             if (avtmpG%rAttr(2,n) > 0) then
+                cnt = cnt + 1
+                sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
+                sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(2,n)
+                sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(1,n)
+             endif
+          enddo
+          call mct_avect_clean(avtmpG)
+       else
+          call mct_sMat_init(sMat,1,1,1)
+       endif
+       call mct_avect_clean(avtmp)
+
+       call mct_sMatP_Init(sMatP_dnstrm, sMat, gsMap_r, gsMap_r, smat_option, 0, mpicom_rof, ROFID)
+
+#if (1 == 0)
+       ! root xonly initialization
+       if (masterproc) then
+          cnt = 0
+          do n = 1,rtmlon*rtmlat
+             if (dwnstrm_index(n) > 0) then
+                cnt = cnt + 1
+             endif
+          enddo
+
+          call mct_sMat_init(sMat, gsize, gsize, cnt)
+          igrow = mct_sMat_indexIA(sMat,'grow')
+          igcol = mct_sMat_indexIA(sMat,'gcol')
+          iwgt  = mct_sMat_indexRA(sMat,'weight')
+
+          cnt = 0
+          do n = 1,rtmlon*rtmlat
+             if (dwnstrm_index(n) > 0) then
+                cnt = cnt + 1
+                sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
+                sMat%data%iAttr(igrow,cnt) = dwnstrm_index(n)
+                sMat%data%iAttr(igcol,cnt) = n
+             endif
+          enddo
+       else
+          call mct_sMat_init(sMat,1,1,1)
+       endif
+
+       call mct_sMatP_Init(sMatP_dnstrm, sMat, gsMap_r, gsMap_r, smat_option, 0, mpicom_rof, ROFID)
+#endif
+    else
+
+       write(iulog,*) trim(subname),':MOSART ERROR: invalid smat_option '//trim(smat_option)
+       call shr_sys_abort(trim(subname)//' ERROR invald smat option')
+
+    endif
+
+    ! initialize the AVs to go with sMatP
+    write(rList,'(a,i3.3)') 'tr',1
+    do nt = 2,nt_rtm
+       write(rList,'(a,i3.3)') trim(rList)//':tr',nt
+    enddo
+    write(iulog,*) trim(subname),':MOSART initialize avect ',trim(rList)
+    call mct_aVect_init(avsrc_dnstrm,rList=rList,lsize=rtmCTL%lnumr)
+    call mct_aVect_init(avdst_dnstrm,rList=rList,lsize=rtmCTL%lnumr)
+
+    lsize = mct_smat_gNumEl(sMatP_dnstrm%Matrix,mpicom_rof)
+    if (masterproc) write(iulog,*) "Rtmini Done initializing SmatP_dnstrm, nElements = ",lsize
 
     ! keep only sMatP
     call mct_sMat_clean(sMat)
-    call mct_gsmap_clean(gsmap_r)
 
     !-------------------------------------------------------
     ! Compute timestep and subcycling number
     !-------------------------------------------------------
 
-    dtover = 0._r8
-    dtovermax = 0._r8
-!    write(iulog,*) "tcx ddist ",minval(ddist),maxval(ddist)
-!    write(iulog,*) "tcx evel  ",minval(evel),maxval(evel)
-    do nt=1,nt_rtm
-       do nr=rtmCTL%begr,rtmCTL%endr
-          if (ddist(nr) /= 0._r8) then
-             dtover = evel(nr,nt)/ddist(nr)
-          else
-             dtover = 0._r8
-          endif
-          dtovermax = max(dtovermax,dtover)
-       enddo
-    enddo
-    dtover = dtovermax
-    call mpi_allreduce(dtover,dtovermax,1,MPI_REAL8,MPI_MAX,mpicom_rof,ier)
-
+! tcraig, old code based on cfl
+!    dtover = 0._r8
+!    dtovermax = 0._r8
+!!    write(iulog,*) "tcx ddist ",minval(ddist),maxval(ddist)
+!!    write(iulog,*) "tcx evel  ",minval(evel),maxval(evel)
+!    do nt=1,nt_rtm
+!       do nr=rtmCTL%begr,rtmCTL%endr
+!          if (ddist(nr) /= 0._r8) then
+!             dtover = evel(nr,nt)/ddist(nr)
+!          else
+!             dtover = 0._r8
+!          endif
+!          dtovermax = max(dtovermax,dtover)
+!       enddo
+!    enddo
+!    dtover = dtovermax
+!    call mpi_allreduce(dtover,dtovermax,1,MPI_REAL8,MPI_MAX,mpicom_rof,ier)
+!
+!    write(iulog,*) "tcx dtover ",dtover,dtovermax
+!
 !    if (dtovermax > 0._r8) then
-!       delt_rtm_max = (1.0_r8/dtovermax)*cfl_scale
+!       delt_mosart = (1.0_r8/dtovermax)*cfl_scale
 !    else
-!       write(iulog,*) 'rtmini ERROR in delt_rtm_max ',delt_rtm_max,dtover
-!       call shr_sys_abort('rtmini ERROR delt_rtm_max')
+!       write(iulog,*) 'rtmini ERROR in delt_mosart ',delt_mosart,dtover
+!       call shr_sys_abort('rtmini ERROR delt_mosart')
 !    endif
-
-    delt_rtm_max = 600._r8  ! here set the time interval for routing as 10 mins, which is sufficient for 1/8th degree resolution and coarser.
-
-    if (masterproc) write(iulog,*) 'rtm max timestep = ',delt_rtm_max,' (sec) for cfl_scale = ',cfl_scale
-    if (masterproc) call shr_sys_flush(iulog)
+!
+!    if (masterproc) write(iulog,*) 'rtm max timestep = ',delt_mosart,' (sec) for cfl_scale = ',cfl_scale
+!    if (masterproc) call shr_sys_flush(iulog)
+!
+!    delt_mosart = 600._r8  ! here set the time interval for routing as 10 mins, which is sufficient for 1/8th degree resolution and coarser.
+!    if (masterproc) write(iulog,*) 'rtm max timestep hardwired to = ',delt_mosart
+!    if (masterproc) call shr_sys_flush(iulog)
 
     call t_stopf('mosarti_vars')
 
@@ -1098,12 +1214,13 @@ contains
 
     call t_stopf('mosarti_mosart_init')
 
+#ifdef INCLUDE_WRM
     call t_startf('mosarti_wrm_init')
-!tcx
     if (wrmflag) then
        call WRM_init()
     endif
     call t_startf('mosarti_wrm_init')
+#endif
 
     !-------------------------------------------------------
     ! Read restart/initial info
@@ -1125,10 +1242,12 @@ contains
         TRunoff%wt   = rtmCTL%wt
         TRunoff%wr   = rtmCTL%wr
         TRunoff%erout= rtmCTL%erout
+        do nt = 1,nt_rtm
         do nr = rtmCTL%begr,rtmCTL%endr
-            call UpdateState_hillslope(nr)
-            call UpdateState_subnetwork(nr)
-            call UpdateState_mainchannel(nr)
+            call UpdateState_hillslope(nr,nt)
+            call UpdateState_subnetwork(nr,nt)
+            call UpdateState_mainchannel(nr,nt)
+        enddo
         enddo
     end if
 
@@ -1207,13 +1326,13 @@ contains
     integer  :: yr, mon, day, ymd, tod      ! time information
     integer  :: nsub                        ! subcyling for cfl
     real(r8) :: delt                        ! delt associated with subcycling
-    real(r8) :: delt_rtm                    ! real value of rtm_tstep
+    real(r8) :: delt_rtm                    ! real value of coupling_period
     integer , save :: nsub_save             ! previous nsub
     real(r8), save :: delt_save             ! previous delt
-    logical , save :: first_time = .true.   ! first time flag (for backwards compatibility)
+    logical , save :: first_call = .true.   ! first time flag (for backwards compatibility)
     character(len=256) :: filer             ! restart file name
     integer  :: cnt                         ! counter for gridcells
-    character(len=16384) :: rList           ! list of fields for SM multiply
+    integer  :: ier                         ! error code
     integer,parameter  :: dbug = 1          ! local debug flag
     character(*),parameter :: subname = '(Rtmrun) '
 !-----------------------------------------------------------------------
@@ -1228,8 +1347,8 @@ contains
        write(iulog,'(2a,i10,i6)') trim(subname),' model date is',ymd,tod
     endif
 
-    delt_rtm = rtm_tstep*1.0_r8
-    if (first_time) then
+    delt_rtm = coupling_period*1.0_r8
+    if (first_call) then
        if (masterproc) write(iulog,'(2a,g20.12)') trim(subname),': MOSART coupling period ',delt_rtm
     end if
 
@@ -1349,11 +1468,11 @@ contains
 
     call t_startf('mosartr_subcycling')
 
-    nsub = int(delt_rtm/delt_rtm_max)
-    if (float(nsub)*delt_rtm_max < delt_rtm) then
-       nsub = int(delt_rtm/delt_rtm_max) + 1
+    nsub = coupling_period/delt_mosart
+    if (nsub*delt_mosart < coupling_period) then
+       nsub = nsub + 1
     end if
-    delt = delt_rtm/float(nsub)
+    delt = float(coupling_period)/float(nsub)
     if (delt /= delt_save) then
        if (masterproc) then
           write(iulog,'(2a,2g20.12,2i12)') trim(subname),': MOSART delt update from/to',delt_save,delt,nsub_save,nsub
@@ -1380,16 +1499,26 @@ contains
     do ns = 1,nsub
 
        if (wrmflag) then
+#ifdef INCLUDE_WRM
           call t_startf('mosartr_euler')
           call Euler_WRM()
           call t_stopf('mosartr_euler')
+#else
+          call shr_sys_abort(trim(subname)//' ERROR WRM not compiled')
+#endif
        else
           call t_startf('mosartr_euler')
           call Euler()
           call t_stopf('mosartr_euler')
        endif
 
-       call t_startf('mosartr_SMmult')
+       if (barrier_timers) then
+          call t_startf('mosartr_SMdnstrm_barrier')
+          call mpi_barrier(mpicom_rof,ier)
+          call t_stopf ('mosartr_SMdnstrm_barrier')
+       endif
+
+       call t_startf('mosartr_SMdnstrm')
        sfluxin = 0._r8
 #ifdef NO_MCT
        do n = rtmCTL%begr,rtmCTL%endr
@@ -1405,38 +1534,28 @@ contains
           endif
        enddo
 #else
-       if (ns == 1 .and. first_time) then
-          write(rList,'(a,i3.3)') 'tr',1
-          do nt = 2,nt_rtm
-             write(rList,'(a,i3.3)') trim(rList)//':tr',nt
-          enddo
-          write(iulog,'(2a)') trim(subname),':MOSART initialize avect ',trim(rList)
-          call mct_aVect_init(avsrc,rList=rList,lsize=rtmCTL%lnumr)
-          call mct_aVect_init(avdst,rList=rList,lsize=rtmCTL%lnumr)
-       endif
-
-       !--- copy fluxout into avsrc ---
+       !--- copy fluxout into avsrc_dnstrm ---
        cnt = 0
        do n = rtmCTL%begr,rtmCTL%endr
           cnt = cnt + 1
           do nt = 1,nt_rtm
-             avsrc%rAttr(nt,cnt) = fluxout(n,nt)
+             avsrc_dnstrm%rAttr(nt,cnt) = fluxout(n,nt)
           enddo
        enddo
-       call mct_avect_zero(avdst)
+       call mct_avect_zero(avdst_dnstrm)
 
-       call mct_sMat_avMult(avsrc, sMatP, avdst)
+       call mct_sMat_avMult(avsrc_dnstrm, sMatP_dnstrm, avdst_dnstrm)
 
        !--- add mapped fluxout to sfluxin ---
        cnt = 0
        do n = rtmCTL%begr,rtmCTL%endr
           cnt = cnt + 1
           do nt = 1,nt_rtm
-             sfluxin(n,nt) = sfluxin(n,nt) + avdst%rAttr(nt,cnt)
+             sfluxin(n,nt) = sfluxin(n,nt) + avdst_dnstrm%rAttr(nt,cnt)
           enddo
        enddo
 #endif
-       call t_stopf('mosartr_SMmult')
+       call t_stopf('mosartr_SMdnstrm')
 
        if (dbug > 1) then
           do nt = 1,nt_rtm
@@ -1539,18 +1658,23 @@ contains
           if (rtmCTL%mask(nr) == 2) then
              budget1(nt) = budget1(nt) - rtmCTL%runoff(nr,nt)
           endif
-          budget1(nt) = budget1(nt) - rtmCTL%volr(nr,nt)/delt_rtm
+          budget1(nt) = budget1(nt) - rtmCTL%volr(nr,nt)/float(coupling_period)
 !          write(iulog,*) 'tcx b3',nt,nr,budget1(nt),rtmCTL%volr(nr,nt)
        enddo
        enddo
 !       write(iulog,*) 'tcx b4 ',minval(budget1),maxval(budget1)
 !       write(iulog,*) 'tcx b4a',minval(rtmCTL%runoff),maxval(rtmCTL%runoff)
-!       write(iulog,*) 'tcx b4b',minval(rtmCTL%volr),maxval(rtmCTL%volr),delt_rtm
+!       write(iulog,*) 'tcx b4b',minval(rtmCTL%volr),maxval(rtmCTL%volr),coupling_period
        call t_stopf('mosartr_budget')
     endif
 
     ! RUNOFF check, compute global sums and check
     if (runoff_check) then
+       if (barrier_timers) then
+          call t_startf('mosartr_rofdiag_barrier')
+          call mpi_barrier(mpicom_rof,ier)
+          call t_stopf ('mosartr_rofdiag_barrier')
+       endif
        call t_startf('mosartr_rofdiag')
        diag2 = 0.0_r8
        do nt = 1,nt_rtm
@@ -1575,6 +1699,11 @@ contains
 
     ! BUDGET, compute global sums and check
     if (budget_check) then
+       if (barrier_timers) then
+          call t_startf('mosartr_budget_barrier')
+          call mpi_barrier(mpicom_rof,ier)
+          call t_stopf ('mosartr_budget_barrier')
+       endif
        call t_startf('mosartr_budget')
        call shr_mpi_sum(budget1,diag_global,mpicom_rof,'rtm global budget',all=.false.)
 !       write(iulog,*) 'tcx b5 ',minval(budget1),maxval(budget1)
@@ -1624,7 +1753,7 @@ contains
        enddo
     endif
 
-    first_time = .false.
+    first_call = .false.
 
     call shr_sys_flush(iulog)
     call t_stopf('mosartr_tot')
@@ -1743,8 +1872,14 @@ contains
   integer, pointer   :: compdof(:) ! computational degrees of freedom for pio 
   integer :: dids(2)               ! variable dimension ids 
   integer :: dsizes(2)             ! variable dimension lengths
-  integer  :: ier                           ! error code
-  integer  :: begr, endr, iunit, nn, n, cnt
+  integer :: ier                  ! error code
+  integer :: begr, endr, iunit, nn, n, cnt, nr, nt
+  integer :: numDT_r, numDT_t
+  integer :: lsize, gsize
+  integer :: igrow, igcol, iwgt
+  type(mct_avect) :: avtmp, avtmpG ! temporary avects
+  type(mct_sMat)  :: sMat          ! temporary sparse matrix, needed for sMatP
+  character(len=16384) :: rList             ! list of fields for SM multiply
   character(len=32) :: subname = 'read_MOSART_inputs '
   character(len=1000) :: fname
   character(len=*),parameter :: FORMI = '(2A,2i10)'
@@ -1997,6 +2132,9 @@ contains
      allocate (TRunoff%erout(begr:endr,nt_rtm))
      TRunoff%erout = 0._r8
 
+     allocate (TRunoff%eroutUp(begr:endr,nt_rtm))
+     TRunoff%eroutUp = 0._r8
+
      allocate (TRunoff%ergwl(begr:endr,nt_rtm))
      TRunoff%ergwl = 0._r8
 
@@ -2060,24 +2198,122 @@ contains
         end if
      end do
 
+#ifdef NO_MCT
+     ! tcraig, this only works if decomposed by basin, verify with abort if not
      do iunit=rtmCTL%begr,rtmCTL%endr
-     do nn=rtmCTL%begr,rtmCTL%endr
-        if(TUnit%dnID(iunit) == TUnit%ID0(nn)) then
-           TUnit%indexDown(iunit) = nn
-        end if
-     end do
+        if(Tunit%dnID(iunit) > 0) then
+           Tunit%indexDown(iunit) = -99
+           do nn=rtmCTL%begr,rtmCTL%endr
+              if(TUnit%dnID(iunit) == TUnit%ID0(nn)) then
+                 TUnit%indexDown(iunit) = nn
+                 TUnit%nUp(nn) = TUnit%nUp(nn) + 1
+                 TUnit%iUp(nn,TUnit%nUp(nn)) = iunit
+              end if
+           end do
+           if(Tunit%indexDown(iunit) <= 0) then
+              write(iulog,*) subname,' ERROR indexDown outside basin ',iunit,TUnit%ID0(iunit),Tunit%dnID(iunit)
+              call shr_sys_abort(trim(subname)//' ERROR indexDown outside basin')
+           endif
+        endif
      end do
       
-     ! this part needs to modified for grid-based representation
-     do iunit=rtmCTL%begr,rtmCTL%endr
-     do nn=rtmCTL%begr,rtmCTL%endr
-        if(TUnit%dnID(iunit) == TUnit%ID0(nn)) then
-           TUnit%nUp(nn) = TUnit%nUp(nn) + 1
-           TUnit%iUp(nn,TUnit%nUp(nn)) = iunit
-        end if
-     end do
-     end do
-  end if
+#else
+
+    lsize = rtmCTL%lnumr
+    gsize = rtmlon*rtmlat
+
+    if (smat_option == 'opt') then
+       ! distributed smat initialization
+       ! mct_sMat_init must be given the number of rows and columns that
+       ! would be in the full matrix.  Nrows= size of output vector=nb.
+       ! Ncols = size of input vector = na.
+
+       cnt = 0
+       do iunit=rtmCTL%begr,rtmCTL%endr
+          if(TUnit%dnID(iunit) > 0) cnt = cnt + 1
+       enddo
+
+       call mct_sMat_init(sMat, gsize, gsize, cnt)
+       igrow = mct_sMat_indexIA(sMat,'grow')
+       igcol = mct_sMat_indexIA(sMat,'gcol')
+       iwgt  = mct_sMat_indexRA(sMat,'weight')
+       cnt = 0
+       do iunit = rtmCTL%begr,rtmCTL%endr
+          if (TUnit%dnID(iunit) > 0) then
+             cnt = cnt + 1
+             sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
+             sMat%data%iAttr(igrow,cnt) = TUnit%dnID(iunit)
+             sMat%data%iAttr(igcol,cnt) = TUnit%ID0(iunit)
+          endif
+       enddo
+
+       call mct_sMatP_Init(sMatP_eroutUp, sMat, gsMap_r, gsMap_r, 0, mpicom_rof, ROFID)
+
+    elseif (smat_option == 'Xonly' .or. smat_option == 'Yonly') then
+       ! root initialization
+       call mct_aVect_init(avtmp,rList='f1:f2',lsize=lsize)
+       call mct_aVect_zero(avtmp)
+       cnt = 0
+       do iunit = rtmCTL%begr,rtmCTL%endr
+          cnt = cnt + 1
+          avtmp%rAttr(1,cnt) = TUnit%ID0(iunit)
+          avtmp%rAttr(2,cnt) = TUnit%dnID(iunit)
+       enddo
+       call mct_avect_gather(avtmp,avtmpG,gsmap_r,mastertask,mpicom_rof)
+       if (masterproc) then
+          cnt = 0
+          do n = 1,rtmlon*rtmlat
+             if (avtmpG%rAttr(2,n) > 0) then
+                cnt = cnt + 1
+             endif
+          enddo
+
+          call mct_sMat_init(sMat, gsize, gsize, cnt)
+          igrow = mct_sMat_indexIA(sMat,'grow')
+          igcol = mct_sMat_indexIA(sMat,'gcol')
+          iwgt  = mct_sMat_indexRA(sMat,'weight')
+
+          cnt = 0
+          do n = 1,rtmlon*rtmlat
+             if (avtmpG%rAttr(2,n) > 0) then
+                cnt = cnt + 1
+                sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
+                sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(2,n)
+                sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(1,n)
+             endif
+          enddo
+          call mct_avect_clean(avtmpG)
+       else
+          call mct_sMat_init(sMat,1,1,1)
+       endif
+       call mct_avect_clean(avtmp)
+
+       call mct_sMatP_Init(sMatP_eroutUp, sMat, gsMap_r, gsMap_r, smat_option, 0, mpicom_rof, ROFID)
+
+    else
+
+       write(iulog,*) trim(subname),':MOSART ERROR: invalid smat_option '//trim(smat_option)
+       call shr_sys_abort(trim(subname)//' ERROR invald smat option')
+
+    endif
+
+    ! initialize the AVs to go with sMatP
+    write(rList,'(a,i3.3)') 'tr',1
+    do nt = 2,nt_rtm
+       write(rList,'(a,i3.3)') trim(rList)//':tr',nt
+    enddo
+    write(iulog,*) trim(subname),':MOSART initialize avect ',trim(rList)
+    call mct_aVect_init(avsrc_eroutUp,rList=rList,lsize=rtmCTL%lnumr)
+    call mct_aVect_init(avdst_eroutUp,rList=rList,lsize=rtmCTL%lnumr)
+
+    lsize = mct_smat_gNumEl(sMatP_eroutUp%Matrix,mpicom_rof)
+    if (masterproc) write(iulog,*) "Rtmini Done initializing SmatP_eroutUp, nElements = ",lsize
+
+    ! keep only sMatP
+    call mct_sMat_clean(sMat)
+#endif
+
+  end if  ! endr >= begr
 
   ! control parameters
   Tctl%RoutingMethod = 1
@@ -2089,6 +2325,16 @@ contains
   Tctl%DLevelH2R = 5
   Tctl%DLevelR = 3
   call SubTimestep ! prepare for numerical computation
+
+  call shr_mpi_max(maxval(Tunit%numDT_r),numDT_r,mpicom_rof,'numDT_r',all=.false.)
+  call shr_mpi_max(maxval(Tunit%numDT_t),numDT_t,mpicom_rof,'numDT_t',all=.false.)
+  if (masterproc) then
+     write(iulog,*) subname,' DLevelH2R = ',Tctl%DlevelH2R
+     write(iulog,*) subname,' numDT_r   = ',minval(Tunit%numDT_r),maxval(Tunit%numDT_r)
+     write(iulog,*) subname,' numDT_r max  = ',numDT_r
+     write(iulog,*) subname,' numDT_t   = ',minval(Tunit%numDT_t),maxval(Tunit%numDT_t)
+     write(iulog,*) subname,' numDT_t max  = ',numDT_t
+  endif
     
   !if(masterproc) then
   !    fname = '/lustre/liho745/DCLM_model/ccsm_hy/run/clm_MOSART_subw2/run/test.dat'

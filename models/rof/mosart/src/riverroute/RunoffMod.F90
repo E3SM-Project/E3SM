@@ -18,6 +18,16 @@ module RunoffMod
   implicit none
   private
 
+  type(mct_gsmap),public :: gsmap_r       ! gsmap for mosart decomposition
+
+  type(mct_sMatP),public :: sMatP_dnstrm  ! sparse matrix plus for downstream advection
+  type(mct_avect),public :: avsrc_dnstrm  ! src avect for SM mult downstream advection
+  type(mct_avect),public :: avdst_dnstrm  ! dst avect for SM mult downstream advection
+
+  type(mct_sMatP),public :: sMatP_eroutUp ! sparse matrix plus for eroutUp calc
+  type(mct_avect),public :: avsrc_eroutUp ! src avect for SM mult eroutUp calc
+  type(mct_avect),public :: avdst_eroutUp ! dst avect for SM mult eroutUp calc
+
   public :: runoff_flow
   type runoff_flow
      !    - local initialization
@@ -133,7 +143,7 @@ module RunoffMod
      ! main channel properties
      integer , pointer :: fdir(:)      ! flow direction, currently considering single direction only;
      real(r8), pointer :: rlen(:)      ! length of main river reach, [m]
-     real(r8), pointer :: rslp(:)      ! slope of main river reach, [m]
+     real(r8), pointer :: rslp(:)      ! slope of main river reach, [-]
      real(r8), pointer :: rwidth(:)    ! bankfull width of main reach, [m]
      real(r8), pointer :: rwidth0(:)   ! total width of the flood plain, [m]
      real(r8), pointer :: rdepth(:)    ! bankfull depth of river cross section, [m]
@@ -202,6 +212,7 @@ module RunoffMod
      real(r8), pointer :: erlateral(:,:) ! lateral flow from hillslope, including surface and subsurface runoff generation components, [m3/s]
      real(r8), pointer :: erin(:,:)    ! inflow from upstream links, [m3/s]
      real(r8), pointer :: erout(:,:)   ! outflow into downstream links, [m3/s]
+     real(r8), pointer :: eroutUp(:,:) ! outflow sum of upstream gridcells, instantaneous (m**3/s)
      real(r8), pointer :: flow(:,:)    ! streamflow from the outlet of the reach, [m3/s]
      real(r8), pointer :: erin1(:,:)   ! inflow from upstream links during previous step, used for Muskingum method, [m3/s]
      real(r8), pointer :: erin2(:,:)   ! inflow from upstream links during current step, used for Muskingum method, [m3/s]
