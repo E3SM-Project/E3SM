@@ -1188,8 +1188,14 @@ contains
        ! compute the cross product and dot with normal, if negative we are outside cell
        ! we only need to fail on a single test!
        call mpas_cross_product_in_r3(vec1,vec2,crossProd)
-       if(sum(crossProd*pVertices(:,v0)) < 0) then
-         point_in_cell = .false.
+       if (on_a_sphere) then
+         if(sum(crossProd*pVertices(:,v0)) < 0) then
+           point_in_cell = .false.
+         end if
+       else
+         if(crossProd(3) < 0) then
+           point_in_cell = .false.
+         end if
        end if
 
      end do
@@ -1331,14 +1337,17 @@ contains
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: lagrPartTrackCellsPool
       type (mpas_pool_type), pointer :: meshPool
-      integer  :: nVertices, iCell, i, im1, i0, ip1
+      integer  :: nVertices, iCell, i, im1, i0, ip1, iVertex
       integer, pointer :: nCells
       real (kind=RKIND), dimension(:), allocatable :: xv,yv,zv
       real (kind=RKIND), pointer :: radiusLocal
       integer, dimension(:,:), pointer :: verticesOnCell
       integer, dimension(:), pointer :: nCellVerticesArray
       real (kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+      real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
       real (kind=RKIND), dimension(:,:), pointer :: areaBArray
+      logical, pointer :: on_a_sphere, is_periodic
+      real(kind=RKIND), pointer :: x_period, y_period
 
       err = 0
 
@@ -1347,6 +1356,10 @@ contains
         ! setup pointers / get block
         call mpas_pool_get_subpool(block % structs, 'lagrPartTrackCells', lagrPartTrackCellsPool)
         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+        call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
+        call mpas_pool_get_config(meshPool, 'is_periodic', is_periodic)
+        call mpas_pool_get_config(meshPool, 'x_period', x_period)
+        call mpas_pool_get_config(meshPool, 'y_period', y_period)
         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nCellVerticesArray)
         call mpas_pool_get_config(meshPool, 'sphere_radius', radiusLocal)
@@ -1354,6 +1367,9 @@ contains
         call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
         call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
         call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
+        call mpas_pool_get_array(meshPool, 'xCell', xCell)
+        call mpas_pool_get_array(meshPool, 'yCell', yCell)
+        call mpas_pool_get_array(meshPool, 'zCell', zCell)
         call mpas_pool_get_array(lagrPartTrackCellsPool, 'wachspressAreaB', areaBArray)
 
         ! compute B_i coefficients
@@ -1361,9 +1377,19 @@ contains
         do iCell = 1, nCells
           nVertices = nCellVerticesArray(iCell)
           allocate(xv(nVertices), yv(nVertices), zv(nVertices))
-          xv = xVertex(verticesOnCell(:,iCell))
-          yv = yVertex(verticesOnCell(:,iCell))
-          zv = zVertex(verticesOnCell(:,iCell))
+          if (on_a_sphere .or. .not. is_periodic) then
+            xv = xVertex(verticesOnCell(:,iCell))
+            yv = yVertex(verticesOnCell(:,iCell))
+            zv = zVertex(verticesOnCell(:,iCell))
+          else
+            do iVertex=1,nVertices
+              xv(iVertex) = mpas_fix_periodicity(xVertex(verticesOnCell(iVertex,iCell)), &
+                xCell(iCell), x_period)
+              yv(iVertex) = mpas_fix_periodicity(yVertex(verticesOnCell(iVertex,iCell)), &
+                yCell(iCell), y_period)
+              zv(iVertex) = zVertex(verticesOnCell(iVertex,iCell))
+            end do
+          end if
           do i = 1, nVertices
             ! compute first area B_i
             ! get vertex indices

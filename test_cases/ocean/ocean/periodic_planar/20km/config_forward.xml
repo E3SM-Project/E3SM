@@ -9,6 +9,12 @@
 		<mirror protocol="local" path_name="mesh_database" file_name="particle_full.151029.nc"/>	
 	</get_file>
 
+  <get_file dest="graph.info.part.16">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mpas_ocean/test_cases/staging" file_name="graph.info.part.16.doubly_periodic_20km_1000x2000km_planar.151106"/>	
+		<mirror protocol="local" path_name="mesh_database" file_name="graph.info.part.16.doubly_periodic_20km_1000x2000km_planar.151106"/>	
+  </get_file>
+
+
 	<add_executable source="model" dest="ocean_model"/>
 	<add_executable source="metis" dest="metis"/>
 
@@ -24,9 +30,9 @@
 		<option name="config_disable_vel_all_tend">.true.</option>
 		<option name="config_disable_tr_all_tend">.true.</option>
 		<option name="config_use_active_tracers">.false.</option>
-
+		<option name="config_AM_lagrPartTrack_enable">.true.</option>
 		<option name="config_AM_lagrPartTrack_compute_on_startup">.false.</option>
-		<option name="config_AM_lagrPartTrack_write_on_startup">.false.</option>
+		<option name="config_AM_lagrPartTrack_write_on_startup">.true.</option>
 		<option name="config_AM_timeSeriesStats_output_stream">'none'</option>
 		<option name="config_AM_timeSeriesStats_restart_stream">'none'</option>
 	</namelist>
@@ -66,12 +72,16 @@
 		</stream>
 	</streams>
 
+	<!--  Currently, this will only run with 16 processors because
+	      the particle file is decomposed with 16 processors and we
+	      currently do not have an online way of redecomposing particles.
+	      Therefore, a graph file is also used because different versions
+	      of metis produce different graph files and the particle file is
+	      tied to a particular version of the graph file.
+	-->
 	<run_script name="run.py">
-		<step executable="./metis">
-			<argument flag="graph.info">4</argument>
-		</step>
 		<step executable="mpirun">
-			<argument flag="-n">4</argument>
+			<argument flag="-n">16</argument>
 			<argument flag="">./ocean_model</argument>
 			<argument flag="-n">namelist.ocean</argument>
 			<argument flag="-s">streams.ocean</argument>
