@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import unittest, sys, os, tempfile, shutil, re, threading, time, signal, glob, stat
+import unittest, sys, os, tempfile, shutil, re, threading, time, signal, glob, stat, traceback
 
 SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(SCRIPT_DIR)
@@ -505,6 +505,7 @@ class TestUpdateACMETests(unittest.TestCase):
         try:
             update_acme_tests.update_acme_tests(self._testlist_allactive, update_acme_tests.get_test_suites())
         except:
+            traceback.print_tb(sys.exc_info()[2])
             self.assertTrue(False, str(sys.exc_info()[1]))
 
         stat = run_cmd("grep 'test/test_mod' %s" % self._testlist_allactive, ok_to_fail=True)[0]
