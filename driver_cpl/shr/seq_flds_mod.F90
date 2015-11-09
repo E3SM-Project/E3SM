@@ -1053,6 +1053,12 @@ module seq_flds_mod
      ! Aerodynamical resistance (land/atm only)
      call seq_flds_add(l2x_states,"Sl_ram1")
      call seq_flds_add(x2a_states,"Sl_ram1")
+     longname = 'aerodynamic resistance'
+     stdname = 'aerodynamic_resistance'
+     attname = 'SI_ram1'
+     units = 's/m'
+     call metadata_set(attname, longname, stdname, units)
+
 
      ! Surface snow water equivalent (land/atm only) 
      call seq_flds_add(l2x_states,"Sl_snowh")
@@ -1971,6 +1977,11 @@ module seq_flds_mod
      if (carma_fields /= ' ') then
         call seq_flds_add(l2x_fluxes, trim(carma_fields))
         call seq_flds_add(x2a_fluxes, trim(carma_fields))
+        longname = 'Volumetric soil water'
+        stdname  = 'soil_water'
+        units    = 'm3/m3'
+        attname = trim(carma_fields)
+        call metadata_set(attname, longname, stdname, units)
      endif
 
      !-----------------------------------------------------------------------------
@@ -1983,6 +1994,11 @@ module seq_flds_mod
      if (shr_megan_mechcomps_n>0) then
         call seq_flds_add(l2x_fluxes, trim(megan_voc_fields))
         call seq_flds_add(x2a_fluxes, trim(megan_voc_fields))
+        longname = 'MEGAN emission fluxes'
+        stdname  = 'megan_fluxes'
+        units    = 'molecules/m2/sec'
+        attname = trim(megan_voc_fields)
+        call metadata_set(attname, longname, stdname, units)
      endif
 
      !-----------------------------------------------------------------------------
@@ -1995,8 +2011,20 @@ module seq_flds_mod
      if (shr_fire_emis_mechcomps_n>0) then
         call seq_flds_add(l2x_fluxes, trim(fire_emis_fields))
         call seq_flds_add(x2a_fluxes, trim(fire_emis_fields))
+        longname = 'wild fire emission fluxes'
+        stdname  = 'fire_emis'
+        units    = 'kg/m2/sec'
+        attname = trim(fire_emis_fields)
+        call metadata_set(attname, longname, stdname, units)
+
         call seq_flds_add(l2x_states, trim(shr_fire_emis_ztop_token))
         call seq_flds_add(x2a_states, trim(shr_fire_emis_ztop_token))
+        longname = 'wild fire plume height'
+        stdname  = 'fire_plume_top'
+        units    = 'm'
+        attname = trim(shr_fire_emis_ztop_token)
+        call metadata_set(attname, longname, stdname, units)
+
      endif
 
      !-----------------------------------------------------------------------------
@@ -2010,8 +2038,14 @@ module seq_flds_mod
 
      call seq_drydep_readnl(nlfilename="drv_flds_in", ID=ID, seq_drydep_fields=seq_drydep_fields)
      if ( lnd_drydep ) then
-        call seq_flds_add(l2x_states, trim(seq_drydep_fields))
-        call seq_flds_add(x2a_states, trim(seq_drydep_fields))
+        attname = trim(seq_drydep_fields)
+        call seq_flds_add(l2x_states, attname)
+        call seq_flds_add(x2a_states, attname)
+        longname = 'dry deposition velocities'
+        stdname  = 'drydep_vel'
+        units    = 'cm/sec'
+        call metadata_set(attname, longname, stdname, units)
+
      endif
      call seq_drydep_init( )
 
