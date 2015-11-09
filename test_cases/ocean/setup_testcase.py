@@ -328,7 +328,8 @@ def add_links(config_file, args, configs):#{{{
 
 	dev_null = open('/dev/null', 'r+')
 
-	base_path = '%s/%s/%s/%s'%(args.core, args.configuration, args.resolution, case)
+	test_path = '%s/%s/%s/%s'%(args.core, args.configuration, args.resolution, case)
+	base_path = '%s/%s'%(args.base_path, test_path)
 
 	for link in config_root.findall('add_link'):
 		try:
@@ -561,6 +562,11 @@ def generate_driver_scripts(config_file, init_path, configs):#{{{
 
 	if config_root.tag == 'driver_script':
 		name = config_root.attrib['name']
+
+		# Ensure init_path exists before writing driver script there.
+		if not os.path.exists(init_path):
+			os.makedirs(init_path)
+
 		script = open('%s/%s'%(init_path, name), 'w')
 
 		script.write('#!/usr/bin/env python\n')
@@ -611,6 +617,7 @@ parser.add_argument("-n", "--case_number", dest="case_num", help="Case number to
 parser.add_argument("-f", "--config_file", dest="config_file", help="Configuration file for test case setup", metavar="FILE", required=True)
 parser.add_argument("--no_download", dest="no_download", help="If set, script will not auto-download base_mesh files", action="store_true")
 parser.add_argument("--copy_instead_of_symlink", dest="nolink_copy", help="If set, script will replace symlinks with copies of files.", action="store_true")
+parser.add_argument("--base_path", dest="base_path", help="If set, script will create case directories in base_path rather than the current directory.", metavar="PATH")
 
 args = parser.parse_args()
 
@@ -638,21 +645,34 @@ if not args.no_download:
 if not args.nolink_copy:
 	args.nolink_copy = False
 
+if not args.base_path:
+	args.base_path = os.getcwd()
+
+# Build variables for history output
+git_version = subprocess.check_output(['git', 'describe', '--tags', '--dirty'])
+git_version = git_version.strip('\n')
+calling_command = ""
+for arg in sys.argv:
+	calling_command = "%s%s "%(calling_command, arg)
+
 # Setup each xml file in the configuration directory:
 template_path = '%s/templates/%s'%(os.getcwd(), args.core)
-base_path = '%s/%s/%s'%(args.core, args.configuration, args.resolution)
-for file in os.listdir('%s'%(base_path)):
+test_path = '%s/%s/%s'%(args.core, args.configuration, args.resolution)
+base_path = '%s/%s'%(args.base_path, test_path)
+write_history = False
+for file in os.listdir('%s'%(test_path)):
 	if fnmatch.fnmatch(file, '*.xml'):
-		config_file = '%s/%s'%(base_path, file)
+		config_file = '%s/%s'%(test_path, file)
 
 		if is_config_case_file(config_file):
+			write_history = True
 			case_dir = make_case_dir(config_file, base_path)
 			case_mode = get_case_mode(config_file)
 
 			case_path = '%s/%s'%(base_path, case_dir)
 
 			if not config.has_option("streams", case_mode) or not config.has_option("namelists", case_mode):
-				print "Error. Configuration file %s is requires paths for streams and namelist files for %s mode."%(args.config_file, case_mode)
+				print "Error. Configuration file '%s' requires paths for streams and namelist files for '%s' mode."%(args.config_file, case_mode)
 				quit(1)
 			else:
 				case_streams_template = config.get("streams", case_mode)
@@ -670,6 +690,22 @@ for file in os.listdir('%s'%(base_path)):
 
 			print " -- Set up case: %s/%s"%(base_path, case_dir)
 		else:
+			write_history = True
 			generate_driver_scripts(config_file, base_path, config)
 			print " -- Set up driver script in %s"%(base_path)
+
+if write_history:
+	history_file_path = '%s/command_history'%(args.base_path)
+	if os.path.exists(history_file_path):
+		history_file = open(history_file_path, 'a')
+		history_file.write('\n')
+	else:
+		history_file = open(history_file_path, 'w')
+	
+	history_file.write('git_version: %s\n'%(git_version))
+	history_file.write('command: %s\n'%(calling_command))
+	history_file.write('core: %s\n'%(args.core))
+	history_file.write('configuration: %s\n'%(args.configuration))
+	history_file.write('resolution: %s\n'%(args.resolution))
+	history_file.close()
 
