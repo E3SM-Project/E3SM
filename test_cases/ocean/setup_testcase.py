@@ -562,6 +562,11 @@ def generate_driver_scripts(config_file, init_path, configs):#{{{
 
 	if config_root.tag == 'driver_script':
 		name = config_root.attrib['name']
+
+		# Ensure init_path exists before writing driver script there.
+		if not os.path.exists(init_path):
+			os.makedirs(init_path)
+
 		script = open('%s/%s'%(init_path, name), 'w')
 
 		script.write('#!/usr/bin/env python\n')
@@ -643,15 +648,24 @@ if not args.nolink_copy:
 if not args.base_path:
 	args.base_path = os.getcwd()
 
+# Build variables for history output
+git_version = subprocess.check_output(['git', 'describe', '--tags', '--dirty'])
+git_version = git_version.strip('\n')
+calling_command = ""
+for arg in sys.argv:
+	calling_command = "%s%s "%(calling_command, arg)
+
 # Setup each xml file in the configuration directory:
 template_path = '%s/templates/%s'%(os.getcwd(), args.core)
 test_path = '%s/%s/%s'%(args.core, args.configuration, args.resolution)
 base_path = '%s/%s'%(args.base_path, test_path)
+write_history = False
 for file in os.listdir('%s'%(test_path)):
 	if fnmatch.fnmatch(file, '*.xml'):
 		config_file = '%s/%s'%(test_path, file)
 
 		if is_config_case_file(config_file):
+			write_history = True
 			case_dir = make_case_dir(config_file, base_path)
 			case_mode = get_case_mode(config_file)
 
@@ -676,6 +690,22 @@ for file in os.listdir('%s'%(test_path)):
 
 			print " -- Set up case: %s/%s"%(base_path, case_dir)
 		else:
+			write_history = True
 			generate_driver_scripts(config_file, base_path, config)
 			print " -- Set up driver script in %s"%(base_path)
+
+if write_history:
+	history_file_path = '%s/command_history'%(args.base_path)
+	if os.path.exists(history_file_path):
+		history_file = open(history_file_path, 'a')
+		history_file.write('\n')
+	else:
+		history_file = open(history_file_path, 'w')
+	
+	history_file.write('git_version: %s\n'%(git_version))
+	history_file.write('command: %s\n'%(calling_command))
+	history_file.write('core: %s\n'%(args.core))
+	history_file.write('configuration: %s\n'%(args.configuration))
+	history_file.write('resolution: %s\n'%(args.resolution))
+	history_file.close()
 
