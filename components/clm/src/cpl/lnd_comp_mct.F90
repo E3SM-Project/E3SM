@@ -41,7 +41,7 @@ contains
     ! !USES:
     use abortutils       , only : endrun
     use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
-    use clm_initializeMod, only : initialize1, initialize2, lnd2atm_vars, lnd2glc_vars
+    use clm_initializeMod, only : initialize1, initialize2, initialize3, lnd2atm_vars, lnd2glc_vars
     use clm_varctl       , only : finidat,single_column, clm_varctl_set, iulog, noland
     use clm_varctl       , only : inst_index, inst_suffix, inst_name
     use clm_varorb       , only : eccen, obliqr, lambm0, mvelpp
@@ -229,6 +229,7 @@ contains
     ! Finish initializing clm
 
     call initialize2()
+    call initialize3()
 
     ! Check that clm internal dtime aligns with clm coupling interval
 
@@ -492,6 +493,7 @@ contains
     use seq_timemgr_mod ,only : seq_timemgr_RestartAlarmIsOn, seq_timemgr_EClockDateInSync
     use mct_mod
     use esmf
+    use clm_finalizeMod, only : final
     !
     ! !ARGUMENTS:
     type(ESMF_Clock) , intent(inout) :: EClock    ! Input synchronization clock from driver
@@ -501,6 +503,8 @@ contains
     !---------------------------------------------------------------------------
 
     ! fill this in
+    call final()
+
   end subroutine lnd_final_mct
 
   !====================================================================================

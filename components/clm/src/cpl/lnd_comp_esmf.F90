@@ -77,7 +77,7 @@ contains
     use shr_file_mod     , only : shr_file_getLogUnit, shr_file_getLogLevel
     use shr_file_mod     , only : shr_file_getUnit, shr_file_setIO
     use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
-    use clm_initializeMod, only : initialize1, initialize2, lnd2atm_vars, lnd2glc_vars
+    use clm_initializeMod, only : initialize1, initialize2, initialize3, lnd2atm_vars, lnd2glc_vars
     use clm_varctl       , only : finidat,single_column, clm_varctl_set, noland
     use clm_varctl       , only : inst_index, inst_suffix, inst_name
     use clm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
@@ -368,6 +368,7 @@ contains
     ! Finish initializing clm
 
     call initialize2()
+    call initialize3()
 
     ! Check that clm internal dtime aligns with clm coupling interval
 
@@ -682,6 +683,9 @@ contains
     ! !DESCRIPTION:
     ! Finalize land surface model
     !
+    ! !USES:
+    use clm_finalizeMod, only : final
+    !
     ! !ARGUMENTS:
     type(ESMF_GridComp)  :: comp            ! CLM gridded component
     type(ESMF_State)     :: import_state    ! CLM import state
@@ -691,6 +695,8 @@ contains
     !---------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
+
+    call final()
 
     ! Destroy ESMF objects
     call esmfshr_util_StateArrayDestroy(export_state,'domain',rc=rc)

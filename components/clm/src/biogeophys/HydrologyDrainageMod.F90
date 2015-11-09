@@ -45,7 +45,7 @@ contains
     use landunit_varcon  , only : istice, istwet, istsoil, istice_mec, istcrop
     use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall, icol_shadewall
     use clm_varcon       , only : denh2o, denice, secspday
-    use clm_varctl       , only : glc_snow_persistence_max_days, use_vichydro, use_betr
+    use clm_varctl       , only : glc_snow_persistence_max_days, use_vichydro, use_betr, use_vsfm
     use clm_varpar       , only : nlevgrnd, nlevurb, nlevsoi    
     use clm_time_manager , only : get_step_size, get_nstep
     use SoilHydrologyMod , only : CLMVICMap, Drainage
@@ -128,10 +128,12 @@ contains
               h2osoi_liq(bounds%begc:bounds%endc, 1:nlevsoi))
       endif
 
-      call Drainage(bounds, num_hydrologyc, filter_hydrologyc, &
-           num_urbanc, filter_urbanc,&
-           temperature_vars, soilhydrology_vars, soilstate_vars, &
-           waterstate_vars, waterflux_vars)
+      if (.not. use_vsfm) then
+         call Drainage(bounds, num_hydrologyc, filter_hydrologyc, &
+              num_urbanc, filter_urbanc,&
+              temperature_vars, soilhydrology_vars, soilstate_vars, &
+              waterstate_vars, waterflux_vars)
+      endif
 
       if (use_betr) then
          call diagnose_drainage_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &

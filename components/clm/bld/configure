@@ -651,6 +651,7 @@ sub write_filepath_cesmbld
 		     "betr/bgc_century",
 		     "betr/bgc_sminn",
 		     "biogeophys",
+                     "biogeophys/vsfm",
 		     "biogeochem", 
 		     "dyn_subgrid",
 		     "ED", 
