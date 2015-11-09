@@ -1,4 +1,4 @@
-<nml_record name="ziso" in_defaults="true" mode="init" configuration="ziso">
+<nml_record name="ziso" mode="init" configuration="ziso">
   <nml_option name="config_ziso_vert_levels" type="integer" default_value="100" units="unitless"
     description="Number of vertical levels in ziso. Typical value is 100."
     possible_values="Any positive integer number greater than 0."
