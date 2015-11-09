@@ -204,10 +204,6 @@
 					description="Maximum thickness allowed. This is a factor times the resting thickness, i.e., maximum thickness = config_max_thickness_factor*$h^{rest}$."
 					possible_values="any positive real value, but typically 2-4."
 		/>
-		<nml_option name="config_set_restingThickness_to_IC" type="logical" default_value=".true." units="unitless"
-					description="If true, set restingThickness to be the same as layerThickness upon start-up. This only occurs when config_do_restart is false, i.e. on an initial run."
-					possible_values=".true. or .false."
-		/>
 		<nml_option name="config_dzdk_positive" type="logical" default_value=".false." units="unitless"
 					description="Determines if the positive Z axis is aligned with the positive K index direction."
 					possible_values=".true. or .false."
