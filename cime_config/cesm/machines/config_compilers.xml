@@ -278,7 +278,7 @@ for mct, etc.
   <ADD_CFLAGS DEBUG="FALSE"> -O2 -debug minimal </ADD_CFLAGS>
   <ADD_CFLAGS DEBUG="TRUE"> -O0 -g </ADD_CFLAGS>
   <FFLAGS> -no-opt-dynamic-align  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source  </FFLAGS>
-  <CFLAGS>  -no-opt-dynamic-align -fp-model precise </CFLAGS>
+  <CFLAGS>  -no-opt-dynamic-align -fp-model precise -std=gnu99 </CFLAGS>
   <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -openmp </ADD_FFLAGS_NOOPT>
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
@@ -336,6 +336,7 @@ for mct, etc.
 <compiler COMPILER="gnu">
   <!-- http://gcc.gnu.org/onlinedocs/gfortran/ -->
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
+  <CFLAGS> -std=gnu99 </CFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -fopenmp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -fopenmp </ADD_FFLAGS>
   <ADD_LDFLAGS compile_threaded="true"> -fopenmp </ADD_LDFLAGS>
@@ -349,7 +350,7 @@ for mct, etc.
   <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS 
        so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
   <FFLAGS> -mcmodel=medium -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </FFLAGS>
-  <CFLAGS> -mcmodel=medium </CFLAGS>
+  <CFLAGS> -mcmodel=medium -std=gnu99 </CFLAGS>
   <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
   <FC_AUTO_R8> -fdefault-real-8 </FC_AUTO_R8>
   <SFC> gfortran </SFC>
@@ -400,6 +401,7 @@ for mct, etc.
  <!--  <FFLAGS      > -Wp,-macro=no_com -wmismatch=mpi_send,mpi_recv,mpi_bcast,mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,mpi_scatterv,mpi_allgather,mpi_alltoallv,mpi_file_read_all,mpi_file_write_all,mpibcast,mpiscatterv    -convert=BIG_ENDIAN </FFLAGS>-->
   <FFLAGS>  -Wp,-macro=no_com -convert=BIG_ENDIAN -mismatch_all </FFLAGS>
   <FFLAGS_NOOPT> $(FFLAGS) </FFLAGS_NOOPT>
+  <CFLAGS> -std=gnu99 </CFLAGS>
 
   <!-- DEBUG vs. non-DEBUG runs.                                             -->
   <ADD_FFLAGS       DEBUG="FALSE"> -ieee=full -O2 </ADD_FFLAGS>
@@ -499,6 +501,7 @@ for mct, etc.
   <MPICXX>mpiicpc</MPICXX>
   <ADD_FFLAGS>  -xHost </ADD_FFLAGS>
   <ADD_CFLAGS>  -xHost </ADD_CFLAGS>
+  <ADD_CPPDEFS> -DINTEL_MKL -DHAVE_SSE2 </ADD_CPPDEFS>
   <TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
   <PAPI_INC> /glade/apps/opt/papi/5.3.0/intel/12.1.5/include/</PAPI_INC>
   <PAPI_LIB>/glade/apps/opt/papi/5.3.0/intel/12.1.5/lib64 </PAPI_LIB>

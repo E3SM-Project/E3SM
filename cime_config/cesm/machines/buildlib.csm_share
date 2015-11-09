@@ -46,6 +46,10 @@ my @filepath = ( "$CASEROOT/SourceMods/src.share",
 		 "$CIMEROOT/driver_cpl/shr",
 		 "$CIMEROOT/components/xcpl_models/xshare",
 		 "$CIMEROOT/share/csm_share/shr",
+		 "$CIMEROOT/share/shr_RandNum/src",
+		 "$CIMEROOT/share/shr_RandNum/src/dsfmt_f03",
+		 "$CIMEROOT/share/shr_RandNum/src/kissvec",
+		 "$CIMEROOT/share/shr_RandNum/src/mt19937",
 		 );
 
 if($useesmf eq "noesmf"){
