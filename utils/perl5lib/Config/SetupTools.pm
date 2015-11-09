@@ -3,6 +3,7 @@ my $pkg_nm = 'SetupTools';
 
 use strict;
 use XML::LibXML;
+use Data::Dumper;
 
 use Log::Log4perl qw(get_logger);
 my $logger;
@@ -138,6 +139,56 @@ sub getAllResolved
     }
     return %masterconfig;
 }
+
+#-------------------------------------------------------------------------------
+# Resolve a single unresolved variable
+#-------------------------------------------------------------------------------
+sub getSingleResolved
+{
+    my $variable = shift;
+    my $id_to_find = $variable;
+    $id_to_find =~ s/\$//g;
+    my %parsers;
+    my $value;
+    my @xmlfiles = qw (env_build.xml env_case.xml env_mach_pes.xml env_run.xml );
+    push(@xmlfiles, "env_test.xml") if ( -e "./env_test.xml");
+    push(@xmlfiles, "env_archive.xml") if ( -e "./env_archive.xml");
+    
+    foreach my $basefile(@xmlfiles)
+    {
+        my $xml = XML::LibXML->new()->parse_file($basefile);
+        $parsers{$basefile} = $xml;
+    }
+        
+    my @nodes;
+    foreach my $basefile(@xmlfiles)
+    {
+        my $parser = $parsers{$basefile};
+        my @nodes = $parser->findnodes("//entry[\@id=\'$id_to_find\']");
+        if(@nodes)
+        {
+            my $node = $nodes[0];
+            $value = $node->getAttribute('value');
+            if($value =~/\$/)
+            {
+                $value = _resolValues($value, \%parsers);
+            }
+            
+        }
+        else
+        {
+            next;
+        }
+    }
+    if(defined $value)
+    {
+        return $value;
+    }
+    else
+    {
+        return undef;
+    }
+}           
 
 #-------------------------------------------------------------------------------
 sub getxmlvars
