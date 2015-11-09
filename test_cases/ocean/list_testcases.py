@@ -4,11 +4,25 @@ import os, fnmatch
 import argparse
 
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-parser.add_argument("-l", "--list", dest="list", help="If set, script will list available configurations which can be passed into setup_testcases.py.", action="store_true")
+parser.add_argument("-n", "--number", dest="number", help="If set, script will print the flags to use a the N'th configuraiton.")
 
 args = parser.parse_args()
 
-print "Available test cases are:"
+quiet = False
+
+try:
+	print_num = 0
+	if args.number:
+		quiet = True
+		print_num = int(args.number)
+except:
+	args.number = 0
+	print_num = 0
+
+if not quiet:
+	print "Available test cases are:"
+
+case_num = 1
 for core_dir in os.listdir('.'):
 	if os.path.isdir(core_dir) and not core_dir == '.git':
 		for config_dir in os.listdir(core_dir):
@@ -22,4 +36,8 @@ for core_dir in os.listdir('.'):
 							if fnmatch.fnmatch(case_file, '*.xml'):
 								print_case = True
 						if print_case:
-							print "  -o %s -c %s -r %s"%(core_dir, config_dir, res_dir)
+							if not quiet:
+								print "  %d: -o %s -c %s -r %s"%(case_num, core_dir, config_dir, res_dir)
+							if quiet and case_num == print_num:
+								print "-o %s -c %s -r %s"%(core_dir, config_dir, res_dir)
+							case_num = case_num + 1

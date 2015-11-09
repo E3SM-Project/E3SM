@@ -1,32 +1,39 @@
 <?xml version="1.0"?>
 <config case="init_step1" mode="init">
 
-	<get_file hash="ph1dyjmvcc" dest="base_mesh.nc">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/" file_name="mesh.QU.10242.151022.nc"/>
+	<get_file hash="ph1dyjmvcc" dest_path="mesh_database" file_name="mesh.QU.10242.151022.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/"/>
 	</get_file>
 
-	<get_file dest="graph.info">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/" file_name="graph.QU.10242.151022.info"/>
+	<get_file dest_path="mesh_database" file_name="graph.QU.10242.151022.info">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/"/>
 	</get_file>
 
-	<get_file dest="temperature.nc">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/" file_name="PotentialTemperature.01.filled.60levels.PHC.151106.nc"/>
+	<get_file dest_path="initial_condition_database" file_name="PotentialTemperature.01.filled.60levels.PHC.151106.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
 	</get_file>
 
-	<get_file dest="salinity.nc">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/" file_name="Salinity.01.filled.60levels.PHC.151106.nc"/>
+	<get_file dest_path="initial_condition_database" file_name="Salinity.01.filled.60levels.PHC.151106.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
 	</get_file>
 
-	<get_file dest="wind_stress.nc">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/" file_name="windStress.ncep_1958-2000avg.interp3600x2431.151106.nc"/>
+	<get_file dest_path="initial_condition_database" file_name="windStress.ncep_1958-2000avg.interp3600x2431.151106.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
 	</get_file>
 
-	<get_file dest="topography.nc">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/" file_name="ETOPO2v2c_f4_151106.nc"/>
+	<get_file dest_path="initial_condition_database" file_name="ETOPO2v2c_f4_151106.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
 	</get_file>
 
 	<add_executable source="model" dest="ocean_model"/>
 	<add_executable source="cell_culler" dest="MpasCellCuller.x"/>
+
+	<add_link source_path="mesh_database" source="mesh.QU.10242.151022.nc" dest="base_mesh.nc"/>
+	<add_link source_path="mesh_database" source="graph.QU.10242.151022.info" dest="graph.info"/>
+	<add_link source_path="initial_condition_database" source="PotentialTemperature.01.filled.60levels.PHC.151106.nc" dest="temperature.nc"/>
+	<add_link source_path="initial_condition_database" source="Salinity.01.filled.60levels.PHC.151106.nc" dest="salinity.nc"/>
+	<add_link source_path="initial_condition_database" source="windStress.ncep_1958-2000avg.interp3600x2431.151106.nc" dest="wind_stress.nc"/>
+	<add_link source_path="initial_condition_database" source="ETOPO2v2c_f4_151106.nc" dest="topography.nc"/>
 
 	<namelist name="namelist.ocean">
 		<option name="config_init_configuration">'global_ocean'</option>

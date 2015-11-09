@@ -15,6 +15,24 @@ except ImportError:
 	from utils import defaultdict
 
 # *** Namelist setup functions *** #{{{
+def generate_namelist_files(config_file, case_path, template_namelist, templates_path):#{{{
+	config_tree = ET.parse(config_file)
+	config_root = config_tree.getroot()
+
+	for namelists in config_root.iter('namelist'):
+		# -- Generate namelist
+		namelist_file = '%s/%s'%(case_path, namelists.attrib['name'])
+
+		namelist_dict = defaultdict(lambda : defaultdict(list))
+		ingest_namelist(template_namelist, namelist_dict)
+		configure_namelist(namelist_dict, templates_path, namelists)
+		write_namelist(namelist_dict, namelist_file, template_namelist)
+		del namelist_dict
+
+	del config_root
+	del config_tree
+#}}}
+
 def ingest_namelist(namelist_file, namelist_dict):#{{{
 	namelistfile = open(namelist_file, 'r+')
 	lines = namelistfile.readlines()
@@ -50,36 +68,18 @@ def apply_namelist_template(namelist_dict, template_name, template_path):#{{{
 			set_namelist_val(namelist_dict, option_name, option_val)
 #}}}
 
-def configure_namelist(namelist_dict, template_path, config_file):#{{{
-	config_tree = ET.parse(config_file)
-	config_root = config_tree.getroot()
-
-
-	for namelists in config_root.iter('namelist'):
-		for child in namelists.iter('*'):
-			if child.tag == 'option':
-				option_name = child.attrib['name']
-				option_val = child.text
-				set_namelist_val(namelist_dict, option_name, option_val)
-			elif child.tag == 'template':
-				apply_namelist_template(namelist_dict, child.attrib['name'], template_path)
+def configure_namelist(namelist_dict, template_path, namelist_tag):#{{{
+	for child in namelist_tag.iter('*'):
+		if child.tag == 'option':
+			option_name = child.attrib['name']
+			option_val = child.text
+			set_namelist_val(namelist_dict, option_name, option_val)
+		elif child.tag == 'template':
+			apply_namelist_template(namelist_dict, child.attrib['name'], template_path)
 	
-	del config_root
-	del config_tree
 #}}}
 
-def write_namelist(namelist_dict, config_file, infilename, init_path):#{{{
-	config_tree = ET.parse(config_file)
-	config_root = config_tree.getroot()
-
-	outfilename = ''
-
-	for namelist in config_root.findall('namelist'):
-		outfilename = "%s/%s"%(init_path, namelist.attrib['name'])
-
-	del config_tree
-	del config_root
-
+def write_namelist(namelist_dict, outfilename, infilename):#{{{
 	in_namelist = open(infilename, 'r')
 	lines = in_namelist.readlines()
 	in_namelist.close()
@@ -115,6 +115,23 @@ def write_namelist(namelist_dict, config_file, infilename, init_path):#{{{
 #}}}
 
 # *** Streams setup functions *** #{{{
+
+def generate_streams_files(config_file, case_path, template_streams, templates_path):#{{{
+	config_tree = ET.parse(config_file)
+	config_root = config_tree.getroot()
+
+	for streams in config_root.iter('streams'):
+		streams_filename = '%s/%s'%(case_path, streams.attrib['name'])
+
+		streams_tree = ET.parse(template_streams)
+		streams_root = streams_tree.getroot()
+
+		configure_streams_file(streams_root, templates_path, streams)
+		write_streams_file(streams_root, config_file, streams_filename, '%s'%(case_path))
+
+		del streams_root
+		del streams_tree
+#}}}
 
 def flush_all_streams(streams):#{{{
 	for stream in streams.findall('stream'):
@@ -178,6 +195,9 @@ def modify_stream_definition(streams_file, stream_conf):#{{{
 				member_type = member.attrib['type']
 				sub_member = ET.SubElement(stream_to_modify, member_type)
 				sub_member.set('name', member_name)
+				if 'packages' in member.attrib.keys():
+					member_packages = member.attrib['packages']
+					sub_member.set('packages', member_packages)
 		elif child.tag == 'remove_contents':
 			for member in child.findall('member'):
 				member_name = member.attrib['name']
@@ -190,7 +210,7 @@ def modify_stream_definition(streams_file, stream_conf):#{{{
 
 #}}}
 
-def apply_stream_template(streams_file, template_name, template_path):#{{{ 
+def apply_stream_template(streams_file, template_name, template_path):#{{{
 	template_file = '%s/%s.xml'%(template_path, template_name)
 
 	template_tree = ET.parse(template_file)
@@ -204,37 +224,27 @@ def apply_stream_template(streams_file, template_name, template_path):#{{{
 	del template_root
 #}}}
 
-def configure_streams_file(streams_file, template_path, config_file):#{{{
-	config_tree = ET.parse(config_file)
-	config_root = config_tree.getroot()
+def configure_streams_file(streams_file, template_path, streams_tag):#{{{
+	keep_mode = streams_tag.attrib['keep']
 
-	for streams in config_root.findall('streams'):
-		keep_mode = streams.attrib['keep']
+	if ( keep_mode.strip() == 'immutable' ):
+		flush_mutable_streams(streams_file)
+	if ( keep_mode.strip() == 'none' ):
+		flush_all_streams(streams_file)
+	if ( keep_mode.strip() == 'mutable' ):
+		flush_immutable_streams(streams_file)
 
-		if ( keep_mode.strip() == 'immutable' ):
-			flush_mutable_streams(streams_file)
-		if ( keep_mode.strip() == 'none' ):
-			flush_all_streams(streams_file)
-		if ( keep_mode.strip() == 'mutable' ):
-			flush_immutable_streams(streams_file)
+	for template in streams_tag.findall('template'):
+		template_name = template.attrib['name']
+		apply_stream_template(streams_file, template_name, template_path)
 
-		for template in streams.findall('template'):
-			template_name = template.attrib['name']
-			apply_stream_template(streams_file, template_name, template_path)
-
-		for stream in streams.findall('stream'):
-			modify_stream_definition(streams_file, stream)
-
-	del config_root
-	del config_tree
+	for stream in streams_tag.findall('stream'):
+		modify_stream_definition(streams_file, stream)
 #}}}
 
-def write_streams_file(streams, config_file, init_path):#{{{
+def write_streams_file(streams, config_file, filename, init_path):#{{{
 	config_tree = ET.parse(config_file)
 	config_root = config_tree.getroot()
-
-	for stream in config_root.findall('streams'):
-		filename = "%s/%s"%(init_path, stream.attrib['name'])
 
 	stream_file = open(filename, 'w')
 
@@ -265,19 +275,39 @@ def write_streams_file(streams, config_file, init_path):#{{{
 
 		for substream in stream.findall('stream'):
 			substream_name = substream.attrib['name']
-			stream_file.write('\t<stream name="%s"/>\n'%(substream_name))
+			if 'packages' in substream.attrib.keys():
+				package_name = substream.attrib['packages']
+				entry = '\t<stream name="%s"'%(substream_name) + ' packages="%s" '%(package_name) +'/>\n'
+                        else:
+				entry = '\t<stream name="%s"'%(substream_name) +'/>\n'
+			stream_file.write(entry)
 
 		for var_struct in stream.findall('var_struct'):
 			var_struct_name = var_struct.attrib['name']
-			stream_file.write('\t<var_struct name="%s"/>\n'%(var_struct_name))
+			if 'packages' in var_struct.attrib.keys():
+				package_name = var_struct.attrib['packages']
+				entry = '\t<var_struct name="%s"'%(var_struct_name) + ' packages="%s" '%(package_name) +'/>\n'
+                        else:
+				entry = '\t<var_struct name="%s"'%(var_struct_name) +'/>\n'
+			stream_file.write(entry)
 
 		for var_array in stream.findall('var_array'):
 			var_array_name = var_array.attrib['name']
-			stream_file.write('\t<var_array name="%s"/>\n'%(var_array_name))
+			if 'packages' in var_array.attrib.keys():
+				package_name = var_array.attrib['packages']
+				entry = '\t<var_array name="%s"'%(var_array_name) + ' packages="%s" '%(package_name) +'/>\n'
+                        else:
+				entry = '\t<var_array name="%s"'%(var_array_name) +'/>\n'
+			stream_file.write(entry)
 
 		for var in stream.findall('var'):
 			var_name = var.attrib['name']
-			stream_file.write('\t<var name="%s"/>\n'%(var_name))
+			if 'packages' in var.attrib.keys():
+				package_name = var.attrib['packages']
+				entry = '\t<var name="%s"'%(var_name) + ' packages="%s" '%(package_name) +'/>\n'
+                        else:
+				entry = '\t<var name="%s"'%(var_name) +'/>\n'
+			stream_file.write(entry)
 
 		stream_file.write('</stream>\n')
 
@@ -298,14 +328,31 @@ def add_links(config_file, args, configs):#{{{
 
 	dev_null = open('/dev/null', 'r+')
 
-	base_path = '%s/%s/%s/%s'%(args.core, args.configuration, args.resolution, case)
+	test_path = '%s/%s/%s/%s'%(args.core, args.configuration, args.resolution, case)
+	base_path = '%s/%s'%(args.base_path, test_path)
 
 	for link in config_root.findall('add_link'):
-		source = link.attrib['source']
+		try:
+			source = link.attrib['source']
+		except:
+			print " add_link tag missing a 'source' attribute."
+			print " Exiting..."
+			quit(1)
+
+		try:
+			source_path_name = link.attrib['source_path']
+			source_path = configs.get('paths', source_path_name)
+			source_file = '%s/%s'%(source_path, source)
+		except:
+			source_file = '%s'%(source)
+
 		dest = link.attrib['dest']
 		old_cwd = os.getcwd()
 		os.chdir(base_path)
-		subprocess.check_call(['ln', '-sf', '%s'%(source), '%s'%(dest)], stdout=dev_null, stderr=dev_null)
+		if args.nolink_copy:
+			subprocess.check_call(['cp', '%s'%(source_file), '%s'%(dest)], stdout=dev_null, stderr=dev_null)
+		else:
+			subprocess.check_call(['ln', '-sf', '%s'%(source_file), '%s'%(dest)], stdout=dev_null, stderr=dev_null)
 		os.chdir(old_cwd)
 		del source
 		del dest
@@ -363,75 +410,94 @@ def get_defined_files(config_file, init_path, args, configs):#{{{
 	dev_null = open('/dev/null', 'w')
 
 	for get_file in config_root.findall('get_file'):
-		dest_name = get_file.attrib['dest']
+		try:
+			dest_path_name = get_file.attrib['dest_path']
+		except:
+			print " get_file tag is missing the 'dest_path' attribute."
+			print " Exiting..."
+			quit(1)
 
-		for mirror in get_file.findall('mirror'):
+		try:
+			file_name = get_file.attrib['file_name']
+		except:
+			print " get_file tag is missing a 'file_name' attribute."
+			print " Exiting..."
+			quit(1)
+
+		if dest_path_name == 'case':
+			dest_path = init_path
+		else:
 			try:
-				protocol = mirror.attrib['protocol']
+				dest_path = '%s'%(configs.get('paths', dest_path_name))
 			except:
-				print "Mirror is missing the 'protocol' attribute."
-				print "Exiting..."
+				print " Path '%s' is not defined in the config file, but is required to get a file."%(dest_path_name)
+				print " Exiting..."
 				quit(1)
 
-			if protocol == 'local':
-
-				try:
-					path = '%s/%s'%( configs.get('paths', mirror.attrib['path_name']), mirror.attrib['file_name'])
-				except:
-					print " Mirror with protocol 'local' is missing one or more attribute of 'path_name' or 'file_name'"
-					print " Or paths.%s doesn't exist in the configuration file."%(mirror.attrib['path_name'])
-					print " Exiting..."
-					quit(1)
-
-				try:
-					subprocess.check_call(['cp', '-f', '%s'%(path), '%s/%s'%(init_path, dest_name)], stdout=dev_null, stderr=dev_null)
-				except:
-					print "  -- Mirror attempt failed. Trying other mirrors..."
-
-			elif protocol == 'wget':
-				if not args.no_download:
+		if not os.path.exists('%s/%s'%(dest_path, file_name)):
+			file_found = False
+			if not file_found:
+				for mirror in get_file.findall('mirror'):
 					try:
-						name = mirror.attrib['file_name']
-						path = '%s/%s'%( mirror.attrib['url'], mirror.attrib['file_name'])
+						protocol = mirror.attrib['protocol']
 					except:
-						print " Mirror with protocol 'wget' is missing one or more attribute of 'url' or 'file_name'"
-						print " Exiting..."
+						print "Mirror is missing the 'protocol' attribute."
+						print "Exiting..."
 						quit(1)
 
-					try:
-						subprocess.check_call(['wget', '-q', '%s'%(path)], stdout=dev_null, stderr=dev_null)
-						subprocess.check_call(['mv', '%s'%(name), '%s/%s'%(init_path, dest_name)], stdout=dev_null, stderr=dev_null)
-					except:
-						print "  -- Mirror attempt failed. Trying other mirrors..."
+					if protocol == 'wget':
+						if not args.no_download:
+							try:
+								path = '%s/%s'%( mirror.attrib['url'], file_name)
+							except:
+								print " Mirror with protocol 'wget' is missing a 'url' attribute"
+								print " Exiting..."
+								quit(1)
+
+							try:
+								subprocess.check_call(['wget', '-q', '%s'%(path)], stdout=dev_null, stderr=dev_null)
+								subprocess.check_call(['mv', '%s'%(file_name), '%s/%s'%(dest_path, file_name)], stdout=dev_null, stderr=dev_null)
+							except:
+								print "  -- Web mirror attempt failed. Trying other mirrors..."
 
 	
-		try:
-			expected_hash = get_file.attrib['hash']
-			validate_file = True
-		except:
-			validate_file = False
+					if os.path.exists('%s/%s'%(dest_path, file_name)):
+						try:
+							expected_hash = get_file.attrib['hash']
+							validate_file = True
+						except:
+							validate_file = False
 
-		if validate_file:
-			if os.path.exists('%s/base_mesh.nc'%(init_path)):
-				nc = netCDF4.Dataset('%s/base_mesh.nc'%(init_path), 'r')
-				try:
-					file_hash = nc.file_id
-				except:
-					nc.close()
-					print " base_mesh does not have file_id attribute. Exiting..."
+						if validate_file:
+							if os.path.exists('%s/%s'%(dest_path, file_name)):
+								nc = netCDF4.Dataset('%s/%s'%(dest_path, file_name), 'r')
+								try:
+									file_hash = nc.file_id
+								except:
+									nc.close()
+									print " Downloaded file '%s' does not have a 'file_id' attribute."%(file_name)
+									print " Deleting file and exiting..."
+									subprocess.check_call(['rm', '-f', '%s/%s'%(dest_path, file_name)], stdout=dev_null, stderr=dev_null)
+									quit(1)
+
+								nc.close()
+
+								if not file_hash.strip() == expected_hash.strip():
+									print "*** ERROR: Base mesh has hash of '%s' which does not match expected hash of '%s'."%(file_hash, expected_hash)
+									print " Deleting file..."
+									subprocess.check_call(['rm', '-f', '%s/%s'%(dest_path, file_name)], stdout=dev_null, stderr=dev_null)
+
+				if not os.path.exists('%s/%s'%(dest_path, file_name)):
+					print " Failed to acquire required file '%s'."%(file_name)
+					print " Exiting..."
 					quit(1)
-
-				nc.close()
-
-				if not file_hash.strip() == expected_hash.strip():
-					print "*** ERROR: Base mesh has hash of '%s' which does not match expected hash of '%s'."%(file_hash, expected_hash)
 
 	del config_tree
 	del config_root
 	dev_null.close()
 #}}}
 
-def generate_run_scripts(config_file, init_path):#{{{
+def generate_run_scripts(config_file, init_path, configs):#{{{
 	config_tree = ET.parse(config_file)
 	config_root = config_tree.getroot()
 	dev_null = open('/dev/null', 'r+')
@@ -445,7 +511,16 @@ def generate_run_scripts(config_file, init_path):#{{{
 		script.write("import subprocess\n")
 
 		for step in run_script.findall('step'):
-			executable = step.attrib['executable']
+			if 'executable_name' in step.attrib.keys() and 'executable' in step.attrib.keys():
+				print "ERROR: <step> tag has both an 'executable' and 'executable_name' attribute. Only one is allowed per step."
+				print "Exiting..."
+				quit(1)
+
+			try:
+				executable_name = step.attrib['executable_name']
+				executable = configs.get('executables', executable_name)
+			except:
+				executable = step.attrib['executable']
 
 			script.write("\n")
 			script.write("# Run command is:\n")
@@ -479,17 +554,87 @@ def generate_run_scripts(config_file, init_path):#{{{
 	del config_tree
 	del config_root
 #}}}
+
+def generate_driver_scripts(config_file, init_path, configs):#{{{
+	config_tree = ET.parse(config_file)
+	config_root = config_tree.getroot()
+	dev_null = open('/dev/null', 'r+')
+
+	if config_root.tag == 'driver_script':
+		name = config_root.attrib['name']
+
+		# Ensure init_path exists before writing driver script there.
+		if not os.path.exists(init_path):
+			os.makedirs(init_path)
+
+		script = open('%s/%s'%(init_path, name), 'w')
+
+		script.write('#!/usr/bin/env python\n')
+		script.write('import os, subprocess\n')
+
+		script.write('\n')
+		script.write('base_path = os.getcwd()')
+		script.write('\n')
+
+		for child in config_root.iter('*'):
+			if child.tag == 'case':
+				case = child.attrib['name']
+				script.write('os.chdir(base_path)\n')
+				script.write('os.chdir(' + "'%s')\n"%(case))
+				for grandchild in child.iter('*'):
+					if grandchild.tag == 'step':
+						try:
+							executable_name = grandchild.attrib['executable_name']
+							excetuable = configs.get('executables', executable_name)
+						except:
+							executable = grandchild.attrib['executable']
+						script.write('subprocess.check_call([' + "'%s'"%(executable) + '])\n')
+
+		script.close()
+		subprocess.check_call(['chmod', 'a+x', '%s/%s'%(init_path, name)], stdout=dev_null, stderr=dev_null)
+#}}}
+
+def is_config_case_file(config_file):#{{{
+	config_tree = ET.parse(config_file)
+	config_root = config_tree.getroot()
+
+	is_case = False
+	if config_root.tag == 'config':
+		is_case = True
+
+	del config_root
+	del config_tree
+
+	return is_case
+#}}}
 #}}}
 
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-parser.add_argument("-o", "--core", dest="core", help="Core that contains configurations", metavar="CORE", required=True)
-parser.add_argument("-c", "--configuration", dest="configuration", help="Configuration to setup", metavar="CONFIG", required=True)
-parser.add_argument("-r", "--resolution", dest="resolution", help="Resolution of configuration to setup", metavar="RES", required=True)
+parser.add_argument("-o", "--core", dest="core", help="Core that contains configurations", metavar="CORE")
+parser.add_argument("-c", "--configuration", dest="configuration", help="Configuration to setup", metavar="CONFIG")
+parser.add_argument("-r", "--resolution", dest="resolution", help="Resolution of configuration to setup", metavar="RES")
+parser.add_argument("-n", "--case_number", dest="case_num", help="Case number to setup, as listed from list_testcases.py.", metavar="NUM")
 parser.add_argument("-f", "--config_file", dest="config_file", help="Configuration file for test case setup", metavar="FILE", required=True)
 parser.add_argument("--no_download", dest="no_download", help="If set, script will not auto-download base_mesh files", action="store_true")
 parser.add_argument("--copy_instead_of_symlink", dest="nolink_copy", help="If set, script will replace symlinks with copies of files.", action="store_true")
+parser.add_argument("--base_path", dest="base_path", help="If set, script will create case directories in base_path rather than the current directory.", metavar="PATH")
 
 args = parser.parse_args()
+
+if not args.case_num and ( not args.core and not args.configuration and not args.resolution):
+	print 'Must be run with either the --case_number argument, or the core, configuration, and resolution arguments.'
+	parser.error(' Invalid configuration. Exiting...')
+
+if args.case_num and args.core and args.configuration and args.resoltuion:
+	print 'Can only be configured with either --case_number (-n) or --core (-o), --configuration (-c), and --resolution (-r).'
+	parser.error(' Invalid configuration. Too many options used. Exiting...')
+
+if args.case_num:
+	core_configuration = subprocess.check_output(['./list_testcases.py', '-n', '%d'%(int(args.case_num))])
+	config_options = core_configuration.strip('\n').split(' ')
+	args.core = config_options[1]
+	args.configuration = config_options[3]
+	args.resolution = config_options[5]
 
 config = ConfigParser.SafeConfigParser()
 config.read(args.config_file)
@@ -500,45 +645,67 @@ if not args.no_download:
 if not args.nolink_copy:
 	args.nolink_copy = False
 
+if not args.base_path:
+	args.base_path = os.getcwd()
+
+# Build variables for history output
+git_version = subprocess.check_output(['git', 'describe', '--tags', '--dirty'])
+git_version = git_version.strip('\n')
+calling_command = ""
+for arg in sys.argv:
+	calling_command = "%s%s "%(calling_command, arg)
+
 # Setup each xml file in the configuration directory:
 template_path = '%s/templates/%s'%(os.getcwd(), args.core)
-base_path = '%s/%s/%s'%(args.core, args.configuration, args.resolution)
-for file in os.listdir('%s'%(base_path)):
+test_path = '%s/%s/%s'%(args.core, args.configuration, args.resolution)
+base_path = '%s/%s'%(args.base_path, test_path)
+write_history = False
+for file in os.listdir('%s'%(test_path)):
 	if fnmatch.fnmatch(file, '*.xml'):
-		config_file = '%s/%s'%(base_path, file)
+		config_file = '%s/%s'%(test_path, file)
 
-		case_dir = make_case_dir(config_file, base_path)
-		case_mode = get_case_mode(config_file)
+		if is_config_case_file(config_file):
+			write_history = True
+			case_dir = make_case_dir(config_file, base_path)
+			case_mode = get_case_mode(config_file)
 
-		case_path = '%s/%s'%(base_path, case_dir)
+			case_path = '%s/%s'%(base_path, case_dir)
 
-		if not config.has_option("streams", case_mode) or not config.has_option("namelists", case_mode):
-			print "Error. Configuration file %s is requires paths for streams and namelist files for %s mode."%(args.config_file, case_mode)
-			quit(1)
+			if not config.has_option("streams", case_mode) or not config.has_option("namelists", case_mode):
+				print "Error. Configuration file '%s' requires paths for streams and namelist files for '%s' mode."%(args.config_file, case_mode)
+				quit(1)
+			else:
+				case_streams_template = config.get("streams", case_mode)
+				case_namelist_template = config.get("namelists", case_mode)
+				
+			generate_namelist_files(config_file, case_path, case_namelist_template, template_path)
+
+			generate_streams_files(config_file, case_path, case_streams_template, template_path)
+
+			add_links(config_file, args, config)
+
+			get_defined_files(config_file, '%s'%(case_path), args, config)
+
+			generate_run_scripts(config_file, '%s'%(case_path), config)
+
+			print " -- Set up case: %s/%s"%(base_path, case_dir)
 		else:
-			case_streams = config.get("streams", case_mode)
-			case_namelist = config.get("namelists", case_mode)
-			
-		namelist_dict = defaultdict(lambda : defaultdict(list))
+			write_history = True
+			generate_driver_scripts(config_file, base_path, config)
+			print " -- Set up driver script in %s"%(base_path)
 
-		ingest_namelist(case_namelist, namelist_dict)
-		configure_namelist(namelist_dict, template_path, config_file)
-		write_namelist(namelist_dict, config_file, case_namelist, '%s'%(case_path))
-
-		streams_tree = ET.parse(case_streams)
-		streams_root = streams_tree.getroot()
-		configure_streams_file(streams_root, template_path, config_file)
-		write_streams_file(streams_root, config_file, '%s'%(case_path))
-
-		add_links(config_file, args, config)
-
-		get_defined_files(config_file, '%s'%(case_path), args, config)
-
-		generate_run_scripts(config_file, '%s'%(case_path))
-
-		del namelist_dict
-		del streams_tree
-		del streams_root
-
-		print " -- Set up case: %s/%s"%(base_path, case_dir)
+if write_history:
+	history_file_path = '%s/command_history'%(args.base_path)
+	if os.path.exists(history_file_path):
+		history_file = open(history_file_path, 'a')
+		history_file.write('\n')
+	else:
+		history_file = open(history_file_path, 'w')
+	
+	history_file.write('git_version: %s\n'%(git_version))
+	history_file.write('command: %s\n'%(calling_command))
+	history_file.write('core: %s\n'%(args.core))
+	history_file.write('configuration: %s\n'%(args.configuration))
+	history_file.write('resolution: %s\n'%(args.resolution))
+	history_file.close()
 

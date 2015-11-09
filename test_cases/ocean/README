@@ -48,20 +48,20 @@ Within each XML file, the following XML description is available:
 		* hash: (Optional) The expected hash of the mesh file. The acquired
 				mesh file will be validated using this. If this attribute is omitted,
 				the resulting file will not be validated.
-		* dest: The name of the file that will be created after a file is found from a mirror.
+		* dest_path: The path the resulting file should be placed in. Should be
+						the name of a path defined in the config file, or optionally 'case'
+						which is expanded to be the case directory generated from the XML
+						file containing the get_file tag.
+		* file_name: The name of the file that will be downloaded and placed in dest_path.
 	- Children:
 		* <mirror>
 
 <mirror> - This tag defined the different methods of acquiring a base_mesh.nc file.
 	- Attributes:
 		* protocol: A description of how the mesh should be retrieved.
-				    Currently supports local or wget.
+				    Currently supports wget.
 		* url: Only used if protocol == wget. The url (pre-filename) portion of
 			   the wget command.
-		* path_name: Only used if protocol == local. Name of the config option
-					 from configuration file (e.g. general.config) that is the path where
-					 the mesh should be found.
-		* file_name: The name of the file that will be downloaded.
 	
 
 <add_executable> - This tag defined the need to link an executable defined in a
@@ -74,6 +74,9 @@ Within each XML file, the following XML description is available:
 
 <add_link> - This tag defined the need to link a file into a case directory.
 	- Attributes:
+		* source_path: The path variable from a configure file to find the
+						source file in. If it is empty, source is assumed to
+						have the full path to the file.
 		* source: The source to generate a symlink from. Relative to the case
 				   directory that will be generated from the parent <config> tag.
 		* dest: The name of the resulting symlink.
@@ -162,6 +165,8 @@ Within each XML file, the following XML description is available:
 <step> - This tag defines a step in a run script
 	- Attributes:
 		* executable: The base executable for this step of the run script. e.g. mpirun
+		* executable_name: The name of the executable that has been defined in
+						   the configuration file to be used for this step of the run script.
 	- Children:
 		* <argument>
 
@@ -174,3 +179,17 @@ Within each XML file, the following XML description is available:
 		  the argument after the flag. In the example "mpirun -n 4" the flag
 		  would be -n, and the text would be 4.
 
+<driver_script> - This tag defines a driver script for a set of case directories.
+	- Attributes:
+		* name: The name of the driver script that will be generated
+	- Children:
+		* <case>
+
+<case> - This tag defines the case that will be used for part of a driver
+		 script. It implies the driver script should `cd` into the case directory before
+		 executing the steps / arguments defined within.
+	- Attributes:
+		* name: The name of the case directory that will be used for this
+				portion of the driver script.
+	- Children:
+		* <step>

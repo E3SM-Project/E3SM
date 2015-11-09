@@ -11,6 +11,8 @@ model = FULL_PATH_TO_MODEL
 mesh_converter = FULL_PATH_TO_MESH_CONVERTER
 cell_culler = FULL_PATH_TO_CELL_CULLER
 metis = FULL_PATH_TO_METIS
+mpi_runtime = MPI_RUNTIME
 
 [paths]
 mesh_database = FULL_PATH_TO_LOCAL_MESH_DATABASE
+initial_condition_database = FULL_PATH_TO_LOCAL_INITIAL_CONDITION_DATABASE

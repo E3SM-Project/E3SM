@@ -1,10 +1,11 @@
 <?xml version="1.0"?>
 <config case="init_step1" mode="init">
 
-	<get_file hash="9k5rpoi0lg" dest="base_mesh.nc">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mpas_ocean/test_cases/staging" file_name="doubly_periodic_20km_1000x2000km_planar.151027.nc"/>
-		<mirror protocol="local" path_name="mesh_database" file_name="doubly_periodic_20km_1000x2000km_planar.151027.nc"/>
+	<get_file hash="9k5rpoi0lg" dest_path="mesh_database" file_name="doubly_periodic_20km_1000x2000km_planar.151027.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mpas_ocean/test_cases/staging"/>
 	</get_file>
+
+	<add_link source_path="mesh_database" source="doubly_periodic_20km_1000x2000km_planar.151027.nc" dest="base_mesh.nc"/>
 
 	<add_executable source="model" dest="ocean_model"/>
 	<add_executable source="cell_culler" dest="MpasCellCuller.x"/>

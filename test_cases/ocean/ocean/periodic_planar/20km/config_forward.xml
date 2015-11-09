@@ -4,15 +4,16 @@
 	<add_link source="../init_step2/mesh.nc" dest="mesh.nc"/>
 	<add_link source="../init_step2/graph.info" dest="graph.info"/>
 
-	<get_file dest="particle_full.nc">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mpas_ocean/test_cases/staging" file_name="particle_full.151029.nc"/>	
-		<mirror protocol="local" path_name="mesh_database" file_name="particle_full.151029.nc"/>	
+	<get_file dest_path="initial_condition_database" file_name="particle_full.151029.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mpas_ocean/test_cases/staging"/>
 	</get_file>
 
-  <get_file dest="graph.info.part.16">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mpas_ocean/test_cases/staging" file_name="graph.info.part.16.doubly_periodic_20km_1000x2000km_planar.151106"/>	
-		<mirror protocol="local" path_name="mesh_database" file_name="graph.info.part.16.doubly_periodic_20km_1000x2000km_planar.151106"/>	
-  </get_file>
+	<get_file dest_path="mesh_database" file_name="graph.info.part.16.doubly_periodic_20km_1000x2000km_planar.151106">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mpas_ocean/test_cases/staging"/>
+	</get_file>
+
+	<add_link source_path="initial_condition_database" source="particle_full.151029.nc" dest="particle_full.nc"/>
+	<add_link source_path="mesh_database" source="graph.info.part.16.doubly_periodic_20km_1000x2000km_planar.151106" dest="graph.info.part.16"/>
 
 
 	<add_executable source="model" dest="ocean_model"/>
