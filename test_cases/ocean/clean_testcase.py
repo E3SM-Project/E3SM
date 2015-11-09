@@ -11,6 +11,7 @@ parser.add_argument("-o", "--core", dest="core", help="Core that conatins config
 parser.add_argument("-c", "--configuration", dest="configuration", help="Configuration to clean", metavar="CONFIG")
 parser.add_argument("-r", "--resolution", dest="resolution", help="Resolution of configuration to clean", metavar="RES")
 parser.add_argument("-n", "--case_number", dest="case_num", help="Case number to clean, as listed from list_testcases.py.", metavar="NUM")
+parser.add_argument("--base_path", dest="base_path", help="If set, script will clean case directories in base_path rather than the current directory.", metavar="PATH")
 
 args = parser.parse_args()
 
@@ -29,10 +30,14 @@ if args.case_num:
 	args.configuration = config_options[3]
 	args.resolution = config_options[5]
 
-base_path = '%s/%s/%s'%(args.core, args.configuration, args.resolution)
-for file in os.listdir('%s'%(base_path)):
+if not args.base_path:
+	args.base_path = os.getcwd()
+
+test_path = '%s/%s/%s'%(args.core, args.configuration, args.resolution)
+base_path = '%s/%s'%(args.base_path, test_path)
+for file in os.listdir('%s'%(test_path)):
 	if fnmatch.fnmatch(file, '*.xml'):
-		config_file = '%s/%s'%(base_path, file)
+		config_file = '%s/%s'%(test_path, file)
 
 		config_tree = ET.parse(config_file)
 		config_root = config_tree.getroot()
@@ -40,11 +45,11 @@ for file in os.listdir('%s'%(base_path)):
 		if config_root.tag == 'config':
 			case_dir = config_root.attrib['case']
 
-
 			if os.path.exists('%s/%s'%(base_path, case_dir)):
 				if os.path.isdir('%s/%s'%(base_path, case_dir)):
 					shutil.rmtree('%s/%s'%(base_path, case_dir))
 					print ' -- Removed case %s/%s'%(base_path, case_dir)
+
 		elif config_root.tag == 'driver_script':
 			script_name = config_root.attrib['name']
 
