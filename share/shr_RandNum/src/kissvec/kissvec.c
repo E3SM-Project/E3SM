@@ -30,7 +30,7 @@ void kiss_rng(uint32_t seed1[restrict], uint32_t seed2[restrict],
     shiftl_xor(seed2[i], 5);
     seed3[i] = 18000U * (seed3[i] & 65535U) + (seed3[i] >> 16);
     seed4[i] = 30903U * (seed4[i] & 65535U) + (seed4[i] >> 16);
-    ran_arr[i] = (seed1[i] + seed2[i] + (seed3[i] << 16) + seed4[i]) * 2.328306E-10;
+    ran_arr[i] = ((int32_t) (seed1[i] + seed2[i] + (seed3[i] << 16) + seed4[i])) * 2.328306E-10 + 0.5;
   }
 
 }
