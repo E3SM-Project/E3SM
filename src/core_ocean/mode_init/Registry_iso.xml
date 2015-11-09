@@ -15,7 +15,7 @@
 				description="Latitude of the top of the main channel south wall wall in the ISO domain."
 				possible_values="Any real number."
 	/>
-        <nml_option name="config_iso_ridge_flag" type="logical" default_value="true" units="unitless"
+        <nml_option name="config_iso_ridge_flag" type="logical" default_value=".true." units="unitless"
 				description="Logical flag that controls if a ridge is used or not."
 				possible_values=".true. or .false."
 	/>
@@ -31,7 +31,7 @@
 				description="Width of the ridge at the zonal middle of the ISO domain."
 				possible_values="Any positive real number."
 	/>
-        <nml_option name="config_iso_plateau_flag" type="logical" default_value="true" units="unitless"
+        <nml_option name="config_iso_plateau_flag" type="logical" default_value=".true." units="unitless"
 				description="Logical flag that controls if a plateau is used or not."
 				possible_values=".true. or .false."
 	/>
@@ -55,7 +55,7 @@
 				description="Width of the sloping region of the plateau in the ISO domain."
 				possible_values="Any positive real number."
 	/>
-        <nml_option name="config_iso_shelf_flag" type="logical" default_value="true" units="unitless"
+        <nml_option name="config_iso_shelf_flag" type="logical" default_value=".true." units="unitless"
 				description="Logical flag that controls if a shelf is used or not."
 				possible_values=".true. or .false."
 	/>
@@ -67,7 +67,7 @@
 				description="Width of the shelf in the ISO."
 				possible_values="Any positive real number."
 	/>
-        <nml_option name="config_iso_cont_slope_flag" type="logical" default_value="true" units="unitless"
+        <nml_option name="config_iso_cont_slope_flag" type="logical" default_value=".true." units="unitless"
 				description="Logical flag that controls if a continental slope is used or not."
 				possible_values=".true. or .false."
 	/>
@@ -75,7 +75,7 @@
 				description="Maximum slope of the continental slope in the ISO."
 				possible_values="Any positive real number."
 	/>
-       <nml_option name="config_iso_embayment_flag" type="logical" default_value="true" units="unitless"
+       <nml_option name="config_iso_embayment_flag" type="logical" default_value=".true." units="unitless"
 				description="Logical flag that controls if an embayment is used or not."
 				possible_values=".true. or .false."
 	/>
@@ -95,7 +95,7 @@
 				description="Depth of the embayment in the ISO."
 				possible_values="Any positive real number."
 	/>
-        <nml_option name="config_iso_depression_flag" type="logical" default_value="true" units="unitless"
+        <nml_option name="config_iso_depression_flag" type="logical" default_value=".true." units="unitless"
 				description="Logical flag to add a depresseion between embayment and main channel."
 				possible_values=".true. or .false."
 	/>
@@ -267,7 +267,7 @@
 				description="Sponge layer restoring time scale, used to calculate interior restoring rate."
 				possible_values="Any real number."
          />
-        <nml_option name="config_iso_temperature_restore_region1_flag" type="logical" default_value="true" units="unitless"
+        <nml_option name="config_iso_temperature_restore_region1_flag" type="logical" default_value=".true." units="unitless"
                                 description="Logical flag controlling use of temperature restoring in region 1."
 				possible_values=".true. or .false."
 	/>
@@ -283,7 +283,7 @@
 				description="Meridional length scale of the restoring region 1"
 				possible_values="Any real number."
 	/>
-        <nml_option name="config_iso_temperature_restore_region2_flag" type="logical" default_value="true" units="unitless"
+        <nml_option name="config_iso_temperature_restore_region2_flag" type="logical" default_value=".true." units="unitless"
                                 description="Logical flag controlling use of temperature restoring in region 2."
 				possible_values=".true. or .false."
 	/>
@@ -299,7 +299,7 @@
 				description="Meridional length scale of the restoring region 2"
 				possible_values="Any real number."
 	/>
-        <nml_option name="config_iso_temperature_restore_region3_flag" type="logical" default_value="true" units="unitless"
+        <nml_option name="config_iso_temperature_restore_region3_flag" type="logical" default_value=".true." units="unitless"
                                description="Logical flag controlling use of temperature restoring in region 3."
 				possible_values=".true. or .false."
 	/>
@@ -315,7 +315,7 @@
 				description="Meridional length scale of the restoring region 3"
 				possible_values="Any real number."
 	/>
-        <nml_option name="config_iso_temperature_restore_region4_flag" type="logical" default_value="true" units="unitless"
+        <nml_option name="config_iso_temperature_restore_region4_flag" type="logical" default_value=".true." units="unitless"
                                description="Logical flag controlling use of temperature restoring in region 4."
 				possible_values=".true. or .false."
 	/>

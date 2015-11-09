@@ -3,7 +3,7 @@
 					description="Number of vertical levels in baroclinic channel test case. Typical value is 20."
 					possible_values="Any positive integer number greater than 0."
 		/>
-		<nml_option name="config_baroclinic_channel_use_distances" type="logical" default_value="false" units="unitless"
+		<nml_option name="config_baroclinic_channel_use_distances" type="logical" default_value=".false." units="unitless"
 					description="Logical flag that determines if locations of features are defined by distances of fractions. False means fractions."
 					possible_values=".true. or .false."
 		/>
