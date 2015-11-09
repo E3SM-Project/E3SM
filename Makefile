@@ -23,23 +23,10 @@ core_input_gen:
 	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.forward mode=forward )
 	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.analysis mode=analysis )
 	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init mode=init )
-	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.baroclinic_channel mode=init configuration=baroclinic_channel)
-	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.lock_exchange mode=init configuration=lock_exchange)
-	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.internal_waves mode=init configuration=internal_waves)
-	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.overflow mode=init configuration=overflow)
-	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.cvmix_convection_unit_test mode=init configuration=cvmix_convection_unit_test)
-	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.cvmix_shear_unit_test mode=init configuration=cvmix_shear_unit_test)
-	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.soma mode=init configuration=soma)
-	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.iso mode=init configuration=iso)
-	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.ziso mode=init configuration=ziso)
-	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.global_ocean mode=init configuration=global_ocean)
-	(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.periodic_planar mode=init configuration=periodic_planar)
 	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean stream_list.ocean. mutable )
 	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean.forward stream_list.ocean.forward. mutable mode=forward )
 	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean.analysis stream_list.ocean.analysis. mutable mode=analysis )
 	(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean.init stream_list.ocean.init. mutable mode=init )
-	#(cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.TEMPLATE mode=init configuration=TEMPLATE)
-	#(cd default_inputs; $(ST_GEN) ../Registry_processed.xml streams.ocean.init.TEMPLATE stream_list.ocean.init.TEMPLATE. mutable mode=init configuration=TEMPLATE )
 
 gen_includes:
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
@@ -78,6 +65,9 @@ analysis_members: libcvmix shared
 clean:
 	if [ -d cvmix ]; then \
 		(cd cvmix; make clean) \
+	fi
+	if [ -d inc ]; then \
+		($(RM) -r inc) \
 	fi
 	(cd mode_forward; $(MAKE) clean)
 	(cd mode_analysis; $(MAKE) clean)
