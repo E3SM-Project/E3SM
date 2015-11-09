@@ -35,6 +35,12 @@
 
 	<packages>
 		<package name="DMSTracersPKG" description="This package includes variables required to include DMSGRP."/>
+		<package name="DMSTracersBulkRestoringPKG" description="This package includes variables required to compute bulk restoring on the DMS tracer group."/>
+		<package name="DMSTracersSurfaceRestoringPKG" description="This package includes variables required to compute surface restoring on the DMS tracer group."/>
+		<package name="DMSTracersInteriorRestoringPKG" description="This package includes variables required to compute interior restoring on the DMS tracer group."/>
+		<package name="DMSTracersExponentialDecayPKG" description="This package includes variables required to compute exponential decay on the DMS tracer group."/>
+		<package name="DMSTracersIdealAgePKG" description="This package includes variables required to compute ideal age forcing on the DMS tracer group."/>
+		<package name="DMSTracersTTDPKG" description="This package includes variables required to compute transit-time distribution forcing on the DMS tracer group."/>
 	</packages>
 
 	<var_struct name="state" time_levs="2">
@@ -90,5 +96,71 @@
                         <var name="iceFluxDMSP" type="real" dimensions="nCells Time" units="mmolS m^{-2} s"
                                  description="Surface DMSP flux from sea ice"
                         />
+		</var_struct>
+		<var_struct name="tracersSurfaceRestoringFields" time_levs="1">
+			<var_array name="DMSTracersPistonVelocity" type="real" dimensions="nCells Time" packages="DMSTracersSurfaceRestoringPKG">
+				<var name="DMSPistonVelocity" array_group="DMSPVGRP" units="m s^{-1}"
+					 description="A non-negative field controlling the rate at which DMS is restored to DMSSurfaceRestoringValue"
+				/>
+				<var name="DMSPPistonVelocity" array_group="DMSPVGRP" units="m s^{-1}"
+					 description="A non-negative field controlling the rate at which DMSP is restored to DMSPSurfaceRestoringValue"
+				/>
+			</var_array>
+			<var_array name="DMSTracersSurfaceRestoringValue" type="real" dimensions="nCells Time" packages="DMSTracersSurfaceRestoringPKG">
+				<var name="DMSSurfaceRestoringValue" array_group="DMSSRVGRP" units="mmol m^{3}"
+					 description="Temperature is restored toward this field at a rate controlled by DMSPistonVelocity."
+				/>
+				<var name="DMSPSurfaceRestoringValue" array_group="DMSSRVGRP" units="mmol m^{3}"
+					 description="Salinity is restored toward this field at a rate controlled by DMSPPistonVelocity."
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="tracersInteriorRestoringFields" time_levs="1">
+			<var_array name="DMSTracersInteriorRestoringRate" type="real" dimensions="nVertLevels nCells Time" packages="DMSTracersInteriorRestoringPKG">
+				<var name="DMSInteriorRestoringRate" array_group="DMSIRRGRP" units="{s}^-1"
+					 description="A non-negative field controlling the rate at which DMS is restored to DMSInteriorRestoringValue"
+				/>
+				<var name="DMSPInteriorRestoringRate" array_group="DMSIRRGRP" units="{s}^-1"
+					 description="A non-negative field controlling the rate at which DMSP is restored to DMSPInteriorRestoringValue"
+				/>
+			</var_array>
+			<var_array name="DMSTracersInteriorRestoringValue" type="real" dimensions="nVertLevels nCells Time" packages="DMSTracersInteriorRestoringPKG">
+				<var name="DMSInteriorRestoringValue" array_group="DMSIRVGRP" units="mmol m^{3}"
+					 description="Temperature is restored toward this field at a rate controlled by DMSInteriorRestoringRate."
+				/>
+				<var name="DMSPInteriorRestoringValue" array_group="DMSIRVGRP" units="mmol m^{3}"
+					 description="Salinity is restored toward this field at a rate controlled by DMSPInteriorRestoringRate."
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="tracersExponentialDecayFields" time_levs="1">
+			<var_array name="DMSTracersExponentialDecayRate" type="real" dimensions="Time" packages="DMSTracersExponentialDecayPKG">
+				<var name="DMSExponentialDecayRate" array_group="DMSGRP" units="s^{-1}"
+					 description="A non-negative field controlling the exponential decay of DMS"
+				/>
+				<var name="DMSPExponentialDecayRate" array_group="DMSGRP" units="s"
+					 description="A non-negative field controlling the exponential decay of DMSP"
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="tracersIdealAgeFields" time_levs="1">
+			<var_array name="DMSTracersIdealAgeMask" type="real" dimensions="nCells Time" packages="DMSTracersIdealAgePKG">
+				<var name="DMSIdealAgeMask" array_group="DMSGRP" units="unitless"
+					 description="In top layer, DMS is reset to DMS * DMSIdealAgeMask, valid values of DMSIdealAgeMask or 0 and 1"
+				/>
+				<var name="DMSPIdealAgeMask" array_group="DMSGRP" units="unitless"
+					 description="In top layer, DMSP is reset to DMSP * DMSPIdealAgeMask, valid values of DMSPIdealAgeMask or 0 and 1"
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="tracersTTDFields" time_levs="1">
+			<var_array name="DMSTracersTTDMask" type="real" dimensions="nCells Time" packages="DMSTracersTTDPKG">
+				<var name="DMSTTDMask" array_group="DMSGRP" units="unitless"
+					 description="In top layer, DMS is reset to TTDMask, valid values of DMSTTDMask or 0 and 1"
+				/>
+				<var name="DMSPTTDMask" array_group="DMSGRP" units="unitless"
+					 description="In top layer, DMSP is reset to DMSPTTDMask, valid values of DMSPTTDMask or 0 and 1"
+				/>
+			</var_array>
 		</var_struct>
 	</var_struct>
