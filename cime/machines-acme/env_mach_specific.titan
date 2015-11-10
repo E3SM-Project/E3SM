@@ -69,7 +69,7 @@ if (-e /opt/modules/default/init/csh) then
 
   if ( $COMPILER == "intel" ) then
       module load PrgEnv-intel 
-      module switch intel intel/14.0.2.144
+      module switch intel intel/15.0.2.164
       module switch cray-libsci cray-libsci/13.0.4
       module switch cray-mpich cray-mpich/7.2.5
       module switch atp atp/1.7.5
