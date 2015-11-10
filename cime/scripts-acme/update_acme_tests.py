@@ -64,10 +64,12 @@ def get_test_suite(suite):
 ###############################################################################
     expect(suite in _TEST_SUITES, "Unknown test suite: '%s'" % suite)
     inherits_from, tests = _TEST_SUITES[suite]
+    tests = list(tests)
     if (inherits_from is not None):
         inherited_tests = get_test_suite(inherits_from)
+
         expect(len(set(tests) & set(inherited_tests)) == 0,
-               "Tests %s defined in multiple suites" % ", ".join(set(tests) & set(inherited_tests)))
+               "Tests %s defined in multiple suites" % ", ".join(set(item[0] for item in tests) & set(item[0] for item in inherited_tests)))
         tests.extend(inherited_tests)
     return tests
 
