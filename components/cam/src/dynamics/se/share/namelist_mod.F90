@@ -396,7 +396,7 @@ module namelist_mod
     tstep_type = 1            ! forward-in-time RK methods
     qsplit=4; rk_stage_user=3
     se_limiter_option=4
-    se_ftype = 2
+    se_ftype = 0           ! apply phys tend as constant each remap step
     energy_fixer = -1      ! no fixer, non-staggered-in-time formulas
     se_partmethod = -1
     se_ne       = -1

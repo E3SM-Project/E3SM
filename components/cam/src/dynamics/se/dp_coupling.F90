@@ -299,6 +299,8 @@ CONTAINS
        
   end subroutine d_p_coupling
 
+!#######################################################################
+
   subroutine p_d_coupling(phys_state, phys_tend,  dyn_in)
     use shr_vmath_mod, only: shr_vmath_log
     use cam_control_mod, only : adiabatic
@@ -361,6 +363,8 @@ CONTAINS
                 uv_tmp(ioff,1,ilyr,ie)   = phys_tend(lchnk)%dudt(icol,ilyr)
                 uv_tmp(ioff,2,ilyr,ie)   = phys_tend(lchnk)%dvdt(icol,ilyr)
 
+                !PMC note: T_tmp and uv_tmp are tendencies. qtend is not
+                !saved in phys_tend (see physics_types.F90), so q_tmp is a *state*
                 do m=1,pcnst
                    q_tmp(ioff,ilyr,m,ie) = phys_state(lchnk)%q(icol,ilyr,m)
                 end do
@@ -370,7 +374,7 @@ CONTAINS
 
        end do
 
-    else
+    else !if not local_dp_map
 
        tsize = 3 + pcnst
 
@@ -394,6 +398,7 @@ CONTAINS
                 cbuffer   (cpter(icol,ilyr)+1)   = phys_tend(lchnk)%dudt(icol,ilyr)
                 cbuffer   (cpter(icol,ilyr)+2)   = phys_tend(lchnk)%dvdt(icol,ilyr)
 
+                
                 do m=1,pcnst
                    cbuffer(cpter(icol,ilyr)+2+m) = phys_state(lchnk)%q(icol,ilyr,m)
                 end do
@@ -421,6 +426,8 @@ CONTAINS
                    uv_tmp  (icol,1,ilyr,ie) = bbuffer(bpter(icol,ilyr)+1)
                    uv_tmp  (icol,2,ilyr,ie) = bbuffer(bpter(icol,ilyr)+2)
 
+                   !PMC note: T_tmp and uv_tmp are tendencies. qtend is not
+                   !saved in phys_tend (see physics_types.F90), so q_tmp is a *state*
                    do m=1,pcnst
                       q_tmp(icol,ilyr,m,ie) = bbuffer(bpter(icol,ilyr)+2+m)
                    end do

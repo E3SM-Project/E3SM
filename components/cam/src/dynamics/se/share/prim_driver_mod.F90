@@ -1309,8 +1309,7 @@ contains
     use time_mod, only : TimeLevel_t, timelevel_update, timelevel_qdp, nsplit
     use control_mod, only: statefreq,&
            energy_fixer, ftype, qsplit, rsplit, test_cfldep
-    use prim_advance_mod, only : applycamforcing, &
-                                 applycamforcing_dynamics
+    use prim_advance_mod, only : applycamforcing
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use parallel_mod, only : abortmp
     use reduction_mod, only : parallelmax
@@ -1373,13 +1372,11 @@ contains
 
 
 #ifdef CAM
-    ! ftype=2  Q was adjusted by physics, but apply u,T forcing here
     ! ftype=1  forcing was applied time-split in CAM coupling layer
     ! ftype=0 means forcing apply here
     ! ftype=-1 do not apply forcing
     call TimeLevel_Qdp( tl, qsplit, n0_qdp)
     if (ftype==0) call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
-    if (ftype==2) call ApplyCAMForcing_dynamics(elem, hvcoord,tl%n0,dt_remap,nets,nete)
 #endif
 
     ! E(1) Energy after CAM forcing
