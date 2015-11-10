@@ -364,7 +364,7 @@ module seq_flds_mod
         flds_co2_dmsa = .false.
         glc_nec   = 0
         ice_ncat  = 1
-        seq_flds_i2o_per_cat = .true.
+        seq_flds_i2o_per_cat = .false.
 
         unitn = shr_file_getUnit()
         write(logunit,"(A)") subname//': read seq_cplflds_inparm namelist from: '&
@@ -524,14 +524,14 @@ module seq_flds_mod
      call seq_flds_add(dom_other,'mask')
      longname = ''
      stdname  = 'mask'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'mask'
      call metadata_set(attname, longname, stdname, units)
 
      call seq_flds_add(dom_other,'frac')
      longname = 'area_fraction'
      stdname  = 'area fraction'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'frac' 
      call metadata_set(attname, longname, stdname, units)
 
@@ -920,7 +920,7 @@ module seq_flds_mod
      call seq_flds_add(x2a_states,'Sf_ofrac')
      longname = 'Surface land fraction'
      stdname  = 'land_area_fraction'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Sf_lfrac'
      call metadata_set(attname, longname, stdname, units)
      longname = 'Surface ice fraction'
@@ -939,7 +939,7 @@ module seq_flds_mod
      call seq_flds_add(x2a_states,"Sx_avsdr")
      longname = 'Direct albedo (visible radiation)'
      stdname  = 'surface_direct_albedo_due_to_visible_radiation'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Si_avsdr'
      call metadata_set(attname, longname, stdname, units)
      attname  = 'Sl_avsdr'
@@ -956,7 +956,7 @@ module seq_flds_mod
      call seq_flds_add(x2a_states,"Sx_anidr")
      longname = 'Direct albedo (near-infrared radiation)'
      stdname  = 'surface_direct_albedo_due_to_near_infrared_radiation'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Si_anidr'
      call metadata_set(attname, longname, stdname, units)
      attname  = 'Sl_anidr'
@@ -973,7 +973,7 @@ module seq_flds_mod
      call seq_flds_add(x2a_states,"Sx_avsdf")
      longname = 'Diffuse albedo (visible radiation)'
      stdname  = 'surface_diffuse_albedo_due_to_visible_radiation'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Si_avsdf'
      call metadata_set(attname, longname, stdname, units)
      attname  = 'Sl_avsdf'
@@ -990,7 +990,7 @@ module seq_flds_mod
      call seq_flds_add(x2a_states,"Sx_anidf")
      longname = 'Diffuse albedo (near-infrared radiation)'
      stdname  = 'surface_diffuse_albedo_due_to_near_infrared_radiation'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Si_anidf'
      call metadata_set(attname, longname, stdname, units)
      attname  = 'Sl_anidf'
@@ -1312,7 +1312,7 @@ module seq_flds_mod
      call seq_flds_add(x2w_states,"Si_ifrac")
      longname = 'Fractional ice coverage wrt ocean'
      stdname  = 'sea_ice_area_fraction'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Si_ifrac'
      call metadata_set(attname, longname, stdname, units)
 
@@ -1416,7 +1416,7 @@ module seq_flds_mod
      call seq_flds_add(o2x_states,"So_fswpen")
      longname = 'Fraction of sw penetrating surface layer for diurnal cycle'
      stdname  = 'Fraction of sw penetrating surface layer for diurnal cycle'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'So_fswpen'
      call metadata_set(attname, longname, stdname, units)
 
@@ -1746,7 +1746,7 @@ module seq_flds_mod
      call seq_flds_add(x2l_states_from_glc,trim(name))
      longname = 'Ice sheet grid coverage on global grid'
      stdname  = 'ice_sheet_grid_mask'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Sg_icemask'
      call metadata_set(attname, longname, stdname, units)     
 
@@ -1757,7 +1757,7 @@ module seq_flds_mod
      call seq_flds_add(x2l_states_from_glc,trim(name))
      longname = 'Ice sheet mask where we are potentially sending non-zero fluxes'
      stdname  = 'icemask_coupled_fluxes'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Sg_icemask_coupled_fluxes'
      call metadata_set(attname, longname, stdname, units)     
 
@@ -1813,7 +1813,7 @@ module seq_flds_mod
      name = 'Sg_ice_covered'
      longname = 'Fraction of glacier area'
      stdname  = 'glacier_area_fraction'
-     units    = 'unitless'    
+     units    = '1'    
      attname  = 'Sg_ice_covered'
      call seq_flds_add(g2x_states,trim(name))
      call seq_flds_add(g2x_states_to_lnd,trim(name))
@@ -1987,7 +1987,7 @@ module seq_flds_mod
            call seq_flds_add(x2o_states,name)
            longname = 'fractional ice coverage wrt ocean for thickness category ' // cnum
            stdname  = 'sea_ice_area_fraction'
-           units    = 'unitless'
+           units    = '1'
            attname  = name
            call metadata_set(attname, longname, stdname, units)
 
@@ -2010,7 +2010,7 @@ module seq_flds_mod
         call seq_flds_add(x2o_states,name)
         longname = 'fractional atmosphere coverage wrt ocean'
         stdname  = 'atmosphere_area_fraction'
-        units    = 'unitless'
+        units    = '1'
         attname  = name
         call metadata_set(attname, longname, stdname, units)
 
@@ -2018,7 +2018,7 @@ module seq_flds_mod
         call seq_flds_add(x2o_states,name)
         longname = 'fractional atmosphere coverage used in radiation computations wrt ocean'
         stdname  = 'atmosphere_area_fraction'
-        units    = 'unitless'
+        units    = '1'
         attname  = name
         call metadata_set(attname, longname, stdname, units)
 
