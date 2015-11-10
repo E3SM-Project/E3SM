@@ -43,7 +43,8 @@ module cice_temperatures
    !
    !--------------------------------------------------------------------
 
-   public :: cice_init_temperatures, &
+   public :: cice_bootstrap_temperatures, &
+             cice_init_temperatures, &
              cice_precompute_temperatures, &
              cice_compute_temperatures, &
              cice_restart_temperatures, &
@@ -58,6 +59,55 @@ module cice_temperatures
 !***********************************************************************
 
 contains
+
+!***********************************************************************
+!
+!  routine cice_bootstrap_temperatures
+!
+!> \brief   Bootstrap MPAS-CICE analysis member
+!> \author  Adrian K. Turner
+!> \date    10th November 2015
+!> \details
+!>  This routine conducts all bootstraps required for the
+!>  MPAS-CICE analysis member.
+!
+!-----------------------------------------------------------------------
+
+   subroutine cice_bootstrap_temperatures(domain, analysisMemberName, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      err = 0
+
+   end subroutine cice_bootstrap_temperatures!}}}
 
 !***********************************************************************
 !

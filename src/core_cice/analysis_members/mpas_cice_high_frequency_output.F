@@ -42,7 +42,8 @@ module cice_high_frequency_output
    !
    !--------------------------------------------------------------------
 
-   public :: cice_init_high_frequency_output, &
+   public :: cice_bootstrap_high_frequency_output, &
+             cice_init_high_frequency_output, &
              cice_precompute_high_frequency_output, &
              cice_compute_high_frequency_output, &
              cice_restart_high_frequency_output, &
@@ -57,6 +58,55 @@ module cice_high_frequency_output
 !***********************************************************************
 
 contains
+
+!***********************************************************************
+!
+!  routine cice_bootstrap_high_frequency_output
+!
+!> \brief   Bootstrap MPAS-CICE analysis member
+!> \author  Adrian Turner
+!> \date    10th November 2015
+!> \details
+!>  This routine conducts all bootstraps required for the
+!>  MPAS-CICE analysis member.
+!
+!-----------------------------------------------------------------------
+
+   subroutine cice_bootstrap_high_frequency_output(domain, analysisMemberName, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      err = 0
+
+   end subroutine cice_bootstrap_high_frequency_output!}}}
 
 !***********************************************************************
 !

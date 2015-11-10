@@ -69,7 +69,8 @@ module cice_TEM_PLATE
    !
    !--------------------------------------------------------------------
 
-   public :: cice_init_TEM_PLATE, &
+   public :: cice_bootstrap_TEM_PLATE, &
+             cice_init_TEM_PLATE, &
              cice_compute_TEM_PLATE, &
              cice_restart_TEM_PLATE, &
              cice_finalize_TEM_PLATE
@@ -83,6 +84,55 @@ module cice_TEM_PLATE
 !***********************************************************************
 
 contains
+
+!***********************************************************************
+!
+!  routine cice_bootstrap_TEM_PLATE
+!
+!> \brief   Bootstrap MPAS-CICE analysis member
+!> \author  FILL_IN_AUTHOR
+!> \date    FILL_IN_DATE
+!> \details
+!>  This routine conducts all bootstraps required for the
+!>  MPAS-CICE analysis member.
+!
+!-----------------------------------------------------------------------
+
+   subroutine cice_bootstrap_TEM_PLATE(domain, analysisMemberName, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      err = 0
+
+   end subroutine cice_bootstrap_TEM_PLATE!}}}
 
 !***********************************************************************
 !
@@ -132,6 +182,57 @@ contains
       err = 0
 
    end subroutine cice_init_TEM_PLATE!}}}
+
+!***********************************************************************
+!
+!  routine cice_precompute_TEM_PLATE
+!
+!> \brief   Precompute MPAS-CICE analysis member
+!> \author  FILL_IN_AUTHOR
+!> \date    FILL_IN_DATE
+!> \details
+!>  This routine conducts all pre-computation required for this
+!>  MPAS-CICE analysis member.
+!
+!-----------------------------------------------------------------------
+
+   subroutine cice_precompute_TEM_PLATE(domain, analysisMemberName, timeLevel, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
+
+      integer, intent(in) :: timeLevel
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      err = 0
+
+   end subroutine cice_precompute_TEM_PLATE!}}}
 
 !***********************************************************************
 !

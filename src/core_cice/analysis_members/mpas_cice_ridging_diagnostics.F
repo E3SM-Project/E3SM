@@ -41,7 +41,8 @@ module cice_ridging_diagnostics
    !
    !--------------------------------------------------------------------
 
-   public :: cice_init_ridging_diagnostics, &
+   public :: cice_bootstrap_ridging_diagnostics, &
+             cice_init_ridging_diagnostics, &
              cice_precompute_ridging_diagnostics, &
              cice_compute_ridging_diagnostics, &
              cice_restart_ridging_diagnostics, &
@@ -56,6 +57,55 @@ module cice_ridging_diagnostics
 !***********************************************************************
 
 contains
+
+!***********************************************************************
+!
+!  routine cice_bootstrap_ridging_diagnostics
+!
+!> \brief   Bootstrap MPAS-CICE analysis member
+!> \author  Adrian K. Turner
+!> \date    10th November 2015
+!> \details
+!>  This routine conducts all bootstraps required for the
+!>  MPAS-CICE analysis member.
+!
+!-----------------------------------------------------------------------
+
+   subroutine cice_bootstrap_ridging_diagnostics(domain, analysisMemberName, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      err = 0
+
+   end subroutine cice_bootstrap_ridging_diagnostics!}}}
 
 !***********************************************************************
 !

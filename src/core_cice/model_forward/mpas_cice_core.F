@@ -88,6 +88,9 @@ module cice_core
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='input', direction=MPAS_STREAM_INPUT, ierr=ierr)
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_INPUT, ierr=ierr)
 
+      ! bootstrap analysis members
+      call cice_analysis_bootstrap(domain, ierr)
+
       ! Read all other inputs
       call MPAS_stream_mgr_read(domain % streamManager, ierr=ierr)
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=ierr)

@@ -41,7 +41,8 @@ module cice_conservation_check
    !
    !--------------------------------------------------------------------
 
-   public :: cice_init_conservation_check, &
+   public :: cice_bootstrap_conservation_check, &
+             cice_init_conservation_check, &
              cice_precompute_conservation_check, &
              cice_compute_conservation_check, &
              cice_restart_conservation_check, &
@@ -56,6 +57,55 @@ module cice_conservation_check
 !***********************************************************************
 
 contains
+
+!***********************************************************************
+!
+!  routine cice_bootstrap_conservation_check
+!
+!> \brief   Bootstrap MPAS-CICE analysis member
+!> \author  Adrian K. Turner
+!> \date    10th November 2015
+!> \details
+!>  This routine conducts all boostraps required for the
+!>  MPAS-CICE analysis member.
+!
+!-----------------------------------------------------------------------
+
+   subroutine cice_bootstrap_conservation_check(domain, analysisMemberName, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      err = 0
+
+   end subroutine cice_bootstrap_conservation_check!}}}
 
 !***********************************************************************
 !

@@ -41,7 +41,8 @@ module cice_geographical_vectors
    !
    !--------------------------------------------------------------------
 
-   public :: cice_init_geographical_vectors, &
+   public :: cice_bootstrap_geographical_vectors, &
+             cice_init_geographical_vectors, &
              cice_precompute_geographical_vectors, &      
              cice_compute_geographical_vectors, &
              cice_restart_geographical_vectors, &
@@ -56,6 +57,55 @@ module cice_geographical_vectors
 !***********************************************************************
 
 contains
+
+!***********************************************************************
+!
+!  routine cice_bootstrap_geographical_vectors
+!
+!> \brief   Bootstrap MPAS-CICE analysis member
+!> \author  Adrian K. Turner
+!> \date    10th November 2015
+!> \details
+!>  This routine conducts all bootstraps required for the
+!>  MPAS-CICE analysis member.
+!
+!-----------------------------------------------------------------------
+
+   subroutine cice_bootstrap_geographical_vectors(domain, analysisMemberName, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      err = 0
+
+    end subroutine cice_bootstrap_geographical_vectors!}}}
 
 !***********************************************************************
 !

@@ -42,7 +42,8 @@ module cice_regional_statistics
    !
    !--------------------------------------------------------------------
 
-   public :: cice_init_regional_statistics, &
+   public :: cice_bootstrap_regional_statistics, &
+             cice_init_regional_statistics, &
              cice_precompute_regional_statistics, &
              cice_compute_regional_statistics, &
              cice_restart_regional_statistics, &
@@ -57,6 +58,55 @@ module cice_regional_statistics
 !***********************************************************************
 
 contains
+
+!***********************************************************************
+!
+!  routine cice_bootstrap_regional_statistics
+!
+!> \brief   Bootstrap MPAS-CICE analysis member
+!> \author  Adrian K. Turner
+!> \date    10th November 2015
+!> \details
+!>  This routine conducts all bootstraps required for the
+!>  MPAS-CICE analysis member.
+!
+!-----------------------------------------------------------------------
+
+   subroutine cice_bootstrap_regional_statistics(domain, analysisMemberName, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      err = 0
+
+   end subroutine cice_bootstrap_regional_statistics!}}}
 
 !***********************************************************************
 !
