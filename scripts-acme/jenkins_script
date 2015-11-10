@@ -13,3 +13,7 @@ SCRIPT_DIR=$( cd "$( dirname "$0" )" && pwd )
 DATE_STAMP=$(date "+%Y-%m-%d_%H%M%S")
 
 $SCRIPT_DIR/jenkins_generic_job "$@" >& JENKINS_$DATE_STAMP
+
+for SUB in $(git submodule status | awk '{print $2}'); do
+    git submodule deinit ${SUB}
+done
