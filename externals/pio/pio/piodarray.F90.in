@@ -207,7 +207,7 @@ contains
        if(debugasync) print *,__PIO_FILE__,__LINE__
     endif
 
-    if(debugasync .and. ios%ioproc) print *,__FILE__,__LINE__,iodesc%async_id
+    if(debugasync .and. ios%ioproc) print *,__PIO_FILE__,__LINE__,iodesc%async_id
 
     select case(File%iotype)
     case(pio_iotype_pbinary, pio_iotype_direct_pbinary)
@@ -1294,7 +1294,7 @@ contains
 #ifdef _PNETCDF
        ierr  = nfmpi_wait_all(file%fh, cnt-1, array_of_requests, status)
 #endif
-       if(DEBUG) print *,__FILE__,__LINE__,status, ierr, total_buffsize
+       if(DEBUG) print *,__PIO_FILE__,__LINE__,status, ierr, total_buffsize
 
        ptr=>file%data_list_top
        do while(associated(ptr))
