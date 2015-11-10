@@ -28,7 +28,8 @@ module dice_comp_mod
   use seq_timemgr_mod
   use seq_comm_mct     , only: seq_comm_inst, seq_comm_name, seq_comm_suffix
   use seq_flds_mod     , only: seq_flds_i2x_fields, &
-                               seq_flds_x2i_fields
+                               seq_flds_x2i_fields, &
+                               seq_flds_i2o_per_cat
 !
 ! !PUBLIC TYPES:
   implicit none

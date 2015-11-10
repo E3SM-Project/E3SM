@@ -23,17 +23,13 @@ my $cnt1=$#nlfile;
 my $cnt2=$#basenml;
 my $shiftbl=1;
 foreach $line (@nlfile){
-    chomp $line;
     my $bline = shift(@basenml) if($shiftbl);
-    chomp $line;
     $line =~ s/\s+/ /g;
     $bline =~ s/\s+/ /g;
     $shiftbl=1;
     next if($line eq $bline);
     $bline=shift(@basenml) if(($bline =~ /^\s*[#!\[\/]/) or ($bline =~ /^\s*$/));
-    chomp $bline;
 
-    next if($line eq $bline);
     next if(defined $baseid && $line =~ /$baseid/); 
     next if($line =~ /^\s*[#!\[\/]/);
     next if($line =~ /^\s*$/);
@@ -48,7 +44,8 @@ foreach $line (@nlfile){
     if($bline =~ /(.*)=(.*)/){
         $name2 = $1;
     }
-
+    chomp $line;
+    chomp $bline;
     if($name1 eq $name2){
 	push(@diffs1,$line);
 	push(@diffs2,$bline);
@@ -56,7 +53,6 @@ foreach $line (@nlfile){
 	push(@added,$line);
 	$shiftbl=0;
 	$cnt1--;
-	unshift(@basenml, $bline);
     }elsif($cnt2>$cnt1){
 	push(@removed,$bline);
 	shift(@basenml);
