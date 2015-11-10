@@ -15,6 +15,8 @@ use Getopt::Long;
 use IO::File;
 use IO::Handle;
 use Data::Dumper;
+use File::Find;
+use File::Basename;
 
 #-----------------------------------------------------------------------------------------------
 # Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
@@ -120,6 +122,7 @@ my $eol = "\n";
 # Obtain necessary variables from $cloneroot
 chdir ("$cloneroot");
 my $cimeroot  = `./xmlquery CIMEROOT -value`;
+my $srcroot  = `./xmlquery SRCROOT -value`;
 my $machdir   = `./xmlquery MACHDIR  -value`;
 my $mach      = `./xmlquery MACH     -value`;
 
@@ -219,6 +222,16 @@ system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 $sysmod = "cp  $cimeroot/scripts/Tools/case.submit $caseroot/case.submit"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
+#-----------------------------------------------------------------------------------------------
+# Now run a find and replace on all the files found in the new case, substitute the fo
+#-----------------------------------------------------------------------------------------------
+my $scriptdir = dirname(__FILE__);
+print "script dir: $scriptdir\n";
+my $newcimeroot = abs_path("$scriptdir/../..");
+my $newsrcroot = abs_path("$scriptdir/../../..");
+my @casesearch = ($caseroot);
+find(\&substitute, @casesearch);
+
 
 
 #-----------------------------------------------------------------------------------------------
@@ -226,6 +239,39 @@ system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 $sysmod = "./case.setup"; 
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
+
+sub substitute()
+{
+    my $filetosearch = $File::Find::name;
+    if(-f $filetosearch && ! -d $filetosearch)
+    {
+        #print "file to search: $filetosearch\n";
+        open(my $F, "<", $filetosearch) or die "could not open $filetosearch for reading, $!, $?";
+        my @lines =  <$F>;
+        chomp @lines;
+        close $F;
+        my @matches = grep { m/($cimeroot|$srcroot)/ } @lines;
+        if(@matches)
+        {
+            for my $i(0 .. $#lines)
+            {
+                if($lines[$i] =~ /$cimeroot/)
+                {
+                    $lines[$i] =~ s/$cimeroot/$newcimeroot/g;
+                }
+                if($lines[$i] =~ /$srcroot/)
+                {
+                    $lines[$i] =~ s/$srcroot/$newsrcroot/g;
+                }
+                #print "new line: $lines[$i]\n";
+            }
+            open (my $NEWF, ">", $filetosearch) or die "could not open $filetosearch for writing, $! $?";
+            map { print $NEWF "$_\n"} @lines;
+            close $NEWF;
+        }
+    }
+
+}
 # --- Print output ---
 my $compset = `./xmlquery COMPSET -value`;
 print "Successfully created new case\n   $caseroot\nfrom clone case\n   $cloneroot\n";
