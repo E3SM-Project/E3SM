@@ -97,13 +97,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_TEM_PLATE(domain, err)!{{{
+   subroutine cice_init_TEM_PLATE(domain, analysisMemberName, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       !-----------------------------------------------------------------
       !
@@ -144,13 +146,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_TEM_PLATE(domain, timeLevel, err)!{{{
+   subroutine cice_compute_TEM_PLATE(domain, analysisMemberName, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       integer, intent(in) :: timeLevel
 
@@ -266,13 +270,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_TEM_PLATE(domain, err)!{{{
+   subroutine cice_restart_TEM_PLATE(domain, analysisMemberName, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       !-----------------------------------------------------------------
       !
@@ -313,13 +319,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_TEM_PLATE(domain, err)!{{{
+   subroutine cice_finalize_TEM_PLATE(domain, analysisMemberName, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       !-----------------------------------------------------------------
       !

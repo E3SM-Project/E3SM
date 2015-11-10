@@ -71,13 +71,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_high_frequency_output(domain, err)!{{{
+   subroutine cice_init_high_frequency_output(domain, analysisMemberName, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       !-----------------------------------------------------------------
       !
@@ -118,13 +120,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_high_frequency_output(domain, timeLevel, err)!{{{
+   subroutine cice_precompute_high_frequency_output(domain, analysisMemberName, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       integer, intent(in) :: timeLevel
 
@@ -167,13 +171,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_high_frequency_output(domain, timeLevel, err)!{{{
+   subroutine cice_compute_high_frequency_output(domain, analysisMemberName, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       integer, intent(in) :: timeLevel
 
@@ -248,13 +254,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_high_frequency_output(domain, err)!{{{
+   subroutine cice_restart_high_frequency_output(domain, analysisMemberName, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       !-----------------------------------------------------------------
       !
@@ -295,13 +303,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_high_frequency_output(domain, err)!{{{
+   subroutine cice_finalize_high_frequency_output(domain, analysisMemberName, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       !-----------------------------------------------------------------
       !

@@ -70,13 +70,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_ridging_diagnostics(domain, err)!{{{
+   subroutine cice_init_ridging_diagnostics(domain, analysisMemberName, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       !-----------------------------------------------------------------
       !
@@ -117,13 +119,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_ridging_diagnostics(domain, timeLevel, err)!{{{
+   subroutine cice_precompute_ridging_diagnostics(domain, analysisMemberName, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       integer, intent(in) :: timeLevel
 
@@ -166,13 +170,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_ridging_diagnostics(domain, timeLevel, err)!{{{
+   subroutine cice_compute_ridging_diagnostics(domain, analysisMemberName, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       integer, intent(in) :: timeLevel
 
@@ -286,13 +292,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_ridging_diagnostics(domain, err)!{{{
+   subroutine cice_restart_ridging_diagnostics(domain, analysisMemberName, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       !-----------------------------------------------------------------
       !
@@ -333,13 +341,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_ridging_diagnostics(domain, err)!{{{
+   subroutine cice_finalize_ridging_diagnostics(domain, analysisMemberName, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       !-----------------------------------------------------------------
       !

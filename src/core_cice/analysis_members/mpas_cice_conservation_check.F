@@ -70,13 +70,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_conservation_check(domain, err)!{{{
+   subroutine cice_init_conservation_check(domain, analysisMemberName, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       !-----------------------------------------------------------------
       !
@@ -117,13 +119,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_conservation_check(domain, timeLevel, err)!{{{
+   subroutine cice_precompute_conservation_check(domain, analysisMemberName, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       integer, intent(in) :: timeLevel
 
@@ -191,13 +195,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_conservation_check(domain, timeLevel, err)!{{{
+   subroutine cice_compute_conservation_check(domain, analysisMemberName, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       integer, intent(in) :: timeLevel
 
@@ -1233,13 +1239,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_conservation_check(domain, err)!{{{
+   subroutine cice_restart_conservation_check(domain, analysisMemberName, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       !-----------------------------------------------------------------
       !
@@ -1280,13 +1288,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_conservation_check(domain, err)!{{{
+   subroutine cice_finalize_conservation_check(domain, analysisMemberName, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       !-----------------------------------------------------------------
       !

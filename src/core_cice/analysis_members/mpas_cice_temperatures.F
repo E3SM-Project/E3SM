@@ -72,13 +72,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_temperatures(domain, err)!{{{
+   subroutine cice_init_temperatures(domain, analysisMemberName, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       !-----------------------------------------------------------------
       !
@@ -118,13 +120,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_temperatures(domain, timeLevel, err)!{{{
+   subroutine cice_precompute_temperatures(domain, analysisMemberName, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       integer, intent(in) :: timeLevel
 
@@ -169,7 +173,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_temperatures(domain, timeLevel, err)!{{{
+   subroutine cice_compute_temperatures(domain, analysisMemberName, timeLevel, err)!{{{
 
       use ice_colpkg, only: &
            colpkg_ice_temperature, &
@@ -180,6 +184,8 @@ contains
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       integer, intent(in) :: timeLevel
 
@@ -306,13 +312,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_temperatures(domain, err)!{{{
+   subroutine cice_restart_temperatures(domain, analysisMemberName, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       !-----------------------------------------------------------------
       !
@@ -353,13 +361,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_temperatures(domain, err)!{{{
+   subroutine cice_finalize_temperatures(domain, analysisMemberName, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       !-----------------------------------------------------------------
       !

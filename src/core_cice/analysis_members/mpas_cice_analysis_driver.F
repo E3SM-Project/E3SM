@@ -816,21 +816,21 @@ contains
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
-         call cice_init_high_frequency_output(domain, err_tmp)
+         call cice_init_high_frequency_output(domain, analysisMemberName, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
-         call cice_init_temperatures(domain, err_tmp)
+         call cice_init_temperatures(domain, analysisMemberName, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
-         call cice_init_regional_statistics(domain, err_tmp)
+         call cice_init_regional_statistics(domain, analysisMemberName, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
-         call cice_init_ridging_diagnostics(domain, err_tmp)
+         call cice_init_ridging_diagnostics(domain, analysisMemberName, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
-         call cice_init_conservation_check(domain, err_tmp)
+         call cice_init_conservation_check(domain, analysisMemberName, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
-         call cice_init_geographical_vectors(domain, err_tmp)
+         call cice_init_geographical_vectors(domain, analysisMemberName, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
-!        call cice_init_surface_area_weighted_averages(domain, err_tmp)
+!        call cice_init_surface_area_weighted_averages(domain, analysisMemberName, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
-!        call cice_init_TEMP_LATE(domain, err_tmp)
+!        call cice_init_TEMP_LATE(domain, analysisMemberName, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
@@ -861,21 +861,21 @@ contains
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
-         call cice_precompute_high_frequency_output(domain, timeLevel, err_tmp)
+         call cice_precompute_high_frequency_output(domain, analysisMemberName, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
-         call cice_precompute_temperatures(domain, timeLevel, err_tmp)
+         call cice_precompute_temperatures(domain, analysisMemberName, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
-         call cice_precompute_regional_statistics(domain, timeLevel, err_tmp)
+         call cice_precompute_regional_statistics(domain, analysisMemberName, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
-         call cice_precompute_ridging_diagnostics(domain, timeLevel, err_tmp)
+         call cice_precompute_ridging_diagnostics(domain, analysisMemberName, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
-         call cice_precompute_conservation_check(domain, timeLevel, err_tmp)
+         call cice_precompute_conservation_check(domain, analysisMemberName, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
-         call cice_precompute_geographical_vectors(domain, timeLevel, err_tmp)
+         call cice_precompute_geographical_vectors(domain, analysisMemberName, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
-!        call cice_precompute_surface_area_weighted_averages(domain, timeLevel, err_tmp)
+!        call cice_precompute_surface_area_weighted_averages(domain, analysisMemberName, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
-!        call cice_precompute_TEMP_LATE(domain, timeLevel, err_tmp)
+!        call cice_precompute_TEMP_LATE(domain, analysisMemberName, timeLevel, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
@@ -906,21 +906,21 @@ contains
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
-         call cice_compute_high_frequency_output(domain, timeLevel, err_tmp)
+         call cice_compute_high_frequency_output(domain, analysisMemberName, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
-         call cice_compute_temperatures(domain, timeLevel, err_tmp)
+         call cice_compute_temperatures(domain, analysisMemberName, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
-         call cice_compute_regional_statistics(domain, timeLevel, err_tmp)
+         call cice_compute_regional_statistics(domain, analysisMemberName, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
-         call cice_compute_ridging_diagnostics(domain, timeLevel, err_tmp)
+         call cice_compute_ridging_diagnostics(domain, analysisMemberName, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
-         call cice_compute_conservation_check(domain, timeLevel, err_tmp)
+         call cice_compute_conservation_check(domain, analysisMemberName, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
-         call cice_compute_geographical_vectors(domain, timeLevel, err_tmp)
+         call cice_compute_geographical_vectors(domain, analysisMemberName, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
-!        call cice_compute_surface_area_weighted_averages(domain, timeLevel, err_tmp)
+!        call cice_compute_surface_area_weighted_averages(domain, analysisMemberName, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
-!        call cice_compute_TEMP_LATE(domain, timeLevel, err_tmp)
+!        call cice_compute_TEMP_LATE(domain, analysisMemberName, timeLevel, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
@@ -950,21 +950,21 @@ contains
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
-         call cice_restart_high_frequency_output(domain, err_tmp)
+         call cice_restart_high_frequency_output(domain, analysisMemberName, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
-         call cice_restart_temperatures(domain, err_tmp)
+         call cice_restart_temperatures(domain, analysisMemberName, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
-         call cice_restart_regional_statistics(domain, err_tmp)
+         call cice_restart_regional_statistics(domain, analysisMemberName, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
-         call cice_restart_ridging_diagnostics(domain, err_tmp)
+         call cice_restart_ridging_diagnostics(domain, analysisMemberName, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
-         call cice_restart_conservation_check(domain, err_tmp)
+         call cice_restart_conservation_check(domain, analysisMemberName, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
-         call cice_restart_geographical_vectors(domain, err_tmp)
+         call cice_restart_geographical_vectors(domain, analysisMemberName, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
-!        call cice_restart_surface_area_weighted_averages(domain, err_tmp)
+!        call cice_restart_surface_area_weighted_averages(domain, analysisMemberName, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
-!        call cice_restart_TEMP_LATE(domain, err_tmp)
+!        call cice_restart_TEMP_LATE(domain, analysisMemberName, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
@@ -994,21 +994,21 @@ contains
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'highFrequencyOutput' ) then
-         call cice_finalize_high_frequency_output(domain, err_tmp)
+         call cice_finalize_high_frequency_output(domain, analysisMemberName, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
-         call cice_finalize_temperatures(domain, err_tmp)
+         call cice_finalize_temperatures(domain, analysisMemberName, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
-         call cice_finalize_regional_statistics(domain, err_tmp)
+         call cice_finalize_regional_statistics(domain, analysisMemberName, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
-         call cice_finalize_ridging_diagnostics(domain, err_tmp)
+         call cice_finalize_ridging_diagnostics(domain, analysisMemberName, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'conservationCheck' ) then
-         call cice_finalize_conservation_check(domain, err_tmp)
+         call cice_finalize_conservation_check(domain, analysisMemberName, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
-         call cice_finalize_geographical_vectors(domain, err_tmp)
+         call cice_finalize_geographical_vectors(domain, analysisMemberName, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
-!        call cice_finalize_surface_area_weighted_averages(domain, err_tmp)
+!        call cice_finalize_surface_area_weighted_averages(domain, analysisMemberName, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
-!        call cice_finalize_TEMP_LATE(domain, err_tmp)
+!        call cice_finalize_TEMP_LATE(domain, analysisMemberName, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)

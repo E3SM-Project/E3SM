@@ -71,13 +71,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_regional_statistics(domain, err)!{{{
+   subroutine cice_init_regional_statistics(domain, analysisMemberName, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       !-----------------------------------------------------------------
       !
@@ -170,13 +172,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_regional_statistics(domain, timeLevel, err)!{{{
+   subroutine cice_precompute_regional_statistics(domain, analysisMemberName, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       integer, intent(in) :: timeLevel
 
@@ -219,7 +223,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_regional_statistics(domain, timeLevel, err)!{{{
+   subroutine cice_compute_regional_statistics(domain, analysisMemberName, timeLevel, err)!{{{
 
       use cice_mesh, only: &
            cice_interpolate_vertex_to_cell
@@ -237,6 +241,8 @@ contains
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       integer, intent(in) :: timeLevel
 
@@ -523,13 +529,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_regional_statistics(domain, err)!{{{
+   subroutine cice_restart_regional_statistics(domain, analysisMemberName, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       !-----------------------------------------------------------------
       !
@@ -570,13 +578,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_regional_statistics(domain, err)!{{{
+   subroutine cice_finalize_regional_statistics(domain, analysisMemberName, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: analysisMemberName
 
       !-----------------------------------------------------------------
       !
