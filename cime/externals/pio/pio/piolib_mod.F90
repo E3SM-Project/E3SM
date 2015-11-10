@@ -836,7 +836,7 @@ contains
     !---------------------
     glength= product(int(dims,kind=PIO_OFFSET))
     if(glength > huge(ndisp)) then
-       print *,__FILE__,__LINE__,dims,glength
+       print *,__PIO_FILE__,__LINE__,dims,glength
        call piodie( __PIO_FILE__,__LINE__, &
             'requested array size too large for this interface ')       
     endif
@@ -1740,7 +1740,7 @@ contains
 
     iotmp2(:)=0 
     call MPI_allreduce(iotmp, iotmp2, iosystem%num_tasks, MPI_INTEGER, MPI_SUM, comp_comm, ierr)
-    call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+    call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__PIO_FILE__,__LINE__)
     call alloc_check(iosystem%ioranks,n_iotasks,'init:n_ioranks')
     j=1
     iosystem%iomaster = -1
@@ -1936,11 +1936,11 @@ contains
              iam = -1
           end if
           call mpi_allreduce(iam, io_leader, 1, mpi_integer, MPI_MAX, peer_comm, ierr)
-          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__PIO_FILE__,__LINE__)
           ! Find the rank of the comp leader in peer_comm
           iam = -1
           call mpi_allreduce(iam, comp_leader, 1, mpi_integer, MPI_MAX, peer_comm, ierr)
-          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__PIO_FILE__,__LINE__)
           ! create the intercomm
           call mpi_intercomm_create(io_comm, 0, peer_comm, comp_leader, i, iosystem(i)%intercomm, ierr)
           ! create the union_comm
@@ -1949,7 +1949,7 @@ contains
           ! Find the rank of the io leader in peer_comm
           iam = -1
           call mpi_allreduce(iam, io_leader, 1, mpi_integer, MPI_MAX, peer_comm, ierr)
-          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__PIO_FILE__,__LINE__)
 
           ! Find the rank of the comp leader in peer_comm
           iosystem(i)%comp_rank = -1
@@ -1962,7 +1962,7 @@ contains
              end if
           end if
           call mpi_allreduce(iam, comp_leader, 1, mpi_integer, MPI_MAX, peer_comm, ierr)
-          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__PIO_FILE__,__LINE__)
 
           ! create the intercomm
           call mpi_intercomm_create(comp_comms(i), 0, peer_comm, io_leader, i, iosystem(i)%intercomm, ierr)
@@ -2012,11 +2012,11 @@ contains
           if(Debugasync) print *,__PIO_FILE__,__LINE__
           
           call MPI_allreduce(iosystem(i)%comproot, j, 1, MPI_INTEGER, MPI_MAX,iosystem(i)%union_comm,ierr)
-          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__PIO_FILE__,__LINE__)
           
           iosystem%comproot=j
           call MPI_allreduce(iosystem(i)%ioroot, j, 1, MPI_INTEGER, MPI_MAX,iosystem(i)%union_comm,ierr)
-          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__PIO_FILE__,__LINE__)
 
           iosystem%ioroot=j
 
@@ -2047,7 +2047,7 @@ contains
           call alloc_check(iosystem(i)%ioranks, iosystem(i)%num_iotasks,'init:n_ioranks')
           if(Debugasync) print *,__PIO_FILE__,__LINE__,iotmp
           call MPI_allreduce(iotmp,iosystem(i)%ioranks,iosystem(i)%num_iotasks,MPI_INTEGER,MPI_MAX,iosystem(i)%union_comm,ierr)
-          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__PIO_FILE__,__LINE__)
 
           if(Debugasync) print *,__PIO_FILE__,__LINE__,iosystem(i)%ioranks
           call dealloc_check(iotmp)
@@ -2150,7 +2150,7 @@ contains
     endif
     iotmp2(:)=0 
     call MPI_allreduce(iotmp,iotmp2,num_tasks,MPI_INTEGER,MPI_SUM,comm,ierr)
-    call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+    call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__PIO_FILE__,__LINE__)
 
     numiotasks=SUM(iotmp2)
 
