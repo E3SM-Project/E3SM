@@ -816,7 +816,11 @@
 <!-- complete path to the inputdata directory -->
         <DIN_LOC_ROOT_CLMFORC>/home/reichpb/shared/cesm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
 <!-- path to the optional forcing data for CLM (for CRUNCEP forcing) -->
+<<<<<<< HEAD
         <DOUT_S>FALSE</DOUT_S>                                            
+=======
+        <DOUT_S>FALSE</DOUT_S>                                           
+>>>>>>> 9ea614a4a0710da532ea20e6d04dadf90a173a8d
 <!-- logical for short term archiving -->
         <DOUT_S_ROOT>USERDEFINED_optional_run</DOUT_S_ROOT>               
 <!-- complete path to a short term archiving directory -->
