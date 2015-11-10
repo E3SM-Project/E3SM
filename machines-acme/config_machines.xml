@@ -808,25 +808,24 @@
         <OS>LINUX</OS>
         <COMPILERS>intel</COMPILERS>
         <MPILIBS>openmpi</MPILIBS>
-        <RUNDIR>$CASEROOT/run</RUNDIR>                       <!-- complete path
-to the run directory -->
-        <EXEROOT>$CASEROOT/exedir</EXEROOT>                     <!-- complete
-path to the build directory -->
-        <DIN_LOC_ROOT>/home/reichpb/shared/cesm_inputdata</DIN_LOC_ROOT>           <!--
-complete path to the inputdata directory -->
-
+        <RUNDIR>$CASEROOT/run</RUNDIR>                       
+<!-- complete path to the run directory -->
+        <EXEROOT>$CASEROOT/exedir</EXEROOT>                     
+<!-- complete path to the build directory -->
+        <DIN_LOC_ROOT>/home/reichpb/shared/cesm_inputdata</DIN_LOC_ROOT>           
+<!-- complete path to the inputdata directory -->
         <DIN_LOC_ROOT_CLMFORC>/home/reichpb/shared/cesm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
 <!-- path to the optional forcing data for CLM (for CRUNCEP forcing) -->
-        <DOUT_S>FALSE</DOUT_S>                                            <!--
-logical for short term archiving -->
-        <DOUT_S_ROOT>USERDEFINED_optional_run</DOUT_S_ROOT>               <!--
-complete path to a short term archiving directory -->
-        <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!--
-complete path to a long term archiving directory -->
-        <CCSM_BASELINE>USERDEFINED_optional_run</CCSM_BASELINE>           <!--
-where the cesm testing scripts write and read baseline results -->
-        <CCSM_CPRNC>USERDEFINED_optional_test</CCSM_CPRNC>                <!--
-path to the cprnc tool used to compare netcdf history files in testing -->
+        <DOUT_S>FALSE</DOUT_S>                                            
+<!-- logical for short term archiving -->
+        <DOUT_S_ROOT>USERDEFINED_optional_run</DOUT_S_ROOT>               
+<!-- complete path to a short term archiving directory -->
+        <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           
+<!-- complete path to a long term archiving directory -->
+        <CCSM_BASELINE>USERDEFINED_optional_run</CCSM_BASELINE>           
+<!-- where the cesm testing scripts write and read baseline results -->
+        <CCSM_CPRNC>USERDEFINED_optional_test</CCSM_CPRNC>                
+<!-- path to the cprnc tool used to compare netcdf history files in testing -->
         <BATCHQUERY>qstat -f</BATCHQUERY>
         <BATCHSUBMIT>qsub -q mesabi</BATCHSUBMIT>
         <SUPPORTED_BY>USERDEFINED_optional</SUPPORTED_BY>
@@ -859,25 +858,24 @@ path to the cprnc tool used to compare netcdf history files in testing -->
         <OS>LINUX</OS>
         <COMPILERS>intel</COMPILERS>
         <MPILIBS>openmpi</MPILIBS>
-        <RUNDIR>$CASEROOT/run</RUNDIR>                       <!-- complete path
-to the run directory -->
-        <EXEROOT>$CASEROOT/exedir</EXEROOT>                     <!-- complete
-path to the build directory -->
-        <DIN_LOC_ROOT>/home/reichpb/shared/cesm_inputdata</DIN_LOC_ROOT>           <!--
-complete path to the inputdata directory -->
-
+        <RUNDIR>$CASEROOT/run</RUNDIR>                       
+<!-- complete path to the run directory -->
+        <EXEROOT>$CASEROOT/exedir</EXEROOT>                     
+<!-- complete path to the build directory -->
+        <DIN_LOC_ROOT>/home/reichpb/shared/cesm_inputdata</DIN_LOC_ROOT>           
+<!-- complete path to the inputdata directory -->
         <DIN_LOC_ROOT_CLMFORC>/home/reichpb/shared/cesm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
 <!-- path to the optional forcing data for CLM (for CRUNCEP forcing) -->
-        <DOUT_S>FALSE</DOUT_S>                                            <!--
-logical for short term archiving -->
-        <DOUT_S_ROOT>USERDEFINED_optional_run</DOUT_S_ROOT>               <!--
-complete path to a short term archiving directory -->
-        <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!--
-complete path to a long term archiving directory -->
-        <CCSM_BASELINE>USERDEFINED_optional_run</CCSM_BASELINE>           <!--
-where the cesm testing scripts write and read baseline results -->
-        <CCSM_CPRNC>USERDEFINED_optional_test</CCSM_CPRNC>                <!--
-path to the cprnc tool used to compare netcdf history files in testing -->
+        <DOUT_S>FALSE</DOUT_S>                                            
+<!-- logical for short term archiving -->
+        <DOUT_S_ROOT>USERDEFINED_optional_run</DOUT_S_ROOT>               
+<!-- complete path to a short term archiving directory -->
+        <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           
+<!-- complete path to a long term archiving directory -->
+        <CCSM_BASELINE>USERDEFINED_optional_run</CCSM_BASELINE>           
+<!-- where the cesm testing scripts write and read baseline results -->
+        <CCSM_CPRNC>USERDEFINED_optional_test</CCSM_CPRNC>                
+<!-- path to the cprnc tool used to compare netcdf history files in testing -->
         <BATCHQUERY>qstat -f</BATCHQUERY>
         <BATCHSUBMIT>qsub -q batch</BATCHSUBMIT>
         <SUPPORTED_BY>USERDEFINED_optional</SUPPORTED_BY>
