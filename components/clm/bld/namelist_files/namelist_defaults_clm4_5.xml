@@ -1763,6 +1763,12 @@ this mask will have smb calculated over the entire global land surface
 <use_aereoxid_prog use_cn=".true.">.true.</use_aereoxid_prog>
 
 <!-- =========================================  -->
+<!-- Defaults for lateral grid connectivity     -->
+<!-- =========================================  -->
+<lateral_connectivity>.false.</lateral_connectivity>
+<domain_decomposition_method>round_robin</domain_decomposition_method>
+
+<!-- =========================================  -->
 <!-- Defaults for clm_pflotran_inparm interface -->
 <!-- =========================================  -->
 <pflotran_inputdir>pflotran</pflotran_inputdir>

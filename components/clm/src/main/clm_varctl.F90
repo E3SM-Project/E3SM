@@ -317,6 +317,12 @@ module clm_varctl
  character(len=15), public :: nu_com = 'RD'
 
   !-----------------------------------------------------------------------
+  ! Lateral grid connectivity
+  !-----------------------------------------------------------------------
+  logical, public            :: lateral_connectivity  = .false.
+  character(len=256), public :: domain_decomp_type    = 'round_robin'
+
+  !-----------------------------------------------------------------------
   ! bgc & pflotran interface
   !
   logical, public :: use_bgc_interface  = .false.

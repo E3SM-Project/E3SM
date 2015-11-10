@@ -244,6 +244,9 @@ contains
     namelist /clm_inparm / &
          use_vsfm, vsfm_satfunc_type, vsfm_use_dynamic_linesearch
 
+    namelist /clm_inparm/ &
+       lateral_connectivity, domain_decomp_type
+
     ! ----------------------------------------------------------------------
     ! Default values
     ! ----------------------------------------------------------------------
@@ -472,6 +475,14 @@ contains
             errMsg(__FILE__, __LINE__))
     end if
 
+    ! Lateral connectivity
+    if ((.not.lateral_connectivity) .and. &
+        trim(domain_decomp_type) == 'graph_partitioning' ) then
+       call endrun(msg=' ERROR: domain_decomp_type = graph_partitioning requires ' // &
+        'lateral_connectivity to be true.'                                        // &
+       errMsg(__FILE__, __LINE__))
+    endif
+
     if (masterproc) then
        write(iulog,*) 'Successfully initialized run control settings'
        write(iulog,*)
@@ -668,6 +679,10 @@ contains
     ! clump decomposition variables
 
     call mpi_bcast (clump_pproc, 1, MPI_INTEGER, 0, mpicom, ier)
+
+    ! lateral connectivity
+    call mpi_bcast (lateral_connectivity, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (domain_decomp_type, len(domain_decomp_type), MPI_CHARACTER, 0, mpicom, ier)
 
     ! bgc & pflotran interface
     call mpi_bcast (use_bgc_interface, 1, MPI_LOGICAL, 0, mpicom, ier)

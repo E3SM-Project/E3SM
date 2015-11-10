@@ -1548,6 +1548,19 @@ and pct_nat_pft read from the surface dataset.
 </entry>
 
 <!-- =========================================================================================  -->
+<!-- Namelist options related to lateral grid connectivity
+<!-- ========================================================================================  -->
+<entry id="lateral_connectivity" type="logical" category="clm_initialization"
+       group="clm_inparm" valid_values="" >
+If TRUE setup up lateral grid connectivity in CLM.
+</entry>
+
+<entry id="domain_decomp_type" type="char*256" category="clm_initialization"
+       group="clm_inparm" valid_values="round_robin,graph_partitioning" >
+Specifies the method for decomposing CLM grids across processors.
+</entry>
+
+<!-- =========================================================================================  -->
 <!-- Namelist options related to the bgc & pflotran interface
 <!-- ========================================================================================  -->
 
