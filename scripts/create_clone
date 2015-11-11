@@ -17,7 +17,10 @@ use IO::Handle;
 use Data::Dumper;
 use File::Find;
 use File::Basename;
+use File::Spec::Functions qw(rel2abs);
 
+my @argstash = @ARGV;
+my $banner = '=' x 80;
 #-----------------------------------------------------------------------------------------------
 # Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
 # descriptions to be printed to STDOUT before the error messages start.
@@ -61,6 +64,7 @@ GetOptions(
     "clone=s"                   => \$opts{'clone'},
     "mach_dir=s"                => \$opts{'mach_dir'},
     "project=s"                 => \$opts{'project'},
+    "keepexe"                   => \$opts{'keepexe'},
     "s|silent"                  => \$opts{'silent'},
     "v|verbose"                 => \$opts{'verbose'},
 )  or usage();
@@ -73,7 +77,9 @@ if (@ARGV) {
     print "ERROR: unrecognized arguments: @ARGV\n";
     usage();
 }
-my $banner = '=' x 80;
+my $scriptdir = dirname(rel2abs($0));
+my $newcimeroot = abs_path("$scriptdir/..");
+my $newsrcroot = abs_path("$scriptdir/../..");
 my $warning = <<EOF;
 $banner
 Please be advised, it is NOT recommended to clone cases from different versions of CESM.
@@ -133,6 +139,7 @@ my $cimeroot  = `./xmlquery CIMEROOT -value`;
 my $srcroot  = `./xmlquery SRCROOT -value`;
 my $machdir   = `./xmlquery MACHDIR  -value`;
 my $mach      = `./xmlquery MACH     -value`;
+my $origexeroot = `./xmlquery EXEROOT -value`;
 
 # Update paths that Perl searches for modules
 my @dirs = ("$cimeroot/utils/perl5lib");
@@ -167,11 +174,30 @@ $sysmod = "rm -f $caseroot/*~";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 # Need to copy back in the CaseDocs/README
-$sysmod = "cp -rp $cloneroot/CaseDocs/README $caseroot/CaseDocs/."; 
+$sysmod = "cp -rp $cloneroot/README.case $caseroot/CaseDocs/README.case"; 
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+
+# append create_clone and args to cloned case README.case
+open (my $RCASE, ">>", "$caseroot/README.case") or die "could not open $caseroot/README.case: $!";
+print $RCASE "$0 ";
+map {print $RCASE "$_ "} @argstash;
+print $RCASE "\n";
+close $RCASE;
+
+#append create_clone and args to cloned case CaseStatus
+open (my $CSTATUS, ">>", "$caseroot/CaseStatus") or die "could not open $caseroot/CaseStatus: $!";
+print $CSTATUS "$0 ";
+map {print $CSTATUS "$_ "} @argstash;
+print $CSTATUS "\n";
+close $CSTATUS;
 
 # Change directory to be $caseroot
 chdir $caseroot;
+#-----------------------------------------------------------------------------------------------
+## Now run a find and replace on all the files found in the new case, substitute the fo
+##-----------------------------------------------------------------------------------------------
+my @casesearch = ($caseroot);
+find(\&substitute, @casesearch);
 
 # Obtain variables needed below
 my $username  = "$ENV{'USER'}"; 
@@ -185,6 +211,13 @@ $sysmod = "./xmlchange CONTINUE_RUN=FALSE"		; system($sysmod) == 0 or die "ERROR
 $sysmod = "./xmlchange RESUBMIT=0"			; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 if ($opts{'mach_dir'}) {
     $sysmod = "./xmlchange MACHIDR=$opts{'mach_dir'}"   ; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}
+if($opts{'keepexe'})
+{
+    $sysmod = "./xmlchange EXEROOT=$origexeroot"; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    $sysmod = "./xmlchange BUILD_COMPLETE=TRUE"; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    #$sysmod = "mkdir $caseroot/Buildconf"; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    $sysmod = "cp -Rp $cloneroot/Buildconf/* $caseroot/Buildconf/"; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 
 # --- Set project id 
@@ -230,17 +263,6 @@ system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 $sysmod = "cp  $cimeroot/scripts/Tools/case.submit $caseroot/case.submit"; 
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
-#-----------------------------------------------------------------------------------------------
-# Now run a find and replace on all the files found in the new case, substitute the fo
-#-----------------------------------------------------------------------------------------------
-my $scriptdir = dirname(__FILE__);
-print "script dir: $scriptdir\n";
-my $newcimeroot = abs_path("$scriptdir/../..");
-my $newsrcroot = abs_path("$scriptdir/../../..");
-my @casesearch = ($caseroot);
-find(\&substitute, @casesearch);
-
-
 
 #-----------------------------------------------------------------------------------------------
 # Create batch script
@@ -261,8 +283,11 @@ sub substitute()
         my @matches = grep { m/($cimeroot|$srcroot)/ } @lines;
         if(@matches)
         {
+            #print Dumper \@matches;
             for my $i(0 .. $#lines)
             {
+                #print "line before replace\n";
+                #print $lines[$i] . "\n";
                 if($lines[$i] =~ /$cimeroot/)
                 {
                     $lines[$i] =~ s/$cimeroot/$newcimeroot/g;
@@ -271,7 +296,6 @@ sub substitute()
                 {
                     $lines[$i] =~ s/$srcroot/$newsrcroot/g;
                 }
-                #print "new line: $lines[$i]\n";
             }
             open (my $NEWF, ">", $filetosearch) or die "could not open $filetosearch for writing, $! $?";
             map { print $NEWF "$_\n"} @lines;
