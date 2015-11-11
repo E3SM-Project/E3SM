@@ -45,6 +45,10 @@
  * The variable record is the index into the unlimited dimension in the netcdf file
  *  typically this is the time dimension.
  *  ndims is the number of dimensions on the file for this variable 
+ *  request is the id of each outstanding pnetcdf request for this variable
+ *  nreqs is the number of outstanding pnetcdf requests for this variable 
+ *  fillbuf is a memory buffer to hold fill values for this variable (write only)
+ *  iobuf is a memory buffer to hold (write only)
 */
 typedef struct var_desc_t
 {
