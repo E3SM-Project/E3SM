@@ -73,6 +73,14 @@ if (@ARGV) {
     print "ERROR: unrecognized arguments: @ARGV\n";
     usage();
 }
+my $banner = '=' x 80;
+my $warning = <<EOF;
+$banner
+Please be advised, it is NOT recommended to clone cases from different versions of CESM.
+$banner
+EOF
+print $warning;
+
 
 # Check for manditory case input if not just listing valid values
 my $case;
