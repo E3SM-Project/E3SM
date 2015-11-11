@@ -375,7 +375,7 @@ contains
       type (mpas_pool_type), intent(in)    :: statePool       !< Input: State information
       type (mpas_pool_type), intent(inout) :: forcingPool     !< Input: Forcing information
       type (mpas_pool_type), intent(in)    :: diagnosticsPool !< Input: Diagnostic information
-      type (mpas_pool_type), intent(inout)    :: meshPool        !< Input: Mesh information
+      type (mpas_pool_type), intent(inout) :: meshPool        !< Input: Mesh information
       type (mpas_pool_type), intent(in)    :: scratchPool     !< Input: Scratch information
       real (kind=RKIND), intent(in) :: dt                     !< Input: Time step
       integer, intent(in), optional :: timeLevelIn            !< Input/Optional: Time Level Indes
@@ -564,7 +564,7 @@ contains
                !
                if (config_use_tracerGroup_surface_bulk_forcing) then
                   call mpas_timer_start("bulk_" // trim(groupItr % memberName), .false.)
-                  call ocn_surface_bulk_forcing_tracers(meshPool, groupItr % memberName, forcingPool, tracerGroupSurfaceFlux, err)
+                  call ocn_surface_bulk_forcing_tracers(meshPool, groupItr % memberName, forcingPool, tracerGroup, tracerGroupSurfaceFlux, err)
                   call mpas_timer_stop("bulk_" // trim(groupItr % memberName))
                end if
 

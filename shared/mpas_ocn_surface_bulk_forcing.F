@@ -73,7 +73,7 @@ contains
 
 ! TRACER-CLEAN-UP
 ! Currently, penetrativeTemperatureFlux is built into bulk forcing.. what should we do about that?
-   subroutine ocn_surface_bulk_forcing_tracers(meshPool, groupName, forcingPool, tracersSurfaceFlux, err)!{{{
+   subroutine ocn_surface_bulk_forcing_tracers(meshPool, groupName, forcingPool, tracerGroup, tracersSurfaceFlux, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -89,6 +89,7 @@ contains
       !
       !-----------------------------------------------------------------
       type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
+      real (kind=RKIND), dimension(:,:,:), intent(inout) :: tracerGroup
       real (kind=RKIND), dimension(:,:), intent(inout) :: tracersSurfaceFlux !< Input/Output: Surface flux for tracer group
 
       !-----------------------------------------------------------------
@@ -108,7 +109,7 @@ contains
       err = 0
 
       if ( trim(groupName) == 'activeTracers' ) then
-         call ocn_surface_bulk_forcing_active_tracers(meshPool, forcingPool, tracersSurfaceFlux, err)
+         call ocn_surface_bulk_forcing_active_tracers(meshPool, forcingPool, tracerGroup, tracersSurfaceFlux, err)
       end if
 
    end subroutine ocn_surface_bulk_forcing_tracers!}}}
@@ -325,7 +326,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_surface_bulk_forcing_active_tracers(meshPool, forcingPool, tracersSurfaceFlux, err)!{{{
+   subroutine ocn_surface_bulk_forcing_active_tracers(meshPool, forcingPool, tracerGroup, tracersSurfaceFlux, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -333,6 +334,7 @@ contains
       !
       !-----------------------------------------------------------------
       type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
+      real (kind=RKIND), dimension(:,:,:), intent(in) :: tracerGroup
 
       !-----------------------------------------------------------------
       !
@@ -360,15 +362,20 @@ contains
       integer, pointer :: index_temperature_flux, index_salinity_flux
       integer, pointer :: nCells
 
-      real (kind=RKIND), dimension(:), pointer :: latentHeatFlux, sensibleHeatFlux, longWaveHeatFluxUp, longWaveHeatFluxDown, seaIceHeatFlux, snowFlux
+      real (kind=RKIND), dimension(:), pointer :: latentHeatFlux, sensibleHeatFlux, longWaveHeatFluxUp, longWaveHeatFluxDown, seaIceHeatFlux
       real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, seaIceSalinityFlux, iceRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: shortWaveHeatFlux, penetrativeTemperatureFlux
+
+      real (kind=RKIND), dimension(:), pointer :: snowFlux, rainFlux
+ ! CLEANUP
+ !    real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, riverRunoffFlux, iceRunoffFlux  ! Do we want to include these in the heat forcing?
 
       err = 0
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
  ! CLEANUP
+ ! Doug: Should we keep these two lines? If so, we should uncomment them and used them for the indexing.
    !  call mpas_pool_get_dimension(forcingPool, 'index_temperatureSurfaceFlux', index_temperature_flux)
    !  call mpas_pool_get_dimension(forcingPool, 'index_salinitySurfaceFlux', index_salinity_flux)
 
@@ -397,6 +404,19 @@ contains
                                                         + seaIceSalinityFlux(iCell) * sflux_factor
       end do
       !$omp end do
+
+      ! Surface fluxes of water have an associated heat content, but the coupled system does not account for this
+      ! Assume surface fluxes of water have a temperature equal to the surface temperature.
+      ! Assume surface fluxes of water have zero salinity. So the RHS forcing is zero for salinity.
+      ! Only include this heat forcing when bulk thickness is turned on
+      ! indices on tracerGroup are (iTracer, iLevel, iCell)
+      ! DOUG: OpenMP directive here?
+      if (bulkThicknessFluxOn) then
+         do iCell = 1, nCells
+           tracersSurfaceFlux(1, iCell) = tracersSurfaceFlux(1, iCell) + (snowFlux(iCell) + rainFlux(iCell))*tracerGroup(1,1,iCell)
+         end do
+      endif ! bulkThicknessFluxOn
+      ! DOUG: OpenMP directive here?
 
       ! TRACER-CLEAN-UP
       ! Do we want this here still?
