@@ -988,7 +988,7 @@ contains
           call alloc_check(IOBUF,0,'IOBUF')
        end if
     endif
-!    print *,__FILE__,__LINE__,ndims, fndims, start(1:fndims),count(1:fndims),vardesc%rec
+!    print *,__PIO_FILE__,__LINE__,ndims, fndims, start(1:fndims),count(1:fndims),vardesc%rec
 
 #ifdef TIMING
     call t_startf("pio_read_nf")
