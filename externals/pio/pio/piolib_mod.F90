@@ -1513,7 +1513,7 @@ contains
          if(check) call checkmpireturn('genindexedblock: after call to type_commit: ',ierr)
 !         if(debug) then
 !            call mpi_type_get_envelope(filetype, nints, nadds, ndtypes, comb, ierr)
-!            print *,__FILE__,__LINE__,nints,nadds,ndtypes,comb,ierr
+!            print *,__PIO_FILE__,__LINE__,nints,nadds,ndtypes,comb,ierr
 !         endif
        endif
 
