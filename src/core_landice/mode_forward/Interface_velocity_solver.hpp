@@ -97,7 +97,7 @@ void velocity_solver_solve_l1l2(double const* lowerSurface_F,
     double* u_normal_F = 0,
     double* xVelocityOnCell = 0, double* yVelocityOnCell = 0);
 
-void velocity_solver_solve_fo(double const* lowerSurface_F,
+void velocity_solver_solve_fo(double const* bedTopography_F, double const* lowerSurface_F,
     double const* thickness_F, double const* beta_F, double const* smb_F, double const* temperature_F,
     double* const dirichletVelocityXValue = 0, double* const dirichletVelocitYValue = 0,
     double* u_normal_F = 0,
@@ -232,7 +232,7 @@ double signedTriangleArea(const double* x, const double* y, const double* z);
 
 void createReducedMPI(int nLocalEntities, MPI_Comm& reduced_comm_id);
 
-void import2DFields(double const* lowerSurface_F, double const* thickness_F,
+void import2DFields(double const* bedTopography_F, double const* lowerSurface_F, double const* thickness_F,
     double const* beta_F = 0, double const* smb_F = 0, double eps = 0);
 
 std::vector<int> extendMaskByOneLayer(int const* verticesMask_F);
