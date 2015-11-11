@@ -172,15 +172,24 @@ class CreateTest(object):
     ###########################################################################
     def _run_phase_command(self, test_name, cmd, phase, from_dir=None):
     ###########################################################################
-        rc, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=from_dir)
-        if (rc != 0):
-            self._log_output(test_name,
-                             "%s FAILED for test '%s'.\nCommand: %s\nOutput: %s\n\nErrput: %s" %
-                             (phase, test_name, cmd, output, errput))
-        else:
-            self._log_output(test_name,
-                             "%s PASSED for test '%s'.\nCommand: %s\nOutput: %s\n\nErrput: %s" %
-                             (phase, test_name, cmd, output, errput))
+        while (True):
+            rc, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=from_dir)
+            if (rc != 0):
+                self._log_output(test_name,
+                                 "%s FAILED for test '%s'.\nCommand: %s\nOutput: %s\n\nErrput: %s" %
+                                 (phase, test_name, cmd, output, errput))
+                # Temporary hack to get around odd file descriptor use by
+                # buildnml scripts.
+                if ("bad interpreter" in errput):
+                    time.sleep(1)
+                    continue
+                else:
+                    break
+            else:
+                self._log_output(test_name,
+                                 "%s PASSED for test '%s'.\nCommand: %s\nOutput: %s\n\nErrput: %s" %
+                                 (phase, test_name, cmd, output, errput))
+                break
 
         return rc == 0
 
