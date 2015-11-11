@@ -80,12 +80,6 @@ if (@ARGV) {
 my $scriptdir = dirname(rel2abs($0));
 my $newcimeroot = abs_path("$scriptdir/..");
 my $newsrcroot = abs_path("$scriptdir/../..");
-my $warning = <<EOF;
-$banner
-Please be advised, it is NOT recommended to clone cases from different versions of CESM.
-$banner
-EOF
-print $warning;
 
 
 # Check for manditory case input if not just listing valid values
@@ -140,6 +134,15 @@ my $srcroot  = `./xmlquery SRCROOT -value`;
 my $machdir   = `./xmlquery MACHDIR  -value`;
 my $mach      = `./xmlquery MACH     -value`;
 my $origexeroot = `./xmlquery EXEROOT -value`;
+if($cimeroot ne $newcimeroot)
+{
+    my $warning = <<EOF;
+$banner
+Please be advised, it is NOT recommended to clone cases from different versions of CESM.
+$banner
+EOF
+    print $warning;
+}
 
 # Update paths that Perl searches for modules
 my @dirs = ("$cimeroot/utils/perl5lib");
