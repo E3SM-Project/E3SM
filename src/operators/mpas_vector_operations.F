@@ -880,9 +880,6 @@ contains
       dist = pxi - xci
 
       if (abs(dist) > xiRef * 0.5_RKIND) then
-#ifdef MPAS_DEBUG
-        write(stderrUnit,*) 'Fixing periodicity'
-#endif
         mpas_fix_periodicity = pxi - (dist/abs(dist)) * xiRef
       else
         mpas_fix_periodicity = pxi

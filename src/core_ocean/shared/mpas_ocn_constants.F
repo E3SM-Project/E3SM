@@ -29,10 +29,16 @@ module ocn_constants
 #endif
 
    implicit none
+   private
    save
 
-   type (mpas_pool_type), pointer :: ocnConfigs
-   type (mpas_pool_type), pointer :: ocnPackages
+   public :: ocn_constants_init
+
+   type (mpas_pool_type), public, pointer :: ocnConfigs
+   type (mpas_pool_type), public, pointer :: ocnPackages
+
+   character (len=*), public, parameter :: statsAlarmID = 'stats'
+   character (len=*), public, parameter :: coupleAlarmID = 'coupling'
 
    real (kind=RKIND), public ::      &
       rho_air               ,&! ambient air density (kg/m^3)

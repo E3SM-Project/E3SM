@@ -51,6 +51,8 @@ module ocn_forcing_bulk
    !
    !--------------------------------------------------------------------
 
+   real (kind=RKIND) :: refDensity
+
 !***********************************************************************
 
 contains
@@ -114,7 +116,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: rainFlux
       real (kind=RKIND), dimension(:), pointer :: seaSurfacePressure, iceFraction
 
-      real (kind=RKIND), dimension(:), pointer :: surfaceMassFlux, surfaceWindStress, surfaceWindStressMagnitude
+      real (kind=RKIND), dimension(:), pointer :: surfaceThicknessFlux, surfaceWindStress, surfaceWindStressMagnitude
       real (kind=RKIND), dimension(:,:), pointer :: surfaceTracerFlux
 
       err = 0
@@ -151,7 +153,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
       call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
 
-      call mpas_pool_get_array(forcingPool, 'surfaceMassFlux', surfaceMassFlux)
+      call mpas_pool_get_array(forcingPool, 'surfaceThicknessFlux', surfaceThicknessFlux)
       call mpas_pool_get_array(forcingPool, 'surfaceTracerFlux', surfaceTracerFlux)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
 
@@ -175,7 +177,7 @@ contains
 
         surfaceTracerFlux(index_salinity_flux, iCell) = seaIceSalinityFlux(iCell) * sflux_factor
 
-        surfaceMassFlux(iCell) = snowFlux(iCell) + rainFlux(iCell) + evaporationFlux(iCell) + seaIceFreshWaterFlux(iCell) + iceRunoffFlux(iCell) + riverRunoffFlux(iCell)
+        surfaceThicknessFlux(iCell) = ( snowFlux(iCell) + rainFlux(iCell) + evaporationFlux(iCell) + seaIceFreshWaterFlux(iCell) + iceRunoffFlux(iCell) + riverRunoffFlux(iCell) ) / refDensity
       end do
 
       penetrativeTemperatureFlux = shortWaveHeatFlux * hflux_factor
@@ -198,7 +200,14 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
+      real (kind=RKIND), pointer :: config_density0
+
       err = 0
+
+
+      call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
+
+      refDensity = config_density0
 
    end subroutine ocn_forcing_bulk_init!}}}
 

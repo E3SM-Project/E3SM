@@ -1,0 +1,75 @@
+	<nml_record name="AM_meridionalHeatTransport" mode="forward;analysis">
+		<nml_option name="config_AM_meridionalHeatTransport_enable" type="logical" default_value=".false." units="unitless"
+			description="If true, ocean analysis member meridional_heat_transport is called."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_meridionalHeatTransport_compute_interval" type="character" default_value="output_interval" units="unitless"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_meridionalHeatTransport_compute_on_startup" type="logical" default_value=".true." units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_meridionalHeatTransport_write_on_startup" type="logical" default_value=".true." units="unitless"
+			description="Logical flag determining if an analysis member output occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_meridionalHeatTransport_stream_name" type="character" default_value="meridionalHeatTransportOutput" units="unitless"
+			description="Name of the stream that the meridional heat transport analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_meridionalHeatTransport_num_bins" type="integer" default_value="180" units="unitless"
+			description="Number of bins used for meridional heat transport."
+			possible_values="Any positive integer value less than or equal to nMerHeatTransBins."
+		/>
+		<nml_option name="config_AM_meridionalHeatTransport_min_bin" type="real" default_value="-1.0e34" units="varies"
+			description="minimum bin boundary value.  If set to -1.0e34, the minimum value in the domain is found."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_AM_meridionalHeatTransport_max_bin" type="real" default_value="-1.0e34" units="varies"
+			description="maximum bin boundary value.  If set to -1.0e34, the maximum value in the domain is found."
+			possible_values="Any real number."
+		/>
+	</nml_record>
+	<dims>
+		<dim name="nMerHeatTransBins" definition="namelist:config_AM_meridionalHeatTransport_num_bins" units="unitless"
+			 description="Maximum number of bins for meridional heat transport."
+		/>
+		<dim name="nMerHeatTransBinsP1" definition="nMerHeatTransBins+1" units="unitless"
+			 description="Maximum number of bins for meridional heat transport, plus one."
+		/>
+	</dims>
+	<packages>
+		<package name="meridionalHeatTransportAMPKG" description="This package includes variables required for the meridional heat transport analysis member."/>
+	</packages>
+	<var_struct name="meridionalHeatTransportAM" time_levs="1" packages="meridionalHeatTransportAMPKG">
+		<var name="binBoundaryMerHeatTrans" type="real" dimensions="nMerHeatTransBinsP1" units="varies"
+			 description="Coordinate of southern edge of meridional heat transport bin, either in latitude or y, for plotting."
+		/>
+		<var name="meridionalHeatTransportLatZ" type="real" dimensions="nVertLevels nMerHeatTransBinsP1 Time" units="petawatts"
+			 description="Northward heat transport at locations defined at the binBoundaryMerHeatTrans coordinates, by vertical level."
+		/>
+		<var name="meridionalHeatTransportLat" type="real" dimensions="nMerHeatTransBinsP1 Time" units="petawatts"
+			 description="Northward heat transport at locations defined at the binBoundaryMerHeatTrans coordinates."
+		/>
+	</var_struct>
+	<streams>
+		<stream name="meridionalHeatTransportOutput" type="output"
+				filename_template="analysis_members/meridionalHeatTransport.$Y-$M-$D_$h.$m.$s.nc"
+				output_interval="0001_00:00:00"
+				filename_interval="01-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				clobber_mode="truncate"
+				packages="meridionalHeatTransportAMPKG"
+				runtime_format="single_file">
+
+			<var name="xtime"/>
+			<var name="binBoundaryMerHeatTrans"/>
+			<var name="meridionalHeatTransportLatZ"/>
+			<var name="meridionalHeatTransportLat"/>
+			<var name="refZMid"/>
+			<var name="refBottomDepth"/>
+		</stream>
+	</streams>
+

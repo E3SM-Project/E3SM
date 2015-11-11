@@ -318,6 +318,7 @@
  tempField % copyList => block % parinfo % cellsToCopy
  tempField % prev => null()
  tempField % next => null()
+ tempField % isActive = .true.
 
  tempField % array => Ux_tend_halo
  call mpas_dmpar_exch_halo_field(tempField)
