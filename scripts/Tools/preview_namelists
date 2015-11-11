@@ -160,6 +160,9 @@ if($dryrun){
 # Create namelists
 # -------------------------------------------------------------------------
 
+# Note - COMP_CPL must be last so that it can use xml vars potentially set 
+# by other component's buildnml scripts
+
 my @modelsorder = qw( atm lnd ice ocn glc wav rof drv );
 
 my %models = ( atm => $COMP_ATM, lnd => $COMP_LND, ice => $COMP_ICE,
