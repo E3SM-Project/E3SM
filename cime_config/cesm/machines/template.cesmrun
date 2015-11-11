@@ -36,7 +36,6 @@ require Depends::Checks;
 require Module::ModuleLoader;
 require Batch::BatchUtils;
 require Log::Log4perl;
-require Log::Log4perl::Appender::Screen;
 my $logger;
 
 
@@ -92,12 +91,6 @@ sub getOptions()
 			  layout=>'%m%n'});
     
     $logger = Log::Log4perl::get_logger();
-# By default logger writes to stderr - redirect to stdout
-    my $app = Log::Log4perl::Appender::Screen->new(
-      stderr    => 0,
-    );
-    $logger->add_appender($app);
-
 
 
     # First, get the configuration from xml . 
