@@ -449,11 +449,13 @@ sub loadDotKitModules()
         {
             $newbuildenv{$k} = $newenv{$k};
             $ENV{$k} = $newenv{$k};
+	    $logger->info("setting environment variable $k=$newenv{$k}");
         }
         if(defined $oldenv{$k} && $newenv{$k} ne $oldenv{$k})
         {
             $newbuildenv{$k} = $newenv{$k};
             $ENV{$k} = $newenv{$k};
+	    $logger->info("setting environment variable $k=$newenv{$k}");
 
         }
     }
@@ -501,12 +503,15 @@ sub loadModuleModules()
          my $envvalue = $moduleenv{$key};
          if($envvalue =~ /^\$/)
          {
-           $envvalue =~ s/\$//g;
-           $ENV{$key} = $ENV{$envvalue};
+	     $envvalue =~ s/\$//g;
+	     $ENV{$key} = $ENV{$envvalue};
+	     $logger->info("setting environment variable $key=$ENV{$envvalue}");
          }
          else
          {
-                 $ENV{$key} = $moduleenv{$key};
+	     $ENV{$key} = $moduleenv{$key};
+	     $logger->info("setting environment variable $key=$moduleenv{$key}");
+
          }
      }
     $self->writeCshModuleFile();
@@ -550,6 +555,7 @@ sub loadNoneModules()
                 else
                 {
                     $ENV{$name} = $value; 
+		    $logger->info("setting environment variable $name=$value");
                 }
             }
         }
@@ -599,6 +605,7 @@ sub loadNoneModules()
                       else
                       {
                           $ENV{$name} = $value;
+			  $logger->info("setting environment variable $name=$value");
                       }
                   }
               }
@@ -641,11 +648,13 @@ sub loadSoftModules()
         {
             $newbuildenv{$k} = $newenv{$k};
             $ENV{$k} = $newenv{$k};
+	    $logger->info("setting environment variable $k=$newenv{$k}");
         }
         if(defined $oldenv{$k} && $newenv{$k} ne $oldenv{$k})
         { 
             $newbuildenv{$k} = $newenv{$k};
             $ENV{$k} = $newenv{$k};
+	    $logger->info("setting environment variable $k=$newenv{$k}");
         }
     }
     $self->writeCshModuleFile();
@@ -742,6 +751,7 @@ sub loadEnvVars()
             {
                 $value = $ENV{$value};
             }
+	    $logger->info("setting environment variable $name=$value");
             $ENV{$name} = $value;
         }
     }
