@@ -11,7 +11,7 @@
 !
 !> \brief MPAS ocean ecosys
 !> \author Mathew Maltrud
-!> \date   08/24/2015
+!> \date   11/01/2015
 !> \details
 !>  This module contains routines for computing tracer forcing due to ecosys
 !
@@ -82,8 +82,8 @@ contains
 !  routine ocn_tracer_ecosys_compute
 !
 !> \brief   computes a tracer tendency due to ecosys
-!> \author  Todd Ringler
-!> \date    06/09/2015
+!> \author  Mathew Maltrud
+!> \date    11/01/2015
 !> \details 
 !>  This routine computes a tracer tendency due to ecosys
 !
@@ -503,8 +503,8 @@ contains
 !  routine ocn_tracer_ecosys_surface_flux_compute
 !
 !> \brief   computes a tracer tendency due to ecosys
-!> \author  Todd Ringler
-!> \date    06/09/2015
+!> \author  Mathew Maltrud
+!> \date    11/01/2015
 !> \details 
 !>  This routine computes a tracer tendency due to ecosys
 !
@@ -722,8 +722,8 @@ contains
 !  routine ocn_tracer_ecosys_init
 !
 !> \brief   Initializes ocean surface restoring
-!> \author  Todd Ringler
-!> \date    06/09/2015
+!> \author  Mathew Maltrud
+!> \date    11/01/2015
 !> \details 
 !>  This routine initializes fields required for tracer surface flux restoring
 !

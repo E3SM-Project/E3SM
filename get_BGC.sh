@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## BGC Tag for build
-BGC_TAG=50af425
+BGC_TAG=6c4240c
 
 ## Subdirectory in BGC repo to use
 BGC_SUBDIR=.
@@ -32,7 +32,7 @@ if [ -d BGC ]; then
 	fi
 fi
 
-# CVmix Doesn't exist, need to acquire souce code
+# BGC Doesn't exist, need to acquire souce code
 # If might have been flushed from the above if, in the case where it was svn or wget that acquired the source.
 if [ ! -d BGC ]; then 
 	if [ -d .BGC_all ]; then
