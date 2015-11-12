@@ -178,7 +178,7 @@ def parse_test_name(test_name):
     ['ERS', ['D', 'P1'], 'fe12_123', 'JGF', None, None, None]
     >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler')
     ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', None]
-    >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler.test/mods')
+    >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler.test-mods')
     ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', 'test/mods']
     """
     rv = [None] * 6
@@ -200,6 +200,9 @@ def parse_test_name(test_name):
         rv[4:5] = rv[4].split("_")
         rv.pop()
 
+    if (rv[-1] is not None):
+        rv[-1] = rv[-1].replace("-", "/")
+
     return rv
 
 ###############################################################################
@@ -213,11 +216,11 @@ def get_full_test_name(test, machine, compiler, testmod=None):
     'ERS.ne16_fe16.JGF.melvin_gnu'
     >>> get_full_test_name("ERS.ne16_fe16.JGF.melvin_gnu.mods", "melvin", "gnu")
     'ERS.ne16_fe16.JGF.melvin_gnu.mods'
-    >>> get_full_test_name("ERS.ne16_fe16.JGF", "melvin", "gnu", "mods")
-    'ERS.ne16_fe16.JGF.melvin_gnu.mods'
+    >>> get_full_test_name("ERS.ne16_fe16.JGF", "melvin", "gnu", "mods/test")
+    'ERS.ne16_fe16.JGF.melvin_gnu.mods-test'
     """
     if (test.count(".") == 2):
-        return "%s.%s_%s%s" % (test, machine, compiler, "" if testmod is None else ".%s" % testmod)
+        return "%s.%s_%s%s" % (test, machine, compiler, "" if testmod is None else ".%s" % testmod.replace("/", "-"))
     else:
         _, _, _, _, test_machine, test_compiler, test_testmod = parse_test_name(test)
         expect(machine == test_machine,
@@ -225,7 +228,7 @@ def get_full_test_name(test, machine, compiler, testmod=None):
         expect(compiler == test_compiler,
                "Found testname/compiler mismatch, test is '%s', your current compiler is '%s'" % (test, compiler))
         if (test_testmod is None):
-            return "%s%s" % (test, "" if testmod is None else ".%s" % testmod)
+            return "%s%s" % (test, "" if testmod is None else ".%s" % testmod.replace("/", "-"))
         else:
             return test
 
