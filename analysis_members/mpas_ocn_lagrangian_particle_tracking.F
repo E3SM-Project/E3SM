@@ -309,7 +309,7 @@ contains
 
       call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_filter_number', filterNum)
 
-      allocate(ioProcRecvList(size(g_ioProcNeighs), domain % dminfo % nprocs))
+      allocate(ioProcRecvList(domain % dminfo % nprocs, size(g_ioProcNeighs)))
       allocate(ioProcSendList(domain % dminfo % nprocs))
       ioProcRecvList = .False.
       ioProcSendList = .False.
