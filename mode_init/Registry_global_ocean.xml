@@ -139,6 +139,14 @@
 					description="Variable name for the topography in the topography file."
 					possible_values="Variable name from input file."
 		/>
+		<nml_option name="config_global_ocean_topography_has_ocean_frac" type="logical" default_value=".false." units="unitless"
+					description="Logical flag that controls if topograhy file contains a field for the fraction of each cell that contains ocean (vs. land or grounded ice)."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_global_ocean_topography_ocean_frac_varname" type="character" default_value="none" units="unitless"
+					description="Variable name for the ocean mask in the topography file."
+					possible_values="Variable name from input file."
+		/>
 		<nml_option name="config_global_ocean_topography_method" type="character" default_value="nearest_neighbor" units="unitless"
 					description="Method to interpolate topography data to MPAS mesh."
 					possible_values="bilinear_interpolation, nearest_neighbor"
