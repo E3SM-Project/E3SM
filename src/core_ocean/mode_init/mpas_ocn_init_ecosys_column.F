@@ -9,14 +9,13 @@
 !
 !  ocn_init_ecosys_column
 !
-!> \brief MPAS ocean initialize case -- CVMix Unit Test
-!> WSwSBF means Wind Stress with Surface Buoyancy Forcing
-!> \author Todd Ringler
-!> \date   04/23/2015
+!> \brief MPAS ocean initialize case -- BGC (ecosys + DMS + MacroMolecules)
+!> \author Mathew Maltrud
+!> \date   11/01/2015
 !> \details
 !>  This module contains the routines for initializing the 
 !>  the ecosys column test configuration. This in a 
-!>  single column configuration
+!>  single column configuration.
 !
 !-----------------------------------------------------------------------
 
@@ -69,8 +68,8 @@ contains
 !  routine ocn_init_setup_ecosys_column
 !
 !> \brief   Setup for ecosys column test configuration
-!> \author  Todd Ringler
-!> \date    04/23/2015
+!> \author  Mathew Maltrud
+!> \date    11/01/2015
 !> \details 
 !>  This routine sets up the initial conditions for the ecosys column test configuration.
 !
@@ -443,11 +442,11 @@ contains
 !
 !  routine ocn_init_validate_ecosys_column
 !
-!> \brief   Validation for CVMix WSwSBF mixing unit test case
-!> \author  Doug Jacobsen
-!> \date    04/01/2015
+!> \brief   Validation for ecosys column test case
+!> \author  Mathew Maltrud
+!> \date    11/01/2015
 !> \details 
-!>  This routine validates the configuration options for the CVMix WSwSBF mixing unit test configuration.
+!>  This routine validates the configuration options for the ecosys column test configuration.
 !
 !-----------------------------------------------------------------------
 
@@ -490,8 +489,8 @@ contains
 !  routine ocn_init_setup_ecosys_read_column
 !
 !> \brief   Read a column of a specified field from a given file
-!> \author  Doug Jacobsen
-!> \date    03/04/2014
+!> \author  Mathew Maltrud
+!> \date    11/01/2014
 !> \details
 !>  This routine reads a column of a specified field from a given file
 !

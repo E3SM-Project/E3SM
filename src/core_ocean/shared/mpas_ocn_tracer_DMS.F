@@ -11,7 +11,7 @@
 !
 !> \brief MPAS ocean DMS
 !> \author Mathew Maltrud
-!> \date   08/24/2015
+!> \date   11/01/2015
 !> \details
 !>  This module contains routines for computing tracer forcing due to DMS
 !
@@ -83,8 +83,8 @@ contains
 !  routine ocn_tracer_DMS_compute
 !
 !> \brief   computes a tracer tendency due to DMS
-!> \author  Todd Ringler
-!> \date    06/09/2015
+!> \author  Mathew Maltrud
+!> \date    11/01/2015
 !> \details 
 !>  This routine computes a tracer tendency due to DMS
 !
@@ -205,8 +205,8 @@ contains
 !  routine ocn_tracer_DMS_surface_flux_compute
 !
 !> \brief   computes a tracer tendency due to DMS
-!> \author  Todd Ringler
-!> \date    06/09/2015
+!> \author  Mathew Maltrud
+!> \date    11/01/2015
 !> \details 
 !>  This routine computes a tracer tendency due to DMS
 !
@@ -314,8 +314,8 @@ contains
 !  routine ocn_tracer_DMS_init
 !
 !> \brief   Initializes ocean surface restoring
-!> \author  Todd Ringler
-!> \date    06/09/2015
+!> \author  Mathew Maltrud
+!> \date    11/01/2015
 !> \details 
 !>  This routine initializes fields required for tracer surface flux restoring
 !
