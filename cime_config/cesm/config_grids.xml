@@ -251,10 +251,16 @@
 
 
 
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+SGLC">
       <sname>1.9x2.5_1.9x2.5</sname>
       <alias>f19_f19</alias>
       <lname>a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%null_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+CISM1">
+      <sname>1.9x2.5_1.9x2.5</sname>
+      <alias>f19_f19</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
     </grid>
 
     <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
