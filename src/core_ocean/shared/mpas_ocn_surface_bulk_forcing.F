@@ -334,7 +334,6 @@ contains
       !
       !-----------------------------------------------------------------
       type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
-      real (kind=RKIND), dimension(:,:,:), intent(in) :: tracerGroup
 
       !-----------------------------------------------------------------
       !
@@ -343,6 +342,7 @@ contains
       !-----------------------------------------------------------------
       type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
       real (kind=RKIND), dimension(:,:), intent(inout) :: tracersSurfaceFlux
+      real (kind=RKIND), dimension(:,:,:), intent(inout) :: tracerGroup
 
       !-----------------------------------------------------------------
       !
@@ -384,6 +384,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'longWaveHeatFluxUp', longWaveHeatFluxUp)
       call mpas_pool_get_array(forcingPool, 'longWaveHeatFluxDown', longWaveHeatFluxDown)
       call mpas_pool_get_array(forcingPool, 'seaIceHeatFlux', seaIceHeatFlux)
+      call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
       call mpas_pool_get_array(forcingPool, 'snowFlux', snowFlux)
       call mpas_pool_get_array(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFlux)
 
@@ -413,7 +414,7 @@ contains
       ! DOUG: OpenMP directive here?
       if (bulkThicknessFluxOn) then
          do iCell = 1, nCells
-           tracersSurfaceFlux(1, iCell) = tracersSurfaceFlux(1, iCell) + (snowFlux(iCell) + rainFlux(iCell))*tracerGroup(1,1,iCell)
+           tracersSurfaceFlux(1, iCell) = tracersSurfaceFlux(1, iCell) + (snowFlux(iCell) + rainFlux(iCell))*tracerGroup(1,1,iCell) / rho_sw
          end do
       endif ! bulkThicknessFluxOn
       ! DOUG: OpenMP directive here?
