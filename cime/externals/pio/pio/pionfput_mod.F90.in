@@ -125,7 +125,7 @@ contains
           ierr = nfmpi_begin_indep_data(File%fh)
           
           if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
-             print *,__FILE__,__LINE__,index,count,trim(ival)
+             print *,__PIO_FILE__,__LINE__,index,count,trim(ival)
              ierr = nfmpi_put_vara (File%fh, varid, int(index,kind=PIO_OFFSET), &
                   int(count,kind=PIO_OFFSET), ival, int(count,kind=PIO_OFFSET), &
                   MPI_CHARACTER)
@@ -134,7 +134,7 @@ contains
              ierr = nfmpi_end_indep_data(File%fh)
           end if
 !#else
-!          print *,__FILE__,__LINE__,index,count,trim(ival)
+!          print *,__PIO_FILE__,__LINE__,index,count,trim(ival)
 !            ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), &
 !                  int(count,kind=PIO_OFFSET), ival)
 !#endif
