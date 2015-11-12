@@ -8,7 +8,7 @@
 			description="Timestamp determining how often analysis member computation should be performed."
 			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
 		/>
-		<nml_option name="config_AM_conservationCheck_stream_name" type="character" default_value="conservationCheckOutput" units="unitless"
+		<nml_option name="config_AM_conservationCheck_output_stream" type="character" default_value="conservationCheckOutput" units="unitless"
 			description="Name of the stream that the conservationCheck analysis member should be tied to."
 			possible_values="Any existing stream name or 'none'"
 		/>

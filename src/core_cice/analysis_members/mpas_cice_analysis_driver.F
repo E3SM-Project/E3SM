@@ -31,6 +31,7 @@ module cice_analysis_driver
    use cice_ridging_diagnostics
    use cice_conservation_check
    use cice_geographical_vectors
+   use cice_time_series_stats
 !   use cice_TEMP_LATE
 
    implicit none
@@ -141,6 +142,7 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'ridgingDiagnostics', 1)
       call mpas_pool_add_config(analysisMemberList, 'conservationCheck', 1)
       call mpas_pool_add_config(analysisMemberList, 'geographicalVectors', 1)
+      call mpas_pool_add_config(analysisMemberList, 'timeSeriesStats', 1)
    !   write(6,*) ' debug:  mpas_pool_add_config'
    !  call mpas_pool_add_config(analysisMemberList, 'surfaceAreaWeightedAverages', 1)
    !  call mpas_pool_add_config(analysisMemberList, 'TEMPLATE', 1)
@@ -366,7 +368,7 @@ contains
 
       character (len=StrKIND) :: configName, alarmName, streamName, timerName
       logical, pointer :: config_AM_enable
-      character (len=StrKIND), pointer :: config_AM_compute_interval, config_AM_stream_name
+      character (len=StrKIND), pointer :: config_AM_compute_interval, config_AM_output_stream
       integer :: nameLength
       type (mpas_pool_iterator_type) :: poolItr
 
@@ -394,8 +396,8 @@ contains
             configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_compute_interval'
             call mpas_pool_get_config(domain % configs, configName, config_AM_compute_interval)
 
-            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_stream_name'
-            call mpas_pool_get_config(domain % configs, configName, config_AM_stream_name)
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_output_stream'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_output_stream)
 
             if ( config_AM_compute_interval == 'dt' ) then
                alarmTimeStep = mpas_get_clock_timestep(domain % clock, err_tmp)
@@ -403,26 +405,26 @@ contains
             end if
 
             ! Verify stream exists before trying to use output_interval
-            if ( config_AM_stream_name /= 'none' ) then
+            if ( config_AM_output_stream /= 'none' ) then
                streamFound = .false.
    
                call mpas_stream_mgr_begin_iteration(domain % streamManager)
                do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamName) )
-                  if ( trim(streamName) == trim(config_AM_stream_name) ) then
+                  if ( trim(streamName) == trim(config_AM_output_stream) ) then
                      streamFound = .true.
                   end if
                end do
    
                if ( .not. streamFound ) then
-                  call mpas_dmpar_global_abort('ERROR: Stream ' // trim(config_AM_stream_name) // ' does not exist. Exiting...')
+                  call mpas_dmpar_global_abort('ERROR: Stream ' // trim(config_AM_output_stream) // ' does not exist. Exiting...')
                end if
             end if
             
 
-            if ( config_AM_compute_interval /= 'output_interval' .and. config_AM_stream_name /= 'none') then
+            if ( config_AM_compute_interval /= 'output_interval' .and. config_AM_output_stream /= 'none') then
                alarmName = poolItr % memberName(1:nameLength) // computeAlarmSuffix
                call mpas_set_timeInterval(alarmTimeStep, timeString=config_AM_compute_interval, ierr=err_tmp)
-               call MPAS_stream_mgr_get_property(domain % streamManager, config_AM_stream_name, MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
+               call MPAS_stream_mgr_get_property(domain % streamManager, config_AM_output_stream, MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
                call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
                call mpas_add_clock_alarm(domain % clock, alarmName, referenceTime, alarmTimeStep, ierr=err_tmp)
                call mpas_reset_clock_alarm(domain % clock, alarmName, ierr=err_tmp)
@@ -481,7 +483,7 @@ contains
       integer :: timeLevel, err_tmp
 
       character (len=StrKIND) :: configName, timerName
-      character (len=StrKIND), pointer :: config_AM_stream_name
+      character (len=StrKIND), pointer :: config_AM_output_stream
       logical, pointer :: config_AM_enable, config_AM_write_on_startup, config_AM_compute_on_startup
       type (mpas_pool_iterator_type) :: poolItr
       integer :: nameLength
@@ -512,10 +514,10 @@ contains
                err = ior(err, err_tmp)
 
                if ( config_AM_write_on_startup ) then
-                  configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_stream_name'
-                  call mpas_pool_get_config(domain % configs, configName, config_AM_stream_name)
-                  if ( config_AM_stream_name /= 'none' ) then
-                     call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_stream_name, forceWriteNow=.true., ierr=err_tmp)
+                  configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_output_stream'
+                  call mpas_pool_get_config(domain % configs, configName, config_AM_output_stream)
+                  if ( config_AM_output_stream /= 'none' ) then
+                     call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_output_stream, forceWriteNow=.true., ierr=err_tmp)
                   end if
                end if
             else
@@ -577,7 +579,7 @@ contains
       integer :: timeLevel, err_tmp
 
       character (len=StrKIND) :: configName, alarmName, timerName
-      character (len=StrKIND), pointer :: config_AM_stream_name, config_AM_compute_interval
+      character (len=StrKIND), pointer :: config_AM_output_stream, config_AM_compute_interval
       logical, pointer :: config_AM_enable
       type (mpas_pool_iterator_type) :: poolItr
       integer :: nameLength
@@ -597,16 +599,16 @@ contains
          if ( config_AM_enable ) then
             configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_compute_interval'
             call mpas_pool_get_config(domain % configs, configName, config_AM_compute_interval)
-            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_stream_name'
-            call mpas_pool_get_config(domain % configs, configName, config_AM_stream_name)
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_output_stream'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_output_stream)
 
             ! Build name of alarm for analysis member
             alarmName = poolItr % memberName(1:nameLength) // computeAlarmSuffix
             timerName = trim(precomputeTimerPrefix) // poolItr % memberName(1:nameLength)
 
             ! Compute analysis member just before output
-            if ( config_AM_compute_interval == 'output_interval' .and. config_AM_stream_name /= 'none') then
-               if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID=config_AM_stream_name, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
+            if ( config_AM_compute_interval == 'output_interval' .and. config_AM_output_stream /= 'none') then
+               if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID=config_AM_output_stream, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
                   call mpas_timer_start(timerName, .false.)
                   call cice_precompute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
                   call mpas_timer_stop(timerName)
@@ -670,7 +672,7 @@ contains
       integer :: timeLevel, err_tmp
 
       character (len=StrKIND) :: configName, alarmName, timerName
-      character (len=StrKIND), pointer :: config_AM_stream_name, config_AM_compute_interval
+      character (len=StrKIND), pointer :: config_AM_output_stream, config_AM_compute_interval
       logical, pointer :: config_AM_enable
       type (mpas_pool_iterator_type) :: poolItr
       integer :: nameLength
@@ -690,16 +692,16 @@ contains
          if ( config_AM_enable ) then
             configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_compute_interval'
             call mpas_pool_get_config(domain % configs, configName, config_AM_compute_interval)
-            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_stream_name'
-            call mpas_pool_get_config(domain % configs, configName, config_AM_stream_name)
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_output_stream'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_output_stream)
 
             ! Build name of alarm for analysis member
             alarmName = poolItr % memberName(1:nameLength) // computeAlarmSuffix
             timerName = trim(computeTimerPrefix) // poolItr % memberName(1:nameLength)
 
             ! Compute analysis member just before output
-            if ( config_AM_compute_interval == 'output_interval' .and. config_AM_stream_name /= 'none') then
-               if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID=config_AM_stream_name, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
+            if ( config_AM_compute_interval == 'output_interval' .and. config_AM_output_stream /= 'none') then
+               if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID=config_AM_output_stream, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
                   call mpas_timer_start(timerName, .false.)
                   call cice_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
                   call mpas_timer_stop(timerName)
@@ -839,7 +841,7 @@ contains
       integer :: err_tmp
 
       character (len=StrKIND) :: configName, timerName
-      character (len=StrKIND), pointer :: config_AM_stream_name
+      character (len=StrKIND), pointer :: config_AM_output_stream
       logical, pointer :: config_AM_enable
       type (mpas_pool_iterator_type) :: poolItr
       integer :: nameLength
@@ -855,16 +857,16 @@ contains
          call mpas_pool_get_config(domain % configs, configName, config_AM_enable)
 
          if ( config_AM_enable ) then
-            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_stream_name'
-            call mpas_pool_get_config(domain % configs, configName, config_AM_stream_name)
-            if ( config_AM_stream_name /= 'none' ) then
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_output_stream'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_output_stream)
+            if ( config_AM_output_stream /= 'none' ) then
                timerName = trim(writeTimerPrefix) // poolItr % memberName(1:nameLength)
                call mpas_timer_start(timerName, .false.)
-               call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_stream_name, ierr=err_tmp)
+               call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_output_stream, ierr=err_tmp)
                call mpas_timer_stop(timerName)
                timerName = trim(alarmTimerPrefix) // poolItr % memberName(1:nameLength)
                call mpas_timer_start(timerName, .false.)
-               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_stream_name, ierr=err_tmp)
+               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_output_stream, ierr=err_tmp)
                call mpas_timer_stop(timerName)
             end if
          end if
@@ -983,6 +985,8 @@ contains
          call cice_bootstrap_conservation_check(domain, analysisMemberName, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
          call cice_bootstrap_geographical_vectors(domain, analysisMemberName, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
+         call cice_bootstrap_time_series_stats(domain, analysisMemberName, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_bootstrap_surface_area_weighted_averages(domain, analysisMemberName, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -1027,6 +1031,8 @@ contains
          call cice_init_conservation_check(domain, analysisMemberName, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
          call cice_init_geographical_vectors(domain, analysisMemberName, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
+         call cice_init_time_series_stats(domain, analysisMemberName, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_init_surface_area_weighted_averages(domain, analysisMemberName, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -1072,6 +1078,8 @@ contains
          call cice_precompute_conservation_check(domain, analysisMemberName, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
          call cice_precompute_geographical_vectors(domain, analysisMemberName, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
+         call cice_precompute_time_series_stats(domain, analysisMemberName, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_precompute_surface_area_weighted_averages(domain, analysisMemberName, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -1117,6 +1125,8 @@ contains
          call cice_compute_conservation_check(domain, analysisMemberName, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
          call cice_compute_geographical_vectors(domain, analysisMemberName, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
+         call cice_compute_time_series_stats(domain, analysisMemberName, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_compute_surface_area_weighted_averages(domain, analysisMemberName, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -1161,6 +1171,8 @@ contains
          call cice_restart_conservation_check(domain, analysisMemberName, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
          call cice_restart_geographical_vectors(domain, analysisMemberName, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
+         call cice_restart_time_series_stats(domain, analysisMemberName, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_restart_surface_area_weighted_averages(domain, analysisMemberName, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -1205,6 +1217,8 @@ contains
          call cice_finalize_conservation_check(domain, analysisMemberName, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
          call cice_finalize_geographical_vectors(domain, analysisMemberName, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
+         call cice_finalize_time_series_stats(domain, analysisMemberName, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call cice_finalize_surface_area_weighted_averages(domain, analysisMemberName, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
