@@ -167,7 +167,7 @@ module PhosphorusFluxType
      real(r8), pointer :: livecrootp_storage_to_xfer_patch          (:)     ! patch live coarse root P shift storage to transfer (gP/m2/s)
      real(r8), pointer :: deadcrootp_storage_to_xfer_patch          (:)     ! patch dead coarse root P shift storage to transfer (gP/m2/s)
      real(r8), pointer :: fert_p_patch                                (:)     ! patch applied fertilizer (gP/m2/s)
-     real(r8), pointer :: fert_counter_patch                        (:)     ! patch >0 fertilize; <=0 not
+     real(r8), pointer :: fert_p_counter_patch                        (:)     ! patch >0 fertilize; <=0 not
 
      ! turnover of livewood to deadwood, with retranslocation 
      real(r8), pointer :: livestemp_to_deadstemp_patch              (:)     ! patch live stem P turnover (gP/m2/s)
@@ -461,7 +461,7 @@ contains
     allocate(this%grainp_xfer_to_grainp_patch       (begp:endp)) ; this%grainp_xfer_to_grainp_patch       (:) = nan
     allocate(this%grainp_storage_to_xfer_patch      (begp:endp)) ; this%grainp_storage_to_xfer_patch      (:) = nan
     allocate(this%fert_p_patch                      (begp:endp)) ; this%fert_p_patch                      (:) = nan
-    allocate(this%fert_counter_patch                (begp:endp)) ; this%fert_counter_patch                (:) = nan
+    allocate(this%fert_p_counter_patch                (begp:endp)) ; this%fert_p_counter_patch                (:) = nan
 
     allocate(this%pdep_to_sminp_col             (begc:endc))    ; this%pdep_to_sminp_col	     (:) = nan
     allocate(this%fert_p_to_sminp_col             (begc:endc))    ; this%fert_p_to_sminp_col	     (:) = nan
@@ -1029,10 +1029,10 @@ contains
 
 
     if (crop_prog) then
-       this%fert_counter_patch(begp:endp) = spval
-       call hist_addfld1d (fname='FERT_COUNTER', units='seconds', &
+       this%fert_p_counter_patch(begp:endp) = spval
+       call hist_addfld1d (fname='FERT_P_COUNTER', units='seconds', &
             avgflag='A', long_name='time left to fertilize', &
-            ptr_patch=this%fert_counter_patch)
+            ptr_patch=this%fert_p_counter_patch)
     end if
 
     !-------------------------------
@@ -1493,12 +1493,12 @@ contains
        l = pft%landunit(p)
 
        if ( crop_prog )then
-          this%fert_counter_patch(p)  = spval
+          this%fert_p_counter_patch(p)  = spval
           this%fert_p_patch(p)          = 0._r8 
        end if
 
        if (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop) then
-          this%fert_counter_patch(p)  = 0._r8
+          this%fert_p_counter_patch(p)  = 0._r8
        end if
 
        if (lun%ifspecial(l)) then
@@ -1549,10 +1549,10 @@ contains
     !------------------------------------------------------------------------
 
     if (crop_prog) then
-       call restartvar(ncid=ncid, flag=flag, varname='fert_counter', xtype=ncd_double,  &
+       call restartvar(ncid=ncid, flag=flag, varname='fert_p_counter', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%fert_counter_patch)
+            interpinic_flag='interp', readvar=readvar, data=this%fert_p_counter_patch)
 
        call restartvar(ncid=ncid, flag=flag, varname='fert_p', xtype=ncd_double,  &
             dim1name='pft', &
