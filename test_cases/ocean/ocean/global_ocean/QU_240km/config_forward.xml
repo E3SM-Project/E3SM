@@ -2,6 +2,7 @@
 <config case="forward" mode="forward">
 	<add_link source="../init_step2/ocean.nc" dest="init.nc"/>
 	<add_link source="../init_step2/graph.info" dest="graph.info"/>
+	<add_link source="../init_step2/init_mode_forcing_data.nc" dest="forcing_data.nc"/>
 
 	<add_executable source="model" dest="ocean_model"/>
 	<add_executable source="metis" dest="metis"/>
@@ -28,6 +29,7 @@
 		<option name="config_use_cvmix_shear">.true.</option>
 		<option name="config_use_cvmix_kpp">.true.</option>
 		<option name="config_eos_type">'jm'</option>
+		<option name="config_use_activeTracers_surface_restoring">.true.</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable">
@@ -48,6 +50,34 @@
 				<member name="xtime" type="var"/>
 				<member name="normalVelocity" type="var"/>
 				<member name="layerThickness" type="var"/>
+			</add_contents>
+		</stream>
+		<stream name="forcing_data">
+			<attribute name="type">input</attribute>
+			<attribute name="filename_template">forcing_data.nc</attribute>
+			<attribute name="input_interval">initial_only</attribute>
+			<add_contents>
+				<member name="tracersSurfaceRestoringFields" type="var_struct"/>
+				<member name="tracersInteriorRestoringFields" type="var_struct"/>
+				<member name="tracersExponentialDecayFields" type="var_struct"/>
+				<member name="tracersIdealAgeFields" type="var_struct"/>
+				<member name="tracersTTDFields" type="var_struct"/>
+				<member name="activeTracersPistonVelocity" type="var_array" packages="activeTracersSurfaceRestoringPKG"/>
+				<member name="activeTracersSurfaceRestoringValue" type="var_array" packages="activeTracersSurfaceRestoringPKG"/>
+				<member name="activeTracersInteriorRestoringRate" type="var_array" packages="activeTracersInteriorRestoringPKG"/>
+				<member name="activeTracersInteriorRestoringValue" type="var_array" packages="activeTracersInteriorRestoringPKG"/>
+				<member name="debugTracersPistonVelocity" type="var_array" packages="debugTracersSurfaceRestoringPKG"/>
+				<member name="debugTracersSurfaceRestoringValue" type="var_array" packages="debugTracersSurfaceRestoringPKG"/>
+				<member name="seaSurfacePressure" type="var"/>
+				<member name="windStressZonal" type="var"/>
+				<member name="windStressMeridional" type="var"/>
+				<member name="landIceFraction" type="var"/>
+				<member name="landIceSurfaceTemperature" type="var"/>
+				<member name="latentHeatFlux" type="var"/>
+				<member name="sensibleHeatFlux" type="var"/>
+				<member name="shortWaveHeatFlux" type="var"/>
+				<member name="evaporationFlux" type="var"/>
+				<member name="rainFlux" type="var"/>
 			</add_contents>
 		</stream>
 	</streams>
