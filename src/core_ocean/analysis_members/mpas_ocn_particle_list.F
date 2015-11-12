@@ -617,12 +617,12 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
       ! for each ioProc, send logical array information
       do i = 1, nioProcNeighs
 #ifdef _MPI
-        call MPI_ISend(ioProcRecvList(i,:), nProcs, MPI_LOGICAL, ioProcNeighs(i), domain % dminfo % my_proc_id, &
+        call MPI_ISend(ioProcRecvList(:,i), nProcs, MPI_LOGICAL, ioProcNeighs(i), domain % dminfo % my_proc_id, &
           domain % dminfo % comm, sendRequestID(i), mpi_ierr)
 #endif
 #ifdef MPAS_DEBUG
         write(stderrUnit,*) 'ioProcNeigh= ', ioProcNeighs(i)
-        write(stderrUnit,*) 'send data = ', ioProcRecvList(i,:)
+        write(stderrUnit,*) 'send data = ', ioProcRecvList(:,i)
 #endif
       end do
 
@@ -3953,7 +3953,7 @@ end subroutine allocate_list_particlelists !}}}
      ! which is dependent upon current, on-processor particles
      if (ioProc /= domain % dminfo % my_proc_id) then
        arrayIndex = find_index(gioProcNeighs, ioProc)
-       ioProcRecvList(arrayIndex, currentProc+1) = .True.
+       ioProcRecvList(currentProc+1, arrayIndex) = .True.
      else
        ! consider the case where a particle on A has an ioProc of A and is sent to B (need to have B in A's halo).
        ioProcSendList(currentProc+1) = .True.
