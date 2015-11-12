@@ -745,11 +745,11 @@ end subroutine box_rearrange_io2comp_{TYPE}
        do j=1,ndim
           if ( gcoord(j) < lb(j,i) ) then
              i = max(1,i-decompstep(j))
-             if(k>5000) print *,__FILE__,__LINE__,i,gcoord(:),lb(:,i),ub(:,i)
+             if(k>5000) print *,__PIO_FILE__,__LINE__,i,gcoord(:),lb(:,i),ub(:,i)
              cycle loop_ioproc
           else  if(gcoord(j) >= ub(j,i) ) then
              i = min(nioproc,i+decompstep(j))
-             if(k>5000) print *,__FILE__,__LINE__,i,gcoord(:),lb(:,i),ub(:,i)
+             if(k>5000) print *,__PIO_FILE__,__LINE__,i,gcoord(:),lb(:,i),ub(:,i)
              cycle loop_ioproc
           endif
        end do
