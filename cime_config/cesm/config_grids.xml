@@ -103,10 +103,16 @@
       <lname>a%T341_l%0.23x0.31_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null</lname>
     </grid> 
 
-    <grid compset="(DOCN|XOCN|SOCN)">
+    <grid compset="(DOCN|XOCN|SOCN).+SGLC">
       <sname>T31_T31</sname>
       <alias>T31_T31</alias>
       <lname>a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%null_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN).+CISM1">
+      <sname>T31_T31</sname>
+      <alias>T31_T31</alias>
+      <lname>a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%gland5UM_w%null</lname>
     </grid>
 
     <grid compset="(DOCN|XOCN|SOCN)">
