@@ -506,7 +506,7 @@ def parse_config_machines():
                 warning("Ignoring unrecognized tag: '%s'" % machine.tag)
 
 ###############################################################################
-def get_machine_info(items, machine=None, user=None, project=None, raw=False):
+def get_machine_info(items, machine=None, user=None, project=None, case=None, raw=False):
 ###############################################################################
     """
     Return information on machine. If no arg provided, probe for machine.
@@ -518,14 +518,15 @@ def get_machine_info(items, machine=None, user=None, project=None, raw=False):
     (compiler, test_suite, use_batch, project, testroot, baseline_root, proxy)
 
     >>> parse_config_machines()
-    >>> get_machine_info("EXEROOT", machine="melvin") == os.path.join(os.environ["HOME"], "acme/scratch/$CASE/bld")
-    True
 
     >>> get_machine_info(["NODENAME_REGEX", "TESTS"], machine="skybridge")
     ['skybridge-login', 'acme_integration']
 
     >>> get_machine_info("CESMSCRATCHROOT", machine="melvin", user="jenkins")
     '/home/jenkins/acme/scratch'
+
+    >>> get_machine_info("EXEROOT", machine="melvin", user="jenkins", case="Foo")
+    '/home/jenkins/acme/scratch/Foo/bld'
     """
     parse_config_machines()
 
@@ -562,11 +563,19 @@ def get_machine_info(items, machine=None, user=None, project=None, raw=False):
                         item_data = item_data.replace(m.group(), get_machine_info(ref, machine=machine, user=user, project=project))
 
                 item_data = item_data.replace("$USER", user)
-                item_data = item_data.replace(getpass.getuser(), user, 1)
+                # Need extra logic to handle case where user string was brought in from env ($HOME)
+                if (user != getpass.getuser()):
+                    item_data = item_data.replace(getpass.getuser(), user, 1)
+
                 if ("$PROJECT" in item_data):
                     project = get_machine_project(machine=machine) if project is None else project
                     expect(project is not None, "Cannot evaluate '%s' without project information" % item)
                     item_data = item_data.replace("$PROJECT", project)
+
+                # $CASE is another special case, it can only be provided by user
+                if ("$CASE" in item_data):
+                    expect(case is not None, "Data for '%s' required case information but none provided" % item)
+                    item_data = item_data.replace("$CASE", case)
 
             rv.append(item_data)
 
