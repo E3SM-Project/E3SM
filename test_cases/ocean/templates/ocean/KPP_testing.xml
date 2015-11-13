@@ -25,8 +25,8 @@
 				<member name="surfaceFrictionVelocity" type="var"/>
 				<member name="penetrativeTemperatureFluxOBL" type="var"/>
 				<member name="surfaceBuoyancyForcing" type="var"/>
-				<member name="windStressZonalDiag" type="var"/>
-				<member name="windStressMeridionalDiag" type="var"/>
+				<member name="windStressZonal" type="var"/>
+				<member name="windStressMeridional" type="var"/>
 				<member name="transportVelocityZonal" type="var"/>
 				<member name="transportVelocityMeridional" type="var"/>
 				<member name="RiTopOfCell" type="var"/>

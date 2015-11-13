@@ -16,11 +16,11 @@
 
 	<namelist name="namelist.ocean">
 		<option name="config_ocean_run_mode">'forward'</option>
-		<option name="config_dt">'00:06:00'</option>
-		<option name="config_run_duration">'0000_00:18:01'</option>
+		<option name="config_dt">'00:01:30'</option>
+		<option name="config_run_duration">'0000_00:04:31'</option>
 		<option name="config_use_mom_del2">.false.</option>
 		<option name="config_use_mom_del4">.true.</option>
-		<option name="config_mom_del4">6.25e9</option>
+		<option name="config_mom_del4">9.8e7</option>
 		<option name="config_mom_del4_div_factor">10.0</option>
 		<option name="config_convective_visc">1.0</option>
 		<option name="config_convective_diff">1.0</option>

@@ -16,11 +16,11 @@
 
 	<namelist name="namelist.ocean">
 		<option name="config_ocean_run_mode">'forward'</option>
-		<option name="config_dt">'00:06:00'</option>
-		<option name="config_run_duration">'0000_00:18:01'</option>
+		<option name="config_dt">'00:03:00'</option>
+		<option name="config_run_duration">'0000_00:09:01'</option>
 		<option name="config_use_mom_del2">.false.</option>
 		<option name="config_use_mom_del4">.true.</option>
-		<option name="config_mom_del4">6.25e9</option>
+		<option name="config_mom_del4">7.8e8</option>
 		<option name="config_mom_del4_div_factor">10.0</option>
 		<option name="config_convective_visc">1.0</option>
 		<option name="config_convective_diff">1.0</option>
@@ -54,8 +54,8 @@
 		<option name="config_AM_eliassenPalm_enable">.true.</option>
 		<option name="config_AM_eliassenPalm_compute_interval">'03_00:00:00'</option>
 		<option name="config_AM_eliassenPalm_nBuoyancyLayers">100</option>
-		<option name="config_AM_eliassenPalm_rhomin_buoycoor">1028.0</option>
-		<option name="config_AM_eliassenPalm_rhomax_buoycoor">1030.7</option>
+		<option name="config_AM_eliassenPalm_rhomin_buoycoor">1028.1</option>
+		<option name="config_AM_eliassenPalm_rhomax_buoycoor">1030.25</option>
 		<option name="config_AM_mixedLayerDepths_enable">.true.</option>
 		<option name="config_AM_timeFilters_enable">.true.</option>
 		<option name="config_AM_timeFilters_initialize_filters">.false.</option>

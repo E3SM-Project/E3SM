@@ -1,0 +1,11 @@
+<driver_script name="20km_ziso.py">
+	<case name="init_step1">
+		<step executable="./run.py"/>
+	</case>
+	<case name="init_step2">
+		<step executable="./run.py"/>
+	</case>
+	<case name="forward">
+		<step executable="./run.py"/>
+	</case>
+</driver_script>
