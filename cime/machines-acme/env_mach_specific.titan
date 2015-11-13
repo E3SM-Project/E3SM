@@ -62,7 +62,6 @@ if (-e /opt/modules/default/init/csh) then
       module switch cray-libsci cray-libsci/13.0.4
       module load esmf/5.2.0rp2
       module switch atp atp/1.7.5
-      module load cray-petsc-64/3.5.3.1
       # NOTE(wjs, 2015-03-12) The following line is needed for bit-for-bit reproducibility
       setenv CRAY_CPU_TARGET istanbul
   endif    
