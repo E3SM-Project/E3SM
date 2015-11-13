@@ -625,10 +625,10 @@ endif
        iptr = np*(kptr+k-1)
 !dir$ ivdep
        do i=1,np
-          edge%buf(iptr+ie+i)   = v(np ,i ,k) ! East
           edge%buf(iptr+is+i)   = v(i  ,1 ,k) ! South
           edge%buf(iptr+in+i)   = v(i  ,np,k) ! North
           edge%buf(iptr+iw+i)   = v(1  ,i ,k) ! West
+          edge%buf(iptr+ie+i)   = v(np ,i ,k) ! East
        enddo
     enddo
 
@@ -971,9 +971,6 @@ endif
     integer,               intent(in)  :: ielem
     !type (EdgeDescriptor_t)            :: desc
 
-    real(kind=real_kind) :: temp(np)
-    real(kind=real_kind) :: temp1,temp2,temp3,temp4
-
     ! Local
     integer :: i,k,ll,iptr,nce
     integer :: is,ie,in,iw
@@ -1007,41 +1004,14 @@ endif
 !$omp parallel do private(k,i,iptr)
 #endif
     do k=1,vlyr
-       iptr=np*(kptr+k-1)+ie
+       iptr=np*(kptr+k-1)
        do i=1,np
-          v(np ,i  ,k) = v(np ,i  ,k)+edge%receive(iptr+i) ! East
+          v(i  ,1  ,k) = v(i  ,1  ,k)+edge%receive(iptr+is+i) ! South
+          v(i  ,np ,k) = v(i  ,np ,k)+edge%receive(iptr+in+i) ! North
+          v(1  ,i  ,k) = v(1  ,i  ,k)+edge%receive(iptr+iw+i) ! West
+          v(np ,i  ,k) = v(np ,i  ,k)+edge%receive(iptr+ie+i) ! East
        enddo
     enddo
-
-#if (defined COLUMN_OPENMP && !defined __bg__)
-!$omp parallel do private(k,i,iptr)
-#endif
-    do k=1,vlyr
-       iptr=np*(kptr+k-1)+is
-       do i=1,np
-          v(i  ,1  ,k) = v(i  ,1  ,k)+edge%receive(iptr+i) ! South
-       enddo
-    enddo
-
-#if (defined COLUMN_OPENMP && !defined __bg__)
-!$omp parallel do private(k,i,iptr)
-#endif
-    do k=1,vlyr
-       iptr=np*(kptr+k-1)+in
-       do i=1,np
-          v(i  ,np ,k) = v(i  ,np ,k)+edge%receive(iptr+i) ! North
-       enddo
-    enddo
-
-#if (defined COLUMN_OPENMP && !defined __bg__)
-!$omp parallel do private(k,i,iptr)
-#endif
-    do k=1,vlyr
-       iptr=np*(kptr+k-1)+iw
-       do i=1,np
-          v(1  ,i  ,k) = v(1  ,i  ,k)+edge%receive(iptr+i) ! West
-       enddo
-    end do
 
 ! SWEST
     nce = max_corner_elem
