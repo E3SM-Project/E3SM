@@ -146,10 +146,7 @@ contains
 
       ! get "MPI halos" for communication of particles in halo during computational step
       call mpas_particle_list_build_computation_halos(domain, err, g_compProcNeighsNearby)
-      ! make sure Eulerian computational halo values are transfered to general computational halo
-      ! just copy this data
-      allocate(g_compProcNeighs(size(g_compProcNeighsNearby)))
-      g_compProcNeighs = g_compProcNeighsNearby
+
 #ifdef MPAS_DEBUG
       write(stderrUnit,*) 'finished building and computational halos'
 #endif
@@ -175,30 +172,6 @@ contains
       call mpas_timer_stop("trans_from_block_to_blockLPT", timerTransferParticles_init)
       !call MPI_Barrier(domain % dminfo % comm, err)
 #endif
-
-      ! at initialization time we need to build the initial halo for the reset
-      ! (could be anywhere so we'll need to make a connection between the
-      ! 'currentBlock' and 'currentBlockReset'
-      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_reset_criteria', config_AM_lagrPartTrack_reset_criteria)
-      if (trim(config_AM_lagrPartTrack_reset_criteria) == 'none') then
-        config_AM_lagrPartTrack_reset_particles = .False.
-      else
-        config_AM_lagrPartTrack_reset_particles = .True.
-      end if
-      if (config_AM_lagrPartTrack_reset_particles) then
-         ! build halos to reset blocks
-         ! AllToAll Computation!
-         call mpas_particle_list_build_halos(domain, err, 'currentBlockReset', g_compProcNeighs)
-#if MPAS_DEBUG
-     write(stderrUnit,*) 'Neighs: self begin = ', g_compProcNeighs
-     write(stderrUnit,*) 'Neighs: list = ', g_compProcNeighsNearby
-#endif
-         ! take the union of this halo with the particle computation halos to build complete computational halo
-         call mpas_particle_list_self_union_halo_lists(g_compProcNeighs, g_compProcNeighsNearby, domain % dminfo % nprocs, domain % dminfo % my_proc_id)
-#if MPAS_DEBUG
-     write(stderrUnit,*) 'Neighs: self end = ', g_compProcNeighs
-#endif
-      end if
 
       ! tests to make sure all the values are ok !{{{
 #ifdef MPAS_DEBUG
@@ -309,10 +282,6 @@ contains
       integer, pointer :: nCells, nVertLevels, iCell
       integer, dimension(:), pointer :: nCellVerticesArray
       integer, dimension(:,:), pointer :: cellsOnCell
-      logical, dimension(:,:), pointer :: ioProcRecvList
-      logical, dimension(:), pointer :: ioProcSendList
-      logical, dimension(:,:), pointer :: compProcRecvList
-      logical, dimension(:), pointer :: compProcSendList
       logical, pointer :: onSphere
       logical :: config_AM_lagrPartTrack_reset_particles
       character (len=StrKIND), pointer :: config_AM_lagrPartTrack_reset_criteria
@@ -333,7 +302,7 @@ contains
       integer, pointer :: verticalTreatment, vertexReconstMethod, timeIntegration, indexLevel, filterNum
       character(len=StrKIND), pointer :: config_dt
       type (MPAS_timeInterval_type) :: timeStepESMF
-      logical :: resetParticle
+      logical :: resetParticle, resetParticleAny
       integer :: err_tmp
 
       err = 0
@@ -357,24 +326,6 @@ contains
         config_AM_lagrPartTrack_reset_particles = .True.
       end if
 
-      allocate(ioProcRecvList(domain % dminfo % nprocs, size(g_ioProcNeighs)))
-      allocate(ioProcSendList(domain % dminfo % nprocs))
-      ioProcRecvList = .False.
-      allocate(ioProcSendList(domain % dminfo % nprocs))
-      ioProcSendList = .False.
-      allocate(compProcRecvList(domain % dminfo % nprocs, size(g_compProcNeighs)))
-      compProcRecvList = .False.
-      allocate(compProcSendList(domain % dminfo % nprocs))
-      compProcSendList = .False.
-      ! initialize with neighboring blocks to current block 
-      ! (make sure computational halo has Eulerian MPAS halos)
-      compProcSendList(g_compProcNeighsNearby+1) = .True.
-#ifdef MPAS_DEBUG
-      write(stderrUnit,*) 'compProcSendList before halo updates = ', compProcSendList
-      write(stderrUnit,*) 'g_compProcNeighs before halo updates = ', g_compProcNeighs
-#endif
-
-
       ! get the most recent velocities on the potential density surfaces
 #ifdef MPAS_DEBUG
       call mpas_timer_start("velocity_pot_density_LPT", .false., timerVelocityPotDensity)
@@ -383,6 +334,8 @@ contains
 #ifdef MPAS_DEBUG
       call mpas_timer_stop("velocity_pot_density_LPT",timerVelocityPotDensity)
 #endif
+
+      resetParticleAny = .False.
 
       block => domain % blocklist
       do while (associated(block)) !{{{
@@ -818,21 +771,13 @@ contains
             ! determine if particles should be reset based on different criteria.  If so, reset them.
             call ocn_evaluate_particle_reset_condition(domain, block, particle, dtSim, iCell, resetParticle, err)
           end if
+          resetParticleAny = resetParticleAny .or. resetParticle
 
           if (.not. resetParticle) then
             ! update halo fields for particles moving from adjacent computational halos
             call mpas_particle_list_update_particle_block(domain, block, particle, 'lagrPartTrackCells', iCell)
           end if
 
-          !! update IO halos based on particle movement (if particle isn't reset)
-          call mpas_particle_list_update_halos_start(domain, block, particle, 'lagrPartTrackCells', iCell, &
-            arrayIndex, 'ioBlock', ioProcRecvList, ioProcSendList, g_ioProcNeighs)
-
-          if (config_AM_lagrPartTrack_reset_particles) then   ! need to link to currentBlockReset for communication
-            ! update computational halos (to account for non block halo communication caused by resets, etc)
-            call mpas_particle_list_update_halos_start(domain, block, particle, 'lagrPartTrackCells', iCell, &
-              arrayIndex, 'currentBlockReset', compProcRecvList, compProcSendList, g_compProcNeighs)
-          end if
 #ifdef MPAS_DEBUG
           call mpas_timer_stop("particleAssignments", timerParticleAssignment)
 #endif
@@ -858,41 +803,24 @@ contains
       ! updated.  Then, a routine can be called to make sure particles are placed on their appropriate
       ! currentBlocks
 
-#ifdef MPAS_DEBUG
-      write(stderrUnit,*) 'compProcSendList after 1st halo updates = ', compProcSendList
-      write(stderrUnit,*) 'compProcRecvList after 1st halo updates = ', compProcRecvList
-      write(stderrUnit,*) 'write halo information before'
-      write(stderrUnit,*) 'g_compProcNeighs       = ', g_compProcNeighs
-      write(stderrUnit,*) 'g_compProcNeighsNearby = ', g_compProcNeighsNearby
-#endif
-
       ! particle transfer can then occur from computational processor to computational processor
 #ifdef MPAS_DEBUG
       call mpas_timer_start("trans_from_block_to_blockLPT", .false., timerTransferParticles)
 #endif
+      if (config_AM_lagrPartTrack_reset_particles .and. resetParticleAny) then   ! need to link to currentBlockReset for communication
+         call mpas_particle_list_build_halos(domain, err, 'currentBlockReset', g_compProcNeighs)
+         ! take the union of this halo with the particle computation halos to build complete computational halo
+         call mpas_particle_list_self_union_halo_lists(g_compProcNeighs, g_compProcNeighsNearby, domain % dminfo % nprocs, domain % dminfo % my_proc_id)
+      else
+        allocate(g_compProcNeighs(size(g_compProcNeighsNearby)))
+        g_compProcNeighs = g_compProcNeighsNearby
+      end if
       call mpas_particle_list_transfer_particles_from_block_to_named_block(domain, err, .True., .False., 'currentBlock', &
         g_compProcNeighs)
+      deallocate(g_compProcNeighs)
 #ifdef MPAS_DEBUG
       call mpas_timer_stop("trans_from_block_to_blockLPT", timerTransferParticles)
-      call mpas_timer_start("update_io_haloLPT", .false., timerUpdateIOHalo)
 #endif
-      ! update io halo
-      call mpas_particle_list_update_halos_end(domain, err, 'ioBlock', g_ioProcNeighs, ioProcSendList, ioProcRecvList)
-      if (config_AM_lagrPartTrack_reset_particles) then   ! need to link to currentBlockReset for communication
-        ! update computational halo
-        call mpas_particle_list_update_halos_end(domain, err, 'currentBlockReset', g_compProcNeighs, compProcSendList, compProcRecvList)
-      end if
-#ifdef MPAS_DEBUG
-      write(stderrUnit,*) 'g_compProcNeighs after halo updates  = ', g_compProcNeighs
-      write(stderrUnit,*) 'compProcSendList after last halo updates = ', compProcSendList
-      write(stderrUnit,*) 'compProcRecvList after last halo updates = ', compProcRecvList
-      write(stderrUnit,*) 'write halo information after'
-      write(stderrUnit,*) 'g_compProcNeighsNearby = ', g_compProcNeighsNearby
-      write(stderrUnit,*) 'g_compProcNeighs       = ', g_compProcNeighs
-      write(stderrUnit,*) 'g_ioProcNeighs         = ', g_ioProcNeighs
-      call mpas_timer_stop("update_io_haloLPT",timerUpdateIOHalo)
-#endif
-      deallocate(compProcSendList, compProcRecvList, ioProcSendList, ioProcRecvList)
 
       ! do IO communications if this is an output time step
       if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='lagrPartTrackOutput', direction=MPAS_STREAM_OUTPUT, ierr=err)) then
@@ -961,8 +889,10 @@ contains
       write(stderrUnit,*) 'start ocn_restart_lagrangian_particle_tracking'
       ! transfer particles to their appropriate blocks (ioBlock) via MPI
       ! note, don't necessarily need to have g_ionSend and g_ionRecv comeout
+      call mpas_particle_list_build_halos(domain, err, 'ioBlock', g_ioProcNeighs)
       call mpas_particle_list_transfer_particles_from_block_to_named_block(domain, err, .True., .True., 'ioBlock', &
         g_ioProcNeighs)
+      deallocate(g_ioProcNeighs)
 
       ! write out all the data, sorting to make sure that shuffled particles
       ! are ouptut correctly (done separately in each function, could be
@@ -1042,10 +972,11 @@ contains
 #endif
       ! depreciated (can just use update_halo_io to keep g_ioProcNeighs up to date)
       !! get "MPI halos" for IO communication during write and restart steps (currentBlock to ioBlock)
-      !call mpas_particle_list_build_halos(domain, err, 'ioBlock', g_ioProcNeighs)
+      call mpas_particle_list_build_halos(domain, err, 'ioBlock', g_ioProcNeighs)
       ! transfer the data
       call mpas_particle_list_transfer_particles_from_block_to_named_block(domain, err, .False., .True., 'ioBlock', &
         g_ioProcNeighs)
+      deallocate(g_ioProcNeighs)
 #ifdef MPAS_DEBUG
       call mpas_timer_stop("trans_from_block_to_blockLPT", timerTransferParticles_write)
 #endif
@@ -1130,9 +1061,7 @@ contains
         block => block %  next
       end do
 
-      deallocate(g_compProcNeighsNearby, g_compProcNeighs, g_ioProcNeighs)
-      ! these following ones should be deallocated once rest of the code is sketched in
-      !deallocate(g_nPartSend, g_nPartRecv, g_ionSend, g_ionRecv)
+      deallocate(g_compProcNeighsNearby)
 
       write(stderrUnit,*) 'end ocn_finalize_lagrangian_particle_tracking'
       call mpas_timer_stop("finalizeLPT", timerFinalize)
