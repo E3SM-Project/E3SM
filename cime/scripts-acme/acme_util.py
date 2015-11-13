@@ -269,7 +269,7 @@ def get_current_branch(repo=None):
             branch = branch.replace("origin/", "", 1)
         return branch
     else:
-        stat, output, errput = run_cmd("git symbolic-ref HEAD", from_dir=repo, ok_to_fail=True)
+        stat, output, _ = run_cmd("git symbolic-ref HEAD", from_dir=repo, ok_to_fail=True)
         if (stat != 0):
             return None
         else:
@@ -520,8 +520,12 @@ def get_machine_info(items, machine=None, user=None, project=None, raw=False):
     >>> parse_config_machines()
     >>> get_machine_info("EXEROOT", machine="melvin") == os.path.join(os.environ["HOME"], "acme/scratch/$CASE/bld")
     True
+
     >>> get_machine_info(["NODENAME_REGEX", "TESTS"], machine="skybridge")
     ['skybridge-login', 'acme_integration']
+
+    >>> get_machine_info("CESMSCRATCHROOT", machine="melvin", user="jenkins")
+    '/home/jenkins/acme/scratch'
     """
     parse_config_machines()
 
@@ -533,7 +537,7 @@ def get_machine_info(items, machine=None, user=None, project=None, raw=False):
     expect(machine is not None, "Failed to probe machine. Please provide machine to whatever script you just ran")
     expect(machine in _MACHINE_INFO, "No info for machine '%s'" % machine)
 
-    if (type(items) is str):
+    if (isinstance(items, str)):
         items = [items]
 
     rv = []
@@ -545,7 +549,7 @@ def get_machine_info(items, machine=None, user=None, project=None, raw=False):
         env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
         for item in items:
             item_data = _MACHINE_INFO[machine][item] if item in _MACHINE_INFO[machine] else None
-            if (type(item_data) is str):
+            if (isinstance(item_data, str)):
                 for m in env_ref_re.finditer(item_data):
                     env_var = m.groups()[0]
                     expect(env_var in os.environ,
@@ -558,6 +562,7 @@ def get_machine_info(items, machine=None, user=None, project=None, raw=False):
                         item_data = item_data.replace(m.group(), get_machine_info(ref, machine=machine, user=user, project=project))
 
                 item_data = item_data.replace("$USER", user)
+                item_data = item_data.replace(getpass.getuser(), user, 1)
                 if ("$PROJECT" in item_data):
                     project = get_machine_project(machine=machine) if project is None else project
                     expect(project is not None, "Cannot evaluate '%s' without project information" % item)
