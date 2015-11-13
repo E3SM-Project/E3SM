@@ -71,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_bootstrap_conservation_check(domain, analysisMemberName, err)!{{{
+   subroutine cice_bootstrap_conservation_check(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -79,7 +79,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -120,7 +120,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_conservation_check(domain, analysisMemberName, err)!{{{
+   subroutine cice_init_conservation_check(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -128,7 +128,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -169,7 +169,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_conservation_check(domain, analysisMemberName, timeLevel, err)!{{{
+   subroutine cice_precompute_conservation_check(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -177,7 +177,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       integer, intent(in) :: timeLevel
 
@@ -245,7 +245,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_conservation_check(domain, analysisMemberName, timeLevel, err)!{{{
+   subroutine cice_compute_conservation_check(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -253,7 +253,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       integer, intent(in) :: timeLevel
 
@@ -1289,7 +1289,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_conservation_check(domain, analysisMemberName, err)!{{{
+   subroutine cice_restart_conservation_check(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -1297,7 +1297,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -1338,7 +1338,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_conservation_check(domain, analysisMemberName, err)!{{{
+   subroutine cice_finalize_conservation_check(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -1346,7 +1346,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !

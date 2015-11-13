@@ -71,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_bootstrap_geographical_vectors(domain, analysisMemberName, err)!{{{
+   subroutine cice_bootstrap_geographical_vectors(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -79,7 +79,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -120,7 +120,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_geographical_vectors(domain, analysisMemberName, err)!{{{
+   subroutine cice_init_geographical_vectors(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -128,7 +128,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -169,7 +169,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_geographical_vectors(domain, analysisMemberName, timeLevel, err)!{{{
+   subroutine cice_precompute_geographical_vectors(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -177,7 +177,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       integer, intent(in) :: timeLevel
 
@@ -220,7 +220,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_geographical_vectors(domain, analysisMemberName, timeLevel, err)!{{{
+   subroutine cice_compute_geographical_vectors(domain, instance, timeLevel, err)!{{{
 
      use cice_mesh, only: &
           cice_latlon_vector_rotation_backward
@@ -231,7 +231,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       integer, intent(in) :: timeLevel
 
@@ -476,7 +476,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_geographical_vectors(domain, analysisMemberName, err)!{{{
+   subroutine cice_restart_geographical_vectors(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -484,7 +484,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -525,7 +525,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_geographical_vectors(domain, analysisMemberName, err)!{{{
+   subroutine cice_finalize_geographical_vectors(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -533,7 +533,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !

@@ -171,9 +171,9 @@ contains
 !>  Specifically, it ensures the streams used for this instance are correctly
 !>  configured.
 !-----------------------------------------------------------------------
-subroutine cice_bootstrap_time_series_stats(domain, analysisMemberName, err)!{{{
+subroutine cice_bootstrap_time_series_stats(domain, instance, err)!{{{
   ! input variables
-  character(len=strKIND), intent(in) :: analysisMemberName
+  character(len=*), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -183,7 +183,7 @@ subroutine cice_bootstrap_time_series_stats(domain, analysisMemberName, err)!{{{
 
   ! local variables
   integer :: v
-  character (len=StrKIND) :: instance ! TODO intent(in)
+  !character (len=StrKIND) :: instance ! TODO intent(in)
   type (time_series_type) :: series
   type (time_series_alarms_type), allocatable, dimension(:) :: alarms
 
@@ -191,7 +191,7 @@ subroutine cice_bootstrap_time_series_stats(domain, analysisMemberName, err)!{{{
   err = 0
 
   ! TODO placeholder for some unique ID if this code is replicated
-  instance = '' ! TODO to be passed in
+  !instance = '' ! TODO to be passed in
 
   ! initial allocation of instance state for this AM from the namelist
   call start_state(domain, instance, series, err)
@@ -218,9 +218,9 @@ end subroutine cice_bootstrap_time_series_stats!}}}
 !>  This routine conducts all initializations required for the
 !>  MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
-subroutine cice_init_time_series_stats(domain, analysisMemberName, err)!{{{
+subroutine cice_init_time_series_stats(domain, instance, err)!{{{
   ! input variables
-  character(len=strKIND), intent(in) :: analysisMemberName
+  character(len=*), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -230,7 +230,7 @@ subroutine cice_init_time_series_stats(domain, analysisMemberName, err)!{{{
 
   ! local variables
   integer :: v
-  character (len=StrKIND) :: instance ! TODO intent(in)
+  !character (len=StrKIND) :: instance ! TODO intent(in)
   type (time_series_type) :: series
   type (time_series_alarms_type), allocatable, dimension(:) :: alarms
 
@@ -238,7 +238,7 @@ subroutine cice_init_time_series_stats(domain, analysisMemberName, err)!{{{
   err = 0
 
   ! TODO placeholder for some unique ID if this code is replicated
-  instance = '' ! TODO to be passed in
+  !instance = '' ! TODO to be passed in
 
   ! coming back from a potential restart read
   ! get all of the state for this instance
@@ -273,7 +273,7 @@ end subroutine cice_init_time_series_stats!}}}
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_time_series_stats(domain, analysisMemberName, timeLevel, err)!{{{
+   subroutine cice_precompute_time_series_stats(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -281,7 +281,7 @@ end subroutine cice_init_time_series_stats!}}}
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       integer, intent(in) :: timeLevel
 
@@ -321,9 +321,9 @@ end subroutine cice_init_time_series_stats!}}}
 !>  This routine conducts all computation required for this
 !>  MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
-subroutine cice_compute_time_series_stats(domain, analysisMemberName, timeLevel, err)!{{{
+subroutine cice_compute_time_series_stats(domain, instance, timeLevel, err)!{{{
   ! input variables
-  character(len=strKIND), intent(in) :: analysisMemberName
+  character(len=*), intent(in) :: instance
   integer, intent(in) :: timeLevel
 
   ! input/output variables
@@ -333,7 +333,7 @@ subroutine cice_compute_time_series_stats(domain, analysisMemberName, timeLevel,
   integer, intent(out) :: err !< Output: error flag
 
   ! local variables
-  character (len=StrKIND) :: instance ! TODO intent(in)
+  !character (len=StrKIND) :: instance ! TODO intent(in)
   integer :: v, b
   type (time_series_type) :: series
 
@@ -341,7 +341,7 @@ subroutine cice_compute_time_series_stats(domain, analysisMemberName, timeLevel,
   err = 0
 
   ! TODO placeholder for some unique ID if this code is replicated
-  instance = '' ! TODO to be passed in
+  !instance = '' ! TODO to be passed in
 
   ! get all of the state for this instance to be able to compute
   call get_state(domain, instance, series)
@@ -388,9 +388,9 @@ end subroutine cice_compute_time_series_stats!}}}
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
-subroutine cice_restart_time_series_stats(domain, analysisMemberName, err)!{{{
+subroutine cice_restart_time_series_stats(domain, instance, err)!{{{
   ! input variables
-  character(len=strKIND), intent(in) :: analysisMemberName
+  character(len=*), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -417,9 +417,9 @@ end subroutine cice_restart_time_series_stats!}}}
 !>  This routine conducts all finalizations required for this
 !>  MPAS-Ocean analysis member.
 !-----------------------------------------------------------------------
-subroutine cice_finalize_time_series_stats(domain, analysisMemberName, err)!{{{
+subroutine cice_finalize_time_series_stats(domain, instance, err)!{{{
   ! input variables
-  character(len=strKIND), intent(in) :: analysisMemberName
+  character(len=*), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -450,7 +450,7 @@ end subroutine cice_finalize_time_series_stats!}}}
 !-----------------------------------------------------------------------
 subroutine get_state(domain, instance, series)
   ! input variables
-  character (len=StrKIND), intent(in) :: instance
+  character (len=*), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -589,7 +589,7 @@ end subroutine get_state
 !-----------------------------------------------------------------------
 subroutine start_state(domain, instance, series, err)
   ! input variables
-  character (len=StrKIND), intent(in) :: instance
+  character (len=*), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -826,7 +826,7 @@ end subroutine start_state
 !-----------------------------------------------------------------------
 subroutine modify_stream(domain, instance, series, err)!{{{
   ! input variables
-  character (len=StrKIND), intent(in) :: instance
+  character (len=*), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -1043,7 +1043,7 @@ end function counter_naming
 !-----------------------------------------------------------------------
 subroutine get_alarms(domain, instance, series, alarms, err)
   ! input variables
-  character (len=StrKIND), intent(in) :: instance
+  character (len=*), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain
@@ -1152,7 +1152,7 @@ end subroutine get_alarms
 !-----------------------------------------------------------------------
 subroutine set_alarms(domain, instance, series, alarms, err)
   ! input variables
-  character (len=StrKIND), intent(in) :: instance
+  character (len=*), intent(in) :: instance
 
   ! input/output variables
   type (domain_type), intent(inout) :: domain

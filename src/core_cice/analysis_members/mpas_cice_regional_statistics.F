@@ -72,7 +72,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_bootstrap_regional_statistics(domain, analysisMemberName, err)!{{{
+   subroutine cice_bootstrap_regional_statistics(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -80,7 +80,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -121,7 +121,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_regional_statistics(domain, analysisMemberName, err)!{{{
+   subroutine cice_init_regional_statistics(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -129,7 +129,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -222,7 +222,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_regional_statistics(domain, analysisMemberName, timeLevel, err)!{{{
+   subroutine cice_precompute_regional_statistics(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -230,7 +230,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       integer, intent(in) :: timeLevel
 
@@ -273,7 +273,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_regional_statistics(domain, analysisMemberName, timeLevel, err)!{{{
+   subroutine cice_compute_regional_statistics(domain, instance, timeLevel, err)!{{{
 
       use cice_mesh, only: &
            cice_interpolate_vertex_to_cell
@@ -292,7 +292,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       integer, intent(in) :: timeLevel
 
@@ -579,7 +579,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_regional_statistics(domain, analysisMemberName, err)!{{{
+   subroutine cice_restart_regional_statistics(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -587,7 +587,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -628,7 +628,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_regional_statistics(domain, analysisMemberName, err)!{{{
+   subroutine cice_finalize_regional_statistics(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -636,7 +636,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !

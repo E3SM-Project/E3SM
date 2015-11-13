@@ -72,7 +72,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_bootstrap_high_frequency_output(domain, analysisMemberName, err)!{{{
+   subroutine cice_bootstrap_high_frequency_output(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -80,7 +80,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -121,7 +121,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_high_frequency_output(domain, analysisMemberName, err)!{{{
+   subroutine cice_init_high_frequency_output(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -129,7 +129,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -170,7 +170,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_high_frequency_output(domain, analysisMemberName, timeLevel, err)!{{{
+   subroutine cice_precompute_high_frequency_output(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -178,7 +178,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       integer, intent(in) :: timeLevel
 
@@ -221,7 +221,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_high_frequency_output(domain, analysisMemberName, timeLevel, err)!{{{
+   subroutine cice_compute_high_frequency_output(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -229,7 +229,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       integer, intent(in) :: timeLevel
 
@@ -304,7 +304,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_high_frequency_output(domain, analysisMemberName, err)!{{{
+   subroutine cice_restart_high_frequency_output(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -312,7 +312,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -353,7 +353,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_high_frequency_output(domain, analysisMemberName, err)!{{{
+   subroutine cice_finalize_high_frequency_output(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -361,7 +361,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !

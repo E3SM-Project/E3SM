@@ -73,7 +73,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_bootstrap_temperatures(domain, analysisMemberName, err)!{{{
+   subroutine cice_bootstrap_temperatures(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -81,7 +81,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -122,7 +122,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_temperatures(domain, analysisMemberName, err)!{{{
+   subroutine cice_init_temperatures(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -130,7 +130,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -170,7 +170,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_temperatures(domain, analysisMemberName, timeLevel, err)!{{{
+   subroutine cice_precompute_temperatures(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -178,7 +178,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       integer, intent(in) :: timeLevel
 
@@ -223,7 +223,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_temperatures(domain, analysisMemberName, timeLevel, err)!{{{
+   subroutine cice_compute_temperatures(domain, instance, timeLevel, err)!{{{
 
       use ice_colpkg, only: &
            colpkg_ice_temperature, &
@@ -235,7 +235,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       integer, intent(in) :: timeLevel
 
@@ -362,7 +362,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_temperatures(domain, analysisMemberName, err)!{{{
+   subroutine cice_restart_temperatures(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -370,7 +370,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -411,7 +411,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_temperatures(domain, analysisMemberName, err)!{{{
+   subroutine cice_finalize_temperatures(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -419,7 +419,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), intent(in) :: analysisMemberName
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
