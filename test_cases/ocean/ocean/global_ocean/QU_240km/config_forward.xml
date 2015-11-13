@@ -22,7 +22,15 @@
 		<option name="config_use_cvmix_shear">.true.</option>
 		<option name="config_use_cvmix_kpp">.true.</option>
 		<option name="config_eos_type">'jm'</option>
+		<option name="config_bottom_drag_coeff">1.0e-3</option>
 		<option name="config_use_activeTracers_surface_restoring">.true.</option>
+		<option name="config_use_debugTracers">.true.</option>
+
+		<option name="config_AM_globalStats_enable">.true.</option>
+		<option name="config_AM_globalStats_compute_interval">'dt'</option>
+		<option name="config_AM_globalStats_compute_on_startup">.true.</option>
+		<option name="config_AM_globalStats_write_on_startup">.true.</option>
+		<option name="config_AM_globalStats_text_file">.true.</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable">
@@ -71,6 +79,19 @@
 				<member name="shortWaveHeatFlux" type="var"/>
 				<member name="evaporationFlux" type="var"/>
 				<member name="rainFlux" type="var"/>
+			</add_contents>
+		</stream>
+		<stream name="globalStatsOutput">
+			<attribute name="type">output</attribute>
+			<attribute name="filename_template">analysis_members/globalStats.$Y-$M-$D_$h.$m.$s.nc</attribute>
+			<attribute name="output_interval">0000_00:00:01</attribute>
+			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="packages=">globalStatsAMPKG</attribute>
+			<add_contents>
+				<member name="minGlobalStats" type="var_array"/>
+				<member name="maxGlobalStats" type="var_array"/>
+				<member name="avgGlobalStats" type="var_array"/>
 			</add_contents>
 		</stream>
 	</streams>
