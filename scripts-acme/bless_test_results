@@ -64,11 +64,14 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-c", "--compiler", default=default_compiler,
                         help="Compiler of run you want to bless")
 
-    parser.add_argument("-r", "--report-only", action="store_true",
+    parser.add_argument("--report-only", action="store_true",
                         help="Only report what files will be overwritten and why. Caution is a good thing when updating baselines")
 
-    parser.add_argument("-t", "--test-root", default=default_testroot,
+    parser.add_argument("-r", "--test-root", default=default_testroot,
                         help="Path to test results that are being blessed")
+
+    parser.add_argument("-t", "--test-id",
+                        help="Limit processes to case dirs matching this test-id. Can be useful if mutiple runs dumped into the same dir.")
 
     parser.add_argument("-f", "--force", action="store_true",
                         help="Update every diff without asking. VERY DANGEROUS. Should only be used within testing scripts.")
@@ -85,7 +88,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     acme_util.set_verbosity(args.verbose)
 
-    return args.baseline_name, args.test_root, args.compiler, args.namelists_only, args.hist_only, args.report_only, args.force, args.bless_tests
+    return args.baseline_name, args.test_root, args.compiler, args.test_id, args.namelists_only, args.hist_only, args.report_only, args.force, args.bless_tests
 
 ###############################################################################
 def bless_namelists(test_name, baseline_dir_for_test, testcase_dir_for_test, report_only, force):
@@ -125,9 +128,11 @@ def bless_namelists(test_name, baseline_dir_for_test, testcase_dir_for_test, rep
         acme_util.safe_copy(testcase_dir_for_test, baseline_dir_for_test, namelist_files)
 
 ###############################################################################
-def bless_test_results(baseline_name, test_root, compiler, namelists_only=False, hist_only=False, report_only=False, force=False, bless_tests=None):
+def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelists_only=False, hist_only=False, report_only=False, force=False, bless_tests=None):
 ###############################################################################
-    test_status_files = glob.glob("%s/*/TestStatus" % test_root)
+    test_id_glob = "*" if test_id is None else ("*%s" % test_id)
+    test_status_files = glob.glob("%s/%s/TestStatus" % (test_root, test_id_glob))
+    expect(test_status_files, "No matching test cases found in for %s/%s/TestStatus" % (test_root, test_id_glob))
 
     baseline_root = acme_util.get_machine_info("CCSM_BASELINE")
     baseline_tag  = os.path.join(compiler, baseline_name)
@@ -174,7 +179,7 @@ def bless_test_results(baseline_name, test_root, compiler, namelists_only=False,
                            "Problem, baseline dir '%s' does not exist" % baseline_dir_for_test)
 
                     # Get testcase dir for this test
-                    globs = glob.glob("%s*" % os.path.join(test_root, test_name))
+                    globs = glob.glob("%s/%s%s" % (test_root, test_name, test_id_glob))
                     expect(len(globs) == 1, "Expected exactly one match for testcase area for test '%s', found '%s'" % (test_name, globs))
                     testcase_dir_for_test = globs[0]
                     case = os.path.basename(testcase_dir_for_test)
@@ -224,10 +229,10 @@ def _main_func(description):
 
     acme_util.stop_buffering_output()
 
-    baseline_name, test_root, compiler, namelists_only, hist_only, report_only, force, bless_tests = \
+    baseline_name, test_root, compiler, test_id, namelists_only, hist_only, report_only, force, bless_tests = \
         parse_command_line(sys.argv, description)
 
-    bless_test_results(baseline_name, test_root, compiler, namelists_only, hist_only, report_only, force, bless_tests)
+    bless_test_results(baseline_name, test_root, compiler, test_id, namelists_only, hist_only, report_only, force, bless_tests)
 
 ###############################################################################
 
