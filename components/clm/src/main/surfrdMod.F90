@@ -28,6 +28,7 @@ module surfrdMod
   public :: surfrd_get_grid      ! Read grid/ladnfrac data into domain (after domain decomp)
   public :: surfrd_get_topo      ! Read grid topography into domain (after domain decomp)
   public :: surfrd_get_data      ! Read surface dataset and determine subgrid weights
+  public :: surfrd_get_grid_conn ! Reads grid connectivity information from domain file
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: surfrd_special
@@ -847,5 +848,102 @@ contains
     call check_sums_equal_1(wt_nat_patch, begg, 'wt_nat_patch', subname)
 
   end subroutine surfrd_veg_dgvm
+
+  !-----------------------------------------------------------------------
+  subroutine surfrd_get_grid_conn(filename, cellsOnCell, nCells_loc, maxEdges)
+    !
+    ! !DESCRIPTION:
+    ! Read grid connectivity information.
+    ! NO DOMAIN DECOMPOSITION  HAS BEEN SET YET
+    !
+    ! !USES:
+    use fileutils , only : getfil
+    !
+    ! !ARGUMENTS:
+    character(len=*), intent(in)  :: filename                        ! filename
+    integer         , pointer     :: cellsOnCell(:,:)                ! cells-to-cell connection
+    integer         , intent(out) :: nCells_loc                      ! number of local cell-to-cell connections
+    integer         , intent(out) :: maxEdges                        ! max number of edges/neighbors
+    !
+    ! !LOCAL VARIABLES:
+    integer                      :: dimid,varid                      ! netCDF id's
+    integer                      :: i                                ! index
+    integer                      :: ier                              ! error status
+    integer                      :: nCells                           ! global number of cell-to-cell connections
+    integer                      :: ibeg, iend                       ! beginning/ending index of data
+    integer                      :: remainder                        ! temporary variable
+    type(file_desc_t)            :: ncid                             ! netcdf id
+    character(len=256)           :: varname                          ! variable name
+    character(len=256)           :: locfn                            ! local file name
+    logical                      :: readvar                          ! read variable in or not
+    logical                      :: readdim                          ! read dimension present or not
+    integer , allocatable        :: idata2d(:,:)                     ! temporary data
+    character(len=32)            :: subname = 'surfrd_get_grid_conn' ! subroutine name
+
+    !-----------------------------------------------------------------------
+
+    if (masterproc) then
+       if (filename == ' ') then
+          call endrun( msg=' ERROR: filename is empty)'//&
+               errMsg(__FILE__, __LINE__))
+       end if
+    end if
+
+    call getfil( filename, locfn, 0 )
+    call ncd_pio_openfile (ncid, trim(locfn), 0)
+
+    ! Check if the dimensions are present
+
+    call ncd_inqdid(ncid,'nCells',dimid, readdim)
+
+    if ( .not.readdim ) then
+       call endrun( msg=' ERROR: Dimension nCells missing in '//filename// &
+            errMsg(__FILE__, __LINE__))
+    end if
+    ier = pio_inq_dimlen(ncid, dimid, nCells)
+
+    call ncd_inqdid(ncid,'maxEdges',dimid,readdim)
+
+    if ( .not.readdim ) then
+       call endrun( msg=' ERROR: Dimension maxEdges missing in '//filename// &
+            errMsg(__FILE__, __LINE__))
+    end if
+    ier = pio_inq_dimlen(ncid, dimid, maxEdges)
+
+    ! Read the data independently (i.e. each MPI-proc reads in the entire
+    ! dataset)
+
+    allocate(idata2d(maxEdges, nCells))
+
+    call ncd_io(ncid=ncid, varname='cellsOnCell', data=idata2d, flag='read', readvar=readvar)
+
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: cellsOnCell not found in the file'//errMsg(__FILE__, __LINE__))
+    end if
+
+    ! Determine the size of local array that needs to be saved.
+    nCells_loc = nCells/npes
+    remainder  = nCells - nCells_loc*npes
+    if (iam < remainder) nCells_loc = nCells_loc + 1
+
+    ! Allocate memory
+    allocate(cellsOnCell(maxEdges, nCells_loc))
+
+    ! Determine the beginning and ending index of the data to
+    ! be saved
+    ibeg = 0
+    iend = 0
+    call MPI_Exscan(nCells_loc, ibeg, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
+    call MPI_Scan(  nCells_loc, iend, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
+    ibeg = ibeg + 1
+
+    ! Save the data
+    cellsOnCell(:,:) = idata2d(:,ibeg:iend)
+
+    ! Perform cleanup
+    deallocate(idata2d)
+    call ncd_pio_closefile(ncid)
+
+  end subroutine surfrd_get_grid_conn
 
 end module surfrdMod

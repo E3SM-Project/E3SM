@@ -54,12 +54,14 @@ contains
     use soilorder_varcon , only: soilorder_conrd
     use decompInitMod    , only: decompInit_lnd, decompInit_clumps, decompInit_glcp
     use domainMod        , only: domain_check, ldomain, domain_init
-    use surfrdMod        , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data 
+    use surfrdMod        , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data
     use controlMod       , only: control_init, control_print
     use ncdio_pio        , only: ncd_pio_init
     use initGridCellsMod , only: initGridCells
     use ch4varcon        , only: ch4conrd
     use UrbanParamsType  , only: UrbanInput
+    use surfrdMod        , only: surfrd_get_grid_conn
+    use clm_varctl       , only: lateral_connectivity
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
@@ -70,6 +72,9 @@ contains
     integer           :: icemec_class            ! current icemec class (1..maxpatch_glcmec)
     type(bounds_type) :: bounds_proc             
     integer ,pointer  :: amask(:)                ! global land mask
+    integer ,pointer  :: cellsOnCell(:,:)        ! grid cell level connectivity
+    integer           :: nCells_loc              ! number of grid cell level connectivity saved locally
+    integer           :: maxEdges                ! max number of edges/neighbors
     character(len=32) :: subname = 'initialize1' ! subroutine name
     !-----------------------------------------------------------------------
 
@@ -113,6 +118,19 @@ contains
        noland = .true.
        return
     end if
+
+
+    ! ------------------------------------------------------------------------
+    ! If specified, read the grid level connectivity
+    ! ------------------------------------------------------------------------
+
+    if (lateral_connectivity) then
+       call surfrd_get_grid_conn(fatmlndfrc, cellsOnCell, nCells_loc, maxEdges)
+    else
+       nullify(cellsOnCell)
+       nCells_loc = 0
+       maxEdges   = 0
+    endif
 
     ! ------------------------------------------------------------------------
     ! Determine clm gridcell decomposition and processor bounds for gridcells
