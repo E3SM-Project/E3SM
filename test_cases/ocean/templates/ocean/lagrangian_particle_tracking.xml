@@ -8,6 +8,11 @@
 		<option name="config_AM_lagrPartTrack_input_stream">'lagrPartTrackInput'</option>
 		<option name="config_AM_lagrPartTrack_write_on_startup">.true.</option>
 		<option name="config_AM_lagrPartTrack_filter_number">0</option>
+		<option name="config_AM_lagrPartTrack_reset_criteria">'none'</option>
+		<option name="config_AM_lagrPartTrack_reset_global_timestamp">0000_00:00:00</option>
+		<option name="config_AM_lagrPartTrack_region_stream">'none'</option>
+		<option name="config_AM_lagrPartTrack_reset_if_outside_region">.false.</option>
+		<option name="config_AM_lagrPartTrack_reset_if_inside_region">.false.</option>
 	</namelist>
 
 	<streams>
@@ -29,6 +34,15 @@
 				<member name="yParticle" type="var"/>
 				<member name="zParticle" type="var"/>
 				<member name="zLevelParticle" type="var"/>
+				<member name="xParticleReset" type="var"/>
+				<member name="yParticleReset" type="var"/>
+				<member name="zParticleReset" type="var"/>
+				<member name="zLevelParticleReset" type="var"/>
+				<member name="currentCellReset" type="var"/>
+				<member name="currentBlockReset" type="var"/>
+				<member name="timeSinceReset" type="var"/>
+				<member name="resetTime" type="var"/>
+				<member name="numTimesReset" type="var"/>
 				<member name="buoyancyParticle" type="var"/>
 				<member name="vertexReconstMethod" type="var"/>
 				<member name="horizontalTreatment" type="var"/>
@@ -78,6 +92,15 @@
 				<member name="yParticle" type="var"/>
 				<member name="zParticle" type="var"/>
 				<member name="zLevelParticle" type="var"/>
+				<member name="xParticleReset" type="var"/>
+				<member name="yParticleReset" type="var"/>
+				<member name="zParticleReset" type="var"/>
+				<member name="zLevelParticleReset" type="var"/>
+				<member name="currentCellReset" type="var"/>
+				<member name="currentBlockReset" type="var"/>
+				<member name="timeSinceReset" type="var"/>
+				<member name="resetTime" type="var"/>
+				<member name="numTimesReset" type="var"/>
 				<member name="buoyancyParticle" type="var"/>
 				<member name="vertexReconstMethod" type="var"/>
 				<member name="horizontalTreatment" type="var"/>
@@ -111,6 +134,15 @@
 				<member name="yParticle" type="var"/>
 				<member name="zParticle" type="var"/>
 				<member name="zLevelParticle" type="var"/>
+				<member name="xParticleReset" type="var"/>
+				<member name="yParticleReset" type="var"/>
+				<member name="zParticleReset" type="var"/>
+				<member name="zLevelParticleReset" type="var"/>
+				<member name="currentCellReset" type="var"/>
+				<member name="currentBlockReset" type="var"/>
+				<member name="timeSinceReset" type="var"/>
+				<member name="resetTime" type="var"/>
+				<member name="numTimesReset" type="var"/>
 				<member name="buoyancyParticle" type="var"/>
 				<member name="vertexReconstMethod" type="var"/>
 				<member name="horizontalTreatment" type="var"/>
