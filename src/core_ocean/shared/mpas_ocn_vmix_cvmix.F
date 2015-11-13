@@ -404,9 +404,9 @@ contains
                 invAreaCell = 1.0 / areaCell(iCell)
                 deltaVelocitySquared = 0.0_RKIND
                 do iEdge=1,nEdgesOnCell(iCell)
-                   normalVelocityAv = sum(normalVelocity(1:kav,iEdge))/float(kav)
-
                    iEdgeVal = edgesOnCell(iEdge,iCell)
+
+                   normalVelocityAv = sum(normalVelocity(1:kav,iEdgeVal))/real(kav, kind=RKIND)
                    factor = 0.5 * dcEdge(iEdgeVal) * dvEdge(iEdgeVal) * invAreaCell
                    delU2 = (normalVelocityAv - normalVelocity(kIndexOBL,iEdgeVal))**2
                    deltaVelocitySquared = deltaVelocitySquared + factor * delU2
@@ -415,7 +415,7 @@ contains
                bulkRichardsonNumberShear(kIndexOBL,iCell) = max(deltaVelocitySquared, 1.0e-15_RKIND)
                  
                bulkRichardsonNumberBuoy(kIndexOBL,iCell) = gravity * (density(kIndexOBL,iCell) - &
-                                 sum(density(1:kav,iCell))/float(kav)) / rho_sw
+                                 sum(density(1:kav,iCell))/real(kav, kind=RKIND)) / rho_sw
             
               enddo ! do kIndexOBL
               cvmix_variables % bulkRichardson_cntr(:) = cvmix_kpp_compute_bulk_Richardson( &
