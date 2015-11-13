@@ -34,7 +34,7 @@
 	</nml_record>
 
 	<dims>
-		<dim name="nParticles" units="unitless" decomposition="uniform" 
+		<dim name="nParticles" units="unitless" decomposition="uniform"
 			 description="The total number of particles in the simlulation."
 		/>
 		<dim name="nBuoyancySurfaces" definition="1" units="unitless"
