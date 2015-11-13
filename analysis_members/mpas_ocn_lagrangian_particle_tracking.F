@@ -816,13 +816,15 @@ contains
           resetParticle = .False.
           if (config_AM_lagrPartTrack_reset_particles) then   ! need to link to currentBlockReset for communication
             ! determine if particles should be reset based on different criteria.  If so, reset them.
-            call ocn_evaluate_particle_reset_condition(domain, block, particle, dtSim, iCell, err)
-          else
+            call ocn_evaluate_particle_reset_condition(domain, block, particle, dtSim, iCell, resetParticle, err)
+          end if
+
+          if (.not. resetParticle) then
             ! update halo fields for particles moving from adjacent computational halos
             call mpas_particle_list_update_particle_block(domain, block, particle, 'lagrPartTrackCells', iCell)
           end if
 
-          !! update IO halos based on particle movement
+          !! update IO halos based on particle movement (if particle isn't reset)
           call mpas_particle_list_update_halos_start(domain, block, particle, 'lagrPartTrackCells', iCell, &
             arrayIndex, 'ioBlock', ioProcRecvList, ioProcSendList, g_ioProcNeighs)
 
