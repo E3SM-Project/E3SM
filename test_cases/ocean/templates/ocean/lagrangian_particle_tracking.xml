@@ -154,5 +154,16 @@
 				<member name="buoyancySurfaceValues" type="var"/>
 			</add_contents>
 		</stream>
+		<stream name="lagrPartTrackRegions">
+			<attribute name="type">input</attribute>
+			<attribute name="filename_template">particle_regions.nc</attribute>
+			<attribute name="name">lagrPartTrackRegions</attribute>
+			<attribute name="input_interval">initial_only</attribute>
+			<attribute name="packages">lagrPartTrackAMPKG</attribute>
+			<add_contents>
+				<var name="resetOutsideRegionMaskValue1"/>
+				<var name="resetInsideRegionMaskValue1"/>
+			</add_contents>
+		</stream>
 	</streams>
 </template>
