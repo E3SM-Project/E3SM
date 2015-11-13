@@ -208,11 +208,11 @@
 	</streams>
 
 	<var_struct name="lagrPartTrackRegions" time_levs="1" packages="lagrPartTrackAMPKG">
-		<var name="resetOutsideRegionMaskValue1" type="logical" dimensions="nCells" units="Unitless"
-			 description="Mask for particle resets that leave this particular region (specified by .true.)"
+		<var name="resetOutsideRegionMaskValue1" type="integer" dimensions="nCells" units="Unitless"
+			 description="Mask for particle resets that leave this particular region (specified by 1)" default="0"
 		/>
-		<var name="resetInsideRegionMaskValue1" type="logical" dimensions="nCells" units="Unitless"
-			 description="Mask for particle resets that enter this particular region (specified by .true.)"
+		<var name="resetInsideRegionMaskValue1" type="integer" dimensions="nCells" units="Unitless"
+			 description="Mask for particle resets that enter this particular region (specified by 1)" default="0"
 		/>
 	</var_struct>
 	<var_struct name="lagrPartTrackScalars" time_levs="1" packages="lagrPartTrackAMPKG">
