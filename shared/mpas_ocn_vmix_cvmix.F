@@ -144,7 +144,7 @@ contains
       real (kind=RKIND), pointer :: config_cvmix_kpp_boundary_layer_depth, config_cvmix_kpp_surface_layer_extent
       character (len=StrKIND), pointer :: config_cvmix_shear_mixing_scheme, config_cvmix_kpp_matching
 
-      integer :: k, iCell, jCell, iNeighbor, iter, timeLevel, kIndexOBL, kav, iEdge, iEdgeVal
+      integer :: k, i, iCell, jCell, iNeighbor, iter, timeLevel, kIndexOBL, kav, iEdge
       integer, pointer :: nVertLevels, nCells
       real (kind=RKIND) :: r, layerSum, bulkRichardsonNumberStop, sfc_layer_depth, invAreaCell, deltaVelocitySquared
       real (kind=RKIND) :: normalVelocityAv, factor, delU2
@@ -400,15 +400,15 @@ contains
                  enddo   
 
                 !compute shear contribution assuming BLdepth is cell bottom
-                
+
                 invAreaCell = 1.0 / areaCell(iCell)
                 deltaVelocitySquared = 0.0_RKIND
-                do iEdge=1,nEdgesOnCell(iCell)
-                   iEdgeVal = edgesOnCell(iEdge,iCell)
+                do i=1,nEdgesOnCell(iCell)
+                   iEdge = edgesOnCell(i,iCell)
 
-                   normalVelocityAv = sum(normalVelocity(1:kav,iEdgeVal))/real(kav, kind=RKIND)
-                   factor = 0.5 * dcEdge(iEdgeVal) * dvEdge(iEdgeVal) * invAreaCell
-                   delU2 = (normalVelocityAv - normalVelocity(kIndexOBL,iEdgeVal))**2
+                   normalVelocityAv = sum(normalVelocity(1:kav,iEdge))/real(kav, kind=RKIND)
+                   factor = 0.5 * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
+                   delU2 = (normalVelocityAv - normalVelocity(kIndexOBL,iEdge))**2
                    deltaVelocitySquared = deltaVelocitySquared + factor * delU2
                enddo
 
