@@ -587,7 +587,8 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
       !-----------------------------------------------------------------
 
       integer :: i, nsendProcNeighs, nProcs
-      logical, dimension(:), pointer :: completeList, recvList
+      logical, dimension(:), pointer :: completeList
+      logical, dimension(:,:), pointer :: recvList
       integer, dimension(:), pointer :: intArray
       integer, dimension(:), pointer :: sendRequestID, recvRequestID
       integer :: mpi_ierr
@@ -614,7 +615,7 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
       ! proceed to update the halo
       nProcs = domain % dminfo % nprocs
       nsendProcNeighs = size(sendProcNeighs)
-      allocate(completeList(nProcs), recvList(nProcs))
+      allocate(completeList(nProcs), recvList(nProcs,nsendProcNeighs))
       allocate(sendRequestID(nsendProcNeighs), recvRequestID(nsendProcNeighs))
 
       completeList = .False.
@@ -629,31 +630,28 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
         write(stderrUnit,*) 'sendProcNeigh= ', sendProcNeighs(i)
         write(stderrUnit,*) 'send data = ', sendProcRecvList(i,:)
 #endif
-      end do
-
-      ! for each sendProc, listen for logical array
-      do i = 1, nsendProcNeighs
-        ! send the data
 #ifdef _MPI
-        call MPI_IRecv(recvList, nProcs, MPI_LOGICAL, sendProcNeighs(i), sendProcNeighs(i), &
+        call MPI_IRecv(recvList(:,i), nProcs, MPI_LOGICAL, sendProcNeighs(i), sendProcNeighs(i), &
           domain % dminfo % comm, recvRequestID(i), mpi_ierr)
 #endif
+      end do
 
-        ! wait until the data is in the buffer
 #ifdef _MPI
-        call MPI_Wait(recvRequestID(i), MPI_STATUS_IGNORE, mpi_ierr)
+      ! wait until the data is in the buffer
+      call MPI_WaitAll(nsendProcNeighs,recvRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
 #endif
 
+      do i = 1, nsendProcNeighs
         ! aggregate results after wait, making sure that we have the most
         ! comprehensive list of sendProcs for receiving
 #ifdef MPAS_DEBUG
         write(stderrUnit,*) 'sendProcNeigh= ', sendProcNeighs(i)
-        write(stderrUnit,*) 'recvList before = ', recvList
+        write(stderrUnit,*) 'recvList before = ', recvList(:,i)
         write(stderrUnit,*) 'completeList before = ', completeList
 #endif
-        completeList = completeList .or. recvList
+        completeList = completeList .or. recvList(:,i)
 #ifdef MPAS_DEBUG
-        write(stderrUnit,*) 'recvList after = ', recvList
+        write(stderrUnit,*) 'recvList after = ', recvList(:,i)
         write(stderrUnit,*) 'completeList after = ', completeList
 #endif
       end do
@@ -2928,19 +2926,21 @@ write(stderrUnit,*) 'numProcs =', numProcs
 #endif
      do i=1,numProcs
 #ifdef MPAS_DEBUG
+       write(stderrUnit,*) 'receiving data i=',i, ' procNeighs(i)=', procNeighs(i)
+#endif
+#ifdef _MPI
+         call MPI_IRecv(nPartRecv(i), 1, MPI_INTEGERKIND, procNeighs(i), procNeighs(i), &
+           domain % dminfo % comm, requestID(i), mpi_ierr)
+#endif
+     end do
+     do i=1,numProcs
+#ifdef MPAS_DEBUG
        write(stderrUnit,*) 'procNeighs=', procNeighs
        write(stderrUnit,*) 'sending data i=',i, ' procNeighs(i)=', procNeighs(i), ' nPartSend(i)=', nPartSend(i)
 #endif
 #ifdef _MPI
          call MPI_ISend(nPartSend(i), 1, MPI_INTEGERKIND, procNeighs(i), domain % dminfo % my_proc_id, &
            domain % dminfo % comm, requestID(numProcs + i), mpi_ierr)
-#endif
-#ifdef MPAS_DEBUG
-       write(stderrUnit,*) 'receiving data i=',i, ' procNeighs(i)=', procNeighs(i)
-#endif
-#ifdef _MPI
-         call MPI_IRecv(nPartRecv(i), 1, MPI_INTEGERKIND, procNeighs(i), procNeighs(i), &
-           domain % dminfo % comm, requestID(i), mpi_ierr)
 #endif
      end do
 #ifdef MPAS_DEBUG
