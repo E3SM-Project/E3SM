@@ -855,6 +855,9 @@
 				<var name="diatChlInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
 					 description="A non-negative field controlling the rate at which diatChl is restored to diatChlInteriorRestoringValue"
 				/>
+				<var name="diatCInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
+					 description="A non-negative field controlling the rate at which diatC is restored to diatCInteriorRestoringValue"
+				/>
 				<var name="diatFeInteriorRestoringRate" array_group="ecosysIRRGRP" units="{s}^-1"
 					 description="A non-negative field controlling the rate at which diatFe is restored to diatFeInteriorRestoringValue"
 				/>
@@ -1038,6 +1041,9 @@
 				<var name="diatChlExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
 					 description="A non-negative field controlling the exponential decay of diatChl"
 				/>
+				<var name="diatCExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
+					 description="A non-negative field controlling the exponential decay of diatC"
+				/>
 				<var name="diatFeExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
 					 description="A non-negative field controlling the exponential decay of diatFe"
 				/>
@@ -1058,9 +1064,6 @@
 				/>
 				<var name="phaeoCExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
 					 description="A non-negative field controlling the exponential decay of phaeoC"
-				/>
-				<var name="phaeoFeExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
-					 description="A non-negative field controlling the exponential decay of phaeoFe"
 				/>
 				<var name="phaeoFeExponentialDecayRate" array_group="ecosysGRP" units="s^{-1}"
 					 description="A non-negative field controlling the exponential decay of phaeoFe"
@@ -1131,6 +1134,9 @@
 				/>
 				<var name="diatChlIdealAgeMask" array_group="ecosysGRP" units="unitless"
 					 description="In top layer, diatChl is reset to diatChl * diatChlIdealAgeMask, valid values of diatChlIdealAgeMask or 0 and 1"
+				/>
+				<var name="diatCIdealAgeMask" array_group="ecosysGRP" units="unitless"
+					 description="In top layer, diatC is reset to diatC * diatCIdealAgeMask, valid values of diatCIdealAgeMask or 0 and 1"
 				/>
 				<var name="diatFeIdealAgeMask" array_group="ecosysGRP" units="unitless"
 					 description="In top layer, diatFe is reset to diatFe * diatFeIdealAgeMask, valid values of diatFeIdealAgeMask or 0 and 1"
@@ -1222,6 +1228,9 @@
 				/>
 				<var name="diatChlTTDMask" array_group="ecosysGRP" units="unitless"
 					 description="In top layer, diatChl is reset to TTDMask, valid values of diatChlTTDMask or 0 and 1"
+				/>
+				<var name="diatCTTDMask" array_group="ecosysGRP" units="unitless"
+					 description="In top layer, diatC is reset to TTDMask, valid values of diatCTTDMask or 0 and 1"
 				/>
 				<var name="diatFeTTDMask" array_group="ecosysGRP" units="unitless"
 					 description="In top layer, diatFe is reset to TTDMask, valid values of diatFeTTDMask or 0 and 1"

@@ -107,7 +107,7 @@
                         />
 		</var_struct>
 		<var_struct name="tracersSurfaceRestoringFields" time_levs="1">
-			<var_array name="activeTracersPistonVelocity" type="real" dimensions="nCells Time" packages="activeTracersSurfaceRestoringPKG">
+			<var_array name="MacroMoleculesTracersPistonVelocity" type="real" dimensions="nCells Time" packages="MacroMoleculesTracersSurfaceRestoringPKG">
 				<var name="PROTPistonVelocity" array_group="MacroMoleculesPVGRP" units="m s^{-1}"
 					 description="A non-negative field controlling the rate at which PROT is restored to PROTSurfaceRestoringValue"
 				/>
@@ -118,7 +118,7 @@
 					 description="A non-negative field controlling the rate at which LIP is restored to LIPSurfaceRestoringValue"
 				/>
 			</var_array>
-			<var_array name="activeTracersSurfaceRestoringValue" type="real" dimensions="nCells Time" packages="activeTracersSurfaceRestoringPKG">
+			<var_array name="MacroMoleculesTracersSurfaceRestoringValue" type="real" dimensions="nCells Time" packages="MacroMoleculesTracersSurfaceRestoringPKG">
 				<var name="PROTSurfaceRestoringValue" array_group="MacroMoleculesSRVGRP" units="mmol m^{3}"
 					 description="Temperature is restored toward this field at a rate controlled by PROTPistonVelocity."
 				/>
@@ -131,7 +131,7 @@
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersInteriorRestoringFields" time_levs="1">
-			<var_array name="activeTracersInteriorRestoringRate" type="real" dimensions="nVertLevels nCells Time" packages="activeTracersInteriorRestoringPKG">
+			<var_array name="MacroMoleculesTracersInteriorRestoringRate" type="real" dimensions="nVertLevels nCells Time" packages="MacroMoleculesTracersInteriorRestoringPKG">
 				<var name="PROTInteriorRestoringRate" array_group="MacroMoleculesIRRGRP" units="{s}^-1"
 					 description="A non-negative field controlling the rate at which PROT is restored to PROTInteriorRestoringValue"
 				/>
@@ -142,7 +142,7 @@
 					 description="A non-negative field controlling the rate at which LIP is restored to LIPInteriorRestoringValue"
 				/>
 			</var_array>
-			<var_array name="activeTracersInteriorRestoringValue" type="real" dimensions="nVertLevels nCells Time" packages="activeTracersInteriorRestoringPKG">
+			<var_array name="MacroMoleculesTracersInteriorRestoringValue" type="real" dimensions="nVertLevels nCells Time" packages="MacroMoleculesTracersInteriorRestoringPKG">
 				<var name="PROTInteriorRestoringValue" array_group="MacroMoleculesIRVGRP" units="mmol m^{3}"
 					 description="Temperature is restored toward this field at a rate controlled by PROTInteriorRestoringRate."
 				/>
@@ -155,7 +155,7 @@
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersExponentialDecayFields" time_levs="1">
-			<var_array name="activeTracersExponentialDecayRate" type="real" dimensions="Time" packages="activeTracersExponentialDecayPKG">
+			<var_array name="MacroMoleculesTracersExponentialDecayRate" type="real" dimensions="Time" packages="MacroMoleculesTracersExponentialDecayPKG">
 				<var name="PROTExponentialDecayRate" array_group="MacroMoleculesGRP" units="s^{-1}"
 					 description="A non-negative field controlling the exponential decay of PROT"
 				/>
@@ -168,7 +168,7 @@
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersIdealAgeFields" time_levs="1">
-			<var_array name="activeTracersIdealAgeMask" type="real" dimensions="nCells Time" packages="activeTracersIdealAgePKG">
+			<var_array name="MacroMoleculesTracersIdealAgeMask" type="real" dimensions="nCells Time" packages="MacroMoleculesTracersIdealAgePKG">
 				<var name="PROTIdealAgeMask" array_group="MacroMoleculesGRP" units="unitless"
 					 description="In top layer, PROT is reset to PROT * PROTIdealAgeMask, valid values of PROTIdealAgeMask or 0 and 1"
 				/>
@@ -181,7 +181,7 @@
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersTTDFields" time_levs="1">
-			<var_array name="activeTracersTTDMask" type="real" dimensions="nCells Time" packages="activeTracersTTDPKG">
+			<var_array name="MacroMoleculesTracersTTDMask" type="real" dimensions="nCells Time" packages="MacroMoleculesTracersTTDPKG">
 				<var name="PROTTTDMask" array_group="MacroMoleculesGRP" units="unitless"
 					 description="In top layer, PROT is reset to TTDMask, valid values of PROTTTDMask or 0 and 1"
 				/>
