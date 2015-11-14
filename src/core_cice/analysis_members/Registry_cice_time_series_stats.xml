@@ -320,6 +320,7 @@
 				clobber_mode="truncate"
 				runtime_format="single_file">
 
+		  <var name="icePresent"/>
 		  <var name="iceAreaCell"/>
 		</stream>
 
@@ -346,6 +347,7 @@
 				clobber_mode="truncate"
 				runtime_format="single_file">
 
+		  <var name="icePresent"/>
 		  <var name="iceAreaCell"/>
 		</stream>
 
@@ -371,6 +373,7 @@
 				clobber_mode="truncate"
 				runtime_format="single_file">
 
+		  <var name="icePresent"/>
 		  <var name="iceAreaCell"/>
 		</stream>
 

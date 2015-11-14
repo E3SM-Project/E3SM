@@ -2,7 +2,7 @@
 
 OBJS = mpas_cice_analysis_driver.o
 
-MEMBERS = mpas_cice_high_frequency_output.o mpas_cice_temperatures.o mpas_cice_regional_statistics.o mpas_cice_ridging_diagnostics.o mpas_cice_conservation_check.o mpas_cice_geographical_vectors.o mpas_cice_time_series_stats.o
+MEMBERS = mpas_cice_high_frequency_output.o mpas_cice_temperatures.o mpas_cice_regional_statistics.o mpas_cice_ridging_diagnostics.o mpas_cice_conservation_check.o mpas_cice_geographical_vectors.o mpas_cice_ice_present.o mpas_cice_time_series_stats.o
 
 all: $(OBJS)
 

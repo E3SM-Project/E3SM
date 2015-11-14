@@ -32,6 +32,7 @@ module cice_analysis_driver
    use cice_conservation_check
    use cice_geographical_vectors
    use cice_time_series_stats
+   use cice_ice_present
 !   use cice_TEMP_LATE
 
    implicit none
@@ -142,6 +143,7 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'ridgingDiagnostics', 1)
       call mpas_pool_add_config(analysisMemberList, 'conservationCheck', 1)
       call mpas_pool_add_config(analysisMemberList, 'geographicalVectors', 1)
+      call mpas_pool_add_config(analysisMemberList, 'icePresent', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsDaily', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsMonthly', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsClimatology', 1)
@@ -987,6 +989,8 @@ contains
          call cice_bootstrap_conservation_check(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
          call cice_bootstrap_geographical_vectors(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
+         call cice_bootstrap_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
          call cice_bootstrap_time_series_stats(domain, 'Daily', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
@@ -1037,6 +1041,8 @@ contains
          call cice_init_conservation_check(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
          call cice_init_geographical_vectors(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
+         call cice_init_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
          call cice_init_time_series_stats(domain, 'Daily', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
@@ -1088,6 +1094,8 @@ contains
          call cice_precompute_conservation_check(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
          call cice_precompute_geographical_vectors(domain, '', timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
+         call cice_precompute_ice_present(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
          call cice_precompute_time_series_stats(domain, 'Daily', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
@@ -1139,6 +1147,8 @@ contains
          call cice_compute_conservation_check(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
          call cice_compute_geographical_vectors(domain, '', timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
+         call cice_compute_ice_present(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
          call cice_compute_time_series_stats(domain, 'Daily', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
@@ -1189,6 +1199,8 @@ contains
          call cice_restart_conservation_check(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
          call cice_restart_geographical_vectors(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
+         call cice_restart_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
          call cice_restart_time_series_stats(domain, 'Daily', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
@@ -1239,6 +1251,8 @@ contains
          call cice_finalize_conservation_check(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
          call cice_finalize_geographical_vectors(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
+         call cice_finalize_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
          call cice_finalize_time_series_stats(domain, 'Daily', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
