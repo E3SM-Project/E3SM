@@ -1492,7 +1492,7 @@ subroutine cesm_init()
    !----------------------------------------------------------
 
    if (atm_prognostic .and. .not.atm_present) then
-      call shr_sys_abort(subname//' ERROR: if prognostic lnd must also have lnd present')
+      call shr_sys_abort(subname//' ERROR: if prognostic atm must also have atm present')
    endif
    if (ocn_prognostic .and. .not.ocn_present) then
       call shr_sys_abort(subname//' ERROR: if prognostic ocn must also have ocn present')
