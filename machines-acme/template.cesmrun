@@ -364,7 +364,7 @@ sub postRun()
         print $CS "Run FAILED $sdate\n";
         exit(-1);
     }
-	elsif( -e "$config{'RUNDIR'}/$cpllogfile")
+    elsif( -e "$config{'RUNDIR'}/$cpllogfile")
     {
         open my $CPLLOG, "<", "$config{'RUNDIR'}/$cpllogfile" or warn "could not open $config{'RUNDIR'}/$cpllogfile, $!";
         my @cpllines = <$CPLLOG>;
