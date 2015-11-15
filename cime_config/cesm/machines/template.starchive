@@ -63,7 +63,7 @@ sub resubmitCheck()
 	my $submitscript = "$config{'CASEROOT'}/case.submit";
 	my $cwd = getcwd;
 	chdir $config{CASEROOT};
-	my $resubmitcommand = "$submitscript -resubmit -scriptname case.st_archive -loglevel $opts{$loglevel}";
+	my $resubmitcommand = "$submitscript -resubmit -scriptname case.st_archive -loglevel $opts{loglevel}";
 	$logger->debug( "running resubmit check $resubmitcommand");
 	if(-e $testlog){
 	    open(TL,">>$testlog");

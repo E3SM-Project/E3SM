@@ -235,7 +235,7 @@ sub checkInputData()
 	$logger->logdie( "ERROR, the input data directory $config{'DIN_LOC_ROOT'} cannot be found!");
     }
     
-    open(F,"./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check -loglevel $opts{$loglevel} |" );
+    open(F,"./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check -loglevel $opts{loglevel} |" );
     my @inputdatacheck = <F>;
     close(F);
     my @unknown = grep { /unknown/ } @inputdatacheck;
@@ -248,16 +248,16 @@ sub checkInputData()
         $out.="expected location, and are not from the input data repository.\n";
         $out.="This is informational only.\n";
 	$logger->warn($out);
-	system("./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check -loglevel $opts{$loglevel}");
+	system("./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check -loglevel $opts{loglevel}");
     }
     
     if(@missing)
     {
 	$logger->info( "Attempting to download missing data:");
-	system("./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -export -loglevel $opts{$loglevel}");
+	system("./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -export -loglevel $opts{loglevel}");
     }
     
-    open(F,"./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check -loglevel $opts{$loglevel} |" );
+    open(F,"./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check -loglevel $opts{loglevel} |" );
     my @potmissing  = <F>;
     close(F);
     @missing = grep { /missing/ } @potmissing;
@@ -490,7 +490,7 @@ sub resubmitCheck()
 	my $submitscript = "$config{'CASEROOT'}/case.submit";
 	my $cwd = getcwd;
 	chdir $config{'CASEROOT'};
-	my $resubmitcommand = "$submitscript -resubmit -scriptname case. -loglevel $opts{$loglevel}";
+	my $resubmitcommand = "$submitscript -resubmit -scriptname case. -loglevel $opts{loglevel}";
 
 	if(defined $config{TESTCASE} && $config{TESTCASE} eq "ERR"){
 	    $resubmitcommand .= "test"; 
