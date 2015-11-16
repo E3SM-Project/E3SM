@@ -535,11 +535,14 @@ endif # END OF GIT DESCRIBE VERSION
 # Section for adding external libraries and includes
 ####################################################
 ifdef MPAS_EXTERNAL_LIBS
- LIBS += $(MPAS_EXTERNAL_LIBS)
+	override LIBS += $(MPAS_EXTERNAL_LIBS)
 endif
 ifdef MPAS_EXTERNAL_INCLUDES
- CPPINCLUDES += $(MPAS_EXTERNAL_INCLUDES)
- FCINCLUDES += $(MPAS_EXTERNAL_INCLUDES)
+	override CPPINCLUDES += $(MPAS_EXTERNAL_INCLUDES)
+	override FCINCLUDES += $(MPAS_EXTERNAL_INCLUDES)
+endif
+ifdef MPAS_EXTERNAL_CPPFLAGS
+	override CPPFLAGS += $(MPAS_EXTERNAL_CPPFLAGS)
 endif
 ####################################################
 
