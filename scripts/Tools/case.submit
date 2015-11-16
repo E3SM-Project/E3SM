@@ -49,7 +49,7 @@ sub main
     # Check the case only once..
     if(!$opts{resubmit}){
 	$logger->info( "checking the case..");
-	qx(./check_case -loglevel $opts{loglevel});
+	system("./check_case -loglevel $opts{loglevel}");
 	if($?)
 	{
 	    $logger->error( "check_case failed");
