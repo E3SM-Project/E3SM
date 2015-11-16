@@ -21,8 +21,9 @@ module stepon
 ! from SE
    use derivative_mod, only : derivinit, deriv_print, derivative_t
    use quadrature_mod, only : gauss, gausslobatto, quadrature_t
-   use edge_mod,       only: EdgeBuffer_t, initEdgeBuffer, FreeEdgeBuffer, &
+   use edge_mod,       only: initEdgeBuffer, FreeEdgeBuffer, &
                              edgeVpack, edgeVunpack
+   use edgetype_mod,       only: EdgeBuffer_t
    use parallel_mod,   only : par
 
    implicit none
@@ -96,8 +97,8 @@ subroutine stepon_init( gw, etamid, dyn_in, dyn_out )
 
   ! This is not done in dyn_init due to a circular dependency issue.
   if(iam < par%nprocs) then
-     call initEdgeBuffer(edgebuf, (3+pcnst)*nlev)
-     if (use_gw_front) call gws_init
+     call initEdgeBuffer(par, edgebuf, dyn_in%elem, (3+pcnst)*nlev, numthreads_in=1)
+     if (use_gw_front) call gws_init(dyn_in%elem)
   end if
 
   etamid(:) = hyam(:) + hybm(:)
@@ -237,12 +238,12 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    ! do boundary exchange
    do ie=1,nelemd
       kptr=0
-      call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:,1),2*nlev,kptr,dyn_in%elem(ie)%desc)
+      call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:,1),2*nlev,kptr,ie)
       kptr=kptr+2*nlev
 
-      call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:,1),nlev,kptr,dyn_in%elem(ie)%desc)
+      call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:,1),nlev,kptr,ie)
       kptr=kptr+nlev
-      call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:,1),nlev*pcnst,kptr,dyn_in%elem(ie)%desc)
+      call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:,1),nlev*pcnst,kptr,ie)
    end do
 
    call t_startf('stepon_bexchV')
@@ -264,13 +265,13 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    do ie=1,nelemd
       kptr=0
 
-      call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:,1),2*nlev,kptr,dyn_in%elem(ie)%desc)
+      call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:,1),2*nlev,kptr,ie)
       kptr=kptr+2*nlev
 
-      call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:,1),nlev,kptr,dyn_in%elem(ie)%desc)
+      call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:,1),nlev,kptr,ie)
       kptr=kptr+nlev
 
-      call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:,1),nlev*pcnst,kptr,dyn_in%elem(ie)%desc)
+      call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:,1),nlev*pcnst,kptr,ie)
 
       tl_f = TimeLevel%n0   ! timelevel which was adjusted by physics
 
