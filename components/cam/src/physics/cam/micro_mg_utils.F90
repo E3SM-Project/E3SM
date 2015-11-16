@@ -46,6 +46,9 @@ save
 public :: &
      micro_mg_utils_init, &
      size_dist_param_liq, &
+!!== KZ_DCS
+     size_dist_param_ice, &
+!!== KZ_DCS
      size_dist_param_basic, &
      avg_diameter, &
      rising_factorial, &
@@ -452,6 +455,55 @@ elemental subroutine size_dist_param_basic(props, qic, nic, lam, n0)
 
 end subroutine size_dist_param_basic
 
+
+!!== KZ_DCS
+! Basic routine for getting size distribution parameters.
+elemental subroutine size_dist_param_ice(props, dcst, qic, nic, lam, n0)
+  type(MGHydrometeorProps), intent(in) :: props
+  real(r8), intent(in) :: dcst
+  real(r8), intent(in) :: qic
+  real(r8), intent(inout) :: nic
+
+  real(r8), intent(out) :: lam
+  real(r8), intent(out), optional :: n0
+
+  ! local parameters
+  real(r8), parameter :: lammaxi = 1._r8/10.e-6_r8
+  real(r8) :: lammini
+
+  lammini = 1._r8/(2._r8*dcst)
+
+  if (qic > qsmall) then
+
+     ! add upper limit to in-cloud number concentration to prevent
+     ! numerical error
+     if (limiter_is_on(props%min_mean_mass)) then
+        nic = min(nic, qic / props%min_mean_mass)
+     end if
+
+     ! lambda = (c n/q)^(1/d)
+     lam = (props%shape_coef * nic/qic)**(1._r8/props%eff_dim)
+
+     ! check for slope
+     ! adjust vars
+     if (lam < lammini) then
+        lam = lammini
+        nic = lam**(props%eff_dim) * qic/props%shape_coef
+     else if (lam > lammaxi) then
+        lam = lammaxi
+        nic = lam**(props%eff_dim) * qic/props%shape_coef
+     end if
+
+  else
+     lam = 0._r8
+  end if
+
+  if (present(n0)) n0 = nic * lam
+
+end subroutine size_dist_param_ice
+!!== KZ_DCS
+
+
 real(r8) elemental function avg_diameter(q, n, rho_air, rho_sub)
   ! Finds the average diameter of particles given their density, and
   ! mass/number concentrations in the air.
@@ -497,7 +549,9 @@ end function var_coef_integer
 ! This subroutine written by Peter Caldwell
 
 elemental subroutine ice_deposition_sublimation(t, qv, qi, ni, &
-                                                icldm, rho, dv,qvl, qvi, &
+!!== KZ_DCS
+                                                icldm, rho, dv,qvl, qvi, dcst, dcs_tdep, &
+!!== KZ_DCS
                                                 berg, vap_dep, ice_sublim)
 
   !INPUT VARS:
@@ -511,6 +565,10 @@ elemental subroutine ice_deposition_sublimation(t, qv, qi, ni, &
   real(r8), intent(in) :: dv
   real(r8), intent(in) :: qvl
   real(r8), intent(in) :: qvi
+!!== KZ_DCS
+  real(r8), intent(in) :: dcst
+  logical,  intent(in) :: dcs_tdep
+!!== KZ_DCS
 
   !OUTPUT VARS:
   !===============================================
@@ -536,8 +594,17 @@ elemental subroutine ice_deposition_sublimation(t, qv, qi, ni, &
 
      !Compute linearized condensational heating correction
      ab=calc_ab(t, qvi, xxls)
+
+!!== KZ_DCS
+
      !Get slope and intercept of gamma distn for ice.
-     call size_dist_param_basic(mg_ice_props, qiic, niic, lami, n0i)
+     if(dcs_tdep) then  
+        call size_dist_param_ice(mg_ice_props, dcst, qiic, niic, lami, n0i)
+     else
+        call size_dist_param_basic(mg_ice_props, qiic, niic, lami, n0i)
+     end if 
+!!== KZ_DCS 
+
      !Get depletion timescale=1/eps
      epsi = 2._r8*pi*n0i*rho*Dv/(lami*lami)
 
@@ -628,13 +695,19 @@ end subroutine kk2000_liq_autoconversion
 ! Autoconversion of cloud ice to snow
 ! similar to Ferrier (1994)
 
-elemental subroutine ice_autoconversion(t, qiic, lami, n0i, dcs, prci, nprci)
+!!== KZ_DCS
+elemental subroutine ice_autoconversion(t, qiic, lami, n0i, dcs, dcst, dcs_tdep, prci, nprci)
+!!== KZ_DCS
 
   real(r8), intent(in) :: t
   real(r8), intent(in) :: qiic
   real(r8), intent(in) :: lami
   real(r8), intent(in) :: n0i
+!!== KZ_DCS
   real(r8), intent(in) :: dcs
+  real(r8), intent(in) :: dcst
+  logical,  intent(in) :: dcs_tdep 
+!!== KZ_DCS
 
   real(r8), intent(out) :: prci
   real(r8), intent(out) :: nprci
@@ -649,7 +722,14 @@ elemental subroutine ice_autoconversion(t, qiic, lami, n0i, dcs, prci, nprci)
 
   if (t <= tmelt .and. qiic >= qsmall) then
 
-     d_rat = lami*dcs
+!!== KZ_DCS
+     if(dcs_tdep) then
+        d_rat = lami*dcst
+     else
+        d_rat = lami*dcs
+     end if
+!!== KZ_DCS 
+
 
      ! Rate of ice particle conversion (number).
      nprci = n0i/(lami*ac_time)*exp(-d_rat)
@@ -1293,6 +1373,37 @@ elemental subroutine bergeron_process_snow(t, rho, dv, mu, sc, qvl, qvi, asn, &
   end if
 
 end subroutine bergeron_process_snow
+
+
+
+!!== KZ_DCS
+subroutine get_dcst_sc(temp,dcst)
+
+implicit none
+
+real(r8), intent(in) :: temp      ! input temperature (K)
+real(r8), intent(out) :: dcst     ! temperature dependent dcs
+
+real(r8) :: st
+
+
+   dcst = 400.e-6_r8
+
+   st = temp - 273.15
+   if(st.le.-70.) then
+      dcst = 100.e-6_r8
+   elseif(st.gt.-70. .and. st.le.-10.) then
+      dcst = 5.e-6_r8 * st  + 450.e-6_r8
+   elseif(st.gt.-10.) then
+      dcst = 400.e-6_r8
+   end if
+
+return
+
+end subroutine get_dcst_sc
+!!== KZ_DCS
+
+
 
 !========================================================================
 !UTILITIES
