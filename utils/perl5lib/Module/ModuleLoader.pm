@@ -504,8 +504,15 @@ sub loadModuleModules()
          if($envvalue =~ /^\$/)
          {
 	     $envvalue =~ s/\$//g;
-	     $ENV{$key} = $ENV{$envvalue};
-	     $logger->info("setting environment variable $key=$ENV{$envvalue}");
+	     if(defined $self->{$envvalue}){
+		 $ENV{$key} = $self->{$envvalue};
+		 $logger->info("setting environment variable $key=$self->{$envvalue}");
+	     }elsif(defined $ENV{$envvalue}){
+		 $ENV{$key} = $ENV{$envvalue};
+		 $logger->info("setting environment variable $key=$ENV{$envvalue}");
+	     }else{
+		 $logger->warn("No variable $envvalue found, not setting $key");
+	     }		 
          }
          else
          {

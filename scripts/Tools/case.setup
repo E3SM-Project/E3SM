@@ -12,6 +12,8 @@ use IO::File;
 use IO::Handle;
 use File::Basename;
 use File::Copy;
+
+
 #-----------------------------------------------------------------------------------------------
 sub usage {
     die <<EOF;
@@ -316,8 +318,8 @@ if (! $clean ) {
     #--------------------------------------------------------------------------
     # Run preview namelists for scripts
     #--------------------------------------------------------------------------
-    $logger->info("Running preview_namelist script ");
-    qx( $caseroot/preview_namelists -loglevel $opts{loglevel} );
+    $logger->info("Running preview_namelist script with loglevel $opts{loglevel}");
+    system(" $caseroot/preview_namelists -loglevel $opts{loglevel} ");
     if($?){
 	$logger->logdie("ERROR: $caseroot/preview_namelists failed: $?")
     }
