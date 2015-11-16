@@ -456,10 +456,14 @@ contains
     type (MPAS_time_type) :: &
          currentForcingTime
 
+    real(kind=RKIND) :: &
+         secondsToday
+
     integer, pointer :: &
          nCellsSolve
 
     integer :: &
+         dayOfYear, &
          iCell
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)    
@@ -500,6 +504,12 @@ contains
          "cice_atmospheric_forcing_sixhrly", &
          currentForcingTime)
 
+    ! get the number of seconds so far today
+    call get_seconds_today(&
+         currentForcingTime, &
+         secondsToday, &
+         dayOfYear)
+
     do iCell = 1, nCellsSolve
 
        ! limit air temperature values where ice is present
@@ -512,18 +522,15 @@ contains
             airTemperature(iCell), &
             airSpecificHumidity(iCell))
 
-    enddo ! iCell
-
-    ! shortwave
-    call shortwave_down(&
-         shortwaveDown, &
-         lonCell, &
-         latCell, &
-         cloudFraction, &
-         airSpecificHumidity, &
-         currentForcingTime)
-
-    do iCell = 1, nCellsSolve
+       ! shortwave
+       call shortwave_down(&
+            shortwaveDown(iCell), &
+            lonCell(iCell), &
+            latCell(iCell), &
+            cloudFraction(iCell), &
+            airSpecificHumidity(iCell), &
+            secondsToday, &
+            dayOfYear)
 
        shortwaveVisibleDirectDown(iCell)  = shortwaveDown(iCell) * fracShortwaveVisibleDirect
        shortwaveVisibleDiffuseDown(iCell) = shortwaveDown(iCell) * fracShortwaveVisibleDiffuse
@@ -544,20 +551,16 @@ contains
 
        ! air density
        airDensity(iCell) = 1.3_RKIND
-       
-    enddo ! iCell
 
-    ! longwave radiation
-    call longwave_rosati_miyakoda(&
-         longwaveDown, &
-         cloudFraction, &
-         iceAreaCell, &
-         surfaceTemperatureCell, &
-         seaSurfaceTemperature, &
-         airSpecificHumidity, &
-         airTemperature)
-
-    do iCell = 1, nCellsSolve
+       ! longwave radiation
+       call longwave_rosati_miyakoda(&
+            longwaveDown(iCell), &
+            cloudFraction(iCell), &
+            iceAreaCell(iCell), &
+            surfaceTemperatureCell(iCell), &
+            seaSurfaceTemperature(iCell), &
+            airSpecificHumidity(iCell), &
+            airTemperature(iCell))
 
        ! precipitation
        call precipitation(&
@@ -832,10 +835,10 @@ contains
          ciceFreshWaterFreezingPoint, &
          ciceIceSnowEmissivity
 
-    real(kind=RKIND), dimension(:), intent(out) :: &
+    real(kind=RKIND), intent(out) :: &
          longwaveDown
 
-    real(kind=RKIND), dimension(:), intent(in) :: &
+    real(kind=RKIND), intent(in) :: &
          cloudFraction, &
          iceAreaCell, &
          surfaceTemperature, &
@@ -850,42 +853,35 @@ contains
          airPotentialTemperature, &
          airSeaTemperatureDifferenceTerm
 
-    integer :: &
-         iCell
-
-    do iCell = 1, size(longwaveDown)
-
-       ! get a clear sky fraction
-       clearSkyFraction = 1.0_RKIND - 0.8_RKIND * cloudFraction(iCell)
+    ! get a clear sky fraction
+    clearSkyFraction = 1.0_RKIND - 0.8_RKIND * cloudFraction
     
-       ! combined ice and ocean temperature in Kelvin
-       combinedSurfaceTemperature = &
-            surfaceTemperature(iCell)    * iceAreaCell(iCell)               + &
-            seaSurfaceTemperature(iCell) * (1.0_RKIND - iceAreaCell(iCell)) + &
-            ciceFreshWaterFreezingPoint
+    ! combined ice and ocean temperature in Kelvin
+    combinedSurfaceTemperature = &
+         surfaceTemperature    * iceAreaCell               + &
+         seaSurfaceTemperature * (1.0_RKIND - iceAreaCell) + &
+         ciceFreshWaterFreezingPoint
 
-       ! square root of the vapour pressure
-       vapourPressureSqrt = sqrt((1000.0_RKIND * airSpecificHumidity(iCell)) / &
-                                 (0.622_RKIND + 0.378_RKIND * airSpecificHumidity(iCell)))
+    ! square root of the vapour pressure
+    vapourPressureSqrt = sqrt((1000.0_RKIND * airSpecificHumidity) / &
+                              (0.622_RKIND + 0.378_RKIND * airSpecificHumidity))
 
-       ! potential temperature (CICE comment: get this from stability?)
-       airPotentialTemperature = airTemperature(iCell)
+    ! potential temperature (CICE comment: get this from stability?)
+    airPotentialTemperature = airTemperature
 
-       ! unknown
-       !airSeaTemperatureDifferenceTerm = airPotentialTemperature**3 * &
-       !     (airPotentialTemperature * (0.39_RKIND - 0.05_RKIND * vapourPressureSqrt) * clearSkyFraction + &
-       !     4.0_RKIND * (combinedSurfaceTemperature - airPotentialTemperature))
+    ! unknown
+    !airSeaTemperatureDifferenceTerm = airPotentialTemperature**3 * &
+    !     (airPotentialTemperature * (0.39_RKIND - 0.05_RKIND * vapourPressureSqrt) * clearSkyFraction + &
+    !     4.0_RKIND * (combinedSurfaceTemperature - airPotentialTemperature))
 
-       ! Different version for bfb to CICE
-       airSeaTemperatureDifferenceTerm = airPotentialTemperature*airPotentialTemperature*airPotentialTemperature * &
-            (airPotentialTemperature * (0.39_RKIND - 0.05_RKIND * vapourPressureSqrt) * clearSkyFraction + &
-            4.0_RKIND * (combinedSurfaceTemperature - airPotentialTemperature))
+    ! Different version for bfb to CICE
+    airSeaTemperatureDifferenceTerm = airPotentialTemperature*airPotentialTemperature*airPotentialTemperature * &
+         (airPotentialTemperature * (0.39_RKIND - 0.05_RKIND * vapourPressureSqrt) * clearSkyFraction + &
+         4.0_RKIND * (combinedSurfaceTemperature - airPotentialTemperature))
 
-       ! final longwave calculation from stefan-boltzmann law
-       longwaveDown(iCell) = ciceIceSnowEmissivity * ciceStefanBoltzmann * &
-                             (combinedSurfaceTemperature**4 - airSeaTemperatureDifferenceTerm)
-
-    enddo ! iCell
+    ! final longwave calculation from stefan-boltzmann law
+    longwaveDown = ciceIceSnowEmissivity * ciceStefanBoltzmann * &
+                          (combinedSurfaceTemperature**4 - airSeaTemperatureDifferenceTerm)
 
   end subroutine longwave_rosati_miyakoda
 
@@ -1014,6 +1010,44 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
+!  get_seconds_today
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine get_seconds_today(&
+       currentTime, &
+       secondsToday, &
+       dayOfYear)
+
+    type(MPAS_time_type), intent(in) :: &
+         currentTime
+
+    real(kind=RKIND), intent(out) :: &
+         secondsToday
+
+    integer, intent(out) :: &
+         dayOfYear
+
+    integer :: &
+         H, M, S, S_d, S_n
+
+    call mpas_get_time(currentTime, DoY=dayOfYear, H=H, M=M, S=S, S_n=S_n, S_d=S_d)
+
+    secondsToday = real(H,RKIND)*3600.0_RKIND + &
+                   real(M,RKIND)*60.0_RKIND + &
+                   real(S,RKIND) + &
+                   real(S_n,RKIND)/real(S_d,RKIND)
+
+  end subroutine get_seconds_today
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
 !  shortwave_down
 !
 !> \brief 
@@ -1030,7 +1064,8 @@ contains
        latitude, &
        cloudFraction, &
        airSpecificHumidity, &
-       currentTime)
+       secondsToday, &
+       dayOfYear)
 
     use cice_constants, only: &
          ciceDegreesToRadians, &
@@ -1039,24 +1074,23 @@ contains
     use cice_constants, only: &
          pii
 
-    real(kind=RKIND), dimension(:), intent(out) :: &
+    real(kind=RKIND), intent(out) :: &
          shortwaveDown
 
-    real(kind=RKIND), dimension(:), intent(in) :: &    
+    real(kind=RKIND), intent(in) :: &
          longitudeIn, &
          latitude, &
          cloudFraction, &
          airSpecificHumidity
 
-    type(MPAS_time_type), intent(in) :: &
-         currentTime
+    real(kind=RKIND), intent(in) :: &
+         secondsToday
 
-    integer :: &
-         dayOfYear, H, M, S, S_d, S_n
+    integer, intent(in) :: &
+         dayOfYear
 
     real(kind=RKIND) :: &
          longitude, &
-         secondsToday, &
          solarTime, &
          hourAngle, &
          declination, &
@@ -1065,43 +1099,29 @@ contains
          d, &
          sw0
 
-    integer :: &
-         iCell
+    ! longitude needs to be [-pi,pi] not [0,2pi]
+    longitude = longitudeIn
+    if (longitude > pii) longitude = longitude - 2.0_RKIND * pii
 
-    call mpas_get_time(currentTime, DoY=dayOfYear, H=H, M=M, S=S, S_n=S_n, S_d=S_d)
+    solarTime = mod(real(secondsToday,kind=RKIND),ciceSecondsPerDay)/3600.0_RKIND + 12.0_RKIND*sin(0.5_RKIND*longitude)
 
-    secondsToday = real(H,RKIND)*3600.0_RKIND + &
-                   real(M,RKIND)*60.0_RKIND + &
-                   real(S,RKIND) + &
-                   real(S_n,RKIND)/real(S_d,RKIND)
+    hourAngle = (12.0_RKIND - solarTime)*pii/12.0_RKIND
 
-    do iCell = 1, size(shortwaveDown)
+    ! solar declinatiom
+    declination = 23.44_RKIND*cos((172.0_RKIND-real(dayOfYear,RKIND)) * 2.0_RKIND*pii/365.0_RKIND)*ciceDegreesToRadians
 
-       ! longitude needs to be [-pi,pi] not [0,2pi]
-       longitude = longitudeIn(iCell)
-       if (longitude > pii) longitude = longitude - 2.0_RKIND * pii
+    ! solar zenith angle
+    cosZ = sin(latitude)*sin(declination) + cos(latitude)*cos(declination)*cos(hourAngle)
+    cosZ = max(cosZ,0.0_RKIND)
 
-       solarTime = mod(real(secondsToday,kind=RKIND),ciceSecondsPerDay)/3600.0_RKIND + 12.0_RKIND*sin(0.5_RKIND*longitude)
+    e = 1.0e5_RKIND*airSpecificHumidity/(0.622_RKIND + 0.378_RKIND*airSpecificHumidity)
 
-       hourAngle = (12.0_RKIND - solarTime)*pii/12.0_RKIND
+    d = (cosZ + 2.7_RKIND)*e*1.0e-5_RKIND+1.085_RKIND*cosZ+0.1_RKIND
 
-       ! solar declinatiom
-       declination = 23.44_RKIND*cos((172.0_RKIND-real(dayOfYear,RKIND)) * 2.0_RKIND*pii/365.0_RKIND)*ciceDegreesToRadians
+    sw0 = 1353.0_RKIND*cosZ**2/d
+    sw0 = max(sw0,0.0_RKIND)
 
-       ! solar zenith angle
-       cosZ = sin(latitude(iCell))*sin(declination) + cos(latitude(iCell))*cos(declination)*cos(hourAngle)
-       cosZ = max(cosZ,0.0_RKIND)
-
-       e = 1.0e5_RKIND*airSpecificHumidity(iCell)/(0.622_RKIND + 0.378_RKIND*airSpecificHumidity(iCell))
-
-       d = (cosZ + 2.7_RKIND)*e*1.0e-5_RKIND+1.085_RKIND*cosZ+0.1_RKIND
-
-       sw0 = 1353.0_RKIND*cosZ**2/d
-       sw0 = max(sw0,0.0_RKIND)
-
-       shortwaveDown(iCell) = sw0 * (1.0_RKIND - 0.6_RKIND * cloudFraction(iCell)**3) 
-
-    enddo ! iCell
+    shortwaveDown = sw0 * (1.0_RKIND - 0.6_RKIND * cloudFraction**3)
 
   end subroutine shortwave_down
 
