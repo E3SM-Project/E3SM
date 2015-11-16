@@ -1157,6 +1157,7 @@
 			<var name="highFreqThickness"/>
 			<var name="lowFreqDivergence"/>
 			<var name="effectiveDensityInLandIce"/>
+			<var_struct name="ecosysAuxiliary"/>
 		</stream>
 		<stream name="KPP_testing"
 				type="output"
@@ -1219,6 +1220,7 @@
 			<var_array name="SSHGradient"/>
 			<var_array name="vertNonLocalFlux"/>
 			<var name="effectiveDensityInLandIce"/>
+			<var_struct name="ecosysAuxiliary"/>
 		</stream>
 
 		<stream name="output" 
@@ -1390,14 +1392,6 @@
 			<var name="rainFlux"/>
 			<var name="snowFlux"/>
 			<var name="iceFraction"/>
-			<!-- TRACER-CLEAN-UP
-				swap out for 'bgcTracers' group	
-			<var name="prognosticCO2"/>
-			<var name="diagnosticCO2"/>
-			<var name="squaredWindSpeed10Meter"/>
-			<var name="CO2Flux"/>
-			<var name="DMSFlux"/>
-			-->
 			<var name="nAccumulatedCoupled"/>
 			<var name="thermalExpansionCoeff"/>
 			<var name="salineContractionCoeff"/>
@@ -2312,7 +2306,7 @@
 		/>
 		<var name="shortWaveHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
 			 description="Short wave flux at cell centers from coupler. Positive into the ocean."
-			 packages="activeTracersBulkRestoringPKG"
+			 packages="activeTracersBulkRestoringPKG;ecosysTracersPKG"
 		/>
 
 		<!-- Coupling fields associated with mass or salinity fluxes -->
@@ -2349,28 +2343,6 @@
 		<var name="iceFraction" type="real" dimensions="nCells Time" units="percent"
 			 description="Fraction of sea ice coverage at cell centers from coupler. Positive into the ocean."
 		/>
-		<!-- Tracers that should be in BGC?
-		<var name="prognosticCO2" type="real" dimensions="nCells Time" units="1e-6 mol mol^{-1}"
-			 description="Prognostic CO2 at cell centers from coupler. Positive into the ocean."
-			 packages="bulkForcing"
-		/>
-		<var name="diagnosticCO2" type="real" dimensions="nCells Time" units="1e-6 mol mol^{-1}"
-			 description="Diagnostic CO2 at cell centers from coupler. Positive into the ocean."
-			 packages="bulkForcing"
-		/>
-		<var name="squaredWindSpeed10Meter" type="real" dimensions="nCells Time" units="m^2 s^{-2}"
-			 description="Squared wind speed at 10 meters at cell centers from coupler."
-			 packages="bulkForcing"
-		/>
-		<var name="CO2Flux" type="real" dimensions="nCells Time" units="mol m^{-2} s^{-1}"
-			 description="CO2 Flux."
-			 packages="bulkForcing"
-		/>
-		<var name="DMSFlux" type="real" dimensions="nCells Time" units="mol m^{-2} s^{-1}"
-			 description="DMS Flux."
-			 packages="bulkForcing"
-		/>
-		-->
 
 		<!-- Output fields for coupling -->
 		<var name="nAccumulatedCoupled" type="integer" dimensions="Time" units="unitless"

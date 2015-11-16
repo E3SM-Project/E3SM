@@ -13,9 +13,10 @@ TEST_CASES = mpas_ocn_init_baroclinic_channel.o \
              mpas_ocn_init_cvmix_WSwSBF.o \
              mpas_ocn_init_iso.o \
              mpas_ocn_init_soma.o \
-             mpas_ocn_init_global_ocean.o \
              mpas_ocn_init_ziso.o \
-             mpas_ocn_init_periodic_planar.o
+             mpas_ocn_init_periodic_planar.o \
+             mpas_ocn_init_ecosys_column.o \
+             mpas_ocn_init_global_ocean.o
              #mpas_ocn_init_TEMPLATE.o
 
 all: init_mode
@@ -47,6 +48,9 @@ mpas_ocn_init_global_ocean.o: $(UTILS)
 mpas_ocn_init_cvmix_WSwSBF.o: $(UTILS)
 
 mpas_ocn_init_periodic_planar.o: $(UTILS)
+
+mpas_ocn_init_ecosys_column.o: $(UTILS)
+
 
 #mpas_ocn_init_TEMPLATE.o: $(UTILS)
 
