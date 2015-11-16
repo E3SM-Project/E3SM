@@ -606,8 +606,8 @@ endif
     integer :: is,ie,in,iw
     integer :: nce
 
-    call t_adj_detailf(+2)
-    call t_startf('edgeVpack')
+    !call t_adj_detailf(+2)
+    !call t_startf('edgeVpack')
 
     is = edge%putmap(south,ielem)
     ie = edge%putmap(east,ielem)
@@ -618,17 +618,17 @@ endif
        print *,'kptr+vlyr = ',kptr+vlyr
        call haltmp('edgeVpack: Buffer overflow: size of the vertical dimension must be increased!')
     endif
-#if (defined COLUMN_OPENMP)
+#if (defined COLUMN_OPENMP && !defined __bg__)
 !$omp parallel do private(k,i,iptr)
 #endif
     do k=1,vlyr
        iptr = np*(kptr+k-1)
 !dir$ ivdep
        do i=1,np
-          edge%buf(iptr+ie+i)   = v(np ,i ,k) ! East
           edge%buf(iptr+is+i)   = v(i  ,1 ,k) ! South
           edge%buf(iptr+in+i)   = v(i  ,np,k) ! North
           edge%buf(iptr+iw+i)   = v(1  ,i ,k) ! West
+          edge%buf(iptr+ie+i)   = v(np ,i ,k) ! East
        enddo
     enddo
 
@@ -636,7 +636,7 @@ endif
     !  But since it is so a rare event not real need to spend time optimizing
 
     if(edge%reverse(south,ielem)) then
-#if (defined COLUMN_OPENMP)
+#if (defined COLUMN_OPENMP && !defined __bg__)
 !$omp parallel do private(k,i,ir,iptr)
 #endif
        do k=1,vlyr
@@ -649,7 +649,7 @@ endif
     endif
 
     if(edge%reverse(east,ielem)) then
-#if (defined COLUMN_OPENMP)
+#if (defined COLUMN_OPENMP && !defined __bg__)
 !$omp parallel do private(k,i,ir,iptr)
 #endif
        do k=1,vlyr
@@ -662,7 +662,7 @@ endif
     endif
 
     if(edge%reverse(north,ielem)) then
-#if (defined COLUMN_OPENMP)
+#if (defined COLUMN_OPENMP && !defined __bg__)
 !$omp parallel do private(k,i,ir,iptr)
 #endif
        do k=1,vlyr
@@ -675,7 +675,7 @@ endif
     endif
 
     if(edge%reverse(west,ielem)) then
-#if (defined COLUMN_OPENMP)
+#if (defined COLUMN_OPENMP && !defined __bg__)
 !$omp parallel do private(k,i,ir,iptr)
 #endif
        do k=1,vlyr
@@ -728,8 +728,8 @@ endif
         end if
     end do
 
-    call t_stopf('edgeVpack')
-    call t_adj_detailf(-2)
+    !call t_stopf('edgeVpack')
+    !call t_adj_detailf(-2)
 
   end subroutine edgeVpack
 
@@ -971,17 +971,14 @@ endif
     integer,               intent(in)  :: ielem
     !type (EdgeDescriptor_t)            :: desc
 
-    real(kind=real_kind) :: temp(np)
-    real(kind=real_kind) :: temp1,temp2,temp3,temp4
-
     ! Local
     integer :: i,k,ll,iptr,nce
     integer :: is,ie,in,iw
     integer :: ks,ke,kblock
     logical :: done
 
-    call t_adj_detailf(+2)
-    call t_startf('edgeVunpack')
+    !call t_adj_detailf(+2)
+    !call t_startf('edgeVunpack')
 
     is=edge%getmap(south,ielem)
     ie=edge%getmap(east,ielem)
@@ -1003,45 +1000,18 @@ endif
 !       print *,'edgeVunpack: vlyr:= ',vlyr 
 !    endif
 
-#if (defined COLUMN_OPENMP)
+#if (defined COLUMN_OPENMP && !defined __bg__)
 !$omp parallel do private(k,i,iptr)
 #endif
     do k=1,vlyr
-       iptr=np*(kptr+k-1)+ie
+       iptr=np*(kptr+k-1)
        do i=1,np
-          v(np ,i  ,k) = v(np ,i  ,k)+edge%receive(iptr+i) ! East
+          v(i  ,1  ,k) = v(i  ,1  ,k)+edge%receive(iptr+is+i) ! South
+          v(i  ,np ,k) = v(i  ,np ,k)+edge%receive(iptr+in+i) ! North
+          v(1  ,i  ,k) = v(1  ,i  ,k)+edge%receive(iptr+iw+i) ! West
+          v(np ,i  ,k) = v(np ,i  ,k)+edge%receive(iptr+ie+i) ! East
        enddo
     enddo
-
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,iptr)
-#endif
-    do k=1,vlyr
-       iptr=np*(kptr+k-1)+is
-       do i=1,np
-          v(i  ,1  ,k) = v(i  ,1  ,k)+edge%receive(iptr+i) ! South
-       enddo
-    enddo
-
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,iptr)
-#endif
-    do k=1,vlyr
-       iptr=np*(kptr+k-1)+in
-       do i=1,np
-          v(i  ,np ,k) = v(i  ,np ,k)+edge%receive(iptr+i) ! North
-       enddo
-    enddo
-
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,iptr)
-#endif
-    do k=1,vlyr
-       iptr=np*(kptr+k-1)+iw
-       do i=1,np
-          v(1  ,i  ,k) = v(1  ,i  ,k)+edge%receive(iptr+i) ! West
-       enddo
-    end do
 
 ! SWEST
     nce = max_corner_elem
@@ -1086,8 +1056,8 @@ endif
 !    endif
 ! enddo
 
-    call t_stopf('edgeVunpack')
-    call t_adj_detailf(-2)
+    !call t_stopf('edgeVunpack')
+    !call t_adj_detailf(-2)
 
   end subroutine edgeVunpack
   subroutine edgeVunpackVert(edge,v,ielem)

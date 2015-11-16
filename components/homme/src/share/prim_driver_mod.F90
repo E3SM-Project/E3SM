@@ -72,6 +72,7 @@ contains
     ! --------------------------------
     use time_mod, only : nmax, time_at, timelevel_init, timelevel_t
     ! --------------------------------
+    use element_mod, only : setup_element_pointers
     ! --------------------------------
     use mass_matrix_mod, only : mass_matrix
     ! --------------------------------
@@ -91,7 +92,7 @@ contains
     ! --------------------------------
     use schedule_mod, only : genEdgeSched,  PrintSchedule
     ! --------------------------------
-    use prim_advection_mod, only: prim_advec_init1
+    use arch_switch_mod, only: prim_advec_init1
     ! --------------------------------
     use prim_advance_mod, only: prim_advance_init
     ! --------------------------------
@@ -315,6 +316,7 @@ contains
 
     if (nelemd>0) then
        allocate(elem(nelemd))
+       call setup_element_pointers(elem)
        call allocate_element_desc(elem)
 #ifndef CAM
        call ManagerInit()
@@ -605,7 +607,7 @@ contains
     use derivative_mod, only : derivinit, interpolate_gll2fvm_points, interpolate_gll2spelt_points, v2pinit
     use global_norms_mod, only : test_global_integral, print_cfl
     use hybvcoord_mod, only : hvcoord_t
-    use prim_advection_mod, only: prim_advec_init2, deriv
+    use arch_switch_mod, only: prim_advec_init2, prim_advec_init_deriv, deriv, arch_init2
 #ifdef CAM
 #else
     use column_model_mod, only : InitColumnModel
@@ -614,9 +616,6 @@ contains
     use asp_tests, only : asp_tracer, asp_baroclinic, asp_rossby, asp_mountain, asp_gravity_wave, dcmip2_schar
 #endif
     use fvm_control_volume_mod, only : n0_fvm, np1_fvm
-#if USE_CUDA_FORTRAN
-    use cuda_mod, only: cuda_mod_init
-#endif
 
     type (element_t), intent(inout) :: elem(:)
 #if defined(_SPELT)
@@ -763,7 +762,7 @@ contains
     ! ==================================
     ! Initialize derivative structure
     ! ==================================
-    call Prim_Advec_Init2(hybrid, fvm_corners, fvm_points, spelt_refnep)
+    call Prim_Advec_Init_deriv(hybrid, fvm_corners, fvm_points, spelt_refnep)
 
     ! ================================================
     ! fvm initialization
@@ -1099,12 +1098,11 @@ contains
     end if
 
 
-#if USE_CUDA_FORTRAN
-    !Inside this routine, we enforce an OMP BARRIER and an OMP MASTER. It's left out of here because it's ugly
-    call cuda_mod_init(elem,hybrid,deriv(hybrid%ithr),hvcoord)
-#endif
     if (hybrid%masterthread) write(iulog,*) "initial state:"
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete, fvm)
+
+    call arch_init2(elem(:), deriv(hybrid%ithr))
+    call Prim_Advec_Init2(elem(:), hvcoord, hybrid)
 
   end subroutine prim_init2
 
@@ -1163,7 +1161,7 @@ contains
     use control_mod, only: statefreq, integration, ftype, qsplit, disable_diagnostics
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
-    use prim_advection_mod, only: deriv
+    use arch_switch_mod, only: deriv
     use parallel_mod, only : abortmp
 #ifndef CAM
     use column_model_mod, only : ApplyColumnModel
@@ -1360,10 +1358,9 @@ contains
     use reduction_mod, only : parallelmax
     use prim_advection_mod, only : vertical_remap
     use fvm_control_volume_mod, only : n0_fvm
-#if USE_CUDA_FORTRAN
-    use cuda_mod, only: copy_qdp_h2d, copy_qdp_d2h
+#if USE_OPENACC
+    use openacc_utils_mod, only: copy_qdp_h2d, copy_qdp_d2h
 #endif
-
 
     type (element_t) , intent(inout)        :: elem(:)
 
@@ -1452,8 +1449,8 @@ contains
     enddo
     endif
 
-#if USE_CUDA_FORTRAN
-    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
+#if (USE_OPENACC)
+    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp) 
     call copy_qdp_h2d( elem , n0_qdp )
 #endif
 
@@ -1465,6 +1462,10 @@ contains
     enddo
     ! defer final timelevel update until after remap and diagnostics
 
+#if (USE_OPENACC)
+    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp) 
+    call copy_qdp_d2h( elem , np1_qdp )
+#endif
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1475,9 +1476,6 @@ contains
     !compute timelevels for tracers (no longer the same as dynamics)
     ! note: time level update for fvm tracers takes place in fvm_mod
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
-#if USE_CUDA_FORTRAN
-    call copy_qdp_d2h( elem , np1_qdp )
-#endif
     call vertical_remap(hybrid,elem,fvm,hvcoord,dt_remap,tl%np1,np1_qdp,n0_fvm,nets,nete)
 
 
@@ -1577,7 +1575,8 @@ contains
     use fvm_mod,     only : fvm_test_type, IDEAL_TEST_BOOMERANG, IDEAL_TEST_SOLIDBODY
     use fvm_bsp_mod, only : get_boomerang_velocities_gll, get_solidbody_velocities_gll
     use prim_advance_mod, only : prim_advance_exp, overwrite_SEdensity
-    use prim_advection_mod, only : prim_advec_tracers_remap, prim_advec_tracers_fvm, deriv
+    use prim_advection_mod, only : prim_advec_tracers_fvm
+    use arch_switch_mod, only : prim_advec_tracers_remap, deriv
     use derivative_mod, only : subcell_integration
 #if defined(_SPELT)
     use prim_advection_mod, only : prim_advec_tracers_spelt
@@ -1974,7 +1973,7 @@ contains
     use derivative_mod, only : derivative_t , laplace_sphere_wk
     use viscosity_mod, only : biharmonic_wk
     use prim_advance_mod, only : smooth_phis
-    use prim_advection_mod, only: deriv
+    use arch_switch_mod, only: deriv
     implicit none
 
     integer , intent(in) :: nets,nete
