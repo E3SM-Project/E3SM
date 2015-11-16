@@ -48,6 +48,7 @@ module ocn_init_mode
    use ocn_init_soma
    use ocn_init_ziso
    use ocn_init_periodic_planar
+   use ocn_init_ecosys_column
 
    implicit none
    private
@@ -257,6 +258,7 @@ module ocn_init_mode
       call ocn_init_setup_soma(domain, ierr)
       call ocn_init_setup_ziso(domain, ierr)
       call ocn_init_setup_periodic_planar(domain, ierr)
+      call ocn_init_setup_ecosys_column(domain, ierr)
       !call ocn_init_setup_TEMPLATE(domain, ierr)
 
       write(stderrUnit, *) ' Completed setup of: ' // trim(config_init_configuration)
@@ -350,7 +352,9 @@ module ocn_init_mode
       iErr = ior(iErr, err_tmp)
       call ocn_init_validate_periodic_planar(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
-      ! call ocn_config_TEMPLATE_validate(configPool, packagePool, iErr=err_tmp)
+      call ocn_init_validate_ecosys_column(configPool, packagePool, iocontext, iErr=err_tmp)
+      iErr = ior(iErr, err_tmp)
+      ! call ocn_config_TEMPLATE_validate(configPool, packagePool, iocontext, iErr=err_tmp)
       ! iErr = ior(iErr, err_tmp)
    end subroutine ocn_init_mode_validate_configuration!}}}
 
