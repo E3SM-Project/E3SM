@@ -281,7 +281,8 @@ subroutine convect_deep_tend( &
           rliq    , &
           ztodt   , &
           jctop, jcbot , &
-          state   ,ptend   ,landfrac, pbuf)
+          state   ,ptend   ,landfrac, pbuf, mu, eu, &
+          du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath)
 
 
   end select
@@ -341,7 +342,8 @@ subroutine convect_deep_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, &
    integer, intent(in) :: species_class(:)
 
    if ( deep_scheme .eq. 'ZM' ) then  !    1 ==> Zhang-McFarlane (default)
-      call zm_conv_tend_2( state,   ptend,  ztodt,  pbuf, species_class) 
+      call zm_conv_tend_2( state,   ptend,  ztodt,  pbuf,mu, eu, &
+     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class) 
    else
       call physics_ptend_init(ptend, state%psetcols, 'convect_deep')
    end if
