@@ -69,7 +69,7 @@ def apply_namelist_template(namelist_dict, template_name, template_path):#{{{
 #}}}
 
 def configure_namelist(namelist_dict, template_path, namelist_tag):#{{{
-	for child in namelist_tag.iter('*'):
+	for child in namelist_tag:
 		if child.tag == 'option':
 			option_name = child.attrib['name']
 			option_val = child.text
@@ -184,7 +184,7 @@ def modify_stream_definition(streams_file, stream_conf):#{{{
 		stream_to_modify = ET.SubElement(streams_file, 'stream')
 		stream_to_modify.set('name', name_to_modify)
 
-	for child in stream_conf.iter('*'):
+	for child in stream_conf:
 		if child.tag == 'attribute':
 			attr_name = child.attrib['name']
 			attr_val = child.text
@@ -576,12 +576,12 @@ def generate_driver_scripts(config_file, init_path, configs):#{{{
 		script.write('base_path = os.getcwd()')
 		script.write('\n')
 
-		for child in config_root.iter('*'):
+		for child in config_root:
 			if child.tag == 'case':
 				case = child.attrib['name']
 				script.write('os.chdir(base_path)\n')
 				script.write('os.chdir(' + "'%s')\n"%(case))
-				for grandchild in child.iter('*'):
+				for grandchild in child:
 					if grandchild.tag == 'step':
 						try:
 							executable_name = grandchild.attrib['executable_name']
