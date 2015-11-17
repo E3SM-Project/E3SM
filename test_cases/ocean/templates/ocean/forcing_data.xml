@@ -11,12 +11,6 @@
 				<member name="tracersExponentialDecayFields" type="var_struct"/>
 				<member name="tracersIdealAgeFields" type="var_struct"/>
 				<member name="tracersTTDFields" type="var_struct"/>
-				<member name="activeTracersPistonVelocity" packages="activeTracersSurfaceRestoringPKG" type="var_array"/>
-				<member name="activeTracersSurfaceRestoringValue" packages="activeTracersSurfaceRestoringPKG" type="var_array"/>
-				<member name="activeTracersInteriorRestoringRate" packages="activeTracersInteriorRestoringPKG" type="var_array"/>
-				<member name="activeTracersInteriorRestoringValue" packages="activeTracersInteriorRestoringPKG" type="var_array"/>
-				<member name="debugTracersPistonVelocity" packages="debugTracersSurfaceRestoringPKG" type="var_array"/>
-				<member name="debugTracersSurfaceRestoringValue" packages="debugTracersSurfaceRestoringPKG" type="var_array"/>
 				<member name="windStressZonal" type="var"/>
 				<member name="windStressMeridional" type="var"/>
 				<member name="landIceFraction" type="var"/>

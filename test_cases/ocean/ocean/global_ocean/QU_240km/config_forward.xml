@@ -10,7 +10,7 @@
 	<namelist name="namelist.ocean">
 		<option name="config_ocean_run_mode">'forward'</option>
 		<option name="config_dt">'02:00:00'</option>
-		<option name="config_run_duration">'0001_00:00:00'</option>
+		<option name="config_run_duration">'0000_06:00:00'</option>
 		<option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
 		<option name="config_time_integrator">'split_explicit'</option>
 
@@ -23,14 +23,10 @@
 		<option name="config_use_cvmix_kpp">.true.</option>
 		<option name="config_eos_type">'jm'</option>
 		<option name="config_bottom_drag_coeff">1.0e-3</option>
+		<option name="config_use_bulk_wind_stress">.true.</option>
 		<option name="config_use_activeTracers_surface_restoring">.true.</option>
 		<option name="config_use_debugTracers">.true.</option>
-
-		<option name="config_AM_globalStats_enable">.true.</option>
-		<option name="config_AM_globalStats_compute_interval">'dt'</option>
-		<option name="config_AM_globalStats_compute_on_startup">.true.</option>
-		<option name="config_AM_globalStats_write_on_startup">.true.</option>
-		<option name="config_AM_globalStats_text_file">.true.</option>
+		<template name="global_stats"/>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable">
@@ -53,47 +49,9 @@
 				<member name="layerThickness" type="var"/>
 			</add_contents>
 		</stream>
-		<stream name="forcing_data">
-			<attribute name="type">input</attribute>
-			<attribute name="filename_template">forcing_data.nc</attribute>
-			<attribute name="input_interval">initial_only</attribute>
-			<add_contents>
-				<member name="tracersSurfaceRestoringFields" type="var_struct"/>
-				<member name="tracersInteriorRestoringFields" type="var_struct"/>
-				<member name="tracersExponentialDecayFields" type="var_struct"/>
-				<member name="tracersIdealAgeFields" type="var_struct"/>
-				<member name="tracersTTDFields" type="var_struct"/>
-				<member name="activeTracersPistonVelocity" type="var_array" packages="activeTracersSurfaceRestoringPKG"/>
-				<member name="activeTracersSurfaceRestoringValue" type="var_array" packages="activeTracersSurfaceRestoringPKG"/>
-				<member name="activeTracersInteriorRestoringRate" type="var_array" packages="activeTracersInteriorRestoringPKG"/>
-				<member name="activeTracersInteriorRestoringValue" type="var_array" packages="activeTracersInteriorRestoringPKG"/>
-				<member name="debugTracersPistonVelocity" type="var_array" packages="debugTracersSurfaceRestoringPKG"/>
-				<member name="debugTracersSurfaceRestoringValue" type="var_array" packages="debugTracersSurfaceRestoringPKG"/>
-				<member name="seaSurfacePressure" type="var"/>
-				<member name="windStressZonal" type="var"/>
-				<member name="windStressMeridional" type="var"/>
-				<member name="landIceFraction" type="var"/>
-				<member name="landIceSurfaceTemperature" type="var"/>
-				<member name="latentHeatFlux" type="var"/>
-				<member name="sensibleHeatFlux" type="var"/>
-				<member name="shortWaveHeatFlux" type="var"/>
-				<member name="evaporationFlux" type="var"/>
-				<member name="rainFlux" type="var"/>
-			</add_contents>
-		</stream>
-		<stream name="globalStatsOutput">
-			<attribute name="type">output</attribute>
-			<attribute name="filename_template">analysis_members/globalStats.$Y-$M-$D_$h.$m.$s.nc</attribute>
-			<attribute name="output_interval">0000_00:00:01</attribute>
-			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
-			<attribute name="clobber_mode">truncate</attribute>
-			<attribute name="packages=">globalStatsAMPKG</attribute>
-			<add_contents>
-				<member name="minGlobalStats" type="var_array"/>
-				<member name="maxGlobalStats" type="var_array"/>
-				<member name="avgGlobalStats" type="var_array"/>
-			</add_contents>
-		</stream>
+		<template name="forcing_data"/>
+		<template name="global_stats"/>
+
 	</streams>
 
 	<run_script name="run.py">
