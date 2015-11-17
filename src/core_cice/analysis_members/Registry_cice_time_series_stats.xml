@@ -329,11 +329,10 @@
 				type="input;output"
 				filename_template="restarts/restart.AM.timeSeriesStatsDaily.$Y-$M-$D_$h.$m.$s.nc"
 				filename_interval="output_interval"
-				reference_time="0000-01-01_00:00:00"
 				clobber_mode="truncate"
 				input_interval="initial_only"
 				packages="timeSeriesStatsDailyAMPKG"
-				output_interval="00-03-00_00:00:00"
+				output_interval="stream:restart:output_interval"
 				immutable="false"
 		/>
 
@@ -356,11 +355,10 @@
 				type="input;output"
 				filename_template="restarts/restart.AM.timeSeriesStatsMonthly.$Y-$M-$D_$h.$m.$s.nc"
 				filename_interval="output_interval"
-				reference_time="0000-01-01_00:00:00"
 				clobber_mode="truncate"
 				input_interval="initial_only"
 				packages="timeSeriesStatsMonthlyAMPKG"
-				output_interval="00-03-00_00:00:00"
+				output_interval="stream:restart:output_interval"
 				immutable="false"
 		/>
 
@@ -382,11 +380,10 @@
 				type="input;output"
 				filename_template="restarts/restart.AM.timeSeriesStatsClimatology.$Y-$M-$D_$h.$m.$s.nc"
 				filename_interval="output_interval"
-				reference_time="0000-01-01_00:00:00"
 				clobber_mode="truncate"
 				input_interval="initial_only"
 				packages="timeSeriesStatsClimatologyAMPKG"
-				output_interval="00-03-00_00:00:00"
+				output_interval="stream:restart:output_interval"
 				immutable="false"
 		/>
 
