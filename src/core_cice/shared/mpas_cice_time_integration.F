@@ -161,6 +161,9 @@ contains
 
   subroutine store_timestep_counter(domain, itimestep)
 
+    use cice_constants, only: &
+         ciceSecondsPerDay
+
     type(domain_type), intent(in) :: &
          domain
 
@@ -171,19 +174,29 @@ contains
          block
 
     type(MPAS_pool_type), pointer :: &
-         mesh
+         mesh, &
+         diagnosticsPool
 
     integer, dimension(:), pointer :: &
          mesh_itimestep
+
+    real(kind=RKIND), pointer :: &
+         timeAverageTestVariable, &
+         config_dt
 
     block => domain % blocklist
     do while (associated(block))
 
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-       
-       call MPAS_pool_get_array(mesh, "itimestep", mesh_itimestep)    
+       call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnosticsPool)
+       call MPAS_pool_get_array(mesh, "itimestep", mesh_itimestep)
+       call MPAS_pool_get_array(diagnosticsPool, "timeAverageTestVariable", timeAverageTestVariable)
+
+       call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
        
        mesh_itimestep(1) = itimestep
+
+       timeAverageTestVariable = timeAverageTestVariable + config_dt / ciceSecondsPerDay
 
        block => block % next
     end do

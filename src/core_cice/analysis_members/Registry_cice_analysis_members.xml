@@ -4,3 +4,5 @@
 #include "Registry_cice_ridging_diagnostics.xml"
 #include "Registry_cice_conservation_check.xml"
 #include "Registry_cice_geographical_vectors.xml"
+#include "Registry_cice_ice_present.xml"
+#include "Registry_cice_time_series_stats.xml"

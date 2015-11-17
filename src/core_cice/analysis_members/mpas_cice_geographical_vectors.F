@@ -41,7 +41,8 @@ module cice_geographical_vectors
    !
    !--------------------------------------------------------------------
 
-   public :: cice_init_geographical_vectors, &
+   public :: cice_bootstrap_geographical_vectors, &
+             cice_init_geographical_vectors, &
              cice_precompute_geographical_vectors, &      
              cice_compute_geographical_vectors, &
              cice_restart_geographical_vectors, &
@@ -59,6 +60,55 @@ contains
 
 !***********************************************************************
 !
+!  routine cice_bootstrap_geographical_vectors
+!
+!> \brief   Bootstrap MPAS-CICE analysis member
+!> \author  Adrian K. Turner
+!> \date    10th November 2015
+!> \details
+!>  This routine conducts all bootstraps required for the
+!>  MPAS-CICE analysis member.
+!
+!-----------------------------------------------------------------------
+
+   subroutine cice_bootstrap_geographical_vectors(domain, instance, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      err = 0
+
+    end subroutine cice_bootstrap_geographical_vectors!}}}
+
+!***********************************************************************
+!
 !  routine cice_init_geographical_vectors
 !
 !> \brief   Initialize MPAS-CICE analysis member
@@ -70,13 +120,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_geographical_vectors(domain, err)!{{{
+   subroutine cice_init_geographical_vectors(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -117,13 +169,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_geographical_vectors(domain, timeLevel, err)!{{{
+   subroutine cice_precompute_geographical_vectors(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
 
       integer, intent(in) :: timeLevel
 
@@ -166,7 +220,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_geographical_vectors(domain, timeLevel, err)!{{{
+   subroutine cice_compute_geographical_vectors(domain, instance, timeLevel, err)!{{{
 
      use cice_mesh, only: &
           cice_latlon_vector_rotation_backward
@@ -176,6 +230,8 @@ contains
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
 
       integer, intent(in) :: timeLevel
 
@@ -420,13 +476,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_geographical_vectors(domain, err)!{{{
+   subroutine cice_restart_geographical_vectors(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -467,13 +525,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_geographical_vectors(domain, err)!{{{
+   subroutine cice_finalize_geographical_vectors(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !

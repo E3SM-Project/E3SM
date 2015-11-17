@@ -72,10 +72,10 @@
 		<nml_option name="config_test_case_diag_type"        type="character"     default_value="none"/>
 	</nml_record>
 	<nml_record name="decomposition" in_defaults="true">
-		<nml_option name="config_block_decomp_file_prefix"   type="character"     default_value="graph.info.part."/>
+		<nml_option name="config_block_decomp_file_prefix"   type="character"     default_value="graphs/graph.info.part."/>
 		<nml_option name="config_number_of_blocks"           type="integer"       default_value="0"/>
 		<nml_option name="config_explicit_proc_decomp"       type="logical"       default_value=".false."/>
-		<nml_option name="config_proc_decomp_file_prefix"    type="character"     default_value="graph.info.part."/>
+		<nml_option name="config_proc_decomp_file_prefix"    type="character"     default_value="graphs/graph.info.part."/>
 	</nml_record>
 	<nml_record name="restart" in_defaults="true">
 		<nml_option name="config_do_restart"                 type="logical"       default_value="false"/>
@@ -330,10 +330,10 @@
 
 	  <stream name="restart" 
 		  type="input;output"
-		  filename_template="restart.$Y-$M-$D_$h.$m.$s.nc"
+		  filename_template="restarts/restart.$Y-$M-$D_$h.$m.$s.nc"
 		  filename_interval="00_00:00:01"
 		  input_interval="initial_only"
-		  output_interval="none"
+		  output_interval="00-03-00_00:00:00"
 		  immutable="true">    
 	    <stream name="mesh"/>
 	    <var name="xtime"/>
@@ -417,9 +417,9 @@
 
 	  <stream name="output" 				
 		  type="output"
-		  filename_template="output.nc"
-		  filename_interval="none"
-		  output_interval="1:00:00"
+		  filename_template="output/output.$Y.nc"
+		  filename_interval="01-00-00_00:00:00"
+		  output_interval="00-01-00_00:00:00"
 		  clobber_mode="replace_files"
 		  runtime_format="single_file">
 	    <var name="xtime"/>
@@ -474,7 +474,7 @@
         <!-- forcing streams -->
 	<stream name="LYqSixHourlyForcing"
 	    type="input"
-	    filename_template="120km/LYq_six_hourly.$Y.nc"
+	    filename_template="forcing/atmosphere_forcing_six_hourly.$Y.nc"
 	    filename_interval="0001-00-00_00:00:00"
 	    input_interval="none"
 	    reference_time="2000-01-01_03:00:00"
@@ -486,7 +486,7 @@
 	</stream>
 	<stream name="LYqMonthlyForcing"
 	    type="input"
-	    filename_template="LYq_monthly.nc"
+	    filename_template="forcing/atmosphere_forcing_monthly.nc"
 	    filename_interval="none"
 	    input_interval="none"
 	    immutable="true">
@@ -495,7 +495,7 @@
 	</stream>
 	<stream name="NCARMonthlySSTForcing"
 	    type="input"
-	    filename_template="oceanmixed_ice_depth_mpas.nc"
+	    filename_template="forcing/ocean_forcing_monthly.nc"
 	    filename_interval="none"
 	    input_interval="none"
 	    immutable="true">
@@ -503,7 +503,7 @@
 	</stream>
 	<stream name="NCARMonthlyForcing"
 	    type="input"
-	    filename_template="oceanmixed_ice_depth_mpas.nc"
+	    filename_template="forcing/ocean_forcing_monthly.nc"
 	    filename_interval="none"
 	    input_interval="none"
 	    immutable="true">
@@ -1794,6 +1794,7 @@
 	        <var name="iceVolumeTendencyThermodynamics"        type="real"     dimensions="nCells"              name_in_code="iceVolumeTendencyThermodynamics"/>
 	        <var name="iceAgeTendencyThermodynamics"           type="real"     dimensions="nCells"              name_in_code="iceAgeTendencyThermodynamics"/>
 	        <var name="freezingMeltingPotentialInitial"           type="real"     dimensions="nCells"              name_in_code="freezingMeltingPotentialInitial"/>
+	        <var name="timeAverageTestVariable"           type="real"     dimensions="Time"              name_in_code="timeAverageTestVariable"/>
 	</var_struct>
 
 #include "analysis_members/Registry_cice_analysis_members.xml"

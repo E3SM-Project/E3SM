@@ -43,7 +43,8 @@ module cice_temperatures
    !
    !--------------------------------------------------------------------
 
-   public :: cice_init_temperatures, &
+   public :: cice_bootstrap_temperatures, &
+             cice_init_temperatures, &
              cice_precompute_temperatures, &
              cice_compute_temperatures, &
              cice_restart_temperatures, &
@@ -61,6 +62,55 @@ contains
 
 !***********************************************************************
 !
+!  routine cice_bootstrap_temperatures
+!
+!> \brief   Bootstrap MPAS-CICE analysis member
+!> \author  Adrian K. Turner
+!> \date    10th November 2015
+!> \details
+!>  This routine conducts all bootstraps required for the
+!>  MPAS-CICE analysis member.
+!
+!-----------------------------------------------------------------------
+
+   subroutine cice_bootstrap_temperatures(domain, instance, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      err = 0
+
+   end subroutine cice_bootstrap_temperatures!}}}
+
+!***********************************************************************
+!
 !  routine cice_init_temperatures
 !
 !> \brief   Initialize MPAS-CICE analysis member
@@ -72,13 +122,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_temperatures(domain, err)!{{{
+   subroutine cice_init_temperatures(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -118,13 +170,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_temperatures(domain, timeLevel, err)!{{{
+   subroutine cice_precompute_temperatures(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
 
       integer, intent(in) :: timeLevel
 
@@ -169,7 +223,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_temperatures(domain, timeLevel, err)!{{{
+   subroutine cice_compute_temperatures(domain, instance, timeLevel, err)!{{{
 
       use ice_colpkg, only: &
            colpkg_ice_temperature, &
@@ -180,6 +234,8 @@ contains
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
 
       integer, intent(in) :: timeLevel
 
@@ -306,13 +362,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_temperatures(domain, err)!{{{
+   subroutine cice_restart_temperatures(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -353,13 +411,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_temperatures(domain, err)!{{{
+   subroutine cice_finalize_temperatures(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !

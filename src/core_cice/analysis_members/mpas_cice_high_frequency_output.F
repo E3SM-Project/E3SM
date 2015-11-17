@@ -42,7 +42,8 @@ module cice_high_frequency_output
    !
    !--------------------------------------------------------------------
 
-   public :: cice_init_high_frequency_output, &
+   public :: cice_bootstrap_high_frequency_output, &
+             cice_init_high_frequency_output, &
              cice_precompute_high_frequency_output, &
              cice_compute_high_frequency_output, &
              cice_restart_high_frequency_output, &
@@ -60,6 +61,55 @@ contains
 
 !***********************************************************************
 !
+!  routine cice_bootstrap_high_frequency_output
+!
+!> \brief   Bootstrap MPAS-CICE analysis member
+!> \author  Adrian Turner
+!> \date    10th November 2015
+!> \details
+!>  This routine conducts all bootstraps required for the
+!>  MPAS-CICE analysis member.
+!
+!-----------------------------------------------------------------------
+
+   subroutine cice_bootstrap_high_frequency_output(domain, instance, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      err = 0
+
+   end subroutine cice_bootstrap_high_frequency_output!}}}
+
+!***********************************************************************
+!
 !  routine cice_init_high_frequency_output
 !
 !> \brief   Initialize MPAS-CICE analysis member
@@ -71,13 +121,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_high_frequency_output(domain, err)!{{{
+   subroutine cice_init_high_frequency_output(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -118,13 +170,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_high_frequency_output(domain, timeLevel, err)!{{{
+   subroutine cice_precompute_high_frequency_output(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
 
       integer, intent(in) :: timeLevel
 
@@ -167,13 +221,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_high_frequency_output(domain, timeLevel, err)!{{{
+   subroutine cice_compute_high_frequency_output(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
 
       integer, intent(in) :: timeLevel
 
@@ -248,13 +304,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_high_frequency_output(domain, err)!{{{
+   subroutine cice_restart_high_frequency_output(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -295,13 +353,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_high_frequency_output(domain, err)!{{{
+   subroutine cice_finalize_high_frequency_output(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !

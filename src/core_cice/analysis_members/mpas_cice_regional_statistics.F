@@ -42,7 +42,8 @@ module cice_regional_statistics
    !
    !--------------------------------------------------------------------
 
-   public :: cice_init_regional_statistics, &
+   public :: cice_bootstrap_regional_statistics, &
+             cice_init_regional_statistics, &
              cice_precompute_regional_statistics, &
              cice_compute_regional_statistics, &
              cice_restart_regional_statistics, &
@@ -60,6 +61,55 @@ contains
 
 !***********************************************************************
 !
+!  routine cice_bootstrap_regional_statistics
+!
+!> \brief   Bootstrap MPAS-CICE analysis member
+!> \author  Adrian K. Turner
+!> \date    10th November 2015
+!> \details
+!>  This routine conducts all bootstraps required for the
+!>  MPAS-CICE analysis member.
+!
+!-----------------------------------------------------------------------
+
+   subroutine cice_bootstrap_regional_statistics(domain, instance, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      err = 0
+
+   end subroutine cice_bootstrap_regional_statistics!}}}
+
+!***********************************************************************
+!
 !  routine cice_init_regional_statistics
 !
 !> \brief   Initialize MPAS-CICE analysis member
@@ -71,13 +121,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_init_regional_statistics(domain, err)!{{{
+   subroutine cice_init_regional_statistics(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -170,13 +222,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_precompute_regional_statistics(domain, timeLevel, err)!{{{
+   subroutine cice_precompute_regional_statistics(domain, instance, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
 
       integer, intent(in) :: timeLevel
 
@@ -219,7 +273,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_compute_regional_statistics(domain, timeLevel, err)!{{{
+   subroutine cice_compute_regional_statistics(domain, instance, timeLevel, err)!{{{
 
       use cice_mesh, only: &
            cice_interpolate_vertex_to_cell
@@ -237,6 +291,8 @@ contains
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
 
       integer, intent(in) :: timeLevel
 
@@ -523,13 +579,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_restart_regional_statistics(domain, err)!{{{
+   subroutine cice_restart_regional_statistics(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
@@ -570,13 +628,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine cice_finalize_regional_statistics(domain, err)!{{{
+   subroutine cice_finalize_regional_statistics(domain, instance, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      character(len=*), intent(in) :: instance
 
       !-----------------------------------------------------------------
       !
