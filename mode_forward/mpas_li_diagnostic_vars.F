@@ -355,8 +355,7 @@ contains
       use mpas_geometry_utils, only: mpas_cells_to_points_using_baryweights
       use mpas_vector_operations, only: mpas_tangential_vector_1d
       
-      !TODO - Move li_heat_dissipation_sia to a different module?
-      use li_thermal, only: li_heat_dissipation_sia
+      use li_thermal, only: li_heat_dissipation_sia, li_basal_friction_sia
 
       !-----------------------------------------------------------------
       !
@@ -591,7 +590,9 @@ contains
 
           ! Do vertical remapping of layerThickness and tracers
           !WHL - I think the last argument should be err_tmp.
-          call vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err)
+          !TODO - Should vertical remapping be done after horizontal advection instead?
+          !       Commented out for now, to avoid altering the vertical temperature calculation.
+!!          call vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err)
           err = ior(err, err_tmp)
 
           ! This information is only needed by external dycores.
@@ -674,18 +675,6 @@ contains
          call mpas_dmpar_max_int(domain % dminfo, procDirichletMaskChanged, dirichletMaskChanged)
          !print *,'dirichletMaskChanged', dirichletMaskChanged
       end if
-
-      ! Calculate heat dissipation, as needed by the thermal solver during the next time step.
-      !TODO - Make sure heat dissipation is computed for the FO solver.
-
-      if (trim(config_thermal_solver) == 'temperature' .or. trim(config_thermal_solver) == 'enthalpy') then
-
-         if (trim(config_velocity_solver) == 'sia') then
-            call li_heat_dissipation_sia(domain, err_tmp)
-            err = ior(err, err_tmp)
-         endif
-
-      endif
 
       ! === error check
       if (err > 0) then
@@ -790,6 +779,27 @@ contains
       endif
 
       ! Note: the outmost layerThicknessEdge may be wrong if its upwind cell is off this block - halo update should be done if this variable will be used.
+
+      ! Calculate heating terms that needed by the thermal solver during the next time step.
+      ! Note: The SIA heat dissipation could be computed before velocity, but for other approximations, 
+      !       heat dissipation may need to be computed after velocity.
+      !TODO - Make sure the heatDissipation and basalFriction fields are computed for the FO solver.
+
+      if (trim(config_thermal_solver) == 'temperature' .or. trim(config_thermal_solver) == 'enthalpy') then
+
+         if (trim(config_velocity_solver) == 'sia') then
+
+            ! Compute interior heat dissipation
+            call li_heat_dissipation_sia(domain, err_tmp)
+            err = ior(err, err_tmp)
+
+            ! Compute heat flux due to basal friction
+            call li_basal_friction_sia(domain, err_tmp)
+            err = ior(err, err_tmp)
+
+         endif
+
+      endif
 
    end subroutine diagnostic_solve_after_velocity
 

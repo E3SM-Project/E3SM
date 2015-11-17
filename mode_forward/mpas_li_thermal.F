@@ -47,7 +47,8 @@ module li_thermal
    !
    !--------------------------------------------------------------------
 
-   public :: li_thermal_init, li_thermal_solver, li_heat_dissipation_sia
+   public :: li_thermal_init, li_thermal_solver, &
+             li_heat_dissipation_sia, li_basal_friction_sia
 
    !--------------------------------------------------------------------
    !
@@ -58,15 +59,14 @@ module li_thermal
    real (kind=RKIND), save :: rhoi    ! ice density (kg m^{-3}), copied from config_ice_density
    real (kind=RKIND), save :: rhoo    ! ocean density (kg m^{-3}), copied from config_ocean_density
 
-   !TODO - dups is from CISM.  Choose a better name?
-   real (kind=RKIND), dimension(:,:), allocatable :: dups   ! vertical grid quantities
+   real (kind=RKIND), dimension(:,:), allocatable :: dsigmaTerm   ! vertical grid quantities
 
    ! max and min allowed temperatures (Kelvin)
    ! Note: kelvin_to_celsius = 273.15 (perhaps it should be called celsius_to_kelvin?)
 
    real (kind=RKIND), parameter ::   &
-        maxtemp_threshold =  100._RKIND + kelvin_to_celsius, &
-        mintemp_threshold = -100._RKIND + kelvin_to_celsius
+        maxtempThreshold =  100._RKIND + kelvin_to_celsius,   & 
+        mintempThreshold = -100._RKIND + kelvin_to_celsius     
 
 !***********************************************************************
    contains
@@ -86,10 +86,6 @@ module li_thermal
 !-----------------------------------------------------------------------
 
    subroutine li_thermal_init(domain, err)
-
-      !-----------------------------------------------------------------
-      ! input variables
-      !-----------------------------------------------------------------
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -119,12 +115,21 @@ module li_thermal
            config_do_restart
 
       character(len=StrKIND), pointer :: &
-           config_thermal_solver,    & ! solver option ('temperature' or 'enthalpy')
-           config_thermal_init         ! initialization option ('linear' or 'file')
+           config_thermal_solver,                 & ! solver option ('temperature' or 'enthalpy')
+           config_temperature_init,               & ! temperature initialization option ('linear' or 'file')
+           config_surface_air_temperature_source, & ! surface air temperature initialization option ('constant' or 'file') 
+           config_basal_heat_flux_source            ! basal heat flux initialization option ('constant' or 'file') 
 
       real (kind=RKIND), pointer ::  &
-           config_ice_density,       & ! ice density
-           config_ocean_density        ! ocean density
+           config_ice_density,            & ! ice density
+           config_ocean_density             ! ocean density
+
+      real (kind=RKIND), pointer ::  &
+           config_surface_air_temperature_value, & ! constant value of surface air temperature
+           config_basal_heat_flux_value            ! constant value of basal heat flux
+  
+      integer, pointer :: &
+           config_stats_cell_ID             ! cell ID for diagnostic output
 
       integer, pointer :: &
            index_temperature,  &
@@ -147,11 +152,14 @@ module li_thermal
            temperature,              & ! interior ice temperature (K)
            waterfrac,                & ! interior water fraction (unitless)
            enthalpy                    ! interior ice enthalpy (J m^{-3})
-      
+
       real (kind=RKIND), dimension(:), pointer :: &
+           surfaceAirTemperature,    & ! surface air temperature (K)
            surfaceTemperature,       & ! surface ice temperature (K)
-           basalTemperature,         & ! basal ice temperature (K)
-           surfaceAirTemperature       ! surface air temperature (K)
+           basalTemperature            ! basal ice temperature (K)
+
+      real (kind=RKIND), dimension(:), pointer :: &
+           basalHeatFlux               ! basal heat flux into the ice (W m^{-2}, positive upward)
 
       ! Note: The following fields are needed for halo updates
       ! TODO - Are halo updates needed at initialization?
@@ -179,18 +187,35 @@ module li_thermal
 
       integer :: err_tmp
 
-      !WHL - debug - for circular shelf test case
-      integer, parameter :: ncellsPerRow = 40
-      integer, parameter :: nRows = 46
+      !WHL - debug - for test-case diagnostics
+      logical, parameter :: circular_shelf_test = .false.
+      logical, parameter :: dome_test = .true.
+
+      integer :: ncellsPerRow 
+      integer :: nRows
       integer :: i, iRow
+      real(kind=RKIND), parameter :: surfaceAirTemperatureCelsius = -15.0_RKIND
+
+      if (circular_shelf_test) then
+         nCellsPerRow = 40
+         nRows = 46
+      elseif (dome_test) then
+         nCellsPerRow = 30
+         nRows = 34
+      endif
 
       err = 0
 
       ! get config options
       call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
-      call mpas_pool_get_config(liConfigs, 'config_thermal_init', config_thermal_init)
+      call mpas_pool_get_config(liConfigs, 'config_temperature_init', config_temperature_init)
+      call mpas_pool_get_config(liConfigs, 'config_surface_air_temperature_source', config_surface_air_temperature_source)
+      call mpas_pool_get_config(liConfigs, 'config_surface_air_temperature_value', config_surface_air_temperature_value)
+      call mpas_pool_get_config(liConfigs, 'config_basal_heat_flux_source', config_basal_heat_flux_source)
+      call mpas_pool_get_config(liConfigs, 'config_basal_heat_flux_value', config_basal_heat_flux_value)
       call mpas_pool_get_config(liConfigs, 'config_print_thermal_info', config_print_thermal_info)
       call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
+      call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
             
       ! set some physical constants
       ! (to avoid calling mpas_pool_get_config repeatedly in this module)
@@ -202,8 +227,6 @@ module li_thermal
       ! block loop
       block => domain % blocklist
       do while (associated(block))
-
-         write(stderrUnit,*) 'Get pools'
 
          ! get pools
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -230,72 +253,117 @@ module li_thermal
          call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature', surfaceTemperature)
          call mpas_pool_get_array(thermalPool, 'basalTemperature',   basalTemperature)
-
-         ! temporary init for surfaceAirTemperature
-         !TODO - Read surfaceAirTemperature from a file or create a simple field
-         surfaceAirTemperature(:) = kelvin_to_celsius   ! 273.15
+         call mpas_pool_get_array(thermalPool, 'basalHeatFlux', basalHeatFlux)
 
          !TODO - Is there a better way to access the temperature and waterfrac arrays?
          temperature => tracers(index_temperature,:,:)
          waterfrac => tracers(index_waterfrac,:,:)
 
          if (config_print_thermal_info) then
+            write(stderrUnit,*) 'Initialize thermal solver, config_temperature_init = ', trim(config_temperature_init)
+         endif
 
-            write(stderrUnit,*) 'Initialize thermal solver, config_thermal_init =', trim(config_thermal_init)
+         ! init for surfaceAirTemperature
+         !TODO - Allow for reading surfaceAirTemperature from an external file
+         if (trim(config_surface_air_temperature_source) == 'constant') then
+            surfaceAirTemperature(:) = config_surface_air_temperature_value
+            if (config_print_thermal_info) write(stderrUnit,*) 'Initialize sfc air temp:', config_surface_air_temperature_value
+         endif
 
-            !WHL - temporary debugging code - for circular shelf test case
-!            write(stderrUnit,*) ' '
-!            write(stderrUnit,*) 'Surface ice temperature before init'
-!            do iRow = nRows, 1, -1
-!               if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-!                  write(stderrUnit,'(a3)',advance='no') '    '
-!               endif
-!               do i = nCellsPerRow/2 - 2, nCellsPerRow
-!                  iCell = (iRow-1)*nCellsPerRow + i
-!                  write(stderrUnit,'(f8.2)',advance='no') surfaceTemperature(iCell)
-!               enddo
-!               write(stderrUnit,*) ' '
-!            enddo
-
-         endif  ! config_print_thermal_info
+         ! init for basalHeatFlux
+         !TODO - Allow for reading basalHeatFlux from an external file
+         if (trim(config_basal_heat_flux_source) == 'constant') then
+            basalHeatFlux(:) = config_basal_heat_flux_value
+            if (config_print_thermal_info) write(stderrUnit,*) 'Initialize basal heat flux:', config_basal_heat_flux_value
+         endif
 
          ! Precompute some grid quantities used in the vertical temperature solve
-         ! (Commented-out lines are from CISM)
 
-         allocate(dups(nVertLevels,2))
-         dups(:,:) = 0.0_RKIND
+         allocate(dsigmaTerm(nVertLevels,2))
+         dsigmaTerm(:,:) = 0.0_RKIND
       
          k = 1
-         !      dups(k,1) = 1.0_RKIND/((sigma(k+1) - sigma(k)) * (stagsigma(k) - sigma(k)) )
-         dups(k,1) = 1.0_RKIND/((layerInterfaceSigma(k+1) - layerInterfaceSigma(k)) * (layerCenterSigma(k) - layerInterfaceSigma(k)) )
+         dsigmaTerm(k,1) = 1.0_RKIND/( (layerInterfaceSigma(k+1) - layerInterfaceSigma(k)) * (layerCenterSigma(k) - layerInterfaceSigma(k)) )
       
          do k = 2, nVertLevels
-            !         dups(k,1) = 1.0_RKIND/((sigma(k+1) - sigma(k)) * (sigma(k) - sigma(k-1)) )
-            dups(k,1) = 1.0_RKIND/((layerInterfaceSigma(k+1) - layerInterfaceSigma(k)) * (layerCenterSigma(k) - layerCenterSigma(k-1)) )
+            dsigmaTerm(k,1) = 1.0_RKIND/( (layerInterfaceSigma(k+1) - layerInterfaceSigma(k)) * (layerCenterSigma(k) - layerCenterSigma(k-1)) )
          enddo
          
          do k = 1, nVertLevels-1
-            !         dups(k,2) = 1.0_RKIND/((sigma(k+1) - sigma(k)) * (stagsigma(k+1) - stagsigma(k)) )
-            dups(k,2) = 1.0_RKIND/((layerInterfaceSigma(k+1) - layerInterfaceSigma(k)) * (layerCenterSigma(k+1) - layerCenterSigma(k)) )
+            dsigmaTerm(k,2) = 1.0_RKIND/( (layerInterfaceSigma(k+1) - layerInterfaceSigma(k)) * (layerCenterSigma(k+1) - layerCenterSigma(k)) )
          end do
          
          k = nVertLevels
-         !      dups(k,2) = 1.0_RKIND/((sigma(k+1) - sigma(k)) * (sigma(k+1) - stagsigma(k)) )
-         dups(k,2) = 1.0_RKIND/((layerInterfaceSigma(k+1) - layerInterfaceSigma(k)) * (layerInterfaceSigma(k+1) - layerCenterSigma(k)) )
+         dsigmaTerm(k,2) = 1.0_RKIND/( (layerInterfaceSigma(k+1) - layerInterfaceSigma(k)) * (layerInterfaceSigma(k+1) - layerCenterSigma(k)) )
          
          if (config_print_thermal_info) then
-            write(stderrUnit,*) 'dups coefficients:'
+            write(stderrUnit,*) 'dsigmaTerm coefficients:'
             do k = 1, nVertLevels
-               write(stderrUnit,*) k, dups(k,1), dups(k,2)
+               write(stderrUnit,*) k, dsigmaTerm(k,1), dsigmaTerm(k,2)
             enddo
          endif
          
+         !WHL - debug - Temporary initialization for test cases
+
+         if (config_print_thermal_info .and. (circular_shelf_test .or. dome_test)) then
+
+            write(stderrUnit,*) ' '
+
+            if (circular_shelf_test) then
+               
+               write(stderrUnit,*) 'Circular shelf test:'
+
+            elseif (dome_test) then
+
+               write(stderrUnit,*) 'Dome test:'
+!                  write(stderrUnit,*) ' '
+!                  write(stderrUnit,*) 'Cells with ice: iCell, thickness'
+!                  do iCell = 1, nCellsSolve
+!                     if (thickness(iCell) > 0.0_RKIND) then
+!                        write(stderrUnit,*) iCell, thickness(iCell)
+!                     endif
+!                  enddo
+                  
+            endif
+
+            !WHL - debug dome - Adjust thickness slightly so the central cell has the same thickness as in CISM
+!!            thickness(:) = thickness(:) * 707.1068115234375000_RKIND / 707.10678118654755_RKIND
+            
+            write(stderrUnit,*) ' '
+            write(stderrUnit,*) 'Initial thickness'
+            do iRow = nRows, 1, -1
+               if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+                  write(stderrUnit,'(a3)',advance='no') '    '
+               endif
+               do i = nCellsPerRow/2 - 2, nCellsPerRow
+                  iCell = (iRow-1)*nCellsPerRow + i
+                  write(stderrUnit,'(f8.2)',advance='no') thickness(iCell)
+               enddo
+               write(stderrUnit,*) ' '
+            enddo
+            
+            write(stderrUnit,*) ' '
+            write(stderrUnit,*) 'Initial surfaceAirTemperature'
+            do iRow = nRows, 1, -1
+               if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+                  write(stderrUnit,'(a3)',advance='no') '    '
+               endif
+               do i = nCellsPerRow/2 - 2, nCellsPerRow
+                  iCell = (iRow-1)*nCellsPerRow + i
+                  write(stderrUnit,'(f8.2)',advance='no') surfaceAirTemperature(iCell)
+               enddo
+               write(stderrUnit,*) ' '
+            enddo
+            
+         endif  ! circ shelf or dome
+
+
          ! Initialize vertical temperature profile.
          ! Three possibilities:
          ! (1) Set up a linear temperature profile, with T = artm at the surface and T <= Tpmp
-         !     at the bed (config_thermal_init = 'linear'). 
+         !     at the bed (config_temperature_init = 'linear'). 
          !     A parameter (pmpt_offset) controls how far below Tpmp the initial bed temp is set.
-         ! (2) Read ice temperature from an initial input file (config_thermal_init = 'file').
+         ! (2) Read ice temperature from an initial input file (config_temperature_init = 'file').
          ! (3) Read ice temperature from a restart file.
          !
          ! The default is (1).
@@ -311,7 +379,7 @@ module li_thermal
                write(stderrUnit,*) 'Initialized ice temperature from the restart file'
             endif
 
-         elseif (trim(config_thermal_init) == 'file') then
+         elseif (trim(config_temperature_init) == 'file') then
 
             ! Temperature was read from the input file
             if (config_print_thermal_info) then
@@ -325,7 +393,7 @@ module li_thermal
                waterfrac(:,:) = 0.0_RKIND
             endif
 
-         elseif (trim(config_thermal_init) == 'linear') then
+         elseif (trim(config_temperature_init) == 'linear') then
 
             ! set up a linear temperature profile in each column
             ! T = surfaceAirTemperature at the ice surface, and T <= Tpmp at the bed
@@ -342,10 +410,15 @@ module li_thermal
                surfaceTemperature(iCell) = min(surfaceAirTemperature(iCell), kelvin_to_celsius)
 
                ! compute the pressure melting point temperature in the column and at the bed
-               !TODO - Change pmp subroutine to return temperature in Kelvin
 
-               call pressure_melting_point_column(layerCenterSigma(:), thickness(iCell), pmptemp(:))
-               call pressure_melting_point(thickness(iCell), pmptemp_bed)
+               call pressure_melting_point_column(&
+                    layerCenterSigma,   &
+                    thickness(iCell),   &
+                    pmptemp)
+
+               call pressure_melting_point(&
+                    thickness(iCell), &
+                    pmptemp_bed)
 
                pmptemp(:) = pmptemp(:) + kelvin_to_celsius
                pmptemp_bed = pmptemp_bed + kelvin_to_celsius
@@ -368,7 +441,53 @@ module li_thermal
 
             if (config_print_thermal_info) then
                write(stderrUnit,*) 'Initialized a linear temperature profile in each column'
-            endif
+
+               !WHL - debug
+               if (circular_shelf_test .or. dome_test) then
+
+                  write(stderrUnit,*) ' '
+                  write(stderrUnit,*) 'Initial layer 1 temperature'
+                  iLayer = 1
+                  do iRow = nRows, 1, -1
+                     if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+                        write(stderrUnit,'(a3)',advance='no') '    '
+                     endif
+                     do i = nCellsPerRow/2 - 2, nCellsPerRow
+                        iCell = (iRow-1)*nCellsPerRow + i
+                        write(stderrUnit,'(f8.2)',advance='no') temperature(iLayer,iCell)
+                     enddo
+                     write(stderrUnit,*) ' '
+                  enddo
+
+                  write(stderrUnit,*) ' '
+                  write(stderrUnit,*) 'Initial basal temperature'
+                  do iRow = nRows, 1, -1
+                     if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+                        write(stderrUnit,'(a3)',advance='no') '    '
+                     endif
+                     do i = nCellsPerRow/2 - 2, nCellsPerRow
+                        iCell = (iRow-1)*nCellsPerRow + i
+                        write(stderrUnit,'(f8.2)',advance='no') basalTemperature(iCell)
+                     enddo
+                     write(stderrUnit,*) ' '
+                  enddo
+
+                  !TODO - Use indexToCellID to make this more robust?
+                  iCell = config_stats_cell_ID
+                  write(stderrUnit,*) ' '
+                  write(stderrUnit,*) 'Diagnostic cell =', iCell
+                  write(stderrUnit,*) 'Thickness =', thickness(iCell)
+                  write(stderrUnit,*) ' '
+                  write(stderrUnit,*) 'Temperature profile (C):'
+                  write(stderrUnit,*) 'Sfc:', surfaceTemperature(iCell) - kelvin_to_celsius
+                  do iLayer = 1, nVertLevels
+                     write(stderrUnit,*) iLayer, layerCenterSigma(iLayer), temperature(iLayer,iCell) - kelvin_to_celsius
+                  enddo
+                  write(stderrUnit,*) 'Bed:', basalTemperature(iCell) - kelvin_to_celsius
+                  
+               endif  ! shelf or dome test
+
+            endif  ! config_print_thermal_info
 
          endif    ! restart file, input file, or linear
 
@@ -451,30 +570,40 @@ module li_thermal
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: thermalPool 
       type (mpas_pool_type), pointer :: velocityPool   ! needed for mask subroutine
+      type (mpas_pool_type), pointer :: scratchPool 
 
       integer, pointer :: &
            nCellsSolve,              & ! number of locally owned cells
-           nVertLevels,              & ! number of vertical layers
-           nVertInterfaces             ! number of vertical interfaces (including top and bottom)
+           nVertLevels                 ! number of vertical layers
+
+      integer, pointer :: &
+           index_temperature,  &
+           index_waterfrac,  &
+           index_enthalpy
 
       logical, pointer :: &
            config_print_thermal_info   ! if true, print debug info
 
       character(len=StrKIND), pointer :: &
-           config_thermal_solver       ! option for thermal solver
+           config_thermal_solver,     &! option for thermal solver
+           config_basal_mass_bal_float ! option for basal mass balance of floating ice
 
       real(kind=RKIND), pointer :: &
-           config_thermal_thickness    ! minimum thickness for temperature calculations
+           config_thermal_thickness,  &! minimum thickness for temperature calculations
+           config_sea_level            ! sea level relative to z = 0
 
       integer, pointer :: &
            config_stats_cell_ID        ! global ID for diagnostic cell
 
       integer, dimension(:), pointer :: &
            cellMask,                 & ! bit mask describing whether ice is floating, dynamically active, etc.
-           thermalCellMask,          & ! mask for thermal calculations
-                                       ! = 1 where thickness > config_thermal_thickness, elsewhere = 0 
            indexToCellID               ! list of global cell IDs
       
+      type (field1dInteger), pointer :: thermalCellMaskField
+      integer, dimension(:), pointer :: &
+           thermalCellMask             ! mask for thermal calculations
+                                       ! = 1 where thickness > config_thermal_thickness, elsewhere = 0 
+
       real (kind=RKIND), dimension(:), pointer :: &
            layerCenterSigma,         & ! sigma coordinate at midpoint of each layer
            layerInterfaceSigma         ! sigma coordinate at layer interfaces (including top and bottom)
@@ -485,18 +614,23 @@ module li_thermal
            surfaceAirTemperature,    & ! surface air temperature (K)
            basalHeatFlux,            & ! basal heat flux into the ice (W m^{-2}, positive upward)
            basalFrictionFlux,        & ! basal frictional flux into the ice (W m^{-2})
-           surfaceConductiveFlux,    & ! conductive heat flux at the upper surface (W m^{-2}, positive downward) 
-           basalConductiveFlux,      & ! conductive heat flux at the lower surface (W m^{-2}, positive downward) 
+           surfaceConductiveFlux,    & ! conductive heat flux at the upper surface (W m^{-2}, positive down) 
+           basalConductiveFlux,      & ! conductive heat flux at the lower surface (W m^{-2}, positive down) 
            basalMassBal,             & ! basal mass balance (kg m^{-2} s^{-1}); positive for freeze-on, negative for melting
+           groundedBasalMassBal,     & ! basal mass balance for grounded ice
+           floatingBasalMassBal,     & ! basal mass balance for floating ice
            basalWaterThickness,      & ! basal water thickness (m)
            thickness,                & ! ice thickness (m)
+           lowerSurface,             & ! lower surface elevation (m)
            bedTopography               ! bed topography (m; negative below sea level)
+
+      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,              & ! interior ice temperature (K)
            waterfrac,                & ! interior water fraction (unitless)
            enthalpy,                 & ! interior ice enthalpy (J m^{-3})
-           heatDissipation             ! interior heat dissipation (deg/s)   ! TODO - These are CISM units.  Change?
+           heatDissipation             ! interior heat dissipation (deg/s)
 
       ! Note: The following fields are needed for halo updates
 
@@ -512,16 +646,16 @@ module li_thermal
            subdiagonal, diagonal, superdiagonal,   &  ! tridiagonal matrix elements
            rhs                                        ! matrix right-hand side
 
-      !TODO - Change name of alpha_enth?
       real(kind=RKIND), dimension(:), allocatable :: &
-           alpha_enth   ! diffusivity at interfaces (m2/s) for enthalpy solver
-                        ! = coni / (rhoi*cp_ice) for cold ice  !TODO - Change name of coni?
+           diffusivity   ! diffusivity at interfaces (m^2/s) for enthalpy solver
+                         ! = iceConductivity / (rhoi*cp_ice) for cold ice
 
-      !TODO - Get rid of these temporary arrays?
       real(kind=RKIND), dimension(:), allocatable :: &
-           temp, enth       ! like temperature/enthalpy, but including surface and bed
+           solution     ! solution of tridiagonal matrix problem
 
       real(kind=RKIND) :: &
+           surfaceEnthalpy,          & ! surface ice enthalpy
+           basalEnthalpy,            & ! basal ice enthalpy
            depth,                    & ! depth within ice column
            dTtop, dTbot,             & ! temperature differences
            denth_top, denth_bot,     & ! enthalpy differences
@@ -537,11 +671,6 @@ module li_thermal
 
       integer :: k
 
-      !WHL - debug - for circular shelf test case
-      integer, parameter :: ncellsPerRow = 40
-      integer, parameter :: nRows = 46
-      integer :: i, iRow
-
       err = 0
 
       ! block loop
@@ -553,11 +682,14 @@ module li_thermal
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
 
          ! get dimensions
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-         call mpas_pool_get_dimension(meshPool, 'nVertInterfaces', nVertInterfaces)
+         call mpas_pool_get_dimension(thermalPool, 'index_temperature', index_temperature)
+         call mpas_pool_get_dimension(thermalPool, 'index_waterfrac', index_waterfrac)
+         call mpas_pool_get_dimension(thermalPool, 'index_enthalpy', index_enthalpy)
 
          ! get fields from the mesh pool
          call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
@@ -566,17 +698,21 @@ module li_thermal
 
          ! get fields from the geometry pool
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
+         call mpas_pool_get_array(geometryPool, 'groundedBasalMassBal', groundedBasalMassBal)
+         call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
          call mpas_pool_get_array(geometryPool, 'basalWaterThickness', basalWaterThickness)
 
          ! get fields from the thermal pool
+         call mpas_pool_get_array(thermalPool, 'tracers', tracers)  !TODO - Can we get temperature, etc. directly?
+!         call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+!         call mpas_pool_get_array(thermalPool, 'waterfrac',   waterfrac)
+!         call mpas_pool_get_array(thermalPool, 'enthalpy',    enthalpy)
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature', surfaceTemperature)
          call mpas_pool_get_array(thermalPool, 'basalTemperature',   basalTemperature)
-         call mpas_pool_get_array(thermalPool, 'temperature', temperature)
-         call mpas_pool_get_array(thermalPool, 'waterfrac',   waterfrac)
-         call mpas_pool_get_array(thermalPool, 'enthalpy',    enthalpy)
          call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
          call mpas_pool_get_array(thermalPool, 'surfaceConductiveFlux', surfaceConductiveFlux)
          call mpas_pool_get_array(thermalPool, 'basalConductiveFlux', basalConductiveFlux)
@@ -584,36 +720,34 @@ module li_thermal
          call mpas_pool_get_array(thermalPool, 'basalFrictionFlux', basalFrictionFlux)
          call mpas_pool_get_array(thermalPool, 'heatDissipation', heatDissipation)
 
+         !TODO - Is there a better way to access the temperature and waterfrac arrays?
+         temperature => tracers(index_temperature,:,:)
+         waterfrac   => tracers(index_waterfrac,:,:)
+         enthalpy    => tracers(index_enthalpy,:,:)
+
          ! get fields from the scratch pool
-         call mpas_pool_get_array(thermalPool, 'iceCellMask', thermalCellMask)
+         call mpas_pool_get_field(scratchPool, 'iceCellMask', thermalCellMaskField)
+         call mpas_allocate_scratch_field(thermalCellMaskField, .true.)
+         thermalCellMask => thermalCellMaskField % array
 
          ! get config variables
          call mpas_pool_get_config(liConfigs, 'config_print_thermal_info', config_print_thermal_info)
          call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
          call mpas_pool_get_config(liConfigs, 'config_thermal_thickness', config_thermal_thickness)
+         call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+         call mpas_pool_get_config(liConfigs, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
          call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
 
          if (config_print_thermal_info) then
-            write(stderrUnit,*) 'Solving for temperature, config_thermal_solver = ', config_thermal_solver
-
-            !WHL - debug - for circular shelf test case
-!            write(stderrUnit,*) 'Surface ice temperature before thermal calc'
-!            do iRow = nRows, 1, -1
-!               if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-!                  write(stderrUnit,'(a3)',advance='no') '    '
-!               endif
-!               do i = nCellsPerRow/2 - 2, nCellsPerRow
-!                  iCell = (iRow-1)*nCellsPerRow + i
-!                  write(stderrUnit,'(f8.2)',advance='no') surfaceTemperature(iCell)
-!               enddo
-!               write(stderrUnit,*) ' '
-!            enddo
-
+            write(stderrUnit,*) 'Solving for temperature, config_thermal_solver = ', trim(config_thermal_solver)
          endif
 
          ! calculate masks - so we know where the ice is floating
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
          err = ior(err, err_tmp)
+
+         !WHL - debug dome - Zero out heat dissipation for easier comparison with dome problem
+!!!         heatDissipation(:,:) = 0.0d0
 
          select case(config_thermal_solver)
 
@@ -626,17 +760,30 @@ module li_thermal
             ! Convert temperature from Kelvin to Celsius to avoid repeated use of kelvin_to_celsius below
             ! (Convert back at the end.)
             temperature(:,:) = temperature(:,:) - kelvin_to_celsius
+            surfaceAirTemperature(:) = surfaceAirTemperature(:) - kelvin_to_celsius
+            surfaceTemperature(:) = surfaceTemperature(:) - kelvin_to_celsius
+            basalTemperature(:) = basalTemperature(:) - kelvin_to_celsius
 
             ! allocate some vertical arrays
-            allocate(subdiagonal(nVertInterfaces+1))  ! temperature/enthalpy in each layer, plus surface and basal temperature
-            allocate(diagonal(nVertInterfaces+1))    
-            allocate(superdiagonal(nVertInterfaces+1))    
-            allocate(rhs(nVertInterfaces+1))
-            allocate(alpha_enth(nVertInterfaces))
+            allocate(subdiagonal(nVertLevels+2))  ! temperature/enthalpy in each layer, plus surface and basal temperature
+            allocate(diagonal(nVertLevels+2))    
+            allocate(superdiagonal(nVertLevels+2))    
+            allocate(rhs(nVertLevels+2))
+            allocate(solution(nVertLevels+2))
+            allocate(diffusivity(nVertLevels+1))
 
-            !TODO - Get rid of these temporary arrasy?
-            allocate(temp(0:nVertInterfaces))
-            allocate(enth(0:nVertInterfaces))
+            if (config_print_thermal_info) then
+               write(stderrUnit,*) ' '
+               iCell = config_stats_cell_ID
+               write(stderrUnit,*) 'thickness =', thickness(iCell)
+               write(stderrUnit,*) 'Initial temperature, iCell =', iCell
+               write(stderrUnit,*) 0, surfaceTemperature(iCell)
+               do k = 1, nVertLevels
+                  write(stderrUnit,*) k, temperature(k,iCell)
+               enddo
+               write(stderrUnit,*) nVertLevels+1, basalTemperature(iCell)
+               write(stderrUnit,*) 'Loop over cells'
+            endif
 
             ! loop over locally owned cells
             do iCell = 1, nCellsSolve
@@ -649,14 +796,14 @@ module li_thermal
 
                if (thickness(iCell) > config_thermal_thickness) then
 
-                  ! set thermal mask
+                  ! Set thermal mask
                   thermalCellMask(iCell) = 1
 
                   ! Set surface temperature (Celsius)
                   
-                  surfaceTemperature(iCell) = min(0.0_RKIND, surfaceAirTemperature(iCell) - kelvin_to_celsius)
+                  surfaceTemperature(iCell) = min(0.0_RKIND, surfaceAirTemperature(iCell))
 
-                  ! For floating ice, set the basal temperature to the freezing temperature of seawater
+                  ! For floating ice, set the basal temperature to the freezing temperature of seawater.
                   ! Values based on Ocean Water Freezing Point Calculator with S = 35 PSU 
                   if (li_mask_is_floating_ice(cellMask(iCell))) then
                      depth = thickness(iCell) * rhoi/rhoo
@@ -667,6 +814,11 @@ module li_thermal
 
                      ! Given temperature and waterfrac in ice interior, compute enthalpy
 
+                     !WHL - debug - nonzero waterfrac for testing
+!!                     if (verboseColumn) then
+!!                        waterfrac(nVertLevels-1:nVertLevels,iCell) = 0.01d0
+!!                     endif
+
                      call temperature_to_enthalpy(&
                           layerCenterSigma,      &
                           thickness(iCell),      &
@@ -674,124 +826,120 @@ module li_thermal
                           waterfrac(:,iCell),    &
                           enthalpy(:,iCell))
 
+                     surfaceEnthalpy = surfaceTemperature(iCell) * rhoi*cp_ice
+                     basalEnthalpy = basalTemperature(iCell) * rhoi*cp_ice
+
                      if (verboseColumn) then
                         write(stderrUnit,*) ' '
                         write(stderrUnit,*) 'Before prognostic enthalpy, iCell =', indexToCellID(iCell)
                         write(stderrUnit,*) 'thickness =', thickness(iCell)
                         write(stderrUnit,*) 'Temperature (C), waterfrac, enthalpy/(rhoi*cp_ice):'
-                        write(stderrUnit,*) surfaceTemperature(iCell)
+                        write(stderrUnit,*) 0, surfaceEnthalpy/(rhoi*cp_ice)
                         do k = 1, nVertLevels
                            write(stderrUnit,*) k, temperature(k,iCell), waterfrac(k,iCell), enthalpy(k,iCell)/(rhoi*cp_ice)
                         enddo
-                        write(stderrUnit,*) basalTemperature(iCell)
+                        write(stderrUnit,*) nVertLevels+1, basalEnthalpy/(rhoi*cp_ice)
                      endif
 
-                     ! compute initial internal energy in column (for energy conservation check)
+                     ! Compute initial internal energy in column (for energy conservation check)
                      initialEnergy = 0.0_RKIND
                      do k = 1, nVertLevels
-                        initialEnergy = initialEnergy + enthalpy(k,iCell) * (layerInterfaceSigma(k+1) - layerInterfaceSigma(k)) * thickness(iCell)
+                        initialEnergy = initialEnergy + enthalpy(k,iCell) * (layerInterfaceSigma(k+1) - layerInterfaceSigma(k))
                      enddo
+                     initialEnergy = initialEnergy * thickness(iCell)
 
-                     ! compute matrix elements using enthalpy gradient method
-
-                     temp(0) = surfaceTemperature(iCell)
-                     temp(1:nVertLevels) = temperature(:,iCell)
-                     temp(nVertInterfaces) = basalTemperature(iCell)
-
-                     enth(0) = surfaceTemperature(iCell) * rhoi*cp_ice
-                     enth(1:nVertLevels) = enthalpy(:,iCell)
-                     enth(nVertInterfaces) = basalTemperature(iCell) * rhoi*cp_ice
+                     ! Compute matrix elements using enthalpy gradient method
 
                      call enthalpy_matrix_elements(&
-                          deltat,               &
-                          nVertInterfaces,      &   ! CISM passes upn
-                          layerCenterSigma,     &   ! CISM passes stagsigma
-                          subdiagonal,          &
-                          diagonal,             &
-                          superdiagonal,        &
-                          rhs,                  &
-                          dups,                 &
+                          deltat,                         &
+                          nVertLevels,                    &
+                          layerCenterSigma,               &
+                          dsigmaTerm,                     &
                           li_mask_is_floating_ice_int(cellMask(iCell)), &
                           thickness(iCell),               &
-                          temp(0:nVertInterfaces),        &
-                          waterfrac(:,iCell),             & 
-                          enth(0:nVertInterfaces),        & 
+                          temperature(:,iCell),           &
+                          surfaceTemperature(iCell),      &
+                          basalTemperature(iCell),        &
+                          waterfrac(:,iCell),             &
+                          enthalpy(:,iCell),              &
                           heatDissipation(:,iCell),       &
-!!                          basalHeatFlux(iCell),           &
-                          -basalHeatFlux(iCell),           &    ! CISM subroutine assumes positive down, so flip sign
+                          basalHeatFlux(iCell),           &
                           basalFrictionFlux(iCell),       &
-                          alpha_enth,                &
-                          verboseColumn)
+                          diffusivity,                    &
+                          subdiagonal,                    &
+                          diagonal,                       &
+                          superdiagonal,                  &
+                          rhs)
 
                      if (verboseColumn) then
                         write(stderrUnit,*) ' '
                         write(stderrUnit,*) 'After matrix elements, iCell =', indexToCellID(iCell)
                         write(stderrUnit,*) 'k, subd, diag, supd, rhs/(rhoi*ci):'
-                        do k = 1, nVertInterfaces+1
+                        do k = 1, nVertLevels+2
                            write(stderrUnit,*) k-1, subdiagonal(k), diagonal(k), superdiagonal(k), rhs(k)/(rhoi*cp_ice)
                         enddo
                      endif
 
                      ! solve the tridiagonal system
-                     ! Note: Enthalpy is indexed from 0 to nVertInterfaces, with indices 1 to nVertInterfaces-1 colocated
-                     ! with layerCenterSigma values of the same index.
-                     ! However, the matrix elements are indexed 1 to nVertInterfaces+1, with the first row
-                     ! corresponding to the surface enthalpy, enthalpy(0).
+                     ! Note: Temperature is indexed from 1 to nVertLevels, whereas the matrix elements
+                     !        are indexed from 1 to nVertLevels+2.
+                     !       Matrix row 1 corresponds to surface temperature, and matrix row nVertLevels+2
+                     !        corresponds to the basal temperature.
 
                      call tridiag_solver(&
-                          subdiagonal,      &
-                          diagonal,         &
-                          superdiagonal,    &
-                          enth(0:nVertInterfaces),  &
+                          subdiagonal,   &
+                          diagonal,      &
+                          superdiagonal, &
+                          solution,      &
                           rhs)
 
-                     ! Compute conductive fluxes = (alpha/H * denth/dsigma) at upper and lower surfaces; positive down.
-                     ! Here alpha = coni / (rhoi*shci) for cold ice, with a smaller value for temperate ice.
+                     ! Copy the solution into the enthalpy variables
+                     surfaceEnthalpy   = solution(1)
+                     enthalpy(:,iCell) = solution(2:nVertLevels+1)
+                     basalEnthalpy     = solution(nVertLevels+2)
+
+                     ! Compute conductive fluxes = (diffusivity/thickness * denth/dsigma) at upper and lower surfaces; positive down.
+                     ! Here diffusivity = iceConductivity / (rhoi*cp_ice) for cold ice, with a smaller value for temperate ice.
                      ! Assume implicit backward Euler time step.
-                     ! Note: These fluxes should be computed before calling glissade_enth2temp (which might reset the bed enthalpy).
+                     ! Note: These fluxes should be computed before calling glissade_enth2temp (which might change basalEnthalpy).
 
-                     ! commented-out code is from CISM
-!!                     denth_top = enthalpy(1,ew,ns) - enthalpy(0,ew,ns)
-!!                     denth_bot = enthalpy(upn,ew,ns) - enthalpy(upn-1,ew,ns)
+                     denth_top = enthalpy(1,iCell) - surfaceEnthalpy
+                     denth_bot = basalEnthalpy - enthalpy(nVertLevels,iCell)
                 
-!!                     ucondflx(ew,ns) = -alpha_enth(1)  /thck(ew,ns) * denth_top/( stagsigma(1))
-!!                     lcondflx(ew,ns) = -alpha_enth(upn)/thck(ew,ns) * denth_bot/(1.d0 - stagsigma(upn-1))
-
-                     denth_top = enth(1) - enth(0)
-                     denth_bot = enth(nVertInterfaces) - enth(nVertLevels)
-                
-                     surfaceConductiveFlux(iCell) = -alpha_enth(1)/thickness(iCell) * denth_top/layerCenterSigma(1)
-                     basalConductiveFlux(iCell) = -alpha_enth(nVertInterfaces)/thickness(iCell) * denth_bot/(1.0_RKIND - layerCenterSigma(nVertLevels))
+                     surfaceConductiveFlux(iCell) = -diffusivity(1)/thickness(iCell) * denth_top/layerCenterSigma(1)
+                     basalConductiveFlux(iCell) = -diffusivity(nVertLevels+1)/thickness(iCell) * denth_bot/(1.0_RKIND - layerCenterSigma(nVertLevels))
                                               
-                     ! copy the enthalpy back into the full array
-                     enthalpy(:,iCell) = enth(1:nVertLevels)
-
                      ! convert enthalpy back to temperature and waterfrac
 
                      call enthalpy_to_temperature(&
-                          layerCenterSigma,      &
-                          thickness(iCell),      &
-                          enthalpy(:,iCell),     &
-                          temperature(:,iCell),  &
+                          layerCenterSigma,          &
+                          thickness(iCell),          &
+                          enthalpy(:,iCell),         &
+                          surfaceEnthalpy,           &
+                          basalEnthalpy,             &
+                          temperature(:,iCell),      &
+                          surfaceTemperature(iCell), &
+                          basalTemperature(iCell),   &
                           waterfrac(:,iCell))
 
                      if (verboseColumn) then
                         write(stderrUnit,*) ' '
                         write(stderrUnit,*) 'After prognostic enthalpy, iCell =', indexToCellID(iCell)
                         write(stderrUnit,*) 'thickness =', thickness(iCell)
-                        write(stderrUnit,*) 'Temp, waterfrac, enthalpy/(rhoi*cp_ice):'
-                        write(stderrUnit,*) surfaceTemperature(iCell)
+                        write(stderrUnit,*) 'Temperature, waterfrac, enthalpy/(rhoi*cp_ice):'
+                        write(stderrUnit,*) 0, surfaceEnthalpy/(rhoi*cp_ice)
                         do k = 1, nVertLevels
                            write(stderrUnit,*) k, temperature(k,iCell), waterfrac(k,iCell), enthalpy(k,iCell)/(rhoi*cp_ice)
                         enddo
-                        write(stderrUnit,*) basalTemperature(iCell)
+                        write(stderrUnit,*) nVertLevels+1, basalEnthalpy/(rhoi*cp_ice)
                      endif
 
-                     ! compute final internal energy in column (for energy conservation check)
+                     ! Compute final internal energy in column (for energy conservation check)
                      finalEnergy = 0.0_RKIND
                      do k = 1, nVertLevels
-                        finalEnergy = finalEnergy + enthalpy(k,iCell) * (layerInterfaceSigma(k+1) - layerInterfaceSigma(k)) * thickness(iCell)
+                        finalEnergy = finalEnergy + enthalpy(k,iCell) * (layerInterfaceSigma(k+1) - layerInterfaceSigma(k))
                      enddo
+                     finalEnergy = finalEnergy * thickness(iCell)
 
                   else    ! temperature solver
 
@@ -799,108 +947,110 @@ module li_thermal
                         write(stderrUnit,*) ' '
                         write(stderrUnit,*) 'Before prognostic temperature, iCell =', indexToCellID(iCell)
                         write(stderrUnit,*) 'thickness =', thickness(iCell)
-                        write(stderrUnit,*) surfaceTemperature(iCell)
+                        write(stderrUnit,*) 0, surfaceTemperature(iCell)
                         do k = 1, nVertLevels
                            write(stderrUnit,*) k, temperature(k,iCell)
                         enddo
-                        write(stderrUnit,*) basalTemperature(iCell)
+                        write(stderrUnit,*) nVertLevels+1, basalTemperature(iCell)
                      endif
 
-                     ! compute initial internal energy in column (for energy conservation check)
+                     ! Compute initial internal energy in column (for energy conservation check)
                      initialEnergy = 0.0_RKIND
                      do k = 1, nVertLevels
-                        initialEnergy = initialEnergy + temperature(k,iCell) * (layerInterfaceSigma(k+1) - layerInterfaceSigma(k)) * thickness(iCell)
+                        initialEnergy = initialEnergy + temperature(k,iCell) * (layerInterfaceSigma(k+1) - layerInterfaceSigma(k))
                      enddo
+                     initialEnergy = initialEnergy * thickness(iCell) * rhoi*cp_ice
 
-                     ! compute matrix elements using enthalpy gradient method
-                     !TODO - Get rid of temporary arrays?
-
-                     temp(0) = surfaceTemperature(iCell)
-                     temp(1:nVertLevels) = temperature(:,iCell)
-                     temp(nVertInterfaces) = basalTemperature(iCell)
+                     ! Compute matrix elements
 
                      call temperature_matrix_elements(&
-                          deltat,               &
-                          nVertInterfaces,      &   ! CISM passes upn
-                          layerCenterSigma,     &   ! CISM passes stagsigma
-                          subdiagonal,          &
-                          diagonal,             &
-                          superdiagonal,        &
-                          rhs,                  &
-                          dups,                 &
+                          deltat,                         &
+                          nVertLevels,                    &
+                          layerCenterSigma,               &
+                          dsigmaTerm,                     &
                           li_mask_is_floating_ice_int(cellMask(iCell)), &
                           thickness(iCell),               &
-                          temp(0:nVertInterfaces),        &
+                          temperature(:,iCell),           &
+                          surfaceTemperature(iCell),      &
+                          basalTemperature(iCell),        &
                           heatDissipation(:,iCell),       &
-!!                          basalHeatFlux(iCell),           &
-                          -basalHeatFlux(iCell),           &    ! CISM subroutine assumes positive down, so flip sign
-                          basalFrictionFlux(iCell))
+                          basalHeatFlux(iCell),           &
+                          basalFrictionFlux(iCell),       &
+                          subdiagonal,                    &
+                          diagonal,                       &
+                          superdiagonal,                  &
+                          rhs)
 
                      if (verboseColumn) then
                         write(stderrUnit,*) ' '
+                        write(stderrUnit,*) 'deltat =', deltat
                         write(stderrUnit,*) 'After matrix elements, iCell =', indexToCellID(iCell)
                         write(stderrUnit,*) 'k, subd, diag, supd, rhs:'
-                        do k = 1, nVertInterfaces+1
+                        do k = 1, nVertLevels+2
                            write(stderrUnit,*) k-1, subdiagonal(k), diagonal(k), superdiagonal(k), rhs(k)
                         enddo
                      endif
 
-                     ! solve the tridiagonal system
-                     ! Note: Temperature is indexed from 0 to nVertInterfaces, with indices 1 to nVertInterfaces-1 colocated
-                     ! with layerCenterSigma values of the same index.
-                     ! However, the matrix elements are indexed 1 to nVertInterfaces+1, with the first row
-                     ! corresponding to the surface temperature, temp(0).
+                     ! Solve the tridiagonal system
+                     ! Note: Temperature is indexed from 1 to nVertLevels, whereas the matrix elements
+                     !        are indexed from 1 to nVertLevels+2.
+                     !       Matrix row 1 corresponds to surface temperature, and matrix row nVertLevels+2
+                     !        corresponds to the basal temperature.
 
                      call tridiag_solver(&
-                          subdiagonal,      &
-                          diagonal,         &
-                          superdiagonal,    &
-                          temp(0:nVertInterfaces),  &
+                          subdiagonal,   &
+                          diagonal,      &
+                          superdiagonal, &
+                          solution,      &
                           rhs)
+
+                     ! Copy the solution into the temperature variables
+                     surfaceTemperature(iCell) = solution(1)
+                     temperature(:,iCell)      = solution(2:nVertLevels+1)
+                     basalTemperature(iCell)   = solution(nVertLevels+2)
 
                      ! Compute conductive flux = (k/H * dT/dsigma) at upper and lower surfaces; positive down
                      ! Assume implicit backward Euler time step.
                      
-                     dTtop = temp(1) - temp(0)
-                     dTbot = temp(nVertInterfaces) - temp(nVertInterfaces-1)
+                     dTtop = temperature(1,iCell) - surfaceTemperature(iCell)
+                     dTbot = basalTemperature(iCell) - temperature(nVertLevels,iCell)
 
                      surfaceConductiveFlux(iCell) = (-iceConductivity/thickness(iCell) ) * dTtop / layerCenterSigma(1)
                      basalConductiveFlux(iCell) = (-iceConductivity/thickness(iCell) ) * dTbot / (1.0_RKIND - layerCenterSigma(nVertLevels))
-
-                     ! copy the temperature back into the full array
-                     temperature(:,iCell) = temp(1:nVertLevels)
 
                      if (verboseColumn) then
                         write(stderrUnit,*) ' '
                         write(stderrUnit,*) 'After prognostic temperature, iCell =', indexToCellID(iCell)
                         write(stderrUnit,*) 'thickness =', thickness(iCell)
-                        write(stderrUnit,*) surfaceTemperature(iCell)
+                        write(stderrUnit,*) 0, surfaceTemperature(iCell)
                         do k = 1, nVertLevels
                            write(stderrUnit,*) k, temperature(k,iCell)
                         enddo
-                        write(stderrUnit,*) basalTemperature(iCell)
+                        write(stderrUnit,*) nVertLevels+1, basalTemperature(iCell)
                      endif
 
-                     ! compute final internal energy in column (for energy conservation check)
+                     ! Compute final internal energy in column (for energy conservation check)
                      finalEnergy = 0.0_RKIND
                      do k = 1, nVertLevels
-                        finalEnergy = finalEnergy + temperature(k,iCell) * (layerInterfaceSigma(k+1) - layerInterfaceSigma(k)) * thickness(iCell)
+                        finalEnergy = finalEnergy + temperature(k,iCell) * (layerInterfaceSigma(k+1) - layerInterfaceSigma(k))
                      enddo
+                     finalEnergy = finalEnergy * thickness(iCell) * rhoi*cp_ice
 
                   endif   ! temperature or enthalpy solver
-
-                  ! Convert temperature from Celsius back to Kelvin
-                  temperature(:,iCell) = temperature(:,iCell) + kelvin_to_celsius
-                  surfaceTemperature(iCell) = surfaceTemperature(iCell) + kelvin_to_celsius
-                  basalTemperature(iCell) = basalTemperature(iCell) + kelvin_to_celsius
 
                   ! Compute total dissipation rate in column (W/m^2)                                                                                                                  
                   columnHeatDissipation = 0.0_RKIND
                   do k = 1, nVertLevels
                      columnHeatDissipation = columnHeatDissipation  &
-                                           + heatDissipation(k,iCell) * (layerCenterSigma(k+1) - layerCenterSigma(k))
+                                           + heatDissipation(k,iCell) * (layerInterfaceSigma(k+1) - layerInterfaceSigma(k))
                   enddo
                   columnHeatDissipation = columnHeatDissipation * thickness(iCell)*rhoi*cp_ice
+
+                  if (verboseColumn) then
+                     write(stderrUnit,*) ' '
+                     write(stderrUnit,*) 'heatDissipation:', heatDissipation(:,iCell)
+                     write(stderrUnit,*) 'columnHeatDissipation:', columnHeatDissipation
+                  endif
 
                   ! Verify that the net input of energy into the column is equal to the change in internal energy.
 
@@ -910,25 +1060,25 @@ module li_thermal
                   if (abs((finalEnergy - initialEnergy - deltaEnergy) / deltat) > 1.0e-8_RKIND) then
 
                      if (verboseColumn) then
-                        print*, 'Ice thickness:', thickness(iCell)
-                        print*, 'config_thermal_thickness:', config_thermal_thickness
-                        print*, ' '
-                        print*, 'Interior fluxes:'
-                        print*, 'sfc conductive flx (positive up)=', -surfaceConductiveFlux(iCell)
-                        print*, 'bed conductive flx (positive up)=', -basalConductiveFlux(iCell)
-                        print*, 'column heat dissipation =', columnHeatDissipation
-                        print*, 'Net flux =', deltaEnergy/deltat
-                        print*, ' '
-                        print*, 'deltaEnergy =', deltaEnergy
-                        print*, 'initialEnergy =', initialEnergy
-                        print*, 'finalEnergy =', finalEnergy
-                        print*, ' '
-                        print*, 'Energy imbalance =', finalEnergy - initialEnergy - deltaEnergy
-                        print*, ' '
-                        print*, 'Basal fluxes:'
-                        print*, 'frictional =', basalFrictionFlux(iCell)
-                        print*, 'geothermal =', basalHeatFlux(iCell)
-                        print*, 'flux for bottom melting =', basalFrictionFlux(iCell) + basalHeatFlux(iCell) + basalConductiveFlux(iCell)
+                        write(stderrUnit,*) 'Ice thickness:', thickness(iCell)
+                        write(stderrUnit,*) 'config_thermal_thickness:', config_thermal_thickness
+                        write(stderrUnit,*) ' '
+                        write(stderrUnit,*) 'Interior fluxes:'
+                        write(stderrUnit,*) 'sfc conductive flx (W/m^2, positive down)=', surfaceConductiveFlux(iCell)
+                        write(stderrUnit,*) 'bed conductive flx (W/m^2, positive down)=', basalConductiveFlux(iCell)
+                        write(stderrUnit,*) 'column heat dissipation (W/m^2) =', columnHeatDissipation
+                        write(stderrUnit,*) 'Net flux (W/m^2) =', deltaEnergy/deltat
+                        write(stderrUnit,*) ' '
+                        write(stderrUnit,*) 'deltaEnergy (J/m^2) =', deltaEnergy
+                        write(stderrUnit,*) 'initialEnergy (J/m^2) =', initialEnergy
+                        write(stderrUnit,*) 'finalEnergy (J/m^2) =', finalEnergy
+                        write(stderrUnit,*) ' '
+                        write(stderrUnit,*) 'Energy imbalance (J/m^2)=', finalEnergy - initialEnergy - deltaEnergy
+                        write(stderrUnit,*) ' '
+                        write(stderrUnit,*) 'Basal fluxes:'
+                        write(stderrUnit,*) 'frictional =', basalFrictionFlux(iCell)
+                        write(stderrUnit,*) 'geothermal =', basalHeatFlux(iCell)
+                        write(stderrUnit,*) 'flux for bottom melting =', basalFrictionFlux(iCell) + basalHeatFlux(iCell) + basalConductiveFlux(iCell)
                      endif   ! verboseColumn
 
                      write(stderrUnit,*) 'li_thermal, energy conservation error: iCell, imbalance (W/m2):', &
@@ -942,13 +1092,13 @@ module li_thermal
                   ! set thermal mask
                   thermalCellMask(iCell) = 0
 
-                  ! Set temperature of thin ice to 0 C = 273.15 K
-                  !TODO - For cells that have just crossed this thickness threshold, energy is not conserved here.
+                  ! Set temperature of thin ice to 0 C
+                  !TODO - For cells that have just crossed the config_thermal_thickness threshold, energy is not conserved here.
                   !       Keep track of the energy difference?
 
-                  surfaceTemperature(iCell) = kelvin_to_celsius
-                  basalTemperature(iCell) = kelvin_to_celsius
-                  temperature(:,iCell) = kelvin_to_celsius
+                  surfaceTemperature(iCell) = 0.0_RKIND
+                  basalTemperature(iCell) = 0.0_RKIND
+                  temperature(:,iCell) = 0.0_RKIND
                   waterfrac(:,iCell) = 0.0_RKIND
 
                endif   ! thickness > config_thermal_thickness
@@ -962,26 +1112,37 @@ module li_thermal
             !  fraction (0.01 by default) is drained to the bed.  
 
             call basal_melting(&
-                 config_thermal_solver,         &     
-                 deltat,                        &
-                 nCellsSolve,              &
-                 nVertInterfaces,          &
-                 layerInterfaceSigma,      &
-                 layerCenterSigma,         &
-                 thermalCellMask,           &
+                 config_thermal_solver,        &     
+                 deltat,                       &
+                 nCellsSolve,                  &
+                 nVertLevels,                  &
+                 layerInterfaceSigma,          &
+                 layerCenterSigma,             &
+                 thermalCellMask,              &
                  li_mask_is_floating_ice_int(cellMask), &
-                 thickness,                &
-                 temperature,              &
-                 basalTemperature,         &
-                 waterfrac,                &
-                 enthalpy,                 &
-                 basalFrictionFlux,        &
-!!                 basalHeatFlux,            &
-                 -basalHeatFlux,            &  !TODO - Switch sign convention in subroutine
-                 basalConductiveFlux,      &
-                 basalWaterThickness,      &
+                 thickness,                    &
+                 lowerSurface,                 &
+                 bedTopography,                &
+                 config_sea_level,             &
+                 config_basal_mass_bal_float,  &
+                 temperature,                  &
+                 basalTemperature,             &
+                 waterfrac,                    &
+                 enthalpy,                     &
+                 basalFrictionFlux,            &
+                 basalHeatFlux,                &
+                 basalConductiveFlux,          &
+                 basalWaterThickness,          &
+                 groundedBasalMassBal,         &
+                 floatingBasalMassBal,         &
                  basalMassBal)
 
+            ! Convert temperatures from Celsius back to Kelvin
+            temperature(:,:) = temperature(:,:) + kelvin_to_celsius
+            surfaceAirTemperature(:) = surfaceAirTemperature(:) + kelvin_to_celsius
+            surfaceTemperature(:) = surfaceTemperature(:) + kelvin_to_celsius
+            basalTemperature(:) = basalTemperature(:) + kelvin_to_celsius
+            
             ! Before exiting, check for temperatures that are physically unrealistic.
             ! Thresholds are set at the top of this module.
 
@@ -990,8 +1151,8 @@ module li_thermal
                maxtemp = maxval(temperature(:,iCell))
                mintemp = minval(temperature(:,iCell))
           
-               if (maxtemp > maxtemp_threshold) then
-                  write(stderrUnit,*) 'maxtemp > 0: iCell, maxtemp =', iCell, maxtemp
+               if (maxtemp > maxtempThreshold) then
+                  write(stderrUnit,*) 'maxtemp > maxtempThreshold: iCell, maxtemp =', iCell, maxtemp
                   write(stderrUnit,*) 'thickness =', thickness(iCell)
                   write(stderrUnit,*) 'temperature:'
                   do k = 1, nVertLevels
@@ -1000,8 +1161,8 @@ module li_thermal
                   call mpas_dmpar_global_abort("An error has occurred in li_core_finalize. Aborting...")
                endif
 
-               if (mintemp < mintemp_threshold) then
-                  write(stderrUnit,*) 'mintemp < mintemp_threshold: iCell, mintemp =', iCell, mintemp
+               if (mintemp < mintempThreshold) then
+                  write(stderrUnit,*) 'mintemp < mintempThreshold: iCell, mintemp =', iCell, mintemp
                   write(stderrUnit,*) 'thickness =', thickness(iCell)
                   write(stderrUnit,*) 'temperature:'
                   do k = 1, nVertLevels
@@ -1013,13 +1174,13 @@ module li_thermal
             enddo   ! iCell
 
             ! clean up
+            call mpas_deallocate_scratch_field(thermalCellMaskField, .true.)
             if (allocated(subdiagonal)) deallocate(subdiagonal)
             if (allocated(diagonal)) deallocate(diagonal)
             if (allocated(superdiagonal)) deallocate(superdiagonal)
             if (allocated(rhs)) deallocate(rhs)
-            if (allocated(alpha_enth)) deallocate(alpha_enth)
-            if (allocated(temp)) deallocate(temp)
-            if (allocated(enth)) deallocate(enth)
+            if (allocated(solution)) deallocate(solution)
+            if (allocated(diffusivity)) deallocate(diffusivity)
 
          end select
 
@@ -1034,7 +1195,7 @@ module li_thermal
       call mpas_pool_get_field(thermalPool, 'basalTemperature', basalTemperatureField)
       call mpas_dmpar_exch_halo_field(basalTemperatureField)
 
-      !TODO - Halo updates for components of the tracer array
+      !TODO - Enable halo updates for components of the tracer array
 !!      call mpas_pool_get_field(thermalPool, 'temperature', temperatureField)
 !!      call mpas_dmpar_exch_halo_field(temperatureField)
 
@@ -1049,7 +1210,6 @@ module li_thermal
           write (stderrUnit,*) 'An error has occurred in li_thermal_solver'
       endif
 
-
     end subroutine li_thermal_solver
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -1060,15 +1220,11 @@ module li_thermal
 !> \author William Lipscomb
 !> \date   October 2015
 !> \details
-!>  This routine computes heat dissipation in the ice interior for the
-!>  SIA velocity solver.
+!>  This routine computes heat dissipation associated with strain heating
+!>  in the ice interior, based on the shallow-ice approximation.
 !-----------------------------------------------------------------------
 
-  !TODO - Move this subroutine to another module?
   subroutine li_heat_dissipation_sia(domain, err)
-
-     ! Compute the dissipation source term associated with strain heating,
-     ! based on the shallow-ice approximation.
 
      !-----------------------------------------------------------------
      ! input/output variables
@@ -1093,6 +1249,9 @@ module li_thermal
      type (mpas_pool_type), pointer :: thermalPool 
      type (mpas_pool_type), pointer :: scratchPool     
     
+     logical, pointer :: &
+          config_print_thermal_info   ! if true, print debug info
+
      integer, pointer :: &
           nCells,                & ! number of cells
           nEdges,                & ! number of edges
@@ -1133,6 +1292,15 @@ module li_thermal
      real (kind=RKIND), dimension(:,:), pointer :: &
           heatDissipationEdge      ! heat dissipation on edges
  
+     integer, dimension(:), pointer :: &
+          indexToCellID            ! list of global cell IDs
+
+     integer, pointer :: &
+          config_stats_cell_ID     ! global ID for diagnostic cell
+
+     real (kind=RKIND), pointer :: &
+          config_flowLawExponent   ! flow law exponent
+
      real (kind=RKIND) :: &
           thicknessEdge,         & ! thickness averaged to edge
           weightEdge               ! edge weight for averaging to cell center
@@ -1140,9 +1308,7 @@ module li_thermal
      real (kind=RKIND), dimension(:), allocatable ::  &
           flowParamAEdge           ! flow parameter averaged to edge
 
-     real (kind=RKIND), pointer :: n    ! flow law exponent
-
-     integer :: iCell, iCell1, iCell2, iEdge, iEdgeOnCell
+     integer :: iCell, iCell1, iCell2, iEdge, iEdgeOnCell, iLayer
 
      ! Here are notes from the Glimmer calculation of heat dissipation:
      !
@@ -1152,7 +1318,8 @@ module li_thermal
      !     (2) works best for eismint divide (symmetry) but (1) may be better for full expts"
      !
      ! Glimmer uses (2).
-     ! Here we use the C-grid variant of (1); we find the dissipation at edges and then average to cell centers.
+     !
+     ! For MPAS LI we use the C-grid variant of (1); we find the dissipation at edges and then average to cell centers.
      ! The heating rate phi, defined on an edge, is given by
      !
      !      phi = 2 * A(T) * (sigma * rhoi * g * H * |grad(s)|)^(n+1)
@@ -1163,6 +1330,9 @@ module li_thermal
      ! phi has units of W m^{-3}.
      ! The heat dissipation in deg/s is given by phi / (rhoi * cp_ice).
 
+     err = 0
+
+     ! block loop
      block => domain % blocklist
      do while (associated(block))
 
@@ -1174,37 +1344,43 @@ module li_thermal
         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
         
         ! get fields from the mesh pool
-        call mpas_pool_get_array(meshPool, 'nCells', nCells)
-        call mpas_pool_get_array(meshPool, 'nEdges', nEdges)
-        call mpas_pool_get_array(meshPool, 'nVertLevels', nVertLevels)
+        call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+        call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+        call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+        call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
         call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
         call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+        call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)  ! diagnostic only
                 
         ! get fields from the geometry pool
-        !TODO - Make sure slopeEdge is up to date.
         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
         call mpas_pool_get_array(geometryPool, 'slopeEdge', slopeEdge)
         
         ! get fields from the velocity pool
-        call mpas_pool_get_array(geometryPool, 'flowParamA', flowParamA)
+        call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
         
         ! get fields from the thermal pool
-        call mpas_pool_get_array(geometryPool, 'heatDissipation', heatDissipation)
+        call mpas_pool_get_array(thermalPool, 'heatDissipation', heatDissipation)
         
+        ! get config parameters
+        call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', config_flowLawExponent)
+        call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
+        call mpas_pool_get_config(liConfigs, 'config_print_thermal_info', config_print_thermal_info)
+
         ! get scratch fields
         call mpas_pool_get_field(scratchPool, 'workLevelEdge', heatDissipationEdgeField)
         call mpas_allocate_scratch_field(heatDissipationEdgeField, .true.)
         heatDissipationEdge => heatDissipationEdgeField % array
         
-        ! get config parameters
-        call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', n)
-        
         allocate(flowParamAEdge(nVertLevels))
         
+        if (config_print_thermal_info) write(stderrUnit,*) 'Compute SIA heat dissipation'
+
         ! compute the heat dissipation on edges
         
         do iEdge = 1, nEdges
@@ -1220,10 +1396,18 @@ module li_thermal
               flowParamAEdge(:) = 0.5_RKIND * (flowParamA(:,iCell1) + flowParamA(:,iCell2))
 
               ! compute the dissipation at each level
-              ! Note: n = config_flowLawExponent
               !TODO - Verify that this equation gives the right answer
               heatDissipationEdge(:,iEdge) = 2.0_RKIND * flowParamAEdge(:) * &
-                   (layerCenterSigma(:) * rhoi * gravity * thicknessEdge * abs(slopeEdge)) ** (n+1.0_RKIND)
+                   (layerCenterSigma(:) * rhoi * gravity * thicknessEdge * abs(slopeEdge(iEdge))) ** (config_flowLawExponent + 1.0_RKIND)
+
+              if (config_print_thermal_info .and. indexToCellID(iCell1) == config_stats_cell_ID) then
+!                 write(stderrUnit,*) ' '
+!                 write(stderrUnit,*) 'Heat dissipation, iEdge, iCell1 =', iEdge, iCell1
+!                 write(stderrUnit,*) 'thicknessEdge:', thicknessEdge
+!                 write(stderrUnit,*) 'flowParamAEdge:', flowParamAEdge(:)
+!                 write(stderrUnit,*) 'slopeEdge:', slopeEdge(iEdge)
+!                 write(stderrUnit,*) 'heatDissipationEdge:', heatDissipationEdge(:,iEdge)
+              endif
 
            else  ! one neighbor cell does not exist
                  !TODO = Confirm that the dissipation is not needed at such edges
@@ -1234,34 +1418,172 @@ module li_thermal
            
          enddo  ! iEdge
         
-
         ! average the heat dissipation to cell centers
         
         do iCell = 1, nCells
 
            heatDissipation(:,iCell) = 0.0_RKIND
 
+           if (config_print_thermal_info .and. indexToCellID(iCell) == config_stats_cell_ID) then
+              write(stderrUnit,*) ' '
+              write(stderrUnit,*) 'Heat dissipation, iCell (local, global ID) =', iCell, indexToCellID(iCell)
+              write(stderrUnit,*) 'iEdgeOnCell, iEdge, weightEdge, heatDissipationEdge (layer 1)'
+           endif
+
            do iEdgeOnCell = 1, nEdgesOnCell(iCell)
            
               iEdge = edgesOnCell(iEdgeOnCell,iCell)
-
-              !TODO - Is this the preferred way of getting the edge weights?
               weightEdge = 0.25_RKIND*dcEdge(iEdge)*dvEdge(iEdge) / areaCell(iCell)
 
               heatDissipation(:,iCell) = heatDissipation(:,iCell) + weightEdge * heatDissipationEdge(:,iEdge)
 
+              if (config_print_thermal_info .and. indexToCellID(iCell) == config_stats_cell_ID) then
+                 write(stderrUnit,*) iEdgeOnCell, iEdge, weightEdge, heatDissipationEdge(1,iEdge), heatDissipation(1,iCell)
+              endif
+
            enddo  ! iEdgeOnCell
+
+           if (config_print_thermal_info .and. indexToCellID(iCell) == config_stats_cell_ID) then
+              write(stderrUnit,*) 'heatDissipation (deg/s) for cell', iCell
+              do iLayer = 1, nVertLevels
+                 write(stderrUnit,*) iLayer, heatDissipation(iLayer,iCell) / (rhoi*cp_ice)
+              enddo
+           endif
 
         enddo  ! iCell
 
         ! convert units from W/m^3 to deg/s
-        !TODO - Confirm that deg/s are the desired units.  Might want to go with W/m^3?
 
         heatDissipation(:,:) = heatDissipation(:,:) / (rhoi * cp_ice)
 
+        ! clean up
+        deallocate(flowParamAEdge)
+        call mpas_deallocate_scratch_field(heatDissipationEdgeField, .true.)
+
+        block => block % next
      enddo  ! associated(block) 
 
    end subroutine li_heat_dissipation_sia
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine li_basal_friction_sia
+!
+!> \brief MPAS heat flux due to basal friction for SIA dynamics
+!> \author William Lipscomb
+!> \date   October 2015
+!> \details
+!>  This routine computes the heat flux due to basal friction at the
+!>  base of the ice, based on the shallow-ice approximation.
+!-----------------------------------------------------------------------
+
+   subroutine li_basal_friction_sia(domain, err)
+
+     !-----------------------------------------------------------------
+     ! input/output variables
+     !-----------------------------------------------------------------
+
+     type (domain_type), intent(inout) :: &
+          domain          !< Input/Output: domain object 
+
+     !-----------------------------------------------------------------
+     ! output variables
+     !-----------------------------------------------------------------
+     integer, intent(out) :: err !< Output: error flag
+
+     !-----------------------------------------------------------------
+     ! local variables
+     !-----------------------------------------------------------------
+
+     type (block_type), pointer :: block
+
+     type (mpas_pool_type), pointer :: meshPool
+     type (mpas_pool_type), pointer :: velocityPool
+     type (mpas_pool_type), pointer :: thermalPool 
+    
+     logical, pointer :: &
+          config_print_thermal_info  ! if true, print debug info
+
+     integer, pointer :: &
+          config_stats_cell_ID       ! global ID for diagnostic cell
+
+     integer, dimension(:), pointer :: &
+          indexToCellID              ! list of global cell IDs
+
+     integer, pointer :: &
+          nCells                     ! number of cells
+
+     real(kind=RKIND), dimension(:), pointer :: &
+          basalSpeed,              & ! basal ice speed, reconstructed at cell centers (m s^{-1})
+          beta,                    & ! basal traction parameter (Pa m^{-1} s)
+          basalFrictionFlux          ! heat flux due to basal friction (W^{m-2}), computed in this subroutine
+
+     integer :: iCell
+
+     !----------------------------------------------------------------
+     ! Compute the heat flux due to basal friction, given the basal speed
+     ! and basal traction fields.
+     !
+     ! Assume a sliding law of the form 
+     !
+     !     tau_b = beta * basalSpeed
+     ! 
+     ! The frictional heat flux (W/m^2) is given by (e.g., Cuffey & Paterson, p. 418)
+     !
+     !     basalFrictionFlux = tau_b * basalSpeed.
+     !
+     ! Note: Currently (Nov. 2015), beta is used by the HO solver only,
+     !       and the SIA solver assumes no slip (basalSpeed = 0).
+     ! TODO: Modify the SIA solver to allow sliding.
+     !----------------------------------------------------------------
+
+     err = 0
+
+     ! block loop
+     block => domain % blocklist
+     do while (associated(block))
+
+        ! get pools
+        call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+        call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+        call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+        
+        ! get dimensions
+        call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+        ! get fields from the mesh pool
+        call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)  ! diagnostic only
+                
+        ! get fields from the velocity pool
+        call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed)
+        call mpas_pool_get_array(velocityPool, 'beta', beta)
+        
+        ! get fields from the thermal pool
+        call mpas_pool_get_array(thermalPool, 'basalFrictionFlux', basalFrictionFlux)
+        
+        ! get config parameters
+        call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
+        call mpas_pool_get_config(liConfigs, 'config_print_thermal_info', config_print_thermal_info)
+
+        if (config_print_thermal_info) write(stderrUnit,*) 'Compute basal friction flux'
+
+        ! Compute basal frictional heating for each cell
+
+        do iCell = 1, nCells
+
+           basalFrictionFlux(iCell) = beta(iCell) * basalSpeed(iCell)
+
+           if (config_print_thermal_info .and. indexToCellID(iCell) == config_stats_cell_ID) then
+              write(stderrUnit,*) 'iCell, beta, basalSpeed, basalFrictionFlux:', &
+                   iCell, beta(iCell), basalSpeed(iCell), basalFrictionFlux(iCell)
+           endif
+
+        enddo
+
+        block => block % next
+     enddo  ! associated(block) 
+
+  end subroutine li_basal_friction_sia
 
 
 !***********************************************************************
@@ -1270,60 +1592,112 @@ module li_thermal
 !***********************************************************************
 !***********************************************************************
 
-!TODO - Add subroutine headers
-!       Clean up subroutines and code in MPAS style/
-!       Change variable names to agree with the driver subroutine
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine temperature_matrix_elements
+!
+!> \brief MPAS matrix elements for vertical temperature solver
+!> \author William Lipscomb
+!> \date   October 2015
+!> \details
+!>  This routine computes matrix elements for the tridiagonal solve
+!>  of the vertical temperature profile.
+!-----------------------------------------------------------------------
 
-    subroutine temperature_matrix_elements(dttem,                        &   ! deltat
-                                           upn,          stagsigma,      &   ! upn = nVertInterfaces; stagsigma = layerCenterSigma
-                                           subd,         diag,           &
-                                           supd,         rhsd,           &
-                                           dups,         floating_mask,  &
-                                           thck,         temp,           &
-                                           dissip,                       &
-                                           bheatflx,     bfricflx)
+    subroutine temperature_matrix_elements(&
+         deltat,                &
+         nVertLevels,           &
+         layerCenterSigma,      &
+         dsigmaTerm,            &
+         floatingMask,          &
+         thickness,             &
+         temperature,           &
+         surfaceTemperature,    &
+         basalTemperature,      &
+         heatDissipation,       &
+         basalHeatFlux,         &
+         basalFrictionFlux,     &
+         subd,                  &
+         diag,                  &
+         supd,                  &
+         rhs)
 
-      ! solve for tridiagonal entries of sparse matrix
-
-      ! Note: Matrix elements (subd, supd, diag, rhsd) are indexed from 1 to upn+1,
-      !       whereas temperature is indexed from 0 to upn.
-      !       The first row of the matrix is the equation for temperature(0),
-      !       the last row is the equation for temperature(upn), and so on.
+      ! Note: Matrix elements (subd, supd, diag, rhs) are indexed from 1 to nVertLevels+2,
+      !       whereas temperature is indexed from 1 to nVertLevels.
+      !       The first row of the matrix is the equation for surfaceTemperature, and
+      !       the last row is the equation for basalTemperature.
       
-      real(kind=RKIND), intent(in) :: dttem       ! time step (s)
-      integer, intent(in) :: upn          ! number of layer interfaces
-      real(kind=RKIND), dimension(upn-1), intent(in) :: stagsigma    ! sigma coordinate at temp nodes
-      real(kind=RKIND), dimension(:), intent(out) :: subd, diag, supd, rhsd
-      real(kind=RKIND), dimension(:,:), intent(in) :: dups           ! vertical grid quantities
-      integer, intent(in) :: floating_mask
-      real(kind=RKIND), intent(in) ::  thck       ! ice thickness (m)
-      real(kind=RKIND), dimension(0:upn), intent(in) ::  temp     ! ice temperature (deg C)
-      real(kind=RKIND), dimension(upn-1), intent(in) :: dissip     ! interior heat dissipation (deg/s)
-      real(kind=RKIND), intent(in) :: bheatflx    ! geothermal flux (W m-2), positive down
-      real(kind=RKIND), intent(in) :: bfricflx    ! basal friction heat flux (W m-2), >= 0
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
 
+      real(kind=RKIND), intent(in) :: &
+           deltat                   !< Input: time step (s)
+
+      integer, intent(in) :: &
+           nVertLevels              !< Input: number of vertical layers
+
+      real(kind=RKIND), dimension(nVertLevels), intent(in) :: &
+           layerCentersigma         !< Input: sigma coordinate at layer midpoints
+
+      real(kind=RKIND), dimension(:,:), intent(in) :: &
+           dsigmaTerm               !< Input: vertical grid quantities
+
+      integer, intent(in) :: &
+           floatingMask             !< Input: = 1 where ice is floating, else = 0
+
+      real(kind=RKIND), intent(in) ::  &
+           thickness                !< Input: ice thickness (m)
+
+      real(kind=RKIND), dimension(nVertLevels), intent(in) :: &
+           temperature              !< Input: ice temperature (deg C)
+
+      real(kind=RKIND), intent(in) :: &
+           surfaceTemperature,    & !< Input: surface ice temperature (deg C)
+           basalTemperature         !< Input: basal ice temperature (deg C)
+
+      real(kind=RKIND), dimension(nVertLevels), intent(in) :: &
+           heatDissipation          !< Input: interior heat dissipation (deg/s)
+
+      real(kind=RKIND), intent(in) :: &
+           basalHeatFlux            !< Input: geothermal heat flux (W m-2), positive up
+
+      real(kind=RKIND), intent(in) :: &
+           basalFrictionFlux        !< Input: basal friction heat flux (W m-2), >= 0
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      real(kind=RKIND), dimension(:), intent(out) :: &
+           subd, diag, supd, rhs    !< Output: tridiagonal matrix elements
+
+      !-----------------------------------------------------------------
       ! local variables
+      !-----------------------------------------------------------------
 
-      real(kind=RKIND) :: pmptemp_bed  ! pressure melting temp at bed
-      real(kind=RKIND) :: fact
-      real(kind=RKIND) :: dsigbot      ! bottom layer thicknes in sigma coords
+      real(kind=RKIND) :: pmpTemperatureBed  ! pressure melting temperature at bed
+      real(kind=RKIND) :: factor             ! term in tridiagonal matrix
+      real(kind=RKIND) :: dsigmaBot          ! bottom layer thickness in sigma coords
 
-      ! Compute subdiagonal, diagonal, and superdiagonal matrix elements
+      ! Compute subdiagonal, diagonal, and superdiagonal matrix elements,
+      ! along with the right-hand-side vector
 
-      ! upper boundary: set to surface air temperature
+      ! upper boundary: set to surfaceTemperature
 
-      supd(1) = 0.0_RKIND
       subd(1) = 0.0_RKIND
       diag(1) = 1.0_RKIND
-      rhsd(1) = temp(0)
+      supd(1) = 0.0_RKIND
+      rhs(1)  = surfaceTemperature
       
-      ! ice interior, layers 1:upn-1  (matrix elements 2:upn)
+      ! ice interior, layers 1:nVertLevels  (matrix elements 2:nVertLevels+1)
 
-      fact = dttem * iceConductivity / (rhoi*cp_ice) / thck**2
-      subd(2:upn) = -fact * dups(1:upn-1,1)
-      supd(2:upn) = -fact * dups(1:upn-1,2)
-      diag(2:upn) = 1.0_RKIND - subd(2:upn) - supd(2:upn)
-      rhsd(2:upn) = temp(1:upn-1) + dissip(1:upn-1)*dttem
+      factor = deltat * iceConductivity / (rhoi*cp_ice) / thickness**2
+
+      subd(2:nVertLevels+1) = -factor * dsigmaTerm(1:nVertLevels,1)
+      supd(2:nVertLevels+1) = -factor * dsigmaTerm(1:nVertLevels,2)
+      diag(2:nVertLevels+1) = 1.0_RKIND - subd(2:nVertLevels+1) - supd(2:nVertLevels+1)
+      rhs(2:nVertLevels+1)  = temperature(1:nVertLevels) + heatDissipation(1:nVertLevels)*deltat
 
       ! basal boundary:
       ! for grounded ice, a heat flux is applied
@@ -1333,40 +1707,40 @@ module li_thermal
       !       That is, net heat flux at lower boundary must equal zero.
       !      If T(upn) >= Tpmp, then set T(upn) = Tpmp
       
-      if (floating_mask == 1) then
+      if (floatingMask == 1) then
 
-         supd(upn+1) = 0.0_RKIND
-         subd(upn+1) = 0.0_RKIND
-         diag(upn+1) = 1.0_RKIND
-         rhsd(upn+1) = temp(upn) 
+         subd(nVertLevels+2) = 0.0_RKIND
+         diag(nVertLevels+2) = 1.0_RKIND
+         supd(nVertLevels+2) = 0.0_RKIND
+         rhs(nVertLevels+2)  = basalTemperature
          
       else    ! grounded ice
 
-         call pressure_melting_point(thck, pmptemp_bed)
+         call pressure_melting_point(thickness, pmpTemperatureBed)
 
-         if (abs(temp(upn) - pmptemp_bed) < 0.001_RKIND) then
+         if (abs(basalTemperature - pmpTemperatureBed) < 0.001_RKIND) then
 
             ! hold basal temperature at pressure melting point
 
-            supd(upn+1) = 0.0_RKIND
-            subd(upn+1) = 0.0_RKIND
-            diag(upn+1) = 1.0_RKIND
-            rhsd(upn+1) = pmptemp_bed
+            subd(nVertLevels+2) = 0.0_RKIND
+            diag(nVertLevels+2) = 1.0_RKIND
+            supd(nVertLevels+2) = 0.0_RKIND
+            rhs(nVertLevels+2)  = pmpTemperatureBed
 
          else   ! frozen at bed
                 ! maintain balance of heat sources and sinks
                 ! (conductive flux, geothermal flux, and basal friction)
 
-            ! Note: bheatflx is generally <= 0, since defined as positive down.
+            ! Note: basalHeatFlux is generally >= 0, since defined as positive up
 
-            ! calculate dsigma for the bottom layer between the basal boundary and the temp. point above
-            dsigbot = 1.0_RKIND - stagsigma(upn-1)
+            ! calculate dsigma for the bottom layer between the basal boundary and the temperature point above
+            dsigmaBot = 1.0_RKIND - layerCentersigma(nVertLevels)
 
             ! backward Euler flux basal boundary condition
-            subd(upn+1) = -1.0_RKIND
-            supd(upn+1) =  0.0_RKIND
-            diag(upn+1) =  1.0_RKIND
-            rhsd(upn+1) = (bfricflx - bheatflx) * dsigbot*thck / iceConductivity
+            subd(nVertLevels+2) = -1.0_RKIND
+            diag(nVertLevels+2) =  1.0_RKIND
+            supd(nVertLevels+2) =  0.0_RKIND
+            rhs(nVertLevels+2)  = (basalFrictionFlux + basalHeatFlux) * dsigmaBot*thickness / iceConductivity
             
          endif   ! melting or frozen
          
@@ -1374,144 +1748,162 @@ module li_thermal
 
     end subroutine temperature_matrix_elements
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine enthalpy_matrix_elements
+!
+!> \brief MPAS matrix elements for vertical enthalpy solver
+!> \author William Lipscomb
+!> \date   October 2015
+!> \details
+!>  This routine computes matrix elements for the tridiagonal solve
+!>  of the vertical enthalpy profile.
+!-----------------------------------------------------------------------
 
-    subroutine enthalpy_matrix_elements(dttem,                       &   ! deltat
-                                        upn,       stagsigma,        &   ! upn = nVertInterfaces; stagsigma = layerCenterSigma
-                                        subd,      diag,             &
-                                        supd,      rhsd,             &
-                                        dups,      floating_mask,    &
-                                        thck,                        &
-                                        temp,      waterfrac,        &
-                                        enthalpy,  dissip,           &
-                                        bheatflx,  bfricflx,         &
-                                        alpha_enth,                  &
-                                        verbose_column_in)
+    subroutine enthalpy_matrix_elements(&
+         deltat,                &
+         nVertLevels,           &
+         layerCentersigma,      &
+         dsigmaTerm,            &
+         floatingMask,          &
+         thickness,             &
+         temperature,           &
+         surfaceTemperature,    &
+         basalTemperature,      &
+         waterfrac,             &
+         enthalpy,              &
+         heatDissipation,       &
+         basalHeatFlux,         &
+         basalFrictionFlux,     &
+         diffusivity,           &
+         subd,                  &
+         diag,                  &
+         supd,                  &
+         rhs)
 
-      ! solve for tridiagonal entries of sparse matrix
+      ! Note: Matrix elements (subd, supd, diag, rhs) are indexed from 1 to nVertLevels+2,
+      ! whereas temperature and enthalpy are indexed from 1 to nVertLevels.
+      ! The first row of the matrix is the equation for surface enthalpy, and
+      ! the last row is the equation for basal enthalpy.
 
-      ! Note: Matrix elements (subd, supd, diag, rhsd) are indexed from 1 to upn+1,
-      ! whereas temperature/enthalpy is indexed from 0 to upn.
-      ! The first row of the matrix is the equation for enthalpy(0),
-      ! the last row is the equation for enthalpy(upn), and so on.
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
 
-      !I/O variables
-      real(kind=RKIND), intent(in) :: dttem       ! time step (s)
-      integer, intent(in) :: upn                  ! number of vertical interfaces
-      real(kind=RKIND), dimension(upn-1), intent(in) :: stagsigma    ! sigma coordinate at temp/enthalpy nodes
-      real(kind=RKIND), dimension(:,:), intent(in) :: dups           ! vertical grid quantities
-      real(kind=RKIND), dimension(:), intent(out) :: subd, diag, supd, rhsd   ! matrix elements
-      integer, intent(in) :: floating_mask
-      real(kind=RKIND), intent(in) :: thck                         ! ice thickness (m)
-      real(kind=RKIND), dimension(0:upn), intent(in) :: temp       ! temperature (deg C)            !TODO - Do units matter? K or C?
-      real(kind=RKIND), dimension(upn-1), intent(in) :: waterfrac  ! water fraction (unitless)
-      real(kind=RKIND), dimension(0:upn), intent(in) :: enthalpy   ! specific enthalpy (J/m^3)
-      real(kind=RKIND), dimension(upn-1), intent(in) :: dissip     ! interior heat dissipation (deg/s)
-      real(kind=RKIND), intent(in) :: bheatflx   ! geothermal flux (W m-2), positive down           !TODO - Flip sign to positive up
-      real(kind=RKIND), intent(in) :: bfricflx   ! basal friction heat flux (W m-2), >= 0
-      real(kind=RKIND), dimension(:), intent(out) :: alpha_enth  ! half-node diffusivity (m^2/s) for enthalpy
-                                                                 ! located halfway between temperature points
+      real(kind=RKIND), intent(in) :: &
+           deltat                   !< Input: time step (s)
+
+      integer, intent(in) :: &
+           nVertLevels              !< Input: number of vertical layers
+
+      real(kind=RKIND), dimension(nVertLevels), intent(in) :: &
+           layerCentersigma         !< Input: sigma coordinate at layer midpoints
+
+      real(kind=RKIND), dimension(:,:), intent(in) :: &
+           dsigmaTerm               !< Input: vertical grid quantities
+
+      integer, intent(in) :: &
+           floatingMask             !< Input: = 1 where ice is floating, else = 0
+
+      real(kind=RKIND), intent(in) :: &
+           thickness                !< Input: ice thickness (m)
+
+      real(kind=RKIND), dimension(nVertLevels), intent(in) :: &
+           temperature,           & !< Input: ice temperature (deg C)
+           waterfrac,             & !< Input: water fraction (unitless)
+           enthalpy                 !< Input: specific enthalpy (J/m^3)
+
+      real(kind=RKIND), intent(in) :: &
+           surfaceTemperature,    & !< Input: surface ice temperature (deg C)
+           basalTemperature         !< Input: basal ice temperature (deg C)
+
+      real(kind=RKIND), dimension(nVertLevels), intent(in) :: &
+           heatDissipation          !< Input: interior heat dissipation (deg/s)
+
+      real(kind=RKIND), intent(in) :: &
+           basalHeatFlux            !< Input: geothermal heat flux (W m-2), positive up
+
+      real(kind=RKIND), intent(in) :: &
+           basalFrictionFlux        !< Input: basal friction heat flux (W m-2), >= 0
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      real(kind=RKIND), dimension(:), intent(out) :: &
+           diffusivity              !< Output: half-node diffusivity (m^2/s) for enthalpy
+                                    !          located at layer interfaces
       
-      logical, intent(in), optional :: verbose_column_in   ! if true, print debug statements for this column
-    
+      real(kind=RKIND), dimension(:), intent(out) :: &
+           subd, diag, supd, rhs    !< Output: matrix elements
+
+      !-----------------------------------------------------------------
       ! local variables
-      real(kind=RKIND) :: dsigbot  ! bottom layer thicknes in sigma coords.
-      real(kind=RKIND) :: alphai   ! cold ice diffusivity
-      real(kind=RKIND) :: alpha0   ! temperate ice diffusivity
-      real(kind=RKIND) :: fact     ! coefficient in tridiag matrix
-      real(kind=RKIND), dimension(1:upn-1) :: pmptemp    ! pressure melting point temp in interior (deg C)
-      real(kind=RKIND) :: pmptemp_bed                    ! pressure melting point temp at bed (deg C)
-      real(kind=RKIND), dimension(0:upn) :: enth_T       ! temperature part of specific enthalpy (J/m^3)
-      real(kind=RKIND) :: denth       ! enthalpy difference between adjacent layers
-      real(kind=RKIND) :: denth_T     ! difference in temperature component of enthalpy between adjacent layers
-      real(kind=RKIND) :: alpha_fact  ! factor for averaging diffusivity, 0 <= fact <= 1
-      logical :: verbose_column       ! if true, print debug statements for this column
+      !-----------------------------------------------------------------
+
+      real(kind=RKIND), dimension(nVertLevels) :: &
+           pmpTemperature           ! pressure melting point temperature in interior (deg C)
+
+      real(kind=RKIND) :: &
+           pmpTemperatureBed        ! pressure melting point temperature at bed (deg C)
+
+      real(kind=RKIND), dimension(0:nVertLevels+1) :: &
+           enthalpyTemp             ! temperature part of specific enthalpy (J/m^3)
+
+      real(kind=RKIND) :: surfaceEnthalpy       ! surface enthalpy = surfaceTemperature*rhoi*cp_ice
+      real(kind=RKIND) :: basalEnthalpy         ! basal enthalpy = basalTemperature*rhoi*cp_ice
+      real(kind=RKIND) :: dsigmaBot             ! bottom layer thickness in sigma coords
+      real(kind=RKIND) :: diffusivityCold       ! cold ice diffusivity
+      real(kind=RKIND) :: diffusivityTemperate  ! temperate ice diffusivity
+      real(kind=RKIND) :: factor                ! term in tridiagonal matrix
+      real(kind=RKIND) :: dEnthalpy             ! enthalpy difference between adjacent layers
+      real(kind=RKIND) :: dEnthalpyTemp         ! difference in temperature component of enthalpy between adjacent layers
+      real(kind=RKIND) :: avgFactor             ! factor for averaging diffusivity, 0 <= avgFactor <= 1
+
       integer  :: k
       
       logical, parameter :: &
-           alpha_harmonic_avg  = .false.  ! if true, take harmonic average of alpha in adjacent layers
-                                          ! if false, take arithmetic average
+           harmonic_avg  = .false.  ! if true, take the harmonic average of diffusivity in adjacent layers
+                                    ! if false, take the arithmetic average
 
-      if (present(verbose_column_in)) then
-         verbose_column = verbose_column_in
-      else
-         verbose_column = .false.
-      endif
-
-      ! define diffusivities alpha_i and alpha_0
-      !!    alphai = coni / rhoi / cp_ice
-      alphai = iceConductivity / rhoi / cp_ice
-      alpha0 = alphai / 100.0_RKIND
+      diffusivityCold = iceConductivity / (rhoi*cp_ice)
+      diffusivityTemperate = diffusivityCold / 100.0_RKIND
         
-      ! find pmptemp for this column (interior nodes and boundary)
-      call pressure_melting_point_column(stagsigma(1:upn-1), thck, pmptemp(1:upn-1))
-      call pressure_melting_point(thck, pmptemp_bed)
+      ! set enthalpy at surface and bed
+      surfaceEnthalpy = surfaceTemperature * rhoi*cp_ice
+      basalEnthalpy = basalTemperature * rhoi*cp_ice
 
-      !WHL - debug                                                                                                                       
-      if (verbose_column) then
-         print*, ' '
-         print*, 'Computing enthalpy matrix elements'
-         print*, 'k, temp, wfrac, enthalpy/(rhoi*ci), pmpt:'
-         k = 0
-         print*, k, temp(k), 0.0_RKIND, enthalpy(k)/(rhoi*cp_ice)
-         do k = 1, upn-1
-            print*, k, temp(k), waterfrac(k), &
-                 enthalpy(k)/(rhoi*cp_ice), pmptemp(k)
-         enddo
-         k = upn
-         print*, k, temp(k), 0.0_RKIND, enthalpy(k)/(rhoi*cp_ice), pmptemp_bed
-      endif
-      
-      !--------------------------------------------------------------------
-      !WHL - Commenting out the following and replacing it with a new way of computing alpha.
-      !      The commented-out code can result in sudden large changes in alpha that
-      !       lead to oscillations in the thickness, temperature and velocity fields.
-      !      These oscillations have a period of ~1 yr or more, spatial scale of
-      !       many grid cells, and amplitude of ~10 m in thickness, 1 deg in temperature,
-      !       and 2 m/s in velocity.
-      
-      ! create a column vector of size (0:upn) of diffusivity based on 
-      ! previous timestep's temp.  Boundary nodes need a value so half-node
-      ! diffusivity can be calculated at interior nodes (1:upn-1)
-      
-!    do k = 0,upn
-!       if (temp(k) < pmptemp(k)) then
-!          alpha(k) = alphai
-!       else
-!          alpha(k) = alpha0
-!       endif
-!    end do
-    
-    ! Find half-node diffusivity using harmonic average between nodes.
-    ! The vector will be size (1:upn) - the first value is the half-node
-    ! between nodes 0 and 1, the last value is the half-node between
-    ! nodes upn-1 and upn. 
-    
-!    do k = 1,upn
-!       alpha_enth(k) = 2.0_RKIND / ((1.0_RKIND/alpha(k-1)) + (1.0_RKIND/alpha(k)))
-!    end do
+      ! find pmpTemperature for this column (interior nodes and boundary)
 
-      ! end of commented-out method
+      call pressure_melting_point_column(&
+           layerCenterSigma, &
+           thickness,        &
+           pmpTemperature)
+
+      call pressure_melting_point(&
+           thickness,        &
+           pmpTemperatureBed)
+
       !--------------------------------------------------------------------
-       
-      !--------------------------------------------------------------------
-      !WHL - Trying a different approach to the diffusivity at layer interfaces.
+      ! Compute the enthalpy diffusivity at layer interfaces.
       ! Let d(enth)/dz = the gradient of enthalpy
       ! Can write
       !    d(enth)/dz = d(enth_T)/dz + d(enth_w)/dz,
       ! where
       !    enth_T = (1-phi_w) * rhoi*ci*T
-      !    enth_w =    phi_w  * rhoo*(L + ci*Tpmp)
-      !
-      ! Now let f = d(enth_T)/z / d(enth)/dz
+      !    enth_w =    phi_w  * rhow*(L + ci*Tpmp)
+      !    phi_w = water fraction
+      ! 
+      ! Now let f = d(enth_T)/dz / d(enth)/dz
       !   (f -> 0 if f is computed to be negative)
-      ! For cold ice, f = 1 and alpha = alphai
-      ! For temperate ice, f ~ 0 and alpha = alpha0
+      ! For cold ice, f = 1 and diffusivity = diffusivityCold
+      ! For temperate ice, f ~ 0 and diffusivity = diffusivityTemperate
       ! At the interface between cold and temperate ice,
       !  f ~ 0 if the temperate ice has large phi_w, but
       !  f ~ 1 if the temperate ice has close to zero phi_w.
       ! Two ways to average:
-      ! (1) arithmetic average:  alpha = f*alphai + (1-f)*alpha0
-      ! (2) harmonic average:    alpha = 1 / (f/alphai + (1-f)/alpha0).
+      ! (1) arithmetic average:  diffusivity = f*diffusivityCold + (1-f)*diffusivityTemperate
+      ! (2) harmonic average:    diffusivity = 1 / (f/diffusivityCold + (1-f)/diffusivityTemperate).
       ! Both methods have the same asymptotic values at f = 0 or 1,
       !  but the arithmetic average gives greater diffusivity for
       !  intermediate values.
@@ -1520,348 +1912,460 @@ module li_thermal
       ! The harmonic average allows large temperature gradients between the 
       !  bottom layer and the next layer up; the arithmetic average gives
       !  smoother gradients.
+      ! Currently (as of Oct. 2015), the arithmetic average is the default.
       !--------------------------------------------------------------------
       !
       ! At each temperature point, compute the temperature part of the enthalpy.
-      ! enth_T = enth for cold ice, enth_T < enth for temperate ice
+      ! Note: enthalpyTemp = enthalpy for cold ice, enthalpyTemp < enthalpy for temperate ice
       
-      do k = 0, upn
-         enth_T(k) = (1.0_RKIND - waterfrac(k)) * rhoi*cp_ice*temp(k)
+      enthalpyTemp(0) = surfaceEnthalpy
+      do k = 1, nVertLevels
+         enthalpyTemp(k) = (1.0_RKIND - waterfrac(k)) * rhoi*cp_ice*temperature(k)
       enddo
-      
-      !WHL - debug
-      if (verbose_column) then
-         print*, ' '
-         print*, 'k, denth_T/(rhoi*cp_ice), denth/(rhoi*cp_ice), alpha_fact, alpha_enth(up):'
-      endif
+      enthalpyTemp(nVertLevels+1) = basalEnthalpy
 
       ! Compute factors relating the temperature gradient to the total enthalpy gradient.
       ! Use these factors to average the diffusivity between adjacent temperature points.
-      do k = 1,upn
-         denth   = enthalpy(k) - enthalpy(k-1)
-         denth_T = enth_T(k) - enth_T(k-1)   ! = denth in cold ice, < denth in temperate ice
-         if (abs(denth) > 1.e-20_RKIND * rhoo*latent_heat_ice) then
-            alpha_fact = max(0.0_RKIND, denth_T/denth)
-            alpha_fact = min(1.0_RKIND, alpha_fact)
+
+      do k = 1, nVertLevels+1
+
+         if (k == 1) then
+            dEnthalpy = enthalpy(k) - surfaceEnthalpy
+         elseif (k == nVertLevels+1) then
+            dEnthalpy = basalEnthalpy - enthalpy(k-1)
          else
-            alpha_fact = 0.0_RKIND
-         endif
-         
-         if (alpha_harmonic_avg) then  ! take a harmonic average
-                                       ! This gives slower cooling of temperate layers and allows
-                                       !  large temperature gradients between cold and temperate layers
-            alpha_enth(k) = 1.0_RKIND / ((alpha_fact/alphai) + (1.0_RKIND-alpha_fact)/alpha0)
-         else   ! take an arithmetic average
-                ! This gives faster cooling of temperate layers and smaller gradients 
-            alpha_enth(k) = alpha_fact*alphai + (1.0_RKIND-alpha_fact)*alpha0
+            dEnthalpy = enthalpy(k) - enthalpy(k-1)
          endif
 
-         !WHL - debug
-         if (verbose_column) then
-            print*, k, denth_T/(rhoi*cp_ice), denth/(rhoi*cp_ice), alpha_fact, alpha_enth(k)
+         dEnthalpyTemp = enthalpyTemp(k) - enthalpyTemp(k-1)   ! = dEnthalpy in cold ice, < dEnthalpy in temperate ice
+
+         if (abs(dEnthalpy) > 1.e-20_RKIND * rho_water*latent_heat_ice) then
+            avgFactor = max(0.0_RKIND, dEnthalpyTemp/dEnthalpy)
+            avgFactor = min(1.0_RKIND, avgFactor)
+         else
+            avgFactor = 0.0_RKIND
          endif
          
+         if (harmonic_avg) then  ! take a harmonic average
+                                 ! This gives slower cooling of temperate layers and allows
+                                 !  large temperature gradients between cold and temperate layers
+            diffusivity(k) = 1.0_RKIND / ((avgFactor/diffusivityCold) + (1.0_RKIND - avgFactor)/diffusivityTemperate)
+         else   ! take an arithmetic average
+                ! This gives faster cooling of temperate layers and smaller gradients 
+            diffusivity(k) = avgFactor*diffusivityCold + (1.0_RKIND - avgFactor)*diffusivityTemperate
+         endif
+
       end do
 
       ! Compute subdiagonal, diagonal, and superdiagonal matrix elements
       ! Assume backward Euler time stepping
     
-      ! upper boundary: set to surface air temperature
-      supd(1) = 0.0_RKIND
+      ! upper boundary: set to surfaceEnthalpy = surface temperature*rhoi*cp_ice
       subd(1) = 0.0_RKIND
       diag(1) = 1.0_RKIND
-      rhsd(1) = min(0.0_RKIND,temp(0)) * rhoi*cp_ice
+      supd(1) = 0.0_RKIND
+      rhs(1)  = surfaceEnthalpy
       
-      ! ice interior, layers 1:upn-1  (matrix elements 2:upn)
+      ! ice interior, layers 1:nVertLevels  (matrix elements 2:nVertLevels+1)
 
-      fact = dttem / thck**2
+      factor = deltat / thickness**2
 
-      subd(2:upn) = -fact * alpha_enth(1:upn-1) * dups(1:upn-1,1)                                
-      supd(2:upn) = -fact * alpha_enth(2:upn) * dups(1:upn-1,2)                                
-      diag(2:upn) = 1.0_RKIND - subd(2:upn) - supd(2:upn)                                
-      rhsd(2:upn) = enthalpy(1:upn-1) + dissip(1:upn-1)*dttem * rhoi * cp_ice
+      subd(2:nVertLevels+1) = -factor * diffusivity(1:nVertLevels)   * dsigmaTerm(1:nVertLevels,1)                                
+      supd(2:nVertLevels+1) = -factor * diffusivity(2:nVertLevels+1) * dsigmaTerm(1:nVertLevels,2)                                
+      diag(2:nVertLevels+1) = 1.0_RKIND - subd(2:nVertLevels+1) - supd(2:nVertLevels+1)                              
+      rhs(2:nVertLevels+1)  = enthalpy(1:nVertLevels) + heatDissipation(1:nVertLevels) * deltat * rhoi * cp_ice
       
-      ! BDM I'm assuming that dissip has units of phi/rhoi/cp_ice.
-      ! For an enthalpy calc, we want just phi, hence dissip * rhoi * cp_ice
+      ! Note: heatDissipation has units of phi/rhoi/cp_ice, where phi has units of W m^-3..
+      ! For an enthalpy calculation, we want just phi, hence heatDissipation * rhoi * cp_ice
         
-      ! basal boundary:
-      ! for grounded ice, a heat flux is applied
-      ! for floating ice, the basal temperature is held constant
-
-      !NOTE: This lower BC is different from the one in glide_temp.
-      !      If T(upn) < T_pmp, then require dT/dsigma = H/k * (G + taub*ubas)
+      ! Basal boundary:
+      ! For grounded ice, a heat flux is applied.
+      ! For floating ice, the basal temperature is held constant.
+      !      If basalTemperature < T_pmp, then require dT/dsigma = H/k * (G + taub*ubas)
       !       That is, net heat flux at lower boundary must equal zero.
-      !      If T(upn) >= Tpmp, then set T(upn) = Tpmp
+      !      If basalTemperature >= Tpmp, then set basalTemperature = Tpmp
       
-      if (floating_mask == 1) then
+      if (floatingMask == 1) then
 
-         supd(upn+1) = 0.0_RKIND 
-         subd(upn+1) = 0.0_RKIND
-         diag(upn+1) = 1.0_RKIND
-         rhsd(upn+1) = enthalpy(upn)
+         subd(nVertLevels+2) = 0.0_RKIND
+         diag(nVertLevels+2) = 1.0_RKIND
+         supd(nVertLevels+2) = 0.0_RKIND 
+         rhs(nVertLevels+2)  = basalEnthalpy
          
       else    ! grounded ice
          
-         !WHL - debug
-         if (verbose_column) then
-            k = upn-1
-            print*, 'temp(upn-1), pmptemp(upn-1):', temp(k), pmptemp(k)
-            k = upn
-            print*, 'temp(upn), pmptemp(upn):', temp(k), pmptemp_bed
-         endif
-         
-         ! Positive-Thickness Basal Temperate Boundary Layer
+         if (abs(temperature(nVertLevels) - pmpTemperature(nVertLevels)) < 0.001_RKIND) then
 
-         !WHL - Not sure whether this condition is ideal.
-         !      It implies that the enthalpy at the bed (upn) = enthalpy in layer (upn-1). 
-         if (abs(temp(upn-1) - pmptemp(upn-1)) < 0.001_RKIND) then   
-       
-            subd(upn+1) = -1.0_RKIND
-            supd(upn+1) =  0.0_RKIND 
-            diag(upn+1) = 1.0_RKIND 
-            rhsd(upn+1) = 0.0_RKIND
-            
-            !WHL - debug
-            if (verbose_column) then
-               print*, 'basal BC: branch 1 (finite-thck BL)'
-            endif
+            ! Positive-thickness basal temperate boundary Layer
+            !WHL - Not sure whether this condition is ideal. It implies that basalEnthalpy = enthalpy(nVertLevels).
 
-            !Zero-Thickness Basal Temperate Boundary Layer
-         elseif (abs(temp(upn) -  pmptemp_bed) < 0.001_RKIND) then  ! melting
+            subd(nVertLevels+2) = -1.0_RKIND
+            diag(nVertLevels+2) =  1.0_RKIND
+            supd(nVertLevels+2) =  0.0_RKIND 
+            rhs(nVertLevels+2)  =  0.0_RKIND
+            
+         elseif (abs(basalTemperature -  pmpTemperatureBed) < 0.001_RKIND) then  ! melting
           
-            ! hold basal temperature at pressure melting point
-            supd(upn+1) = 0.0_RKIND
-            subd(upn+1) = 0.0_RKIND
-            diag(upn+1) = 1.0_RKIND
-            rhsd(upn+1) = pmptemp_bed * rhoi * cp_ice
+            ! Zero-thickness basal temperate boundary layer
+            ! Hold basal temperature at pressure melting point
+            subd(nVertLevels+2) = 0.0_RKIND
+            diag(nVertLevels+2) = 1.0_RKIND
+            supd(nVertLevels+2) = 0.0_RKIND
+            rhs(nVertLevels+2)  = pmpTemperatureBed * rhoi*cp_ice
             
-            !WHL - debug
-            if (verbose_column) then
-               print*, 'basal BC: branch 2 (zero-thck BL)'
-            endif
-            
-         else  
+         else  ! cold ice at bed
           
-            !WHL - debug
-            if (verbose_column) then
-               print*, 'basal BC: branch 3 (cold ice)'
-            endif
-            
-            ! frozen at bed
-            ! maintain balance of heat sources and sinks
+            ! Frozen at bed: Maintain balance of heat sources and sinks
             ! (conductive flux, geothermal flux, and basal friction)
             
-            ! Note: The heat source due to basal sliding (bfricflx) is computed in subroutine calcbfric.
-            ! Also note that bheatflx is generally <= 0, since defined as positive down.
+            ! Note: basalHeatFlux is generally >= 0, since defined as positive up
             
-            ! calculate dsigma for the bottom layer between the basal boundary and the temp. point above
-            dsigbot = (1.0_RKIND - stagsigma(upn-1))                                                                  
+            ! calculate dsigma for the bottom layer between the basal boundary and the temperature point above
+            dsigmaBot = (1.0_RKIND - layerCentersigma(nVertLevels))
             
-            ! =====Backward Euler flux basal boundary condition=====
-            ! MJH: If Crank-Nicolson is desired for the b.c., it is necessary to
-            ! ensure that the i.c. temperature for the boundary satisfies the
-            ! b.c. - otherwise oscillations will occur because the C-N b.c. only
-            ! specifies the basal flux averaged over two consecutive time steps.
-            subd(upn+1) = -1.0_RKIND
-            supd(upn+1) =  0.0_RKIND 
-            diag(upn+1) =  1.0_RKIND 
-            rhsd(upn+1) = (bfricflx - bheatflx) * dsigbot*thck * rhoi*cp_ice/iceConductivity
-            ! BDM temp approach should work out to be dT/dsigma, so enthalpy approach
-            ! should just need dT/dsigma * rhoi * cp_ice for correct units
-            
+            subd(nVertLevels+2) = -1.0_RKIND
+            diag(nVertLevels+2) =  1.0_RKIND
+            supd(nVertLevels+2) =  0.0_RKIND 
+            rhs(nVertLevels+2)  = (basalFrictionFlux + basalHeatFlux) * dsigmaBot * thickness *rhoi * cp_ice / iceConductivity
+
          endif   ! melting or frozen
          
       end if     ! floating or grounded
       
     end subroutine enthalpy_matrix_elements
     
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine basal_melting
+!
+!> \brief MPAS melt rate at base of ice
+!> \author William Lipscomb
+!> \date   October 2015
+!> \details
+!>  This routine computes the melt rate at the base of grounded and
+!>  floating ice.
+!-----------------------------------------------------------------------
+
     subroutine basal_melting(&
-                             config_thermal_solver,     &
-                             dttem,         &
-                             nCellsSolve,                  &
-                             upn,                          &
-                             sigma,         stagsigma,     &
-                             ice_mask,      floating_mask, &
-                             thck,                         &
-                             temp,          basalTemp,     &
-                             waterfrac,     enthalpy,      &
-                             bfricflx,      bheatflx,      &
-                             lcondflx,                     &
-                             bwat,          bmlt)
+         config_thermal_solver,       &
+         deltat,                      &
+         nCellsSolve,                 &
+         nVertLevels,                 &
+         layerInterfaceSigma,         &
+         layerCenterSigma,            &
+         iceMask,                     &
+         floatingMask,                &
+         thickness,                   &
+         lowerSurface,                &
+         bedTopography,               &
+         config_sea_level,            &
+         config_basal_mass_bal_float, &
+         temperature,                 &
+         basalTemperature,            &
+         waterfrac,                   &
+         enthalpy,                    &
+         basalFrictionFlux,           &
+         basalHeatFlux,               &
+         basalConductiveFlux,         &
+         basalWaterThickness,         &
+         groundedBasalMassBal,        &
+         floatingBasalMassBal,        &
+         basalMassBal)
+      
+      !-----------------------------------------------------------------
+      ! Note: For the temperature solver, any internal temperatures above
+      !  the pressure melting point are reset to Tpmp.  Excess energy 
+      !  is applied toward melting with immediate drainage to the bed. 
+      ! For the enthalpy solver, any meltwater in excess of the maximum allowed
+      !  meltwater fraction (0.01 by default) is drained to the bed.
+      !-----------------------------------------------------------------
 
-    ! Compute the rate of basal melting.
-    ! The basal melting computed here is applied to the ice thickness
-    !  by glissade_transport_driver, conserving mass and energy.
-    !
-    ! For the standard prognostic temperature scheme, any internal temperatures 
-    !  above the pressure melting point are reset to Tpmp.  Excess energy 
-    !  is applied toward melting with immediate drainage to the bed. 
-    ! For the enthalpy scheme, any meltwater in excess of the maximum allowed
-    !  meltwater fraction (0.01 by default) is drained to the bed.
-    !
-    !TODO - Deal with basal melting for floating ice
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
 
-    !-----------------------------------------------------------------
-    ! Input/output arguments
-    !-----------------------------------------------------------------
+      character(len=StrKIND), intent(in) :: &
+           config_thermal_solver    !< Input: thermal solver option (temperature or enthalpy)
 
-    character(len=StrKIND), intent(in) :: &
-         config_thermal_solver                ! thermal solver option (temperature or enthalpy)
+      real(kind=RKIND), intent(in) :: &
+           deltat                   !< Input: time step (s)
 
-    real(kind=RKIND), intent(in) :: dttem     ! time step (s)
-    integer, intent(in) :: nCellsSolve        ! number of locally owned cells
-    integer, intent(in) :: upn                ! number of vertical interfaces
-                                              !TODO - change to nVertInterfaces
-    real(kind=RKIND), dimension(upn),    intent(in) :: sigma           ! vertical sigma coordinate
-    real(kind=RKIND), dimension(upn-1),  intent(in) :: stagsigma       ! staggered vertical coordinate for temperature
+      integer, intent(in) :: &
+           nCellsSolve              !< Input: number of locally owned cells
 
-!!    real(kind=RKIND), dimension(0:,:,:), intent(inout) :: temp         ! temperature (deg C)
-    real(kind=RKIND), dimension(:,:), intent(inout) :: temp              ! temperature (deg C) in each layer
-    real(kind=RKIND), dimension(:), intent(inout) :: basalTemp         ! basal temperature (deg C)
+      integer, intent(in) :: &
+           nVertLevels              !< Input: number of vertical layers
 
-    real(kind=RKIND), dimension(:,:),  intent(inout) :: waterfrac    ! water fraction
+      real(kind=RKIND), dimension(:), intent(in) :: &
+           layerInterfaceSigma      !< Input: vertical coordinate at layer interfaces
 
-    real(kind=RKIND), dimension(:,:), intent(in) :: enthalpy        ! enthalpy
-!!    real(kind=RKIND), dimension(:), intent(in) :: basalEnthalpy        ! basal enthalpy
+      real(kind=RKIND), dimension(:), intent(in) :: &
+           layerCenterSigma         !< Input: vertical coordinate at layer centers
 
-    real(kind=RKIND), dimension(:),   intent(in) :: &
-         thck,                 & ! ice thickness (m)
-         bfricflx,             & ! basal frictional heating flux (W m-2), >= 0
-         bheatflx,             & ! geothermal heating flux (W m-2), positive down   !TODO - Switch sign convention
-         lcondflx,             & ! heat conducted from ice interior to bed (W m-2), positive down
-         bwat                    ! depth of basal water (m)
+      real(kind=RKIND), dimension(:,:), intent(in) :: &
+           enthalpy                 !< Input: enthalpy
 
-    integer, dimension(:), intent(in) ::  &
-         ice_mask,           &! = 1 where ice exists (thickness > config_thermal_thickness), else = 0
-         floating_mask        ! = 1 where ice is floating, else = 0
+      real(kind=RKIND), dimension(:), intent(in) :: &
+           thickness,             & !< Input: ice thickness (m)
+           lowerSurface,          & !< Input: lower surface elevation (m)
+           bedTopography,         & !< Input: elevation of bed topography (m)
+           basalFrictionFlux,     & !< Input: basal frictional heating flux (W m-2), >= 0
+           basalHeatFlux,         & !< Input: geothermal heating flux (W m-2), positive up
+           basalConductiveFlux,   & !< Input: heat conducted from ice interior to bed (W m-2), positive down
+           basalWaterThickness      !< Input: thickness of basal water layer (m)
+      
+      real(kind=RKIND), intent(in) :: &
+           config_sea_level         !< Input: sea level relative to z = 0 (m)
 
-    !TODO - Fix sign of bmlt before passing out
-    real(kind=RKIND), dimension(:), intent(out):: bmlt    ! melt rate (m/s)
-                                                    ! > 0 for melting, < 0 for freeze-on
+      character(len=strKIND), intent(in) :: &
+           config_basal_mass_bal_float  !< Input: option for computing basal mbal balance for floating ice
 
-    !-----------------------------------------------------------------
-    ! Local variables
-    !-----------------------------------------------------------------
+      integer, dimension(:), intent(in) :: &
+           iceMask,               & !< Input: = 1 where ice exists (thickness > config_thermal_thickness), else = 0
+           floatingMask             !< Input: = 1 where ice is floating, else = 0
 
-    integer :: k, iCell
-    real(kind=RKIND), dimension(upn-1)  :: pmptemp   ! pressure melting point temp in ice interior
-    real(kind=RKIND) :: pmptemp_bed     ! pressure melting point temp at bed
-    real(kind=RKIND) :: bflx          ! heat flux available for basal melting (W/m^2)
-    real(kind=RKIND) :: layer_thck    ! layer thickness (m)
-    real(kind=RKIND) :: melt_energy   ! energy available for internal melting (J/m^2)
-    real(kind=RKIND) :: internal_melt_rate   ! internal melt rate, transferred to bed (m/s)
-    real(kind=RKIND) :: melt_fact     ! factor for bmlt calculation
-    real(kind=RKIND) :: hmlt          ! melt thickness associated with excess meltwater
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
 
-    real(kind=RKIND), parameter :: &
-         max_waterfrac = 0.01_RKIND   ! maximum allowed water fraction; excess drains to bed
+      real(kind=RKIND), dimension(:,:), intent(inout) :: &
+           temperature              !< Input/output: temperature (deg C)
 
-    real(kind=RKIND), parameter :: &
-         eps11 = 1.0e-11_RKIND        ! small number
+      real(kind=RKIND), dimension(:), intent(inout) :: &
+           basalTemperature         !< Input/output: basal temperature (deg C)
 
-    bmlt(:) = 0.0_RKIND
-    melt_fact = 1.0_RKIND / (latent_heat_ice * rhoi) 
-    
-    do iCell = 1, nCellsSolve
-       
-       if (ice_mask(iCell) == 1 .and. floating_mask(iCell) == 0) then  ! ice is present and grounded
+      real(kind=RKIND), dimension(:,:), intent(inout) :: &
+           waterfrac                !< Input/output: water fraction
+      
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
 
-          !TODO - Switch sign conventions for bmlt and bheatflux
-          ! Compute basal melting
-          ! Note: bmlt > 0 for melting, < 0 for freeze-on   
-          !       bfricflx >= 0 by definition
-          !       bheatflx is positive down, so usually bheatflx < 0 (with negative values contributing to melt)
-          !       lcondflx is positive down, so lcondflx < 0 for heat is flowing from the bed toward the surface
-          !
-          !       This equation allows for freeze-on (bmlt < 0) if the conductive term 
-          !        (lcondflx, positive down) is carrying enough heat away from the boundary.  
-          !       But freeze-on requires a local water supply, bwat > 0.
-          !       When bwat = 0, we reset the bed temperature to a value slightly below the melting point.
-          !
-          !TODO - For the enthalpy scheme, deal with the rare case that the bottom layer melts completely
-          !       and overlying layers with a different enthalpy also melt.
-          
-          bflx = bfricflx(iCell) + lcondflx(iCell) - bheatflx(iCell)  ! W/m^2
+      real(kind=RKIND), dimension(:), intent(out):: &
+           basalMassBal,          & !< Output: basal mass balance (kg/m^2/s): < 0 for melting, > 0 for freeze-on 
+           groundedBasalMassBal,  & !< Output: basal mass balance for grounded ice 
+           floatingBasalMassBal     !< Output: basal mass balance for floating ice 
+                                   
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
 
-          if (abs(bflx) < eps11) then  ! bflx might be slightly different from zero because of rounding errors; if so, then zero out
-             bflx = 0.0_RKIND
-          endif
+      integer :: k, iCell
 
-          if (trim(config_thermal_solver) == 'enthalpy') then
-!!             bmlt(ew,ns) = bflx / (lhci*rhoi - enthalpy(upn,ew,ns))
-             !Note: basalEnthalpy = rhoi*cp_ice*basalTemp
-             bmlt(iCell) = bflx / (latent_heat_ice*rhoi - rhoi*cp_ice*basalTemp(iCell))   
-          else   ! temperature solver
-             bmlt(iCell) = bflx * melt_fact   ! m/s   (melt_fact = 1/(rhoi*latent_heat_ice)
-          endif
-          
-          ! Add internal melting
+      real(kind=RKIND), dimension(nVertLevels) :: &
+           pmpTemperature           ! pressure melting point temperature in ice interior
 
-          if (trim(config_thermal_solver) == 'enthalpy') then
+      real(kind=RKIND) :: pmpTemperatureBed     ! pressure melting point temperature at bed
+      real(kind=RKIND) :: netBasalFlux          ! heat flux available for basal melting (W/m^2)
+      real(kind=RKIND) :: layerThickness        ! layer thickness (m)
+      real(kind=RKIND) :: meltEnergy            ! energy available for internal melting (J/m^2)
+      real(kind=RKIND) :: internalMeltRate      ! internal melt rate, transferred to bed (m/s)
+      real(kind=RKIND) :: excessWater           ! thickness of excess meltwater (m)
+      real(kind=RKIND) :: hCavity               ! depth of ice cavity beneath floating ice (m)
+      real(kind=RKIND) :: zDraft                ! draft of floating ice (m below sea level)       
 
-             ! Add internal melting associated with waterfrac > max_waterfrac (1%)
+      real(kind=RKIND), parameter :: &
+           max_waterfrac = 0.01_RKIND      ! maximum allowed water fraction; excess drains to bed
+      
+      real(kind=RKIND), parameter :: &
+           eps11 = 1.0e-11_RKIND           ! small number
+      
+      ! basal melting parameters for MISMIP+ experiment
+      ! TODO - Make these config parameters? 
+      real(kind=RKIND), parameter :: &
+           bmlt_float_omega = 0.20_RKIND / scyr,  & ! time scale for basal melting (s^-1)
+           bmlt_float_h0 = 75._RKIND,             & ! scale for sub-shelf cavity thickness (m)
+           bmlt_float_z0 = 100._RKIND               ! scale for ice draft (m)
 
-             !TODO - Any correction for rhoi/rhow here?  Or melting ice that is already partly melted?
-             do k = 1, upn-1
-                if (waterfrac(k,iCell) > max_waterfrac) then
-                   ! compute melt rate associated with excess water
-                   hmlt = (waterfrac(k,iCell) - max_waterfrac) * thck(iCell) * (sigma(k+1) - sigma(k))  ! m
-                   internal_melt_rate = hmlt / dttem          ! m/s
-                   ! transfer meltwater to the bed
-                   bmlt(iCell) = bmlt(iCell) + internal_melt_rate      ! m/s
-                   ! reset waterfrac to max value
-                   waterfrac(k,iCell) = max_waterfrac
-                endif
-             enddo
+      ! Compute melt rate for grounded ice
 
-          else   ! temperature solver
+      groundedBasalMassBal(:) = 0.0_RKIND
 
-             ! Add internal melting associated with T > Tpmp
+      do iCell = 1, nCellsSolve
+         if (iceMask(iCell) == 1 .and. floatingMask(iCell) == 0) then  ! ice is present and grounded
 
-             call pressure_melting_point_column(&
-                  stagsigma,     &
-                  thck(iCell),   &
-                  pmptemp)
+            ! Compute basal mass balance
+            ! Note: basalMassBal < 0 for melting, > 0 for freeze-on   
+            !       basalFrictionFlux >= 0 by definition
+            !       basalHeatFlux is positive up, so generally basalHeatFlux >= 0
+            !       basalConductiveFlux is positive down, so basalConductiveFlux < 0 for heat flowing from the bed toward the surface
+            !
+            !       This equation allows for freeze-on (basalMassBal > 0) if the conductive term 
+            !        (basalConductiveFlux, positive down) is carrying enough heat away from the boundary.  
+            !       But freeze-on requires a local water supply, basalWaterThickness > 0.
+            !       When basalWaterThickness = 0, we reset the bed temperature to a value slightly below the melting point.
+            !
+            !TODO - For the enthalpy scheme, deal with the rare case that the bottom layer melts completely,
+            !       and overlying layers with a different enthalpy also melt.
+            
+            netBasalFlux = basalFrictionFlux(iCell) + basalHeatFlux(iCell) + basalConductiveFlux(iCell)  ! W/m^2
+            
+            if (abs(netBasalFlux) < eps11) then  ! netBasalFlux might be slightly different from zero because of rounding errors; if so, then zero out
+               netBasalFlux = 0.0_RKIND
+            endif
 
-             do k = 1, upn-1
-                if (temp(k,iCell) > pmptemp(k)) then
-                   ! compute excess energy available for melting
-                   layer_thck = thck(iCell) * (sigma(k+1) - sigma(k))  ! m
-                   melt_energy = rhoi * cp_ice * (temp(k,iCell) - pmptemp(k)) * layer_thck    ! J/m^2
-                   internal_melt_rate = melt_energy / (rhoi * latent_heat_ice * dttem)  ! m/s
-                   ! transfer internal melting to the bed
-                   bmlt(iCell) = bmlt(iCell) + internal_melt_rate  ! m/s
-                   ! reset T to Tpmp
-                   temp(k,iCell) = pmptemp(k)
-                endif
-             enddo
+            if (trim(config_thermal_solver) == 'enthalpy') then
+               groundedBasalMassBal(iCell) = -netBasalFlux / (latent_heat_ice*rhoi - enthalpy(nVertLevels,iCell))
+            else   ! temperature solver
+               groundedBasalMassBal(iCell) = -netBasalFlux / (latent_heat_ice*rhoi)   ! m/s
+            endif
 
-          endif    ! config_thermal_solver
+         endif   ! ice is present and grounded
+      enddo   ! icell
 
-          ! Cap basal temp at pressure melting point, if necessary
+      ! Compute melt rate for grounded ice
 
-          call pressure_melting_point(&
-               thck(iCell), &
-               pmptemp_bed)
+      floatingBasalMassBal(:) = 0.0_RKIND
 
-          temp(upn,iCell) = min (temp(upn,iCell), pmptemp_bed)
-          
-          ! If freeze-on was computed above (bmlt < 0) and Tbed = Tpmp but no basal water is present, then set T(upn) < Tpmp.
-          ! Note: In the matrix element subroutines, we solve for Tbed (instead of holding it at Tpmp) when Tbed < -0.001.
-          !       With an offset here of 0.01, we will solve for T_bed at the next timestep.
-          ! Note: I don't think energy conservation is violated here, because no energy is associated with
-          !       the infinitesimally thin layer at the bed.
-          
-          if (bmlt(iCell) < 0.0_RKIND .and. bwat(iCell) == 0.0_RKIND .and. temp(upn,iCell) >= pmptemp_bed) then
-             temp(upn,iCell) = pmptemp_bed - 0.01_RKIND
-          endif
-          
-       endif   ! ice is present and grounded
-       
-    enddo   ! iCell
+      if (trim(config_basal_mass_bal_float) == 'none') then
 
-  end subroutine basal_melting
+         ! nothing to do; bmlt_float already set to zero
 
+      elseif (trim(config_basal_mass_bal_float) == 'mismip') then
+
+         !TODO - Test the MISMIP+ melt parameterization
+
+         ! compute melt rate based on bed depth and cavity thickness
+         ! The MISMIP+ formula is as follows:
+         !
+         ! bmlt_float = omega * tanh(H_c/H_0) * max(z_d - z_0, 0)
+         !
+         ! where H_c = lsrf - topg is the cavity thickness
+         !       z_d = lsrf - eus is the ice draft
+         !       omega = a time scale = 0.2 yr^{-1} by default
+         !       H_0 = 75 m by default
+         !       z_0 = 100 m by default
+         
+         do iCell = 1, nCellsSolve
+            if (iceMask(iCell) == 1 .and. floatingMask(iCell) == 1) then  ! ice is present and floating
+
+               hCavity = lowerSurface(iCell) - bedTopography(iCell)
+               zDraft = lowerSurface(iCell) - config_sea_level
+               floatingBasalMassBal(iCell) = -bmlt_float_omega * tanh(bmlt_float_h0 / hCavity) * max(bmlt_float_z0 - zDraft, 0.0_RKIND)
+
+            endif   ! ice is present and floating
+         enddo   ! iCell
+
+      endif   ! config_basal_mass_bal_float
+         
+
+      ! Compute internal melting (both grounded and floating ice)
+
+      if (trim(config_thermal_solver) == 'enthalpy') then
+
+         ! Add internal melting associated with waterfrac > max_waterfrac (1%)
+         !TODO - Add correction for rhoi/rhow here?  Or melting ice that is already partly melted?
+
+         do iCell = 1, nCellsSolve
+            if (iceMask(iCell) == 1) then   ! ice is present
+
+               do k = 1, nVertLevels
+                  if (waterfrac(k,iCell) > max_waterfrac) then
+
+                     ! compute melt rate associated with excess water
+                     excessWater = (waterfrac(k,iCell) - max_waterfrac) * thickness(iCell) * (layerInterfaceSigma(k+1) - layerInterfaceSigma(k))  ! m
+                     internalMeltRate = excessWater / deltat
+
+                     ! transfer meltwater to the bed
+                     if (floatingMask(iCell) == 0) then   ! grounded
+                        groundedBasalMassBal(iCell) = groundedBasalMassBal(iCell) - internalMeltRate      ! m/s
+                     else    ! floating
+                        floatingBasalMassBal(iCell) = floatingBasalMassBal(iCell) - internalMeltRate      ! m/s
+                     endif
+
+                     ! reset waterfrac to max value
+                     waterfrac(k,iCell) = max_waterfrac
+
+                  endif   ! waterfrac > max_waterfrac
+               enddo   ! k
+               
+            endif   ! ice is present
+         enddo   ! iCell
+
+      else   ! temperature solver
+               
+         ! Add internal melting associated with T > Tpmp
+
+         do iCell = 1, nCellsSolve
+            if (iceMask(iCell) == 1) then   ! ice is present
+
+               call pressure_melting_point_column(&
+                    layerCentersigma,     &
+                    thickness(iCell),   &
+                    pmpTemperature)
+
+               do k = 1, nVertLevels
+                  if (temperature(k,iCell) > pmpTemperature(k)) then
+
+                     ! compute excess energy available for melting
+                     layerThickness = thickness(iCell) * (layerInterfaceSigma(k+1) - layerInterfaceSigma(k))     ! m
+                     meltEnergy = rhoi*cp_ice * (temperature(k,iCell) - pmpTemperature(k)) * layerThickness    ! J/m^2
+                     internalMeltRate = meltEnergy / (rhoi * latent_heat_ice * deltat)  ! m/s
+
+                     ! transfer meltwater to the bed
+                     if (floatingMask(iCell) == 0) then   ! grounded
+                        groundedBasalMassBal(iCell) = groundedBasalMassBal(iCell) - internalMeltRate      ! m/s
+                     else   ! floating
+                        floatingBasalMassBal(iCell) = floatingBasalMassBal(iCell) - internalMeltRate      ! m/s
+                     endif
+
+                     ! reset T to Tpmp
+                     temperature(k,iCell) = pmpTemperature(k)
+                  endif
+               enddo
+
+            endif   ! ice is present
+         enddo   ! iCell
+               
+      endif    ! config_thermal_solver
+
+      ! Cap basal temperature at pressure melting point (grounded ice only)
+
+      do iCell = 1, nCellsSolve
+         if (iceMask(iCell) == 1 .and. floatingMask(iCell) == 0) then  ! ice is present and grounded
+
+            call pressure_melting_point(&
+                 thickness(iCell), &
+                 pmpTemperatureBed)
+            
+            basalTemperature(iCell) = min (basalTemperature(iCell), pmpTemperatureBed)
+            
+            ! If freeze-on was computed above (basalMassBal > 0) and Tbed = Tpmp but no basal water is present, 
+            !  then set basalTemperature < Tpmp.
+            ! Note: In the matrix element subroutines, we solve for Tbed (instead of holding it at Tpmp) when Tbed < -0.001.
+            !       With an offset here of 0.01, we will solve for T_bed at the next timestep.
+            ! Note: I don't think energy conservation is violated here, because no energy is associated with
+            !       the infinitesimally thin layer at the bed.
+            
+            if (groundedBasalMassBal(iCell) > 0.0_RKIND .and. basalWaterThickness(iCell) == 0.0_RKIND .and. &
+                 basalTemperature(iCell) >= pmpTemperatureBed) then
+               basalTemperature(iCell) = pmpTemperatureBed - 0.01_RKIND
+            endif
+            
+         endif   ! ice is present and grounded
+         
+      enddo   ! iCell
+
+      ! change units from m/s to kg/m2/s
+      groundedBasalMassBal(:) = groundedBasalMassBal(:) * rhoi
+      floatingBasalMassBal(:) = floatingBasalMassBal(:) * rhoi
+      
+      ! compute total basal mass balance
+      basalMassBal(:) = groundedBasalMassBal(:) + floatingBasalMassBal(:)
+
+    end subroutine basal_melting
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine temperature_to_enthalpy
+!
+!> \brief MPAS convert temperature to enthalpy
+!> \author William Lipscomb
+!> \date   October 2015
+!> \details
+!>  This routine computes the enthalpy in each layer of an ice column,
+!>  given the temperature and water fraction.
+!-----------------------------------------------------------------------
    
     subroutine temperature_to_enthalpy(&
          layerCenterSigma,  &
@@ -1871,9 +2375,7 @@ module li_thermal
          enthalpy)
 
       !-----------------------------------------------------------------
-      !
       ! input variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:), intent(in) :: &
@@ -1887,27 +2389,18 @@ module li_thermal
            waterfrac             !< Input: interior water fraction
 
       !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
       ! output variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:), intent(out) :: &
            enthalpy              !< Output:  interior ice enthalpy
 
       !-----------------------------------------------------------------
-      !
       ! local variables
-      !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(size(layerCenterSigma)) :: pmpTemperature
+      real (kind=RKIND), dimension(size(layerCenterSigma)) :: &
+           pmpTemperature         ! pressure melting point temperature
 
       integer :: k, nVertLevels
 
@@ -1924,23 +2417,36 @@ module li_thermal
 
       do k = 1, nVertLevels
          enthalpy(k) = (1.0_RKIND - waterfrac(k)) * rhoi * cp_ice * temperature(k)   &
-                      + waterfrac(k) * rhoo * (cp_ice * pmpTemperature(k) + latent_heat_ice)
+                      + waterfrac(k) * rho_water * (cp_ice * pmpTemperature(k) + latent_heat_ice)
       end do
 
     end subroutine temperature_to_enthalpy
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine enthalpy_to_temperature
+!
+!> \brief MPAS convert enthalpy to temperature
+!> \author William Lipscomb
+!> \date   October 2015
+!> \details
+!>  This routine computes the temperature and water fraction in each layer
+!>  of an ice column, given the enthalpy.
+!-----------------------------------------------------------------------
 
     subroutine enthalpy_to_temperature(&
-         layerCenterSigma,  &
-         thickness,         &
-         enthalpy,          &
-         temperature,       &
+         layerCenterSigma,   &
+         thickness,          &
+         enthalpy,           &
+         surfaceEnthalpy,    &
+         basalEnthalpy,      &
+         temperature,        &
+         surfaceTemperature, &
+         basalTemperature,   &
          waterfrac)
 
       !-----------------------------------------------------------------
-      !
       ! input variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:), intent(in) :: &
@@ -1950,48 +2456,44 @@ module li_thermal
            thickness             !< Input: ice thickness
  
       !-----------------------------------------------------------------
-      !
       ! input/output variables
-      !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(0:), intent(inout) :: &
-           enthalpy              !< Input/output:  interior ice enthalpy
+      real (kind=RKIND), dimension(:), intent(inout) :: &
+           enthalpy              !< Input/output: interior ice enthalpy
+
+      real (kind=RKIND), intent(inout) :: &
+           surfaceEnthalpy,    & !< Input/output: surface ice enthalpy
+           basalEnthalpy         !< Input/output: basal ice enthalpy
 
       !-----------------------------------------------------------------
-      !
       ! output variables
-      !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(0:), intent(out) :: &
+      real (kind=RKIND), dimension(:), intent(out) :: &
            temperature           !< Output: interior ice temperature
+
+      real (kind=RKIND), intent(out) :: &
+           surfaceTemperature, & !< Output: surface ice temperature
+           basalTemperature      !< Output: basal ice temperature
 
       real (kind=RKIND), dimension(:), intent(out) :: &
            waterfrac             !< Output: interior water fraction
 
       !-----------------------------------------------------------------
-      !
       ! local variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(size(layerCenterSigma)) :: pmpTemperature
+      real (kind=RKIND), dimension(size(layerCenterSigma)) :: pmpEnthalpy
+
       real (kind=RKIND) :: pmpTemperatureBed
-      real (kind=RKIND), dimension(0:size(layerCenterSigma)+1) :: pmpEnthalpy
+      real (kind=RKIND) :: pmpEnthalpyBed
 
       integer :: k, nVertLevels
 
       nVertLevels = size(layerCenterSigma)
 
-      ! Commented-out code below is from CISM
-!    real(dp), dimension(size(stagsigma))                 :: pmptemp     ! (1:upn-1)
-!    real(dp)                                             :: pmptemp_bed
-!    real(dp), dimension(0:size(stagsigma)+1)             :: pmpenthalpy ! (0:upn)
-!    integer :: up, upn
-        
-!    upn = size(stagsigma) + 1
-        
       ! Find pressure melting point temperature in ice interior
       call pressure_melting_point_column(&
            layerCenterSigma,  &
@@ -2003,89 +2505,63 @@ module li_thermal
            thickness, &
            pmpTemperatureBed)
 
-!    upn = size(stagsigma) + 1
-        
-      ! find pressure melting point enthalpy in the column
-      pmpEnthalpy(0) = 0.0_RKIND
-      pmpEnthalpy(1:nVertLevels) = pmpTemperature(1:nVertLevels) * rhoi*cp_ice
-      pmpEnthalpy(nVertLevels+1) = pmpTemperatureBed * rhoi*cp_ice
+      ! Find pressure melting point enthalpy
+      pmpEnthalpy(:) = pmpTemperature(:) * rhoi*cp_ice
+      pmpEnthalpyBed = pmpTemperatureBed * rhoi*cp_ice
 
-!    call glissade_pressure_melting_point_column(thck, stagsigma(1:upn-1), pmptemp(1:upn-1))
-!    call glissade_pressure_melting_point(thck, pmptemp_bed)
-!    pmpenthalpy(0) = 0.d0
-!    pmpenthalpy(1:upn-1) = pmptemp(1:upn-1) * rhoi*shci
-!    pmpenthalpy(upn) = pmptemp_bed * rhoi*shci
+      ! Solve for temperature and waterfrac
 
-      ! solve for temperature and waterfrac
-      
       ! upper surface
-      if (enthalpy(0) >= pmpEnthalpy(0)) then   ! temperature ice
-         temperature(0) = 0.0_RKIND
-         ! Reset enthalpy to be consistent with the surface temperature.
+
+      if (surfaceEnthalpy >= 0.0_RKIND) then   ! temperate ice
+         surfaceTemperature = 0.0_RKIND
+         ! Reset surfaceEnthalpy to agree with the surface temperature.
          ! This is consistent with energy conservation because the top surface
          !  is infinitesimally thin.
-         enthalpy(0) = pmpEnthalpy(0)
+         surfaceEnthalpy = 0.0_RKIND
       else   ! cold ice
-         temperature(0) = enthalpy(0) / (rhoi*cp_ice)
+         surfaceTemperature = surfaceEnthalpy / (rhoi*cp_ice)
       endif
 
-!    if (enthalpy(0) >= pmpenthalpy(0)) then ! temperate ice
-!       temp(0) = 0.d0                      ! temperate ice
-       ! Reset enthalpy to be consistent with the surface temperature.
-       ! This is consistent with energy conservation because the top surface
-       !  is infinitesimally thin.
-!       enthalpy(0) = pmpenthalpy(0)
-!    else
-!       temp(0) = enthalpy(0) / (rhoi*shci) ! cold ice
-!    endif
+      ! ice interior
 
-      ! interior
       do k = 1, nVertLevels
          if (enthalpy(k) >= pmpEnthalpy(k)) then   ! temperate ice
             temperature(k) = pmpTemperature(k)
             waterfrac(k) = (enthalpy(k) - pmpenthalpy(k)) /        &
-                          ((rhoo-rhoi)*cp_ice*pmpTemperature(k) + rhoo*latent_heat_ice)
+                          ((rho_water-rhoi)*cp_ice*pmpTemperature(k) + rho_water*latent_heat_ice)
          else   ! cold ice
             temperature(k) = enthalpy(k) / (rhoi*cp_ice)
             waterfrac(k) = 0.0_RKIND
          endif
       enddo   ! k
 
-!    do up = 1, upn-1
-!       if (enthalpy(up) >= pmpenthalpy(up)) then ! temperate ice
-!          temp(up) = pmptemp(up)
-!          waterfrac(up) = (enthalpy(up)-pmpenthalpy(up)) /                 &
-!                          ((rhow-rhoi) * shci * pmptemp(up) + rhow * lhci)
-!       else ! cold ice
-!          temp(up) = enthalpy(up) / (rhoi*shci)
-!          waterfrac(up) = 0.0d0
-!       endif
-!    end do
-        
       ! bed
-      k = nVertLevels + 1
-      if (enthalpy(k) >= pmpEnthalpy(k)) then   ! temperature ice
-         temperature(k) = 0.0_RKIND
-         ! Reset enthalpy to be consistent with the surface temperature.
-         ! This is consistent with energy conservation because the top surface
-         !  is infinitesimally thin.
-         enthalpy(k) = pmpEnthalpy(k)
-      else   ! cold ice
-         temperature(k) = enthalpy(k) / (rhoi*cp_ice)
-      endif
 
-!    if (enthalpy(upn) >= pmpenthalpy(upn)) then  ! temperate ice
-!       temp(upn) = pmptemp_bed
-       ! Reset enthalpy to be consistent with the bed temperature.
-       ! This is consistent with energy conservation because the basal surface
-       !  is infinitesimally thin.
-!       enthalpy(upn) = pmpenthalpy(upn)
-!    else
-!       temp(upn) = enthalpy(upn) / (rhoi*shci)   ! cold ice
-!    endif
+      k = nVertLevels + 1
+      if (basalEnthalpy >= pmpEnthalpyBed) then   ! temperate ice
+         basalTemperature = pmpTemperatureBed
+         ! Reset basalEnthalpy to agree with the surface temperature.
+         ! This is consistent with energy conservation because the lower surface
+         !  is infinitesimally thin.
+         basalEnthalpy = pmpEnthalpyBed
+      else   ! cold ice
+         basalTemperature = basalEnthalpy / (rhoi*cp_ice)
+      endif
 
     end subroutine enthalpy_to_temperature
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine pressure_melting_point_column
+!
+!> \brief MPAS compute pressure melting point temperature
+!> \author William Lipscomb
+!> \date   October 2015
+!> \details
+!>  This routine computes the pressure melting point temperature in each layer
+!>  of an ice column, given the thickness.
+!-----------------------------------------------------------------------
 
     subroutine pressure_melting_point_column(&
          layerCenterSigma,  &
@@ -2093,9 +2569,7 @@ module li_thermal
          pmpTemperature)
       
       !-----------------------------------------------------------------
-      !
       ! input variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:), intent(in) :: &
@@ -2105,85 +2579,106 @@ module li_thermal
            thickness             !< Input: ice thickness
  
       !-----------------------------------------------------------------
-      !
       ! output variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:), intent(out) :: &
            pmpTemperature          !< Output: pressure melting point temperature
 
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
+      ! Compute the pressure melting point temperature in the column
 
       pmpTemperature(:) = - iceMeltingPointPressureDependence * rhoi * gravity * thickness * layerCenterSigma(:) 
 
     end subroutine pressure_melting_point_column
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine pressure_melting_point
+!
+!> \brief MPAS compute pressure melting point temperature
+!> \author William Lipscomb
+!> \date   October 2015
+!> \details
+!>  This routine computes the pressure melting point temperature at a 
+!>  given depth in an ice column.
+!-----------------------------------------------------------------------
 
     subroutine pressure_melting_point(&
          depth,           &
          pmpTemperature)
       
       !-----------------------------------------------------------------
-      !
       ! input variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), intent(in) ::  &
            depth                !< Input: depth in column
  
       !-----------------------------------------------------------------
-      !
       ! output variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), intent(out) :: &
            pmpTemperature          !< Output: pressure melting point temperature
 
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
+      ! Compute the pressure melting point temperature
 
       pmpTemperature = - iceMeltingPointPressureDependence * rhoi * gravity * depth
 
     end subroutine pressure_melting_point
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine tridiag_solver
+!
+!> \brief MPAS solve tridiagonal matrix
+!> \author William Lipscomb
+!> \date   October 2015
+!> \details
+!>  This routine solves a tridiagonal matrix equation, given the matrix 
+!>  coefficients and right-hand side.
+!-----------------------------------------------------------------------
 
     !TODO - Move the tridiag solver to a utility module?
     subroutine tridiag_solver(a,b,c,x,y)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
 
       real(kind=RKIND), dimension(:), intent(in)  :: a !< Input: Lower diagonal; a(1) is ignored
       real(kind=RKIND), dimension(:), intent(in)  :: b !< Input: Main diagonal
       real(kind=RKIND), dimension(:), intent(in)  :: c !< Input: Upper diagonal; c(n) is ignored
       real(kind=RKIND), dimension(:), intent(in)  :: y !< Input: Right-hand side
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
       real(kind=RKIND), dimension(:), intent(out) :: x !< Output: Unknown vector
       
-      real(kind=RKIND),dimension(size(a)) :: aa
-      real(kind=RKIND),dimension(size(a)) :: bb
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
 
-      integer :: n,i
+      real(kind=RKIND), dimension(size(a)) :: aa
+      real(kind=RKIND), dimension(size(a)) :: bb
+
+      integer :: n, i
 
       n = size(a)
       
-      aa(1) = c(1)/b(1)
-      bb(1) = y(1)/b(1)
+      aa(1) = c(1) / b(1)
+      bb(1) = y(1) / b(1)
       
-      do i = 2,n
-         aa(i) = c(i)/(b(i)-a(i)*aa(i-1))
+      do i = 2, n
+         aa(i) = c(i) / (b(i)-a(i)*aa(i-1))
          bb(i) = (y(i)-a(i)*bb(i-1)) / (b(i)-a(i)*aa(i-1))
       end do
       
       x(n) = bb(n)
 
-      do i = n-1,1,-1
+      do i = n-1, 1, -1
          x(i) = bb(i) - aa(i)*x(i+1)
       end do
       
