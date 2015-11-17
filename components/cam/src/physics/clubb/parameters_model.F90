@@ -54,7 +54,7 @@ module parameters_model
 
 !$omp threadprivate(sclr_tol)
 
-  real( kind = 4 ), public :: PosInf
+  real( kind = selected_real_kind(6) ), public :: PosInf
 
 !$omp threadprivate(PosInf)
 
