@@ -22,6 +22,7 @@ This document provides specific instructions for installing PIO using a variety 
 -    <a href="#Mira">Mira</a> (IBM Blue Gene Supercomputer at ALCF)
 -    <a href="#BlueWat">Blue Waters</a> (NCSA's 1.3-petaflop Cray Supercomputer)
 -    <a href="#Hobart">Hobart</a> (The NCAR CGD local cluster)
+-    <a href="#Linux">Linux with MPICH2</a> (Standard Linux box with MPICH2)
 
 <a name="Yellowstone"></a>
 ### Yellowstone ###
@@ -290,6 +291,110 @@ Building PIO requires running the CMake configure and then make. In the PIO_buil
 ParallelIO does not require Parallel netcdf to run, so if you decide to use the GNU compiler on Hobart (not described here) without the parallel-netcdf library, use the cmake configure flags:<br>
   %> cmake -DNETCDF_DIR=$NETCDF_PATH -DWITH_PNETCDF=FALSE ../PIO_source/<br>
   %> make
+
+</ol>
+
+### Linux with MPICH ###
+<ol>
+<li>Installing MPICH
+
+<p>Download from the <a href="http://www.mpich.org/downloads/">MPICH2
+downloads page</a>. (These instructions were tested using version
+3.2). Untar with:
+<pre>tar zxf mpich-3.2.tar.gz</pre>
+
+<p>Build with:
+<pre>cd mpich-3.2 && ./configure --prefix=/usr/local && make all check
+&& sudo make install </pre>
+
+<p>Now you should be able to access mpicc, mpifort, and mpirun from
+the command line. (If not, make sure /usr/local/bin is in path.)
+
+<li>Installing Zlib
+
+<p>Download from the <a href="http://www.zlib.net/">zlib
+downloads page</a>. (These instructions were tested using version
+1.2.8). Untar with:
+<pre>tar zxf zlib-1.2.8.tar.gz</pre>
+
+
+<p>Build with:
+<pre>cd zlib-1.2.8
+CC=mpicc ./configure --prefix=/usr/local
+make all check
+sudo make install </pre>
+
+<li>Installing SZlib
+
+<p>Download szlib from the <a
+href="https://www.hdfgroup.org/doc_resource/SZIP/">HDF5 szlib
+page</a>. (These instructions were tested using version 2.1). Untar
+with: <pre>tar zxf szip-2.1.tar.gz</pre>
+
+
+<p>Build with:
+<pre>cd slib-2.1
+CC=mpicc ./configure --prefix=/usr/local
+make all check
+sudo make install </pre>
+
+<li>Installing pNetCDF
+
+<p>Download parallel-netcdf from the <a
+href="https://trac.mcs.anl.gov/projects/parallel-netcdf/wiki/Download">parallel-netcdf download
+page</a>. (These instructions were tested using version 1.6.1). Untar
+with: <pre>tar zxf parallel-netcdf-1.6.1.tar.gz</pre>
+
+
+<p>Build with:
+<pre>cd parallel-netcdf-1.6.1
+FC=mpifort CC=mpicc ./configure --prefix=/usr/local
+make all check
+sudo make install </pre>
+
+<li>Installing HDF5
+
+<p>Download HDF5 from the <a
+href="https://www.hdfgroup.org/HDF5/release/obtain5.html">HDF5 download
+page</a>. (These instructions were tested using version 1.8.15-patch1). Untar
+with: <pre>tar zxf hdf5-1.8.15-patch1.tar.gz</pre>
+
+
+<p>Build with:
+<pre>cd hdf5-1.8.15-patch1
+CC=mpicc ./configure --with-zlib=/usr/local --prefix=/usr/local --with-szlib=/usr/local --enable-parallel
+make all check
+sudo make install </pre>
+
+<li>Installing NetCDF-4 C Library
+
+<p>Download the netcdf C library from the <a
+href="http://www.unidata.ucar.edu/downloads/netcdf/index.jsp">NetCDF download
+page</a>. (These instructions were tested using version 4.3.3.1). Untar
+with: <pre>tar zxf netcdf-4.3.3.1.tar.gz</pre>
+
+
+<p>Build with:
+<pre>cd netcdf-4.3.3.1
+CC=mpicc ./configure --with-zlib=/usr/local --prefix=/usr/local --with-szlib=/usr/local --with-hdf5=/usr/local --enable-pnetcdf --enable-parallel-tests --enable-logging
+make all check
+sudo make install </pre>
+
+
+<li>Installing ParallelIO Library
+
+<p>Clone the ParallelIO library.
+
+<p>Create a build directory and run cmake.
+<pre>
+cd ParallelIO
+mkdir build
+cd build
+CC=mpicc FC=mpifort cmake -DNetCDF_C_PATH=/usr/local -DNetCDF_Fortran_PATH=/usr/local -DPnetCDF_PATH=/usr/local ..
+make
+make check
+sudo make install
+</pre>
 
 </ol>
 
