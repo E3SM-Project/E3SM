@@ -100,6 +100,8 @@ module li_time_integration_fe
 
       logical, pointer :: config_restore_calving_front
 
+      err = 0
+
       call mpas_pool_get_config(liConfigs, 'config_restore_calving_front', config_restore_calving_front)
 
       ! During integration, time level 1 stores the model state at the beginning of the

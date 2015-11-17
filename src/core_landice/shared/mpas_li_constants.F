@@ -39,6 +39,7 @@ module li_constants
    real (kind=RKIND), parameter, public :: cp_ice = 2009.0_RKIND        !< heat capacity of ice (J/kg/K)
    real (kind=RKIND), parameter, public :: latent_heat_ice = 335.0d3    !< Latent heat of melting of ice (J/kg)
    real (kind=RKIND), parameter, public :: triple_point = 273.16_RKIND  !< Triple point of water (K)
+   real (kind=RKIND), parameter, public :: rho_water = 1000.0_RKIND     !< Density of fresh water (kg m^-3)
 
 #endif
 

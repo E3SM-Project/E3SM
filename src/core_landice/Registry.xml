@@ -117,13 +117,33 @@
 		            description="Selection of the method for the vertical thermal solver."
 		            possible_values="'none', 'temperature', 'enthalpy'"
 		/>
-		<nml_option name="config_thermal_init" type="character" default_value="linear" units="unitless"
+		<nml_option name="config_temperature_init" type="character" default_value="linear" units="unitless"
 		            description="Selection of the method for initializing the ice temperature."
 		            possible_values="'linear', 'file'"
 		/>
 		<nml_option name="config_thermal_thickness" type="real" default_value="1.0" units="m of ice"
 		            description="Defines the minimum thickness for thermal calculations"
 		            possible_values="Any positive real value"
+		/>
+		<nml_option name="config_surface_air_temperature_source" type="character" default_value="constant" units="unitless"
+		            description="Selection of the method for setting the surface air temperature."
+		            possible_values="'constant', 'file'"
+		/>
+		<nml_option name="config_surface_air_temperature_value" type="real" default_value="273.15" units="Kelvin"
+		            description="Constant value of the surface air temperature."
+		            possible_values="Any positive real value"
+		/>
+		<nml_option name="config_basal_heat_flux_source" type="character" default_value="constant" units="unitless"
+		            description="Selection of the method for setting the basal heat flux."
+		            possible_values="'constant', 'file'"
+		/>
+		<nml_option name="config_basal_heat_flux_value" type="real" default_value="0.0" units="W m^{-2}"
+		            description="Constant value of the basal heat flux (positive upward)."
+		            possible_values="Any positive real value"
+		/>
+		<nml_option name="config_basal_mass_bal_float" type="character" default_value="none" units="unitless"
+		            description="Selection of the method for computing the basal mass balance of floating ice"
+		            possible_values="'none', 'mismip'"
 		/>
 	</nml_record>
 
@@ -691,6 +711,9 @@ is the value of that variable from the *previous* time level!
 		<var name="calvingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
 		     description="thickness of ice that calves (<= ice thickness)"
 		/>
+		<var name="basalWaterThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
+		     description="thickness of basal water"
+		/>
 		<var name="restoreThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
 		     description="thickness of ice added to restore the calving front to its initial position"
 		/>
@@ -748,16 +771,14 @@ is the value of that variable from the *previous* time level!
 		<var name="basalSpeed"                     type="real"     dimensions="nCells Time"
 		     units="m s^{-1}"  description="ice basal speed reconstructed at cell centers"
 		/>
-
-		<!-- Variables only needed by HO solver -->
 		<var name="beta" type="real" dimensions="nCells Time" units="Pa s m^{−1}"
 		     description="higher-order basal traction parameter"
-			packages="higherOrderVelocity"
 		/>
 		<var name="betaSolve" type="real" dimensions="nCells Time" units="Pa s m^{−1}"
 		     description="higher-order basal traction parameter"
-			packages="higherOrderVelocity"
 		/>
+
+		<!-- Variables only needed by HO solver -->
 		<var name="anyDynamicVertexMaskChanged"              type="integer"  dimensions="Time"
 		     units="none"  description="flag needed by external velocity solvers that indicates if the region to solve on the block's domain has changed (treated as a logical)"
 			packages="higherOrderVelocity"

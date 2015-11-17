@@ -354,7 +354,7 @@ contains
          ! Set to the same value everywhere in the column
          normalVelocityInitial(:,iEdge) = uEdgeX*unitNormalVector(1) + uEdgeY*unitNormalVector(2)
 
-      enddo
+      enddo   ! iEdge
 
       !WHL - debug
       iCell = config_stats_cell_ID
@@ -549,6 +549,10 @@ contains
 
       endif   ! config_calving
       !--------------------------------
+
+      ! clean up
+      call mpas_allocate_scratch_field(uVelocityXField, .true.)
+      call mpas_allocate_scratch_field(uVelocityYField, .true.)
 
       ! === error check
       if (err > 0) then
