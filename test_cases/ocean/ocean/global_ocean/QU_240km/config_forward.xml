@@ -2,6 +2,7 @@
 <config case="forward" mode="forward">
 	<add_link source="../init_step2/ocean.nc" dest="init.nc"/>
 	<add_link source="../init_step2/graph.info" dest="graph.info"/>
+	<add_link source="../init_step2/init_mode_forcing_data.nc" dest="forcing_data.nc"/>
 
 	<add_executable source="model" dest="ocean_model"/>
 	<add_executable source="metis" dest="metis"/>
@@ -9,16 +10,9 @@
 	<namelist name="namelist.ocean">
 		<option name="config_ocean_run_mode">'forward'</option>
 		<option name="config_dt">'02:00:00'</option>
-		<option name="config_run_duration">'0001_00:00:00'</option>
+		<option name="config_run_duration">'0000_06:00:00'</option>
 		<option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
 		<option name="config_time_integrator">'split_explicit'</option>
-
-		<option name="config_convective_visc">1.0</option>
-		<option name="config_convective_diff">1.0</option>
-		<option name="config_use_const_visc">.false.</option>
-		<option name="config_use_const_diff">.false.</option>
-		<option name="config_use_rich_visc">.false.</option>
-		<option name="config_use_rich_diff">.false.</option>
 
 		<option name="config_use_mom_del4">.true.</option>
 		<option name="config_mom_del4">2.0e14</option>
@@ -28,6 +22,11 @@
 		<option name="config_use_cvmix_shear">.true.</option>
 		<option name="config_use_cvmix_kpp">.true.</option>
 		<option name="config_eos_type">'jm'</option>
+		<option name="config_bottom_drag_coeff">1.0e-3</option>
+		<option name="config_use_bulk_wind_stress">.true.</option>
+		<option name="config_use_activeTracers_surface_restoring">.true.</option>
+		<option name="config_use_debugTracers">.true.</option>
+		<template name="global_stats"/>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable">
@@ -50,6 +49,9 @@
 				<member name="layerThickness" type="var"/>
 			</add_contents>
 		</stream>
+		<template name="forcing_data"/>
+		<template name="global_stats"/>
+
 	</streams>
 
 	<run_script name="run.py">
