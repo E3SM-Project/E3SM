@@ -47,11 +47,11 @@ post_build:
 
 cvmix_source: get_cvmix.sh
 	(chmod a+x get_cvmix.sh; ./get_cvmix.sh)
-	(cd cvmix; make clean)
+	(cd cvmix)
 
 BGC_source: get_BGC.sh
 	(chmod a+x get_BGC.sh; ./get_BGC.sh)
-	(cd BGC; make clean)
+	(cd BGC)
 
 libcvmix: cvmix_source
 	if [ -d cvmix ]; then \
