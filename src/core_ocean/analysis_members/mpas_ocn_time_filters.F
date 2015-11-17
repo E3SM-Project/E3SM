@@ -26,6 +26,7 @@ module ocn_time_filters
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
+   use mpas_vector_reconstruction
 
    use ocn_constants
    use ocn_diagnostics_routines
@@ -246,12 +247,16 @@ contains
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: timeFiltersAM
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalVelocityLowPass, normalVelocityHighPass, normalVelocityTest
+      type (field2DReal), pointer :: normalVelocityLowPassField
+      real (kind=RKIND), dimension(:,:), pointer :: velocityZonalLowPass, velocityMeridionalLowPass, &
+                                                    velocityXLowPass, velocityYLowPass, velocityZLowPass
       integer, pointer :: nVertLevels, nEdgesSolve
       integer :: k, iEdge
       integer, dimension(:), pointer :: maxLevelEdgeBot
 
       type (MPAS_timeInterval_type) :: timeStepESMF
       character(len=StrKIND), pointer :: config_dt
+      logical, pointer :: computeCC
       real (kind=RKIND) :: dt, tau
 #ifdef TIME_FILTERS_DEBUG
       integer :: iBlock
@@ -320,6 +325,33 @@ contains
 
          block => block % next
       end do
+
+      ! do IO communications if this is an output time step
+      call mpas_pool_get_config(domain % configs, 'config_AM_timeFilters_compute_cell_centered_values', computeCC)
+      if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='timeFiltersOutput', direction=MPAS_STREAM_OUTPUT, ierr=err) &
+        .and. computeCC) then
+        block => domain % blocklist
+        do while (associated(block))
+           call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+           call mpas_pool_get_subpool(block % structs, 'timeFiltersAM', timeFiltersAMPool)
+           ! make sure all processors have correct normalVelocityLowPass data
+           call mpas_pool_get_field(timeFiltersAMPool, 'normalVelocityLowPass', normalVelocityLowPassField)
+           call mpas_dmpar_exch_halo_field(normalVelocityLowPassField)
+           ! get variables for computations
+           call mpas_pool_get_array(timeFiltersAMPool, 'normalVelocityLowPass', normalVelocityLowPass)
+           call mpas_pool_get_array(timeFiltersAMPool, 'velocityZonalLowPass', velocityZonalLowPass)
+           call mpas_pool_get_array(timeFiltersAMPool, 'velocityMeridionalLowPass', velocityMeridionalLowPass)
+           call mpas_pool_get_array(timeFiltersAMPool, 'velocityXLowPass', velocityXLowPass)
+           call mpas_pool_get_array(timeFiltersAMPool, 'velocityYLowPass', velocityYLowPass)
+           call mpas_pool_get_array(timeFiltersAMPool, 'velocityZLowPass', velocityZLowPass)
+          ! must perform reconstruction for cell centered values
+           call mpas_reconstruct(meshPool, normalVelocityLowPass,  &
+                            velocityXLowPass, velocityYLowPass, velocityZLowPass,   &
+                            velocityZonalLowPass, velocityMeridionalLowPass, &
+                            includeHalos = .false.)
+          block => block % next
+        end do
+      end if
 
 #ifdef TIME_FILTERS_DEBUG
         write(stderrUnit,*) 'finished computing time filters'
