@@ -77,6 +77,8 @@ contains
 
    subroutine li_calculate_diagnostic_vars(domain, solveVelo, err)
 
+      use li_thermal, only: li_heat_dissipation_sia, li_basal_friction_sia
+
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -113,6 +115,10 @@ contains
       type (mpas_pool_type), pointer :: thermalPool
       type (mpas_pool_type), pointer :: velocityPool
       type (field2DReal), pointer :: layerThicknessEdgeField
+
+      character (len=StrKIND), pointer :: config_thermal_solver
+      character (len=StrKIND), pointer :: config_velocity_solver
+
       integer :: err_tmp
 
 
@@ -153,6 +159,30 @@ contains
 
          block => block % next
       end do
+
+      ! Calculate the heating terms needed by the thermal solver during the next time step.
+      ! Note: The SIA heat dissipation could be computed before velocity, but for other approximations, 
+      !       heat dissipation generally must be computed after velocity.
+      !TODO - Make sure the heatDissipation and basalFriction fields are computed for the FO solver.
+
+      call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
+      call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
+
+      if (trim(config_thermal_solver) == 'temperature' .or. trim(config_thermal_solver) == 'enthalpy') then
+
+         if (trim(config_velocity_solver) == 'sia') then
+
+            ! Compute interior heat dissipation
+            call li_heat_dissipation_sia(domain, err_tmp)
+            err = ior(err, err_tmp)
+
+            ! Compute heat flux due to basal friction
+            call li_basal_friction_sia(domain, err_tmp)
+            err = ior(err, err_tmp)
+
+         endif   ! sia
+
+      endif   ! temperature or enthalpy
 
       call mpas_timer_start("halo updates")
       call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
@@ -355,8 +385,6 @@ contains
       use mpas_geometry_utils, only: mpas_cells_to_points_using_baryweights
       use mpas_vector_operations, only: mpas_tangential_vector_1d
       
-      use li_thermal, only: li_heat_dissipation_sia, li_basal_friction_sia
-
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -411,7 +439,6 @@ contains
       real (kind=RKIND), dimension(:), pointer :: beta, betaSolve
       real (kind=RKIND), pointer :: config_sea_level, config_ice_density, config_ocean_density
       character (len=StrKIND), pointer :: config_velocity_solver, config_sia_tangent_slope_calculation
-      character (len=StrKIND), pointer :: config_thermal_solver
       logical, pointer :: config_adaptive_timestep_include_DCFL
       ! truly local variables
       real (kind=RKIND) :: thisThk
@@ -420,7 +447,6 @@ contains
       integer :: blockDirichletMaskChanged, procDirichletMaskChanged
 
       integer :: err_tmp
-
 
       err = 0
       err_tmp = 0
@@ -479,7 +505,6 @@ contains
           call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
           call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
           call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
-          call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
           call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
 
           call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
@@ -535,7 +560,6 @@ contains
           endif
           ! The remaining calculations are only needed by the SIA solver
           if (trim(config_velocity_solver) == 'sia') then
-             call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
              call mpas_pool_get_config(liConfigs, 'config_sia_tangent_slope_calculation', config_sia_tangent_slope_calculation)
              call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
              call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
@@ -674,7 +698,7 @@ contains
          call mpas_pool_get_array(velocityPool, 'dirichletMaskChanged', dirichletMaskChanged)
          call mpas_dmpar_max_int(domain % dminfo, procDirichletMaskChanged, dirichletMaskChanged)
          !print *,'dirichletMaskChanged', dirichletMaskChanged
-      end if
+      end if   ! sia
 
       ! === error check
       if (err > 0) then
@@ -779,27 +803,6 @@ contains
       endif
 
       ! Note: the outmost layerThicknessEdge may be wrong if its upwind cell is off this block - halo update should be done if this variable will be used.
-
-      ! Calculate heating terms that needed by the thermal solver during the next time step.
-      ! Note: The SIA heat dissipation could be computed before velocity, but for other approximations, 
-      !       heat dissipation may need to be computed after velocity.
-      !TODO - Make sure the heatDissipation and basalFriction fields are computed for the FO solver.
-
-      if (trim(config_thermal_solver) == 'temperature' .or. trim(config_thermal_solver) == 'enthalpy') then
-
-         if (trim(config_velocity_solver) == 'sia') then
-
-            ! Compute interior heat dissipation
-            call li_heat_dissipation_sia(domain, err_tmp)
-            err = ior(err, err_tmp)
-
-            ! Compute heat flux due to basal friction
-            call li_basal_friction_sia(domain, err_tmp)
-            err = ior(err, err_tmp)
-
-         endif
-
-      endif
 
    end subroutine diagnostic_solve_after_velocity
 
