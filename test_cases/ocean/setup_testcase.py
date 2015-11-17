@@ -76,7 +76,7 @@ def configure_namelist(namelist_dict, template_path, namelist_tag):#{{{
 			set_namelist_val(namelist_dict, option_name, option_val)
 		elif child.tag == 'template':
 			apply_namelist_template(namelist_dict, child.attrib['name'], template_path)
-	
+
 #}}}
 
 def write_namelist(namelist_dict, outfilename, infilename):#{{{
@@ -460,7 +460,7 @@ def get_defined_files(config_file, init_path, args, configs):#{{{
 							except:
 								print "  -- Web mirror attempt failed. Trying other mirrors..."
 
-	
+
 					if os.path.exists('%s/%s'%(dest_path, file_name)):
 						try:
 							expected_hash = get_file.attrib['hash']
@@ -497,6 +497,72 @@ def get_defined_files(config_file, init_path, args, configs):#{{{
 	dev_null.close()
 #}}}
 
+def process_script_step(step, configs, script_file):#{{{
+	if 'executable_name' in step.attrib.keys() and 'executable' in step.attrib.keys():
+		print "ERROR: <step> tag has both an 'executable' and 'executable_name' attribute. Only one is allowed per step."
+		print "Exiting..."
+		quit(1)
+
+	try:
+		quiet_val = step.attrib['quiet']
+		if quiet_val == "true":
+			quiet = True
+		else:
+			quiet = False
+	except:
+		quiet = False
+
+	try:
+		step_pre_message = step.attrib['pre_message']
+		write_pre_message = True
+	except:
+		write_pre_message = False
+
+	try:
+		step_post_message = step.attrib['post_message']
+		write_post_message = True
+	except:
+		write_post_message = False
+
+	try:
+		executable_name = step.attrib['executable_name']
+		executable = configs.get('executables', executable_name)
+	except:
+		executable = step.attrib['executable']
+
+	script_file.write("\n")
+	script_file.write("# Run command is:\n")
+
+	comment = "# %s "%(executable)
+	command = "subprocess.check_call(['%s'"%(executable)
+
+	for argument in step.findall('argument'):
+		flag = argument.attrib['flag']
+		val = argument.text
+
+		if not flag.strip() == "":
+			comment = "%s %s"%(comment, flag)
+			command = "%s, '%s'"%(command, flag)
+
+		comment = "%s %s"%(comment, val)
+		command = "%s, '%s'"%(command, val)
+
+	if write_pre_message:
+		script_file.write('print "%s"\n'%(step_pre_message))
+
+	if quiet:
+		command = "%s], stdout=dev_null, stderr=dev_null)"%(command)
+	else:
+		command = "%s])"%(command)
+	script_file.write("%s\n"%(comment))
+	script_file.write("%s\n"%(command))
+
+	if write_post_message:
+		script_file.write('print "%s"\n'%(step_post_message))
+
+	script_file.write("\n");
+#}}}
+
 def generate_run_scripts(config_file, init_path, configs):#{{{
 	config_tree = ET.parse(config_file)
 	config_root = config_tree.getroot()
@@ -509,41 +575,10 @@ def generate_run_scripts(config_file, init_path, configs):#{{{
 
 		script.write("#!/usr/bin/env python\n")
 		script.write("import subprocess\n")
+		script.write("dev_null = open('/dev/null', 'w')\n")
 
 		for step in run_script.findall('step'):
-			if 'executable_name' in step.attrib.keys() and 'executable' in step.attrib.keys():
-				print "ERROR: <step> tag has both an 'executable' and 'executable_name' attribute. Only one is allowed per step."
-				print "Exiting..."
-				quit(1)
-
-			try:
-				executable_name = step.attrib['executable_name']
-				executable = configs.get('executables', executable_name)
-			except:
-				executable = step.attrib['executable']
-
-			script.write("\n")
-			script.write("# Run command is:\n")
-
-			comment = "# %s "%(executable)
-			command = "subprocess.check_call(['%s'"%(executable)
-			
-			for argument in step.findall('argument'):
-				flag = argument.attrib['flag']
-				val = argument.text
-
-				if not flag.strip() == "":
-					comment = "%s %s"%(comment, flag)
-					command = "%s, '%s'"%(command, flag)
-
-				comment = "%s %s"%(comment, val)
-				command = "%s, '%s'"%(command, val)
-
-			command = "%s])"%(command)
-			script.write("%s\n"%(comment))
-			script.write("%s\n"%(command))
-
-			script.write("\n");
+			process_script_step(step, configs, script)
 
 		script.close()
 
@@ -573,7 +608,8 @@ def generate_driver_scripts(config_file, init_path, configs):#{{{
 		script.write('import os, subprocess\n')
 
 		script.write('\n')
-		script.write('base_path = os.getcwd()')
+		script.write('base_path = os.getcwd()\n')
+		script.write("dev_null = open('/dev/null', 'w')\n")
 		script.write('\n')
 
 		for child in config_root:
@@ -583,12 +619,10 @@ def generate_driver_scripts(config_file, init_path, configs):#{{{
 				script.write('os.chdir(' + "'%s')\n"%(case))
 				for grandchild in child:
 					if grandchild.tag == 'step':
-						try:
-							executable_name = grandchild.attrib['executable_name']
-							excetuable = configs.get('executables', executable_name)
-						except:
-							executable = grandchild.attrib['executable']
-						script.write('subprocess.check_call([' + "'%s'"%(executable) + '])\n')
+						process_script_step(grandchild, configs, script)
+			if child.tag == 'step':
+				script.write('os.chdir(base_path)\n')
+				process_script_step(child, configs, script)
 
 		script.close()
 		subprocess.check_call(['chmod', 'a+x', '%s/%s'%(init_path, name)], stdout=dev_null, stderr=dev_null)
@@ -677,7 +711,7 @@ for file in os.listdir('%s'%(test_path)):
 			else:
 				case_streams_template = config.get("streams", case_mode)
 				case_namelist_template = config.get("namelists", case_mode)
-				
+
 			generate_namelist_files(config_file, case_path, case_namelist_template, template_path)
 
 			generate_streams_files(config_file, case_path, case_streams_template, template_path)
@@ -701,7 +735,7 @@ if write_history:
 		history_file.write('\n')
 	else:
 		history_file = open(history_file_path, 'w')
-	
+
 	history_file.write('git_version: %s\n'%(git_version))
 	history_file.write('command: %s\n'%(calling_command))
 	history_file.write('core: %s\n'%(args.core))
