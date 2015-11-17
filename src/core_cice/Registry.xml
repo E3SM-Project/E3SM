@@ -1761,8 +1761,8 @@
 		<var name="totalChlorophyll"                  type="real"     dimensions="nCells Time"              name_in_code="totalChlorophyll"/>
 		<var name="totalNitrate"                      type="real"     dimensions="nCells Time"              name_in_code="totalNitrate"/>
 		<var name="netBrineHeight"                    type="real"     dimensions="nCells Time"              name_in_code="netBrineHeight"/>
-		<var name="biologyGrid"                       type="real"     dimensions="nBioLayersP2"             name_in_code="biologyGrid"/>
-		<var name="interfaceBiologyGrid"              type="real"     dimensions="nBioLayersP1"             name_in_code="interfaceBiologyGrid"/>
+		<var name="biologyGrid"                       type="real"     dimensions="nBioLayersP2"             name_in_code="biologyGrid" packages="pkgColumnBiogeochemistry;pkgColumnPackage"/>
+		<var name="interfaceBiologyGrid"              type="real"     dimensions="nBioLayersP1"             name_in_code="interfaceBiologyGrid" packages="pkgColumnBiogeochemistry;pkgColumnPackage"/>
 		<var name="verticalGrid"                      type="real"     dimensions="nIceLayersP1"             name_in_code="verticalGrid" packages="pkgColumnBiogeochemistry;pkgColumnPackage"/>
 		<var name="interfaceGrid"                     type="real"     dimensions="nIceLayersP1"             name_in_code="interfaceGrid"/>
 		<var name="verticalShortwaveGrid"             type="real"     dimensions="nIceLayersP1"             name_in_code="verticalShortwaveGrid" packages="pkgColumnBiogeochemistry;pkgColumnPackage"/>

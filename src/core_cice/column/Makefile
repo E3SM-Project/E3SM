@@ -27,7 +27,7 @@ OBJS =  ice_colpkg.o \
         ice_brine.o \
         ice_algae.o \
         ice_zbgc.o \
-        ice_zbgc_shared.o \
+        ice_zbgc_shared.o
 
 all: $(OBJS)
 
