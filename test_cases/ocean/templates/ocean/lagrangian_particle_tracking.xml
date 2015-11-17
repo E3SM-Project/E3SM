@@ -2,14 +2,14 @@
 	<namelist>
 		<option name="config_AM_lagrPartTrack_enable">.true.</option>
 		<option name="config_AM_lagrPartTrack_compute_interval">'dt'</option>
-		<option name="config_AM_lagrPartTrack_compute_on_startup">.true.</option>
+		<option name="config_AM_lagrPartTrack_compute_on_startup">.false.</option>
 		<option name="config_AM_lagrPartTrack_output_stream">'lagrPartTrackOutput'</option>
 		<option name="config_AM_lagrPartTrack_restart_stream">'lagrPartTrackRestart'</option>
 		<option name="config_AM_lagrPartTrack_input_stream">'lagrPartTrackInput'</option>
 		<option name="config_AM_lagrPartTrack_write_on_startup">.true.</option>
 		<option name="config_AM_lagrPartTrack_filter_number">0</option>
 		<option name="config_AM_lagrPartTrack_reset_criteria">'none'</option>
-		<option name="config_AM_lagrPartTrack_reset_global_timestamp">0000_00:00:00</option>
+		<option name="config_AM_lagrPartTrack_reset_global_timestamp">'0000_00:00:00'</option>
 		<option name="config_AM_lagrPartTrack_region_stream">'none'</option>
 		<option name="config_AM_lagrPartTrack_reset_if_outside_region">.false.</option>
 		<option name="config_AM_lagrPartTrack_reset_if_inside_region">.false.</option>

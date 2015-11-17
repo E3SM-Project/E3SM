@@ -5,11 +5,11 @@
 	<add_link source="../init_step2/graph.info" dest="graph.info"/>
 
 	<get_file dest_path="initial_condition_database" file_name="particle_resets_time.151113.nc">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mpas_ocean/test_cases/staging"/>
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
 	</get_file>
 
 	<get_file dest_path="mesh_database" file_name="graph.info.part.6.doubly_periodic_20km_1000x2000km_planar.151113">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mpas_ocean/test_cases/staging"/>
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/"/>
 	</get_file>
 
 	<add_link source_path="initial_condition_database" source="particle_resets_time.151113.nc" dest="particle_resets.nc"/>
@@ -20,7 +20,7 @@
 	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean">
-		<!-- <template name="lagrangian_particle_tracking"/> -->
+		<template name="lagrangian_particle_tracking"/>
 		<option name="config_ocean_run_mode">'forward'</option>
 		<option name="config_dt">'002:46:40'</option>
 		<option name="config_time_integrator">'RK4'</option>
@@ -31,9 +31,6 @@
 		<option name="config_disable_vel_all_tend">.true.</option>
 		<option name="config_disable_tr_all_tend">.true.</option>
 		<option name="config_use_active_tracers">.false.</option>
-		<option name="config_AM_lagrPartTrack_enable">.true.</option>
-		<option name="config_AM_lagrPartTrack_compute_on_startup">.false.</option>
-		<option name="config_AM_lagrPartTrack_write_on_startup">.true.</option>
 		<option name="config_AM_lagrPartTrack_reset_criteria">'particle_time'</option>
 		<option name="config_AM_timeSeriesStats_output_stream">'none'</option>
 		<option name="config_AM_timeSeriesStats_restart_stream">'none'</option>
@@ -74,8 +71,8 @@
 		</stream>
 	</streams>
 
-	<!--  Currently, this will only run with 16 processors because
-	      the particle file is decomposed with 16 processors and we
+	<!--  Currently, this will only run with 6 processors because
+	      the particle file is decomposed with 6 processors and we
 	      currently do not have an online way of redecomposing particles.
 	      Therefore, a graph file is also used because different versions
 	      of metis produce different graph files and the particle file is
