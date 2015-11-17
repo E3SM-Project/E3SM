@@ -303,6 +303,10 @@ module clm_varctl
   !
   logical, private :: clmvarctl_isset = .false.
  !-----------------------------------------------------------------------
+ 
+ !-----------------------------------------------------------------------
+ ! nutrient competition (nu_com), default is relative demand approach (RD)
+ character(len=15), public :: nu_com = 'RD'
 
   !-----------------------------------------------------------------------
   ! bgc & pflotran interface
