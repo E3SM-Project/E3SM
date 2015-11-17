@@ -1,5 +1,5 @@
 <driver_script name="642_cell_spherical_test.py">
 	<case name="test">
-		<step executable="./run.py"/>
+		<step executable="./run.py" pre_message=" ** Running test/run.py **" post_message=" ** Done running test/run.py **" quiet="true"/>
 	</case>
 </driver_script>
