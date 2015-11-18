@@ -976,6 +976,7 @@ contains
     call RtmHistFldsSet()
 
     if (masterproc) write(iulog,*) subname //':: Success '
+    call t_stopf('rtmi_grid')
 
   end subroutine Rtmini
   !=======================================================================
