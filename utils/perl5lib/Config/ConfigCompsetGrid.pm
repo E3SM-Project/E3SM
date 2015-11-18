@@ -72,12 +72,9 @@ sub getCompsetLongname
 		
 		$logger->logdie ("ERROR create_newcase: more than one match for compset alias $input_compset in file $file ");
 	    } else {
-		my @name_nodes = $alias_nodes[0]->childNodes();
+		my @name_nodes = $alias_nodes[0]->findnodes(".//lname");
 		foreach my $name_node (@name_nodes) {
-		    my $debug = $name_node->nodeName();
-		    if ($name_node->nodeName() eq 'lname') {
-			$compset_longname = $name_node->textContent();
-		    }		    
+		    $compset_longname = $name_node->textContent();
 		}
 	    }
 	    $pes_setby = $node_file->getAttribute('component');
@@ -93,12 +90,9 @@ sub getCompsetLongname
 	    if ($#lname_nodes > 0) {
 		die "ERROR create_newcase: more than one match for lname element in file $file \n";
 	    } else {
-		my @name_nodes = $lname_nodes[0]->childNodes();
+		my @name_nodes = $lname_nodes[0]->findnodes(".//lname");
 		foreach my $name_node (@name_nodes) {
-		    my $debug = $name_node->nodeName();
-		    if ($name_node->nodeName() eq 'lname') {
-			$compset_longname = $name_node->textContent();
-		    }		    
+		    $compset_longname = $name_node->textContent();
 		}
 	    }
 	    $pes_setby = $node_file->getAttribute('component');
@@ -194,7 +188,7 @@ sub getGridLongname
     }
     
     # set the compset grid alias and longname
-    foreach my $node ($grid_node->childNodes()) {
+    foreach my $node ($grid_node->findnodes(".//*")) {
 	my $name = $node->nodeName();
 	my $value = $node->textContent();
 	if ($name eq 'lname') {$grid_longname   = $node->textContent();}

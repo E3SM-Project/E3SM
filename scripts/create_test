@@ -865,11 +865,11 @@ sub ExpandXmlList
     foreach my $compset_elem (@compset_elems) {
 	my $compset_val = $compset_elem->getAttribute('name');
 
-	my @grid_elems = $compset_elem->childNodes();
+	my @grid_elems = $compset_elem->findnodes(".//grid");
 	foreach my $grid_elem (@grid_elems) {
 	    my $grid_val  = $grid_elem->getAttribute('name');
 
-	    my @test_elems = $grid_elem->childNodes();
+	    my @test_elems = $grid_elem->findnodes(".//test");
 	    foreach my $test_elem (@test_elems) {
 		my $test_val  = $test_elem->getAttribute('name');
 		if ($opts{'nlcompareonly'}) {
@@ -881,7 +881,7 @@ sub ExpandXmlList
 		    }
 		}
 
-		my @mach_elems = $test_elem->childNodes();
+		my @mach_elems = $test_elem->findnodes(".//machine");
 		foreach my $mach_elem (@mach_elems) {
 		    my $machine_val  = $mach_elem->textContent();
 		    my $testtype_val = $mach_elem->getAttribute('testtype');

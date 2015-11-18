@@ -52,7 +52,7 @@ sub setTests
     my @ids = keys %$cfg_ref;
     foreach my $id (sort @ids) {
 	foreach my $test (@tests) {
-	    foreach my $node ($test->childNodes()) {
+	    foreach my $node ($test->findnodes(".//*")) {
 		my $name = $node->nodeName();
 		if ( ! $cfg_ref->is_valid_name($name) ) { 
 		    $logger->logdie("set_test: invalid element $name in test $testname in file $testfile exiting"); 

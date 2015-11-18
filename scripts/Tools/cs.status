@@ -133,7 +133,7 @@ sub getTestStatus
 	my $testxml = $parser->parse_file($testlist);
 	@xfailnodes = $testxml->findnodes("//entry");
 	foreach my $xfailnode (@xfailnodes) {
-	    my @xfailchild_nodes = $xfailnode->childNodes();
+	    my @xfailchild_nodes = $xfailnode->findnodes(".//");
 	}
     }
 
