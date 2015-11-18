@@ -1,26 +1,19 @@
 #!/usr/bin/env python
 
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ElementTree
 import xml.dom
 import argparse
 import os, glob, re
+import urllib
 import urllib2
 import json
-testdburl = "https://csegweb.cgd.ucar.edu/testdb/cgi-bin/processXMLtest.cgi"
+testdburl = "https://csegwebdev.cgd.ucar.edu/testdb/cgi-bin/processXMLtest.cgi"
 
 class CimeTestStatus():
     def __init__(self, testname):
         self.testname = testname
         self.testcomparestatus = ''
         self.baselinecomparestatus = ''
-    #def setStatus(self, status):
-    #    self.overallstatus = status
-    #def getStatus(self):
-    #    return self.overallstatus
-    #def setOutput(self, output):
-    #    self.output = output
-    #def getOutput(self):
-    #    return self.output
     def testLine(self):
         return self.overallstatus + " " + self.testname
     def testStatus(self):
@@ -31,21 +24,40 @@ class CimeTestStatusEncoder(json.JSONEncoder):
         if isinstance(obj, CimeTestStatus):
             return {"testname" : obj.testname, "status" : obj.overallstatus, "output" : obj.output}
         return json.JSONEncoder.default(self, obj)
+# we need to write CDATA tags as part of the xml processing, 
+# unfortunately, ElementTree doesn't do CDATA
+def CDATA(text=None):
+    element = etree.Element('![CDATA[')
+    element.text = text
+    return element
+
+ElementTree._original_serialize_xml = ElementTree._serialize_xml
+
+def _serialize_xml(write, elem, encoding, qnames, namespaces):
+    if elem.tag == '![CDATA[':
+        write("\n{}{}]]>\n".format(elem.tag, elem.text))
+        if elem.tail:
+            write(_escape_cdata(elem.tail))
+    else:
+        return ElementTree._original_serialize_xml(write, elem, qnames, namespaces, short_empty_elements, **kwargs)
+
+ElementTree._serialize_xml = ElementTree._serialize['xml'] = _serialize_xml
+
         
 #------------------------------------------------------------------------------
 # Read the test spec, get relevant test info 
 #------------------------------------------------------------------------------
-def getSuiteInfo(testid):
+def getSuiteInfo(args):
     
     
-    if testid: 
-        xmlfile = "testspec." + testid + ".xml"
+    if args.testid: 
+        xmlfile = "testspec." + args.testid + ".xml"
         print xmlfile
     else:
         for file in glob.glob("testspec*xml"):
             xmlfile = file
     
-    tree = ET.parse(xmlfile)
+    tree = ElementTree.parse(xmlfile)
     root = tree.getroot()
     suiteinfo = {}
     testlist = []
@@ -59,11 +71,16 @@ def getSuiteInfo(testid):
     for bltag in root.findall('baselinetag'):
         suiteinfo['baselinetag'] = bltag.text
     
-    for compiler in root.findall("./testlist/compiler"):
+    for compiler in root.findall("compiler"):
         suiteinfo['compiler'] = compiler.text
     
     for mpilib in root.findall('mpilib'):
         suiteinfo['mpilib'] = mpilib.text
+    
+    for mach in root.findall('mach'):
+        suiteinfo['machine'] = mach.text
+
+    print suiteinfo
     
     for t in root.findall('test'):
         testlist.append(t.attrib['case'])
@@ -127,7 +144,7 @@ def printStatus(cimetests):
         #print CimeTestStatusEncoder().encode(test)
         print test.testStatus()    
 
-def printExecutiveSummary(suiteinfo, cimetests):
+def printSummary(suiteinfo, cimetests):
 
     banner = '=' * 80
     
@@ -213,8 +230,32 @@ def printExecutiveSummary(suiteinfo, cimetests):
             print c.testLine()
         print banner
 
-def sendTestReport(suiteinfo, cimetests):
-    pass
+def cimetestjson(cimetest):
+    return cimetest.__dict__
+
+def sendTestReport(suiteinfo, cimetests, tagname):
+    #pass
+    #print suiteinfo
+    #print suiteinfo['machine']
+    #for test in cimetests:
+    #    print test.testLine()
+    #suiteinfo.pop("testlist",None)
+    
+    testrecord = ElementTree.Element('testrecord')
+    mach = ElementTree.SubElement(testrecord, 'mach', text=suiteinfo['machine'])
+    compiler = ElementTree.SubElement(testrecord, 'compiler', text=suiteinfo['compiler'])
+    mpilib = ElementTree.SubElement(testrecord, 'mpilib', text=suiteinfo['mpilib'])
+    testroot = ElementTree.SubElement(testrecord, 'testroot', text=suiteinfo['testroot'])
+    testtype = ElementTree.SubElement(testrecord, 'testtype', text=suiteinfo['testtype'])
+    baselinetag = ElementTree.SubElement(testrecord, 'baselinetag', text=suiteinfo['baselinetag'])
+    
+    #for test in cimetests:
+    #    testelement = ElementTree.Element('test',  {name : test.testname, overallstatus : test.overallstatus})
+    #    #outputelement
+    #    testrecord.append(testelement)
+
+    testrecord.dump()
+
 #------------------------------------------------------------------------------
 # main function
 #------------------------------------------------------------------------------
@@ -222,26 +263,32 @@ def main():
     parser = argparse.ArgumentParser(description='cs.status options')
 
     parser.add_argument('-i', '--testid', help='test id of the particular test suite', required=False)
-    parser.add_argument('-s', '--summary', action='store_true', help='Generate test summary', required=False)
-    parser.add_argument('-e', '--expectedfails', help='Specify expected fails file', required=False)
+    parser.add_argument('-s', '--summary', action='store_true', help='Generate summary', required=False)
+    #parser.add_argument('-t', '--sendtestreport', action='store_true', help='Send the test report to CSEG\'s Test Database', required=False)
+    #parser.add_argument('-a', '--tagname', help="The tag name under test" , required=False)
+    tgroup = parser.add_argument_group('testreport')
+    tgroup.add_argument('-t', '--testreport', action='store_true', help='Send the test report to CSEG\'s Test Database', required=False)
+    tgroup.add_argument( '--tagname', help='Send the test report to CSEG\'s Test Database', required=False)
+    tgroup.add_argument( '--testtype', help='Send the test report to CSEG\'s Test Database', required=False)
+    
     
     args = parser.parse_args()
     #print args
     
     # get info needed to process the test status
-    suiteinfo = getSuiteInfo(args.testid)
+    suiteinfo = getSuiteInfo(args)
     
     # Now check each test, get the status of each test. 
     cimetests = getTestStatuses(suiteinfo)
-    #print cimetests
     
-    if(args.executivesummary==True):
-        printExecutiveSummary(suiteinfo, cimetests)
+    if(args.summary==True):
+        printSummary(suiteinfo, cimetests)
+    elif(args.testreport==True):
+        tagname = args.tagname
+        print "tagname ", tagname
+        sendTestReport(suiteinfo, cimetests, tagname)
     else:
         printStatus(cimetests)
-    #print args
-    
-    #makeXMLReport(suiteinfo, cimetests)
     
 if __name__ == "__main__":
     main()
