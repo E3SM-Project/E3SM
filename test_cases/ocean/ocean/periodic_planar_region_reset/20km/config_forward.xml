@@ -4,16 +4,21 @@
 	<add_link source="../init_step2/mesh.nc" dest="mesh.nc"/>
 	<add_link source="../init_step2/graph.info" dest="graph.info"/>
 
-	<get_file dest_path="initial_condition_database" file_name="particle_full.151029.nc">
+	<get_file dest_path="initial_condition_database" file_name="particle_resets_region.151113.nc">
 		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
 	</get_file>
 
-	<get_file dest_path="mesh_database" file_name="graph.info.part.16.doubly_periodic_20km_1000x2000km_planar.151106">
+	<get_file dest_path="initial_condition_database" file_name="particle_regions.151113.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
+	</get_file>
+
+	<get_file dest_path="mesh_database" file_name="graph.info.part.6.doubly_periodic_20km_1000x2000km_planar.151113">
 		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/"/>
 	</get_file>
 
-	<add_link source_path="initial_condition_database" source="particle_full.151029.nc" dest="particle_full.nc"/>
-	<add_link source_path="mesh_database" source="graph.info.part.16.doubly_periodic_20km_1000x2000km_planar.151106" dest="graph.info.part.16"/>
+	<add_link source_path="initial_condition_database" source="particle_regions.151113.nc" dest="particle_regions.nc"/>
+	<add_link source_path="initial_condition_database" source="particle_resets_region.151113.nc" dest="particle_resets.nc"/>
+	<add_link source_path="mesh_database" source="graph.info.part.6.doubly_periodic_20km_1000x2000km_planar.151113" dest="graph.info.part.6"/>
 
 
 	<add_executable source="model" dest="ocean_model"/>
@@ -31,6 +36,10 @@
 		<option name="config_disable_vel_all_tend">.true.</option>
 		<option name="config_disable_tr_all_tend">.true.</option>
 		<option name="config_use_active_tracers">.false.</option>
+		<option name="config_AM_lagrPartTrack_reset_criteria">'region'</option>
+		<option name="config_AM_lagrPartTrack_region_stream">'lagrPartTrackRegions'</option>
+		<option name="config_AM_lagrPartTrack_reset_if_outside_region">.false.</option>
+		<option name="config_AM_lagrPartTrack_reset_if_inside_region">.true.</option>
 		<option name="config_AM_timeSeriesStats_output_stream">'none'</option>
 		<option name="config_AM_timeSeriesStats_restart_stream">'none'</option>
 	</namelist>
@@ -66,7 +75,13 @@
 			<attribute name="output_interval">0000_02:46:40</attribute>
 		</stream>
 		<stream name="lagrPartTrackInput">
-			<attribute name="filename_template">particle_full.nc</attribute>
+			<attribute name="filename_template">particle_resets.nc</attribute>
+		</stream>
+		<stream name="lagrPartTrackRegions">
+			<add_contents>
+				<member name="resetOutsideRegionMaskValue1" type="var"/>
+				<member name="resetInsideRegionMaskValue1" type="var"/>
+			</add_contents>
 		</stream>
 	</streams>
 
@@ -79,7 +94,7 @@
 	-->
 	<run_script name="run.py">
 		<step executable="mpirun">
-			<argument flag="-n">16</argument>
+			<argument flag="-n">6</argument>
 			<argument flag="">./ocean_model</argument>
 			<argument flag="-n">namelist.ocean</argument>
 			<argument flag="-s">streams.ocean</argument>
