@@ -689,7 +689,7 @@ is the value of that variable from the *previous* time level!
                      description="Basal mass balance on floating regions"
                 />
 		<var name="calvingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
-		     description="thickness of ice that calves (<= ice thickness)"
+		     description="thickness of ice that calves (less than or equal to ice thickness)"
 		/>
 		<var name="restoreThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
 		     description="thickness of ice added to restore the calving front to its initial position"
