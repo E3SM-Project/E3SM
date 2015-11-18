@@ -443,7 +443,7 @@ sub formattedOutput {
 	       }
 	       foreach my $element ('ntasks','nthrds','rootpe') {
 		   foreach my $node_ntasks ($pes_node->findnodes("./$element")) {
-		       my @child_nodes = $node_ntasks->childNodes();
+		       my @child_nodes = $node_ntasks->findnodes(".//");
 		       foreach my $child_node (@child_nodes) {
 			   my $name  = $child_node->nodeName();
 			   my $value = $child_node->textContent();

@@ -197,7 +197,7 @@ foreach my $id ( keys(%idlist) )
 	    # Do error checking for requested change
 	    my $value = $node->getAttribute('value');
 	    my($type, $valid_values, $is_list_value);
-	    foreach my $childnode ($node->childNodes()) 
+	    foreach my $childnode ($node->findnodes(".//*")) 
 	    {
 		if ($childnode->nodeName() eq 'type') {
 		    $type = $childnode->textContent();

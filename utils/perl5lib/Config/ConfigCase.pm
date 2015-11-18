@@ -110,14 +110,14 @@ sub add_config_variables
     foreach my $node (@nodes) 
     {
 	my $id = $node->getAttribute('id');
-	foreach my $define_node ($node->childNodes()) 
+	foreach my $define_node ($node->findnodes(".//*")) 
 	{
 	    my $node_name  = $define_node->nodeName();
 	    #
             # This creates a hash of values with attribute name and id as keys
             #
 	    if($node_name eq "values"){
-		foreach my $val_node ($define_node->childNodes()){
+		foreach my $val_node ($define_node->findnodes(".//*")){
                     if($val_node->hasAttributes()){		 
                     my @att = $val_node->attributes();
 		    foreach my $attstr (@att){

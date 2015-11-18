@@ -161,7 +161,7 @@ sub findModulesFromMachinesDir()
         # these modules will be loaded regardless of compiler, mpilib, or debug status.  
         if(!$mod->hasAttributes())
         {
-            my @modchildren = $mod->getChildNodes();
+            my @modchildren = $mod->findnodes(".//command");
             foreach my $child(@modchildren)
             {
             my $action = $child->getAttribute('name');  
@@ -219,7 +219,7 @@ sub findModulesFromMachinesDir()
             }
             if($attrmatch == 1)
             {
-                my @modchildren = $mod->getChildNodes();
+                my @modchildren = $mod->findnodes(".//command");
                 foreach my $child(@modchildren)
                 {
                     #my $action = $child->getName();
@@ -311,7 +311,7 @@ sub findModules()
         # then we want to load these modules no matter what.  
         if(!$mod->hasAttributes())
         {
-            my @modchildren = $mod->getChildNodes();
+            my @modchildren = $mod->findnodes(".//command");
             
             # for every child node we find, 
             # action is the module action to take, actupon is the module 
@@ -319,12 +319,12 @@ sub findModules()
             # module will be loaded. 
             foreach my $child(@modchildren)
             {
-            #my $action = $child->getName();
-            my $action = $child->getAttribute('name');
-            my $actupon = $child->textContent();
-            my $modhash = { action => $action, actupon => $actupon, seqnum => $seqnum} ;
-            push(@foundmodules, $modhash);
-            $seqnum += 1;
+		#my $action = $child->getName();
+		my $action = $child->getAttribute('name');
+		my $actupon = $child->textContent();
+		my $modhash = { action => $action, actupon => $actupon, seqnum => $seqnum} ;
+		push(@foundmodules, $modhash);
+		$seqnum += 1;
             } 
         }
         else
@@ -370,7 +370,7 @@ sub findModules()
             }
             if($attrmatch == 1)
             {
-                my @modchildren = $mod->getChildNodes();
+                my @modchildren = $mod->findnodes(".//command");
                 foreach my $child(@modchildren)
                 {
                     #my $action = $child->getName();
@@ -550,7 +550,7 @@ sub loadNoneModules()
     {
         if(! $envnode->hasAttributes())
         {
-            my @envs = $envnode->childNodes();
+            my @envs = $envnode->findnodes(".//env");
             foreach my $e(@envs)
             {
                 my $name = $e->getAttribute('name');    
@@ -600,7 +600,7 @@ sub loadNoneModules()
              }
              if($attrMatch)
              {
-                  my @envs = $envnode->childNodes();
+                  my @envs = $envnode->findnodes(".//env");
                   foreach my $e(@envs)
                   {
                       my $name = $e->getAttribute('name');
@@ -682,7 +682,7 @@ sub findEnvVars()
     {
         if(! $enode->hasAttributes())
         {
-            my @envchildnodes = $enode->getChildNodes();
+            my @envchildnodes = $enode->findnodes(".//env");
             foreach my $e(@envchildnodes)
             {
                 my $name = $e->getAttribute('name');        
@@ -724,7 +724,7 @@ sub findEnvVars()
             }
             if($attrMatch)
             {
-                my @envs = $enode->getChildNodes();
+                my @envs = $enode->findnodes(".//env");
                 foreach my $e(@envs)
                 {
                     my $name = $e->getAttribute('name');
@@ -873,7 +873,7 @@ START
     {
         if(!$mod->hasAttributes())
         {
-            my @modchildren = $mod->getChildNodes();
+            my @modchildren = $mod->findnodes(".//command");
             foreach my $child(@modchildren)
             {
                 my $action = $child->getAttribute('name');
@@ -904,7 +904,7 @@ START
             }
             $csh .= " ) then\n";
 
-            my @modchildren = $mod->getChildNodes();
+            my @modchildren = $mod->findnodes(".//command");
             foreach my $child(@modchildren)
             {
                 my $action = $child->getAttribute('name');
@@ -927,7 +927,7 @@ START
     {
         if(! $envnode->hasAttributes())
         {
-            my @envs = $envnode->childNodes();
+            my @envs = $envnode->findnodes(".//env");
             foreach my $e(@envs)
             {
                 my $name = $e->getAttribute('name');
@@ -959,7 +959,7 @@ START
             }
             $csh .= " ) then\n";
             
-            my @envs = $envnode->childNodes();
+            my @envs = $envnode->findnodes(".//env");
             foreach my $e(@envs)
             {
                 my $name = $e->getAttribute('name');
@@ -1054,7 +1054,7 @@ sub getShModuleCode()
         }
     }
 
-    my $sh =<<"START";
+    my $sh ="
 #!/usr/bin/env sh -f 
 #===============================================================================
 # Automatically generated module settings for $self->{machine}
@@ -1062,15 +1062,15 @@ sub getShModuleCode()
 # in your CASEROOT. This file is overwritten every time modules are loaded!
 #===============================================================================
 
-.  $self->{shinitpath}
-START
+    .  $self->{shinitpath}\n";
+
    my @attrKeys = keys %modattrvalues;
    if($#attrKeys >= 0) {
 
-       $sh .=<<"START";
+       $sh .="
 if [ -x ./xmlquery  ]
-then 
-START
+then \n";
+
       foreach my $attrKey(@attrKeys)
       {
         $sh .="\t$attrKey=`./xmlquery $attrKey -value`\n";
@@ -1094,7 +1094,7 @@ START
     {
         if(! $mod->hasAttributes())
         {
-            my @modchildren = $mod->getChildNodes();
+            my @modchildren = $mod->findnodes(".//command");
             foreach my $child(@modchildren)
             {
                 #my $action = $child->getName();
@@ -1128,7 +1128,7 @@ START
              $sh .= " ]\n";
              $sh .= "then\n";
              
-             my @modchildren = $mod->getChildNodes();
+             my @modchildren = $mod->findnodes("./command");
              foreach my $child(@modchildren)
              {
                  #my $action = $child->getName();
@@ -1152,7 +1152,7 @@ START
     {
         if(! $envnode->hasAttributes())
         {
-            my @envs = $envnode->childNodes();
+            my @envs = $envnode->findnodes(".//env");
             foreach my $e(@envs)
             {
                 my $name = $e->getAttribute('name');
@@ -1186,7 +1186,7 @@ START
             $sh .= " ]\n";
             $sh .= "then\n";
 
-            my @envs = $envnode->childNodes();
+            my @envs = $envnode->findnodes(".//env");
             foreach my $e(@envs)
             {
                 my $name = $e->getAttribute('name');

@@ -498,10 +498,10 @@
 	<command name="use">/global/project/projectdirs/ccsm1/modulefiles/cori</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" >
-	<command name="load">esmf/6.3.0rp1-defio-intel2016-mpi-0</command>
+	<command name="load">esmf/6.3.0rp1-defio-intel2016-mpi-O</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" >
-        <command name="load">esmf/6.3.0rp1-defio-intel2016-mpiuni-0</command>
+        <command name="load">esmf/6.3.0rp1-defio-intel2016-mpiuni-O</command>
       </modules>
 
       <modules compiler="cray">
