@@ -7,7 +7,7 @@
 					description="Timestamp determining how often analysis member computation should be performed."
 					possible_values="'DDDD_HH:MM:SS', 'output', 'dt'"
 		/>
-		<nml_option name="config_AM_lagrPartTrack_compute_on_startup" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_lagrPartTrack_compute_on_startup" type="logical" default_value=".false." units="unitless"
 					description="Logical flag determining if an analysis member computation occurs on start-up."
 					possible_values=".true. or .false."
 		/>
@@ -31,10 +31,30 @@
 					description="Number of times to apply filtering operation."
 					possible_values="0, 1, 2, ..."
 		/>
+		<nml_option name="config_AM_lagrPartTrack_reset_criteria" type="character" default_value="none" units="unitless"
+					description="Specify whether particles should not be reset ('none'), be reset on a timer for each particle ('particle_time'), be reset on config_AM_lagrPartTrack_reset_time_globally value ('global_time'), be reset based on regions ('region'), or be reset for all conditions ('all')."
+					possible_values="'none','particle_time','global_time', 'region','all'"
+		/>
+		<nml_option name="config_AM_lagrPartTrack_reset_global_timestamp" type="character" default_value="0000_00:00:00" units="unitless"
+					description="Specify reset global timestamp interval."
+					possible_values="timestamps of form 0000_00:00:00"
+		/>
+		<nml_option name="config_AM_lagrPartTrack_region_stream" type="character" default_value="lagrPartTrackRegions" units="unitless"
+					description="Name of the stream that has region arrays resetOutsideRegionMaskValue1 and resetInsideRegionMaskValue1 for region-based particle resets."
+					possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_lagrPartTrack_reset_if_outside_region" type="logical" default_value=".false." units="unitless"
+					description="Specify whether particles should be reset when they leave the resetOutsideRegionMaskValue1 mask."
+					possible_values=".false. or .true."
+		/>
+		<nml_option name="config_AM_lagrPartTrack_reset_if_inside_region" type="logical" default_value=".false." units="unitless"
+					description="Specify whether particles should be reset when they enter the resetInsideRegionMaskValue1 mask."
+					possible_values=".false. or .true."
+		/>
 	</nml_record>
 
 	<dims>
-		<dim name="nParticles" units="unitless" decomposition="uniform" 
+		<dim name="nParticles" units="unitless" decomposition="uniform"
 			 description="The total number of particles in the simlulation."
 		/>
 		<dim name="nBuoyancySurfaces" definition="1" units="unitless"
@@ -64,6 +84,13 @@
 			<var name="yParticle"/>
 			<var name="zParticle"/>
 			<var name="zLevelParticle"/>
+			<var name="xParticleReset"/>
+			<var name="yParticleReset"/>
+			<var name="zParticleReset"/>
+			<var name="zLevelParticleReset"/>
+			<var name="timeSinceReset"/>
+			<var name="resetTime"/>
+			<var name="numTimesReset"/>
 			<var name="buoyancyParticle"/>
 			<var name="vertexReconstMethod"/>
 			<var name="horizontalTreatment"/>
@@ -111,6 +138,15 @@
 			<var name="yParticle"/>
 			<var name="zParticle"/>
 			<var name="zLevelParticle"/>
+			<var name="xParticleReset"/>
+			<var name="yParticleReset"/>
+			<var name="zParticleReset"/>
+			<var name="zLevelParticleReset"/>
+			<var name="currentBlockReset"/>
+			<var name="currentCellReset"/>
+			<var name="timeSinceReset"/>
+			<var name="resetTime"/>
+			<var name="numTimesReset"/>
 			<var name="buoyancyParticle"/>
 			<var name="vertexReconstMethod"/>
 			<var name="horizontalTreatment"/>
@@ -141,6 +177,13 @@
 			<var name="yParticle"/>
 			<var name="zParticle"/>
 			<var name="zLevelParticle"/>
+			<var name="xParticleReset"/>
+			<var name="yParticleReset"/>
+			<var name="zParticleReset"/>
+			<var name="zLevelParticleReset"/>
+			<var name="currentBlockReset"/>
+			<var name="currentCellReset"/>
+			<var name="resetTime"/>
 			<var name="buoyancyParticle"/>
 			<var name="vertexReconstMethod"/>
 			<var name="horizontalTreatment"/>
@@ -151,8 +194,32 @@
 			<var name="transfered"/>
 			<var name="buoyancySurfaceValues"/>
 		</stream>
+
+		<stream name="lagrPartTrackRegions" type="input"
+						runtime_format="single_file"
+						mode="forward;analysis"
+						filename_template="analysis_members/lagrangianParticleTrackingRegions.nc"
+						input_interval="initial_only"
+						packages="lagrPartTrackAMPKG"
+						immutable="false">
+			<var name="resetOutsideRegionMaskValue1"/>
+			<var name="resetInsideRegionMaskValue1"/>
+		</stream>
 	</streams>
 
+	<var_struct name="lagrPartTrackRegions" time_levs="1" packages="lagrPartTrackAMPKG">
+		<var name="resetOutsideRegionMaskValue1" type="integer" dimensions="nCells" units="Unitless"
+			 description="Mask for particle resets that leave this particular region (specified by 1)" default="0"
+		/>
+		<var name="resetInsideRegionMaskValue1" type="integer" dimensions="nCells" units="Unitless"
+			 description="Mask for particle resets that enter this particular region (specified by 1)" default="0"
+		/>
+	</var_struct>
+	<var_struct name="lagrPartTrackScalars" time_levs="1" packages="lagrPartTrackAMPKG">
+		<var name="globalResetTimeValue" type="real" dimensions="Time" units="s"
+			 description="Time in s for a global reset."
+		/>
+	</var_struct>
 	<var_struct name="lagrPartTrackFields" time_levs="2" packages="lagrPartTrackAMPKG">
 		<var name="uVertexVelocity" type="real" dimensions="nVertLevels nVertices Time" units="m s^{-1}"
 			 description="recostructed u horizontal velocity at vertices"
@@ -220,6 +287,33 @@
 		/>
 		<var name="zLevelParticle" type="real" dimensions="nParticles Time" units="m"
 			 description="z-level for vertical elevation of particle position"
+		/>
+		<var name="xParticleReset" type="real" dimensions="nParticles" units="m"
+			 description="reset x location of horizontal particle position"
+		/>
+		<var name="yParticleReset" type="real" dimensions="nParticles" units="m"
+			 description="reset y location of horizontal particle position"
+		/>
+		<var name="zParticleReset" type="real" dimensions="nParticles" units="m"
+			 description="reset z location of horizontal particle position"
+		/>
+		<var name="zLevelParticleReset" type="real" dimensions="nParticles" units="m"
+			 description="reset z-level for vertical elevation of particle position"
+		/>
+		<var name="currentBlockReset" type="integer" dimensions="nParticles" units="unitless"
+			 description="reset block for a particle"
+		/>
+		<var name="currentCellReset" type="integer" dimensions="nParticles" units="unitless"
+			 description="reset cell for a particle"
+		/>
+		<var name="timeSinceReset" type="real" dimensions="nParticles" units="m"
+			 description="time (in seconds) since last particle reset" default_value="0.0"
+		/>
+		<var name="resetTime" type="integer" dimensions="nParticles" units="m"
+			 description="reset timer (in seconds) for particles"
+		/>
+		<var name="numTimesReset" type ="integer" dimensions="nParticles Time" units="unitless"
+			 description="flag to specify how many times the particle was reset" default_value="0"
 		/>
 		<var name="vertexReconstMethod" type="integer" dimensions="nParticles Time", units="unitless"
 			 description="type of vertex reconstruction method, with possible_values='RBFlinear(1)' as ENUMs"

@@ -13,11 +13,12 @@ MEMBERS = mpas_ocn_global_stats.o \
           mpas_ocn_zonal_mean.o \
           mpas_ocn_lagrangian_particle_tracking_interpolations.o \
           mpas_ocn_particle_list.o \
+          mpas_ocn_lagrangian_particle_tracking_reset.o \
           mpas_ocn_lagrangian_particle_tracking.o \
           mpas_ocn_eliassen_palm.o \
           mpas_ocn_time_filters.o \
           mpas_ocn_mixed_layer_depths.o \
-          mpas_ocn_time_series_stats.o 
+          mpas_ocn_time_series_stats.o
 
 all: $(OBJS)
 
@@ -27,7 +28,9 @@ mpas_ocn_okubo_weiss.o: mpas_ocn_okubo_weiss_eigenvalues.o
 
 mpas_ocn_particle_list.o:
 
-mpas_ocn_lagrangian_particle_tracking.o: mpas_ocn_particle_list.o mpas_ocn_lagrangian_particle_tracking_interpolations.o 
+mpas_ocn_lagrangian_particle_tracking_reset.o:
+
+mpas_ocn_lagrangian_particle_tracking.o: mpas_ocn_particle_list.o mpas_ocn_lagrangian_particle_tracking_interpolations.o mpas_ocn_lagrangian_particle_tracking_reset.o
 
 clean:
 	$(RM) *.o *.i *.mod *.f90
@@ -36,9 +39,9 @@ clean:
 	$(RM) $@ $*.mod
 ifeq "$(GEN_F90)" "true"
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.f90
-	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) 
+	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES)
 else
-	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) 
+	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES)
 endif
 
 .c.o:

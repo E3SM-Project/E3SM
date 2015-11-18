@@ -33,7 +33,7 @@ module ocn_particle_list
   ! blanket statments to restrict implicit module's scope
   implicit none
   private
-  
+
   ! mpi defines
 #ifdef _MPI
    integer, parameter :: MPI_INTEGERKIND = MPI_INTEGER
@@ -105,11 +105,13 @@ module ocn_particle_list
   ! define publically accessible subroutines, functions, interfaces
   public :: mpas_particle_list_build_and_assign_particle_list
   public :: mpas_particle_list_destroy_particle_list, mpas_particle_list_remove_particles_not_on_current_block
-  public :: mpas_particle_list_build_computation_halos, mpas_particle_list_build_io_halos
-  public :: mpas_particle_list_update_computational_halos, mpas_particle_list_update_io_halos
+  public :: mpas_particle_list_build_computation_halos, mpas_particle_list_build_halos
+  public :: mpas_particle_list_update_particle_block
+  public :: mpas_particle_list_update_halos_start, mpas_particle_list_update_halos_end
   public :: mpas_particle_list_transfer_particles_from_block_to_named_block
   public :: mpas_particle_list_write_halo_data, mpas_particle_list_write_nonhalo_data
   public :: mpas_particle_list_test_neighscalc, mpas_particle_list_test_numparticles_to_neighprocs, mpas_particle_list_test_num_current_particlelist
+  public :: mpas_particle_list_self_union_halo_lists
 
   ! subroutine / function definition
 contains
@@ -337,10 +339,10 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
 !> \author  Phillip Wolfram
 !> \date    07/02/2014
 !> \details
-!>  This routine builds g_ProcNeighs which is the neighboring processor
+!>  This routine builds g_compProcNeighs which is the neighboring processor
 !>  list needed to process MPI communication, assuming a list of
 !>  particlelists is built up corresponding to the processors in this
-!>  array.  The end result is that g_ProcNeighs is populated.
+!>  array.  The end result is that g_compProcNeighs is populated.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_particle_list_build_computation_halos(domain, err, procNeighs) !{{{
@@ -397,7 +399,7 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
 
 !***********************************************************************
 !
-!  routine mpas_particle_list_build_io_halos
+!  routine mpas_particle_list_build_halos
 !
 !> \brief   Build the IO halo information to transmit particles from their
 !>          initial host IO processor to the appropriate currentBlock
@@ -410,7 +412,7 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
 !>  processor.  The end result is that g_ioProcNeighs is populated.
 !
 !-----------------------------------------------------------------------
-    subroutine mpas_particle_list_build_io_halos(domain, err, namedBlock, ioProcNeighs) !{{{
+    subroutine mpas_particle_list_build_halos(domain, err, namedBlock, ioProcNeighs) !{{{
       !{{{ initialization
       implicit none
 
@@ -531,24 +533,24 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
 #endif
       deallocate(tempInt)
 
-    end subroutine mpas_particle_list_build_io_halos !}}}
+    end subroutine mpas_particle_list_build_halos !}}}
 
 !***********************************************************************
 !
-!  routine  mpas_particle_list_update_io_halos
+!  routine  mpas_particle_list_update_halos_end
 !
-!> \brief   Updates halo processor for io communication, noting that
+!> \brief   Updates halo processors for communication, noting that
 !>          the receiving processors must be informed of changes
 !> \author  Phillip Wolfram
 !> \date    07/08/2014
 !> \details
 !>  This routine transmits a logical list of processors that will
-!>  transmit data for each ioProc.  On the ioProcs, these lists must
-!>  be aggregated to build out the full list of processors from
-!>  which data will be received.
+!>  transmit data for each compProc or ioProc.  On the compProcs or
+!>  ioProcs, these lists must be aggregated to build out the full list
+!>  of processors from which data will be received.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_particle_list_update_io_halos(domain, err, ioProcNeighs, ioProcSendList, ioProcRecvList) !{{{
+   subroutine mpas_particle_list_update_halos_end(domain, err, destinationName, sendProcNeighs, sendProcSendList, sendProcRecvList) !{{{
       implicit none
       !-----------------------------------------------------------------
       !
@@ -556,8 +558,10 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
       !
       !-----------------------------------------------------------------
 
-      logical, dimension(:,:), intent(in) :: ioProcRecvList !< x: ioProcNeighs for send. y: each receiving processors on x denoted by true
-      logical, dimension(:), pointer, intent(inout) :: ioProcSendList   !< location of true indicates processors to send data to
+      logical, dimension(:,:), intent(in) :: sendProcRecvList !< x: sendProcNeighs for send. y: each receiving processors on x denoted by true
+      ! 'ioBlock' and 'currentBlock' are options for destinationName
+      character(len=*), intent(in) :: destinationName
+      logical, dimension(:), pointer, intent(inout) :: sendProcSendList   !< location of true indicates processors to send data to
       type (domain_type), intent(in) :: domain
 
       !-----------------------------------------------------------------
@@ -566,7 +570,7 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
       !
       !-----------------------------------------------------------------
 
-      integer, dimension(:), pointer, intent(inout)   :: ioProcNeighs !< list of io halo processors
+      integer, dimension(:), pointer, intent(inout)   :: sendProcNeighs !< list of io halo processors
 
       !-----------------------------------------------------------------
       !
@@ -582,8 +586,9 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
       !
       !-----------------------------------------------------------------
 
-      integer :: i, nioProcNeighs, nProcs
-      logical, dimension(:), pointer :: completeList, recvList
+      integer :: i, nsendProcNeighs, nProcs
+      logical, dimension(:), pointer :: completeList
+      logical, dimension(:,:), pointer :: recvList
       integer, dimension(:), pointer :: intArray
       integer, dimension(:), pointer :: sendRequestID, recvRequestID
       integer :: mpi_ierr
@@ -594,72 +599,70 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
       ! compute send list now that all particles reside on correct block (processor) 'currentBlock'
       ! didn't show up with serial IO because all computational processors sent data to proc 0
       ! note that this could be missing communication where before transfer particle on proc A
-      ! has ioProc of A and is sent to B (must have previously kept a record that B is in A's halo list
-      ! note, may be slightly redundant because we could update ioProcSendList once particles are transfered
-      call compute_additional_particle_send_list(domain, ioProcSendList)
+      ! has sendProc of A and is sent to B (must have previously kept a record that B is in A's halo list
+      ! note, may be slightly redundant because we could update sendProcSendList once particles are transfered
+      call compute_additional_particle_send_list(domain, destinationName, sendProcSendList)
 
 #ifdef MPAS_DEBUG
       ! need to update IO processors as to the change also so that they know where to get data from!!!
-      ! should uncomment for testing when multiple ioProcs are utilized (parallel IO)
-      write(stderrUnit,*) 'ioProcSendList before = ', ioProcSendList
-      write(stderrUnit,*) 'ioProcRecvList before = ', ioProcRecvList
-      write(stderrUnit,*) 'ioProcNeighs before = ', ioProcNeighs
+      ! should uncomment for testing when multiple sendProcs are utilized (parallel IO)
+      write(stderrUnit,*) 'destinationName= ', destinationName
+      write(stderrUnit,*) 'sendProcSendList before = ', sendProcSendList
+      write(stderrUnit,*) 'sendProcRecvList before = ', sendProcRecvList
+      write(stderrUnit,*) 'sendProcNeighs before = ', sendProcNeighs
 #endif
 
       ! proceed to update the halo
       nProcs = domain % dminfo % nprocs
-      nioProcNeighs = size(ioProcNeighs)
-      allocate(completeList(nProcs), recvList(nProcs))
-      allocate(sendRequestID(nioProcNeighs), recvRequestID(nioProcNeighs))
+      nsendProcNeighs = size(sendProcNeighs)
+      allocate(completeList(nProcs), recvList(nProcs,nsendProcNeighs))
+      allocate(sendRequestID(nsendProcNeighs), recvRequestID(nsendProcNeighs))
 
       completeList = .False.
       recvList = .False.
-      ! for each ioProc, send logical array information
-      do i = 1, nioProcNeighs
+      ! for each sendProc, send logical array information
+      do i = 1, nsendProcNeighs
 #ifdef _MPI
-        call MPI_ISend(ioProcRecvList(:,i), nProcs, MPI_LOGICAL, ioProcNeighs(i), domain % dminfo % my_proc_id, &
+        call MPI_ISend(sendProcRecvList(:,i), nProcs, MPI_LOGICAL, sendProcNeighs(i), domain % dminfo % my_proc_id, &
           domain % dminfo % comm, sendRequestID(i), mpi_ierr)
 #endif
 #ifdef MPAS_DEBUG
-        write(stderrUnit,*) 'ioProcNeigh= ', ioProcNeighs(i)
-        write(stderrUnit,*) 'send data = ', ioProcRecvList(:,i)
+        write(stderrUnit,*) 'sendProcNeigh= ', sendProcNeighs(i)
+        write(stderrUnit,*) 'send data = ', sendProcRecvList(i,:)
+#endif
+#ifdef _MPI
+        call MPI_IRecv(recvList(:,i), nProcs, MPI_LOGICAL, sendProcNeighs(i), sendProcNeighs(i), &
+          domain % dminfo % comm, recvRequestID(i), mpi_ierr)
 #endif
       end do
 
-      ! for each ioProc, listen for logical array
-      do i = 1, nioProcNeighs
-        ! send the data
 #ifdef _MPI
-        call MPI_IRecv(recvList, nProcs, MPI_LOGICAL, ioProcNeighs(i), ioProcNeighs(i), &
-          domain % dminfo % comm, recvRequestID(i), mpi_ierr)
+      ! wait until the data is in the buffer
+      call MPI_WaitAll(nsendProcNeighs,recvRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
 #endif
 
-        ! wait until the data is in the buffer
-#ifdef _MPI
-        call MPI_Wait(recvRequestID(i), MPI_STATUS_IGNORE, mpi_ierr)
-#endif
-
+      do i = 1, nsendProcNeighs
         ! aggregate results after wait, making sure that we have the most
-        ! comprehensive list of ioProcs for receiving
+        ! comprehensive list of sendProcs for receiving
 #ifdef MPAS_DEBUG
-        write(stderrUnit,*) 'ioProcNeigh= ', ioProcNeighs(i)
-        write(stderrUnit,*) 'recvList before = ', recvList
+        write(stderrUnit,*) 'sendProcNeigh= ', sendProcNeighs(i)
+        write(stderrUnit,*) 'recvList before = ', recvList(:,i)
         write(stderrUnit,*) 'completeList before = ', completeList
 #endif
-        completeList = completeList .or. recvList
+        completeList = completeList .or. recvList(:,i)
 #ifdef MPAS_DEBUG
-        write(stderrUnit,*) 'recvList after = ', recvList
+        write(stderrUnit,*) 'recvList after = ', recvList(:,i)
         write(stderrUnit,*) 'completeList after = ', completeList
 #endif
       end do
 
       ! wait to make sure (just in case) that all sends have completed
 #ifdef _MPI
-      call MPI_WaitAll(nioProcNeighs, sendRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
+      call MPI_WaitAll(nsendProcNeighs, sendRequestID, MPI_STATUSES_IGNORE, mpi_ierr)
 #endif
 
       ! "add" receiving and sending lists into a complete list
-      completeList = completeList .or. ioProcSendList
+      completeList = completeList .or. sendProcSendList
       !write(stderrUnit,*) 'completeList = ', completeList
 
       ! convert complete list into a unique list of processor numbers
@@ -677,20 +680,20 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
       end do
 
       ! now get the desired integer halo list
-      deallocate(ioProcNeighs)
-      call uniqueIntegerList(intArray, ioProcNeighs)
-      call removeValueFromIntList(ioProcNeighs, domain % dminfo % my_proc_id)
+      deallocate(sendProcNeighs)
+      call uniqueIntegerList(intArray, sendProcNeighs)
+      call removeValueFromIntList(sendProcNeighs, domain % dminfo % my_proc_id)
 
       deallocate(intArray, completeList, sendRequestID, recvRequestID)
 #ifdef MPAS_DEBUG
       ! need to update IO processors as to the change also so that they know where to get data from!!!
-      ! should uncomment for testing when multiple ioProcs are utilized (parallel IO)
-      write(stderrUnit,*) 'ioProcSendList after = ', ioProcSendList
-      write(stderrUnit,*) 'ioProcRecvList after = ', ioProcRecvList
-      write(stderrUnit,*) 'ioProcNeighs after = ', ioProcNeighs
+      ! should uncomment for testing when multiple sendProcs are utilized (parallel IO)
+      write(stderrUnit,*) 'sendProcSendList after = ', sendProcSendList
+      write(stderrUnit,*) 'sendProcRecvList after = ', sendProcRecvList
+      write(stderrUnit,*) 'sendProcNeighs after = ', sendProcNeighs
 #endif
 
-   end subroutine mpas_particle_list_update_io_halos !}}}
+   end subroutine mpas_particle_list_update_halos_end !}}}
 
 !***********************************************************************
 !
@@ -770,7 +773,7 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
      ! 1. Make temporary particle lists for transfers based on currentBock of cells in halo.
      !    These lists live on each block and correspond to other
      !    blocks that the list must be moved to.  The particle must end up on its currentBlock specified.
-     ! convention on particles lists is that g_ProcNeighs specifies the processor neighbor numbers
+     ! convention on particles lists is that g_compProcNeighs specifies the processor neighbor numbers
      ! corresponding to each index in the particlelists pointer array.  Should use linked-list
      ! because processor neighbors are typically going to be somewhere less than 10
      ! (perfect partitioning of plane gives hexagons with 6 cell neighbors, for instance).
@@ -2424,6 +2427,60 @@ end subroutine empty_list_particlelists!}}}
 
    end subroutine removeValueFromIntList
 
+!***********************************************************************
+!
+!  routine mpas_particle_list_self_union_halo_lists(self, list)
+!
+!> \brief   Taken union of self and list and store in self
+!> \author  Phillip J. Wolfram
+!> \date    10/29/2015
+!> \details
+!>  This routine computes the unique entries in an array using a
+!>  linked list for dynamic memory storage
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_particle_list_self_union_halo_lists(self, list, nprocs, procid) !{{{
+     implicit none
+     integer, dimension(:), pointer, intent(inout) :: self
+     integer, dimension(:), pointer, intent(in) :: list
+     integer, intent(in) :: nprocs
+     integer, intent(in) :: procid
+
+     logical, dimension(:), pointer :: theunion
+     integer :: i, thesum
+
+     allocate(theunion(nprocs))
+     theunion = .False.
+
+     ! use Fortran integer indexing
+     theunion(self+1) = .True.
+     theunion(list+1) = .True.
+
+     ! compute number of processors in halo
+     thesum = 0
+     do i=1,nprocs
+       if (theunion(i)) then
+         thesum = thesum + 1
+       end if
+     end do
+
+     ! rebuild up self
+     deallocate(self)
+     allocate(self(thesum))
+
+     ! store processor number in new list
+     thesum = 0
+     do i=1,nprocs
+       if (theunion(i)) then
+         thesum = thesum + 1
+         self(thesum) = i-1
+       end if
+     end do
+
+     deallocate(theunion)
+     call removeValueFromIntList(self, procid)
+
+   end subroutine mpas_particle_list_self_union_halo_lists !}}}
 
 !***********************************************************************
 !
@@ -2869,19 +2926,21 @@ write(stderrUnit,*) 'numProcs =', numProcs
 #endif
      do i=1,numProcs
 #ifdef MPAS_DEBUG
+       write(stderrUnit,*) 'receiving data i=',i, ' procNeighs(i)=', procNeighs(i)
+#endif
+#ifdef _MPI
+         call MPI_IRecv(nPartRecv(i), 1, MPI_INTEGERKIND, procNeighs(i), procNeighs(i), &
+           domain % dminfo % comm, requestID(i), mpi_ierr)
+#endif
+     end do
+     do i=1,numProcs
+#ifdef MPAS_DEBUG
        write(stderrUnit,*) 'procNeighs=', procNeighs
        write(stderrUnit,*) 'sending data i=',i, ' procNeighs(i)=', procNeighs(i), ' nPartSend(i)=', nPartSend(i)
 #endif
 #ifdef _MPI
          call MPI_ISend(nPartSend(i), 1, MPI_INTEGERKIND, procNeighs(i), domain % dminfo % my_proc_id, &
            domain % dminfo % comm, requestID(numProcs + i), mpi_ierr)
-#endif
-#ifdef MPAS_DEBUG
-       write(stderrUnit,*) 'receiving data i=',i, ' procNeighs(i)=', procNeighs(i)
-#endif
-#ifdef _MPI
-         call MPI_IRecv(nPartRecv(i), 1, MPI_INTEGERKIND, procNeighs(i), procNeighs(i), &
-           domain % dminfo % comm, requestID(i), mpi_ierr)
 #endif
      end do
 #ifdef MPAS_DEBUG
@@ -2912,16 +2971,17 @@ write(stderrUnit,*) 'after 2nd barrier'
 !> \details
 !>  Compute send list for all particles residing on correct block 'currentBlock'
 !-----------------------------------------------------------------------
-   subroutine compute_additional_particle_send_list(domain, ioProcSendList) !{{{
+   subroutine compute_additional_particle_send_list(domain, destinationName, ioProcSendList) !{{{
      implicit none
      type (domain_type), intent(in) :: domain
+     character(len=*), intent(in) :: destinationName
      logical, dimension(:), pointer, intent(inout) :: ioProcSendList
 
      ! local variables
      type (block_type), pointer :: block
      type (mpas_particle_list_type), pointer :: particlelist
      type (mpas_particle_type), pointer :: particle
-     integer, pointer :: ioBlock
+     integer, pointer :: sendBlock
      integer :: ioProc
 
      block => domain % blocklist
@@ -2929,8 +2989,8 @@ write(stderrUnit,*) 'after 2nd barrier'
        particlelist => block % particlelist
        do while(associated(particlelist)) !{{{
          particle => particlelist % particle
-         call mpas_pool_get_array(particle % haloDataPool, 'ioBlock', ioBlock)
-         call mpas_get_owning_proc(domain % dminfo, ioBlock, ioProc)
+         call mpas_pool_get_array(particle % haloDataPool, destinationName, sendBlock)
+         call mpas_get_owning_proc(domain % dminfo, sendBlock, ioProc)
          ioProcSendList(ioProc+1) = .True.
          ! get next particle to process on the list
          particlelist => particlelist % next
@@ -3785,6 +3845,10 @@ end subroutine allocate_list_particlelists !}}}
 #endif
                 field1DIntPointer % array = domain % dminfo % my_proc_id
               end if
+#ifdef MPAS_DEBUG
+              write(stderrunit,*) dimItr % memberName, ' = '
+              write(stderrunit,*) field1DIntPointer % array
+#endif
               call add_halo_data_to_particle_list(particlelist, dimItr % memberName, field1DIntPointer)
             else
 #ifdef MPAS_DEBUG
@@ -3796,7 +3860,7 @@ end subroutine allocate_list_particlelists !}}}
           else
 #ifdef MPAS_DEBUG
             write(stderrunit,*) "Different type expected in registry for key ", trim(dimItr % memberName), " in halo data for read, don't know what to do!"
-            ! false warning for 
+            ! false warning for
             !Different type expected in registry for key on_a_sphere in nonHalo data for read, don't know what to do!
             !Different type expected in registry for key sphere_radius in nonHalo data for read, don't know what to do!
             !Different type expected in registry for key is_periodic in nonHalo data for read, don't know what to do!
@@ -3894,44 +3958,32 @@ end subroutine allocate_list_particlelists !}}}
 
 !***********************************************************************
 !
-!  routine mpas_particle_list_update_computational_halos
+!  routine mpas_particle_list_update_particle_block
 !
-!> \brief   Update halo
+!> \brief   Update particle block
 !> \author  Phillip Wolfram
-!> \date    06/24/2015
+!> \date    10/28/2015
 !> \details
-!>  This routine updates the halos for particles within the particlelist loop.
-!>  This constitutes a computational transfer of a particle from one domain
-!>  to another.  Its main goals are to
-!>        1. determine if iCell is on halo (just set each particle's
-!>           currentBlock to the correct currentBlock
-!>        2. determine owning block in halo, update particle's currentBlock
-!>        3. determine currentBlock ownership of iCell and set cellOwnerBlock
-!>           to be current block
+!>  This routine updates the currentBlock for particles within the
+!>  particlelist loop.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_particle_list_update_computational_halos(domain, block, particle, poolname, iCell, &
-       arrayIndex, ioProcRecvList, ioProcSendList, gioProcNeighs ) !{{{
+   subroutine mpas_particle_list_update_particle_block(domain, block, particle, poolname, iCell) !{{{
      implicit none
      type (domain_type), intent(inout) :: domain
      type (block_type), intent(inout), pointer :: block
      type (mpas_particle_type), intent(inout), pointer :: particle
      character(len=*), intent(in) :: poolname
-     integer, intent(inout) :: iCell, arrayIndex
-     integer, dimension(:), pointer, intent(inout) :: gioProcNeighs
-     logical, dimension(:,:), pointer, intent(inout) :: ioProcRecvList
-     logical, dimension(:), pointer, intent(inout) :: ioProcSendList
+     integer, intent(inout) :: iCell
 
      ! local variables
-     integer :: currentProc, ioProc
      type (mpas_pool_type), pointer :: lagrPartTrackCellsPool
-     integer, pointer :: currentBlock, ioBlock, transfered
      integer, dimension(:), pointer :: cellOwnerBlock
+     integer, pointer :: currentBlock, transfered
 
      call mpas_pool_get_subpool(block % structs, trim(poolname), lagrPartTrackCellsPool)
      call mpas_pool_get_array(lagrPartTrackCellsPool, 'cellOwnerBlock', cellOwnerBlock)
      call mpas_pool_get_array(particle % haloDataPool, 'currentBlock', currentBlock)
-     call mpas_pool_get_array(particle % haloDataPool, 'ioBlock', ioBlock)
      if(cellOwnerBlock(iCell) /= currentBlock) then
        ! increment transfer counter
        call mpas_pool_get_array(particle % haloDataPool, 'transfered', transfered)
@@ -3941,25 +3993,64 @@ end subroutine allocate_list_particlelists !}}}
        ! reset cell_id to be brute force computed on new block after trasnfer
        iCell = -1
      end if
+
+   end subroutine mpas_particle_list_update_particle_block !}}}
+
+!***********************************************************************
+!
+!  routine mpas_particle_list_update_halos_start
+!
+!> \brief   Update halo
+!> \author  Phillip Wolfram
+!> \date    10/28/2015
+!> \details
+!>  This routine updates the halos for particles within the particlelist loop.
+!>  This facilitates a computational transfer of a particle from one domain
+!>  to another.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_particle_list_update_halos_start(domain, block, particle, poolname, iCell, &
+       arrayIndex, destinationName, sendProcRecvList, sendProcSendList, gsendProcNeighs ) !{{{
+     implicit none
+     type (domain_type), intent(inout) :: domain
+     type (block_type), intent(inout), pointer :: block
+     type (mpas_particle_type), intent(inout), pointer :: particle
+     character(len=*), intent(in) :: poolname
+     ! 'ioBlock' and 'currentBlock' are options for destinationName
+     character(len=*), intent(in) :: destinationName
+     integer, intent(inout) :: iCell, arrayIndex
+     integer, dimension(:), pointer, intent(inout) :: gsendProcNeighs
+     logical, dimension(:,:), pointer, intent(inout) :: sendProcRecvList
+     logical, dimension(:), pointer, intent(inout) :: sendProcSendList
+
+     ! local variables
+     integer :: currentProc, sendProc
+     type (mpas_pool_type), pointer :: lagrPartTrackCellsPool
+     integer, pointer :: currentBlock, sendBlock
+
+     call mpas_pool_get_subpool(block % structs, trim(poolname), lagrPartTrackCellsPool)
+     call mpas_pool_get_array(particle % haloDataPool, 'currentBlock', currentBlock)
+     call mpas_pool_get_array(particle % haloDataPool, destinationName, sendBlock)
      call mpas_get_owning_proc(domain % dminfo, currentBlock, currentProc)
-     call mpas_get_owning_proc(domain % dminfo, ioBlock, ioProc)
+     call mpas_get_owning_proc(domain % dminfo, sendBlock, sendProc)
 
      ! increment data for receiving processors (sum should be total number of particles on processor)
 #ifdef MPAS_DEBUG
-     write(stderrUnit,*) 'g_ioProcNeighs=',gioProcNeighs
-     write(stderrUnit,*) 'ioProc=',ioProc
+     write(stderrUnit,*) 'destinationName=',destinationName
+     write(stderrUnit,*) 'gsendProcNeighs=',gsendProcNeighs
+     write(stderrUnit,*) 'sendProc=',sendProc
 #endif
      ! do not need to transfer information for particles on-processor, this is computed from the send list
      ! which is dependent upon current, on-processor particles
-     if (ioProc /= domain % dminfo % my_proc_id) then
-       arrayIndex = find_index(gioProcNeighs, ioProc)
-       ioProcRecvList(currentProc+1, arrayIndex) = .True.
+     if (sendProc /= domain % dminfo % my_proc_id) then
+       arrayIndex = find_index(gsendProcNeighs, sendProc)
+       sendProcRecvList(currentProc+1, arrayIndex) = .True.
      else
-       ! consider the case where a particle on A has an ioProc of A and is sent to B (need to have B in A's halo).
-       ioProcSendList(currentProc+1) = .True.
+       ! consider the case where a particle on A has an sendProc of A and is sent to B (need to have B in A's halo).
+       sendProcSendList(currentProc+1) = .True.
      end if
      ! must be computed after computational particles are transferred (this was a bug left-over from serial IO)
-   end subroutine mpas_particle_list_update_computational_halos !}}}
+   end subroutine mpas_particle_list_update_halos_start!}}}
 
 !}}}
 
