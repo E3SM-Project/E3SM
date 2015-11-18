@@ -2051,8 +2051,7 @@ module seq_flds_mod
         longname = 'Volumetric soil water'
         stdname  = 'soil_water'
         units    = 'm3/m3'
-        attname = trim(carma_fields)
-        call metadata_set(attname, longname, stdname, units)
+        call metadata_set(carma_fields, longname, stdname, units)
      endif
 
      !-----------------------------------------------------------------------------
@@ -2068,8 +2067,7 @@ module seq_flds_mod
         longname = 'MEGAN emission fluxes'
         stdname  = 'megan_fluxes'
         units    = 'molecules/m2/sec'
-        attname = trim(megan_voc_fields)
-        call metadata_set(attname, longname, stdname, units)
+        call metadata_set(megan_voc_fields, longname, stdname, units)
      endif
 
      !-----------------------------------------------------------------------------
@@ -2085,16 +2083,15 @@ module seq_flds_mod
         longname = 'wild fire emission fluxes'
         stdname  = 'fire_emis'
         units    = 'kg/m2/sec'
-        attname = trim(fire_emis_fields)
-        call metadata_set(attname, longname, stdname, units)
+        call metadata_set(fire_emis_fields, longname, stdname, units)
 
         call seq_flds_add(l2x_states, trim(shr_fire_emis_ztop_token))
         call seq_flds_add(x2a_states, trim(shr_fire_emis_ztop_token))
         longname = 'wild fire plume height'
         stdname  = 'fire_plume_top'
         units    = 'm'
-        attname = trim(shr_fire_emis_ztop_token)
-        call metadata_set(attname, longname, stdname, units)
+        
+        call metadata_set(shr_fire_emis_ztop_token, longname, stdname, units)
 
      endif
 
@@ -2109,13 +2106,13 @@ module seq_flds_mod
 
      call seq_drydep_readnl(nlfilename="drv_flds_in", ID=ID, seq_drydep_fields=seq_drydep_fields)
      if ( lnd_drydep ) then
-        attname = trim(seq_drydep_fields)
-        call seq_flds_add(l2x_states, attname)
-        call seq_flds_add(x2a_states, attname)
-        longname = 'dry deposition velocities'
+        call seq_flds_add(l2x_states, seq_drydep_fields)
+        call seq_flds_add(x2a_states, seq_drydep_fields)
+        
+        longname = 'dry deposition velocity'
         stdname  = 'drydep_vel'
         units    = 'cm/sec'
-        call metadata_set(attname, longname, stdname, units)
+        call metadata_set(seq_drydep_fields, longname, stdname, units)
 
      endif
      call seq_drydep_init( )
@@ -2368,7 +2365,8 @@ module seq_flds_mod
    end subroutine seq_flds_getField
 
    !===============================================================================
-
+! If the attname passed in contains colons it is assumed to be a list of fields 
+! all of which have the same names and units
    subroutine metadata_set(attname , longname, stdname , units   )
 
      ! !USES:
@@ -2382,18 +2380,34 @@ module seq_flds_mod
 
      !EOP
      character(len=*),parameter :: subname = '(seq_flds_metadata_set) '
+     integer :: i, j
+     
+     i = index(attname,':')
+     j=1
 
+     do while(i>j .and. i<=len_trim(attname))
+        n_entries = n_entries + 1
+        lookup_entry(n_entries,1) = attname(j:i-1) 
+        lookup_entry(n_entries,2) = trim(longname)
+        lookup_entry(n_entries,3) = trim(stdname )
+        lookup_entry(n_entries,4) = trim(units   )
+        j=i+1
+        i =  index(attname(j:),':') + j - 1
+     enddo
      n_entries = n_entries + 1
-     if (n_entries > nmax) then
-        write(logunit,*)'n_entries= ',n_entries,' nmax = ',nmax,' attname= ',trim(attname)
-        call shr_sys_abort(subname//'ERROR: nmax fields in lookup_entry table exceeded') 
-     end if
-
-     lookup_entry(n_entries,1) = trim(attname )
+     i = len_trim(attname)
+     lookup_entry(n_entries,1) = attname(j:i)
      lookup_entry(n_entries,2) = trim(longname)
      lookup_entry(n_entries,3) = trim(stdname )
      lookup_entry(n_entries,4) = trim(units   )
 
+
+
+
+     if (n_entries .ge. nmax) then
+        write(logunit,*)'n_entries= ',n_entries,' nmax = ',nmax,' attname= ',trim(attname)
+        call shr_sys_abort(subname//'ERROR: nmax fields in lookup_entry table exceeded') 
+     end if
 
    end subroutine metadata_set
 

@@ -121,9 +121,8 @@ sub add_config_variables
                     if($val_node->hasAttributes()){		 
                     my @att = $val_node->attributes();
 		    foreach my $attstr (@att){
-			$attstr =~ /(\w+)=\"(.*)\"/;
-	                my $att = $1;
-	                my $att_val = $2;
+			my $att = $attstr->nodeName();
+			my $att_val = $attstr->getValue();
 			my $val =  $val_node->textContent();		
 			$val =~ s/\$MODEL/$model/;
 			$val =~ s/\$CIMEROOT/$cimeroot/;
