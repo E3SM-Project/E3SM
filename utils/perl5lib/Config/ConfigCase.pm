@@ -117,24 +117,26 @@ sub add_config_variables
             # This creates a hash of values with attribute name and id as keys
             #
 	    if($node_name eq "values"){
-		foreach my $val_node ($define_node->findnodes(".//*")){
+		foreach my $val_node ($define_node->findnodes(".//value")){
                     if($val_node->hasAttributes()){		 
-                    my @att = $val_node->attributes();
-		    foreach my $attstr (@att){
-			my $att = $attstr->nodeName();
-			my $att_val = $attstr->getValue();
-			my $val =  $val_node->textContent();		
-			$val =~ s/\$MODEL/$model/;
-			$val =~ s/\$CIMEROOT/$cimeroot/;
-			if (-d $srcroot) {
-			    $val =~ s/\$SRCROOT/$srcroot/;
-			}			
-			$self->{$id}{$att}{$att_val} = $val;
+			my @att = $val_node->attributes();
+			foreach my $attstr (@att){
+			    my $att = $attstr->nodeName();
+			    my $att_val = $attstr->getValue();
+			    my $val =  $val_node->textContent();		
+			    $val =~ s/\$MODEL/$model/;
+			    $val =~ s/\$CIMEROOT/$cimeroot/;
+			    if (-d $srcroot) {
+				$val =~ s/\$SRCROOT/$srcroot/;
+			    }			
+			    $self->{$id}{$att}{$att_val} = $val;
+			}
 		    }
-}
 		}
 
 	    }else{
+		# we want to avoid the 'value' nodes which are children of 'values'
+		next if($node_name eq 'value' and $define_node->parentNode() ne $node);
 		my $node_value = $define_node->textContent();
 		if (defined $node_value) {
 		    $node_value =~ s/\$MODEL/$model/;
