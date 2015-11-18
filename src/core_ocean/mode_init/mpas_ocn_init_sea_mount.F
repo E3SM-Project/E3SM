@@ -80,7 +80,7 @@ contains
       integer, intent(out) :: iErr
       real (kind=RKIND) :: yMin, yMax, xMin, xMax, dcEdgeMin, dcEdgeMinGlobal
       real (kind=RKIND) :: yMinGlobal, yMaxGlobal, yMidGlobal, xMinGlobal, xMaxGlobal, xMidGlobal
-      real (kind=RKIND) :: coefT, deltaT, z
+      real (kind=RKIND) :: densityCell, z
 
       type (block_type), pointer :: block_ptr
 
@@ -224,9 +224,11 @@ contains
         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
         call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
 
-        ! mrp note: doubly periodic.  Can delete these later.
-        !call ocn_mark_north_boundary(meshPool, yMaxGlobal, dcEdgeMinGlobal, iErr)
-        !call ocn_mark_south_boundary(meshPool, yMinGlobal, dcEdgeMinGlobal, iErr)
+        ! mrp note: doubly non-periodic.  Can delete these later.
+        call ocn_mark_north_boundary(meshPool, yMaxGlobal, dcEdgeMinGlobal, iErr)
+        call ocn_mark_south_boundary(meshPool, yMinGlobal, dcEdgeMinGlobal, iErr)
+        call ocn_mark_east_boundary(meshPool, xMaxGlobal, dcEdgeMinGlobal, iErr)
+        call ocn_mark_west_boundary(meshPool, xMinGlobal, dcEdgeMinGlobal, iErr)
 
         ! Set refBottomDepth and refZMid
         do k = 1, nVertLevels
@@ -242,21 +244,9 @@ contains
         ! Set vertCoordMovementWeights
         vertCoordMovementWeights(:) = 1.0_RKIND
 
-        ! Beckmann and Haidvogel 1993 eqn 15-16 only gives density values.  Use linear eos to 
-        ! translate these back to temperature, assuming salinity = reference salinity.
-        if ( trim(config_sea_mount_stratification_type) == 'linear' ) then
-           coefT = config_sea_mount_density_Tref - ( config_sea_mount_density_coef_linear - config_sea_mount_density_ref )/config_sea_mount_density_alpha
-           deltaT = - config_sea_mount_density_gradient_linear / config_sea_mount_density_alpha
-        elseif ( trim(config_sea_mount_stratification_type) == 'exponential' ) then
-           coefT = config_sea_mount_density_Tref - ( config_sea_mount_density_coef_exp - config_sea_mount_density_ref )/config_sea_mount_density_alpha
-           deltaT = - config_sea_mount_density_gradient_exp / config_sea_mount_density_alpha
-        else
-           call mpas_dmpar_global_abort(' Error: Incorrect config_sea_mount_stratification_type: '//config_sea_mount_stratification_type)
-        end if
-
         do iCell = 1, nCellsSolve
 
-           ! Set bottomDepth.  See Beckmann and Haidvogel 1993 eqn 12.
+           ! Set bottomDepth.  See Beckmann and Haidvogel 1993 eqn 12, Shchepetkin 2003 eqn 4.2
            bottomDepth(iCell) = config_sea_mount_bottom_depth - config_sea_mount_height * exp(-((xCell(iCell)-xMidGlobal)**2 + (yCell(iCell)-yMidGlobal)**2 )/ config_sea_mount_width**2)
 
            ! Set maxLevelCell and layerThickness 
@@ -264,8 +254,10 @@ contains
               maxLevelCell(iCell) = -1
               do k = 1, nVertLevels
                  if (bottomDepth(iCell) .le. refBottomDepth(k)) then
-                     maxLevelCell(iCell) = k
-                     exit
+                    maxLevelCell(iCell) = k
+                    ! make full cell only:
+                    bottomDepth(iCell) = refBottomDepth(k)
+                    exit
                  end if
               end do
               do k = 1, maxLevelCell(iCell)
@@ -286,19 +278,24 @@ contains
            ! Set stratification using temperature.  See Beckmann and Haidvogel 1993 eqn 15-16.
            idx = index_temperature
            z = 0.0_RKIND
-           if ( trim(config_sea_mount_stratification_type) == 'linear' ) then
-              do k = 1, maxLevelCell(iCell)
-                 z = z - 0.5_RKIND * layerThickness(k, iCell)
-                 activeTracers(idx, k, iCell) = coefT - deltaT*(z/config_sea_mount_density_depth_linear)
-                 z = z - 0.5_RKIND * layerThickness(k, iCell)
-              end do
-           elseif ( trim(config_sea_mount_stratification_type) == 'exponential' ) then
-              do k = 1, maxLevelCell(iCell)
-                 z = z - 0.5_RKIND * layerThickness(k, iCell)
-                 activeTracers(idx, k, iCell) = coefT - deltaT*exp(z/config_sea_mount_density_depth_exp)
-                 z = z - 0.5_RKIND * layerThickness(k, iCell)
-              end do
-           end if
+           do k = 1, maxLevelCell(iCell)
+
+              z = z - 0.5_RKIND * layerThickness(k, iCell)
+
+              if ( trim(config_sea_mount_stratification_type) == 'linear' ) then
+                 densityCell =  config_sea_mount_density_coef_linear - config_sea_mount_density_gradient_linear * z / config_sea_mount_density_depth_linear
+              elseif ( trim(config_sea_mount_stratification_type) == 'exponential' ) then
+                 densityCell = config_sea_mount_density_coef_exp - config_sea_mount_density_gradient_exp * exp( z / config_sea_mount_density_depth_exp)
+              else
+                 call mpas_dmpar_global_abort(' Error: Incorrect config_sea_mount_stratification_type: '//config_sea_mount_stratification_type)
+              end if
+
+              ! Back-solve linear EOS for temperature, with S=S_ref
+              ! T = T_ref - (rho - rho_ref)/alpha
+              activeTracers(idx, k, iCell) = config_sea_mount_density_Tref - (densityCell - config_sea_mount_density_ref) / config_sea_mount_density_alpha
+              z = z - 0.5_RKIND * layerThickness(k, iCell)
+
+           end do
 
            ! Set salinity
            idx = index_salinity
