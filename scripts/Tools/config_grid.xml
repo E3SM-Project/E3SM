@@ -60,6 +60,7 @@ Each grid is associated with five names
 <GRID sname="0.47x0.63_gx1v6"   alias="f05_g16">a%0.47x0.63_l%0.47x0.63_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</GRID>
 <GRID sname="0.47x0.63_tx0.1v2" alias="f05_t12">a%0.47x0.63_l%0.47x0.63_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null</GRID>    
 <GRID sname="0.9x1.25_gx1v6"    alias="f09_g16">a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</GRID>
+<GRID sname="0.9x1.25_mpas120"  alias="f09_m120">a%0.9x1.25_l%0.9x1.25_oi%mpas120_r%r05_m%mpas120_g%null_w%null</GRID>
 <GRID sname="1.9x2.5_gx1v6"     alias="f19_g16">a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</GRID>
 <GRID sname="4x5_gx3v7"         alias="f45_g37">a%4x5_l%4x5_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null</GRID>
 <GRID sname="1.9x2.5_gx1v6_r01" alias="f19_g16_r01" support_level="Non-standard grid, for testing high resolution RTM grid" >a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r01_m%gx1v6_g%null_w%null</GRID>
@@ -75,6 +76,8 @@ Each grid is associated with five names
 
 <GRID sname="ne16np4_gx3v7"              alias="ne16_g37"     >a%ne16np4_l%ne16np4_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null</GRID>
 <GRID sname="ne30np4_gx1v6"              alias="ne30_g16"     >a%ne30np4_l%ne30np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</GRID>
+<GRID sname="ne30np4_mpas120"            alias="ne30_m120"    >a%ne30np4_l%ne30np4_oi%mpas120_r%r05_m%mpas120_g%null_w%null</GRID>
+<GRID sname="ne30np4_mpas120_gis20"      alias="ne30_m120_g"  >a%ne30np4_l%ne30np4_oi%mpas120_r%r05_m%mpas120_g%mpas.gis20km_w%null</GRID>
 <GRID sname="ne30np4_1.9x2.5_gx1v6"      alias="ne30_f19_g16" support_level="For testing tri-grid" >a%ne30np4_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</GRID>  
 <GRID sname="ne30np4_0.9x1.25_gx1v6"     alias="ne30_f09_g16" support_level="For testing tri-grid" >a%ne30np4_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</GRID> 
 <GRID sname="ne60np4_gx1v6"              alias="ne60_g16"     >a%ne60np4_l%ne60np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</GRID>
@@ -801,6 +804,13 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <LND_DOMAIN_FILE>domain.lnd.fv0.9x1.25_mp120v1.111018.nc</LND_DOMAIN_FILE>
 </griddom>
 
+<griddom grid="0.9x1.25" mask="mpas120">
+  <ATM_DOMAIN_FILE>domain.lnd.0.9x1.25_mpas120.151109.nc</ATM_DOMAIN_FILE>
+  <LND_DOMAIN_FILE>domain.lnd.0.9x1.25_mpas120.151109.nc</LND_DOMAIN_FILE>
+  <ICE_DOMAIN_FILE>domain.ocn.0.9x1.25_mpas120.151109.nc</ICE_DOMAIN_FILE>
+  <OCN_DOMAIN_FILE>domain.ocn.0.9x1.25_mpas120.151109.nc</OCN_DOMAIN_FILE>
+</griddom>
+
 <griddom grid="0.9x1.25" mask="tx0.1v2">
   <ATM_DOMAIN_FILE>domain.lnd.fv0.9x1.25_tx0.1v2_070928.nc</ATM_DOMAIN_FILE>
   <LND_DOMAIN_FILE>domain.lnd.fv0.9x1.25_tx0.1v2_070928.nc</LND_DOMAIN_FILE>
@@ -812,6 +822,14 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <ATM2OCN_VMAPNAME>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gx1v6_patc.130322.nc</ATM2OCN_VMAPNAME>
   <OCN2ATM_FMAPNAME>cpl/gridmaps/gx1v6/map_gx1v6_TO_fv0.9x1.25_aave.130322.nc</OCN2ATM_FMAPNAME>
   <OCN2ATM_SMAPNAME>cpl/gridmaps/gx1v6/map_gx1v6_TO_fv0.9x1.25_aave.130322.nc </OCN2ATM_SMAPNAME>
+</gridmap>
+
+<gridmap atm_grid="0.9x1.25" ocn_grid="mpas120">
+  <ATM2OCN_FMAPNAME>cpl/gridmaps/fv0.9x1.25/map_0.9x1.25_TO_mpas120_aave.151109.nc</ATM2OCN_FMAPNAME>
+  <ATM2OCN_SMAPNAME>cpl/gridmaps/fv0.9x1.25/map_0.9x1.25_TO_mpas120_bilin.151109.nc</ATM2OCN_SMAPNAME>
+  <ATM2OCN_VMAPNAME>cpl/gridmaps/fv0.9x1.25/map_0.9x1.25_TO_mpas120_patc.151109.nc</ATM2OCN_VMAPNAME>
+  <OCN2ATM_FMAPNAME>cpl/gridmaps/mpas120/map_mpas120_TO_0.9x1.25_aave.151109.nc</OCN2ATM_FMAPNAME>
+  <OCN2ATM_SMAPNAME>cpl/gridmaps/mpas120/map_mpas120_TO_0.9x1.25_aave.151109.nc</OCN2ATM_SMAPNAME>
 </gridmap>
 
 <gridmap atm_grid="0.9x1.25" ocn_grid="mp120v1">
@@ -929,12 +947,27 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <OCN_DOMAIN_FILE>domain.ocn.ne30np4_gx1v6_110217.nc</OCN_DOMAIN_FILE>
 </griddom>
 
+<griddom grid="ne30np4" mask="mpas120">
+  <ATM_DOMAIN_FILE>domain.lnd.ne30np4_mpas120.151113.nc</ATM_DOMAIN_FILE>
+  <LND_DOMAIN_FILE>domain.lnd.ne30np4_mpas120.151113.nc</LND_DOMAIN_FILE>
+  <ICE_DOMAIN_FILE>domain.ocn.ne30np4_mpas120.151113.nc</ICE_DOMAIN_FILE>
+  <OCN_DOMAIN_FILE>domain.ocn.ne30np4_mpas120.151113.nc</OCN_DOMAIN_FILE>
+</griddom>
+
 <gridmap atm_grid="ne30np4" ocn_grid="gx1v6">
   <ATM2OCN_FMAPNAME>cpl/cpl6/map_ne30np4_to_gx1v6_aave_110121.nc</ATM2OCN_FMAPNAME>
   <ATM2OCN_SMAPNAME>cpl/cpl6/map_ne30np4_to_gx1v6_native_110328.nc</ATM2OCN_SMAPNAME>
   <ATM2OCN_VMAPNAME>cpl/cpl6/map_ne30np4_to_gx1v6_native_110328.nc</ATM2OCN_VMAPNAME>
   <OCN2ATM_FMAPNAME>cpl/cpl6/map_gx1v6_to_ne30np4_aave_110121.nc</OCN2ATM_FMAPNAME>
   <OCN2ATM_SMAPNAME>cpl/cpl6/map_gx1v6_to_ne30np4_aave_110121.nc</OCN2ATM_SMAPNAME>
+</gridmap>
+
+<gridmap atm_grid="ne30np4" ocn_grid="mpas120">
+  <ATM2OCN_FMAPNAME>cpl/cpl6/map_ne30np4_TO_MPASO_QU120km_aave.151110.nc</ATM2OCN_FMAPNAME>
+  <ATM2OCN_SMAPNAME>cpl/cpl6/map_ne30np4_TO_MPASO_QU120km_bilin.151110.nc</ATM2OCN_SMAPNAME>
+  <ATM2OCN_VMAPNAME>cpl/cpl6/map_ne30np4_TO_MPASO_QU120km_bilin.151110.nc</ATM2OCN_VMAPNAME>
+  <OCN2ATM_FMAPNAME>cpl/cpl6/map_MPASO_QU120km_TO_ne30np4_aave.151110.nc</OCN2ATM_FMAPNAME>
+  <OCN2ATM_SMAPNAME>cpl/cpl6/map_MPASO_QU120km_TO_ne30np4_aave.151110.nc</OCN2ATM_SMAPNAME>
 </gridmap>
 
 <gridmap atm_grid="ne30np4" lnd_grid="0.9x1.25">
@@ -1430,6 +1463,9 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 </gridmap>
 <gridmap rof_grid="r05" ocn_grid="gx1v6" >
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_gx1v6_e1000r300_090226.nc</ROF2OCN_RMAPNAME>
+</gridmap>
+<gridmap rof_grid="r05" ocn_grid="mpas120" >
+  <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_QU120km_nn_151110.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 <gridmap rof_grid="r05" ocn_grid="tx1v1" >
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_tx1v1_e1000r500_080505.nc</ROF2OCN_RMAPNAME>
