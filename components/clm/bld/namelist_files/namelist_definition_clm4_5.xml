@@ -96,27 +96,6 @@ over-productive.
     ALL            = Supplemental Phosphorus is active for all vegetation types
 </entry>
 
-
-<entry id="nu_com" type="char*15" category="clm_physics"
-       group="clm_inparm" valid_values="RD,ECA,MIC" >
-Nutrient competition mode. In each specific mode, plants/soil microbes have the different
-priority to access soil nitrogen and phosphorus.
-    RD           = competition scaled by relative nutrient demand
-    ECA          = competition scaled by equilibrium chemical approximation theory
-    MIC          = always assume that soil microbes out-compete plants
-</entry>
-
-<entry id="nu_com_phosphatase" type="logical" category="clm_physics"
-       group="clm_inparm" valid_values="" >
-If TRUE, use new phosphatase activity algorithm that comes with nu_com module
-</entry>
-
-<entry id="nu_com_nfix" type="logical" category="clm_physics"
-       group="clm_inparm" valid_values="" >
-If TRUE, use new N2 fixation algorithm that comes with nu_com module
-</entry>
-
-
 <entry id="create_crop_landunit" type="logical" category="clm_physics"
        group="clm_inparm" valid_values="" >
 If TRUE, separate the vegetated landunit into a crop landunit and a natural vegetation landunit

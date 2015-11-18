@@ -754,8 +754,6 @@ contains
        call nitrogenstate_vars%Init(bounds_proc,                      &
             carbonstate_vars%leafc_patch(begp:endp),                  &
             carbonstate_vars%leafc_storage_patch(begp:endp),          &
-            carbonstate_vars%frootc_patch(begp:endp),                 &
-            carbonstate_vars%frootc_storage_patch(begp:endp),         &
             carbonstate_vars%deadstemc_patch(begp:endp),              &
             carbonstate_vars%decomp_cpools_vr_col(begc:endc, 1:, 1:), &
             carbonstate_vars%decomp_cpools_col(begc:endc, 1:),        &
@@ -767,8 +765,6 @@ contains
        call phosphorusstate_vars%Init(bounds_proc,                    &
             carbonstate_vars%leafc_patch(begp:endp),                  &
             carbonstate_vars%leafc_storage_patch(begp:endp),          &
-            carbonstate_vars%frootc_patch(begp:endp),                 &
-            carbonstate_vars%frootc_storage_patch(begp:endp),         &
             carbonstate_vars%deadstemc_patch(begp:endp),              &
             carbonstate_vars%decomp_cpools_vr_col(begc:endc, 1:, 1:), &
             carbonstate_vars%decomp_cpools_col(begc:endc, 1:),        &

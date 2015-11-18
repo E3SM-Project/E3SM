@@ -140,13 +140,6 @@ module CNStateType
 
      integer           :: CropRestYear                         ! restart year from initial conditions file - increment as time elapses
 
-     real(r8), pointer :: fpg_nh4_vr_col               (:,:)   ! fraction of plant nh4 demand that is satisfied (no units) BGC mode
-     real(r8), pointer :: fpg_no3_vr_col               (:,:)   ! fraction of plant no3 demand that is satisfied (no units) BGC mode
-     real(r8), pointer :: fpg_vr_col                   (:,:)   ! fraction of plant N demand that is satisfied (no units) CN mode
-     real(r8), pointer :: fpg_p_vr_col                 (:,:)   ! fraction of plant p demand that is satisfied (no units) 
-     real(r8), pointer :: cn_scalar                    (:)     ! cn scaling factor for root n uptake kinetics (no units) 
-     real(r8), pointer :: cp_scalar                    (:)     ! cp scaling factor for root p uptake kinetics (no units)
-
    contains
 
      procedure, public  :: Init         
@@ -306,13 +299,6 @@ contains
     allocate(this%tempmax_retransp_patch      (begp:endp)) ;    this%tempmax_retransp_patch      (:) = nan
     allocate(this%annmax_retransp_patch       (begp:endp)) ;    this%annmax_retransp_patch       (:) = nan
 
-    allocate(this%fpg_nh4_vr_col              (begc:endc,1:nlevdecomp_full)) ; this%fpg_nh4_vr_col(:,:) = nan 
-    allocate(this%fpg_no3_vr_col              (begc:endc,1:nlevdecomp_full)) ; this%fpg_no3_vr_col(:,:) = nan
-    allocate(this%fpg_vr_col                  (begc:endc,1:nlevdecomp_full)) ; this%fpg_vr_col    (:,:) = nan
-    allocate(this%fpg_p_vr_col                (begc:endc,1:nlevdecomp_full)) ; this%fpg_p_vr_col  (:,:) = nan
-    allocate(this%cn_scalar                   (begp:endp))                   ; this%cn_scalar     (:) = nan 
-    allocate(this%cp_scalar                   (begp:endp))                   ; this%cp_scalar     (:) = nan
-    
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -691,17 +677,17 @@ contains
     ! Read in soilorder data 
     ! --------------------------------------------------------------------
 
-    allocate(soilorder_rdin(bounds%begg:bounds%endg))
-    call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) then
-       call endrun(msg=' ERROR: SOIL_ORDER NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-    end if
+!    allocate(soilorder_rdin(bounds%begg:bounds%endg))
+!    call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=grlnd, readvar=readvar)
+!    if (.not. readvar) then
+!       call endrun(msg=' ERROR: SOIL_ORDER NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+!    end if
     do c = bounds%begc, bounds%endc
-       g = col%gridcell(c)
+!       g = col%gridcell(c)
 !       this%isoilorder(c) = soilorder_rdin(g)
        this%isoilorder(c) = 12
     end do
-    deallocate(soilorder_rdin)
+!    deallocate(soilorder_rdin)
 
 
     ! --------------------------------------------------------------------

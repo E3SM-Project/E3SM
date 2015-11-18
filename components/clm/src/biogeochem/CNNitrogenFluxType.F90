@@ -363,31 +363,6 @@ module CNNitrogenFluxType
      real(r8), pointer :: no3_net_transport_vr_col                  (:,:)   ! col net NO3 transport associated with runoff/leaching (gN/m3/s)
      real(r8), pointer :: no3_net_transport_delta_col               (:)     ! col summarized net change of column-level N leaching to NO3 bwtn time-step (for balance checking) (gN/m2)
     !------------------------------------------------------------------------
-
-     real(r8), pointer :: smin_no3_to_plant_patch                   (:)     ! pft level plant uptake of soil NO3 (gN/m2/s) BGC mode
-     real(r8), pointer :: smin_nh4_to_plant_patch                   (:)     ! pft level plant uptake of soil Nh4 (gN/m2/s) BGC mode
-     real(r8), pointer :: sminn_to_plant_patch                      (:)     ! pft level plant uptake of soil N (gN/m2/s) CN mode
-     real(r8), pointer :: pnup_pfrootc_patch                        (:)     ! partial nitrogen uptake / partial fine root carbon (used by symbiotic n2 fixation)
-     real(r8), pointer :: pgpp_pleafc_patch                         (:)     ! partial gpp / partial leaf carbon (used by symbiotic n2 fixation)
-     real(r8), pointer :: pgpp_pleafn_patch                         (:)     ! partial gpp / partial leaf nitrogen (used by phosphatase activity)
-     real(r8), pointer :: pgpp_pleafp_patch                         (:)     ! partial gpp / partial leaf phosphorus (used by phosphatase activity)
-     real(r8), pointer :: col_plant_ndemand_vr                      (:,:)   ! column-level plant N demand
-     real(r8), pointer :: col_plant_nh4demand_vr                    (:,:)   ! column-level plant NH4 demand
-     real(r8), pointer :: col_plant_no3demand_vr                    (:,:)   ! column-level plant NO3 demand
-     real(r8), pointer :: col_plant_pdemand_vr                      (:,:)   ! column-level plant P demand
-     real(r8), pointer :: plant_nh4demand_vr_patch                  (:,:)   ! pft-level plant NH4 demand BGC mode
-     real(r8), pointer :: plant_no3demand_vr_patch                  (:,:)   ! pft-level plant NO3 demand BGC mode
-     real(r8), pointer :: plant_ndemand_vr_patch                    (:,:)   ! pft-level plant N demand CN mode
-     real(r8), pointer :: prev_leafn_to_litter_patch                (:)     ! previous timestep leaf N litterfall flux (gN/m2/s)
-     real(r8), pointer :: prev_frootn_to_litter_patch               (:)     ! previous timestep froot N litterfall flux (gN/m2/s)
-
-     real(r8), pointer :: plant_n_uptake_flux                       (:)     ! for the purpose of mass balance check  
-     real(r8), pointer :: soil_n_immob_flux                         (:)     ! for the purpose of mass balance check
-     real(r8), pointer :: soil_n_immob_flux_vr                      (:,:)   ! for the purpose of mass balance check
-     real(r8), pointer :: soil_n_grossmin_flux                      (:)     ! for the purpose of mass balance check
-     real(r8), pointer :: plant_to_litter_nflux                     (:)     ! for the purpose of mass balance check
-     real(r8), pointer :: plant_to_cwd_nflux                        (:)     ! for the purpose of mass balance check
-
    contains
 
      procedure , public  :: Init   
@@ -761,34 +736,6 @@ contains
     allocate(this%no3_net_transport_delta_col       (begc:endc))                                    ; this%no3_net_transport_delta_col       (:)     = spval
     !------------------------------------------------------------------------
 
-    allocate(this%smin_no3_to_plant_patch     (begp:endp)) ;             this%smin_no3_to_plant_patch     (:) = nan
-    allocate(this%smin_nh4_to_plant_patch     (begp:endp)) ;             this%smin_nh4_to_plant_patch     (:) = nan
-    allocate(this%sminn_to_plant_patch        (begp:endp)) ;             this%sminn_to_plant_patch        (:) = nan
-    allocate(this%pnup_pfrootc_patch          (begp:endp)) ;             this%pnup_pfrootc_patch          (:) = nan
-    allocate(this%pgpp_pleafc_patch           (begp:endp)) ;             this%pgpp_pleafc_patch           (:) = nan
-    allocate(this%pgpp_pleafn_patch           (begp:endp)) ;             this%pgpp_pleafn_patch           (:) = nan
-    allocate(this%pgpp_pleafp_patch           (begp:endp)) ;             this%pgpp_pleafp_patch           (:) = nan
-    allocate(this%col_plant_ndemand_vr        (begc:endc,1:nlevdecomp)); this%col_plant_ndemand_vr        (:,:) = nan
-    allocate(this%col_plant_nh4demand_vr      (begc:endc,1:nlevdecomp)); this%col_plant_nh4demand_vr      (:,:) = nan
-    allocate(this%col_plant_no3demand_vr      (begc:endc,1:nlevdecomp)); this%col_plant_no3demand_vr      (:,:) = nan
-    allocate(this%col_plant_pdemand_vr        (begc:endc,1:nlevdecomp)); this%col_plant_pdemand_vr        (:,:) = nan
-    allocate(this%plant_nh4demand_vr_patch    (begp:endp,1:nlevdecomp)); this%plant_nh4demand_vr_patch    (:,:) = nan
-    allocate(this%plant_no3demand_vr_patch    (begp:endp,1:nlevdecomp)); this%plant_no3demand_vr_patch    (:,:) = nan
-    allocate(this%plant_ndemand_vr_patch      (begp:endp,1:nlevdecomp)); this%plant_ndemand_vr_patch      (:,:) = nan
-    allocate(this%prev_leafn_to_litter_patch  (begp:endp)) ;             this%prev_leafn_to_litter_patch  (:) = nan
-    allocate(this%prev_frootn_to_litter_patch (begp:endp)) ;             this%prev_frootn_to_litter_patch (:) = nan
-
-    allocate(this%plant_n_uptake_flux         (begc:endc)) ;	         this%plant_n_uptake_flux   (:)   = nan
-    allocate(this%soil_n_immob_flux           (begc:endc)) ;	         this%soil_n_immob_flux	    (:)   = nan
-    allocate(this%soil_n_immob_flux_vr        (begc:endc,1:nlevdecomp)); this%soil_n_immob_flux_vr  (:,:) = nan
-    allocate(this%soil_n_grossmin_flux        (begc:endc)) ;	         this%soil_n_grossmin_flux  (:)   = nan
-    allocate(this%actual_immob_no3_col        (begc:endc)) ;             this%actual_immob_no3_col  (:)   = nan
-    allocate(this%actual_immob_nh4_col        (begc:endc)) ;             this%actual_immob_nh4_col  (:)   = nan
-    allocate(this%smin_no3_to_plant_col       (begc:endc)) ;             this%smin_no3_to_plant_col (:)   = nan
-    allocate(this%smin_nh4_to_plant_col       (begc:endc)) ;             this%smin_nh4_to_plant_col (:)   = nan 
-    allocate(this%plant_to_litter_nflux       (begc:endc)) ;             this%plant_to_litter_nflux (:)   = nan
-    allocate(this%plant_to_cwd_nflux          (begc:endc)) ;             this%plant_to_cwd_nflux    (:)   = nan
-    
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------
@@ -1796,52 +1743,52 @@ contains
     this%fire_nloss_col(begc:endc) = spval
     call hist_addfld1d (fname='COL_FIRE_NLOSS', units='gN/m^2/s', &
          avgflag='A', long_name='total column-level fire N loss', &
-         ptr_col=this%fire_nloss_col, default='inactive')
+         ptr_col=this%fire_nloss_col)
 
     this%dwt_seedn_to_leaf_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_SEEDN_TO_LEAF', units='gN/m^2/s', &
          avgflag='A', long_name='seed source to PFT-level leaf', &
-         ptr_col=this%dwt_seedn_to_leaf_col, default='inactive')
+         ptr_col=this%dwt_seedn_to_leaf_col)
 
     this%dwt_seedn_to_deadstem_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_SEEDN_TO_DEADSTEM', units='gN/m^2/s', &
          avgflag='A', long_name='seed source to PFT-level deadstem', &
-         ptr_col=this%dwt_seedn_to_deadstem_col, default='inactive')
+         ptr_col=this%dwt_seedn_to_deadstem_col)
 
     this%dwt_conv_nflux_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_CONV_NFLUX', units='gN/m^2/s', &
          avgflag='A', long_name='conversion N flux (immediate loss to atm)', &
-         ptr_col=this%dwt_conv_nflux_col, default='inactive')
+         ptr_col=this%dwt_conv_nflux_col)
 
     this%dwt_prod10n_gain_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_PROD10N_GAIN', units='gN/m^2/s', &
          avgflag='A', long_name='addition to 10-yr wood product pool', &
-         ptr_col=this%dwt_prod10n_gain_col, default='inactive')
+         ptr_col=this%dwt_prod10n_gain_col)
 
     this%prod10n_loss_col(begc:endc) = spval
     call hist_addfld1d (fname='PROD10N_LOSS', units='gN/m^2/s', &
          avgflag='A', long_name='loss from 10-yr wood product pool', &
-         ptr_col=this%prod10n_loss_col, default='inactive')
+         ptr_col=this%prod10n_loss_col)
 
     this%dwt_prod100n_gain_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_PROD100N_GAIN', units='gN/m^2/s', &
          avgflag='A', long_name='addition to 100-yr wood product pool', &
-         ptr_col=this%dwt_prod100n_gain_col, default='inactive')
+         ptr_col=this%dwt_prod100n_gain_col)
 
     this%prod100n_loss_col(begc:endc) = spval
     call hist_addfld1d (fname='PROD100N_LOSS', units='gN/m^2/s', &
          avgflag='A', long_name='loss from 100-yr wood product pool', &
-         ptr_col=this%prod100n_loss_col, default='inactive')
+         ptr_col=this%prod100n_loss_col)
 
     this%prod1n_loss_col(begc:endc) = spval
     call hist_addfld1d (fname='PROD1N_LOSS', units='gN/m^2/s', &
          avgflag='A', long_name='loss from 1-yr crop product pool', &
-         ptr_col=this%prod1n_loss_col, default='inactive')
+         ptr_col=this%prod1n_loss_col)
 
     this%product_nloss_col(begc:endc) = spval
     call hist_addfld1d (fname='PRODUCT_NLOSS', units='gN/m^2/s', &
          avgflag='A', long_name='total N loss from wood product pools', &
-         ptr_col=this%product_nloss_col, default='inactive')
+         ptr_col=this%product_nloss_col)
 
     this%dwt_frootn_to_litr_met_n_col(begc:endc,:) = spval
     call hist_addfld_decomp (fname='DWT_FROOTN_TO_LITR_MET_N', units='gN/m^2/s',  type2d='levdcmp', &
@@ -1871,7 +1818,7 @@ contains
     this%dwt_nloss_col(begc:endc) = spval
     call hist_addfld1d (fname='DWT_NLOSS', units='gN/m^2/s', &
          avgflag='A', long_name='total nitrogen loss from landcover conversion', &
-         ptr_col=this%dwt_nloss_col, default='inactive')
+         ptr_col=this%dwt_nloss_col)
 
     if (crop_prog) then
        this%fert_to_sminn_col(begc:endc) = spval
@@ -2029,10 +1976,7 @@ contains
 
     do p = bounds%begp,bounds%endp
        l = pft%landunit(p)
-       
-       this%prev_leafn_to_litter_patch(p)  = 0._r8 
-       this%prev_frootn_to_litter_patch(p) = 0._r8 
-       
+
        if ( crop_prog )then
           this%fert_counter_patch(p)  = spval
           this%fert_patch(p)          = 0._r8 
@@ -3025,35 +2969,6 @@ contains
           this%som_n_leached_col(c) = &
                this%som_n_leached_col(c) + &
                this%decomp_npools_leached_col(c,l)
-       end do
-    end do
-    
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       this%smin_no3_to_plant_col(c) = 0._r8
-       this%smin_nh4_to_plant_col(c) = 0._r8
-       this%plant_to_litter_nflux(c) = 0._r8
-       this%plant_to_cwd_nflux(c) = 0._r8
-       do j = 1, nlevdecomp
-          this%smin_no3_to_plant_col(c)= this%smin_no3_to_plant_col(c) + & 
-               this%smin_no3_to_plant_vr_col(c,j) * dzsoi_decomp(j)
-          this%smin_nh4_to_plant_col(c)= this%smin_nh4_to_plant_col(c) + & 
-               this%smin_nh4_to_plant_vr_col(c,j) * dzsoi_decomp(j) 
-          this%plant_to_litter_nflux(c) = &
-               this%plant_to_litter_nflux(c)  + &
-               this%phenology_n_to_litr_met_n_col(c,j)* dzsoi_decomp(j) + &
-               this%phenology_n_to_litr_cel_n_col(c,j)* dzsoi_decomp(j) + &
-               this%phenology_n_to_litr_lig_n_col(c,j)* dzsoi_decomp(j) + &
-               this%gap_mortality_n_to_litr_met_n_col(c,j)* dzsoi_decomp(j) + &
-               this%gap_mortality_n_to_litr_cel_n_col(c,j)* dzsoi_decomp(j) + &
-               this%gap_mortality_n_to_litr_lig_n_col(c,j)* dzsoi_decomp(j) + &
-               this%m_n_to_litr_met_fire_col(c,j)* dzsoi_decomp(j) + &
-               this%m_n_to_litr_cel_fire_col(c,j)* dzsoi_decomp(j) + &
-               this%m_n_to_litr_lig_fire_col(c,j)* dzsoi_decomp(j)
-          this%plant_to_cwd_nflux(c) = &
-               this%plant_to_cwd_nflux(c) + &
-               this%gap_mortality_n_to_cwdn_col(c,j)* dzsoi_decomp(j) + &
-               this%fire_mortality_n_to_cwdn_col(c,j)* dzsoi_decomp(j)
        end do
     end do
 
