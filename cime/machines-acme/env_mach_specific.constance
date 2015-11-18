@@ -22,6 +22,10 @@ if ( $COMPILER == "intel") then
     module load mkl/15.0.1
     setenv MKL_PATH $MLIB_LIB
     setenv NETCDF_HOME $NETCDF_LIB/../
+
+    # Set compiler environment variables needed by campp
+    setenv CHEMPROC_FC ifort
+    setenv COMPILER ifort
 endif
 
 if ( $COMPILER == "pgi") then
