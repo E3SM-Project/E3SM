@@ -17,7 +17,7 @@
     />
   <nml_option name="config_ziso_wind_stress_shelf_front_max" type="real" default_value="-0.05" units="N m^{-2}"
     description="Maximum zonal windstress value in the shelf front region, following Stewart et al. 2013"
-    possible_values="Any real number < 0"
+    possible_values="Any real number less than 0"
     />
   <nml_option name="config_ziso_use_slopping_bathymetry" type="logical" default_value="false" units="unitless"
     description="Logical flag that determines if sloping bathymetery is used."
