@@ -446,7 +446,7 @@ sub postRun()
         }
 
         $logger->debug("lid: $LID");
-	foreach my $comp (qw(atm cpl ocn wav glc ice rof lnd)){
+	foreach my $comp (qw(atm cpl ocn wav glc ice rof lnd cesm)){
 	    disposeLog($config{RUNDIR},$config{CASEROOT}, $comp ,$LID,$config{LOGDIR});
 	}
     }
