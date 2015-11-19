@@ -182,13 +182,6 @@ print $tfwfh "mv -f $caseroot/TestStatus.new $caseroot/TestStatus$eol";
 
 print $tfwfh "if (\$testrc != 0) then$eol";
 print $tfwfh "  echo 'FAIL $casebaseid RUN' >> $caseroot/TestStatus$eol";
-
-print $tfwfh "  foreach logfile ($rundir/*log*)$eol";
-print $tfwfh "    echo '###############################################################################' >> $caseroot/TestStatus.log$eol";
-print $tfwfh "    echo 'Log data for broken run from ' \$logfile >> $caseroot/TestStatus.log$eol";
-print $tfwfh "    cat \$logfile >> $caseroot/TestStatus.log$eol";
-print $tfwfh "  end$eol";
-
 print $tfwfh "else$eol";
 print $tfwfh "  echo 'PASS $casebaseid RUN' >> $caseroot/TestStatus$eol";
 print $tfwfh "endif$eol";
