@@ -226,6 +226,8 @@ contains
 
     namelist /clm_inparm/ use_dynroot
 
+    namelist /clm_inparm / &
+         use_vsfm, vsfm_satfunc_type
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -444,6 +446,17 @@ contains
        end if
     end if
 
+    ! Consistency settings for co2 type
+    if (vsfm_satfunc_type /= 'brooks_corey'             .and. &
+        vsfm_satfunc_type /= 'smooth_brooks_corey_bz2'  .and. &
+        vsfm_satfunc_type /= 'smooth_brooks_corey_bz3'  .and. &
+        vsfm_satfunc_type /= 'van_genuchten') then
+       write(iulog,*)'vsfm_satfunc_type = ',vsfm_satfunc_type,' is not supported'
+       call endrun(msg=' ERROR:: choices are brooks_corey, smooth_brooks_corey_bz2, '//&
+            'smooth_brooks_corey_bz3 or van_genuchten'//&
+            errMsg(__FILE__, __LINE__))
+    end if
+
     if (masterproc) then
        write(iulog,*) 'Successfully initialized run control settings'
        write(iulog,*)
@@ -640,6 +653,11 @@ contains
     call mpi_bcast (use_bgc_interface, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_clm_bgc, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_pflotran, 1, MPI_LOGICAL, 0, mpicom, ier)
+
+    ! VSFM variable
+
+    call mpi_bcast (use_vsfm, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (vsfm_satfunc_type, len(vsfm_satfunc_type), MPI_CHARACTER, 0, mpicom, ier)
 
   end subroutine control_spmd
 
@@ -845,6 +863,13 @@ contains
                       ' by a factor of ', deepmixing_mixfact, '.'
     write(iulog,*) 'Albedo over melting lakes will approach values (visible, NIR):', lake_melt_icealb, &
                    'as compared with 0.60, 0.40 for cold frozen lakes with no snow.'
+
+    ! VSFM
+    if (use_vsfm) then
+       write(iulog,*)
+       write(iulog,*) 'VSFM Namelists:'
+       write(iulog, *) '  vsfm_satfunc_type                                      : ', vsfm_satfunc_type
+    endif
 
   end subroutine control_print
 

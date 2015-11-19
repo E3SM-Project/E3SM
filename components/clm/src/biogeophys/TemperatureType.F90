@@ -100,6 +100,9 @@ module TemperatureType
      real(r8), pointer    :: fact_col              (:,:) ! used in computing tridiagonal matrix
      real(r8), pointer    :: c_h2osfc_col          (:)   ! heat capacity of surface water
 
+     ! For VSFM model
+     real(r8), pointer :: t_soil_col_1d            (:)   ! 1D temperature of soil layers (Kelvin)
+
    contains
 
      procedure, public  :: Init         
@@ -232,6 +235,9 @@ contains
     allocate(this%xmf_h2osfc_col           (begc:endc))                      ; this%xmf_h2osfc_col           (:)   = nan
     allocate(this%fact_col                 (begc:endc, -nlevsno+1:nlevgrnd)) ; this%fact_col                 (:,:) = nan
     allocate(this%c_h2osfc_col             (begc:endc))                      ; this%c_h2osfc_col             (:)   = nan
+
+    ! For VSFM model
+    allocate(this%t_soil_col_1d            ((endc-begc+1)*nlevgrnd))         ; this%t_soil_col_1d            (:) = nan
 
   end subroutine InitAllocate
 

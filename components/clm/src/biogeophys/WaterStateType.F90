@@ -91,6 +91,14 @@ module WaterstateType
      real(r8), pointer :: errh2o_col             (:)   ! water conservation error (mm H2O)
      real(r8), pointer :: errh2osno_col          (:)   ! snow water conservation error(mm H2O)
 
+     ! For VSFM
+     real(r8), pointer :: vsfm_fliq_col_1d       (:)   ! fraction of liquid saturation for VSFM [-]
+     real(r8), pointer :: vsfm_sat_col_1d        (:)   ! liquid saturation from VSFM [-]
+     real(r8), pointer :: vsfm_mass_col_1d       (:)   ! liquid mass per unit area from VSFM [kg H2O/m^2]
+     real(r8), pointer :: vsfm_smpl_col_1d       (:)   ! 1D soil matrix potential liquid from VSFM [m]
+     real(r8), pointer :: vsfm_soilp_col_1d      (:)   ! 1D soil liquid pressure from VSFM [Pa]
+     real(r8), pointer :: soilp_col              (:,:) ! col soil pressure (Pa)
+
    contains
 
      procedure          :: Init         
@@ -148,6 +156,7 @@ contains
     integer :: begc, endc
     integer :: begl, endl
     integer :: begg, endg
+    integer :: ncells
     !------------------------------------------------------------------------
 
     begp = bounds%begp; endp= bounds%endp
@@ -221,6 +230,14 @@ contains
     allocate(this%errh2o_patch           (begp:endp))                     ; this%errh2o_patch           (:)   = nan
     allocate(this%errh2o_col             (begc:endc))                     ; this%errh2o_col             (:)   = nan
     allocate(this%errh2osno_col          (begc:endc))                     ; this%errh2osno_col          (:)   = nan
+
+    ncells = (endc - begc + 1)*nlevgrnd
+    allocate(this%vsfm_fliq_col_1d(          ncells))                     ; this%vsfm_fliq_col_1d       (:)   = nan
+    allocate(this%vsfm_sat_col_1d(           ncells))                     ; this%vsfm_sat_col_1d        (:)   = nan
+    allocate(this%vsfm_mass_col_1d(          ncells))                     ; this%vsfm_mass_col_1d       (:)   = nan
+    allocate(this%vsfm_smpl_col_1d(          ncells))                     ; this%vsfm_smpl_col_1d       (:)   = nan
+    allocate(this%vsfm_soilp_col_1d(         ncells))                     ; this%vsfm_soilp_col_1d      (:)   = nan
+    allocate(this%soilp_col              (begc:endc,1:nlevgrnd))          ; this%soilp_col              (:,:) = nan
 
   end subroutine InitAllocate
 
@@ -806,6 +823,11 @@ contains
          dim1name='pft', &
          long_name='canopy water', units='kg/m2', &
          interpinic_flag='interp', readvar=readvar, data=this%h2ocan_patch)
+
+    call restartvar(ncid=ncid, flag=flag, varname='SOILP', xtype=ncd_double,  &
+         dim1name='column', dim2name='levgrnd', switchdim=.true., &
+         long_name='soil pressure ', units='Pa', &
+         interpinic_flag='interp', readvar=readvar, data=this%soilp_col)
 
     ! Determine volumetric soil water (for read only)
     if (flag == 'read' ) then

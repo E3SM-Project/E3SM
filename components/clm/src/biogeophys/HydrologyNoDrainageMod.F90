@@ -74,6 +74,8 @@ contains
     use tracerfluxType       , only : tracerflux_type
     use tracerstatetype      , only : tracerstate_type
     use BeTRTracerType       , only : betrtracer_type        
+    use clm_varctl           , only : use_vsfm
+    use SoilHydrologyMod     , only : DrainageVSFM
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds               
@@ -155,6 +157,7 @@ contains
          air_vol            => waterstate_vars%air_vol_col            , & ! Output: [real(r8) (:,:) ]  volumetric air porosity
          eff_porosity       => soilstate_vars%eff_porosity_col        , & ! Output: [real(r8) (:,:) ]  effective soil porosity
 
+
          watsat             => soilstate_vars%watsat_col              , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
          sucsat             => soilstate_vars%sucsat_col              , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)             
          bsw                => soilstate_vars%bsw_col                 , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"              
@@ -199,6 +202,13 @@ contains
           waterstate_vars%h2osoi_liq_col(bounds%begc:bounds%endc, 1:nlevsoi))
       endif
       
+      if (use_vsfm) then
+         call DrainageVSFM(bounds, num_hydrologyc, filter_hydrologyc, &
+              num_urbanc, filter_urbanc,&
+              temperature_vars, soilhydrology_vars, soilstate_vars, &
+              waterstate_vars, waterflux_vars)
+      endif
+
       call SoilWater(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
             soilhydrology_vars, soilstate_vars, waterflux_vars, waterstate_vars, temperature_vars, &
             soil_water_retention_curve)

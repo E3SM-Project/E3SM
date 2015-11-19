@@ -50,6 +50,7 @@ contains
     use clm_time_manager , only : get_step_size, get_nstep
     use SoilHydrologyMod , only : CLMVICMap, Drainage
     use TracerParamsMod  , only : pre_diagnose_soilcol_water_flux, diagnose_drainage_water_flux    
+    use clm_varctl       , only : use_vsfm
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds               
@@ -128,10 +129,12 @@ contains
               h2osoi_liq(bounds%begc:bounds%endc, 1:nlevsoi))
       endif
 
-      call Drainage(bounds, num_hydrologyc, filter_hydrologyc, &
-           num_urbanc, filter_urbanc,&
-           temperature_vars, soilhydrology_vars, soilstate_vars, &
-           waterstate_vars, waterflux_vars)
+      if (.not. use_vsfm) then
+         call Drainage(bounds, num_hydrologyc, filter_hydrologyc, &
+              num_urbanc, filter_urbanc,&
+              temperature_vars, soilhydrology_vars, soilstate_vars, &
+              waterstate_vars, waterflux_vars)
+      endif
 
       if (use_betr) then
          call diagnose_drainage_water_flux(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
