@@ -152,6 +152,9 @@ value of RUN_STARTDATE will be date2.
 
 <COMPSET sname="B_2013_WACCM_BC_CN" alias="B2013WBCCN" >2013_CAM4%WCBC_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
 
+<!-- ACME B compsets -->
+<COMPSET sname="ACMEB_1850"                alias="A_B1850" >1850_CAM5_CLM45%CN_MPASCICE%SSMI_MPASO_RTM_SGLC_SWAV</COMPSET>
+
 <!-- BG compsets -->
 
 <COMPSET sname="B_2000_CN_GLC_CISM1"  alias="BGCN"   >2000_CAM4_CLM40%CN_CICE_POP2_RTM_CISM1_SWAV</COMPSET>
@@ -164,12 +167,16 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="B_RCP6.0_CN_GLC_CISM1"    alias="BGRCP60CN" grid="gland">RCP6_CAM4_CLM40%CN_CICE_POP2_RTM_CISM1_SWAV</COMPSET>
 <COMPSET sname="B_RCP8.5_CN_GLC_CISM1"    alias="BGRCP85CN" grid="gland">RCP8_CAM4_CLM40%CN_CICE_POP2_RTM_CISM1_SWAV</COMPSET>
 
+<!-- ACME BG compsets -->
+<COMPSET sname="ACMEB_1850_CN_GLC_MPASLI"  alias="A_BG1850CN" >1850_CAM5_CLM45%CN_MPASCICE%SSMI_MPASO_RTM_MPASLI_SWAV</COMPSET>
+
 <!-- C compsets -->
 
 <COMPSET sname="C_NORMAL_YEAR"        alias="C"    >2000_DATM%NYF_SLND_DICE%SSMI_POP2_DROF%NYF_SGLC_SWAV</COMPSET>
 <COMPSET sname="C_INTERANNUAL"        alias="CIAF" >2000_DATM%IAF_SLND_DICE%SIAF_POP2_DROF%IAF_SGLC_SWAV</COMPSET>
 <COMPSET sname="C_NORMAL_YEAR_ECOSYS" alias="CECO" >1850_DATM%NYF_SLND_DICE%SSMI_POP2%ECO_DROF%NYF_SGLC_SWAV</COMPSET>
 
+<!-- ACME C compsets -->
 <COMPSET sname="C_MPAS_NORMAL_YEAR"   alias="CMPASO-NYF" support_level="Experimental, under development" >2000_DATM%NYF_SLND_DICE%SSMI_MPASO_DROF%NYF_SGLC_SWAV</COMPSET>
 <COMPSET sname="C_MPAS_INTERANNUAL"        alias="CMPASO-IAF" support_level="Experimental, under development" >2000_DATM%IAF_SLND_DICE%SIAF_MPASO_DROF%IAF_SGLC_SWAV</COMPSET>
 
@@ -177,6 +184,8 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="D_NORMAL_YEAR" alias="D"    support_level="Requires additional user-supplied datasets" >2000_DATM%NYF_SLND_CICE_DOCN%SOM_DROF%NYF_SGLC_SWAV</COMPSET>
 <COMPSET sname="D_INTERANNUAL" alias="DIAF" support_level="Requires additional user-supplied datasets" >2000_DATM%IAF_SLND_CICE_DOCN%SOM_DROF%IAF_SGLC_SWAV</COMPSET>
 <COMPSET sname="D_TEST"        alias="DTEST">2000_DATM%NYF_SLND_CICE_DOCN%SOM_DROF%NYF_SGLC_SWAV_TEST </COMPSET>
+
+<!-- ACME D compsets -->
 <COMPSET sname="D_TEST_MPAS"   alias="DTESTM">2000_DATM%NYF_SLND_MPASCICE_DOCN%SOM_DROF%NYF_SGLC_SWAV_TEST </COMPSET>
 
 <!-- E compsets -->
@@ -1658,7 +1667,7 @@ DOCN%COPY => docn copy mode
 <GLC_NCPL compset="_SLND.*SOCN.*_MPASLI">1</GLC_NCPL>
 <ROF_NCPL compset="_SLND.*SOCN.*_MPASLI">1</ROF_NCPL>
 
-<!-- coupler intervals for MPASLI-ONLY compset -->
+<!-- coupler intervals for MPASLI and MPASO compset -->
 <NCPL_BASE_PERIOD compset="_DATM.*_SLND.*MPASO.*_MPASLI">day  </NCPL_BASE_PERIOD>
 <ATM_NCPL compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</ATM_NCPL>
 <LND_NCPL compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</LND_NCPL>
@@ -1666,6 +1675,15 @@ DOCN%COPY => docn copy mode
 <OCN_NCPL compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</OCN_NCPL>
 <GLC_NCPL compset="_DATM.*_SLND.*MPASO.*_MPASLI">1</GLC_NCPL>
 <ROF_NCPL compset="_DATM.*_SLND.*MPASO.*_MPASLI">24</ROF_NCPL>
+
+<!-- coupler intervals for CAM, CLM, and MPASO compset -->
+<NCPL_BASE_PERIOD compset="_CAM.*_CLM.*MPASO">day  </NCPL_BASE_PERIOD>
+<ATM_NCPL compset="_CAM.*_CLM.*MPASO">48</ATM_NCPL>
+<LND_NCPL compset="_CAM.*_CLM.*MPASO">48</LND_NCPL>
+<ICE_NCPL compset="_CAM.*_CLM.*MPASO">48</ICE_NCPL>
+<OCN_NCPL compset="_CAM.*_CLM.*MPASO">24</OCN_NCPL>
+<GLC_NCPL compset="_CAM.*_CLM.*MPASO">1</GLC_NCPL>
+<ROF_NCPL compset="_CAM.*_CLM.*MPASO">8</ROF_NCPL>
 
 
 <!-- ======================================= -->
