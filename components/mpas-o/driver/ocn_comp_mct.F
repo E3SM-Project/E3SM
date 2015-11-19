@@ -639,7 +639,6 @@ contains
     if (errorCode /= 0) then
        call mpas_dmpar_global_abort('ERROR in ocn_export_mct')
     endif
-
     ! Setup clock for initial runs
     if ( runtype == 'continue' ) then
        block_ptr => domain % blocklist
@@ -669,7 +668,7 @@ contains
     if (errorCode /= 0) then
        call mpas_dmpar_global_abort('ERROR in ocn_import_mct')
     endif
-
+    
     ! Build forcing arrays.
     block_ptr => domain % blocklist
     do while(associated(block_ptr))
@@ -1668,9 +1667,6 @@ contains
 !      o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = CO2Flux(i)
 !      o2x_o % rAttr(index_o2x_Faoo_fdms_ocn, n) = DMSFlux(i)
 !      o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = surfaceUpwardCO2Flux(i)
-
-!JGF 311015 TODO: Figure out why accessing these fields causes segfault, and replace the
-!0.0_RKIND set.a
 
        o2x_o % rAttr(index_o2x_So_blt, n) = landIceBoundaryLayerTemperature(i)
        o2x_o % rAttr(index_o2x_So_bls, n) = landIceBoundaryLayerSalinity(i)

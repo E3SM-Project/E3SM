@@ -1358,7 +1358,7 @@ subroutine cesm_init()
    glc_c2_ocn = .false.
    glc_c2_ice = .false.
    glcshelf_c2_ocn = .false.
-   glcshelf_c2_ice = .false.   
+   glcshelf_c2_ice = .false.
    wav_c2_ocn = .false.
 
    if (atm_present) then
@@ -1393,7 +1393,10 @@ subroutine cesm_init()
    if (glc_present) then
       if (glclnd_present .and. lnd_prognostic) glc_c2_lnd = .true.
       if (glcocn_present .and. ocn_prognostic) glc_c2_ocn = .true.
+      if (glcocn_present .and. ocn_prognostic) glcshelf_c2_ocn = .true.
       if (glcice_present .and. iceberg_prognostic) glc_c2_ice = .true.
+      if (glcocn_present .and. ice_prognostic) glcshelf_c2_ice = .true.
+      
    endif
    if (wav_present) then
       if (ocn_prognostic) wav_c2_ocn = .true.
@@ -1470,8 +1473,8 @@ subroutine cesm_init()
       write(logunit,F0L)'glc_c2_lnd            = ',glc_c2_lnd
       write(logunit,F0L)'glc_c2_ocn            = ',glc_c2_ocn
       write(logunit,F0L)'glc_c2_ice            = ',glc_c2_ice
-      write(logunit,F0L)'glcshelf_c2_ocn       = ',glc_c2_ocn
-      write(logunit,F0L)'glcshelf_c2_ice       = ',glc_c2_ice      
+      write(logunit,F0L)'glcshelf_c2_ocn       = ',glcshelf_c2_ocn
+      write(logunit,F0L)'glcshelf_c2_ice       = ',glcshelf_c2_ice      
       write(logunit,F0L)'wav_c2_ocn            = ',wav_c2_ocn
 
       write(logunit,F0L)'dead components       = ',dead_comps
@@ -1581,9 +1584,8 @@ subroutine cesm_init()
       call prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm)
       
       call prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd)
-
-      call prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, wav_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn)
-
+      call prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, &
+                                   wav_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn)
       call prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, glcshelf_c2_ice, rof_c2_ice )
 
       call prep_rof_init(infodata, lnd_c2_rof)

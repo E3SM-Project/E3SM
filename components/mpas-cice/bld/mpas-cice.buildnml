@@ -41,8 +41,8 @@ my $grid_prefix = '';
 my $decomp_prefix = '';
 
 if ( $ICE_GRID eq 'oEC60to30' ) {
-	$grid_date .= '150107';
-	$grid_prefix .= 'cice.EC.60-30km';
+	$grid_date .= '151020';
+	$grid_prefix .= 'cice.EC60to30km';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'mpas120' ) {
 	$grid_date .= '121116';

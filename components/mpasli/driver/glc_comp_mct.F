@@ -717,13 +717,12 @@ contains
         call memmon_reset_addr()
     endif
 #endif
-    call shr_sys_flush(stderrUnit)
-
     call check_clocks_sync(domain % clock, Eclock, stderrUnit, err_tmp)
     ierr = ior(ierr,err_tmp)
 
     write(stderrUnit,*) '=== glc_init_mct complete.'
-
+    call shr_sys_flush(stderrUnit)
+    
 !-----------------------------------------------------------------------
 !EOC
 
@@ -1434,15 +1433,11 @@ contains
         call mpas_pool_get_subpool(block % structs, 'thermal',  thermalPool)	
 
         call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
-        call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
-        call mpas_pool_get_array(geometryPool, 'thickness', Thickness)	
+        call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness, timeLevel = 1)
+        call mpas_pool_get_array(geometryPool, 'thickness', Thickness, timeLevel = 1)
 	call mpas_pool_get_array(thermalPool, 'basalTemperature', basalTemperature)
 	
         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-	
-	!Jer: set these to zero uniformly to be sure (perhaps redundant)
-	g2x_g % rAttr(index_g2x_Sg_icemask_grounded, :)=0.0_RKIND
-	g2x_g % rAttr(index_g2x_Sg_icemask_floating, :)=0.0_RKIND	
 	Fogg_rofi=0.0_RKIND
 	Figg_rofi=0.0_RKIND
         do i = 1, nCellsSolve

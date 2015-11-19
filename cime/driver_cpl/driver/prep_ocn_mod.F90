@@ -332,8 +332,7 @@ contains
           end if
           call seq_map_init_rcfile(mapper_Sg2o, glc(1), ocn(1), &
                'seq_maps.rc', 'glc2ocn_smapname:', 'glc2ocn_smaptype:',samegrid_og, &
-               'mapper_Sg2o initialization',esmf_map_flag)	       
-	       
+               'mapper_Sg2o initialization',esmf_map_flag)
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Fg2o'

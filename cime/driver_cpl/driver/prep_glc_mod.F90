@@ -1,6 +1,6 @@
 module prep_glc_mod
 
-  use shr_kind_mod    , only: r8 => SHR_KIND_R8 
+  use shr_kind_mod    , only: r8 => SHR_KIND_R8
   use shr_kind_mod    , only: cl => SHR_KIND_CL
   use shr_sys_mod     , only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct    , only: num_inst_glc, num_inst_lnd, num_inst_frc, &
@@ -149,15 +149,15 @@ contains
     allocate(mapper_So2g)
     allocate(mapper_Fo2g)   
 
+    g2x_gx => component_get_c2x_cx(glc(1))
+    x2g_gx => component_get_x2c_cx(glc(1))
+    lsize_g = mct_aVect_lsize(g2x_gx)
+
     if (glc_present .and. lnd_c2_glc) then
 
        call seq_comm_getData(CPLID, &
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
-       g2x_gx => component_get_c2x_cx(lnd(1))
-       x2g_gx => component_get_x2c_cx(glc(1))
-       lsize_g = mct_aVect_lsize(g2x_gx)
-       
        l2x_lx => component_get_c2x_cx(lnd(1))
        lsize_l = mct_aVect_lsize(l2x_lx)
               
@@ -194,32 +194,27 @@ contains
        call shr_sys_flush(logunit)
           
     end if
-    
+
     if (glc_present .and. ocn_c2_glc) then
 
        allocate(o2x_gx(num_inst_ocn))
+       do eoi = 1,num_inst_ocn
+	  call mct_aVect_init(o2x_gx(eoi), rList=seq_flds_o2x_fields, lsize=lsize_g)
+	  call mct_aVect_zero(o2x_gx(eoi))
+       enddo
+
        allocate(x2gacc_gx(num_inst_glc))
+       do egi = 1,num_inst_glc
+          call mct_aVect_init(x2gacc_gx(egi), x2g_gx, lsize_g)
+          call mct_aVect_zero(x2gacc_gx(egi))
+       end do
 
        o2x_ox => component_get_c2x_cx(ocn(1))
        lsize_o = mct_aVect_lsize(o2x_ox)
-       
-       allocate(o2x_gx(num_inst_ocn))
-       allocate(x2gacc_gx(num_inst_glc))
 
-       do eoi = 1,num_inst_ocn
-          call mct_aVect_init(o2x_gx(eoi), rList=seq_flds_o2x_fields, lsize=lsize_g)
-          call mct_aVect_zero(o2x_gx(eoi))
-       enddo       
- 
-       do egi = 1,num_inst_glc
-          call mct_avect_init(x2gacc_gx(egi), x2g_gx, lsize_g)
-          call mct_aVect_zero(x2gacc_gx(egi))
-       end do       
        x2gacc_gx_cnt = 0
-       
        samegrid_go = .true.
        if (trim(ocn_gnam) /= trim(glc_gnam)) samegrid_go = .false.
-
        if (iamroot_CPLID) then
           write(logunit,*) ' '
           write(logunit,F00) 'Initializing mapper_So2g'
@@ -227,15 +222,14 @@ contains
        call seq_map_init_rcfile(mapper_So2g, ocn(1), glc(1), &
        'seq_maps.rc','ocn2glc_smapname:','ocn2glc_smaptype:',samegrid_go, &
        'mapper_So2g initialization',esmf_map_flag)
-
        if (iamroot_CPLID) then
           write(logunit,*) ' '
           write(logunit,F00) 'Initializing mapper_Fo2g'
        end if
        call seq_map_init_rcfile(mapper_Fo2g, ocn(1), glc(1), &
        'seq_maps.rc','ocn2glc_fmapname:','ocn2glc_fmaptype:',samegrid_go, &
-       'mapper_Fo2g initialization',esmf_map_flag)     
-       
+       'mapper_Fo2g initialization',esmf_map_flag)
+
        !Initialize module-level arrays associated with compute_melt_fluxes
        allocate(oceanTemperature(lsize_g))
        allocate(oceanSalinity(lsize_g))
