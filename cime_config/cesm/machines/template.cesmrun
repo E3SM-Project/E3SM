@@ -209,7 +209,7 @@ sub doPreRunChecks()
     $logger->info(" - To prestage restarts, untar a restart.tar file into $config{'RUNDIR'}");
 	
     # Run preview namelists.. should turn this into a module at some point..
-    system("./preview_namelists -loglevel $opts{loglevel}");
+    system("./preview_namelists -loglevel $opts{loglevel} ");
 	
     if($?)
     {
@@ -248,7 +248,7 @@ sub checkInputData()
         $out.="expected location, and are not from the input data repository.\n";
         $out.="This is informational only.\n";
 	$logger->warn($out);
-	system("./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check -loglevel $opts{loglevel}");
+	system("./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check -loglevel $opts{loglevel} ");
     }
     
     if(@missing)
@@ -490,7 +490,7 @@ sub resubmitCheck()
 	my $submitscript = "$config{'CASEROOT'}/case.submit";
 	my $cwd = getcwd;
 	chdir $config{'CASEROOT'};
-	my $resubmitcommand = "$submitscript -resubmit -scriptname case. -loglevel $opts{loglevel}";
+	my $resubmitcommand = "$submitscript -resubmit -scriptname case.";
 
 	if(defined $config{TESTCASE} && $config{TESTCASE} eq "ERR"){
 	    $resubmitcommand .= "test"; 

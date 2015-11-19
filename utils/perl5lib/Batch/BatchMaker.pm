@@ -513,6 +513,11 @@ sub setQueue()
     # Get the queue from env_batch.xml if its defined there
     # otherwise get the default from config_machines.xml
     # and set it in env_batch.xml
+    if(! defined $self->{envBatch}){
+	$logger->logdie("envBatch not defined");
+    }elsif(! defined $self->{job}){
+	$logger->logdie("job not defined");
+    }
 
     my $queue = $self->{envBatch}{$self->{job}}{JOB_QUEUE};
     
