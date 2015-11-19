@@ -333,20 +333,7 @@ class CreateTest(object):
     ###########################################################################
         case_id = self._get_case_id(test_name)
         test_dir = self._get_test_dir(test_name)
-        success = self._run_phase_command(test_name, "./%s.test_build" % case_id, BUILD_PHASE, from_dir=test_dir)
-
-        if (not success):
-            bld_dir = acme_util.get_machine_info("EXEROOT", project=self._project, case=case_id)
-            stat, output, _ = run_cmd("grep -l ERROR %s/*log*" % bld_dir, ok_to_fail=True)
-            if (stat == 0):
-                for filename in output.splitlines():
-                    self._log_output(test_name, "###############################################################################")
-                    self._log_output(test_name, "Log data for broken build from '%s'" % filename)
-                    self._log_output(test_name, open(filename, "r").read())
-            else:
-                warning("Build failed but no ERROR appeared in logs")
-
-        return success
+        return self._run_phase_command(test_name, "./%s.test_build" % case_id, BUILD_PHASE, from_dir=test_dir)
 
     ###########################################################################
     def _run_phase(self, test_name):
