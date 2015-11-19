@@ -106,6 +106,10 @@
 					possible_values="Any positive integer value greater than 0."
 					mode="forward;analysis;init"
 		/>
+		<nml_option name="config_restart_forcing_fields" type="logical" default_value=".true." units="unitless"
+					description="Controls whether forcing related fields are part of the restart stream or not."
+					possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<nml_record name="decomposition" mode="forward;analysis;init">
 		<nml_option name="config_num_halos" type="integer" default_value="3" units="unitless"
@@ -981,6 +985,7 @@
 		<package name="analysisMode" description="This package controls variables that are intended to be used within the analysis run mode of the ocean model."/>
 		<package name="initMode" description="This package controls variables that are intended to be used within the init run mode of the ocean model."/>
 		<package name="cullCells" description="This package controls variables that provide information on what cells should be culled."/>
+		<package name="restartForcingFields" destiption="This package controls whether forcing related fields are included in the restart stream or not."/>
 	</packages>
 
 	<streams>
@@ -1215,6 +1220,7 @@
 			<var name="vertCoordMovementWeights"/>
 			<var name="xtime"/>
 			<var name="boundaryLayerDepth"/>
+			<var name="seaSurfacePressure" packages="restartForcingFields"/>
 			<var_array name="tracersSurfaceValue"/>
 			<var_array name="surfaceVelocity"/>
 			<var_array name="SSHGradient"/>
