@@ -12,29 +12,29 @@ module ConnectionSetType
 
   type, public :: connection_set_type
 
-     PetscInt                :: id                                   ! identifier
+     PetscInt                                     :: id              ! identifier
 
-     PetscInt                :: num_connections                      ! total num. of connections
-     PetscInt, pointer       :: id_up(:)                             ! IDs of upwind cells [-]
-     PetscInt, pointer       :: id_dn(:)                             ! IDs of downwind cells [-]
+     PetscInt                                     :: num_connections ! total num. of connections
+     PetscInt, pointer                            :: id_up(:)        ! IDs of upwind cells [-]
+     PetscInt, pointer                            :: id_dn(:)        ! IDs of downwind cells [-]
 
-     PetscReal, pointer      :: area(:)                              ! area normal to connection [m^2]
+     PetscReal, pointer                           :: area(:)         ! area normal to connection [m^2]
 
-     ! Distances are computed as : downwind - upwind
-     PetscReal, pointer      :: dist_up(:)                           ! Magnitude of distance from centroid of
+                                                                     ! Distances are computed as : downwind - upwind
+     PetscReal, pointer                           :: dist_up(:)      ! Magnitude of distance from centroid of
                                                                      ! upwind cell to centroid of cell face [m]
-     PetscReal, pointer      :: dist_dn(:)                           ! Magnitude of distance from centroid of
+     PetscReal, pointer                           :: dist_dn(:)      ! Magnitude of distance from centroid of
                                                                      ! downwind cell to centroid of cell face [m]
      type(array_dim3_type), dimension(:), pointer :: dist_unitvec    ! Unit vector [-]
 
-     type(connection_set_type), pointer :: next
+     type(connection_set_type), pointer           :: next
 
   end type connection_set_type
 
   type, public :: connection_set_list_type
-    PetscInt                              :: num_connection_list
-    type(connection_set_type), pointer    :: first
-    type(connection_set_type), pointer    :: last
+     PetscInt                           :: num_connection_list
+     type(connection_set_type), pointer :: first
+     type(connection_set_type), pointer :: last
   end type connection_set_list_type
 
   public :: ConnectionSetNew
@@ -57,7 +57,7 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    PetscInt, intent(in) :: num_connections
+    PetscInt, intent(in)              :: num_connections
     !
     ! !LOCAL VARIABLES:
     type(connection_set_type),pointer :: ConnectionSetNew
@@ -68,12 +68,12 @@ contains
     conn_set%id                = 0
     conn_set%num_connections   = num_connections
 
-    allocate(conn_set%id_up          (num_connections)); conn_set%id_up         (:) = 0
-    allocate(conn_set%id_dn          (num_connections)); conn_set%id_dn         (:) = 0
-    allocate(conn_set%area           (num_connections)); conn_set%area          (:) = nan
-    allocate(conn_set%dist_up        (num_connections)); conn_set%dist_up       (:) = nan
-    allocate(conn_set%dist_dn        (num_connections)); conn_set%dist_dn       (:) = nan
-    allocate(conn_set%dist_unitvec   (num_connections));
+    allocate(conn_set%id_up       (num_connections)); conn_set%id_up  (:) = 0
+    allocate(conn_set%id_dn       (num_connections)); conn_set%id_dn  (:) = 0
+    allocate(conn_set%area        (num_connections)); conn_set%area   (:) = nan
+    allocate(conn_set%dist_up     (num_connections)); conn_set%dist_up(:) = nan
+    allocate(conn_set%dist_dn     (num_connections)); conn_set%dist_dn(:) = nan
+    allocate(conn_set%dist_unitvec(num_connections));
 
     nullify(conn_set%next)
 
@@ -108,18 +108,18 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    type(connection_set_list_type)      :: list
-    type(connection_set_type),pointer   :: new_conn_set
+    type(connection_set_list_type)    :: list
+    type(connection_set_type),pointer :: new_conn_set
 
     list%num_connection_list = list%num_connection_list + 1
     new_conn_set%id          = list%num_connection_list
 
     if (.not.associated(list%first)) then
-      list%first => new_conn_set
+       list%first => new_conn_set
     endif
 
     if (associated(list%last)) then
-      list%last%next => new_conn_set
+       list%last%next => new_conn_set
     endif
 
     list%last => new_conn_set
@@ -171,14 +171,14 @@ contains
     type(connection_set_list_type), intent(inout) :: list
     !
     ! !LOCAL VARIABLES:
-    type(connection_set_type), pointer :: curr_conn_set, prev_conn_set
+    type(connection_set_type), pointer            :: curr_conn_set, prev_conn_set
 
     curr_conn_set => list%first
     do
-      if (.not.associated(curr_conn_set)) exit
-      prev_conn_set => curr_conn_set
-      curr_conn_set => curr_conn_set%next
-      call ConnectionSetDestroy(prev_conn_set)
+       if (.not.associated(curr_conn_set)) exit
+       prev_conn_set => curr_conn_set
+       curr_conn_set => curr_conn_set%next
+       call ConnectionSetDestroy(prev_conn_set)
     enddo
 
     call ConnectionSetListInit(list)

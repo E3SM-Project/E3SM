@@ -37,14 +37,14 @@ module MultiPhysicsProbVSFM
 #include "finclude/petscviewer.h"
 
   type, public, extends(multiphysicsprob_base_type) :: mpp_vsfm_type
-    class(sysofeqns_vsfm_type),pointer          :: sysofeqns
-    type(sysofeqns_base_pointer_type), pointer  :: sysofeqns_ptr
-  contains
-    procedure, public :: Init                     => VSFMMPPInit
-    procedure, public :: Clean                    => VSFMMPPClean
-    procedure, public :: Setup                    => VSFMMPPSetup
-    procedure, public :: Restart                  => VSFMMPPRestart
-    procedure, public :: UpdateSysOfEqnsAuxVars   => VSFMMPPUpdateSysOfEqnsAuxVars
+     class(sysofeqns_vsfm_type),pointer          :: sysofeqns
+     type(sysofeqns_base_pointer_type), pointer  :: sysofeqns_ptr
+   contains
+     procedure, public :: Init                   => VSFMMPPInit
+     procedure, public :: Clean                  => VSFMMPPClean
+     procedure, public :: Setup                  => VSFMMPPSetup
+     procedure, public :: Restart                => VSFMMPPRestart
+     procedure, public :: UpdateSysOfEqnsAuxVars => VSFMMPPUpdateSysOfEqnsAuxVars
   end type mpp_vsfm_type
 
   type(mpp_vsfm_type), public, target :: vsfm_mpp
@@ -80,7 +80,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine VSFMMPPSetup(this, begc, endc, num_hydrologyc, filter_hydrologyc, &
-                          soilstate_vars, waterstate_vars, soilhydrology_vars)
+       soilstate_vars, waterstate_vars, soilhydrology_vars)
     !
     ! !DESCRIPTION:
     ! Sets up the Variably Saturated Flow Model (VSFM) - Multi-Phyiscs Problem 
@@ -151,33 +151,33 @@ contains
     ! !DESCRIPTION:
     ! Sets up the PETSc SNES solver for the VSFM
     !
-    use SystemOfEquationsBasePointerType   , only : SOEResidual
-    use SystemOfEquationsBasePointerType   , only : SOEJacobian
-    use SystemOfEquationsVSFMType          , only : VSFMSOESetAuxVars
-    use GoverningEquationBaseType          , only : goveqn_base_type
-    use GoveqnRichardsODEPressureType      , only : goveqn_richards_ode_pressure_type
-    use MultiPhysicsProbConstants          , only : AUXVAR_INTERNAL
-    use MultiPhysicsProbConstants          , only : VAR_TEMPERATURE
-    use MultiPhysicsProbConstants          , only : MPP_VSFM_SNES_CLM
-    use abortutils                         , only : endrun
+    use SystemOfEquationsBasePointerType , only : SOEResidual
+    use SystemOfEquationsBasePointerType , only : SOEJacobian
+    use SystemOfEquationsVSFMType        , only : VSFMSOESetAuxVars
+    use GoverningEquationBaseType        , only : goveqn_base_type
+    use GoveqnRichardsODEPressureType    , only : goveqn_richards_ode_pressure_type
+    use MultiPhysicsProbConstants        , only : AUXVAR_INTERNAL
+    use MultiPhysicsProbConstants        , only : VAR_TEMPERATURE
+    use MultiPhysicsProbConstants        , only : MPP_VSFM_SNES_CLM
+    use abortutils                       , only : endrun
     !
     implicit none
     !
     ! !ARGUMENTS
-    class(mpp_vsfm_type)                                :: vsfm_mpp
+    class(mpp_vsfm_type)                              :: vsfm_mpp
     !
     ! !LOCAL VARIABLES:
-    PetscInt :: size
-    DM                                                  :: dm_p                ! DM object for pressure equation
-    PetscErrorCode                                      :: ierr
-    class(goveqn_base_type),pointer                     :: cur_goveq
-    class (goveqn_richards_ode_pressure_type),pointer   :: goveq_richards_pres
-    class(sysofeqns_vsfm_type),pointer                  :: vsfm_soe
-    PetscReal, parameter                                :: atol    = PETSC_DEFAULT_REAL
-    PetscReal, parameter                                :: rtol    = PETSC_DEFAULT_REAL
-    PetscReal, parameter                                :: stol    = 1.d-30
-    PetscInt, parameter                                 :: max_it  = PETSC_DEFAULT_INTEGER
-    PetscInt, parameter                                 :: max_f   = PETSC_DEFAULT_INTEGER
+    PetscInt                                          :: size
+    DM                                                :: dm_p                ! DM object for pressure equation
+    PetscErrorCode                                    :: ierr
+    class(goveqn_base_type),pointer                   :: cur_goveq
+    class (goveqn_richards_ode_pressure_type),pointer :: goveq_richards_pres
+    class(sysofeqns_vsfm_type),pointer                :: vsfm_soe
+    PetscReal, parameter                              :: atol    = PETSC_DEFAULT_REAL
+    PetscReal, parameter                              :: rtol    = PETSC_DEFAULT_REAL
+    PetscReal, parameter                              :: stol    = 1.d-10
+    PetscInt, parameter                               :: max_it  = PETSC_DEFAULT_INTEGER
+    PetscInt, parameter                               :: max_f   = PETSC_DEFAULT_INTEGER
 
     vsfm_soe => vsfm_mpp%sysofeqns
     vsfm_mpp%sysofeqns_ptr%ptr => vsfm_mpp%sysofeqns
@@ -216,25 +216,27 @@ contains
           call endrun(msg=errMsg(__FILE__, __LINE__))
     end select
 
-    call DMSetOptionsPrefix(dm_p, "fp_", ierr); CHKERRQ(ierr)
-    call DMDASetFieldName(dm_p, 0, "pressure_", ierr); CHKERRQ(ierr)
-    call DMSetFromOptions(dm_p, ierr); CHKERRQ(ierr)
+    call DMSetOptionsPrefix (dm_p , "fp_" , ierr               ); CHKERRQ(ierr)
+    call DMDASetFieldName   (dm_p , 0     , "pressure_" , ierr ); CHKERRQ(ierr)
+    call DMSetFromOptions   (dm_p , ierr                       ); CHKERRQ(ierr)
 
     ! Create DMComposite: pressure
-    call DMCompositeCreate(PETSC_COMM_SELF, vsfm_soe%dm, ierr); CHKERRQ(ierr)
-    call DMSetOptionsPrefix(vsfm_soe%dm, "pressure_", ierr); CHKERRQ(ierr)
-    call DMCompositeAddDM(vsfm_soe%dm, dm_p, ierr); CHKERRQ(ierr)
-    call DMDestroy(dm_p, ierr); CHKERRQ(ierr)
-    call DMSetUp(vsfm_soe%dm, ierr); CHKERRQ(ierr)
+    call DMCompositeCreate  (PETSC_COMM_SELF , vsfm_soe%dm , ierr ); CHKERRQ(ierr)
+    call DMSetOptionsPrefix (vsfm_soe%dm     , "pressure_" , ierr ); CHKERRQ(ierr)
+    call DMCompositeAddDM   (vsfm_soe%dm     , dm_p        , ierr ); CHKERRQ(ierr)
+    call DMDestroy          (dm_p            , ierr               ); CHKERRQ(ierr)
+    call DMSetUp            (vsfm_soe%dm     , ierr               ); CHKERRQ(ierr)
 
-    call DMCreateMatrix(vsfm_soe%dm, vsfm_soe%jac, ierr); CHKERRQ(ierr)
+    call DMCreateMatrix     (vsfm_soe%dm     , vsfm_soe%jac, ierr ); CHKERRQ(ierr)
 
     ! Create solution vector
-    call DMCreateGlobalVector(vsfm_soe%dm, vsfm_soe%soln,      ierr); CHKERRQ(ierr)
-    call DMCreateGlobalVector(vsfm_soe%dm, vsfm_soe%soln_prev, ierr); CHKERRQ(ierr)
+    call DMCreateGlobalVector(vsfm_soe%dm , vsfm_soe%soln          , ierr); CHKERRQ(ierr)
+    call DMCreateGlobalVector(vsfm_soe%dm , vsfm_soe%soln_prev     , ierr); CHKERRQ(ierr)
+    call DMCreateGlobalVector(vsfm_soe%dm , vsfm_soe%soln_prev_clm , ierr); CHKERRQ(ierr)
 
-    call VecZeroEntries(vsfm_soe%soln,      ierr); CHKERRQ(ierr)
-    call VecZeroEntries(vsfm_soe%soln_prev, ierr); CHKERRQ(ierr)
+    call VecZeroEntries(vsfm_soe%soln         , ierr); CHKERRQ(ierr)
+    call VecZeroEntries(vsfm_soe%soln_prev    , ierr); CHKERRQ(ierr)
+    call VecZeroEntries(vsfm_soe%soln_prev_clm, ierr); CHKERRQ(ierr)
 
     ! SNES
     call SNESCreate(PETSC_COMM_SELF, vsfm_soe%snes, ierr); CHKERRQ(ierr)
@@ -243,7 +245,7 @@ contains
 
     call SNESSetFunction(vsfm_soe%snes, PETSC_NULL_OBJECT, SOEResidual, &
                          vsfm_mpp%sysofeqns_ptr, ierr); CHKERRQ(ierr)
-    call SNESSetJacobian(vsfm_soe%snes, vsfm_soe%jac, vsfm_soe%jac, &
+    call SNESSetJacobian(vsfm_soe%snes, vsfm_soe%jac, vsfm_soe%jac,     &
                          SOEJacobian, vsfm_mpp%sysofeqns_ptr, ierr); CHKERRQ(ierr)
 
     call SNESSetFromOptions(vsfm_soe%snes, ierr); CHKERRQ(ierr)
@@ -252,7 +254,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine VSFMMPPInitialize(vsfm_mpp, begc, endc, &
-                               soilstate_vars, waterstate_vars, soilhydrology_vars)
+       soilstate_vars, waterstate_vars, soilhydrology_vars)
 
     !
     ! !DESCRIPTION:
@@ -262,39 +264,39 @@ contains
     ! - Setting initial conditions from CLM,
     ! - Performing pre- and post-solve for the VSFM.
     !
-    use SystemOfEquationsBasePointerType   , only : SOEResidual
-    use SystemOfEquationsBasePointerType   , only : SOEJacobian
-    use SystemOfEquationsVSFMType          , only : VSFMSOESetAuxVars
-    use GoverningEquationBaseType          , only : goveqn_base_type
-    use GoveqnRichardsODEPressureType      , only : goveqn_richards_ode_pressure_type
-    use MultiPhysicsProbConstants          , only : AUXVAR_INTERNAL
-    use MultiPhysicsProbConstants          , only : VAR_TEMPERATURE
-    use MultiPhysicsProbConstants          , only : MPP_VSFM_SNES_CLM
-    use abortutils                         , only : endrun
+    use SystemOfEquationsBasePointerType , only : SOEResidual
+    use SystemOfEquationsBasePointerType , only : SOEJacobian
+    use SystemOfEquationsVSFMType        , only : VSFMSOESetAuxVars
+    use GoverningEquationBaseType        , only : goveqn_base_type
+    use GoveqnRichardsODEPressureType    , only : goveqn_richards_ode_pressure_type
+    use MultiPhysicsProbConstants        , only : AUXVAR_INTERNAL
+    use MultiPhysicsProbConstants        , only : VAR_TEMPERATURE
+    use MultiPhysicsProbConstants        , only : MPP_VSFM_SNES_CLM
+    use abortutils                       , only : endrun
     !
     implicit none
     !
     ! !ARGUMENTS
-    class(mpp_vsfm_type)                                :: vsfm_mpp
-    integer, intent(in)                                 :: begc,endc
-    type(soilstate_type) , intent(in)                   :: soilstate_vars
-    type(waterstate_type), intent(in)                   :: waterstate_vars
-    type(soilhydrology_type), intent(in)                :: soilhydrology_vars
+    class(mpp_vsfm_type)                              :: vsfm_mpp
+    integer, intent(in)                               :: begc,endc
+    type(soilstate_type) , intent(in)                 :: soilstate_vars
+    type(waterstate_type), intent(in)                 :: waterstate_vars
+    type(soilhydrology_type), intent(in)              :: soilhydrology_vars
     !
     ! !LOCAL VARIABLES:
-    PetscInt :: size
-    class(goveqn_base_type),pointer                     :: cur_goveq
-    class (goveqn_richards_ode_pressure_type),pointer   :: goveq_richards_pres
-    class(sysofeqns_vsfm_type),pointer                  :: vsfm_soe
-    Vec                                                 :: variable_vec
-    PetscReal, pointer                                  :: vec_p(:)
-    PetscErrorCode                                      :: ierr
+    PetscInt                                          :: size
+    class(goveqn_base_type),pointer                   :: cur_goveq
+    class (goveqn_richards_ode_pressure_type),pointer :: goveq_richards_pres
+    class(sysofeqns_vsfm_type),pointer                :: vsfm_soe
+    Vec                                               :: variable_vec
+    PetscReal, pointer                                :: vec_p(:)
+    PetscErrorCode                                    :: ierr
 
     vsfm_soe => vsfm_mpp%sysofeqns
 
     ! Set initial coniditions
-    call VSFMMPPSetSoils(vsfm_mpp, begc, endc, soilstate_vars)
-    call VSFMMPPSetICs(vsfm_mpp, begc, endc, soilhydrology_vars)
+    call VSFMMPPSetSoils(vsfm_mpp, begc, endc, soilstate_vars     )
+    call VSFMMPPSetICs(  vsfm_mpp, begc, endc, soilhydrology_vars )
 
     ! Get pointers to governing-equations
     cur_goveq => vsfm_soe%goveqns
@@ -341,9 +343,9 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(mpp_vsfm_type)                                :: vsfm_mpp
-    integer, intent(in)                                 :: begc,endc
-    type(soilhydrology_type), intent(in)                :: soilhydrology_vars
+    class(mpp_vsfm_type)                 :: vsfm_mpp
+    integer, intent(in)                  :: begc,endc
+    type(soilhydrology_type), intent(in) :: soilhydrology_vars
 
     select case(vsfm_mpp%id)
     case (MPP_VSFM_SNES_CLM)
@@ -367,9 +369,9 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(mpp_vsfm_type)                                :: vsfm_mpp
-    integer, intent(in)                                 :: begc,endc
-    type(soilstate_type) , intent(in)                   :: soilstate_vars
+    class(mpp_vsfm_type)              :: vsfm_mpp
+    integer, intent(in)               :: begc,endc
+    type(soilstate_type) , intent(in) :: soilstate_vars
 
     select case(vsfm_mpp%id)
     case (MPP_VSFM_SNES_CLM)
@@ -388,66 +390,69 @@ contains
     ! Sets soil properties for VSFM solver from CLM
     !
     ! !USES:
-    use GoverningEquationBaseType         , only : goveqn_base_type
-    use GoveqnRichardsODEPressureType     , only : goveqn_richards_ode_pressure_type
-    use RichardsODEPressureAuxType        , only : rich_ode_pres_auxvar_type
-    use SaturationFunction                , only : SatFunc_Set_BC
-    use PorosityFunctionMod               , only : PorosityFunctionSetConstantModel
-    use ConditionType                     , only : condition_type
-    use ConnectionSetType                 , only : connection_set_type
-    use clm_varpar                        , only : nlevgrnd
-    use ColumnType                        , only : col
-    use LandunitType                      , only : lun
-    use landunit_varcon                   , only : istcrop, istsoil
-    use column_varcon                     , only : icol_road_perv
-    use clm_varcon                        , only : grav, denh2o
+    use GoverningEquationBaseType     , only : goveqn_base_type
+    use GoveqnRichardsODEPressureType , only : goveqn_richards_ode_pressure_type
+    use RichardsODEPressureAuxType    , only : rich_ode_pres_auxvar_type
+    use SaturationFunction            , only : SatFunc_Set_BC
+    use SaturationFunction            , only : SatFunc_Set_SBC_bz2
+    use SaturationFunction            , only : SatFunc_Set_SBC_bz3
+    use SaturationFunction            , only : SatFunc_Set_VG
+    use PorosityFunctionMod           , only : PorosityFunctionSetConstantModel
+    use ConditionType                 , only : condition_type
+    use ConnectionSetType             , only : connection_set_type
+    use clm_varpar                    , only : nlevgrnd
+    use ColumnType                    , only : col
+    use LandunitType                  , only : lun
+    use landunit_varcon               , only : istcrop, istsoil
+    use column_varcon                 , only : icol_road_perv
+    use clm_varcon                    , only : grav, denh2o
+    use clm_varctl                    , only : vsfm_satfunc_type
     !
     implicit none
     !
     ! !ARGUMENTS
-    class(mpp_vsfm_type)                                :: vsfm_mpp
-    integer, intent(in)                                 :: begc,endc
-    type(soilstate_type) , intent(in)                   :: soilstate_vars
+    class(mpp_vsfm_type)                              :: vsfm_mpp
+    integer, intent(in)                               :: begc,endc
+    type(soilstate_type) , intent(in)                 :: soilstate_vars
     !
     ! !LOCAL VARIABLES:
-    class (goveqn_richards_ode_pressure_type),pointer   :: goveq_richards_ode_pres
-    class(sysofeqns_vsfm_type),pointer                  :: vsfm_soe
-    class(goveqn_base_type),pointer                     :: cur_goveq
-    type (rich_ode_pres_auxvar_type), pointer           :: ode_aux_vars_in(:)
-    type (rich_ode_pres_auxvar_type), pointer           :: ode_aux_vars_bc(:)
-    type (rich_ode_pres_auxvar_type), pointer           :: ode_aux_vars_ss(:)
-    type(condition_type),pointer                        :: cur_cond
-    type(connection_set_type), pointer                  :: cur_conn_set
-    PetscInt                                            :: ghosted_id
-    PetscInt                                            :: sum_conn
-    PetscInt                                            :: iconn
-    PetscInt                                            :: ncells
-    PetscInt                                            :: j,c,g,l
-    PetscInt                                            :: icell
-    PetscReal                                           :: perm
-    PetscReal                                           :: por
-    PetscReal                                           :: sat_res
-    PetscReal                                           :: alpha
-    PetscReal                                           :: lambda
-    PetscReal                                           :: vish2o
-    PetscInt                                            :: first_active_hydro_col_id
-    PetscInt                                            :: col_id
-    PetscBool                                           :: dae_eqn
+    class (goveqn_richards_ode_pressure_type),pointer :: goveq_richards_ode_pres
+    class(sysofeqns_vsfm_type),pointer                :: vsfm_soe
+    class(goveqn_base_type),pointer                   :: cur_goveq
+    type (rich_ode_pres_auxvar_type), pointer         :: ode_aux_vars_in(:)
+    type (rich_ode_pres_auxvar_type), pointer         :: ode_aux_vars_bc(:)
+    type (rich_ode_pres_auxvar_type), pointer         :: ode_aux_vars_ss(:)
+    type(condition_type),pointer                      :: cur_cond
+    type(connection_set_type), pointer                :: cur_conn_set
+    PetscInt                                          :: ghosted_id
+    PetscInt                                          :: sum_conn
+    PetscInt                                          :: iconn
+    PetscInt                                          :: ncells
+    PetscInt                                          :: j,c,g,l
+    PetscInt                                          :: icell
+    PetscReal                                         :: perm
+    PetscReal                                         :: por
+    PetscReal                                         :: sat_res
+    PetscReal                                         :: alpha
+    PetscReal                                         :: lambda
+    PetscReal, parameter                              :: vish2o = 0.001002d0    ! [N s/m^2] @ 20 degC
+    PetscInt                                          :: first_active_hydro_col_id
+    PetscInt                                          :: col_id
+    PetscBool                                         :: dae_eqn
 
     associate(&
-         smpmin            =>    soilstate_vars%smpmin_col          , & ! Input:  [real(r8) (:)   ]  restriction for min of soil potential (mm)
-         watsat            =>    soilstate_vars%watsat_col          , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
-         hksat             =>    soilstate_vars%hksat_col           , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity at saturation (mm H2O /s)
-         bsw               =>    soilstate_vars%bsw_col             , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"
-         sucsat            =>    soilstate_vars%sucsat_col          , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)
-         eff_porosity      =>    soilstate_vars%eff_porosity_col    , & ! Input:  [real(r8) (:,:) ]  effective porosity = porosity - vol_ice
-         rootr_col         =>    soilstate_vars%rootr_col           , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer
-         smp_l             =>    soilstate_vars%smp_l_col           , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]
-         hk_l              =>    soilstate_vars%hk_l_col            , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity (mm/s)
-         rootr_pft         =>    soilstate_vars%rootr_patch           & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer
+         smpmin       =>    soilstate_vars%smpmin_col       , & ! Input:  [real(r8) (:)   ]  restriction for min of soil potential (mm)
+         watsat       =>    soilstate_vars%watsat_col       , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
+         hksat        =>    soilstate_vars%hksat_col        , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity at saturation (mm H2O /s)
+         bsw          =>    soilstate_vars%bsw_col          , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"
+         sucsat       =>    soilstate_vars%sucsat_col       , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)
+         eff_porosity =>    soilstate_vars%eff_porosity_col , & ! Input:  [real(r8) (:,:) ]  effective porosity = porosity - vol_ice
+         rootr_col    =>    soilstate_vars%rootr_col        , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer
+         smp_l        =>    soilstate_vars%smp_l_col        , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]
+         hk_l         =>    soilstate_vars%hk_l_col         , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity (mm/s)
+         rootr_pft    =>    soilstate_vars%rootr_patch        & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer
          )
 
-    vish2o = 0.001002d0    ! [N s/m^2] @ 20 degC
     first_active_hydro_col_id = -1
 
     vsfm_soe => vsfm_mpp%sysofeqns
@@ -533,8 +538,32 @@ contains
              call PorosityFunctionSetConstantModel(ode_aux_vars_in(icell)%porParams, &
                   ode_aux_vars_in(icell)%por)
 
-             call SatFunc_Set_BC(ode_aux_vars_in(icell)%satParams,  &
-                 sat_res, alpha, lambda)
+             if (vsfm_satfunc_type == 'brooks_corey') then
+                call SatFunc_Set_BC(ode_aux_vars_in(icell)%satParams,      &
+                                    sat_res,                               &
+                                    alpha,                                 &
+                                    lambda)
+             elseif (vsfm_satfunc_type == 'smooth_brooks_corey_bz2') then
+                call SatFunc_Set_SBC_bz2(ode_aux_vars_in(icell)%satParams, &
+                                         sat_res,                          &
+                                         alpha,                            &
+                                         lambda,                           &
+                                         -0.9d0/alpha)
+             elseif (vsfm_satfunc_type == 'smooth_brooks_corey_bz3') then
+                call SatFunc_Set_SBC_bz3(ode_aux_vars_in(icell)%satParams, &
+                                         sat_res,                          &
+                                         alpha,                            &
+                                         lambda,                           &
+                                         -0.9d0/alpha)
+             elseif (vsfm_satfunc_type == 'van_genuchten') then
+                call SatFunc_Set_VG(ode_aux_vars_in(icell)%satParams,      &
+                                    sat_res,                               &
+                                    alpha,                                 &
+                                    lambda)
+             else
+                call endrun(msg='ERROR:: Unknown vsfm_satfunc_type = '//vsfm_satfunc_type//&
+                  errMsg(__FILE__, __LINE__))
+             endif
 
           enddo
        enddo
@@ -576,10 +605,10 @@ contains
              sum_conn = sum_conn + 1
              ghosted_id = cur_conn_set%id_dn(iconn)
 
-             ode_aux_vars_ss(sum_conn)%perm(:)    = ode_aux_vars_in(ghosted_id)%perm(:)
-             ode_aux_vars_ss(sum_conn)%por        = ode_aux_vars_in(ghosted_id)%por
-             ode_aux_vars_ss(sum_conn)%satParams  = ode_aux_vars_in(ghosted_id)%satParams
-             ode_aux_vars_ss(sum_conn)%porParams  = ode_aux_vars_in(ghosted_id)%porParams
+             ode_aux_vars_ss(sum_conn)%perm(:)       = ode_aux_vars_in(ghosted_id)%perm(:)
+             ode_aux_vars_ss(sum_conn)%por           = ode_aux_vars_in(ghosted_id)%por
+             ode_aux_vars_ss(sum_conn)%satParams     = ode_aux_vars_in(ghosted_id)%satParams
+             ode_aux_vars_ss(sum_conn)%porParams     = ode_aux_vars_in(ghosted_id)%porParams
 
              ode_aux_vars_ss(sum_conn)%pressure_prev = 3.5355d3
 
@@ -600,43 +629,43 @@ contains
     ! Sets inital conditions for VSFM solver from CLM
     !
     ! !USES:
-    use SystemOfEquationsBasePointerType   , only : SOEIFunction, SOEIJacobian
-    use GoverningEquationBaseType          , only : goveqn_base_type
-    use GoveqnRichardsODEPressureType      , only : goveqn_richards_ode_pressure_type
-    use clm_varpar                         , only : nlevgrnd, nlevsoi
-    use ColumnType                         , only : col
-    use LandunitType                       , only : lun
-    use column_varcon                      , only : icol_road_perv, icol_road_imperv
-    use landunit_varcon                    , only : istice, istwet, istice_mec, istcrop, istsoil
-    use clm_varcon                         , only : grav, denh2o
-    use MultiPhysicsProbConstants          , only : GRAVITY_CONSTANT
+    use SystemOfEquationsBasePointerType , only : SOEIFunction, SOEIJacobian
+    use GoverningEquationBaseType        , only : goveqn_base_type
+    use GoveqnRichardsODEPressureType    , only : goveqn_richards_ode_pressure_type
+    use clm_varpar                       , only : nlevgrnd, nlevsoi
+    use ColumnType                       , only : col
+    use LandunitType                     , only : lun
+    use column_varcon                    , only : icol_road_perv, icol_road_imperv
+    use landunit_varcon                  , only : istice, istwet, istice_mec, istcrop, istsoil
+    use clm_varcon                       , only : grav, denh2o
+    use MultiPhysicsProbConstants        , only : GRAVITY_CONSTANT
     !
     implicit none
     !
     ! !ARGUMENTS
-    class(mpp_vsfm_type)                                :: vsfm_mpp
-    integer, intent(in)                                 :: begc,endc
-    type(soilhydrology_type), intent(in)                :: soilhydrology_vars
+    class(mpp_vsfm_type)                              :: vsfm_mpp
+    integer, intent(in)                               :: begc,endc
+    type(soilhydrology_type), intent(in)              :: soilhydrology_vars
     !
     ! !LOCAL VARIABLES:
-    PetscInt :: size
-    PetscErrorCode                                      :: ierr
-    class(goveqn_base_type),pointer                     :: cur_goveq
-    class (goveqn_richards_ode_pressure_type),pointer   :: goveq_richards_ode_pres
-    class(sysofeqns_vsfm_type),pointer                  :: vsfm_soe
-    PetscInt                                            :: nDM
-    DM, pointer                                         :: dms(:)
-    Vec, pointer                                        :: soln_subvecs(:)
-    PetscReal, pointer                                  :: press_p(:)
-    PetscInt                                            :: ghosted_id
-    PetscReal                                           :: initial_sat, initial_pressure
-    PetscInt                                            :: j,c,g,l
-    PetscInt                                            :: first_active_hydro_col_id
-    PetscInt                                            :: icell
-    PetscInt                                            :: col_id
+    PetscInt                                          :: size
+    PetscErrorCode                                    :: ierr
+    class(goveqn_base_type),pointer                   :: cur_goveq
+    class (goveqn_richards_ode_pressure_type),pointer :: goveq_richards_ode_pres
+    class(sysofeqns_vsfm_type),pointer                :: vsfm_soe
+    PetscInt                                          :: nDM
+    DM, pointer                                       :: dms(:)
+    Vec, pointer                                      :: soln_subvecs(:)
+    PetscReal, pointer                                :: press_p(:)
+    PetscInt                                          :: ghosted_id
+    PetscReal                                         :: initial_sat, initial_pressure
+    PetscInt                                          :: j,c,g,l
+    PetscInt                                          :: first_active_hydro_col_id
+    PetscInt                                          :: icell
+    PetscInt                                          :: col_id
 
-    associate(                                                        &
-         zwt_col               => soilhydrology_vars%zwt_col          &
+    associate(                                 &
+         zwt_col => soilhydrology_vars%zwt_col &
          )
 
     first_active_hydro_col_id = -1
@@ -717,7 +746,8 @@ contains
     call DMCompositeRestoreAccessArray(vsfm_soe%dm, vsfm_soe%soln, nDM, &
                                        PETSC_NULL_INTEGER, soln_subvecs, ierr)
 
-    call VecCopy(vsfm_soe%soln, vsfm_soe%soln_prev, ierr); CHKERRQ(ierr)
+    call VecCopy(vsfm_soe%soln, vsfm_soe%soln_prev,     ierr); CHKERRQ(ierr)
+    call VecCopy(vsfm_soe%soln, vsfm_soe%soln_prev_clm, ierr); CHKERRQ(ierr)
 
     ! Free memory
     deallocate(dms)
@@ -746,17 +776,17 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(mpp_vsfm_type)                                :: this
-    PetscInt, intent(in)                                :: gov_eqn_id
-    PetscInt, intent(in)                                :: auxvar_type
-    PetscInt, intent(in)                                :: var_id
-    PetscInt, intent(in)                                :: condition_id
-    PetscInt, intent(in)                                :: num_values
-    PetscReal,intent(in)                                :: values(:)
+    class(mpp_vsfm_type)               :: this
+    PetscInt, intent(in)               :: gov_eqn_id
+    PetscInt, intent(in)               :: auxvar_type
+    PetscInt, intent(in)               :: var_id
+    PetscInt, intent(in)               :: condition_id
+    PetscInt, intent(in)               :: num_values
+    PetscReal,intent(in)               :: values(:)
     ! !LOCAL VARIABLES:
-    class(sysofeqns_vsfm_type),pointer                  :: vsfm_soe
-    PetscInt                                            :: iauxvar
-    PetscInt                                            :: counter
+    class(sysofeqns_vsfm_type),pointer :: vsfm_soe
+    PetscInt                           :: iauxvar
+    PetscInt                           :: counter
 
     vsfm_soe => this%sysofeqns
 
@@ -820,26 +850,26 @@ contains
     ! (%soln_prev) and the first guess at next time step (%soln).
     !
     ! !USES:
-    use GoverningEquationBaseType          , only : goveqn_base_type
-    use GoveqnRichardsODEPressureType      , only : goveqn_richards_ode_pressure_type
+    use GoverningEquationBaseType     , only : goveqn_base_type
+    use GoveqnRichardsODEPressureType , only : goveqn_richards_ode_pressure_type
     !
     implicit none
     !
     ! !ARGUMENTS
-    class(mpp_vsfm_type)                                :: this
-    PetscReal                                           :: data_1d(:)
+    class(mpp_vsfm_type)                              :: this
+    PetscReal                                         :: data_1d(:)
     !
     ! !LOCAL VARIABLES:
-    PetscInt :: size
-    PetscErrorCode                                      :: ierr
-    class(goveqn_base_type),pointer                     :: cur_goveq
-    class (goveqn_richards_ode_pressure_type),pointer   :: goveq_richards_pres
-    class(sysofeqns_vsfm_type),pointer                  :: vsfm_soe
-    PetscInt                                            :: nDM
-    DM, pointer                                         :: dms(:)
-    Vec, pointer                                        :: soln_subvecs(:)
-    PetscReal, pointer                                  :: press_p(:)
-    PetscInt                                            :: local_id
+    PetscInt                                          :: size
+    PetscErrorCode                                    :: ierr
+    class(goveqn_base_type),pointer                   :: cur_goveq
+    class (goveqn_richards_ode_pressure_type),pointer :: goveq_richards_pres
+    class(sysofeqns_vsfm_type),pointer                :: vsfm_soe
+    PetscInt                                          :: nDM
+    DM, pointer                                       :: dms(:)
+    Vec, pointer                                      :: soln_subvecs(:)
+    PetscReal, pointer                                :: press_p(:)
+    PetscInt                                          :: local_id
 
     vsfm_soe => this%sysofeqns
 
@@ -874,7 +904,7 @@ contains
 
     ! Get solution vectors for individual GEs
     call DMCompositeGetAccessArray(vsfm_soe%dm, vsfm_soe%soln, nDM, &
-                                   PETSC_NULL_INTEGER, soln_subvecs, ierr)
+         PETSC_NULL_INTEGER, soln_subvecs, ierr)
 
     call VecGetArrayF90(soln_subvecs(1), press_p, ierr)
     do local_id = 1, goveq_richards_pres%mesh%ncells
@@ -884,9 +914,10 @@ contains
 
     ! Restore solution vectors for individual GEs
     call DMCompositeRestoreAccessArray(vsfm_soe%dm, vsfm_soe%soln, nDM, &
-                                       PETSC_NULL_INTEGER, soln_subvecs, ierr)
+         PETSC_NULL_INTEGER, soln_subvecs, ierr)
 
     call VecCopy(vsfm_soe%soln, vsfm_soe%soln_prev, ierr); CHKERRQ(ierr)
+    call VecCopy(vsfm_soe%soln, vsfm_soe%soln_prev_clm, ierr); CHKERRQ(ierr)
 
   end subroutine VSFMMPPRestart
 

@@ -9,11 +9,11 @@ module SystemOfEquationsBaseType
   !-----------------------------------------------------------------------
 
   ! !USES:
-  use abortutils                   , only : endrun
-  use clm_varctl                   , only : iulog
-  use shr_log_mod                  , only : errMsg => shr_log_errMsg
-  use MeshType                     , only : mesh_type
-  use GoverningEquationBaseType    , only : goveqn_base_type
+  use abortutils                , only : endrun
+  use clm_varctl                , only : iulog
+  use shr_log_mod               , only : errMsg => shr_log_errMsg
+  use MeshType                  , only : mesh_type
+  use GoverningEquationBaseType , only : goveqn_base_type
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -37,49 +37,52 @@ module SystemOfEquationsBaseType
 #include "finclude/petscksp.h90"
 
   type, public :: sysofeqns_base_type
-    character(len =256)                  :: name                                ! name for system-of-equations (SoE)
-    PetscInt                             :: itype                               ! identifier for SoE
+     character(len =256)             :: name                         ! name for system-of-equations (SoE)
+     PetscInt                        :: itype                        ! identifier for SoE
 
-    class(goveqn_base_type),pointer      :: goveqns                             ! pointer to governing equations within SoE
-    PetscInt                             :: ngoveqns                            ! number of governing equations within SoE
+     class(goveqn_base_type),pointer :: goveqns                      ! pointer to governing equations within SoE
+     PetscInt                        :: ngoveqns                     ! number of governing equations within SoE
 
 
-    PetscReal                            :: time                                ! [sec]
-    PetscReal                            :: dtime                               ! [sec]
+     PetscReal                       :: time                         ! [sec]
+     PetscReal                       :: dtime                        ! [sec]
 
-    PetscInt                             :: cumulative_newton_iterations        ! Total number of Newton iterations
-    PetscInt                             :: cumulative_linear_iterations        ! Total number of Linear iterations
+     PetscInt                        :: cumulative_newton_iterations ! Total number of Newton iterations
+     PetscInt                        :: cumulative_linear_iterations ! Total number of Linear iterations
 
-    PetscInt                             :: solver_type                         ! type of PETSc equation being solved (KSP, SNES, TS)
-    DM                                   :: dm                                  ! PETSc DM
-    TS                                   :: ts                                  ! PETSc TS
-    SNES                                 :: snes                                ! PETSc SNES
-    KSP                                  :: ksp                                 ! PETSc KSP
+     PetscInt                        :: solver_type                  ! type of PETSc equation being solved (KSP, SNES, TS)
+     DM                              :: dm                           ! PETSc DM
+     TS                              :: ts                           ! PETSc TS
+     SNES                            :: snes                         ! PETSc SNES
+     KSP                             :: ksp                          ! PETSc KSP
 
-    Vec                                  :: soln                                ! solution at current iteration + time step
-    Vec                                  :: soln_prev                           ! solution vector at previous time step
-    Vec                                  :: rhs                                 ! used if SoE is a PETSc TS
-    Mat                                  :: jac                                 ! used if SoE is a PETSc TS/SNES
-    Mat                                  :: Amat                                ! used if SoE is a PETSc KSP
+     Vec                             :: soln                         ! solution at current iteration + time step
+     Vec                             :: soln_prev                    ! solution vector at previous time step
+     Vec                             :: soln_prev_clm                ! solution vector at previous CLM time step
+     Vec                             :: rhs                          ! used if SoE is a PETSc TS
+     Mat                             :: jac                          ! used if SoE is a PETSc TS/SNES
+     Mat                             :: Amat                         ! used if SoE is a PETSc KSP
 
-  contains
-    procedure, public :: Init                   => SOEBaseInit
-    procedure, public :: Clean                  => SOEBaseClean
-    procedure, public :: IFunction              => SOEBaseIFunction
-    procedure, public :: IJacobian              => SOEBaseIJacobian
-    procedure, public :: Residual               => SOEBaseResidual
-    procedure, public :: Jacobian               => SOEBaseJacobian
-    procedure, public :: ComputeRHS             => SOEComputeRHS
-    procedure, public :: ComputeOperators       => SOEComputeOperators
-    procedure, public :: StepDT                 => SOEBaseStepDT
-    procedure, public :: PreSolve               => SOEBasePreSolve
-    procedure, public :: PostSolve              => SOEBasePostSolve
-    procedure, public :: PrintInfo              => SOEBasePrintInfo
-    procedure, public :: SetPointerToIthGovEqn  => SOEBaseSetPointerToIthGovEqn
-    procedure, public :: SetDtime               => SOEBaseSetDtime
-    procedure, public :: SetDataFromCLM         => SOEBaseSetDataFromCLM
-    procedure, public :: GetDataForCLM          => SOEBaseGetDataForCLM
-  end type
+   contains
+     procedure, public :: Init                  => SOEBaseInit
+     procedure, public :: Clean                 => SOEBaseClean
+     procedure, public :: IFunction             => SOEBaseIFunction
+     procedure, public :: IJacobian             => SOEBaseIJacobian
+     procedure, public :: Residual              => SOEBaseResidual
+     procedure, public :: Jacobian              => SOEBaseJacobian
+     procedure, public :: ComputeRHS            => SOEComputeRHS
+     procedure, public :: ComputeOperators      => SOEComputeOperators
+     procedure, public :: StepDT                => SOEBaseStepDT
+     procedure, public :: PreSolve              => SOEBasePreSolve
+     procedure, public :: PostSolve             => SOEBasePostSolve
+     procedure, public :: PreStepDT             => SOEBasePreStepDT
+     procedure, public :: PostStepDT            => SOEBasePostStepDT
+     procedure, public :: PrintInfo             => SOEBasePrintInfo
+     procedure, public :: SetPointerToIthGovEqn => SOEBaseSetPointerToIthGovEqn
+     procedure, public :: SetDtime              => SOEBaseSetDtime
+     procedure, public :: SetDataFromCLM        => SOEBaseSetDataFromCLM
+     procedure, public :: GetDataForCLM         => SOEBaseGetDataForCLM
+  end type sysofeqns_base_type
 
   public :: SOEBaseInit
   public :: SOESetMeshesOfGoveqns
@@ -98,27 +101,28 @@ contains
     ! !ARGUMENTS
     class(sysofeqns_base_type) :: this
 
-    this%name            = ""
-    this%itype           = 0
-    this%ngoveqns        = 0
+    this%name                         = ""
+    this%itype                        = 0
+    this%ngoveqns                     = 0
 
-    this%time            = 0.d0
-    this%dtime           = 0.d0
+    this%time                         = 0.d0
+    this%dtime                        = 0.d0
 
     this%cumulative_newton_iterations = 0
     this%cumulative_linear_iterations = 0
 
-    this%solver_type     = 0
-    this%dm              = 0
-    this%ts              = 0
-    this%snes            = 0
-    this%ksp             = 0
+    this%solver_type                  = 0
+    this%dm                           = 0
+    this%ts                           = 0
+    this%snes                         = 0
+    this%ksp                          = 0
 
-    this%soln            = 0
-    this%soln_prev       = 0
-    this%rhs             = 0
-    this%jac             = 0
-    this%Amat            = 0
+    this%soln                         = 0
+    this%soln_prev                    = 0
+    this%soln_prev_clm                = 0
+    this%rhs                          = 0
+    this%jac                          = 0
+    this%Amat                         = 0
 
     nullify(this%goveqns)
 
@@ -134,13 +138,13 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_base_type)    :: this
-    TS                            :: ts
-    PetscReal                     :: t
-    Vec                           :: U
-    Vec                           :: Udot
-    Vec                           :: F
-    PetscErrorCode                :: ierr
+    class(sysofeqns_base_type) :: this
+    TS                         :: ts
+    PetscReal                  :: t
+    Vec                        :: U
+    Vec                        :: Udot
+    Vec                        :: F
+    PetscErrorCode             :: ierr
 
     call endrun(msg='ERROR SystemOfEquationsBaseType: '//&
          'SOEBaseIFunction must be extended')
@@ -157,15 +161,15 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_base_type)    :: this
-    TS                            :: ts
-    PetscReal                     :: t
-    Vec                           :: U
-    Vec                           :: Udot
-    PetscReal                     :: shift
-    Mat                           :: A
-    Mat                           :: B
-    PetscErrorCode                :: ierr
+    class(sysofeqns_base_type) :: this
+    TS                         :: ts
+    PetscReal                  :: t
+    Vec                        :: U
+    Vec                        :: Udot
+    PetscReal                  :: shift
+    Mat                        :: A
+    Mat                        :: B
+    PetscErrorCode             :: ierr
 
     call endrun(msg='ERROR SystemOfEquationsBaseType: '//&
          'SOEBaseIJacobian must be extended')
@@ -182,12 +186,12 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_base_type)    :: this
-    SNES                          :: snes
-    PetscReal                     :: t
-    Vec                           :: X
-    Vec                           :: F
-    PetscErrorCode                :: ierr
+    class(sysofeqns_base_type) :: this
+    SNES                       :: snes
+    PetscReal                  :: t
+    Vec                        :: X
+    Vec                        :: F
+    PetscErrorCode             :: ierr
 
     call endrun(msg='ERROR SystemOfEquationsBaseType: '//&
          'SOEBaseResidual must be extended')
@@ -204,12 +208,12 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_base_type)    :: this
-    SNES                          :: snes
-    Vec                           :: X
-    Mat                           :: A
-    Mat                           :: B
-    PetscErrorCode                :: ierr
+    class(sysofeqns_base_type) :: this
+    SNES                       :: snes
+    Vec                        :: X
+    Mat                        :: A
+    Mat                        :: B
+    PetscErrorCode             :: ierr
 
     call endrun(msg='ERROR SystemOfEquationsBaseType: '//&
          'SOEBaseJacobian must be extended')
@@ -226,10 +230,10 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_base_type)    :: this
-    KSP                           :: ksp
-    Mat                           :: B
-    PetscErrorCode                :: ierr
+    class(sysofeqns_base_type) :: this
+    KSP                        :: ksp
+    Mat                        :: B
+    PetscErrorCode             :: ierr
 
     call endrun(msg='ERROR SOEComputeRHS: '//&
          'SOEComputeRHS must be extended')
@@ -246,11 +250,11 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_base_type)    :: this
-    KSP                           :: ksp
-    Mat                           :: A
-    Mat                           :: B
-    PetscErrorCode                :: ierr
+    class(sysofeqns_base_type) :: this
+    KSP                        :: ksp
+    Mat                        :: A
+    Mat                        :: B
+    PetscErrorCode             :: ierr
 
     call endrun(msg='ERROR SOEComputeOperators: '//&
          'SOEComputeOperators must be extended')
@@ -268,12 +272,47 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_base_type)    :: this
+    class(sysofeqns_base_type) :: this
 
     call endrun(msg='ERROR SystemOfEquationsBaseType: '//&
          'SOEBasePreSolve must be extended')
 
   end subroutine SOEBasePreSolve
+
+  !------------------------------------------------------------------------
+  subroutine SOEBasePreStepDT(this)
+    !
+    ! !DESCRIPTION:
+    ! Dummy subroutine that performs any required operations before calling
+    ! StepDT.
+    ! This subroutines needs to be extended by a child class.
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(sysofeqns_base_type) :: this
+
+    call endrun(msg='ERROR SOEBasePreStepDT: '//&
+         'SOEBasePreStepDT must be extended')
+
+  end subroutine SOEBasePreStepDT
+
+  !------------------------------------------------------------------------
+  subroutine SOEBasePostStepDT(this)
+    !
+    ! !DESCRIPTION:
+    ! Dummy subroutine that performs any required operations post StepDT.
+    ! This subroutines needs to be extended by a child class.
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(sysofeqns_base_type) :: this
+
+    call endrun(msg='ERROR SOEBasePostStepDT: '//&
+         'SOEBasePostStepDT must be extended')
+
+  end subroutine SOEBasePostStepDT
 
   !------------------------------------------------------------------------
   subroutine SOEBaseStepDT(this, dt, converged, ierr)
@@ -289,16 +328,16 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_base_type)    :: this
-    PetscReal                     :: dt
-    PetscBool,intent(out)         :: converged
-    PetscErrorCode                :: ierr
+    class(sysofeqns_base_type) :: this
+    PetscReal                  :: dt
+    PetscBool,intent(out)      :: converged
+    PetscErrorCode             :: ierr
 
     select case(this%solver_type)
     case (PETSC_TS)
-      call SOEBaseStepDT_TS(this, dt, ierr)
+       call SOEBaseStepDT_TS(this, dt, ierr)
     case (PETSC_SNES)
-      call SOEBaseStepDT_SNES(this, dt, converged, ierr)
+       call SOEBaseStepDT_SNES(this, dt, converged, ierr)
     case default
        write(iulog,*) 'VSFMMPPSetup: Unknown this%solver_type'
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -315,12 +354,12 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_base_type)    :: soe
-    PetscReal                     :: dt
-    PetscErrorCode                :: ierr
+    class(sysofeqns_base_type) :: soe
+    PetscReal                  :: dt
+    PetscErrorCode             :: ierr
     !
     ! !LOCAL VARIABLES:
-    SNESConvergedReason           :: snes_reason
+    SNESConvergedReason        :: snes_reason
 
     call TSSetTime(soe%ts, 0.d0, ierr); CHKERRQ(ierr)
     call TSSetDuration(soe%ts, 100000, dt, ierr); CHKERRQ(ierr)
@@ -339,25 +378,25 @@ contains
     ! Solves SoE via PETSc SNES
     !
     ! !USES
-    use spmdMod             , only : masterproc, iam
-    use clm_time_manager    , only : get_nstep
+    use spmdMod          , only : masterproc, iam
+    use clm_time_manager , only : get_nstep
     !
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_base_type)    :: soe
-    PetscErrorCode                :: ierr
-    PetscBool,intent(out)         :: converged
-    PetscReal                     :: dt
+    class(sysofeqns_base_type) :: soe
+    PetscErrorCode             :: ierr
+    PetscBool,intent(out)      :: converged
+    PetscReal                  :: dt
     !
     ! !LOCAL VARIABLES:
-    SNESConvergedReason           :: snes_reason
-    PetscInt                      :: num_newton_iterations
-    PetscInt                      :: num_linear_iterations
-    PetscInt                      :: num_time_cuts
-    PetscInt, parameter           :: max_num_time_cuts = 20
-    PetscReal                     :: target_time
-    PetscReal                     :: dt_iter
+    SNESConvergedReason        :: snes_reason
+    PetscInt                   :: num_newton_iterations
+    PetscInt                   :: num_linear_iterations
+    PetscInt                   :: num_time_cuts
+    PetscInt, parameter        :: max_num_time_cuts = 20
+    PetscReal                  :: target_time
+    PetscReal                  :: dt_iter
 
     ! initialize
     num_time_cuts  = 0
@@ -385,7 +424,7 @@ contains
           num_time_cuts = num_time_cuts + 1
           dt_iter = 0.5d0*dt_iter
           write(iulog,*),'On proc ', iam, ' time_step = ', get_nstep(), &
-                     'snes_reason = ',snes_reason,' cutting dt to ',dt_iter
+               'snes_reason = ',snes_reason,' cutting dt to ',dt_iter
 
           call VecCopy(soe%soln_prev, soe%soln, ierr); CHKERRQ(ierr)
        else
@@ -393,15 +432,15 @@ contains
           converged = PETSC_TRUE
           soe%time = soe%time + dt_iter
 
-          call SNESGetIterationNumber(soe%snes, &
-                                      num_newton_iterations, ierr); CHKERRQ(ierr)
+          call SNESGetIterationNumber(soe%snes,       &
+               num_newton_iterations, ierr); CHKERRQ(ierr)
           call SNESGetLinearSolveIterations(soe%snes, &
-                                            num_linear_iterations, ierr); CHKERRQ(ierr)
+               num_linear_iterations, ierr); CHKERRQ(ierr)
 
           soe%cumulative_newton_iterations = soe%cumulative_newton_iterations + &
-                                             num_newton_iterations
+               num_newton_iterations
           soe%cumulative_linear_iterations = soe%cumulative_linear_iterations + &
-                                             num_linear_iterations
+               num_linear_iterations
 
           ! Do any post-solve operations
           call soe%PostSolve()
@@ -510,7 +549,7 @@ contains
                'Mesh not found for Governing equation within the list')
        endif
 
-      cur_goveqn => cur_goveqn%next
+       cur_goveqn => cur_goveqn%next
     enddo
 
   end subroutine SOESetMeshesOfGoveqns
@@ -522,22 +561,23 @@ contains
     ! Returns pointer to the i-th governing equation present with SoE
     !
     ! !USES
-    use MeshType                     , only : mesh_type
+    use MeshType , only : mesh_type
     !
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_base_type)           :: this
-    PetscInt                             :: goveqn_id
-    class(goveqn_base_type),pointer      :: goveqn_ptr
+    class(sysofeqns_base_type)      :: this
+    PetscInt                        :: goveqn_id
+    class(goveqn_base_type),pointer :: goveqn_ptr
     !
     ! !LOCAL VARIABLES
-    class(goveqn_base_type),pointer      :: cur_goveq
-    PetscInt                             :: sum_goveqn
-    PetscBool                            :: found
+    class(goveqn_base_type),pointer :: cur_goveq
+    PetscInt                        :: sum_goveqn
+    PetscBool                       :: found
 
     sum_goveqn = 0
-    found = PETSC_FALSE
+    found      = PETSC_FALSE
+
     cur_goveq => this%goveqns
     do
        if (.not.associated(cur_goveq)) exit
@@ -567,8 +607,8 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_base_type)        :: this
-    PetscReal                         :: dtime
+    class(sysofeqns_base_type) :: this
+    PetscReal                  :: dtime
     !
     ! !LOCAL VARIABLES:
     class(goveqn_base_type),pointer   :: cur_goveqn
@@ -595,11 +635,11 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_base_type)        :: this
-    PetscInt, intent(in)              :: var_type
-    PetscInt                          :: soe_auxvar_type
-    PetscInt                          :: soe_auxvar_id
-    PetscReal                         :: data_1d(:)
+    class(sysofeqns_base_type) :: this
+    PetscInt, intent(in)       :: var_type
+    PetscInt                   :: soe_auxvar_type
+    PetscInt                   :: soe_auxvar_id
+    PetscReal                  :: data_1d(:)
     !
     ! !LOCAL VARIABLES:
 
@@ -620,12 +660,12 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_base_type)        :: this
-    PetscInt, intent(in)              :: var_type
-    PetscInt                          :: soe_auxvar_type
-    PetscInt                          :: soe_auxvar_id
-    PetscReal                         :: data_1d(:)
-    PetscInt                          :: nsize
+    class(sysofeqns_base_type) :: this
+    PetscInt, intent(in)       :: var_type
+    PetscInt                   :: soe_auxvar_type
+    PetscInt                   :: soe_auxvar_id
+    PetscReal                  :: data_1d(:)
+    PetscInt                   :: nsize
     !
     ! !LOCAL VARIABLES:
 

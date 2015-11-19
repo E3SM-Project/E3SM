@@ -32,25 +32,28 @@ module SystemOfEquationsVSFMType
 #include "finclude/petscviewer.h"
 
   type, public, extends(sysofeqns_base_type) :: sysofeqns_vsfm_type
-     type (sysofeqns_vsfm_auxvar_type), pointer    :: aux_vars_in(:)            ! Internal state.
-     type (sysofeqns_vsfm_auxvar_type), pointer    :: aux_vars_bc(:)            ! Boundary conditions.
-     type (sysofeqns_vsfm_auxvar_type), pointer    :: aux_vars_ss(:)            ! Source-sink.
-     PetscInt, pointer                             :: soe_auxvars_bc_offset (:) ! Cummulative sum of number of control volumes associated with each boundary condition.
-     PetscInt, pointer                             :: soe_auxvars_ss_offset (:) ! Cummulative sum of number of control volumes associated with each source-sink condition.
-     PetscInt, pointer                             :: soe_auxvars_bc_ncells (:) ! Number of control volumes associated with each boundary condition.
-     PetscInt, pointer                             :: soe_auxvars_ss_ncells (:) ! Number of control volumes associated with each source-sink condition.
-     PetscInt                                      :: num_auxvars_in            ! Number of auxvars associated with internal state.
-     PetscInt                                      :: num_auxvars_bc            ! Number of auxvars associated with boundary condition.
-     PetscInt                                      :: num_auxvars_ss            ! Number of auxvars associated with source-sink condition.
-  contains
-     procedure, public :: Init                     => VSFMSOEInit
-     procedure, public :: Setup                    => VSFMSOESetup
-     procedure, public :: Residual                 => VSFMSOEResidual
-     procedure, public :: Jacobian                 => VSFMJacobian
-     procedure, public :: PreSolve                 => VSFMSOEPreSolve
-     procedure, public :: SetDataFromCLM           => VSFMSOESetDataFromCLM
-     procedure, public :: GetDataForCLM            => VSFMSOEGetDataForCLM
-     procedure, public :: PostSolve                => VSFMSOEPostSolve
+     type (sysofeqns_vsfm_auxvar_type), pointer :: aux_vars_in(:)            ! Internal state.
+     type (sysofeqns_vsfm_auxvar_type), pointer :: aux_vars_bc(:)            ! Boundary conditions.
+     type (sysofeqns_vsfm_auxvar_type), pointer :: aux_vars_ss(:)            ! Source-sink.
+     PetscInt, pointer                          :: soe_auxvars_bc_offset (:) ! Cummulative sum of number of control volumes associated with each boundary condition.
+     PetscInt, pointer                          :: soe_auxvars_ss_offset (:) ! Cummulative sum of number of control volumes associated with each source-sink condition.
+     PetscInt, pointer                          :: soe_auxvars_bc_ncells (:) ! Number of control volumes associated with each boundary condition.
+     PetscInt, pointer                          :: soe_auxvars_ss_ncells (:) ! Number of control volumes associated with each source-sink condition.
+     PetscInt                                   :: num_auxvars_in            ! Number of auxvars associated with internal state.
+     PetscInt                                   :: num_auxvars_bc            ! Number of auxvars associated with boundary condition.
+     PetscInt                                   :: num_auxvars_ss            ! Number of auxvars associated with source-sink condition.
+   contains
+     procedure, public :: Init              => VSFMSOEInit
+     procedure, public :: Setup             => VSFMSOESetup
+     procedure, public :: Residual          => VSFMSOEResidual
+     procedure, public :: Jacobian          => VSFMJacobian
+     procedure, public :: PreSolve          => VSFMSOEPreSolve
+     procedure, public :: SetDataFromCLM    => VSFMSOESetDataFromCLM
+     procedure, public :: GetDataForCLM     => VSFMSOEGetDataForCLM
+     procedure, public :: PostSolve         => VSFMSOEPostSolve
+     procedure, public :: PostStepDT        => VSFMSPostStepDT
+     procedure, public :: PreStepDT         => VSFMSPreStepDT
+     procedure, public :: GetConditionNames => VSFMSGetConditionNames
   end type sysofeqns_vsfm_type
 
   public :: VSFMSOESetAuxVars
@@ -78,14 +81,14 @@ contains
     this%num_auxvars_bc   = 0
     this%num_auxvars_ss   = 0
 
-    nullify(this%aux_vars_in)
-    nullify(this%aux_vars_bc)
-    nullify(this%aux_vars_ss)
+    nullify(this%aux_vars_in           )
+    nullify(this%aux_vars_bc           )
+    nullify(this%aux_vars_ss           )
 
-    nullify(this%soe_auxvars_bc_offset)
-    nullify(this%soe_auxvars_ss_offset)
-    nullify(this%soe_auxvars_bc_ncells)
-    nullify(this%soe_auxvars_ss_ncells)
+    nullify(this%soe_auxvars_bc_offset )
+    nullify(this%soe_auxvars_ss_offset )
+    nullify(this%soe_auxvars_bc_ncells )
+    nullify(this%soe_auxvars_ss_ncells )
 
   end subroutine VSFMSOEInit
 
@@ -135,11 +138,18 @@ contains
     ! Sets up SoE for the VSFM that uses PETSc SNES.
     !
     ! !USES:
-    use MeshType                        , only : mesh_type, MeshCreateConnectionSet
-    use ConditionType                   , only : condition_type, ConditionNew
+    use MeshType                        , only : mesh_type
+    use MeshType                        , only : MeshCreateConnectionSet
+    use ConditionType                   , only : condition_type
+    use ConditionType                   , only : ConditionNew
     use ConditionType                   , only : ConditionListAddCondition
-    use MultiPhysicsProbConstants       , only : SOIL_TOP_CELLS, SOIL_CELLS
-    use MultiPhysicsProbConstants       , only : COND_MASS_RATE, COND_MASS_FLUX
+    use MultiPhysicsProbConstants       , only : SOIL_TOP_CELLS
+    use MultiPhysicsProbConstants       , only : SOIL_CELLS
+    use MultiPhysicsProbConstants       , only : COND_MASS_RATE
+    use MultiPhysicsProbConstants       , only : COND_MASS_FLUX
+    use MultiPhysicsProbConstants       , only : COND_BC
+    use MultiPhysicsProbConstants       , only : COND_SS
+    use MultiPhysicsProbConstants       , only : COND_NULL
     use GoveqnRichardsODEPressureType   , only : goveqn_richards_ode_pressure_type
     use EOSWaterMod                     , only : DENSITY_TGDPB01
     use SystemOfEquationsBaseType       , only : SOESetMeshesOfGoveqns
@@ -147,25 +157,25 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_vsfm_type)                           :: vsfm_soe
-    class(mesh_type), pointer                            :: meshes(:)
-    type(condition_type),pointer                         :: bc
-    type(condition_type),pointer                         :: ss
-    PetscInt                                             :: nmesh
+    class(sysofeqns_vsfm_type)                        :: vsfm_soe
+    class(mesh_type), pointer                         :: meshes(:)
+    type(condition_type),pointer                      :: bc
+    type(condition_type),pointer                      :: ss
+    PetscInt                                          :: nmesh
     !
     ! !LOCAL VARIABLES:
-    class (goveqn_richards_ode_pressure_type),pointer    :: goveq_richards_pres
-    PetscInt                                             :: nvars
-    PetscInt                                             :: iauxvar
-    PetscInt                                             :: icond
-    PetscInt                                             :: offset
-    PetscInt                                             :: num_bc
-    PetscInt                                             :: num_ss
-    PetscInt                                             :: total_ncells_for_bc
-    PetscInt                                             :: total_ncells_for_ss
-    PetscInt, pointer                                    :: ncells_for_bc(:)
-    PetscInt, pointer                                    :: ncells_for_ss(:)
-    PetscErrorCode                                       :: ierr
+    class (goveqn_richards_ode_pressure_type),pointer :: goveq_richards_pres
+    PetscInt                                          :: nvars
+    PetscInt                                          :: iauxvar
+    PetscInt                                          :: icond
+    PetscInt                                          :: offset
+    PetscInt                                          :: num_bc
+    PetscInt                                          :: num_ss
+    PetscInt                                          :: total_ncells_for_bc
+    PetscInt                                          :: total_ncells_for_ss
+    PetscInt, pointer                                 :: ncells_for_bc(:)
+    PetscInt, pointer                                 :: ncells_for_ss(:)
+    PetscErrorCode                                    :: ierr
 
     vsfm_soe%name     = "SOEs for VSFM using ODE approach"
     vsfm_soe%ngoveqns = 1
@@ -182,90 +192,96 @@ contains
 
     ! Set BCs/SSs for each governing equation
     ss               => ConditionNew()
-    ss%name          = 'Infiltration'
+    ss%name          = 'Infiltration_Flux'
     ss%units         = 'kg/s'
     ss%itype         = COND_MASS_RATE
     ss%region_itype  = SOIL_TOP_CELLS
     allocate(ss%conn_set)
-    call MeshCreateConnectionSet(goveq_richards_pres%mesh, &
-                                 ss%region_itype,          &
-                                 ss%conn_set,              &
-                                 ss%ncells)
+    call MeshCreateConnectionSet(  &
+         goveq_richards_pres%mesh, &
+         ss%region_itype,          &
+         ss%conn_set,              &
+         ss%ncells)
     allocate(ss%value(ss%ncells))
     ss%value(:) = 0.d0
     call ConditionListAddCondition(goveq_richards_pres%source_sinks, ss)
     nullify(ss)
 
-    ss => ConditionNew()
-    ss%name          = 'Evapotranspiration'
+    ss              => ConditionNew()
+    ss%name         = 'Evapotranspiration_Flux'
+    ss%units        = 'kg/s'
+    ss%itype        = COND_MASS_RATE
+    ss%region_itype = SOIL_CELLS
+    allocate(ss%conn_set)
+    call MeshCreateConnectionSet(  &
+         goveq_richards_pres%mesh, &
+         ss%region_itype,          &
+         ss%conn_set,              &
+         ss%ncells)
+    allocate(ss%value(ss%ncells))
+    ss%value(:) = 0.d0
+    call ConditionListAddCondition(goveq_richards_pres%source_sinks, ss)
+    nullify(ss)
+
+    ss               => ConditionNew()
+    ss%name          = 'Dew_Flux'
+    ss%units         = 'kg/s'
+    ss%itype         = COND_MASS_RATE
+    ss%region_itype  = SOIL_TOP_CELLS
+    allocate(ss%conn_set)
+    call MeshCreateConnectionSet(  &
+         goveq_richards_pres%mesh, &
+         ss%region_itype,          &
+         ss%conn_set,              &
+         ss%ncells)
+    allocate(ss%value(ss%ncells))
+    ss%value(:) = 0.d0
+    call ConditionListAddCondition(goveq_richards_pres%source_sinks, ss)
+    nullify(ss)
+
+    ss               => ConditionNew()
+    ss%name          = 'Drainage_Flux'
     ss%units         = 'kg/s'
     ss%itype         = COND_MASS_RATE
     ss%region_itype  = SOIL_CELLS
     allocate(ss%conn_set)
-    call MeshCreateConnectionSet(goveq_richards_pres%mesh, &
-                                 ss%region_itype,          &
-                                 ss%conn_set,              &
-                                 ss%ncells)
+    call MeshCreateConnectionSet(  &
+         goveq_richards_pres%mesh, &
+         ss%region_itype,          &
+         ss%conn_set,              &
+         ss%ncells)
     allocate(ss%value(ss%ncells))
     ss%value(:) = 0.d0
     call ConditionListAddCondition(goveq_richards_pres%source_sinks, ss)
     nullify(ss)
 
     ss               => ConditionNew()
-    ss%name          = 'Liquid + Ice Dew'
+    ss%name          = 'Snow_Disappearance_Flux'
     ss%units         = 'kg/s'
     ss%itype         = COND_MASS_RATE
     ss%region_itype  = SOIL_TOP_CELLS
     allocate(ss%conn_set)
-    call MeshCreateConnectionSet(goveq_richards_pres%mesh, &
-                                 ss%region_itype,          &
-                                 ss%conn_set,              &
-                                 ss%ncells)
+    call MeshCreateConnectionSet(  &
+         goveq_richards_pres%mesh, &
+         ss%region_itype,          &
+         ss%conn_set,              &
+         ss%ncells)
     allocate(ss%value(ss%ncells))
     ss%value(:) = 0.d0
     call ConditionListAddCondition(goveq_richards_pres%source_sinks, ss)
     nullify(ss)
 
     ss               => ConditionNew()
-    ss%name          = 'Drainage from groundwater and perched water table'
-    ss%units         = 'kg/s'
-    ss%itype         = COND_MASS_RATE
-    ss%region_itype  = SOIL_CELLS
-    allocate(ss%conn_set)
-    call MeshCreateConnectionSet(goveq_richards_pres%mesh, &
-                                 ss%region_itype,          &
-                                 ss%conn_set,              &
-                                 ss%ncells)
-    allocate(ss%value(ss%ncells))
-    ss%value(:) = 0.d0
-    call ConditionListAddCondition(goveq_richards_pres%source_sinks, ss)
-    nullify(ss)
-
-    ss               => ConditionNew()
-    ss%name          = 'Flux associated with disappearance of snow layer'
+    ss%name          = 'Sublimation_Flux'
     ss%units         = 'kg/s'
     ss%itype         = COND_MASS_RATE
     ss%region_itype  = SOIL_TOP_CELLS
     allocate(ss%conn_set)
-    call MeshCreateConnectionSet(goveq_richards_pres%mesh, &
-                                 ss%region_itype,          &
-                                 ss%conn_set,              &
-                                 ss%ncells)
-    allocate(ss%value(ss%ncells))
-    ss%value(:) = 0.d0
-    call ConditionListAddCondition(goveq_richards_pres%source_sinks, ss)
-    nullify(ss)
-
-    ss               => ConditionNew()
-    ss%name          = 'Sublimation flux'
-    ss%units         = 'kg/s'
-    ss%itype         = COND_MASS_RATE
-    ss%region_itype  = SOIL_TOP_CELLS
-    allocate(ss%conn_set)
-    call MeshCreateConnectionSet(goveq_richards_pres%mesh, &
-                                 ss%region_itype,          &
-                                 ss%conn_set,              &
-                                 ss%ncells)
+    call MeshCreateConnectionSet(  &
+         goveq_richards_pres%mesh, &
+         ss%region_itype,          &
+         ss%conn_set,              &
+         ss%ncells)
     allocate(ss%value(ss%ncells))
     ss%value(:) = 0.d0
     call ConditionListAddCondition(goveq_richards_pres%source_sinks, ss)
@@ -284,8 +300,19 @@ contains
        vsfm_soe%aux_vars_in(iauxvar)%goveqn_id  = 1
     enddo
 
-    call goveq_richards_pres%NumCellsInBC(num_bc, ncells_for_bc)
-    call goveq_richards_pres%NumCellsInSS(num_ss, ncells_for_ss)
+    call goveq_richards_pres%NumCellsInConditions( &
+         COND_BC,                                  & ! Boundary condition ID
+         COND_NULL,                                & ! ID of any condition to be excluded
+         num_bc,                                   & ! Num. of BCs
+         ncells_for_bc                             & ! Num. of control volumes in each BC
+         )
+
+    call goveq_richards_pres%NumCellsInConditions( &
+         COND_SS,                                  &  ! Source-sink condition ID
+         COND_NULL,                                &  ! ID of any condition to be excluded
+         num_ss,                                   &  ! Num. of source-sink conditions
+         ncells_for_ss                             &  ! Num. of control volumes in each source-sink condition
+         )
 
     allocate(vsfm_soe%soe_auxvars_bc_offset(num_bc))
     allocate(vsfm_soe%soe_auxvars_ss_offset(num_ss))
@@ -354,13 +381,11 @@ contains
     ! of the timestep
 
     call VecCreateSeq(PETSC_COMM_SELF, goveq_richards_pres%mesh%ncells, &
-                      goveq_richards_pres%accum_prev, ierr)
+         goveq_richards_pres%accum_prev, ierr)
     CHKERRQ(ierr)
 
     if (associated(ncells_for_bc)) deallocate(ncells_for_bc)
     if (associated(ncells_for_ss)) deallocate(ncells_for_ss)
-
-    call vsfm_soe%PrintInfo()
 
   end subroutine VSFMSOERichardsEqnODESetup
 
@@ -371,32 +396,32 @@ contains
     ! Performs residual function evaluation for the VSFM
     !
     ! !USES:
-    use GoverningEquationBaseType       , only : goveqn_base_type
-    use GoveqnRichardsODEPressureType   , only : goveqn_richards_ode_pressure_type
-    use MultiPhysicsProbConstants       , only : AUXVAR_INTERNAL
+    use GoverningEquationBaseType     , only : goveqn_base_type
+    use GoveqnRichardsODEPressureType , only : goveqn_richards_ode_pressure_type
+    use MultiPhysicsProbConstants     , only : AUXVAR_INTERNAL
     !
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_vsfm_type)         :: this
-    SNES                               :: snes
-    Vec                                :: X
-    Vec                                :: F
-    PetscErrorCode                     :: ierr
+    class(sysofeqns_vsfm_type)      :: this
+    SNES                            :: snes
+    Vec                             :: X
+    Vec                             :: F
+    PetscErrorCode                  :: ierr
     !
     ! !LOCAL VARIABLES:
-    PetscInt                           :: dm_id
-    PetscInt                           :: nDM
-    PetscInt, parameter                :: offset = 0
-    DM, pointer                        :: dms(:)
-    Vec, pointer                       :: X_subvecs(:)
-    Vec, pointer                       :: F_subvecs(:)
-    class(goveqn_base_type),pointer    :: cur_goveq
-    class(goveqn_base_type),pointer    :: cur_goveq_1
-    class(goveqn_base_type),pointer    :: cur_goveq_2
-    PetscInt                           :: row, col
-    PetscViewer                        :: viewer
-    character(len=256)                 :: string
+    PetscInt                        :: dm_id
+    PetscInt                        :: nDM
+    PetscInt, parameter             :: offset = 0
+    DM, pointer                     :: dms(:)
+    Vec, pointer                    :: X_subvecs(:)
+    Vec, pointer                    :: F_subvecs(:)
+    class(goveqn_base_type),pointer :: cur_goveq
+    class(goveqn_base_type),pointer :: cur_goveq_1
+    class(goveqn_base_type),pointer :: cur_goveq_2
+    PetscInt                        :: row, col
+    PetscViewer                     :: viewer
+    character(len=256)              :: string
 
     ! Find number of GEs packed within the SoE
     call DMCompositeGetNumberDM(this%dm, nDM, ierr); CHKERRQ(ierr)
@@ -411,9 +436,9 @@ contains
 
     ! Get vectors (X,F) for individual GEs
     call DMCompositeGetAccessArray(this%dm, X, nDM, PETSC_NULL_INTEGER, X_subvecs, &
-                                   ierr); CHKERRQ(ierr)
+         ierr); CHKERRQ(ierr)
     call DMCompositeGetAccessArray(this%dm, F, nDM, PETSC_NULL_INTEGER, F_subvecs, &
-                                   ierr); CHKERRQ(ierr)
+         ierr); CHKERRQ(ierr)
 
     ! 1) {X}  ---> sim_aux()
     call VSFMSOEUpdateAuxVarsODE(this, X)
@@ -424,8 +449,8 @@ contains
     do
        if (.not.associated(cur_goveq)) exit
        select type(cur_goveq)
-       class is (goveqn_richards_ode_pressure_type)
-          call cur_goveq%GetFromSOEAuxVarsIntrn(this%aux_vars_in, offset)
+          class is (goveqn_richards_ode_pressure_type)
+             call cur_goveq%GetFromSOEAuxVarsIntrn(this%aux_vars_in, offset)
        end select
 
        call cur_goveq%UpdateAuxVarsIntrn()
@@ -451,18 +476,18 @@ contains
 
        call VecZeroEntries(F_subvecs(dm_id), ierr); CHKERRQ(ierr)
 
-       call cur_goveq%Residual(X_subvecs(dm_id),    &
-                               F_subvecs(dm_id),    &
-                               ierr); CHKERRQ(ierr)
+       call cur_goveq%Residual(X_subvecs(dm_id), &
+            F_subvecs(dm_id),                    &
+            ierr); CHKERRQ(ierr)
 
        cur_goveq => cur_goveq%next
     enddo
 
     ! Restore vectors (u,udot,F) for individual GEs
     call DMCompositeRestoreAccessArray(this%dm, X, nDM, PETSC_NULL_INTEGER, &
-                                       X_subvecs, ierr); CHKERRQ(ierr)
+         X_subvecs, ierr); CHKERRQ(ierr)
     call DMCompositeRestoreAccessArray(this%dm, F, nDM, PETSC_NULL_INTEGER, &
-                                       F_subvecs, ierr); CHKERRQ(ierr)
+         F_subvecs, ierr); CHKERRQ(ierr)
 
     ! Free memory
     deallocate(dms)
@@ -478,34 +503,34 @@ contains
     ! Computes jacobian for the VSFM
     !
     ! !USES:
-    use GoverningEquationBaseType       , only : goveqn_base_type
-    use GoveqnRichardsODEPressureType   , only : goveqn_richards_ode_pressure_type
-    use MultiPhysicsProbConstants       , only : AUXVAR_INTERNAL
+    use GoverningEquationBaseType     , only : goveqn_base_type
+    use GoveqnRichardsODEPressureType , only : goveqn_richards_ode_pressure_type
+    use MultiPhysicsProbConstants     , only : AUXVAR_INTERNAL
     !
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_vsfm_type)         :: this
-    SNES                               :: snes
-    Vec                                :: X
-    Mat                                :: A
-    Mat                                :: B
-    PetscErrorCode                     :: ierr
+    class(sysofeqns_vsfm_type)      :: this
+    SNES                            :: snes
+    Vec                             :: X
+    Mat                             :: A
+    Mat                             :: B
+    PetscErrorCode                  :: ierr
     !
     ! !LOCAL VARIABLES:
-    PetscInt                           :: row
-    PetscInt                           :: col
-    PetscInt                           :: nDM
-    PetscInt                           :: icell
+    PetscInt                        :: row
+    PetscInt                        :: col
+    PetscInt                        :: nDM
+    PetscInt                        :: icell
 
-    IS,pointer                         :: is(:)
-    DM, pointer                        :: dms(:)
-    Vec, pointer                       :: X_subvecs(:)
-    Mat, pointer                       :: B_submats(:,:)
-    class(goveqn_base_type),pointer    :: cur_goveq_1
-    class(goveqn_base_type),pointer    :: cur_goveq_2
-    PetscViewer                        :: viewer
-    character(len=256)                 :: string
+    IS,pointer                      :: is(:)
+    DM, pointer                     :: dms(:)
+    Vec, pointer                    :: X_subvecs(:)
+    Mat, pointer                    :: B_submats(:,:)
+    class(goveqn_base_type),pointer :: cur_goveq_1
+    class(goveqn_base_type),pointer :: cur_goveq_2
+    PetscViewer                     :: viewer
+    character(len=256)              :: string
 
 
     ! Find number of GEs packed within the SoE
@@ -520,7 +545,7 @@ contains
 
     ! Get vectors (X) for individual GEs
     call DMCompositeGetAccessArray(this%dm, X, nDM, PETSC_NULL_INTEGER, &
-                                   X_subvecs, ierr); CHKERRQ(ierr)
+         X_subvecs, ierr); CHKERRQ(ierr)
 
     ! Initialize the matrix
     call MatZeroEntries(B, ierr); CHKERRQ(ierr)
@@ -530,10 +555,10 @@ contains
     allocate(B_submats(nDM,nDM))
     call DMCompositeGetLocalISs(this%dm, is, ierr); CHKERRQ(ierr)
     do row = 1,nDM
-      do col = 1,nDM
-        call MatGetLocalSubMatrix(B, is(row), is(col), B_submats(row,col), &
-                                  ierr); CHKERRQ(ierr)
-      enddo
+       do col = 1,nDM
+          call MatGetLocalSubMatrix(B, is(row), is(col), B_submats(row,col), &
+               ierr); CHKERRQ(ierr)
+       enddo
     enddo
 
     ! Jacobian and JacobianOffDiag
@@ -544,30 +569,29 @@ contains
 
        row = row + 1
 
-       call cur_goveq_1%Jacobian(X_subvecs(row),        &
-                                 B_submats(row,row),    &
-                                 B_submats(row,row),    &
-                                 ierr); CHKERRQ(ierr)
+       call cur_goveq_1%Jacobian(X_subvecs(row), &
+            B_submats(row,row),                  &
+            B_submats(row,row),                  &
+            ierr); CHKERRQ(ierr)
 
        cur_goveq_1 => cur_goveq_1%next
     enddo
 
-
     ! Restore vectors (X) for individual GEs
     call DMCompositeRestoreAccessArray(this%dm, X, nDM, PETSC_NULL_INTEGER, &
-                                       X_subvecs, ierr); CHKERRQ(ierr)
+         X_subvecs, ierr); CHKERRQ(ierr)
 
     ! Restore submatrices
     do row = 1,nDM
-      do col = 1,nDM
-        call MatRestoreLocalSubMatrix(B, is(row), is(col), B_submats(row,col), &
-                                      ierr); CHKERRQ(ierr)
-      enddo
+       do col = 1,nDM
+          call MatRestoreLocalSubMatrix(B, is(row), is(col), B_submats(row,col), &
+               ierr); CHKERRQ(ierr)
+       enddo
     enddo
 
     ! Destroy IS
     do row = 1,nDM
-      call ISDestroy(is(row), ierr); CHKERRQ(ierr)
+       call ISDestroy(is(row), ierr); CHKERRQ(ierr)
     enddo
 
     ! Assemble matrix
@@ -579,12 +603,12 @@ contains
     endif
 
     ! Free memory
-    deallocate(dms         )
-    deallocate(X_subvecs   )
-    deallocate(is          )
-    deallocate(B_submats   )
+    deallocate(dms       )
+    deallocate(X_subvecs )
+    deallocate(is        )
+    deallocate(B_submats )
 
-    end subroutine VSFMJacobian
+  end subroutine VSFMJacobian
 
   !------------------------------------------------------------------------
   subroutine VSFMSOEUpdateAuxVarsODE(vsfm_soe, X)
@@ -622,22 +646,23 @@ contains
     ! based on the input vector X
     !
     ! !USES:
-    use MultiPhysicsProbConstants, only : AUXVAR_INTERNAL, VAR_PRESSURE
+    use MultiPhysicsProbConstants, only : AUXVAR_INTERNAL
+    use MultiPhysicsProbConstants, only : VAR_PRESSURE
     !
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_vsfm_type)    :: vsfm_soe
-    Vec                           :: X
+    class(sysofeqns_vsfm_type) :: vsfm_soe
+    Vec                        :: X
     !
     ! !LOCAL VARIABLES:
-    PetscInt                      :: dm_id
-    PetscInt                      :: nDM
-    DM, pointer                   :: dms(:)
-    Vec, pointer                  :: X_subvecs(:)
-    PetscInt                      :: size
-    PetscInt                      :: offset
-    PetscErrorCode                :: ierr
+    PetscInt                   :: dm_id
+    PetscInt                   :: nDM
+    DM, pointer                :: dms(:)
+    Vec, pointer               :: X_subvecs(:)
+    PetscInt                   :: size
+    PetscInt                   :: offset
+    PetscErrorCode             :: ierr
 
     ! Find number of GEs packed within the SoE
     call DMCompositeGetNumberDM(vsfm_soe%dm, nDM, ierr); CHKERRQ(ierr)
@@ -651,20 +676,20 @@ contains
 
     ! Get vectors (X) for individual GEs
     call DMCompositeGetAccessArray(vsfm_soe%dm, X, nDM, PETSC_NULL_INTEGER, &
-                                   X_subvecs, ierr); CHKERRQ(ierr)
+         X_subvecs, ierr); CHKERRQ(ierr)
 
     ! Update the SoE auxvars
     offset = 0
     do dm_id = 1, nDM
        call VSFMSOESetAuxVars(vsfm_soe, AUXVAR_INTERNAL, VAR_PRESSURE, &
-                              X_subvecs(dm_id), offset)
+            X_subvecs(dm_id), offset)
        call VecGetSize(X_subvecs(dm_id), size, ierr); CHKERRQ(ierr)
        offset = offset + size
     enddo
 
     ! Restore vectors (u,udot,F) for individual GEs
     call DMCompositeRestoreAccessArray(vsfm_soe%dm, X, nDM, PETSC_NULL_INTEGER, &
-                                       X_subvecs, ierr); CHKERRQ(ierr)
+         X_subvecs, ierr); CHKERRQ(ierr)
 
     ! Free memory
     deallocate(dms)
@@ -674,7 +699,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine VSFMSOESetAuxVars(vsfm_soe, auxvar_type, var_type, &
-             var_vec, offset)
+       var_vec, offset)
     !
     ! !DESCRIPTION:
     ! Set values in SoE auxvars.
@@ -685,20 +710,20 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_vsfm_type)                   :: vsfm_soe
-    PetscInt                                     :: auxvar_type
-    PetscInt, intent(in)                         :: var_type
-    Vec                                          :: var_vec
+    class(sysofeqns_vsfm_type)                 :: vsfm_soe
+    PetscInt                                   :: auxvar_type
+    PetscInt, intent(in)                       :: var_type
+    Vec                                        :: var_vec
     !
     ! !LOCAL VARIABLES:
-    PetscReal, pointer                           :: var_p(:)
-    type (sysofeqns_vsfm_auxvar_type), pointer   :: avars(:)
-    PetscInt                                     :: nauxvar
-    PetscInt                                     :: nvar
-    PetscInt, optional                           :: offset
-    PetscInt                                     :: iauxvar
-    PetscInt                                     :: iauxvar_off
-    PetscErrorCode :: ierr
+    PetscReal, pointer                         :: var_p(:)
+    type (sysofeqns_vsfm_auxvar_type), pointer :: avars(:)
+    PetscInt                                   :: nauxvar
+    PetscInt                                   :: nvar
+    PetscInt, optional                         :: offset
+    PetscInt                                   :: iauxvar
+    PetscInt                                   :: iauxvar_off
+    PetscErrorCode                             :: ierr
 
     select case(auxvar_type)
     case (AUXVAR_INTERNAL)
@@ -709,9 +734,9 @@ contains
     end select
 
     if (present(offset)) then
-        iauxvar_off = offset
+       iauxvar_off = offset
     else
-        iauxvar_off = 0
+       iauxvar_off = 0
     endif
 
     nauxvar = size(avars)
@@ -744,7 +769,7 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_vsfm_type) :: this
+    class(sysofeqns_vsfm_type)      :: this
     !
     ! !LOCAL VARIABLES:
     class(goveqn_base_type),pointer :: cur_goveqn
@@ -777,12 +802,12 @@ contains
     !   that depends on the solution from previous time step.
     !
     ! !USES:
-    use MultiPhysicsProbConstants       , only : SOE_RE_ODE
-    use MultiPhysicsProbConstants       , only : AUXVAR_INTERNAL
-    use MultiPhysicsProbConstants       , only : AUXVAR_BC
-    use MultiPhysicsProbConstants       , only : AUXVAR_SS
-    use GoverningEquationBaseType       , only : goveqn_base_type
-    use GoveqnRichardsODEPressureType   , only : goveqn_richards_ode_pressure_type
+    use MultiPhysicsProbConstants     , only : SOE_RE_ODE
+    use MultiPhysicsProbConstants     , only : AUXVAR_INTERNAL
+    use MultiPhysicsProbConstants     , only : AUXVAR_BC
+    use MultiPhysicsProbConstants     , only : AUXVAR_SS
+    use GoverningEquationBaseType     , only : goveqn_base_type
+    use GoveqnRichardsODEPressureType , only : goveqn_richards_ode_pressure_type
     !
     implicit none
     !
@@ -804,7 +829,7 @@ contains
        do
           if (.not.associated(cur_goveq)) exit
           select type(cur_goveq)
-          class is (goveqn_richards_ode_pressure_type)
+             class is (goveqn_richards_ode_pressure_type)
 
              call cur_goveq%GetFromSOEAuxVarsIntrn(this%aux_vars_in, offset)
              call cur_goveq%GetFromSOEAuxVarsBC(this%aux_vars_bc)
@@ -832,21 +857,21 @@ contains
     ! Peform operations after a successful call to the PETSc solver.
     !
     ! !USES:
-    use MultiPhysicsProbConstants       , only : SOE_RE_ODE
-    use MultiPhysicsProbConstants       , only : AUXVAR_INTERNAL
-    use MultiPhysicsProbConstants       , only : AUXVAR_BC
-    use MultiPhysicsProbConstants       , only : AUXVAR_SS
-    use GoverningEquationBaseType       , only : goveqn_base_type
-    use GoveqnRichardsODEPressureType   , only : goveqn_richards_ode_pressure_type
+    use MultiPhysicsProbConstants     , only : SOE_RE_ODE
+    use MultiPhysicsProbConstants     , only : AUXVAR_INTERNAL
+    use MultiPhysicsProbConstants     , only : AUXVAR_BC
+    use MultiPhysicsProbConstants     , only : AUXVAR_SS
+    use GoverningEquationBaseType     , only : goveqn_base_type
+    use GoveqnRichardsODEPressureType , only : goveqn_richards_ode_pressure_type
     !
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_vsfm_type) :: this
+    class(sysofeqns_vsfm_type)      :: this
     !
     ! !LOCAL VARIABLES:
     class(goveqn_base_type),pointer :: cur_goveq
-    PetscErrorCode             :: ierr
+    PetscErrorCode                  :: ierr
 
     call VecCopy(this%soln, this%soln_prev,ierr); CHKERRQ(ierr)
 
@@ -857,7 +882,7 @@ contains
        do
           if (.not.associated(cur_goveq)) exit
           select type(cur_goveq)
-          class is (goveqn_richards_ode_pressure_type)
+             class is (goveqn_richards_ode_pressure_type)
 
              call cur_goveq%SetDataInSOEAuxVar(AUXVAR_INTERNAL, this%aux_vars_in)
 
@@ -874,7 +899,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine VSFMSOESetDataFromCLM(this, soe_auxvar_type, var_type, &
-                                   soe_auxvar_id, data_1d)
+       soe_auxvar_id, data_1d)
     !
     ! !DESCRIPTION:
     ! Used by CLM to set values of boundary conditions and source-sink
@@ -889,34 +914,34 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_vsfm_type)                    :: this
-    PetscInt, intent(in)                          :: var_type
-    PetscInt                                      :: soe_auxvar_type
-    PetscInt                                      :: soe_auxvar_id
-    PetscReal                                     :: data_1d(:)
+    class(sysofeqns_vsfm_type)                 :: this
+    PetscInt, intent(in)                       :: var_type
+    PetscInt                                   :: soe_auxvar_type
+    PetscInt                                   :: soe_auxvar_id
+    PetscReal                                  :: data_1d(:)
     !
     ! !LOCAL VARIABLES:
-    PetscInt                                      :: iauxvar
-    PetscInt                                      :: iauxvar_off
-    PetscInt                                      :: nauxvar
-    type (sysofeqns_vsfm_auxvar_type), pointer    :: auxvars(:)
+    PetscInt                                   :: iauxvar
+    PetscInt                                   :: iauxvar_off
+    PetscInt                                   :: nauxvar
+    type (sysofeqns_vsfm_auxvar_type), pointer :: auxvars(:)
 
     select case(soe_auxvar_type)
-       case(AUXVAR_INTERNAL)
-          auxvars      => this%aux_vars_in
-          iauxvar_off  = 0
-          nauxvar      = this%num_auxvars_in
-       case(AUXVAR_BC)
-          auxvars      => this%aux_vars_bc
-          iauxvar_off  = this%soe_auxvars_bc_offset(soe_auxvar_id)
-          nauxvar      = this%soe_auxvars_bc_ncells(soe_auxvar_id)
-       case(AUXVAR_SS)
-          auxvars      => this%aux_vars_ss
-          iauxvar_off  = this%soe_auxvars_ss_offset(soe_auxvar_id)
-          nauxvar      = this%soe_auxvars_ss_ncells(soe_auxvar_id)
-       case default
-          write(iulog,*) 'VSFMSOESetDataFromCLM: Unknown soe_auxvar_type'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
+    case(AUXVAR_INTERNAL)
+       auxvars      => this%aux_vars_in
+       iauxvar_off  = 0
+       nauxvar      = this%num_auxvars_in
+    case(AUXVAR_BC)
+       auxvars      => this%aux_vars_bc
+       iauxvar_off  = this%soe_auxvars_bc_offset(soe_auxvar_id)
+       nauxvar      = this%soe_auxvars_bc_ncells(soe_auxvar_id)
+    case(AUXVAR_SS)
+       auxvars      => this%aux_vars_ss
+       iauxvar_off  = this%soe_auxvars_ss_offset(soe_auxvar_id)
+       nauxvar      = this%soe_auxvars_ss_ncells(soe_auxvar_id)
+    case default
+       write(iulog,*) 'VSFMSOESetDataFromCLM: Unknown soe_auxvar_type'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
     end select
 
     if (size(data_1d) /= nauxvar) then
@@ -934,7 +959,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine VSFMSOEGetDataForCLM(this, soe_auxvar_type, var_type, &
-                                  soe_auxvar_id, data_1d)
+       soe_auxvar_id, data_1d)
     !
     ! !DESCRIPTION:
     ! Used by CLM to extracted values from the VSFM solver
@@ -948,28 +973,28 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_vsfm_type)                    :: this
-    PetscInt, intent(in)                          :: var_type
-    PetscInt                                      :: soe_auxvar_type
-    PetscInt                                      :: soe_auxvar_id
-    PetscReal                                     :: data_1d(:)
-    PetscInt                                      :: nsize
+    class(sysofeqns_vsfm_type)                 :: this
+    PetscInt, intent(in)                       :: var_type
+    PetscInt                                   :: soe_auxvar_type
+    PetscInt                                   :: soe_auxvar_id
+    PetscReal                                  :: data_1d(:)
+    PetscInt                                   :: nsize
     !
     ! !LOCAL VARIABLES:
-    PetscInt                                      :: iauxvar
-    PetscInt                                      :: iauxvar_off
-    PetscInt                                      :: nauxvar
-    PetscReal                                     :: var_value
-    type (sysofeqns_vsfm_auxvar_type), pointer    :: auxvars(:)
+    PetscInt                                   :: iauxvar
+    PetscInt                                   :: iauxvar_off
+    PetscInt                                   :: nauxvar
+    PetscReal                                  :: var_value
+    type (sysofeqns_vsfm_auxvar_type), pointer :: auxvars(:)
 
     select case(soe_auxvar_type)
-       case(AUXVAR_INTERNAL)
-          auxvars      => this%aux_vars_in
-          iauxvar_off  = 0
-          nauxvar      = this%num_auxvars_in
-       case default
-          write(iulog,*) 'VSFMSOESetDataFromCLM: Unknown soe_auxvar_type'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
+    case(AUXVAR_INTERNAL)
+       auxvars      => this%aux_vars_in
+       iauxvar_off  = 0
+       nauxvar      = this%num_auxvars_in
+    case default
+       write(iulog,*) 'VSFMSOESetDataFromCLM: Unknown soe_auxvar_type'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
     end select
 
     if (size(data_1d) /= nauxvar) then
@@ -986,6 +1011,102 @@ contains
 
   end subroutine VSFMSOEGetDataForCLM
 
+  !------------------------------------------------------------------------
+  subroutine VSFMSPreStepDT(this)
+    !
+    ! !DESCRIPTION:
+    ! This subroutines copies solution vector at previous CLM time step
+    ! before StepDT is called.
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(sysofeqns_vsfm_type)    :: this
+    PetscErrorCode                :: ierr
+
+    call VecCopy(this%soln_prev_clm, this%soln_prev, ierr); CHKERRQ(ierr)
+
+  end subroutine VSFMSPreStepDT
+
+  !------------------------------------------------------------------------
+  subroutine VSFMSPostStepDT(this)
+    !
+    ! !DESCRIPTION:
+    ! This subroutines make a copy of solution vector post StepDT is
+    ! called.
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(sysofeqns_vsfm_type) :: this
+    PetscErrorCode             :: ierr
+
+    call VecCopy(this%soln_prev, this%soln_prev_clm, ierr); CHKERRQ(ierr)
+
+  end subroutine VSFMSPostStepDT
+
+  !------------------------------------------------------------------------
+  subroutine VSFMSGetConditionNames(this, cond_type, cond_type_to_exclude, &
+       num_conds, cond_names)
+    !
+    ! !DESCRIPTION:
+    ! Returns the total number and names of conditions (eg. boundary condition
+    ! or source-sink) present
+    !
+    use GoverningEquationBaseType     , only : goveqn_base_type
+    use GoveqnRichardsODEPressureType , only : goveqn_richards_ode_pressure_type
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(sysofeqns_vsfm_type)      :: this
+    PetscInt, intent(in)            :: cond_type
+    PetscInt, intent(in)            :: cond_type_to_exclude
+    character (len=256), pointer    :: cond_names(:)
+    PetscInt                        :: num_conds
+    !
+    class(goveqn_base_type),pointer :: cur_goveq
+    PetscInt                        :: nn
+    PetscErrorCode                  :: ierr
+    PetscInt                        :: num_conds_tmp
+    character (len=256), pointer    :: cond_names_tmp(:)
+
+    num_conds = 0
+    cur_goveq => this%goveqns
+    do
+       if (.not.associated(cur_goveq)) exit
+       select type(cur_goveq)
+          class is (goveqn_richards_ode_pressure_type)
+             call cur_goveq%NumConditions(cond_type, cond_type_to_exclude, num_conds_tmp)
+          class default
+             write(iulog,*) 'VSFMSGetConditionNames: Supported for only goveqn_richards_ode_pressure_type'
+             call endrun(msg=errMsg(__FILE__, __LINE__))
+       end select
+       num_conds = num_conds + num_conds_tmp
+       cur_goveq => cur_goveq%next
+    enddo
+
+    allocate(cond_names(num_conds))
+
+    num_conds = 0
+    cur_goveq => this%goveqns
+    do
+       if (.not.associated(cur_goveq)) exit
+       select type(cur_goveq)
+          class is (goveqn_richards_ode_pressure_type)
+          call cur_goveq%GetConditionNames(cond_type, cond_type_to_exclude, num_conds_tmp, cond_names_tmp)
+          if (num_conds_tmp > 0) then
+             do nn = 1, num_conds_tmp
+                num_conds = num_conds + 1
+                cond_names(num_conds) = cond_names_tmp(nn)
+             enddo
+             deallocate(cond_names_tmp)
+          endif
+       end select
+       cur_goveq => cur_goveq%next
+    enddo
+
+  end subroutine VSFMSGetConditionNames
   !------------------------------------------------------------------------
 
 end module SystemOfEquationsVSFMType
