@@ -477,7 +477,7 @@
                             icells,   indxi,   indxj, &
                             ntrcr,    trcr_depend,    &
                             atrcr, aice,    &
-                            vice,   vsno,  &
+                            vice ,   vsno,  &
                             trcr)
 
       deallocate (atrcr)

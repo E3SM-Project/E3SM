@@ -1193,7 +1193,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
        !BSINGH - ENDS
 
 
-!$OMP PARALLEL DO PRIVATE (C, phys_buffer_chunk)
+!$OMP PARALLEL DO PRIVATE (C, phys_buffer_chunk, ilchnk)
        do c=begchunk, endchunk
           !
           ! Output physics terms to IC file
