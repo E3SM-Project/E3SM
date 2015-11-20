@@ -36,7 +36,7 @@
 #define PIO_OFFSET MPI_OFFSET
 #define PIO_Offset MPI_Offset
 #define PIO_MAX_VARS NC_MAX_VARS
-#define PIO_MAX_REQUESTS 200
+#define PIO_MAX_REQUESTS 2000
 
 
 /**
