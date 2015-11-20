@@ -2130,15 +2130,6 @@
 			 description="CVMix/KPP: Penetrative temperature flux at the bottom of boundary layer due to solar radiation. Positive is into the ocean."
 			 packages="forwardMode;analysisMode"
 		/>
-		 <!--The next two var arrays can be removed after the commit is tested -->
-		<var name="penetratingShortwave" type="real" dimensions="nVertLevels nCells Time" units="^\circ C m s^{-1}"
-			 description="true penetrating shortwvae component to test new SW code"
-			 packages="forwardMode;analysisMode"
-			 />
-		<var name="chlA_test" type="real" dimensions="nCells Time" units="NA"
-			description="test if chlA is read and interpolated correctly"
-			packages="forwardMode;analysisMode"
-		/>
 		<var name="surfaceBuoyancyForcing" type="real" dimensions="nCells Time" units="m^2 s^{-3}"
 			 description="CVMix/KPP: diagnosed surface buoyancy flux due to heat, salt and freshwater fluxes. Positive flux increases buoyancy."
 			 packages="forwardMode;analysisMode"
@@ -2334,7 +2325,17 @@
 		<var name="penetrativeTemperatureFlux" type="real" dimensions="nCells Time" units="^\circ C m s^{-1}"
 			 description="Penetrative temperature flux at the surface due to solar radiation. Positive is into the ocean."
 			 packages="forwardMode;analysisMode"
-		/>
+			 />
+                  <!--The next two var arrays can be removed after the commit is tested -->
+                 <var name="penetratingShortwave" type="real" dimensions="nVertLevels nCells Time" units="^\circ C m s^{-1}"
+                          description="true penetrating shortwvae component to test new SW code"
+                          packages="forwardMode;analysisMode"
+                 />
+                 <var name="chlA_test" type="real" dimensions="nCells Time" units="NA"
+                         description="test if chlA is read and interpolated correctly"
+                         packages="forwardMode;analysisMode"
+                 />
+
 		<var name="fractionAbsorbed" type="real" dimensions="nVertLevels nCells Time" units="fractional"
 			 description="Divergence of transmission through interfaces of surface fluxes below the surface layer at cell centers. These are not applied to short wave."
 			 packages="forwardMode;analysisMode"
@@ -2367,6 +2368,7 @@
 			 packages="activeTracersBulkRestoringPKG;ecosysTracersPKG"
 		/>
 
+		
 		<!-- Coupling fields associated with mass or salinity fluxes -->
 		<var name="evaporationFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Evaporation flux at cell centers from coupler. Positive into the ocean."
