@@ -8772,7 +8772,32 @@ contains
          pkgColumnTracerLidThicknessActive, &
          pkgColumnTracerAerosolsActive, &
          pkgColumnFormDragActive, &
-         pkgColumnBiogeochemistryActive
+         pkgColumnBiogeochemistryActive, &
+         pkgTracerBrineActive, &
+         pkgTracerMobileFractionActive, &
+         pkgTracerSkeletalAlgaeActive, &
+         pkgTracerSkeletalNitrateActive, &
+         pkgTracerSkeletalCarbonActive, &
+         pkgTracerSkeletalAmmoniumActive, &
+         pkgTracerSkeletalSilicateActive, &
+         pkgTracerSkeletalDMSActive, &
+         pkgTracerSkeletalNonreactiveActive, &
+         pkgTracerSkeletalHumicsActive, &
+         pkgTracerSkeletalDONActive, &
+         pkgTracerSkeletalIronActive, &
+         pkgTracerVerticalAlgaeActive, &
+         pkgTracerVerticalNitrateActive, &
+         pkgTracerVerticalCarbonActive, &
+         pkgTracerVerticalAmmoniumActive, &
+         pkgTracerVerticalSilicateActive, &
+         pkgTracerVerticalDMSActive, &
+         pkgTracerVerticalNonreactiveActive, &
+         pkgTracerVerticalHumicsActive, &
+         pkgTracerVerticalDONActive, &
+         pkgTracerVerticalIronActive, &
+         pkgTracerZAerosolsActive, &
+         pkgTracerZSalinityActive
+        
 
     ! mesh stand-ins
     type(field1DReal), pointer :: &
@@ -8813,6 +8838,31 @@ contains
        call MPAS_pool_get_package(block % packages, "pkgColumnTracerLidThicknessActive", pkgColumnTracerLidThicknessActive)
        call MPAS_pool_get_package(block % packages, "pkgColumnTracerAerosolsActive", pkgColumnTracerAerosolsActive)
        call MPAS_pool_get_package(block % packages, "pkgColumnBiogeochemistryActive", pkgColumnBiogeochemistryActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerBrineActive", pkgTracerBrineActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerMobileFractionActive", pkgTracerMobileFractionActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerSkeletalAlgaeActive", pkgTracerSkeletalAlgaeActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerSkeletalNitrateActive", pkgTracerSkeletalNitrateActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerSkeletalCarbonActive", pkgTracerSkeletalCarbonActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerSkeletalAmmoniumActive", pkgTracerSkeletalAmmoniumActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerSkeletalSilicateActive", pkgTracerSkeletalSilicateActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerSkeletalDMSActive", pkgTracerSkeletalDMSActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerSkeletalNonreactiveActive", pkgTracerSkeletalNonreactiveActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerSkeletalHumicsActive", pkgTracerSkeletalHumicsActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerSkeletalDONActive", pkgTracerSkeletalDONActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerSkeletalIronActive", pkgTracerSkeletalIronActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerVerticalAlgaeActive", pkgTracerVerticalAlgaeActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerVerticalNitrateActive", pkgTracerVerticalNitrateActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerVerticalCarbonActive", pkgTracerVerticalCarbonActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerVerticalAmmoniumActive", pkgTracerVerticalAmmoniumActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerVerticalSilicateActive", pkgTracerVerticalSilicateActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerVerticalDMSActive", pkgTracerVerticalDMSActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerVerticalNonreactiveActive", pkgTracerVerticalNonreactiveActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerVerticalHumicsActive", pkgTracerVerticalHumicsActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerVerticalDONActive", pkgTracerVerticalDONActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerVerticalIronActive", pkgTracerVerticalIronActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerZAerosolsActive", pkgTracerZAerosolsActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerZSalinityActive", pkgTracerZSalinityActive)
+
 
        ! ice age
        if (.not. pkgColumnTracerIceAgeActive) then
@@ -8883,6 +8933,87 @@ contains
           call set_stand_in_tracer_array(block, "brineFraction")
           call set_stand_in_tracer_array(block, "mobileFraction")
           call set_stand_in_tracer_array(block, "verticalSalinity")
+       else
+          if (.not. pkgTracerBrineActive) then
+             call set_stand_in_tracer_array(block, "brineFraction")
+          endif
+          if (.not. pkgTracerMobileFractionActive) then
+             call set_stand_in_tracer_array(block, "mobileFraction")
+          endif
+          if (.not. pkgTracerSkeletalAlgaeActive) then
+             call set_stand_in_tracer_array(block, "skeletalAlgaeConc")
+          endif
+          if (.not. pkgTracerSkeletalNitrateActive) then
+             call set_stand_in_tracer_array(block, "skeletalNitrateConc")
+          endif
+          if (.not. pkgTracerSkeletalSilicateActive) then
+             call set_stand_in_tracer_array(block, "skeletalSilicateConc")
+          endif
+          if (.not. pkgTracerSkeletalAmmoniumActive) then
+             call set_stand_in_tracer_array(block, "skeletalAmmoniumConc")
+          endif
+          if (.not. pkgTracerSkeletalDMSActive) then
+             call set_stand_in_tracer_array(block, "skeletalDMSPpConc")
+             call set_stand_in_tracer_array(block, "skeletalDMSPpConc")
+             call set_stand_in_tracer_array(block, "skeletalDMSConc")
+          endif
+          if (.not. pkgTracerSkeletalCarbonActive) then
+             call set_stand_in_tracer_array(block, "skeletalDOCConc")
+             call set_stand_in_tracer_array(block, "skeletalDICConc")
+          endif
+          if (.not. pkgTracerSkeletalDONActive) then
+             call set_stand_in_tracer_array(block, "skeletalDONConc")
+          endif
+          if (.not. pkgTracerSkeletalNonreactiveActive) then
+             call set_stand_in_tracer_array(block, "skeletalNonreactiveConc")
+          endif
+          if (.not. pkgTracerSkeletalHumicsActive) then
+             call set_stand_in_tracer_array(block, "skeletalHumicsConc")
+          endif
+          if (.not. pkgTracerSkeletalIronActive) then
+             call set_stand_in_tracer_array(block, "skeletalParticulateIronConc")
+             call set_stand_in_tracer_array(block, "skeletalDissolvedIronConc")
+          endif          
+          if (.not. pkgTracerVerticalAlgaeActive) then
+             call set_stand_in_tracer_array(block, "verticalAlgaeConc")
+          endif
+          if (.not. pkgTracerVerticalNitrateActive) then
+             call set_stand_in_tracer_array(block, "verticalNitrateConc")
+          endif
+          if (.not. pkgTracerVerticalSilicateActive) then
+             call set_stand_in_tracer_array(block, "verticalSilicateConc")
+          endif
+          if (.not. pkgTracerVerticalAmmoniumActive) then
+             call set_stand_in_tracer_array(block, "verticalAmmoniumConc")
+          endif
+          if (.not. pkgTracerVerticalDMSActive) then
+             call set_stand_in_tracer_array(block, "verticalDMSPpConc")
+             call set_stand_in_tracer_array(block, "verticalDMSPdConc")
+             call set_stand_in_tracer_array(block, "verticalDMSConc")
+          endif
+          if (.not. pkgTracerVerticalCarbonActive) then
+             call set_stand_in_tracer_array(block, "verticalDOCConc")
+             call set_stand_in_tracer_array(block, "verticalDICConc")
+          endif
+          if (.not. pkgTracerVerticalDONActive) then
+             call set_stand_in_tracer_array(block, "verticalDONConc")
+          endif
+          if (.not. pkgTracerVerticalNonreactiveActive) then
+             call set_stand_in_tracer_array(block, "verticalNonreactiveConc")
+          endif
+          if (.not. pkgTracerVerticalHumicsActive) then
+             call set_stand_in_tracer_array(block, "verticalHumicsConc")
+          endif
+          if (.not. pkgTracerVerticalIronActive) then
+             call set_stand_in_tracer_array(block, "verticalParticulateIronConc")
+             call set_stand_in_tracer_array(block, "verticalDissolvedIronConc")
+          endif     
+          if (.not. pkgTracerZAerosolsActive) then
+             call set_stand_in_tracer_array(block, "verticalAerosolsConc")
+          endif       
+          if (.not. pkgTracerZSalinityActive) then
+             call set_stand_in_tracer_array(block, "verticalSalinity")
+          endif     
        endif
 
        !-----------------------------------------------------------------------
@@ -8970,7 +9101,31 @@ contains
          pkgColumnTracerLidThicknessActive, &
          pkgColumnTracerAerosolsActive, &
          pkgColumnFormDragActive, &
-         pkgColumnBiogeochemistryActive
+         pkgColumnBiogeochemistryActive, &
+         pkgTracerBrineActive, &
+         pkgTracerMobileFractionActive, &
+         pkgTracerSkeletalAlgaeActive, &
+         pkgTracerSkeletalNitrateActive, &
+         pkgTracerSkeletalCarbonActive, &
+         pkgTracerSkeletalAmmoniumActive, &
+         pkgTracerSkeletalSilicateActive, &
+         pkgTracerSkeletalDMSActive, &
+         pkgTracerSkeletalNonreactiveActive, &
+         pkgTracerSkeletalHumicsActive, &
+         pkgTracerSkeletalDONActive, &
+         pkgTracerSkeletalIronActive, &
+         pkgTracerVerticalAlgaeActive, &
+         pkgTracerVerticalNitrateActive, &
+         pkgTracerVerticalCarbonActive, &
+         pkgTracerVerticalAmmoniumActive, &
+         pkgTracerVerticalSilicateActive, &
+         pkgTracerVerticalDMSActive, &
+         pkgTracerVerticalNonreactiveActive, &
+         pkgTracerVerticalHumicsActive, &
+         pkgTracerVerticalDONActive, &
+         pkgTracerVerticalIronActive, &
+         pkgTracerZAerosolsActive, &
+         pkgTracerZSalinityActive
 
     ! drag variables
     type(field1DReal), pointer :: &
@@ -9004,6 +9159,30 @@ contains
        call MPAS_pool_get_package(block % packages, "pkgColumnTracerLidThicknessActive", pkgColumnTracerLidThicknessActive)
        call MPAS_pool_get_package(block % packages, "pkgColumnTracerAerosolsActive", pkgColumnTracerAerosolsActive)
        call MPAS_pool_get_package(block % packages, "pkgColumnBiogeochemistryActive", pkgColumnBiogeochemistryActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerBrineActive", pkgTracerBrineActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerMobileFractionActive", pkgTracerMobileFractionActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerSkeletalAlgaeActive", pkgTracerSkeletalAlgaeActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerSkeletalNitrateActive", pkgTracerSkeletalNitrateActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerSkeletalCarbonActive", pkgTracerSkeletalCarbonActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerSkeletalAmmoniumActive", pkgTracerSkeletalAmmoniumActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerSkeletalSilicateActive", pkgTracerSkeletalSilicateActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerSkeletalDMSActive", pkgTracerSkeletalDMSActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerSkeletalNonreactiveActive", pkgTracerSkeletalNonreactiveActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerSkeletalHumicsActive", pkgTracerSkeletalHumicsActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerSkeletalDONActive", pkgTracerSkeletalDONActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerSkeletalIronActive", pkgTracerSkeletalIronActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerVerticalAlgaeActive", pkgTracerVerticalAlgaeActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerVerticalNitrateActive", pkgTracerVerticalNitrateActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerVerticalCarbonActive", pkgTracerVerticalCarbonActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerVerticalAmmoniumActive", pkgTracerVerticalAmmoniumActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerVerticalSilicateActive", pkgTracerVerticalSilicateActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerVerticalDMSActive", pkgTracerVerticalDMSActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerVerticalNonreactiveActive", pkgTracerVerticalNonreactiveActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerVerticalHumicsActive", pkgTracerVerticalHumicsActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerVerticalDONActive", pkgTracerVerticalDONActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerVerticalIronActive", pkgTracerVerticalIronActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerZAerosolsActive", pkgTracerZAerosolsActive)
+       call MPAS_pool_get_package(block % packages, "pkgTracerZSalinityActive", pkgTracerZSalinityActive)
 
        ! ice age
        if (.not. pkgColumnTracerIceAgeActive) then
@@ -9075,6 +9254,87 @@ contains
           call finalize_stand_in_tracer_array(block, "brineFraction")
           call finalize_stand_in_tracer_array(block, "mobileFraction")
           call finalize_stand_in_tracer_array(block, "verticalSalinity")
+       else
+          if (.not. pkgTracerBrineActive) then
+             call finalize_stand_in_tracer_array(block, "brineFraction")
+          endif
+          if (.not. pkgTracerMobileFractionActive) then
+             call finalize_stand_in_tracer_array(block, "mobileFraction")
+          endif
+          if (.not. pkgTracerSkeletalAlgaeActive) then
+             call finalize_stand_in_tracer_array(block, "skeletalAlgaeConc")
+          endif
+          if (.not. pkgTracerSkeletalNitrateActive) then
+             call finalize_stand_in_tracer_array(block, "skeletalNitrateConc")
+          endif
+          if (.not. pkgTracerSkeletalSilicateActive) then
+             call finalize_stand_in_tracer_array(block, "skeletalSilicateConc")
+          endif
+          if (.not. pkgTracerSkeletalAmmoniumActive) then
+             call finalize_stand_in_tracer_array(block, "skeletalAmmoniumConc")
+          endif
+          if (.not. pkgTracerSkeletalDMSActive) then
+             call finalize_stand_in_tracer_array(block, "skeletalDMSPpConc")
+             call finalize_stand_in_tracer_array(block, "skeletalDMSPdConc")
+             call finalize_stand_in_tracer_array(block, "skeletalDMSConc")
+          endif
+          if (.not. pkgTracerSkeletalCarbonActive) then
+             call finalize_stand_in_tracer_array(block, "skeletalDOCConc")
+             call finalize_stand_in_tracer_array(block, "skeletalDICConc")
+          endif
+          if (.not. pkgTracerSkeletalDONActive) then
+             call finalize_stand_in_tracer_array(block, "skeletalDONConc")
+          endif
+          if (.not. pkgTracerSkeletalNonreactiveActive) then
+             call finalize_stand_in_tracer_array(block, "skeletalNonreactiveConc")
+          endif
+          if (.not. pkgTracerSkeletalHumicsActive) then
+             call finalize_stand_in_tracer_array(block, "skeletalHumicsConc")
+          endif
+          if (.not. pkgTracerSkeletalIronActive) then
+             call finalize_stand_in_tracer_array(block, "skeletalParticulateIronConc")
+             call finalize_stand_in_tracer_array(block, "skeletalDissolvedIronConc")
+          endif          
+          if (.not. pkgTracerVerticalAlgaeActive) then
+             call finalize_stand_in_tracer_array(block, "verticalAlgaeConc")
+          endif
+          if (.not. pkgTracerVerticalNitrateActive) then
+             call finalize_stand_in_tracer_array(block, "verticalNitrateConc")
+          endif
+          if (.not. pkgTracerVerticalSilicateActive) then
+             call finalize_stand_in_tracer_array(block, "verticalSilicateConc")
+          endif
+          if (.not. pkgTracerVerticalAmmoniumActive) then
+             call finalize_stand_in_tracer_array(block, "verticalAmmoniumConc")
+          endif
+          if (.not. pkgTracerVerticalDMSActive) then
+             call finalize_stand_in_tracer_array(block, "verticalDMSPpConc")
+             call finalize_stand_in_tracer_array(block, "verticalDMSPdConc")
+             call finalize_stand_in_tracer_array(block, "verticalDMSConc")
+          endif
+          if (.not. pkgTracerVerticalCarbonActive) then
+             call finalize_stand_in_tracer_array(block, "verticalDOCConc")
+             call finalize_stand_in_tracer_array(block, "verticalDICConc")
+          endif
+          if (.not. pkgTracerVerticalDONActive) then
+             call finalize_stand_in_tracer_array(block, "verticalDONConc")
+          endif
+          if (.not. pkgTracerVerticalNonreactiveActive) then
+             call finalize_stand_in_tracer_array(block, "verticalNonreactiveConc")
+          endif
+          if (.not. pkgTracerVerticalHumicsActive) then
+             call finalize_stand_in_tracer_array(block, "verticalHumicsConc")
+          endif
+          if (.not. pkgTracerVerticalIronActive) then
+             call finalize_stand_in_tracer_array(block, "verticalParticulateIronConc")
+             call finalize_stand_in_tracer_array(block, "verticalDissolvedIronConc")
+          endif     
+          if (.not. pkgTracerZAerosolsActive) then
+             call finalize_stand_in_tracer_array(block, "verticalAerosolsConc")
+          endif       
+          if (.not. pkgTracerZSalinityActive) then
+             call finalize_stand_in_tracer_array(block, "verticalSalinity")
+          endif     
        endif
 
        !-----------------------------------------------------------------------

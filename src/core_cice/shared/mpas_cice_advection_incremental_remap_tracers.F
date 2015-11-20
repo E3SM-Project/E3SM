@@ -171,26 +171,35 @@ contains
          pkgColumnTracerLevelIceActive, &
          pkgColumnTracerPondsActive, &
          pkgColumnTracerLidThicknessActive, &
-         pkgColumnTracerAerosolsActive
+         pkgColumnTracerAerosolsActive, &
+         pkgColumnBiogeochemistryActive, &
+         pkgTracerBrineActive, &
+         pkgTracerMobileFractionActive, &
+         pkgTracerSkeletalAlgaeActive, &
+         pkgTracerSkeletalNitrateActive, &
+         pkgTracerSkeletalCarbonActive, &
+         pkgTracerSkeletalAmmoniumActive, &
+         pkgTracerSkeletalSilicateActive, &
+         pkgTracerSkeletalDMSActive, &
+         pkgTracerSkeletalNonreactiveActive, &
+         pkgTracerSkeletalHumicsActive, &
+         pkgTracerSkeletalDONActive, &
+         pkgTracerSkeletalIronActive, &
+         pkgTracerVerticalAlgaeActive, &
+         pkgTracerVerticalNitrateActive, &
+         pkgTracerVerticalCarbonActive, &
+         pkgTracerVerticalAmmoniumActive, &
+         pkgTracerVerticalSilicateActive, &
+         pkgTracerVerticalDMSActive, &
+         pkgTracerVerticalNonreactiveActive, &
+         pkgTracerVerticalHumicsActive, &
+         pkgTracerVerticalDONActive, &
+         pkgTracerVerticalIronActive, &
+         pkgTracerZAerosolsActive, &
+         pkgTracerZSalinityActive
  
     logical, pointer :: &
-         config_use_level_meltponds, &
-         config_use_column_biogeochemistry, &
-         config_use_skeletal_biochemistry, &
-         config_use_vertical_biochemistry, &
-         config_use_vertical_zsalinity, &
-         config_use_vertical_tracers, &
-         config_use_brine, &
-         config_use_nitrate, &
-         config_use_carbon, &
-         config_use_ammonium, &
-         config_use_silicate, &
-         config_use_DMS, &
-         config_use_nonreactive, &
-         config_use_humics, &
-         config_use_DON, &
-         config_use_iron, &
-         config_use_zaerosols
+         config_use_level_meltponds
 
     type (mpas_pool_type), pointer :: configPool
 
@@ -225,6 +234,31 @@ contains
     call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerPondsActive',        pkgColumnTracerPondsActive)
     call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerLidThicknessActive', pkgColumnTracerLidThicknessActive)
     call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnTracerAerosolsActive',     pkgColumnTracerAerosolsActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgColumnBiogeochemistryActive',    pkgColumnBiogeochemistryActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerBrineActive',              pkgTracerBrineActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerMobileFractionActive',     pkgTracerMobileFractionActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalAlgaeActive',      pkgTracerSkeletalAlgaeActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalNitrateActive',    pkgTracerSkeletalNitrateActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalCarbonActive',     pkgTracerSkeletalCarbonActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalAmmoniumActive',   pkgTracerSkeletalAmmoniumActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalSilicateActive',   pkgTracerSkeletalSilicateActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalDMSActive',        pkgTracerSkeletalDMSActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalNonreactiveActive', pkgTracerSkeletalNonreactiveActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalHumicsActive',     pkgTracerSkeletalHumicsActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalDONActive',        pkgTracerSkeletalDONActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerSkeletalIronActive',       pkgTracerSkeletalIronActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalAlgaeActive',      pkgTracerVerticalAlgaeActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalNitrateActive',    pkgTracerVerticalNitrateActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalCarbonActive',     pkgTracerVerticalCarbonActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalAmmoniumActive',   pkgTracerVerticalAmmoniumActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalSilicateActive',   pkgTracerVerticalSilicateActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalDMSActive',        pkgTracerVerticalDMSActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalNonreactiveActive', pkgTracerVerticalNonreactiveActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalHumicsActive',     pkgTracerVerticalHumicsActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalDONActive',        pkgTracerVerticalDONActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerVerticalIronActive',       pkgTracerVerticalIronActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerZAerosolsActive',          pkgTracerZAerosolsActive)
+    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerZSalinityActive',          pkgTracerZSalinityActive)
 
     configPool => domain % blocklist % configs
     call MPAS_pool_get_config(configPool, "config_use_level_meltponds", config_use_level_meltponds)
@@ -262,138 +296,118 @@ contains
        call add_tracer_to_tracer_linked_list(tracersHead, 'iceBodyAerosol',       'iceVolumeCategory')
     endif
 
-    !if (pkgColumnBiogeochemistry) then
-    call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
-    call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
-    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
-    call MPAS_pool_get_config(domain % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
-    call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
-    call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
-    call MPAS_pool_get_config(domain % configs, "config_use_nitrate", config_use_nitrate)
-    call MPAS_pool_get_config(domain % configs, "config_use_carbon", config_use_carbon)
-    call MPAS_pool_get_config(domain % configs, "config_use_ammonium",config_use_ammonium)
-    call MPAS_pool_get_config(domain % configs, "config_use_silicate",config_use_silicate)
-    call MPAS_pool_get_config(domain % configs, "config_use_DMS",config_use_DMS)
-    call MPAS_pool_get_config(domain % configs, "config_use_nonreactive",config_use_nonreactive)
-    call MPAS_pool_get_config(domain % configs, "config_use_humics",config_use_humics)
-    call MPAS_pool_get_config(domain % configs, "config_use_DON",config_use_DON)
-    call MPAS_pool_get_config(domain % configs, "config_use_iron",config_use_iron)
-    call MPAS_pool_get_config(domain % configs, "config_use_zaerosols",config_use_zaerosols)
-
-    if (config_use_column_biogeochemistry) then
-
+    if (pkgColumnBiogeochemistryActive) then
        ! brine height tracer
-       if (config_use_brine) &
+       if (pkgTracerBrineActive) &
           call add_tracer_to_tracer_linked_list(tracersHead, 'brineFraction',               'iceVolumeCategory')
        
        ! skeletal layer biogeochemistry
-       if (config_use_skeletal_biochemistry) then
+       if (pkgTracerSkeletalAlgaeActive) &
           call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalAlgaeConc',           'iceAreaCategory')
 
-          ! nitrate
-          if (config_use_nitrate) &
-             call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalNitrateConc',         'iceAreaCategory')
+       ! nitrate
+       if (pkgTracerSkeletalNitrateActive) &
+          call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalNitrateConc',         'iceAreaCategory')
 
-          ! carbon (DOC and DIC)
-          if (config_use_carbon) then
-             call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDOCConc',             'iceAreaCategory')
-             call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDICConc',             'iceAreaCategory')
-          endif
+       ! carbon (DOC and DIC)
+       if (pkgTracerSkeletalCarbonActive) then
+          call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDOCConc',             'iceAreaCategory')
+          call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDICConc',             'iceAreaCategory')
+       endif
 
-          ! DON (proteins...)
-          if (config_use_DON) &
-             call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDONConc',             'iceAreaCategory')
+       ! DON (proteins...)
+       if (pkgTracerSkeletalDONActive) &
+          call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDONConc',             'iceAreaCategory')
 
-          ! ammonium 
-          if (config_use_ammonium) &
-             call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalAmmoniumConc',        'iceAreaCategory')
+       ! ammonium 
+       if (pkgTracerSkeletalAmmoniumActive) &
+          call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalAmmoniumConc',        'iceAreaCategory')
 
-          ! silicate
-          if (config_use_silicate) &
-             call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalSilicateConc',        'iceAreaCategory')
+       ! silicate
+       if (pkgTracerSkeletalSilicateActive) &
+          call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalSilicateConc',        'iceAreaCategory')
 
-          ! DMS and products
-          if (config_use_DMS) then
-             call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDMSConc',             'iceAreaCategory')
-             call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDMSPpConc',           'iceAreaCategory')
-             call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDMSPdConc',           'iceAreaCategory')
-          endif
+       ! DMS and products
+       if (pkgTracerSkeletalDMSActive) then
+          call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDMSConc',             'iceAreaCategory')
+          call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDMSPpConc',           'iceAreaCategory')
+          call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDMSPdConc',           'iceAreaCategory')
+       endif
 
-          ! nonreactive mobile tracer
-          if (config_use_nonreactive) &
-             call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalNonreactiveConc',     'iceAreaCategory')
+       ! nonreactive mobile tracer
+       if (pkgTracerSkeletalNonreactiveActive) &
+          call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalNonreactiveConc',     'iceAreaCategory')
          
-          ! humic material
-          if (config_use_humics) &
-             call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalHumicsConc',          'iceAreaCategory')
+       ! humic material
+       if (pkgTracerSkeletalHumicsActive) &
+          call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalHumicsConc',          'iceAreaCategory')
 
-          ! iron
-          if (config_use_iron) then
-             call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalParticulateIronConc', 'iceAreaCategory')
-             call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDissolvedIronConc',   'iceAreaCategory')
-          endif
+       ! iron
+       if (pkgTracerSkeletalIronActive) then
+          call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalParticulateIronConc', 'iceAreaCategory')
+          call add_tracer_to_tracer_linked_list(tracersHead, 'skeletalDissolvedIronConc',   'iceAreaCategory')
+       endif
 
-       ! vertical biogeochemistry
-       elseif (config_use_vertical_tracers) then
-
-          ! fraction of tracer in the mobile phase
+       ! vertical biogeochemistry 
+       ! fraction of tracer in the mobile phase
+       if (pkgTracerMobileFractionActive) &
           call add_tracer_to_tracer_linked_list(tracersHead, 'mobileFraction',              'brineFraction')
          
-          ! algal nitrogen
-          if (config_use_vertical_biochemistry) &
+       ! algal nitrogen
+       if (pkgTracerVerticalAlgaeActive) &
              call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAlgaeConc',           'brineFraction')
       
-          ! nitrate
-          if (config_use_nitrate) &
+       ! nitrate
+       if (pkgTracerVerticalNitrateActive) &
              call add_tracer_to_tracer_linked_list(tracersHead, 'verticalNitrateConc',         'brineFraction')
 
-          ! carbon
-          if (config_use_carbon) then
-             call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDOCConc',             'brineFraction')
-             call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDICConc',             'brineFraction')
-          endif
-
-          ! DON (proteins...)
-          if (config_use_DON) &
-             call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDONConc',             'brineFraction')
-
-          ! ammonium
-          if (config_use_ammonium) &
-             call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAmmoniumConc',        'brineFraction')
-
-          ! silicate 
-          if (config_use_silicate) &
-             call add_tracer_to_tracer_linked_list(tracersHead, 'verticalSilicateConc',        'brineFraction')
-
-          ! DMS and related products
-          if (config_use_DMS) then
-             call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDMSConc',             'brineFraction')
-             call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDMSPpConc',           'brineFraction')
-             call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDMSPdConc',           'brineFraction')
-          endif
-
-          ! nonreactive mobile tracer
-          if (config_use_nonreactive) &
-             call add_tracer_to_tracer_linked_list(tracersHead, 'verticalNonreactiveConc',     'brineFraction')
-
-          ! humic material
-          if (config_use_humics) &
-             call add_tracer_to_tracer_linked_list(tracersHead, 'verticalHumicsConc',          'brineFraction')
-
-          ! iron
-          if (config_use_iron) then
-             call add_tracer_to_tracer_linked_list(tracersHead, 'verticalParticulateIronConc', 'brineFraction')
-             call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDissolvedIronConc',   'brineFraction')
-          endif
-
-          ! vertical aerosols
-          if (config_use_zaerosols) &
-             call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAerosolsConc',        'brineFraction')
-       
-          ! vertical salinity
-          if (config_use_vertical_zsalinity) &
-             call add_tracer_to_tracer_linked_list(tracersHead, 'verticalSalinity',            'brineFraction')
+       ! carbon
+       if (pkgTracerVerticalCarbonActive) then
+          call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDOCConc',             'brineFraction')
+          call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDICConc',             'brineFraction')
        endif
+
+       ! DON (proteins...)
+       if (pkgTracerVerticalDONActive) &
+          call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDONConc',             'brineFraction')
+
+       ! ammonium
+       if (pkgTracerVerticalAmmoniumActive) &
+          call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAmmoniumConc',        'brineFraction')
+
+       ! silicate 
+       if (pkgTracerVerticalSilicateActive) &
+          call add_tracer_to_tracer_linked_list(tracersHead, 'verticalSilicateConc',        'brineFraction')
+
+       ! DMS and related products
+       if (pkgTracerVerticalDMSActive) then
+          call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDMSConc',             'brineFraction')
+          call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDMSPpConc',           'brineFraction')
+          call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDMSPdConc',           'brineFraction')
+       endif
+
+       ! nonreactive mobile tracer
+       if (pkgTracerVerticalNonreactiveActive) &
+          call add_tracer_to_tracer_linked_list(tracersHead, 'verticalNonreactiveConc',     'brineFraction')
+
+       ! humic material
+       if (pkgTracerVerticalHumicsActive) &
+          call add_tracer_to_tracer_linked_list(tracersHead, 'verticalHumicsConc',          'brineFraction')
+
+       ! iron
+       if (pkgTracerVerticalIronActive) then
+          call add_tracer_to_tracer_linked_list(tracersHead, 'verticalParticulateIronConc', 'brineFraction')
+          call add_tracer_to_tracer_linked_list(tracersHead, 'verticalDissolvedIronConc',   'brineFraction')
+       endif
+
+       ! vertical aerosols
+       if (pkgTracerZAerosolsActive) &
+          call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAerosolsConc',        'brineFraction')
+       
+       ! vertical salinity
+       if (pkgTracerZSalinityActive) &
+          call add_tracer_to_tracer_linked_list(tracersHead, 'verticalSalinity',            'brineFraction')
+       
     endif
 
     if (verboseTracers) then
