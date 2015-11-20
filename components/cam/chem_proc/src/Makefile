@@ -152,6 +152,11 @@ endif
 
 FC := $(COMPILER)
 
+# if compiler is intel, change to ifort
+ifeq ($(COMPILER),intel)
+  FC := ifort
+endif
+
 #------------------------------------------------------------------------
 # Default rules
 #------------------------------------------------------------------------
