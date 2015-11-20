@@ -2261,6 +2261,23 @@
 				description="friction velocity times nondimensional salt transfer coefficient"
 			/>
 		</var_array>
+		<!-- diagnostic fields for Haney number (rx1) -->
+		<var name="rx1Cell" type="real" dimensions="nVertLevels nCells Time" units="unitless"
+			 description="The Haney number (rx1), a measure of hydrostatic consistency, at cell centers."
+			 packages="initMode"
+		/>
+		<var name="rx1Edge" type="real" dimensions="nVertLevels nEdges Time" units="unitless"
+			 description="The Haney number (rx1), a measure of hydrostatic consistency, at edges."
+			 packages="initMode"
+		/>
+		<var name="rx1MaxCell" type="real" dimensions="nCells Time" units="unitless"
+			 description="The maximum Haney number (rx1) in a vertical column, measured at cell centers."
+			 packages="initMode"
+		/>
+		<var name="rx1MaxEdge" type="real" dimensions="nEdges Time" units="unitless"
+			 description="The maximum Haney number (rx1) in a vertical column, measured at edges."
+			 packages="initMode"
+		/>
 	</var_struct>
 	<var_struct name="shortwave" time_levs="1">
 		<!-- **********************************************************************
