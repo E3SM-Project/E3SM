@@ -773,6 +773,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    }
    ios = file->iosystem;
 
+
   vdesc = (file->varlist)+vid;
   if(vdesc == NULL)
     return PIO_EBADID;
@@ -1319,6 +1320,7 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
     MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_OFFSET,  MPI_MAX, 
 		  file->iosystem->io_comm);
   }
+
   if(usage > maxusage){
     maxusage = usage;
   }
@@ -1329,14 +1331,16 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
     bool prev_dist=false;
     int prev_record=-1;
     int prev_type=0;
+
     for(int i=0; i<PIO_MAX_VARS; i++){
       vdesc = file->varlist+i;
+
+
 #ifdef MPIO_ONESIDED
       /*onesided optimization requires that all of the requests in a wait_all call represent 
 	a contiguous block of data in the file */
       if(rcnt>0 && (prev_record != vdesc->record ||
 		    vdesc->nreqs==0)){
-	if(file->iosystem->io_rank==0) printf("%s %d %d\n",__FILE__,__LINE__,rcnt);
 	ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
 	rcnt=0;
       }
@@ -1350,6 +1354,9 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
 	request[rcnt++] = max(vdesc->request[reqcnt],NC_REQ_NULL);
 	vdesc->request[reqcnt] = NC_REQ_NULL;
 	reqcnt++;
+	if(reqcnt >= PIO_MAX_REQUESTS){
+	  piodie("PIO_MAX_REQUESTS CNT EXCEEDED, INCREASE in pio.h",__FILE__,__LINE__);
+	}
       }
 
       vdesc->nreqs=0;
@@ -1358,15 +1365,14 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
       ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
       rcnt=0;
 #endif
-
     }
-    if(file->iosystem->io_rank==0){
-      printf("%s %d %d\n",__FILE__,__LINE__,rcnt);
-    }
+   // if(file->iosystem->io_rank==0){
+   //   printf("%s %d %d\n",__FILE__,__LINE__,rcnt);
+   // }
     if(rcnt>0){
-      if(file->iosystem->io_rank==0){
-	printf("%s %d %d\n",__FILE__,__LINE__,rcnt);
-      }
+    //  if(file->iosystem->io_rank==0){
+//	printf("%s %d %d\n",__FILE__,__LINE__,rcnt);
+  //    }
       ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
     }
     for(int i=0; i<PIO_MAX_VARS; i++){
