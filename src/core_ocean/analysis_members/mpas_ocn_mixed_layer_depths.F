@@ -260,8 +260,8 @@ contains
                     if(.not. found_temp_mld .and. abs(tracers(index_temperature,k+1,iCell) - temp_ref_lev) .ge. tempThresh) then
                         dVp1 = abs(tracers(index_temperature,k+1,iCell) - temp_ref_lev)
                         dV   = abs(tracers(index_temperature,k  ,iCell) - temp_ref_lev)
-                        dVm1 = abs(tracers(index_temperature,k-1,iCell) - temp_ref_lev)
-                        localVals(1:3)=zMid(k-1:k+1,iCell)
+                    
+                        localVals(2:3)=zMid(k:k+1,iCell)
                         call interp_bw_levels(localVals(2),localVals(3), dV, dVp1, tempThresh,     &
                                    interp_local, mldTemp)!,dVm1, localVals(1))
                         mldTemp=max(mldTemp,zMid(k+1,iCell)) !make sure MLD isn't deeper than zMid(k+1)
@@ -301,8 +301,7 @@ contains
                     if(.not. found_den_mld .and. abs(potentialDensity(k+1,iCell) - den_ref_lev) .ge. denThresh) then
                         dVp1 = abs(potentialDensity(k+1,iCell) - den_ref_lev)
                         dV   = abs(potentialDensity(k  ,iCell) - den_ref_lev)
-                        dVm1 = abs(potentialDensity(k-1,iCell) - den_ref_lev)
-                        localVals(1:3)=zMid(k-1:k+1,iCell)
+                        localVals(2:3)=zMid(k:k+1,iCell)
                         call interp_bw_levels(localVals(2),localVals(3), dV, dVp1, denThresh,     &
                                    interp_local, mldTemp)!, dVm1, localVals(1))
                         mldTemp=max(mldTemp,zMid(k+1,iCell)) !make sure MLD isn't deeper than zMid(k+1)
