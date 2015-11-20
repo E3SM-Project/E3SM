@@ -102,6 +102,7 @@ module ocn_time_integration_split
       type (mpas_pool_type), pointer :: tracersTendPool
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: scratchPool
+      type (mpas_pool_type), pointer :: swForcingPool
 
       type (dm_info) :: dminfo
       integer :: iCell, i,k,j, iEdge, cell1, cell2, split_explicit_step, split, &
@@ -1361,7 +1362,8 @@ module ocn_time_integration_split
             call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
             call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-            call ocn_tend_tracer(tendPool, statePool, forcingPool, diagnosticsPool, meshPool, scratchPool, dt, 2)
+            call mpas_pool_get_subpool(block % structs, 'shortwave', swForcingPool)
+            call ocn_tend_tracer(tendPool, statePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, scratchPool, dt, 2)
 
             block => block % next
          end do
