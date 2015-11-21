@@ -1441,6 +1441,7 @@ and pct_nat_pft read from the surface dataset.
 <!-- =========================================================================================  -->
 <!-- Namelist options related to the bgc & pflotran interface
 <!-- ========================================================================================  -->
+
 <entry id="use_bgc_interface" type="logical" category="default_settings"
     group="clm_inparm" valid_values="">
     Runtime flag to turn on/off bgc interface.
@@ -1464,6 +1465,7 @@ and pct_nat_pft read from the surface dataset.
 <entry id="pflotran_prefix" type="char*256" category="clm_pflotran"
     group="clm_pflotran_inparm" valid_values="" >
     pflotran file prefix.
+</entry>
 
 <!-- ========================================================================================  -->
 <!-- Namelist options related to Variably Saturated Flow Model (VSFM)                          -->
@@ -1483,6 +1485,5 @@ Type of saturation function used in VSFM.
     smooth_brooks_corey_bz3  = use the smooth approximation of Brooks Corey Model with no cubic term
     van_genuchten            = use the van Genuchten model
 </entry>
-
 
 </namelist_definition>
