@@ -2686,17 +2686,9 @@ end subroutine ALE_parametric_coords
   ! local
   real (kind=real_kind), dimension(np,np,nlev,qsize,nets:nete) :: Qtens
   real (kind=real_kind), dimension(np,np,nlev                ) :: dp
-  real (kind=real_kind), dimension(      nlev,qsize,nets:nete) :: min_neigh
-  real (kind=real_kind), dimension(      nlev,qsize,nets:nete) :: max_neigh
-  integer :: k , kptr , i , j , ie , ic , q
+  real (kind=real_kind) :: dt,dp0
+  integer :: k , i , j , ie , ic , q
 
-! NOTE: PGI compiler bug: when using spheremp, rspheremp and ps as pointers to elem(ie)% members,
-!       data is incorrect (offset by a few numbers actually)
-!       removed for now.
-!  real (kind=real_kind), dimension(:,:), pointer :: spheremp,rspheremp
-  real (kind=real_kind), dimension(np,np) :: lap_p
-  real (kind=real_kind) :: v1,v2,dt,dp0
-  integer :: density_scaling = 0
   if ( nu_q           == 0 ) return
   if ( hypervis_order /= 2 ) return
 !   call t_barrierf('sync_advance_hypervis_scalar', hybrid%par%comm)
@@ -2710,44 +2702,50 @@ end subroutine ALE_parametric_coords
   do ic = 1 , hypervis_subcycle_q
     do ie = nets , nete
       ! Qtens = Q/dp   (apply hyperviscsoity to dp0 * Q, not Qdp)
+      ! various options:
+      !   1)  biharmonic( Qdp )
+      !   2)  dp0 * biharmonic( Qdp/dp )
+      !   3)  dpave * biharmonic(Q/dp)
+      ! For trace mass / mass consistenciy, we use #2 when nu_p=0
+      ! and #e when nu_p>0, where dpave is the mean mass flux from the nu_p
+      ! contribution from dynamics.
+
+      if (nu_p>0) then
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,dp0,q)
+!$omp parallel do private(q,k)
 #endif
-      do k = 1 , nlev
-         ! various options:
-         !   1)  biharmonic( Qdp )
-         !   2)  dp0 * biharmonic( Qdp/dp )
-         !   3)  dpave * biharmonic(Q/dp)
-         ! For trace mass / mass consistenciy, we use #2 when nu_p=0
-         ! and #e when nu_p>0, where dpave is the mean mass flux from the nu_p
-         ! contribution from dynamics.
-         dp0 = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) ) * hvcoord%ps0 + &
-              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * hvcoord%ps0
-         dp(:,:,k) = elem(ie)%derived%dp(:,:,k) - dt2*elem(ie)%derived%divdp_proj(:,:,k)
-         if (nu_p>0) then
-            do q = 1 , qsize
-               Qtens(:,:,k,q,ie) = elem(ie)%derived%dpdiss_ave(:,:,k)*&
-                    elem(ie)%state%Qdp(:,:,k,q,nt_qdp) / dp(:,:,k)
-            enddo
-         else
-            do q = 1 , qsize
-               Qtens(:,:,k,q,ie) = dp0*elem(ie)%state%Qdp(:,:,k,q,nt_qdp) / dp(:,:,k)
-            enddo
-         endif
-      enddo
-   enddo
+        do q = 1 , qsize
+          do k = 1 , nlev
+            dp(:,:,k) = elem(ie)%derived%dp(:,:,k) - dt2*elem(ie)%derived%divdp_proj(:,:,k)
+            Qtens(:,:,k,q,ie) = elem(ie)%derived%dpdiss_ave(:,:,k)*&
+                                elem(ie)%state%Qdp(:,:,k,q,nt_qdp) / dp(:,:,k)
+          enddo
+        enddo
+
+      else
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(q,k,dp0)
+#endif
+        do q = 1 , qsize
+          do k = 1 , nlev
+            dp(:,:,k) = elem(ie)%derived%dp(:,:,k) - dt2*elem(ie)%derived%divdp_proj(:,:,k)
+            dp0 = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) ) * hvcoord%ps0 + &
+                  ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * hvcoord%ps0
+            Qtens(:,:,k,q,ie) = dp0*elem(ie)%state%Qdp(:,:,k,q,nt_qdp) / dp(:,:,k)
+          enddo
+        enddo
+      endif
+    enddo ! ie loop
 
     ! compute biharmonic operator. Qtens = input and output
     call biharmonic_wk_scalar( elem , Qtens , deriv , edgeAdv , hybrid , nets , nete )
+
     do ie = nets , nete
-      !spheremp     => elem(ie)%spheremp
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k,j,i,dp0)
+!$omp parallel do private(q,k,j,i)
 #endif
       do q = 1 , qsize
         do k = 1 , nlev
-          dp0 = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) ) * hvcoord%ps0 + &
-                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * hvcoord%ps0
           do j = 1 , np
             do i = 1 , np
               ! advection Qdp.  For mass advection consistency:
@@ -2765,13 +2763,12 @@ end subroutine ALE_parametric_coords
 
       enddo
       call edgeVpack  ( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , ie )
-    enddo
+    enddo ! ie loop
 
     call bndry_exchangeV( hybrid , edgeAdv )
 
     do ie = nets , nete
       call edgeVunpack( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , ie )
-      !rspheremp     => elem(ie)%rspheremp
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(q,k)
 #endif
@@ -2781,7 +2778,7 @@ end subroutine ALE_parametric_coords
           elem(ie)%state%Qdp(:,:,k,q,nt_qdp) = elem(ie)%rspheremp(:,:) * elem(ie)%state%Qdp(:,:,k,q,nt_qdp)
         enddo
       enddo
-    enddo
+    enddo ! ie loop
 #ifdef DEBUGOMP
 #if (defined HORIZ_OPENMP)
 !$OMP BARRIER
