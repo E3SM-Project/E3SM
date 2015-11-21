@@ -61,7 +61,7 @@ contains
     use landunit_varcon      , only : istice, istwet, istsoil, istice_mec, istcrop, istdlak 
     use column_varcon        , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall
     use column_varcon        , only : icol_shadewall
-    use clm_varctl           , only : use_cn, use_betr, use_vsfm
+    use clm_varctl           , only : use_cn, use_betr
     use clm_varpar           , only : nlevgrnd, nlevsno, nlevsoi, nlevurb
     use clm_time_manager     , only : get_step_size, get_nstep
     use SnowHydrologyMod     , only : SnowCompaction, CombineSnowLayers, DivideSnowLayers
@@ -74,6 +74,7 @@ contains
     use tracerfluxType       , only : tracerflux_type
     use tracerstatetype      , only : tracerstate_type
     use BeTRTracerType       , only : betrtracer_type        
+    use clm_varctl           , only : use_vsfm
     use SoilHydrologyMod     , only : DrainageVSFM
     !
     ! !ARGUMENTS:
