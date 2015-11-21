@@ -733,7 +733,7 @@
 
 <!-- CLUBB options -->
 <clubb_rainevap_turb                              > .false. </clubb_rainevap_turb>
-<clubb_rainevap_turb microphys="mg2" clubb_sgs="1"> .true.  </clubb_rainevap_turb>
+<clubb_rainevap_turb microphys="mg2" clubb_sgs="1"> .false.  </clubb_rainevap_turb>
 <clubb_cloudtop_cooling                           > .false. </clubb_cloudtop_cooling>
 <clubb_expldiff                                   > .false. </clubb_expldiff>
 <clubb_expldiff     clubb_sgs="1"                 > .true.  </clubb_expldiff>
@@ -1020,6 +1020,7 @@
 
 <!-- Cldwat -->
 <cldwat_icritc                                                        >  5.0e-6  </cldwat_icritc>
+<cldwat_icritc  dyn="fv"                                              >  9.5e-6  </cldwat_icritc>
 <cldwat_icritc  dyn="fv"           unicon="1"                         >  9.5e-6  </cldwat_icritc>
 <cldwat_icritc  dyn="fv"  hgrid="0.23x0.31"                           > 45.0e-6  </cldwat_icritc>
 <cldwat_icritc  dyn="fv"  hgrid="0.47x0.63"                           > 45.0e-6  </cldwat_icritc>
