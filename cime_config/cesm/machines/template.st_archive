@@ -3,7 +3,7 @@
 # Batch system directives
 #------------------------------------------------------------------------------
 {{ batchdirectives }}
-
+use strict;
 if(! -e "./xmlquery" and defined $ENV{'PBS_O_WORKDIR'})
 {
 	chdir $ENV{'PBS_O_WORKDIR'};
@@ -21,7 +21,7 @@ require Batch::BatchUtils;
 use Cwd;
 require Log::Log4perl;
 
-my $level = Log::Log4perl::Level::to_priority("DEBUG");
+my $level = Log::Log4perl::Level::to_priority("INFO");
 Log::Log4perl->easy_init({level=>$level,
 			  layout=>'%m%n'});
 
@@ -63,7 +63,7 @@ sub resubmitCheck()
 	my $submitscript = "$config{'CASEROOT'}/case.submit";
 	my $cwd = getcwd;
 	chdir $config{CASEROOT};
-	my $resubmitcommand = "$submitscript -resubmit -scriptname case.st_archive -loglevel $opts{loglevel}";
+	my $resubmitcommand = "$submitscript  -resubmit -scriptname case.st_archive";
 	$logger->debug( "running resubmit check $resubmitcommand");
 	if(-e $testlog){
 	    open(TL,">>$testlog");

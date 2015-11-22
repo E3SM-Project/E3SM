@@ -239,7 +239,7 @@ sub set_compiler
 		next if (defined $MPILIB   && $MPILIB   ne $mpilib  );
 		
 		# compiler settings comprises child xml nodes
-		push (@compiler_settings ,$node->childNodes());
+		push (@compiler_settings ,$node->findnodes(".//*"));
 	    }
 	}	
     }
