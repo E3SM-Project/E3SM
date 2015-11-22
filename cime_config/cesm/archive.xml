@@ -345,7 +345,7 @@
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension suffix=".h\.[\w\-]*\.nc$">      
+      <file_extension suffix=".h\.[\w\-\.]*\.nc$">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
