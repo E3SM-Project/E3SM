@@ -2,11 +2,13 @@
 Common functions used by acme python scripts
 """
 
-import sys, socket, re, os, time
+import sys, socket, re, os, time, glob, getpass
 
 _VERBOSE = False
 
 _MACHINE_INFO = None
+_CONFIG_INFO  = {}
+_ENV_INFO     = {}
 
 # batch-system-name -> ( cmd-to-list-all-jobs-for-user, cmd-to-delete-job )
 BATCH_INFO = \
@@ -35,7 +37,7 @@ _MACHINE_PROJECTS = {
 }
 
 ###############################################################################
-def expect(condition, error_msg):
+def expect(condition, error_msg, error_type=SystemExit):
 ###############################################################################
     """
     Similar to assert except doesn't generate an ugly stacktrace. Useful for
@@ -46,9 +48,13 @@ def expect(condition, error_msg):
     Traceback (most recent call last):
         ...
     SystemExit: FAIL: error2
+    >>> expect(False, "error3", RuntimeError)
+    Traceback (most recent call last):
+        ...
+    RuntimeError: FAIL: error3
     """
     if (not condition):
-        raise SystemExit("FAIL: %s" % error_msg)
+        raise error_type("FAIL: %s" % error_msg)
 
 ###############################################################################
 def warning(msg):
@@ -324,8 +330,7 @@ def get_cime_root():
     >>> os.path.isdir(os.path.join(get_cime_root(), get_acme_scripts_location_within_cime()))
     True
     """
-    acme_script_absdir = os.path.abspath(os.path.dirname(__file__))
-    assert acme_script_absdir.endswith(get_acme_scripts_location_within_cime())
+    acme_script_absdir = get_acme_scripts_root()
     return os.path.normpath(acme_script_absdir[:len(acme_script_absdir)-len(get_acme_scripts_location_within_cime())])
 
 ###############################################################################
@@ -346,8 +351,14 @@ def get_acme_scripts_root():
 ###############################################################################
     """
     Get absolute path to acme scripts
+
+    This is the key function that locates things.
     """
-    return os.path.abspath(os.path.dirname(__file__))
+    rv = os.path.abspath(os.path.dirname(__file__))
+    if (not rv.endswith(get_acme_scripts_location_within_cime())):
+        expect(rv.endswith("Tools"), "I'm lost, not run from ACME or casedir")
+        rv = os.path.join(xmlquery("CIMEROOT", os.path.join(rv, "..")), get_acme_scripts_location_within_cime())
+    return rv
 
 ###############################################################################
 def stop_buffering_output():
@@ -447,7 +458,6 @@ def get_my_queued_jobs(batch_system=None):
     """
     Return a list of job ids for the current user
     """
-    import getpass
     if (batch_system is None):
         batch_system = probe_batch_system()
     expect(batch_system is not None, "Failed to probe batch system")
@@ -472,7 +482,76 @@ def get_batch_system_info(batch_system=None):
     return BATCH_INFO[batch_system]
 
 ###############################################################################
-def parse_config_machines():
+def _parse_env_config(caseroot):
+###############################################################################
+    global _CONFIG_INFO, _ENV_INFO
+    if (caseroot not in _CONFIG_INFO):
+        config_info_for_case = {}
+        env_info_for_case    = {}
+        _CONFIG_INFO[caseroot] = config_info_for_case
+        _ENV_INFO[caseroot]    = env_info_for_case
+
+        import xml.etree.ElementTree as ET
+        tree = ET.parse(os.path.join(caseroot, "Tools", "config_definition.xml"))
+        root = tree.getroot()
+        expect(root.tag == "config_definition",
+               "The given XML file is not a valid list of configurations.")
+
+        for entry in root:
+            if (entry.tag == "entry"):
+                entry_id = entry.attrib["id"].strip()
+                expect(entry_id not in config_info_for_case, "Duplicate entry '%s'" % entry_id)
+                config_info_for_case[entry_id] = entry.attrib
+            else:
+                warning("Ignoring unrecognized tag: '%s'" % entry.tag)
+
+        for env_xml in glob.glob(os.path.join(caseroot, "env_*.xml")):
+            tree = ET.parse(env_xml)
+            root = tree.getroot()
+            expect(root.tag == "config_definition",
+                   "The given XML file is not a valid list of configurations.")
+
+            for entry in root:
+                if (entry.tag == "entry"):
+                    entry_id    = entry.attrib["id"].strip()
+                    entry_value = entry.attrib["value"].strip()
+                    expect(entry_id not in env_info_for_case, "Duplicate entry '%s'" % entry_id)
+                    env_info_for_case[entry_id] = entry_value
+                else:
+                    warning("Ignoring unrecognized tag: '%s'" % entry.tag)
+
+###############################################################################
+def xmlquery(keys, caseroot):
+###############################################################################
+    caseroot = os.path.abspath(caseroot)
+    _parse_env_config(caseroot)
+    rvs = []
+
+    if (isinstance(keys, str)):
+        keys = [keys]
+
+    env_info_for_case = _ENV_INFO[caseroot]
+    for key in keys:
+        if (key == "USER"):
+            item_data = getpass.getuser()
+        else:
+            item_data = env_info_for_case[key] if key in env_info_for_case else get_machine_info(key)
+
+        if (item_data is None):
+            warning("Could not get XML data for key '%s'" % key)
+            item_data = ""
+
+        reference_re = re.compile(r'\$(\w+)')
+        for m in reference_re.finditer(item_data):
+            ref = m.groups()[0]
+            item_data = item_data.replace(m.group(), xmlquery(ref, caseroot))
+
+        rvs.append(item_data)
+
+    return rvs[0] if (len(rvs) == 1) else rvs
+
+###############################################################################
+def _parse_config_machines():
 ###############################################################################
     """
     """
@@ -521,8 +600,6 @@ def get_machine_info(items, machine=None, user=None, project=None, case=None, ra
     Info returned as tuple:
     (compiler, test_suite, use_batch, project, testroot, baseline_root, proxy)
 
-    >>> parse_config_machines()
-
     >>> get_machine_info(["NODENAME_REGEX", "TESTS"], machine="skybridge")
     ['skybridge-login', 'acme_integration']
 
@@ -532,9 +609,8 @@ def get_machine_info(items, machine=None, user=None, project=None, case=None, ra
     >>> get_machine_info("EXEROOT", machine="melvin", user="jenkins", case="Foo")
     '/home/jenkins/acme/scratch/Foo/bld'
     """
-    parse_config_machines()
+    _parse_config_machines()
 
-    import getpass
     user = getpass.getuser() if user is None else user
 
     if (machine is None):
@@ -594,7 +670,7 @@ def get_machines():
     """
     Return all machines defined by the config_machines.xml
     """
-    parse_config_machines()
+    _parse_config_machines()
     return _MACHINE_INFO.keys()
 
 ###############################################################################

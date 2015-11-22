@@ -3,12 +3,13 @@
 ./Tools/check_lockedfiles || exit -1
 
 # NOTE - Are assumming that are already in $CASEROOT here
-set EXEROOT     = `./xmlquery EXEROOT		-value`
-set OCN_GRID	= `./xmlquery OCN_GRID		-value`
-set OCN_NX	= `./xmlquery OCN_NX		-value`
-set OCN_NY	= `./xmlquery OCN_NY		-value`
-set NTASKS_OCN	= `./xmlquery NTASKS_OCN	-value`
-set NTHRDS_OCN	= `./xmlquery NTASKS_OCN	-value`
+set xmlquery_data=`./xmlquery -s JGFSEP EXEROOT OCN_GRID OCN_NX OCN_NY NTASKS_OCN NTASKS_OCN`
+set EXEROOT=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set OCN_GRID=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
+set OCN_NX=`echo $xmlquery_data | awk -F'JGFSEP' '{print $3}'`
+set OCN_NY=`echo $xmlquery_data | awk -F'JGFSEP' '{print $4}'`
+set NTASKS_OCN=`echo $xmlquery_data | awk -F'JGFSEP' '{print $5}'`
+set NTHRDS_OCN=`echo $xmlquery_data | awk -F'JGFSEP' '{print $6}'`
 
 touch pop_perf.out
 

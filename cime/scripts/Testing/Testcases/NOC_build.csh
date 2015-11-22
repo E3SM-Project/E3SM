@@ -3,8 +3,6 @@
 ./Tools/check_lockedfiles || exit -1
 
 # NOTE - Are assumming that are already in $CASEROOT here
-set CASE        = `./xmlquery CASE		-value`
-set EXEROOT     = `./xmlquery EXEROOT		-value`
 
 ./xmlchange -file env_mach_pes.xml -id NINST_ATM  -val 2
 ./xmlchange -file env_mach_pes.xml -id NINST_LND  -val 2
@@ -14,14 +12,17 @@ set EXEROOT     = `./xmlquery EXEROOT		-value`
 ./xmlchange -file env_mach_pes.xml -id NINST_ICE  -val 2
 ./xmlchange -file env_mach_pes.xml -id NINST_GLC  -val 2
 
-set NTASKS_ATM  = `./xmlquery NTASKS_ATM	-value`
-set NTASKS_LND  = `./xmlquery NTASKS_LND	-value`
-set NTASKS_ROF  = `./xmlquery NTASKS_ROF	-value`
-set NTASKS_WAV  = `./xmlquery NTASKS_WAV	-value`
-set NTASKS_OCN  = `./xmlquery NTASKS_OCN	-value`
-set NTASKS_ICE  = `./xmlquery NTASKS_ICE	-value`
-set NTASKS_GLC  = `./xmlquery NTASKS_GLC	-value`
-set NTASKS_CPL  = `./xmlquery NTASKS_CPL	-value`
+set xmlquery_data=`./xmlquery -s JGFSEP CASE EXEROOT NTASKS_ATM NTASKS_LND NTASKS_ROF NTASKS_WAV NTASKS_OCN NTASKS_ICE NTASKS_GLC NTASKS_CPL`
+set CASE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set EXEROOT=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
+set NTASKS_ATM=`echo $xmlquery_data | awk -F'JGFSEP' '{print $3}'`
+set NTASKS_LND=`echo $xmlquery_data | awk -F'JGFSEP' '{print $4}'`
+set NTASKS_ROF=`echo $xmlquery_data | awk -F'JGFSEP' '{print $5}'`
+set NTASKS_WAV=`echo $xmlquery_data | awk -F'JGFSEP' '{print $6}'`
+set NTASKS_OCN=`echo $xmlquery_data | awk -F'JGFSEP' '{print $7}'`
+set NTASKS_ICE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $8}'`
+set NTASKS_GLC=`echo $xmlquery_data | awk -F'JGFSEP' '{print $9}'`
+set NTASKS_CPL=`echo $xmlquery_data | awk -F'JGFSEP' '{print $10}'`
 
 if ( $NTASKS_ATM == 1 ) then
   ./xmlchange -file env_mach_pes.xml -id NTASKS_ATM  -val 2

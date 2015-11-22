@@ -1,9 +1,10 @@
 #! /bin/csh -f
 
-set RUNDIR	= `./xmlquery  RUNDIR    -value`
-set NINST_WAV	= `./xmlquery  NINST_WAV -value`  
-set WAV_NX	= `./xmlquery  WAV_NX	 -value`  
-set WAV_NY	= `./xmlquery  WAV_NY	 -value`  
+set xmlquery_data=`./xmlquery -s JGFSEP RUNDIR NINST_WAV WAV_NX WAV_NY`
+set RUNDIR=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set NINST_WAV=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
+set WAV_NX=`echo $xmlquery_data | awk -F'JGFSEP' '{print $3}'`
+set WAV_NY=`echo $xmlquery_data | awk -F'JGFSEP' '{print $4}'`
 
 set NX = $WAV_NX
 set NY = $WAV_NY

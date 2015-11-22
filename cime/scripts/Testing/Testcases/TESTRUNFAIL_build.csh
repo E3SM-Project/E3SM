@@ -2,9 +2,10 @@
 
 ./Tools/check_lockedfiles || exit -1
 
-set EXEROOT  = `./xmlquery EXEROOT -value`
-set RUNDIR   = `./xmlquery RUNDIR -value`
-set TESTID   = `./xmlquery TEST_TESTID -value`
+set xmlquery_data=`./xmlquery -s JGFSEP EXEROOT RUNDIR TEST_TESTID`
+set EXEROOT=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set RUNDIR=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
+set TESTID=`echo $xmlquery_data | awk -F'JGFSEP' '{print $3}'`
 
 echo "#! /bin/bash" > $EXEROOT/cesm.exe
 echo "echo Insta fail" >> $EXEROOT/cesm.exe

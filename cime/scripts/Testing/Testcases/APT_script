@@ -1,10 +1,12 @@
+#!/bin/csh -f
 
 #======================================================================
 # Clear coupler log files for comparison tests
 #======================================================================
 
-set OS   = `./xmlquery OS    -value`
-set CASE = `./xmlquery CASE  -value`
+set xmlquery_data=`./xmlquery -s JGFSEP OS CASE`
+set OS=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set CASE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
 
 #--- This only works on AIX systems
 if ($OS != AIX) then
@@ -76,7 +78,7 @@ cd $CIMEROOT/scripts
 
 cd ${CASERR}
 
-set CASE = `./xmlquery CASE  -value`
+set CASE = `./xmlquery CASE`
 
 ./cesm_setup -clean -testmode
 ./cesm_setup

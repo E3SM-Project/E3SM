@@ -15,16 +15,7 @@ if ($#ARGV == -1) {
 my ($CASEROOT) = @ARGV;
 chdir "${CASEROOT}";
 
-my $CCSMROOT     = `./xmlquery CCSMROOT     -value`;
-my $OBJROOT      = `./xmlquery OBJROOT      -value`;
-my $CASEBUILD    = `./xmlquery CASEBUILD    -value`;
-my $CASETOOLS    = `./xmlquery CASETOOLS    -value`;
-my $OBJROOT      = `./xmlquery OBJROOT	    -value`;
-my $LIBROOT      = `./xmlquery LIBROOT	    -value`;
-my $GMAKE_J      = `./xmlquery GMAKE_J	    -value`;
-my $GMAKE        = `./xmlquery GMAKE	    -value`;
-my $MACH         = `./xmlquery MACH         -value`;
-my $MPASLI_USE_ALBANY = `./xmlquery MPASLI_USE_ALBANY -value`;
+my ($CCSMROOT, $OBJROOT, $CASEBUILD, $CASETOOLS, $OBJROOT, $LIBROOT, $GMAKE_J, $GMAKE, $MACH, $MPASLI_USE_ALBANY) = split('JGFSEP', `./xmlquery -s JGFSEP CCSMROOT OBJROOT CASEBUILD CASETOOLS OBJROOT LIBROOT GMAKE_J GMAKE MACH MPASLI_USE_ALBANY`);
 
 #---------------------------------------------------------------------------
 # Copy MPASLI source

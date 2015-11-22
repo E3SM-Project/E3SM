@@ -13,23 +13,7 @@ unshift @INC, @dirs;
 require SetupTools;
 my $sysmod; 
 
-my $CASEBUILD		= `./xmlquery  CASEBUILD	 -value`;
-my $CASEROOT		= `./xmlquery  CASEROOT		 -value`;
-my $CCSMROOT		= `./xmlquery  CCSMROOT		 -value`;
-my $DIN_LOC_ROOT	= `./xmlquery  DIN_LOC_ROOT	 -value`;
-my $NINST_ROF		= `./xmlquery  NINST_ROF	 -value`;
-my $GET_REFCASE		= `./xmlquery  GET_REFCASE	 -value`;
-my $ROF_GRID		= `./xmlquery  ROF_GRID     	 -value`;
-my $RTM_BLDNML_OPTS     = `./xmlquery  RTM_BLDNML_OPTS 	 -value`;
-my $RTM_NAMELIST_OPTS   = `./xmlquery  RTM_NAMELIST_OPTS -value`;
-my $RUNDIR		= `./xmlquery  RUNDIR     	 -value`;
-my $RUN_TYPE		= `./xmlquery  RUN_TYPE		 -value`;
-my $RUN_STARTDATE	= `./xmlquery  RUN_STARTDATE	 -value`;
-my $RUN_REFCASE	        = `./xmlquery  RUN_REFCASE 	 -value`;
-my $RUN_REFDATE	        = `./xmlquery  RUN_REFDATE	 -value`;
-my $RUN_REFTOD	        = `./xmlquery  RUN_REFTOD 	 -value`;
-my $SCRIPTSROOT		= `./xmlquery  SCRIPTSROOT	 -value`;
-my $UTILROOT		= `./xmlquery  UTILROOT		 -value`;
+my ($CASEBUILD, $CASEROOT, $CCSMROOT, $DIN_LOC_ROOT, $NINST_ROF, $GET_REFCASE, $ROF_GRID, $RTM_BLDNML_OPTS, $RTM_NAMELIST_OPTS, $RUNDIR, $RUN_TYPE, $RUN_STARTDATE, $RUN_REFCASE, $RUN_REFDATE, $RUN_REFTOD, $SCRIPTSROOT, $UTILROOT) = split('JGFSEP', `./xmlquery -s JGFSEP CASEBUILD CASEROOT CCSMROOT DIN_LOC_ROOT NINST_ROF GET_REFCASE ROF_GRID RTM_BLDNML_OPTS RTM_NAMELIST_OPTS RUNDIR RUN_TYPE RUN_STARTDATE RUN_REFCASE RUN_REFDATE RUN_REFTOD SCRIPTSROOT UTILROOT`);
 
 if (! -d "$CASEBUILD/rtmconf" ) {
     $sysmod = "mkdir $CASEBUILD/rtmconf";

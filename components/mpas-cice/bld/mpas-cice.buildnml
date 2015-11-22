@@ -13,18 +13,10 @@ unshift @INC, @dirs;
 require SetupTools;
 my $sysmod;
 
-my $CASEROOT        = `./xmlquery  CASEROOT		-value`;
-my $CASEBUILD       = `./xmlquery  CASEBUILD		-value`;
-my $CCSMROOT        = `./xmlquery  CCSMROOT		-value`;
-my $OBJROOT         = `./xmlquery  OBJROOT		-value`;
-my $SCRIPTSROOT	    = `./xmlquery  SCRIPTSROOT		-value`;
-my $COMP_INTERFACE  = `./xmlquery  COMP_INTERFACE	-value`;
-my $DIN_LOC_ROOT    = `./xmlquery  DIN_LOC_ROOT		-value`;
-my $ICE_GRID        = `./xmlquery  ICE_GRID		-value`;
-my $NTASKS_ICE      = `./xmlquery  NTASKS_ICE		-value`;
-#my $NINST_ICE       = `./xmlquery  NINST_ICE		-value`;
+my ($CASEROOT, $CASEBUILD, $CCSMROOT, $OBJROOT, $SCRIPTSROOT, $COMP_INTERFACE, $DIN_LOC_ROOT, $ICE_GRID, $NTASKS_ICE, $RUNDIR) = split('JGFSEP', `./xmlquery -s JGFSEP CASEROOT CASEBUILD CCSMROOT OBJROOT SCRIPTSROOT COMP_INTERFACE DIN_LOC_ROOT ICE_GRID NTASKS_ICE RUNDIR`);
+
+#my $NINST_ICE       = `./xmlquery  NINST_ICE`;
 my $NINST_ICE       = 1; # Change if you want multiple instances... though this isn't coded yet.
-my $RUNDIR          = `./xmlquery  RUNDIR		-value`;
 my $STREAM_NAME     = 'streams.cice';
 
 if (! -d "$CASEBUILD/mpas-ciceconf" ) {

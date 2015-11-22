@@ -9,7 +9,7 @@ rm -f LockedFiles/env_build*  >& /dev/null
 ./xmlchange -file env_build.xml -id BUILD_COMPLETE         -val FALSE        || exit -930
 ./xmlchange -file env_build.xml -id BUILD_STATUS           -val 0            || exit -940
 
-set $CASE = `./xmlquery CASE -value`
+set CASE = `./xmlquery CASE`
 echo "CCSM $CASE mobysetup FINISHED SUCCESSFULLY"       
 
 exit 0

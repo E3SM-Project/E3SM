@@ -147,7 +147,7 @@ sub getTestStatus
 	my $teststatusfile = "$testdir/$testcase/TestStatus";
 	next if (! -e $teststatusfile);
 	chdir "$testdir/$testcase";
-	my $testbase = `./xmlquery CASEBASEID -value`;
+	my $testbase = `./xmlquery CASEBASEID`;
 	chdir $cwd;
 	
 	open my $STATUS, "<", $teststatusfile or die $!;

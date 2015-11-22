@@ -72,14 +72,6 @@
 	 sdesc="Machines directory location"
 	 ></entry>
 
-  <entry id="SUPPORTED_BY" 
-	 type="char"
-	 valid_values="" 
-	 value="UNSET" 
-	 group="case_def"
-	 sdesc="current machine name support contact"
-	 ></entry>
-
   <entry id="CCSMUSER" 
 	 type="char"
 	 valid_values=""  
@@ -182,14 +174,6 @@
 	 value="$CIMEROOT/scripts/Tools" 
 	 group="case_der"
 	 sdesc="CESM source scripts utils directory location (setup automatically to $CIMEROOT/scripts/Tools - DO NOT EDIT)"
-	 ></entry>
-
-  <entry id="OS" 
-	 type="char"
-	 valid_values="" 
-	 value="UNSET" 
-	 group="case_mach"
-	 sdesc="operating system for target machine"
 	 ></entry>
 
   <entry id="CCSM_COMPSET" 
@@ -1892,15 +1876,6 @@
 		runs; for branch runs, it MUST BE FALSE."
 	 ></entry>
 
-  <entry id="GLC_SMB" 
-	 type="logical"
-	 valid_values="true,false" 
-	 value="true" 
-	 group="run_component_cism"
-	 sdesc="true => do surface mass balance, false => PDD, nec_glc is set to 1" 
-	 ></entry>
-
-
   <!-- ======================================================================= -->
   <!-- MPASLI                                                                 -->
   <!-- ======================================================================= -->
@@ -2827,12 +2802,12 @@
 
 
   <entry id="OS" 
-	 type="char"
-	 valid_values="" 
-	 value="USERDEFINED_required_macros" 
-	 group="build_macros"
-	 sdesc="operating system - DO NOT EDIT UNLESS for userdefined machine - ignored once Macros has been created  "
-	 ></entry>
+        type="char"
+        valid_values="" 
+        value="USERDEFINED_required_macros" 
+        group="build_macros"
+        sdesc="operating system - DO NOT EDIT UNLESS for userdefined machine - ignored once Macros has been created  "
+        ></entry>
 
   <entry id="COMPILERS" 
 	 type="char"

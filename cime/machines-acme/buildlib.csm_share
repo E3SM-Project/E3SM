@@ -13,20 +13,7 @@ my ($sharedlibroot, $CASEROOT) = @ARGV;
 
 chdir "${CASEROOT}";
 
-my $CIMEROOT		= `./xmlquery CIMEROOT		-value`;
-my $COMP_INTERFACE	= `./xmlquery COMP_INTERFACE	-value`;
-my $USE_ESMF_LIB	= `./xmlquery USE_ESMF_LIB	-value`;
-my $GMAKE_J		= `./xmlquery GMAKE_J		-value`;
-my $GMAKE		= `./xmlquery GMAKE		-value`;
-my $CASETOOLS		= `./xmlquery CASETOOLS		-value`;
-my $NINST_ATM		= `./xmlquery NINST_ATM		-value`;
-my $NINST_ICE		= `./xmlquery NINST_ICE		-value`;
-my $NINST_GLC		= `./xmlquery NINST_GLC		-value`;
-my $NINST_LND		= `./xmlquery NINST_LND		-value`;
-my $NINST_OCN		= `./xmlquery NINST_OCN		-value`;
-my $NINST_ROF		= `./xmlquery NINST_ROF		-value`;
-my $NINST_WAV		= `./xmlquery NINST_WAV		-value`;
-my $NINST_VALUE		= `./xmlquery NINST_VALUE	-value`;
+my ($CIMEROOT, $COMP_INTERFACE, $USE_ESMF_LIB, $GMAKE_J, $GMAKE, $CASETOOLS, $NINST_ATM, $NINST_ICE, $NINST_GLC, $NINST_LND, $NINST_OCN, $NINST_ROF, $NINST_WAV, $NINST_VALUE) = split('JGFSEP', `./xmlquery -s JGFSEP CIMEROOT COMP_INTERFACE USE_ESMF_LIB GMAKE_J GMAKE CASETOOLS NINST_ATM NINST_ICE NINST_GLC NINST_LND NINST_OCN NINST_ROF NINST_WAV NINST_VALUE`);
 
 #--------------------------------------------------------------------
 # Filepath: list of source code directories (in order of importance).

@@ -1,0 +1,105 @@
+#!/usr/bin/env python
+
+"""
+TODO
+"""
+
+# Add Tools to sys path in case this is being run from a case
+import sys, os, argparse, doctest, shutil, glob
+sys.path.append(os.path.join(os.path.dirname(__file__), "Tools"))
+
+import acme_util
+acme_util.check_minimum_python_version(2, 7)
+from acme_util import expect, warning, verbose_print, run_cmd
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [CASEDIR] [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Preview namelists \033[0m
+    > %s
+""" % ((os.path.basename(args[0]), ) * 4),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Print extra information")
+
+    parser.add_argument("casedir", nargs="?", default=os.getcwd(),
+                        help="The case directory to preview_namelists for. Default is pwd.")
+
+    args = parser.parse_args(args[1:])
+
+    acme_util.set_verbosity(args.verbose)
+
+    return os.path.abspath(args.casedir)
+
+###############################################################################
+def preview_namelists(casedir):
+###############################################################################
+    exeroot, libroot, incroot, rundir, sharedlibroot, caseroot, casebuild, \
+    comp_cpl, comp_atm, comp_lnd, comp_ice, comp_ocn, comp_glc, comp_wav, \
+    comp_rof = \
+        acme_util.xmlquery(["EXEROOT", "LIBROOT", "INCROOT", "RUNDIR", "SHAREDLIBROOT",
+                            "CASEROOT", "CASEBUILD", "COMP_CPL", "COMP_ATM", "COMP_LND",
+                            "COMP_ICE", "COMP_OCN", "COMP_GLC", "COMP_WAV", "COMP_ROF"], casedir)
+
+    os.chdir(casedir)
+
+    # Make necessary directories
+    dirs_to_make = [os.path.join(exeroot, model, "obj") for model in ["cpl", "atm", "lnd", "ice", "ocn", "glc", "wav", "rof"]]
+    docdir = os.path.join(caseroot, "CaseDocs")
+    dirs_to_make.extend([exeroot, libroot, incroot, rundir, sharedlibroot, docdir])
+
+    for dir_to_make in dirs_to_make:
+        if (not os.path.isdir(dir_to_make)):
+            os.makedirs(dir_to_make)
+
+    # Create namelists
+    if (acme_util._VERBOSE):
+        os.environ["PREVIEW_NML"] = "1"
+
+    for comp in [comp_cpl, comp_atm, comp_lnd, comp_ice, comp_ocn, comp_glc, comp_wav, comp_rof]:
+        run_cmd("%s/%s.buildnml %s" % (casebuild, comp, caseroot))
+
+    # Save namelists to docdir
+    with open(os.path.join(docdir, "README"), "w") as fd:
+        fd.write(" CESM Resolved Namelist Files\n   For documentation only DO NOT MODIFY\n")
+
+    for cpglob in ["*_in_[0-9]*", "*modelio*nml_[0-9]*", "*_in", "*modelio*nml",
+                   "*streams*txt*", "*.stxt", "*maps.rc", "cism.config*"]:
+        for file_to_copy in glob.glob(os.path.join(rundir, cpglob)):
+            shutil.copy2(file_to_copy, docdir)
+
+    # Copy over chemistry mechanism docs if they exist
+    if (os.path.isdir(os.path.join(casebuild, "camconf"))):
+        for file_to_copy in glob.glob(os.path.join(casebuild, "camconf", "chem_mech.*")):
+            shutil.copy2(file_to_copy, docdir)
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        # TODO
+        return
+
+    acme_util.stop_buffering_output()
+
+    casedir = parse_command_line(sys.argv, description)
+
+    preview_namelists(casedir)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

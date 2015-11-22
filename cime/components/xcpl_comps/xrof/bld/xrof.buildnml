@@ -1,10 +1,11 @@
 #! /bin/csh -f
 
-set RUNDIR		= `./xmlquery  RUNDIR     	-value`
-set NINST_ROF		= `./xmlquery  NINST_ROF	-value`  
-set ROF_NX		= `./xmlquery  ROF_NX		-value`  
-set ROF_NY		= `./xmlquery  ROF_NY		-value`  
-set XROF_FLOOD_MODE	= `./xmlquery  XROF_FLOOD_MODE	-value`
+set xmlquery_data=`./xmlquery -s JGFSEP RUNDIR NINST_ROF ROF_NX ROF_NY XROF_FLOOD_MODE`
+set RUNDIR=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set NINST_ROF=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
+set ROF_NX=`echo $xmlquery_data | awk -F'JGFSEP' '{print $3}'`
+set ROF_NY=`echo $xmlquery_data | awk -F'JGFSEP' '{print $4}'`
+set XROF_FLOOD_MODE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $5}'`
 
 cd $RUNDIR
 

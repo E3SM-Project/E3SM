@@ -7,7 +7,7 @@ if ($#ARGV == -1) {
 my ($CASEROOT) = @ARGV;
 chdir "${CASEROOT}";
 
-my $RUNDIR = `./xmlquery  RUNDIR -value`;
+my $RUNDIR = `./xmlquery  RUNDIR`;
 
 chdir "$RUNDIR";
 

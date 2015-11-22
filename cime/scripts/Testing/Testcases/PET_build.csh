@@ -3,8 +3,6 @@
 ./Tools/check_lockedfiles || exit -1
 
 # NOTE - Are assumming that are already in $CASEROOT here
-set CASE     = `./xmlquery CASE    -value`
-set EXEROOT  = `./xmlquery EXEROOT -value`
 
 # Reset all previous env_mach_pes settings if a previous setting exists
 
@@ -15,14 +13,17 @@ endif
 # NOTE - there is only one build for this case 
 
 # Check that have at least one component with nthrds > 1
-set NTHRDS_ATM  = `./xmlquery NTHRDS_ATM  -value`
-set NTHRDS_LND  = `./xmlquery NTHRDS_LND  -value`
-set NTHRDS_ROF  = `./xmlquery NTHRDS_ROF  -value`
-set NTHRDS_WAV  = `./xmlquery NTHRDS_WAV  -value`
-set NTHRDS_OCN  = `./xmlquery NTHRDS_OCN  -value`
-set NTHRDS_ICE  = `./xmlquery NTHRDS_ICE  -value`
-set NTHRDS_GLC  = `./xmlquery NTHRDS_GLC  -value`
-set NTHRDS_CPL  = `./xmlquery NTHRDS_CPL  -value`
+set xmlquery_data=`./xmlquery -s JGFSEP CASE EXEROOT NTHRDS_ATM NTHRDS_LND NTHRDS_ROF NTHRDS_WAV NTHRDS_OCN NTHRDS_ICE NTHRDS_GLC NTHRDS_CPL`
+set CASE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set EXEROOT=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
+set NTHRDS_ATM=`echo $xmlquery_data | awk -F'JGFSEP' '{print $3}'`
+set NTHRDS_LND=`echo $xmlquery_data | awk -F'JGFSEP' '{print $4}'`
+set NTHRDS_ROF=`echo $xmlquery_data | awk -F'JGFSEP' '{print $5}'`
+set NTHRDS_WAV=`echo $xmlquery_data | awk -F'JGFSEP' '{print $6}'`
+set NTHRDS_OCN=`echo $xmlquery_data | awk -F'JGFSEP' '{print $7}'`
+set NTHRDS_ICE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $8}'`
+set NTHRDS_GLC=`echo $xmlquery_data | awk -F'JGFSEP' '{print $9}'`
+set NTHRDS_CPL=`echo $xmlquery_data | awk -F'JGFSEP' '{print $10}'`
 
 if ( $NTHRDS_ATM <= 1) then
   echo "WARNING: component ATM is not threaded, changing NTHRDS_ATM to 2" 

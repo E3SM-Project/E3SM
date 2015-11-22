@@ -1,9 +1,10 @@
 #! /bin/csh -f
 
-set RUNDIR    = `./xmlquery  RUNDIR    -value`
-set NINST_GLC = `./xmlquery  NINST_GLC -value`  
-set GLC_NX    = `./xmlquery  GLC_NX    -value`  
-set GLC_NY    = `./xmlquery  GLC_NY    -value`  
+set xmlquery_data=`./xmlquery -s JGFSEP RUNDIR NINST_GLC GLC_NX GLC_NY`
+set RUNDIR=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set NINST_GLC=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
+set GLC_NX=`echo $xmlquery_data | awk -F'JGFSEP' '{print $3}'`
+set GLC_NY=`echo $xmlquery_data | awk -F'JGFSEP' '{print $4}'`
 
 set NX = $GLC_NX
 set NY = $GLC_NY

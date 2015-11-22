@@ -7,12 +7,7 @@ if ($#ARGV == -1) {
 my ($CASEROOT) = @ARGV;
 chdir "${CASEROOT}";
 
-my $CASEBUILD = `./xmlquery CASEBUILD -value`;
-my $CASETOOLS = `./xmlquery CASETOOLS -value`;
-my $OBJROOT   = `./xmlquery OBJROOT   -value`;
-my $LIBROOT   = `./xmlquery LIBROOT   -value`;
-my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
-my $GMAKE     = `./xmlquery GMAKE     -value`;
+my ($CASEBUILD, $CASETOOLS, $OBJROOT, $LIBROOT, $GMAKE_J, $GMAKE) = split('JGFSEP', `./xmlquery -s JGFSEP CASEBUILD CASETOOLS OBJROOT LIBROOT GMAKE_J GMAKE`);
 
 chdir "${OBJROOT}/atm/obj";
 

@@ -8,15 +8,7 @@ if ($#ARGV == -1) {
 my ($CASEROOT) = @ARGV;
 chdir "${CASEROOT}";
 
-my $CASEBUILD			= `./xmlquery CASEBUILD			-value`;
-my $SRCROOT			= `./xmlquery SRCROOT			-value`;
-my $LIBROOT			= `./xmlquery LIBROOT			-value`;
-my $OBJROOT			= `./xmlquery OBJROOT			-value`;
-my $CASETOOLS			= `./xmlquery CASETOOLS			-value`;
-my $OCN_GRID			= `./xmlquery OCN_GRID			-value`;
-my $OCN_TRACER_MODULES		= `./xmlquery OCN_TRACER_MODULES	-value`;
-my $GMAKE_J			= `./xmlquery GMAKE_J			-value`;
-my $GMAKE			= `./xmlquery GMAKE			-value`;
+my ($CASEBUILD, $SRCROOT, $LIBROOT, $OBJROOT, $CASETOOLS, $OCN_GRID, $OCN_TRACER_MODULES, $GMAKE_J, $GMAKE) = split('JGFSEP', `./xmlquery -s JGFSEP CASEBUILD SRCROOT LIBROOT OBJROOT CASETOOLS OCN_GRID OCN_TRACER_MODULES GMAKE_J GMAKE`);
 
 if (! -d "$OBJROOT/ocn/obj" ) {
     my $sysmod = "mkdir -p $OBJROOT/ocn/obj";    
@@ -162,7 +154,7 @@ my $sysmod = "cp -f $OBJROOT/ocn/obj/POP_cppdefs.new $OBJROOT/ocn/obj/POP_cppdef
 system($sysmod) == 0 or die "ERROR: pop.buidexe $sysmod failed: $?\n";
 
 chdir $CASEROOT;
-my $cppdefs = `./xmlquery POP_CPPDEFS -value`;
+my $cppdefs = `./xmlquery POP_CPPDEFS`;
 chomp($cppdefs);
 
 print " ----------------------------------------------------------------- \n";

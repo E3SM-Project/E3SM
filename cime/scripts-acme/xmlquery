@@ -1,0 +1,84 @@
+#!/usr/bin/env python
+
+"""
+Parse XML configuration for a case directory and return values
+"""
+
+# Add Tools to sys path in case this is being run from a case
+import argparse, sys, os, doctest
+sys.path.append(os.path.join(os.path.dirname(__file__), "Tools"))
+
+import acme_util
+acme_util.check_minimum_python_version(2, 7)
+from acme_util import expect, warning, verbose_print, run_cmd, xmlquery
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [CASEDIR] [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Preview namelists \033[0m
+    > %s
+""" % ((os.path.basename(args[0]), ) * 4),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Print extra information")
+
+    parser.add_argument("-c", "--casedir", default=(".." if os.getcwd().endswith("Tools") else os.getcwd()),
+                        help="The case directory to get configuration for. Default is pwd.")
+
+    parser.add_argument("-s", "--separator", default=" ",
+                        help="The string to use to separate values for a multi-query")
+
+    # REMOVE
+    parser.add_argument("-a", action="store_true")
+    parser.add_argument("-l", action="store_true")
+    parser.add_argument("-u", action="store_true")
+    parser.add_argument("-e", action="store_true")
+
+    parser.add_argument("keys", nargs="+",
+                        help="The data items you want values for.")
+
+    args = parser.parse_args(args[1:])
+
+    #acme_util.set_verbosity(args.verbose)
+    acme_util.set_verbosity(False)
+
+    return args.keys, os.path.abspath(args.casedir), args.separator
+
+###############################################################################
+def impl(keys, casedir, separator):
+###############################################################################
+    if (len(keys) == 1):
+        sys.stdout.write(xmlquery(keys, casedir))
+    else:
+        sys.stdout.write(separator.join(xmlquery(keys, casedir)))
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        # TODO
+        return
+
+    acme_util.stop_buffering_output()
+
+    keys, casedir, separator = parse_command_line(sys.argv, description)
+
+    impl(keys, casedir, separator)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

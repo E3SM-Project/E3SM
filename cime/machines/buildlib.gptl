@@ -6,8 +6,9 @@
 
 cd $CASEROOT # CASEROOT is always assumed to be an environment variable
 
-set CIMEROOT	= `./xmlquery  CIMEROOT	-value `
-set GMAKE	= `./xmlquery  GMAKE	-value ` 
+set xmlquery_data=`./xmlquery -s JGFSEP CIMEROOT GMAKE`
+set CIMEROOT=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set GMAKE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
 
 # NOTE- (mv, 2015-01-02) SHAREDPATH is an environment variable set in 
 # the $CASE.build script

@@ -79,7 +79,7 @@ if ($opts{'testmode'}) {
 }
 
 chdir "$caseroot";
-my $cimeroot  = `./xmlquery CIMEROOT  -value`;
+my $cimeroot  = `./xmlquery CIMEROOT`;
 my @dirs = ("$caseroot/Tools", "$cimeroot/utils/perl5lib");
 
 unshift @INC, @dirs;
@@ -384,7 +384,7 @@ sub build_usernl_files {
 
     my $model = uc($model);
     my $sysmod;
-    my $CIMEROOT  = `./xmlquery CIMEROOT  -value`;
+    my $CIMEROOT  = `./xmlquery CIMEROOT`;
     
     if ($comp eq 'cpl') {
 	if ( ! -f "$CASEROOT/user_nl_${comp}" ) {
@@ -392,7 +392,7 @@ sub build_usernl_files {
 	    system($sysmod) == 0 or die "ERROR build_usernl_files: $sysmod failed: $?\n";
 	}
     } else {
-	my $NINST = `./xmlquery  NINST_${model} -value`;  
+	my $NINST = `./xmlquery  NINST_${model}`;  
 	if ($NINST > 1) {
 	    my $inst_string;
 	    my $inst_counter = 1;
