@@ -647,7 +647,7 @@ parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.R
 parser.add_argument("-o", "--core", dest="core", help="Core that contains configurations", metavar="CORE")
 parser.add_argument("-c", "--configuration", dest="configuration", help="Configuration to setup", metavar="CONFIG")
 parser.add_argument("-r", "--resolution", dest="resolution", help="Resolution of configuration to setup", metavar="RES")
-parser.add_argument("-n", "--case_number", dest="case_num", help="Case number to setup, as listed from list_testcases.py.", metavar="NUM")
+parser.add_argument("-n", "--case_number", dest="case_num", help="Case number to setup, as listed from list_testcases.py. Can be a comma delimited list of case numbers.", metavar="NUM")
 parser.add_argument("-f", "--config_file", dest="config_file", help="Configuration file for test case setup", metavar="FILE", required=True)
 parser.add_argument("--no_download", dest="no_download", help="If set, script will not auto-download base_mesh files", action="store_true")
 parser.add_argument("--copy_instead_of_symlink", dest="nolink_copy", help="If set, script will replace symlinks with copies of files.", action="store_true")
@@ -664,11 +664,12 @@ if args.case_num and args.core and args.configuration and args.resoltuion:
 	parser.error(' Invalid configuration. Too many options used. Exiting...')
 
 if args.case_num:
-	core_configuration = subprocess.check_output(['./list_testcases.py', '-n', '%d'%(int(args.case_num))])
-	config_options = core_configuration.strip('\n').split(' ')
-	args.core = config_options[1]
-	args.configuration = config_options[3]
-	args.resolution = config_options[5]
+	use_case_list = True
+	case_list = args.case_num.split(',')
+else:
+	use_case_list = False
+	case_list = list()
+	case_list.append(0)
 
 config = ConfigParser.SafeConfigParser()
 config.read(args.config_file)
@@ -689,57 +690,65 @@ calling_command = ""
 for arg in sys.argv:
 	calling_command = "%s%s "%(calling_command, arg)
 
-# Setup each xml file in the configuration directory:
-template_path = '%s/templates/%s'%(os.getcwd(), args.core)
-test_path = '%s/%s/%s'%(args.core, args.configuration, args.resolution)
-base_path = '%s/%s'%(args.base_path, test_path)
-write_history = False
-for file in os.listdir('%s'%(test_path)):
-	if fnmatch.fnmatch(file, '*.xml'):
-		config_file = '%s/%s'%(test_path, file)
+for case_num in case_list:
+	if use_case_list:
+		core_configuration = subprocess.check_output(['./list_testcases.py', '-n', '%d'%(int(case_num))])
+		config_options = core_configuration.strip('\n').split(' ')
+		args.core = config_options[1]
+		args.configuration = config_options[3]
+		args.resolution = config_options[5]
 
-		if is_config_case_file(config_file):
-			write_history = True
-			case_dir = make_case_dir(config_file, base_path)
-			case_mode = get_case_mode(config_file)
+	# Setup each xml file in the configuration directory:
+	template_path = '%s/templates/%s'%(os.getcwd(), args.core)
+	test_path = '%s/%s/%s'%(args.core, args.configuration, args.resolution)
+	base_path = '%s/%s'%(args.base_path, test_path)
+	write_history = False
+	for file in os.listdir('%s'%(test_path)):
+		if fnmatch.fnmatch(file, '*.xml'):
+			config_file = '%s/%s'%(test_path, file)
 
-			case_path = '%s/%s'%(base_path, case_dir)
+			if is_config_case_file(config_file):
+				write_history = True
+				case_dir = make_case_dir(config_file, base_path)
+				case_mode = get_case_mode(config_file)
 
-			if not config.has_option("streams", case_mode) or not config.has_option("namelists", case_mode):
-				print "Error. Configuration file '%s' requires paths for streams and namelist files for '%s' mode."%(args.config_file, case_mode)
-				quit(1)
+				case_path = '%s/%s'%(base_path, case_dir)
+
+				if not config.has_option("streams", case_mode) or not config.has_option("namelists", case_mode):
+					print "Error. Configuration file '%s' requires paths for streams and namelist files for '%s' mode."%(args.config_file, case_mode)
+					quit(1)
+				else:
+					case_streams_template = config.get("streams", case_mode)
+					case_namelist_template = config.get("namelists", case_mode)
+
+				generate_namelist_files(config_file, case_path, case_namelist_template, template_path)
+
+				generate_streams_files(config_file, case_path, case_streams_template, template_path)
+
+				add_links(config_file, args, config)
+
+				get_defined_files(config_file, '%s'%(case_path), args, config)
+
+				generate_run_scripts(config_file, '%s'%(case_path), config)
+
+				print " -- Set up case: %s/%s"%(base_path, case_dir)
 			else:
-				case_streams_template = config.get("streams", case_mode)
-				case_namelist_template = config.get("namelists", case_mode)
+				write_history = True
+				generate_driver_scripts(config_file, base_path, config)
+				print " -- Set up driver script in %s"%(base_path)
 
-			generate_namelist_files(config_file, case_path, case_namelist_template, template_path)
-
-			generate_streams_files(config_file, case_path, case_streams_template, template_path)
-
-			add_links(config_file, args, config)
-
-			get_defined_files(config_file, '%s'%(case_path), args, config)
-
-			generate_run_scripts(config_file, '%s'%(case_path), config)
-
-			print " -- Set up case: %s/%s"%(base_path, case_dir)
+	if write_history:
+		history_file_path = '%s/command_history'%(args.base_path)
+		if os.path.exists(history_file_path):
+			history_file = open(history_file_path, 'a')
+			history_file.write('\n')
 		else:
-			write_history = True
-			generate_driver_scripts(config_file, base_path, config)
-			print " -- Set up driver script in %s"%(base_path)
+			history_file = open(history_file_path, 'w')
 
-if write_history:
-	history_file_path = '%s/command_history'%(args.base_path)
-	if os.path.exists(history_file_path):
-		history_file = open(history_file_path, 'a')
-		history_file.write('\n')
-	else:
-		history_file = open(history_file_path, 'w')
-
-	history_file.write('git_version: %s\n'%(git_version))
-	history_file.write('command: %s\n'%(calling_command))
-	history_file.write('core: %s\n'%(args.core))
-	history_file.write('configuration: %s\n'%(args.configuration))
-	history_file.write('resolution: %s\n'%(args.resolution))
-	history_file.close()
+		history_file.write('git_version: %s\n'%(git_version))
+		history_file.write('command: %s\n'%(calling_command))
+		history_file.write('core: %s\n'%(args.core))
+		history_file.write('configuration: %s\n'%(args.configuration))
+		history_file.write('resolution: %s\n'%(args.resolution))
+		history_file.close()
 
