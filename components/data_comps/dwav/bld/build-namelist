@@ -3,7 +3,12 @@
 #
 # build-namelist
 #
-# This is the build-namelist script for the CIME drof (Data River Model).
+# The simplest use of build-namelist is to execute it from the build directory where configure
+# was run.  
+#
+# Date        Contributor      Modification
+# -------------------------------------------------------------------------------------------
+# 2012-03-10  Vertenstein      Updated for cesm1.1
 #--------------------------------------------------------------------------------------------
 
 use strict;
@@ -22,14 +27,14 @@ sub usage {
 SYNOPSIS
      build-namelist [options]
 
-     Build the drof namelist 
+     Build the dwav namelist 
 OPTIONS
      -help [or -h]            	   Print usage to STDOUT.					    
      -infile "filepath"       	   Specify a file or list of files (comma delimited) 	    
                               	   containing namelists to read values from.			    
      -namelist "namelist"     	   Specify namelist settings directly on the commandline by 	    
                               	   supplying a string containing FORTRAN namelist syntax, e.g.,  
-                              	      -namelist "&drof_exp taxmode='extend'/"		    
+                              	      -namelist "&dwav_exp taxmode='extend'/"		    
      -print "level"           	   Print level for debugging:				    
                               	      0 = silent						    
                               	      1 = regular						    
@@ -38,8 +43,8 @@ OPTIONS
      -cimeroot                     CIMEROOT directory variable
      -inst_string                  INST_STRING variable
      -user_xml_dir "directory"     Directory of where to look for user versions of 
-                                      namelist XML files (usually your SourceMods/src.drof directory)
-                                      (such as namelist_definition_drof.xml, or namelist_defaults_drof.xml)
+                                      namelist XML files (usually your SourceMods/src.dwav directory)
+                                      (such as namelist_definition_dwav.xml, or namelist_defaults_dwav.xml)
 
 
 Note: The precedence for setting the values of namelist variables is (highest to lowest):
@@ -52,7 +57,7 @@ EOF
 }
 
 #-----------------------------------------------------------------------------------------------
-# Set the directory that contains the DROF configuration scripts.  If the command was
+# Set the directory that contains the DWAV configuration scripts.  If the command was
 # issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
 # command was issued from the current working directory.
 
@@ -122,14 +127,14 @@ EOF
 }
 
 my $CASEROOT    = $opts{'caseroot'}; 
-my $CIMEROOT    = $opts{'cimeroot'};       
+my $CIMEROOT    = $opts{'cimeroot'};
 my $INST_STRING = $opts{'inst_string'}; 
 
-if ($print>=2) { print "Setting drof configuration script directory to $cfgdir$eol"; }
+if ($print>=2) { print "Setting dwav configuration script directory to $cfgdir$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # build empty config_cache.xml file (needed below)
-my $config_cache = "$CASEROOT/Buildconf/drofconf/config_cache.xml";
+my $config_cache = "$CASEROOT/Buildconf/dwavconf/config_cache.xml";
 my $fh = new IO::File;
 $fh->open(">$config_cache") or die "** can't open file: $config_cache\n";
 print $fh  <<"EOF";
@@ -149,8 +154,8 @@ EOF
 
 # The root directory for the input data files must be specified.
 
-#The root directory to utils Tools
-my $cimeroot = abs_path($CIMEROOT);
+#The root directory to cesm utils Tools
+my $cimeroot   = abs_path($CIMEROOT);
 my $perl5lib = "$cimeroot/utils/perl5lib";
 
 # The XML::Lite module is required to parse the XML files.
@@ -168,8 +173,8 @@ EOF
 
 # The namelist definition file contains entries for all namelist variables that
 # can be output by build-namelist.  The version of the file that is associate with a
-# fixed drof tag is $cfgdir/namelist_files/namelist_definition_drof.xml.  
-my $nl_definition_file = "${cfgdir}/namelist_files/namelist_definition_drof.xml";
+# fixed dwav tag is $cfgdir/namelist_files/namelist_definition_dwav.xml.  
+my $nl_definition_file = "${cfgdir}/namelist_files/namelist_definition_dwav.xml";
 
 # If user has user namelist definition files
 if (defined $opts{'user_xml_dir'}) {
@@ -195,8 +200,8 @@ EOF
     
 # The namelist defaults file contains default values for most namelist variables
 # can be output by build-namelist.  The version of the file that is associated with a
-# fixed drof tag is $cfgdir/namelist_files/namelist_defaults_drof.xml.
-my $nl_defaults_file =  "$cfgdir/namelist_files/namelist_defaults_drof.xml";
+# fixed dwav tag is $cfgdir/namelist_files/namelist_defaults_dwav.xml.
+my $nl_defaults_file =  "$cfgdir/namelist_files/namelist_defaults_dwav.xml";
 
 # If user has user namelist defaults files
 if (defined $opts{'user_xml_dir'}) {
@@ -231,6 +236,7 @@ EOF
 # Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
 my @dirs = ( "$cfgdir/..", "$perl5lib");
 unshift @INC, @dirs;
+
 require XML::Lite;
 require Build::Config;
 require Build::NamelistDefinition;
@@ -240,7 +246,7 @@ require Streams::TemplateGeneric;
 require Config::SetupTools;
 
 #-----------------------------------------------------------------------------------------------
-# Create a configuration object from the DROF config_cache.xml file. 
+# Create a configuration object from the DWAV config_cache.xml file. 
 my $cfg = Build::Config->new($config_cache);
 
 # Validate some of the commandline option values.
@@ -253,7 +259,7 @@ my $definition = Build::NamelistDefinition->new($nl_definition_file);
 
 # Create a namelist defaults object.  This object provides default values for variables
 # contained in the input defaults file.  The configuration object provides attribute
-# values that are relevent for the DROF for which the namelist is being produced.
+# values that are relevent for the DWAV for which the namelist is being produced.
 my $defaults = Build::NamelistDefaults->new( $nl_defaults_file, $cfg);
 
 # Create an empty namelist object.  Add values to it in order of precedence.
@@ -315,16 +321,19 @@ foreach my $attr (keys %xmlvars) {
 
 my $RUN_TYPE      = $xmlvars{'RUN_TYPE'};
 my $DIN_LOC_ROOT  = $xmlvars{'DIN_LOC_ROOT'};     
-my $ROF_GRID      = $xmlvars{'ROF_GRID'};        
-my $DROF_MODE     = $xmlvars{'DROF_MODE'};
+my $WAV_GRID      = $xmlvars{'WAV_GRID'};        
+my $DWAV_MODE     = $xmlvars{'DWAV_MODE'};
 
-if ($ROF_GRID eq "null") {
-    if ($DROF_MODE ne "NULL") {
-	die "$ProgName ERROR:: ROF_GRID null DROF_MODE not NULL.\n";
+if ($WAV_GRID eq "null") {
+    if ($DWAV_MODE ne "NULL") {
+	die "$ProgName ERROR:: WAV_GRID null DWAV_MODE not NULL.\n";
     }
 }
 
-if ($print>=2) { print "Inputdata root directory: $DIN_LOC_ROOT$eol"; }
+(-d $DIN_LOC_ROOT)  or  die <<"EOF";
+** $ProgName - CESM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
+EOF
+if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 ####################################
 # Streams file(s)                  #
@@ -332,13 +341,13 @@ if ($print>=2) { print "Inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 # Create input data list (written to later)
 my $fh_out = new IO::File;
-$fh_out->open(">>$CASEROOT/Buildconf/drof.input_data_list") or
-    die "** can't open filepath file: drof.input_data_list\n";
+$fh_out->open(">>$CASEROOT/Buildconf/dwav.input_data_list") or
+    die "** can't open filepath file: dwav.input_data_list\n";
 
-# Create hash needed to parse namelist_defaults_drof.xml file
+# Create hash needed to parse namelist_defaults_dwav.xml file
 my %default_namelist_opts;
-$default_namelist_opts{'drof_mode'} = $DROF_MODE; 
-$default_namelist_opts{'rof_grid'}  = $ROF_GRID;
+$default_namelist_opts{'dwav_mode'} = $DWAV_MODE; 
+$default_namelist_opts{'wav_grid'}  = $WAV_GRID;
 
 # Create streams template file(s) - loop over streams
 my $streams = $defaults->get_value( "streamslist", \%default_namelist_opts );
@@ -357,8 +366,8 @@ foreach my $stream ( @streams ) {
     # Set stream specific part of default_namelist_opts hash
     $default_namelist_opts{'stream'} = $stream;
 	
-    my $outstream = "drof.streams.txt" . ".$stream" . "$INST_STRING";
-    if ($print>=1) { print "  drof stream is $stream$INST_STRING \n";}
+    my $outstream = "dwav.streams.txt" . ".$stream" . "$INST_STRING";
+    if ($print>=1) { print "  dwav stream is $stream$INST_STRING \n";}
 
     if ($stream eq "NULL") {
 
@@ -366,7 +375,7 @@ foreach my $stream ( @streams ) {
 
     } elsif (-e "$CASEROOT/user_$outstream") {  
 
-	my $command = "cp -p $CASEROOT/user_$outstream $CASEROOT/Buildconf/drofconf/$outstream";
+	my $command = "cp -p $CASEROOT/user_$outstream $CASEROOT/Buildconf/dwavconf/$outstream";
 	system($command) == 0  or die "system $command failed: $? \n";
 
     } else {
@@ -401,12 +410,11 @@ foreach my $stream ( @streams ) {
 	$stream_template_opts{'yearlast'}   = SetupTools::expand_xml_var($stream_template_opts{'yearlast'}  , \%xmlvars);
 	
 	# Create the streams txt file for this stream (from a generic template)
-	# QL, 150527,typos fixed, dice->drof
 	my $stream_template = Streams::TemplateGeneric->new( \%stream_template_opts );
-	$stream_template->Read( "${CASEROOT}/Buildconf/drof.template.streams.xml" );
+	$stream_template->Read( "${CASEROOT}/Buildconf/dwav.template.streams.xml" );
 	$stream_template->Write( $outstream );
 	
-	# Append to drof.input_data_list
+	# Append to dwav.input_data_list
 	my @filenames = $stream_template->GetDataFilenames( 'domain');
 	my $i = 0;
 	foreach my $file ( @filenames ) {
@@ -471,7 +479,7 @@ $fh_out->close;
 
 my $datamode   = $defaults->get_value( "datamode", \%default_namelist_opts );
 add_default($nl, 'datamode',   'val' => "$datamode");  
-if ($datamode ne 'NULL') {
+if ($datamode ne 'null') {
     add_default($nl, 'streams',    'val' => "$ostreams"  );
     add_default($nl, 'mapalgo',    'val' => "$omapalgo"  );
     add_default($nl, 'mapmask',    'val' => "$omapmask"  );
@@ -483,15 +491,15 @@ if ($datamode ne 'NULL') {
 }
 
 #############################
-# namelist group: drof_nml  #
+# namelist group: dwav_nml  #
 #############################
 
-add_default($nl, 'rof_in', 'val'=>"drof_rof_in${INST_STRING}");
+add_default($nl, 'wav_in', 'val'=>"dwav_wav_in${INST_STRING}");
 add_default($nl, 'decomp');
 add_default($nl, 'force_prognostic_true', 'val'=>'.false.');
 
 if ( $RUN_TYPE =~ /branch/ ) {
-   # The drof master restart file is currently unused
+   # The dwav master restart file is currently unused
    #if (not defined $nl->get_value('restfilm')) {
    #   die "$ProgName ERROR:: restfilm is required for a branch type.\n";
    #}
@@ -507,28 +515,28 @@ $definition->validate($nl);
 #
 my $note = "";
 
-# drof_rof_in
+# dwav_wav_in
 my @groups = qw(shr_strdata_nml);
 my $outfile;
-$outfile = "./drof_rof_in";
+$outfile = "./dwav_wav_in";
 $nl->write($outfile, 'groups'=>\@groups, 'note'=>"$note" );
-if ($print>=2) { print "Writing drof_dshr namelist to $outfile $eol"; }
+if ($print>=2) { print "Writing dwav_dshr namelist to $outfile $eol"; }
 
-# drof_in
-@groups = qw(drof_nml);
-$outfile = "./drof_in";
+# dwav_in
+@groups = qw(dwav_nml);
+$outfile = "./dwav_in";
 $nl->write($outfile, 'groups'=>\@groups, 'note'=>"$note" );
-if ($print>=2) { print "Writing drof_in namelist to $outfile $eol"; }
+if ($print>=2) { print "Writing dwav_in namelist to $outfile $eol"; }
 
-# rof_modelio
+# wav_modelio
 @groups = qw(modelio);
-$outfile = "./rof_modelio.nml";
-$nl->set_variable_value( "modelio", "logfile", "'rof.log'" );
+$outfile = "./wav_modelio.nml";
+$nl->set_variable_value( "modelio", "logfile", "'wav.log'" );
 $nl->write($outfile, 'groups'=>\@groups, 'note'=>"$note" );
-if ($print>=2) { print "Writing rof_modelio.nml namelist to $outfile $eol"; }
+if ($print>=2) { print "Writing wav_modelio.nml namelist to $outfile $eol"; }
 
 # Create file of required local input datasets
-check_input_files($nl, $DIN_LOC_ROOT, "$CASEROOT/Buildconf/drof.input_data_list");
+check_input_files($nl, $DIN_LOC_ROOT, "$CASEROOT/Buildconf/dwav.input_data_list");
 
 
 #===============================================================================================
@@ -565,7 +573,7 @@ sub add_default {
 # ***** N.B. ***** This routine assumes the following variables are in package main::
 #  $definition        -- the namelist definition object
 #  $defaults          -- the namelist defaults object
-#  $DIN_LOC_ROOT      -- inputdata root directory
+#  $DIN_LOC_ROOT      -- CESM inputdata root directory
 
     my $nl = shift;     # namelist object
     my $var = shift;    # name of namelist variable
@@ -622,7 +630,7 @@ sub add_default {
 
        # The default values for input pathnames are relative.  If the namelist
        # variable is defined to be an absolute pathname, then prepend
-       # the inputdata root directory.
+       # the CESM inputdata root directory.
        if (not defined $opts{'no_abspath'}) {
 	   if (defined $opts{'set_abspath'}) {
 	       $val = set_abs_filepath($val, $opts{'set_abspath'});
