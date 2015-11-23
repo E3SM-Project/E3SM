@@ -647,7 +647,7 @@ sub moveFiles
     }
 # 
 # also get the file that matches the dname for this suffix and
-# add remove from the the restdir to delete duplicates
+# copy to the restdir for a complete restart set
 #
     my @restFiles = grep(/${dname}/, @files);
     if( $#restFiles == 0 ) {
@@ -655,8 +655,7 @@ sub moveFiles
 	if ( $#path >= 0 ) {
 	    $restFile = $path[$#path];
 	    if ( -f $dest . "/" . $restFile ) {
-##		link ( $dest . "/" . $restFile, $restdir . "/" . $restFile );
-		unlink( $dest . "/" . $restFile );
+		copy( $dest . "/" . $restFile, $restdir . "/" . $restFile );
 	    }
 	}
     }
