@@ -644,13 +644,13 @@ contains
       !lateral drainage, vertical leaching
       !for volatile tracers, this includes surface emission surface three different pathways
       write(iulog,*)tracernames(jj)
-      write(iulog,*),'infl=',this%tracer_flx_infl_col(c,jj),' drain=',  this%tracer_flx_drain_col(c,jj),    &
+      write(iulog,*)'infl=',this%tracer_flx_infl_col(c,jj),' drain=',  this%tracer_flx_drain_col(c,jj),    &
            ' surfrun=',this%tracer_flx_surfrun_col(c,jj),' vtrans=', this%tracer_flx_vtrans_col(c,jj),&
            ' leaching=', this%tracer_flx_leaching_col(c,jj)
 
       if(is_volatile(jj))then
          kk = volatileid(jj)
-         write(iulog,*),'tpartm=', this%tracer_flx_tparchm_col(c,kk),' dif=', this%tracer_flx_dif_col(c,kk),  &
+         write(iulog,*)'tpartm=', this%tracer_flx_tparchm_col(c,kk),' dif=', this%tracer_flx_dif_col(c,kk),  &
               ' ebu=',this%tracer_flx_ebu_col(c,kk)
       endif
 

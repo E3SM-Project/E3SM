@@ -1003,8 +1003,8 @@ contains
 
                            if(tracer_conc_mobile_col(c,l,trcid)<0._r8)then
                               !write error message and stop
-                              write(iulog,*),tracernames(trcid),c,l
-                              write(iulog,*),tracer_conc_mobile_col(c,l,trcid),dtracer(c,l,k),dtime_loc(c)
+                              write(iulog,*)tracernames(trcid),c,l
+                              write(iulog,*)tracer_conc_mobile_col(c,l,trcid),dtracer(c,l,k),dtime_loc(c)
                               call endrun('stopped '//trim(subname)//errMsg(__FILE__, __LINE__))
                            endif
 
@@ -1078,7 +1078,7 @@ contains
                            tracer_flx_dif(c,volatileid(trcid)) = tracer_flx_dif(c,volatileid(trcid)) - diff_surf(c,k) * dtime_loc(c)
                         endif
                      else
-                        write(iulog,*),'mass bal error dif '//tracernames(trcid), mass1,'col=',c,get_cntheta()
+                        write(iulog,*)'mass bal error dif '//tracernames(trcid), mass1,'col=',c,get_cntheta()
                         write(iulog,*)'err=',err_tracer(c,k),dmass(c,k), ' dif=',diff_surf(c,k)*dtime_loc(c), ' prod=',dot_sum(x=local_source(c,jtops(c):ubj,k),y=dz(c,jtops(c):ubj))*dtime_loc(c)
                         call endrun('mass balance error for tracer '//tracernames(trcid)//' in ' &
                            //trim(subname)//errMsg(__FILE__, __LINE__))
