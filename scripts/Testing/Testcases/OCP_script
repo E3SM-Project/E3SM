@@ -32,9 +32,9 @@ touch pop_perf.out
       cp -f env_build.xml LockedFiles/env_build.xml.locked
       cp -f $EXEROOT/cesm.exe.${acnt} $EXEROOT/cesm.exe
 
-      ./$CASE.run
+      ./case.run
       if ($status != 0) then
-	  echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+	  echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
 	  exit -1
       endif
 

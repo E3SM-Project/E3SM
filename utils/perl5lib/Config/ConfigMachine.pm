@@ -129,8 +129,10 @@ sub listMachines
     $logger->warn ("  MACHINES:  name (description)\n");
 
     foreach my $node ($xml->findnodes(".//machine")) {
+	next if ($node->nodeType() == XML_COMMENT_NODE);
 	my $name = $node->getAttribute('MACH');
 	foreach my $child ($node->findnodes("./*")) {
+	    next if ($child->nodeType() == XML_COMMENT_NODE);
 	    if ($child->nodeName() eq 'DESC') {
 		my $desc = $child->textContent();
 		$logger->warn( "    $name ($desc) \n");		

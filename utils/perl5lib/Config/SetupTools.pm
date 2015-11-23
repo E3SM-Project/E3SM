@@ -3,6 +3,7 @@ my $pkg_nm = 'SetupTools';
 
 use strict;
 use XML::LibXML;
+use Data::Dumper;
 
 use Log::Log4perl qw(get_logger);
 my $logger;
@@ -140,6 +141,56 @@ sub getAllResolved
 }
 
 #-------------------------------------------------------------------------------
+# Resolve a single unresolved variable
+#-------------------------------------------------------------------------------
+sub getSingleResolved
+{
+    my $variable = shift;
+    my $id_to_find = $variable;
+    $id_to_find =~ s/\$//g;
+    my %parsers;
+    my $value;
+    my @xmlfiles = qw (env_build.xml env_case.xml env_mach_pes.xml env_run.xml );
+    push(@xmlfiles, "env_test.xml") if ( -e "./env_test.xml");
+    push(@xmlfiles, "env_archive.xml") if ( -e "./env_archive.xml");
+    
+    foreach my $basefile(@xmlfiles)
+    {
+        my $xml = XML::LibXML->new()->parse_file($basefile);
+        $parsers{$basefile} = $xml;
+    }
+        
+    my @nodes;
+    foreach my $basefile(@xmlfiles)
+    {
+        my $parser = $parsers{$basefile};
+        my @nodes = $parser->findnodes("//entry[\@id=\'$id_to_find\']");
+        if(@nodes)
+        {
+            my $node = $nodes[0];
+            $value = $node->getAttribute('value');
+            if($value =~/\$/)
+            {
+                $value = _resolValues($value, \%parsers);
+            }
+            
+        }
+        else
+        {
+            next;
+        }
+    }
+    if(defined $value)
+    {
+        return $value;
+    }
+    else
+    {
+        return undef;
+    }
+}           
+
+#-------------------------------------------------------------------------------
 sub getxmlvars
 {
     # Read $caseroot xml files - put restuls in %xmlvars hash
@@ -175,6 +226,7 @@ sub set_compiler
 	    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
 	    my @nodes = $xml->findnodes(".//compiler");
 	    foreach my $node (@nodes) {
+		next if ($node->nodeType() == XML_COMMENT_NODE);
 		my $COMPILER = $node->getAttribute('COMPILER');
 		my $MACH     = $node->getAttribute('MACH');
 		my $OS       = $node->getAttribute('OS');
@@ -187,11 +239,7 @@ sub set_compiler
 		next if (defined $MPILIB   && $MPILIB   ne $mpilib  );
 		
 		# compiler settings comprises child xml nodes
-		if ($node->nodeType() == XML_COMMENT_NODE) {
-		    # do nothing
-		} else {
-		    push (@compiler_settings ,$node->childNodes());
-		}
+		push (@compiler_settings ,$node->findnodes(".//*"));
 	    }
 	}	
     }
@@ -543,7 +591,8 @@ sub _resolveValues
     # the value can come from the 
     if($value =~ /(\$[\w_]+)/)
     {
-	$logger->debug( "in _resolveValues: value: $value\n");
+# too noisy
+#	$logger->debug( "in _resolveValues: value: $value\n");
 	my $unresolved = $1;
 	
 	#print "need to resolve: $unresolved\n";
@@ -562,7 +611,8 @@ sub _resolveValues
 		    my $rid = $r->getAttribute('id');
 		    my $rvalue = $r->getAttribute('value');
 		    $value =~ s/\$$needed/$rvalue/g;
-		    $logger->debug( "value after substitution: $value\n");
+# too noisy
+#		    $logger->debug( "value after substitution: $value\n");
 		}
 	    }
 	}
@@ -586,7 +636,8 @@ sub _resolveValues
     }
     else
     {
-	$logger->debug( "returning $value\n");
+# too verbose
+#	$logger->debug( "returning $value\n");
 	return $value;
     }
 }

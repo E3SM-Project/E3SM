@@ -30,6 +30,7 @@
      <jobid_pattern>(\d+)</jobid_pattern>
      <depend_string> --dependencies</depend_string>
      <submit_args>
+       <arg flag="--cwd" name="cwd"/>
        <arg flag="-A" name="project"/>
        <arg flag="-t" name="wall_time"/>
        <arg flag="-n" name="num_nodes"/>
@@ -46,18 +47,20 @@
     <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
     <depend_pattern>^\#BSUB\s+-w.+\((\d+)\)</depend_pattern>
     <depend_string> -w "done(jobid)"</depend_string>
+    <submit_args>
+      <arg flag="-q" name="queue"/>
+      <arg flag="-W" name="wall_time"/>
+      <arg flag="-P" name="project"/>
+    </submit_args>
     <directives>
       <directive                       > -n {{ totaltasks }} </directive>
       <directive                       > -R "span[ptile={{ ptile }}]"</directive>
-      <directive                       > -q {{ queue }} </directive>
       <directive                       > -N  </directive>
       <directive default="poe"         > -a {{ poe }} </directive>
       <directive                       > -x {{ queue_exclusive }} </directive>
       <directive default="cesm.stdout" > -o {{ cesm_stdout }}.%J  </directive>
       <directive default="cesm.stderr" > -e {{ cesm_stderr }}.%J  </directive>
       <directive                       > -J {{ job_id }} </directive>
-      <directive                       > -W {{ wall_time }} </directive>
-      <directive                       > -P {{ account }}  </directive>
     </directives>
   </batch_system>
 
@@ -67,6 +70,11 @@
     <batch_directive>#PBS</batch_directive>
     <jobid_pattern>^(\d+)\.</jobid_pattern>
     <depend_string> -W depend=afterok:jobid</depend_string>
+    <submit_args>
+      <arg flag="-q" name="queue"/>
+      <arg flag="-l walltime=" name="wall_time"/>
+      <arg flag="-A" name="project"/>
+    </submit_args>
     <directives>
       <directive> -N {{ job_id }}</directive>
       <directive> -q {{ queue }}</directive>
@@ -85,14 +93,23 @@
      <batch_directive>#SBATCH</batch_directive>
      <jobid_pattern>(\d+)$</jobid_pattern>
      <depend_string> --dependency=afterok:jobid</depend_string>
+     <submit_args>
+       <arg flag="--time" name="wall_time"/>
+       <arg flag="-p" name="queue"/>
+       <arg flag="--account" name="project"/>
+     </submit_args>
      <directives>
-       <directive> -J {{ job_id }}</directive>
-       <directive> --time={{ wall_time }} </directive>
+       <directive> --job-name={{ job_id }}</directive>
        <directive> --nodes={{ num_nodes }}</directive>
        <directive> --ntasks-per-node={{ tasks_per_node }}</directive>
-       <directive> --qos={{ queue }}</directive>
+       <directive> --output={{ output_error_path }}   </directive>
+       <directive> --exclusive                        </directive>
      </directives>
    </batch_system>
+
+
+
+
 
   <!-- babbage is PBS -->
   <batch_system MACH="babbage" version="x.y">
@@ -156,13 +173,6 @@
     </directives>
   </batch_system>
 
-  <!-- evergreen is PBS -->
-  <batch_system MACH="evergreen" version="x.y">
-    <directives>
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
-    </directives>
-  </batch_system>
-
    <!-- gaea is PBS -->
    <batch_system MACH="gaea" version="x.y">
    <directives>
@@ -217,9 +227,10 @@
 
   <!-- all pleiades machines are PBS -->
   <batch_system MACH="pleiades-has" version="x.y">
+    <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list={{ project }} </directive>
-      <directive>-L select={{ num_nodes }}:ncpus{{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model:has</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=has</directive>
       <directive>-l place=scatter:excl</directive>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
@@ -227,9 +238,10 @@
 
   <!-- all pleiades machines are PBS -->
   <batch_system MACH="pleiades-ivy" version="x.y">
+    <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list={{ project }} </directive>
-      <directive>-l select={{ num_nodes }}:ncpus{{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model:ivy</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=ivy</directive>
       <directive>-l place=scatter:excl</directive>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
@@ -237,9 +249,10 @@
 
   <!-- all pleiades machines are PBS -->
   <batch_system MACH="pleiades-san" version="x.y">
+    <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list={{ project }} </directive>
-      <directive>-l select={{ num_nodes }}:ncpus{{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model:san</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=san</directive>
       <directive>-l place=scatter:excl</directive>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
@@ -247,9 +260,10 @@
 
   <!-- all pleiades machines are PBS -->
   <batch_system MACH="pleiades-wes" version="x.y">
+    <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
       <directive>-W group_list={{ project }} </directive>
-      <directive>-L select={{ num_nodes }}:ncpus{{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model:wes</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=wes</directive>
       <directive>-l place=scatter:excl</directive>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>

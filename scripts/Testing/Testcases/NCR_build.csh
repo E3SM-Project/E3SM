@@ -1,4 +1,5 @@
 #!/bin/csh -f
+setenv CIMEROOT `./xmlquery CIMEROOT    -value`
 
 ./Tools/check_lockedfiles || exit -1
 
@@ -13,8 +14,8 @@ else
   cp -f env_mach_pes.xml env_mach_pes.xml.1
 endif
 
-./case_setup -clean -testmode
-./case_setup 
+./case.setup -clean -testmode
+./case.setup 
 
 cp -f env_mach_pes.xml env_mach_pes.xml.1
 cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml.locked
@@ -81,12 +82,12 @@ endif
 
 ./xmlchange -file env_build.xml -id NINST_BUILD -val 0
 
-./case_setup -clean -testmode
-./case_setup
+./case.setup -clean -testmode
+./case.setup
 
-./$CASE.clean_build 
+./case.clean_build 
 
-./$CASE.build
+./case.build -testmode
 if ($status != 0) then
    echo "Error: build for single instance failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus
@@ -152,12 +153,12 @@ set NTASKS_CPL  = `./xmlquery NTASKS_CPL	-value`
 ./xmlchange -file env_mach_pes.xml -id ROOTPE_GLC  -val $rootp
 ./xmlchange -file env_build.xml    -id NINST_BUILD -val 0
 
-./case_setup -clean -testmode
-./case_setup
+./case.setup -clean -testmode
+./case.setup
 
-./$CASE.cleanbuild
+./case.cleanbuild
 
-./$CASE.build
+./case.build -testmode
 if ($status != 0) then
    echo "Error: build for single instance failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus

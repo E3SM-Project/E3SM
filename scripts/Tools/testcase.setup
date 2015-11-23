@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #-----------------------------------------------------------------------------------------------
-# testcase_setup - create the $caseroot/$case.test script 
+# testcase.setup - create the $caseroot/case.test script 
 #-----------------------------------------------------------------------------------------------
 
 use strict;
@@ -23,7 +23,7 @@ SYNOPSIS
      Creates batch test script (case.test) for target machine
 
 USAGE
-     testcase_setup [options]
+     testcase.setup [options]
 OPTIONS
      -help [or -h]        Print usage to STDOUT.
      -caseroot            Full pathname of directory that contains this script
@@ -146,14 +146,15 @@ my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $caseroot,
 						     machroot => $machdir,
                                                      machine  => $mach,        
 						     compiler => $compiler,
-                                                     threaded => $build_threaded);
+                                                     threaded => $build_threaded,
+                                                     job => 'test');
 
 my $batchdirectives = $batchmaker->getBatchDirectives();
                                                      
 
 ## create test file
 my $sysmod;
-my $testfile = "$caseroot/${case}.test";
+my $testfile = "$caseroot/case.test";
 my $testfh = new IO::File;
 $testfh->open(">>$testfile") or $logger->logdie ("can't open file: $testfile ");
 print $testfh "#!/bin/csh -f $eol";
@@ -175,7 +176,7 @@ print $testfh " $eol cd $caseroot  $eol";
 my $testcase_interp = <<END_INTERP;
 
     source .env_mach_specific.csh
-
+    setenv CIMEROOT `./xmlquery CIMEROOT -value`
     # valid test output states are:  
     #   PASS      Test passed
     #   FAIL      Test failed
@@ -194,7 +195,7 @@ my $testcase_interp = <<END_INTERP;
     # (Don't) Remove test status files! create_test puts the namelist comparision 
     # status and output into these files, respectively.  
     #======================================================================
-    setenv CASEROOT            = $caseroot
+    setenv CASEROOT             $caseroot
     set CASE			=  $case
     set CASEBASEID		=  $casebaseid
     set TEST_TESTID		=  $test_testid 
@@ -247,29 +248,31 @@ my $testcase_begin = <<'END_BEGIN';
     #-------------------------------------------------------------
 
     unset IOP_ON
-
-    # Reset all previous settings: obtain copy of original env_run.xml file
-    if ( -e env_run.orig )  then
-       cp env_run.orig env_run.xml
-    else
-       cp env_run.xml env_run.orig
-    endif
-
-    if ( $?IOP_ON ) then
-       set add_iop = "-add_iop $IOP_TYPE"
-       set msg = "iop_${IOP_TYPE}_test"
-    else
-       set add_iop = ''
-       set testname = `./xmlquery TESTCASE -value`
-       set msg = "${testname}_test"
-    endif
-
+    set testname = `./xmlquery TESTCASE -value`
+    set resubmit =  `./xmlquery RESUBMIT -value`
+    set add_iop = ''
+    set msg = "${testname}_test"
+    if( $testname == "ERR" && $resubmit <= 0 ) then
+       echo "Second pass of ERR test"
+    else    
+      # Reset all previous settings: obtain copy of original env_run.xml file
+      if ( -e env_run.orig )  then
+        cp env_run.orig env_run.xml
+      else
+         cp env_run.xml env_run.orig
+      endif
+      set resubmit =  `./xmlquery RESUBMIT -value`
+      if ( $?IOP_ON ) then
+         set add_iop = "-add_iop $IOP_TYPE"
+         set msg = "iop_${IOP_TYPE}_test"
+      endif
+   endif
 END_BEGIN
 
 print $testfh $testcase_begin;
 
 my $file = "${cimeroot}/scripts/Testing/Testcases/${testcase}" . "_script";
-(-f $file) or $logger->logdie ("ERROR testcase_setup: $file does not exist"); 
+(-f $file) or $logger->logdie ("ERROR testcase.setup: $file does not exist"); 
 
 $sysmod = "cat ${cimeroot}/scripts/Testing/Testcases/${testcase}" . "_script" . " >> $testfile";
 system($sysmod) == 0 or $logger->logdie ("ERROR: $sysmod failed: $?");
@@ -298,7 +301,7 @@ my $testcase_iop = <<'END_IOP';
     endif
     # ********turn on IOP case***************
     set IOP_ON 
-    ./xmlchange -file env_run.xml -id PIO_TYPENAME -val $IOP_TYPE
+    ./xmlchange -noecho -file env_run.xml -id PIO_TYPENAME -val $IOP_TYPE
     # ***************************************
 
     if ( $?IOP_ON ) then
@@ -564,11 +567,10 @@ print $testfh $testcase_end;
 
 $testfh->close();
 
-$sysmod= "chmod 755 $case* *pl";
-system ($sysmod); if ($? == -1) {$logger->logdie ("$sysmod failed: $!");};
+chmod 0755 ,"case.test_build";
 
-$sysmod = "chmod 755 $testfile";
-system($sysmod) == 0 or $logger->logdie ("ERROR: $sysmod failed: $? ");
+chmod 0755, "$testfile";
+
 
 chdir($caseroot);
 

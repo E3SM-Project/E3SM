@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #-----------------------------------------------------------------------------------------------
-# case_setup - create the $caseroot/$case.run script and user_nl_xxx component namelist mod files
+# case.setup - create the $caseroot/case.run script and user_nl_xxx component namelist mod files
 #-----------------------------------------------------------------------------------------------
 
 use strict;
@@ -11,6 +11,8 @@ use Getopt::Long;
 use IO::File;
 use IO::Handle;
 use File::Basename;
+use File::Copy;
+
 
 #-----------------------------------------------------------------------------------------------
 sub usage {
@@ -23,13 +25,13 @@ SYNOPSIS
      Creates batch run script (case.run) for target machine
 
 USAGE
-     case_setup [options]
+     case.setup [options]
 OPTIONS
      -help [or -h]        Print usage to STDOUT.
      -clean               Removes the batch run script for target machine	
                           If the testmode argument is present then keep the test 
 			  test script if it is present - otherwise remove it
-                          The user_nl_xxx and Macros files are never removed by case_setup - 
+                          The user_nl_xxx and Macros files are never removed by case.setup - 
                           you must remove them manually
      -testmode            Keeps the test script when the -clean argument is used
 EOF
@@ -98,7 +100,7 @@ my $din_loc_root = $xmlvars{'DIN_LOC_ROOT'};
 my $testcase = $xmlvars{'TESTCASE'};
 if (! -d $din_loc_root) {
     if ($testcase ne 'SBN') {    
-	$logger->logdie( "ERROR case_setup: inputdata root is not a directory: \"$din_loc_root\" ");
+	$logger->logdie( "ERROR case.setup: inputdata root is not a directory: \"$din_loc_root\" ");
     }
 }
 
@@ -127,7 +129,7 @@ if ($fail_setup) {
     $outstr = "$strmacros\n" if(defined($strmacros));
     $outstr .= "$strbuild\n" if(defined($strbuild));
     $outstr .= "$strrun\n" if(defined($strrun));
-    $outstr .= "Correct above and issue case_setup again ";
+    $outstr .= "Correct above and issue case.setup again ";
     $logger->logdie($outstr);
 }
 
@@ -139,11 +141,11 @@ if (! $clean ) {
 
     my $mach = $xmlvars{'MACH'};
     if (! defined $mach ) {
-	$logger->logdie("ERROR case_setup: xml variable MACH is not set ");
+	$logger->logdie("ERROR case.setup: xml variable MACH is not set ");
     }
     my $case = $xmlvars{'CASE'};
     if (! defined $case ) {
-	$logger->logdie("ERROR case_setup: xml variable CASE is not set ");
+	$logger->logdie("ERROR case.setup: xml variable CASE is not set ");
     }
 
     #--------------------------------------------------------------------------
@@ -165,7 +167,7 @@ if (! $clean ) {
 	    if($attr =~ /NTASKS_/){
 		$xmlvars{$attr}=1;
 		my $sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id $attr -val 1";
-		system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
+		system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 		
 	    }
 	}
@@ -182,7 +184,7 @@ if (! $clean ) {
 		system("./xmlchange -noecho $ntasks=$xmlvars{$ninst}");
 		$xmlvars{$ntasks}=$xmlvars{$ninst};
 	    }else{
-		$logger->logdie("ERROR case_setup: $comp NINST value greater than $comp NTASKS");
+		$logger->logdie("ERROR case.setup: $comp NINST value greater than $comp NTASKS");
 	    }
 	}
 	if($xmlvars{$nthrds} > 1){
@@ -195,19 +197,19 @@ if (! $clean ) {
     }
 
     my $sysmod = "./xmlchange -noecho BUILD_THREADED=$build_threaded";
-    system($sysmod) == 0 or $logger->logdie("ERROR cesm_setup: $sysmod failed: $?");
+    system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 
-    if (-f "$caseroot/$case.run") {
+    if (-f "$caseroot/case.run") {
 	$logger->info( "Machine/Decomp/Pes configuration has already been done ...skipping ");
 
     } else {
 
-	my $sysmod = "./Tools/check_lockedfiles";
-	system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
+	my $sysmod = "./Tools/check_lockedfiles -cimeroot $cimeroot";
+	system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 	
 	my $pestot = `$caseroot/Tools/taskmaker.pl -sumonly`;
 	$sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id TOTALPES -val $pestot";
-	system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
+	system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 	wait;
 	
         # Compute cost based on PE count
@@ -244,18 +246,18 @@ if (! $clean ) {
 	my $estcost = $CCSM_CCOST + $CCSM_GCOST + $CCSM_MCOST + $CCSM_TCOST + $pcost + $dcost + $lcost;
 	
 	my $sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id TOTALPES -val $pestot";
-	system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
+	system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 
 	$sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id CCSM_PCOST -val $pcost";
-	system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
+	system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 
 	$sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id CCSM_ESTCOST -val $estcost";
-	system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
+	system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 	
 	#--------------------------------------------------------------
 	# create batch file
 	#--------------------------------------------------------------
-	$logger->info( "Creating batch script $case.run");
+	$logger->info( "Creating batch script case.run");
 	# Use BatchFactory to get the appropriate instance of a BatchMaker,
 	# use it to create our batch scripts
 	my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $xmlvars{'CASEROOT'},
@@ -265,26 +267,31 @@ if (! $clean ) {
 							     machroot => $xmlvars{'MACHDIR'},
 							     machine  => $xmlvars{'MACH'},
 							     compiler => $xmlvars{'COMPILER'},
-							     threaded => $build_threaded);
+							     threaded => $build_threaded,
+							     job => 'run'
+	                                                     );
+
+
 	
 	my $inputbatchscript  = "$xmlvars{'MACHDIR'}/template.cesmrun";
-	my $outputbatchscript = "$xmlvars{'CASEROOT'}/$case.run";
+	my $outputbatchscript = "$xmlvars{'CASEROOT'}/case.run";
 
 	$batchmaker->makeBatchScript($inputbatchscript, $outputbatchscript);
-	$logger->info("Creating batch script $case.st_archive");
+	$logger->info("Creating batch script case.st_archive");
 	$batchmaker->overrideNodeCount(1);
+	$batchmaker->set({job=>'st_archive'});
+	$batchmaker->makeBatchScript("$xmlvars{'MACHDIR'}/template.st_archive", "$xmlvars{'CASEROOT'}/case.st_archive");
 
-	$batchmaker->makeBatchScript("$xmlvars{'MACHDIR'}/template.starchive", "$xmlvars{'CASEROOT'}/$case.st_archive");
-	$logger->info("Creating batch script $case.lt_archive");
+	$logger->info("Creating batch script case.lt_archive");
 	$batchmaker->overrideNodeCount(1);
-
-	$batchmaker->makeBatchScript("$xmlvars{'MACHDIR'}/template.ltarchive", "$xmlvars{'CASEROOT'}/$case.lt_archive");
+	$batchmaker->set({job=>'lt_archive'});
+	$batchmaker->makeBatchScript("$xmlvars{'MACHDIR'}/template.lt_archive", "$xmlvars{'CASEROOT'}/case.lt_archive");
 	
 	# Make a copy of env_mach_pes.xml in order to be able 
-	# to check that it does not change once case_setup is invoked
+	# to check that it does not change once case.setup is invoked
 	if (! -e "LockedFiles/env_mach_pes.xml.locked") {
 	    $sysmod = "cp env_mach_pes.xml  LockedFiles/env_mach_pes.xml.locked";
-	    system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
+	    system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 	    $logger->info("Locking file env_mach_pes.xml ");
 	}
     }
@@ -303,7 +310,7 @@ if (! $clean ) {
 	_build_usernl_files($caseroot, $cimeroot, $model, $comp);
 	if ($comp eq "cism")  {
 	    my $sysmod = "$cimeroot/../components/cism/cime_config/cism.template $caseroot";
-	    system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
+	    system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 	}
     }
     _build_usernl_files($caseroot, $cimeroot, "drv", "cpl");
@@ -311,32 +318,32 @@ if (! $clean ) {
     #--------------------------------------------------------------------------
     # Run preview namelists for scripts
     #--------------------------------------------------------------------------
-    $logger->info("Running preview_namelist script ");
-    qx( $caseroot/preview_namelists -loglevel $opts{loglevel} );
+    $logger->info("Running preview_namelist script with loglevel $opts{loglevel}");
+    system(" $caseroot/preview_namelists -loglevel $opts{loglevel} ");
     if($?){
 	$logger->logdie("ERROR: $caseroot/preview_namelists failed: $?")
     }
     $logger->info("See ./CaseDoc for component namelists ");
-    $logger->info("If an old case build already exists, might want to run ${case}.clean_build before building ");
+    $logger->info("If an old case build already exists, might want to run case.clean_build before building ");
 
     #--------------------------------------------------------------------------
     # Create test script if appropriate
     #--------------------------------------------------------------------------
     if( -e "$caseroot/env_test.xml") {
-	if ( -e "$caseroot/$case.test") {
+	if ( -e "$caseroot/case.test") {
 	    # do nothing
 	} else {
-	    $logger->info("Starting testcase_setup ");
-	    my $sysmod = "./testcase_setup -caseroot $caseroot";
+	    $logger->info("Starting testcase.setup ");
+	    my $sysmod = "./testcase.setup -caseroot $caseroot";
 	    system($sysmod) == 0 or $logger->logdie("ERROR: $sysmod failed: $?");
-	    $logger->info("Finished testcase_setup ");
+	    $logger->info("Finished testcase.setup $caseroot");
 	}
     }
 
     my $fh = new IO::File;
     $fh->open(">>CaseStatus") or $logger->logdie("can't open file: CaseStatus");
     my $sdate = `date +"%Y-%m-%d %H:%M:%S"`;
-    print $fh "cesm_setup $sdate $eol";
+    print $fh "case.setup $sdate $eol";
     $fh->close();
 
 }
@@ -348,7 +355,7 @@ if (! $clean ) {
 if ($clean) {
 
     my $case = $xmlvars{'CASE'};
-    if (!-f "$caseroot/$case.run" ) {
+    if (!-f "$caseroot/case.run" ) {
 	$logger->info("clean option has already been invoked ...skipping ");
 	exit;
     }
@@ -358,47 +365,47 @@ if ($clean) {
     my $backupdir = "PESetupHist/b.${id}";
     if (!-d ${backupdir}) {
 	$sysmod = "mkdir -p ${backupdir}";
-	system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
+	system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
     }
     # back up relevant files
-    $sysmod = "cp ${case}.run env_build.xml env_mach_pes.xml Macros* ${backupdir}";
-    system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
+    $sysmod = "cp case.run env_build.xml env_mach_pes.xml Macros* ${backupdir}";
+    system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 
     # remove relevant files from $caseroot
-    $sysmod = "rm ./${case}.run";
-    system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
+    $sysmod = "rm ./case.run";
+    system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 
     # remove relevant files from $caseroot/LockedFiels
     my @files = <${caseroot}/LockedFiles/*build* ${caseroot}/LockedFiles/*mach_pes*>;
     foreach my $file (@files) {
 	$sysmod = "rm $file";
-	system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
+	system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
     }
 
     # only do the following if are NOT in testmode
     if (! $testmode)  {
 	# rebuild the models (even on restart)
 	$sysmod = "./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val FALSE";
-	system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
+	system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
     
 	# backup and then clean test script
-	if( -e "$caseroot/$case.test") {
-	    $sysmod = "cp ${case}.test ${backupdir}";
-	    system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
+	if( -e "$caseroot/case.test") {
+	    $sysmod = "cp case.test ${backupdir}";
+	    system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 
-	    $sysmod = "rm ./${case}.test";
-	    system($sysmod) == 0 or $logger->logdie("ERROR case_setup: $sysmod failed: $?");
-	    $logger->info("Successfully cleaned test script $case.test ");
+	    $sysmod = "rm ./case.test";
+	    system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
+	    $logger->info("Successfully cleaned test script case.test ");
 	}
     }
 
-    $logger->info("Successfully cleaned batch script $case.run ");
+    $logger->info("Successfully cleaned batch script case.run ");
     $logger->info("Some files have been saved to ${backupdir}");
 
     my $fh = new IO::File;
     $fh->open(">>CaseStatus") or $logger->logdie("can't open file: CaseStatus");
     my $sdate = `date +"%Y-%m-%d %H:%M:%S"`;
-    print $fh "case_setup -clean $sdate $eol";
+    print $fh "case.setup -clean $sdate $eol";
     $fh->close();
 
 }

@@ -69,14 +69,12 @@ sub getCompsetLongname
 	my @alias_nodes = $xml2->findnodes(".//compset[alias=\"$input_compset\"]");
 	if (@alias_nodes) {
 	    if ($#alias_nodes > 0) {
-		die "ERROR create_newcase: more than one match for alias element in file $file \n";
+		
+		$logger->logdie ("ERROR create_newcase: more than one match for compset alias $input_compset in file $file ");
 	    } else {
-		my @name_nodes = $alias_nodes[0]->childNodes();
+		my @name_nodes = $alias_nodes[0]->findnodes(".//lname");
 		foreach my $name_node (@name_nodes) {
-		    my $debug = $name_node->nodeName();
-		    if ($name_node->nodeName() eq 'lname') {
-			$compset_longname = $name_node->textContent();
-		    }		    
+		    $compset_longname = $name_node->textContent();
 		}
 	    }
 	    $pes_setby = $node_file->getAttribute('component');
@@ -92,12 +90,9 @@ sub getCompsetLongname
 	    if ($#lname_nodes > 0) {
 		die "ERROR create_newcase: more than one match for lname element in file $file \n";
 	    } else {
-		my @name_nodes = $lname_nodes[0]->childNodes();
+		my @name_nodes = $lname_nodes[0]->findnodes(".//lname");
 		foreach my $name_node (@name_nodes) {
-		    my $debug = $name_node->nodeName();
-		    if ($name_node->nodeName() eq 'lname') {
-			$compset_longname = $name_node->textContent();
-		    }		    
+		    $compset_longname = $name_node->textContent();
 		}
 	    }
 	    $pes_setby = $node_file->getAttribute('component');
@@ -135,8 +130,23 @@ sub getGridLongname
 
     my ($grid_longname, $grid_shortname, $grid_aliasname);
     my $compset_match;
+    if($grid_input =~ /^([^_]+)z(\d+)(.*)/){
+	my $atmnlev = $2;
+	$grid_input = $1.$3;
+        $logger->info("atmnlev = $atmnlev grid = $grid_input");
+	$config->set("ATM_GRID","z$atmnlev");
+    }
+    if($grid_input =~ /^(.*_[^_]+)z(\d+)(.*)/){
+	my $lndnlev = $2;
+	$grid_input = $1.$3;
+	$logger->info("lndnlev = $lndnlev grid = $grid_input");
+	$logger->logdie("User specified vertical levels not yet supported for lnd");
+    }
+
+
 
     my $grids_file = $config->get('GRIDS_SPEC_FILE');
+    my $compset_longname = $config->get('COMPSET');
 
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($grids_file);
     my @nodes_alias = $xml->findnodes(".//grid[alias=\"$grid_input\"]");
@@ -144,18 +154,41 @@ sub getGridLongname
     my @nodes_lname = $xml->findnodes(".//grid[lname=\"$grid_input\"]");
 
     my $grid_node;
-    if (@nodes_alias) {
-	$grid_node = $nodes_alias[0];
-    } elsif (@nodes_lname) {
+    if (@nodes_lname) {
+	if($#nodes_lname > 0){
+	    $logger->logdie("ERROR: more than one grid longname match in file $grids_file");
+	}
 	$grid_node = $nodes_lname[0];
+    }elsif (@nodes_alias) {
+	foreach my $node (@nodes_alias){
+	    if($node->hasAttributes()){
+		my $attr = $node->getAttribute('compset');		
+		if($compset_longname =~ m/$attr/){
+		    $grid_node = $node;
+		}
+	    }elsif(! defined $grid_node){    
+#           This is the default value, it is overwritten by any compset match value
+		$grid_node = $node;
+	    }
+	}
     } elsif (@nodes_sname) {
-	$grid_node = $nodes_sname[0];
+	foreach my $node (@nodes_sname){
+	    if($node->hasAttributes()){
+		my $attr = $node->getAttribute('compset');		
+		if($compset_longname =~ m/$attr/){
+		    $grid_node = $node;
+		}
+	    }elsif(! defined $grid_node){    
+#           This is the default value, it is overwritten by any compset match value
+		$grid_node = $node;
+	    }
+	}
     } else { 
 	die " ERROR: no supported grid match for target grid $grid_input ";
     }
     
     # set the compset grid alias and longname
-    foreach my $node ($grid_node->childNodes()) {
+    foreach my $node ($grid_node->findnodes(".//*")) {
 	my $name = $node->nodeName();
 	my $value = $node->textContent();
 	if ($name eq 'lname') {$grid_longname   = $node->textContent();}
@@ -176,17 +209,19 @@ sub getGridLongname
     $grid_longname =~ /(m%)(.+)(_g%)/ ; $compgrid{'mask'} = $2; 
 
     my @nodes = $xml->findnodes(".//grid[lname=\"$grid_longname\"]");
-    if ($#nodes != 0) {
+    if ($#nodes < 0) {
 	die "ERROR ConfigCompsetGrid::checkGrid : no match found for $grid_longname \n";
     } 
     my $attr = $nodes[0]->getAttribute('compset');
+
     if (defined $attr) {
 	my $compset = $config->get('COMPSET');
 	if ($compset !~ m/$attr/) {
 	    die "ERROR ConfigCompsetGrid::getGridLongame $grid_longname is not supported for $compset \n";
 	}
     }
-
+    $logger->info("grid longname is : $grid_longname");
+    
     return ($grid_longname);
 }
 
@@ -330,11 +365,23 @@ sub setGridMaps
     @nodes = $xml->findnodes(".//gridmap[\@glc_grid=\"$glc_grid\" and \@lnd_grid=\"$lnd_grid\"]/GLC2LND_FMAPNAME");
     if (@nodes) {$config->set('GLC2LND_FMAPNAME',$nodes[0]->textContent())}
 
-    @nodes = $xml->findnodes(".//gridmap[\@glc_grid=\"$glc_grid\" and \@ice_grid=\"$ice_grid\"]/GLC2ICE_RMAPNAME");
+    @nodes = $xml->findnodes(".//gridmap[\@glc_grid=\"$glc_grid\" and \@ocn_grid=\"$ocn_grid\"]/GLC2ICE_RMAPNAME");
     if (@nodes) {$config->set('GLC2ICE_RMAPNAME',$nodes[0]->textContent())}
 
     @nodes = $xml->findnodes(".//gridmap[\@glc_grid=\"$glc_grid\" and \@ocn_grid=\"$ocn_grid\"]/GLC2OCN_RMAPNAME");
     if (@nodes) {$config->set('GLC2OCN_RMAPNAME',$nodes[0]->textContent())}
+
+    @nodes = $xml->findnodes(".//gridmap[\@atm_grid=\"$atm_grid\" and \@wav_grid=\"$wav_grid\"]/ATM2WAV_SMAPNAME");
+    if (@nodes) {$config->set('ATM2WAV_SMAPNAME',$nodes[0]->textContent())}
+
+    @nodes = $xml->findnodes(".//gridmap[\@ocn_grid=\"$ocn_grid\" and \@wav_grid=\"$wav_grid\"]/ICE2WAV_SMAPNAME");
+    if (@nodes) {$config->set('ICE2WAV_SMAPNAME',$nodes[0]->textContent())}
+
+    @nodes = $xml->findnodes(".//gridmap[\@ocn_grid=\"$ocn_grid\" and \@wav_grid=\"$wav_grid\"]/OCN2WAV_SMAPNAME");
+    if (@nodes) {$config->set('OCN2WAV_SMAPNAME',$nodes[0]->textContent())}
+
+    @nodes = $xml->findnodes(".//gridmap[\@ocn_grid=\"$ocn_grid\" and \@wav_grid=\"$wav_grid\"]/WAV2OCN_SMAPNAME");
+    if (@nodes) {$config->set('WAV2OCN_SMAPNAME',$nodes[0]->textContent())}
 }
 
 #-------------------------------------------------------------------------------
@@ -604,13 +651,17 @@ sub printGridCompsetInfo
     $outstr .= " $desc_comp \n";
     $outstr .= "Grid: \n";
     $outstr .= "  $grid_longname \n";
-    $outstr .= "  ATM_GRID = $atm_grid  NX_ATM=$atm_nx NY_ATM=$atm_ny \n";
-    $outstr .= "  LND_GRID = $lnd_grid  NX_LND=$lnd_nx NX_LND=$lnd_ny \n";
-    $outstr .= "  ICE_GRID = $ice_grid  NX_ICE=$ice_nx NX_ICE=$ice_ny \n";
-    $outstr .= "  OCN_GRID = $ocn_grid  NX_OCN=$ocn_nx NX_OCN=$ocn_ny \n";
-    $outstr .= "  ROF_GRID = $rof_grid  NX_ROF=$rof_nx NX_ROF=$rof_ny \n";
-    $outstr .= "  GLC_GRID = $glc_grid  NX_GLC=$glc_nx NX_GLC=$glc_ny \n";
-    $outstr .= "  WAV_GRID = $wav_grid  NX_WAV=$wav_nx NX_WAV=$wav_ny \n";
+    $outstr .= "  ATM_GRID = $atm_grid  NX_ATM=$atm_nx NY_ATM=$atm_ny ";
+    if($atm_grid =~ /z(\d+)/){
+	$outstr .= "NZ_ATM=$1 ";
+    }
+    $outstr .= "\n";
+    $outstr .= "  LND_GRID = $lnd_grid     NX_LND=$lnd_nx NX_LND=$lnd_ny \n";
+    $outstr .= "  ICE_GRID = $ice_grid     NX_ICE=$ice_nx NX_ICE=$ice_ny \n";
+    $outstr .= "  OCN_GRID = $ocn_grid     NX_OCN=$ocn_nx NX_OCN=$ocn_ny \n";
+    $outstr .= "  ROF_GRID = $rof_grid     NX_ROF=$rof_nx NX_ROF=$rof_ny \n";
+    $outstr .= "  GLC_GRID = $glc_grid    NX_GLC=$glc_nx NX_GLC=$glc_ny \n";
+    $outstr .= "  WAV_GRID = $wav_grid    NX_WAV=$wav_nx NX_WAV=$wav_ny \n";
     $outstr .= "Grid Description: \n";
     $outstr .= "  $desc_grid \n";
     $outstr .= "Non-Default Options: \n";

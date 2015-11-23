@@ -191,11 +191,10 @@ if [ $? -ne 0 ]; then
     archive_list="${archive_list} SourceMods"
     archive_list="${archive_list} Tools"
     archive_list="${archive_list} archive_metadata.sh"
-    archive_list="${archive_list} ${casename}.build"
-    archive_list="${archive_list} ${casename}.l_archive"
-    archive_list="${archive_list} ${casename}.run"
+    archive_list="${archive_list} case.build"
+    archive_list="${archive_list} case.run"
     archive_list="${archive_list} check_input_data"
-    archive_list="${archive_list} case_setup"
+    archive_list="${archive_list} case.setup"
     archive_list="${archive_list} create_production_test"
     archive_list="${archive_list} env_build.xml"
     archive_list="${archive_list} env_case.xml"
@@ -215,6 +214,7 @@ if [ $? -ne 0 ]; then
     archive_list="${archive_list} user_nl_cpl"
     archive_list="${archive_list} user_nl_pop"
     archive_list="${archive_list} user_nl_rtm"
+    archive_list="${archive_list} user_nl_mosart"
 
     for item in ${archive_list}; do
 	if [ -e $item ]; then

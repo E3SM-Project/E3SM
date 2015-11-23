@@ -22,9 +22,9 @@ echo "doing an ${STOP_N} ${STOP_OPTION} test with use_init_interp false" >>& $TE
 
 cp user_nl_nointerp/* .
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 
@@ -62,9 +62,9 @@ echo "doing an ${STOP_N} ${STOP_OPTION} test with use_init_interp true" >>& $TES
 
 cp user_nl_interp/* .
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 

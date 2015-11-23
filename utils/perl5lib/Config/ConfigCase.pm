@@ -110,27 +110,52 @@ sub add_config_variables
     foreach my $node (@nodes) 
     {
 	my $id = $node->getAttribute('id');
-	foreach my $define_node ($node->childNodes()) 
+	foreach my $define_node ($node->findnodes(".//*")) 
 	{
 	    my $node_name  = $define_node->nodeName();
-	    my $node_value = $define_node->textContent();
-	    if (defined $node_value) {
-		$node_value =~ s/\$MODEL/$model/;
-		$node_value =~ s/\$CIMEROOT/$cimeroot/;
-		if (-d $srcroot) {
-		    $node_value =~ s/\$SRCROOT/$srcroot/;
+	    #
+            # This creates a hash of values with attribute name and id as keys
+            #
+	    if($node_name eq "values"){
+		foreach my $val_node ($define_node->findnodes(".//value")){
+                    if($val_node->hasAttributes()){		 
+			my @att = $val_node->attributes();
+			foreach my $attstr (@att){
+			    my $att = $attstr->nodeName();
+			    my $att_val = $attstr->getValue();
+			    my $val =  $val_node->textContent();		
+			    $val =~ s/\$MODEL/$model/;
+			    $val =~ s/\$CIMEROOT/$cimeroot/;
+			    if (-d $srcroot) {
+				$val =~ s/\$SRCROOT/$srcroot/;
+			    }			
+			    $self->{$id}{$att}{$att_val} = $val;
+			}
+		    }
 		}
 
-		# now set the initial value to the default value - this can get overwritten
-		if ($node_name eq 'default_value') {
-		    $self->{$id}->{'value'} = $node_value;
-		} else {
-		    $self->{$id}->{$node_name} = $node_value;
+	    }else{
+		# we want to avoid the 'value' nodes which are children of 'values'
+		next if($node_name eq 'value' and $define_node->parentNode() ne $node);
+		my $node_value = $define_node->textContent();
+		if (defined $node_value) {
+		    $node_value =~ s/\$MODEL/$model/;
+		    $node_value =~ s/\$CIMEROOT/$cimeroot/;
+		    if (-d $srcroot) {
+			$node_value =~ s/\$SRCROOT/$srcroot/;
+		    }
+
+		    # now set the initial value to the default value - this can get overwritten
+		    if ($node_name eq 'default_value') {
+			$self->{$id}{'value'} = $node_value;
+		    } else {
+			$self->{$id}{$node_name} = $node_value;
+		    }
+		    $logger->debug("id= $id name = $node_name value = $node_value\n");
 		}
-		$logger->debug("id= $id name = $node_name value = $node_value\n");
 	    }
 	}
-	if (! defined $self->{$id}->{'value'} ) {
+	if (! defined $self->{$id}{'value'} ) {
 	    $logger->logdie( "ERROR add_config_variables: default_value must be set for $id in $file\n");
 	}
     }
@@ -167,8 +192,11 @@ sub set
 		"ERROR: value of $value is not a valid value for parameter $id: valid values are $valid_values\n");
     }
     # Add the new value to the object's internal data structure.
-    $self->{$id}->{'value'} = $value;
-
+    if($id eq "ATM_GRID" && $self->{$id}{value} ne "UNSET"){
+	$self->{$id}{value} = $value.$self->{$id}{value};
+    }else{
+	$self->{$id}->{'value'} = $value;
+    }
     return 1;
 }
 
@@ -176,12 +204,34 @@ sub set
 sub get
 {
     # Return requested value.
-    my ($self, $name) = @_;
+    my ($self, $name, $attribute, $id ) = @_;
 
-    defined($self->{$name}) or $logger->logde( "ERROR ConfigCase.pm::get: unknown parameter name: $name\n");
+    defined($self->{$name}) or $logger->logdie( "ERROR ConfigCase.pm::get: unknown parameter name: $name\n");
     $logger->debug("GET: $name $self->{$name}->{value}\n");
-    return $self->{$name}->{'value'};
+    if(defined $attribute && defined $id){
+	if(defined $self->{$name}{$attribute}){
+	    my $val = $self->{$name}{$attribute}{$id};
+	    if(! defined $val){
+		$logger->warn("No match for $attribute and $id in $name");
+	    }
+	    return $val;
+	}else{
+	    $logger->warn("No values found for $name");
+	}
+    }
+    return $self->{$name}{'value'};
 }
+
+sub getkeys{
+    my ($self, $name,$attribute) = @_;
+    my @keys;
+    defined($self->{$name}) 
+	or $logger->logdie( "ERROR ConfigCase.pm::getkeys: unknown parameter name: $name");
+    defined($self->{$name}{$attribute}) 
+	or $logger->logdie( "ERROR ConfigCase.pm::getkeys: unknown attribute $attribute for parameter name: $name");
+    return(keys %{$self->{$name}{$attribute}});
+}
+
 
 #-----------------------------------------------------------------------------------------------
 sub get_valid_values
@@ -274,24 +324,40 @@ sub write_file
 	print $fh "</groups>\n";   	    
 	print $fh "\n";
 
+	my @subgroups = qw(none);
+	if($output_xml_file =~ "env_batch.xml"){
+	    @subgroups = qw(run test st_archive lt_archive);
+	}
+
+	my $indent = "  ";
 	# Write out all necessary groups to the output xml file
 	foreach my $group (@groups) {
-	    foreach my $id (sort keys %$self) {
-		if ($self->{$id}->{'group'} eq $group ) {
-		    my $value         = $self->{$id}->{'value'};
-		    my $type          = $self->{$id}->{'type'};
-		    my $valid_values  = $self->{$id}->{'valid_values'};
-		    my $desc          = $self->{$id}->{'desc'};
-		    my $is_list_value = $self->{$id}->{'list'};
-		    my $file          = $self->{$id}->{'file'};
-		    if (defined $file) {
-			if ($file eq $file_xml) {
-			    write_xml_entry($fh, $id, $value, $type, $valid_values, $desc, $group, $is_list_value);
+	    foreach my $subgroup (@subgroups){
+		if($subgroup ne "none"){
+		    print $fh "  <job name=\"$subgroup\">";
+		    my $indent = "      ";
+		}
+		foreach my $id (sort keys %$self) {
+		    if ($self->{$id}->{'group'} eq $group ) {
+			my $value         = $self->{$id}->{'value'};
+			my $type          = $self->{$id}->{'type'};
+			my $valid_values  = $self->{$id}->{'valid_values'};
+			my $desc          = $self->{$id}->{'desc'};
+			my $is_list_value = $self->{$id}->{'list'};
+			my $file          = $self->{$id}->{'file'};
+			if (defined $file) {
+			    if ($file eq $file_xml) {
+				write_xml_entry($fh, $id, $value, $type, $valid_values, $desc, $group, $is_list_value, $indent);
+			    }
+			} else {
+			    $logger->logdie("file attribute for variable $id is not defined \n");
 			}
-		    } else {
-			$logger->logdie("file attribute for variable $id is not defined \n");
 		    }
 		}
+		if($subgroup ne "none"){
+		    print $fh "  </job>\n";
+		}
+
 	    }
 	}
     }
@@ -303,8 +369,8 @@ sub write_file
 sub write_xml_entry
 {
     # Output xml file entry
-    my ($fh, $id, $value, $type, $valid_values, $desc, $group, $is_list_value) = @_;
-
+    my ($fh, $id, $value, $type, $valid_values, $desc, $group, $is_list_value,$indent) = @_;
+    $indent="" unless defined($indent);
     $value =~ s/'/&apos;/g;
     $value =~ s/\</&lt;/g;
     $value =~ s/\</&gt;/g;
@@ -318,13 +384,13 @@ sub write_xml_entry
 	$desc = "no description available";
     }
     print $fh "\n";
-    print $fh "<entry id=\"$id\"  value=\"$value\">\n";   	    
-    print $fh "  <type>$type</type> \n"; 
-    if (defined $valid_values && $valid_values  ne '') {print $fh "  <valid_values>$valid_values</valid_values> \n";}
-    if (defined $is_list_value && $is_list_value ne '') {print $fh "  <list>$is_list_value</list> \n";}
-    print $fh "  <group>$group</group> \n"; 
-    print $fh "  <desc>$desc</desc> \n";
-    print $fh "</entry> \n";
+    print $fh "$indent<entry id=\"$id\"  value=\"$value\">\n";   	    
+    print $fh "$indent  <type>$type</type> \n"; 
+    if (defined $valid_values && $valid_values  ne '') {print $fh "$indent  <valid_values>$valid_values</valid_values> \n";}
+    if (defined $is_list_value && $is_list_value ne '') {print $fh "$indent  <list>$is_list_value</list> \n";}
+    print $fh "$indent  <group>$group</group> \n"; 
+    print $fh "$indent  <desc>$desc</desc> \n";
+    print $fh "$indent</entry> \n";
 }
 
 #-----------------------------------------------------------------------------------------------

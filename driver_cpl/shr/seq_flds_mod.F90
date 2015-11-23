@@ -143,6 +143,8 @@ module seq_flds_mod
    character(len=CXX) :: megan_voc_fields    ! List of MEGAN VOC emission fields
    character(len=CXX) :: fire_emis_fields    ! List of fire emission fields
    character(len=CX)  :: carma_fields        ! List of CARMA fields from lnd->atm
+   integer            :: ice_ncat            ! number of sea ice thickness categories
+   logical            :: seq_flds_i2o_per_cat! .true. if select per ice thickness category fields are passed from ice to ocean
 
    !----------------------------------------------------------------------------
    ! metadata
@@ -151,7 +153,7 @@ module seq_flds_mod
    character(len=*),parameter :: undef     = 'undefined'
    integer         ,parameter :: nmax      = 1000        ! maximum number of entries in lookup_entry
    integer                    :: n_entries = 0           ! actual number of entries in lookup_entry
-   character(len=80), dimension(nmax, 4) :: lookup_entry = undef
+   character(len=CSS), dimension(nmax, 4) :: lookup_entry = undef
 
    !----------------------------------------------------------------------------
    ! for the domain
@@ -271,6 +273,8 @@ module seq_flds_mod
      character(len=CSS) :: units
      character(len=CSS) :: longname
      character(len=CSS) :: stdname
+     integer            :: num
+     character(len=  2) :: cnum
      character(len=CSS) :: name
 
      character(CXX) :: dom_coord  = ''
@@ -330,7 +334,8 @@ module seq_flds_mod
      integer :: glc_nec
 
      namelist /seq_cplflds_inparm/  &
-          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, glc_nec
+          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, glc_nec, &
+          ice_ncat, seq_flds_i2o_per_cat
 
      ! user specified new fields
      integer,  parameter :: nfldmax = 200
@@ -358,6 +363,8 @@ module seq_flds_mod
         flds_co2c = .false.
         flds_co2_dmsa = .false.
         glc_nec   = 0
+        ice_ncat  = 1
+        seq_flds_i2o_per_cat = .false.
 
         unitn = shr_file_getUnit()
         write(logunit,"(A)") subname//': read seq_cplflds_inparm namelist from: '&
@@ -379,6 +386,9 @@ module seq_flds_mod
      call shr_mpi_bcast(flds_co2c    , mpicom)
      call shr_mpi_bcast(flds_co2_dmsa, mpicom)
      call shr_mpi_bcast(glc_nec      , mpicom)
+     call shr_mpi_bcast(ice_ncat     , mpicom)
+     call shr_mpi_bcast(seq_flds_i2o_per_cat, mpicom)
+
      call glc_elevclass_init(glc_nec)
      
      !---------------------------------------------------------------------------
@@ -514,14 +524,14 @@ module seq_flds_mod
      call seq_flds_add(dom_other,'mask')
      longname = ''
      stdname  = 'mask'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'mask'
      call metadata_set(attname, longname, stdname, units)
 
      call seq_flds_add(dom_other,'frac')
      longname = 'area_fraction'
      stdname  = 'area fraction'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'frac' 
      call metadata_set(attname, longname, stdname, units)
 
@@ -910,7 +920,7 @@ module seq_flds_mod
      call seq_flds_add(x2a_states,'Sf_ofrac')
      longname = 'Surface land fraction'
      stdname  = 'land_area_fraction'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Sf_lfrac'
      call metadata_set(attname, longname, stdname, units)
      longname = 'Surface ice fraction'
@@ -929,7 +939,7 @@ module seq_flds_mod
      call seq_flds_add(x2a_states,"Sx_avsdr")
      longname = 'Direct albedo (visible radiation)'
      stdname  = 'surface_direct_albedo_due_to_visible_radiation'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Si_avsdr'
      call metadata_set(attname, longname, stdname, units)
      attname  = 'Sl_avsdr'
@@ -946,7 +956,7 @@ module seq_flds_mod
      call seq_flds_add(x2a_states,"Sx_anidr")
      longname = 'Direct albedo (near-infrared radiation)'
      stdname  = 'surface_direct_albedo_due_to_near_infrared_radiation'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Si_anidr'
      call metadata_set(attname, longname, stdname, units)
      attname  = 'Sl_anidr'
@@ -963,7 +973,7 @@ module seq_flds_mod
      call seq_flds_add(x2a_states,"Sx_avsdf")
      longname = 'Diffuse albedo (visible radiation)'
      stdname  = 'surface_diffuse_albedo_due_to_visible_radiation'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Si_avsdf'
      call metadata_set(attname, longname, stdname, units)
      attname  = 'Sl_avsdf'
@@ -980,7 +990,7 @@ module seq_flds_mod
      call seq_flds_add(x2a_states,"Sx_anidf")
      longname = 'Diffuse albedo (near-infrared radiation)'
      stdname  = 'surface_diffuse_albedo_due_to_near_infrared_radiation'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Si_anidf'
      call metadata_set(attname, longname, stdname, units)
      attname  = 'Sl_anidf'
@@ -1053,6 +1063,12 @@ module seq_flds_mod
      ! Aerodynamical resistance (land/atm only)
      call seq_flds_add(l2x_states,"Sl_ram1")
      call seq_flds_add(x2a_states,"Sl_ram1")
+     longname = 'aerodynamic resistance'
+     stdname = 'aerodynamic_resistance'
+     attname = 'SI_ram1'
+     units = 's/m'
+     call metadata_set(attname, longname, stdname, units)
+
 
      ! Surface snow water equivalent (land/atm only) 
      call seq_flds_add(l2x_states,"Sl_snowh")
@@ -1302,7 +1318,7 @@ module seq_flds_mod
      call seq_flds_add(x2w_states,"Si_ifrac")
      longname = 'Fractional ice coverage wrt ocean'
      stdname  = 'sea_ice_area_fraction'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Si_ifrac'
      call metadata_set(attname, longname, stdname, units)
 
@@ -1406,7 +1422,7 @@ module seq_flds_mod
      call seq_flds_add(o2x_states,"So_fswpen")
      longname = 'Fraction of sw penetrating surface layer for diurnal cycle'
      stdname  = 'Fraction of sw penetrating surface layer for diurnal cycle'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'So_fswpen'
      call metadata_set(attname, longname, stdname, units)
 
@@ -1415,12 +1431,36 @@ module seq_flds_mod
      ! TODO: put in attributes below
      !-----------------------------
 
-     call seq_flds_add(l2x_fluxes,'Flrl_rofl')
-     call seq_flds_add(x2r_fluxes,'Flrl_rofl')
-     longname = 'Water flux from land (liquid)'
-     stdname  = 'water_flux_into_runoff'
+     call seq_flds_add(l2x_fluxes,'Flrl_rofsur')
+     call seq_flds_add(x2r_fluxes,'Flrl_rofsur')
+     longname = 'Water flux from land (liquid surface)'
+     stdname  = 'water_flux_into_runoff_surface'
      units    = 'kg m-2 s-1'
-     attname  = 'Flrl_rofl'
+     attname  = 'Flrl_rofsur'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(l2x_fluxes,'Flrl_rofgwl')
+     call seq_flds_add(x2r_fluxes,'Flrl_rofgwl')
+     longname = 'Water flux from land (liquid glacier, wetland, and lake)'
+     stdname  = 'water_flux_into_runoff_from_gwl'
+     units    = 'kg m-2 s-1'
+     attname  = 'Flrl_rofgwl'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(l2x_fluxes,'Flrl_rofsub')
+     call seq_flds_add(x2r_fluxes,'Flrl_rofsub')
+     longname = 'Water flux from land (liquid subsurface)'
+     stdname  = 'water_flux_into_runoff_subsurface'
+     units    = 'kg m-2 s-1'
+     attname  = 'Flrl_rofsub'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(l2x_fluxes,'Flrl_rofdto')
+     call seq_flds_add(x2r_fluxes,'Flrl_rofdto')
+     longname = 'Water flux from land direct to ocean'
+     stdname  = 'water_flux_direct_to_ocean'
+     units    = 'kg m-2 s-1'
+     attname  = 'Flrl_rofdto'
      call metadata_set(attname, longname, stdname, units)
 
      call seq_flds_add(l2x_fluxes,'Flrl_rofi')
@@ -1475,10 +1515,18 @@ module seq_flds_mod
 
      call seq_flds_add(r2x_fluxes,'Flrr_volr')
      call seq_flds_add(x2l_fluxes,'Flrr_volr')
-     longname = 'River channel water volume'
+     longname = 'River channel total water volume'
      stdname  = 'rtm_volr'
      units    = 'm'
      attname  = 'Flrr_volr'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(r2x_fluxes,'Flrr_volrmch')
+     call seq_flds_add(x2l_fluxes,'Flrr_volrmch')
+     longname = 'River channel main channel water volume'
+     stdname  = 'rtm_volrmch'
+     units    = 'm'
+     attname  = 'Flrr_volrmch'
      call metadata_set(attname, longname, stdname, units)
 
      !-----------------------------
@@ -1704,7 +1752,7 @@ module seq_flds_mod
      call seq_flds_add(x2l_states_from_glc,trim(name))
      longname = 'Ice sheet grid coverage on global grid'
      stdname  = 'ice_sheet_grid_mask'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Sg_icemask'
      call metadata_set(attname, longname, stdname, units)     
 
@@ -1715,7 +1763,7 @@ module seq_flds_mod
      call seq_flds_add(x2l_states_from_glc,trim(name))
      longname = 'Ice sheet mask where we are potentially sending non-zero fluxes'
      stdname  = 'icemask_coupled_fluxes'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Sg_icemask_coupled_fluxes'
      call metadata_set(attname, longname, stdname, units)     
 
@@ -1771,7 +1819,7 @@ module seq_flds_mod
      name = 'Sg_ice_covered'
      longname = 'Fraction of glacier area'
      stdname  = 'glacier_area_fraction'
-     units    = 'unitless'    
+     units    = '1'    
      attname  = 'Sg_ice_covered'
      call seq_flds_add(g2x_states,trim(name))
      call seq_flds_add(g2x_states_to_lnd,trim(name))
@@ -1931,6 +1979,67 @@ module seq_flds_mod
      endif
 
      !-----------------------------------------------------------------------------
+     ! optional per thickness category fields
+     !-----------------------------------------------------------------------------
+
+     if (seq_flds_i2o_per_cat) then
+        do num = 1, ice_ncat
+           write(cnum,'(i2.2)') num
+
+           ! Fractional ice coverage wrt ocean
+
+           name = 'Si_ifrac_' // cnum
+           call seq_flds_add(i2x_states,name)
+           call seq_flds_add(x2o_states,name)
+           longname = 'fractional ice coverage wrt ocean for thickness category ' // cnum
+           stdname  = 'sea_ice_area_fraction'
+           units    = '1'
+           attname  = name
+           call metadata_set(attname, longname, stdname, units)
+
+           ! Net shortwave radiation
+
+           name = 'PFioi_swpen_ifrac_' // cnum
+           call seq_flds_add(i2x_fluxes,name)
+           call seq_flds_add(x2o_fluxes,name)
+           longname = 'net shortwave radiation penetrating into ice and ocean times ice fraction for thickness category ' // cnum
+           stdname  = 'product_of_net_downward_shortwave_flux_at_sea_water_surface_and_sea_ice_area_fraction'
+           units    = 'W m-2'
+           attname  = name
+           call metadata_set(attname, longname, stdname, units)
+
+        end do
+
+        ! Fractional atmosphere coverage wrt ocean
+
+        name = 'Sf_afrac'
+        call seq_flds_add(x2o_states,name)
+        longname = 'fractional atmosphere coverage wrt ocean'
+        stdname  = 'atmosphere_area_fraction'
+        units    = '1'
+        attname  = name
+        call metadata_set(attname, longname, stdname, units)
+
+        name = 'Sf_afracr'
+        call seq_flds_add(x2o_states,name)
+        longname = 'fractional atmosphere coverage used in radiation computations wrt ocean'
+        stdname  = 'atmosphere_area_fraction'
+        units    = '1'
+        attname  = name
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Net shortwave radiation
+
+        name = 'Foxx_swnet_afracr'
+        call seq_flds_add(x2o_fluxes,name)
+        longname = 'net shortwave radiation times atmosphere fraction'
+        stdname = 'product_of_net_downward_shortwave_flux_at_sea_water_surface_and_atmosphere_area_fraction'
+        units = 'W m-2'
+        attname = name
+        call metadata_set(attname, longname, stdname, units)
+     endif
+
+     !-----------------------------------------------------------------------------
      ! Read namelist for CARMA 
      ! if carma_flds are specified then setup fields for CLM to CAM communication
      !-----------------------------------------------------------------------------
@@ -1939,6 +2048,10 @@ module seq_flds_mod
      if (carma_fields /= ' ') then
         call seq_flds_add(l2x_fluxes, trim(carma_fields))
         call seq_flds_add(x2a_fluxes, trim(carma_fields))
+        longname = 'Volumetric soil water'
+        stdname  = 'soil_water'
+        units    = 'm3/m3'
+        call metadata_set(carma_fields, longname, stdname, units)
      endif
 
      !-----------------------------------------------------------------------------
@@ -1951,6 +2064,10 @@ module seq_flds_mod
      if (shr_megan_mechcomps_n>0) then
         call seq_flds_add(l2x_fluxes, trim(megan_voc_fields))
         call seq_flds_add(x2a_fluxes, trim(megan_voc_fields))
+        longname = 'MEGAN emission fluxes'
+        stdname  = 'megan_fluxes'
+        units    = 'molecules/m2/sec'
+        call metadata_set(megan_voc_fields, longname, stdname, units)
      endif
 
      !-----------------------------------------------------------------------------
@@ -1963,8 +2080,19 @@ module seq_flds_mod
      if (shr_fire_emis_mechcomps_n>0) then
         call seq_flds_add(l2x_fluxes, trim(fire_emis_fields))
         call seq_flds_add(x2a_fluxes, trim(fire_emis_fields))
+        longname = 'wild fire emission fluxes'
+        stdname  = 'fire_emis'
+        units    = 'kg/m2/sec'
+        call metadata_set(fire_emis_fields, longname, stdname, units)
+
         call seq_flds_add(l2x_states, trim(shr_fire_emis_ztop_token))
         call seq_flds_add(x2a_states, trim(shr_fire_emis_ztop_token))
+        longname = 'wild fire plume height'
+        stdname  = 'fire_plume_top'
+        units    = 'm'
+        
+        call metadata_set(shr_fire_emis_ztop_token, longname, stdname, units)
+
      endif
 
      !-----------------------------------------------------------------------------
@@ -1978,8 +2106,14 @@ module seq_flds_mod
 
      call seq_drydep_readnl(nlfilename="drv_flds_in", ID=ID, seq_drydep_fields=seq_drydep_fields)
      if ( lnd_drydep ) then
-        call seq_flds_add(l2x_states, trim(seq_drydep_fields))
-        call seq_flds_add(x2a_states, trim(seq_drydep_fields))
+        call seq_flds_add(l2x_states, seq_drydep_fields)
+        call seq_flds_add(x2a_states, seq_drydep_fields)
+        
+        longname = 'dry deposition velocity'
+        stdname  = 'drydep_vel'
+        units    = 'cm/sec'
+        call metadata_set(seq_drydep_fields, longname, stdname, units)
+
      endif
      call seq_drydep_init( )
 
@@ -2231,7 +2365,8 @@ module seq_flds_mod
    end subroutine seq_flds_getField
 
    !===============================================================================
-
+! If the attname passed in contains colons it is assumed to be a list of fields 
+! all of which have the same names and units
    subroutine metadata_set(attname , longname, stdname , units   )
 
      ! !USES:
@@ -2245,18 +2380,34 @@ module seq_flds_mod
 
      !EOP
      character(len=*),parameter :: subname = '(seq_flds_metadata_set) '
+     integer :: i, j
+     
+     i = index(attname,':')
+     j=1
 
+     do while(i>j .and. i<=len_trim(attname))
+        n_entries = n_entries + 1
+        lookup_entry(n_entries,1) = attname(j:i-1) 
+        lookup_entry(n_entries,2) = trim(longname)
+        lookup_entry(n_entries,3) = trim(stdname )
+        lookup_entry(n_entries,4) = trim(units   )
+        j=i+1
+        i =  index(attname(j:),':') + j - 1
+     enddo
      n_entries = n_entries + 1
-     if (n_entries > nmax) then
-        write(logunit,*)'n_entries= ',n_entries,' nmax = ',nmax,' attname= ',trim(attname)
-        call shr_sys_abort(subname//'ERROR: nmax fields in lookup_entry table exceeded') 
-     end if
-
-     lookup_entry(n_entries,1) = trim(attname )
+     i = len_trim(attname)
+     lookup_entry(n_entries,1) = attname(j:i)
      lookup_entry(n_entries,2) = trim(longname)
      lookup_entry(n_entries,3) = trim(stdname )
      lookup_entry(n_entries,4) = trim(units   )
 
+
+
+
+     if (n_entries .ge. nmax) then
+        write(logunit,*)'n_entries= ',n_entries,' nmax = ',nmax,' attname= ',trim(attname)
+        call shr_sys_abort(subname//'ERROR: nmax fields in lookup_entry table exceeded') 
+     end if
 
    end subroutine metadata_set
 
@@ -2340,7 +2491,7 @@ module seq_flds_mod
 
      !--- local ---
      integer :: i,n
-     character(len=80) :: llongname, lstdname, lunits, lshortname  ! local copies
+     character(len=CSS) :: llongname, lstdname, lunits, lshortname  ! local copies
      character(len=*),parameter :: undef = 'undefined'
      character(len=*),parameter :: unknown = 'unknown'
      logical :: found

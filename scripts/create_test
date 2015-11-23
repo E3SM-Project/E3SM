@@ -98,11 +98,13 @@ SYNOPSIS
       [-nobuild           no_test_compilation]
       [-pes_file          specified_pes_file]
       [-project           specified project id]
+      [-queue            specify batch system queue]
       [-reruntests        are_tests_rerunnable ]
       [-sharedlibroot     shared build directory to reuse static library components]
       [-testroot          root_directory_for_testsuite]
       [-testid            unique_identifier_for_tests]
       [-testname          name_of_single_test]
+      [-walltime        specify job walltime]
       [-xml_list          list_of_tests (new xml format), default is 
                           $scriptsroot/Testing/Testlistxml/testlist.xml]
       [-xml_mach          target machine for xml list of tests]
@@ -386,12 +388,14 @@ sub initialize()
 	nobuild              => 'off',
 	pes_file             => undef,
 	project              => undef,
+	queue               => undef,
 	reruntests           => 'off',
 	testid               => "$testlid",
 	testname             => undef,
 	testroot             => "$cwd",
 	scratchroot          => undef,
 	sharedlibroot        => undef,
+	walltime               => undef,
 	);
 
 
@@ -405,6 +409,11 @@ sub initialize()
 	usage();
     }
 
+    # if one and only one argument is provided assume its the testname    
+    if($#ARGV == 0){
+	$opts{testname} = $ARGV[0];
+    }
+
 
 }
 
@@ -413,6 +422,7 @@ sub initialize()
 #-----------------------------------------------------------------------------------------------
 sub options
 {
+
     GetOptions(
 	"autosubmit=s"        => \$opts{'autosubmit'},
 	"baselineroot=s"      => \$opts{'baselineroot'},
@@ -440,11 +450,13 @@ sub options
 	"nobuild=s"           => \$opts{'nobuild'}, 
 	"pes_file=s"          => \$opts{'pes_file'},
 	"project=s"           => \$opts{'project'},  
+	"queue=s"            => \$opts{queue},
 	"reruntests=s"        => \$opts{'reruntests'}, 
 	"sharedlibroot=s"     => \$opts{'sharedlibroot'},
 	"testid=s"            => \$opts{'testid'},
 	"testname=s"          => \$opts{'testname'},
 	"testroot=s"          => \$opts{'testroot'},
+	"walltime=s"         => \$opts{walltime},
 	) or usage();
     usage() if $opts{'help'};
 
@@ -677,11 +689,11 @@ sub checkOptions
 	my @testlist = ExpandTestList($opts{'input_list'});
 	my $firsttest = $testlist[0];
 	my $testhash = ParseTestName($firsttest);
-	Debug("first test: ");
-	Debug( eval { Dumper $testhash });
+	$logger->debug("first test: ");
+	$logger->debug( eval { Dumper $testhash });
 	my $machine = $testhash->{'mach'};
 	$opts{'guessmach'} = $machine;
-	Debug("opts{'guessmach'} = $opts{'guessmach'}");
+	$logger->debug("opts{'guessmach'} = $opts{'guessmach'}");
     }
 
     # Read options from config_machines.xml
@@ -853,11 +865,11 @@ sub ExpandXmlList
     foreach my $compset_elem (@compset_elems) {
 	my $compset_val = $compset_elem->getAttribute('name');
 
-	my @grid_elems = $compset_elem->childNodes();
+	my @grid_elems = $compset_elem->findnodes(".//grid");
 	foreach my $grid_elem (@grid_elems) {
 	    my $grid_val  = $grid_elem->getAttribute('name');
 
-	    my @test_elems = $grid_elem->childNodes();
+	    my @test_elems = $grid_elem->findnodes(".//test");
 	    foreach my $test_elem (@test_elems) {
 		my $test_val  = $test_elem->getAttribute('name');
 		if ($opts{'nlcompareonly'}) {
@@ -869,7 +881,7 @@ sub ExpandXmlList
 		    }
 		}
 
-		my @mach_elems = $test_elem->childNodes();
+		my @mach_elems = $test_elem->findnodes(".//machine");
 		foreach my $mach_elem (@mach_elems) {
 		    my $machine_val  = $mach_elem->textContent();
 		    my $testtype_val = $mach_elem->getAttribute('testtype');
@@ -1156,7 +1168,7 @@ sub documentTestCase
   my $outstr ="
   ----------------------------------------------
   Setting up the following test:
-  ----------------------------------------------";
+  ----------------------------------------------\n";
   foreach (sort keys %test){
       $outstr .= "    $_:  $test{$_}\n";
   }
@@ -1363,7 +1375,7 @@ sub writeEnvTestXML
 }
 
 #-----------------------------------------------------------------------------------------------
-# Post create_newcase testcase setup.  Set up the environment properly for testcase_setup.csh, 
+# Post create_newcase testcase setup.  Set up the environment properly for testcase.setup, 
 # and call it. 
 #-----------------------------------------------------------------------------------------------
 sub testcaseSetup
@@ -1394,33 +1406,38 @@ sub testcaseSetup
     my $case     = $xmlvars{'CASE'};
 
     if (-e "$cimeroot/scripts/Testing/Testcases/${testcase}_build.csh") {
-	$sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/${testcase}_build.csh ${caseroot}/${case}.test_build";
+	$sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/${testcase}_build.csh ${caseroot}/case.test_build";
 	$logger->debug("sysmod is $sysmod");
 	system($sysmod) == 0 or $logger->logdie( "$sysmod failed: $?");
     } else {
-	$sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/tests_build.csh ${caseroot}/${case}.test_build";
+	$sysmod = "cp -f $cimeroot/scripts/Testing/Testcases/tests_build.csh ${caseroot}/case.test_build";
 	$logger->debug("sysmod is $sysmod");
 	system($sysmod) == 0 or $logger->logdie( "$sysmod failed: $?");
     }
 
     $logger->info( "Setting up test case ");
     chdir ($caseroot);
-    $sysmod = "./case_setup -loglevel $opts{loglevel}";
+    $sysmod = "./case.setup -loglevel $opts{loglevel}";
     $logger->debug("sysmod is $sysmod");
     system($sysmod) == 0 or $logger->warn ("$sysmod failed: $?");
 
-    
-    
     if($? != 0)
     {
 	$test->{'status'}="SFAIL";
-	$logger->warn("create_test invocation of testcase_setup.csh failed; $!");
+	$logger->warn("create_test invocation of testcase.setup failed; $!");
 	open my $TESTSTATUS, ">", "$caseroot/TestStatus" or print $!;
 	print $TESTSTATUS "SFAIL ".$test->{'case'}."\n";
 	close $TESTSTATUS;
     }
     else
     {
+	if(defined $opts{walltime}){
+	    qx(./xmlchange -file env_batch.xml -id JOB_WALLCLOCK_TIME -val $opts{walltime});
+	}
+	if(defined $opts{queue}){
+	    qx(./xmlchange -file env_batch.xml -id JOB_QUEUE -val $opts{queue});
+	}
+    
 	$test->{'status'}="GEN";
 	open my $TESTSTATUS, ">", "$caseroot/TestStatus" or print $!;
 	print $TESTSTATUS "GEN ".$test->{'case'}."\n";

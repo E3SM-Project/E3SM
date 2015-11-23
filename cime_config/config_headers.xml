@@ -3,6 +3,12 @@
 <?xml-stylesheet type="text/xsl" href="config_definition.xsl" ?>
 
 <files>
+  <file name="env_batch.xml">
+    <header>
+      These variables may be changed anytime during a run, they
+      control arguments to the batch submit command.
+    </header>
+  </file>
 
   <file name="env_case.xml">
     <header>
@@ -87,9 +93,8 @@
 
   <file name="env_archive.xml">
     <header>
-    These are the variables specific to the short and long term          
-    archivers, and the variable time series file generation.             
-    We recommend that users *NEVER* run diagnostics                      
+    These are the variables specific to the short term          
+    archiver.  We recommend that users *NEVER* run diagnostics                      
     or post-processing packages in the same location as the short-term   
     (DOUT_S_ROOT.locked) archiver when the model job is running.         
     Instead, You may run these packages in the (DOUT_S_ROOT)             
@@ -98,7 +103,7 @@
     For a detailed listing of the env_archive.xml file, run
     ./st_archive -help                                                   
     To validate the env_archive.xml file using xmllint, run
-    xmllint -schema ./Tools/config_archive.xsd env_archive.xml
+    xmllint -schema archive.xsd env_archive.xml
     </header>
   </file>
 
