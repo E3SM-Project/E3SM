@@ -536,6 +536,9 @@ contains
     integer, save :: index_x2o_Faxa_prec  
     integer, save :: index_x2o_Foxx_rofl
     integer, save :: index_x2o_Foxx_rofi
+    integer, save :: index_x2o_Sf_afrac
+    integer, save :: index_x2o_Sf_afracr
+    integer, save :: index_x2o_Foxx_swnet_afracr
     logical :: iamroot  
     logical, save, pointer :: amerge(:),imerge(:),xmerge(:)
     integer, save, pointer :: aindx(:), iindx(:), oindx(:), xindx(:)
@@ -584,6 +587,12 @@ contains
        index_x2o_Faxa_prec      = mct_aVect_indexRA(x2o_o,'Faxa_prec') 
        index_x2o_Foxx_rofl      = mct_aVect_indexRA(x2o_o,'Foxx_rofl') 
        index_x2o_Foxx_rofi      = mct_aVect_indexRA(x2o_o,'Foxx_rofi') 
+
+       if (seq_flds_i2o_per_cat) then
+          index_x2o_Sf_afrac          = mct_aVect_indexRA(x2o_o,'Sf_afrac')
+          index_x2o_Sf_afracr         = mct_aVect_indexRA(x2o_o,'Sf_afracr')
+          index_x2o_Foxx_swnet_afracr = mct_aVect_indexRA(x2o_o,'Foxx_swnet_afracr')
+       endif
 
        ! Compute all other quantities based on standardized naming convention (see below)
        ! Only ocn field states that have the name-prefix Sx_ will be merged
@@ -782,6 +791,13 @@ contains
           'a2x%Faxa_swndr*(1.0-xao%So_anidr) + '// &
           'a2x%Faxa_swndf*(1.0-xao%So_anidf)) + '// &
           'ifrac*i2x%Fioi_swpen'
+       if (seq_flds_i2o_per_cat) then
+          mrgstr(index_x2o_Foxx_swnet_afracr) = trim(mrgstr(index_x2o_Foxx_swnet_afracr))//' = '// &
+               'afracr*(a2x%Faxa_swvdr*(1.0-xao%So_avsdr) + '// &
+               'a2x%Faxa_swvdf*(1.0-xao%So_avsdf) + '// &
+               'a2x%Faxa_swndr*(1.0-xao%So_anidr) + '// &
+               'a2x%Faxa_swndf*(1.0-xao%So_anidf))'
+       end if
        mrgstr(index_x2o_Faxa_snow) = trim(mrgstr(index_x2o_Faxa_snow))//' = '// &
           'afrac*(a2x%Faxa_snowc + a2x%Faxa_snowl)*flux_epbalfact'
        mrgstr(index_x2o_Faxa_rain) = trim(mrgstr(index_x2o_Faxa_rain))//' = '// &
@@ -830,6 +846,12 @@ contains
                  + a2x_o%rAttr(index_a2x_Faxa_swndf,n) * (1.0_R8 - anidf)
        x2o_o%rAttr(index_x2o_Foxx_swnet,n) = (fswabsv + fswabsi)                 * afracr + &
                                              i2x_o%rAttr(index_i2x_Fioi_swpen,n) * ifrac
+
+       if (seq_flds_i2o_per_cat) then
+          x2o_o%rAttr(index_x2o_Sf_afrac,n)          = afrac
+          x2o_o%rAttr(index_x2o_Sf_afracr,n)         = afracr
+          x2o_o%rAttr(index_x2o_Foxx_swnet_afracr,n) = (fswabsv + fswabsi)       * afracr
+       end if
 
        ! Derived: compute total precipitation - scale total precip and runoff
 

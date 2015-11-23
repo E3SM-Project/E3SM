@@ -115,6 +115,23 @@ Number of cism elevation classes.
 Set by the xml variable GLC_NEC in env_run.xml
 </entry>
 
+<entry
+id="ice_ncat"
+type="integer"
+category="seq_flds"
+group="seq_cplflds_inparm" >
+Number of sea ice thickness categories. 
+Set by the xml variable ICE_NCAT in env_build.xml
+</entry>
+
+<entry
+id="seq_flds_i2o_per_cat"
+type="logical"
+category="seq_flds"
+group="seq_cplflds_inparm" >
+.true. if select per ice thickness category fields are passed to the ocean.
+Set by the xml variable CPL_I2O_PER_CAT in env_run.xml
+</entry>
 
 <!-- =========================== -->
 <!-- -group seq_cplflds_custom   -->
