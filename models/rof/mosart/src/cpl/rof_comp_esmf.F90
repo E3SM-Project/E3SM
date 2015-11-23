@@ -36,6 +36,7 @@ module rof_comp_esmf
                                 index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
                                 index_x2r_Flrl_rofi, index_x2r_Flrl_rofsur, &
                                 index_x2r_Flrl_rofgwl, index_x2r_Flrl_rofsub, &
+                                index_x2r_Flrl_rofdto, &
                                 index_r2x_Flrr_flood, &
                                 index_r2x_Flrr_volr, index_r2x_Flrr_volrmch
   use perf_mod         , only : t_startf, t_stopf, t_barrierf
@@ -68,6 +69,7 @@ module rof_comp_esmf
   real(r8), pointer :: surrunin(:,:)   ! surface runoff on rtm grid (mm/s)
   real(r8), pointer :: subrunin(:,:)   ! subsurface runoff on rtm grid (mm/s)
   real(r8), pointer :: gwlrunin(:,:)   ! glacier, wetlands and lakes water balance residual on rtm grid (mm/s)
+  real(r8), pointer :: dtorunin(:,:)   ! direct to ocean runoff on rtm grid (mm/s)
 !
 
 !===============================================================================
@@ -275,6 +277,7 @@ contains
        allocate(surrunin(begr:endr,nt_rtm))
        allocate(subrunin(begr:endr,nt_rtm))
        allocate(gwlrunin(begr:endr,nt_rtm))
+       allocate(dtorunin(begr:endr,nt_rtm))
 
        ! Initialize rof distgrid and domain
 
@@ -453,7 +456,7 @@ contains
     nlend = seq_timemgr_StopAlarmIsOn( EClock )
     rstwr = seq_timemgr_RestartAlarmIsOn( EClock )
     call advance_timestep()
-    call Rtmrun(totrunin,surrunin, subrunin, gwlrunin,rstwr, nlend, rdate)
+    call Rtmrun(totrunin,surrunin,subrunin,gwlrunin,dtorunin,rstwr,nlend,rdate)
 
     ! Map roff data to MCT datatype (input is rtmCTL%runoff, output is r2x_r)
       
@@ -660,7 +663,7 @@ contains
     !
     ! LOCAL VARIABLES
     real(R8), pointer :: fptr(:, :)
-    integer :: ni, n, nt, nliq, nfrz
+    integer :: n2, n, nt, begr, endr, nliq, nfrz
     character(len=32), parameter :: sub = 'rof_import_mct'
     !---------------------------------------------------------------------------
     
@@ -684,18 +687,38 @@ contains
     call ESMF_ArrayGet(x2r_array, localDe=0, farrayPtr=fptr, rc=rc)
     if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
     
-    do n = rtmCTL%begr,rtmCTL%endr
-       ni = n - rtmCTL%begr + 1
-       totrunin(n,nliq) = fptr(index_x2r_Flrl_rofsur,ni) + &
-                          fptr(index_x2r_Flrl_rofgwl,ni) + &
-                          fptr(index_x2r_Flrl_rofsub,ni)
-       totrunin(n,nfrz) = fptr(index_x2r_Flrl_rofi,ni)
-       subrunin(n,nliq) = fptr(index_x2r_Flrl_rofsub,ni)
+    begr = rtmCTL%begr
+    endr = rtmCTL%endr
+    do n = begr,endr
+       n2 = n - begr + 1
+       totrunin(n,nliq) = fptr(index_x2r_Flrl_rofsur,n2) + &
+                          fptr(index_x2r_Flrl_rofgwl,n2) + &
+                          fptr(index_x2r_Flrl_rofsub,n2)
+       totrunin(n,nfrz) = fptr(index_x2r_Flrl_rofi,n2)
+
+       surrunin(n,nliq) = fptr(index_x2r_Flrl_rofsur,n2)
+       surrunin(n,nfrz) = fptr(index_x2r_Flrl_rofi,n2)
+
+       subrunin(n,nliq) = fptr(index_x2r_Flrl_rofsub,n2)
        subrunin(n,nfrz) = 0.0_r8
-       surrunin(n,nliq) = fptr(index_x2r_Flrl_rofsur,ni)
-       surrunin(n,nfrz) = fptr(index_x2r_Flrl_rofi,ni)
-       gwlrunin(n,nliq) = fptr(index_x2r_Flrl_rofgwl,ni)
+
+       gwlrunin(n,nliq) = fptr(index_x2r_Flrl_rofgwl,n2)
        gwlrunin(n,nfrz) = 0.0_r8
+
+       dtorunin(n,nliq) = 0.0_r8
+       dtorunin(n,nfrz) = 0.0_r8
+
+       rtmCTL%qsur(n) = fptr(index_x2r_Flrl_rofsur,n2)
+       rtmCTL%qsub(n) = fptr(index_x2r_Flrl_rofsub,n2)
+       rtmCTL%qgwl(n) = fptr(index_x2r_Flrl_rofgwl,n2)
+       rtmCTL%qdto(n) = 0.0_r8
+       if (index_x2r_Flrl_rofdto > 0) then
+          totrunin(n,nliq) = totrunin(n,nliq) + &
+                             fptr(index_x2r_Flrl_rofdto,n2)
+          dtorunin(n,nliq) = fptr(index_x2r_Flrl_rofdto,n2)
+          rtmCTL%qdto(n) = ftpr(index_x2r_Flrl_rofdto,n2)
+       endif
+
     enddo
 
   end subroutine rof_import_esmf
@@ -721,9 +744,6 @@ contains
     
     rc = ESMF_SUCCESS
 
-    call ESMF_ArrayGet(r2x_array, localDe=0, farrayPtr=fptr, rc=rc)
-    if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-    
     nliq = 0
     nfrz = 0
     do nt = 1,nt_rtm
@@ -739,18 +759,20 @@ contains
        call shr_sys_abort()
     endif
 
+    call ESMF_ArrayGet(r2x_array, localDe=0, farrayPtr=fptr, rc=rc)
+    if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
     fptr(:,:) = 0._r8
 
     ni = 0
     if ( ice_runoff )then
        do n = rtmCTL%begr,rtmCTL%endr
           ni = ni + 1
-          if (rtmCTL%mask(n) == 2) then
+          if (rtmCTL%mask(n) >= 2) then
              ! liquid and ice runoff are treated separately
              fptr(index_r2x_Forr_rofl,ni) = &
-                 rtmCTL%runoff(n,nliq)/(rtmCTL%area(n)*1.0e-6_r8*1000._r8)
+                 rtmCTL%runoffall(n,nliq)/(rtmCTL%area(n)*0.001_r8)
              fptr(index_r2x_Forr_rofi,ni) = &
-                 rtmCTL%runoff(n,nfrz)/(rtmCTL%area(n)*1.0e-6_r8*1000._r8)
+                 rtmCTL%runoffall(n,nfrz)/(rtmCTL%area(n)*0.001_r8)
              if (ni > rtmCTL%lnumr) then
                 write(iulog,*) sub, ' : ERROR runoff count',n,ni
                 call shr_sys_abort( sub//' : ERROR runoff > expected' )
@@ -760,10 +782,10 @@ contains
     else
        do n = rtmCTL%begr,rtmCTL%endr
           ni = ni + 1
-          if (rtmCTL%mask(n) == 2) then
+          if (rtmCTL%mask(n) >= 2) then
              ! liquid and ice runoff are bundled together to liquid runoff, and then ice runoff set to zero
              fptr(index_r2x_Forr_rofl,ni) =   &
-               (rtmCTL%runoff(n,nfrz)+rtmCTL%runoff(n,nliq))/(rtmCTL%area(n)*1.0e-6_r8*1000._r8)
+               (rtmCTL%runoffall(n,nfrz)+rtmCTL%runoffall(n,nliq))/(rtmCTL%area(n)*0.001_r8)
              fptr(index_r2x_Forr_rofi,ni) = 0.0_r8
              if (ni > rtmCTL%lnumr) then
                 write(iulog,*) sub, ' : ERROR runoff count',n,ni
@@ -773,14 +795,23 @@ contains
        end do
     end if
 
+!  Add direct to ocean runoff prior to passing runoff to coupler
+!  tcraig, This	is now done in rtmrun to include in the budget
+!    ni = 0
+!    do n = rtmCTL%begr,rtmCTL%endr
+!       ni = ni + 1
+!       fptr(index_r2x_Forr_rofl,ni) &
+!            = fptr(index_r2x_Forr_rofl,ni) + rtmCTL%qdto(n)
+!    end do
+
     ! Flooding back to land, sign convention is positive in land->rof direction
     ! so if water is sent from rof to land, the flux must be negative.
     ni = 0
     do n = rtmCTL%begr, rtmCTL%endr
        ni = ni + 1
-       fptr(index_r2x_Flrr_flood,ni) = -rtmCTL%flood(n)
-       fptr(index_r2x_Flrr_volr,ni)    = Trunoff%wr(n,nliq) + Trunoff%wt(n,nliq)
-       fptr(index_r2x_Flrr_volrmch,ni) = Trunoff%wr(n,nliq)
+       fptr(index_r2x_Flrr_flood,ni) = -rtmCTL%flood(n)/(rtmCTL%area(n)*0.001_r8)
+       fptr(index_r2x_Flrr_volr,ni)    = (Trunoff%wr(n,nliq) + Trunoff%wt(n,nliq)) / rtmCTL%area(n)
+       fptr(index_r2x_Flrr_volrmch,ni) = Trunoff%wr(n,nliq) / rtmCTL%area(n)
     end do
 
   end subroutine rof_export_esmf

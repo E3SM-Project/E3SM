@@ -78,6 +78,22 @@ contains
          avgflag='A', long_name='RTM ocean change of storage: '//trim(rtm_tracers(2)), &
          ptr_rof=rtmCTL%dvolrdtocn_nt2, default='inactive')
 
+    call RtmHistAddfld (fname='QSUR'//'_'//trim(rtm_tracers(1)), units='mm/s',  &
+         avgflag='A', long_name='RTM input surface runoff: '//trim(rtm_tracers(1)), &
+         ptr_rof=rtmCTL%qsur, default='inactive')
+
+    call RtmHistAddfld (fname='QSUB'//'_'//trim(rtm_tracers(1)), units='mm/s',  &
+         avgflag='A', long_name='RTM input subsurface runoff: '//trim(rtm_tracers(1)), &
+         ptr_rof=rtmCTL%qsub, default='inactive')
+
+    call RtmHistAddfld (fname='QGWL'//'_'//trim(rtm_tracers(1)), units='mm/s',  &
+         avgflag='A', long_name='RTM input GWL runoff: '//trim(rtm_tracers(1)), &
+         ptr_rof=rtmCTL%qgwl, default='inactive')
+
+    call RtmHistAddfld (fname='QDTO'//'_'//trim(rtm_tracers(1)), units='mm/s',  &
+         avgflag='A', long_name='RTM input direct to ocean runoff: '//trim(rtm_tracers(1)), &
+         ptr_rof=rtmCTL%qdto, default='inactive')
+
     ! Print masterlist of history fields
 
     call RtmHistPrintflds()

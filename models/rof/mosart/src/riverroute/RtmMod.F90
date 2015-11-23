@@ -34,6 +34,7 @@ module RtmMod
   use RunoffMod       , only : RunoffInit, rtmCTL, Tctl, Tunit, TRunoff, Tpara, &
                                gsmap_r, &
                                SMatP_dnstrm, avsrc_dnstrm, avdst_dnstrm, &
+                               SMatP_direct, avsrc_direct, avdst_direct, &
                                SMatP_eroutUp, avsrc_eroutUp, avdst_eroutUp
   use MOSART_physics_mod, only : Euler
   use MOSART_physics_mod, only : updatestate_hillslope, updatestate_subnetwork, &
@@ -52,7 +53,7 @@ module RtmMod
   private
 !
 ! !PUBLIC MEMBER FUNCTIONS:
-  public Rtmini          ! Initialize RTM grid
+  public Rtmini          ! Initialize MOSART grid
   public Rtmrun          ! River routing model
 !
 ! !REVISION HISTORY:
@@ -63,26 +64,30 @@ module RtmMod
 
 ! !PRIVATE TYPES:
 
-! RTM tracers
+! MOSART tracers
   character(len=256) :: rtm_trstr   ! tracer string
 
-! RTM naemlists
+! MOSART namelists
   integer, save :: coupling_period   ! mosart coupling period
   integer, save :: delt_mosart       ! mosart internal timestep (->nsub)
 
-! RTM constants
+! MOSART constants
   real(r8) :: cfl_scale = 1.0_r8    ! cfl scale factor, must be <= 1.0
 
 !global (glo)
-  integer , pointer :: dwnstrm_index(:)! downstream index
+  integer , pointer :: ID0_global(:)  ! local ID index
+  integer , pointer :: dnID_global(:) ! downstream ID based on ID0
+  real(r8), pointer :: area_global(:) ! area
+  integer , pointer :: IDkey(:)       ! translation key from ID to gindex
 
 !local (gdc)
-  real(r8), save, pointer :: ddist(:)        ! downstream dist (m)
   real(r8), save, pointer :: evel(:,:)       ! effective tracer velocity (m/s)
   real(r8), save, pointer :: sfluxin(:,:)    ! cell tracer influx (m3/s)
   real(r8), save, pointer :: fluxout(:,:)    ! cell tracer outlflux (m3/s)
+  real(r8), save, pointer :: direct(:,:)     ! direct to outlet flow (m3/s)
+  real(r8), save, pointer :: flow(:,:)       ! mosart flow (m3/s)
 
-! global rtm grid
+! global MOSART grid
   real(r8),pointer :: rlatc(:)    ! latitude of 1d grid cell (deg)
   real(r8),pointer :: rlonc(:)    ! longitude of 1d grid cell (deg)
   real(r8),pointer :: rlats(:)    ! latitude of 1d south grid cell edge (deg)
@@ -109,7 +114,7 @@ contains
   subroutine Rtmini(rtm_active,flood_active)
 !
 ! !DESCRIPTION:
-! Initialize RTM grid, mask, decomp
+! Initialize MOSART grid, mask, decomp
 !
 ! !USES:
 !
@@ -130,6 +135,10 @@ contains
 !EOP
     real(r8) :: effvel0 = 10.0_r8             ! default velocity (m/s)
     real(r8) :: effvel(nt_rtm)                ! downstream velocity (m/s)
+    real(r8) :: edgen                         ! North edge of the direction file
+    real(r8) :: edgee                         ! East edge of the direction file
+    real(r8) :: edges                         ! South edge of the direction file
+    real(r8) :: edgew                         ! West edge of the direction file
     integer  :: i,j,k,n,ng,g,n2,nt,nn         ! loop indices
     integer  :: i1,j1,i2,j2
     integer  :: im1,ip1,jm1,jp1,ir,jr,nr      ! neighbor indices
@@ -139,17 +148,18 @@ contains
     real(r8) :: lrtmarea                      ! tmp local sum of area
     real(r8),allocatable :: tempr(:,:)        ! temporary buffer
     integer ,allocatable :: itempr(:,:)       ! temporary buffer
-    integer ,allocatable :: rdirc(:)          ! temporary buffer
-    integer ,allocatable :: idxocn(:)         ! downstream ocean cell
-    integer ,allocatable :: nupstrm(:)        ! number of rtm cells in basin
+    integer ,allocatable :: idxocn(:)         ! downstream ocean outlet cell
+    integer ,allocatable :: nupstrm(:)        ! number of upstream cells including own cell
     integer ,allocatable :: pocn(:)           ! pe number assigned to basin
-    integer ,allocatable :: nop(:)            ! number of rtm cells on a pe
+    integer ,allocatable :: nop(:)            ! number of gridcells on a pe
     integer ,allocatable :: nba(:)            ! number of basins on each pe
     integer ,allocatable :: nrs(:)            ! begr on each pe
-    integer ,allocatable :: basin(:)          ! basin to rtm mapping
-    integer  :: nbas,nbas_chk                 ! number of basins
-    integer  :: nrof,nrof_chk                 ! num of active rtm points
-    integer  :: baspe                         ! pe with min number of rtm cells
+    integer ,allocatable :: basin(:)          ! basin to mosart mapping
+    integer  :: nmos,nmos_chk                 ! number of mosart points
+    integer  :: nout,nout_chk                 ! number of basin with outlets
+    integer  :: nbas,nbas_chk                 ! number of basin/ocean points
+    integer  :: nrof,nrof_chk                 ! num of active mosart points
+    integer  :: baspe                         ! pe with min number of mosart cells
     integer  :: maxrtm                        ! max num of rtms per pe for decomp
     integer  :: minbas,maxbas                 ! used for decomp search
     integer  :: nl,nloops                     ! used for decomp search
@@ -168,7 +178,7 @@ contains
     integer ,pointer  :: rgdc2glo(:)          ! temporary for initialization
     integer ,pointer  :: rglo2gdc(:)          ! temporary for initialization
     integer ,pointer  :: gmask(:)             ! global mask
-    logical           :: found                ! if variable found on rdirc file
+    logical           :: found                ! flag
     character(len=256):: fnamer               ! name of netcdf restart file 
     character(len=256):: pnamer               ! full pathname of netcdf restart file
     character(len=256):: locfn                ! local file name
@@ -182,11 +192,11 @@ contains
     integer           :: igrow,igcol,iwgt     ! mct field indices
     type(mct_avect)   :: avtmp, avtmpG        ! temporary avects
     type(mct_sMat)    :: sMat                 ! temporary sparse matrix, needed for sMatP
-    character(*),parameter :: subname = '(Rtmini) '
+    character(len=*),parameter :: subname = '(Rtmini) '
 !-----------------------------------------------------------------------
 
     !-------------------------------------------------------
-    ! Read in rtm namelist
+    ! Read in mosart namelist
     !-------------------------------------------------------
 
     namelist /mosart_inparm / ice_runoff, do_rtm, do_rtmflood, &
@@ -206,7 +216,7 @@ contains
     coupling_period   = -1
     delt_mosart = 3600
     decomp_option = 'basin'
-    wrmflag     = .false.
+    wrmflag = .false.
     smat_option = 'opt'
 
     nlfilename_rof = "mosart_in" // trim(inst_suffix)
@@ -297,12 +307,12 @@ contains
     end if
 
     if (coupling_period <= 0) then
-       write(iulog,*) subname,': ERROR MOSART coupling_period invalid',coupling_period
+       write(iulog,*) subname,' ERROR MOSART coupling_period invalid',coupling_period
        call shr_sys_abort( subname//' ERROR: coupling_period invalid' )
     endif
 
     if (delt_mosart <= 0) then
-       write(iulog,*) subname,': ERROR MOSART delt_mosart invalid',delt_mosart
+       write(iulog,*) subname,' ERROR MOSART delt_mosart invalid',delt_mosart
        call shr_sys_abort( subname//' ERROR: delt_mosart invalid' )
     endif
        
@@ -315,10 +325,10 @@ contains
     end do
 
     !-------------------------------------------------------
-    ! Initialize rtm time manager 
+    ! Initialize MOSART time manager 
     !-------------------------------------------------------
 
-    ! Intiialize RTM pio
+    ! Intiialize MOSART pio
     call ncd_pio_init()
 
     ! Obtain restart file if appropriate
@@ -358,7 +368,7 @@ contains
 
     call getfil(frivinp_rtm, locfn, 0 )
     if (masterproc) then
-       write(iulog,*)'Read in MOSART file name: ',trim(frivinp_rtm)
+       write(iulog,*) 'Read in MOSART file name: ',trim(frivinp_rtm)
        call shr_sys_flush(iulog)
     endif
 
@@ -380,34 +390,27 @@ contains
              rlats(rtmlat), rlatn(rtmlat), &
              rtmCTL%rlon(rtmlon),          &
              rtmCTL%rlat(rtmlat),          &
-             rdirc(rtmlon*rtmlat),         &
              stat=ier)
     if (ier /= 0) then
-       write(iulog,*)'Rtmgridini: Allocation ERROR for rdirc'
-       call shr_sys_abort('Rtmgridinit ERROR alloc for rdirc')
-    end if
-
-    allocate (dwnstrm_index(rtmlon*rtmlat), stat=ier)
-    if (ier /= 0) then
-       write(iulog,*)'Rtmgridini: Allocation ERROR for dwnstrm_index'
-       call shr_sys_abort('Rtmgridinit ERROR alloc for dwnstrm_index')
+       write(iulog,*) subname,' : Allocation ERROR for rlon'
+       call shr_sys_abort(subname//' ERROR alloc for rlon')
     end if
 
     ! reading the routing parameters
-    allocate (TUnit%fdir(rtmlon*rtmlat), &
-              TUnit%ID0(rtmlon*rtmlat), TUnit%area(rtmlon*rtmlat), &
-              TUnit%dnID(rtmlon*rtmlat),TUnit%rlen(rtmlon*rtmlat), &
+    allocate ( &
+              ID0_global(rtmlon*rtmlat), area_global(rtmlon*rtmlat), &
+              dnID_global(rtmlon*rtmlat), &
               stat=ier)
     if (ier /= 0) then
-       write(iulog,*)'Rtmgridini: Allocation error for TUnit%fdir'
-       call shr_sys_abort('Rtmgridinit ERROR alloc for fdir')
+       write(iulog,*) subname, ' : Allocation error for ID0_global'
+       call shr_sys_abort(subname//' ERROR alloc for ID0')
     end if
 
     allocate(tempr(rtmlon,rtmlat))  
     allocate(itempr(rtmlon,rtmlat))  
 
     call ncd_io(ncid=ncid, varname='longxy', flag='read', data=tempr, readvar=found)
-    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read RTM longitudes')
+    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART longitudes')
     if (masterproc) write(iulog,*) 'Read longxy ',minval(tempr),maxval(tempr)
     do i=1,rtmlon
        rtmCTL%rlon(i) = tempr(i,1)
@@ -416,7 +419,7 @@ contains
     if (masterproc) write(iulog,*) 'rlonc ',minval(rlonc),maxval(rlonc)
 
     call ncd_io(ncid=ncid, varname='latixy', flag='read', data=tempr, readvar=found)
-    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read RTM latitudes')
+    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART latitudes')
     if (masterproc) write(iulog,*) 'Read latixy ',minval(tempr),maxval(tempr)
     do j=1,rtmlat
        rtmCTL%rlat(j) = tempr(1,j)
@@ -424,67 +427,35 @@ contains
     end do
     if (masterproc) write(iulog,*) 'rlatc ',minval(rlatc),maxval(rlatc)
 
-    call ncd_io(ncid=ncid, varname='fdir', flag='read', data=itempr, readvar=found)
-    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read RTM fdir')
-    if (masterproc) write(iulog,*) 'Read fdir ',minval(itempr),maxval(itempr)
-    do j=1,rtmlat
-    do i=1,rtmlon
-       n = (j-1)*rtmlon + i
-       TUnit%fdir(n) = itempr(i,j)
-       rdirc(n) = Tunit%fdir(n)
-    end do
-    end do
-    if (masterproc) write(iulog,*) 'rdirc ',minval(rdirc),maxval(rdirc)
-
-    call ncd_io(ncid=ncid, varname='ID', flag='read', data=itempr, readvar=found)
-    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read RTM ID')
-    if (masterproc) write(iulog,*) 'Read ID ',minval(itempr),maxval(itempr)
-    do j=1,rtmlat
-    do i=1,rtmlon
-       n = (j-1)*rtmlon + i
-       TUnit%ID0(n) = itempr(i,j)
-       ! tcraig, there is an assumption that ID0 and all other global indices
-       ! are consistent with the i/j global indexing order assumed here.
-       ! lets just check to make sure.  if this fails, then need to add more
-       ! code to convert input file global indexing to model global indexing
-       if (TUnit%ID0(n) /= n) then
-          write(iulog,*) subname,' ERROR inconsistency in ID0 global index order',i,j,n,TUnit%ID0(n)
-          call shr_sys_abort(subname//' ERROR inconsistent ID0 indexing')
-       endif
-    end do
-    end do
-    if (masterproc) write(iulog,*) 'ID ',minval(itempr),maxval(itempr)
-
     call ncd_io(ncid=ncid, varname='area', flag='read', data=tempr, readvar=found)
-    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read RTM area')
+    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART area')
     if (masterproc) write(iulog,*) 'Read area ',minval(tempr),maxval(tempr)
     do j=1,rtmlat
     do i=1,rtmlon
        n = (j-1)*rtmlon + i
-       TUnit%area(n) = tempr(i,j)
+       area_global(n) = tempr(i,j)
     end do
     end do
     if (masterproc) write(iulog,*) 'area ',minval(tempr),maxval(tempr)
 
-    call ncd_io(ncid=ncid, varname='rlen', flag='read', data=tempr, readvar=found)
-    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read RTM rlen')
-    if (masterproc) write(iulog,*) 'Read rlen ',minval(tempr),maxval(tempr)
+    call ncd_io(ncid=ncid, varname='ID', flag='read', data=itempr, readvar=found)
+    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART ID')
+    if (masterproc) write(iulog,*) 'Read ID ',minval(itempr),maxval(itempr)
     do j=1,rtmlat
     do i=1,rtmlon
        n = (j-1)*rtmlon + i
-       TUnit%rlen(n) = tempr(i,j)
+       ID0_global(n) = itempr(i,j)
     end do
     end do
-    if (masterproc) write(iulog,*) 'rlen ',minval(tempr),maxval(tempr)
+    if (masterproc) write(iulog,*) 'ID ',minval(itempr),maxval(itempr)
 
     call ncd_io(ncid=ncid, varname='dnID', flag='read', data=itempr, readvar=found)
-    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read RTM dnID')
+    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART dnID')
     if (masterproc) write(iulog,*) 'Read dnID ',minval(itempr),maxval(itempr)
     do j=1,rtmlat
     do i=1,rtmlon
        n = (j-1)*rtmlon + i
-       TUnit%dnID(n) = itempr(i,j)
-       dwnstrm_index(n) = TUnit%dnID(n)
+       dnID_global(n) = itempr(i,j)
     end do
     end do
     if (masterproc) write(iulog,*) 'dnID ',minval(itempr),maxval(itempr)
@@ -495,12 +466,72 @@ contains
     call ncd_pio_closefile(ncid)
 
     !-------------------------------------------------------
+    ! RESET dnID indices based on ID0
+    ! rename the dnID values to be consistent with global grid indexing.
+    ! where 1 = lower left of grid and rtmlon*rtmlat is upper right.
+    ! ID0 is the "key", modify dnID based on that.  keep the IDkey around
+    ! for as long as needed.  This is a key that translates the ID0 value
+    ! to the gindex value.  compute the key, then apply the key to dnID_global.
+    ! As part of this, check that each value of ID0 is unique and within
+    ! the range of 1 to rtmlon*rtmlat.
+    !-------------------------------------------------------
+
+    allocate(IDkey(rtmlon*rtmlat))
+    IDkey = 0
+    do n=1,rtmlon*rtmlat
+       if (ID0_global(n) < 0 .or. ID0_global(n) > rtmlon*rtmlat) then
+          write(iulog,*) subname,' ERROR ID0 out of range',n,ID0_global(n)
+          call shr_sys_abort(subname//' ERROR error ID0 out of range')
+       endif
+       if (IDkey(ID0_global(n)) /= 0) then
+          write(iulog,*) subname,' ERROR ID0 value occurs twice',n,ID0_global(n)
+          call shr_sys_abort(subname//' ERROR ID0 value occurs twice')
+       endif
+       IDkey(ID0_global(n)) = n
+    enddo
+    if (minval(IDkey) < 1) then
+       write(iulog,*) subname,' ERROR IDkey incomplete'
+       call shr_sys_abort(subname//' ERROR IDkey incomplete')
+    endif
+    do n=1,rtmlon*rtmlat
+       if (dnID_global(n) > 0 .and. dnID_global(n) <= rtmlon*rtmlat) then
+          if (IDkey(dnID_global(n)) > 0 .and. IDkey(dnID_global(n)) <= rtmlon*rtmlat) then
+             dnID_global(n) = IDkey(dnID_global(n))
+          else
+             write(iulog,*) subname,' ERROR bad IDkey',n,dnID_global(n),IDkey(dnID_global(n))
+             call shr_sys_abort(subname//' ERROR bad IDkey')
+          endif
+       endif
+    enddo
+    deallocate(ID0_global)
+
+    !-------------------------------------------------------
     ! Derive gridbox edges
     !-------------------------------------------------------
 
+    ! assuming equispaced grid, calculate edges from rtmlat/rtmlon
+    ! w/o assuming a global grid
+    edgen = maxval(rlatc) + 0.5*abs(rlatc(1) - rlatc(2))
+    edges = minval(rlatc) - 0.5*abs(rlatc(1) - rlatc(2))
+    edgee = maxval(rlonc) + 0.5*abs(rlonc(1) - rlonc(2))
+    edgew = minval(rlonc) - 0.5*abs(rlonc(1) - rlonc(2))
+
+    if ( edgen .ne.  90._r8 )then
+       write(iulog,*) 'Regional grid: edgen = ', edgen
+    end if
+    if ( edges .ne. -90._r8 )then
+       write(iulog,*) 'Regional grid: edges = ', edges
+    end if
+    if ( edgee .ne. 180._r8 )then
+       write(iulog,*) 'Regional grid: edgee = ', edgee
+    end if
+    if ( edgew .ne.-180._r8 )then
+       write(iulog,*) 'Regional grid: edgew = ', edgew
+    end if
+
     ! Set edge latitudes (assumes latitudes are constant for a given longitude)
-    rlats(1) = -90.0_r8
-    rlatn(rtmlat) =  90.0_r8
+    rlats(:) = edges
+    rlatn(:) = edgen
     do j = 2, rtmlat
        if (rlatc(2) > rlatc(1)) then ! South to North grid
           rlats(j)   = (rlatc(j-1) + rlatc(j)) / 2._r8
@@ -517,10 +548,11 @@ contains
 !    endif
 
     ! Set edge longitudes
-    rlonw(1) = (rlonc(1) + rlonc(rtmlon) - 360._r8) / 2._r8
-    rlone(rtmlon) = rlonw(1) + 360.0_r8
+    rlonw(:) = edgew
+    rlone(:) = edgee
+    dx = (edgee - edgew) / rtmlon
     do i = 2, rtmlon
-       rlonw(i)   = (rlonc(i-1) + rlonc(i)) / 2._r8
+       rlonw(i)   = rlonw(i) + (i-1)*dx
        rlone(i-1) = rlonw(i)
     end do
 
@@ -530,38 +562,34 @@ contains
 !    endif
 
     !-------------------------------------------------------
-    ! Determine rtm ocn/land mask (global, all procs)
+    ! Determine mosart ocn/land mask (global, all procs)
     !-------------------------------------------------------
-
-    !  0=none, 
-    !  1=land, 
-    !  2=ocean outflow, 
-    ! -1=reroute over ocean to ocean outflow points
 
     call t_startf('mosarti_decomp')
 
     allocate (gmask(rtmlon*rtmlat), stat=ier)
     if (ier /= 0) then
-       write(iulog,*)'Rtmgridini: Allocation ERROR for gmask'
-       call shr_sys_abort('Rtmgridinit ERROR alloc for gmask')
+       write(iulog,*) subname, ' : Allocation ERROR for gmask'
+       call shr_sys_abort(subname//' ERROR alloc for gmask')
     end if
 
-    ! Initialize gmask to 2 everywhere, then compute land cells
+    !  1=land, 
+    !  2=ocean,
+    !  3=ocean outlet from land
 
     gmask = 2    ! assume ocean point
-
-    do n=1,rtmlon*rtmlat         ! override downstream setting from local info
-       nr = dwnstrm_index(n)
-       if ((nr .gt. 0) .and. (nr .le. rtmlon*rtmlat)) then  ! n is always land if dwnstrm_index exists
-          if (rdirc(n) > 0) then
-             gmask(n) = 1
-          else if (rdirc(n) < 0) then
-             gmask(n) = -1
-          end if
+    do n=1,rtmlon*rtmlat         ! mark all downstream points as outlet
+       nr = dnID_global(n)
+       if ((nr > 0) .and. (nr <= rtmlon*rtmlat)) then
+          gmask(nr) = 3          ! <- nr
        end if
     enddo
-
-    deallocate(rdirc)
+    do n=1,rtmlon*rtmlat         ! now mark all points with downstream points as land
+       nr = dnID_global(n)
+       if ((nr > 0) .and. (nr <= rtmlon*rtmlat)) then
+          gmask(n) = 1           ! <- n
+       end if
+    enddo
 
     !-------------------------------------------------------
     ! Compute total number of basins and runoff points
@@ -569,14 +597,28 @@ contains
 
     nbas = 0
     nrof = 0
+    nout = 0
+    nmos = 0
     do nr=1,rtmlon*rtmlat
-       if (gmask(nr) == 2) then
+       if (gmask(nr) == 3) then
+          nout = nout + 1
           nbas = nbas + 1
-       endif
-       if (gmask(nr) == 1 .or. gmask(nr) == 2) then
+          nmos = nmos + 1
+          nrof = nrof + 1
+       elseif (gmask(nr) == 2) then
+          nbas = nbas + 1
+          nrof = nrof + 1
+       elseif (gmask(nr) == 1) then
+          nmos = nmos + 1
           nrof = nrof + 1
        endif
     enddo
+    if (masterproc) then
+       write(iulog,*) 'Number of outlet basins = ',nout
+       write(iulog,*) 'Number of total  basins = ',nbas
+       write(iulog,*) 'Number of mosart points = ',nmos
+       write(iulog,*) 'Number of runoff points = ',nrof
+    endif
 
     !-------------------------------------------------------
     ! Compute river basins, actually compute ocean outlet gridcell
@@ -587,9 +629,9 @@ contains
 
     allocate(idxocn(rtmlon*rtmlat),nupstrm(rtmlon*rtmlat),stat=ier)
     if (ier /= 0) then
-       write(iulog,*)'Rtmgridini: Allocation ERROR for ',&
+       write(iulog,*) subname,' : Allocation ERROR for ',&
             'idxocn,nupstrm'
-       call shr_sys_abort('Rtmgridinit ERROR alloc for idxocn nupstrm')
+       call shr_sys_abort(subname//' ERROR alloc for idxocn nupstrm')
     end if
 
     call t_startf('mosarti_dec_basins')
@@ -601,24 +643,27 @@ contains
           g = 0
           do while (abs(gmask(n)) == 1 .and. g < rtmlon*rtmlat)  ! follow downstream
              nupstrm(n) = nupstrm(n) + 1
-             n = dwnstrm_index(n)
+             n = dnID_global(n)
              g = g + 1
           end do
-          if (gmask(n) == 2) then           ! found ocean outlet 
+          if (gmask(n) == 3) then           ! found ocean outlet 
              nupstrm(n) = nupstrm(n) + 1    ! one more land cell for n
              idxocn(nr) = n                 ! set ocean outlet or nr to n
           elseif (abs(gmask(n)) == 1) then  ! no ocean outlet, warn user, ignore cell
-             write(iulog,*) 'rtmini ERROR no downstream ocean cell ', &
-               g,nr,gmask(nr),dwnstrm_index(nr), &
-               n,gmask(n),dwnstrm_index(n)
-             call shr_sys_abort('rtmini ERROR no downstream ocean cell')
+             write(iulog,*) subname,' ERROR closed basin found', &
+               g,nr,gmask(nr),dnID_global(nr), &
+               n,gmask(n),dnID_global(n)
+             call shr_sys_abort(subname//' ERROR closed basin found')
+          elseif (gmask(n) == 2) then
+             write(iulog,*) subname,' ERROR found invalid ocean cell ',nr
+             call shr_sys_abort(subname//' ERROR found invalid ocean cell')
           else 
-             write(iulog,*) 'rtmini ERROR downstream cell is non-ocean,non-land', &
-               g,nr,gmask(nr),dwnstrm_index(nr), &
-               n,gmask(n),dwnstrm_index(n)
-             call shr_sys_abort('rtmini ERROR downstream cell non ocean land')
+             write(iulog,*) subname,' ERROR downstream cell is unknown', &
+               g,nr,gmask(nr),dnID_global(nr), &
+               n,gmask(n),dnID_global(n)
+             call shr_sys_abort(subname//' ERROR downstream cell is unknown')
           endif
-       elseif (gmask(n) == 2) then  ! ocean, give to self
+       elseif (gmask(n) >= 2) then  ! ocean, give to self
           nupstrm(n) = nupstrm(n) + 1
           idxocn(nr) = n
        endif
@@ -631,15 +676,15 @@ contains
     nrof_chk = 0
     do nr=1,rtmlon*rtmlat
 !      !if (masterproc) write(iulog,*) 'nupstrm check ',nr,gmask(nr),nupstrm(nr),idxocn(nr)
-       if (gmask(nr) == 2 .and. nupstrm(nr) > 0) then
+       if (gmask(nr) >= 2 .and. nupstrm(nr) > 0) then
           nbas_chk = nbas_chk + 1
           nrof_chk = nrof_chk + nupstrm(nr)
        endif
     enddo
 
     if (nbas_chk /= nbas .or. nrof_chk /= nrof) then
-       write(iulog,*) 'rtmini ERROR nbas nrof check',nbas,nbas_chk,nrof,nrof_chk
-       call shr_sys_abort('rtmini ERROR nbas nrof check')
+       write(iulog,*) subname,' ERROR nbas nrof check',nbas,nbas_chk,nrof,nrof_chk
+       call shr_sys_abort(subname//' ERROR nbas nrof check')
     endif
 
     !-------------------------------------------------------
@@ -650,9 +695,9 @@ contains
 
     !--- this is the heart of the decomp, need to set pocn and nop by the end of this
     !--- pocn is the pe that gets the basin associated with ocean outlet nr
-    !--- nop is a running count of the number of rtm cells/pe 
+    !--- nop is a running count of the number of mosart cells/pe 
 
-    allocate(pocn(rtmlon*rtmlat),     &  !global rtm array
+    allocate(pocn(rtmlon*rtmlat),     &  !global mosart array
              nop(0:npes-1), &
              nba(0:npes-1))
 
@@ -670,7 +715,7 @@ contains
           minbas = maxval(nupstrm)/(2**nl)
           if (nl == nloops) minbas = min(minbas,1)
           do nr=1,rtmlon*rtmlat
-             if (gmask(nr) == 2 .and. nupstrm(nr) > 0 .and. nupstrm(nr) >= minbas .and. nupstrm(nr) <= maxbas) then
+             if (gmask(nr) >= 2 .and. nupstrm(nr) > 0 .and. nupstrm(nr) >= minbas .and. nupstrm(nr) <= maxbas) then
                 ! Decomp options
                 !   find min pe (implemented but scales poorly)
                 !   use increasing thresholds (implemented, ok load balance for l2r or calc)
@@ -694,7 +739,7 @@ contains
                 !--------------
                 if (baspe > npes-1 .or. baspe < 0) then
                    write(iulog,*) 'ERROR in decomp for MOSART ',nr,npes,baspe
-                   call shr_sys_abort('ERROR rtm decomp')
+                   call shr_sys_abort('ERROR mosart decomp')
                 endif
                 nop(baspe) = nop(baspe) + nupstrm(nr)
                 nba(baspe) = nba(baspe) + 1
@@ -708,9 +753,9 @@ contains
           if (idxocn(nr) > 0) then
              pocn(nr) = pocn(idxocn(nr))
              if (pocn(nr) < 0 .or. pocn(nr) > npes-1) then
-                write(iulog,*) 'Rtmini ERROR pocn lnd setting ',&
+                write(iulog,*) subname,' ERROR pocn lnd setting ',&
                    nr,idxocn(nr),idxocn(idxocn(nr)),pocn(idxocn(nr)),pocn(nr),npes
-                call shr_sys_abort('rtmini ERROR pocn lnd')
+                call shr_sys_abort(subname//' ERROR pocn lnd')
              endif
           endif
        enddo
@@ -722,14 +767,14 @@ contains
        baspe = 0
        maxrtm = (nrof-1)/npes + 1
        do nr=1,rtmlon*rtmlat
-          if (gmask(nr) == 1 .or. gmask(nr) == 2) then
+          if (gmask(nr) >= 1) then
              pocn(nr) = baspe
              nop(baspe) = nop(baspe) + 1
              if (nop(baspe) >= maxrtm) then
                 baspe = (mod(baspe+1,npes))
                 if (baspe < 0 .or. baspe > npes-1) then
-                   write(iulog,*) 'Rtmini ERROR basepe ',baspe,npes
-                   call shr_sys_abort('rtmini ERROR pocn lnd')
+                   write(iulog,*) subname,' ERROR basepe ',baspe,npes
+                   call shr_sys_abort(subname//' ERROR pocn lnd')
                 endif
              endif
           endif
@@ -741,20 +786,20 @@ contains
        ! maxrtm is the maximum number of points to assign to each pe
        baspe = 0
        do nr=1,rtmlon*rtmlat
-          if (gmask(nr) == 1 .or. gmask(nr) == 2) then
+          if (gmask(nr) >= 1) then
              pocn(nr) = baspe
              nop(baspe) = nop(baspe) + 1
              baspe = (mod(baspe+1,npes))
              if (baspe < 0 .or. baspe > npes-1) then
-                write(iulog,*) 'Rtmini ERROR basepe ',baspe,npes
-                call shr_sys_abort('rtmini ERROR pocn lnd')
+                write(iulog,*) subname,' ERROR basepe ',baspe,npes
+                call shr_sys_abort(subname//' ERROR pocn lnd')
              endif
           endif
        enddo
 
     else
-       write(iulog,*) 'Rtmini ERROR decomp option unknown ',trim(decomp_option)
-       call shr_sys_abort('rtmini ERROR pocn lnd')
+       write(iulog,*) subname,' ERROR decomp option unknown ',trim(decomp_option)
+       call shr_sys_abort(subname//' ERROR pocn lnd')
     endif  ! decomp_option
 
     if (masterproc) then
@@ -764,7 +809,7 @@ contains
        write(iulog,*) 'MOSART basins per pe   min/max = ',minval(nba),maxval(nba)
     endif
 
-    deallocate(idxocn,nupstrm)
+    deallocate(nupstrm)
 
     !-------------------------------------------------------
     !--- Count and distribute cells to rglo2gdc
@@ -784,7 +829,7 @@ contains
        endif
     enddo
 
-    allocate(rglo2gdc(rtmlon*rtmlat), &  !global rtm array
+    allocate(rglo2gdc(rtmlon*rtmlat), &  !global mosart array
              nrs(0:npes-1))
     nrs = 0
     rglo2gdc = 0
@@ -806,8 +851,8 @@ contains
     enddo
     do n = 0,npes-1
        if (nba(n) /= nop(n)) then
-          write(iulog,*) 'Rtmini ERROR rtm cell count ',n,nba(n),nop(n)
-          call shr_sys_abort('Rtminit ERROR rtm cell count')
+          write(iulog,*) subname,' ERROR mosart cell count ',n,nba(n),nop(n)
+          call shr_sys_abort(subname//' ERROR mosart cell count')
        endif
     enddo
 
@@ -818,39 +863,20 @@ contains
     !-------------------------------------------------------
     !--- adjust area estimation from DRT algorithm for those outlet grids
     !--- useful for grid-based representation only
+    !--- need to compute areas where they are not defined in input file
     !-------------------------------------------------------
 
     do n=1,rtmlon*rtmlat
-       if (TUnit%area(n) <= 0._r8) then
+       if (area_global(n) <= 0._r8) then
           i = mod(n-1,rtmlon) + 1
           j = (n-1)/rtmlon + 1
           dx = (rlone(i) - rlonw(i)) * deg2rad
           dy = sin(rlatn(j)*deg2rad) - sin(rlats(j)*deg2rad)
-          TUnit%area(n) = abs(1.e6_r8 * dx*dy*re*re)
-          if (masterproc .and. TUnit%area(n) <= 0) then
-             write(iulog,*) 'Warning! Zero area for unit ', n, TUnit%area(n),dx,dy,re
+          area_global(n) = abs(1.e6_r8 * dx*dy*re*re)
+          if (masterproc .and. area_global(n) <= 0) then
+             write(iulog,*) 'Warning! Zero area for unit ', n, area_global(n),dx,dy,re
           end if
        end if
-          nn = dwnstrm_index(n)
-          if (nn > 0) then
-             i1 = mod(n-1,rtmlon) + 1
-             j1 = (n-1)/rtmlon + 1
-             i2 = mod(nn-1,rtmlon) + 1
-             j2 = (nn-1)/rtmlon + 1
-             dy = deg2rad * abs(rlatc(j1)-rlatc(j2)) * re*1000._r8
-             dx = rlonc(i1)-rlonc(i2)
-             dx1 = abs(dx)
-             dx2 = abs(dx+360._r8)
-             dx3 = abs(dx-360._r8)
-             dx = min(dx1,dx2,dx3)
-             dx = deg2rad * dx * re*1000._r8 * &
-                  0.5_r8*(cos(rlatc(j1)*deg2rad)+ &
-                          cos(rlatc(j2)*deg2rad))
-             TUnit%rlen(n) = sqrt(dx*dx + dy*dy)
-          else
-             TUnit%rlen(n) = 0._r8
-          end if
-!       end if
     end do
 
     call t_stopf('mosarti_decomp')
@@ -908,17 +934,19 @@ contains
     call t_startf('mosarti_vars')
 
     allocate (fluxout (rtmCTL%begr:rtmCTL%endr,nt_rtm), &
-              ddist   (rtmCTL%begr:rtmCTL%endr),        &
               evel    (rtmCTL%begr:rtmCTL%endr,nt_rtm), &
+              direct  (rtmCTL%begr:rtmCTL%endr,nt_rtm), &
+              flow    (rtmCTL%begr:rtmCTL%endr,nt_rtm), &
               sfluxin (rtmCTL%begr:rtmCTL%endr,nt_rtm), stat=ier)
     if (ier /= 0) then
-       write(iulog,*)'Rtmgridini: Allocation ERROR for ',&
-            'fluxout, ddist'
-       call shr_sys_abort('Rtmgridini: Allocationt ERROR volr')
+       write(iulog,*) subname,' Allocation ERROR for ',&
+            'fluxout'
+       call shr_sys_abort(subname//' Allocationt ERROR volr')
     end if
     fluxout(:,:) = 0._r8
-    ddist(:)     = 0._r8
     sfluxin(:,:) = 0._r8
+    direct(:,:)  = 0._r8
+    flow(:,:)    = 0._r8
 
     !-------------------------------------------------------
     ! Allocate runoff datatype 
@@ -927,12 +955,12 @@ contains
     call RunoffInit(rtmCTL%begr, rtmCTL%endr, rtmCTL%numr)
 
     !-------------------------------------------------------
-    ! Initialize rtm flood - rtmCTL%fthresh and evel
+    ! Initialize mosart flood - rtmCTL%fthresh and evel
     !-------------------------------------------------------
 
     if (do_rtmflood) then
-       write(iulog,*)'Rtmgridini: Flood not validated in this version, abort'
-       call shr_sys_abort('Rtmgridini: Flood feature unavailable')
+       write(iulog,*) subname,' Flood not validated in this version, abort'
+       call shr_sys_abort(subname//' Flood feature unavailable')
        call RtmFloodInit (frivinp_rtm, rtmCTL%begr, rtmCTL%endr, rtmCTL%fthresh, evel)
     else
        effvel(:) = effvel0  ! downstream velocity (m/s)
@@ -950,8 +978,8 @@ contains
 
     allocate(rgdc2glo(rtmCTL%numr), stat=ier)
     if (ier /= 0) then
-       write(iulog,*)'Rtmini ERROR allocation of rgdc2glo'
-       call shr_sys_abort('Rtmini ERROR allocate of rgdc2glo')
+       write(iulog,*) subname,' ERROR allocation of rgdc2glo'
+       call shr_sys_abort(subname//' ERROR allocate of rgdc2glo')
     end if
 
     ! Set map from local to global index space
@@ -968,8 +996,12 @@ contains
     end do
     end do
     if (numr /= rtmCTL%numr) then
-       write(iulog,*) 'Rtmini ERROR numr and rtmCTL%numr are different ',numr,rtmCTL%numr
-       call shr_sys_abort('Rtmini ERROR numr')
+       write(iulog,*) subname,'ERROR numr and rtmCTL%numr are different ',numr,rtmCTL%numr
+       call shr_sys_abort(subname//' ERROR numr')
+    endif
+    if (minval(rtmCTL%mask) < 1) then
+       write(iulog,*) subname,'ERROR rtmCTL mask lt 1 ',minval(rtmCTL%mask),maxval(rtmCTL%mask)
+       call shr_sys_abort(subname//' ERROR rtmCTL mask')
     endif
     deallocate(gmask)
 
@@ -982,8 +1014,8 @@ contains
        i = mod(n-1,rtmlon) + 1
        j = (n-1)/rtmlon + 1
        if (n <= 0 .or. n > rtmlon*rtmlat) then
-          write(iulog,*) 'Rtmini ERROR gdc2glo, nr,ng= ',nr,n
-          call shr_sys_abort('Rtmini ERROR gdc2glo values')
+          write(iulog,*) subname,' ERROR gdc2glo, nr,ng= ',nr,n
+          call shr_sys_abort(subname//' ERROR gdc2glo values')
        endif
        rtmCTL%lonc(nr) = rtmCTL%rlon(i)
        rtmCTL%latc(nr) = rtmCTL%rlat(j)
@@ -994,36 +1026,35 @@ contains
              rtmCTL%dvolrdtlnd(nr,nt)= rtmCTL%dvolrdt(nr,nt)
              rtmCTL%volrlnd(nr,nt)= rtmCTL%volr(nr,nt)
           enddo
-       elseif (rtmCTL%mask(nr) == 2 .or. rtmCTL%mask(nr) == 3) then
+       elseif (rtmCTL%mask(nr) >= 2) then
           do nt = 1,nt_rtm
              rtmCTL%runoffocn(nr,nt) = rtmCTL%runoff(nr,nt)
              rtmCTL%dvolrdtocn(nr,nt)= rtmCTL%dvolrdt(nr,nt)
           enddo
        endif
 
-       rtmCTL%area(nr) = TUnit%area(n)
-       ddist(nr)       = TUnit%rlen(n)
+       rtmCTL%outletg(nr) = idxocn(n)
+       rtmCTL%area(nr) = area_global(n)
        lrtmarea = lrtmarea + rtmCTL%area(nr)
-       if (dwnstrm_index(n) <= 0) then
+       if (dnID_global(n) <= 0) then
           rtmCTL%dsig(nr) = 0
-          rtmCTL%dsil(nr) = 0
        else
-          if (rglo2gdc(dwnstrm_index(n)) == 0) then
-             write(iulog,*) 'Rtmini ERROR glo2gdc dwnstrm ',&
-                  nr,n,dwnstrm_index(n),rglo2gdc(dwnstrm_index(n))
-             call shr_sys_abort('Rtmini ERROT glo2gdc dwnstrm')
+          if (rglo2gdc(dnID_global(n)) == 0) then
+             write(iulog,*) subname,' ERROR glo2gdc dnID_global ',&
+                  nr,n,dnID_global(n),rglo2gdc(dnID_global(n))
+             call shr_sys_abort(subname//' ERROT glo2gdc dnID_global')
           endif
           cnt = cnt + 1
-          rtmCTL%dsig(nr) = dwnstrm_index(n)
-          rtmCTL%dsil(nr) = rglo2gdc(dwnstrm_index(n))
+          rtmCTL%dsig(nr) = dnID_global(n)
        endif
     enddo
-    deallocate(dwnstrm_index)
     deallocate(rglo2gdc)
     deallocate(rgdc2glo)
-    call shr_mpi_sum(lrtmarea,rtmCTL%totarea,mpicom_rof,'rtm totarea',all=.true.)
-    if (masterproc) write(iulog,*) 'Rtmini  earth area ',4.0_r8*shr_const_pi*1.0e6_r8*re*re
-    if (masterproc) write(iulog,*) 'Rtmini MOSART area ',rtmCTL%totarea
+    deallocate (dnID_global,area_global)
+    deallocate(idxocn)
+    call shr_mpi_sum(lrtmarea,rtmCTL%totarea,mpicom_rof,'mosart totarea',all=.true.)
+    if (masterproc) write(iulog,*) subname,'  earth area ',4.0_r8*shr_const_pi*1.0e6_r8*re*re
+    if (masterproc) write(iulog,*) subname,' MOSART area ',rtmCTL%totarea
 
     !-------------------------------------------------------
     ! Compute Sparse Matrix for downstream advection
@@ -1108,12 +1139,80 @@ contains
 
        call mct_sMatP_Init(sMatP_dnstrm, sMat, gsMap_r, gsMap_r, smat_option, 0, mpicom_rof, ROFID)
 
-#if (1 == 0)
-       ! root xonly initialization
+    else
+
+       write(iulog,*) trim(subname),' MOSART ERROR: invalid smat_option '//trim(smat_option)
+       call shr_sys_abort(trim(subname)//' ERROR invald smat option')
+
+    endif
+
+    ! initialize the AVs to go with sMatP
+    write(rList,'(a,i3.3)') 'tr',1
+    do nt = 2,nt_rtm
+       write(rList,'(a,i3.3)') trim(rList)//':tr',nt
+    enddo
+    write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
+    call mct_aVect_init(avsrc_dnstrm,rList=rList,lsize=rtmCTL%lnumr)
+    call mct_aVect_init(avdst_dnstrm,rList=rList,lsize=rtmCTL%lnumr)
+
+    lsize = mct_smat_gNumEl(sMatP_dnstrm%Matrix,mpicom_rof)
+    if (masterproc) write(iulog,*) subname," Done initializing SmatP_dnstrm, nElements = ",lsize
+
+    ! keep only sMatP
+    call mct_sMat_clean(sMat)
+
+    !-------------------------------------------------------
+    ! Compute Sparse Matrix for direct to outlet transfer
+    ! reuse gsmap_r
+    !-------------------------------------------------------
+
+    lsize = rtmCTL%lnumr
+    gsize = rtmlon*rtmlat
+
+    if (smat_option == 'opt') then
+       ! distributed smat initialization
+       ! mct_sMat_init must be given the number of rows and columns that
+       ! would be in the full matrix.  Nrows= size of output vector=nb.
+       ! Ncols = size of input vector = na.
+
+       cnt = 0
+       do nr=rtmCTL%begr,rtmCTL%endr
+          if(rtmCTL%outletg(nr) > 0) cnt = cnt + 1
+       enddo
+
+       call mct_sMat_init(sMat, gsize, gsize, cnt)
+       igrow = mct_sMat_indexIA(sMat,'grow')
+       igcol = mct_sMat_indexIA(sMat,'gcol')
+       iwgt  = mct_sMat_indexRA(sMat,'weight')
+       cnt = 0
+       do nr = rtmCTL%begr,rtmCTL%endr
+          if (rtmCTL%outletg(nr) > 0) then
+             cnt = cnt + 1
+             sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
+             sMat%data%iAttr(igrow,cnt) = rtmCTL%outletg(nr)
+             sMat%data%iAttr(igcol,cnt) = rtmCTL%gindex(nr)
+          endif
+       enddo
+
+       call mct_sMatP_Init(sMatP_direct, sMat, gsMap_r, gsMap_r, 0, mpicom_rof, ROFID)
+
+    elseif (smat_option == 'Xonly' .or. smat_option == 'Yonly') then
+
+       ! root initialization
+
+       call mct_aVect_init(avtmp,rList='f1:f2',lsize=lsize)
+       call mct_aVect_zero(avtmp)
+       cnt = 0
+       do nr = rtmCTL%begr,rtmCTL%endr
+          cnt = cnt + 1
+          avtmp%rAttr(1,cnt) = rtmCTL%gindex(nr)
+          avtmp%rAttr(2,cnt) = rtmCTL%outletg(nr)
+       enddo
+       call mct_avect_gather(avtmp,avtmpG,gsmap_r,mastertask,mpicom_rof)
        if (masterproc) then
           cnt = 0
           do n = 1,rtmlon*rtmlat
-             if (dwnstrm_index(n) > 0) then
+             if (avtmpG%rAttr(2,n) > 0) then
                 cnt = cnt + 1
              endif
           enddo
@@ -1125,22 +1224,24 @@ contains
 
           cnt = 0
           do n = 1,rtmlon*rtmlat
-             if (dwnstrm_index(n) > 0) then
+             if (avtmpG%rAttr(2,n) > 0) then
                 cnt = cnt + 1
                 sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-                sMat%data%iAttr(igrow,cnt) = dwnstrm_index(n)
-                sMat%data%iAttr(igcol,cnt) = n
+                sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(2,n)
+                sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(1,n)
              endif
           enddo
+          call mct_avect_clean(avtmpG)
        else
           call mct_sMat_init(sMat,1,1,1)
        endif
+       call mct_avect_clean(avtmp)
 
-       call mct_sMatP_Init(sMatP_dnstrm, sMat, gsMap_r, gsMap_r, smat_option, 0, mpicom_rof, ROFID)
-#endif
+       call mct_sMatP_Init(sMatP_direct, sMat, gsMap_r, gsMap_r, smat_option, 0, mpicom_rof, ROFID)
+
     else
 
-       write(iulog,*) trim(subname),':MOSART ERROR: invalid smat_option '//trim(smat_option)
+       write(iulog,*) trim(subname),' MOSART ERROR: invalid smat_option '//trim(smat_option)
        call shr_sys_abort(trim(subname)//' ERROR invald smat option')
 
     endif
@@ -1150,12 +1251,12 @@ contains
     do nt = 2,nt_rtm
        write(rList,'(a,i3.3)') trim(rList)//':tr',nt
     enddo
-    write(iulog,*) trim(subname),':MOSART initialize avect ',trim(rList)
-    call mct_aVect_init(avsrc_dnstrm,rList=rList,lsize=rtmCTL%lnumr)
-    call mct_aVect_init(avdst_dnstrm,rList=rList,lsize=rtmCTL%lnumr)
+    write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
+    call mct_aVect_init(avsrc_direct,rList=rList,lsize=rtmCTL%lnumr)
+    call mct_aVect_init(avdst_direct,rList=rList,lsize=rtmCTL%lnumr)
 
-    lsize = mct_smat_gNumEl(sMatP_dnstrm%Matrix,mpicom_rof)
-    if (masterproc) write(iulog,*) "Rtmini Done initializing SmatP_dnstrm, nElements = ",lsize
+    lsize = mct_smat_gNumEl(sMatP_direct%Matrix,mpicom_rof)
+    if (masterproc) write(iulog,*) subname," Done initializing SmatP_direct, nElements = ",lsize
 
     ! keep only sMatP
     call mct_sMat_clean(sMat)
@@ -1187,15 +1288,15 @@ contains
 !    if (dtovermax > 0._r8) then
 !       delt_mosart = (1.0_r8/dtovermax)*cfl_scale
 !    else
-!       write(iulog,*) 'rtmini ERROR in delt_mosart ',delt_mosart,dtover
-!       call shr_sys_abort('rtmini ERROR delt_mosart')
+!       write(iulog,*) subname,' ERROR in delt_mosart ',delt_mosart,dtover
+!       call shr_sys_abort(subname//' ERROR delt_mosart')
 !    endif
 !
-!    if (masterproc) write(iulog,*) 'rtm max timestep = ',delt_mosart,' (sec) for cfl_scale = ',cfl_scale
+!    if (masterproc) write(iulog,*) 'mosart max timestep = ',delt_mosart,' (sec) for cfl_scale = ',cfl_scale
 !    if (masterproc) call shr_sys_flush(iulog)
 !
 !    delt_mosart = 600._r8  ! here set the time interval for routing as 10 mins, which is sufficient for 1/8th degree resolution and coarser.
-!    if (masterproc) write(iulog,*) 'rtm max timestep hardwired to = ',delt_mosart
+!    if (masterproc) write(iulog,*) 'mosart max timestep hardwired to = ',delt_mosart
 !    if (masterproc) call shr_sys_flush(iulog)
 
     call t_stopf('mosarti_vars')
@@ -1206,7 +1307,6 @@ contains
 
     call t_startf('mosarti_mosart_init')
 
-    deallocate (TUnit%fdir,TUnit%ID0,TUnit%dnID,TUnit%rlen, TUnit%area)
     !=== initialize MOSART related variables
 !    if (masterproc) write(iulog,*) ' call mosart_init'
 !    if (masterproc) call shr_sys_flush(iulog)
@@ -1249,12 +1349,18 @@ contains
             call UpdateState_mainchannel(nr,nt)
         enddo
         enddo
+        do nt = 1,nt_rtm
+        do nr = rtmCTL%begr,rtmCTL%endr
+           rtmCTL%volr(nr,nt) = (Trunoff%wt(nr,nt) + Trunoff%wr(nr,nt) + &
+                                 Trunoff%wh(nr,nt)*rtmCTL%area(nr))
+        enddo
+        enddo
     end if
 
     call t_stopf('mosarti_restart')
 
     !-------------------------------------------------------
-    ! Initialize rtm history handler and fields
+    ! Initialize mosart history handler and fields
     !-------------------------------------------------------
 
     call t_startf('mosarti_histinit')
@@ -1268,7 +1374,7 @@ contains
     end if
     call RtmHistFldsSet()
 
-    if (masterproc) write(iulog,*) ' rtmini done'
+    if (masterproc) write(iulog,*) subname,' done'
     if (masterproc) call shr_sys_flush(iulog)
 
     call t_stopf('mosarti_histinit')
@@ -1281,22 +1387,20 @@ contains
 ! !IROUTINE: Rtmrun
 !
 ! !INTERFACE:
-  subroutine Rtmrun(totrunin,surrunin, subrunin, gwlrunin,rstwr, nlend, rdate)
+  subroutine Rtmrun(totrunin,surrunin,subrunin,gwlrunin,dtorunin,rstwr,nlend,rdate)
 !
 ! !DESCRIPTION:
 ! River routing model
-! Input is subrunin, totrunin
-! Input/output is fluxout, volr.
-! Outputs are dvolrdt\_r, dvolrdt\_lnd\_r, dvolrdt\_ocn\_r, flxocn\_r, flxlnd\_r.
 !
 ! !USES:
 !
 ! !ARGUMENTS:
     implicit none
-    real(r8),         pointer    :: totrunin(:,:)  ! cell tracer lnd forcing on rtm grid (mm/s)
-    real(r8),         pointer    :: surrunin(:,:)  ! cell tracer lnd forcing on rtm grid (mm/s)
-    real(r8),         pointer    :: subrunin(:,:)  ! cell tracer lnd forcing on rtm grid (mm/s)
-    real(r8),         pointer    :: gwlrunin(:,:)  ! cell tracer lnd forcing on rtm grid (mm/s)
+    real(r8),         pointer    :: totrunin(:,:)  ! total lnd forcing on mosart grid (mm/s)
+    real(r8),         pointer    :: surrunin(:,:)  ! surface forcing on mosart grid (mm/s)
+    real(r8),         pointer    :: subrunin(:,:)  ! subsurface forcing on mosart grid (mm/s)
+    real(r8),         pointer    :: gwlrunin(:,:)  ! glacier/wetland/lake forcing on mosart grid (mm/s)
+    real(r8),         pointer    :: dtorunin(:,:)  ! direct-to-ocean forcing on mosart grid (mm/s)
     logical ,         intent(in) :: rstwr          ! true => write restart file this step)
     logical ,         intent(in) :: nlend          ! true => end of run on this step
     character(len=*), intent(in) :: rdate          ! restart file time stamp for name
@@ -1311,22 +1415,20 @@ contains
 ! !LOCAL VARIABLES:
 !EOP
     integer  :: i, j, n, nr, ns, nt, n2, nf ! indices
-    real(r8) :: dvolrdt                     ! change in storage in discharge units (m3/s)
-    real(r8) :: sumfin(nt_rtm),sumfex(nt_rtm)
-    real(r8) :: sumrin(nt_rtm),sumdvt(nt_rtm)
-    real(r8) :: diag2(10,nt_rtm)            ! diagnostics in m3/s
-    real(r8) :: diag2_global(10,nt_rtm)     ! global budget sum
-    real(r8) :: diag_global(nt_rtm)         ! global budget sum
-    real(r8) :: budget1(nt_rtm)             ! budget check in m3/s
+    real(r8) :: budget_terms(20,nt_rtm)      ! BUDGET terms
+        ! BUDGET terms 1 and 2 are initial and final volumes in m3
+        ! BUDGET terms 3,4,5,6,7,8,9,11 are sur,sub,gwl,dto,tot,flow,flood,direct in m3/s
+    real(r8) :: budget_input, budget_output, budget_volume, budget_total  ! BUDGET terms
+    real(r8) :: budget_global(20,nt_rtm)     ! global budget sum
     logical  :: budget_check                ! do global budget check
-    logical  :: runoff_check                ! diagnose runoff data
+    real(r8) :: volr_init                   ! temporary storage to compute dvolrdt
     real(r8),parameter :: budget_tolerance = 1.0e-6   ! budget tolerance, m3/day
     logical  :: abort                       ! abort flag
     real(r8) :: sum1,sum2
     integer  :: yr, mon, day, ymd, tod      ! time information
     integer  :: nsub                        ! subcyling for cfl
     real(r8) :: delt                        ! delt associated with subcycling
-    real(r8) :: delt_rtm                    ! real value of coupling_period
+    real(r8) :: delt_coupling               ! real value of coupling_period
     integer , save :: nsub_save             ! previous nsub
     real(r8), save :: delt_save             ! previous delt
     logical , save :: first_call = .true.   ! first time flag (for backwards compatibility)
@@ -1334,7 +1436,7 @@ contains
     integer  :: cnt                         ! counter for gridcells
     integer  :: ier                         ! error code
     integer,parameter  :: dbug = 1          ! local debug flag
-    character(*),parameter :: subname = '(Rtmrun) '
+    character(len=*),parameter :: subname = '(Rtmrun) '
 !-----------------------------------------------------------------------
 
     call t_startf('mosartr_tot')
@@ -1347,95 +1449,69 @@ contains
        write(iulog,'(2a,i10,i6)') trim(subname),' model date is',ymd,tod
     endif
 
-    delt_rtm = coupling_period*1.0_r8
+    delt_coupling = coupling_period*1.0_r8
     if (first_call) then
-       if (masterproc) write(iulog,'(2a,g20.12)') trim(subname),': MOSART coupling period ',delt_rtm
+       if (masterproc) write(iulog,'(2a,g20.12)') trim(subname),' MOSART coupling period ',delt_coupling
     end if
 
     budget_check = .false.
-    runoff_check = .false.
     if (day == 1 .and. mon == 1) budget_check = .true.
-    if (tod == 0) runoff_check = .true.
+    if (tod == 0) budget_check = .true.
+    budget_terms = 0._r8
 
-    do n = rtmCTL%begr,rtmCTL%endr
-    do nt = 1,nt_rtm
-       !n2 = n-rtmCTL%begr+1
-       !-- surface is (total - subsurface)
-       !!!TRunoff%qsur(n,nt) = totrunin(n,nt) - subrunin(n,nt)
-       !!!TRunoff%qsub(n,nt) = subrunin(n,nt)
-       TRunoff%qsur(n,nt) = surrunin(n,nt)
-       TRunoff%qsub(n,nt) = subrunin(n,nt)
-       TRunoff%qgwl(n,nt) = gwlrunin(n,nt)
+    flow = 0._r8
+    rtmCTL%runoffall = 0._r8
+    rtmCTL%runofflnd = spval
+    rtmCTL%runoffocn = spval
+    rtmCTL%dvolrdt = 0._r8
+    rtmCTL%dvolrdtlnd = spval
+    rtmCTL%dvolrdtocn = spval
 
-    enddo
-    enddo
-
-    ! now correct negative runoff values for tracer 1 (liquid water)
-    ! this needs to be reviewed 
-!    do n = rtmCTL%begr,rtmCTL%endr
-!       if (totrunin(n,1) <= 0._r8) then
-!          TRunoff%qsur(n,1) = 0._r8
-!          TRunoff%qsub(n,1) = 0._r8
-!       elseif (totrunin(n,1) > 0._r8 .and. totrunin(n,1) <= subrunin(n,1)) then
-!          TRunoff%qsur(n,1) = 0._r8
-!          TRunoff%qsub(n,1) = totrunin(n,1)
-!       else
-!          TRunoff%qsur(n,1) = totrunin(n,1) - subrunin(n,1)
-!          TRunoff%qsub(n,1) = subrunin(n,1)
-!       endif
-!    enddo
-
-    ! convert from kg/m2-s (mm/s) to m/s
-    do n = rtmCTL%begr,rtmCTL%endr
-    do nt = 1,nt_rtm
-       TRunoff%qsur(n,nt) = TRunoff%qsur(n,nt) * 0.001_r8
-       TRunoff%qsub(n,nt) = TRunoff%qsub(n,nt) * 0.001_r8
-       TRunoff%qgwl(n,nt) = TRunoff%qgwl(n,nt) * 0.001_r8
-    enddo
-    enddo
-
-!    write(iulog,*) 'tcx trunoff check1r ',minval(TRunoff%qsur(:,1)),maxval(TRunoff%qsur(:,1))
-!    write(iulog,*) 'tcx trunoff check2r ',minval(TRunoff%qsur(:,2)),maxval(TRunoff%qsur(:,2))
-!    write(iulog,*) 'tcx trunoff check1b ',minval(TRunoff%qsub(:,1)),maxval(TRunoff%qsub(:,1))
-!    write(iulog,*) 'tcx trunoff check2b ',minval(TRunoff%qsub(:,2)),maxval(TRunoff%qsub(:,2))
-!    call shr_sys_flush(iulog)
-
-    ! BUDGET per water tracer, in m3/s = totrunin + (volr_i - volr_f)/dt - flood - runoff ~ 0.0
-    ! BUDGET, totrunin input, add initial volume, final volume removed later
+    ! BUDGET 
+    ! BUDGET terms 1 and 2 are initial and final volumes in m3
+    ! BUDGET terms 3,4,5,6,7,8,9,11 are sur,sub,gwl,dto,tot,flow,flood,direct in m3/s
     if (budget_check) then
        call t_startf('mosartr_budget')
-       budget1 = 0.0_r8
        do nt = 1,nt_rtm
        do nr = rtmCTL%begr,rtmCTL%endr
-          budget1(nt) = budget1(nt) + totrunin(nr,nt)*rtmCTL%area(nr) &
-                                    + rtmCTL%volr(nr,nt)/delt_rtm
+          budget_terms(1,nt) = budget_terms(1,nt) + rtmCTL%volr(nr,nt)
+          budget_terms(3,nt) = budget_terms(3,nt) + surrunin(nr,nt)*rtmCTL%area(nr)*0.001_r8
+          budget_terms(4,nt) = budget_terms(4,nt) + subrunin(nr,nt)*rtmCTL%area(nr)*0.001_r8
+          budget_terms(5,nt) = budget_terms(5,nt) + gwlrunin(nr,nt)*rtmCTL%area(nr)*0.001_r8
+          budget_terms(6,nt) = budget_terms(6,nt) + dtorunin(nr,nt)*rtmCTL%area(nr)*0.001_r8
+          budget_terms(7,nt) = budget_terms(7,nt) + totrunin(nr,nt)*rtmCTL%area(nr)*0.001_r8
        enddo
        enddo
-!       write(iulog,*) 'tcx b1 ',minval(budget1),maxval(budget1)
-!       write(iulog,*) 'tcx b1a',minval(rtmCTL%volr),maxval(rtmCTL%volr),delt_rtm
-!       write(iulog,*) 'tcx b1b',minval(totrunin),maxval(totrunin)
-!       write(iulog,*) 'tcx b1c',minval(subrunin),maxval(subrunin)
-!       write(iulog,*) 'tcx b1d',minval(rtmCTL%area),maxval(rtmCTL%area)
        call t_stopf('mosartr_budget')
     endif
 
-    ! Remove water from rtm and send back to clm
+    ! convert from kg/m2-s (mm/s) to m/s
+    do nr = rtmCTL%begr,rtmCTL%endr
+    do nt = 1,nt_rtm
+       TRunoff%qsur(nr,nt) = surrunin(nr,nt) * 0.001_r8
+       TRunoff%qsub(nr,nt) = subrunin(nr,nt) * 0.001_r8
+       TRunoff%qgwl(nr,nt) = gwlrunin(nr,nt) * 0.001_r8
+    enddo
+    enddo
+
+    !-----------------------------------
+    ! Compute flood
+    ! Remove water from mosart and send back to clm
     ! Just consider land points and only remove liquid water 
-    ! rtmCTL%flood needs to be a flux - in units of mm/s
-    ! totrunin and subrunin is a flux (mm/s)
+    ! rtmCTL%flood is m3/s here
+    !-----------------------------------
 
     call t_startf('mosartr_flood')
     nt = 1 
+    rtmCTL%flood = 0._r8
     do nr = rtmCTL%begr,rtmCTL%endr
        ! initialize rtmCTL%flood to zero
-       rtmCTL%flood(nr) = 0._r8
        if (rtmCTL%mask(nr) == 1) then
           if (rtmCTL%volr(nr,nt) > rtmCTL%fthresh(nr)) then 
              ! determine flux that is sent back to the land
-             ! need to convert to mm/s to be consistent with totrunin units
+             ! this is in m3/s
              rtmCTL%flood(nr) = &
-                  1000._r8*(rtmCTL%volr(nr,nt)-rtmCTL%fthresh(nr)) / &
-                  (delt_rtm*rtmCTL%area(nr))
+                  (rtmCTL%volr(nr,nt)-rtmCTL%fthresh(nr)) / (delt_coupling)
 
              ! rtmCTL%flood will be sent back to land - so must subtract this 
              ! from the input runoff from land
@@ -1446,25 +1522,65 @@ contains
              !   it at the end or even during the run loop as the
              !   new volume is computed.  fluxout depends on volr, so
              !   how this is implemented does impact the solution.
-             surrunin(nr,nt)= surrunin(nr,nt) - rtmCTL%flood(nr)
+             Trunoff%qsur(nr,nt) = Trunoff%qsur(nr,nt) - (rtmCTL%flood(nr)/rtmCTL%area(nr))
           endif
        endif
     enddo
     call t_stopf('mosartr_flood')
-    
-    ! BUDGET, flood out, just liquid water term
-    if (budget_check) then
-       call t_startf('mosartr_budget')
-       nt = 1
-       do nr = rtmCTL%begr,rtmCTL%endr
-          budget1(nt) = budget1(nt) - rtmCTL%flood(nr)*rtmCTL%area(nr)
-       enddo
-!       write(iulog,*) 'tcx b2 ',minval(budget1),maxval(budget1)
-!       write(iulog,*) 'tcx b2a',minval(rtmCTL%flood),maxval(rtmCTL%flood)
-       call t_stopf('mosartr_budget')
+
+    !-----------------------------------
+    ! DIRECT transfer to outlet point using sMat
+    ! Remember to subract water from Trunoff forcing
+    !-----------------------------------
+
+    if (barrier_timers) then
+       call t_startf('mosartr_SMdirect_barrier')
+       call mpi_barrier(mpicom_rof,ier)
+       call t_stopf ('mosartr_SMdirect_barrier')
     endif
 
-    ! Subcycling
+    call t_startf('mosartr_SMdirect')
+
+    !--- copy direct transfer fields to AV
+    !--- convert kg/m2s to m3/s
+    call mct_avect_zero(avsrc_direct)
+    cnt = 0
+    do nr = rtmCTL%begr,rtmCTL%endr
+       cnt = cnt + 1
+       do nt = 1,nt_rtm
+!          if (Trunoff%qgwl(nr,nt) < 0._r8) then
+!             avsrc_direct%rAttr(nt,cnt) = TRunoff%qgwl(nr,nt) * TUnit%area(nr) * 0.001_r8
+!             TRunoff%qgwl(nr,nt) = 0._r8
+!          endif
+       enddo
+    enddo
+    call mct_avect_zero(avdst_direct)
+
+    call mct_sMat_avMult(avsrc_direct, sMatP_direct, avdst_direct)
+
+    !--- copy direct transfer water from AV to output field ---
+    cnt = 0
+    direct(:,:) = 0._r8
+    do nr = rtmCTL%begr,rtmCTL%endr
+       cnt = cnt + 1
+       do nt = 1,nt_rtm
+          direct(nr,nt) = avdst_direct%rAttr(nt,cnt)
+       enddo
+    enddo
+    call t_stopf('mosartr_SMdirect')
+
+    !--- add other direct terms
+
+    do nt = 1,nt_rtm
+    do nr = rtmCTL%begr,rtmCTL%endr
+       direct(nr,nt) = direct(nr,nt) + &
+                       dtorunin(nr,nt)*rtmCTL%area(nr)*0.001_r8
+    enddo
+    enddo
+
+    !-----------------------------------
+    ! MOSART Subcycling
+    !-----------------------------------
 
     call t_startf('mosartr_subcycling')
 
@@ -1472,31 +1588,22 @@ contains
     if (nsub*delt_mosart < coupling_period) then
        nsub = nsub + 1
     end if
-    delt = float(coupling_period)/float(nsub)
+    delt = delt_coupling/float(nsub)
     if (delt /= delt_save) then
        if (masterproc) then
-          write(iulog,'(2a,2g20.12,2i12)') trim(subname),': MOSART delt update from/to',delt_save,delt,nsub_save,nsub
+          write(iulog,'(2a,2g20.12,2i12)') trim(subname),' MOSART delt update from/to',delt_save,delt,nsub_save,nsub
        end if
     endif
 
     nsub_save = nsub
     delt_save = delt
-
-    sumfin = 0._r8
-    sumfex = 0._r8
-    sumrin = 0._r8
-    sumdvt = 0._r8
-    rtmCTL%runoff = 0._r8
-    rtmCTL%runoffall = 0._r8
-    rtmCTL%runofflnd = spval
-    rtmCTL%runoffocn = spval
-    rtmCTL%dvolrdt = 0._r8
-    rtmCTL%dvolrdtlnd = spval
-    rtmCTL%dvolrdtocn = spval
-
     Tctl%DeltaT = delt
 
     do ns = 1,nsub
+
+       !-----------------------------------
+       ! mosart euler solver
+       !-----------------------------------
 
        if (wrmflag) then
 #ifdef INCLUDE_WRM
@@ -1512,218 +1619,163 @@ contains
           call t_stopf('mosartr_euler')
        endif
 
-       if (barrier_timers) then
-          call t_startf('mosartr_SMdnstrm_barrier')
-          call mpi_barrier(mpicom_rof,ier)
-          call t_stopf ('mosartr_SMdnstrm_barrier')
-       endif
+! tcraig - NOT using this now, but leave it here in case it's useful in the future
+!   for some runoff terms.
+!       !-----------------------------------
+!       ! downstream advection using sMat
+!       !-----------------------------------
+!
+!       if (barrier_timers) then
+!          call t_startf('mosartr_SMdnstrm_barrier')
+!          call mpi_barrier(mpicom_rof,ier)
+!          call t_stopf ('mosartr_SMdnstrm_barrier')
+!       endif
+!
+!       call t_startf('mosartr_SMdnstrm')
+!
+!       !--- copy fluxout into avsrc_dnstrm ---
+!       cnt = 0
+!       do n = rtmCTL%begr,rtmCTL%endr
+!          cnt = cnt + 1
+!          do nt = 1,nt_rtm
+!             avsrc_dnstrm%rAttr(nt,cnt) = fluxout(n,nt)
+!          enddo
+!       enddo
+!       call mct_avect_zero(avdst_dnstrm)
+!
+!       call mct_sMat_avMult(avsrc_dnstrm, sMatP_dnstrm, avdst_dnstrm)
+!
+!       !--- add mapped fluxout to sfluxin ---
+!       cnt = 0
+!       sfluxin = 0._r8
+!       do n = rtmCTL%begr,rtmCTL%endr
+!          cnt = cnt + 1
+!          do nt = 1,nt_rtm
+!             sfluxin(n,nt) = sfluxin(n,nt) + avdst_dnstrm%rAttr(nt,cnt)
+!          enddo
+!       enddo
+!       call t_stopf('mosartr_SMdnstrm')
 
-       call t_startf('mosartr_SMdnstrm')
-       sfluxin = 0._r8
-#ifdef NO_MCT
-       do n = rtmCTL%begr,rtmCTL%endr
-          nr = rtmCTL%dsil(n)
-          if (abs(rtmCTL%mask(n)) == 1) then
-             if (nr < rtmCTL%begr .or. nr > rtmCTL%endr) then
-                write(iulog,*) trim(subname),':MOSART ERROR: non-local communication ',n,nr
-                call shr_sys_abort(trim(subname)//' ERROR non local comm')
-             endif
-             do nt = 1,nt_rtm
-                sfluxin(nr,nt) = sfluxin(nr,nt) + fluxout(n,nt)
-             enddo
-          endif
-       enddo
-#else
-       !--- copy fluxout into avsrc_dnstrm ---
-       cnt = 0
-       do n = rtmCTL%begr,rtmCTL%endr
-          cnt = cnt + 1
-          do nt = 1,nt_rtm
-             avsrc_dnstrm%rAttr(nt,cnt) = fluxout(n,nt)
-          enddo
-       enddo
-       call mct_avect_zero(avdst_dnstrm)
-
-       call mct_sMat_avMult(avsrc_dnstrm, sMatP_dnstrm, avdst_dnstrm)
-
-       !--- add mapped fluxout to sfluxin ---
-       cnt = 0
-       do n = rtmCTL%begr,rtmCTL%endr
-          cnt = cnt + 1
-          do nt = 1,nt_rtm
-             sfluxin(n,nt) = sfluxin(n,nt) + avdst_dnstrm%rAttr(nt,cnt)
-          enddo
-       enddo
-#endif
-       call t_stopf('mosartr_SMdnstrm')
-
-       if (dbug > 1) then
-          do nt = 1,nt_rtm
-             sum1 = 0._r8
-             sum2 = 0._r8
-             do n = rtmCTL%begr,rtmCTL%endr
-                sum1 = sum1 + sfluxin(n,nt)
-                sum2 = sum2 + fluxout(n,nt)
-             enddo
-             if (abs(sum1+sum2) > 0.0_r8) then
-             if (abs(sum1-sum2)/(sum1+sum2) > 1.0e-12) then
-                write(iulog,*) trim(subname),':MOSART Warning: fluxin = ',sum1,&
-                     ' not equal to fluxout = ',sum2,' for tracer ',nt
-             endif
-             endif
-          enddo
-       endif
+       !-----------------------------------
+       ! accumulate local flow field
+       !-----------------------------------
 
        do nt = 1,nt_rtm
-       do n = rtmCTL%begr,rtmCTL%endr
-          dvolrdt = sfluxin(n,nt) + totrunin(n,nt)*rtmCTL%area(n) - fluxout(n,nt)
-
-          if (dbug > 1) then
-             sumfin(nt) = sumfin(nt) + sfluxin(n,nt)
-             sumfex(nt) = sumfex(nt) + fluxout(n,nt)
-             sumrin(nt) = sumrin(nt) + totrunin(n,nt)*rtmCTL%area(n)
-             sumdvt(nt) = sumdvt(nt) + dvolrdt
-          endif
-
-          if (abs(rtmCTL%mask(n)) == 1) then         ! land points
-             rtmCTL%volr(n,nt) = rtmCTL%volr(n,nt) + dvolrdt*delt
-             fluxout(n,nt)  = TRunoff%flow(n,nt)
-          else
-             rtmCTL%volr(n,nt) = 0._r8
-             fluxout(n,nt) = 0._r8
-          endif
-
-          if (abs(rtmCTL%mask(n)) == 1) then
-             rtmCTL%runoff(n,nt) = rtmCTL%runoff(n,nt) + fluxout(n,nt)
-             rtmCTL%runoffall(n,nt) = rtmCTL%runoffall(n,nt) + TRunoff%flow(n,nt)
-          elseif (rtmCTL%mask(n) == 2) then
-             rtmCTL%runoff(n,nt) = rtmCTL%runoff(n,nt) + dvolrdt
-             rtmCTL%runoffall(n,nt) = rtmCTL%runoffall(n,nt) + TRunoff%flow(n,nt)
-          elseif (dvolrdt /= 0.0_r8) then
-             ! this water has no where to go.....
-             write(iulog,*) subname,' runoff dvolrdt ERROR ',nt,n,rtmCTL%mask(n),dvolrdt
-             call shr_sys_abort(subname//' runoff dvolrdt ERROR')
-          endif
-
-          ! Convert local dvolrdt (in m3/s) to output dvolrdt (in mm/s)
-          if (rtmCTL%area(n) <= 1.e-10) then !
-             write(iulog,*) 'area error: ', n, rtmCTL%area(n)
-             call shr_sys_flush(iulog)
-          else
-             rtmCTL%dvolrdt(n,nt) = rtmCTL%dvolrdt(n,nt) + 1000._r8*dvolrdt/rtmCTL%area(n)
-          endif
-
+       do nr = rtmCTL%begr,rtmCTL%endr
+          flow(nr,nt) = flow(nr,nt) + TRunoff%flow(nr,nt)
        enddo
        enddo
 
-    enddo
+    enddo ! nsub
 
-    ! average fluxes over subcycling
-    rtmCTL%runoff  = rtmCTL%runoff / float(nsub)
-    rtmCTL%runoffall  = rtmCTL%runoffall / float(nsub)
-    rtmCTL%dvolrdt = rtmCTL%dvolrdt / float(nsub)
-    rtmCTL%fluxout = fluxout
+    !-----------------------------------
+    ! average flow over subcycling
+    !-----------------------------------
 
-    do n = rtmCTL%begr,rtmCTL%endr
-       if (rtmCTL%mask(n) == 1) then
-          do nt = 1,nt_rtm
-             rtmCTL%volrlnd(n,nt)= rtmCTL%volr(n,nt)
-            ! rtmCTL%runofflnd(n,nt) = rtmCTL%runoff(n,nt)
-             rtmCTL%runofflnd(n,nt) = rtmCTL%runoffall(n,nt)
-             rtmCTL%dvolrdtlnd(n,nt)= rtmCTL%dvolrdt(n,nt)
-          enddo
-       elseif (rtmCTL%mask(n) == 2) then
-          do nt = 1,nt_rtm
-             !rtmCTL%runoffocn(n,nt) = rtmCTL%runoff(n,nt)
-             rtmCTL%runoffocn(n,nt) = rtmCTL%runoffall(n,nt)
-             rtmCTL%dvolrdtocn(n,nt)= rtmCTL%dvolrdt(n,nt)
-          enddo
-       endif
-    enddo
+    flow = flow / float(nsub)
 
-    ! record states when subsycling completed
-    rtmCTL%fluxout = fluxout
+    !-----------------------------------
+    ! update states when subsycling completed
+    !-----------------------------------
+
     rtmCTL%wh      = TRunoff%wh
     rtmCTL%wt      = TRunoff%wt
     rtmCTL%wr      = TRunoff%wr
     rtmCTL%erout   = TRunoff%erout
 
+    do nt = 1,nt_rtm
+    do nr = rtmCTL%begr,rtmCTL%endr
+       volr_init = rtmCTL%volr(nr,nt)
+       rtmCTL%volr(nr,nt) = (Trunoff%wt(nr,nt) + Trunoff%wr(nr,nt) + &
+                             Trunoff%wh(nr,nt)*rtmCTL%area(nr))
+       rtmCTL%dvolrdt = (rtmCTL%volr(nr,nt) - volr_init) / delt_coupling
+       rtmCTL%runoffall(nr,nt)  = flow(nr,nt) + direct(nr,nt)
+       if (rtmCTL%mask(n) == 1) then
+          rtmCTL%runofflnd(nr,nt) = rtmCTL%runoffall(nr,nt)
+          rtmCTL%dvolrdtlnd(nr,nt)= rtmCTL%dvolrdt(nr,nt)
+       elseif (rtmCTL%mask(n) >= 2) then
+          rtmCTL%runoffocn(nr,nt) = rtmCTL%runoffall(nr,nt)
+          rtmCTL%dvolrdtocn(nr,nt)= rtmCTL%dvolrdt(nr,nt)
+       endif
+    enddo
+    enddo
+
     call t_stopf('mosartr_subcycling')
 
-    ! BUDGET, runoff out (only ocean points), subtract final volume out
+    !-----------------------------------
+    ! BUDGET
+    !-----------------------------------
+
+    ! BUDGET 
+    ! BUDGET terms 1 and 2 are initial and final volumes in m3
+    ! BUDGET terms 3,4,5,6,7,8,9,11 are sur,sub,gwl,dto,tot,flow,flood,direct in m3/s
     if (budget_check) then
        call t_startf('mosartr_budget')
        do nt = 1,nt_rtm
        do nr = rtmCTL%begr,rtmCTL%endr
-          if (rtmCTL%mask(nr) == 2) then
-             budget1(nt) = budget1(nt) - rtmCTL%runoff(nr,nt)
-          endif
-          budget1(nt) = budget1(nt) - rtmCTL%volr(nr,nt)/float(coupling_period)
-!          write(iulog,*) 'tcx b3',nt,nr,budget1(nt),rtmCTL%volr(nr,nt)
+          budget_terms( 2,nt) = budget_terms( 2,nt) + rtmCTL%volr(nr,nt)
+          budget_terms( 8,nt) = budget_terms( 8,nt) + flow(nr,nt)
+          budget_terms(11,nt) = budget_terms(11,nt) + direct(nr,nt)
+          budget_terms(12,nt) = budget_terms(12,nt) + rtmCTL%runoffall(nr,nt)
        enddo
        enddo
-!       write(iulog,*) 'tcx b4 ',minval(budget1),maxval(budget1)
-!       write(iulog,*) 'tcx b4a',minval(rtmCTL%runoff),maxval(rtmCTL%runoff)
-!       write(iulog,*) 'tcx b4b',minval(rtmCTL%volr),maxval(rtmCTL%volr),coupling_period
-       call t_stopf('mosartr_budget')
-    endif
-
-    ! RUNOFF check, compute global sums and check
-    if (runoff_check) then
-       if (barrier_timers) then
-          call t_startf('mosartr_rofdiag_barrier')
-          call mpi_barrier(mpicom_rof,ier)
-          call t_stopf ('mosartr_rofdiag_barrier')
-       endif
-       call t_startf('mosartr_rofdiag')
-       diag2 = 0.0_r8
-       do nt = 1,nt_rtm
+       nt = 1
        do nr = rtmCTL%begr,rtmCTL%endr
-          diag2(1,nt) = diag2(1,nt) + rtmCTL%runoff(nr,nt)
-          diag2(2,nt) = diag2(2,nt) + rtmCTL%volr(nr,nt)
-          diag2(3,nt) = diag2(3,nt) + rtmCTL%dvolrdt(nr,nt)
+          budget_terms( 9,nt) = budget_terms( 9,nt) + rtmCTL%flood(nr)
        enddo
-       enddo
-       call shr_mpi_sum(diag2,diag2_global,mpicom_rof,'rtm global budget',all=.false.)
+
+       !--- check budget
+
+       ! convert fluxes from m3/s to m3 by mult by coupling_period
+       budget_terms(3:20,:) = budget_terms(3:20,:) * delt_coupling
+
+       ! convert terms from m3 to million m3
+       budget_terms(:,:) = budget_terms(:,:) * 1.0e-6_r8
+
+       ! global sum
+       call shr_mpi_sum(budget_terms,budget_global,mpicom_rof,'mosart global budget',all=.false.)
+
+       ! write budget
        if (masterproc) then
-          write(iulog,'(2a,i10,i6)') trim(subname),' MOSART diagnostics for ',ymd,tod
+          write(iulog,'(2a,i10,i6)') trim(subname),' MOSART BUDGET diagnostics (million m3) for ',ymd,tod
           do nt = 1,nt_rtm
+            budget_volume = (budget_global( 2,nt) - budget_global( 1,nt))
+            budget_input  = (budget_global( 3,nt) + budget_global( 4,nt) + &
+                             budget_global( 5,nt) + budget_global( 6,nt))
+            budget_output = (budget_global( 8,nt) + budget_global( 9,nt) + &
+                             budget_global(11,nt))
+            budget_total  = budget_volume - budget_input + budget_output
             write(iulog,'(2a,i4)')        trim(subname),'  tracer = ',nt
-            write(iulog,'(2a,i4,g20.12)') trim(subname),'   diag runoff  = ',nt,diag2_global(1,nt)
-            write(iulog,'(2a,i4,g20.12)') trim(subname),'   diag volr    = ',nt,diag2_global(2,nt)
-            write(iulog,'(2a,i4,g20.12)') trim(subname),'   diag dvolrdt = ',nt,diag2_global(3,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),'   volume   init = ',nt,budget_global(1,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),'   volume  final = ',nt,budget_global(2,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),'   input surface = ',nt,budget_global(3,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),'   input subsurf = ',nt,budget_global(4,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),'   input gwl     = ',nt,budget_global(5,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),'   input dto     = ',nt,budget_global(6,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),'   input total   = ',nt,budget_global(7,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),'   input check   = ',nt,budget_input - budget_global(7,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),'   output flow   = ',nt,budget_global(8,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),'   output direct = ',nt,budget_global(11,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),'   output rofall = ',nt,budget_global(12,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),'   output flood  = ',nt,budget_global(9,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),'   output check  = ',nt,budget_output - budget_global(12,nt) - budget_global(9,nt)
+           !write(iulog,'(2a)') trim(subname),'----------------'
+            write(iulog,'(2a,i4,f22.6)') trim(subname),'   sum input     = ',nt,budget_input
+            write(iulog,'(2a,i4,f22.6)') trim(subname),'   sum dvolume   = ',nt,budget_volume
+            write(iulog,'(2a,i4,f22.6)') trim(subname),'   sum output    = ',nt,budget_output
+           !write(iulog,'(a,16x,a)') trim(subname),'----------------'
+            write(iulog,'(2a,i4,f22.6)') trim(subname),'   net (dv-i+o)  = ',nt,budget_total
           enddo
+          write(iulog,'(a)') '----------------------------------- '
        endif
-       call t_stopf('mosartr_rofdiag')
-    endif
 
-    ! BUDGET, compute global sums and check
-    if (budget_check) then
-       if (barrier_timers) then
-          call t_startf('mosartr_budget_barrier')
-          call mpi_barrier(mpicom_rof,ier)
-          call t_stopf ('mosartr_budget_barrier')
-       endif
-       call t_startf('mosartr_budget')
-       call shr_mpi_sum(budget1,diag_global,mpicom_rof,'rtm global budget',all=.false.)
-!       write(iulog,*) 'tcx b5 ',minval(budget1),maxval(budget1)
-       if (masterproc) then
-          write(iulog,*) ' '
-          abort = .false.
-          do nt = 1,nt_rtm
-             diag_global(nt) = diag_global(nt) * 1000._r8 / rtmCTL%totarea * 1.0e6_r8   ! convert from m3/s to kg/m2s*1e6
-             write(iulog,'(2a,i10,i6,i4,g20.12)') trim(subname),':BUDGET check (kg/m2s*1e6)= ',ymd,tod,nt,diag_global(nt)
-             if (abs(diag_global(nt)) > budget_tolerance) abort = .true.
-          enddo
-          if (abort) then
-             write(iulog,*) trim(subname),':BUDGET abort balance too large ',budget_tolerance
-             call shr_sys_abort(trim(subname)//':rtm budget ERROR')
-          endif
-       endif
        call t_stopf('mosartr_budget')
-    endif
+    endif  ! budget_check
 
-    ! Write out RTM history and restart file
+    !-----------------------------------
+    ! Write out MOSART history file
+    !-----------------------------------
+
     call t_startf('mosartr_hbuf')
     call RtmHistFldsSet()
     call RtmHistUpdateHbuf()
@@ -1733,6 +1785,10 @@ contains
     call RtmHistHtapesWrapup( rstwr, nlend )
     call t_stopf('mosartr_htapes')
 
+    !-----------------------------------
+    ! Write out MOSART restart file
+    !-----------------------------------
+
     if (rstwr) then
        call t_startf('mosartr_rest')
        filer = RtmRestFileName(rdate=rdate)
@@ -1740,18 +1796,9 @@ contains
        call t_stopf('mosartr_rest')
     end if
 
-    ! Global water balance calculation and ERROR check
-    if (dbug > 1) then
-       do nt = 1,nt_rtm
-       if (abs(sumdvt(nt)+sumrin(nt)) > 0.0_r8) then
-       if (abs((sumdvt(nt)-sumrin(nt))/(sumdvt(nt)+sumrin(nt))) > 1.0e-6) then
-          write(iulog,*) trim(subname),':MOSART Warning: water balance nt,dvt,rin,fin,fex = ', &
-             nt,sumdvt(nt),sumrin(nt),sumfin(nt),sumfex(nt)
-          !call shr_sys_abort()
-       endif
-       endif
-       enddo
-    endif
+    !-----------------------------------
+    ! Done
+    !-----------------------------------
 
     first_call = .false.
 
@@ -1786,15 +1833,15 @@ contains
     type(io_desc_t)    :: iodesc     ! pio io desc
     character(len=256) :: locfn      ! local file name
 
-    !Rtm Flood variables for spatially varying celerity
+    !MOSART Flood variables for spatially varying celerity
     real(r8) :: effvel(nt_rtm) = 0.7_r8   ! downstream velocity (m/s)
     real(r8) :: min_ev(nt_rtm) = 0.35_r8  ! minimum downstream velocity (m/s)
     real(r8) :: fslope = 1.0_r8           ! maximum slope for which flooding can occur
-    character(*),parameter :: subname = '(RtmFloodInit) '
+    character(len=*),parameter :: subname = '(RtmFloodInit) '
     !-----------------------------------------------------------------------
 
     allocate(rslope(begr:endr), max_volr(begr:endr), stat=ier)
-    if (ier /= 0) call shr_sys_abort(subname // ':: allocation ERROR')
+    if (ier /= 0) call shr_sys_abort(subname // ' allocation ERROR')
 
     ! Assume that if SLOPE is on river input dataset so is MAX_VOLR and that
     ! both have the same io descriptor
@@ -1804,7 +1851,7 @@ contains
     call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
     ier = pio_inq_varid(ncid, name='SLOPE', vardesc=vardesc)
     if (ier /= PIO_noerr) then
-       if (masterproc) write(iulog,*) subname//': variable SLOPE is not on dataset'
+       if (masterproc) write(iulog,*) subname//' variable SLOPE is not on dataset'
        readvar = .false.
     else
        readvar = .true.
@@ -1820,6 +1867,7 @@ contains
        enddo
        call pio_initdecomp(pio_subsystem, pio_double, dids, compDOF, iodesc)
        deallocate(compdof)
+! tcraig, there ia bug here, shouldn't use same vardesc for two different variable
        call pio_read_darray(ncid, vardesc, iodesc, rslope, ier)
        call pio_read_darray(ncid, vardesc, iodesc, max_volr, ier)
        call pio_freedecomp(ncid, iodesc)
@@ -1880,8 +1928,8 @@ contains
   type(mct_avect) :: avtmp, avtmpG ! temporary avects
   type(mct_sMat)  :: sMat          ! temporary sparse matrix, needed for sMatP
   character(len=16384) :: rList             ! list of fields for SM multiply
-  character(len=32) :: subname = 'read_MOSART_inputs '
   character(len=1000) :: fname
+  character(len=*),parameter :: subname = '(MOSART_init)'
   character(len=*),parameter :: FORMI = '(2A,2i10)'
   character(len=*),parameter :: FORMR = '(2A,2g15.7)'
  
@@ -1915,14 +1963,27 @@ contains
      if (masterproc) write(iulog,FORMR) trim(subname),' read frac ',minval(Tunit%frac),maxval(Tunit%frac)
      call shr_sys_flush(iulog)
 
-     allocate(TUnit%fdir(begr:endr))  
+     ! read fdir, convert to mask
+     ! fdir <0 ocean, 0=outlet, >0 land
+     ! tunit mask is 0=ocean, 1=land, 2=outlet for mosart calcs
+
+     allocate(TUnit%mask(begr:endr))  
      ier = pio_inq_varid(ncid, name='fdir', vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_int, TUnit%fdir, ier)
-     if (masterproc) write(iulog,FORMI) trim(subname),' read fdir ',minval(Tunit%fdir),maxval(Tunit%fdir)
+     call pio_read_darray(ncid, vardesc, iodesc_int, TUnit%mask, ier)
+     if (masterproc) write(iulog,FORMI) trim(subname),' read fdir mask ',minval(Tunit%mask),maxval(Tunit%mask)
      call shr_sys_flush(iulog)
 
-     allocate(TUnit%mask(begr:endr))
-     TUnit%mask = 1        ! assuming all spatial units are active land surface, TO DO
+     do n = rtmCtl%begr, rtmCTL%endr
+        if (Tunit%mask(n) < 0) then
+           Tunit%mask(n) = 0
+        elseif (Tunit%mask(n) == 0) then
+           Tunit%mask(n) = 2
+        elseif (Tunit%mask(n) > 0) then
+           Tunit%mask(n) = 1
+        else
+           call shr_sys_abort(subname//' Tunit mask error')
+        endif
+     enddo
 
      allocate(TUnit%ID0(begr:endr))  
      ier = pio_inq_varid(ncid, name='ID', vardesc=vardesc)
@@ -1935,6 +1996,22 @@ contains
      call pio_read_darray(ncid, vardesc, iodesc_int, TUnit%dnID, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read dnID ',minval(Tunit%dnID),maxval(Tunit%dnID)
      call shr_sys_flush(iulog)
+
+     !-------------------------------------------------------
+     ! RESET ID0 and dnID indices using the IDkey to be consistent
+     ! with standard gindex order to leverage gsmap_r
+     !-------------------------------------------------------
+     do n=rtmCtl%begr, rtmCTL%endr
+        TUnit%ID0(n)  = IDkey(TUnit%ID0(n))
+        if (Tunit%dnID(n) > 0 .and. TUnit%dnID(n) <= rtmlon*rtmlat) then
+           if (IDkey(TUnit%dnID(n)) > 0 .and. IDkey(TUnit%dnID(n)) <= rtmlon*rtmlat) then
+              TUnit%dnID(n) = IDkey(TUnit%dnID(n))
+           else
+              write(iulog,*) subname,' ERROR bad IDkey for TUnit%dnID',n,TUnit%dnID(n),IDkey(TUnit%dnID(n))
+              call shr_sys_abort(subname//' ERROR bad IDkey for TUnit%dnID')
+           endif
+        endif
+     enddo
 
      allocate(TUnit%area(begr:endr))  
      ier = pio_inq_varid(ncid, name='area', vardesc=vardesc)
@@ -2210,120 +2287,98 @@ contains
         TUnit%hslpsqrt(iunit) = sqrt(Tunit%hslp(iunit))
      end do
 
-#ifdef NO_MCT
-     ! tcraig, this only works if decomposed by basin, verify with abort if not
-     do iunit=rtmCTL%begr,rtmCTL%endr
-        if(Tunit%dnID(iunit) > 0) then
-           Tunit%indexDown(iunit) = -99
-           do nn=rtmCTL%begr,rtmCTL%endr
-              if(TUnit%dnID(iunit) == TUnit%ID0(nn)) then
-                 TUnit%indexDown(iunit) = nn
-                 TUnit%nUp(nn) = TUnit%nUp(nn) + 1
-                 TUnit%iUp(nn,TUnit%nUp(nn)) = iunit
-              end if
-           end do
-           if(Tunit%indexDown(iunit) <= 0) then
-              write(iulog,*) subname,' ERROR indexDown outside basin ',iunit,TUnit%ID0(iunit),Tunit%dnID(iunit)
-              call shr_sys_abort(trim(subname)//' ERROR indexDown outside basin')
+     lsize = rtmCTL%lnumr
+     gsize = rtmlon*rtmlat
+
+     if (smat_option == 'opt') then
+        ! distributed smat initialization
+        ! mct_sMat_init must be given the number of rows and columns that
+        ! would be in the full matrix.  Nrows= size of output vector=nb.
+        ! Ncols = size of input vector = na.
+
+        cnt = 0
+        do iunit=rtmCTL%begr,rtmCTL%endr
+           if(TUnit%dnID(iunit) > 0) cnt = cnt + 1
+        enddo
+
+        call mct_sMat_init(sMat, gsize, gsize, cnt)
+        igrow = mct_sMat_indexIA(sMat,'grow')
+        igcol = mct_sMat_indexIA(sMat,'gcol')
+        iwgt  = mct_sMat_indexRA(sMat,'weight')
+        cnt = 0
+        do iunit = rtmCTL%begr,rtmCTL%endr
+           if (TUnit%dnID(iunit) > 0) then
+              cnt = cnt + 1
+              sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
+              sMat%data%iAttr(igrow,cnt) = TUnit%dnID(iunit)
+              sMat%data%iAttr(igcol,cnt) = TUnit%ID0(iunit)
            endif
+        enddo
+
+        call mct_sMatP_Init(sMatP_eroutUp, sMat, gsMap_r, gsMap_r, 0, mpicom_rof, ROFID)
+
+     elseif (smat_option == 'Xonly' .or. smat_option == 'Yonly') then
+        ! root initialization
+        call mct_aVect_init(avtmp,rList='f1:f2',lsize=lsize)
+        call mct_aVect_zero(avtmp)
+        cnt = 0
+        do iunit = rtmCTL%begr,rtmCTL%endr
+           cnt = cnt + 1
+           avtmp%rAttr(1,cnt) = TUnit%ID0(iunit)
+           avtmp%rAttr(2,cnt) = TUnit%dnID(iunit)
+        enddo
+        call mct_avect_gather(avtmp,avtmpG,gsmap_r,mastertask,mpicom_rof)
+        if (masterproc) then
+           cnt = 0
+           do n = 1,rtmlon*rtmlat
+              if (avtmpG%rAttr(2,n) > 0) then
+                 cnt = cnt + 1
+              endif
+           enddo
+
+           call mct_sMat_init(sMat, gsize, gsize, cnt)
+           igrow = mct_sMat_indexIA(sMat,'grow')
+           igcol = mct_sMat_indexIA(sMat,'gcol')
+           iwgt  = mct_sMat_indexRA(sMat,'weight')
+
+           cnt = 0
+           do n = 1,rtmlon*rtmlat
+              if (avtmpG%rAttr(2,n) > 0) then
+                 cnt = cnt + 1
+                 sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
+                 sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(2,n)
+                 sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(1,n)
+              endif
+           enddo
+           call mct_avect_clean(avtmpG)
+        else
+           call mct_sMat_init(sMat,1,1,1)
         endif
-     end do
-      
-#else
+        call mct_avect_clean(avtmp)
 
-    lsize = rtmCTL%lnumr
-    gsize = rtmlon*rtmlat
+        call mct_sMatP_Init(sMatP_eroutUp, sMat, gsMap_r, gsMap_r, smat_option, 0, mpicom_rof, ROFID)
 
-    if (smat_option == 'opt') then
-       ! distributed smat initialization
-       ! mct_sMat_init must be given the number of rows and columns that
-       ! would be in the full matrix.  Nrows= size of output vector=nb.
-       ! Ncols = size of input vector = na.
+     else
 
-       cnt = 0
-       do iunit=rtmCTL%begr,rtmCTL%endr
-          if(TUnit%dnID(iunit) > 0) cnt = cnt + 1
-       enddo
+        write(iulog,*) trim(subname),' MOSART ERROR: invalid smat_option '//trim(smat_option)
+        call shr_sys_abort(trim(subname)//' ERROR invald smat option')
 
-       call mct_sMat_init(sMat, gsize, gsize, cnt)
-       igrow = mct_sMat_indexIA(sMat,'grow')
-       igcol = mct_sMat_indexIA(sMat,'gcol')
-       iwgt  = mct_sMat_indexRA(sMat,'weight')
-       cnt = 0
-       do iunit = rtmCTL%begr,rtmCTL%endr
-          if (TUnit%dnID(iunit) > 0) then
-             cnt = cnt + 1
-             sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-             sMat%data%iAttr(igrow,cnt) = TUnit%dnID(iunit)
-             sMat%data%iAttr(igcol,cnt) = TUnit%ID0(iunit)
-          endif
-       enddo
+     endif
 
-       call mct_sMatP_Init(sMatP_eroutUp, sMat, gsMap_r, gsMap_r, 0, mpicom_rof, ROFID)
+     ! initialize the AVs to go with sMatP
+     write(rList,'(a,i3.3)') 'tr',1
+     do nt = 2,nt_rtm
+        write(rList,'(a,i3.3)') trim(rList)//':tr',nt
+     enddo
+     write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
+     call mct_aVect_init(avsrc_eroutUp,rList=rList,lsize=rtmCTL%lnumr)
+     call mct_aVect_init(avdst_eroutUp,rList=rList,lsize=rtmCTL%lnumr)
 
-    elseif (smat_option == 'Xonly' .or. smat_option == 'Yonly') then
-       ! root initialization
-       call mct_aVect_init(avtmp,rList='f1:f2',lsize=lsize)
-       call mct_aVect_zero(avtmp)
-       cnt = 0
-       do iunit = rtmCTL%begr,rtmCTL%endr
-          cnt = cnt + 1
-          avtmp%rAttr(1,cnt) = TUnit%ID0(iunit)
-          avtmp%rAttr(2,cnt) = TUnit%dnID(iunit)
-       enddo
-       call mct_avect_gather(avtmp,avtmpG,gsmap_r,mastertask,mpicom_rof)
-       if (masterproc) then
-          cnt = 0
-          do n = 1,rtmlon*rtmlat
-             if (avtmpG%rAttr(2,n) > 0) then
-                cnt = cnt + 1
-             endif
-          enddo
+     lsize = mct_smat_gNumEl(sMatP_eroutUp%Matrix,mpicom_rof)
+     if (masterproc) write(iulog,*) subname," Done initializing SmatP_eroutUp, nElements = ",lsize
 
-          call mct_sMat_init(sMat, gsize, gsize, cnt)
-          igrow = mct_sMat_indexIA(sMat,'grow')
-          igcol = mct_sMat_indexIA(sMat,'gcol')
-          iwgt  = mct_sMat_indexRA(sMat,'weight')
-
-          cnt = 0
-          do n = 1,rtmlon*rtmlat
-             if (avtmpG%rAttr(2,n) > 0) then
-                cnt = cnt + 1
-                sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-                sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(2,n)
-                sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(1,n)
-             endif
-          enddo
-          call mct_avect_clean(avtmpG)
-       else
-          call mct_sMat_init(sMat,1,1,1)
-       endif
-       call mct_avect_clean(avtmp)
-
-       call mct_sMatP_Init(sMatP_eroutUp, sMat, gsMap_r, gsMap_r, smat_option, 0, mpicom_rof, ROFID)
-
-    else
-
-       write(iulog,*) trim(subname),':MOSART ERROR: invalid smat_option '//trim(smat_option)
-       call shr_sys_abort(trim(subname)//' ERROR invald smat option')
-
-    endif
-
-    ! initialize the AVs to go with sMatP
-    write(rList,'(a,i3.3)') 'tr',1
-    do nt = 2,nt_rtm
-       write(rList,'(a,i3.3)') trim(rList)//':tr',nt
-    enddo
-    write(iulog,*) trim(subname),':MOSART initialize avect ',trim(rList)
-    call mct_aVect_init(avsrc_eroutUp,rList=rList,lsize=rtmCTL%lnumr)
-    call mct_aVect_init(avdst_eroutUp,rList=rList,lsize=rtmCTL%lnumr)
-
-    lsize = mct_smat_gNumEl(sMatP_eroutUp%Matrix,mpicom_rof)
-    if (masterproc) write(iulog,*) "Rtmini Done initializing SmatP_eroutUp, nElements = ",lsize
-
-    ! keep only sMatP
-    call mct_sMat_clean(sMat)
-#endif
+     ! keep only sMatP
+     call mct_sMat_clean(sMat)
 
   end if  ! endr >= begr
 
@@ -2361,6 +2416,7 @@ contains
   ! !DESCRIPTION: predescribe the sub-time-steps for channel routing
     implicit none    
     integer :: iunit   !local index
+    character(len=*),parameter :: subname = '(SubTimestep)'
 
     allocate(TUnit%numDT_r(rtmCTL%begr:rtmCTL%endr),TUnit%numDT_t(rtmCTL%begr:rtmCTL%endr))
     TUnit%numDT_r = 1
@@ -2368,9 +2424,9 @@ contains
     allocate(TUnit%phi_r(rtmCTL%begr:rtmCTL%endr),TUnit%phi_t(rtmCTL%begr:rtmCTL%endr))
     TUnit%phi_r = 0._r8
     TUnit%phi_t = 0._r8
-    
+
     do iunit=rtmCTL%begr,rtmCTL%endr
-       if(TUnit%fdir(iunit) > 0 .and. TUnit%rlen(iunit) > 0._r8) then
+       if(TUnit%mask(iunit) > 0 .and. TUnit%rlen(iunit) > 0._r8) then
           TUnit%phi_r(iunit) = TUnit%areaTotal(iunit)*sqrt(TUnit%rslp(iunit))/(TUnit%rlen(iunit)*TUnit%rwidth(iunit))
           if(TUnit%phi_r(iunit) >= 10._r8) then
              TUnit%numDT_r(iunit) = (TUnit%numDT_r(iunit)*log10(TUnit%phi_r(iunit))*Tctl%DLevelR) + 1

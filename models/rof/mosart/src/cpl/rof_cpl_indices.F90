@@ -26,14 +26,13 @@ module rof_cpl_indices
   integer, public :: index_x2r_Flrl_rofsur = 0  ! lnd->rof liquid surface runoff forcing from land
   integer, public :: index_x2r_Flrl_rofgwl = 0  ! lnd->rof liquid gwl runoff from land
   integer, public :: index_x2r_Flrl_rofsub = 0  ! lnd->rof liquid subsurface runoff from land
+  integer, public :: index_x2r_Flrl_rofdto = 0  ! lnd->rof liquid direct to ocean runoff
   integer, public :: index_x2r_Flrl_rofi  = 0   ! lnd->rof ice runoff forcing from land
 
   integer, public :: nflds_x2r = 0
 
   !TODO - nt_rtm and rtm_tracers need to be removed and set by access to the index array
   integer, parameter, public :: nt_rtm = 2    ! number of tracers
-  integer, parameter, public :: nt_nliq = 1
-  integer, parameter, public :: nt_nice = 2
   character(len=3), parameter, public :: rtm_tracers(nt_rtm) =  (/'LIQ','ICE'/)
 
   ! roff to driver (part of land for now) (optional if ROF is off)
@@ -82,6 +81,7 @@ contains
     index_x2r_Flrl_rofsur = mct_avect_indexra(avtmp,'Flrl_rofsur') !'Flrl_rofsur')
     index_x2r_Flrl_rofgwl = mct_avect_indexra(avtmp,'Flrl_rofgwl')
     index_x2r_Flrl_rofsub = mct_avect_indexra(avtmp,'Flrl_rofsub')
+    index_x2r_Flrl_rofdto = mct_avect_indexra(avtmp,'Flrl_rofdto',perrwith='quiet')
     index_x2r_Flrl_rofi   = mct_avect_indexra(avtmp,'Flrl_rofi')
 
     nflds_x2r = mct_avect_nRattr(avtmp)

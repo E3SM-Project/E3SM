@@ -63,7 +63,7 @@ MODULE MOSART_physics_mod
     call t_startf('mosart_hillslope')
     do nt=1,nt_rtm
     do iunit=rtmCTL%begr,rtmCTL%endr
-       if(TUnit%fdir(iunit) >= 0 .and. TUnit%areaTotal(iunit) > 0._r8) then
+       if(TUnit%mask(iunit) > 0 .and. TUnit%areaTotal(iunit) > 0._r8) then
           call hillslopeRouting(iunit,nt,Tctl%DeltaT)
           TRunoff%wh(iunit,nt) = TRunoff%wh(iunit,nt) + TRunoff%dwh(iunit,nt) * Tctl%DeltaT
           call UpdateState_hillslope(iunit,nt)
@@ -85,7 +85,7 @@ MODULE MOSART_physics_mod
        TRunoff%erlateral(:,:) = 0._r8
        do nt=1,nt_rtm
        do iunit=rtmCTL%begr,rtmCTL%endr
-          if(TUnit%fdir(iunit) >= 0 .and. TUnit%areaTotal(iunit) > 0._r8) then
+          if(TUnit%mask(iunit) > 0 .and. TUnit%areaTotal(iunit) > 0._r8) then
              localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R/TUnit%numDT_t(iunit)
              do k=1,TUnit%numDT_t(iunit)
                 call subnetworkRouting(iunit,nt,localDeltaT)
@@ -121,7 +121,7 @@ MODULE MOSART_physics_mod
        end do
        end do
 #else
-       !--- copy fluxout into avsrc_eroutUp ---
+       !--- copy erout into avsrc_eroutUp ---
        cnt = 0
        do iunit = rtmCTL%begr,rtmCTL%endr
           cnt = cnt + 1
@@ -133,7 +133,7 @@ MODULE MOSART_physics_mod
 
        call mct_sMat_avMult(avsrc_eroutUp, sMatP_eroutUp, avdst_eroutUp)
 
-       !--- add mapped fluxout to sfluxin ---
+       !--- add mapped eroutUp to Trunoff ---
        cnt = 0
        do iunit = rtmCTL%begr,rtmCTL%endr
           cnt = cnt + 1
@@ -151,7 +151,7 @@ MODULE MOSART_physics_mod
        call t_startf('mosart_chanroute')    
        do nt=1,nt_rtm
        do iunit=rtmCTL%begr,rtmCTL%endr
-          if(TUnit%fdir(iunit) >= 0 .and. TUnit%areaTotal(iunit) > TINYVALUE) then
+          if(TUnit%mask(iunit) > 0 .and. TUnit%areaTotal(iunit) > TINYVALUE) then
              localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R/TUnit%numDT_r(iunit)
              temp_erout = 0._r8
              do k=1,TUnit%numDT_r(iunit)

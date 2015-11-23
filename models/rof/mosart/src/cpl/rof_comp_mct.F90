@@ -30,6 +30,7 @@ module rof_comp_mct
   use rof_cpl_indices  , only : rof_cpl_indices_set, nt_rtm, rtm_tracers, &
                                 index_x2r_Flrl_rofsur, index_x2r_Flrl_rofi, &
                                 index_x2r_Flrl_rofgwl, index_x2r_Flrl_rofsub, &
+                                index_x2r_Flrl_rofdto, &
                                 index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
                                 index_r2x_Flrr_flood, &
                                 index_r2x_Flrr_volr, index_r2x_Flrr_volrmch
@@ -59,6 +60,7 @@ module rof_comp_mct
   real(r8), pointer :: subrunin(:,:)   ! subsurface runoff on rtm grid (mm/s)
   real(r8), pointer :: surrunin(:,:)   ! surface runoff on rtm grid (mm/s)
   real(r8), pointer :: gwlrunin(:,:)   ! water residual from glacier, wetlands and lakes water balance on rtm grid (mm/s)
+  real(r8), pointer :: dtorunin(:,:)   ! direct to ocean runoff on rtm grid (mm/s)
 
 ! REVISION HISTORY:
 ! Author: Mariana Vertenstein
@@ -203,6 +205,7 @@ contains
        allocate (subrunin(begr:endr,nt_rtm))
        allocate (surrunin(begr:endr,nt_rtm))
        allocate (gwlrunin(begr:endr,nt_rtm))
+       allocate (dtorunin(begr:endr,nt_rtm))
        
        ! Initialize rof gsMap for ocean rof and land rof
        call rof_SetgsMap_mct( mpicom_rof, ROFID, gsMap_rof)
@@ -305,7 +308,7 @@ contains
     nlend = seq_timemgr_StopAlarmIsOn( EClock )
     rstwr = seq_timemgr_RestartAlarmIsOn( EClock )
     call advance_timestep()
-    call Rtmrun(totrunin,surrunin, subrunin, gwlrunin,rstwr, nlend, rdate)
+    call Rtmrun(totrunin,surrunin,subrunin,gwlrunin,dtorunin,rstwr,nlend,rdate)
 
     ! Map roff data to MCT datatype (input is rtmCTL%runoff, output is r2x_r)
     call t_startf ('lc_rof_export')
@@ -521,7 +524,7 @@ contains
     character(len=32), parameter :: sub = 'rof_import_mct'
     !---------------------------------------------------------------------------
     
-    ! Note that totrunin and subrunin is a flux
+    ! Note that ***runin are fluxes
 
     nliq = 0
     nfrz = 0
@@ -546,12 +549,29 @@ contains
                           x2r_r%rAttr(index_x2r_Flrl_rofgwl,n2) + &
                           x2r_r%rAttr(index_x2r_Flrl_rofsub,n2)
        totrunin(n,nfrz) = x2r_r%rAttr(index_x2r_Flrl_rofi,n2)
+
        surrunin(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_rofsur,n2)
        surrunin(n,nfrz) = x2r_r%rAttr(index_x2r_Flrl_rofi,n2)
+
        subrunin(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_rofsub,n2)
        subrunin(n,nfrz) = 0.0_r8
+
        gwlrunin(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_rofgwl,n2)
        gwlrunin(n,nfrz) = 0.0_r8
+
+       dtorunin(n,nliq) = 0.0_r8
+       dtorunin(n,nfrz) = 0.0_r8
+
+       rtmCTL%qsur(n) = x2r_r%rAttr(index_x2r_Flrl_rofsur,n2)
+       rtmCTL%qsub(n) = x2r_r%rAttr(index_x2r_Flrl_rofsub,n2)
+       rtmCTL%qgwl(n) = x2r_r%rAttr(index_x2r_Flrl_rofgwl,n2)
+       rtmCTL%qdto(n) = 0.0_r8
+       if (index_x2r_Flrl_rofdto > 0) then
+          totrunin(n,nliq) = totrunin(n,nliq) + &
+                             x2r_r%rAttr(index_x2r_Flrl_rofdto,n2)
+          dtorunin(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_rofdto,n2)
+          rtmCTL%qdto(n) = x2r_r%rAttr(index_x2r_Flrl_rofdto,n2)
+       endif
     enddo
 
   end subroutine rof_import_mct
@@ -606,12 +626,12 @@ contains
     if ( ice_runoff )then
        do n = rtmCTL%begr,rtmCTL%endr
           ni = ni + 1
-          if (rtmCTL%mask(n) == 2) then
+          if (rtmCTL%mask(n) >= 2) then
              ! liquid and ice runoff are treated separately - this is what goes to the ocean
              r2x_r%rAttr(index_r2x_Forr_rofl,ni) = &
-                  rtmCTL%runoff(n,nliq)/(rtmCTL%area(n)*1.0e-6_r8*1000._r8)
+                  rtmCTL%runoffall(n,nliq)/(rtmCTL%area(n)*0.001_r8)
              r2x_r%rAttr(index_r2x_Forr_rofi,ni) = &
-                  rtmCTL%runoff(n,nfrz)/(rtmCTL%area(n)*1.0e-6_r8*1000._r8)
+                  rtmCTL%runoffall(n,nfrz)/(rtmCTL%area(n)*0.001_r8)
              if (ni > rtmCTL%lnumr) then
                 write(iulog,*) sub, ' : ERROR runoff count',n,ni
                 call shr_sys_abort( sub//' : ERROR runoff > expected' )
@@ -621,10 +641,10 @@ contains
     else
        do n = rtmCTL%begr,rtmCTL%endr
           ni = ni + 1
-          if (rtmCTL%mask(n) == 2) then
+          if (rtmCTL%mask(n) >= 2) then
              ! liquid and ice runoff are bundled together to liquid runoff, and then ice runoff set to zero
              r2x_r%rAttr(index_r2x_Forr_rofl,ni) =   &
-                  (rtmCTL%runoff(n,nfrz)+rtmCTL%runoff(n,nliq))/(rtmCTL%area(n)*1.0e-6_r8*1000._r8)
+                  (rtmCTL%runoffall(n,nfrz)+rtmCTL%runoffall(n,nliq))/(rtmCTL%area(n)*0.001_r8)
              r2x_r%rAttr(index_r2x_Forr_rofi,ni) = 0._r8
              if (ni > rtmCTL%lnumr) then
                 write(iulog,*) sub, ' : ERROR runoff count',n,ni
@@ -634,14 +654,23 @@ contains
        end do
     end if
 
+!  Add direct to ocean runoff prior to passing runoff to coupler
+!  tcraig, This is now done in rtmrun to include in the budget
+!    ni = 0
+!    do n = rtmCTL%begr,rtmCTL%endr
+!       ni = ni + 1
+!       r2x_r%rAttr(index_r2x_Forr_rofl,ni) &
+!            = r2x_r%rAttr(index_r2x_Forr_rofl,ni) + rtmCTL%qdto(n)
+!    end do
+
     ! Flooding back to land, sign convention is positive in land->rof direction
     ! so if water is sent from rof to land, the flux must be negative.
     ni = 0
     do n = rtmCTL%begr, rtmCTL%endr
        ni = ni + 1
-       r2x_r%rattr(index_r2x_Flrr_flood,ni) = -rtmCTL%flood(n)
-       r2x_r%rattr(index_r2x_Flrr_volr,ni)    = Trunoff%wr(n,nliq) + Trunoff%wt(n,nliq)
-       r2x_r%rattr(index_r2x_Flrr_volrmch,ni) = Trunoff%wr(n,nliq)
+       r2x_r%rattr(index_r2x_Flrr_flood,ni)   = -rtmCTL%flood(n)/(rtmCTL%area(n)*0.001_r8)
+       r2x_r%rattr(index_r2x_Flrr_volr,ni)    = (Trunoff%wr(n,nliq) + Trunoff%wt(n,nliq)) / rtmCTL%area(n)
+       r2x_r%rattr(index_r2x_Flrr_volrmch,ni) = Trunoff%wr(n,nliq) / rtmCTL%area(n)
     end do
 
   end subroutine rof_export_mct

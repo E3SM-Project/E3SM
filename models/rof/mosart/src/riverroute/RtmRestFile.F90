@@ -333,7 +333,7 @@ contains
     character(len=  8) :: curdate  ! current date
     character(len=  8) :: curtime  ! current time
     character(len=256) :: str
-    character(len= 32) :: subname='restFile_dimset' ! subroutine name
+    character(len=*),parameter :: subname='restFile_dimset' ! subroutine name
     !----------------------------------------------------------------
 
     ! Define dimensions
@@ -466,7 +466,7 @@ contains
                 rtmCTL%dvolrdtlnd(n,nt)= rtmCTL%dvolrdt(n,nt)
                 rtmCTL%volrlnd(n,nt)   = rtmCTL%volr(n,nt)
              end do
-          elseif (rtmCTL%mask(n) == 2) then
+          elseif (rtmCTL%mask(n) >= 2) then
              do nt = 1,nt_rtm
                 rtmCTL%runoffocn(n,nt) = rtmCTL%runoff(n,nt)
                 rtmCTL%dvolrdtocn(n,nt)= rtmCTL%dvolrdt(n,nt)
