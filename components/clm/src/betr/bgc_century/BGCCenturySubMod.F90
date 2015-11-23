@@ -38,7 +38,7 @@ contains
     ! !ARGUMENTS:
     integer                       , intent(in)  :: nstvars
     integer                       , intent(in)  :: nreactions
-    type(centurybgc_type)         , intent(in)  :: centurybgc_vars
+    type(centurybgc_type)         , intent(inout):: centurybgc_vars
     real(r8)                      , intent(in)  :: cn_ratios(centurybgc_vars%nom_pools)
     real(r8)                      , intent(in)  :: cp_ratios(centurybgc_vars%nom_pools)
     real(r8)                      , intent(in)  :: n2_n2o_ratio_denit                             !ratio of n2 to n2o during denitrification
