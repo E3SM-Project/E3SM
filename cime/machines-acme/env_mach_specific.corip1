@@ -94,7 +94,7 @@ limit stacksize unlimited
 setenv MPICH_ENV_DISPLAY 1
 setenv MPICH_VERSION_DISPLAY 1
 setenv MPICH_CPUMASK_DISPLAY 1
-setenv PERL5LIB /global/project/projectdirs/ccsm1/perl5lib/lib/perl5/5.10.0
+#setenv PERL5LIB $PERL_DIR/lib/5.20.0
 
 # The environment variable below increase the stack size, which is necessary for
 # CICE to run threaded on this machine.  
