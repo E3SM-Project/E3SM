@@ -111,7 +111,7 @@ contains
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata
     logical                  , intent(in)    :: lnd_c2_glc ! .true.  => lnd to glc coupling on
-    logical                  , intent(in)    :: ocn_c2_glc ! .true.  => ocn to glc coupling on    
+    logical                  , intent(in)    :: ocn_c2_glc ! .true.  => ocn to glc coupling on
     !
     ! Local Variables
     integer                          :: eli, egi, eoi
@@ -253,13 +253,15 @@ contains
 
   !================================================================================================
 
-  subroutine prep_glc_accum(timer)
+  subroutine prep_glc_accum(lnd_c2_glc,ocn_c2_glc,timer)
 
     !---------------------------------------------------------------
     ! Description
     ! Accumulate glc inputs
     !
-    ! Arguments
+    ! Arguments    
+    logical                  , intent(in)    :: lnd_c2_glc ! .true.  => lnd to glc coupling on
+    logical                  , intent(in)    :: ocn_c2_glc ! .true.  => ocn to glc coupling on
     character(len=*), intent(in) :: timer
     !
     ! Local Variables
@@ -271,27 +273,29 @@ contains
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-    do eli = 1,num_inst_lnd
-       l2x_lx => component_get_c2x_cx(lnd(eli))
-       if (l2gacc_lx_cnt == 0) then
-          call mct_avect_copy(l2x_lx, l2gacc_lx(eli))
-       else
-          call mct_avect_accum(l2x_lx, l2gacc_lx(eli))
-       endif
-    end do
-    l2gacc_lx_cnt = l2gacc_lx_cnt + 1
-
+    
+    if (lnd_c2_glc) then
+       do eli = 1,num_inst_lnd
+	  l2x_lx => component_get_c2x_cx(lnd(eli))
+	  if (l2gacc_lx_cnt == 0) then
+             call mct_avect_copy(l2x_lx, l2gacc_lx(eli))
+	  else
+             call mct_avect_accum(l2x_lx, l2gacc_lx(eli))
+	  endif
+       end do
+       l2gacc_lx_cnt = l2gacc_lx_cnt + 1
+    end if
+    
     do egi = 1,num_inst_glc
        x2g_gx => component_get_x2c_cx(glc(egi))
        if (x2gacc_gx_cnt == 0) then
 	  call mct_avect_copy(x2g_gx, x2gacc_gx(egi))
        else
-	  call mct_avect_accum(x2g_gx, x2gacc_gx(egi))  !This is accumulating into x2gacc_gx
+	  call mct_avect_accum(x2g_gx, x2gacc_gx(egi))
        endif
     end do
     x2gacc_gx_cnt = x2gacc_gx_cnt + 1
     
-
     call t_drvstopf  (trim(timer))
 
   end subroutine prep_glc_accum
@@ -364,7 +368,6 @@ contains
        ! Use fortran mod to address ensembles in merge
        eli = mod((egi-1),num_inst_lnd) + 1
        efi = mod((egi-1),num_inst_frc) + 1
-       eoi = mod((egi-1),num_inst_ocn) + 1
 
        x2g_gx => component_get_x2c_cx(glc(egi)) 
        call prep_glc_merge(l2x_gx(eli), fractions_gx(efi), x2g_gx)
@@ -677,7 +680,6 @@ contains
       g2x_gx%rAttr(index_g2x_Sg_blit,n) =     outInterfaceTemperature(n) !to ocean
       g2x_gx%rAttr(index_g2x_Fogx_qiceho,n) = outOceanHeatFlux(n)        !to ocean
       g2x_gx%rAttr(index_g2x_Fogx_qicelo,n)=  outFreshwaterFlux(n)       !to ocean
-      
       x2g_gx%rAttr(index_x2g_Fogx_qicehi,n) = outIceHeatFlux(n)          !to ice sheet 
       x2g_gx%rAttr(index_x2g_Fogx_qiceli,n) = outFreshwaterFlux(n)       !to ice sheet
     end do

@@ -1106,13 +1106,12 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do egi = 1,num_inst_glc
        g2x_gx => component_get_c2x_cx(glc(egi))
-       
-       call seq_map_map(mapper_Sg2o, g2x_gx, g2x_ox(egi), &
-            fldlist='Sg_icemask_coupled_fluxes:Sg_topg:Sg_blis:Sg_blit', norm=.true.)
 
-       call seq_map_map(mapper_Fg2o, g2x_gx, g2x_ox(egi), &
-            fldlist='Fogx_qiceho:Fogx_qicelo',norm=.true.)
-	    
+       call seq_map_map(mapper_Sg2o, g2x_gx, g2x_ox(egi), norm=.true.)
+
+       call seq_map_map(mapper_Fg2o, g2x_gx, g2x_ox(egi),norm=.true.)
+
+
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_ocn_shelf_calc_g2x_ox

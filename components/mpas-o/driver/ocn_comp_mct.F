@@ -1441,19 +1441,19 @@ contains
         end if
 
 	if ( landIceFreshwaterFluxField % isActive ) then
-           landIceFreshwaterFlux(i) = x2o_o % rAttr(index_x2o_Fogx_qicelo, n)
+           !landIceFreshwaterFlux(i) = x2o_o % rAttr(index_x2o_Fogx_qicelo, n)
         end if
 	if ( landIceHeatFluxField % isActive ) then
-           landIceHeatFlux(i) = x2o_o % rAttr(index_x2o_Fogx_qiceho, n)
+           !landIceHeatFlux(i) = x2o_o % rAttr(index_x2o_Fogx_qiceho, n)
         end if
 	if ( landIceInterfaceTemperatureField % isActive ) then
-           landIceInterfaceTemperature(i) = x2o_o % rAttr(index_x2o_Sg_blit, n)
+           !landIceInterfaceTemperature(i) = x2o_o % rAttr(index_x2o_Sg_blit, n)
         end if
 	if ( landIceInterfaceSalinityField % isActive ) then
-           landIceInterfaceSalinity(i) = x2o_o % rAttr(index_x2o_Sg_blis, n)
+           !landIceInterfaceSalinity(i) = x2o_o % rAttr(index_x2o_Sg_blis, n)
         end if
 	if ( landIceFractionField % isActive ) then
-           landIceFraction(i) = x2o_o % rAttr(index_x2o_Sg_icemask, n)
+           !landIceFraction(i) = x2o_o % rAttr(index_x2o_Sg_icemask, n)
         end if
 	!if ( landIcePressureField % isActive ) then
            !landIcePressure(i) = x2o_o % rAttr(index_x2o_Sg_lithop, n)

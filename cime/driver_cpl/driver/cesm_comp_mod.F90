@@ -2824,11 +2824,12 @@ end subroutine cesm_init
          if (ocn_c2_glc) then
 	    call prep_glc_calc_o2x_gx(timer='CPL:glcprep_ocn2glc') !remap ocean fields to o2x_g at atmospheric timestep
 	 end if
-	 if (lnd_c2_glc) then                
+	 if (lnd_c2_glc) then
 	    ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
 	    call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc') !...and then here is where Bill S. does the new in-coupler downscaling.  I changed this so it's downscaling non-accumulated fields.  This means (in theory) that it is called more frequently, but then can be merged and averaged with the other stuff, below.
+	    call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
 	 end if
-	 call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
+	 
 	 if (glc_c2_ocn) then
             call prep_glc_calculate_subshelf_boundary_fluxes! this outputs
                                               !x2g_g/g2x_g, where latter is going
@@ -2847,8 +2848,10 @@ end subroutine cesm_init
                                               !changing on the intrinsic
                                               !timestep.  But I don't think it's
                                               !unsafe to do it here.
-            call prep_glc_accum(timer='CPL:glcprep_accum') !accum x2g_g fields here into x2g_gacc, along with l2gacc_lx
          endif
+	 
+	 call prep_glc_accum(lnd_c2_glc,ocn_c2_glc,timer='CPL:glcprep_accum') !accum x2g_g fields here into x2g_gacc, along with l2gacc_lx
+
       endif
       
       if (glc_present .and. glcrun_alarm) then
