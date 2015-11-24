@@ -1114,46 +1114,46 @@ contains
        xVertexOnEdge, yVertexOnEdge, &
        minLengthEdgesOnVertex)
 
-       !-----------------------------------------------------------------------------------
-       !
-       ! The IR edge-numbering and cell-numbering conventions are as follows for a hex mesh (vertexDegree = 3):
-       ! The main edge (E0) has vertices V1 and V2 and is shared by cells C1 and C2.
-       ! C1 lies in the left half-plane of the vector pointing from C1 to C2, and C2 in the right half-plane.
-       ! Edges E1 and E2 lie on C1, and edges E3 and E4 lie on C2.
-       ! C3 is the cell sharing V1 with the main edge, and C4 is the cell sharing V2 with the main edge.
-       ! Vertices 3-6 lie on the distant ends of edges 1-4, respectively.
-       !
-       !                       V3                       V4
-       !                        \                       / 
-       !                         \                     /
-       !                          \E1      C1       E2/ 
-       !                           \                 /
-       !                    C3      \V1___________V2/      C4   
-       !                            /      E0       \
-       !                           /                 \
-       !                          /E3      C2       E4\
-       !                         /                     \
-       !                        /                       \
-       !                       V5                       V6
-       !
-       ! On a quad mesh (vertexDegree = 4), we add the 2 edges that are colinear with the main edge
-       ! (E5 containing V1/V7 and E6 containing V2/V8).
-       ! We also add two cells that share a vertex with the main edge (C5 sharing V1 and C6 sharing V2).
-       !
-       !                             V3            V4
-       !                             |             |
-       !                             |             |
-       !                    C3       |E1    C1     |E2     C4
-       !                             |             |
-       !                V7 _________ |V1___________|V2_________V8
-       !                       E5    |      E0     |     E6
-       !                             |             |
-       !                    C5       |E3    C2     |E4     C6
-       !                             |             |
-       !                             |             |
-       !                             V5            V6
-       !
-       !-----------------------------------------------------------------------------------
+       !--------------------------------------------------------------------------------------------------------!
+       !                                                                                                        !
+       ! The IR edge-numbering and cell-numbering conventions are as follows for a hex mesh (vertexDegree = 3): !
+       ! The main edge (E0) has vertices V1 and V2 and is shared by cells C1 and C2.                            !
+       ! C1 lies in the left half-plane of the vector pointing from C1 to C2, and C2 in the right half-plane.   !
+       ! Edges E1 and E2 lie on C1, and edges E3 and E4 lie on C2.                                              !
+       ! C3 is the cell sharing V1 with the main edge, and C4 is the cell sharing V2 with the main edge.        !
+       ! Vertices 3-6 lie on the distant ends of edges 1-4, respectively.                                       !
+       !                                                                                                        !
+       !                       V3                       V4                                                      !
+       !                        \                       /                                                       !
+       !                         \                     /                                                        !
+       !                          \E1      C1       E2/                                                         !
+       !                           \                 /                                                          !
+       !                    C3      \V1___________V2/      C4                                                   !
+       !                            /      E0       \                                                           !
+       !                           /                 \                                                          !
+       !                          /E3      C2       E4\                                                         !
+       !                         /                     \                                                        !
+       !                        /                       \                                                       !
+       !                       V5                       V6                                                      !
+       !                                                                                                        !
+       ! On a quad mesh (vertexDegree = 4), we add the 2 edges that are colinear with the main edge             !
+       ! (E5 containing V1/V7 and E6 containing V2/V8).                                                         !
+       ! We also add two cells that share a vertex with the main edge (C5 sharing V1 and C6 sharing V2).        !
+       !                                                                                                        !
+       !                             V3            V4                                                           !
+       !                             |             |                                                            !
+       !                             |             |                                                            !
+       !                    C3       |E1    C1     |E2     C4                                                   !
+       !                             |             |                                                            !
+       !                V7 _________ |V1___________|V2_________V8                                               !
+       !                       E5    |      E0     |     E6                                                     !
+       !                             |             |                                                            !
+       !                    C5       |E3    C2     |E4     C6                                                   !
+       !                             |             |                                                            !
+       !                             |             |                                                            !
+       !                             V5            V6                                                           !
+       !                                                                                                        !
+       !--------------------------------------------------------------------------------------------------------!
        
     integer, intent(in) :: &
          nEdges,         & !< Input: number of edges
@@ -5056,78 +5056,78 @@ contains
        indexToVertexID,                           &
        block)
 
-    !-------------------------------------------------------------------------------------------
-    ! Here is a diagram of the IR geometry on a hex mesh (vertexDegree = 3).
-    ! C denotes cells, V denotes vertices, E denotes edges, and D denotes departure points.
-    !
-    ! Note the following: 
-    ! (1) IR computes fluxes across edges. The main edge has vertices V1 and V2.
-    ! (2) Cells C1 and C2 correspond to iCellOnEdge = 1 and 2, respectively. These cells share the main edge.
-    !     C1 lies in the left half-plane of the vector pointing from vertex V1 to V2.
-    ! (3) There are two adjacent side cells: C3 and C4.
-    !     C3 includes V1, and C4 includes V2.
-    ! (4) There are four adjacent edges: E1, E2, E3 and E4.
-    !     Edges E1 and E3 include V1, with E1 in the left half-plane and E3 in the right half-plane.
-    !     Similarly, edges E2 and E4 contain V2, with E2 in the left half-plane and E4 in the right half-plane.
-    ! (5) Each adjacent edge includes one vertex (V1 or V2) on the main edge, and one vertex not on the main edge.
-    !     Vertices V3 to V6 lie on edges E1 to E4. That is, the vertex index is equal to the edge index + 2.
-    ! (6) Departure point D1 connects to V1, and departure point D2 connects to V2.
-    !     D1 and D2 may lie in either half-plane. (In the diagram, both lie in the left half-plane.)
-    !     The line segment joining D1 or D2 may intersect one or more edges.
-    ! (7) The quadrilateral defined by points V1-V2-D2-D1 can lie in up to 4 source cells
-    !     and can consist of up to 4 subtriangles (1 triangle in each side cell and up to 2 triangles
-    !     in C1 and/or C2.
-    !
-    !                      V3                         V4
-    !                        \                       / 
-    !                         \   D1-----------D2   /
-    !                        E1\  |     C1     |   /E2 
-    !                           \ |            |  /
-    !                    C3      \V1___________V2/     C4   
-    !                            /               \
-    !                           /                 \
-    !                        E3/        C2         \E4
-    !                         /                     \
-    !                        /                       \
-    !                      V5                         V6
-    !
-    ! Suppose we have a quad mesh (vertexDegree = 4) instead of a hex mesh.
-    ! Then the labeling is as follows.
-    !
-    !                             V3            V4
-    !                             |             |
-    !                         D1--|----------D2 |
-    !                    C3    \  |E1    C1   \ |E2     C4
-    !                           \ |            \|
-    !                 V7_________\|V1___________|V2_________V8   
-    !                       E5    |             |     E6
-    !                             |             |
-    !                    C5       |E3    C2     |E4     C6
-    !                             |             |
-    !                             |             |
-    !                             V5            V6
-    !  
-    ! Note:
-    ! (1) We have two additional cells, C3 and C5.
-    !     C3 and C5 include V1, with C3 in the left half-plane of the edge and C5 in the right half-plane.
-    !     Similarly, C4 and C6 include V2, with C4 in the left half-plane of the edge and C6 in the right half-plane.
-    ! (2) We have two additional edges, E5 and E6, that are (at least approximately) colinear with the main edge.
-    !     E5 includes V1, and E6 includes V2.
-    ! (3) We have two additional vertices, V7 and V8. These lie on edges E5 and E6, respectively.
-    ! (4) The maximum number of departure triangles is 6 instead of 4, if there is 1 triangle
-    !     in each of the 4 side cells in addition to the 2 triangles in C1 and/or C2.
-    !     (This can happen if E5 and E6 bend up or down away from the main edge.)
-    !
-    ! The values of nTriPerEdgeRemap, maxCellsPerEdgeRemap, maxEdgesPerEdgeRemap and maxVerticesPerEdgeRemap
-    ! in the Registry (6, 6, 6 and 8 respectively) are based on the quad mesh.  The values for a hex mesh
-    ! are 4, 4, 4 and 6. 
-    ! TODO - Modify the setup so that these remap dimensions are based on vertexDegree?
-    !
-    ! Most of the logic below is agnostic with respect to vertexDegree.
-    ! The main difference is that on the hex mesh, side triangles lie in either C3 or C4, whereas 
-    !  for the quad mesh these triangles can also lie in C5 or C6.
-    ! 
-    !-------------------------------------------------------------------------------------------
+    !----------------------------------------------------------------------------------------------------------------!
+    ! Here is a diagram of the IR geometry on a hex mesh (vertexDegree = 3).                                         !
+    ! C denotes cells, V denotes vertices, E denotes edges, and D denotes departure points.                          !
+    !                                                                                                                !
+    ! Note the following:                                                                                            !
+    ! (1) IR computes fluxes across edges. The main edge has vertices V1 and V2.                                     !
+    ! (2) Cells C1 and C2 correspond to iCellOnEdge = 1 and 2, respectively. These cells share the main edge.        !
+    !     C1 lies in the left half-plane of the vector pointing from vertex V1 to V2.                                !
+    ! (3) There are two adjacent side cells: C3 and C4.                                                              !
+    !     C3 includes V1, and C4 includes V2.                                                                        !
+    ! (4) There are four adjacent edges: E1, E2, E3 and E4.                                                          !
+    !     Edges E1 and E3 include V1, with E1 in the left half-plane and E3 in the right half-plane.                 !
+    !     Similarly, edges E2 and E4 contain V2, with E2 in the left half-plane and E4 in the right half-plane.      !
+    ! (5) Each adjacent edge includes one vertex (V1 or V2) on the main edge, and one vertex not on the main edge.   !
+    !     Vertices V3 to V6 lie on edges E1 to E4. That is, the vertex index is equal to the edge index + 2.         !
+    ! (6) Departure point D1 connects to V1, and departure point D2 connects to V2.                                  !
+    !     D1 and D2 may lie in either half-plane. (In the diagram, both lie in the left half-plane.)                 !
+    !     The line segment joining D1 or D2 may intersect one or more edges.                                         !
+    ! (7) The quadrilateral defined by points V1-V2-D2-D1 can lie in up to 4 source cells                            !
+    !     and can consist of up to 4 subtriangles (1 triangle in each side cell and up to 2 triangles                !
+    !     in C1 and/or C2.                                                                                           !
+    !                                                                                                                !
+    !                      V3                         V4                                                             !
+    !                        \                       /                                                               !
+    !                         \   D1-----------D2   /                                                                !
+    !                        E1\  |     C1     |   /E2                                                               !
+    !                           \ |            |  /                                                                  !
+    !                    C3      \V1___________V2/     C4                                                            !
+    !                            /               \                                                                   !
+    !                           /                 \                                                                  !
+    !                        E3/        C2         \E4                                                               !
+    !                         /                     \                                                                !
+    !                        /                       \                                                               !
+    !                      V5                         V6                                                             !
+    !                                                                                                                !
+    ! Suppose we have a quad mesh (vertexDegree = 4) instead of a hex mesh.                                          !
+    ! Then the labeling is as follows.                                                                               !
+    !                                                                                                                !
+    !                             V3            V4                                                                   !
+    !                             |             |                                                                    !
+    !                         D1--|----------D2 |                                                                    !
+    !                    C3    \  |E1    C1   \ |E2     C4                                                           !
+    !                           \ |            \|                                                                    !
+    !                 V7_________\|V1___________|V2_________V8                                                       !
+    !                       E5    |             |     E6                                                             !
+    !                             |             |                                                                    !
+    !                    C5       |E3    C2     |E4     C6                                                           !
+    !                             |             |                                                                    !
+    !                             |             |                                                                    !
+    !                             V5            V6                                                                   !
+    !                                                                                                                !
+    ! Note:                                                                                                          !
+    ! (1) We have two additional cells, C3 and C5.                                                                   !
+    !     C3 and C5 include V1, with C3 in the left half-plane of the edge and C5 in the right half-plane.           !
+    !     Similarly, C4 and C6 include V2, with C4 in the left half-plane of the edge and C6 in the right half-plane.!
+    ! (2) We have two additional edges, E5 and E6, that are (at least approximately) colinear with the main edge.    !
+    !     E5 includes V1, and E6 includes V2.                                                                        !
+    ! (3) We have two additional vertices, V7 and V8. These lie on edges E5 and E6, respectively.                    !
+    ! (4) The maximum number of departure triangles is 6 instead of 4, if there is 1 triangle                        !
+    !     in each of the 4 side cells in addition to the 2 triangles in C1 and/or C2.                                !
+    !     (This can happen if E5 and E6 bend up or down away from the main edge.)                                    !
+    !                                                                                                                !
+    ! The values of nTriPerEdgeRemap, maxCellsPerEdgeRemap, maxEdgesPerEdgeRemap and maxVerticesPerEdgeRemap         !
+    ! in the Registry (6, 6, 6 and 8 respectively) are based on the quad mesh.  The values for a hex mesh            !
+    ! are 4, 4, 4 and 6.                                                                                             !
+    ! TODO - Modify the setup so that these remap dimensions are based on vertexDegree?                              !
+    !                                                                                                                !
+    ! Most of the logic below is agnostic with respect to vertexDegree.                                              !
+    ! The main difference is that on the hex mesh, side triangles lie in either C3 or C4, whereas                    !
+    !  for the quad mesh these triangles can also lie in C5 or C6.                                                   !
+    !                                                                                                                !
+    !----------------------------------------------------------------------------------------------------------------!
 
     integer, intent(in) :: &
          nEdges,         &  !< Input: number of edges
