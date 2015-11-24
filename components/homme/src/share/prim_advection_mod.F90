@@ -2223,14 +2223,12 @@ end subroutine ALE_parametric_coords
     real(kind=real_kind) , intent(in   ) :: dt
     integer              , intent(in   ) :: nets , nete , n0_qdp
     integer :: ie , k
+
     do ie = nets , nete 
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k)
-#endif 
       do k = 1 , nlev   ! div( U dp Q),
         elem(ie)%derived%divdp(:,:,k) = divergence_sphere(elem(ie)%derived%vn0(:,:,:,k),deriv,elem(ie))
+        elem(ie)%derived%divdp_proj(:,:,k) = elem(ie)%derived%divdp(:,:,k)
       enddo  
-      elem(ie)%derived%divdp_proj(:,:,:) = elem(ie)%derived%divdp(:,:,:)
     enddo
   end subroutine precompute_divdp
 !-----------------------------------------------------------------------------
