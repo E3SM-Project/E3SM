@@ -2391,6 +2391,10 @@ if (l_tracer_aero) then
           call modal_aero_wateruptake_dr(state, pbuf)
        endif
 
+       if (do_clubb_sgs) then
+          sh_e_ed_ratio = 0.0_r8
+       endif
+
        call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state, sh_e_ed_ratio,       & !Intent-ins
             mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class,&
             cam_out,                                                                 & !Intent-inout
