@@ -985,6 +985,40 @@
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
+	<nml_record name="layer_thickness_constrain_rx1" mode="init">
+		<nml_option name="config_rx1_smooth_count" type="integer" default_value="20" units="unitless"
+					description="The number of smoothing passes used in modifying the vertical grid such that the Haney number rx1 < rx1Max"
+					possible_values="any positive integer" 
+		/>
+		<nml_option name="config_rx1_inner_iteration_count" type="integer" default_value="10" units="unitless"
+					description="The number of inner iterations used in constraining the Haney number rx1 < rx1Max, allowing changes to propagate horizontally within a layer"
+					possible_values="any positive integer"
+		/>
+		<nml_option name="config_rx1_max" type="real" default_value="10.0" units="unitless"
+					description="The maximum value rx1Max of the Haney number (rx1) after modification of the vertical grid"
+					possible_values="any positive value, typically greater than or equal to 1" 
+		/>
+		<nml_option name="config_rx1_horiz_smooth_weight" type="real" default_value="0.5" units="unitless"
+					description="The averaging weight of neighbors used for horizontal smoothing of layer interface depth"
+					possible_values="Between 0 and 1, with a larger number indicating more smoothing per iteration" 
+		/>
+		<nml_option name="config_rx1_vert_smooth_weight" type="real" default_value="0.5" units="unitless"
+					description="The averaging weight of neighbors used for vertical smoothing of layerThickness"
+					possible_values="Between 0 and 1, with a larger number indicating more smoothing per iteration" 
+		/>
+		<nml_option name="config_rx1_horiz_smooth_open_ocean_cells" type="integer" default_value="20" units="unitless"
+					description="The size (in cells) of a buffer region around land ice for smoothing.  Smoothing is performed under land ice and in the buffer region of open ocean."
+					possible_values="any non-negative integer, 0 indiates no buffer region." 
+		/>
+		<nml_option name="config_rx1_min_layer_thickness_fraction" type="real" default_value="0.8" units="unitless"
+					description="each layer cannot be thinner than this fraction of the thickness of the layer above."
+					possible_values="Between 0 and 1" 
+		/>
+		<nml_option name="config_rx1_min_levels" type="integer" default_value="3" units="unitless"
+					description="The minimum number of layers in the ocean column in the smoothed region."
+					possible_values="a positive integer" 
+		/>
+	</nml_record>
 	<packages>
 		<package name="variableShortwave" description="This package includes variables required to compute spatially variable shortwave extinction coefficients"/>
 
@@ -2877,6 +2911,9 @@
 		<var name="highOrderVertFlux" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells" units=""
 			 description="High order vertical flux for advection"
 		/>
+		<var name="btrvel_temp" persistence="scratch" type="real" dimensions="nEdgesP1" units=""
+			 description="btrvel_temp"
+		/>
 		<!-- FIELDS FOR LAND-ICE FORCING -->
 		<var name="boundaryLayerTemperatureScratch" 
 			persistence="scratch" 
@@ -2918,9 +2955,6 @@
 			type="real" dimensions="nCells" units="kg m^{-3}"
 			description="effective seawater density in land ice before horizontal averaging"
 		/>
-		<var name="btrvel_temp" persistence="scratch" type="real" dimensions="nEdgesP1" units=""
-			 description="btrvel_temp"
-		/>
 		<!-- FIELDS FOR INTERPOLATION DURING INITIALIZATION -->
 		<var name="interpTracer" 
 			persistence="scratch" 
@@ -2932,6 +2966,37 @@
 			persistence="scratch" 
 			type="real" dimensions="nVertLevels nCells" units="m"
 			description="reference z-midpoint of cells for interpolation"
+		/>
+                <!-- FIELDS FOR RX1 INITIALIZATION -->
+		<var name="zInterfaceScratch" 
+			persistence="scratch" 
+			type="real" dimensions="nVertLevelsP1 nCells" units="m"
+			description="location of layer interfaces at cell centers, used for thickening layers constrained by the Haney number (rx1)"
+		/>
+		<var name="zTopScratch" 
+			persistence="scratch" 
+			type="real" dimensions="nCells" units="m"
+			description="location of the upper layer used to compute the Haney number (rx1), equal to ssh for top layer and zMid of the layer for subsequent layers"
+		/>
+		<var name="zBotScratch" 
+			persistence="scratch" 
+			type="real" dimensions="nCells" units="m"
+			description="location of the lower layer used to compute the Haney number (rx1), equal zMid of the layer lower layer (but a 1D filed is needed for halo exchanges)"
+		/>
+		<var name="zBotNewScratch" 
+			persistence="scratch" 
+			type="real" dimensions="nCells" units="m"
+			description="updated location of the lower layer used to compute the Haney number (rx1), needed so update is agnostic to the order in which cells are accessed"
+		/>
+		<var name="smoothingMaskScratch" 
+			persistence="scratch" 
+			type="integer" dimensions="nCells" units="unitless"
+			description="a mask indicating where smoothing is to be performed."
+		/>
+		<var name="smoothingMaskNewScratch" 
+			persistence="scratch" 
+			type="integer" dimensions="nCells" units="unitless"
+			description="a copy of the smoothing mask used to iteratively expand the mask in the buffer region of open ocean around land ice."
 		/>
 	</var_struct>
 
