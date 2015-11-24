@@ -27,6 +27,10 @@ module dynSubgridDriverMod
   use WaterstateType      , only : waterstate_type
   use TemperatureType     , only : temperature_type
   use glc2lndMod          , only : glc2lnd_type
+
+  use PhosphorusStateType   , only : phosphorusstate_type
+  use PhosphorusFluxType    , only : phosphorusflux_type
+
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -99,7 +103,8 @@ contains
        canopystate_vars, photosyns_vars, cnstate_vars, dgvs_vars, &
        carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, &
        carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
-       nitrogenstate_vars, nitrogenflux_vars, glc2lnd_vars)
+       nitrogenstate_vars, nitrogenflux_vars, glc2lnd_vars,&
+       phosphorusstate_vars,phosphorusflux_vars)
     !
     ! !DESCRIPTION:
     ! Update subgrid weights for prescribed transient Patches, CNDV, and/or dynamic
@@ -149,6 +154,10 @@ contains
     type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
     type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
     type(glc2lnd_type)       , intent(inout) :: glc2lnd_vars
+
+    type(phosphorusstate_type) , intent(inout)    :: phosphorusstate_vars
+    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+
     !
     ! !LOCAL VARIABLES:
     integer           :: nclumps      ! number of clumps on this processor
@@ -238,7 +247,8 @@ contains
                canopystate_vars, photosyns_vars, cnstate_vars, &
                carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, &
                carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
-               nitrogenstate_vars, nitrogenflux_vars)
+               nitrogenstate_vars, nitrogenflux_vars,&
+               phosphorusstate_vars,phosphorusflux_vars)
        end if
 
     end do

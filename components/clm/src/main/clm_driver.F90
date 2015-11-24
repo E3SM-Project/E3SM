@@ -346,7 +346,8 @@ contains
        canopystate_vars, photosyns_vars, cnstate_vars, dgvs_vars,            &
        carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars,         &
        carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,            &
-       nitrogenstate_vars, nitrogenflux_vars, glc2lnd_vars)
+       nitrogenstate_vars, nitrogenflux_vars, glc2lnd_vars,                  &
+       phosphorusstate_vars,phosphorusflux_vars)
     call t_stopf('dyn_subgrid')
 
     ! ============================================================================
