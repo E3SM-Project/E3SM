@@ -2137,6 +2137,12 @@ prescribed aerosol bulk sulfur scale factor
 Default: 2 
 </entry>
 
+<entry id="microp_aero_wsub_scheme" type="integer" category="microphysics"
+       group="microp_aero_nl" valid_values="" >
+Updraft velocity paramterization option for ice nucleation.
+Default: 1
+</entry>
+
 <entry id="use_hetfrz_classnuc" type="logical" category="microphys"
        group="phys_ctl_nl" valid_values="" >
 Switch to turn on heterogeneous freezing code.
