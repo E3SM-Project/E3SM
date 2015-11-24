@@ -72,7 +72,7 @@
           logical, optional, intent(in) :: clear_timer !< Input: flag to clear timer
           type (timer_node), optional, pointer :: timer_ptr !< Output: pointer to store timer in module
 
-          character (len=len(timer_name)) :: trimed_name
+          character (len=len_trim(timer_name)) :: trimed_name
           logical :: timer_added, timer_found, string_equal, check_flag
           type (timer_node), pointer :: current, temp
 
@@ -227,7 +227,7 @@
 
           character (len=*), intent(in) :: timer_name !< Input: name of timer to stop
           type (timer_node), pointer, optional :: timer_ptr !< Input: pointer to timer, for stopping
-          character (len=len(timer_name)) :: trimed_name !< Trimed timer name
+          character (len=len_trim(timer_name)) :: trimed_name !< Trimed timer name
 
           type (timer_node), pointer :: current
           
