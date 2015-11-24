@@ -852,7 +852,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
        ! here.  For prognostic MAM the initialization is called from
        ! modal_aero_initialize
        if (.not. prog_modal_aero) then
-          call modal_aero_calcsize_init(pbuf2d)
+          call modal_aero_calcsize_init(pbuf2d, species_class)
        endif
 
        call modal_aero_wateruptake_init(pbuf2d)

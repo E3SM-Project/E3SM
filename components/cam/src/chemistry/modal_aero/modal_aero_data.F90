@@ -27,6 +27,12 @@
     logical, parameter :: rain_evap_to_coarse_aero = .false.
 #endif
 
+    ! carbonaceous species counters - will eventually be set by configuration options
+    integer, parameter :: nbc   = 1  ! number of differently tagged black-carbon      aerosol species
+    integer, parameter :: npoa  = 1  ! number of differently tagged primary-organic   aerosol species
+    integer, parameter :: nsoa  = 1  ! number of differently tagged secondary-organic aerosol species
+    integer, parameter :: nsoag = 1  ! number of differently tagged secondary-organic gas     species
+
     !
     ! definitions for aerosol chemical components
     !
@@ -177,6 +183,10 @@
           modeptr_pcarbon,                                              &   !
           modeptr_finedust,  modeptr_fineseas,                          &   !
           modeptr_coardust,  modeptr_coarseas
+
+      integer &
+          lptr2_soa_a_amode(ntot_amode,nsoa), &
+          lptr2_soa_g_amode(nsoag)
 
       real(r8) ::             &
           specmw_so4_amode,     specdens_so4_amode,       &

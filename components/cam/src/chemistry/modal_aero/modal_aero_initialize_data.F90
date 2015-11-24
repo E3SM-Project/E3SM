@@ -145,9 +145,7 @@ contains
        xname_spectype(:nspec_amode(7),7)  = (/ 'dust      ', 'sulfate   ', 'ammonium  ' /)
 #endif
 
-    if(convproc_do_aer .or. convproc_do_gas) then 
-       species_class(:pcnst) = spec_class_undefined
-    endif
+    species_class(:pcnst) = spec_class_undefined
 
     do m = 1, ntot_amode
 
@@ -277,6 +275,7 @@ contains
 
        use constituents,          only: pcnst
        use physconst,             only: rhoh2o, mwh2o
+       use modal_aero_amicphys,   only: modal_aero_amicphys_init
        use modal_aero_calcsize,   only: modal_aero_calcsize_init
        use modal_aero_coag,       only: modal_aero_coag_init
        use modal_aero_deposition, only: modal_aero_deposition_init
@@ -302,6 +301,7 @@ contains
 
        character(len=3) :: trnum       ! used to hold mode number (as characters)
        integer :: iaerosol, ibulk
+       integer  :: mam_amicphys_optaa
        integer  :: numaerosols     ! number of bulk aerosols in climate list
        character(len=20) :: bulkname
        real(r8) :: pi
@@ -314,7 +314,8 @@ contains
 
        pi = 4._r8*atan(1._r8)    
        call phys_getopts(convproc_do_gas_out = convproc_do_gas, &
-            convproc_do_aer_out = convproc_do_aer) 
+            convproc_do_aer_out = convproc_do_aer, &
+            mam_amicphys_optaa_out = mam_amicphys_optaa ) 
        
 
        ! Mode specific properties.
@@ -413,8 +414,6 @@ contains
 
 
 
-       !BSINGH(09/17/2014): The do-loop in the 'else' of the following if condition is wrong
-       if (convproc_do_aer .or. convproc_do_gas) then 
           ! At this point, species_class is either undefined or aerosol.
           ! For the "chemistry species" (imozart <= i <= imozart+gas_pcnst-1),
           ! set the undefined ones to gas, and leave the aerosol ones as is
@@ -428,15 +427,6 @@ contains
                 species_class(i) = spec_class_gas
              end if
           end do
-       else
-          
-          ! The following is incorrect because it overwrites values set in modal_aero_register, 
-          ! which is called before modal_aero_init
-          ! BSINGH: It is not commented out as of now to maintain original code b4b status
-          do i = 1, pcnst
-             species_class(i) = spec_class_undefined
-          end do
-       endif
 
 
        !   set cnst_name_cw
@@ -490,13 +480,19 @@ contains
        !
        !   call other initialization routines
        !
-       call modal_aero_rename_init
-       !   calcsize call must follow rename call
-       call modal_aero_calcsize_init( pbuf2d )
-       call modal_aero_gasaerexch_init
-       !   coag call must follow gasaerexch call
-       call modal_aero_coag_init
-       call modal_aero_newnuc_init
+       if ( mam_amicphys_optaa > 0 ) then
+          call modal_aero_calcsize_init( pbuf2d, species_class )
+          call modal_aero_newnuc_init( mam_amicphys_optaa )
+          call modal_aero_amicphys_init( imozart, species_class )
+       else
+          call modal_aero_rename_init
+          !   calcsize call must follow rename call
+          call modal_aero_calcsize_init( pbuf2d, species_class )
+          call modal_aero_gasaerexch_init
+          !   coag call must follow gasaerexch call
+          call modal_aero_coag_init
+          call modal_aero_newnuc_init( mam_amicphys_optaa )
+       endif
 
        ! call modal_aero_deposition_init only if the user has not specified 
        ! prescribed aerosol deposition fluxes

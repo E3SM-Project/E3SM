@@ -2678,6 +2678,7 @@ add_default($nl, 'convproc_do_gas');
 add_default($nl, 'demott_ice_nuc');
 #BSINGH - ENDS
 
+add_default($nl, 'mam_amicphys_optaa'); #for enabling amicphys code in cam
 
 # Microphysics scheme
 add_default($nl, 'use_subcol_microp');

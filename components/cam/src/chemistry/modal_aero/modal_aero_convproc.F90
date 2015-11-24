@@ -193,7 +193,8 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
                            mu, md, du, eu,                          &
                            ed, dp, dsubcld,                         &
                            jt, maxg, ideep, lengath, species_class, &
-                           mam_prevap_resusp_optaa                  )
+                           mam_prevap_resusp_optaa,                 &
+                           history_aero_prevap_resusp               )
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -258,6 +259,7 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
    integer,  intent(in)    :: lengath           ! Gathered min lon indices over which to operate
    integer,  intent(in)    :: species_class(:)
    integer,  intent(in)    :: mam_prevap_resusp_optaa
+   logical,  intent(in)    :: history_aero_prevap_resusp
 
 
 ! Local variables
@@ -473,10 +475,12 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
 
         call outfld( trim(cnst_name(l))//'SFWET', aerdepwetis(:,l), pcols, lchnk )
         call outfld( trim(cnst_name(l))//'SFSIC', sflxic(:,l), pcols, lchnk )
+        if ( history_aero_prevap_resusp ) &
         call outfld( trim(cnst_name(l))//'SFSEC', sflxec(:,l), pcols, lchnk )
 
         if ( deepconv_wetdep_history ) then
            call outfld( trim(cnst_name(l))//'SFSID', sflxid(:,l), pcols, lchnk )
+           if ( history_aero_prevap_resusp ) &
            call outfld( trim(cnst_name(l))//'SFSED', sflxed(:,l), pcols, lchnk )
         end if
      end do ! ll

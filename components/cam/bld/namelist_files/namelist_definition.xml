@@ -3368,6 +3368,13 @@ Default: .false.
 </entry>
 
 
+<!-- Flag to turn on/off amicphys codes -->
+<entry id="mam_amicphys_optaa" type="integer"  category="scavenging"
+       group="phys_ctl_nl" valid_values="" >
+invokes new microphysics code (single call to amicphys routine) if > 0
+Default: 0
+</entry>
+
 
 <!-- Diagnostics -->
 

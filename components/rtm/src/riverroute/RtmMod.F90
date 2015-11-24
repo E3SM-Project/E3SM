@@ -87,6 +87,7 @@ module RtmMod
 
   character(len=256) :: nlfilename_rof = 'rof_in' 
   character(len=256) :: nlfilename_lnd = 'lnd_in' 
+  real(r8), save :: delt_save             ! previous delt !BSINGH- declare and initialize it globally
 !
 !EOP
 !-----------------------------------------------------------------------
@@ -976,7 +977,7 @@ contains
     call RtmHistFldsSet()
 
     if (masterproc) write(iulog,*) subname //':: Success '
-
+    delt_save = 0.0
   end subroutine Rtmini
   !=======================================================================
 
@@ -1028,7 +1029,7 @@ contains
     real(r8) :: delt                        ! delt associated with subcycling
     real(r8) :: delt_rtm                    ! real value of rtm_tstep
     integer , save :: nsub_save             ! previous nsub
-    real(r8), save :: delt_save             ! previous delt
+    !real(r8), save :: delt_save             ! previous delt !BSINGH- declare and initialize it globally
     logical , save :: first_time = .true.   ! first time flag (for backwards compatibility)
     character(len=256) :: filer             ! restart file name
     integer,parameter  :: dbug = 1          ! local debug flag
