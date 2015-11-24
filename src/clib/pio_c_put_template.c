@@ -50,6 +50,14 @@ int PIO_function()
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
+
+      if(vdesc->nreqs==0){
+	vdesc->request = malloc(sizeof(int));
+      }else{
+	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      }
+      request = vdesc->request;
+      /*
       int reqn;
       reqn = vdesc->nreqs;
       request = vdesc->request;
@@ -57,11 +65,13 @@ int PIO_function()
 	reqn++;
 	request = vdesc->request+reqn;
       }
+      */
       if(ios->io_rank==0){
 	ierr = ncmpi_function();
       }else{
-	*request = PIO_REQ_NULL;
+	vdesc->request[0] = PIO_REQ_NULL;
       }
+      vdesc->nreqs = 1;
       flush_output_buffer(file, false, 0);
       break;
 #endif

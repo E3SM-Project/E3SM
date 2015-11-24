@@ -36,7 +36,6 @@
 #define PIO_OFFSET MPI_OFFSET
 #define PIO_Offset MPI_Offset
 #define PIO_MAX_VARS NC_MAX_VARS
-#define PIO_MAX_REQUESTS 2000
 
 
 /**
@@ -55,7 +54,7 @@ typedef struct var_desc_t
   int record; 
   int ndims;
 
-  int request[PIO_MAX_REQUESTS]; // used for pnetcdf iput calls
+  int *request; // used for pnetcdf iput calls
   int nreqs;
   void *fillbuf;
   void *iobuf;
@@ -192,8 +191,6 @@ typedef struct file_desc_t
   int fh;
   int iotype;
   struct var_desc_t varlist[PIO_MAX_VARS];
-  //  int request[PIO_MAX_REQUESTS];   // request associated with buffered data for pnetcdf (not an MPI_Request)
-  int nreq;
   int mode;
   struct wmulti_buffer buffer;
   struct file_desc_t *next;

@@ -276,8 +276,15 @@ void compute_buffer_init(iosystem_desc_t ios)
 	   //			     IOBUF, iodesc->llen, iodesc->basetype);
 	   int reqn=0;
 
-	   while(vdesc->request[reqn] != NC_REQ_NULL){
-	     reqn++;
+	   if(vdesc->request == NULL){
+	     vdesc->request = malloc(sizeof(int)*iodesc->maxregions);
+	     for(int i=0;i<iodesc->maxregions;i++){
+	       vdesc->request[i]=NC_REQ_NULL;
+	     }
+	   }else{
+	     while(vdesc->request[reqn] != NC_REQ_NULL){
+	       reqn++;
+	     }
 	   }
 	   
 	   ierr = ncmpi_bput_varn(ncid, vid, rrcnt, startlist, countlist, 
@@ -565,8 +572,15 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 	     bufptr = (void *)((char *) IOBUF + nv*tsize*llen);
 
 	     int reqn=0;
-	     while(vdesc->request[reqn] != NC_REQ_NULL){
-	       reqn++;
+	     if(vdesc->request == NULL){
+	       vdesc->request = malloc(sizeof(int)*maxregions);
+	       for(int i=0;i<maxregions;i++){
+		 vdesc->request[i]=NC_REQ_NULL;
+	       }
+	     }else{
+	       while(vdesc->request[reqn] != NC_REQ_NULL){
+		 reqn++;
+	       }
 	     }
 	     ierr = ncmpi_iput_varn(ncid, vid[nv], rrcnt, startlist, countlist, 
 				    bufptr, llen, basetype, vdesc->request+reqn);
@@ -803,7 +817,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
        }
 #ifdef _PNETCDF
        /* flush the previous record before starting a new one. this is collective */
-       if((vdesc->request[0] != NC_REQ_NULL) ||
+       if(vdesc->request != NULL && (vdesc->request[0] != NC_REQ_NULL) ||
 	  (wmb->frame != NULL && vdesc->record != wmb->frame[0])){
 	 needsflush = 2;  // flush to disk
        }
@@ -1306,7 +1320,7 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
   var_desc_t *vdesc;
   int ierr=PIO_NOERR;
 #ifdef _PNETCDF
-  int status[file->nreq];
+  int *status;
   PIO_Offset usage;
 #ifdef TIMING
   GPTLstart("PIO:flush_output_buffer");
@@ -1341,24 +1355,20 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
 	a contiguous block of data in the file */
       if(rcnt>0 && (prev_record != vdesc->record ||
 		    vdesc->nreqs==0)){
+	status = malloc(rcnt*sizeof(int));
 	ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
+	free(status);
 	rcnt=0;
       }
       prev_record = vdesc->record;
 #endif
 	 //      printf("%s %d %d %d %d %d \n",__FILE__,__LINE__,i,rcnt,vdesc->request,vdesc->fillrequest);
-      int reqcnt=0;
-      while(vdesc->request[reqcnt] != NC_REQ_NULL) {
-	  //	if(file->iosystem->io_rank==0) printf("%s %d %d %d %d %d %d\n",__FILE__,__LINE__,i,vdesc->request,vdesc->distributed, vdesc->record, vdesc->type);
-      //printf("%s %d %d %d\n",__FILE__,__LINE__,i,vdesc->request[0]);
-	request[rcnt++] = max(vdesc->request[reqcnt],NC_REQ_NULL);
-	vdesc->request[reqcnt] = NC_REQ_NULL;
-	reqcnt++;
-	if(reqcnt >= PIO_MAX_REQUESTS){
-	  piodie("PIO_MAX_REQUESTS CNT EXCEEDED, INCREASE in pio.h",__FILE__,__LINE__);
-	}
-      }
 
+      for(int reqcnt=0;reqcnt<vdesc->nreqs;reqcnt++){
+	request[rcnt++] = max(vdesc->request[reqcnt],NC_REQ_NULL);
+      }
+      free(vdesc->request);
+      vdesc->request=NULL;
       vdesc->nreqs=0;
       //      if(file->iosystem->io_rank < 2) printf("%s %d varid=%d\n",__FILE__,__LINE__,i);
 #ifdef FLUSH_EVERY_VAR
