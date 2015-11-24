@@ -737,7 +737,7 @@ contains
 
        call CNFireFluxes(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             dgvs_vars, cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
-            carbonflux_vars, nitrogenflux_vars)
+            carbonflux_vars,nitrogenflux_vars,phosphorusstate_vars,phosphorusflux_vars)
 
        call t_stopf('CNUpdate2')
 
