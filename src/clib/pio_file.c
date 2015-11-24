@@ -43,9 +43,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
     file->varlist[i].record = -1;
     file->varlist[i].ndims = -1;
 #ifdef _PNETCDF
-    for(int req=0;req<PIO_MAX_REQUESTS;req++){
-      file->varlist[i].request[req] = NC_REQ_NULL;
-    }
+    file->varlist[i].request = NULL;
     file->varlist[i].nreqs=0;
 #endif
     file->varlist[i].fillbuf = NULL;
@@ -130,7 +128,6 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
 #endif
   }
 
-  file->nreq=0;
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   if(ierr==PIO_NOERR){
@@ -189,9 +186,7 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
     file->varlist[i].record = -1;
     file->varlist[i].ndims = -1;
 #ifdef _PNETCDF
-    for(int req=0;req<PIO_MAX_REQUESTS;req++){
-      file->varlist[i].request[req] = NC_REQ_NULL;
-    }
+    file->varlist[i].request = NULL;
     file->varlist[i].nreqs=0;
 #endif
     file->varlist[i].fillbuf = NULL;
@@ -250,8 +245,6 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
     }
   }
 
-  file->nreq=0;
-  
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   if(ierr == PIO_NOERR){
