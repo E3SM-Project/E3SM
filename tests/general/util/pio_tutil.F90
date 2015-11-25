@@ -91,6 +91,9 @@ MODULE pio_tutil
 CONTAINS
   ! Initialize Testing framework - Internal (Not directly used by unit tests)
   SUBROUTINE  PIO_TF_Init_
+#ifdef TIMING
+   use perf_mod
+#endif
 #ifndef NO_MPIMOD
     use mpi
 #else
@@ -101,6 +104,11 @@ CONTAINS
     CALL MPI_COMM_DUP(MPI_COMM_WORLD, pio_tf_comm_, ierr);
     CALL MPI_COMM_RANK(pio_tf_comm_, pio_tf_world_rank_, ierr)
     CALL MPI_COMM_SIZE(pio_tf_comm_, pio_tf_world_sz_, ierr)
+#ifdef TIMING
+    call t_initf('gptl.nl')
+#endif
+
+
 
     pio_tf_log_level_ = 0
     pio_tf_num_aggregators_ = 0

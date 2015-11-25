@@ -8,7 +8,9 @@ Program pio_unit_test_driver
   use global_vars
   use basic_tests
   use ncdf_tests
-
+#ifdef TIMING
+  use perf_mod
+#endif
   Implicit None
 
   ! local variables
@@ -28,6 +30,10 @@ Program pio_unit_test_driver
   call MPI_Init(ierr)
   call MPI_Comm_rank(MPI_COMM_WORLD, my_rank, ierr)
   call MPI_Comm_size(MPI_COMM_WORLD, ntasks , ierr)
+#ifdef TIMING
+  call t_initf('gptl.nl')
+#endif
+
   !! call MPI_Errhandler_set(MPI_COMM_WORLD, MPI_ERRORS_RETURN, ierr)
   master_task = my_rank.eq.0
 

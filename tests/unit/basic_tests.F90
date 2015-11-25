@@ -272,7 +272,7 @@ module basic_tests
         if(any(data_buffer /= my_rank)) then
           err_msg = "Error reading data"
           call PIO_closefile(pio_file)
-          print *,__FILE__,__LINE__,trim(err_msg), data_buffer
+          print *,__FILE__,__LINE__,iotype, trim(err_msg), data_buffer
           call mpi_abort(MPI_COMM_WORLD,0,ret_val)
         end if
 
