@@ -101,6 +101,7 @@ if (PIO_ENABLE_TESTS)
     enable_testing()
     include (CTest)
     add_subdirectory (tests)
+    add_subdirectory (examples)
 endif ()
 
 # Documentation
