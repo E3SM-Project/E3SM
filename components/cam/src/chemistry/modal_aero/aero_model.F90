@@ -2209,11 +2209,7 @@ contains
        sflx(:)=0._r8
        F_eff(:)=0._r8
 
-#if (defined MODAL_AERO_9MODE || MODAL_AERO_4MODE_MOM)
        call seasalt_emis(u10, u10cubed, lchnk, cam_in%sst, cam_in%ocnfrac, ncol, cam_in%cflx, seasalt_emis_scale, F_eff)
-#else
-       call seasalt_emis(u10, u10cubed, cam_in%sst, cam_in%ocnfrac, ncol, cam_in%cflx, seasalt_emis_scale, F_eff)
-#endif
 
        ! Write out salt mass fluxes to history files
        do m=1,seasalt_nbin-nslt_om

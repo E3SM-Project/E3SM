@@ -43,6 +43,7 @@ module seasalt_model
   integer, parameter :: om_num_modes = 0
   character(len=6),parameter :: seasalt_names(nslt+nslt_om+nnum+nnum_om) = &
        (/ 'ncl_a1', 'ncl_a2', 'ncl_a4', 'ncl_a6', 'num_a1', 'num_a2', 'num_a4', 'num_a6' /)
+  integer, parameter :: om_num_ind = 0
 #elif( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE )
   integer, parameter :: nslt_om = 0
   integer, parameter :: nnum_om = 0
@@ -50,6 +51,7 @@ module seasalt_model
   character(len=6),parameter :: seasalt_names(nslt+nslt_om+nnum+nnum_om) = &
        (/ 'ncl_a1', 'ncl_a2', 'ncl_a3', &
           'num_a1', 'num_a2', 'num_a3'/)
+  integer, parameter :: om_num_ind = 0
 #elif( defined MODAL_AERO_4MODE_MOM )
   integer, parameter :: nslt_om = 3
   integer, parameter :: nnum_om = 1
@@ -65,25 +67,20 @@ module seasalt_model
   integer, parameter :: om_num_modes = 4
   character(len=8),parameter :: seasalt_names(nslt+nslt_om+nnum+nnum_om) = &
        (/'ncl_a1  ', 'ncl_a2  ', 'ncl_a4  ', 'ncl_a6  ', &
-                      'mpoly_a1', 'mpoly_a2', 'mpoly_a8', 'mpoly_a9', &
-                      'mprot_a1', 'mprot_a2', 'mprot_a8', 'mprot_a9', &
-                      'mlip_a1 ', 'mlip_a2 ', 'mlip_a8 ', 'mlip_a9 ', &
-                      'num_a1  ', 'num_a2  ', 'num_a4  ', 'num_a6  ', &
-                      'num_a8  ', 'num_a9  ' &
-                      /)
+         'mpoly_a1', 'mpoly_a2', 'mpoly_a8', 'mpoly_a9', &
+         'mprot_a1', 'mprot_a2', 'mprot_a8', 'mprot_a9', &
+         'mlip_a1 ', 'mlip_a2 ', 'mlip_a8 ', 'mlip_a9 ', &
+         'num_a1  ', 'num_a2  ', 'num_a4  ', 'num_a6  ', &
+         'num_a8  ', 'num_a9  ' &
+         /)
   integer, dimension(om_num_modes), parameter :: om_num_ind =  (/ 1, 2, 5, 6 /)
 #endif
 
   integer, parameter :: seasalt_nbin = nslt+nslt_om
   integer, parameter :: seasalt_nnum = nnum+nnum_om
 
-#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
   integer, parameter :: & ! number of ocean data fields
        n_ocean_data = 4
-#else
-  integer, parameter :: & ! number of ocean data fields
-       n_ocean_data = 0
-#endif
 
 !  logical, parameter   :: F_eff_out = .true.
   logical, parameter   :: F_eff_out = .false.
@@ -91,36 +88,29 @@ module seasalt_model
   type(trfile)         :: file
 
   ! Settings for marine organics code
-  ! TODO SMB -- pass these in as parameters
-
-  ! Set fmoa=1 for Burrows et al., 2014 parameterization
-  !     fmoa=2 for Gantt et al., 2011 parameterization
-  !     fmoa=3 for simple parameterization based on Quinn et al., 2014
-  !     fmoa=4 for Rinaldi et al. (JGR, 2013)
-  integer, parameter :: fmoa = 1
-
-  ! Determine mixing state for MOM emissions.
-  ! Currently implemented options:
-  ! mixing_state = 0 : total external mixture, add to mass
-  !                1 : total external mixture, replace mass
-  !                2 : total internal mixture, add to mass
-  !                3 : total internal mixture, replace mass
-  integer, parameter :: mixing_state = 0
 
   real(r8), parameter :: small_oceanorg = 1.0e-6 ! smallest ocean organic concentration allowed
 
-  integer :: seasalt_indices(nslt+nslt_om+nnum+nnum_om)
+  integer :: seasalt_indices(seasalt_nbin+seasalt_nnum)
 
   logical :: seasalt_active = .false.
 
+  logical :: debug_mam_mom = .false.
+
 ! Parameters for organic sea salt emissions
-    real(r8), parameter :: l_bub = 0.1e-6_r8            ! assumed bubble thickness
     real(r8), parameter :: Aw_carbon = 12.0107_r8       ! Atomic weight oc carbon
     real(r8), parameter :: g_per_m3_NaCl_bulk = 35875._r8 ! approx volume density of salt in seawater
     real(r8) :: g_per_m2_NaCl_bub                       ! g salt per area bubble surface
-    integer, parameter  :: n_org_in = 3                    ! number of organic compound classes
+    integer, parameter  :: n_org_max = 3                ! max number of organic compound classes
+    integer  :: n_org                ! actual number of organic compound classes (scheme dependent)
+    integer, parameter  :: n_org_burrows = 3        ! actual number of organic compound classes (scheme dependent)
+    integer, parameter  :: n_org_gantt   = 1        ! actual number of organic compound classes (scheme dependent)
+    integer, parameter  :: n_org_rinaldi = 1        ! actual number of organic compound classes (scheme dependent)
+    integer, parameter  :: n_org_quinn   = 1        ! actual number of organic compound classes (scheme dependent)
 
 ! Marine organics namelist variables
+
+! Namelist variables related to dataset specification
    character(len=32)   :: specifier(n_ocean_data) = ''
    character(len=256)  :: filename = ' '
    character(len=256)  :: filelist = ' '
@@ -131,24 +121,40 @@ module seasalt_model
    integer             :: fixed_ymd = 0
    integer             :: fixed_tod = 0
 
+! Namelist variables for parameterization specification
+  ! Bubble film thickness
+   real(r8)            :: l_bub = 0.1e-6_r8
+  ! Determine mixing state for MOM emissions.
+  ! Currently implemented options:
+  ! mixing_state = 0 : total external mixture, add to mass
+  !                1 : total external mixture, replace mass
+  !                2 : total internal mixture, add to mass
+  !                3 : total internal mixture, replace mass
+   integer             :: mixing_state = 0
+
+  ! Selection of alternate parameterizations
+  ! Set fmoa=1 for Burrows et al., 2014 parameterization
+  !     fmoa=2 for Gantt et al., 2011 parameterization
+  !     fmoa=3 for simple parameterization based on Quinn et al., 2014
+  !     fmoa=4 for Rinaldi et al. (JGR, 2013)
+   integer             :: fmoa = 1
+
+! TODO SMB: Implement better mechanism for setting this switch.
 #if (defined MODAL_AERO_9MODE || MODAL_AERO_4MODE_MOM)
    logical :: has_mam_mom = .true.
 #else
    logical :: has_mam_mom = .false.
 #endif
 
-    real(r8), dimension(n_org_in), parameter :: & ! OM:OC mass ratios for input fields (mpoly, mprot, mlip)
-         OM_to_OC_in = (/ 2.3_r8, 2.2_r8, 1.3_r8 /)
-
 ! Order: mpoly, mprot, mlip
-    real(r8), dimension(n_org_in), parameter :: & ! OM:OC mass ratios
-         OM_to_OC = (/ 2.3_r8, 2.2_r8, 1.3_r8 /)
-    real(r8), dimension(n_org_in), parameter :: & ! Langmuir parameters (inverse C_1/2)  [m3 mol-1]
+    real(r8), dimension(n_org_burrows), parameter :: & ! OM:OC mass ratios for input fields (mpoly, mprot, mlip)
+         OM_to_OC_in = (/ 2.3_r8, 2.2_r8, 1.3_r8 /)
+    real(r8), dimension(n_org_burrows), parameter :: & ! Langmuir parameters (inverse C_1/2)  [m3 mol-1]
          alpha_org = (/ 90.58_r8, 25175._r8, 18205._r8 /)
 ! Molecular weights needed for output of optional diagnostic variable F_eff
-    real(r8), dimension(n_org_in), parameter :: & ! Molecular weights [g mol-1]
+    real(r8), dimension(n_org_burrows), parameter :: & ! Molecular weights [g mol-1]
          Mw_org   = (/ 250000._r8, 66463._r8, 284._r8 /)
-    real(r8), dimension(n_org_in), parameter :: & ! mass per sq. m at saturation
+    real(r8), dimension(n_org_burrows), parameter :: & ! mass per sq. m at saturation
          g_per_m2_org = (/ 0.1376_r8, 0.00219_r8, 0.002593_r8 /) ! Mw_org / a_org
 
 #if  ( defined MODAL_AERO_7MODE )
@@ -175,7 +181,7 @@ module seasalt_model
 #elif ( defined MODAL_AERO_4MODE_MOM )
     real(r8), parameter :: sst_sz_range_lo (nslt+nslt_om) = &
          (/ 0.08e-6_r8,  0.02e-6_r8,  1.0e-6_r8, &  ! accu, aitken, coarse
-            0.08e-6_r8,  0.02e-6_r8,  0.08e-6_r8 /)  ! accu, aitken, POM accu
+            0.08e-6_r8,  0.02e-6_r8,  0.08e-6_r8 /) ! accu, aitken, POM accu
     real(r8), parameter :: sst_sz_range_hi (nslt+nslt_om) = &
          (/ 1.0e-6_r8,   0.08e-6_r8, 10.0e-6_r8, &  ! accu, aitken, coarse
             1.0e-6_r8,   0.08e-6_r8,  1.0e-6_r8 /)  ! accu, aitken, POM accu
@@ -289,6 +295,10 @@ subroutine ocean_data_readnl(nlfile)
    integer             :: mam_mom_fixed_ymd
    integer             :: mam_mom_fixed_tod
 
+   real(r8)            :: mam_mom_bubble_thickness
+   integer             :: mam_mom_mixing_state
+   integer             :: mam_mom_parameterization
+
    namelist /mam_mom_nl/ &
       mam_mom_specifier, &
       mam_mom_filename,  &
@@ -298,7 +308,11 @@ subroutine ocean_data_readnl(nlfile)
       mam_mom_rmv_file,  &
       mam_mom_cycle_yr,  &
       mam_mom_fixed_ymd, &
-      mam_mom_fixed_tod
+      mam_mom_fixed_tod, &
+      mam_mom_bubble_thickness, &
+      mam_mom_mixing_state, &
+      mam_mom_parameterization
+
    !-----------------------------------------------------------------------------
 
    ! Initialize namelist variables from local module variables.
@@ -311,6 +325,10 @@ subroutine ocean_data_readnl(nlfile)
    mam_mom_cycle_yr = data_cycle_yr
    mam_mom_fixed_ymd= fixed_ymd
    mam_mom_fixed_tod= fixed_tod
+
+   mam_mom_bubble_thickness = l_bub
+   mam_mom_mixing_state     = mixing_state
+   mam_mom_parameterization = fmoa
 
    ! Read aerosol namelist
    if (masterproc) then
@@ -340,9 +358,23 @@ subroutine ocean_data_readnl(nlfile)
 !                         & ! if mam_mom_datatype  is 'CYCLICAL'.
 !      mam_mom_fixed_ymd, & ! The date at which the prescribed aerosol flux data is fixed
 !                         & ! if mam_mom_datatype is 'FIXED'.
-!      mam_mom_fixed_tod    ! The time of day (seconds) corresponding to mam_mom_fixed_ymd
+!      mam_mom_fixed_tod, & ! The time of day (seconds) corresponding to mam_mom_fixed_ymd
 !                           ! at which the prescribed aerosol flux data is fixed
 !                           ! if mam_mom_datatype is 'FIXED'.
+! mam_mom_bubble_thickness, & ! Bubble film thickness (in m) for marine organic aerosol emission
+!                             ! mechanism.  The physically reasonable range is approximately
+!                             ! (0.1 - 1) x 10 ^-6.
+! mam_mom_mixing_state, &   ! Switch to select mixing state assumption in marine organic aerosol
+!                           ! code. Currently implemented options: 0 : total external mixture, add
+!                           ! to mass; 1 : total external mixture, replace mass; 2 : total
+!                           ! internal mixture, add to mass; 3 : total internal mixture, replace
+!                           ! mass.
+! mam_mom_parameterization  ! Selection of alternate parameterizations for marine organic matter
+!                           ! emissions.  Set fmoa=1 for Burrows et al., 2014 parameterization;
+!                           ! fmoa=2 for Gantt et al. (2011, ACP) parameterization; fmoa=3 for
+!                           ! simple parameterization based on Quinn et al., 2014; fmoa=4 for
+!                           ! Rinaldi et al. (JGR, 2013).
+
 
 #ifdef SPMD
    ! Broadcast namelist variables
@@ -355,6 +387,10 @@ subroutine ocean_data_readnl(nlfile)
    call mpibcast(mam_mom_cycle_yr, 1, mpiint, 0, mpicom)
    call mpibcast(mam_mom_fixed_ymd,1, mpiint, 0, mpicom)
    call mpibcast(mam_mom_fixed_tod,1, mpiint, 0, mpicom)
+
+   call mpibcast(mam_mom_bubble_thickness,1, mpir8, 0, mpicom)
+   call mpibcast(mam_mom_mixing_state,1, mpiint, 0, mpicom)
+   call mpibcast(mam_mom_parameterization,1, mpiint, 0, mpicom)
 #endif
 
    ! Update module variables with user settings.
@@ -368,18 +404,25 @@ subroutine ocean_data_readnl(nlfile)
    fixed_ymd     = mam_mom_fixed_ymd
    fixed_tod     = mam_mom_fixed_tod
 
-!!$   if(masterproc) then
-!!$      write(iulog,*) 'Read namelist mam_mom_nl from file: '//trim(nlfile)
-!!$      write(iulog,*) 'mam_mom_specifier = ',specifier
-!!$      write(iulog,*) 'mam_mom_filename  = '//trim(filename)
-!!$      write(iulog,*) 'mam_mom_filelist  = '//trim(filelist)
-!!$      write(iulog,*) 'mam_mom_datapath  = '//trim(datapath)
-!!$      write(iulog,*) 'mam_mom_datatype  = '//trim(datatype)
-!!$      write(iulog,*) 'mam_mom_rmv_file  = ',rmv_file
-!!$      write(iulog,*) 'mam_mom_cycle_yr  = ',data_cycle_yr
-!!$      write(iulog,*) 'mam_mom_fixed_ymd = ',fixed_ymd
-!!$      write(iulog,*) 'mam_mom_fixed_tod = ',fixed_tod
-!!$   endif
+   l_bub         = mam_mom_bubble_thickness
+   mixing_state  = mam_mom_mixing_state
+   fmoa          = mam_mom_parameterization
+
+   if(masterproc .and. debug_mam_mom) then
+      write(iulog,*) 'Read namelist mam_mom_nl from file: '//trim(nlfile)
+      write(iulog,*) 'mam_mom_specifier = ',specifier
+      write(iulog,*) 'mam_mom_filename  = '//trim(filename)
+      write(iulog,*) 'mam_mom_filelist  = '//trim(filelist)
+      write(iulog,*) 'mam_mom_datapath  = '//trim(datapath)
+      write(iulog,*) 'mam_mom_datatype  = '//trim(datatype)
+      write(iulog,*) 'mam_mom_rmv_file  = ',rmv_file
+      write(iulog,*) 'mam_mom_cycle_yr  = ',data_cycle_yr
+      write(iulog,*) 'mam_mom_fixed_ymd = ',fixed_ymd
+      write(iulog,*) 'mam_mom_fixed_tod = ',fixed_tod
+      write(iulog,*) 'mam_mom_bubble_thickness = ',l_bub
+      write(iulog,*) 'mam_mom_mixing_state     = ',mixing_state
+      write(iulog,*) 'mam_mom_parameterization = ',fmoa
+   endif
 
 !   ! Turn on mam_mom aerosols if user has specified an input dataset.
 !   has_mam_mom = len_trim(filename) > 0
@@ -387,11 +430,7 @@ subroutine ocean_data_readnl(nlfile)
 end subroutine ocean_data_readnl
 
   !=============================================================================
-#if (defined MODAL_AERO_9MODE || MODAL_AERO_4MODE_MOM)
   subroutine seasalt_emis(u10, u10cubed, lchnk, srf_temp, ocnfrc, ncol, cflx, emis_scale, F_eff)
-#else
-  subroutine seasalt_emis(u10, u10cubed, srf_temp, ocnfrc, ncol, cflx, emis_scale, F_eff)
-#endif
 
     use sslt_sections, only: nsections, fluxes, Dg, rdry
     use mo_constants,  only: dns_aer_sst=>seasalt_density, pi
@@ -407,9 +446,7 @@ end subroutine ocean_data_readnl
     real(r8), intent(inout) :: cflx(:,:)
 ! Needed in Gantt et al. calculation of organic mass fraction
     real(r8), intent(in) :: u10(pcols)
-#if (defined MODAL_AERO_9MODE || MODAL_AERO_4MODE_MOM)
     integer, intent(in)  :: lchnk
-#endif
 
     ! local vars
     integer  :: mn, mm, ibin, i
@@ -424,7 +461,7 @@ end subroutine ocean_data_readnl
 
    logical :: emit_this_mode(om_num_modes)
 
-   real(r8) :: mass_frac_bub_section(pcols, n_org_in, nsections)
+   real(r8) :: mass_frac_bub_section(pcols, n_org_max, nsections)
    real(r8) :: om_ssa(pcols, nsections)
    real(r8) :: F_eff(pcols) ! optional diagnostic output
 
@@ -432,7 +469,7 @@ end subroutine ocean_data_readnl
 
     fi(:ncol,:nsections) = fluxes( srf_temp, u10cubed, ncol )
 
-    if ( has_mam_mom ) then
+    calculate_organic_fraction: if ( has_mam_mom ) then
 
        nullify(chla)
        nullify(mpoly)
@@ -461,23 +498,27 @@ end subroutine ocean_data_readnl
     F_eff(:ncol) = 0.0_r8
 
     if (fmoa==1) then ! Burrows et al. organic sea spray
+       n_org = n_org_burrows
        call calc_om_ssa_burrows(ncol, mpoly(:ncol), mprot(:ncol), mlip(:ncol), &
-                                mass_frac_bub_section(:ncol, :, :), om_ssa(:ncol, :), F_eff(:ncol))
+                                mass_frac_bub_section(:ncol, :, :), om_ssa(:ncol, :), F_eff(:ncol), lchnk)
     else if (fmoa==2) then ! Use Gantt et al. (2011) parameterization to calculate
                            ! the total organic mass fraction in the bubble.
+       n_org = n_org_gantt
        call calc_om_ssa_gantt(chla(:ncol), u10(:), mass_frac_bub_section(:ncol, :, :), om_ssa(:ncol, :))
     else if (fmoa==3) then ! Use Quinn et al. (2014) to calculate
                            ! the total organic mass fraction in the bubble --
                            ! 80% in Aitken mode and 5% in accumulation mode,
                            ! everywhere and always.
+       n_org = n_org_quinn
        call calc_om_ssa_quinn(mass_frac_bub_section(:ncol, :, :), om_ssa(:ncol, :))
     else if (fmoa==4) then ! Use Rinaldi et al. (2013) parameterization to calculate
                            ! the total organic mass fraction in the bubble.
+       n_org = n_org_rinaldi
        call calc_om_ssa_rinaldi(chla(:ncol), u10(:), mass_frac_bub_section(:ncol, :, :), om_ssa(:ncol, :))
     else
        call endrun('Unknown value of fmoa (marine organic aerosol parameterization flag)')
     end if
- end if
+ end if calculate_organic_fraction
 
     tracer_loop: do ibin = 1,nslt
        ! Index of mass mode
@@ -559,6 +600,7 @@ end subroutine ocean_data_readnl
 
 add_om_species: if ( has_mam_mom ) then
 ! Calculate emission of MOM mass.
+   write(iulog, *) "Adding MOM species in seasalt_model.F90"
 
 ! Determine which modes to emit MOM in depending on mixing state assumption
 
@@ -596,13 +638,18 @@ add_om_species: if ( has_mam_mom ) then
 
 ! Loop over OM modes
     om_num_mode_loop: do m_om=1,om_num_modes ! modes in which to emit OM
-       ! om_num_ind = (/ 1, 2, 5, 6 /)
+       if (size(om_num_ind) .eq. 1) then
+          call endrun("Error: om_num_ind is a scalar, but attempting to calculate MOM.  Something bad happened!!  We should never get here!")
+       end if
        m = om_num_ind(m_om)
-       mm=seasalt_indices(nslt+nslt_om+m)
+       mn=seasalt_indices(nslt+nslt_om+m)
 
-          cflx(:ncol,mm)=0.0_r8
+          cflx(:ncol,mn)=0.0_r8
           ! add number tracers for organics-only modes
           if (emit_this_mode(m_om)) then
+             if (debug_mam_mom) then
+                write(iulog,"(A30,A10,I3)") "Constituent name and number: ", trim(seasalt_names(nslt+m_om)), mn ! for debugging
+             endif
              section_loop_OM_num: do i=1, nsections
                 cflx_help2(:ncol) = 0.0_r8
                 if (Dg(i).ge.sst_sz_range_lo(nslt+m_om) .and. Dg(i).lt.sst_sz_range_hi(nslt+m_om)) then
@@ -612,11 +659,11 @@ add_om_species: if ( has_mam_mom ) then
                       !                 total number not modified
                       ! Mixing state 2: internal mixture, replace mass with OM,
                       !                 total number not modified
-                      cflx(:ncol,mm) = cflx(:ncol,mm) + cflx_help2(:ncol)*om_ssa(:ncol, i)
+                      cflx(:ncol,mn) = cflx(:ncol,mn) + cflx_help2(:ncol)*om_ssa(:ncol, i)
                    else if ( ( mixing_state == 1 ) .or. ( mixing_state == 3 ) ) then
                       ! Mixing state 1: external mixture, add OM to mass and number
                       ! Mixing state 3: internal mixture, add OM to mass and number
-                      cflx(:ncol,mm) = cflx(:ncol,mm) + cflx_help2(:ncol) * &
+                      cflx(:ncol,mn) = cflx(:ncol,mn) + cflx_help2(:ncol) * &
                                        (1._r8 / (1._r8 - om_ssa(:ncol, i)) - 1._r8)
                    else
                       ! Unknown mixing state assumption
@@ -627,24 +674,25 @@ add_om_species: if ( has_mam_mom ) then
 
              end do section_loop_OM_num
           endif
-    end do om_num_mode_loop
+       end do om_num_mode_loop
 
-    om_type_loop: do n=1,n_org_in
-       om_mode_loop: do m_om=1,nslt_om
+    om_mode_loop: do m_om=1,nslt_om
 #if ( defined MODAL_AERO_9MODE )
-          mm = seasalt_indices(nslt+(n-1)*om_num_modes+m_om)
+       mm = seasalt_indices(nslt+(n-1)*om_num_modes+m_om)
 #elif ( defined MODAL_AERO_4MODE_MOM )
-          mm = seasalt_indices(nslt+m_om)
+       mm = seasalt_indices(nslt+m_om)
 #endif
-          write(iulog,"(A30,A10,I3)") "Constituent name and number: ", trim(seasalt_names(mm)), mm ! for debugging
-          cflx(:ncol,mm)=0.0_r8
-          if (emit_this_mode(m_om)) then
+
+       cflx(:ncol,mm)=0.0_r8
+       if (emit_this_mode(m_om)) then
+!          write(iulog,"(A30,A10,I3)") "Constituent name and number: ", trim(seasalt_names(nslt+m_om)), mm ! for debugging
           ! add mass tracers
-          section_loop_OM_mass: do i=1, nsections
+          om_type_loop: do n=1,n_org
+             section_loop_OM_mass: do i=1, nsections
              if (Dg(i).ge.sst_sz_range_lo(nslt+m_om) .and. Dg(i).lt.sst_sz_range_hi(nslt+m_om)) then
                 cflx_help2(:ncol)=fi(:ncol,i)*ocnfrc(:ncol)*emis_scale &
                      *4._r8/3._r8*pi*rdry(i)**3*dns_aer_sst  ! should use dry size, convert from number to mass flux (kg/m2/s)
-                !  mass_frac_bub_section(pcols, n_org_in, nsections) -- org classes in dim 2, size nsections in dim 3
+                !  mass_frac_bub_section(pcols, n_org_max, nsections) -- org classes in dim 2, size nsections in dim 3
                 if ( ( mixing_state == 0 ) .or. ( mixing_state == 2 ) ) then
                    ! Mixing state 0: external mixture, replace mass with OM,
                    !                 total number not modified
@@ -669,13 +717,16 @@ add_om_species: if ( has_mam_mom ) then
                 endif
              endif
           enddo section_loop_OM_mass
-          endif
+       end do om_type_loop
+    endif
 
-       end do om_mode_loop
-    end do om_type_loop
+    if (debug_mam_mom) then
+       call outfld('cflx_'//trim(seasalt_names(nslt+m_om))//'_debug',cflx(:ncol,mm),pcols,lchnk)
+    endif
+
+    end do om_mode_loop
 
  end if add_om_species
-
 #endif
 
   enddo tracer_loop
@@ -810,7 +861,7 @@ add_om_species: if ( has_mam_mom ) then
  end subroutine calc_om_ssa_gantt
 
  subroutine calc_om_ssa_burrows(ncol, mpoly_in, mprot_in, mlip_in, &
-                                mass_frac_bub_section, om_ssa, F_eff)
+                                mass_frac_bub_section, mass_frac_bub_tot, F_eff, lchnk)
 
    !----------------------------------------------------------------------- 
    ! Purpose:
@@ -821,6 +872,7 @@ add_om_species: if ( has_mam_mom ) then
    ! Susannah Burrows, 9 Mar 2015
    !----------------------------------------------------------------------- 
    use sslt_sections, only: nsections
+   use cam_history,   only: outfld
    implicit none
    !-----------------------------------------------------------------------
    ! Input variables:
@@ -831,49 +883,88 @@ add_om_species: if ( has_mam_mom ) then
    !
    ! Output variables
    real(r8), intent(inout) :: mass_frac_bub_section(:,:,:)
-   real(r8), intent(inout) :: om_ssa(:,:)
    real(r8), intent(inout) :: F_eff(:) ! optional diagnostic output
    !
    ! Local variables
-   real(r8) :: g_per_m3(ncol, n_org_in), mol_per_m3(ncol, n_org_in)
-   real(r8) :: theta(ncol, n_org_in), alpha_help(ncol)
-   real(r8) :: mass_frac_bub(ncol, n_org_in), mass_frac_bub_tot(ncol)
+   real(r8) :: g_per_m3(ncol, n_org_burrows), mol_per_m3(ncol, n_org_burrows)
+   real(r8) :: theta(ncol, n_org_burrows), alpha_help(ncol)
+   real(r8) :: mass_frac_bub(ncol, n_org_burrows), mass_frac_bub_tot(ncol)
+   real(r8) :: theta_help(ncol, n_org_burrows), mass_frac_bub_help(ncol, n_org_burrows)
    real(r8), parameter :: particle_size_for_OMF_param = 0.5_r8 ! in microns
    !
    ! OMF maximum and minimum values -- max from Rinaldi et al. (2013)
    real(r8), parameter :: omfrac_max = 0.78
-   real(r8), parameter :: omfrac_min = 0.00
    !
-   integer  :: i, m
+   integer  :: i
+   integer  :: lchnk
    !
    !-----------------------------------------------------------------------
 
+! Initialize arrays to zero for safety.
+   theta(:,:) = 0.0_r8
+   theta_help(:,:) = 0.0_r8
+   mass_frac_bub_tot(:) = 0.0_r8
+   mass_frac_bub(:,:) = 0.0_r8
+   mass_frac_bub_help(:,:) = 0.0_r8
+   mol_per_m3(:,:) = 0.0_r8
+   g_per_m3(:,:) = 0.0_r8
+   F_eff(:) = 0.0_r8
+
 ! Convert input fields from [(mol C) L-1] to [(g OM) m-3]
 ! and store in single array
-!    if ( has_mam_mom ) then
    g_per_m3(:, 1) = mpoly_in(:)  * 1.0e-3_r8 * OM_to_OC_in(1) * Aw_carbon
    g_per_m3(:, 2) = mprot_in(:)  * 1.0e-3_r8 * OM_to_OC_in(2) * Aw_carbon
    g_per_m3(:, 3) = mlip_in(:)   * 1.0e-3_r8 * OM_to_OC_in(3) * Aw_carbon
 
+   if (debug_mam_mom) then
+      call outfld('mpoly_debug',mpoly_in(:),pcols,lchnk)
+   endif
+
 ! Calculate the surface coverage by class
-   do i=1,n_org_in
+   do i=1,n_org_burrows
 ! Bulk mass concentration [mol m-3] = [g m-3] / [g mol-1]
       mol_per_m3(:, i)     = g_per_m3(:, i) / Mw_org(i)
-! use theta as work array -- theta = alpha(i) * x(i)
-      theta(:, i)         = alpha_org(i)*mol_per_m3(:, i)
+! use theta_help as work array -- theta_help = alpha(i) * x(i)
+      theta_help(:, i)         = alpha_org(i)*mol_per_m3(:, i)
    end do
-   alpha_help = sum(theta, dim=2)
+   alpha_help(:) = sum(theta, dim=2)
    
-   do i=1,n_org_in
+   do i=1,n_org_burrows
 ! complete calculation -- theta = alpha(i) * x(i) / (1 + sum( alpha(i) * x(i) ))
-      theta(:, i)         = theta(:, i) / (1. + alpha_help(:))
+      theta(:, i)         = theta_help(:, i) / (1.0_r8 + alpha_help(:))
 ! Calculate the organic mass per area (by class) [g m-2]
-!  (use mass_frac_bub as work array -- holding mass per area for now)
-      mass_frac_bub(:, i) = theta(:, i) * g_per_m2_org(i)
+!  (use mass_frac_bub_help as local work array -- organic mass per area in g per m2)
+      mass_frac_bub_help(:, i) = theta(:, i) * g_per_m2_org(i)
    end do
 
 ! Calculate g NaCl per m2
    g_per_m2_NaCl_bub = g_per_m3_NaCl_bulk*l_bub ! Redundant, but allows for easier adjustment to l_bub
+
+! mass_frac_bub = 2*[g OM m-2] / (2*[g OM m-2] * [g NaCl m-2])
+! Factor 2 for bubble bilayer (coated on both surfaces of film)
+   do i=1,n_org_burrows
+      mass_frac_bub(:, i) = 2.0_r8*mass_frac_bub_help(:, i) / &
+           (2.0_r8*sum(mass_frac_bub_help(:, :), dim=2) + g_per_m2_NaCl_bub)
+   end do
+
+   mass_frac_bub_tot(:) = sum(mass_frac_bub, dim=2)
+
+   do i=1,n_org_burrows
+      where (mass_frac_bub_tot(:) .gt. omfrac_max)
+         mass_frac_bub(:, i) = mass_frac_bub(:, i) / mass_frac_bub_tot(:) * omfrac_max
+      end where
+   end do
+
+   ! Must exceed threshold value small_oceanorg
+   where (mass_frac_bub(:, :) .lt. small_oceanorg)
+      mass_frac_bub(:, :) = 0.0_r8
+   end where
+
+   mass_frac_bub_tot(:) = sum(mass_frac_bub, dim=2)
+
+   if (debug_mam_mom) then
+      call outfld('mass_frac_bub_tot',mass_frac_bub_tot(:),pcols,lchnk)
+   endif
 
 ! Effective mass enrichment ratio (for bulk OM) -- diagnostic variable
 !
@@ -882,7 +973,8 @@ add_om_species: if ( has_mam_mom ) then
 
    if ( F_eff_out ) then
       F_eff(:) = sum(g_per_m3(:, :), dim=2)
-      where( (mass_frac_bub_tot(:) .gt. 0.0_r8) .and. (F_eff(:) .gt. 0.0_r8) ) ! avoid division by zero
+      ! avoid division by zero
+      where( (mass_frac_bub_tot(:) .gt. small_oceanorg) .and. (F_eff(:) .gt. small_oceanorg) )
          F_eff(:) = 2.0_r8*sum(mass_frac_bub(:, :), dim=2) / g_per_m2_NaCl_bub * &
                  g_per_m3_NaCl_bulk / F_eff(:)
       elsewhere
@@ -890,54 +982,27 @@ add_om_species: if ( has_mam_mom ) then
       end where
    endif
 
-! mass_frac_bub = 2*[g OM m-2] / (2*[g OM m-2] * [g NaCl m-2])
-! Factor 2 for bubble bilayer (coated on both surfaces of film)
-   do i=1,n_org_in
-      mass_frac_bub(:, i) = 2.0_r8*mass_frac_bub(:, i) / &
-           (2.0_r8*sum(mass_frac_bub(:, :), dim=2) + g_per_m2_NaCl_bub)
-   end do
+! Distribute mass fraction evenly into Aitken and accumulation modes
 
-   mass_frac_bub_tot(:) = sum(mass_frac_bub, dim=2)
-
-!end if
-
-! Calculate the organic (mass/number) fraction in each size section, using
-! the Gantt et al. (2011) parameterization of size dependence and the
-! bubble mass fractions just calculated.
-
-! om_ssa(pcols, nsections) -- size nsections in dimension 2
-   call omfrac_accu_aitk(mass_frac_bub_tot(:), om_ssa(:, :))
-
-!  mass_frac_bub_section(pcols, n_org_in, nsections) -- org classes in dim 2, size nsections in dim 3
+!  mass_frac_bub_section(pcols, n_org_max, nsections) -- org classes in dim 2, size nsections in dim 3
    mass_frac_bub_section(:, :, :)   = 0.0_r8
-   do m=1,n_org_in
-      do i=1,nsections
-         ! Repartition as fraction of total mass in each section,
-         ! avoiding division by zero
-         where( mass_frac_bub_tot(:) .gt. 0.0_r8 )
-            mass_frac_bub_section(:, m, i) = &
-                (mass_frac_bub(:, m)/mass_frac_bub_tot(:) - 0.03) * &
-                     (1 + 0.03 * exp(6.18 * particle_size_for_OMF_param)) * &
-                     om_ssa(:, i)
-!                mass_frac_bub(:, m) / mass_frac_bub_tot(:) * om_ssa(:, i)
-                 ! Apply size correction to organic mass fraction,
-                 ! assuming that it is representative for particles of diameter
-                 ! particle_size_for_OMF_param, and using Gantt parameterization.
-         end where
 
-         where ( mass_frac_bub_section(:, m, i) .lt. omfrac_min )
-            mass_frac_bub_section(:, m, i) = omfrac_min
-         end where
-
-         where ( mass_frac_bub_section(:, m, i) .gt. omfrac_max )
-            mass_frac_bub_section(:, m, i) = omfrac_max
-         end where
-      end do
+   do i=1,n_org_burrows
+      call omfrac_accu_aitk(mass_frac_bub(:, i), mass_frac_bub_section(:, i, :))
    end do
+
+   if (debug_mam_mom) then
+      call outfld('mass_frac_bub_poly',mass_frac_bub(:,1),pcols,lchnk)
+      call outfld('mass_frac_bub_prot',mass_frac_bub(:,2),pcols,lchnk)
+      call outfld('mass_frac_bub_lip',mass_frac_bub(:,3),pcols,lchnk)
+      call outfld('omf_bub_section_mpoly',mass_frac_bub_section(:,1,:),pcols,lchnk)
+      call outfld('omf_bub_section_mprot',mass_frac_bub_section(:,2,:),pcols,lchnk)
+      call outfld('omf_bub_section_mlip', mass_frac_bub_section(:,3,:),pcols,lchnk)
+   endif
 
  end subroutine calc_om_ssa_burrows
 
- subroutine omfrac_accu_aitk(om_ssa_max, om_ssa)
+ subroutine omfrac_accu_aitk(om_ssa_in, om_ssa)
 
    !----------------------------------------------------------------------- 
    ! Purpose:
@@ -948,26 +1013,33 @@ add_om_species: if ( has_mam_mom ) then
    !-----------------------------------------------------------------------
    ! Arguments:
    !
-   real(r8), intent(in)    :: om_ssa_max(:)
+   real(r8), intent(in)    :: om_ssa_in(:)
    real(r8), intent(inout) :: om_ssa(:,:)
    !
    ! Local variables
    !
    integer  :: m
+   real(r8), parameter :: om_ssa_max = 1.0_r8
    !
    !-----------------------------------------------------------------------
 
 ! distribute OM fraction!
     do m=1,nsections
        ! update only in Aitken and accu. modes
-       if (Dg(m).ge.sst_sz_range_lo(2) .and. Dg(m).lt.sst_sz_range_hi(1)) then
-          where (om_ssa(:, m) .gt. om_ssa_max)
-             om_ssa(:, m) = om_ssa_max
-          endwhere
+       if ((Dg(m).ge.sst_sz_range_lo(2)) .and. (Dg(m).lt.sst_sz_range_hi(1))) then
+             om_ssa(:, m) = om_ssa_in(:)
        else
           om_ssa(:, m) = 0.0_r8 ! Set to zero for "fine sea salt" and "coarse sea salt" modes
        endif
     enddo
+
+    ! For safety, force fraction to be within bounds [0, 1]
+    where (om_ssa(:, :) .gt. om_ssa_max)
+       om_ssa(:, :) = om_ssa_max
+    endwhere
+    where (om_ssa(:, :) .lt. small_oceanorg)
+       om_ssa(:, :) = 0.0_r8
+    endwhere
 
   end subroutine omfrac_accu_aitk
 
@@ -1051,10 +1123,8 @@ subroutine init_ocean_data()
 
     use tracer_data,      only : trcdata_init
     use cam_history,      only : addfld, add_default, phys_decomp
-    use spmd_utils,      only: masterproc
-!    use mo_constants,     only : d2r
-!    use phys_grid,        only : get_ncols_p, get_rlat_all_p, get_rlon_all_p
-!    use interpolate_data, only : lininterp_init, lininterp, lininterp_finish, interp_type
+    use spmd_utils,       only : masterproc
+    use sslt_sections,    only : nsections
 
     !-----------------------------------------------------------------------
     ! 	... local variables
@@ -1063,7 +1133,7 @@ subroutine init_ocean_data()
 !    type(interp_type)     :: lon_wgts, lat_wgts
 !    real(r8), parameter   :: zero=0._r8, twopi=2._r8*pi
 
-    integer :: i
+    integer :: i, m, m_om
     integer :: number_flds
 
     if ( masterproc ) then
@@ -1121,6 +1191,44 @@ subroutine init_ocean_data()
        endif
 
     enddo fldloop
+
+! FOR DEBUGGING
+    debug: if (debug_mam_mom) then
+       call addfld('mpoly_debug', ' ', 1, 'A', 'mpoly_debug', phys_decomp ) 
+       call add_default ('mpoly_debug', 1, ' ')
+
+       call addfld('mass_frac_bub_tot', ' ', 1, 'A', 'total organic mass fraction of bubble', phys_decomp ) 
+       call add_default ('mass_frac_bub_tot', 1, ' ')
+
+       call addfld('mass_frac_bub_poly', ' ', 1, 'A', 'total organic mass fraction (poly)', phys_decomp ) 
+       call add_default ('mass_frac_bub_poly', 1, ' ')
+
+       call addfld('mass_frac_bub_prot', ' ', 1, 'A', 'total organic mass fraction (prot)', phys_decomp ) 
+       call add_default ('mass_frac_bub_prot', 1, ' ')
+
+       call addfld('mass_frac_bub_lip', ' ', 1, 'A', 'total organic mass fraction (lip)', phys_decomp ) 
+       call add_default ('mass_frac_bub_lip', 1, ' ')
+
+       om_mode_loop: do m_om=1,nslt_om
+#if ( defined MODAL_AERO_9MODE )
+          m = nslt+(n-1)*om_num_modes+m_om
+#elif ( defined MODAL_AERO_4MODE_MOM )
+          m = nslt+m_om
+#endif
+          call addfld('cflx_'//trim(seasalt_names(m))//'_debug', ' ', 1, 'A', 'accumulation organic mass emissions', phys_decomp ) 
+          call add_default ('cflx_'//trim(seasalt_names(m))//'_debug', 1, ' ')
+       enddo om_mode_loop
+
+       call addfld('omf_bub_section_mpoly',' ', nsections, 'A', 'omf poly', phys_decomp ) 
+       call add_default ('omf_bub_section_mpoly', 1, ' ')
+
+       call addfld('omf_bub_section_mprot',' ', nsections, 'A', 'omf prot', phys_decomp ) 
+       call add_default ('omf_bub_section_mprot', 1, ' ')
+
+       call addfld('omf_bub_section_mlip',' ', nsections, 'A', 'omf lip', phys_decomp ) 
+       call add_default ('omf_bub_section_mlip', 1, ' ')
+
+    endif debug
 
     if ( masterproc ) then
        write(iulog,*) 'Done initializing marine organics data'

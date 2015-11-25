@@ -23,10 +23,8 @@ contains
     use physics_buffer, only : pbuf_add_field, dtype_r8
     use seasalt_model, only: n_ocean_data, has_mam_mom
 
-#if ( defined MODAL_AERO_9MODE  || defined MODAL_AERO_4MODE_MOM )
   character(len=5), dimension(n_ocean_data), parameter :: & ! ocean data names
        ocean_data_names = (/'chla ', 'mpoly', 'mprot', 'mlip '/)
-#endif
 
     integer, intent(inout) :: species_class(:) 
     !local variables

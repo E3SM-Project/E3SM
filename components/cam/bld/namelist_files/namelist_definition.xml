@@ -4484,6 +4484,32 @@ if <varname>mam_mom_type</varname> is 'FIXED'.
 Default: 0 seconds
 </entry>
 
+<entry id="mam_mom_bubble_thickness" type="real" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+Bubble film thickness (in m) for marine organic aerosol emission
+mechanism.  The physically reasonable range is approximately
+(0.1 - 1) x 10^ -6.
+Default: 0.1e-6
+</entry>
+
+<entry id="mam_mom_mixing_state" type="integer" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+Switch to select mixing state assumption in marine organic aerosol
+code. Currently implemented options: 0 : total external mixture, add
+to mass; 1 : total external mixture, replace mass; 2 : total internal
+mixture, add to mass; 3 : total internal mixture, replace mass.
+Default:0
+</entry>
+
+<entry id="mam_mom_parameterization" type="integer" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+Selection of alternate parameterizations for marine organic matter
+emissions.  Set fmoa=1 for Burrows et al., 2014 parameterization;
+fmoa=2 for Gantt et al. (2011, ACP) parameterization; fmoa=3 for
+simple parameterization based on Quinn et al., 2014; fmoa=4 for
+Rinaldi et al. (JGR, 2013).
+Default:1
+</entry>
 
 <entry id="prescribed_ghg_datapath" type="char*256" input_pathname="abs" category="cam_chem"
        group="prescribed_ghg_nl" valid_values="" >
