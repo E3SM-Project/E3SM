@@ -22,7 +22,7 @@ This document provides specific instructions for installing PIO using a variety 
 -    <a href="#Mira">Mira</a> (IBM Blue Gene Supercomputer at ALCF)
 -    <a href="#BlueWat">Blue Waters</a> (NCSA's 1.3-petaflop Cray Supercomputer)
 -    <a href="#Hobart">Hobart</a> (The NCAR CGD local cluster)
--    <a href="#Linux">Linux with MPICH2</a> (Standard Linux box with MPICH2)
+-    <a href="#Linux">Linux with MPICH</a> (Standard Linux box with MPICH)
 
 <a name="Yellowstone"></a>
 ### Yellowstone ###
@@ -294,6 +294,7 @@ ParallelIO does not require Parallel netcdf to run, so if you decide to use the 
 
 </ol>
 
+<a name="Linux"></a>
 ### Linux with MPICH ###
 <ol>
 <li>Installing MPICH
@@ -390,13 +391,75 @@ sudo make install </pre>
 cd ParallelIO
 mkdir build
 cd build
-CC=mpicc FC=mpifort cmake -DNetCDF_C_PATH=/usr/local -DNetCDF_Fortran_PATH=/usr/local -DPnetCDF_PATH=/usr/local ..
+CC=mpicc FC=mpifort cmake -DNetCDF_C_PATH=/usr/local -DNetCDF_Fortran_PATH=/usr/local -DPnetCDF_PATH=/usr/local -DPIO_HDF5_LOGGING=On ..
 make
 make check
 sudo make install
 </pre>
 
+<p>When debugging build issues, it's helpful to be able to do a clean
+build from the command line, including tests:
+
+<pre>rm -rf * && CFLAGS=-g CC=mpicc FC=mpifort cmake -DNetCDF_C_PATH=/usr/local -DNetCDF_Fortran_PATH=/usr/local -DPnetCDF_PATH=/usr/local -DPIO_HDF5_LOGGING=On .. && make VERBOSE=1 all tests check</pre>
+
+<p>(Note the optional CFLAGS=-g which allows the use of a debugger
+with this code. Also note the optional VERBOSE=1 provided to make,
+which causes the build commands to be made visible.)
+
+<li>Building and Running Performance Tests
+
+<p>Download a decomp file from our <a
+href="http://parallelio.googlecode.com/svn/perfdecomps/trunk/30/">google
+code page</a>. You can use any of those files, save them to
+build/test/performance. (These instructions were tested with the first
+one in the list.)
+
+<p>Create a namelist file, named "pioperf.nl". Save this file in the
+subdirectory (note that it is in the BUILD directory):
+<pre>
+build/tests/performance/
+</pre>
+
+<p>The contents of the namelist file should look like:
+<pre>
+&pioperf
+decompfile = "/u/sciteam/thayerca/scratch/pio_work/piodecomp30tasks01dims06.dat"
+pio_typenames = 'pnetcdf'
+niotasks = 30
+rearrangers = 1
+nvars = 2
+/
+</pre>
+
+<p>You should change the path to your decomp file to wherever you
+saved it. You can add items to the list to run more tests, so, for
+instance, to test all of the types of io, your pio_typenames would
+look like: pio_typenames = 'pnetcdf','netcdf','netcdf4p','netcdf4c'
+
+<p>HDF5 is netcdf4p, and Parallel-Netcdf is pnetcdf.
+
+<p>Example to test with different numbers of tasks, you could do:
+niotasks = 30,15,5
+
+<p>Example to test with both of the rearranger algorithms:
+rearrangers = 1,2
+
+<p>Example to test with different numbers of variables:
+nvars = 8,5,3,2
+
+<p>Once you have your decomp file and your namelist set up, run like this:
+
+<pre>
+mpiexec -n 30 ./pioperf
+</pre>
+
+<p>If you run the most basic performance tests (as in the first
+pioperf.nl example), this script should only take a few minutes (less
+than 5) to complete. The output and results will be written to your
+pioperf.o$PBS_JOBID file. Adding more iotypes and rearrangers and
+variables to these tests will increase the time significantly.
+
 </ol>
 
-_Last updated: 11-17-2015_
+_Last updated: 11-18-2015_
 */

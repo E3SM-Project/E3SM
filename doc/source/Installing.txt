@@ -98,7 +98,6 @@ From within the build directory, build PIO with:
 
 This will build the `pioc` and `piof` libraries.
 
-
 ### Testing ###
 
 If you desire to do testing, and `PIO_ENABLE_TESTS=ON` (which is the default
@@ -142,5 +141,17 @@ specified by the `CMAKE_INSTALL_PREFIX`.  To do this, simply type:
 If the internal GPTL libraries were built (because GPTL could not be found
 and the `PIO_ENABLE_TIMING` variable is set to `ON`), then these libraries
 will be installed with PIO.
+
+### Examples ###
+
+From within the build directory, build the PIO examples with:
+
+
+    > make examples
+
+
+This will build the C and Fortran examples in under the examples
+subdirectory.
+
 
 */
