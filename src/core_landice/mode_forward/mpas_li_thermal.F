@@ -189,7 +189,7 @@ module li_thermal
 
       !WHL - debug - for test-case diagnostics
       logical, parameter :: circular_shelf_test = .false.
-      logical, parameter :: dome_test = .true.
+      logical, parameter :: dome_test = .false.
 
       integer :: ncellsPerRow 
       integer :: nRows
@@ -605,6 +605,9 @@ module li_thermal
                                        ! = 1 where thickness > config_thermal_thickness, elsewhere = 0 
 
       real (kind=RKIND), dimension(:), pointer :: &
+           xCell                       ! x coordinate for each cell (m)
+
+      real (kind=RKIND), dimension(:), pointer :: &
            layerCenterSigma,         & ! sigma coordinate at midpoint of each layer
            layerInterfaceSigma         ! sigma coordinate at layer interfaces (including top and bottom)
 
@@ -692,6 +695,7 @@ module li_thermal
          call mpas_pool_get_dimension(thermalPool, 'index_enthalpy', index_enthalpy)
 
          ! get fields from the mesh pool
+         call mpas_pool_get_array(meshPool, 'xCell', xCell)
          call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
          call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
          call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)  ! diagnostic only
@@ -746,8 +750,18 @@ module li_thermal
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
          err = ior(err, err_tmp)
 
+         ! calculate a mask to identify ice that is thick enough to be thermally active
+
+         do iCell = 1, nCellsSolve
+            if (thickness(iCell) > config_thermal_thickness) then
+               thermalCellMask(iCell) = 1
+            else
+               thermalCellMask(iCell) = 0
+            endif
+         enddo
+
          !WHL - debug dome - Zero out heat dissipation for easier comparison with dome problem
-!!!         heatDissipation(:,:) = 0.0d0
+!!         heatDissipation(:,:) = 0.0d0
 
          select case(config_thermal_solver)
 
@@ -766,8 +780,8 @@ module li_thermal
 
             ! allocate some vertical arrays
             allocate(subdiagonal(nVertLevels+2))  ! temperature/enthalpy in each layer, plus surface and basal temperature
-            allocate(diagonal(nVertLevels+2))    
-            allocate(superdiagonal(nVertLevels+2))    
+            allocate(diagonal(nVertLevels+2))
+            allocate(superdiagonal(nVertLevels+2))
             allocate(rhs(nVertLevels+2))
             allocate(solution(nVertLevels+2))
             allocate(diffusivity(nVertLevels+1))
@@ -794,10 +808,7 @@ module li_thermal
                   verboseColumn = .false.
                endif
 
-               if (thickness(iCell) > config_thermal_thickness) then
-
-                  ! Set thermal mask
-                  thermalCellMask(iCell) = 1
+               if (thermalCellMask(iCell) == 1) then  ! thermally active ice is present
 
                   ! Set surface temperature (Celsius)
                   
@@ -1087,10 +1098,7 @@ module li_thermal
                      
                   endif  ! energy conservation error
 
-               else    ! thickness <= config_thermal_thickness
-
-                  ! set thermal mask
-                  thermalCellMask(iCell) = 0
+               else    ! thermalCellMask = 0; ice is not thermally active
 
                   ! Set temperature of thin ice to 0 C
                   !TODO - For cells that have just crossed the config_thermal_thickness threshold, energy is not conserved here.
@@ -1105,13 +1113,17 @@ module li_thermal
   
             enddo   ! iCell
 
-            ! Calculate basal melt rate
-            ! For the standard temperature scheme, temperatures above the pressure melting point
-            !  are reset to Tpmp, with excess heat contributing to basal melt.
-            ! For the enthalpy scheme, internal meltwater in excess of the prescribed maximum
-            !  fraction (0.01 by default) is drained to the bed.  
+            ! Compute basal melt rate for grounded ice.
+            ! Note:
+            ! * This subroutine needs to be called only if the temperature/enthalpy is prognostic.
+            ! * It assumes Celsius units, so it should be called before converting back to Kelvin.
+            ! * It includes internal melting.
+            !   For the standard temperature scheme, temperatures above the pressure melting point
+            !    are reset to Tpmp, with excess heat contributing to basal melt.
+            !   For the enthalpy scheme, internal meltwater in excess of the prescribed maximum
+            !    fraction (0.01 by default) is drained to the bed.
 
-            call basal_melting(&
+            call basal_melt_grounded_ice(&
                  config_thermal_solver,        &     
                  deltat,                       &
                  nCellsSolve,                  &
@@ -1121,10 +1133,6 @@ module li_thermal
                  thermalCellMask,              &
                  li_mask_is_floating_ice_int(cellMask), &
                  thickness,                    &
-                 lowerSurface,                 &
-                 bedTopography,                &
-                 config_sea_level,             &
-                 config_basal_mass_bal_float,  &
                  temperature,                  &
                  basalTemperature,             &
                  waterfrac,                    &
@@ -1133,17 +1141,15 @@ module li_thermal
                  basalHeatFlux,                &
                  basalConductiveFlux,          &
                  basalWaterThickness,          &
-                 groundedBasalMassBal,         &
-                 floatingBasalMassBal,         &
-                 basalMassBal)
+                 groundedBasalMassBal)
 
             ! Convert temperatures from Celsius back to Kelvin
             temperature(:,:) = temperature(:,:) + kelvin_to_celsius
             surfaceAirTemperature(:) = surfaceAirTemperature(:) + kelvin_to_celsius
             surfaceTemperature(:) = surfaceTemperature(:) + kelvin_to_celsius
             basalTemperature(:) = basalTemperature(:) + kelvin_to_celsius
-            
-            ! Before exiting, check for temperatures that are physically unrealistic.
+
+            ! Check for temperatures that are physically unrealistic.
             ! Thresholds are set at the top of this module.
 
             do iCell = 1, nCellsSolve
@@ -1158,7 +1164,7 @@ module li_thermal
                   do k = 1, nVertLevels
                      write(stderrUnit,*) k, temperature(k,iCell)
                   enddo
-                  call mpas_dmpar_global_abort("An error has occurred in li_core_finalize. Aborting...")
+                  call mpas_dmpar_global_abort("An error has occurred in li_thermal. Aborting...")
                endif
 
                if (mintemp < mintempThreshold) then
@@ -1168,21 +1174,57 @@ module li_thermal
                   do k = 1, nVertLevels
                      write(stderrUnit,*) k, temperature(k,iCell)
                   enddo
-                  call mpas_dmpar_global_abort("An error has occurred in li_core_finalize. Aborting...")
+                  call mpas_dmpar_global_abort("An error has occurred in li_thermal. Aborting...")
                endif
           
             enddo   ! iCell
 
-            ! clean up
-            call mpas_deallocate_scratch_field(thermalCellMaskField, .true.)
-            if (allocated(subdiagonal)) deallocate(subdiagonal)
-            if (allocated(diagonal)) deallocate(diagonal)
-            if (allocated(superdiagonal)) deallocate(superdiagonal)
-            if (allocated(rhs)) deallocate(rhs)
-            if (allocated(solution)) deallocate(solution)
-            if (allocated(diffusivity)) deallocate(diffusivity)
+         end select   ! config_thermal_solver
 
-         end select
+         ! Compute basal melting for floating ice.
+         ! Note: This subroutine is called whether or not the temperature/enthalpy is prognostic.
+         !       Some tests (e.g., MISMIP+) have basal melting of floating ice without prognostic temperature.
+
+         call basal_melt_floating_ice(&
+              config_basal_mass_bal_float,  &
+              nCellsSolve,                  &
+              xCell,                        &
+              thermalCellMask,              &
+              li_mask_is_floating_ice_int(cellMask), &
+              lowerSurface,                 &
+              bedTopography,                &
+              config_sea_level,             &
+              floatingBasalMassBal)
+
+         do iCell = 1, nCellsSolve
+
+            ! It is possible that internal melting was computed above for floating ice and assigned
+            !  to the groundedBasalMassBal array.  If so, then transfer it to floatingBasalMassBal.
+
+            if (thermalCellMask(iCell) == 1 .and. li_mask_is_floating_ice(cellMask(iCell)) .and. &
+                 groundedBasalMassBal(iCell) /= 0.0_RKIND) then
+               floatingBasalMassBal(iCell) = floatingBasalMassBal(iCell) + groundedBasalMassBal(iCell)
+               groundedBasalMassBal(iCell) = 0.0_RKIND
+            endif
+
+            ! Compute total basal mass balance
+            basalMassBal(iCell) = groundedBasalMassBal(iCell) + floatingBasalMassBal(iCell)
+
+            if (config_print_thermal_info .and. iCell == config_stats_cell_ID) then
+               write(stderrUnit,*) 'iCell, basal mass balance (m/yr) (grounded, floating, total):', &
+                    iCell, groundedBasalMassBal(iCell)*scyr/rhoi, floatingBasalMassBal(iCell)*scyr/rhoi, basalMassBal(iCell)*scyr/rhoi
+            endif
+
+         enddo
+
+         ! clean up
+         call mpas_deallocate_scratch_field(thermalCellMaskField, .true.)
+         if (allocated(subdiagonal)) deallocate(subdiagonal)
+         if (allocated(diagonal)) deallocate(diagonal)
+         if (allocated(superdiagonal)) deallocate(superdiagonal)
+         if (allocated(rhs)) deallocate(rhs)
+         if (allocated(solution)) deallocate(solution)
+         if (allocated(diffusivity)) deallocate(diffusivity)
 
          block => block % next
       enddo   ! associated(block)
@@ -1379,7 +1421,9 @@ module li_thermal
         
         allocate(flowParamAEdge(nVertLevels))
         
-        if (config_print_thermal_info) write(stderrUnit,*) 'Compute SIA heat dissipation'
+        if (config_print_thermal_info) then
+           write(stderrUnit,*) 'Compute SIA heat dissipation'
+        endif
 
         ! compute the heat dissipation on edges
         
@@ -1939,7 +1983,7 @@ module li_thermal
 
          dEnthalpyTemp = enthalpyTemp(k) - enthalpyTemp(k-1)   ! = dEnthalpy in cold ice, < dEnthalpy in temperate ice
 
-         if (abs(dEnthalpy) > 1.e-20_RKIND * rho_water*latent_heat_ice) then
+         if (abs(dEnthalpy) > 1.e-20_RKIND * rho_water * latent_heat_ice) then
             avgFactor = max(0.0_RKIND, dEnthalpyTemp/dEnthalpy)
             avgFactor = min(1.0_RKIND, avgFactor)
          else
@@ -2036,17 +2080,17 @@ module li_thermal
     
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  !  routine basal_melting
+!  !  routine basal_melt_grounded_ice
 !
-!> \brief MPAS melt rate at base of ice
+!> \brief MPAS melt rate at base of grounded ice
 !> \author William Lipscomb
 !> \date   October 2015
 !> \details
-!>  This routine computes the melt rate at the base of grounded and
-!>  floating ice.
+!>  This routine computes the melt rate at the base of grounded ice.
+!>  Internal melting is included in this melt rate.
 !-----------------------------------------------------------------------
 
-    subroutine basal_melting(&
+    subroutine basal_melt_grounded_ice(&
          config_thermal_solver,       &
          deltat,                      &
          nCellsSolve,                 &
@@ -2056,10 +2100,6 @@ module li_thermal
          iceMask,                     &
          floatingMask,                &
          thickness,                   &
-         lowerSurface,                &
-         bedTopography,               &
-         config_sea_level,            &
-         config_basal_mass_bal_float, &
          temperature,                 &
          basalTemperature,            &
          waterfrac,                   &
@@ -2068,9 +2108,7 @@ module li_thermal
          basalHeatFlux,               &
          basalConductiveFlux,         &
          basalWaterThickness,         &
-         groundedBasalMassBal,        &
-         floatingBasalMassBal,        &
-         basalMassBal)
+         groundedBasalMassBal)
       
       !-----------------------------------------------------------------
       ! Note: For the temperature solver, any internal temperatures above
@@ -2107,19 +2145,11 @@ module li_thermal
 
       real(kind=RKIND), dimension(:), intent(in) :: &
            thickness,             & !< Input: ice thickness (m)
-           lowerSurface,          & !< Input: lower surface elevation (m)
-           bedTopography,         & !< Input: elevation of bed topography (m)
            basalFrictionFlux,     & !< Input: basal frictional heating flux (W m-2), >= 0
            basalHeatFlux,         & !< Input: geothermal heating flux (W m-2), positive up
            basalConductiveFlux,   & !< Input: heat conducted from ice interior to bed (W m-2), positive down
            basalWaterThickness      !< Input: thickness of basal water layer (m)
       
-      real(kind=RKIND), intent(in) :: &
-           config_sea_level         !< Input: sea level relative to z = 0 (m)
-
-      character(len=strKIND), intent(in) :: &
-           config_basal_mass_bal_float  !< Input: option for computing basal mbal balance for floating ice
-
       integer, dimension(:), intent(in) :: &
            iceMask,               & !< Input: = 1 where ice exists (thickness > config_thermal_thickness), else = 0
            floatingMask             !< Input: = 1 where ice is floating, else = 0
@@ -2142,9 +2172,7 @@ module li_thermal
       !-----------------------------------------------------------------
 
       real(kind=RKIND), dimension(:), intent(out):: &
-           basalMassBal,          & !< Output: basal mass balance (kg/m^2/s): < 0 for melting, > 0 for freeze-on 
-           groundedBasalMassBal,  & !< Output: basal mass balance for grounded ice 
-           floatingBasalMassBal     !< Output: basal mass balance for floating ice 
+           groundedBasalMassBal     !< Output: basal mass balance for grounded ice (kg/m^2/s): < 0 for melting, > 0 for freeze-on
                                    
       !-----------------------------------------------------------------
       ! local variables
@@ -2161,27 +2189,20 @@ module li_thermal
       real(kind=RKIND) :: meltEnergy            ! energy available for internal melting (J/m^2)
       real(kind=RKIND) :: internalMeltRate      ! internal melt rate, transferred to bed (m/s)
       real(kind=RKIND) :: excessWater           ! thickness of excess meltwater (m)
-      real(kind=RKIND) :: hCavity               ! depth of ice cavity beneath floating ice (m)
-      real(kind=RKIND) :: zDraft                ! draft of floating ice (m below sea level)       
 
       real(kind=RKIND), parameter :: &
-           max_waterfrac = 0.01_RKIND      ! maximum allowed water fraction; excess drains to bed
+           maxWaterfrac = 0.01_RKIND       ! maximum allowed water fraction; excess drains to bed
       
       real(kind=RKIND), parameter :: &
            eps11 = 1.0e-11_RKIND           ! small number
       
-      ! basal melting parameters for MISMIP+ experiment
-      ! TODO - Make these config parameters? 
-      real(kind=RKIND), parameter :: &
-           bmlt_float_omega = 0.20_RKIND / scyr,  & ! time scale for basal melting (s^-1)
-           bmlt_float_h0 = 75._RKIND,             & ! scale for sub-shelf cavity thickness (m)
-           bmlt_float_z0 = 100._RKIND               ! scale for ice draft (m)
 
       ! Compute melt rate for grounded ice
 
       groundedBasalMassBal(:) = 0.0_RKIND
 
       do iCell = 1, nCellsSolve
+
          if (iceMask(iCell) == 1 .and. floatingMask(iCell) == 0) then  ! ice is present and grounded
 
             ! Compute basal mass balance
@@ -2205,89 +2226,45 @@ module li_thermal
             endif
 
             if (trim(config_thermal_solver) == 'enthalpy') then
-               groundedBasalMassBal(iCell) = -netBasalFlux / (latent_heat_ice*rhoi - enthalpy(nVertLevels,iCell))
+               groundedBasalMassBal(iCell) = -netBasalFlux / (latent_heat_ice * rhoi - enthalpy(nVertLevels,iCell))
             else   ! temperature solver
-               groundedBasalMassBal(iCell) = -netBasalFlux / (latent_heat_ice*rhoi)   ! m/s
+               groundedBasalMassBal(iCell) = -netBasalFlux / (latent_heat_ice * rhoi)   ! m/s
             endif
 
          endif   ! ice is present and grounded
-      enddo   ! icell
 
-      ! Compute melt rate for grounded ice
+         ! Add internal melting
+         ! Note: It is possible to have internal melting for floating ice.
+         !       If so, this melting will be switched later from groundedBasalMassBal to floatingBasalMassBal
 
-      floatingBasalMassBal(:) = 0.0_RKIND
+         if (iceMask(iCell) == 1) then   ! ice is present
 
-      if (trim(config_basal_mass_bal_float) == 'none') then
+            if (trim(config_thermal_solver) == 'enthalpy') then
 
-         ! nothing to do; bmlt_float already set to zero
-
-      elseif (trim(config_basal_mass_bal_float) == 'mismip') then
-
-         !TODO - Test the MISMIP+ melt parameterization
-
-         ! compute melt rate based on bed depth and cavity thickness
-         ! The MISMIP+ formula is as follows:
-         !
-         ! bmlt_float = omega * tanh(H_c/H_0) * max(z_d - z_0, 0)
-         !
-         ! where H_c = lsrf - topg is the cavity thickness
-         !       z_d = lsrf - eus is the ice draft
-         !       omega = a time scale = 0.2 yr^{-1} by default
-         !       H_0 = 75 m by default
-         !       z_0 = 100 m by default
-         
-         do iCell = 1, nCellsSolve
-            if (iceMask(iCell) == 1 .and. floatingMask(iCell) == 1) then  ! ice is present and floating
-
-               hCavity = lowerSurface(iCell) - bedTopography(iCell)
-               zDraft = lowerSurface(iCell) - config_sea_level
-               floatingBasalMassBal(iCell) = -bmlt_float_omega * tanh(bmlt_float_h0 / hCavity) * max(bmlt_float_z0 - zDraft, 0.0_RKIND)
-
-            endif   ! ice is present and floating
-         enddo   ! iCell
-
-      endif   ! config_basal_mass_bal_float
-         
-
-      ! Compute internal melting (both grounded and floating ice)
-
-      if (trim(config_thermal_solver) == 'enthalpy') then
-
-         ! Add internal melting associated with waterfrac > max_waterfrac (1%)
-         !TODO - Add correction for rhoi/rhow here?  Or melting ice that is already partly melted?
-
-         do iCell = 1, nCellsSolve
-            if (iceMask(iCell) == 1) then   ! ice is present
+               ! Add internal melting associated with waterfrac > maxWaterfrac (1%)
+               !TODO - Add correction for rhoi/rhow here?  Or melting ice that is already partly melted?
 
                do k = 1, nVertLevels
-                  if (waterfrac(k,iCell) > max_waterfrac) then
+                  if (waterfrac(k,iCell) > maxWaterfrac) then
 
                      ! compute melt rate associated with excess water
-                     excessWater = (waterfrac(k,iCell) - max_waterfrac) * thickness(iCell) * (layerInterfaceSigma(k+1) - layerInterfaceSigma(k))  ! m
+                     excessWater = (waterfrac(k,iCell) - maxWaterfrac) * thickness(iCell) * (layerInterfaceSigma(k+1) - layerInterfaceSigma(k))  ! m
                      internalMeltRate = excessWater / deltat
 
                      ! transfer meltwater to the bed
-                     if (floatingMask(iCell) == 0) then   ! grounded
-                        groundedBasalMassBal(iCell) = groundedBasalMassBal(iCell) - internalMeltRate      ! m/s
-                     else    ! floating
-                        floatingBasalMassBal(iCell) = floatingBasalMassBal(iCell) - internalMeltRate      ! m/s
-                     endif
+                     ! Note: It is possible to have internal melting for floating ice.
+                     !       If so, then this melting will later be switched from groundedBasalMassBall to floatingBasalMassBal.
+                     groundedBasalMassBal(iCell) = groundedBasalMassBal(iCell) - internalMeltRate      ! m/s
 
                      ! reset waterfrac to max value
-                     waterfrac(k,iCell) = max_waterfrac
+                     waterfrac(k,iCell) = maxWaterfrac
 
-                  endif   ! waterfrac > max_waterfrac
+                  endif   ! waterfrac > maxWaterfrac
                enddo   ! k
                
-            endif   ! ice is present
-         enddo   ! iCell
-
-      else   ! temperature solver
+            elseif (config_thermal_solver == 'temperature') then
                
-         ! Add internal melting associated with T > Tpmp
-
-         do iCell = 1, nCellsSolve
-            if (iceMask(iCell) == 1) then   ! ice is present
+               ! Add internal melting associated with T > Tpmp
 
                call pressure_melting_point_column(&
                     layerCentersigma,     &
@@ -2303,25 +2280,22 @@ module li_thermal
                      internalMeltRate = meltEnergy / (rhoi * latent_heat_ice * deltat)  ! m/s
 
                      ! transfer meltwater to the bed
-                     if (floatingMask(iCell) == 0) then   ! grounded
-                        groundedBasalMassBal(iCell) = groundedBasalMassBal(iCell) - internalMeltRate      ! m/s
-                     else   ! floating
-                        floatingBasalMassBal(iCell) = floatingBasalMassBal(iCell) - internalMeltRate      ! m/s
-                     endif
+                     ! Note: It is possible to have internal melting for floating ice.
+                     !       If so, then this melting will later be switched from groundedBasalMassBall to floatingBasalMassBal.
+                     groundedBasalMassBal(iCell) = groundedBasalMassBal(iCell) - internalMeltRate      ! m/s
 
                      ! reset T to Tpmp
                      temperature(k,iCell) = pmpTemperature(k)
-                  endif
-               enddo
 
-            endif   ! ice is present
-         enddo   ! iCell
-               
-      endif    ! config_thermal_solver
+                  endif  ! temperature > pmpTemperature
+               enddo   ! k
 
-      ! Cap basal temperature at pressure melting point (grounded ice only)
+            endif   ! config_thermal_solver
 
-      do iCell = 1, nCellsSolve
+         endif   ! ice is present
+
+         ! Cap basal temperature at pressure melting point
+
          if (iceMask(iCell) == 1 .and. floatingMask(iCell) == 0) then  ! ice is present and grounded
 
             call pressure_melting_point(&
@@ -2343,17 +2317,147 @@ module li_thermal
             endif
             
          endif   ! ice is present and grounded
-         
+
+         ! change units from m/s to kg/m2/s
+         groundedBasalMassBal(iCell) = groundedBasalMassBal(iCell) * rhoi
+
       enddo   ! iCell
 
+    end subroutine basal_melt_grounded_ice
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine basal_melt_floating_ice
+!
+!> \brief MPAS melt rate at base of floating ice
+!> \author William Lipscomb
+!> \date   November 2015
+!> \details
+!>  This routine computes the melt rate at the base of floating ice.
+!-----------------------------------------------------------------------
+
+    subroutine basal_melt_floating_ice(&
+         config_basal_mass_bal_float, &
+         nCellsSolve,                 &
+         xCell,                       &
+         iceMask,                     &
+         floatingMask,                &
+         lowerSurface,                &
+         bedTopography,               &
+         config_sea_level,            &
+         floatingBasalMassBal)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      character(len=strKIND), intent(in) :: &
+           config_basal_mass_bal_float  !< Input: option for computing basal mbal balance for floating ice
+
+      integer, intent(in) :: &
+           nCellsSolve              !< Input: number of locally owned cells
+
+      real(kind=RKIND), dimension(:), intent(in) :: &
+           xCell                    !< Input: x coordinate for each cell
+
+      real(kind=RKIND), dimension(:), intent(in) :: &
+           lowerSurface,          & !< Input: lower surface elevation (m)
+           bedTopography            !< Input: elevation of bed topography (m)
+
+      real(kind=RKIND), intent(in) :: &
+           config_sea_level         !< Input: sea level relative to z = 0 (m)
+
+      integer, dimension(:), intent(in) :: &
+           iceMask,               & !< Input: = 1 where ice exists (thickness > config_thermal_thickness), else = 0
+           floatingMask             !< Input: = 1 where ice is floating, else = 0
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      real(kind=RKIND), dimension(:), intent(out):: &
+           floatingBasalMassBal     !< Output: basal mass balance for floating ice 
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      integer :: iCell
+
+      real(kind=RKIND) :: hCavity               ! depth of ice cavity beneath floating ice (m)
+      real(kind=RKIND) :: zDraft                ! draft of floating ice (m below sea level)
+
+      ! basal melting parameters for MISMIP+ experiment
+      ! TODO - Make the MISMIP+ parameters user-configurable?
+      real(kind=RKIND), parameter :: &
+           bmlt_float_rate = 100._RKIND / scyr,   & ! constant basal melt rate (m/s)
+                                                    ! MISMIP+ default value = 100 m/yr
+           bmlt_float_xlimit = 0.0_RKIND,         & ! melting is allowed only for |xCell| > xLimit
+!!           bmlt_float_xlimit = 480000._RKIND,     & ! uncomment this line for MISMIP+ experiment Ice2r
+                                                    ! MISMIP+ default value = 480 km
+           bmlt_float_omega = 0.20_RKIND / scyr,  & ! time scale for basal melting (s^-1)
+                                                    ! MISMIP+ default value = 0.2 yr^-1
+           bmlt_float_h0 = 75._RKIND,             & ! scale for sub-shelf cavity thickness (m)
+                                                    ! MISMIP+ default value = 75 m
+           bmlt_float_z0 = -100._RKIND              ! scale for ice draft (m)
+                                                    ! MISMIP+ default value = -100 m
+
+      ! Compute melt rate for floating ice
+
+      floatingBasalMassBal(:) = 0.0_RKIND
+
+      if (trim(config_basal_mass_bal_float) == 'none') then
+
+         ! nothing to do; bmlt_float already set to zero
+
+      elseif (trim(config_basal_mass_bal_float) == 'constant') then
+
+         do iCell = 1, nCellsSolve
+            if (iceMask(iCell) == 1 .and. floatingMask(iCell) == 1) then  ! ice is present and floating
+
+               ! Provided xCell > bmlt_float_xlimit, prescribe a uniform basal melt rate
+               ! For MISMIP+, the default value of xlimit is 480 km
+               if (abs(xCell(iCell)) >= bmlt_float_xlimit) then  ! basal melting is allowed
+                  floatingBasalMassBal(iCell) = -bmlt_float_rate
+               endif
+
+            endif   ! ice is present and floating
+         enddo   ! iCell
+
+      elseif (trim(config_basal_mass_bal_float) == 'mismip') then
+
+         ! compute melt rate (m/s) based on bed depth and cavity thickness
+         ! The MISMIP+ formula is as follows:
+         !
+         ! bmlt_float = omega * tanh(H_c/H_0) * max(z_0 - z_d, 0)
+         !
+         ! where H_c = lsrf - topg is the cavity thickness
+         !       z_d = lsrf - eus is the ice draft
+         !       omega = a time scale = 0.2 yr^{-1} by default
+         !       H_0 = 75 m by default
+         !       z_0 = -100 m by default
+
+         !WHL - debug
+!!         write(stderrUnit,*) 'iCell, lowerSurface, hCavity, tanh, zDraft, dzdraft, mass bal (m/yr):'
+
+         do iCell = 1, nCellsSolve
+            if (iceMask(iCell) == 1 .and. floatingMask(iCell) == 1) then  ! ice is present and floating
+
+               hCavity = lowerSurface(iCell) - bedTopography(iCell)
+               zDraft = lowerSurface(iCell) - config_sea_level
+               floatingBasalMassBal(iCell) = -bmlt_float_omega * tanh(hCavity/bmlt_float_h0) * max(bmlt_float_z0 - zDraft, 0.0_RKIND)
+
+!!               write(stderrUnit,*) iCell, lowerSurface(iCell), hCavity, tanh(hCavity/bmlt_float_h0), zDraft, max(bmlt_float_z0 - zDraft, 0.0_RKIND), floatingBasalMassBal(iCell)*scyr
+
+            endif   ! ice is present and floating
+         enddo   ! iCell
+
+      endif   ! config_basal_mass_bal_float
+
       ! change units from m/s to kg/m2/s
-      groundedBasalMassBal(:) = groundedBasalMassBal(:) * rhoi
       floatingBasalMassBal(:) = floatingBasalMassBal(:) * rhoi
       
-      ! compute total basal mass balance
-      basalMassBal(:) = groundedBasalMassBal(:) + floatingBasalMassBal(:)
-
-    end subroutine basal_melting
+    end subroutine basal_melt_floating_ice
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
