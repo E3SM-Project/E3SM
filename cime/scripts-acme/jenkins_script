@@ -17,3 +17,7 @@ $SCRIPT_DIR/jenkins_generic_job "$@" >& JENKINS_$DATE_STAMP
 for SUB in $(git submodule status | awk '{print $2}'); do
     git submodule deinit ${SUB}
 done
+
+git config --remove-section submodule.mpas-o
+git config --remove-section submodule.mpas-cice
+git config --remove-section submodule.mpas-li
