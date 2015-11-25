@@ -2311,10 +2311,6 @@ end subroutine ALE_parametric_coords
   integer :: rhs_viss = 0
 
 !  call t_barrierf('sync_euler_step', hybrid%par%comm)
-  do k = 1 , nlev
-    dp0(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
-  enddo
   call t_startf('euler_step')
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2350,6 +2346,10 @@ end subroutine ALE_parametric_coords
     !        for nu_p=nu_q>0, we need to apply dissipation to Q * diffusion_dp
     !
     ! initialize dp, and compute Q from Qdp (and store Q in Qtens_biharmonic)
+    do k = 1 , nlev
+      dp0(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
+    enddo
     do ie = nets , nete
       ! add hyperviscosity to RHS.  apply to Q at timelevel n0, Qdp(n0)/dp
 #if (defined COLUMN_OPENMP)
@@ -2393,13 +2393,13 @@ end subroutine ALE_parametric_coords
         do ie = nets , nete
 #ifdef NEWEULER_B4B
 #if (defined COLUMN_OPENMP)
-       !$omp parallel do private(k, q, dpdiss)
+       !$omp parallel do private(k, q)
 #endif
           do k = 1 , nlev
-            dpdiss(:,:) = elem(ie)%derived%dpdiss_ave(:,:,k)
             do q = 1 , qsize
               ! NOTE: divide by dp0 since we multiply by dp0 below
-              Qtens_biharmonic(:,:,k,q,ie)=Qtens_biharmonic(:,:,k,q,ie)*dpdiss(:,:)/dp0(k)
+              Qtens_biharmonic(:,:,k,q,ie)=Qtens_biharmonic(:,:,k,q,ie)&
+                *elem(ie)%derived%dpdiss_ave(:,:,k)/dp0(k)
             enddo
           enddo
 #else
@@ -2407,6 +2407,7 @@ end subroutine ALE_parametric_coords
         !$omp parallel do private(k)
 #endif
           do k = 1 , nlev
+            ! NOTE: divide by dp0 since we multiply by dp0 below
             dpdissk(:,:,k) = elem(ie)%derived%dpdiss_ave(:,:,k)/dp0(k)
           enddo
 #if (defined COLUMN_OPENMP)
@@ -2414,13 +2415,12 @@ end subroutine ALE_parametric_coords
 #endif
           do q = 1 , qsize
             do k = 1 , nlev
-              ! NOTE: divide by dp0 since we multiply by dp0 below
               Qtens_biharmonic(:,:,k,q,ie)=Qtens_biharmonic(:,:,k,q,ie)*dpdissk(:,:,k)
             enddo
           enddo
 #endif
-        enddo
-      endif
+        enddo ! ie loop
+      endif ! nu_p > 0
 
 !   Previous version of biharmonic_wk_scalar_minmax included a min/max
 !   calculation into the boundary exchange.  This was causing cache issues.
@@ -2466,10 +2466,9 @@ end subroutine ALE_parametric_coords
       enddo
 #endif
 
-
-    endif
+    endif ! rhs_multiplier == 2
   endif  ! compute biharmonic mixing term and qmin/qmax
-
+  ! end of limiter_option == 8 
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !   2D Advection step
@@ -2483,7 +2482,7 @@ end subroutine ALE_parametric_coords
 
     ! Compute velocity used to advance Qdp
 #if (defined COLUMN_OPENMP)
-    !$omp parallel do private(k)
+    !$omp parallel do private(k,q)
 #endif
     do k = 1 , nlev    !  Loop index added (AAM)
       ! derived variable divdp_proj() (DSS'd version of divdp) will only be correct on 2nd and 3rd stage
@@ -2491,34 +2490,33 @@ end subroutine ALE_parametric_coords
       dp(:,:,k) = elem(ie)%derived%dp(:,:,k) - rhs_multiplier * dt * elem(ie)%derived%divdp_proj(:,:,k)
       Vstar(:,:,1,k) = elem(ie)%derived%vn0(:,:,1,k) / dp(:,:,k)
       Vstar(:,:,2,k) = elem(ie)%derived%vn0(:,:,2,k) / dp(:,:,k)
-    enddo
-    if ( limiter_option == 8) then
-        ! Note that the term dpdissk is independent of Q
-#if (defined COLUMN_OPENMP)
-    !$omp parallel do private(q,k,dpdiss)
-#endif
-        do k = 1 , nlev  ! Loop index added (AAM)
-          ! UN-DSS'ed dp at timelevel n0+1:
-          dpdissk(:,:,k) = dp(:,:,k) - dt * elem(ie)%derived%divdp(:,:,k)
-          if ( nu_p > 0 .and. rhs_viss /= 0 ) then
-            ! add contribution from UN-DSS'ed PS dissipation
-!            dpdiss(:,:) = ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) *
-!            elem(ie)%derived%psdiss_biharmonic(:,:)
-            dpdiss(:,:) = elem(ie)%derived%dpdiss_biharmonic(:,:,k)
-            dpdissk(:,:,k) = dpdissk(:,:,k) - rhs_viss * dt * nu_q * dpdiss(:,:) / elem(ie)%spheremp(:,:)
-          endif
-          ! IMPOSE ZERO THRESHOLD.  do this here so it can be turned off for
-          ! testing
-          do q=1,qsize
-             qmin(k,q,ie)=max(qmin(k,q,ie),0d0)
-          enddo
-        enddo
-    endif  ! limiter == 8
 
+      if ( limiter_option == 8) then
+        ! Note that the term dpdissk is independent of Q
+        ! UN-DSS'ed dp at timelevel n0+1:
+        dpdissk(:,:,k) = dp(:,:,k) - dt * elem(ie)%derived%divdp(:,:,k)
+        if ( nu_p > 0 .and. rhs_viss /= 0 ) then
+          ! add contribution from UN-DSS'ed PS dissipation
+!          dpdiss(:,:) = ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) *
+!          elem(ie)%derived%psdiss_biharmonic(:,:)
+          dpdissk(:,:,k) = dpdissk(:,:,k) - rhs_viss * dt * nu_q &
+                           * elem(ie)%derived%dpdiss_biharmonic(:,:,k) / elem(ie)%spheremp(:,:)
+        endif
+        ! IMPOSE ZERO THRESHOLD.  do this here so it can be turned off for
+        ! testing
+        do q=1,qsize
+          qmin(k,q,ie)=max(qmin(k,q,ie),0d0)
+        enddo
+      endif  ! limiter == 8
+
+      ! also DSS extra field
+      DSSvar(:,:,k) = elem(ie)%spheremp(:,:) * DSSvar(:,:,k)
+    enddo
+    call edgeVpack( edgeAdvp1 , DSSvar(:,:,1:nlev) , nlev , nlev*qsize , ie)
 
     ! advance Qdp
 #if (defined COLUMN_OPENMP)
- !$omp parallel do private(q,k,gradQ,dp_star,qtens,kptr)
+ !$omp parallel do private(q,k,gradQ,dp_star,qtens)
 #endif
     do q = 1 , qsize
       do k = 1 , nlev  !  dp_star used as temporary instead of divdp (AAM)
@@ -2531,13 +2529,11 @@ end subroutine ALE_parametric_coords
         if ( rhs_viss /= 0 ) Qtens(:,:,k) = Qtens(:,:,k) + Qtens_biharmonic(:,:,k,q,ie)
       enddo
 
-
       if ( limiter_option == 8) then
         ! apply limiter to Q = Qtens / dp_star
         call limiter_optim_iter_full( Qtens(:,:,:) , elem(ie)%spheremp(:,:) , qmin(:,q,ie) , &
                                       qmax(:,q,ie) , dpdissk )
       endif
-
 
       ! apply mass matrix, overwrite np1 with solution:
       ! dont do this earlier, since we allow np1_qdp == n0_qdp
@@ -2553,26 +2549,13 @@ end subroutine ALE_parametric_coords
         call limiter2d_zero( elem(ie)%state%Qdp(:,:,:,q,np1_qdp))
       endif
 
-      kptr = nlev*(q-1)
-      call edgeVpack(edgeAdvp1 , elem(ie)%state%Qdp(:,:,:,q,np1_qdp) , nlev , kptr , ie )
+      call edgeVpack(edgeAdvp1 , elem(ie)%state%Qdp(:,:,:,q,np1_qdp) , nlev , nlev*(q-1) , ie )
     enddo
-      ! also DSS extra field
-!JMD#if (defined COLUMN_OPENMP)
-!JMD !$omp parallel do private(k)
-!JMD#endif
-      do k = 1 , nlev
-        DSSvar(:,:,k) = elem(ie)%spheremp(:,:) * DSSvar(:,:,k)
-      enddo
-      call edgeVpack( edgeAdvp1 , DSSvar(:,:,1:nlev) , nlev , nlev*qsize , ie)
-  enddo
+  enddo ! ie loop
 
   call bndry_exchangeV( hybrid , edgeAdvp1 )
 
   do ie = nets , nete
-    if ( DSSopt == DSSeta         ) DSSvar => elem(ie)%derived%eta_dot_dpdn(:,:,:)
-    if ( DSSopt == DSSomega       ) DSSvar => elem(ie)%derived%omega_p(:,:,:)
-    if ( DSSopt == DSSdiv_vdp_ave ) DSSvar => elem(ie)%derived%divdp_proj(:,:,:)
-
     call edgeVunpack( edgeAdvp1 , DSSvar(:,:,1:nlev) , nlev , qsize*nlev , ie )
 #if (defined COLUMN_OPENMP)
  !$omp parallel do private(k)
@@ -2582,14 +2565,13 @@ end subroutine ALE_parametric_coords
     enddo
 
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k,kptr)
+!$omp parallel do private(q,k)
 #endif
     do q = 1 , qsize
-      kptr = nlev*(q-1)
-      call edgeVunpack( edgeAdvp1 , elem(ie)%state%Qdp(:,:,:,q,np1_qdp) , nlev , kptr , ie )
-        do k = 1 , nlev    !  Potential loop inversion (AAM)
-          elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%rspheremp(:,:) * elem(ie)%state%Qdp(:,:,k,q,np1_qdp)
-        enddo
+      call edgeVunpack( edgeAdvp1 , elem(ie)%state%Qdp(:,:,:,q,np1_qdp) , nlev , nlev*(q-1) , ie )
+      do k = 1 , nlev    !  Potential loop inversion (AAM)
+        elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%rspheremp(:,:) * elem(ie)%state%Qdp(:,:,k,q,np1_qdp)
+      enddo
     enddo
   enddo
 #ifdef DEBUGOMP
