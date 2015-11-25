@@ -5,7 +5,7 @@ import unittest, sys, os, tempfile, shutil, re, threading, time, signal, glob, s
 SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(SCRIPT_DIR)
 from acme_util import run_cmd
-import acme_util, update_acme_tests
+import acme_util, update_acme_tests, create_test_impl, wait_for_tests
 
 DART_CONFIG = "DartConfiguration.tcl"
 DART_BACKUP = "temp_dart_backup"
@@ -287,79 +287,7 @@ class TestWaitForTests(unittest.TestCase):
         # TODO: Any further checking of xml output worth doing?
 
 ###############################################################################
-class TestCreateTest(unittest.TestCase):
-###############################################################################
-
-    ###########################################################################
-    def setUp(self):
-    ###########################################################################
-        self._baseline_name = "fake_testing_only_%s" % acme_util.get_utc_timestamp()
-
-    ###########################################################################
-    def tearDown(self):
-    ###########################################################################
-        baseline_area = acme_util.get_machine_info("CCSM_BASELINE")
-        compiler      = acme_util.get_machine_info("COMPILERS")[0]
-        baselines = os.path.join(baseline_area, compiler, self._baseline_name)
-        if (os.path.isdir(baselines)):
-            shutil.rmtree(baselines)
-
-    ###########################################################################
-    def simple_test(self, expect_works, extra_args):
-    ###########################################################################
-        stat, output, errput = run_cmd("%s/create_test acme_tiny %s" % (SCRIPT_DIR, extra_args), ok_to_fail=True)
-        if (expect_works):
-            self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s" % (output, errput))
-        else:
-            self.assertNotEqual(stat, 0, msg="COMMAND SHOULD HAVE FAILED\ncreate_test output:\n%s\n\nerrput:\n%s" % (output, errput))
-
-    ###############################################################################
-    def test_create_test_rebless_namelist(self):
-    ###############################################################################
-        # Generate some namelist baselines
-        self.simple_test(True, "-g -n -b %s" % self._baseline_name)
-
-        # Basic namelist compare
-        self.simple_test(True, "-c -n -b %s" % self._baseline_name)
-
-        # Modify namelist
-        fake_nl = """
- &fake_nml
-   fake_item = 'fake'
-   fake = .true.
-/"""
-        baseline_area = acme_util.get_machine_info("CCSM_BASELINE")
-        compiler      = acme_util.get_machine_info("COMPILERS")[0]
-        baseline_glob = glob.glob(os.path.join(baseline_area, compiler, self._baseline_name, "ERS*"))
-        self.assertEqual(len(baseline_glob), 1, msg="Expected one match, got:\n%s" % "\n".join(baseline_glob))
-
-        baseline_dir = baseline_glob[0]
-        nl_path = os.path.join(baseline_dir, "CaseDocs", "datm_in")
-        self.assertTrue(os.path.isfile(nl_path), msg="Missing file %s" % nl_path)
-
-        import stat
-        os.chmod(nl_path, stat.S_IRUSR | stat.S_IWUSR)
-        with open(nl_path, "a") as nl_file:
-            nl_file.write(fake_nl)
-
-        # Basic namelist compare should now fail
-        self.simple_test(False, "-c -n -b %s" % self._baseline_name)
-
-        # Regen
-        self.simple_test(True, "-g -n -b %s" % self._baseline_name)
-
-        # Basic namelist compare should now pass again
-        self.simple_test(True, "-c -n -b %s" % self._baseline_name)
-
-    ###########################################################################
-    def test_create_test_failed_test(self):
-    ###########################################################################
-        # TODO
-        # Need to ensure that TestStatus not being left in RUN/PEND state
-        pass
-
-###############################################################################
-class TestJenkinsGenericJob(unittest.TestCase):
+class TestCreateTestCommon(unittest.TestCase):
 ###############################################################################
 
     ###########################################################################
@@ -368,8 +296,11 @@ class TestJenkinsGenericJob(unittest.TestCase):
         self._thread_error      = None
         self._unset_proxy       = setup_proxy()
         self._baseline_name     = "fake_testing_only_%s" % acme_util.get_utc_timestamp()
+        self._baseline_area      = acme_util.get_machine_info("CCSM_BASELINE")
         self._testroot          = acme_util.get_machine_info("CESMSCRATCHROOT")
         self._jenkins_root      = os.path.join(self._testroot, "jenkins")
+        self._machine           = acme_util.probe_machine_name()
+        self._compiler          = acme_util.get_machine_info("COMPILERS")[0]
 
         # wait_for_tests could blow away our dart config, need to back it up
         if (os.path.exists(DART_CONFIG)):
@@ -383,9 +314,7 @@ class TestJenkinsGenericJob(unittest.TestCase):
         if (self._unset_proxy):
             del os.environ["http_proxy"]
 
-        baseline_area = acme_util.get_machine_info("CCSM_BASELINE")
-        compiler      = acme_util.get_machine_info("COMPILERS")[0]
-        baselines = os.path.join(baseline_area, compiler, self._baseline_name)
+        baselines = os.path.join(self._baseline_area, self._compiler, self._baseline_name)
         if (os.path.isdir(baselines)):
             shutil.rmtree(baselines)
 
@@ -399,10 +328,168 @@ class TestJenkinsGenericJob(unittest.TestCase):
         if (os.path.exists(DART_BACKUP)):
             shutil.move(DART_BACKUP, DART_CONFIG)
 
+###############################################################################
+class TestCreateTest(TestCreateTestCommon):
+###############################################################################
+
     ###########################################################################
     def simple_test(self, expect_works, extra_args):
     ###########################################################################
-        stat, output, errput = run_cmd("%s/jenkins_generic_job -t acme_tiny %s" % (SCRIPT_DIR, extra_args), ok_to_fail=True)
+        stat, output, errput = run_cmd("%s/create_test acme_test_only_pass %s" % (SCRIPT_DIR, extra_args), ok_to_fail=True)
+        if (expect_works):
+            self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s" % (output, errput))
+        else:
+            self.assertNotEqual(stat, 0, msg="COMMAND SHOULD HAVE FAILED\ncreate_test output:\n%s\n\nerrput:\n%s" % (output, errput))
+
+    ###############################################################################
+    def test_create_test_rebless_namelist(self):
+    ###############################################################################
+        # Generate some namelist baselines
+        self.simple_test(True, "-g -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, acme_util.get_utc_timestamp()))
+
+        # Basic namelist compare
+        self.simple_test(True, "-c -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, acme_util.get_utc_timestamp()))
+
+        # Modify namelist
+        fake_nl = """
+ &fake_nml
+   fake_item = 'fake'
+   fake = .true.
+/"""
+        baseline_area = acme_util.get_machine_info("CCSM_BASELINE")
+        compiler      = acme_util.get_machine_info("COMPILERS")[0]
+        baseline_glob = glob.glob(os.path.join(baseline_area, compiler, self._baseline_name, "TEST*"))
+        self.assertEqual(len(baseline_glob), 3, msg="Expected three matches, got:\n%s" % "\n".join(baseline_glob))
+
+        baseline_dir = baseline_glob[0]
+        nl_path = os.path.join(baseline_dir, "CaseDocs", "datm_in")
+        self.assertTrue(os.path.isfile(nl_path), msg="Missing file %s" % nl_path)
+
+        import stat
+        os.chmod(nl_path, stat.S_IRUSR | stat.S_IWUSR)
+        with open(nl_path, "a") as nl_file:
+            nl_file.write(fake_nl)
+
+        # Basic namelist compare should now fail
+        self.simple_test(False, "-c -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, acme_util.get_utc_timestamp()))
+
+        # Regen
+        self.simple_test(True, "-g -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, acme_util.get_utc_timestamp()))
+
+        # Basic namelist compare should now pass again
+        self.simple_test(True, "-c -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, acme_util.get_utc_timestamp()))
+
+###############################################################################
+class TestCreateTestImpl(TestCreateTestCommon):
+###############################################################################
+
+    ###########################################################################
+    def test_phases(self):
+    ###########################################################################
+        tests = update_acme_tests.get_full_test_names(["acme_test_only"], self._machine, self._compiler)
+        ct = create_test_impl.CreateTest(tests)
+
+        build_fail_test = tests[0]
+        run_fail_test   = tests[1]
+        pass_test       = tests[2]
+
+        self.assertTrue("BUILDFAIL" in build_fail_test, msg="Wrong test '%s'" % build_fail_test)
+        self.assertTrue("RUNFAIL" in run_fail_test, msg="Wrong test '%s'" % run_fail_test)
+        self.assertTrue("RUNPASS" in pass_test, msg="Wrong test '%s'" % pass_test)
+
+        with ct._mutex:
+            for idx, phase in enumerate(ct._phases):
+                for test in tests:
+                    if (phase == create_test_impl.INITIAL_PHASE):
+                        continue
+
+                    elif (phase == create_test_impl.BUILD_PHASE):
+                        ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
+
+                        if (test == build_fail_test):
+                            ct._update_test_status(test, phase, wait_for_tests.TEST_FAIL_STATUS)
+                            self.assertTrue(ct._is_broken(test))
+                            self.assertFalse(ct._work_remains(test))
+                        else:
+                            ct._update_test_status(test, phase, wait_for_tests.TEST_PASS_STATUS)
+                            self.assertFalse(ct._is_broken(test))
+                            self.assertTrue(ct._work_remains(test))
+
+                    elif (phase == create_test_impl.RUN_PHASE):
+                        if (test == build_fail_test):
+                            with self.assertRaises(SystemExit):
+                                ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
+                        else:
+                            ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
+                            self.assertFalse(ct._work_remains(test))
+
+                            if (test == run_fail_test):
+                                ct._update_test_status(test, phase, wait_for_tests.TEST_FAIL_STATUS)
+                                self.assertTrue(ct._is_broken(test))
+                            else:
+                                ct._update_test_status(test, phase, wait_for_tests.TEST_PASS_STATUS)
+                                self.assertFalse(ct._is_broken(test))
+
+                        self.assertFalse(ct._work_remains(test))
+
+                    else:
+                        with self.assertRaises(SystemExit):
+                            ct._update_test_status(test, ct._phases[idx+1], wait_for_tests.TEST_PENDING_STATUS)
+
+                        with self.assertRaises(SystemExit):
+                            ct._update_test_status(test, phase, wait_for_tests.TEST_PASS_STATUS)
+
+                        ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
+                        self.assertFalse(ct._is_broken(test))
+                        self.assertTrue(ct._work_remains(test))
+
+                        with self.assertRaises(SystemExit):
+                            ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
+
+                        ct._update_test_status(test, phase, wait_for_tests.TEST_PASS_STATUS)
+
+                        with self.assertRaises(SystemExit):
+                            ct._update_test_status(test, phase, wait_for_tests.TEST_FAIL_STATUS)
+
+                        self.assertFalse(ct._is_broken(test))
+                        self.assertTrue(ct._work_remains(test))
+
+    ###########################################################################
+    def test_full(self):
+    ###########################################################################
+        tests = update_acme_tests.get_full_test_names(["acme_test_only"], self._machine, self._compiler)
+        test_id="%s-%s" % (self._baseline_name, acme_util.get_utc_timestamp())
+        ct = create_test_impl.CreateTest(tests, test_id=test_id)
+
+        build_fail_test = tests[0]
+        run_fail_test   = tests[1]
+        pass_test       = tests[2]
+
+        ct.create_test()
+        if (acme_util.does_machine_have_batch()):
+            run_cmd("%s/wait_for_tests *%s*/TestStatus*" % (SCRIPT_DIR, test_id), ok_to_fail=True, from_dir=self._testroot)
+
+        test_statuses = glob.glob("%s/*%s*/TestStatus" % (self._testroot, test_id))
+        self.assertEqual(len(tests), len(test_statuses))
+
+        for test_status in test_statuses:
+            status, test_name = wait_for_tests.parse_test_status_file(test_status)
+            if (test_name == build_fail_test):
+                self.assertEqual(status[create_test_impl.BUILD_PHASE], wait_for_tests.TEST_FAIL_STATUS)
+            elif (test_name == run_fail_test):
+                self.assertEqual(status[create_test_impl.RUN_PHASE], wait_for_tests.TEST_FAIL_STATUS)
+            else:
+                self.assertEqual(test_name, pass_test)
+                self.assertEqual(status[create_test_impl.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
+
+###############################################################################
+class TestJenkinsGenericJob(TestCreateTestCommon):
+###############################################################################
+
+    ###########################################################################
+    def simple_test(self, expect_works, extra_args):
+    ###########################################################################
+        stat, output, errput = run_cmd("%s/jenkins_generic_job -t acme_test_only_pass %s" % (SCRIPT_DIR, extra_args), ok_to_fail=True)
         if (expect_works):
             self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\njenkins_generic_job output:\n%s\n\nerrput:\n%s" % (output, errput))
         else:
@@ -429,7 +516,7 @@ class TestJenkinsGenericJob(unittest.TestCase):
         # the testroot (bld/run dump area) and jenkins root
         if (test_id is None):
             test_id = self._baseline_name
-        num_tests_in_tiny = len(update_acme_tests.get_test_suite("acme_tiny"))
+        num_tests_in_tiny = len(update_acme_tests.get_test_suite("acme_test_only_pass"))
 
         jenkins_dirs = glob.glob("%s/*%s*/" % (self._jenkins_root, test_id))
         scratch_dirs = glob.glob("%s/*%s*/" % (self._testroot, test_id))
@@ -454,7 +541,7 @@ class TestJenkinsGenericJob(unittest.TestCase):
 
         build_name = "jenkins_generic_job_pass_%s" % acme_util.get_utc_timestamp()
         self.simple_test(True, "-p ACME_test -b %s -d -c %s --cdash-build-group=Nightly" % (self._baseline_name, build_name))
-        self.assert_num_leftovers()
+        self.assert_num_leftovers() # jenkins_generic_job should have automatically cleaned up leftovers from prior run
         self.assert_no_sentinel()
         assert_dashboard_has_build(self, build_name)
 
@@ -497,7 +584,7 @@ class TestUpdateACMETests(unittest.TestCase):
     def test_update_acme_tests(self):
     ###########################################################################
         # Add some BS to acme tests
-        update_acme_tests._TEST_SUITES["acme_test_only"] = \
+        update_acme_tests._TEST_SUITES["acme_tiny"] = \
             (None, [("ERS.f19_g16_rx1.A", "test/test_mod"),
                     ("NCK.f19_g16_rx1.A", "test/test_mod")]
              )
