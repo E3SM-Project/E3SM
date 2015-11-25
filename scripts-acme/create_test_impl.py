@@ -24,29 +24,33 @@ class CreateTest(object):
 
     ###########################################################################
     def __init__(self, test_names,
-                 no_run, no_build, no_batch,
-                 test_root, test_id,
-                 baseline_root, baseline_name,
-                 clean,
-                 compare, generate, namelists_only,
-                 project, parallel_jobs):
+                 no_run=False, no_build=False, no_batch=None,
+                 test_root=None, test_id=None,
+                 compiler=None,
+                 baseline_root=None, baseline_name=None,
+                 clean=False,
+                 compare=False, generate=False, namelists_only=False,
+                 project=None, parallel_jobs=None):
     ###########################################################################
+        self._cime_root      = acme_util.get_cime_root()
         self._test_names     = test_names
-        self._no_run         = no_run
-        self._no_build       = no_build
-        self._no_batch       = no_batch
-        self._test_root      = test_root
-        self._test_id        = test_id
-        self._baseline_root  = baseline_root
-        self._baseline_name  = baseline_name
+        self._no_build       = no_build      if not namelists_only else True
+        self._no_run         = no_run        if not self._no_build else True
+        self._no_batch       = no_batch      if no_batch is not None else not acme_util.does_machine_have_batch()
+        self._test_root      = test_root     if test_root is not None else acme_util.get_machine_info("CESMSCRATCHROOT")
+        self._test_id        = test_id       if test_id is not None else acme_util.get_utc_timestamp()
+        self._project        = project       if project is not None else acme_util.get_machine_project()
+        self._baseline_root  = baseline_root if baseline_root is not None else acme_util.get_machine_info("CCSM_BASELINE", project=self._project)
+        self._compiler       = compiler      if compiler is not None else acme_util.get_machine_info("COMPILERS")[0]
+        self._baseline_name  = baseline_name if baseline_name is not None else os.path.join(self._compiler, acme_util.get_current_branch(repo=self._cime_root))
         self._clean          = clean
         self._compare        = compare
         self._generate       = generate
         self._namelists_only = namelists_only
-        self._project        = project
-        self._parallel_jobs  = parallel_jobs
+        self._parallel_jobs  = parallel_jobs if parallel_jobs is not None else min(len(self._test_names), int(acme_util.get_machine_info("MAX_TASKS_PER_NODE")))
 
-        self._cime_root      = acme_util.get_cime_root()
+        if (not self._baseline_name.startswith("%s/" % self._compiler)):
+            self._baseline_name = os.path.join(self._compiler, self._baseline_name)
 
         # Oversubscribe by 1/4
         pes = int(acme_util.get_machine_info("MAX_TASKS_PER_NODE"))
@@ -107,15 +111,12 @@ class CreateTest(object):
         return os.path.join(self._test_root, self._get_case_id(test_name))
 
     ###########################################################################
-    def _get_test_data(self, test_name, idx=None):
+    def _get_test_data(self, test_name):
     ###########################################################################
         assert self._mutex.locked()
 
         state_idx = self._test_names.index(test_name)
-        if (idx is None):
-            return self._test_states[state_idx]
-        else:
-            return self._test_states[state_idx][idx]
+        return self._test_states[state_idx]
 
     ###########################################################################
     def _is_broken(self, test_name):
@@ -135,7 +136,7 @@ class CreateTest(object):
         if (phase == NAMELIST_PHASE and test_name in self._tests_with_nl_problems):
             return NAMELIST_FAIL_STATUS
         elif (phase is None or phase == self._get_test_phase(test_name)):
-            return self._get_test_data(test_name, 1)
+            return self._get_test_data(test_name)[1]
         else:
             expect(phase is None or self._phases.index(phase) < self._phases.index(self._get_test_phase(test_name)),
                    "Tried to see the future")
@@ -145,7 +146,7 @@ class CreateTest(object):
     ###########################################################################
     def _get_test_phase(self, test_name):
     ###########################################################################
-        return self._get_test_data(test_name, 0)
+        return self._get_test_data(test_name)[0]
 
     ###########################################################################
     def _update_test_status(self, test_name, phase, status):
@@ -164,6 +165,8 @@ class CreateTest(object):
         else:
             expect(old_status in CONTINUE,
                    "Why did we move on to next phase when prior phase did not pass?")
+            expect(status == TEST_PENDING_STATUS,
+                   "New phase should be set to pending status")
             expect(self._phases.index(old_phase) == phase_idx - 1,
                    "Skipped phase?")
 
@@ -199,6 +202,8 @@ class CreateTest(object):
         test_dir = self._get_test_dir(test_name)
 
         test_case, case_opts, grid, compset, machine, compiler, test_mods = acme_util.parse_test_name(test_name)
+        if (compiler != self._compiler):
+            raise StandardError("Test '%s' has compiler that does not match instance compliler '%s'" % (test_name, self._compiler))
         if (self._parallel_jobs == 1):
             scratch_dir = acme_util.get_machine_info("CESMSCRATCHROOT", machine=machine, project=self._project)
             sharedlibroot = os.path.join(scratch_dir, "sharedlibroot.%s" % self._test_id)
