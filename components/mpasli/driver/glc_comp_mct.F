@@ -1304,7 +1304,7 @@ contains
    type (mpas_pool_type), pointer :: thermalPool
 
    type (field1DReal), pointer :: sfcMassBalField,&
-                                  basalOceanMassBalField,&
+				  floatingBasalMassBalField,&
                                   surfaceTemperatureField,&
                                   basalOceanHeatflxField,&
                                   OceanDensityField
@@ -1312,7 +1312,7 @@ contains
    integer, pointer :: nCellsSolve
 
    real (kind=RKIND), dimension(:), pointer :: sfcMassBal,&
-                                               basalOceanMassBal,&
+                                               floatingBasalMassBal,&
                                                surfaceTemperature,&
                                                basalOceanHeatflx,&
                                                OceanDensity
@@ -1332,24 +1332,23 @@ contains
 	 
          call mpas_pool_get_field(geometryPool, 'sfcMassBal',sfcMassBalField)
          call mpas_pool_get_field(thermalPool, 'surfaceTemperature',surfaceTemperatureField)	 
-         !call mpas_pool_get_field(geometryPool, 'basalOceanMassBal',basalOceanMassBalField)!uncomment when field becomes available
+         call mpas_pool_get_field(geometryPool, 'floatingBasalMassBal',floatingBasalMassBalField)!uncomment when field becomes available
          !call mpas_pool_get_field(thermalPool, 'basalOceanHeatflx',basalOceanHeatflxField)!uncomment when field becomes available
          !call mpas_pool_get_field(geometryPool, 'OceanDensity',OceanDensityField) !uncomment when field becomes available
 	 
-	 sfcMassBal => sfcMassBalField % array  
-         !basalOceanMassBal => basalOceanMassBalField % array
-         surfaceTemperature => surfaceTemperatureField % array 
-	 !basalOceanMassBal => basalOceanMassBalField % array!uncomment when field becomes available
+	 sfcMassBal => sfcMassBalField % array
+         surfaceTemperature => surfaceTemperatureField % array
+	 floatingBasalMassBal => floatingBasalMassBalField % array!uncomment when field becomes available
          !basalOceanHeatflx => basalOceanHeatflxField % array!uncomment when field becomes available
          !OceanDensity => OceanDensityField % array!uncomment when field becomes available
 	 
 	 do i = 1, nCellsSolve
 	    n = n + 1
-	    sfcMassBal(i) =         x2g_g % rAttr(index_x2g_Flgl_qice, n)
-	    !basalOceanMassBal(i) =  x2g_g % rAttr(index_x2g_Fogx_qiceli, n)!uncomment when field becomes available
-	    surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)	    
-	    !basalOceanHeatflx(i) =  x2g_g % rAttr(index_x2g_Fogx_qicehi, n)!uncomment when field becomes available
-	    !OceanDensity (i) =      x2g_g % rAttr(index_x2g_So_rhoeff, n) !uncomment when field becomes available
+	    sfcMassBal(i) =           x2g_g % rAttr(index_x2g_Flgl_qice, n)
+	    surfaceTemperature(i) =   x2g_g % rAttr(index_x2g_Sl_tsrf, n)	    
+	    floatingBasalMassBal(i) = x2g_g % rAttr(index_x2g_Fogx_qiceli, n)!uncomment when field becomes available
+	    !basalOceanHeatflx(i) =    x2g_g % rAttr(index_x2g_Fogx_qicehi, n)!uncomment when field becomes available
+	    !OceanDensity (i) =        x2g_g % rAttr(index_x2g_So_rhoeff, n) !uncomment when field becomes available
 	 end do
 	 
 	 block => block % next
@@ -1360,13 +1359,13 @@ contains
       
       call mpas_pool_get_field(geometryPool, 'sfcMassBal',sfcMassBalField)
       call mpas_pool_get_field(thermalPool,  'surfaceTemperature',surfaceTemperatureField)
-      !call mpas_pool_get_field(geometryPool, 'basalOceanMassBal',basalOceanMassBalField)  !uncomment when field becomes available
+      call mpas_pool_get_field(geometryPool, 'floatingBasalMassBal',floatingBasalMassBalField)  !uncomment when field becomes available
       !call mpas_pool_get_field(thermalPool,  'basalOceanHeatflx',basalOceanHeatflxField) !uncomment when field becomes available
       !call mpas_pool_get_field(geometryPool, 'OceanDensity',OceanDensityField) !uncomment when field becomes available
       
       call mpas_dmpar_exch_halo_field(sfcMassBalField)
       call mpas_dmpar_exch_halo_field(surfaceTemperatureField)      
-      !call mpas_dmpar_exch_halo_field(basalOceanMassBalField) !uncomment when field becomes available
+      call mpas_dmpar_exch_halo_field(floatingBasalMassBalField) !uncomment when field becomes available
       !call mpas_dmpar_exch_halo_field(basalOceanHeatflxField) !uncomment when field becomes available
       !call mpas_dmpar_exch_halo_field(OceanDensityField) !uncomment when field becomes available
 
