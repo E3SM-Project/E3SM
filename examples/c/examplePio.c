@@ -232,6 +232,7 @@ int main(int argc, const char* argv[])
     
 #ifdef TIMING    
     /* Initialize the GPTL timing library. */
+    int ret;
     if ((ret = GPTLinitialize ()))
       return ret;
 #endif    
