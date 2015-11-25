@@ -28,15 +28,15 @@
 #  set paths to source code, build directory and run directory
 #
 set wdir =  ~/scratch1/preqx             # run directory
-set HOMME = ~/codes/homme                # HOMME svn checkout     
+set HOMME = ~/codes/acme-dev/components/homme                # HOMME svn checkout     
 set input = $HOMME/test/jw_baroclinic    # input files for test case
 set vdir = $HOMME/test/vcoord            # vertical coordinate files
 set bld = $wdir/bld                      # cmake/build directory
 
-#set MACH = $HOMME/cmake/machineFiles/redsky.cmake
+set MACH = $HOMME/cmake/machineFiles/redsky.cmake
 #set MACH = $HOMME/cmake/machineFiles/titan.cmake
 #set MACH = $HOMME/cmake/machineFiles/titan-cuda.cmake    # CMAKE file for Titan GPU support
-set MACH = $HOMME/cmake/machineFiles/darwin.cmake
+#set MACH = $HOMME/cmake/machineFiles/darwin.cmake
 setenv CRAY_CUDA_PROXY 1
 
 
@@ -73,23 +73,24 @@ set u_perturb = 1
 set rotate = 0
 
                   # number of elemnets:  6*ne*ne
-set ne = 16       # horizontal resolution   16,30,60,120,240
-set nlev=26       # vertical resolution
-set qsize = 4     # number of passive tracers
+set ne = 4        # horizontal resolution   4,16,30,60,120,240
+
+# CAM4
+#set nlev=26       # vertical resolution
+#set qsize = 4     # number of passive tracers
 
 # simulate CAM5:
 #set nlev=30
 #set qsize=25
 
-# simulate future DOE version:
-# NOTE: HOMME includes vertical coordinate files for 26, 30, 60, 64, 96 levels
-#set nlev=60
-#set qsize=30
+# simulate ACME v1
+# NOTE: HOMME includes vertical coordinate files for 26, 30, 60, 64, 72, 96 levels
+set nlev=72
+set qsize=35
 
  set namelist = jw_baroclinic.nl  # CAM-style, vertically lagrangian
 #set namelist = jw_baroclinic_eulerian.nl
                
-
 
 #
 #  BUILD PREQX
@@ -98,10 +99,8 @@ mkdir -p $bld
 cd $bld
 set exe = $bld/src/preqx/preqx
 set build = 1  # set to 1 to force build
-set conf = 0   # set to 1 to force configure
-
-if ( ! -f CMakeCache.txt) set conf = 1   # no cmake files.  force configure
-if ( $conf == 1 ) then
+# rm $bld/CMakeCache.txt    # remove this file to force re-configure
+if (! -f CMakeCache.txt) then
    rm -rf CMakeFiles CMakeCache.txt src
    #rm -rf utils/pio  utils/timing utils/cprnc   # may also need to do this
    echo "running CMAKE to configure the model"
@@ -200,6 +199,11 @@ if ( $nlev == 60 ) then
    set vfile_mid     = "./aspL60_mid.ascii"
    set vfile_int     = "./aspL60_int.ascii"
    cp $vdir/aspL60_*.ascii $run
+endif
+if ( $nlev == 72 ) then
+   set vfile_mid     = "./acme-72m.ascii"
+   set vfile_int     = "./acme-72i.ascii"
+   cp $vdir/acme-72?.ascii $run
 endif
 
 
