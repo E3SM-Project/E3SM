@@ -61,7 +61,8 @@ contains
     use ch4varcon        , only: ch4conrd
     use UrbanParamsType  , only: UrbanInput
     use surfrdMod        , only: surfrd_get_grid_conn
-    use clm_varctl       , only: lateral_connectivity
+    use clm_varctl       , only: lateral_connectivity, domain_decomp_type
+    use decompInitMod    , only: decompInit_lnd_using_gp
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
@@ -136,8 +137,16 @@ contains
     ! Determine clm gridcell decomposition and processor bounds for gridcells
     ! ------------------------------------------------------------------------
 
-    call decompInit_lnd(ni, nj, amask)
-    deallocate(amask)
+    select case (trim(domain_decomp_type))
+    case ("round_robin")
+       call decompInit_lnd(ni, nj, amask)
+       deallocate(amask)
+    case ("graph_partitioning")
+       call decompInit_lnd_using_gp(ni, nj, cellsOnCell, nCells_loc, maxEdges, amask)
+    case default
+       call endrun(msg='ERROR clm_initializeMod: '//&
+            'Unsupported domain_decomp_type = ' // trim(domain_decomp_type))
+    end select
 
     ! *** Get JUST gridcell processor bounds ***
     ! Remaining bounds (landunits, columns, patches) will be determined 
