@@ -6,8 +6,8 @@
  * one variable. It first writes, then reads the sample file using the
  * ParallelIO library. 
  *
- * This example can be run in parallel for any number of processors up
- * to 16.
+ * This example can be run in parallel for 1, 2, 4, 8, or 16
+ * processors.
  */
 
 #include <stdio.h>
@@ -220,7 +220,7 @@ struct examplePioClass* epc_init( struct examplePioClass* this )
     for (i = 0; i < this->arrIdxPerPe; i++ ){
         
         this->dataBuffer[i] = this->myRank + VAL;
-        this->compdof[i] = localVal;
+        this->compdof[i] = localVal + 1;
         this->readBuffer[i] = 99;
         
         if (localVal > this->isto) {
@@ -267,24 +267,28 @@ struct examplePioClass* epc_init( struct examplePioClass* this )
     on file. For this example, the compdof array will have the following
     sizes and values, depending on number of processors used.
 
-    For one processor the decomposition array looks like this:
+    For one processor the decomposition array looks like this (note
+    that the array is 1-based):
+
     <pre>
-    rank: 0 length: 16 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    rank: 0 length: 16 [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
     </pre>
 
     For two processors, the decomposition array looks like this on
     each processor:
+
     <pre>
-    rank: 0 length: 8 [0, 1, 2, 3, 4, 5, 6, 7]
-    rank: 1 length: 8 [8, 9, 10, 11, 12, 13, 14, 15]
+    rank: 0 length: 8 [1, 2, 3, 4, 5, 6, 7, 8]
+    rank: 1 length: 8 [9, 10, 11, 12, 13, 14, 15, 16]
     </pre>
 
-    For four processors, the decomposition array likes like this:
+    For four processors, the decomposition arrays are:
+
     <pre>
-    rank: 0 length: 4 [0, 1, 2, 3]
-    rank: 1 length: 4 [4, 5, 6, 7]
-    rank: 2 length: 4 [8, 9, 10, 11]
-    rank: 3 length: 4 [12, 13, 14, 15]
+    rank: 0 length: 4 [1, 2, 3, 4]
+    rank: 1 length: 4 [5, 6, 7, 8]
+    rank: 2 length: 4 [9, 10, 11, 12]
+    rank: 3 length: 4 [13, 14, 15, 16]
     </pre>
 
     @param [in] this  Pointer to self.
