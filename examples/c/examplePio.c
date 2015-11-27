@@ -12,18 +12,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <mpi.h>
 #include <pio.h>
 #ifdef TIMING
 #include <gptl.h>
 #endif
-#include <stdio.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <math.h>
-#include <mpi.h>
 
 /** The length of our 1-d data array. */
 static const int LEN = 16;
