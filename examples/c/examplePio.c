@@ -60,7 +60,8 @@ typedef struct examplePioClass
     /** Pointer to function that handles errors. */
     struct examplePioClass* (*errorHandler) (struct examplePioClass*, const char*, const int);
 
-    int someThing;
+    /** Set to non-zero to get output to stdout. */
+    int verbose;
 
     /** Zero-based rank of processor. */
     int myRank;
@@ -140,6 +141,21 @@ typedef struct examplePioClass
     for data used in this example, and assigns sample values to the
     data array that will be written.
 
+    The ParallelIO communicator is set up with a call to
+    PIOc_Init_Intracomm(). This call takes the following parameters:
+
+    - The MPI communicator specifying the invovled processors
+      (MPI_COMM_WORLD, in this case, to use all processors).
+    - The number of I/O tasks. In this example there will be one I/O
+      task for each process.
+    - The stride (1 in this case).
+    - The index of the first I/O task.
+    - The iotype, specifying the flavor of netCDF to use.
+    - Specify the subset rearranger.
+    - A pointer that will get the ID of the ParallelIO system created
+      for this call. This ID will be needed when reading or writing to
+      the file using the ParallelIO library.
+
     @param [in] this  Pointer to self.
     @retval examplePioClass* Pointer to self.
  */
@@ -150,6 +166,8 @@ struct examplePioClass* epc_init( struct examplePioClass* this )
     char *argv;
     int i, localVal;
 
+    this->verbose = 1;
+    
     /*
     ** initialize MPI
     */
@@ -210,7 +228,16 @@ struct examplePioClass* epc_init( struct examplePioClass* this )
         }
         localVal++;
     }
-    
+
+    if (this->verbose) {
+	printf("rank: %d length: %d [", this->myRank, this->arrIdxPerPe);
+	for (int i = 0; i < this->arrIdxPerPe; i++ ) {
+	    printf("%d", this->compdof[i]);
+	    if (i < this->arrIdxPerPe - 1)
+		printf(", ");
+	}
+	printf("]\n");
+    }
     return this;
 }
 
@@ -234,15 +261,41 @@ struct examplePioClass* epc_init( struct examplePioClass* this )
       (NULL means don't use block cyclical decompositions).
     - optional array of count values for block cyclic decompositions
       (NULL means don't use block cyclical decompositions).
-    
+
+    The decomposition mapping array (called compdof, in this example
+    code), contains a 1 based array of offsets into the array record
+    on file. For this example, the compdof array will have the following
+    sizes and values, depending on number of processors used.
+
+    For one processor the decomposition array looks like this:
+    <pre>
+    rank: 0 length: 16 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    </pre>
+
+    For two processors, the decomposition array looks like this on
+    each processor:
+    <pre>
+    rank: 0 length: 8 [0, 1, 2, 3, 4, 5, 6, 7]
+    rank: 1 length: 8 [8, 9, 10, 11, 12, 13, 14, 15]
+    </pre>
+
+    For four processors, the decomposition array likes like this:
+    <pre>
+    rank: 0 length: 4 [0, 1, 2, 3]
+    rank: 1 length: 4 [4, 5, 6, 7]
+    rank: 2 length: 4 [8, 9, 10, 11]
+    rank: 3 length: 4 [12, 13, 14, 15]
+    </pre>
+
     @param [in] this  Pointer to self.
     @retval examplePioClass* Pointer to self.
  */
 struct examplePioClass* epc_createDecomp( struct examplePioClass* this )
 {
+    if (this->verbose)
+	printf("Creating decomposition...\n");
     PIOc_InitDecomp(this->pioIoSystem, PIO_INT, 1, this->dimLen, (PIO_Offset)(this->arrIdxPerPe),
                     this->compdof, &this->iodescNCells, NULL, NULL, NULL);
-    
     return this;
 }
 
@@ -275,6 +328,9 @@ struct examplePioClass* epc_createDecomp( struct examplePioClass* this )
  */
 struct examplePioClass* epc_createFile( struct examplePioClass* this )
 {
+    if (this->verbose)
+	printf("Creating sample file %s with iotype %d...\n",
+	       this->fileName, this->iotype);
     PIOc_createfile(this->pioIoSystem, &this->pioFileDesc, &this->iotype, this->fileName, PIO_CLOBBER);
     return this;
 }
@@ -296,7 +352,8 @@ struct examplePioClass* epc_createFile( struct examplePioClass* this )
  */
 struct examplePioClass* epc_defineVar( struct examplePioClass* this )
 {
-    
+    if (this->verbose)
+	printf("Defining netCDF metadata...\n");
     PIOc_def_dim(this->pioFileDesc, "x", (PIO_Offset)this->dimLen[0], &this->pioDimId);
     PIOc_def_var(this->pioFileDesc, "foo", PIO_INT, 1, &this->pioDimId, &this->pioVar);
     PIOc_enddef(this->pioFileDesc);
@@ -318,6 +375,8 @@ struct examplePioClass* epc_defineVar( struct examplePioClass* this )
  */
 struct examplePioClass* epc_writeVar( struct examplePioClass* this )
 {
+    if (this->verbose)
+	printf("Writing sample data...\n");
     PIOc_write_darray(this->pioFileDesc, this->pioVar, this->iodescNCells,
                       (PIO_Offset)this->arrIdxPerPe, this->dataBuffer, NULL);
     PIOc_sync(this->pioFileDesc);
@@ -340,6 +399,8 @@ struct examplePioClass* epc_readVar( struct examplePioClass* this )
 {
     int i;
     
+    if (this->verbose)
+	printf("Reading sample data...\n");
     PIOc_read_darray(this->pioFileDesc, this->pioVar, this->iodescNCells,
                      (PIO_Offset)this->arrIdxPerPe, this->readBuffer);
     
@@ -356,6 +417,8 @@ struct examplePioClass* epc_readVar( struct examplePioClass* this )
  */
 struct examplePioClass* epc_closeFile( struct examplePioClass* this )
 {
+    if (this->verbose)
+	printf("Closing the sample data file...\n");
     PIOc_closefile(this->pioFileDesc);
     
     return this;
@@ -375,6 +438,8 @@ struct examplePioClass* epc_cleanUp( struct examplePioClass* this )
 {
     int ierr;
     
+    if (this->verbose)
+	printf("Freeing local and library resources...\n");
     free(this->dataBuffer);
     free(this->readBuffer);
     free(this->compdof);
@@ -461,6 +526,21 @@ struct examplePioClass* epc_new()
     <pre>
     mpiexec -n 4 ./examplePio
     </pre>
+
+    The sample file created by this program is a small netCDF file. It
+    has the following contents (as shown by ncdump):
+
+    <pre>
+    netcdf examplePio_c {
+    dimensions:
+        x = 16 ;
+    variables:
+        int foo(x) ;
+    data:
+
+        foo = 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, _ ;
+    }
+    </pre>
     
     @param [in] argc argument count (should be zero)
     @param [in] argv argument array (should be NULL)
@@ -476,7 +556,7 @@ int main(int argc, const char* argv[])
     if ((ret = GPTLinitialize ()))
       return ret;
 #endif    
-
+    
     pioExInst->init(pioExInst);
     pioExInst->createDecomp(pioExInst);
     pioExInst->createFile(pioExInst);
