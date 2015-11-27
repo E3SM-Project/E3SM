@@ -17,6 +17,13 @@
 #ifdef TIMING
 #include <gptl.h>
 #endif
+#include <stdio.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <math.h>
+#include <mpi.h>
 
 /** The length of our 1-d data array. */
 static const int LEN = 16;
@@ -166,8 +173,6 @@ struct examplePioClass* epc_init( struct examplePioClass* this )
     char *argv;
     int i, localVal;
 
-    this->verbose = 1;
-    
     /*
     ** initialize MPI
     */
@@ -297,7 +302,7 @@ struct examplePioClass* epc_init( struct examplePioClass* this )
 struct examplePioClass* epc_createDecomp( struct examplePioClass* this )
 {
     if (this->verbose)
-	printf("Creating decomposition...\n");
+	printf("rank: %d Creating decomposition...\n", this->myRank);
     PIOc_InitDecomp(this->pioIoSystem, PIO_INT, 1, this->dimLen, (PIO_Offset)(this->arrIdxPerPe),
                     this->compdof, &this->iodescNCells, NULL, NULL, NULL);
     return this;
@@ -333,8 +338,8 @@ struct examplePioClass* epc_createDecomp( struct examplePioClass* this )
 struct examplePioClass* epc_createFile( struct examplePioClass* this )
 {
     if (this->verbose)
-	printf("Creating sample file %s with iotype %d...\n",
-	       this->fileName, this->iotype);
+	printf("rank: %d Creating sample file %s with iotype %d...\n",
+	       this->myRank, this->fileName, this->iotype);
     PIOc_createfile(this->pioIoSystem, &this->pioFileDesc, &this->iotype, this->fileName, PIO_CLOBBER);
     return this;
 }
@@ -357,7 +362,7 @@ struct examplePioClass* epc_createFile( struct examplePioClass* this )
 struct examplePioClass* epc_defineVar( struct examplePioClass* this )
 {
     if (this->verbose)
-	printf("Defining netCDF metadata...\n");
+	printf("rank: %d Defining netCDF metadata...\n", this->myRank);
     PIOc_def_dim(this->pioFileDesc, "x", (PIO_Offset)this->dimLen[0], &this->pioDimId);
     PIOc_def_var(this->pioFileDesc, "foo", PIO_INT, 1, &this->pioDimId, &this->pioVar);
     PIOc_enddef(this->pioFileDesc);
@@ -380,7 +385,7 @@ struct examplePioClass* epc_defineVar( struct examplePioClass* this )
 struct examplePioClass* epc_writeVar( struct examplePioClass* this )
 {
     if (this->verbose)
-	printf("Writing sample data...\n");
+	printf("rank: %d Writing sample data...\n", this->myRank);
     PIOc_write_darray(this->pioFileDesc, this->pioVar, this->iodescNCells,
                       (PIO_Offset)this->arrIdxPerPe, this->dataBuffer, NULL);
     PIOc_sync(this->pioFileDesc);
@@ -403,10 +408,15 @@ struct examplePioClass* epc_readVar( struct examplePioClass* this )
 {
     int i;
     
-    if (this->verbose)
-	printf("Reading sample data...\n");
     PIOc_read_darray(this->pioFileDesc, this->pioVar, this->iodescNCells,
                      (PIO_Offset)this->arrIdxPerPe, this->readBuffer);
+
+    /* Check that we got back the data we expected. */
+    for (int i = 0; i < this->arrIdxPerPe; i++)
+	if (this->readBuffer[i] != this->dataBuffer[i])
+	    this->errorHandler(this, "The data was not what was expected!", ERR_CODE);
+    if (this->verbose)
+	printf("rank: %d Data read matches expected data.\n", this->myRank);
     
     return this;
 }
@@ -422,7 +432,7 @@ struct examplePioClass* epc_readVar( struct examplePioClass* this )
 struct examplePioClass* epc_closeFile( struct examplePioClass* this )
 {
     if (this->verbose)
-	printf("Closing the sample data file...\n");
+	printf("rank: %d Closing the sample data file...\n", this->myRank);
     PIOc_closefile(this->pioFileDesc);
     
     return this;
@@ -443,7 +453,7 @@ struct examplePioClass* epc_cleanUp( struct examplePioClass* this )
     int ierr;
     
     if (this->verbose)
-	printf("Freeing local and library resources...\n");
+	printf("rank: %d Freeing local and library resources...\n", this->myRank);
     free(this->dataBuffer);
     free(this->readBuffer);
     free(this->compdof);
@@ -491,10 +501,10 @@ struct examplePioClass* epc_errorHandler(struct examplePioClass* this, const cha
     code and data for this example. Then pointers are to the functions
     used in the example.
     
-    @param [in] this  Pointer to self.
+    @param [in] verbose  Non-zero for output to stdout.
     @retval examplePioClass* Pointer to self.
  */
-struct examplePioClass* epc_new()
+struct examplePioClass* epc_new(int verbose)
 {
     struct examplePioClass* this = malloc((sizeof(struct examplePioClass)));
     
@@ -509,6 +519,7 @@ struct examplePioClass* epc_new()
     this->closeFile = epc_closeFile;
     this->cleanUp = epc_cleanUp;
     this->errorHandler = epc_errorHandler;
+    this->verbose = verbose;
     
     return this;
 }
@@ -550,9 +561,21 @@ struct examplePioClass* epc_new()
     @param [in] argv argument array (should be NULL)
     @retval examplePioClass* Pointer to self.
  */
-int main(int argc, const char* argv[])
+int main(int argc, char* argv[])
 {
-    struct examplePioClass* pioExInst = epc_new();
+    /* Parse command line. */
+    int c, verbose = 0;
+    while ((c = getopt(argc, argv, "v")) != -1)
+	switch (c)
+	{
+	case 'v':
+            verbose++;
+            break;
+	default:
+            break;
+	}
+
+    struct examplePioClass* pioExInst = epc_new(verbose);
     
 #ifdef TIMING    
     /* Initialize the GPTL timing library. */
