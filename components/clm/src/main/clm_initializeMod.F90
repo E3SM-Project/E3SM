@@ -98,6 +98,7 @@ contains
     call clm_varcon_init()
     call landunit_varcon_init()
     call ncd_pio_init()
+    call clm_petsc_init()
 
     if (masterproc) call control_print()
 
@@ -951,13 +952,6 @@ contains
 
 #ifdef USE_PETSC_LIB
 
-    ! Initialize PETSc
-    PETSC_COMM_WORLD = mpicom
-    call PetscInitialize(PETSC_NULL_CHARACTER, ierr);CHKERRQ(ierr)
-
-    PETSC_COMM_SELF  = MPI_COMM_SELF
-    PETSC_COMM_WORLD = mpicom
-
     call get_proc_bounds(bounds_proc)
     nclumps = get_proc_clumps()
 
@@ -1098,6 +1092,42 @@ contains
     call t_stopf('clm_init3')
 
   end subroutine initialize3
+
+  !-----------------------------------------------------------------------
+  subroutine clm_petsc_init()
+    !
+    ! !DESCRIPTION:
+    ! Initialize PETSc
+    !
+    ! !USES:
+    use spmdMod    , only : mpicom
+    use clm_varctl , only : use_vsfm
+    use clm_varctl , only : lateral_connectivity
+    !
+    implicit none
+#ifdef USE_PETSC_LIB
+#include "finclude/petscsys.h"
+    !
+    ! !LOCAL VARIABLES:
+    PetscErrorCode        :: ierr                  ! get error code from PETSc
+#endif
+
+    if ( (.not. use_vsfm) .and. &
+         (.not. lateral_connectivity)) return
+
+#ifdef USE_PETSC_LIB
+    ! Initialize PETSc
+    PETSC_COMM_WORLD = mpicom
+    call PetscInitialize(PETSC_NULL_CHARACTER, ierr);CHKERRQ(ierr)
+
+    PETSC_COMM_SELF  = MPI_COMM_SELF
+    PETSC_COMM_WORLD = mpicom
+#else
+    call endrun(msg='ERROR clm_petsc_init: '//&
+         'PETSc required but the code was not compiled using -DUSE_PETSC_LIB')
+#endif
+
+  end subroutine clm_petsc_init
 
 
 end module clm_initializeMod

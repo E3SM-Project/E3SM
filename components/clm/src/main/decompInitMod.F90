@@ -1209,15 +1209,6 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
-    !
-    ! Initialize PETSc
-    !   This needs to move into a different subroutine
-    PETSC_COMM_WORLD = mpicom
-    call PetscInitialize(PETSC_NULL_CHARACTER, ierr);CHKERRQ(ierr)
-
-    PETSC_COMM_SELF  = MPI_COMM_SELF
-    PETSC_COMM_WORLD = mpicom
-
     ! Determine the cell id offset on each processor
     cell_id_offset = 0
     call MPI_Exscan(ncells_loc, cell_id_offset, 1, MPIU_INTEGER, MPI_SUM, mpicom, ierr)
