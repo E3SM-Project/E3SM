@@ -537,7 +537,8 @@ struct examplePioClass* epc_new(int verbose)
     </pre>
 
     The sample file created by this program is a small netCDF file. It
-    has the following contents (as shown by ncdump):
+    has the following contents (as shown by ncdump) for a 4-processor
+    run:
 
     <pre>
     netcdf examplePio_c {
@@ -547,7 +548,7 @@ struct examplePioClass* epc_new(int verbose)
         int foo(x) ;
     data:
 
-        foo = 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, _ ;
+        foo = 42, 42, 42, 42, 43, 43, 43, 43, 44, 44, 44, 44, 45, 45, 45, 45 ;
     }
     </pre>
     
