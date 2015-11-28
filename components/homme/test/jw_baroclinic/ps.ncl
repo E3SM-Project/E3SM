@@ -3,74 +3,23 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 
 
-
-
-;***********************************************************************;
-; function  compute NE, NPTS from pwd
-;***********************************************************************;
-function get_resolution()
-begin
-  wdir =  systemfunc("pwd")
-  print( "wdir = "+wdir)
-  wname=stringtochar(wdir)
-  ne=0
-  npts=8
-  ; find jw-ne
-  do i=0,dimsizes(wname)-7
-     if ( wname(i:i+4 ) .eq. "jw-ne" ) then  
-         ;print ("i="+i+" char="+wname(i:i+4))
-         istart=i+5
-         ; find value of NE
-         do j=istart+1,dimsizes(wname)-2
-            if ( wname(j:j).eq."-" .or. wname(j:j).eq."t") then 
-               ;print ("found a -"+wname(j:j) + "  string: "+wname(istart:j-1))
-               ne=stringtointeger(chartostring(wname(istart:j-1)))
-            
-               ; find value of npts
-               if ( wname(j:j).eq."-" ) then
-                  do k=j+1,dimsizes(wname)-2
-                     if ( wname(k:k).eq."t") then 
-                        ;print ("found a t: "+wname(j:k) )
-                        npts=stringtointeger(chartostring(wname(j+1:k-1)))
-                        break
-                     end if            
-                  end do
-               end if
-            end if
-            if (ne .ne. 0) then
-               break
-            end if
-         end do
-     end if 
-     if (ne .ne. 0) then
-        break
-     end if
-  end do
-  if (ne .eq. 0) then
-     deg=0
-  else 
-     deg=360.0 / (4*ne*(npts-1))
-  end if 
-  sdeg=sprintf("%7.2f", deg)
-  print("Guessing resolution from filename: NE="+ne+" NPTS="+npts+" degree="+sdeg)
-  return(sdeg)
-end
-
 ;***********************************************************************;
 ; NCL script to plot PS
 ;***********************************************************************;
 begin
 
-;fnames =  systemfunc("ls movies/jw_baroclinic1.nc")
-fnames =  systemfunc("ls movies/asp_baroclinic1.nc")
+plotsol=1
+plotref=0
+
+fnames =  systemfunc("ls movies/jw_baroclinic1.nc")
+;fnames =  systemfunc("ls movies/asp_baroclinic1.nc")
  f      = addfiles(fnames,"r")       ; Open netCDF files.	
 
 
-fnames2 =  systemfunc("ls ../eaT340.ps.nc")
- fref    = addfiles(fnames2,"r")       ; Open netCDF files.	
-
-plotsol=1
-plotref=1
+if (plotref.eq.1) then
+  fnames2 =  systemfunc("ls ../eaT340.ps.nc")
+   fref    = addfiles(fnames2,"r")       ; Open netCDF files.	
+end if
 
 if (isatt(f[0],"ne")) then
    NE=f[0]@ne
@@ -79,18 +28,30 @@ if (isatt(f[0],"ne")) then
    hdeg=sprintf("%4.2f", deg)
    print("NE="+NE+" NPTS="+NPTS+" degree="+hdeg)
 else
-   hdeg = get_resolution()
+   hdeg = ""
 end if 
 
 
+  ntimes = dimsizes(f[0]->time)
+  nlev = dimsizes(f[0]->lev)
+  nlat = dimsizes(f[0]->lat)
+  nlon = dimsizes(f[0]->lon)
+  print ("ntimes="+ntimes+" nlev="+nlev+" nlat x nlon "+nlat+"x"+nlon)
 
 
 ; change the levels and or times to plot here
-  firsttime=9
-  lasttime=9
+  n9 = closest_val(9,f[0]->time)
+
+  firsttime=n9
+  lasttime=n9
   timeinc=1
 
-  field = "PS"
+
+
+  field = "ps"
+  if ( isfilevar(f[0],"PS")) then
+    field = "PS"
+  end if 
 sizevar = dimsizes(f[0]->$field$)
 ntime = sizevar(0)
 nlat=sizevar(1)
@@ -111,23 +72,12 @@ end if
 
 
 
-  output_format = "ncgm"
+;  output_format = "ncgm"
+  output_format = "pdf"
 ;  output_format = "X11"
 
   fcnt = dimsizes(fnames)
   print ("number of input files = " + fcnt )
-  vcnt=new((/fcnt,5/),"integer")
-  do i=0,fcnt-1
-    print ("i=" + i + " f[i]=" + getfiledimsizes(f[i]) )
-    vcnt(i,:) = getfiledimsizes(f[i])
-  end do	   	 
-  
-  ntimes = vcnt(0,4)
-  nlev = vcnt(0,2)
-  nlat = vcnt(0,1)
-  nlon = vcnt(0,0)
-
-
 
   var = new((/nlat,nlon/),"double")
   diffl2 = new((/fcnt,lasttime+1/),"double")
