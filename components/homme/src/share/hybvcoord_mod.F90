@@ -209,6 +209,8 @@ end function
         if (masterproc) then
            write(iulog,9850)
            write(iulog,*)'k,atest,eps=',k,atest,eps
+           write(iulog,*)'hyai k,k+1:  ',hvcoord%hyai(k),hvcoord%hyai(k+1)
+           write(iulog,*)'hyam k:  ',hvcoord%hyam(k)
         end if
      endif
 
@@ -216,6 +218,8 @@ end function
         if (masterproc) then
            write(iulog,9850)
            write(iulog,*)'k,btest,eps=',k,btest,eps
+           write(iulog,*)'hybi k,k+1:  ',hvcoord%hybi(k),hvcoord%hybi(k+1)
+           write(iulog,*)'hybm k:  ',hvcoord%hybm(k)
         end if
      endif
   end do
