@@ -69,7 +69,7 @@
 					default_value="repeat_interval"
 					units="unitless"
 					description="A list of time durations in d_h:m:s describing how long to accumulate statistics. It has to match the number of tokens in reference_times."
-					possible_values="A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Each must be greater than or equal to compute_interval * 2 and less than or requal to repeat_interval. duration_intervals < repeat_intervals allow for repeated statistics within the repeat_interval (i.e., for climatologies)"
+					possible_values="A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Each must be greater than or equal to compute_interval * 2 and less than or requal to repeat_interval. duration_intervals less than repeat_intervals allow for repeated statistics within the repeat_interval (i.e., for climatologies)"
 		/>
 		<nml_option name="config_AM_timeSeriesStats_repeat_intervals"
 					type="character"
