@@ -223,6 +223,9 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="F_AMIP_CAM5_CN"             alias="FAMIPC5CN"       >AMIP_CAM5_CLM40%CN_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET> 
 <COMPSET sname="F_1850-2000_CN"             alias="F20TRCN"         >20TR_CAM4_CLM40%CN_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_CLUBB"          alias="FC5CLUBB"        >2000_CAM5%CLB_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="F_2000_CAM5_MG2"          alias="FC5MG2"            >2000_CAM5%MG2_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="F_2000_CAM5_CLBMG2"          alias="FC5CLBMG2"      >2000_CAM5%CLBMG2_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="F_2000_CAM5_CLBMG2MAM4"          alias="FC5CLBMG2MAM4"    >2000_CAM5%CLBMG2MAM4_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_1850_CAM5_PM"             alias="F1850C5PM"       >1850_CAM5%PM_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_PM"             alias="FC5PM"           >2000_CAM5%PM_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_1850_WACCM"               alias="F1850W"          >1850_CAM4%WCCM_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
@@ -582,6 +585,9 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 <CAM_CONFIG_OPTS compset="_CAM5%MAM4"     >-chem trop_mam4</CAM_CONFIG_OPTS> 
 <CAM_CONFIG_OPTS compset="_CAM5%COSP"     >-cosp</CAM_CONFIG_OPTS> 
 <CAM_CONFIG_OPTS compset="_CAM5%CLB"      >-clubb_sgs</CAM_CONFIG_OPTS>
+<CAM_CONFIG_OPTS compset="_CAM5%MG2"      >-microphys mg2</CAM_CONFIG_OPTS>
+<CAM_CONFIG_OPTS compset="_CAM5%CLBMG2"   >-clubb_sgs -microphys mg2</CAM_CONFIG_OPTS>
+<CAM_CONFIG_OPTS compset="_CAM5%CLBMG2MAM4"   >-clubb_sgs -microphys mg2 -chem trop_mam4</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM5%UNI"      >-unicon -cppdefs -DMODIFY_ACTIVATE</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM4%TBAM"     >-chem trop_bam</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM4%TMOZ"     >-chem trop_mozart</CAM_CONFIG_OPTS>
@@ -707,6 +713,9 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 <desc compset="_CAM5%COSP"   >CAM with COSP turned on:</desc>
 <desc compset="_CAM5.*PLMOD" >CAM with all polar mods:</desc>
 <desc compset="_CAM5%CLB"    >CAM CLUBB:</desc>
+<desc compset="_CAM5%MG2"    >CAM MG2:</desc>
+<desc compset="_CAM5%CLBMG2"    >CAM CLUBB MG2:</desc>
+<desc compset="_CAM5%CLBMG2MAM4"    >CAM CLUBB MG2 MAM4:</desc>
 <desc compset="_CAM5%PM"     >CAM prescribed modal aerosols:</desc>
 <desc compset="_CAM[45]%WCCM">CAM WACCM with daily solar data and SPEs:</desc>
 <desc compset="_CAM[45]%WCMX">CAM WACCM-X:</desc>
