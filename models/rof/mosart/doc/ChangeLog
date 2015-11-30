@@ -1,4 +1,27 @@
 ===============================================================
+Tag name:  mosart1_0_09
+Originator(s): tcraig
+Date: Nov 29 2015
+One-line Summary: Code cleanup, add budget diagnostics, history files
+
+M       src/riverroute/RtmMod.F90
+M       src/riverroute/RtmHistFlds.F90
+M       src/riverroute/MOSART_physics_mod.F90
+M       src/riverroute/RtmHistFile.F90
+M       src/riverroute/RunoffMod.F90
+M       src/riverroute/RtmRestFile.F90
+M       src/cpl/rof_cpl_indices.F90
+M       src/cpl/rof_comp_mct.F90
+M       src/cpl/rof_comp_esmf.F90
+===============================================================
+Tag name:  mosart1_0_08
+Originator(s): tcraig
+Date: Nov 24 2015
+One-line Summary: Fix exact restart in atan slope calc
+
+M       src/riverroute/MOSART_physics_mod.F90
+
+===============================================================
 Tag name:  mosart1_0_07
 Originator(s): tcraig
 Date: Nov 22 2015

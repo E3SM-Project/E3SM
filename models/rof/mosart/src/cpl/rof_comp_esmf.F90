@@ -2,7 +2,7 @@ module rof_comp_esmf
   
 #ifdef ESMF_INTERFACE
 !===============================================================================
-! Interface of the active river runoff componetn (RTM) model component of CESM 
+! Interface of the active river runoff componetn (mosart) model component of CESM 
 ! with the main CESM driver. This is a thin interface taking CESM driver information
 ! in MCT (Model Coupling Toolkit) format and converting it to use by RTM and outputing
 ! if in ESMF (Earth System Modelling Framework) format.
@@ -65,11 +65,6 @@ module rof_comp_esmf
   private :: rof_export_esmf          ! Export the river runoff model data to the CESM coupler
 !
 ! ! PRIVATE DATA MEMBERS:
-  real(r8), pointer :: totrunin(:,:)   ! total runoff on rtm grid (mm/s)
-  real(r8), pointer :: surrunin(:,:)   ! surface runoff on rtm grid (mm/s)
-  real(r8), pointer :: subrunin(:,:)   ! subsurface runoff on rtm grid (mm/s)
-  real(r8), pointer :: gwlrunin(:,:)   ! glacier, wetlands and lakes water balance residual on rtm grid (mm/s)
-  real(r8), pointer :: dtorunin(:,:)   ! direct to ocean runoff on rtm grid (mm/s)
 !
 
 !===============================================================================
@@ -111,13 +106,13 @@ contains
 
     !---------------------------------------------------------------------------
     ! !DESCRIPTION:
-    ! Initialize runoff model (rtm)
+    ! Initialize runoff model (mosart)
     !
     ! !ARGUMENTS:
     implicit none
-    type(ESMF_GridComp)  :: comp            ! RTM gridded component
-    type(ESMF_State)     :: import_state    ! RTM import state
-    type(ESMF_State)     :: export_state    ! RTM export state
+    type(ESMF_GridComp)  :: comp            ! MOSART gridded component
+    type(ESMF_State)     :: import_state    ! MOSART import state
+    type(ESMF_State)     :: export_state    ! MOSART export state
     type(ESMF_Clock)     :: EClock          ! ESMF synchronization clock
     integer, intent(out) :: rc              ! Return code
     !
@@ -171,7 +166,7 @@ contains
     call MPI_Comm_dup(mpicom_vm, mpicom_rof, rc)
     if(rc /= 0) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-    ! Initialize rtm MPI communicator
+    ! Initialize mosart MPI communicator
 
     call ESMF_AttributeGet(export_state, name="ID", value=ROFID, rc=rc)
     if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
@@ -207,15 +202,15 @@ contains
     call shr_file_setLogUnit (iulog)
 
     if (masterproc) then
-       write(iulog,*) ' rtm npes    = ',npes
-       write(iulog,*) ' rtm iam     = ',iam
-       write(iulog,*) ' rtm ROFID   = ',ROFID
-       write(iulog,*) ' rtm name    = ',trim(inst_name)
-       write(iulog,*) ' rtm inst    = ',inst_index
-       write(iulog,*) ' rtm suffix  = ',trim(inst_suffix)
+       write(iulog,*) ' mosart npes    = ',npes
+       write(iulog,*) ' mosart iam     = ',iam
+       write(iulog,*) ' mosart ROFID   = ',ROFID
+       write(iulog,*) ' mosart name    = ',trim(inst_name)
+       write(iulog,*) ' mosart inst    = ',inst_index
+       write(iulog,*) ' mosart suffix  = ',trim(inst_suffix)
     endif
 
-    ! Initialize RTM
+    ! Initialize MOSART
 
     call seq_timemgr_EClockGetData(EClock,                               &
                                    start_ymd=start_ymd,                  &
@@ -266,18 +261,13 @@ contains
                    nsrest_in=nsrest, version_in=version,           &
                    hostname_in=hostname, username_in=username)
 
-    ! Initialize rtm and determine if rtm will be active
+    ! Initialize mosart and determine if mosart will be active
 
     call Rtmini(rtm_active=rof_prognostic,flood_active=flood_present)
 
     if ( rof_prognostic ) then
        begr = rtmCTL%begr
        endr = rtmCTL%endr
-       allocate(totrunin(begr:endr,nt_rtm))
-       allocate(surrunin(begr:endr,nt_rtm))
-       allocate(subrunin(begr:endr,nt_rtm))
-       allocate(gwlrunin(begr:endr,nt_rtm))
-       allocate(dtorunin(begr:endr,nt_rtm))
 
        ! Initialize rof distgrid and domain
 
@@ -353,17 +343,17 @@ contains
     call ESMF_AttributeAdd(comp,  &
                            convention=convCIM, purpose=purpComp, rc=rc)
 
-    call ESMF_AttributeSet(comp, "ShortName", "RTM", &
+    call ESMF_AttributeSet(comp, "ShortName", "MOSART", &
                            convention=convCIM, purpose=purpComp, rc=rc)
     call ESMF_AttributeSet(comp, "LongName", &
-                           "River Runoff from RTM", &
+                           "River Runoff from MOSART", &
                            convention=convCIM, purpose=purpComp, rc=rc)
     call ESMF_AttributeSet(comp, "Description", &
-                  "The RTM component is " // &
+                  "The MOSART component is " // &
                   "the river runoff model used in the CESM1.1.  " // &
-                  "More information on the RTM project " // &
-                  "and access to previous RTM model versions and " // &
-                  "documentation can be found via the RTM Web Page.", &
+                  "More information on the MOSART project " // &
+                  "and access to previous MOSART model versions and " // &
+                  "documentation can be found via the MOSART Web Page.", &
                            convention=convCIM, purpose=purpComp, rc=rc)
     call ESMF_AttributeSet(comp, "ReleaseDate", "2012", &
                            convention=convCIM, purpose=purpComp, rc=rc)
@@ -387,13 +377,13 @@ contains
 
     !---------------------------------------------------------------------------
     ! !DESCRIPTION:
-    ! Run rtm model
+    ! Run mosart model
     !
     ! !ARGUMENTS:
     implicit none
-    type(ESMF_GridComp)  :: comp            ! RTM gridded component
-    type(ESMF_State)     :: import_state    ! RTM import state
-    type(ESMF_State)     :: export_state    ! RTM export state
+    type(ESMF_GridComp)  :: comp            ! MOSART gridded component
+    type(ESMF_State)     :: import_state    ! MOSART import state
+    type(ESMF_State)     :: export_state    ! MOSART export state
     type(ESMF_Clock)     :: EClock          ! ESMF synchronization clock
     integer, intent(out) :: rc              ! Return code
     !
@@ -404,11 +394,11 @@ contains
     integer :: mon_sync                   ! Sync current month
     integer :: day_sync                   ! Sync current day
     integer :: tod_sync                   ! Sync current time of day (sec)
-    integer :: ymd                        ! RTM current date (YYYYMMDD)
-    integer :: yr                         ! RTM current year
-    integer :: mon                        ! RTM current month
-    integer :: day                        ! RTM current day
-    integer :: tod                        ! RTM current time of day (sec)
+    integer :: ymd                        ! MOSART current date (YYYYMMDD)
+    integer :: yr                         ! MOSART current year
+    integer :: mon                        ! MOSART current month
+    integer :: day                        ! MOSART current day
+    integer :: tod                        ! MOSART current time of day (sec)
     logical :: rstwr_sync                 ! .true. ==> write restart file before returning
     logical :: rstwr                      ! .true. ==> write restart file before returning
     logical :: nlend_sync                 ! Flag signaling last time-step
@@ -441,7 +431,7 @@ contains
          curr_ymd=ymd, curr_tod=tod_sync,  &
          curr_yr=yr_sync, curr_mon=mon_sync, curr_day=day_sync)
 
-    ! Map ESMF to rtm input (rof) data type
+    ! Map ESMF to mosart input (rof) data type
 
     call t_startf ('lc_rof_import')
     call ESMF_StateGet(import_state, itemName="x2d", array=x2r, rc=rc)
@@ -449,14 +439,14 @@ contains
     call rof_import_esmf( x2r, rc=rc )
     call t_stopf ('lc_rof_import')
 
-    ! Run rtm (input is *runin, output is rtmCTL%runoff)
-    ! First advance rtm time step
+    ! Run mosart (input is *runin, output is rtmCTL%runoff)
+    ! First advance mosart time step
 
     write(rdate,'(i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') yr_sync,mon_sync,day_sync,tod_sync
     nlend = seq_timemgr_StopAlarmIsOn( EClock )
     rstwr = seq_timemgr_RestartAlarmIsOn( EClock )
     call advance_timestep()
-    call Rtmrun(totrunin,surrunin,subrunin,gwlrunin,dtorunin,rstwr,nlend,rdate)
+    call Rtmrun(rstwr,nlend,rdate)
 
     ! Map roff data to MCT datatype (input is rtmCTL%runoff, output is r2x_r)
       
@@ -472,9 +462,9 @@ contains
     tod = tod
     if ( .not. seq_timemgr_EClockDateInSync( EClock, ymd, tod ) )then
        call seq_timemgr_EclockGetData( EClock, curr_ymd=ymd_sync, curr_tod=tod_sync )
-       write(iulog,*)' rtm ymd=',ymd     ,'  rtm tod= ',tod
+       write(iulog,*)' mosart ymd=',ymd     ,'  mosart tod= ',tod
        write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync
-       call shr_sys_abort( sub//":: RTM clock not in sync with Master Sync clock" )
+       call shr_sys_abort( sub//":: MOSART clock not in sync with Master Sync clock" )
     end if
     
     ! Reset shr logging to my original values
@@ -498,13 +488,13 @@ contains
 
     !------------------------------------------------------------------------------
     ! !DESCRIPTION:
-    ! Finalize rtm
+    ! Finalize mosart
     !
     ! !ARGUMENTS:
     implicit none
-    type(ESMF_GridComp)  :: comp            ! RTM gridded component
-    type(ESMF_State)     :: import_state    ! RTM import state
-    type(ESMF_State)     :: export_state    ! RTM export state
+    type(ESMF_GridComp)  :: comp            ! MOSART gridded component
+    type(ESMF_State)     :: import_state    ! MOSART import state
+    type(ESMF_State)     :: export_state    ! MOSART export state
     type(ESMF_Clock)     :: EClock          ! ESMF synchronization clock
     integer, intent(out) :: rc              ! Return code
     !---------------------------------------------------------------------------
@@ -655,6 +645,7 @@ contains
     !---------------------------------------------------------------------------
     ! DESCRIPTION:
     ! Obtain the runoff input from the coupler
+    ! convert from kg/m2s to m3/s
     !
     ! ARGUMENTS:
     implicit none
@@ -691,33 +682,20 @@ contains
     endr = rtmCTL%endr
     do n = begr,endr
        n2 = n - begr + 1
-       totrunin(n,nliq) = fptr(index_x2r_Flrl_rofsur,n2) + &
-                          fptr(index_x2r_Flrl_rofgwl,n2) + &
-                          fptr(index_x2r_Flrl_rofsub,n2)
-       totrunin(n,nfrz) = fptr(index_x2r_Flrl_rofi,n2)
 
-       surrunin(n,nliq) = fptr(index_x2r_Flrl_rofsur,n2)
-       surrunin(n,nfrz) = fptr(index_x2r_Flrl_rofi,n2)
-
-       subrunin(n,nliq) = fptr(index_x2r_Flrl_rofsub,n2)
-       subrunin(n,nfrz) = 0.0_r8
-
-       gwlrunin(n,nliq) = fptr(index_x2r_Flrl_rofgwl,n2)
-       gwlrunin(n,nfrz) = 0.0_r8
-
-       dtorunin(n,nliq) = 0.0_r8
-       dtorunin(n,nfrz) = 0.0_r8
-
-       rtmCTL%qsur(n) = fptr(index_x2r_Flrl_rofsur,n2)
-       rtmCTL%qsub(n) = fptr(index_x2r_Flrl_rofsub,n2)
-       rtmCTL%qgwl(n) = fptr(index_x2r_Flrl_rofgwl,n2)
-       rtmCTL%qdto(n) = 0.0_r8
+       rtmCTL%qsur(n,nliq) = fptr(index_x2r_Flrl_rofsur,n2) * (rtmCTL%area(n)*0.001_r8)
+       rtmCTL%qsub(n,nliq) = fptr(index_x2r_Flrl_rofsub,n2) * (rtmCTL%area(n)*0.001_r8)
+       rtmCTL%qgwl(n,nliq) = fptr(index_x2r_Flrl_rofgwl,n2) * (rtmCTL%area(n)*0.001_r8)
        if (index_x2r_Flrl_rofdto > 0) then
-          totrunin(n,nliq) = totrunin(n,nliq) + &
-                             fptr(index_x2r_Flrl_rofdto,n2)
-          dtorunin(n,nliq) = fptr(index_x2r_Flrl_rofdto,n2)
-          rtmCTL%qdto(n) = ftpr(index_x2r_Flrl_rofdto,n2)
+          rtmCTL%qdto(n,nliq) = fptr(index_x2r_Flrl_rofdto,n2) * (rtmCTL%area(n)*0.001_r8)
+       else
+          rtmCTL%qdto(n,nliq) = 0.0_r8
        endif
+
+       rtmCTL%qsur(n,nfrz) = fptr(index_x2r_Flrl_rofi,n2) * (rtmCTL%area(n)*0.001_r8)
+       rtmCTL%qsub(n,nfrz) = 0.0_r8
+       rtmCTL%qgwl(n,nfrz) = 0.0_r8
+       rtmCTL%qdto(n,nfrz) = 0.0_r8
 
     enddo
 
@@ -729,7 +707,8 @@ contains
 
     !---------------------------------------------------------------------------
     ! !DESCRIPTION:
-    ! Send the rtm export state to the CESM coupler
+    ! Send the mosart export state to the CESM coupler
+    ! convert from kg/m2s to m3/s
     !
     ! !ARGUMENTS:
     implicit none
@@ -739,6 +718,7 @@ contains
     ! Local variables
     integer :: ni, n, nt, nliq, nfrz
     real(R8), pointer :: fptr(:, :)
+    logical,save :: first_time = .true.
     character(len=*), parameter :: sub = 'rof_export_esmf'
     !---------------------------------------------------------------------------
     
@@ -763,16 +743,29 @@ contains
     if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
     fptr(:,:) = 0._r8
 
+    if (first_time) then
+       if (masterproc) then
+       if ( ice_runoff )then
+          write(iulog,*)'Snow capping will flow out in frozen river runoff'
+       else
+          write(iulog,*)'Snow capping will flow out in liquid river runoff'
+       endif
+       endif
+       first_time = .false.
+    end if
+
     ni = 0
     if ( ice_runoff )then
+       ! separate liquid and ice runoff
        do n = rtmCTL%begr,rtmCTL%endr
           ni = ni + 1
+          fptr(index_r2x_Forr_rofl,ni) =  rtmCTL%direct(n,nliq) / (rtmCTL%area(n)*0.001_r8)
+          fptr(index_r2x_Forr_rofi,ni) =  rtmCTL%direct(n,nfrz) / (rtmCTL%area(n)*0.001_r8)
           if (rtmCTL%mask(n) >= 2) then
-             ! liquid and ice runoff are treated separately
-             fptr(index_r2x_Forr_rofl,ni) = &
-                 rtmCTL%runoffall(n,nliq)/(rtmCTL%area(n)*0.001_r8)
-             fptr(index_r2x_Forr_rofi,ni) = &
-                 rtmCTL%runoffall(n,nfrz)/(rtmCTL%area(n)*0.001_r8)
+             fptr(index_r2x_Forr_rofl,ni) = fptr(index_r2x_Forr_rofl,ni) + &
+                 rtmCTL%runoff(n,nliq) / (rtmCTL%area(n)*0.001_r8)
+             fptr(index_r2x_Forr_rofi,ni) = fptr(index_r2x_Forr_rofi,ni) + &
+                 rtmCTL%runoff(n,nfrz) / (rtmCTL%area(n)*0.001_r8)
              if (ni > rtmCTL%lnumr) then
                 write(iulog,*) sub, ' : ERROR runoff count',n,ni
                 call shr_sys_abort( sub//' : ERROR runoff > expected' )
@@ -780,13 +773,14 @@ contains
           endif
        end do
     else
+       ! liquid and ice runoff added to liquid runoff, ice runoff is zero
        do n = rtmCTL%begr,rtmCTL%endr
           ni = ni + 1
+          fptr(index_r2x_Forr_rofl,ni) =  &
+             (rtmCTL%direct(n,nfrz)+rtmCTL%direct(n,nliq)) / (rtmCTL%area(n)*0.001_r8)
           if (rtmCTL%mask(n) >= 2) then
-             ! liquid and ice runoff are bundled together to liquid runoff, and then ice runoff set to zero
-             fptr(index_r2x_Forr_rofl,ni) =   &
-               (rtmCTL%runoffall(n,nfrz)+rtmCTL%runoffall(n,nliq))/(rtmCTL%area(n)*0.001_r8)
-             fptr(index_r2x_Forr_rofi,ni) = 0.0_r8
+             fptr(index_r2x_Forr_rofl,ni) = fptr(index_r2x_Forr_rofl,ni) +  &
+               (rtmCTL%runoff(n,nfrz)+rtmCTL%runoff(n,nliq))/(rtmCTL%area(n)*0.001_r8)
              if (ni > rtmCTL%lnumr) then
                 write(iulog,*) sub, ' : ERROR runoff count',n,ni
                 call shr_sys_abort( sub//' : ERROR runoff > expected' )
@@ -794,15 +788,6 @@ contains
           endif
        end do
     end if
-
-!  Add direct to ocean runoff prior to passing runoff to coupler
-!  tcraig, This	is now done in rtmrun to include in the budget
-!    ni = 0
-!    do n = rtmCTL%begr,rtmCTL%endr
-!       ni = ni + 1
-!       fptr(index_r2x_Forr_rofl,ni) &
-!            = fptr(index_r2x_Forr_rofl,ni) + rtmCTL%qdto(n)
-!    end do
 
     ! Flooding back to land, sign convention is positive in land->rof direction
     ! so if water is sent from rof to land, the flux must be negative.

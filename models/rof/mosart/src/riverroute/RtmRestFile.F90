@@ -211,7 +211,7 @@ contains
        
        ! Check case name consistency (case name must be different 
        ! for branch run, unless brnch_retain_casename is set)
-       ctest = 'xx.'//trim(caseid)//'.rtm'
+       ctest = 'xx.'//trim(caseid)//'.mosart'
        ftest = 'xx.'//trim(file)
        status = index(trim(ftest),trim(ctest))
        if (status /= 0 .and. .not.(brnch_retain_casename)) then
@@ -308,7 +308,7 @@ contains
     implicit none
     character(len=*), intent(in) :: rdate   ! input date for restart file name 
 
-    RtmRestFileName = "./"//trim(caseid)//".rtm"//trim(inst_suffix)//".r."//trim(rdate)//".nc"
+    RtmRestFileName = "./"//trim(caseid)//".mosart"//trim(inst_suffix)//".r."//trim(rdate)//".nc"
     if (masterproc) then
        write(iulog,*)'writing restart file ',trim(RtmRestFileName),' for model date = ',rdate
     end if
@@ -381,7 +381,7 @@ contains
     character(len=128) :: lname
     !-----------------------------------------------------------------------
 
-    do nv = 1,8
+    do nv = 1,7
     do nt = 1,nt_rtm
 
        if (nv == 1) then
@@ -390,36 +390,31 @@ contains
           uname = 'm3'
           dfld  => rtmCTL%volr(:,nt)
        elseif (nv == 2) then
-          vname = 'RTM_FLUXOUT_'//trim(rtm_tracers(nt))
-          lname = 'water fluxout in cell (fluxout)'
-          uname = 'm3/s'
-          dfld  => rtmCTL%fluxout(:,nt)
-       elseif (nv == 3) then
           vname = 'RTM_RUNOFF_'//trim(rtm_tracers(nt))
           lname = 'runoff (runoff)'
           uname = 'm3/s'
           dfld  => rtmCTL%runoff(:,nt)
-       elseif (nv == 4) then
+       elseif (nv == 3) then
           vname = 'RTM_DVOLRDT_'//trim(rtm_tracers(nt))
           lname = 'water volume change in cell (dvolrdt)'
           uname = 'mm/s'
           dfld  => rtmCTL%dvolrdt(:,nt)
-       elseif (nv == 5) then
+       elseif (nv == 4) then
           vname = 'RTM_WH_'//trim(rtm_tracers(nt))
           lname = 'surface water storage at hillslopes in cell'
           uname = 'm'
           dfld  => rtmCTL%wh(:,nt)
-       elseif (nv == 6) then
+       elseif (nv == 5) then
           vname = 'RTM_WT_'//trim(rtm_tracers(nt))
           lname = 'water storage in tributary channels in cell'
           uname = 'm3'
           dfld  => rtmCTL%wt(:,nt)
-       elseif (nv == 7) then
+       elseif (nv == 6) then
           vname = 'RTM_WR_'//trim(rtm_tracers(nt))
           lname = 'water storage in main channel in cell'
           uname = 'm3'
           dfld  => rtmCTL%wr(:,nt)
-       elseif (nv == 8) then
+       elseif (nv == 7) then
           vname = 'RTM_EROUT_'//trim(rtm_tracers(nt))
           lname = 'instataneous flow out of main channel in cell'
           uname = 'm3/s'
@@ -454,7 +449,6 @@ contains
              if (abs(rtmCTL%volr(n,nt))    > 1.e30) rtmCTL%volr(n,nt) = 0.
              if (abs(rtmCTL%runoff(n,nt))  > 1.e30) rtmCTL%runoff(n,nt) = 0.
              if (abs(rtmCTL%dvolrdt(n,nt)) > 1.e30) rtmCTL%dvolrdt(n,nt) = 0.
-             if (abs(rtmCTL%fluxout(n,nt)) > 1.e30) rtmCTL%fluxout(n,nt) = 0.
              if (abs(rtmCTL%wh(n,nt))      > 1.e30) rtmCTL%wh(n,nt) = 0.
              if (abs(rtmCTL%wt(n,nt))      > 1.e30) rtmCTL%wt(n,nt) = 0.
              if (abs(rtmCTL%wr(n,nt))      > 1.e30) rtmCTL%wr(n,nt) = 0.
@@ -464,7 +458,6 @@ contains
              do nt = 1,nt_rtm
                 rtmCTL%runofflnd(n,nt) = rtmCTL%runoff(n,nt)
                 rtmCTL%dvolrdtlnd(n,nt)= rtmCTL%dvolrdt(n,nt)
-                rtmCTL%volrlnd(n,nt)   = rtmCTL%volr(n,nt)
              end do
           elseif (rtmCTL%mask(n) >= 2) then
              do nt = 1,nt_rtm

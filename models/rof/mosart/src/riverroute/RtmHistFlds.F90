@@ -38,61 +38,77 @@ contains
     implicit none
     !-------------------------------------------------------
 
-    call RtmHistAddfld (fname='QCHANR', units='m3/s',  &
-         avgflag='A', long_name='RTM river flow: '//trim(rtm_tracers(1)), &
-         ptr_rof=rtmCTL%runofflnd_nt1)
+    call RtmHistAddfld (fname='QCHANR'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
+         avgflag='A', long_name='MOSART river flow: '//trim(rtm_tracers(1)), &
+         ptr_rof=rtmCTL%runofflnd_nt1, default='active')
 
     call RtmHistAddfld (fname='QCHANR'//'_'//trim(rtm_tracers(2)), units='m3/s',  &
-         avgflag='A', long_name='RTM river flow: '//trim(rtm_tracers(2)), &
-         ptr_rof=rtmCTL%runofflnd_nt2)
+         avgflag='A', long_name='MOSART river flow: '//trim(rtm_tracers(2)), &
+         ptr_rof=rtmCTL%runofflnd_nt2, default='active')
 
-    call RtmHistAddfld (fname='QCHOCNR', units='m3/s', &
-         avgflag='A', long_name='RTM river discharge into ocean: '//trim(rtm_tracers(1)), &
-         ptr_rof=rtmCTL%runoffocn_nt1)
+    call RtmHistAddfld (fname='QCHOCNR'//'_'//trim(rtm_tracers(1)), units='m3/s', &
+         avgflag='A', long_name='MOSART river discharge into ocean: '//trim(rtm_tracers(1)), &
+         ptr_rof=rtmCTL%runoffocn_nt1, default='active')
 
     call RtmHistAddfld (fname='QCHOCNR'//'_'//trim(rtm_tracers(2)), units='m3/s', &
-         avgflag='A', long_name='RTM river discharge into ocean: '//trim(rtm_tracers(2)), &
-         ptr_rof=rtmCTL%runoffocn_nt2)
+         avgflag='A', long_name='MOSART river discharge into ocean: '//trim(rtm_tracers(2)), &
+         ptr_rof=rtmCTL%runoffocn_nt2, default='active')
 
-    call RtmHistAddfld (fname='VOLR', units='m3',  &
-         avgflag='A', long_name='RTM storage: '//trim(rtm_tracers(1)), &
-         ptr_rof=rtmCTL%volr_nt1)
+    call RtmHistAddfld (fname='VOLR'//'_'//trim(rtm_tracers(1)), units='m3',  &
+         avgflag='A', long_name='MOSART storage: '//trim(rtm_tracers(1)), &
+         ptr_rof=rtmCTL%volr_nt1, default='active')
 
     call RtmHistAddfld (fname='VOLR'//'_'//trim(rtm_tracers(2)), units='m3',  &
-         avgflag='A', long_name='RTM storage: '//trim(rtm_tracers(2)), &
-         ptr_rof=rtmCTL%volr_nt2, default='inactive')
+         avgflag='A', long_name='MOSART storage: '//trim(rtm_tracers(2)), &
+         ptr_rof=rtmCTL%volr_nt2, default='active')
 
-    call RtmHistAddfld (fname='DVOLRDT_LND', units='mm/s',  &
-         avgflag='A', long_name='RTM land change in storage: '//trim(rtm_tracers(1)), &
+    call RtmHistAddfld (fname='DVOLRDT_LND'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
+         avgflag='A', long_name='MOSART land change in storage: '//trim(rtm_tracers(1)), &
          ptr_rof=rtmCTL%dvolrdtlnd_nt1, default='inactive')
 
-    call RtmHistAddfld (fname='DVOLRDT_LND'//'_'//trim(rtm_tracers(2)), units='mm/s',  &
-         avgflag='A', long_name='RTM land change in storage: '//trim(rtm_tracers(2)), &
+    call RtmHistAddfld (fname='DVOLRDT_LND'//'_'//trim(rtm_tracers(2)), units='m3/s',  &
+         avgflag='A', long_name='MOSART land change in storage: '//trim(rtm_tracers(2)), &
          ptr_rof=rtmCTL%dvolrdtlnd_nt2, default='inactive')
 
-    call RtmHistAddfld (fname='DVOLRDT_OCN', units='mm/s',  &
-         avgflag='A', long_name='RTM ocean change of storage: '//trim(rtm_tracers(1)), &
+    call RtmHistAddfld (fname='DVOLRDT_OCN'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
+         avgflag='A', long_name='MOSART ocean change of storage: '//trim(rtm_tracers(1)), &
          ptr_rof=rtmCTL%dvolrdtocn_nt1, default='inactive')
 
-    call RtmHistAddfld (fname='DVOLRDT_OCN'//'_'//trim(rtm_tracers(2)), units='mm/s',  &
-         avgflag='A', long_name='RTM ocean change of storage: '//trim(rtm_tracers(2)), &
+    call RtmHistAddfld (fname='DVOLRDT_OCN'//'_'//trim(rtm_tracers(2)), units='m3/s',  &
+         avgflag='A', long_name='MOSART ocean change of storage: '//trim(rtm_tracers(2)), &
          ptr_rof=rtmCTL%dvolrdtocn_nt2, default='inactive')
 
-    call RtmHistAddfld (fname='QSUR'//'_'//trim(rtm_tracers(1)), units='mm/s',  &
-         avgflag='A', long_name='RTM input surface runoff: '//trim(rtm_tracers(1)), &
-         ptr_rof=rtmCTL%qsur, default='inactive')
+    call RtmHistAddfld (fname='QSUR'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
+         avgflag='A', long_name='MOSART input surface runoff: '//trim(rtm_tracers(1)), &
+         ptr_rof=rtmCTL%qsur_nt1, default='active')
 
-    call RtmHistAddfld (fname='QSUB'//'_'//trim(rtm_tracers(1)), units='mm/s',  &
-         avgflag='A', long_name='RTM input subsurface runoff: '//trim(rtm_tracers(1)), &
-         ptr_rof=rtmCTL%qsub, default='inactive')
+    call RtmHistAddfld (fname='QSUR'//'_'//trim(rtm_tracers(2)), units='m3/s',  &
+         avgflag='A', long_name='MOSART input surface runoff: '//trim(rtm_tracers(2)), &
+         ptr_rof=rtmCTL%qsur_nt2, default='active')
 
-    call RtmHistAddfld (fname='QGWL'//'_'//trim(rtm_tracers(1)), units='mm/s',  &
-         avgflag='A', long_name='RTM input GWL runoff: '//trim(rtm_tracers(1)), &
-         ptr_rof=rtmCTL%qgwl, default='inactive')
+    call RtmHistAddfld (fname='QSUB'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
+         avgflag='A', long_name='MOSART input subsurface runoff: '//trim(rtm_tracers(1)), &
+         ptr_rof=rtmCTL%qsub_nt1, default='active')
 
-    call RtmHistAddfld (fname='QDTO'//'_'//trim(rtm_tracers(1)), units='mm/s',  &
-         avgflag='A', long_name='RTM input direct to ocean runoff: '//trim(rtm_tracers(1)), &
-         ptr_rof=rtmCTL%qdto, default='inactive')
+    call RtmHistAddfld (fname='QSUB'//'_'//trim(rtm_tracers(2)), units='m3/s',  &
+         avgflag='A', long_name='MOSART input subsurface runoff: '//trim(rtm_tracers(2)), &
+         ptr_rof=rtmCTL%qsub_nt2, default='active')
+
+    call RtmHistAddfld (fname='QGWL'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
+         avgflag='A', long_name='MOSART input GWL runoff: '//trim(rtm_tracers(1)), &
+         ptr_rof=rtmCTL%qgwl_nt1, default='active')
+
+    call RtmHistAddfld (fname='QGWL'//'_'//trim(rtm_tracers(2)), units='m3/s',  &
+         avgflag='A', long_name='MOSART input GWL runoff: '//trim(rtm_tracers(2)), &
+         ptr_rof=rtmCTL%qgwl_nt2, default='active')
+
+    call RtmHistAddfld (fname='QDTO'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
+         avgflag='A', long_name='MOSART input direct to ocean runoff: '//trim(rtm_tracers(1)), &
+         ptr_rof=rtmCTL%qdto_nt1, default='active')
+
+    call RtmHistAddfld (fname='QDTO'//'_'//trim(rtm_tracers(2)), units='m3/s',  &
+         avgflag='A', long_name='MOSART input direct to ocean runoff: '//trim(rtm_tracers(2)), &
+         ptr_rof=rtmCTL%qdto_nt2, default='active')
 
     ! Print masterlist of history fields
 
@@ -106,7 +122,7 @@ contains
 
     !-----------------------------------------------------------------------
     ! !DESCRIPTION:
-    ! Set rtm history fields as 1d poitner arrays
+    ! Set mosart history fields as 1d poitner arrays
     !
     implicit none
     !-----------------------------------------------------------------------
@@ -125,8 +141,20 @@ contains
     rtmCTL%dvolrdtocn_nt1(:) = rtmCTL%dvolrdtocn(:,1)
     rtmCTL%dvolrdtocn_nt2(:) = rtmCTL%dvolrdtocn(:,2)
 
-    rtmCTL%volr_nt1(:)       = rtmCTL%volrlnd(:,1)
-    rtmCTL%volr_nt2(:)       = rtmCTL%volrlnd(:,2)
+    rtmCTL%volr_nt1(:)       = rtmCTL%volr(:,1)
+    rtmCTL%volr_nt2(:)       = rtmCTL%volr(:,2)
+
+    rtmCTL%qsub_nt1(:)       = rtmCTL%qsub(:,1)
+    rtmCTL%qsub_nt2(:)       = rtmCTL%qsub(:,2)
+
+    rtmCTL%qsur_nt1(:)       = rtmCTL%qsur(:,1)
+    rtmCTL%qsur_nt2(:)       = rtmCTL%qsur(:,2)
+
+    rtmCTL%qgwl_nt1(:)       = rtmCTL%qgwl(:,1)
+    rtmCTL%qgwl_nt2(:)       = rtmCTL%qgwl(:,2)
+
+    rtmCTL%qdto_nt1(:)       = rtmCTL%qdto(:,1)
+    rtmCTL%qdto_nt2(:)       = rtmCTL%qdto(:,2)
 
   end subroutine RtmHistFldsSet
 

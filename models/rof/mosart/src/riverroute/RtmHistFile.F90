@@ -809,6 +809,8 @@ contains
             long_name='runoff coordinate longitude', units='degrees_east', ncid=nfid(t))
        call ncd_defvar(varname='lat', xtype=tape(t)%ncprec, dim1name='lat', &
             long_name='runoff coordinate latitude', units='degrees_north', ncid=nfid(t))
+!       call ncd_defvar(varname='mask', xtype=ncd_int, dim1name='lon', dim2name='lat', &
+!            long_name='runoff mask', units='unitless', ncid=nfid(t))
 
     else if (mode == 'write') then
 
@@ -837,6 +839,7 @@ contains
 
        call ncd_io(varname='lon', data=rtmCTL%rlon, ncid=nfid(t), flag='write')
        call ncd_io(varname='lat', data=rtmCTL%rlat, ncid=nfid(t), flag='write')
+!       call ncd_io(varname='mask', data=rtmCTL%mask, ncid=nfid(t), flag='write')
 
     endif
 
@@ -1178,7 +1181,7 @@ contains
           ! Create the restart history filename and open it
           !
           write(hnum,'(i1.1)') t-1
-          locfnhr(t) = "./" // trim(caseid) //".rtm"// trim(inst_suffix) &
+          locfnhr(t) = "./" // trim(caseid) //".mosart"// trim(inst_suffix) &
                         // ".rh" // hnum //"."// trim(rdate) //".nc"
           call htape_create( t, histrest=.true. )
           !
@@ -1617,7 +1620,7 @@ contains
        write(cdate,'(i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') yr,mon,day,sec
     endif
     write(hist_index,'(i1.1)') hist_file - 1
-    set_hist_filename = "./"//trim(caseid)//".rtm"//trim(inst_suffix)//&
+    set_hist_filename = "./"//trim(caseid)//".mosart"//trim(inst_suffix)//&
                         ".h"//hist_index//"."//trim(cdate)//".nc"
 
   end function set_hist_filename
@@ -1689,21 +1692,21 @@ contains
 
     if (present(default)) then
        if (trim(default) == 'inactive') return
-    else
-       ! Look through master list for input field name.
-       ! When found, set active flag for that tape to true.
-       found = .false.
-       do f = 1,nfmaster
-          if (trim(fname) == trim(masterlist(f)%field%name)) then
-             masterlist(f)%actflag(1) = .true.
-             found = .true.
-             exit
-          end if
-       end do
-       if (.not. found) then
-          write(iulog,*) trim(subname),' ERROR: field=', fname, ' not found'
-          call shr_sys_abort()
+    endif
+
+    ! Look through master list for input field name.
+    ! When found, set active flag for that tape to true.
+    found = .false.
+    do f = 1,nfmaster
+       if (trim(fname) == trim(masterlist(f)%field%name)) then
+          masterlist(f)%actflag(1) = .true.
+          found = .true.
+          exit
        end if
+    end do
+    if (.not. found) then
+       write(iulog,*) trim(subname),' ERROR: field=', fname, ' not found'
+       call shr_sys_abort()
     end if
 
   end subroutine RtmHistAddfld

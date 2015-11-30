@@ -49,12 +49,6 @@ MODULE MOSART_physics_mod
     integer :: iunit, m, k, unitUp, cnt, ier   !local index
     real(r8) :: temp_erout, localDeltaT
     real(r8) :: negchan
-    logical, save :: first_call = .true.
-
-    if (first_call) then
-       sinatanSLOPE1defr = 1.0_r8/(sin(atan(SLOPE1def)))
-    endif
-    first_call = .false.
 
     !------------------
     ! hillslope
@@ -74,8 +68,18 @@ MODULE MOSART_physics_mod
     call t_stopf('mosart_hillslope')
 
     TRunoff%flow = 0._r8
+    TRunoff%erout_prev = 0._r8
+    TRunoff%eroutup_avg = 0._r8
+    TRunoff%erlat_avg = 0._r8
     negchan = 9999.0_r8
     do m=1,Tctl%DLevelH2R
+
+       !--- accumulate/average erout at prior timestep (used in eroutUp calc) for budget analysis
+       do nt=1,nt_rtm
+       do iunit=rtmCTL%begr,rtmCTL%endr
+          TRunoff%erout_prev(iunit,nt) = TRunoff%erout_prev(iunit,nt) + TRunoff%erout(iunit,nt)
+       enddo
+       enddo
 
        !------------------
        ! subnetwork
@@ -110,7 +114,7 @@ MODULE MOSART_physics_mod
        endif
 
        call t_startf('mosart_SMeroutUp')    
-       Trunoff%eroutUp = 0._r8
+       TRunoff%eroutUp = 0._r8
 #ifdef NO_MCT
        do iunit=rtmCTL%begr,rtmCTL%endr
        do k=1,TUnit%nUp(iunit)
@@ -122,27 +126,31 @@ MODULE MOSART_physics_mod
        end do
 #else
        !--- copy erout into avsrc_eroutUp ---
+       call mct_avect_zero(avsrc_eroutUp)
        cnt = 0
        do iunit = rtmCTL%begr,rtmCTL%endr
           cnt = cnt + 1
           do nt = 1,nt_rtm
-             avsrc_eroutUp%rAttr(nt,cnt) = Trunoff%erout(iunit,nt)
+             avsrc_eroutUp%rAttr(nt,cnt) = TRunoff%erout(iunit,nt)
           enddo
        enddo
        call mct_avect_zero(avdst_eroutUp)
 
        call mct_sMat_avMult(avsrc_eroutUp, sMatP_eroutUp, avdst_eroutUp)
 
-       !--- add mapped eroutUp to Trunoff ---
+       !--- add mapped eroutUp to TRunoff ---
        cnt = 0
        do iunit = rtmCTL%begr,rtmCTL%endr
           cnt = cnt + 1
           do nt = 1,nt_rtm
-             Trunoff%eroutUp(iunit,nt) = avdst_eroutUp%rAttr(nt,cnt)
+             TRunoff%eroutUp(iunit,nt) = avdst_eroutUp%rAttr(nt,cnt)
           enddo
        enddo
 #endif
        call t_stopf('mosart_SMeroutUp')    
+
+       TRunoff%eroutup_avg = TRunoff%eroutup_avg + TRunoff%eroutUp
+       TRunoff%erlat_avg   = TRunoff%erlat_avg   + TRunoff%erlateral
 
        !------------------
        ! channel routing
@@ -171,7 +179,7 @@ MODULE MOSART_physics_mod
           endif
        end do
        end do
-       negchan = min(negchan, minval(Trunoff%wr(:,:)))
+       negchan = min(negchan, minval(TRunoff%wr(:,:)))
 
        call t_stopf('mosart_chanroute')    
     end do
@@ -182,6 +190,9 @@ MODULE MOSART_physics_mod
 !       call shr_sys_abort('mosart: negative channel storage')
     endif
     TRunoff%flow = TRunoff%flow / Tctl%DLevelH2R
+    TRunoff%erout_prev = TRunoff%erout_prev / Tctl%DLevelH2R
+    TRunoff%eroutup_avg = TRunoff%eroutup_avg / Tctl%DLevelH2R
+    TRunoff%erlat_avg = TRunoff%erlat_avg / Tctl%DLevelH2R
 
   end subroutine Euler
 
@@ -200,16 +211,7 @@ MODULE MOSART_physics_mod
        TRunoff%wh(iunit,nt) + (TRunoff%qsur(iunit,nt) + TRunoff%ehout(iunit,nt)) * theDeltaT < TINYVALUE) then
        TRunoff%ehout(iunit,nt) = -(TRunoff%qsur(iunit,nt) + TRunoff%wh(iunit,nt) / theDeltaT)  
     end if
-    TRunoff%dwh(iunit,nt) = (TRunoff%qsur(iunit,nt) + TRunoff%ehout(iunit,nt)) !* TUnit%area(iunit) * TUnit%frac(iunit)
-    TRunoff%etin(iunit,nt) = (-TRunoff%ehout(iunit,nt) + TRunoff%qsub(iunit,nt)) * TUnit%area(iunit) * TUnit%frac(iunit)
-    !if(TRunoff%etin(iunit,1) < 0) then
-    !   call hillslopeRouting(iunit, Tctl%DeltaT)
-    !end if
-
-! check stability
-!    if(TRunoff%yh(iunit,nt) < -TINYVALUE .or. TRunoff%yh(iunit,nt) > 10) then
-!       write(iulog,*) "Numerical error in hillslopeRouting, ", iunit,nt,TRunoff%yh(iunit,nt)
-!    end if
+    TRunoff%dwh(iunit,nt) = (TRunoff%qsur(iunit,nt) + TRunoff%ehout(iunit,nt)) 
 
   end subroutine hillslopeRouting
 
@@ -239,7 +241,7 @@ MODULE MOSART_physics_mod
 
 ! check stability
 !    if(TRunoff%vt(iunit,nt) < -TINYVALUE .or. TRunoff%vt(iunit,nt) > 30) then
-!       write(iulog,*) "Numerical error in subnetworkRouting, ", iunit,nt,Trunoff%vt(iunit,nt)
+!       write(iulog,*) "Numerical error in subnetworkRouting, ", iunit,nt,TRunoff%vt(iunit,nt)
 !    end if
 
   end subroutine subnetworkRouting
@@ -281,11 +283,11 @@ MODULE MOSART_physics_mod
     TRunoff%erin(iunit,nt) = 0._r8
 
 ! tcraig, moved this out of the inner main channel loop to before main channel call
-! now it's precomputed as Trunoff%eroutUp
+! now it's precomputed as TRunoff%eroutUp
 !    do k=1,TUnit%nUp(iunit)
 !       TRunoff%erin(iunit,nt) = TRunoff%erin(iunit,nt) - TRunoff%erout(TUnit%iUp(iunit,k),nt)
 !    end do
-    TRunoff%erin(iunit,nt) = TRunoff%erin(iunit,nt) - Trunoff%eroutUp(iunit,nt)
+    TRunoff%erin(iunit,nt) = TRunoff%erin(iunit,nt) - TRunoff%eroutUp(iunit,nt)
 
     ! estimate the outflow
     if(TUnit%rlen(iunit) <= 0._r8) then ! no river network, no channel routing
@@ -311,9 +313,13 @@ MODULE MOSART_physics_mod
     temp_gwl = TRunoff%qgwl(iunit,nt) * TUnit%area(iunit) * TUnit%frac(iunit)
     temp_gwl0 = temp_gwl
     if(abs(temp_gwl) <= TINYVALUE) then
+!       write(iulog,*) 'mosart: ERROR dropping temp_gwl too small'
+!       call shr_sys_abort('mosart: ERROR temp_gwl too small')
        temp_gwl = 0._r8
     end if 
     if(temp_gwl < -TINYVALUE) then 
+       write(iulog,*) 'mosart: ERROR temp_gwl negative',iunit,nt,TRunoff%qgwl(iunit,nt)
+       call shr_sys_abort('mosart: ERROR temp_gwl negative ')
        if(TRunoff%wr(iunit,nt) < TINYVALUE) then
           temp_gwl = 0._r8
        else 
@@ -328,7 +334,7 @@ MODULE MOSART_physics_mod
 
 ! check for stability
 !    if(TRunoff%vr(iunit,nt) < -TINYVALUE .or. TRunoff%vr(iunit,nt) > 30) then
-!       write(iulog,*) "Numerical error inRouting_KW, ", iunit,nt,Trunoff%vr(iunit,nt)
+!       write(iulog,*) "Numerical error inRouting_KW, ", iunit,nt,TRunoff%vr(iunit,nt)
 !    end if
 
 ! check for negative wr
@@ -615,8 +621,13 @@ MODULE MOSART_physics_mod
     
     real(r8) :: SLOPE1  ! slope of flood plain, TO DO
     real(r8) :: deltahr_
+    logical, save :: first_call = .true.
 
     SLOPE1 = SLOPE1def
+    if (first_call) then
+       sinatanSLOPE1defr = 1.0_r8/(sin(atan(SLOPE1def)))
+    endif
+    first_call = .false.
 
     if(hr_ < TINYVALUE) then
        pr_ = 0._r8
