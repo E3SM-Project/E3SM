@@ -280,12 +280,12 @@ if (! $clean ) {
 	$logger->info("Creating batch script case.st_archive");
 	$batchmaker->overrideNodeCount(1);
 	$batchmaker->set({job=>'st_archive'});
-	$batchmaker->makeBatchScript("$xmlvars{'MACHDIR'}/template.starchive", "$xmlvars{'CASEROOT'}/case.st_archive");
+	$batchmaker->makeBatchScript("$xmlvars{'MACHDIR'}/template.st_archive", "$xmlvars{'CASEROOT'}/case.st_archive");
 
 	$logger->info("Creating batch script case.lt_archive");
 	$batchmaker->overrideNodeCount(1);
 	$batchmaker->set({job=>'lt_archive'});
-	$batchmaker->makeBatchScript("$xmlvars{'MACHDIR'}/template.ltarchive", "$xmlvars{'CASEROOT'}/case.lt_archive");
+	$batchmaker->makeBatchScript("$xmlvars{'MACHDIR'}/template.lt_archive", "$xmlvars{'CASEROOT'}/case.lt_archive");
 	
 	# Make a copy of env_mach_pes.xml in order to be able 
 	# to check that it does not change once case.setup is invoked

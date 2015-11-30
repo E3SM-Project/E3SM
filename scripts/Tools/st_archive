@@ -161,7 +161,7 @@ THAT ARE INCLUDED IN THE ENV_RUN.XML FILE
     archive files. The st_archive creates an archive locked directory
     (ARCHIVE_DIR_LOCKED) using the basename of the DOUT_S_ROOT location.
 
-    DOUT_S_SAVE_ALL_ON_DISK - [boolean] If set to TRUE (default), then
+    DOUT_S_CREATE_LINKED_ARCHIVE - [boolean] If set to TRUE (default), then
     the st_archive creates an archive linked directory
     (\$ARCHIVE_DIR_LINKED) using the basename of the \$DOUT_S_ROOT
     location.  The \$ARCHIVE_DIR_LOCKED and \$ARCHIVE_DIR_LINKED
@@ -188,32 +188,24 @@ THAT ARE INCLUDED IN THE ENV_RUN.XML FILE
     run. This is for expert users ONLY and requires expert
     knowledge. We will not document this further in this guide.
 
-    DOUT_S_SAVE_EVERY_NTH_RESTART_FILE_SET - [integer] If value is
-    greater than 0 (default), then only save the nth restart set in
-    the \$DOUT_S_ROOT/rest location. Always preserve the most recent
-    restart set regardless.
-
 USAGE
     st_archive [options]
 
 OPTIONS
-    -help [or -h] Print usage to STDOUT.
+    -help|-h     Print usage to STDOUT.
 
-    -input List out the contents of the env_archive.xml datafile in a
-           friendly format and check the env_archive.xml file for
-           validity.
+    -input|-in   List out the contents of the env_archive.xml datafile in a
+                 friendly format and check the env_archive.xml file for
+                 validity.
 
-    -output List out the contents of the archive directory.
+    -output|-out List out the contents of the archive directory.
 
-    -clean Create / update hardlinks in both the \$ARCHIVE_DIR_LOCKED
-           and \$ARCHIVE_DIR_LINKED for duplicate files.
+    -link        Create / update the hardlinks from the \$ARCHIVE_DIR_LINKED
+                 to the \$ARCHIVE_DIR_LOCKED.
 
-    -link Create / update the hardlinks from the \$ARCHIVE_DIR_LINKED
-          to the \$ARCHIVE_DIR_LOCKED.
+    -undo        move all the files from the \$ARCHIVE_DIR_LOCKED back into the \$RUNDIR
 
-    -undo move all the files from the \$ARCHIVE_DIR_LOCKED back into the \$RUNDIR
-
-    -loglevel - set level of output from this script DEBUG, INFO, WARN, ERROR, FATAL (default INFO)
+    -loglevel    set level of output from this script DEBUG, INFO, WARN, ERROR, FATAL (default INFO)
 
 EOF
 #" added per for emacs perl mode parsing
@@ -232,7 +224,6 @@ sub getOptions
 	"h|help"        => \$opts{'help'},
         "in|input"      => \$opts{'input'}, 	
         "out|output"    => \$opts{'output'}, 	
-        "clean"         => \$opts{'clean'}, 	
         "link"          => \$opts{'link'}, 	
 	"undo"          => \$opts{'undo'},
 	"loglevel"     => \$opts{loglevel}
@@ -282,7 +273,7 @@ and the short term st_archive is active.
 A parallel directory located in DOUT_S_ROOT is available for *READ ONLY* 
 operations on CESM model output files. The short term archiver (st_archive)
 automatically creates and populates this directory with hard linked filenames 
-when the environment variable DOUT_S_SAVE_ALL_ON_DISK is set to TRUE. Users 
+when the environment variable DOUT_S_CREATE_LINKED_ARCHIVE is set to TRUE. Users 
 may run diagnostics and post-processing routines in this location while
 the model is running and st_archive is also running. However,
 be aware that the file names in this directory may not change but
@@ -317,10 +308,6 @@ EOD
 	    }
 	}
 	close( $CASESTATUS );
-    }
-    if( !defined $config{'DOUT_S_SAVE_EVERY_NTH_RESTART_FILE_SET'} || uc($config{'DOUT_S_SAVE_EVERY_NTH_RESTART_FILE_SET'}) eq 'UNSET' )
-    {
-	$config{'DOUT_S_SAVE_EVERY_NTH_RESTART_FILE_SET'} = 0;
     }
 
     return $runComplete;
@@ -541,7 +528,7 @@ sub processHardlinks
 This directory is available for *READ ONLY* operations on CESM model 
 output files that have been written by the short term archiver (st_archive). 
 This directory is automatically created and populated with hard linked 
-filenames when the environment variable DOUT_S_SAVE_ALL_ON_DISK is set to TRUE. 
+filenames when the environment variable DOUT_S_CREATE_LINKED_ARCHIVE is set to TRUE. 
 Users may run diagnostics and post-processing routines in this location while
 the model is running and st_archive is also running.
 
@@ -566,8 +553,7 @@ EOD
 
 #-----------------------------------------------------------------------------------------------
 # undoArchive routine loops through the ARCHIVE_DIR_LOCKED getting the list of archived files
-# and unlinks the corresponding file in the ARCHIVE_DIR_LINKED and then moves the file back
-# into the RUNDIR
+# and then moves the file back into the RUNDIR. This has no affect on the ARCHIVE_DIR_LINKED files.
 #-----------------------------------------------------------------------------------------------
 sub undoArchive
 {
@@ -661,7 +647,7 @@ sub moveFiles
     }
 # 
 # also get the file that matches the dname for this suffix and
-# add a hardlink to the restdir
+# copy to the restdir for a complete restart set
 #
     my @restFiles = grep(/${dname}/, @files);
     if( $#restFiles == 0 ) {
@@ -669,7 +655,7 @@ sub moveFiles
 	if ( $#path >= 0 ) {
 	    $restFile = $path[$#path];
 	    if ( -f $dest . "/" . $restFile ) {
-		link ( $dest . "/" . $restFile, $restdir . "/" . $restFile );
+		copy( $dest . "/" . $restFile, $restdir . "/" . $restFile );
 	    }
 	}
     }
@@ -809,49 +795,6 @@ sub getRestartDirs
 }
 
 #-----------------------------------------------------------------------------------------------
-# short term archive clean - checks the DOUT_S_SAVE_EVERY_NTH_RESTART_FILE_SET option and deletes all 
-# restart sets that are not either the Nth set or the last set.
-#-----------------------------------------------------------------------------------------------
-sub cleanArchive
-{
-    my ($i, $j) = 0;
-    my @indeces;
-    my $linkeddir;
-
-    $logger->debug("In cleanArchive..."); 
-
-    my @sorteddirs = getRestartDirs();
-    my $numsubdirs = @sorteddirs;
-
-# this code may no longer be needed with the new DART loop in the run script...
-    if( $config{'DOUT_S_SAVE_EVERY_NTH_RESTART_FILE_SET'} > 1 ) 
-    {
-# save every nth restart file set
-	for( $i = 0; $i < $numsubdirs; $i += $config{'DOUT_S_SAVE_EVERY_NTH_RESTART_FILE_SET'} )
-	{
-	    push( @indeces, $i );
-	}
-	
-	for my $index (0 .. $#indeces-1) 
-	{
-	    my $start = $index;
-	    my $end = $indeces[$index+1];
-	    for( $j = $start+1; $j < $end; $j++ ) 
-	    {
-# remove the restart directory - this deletes the rpointer files but not the component intermediate restart files
-		rmtree $sorteddirs[$j];
-# do the same for the archive dir
-		if( $config{'DOUT_S_SAVE_ALL_ON_DISK'} eq 'TRUE' ) {
-		    $linkeddir = $sorteddirs[$j];
-		    $linkeddir =~ s/\.locked//;
-                    rmtree $linkeddir;
-		}
-	    }
-	}
-    }
-}
-
-#-----------------------------------------------------------------------------------------------
 # Main program
 #-----------------------------------------------------------------------------------------------
 sub main
@@ -879,15 +822,6 @@ sub main
 	$dname  = getDname();
 	$logger->info("Short-term archive listing of $config{'ARCHIVE_DIR_LOCKED'}:");
 	listArchive( $config{'ARCHIVE_DIR_LOCKED'} );
-    }
-    elsif( defined $opts{'clean'} && $runComplete )
-    {
-#
-# clean up the archive directory and check if need to delete
-# the nth occurance of restart sets
-#
-	$dname  = getDname();
-	cleanArchive();
     }
     elsif( defined $opts{'link'} && $runComplete )
     {
@@ -918,13 +852,8 @@ sub main
 
 # run the short term archive process
 	archiveProcess( $XMLin, $dname, \@runfiles );
-#
-# clean up the archive directory and check if need to delete
-# the nth occurance of restart sets
-#
-	cleanArchive();
 
-	if( $config{'DOUT_S_SAVE_ALL_ON_DISK'} eq 'TRUE' ) {
+	if( $config{'DOUT_S_CREATE_LINKED_ARCHIVE'} eq 'TRUE' ) {
 #
 # create the hard links in the ARCHIVE_DIR_LINKED directory
 #

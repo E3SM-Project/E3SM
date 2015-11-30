@@ -182,24 +182,14 @@ if [ "$mode" == "copy_dirs_hsi" ]; then
 	exit -1
     fi
 
-    # Long-term archiver for HPSS (Trey White, December 6, 2011)
     date
 
-    if [ ! $?DOUT_L_HPSS_ACCNT ]; then
-	DOUT_L_HPSS_ACCNT=0
-    fi
-
-    # check if files on st_archive should be saved or not
-    saveFlag="-dPR"
-    if [ $DOUT_L_SAVE_ALL_ON_DISK == "TRUE" ] ; then
-	saveFlag="-PR"
-    fi
-
-    # send files to HPSS and delete upon success
+    # send files to HPSS
+    saveFlag="-PR"
     cd $DOUT_S_ROOT
     hsiArgs="mkdir -p $DOUT_L_MSROOT ; chmod +t $DOUT_L_MSROOT ; cd $DOUT_L_MSROOT ; put $saveFlag *"
     # echo $hsiArgs
-    if [ $DOUT_L_HPSS_ACCNT -gt 0 ]; then
+    if ! [[ "$DOUT_L_HPSS_ACCNT" =~ "0000*" ]]; then  
 	hsi -a $DOUT_L_HPSS_ACCNT "$hsiArgs"
     else
 	hsi "$hsiArgs"
@@ -317,8 +307,6 @@ if [ "$mode" == "copy_dirs_local" ]; then
 			rm -f ${file}
 		    else
 			echo "local file and long-term archive file are NOT the same size... ${file} will remain on local disk"
-			#exit -1 #??? ask francis if this is right 
-                        # Not sure what to do here... maybe make the log entry and carry on...
 		    fi
 		fi
 	    done # for file
