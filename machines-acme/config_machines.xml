@@ -691,6 +691,7 @@
          <OS>LINUX</OS>
          <COMPILERS>pgi,intel</COMPILERS>
          <MPILIBS>mpich</MPILIBS>
+	 <NODENAME_REGEX>constance</NODENAME_REGEX>
          <RUNDIR>/pic/scratch/$CCSMUSER/csmruns/$CASE/run</RUNDIR>
          <EXEROOT>/pic/scratch/$CCSMUSER/csmruns/$CASE/bld</EXEROOT>
          <CESMSCRATCHROOT>/pic/scratch/$USER</CESMSCRATCHROOT>
