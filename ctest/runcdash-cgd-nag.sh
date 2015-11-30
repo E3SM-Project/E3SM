@@ -9,7 +9,7 @@ fi
 
 module purge
 module load compiler/nag/6.0
-module load  tool/parallel-netcdf/1.6.1/nag/openmpi
+module load tool/parallel-netcdf/1.6.1/nag/openmpi
 
 export CC=mpicc
 export FC=mpif90

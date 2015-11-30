@@ -230,7 +230,7 @@ struct examplePioClass* epc_init( struct examplePioClass* this )
 
     if (this->verbose) {
 	printf("rank: %d length: %d [", this->myRank, this->arrIdxPerPe);
-	for (int i = 0; i < this->arrIdxPerPe; i++ ) {
+	for (i = 0; i < this->arrIdxPerPe; i++ ) {
 	    printf("%d", this->compdof[i]);
 	    if (i < this->arrIdxPerPe - 1)
 		printf(", ");
@@ -406,7 +406,7 @@ struct examplePioClass* epc_readVar( struct examplePioClass* this )
                      (PIO_Offset)this->arrIdxPerPe, this->readBuffer);
 
     /* Check that we got back the data we expected. */
-    for (int i = 0; i < this->arrIdxPerPe; i++)
+    for (i = 0; i < this->arrIdxPerPe; i++)
 	if (this->readBuffer[i] != this->dataBuffer[i])
 	    this->errorHandler(this, "The data was not what was expected!", ERR_CODE);
     if (this->verbose)
