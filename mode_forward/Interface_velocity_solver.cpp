@@ -307,7 +307,7 @@ void velocity_solver_init_fo(double const *levelsRatio_F) {
   initialize_velocity = false;
 }
 
-void velocity_solver_solve_fo(double const* lowerSurface_F,
+void velocity_solver_solve_fo(double const* bedTopography_F, double const* lowerSurface_F,
     double const* thickness_F, double const* beta_F, double const* smb_F, double const* temperature_F,
     double* const dirichletVelocityXValue, double* const dirichletVelocitYValue,
     double* u_normal_F, double* xVelocityOnCell, double* yVelocityOnCell, double const* deltat) {
@@ -352,7 +352,7 @@ void velocity_solver_solve_fo(double const* lowerSurface_F,
 
 
 
-    import2DFields(lowerSurface_F, thickness_F, beta_F, smb_F,  minThickness);
+    import2DFields(bedTopography_F, lowerSurface_F, thickness_F, beta_F, smb_F,  minThickness);
 
     std::vector<double> regulThk(thicknessData);
     for (int index = 0; index < nVertices; index++)
@@ -1308,7 +1308,7 @@ void extendMaskByOneLayer(int const* verticesMask_F,
   }
 }
 
-void import2DFields(double const * lowerSurface_F, double const * thickness_F,
+void import2DFields(double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
     double const * beta_F, double const * smb_F, double eps) {
   elevationData.assign(nVertices, 1e10);
   thicknessData.assign(nVertices, 1e10);
@@ -1324,8 +1324,8 @@ void import2DFields(double const * lowerSurface_F, double const * thickness_F,
   for (int index = 0; index < nVertices; index++) {
     int iCell = vertexToFCell[index];
     thicknessData[index] = std::max(thickness_F[iCell] / unit_length, eps);
-    bedTopographyData[index] = lowerSurface_F[iCell] / unit_length;
-    elevationData[index] = bedTopographyData[index] + thicknessData[index];
+    bedTopographyData[index] = bedTopography_F[iCell] / unit_length;
+    elevationData[index] = lowerSurface_F[iCell] / unit_length + thicknessData[index];
     if (beta_F != 0)
       betaData[index] = beta_F[iCell] / unit_length;
     if (smb_F != 0)
@@ -1374,8 +1374,8 @@ void import2DFields(double const * lowerSurface_F, double const * thickness_F,
     int iv = it->first;
     int ic = it->second;
     thicknessData[iv] = std::max(thickness_F[ic] / unit_length, eps);
-    bedTopographyData[iv] = lowerSurface_F[ic] / unit_length;
-    elevationData[iv] = thicknessData[iv] + bedTopographyData[iv];
+    bedTopographyData[iv] = bedTopography_F[ic] / unit_length;
+    elevationData[iv] = thicknessData[iv] + lowerSurface_F[ic] / unit_length;
     if (beta_F != 0)
       betaData[iv] = beta_F[ic] / unit_length;
     if (smb_F != 0)
