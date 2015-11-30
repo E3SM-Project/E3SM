@@ -1,8 +1,6 @@
+!> @file
+!! A simple Fortran example for the ParallelIO Library.
 module pioExample
-
-    ! 
-    ! simple example of using PIO with netcdf
-    !
 
     use pio, only : PIO_init, PIO_rearr_subset, iosystem_desc_t, file_desc_t
     use pio, only : PIO_finalize, PIO_noerr, PIO_iotype_netcdf, PIO_createfile
@@ -21,6 +19,9 @@ module pioExample
     integer, parameter :: VAL = 42  ! value used for array that will be written to netcdf file
     integer, parameter :: ERR_CODE = 99
 
+    !> @brief A class to hold example code and data.
+    !! This class contains the data and functions to execute the
+    !! example.
     type, public :: pioExampleClass
 
         integer :: myRank
@@ -64,6 +65,9 @@ module pioExample
 
 contains
 
+    !> @brief Initialize MPI, ParallelIO, and example data.
+    !! Initialize the MPI and ParallelIO libraries. Also allocate
+    !! memory to write and read the sample data to the netCDF file.
     subroutine init(this)
 
         implicit none
@@ -127,6 +131,9 @@ contains
 
     end subroutine init
 
+    !> @fn createDecomp
+    !! @brief Create the decomposition for the example.
+    !! This subroutine creates the decomposition for the example.
     subroutine createDecomp(this)
 
         implicit none
@@ -144,6 +151,8 @@ contains
 
     end subroutine createDecomp
 
+    !> @brief Create netCDF output file.
+    !! This subroutine creates the netCDF output file for the example.
     subroutine createFile(this)
 
         implicit none
@@ -157,6 +166,9 @@ contains
 
     end subroutine createFile
 
+    !> @brief Define the netCDF metadata.
+    !! This subroutine defines the netCDF dimension and variable used
+    !! in the output file.
     subroutine defineVar(this)
 
         implicit none
@@ -176,6 +188,9 @@ contains
 
     end subroutine defineVar
 
+    !> @brief Write the sample data to the output file.
+    !! This subroutine writes the sample data array to the netCDF
+    !! output file.
     subroutine writeVar(this)
 
     implicit none
@@ -190,6 +205,9 @@ contains
 
     end subroutine writeVar
 
+    !> @brief Read the sample data from the output file.
+    !! This subroutine reads the sample data array from the netCDF
+    !! output file.
     subroutine readVar(this)
 
         implicit none
@@ -203,6 +221,8 @@ contains
 
     end subroutine readVar
 
+    !> @brief Close the netCDF output file.
+    !! This subroutine closes the output file used by this example.
     subroutine closeFile(this)
 
         implicit none
@@ -213,6 +233,10 @@ contains
 
     end subroutine closeFile
 
+    !> @brief Clean up resources.
+    !! This subroutine cleans up resources used in the example. The
+    !! ParallelIO and MPI libraries are finalized, and memory
+    !! allocated in this example program is freed.
     subroutine cleanUp(this)
 
         implicit none
@@ -231,6 +255,8 @@ contains
 
     end subroutine cleanUp
 
+    !> @brief Handle errors.
+    !! This subroutine is called if there is an error.
     subroutine errorHandle(this, errMsg, retVal)
 
         implicit none
@@ -249,6 +275,22 @@ contains
 
 end module pioExample
 
+!> @brief Main execution of example code.
+!! This is an example program for the ParallelIO library.
+!!
+!! This program creates a netCDF output file with the ParallelIO
+!! library, then writes and reads some data to and from the file.
+!!
+!! This example does the following:
+!!
+!! - initialization initializes the MPI library, initializes the
+!!   ParallelIO library with ::PIO_int(). Then allocate memory for a
+!!   data array of sample data to write, and an array to read the data
+!!   back into. Also allocate an array to hold decomposition
+!!   information.
+!!
+!! - creation of decomposition by calling ::PIO_initdecomp().
+!!
 program main
 
     use pioExample, only : pioExampleClass

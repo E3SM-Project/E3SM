@@ -174,6 +174,12 @@ struct examplePioClass* epc_init( struct examplePioClass* this )
     ierr = MPI_Init(NULL, NULL);
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &this->myRank);
     ierr = MPI_Comm_size(MPI_COMM_WORLD, &this->ntasks);
+
+    /* Check that a valid number of processors was specified. */
+    if (!(this->ntasks == 1 || this->ntasks == 2 || this->ntasks == 4 ||
+	  this->ntasks == 8 || this->ntasks == 16))
+	this->errorHandler(this, "Number of processors must be 1, 2, 4, 8, or 16!",
+			   ERR_CODE);
     
     /*
     ** set up PIO for rest of example
