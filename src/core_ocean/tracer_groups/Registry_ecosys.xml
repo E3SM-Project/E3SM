@@ -414,7 +414,7 @@
 
 	        <var_struct name="ecosysSeaIceCoupling" time_levs="1" packages="ecosysTracersPKG">
                         <var name="oceanSurfacePhytoC" type="real" dimensions="R3 nCells Time" units="mmolC m^{-3}"
-                                 description="Ocean Surface phytoplankton carbon concentration: (1,2,3)=>(diat,sp,phaeo)"
+                                 description="Ocean Surface phytoplankton carbon concentration: (1,2,3) corresponds to (diat,sp,phaeo)"
                         />
                         <var name="oceanSurfaceDIC" type="real" dimensions="nCells Time" units="mmolC m^{-3}"
                                  description="Ocean Surface DIC concentration"
@@ -438,7 +438,7 @@
                                  description="Ocean Surface dissolved bioavailable Fe concentration"
                         />
                         <var name="iceFluxPhytoC" type="real" dimensions="R3 nCells Time" units="mmolC m^{-2} s"
-                                 description="Surface phytoplankton carbon flux from sea ice: (1,2,3)=>(diat,sp,phaeo)"
+                                 description="Surface phytoplankton carbon flux from sea ice: (1,2,3) corresponds to (diat,sp,phaeo)"
                         />
                         <var name="iceFluxDIC" type="real" dimensions="nCells Time" units="mmolC m^{-2} s"
                                  description="Surface DIC flux from sea ice"

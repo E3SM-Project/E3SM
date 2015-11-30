@@ -315,16 +315,16 @@
 		<var name="numTimesReset" type ="integer" dimensions="nParticles Time" units="unitless"
 			 description="flag to specify how many times the particle was reset" default_value="0"
 		/>
-		<var name="vertexReconstMethod" type="integer" dimensions="nParticles Time", units="unitless"
+		<var name="vertexReconstMethod" type="integer" dimensions="nParticles Time" units="unitless"
 			 description="type of vertex reconstruction method, with possible_values='RBFlinear(1)' as ENUMs"
 		/>
-		<var name="timeIntegration" type="integer" dimensions="nParticles Time", units="unitless"
+		<var name="timeIntegration" type="integer" dimensions="nParticles Time" units="unitless"
 			 description="type of temporal interpolation with possible_values='EE(1), RK2(2), RK4(4)' as ENUMs"
 		/>
-		<var name="horizontalTreatment" type="integer" dimensions="nParticles Time", units="unitless"
+		<var name="horizontalTreatment" type="integer" dimensions="nParticles Time" units="unitless"
 			 description="select type of horizontal treatment to be used, with possible_values='wachspress' as ENUMs"
 		/>
-		<var name="verticalTreatment" type="integer" dimensions="nParticles Time", units="unitless"
+		<var name="verticalTreatment" type="integer" dimensions="nParticles Time" units="unitless"
 			 description="select type of vertical treatment to be used, with possible_values='indexLevel','fixedZLevel','passiveFloat','buoyancySurface','argoFloat' (ENUM)"
 		/>
 		<var name="indexLevel" type="integer" dimensions="nParticles Time" units="unitless"
