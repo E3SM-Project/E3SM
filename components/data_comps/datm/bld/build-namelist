@@ -417,7 +417,9 @@ if ($DATM_PRESAERO ne "none") {
     } else {
 	push (@streams, "presaero.$DATM_PRESAERO");
     }
-}
+ }
+# TODO(wjs, 2015-11-30) Put this in a conditional, as is done for the presaero stream
+push (@streams, "topo.observed");
 
 if ($DATM_CO2_TSERIES ne "none") {
     push (@streams, "co2tseries.$DATM_CO2_TSERIES");
