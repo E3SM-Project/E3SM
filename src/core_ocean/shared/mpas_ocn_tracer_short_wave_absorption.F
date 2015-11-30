@@ -106,8 +106,8 @@ contains
 !done on this branch.
 
       err = 0
-	  if(useJerlov) then
-                  call ocn_tracer_short_wave_absorption_jerlov_tend(meshPool, forcingPool, index_temperature, layerThickness, penetrativeTemperatureFlux, tend, err)
+      if(useJerlov) then
+         call ocn_tracer_short_wave_absorption_jerlov_tend(meshPool, forcingPool, index_temperature, layerThickness, penetrativeTemperatureFlux, tend, err)
       else
          call ocn_tracer_short_wave_absorption_variable_tend(meshPool,swForcingPool, forcingPool, index_temperature, layerThickness, penetrativeTemperatureFlux,tend,err)
       endif
