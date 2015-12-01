@@ -48,7 +48,8 @@ module li_thermal
    !--------------------------------------------------------------------
 
    public :: li_thermal_init, li_thermal_solver, &
-             li_heat_dissipation_sia, li_basal_friction_sia
+             li_heat_dissipation_sia, li_basal_friction_sia,  &
+             li_temperature_to_enthalpy, li_enthalpy_to_temperature
 
    !--------------------------------------------------------------------
    !
@@ -131,9 +132,10 @@ module li_thermal
       integer, pointer :: &
            config_stats_cell_ID             ! cell ID for diagnostic output
 
-      integer, pointer :: &
-           index_temperature,  &
-           index_waterfrac
+      integer, pointer :: &            
+           index_temperature,  &       ! indices of the tracers in the thermal pool
+           index_waterfrac,    &
+           index_enthalpy
 
       integer, pointer :: &
            nCellsSolve,              & ! number of locally owned cells
@@ -161,15 +163,13 @@ module li_thermal
       real (kind=RKIND), dimension(:), pointer :: &
            basalHeatFlux               ! basal heat flux into the ice (W m^{-2}, positive upward)
 
-      ! Note: The following fields are needed for halo updates
-      ! TODO - Are halo updates needed at initialization?
+      ! The following fields are needed for halo updates
+
       type (field1DReal), pointer :: &
            surfaceTemperatureField,  &
            basalTemperatureField
 
-      type (field2DReal), pointer :: &
-           temperatureField,  &
-           waterfracField
+      type (field3DReal), pointer :: tracersField
 
       real (kind=RKIND), dimension(:), allocatable :: &
            pmptemp                     ! pressure melting point temp in ice interior
@@ -238,26 +238,26 @@ module li_thermal
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(thermalPool, 'index_temperature', index_temperature)
          call mpas_pool_get_dimension(thermalPool, 'index_waterfrac', index_waterfrac)
+         call mpas_pool_get_dimension(thermalPool, 'index_enthalpy', index_enthalpy)
 
-         ! get fields from the mesh pool
+         ! get arrays from the mesh pool
          call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
          call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
 
-         ! get fields from the geometry pool
+         ! get arrays from the geometry pool
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
 
-         ! get fields from the thermal pool
+         ! get arrays from the thermal pool
          call mpas_pool_get_array(thermalPool, 'tracers', tracers)
-!         call mpas_pool_get_array(thermalPool, 'temperature', temperature)
-!         call mpas_pool_get_array(thermalPool, 'waterfrac',   waterfrac)
          call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature', surfaceTemperature)
          call mpas_pool_get_array(thermalPool, 'basalTemperature',   basalTemperature)
          call mpas_pool_get_array(thermalPool, 'basalHeatFlux', basalHeatFlux)
 
-         !TODO - Is there a better way to access the temperature and waterfrac arrays?
+         !TODO - Modify to avoid strides?
          temperature => tracers(index_temperature,:,:)
          waterfrac => tracers(index_waterfrac,:,:)
+         enthalpy => tracers(index_enthalpy,:,:)
 
          if (config_print_thermal_info) then
             write(stderrUnit,*) 'Initialize thermal solver, config_temperature_init = ', trim(config_temperature_init)
@@ -502,20 +502,17 @@ module li_thermal
 
       ! halo updates
       call mpas_timer_start("halo updates")
+
       call mpas_pool_get_field(thermalPool, 'surfaceTemperature', surfaceTemperatureField)
       call mpas_dmpar_exch_halo_field(surfaceTemperatureField)
 
       call mpas_pool_get_field(thermalPool, 'basalTemperature', basalTemperatureField)
       call mpas_dmpar_exch_halo_field(basalTemperatureField)
 
-      !TODO - Halo updates for components of the tracer array
-!!      call mpas_pool_get_field(thermalPool, 'temperature', temperatureField)
-!!      call mpas_dmpar_exch_halo_field(temperatureField)
+      ! tracersField includes temperature, waterfrac and enthalpy
+      call mpas_pool_get_field(thermalPool, 'tracers', tracersField)
+      call mpas_dmpar_exch_halo_field(tracersField)
 
-      if (trim(config_thermal_solver) == 'enthalpy') then
-!!         call mpas_pool_get_field(thermalPool, 'waterfrac', waterfracField)
-!!         call mpas_dmpar_exch_halo_field(waterfracField)
-      endif
       call mpas_timer_stop("halo updates")
 
       ! === error check
@@ -577,7 +574,7 @@ module li_thermal
            nVertLevels                 ! number of vertical layers
 
       integer, pointer :: &
-           index_temperature,  &
+           index_temperature,  &       ! indices of the tracers in the thermal pool 
            index_waterfrac,  &
            index_enthalpy
 
@@ -635,15 +632,13 @@ module li_thermal
            enthalpy,                 & ! interior ice enthalpy (J m^{-3})
            heatDissipation             ! interior heat dissipation (deg/s)
 
-      ! Note: The following fields are needed for halo updates
+      ! The following fields are needed for halo updates
 
       type (field1DReal), pointer :: &
            surfaceTemperatureField,  &
            basalTemperatureField
 
-      type (field2DReal), pointer :: &
-           temperatureField,  &
-           waterfracField
+      type (field3DReal), pointer :: tracersField
 
       real(kind=RKIND), dimension(:), allocatable :: &
            subdiagonal, diagonal, superdiagonal,   &  ! tridiagonal matrix elements
@@ -711,10 +706,7 @@ module li_thermal
          call mpas_pool_get_array(geometryPool, 'basalWaterThickness', basalWaterThickness)
 
          ! get fields from the thermal pool
-         call mpas_pool_get_array(thermalPool, 'tracers', tracers)  !TODO - Can we get temperature, etc. directly?
-!         call mpas_pool_get_array(thermalPool, 'temperature', temperature)
-!         call mpas_pool_get_array(thermalPool, 'waterfrac',   waterfrac)
-!         call mpas_pool_get_array(thermalPool, 'enthalpy',    enthalpy)
+         call mpas_pool_get_array(thermalPool, 'tracers', tracers)
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature', surfaceTemperature)
          call mpas_pool_get_array(thermalPool, 'basalTemperature',   basalTemperature)
          call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
@@ -724,10 +716,10 @@ module li_thermal
          call mpas_pool_get_array(thermalPool, 'basalFrictionFlux', basalFrictionFlux)
          call mpas_pool_get_array(thermalPool, 'heatDissipation', heatDissipation)
 
-         !TODO - Is there a better way to access the temperature and waterfrac arrays?
+         !TODO - Modify to avoid strides?
          temperature => tracers(index_temperature,:,:)
-         waterfrac   => tracers(index_waterfrac,:,:)
-         enthalpy    => tracers(index_enthalpy,:,:)
+         waterfrac => tracers(index_waterfrac,:,:)
+         enthalpy => tracers(index_enthalpy,:,:)
 
          ! get fields from the scratch pool
          call mpas_pool_get_field(scratchPool, 'iceCellMask', thermalCellMaskField)
@@ -830,7 +822,7 @@ module li_thermal
 !!                        waterfrac(nVertLevels-1:nVertLevels,iCell) = 0.01d0
 !!                     endif
 
-                     call temperature_to_enthalpy(&
+                     call li_temperature_to_enthalpy(&
                           layerCenterSigma,      &
                           thickness(iCell),      &
                           temperature(:,iCell),  &
@@ -920,18 +912,18 @@ module li_thermal
                      surfaceConductiveFlux(iCell) = -diffusivity(1)/thickness(iCell) * denth_top/layerCenterSigma(1)
                      basalConductiveFlux(iCell) = -diffusivity(nVertLevels+1)/thickness(iCell) * denth_bot/(1.0_RKIND - layerCenterSigma(nVertLevels))
                                               
-                     ! convert enthalpy back to temperature and waterfrac
+                     ! convert enthalpy in ice interior back to temperature and waterfrac
 
-                     call enthalpy_to_temperature(&
+                     call li_enthalpy_to_temperature(&
                           layerCenterSigma,          &
                           thickness(iCell),          &
                           enthalpy(:,iCell),         &
-                          surfaceEnthalpy,           &
-                          basalEnthalpy,             &
                           temperature(:,iCell),      &
+                          waterfrac(:,iCell),        &
+                          surfaceEnthalpy,           &
                           surfaceTemperature(iCell), &
-                          basalTemperature(iCell),   &
-                          waterfrac(:,iCell))
+                          basalEnthalpy,             &
+                          basalTemperature(iCell))
 
                      if (verboseColumn) then
                         write(stderrUnit,*) ' '
@@ -1108,6 +1100,7 @@ module li_thermal
                   basalTemperature(iCell) = 0.0_RKIND
                   temperature(:,iCell) = 0.0_RKIND
                   waterfrac(:,iCell) = 0.0_RKIND
+                  enthalpy(:,iCell) = 0.0_RKIND
 
                endif   ! thickness > config_thermal_thickness
   
@@ -1230,21 +1223,20 @@ module li_thermal
       enddo   ! associated(block)
 
       ! halo updates
+      ! Note: This subroutine does not change the ice thickness, so no thickness update is needed.
+
       call mpas_timer_start("halo updates")
+
       call mpas_pool_get_field(thermalPool, 'surfaceTemperature', surfaceTemperatureField)
       call mpas_dmpar_exch_halo_field(surfaceTemperatureField)
 
       call mpas_pool_get_field(thermalPool, 'basalTemperature', basalTemperatureField)
       call mpas_dmpar_exch_halo_field(basalTemperatureField)
 
-      !TODO - Enable halo updates for components of the tracer array
-!!      call mpas_pool_get_field(thermalPool, 'temperature', temperatureField)
-!!      call mpas_dmpar_exch_halo_field(temperatureField)
+      ! tracersField includes temperature, waterfrac and enthalpy
+      call mpas_pool_get_field(thermalPool, 'tracers', tracersField)
+      call mpas_dmpar_exch_halo_field(tracersField)
 
-      if (trim(config_thermal_solver) == 'enthalpy') then
-!!         call mpas_pool_get_field(thermalPool, 'waterfrac', waterfracField)
-!!         call mpas_dmpar_exch_halo_field(waterfracField)
-      endif
       call mpas_timer_stop("halo updates")
 
       ! === error check
@@ -1629,6 +1621,209 @@ module li_thermal
 
   end subroutine li_basal_friction_sia
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine li_temperature_to_enthalpy
+!
+!> \brief MPAS convert temperature to enthalpy
+!> \author William Lipscomb
+!> \date   October 2015
+!> \details
+!>  This routine computes the enthalpy in each layer of an ice column,
+!>  given the temperature and water fraction.
+!-----------------------------------------------------------------------
+   
+    subroutine li_temperature_to_enthalpy(&
+         layerCenterSigma,  &
+         thickness,         &
+         temperature,       &
+         waterfrac,         &
+         enthalpy)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(in) :: &
+           layerCenterSigma      !< Input: sigma coordinate at midpoint of each layer
+
+      real (kind=RKIND), intent(in) ::  &
+           thickness             !< Input: ice thickness
+ 
+      real (kind=RKIND), dimension(:), intent(in) :: &
+           temperature,        & !< Input: interior ice temperature
+           waterfrac             !< Input: interior water fraction
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(out) :: &
+           enthalpy              !< Output:  interior ice enthalpy
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(size(layerCenterSigma)) :: &
+           pmpTemperature         ! pressure melting point temperature
+
+      integer :: k, nVertLevels
+
+      nVertLevels = size(layerCenterSigma)
+
+      ! Find pressure melting point temperature in column
+
+      call pressure_melting_point_column(&
+           layerCenterSigma,  &
+           thickness,         &
+           pmpTemperature)
+
+      ! Solve for enthalpy
+
+      do k = 1, nVertLevels
+         enthalpy(k) = (1.0_RKIND - waterfrac(k)) * rhoi * cp_ice * temperature(k)   &
+                      + waterfrac(k) * rho_water * (cp_ice * pmpTemperature(k) + latent_heat_ice)
+      end do
+
+    end subroutine li_temperature_to_enthalpy
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine li_enthalpy_to_temperature
+!
+!> \brief MPAS convert enthalpy to temperature
+!> \author William Lipscomb
+!> \date   October 2015
+!> \details
+!>  This routine computes the temperature and water fraction in each layer
+!>  of an ice column, given the enthalpy.
+!-----------------------------------------------------------------------
+
+    subroutine li_enthalpy_to_temperature(&
+         layerCenterSigma,   &
+         thickness,          &
+         enthalpy,           &
+         temperature,        &
+         waterfrac,          &
+         surfaceEnthalpy,    &
+         surfaceTemperature, &
+         basalEnthalpy,      &
+         basalTemperature)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(in) :: &
+           layerCenterSigma      !< Input: sigma coordinate at midpoint of each layer
+
+      real (kind=RKIND), intent(in) ::  &
+           thickness             !< Input: ice thickness
+ 
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(inout) :: &
+           enthalpy              !< Input/output: interior ice enthalpy
+
+      real (kind=RKIND), intent(inout) , optional :: &
+           surfaceEnthalpy,    & !< Input/output: surface ice enthalpy
+           basalEnthalpy         !< Input/output: basal ice enthalpy
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(out) :: &
+           temperature           !< Output: interior ice temperature
+
+      real (kind=RKIND), dimension(:), intent(out) :: &
+           waterfrac             !< Output: interior water fraction
+
+      real (kind=RKIND), intent(out), optional :: &
+           surfaceTemperature, & !< Output: surface ice temperature
+           basalTemperature      !< Output: basal ice temperature
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(size(layerCenterSigma)) :: pmpTemperature
+      real (kind=RKIND), dimension(size(layerCenterSigma)) :: pmpEnthalpy
+
+      real (kind=RKIND) :: pmpTemperatureBed
+      real (kind=RKIND) :: pmpEnthalpyBed
+
+      integer :: k, nVertLevels
+
+      nVertLevels = size(layerCenterSigma)
+
+      ! Find pressure melting point temperature in ice interior
+      call pressure_melting_point_column(&
+           layerCenterSigma,  &
+           thickness,         &
+           pmpTemperature)
+
+      ! find pressure melting point temperature at bed
+      call pressure_melting_point(&
+           thickness, &
+           pmpTemperatureBed)
+
+      ! Find pressure melting point enthalpy
+      pmpEnthalpy(:) = pmpTemperature(:) * rhoi*cp_ice
+      pmpEnthalpyBed = pmpTemperatureBed * rhoi*cp_ice
+
+      ! Solve for temperature and waterfrac in ice interior
+
+      ! ice interior
+
+      do k = 1, nVertLevels
+         if (enthalpy(k) >= pmpEnthalpy(k)) then   ! temperate ice
+            temperature(k) = pmpTemperature(k)
+            waterfrac(k) = (enthalpy(k) - pmpenthalpy(k)) /        &
+                          ((rho_water-rhoi)*cp_ice*pmpTemperature(k) + rho_water*latent_heat_ice)
+         else   ! cold ice
+            temperature(k) = enthalpy(k) / (rhoi*cp_ice)
+            waterfrac(k) = 0.0_RKIND
+         endif
+      enddo   ! k
+
+      ! surface temperature (optional)
+
+      if (present(surfaceEnthalpy) .and. present(surfaceTemperature)) then
+
+         if (surfaceEnthalpy >= 0.0_RKIND) then   ! temperate ice
+            surfaceTemperature = 0.0_RKIND
+            ! Reset surfaceEnthalpy to agree with the surface temperature.
+            ! This is consistent with energy conservation because the top surface
+            !  is infinitesimally thin.
+            surfaceEnthalpy = 0.0_RKIND
+         else   ! cold ice
+            surfaceTemperature = surfaceEnthalpy / (rhoi*cp_ice)
+         endif
+
+      endif
+
+      ! basal temperature (optional)
+      
+      if (present(basalEnthalpy) .and. present(basalTemperature)) then
+
+         k = nVertLevels + 1
+         if (basalEnthalpy >= pmpEnthalpyBed) then   ! temperate ice
+            basalTemperature = pmpTemperatureBed
+            ! Reset basalEnthalpy to agree with the surface temperature.
+            ! This is consistent with energy conservation because the lower surface
+            !  is infinitesimally thin.
+            basalEnthalpy = pmpEnthalpyBed
+         else   ! cold ice
+            basalTemperature = basalEnthalpy / (rhoi*cp_ice)
+         endif
+         
+      endif
+
+    end subroutine li_enthalpy_to_temperature
 
 !***********************************************************************
 !***********************************************************************
@@ -2458,202 +2653,6 @@ module li_thermal
       floatingBasalMassBal(:) = floatingBasalMassBal(:) * rhoi
       
     end subroutine basal_melt_floating_ice
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  !  routine temperature_to_enthalpy
-!
-!> \brief MPAS convert temperature to enthalpy
-!> \author William Lipscomb
-!> \date   October 2015
-!> \details
-!>  This routine computes the enthalpy in each layer of an ice column,
-!>  given the temperature and water fraction.
-!-----------------------------------------------------------------------
-   
-    subroutine temperature_to_enthalpy(&
-         layerCenterSigma,  &
-         thickness,         &
-         temperature,       &
-         waterfrac,         &
-         enthalpy)
-
-      !-----------------------------------------------------------------
-      ! input variables
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:), intent(in) :: &
-           layerCenterSigma      !< Input: sigma coordinate at midpoint of each layer
-
-      real (kind=RKIND), intent(in) ::  &
-           thickness             !< Input: ice thickness
- 
-      real (kind=RKIND), dimension(:), intent(in) :: &
-           temperature,        & !< Input: interior ice temperature
-           waterfrac             !< Input: interior water fraction
-
-      !-----------------------------------------------------------------
-      ! output variables
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:), intent(out) :: &
-           enthalpy              !< Output:  interior ice enthalpy
-
-      !-----------------------------------------------------------------
-      ! local variables
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(size(layerCenterSigma)) :: &
-           pmpTemperature         ! pressure melting point temperature
-
-      integer :: k, nVertLevels
-
-      nVertLevels = size(layerCenterSigma)
-
-      ! Find pressure melting point temperature in column
-
-      call pressure_melting_point_column(&
-           layerCenterSigma,  &
-           thickness,         &
-           pmpTemperature)
-
-      ! Solve for enthalpy
-
-      do k = 1, nVertLevels
-         enthalpy(k) = (1.0_RKIND - waterfrac(k)) * rhoi * cp_ice * temperature(k)   &
-                      + waterfrac(k) * rho_water * (cp_ice * pmpTemperature(k) + latent_heat_ice)
-      end do
-
-    end subroutine temperature_to_enthalpy
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  !  routine enthalpy_to_temperature
-!
-!> \brief MPAS convert enthalpy to temperature
-!> \author William Lipscomb
-!> \date   October 2015
-!> \details
-!>  This routine computes the temperature and water fraction in each layer
-!>  of an ice column, given the enthalpy.
-!-----------------------------------------------------------------------
-
-    subroutine enthalpy_to_temperature(&
-         layerCenterSigma,   &
-         thickness,          &
-         enthalpy,           &
-         surfaceEnthalpy,    &
-         basalEnthalpy,      &
-         temperature,        &
-         surfaceTemperature, &
-         basalTemperature,   &
-         waterfrac)
-
-      !-----------------------------------------------------------------
-      ! input variables
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:), intent(in) :: &
-           layerCenterSigma      !< Input: sigma coordinate at midpoint of each layer
-
-      real (kind=RKIND), intent(in) ::  &
-           thickness             !< Input: ice thickness
- 
-      !-----------------------------------------------------------------
-      ! input/output variables
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:), intent(inout) :: &
-           enthalpy              !< Input/output: interior ice enthalpy
-
-      real (kind=RKIND), intent(inout) :: &
-           surfaceEnthalpy,    & !< Input/output: surface ice enthalpy
-           basalEnthalpy         !< Input/output: basal ice enthalpy
-
-      !-----------------------------------------------------------------
-      ! output variables
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:), intent(out) :: &
-           temperature           !< Output: interior ice temperature
-
-      real (kind=RKIND), intent(out) :: &
-           surfaceTemperature, & !< Output: surface ice temperature
-           basalTemperature      !< Output: basal ice temperature
-
-      real (kind=RKIND), dimension(:), intent(out) :: &
-           waterfrac             !< Output: interior water fraction
-
-      !-----------------------------------------------------------------
-      ! local variables
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(size(layerCenterSigma)) :: pmpTemperature
-      real (kind=RKIND), dimension(size(layerCenterSigma)) :: pmpEnthalpy
-
-      real (kind=RKIND) :: pmpTemperatureBed
-      real (kind=RKIND) :: pmpEnthalpyBed
-
-      integer :: k, nVertLevels
-
-      nVertLevels = size(layerCenterSigma)
-
-      ! Find pressure melting point temperature in ice interior
-      call pressure_melting_point_column(&
-           layerCenterSigma,  &
-           thickness,         &
-           pmpTemperature)
-
-      ! find pressure melting point temperature at bed
-      call pressure_melting_point(&
-           thickness, &
-           pmpTemperatureBed)
-
-      ! Find pressure melting point enthalpy
-      pmpEnthalpy(:) = pmpTemperature(:) * rhoi*cp_ice
-      pmpEnthalpyBed = pmpTemperatureBed * rhoi*cp_ice
-
-      ! Solve for temperature and waterfrac
-
-      ! upper surface
-
-      if (surfaceEnthalpy >= 0.0_RKIND) then   ! temperate ice
-         surfaceTemperature = 0.0_RKIND
-         ! Reset surfaceEnthalpy to agree with the surface temperature.
-         ! This is consistent with energy conservation because the top surface
-         !  is infinitesimally thin.
-         surfaceEnthalpy = 0.0_RKIND
-      else   ! cold ice
-         surfaceTemperature = surfaceEnthalpy / (rhoi*cp_ice)
-      endif
-
-      ! ice interior
-
-      do k = 1, nVertLevels
-         if (enthalpy(k) >= pmpEnthalpy(k)) then   ! temperate ice
-            temperature(k) = pmpTemperature(k)
-            waterfrac(k) = (enthalpy(k) - pmpenthalpy(k)) /        &
-                          ((rho_water-rhoi)*cp_ice*pmpTemperature(k) + rho_water*latent_heat_ice)
-         else   ! cold ice
-            temperature(k) = enthalpy(k) / (rhoi*cp_ice)
-            waterfrac(k) = 0.0_RKIND
-         endif
-      enddo   ! k
-
-      ! bed
-
-      k = nVertLevels + 1
-      if (basalEnthalpy >= pmpEnthalpyBed) then   ! temperate ice
-         basalTemperature = pmpTemperatureBed
-         ! Reset basalEnthalpy to agree with the surface temperature.
-         ! This is consistent with energy conservation because the lower surface
-         !  is infinitesimally thin.
-         basalEnthalpy = pmpEnthalpyBed
-      else   ! cold ice
-         basalTemperature = basalEnthalpy / (rhoi*cp_ice)
-      endif
-
-    end subroutine enthalpy_to_temperature
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !

@@ -184,6 +184,7 @@ contains
 
       endif   ! temperature or enthalpy
 
+      ! Halo updates
       call mpas_timer_start("halo updates")
       call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
       call mpas_pool_get_field(geometryPool, 'layerThicknessEdge', layerThicknessEdgeField)
@@ -439,6 +440,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: beta, betaSolve
       real (kind=RKIND), pointer :: config_sea_level, config_ice_density, config_ocean_density
       character (len=StrKIND), pointer :: config_velocity_solver, config_sia_tangent_slope_calculation
+      character (len=StrKIND), pointer :: config_thickness_advection, config_tracer_advection
       logical, pointer :: config_adaptive_timestep_include_DCFL
       ! truly local variables
       real (kind=RKIND) :: thisThk
@@ -506,6 +508,8 @@ contains
           call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
           call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
           call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
+          call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
+          call mpas_pool_get_config(liConfigs, 'config_tracer_advection', config_tracer_advection)
 
           call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
           call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
@@ -613,10 +617,16 @@ contains
 
 
           ! Do vertical remapping of layerThickness and tracers
-          !WHL - I think the last argument should be err_tmp.
-          !TODO - Should vertical remapping be done after horizontal advection instead?
-          !       Commented out for now, to avoid altering the vertical temperature calculation.
-!!          call vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err)
+          ! Note: It is better to do vertical remapping immediately after the horizontal advection and mass balance calculations.
+          !       This is done with the new option to advect thickness and tracers together using a first-order upwind scheme.
+          !       For the old option where only thickness is advected, the vertical_remap call is done here to avoid answer changes. 
+
+          if (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'fo') then
+             ! do nothing, because vertical remapping is done in the li_tendency module
+          else
+             call vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err_tmp)
+          endif
+
           err = ior(err, err_tmp)
 
           ! This information is only needed by external dycores.

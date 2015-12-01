@@ -39,6 +39,9 @@
 		<dim name="nVertInterfaces" definition="nVertLevels+1" units="unitless"
 		     description="The number of interfaces in the vertical direction."
 		/>
+		<dim name="maxTracersAdvect" definition="1" units="unitless"
+		     description="The maximum number of tracers to be advected."
+		/>
 	</dims>
 
 
@@ -79,7 +82,7 @@
 		/>
 		<nml_option name="config_tracer_advection" type="character" default_value="none" units="unitless"
 		            description="Selection of the method for advecting tracers."
-		            possible_values="'none'"
+		            possible_values="'fo', 'none'"
 		/>
 <!-- This option to be implemented in the future.
 		<nml_option name="config_allow_additional_advance" type="logical" default_value=".true." units="none"
@@ -846,12 +849,18 @@ is the value of that variable from the *previous* time level!
 
 	<!-- Tendency Variables --> 
 	<var_struct name="tendency" time_levs="1">
-		<var name="tend_layerThickness" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}" name_in_code="layerThickness"
+		<var name="layerThicknessTendency" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}" name_in_code="layerThicknessTendency"
 		     description="time tendency of layer thickness"
 		/>
-		<var_array name="tendTracers" type="real" dimensions="nVertLevels nCells Time" name_in_code="tracers">
-			<var name="tend_temperature" array_group="dynamics" units="K s^{-1}" name_in_code="temperature"
+		<var_array name="tracerTendency" type="real" dimensions="nVertLevels nCells Time" name_in_code="tracerTendency">
+			<var name="temperatureTendency" array_group="dynamics" units="K s^{-1}" name_in_code="temperatureTendency"
 			     description="time tendency of ice temperature"
+			/>
+			<var name="waterfracTendency" array_group="dynamics" units="s^{-1}" name_in_code="waterfracTendency"
+			     description="time tendency of water fraction"
+			/>
+			<var name="enthalpyTendency" array_group="dynamics" units="s^{-1}" name_in_code="enthalpyTendency"
+			     description="time tendency of ice enthalpy"
 			/>
 		</var_array>
 	</var_struct>
@@ -894,6 +903,14 @@ is the value of that variable from the *previous* time level!
 	       />
 	  <var name="workCell3" type="real" dimensions="nCells" units="none"
 	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="workTracerLevelCell" type="real" dimensions="maxTracersAdvect nVertLevels nCells" units="none"
+	       description="generic work array with dimensions of (maxTracersAdvect nVertLevels nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="workTracerLevelCell2" type="real" dimensions="maxTracersAdvect nVertLevels nCells" units="none"
+	       description="generic work array with dimensions of (maxTracersAdvect nVertLevels nCells)"
 	       persistence="scratch"
 	       />
 	  <var name="slopeCellX" type="real" dimensions="nCells" units="none"
