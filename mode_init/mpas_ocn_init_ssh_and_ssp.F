@@ -201,7 +201,7 @@ contains
 
      logical, pointer :: config_read_ssh_and_ssp_from_stream , &
                          config_update_ssh_not_ssp, &
-                         config_modify_open_ocean_ssh
+                         config_use_rx1_constraint
 
      ! Define dimension pointers
      integer, pointer :: nCells, nVertLevels
@@ -214,7 +214,7 @@ contains
 
      integer :: iCell
 
-     logical :: initZStarWithSSH, initZStarWithoutSSH
+     logical :: initWithSSH, initZStarWithSSH, initZStarWithoutSSH, initRx1WithSSH
 
    !--------------------------------------------------------------------
 
@@ -222,9 +222,12 @@ contains
 
      call mpas_pool_get_config(ocnConfigs, 'config_read_ssh_and_ssp_from_stream', config_read_ssh_and_ssp_from_stream)
      call mpas_pool_get_config(ocnConfigs, 'config_update_ssh_not_ssp', config_update_ssh_not_ssp)
+     call mpas_pool_get_config(ocnConfigs, 'config_use_rx1_constraint', config_use_rx1_constraint)
 
-     initZStarWithSSH = updateOnly .or. config_read_ssh_and_ssp_from_stream
-     initZStarWithoutSSH = .not. updateOnly .and. .not. config_read_ssh_and_ssp_from_stream
+     initWithSSH = updateOnly .or. config_read_ssh_and_ssp_from_stream
+     initZStarWithSSH = initWithSSH .and. .not. config_use_rx1_constraint
+     initZStarWithoutSSH = .not. initWithSSH
+     initRx1WithSSH = initWithSSH .and. config_use_rx1_constraint
 
      if(.not. updateOnly) then
        ! we haven't computed deltaSSH yet and may need to modify ssh
@@ -313,6 +316,19 @@ contains
 
        block_ptr => block_ptr % next
      end do !block_ptr
+
+     if(initRx1WithSSH) then
+       ! We already know the ssh and ssp we want to use.
+       ! Compute the layer thicknesses and zMid based on topography and ssh.
+       ! Use rx1 constraint to recompute the vertical grid.
+       call ocn_init_vertical_grid_with_max_rx1(domain, iErr)
+
+       if(iErr .ne. 0) then
+         write(stderrUnit,*) 'ERROR: ocn_init_vertical_grid_with_max_rx1 failed.'
+         return
+       end if
+
+     end if
 
    end subroutine ocn_init_vertical_grid
 
@@ -464,6 +480,7 @@ contains
          write(stderrUnit,*) 'ERROR: interpolate_activeTracers failed.'
          return
        end if
+       call mpas_deallocate_scratch_field(refZMidField,.true.)
 
        if(.not. config_update_ssh_not_ssp) then
          ! now compute what the weight of each ocean column with the new layer thickness,
@@ -485,7 +502,6 @@ contains
      end do !block_ptr
 
      call mpas_deallocate_scratch_field(refZMidField, .false.)
-
 
    !--------------------------------------------------------------------
 
