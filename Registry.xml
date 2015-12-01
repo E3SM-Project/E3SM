@@ -608,7 +608,7 @@
 	<nml_record name="shortwaveRadiation" mode="init;forward">
 		<nml_option name="config_sw_absorption_type" type="character" default_value="ohlmann00" units="unitless"
 					description="Name of shortwave absorption type used in simulation. Not recommended to change default"
-					possible_values="'jerlov' or 'ohlmann00'"
+					possible_values="'jerlov' or 'ohlmann00' or 'none'"
 		/>
 		<nml_option name="config_jerlov_water_type" type="integer" default_value="3" units="unitless"
 					description="Integer value defining the water type used in Jerlov short wave absorption."

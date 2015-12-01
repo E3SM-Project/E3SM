@@ -42,9 +42,9 @@ module ocn_tracer_short_wave_absorption_variable
              ocn_tracer_short_wave_absorption_variable_init, &
              ocn_get_variable_sw_fraction,					 &
              ocn_get_os00_coeffs,							 &
-             init_shortwave_forcing_ohlmann,				 &
-             get_shortWaveData,								 &
-             shortwave_forcing_write_restart
+             ocn_init_shortwave_forcing_ohlmann,				 &
+             ocn_get_shortWaveData,								 &
+             ocn_shortwave_forcing_write_restart
 
    !--------------------------------------------------------------------
    !
@@ -210,7 +210,7 @@ contains
 
       select case ( trim(config_sw_absorption_type) ) 
       case ('ohlmann00')
-         call init_shortwave_forcing_ohlmann(domain)
+         call ocn_init_shortwave_forcing_ohlmann(domain)
       case default
          write(stderrUnit,*) "Shortwave parameterization type unknown: ", trim(config_sw_absorption_type)
          call MPAS_dmpar_global_abort('Unknown config_sw_absortion_type')
@@ -223,7 +223,7 @@ contains
 
 !***********************************************************************
 !
-!  routine init_shortwave_forcing_ohlmann
+!  routine ocn_init_shortwave_forcing_ohlmann
 !
 !> \brief   Initializes forcing group if parameterization of Ohlmann and Siegel (2000) or Ohlmann(2003)
 !> 			This parameterization only requires chlorophyll-a concentrations, so only add that
@@ -234,7 +234,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine init_shortwave_forcing_ohlmann(domain)!{{{
+   subroutine ocn_init_shortwave_forcing_ohlmann(domain)!{{{
    
    type(domain_type) :: domain
    
@@ -300,7 +300,7 @@ contains
    		'shortwave_monthly_observations', &
    		domain % streamManager)
    		
-   	end subroutine init_shortwave_forcing_ohlmann!}}}
+   	end subroutine ocn_init_shortwave_forcing_ohlmann!}}}
    	   	
 !***********************************************************************
 
@@ -317,7 +317,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine get_shortWaveData( streamManager, &
+    subroutine ocn_get_shortWaveData( streamManager, &
     	domain, &
     	simulationClock, &
     	firstTimeStep) !{{{
@@ -345,7 +345,7 @@ contains
     	     		'shortwave_monthly_observations', streamManager, dt)
     	endif
     	
-    end subroutine get_shortWaveData!}}}
+    end subroutine ocn_get_shortWaveData!}}}
     
 
 !***********************************************************************	
@@ -460,7 +460,7 @@ contains
     	
 !***********************************************************************
 !
-!  routine shortwave_forcing_write_restart
+!  routine ocn_shortwave_forcing_write_restart
 !
 !> \brief   writes restart timestamp for SW data to be read in on future restart
 !> \author  Luke Van Roekel
@@ -469,7 +469,7 @@ contains
 !
 !-----------------------------------------------------------------------   
    	    	
-   subroutine shortwave_forcing_write_restart(domain)!{{{
+   subroutine ocn_shortwave_forcing_write_restart(domain)!{{{
    
       type(domain_type) :: domain
       
@@ -486,7 +486,7 @@ contains
       		
       endif
       
-    end subroutine shortwave_forcing_write_restart!}}}
+    end subroutine ocn_shortwave_forcing_write_restart!}}}
     
     
 end module ocn_tracer_short_wave_absorption_variable
