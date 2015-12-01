@@ -479,8 +479,7 @@ contains
      
       call MPAS_pool_get_config(domain % configs, "config_sw_absorption_type", config_sw_absorption_type)
       
-      if( trim(config_sw_absorption_type) == 'manizza05' .or. trim(config_sw_absorption_type) == 'ohlmann00'  &
-      		.or. trim(config_sw_absorption_type) == 'ohlmann03') then
+      if( trim(config_sw_absorption_type) == 'ohlmann00'  ) then
       		call MPAS_pool_get_config(domain % configs, "config_forcing_restart_file", config_forcing_restart_file)
       		
       		call MPAS_forcing_write_restart_times(shortwaveForcingGroup, config_forcing_restart_file)

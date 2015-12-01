@@ -142,14 +142,15 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_sw_absorption_type', config_sw_absorption_type)
    
       useJerlov=.false.
+      if ( trim( config_sw_absorption_type ) == 'none' ) return
+
       if ( trim( config_sw_absorption_type ) == 'jerlov') then
          useJerlov=.true.
 !        call ocn_tracer_short_wave_absorption_jerlov_init(err)
-      else if ( trim( config_sw_absorption_type ) == 'manizza05' .or. trim( config_sw_absorption_type ) == 'ohlmann00'  .or.   &
-      		trim(config_sw_absorption_type) == 'ohlmann03' ) then
+      else if ( trim( config_sw_absorption_type ) == 'ohlmann00' ) then
       	 call ocn_tracer_short_wave_absorption_variable_init(domain, err)
       else 
-         write(stderrUnit,*) 'Incorrect option for config_sw_absorption_type. Options are: jerlov, manizza05, ohlmann00, or ohlmann03'
+         write(stderrUnit,*) 'Incorrect option for config_sw_absorption_type. Options are: jerlov or ohlmann00 or none'
          err = 1
          return
       end if
