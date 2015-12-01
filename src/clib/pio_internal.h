@@ -30,7 +30,7 @@
 
 
 #define MAX_GATHER_BLOCK_SIZE 0
-
+#define PIO_REQUEST_ALLOC_CHUNK 16
 
 #if defined(__cplusplus)
 extern "C" {
