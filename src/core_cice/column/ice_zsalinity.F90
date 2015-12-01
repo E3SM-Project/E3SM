@@ -964,8 +964,8 @@
 
       fluxb_t = -p5*Ui_s(1)*(pre_sin(1)*dbgrid +  &
                               dhtmp*Sintemp(2) -  &
-                              (dbgrid-c1)*pre_sin(2)) + &
-                              -p5*(dbgrid*F_s(1)*pre_sin(1) + &
+                              (dbgrid-c1)*pre_sin(2)) - &
+                              p5*(dbgrid*F_s(1)*pre_sin(1) + &
                               F_s(2)*(dhtmp*Sintemp(2) &
                               +(c1-dbgrid)*pre_sin(2)))
 
