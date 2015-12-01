@@ -36,6 +36,7 @@
 		<option name="config_disable_vel_all_tend">.true.</option>
 		<option name="config_disable_tr_all_tend">.true.</option>
 		<option name="config_use_active_tracers">.false.</option>
+		<option name="config_sw_absorption_type">'none'</option>
 		<option name="config_AM_lagrPartTrack_reset_criteria">'region'</option>
 		<option name="config_AM_lagrPartTrack_region_stream">'lagrPartTrackRegions'</option>
 		<option name="config_AM_lagrPartTrack_reset_if_outside_region">.false.</option>
