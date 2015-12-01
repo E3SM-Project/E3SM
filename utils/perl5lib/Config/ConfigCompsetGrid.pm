@@ -72,12 +72,9 @@ sub getCompsetLongname
 		
 		$logger->logdie ("ERROR create_newcase: more than one match for compset alias $input_compset in file $file ");
 	    } else {
-		my @name_nodes = $alias_nodes[0]->childNodes();
+		my @name_nodes = $alias_nodes[0]->findnodes(".//lname");
 		foreach my $name_node (@name_nodes) {
-		    my $debug = $name_node->nodeName();
-		    if ($name_node->nodeName() eq 'lname') {
-			$compset_longname = $name_node->textContent();
-		    }		    
+		    $compset_longname = $name_node->textContent();
 		}
 	    }
 	    $pes_setby = $node_file->getAttribute('component');
@@ -93,12 +90,9 @@ sub getCompsetLongname
 	    if ($#lname_nodes > 0) {
 		die "ERROR create_newcase: more than one match for lname element in file $file \n";
 	    } else {
-		my @name_nodes = $lname_nodes[0]->childNodes();
+		my @name_nodes = $lname_nodes[0]->findnodes(".//lname");
 		foreach my $name_node (@name_nodes) {
-		    my $debug = $name_node->nodeName();
-		    if ($name_node->nodeName() eq 'lname') {
-			$compset_longname = $name_node->textContent();
-		    }		    
+		    $compset_longname = $name_node->textContent();
 		}
 	    }
 	    $pes_setby = $node_file->getAttribute('component');
@@ -136,6 +130,20 @@ sub getGridLongname
 
     my ($grid_longname, $grid_shortname, $grid_aliasname);
     my $compset_match;
+    if($grid_input =~ /^([^_]+)z(\d+)(.*)/){
+	my $atmnlev = $2;
+	$grid_input = $1.$3;
+        $logger->info("atmnlev = $atmnlev grid = $grid_input");
+	$config->set("ATM_GRID","z$atmnlev");
+    }
+    if($grid_input =~ /^(.*_[^_]+)z(\d+)(.*)/){
+	my $lndnlev = $2;
+	$grid_input = $1.$3;
+	$logger->info("lndnlev = $lndnlev grid = $grid_input");
+	$logger->logdie("User specified vertical levels not yet supported for lnd");
+    }
+
+
 
     my $grids_file = $config->get('GRIDS_SPEC_FILE');
     my $compset_longname = $config->get('COMPSET');
@@ -180,7 +188,7 @@ sub getGridLongname
     }
     
     # set the compset grid alias and longname
-    foreach my $node ($grid_node->childNodes()) {
+    foreach my $node ($grid_node->findnodes(".//*")) {
 	my $name = $node->nodeName();
 	my $value = $node->textContent();
 	if ($name eq 'lname') {$grid_longname   = $node->textContent();}
@@ -213,6 +221,7 @@ sub getGridLongname
 	}
     }
     $logger->info("grid longname is : $grid_longname");
+    
     return ($grid_longname);
 }
 
@@ -642,13 +651,17 @@ sub printGridCompsetInfo
     $outstr .= " $desc_comp \n";
     $outstr .= "Grid: \n";
     $outstr .= "  $grid_longname \n";
-    $outstr .= "  ATM_GRID = $atm_grid  NX_ATM=$atm_nx NY_ATM=$atm_ny \n";
-    $outstr .= "  LND_GRID = $lnd_grid  NX_LND=$lnd_nx NX_LND=$lnd_ny \n";
-    $outstr .= "  ICE_GRID = $ice_grid  NX_ICE=$ice_nx NX_ICE=$ice_ny \n";
-    $outstr .= "  OCN_GRID = $ocn_grid  NX_OCN=$ocn_nx NX_OCN=$ocn_ny \n";
-    $outstr .= "  ROF_GRID = $rof_grid  NX_ROF=$rof_nx NX_ROF=$rof_ny \n";
-    $outstr .= "  GLC_GRID = $glc_grid  NX_GLC=$glc_nx NX_GLC=$glc_ny \n";
-    $outstr .= "  WAV_GRID = $wav_grid  NX_WAV=$wav_nx NX_WAV=$wav_ny \n";
+    $outstr .= "  ATM_GRID = $atm_grid  NX_ATM=$atm_nx NY_ATM=$atm_ny ";
+    if($atm_grid =~ /z(\d+)/){
+	$outstr .= "NZ_ATM=$1 ";
+    }
+    $outstr .= "\n";
+    $outstr .= "  LND_GRID = $lnd_grid     NX_LND=$lnd_nx NX_LND=$lnd_ny \n";
+    $outstr .= "  ICE_GRID = $ice_grid     NX_ICE=$ice_nx NX_ICE=$ice_ny \n";
+    $outstr .= "  OCN_GRID = $ocn_grid     NX_OCN=$ocn_nx NX_OCN=$ocn_ny \n";
+    $outstr .= "  ROF_GRID = $rof_grid     NX_ROF=$rof_nx NX_ROF=$rof_ny \n";
+    $outstr .= "  GLC_GRID = $glc_grid    NX_GLC=$glc_nx NX_GLC=$glc_ny \n";
+    $outstr .= "  WAV_GRID = $wav_grid    NX_WAV=$wav_nx NX_WAV=$wav_ny \n";
     $outstr .= "Grid Description: \n";
     $outstr .= "  $desc_grid \n";
     $outstr .= "Non-Default Options: \n";

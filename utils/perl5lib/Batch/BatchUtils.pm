@@ -241,9 +241,9 @@ sub _decrementResubmitCounter()
     chdir $config->{'CASEROOT'};
     if($config->{COMP_RUN_BARRIERS} ne "TRUE") 
     {
-	`./xmlchange CONTINUE_RUN=TRUE`;
+	`./xmlchange -noecho CONTINUE_RUN=TRUE`;
     }
-    `./xmlchange RESUBMIT=$newresubmit`;
+    `./xmlchange -noecho RESUBMIT=$newresubmit`;
     if($?)
     {
 	$logger->logdie( "could not execute ./xmlchange RESUBMIT=$newresubmit");

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <testlist>
-  <compset name="B1850G">
+  <compset name="B1850RG">
     <grid name="f09_g16">
       <test name="ERS_Ld11">
         <machine compiler="intel" testtype="prealpha" testmods="allactive/cesm2dev01io">yellowstone</machine>
@@ -13,7 +13,7 @@
       </test>
     </grid>
   </compset>
-  <compset name="B1850">
+  <compset name="B1850R">
     <grid name="f19_g16">
       <test name="ERR_N2">
         <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">yellowstone</machine>
@@ -64,7 +64,7 @@
       </test>
     </grid>
   </compset>
-  <compset name="B1850R">
+  <compset name="B1850">
     <grid name="f19_g16">
       <test name="CME_D_Ld5">
         <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>

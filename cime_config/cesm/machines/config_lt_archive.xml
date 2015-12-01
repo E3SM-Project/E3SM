@@ -16,10 +16,4 @@
     <machine name="pleiades-san">
       <lt_archive_args>--mode copy_dirs_ssh --ssh_loc lfe --rm_loc_files TRUE</lt_archive_args>
     </machine>
-    <machine name="hobart">
-      <lt_archive_args></lt_archive_args>
-    </machine>
-    <machine name="yellowstone">
-      <lt_archive_args>--mode copy_files</lt_archive_args>
-    </machine>
 </config_lt_archive>

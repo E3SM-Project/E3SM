@@ -105,7 +105,7 @@ for mct, etc.
   <FIXEDFLAGS>  -qsuffix=f=f -qfixed=132 </FIXEDFLAGS>
   <FREEFLAGS> -qsuffix=f=f90:cpp=F90  </FREEFLAGS>
   <FFLAGS> -g -qfullpath -qmaxmem=-1 </FFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 -qstrict -Q </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -qstrict -qinline=auto </ADD_FFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O3  </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -qsmp=omp </ADD_FFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -qsmp=omp </ADD_CFLAGS>
@@ -278,7 +278,7 @@ for mct, etc.
   <ADD_CFLAGS DEBUG="FALSE"> -O2 -debug minimal </ADD_CFLAGS>
   <ADD_CFLAGS DEBUG="TRUE"> -O0 -g </ADD_CFLAGS>
   <FFLAGS> -no-opt-dynamic-align  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source  </FFLAGS>
-  <CFLAGS>  -no-opt-dynamic-align -fp-model precise </CFLAGS>
+  <CFLAGS>  -no-opt-dynamic-align -fp-model precise -std=gnu99 </CFLAGS>
   <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -openmp </ADD_FFLAGS_NOOPT>
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
@@ -336,6 +336,7 @@ for mct, etc.
 <compiler COMPILER="gnu">
   <!-- http://gcc.gnu.org/onlinedocs/gfortran/ -->
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
+  <CFLAGS> -std=gnu99 </CFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -fopenmp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -fopenmp </ADD_FFLAGS>
   <ADD_LDFLAGS compile_threaded="true"> -fopenmp </ADD_LDFLAGS>
@@ -349,7 +350,7 @@ for mct, etc.
   <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS 
        so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
   <FFLAGS> -mcmodel=medium -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </FFLAGS>
-  <CFLAGS> -mcmodel=medium </CFLAGS>
+  <CFLAGS> -mcmodel=medium -std=gnu99 </CFLAGS>
   <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
   <FC_AUTO_R8> -fdefault-real-8 </FC_AUTO_R8>
   <SFC> gfortran </SFC>
@@ -400,6 +401,7 @@ for mct, etc.
  <!--  <FFLAGS      > -Wp,-macro=no_com -wmismatch=mpi_send,mpi_recv,mpi_bcast,mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,mpi_scatterv,mpi_allgather,mpi_alltoallv,mpi_file_read_all,mpi_file_write_all,mpibcast,mpiscatterv    -convert=BIG_ENDIAN </FFLAGS>-->
   <FFLAGS>  -Wp,-macro=no_com -convert=BIG_ENDIAN -mismatch_all </FFLAGS>
   <FFLAGS_NOOPT> $(FFLAGS) </FFLAGS_NOOPT>
+  <CFLAGS> -std=gnu99 </CFLAGS>
 
   <!-- DEBUG vs. non-DEBUG runs.                                             -->
   <ADD_FFLAGS       DEBUG="FALSE"> -ieee=full -O2 </ADD_FFLAGS>
@@ -499,6 +501,7 @@ for mct, etc.
   <MPICXX>mpiicpc</MPICXX>
   <ADD_FFLAGS>  -xHost </ADD_FFLAGS>
   <ADD_CFLAGS>  -xHost </ADD_CFLAGS>
+  <ADD_CPPDEFS> -DINTEL_MKL -DHAVE_SSE2 </ADD_CPPDEFS>
   <TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
   <PAPI_INC> /glade/apps/opt/papi/5.3.0/intel/12.1.5/include/</PAPI_INC>
   <PAPI_LIB>/glade/apps/opt/papi/5.3.0/intel/12.1.5/lib64 </PAPI_LIB>
@@ -569,28 +572,6 @@ for mct, etc.
 </compiler>
 
 
-<compiler MACH="janus">
-  <NETCDF_PATH> $(NETCDF)</NETCDF_PATH>
-  <PNETCDF_PATH> $(PNETCDF)</PNETCDF_PATH>
-  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nc-config --flibs) </ADD_SLIBS>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <SFC> mpif90 </SFC>
-  <SCC> mpicc </SCC>
-</compiler>
-
-<compiler COMPILER="intel" MACH="janus">
-  <ADD_FFLAGS> -O2 -xHost </ADD_FFLAGS>
-  <ADD_CFLAGS> -O2 -xHost </ADD_CFLAGS>
-  <ESMF_LIBDIR>/projects/siva7831/esmf_install/esmf-5.3.0-O-intel-openmpi/lib</ESMF_LIBDIR>
-  <PNETCDF_PATH>/home/jimedwards/parallel-netcdf/1.3.0/intel/12.1.4/</PNETCDF_PATH>
-</compiler>
-
-<compiler COMPILER="pgi" MACH="janus">
-  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
-  <ADD_SLIBS> -llapack -lblas </ADD_SLIBS>
-</compiler>
-
 <compiler COMPILER="ibm" OS="AIX">
   <CONFIG_SHELL> /usr/bin/bash </CONFIG_SHELL>
   <SFC> xlf2003_r </SFC>
@@ -617,7 +598,7 @@ for mct, etc.
   <SCC> blrts_xlc </SCC>
   <MPICC> blrts_xlc </MPICC>
   <CFLAGS> -O3 -qstrict </CFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O3 -qstrict -Q </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O3 -qstrict -qinline=auto </ADD_FFLAGS>
   <ADD_FFLAGS DEBUG="TRUE"> -qinitauto=FF911299 -qflttrap=ov:zero:inv:en </ADD_FFLAGS>
   <MLIBS> -L/bgl/BlueLight/ppcfloor/bglsys/lib -lmpich.rts -lmsglayer.rts -lrts.rts -ldevices.rts </MLIBS>
   <ADD_CPPDEFS> -DLINUX -DnoI8 </ADD_CPPDEFS>
@@ -638,7 +619,7 @@ for mct, etc.
 
 <compiler COMPILER="ibm" OS="BGQ">
   <FFLAGS> -g -qfullpath -qmaxmem=-1 -qspillsize=2500 -qextname=flush </FFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O3 -qstrict -Q </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O3 -qstrict -qinline=auto </ADD_FFLAGS>
   <ADD_FFLAGS DEBUG="FALSE" compile_threaded="true"> -qsmp=omp </ADD_FFLAGS>
   <ADD_FFLAGS DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:noopt </ADD_FFLAGS>
   <ADD_CPPDEFS> -DLINUX  </ADD_CPPDEFS>
@@ -704,6 +685,9 @@ for mct, etc.
 <compiler COMPILER="pgi" MACH="eastwind">
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <ADD_CFLAGS compile_threaded="false"> -nomp </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="false"> -nomp </ADD_FFLAGS>
+  <ADD_LDFLAGS compile_threaded="false"> -nomp </ADD_LDFLAGS>
   <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
@@ -751,16 +735,6 @@ for mct, etc.
   <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi </SLIBS>
 </compiler>
  
-<compiler COMPILER="intel" MACH="evergreen">
-  <NETCDF_PATH> $(NETCDFLIB)/..</NETCDF_PATH>
-  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
-  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lcurl </SLIBS>
-  <ADD_FFLAGS> -heap_arrays </ADD_FFLAGS>
-  <ADD_CFLAGS> -heap_arrays </ADD_CFLAGS>
-</compiler>
-
 <compiler COMPILER="pgi" MACH="hera">
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>

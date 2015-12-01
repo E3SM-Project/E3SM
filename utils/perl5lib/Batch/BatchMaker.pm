@@ -182,20 +182,28 @@ sub makeBatchScript()
     my $inputfilename = shift;
     my $outputfilename = shift;
 
-    $logger->debug("In makeBatchScript");
+    $logger->debug("In makeBatchScript 1");
     if(! -f $inputfilename)
     {
 	die "$inputfilename does not exist!";
     }
     
     $self->getBatchSystemTypeForMachine();
+    $logger->debug("In makeBatchScript 2");
     $self->setTaskInfo();
+    $logger->debug("In makeBatchScript 3");
     $self->setQueue();
+    $logger->debug("In makeBatchScript 4");
     $self->setWallTime();
+    $logger->debug("In makeBatchScript 5");
     $self->setProject();
+    $logger->debug("In makeBatchScript 6");
     $self->setBatchDirectives();
+    $logger->debug("In makeBatchScript 7");
     $self->getLtArchiveOptions();
+    $logger->debug("In makeBatchScript 8");
     $self->setCESMRun();
+    $logger->debug("In makeBatchScript 9");
     $self->writeBatchScript($inputfilename, $outputfilename);
 }
 
@@ -505,6 +513,11 @@ sub setQueue()
     # Get the queue from env_batch.xml if its defined there
     # otherwise get the default from config_machines.xml
     # and set it in env_batch.xml
+    if(! defined $self->{envBatch}){
+	$logger->logdie("envBatch not defined");
+    }elsif(! defined $self->{job}){
+	$logger->logdie("job not defined");
+    }
 
     my $queue = $self->{envBatch}{$self->{job}}{JOB_QUEUE};
     
@@ -517,18 +530,23 @@ sub setQueue()
     }
 
 
-
+    $logger->debug("setQueue 1");
     #get the batch config parser, and the estimated cost of the run. 
     $self->getBatchConfigParser();	
+    $logger->debug("setQueue 2");
+
     $self->getConfigMachinesParser();
+    $logger->debug("setQueue 3");
     $self->getEstCost();
     my $batchparser = $self->{'batchparser'};
     my $configmachinesparser = $self->{'configmachinesparser'};
-    
+
+    $logger->debug("calling parser");
 
     # First, set the queue based on the default queue defined in config_batch.xml. 
     my @defaultqueue = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/batch_system/queues/queue[\@default=\'true\']");
 
+    $logger->debug("setting queue");
     
     # set the default queue IF we have a default queue defined, some machines (blues) do not allow one to 
     # specifiy the queue directly. 
@@ -555,9 +573,10 @@ sub setQueue()
 	    $self->{'queue'} = $qelem->textContent();
 	}
     }
-    $self->{envBatch}->set("JOB_QUEUE",$self->{job},$self->{queue});
-    $logger->debug("Using queue $self->{queue} ");
-
+    if(defined $self->{queue}){  
+      $self->{envBatch}->set("JOB_QUEUE",$self->{job},$self->{queue});
+      $logger->debug("Using queue $self->{queue} ");
+    }
 
 }
 

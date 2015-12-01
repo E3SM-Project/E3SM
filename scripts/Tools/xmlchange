@@ -197,7 +197,7 @@ foreach my $id ( keys(%idlist) )
 	    # Do error checking for requested change
 	    my $value = $node->getAttribute('value');
 	    my($type, $valid_values, $is_list_value);
-	    foreach my $childnode ($node->childNodes()) 
+	    foreach my $childnode ($node->findnodes(".//*")) 
 	    {
 		if ($childnode->nodeName() eq 'type') {
 		    $type = $childnode->textContent();
@@ -211,14 +211,24 @@ foreach my $id ( keys(%idlist) )
 	    }
 
 	    # Determine if requested change is a value
-	    # Only do this if the variable does not start with $
-	    # TODO - must generalize this check - so you substitute first then check
-	    # for valid values even if the value starts with $
-	    # Will die in is_valid_values if the check fails
-	    if ($value !~ m/^$/) {
-		my $newvalue = $idlist{$id};
-		$logger->debug("is_valid_value: $id, $newvalue, $valid_values, $is_list_value");
-		SetupTools::is_valid_value($id, $newvalue, $valid_values, $is_list_value);
+        
+        # If we are setting a value to another unresolved value
+        # such as ./xmlchange REST_OPTION=\$STOP_OPTION, 
+        # we want to resolve STOP_OPTION, make sure whatever 
+        # it is set to is a valid_value, then set 
+        # $value to $unresolved_value if is_valid_values passes
+        my $unresolved_value = $idlist{$id};
+	    if($unresolved_value =~ m/^\$/) {
+            $logger->debug("UNRESOLVED VALUE: $unresolved_value");
+            my $resolved_value = SetupTools::getSingleResolved($unresolved_value); 
+		    $logger->debug("is_valid_value: $id, $resolved_value, $valid_values, $is_list_value");
+            SetupTools::is_valid_value($id, $resolved_value, $valid_values, $is_list_value);
+            $value = $unresolved_value;
+        }
+	    elsif ($value !~ m/^$/) {
+		    my $newvalue = $idlist{$id};
+		    $logger->debug("is_valid_value: $id, $newvalue, $valid_values, $is_list_value");
+		    SetupTools::is_valid_value($id, $newvalue, $valid_values, $is_list_value);
 	    }
 
 	    # If append mode is on - check that variable is of the character type

@@ -34,13 +34,11 @@ sub read {
     
     foreach my $job (@jobs){
 	my $name = $job->getAttribute('name');
-	foreach my $entry ($job->childNodes()){
-	    if($entry->nodeName() eq "entry"){
-		my $id = $entry->getAttribute('id');
-		my $value = $entry->getAttribute('value');
-		$logger->debug ("job= $name id=$id value=$value");
-		$self->{$name}{$id}=$value;
-	    }
+	foreach my $entry ($job->findnodes(".//entry")){
+	    my $id = $entry->getAttribute('id');
+	    my $value = $entry->getAttribute('value');
+	    $logger->debug ("job= $name id=$id value=$value");
+	    $self->{$name}{$id}=$value;
 	}
     }
     
@@ -57,11 +55,13 @@ sub get
 sub set
 {
     my($self, $id, $job, $value)  = @_;
-    
+  
+    if(defined $value){
+  
     $self->{$job}{$id} = $value;
-
-    qx(./xmlchange -file env_batch.xml -id $id -val $value -subgroup $job);
-
+   
+    qx(./xmlchange -noecho -file env_batch.xml -id $id -val $value -subgroup $job);
+  }
 }
 
 

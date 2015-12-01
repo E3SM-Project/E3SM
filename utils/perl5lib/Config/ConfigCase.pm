@@ -110,32 +110,33 @@ sub add_config_variables
     foreach my $node (@nodes) 
     {
 	my $id = $node->getAttribute('id');
-	foreach my $define_node ($node->childNodes()) 
+	foreach my $define_node ($node->findnodes(".//*")) 
 	{
 	    my $node_name  = $define_node->nodeName();
 	    #
             # This creates a hash of values with attribute name and id as keys
             #
 	    if($node_name eq "values"){
-		foreach my $val_node ($define_node->childNodes()){
+		foreach my $val_node ($define_node->findnodes(".//value")){
                     if($val_node->hasAttributes()){		 
-                    my @att = $val_node->attributes();
-		    foreach my $attstr (@att){
-			$attstr =~ /(\w+)=\"(.*)\"/;
-	                my $att = $1;
-	                my $att_val = $2;
-			my $val =  $val_node->textContent();		
-			$val =~ s/\$MODEL/$model/;
-			$val =~ s/\$CIMEROOT/$cimeroot/;
-			if (-d $srcroot) {
-			    $val =~ s/\$SRCROOT/$srcroot/;
-			}			
-			$self->{$id}{$att}{$att_val} = $val;
+			my @att = $val_node->attributes();
+			foreach my $attstr (@att){
+			    my $att = $attstr->nodeName();
+			    my $att_val = $attstr->getValue();
+			    my $val =  $val_node->textContent();		
+			    $val =~ s/\$MODEL/$model/;
+			    $val =~ s/\$CIMEROOT/$cimeroot/;
+			    if (-d $srcroot) {
+				$val =~ s/\$SRCROOT/$srcroot/;
+			    }			
+			    $self->{$id}{$att}{$att_val} = $val;
+			}
 		    }
-}
 		}
 
 	    }else{
+		# we want to avoid the 'value' nodes which are children of 'values'
+		next if($node_name eq 'value' and $define_node->parentNode() ne $node);
 		my $node_value = $define_node->textContent();
 		if (defined $node_value) {
 		    $node_value =~ s/\$MODEL/$model/;
@@ -191,8 +192,11 @@ sub set
 		"ERROR: value of $value is not a valid value for parameter $id: valid values are $valid_values\n");
     }
     # Add the new value to the object's internal data structure.
-    $self->{$id}->{'value'} = $value;
-
+    if($id eq "ATM_GRID" && $self->{$id}{value} ne "UNSET"){
+	$self->{$id}{value} = $value.$self->{$id}{value};
+    }else{
+	$self->{$id}->{'value'} = $value;
+    }
     return 1;
 }
 

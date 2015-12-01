@@ -103,10 +103,16 @@
       <lname>a%T341_l%0.23x0.31_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null</lname>
     </grid> 
 
-    <grid compset="(DOCN|XOCN|SOCN)">
+    <grid compset="(DOCN|XOCN|SOCN).+SGLC">
       <sname>T31_T31</sname>
       <alias>T31_T31</alias>
       <lname>a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%null_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN).+CISM1">
+      <sname>T31_T31</sname>
+      <alias>T31_T31</alias>
+      <lname>a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%gland5UM_w%null</lname>
     </grid>
 
     <grid compset="(DOCN|XOCN|SOCN)">
@@ -180,13 +186,13 @@
     <grid compset="CISM1.+SWAV">
       <sname>0.9x1.25_gx1v6</sname>
       <alias>f09_g16</alias>
-      <lname>a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5_w%null</lname>
+      <lname>a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
     </grid>
 
     <grid compset="CISM1.+DWAV">
       <sname>0.9x1.25_gx1v6</sname>
       <alias>f09_g16</alias>
-      <lname>a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5_w%ww3a</lname>
+      <lname>a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%ww3a</lname>
     </grid>
 
     <grid compset="SGLC.+DWAV">
@@ -204,12 +210,12 @@
     <grid compset="CISM1.+SWAV">
       <sname>1.9x2.5_gx1v6</sname>
       <alias>f19_g16</alias>
-      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5_w%null</lname>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
     </grid>
     <grid compset="CISM1.+DWAV">
       <sname>1.9x2.5_gx1v6</sname>
       <alias>f19_g16</alias>
-      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5_w%ww3a</lname>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%ww3a</lname>
     </grid>
     <grid compset="SGLC.+DWAV">
       <sname>1.9x2.5_gx1v6</sname>
@@ -236,16 +242,31 @@
       <lname>a%0.23x0.31_l%0.23x0.31_oi%0.23x0.31_r%r05_m%gx1v6_g%null_w%null</lname>
     </grid>
 
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+SGLC">
       <sname>0.9x1.25_0.9x1.25</sname>
       <alias>f09_f09</alias>
       <lname>a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%null_w%null</lname>
     </grid>
 
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+CISM1">
+      <sname>0.9x1.25_0.9x1.25</sname>
+      <alias>f09_f09</alias>
+      <lname>a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
+    </grid>
+
+
+
     <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
       <sname>1.9x2.5_1.9x2.5</sname>
       <alias>f19_f19</alias>
       <lname>a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%null_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+CISM1">
+      <sname>1.9x2.5_1.9x2.5</sname>
+      <alias>f19_f19</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
     </grid>
 
     <grid compset="(DOCN|XOCN|SOCN|AQUAP)">

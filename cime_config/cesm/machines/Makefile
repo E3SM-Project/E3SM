@@ -357,7 +357,7 @@ ifndef CISM_LIBDIR
 endif
 
 INCLDIR +=	-I$(SHAREDPATH)/include -I$(CIMEROOT)/share/csm_share/shr \
-		-I$(CIMEROOT)/share/csm_share/include
+		-I$(CIMEROOT)/share/csm_share/include -I$(CIMEROOT)/share/shr_RandNum/include
 #
 # Use the MCT dir for the cache for all configure calls because it is the first one 
 #

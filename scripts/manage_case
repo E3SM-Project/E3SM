@@ -304,7 +304,7 @@ sub _queryGrids
 	    print " component grid: $name \n";
 	}	    
 	my $support; my $nx; my $ny; my $desc;
-	foreach my $child_node ($node->childNodes()) {
+	foreach my $child_node ($node->findnodes(".//*")) {
 	    my $name  = $child_node->nodeName();
 	    my $value = $child_node->textContent();
 	    if ($name eq 'support') {$support= $value;}

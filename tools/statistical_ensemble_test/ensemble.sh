@@ -215,7 +215,10 @@ create_cases ()
 
     # Create clone
     cd $SCRIPTS_ROOT
-    ./create_clone -case $CASE1 -clone $CASE # Copy $CASE to $CASE1
+    echo "=== SCRIPTS_ROOT ==="
+    echo $SCRIPTS_ROOT
+    #./create_clone -keepexe -case $CASE1 -clone $CASE # Copy $CASE to $CASE1
+    $SCRIPTS_ROOT/create_clone -keepexe -case $CASE1 -clone $CASE # Copy $CASE to $CASE1
 
     # Get value for EXEROOT from $CASE
     # Note return string is "EXEROOT = $EXEROOT"
@@ -233,12 +236,12 @@ create_cases ()
     else
       cd $CASE1
     fi
-	echo "running ./xmlchange EXEROOT=\"$EXEROOT\""
-    ./xmlchange EXEROOT="$EXEROOT"
-    echo "running ./xmlchange BUILD_COMPLETE=\"TRUE\""
-    ./xmlchange BUILD_COMPLETE="TRUE"
+	#echo "running ./xmlchange EXEROOT=\"$EXEROOT\""
+    #./xmlchange EXEROOT="$EXEROOT"
+    #echo "running ./xmlchange BUILD_COMPLETE=\"TRUE\""
+    #./xmlchange BUILD_COMPLETE="TRUE"
     echo "running case.setup"
-    `./case.setup`
+    ./case.setup
 
     # For validations, subsequent cloned cases will have the pertlim from the
     # parent case. We neet to remove the original case's pertlim before we set

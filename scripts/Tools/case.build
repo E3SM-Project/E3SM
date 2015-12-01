@@ -239,7 +239,10 @@ sub checkInputData()
     my $RUNDIR		= `./xmlquery RUNDIR		-value`;
     my $CONTINUE_RUN	= `./xmlquery CONTINUE_RUN	-value`;
 
-    my @inputdatacheck = qx(./check_input_data -inputdata $DIN_LOC_ROOT -check);
+    
+    open(F," ./check_input_data -inputdata $DIN_LOC_ROOT -check |");
+    my @inputdatacheck = <F>;
+    close(F);
 
     my @unknown = grep { /unknown/ } @inputdatacheck;
     if (@unknown) {
@@ -252,11 +255,13 @@ sub checkInputData()
     my @missing = grep { /missing/ } @inputdatacheck;
     if (@missing) {
 	$logger->info("Attempting to download missing data");
-	qx(./check_input_data -inputdata $DIN_LOC_ROOT -export);
+	system("./check_input_data -inputdata $DIN_LOC_ROOT -export");
 
 	$logger->info("Now checking if required input data is in $DIN_LOC_ROOT ");
 
-	@inputdatacheck = qx(./check_input_data -inputdata $DIN_LOC_ROOT -check);
+	open(F,"./check_input_data -inputdata $DIN_LOC_ROOT -check |");
+	@inputdatacheck = <F>;
+	close(F);
 	@missing = grep { /missing/ } @inputdatacheck;
 	if (@missing) {
 	    $logger->logdie( "The following files were not found, they are required".
@@ -507,7 +512,7 @@ sub buildLibraries()
 	my $file_build = "$SHAREDPATH/$lib.bldlog.$LID";
 	my $now = localtime;
 	$logger->info( "      $now $file_build");
-	open my $FB, ">", $file_build or die $!;
+	open my $FB, ">", $file_build or $logger->logdie( $!);
 	map { print $FB "$_: $ENV{$_}\n"} sort keys %ENV;
 	close $FB;
 	
