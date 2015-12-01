@@ -813,8 +813,8 @@ contains
            print *, ' '
            print *, 'TEST1: Testing interpolatoin function'
            print *, 'Interpolating from (z, rho) to (z, rho)'
-           print *, 'call linear_interp_1d_field_along_column(nVertLevels, nCells, &
-              nVertLevels, maxLevelCell, array1_3D, array2_3D, array1_3D(:,1), array3_3D)'
+           print *, 'call linear_interp_1d_field_along_column(nVertLevels, nCells, ' &
+              // 'nVertLevels, maxLevelCell, array1_3D, array2_3D, array1_3D(:,1), array3_3D)'
            
            print *, 'sum(array1_3D)/nCells + sum(zMid(:,nCells/2))'
            print *, sum(array1_3D)/nCells + sum(zMid(:,nCells/2))
@@ -2343,7 +2343,7 @@ contains
               wrk = sqrt( &
                 sum( &
                 ( & 
-                (divExact(:)-scalarWrk1(kLayer,:))/ max(abs(divExact(:)),1.0e-15)  &
+                (divExact(:)-scalarWrk1(kLayer,:))/ max(abs(divExact(:)),1.0e-15_RKIND)  &
                 )**2 * &
                 (1.0 - boundaryCell(1,:)) &
                 ) / nCells )
@@ -2569,7 +2569,7 @@ contains
            wrk = sqrt( &
              sum( &
              ( & 
-             (divExact(:)-divVectorCell(k,:))/ max(abs(divExact(:)),1.0e-15)  &
+             (divExact(:)-divVectorCell(k,:))/ max(abs(divExact(:)),1.0e-15_RKIND)  &
              )**2 * &
              (1.0 - boundaryCell(1,:)) &
              ) / nCells )
