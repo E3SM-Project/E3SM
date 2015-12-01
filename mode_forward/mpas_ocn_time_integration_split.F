@@ -351,6 +351,8 @@ module ocn_time_integration_split
       n_bcl_iter(config_n_ts_iter) = config_n_bcl_iter_end
 
       do split_explicit_step = 1, config_n_ts_iter
+         call mpas_timer_start('se loop', .false.)
+
          stage1_tend_time = min(split_explicit_step,2)
 
          call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
@@ -447,8 +449,9 @@ module ocn_time_integration_split
          endif
 
          ! compute velocity tendencies, T(u*,w*,p*)
-         call mpas_timer_start("se_bcl_vel", .false., timer_bcl_vel)
+         call mpas_timer_start("se bcl vel", .false., timer_bcl_vel)
 
+         call mpas_timer_start('se bcl vel tend', .false.)
          block => domain % blocklist
          do while (associated(block))
            call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
@@ -486,6 +489,7 @@ module ocn_time_integration_split
 
             block => block % next
          end do
+         call mpas_timer_stop('se bcl vel tend')
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          ! BEGIN baroclinic iterations on linear Coriolis term
@@ -499,6 +503,7 @@ module ocn_time_integration_split
                split = 1
             endif
 
+            call mpas_timer_start('bcl iters on linear Coriolis', .false.)
             block => domain % blocklist
             do while (associated(block))
                call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
@@ -577,6 +582,7 @@ module ocn_time_integration_split
 
                block => block % next
             end do
+            call mpas_timer_stop('bcl iters on linear Coriolis')
 
             call mpas_threading_barrier()
 
@@ -591,7 +597,7 @@ module ocn_time_integration_split
 
          end do  ! do j=1,config_n_bcl_iter
 
-         call mpas_timer_stop("se_bcl_vel", timer_bcl_vel)
+         call mpas_timer_stop("se bcl vel", timer_bcl_vel)
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          ! END baroclinic iterations on linear Coriolis term
@@ -610,6 +616,7 @@ module ocn_time_integration_split
 
          if (trim(config_time_integrator) == 'unsplit_explicit') then
 
+            call mpas_timer_start('btr vel ue', .false.)
             block => domain % blocklist
             do while (associated(block))
                call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
@@ -652,10 +659,12 @@ module ocn_time_integration_split
 
                block => block % next
             end do  ! block
+            call mpas_timer_stop('btr vel ue')
 
          elseif (trim(config_time_integrator) == 'split_explicit') then
 
             ! Initialize variables for barotropic subcycling
+            call mpas_timer_start('btr vel se init', .false.)
             block => domain % blocklist
             do while (associated(block))
                call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
@@ -703,10 +712,12 @@ module ocn_time_integration_split
 
                block => block % next
             end do  ! block
+            call mpas_timer_stop('btr vel se init')
 
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             ! BEGIN Barotropic subcycle loop
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            call mpas_timer_start('btr se subcycle loop', .false.)
             do j = 1, config_n_btr_subcycles * config_btr_subcycle_loop_factor
 
                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1165,11 +1176,13 @@ module ocn_time_integration_split
                newBtrSubcycleTime = mod(newBtrSubcycleTime,2)+1
       
             end do ! j=1,config_n_btr_subcycles
+            call mpas_timer_stop('btr se subcycle loop')
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             ! END Barotropic subcycle loop
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             ! Normalize Barotropic subcycle sums: ssh, normalBarotropicVelocity, and F
+            call mpas_timer_start('btr se norm', .false.)
             block => domain % blocklist
             do while (associated(block))
                call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
@@ -1194,6 +1207,7 @@ module ocn_time_integration_split
 
                block => block % next
             end do  ! block
+            call mpas_timer_stop('btr se norm')
 
             call mpas_threading_barrier()
       
@@ -1212,6 +1226,7 @@ module ocn_time_integration_split
             ! over the barotropic subcycles.
             ! efficiency: This next block of code is really a check for debugging, and can 
             ! be removed later.
+            call mpas_timer_start('btr se ssh verif', .false.)
             block => domain % blocklist
             do while (associated(block))
                call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
@@ -1286,6 +1301,7 @@ module ocn_time_integration_split
 
                block => block % next
             end do  ! block
+            call mpas_timer_stop('btr se ssh verif')
 
          endif ! split_explicit  
 
@@ -1299,6 +1315,7 @@ module ocn_time_integration_split
 
          ! Thickness tendency computations and thickness halo updates are completed before tracer 
          ! tendency computations to allow monotonic advection.
+         call mpas_timer_start('se thick tend', .false.)
          block => domain % blocklist
          do while (associated(block))
             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -1322,8 +1339,9 @@ module ocn_time_integration_split
             ! compute vertAleTransportTop.  Use normalTransportVelocity for advection of layerThickness and tracers.
             ! Use time level 1 values of layerThickness and layerThicknessEdge because 
             ! layerThickness has not yet been computed for time level 2.
-           if (associated(highFreqThicknessNew)) then
-              call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
+            call mpas_timer_start('thick vert trans vel top', .false.)
+            if (associated(highFreqThicknessNew)) then
+               call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
                  layerThicknessCur, layerThicknessEdge, normalTransportVelocity, &
                  sshCur, dt, vertAleTransportTop, err, highFreqThicknessNew)
             else
@@ -1331,11 +1349,13 @@ module ocn_time_integration_split
                  layerThicknessCur, layerThicknessEdge, normalTransportVelocity, &
                  sshCur, dt, vertAleTransportTop, err)
             endif
+            call mpas_timer_stop('thick vert trans vel top')
 
             call ocn_tend_thick(tendPool, forcingPool, diagnosticsPool, meshPool)
 
             block => block % next
          end do
+         call mpas_timer_stop('se thick tend')
 
          call mpas_threading_barrier()
 
@@ -1351,6 +1371,7 @@ module ocn_time_integration_split
 
          call mpas_threading_barrier()
 
+         call mpas_timer_start('se tracer tend', .false.)
          block => domain % blocklist
          do while (associated(block))
             call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
@@ -1365,6 +1386,7 @@ module ocn_time_integration_split
 
             block => block % next
          end do
+         call mpas_timer_stop('se tracer tend')
 
          call mpas_threading_barrier()
 
@@ -1387,6 +1409,7 @@ module ocn_time_integration_split
 
          call mpas_threading_barrier()
 
+         call mpas_timer_start('se loop fini', .false.)
          block => domain % blocklist
          do while (associated(block))
             call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
@@ -1502,7 +1525,9 @@ module ocn_time_integration_split
 
                ! Efficiency note: We really only need this to compute layerThicknessEdge, density, pressure, and SSH 
                ! in this diagnostics solve.
+               call mpas_timer_start("slf diag solve", .false.)
                call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
+               call mpas_timer_stop("slf diag solve")
 
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             !
@@ -1581,7 +1606,8 @@ module ocn_time_integration_split
             block => block % next
          end do
 
-
+         call mpas_timer_stop('se loop fini')
+         call mpas_timer_stop('se loop')
 
       end do  ! split_explicit_step = 1, config_n_ts_iter
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1589,6 +1615,7 @@ module ocn_time_integration_split
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       ! Perform Sea Ice Formation Adjustment
+      call mpas_timer_start('se sea ice formation', .false.)
       block => domain % blocklist
       do while(associated(block))
         call mpas_pool_get_subpool(block % structs, 'state', statePool)
@@ -1604,9 +1631,12 @@ module ocn_time_integration_split
         call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessNew, 2)
         call mpas_pool_get_array(tracersPool, 'activeTracers', tracersGroupNew, 2)
 
+        call mpas_timer_start('se sea ice diag solve', .false.)
         call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
+        call mpas_timer_stop('se sea ice diag solve')
         block => block % next
       end do
+      call mpas_timer_stop('se sea ice formation')
 
       call mpas_timer_start("se implicit vert mix")
 
@@ -1625,13 +1655,19 @@ module ocn_time_integration_split
         ! be computed.  For kpp, more variables may be needed.  Either way, this
         ! could be made more efficient by only computing what is needed for the
         ! implicit vmix routine that follows.
+        call mpas_timer_start('se vmix diag solve', .false.)
         call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
+        call mpas_timer_stop('se vmix diag solve')
 
         ! Compute normalGMBolusVelocity; it will be added to the baroclinic modes in Stage 2 above.
         if (config_use_standardGM) then
+           call mpas_timer_start('se vmix gm comp Bolus vel', .false.)
            call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
+           call mpas_timer_stop('se vmix gm comp Bolus vel')
         end if
+        call mpas_timer_start('se vmix vmix imp', .false.)
         call ocn_vmix_implicit(dt, meshPool, diagnosticsPool, statePool, scratchPool, err, 2)
+        call mpas_timer_stop('se vmix vmix imp')
 
         block => block % next
       end do
@@ -1642,13 +1678,15 @@ module ocn_time_integration_split
       ! this leads to lack of volume conservation.  It is required because halo updates in stage 3 are only
       ! conducted on tendencies, not on the velocity and tracer fields.  So this update is required to 
       ! communicate the change due to implicit vertical mixing across the boundary.
-      call mpas_timer_start("se implicit vert mix halos")
+      call mpas_timer_start('se vmix halos', .false.)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
       call mpas_pool_get_field(statePool, 'normalVelocity', normalVelocityField, 2)
 
+      call mpas_timer_start('se vmix halos normalVelFld', .false.)
       call mpas_dmpar_exch_halo_field(normalVelocityField)
+      call mpas_timer_stop('se vmix halos normalVelFld')
 
       call mpas_pool_begin_iteration(tracersPool)
       do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
@@ -1656,16 +1694,19 @@ module ocn_time_integration_split
             call mpas_pool_get_field(tracersPool, groupItr % memberName, tracersGroupField, 2)
 
             if ( tracersGroupField % isActive ) then
+               call mpas_timer_start('se vmix halos tracersFld', .false.)
                call mpas_dmpar_exch_halo_field(tracersGroupField)
+               call mpas_timer_stop('se vmix halos tracersFld')
             end if
          end if
       end do
-      call mpas_timer_stop("se implicit vert mix halos")
+      call mpas_timer_stop('se vmix halos')
 
       call mpas_timer_stop("se implicit vert mix")
 
       call mpas_threading_barrier()
 
+      call mpas_timer_start('se fini', .false.)
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
@@ -1714,18 +1755,23 @@ module ocn_time_integration_split
             !$omp end workshare
          end if
 
+         call mpas_timer_start('se final diag solve', .false.)
          call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
+         call mpas_timer_stop('se final diag solve')
 
          ! Update the effective desnity in land ice if we're coupling to land ice
          call ocn_effective_density_in_land_ice_update(meshPool, forcingPool, statePool, scratchPool, err)
 
          ! Compute normalGMBolusVelocity; it will be added to normalVelocity in Stage 2 of the next cycle. 
          if (config_use_standardGM) then
+            call mpas_timer_start('se final gm comp Bolus vel', .false.)
             call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
+            call mpas_timer_stop('se final gm comp Bolus vel')
          end if
 
          call mpas_threading_barrier()
          !$omp master
+         call mpas_timer_start('se final mpas reconstruct', .false.)
          call mpas_reconstruct(meshPool, normalVelocityNew,  &
                           velocityX, velocityY, velocityZ,   &
                           velocityZonal, velocityMeridional, &
@@ -1735,6 +1781,7 @@ module ocn_time_integration_split
                           gradSSHX, gradSSHY, gradSSHZ,   &
                           gradSSHZonal, gradSSHMeridional &
                          )
+         call mpas_timer_stop('se final mpas reconstruct')
          !$omp end master
          call mpas_threading_barrier()
 
@@ -1750,7 +1797,9 @@ module ocn_time_integration_split
          call mpas_threading_barrier()
 
          if (config_use_standardGM) then
+            call mpas_timer_start('se final reconstruct gm vect', .false.)
             call ocn_reconstruct_gm_vectors(diagnosticsPool, meshPool)
+            call mpas_timer_stop('se final reconstruct gm vect')
          end if
 
          block => block % next
@@ -1764,6 +1813,7 @@ module ocn_time_integration_split
          call mpas_timer_stop("se effective density halo")
       end if
 
+      call mpas_timer_stop('se fini')
       call mpas_timer_stop("se timestep", timer_main)
       call mpas_threading_barrier()
 

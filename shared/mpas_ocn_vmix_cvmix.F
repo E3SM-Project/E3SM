@@ -294,6 +294,7 @@ contains
       allocate(RiSmoothed(nVertLevels+1))
       allocate(BVFSmoothed(nVertLevels+1))
 
+      call mpas_timer_start('cvmix cell loop', .false.)
       !$omp do schedule(runtime) private(k, bulkRichardsonNumberStop, kIndexOBL, bulkRichardsonFlag)
       do iCell = 1, nCells
 
@@ -377,6 +378,7 @@ contains
               bulkRichardsonNumberStop = config_cvmix_kpp_stop_OBL_search * config_cvmix_kpp_criticalBulkRichardsonNumber
               bulkRichardsonNumber(:,iCell) = bulkRichardsonNumberStop - 1.0_RKIND
               bulkRichardsonFlag = .false.
+              call mpas_timer_start('Bulk Richardson kIndexOBL loop', .false.)
               do kIndexOBL = 1, maxLevelCell(iCell)
 
                  ! set OBL at bottom of kIndexOBL cell for computation of bulk Richardson number
@@ -418,6 +420,8 @@ contains
                                  sum(density(1:kav,iCell))/real(kav, kind=RKIND)) / rho_sw
             
               enddo ! do kIndexOBL
+              call mpas_timer_stop('Bulk Richardson kIndexOBL loop')
+
               cvmix_variables % bulkRichardson_cntr(:) = cvmix_kpp_compute_bulk_Richardson( &
                    zt_cntr = cvmix_variables % zt_cntr(1:nVertLevels), &
                    delta_buoy_cntr = bulkRichardsonNumberBuoy(1:nVertLevels,iCell), &
@@ -458,6 +462,7 @@ contains
 
              endif
 
+            call mpas_timer_start('cvmix coeffs kpp', .false.)
             call cvmix_coeffs_kpp(                                              &
                           Mdiff_out = cvmix_variables % Mdiff_iface(1:nVertLevels+1),       &
                           Tdiff_out = cvmix_variables % Tdiff_iface(1:nVertLevels+1),       &
@@ -475,6 +480,7 @@ contains
                           surf_buoy = cvmix_variables%SurfaceBuoyancyForcing,               &
                           nlev = maxLevelCell(iCell),                                  &
                           max_nlev = nVertLevels)
+            call mpas_timer_stop('cvmix coeffs kpp')
 
             ! intent out of BoundaryLayerDepth is boundary layer depth measured in meters and vertical index
             boundaryLayerDepth(iCell) = cvmix_variables % BoundaryLayerDepth
@@ -564,6 +570,7 @@ contains
 
       end do  ! do iCell=1,mesh%nCells
       !$omp end do
+      call mpas_timer_stop('cvmix cell loop')
 
       ! dellocate cmvix variables
       deallocate(cvmix_variables % Mdiff_iface)

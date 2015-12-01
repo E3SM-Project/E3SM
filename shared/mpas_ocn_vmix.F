@@ -150,11 +150,25 @@ contains
       vertDiffTopOfCell = 0.0_RKIND
       !$omp end workshare
 
+      call mpas_timer_start('coef const build', .false.)
       call ocn_vmix_coefs_const_build(meshPool, statePool, diagnosticsPool, err1, timeLevel)
+      call mpas_timer_stop('coef const build')
+
+      call mpas_timer_start('coef tanh build', .false.)
       call ocn_vmix_coefs_tanh_build(meshPool, statePool, diagnosticsPool, err2, timeLevel)
+      call mpas_timer_stop('coef tanh build')
+
+      call mpas_timer_start('coef rich build', .false.)
       call ocn_vmix_coefs_rich_build(meshPool, statePool, diagnosticsPool, scratchPool, err3, timeLevel)
+      call mpas_timer_stop('coef rich build')
+
+      call mpas_timer_start('coef cvmix build', .false.)
       call ocn_vmix_coefs_cvmix_build(meshPool, statePool, diagnosticsPool, err4, timeLevel)
+      call mpas_timer_stop('coef cvmix build')
+
+      call mpas_timer_start('coef redi build', .false.)
       call ocn_vmix_coefs_redi_build(meshPool, statePool, diagnosticsPool, err5, timeLevel)
+      call mpas_timer_stop('coef redi build')
 
       err = ior(ior(ior(err1, ior(err2, err3)), err4), err5)
 
@@ -380,6 +394,7 @@ contains
 
       allocate(A(nVertLevels),B(nVertLevels),C(nVertLevels),tracersTemp(num_tracers,nVertLevels))
 
+      call mpas_timer_start('vmix tracers tend imp loop', .false.)
       !$omp do schedule(runtime) private(N, k)
       do iCell = 1, nCells
          ! Compute A(k), B(k), C(k) for tracers
@@ -411,6 +426,7 @@ contains
          tracers(:,N+1:nVertLevels,iCell) = -1e34
       end do
       !$omp end do
+      call mpas_timer_stop('vmix tracers tend imp loop')
 
       deallocate(A, B, C, tracersTemp)
 
@@ -481,10 +497,14 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
+      call mpas_timer_start('vmix coefs', .false.)
       call ocn_vmix_coefs(meshPool, statePool, diagnosticsPool, scratchPool, err, timeLevel)
+      call mpas_timer_stop('vmix coefs')
 
       ! if using CVMix, then viscosity has to be averaged from cell centers to cell edges
       if ( config_use_cvmix ) then
+
+      call mpas_timer_start('CVMix avg', .false.)
       !$omp workshare
       vertViscTopOfEdge(:,:) = 0.0
       !$omp end workshare
@@ -497,17 +517,22 @@ contains
          enddo
       enddo
       !$omp end do
+      call mpas_timer_stop('CVMix avg')
+
       endif
 
       !
       !  Implicit vertical solve for momentum
       !
+      call mpas_timer_start('vmix solve momentum', .false.)
       call ocn_vel_vmix_tend_implicit(meshPool, dt, kineticEnergyCell, vertViscTopOfEdge, layerThickness, layerThicknessEdge, normalVelocity, err)
+      call mpas_timer_stop('vmix solve momentum')
 
       !
       !  Implicit vertical solve for all tracers
       !
 
+      call mpas_timer_start('vmix solve tracers', .false.)
       call mpas_pool_begin_iteration(tracersPool)
       do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
 
@@ -518,6 +543,7 @@ contains
             end if
          end if
       end do
+      call mpas_timer_stop('vmix solve tracers')
 
 
    end subroutine ocn_vmix_implicit!}}}
