@@ -315,36 +315,16 @@ contains
          iceVolumeCell, &
          snowVolumeCell
 
-    type(field3DReal), pointer :: &
-         iceAreaCategoryField, &
-         iceVolumeCategoryField, &
-         snowVolumeCategoryField
-
     integer, pointer :: &
-         nCells
+         nCellsSolve
 
     integer :: &
          iCell
 
-    ! halo exchange of mass tracers
-    call mpas_timer_start("Halo")
-
-    call MPAS_pool_get_subpool(domain % blocklist % structs, "tracers", tracersPool)
-
-    call MPAS_pool_get_field(tracersPool, "iceAreaCategory", iceAreaCategoryField, 1)
-    call MPAS_pool_get_field(tracersPool, "iceVolumeCategory", iceVolumeCategoryField, 1)
-    call MPAS_pool_get_field(tracersPool, "snowVolumeCategory", snowVolumeCategoryField, 1)
-
-    call MPAS_dmpar_exch_halo_field(iceAreaCategoryField)
-    call MPAS_dmpar_exch_halo_field(iceVolumeCategoryField)
-    call MPAS_dmpar_exch_halo_field(snowVolumeCategoryField)
-
-    call mpas_timer_stop("Halo")
-
     block => domain % blocklist
     do while (associated(block))
 
-       call MPAS_pool_get_dimension(block % dimensions, "nCells", nCells)
+       call MPAS_pool_get_dimension(block % dimensions, "nCells", nCellsSolve)
 
        call MPAS_pool_get_subpool(block % structs, "tracers", tracersPool)
        call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracersAggregatePool)
@@ -360,7 +340,7 @@ contains
 
        call MPAS_pool_get_array(icestatePool, "totalMassCell", totalMassCell)
 
-       do iCell = 1, nCells
+       do iCell = 1, nCellsSolve
 
           iceAreaCell(iCell)    = sum(iceAreaCategory(1,:,iCell))
           iceVolumeCell(iCell)  = sum(iceVolumeCategory(1,:,iCell))
@@ -406,7 +386,8 @@ contains
          velocitySolverPool
 
     type(field1DReal), pointer :: &
-         iceAreaCellInitialField
+         iceAreaCellInitialField, &
+         totalMassCellField
 
     real(kind=RKIND), dimension(:), pointer :: &
          iceAreaVertex, &
@@ -448,7 +429,9 @@ contains
     call mpas_timer_start("Halo")
     call MPAS_pool_get_subpool(domain % blocklist % structs, "icestate", icestatePool)
     call MPAS_pool_get_field(icestatePool, "iceAreaCellInitial", iceAreaCellInitialField)
+    call MPAS_pool_get_field(icestatePool, "totalMassCell", totalMassCellField)
     call MPAS_dmpar_exch_halo_field(iceAreaCellInitialField)
+    call MPAS_dmpar_exch_halo_field(totalMassCellField)
     call mpas_timer_stop("Halo")
 
     ! interpolate area and mass from cells to vertices
