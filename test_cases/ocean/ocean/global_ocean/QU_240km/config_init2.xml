@@ -9,7 +9,7 @@
 	<add_link source="../init_step1/salinity.nc" dest="salinity.nc"/>
 	<add_link source="../init_step1/wind_stress.nc" dest="wind_stress.nc"/>
 	<add_link source="../init_step1/topography.nc" dest="topography.nc"/>
-	<add_link source="/turquoise/usr/projects/regionalclimate/COMMON_MPAS/ocean/grids/initial_condition_database/chlorophyllA_monthly_averages.nc" dest="swData.nc"/>
+	<add_link source="../init_step1/swData.nc" dest="swData.nc"/>
 
 	<namelist name="namelist.ocean">
 		<option name="config_init_configuration">'global_ocean'</option>
