@@ -535,6 +535,7 @@ module ocn_forward_mode
             open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
             write(22, *) trim(timeStamp)
             close(22)
+            call shortwave_forcing_write_restart(domain)
          end if
 
          call mpas_timer_start('reset_io_alarms', .false.)
