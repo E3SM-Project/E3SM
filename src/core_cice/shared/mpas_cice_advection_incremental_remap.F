@@ -396,9 +396,9 @@ contains
           
           if (verboseInit) then
              if (ctestOnProc) then
-                write(stderrUnit,*), 'ctestGlobal, local ctest, block:', ctestGlobal, ctest, ctestBlockID
+                write(stderrUnit,*) 'ctestGlobal, local ctest, block:', ctestGlobal, ctest, ctestBlockID
              else
-                write(stderrUnit,*), 'Not on this proc: ctestGlobal =', cTestGlobal
+                write(stderrUnit,*) 'Not on this proc: ctestGlobal =', cTestGlobal
              endif
           endif
 
@@ -417,9 +417,9 @@ contains
           
           if (verboseInit) then
              if (etestOnProc) then
-                write(stderrUnit,*), 'etestGlobal, local etest, block:', etestGlobal, etest, etestBlockID
+                write(stderrUnit,*) 'etestGlobal, local etest, block:', etestGlobal, etest, etestBlockID
              else
-                write(stderrUnit,*), 'Not on this proc: etestGlobal =', eTestGlobal
+                write(stderrUnit,*) 'Not on this proc: etestGlobal =', eTestGlobal
              endif
           endif
 
@@ -438,9 +438,9 @@ contains
           
           if (verboseInit) then
              if (vtestOnProc) then
-                write(stderrUnit,*), 'vtestGlobal, local vtest, block:', vtestGlobal, vtest, vtestBlockID
+                write(stderrUnit,*) 'vtestGlobal, local vtest, block:', vtestGlobal, vtest, vtestBlockID
              else
-                write(stderrUnit,*), 'Not on this proc: vtestGlobal =', vTestGlobal
+                write(stderrUnit,*) 'Not on this proc: vtestGlobal =', vTestGlobal
              endif
           endif
 
@@ -4096,7 +4096,7 @@ contains
              iCat = 1
              write(stderrUnit,*) ' '
              write(stderrUnit,*) 'iCell =', indexToCellID(iCell)
-             write(stderrUnit,*), 'field value =', field(iCat,iCell)
+             write(stderrUnit,*) 'field value =', field(iCat,iCell)
              write(stderrUnit,*) 'neighbor values and edge gradients:'
              do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                 iCellNeighbor = cellsOnCell(iEdgeOnCell,iCell)
@@ -4321,7 +4321,7 @@ contains
              iCat = 1; iLayer = 1
              write(stderrUnit,*) ' '
              write(stderrUnit,*) 'iCell =', indexToCellID(iCell)
-             write(stderrUnit,*), 'field value =', field(iLayer,iCat,iCell)
+             write(stderrUnit,*) 'field value =', field(iLayer,iCat,iCell)
              write(stderrUnit,*) 'neighbor values and edge gradients:'
              do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                 iCellNeighbor = cellsOnCell(iEdgeOnCell,iCell)
