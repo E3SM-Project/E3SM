@@ -1490,24 +1490,29 @@ contains
        type (mpas_pool_type), pointer :: meshPool, forcingPool
 
        real (kind=RKIND) :: currentLat, currentLon
-       real (kind=RKIND) :: zonalWind, meridionalWind
-       real (kind=RKIND) :: angle
        real (kind=RKIND) :: dist, minDist
        real (kind=RKIND) :: x, x1, x2, y, y1, y2, coef, coef11, coef12, coef21, coef22
 
        integer :: ilat, iLon
        integer :: latSearch, lonSearch
-       integer :: iEdge
+       integer :: iCell
        integer :: xInd1, xInd2, yInd1, yInd2
 
-       real (kind=RKIND), dimension(:), pointer :: latEdge, lonEdge, angleEdge, surfaceStress
+       real (kind=RKIND), dimension(:), pointer :: latCell, lonCell, windStressZonal, windStressMeridional
 
-       integer, pointer :: nEdgesSolve, nEdges
+       integer, pointer :: nCellsSolve, nCells
 
+       logical, pointer :: config_use_bulk_wind_stress
        character (len=StrKIND), pointer :: config_global_ocean_windstress_method
        real (kind=RKIND), pointer :: config_global_ocean_windstress_conversion_factor
 
        iErr = 0
+
+       call mpas_pool_get_config(domain % configs, 'config_use_bulk_wind_stress', config_use_bulk_wind_stress)
+       if (.not.config_use_bulk_wind_stress) then
+          write(stderrUnit,'(A)') ' WARNING: wind stress not initialized because config_use_bulk_wind_stress = .false.'
+          return
+       endif
 
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_windstress_method', config_global_ocean_windstress_method)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_windstress_conversion_factor', config_global_ocean_windstress_conversion_factor)
@@ -1517,20 +1522,19 @@ contains
           call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
           call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
 
-          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-          call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
-          call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
-          call mpas_pool_get_array(meshPool, 'lonEdge', lonEdge)
-          call mpas_pool_get_array(meshPool, 'angleEdge', angleEdge)
+          call mpas_pool_get_array(meshPool, 'latCell', latCell)
+          call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
 
-          call mpas_pool_get_array(forcingPool, 'surfaceStress', surfaceStress)
+          call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonal)
+          call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional)
 
           if (config_global_ocean_windstress_method .eq. "nearest_neighbor") then
-             do iEdge = 1, nEdgesSolve
-                currentLat = latEdge(iEdge)
-                currentLon = lonEdge(iEdge)
-                angle = angleEdge(iEdge)
+             do iCell = 1, nCellsSolve
+                currentLat = latCell(iCell)
+                currentLon = lonCell(iCell)
 
                 minDist = 2.0_RKIND * pii
                 lonSearch = 1
@@ -1552,18 +1556,16 @@ contains
                    end if
                 end do
 
-                zonalWind = zonalWindIC % array(lonSearch, latSearch) * config_global_ocean_windstress_conversion_factor
-                meridionalWind = meridionalWindIC % array(lonSearch, latSearch) * config_global_ocean_windstress_conversion_factor
+                windStressZonal(iCell) = zonalWindIC % array(lonSearch, latSearch) * config_global_ocean_windstress_conversion_factor
+                windStressMeridional(iCell) = meridionalWindIC % array(lonSearch, latSearch) * config_global_ocean_windstress_conversion_factor
 
-                surfaceStress(iEdge) = zonalWind * cos(angle) + meridionalWind * sin(angle)
              end do
 
           elseif (config_global_ocean_windstress_method .eq. "bilinear_interpolation") then
 
-             do iEdge = 1, nEdges
-                x = lonEdge(iEdge)
-                y = latEdge(iEdge)
-                angle = angleEdge(iEdge)
+             do iCell = 1, nCells
+                x = lonCell(iCell)
+                y = latCell(iCell)
 
                 ! Set up bilinear interpolation indices in longitude, watching for periodic boundary at 0 and 2 pi
                 xInd1 = 0
@@ -1626,19 +1628,17 @@ contains
                    coef22 = 1.0_RKIND*(x -x1)*(y -y1)
                 endif
 
-                zonalWind = coef*config_global_ocean_windstress_conversion_factor*( &
+                windStressZonal(iCell) = coef*config_global_ocean_windstress_conversion_factor*( &
                      coef11* zonalWindIC % array(xInd1, yInd1) &
                      + coef21* zonalWindIC % array(xInd2, yInd1) &
                      + coef12* zonalWindIC % array(xInd1, yInd2) &
                      + coef22* zonalWindIC % array(xInd2, yInd2) )
 
-                meridionalWind = coef*config_global_ocean_windstress_conversion_factor*( &
+                windStressMeridional(iCell) = coef*config_global_ocean_windstress_conversion_factor*( &
                      coef11* meridionalWindIC % array(xInd1, yInd1) &
                      + coef21* meridionalWindIC % array(xInd2, yInd1) &
                      + coef12* meridionalWindIC % array(xInd1, yInd2) &
                      + coef22* meridionalWindIC % array(xInd2, yInd2) )
-
-                surfaceStress(iEdge) = zonalWind * cos(angle) + meridionalWind * sin(angle)
 
              end do
 
