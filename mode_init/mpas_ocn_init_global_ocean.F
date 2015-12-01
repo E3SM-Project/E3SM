@@ -125,14 +125,14 @@ contains
       write(stderrUnit,*) 'Cleaning up topography IC fields'
       call ocn_init_global_ocean_destroy_topo_fields()
 	  
-	  if(trim(config_sw_absorption_type) == 'ohlmann00') then
+      if(trim(config_sw_absorption_type) == 'ohlmann00') then
 	  
-      	write(stderrUnit,*) 'Reading penetrating shortwave lat/lon data'
-      	call ocn_init_setup_global_ocean_read_swData_lat_lon(domain,iErr)
-      	write(stderrUnit,*) 'Interpolating penetrating shortwave data'
-      	call ocn_init_setup_global_ocean_interpolate_swData(domain,iErr)
-      	write(stderrUnit,*) 'Cleaning penetrating shortwave data'
-      	call ocn_init_global_ocean_destroy_swData_fields()
+      write(stderrUnit,*) 'Reading penetrating shortwave lat/lon data'
+      call ocn_init_setup_global_ocean_read_swData_lat_lon(domain,iErr)
+      write(stderrUnit,*) 'Interpolating penetrating shortwave data'
+      call ocn_init_setup_global_ocean_interpolate_swData(domain,iErr)
+      write(stderrUnit,*) 'Cleaning penetrating shortwave data'
+      call ocn_init_global_ocean_destroy_swData_fields()
       
       endif
       
@@ -1504,30 +1504,30 @@ subroutine ocn_init_setup_global_ocean_interpolate_swData(domain, iErr)!{{{
 
    character (len=StrKIND), pointer :: config_global_ocean_swData_method, xtime
    character (len=StrKIND), pointer :: config_global_ocean_swData_file, config_global_ocean_zenithAngle_varname, &
-									   config_global_ocean_swData_nlon_dimname, config_global_ocean_swData_nlat_dimname, &
-									   config_global_ocean_chlorophyll_varname, config_global_ocean_clearSky_varname
+				   config_global_ocean_swData_nlon_dimname, config_global_ocean_swData_nlat_dimname, &
+				   config_global_ocean_chlorophyll_varname, config_global_ocean_clearSky_varname
 									   
    iErr = 0
 
    call mpas_pool_get_config(domain % configs, 'config_global_ocean_swData_method', config_global_ocean_swData_method)
    call mpas_pool_get_config(domain % configs, 'config_global_ocean_swData_file', config_global_ocean_swData_file)
-   call mpas_pool_get_config(domain % configs, 'config_global_ocean_swData_zenithAngle_varname', config_global_ocean_zenithAngle_varname)
-   call mpas_pool_get_config(domain % configs, 'config_global_ocean_swData_chlorophyll_varname', config_global_ocean_chlorophyll_varname)
-   call mpas_pool_get_config(domain % configs, 'config_global_ocean_swData_clearSky_varname', config_global_ocean_clearSky_varname)
+   call mpas_pool_get_config(domain % configs, 'config_global_ocean_zenithAngle_varname', config_global_ocean_zenithAngle_varname)
+   call mpas_pool_get_config(domain % configs, 'config_global_ocean_chlorophyll_varname', config_global_ocean_chlorophyll_varname)
+   call mpas_pool_get_config(domain % configs, 'config_global_ocean_clearSky_varname', config_global_ocean_clearSky_varname)
    call mpas_pool_get_config(domain % configs, 'config_global_ocean_swData_nlon_dimname', config_global_ocean_swData_nlon_dimname)
    call mpas_pool_get_config(domain % configs, 'config_global_ocean_swData_nlat_dimname', config_global_ocean_swData_nlat_dimname)
-call mpas_pool_get_config(domain % configs, 'config_global_ocean_swData_method', config_global_ocean_swData_method)
+   call mpas_pool_get_config(domain % configs, 'config_global_ocean_swData_method', config_global_ocean_swData_method)
    ! Define stream for zenithAngle IC
    call MPAS_createStream(zenithStream, domain % iocontext, config_global_ocean_swData_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
    call MPAS_createStream(chlorophyllStream, domain % iocontext, config_global_ocean_swData_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
    call MPAS_createStream(clearSkyStream, domain % iocontext, config_global_ocean_swData_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
-    
+   
+
    ! Setup zenithAngle field for stream to be read in
    
    zenithAngleIC % fieldName = trim(config_global_ocean_zenithAngle_varname)
    zenithAngleIC % dimSizes(1) = nLonSW
    zenithAngleIC % dimSizes(2) = nLatSW
-   write(stderrUnit,*) nLonSW, nLatSW
    zenithAngleIC % dimNames(1) = trim(config_global_ocean_swData_nlon_dimname)
    zenithAngleIC % dimNames(2) = trim(config_global_ocean_swData_nlat_dimname)
  
@@ -1569,7 +1569,6 @@ call mpas_pool_get_config(domain % configs, 'config_global_ocean_swData_method',
    call MPAS_streamAddField(chlorophyllStream, chlorophyllIC, iErr)
    call MPAS_streamAddField(clearSkyStream, clearSKYIC, iErr)
      
-   
    do monIndex=1,12
    block_ptr => domain % blocklist
    do while(associated(block_ptr))
@@ -2174,7 +2173,8 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
                                           config_global_ocean_tracer_nlon_dimname, config_global_ocean_topography_file, &
                                           config_global_ocean_topography_nlat_dimname, config_global_ocean_topography_nlon_dimname, &
                                           config_global_ocean_windstress_file, config_global_ocean_windstress_nlat_dimname, &
-                                          config_global_ocean_windstress_nlon_dimname
+                                          config_global_ocean_windstress_nlon_dimname, config_global_ocean_swData_file, &
+                                          config_global_ocean_swData_nlon_dimname, config_global_ocean_swData_nlat_dimname
 
       integer, pointer :: config_vert_levels
       type (mpas_io_context_type), pointer :: iocontext_ptr
@@ -2203,6 +2203,10 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
       call mpas_pool_get_config(configPool, 'config_global_ocean_windstress_file', config_global_ocean_windstress_file)
       call mpas_pool_get_config(configPool, 'config_global_ocean_windstress_nlat_dimname', config_global_ocean_windstress_nlat_dimname)
       call mpas_pool_get_config(configPool, 'config_global_ocean_windstress_nlon_dimname', config_global_ocean_windstress_nlon_dimname)
+      call mpas_pool_get_config(configPool, 'config_global_ocean_swData_file', config_global_ocean_swData_file)
+      call mpas_pool_get_config(configPool, 'config_global_ocean_swData_nlat_dimname', config_global_ocean_swData_nlat_dimname)
+      call mpas_pool_get_config(configPool, 'config_global_ocean_swData_nlon_dimname', config_global_ocean_swData_nlon_dimname)
+
 
       inputFile = MPAS_io_open(config_global_ocean_depth_file, MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
 
@@ -2214,6 +2218,13 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
 
       call MPAS_io_inq_dim(inputFile, config_global_ocean_tracer_nlat_dimname, nLatTracer, iErr)
       call MPAS_io_inq_dim(inputFile, config_global_ocean_tracer_nlon_dimname, nLonTracer, iErr)
+
+      call MPAS_io_close(inputFile, iErr)
+
+      inputFile = MPAS_io_open(config_global_ocean_swData_file, MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
+ 
+      call MPAS_io_inq_dim(inputFile, config_global_ocean_swData_nlat_dimname, nLatSW, iErr)
+      call MPAS_io_inq_dim(inputFile, config_global_ocean_swData_nlon_dimname, nLonSW, iErr)
 
       call MPAS_io_close(inputFile, iErr)
 
