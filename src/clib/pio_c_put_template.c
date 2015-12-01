@@ -52,26 +52,18 @@ int PIO_function()
       vdesc = file->varlist + varid;
 
       if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int));
-      }else{
+	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
+      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
 	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
       }
-      request = vdesc->request;
-      /*
-      int reqn;
-      reqn = vdesc->nreqs;
-      request = vdesc->request;
-      while(*request  != NC_REQ_NULL){
-	reqn++;
-	request = vdesc->request+reqn;
-      }
-      */
+      request = vdesc->request+vdesc->nreqs;
+
       if(ios->io_rank==0){
 	ierr = ncmpi_function();
       }else{
-	vdesc->request[0] = PIO_REQ_NULL;
+	*request = PIO_REQ_NULL;
       }
-      vdesc->nreqs = 1;
+      vdesc->nreqs++;
       flush_output_buffer(file, false, 0);
       break;
 #endif
