@@ -1364,6 +1364,7 @@ contains
       integer  :: nVertices, iCell, i, im1, i0, ip1, iVertex
       integer, pointer :: nCells
       real (kind=RKIND), dimension(:), allocatable :: xv,yv,zv
+      real (kind=RKIND), dimension(3) :: v1, v2, v3
       real (kind=RKIND), pointer :: radiusLocal
       integer, dimension(:,:), pointer :: verticesOnCell
       integer, dimension(:), pointer :: nCellVerticesArray
@@ -1423,9 +1424,16 @@ contains
 
             ! precompute B_i areas
             ! always the same because B_i independent of xp,yp,zp
-            areaBArray(iCell, i) = mpas_triangle_signed_area( (/ xv(im1),yv(im1),zv(im1) /) , &
-              (/ xv(i0),yv(i0),zv(i0) /) , &
-              (/ xv(ip1),yv(ip1),zv(ip1) /) , meshPool)
+            v1(1) = xv(im1)
+            v1(2) = yv(im1)
+            v1(3) = zv(im1)
+            v2(1) = xv(i0)
+            v2(2) = yv(i0)
+            v2(3) = zv(i0)
+            v3(1) = xv(ip1)
+            v3(2) = yv(ip1)
+            v3(3) = zv(ip1)
+            areaBArray(iCell, i) = mpas_triangle_signed_area(v1, v2, v3, meshPool)
           end do
           deallocate(xv, yv, zv)
 
