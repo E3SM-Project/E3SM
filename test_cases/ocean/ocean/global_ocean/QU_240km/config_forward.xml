@@ -3,6 +3,7 @@
 	<add_link source="../init_step2/ocean.nc" dest="init.nc"/>
 	<add_link source="../init_step2/graph.info" dest="graph.info"/>
 	<add_link source="../init_step2/init_mode_forcing_data.nc" dest="forcing_data.nc"/>
+        <add_link source="../init_step2/init_mode_shortwaveData.nc" dest="shortwaveData.nc"/>
 
 	<add_executable source="model" dest="ocean_model"/>
 	<add_executable source="metis" dest="metis"/>
@@ -50,6 +51,7 @@
 			</add_contents>
 		</stream>
 		<template name="forcing_data"/>
+		<template name="shortwave_forcing_data"/>
 		<template name="global_stats"/>
 
 	</streams>
