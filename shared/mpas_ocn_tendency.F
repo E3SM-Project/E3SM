@@ -744,11 +744,9 @@ contains
                ! Performing shortwave absorption
                !
                if ( trim(groupItr % memberName) == 'activeTracers' ) then
-                  if ( config_use_activeTracers_surface_bulk_forcing ) then
                   call mpas_timer_start("short wave", .false.)
                   call ocn_tracer_short_wave_absorption_tend(meshPool, swForcingPool, forcingPool, indexTemperature, layerThickness, penetrativeTemperatureFlux, tracerGroupTend, err)
                   call mpas_timer_stop("short wave")
-                  endif
                endif
 
                !
