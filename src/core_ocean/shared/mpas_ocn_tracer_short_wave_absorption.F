@@ -103,11 +103,12 @@ contains
       !
       !-----------------------------------------------------------------
 
-      logical, pointer :: config_use_activeTracers_surface_bulk_forcing
+      character(len=strKIND), pointer :: config_sw_absorption_type
 
-      call MPAS_pool_get_config(ocnConfigs, 'config_use_activeTracers_surface_bulk_forcing', config_use_activeTracers_surface_bulk_forcing)
+      call MPAS_pool_get_config(ocnConfigs, 'config_sw_absorption_type', config_sw_absorption_type)
 
-      if (.not.config_use_activeTracers_surface_bulk_forcing) return
+      write(stderrUnit,*) 'in swTend',config_sw_absorption_type
+      if (trim(config_sw_absorption_type)=='none') return
 
       err = 0
       if(useJerlov) then

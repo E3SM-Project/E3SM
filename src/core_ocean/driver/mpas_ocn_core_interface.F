@@ -117,6 +117,7 @@ module ocn_core_interface
       logical, pointer :: frazilIceActive
       logical, pointer :: inSituEOSActive
       logical, pointer :: restartForcingFieldsActive
+      logical, pointer :: variableShortwaveActive
 
       type (mpas_pool_iterator_type) :: pkgItr
       logical, pointer :: packageActive
@@ -144,6 +145,8 @@ module ocn_core_interface
       character (len=StrKIND), pointer :: config_time_integrator
       character (len=StrKIND), pointer :: config_ocean_run_mode
       character (len=StrKIND), pointer :: config_pressure_gradient_type
+      character (len=StrKIND), pointer :: config_sw_absorption_type
+
       logical, pointer :: config_use_bulk_wind_stress
       logical, pointer :: config_use_bulk_thickness_flux
       character (len=StrKIND), pointer :: config_land_ice_flux_mode
@@ -161,6 +164,7 @@ module ocn_core_interface
       call mpas_pool_get_package(packagePool, 'analysisModeActive', analysisModeActive)
       call mpas_pool_get_package(packagePool, 'initModeActive', initModeActive)
       call mpas_pool_get_config(configPool, 'config_ocean_run_mode', config_ocean_run_mode)
+      
       if ( trim(config_ocean_run_mode) == 'forward' ) then
          forwardModeActive = .true.
       endif
@@ -211,6 +215,17 @@ module ocn_core_interface
       call mpas_pool_get_config(configPool, 'config_use_bulk_wind_stress', config_use_bulk_wind_stress)
       if ( config_use_bulk_wind_stress ) then
          windStressBulkPKGActive = .true.
+      end if
+
+      !
+      ! Test if chlorophyll, solar zenith angle, and clear sky radiation should
+      ! be used
+      !
+
+      call mpas_pool_get_package(packagePool,'variableShortwaveActive',variableShortwaveActive)
+      call mpas_pool_get_config(configPool,'config_sw_absorption_type',config_sw_absorption_type)
+      if (trim (config_sw_absorption_type) == 'ohlmann00') then
+         variableShortwaveActive = .false.
       end if
 
       !
