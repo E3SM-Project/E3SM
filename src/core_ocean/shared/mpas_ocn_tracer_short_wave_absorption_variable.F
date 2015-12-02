@@ -100,7 +100,6 @@ contains
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
          tend          !< Input/Output: velocity tendency
 
-      real (kind=RKIND), dimension(:,:), pointer :: swTend !LPV: testing array, should be removed before merge
       !-----------------------------------------------------------------
       !
       ! output variables
@@ -121,12 +120,12 @@ contains
       integer, dimension(:), pointer :: maxLevelCell
 
       real (kind=RKIND) :: depth
-      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, chlA !LPV: The chlA array is testing only
+      real (kind=RKIND), dimension(:), pointer :: refBottomDepth
       real (kind=RKIND), dimension(:), allocatable :: weights
-	  real (kind=RKIND), dimension(:), pointer :: chlorophyllA, zenithAngle, clearSkyRadiation
-	  character (len=StrKIND), pointer :: config_sw_absorption_type
-	  real (kind=RKIND), dimension(4) :: Avals, Kvals
-	  real (kind=RKIND) :: cloudRatio ! cloud Ratio = 1 - incident_sfc_sw_radiation/clearSkyRadiation
+      real (kind=RKIND), dimension(:), pointer :: chlorophyllA, zenithAngle, clearSkyRadiation
+      character (len=StrKIND), pointer :: config_sw_absorption_type
+      real (kind=RKIND), dimension(4) :: Avals, Kvals
+      real (kind=RKIND) :: cloudRatio ! cloud Ratio = 1 - incident_sfc_sw_radiation/clearSkyRadiation
 	  
       err = 0
 
@@ -135,23 +134,17 @@ contains
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
-! LPV: The following two arrays are for testing only and should be removed prior to merging
-      call mpas_pool_get_array(forcingPool, 'penetratingShortwave', swTend)
-      call mpas_pool_get_array(forcingPool, 'chlA_test', chlA)
-
-      swTend(:,:) = tend(index_temperature,:,:)
 
       allocate(weights(nVertLevels+1))
       weights = 0.0_RKIND
       weights(1) = 1.0_RKIND
-	  Avals(:)=0.0_RKIND
-	  Kvals(:)=0.0_RKIND
+      Avals(:)=0.0_RKIND
+      Kvals(:)=0.0_RKIND
 
-	  call mpas_pool_get_config(ocnConfigs, 'config_sw_absorption_type', config_sw_absorption_type)
-          call mpas_pool_get_array(swForcingPool,'chlorophyllData',chlorophyllA)
+      call mpas_pool_get_config(ocnConfigs, 'config_sw_absorption_type', config_sw_absorption_type)
+      call mpas_pool_get_array(swForcingPool,'chlorophyllData',chlorophyllA)
 
-          chlA=chlorophyllA
-	  select case ( trim(config_sw_absorption_type) ) 
+      select case ( trim(config_sw_absorption_type) ) 
       case('ohlmann00')
          call mpas_pool_get_array(swForcingPool,'zenithAngle',zenithAngle)
          call mpas_pool_get_array(swForcingPool,'clearSkyRadiation',clearSkyRadiation)
@@ -172,9 +165,6 @@ contains
          end do
          !$omp end do
       end select
-
-      !LPV: remove prior to merge
-      swTend(:,:) = (-swTend(:,:) + tend(index_temperature,:,:))/hflux_factor
 
       deallocate(weights)
 

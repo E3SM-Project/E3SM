@@ -82,10 +82,6 @@ contains
       !
       !-----------------------------------------------------------------
 
-      ! LPV for spatially variable, will also need hooks to the forcingPool to get the extinction coefficients for the blue and red
-      ! bands (extinction_coeffs_red and extinction_coeffs_bg)
-      ! This will have to be updated with times.  It should be okay to just update immediately between months.
-
       type (mpas_pool_type), intent(in) :: &
          meshPool, forcingPool          !< Input: mesh information
 
@@ -119,9 +115,6 @@ contains
       !
       !-----------------------------------------------------------------
 
-      ! this next array is for testing and should be removed before merge
-      real (kind=RKIND), dimension(:,:), pointer :: penetratingShortwave
-
       integer :: iCell, k
       integer, pointer :: nCells, nVertLevels
 
@@ -142,29 +135,21 @@ contains
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
-!LPV: this get array that follows can be struck prior to merge (testing only)
-      call mpas_pool_get_array(forcingPool, 'penetratingShortwave', penetratingShortwave)
       allocate(weights(nVertLevels+1))
       weights = 0.0_RKIND
       weights(1) = 1.0_RKIND
 
-      !LPV: the following line is for testing only
-      penetratingShortwave(:,:)=tend(index_temperature,:,:)
+      !$omp do schedule(runtime) private(depth, k)
+      do iCell = 1, nCells
+         depth = 0.0_RKIND
+         do k = 1, maxLevelCell(iCell)
+            depth = depth + layerThickness(k, iCell)
 
-         !$omp do schedule(runtime) private(depth, k)
-         do iCell = 1, nCells
-           depth = 0.0_RKIND
-           do k = 1, maxLevelCell(iCell)
-             depth = depth + layerThickness(k, iCell)
-
-             call ocn_get_jerlov_fraction(depth, weights(k+1))
-             tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell)*(weights(k) - weights(k+1))
-           end do
+            call ocn_get_jerlov_fraction(depth, weights(k+1))
+            tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell)*(weights(k) - weights(k+1))
          end do
-         !$omp end do
-
-         !LPV: the following line is for testing only
-      penetratingShortwave(:,:)=(-penetratingShortwave(:,:)+tend(index_temperature,:,:))/hflux_factor
+      end do
+      !$omp end do
 
       deallocate(weights)
 
