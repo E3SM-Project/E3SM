@@ -148,6 +148,12 @@ subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_nd
 #else
 !  for 7 mode bin_fluxes will be false
    bin_fluxes = idx_dst1>0 .and. idx_dst3>0 .and.idx_ncl3>0 .and. idx_so43>0
+#ifdef RAIN_EVAP_TO_COARSE_AERO
+      ! assign additional indices for resuspended BC and POM to coarse mode:
+      call cnst_get_ind('bc_a3',  idx_bc3)
+      call cnst_get_ind('pom_a3', idx_pom3)
+#endif
+
 #endif
 
    initialized = .true.
@@ -192,6 +198,14 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
       ! ocphidry represents OC mixed externally to hydrometeors
       cam_out%ocphidry(i) = -(aerdepwetis(i,idx_pom1)+aerdepwetis(i,idx_soa1)+aerdepwetis(i,idx_soa2))
 
+#ifdef RAIN_EVAP_TO_COARSE_AERO
+       ! add resuspended coarse-mode BC and OC
+         cam_out%bcphiwet(i) = cam_out%bcphiwet(i) -aerdepwetcw(i,idx_bc3)
+         cam_out%bcphidry(i) = cam_out%bcphidry(i) -aerdepwetis(i,idx_bc3)
+         cam_out%ocphiwet(i) = cam_out%ocphiwet(i) -aerdepwetcw(i,idx_pom3)
+         cam_out%ocphidry(i) = cam_out%ocphidry(i) -aerdepwetis(i,idx_pom3)
+#endif
+
       
       ! Four dust bins in SNICAR represent dust with dry diameters of
       ! 0.1-1.0um, 1.0-2.5um, 2.5-5.0um, 5.0-10um, respectively.  Dust
@@ -231,6 +245,13 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
       cam_out%ocphidry(i) = -(aerdepwetis(i,idx_pom1)+aerdepwetis(i,idx_pom4)+ &
                               aerdepwetis(i,idx_soa1)+aerdepwetis(i,idx_soa2))
 
+#ifdef RAIN_EVAP_TO_COARSE_AERO
+       ! add resuspended coarse-mode BC and OC
+         cam_out%bcphiwet(i) = cam_out%bcphiwet(i) -aerdepwetcw(i,idx_bc3)
+         cam_out%bcphidry(i) = cam_out%bcphidry(i) -aerdepwetis(i,idx_bc3)
+         cam_out%ocphiwet(i) = cam_out%ocphiwet(i) -aerdepwetcw(i,idx_pom3)
+         cam_out%ocphidry(i) = cam_out%ocphidry(i) -aerdepwetis(i,idx_pom3)
+#endif
 
       ! Four dust bins in SNICAR represent dust with dry diameters of
       ! 0.1-1.0um, 1.0-2.5um, 2.5-5.0um, 5.0-10um, respectively.  Dust
@@ -327,6 +348,11 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
          cam_out%ocphiwet(i) = cam_out%ocphiwet(i) -(aerdepwetis(i,idx_pom1)+aerdepwetcw(i,idx_pom1))
       if (idx_pom4>0) &
          cam_out%ocphiwet(i) = cam_out%ocphiwet(i) -(aerdepwetis(i,idx_pom4)+aerdepwetcw(i,idx_pom4))
+#ifdef RAIN_EVAP_TO_COARSE_AERO
+       ! add resuspended coarse-mode BC and OC
+         cam_out%bcphiwet(i) = cam_out%bcphiwet(i) -(aerdepwetis(i,idx_bc3)+aerdepwetcw(i,idx_bc3))
+         cam_out%ocphiwet(i) = cam_out%ocphiwet(i) -(aerdepwetis(i,idx_pom3)+aerdepwetcw(i,idx_pom3))
+#endif
 
       ! dust fluxes
       !
@@ -381,6 +407,12 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
       ! ocphodry represents OC mixed external to hydrometeors
       cam_out%ocphodry(i) = aerdepdryis(i,idx_pom1)+aerdepdryis(i,idx_soa1)+aerdepdryis(i,idx_soa2)+ &
                             aerdepdrycw(i,idx_pom1)+aerdepdrycw(i,idx_soa1)+aerdepdrycw(i,idx_soa2)
+#ifdef RAIN_EVAP_TO_COARSE_AERO
+       ! add resuspended coarse-mode BC and OC
+         cam_out%bcphodry(i) = cam_out%bcphodry(i) + (aerdepdryis(i,idx_bc3)+aerdepdrycw(i,idx_bc3))
+         cam_out%ocphodry(i) = cam_out%ocphodry(i) + (aerdepdryis(i,idx_pom3)+aerdepdrycw(i,idx_pom3))
+#endif
+
 
       ! NOTE: drycw fluxes shown above ideally would be included as
       ! within-hydrometeor species, but this would require passing
@@ -420,6 +452,11 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
       cam_out%ocphodry(i) = aerdepdryis(i,idx_pom1)+aerdepdryis(i,idx_pom4)+aerdepdryis(i,idx_soa1)+aerdepdryis(i,idx_soa2)+ &
                             aerdepdrycw(i,idx_pom1)+aerdepdrycw(i,idx_pom4)+aerdepdrycw(i,idx_soa1)+aerdepdrycw(i,idx_soa2)
 
+#ifdef RAIN_EVAP_TO_COARSE_AERO
+       ! add resuspended coarse-mode BC and OC
+         cam_out%bcphodry(i) = cam_out%bcphodry(i) + (aerdepdryis(i,idx_bc3)+aerdepdrycw(i,idx_bc3))
+         cam_out%ocphodry(i) = cam_out%ocphodry(i) + (aerdepdryis(i,idx_pom3)+aerdepdrycw(i,idx_pom3))
+#endif
 
       ! NOTE: drycw fluxes shown above ideally would be included as
       ! within-hydrometeor species, but this would require passing
@@ -524,6 +561,12 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
            cam_out%ocphidry(i) = cam_out%ocphidry(i) + aerdepdryis(i,idx_soa1)+aerdepdrycw(i,idx_soa1)
       if (idx_soa2>0) &
            cam_out%ocphodry(i) = cam_out%ocphodry(i) + aerdepdryis(i,idx_soa2)+aerdepdrycw(i,idx_soa2)
+
+#ifdef RAIN_EVAP_TO_COARSE_AERO
+       ! add resuspended coarse-mode BC and OC to xxphidry
+         cam_out%bcphidry(i) = cam_out%bcphidry(i) + (aerdepdryis(i,idx_bc3)+aerdepdrycw(i,idx_bc3))
+         cam_out%ocphidry(i) = cam_out%ocphidry(i) + (aerdepdryis(i,idx_pom3)+aerdepdrycw(i,idx_pom3))
+#endif
 
       ! dust fluxes
       !
