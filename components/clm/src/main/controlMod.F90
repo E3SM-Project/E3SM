@@ -40,6 +40,8 @@ module controlMod
   use UrbanParamsType         , only: urban_hac, urban_traffic
   use clm_varcon              , only: h2osno_max
   use clm_varctl              , only: use_dynroot
+  use CNAllocationMod         , only: nu_com_phosphatase,nu_com_nfix 
+  use clm_varctl              , only: nu_com
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -153,7 +155,13 @@ contains
     namelist /clm_inparm/ hist_wrtch4diag
 
     ! BGC info
-
+    namelist /clm_inparm/  &
+         nu_com
+    namelist /clm_inparm/  &
+         nu_com_phosphatase
+    namelist /clm_inparm/  &
+         nu_com_nfix
+         
     namelist /clm_inparm/  &
          suplnitro,suplphos
     namelist /clm_inparm/ &
@@ -546,6 +554,9 @@ contains
        call mpi_bcast (override_bgc_restart_mismatch_dump, 1, MPI_LOGICAL, 0, mpicom, ier)
     end if
     call mpi_bcast (suplphos, len(suplphos), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (nu_com, len(nu_com), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (nu_com_phosphatase, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (nu_com_nfix, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! isotopes
     call mpi_bcast (use_c13, 1, MPI_LOGICAL, 0, mpicom, ier)
