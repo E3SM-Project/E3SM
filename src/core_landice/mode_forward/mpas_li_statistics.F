@@ -166,9 +166,6 @@ module li_statistics
      integer :: iCell, iCell1, iCell2, iEdge, kLevel
      integer :: proc
 
-     ! local parameters
-     real (kind=RKIND), parameter :: scyr = 31536000.0_RKIND  ! seconds per 365-day year
-
      block => domain % blocklist
      dminfo => domain % dminfo
 
