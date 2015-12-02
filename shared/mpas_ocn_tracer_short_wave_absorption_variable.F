@@ -327,20 +327,22 @@ contains
     	type (domain_type) :: domain
         type (MPAS_timeInterval_type) :: timeStepSW
     	type (MPAS_clock_type) :: simulationClock
-    	
+
+        logical,pointer :: config_use_activeTracers_surface_bulk_forcing        
     	logical, intent(in) :: firstTimeStep
     	character(len=strKind), pointer :: config_sw_absorption_type
     	character(len=strKind), pointer :: config_dt
     	real(kind=RKIND) :: dt
 
 
+        call MPAS_pool_get_config(domain%configs, 'config_use_activeTracers_surface_bulk_forcing', config_use_activeTracers_surface_bulk_forcing)
     	call MPAS_pool_get_config(domain%configs, 'config_sw_absorption_type', config_sw_absorption_type)
     	call MPAS_pool_get_config(domain%configs, 'config_dt', config_dt)
     	
         call mpas_set_timeInterval(timeStepSW,timeString=config_dt)
         call mpas_get_timeInterval(timeStepSW,dt=dt)
 
-    	if(trim(config_sw_absorption_type) == 'ohlmann00') then
+    	if(trim(config_sw_absorption_type) == 'ohlmann00' .and. config_use_activeTracers_surface_bulk_forcing) then
     	     call MPAS_forcing_get_forcing(shortwaveForcingGroup, &
     	     		'shortwave_monthly_observations', streamManager, dt)
     	endif
