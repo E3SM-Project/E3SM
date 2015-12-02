@@ -1,12 +1,6 @@
-
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
-load "$HOME/contrib/ncl/homme_get_resolution.ncl"
-
-
-
-
 
 
 begin
@@ -15,9 +9,9 @@ begin
 
   fcnt = dimsizes(fnames)
   fps=fall[0];   file with ps
-  f=fall[1];     f has zeta
-  fT=fall[2];    file with T, Q, Q2
-;  fQ=fall[3];    file with Q
+  f=fall[0];     f has zeta
+  fT=fall[1];    file with T, Q, Q2
+  fQ=fall[1];    file with Q
   
 
 ; for HOMME dycore.  
@@ -28,12 +22,11 @@ begin
     hdeg=sprintf("%4.2f", deg)
     print("NE="+NE+" NPTS="+NPTS+" degree="+hdeg)
   else
-    deg = get_resolution(systemfunc("pwd"))
-    hdeg=sprintf("%7.2f", deg)
+    hdeg=""
   end if 
   
-  output_format = "ncgm"
-;  output_format = "pdf"
+;  output_format = "ncgm"
+  output_format = "pdf"
   output_format@wkOrientation = "landscape"
 
 
@@ -46,8 +39,10 @@ begin
 
 
 ; change the levels and or times to plot here
-  firsttime=9
-  lasttime=9 ; ntimes-1
+  n9 = closest_val(9,fps->time)
+
+  firsttime=n9
+  lasttime=n9
   timeinc=1
 
 

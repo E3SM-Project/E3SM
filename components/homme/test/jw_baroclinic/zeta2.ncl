@@ -1,9 +1,6 @@
-
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
-load "$HOME/contrib/ncl/homme_get_resolution.ncl"
-
 
 
 
@@ -14,19 +11,18 @@ begin
   fcnt = dimsizes(fnames)
 
   fps=fall[0];   file with ps
-  f=fall[1];     f has zeta
+  f=fall[0];     f has zeta
 ;  fT=fall[2];    file with T
 ;  fQ=fall[3];    file with Q
 
 if (isatt(f,"ne")) then
    NE=f@ne
-   NPTS = f@nv
+   NPTS = f@np
    deg=360.0 / (4*NE*(NPTS-1))
    hdeg=sprintf("%4.2f", deg)
    print("NE="+NE+" NPTS="+NPTS+" degree="+hdeg)
 else
-   deg = get_resolution()
-   hdeg=sprintf("%7.2f", deg)
+   hdeg=""
 end if 
 
 ;  field = "ps"
@@ -34,24 +30,19 @@ end if
 
   output_format = "ncgm"
 
-
-  vcnt=new((/fcnt,5/),"integer")
-  vcnt(0,:) = getfiledimsizes(f)
-  
-  ntimes = vcnt(0,4)
-  nlev = vcnt(0,2)
-  nlat = vcnt(0,1)
-  nlon = vcnt(0,0)
-
-
-
-
+  ntimes = dimsizes(fps->time)
+  nlev = dimsizes(fps->lev)
+  nlat = dimsizes(fps->lat)
+  nlon = dimsizes(fps->lon)
+  print ("ntimes="+ntimes+" nlev="+nlev+" nlat x nlon "+nlat+"x"+nlon)
 
 
 
 ; change the levels and or times to plot here
-  firsttime=9
-  lasttime=ntimes-1
+  n9 = closest_val(9,fps->time)
+
+  firsttime=n9
+  lasttime=n9
   timeinc=1
 
 
