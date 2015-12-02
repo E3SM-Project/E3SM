@@ -2,8 +2,6 @@
 !! @file pio_support.F90
 !! @brief internal code for compiler workarounds, aborts and debug functions
 !!
-!! $Revision$
-!! $LastChangedDate$
 !<
 module pio_support
   use pio_kinds

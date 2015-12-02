@@ -15,8 +15,14 @@ module pioExample
 
     include 'mpif.h'
 
-    integer, parameter :: LEN = 16  ! total length of the array we are using.  This is then divided among MPI processes
-    integer, parameter :: VAL = 42  ! value used for array that will be written to netcdf file
+    !> @brief Length of the data array we are using.  This is then
+    !! divided among MPI processes.
+    integer, parameter :: LEN = 16
+
+    !> @brief Value used for array that will be written to netcdf file.
+    integer, parameter :: VAL = 42  
+
+    !> @brief Error code if anything goes wrong.
     integer, parameter :: ERR_CODE = 99
 
     !> @brief A class to hold example code and data.
@@ -24,41 +30,108 @@ module pioExample
     !! example.
     type, public :: pioExampleClass
 
+        !> @brief Rank of processor running the code.
         integer :: myRank
+
+        !> @brief Number of processors participating in MPI communicator.
         integer :: ntasks
+
+        !> @brief Number of processors performing I/O.
         integer :: niotasks
-        integer :: stride        ! stride in the mpi rank between io tasks
+
+        !> @brief Stride in the mpi rank between io tasks.
+        integer :: stride        
+
+        !> @brief Number of aggregator.
         integer :: numAggregator
+
+        !> @brief Start index of I/O processors.
         integer :: optBase
 
+        !> @brief The ParallelIO system set up by @ref PIO_init.
         type(iosystem_desc_t) :: pioIoSystem
+
+        !> @brief Contains data identifying the file.
         type(file_desc_t)     :: pioFileDesc
+
+        !> @brief The netCDF variable ID.
         type(var_desc_t)      :: pioVar
+
+        !> @brief An io descriptor handle that is generated in @ref PIO_initdecomp.
         type(io_desc_t)       :: iodescNCells
 
+        !> @brief Specifies the flavor of netCDF output.
         integer               :: iotype
+
+        !> @brief The netCDF dimension ID.
         integer               :: pioDimId
+
+        !> @brief 1-based index of start of this processors data in full data array.
         integer               :: ista
+
+        !> @brief Size of data array for this processor.
         integer               :: isto
+
+        !> @brief Number of elements handled by each processor.
         integer               :: arrIdxPerPe
+
+        !> @brief The length of the dimension of the netCDF variable.
         integer, dimension(1) :: dimLen
 
+        !> @brief Buffer to hold sample data that is written to netCDF file.
         integer, allocatable  :: dataBuffer(:)
+
+        !> @brief Buffer to read data into.
         integer, allocatable  :: readBuffer(:)
+
+        !> @brief Array describing the decomposition of the data.
         integer, allocatable  :: compdof(:)
 
+        !> @brief Name of the sample netCDF file written by this example.
         character(len=255) :: fileName
 
     contains
 
+        !> @brief Initialize MPI, ParallelIO, and example data.
+        !! Initialize the MPI and ParallelIO libraries. Also allocate
+        !! memory to write and read the sample data to the netCDF file.
         procedure,  public  :: init
+
+        !> @brief Create the decomposition for the example.
+        !! This subroutine creates the decomposition for the example.
         procedure,  public  :: createDecomp
+
+        !> @brief Create netCDF output file.
+        !! This subroutine creates the netCDF output file for the example.
         procedure,  public  :: createFile
+
+        !> @brief Define the netCDF metadata.
+        !! This subroutine defines the netCDF dimension and variable used
+        !! in the output file.
         procedure,  public  :: defineVar
+
+        !> @brief Write the sample data to the output file.
+        !! This subroutine writes the sample data array to the netCDF
+        !! output file.
         procedure,  public  :: writeVar
+
+        !> @brief Read the sample data from the output file.
+        !! This subroutine reads the sample data array from the netCDF
+        !! output file.
         procedure,  public  :: readVar
+
+        !> @brief Close the netCDF output file.
+        !! This subroutine closes the output file used by this example.
         procedure,  public  :: closeFile
+
+        !> @brief Clean up resources.
+        !! This subroutine cleans up resources used in the example. The
+        !! ParallelIO and MPI libraries are finalized, and memory
+        !! allocated in this example program is freed.
         procedure,  public  :: cleanUp
+
+        !> @brief Handle errors.
+        !! This subroutine is called if there is an error.
         procedure,  private :: errorHandle
 
     end type pioExampleClass
@@ -131,9 +204,6 @@ contains
 
     end subroutine init
 
-    !> @fn createDecomp
-    !! @brief Create the decomposition for the example.
-    !! This subroutine creates the decomposition for the example.
     subroutine createDecomp(this)
 
         implicit none
@@ -151,8 +221,6 @@ contains
 
     end subroutine createDecomp
 
-    !> @brief Create netCDF output file.
-    !! This subroutine creates the netCDF output file for the example.
     subroutine createFile(this)
 
         implicit none
@@ -166,9 +234,6 @@ contains
 
     end subroutine createFile
 
-    !> @brief Define the netCDF metadata.
-    !! This subroutine defines the netCDF dimension and variable used
-    !! in the output file.
     subroutine defineVar(this)
 
         implicit none
@@ -188,9 +253,6 @@ contains
 
     end subroutine defineVar
 
-    !> @brief Write the sample data to the output file.
-    !! This subroutine writes the sample data array to the netCDF
-    !! output file.
     subroutine writeVar(this)
 
     implicit none
@@ -205,9 +267,6 @@ contains
 
     end subroutine writeVar
 
-    !> @brief Read the sample data from the output file.
-    !! This subroutine reads the sample data array from the netCDF
-    !! output file.
     subroutine readVar(this)
 
         implicit none
@@ -221,8 +280,6 @@ contains
 
     end subroutine readVar
 
-    !> @brief Close the netCDF output file.
-    !! This subroutine closes the output file used by this example.
     subroutine closeFile(this)
 
         implicit none
@@ -233,10 +290,6 @@ contains
 
     end subroutine closeFile
 
-    !> @brief Clean up resources.
-    !! This subroutine cleans up resources used in the example. The
-    !! ParallelIO and MPI libraries are finalized, and memory
-    !! allocated in this example program is freed.
     subroutine cleanUp(this)
 
         implicit none
@@ -255,8 +308,6 @@ contains
 
     end subroutine cleanUp
 
-    !> @brief Handle errors.
-    !! This subroutine is called if there is an error.
     subroutine errorHandle(this, errMsg, retVal)
 
         implicit none
@@ -284,12 +335,27 @@ end module pioExample
 !! This example does the following:
 !!
 !! - initialization initializes the MPI library, initializes the
-!!   ParallelIO library with ::PIO_int(). Then allocate memory for a
+!!   ParallelIO library with @ref PIO_init. Then allocate memory for a
 !!   data array of sample data to write, and an array to read the data
 !!   back into. Also allocate an array to hold decomposition
 !!   information.
 !!
-!! - creation of decomposition by calling ::PIO_initdecomp().
+!! - creation of decomposition by calling @ref PIO_initdecomp.
+!!
+!! - creation of netCDF file with @ref PIO_createfile.
+!!
+!! - define netCDF metadata with @ref PIO_def_dim and @ref
+!!   PIO_def_var. Then end define mode with @ref PIO_enddef.
+!!
+!! - write the sample data with @ref PIO_write_darray. Then sync the
+!!   file with @ref PIO_syncfile.
+!!
+!! - read the sample data with @ref PIO_read_darray.
+!!
+!! - close the netCDF file with @ref PIO_closefile.
+!! 
+!! - clean up local memory, ParallelIO library resources with @ref
+!!   PIO_freedecomp and @ref PIO_finalize, and MPI library resources.
 !!
 program main
 

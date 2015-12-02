@@ -50,6 +50,10 @@ typedef struct mapsort
   PIO_Offset iomap;
 } mapsort;
 
+/**
+ * @brief swapm defaults.
+ *
+*/
 typedef struct pio_swapm_defaults
 {
   int nreqs;

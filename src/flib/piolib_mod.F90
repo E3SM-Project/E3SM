@@ -5,8 +5,6 @@
 !! @file 
 !! @brief Initialization Routines for PIO
 !! 
-!! $Revision$
-!! $LastChangedDate$
 !<
 module piolib_mod
   use iso_c_binding

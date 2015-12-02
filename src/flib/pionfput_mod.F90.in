@@ -1,9 +1,7 @@
 #define __PIO_FILE__ "pionfput_mod.F90"
 !>
 !! @file 
-!! $Revision$
-!! $LastChangedDate$
-!! @brief Write Routines for non-decomposed NetCDF data.
+!! @brief Write routines for non-decomposed NetCDF data.
 !<
 module pionfput_mod
 #ifdef TIMING
@@ -18,7 +16,7 @@ module pionfput_mod
 
 !>
 !! @defgroup PIO_put_var PIO_put_var
-!! @brief Writes netcdf metadata to a file
+!! @brief Writes data to a netCDF file.
 !! @details The put_var interface is provided as a simplified interface to
 !!  write variables to a netcdf format file.   
 !! @warning Although this is a collective call the variable is written from the 
@@ -97,7 +95,7 @@ contains
 !>
 !! @public
 !! @ingroup PIO_put_var
-!! @brief Writes an netcdf attribute to a file
+!! @brief Write one element of data to a netCDF variable.
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param varid : The netcdf variable identifier
@@ -132,7 +130,7 @@ contains
 !>
 !! @public
 !! @ingroup PIO_put_var
-!! @brief Writes an netcdf attribute to a file
+!! @brief Write one element of data to a netCDF variable.
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param varid : The netcdf variable identifier
@@ -176,7 +174,7 @@ contains
 !>
 !! @public
 !! @ingroup PIO_put_var
-!! @brief Writes an netcdf attribute to a file
+!! @brief Write one element of data to a netCDF variable.
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
@@ -196,12 +194,12 @@ contains
 !>
 !! @public
 !! @ingroup PIO_put_var
-!! @brief Writes an netcdf attribute to a file
+!! @brief Writes a netCDF scalar variable.
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
+!! @param ival : The value for the netcdf variable
 !! @retval ierr @copydoc error_return
 !<
   integer function put_var_0d_text (File,varid, ival) result(ierr)
@@ -232,7 +230,7 @@ contains
 !>
 !! @public
 !! @ingroup PIO_put_var
-!! @brief Writes an netcdf attribute to a file
+!! @brief Writes text data to netcdf variable.
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
@@ -266,12 +264,12 @@ contains
 !>
 !! @public
 !! @ingroup PIO_put_var
-!! @brief Writes an netcdf attribute to a file
+!! @brief Writes {TYPE} data to a netCDF variable.
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
+!! @param ival : The data to write.
 !! @retval ierr @copydoc error_return
 !<
   integer function put_var_internal_{TYPE} (ncid,varid, ival) result(ierr)
@@ -299,7 +297,7 @@ contains
 !>
 !! @public
 !! @ingroup PIO_put_var
-!! @brief Writes an netcdf attribute to a file
+!! @brief Write {TYPE} data to a netCDF varaible of {DIMS} dimension(s).
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
@@ -325,7 +323,7 @@ contains
 !>
 !! @public
 !! @ingroup PIO_put_var
-!! @brief Writes an netcdf attribute to a file
+!! @brief Writes {TYPE} data to a netCDF scalar variable.
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
@@ -382,7 +380,7 @@ contains
 !>
 !! @public
 !! @ingroup PIO_put_var
-!! @brief Writes an netcdf attribute to a file
+!! @brief Write {TYPE} data to a netcdf variable of {DIMS} dimension(s).
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
@@ -403,7 +401,7 @@ contains
 !>
 !! @public
 !! @ingroup PIO_put_var
-!! @brief Writes an netcdf attribute to a file
+!! @brief Write {TYPE} data to a netcdf variable of {DIMS} dimension(s).
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param varid : The netcdf variable identifier
@@ -540,7 +538,7 @@ contains
 !>
 !! @public
 !! @ingroup PIO_put_var
-!! @brief Writes an netcdf attribute to a file
+!! @brief Write {TYPE} data to a netcdf variable of {DIMS} dimension(s).
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param varid : The netcdf variable identifier
@@ -569,7 +567,7 @@ contains
 !>
 !! @public
 !! @ingroup PIO_put_var
-!! @brief Writes an netcdf variable to a file
+!! @brief Write {TYPE} data to a netcdf variable of {DIMS} dimension(s).
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t

@@ -1,9 +1,7 @@
 #define __PIO_FILE__ 'piodarray'
 !>
 !! @file 
-!! $Revision$
-!! $LastChangedDate$
-!! @brief Read and write Routines for decomposed data.
+!! @brief Read and write routines for decomposed data.
 !<
 module piodarray
   use pio_types, only : file_desc_t, io_desc_t, var_desc_t
@@ -336,7 +334,7 @@ contains
 !> 
 !! @public
 !! @ingroup PIO_read_darray
-!! @brief
+!! @brief Read distributed array of type {TYPE} from a netCDF variable of {DIMS} dimension(s).
 !! @details
 !! @param File @ref file_desc_t
 !! @param varDesc @ref var_desc_t

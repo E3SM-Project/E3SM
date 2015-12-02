@@ -5,7 +5,6 @@
     <tab type="classes" visible="yes" title="Appendix">
       <tab type="namespacemembers" visible="yes" title="Symbol Index"/>
       <tab type="modules" visible="yes" title="Modules"/>
-      <tab type="dirs" visible="yes" title="Directories"/>
       <tab type="classes" visible="yes" title="Data Types"/>
       <tab type="examples" visible="yes" title="Examples"/>  
       <tab type="pages" visible="yes" title="Page Index"/>
