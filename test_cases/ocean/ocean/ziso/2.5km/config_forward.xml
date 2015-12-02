@@ -1,0 +1,162 @@
+<?xml version="1.0"?>
+<config case="forward" mode="forward">
+	<add_link source="../init_step2/init.nc" dest="init.nc"/>
+	<add_link source="../init_step2/forcing.nc" dest="forcing.nc"/>
+	<add_link source="../init_step2/mesh.nc" dest="mesh.nc"/>
+	<add_link source="../init_step2/graph.info" dest="graph.info"/>
+
+	<get_file dest_path="initial_condition_database" file_name="make_particle_resets.151113.py">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mpas_ocean/test_cases/staging"/>
+	</get_file>
+
+	<add_link source_path="initial_condition_database" source="make_particle_resets.151113.py" dest="make_particle_resets.py"/>
+
+	<add_executable source="model" dest="ocean_model"/>
+	<add_executable source="metis" dest="metis"/>
+
+	<namelist name="namelist.ocean">
+		<option name="config_ocean_run_mode">'forward'</option>
+		<option name="config_dt">'00:01:30'</option>
+		<option name="config_run_duration">'0000_00:04:31'</option>
+		<option name="config_use_mom_del2">.false.</option>
+		<option name="config_use_mom_del4">.true.</option>
+		<option name="config_mom_del4">9.8e7</option>
+		<option name="config_mom_del4_div_factor">10.0</option>
+		<option name="config_convective_visc">1.0</option>
+		<option name="config_convective_diff">1.0</option>
+		<option name="config_use_const_visc">.false.</option>
+		<option name="config_use_cvmix">.true.</option>
+		<option name="config_use_cvmix_background">.true.</option>
+		<option name="config_use_cvmix_convection">.true.</option>
+		<option name="config_cvmix_background_diffusion">5.0e-6</option>
+		<option name="config_cvmix_convective_basedOnBVF">.true.</option>
+		<option name="config_use_cvmix_shear">.true.</option>
+		<option name="config_cvmix_shear_mixing_scheme">'KPP'</option>
+		<option name="config_use_cvmix_kpp">.true.</option>
+		<option name="config_use_bulk_wind_stress">.true.</option>
+		<option name="config_eos_linear_alpha">0.255</option>
+		<option name="config_eos_linear_Tref">19.0</option>
+		<option name="config_eos_linear_Sref">34.0</option>
+		<option name="config_eos_linear_densityref">1025.0</option>
+		<option name="config_bottom_drag_coeff">3.0e-3</option>
+		<option name="config_use_activeTracers_surface_bulk_forcing">.false.</option>
+		<option name="config_use_activeTracers_surface_restoring">.true.</option>
+		<option name="config_use_activeTracers_interior_restoring">.true.</option>
+		<option name="config_n_btr_subcycles">28</option>
+		<option name="config_AM_globalStats_enable">.true.</option>
+		<option name="config_AM_globalStats_compute_on_startup">.true.</option>
+		<option name="config_AM_globalStats_write_on_startup">.true.</option>
+		<option name="config_AM_zonalMean_enable">.true.</option>
+		<option name="config_AM_zonalMean_num_bins">100</option>
+		<option name="config_AM_okuboWeiss_enable">.true.</option>
+		<option name="config_AM_okuboWeiss_eddy_min_cells">100</option>
+		<option name="config_AM_highFrequencyOutput_enable">.true.</option>
+		<option name="config_AM_eliassenPalm_enable">.true.</option>
+		<option name="config_AM_eliassenPalm_compute_interval">'03_00:00:00'</option>
+		<option name="config_AM_eliassenPalm_nBuoyancyLayers">100</option>
+		<option name="config_AM_eliassenPalm_rhomin_buoycoor">1028.0</option>
+		<option name="config_AM_eliassenPalm_rhomax_buoycoor">1030.7</option>
+		<option name="config_AM_mixedLayerDepths_enable">.true.</option>
+		<option name="config_AM_timeFilters_enable">.true.</option>
+		<option name="config_AM_timeFilters_initialize_filters">.false.</option>
+		<option name="config_AM_lagrPartTrack_enable">.true.</option>
+		<option name="config_AM_lagrPartTrack_reset_criteria">'global_time'</option>
+		<option name="config_AM_lagrPartTrack_reset_global_timestamp">'0029_23:59:59'</option>
+		<option name="config_AM_lagrPartTrack_region_stream">'none'</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable">
+		<stream name="mesh">
+			<attribute name="filename_template">mesh.nc</attribute>
+		</stream>
+		<stream name="input">
+			<attribute name="filename_template">init.nc</attribute>
+		</stream>
+		<stream name="restart">
+			<attribute name="output_interval">0030_00:00:00</attribute>
+		</stream>
+		<template name="KPP_testing"/>
+		<stream name="KPP_testing">
+			<attribute name="output_interval">0001_00:00:00</attribute>
+		</stream>
+		<template name="output"/>
+		<stream name="output">
+			<attribute name="output_interval">0000-01-00_00:00:00</attribute>
+			<add_contents>
+				<member name="velocityZonal" type="var"/>
+				<member name="velocityMeridional" type="var"/>
+				<member name="density" type="var"/>
+				<member name="divergence" type="var"/>
+				<member name="displacedDensity" type="var"/>
+				<member name="potentialDensity" type="var"/>
+				<member name="boundaryLayerDepth" type="var"/>
+				<member name="indexBoundaryLayerDepth" type="var"/>
+				<member name="indexSurfaceLayerDepth" type="var"/>
+				<member name="surfaceFrictionVelocity" type="var"/>
+				<member name="surfaceBuoyancyForcing" type="var"/>
+				<member name="seaSurfacePressure" type="var"/>
+				<member name="windStressZonal" type="var"/>
+				<member name="windStressMeridional" type="var"/>
+				<member name="BruntVaisalaFreqTop" type="var"/>
+			</add_contents>
+			<remove_contents>
+				<member name="areaCellGlobal"/>
+				<member name="areaEdgeGlobal"/>
+				<member name="areaTriangleGlobal"/>
+				<member name="volumeCellGlobal"/>
+				<member name="volumeEdgeGlobal"/>
+				<member name="CFLNumberGlobal"/>
+			</remove_contents>
+		</stream>
+		<template name="forcing_data"/>
+		<stream name="forcing_data">
+			<attribute name="filename_template">forcing.nc</attribute>
+		</stream>
+		<template name="global_stats"/>
+		<stream name="globalStatsOutput">
+			<attribute name="output_interval">0001_00:00:00</attribute>
+		</stream>
+		<template name="zonal_mean"/>
+			<attribute name="output_interval">0003_00:00:00</attribute>
+		<template name="okubo_weiss"/>
+		<stream name="okuboWeissOutput">
+			<attribute name="output_interval">00-00-05_00:00:00</attribute>
+			<attribute name="reference_time=">0000-01-01_00:00:00</attribute>
+		</stream>
+		<template name="high_frequency_output"/>
+		<stream name="highFrequencyOutput">
+			<attribute name="output_interval">00-00-01_00:00:00</attribute>
+		</stream>
+		<template name="time_filters"/>
+		<stream name="timeFiltersOutput">
+			<attribute name="output_interval">0000-01-00_00:00:00</attribute>
+		</stream>
+		<template name="eliassen_palm"/>
+		<stream name="eliassenPalmOutput">
+			<attribute name="output_interval">00-01-00_00:00:00</attribute>
+		</stream>
+		<template name="mixed_layer_depths"/>
+		<template name="lagrangian_particle_tracking"/>
+		<stream name="lagrPartTrackInput">
+			<attribute name="filename_template">particles.nc</attribute>
+		</stream>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="./metis">
+			<argument flag="graph.info">4</argument>
+		</step>
+		<step executable="python">
+			<argument flag="">make_particle_resets.py</argument>
+			<argument flag="">mesh.nc</argument>
+			<argument flag="">particles.nc</argument>
+			<argument flag="">graph.info.part.4</argument>
+		</step>
+		<step executable="mpirun">
+			<argument flag="-n">4</argument>
+			<argument flag="">./ocean_model</argument>
+			<argument flag="-n">namelist.ocean</argument>
+			<argument flag="-s">streams.ocean</argument>
+		</step>
+	</run_script>
+</config>
