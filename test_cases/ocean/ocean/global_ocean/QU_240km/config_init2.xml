@@ -9,6 +9,7 @@
 	<add_link source="../init_step1/salinity.nc" dest="salinity.nc"/>
 	<add_link source="../init_step1/wind_stress.nc" dest="wind_stress.nc"/>
 	<add_link source="../init_step1/topography.nc" dest="topography.nc"/>
+	<add_link source="../init_step1/swData.nc" dest="swData.nc"/>
 
 	<namelist name="namelist.ocean">
 		<option name="config_init_configuration">'global_ocean'</option>
@@ -24,7 +25,17 @@
 
 		<option name="config_use_activeTracers_surface_restoring">.true.</option>
 		<option name="config_use_bulk_wind_stress">.true.</option>
-		
+
+		<option name="config_global_ocean_swData_file">'swData.nc'</option>
+		<option name="config_global_ocean_swData_nlat_dimname">'t_lat'</option>
+		<option name="config_global_ocean_swData_nlon_dimname">'t_lon'</option>
+		<option name="config_global_ocean_swData_lat_varname">'t_lat'</option>
+		<option name="config_global_ocean_swData_lon_varname">'t_lon'</option>
+		<option name="config_global_ocean_swData_latlon_degrees">.true.</option>
+		<option name="config_global_ocean_swData_method">'bilinear_interpolation'</option>
+		<option name="config_global_ocean_chlorophyll_varname">'Chlorophyll'</option>
+		<option name="config_global_ocean_zenithAngle_varname">'zenithAngle'</option>
+		<option name="config_global_ocean_clearSky_varname">'clearSky'</option>
 		<option name="config_global_ocean_minimum_depth">15</option>
 		<option name="config_global_ocean_depth_file">'temperature.nc'</option>
 		<option name="config_global_ocean_depth_dimname">'depth_t'</option>
@@ -106,6 +117,18 @@
 				<member name="windStressMeridional" type="var"/>
 				<member name="landIceFraction" type="var"/>
 				<member name="landIceSurfaceTemperature" type="var"/>
+			</add_contents>
+		</stream>
+		<stream name="shortwave_forcing_data_init">
+			<attribute name="type">output</attribute>
+			<attribute name="output_interval">0000-00-00_00:00:01</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="filename_template">init_mode_shortwaveData.nc</attribute>
+			<add_contents>
+				<member name="chlorophyllData" type="var" />
+				<member name="zenithAngle" type="var"/>
+				<member name="clearSkyRadiation" type="var"/>
+				<member name="xtime" type="var"/>
 			</add_contents>
 		</stream>
 	</streams>

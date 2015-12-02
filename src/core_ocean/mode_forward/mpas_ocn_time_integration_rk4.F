@@ -101,6 +101,7 @@ module ocn_time_integration_rk4
       type (mpas_pool_type), pointer :: verticalMeshPool
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: scratchPool
+      type (mpas_pool_type), pointer :: swForcingPool
 
       integer :: rk_step
 
@@ -439,6 +440,7 @@ module ocn_time_integration_rk4
            call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
            call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
            call mpas_pool_get_subpool(block % structs, 'provis_state', provisStatePool)
+           call mpas_pool_get_subpool(block % structs, 'shortwave', swForcingPool)
 
            call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessCur, 1)
            call mpas_pool_get_array(statePool, 'ssh', sshCur, 1)
@@ -488,7 +490,7 @@ module ocn_time_integration_rk4
            endif
            call mpas_threading_barrier()
 
-           call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, scratchPool, dt, 1)
+           call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, scratchPool, dt, 1)
            call mpas_threading_barrier()
            block => block % next
         end do
