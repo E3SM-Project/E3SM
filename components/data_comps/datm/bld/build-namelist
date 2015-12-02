@@ -50,7 +50,8 @@ Note: The precedence for setting the values of namelist variables is (highest to
 
 NOTE: The following xml variables are REQUIRED (they are already set by scripts in the env_*.xml files)
          RUN_TYPE    DIN_LOC_ROOT  ATM_DOMAIN_FILE   ATM_DOMAIN_PATH
-	 DATM_MODE   DATM_PRESAERO DATM_CO2_TSERIES  ATM_GRID          GRID                     
+	 DATM_MODE   DATM_PRESAERO DATM_TOPO         DATM_CO2_TSERIES
+         ATM_GRID    GRID                     
 EOF
 }
 
@@ -347,7 +348,8 @@ foreach my $attr (keys %xmlvars) {
     $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars); 
 }
 foreach my $var ( "RUN_TYPE", "DIN_LOC_ROOT", "ATM_DOMAIN_FILE", "ATM_DOMAIN_PATH", 
-		  "DATM_MODE", "DATM_PRESAERO", "DATM_CO2_TSERIES", "ATM_GRID", "GRID" ) {
+		  "DATM_MODE", "DATM_PRESAERO", "DATM_TOPO", "DATM_CO2_TSERIES",
+                  "ATM_GRID", "GRID" ) {
     if ( $print > 1 ) { print "$var = $xmlvars{$var}\n"; }
     if ( ! defined($xmlvars{$var})  || $xmlvars{$var} =~ /^(UNSET|)$/ ) {
 	die "** $ProgName - $var is NOT set  ** \n"
@@ -360,6 +362,7 @@ my $ATM_DOMAIN_FILE = $xmlvars{'ATM_DOMAIN_FILE'};
 my $ATM_DOMAIN_PATH = $xmlvars{'ATM_DOMAIN_PATH'};
 my $DATM_MODE       = $xmlvars{'DATM_MODE'};   
 my $DATM_PRESAERO   = $xmlvars{'DATM_PRESAERO'};    
+my $DATM_TOPO       = $xmlvars{'DATM_TOPO'};    
 my $DATM_CO2_TSERIES= $xmlvars{'DATM_CO2_TSERIES'};
 my $ATM_GRID        = $xmlvars{'ATM_GRID'};    
 my $GRID            = $xmlvars{'GRID'};     
@@ -368,6 +371,9 @@ my $CLM_USRDAT_NAME = $xmlvars{'CLM_USRDAT_NAME'};
 # Validate some of the env values.
 if ( $DATM_MODE =~ /CLM/ && $DATM_PRESAERO eq "none" ) {
    die "${nm}:: A DATM_MODE for CLM is incompatible with DATM_PRESAERO=none\n";
+}
+if ( $DATM_MODE =~ /CLM/ && $DATM_TOPO eq "none" ) {
+   die "${nm}:: A DATM_MODE for CLM is incompatible with DATM_TOPO=none\n";
 }
 
 if ( $GRID eq "CLM_USRDAT" && $CLM_USRDAT_NAME =~ /^(UNSET|)$/ ) {
@@ -392,6 +398,7 @@ $nl->set_variable_value( $group, $var, "\'$xmlvars{$var}\'" );
 
 if ($print>=1) { print "  datm mode is $DATM_MODE \n"; }
 if ($print>=1) { print "  datm presaero mode is $DATM_PRESAERO \n"; }
+if ($print>=1) { print "  datm topo mode is $DATM_TOPO \n"; }
 if ($print>=1) { print "  datm model grid is $GRID \n"; }
 if ($print>=1) { print "  datm atm   grid is $ATM_GRID \n" };
 
@@ -418,8 +425,9 @@ if ($DATM_PRESAERO ne "none") {
 	push (@streams, "presaero.$DATM_PRESAERO");
     }
  }
-# TODO(wjs, 2015-11-30) Put this in a conditional, as is done for the presaero stream
-push (@streams, "topo.observed");
+if ($DATM_TOPO ne "none") {
+   push (@streams, "topo.$DATM_TOPO");
+}
 
 if ($DATM_CO2_TSERIES ne "none") {
     push (@streams, "co2tseries.$DATM_CO2_TSERIES");
