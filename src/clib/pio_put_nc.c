@@ -54,10 +54,9 @@ int PIOc_put_vars_uchar (int ncid, int varid, const PIO_Offset start[], const PI
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -133,10 +132,9 @@ int PIOc_put_vars_ushort (int ncid, int varid, const PIO_Offset start[], const P
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -212,10 +210,9 @@ int PIOc_put_vars_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -291,10 +288,9 @@ int PIOc_put_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -370,10 +366,9 @@ int PIOc_put_vars_uint (int ncid, int varid, const PIO_Offset start[], const PIO
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -449,10 +444,9 @@ int PIOc_put_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PI
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -528,10 +522,9 @@ int PIOc_put_var_ushort (int ncid, int varid, const unsigned short *op)
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -607,10 +600,9 @@ int PIOc_put_var1_longlong (int ncid, int varid, const PIO_Offset index[], const
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -686,10 +678,9 @@ int PIOc_put_vara_uchar (int ncid, int varid, const PIO_Offset start[], const PI
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -765,10 +756,9 @@ int PIOc_put_varm_short (int ncid, int varid, const PIO_Offset start[], const PI
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -844,10 +834,9 @@ int PIOc_put_var1_long (int ncid, int varid, const PIO_Offset index[], const lon
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -923,10 +912,9 @@ int PIOc_put_vars_long (int ncid, int varid, const PIO_Offset start[], const PIO
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -1002,10 +990,9 @@ int PIOc_put_var_short (int ncid, int varid, const short *op)
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -1081,10 +1068,9 @@ int PIOc_put_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -1160,10 +1146,9 @@ int PIOc_put_var1_ushort (int ncid, int varid, const PIO_Offset index[], const u
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -1239,10 +1224,9 @@ int PIOc_put_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -1318,10 +1302,9 @@ int PIOc_put_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -1397,10 +1380,9 @@ int PIOc_put_varm_ushort (int ncid, int varid, const PIO_Offset start[], const P
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -1476,10 +1458,9 @@ int PIOc_put_var_ulonglong (int ncid, int varid, const unsigned long long *op)
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -1555,10 +1536,9 @@ int PIOc_put_var_int (int ncid, int varid, const int *op)
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -1634,10 +1614,9 @@ int PIOc_put_var_longlong (int ncid, int varid, const long long *op)
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -1713,10 +1692,9 @@ int PIOc_put_var_schar (int ncid, int varid, const signed char *op)
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -1792,10 +1770,9 @@ int PIOc_put_var_uint (int ncid, int varid, const unsigned int *op)
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -1871,10 +1848,9 @@ int PIOc_put_var (int ncid, int varid, const void *buf, PIO_Offset bufcount, MPI
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -1950,10 +1926,9 @@ int PIOc_put_vara_ushort (int ncid, int varid, const PIO_Offset start[], const P
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -2029,10 +2004,9 @@ int PIOc_put_vars_short (int ncid, int varid, const PIO_Offset start[], const PI
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -2108,10 +2082,9 @@ int PIOc_put_vara_uint (int ncid, int varid, const PIO_Offset start[], const PIO
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -2187,10 +2160,9 @@ int PIOc_put_vara_schar (int ncid, int varid, const PIO_Offset start[], const PI
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -2266,10 +2238,9 @@ int PIOc_put_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -2345,10 +2316,9 @@ int PIOc_put_var1_uchar (int ncid, int varid, const PIO_Offset index[], const un
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -2424,10 +2394,9 @@ int PIOc_put_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -2503,10 +2472,9 @@ int PIOc_put_vars_schar (int ncid, int varid, const PIO_Offset start[], const PI
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -2582,10 +2550,9 @@ int PIOc_put_var1 (int ncid, int varid, const PIO_Offset index[], const void *bu
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -2661,10 +2628,9 @@ int PIOc_put_vara_float (int ncid, int varid, const PIO_Offset start[], const PI
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -2740,10 +2706,9 @@ int PIOc_put_var1_float (int ncid, int varid, const PIO_Offset index[], const fl
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -2819,10 +2784,9 @@ int PIOc_put_varm_float (int ncid, int varid, const PIO_Offset start[], const PI
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -2898,10 +2862,9 @@ int PIOc_put_var1_text (int ncid, int varid, const PIO_Offset index[], const cha
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -2977,10 +2940,9 @@ int PIOc_put_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -3056,10 +3018,9 @@ int PIOc_put_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -3135,10 +3096,9 @@ int PIOc_put_vars_double (int ncid, int varid, const PIO_Offset start[], const P
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -3214,10 +3174,9 @@ int PIOc_put_vara_longlong (int ncid, int varid, const PIO_Offset start[], const
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -3293,10 +3252,9 @@ int PIOc_put_var_double (int ncid, int varid, const double *op)
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -3372,10 +3330,9 @@ int PIOc_put_var_float (int ncid, int varid, const float *op)
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -3451,10 +3408,9 @@ int PIOc_put_var1_ulonglong (int ncid, int varid, const PIO_Offset index[], cons
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -3530,10 +3486,9 @@ int PIOc_put_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -3609,10 +3564,9 @@ int PIOc_put_var1_uint (int ncid, int varid, const PIO_Offset index[], const uns
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -3688,10 +3642,9 @@ int PIOc_put_var1_int (int ncid, int varid, const PIO_Offset index[], const int 
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -3767,10 +3720,9 @@ int PIOc_put_vars_float (int ncid, int varid, const PIO_Offset start[], const PI
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -3846,10 +3798,9 @@ int PIOc_put_vara_short (int ncid, int varid, const PIO_Offset start[], const PI
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -3925,10 +3876,9 @@ int PIOc_put_var1_schar (int ncid, int varid, const PIO_Offset index[], const si
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -4004,10 +3954,9 @@ int PIOc_put_vara_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -4083,10 +4032,9 @@ int PIOc_put_varm_double (int ncid, int varid, const PIO_Offset start[], const P
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -4162,10 +4110,9 @@ int PIOc_put_vara (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -4241,10 +4188,9 @@ int PIOc_put_vara_long (int ncid, int varid, const PIO_Offset start[], const PIO
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -4320,10 +4266,9 @@ int PIOc_put_var1_double (int ncid, int varid, const PIO_Offset index[], const d
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -4399,10 +4344,9 @@ int PIOc_put_varm_schar (int ncid, int varid, const PIO_Offset start[], const PI
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -4478,10 +4422,9 @@ int PIOc_put_var_text (int ncid, int varid, const char *op)
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -4557,10 +4500,9 @@ int PIOc_put_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -4636,10 +4578,9 @@ int PIOc_put_var1_short (int ncid, int varid, const PIO_Offset index[], const sh
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -4715,10 +4656,9 @@ int PIOc_put_vars_longlong (int ncid, int varid, const PIO_Offset start[], const
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -4794,10 +4734,9 @@ int PIOc_put_vara_double (int ncid, int varid, const PIO_Offset start[], const P
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -4873,10 +4812,9 @@ int PIOc_put_vars (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -4952,10 +4890,9 @@ int PIOc_put_var_uchar (int ncid, int varid, const unsigned char *op)
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -5031,10 +4968,9 @@ int PIOc_put_var_long (int ncid, int varid, const long *op)
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
@@ -5110,10 +5046,9 @@ int PIOc_put_varm_longlong (int ncid, int varid, const PIO_Offset start[], const
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 

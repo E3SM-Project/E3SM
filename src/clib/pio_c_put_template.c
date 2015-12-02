@@ -51,10 +51,9 @@ int PIO_function()
     case PIO_IOTYPE_PNETCDF:
       vdesc = file->varlist + varid;
 
-      if(vdesc->nreqs==0){
-	vdesc->request = malloc(sizeof(int)*PIO_REQUEST_ALLOC_CHUNK );
-      }else if(vdesc->nreqs>PIO_REQUEST_ALLOC_CHUNK){
-	printf("%s %d %d not expected to be here %d\n",__FILE__,__LINE__,vdesc->nreqs,varid);
+      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	vdesc->request = realloc(vdesc->request, 
+				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
       }
       request = vdesc->request+vdesc->nreqs;
 
