@@ -1,10 +1,14 @@
 /** @file
  * 
- *  @brief This file contains the routines that read and write
- *  distributed arrays in PIO.
+ * @brief This file contains the routines that read and write
+ * distributed arrays in PIO. 
+ *
+ * When arrays are distributed, each processor holds some of the
+ * array. Only by combining the distributed arrays from all processor
+ * can the full array be obtained.
  *  
- *  @author Jim Edwards
- *  @bug No Known bugs
+ * @author Jim Edwards
+ * @bug No Known bugs
  */
 
 #include <pio.h>
