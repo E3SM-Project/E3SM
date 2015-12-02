@@ -164,6 +164,10 @@ typedef struct iosystem_desc_t
   struct iosystem_desc_t *next;
 } iosystem_desc_t;
 
+/**
+ * @brief multi buffer
+ *
+*/
 typedef struct wmulti_buffer
 {
   int ioid;

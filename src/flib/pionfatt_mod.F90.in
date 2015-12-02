@@ -1,8 +1,6 @@
 #define __PIO_FILE__ "pionfatt_mod.F90"
 !>
 !! @file 
-!! $Revision$
-!! $LastChangedDate$
 !! @brief NetCDF attribute interface to PIO
 !<
 module pionfatt_mod
@@ -52,6 +50,7 @@ module pionfatt_mod
   private :: modName
   character(len=*), parameter :: modName='pionfatt_mod'
   interface
+     !> @brief Write a netCDF text attribute.
      integer(C_INT) function PIOc_put_att_text (ncid, varid, name, len, op) &
           bind(C,name="PIOc_put_att_text")
        use iso_c_binding

@@ -2,8 +2,6 @@
 !! @file 
 !! @brief Derived datatypes and constants for PIO Fortran API
 !! 
-!! $Revision$
-!! $LastChangedDate$
 !<
 module pio_types
     use pio_kinds

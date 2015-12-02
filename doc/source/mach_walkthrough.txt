@@ -401,6 +401,7 @@ sudo make install
 build from the command line, including tests:
 
 <pre>
+cd build
 rm -rf * && CFLAGS=-g CC=mpicc FC=mpifort cmake -DNetCDF_C_PATH=/usr/local -DNetCDF_Fortran_PATH=/usr/local -DPnetCDF_PATH=/usr/local -DPIO_HDF5_LOGGING=On .. && make VERBOSE=1 all tests check
 </pre>
 

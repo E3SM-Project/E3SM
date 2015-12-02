@@ -1,6 +1,7 @@
-/** @file   pio_darray.c
- *  @brief  This file contains the routines that read and write distributed arrays in PIO
- *
+/** @file
+ * 
+ *  @brief This file contains the routines that read and write
+ *  distributed arrays in PIO.
  *  
  *  @author Jim Edwards
  *  @bug No Known bugs
@@ -749,6 +750,13 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
  *
  *  This routine aggregates output on the compute nodes and only sends it to the IO nodes when the
  *  compute buffer is full or when a flush is triggered.  
+ *
+ *   @param[in] ncid: the ncid of the open netCDF file.
+ *   @param[in] vid: the variable ID.
+ *   @param[in] ioid: 
+ *   @param[in] arraylen: the length of the array to be written.
+ *   @param[in] array: pointer to the data to be written.
+ *   @param[in] fillvalue: pointer to the fill value to be used for missing data.
  */ 
  int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_Offset arraylen, void *array, void *fillvalue)
  {
