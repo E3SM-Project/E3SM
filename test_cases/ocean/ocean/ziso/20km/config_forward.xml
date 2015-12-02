@@ -39,7 +39,7 @@
 		<option name="config_eos_linear_Sref">34.0</option>
 		<option name="config_eos_linear_densityref">1025.0</option>
 		<option name="config_bottom_drag_coeff">3.0e-3</option>
-		<option name="config_use_activeTracers_surface_bulk_forcing">.true.</option>
+		<option name="config_use_activeTracers_surface_bulk_forcing">.false.</option>
 		<option name="config_use_activeTracers_surface_restoring">.true.</option>
 		<option name="config_use_activeTracers_interior_restoring">.true.</option>
 		<option name="config_AM_globalStats_enable">.true.</option>
