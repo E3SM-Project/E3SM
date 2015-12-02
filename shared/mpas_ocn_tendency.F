@@ -368,7 +368,7 @@ contains
 !>  This routine computes tracer tendencies for the ocean
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_tend_tracer(tendPool, statePool, forcingPool, diagnosticsPool, meshPool, scratchPool, dt, timeLevelIn)!{{{
+   subroutine ocn_tend_tracer(tendPool, statePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, scratchPool, dt, timeLevelIn)!{{{
       implicit none
 
       !
@@ -379,6 +379,7 @@ contains
       type (mpas_pool_type), intent(inout) :: forcingPool     !< Input: Forcing information
       type (mpas_pool_type), intent(in)    :: diagnosticsPool !< Input: Diagnostic information
       type (mpas_pool_type), intent(inout)    :: meshPool        !< Input: Mesh information
+      type (mpas_pool_type), intent(in)    :: swForcingPool   !< INput: sw data input info
       type (mpas_pool_type), intent(in)    :: scratchPool     !< Input: Scratch information
       real (kind=RKIND), intent(in) :: dt                     !< Input: Time step
       integer, intent(in), optional :: timeLevelIn            !< Input/Optional: Time Level Indes
@@ -406,7 +407,6 @@ contains
       type (mpas_pool_iterator_type) :: groupItr
       character (len=StrKIND) :: modifiedGroupName
       character (len=StrKIND) :: modifiedConfigName
-
       !
       ! one dimensional pointers
       !
@@ -745,7 +745,7 @@ contains
                !
                if ( trim(groupItr % memberName) == 'activeTracers' ) then
                   call mpas_timer_start("short wave", .false.)
-                  call ocn_tracer_short_wave_absorption_tend(meshPool, indexTemperature, layerThickness, penetrativeTemperatureFlux, tracerGroupTend, err)
+                  call ocn_tracer_short_wave_absorption_tend(meshPool, swForcingPool, forcingPool, indexTemperature, layerThickness, penetrativeTemperatureFlux, tracerGroupTend, err)
                   call mpas_timer_stop("short wave")
                endif
 

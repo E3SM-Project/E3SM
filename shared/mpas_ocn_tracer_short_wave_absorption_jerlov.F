@@ -34,7 +34,6 @@ module ocn_tracer_short_wave_absorption_jerlov
    !--------------------------------------------------------------------
 
    public :: ocn_tracer_short_wave_absorption_jerlov_tend, &
-             ocn_tracer_short_wave_absorption_jerlov_init, &
              ocn_get_jerlov_fraction
 
    !--------------------------------------------------------------------
@@ -75,7 +74,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_short_wave_absorption_jerlov_tend(meshPool, index_temperature, layerThickness, penetrativeTemperatureFlux, tend, err)!{{{
+   subroutine ocn_tracer_short_wave_absorption_jerlov_tend(meshPool, forcingPool, index_temperature, layerThickness, penetrativeTemperatureFlux, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -84,7 +83,7 @@ contains
       !-----------------------------------------------------------------
 
       type (mpas_pool_type), intent(in) :: &
-         meshPool          !< Input: mesh information
+         meshPool, forcingPool          !< Input: mesh information
 
       real (kind=RKIND), dimension(:), intent(in) :: &
         penetrativeTemperatureFlux !< Input: penetrative temperature flux through the surface
@@ -136,76 +135,27 @@ contains
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
-
       allocate(weights(nVertLevels+1))
       weights = 0.0_RKIND
       weights(1) = 1.0_RKIND
 
-      if ( config_fixed_jerlov_weights ) then
-         !$omp do schedule(runtime) private(depth, k)
-         do iCell = 1, nCells
-           depth = 0.0_RKIND
-           do k = 1, maxLevelCell(iCell)
-             depth = depth + refBottomDepth(k)
+      !$omp do schedule(runtime) private(depth, k)
+      do iCell = 1, nCells
+         depth = 0.0_RKIND
+         do k = 1, maxLevelCell(iCell)
+            depth = depth + layerThickness(k, iCell)
 
-             call ocn_get_jerlov_fraction(depth, weights(k+1))
-             tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell)*(weights(k) - weights(k+1))
-           end do
+            call ocn_get_jerlov_fraction(depth, weights(k+1))
+            tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell)*(weights(k) - weights(k+1))
          end do
-         !$omp end do
-      else
-         !$omp do schedule(runtime) private(depth, k)
-         do iCell = 1, nCells
-           depth = 0.0_RKIND
-           do k = 1, maxLevelCell(iCell)
-             depth = depth + layerThickness(k, iCell)
-
-             call ocn_get_jerlov_fraction(depth, weights(k+1))
-             tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell)*(weights(k) - weights(k+1))
-           end do
-         end do
-         !$omp end do
-      end if
+      end do
+      !$omp end do
 
       deallocate(weights)
 
    !--------------------------------------------------------------------
 
    end subroutine ocn_tracer_short_wave_absorption_jerlov_tend!}}}
-
-!***********************************************************************
-!
-!  routine ocn_tracer_short_wave_absorption_jerlov_init
-!
-!> \brief   Initializes ocean tracer surface flux quantities
-!> \author  Doug Jacobsen
-!> \date    12/17/12
-!> \details 
-!>  This routine initializes quantities related to surface fluxes in the ocean.
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_tracer_short_wave_absorption_jerlov_init(err)!{{{
-
-   !--------------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      character (len=StrKIND), pointer :: config_sw_absorption_type
-
-      err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_sw_absorption_type', config_sw_absorption_type)
-
-      if ( trim( config_sw_absorption_type ) .ne. 'jerlov') then
-        write(stderrUnit,*) 'Incorrect option for config_sw_absorption_type. Options are: jerlov'
-        err = 1
-        return
-      end if
-
-   end subroutine ocn_tracer_short_wave_absorption_jerlov_init!}}}
-
-!***********************************************************************
 
 !***********************************************************************
 !
@@ -235,9 +185,12 @@ contains
 !
 !-----------------------------------------------------------------------
 
+!
       integer :: k, nVertLevels
       integer,  parameter :: num_water_types = 5  ! max number of different water types
    
+      ! I don't understand what the previous two lines are for.  They appear unnecessary
+
       real (kind=RKIND), parameter :: depth_cutoff = -200.0_RKIND
 
       integer, pointer :: config_jerlov_water_type

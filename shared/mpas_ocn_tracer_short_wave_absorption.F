@@ -17,7 +17,8 @@ module ocn_tracer_short_wave_absorption
    use mpas_pool_routines
    use ocn_constants
    use ocn_tracer_short_wave_absorption_jerlov
-
+   use ocn_tracer_short_wave_absorption_variable
+   
    implicit none
    private
    save
@@ -61,7 +62,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_short_wave_absorption_tend(meshPool, index_temperature, layerThickness, penetrativeTemperatureFlux, tend, err)!{{{
+   subroutine ocn_tracer_short_wave_absorption_tend(meshPool, swForcingPool, forcingPool, index_temperature, layerThickness, penetrativeTemperatureFlux, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -70,7 +71,7 @@ contains
       !-----------------------------------------------------------------
 
       type (mpas_pool_type), intent(in) :: &
-         meshPool          !< Input: mesh information
+         meshPool, swForcingPool, forcingPool          !< Input: mesh information
 
       real (kind=RKIND), dimension(:), intent(in) :: &
          penetrativeTemperatureFlux !< Input: short wave heat flux
@@ -102,12 +103,18 @@ contains
       !
       !-----------------------------------------------------------------
 
+      logical, pointer :: config_use_activeTracers_surface_bulk_forcing
+
+      call MPAS_pool_get_config(ocnConfigs, 'config_use_activeTracers_surface_bulk_forcing', config_use_activeTracers_surface_bulk_forcing)
+
+      if (.not.config_use_activeTracers_surface_bulk_forcing) return
+
       err = 0
-
-      if ( useJerlov ) then
-         call ocn_tracer_short_wave_absorption_jerlov_tend(meshPool, index_temperature, layerThickness, penetrativeTemperatureFlux, tend, err)
-      end if
-
+      if(useJerlov) then
+         call ocn_tracer_short_wave_absorption_jerlov_tend(meshPool, forcingPool, index_temperature, layerThickness, penetrativeTemperatureFlux, tend, err)
+      else
+         call ocn_tracer_short_wave_absorption_variable_tend(meshPool,swForcingPool, forcingPool, index_temperature, layerThickness, penetrativeTemperatureFlux,tend,err)
+      endif
    !--------------------------------------------------------------------
 
    end subroutine ocn_tracer_short_wave_absorption_tend!}}}
@@ -124,33 +131,41 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_short_wave_absorption_init(err)!{{{
+   subroutine ocn_tracer_short_wave_absorption_init(domain,err)!{{{
 
    !--------------------------------------------------------------------
 
+      type (domain_type) :: domain
+      
       integer, intent(out) :: err !< Output: error flag
 
+      logical, pointer :: config_use_activeTracers_surface_bulk_forcing
       character (len=StrKind), pointer :: config_sw_absorption_type
 
       err = 0
 
       call mpas_pool_get_config(ocnConfigs, 'config_sw_absorption_type', config_sw_absorption_type)
+      call MPAS_pool_get_config(ocnConfigs, 'config_use_activeTracers_surface_bulk_forcing', config_use_activeTracers_surface_bulk_forcing)
 
-      useJerlov = .false.
+      useJerlov=.false.
+      if (.not.config_use_activeTracers_surface_bulk_forcing.or.trim( config_sw_absorption_type ) == 'none') return
 
-      if ( trim( config_sw_absorption_type ) .ne. 'jerlov') then
-        write(stderrUnit,*) 'Incorrect option for config_sw_absorption_type. Options are: jerlov'
-        err = 1
-        return
-      else if ( trim( config_sw_absorption_type ) == 'jerlov') then
-        useJerlov = .true.
-        call ocn_tracer_short_wave_absorption_jerlov_init(err)
+      if ( trim( config_sw_absorption_type ) == 'jerlov') then
+         useJerlov=.true.
+!        call ocn_tracer_short_wave_absorption_jerlov_init(err)
+      else if ( trim( config_sw_absorption_type ) == 'ohlmann00' ) then
+      	 call ocn_tracer_short_wave_absorption_variable_init(domain, err)
+      else 
+         write(stderrUnit,*) 'Incorrect option for config_sw_absorption_type. Options are: jerlov or ohlmann00 or none'
+         err = 1
+         return
       end if
 
 
    end subroutine ocn_tracer_short_wave_absorption_init!}}}
 
 !***********************************************************************
+
 
 end module ocn_tracer_short_wave_absorption
 

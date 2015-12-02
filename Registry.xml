@@ -604,17 +604,18 @@
 					description="The length scale of exponential decay of surface fluxes. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
 					possible_values="Any positive real number."
 		/>
-		<nml_option name="config_sw_absorption_type" type="character" default_value="jerlov" units="unitless"
-					description="Name of shortwave absorption type used in simulation."
-					possible_values="'jerlov'"
+	</nml_record>
+	<nml_record name="shortwaveRadiation" mode="init;forward">
+		<nml_option name="config_sw_absorption_type" type="character" default_value="ohlmann00" units="unitless"
+					description="Name of shortwave absorption type used in simulation. Not recommended to change default"
+					possible_values="'jerlov' or 'ohlmann00' "
 		/>
 		<nml_option name="config_jerlov_water_type" type="integer" default_value="3" units="unitless"
 					description="Integer value defining the water type used in Jerlov short wave absorption."
 					possible_values="Integer values between 1 and 5"
 		/>
-		<nml_option name="config_fixed_jerlov_weights" type="logical" default_value=".true." units="unitless"
-					description="Logical value determining if the weights for Jerlov absorption are based off of reference depths (.true.), or the layerThickness variable (.false.)."
-					possible_values=".true. or .false."
+		<nml_option name="config_forcing_restart_file" type="character" default_value="restart_forcing_time_stamp"
+					description="Filename for the restart timestamp in the forcing file"
 		/>
 	</nml_record>
 	<nml_record name="frazil_ice" mode="forward">
@@ -1262,7 +1263,32 @@
 			<var name="volumeEdgeGlobal"/>
 			<var name="CFLNumberGlobal"/>
 		</stream>
+		<!--forcing stream for shortwave radiation-->
+		<stream name="shortwave_forcing_data"
+				type="input"
+				filename_template="shortwaveData.nc"
+				input_interval="none"
+				runtime_format="single_file"
+				mode="forward">
+				
+			<var name="xtime"/>
+			<var name="chlorophyllData"/>
+			<var name="zenithAngle"/>
+			<var name="clearSkyRadiation"/>
+		</stream>
+		<!--This is the output from the init mode-->
+		<stream name="shortwave_forcing_data_init"
+				type="output"
+				filename_template="init_mode_shortwaveData.nc"
+				output_interval="0000-00-00_00:00:01"
+				clobber_mode="truncate"
+				runtime_format="single_file"
+				mode="init">
 
+			<var name="chlorophyllData"/>
+			<var name="zenithAngle"/>
+			<var name="clearSkyRadiation"/>
+		</stream>
 		<stream name="forcing_data"
 				type="input"
 				filename_template="forcing_data.nc"
@@ -2234,6 +2260,23 @@
 			/>
 		</var_array>
 	</var_struct>
+	<var_struct name="shortwave" time_levs="1">
+		<!-- **********************************************************************
+				These fields are necessary for reading in chlorophyll concentrations, 
+				zenith angle and cloud fraction for horizontally variable shortwave radiation
+				
+				They are interpolated in the init core from observations
+		     ********************************************************************** -->
+		<var name="chlorophyllData" type="real" dimensions="nCells Time" units="mg m^{-3}"
+			 description="the concentration of chlorophyll data in mg/m^-3"
+		/>
+		<var name="zenithAngle" type="real" dimensions="nCells Time"  units="none"
+			 description="the cos of the solar zenith angle"
+		/>
+		<var name="clearSkyRadiation" type="real" dimensions="nCells Time" units="%"
+			 description="the fractional cloudiness (between 0 and 1)"
+		/>
+	</var_struct>
 	<var_struct name="forcing" time_levs="1">
 		<!-- *********************************************************************
 
@@ -2282,7 +2325,7 @@
 		<var name="penetrativeTemperatureFlux" type="real" dimensions="nCells Time" units="^\circ C m s^{-1}"
 			 description="Penetrative temperature flux at the surface due to solar radiation. Positive is into the ocean."
 			 packages="forwardMode;analysisMode"
-		/>
+			 />
 		<var name="fractionAbsorbed" type="real" dimensions="nVertLevels nCells Time" units="fractional"
 			 description="Divergence of transmission through interfaces of surface fluxes below the surface layer at cell centers. These are not applied to short wave."
 			 packages="forwardMode;analysisMode"
@@ -2315,6 +2358,7 @@
 			 packages="activeTracersBulkRestoringPKG;ecosysTracersPKG"
 		/>
 
+		
 		<!-- Coupling fields associated with mass or salinity fluxes -->
 		<var name="evaporationFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Evaporation flux at cell centers from coupler. Positive into the ocean."
@@ -2825,7 +2869,7 @@
 
 	</var_struct>
 
-<!-- Include init mode's registry file -->
+<!-- Include init modes registry file -->
 #include "mode_init/Registry.xml"
 
 #include "tracer_groups/Registry_tracers.xml"
