@@ -396,6 +396,11 @@ module li_calving
                thickness = thickness - calvingThickness
             endwhere
 
+            ! clean up
+            call mpas_deallocate_scratch_field(activeForCalvingMaskField, .true.)
+            call mpas_deallocate_scratch_field(inactiveMarginMaskField, .true.)
+            call mpas_deallocate_scratch_field(oceanMaskField, .true.)
+
          else   ! other calving options (floating, topographic_threshold)
 
             ! get scratch fields for calving
@@ -446,6 +451,8 @@ module li_calving
                thickness = thickness - calvingThickness
 
             endwhere
+
+            call mpas_deallocate_scratch_field(calvingLawMaskField, .true.)
 
          endif   ! config_calving
 
