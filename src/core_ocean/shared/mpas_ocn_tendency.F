@@ -407,7 +407,6 @@ contains
       type (mpas_pool_iterator_type) :: groupItr
       character (len=StrKIND) :: modifiedGroupName
       character (len=StrKIND) :: modifiedConfigName
-      character (len=StrKIND), pointer :: config_sw_absorption_type
       !
       ! one dimensional pointers
       !
@@ -478,7 +477,6 @@ contains
       !
       call mpas_pool_get_config(ocnConfigs, 'config_disable_tr_all_tend', config_disable_tr_all_tend)
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
-      call mpas_pool_get_config(ocnConfigs, 'config_sw_absorption_type', config_sw_absorption_type)
 
       !
       ! get arrays
@@ -746,7 +744,7 @@ contains
                ! Performing shortwave absorption
                !
                if ( trim(groupItr % memberName) == 'activeTracers' ) then
-                  if ( trim(config_sw_absorption_type) .ne. 'none') then
+                  if ( config_use_activeTracers_surface_bulk_forcing ) then
                   call mpas_timer_start("short wave", .false.)
                   call ocn_tracer_short_wave_absorption_tend(meshPool, swForcingPool, forcingPool, indexTemperature, layerThickness, penetrativeTemperatureFlux, tracerGroupTend, err)
                   call mpas_timer_stop("short wave")

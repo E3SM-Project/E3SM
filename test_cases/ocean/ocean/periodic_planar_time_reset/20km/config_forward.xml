@@ -31,7 +31,6 @@
 		<option name="config_disable_vel_all_tend">.true.</option>
 		<option name="config_disable_tr_all_tend">.true.</option>
 		<option name="config_use_active_tracers">.false.</option>
-		<option name="config_sw_absorption_type">'none'</option>
 		<option name="config_AM_lagrPartTrack_reset_criteria">'particle_time'</option>
 		<option name="config_AM_timeSeriesStats_output_stream">'none'</option>
 		<option name="config_AM_timeSeriesStats_restart_stream">'none'</option>
