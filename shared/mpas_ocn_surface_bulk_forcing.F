@@ -71,8 +71,6 @@ contains
 !
 !-----------------------------------------------------------------------
 
-! TRACER-CLEAN-UP
-! Currently, penetrativeTemperatureFlux is built into bulk forcing.. what should we do about that?
    subroutine ocn_surface_bulk_forcing_tracers(meshPool, groupName, forcingPool, tracerGroup, tracersSurfaceFlux, err)!{{{
 
       !-----------------------------------------------------------------
@@ -367,17 +365,13 @@ contains
       real (kind=RKIND), dimension(:), pointer :: shortWaveHeatFlux, penetrativeTemperatureFlux
 
       real (kind=RKIND), dimension(:), pointer :: snowFlux, rainFlux
- ! CLEANUP
- !    real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, riverRunoffFlux, iceRunoffFlux  ! Do we want to include these in the heat forcing?
 
       err = 0
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
- ! CLEANUP
- ! Doug: Should we keep these two lines? If so, we should uncomment them and used them for the indexing.
-   !  call mpas_pool_get_dimension(forcingPool, 'index_temperatureSurfaceFlux', index_temperature_flux)
-   !  call mpas_pool_get_dimension(forcingPool, 'index_salinitySurfaceFlux', index_salinity_flux)
+      call mpas_pool_get_dimension(forcingPool, 'index_temperatureSurfaceFlux', index_temperature_flux)
+      call mpas_pool_get_dimension(forcingPool, 'index_salinitySurfaceFlux', index_salinity_flux)
 
       call mpas_pool_get_array(forcingPool, 'latentHeatFlux', latentHeatFlux)
       call mpas_pool_get_array(forcingPool, 'sensibleHeatFlux', sensibleHeatFlux)
@@ -394,14 +388,13 @@ contains
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
 
       ! Build surface fluxes at cell centers
-      ! CLEANUP
       !$omp do schedule(runtime)
       do iCell = 1, nCells
-        tracersSurfaceFlux(1, iCell) = tracersSurfaceFlux(1, iCell) &
+        tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
                                                            + (latentHeatFlux(iCell) + sensibleHeatFlux(iCell) + longWaveHeatFluxUp(iCell) + longWaveHeatFluxDown(iCell) &
                                                            + seaIceHeatFlux(iCell) - (snowFlux(iCell) + iceRunoffFlux(iCell)) * latent_heat_fusion_mks) * hflux_factor
 
-        tracersSurfaceFlux(2, iCell) = tracersSurfaceFlux(2, iCell)  &
+        tracersSurfaceFlux(index_salinity_flux, iCell) = tracersSurfaceFlux(index_salinity_flux, iCell)  &
                                                         + seaIceSalinityFlux(iCell) * sflux_factor
       end do
       !$omp end do
@@ -411,17 +404,19 @@ contains
       ! Assume surface fluxes of water have zero salinity. So the RHS forcing is zero for salinity.
       ! Only include this heat forcing when bulk thickness is turned on
       ! indices on tracerGroup are (iTracer, iLevel, iCell)
-      ! DOUG: OpenMP directive here?
       if (bulkThicknessFluxOn) then
+         !$omp do schedule(runtime)
          do iCell = 1, nCells
-           tracersSurfaceFlux(1, iCell) = tracersSurfaceFlux(1, iCell) + (snowFlux(iCell) + rainFlux(iCell))*tracerGroup(1,1,iCell) / rho_sw
+           tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
+               + (snowFlux(iCell) + rainFlux(iCell))*tracerGroup(index_temperature_flux,1,iCell) / rho_sw
          end do
+         !$omp end do
       endif ! bulkThicknessFluxOn
-      ! DOUG: OpenMP directive here?
 
-      ! TRACER-CLEAN-UP
-      ! Do we want this here still?
+      ! convert short wave heat flux to a temperature flux
+      !$omp workshare
       penetrativeTemperatureFlux = shortWaveHeatFlux * hflux_factor
+      !$omp end workshare
 
    end subroutine ocn_surface_bulk_forcing_active_tracers!}}}
 
