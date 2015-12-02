@@ -66,7 +66,7 @@ set rotate = 0
 
                   # number of elemnets:  6*ne*ne
 set ne = 4        # horizontal resolution   4,16,30,60,120,240
-set ne = 30
+set qsize = 4     # use 4 tracers for testing
 
 # CAM4
 #set nlev=26       # vertical resolution
@@ -77,9 +77,8 @@ set ne = 30
 #set qsize=25
 
 # simulate ACME v1
-# NOTE: HOMME includes vertical coordinate files for 26, 30, 60, 64, 72, 96 levels
+# NE=120, nlev=72, qsize=35
 set nlev=72
-set qsize = 4    
 #set qsize=35
 
  set namelist = jw_baroclinic.nl  # CAM-style, vertically lagrangian
