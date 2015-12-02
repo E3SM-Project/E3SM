@@ -2326,16 +2326,6 @@
 			 description="Penetrative temperature flux at the surface due to solar radiation. Positive is into the ocean."
 			 packages="forwardMode;analysisMode"
 			 />
-                  <!--The next two var arrays can be removed after the commit is tested -->
-                 <var name="penetratingShortwave" type="real" dimensions="nVertLevels nCells Time" units="^\circ C m s^{-1}"
-                          description="true penetrating shortwvae component to test new SW code"
-                          packages="forwardMode;analysisMode"
-                 />
-                 <var name="chlA_test" type="real" dimensions="nCells Time" units="NA"
-                         description="test if chlA is read and interpolated correctly"
-                         packages="forwardMode;analysisMode"
-                 />
-
 		<var name="fractionAbsorbed" type="real" dimensions="nVertLevels nCells Time" units="fractional"
 			 description="Divergence of transmission through interfaces of surface fluxes below the surface layer at cell centers. These are not applied to short wave."
 			 packages="forwardMode;analysisMode"

@@ -102,8 +102,6 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-!LPV: I belive the Jerlov routines should be completely removed once testing is
-!done on this branch.
 
       err = 0
       if(useJerlov) then
