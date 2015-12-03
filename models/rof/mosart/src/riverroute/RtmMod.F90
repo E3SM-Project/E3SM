@@ -39,11 +39,11 @@ module RtmMod
   use MOSART_physics_mod, only : Euler
   use MOSART_physics_mod, only : updatestate_hillslope, updatestate_subnetwork, &
                                  updatestate_mainchannel
-  use RtmIO
 #ifdef INCLUDE_WRM
   use WRM_subw_IO_mod , only : WRM_init
   use WRM_modules     , only : Euler_WRM
 #endif
+  use RtmIO
   use mct_mod
   use perf_mod
   use pio
@@ -1016,18 +1016,6 @@ contains
        rtmCTL%lonc(nr) = rtmCTL%rlon(i)
        rtmCTL%latc(nr) = rtmCTL%rlat(j)
 
-       if (rtmCTL%mask(nr) == 1) then
-          do nt = 1,nt_rtm
-             rtmCTL%runofflnd(nr,nt) = rtmCTL%runoff(nr,nt)
-             rtmCTL%dvolrdtlnd(nr,nt)= rtmCTL%dvolrdt(nr,nt)
-          enddo
-       elseif (rtmCTL%mask(nr) >= 2) then
-          do nt = 1,nt_rtm
-             rtmCTL%runoffocn(nr,nt) = rtmCTL%runoff(nr,nt)
-             rtmCTL%dvolrdtocn(nr,nt)= rtmCTL%dvolrdt(nr,nt)
-          enddo
-       endif
-
        rtmCTL%outletg(nr) = idxocn(n)
        rtmCTL%area(nr) = area_global(n)
        lrtmarea = lrtmarea + rtmCTL%area(nr)
@@ -1176,10 +1164,7 @@ contains
        ! would be in the full matrix.  Nrows= size of output vector=nb.
        ! Ncols = size of input vector = na.
 
-       cnt = 0
-       do nr=rtmCTL%begr,rtmCTL%endr
-          if(rtmCTL%outletg(nr) > 0) cnt = cnt + 1
-       enddo
+       cnt = rtmCTL%endr - rtmCTL%begr + 1
 
        call mct_sMat_init(sMat, gsize, gsize, cnt)
        igrow = mct_sMat_indexIA(sMat,'grow')
@@ -1192,8 +1177,17 @@ contains
              sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
              sMat%data%iAttr(igrow,cnt) = rtmCTL%outletg(nr)
              sMat%data%iAttr(igcol,cnt) = rtmCTL%gindex(nr)
+          else
+             cnt = cnt + 1
+             sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
+             sMat%data%iAttr(igrow,cnt) = rtmCTL%gindex(nr)
+             sMat%data%iAttr(igcol,cnt) = rtmCTL%gindex(nr)
           endif
        enddo
+       if (cnt /= rtmCTL%endr - rtmCTL%begr + 1) then
+          write(iulog,*) trim(subname),' MOSART ERROR: smat cnt1 ',cnt,rtmCTL%endr-rtmCTL%begr+1
+          call shr_sys_abort(trim(subname)//' ERROR smat cnt1')
+       endif
 
        call mct_sMatP_Init(sMatP_direct, sMat, gsMap_r, gsMap_r, 0, mpicom_rof, ROFID)
 
@@ -1211,12 +1205,8 @@ contains
        enddo
        call mct_avect_gather(avtmp,avtmpG,gsmap_r,mastertask,mpicom_rof)
        if (masterproc) then
-          cnt = 0
-          do n = 1,rtmlon*rtmlat
-             if (avtmpG%rAttr(2,n) > 0) then
-                cnt = cnt + 1
-             endif
-          enddo
+
+          cnt = rtmlon*rtmlat
 
           call mct_sMat_init(sMat, gsize, gsize, cnt)
           igrow = mct_sMat_indexIA(sMat,'grow')
@@ -1230,8 +1220,17 @@ contains
                 sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
                 sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(2,n)
                 sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(1,n)
+             else
+                cnt = cnt + 1
+                sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
+                sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(1,n)
+                sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(1,n)
              endif
           enddo
+          if (cnt /= rtmlon*rtmlat) then
+             write(iulog,*) trim(subname),' MOSART ERROR: smat cnt2 ',cnt,rtmlon*rtmlat
+             call shr_sys_abort(trim(subname)//' ERROR smat cnt2')
+          endif
           call mct_avect_clean(avtmpG)
        else
           call mct_sMat_init(sMat,1,1,1)
@@ -1415,12 +1414,14 @@ contains
 ! !LOCAL VARIABLES:
 !EOP
     integer  :: i, j, n, nr, ns, nt, n2, nf ! indices
-    real(r8) :: budget_terms(30,nt_rtm)      ! BUDGET terms
+    real(r8) :: budget_terms(30,nt_rtm)     ! BUDGET terms
         ! BUDGET terms 1-10 are for volumes (m3)
         ! BUDGET terms 11-30 are for flows (m3/s)
     real(r8) :: budget_input, budget_output, budget_volume, budget_total, &
-                budget_euler, budget_eroutlag  ! BUDGET terms
-    real(r8) :: budget_global(30,nt_rtm)     ! global budget sum
+                budget_euler, budget_eroutlag
+    real(r8),save :: budget_accum(nt_rtm)   ! BUDGET accumulator over run
+    integer ,save :: budget_accum_cnt       ! counter for budget_accum
+    real(r8) :: budget_global(30,nt_rtm)    ! global budget sum
     logical  :: budget_check                ! do global budget check
     real(r8) :: volr_init                   ! temporary storage to compute dvolrdt
     real(r8),parameter :: budget_tolerance = 1.0e-6   ! budget tolerance, m3/day
@@ -1457,6 +1458,8 @@ contains
 
     delt_coupling = coupling_period*1.0_r8
     if (first_call) then
+       budget_accum = 0._r8
+       budget_accum_cnt = 0
        if (masterproc) write(iulog,'(2a,g20.12)') trim(subname),' MOSART coupling period ',delt_coupling
     end if
 
@@ -1481,7 +1484,7 @@ contains
     ! BUDGET 
     ! BUDGET terms 1-10 are for volumes (m3)
     ! BUDGET terms 11-30 are for flows (m3/s)
-    if (budget_check) then
+!    if (budget_check) then
        call t_startf('mosartr_budget')
        do nt = 1,nt_rtm
        do nr = rtmCTL%begr,rtmCTL%endr
@@ -1498,7 +1501,7 @@ contains
        enddo
        enddo
        call t_stopf('mosartr_budget')
-    endif
+!    endif
 
     ! data for euler solver, in m3/s here
     do nr = rtmCTL%begr,rtmCTL%endr
@@ -1563,8 +1566,78 @@ contains
     do nr = rtmCTL%begr,rtmCTL%endr
        cnt = cnt + 1
        do nt = 1,nt_rtm
-          avsrc_direct%rAttr(nt,cnt) = TRunoff%qgwl(nr,nt)
+
+          !-------------------------------
+          ! This water is routed directly to the outlet and passed out
+          ! Turn on and off terms as desired via commenting them out
+          !-------------------------------
+
+          !---- all dto water, none was going to TRunoff ---
+          !---- *** DO NOT TURN THIS ONE OFF, conservation will fail *** ---
+          avsrc_direct%rAttr(nt,cnt) = avsrc_direct%rAttr(nt,cnt) + rtmCTL%qdto(nr,nt)
+
+          !---- negative gwl water less than channel volume, remove from TRunoff ---
+          !---- scs
+          qgwl_volume = TRunoff%qgwl(nr,nt) * delt_mosart
+          river_volume_minimum = river_depth_minimum * rtmCTL%area(nr)
+          !---- if qgwl is negative, and adding it to the main channel would bring 
+          !---- main channel storage below a threshold, send qgwl directly to ocean
+          if (((qgwl_volume + TRunoff%wr(nr,nt)) < river_volume_minimum) &
+             .and. (TRunoff%qgwl(nr,nt) < 0._r8)) then
+             avsrc_direct%rAttr(nt,cnt) = avsrc_direct%rAttr(nt,cnt) + TRunoff%qgwl(nr,nt)
+             TRunoff%qgwl(nr,nt) = 0._r8
+          endif
+          !---- scs
+
+          !---- negative qgwl water, remove from TRunoff ---
+          if (TRunoff%qgwl(nr,nt) < 0._r8) then
+             avsrc_direct%rAttr(nt,cnt) = avsrc_direct%rAttr(nt,cnt) + TRunoff%qgwl(nr,nt)
+             TRunoff%qgwl(nr,nt) = 0._r8
+          endif
+
+          !---- all gwl water, remove from TRunoff ---
+          avsrc_direct%rAttr(nt,cnt) = avsrc_direct%rAttr(nt,cnt) + TRunoff%qgwl(nr,nt)
           TRunoff%qgwl(nr,nt) = 0._r8
+
+          !---- negative qsub water, remove from TRunoff ---
+          if (TRunoff%qsub(nr,nt) < 0._r8) then
+             avsrc_direct%rAttr(nt,cnt) = avsrc_direct%rAttr(nt,cnt) + TRunoff%qsub(nr,nt)
+             TRunoff%qsub(nr,nt) = 0._r8
+          endif
+
+          !---- negative qsur water, remove from TRunoff ---
+          if (TRunoff%qsur(nr,nt) < 0._r8) then
+             avsrc_direct%rAttr(nt,cnt) = avsrc_direct%rAttr(nt,cnt) + TRunoff%qsur(nr,nt)
+             TRunoff%qsur(nr,nt) = 0._r8
+          endif
+
+          !---- water outside the basin ---
+          !---- *** DO NOT TURN THIS ONE OFF, conservation will fail *** ---
+          if (TUnit%mask(nr) > 0) then
+             ! mosart euler
+          else
+             avsrc_direct%rAttr(nt,cnt) = avsrc_direct%rAttr(nt,cnt) + &
+                TRunoff%qsub(nr,nt) + &
+                TRunoff%qsur(nr,nt) + &
+                TRunoff%qgwl(nr,nt)
+             TRunoff%qsub(nr,nt) = 0._r8
+             TRunoff%qsur(nr,nt) = 0._r8
+             TRunoff%qgwl(nr,nt) = 0._r8
+          endif
+
+          !---- all nt=2 water ---
+          !---- can turn off euler_calc for this tracer ----
+          if (nt == 2) then
+             TUnit%euler_calc(nt) = .false.
+             avsrc_direct%rAttr(nt,cnt) = avsrc_direct%rAttr(nt,cnt) + &
+                TRunoff%qsub(nr,nt) + &
+                TRunoff%qsur(nr,nt) + &
+                TRunoff%qgwl(nr,nt)
+             TRunoff%qsub(nr,nt) = 0._r8
+             TRunoff%qsur(nr,nt) = 0._r8
+             TRunoff%qgwl(nr,nt) = 0._r8
+          endif
+
        enddo
     enddo
     call mct_avect_zero(avdst_direct)
@@ -1576,69 +1649,22 @@ contains
     do nr = rtmCTL%begr,rtmCTL%endr
        cnt = cnt + 1
        do nt = 1,nt_rtm
-          rtmCTL%direct(nr,nt) = rtmCTL%direct(nr,nt) + avdst_direct%rAttr(nt,cnt)
+          rtmCTL%direct(nr,nt) = avdst_direct%rAttr(nt,cnt)
        enddo
     enddo
     call t_stopf('mosartr_SMdirect')
-
-    !-----------------------------------
-    !--- add other direct terms
-    !-----------------------------------
-
-    do nt = 1,nt_rtm
-    do nr = rtmCTL%begr,rtmCTL%endr
-       ! --- dto water
-       rtmCTL%direct(nr,nt) = rtmCTL%direct(nr,nt) + rtmCTL%qdto(nr,nt)
-
-       ! --- gwl negative volume
-!scs
-       qgwl_volume = TRunoff%qgwl(nr,nt) * delt_mosart
-       river_volume_minimum = river_depth_minimum * rtmCTL%area(nr)
-! if qgwl is negative, and adding it to the main channel would bring 
-! main channel storage below a threshold, send qgwl directly to ocean
-       if (((qgwl_volume + TRunoff%wr(nr,nt)) < river_volume_minimum) &
-          .and. (TRunoff%qgwl(nr,nt) < 0._r8)) then
-          rtmCTL%direct(nr,nt) = rtmCTL%direct(nr,nt) + TRunoff%qgwl(nr,nt)
-          TRunoff%qgwl(nr,nt) = 0._r8
-       endif
-!scs
-
-       if (TRunoff%qgwl(nr,nt) < 0._r8) then
-          rtmCTL%direct(nr,nt) = rtmCTL%direct(nr,nt) + TRunoff%qgwl(nr,nt)
-          TRunoff%qgwl(nr,nt) = 0._r8
-       endif
-
-       if (TRunoff%qsub(nr,nt) < 0._r8) then
-          rtmCTL%direct(nr,nt) = rtmCTL%direct(nr,nt) + TRunoff%qsub(nr,nt)
-          TRunoff%qsub(nr,nt) = 0._r8
-       endif
-
-       if (TRunoff%qsur(nr,nt) < 0._r8) then
-          rtmCTL%direct(nr,nt) = rtmCTL%direct(nr,nt) + TRunoff%qsur(nr,nt)
-          TRunoff%qsur(nr,nt) = 0._r8
-       endif
-
-!       if (TUnit%mask(nr) > 0 .and. TUnit%areaTotal(nr) > 0._r8) then
-       if (TUnit%mask(nr) > 0) then
-          ! mosart euler
-       else
-          rtmCTL%direct(nr,nt) = rtmCTL%direct(nr,nt) + &
-             TRunoff%qsub(nr,nt) + &
-             TRunoff%qsur(nr,nt) + &
-             TRunoff%qgwl(nr,nt)
-          TRunoff%qsub(nr,nt) = 0._r8
-          TRunoff%qsur(nr,nt) = 0._r8
-          TRunoff%qgwl(nr,nt) = 0._r8
-      endif
-
-    enddo
-    enddo
 
     !-----------------------------------
     ! MOSART Subcycling
     !-----------------------------------
 
     call t_startf('mosartr_subcycling')
+
+    if (first_call) then
+       do nt = 1,nt_rtm
+          write(iulog,'(2a,i6,l4)') trim(subname),' euler_calc for nt = ',nt,TUnit%euler_calc(nt)
+       enddo
+    endif
 
     nsub = coupling_period/delt_mosart
     if (nsub*delt_mosart < coupling_period) then
@@ -1660,7 +1686,7 @@ contains
     ! --- convert TRunoff fields from m3/s to m/s before calling Euler
     !-----------------------------------
 
-    if (budget_check) then
+!    if (budget_check) then
        call t_startf('mosartr_budget')
        do nt = 1,nt_rtm
        do nr = rtmCTL%begr,rtmCTL%endr
@@ -1670,7 +1696,7 @@ contains
        enddo
        enddo
        call t_stopf('mosartr_budget')
-    endif
+!    endif
 
     do nt = 1,nt_rtm
     do nr = rtmCTL%begr,rtmCTL%endr
@@ -1774,11 +1800,13 @@ contains
        rtmCTL%dvolrdt(nr,nt) = (rtmCTL%volr(nr,nt) - volr_init) / delt_coupling
        rtmCTL%runoff(nr,nt) = flow(nr,nt)
 
+       rtmCTL%runofftot(nr,nt) = rtmCTL%direct(nr,nt)
        if (rtmCTL%mask(nr) == 1) then
           rtmCTL%runofflnd(nr,nt) = rtmCTL%runoff(nr,nt)
           rtmCTL%dvolrdtlnd(nr,nt)= rtmCTL%dvolrdt(nr,nt)
        elseif (rtmCTL%mask(nr) >= 2) then
           rtmCTL%runoffocn(nr,nt) = rtmCTL%runoff(nr,nt)
+          rtmCTL%runofftot(nr,nt) = rtmCTL%runofftot(nr,nt) + rtmCTL%runoff(nr,nt)
           rtmCTL%dvolrdtocn(nr,nt)= rtmCTL%dvolrdt(nr,nt)
        endif
     enddo
@@ -1794,7 +1822,7 @@ contains
     ! BUDGET terms 1-10 are for volumes (m3)
     ! BUDGET terms 11-30 are for flows (m3/s)
     ! BUDGET only ocean runoff and direct gets out of the system
-    if (budget_check) then
+!    if (budget_check) then
        call t_startf('mosartr_budget')
        do nt = 1,nt_rtm
        do nr = rtmCTL%begr,rtmCTL%endr
@@ -1822,6 +1850,22 @@ contains
           budget_terms(22,nt) = budget_terms(22,nt) + rtmCTL%flood(nr)
        enddo
 
+       ! accumulate the budget total over the run to make sure it's decreasing on avg
+       budget_accum_cnt = budget_accum_cnt + 1
+       do nt = 1,nt_rtm
+          budget_volume = (budget_terms( 2,nt) - budget_terms( 1,nt)) / delt_coupling
+          budget_input  = (budget_terms(13,nt) + budget_terms(14,nt) + &
+                           budget_terms(15,nt) + budget_terms(16,nt))
+          budget_output = (budget_terms(18,nt) + budget_terms(19,nt) + &
+                           budget_terms(21,nt))
+          budget_total  = budget_volume - budget_input + budget_output
+          budget_accum(nt) = budget_accum(nt) + budget_total
+          budget_terms(30,nt) = budget_accum(nt)/budget_accum_cnt
+       enddo
+       call t_stopf('mosartr_budget')
+
+    if (budget_check) then
+       call t_startf('mosartr_budget')
        !--- check budget
 
        ! convert fluxes from m3/s to m3 by mult by coupling_period
@@ -1876,6 +1920,7 @@ contains
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   net (dv-i+o)  = ',nt,budget_total
            !write(iulog,'(2a,i4,f22.6)') trim(subname),'   net euler     = ',nt,budget_euler
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   eul erout lag = ',nt,budget_eroutlag
+           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   accum (dv-i+o)= ',nt,budget_global(30,nt)
            !write(iulog,'(2a)') trim(subname),'----------------'
            !write(iulog,'(2a,i4,f22.6)') trim(subname),'   erout_prev  no= ',nt,budget_global(23,nt)
            !write(iulog,'(2a,i4,f22.6)') trim(subname),'   erout       no= ',nt,budget_global(24,nt)
@@ -1887,9 +1932,12 @@ contains
            !write(iulog,'(2a,i4,f22.6)') trim(subname),'   net main chan = ',nt,budget_global(6,nt)-budget_global(5,nt)+budget_global(24,nt)-budget_global(23,nt)+budget_global(27,nt)+budget_global(28,nt)+budget_global(29,nt)
            !write(iulog,'(2a)') trim(subname),'----------------'
 
-            if ((budget_total+budget_eroutlag) /= 0._r8) then
-               if ((budget_total-budget_eroutlag)/(budget_total+budget_eroutlag) > 0.01_r8) then
-                  write(iulog,'(2a,i4)') trim(subname),' ***** BUDGET WARNING for nt = ',nt
+            if ((budget_total-budget_eroutlag) > 1.0e-6) then
+               write(iulog,'(2a,i4)') trim(subname),' ***** BUDGET WARNING error gt 1. m3 for nt = ',nt
+            endif
+            if ((budget_total+budget_eroutlag) >= 1.0e-6) then
+               if ((budget_total-budget_eroutlag)/(budget_total+budget_eroutlag) > 0.001_r8) then
+                  write(iulog,'(2a,i4)') trim(subname),' ***** BUDGET WARNING out of balance for nt = ',nt
                endif
             endif
           enddo
@@ -2054,6 +2102,8 @@ contains
   integer :: igrow, igcol, iwgt
   type(mct_avect) :: avtmp, avtmpG ! temporary avects
   type(mct_sMat)  :: sMat          ! temporary sparse matrix, needed for sMatP
+  real(r8):: areatot_prev, areatot_tmp, areatot_new
+  integer :: tcnt
   character(len=16384) :: rList             ! list of fields for SM multiply
   character(len=1000) :: fname
   character(len=*),parameter :: subname = '(MOSART_init)'
@@ -2083,6 +2133,9 @@ contains
      call pio_initdecomp(pio_subsystem, pio_int   , dsizes, compDOF, iodesc_int)
      deallocate(compdof)
      call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
+
+     allocate(TUnit%euler_calc(nt_rtm))
+     Tunit%euler_calc = .true.
 
      allocate(TUnit%frac(begr:endr))
      ier = pio_inq_varid(ncid, name='frac', vardesc=vardesc)
@@ -2534,6 +2587,71 @@ contains
 
   end if  ! endr >= begr
 
+  !--- compute areatot from area using dnID ---
+  !--- this basically advects upstream areas downstream and
+  !--- adds them up as it goes until all upstream areas are accounted for
+
+  allocate(Tunit%areatotal2(rtmCTL%begr:rtmCTL%endr))
+  Tunit%areatotal2 = 0._r8
+
+  ! initialize avdst to local area and add that to areatotal2
+  cnt = 0
+  call mct_avect_zero(avdst_eroutUp)
+  do nr = rtmCTL%begr,rtmCTL%endr
+     cnt = cnt + 1
+     avdst_eroutUp%rAttr(1,cnt) = rtmCTL%area(nr)
+     Tunit%areatotal2(nr) = avdst_eroutUp%rAttr(1,cnt)
+  enddo
+
+  tcnt = 0
+  areatot_prev = -99._r8
+  areatot_new = -50._r8
+  do while (areatot_new /= areatot_prev .and. tcnt < rtmlon*rtmlat)
+
+     tcnt = tcnt + 1
+
+     ! copy avdst to avsrc for next downstream step
+     cnt = 0
+     call mct_avect_zero(avsrc_eroutUp)
+     do nr = rtmCTL%begr,rtmCTL%endr
+        cnt = cnt + 1
+        avsrc_eroutUp%rAttr(1,cnt) = avdst_eroutUp%rAttr(1,cnt)
+     enddo
+
+     call mct_avect_zero(avdst_eroutUp)
+
+     call mct_sMat_avMult(avsrc_eroutUp, sMatP_eroutUp, avdst_eroutUp)
+
+     ! add avdst to areatot and compute new global sum
+     cnt = 0
+     areatot_prev = areatot_new
+     areatot_tmp = 0._r8
+     do nr = rtmCTL%begr,rtmCTL%endr
+        cnt = cnt + 1
+        Tunit%areatotal2(nr) = Tunit%areatotal2(nr) + avdst_eroutUp%rAttr(1,cnt)
+        areatot_tmp = areatot_tmp + Tunit%areatotal2(nr)
+     enddo
+     call shr_mpi_sum(areatot_tmp, areatot_new, mpicom_rof, 'areatot_new', all=.true.)
+
+     if (masterproc) then
+        write(iulog,*) trim(subname),' areatot calc ',tcnt,areatot_new
+     endif
+
+  enddo
+
+  if (areatot_new /= areatot_prev) then
+     write(iulog,*) trim(subname),' MOSART ERROR: areatot incorrect ',areatot_new, areatot_prev
+     call shr_sys_abort(trim(subname)//' ERROR areatot incorrect')
+  endif
+
+!  do nr = rtmCTL%begr,rtmCTL%endr
+!     if (TUnit%areatotal(nr) > 0._r8 .and. Tunit%areatotal2(nr) /= TUnit%areatotal(nr)) then
+!        write(iulog,'(2a,i12,2e16.4,f16.4)') trim(subname),' areatot diff ',nr,TUnit%areatotal(nr),Tunit%areatota!l2(nr),&
+!           abs(TUnit%areatotal(nr)-Tunit%areatotal2(nr))/(TUnit%areatotal(nr))
+!     endif
+!  enddo
+
+
   ! control parameters
   Tctl%RoutingMethod = 1
   !Tctl%DATAH = rtm_nsteps*get_step_size()
@@ -2579,7 +2697,7 @@ contains
 
     do iunit=rtmCTL%begr,rtmCTL%endr
        if(TUnit%mask(iunit) > 0 .and. TUnit%rlen(iunit) > 0._r8) then
-          TUnit%phi_r(iunit) = TUnit%areaTotal(iunit)*sqrt(TUnit%rslp(iunit))/(TUnit%rlen(iunit)*TUnit%rwidth(iunit))
+          TUnit%phi_r(iunit) = TUnit%areaTotal2(iunit)*sqrt(TUnit%rslp(iunit))/(TUnit%rlen(iunit)*TUnit%rwidth(iunit))
           if(TUnit%phi_r(iunit) >= 10._r8) then
              TUnit%numDT_r(iunit) = (TUnit%numDT_r(iunit)*log10(TUnit%phi_r(iunit))*Tctl%DLevelR) + 1
           else 

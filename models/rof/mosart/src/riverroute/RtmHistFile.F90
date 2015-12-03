@@ -8,7 +8,7 @@ module RtmHistFile
 ! !USES:
   use shr_kind_mod  , only : r8 => shr_kind_r8
   use shr_sys_mod   , only : shr_sys_flush, shr_sys_abort
-  use RunoffMod     , only : rtmCTL
+  use RunoffMod     , only : rtmCTL, Tunit
   use RtmVar        , only : rtmlon, rtmlat, spval, ispval, secspday, frivinp_rtm, &   
                              iulog, nsrest, caseid, inst_suffix, nsrStartup, nsrBranch, & 
                              ctitle, version, hostname, username, conventions, source
@@ -809,8 +809,14 @@ contains
             long_name='runoff coordinate longitude', units='degrees_east', ncid=nfid(t))
        call ncd_defvar(varname='lat', xtype=tape(t)%ncprec, dim1name='lat', &
             long_name='runoff coordinate latitude', units='degrees_north', ncid=nfid(t))
-!       call ncd_defvar(varname='mask', xtype=ncd_int, dim1name='lon', dim2name='lat', &
-!            long_name='runoff mask', units='unitless', ncid=nfid(t))
+       call ncd_defvar(varname='mask', xtype=ncd_int, dim1name='lon', dim2name='lat', &
+            long_name='runoff mask', units='unitless', ncid=nfid(t))
+       call ncd_defvar(varname='area', xtype=tape(t)%ncprec, dim1name='lon', dim2name='lat', &
+            long_name='runoff grid area', units='m2', ncid=nfid(t))
+       call ncd_defvar(varname='areatotal', xtype=tape(t)%ncprec, dim1name='lon', dim2name='lat', &
+            long_name='basin upstream areatotal', units='m2', ncid=nfid(t))
+       call ncd_defvar(varname='areatotal2', xtype=tape(t)%ncprec, dim1name='lon', dim2name='lat', &
+            long_name='computed basin upstream areatotal', units='m2', ncid=nfid(t))
 
     else if (mode == 'write') then
 
@@ -839,7 +845,14 @@ contains
 
        call ncd_io(varname='lon', data=rtmCTL%rlon, ncid=nfid(t), flag='write')
        call ncd_io(varname='lat', data=rtmCTL%rlat, ncid=nfid(t), flag='write')
-!       call ncd_io(varname='mask', data=rtmCTL%mask, ncid=nfid(t), flag='write')
+       call ncd_io(flag='write', varname='mask', dim1name='allrof', &
+           data=rtmCTL%mask, ncid=nfid(t))
+       call ncd_io(flag='write', varname='area', dim1name='allrof', &
+           data=rtmCTL%area, ncid=nfid(t))
+       call ncd_io(flag='write', varname='areatotal', dim1name='allrof', &
+           data=Tunit%areatotal, ncid=nfid(t))
+       call ncd_io(flag='write', varname='areatotal2', dim1name='allrof', &
+           data=Tunit%areatotal2, ncid=nfid(t))
 
     endif
 

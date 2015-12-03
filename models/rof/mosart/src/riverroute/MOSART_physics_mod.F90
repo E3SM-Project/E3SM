@@ -54,18 +54,20 @@ MODULE MOSART_physics_mod
     ! hillslope
     !------------------
 
-    call t_startf('mosart_hillslope')
+    call t_startf('mosartr_hillslope')
     do nt=1,nt_rtm
+    if (TUnit%euler_calc(nt)) then
     do iunit=rtmCTL%begr,rtmCTL%endr
-       if(TUnit%mask(iunit) > 0 .and. TUnit%areaTotal(iunit) > 0._r8) then
+       if(TUnit%mask(iunit) > 0) then
           call hillslopeRouting(iunit,nt,Tctl%DeltaT)
           TRunoff%wh(iunit,nt) = TRunoff%wh(iunit,nt) + TRunoff%dwh(iunit,nt) * Tctl%DeltaT
           call UpdateState_hillslope(iunit,nt)
           TRunoff%etin(iunit,nt) = (-TRunoff%ehout(iunit,nt) + TRunoff%qsub(iunit,nt)) * TUnit%area(iunit) * TUnit%frac(iunit)
        endif
     end do
+    endif
     end do
-    call t_stopf('mosart_hillslope')
+    call t_stopf('mosartr_hillslope')
 
     TRunoff%flow = 0._r8
     TRunoff%erout_prev = 0._r8
@@ -76,20 +78,23 @@ MODULE MOSART_physics_mod
 
        !--- accumulate/average erout at prior timestep (used in eroutUp calc) for budget analysis
        do nt=1,nt_rtm
+       if (TUnit%euler_calc(nt)) then
        do iunit=rtmCTL%begr,rtmCTL%endr
           TRunoff%erout_prev(iunit,nt) = TRunoff%erout_prev(iunit,nt) + TRunoff%erout(iunit,nt)
-       enddo
-       enddo
+       end do
+       endif
+       end do
 
        !------------------
        ! subnetwork
        !------------------
 
-       call t_startf('mosart_subnetwork')    
+       call t_startf('mosartr_subnetwork')    
        TRunoff%erlateral(:,:) = 0._r8
        do nt=1,nt_rtm
+       if (TUnit%euler_calc(nt)) then
        do iunit=rtmCTL%begr,rtmCTL%endr
-          if(TUnit%mask(iunit) > 0 .and. TUnit%areaTotal(iunit) > 0._r8) then
+          if(TUnit%mask(iunit) > 0) then
              localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R/TUnit%numDT_t(iunit)
              do k=1,TUnit%numDT_t(iunit)
                 call subnetworkRouting(iunit,nt,localDeltaT)
@@ -100,20 +105,21 @@ MODULE MOSART_physics_mod
              TRunoff%erlateral(iunit,nt) = TRunoff%erlateral(iunit,nt) / TUnit%numDT_t(iunit)
           endif
        end do ! iunit
+       endif  ! euler_calc
        end do ! nt
-       call t_stopf('mosart_subnetwork')    
+       call t_stopf('mosartr_subnetwork')    
 
        !------------------
        ! upstream interactions
        !------------------
 
        if (barrier_timers) then
-          call t_startf('mosart_SMeroutUp_barrier')    
+          call t_startf('mosartr_SMeroutUp_barrier')    
           call mpi_barrier(mpicom_rof,ier)
-          call t_stopf('mosart_SMeroutUp_barrier')    
+          call t_stopf('mosartr_SMeroutUp_barrier')    
        endif
 
-       call t_startf('mosart_SMeroutUp')    
+       call t_startf('mosartr_SMeroutUp')    
        TRunoff%eroutUp = 0._r8
 #ifdef NO_MCT
        do iunit=rtmCTL%begr,rtmCTL%endr
@@ -147,7 +153,7 @@ MODULE MOSART_physics_mod
           enddo
        enddo
 #endif
-       call t_stopf('mosart_SMeroutUp')    
+       call t_stopf('mosartr_SMeroutUp')    
 
        TRunoff%eroutup_avg = TRunoff%eroutup_avg + TRunoff%eroutUp
        TRunoff%erlat_avg   = TRunoff%erlat_avg   + TRunoff%erlateral
@@ -156,10 +162,11 @@ MODULE MOSART_physics_mod
        ! channel routing
        !------------------
 
-       call t_startf('mosart_chanroute')    
+       call t_startf('mosartr_chanroute')    
        do nt=1,nt_rtm
+       if (TUnit%euler_calc(nt)) then
        do iunit=rtmCTL%begr,rtmCTL%endr
-          if(TUnit%mask(iunit) > 0 .and. TUnit%areaTotal(iunit) > TINYVALUE) then
+          if(TUnit%mask(iunit) > 0) then
              localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R/TUnit%numDT_r(iunit)
              temp_erout = 0._r8
              do k=1,TUnit%numDT_r(iunit)
@@ -177,11 +184,12 @@ MODULE MOSART_physics_mod
              TRunoff%erout(iunit,nt) = temp_erout
              TRunoff%flow(iunit,nt) = TRunoff%flow(iunit,nt) - TRunoff%erout(iunit,nt)
           endif
-       end do
-       end do
+       end do ! iunit
+       endif  ! euler_calc
+       end do ! nt
        negchan = min(negchan, minval(TRunoff%wr(:,:)))
 
-       call t_stopf('mosart_chanroute')    
+       call t_stopf('mosartr_chanroute')    
     end do
 
 ! check for negative channel storage
@@ -294,7 +302,7 @@ MODULE MOSART_physics_mod
        TRunoff%vr(iunit,nt) = 0._r8
        TRunoff%erout(iunit,nt) = -TRunoff%erin(iunit,nt)-TRunoff%erlateral(iunit,nt)
     else
-       if(TUnit%areaTotal(iunit)/TUnit%rwidth(iunit)/TUnit%rlen(iunit) > 1e6_r8) then
+       if(TUnit%areaTotal2(iunit)/TUnit%rwidth(iunit)/TUnit%rlen(iunit) > 1e6_r8) then
           TRunoff%erout(iunit,nt) = -TRunoff%erin(iunit,nt)-TRunoff%erlateral(iunit,nt)
        else
 !        !TRunoff%vr(iunit,nt) = CRVRMAN(TUnit%rslp(iunit), TUnit%nr(iunit), TRunoff%rr(iunit,nt))

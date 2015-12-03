@@ -56,6 +56,7 @@ module RunoffMod
      !    - local
      real(r8), pointer :: runofflnd(:,:)   ! runoff masked for land (m3 H2O/s)
      real(r8), pointer :: runoffocn(:,:)   ! runoff masked for ocn  (m3 H2O/s)
+     real(r8), pointer :: runofftot(:,:)   ! total runoff masked for ocn  (m3 H2O/s)
      real(r8), pointer :: dvolrdt(:,:)     ! RTM change in storage (mm/s)
      real(r8), pointer :: dvolrdtlnd(:,:)  ! dvolrdt masked for land (mm/s)
      real(r8), pointer :: dvolrdtocn(:,:)  ! dvolrdt masked for ocn  (mm/s)
@@ -84,6 +85,10 @@ module RunoffMod
      real(r8), pointer :: runofflnd_nt2(:)
      real(r8), pointer :: runoffocn_nt1(:)
      real(r8), pointer :: runoffocn_nt2(:)
+     real(r8), pointer :: runofftot_nt1(:)
+     real(r8), pointer :: runofftot_nt2(:)
+     real(r8), pointer :: runoffdir_nt1(:)
+     real(r8), pointer :: runoffdir_nt2(:)
      real(r8), pointer :: dvolrdtlnd_nt1(:)
      real(r8), pointer :: dvolrdtlnd_nt2(:)
      real(r8), pointer :: dvolrdtocn_nt1(:)
@@ -146,9 +151,11 @@ module RunoffMod
      real(r8), pointer :: lon(:)       ! longitude of the centroid of the cell
      real(r8), pointer :: area(:)      ! area of local cell, [m2]
      real(r8), pointer :: areaTotal(:) ! total upstream drainage area, [m2]
+     real(r8), pointer :: areaTotal2(:)! computed total upstream drainage area, [m2]
      real(r8), pointer :: rlenTotal(:) ! length of all reaches, [m]
      real(r8), pointer :: Gxr(:)       ! drainage density within the cell, [1/m]
      real(r8), pointer :: frac(:)      ! fraction of cell included in the study area, [-]
+     logical , pointer :: euler_calc(:) ! flag for calculating tracers in euler
 
      ! hillslope properties
      real(r8), pointer :: nh(:)        ! manning's roughness of the hillslope (channel network excluded) 
@@ -289,6 +296,7 @@ contains
              rtmCTL%dvolrdtlnd(begr:endr,nt_rtm), &
              rtmCTL%runoffocn(begr:endr,nt_rtm),  &
              rtmCTL%dvolrdtocn(begr:endr,nt_rtm), &
+             rtmCTL%runofftot(begr:endr,nt_rtm),  &
              rtmCTL%area(begr:endr),              &
              rtmCTL%volr(begr:endr,nt_rtm),       &
              rtmCTL%lonc(begr:endr),              &
@@ -299,6 +307,10 @@ contains
              rtmCTL%runofflnd_nt2(begr:endr),     &
              rtmCTL%runoffocn_nt1(begr:endr),     &
              rtmCTL%runoffocn_nt2(begr:endr),     &
+             rtmCTL%runofftot_nt1(begr:endr),     &
+             rtmCTL%runofftot_nt2(begr:endr),     &
+             rtmCTL%runoffdir_nt1(begr:endr),     &
+             rtmCTL%runoffdir_nt2(begr:endr),     &
              rtmCTL%volr_nt1(begr:endr),          &
              rtmCTL%volr_nt2(begr:endr),          &
              rtmCTL%dvolrdtlnd_nt1(begr:endr),    &
@@ -335,6 +347,7 @@ contains
     rtmCTL%runoff(:,:)     = 0._r8
     rtmCTL%runofflnd(:,:)  = spval
     rtmCTL%runoffocn(:,:)  = spval
+    rtmCTL%runofftot(:,:)  = spval
     rtmCTL%dvolrdt(:,:)    = 0._r8
     rtmCTL%dvolrdtlnd(:,:) = spval
     rtmCTL%dvolrdtocn(:,:) = spval

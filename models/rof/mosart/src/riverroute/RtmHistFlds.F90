@@ -38,27 +38,43 @@ contains
     implicit none
     !-------------------------------------------------------
 
-    call RtmHistAddfld (fname='QCHANR'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
-         avgflag='A', long_name='MOSART river flow: '//trim(rtm_tracers(1)), &
+    call RtmHistAddfld (fname='RIVER_DISCHARGE_OVER_LAND'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
+         avgflag='A', long_name='MOSART river basin flow: '//trim(rtm_tracers(1)), &
          ptr_rof=rtmCTL%runofflnd_nt1, default='active')
 
-    call RtmHistAddfld (fname='QCHANR'//'_'//trim(rtm_tracers(2)), units='m3/s',  &
-         avgflag='A', long_name='MOSART river flow: '//trim(rtm_tracers(2)), &
+    call RtmHistAddfld (fname='RIVER_DISCHARGE_OVER_LAND'//'_'//trim(rtm_tracers(2)), units='m3/s',  &
+         avgflag='A', long_name='MOSART river basin flow: '//trim(rtm_tracers(2)), &
          ptr_rof=rtmCTL%runofflnd_nt2, default='active')
 
-    call RtmHistAddfld (fname='QCHOCNR'//'_'//trim(rtm_tracers(1)), units='m3/s', &
+    call RtmHistAddfld (fname='RIVER_DISCHARGE_TO_OCEAN'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
          avgflag='A', long_name='MOSART river discharge into ocean: '//trim(rtm_tracers(1)), &
          ptr_rof=rtmCTL%runoffocn_nt1, default='active')
 
-    call RtmHistAddfld (fname='QCHOCNR'//'_'//trim(rtm_tracers(2)), units='m3/s', &
+    call RtmHistAddfld (fname='RIVER_DISCHARGE_TO_OCEAN'//'_'//trim(rtm_tracers(2)), units='m3/s',  &
          avgflag='A', long_name='MOSART river discharge into ocean: '//trim(rtm_tracers(2)), &
          ptr_rof=rtmCTL%runoffocn_nt2, default='active')
 
-    call RtmHistAddfld (fname='VOLR'//'_'//trim(rtm_tracers(1)), units='m3',  &
+    call RtmHistAddfld (fname='TOTAL_DISCHARGE_TO_OCEAN'//'_'//trim(rtm_tracers(1)), units='m3/s', &
+         avgflag='A', long_name='MOSART total discharge into ocean: '//trim(rtm_tracers(1)), &
+         ptr_rof=rtmCTL%runofftot_nt1, default='active')
+
+    call RtmHistAddfld (fname='TOTAL_DISCHARGE_TO_OCEAN'//'_'//trim(rtm_tracers(2)), units='m3/s', &
+         avgflag='A', long_name='MOSART total discharge into ocean: '//trim(rtm_tracers(2)), &
+         ptr_rof=rtmCTL%runofftot_nt2, default='active')
+
+    call RtmHistAddfld (fname='DIRECT_DISCHARGE_TO_OCEAN'//'_'//trim(rtm_tracers(1)), units='m3/s', &
+         avgflag='A', long_name='MOSART direct discharge into ocean: '//trim(rtm_tracers(1)), &
+         ptr_rof=rtmCTL%runoffdir_nt1, default='active')
+
+    call RtmHistAddfld (fname='DIRECT_DISCHARGE_TO_OCEAN'//'_'//trim(rtm_tracers(2)), units='m3/s', &
+         avgflag='A', long_name='MOSART direct discharge into ocean: '//trim(rtm_tracers(2)), &
+         ptr_rof=rtmCTL%runoffdir_nt2, default='active')
+
+    call RtmHistAddfld (fname='STORAGE'//'_'//trim(rtm_tracers(1)), units='m3',  &
          avgflag='A', long_name='MOSART storage: '//trim(rtm_tracers(1)), &
          ptr_rof=rtmCTL%volr_nt1, default='active')
 
-    call RtmHistAddfld (fname='VOLR'//'_'//trim(rtm_tracers(2)), units='m3',  &
+    call RtmHistAddfld (fname='STORAGE'//'_'//trim(rtm_tracers(2)), units='m3',  &
          avgflag='A', long_name='MOSART storage: '//trim(rtm_tracers(2)), &
          ptr_rof=rtmCTL%volr_nt2, default='active')
 
@@ -134,6 +150,12 @@ contains
 
     rtmCTL%runoffocn_nt1(:)  = rtmCTL%runoffocn(:,1)
     rtmCTL%runoffocn_nt2(:)  = rtmCTL%runoffocn(:,2)
+
+    rtmCTL%runofftot_nt1(:)  = rtmCTL%runofftot(:,1)
+    rtmCTL%runofftot_nt2(:)  = rtmCTL%runofftot(:,2)
+
+    rtmCTL%runoffdir_nt1(:)  = rtmCTL%direct(:,1)
+    rtmCTL%runoffdir_nt2(:)  = rtmCTL%direct(:,2)
 
     rtmCTL%dvolrdtlnd_nt1(:) = rtmCTL%dvolrdtlnd(:,1)
     rtmCTL%dvolrdtlnd_nt2(:) = rtmCTL%dvolrdtlnd(:,2)
