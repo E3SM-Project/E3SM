@@ -14,6 +14,7 @@ module cice_advection
 
   use mpas_derived_types
   use mpas_pool_routines
+  use mpas_timer
 
   implicit none
 
@@ -116,14 +117,18 @@ contains
        
        if (trim(config_advection_type) == "upwind") then
 
+          call mpas_timer_start("advection upwind")
           call cice_run_advection_upwind(domain, clock, dt)
+          call mpas_timer_stop("advection upwind")
 
        else if (trim(config_advection_type) == "incremental_remap") then
 
           !TODO WHL - Convert ice/snow volume to thickness here
           !           (Later, change volume to thickness throughout code?)
  
+          call mpas_timer_start("advection incr remap")
           call cice_run_advection_incremental_remap(domain, clock, dt)
+          call mpas_timer_stop("advection incr remap")
 
           !TODO WHL - Convert ice/snow thickness to volume here
 

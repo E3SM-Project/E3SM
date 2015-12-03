@@ -23,6 +23,7 @@ module cice_advection_incremental_remap
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_dmpar
+   use mpas_timer
 
    use cice_advection_incremental_remap_tracers, only: &
         tracer_type, &
@@ -2398,6 +2399,7 @@ contains
           write(stderrUnit,*) 'Doing initial halo updates for velocity, mass and tracers'
        endif
 
+       call mpas_timer_start("incr remap init halo")
        ! velocity
        call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity_solver', velocityPool)
        call mpas_pool_get_field(velocityPool, 'uVelocity', uVelocityField)
@@ -2407,6 +2409,7 @@ contains
 
        ! mass and tracers
        call cice_update_tracer_halo(tracersHead, domain, timeLevel)
+       call mpas_timer_stop("incr remap init halo")
 
     endif  ! halo update
 
@@ -2416,6 +2419,7 @@ contains
 
     ! loop over blocks
 
+    call mpas_timer_start("incr remap blocks")
     do while (associated(block))
 
        if (verboseRun) then
@@ -2431,13 +2435,16 @@ contains
        block  => block % next
 
     end do  ! associated(block)
+    call mpas_timer_stop("incr remap blocks")
 
     ! Optional check for conservation of mass and mass*tracer
     ! Note: This check must be done outside the block loop because it requires global sums
 
     if (conservationCheck) then
 
+       call mpas_timer_start("incr remap tracer cons check")
        call check_tracer_conservation(dminfo, tracersHead)
+       call mpas_timer_stop("incr remap tracer cons check")
 
     endif
 
@@ -2447,7 +2454,9 @@ contains
 
     if (monotonicityCheck) then
 
+       call mpas_timer_start("incr remap tracer mono check")
        call check_tracer_monotonicity(domain, tracersHead)
+       call mpas_timer_stop("incr remap tracer mono check")
 
     endif
 
@@ -2458,7 +2467,9 @@ contains
        endif
 
        ! mass and tracers
+       call mpas_timer_start("incr remap final halo")
        call cice_update_tracer_halo(tracersHead, domain, timeLevel)
+       call mpas_timer_stop("incr remap final halo")
 
     endif  ! halo update
 
@@ -7774,10 +7785,12 @@ contains
           do iCat = 1, nCategories
              
              ! global sums
+             call mpas_timer_start("tracer cons check 2D glbsum")
              localSum = thisTracer % globalSumInit2D(iCat)
              call mpas_dmpar_sum_real (dminfo, localSum, thisTracer % globalSumInit2D(iCat))
              localSum = thisTracer % globalSumFinal2D(iCat)
              call mpas_dmpar_sum_real (dminfo, localSum, thisTracer % globalSumFinal2D(iCat))
+             call mpas_timer_stop("tracer cons check 2D glbsum")
 
              if (verboseRun .and. iCat == 1) then
                 if (trim(thisTracer % tracerName) == 'iceAreaCategory' .or. trim(thisTracer % tracerName) == 'iceVolumeCategory') then
@@ -7815,10 +7828,12 @@ contains
              do iLayer = 1, nLayers
 
                 ! global sums
+                call mpas_timer_start("tracer cons check 3D glbsum")
                 localSum = thisTracer % globalSumInit3D(iLayer,iCat)
                 call mpas_dmpar_sum_real (dminfo, localSum, thisTracer % globalSumInit3D(iLayer,iCat))
                 localSum = thisTracer % globalSumFinal3D(iLayer,iCat)
                 call mpas_dmpar_sum_real (dminfo, localSum, thisTracer % globalSumFinal3D(iLayer,iCat))
+                call mpas_timer_stop("tracer cons check 3D glbsum")
 
                 if (verboseRun .and. iCat == 1 .and. iLayer == 1) then
                    if (trim(thisTracer % tracerName) == 'iceAreaCategory' .or. trim(thisTracer % tracerName) == 'iceVolumeCategory') then
@@ -8088,6 +8103,7 @@ contains
 
                 ! halo update for local max/min
 
+                call mpas_timer_start("tracer mono check 2D halo")
                 ! Find out how many dimensions the LocalMin field has (and assume the LocalMax field has the same number).
                 ! Note: This is temporary logic associated with the fact that some fields are both formally and physically 2D,
                 !      whereas others are physically 2D but formally 3D. In the latter case, we need to get a 3D field.
@@ -8110,6 +8126,7 @@ contains
                    call mpas_dmpar_exch_halo_field(tracerField3D)
                    
                 endif
+                call mpas_timer_stop("tracer mono check 2D halo")
 
                 ! loop over blocks
 
@@ -8207,10 +8224,12 @@ contains
 
                 ! halo update for local max/min
 
+                call mpas_timer_start("tracer mono check 3D halo")
                 call mpas_pool_get_field(tracerMonotonicityPool, trim(thisTracer % tracerName) // 'LocalMin', tracerField3D)               
                 call mpas_dmpar_exch_halo_field(tracerField3D)
                 call mpas_pool_get_field(tracerMonotonicityPool, trim(thisTracer % tracerName) // 'LocalMax', tracerField3D)
                 call mpas_dmpar_exch_halo_field(tracerField3D)
+                call mpas_timer_stop("tracer mono check 3D halo")
                 
                 ! loop over blocks
 

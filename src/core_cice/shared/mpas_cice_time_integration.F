@@ -91,9 +91,11 @@ contains
     integer :: &
          iDynamicsSubcycle
 
+#ifndef MPAS_PERF_MOD_TIMERS
     ! set halo timer
     call mpas_timer_start("Halo")
     call mpas_timer_stop("Halo")
+#endif
 
     call store_timestep_counter(domain, itimestep)
 
@@ -111,9 +113,9 @@ contains
     endif
 
     ! pre dynamics column physics
-    call mpas_timer_start("Column")
+    call mpas_timer_start("Column pre-dynamics")
     call cice_column_predynamics_time_integration(domain, clock)
-    call mpas_timer_stop("Column")
+    call mpas_timer_stop("Column pre-dynamics")
 
     ! loop of dynamcis subcycle
     call MPAS_pool_get_config(configs, "config_dynamics_subcycle_number", config_dynamics_subcycle_number)
@@ -138,9 +140,9 @@ contains
     enddo ! iDynamicsSubcycle
 
     ! shortwave
-    call mpas_timer_start("Column")
+    call mpas_timer_start("Column post-dynamics")
     call cice_column_postdynamics_time_integration(domain, clock)
-    call mpas_timer_stop("Column")
+    call mpas_timer_stop("Column post-dynamics")
 
     ! reinitialize fluxes
     call cice_column_reinitialize_fluxes(domain)
