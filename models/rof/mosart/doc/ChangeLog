@@ -1,4 +1,28 @@
 ===============================================================
+Tag name:  mosart1_0_10
+Originator(s): tcraig
+Date: Dec 2 2015
+One-line Summary: New input file, update direct terms, update history file
+
+- switch to input dataset MOSART_Global_half_20151130a.nc
+- update direct sparse matrix to include non basin points in order
+  to pass data from any grid cell directly to the ocean.
+- modify the direct term and push all direct water to outlet points
+- set all tracer 2 water (frozen water) to be a direct term
+- add ability to skip some tracers in the euler solver via euler_calc flag
+- add a budget accumulator term
+- update history file fields and fieldnames, add new history fields
+- compare total upstream basin areas from the input area field, use the
+  computed total areas instead of the input total areas
+
+M       bld/namelist_files/namelist_defaults_mosart.xml
+M       src/riverroute/RtmMod.F90
+M       src/riverroute/RtmHistFlds.F90
+M       src/riverroute/MOSART_physics_mod.F90
+M       src/riverroute/RtmHistFile.F90
+M       src/riverroute/RunoffMod.F90
+
+===============================================================
 Tag name:  mosart1_0_09
 Originator(s): tcraig
 Date: Nov 29 2015
