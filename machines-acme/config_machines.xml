@@ -195,12 +195,12 @@
     <CESMSCRATCHROOT>$ENV{SCRATCH}</CESMSCRATCHROOT>
     <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
-    <DIN_LOC_ROOT>/project/projectdirs/ccsm1/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/ccsm1/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <CCSM_BASELINE>/project/projectdirs/ccsm1/ccsm_baselines</CCSM_BASELINE>
-    <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc.edison/cprnc</CCSM_CPRNC>
+    <CCSM_BASELINE>/project/projectdirs/acme/baselines</CCSM_BASELINE>
+    <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.edison/cprnc</CCSM_CPRNC>
     <SAVE_TIMING_DIR>/project/projectdirs/$PROJECT</SAVE_TIMING_DIR>
     <OS>CNL</OS>
     <BATCHQUERY>squeue</BATCHQUERY>
