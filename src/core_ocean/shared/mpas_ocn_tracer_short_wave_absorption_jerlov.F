@@ -124,11 +124,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
       real (kind=RKIND), dimension(:), allocatable :: weights
 
-      logical, pointer :: config_fixed_jerlov_weights
-
       err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_fixed_jerlov_weights', config_fixed_jerlov_weights)
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
