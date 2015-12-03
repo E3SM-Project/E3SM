@@ -51,7 +51,11 @@
                dst_cursor % sendList => src_cursor % sendList
                dst_cursor % recvList => src_cursor % recvList
                dst_cursor % copyList => src_cursor % copyList
-               call mpas_allocate_mold(dst_cursor % array, src_cursor % array)   ! Until we get F2008 support for ALLOCATE(A,MOLD=B)
+               if ( dst_cursor % isActive ) then
+                  call mpas_allocate_mold(dst_cursor % array, src_cursor % array)   ! Until we get F2008 support for ALLOCATE(A,MOLD=B)
+               else
+                  nullify(dst_cursor % array)
+               end if
             end if
             if ( dst_cursor % isActive .and. src_cursor % isActive ) then
                dst_cursor % array = src_cursor % array
