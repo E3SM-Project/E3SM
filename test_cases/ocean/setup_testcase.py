@@ -69,14 +69,14 @@ def apply_namelist_template(namelist_dict, template_name, template_path):#{{{
 #}}}
 
 def configure_namelist(namelist_dict, template_path, namelist_tag):#{{{
-	for child in namelist_tag.iter('*'):
+	for child in namelist_tag:
 		if child.tag == 'option':
 			option_name = child.attrib['name']
 			option_val = child.text
 			set_namelist_val(namelist_dict, option_name, option_val)
 		elif child.tag == 'template':
 			apply_namelist_template(namelist_dict, child.attrib['name'], template_path)
-	
+
 #}}}
 
 def write_namelist(namelist_dict, outfilename, infilename):#{{{
@@ -184,7 +184,7 @@ def modify_stream_definition(streams_file, stream_conf):#{{{
 		stream_to_modify = ET.SubElement(streams_file, 'stream')
 		stream_to_modify.set('name', name_to_modify)
 
-	for child in stream_conf.iter('*'):
+	for child in stream_conf:
 		if child.tag == 'attribute':
 			attr_name = child.attrib['name']
 			attr_val = child.text
@@ -460,7 +460,7 @@ def get_defined_files(config_file, init_path, args, configs):#{{{
 							except:
 								print "  -- Web mirror attempt failed. Trying other mirrors..."
 
-	
+
 					if os.path.exists('%s/%s'%(dest_path, file_name)):
 						try:
 							expected_hash = get_file.attrib['hash']
@@ -497,6 +497,72 @@ def get_defined_files(config_file, init_path, args, configs):#{{{
 	dev_null.close()
 #}}}
 
+def process_script_step(step, configs, script_file):#{{{
+	if 'executable_name' in step.attrib.keys() and 'executable' in step.attrib.keys():
+		print "ERROR: <step> tag has both an 'executable' and 'executable_name' attribute. Only one is allowed per step."
+		print "Exiting..."
+		quit(1)
+
+	try:
+		quiet_val = step.attrib['quiet']
+		if quiet_val == "true":
+			quiet = True
+		else:
+			quiet = False
+	except:
+		quiet = False
+
+	try:
+		step_pre_message = step.attrib['pre_message']
+		write_pre_message = True
+	except:
+		write_pre_message = False
+
+	try:
+		step_post_message = step.attrib['post_message']
+		write_post_message = True
+	except:
+		write_post_message = False
+
+	try:
+		executable_name = step.attrib['executable_name']
+		executable = configs.get('executables', executable_name)
+	except:
+		executable = step.attrib['executable']
+
+	script_file.write("\n")
+	script_file.write("# Run command is:\n")
+
+	comment = "# %s "%(executable)
+	command = "subprocess.check_call(['%s'"%(executable)
+
+	for argument in step.findall('argument'):
+		flag = argument.attrib['flag']
+		val = argument.text
+
+		if not flag.strip() == "":
+			comment = "%s %s"%(comment, flag)
+			command = "%s, '%s'"%(command, flag)
+
+		comment = "%s %s"%(comment, val)
+		command = "%s, '%s'"%(command, val)
+
+	if write_pre_message:
+		script_file.write('print "%s"\n'%(step_pre_message))
+
+	if quiet:
+		command = "%s], stdout=dev_null, stderr=dev_null)"%(command)
+	else:
+		command = "%s])"%(command)
+	script_file.write("%s\n"%(comment))
+	script_file.write("%s\n"%(command))
+
+	if write_post_message:
+		script_file.write('print "%s"\n'%(step_post_message))
+
+	script_file.write("\n");
+#}}}
+
 def generate_run_scripts(config_file, init_path, configs):#{{{
 	config_tree = ET.parse(config_file)
 	config_root = config_tree.getroot()
@@ -509,41 +575,10 @@ def generate_run_scripts(config_file, init_path, configs):#{{{
 
 		script.write("#!/usr/bin/env python\n")
 		script.write("import subprocess\n")
+		script.write("dev_null = open('/dev/null', 'w')\n")
 
 		for step in run_script.findall('step'):
-			if 'executable_name' in step.attrib.keys() and 'executable' in step.attrib.keys():
-				print "ERROR: <step> tag has both an 'executable' and 'executable_name' attribute. Only one is allowed per step."
-				print "Exiting..."
-				quit(1)
-
-			try:
-				executable_name = step.attrib['executable_name']
-				executable = configs.get('executables', executable_name)
-			except:
-				executable = step.attrib['executable']
-
-			script.write("\n")
-			script.write("# Run command is:\n")
-
-			comment = "# %s "%(executable)
-			command = "subprocess.check_call(['%s'"%(executable)
-			
-			for argument in step.findall('argument'):
-				flag = argument.attrib['flag']
-				val = argument.text
-
-				if not flag.strip() == "":
-					comment = "%s %s"%(comment, flag)
-					command = "%s, '%s'"%(command, flag)
-
-				comment = "%s %s"%(comment, val)
-				command = "%s, '%s'"%(command, val)
-
-			command = "%s])"%(command)
-			script.write("%s\n"%(comment))
-			script.write("%s\n"%(command))
-
-			script.write("\n");
+			process_script_step(step, configs, script)
 
 		script.close()
 
@@ -573,22 +608,21 @@ def generate_driver_scripts(config_file, init_path, configs):#{{{
 		script.write('import os, subprocess\n')
 
 		script.write('\n')
-		script.write('base_path = os.getcwd()')
+		script.write('base_path = os.getcwd()\n')
+		script.write("dev_null = open('/dev/null', 'w')\n")
 		script.write('\n')
 
-		for child in config_root.iter('*'):
+		for child in config_root:
 			if child.tag == 'case':
 				case = child.attrib['name']
 				script.write('os.chdir(base_path)\n')
 				script.write('os.chdir(' + "'%s')\n"%(case))
-				for grandchild in child.iter('*'):
+				for grandchild in child:
 					if grandchild.tag == 'step':
-						try:
-							executable_name = grandchild.attrib['executable_name']
-							excetuable = configs.get('executables', executable_name)
-						except:
-							executable = grandchild.attrib['executable']
-						script.write('subprocess.check_call([' + "'%s'"%(executable) + '])\n')
+						process_script_step(grandchild, configs, script)
+			if child.tag == 'step':
+				script.write('os.chdir(base_path)\n')
+				process_script_step(child, configs, script)
 
 		script.close()
 		subprocess.check_call(['chmod', 'a+x', '%s/%s'%(init_path, name)], stdout=dev_null, stderr=dev_null)
@@ -613,7 +647,7 @@ parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.R
 parser.add_argument("-o", "--core", dest="core", help="Core that contains configurations", metavar="CORE")
 parser.add_argument("-c", "--configuration", dest="configuration", help="Configuration to setup", metavar="CONFIG")
 parser.add_argument("-r", "--resolution", dest="resolution", help="Resolution of configuration to setup", metavar="RES")
-parser.add_argument("-n", "--case_number", dest="case_num", help="Case number to setup, as listed from list_testcases.py.", metavar="NUM")
+parser.add_argument("-n", "--case_number", dest="case_num", help="Case number to setup, as listed from list_testcases.py. Can be a comma delimited list of case numbers.", metavar="NUM")
 parser.add_argument("-f", "--config_file", dest="config_file", help="Configuration file for test case setup", metavar="FILE", required=True)
 parser.add_argument("--no_download", dest="no_download", help="If set, script will not auto-download base_mesh files", action="store_true")
 parser.add_argument("--copy_instead_of_symlink", dest="nolink_copy", help="If set, script will replace symlinks with copies of files.", action="store_true")
@@ -630,11 +664,12 @@ if args.case_num and args.core and args.configuration and args.resoltuion:
 	parser.error(' Invalid configuration. Too many options used. Exiting...')
 
 if args.case_num:
-	core_configuration = subprocess.check_output(['./list_testcases.py', '-n', '%d'%(int(args.case_num))])
-	config_options = core_configuration.strip('\n').split(' ')
-	args.core = config_options[1]
-	args.configuration = config_options[3]
-	args.resolution = config_options[5]
+	use_case_list = True
+	case_list = args.case_num.split(',')
+else:
+	use_case_list = False
+	case_list = list()
+	case_list.append(0)
 
 config = ConfigParser.SafeConfigParser()
 config.read(args.config_file)
@@ -655,57 +690,65 @@ calling_command = ""
 for arg in sys.argv:
 	calling_command = "%s%s "%(calling_command, arg)
 
-# Setup each xml file in the configuration directory:
-template_path = '%s/templates/%s'%(os.getcwd(), args.core)
-test_path = '%s/%s/%s'%(args.core, args.configuration, args.resolution)
-base_path = '%s/%s'%(args.base_path, test_path)
-write_history = False
-for file in os.listdir('%s'%(test_path)):
-	if fnmatch.fnmatch(file, '*.xml'):
-		config_file = '%s/%s'%(test_path, file)
+for case_num in case_list:
+	if use_case_list:
+		core_configuration = subprocess.check_output(['./list_testcases.py', '-n', '%d'%(int(case_num))])
+		config_options = core_configuration.strip('\n').split(' ')
+		args.core = config_options[1]
+		args.configuration = config_options[3]
+		args.resolution = config_options[5]
 
-		if is_config_case_file(config_file):
-			write_history = True
-			case_dir = make_case_dir(config_file, base_path)
-			case_mode = get_case_mode(config_file)
+	# Setup each xml file in the configuration directory:
+	template_path = '%s/templates/%s'%(os.getcwd(), args.core)
+	test_path = '%s/%s/%s'%(args.core, args.configuration, args.resolution)
+	base_path = '%s/%s'%(args.base_path, test_path)
+	write_history = False
+	for file in os.listdir('%s'%(test_path)):
+		if fnmatch.fnmatch(file, '*.xml'):
+			config_file = '%s/%s'%(test_path, file)
 
-			case_path = '%s/%s'%(base_path, case_dir)
+			if is_config_case_file(config_file):
+				write_history = True
+				case_dir = make_case_dir(config_file, base_path)
+				case_mode = get_case_mode(config_file)
 
-			if not config.has_option("streams", case_mode) or not config.has_option("namelists", case_mode):
-				print "Error. Configuration file '%s' requires paths for streams and namelist files for '%s' mode."%(args.config_file, case_mode)
-				quit(1)
+				case_path = '%s/%s'%(base_path, case_dir)
+
+				if not config.has_option("streams", case_mode) or not config.has_option("namelists", case_mode):
+					print "Error. Configuration file '%s' requires paths for streams and namelist files for '%s' mode."%(args.config_file, case_mode)
+					quit(1)
+				else:
+					case_streams_template = config.get("streams", case_mode)
+					case_namelist_template = config.get("namelists", case_mode)
+
+				generate_namelist_files(config_file, case_path, case_namelist_template, template_path)
+
+				generate_streams_files(config_file, case_path, case_streams_template, template_path)
+
+				add_links(config_file, args, config)
+
+				get_defined_files(config_file, '%s'%(case_path), args, config)
+
+				generate_run_scripts(config_file, '%s'%(case_path), config)
+
+				print " -- Set up case: %s/%s"%(base_path, case_dir)
 			else:
-				case_streams_template = config.get("streams", case_mode)
-				case_namelist_template = config.get("namelists", case_mode)
-				
-			generate_namelist_files(config_file, case_path, case_namelist_template, template_path)
+				write_history = True
+				generate_driver_scripts(config_file, base_path, config)
+				print " -- Set up driver script in %s"%(base_path)
 
-			generate_streams_files(config_file, case_path, case_streams_template, template_path)
-
-			add_links(config_file, args, config)
-
-			get_defined_files(config_file, '%s'%(case_path), args, config)
-
-			generate_run_scripts(config_file, '%s'%(case_path), config)
-
-			print " -- Set up case: %s/%s"%(base_path, case_dir)
+	if write_history:
+		history_file_path = '%s/command_history'%(args.base_path)
+		if os.path.exists(history_file_path):
+			history_file = open(history_file_path, 'a')
+			history_file.write('\n')
 		else:
-			write_history = True
-			generate_driver_scripts(config_file, base_path, config)
-			print " -- Set up driver script in %s"%(base_path)
+			history_file = open(history_file_path, 'w')
 
-if write_history:
-	history_file_path = '%s/command_history'%(args.base_path)
-	if os.path.exists(history_file_path):
-		history_file = open(history_file_path, 'a')
-		history_file.write('\n')
-	else:
-		history_file = open(history_file_path, 'w')
-	
-	history_file.write('git_version: %s\n'%(git_version))
-	history_file.write('command: %s\n'%(calling_command))
-	history_file.write('core: %s\n'%(args.core))
-	history_file.write('configuration: %s\n'%(args.configuration))
-	history_file.write('resolution: %s\n'%(args.resolution))
-	history_file.close()
+		history_file.write('git_version: %s\n'%(git_version))
+		history_file.write('command: %s\n'%(calling_command))
+		history_file.write('core: %s\n'%(args.core))
+		history_file.write('configuration: %s\n'%(args.configuration))
+		history_file.write('resolution: %s\n'%(args.resolution))
+		history_file.close()
 

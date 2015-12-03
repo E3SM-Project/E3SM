@@ -1,3 +1,18 @@
+# Duplicate logic from Tools/Makefile to set compile_threaded
+compile_threaded = false
+ifeq ($(strip $(SMP)),TRUE)
+   compile_threaded = true
+   THREADDIR = threads
+else
+   ifeq ($(strip $(BUILD_THREADED)),TRUE)
+      compile_threaded = true
+      THREADDIR = threads
+   else
+      THREADDIR = nothreads
+   endif
+endif
+# End duplicated logic
+
 include $(CASEROOT)/Macros
 
 ifneq ($(wildcard core_$(CORE)/build_options.mk), ) # Check for build_options.mk
@@ -45,6 +60,10 @@ endif
 
 ifeq ($(DEBUG), TRUE)
     override CPPFLAGS += -DMPAS_DEBUG
+endif
+
+ifeq ($(compile_threaded), true)
+    override CPPFLAGS += -DMPAS_OPENMP
 endif
 
 all:

@@ -72,7 +72,7 @@
           logical, optional, intent(in) :: clear_timer !< Input: flag to clear timer
           type (timer_node), optional, pointer :: timer_ptr !< Output: pointer to store timer in module
 
-          character (len=len(timer_name)) :: trimed_name
+          character (len=len_trim(timer_name)) :: trimmed_name
           logical :: timer_added, timer_found, string_equal, check_flag
           type (timer_node), pointer :: current, temp
 
@@ -81,19 +81,19 @@
 
           threadNum = mpas_threading_get_thread_num()
 
-          trimed_name = trim(timer_name)
-          nlen = len(trimed_name)
+          trimmed_name = trim(timer_name)
+          nlen = len(trimmed_name)
 
 #ifdef MPAS_TAU_TIMERS
-          call tau_start(trimed_name)
+          call tau_start(trimmed_name)
 #endif
 
 #ifdef MPAS_PERF_MOD_TIMERS
-          call t_startf(trimed_name)
+          call t_startf(trimmed_name)
 #endif
 
 #ifdef MPAS_GPTL_TIMERS
-          iErr = gptlstart(trimed_name)
+          iErr = gptlstart(trimmed_name)
 #endif
 
 #ifdef MPAS_NATIVE_TIMERS
@@ -114,7 +114,7 @@
              else 
                current => all_timers%next
                timer_search: do while ((.not.timer_found) .and. associated(current))
-                 string_equal = (current%timer_name(1:current%nlen) == trimed_name)
+                 string_equal = (current%timer_name(1:current%nlen) == trimmed_name)
                  if(string_equal) then
                    timer_found = .true.
                  else
@@ -137,7 +137,7 @@
                  current => timer_ptr
                  nullify(timer_ptr%next)
                  current%levels = levels
-                 current%timer_name = trimed_name
+                 current%timer_name = trimmed_name
                  current%nlen = nlen
                  current%running = .false.
                  current%total_time = 0.0
@@ -166,7 +166,7 @@
 
              if(timer_added .and. (.not.timer_found)) then
                current%levels = levels
-               current%timer_name = trimed_name
+               current%timer_name = trimmed_name
                current%nlen = nlen
                current%running = .false.
                current%total_time = 0.0
@@ -227,7 +227,7 @@
 
           character (len=*), intent(in) :: timer_name !< Input: name of timer to stop
           type (timer_node), pointer, optional :: timer_ptr !< Input: pointer to timer, for stopping
-          character (len=len(timer_name)) :: trimed_name !< Trimed timer name
+          character (len=len_trim(timer_name)) :: trimmed_name !< Trimmed timer name
 
           type (timer_node), pointer :: current
           
@@ -237,19 +237,19 @@
 
           threadNum = mpas_threading_get_thread_num()
 
-          trimed_name = trim(timer_name)
-          nlen = len(trimed_name)
+          trimmed_name = trim(timer_name)
+          nlen = len(trimmed_name)
 
 #ifdef MPAS_TAU_TIMERS
-          call tau_stop(trimed_name)
+          call tau_stop(trimmed_name)
 #endif
 
 #ifdef MPAS_PERF_MOD_TIMERS
-          call t_stopf(trimed_name)
+          call t_stopf(trimmed_name)
 #endif
 
 #ifdef MPAS_GPTL_TIMERS
-          iErr = gptlstop(trimed_name)
+          iErr = gptlstop(trimmed_name)
 #endif
  
 #ifdef MPAS_NATIVE_TIMERS
@@ -266,7 +266,7 @@
             else if(.not. timer_found) then
               current => all_timers
               timer_find: do while(.not.timer_found .and. associated(current))
-                string_equal = (current%timer_name(1:current%nlen) == trimed_name)
+                string_equal = (current%timer_name(1:current%nlen) == trimmed_name)
    
                 if(string_equal) then
                   timer_found = .true.

@@ -4,6 +4,9 @@ import os, fnmatch
 import argparse
 
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
+parser.add_argument("-o", "--core", dest="core", help="Core to search for configurations within", metavar="CORE")
+parser.add_argument("-c", "--configuration", dest="configuration", help="Configuration name to search for", metavar="CONFIG")
+parser.add_argument("-r", "--resolution", dest="resolution", help="Resolution to search for", metavar="RES")
 parser.add_argument("-n", "--number", dest="number", help="If set, script will print the flags to use a the N'th configuraiton.")
 
 args = parser.parse_args()
@@ -35,9 +38,13 @@ for core_dir in os.listdir('.'):
 						for case_file in os.listdir(res_path):
 							if fnmatch.fnmatch(case_file, '*.xml'):
 								print_case = True
+
 						if print_case:
 							if not quiet:
-								print "  %d: -o %s -c %s -r %s"%(case_num, core_dir, config_dir, res_dir)
+								if (not args.core) or args.core == core_dir:
+									if (not args.configuration) or args.configuration == config_dir:
+										if (not args.resolution) or args.resolution == res_dir:
+											print "  %d: -o %s -c %s -r %s"%(case_num, core_dir, config_dir, res_dir)
 							if quiet and case_num == print_num:
 								print "-o %s -c %s -r %s"%(core_dir, config_dir, res_dir)
 							case_num = case_num + 1

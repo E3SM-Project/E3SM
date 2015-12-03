@@ -308,10 +308,10 @@ module mpas_io
          end if
 
          ! Here we're depending on the undocumented behavior of PIO to return a
-         ! -1 dimension ID when an unlimited dimension is not found.  This
+         ! negative dimension ID when an unlimited dimension is not found.  This
          ! might change in the future, causing this code to break, though it
          ! shouldn't break for files with unlimited dimensions.
-         if ( MPAS_io_open % pio_unlimited_dimid /= -1 ) then
+         if ( MPAS_io_open % pio_unlimited_dimid >= 0 ) then
             pio_ierr = PIO_inq_dimlen(MPAS_io_open % pio_file, MPAS_io_open % pio_unlimited_dimid, MPAS_io_open % preexisting_records)
             if (pio_ierr /= PIO_noerr) then
                if (present(ierr)) ierr = MPAS_IO_ERR_PIO

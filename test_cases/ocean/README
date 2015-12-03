@@ -167,6 +167,11 @@ Within each XML file, the following XML description is available:
 		* executable: The base executable for this step of the run script. e.g. mpirun
 		* executable_name: The name of the executable that has been defined in
 						   the configuration file to be used for this step of the run script.
+		* quiet: If set to true, this step will not print any output when running it's executable.
+		* pre_message: If set, this message will be printed before running the
+					   executable defined for this step. This is written even if quiet=true.
+		* post_message: If set, this messag will be printed after running the
+						executable defined for this step. This is written even if quiet=true.
 	- Children:
 		* <argument>
 
