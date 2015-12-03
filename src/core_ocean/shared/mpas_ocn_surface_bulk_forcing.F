@@ -360,6 +360,8 @@ contains
       integer, pointer :: index_temperature_flux, index_salinity_flux
       integer, pointer :: nCells
 
+      type(mpas_pool_type),pointer :: tracersSurfaceFluxPool
+
       real (kind=RKIND), dimension(:), pointer :: latentHeatFlux, sensibleHeatFlux, longWaveHeatFluxUp, longWaveHeatFluxDown, seaIceHeatFlux
       real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, seaIceSalinityFlux, iceRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: shortWaveHeatFlux, penetrativeTemperatureFlux
@@ -370,8 +372,10 @@ contains
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
-      call mpas_pool_get_dimension(forcingPool, 'index_temperatureSurfaceFlux', index_temperature_flux)
-      call mpas_pool_get_dimension(forcingPool, 'index_salinitySurfaceFlux', index_salinity_flux)
+      call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux',tracersSurfaceFluxPool)
+
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_temperatureSurfaceFlux', index_temperature_flux)
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_salinitySurfaceFlux', index_salinity_flux)
 
       call mpas_pool_get_array(forcingPool, 'latentHeatFlux', latentHeatFlux)
       call mpas_pool_get_array(forcingPool, 'sensibleHeatFlux', sensibleHeatFlux)
