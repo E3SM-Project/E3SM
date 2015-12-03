@@ -998,6 +998,10 @@
 					description="The number of inner iterations used in constraining the Haney number rx1 < rx1Max, allowing changes to propagate horizontally within a layer"
 					possible_values="any positive integer"
 		/>
+		<nml_option name="config_rx1_inner_iteration_weight" type="real" default_value="0.1" units="unitless"
+					description="During inner iteration, layers with rx1 > rx1Max are thickened toward a target thickness by this fraction.  A smaller weights will result in less layer thickening but will require more inner iterations to converge."
+					possible_values="a positive value less than or equal to 1" 
+		/>
 		<nml_option name="config_rx1_max" type="real" default_value="10.0" units="unitless"
 					description="The maximum value rx1Max of the Haney number (rx1) after modification of the vertical grid"
 					possible_values="any positive value, typically greater than or equal to 1" 
@@ -3001,6 +3005,16 @@
 			persistence="scratch" 
 			type="integer" dimensions="nCells" units="unitless"
 			description="a copy of the smoothing mask used to iteratively expand the mask in the buffer region of open ocean around land ice."
+		/>
+		<var name="maxLevelCellNewScratch" 
+			persistence="scratch" 
+			type="integer" dimensions="nCells" units="unitless"
+			description="a copy of maxLevelCell used in constraining the bathymetry to vary by at most one level where constrained by the Haney number (rx1)."
+		/>
+		<var name="layerThicknessNewScratch" 
+			persistence="scratch" 
+			type="real" dimensions="nVertLevels nCells" units="m"
+			description="a copy of layerThickness used during smoothing of the vertical grid while constraining the Haney number (rx1)"
 		/>
 	</var_struct>
 
