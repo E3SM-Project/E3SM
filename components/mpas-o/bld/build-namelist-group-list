@@ -22,6 +22,8 @@ my @groups = qw(run_modes
                 vmix_tanh
                 cvmix
                 forcing
+                shortwaveradiation
+                frazil_ice
                 land_ice_fluxes
                 advection
                 bottom_drag
@@ -40,8 +42,14 @@ my @groups = qw(run_modes
                 cvmix_wswsbf
                 iso
                 soma
+                ziso
+                periodic_planar
+                ecosys_column
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
+                tracer_forcing_ecosystracers
+                tracer_forcing_dmstracers
+                tracer_forcing_macromoleculestracers
                 am_globalstats
                 am_surfaceareaweightedaverages
                 am_watermasscensus
@@ -52,6 +60,8 @@ my @groups = qw(run_modes
                 am_testcomputeinterval
                 am_highfrequencyoutput
                 am_timefilters
+                am_lagrparttrack
                 am_eliassenpalm
                 am_mixedlayerdepths
+                am_timeseriesstats
                 );
