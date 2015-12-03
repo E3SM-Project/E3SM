@@ -58,6 +58,20 @@
     <desc>DATM prescribed aerosol forcing</desc>
   </entry>
 
+  <entry id="DATM_TOPO">
+     <type>char</type>
+     <valid_values>none,observed</valid_values>
+     <default_value>observed</default_value>
+     <values>
+        <!-- Only needed for compsets with active land; for other compsets, turn it off -->
+        <value compset="_SLND">none</value>
+        <value compset="_DLND">none</value>
+     </values>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>DATM surface topography forcing</desc>
+  </entry>
+
   <entry id="DATM_CO2_TSERIES">
     <type>char</type>
     <valid_values>none,20tr,rcp2.6,rcp4.5,rcp6.0,rcp8.5</valid_values>
