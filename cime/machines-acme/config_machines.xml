@@ -747,6 +747,24 @@
          <SUPPORTED_BY>dmricciuto</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
+         <batch_system type="pbs">
+            <queues>
+              <queue default="true">esd08q</queue>
+            </queues>
+            <walltimes>
+              <walltime default="true">24:00:00</walltime>
+            </walltimes>
+         </batch_system>
+         <mpirun mpilib="mpich">
+              <executable args="default">/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpirun </executable>
+	      <arguments>
+			<arg name="num_tasks"> -np {{ num_tasks }}</arg>
+			<arg name="machine_file">-hostfile $ENV{'PBS_NODEFILE'}</arg>
+	      </arguments>
+         </mpirun>
+         <mpirun mpilib = "mpi-serial">
+              <executable> </executable>
+         </mpirun>
 </machine>
 
 <machine MACH="oic5">
@@ -767,6 +785,25 @@
          <SUPPORTED_BY>dmricciuto</SUPPORTED_BY>
          <GMAKE_J>32</GMAKE_J>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+         <batch_system type="pbs">
+            <queues>
+              <queue default="true">esd13q</queue>
+              <queue walltimemax="1:00">esddbg13q</queue>
+            </queues>
+            <walltimes>
+              <walltime default="true">24:00:00</walltime>
+            </walltimes>
+         </batch_system>
+         <mpirun mpilib="mpich">
+              <executable args="default">/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpirun </executable>
+	      <arguments>
+			<arg name="num_tasks"> -np {{ num_tasks }}</arg>
+                        <arg name="machine_file">-f $ENV{'PBS_NODEFILE'}</arg>
+	      </arguments>
+         </mpirun>
+         <mpirun mpilib = "mpi-serial">
+              <executable> </executable>
+         </mpirun>
 </machine>
 
 <machine MACH="titan">

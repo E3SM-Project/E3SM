@@ -36,7 +36,31 @@ module atm2lndType
   ! which gives the downscaled versions of these fields.
   !----------------------------------------------------
   type, public :: atm2lnd_type
-
+      !DMR additions for CPL_BYPASS option
+#ifdef CPL_BYPASS
+      integer*2, pointer :: atm_input                (:,:,:,:) => null()  !Single-site meteorological input
+      real(r8), pointer :: add_offsets                     (:) => null()  !offsets for compressed met drivers
+      real(r8), pointer :: scale_factors                   (:) => null()  !scale factors for compressed met drivers      
+      integer(r8), pointer :: startyear_met                    => null()  !staring driver met year
+      integer(r8), pointer :: endyear_met_spinup               => null()  !end driver met year for spinup cycle
+      integer(r8), pointer :: endyear_met_trans                => null()  !end driver met year for transient simulation
+      real(r8), pointer :: timeres                         (:) => null()  !time resolution of driver met (hours)
+      real(r8), pointer :: var_offset                  (:,:,:) => null()  !correction offset for grid->site driver met (monthly)
+      real(r8), pointer :: var_mult                    (:,:,:) => null()  !correction factor for grid->site driver met (monthly)
+      integer,  pointer :: timelen                         (:) => null()  !length of input meteorology
+      integer,  pointer :: timelen_spinup                  (:) => null()  !length of spinup meteorology
+      integer,  pointer :: tindex                      (:,:,:) => null()  !current index for meteorolgoical data
+      integer,  pointer :: metsource                           => null()  !Meteorogical source (0=Qian, 1=cruncep)
+      real(r8), pointer :: npf                            (:)  => null()  !number of model timesteps per forcing timestep
+      real(r8), pointer :: co2_input                   (:,:,:) => null()  !annual CO2 input data
+      real(r8), pointer :: c13o2_input                 (:,:,:) => null()  !annual C13O2 input data
+      real, pointer :: ndep_input                      (:,:,:) => null()  !annual nitrogen deposition data
+      real, pointer :: aero_input                    (:,:,:,:) => null()  !monthly aerosol deposition data
+      real, pointer :: hdm_input                       (:,:,:) => null()  !popluation density
+      real, pointer :: lnfm_input                      (:,:,:) => null()  !lightning
+      real(r8), pointer :: forc_hdm                      (:)   => null() 
+      real(r8), pointer :: forc_lnfm                     (:)   => null()
+#endif
      ! atm->lnd not downscaled
      real(r8), pointer :: forc_u_grc                    (:)   => null() ! atm wind speed, east direction (m/s)
      real(r8), pointer :: forc_v_grc                    (:)   => null() ! atm wind speed, north direction (m/s)
@@ -144,6 +168,9 @@ contains
     !
     ! !LOCAL VARIABLES:
     real(r8) :: ival  = 0.0_r8  ! initial value
+    real     :: ival_float = 0.0
+    integer  :: ival_int = 0
+    integer*2 :: ival_short = 0
     integer  :: begg, endg
     integer  :: begc, endc
     integer  :: begp, endp
@@ -154,6 +181,33 @@ contains
     begp = bounds%begp; endp= bounds%endp
 
     ! atm->lnd
+
+    !DMR - variables added for CPL_BYPASS option 
+#ifdef CPL_BYPASS
+    allocate(this%timelen                             (1:8))        ; this%timelen                       (:)   = ival_int
+    allocate(this%timelen_spinup                      (1:8))        ; this%timelen_spinup                (:)   = ival_int
+    allocate(this%tindex                (begg:endg,1:8,1:2))        ; this%tindex                    (:,:,:)   = ival_int
+    allocate(this%metsource                                )        ; this%metsource                           = ival_int   
+    allocate(this%npf                                 (1:8))        ; this%npf                           (:)   = ival
+    allocate(this%atm_input        (8,begg:endg,1,1:600000))        ; this%atm_input               (:,:,:,:)   = ival_short
+    allocate(this%add_offsets                         (1:8))        ; this%add_offsets                   (:)   = ival_float 
+    allocate(this%scale_factors                       (1:8))        ; this%scale_factors                 (:)   = ival_float
+    allocate(this%startyear_met                            )        ; this%startyear_met                       = ival_int
+    allocate(this%endyear_met_spinup                       )        ; this%endyear_met_spinup                  = ival_int
+    allocate(this%endyear_met_trans                        )        ; this%endyear_met_trans                   = ival_int
+    allocate(this%timeres                             (1:8))        ; this%timeres                       (:)   = ival
+    allocate(this%var_offset               (8,begg:endg,12))        ; this%var_offset                (:,:,:)   = ival
+    allocate(this%var_mult                 (8,begg:endg,12))        ; this%var_mult                  (:,:,:)   = ival
+    allocate(this%co2_input                      (1,1,3000))        ; this%co2_input                 (:,:,:)   = ival    
+    allocate(this%c13o2_input                    (1,1,3000))        ; this%c13o2_input               (:,:,:)   = ival
+    allocate(this%ndep_input              (begg:endg,1,158))        ; this%ndep_input                (:,:,:)   = ival_float
+    allocate(this%aero_input         (14,begg:endg,1,50000))        ; this%aero_input              (:,:,:,:)   = ival_float
+    allocate(this%hdm_input              (begg:endg,1,3000))        ; this%hdm_input                 (:,:,:)   = ival_float
+    allocate(this%lnfm_input           (begg:endg,1,100000))        ; this%lnfm_input                (:,:,:)   = ival_float
+    allocate(this%forc_hdm                      (begg:endg))        ; this%forc_hdm                      (:)   = ival
+    allocate(this%forc_lnfm                     (begg:endg))        ; this%forc_lnfm                     (:)   = ival
+    !END DMR
+#endif
     allocate(this%forc_u_grc                    (begg:endg))        ; this%forc_u_grc                    (:)   = ival
     allocate(this%forc_v_grc                    (begg:endg))        ; this%forc_v_grc                    (:)   = ival
     allocate(this%forc_wind_grc                 (begg:endg))        ; this%forc_wind_grc                 (:)   = ival
@@ -354,6 +408,16 @@ contains
     call hist_addfld1d (fname='PBOT', units='Pa',  &
          avgflag='A', long_name='atmospheric pressure', &
          ptr_lnd=this%forc_pbot_not_downscaled_grc)
+
+#ifdef CPL_BYPASS
+   call hist_addfld1d (fname='HDM', units='counts/km^2',      &
+         avgflag='A', long_name='human population density',   &
+         ptr_lnd=this%forc_hdm, default='inactive')
+   
+    call hist_addfld1d (fname='LNFM', units='counts/km^2/hr',  &
+         avgflag='A', long_name='Lightning frequency',        &
+         ptr_lnd=this%forc_lnfm, default='inactive')
+#endif
 
     ! Time averaged quantities
     this%fsi24_patch(begp:endp) = spval

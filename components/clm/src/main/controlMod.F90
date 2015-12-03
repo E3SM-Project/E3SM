@@ -142,6 +142,7 @@ contains
          fsurdat, fatmtopo, flndtopo, &
          paramfile, flanduse_timeseries,  fsnowoptics, fsnowaging,fsoilordercon
 
+
     ! History, restart options
 
     namelist /clm_inparm/  &
@@ -228,6 +229,10 @@ contains
          use_nofire, use_lch4, use_nitrif_denitrif, use_vertsoilc, use_extralakelayers, &
          use_vichydro, use_century_decomp, use_cn, use_cndv, use_crop, use_snicar_frc, &
          use_vancouver, use_mexicocity, use_noio
+
+    ! cpl_bypass variables
+    namelist /clm_inparm/ metdata_type, metdata_bypass, metdata_biases, &
+         co2_file, aero_file
 
     ! bgc & pflotran interface
     namelist /clm_inparm/ use_bgc_interface, use_clm_bgc, use_pflotran
@@ -664,6 +669,14 @@ contains
     call mpi_bcast (use_bgc_interface, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_clm_bgc, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_pflotran, 1, MPI_LOGICAL, 0, mpicom, ier)
+    
+    !cpl_bypass
+     call mpi_bcast (metdata_type,   len(metdata_type),   MPI_CHARACTER, 0, mpicom, ier)
+     call mpi_bcast (metdata_bypass, len(metdata_bypass), MPI_CHARACTER, 0, mpicom, ier)
+     call mpi_bcast (metdata_biases, len(metdata_biases), MPI_CHARACTER, 0, mpicom, ier)
+     call mpi_bcast (co2_file,       len(co2_file),       MPI_CHARACTER, 0, mpicom, ier)
+     call mpi_bcast (aero_file,      len(aero_file),      MPI_CHARACTER, 0, mpicom, ier)
+
 
     ! VSFM variable
 
