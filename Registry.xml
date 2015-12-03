@@ -602,9 +602,9 @@
 		/>
 	</nml_record>
 	<nml_record name="shortwaveRadiation" mode="init;forward">
-		<nml_option name="config_sw_absorption_type" type="character" default_value="ohlmann00" units="unitless"
-					description="Name of shortwave absorption type used in simulation. Not recommended to change default"
-					possible_values="'jerlov' or 'ohlmann00' "
+		<nml_option name="config_sw_absorption_type" type="character" default_value="none" units="unitless"
+					description="Name of shortwave absorption type used in simulation. "
+					possible_values="'jerlov' or 'ohlmann00' or 'none'"
 		/>
 		<nml_option name="config_jerlov_water_type" type="integer" default_value="3" units="unitless"
 					description="Integer value defining the water type used in Jerlov short wave absorption."
@@ -970,6 +970,8 @@
 		/>
 	</nml_record>
 	<packages>
+		<package name="variableShortwave" description="This package includes variables required to compute spatially variable shortwave extinction coefficients"/>
+
 		<package name="splitTimeIntegrator" description="This package includes variables required for either the split or unsplit explicit time integrators."/>
 		<package name="thicknessFilter" description="This package includes variables required for frequency filtered thickness."/>
 		<package name="windStressBulkPKG" description="This package includes varibles required for bulk wind stress forcing."/>
@@ -1265,6 +1267,7 @@
 				filename_template="shortwaveData.nc"
 				input_interval="none"
 				runtime_format="single_file"
+				packages="variableShortwave"
 				mode="forward">
 				
 			<var name="xtime"/>
@@ -1279,6 +1282,7 @@
 				output_interval="0000-00-00_00:00:01"
 				clobber_mode="truncate"
 				runtime_format="single_file"
+				packages="variableShortwave"
 				mode="init">
 
 			<var name="chlorophyllData"/>
@@ -2265,12 +2269,15 @@
 		     ********************************************************************** -->
 		<var name="chlorophyllData" type="real" dimensions="nCells Time" units="mg m^{-3}"
 			 description="the concentration of chlorophyll data in mg/m^-3"
+			 packages="variableShortwave"	 
 		/>
 		<var name="zenithAngle" type="real" dimensions="nCells Time"  units="none"
-			 description="the cos of the solar zenith angle"
+			description="the cos of the solar zenith angle"
+			packages="variableShortwave"
 		/>
 		<var name="clearSkyRadiation" type="real" dimensions="nCells Time" units="%"
-			 description="the fractional cloudiness (between 0 and 1)"
+			description="the fractional cloudiness (between 0 and 1)"
+			packages="variableShortwave"
 		/>
 	</var_struct>
 	<var_struct name="forcing" time_levs="1">
