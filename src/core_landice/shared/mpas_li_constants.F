@@ -26,7 +26,8 @@ module li_constants
    use shr_const_mod, only: &
           cp_ice => SHR_CONST_CPICE,&
           latent_heat_ice => SHR_CONST_LATICE,&
-          triple_point => SHR_CONST_TKTRIP
+          triple_point => SHR_CONST_TKTRIP,&
+          rho_water => SHR_CONST_RHOFW
    implicit none
    save
 
