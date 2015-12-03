@@ -23,10 +23,19 @@ module mpas_dmpar
    use mpas_io_units
    use mpas_threading
 
+#ifdef _MPI
+#ifndef NOMPIMOD
+   use mpi
+#endif
+#endif
+
+   implicit none
    private
 
 #ifdef _MPI
+#ifdef NOMPIMOD
 include 'mpif.h'
+#endif
    integer, parameter :: MPI_INTEGERKIND = MPI_INTEGER
    integer, parameter :: MPI_2INTEGERKIND = MPI_2INTEGER
 

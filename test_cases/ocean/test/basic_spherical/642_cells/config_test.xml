@@ -1,25 +1,21 @@
 <?xml version="1.0"?>
 <config case="test" mode="forward">
 
-	<get_file hash="vbz0hlsy84" dest="base_mesh.nc">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mpas_ocean/test_cases/staging" file_name="mesh.QU.642.151008.nc"/>	
-		<mirror protocol="local" path_name="mesh_database" file_name="mesh.QU.642.151008.nc"/>
+	<get_file hash="vbz0hlsy84" dest_path="mesh_database" file_name="mesh.QU.642.151008.nc">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database"/>
 	</get_file>
 
-	<get_file dest="graph.info">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mpas_ocean/test_cases/staging" file_name="graph.QU.642.151008.info"/>	
-		<mirror protocol="local" path_name="mesh_database" file_name="graph.QU.642.151008.info"/>
+	<get_file dest="graph.info" dest_path="mesh_database" file_name="graph.QU.642.151008.info">
+		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database"/>
 	</get_file>
 
 	<add_executable source="model" dest="test_model"/>
 	<add_executable source="metis" dest="metis"/>
 
-	<namelist name="namelist.test">
-		<option name="config_init_configuration">'baroclinic_channel'</option>
-		<option name="config_vert_levels">1</option>
-		<option name="config_ocean_run_mode">'init'</option>
-		<option name="config_write_cull_cell_mask">.true.</option>
-	</namelist>
+	<add_link source_path="mesh_database" source="graph.QU.642.151008.info" dest="graph.info"/>
+	<add_link source_path="mesh_database" source="mesh.QU.642.151008.nc" dest="base_mesh.nc"/>
+
+	<namelist name="namelist.test"/>
 
 	<streams name="streams.test" keep="immutable">
 		<stream name="input">
@@ -33,7 +29,7 @@
 			<argument flag="">4</argument>
 		</step>
 
-		<step executable="mpirun">
+		<step executable_name="mpi_runtime">
 			<argument flag="-n">4</argument>
 			<argument flag="">./test_model</argument>
 			<argument flag="-n">namelist.test</argument>
