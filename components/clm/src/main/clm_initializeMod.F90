@@ -63,6 +63,7 @@ contains
     use surfrdMod        , only: surfrd_get_grid_conn
     use clm_varctl       , only: lateral_connectivity, domain_decomp_type
     use decompInitMod    , only: decompInit_lnd_using_gp
+    use domainLateralMod , only: ldomain_lateral, domainlateral_init
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
@@ -148,6 +149,10 @@ contains
        call endrun(msg='ERROR clm_initializeMod: '//&
             'Unsupported domain_decomp_type = ' // trim(domain_decomp_type))
     end select
+
+    if (lateral_connectivity) then
+       call domainlateral_init(ldomain_lateral, cellsOnCell, nCells_loc, maxEdges)
+    endif
 
     ! *** Get JUST gridcell processor bounds ***
     ! Remaining bounds (landunits, columns, patches) will be determined 
