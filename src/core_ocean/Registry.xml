@@ -738,7 +738,7 @@
 		/>
 	</nml_record>
 	<nml_record name="bottom_drag" mode="forward">
-		<nml_option name="config_bottom_drag_coeff" type="real" default_value="1.0e-2" units="unitless"
+		<nml_option name="config_bottom_drag_coeff" type="real" default_value="1.0e-3" units="unitless"
 					description="Dimensionless bottom drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"
 		/>
