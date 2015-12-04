@@ -27,6 +27,7 @@ _MACHINE_PROJECTS = {
     "redsky"    : "fy150001",
     "skybridge" : "fy150001",
     "edison"    : "acme",
+    "corip1"    : "acme",
     "blues"     : "ACME",
     "titan"     : "cli115",
     "mira"      : "HiRes_EarthSys",
