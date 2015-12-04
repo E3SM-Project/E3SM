@@ -4,40 +4,43 @@ from optparse import OptionParser
 import numpy
 
 def getvar(fname, varname):
-    usefortran = False
+    usescipy = False
     try:
-    	import Scientific.IO.NetCDF
+    	import Scientific.IO.NetCDF as netcdf
     except ImportError:
-        usefortran = True
-    usefortran = False
-    if (usefortran):
-        os.system('pwd')
-	output = open('../temp/netcdfio.txt','w')
-        output.write(fname+'\n')
-        output.write(varname+'\n')
-        output.write('none\n')
-        output.close()
-        os.system('../../netcdfio')
-	#os.system('rm ../temp/netcdfio.txt')
+        import scipy
+        from scipy.io import netcdf
+        usescipy = True
+    if (usescipy):
+        nffile = netcdf.netcdf_file(fname,"r")
+        var = nffile.variables[varname]
+        varvals = var[:].copy()    #works for vector only?
+        nffile.close()
     else:    
-    	nffile = Scientific.IO.NetCDF.NetCDFFile(fname,"r")
+    	nffile = netcdf.NetCDFFile(fname,"r")
     	var = nffile.variables[varname]
     	varvals = var.getValue()
     	nffile.close()
     return varvals
 
 def putvar(fname, varname, varvals):
-    usefortran = False
+    usescipy = False
     try:
-        import Scientific.IO.NetCDF
+        import Scientific.IO.NetCDF as netcdf
     except ImportError:
-        usefortran=True
-    usefortran=False
-    #if (usefortran):
-    nffile = Scientific.IO.NetCDF.NetCDFFile(fname,"a")
-    var = nffile.variables[varname]
-    var.assignValue(varvals)
-    nffile.close()
+        import scipy
+        from scipy.io import netcdf
+        usescipy = True
+    if (usescipy):
+        nffile = netcdf.netcdf_file(fname,"a")
+        var = nffile.variables[varname]
+        var[:] = varvals[:]
+        nffile.close()
+    else:
+        nffile = netcdf.NetCDFFile(fname,"a")
+        var = nffile.variables[varname]
+        var.assignValue(varvals)
+        nffile.close()
     ierr = 0
     return ierr
 
@@ -113,7 +116,7 @@ for row in AFdatareader:
            #lon=lon-resx/2
         if (options.makemet):
             print(" Making meteorological data for site")
-            metcmd = 'python '+csmdir+'/scripts/makemetdata.py' \
+            metcmd = 'python '+csmdir+'/cime/scripts-acme/makemetdata.py' \
                           +' --site '+options.site+' --lat '+row[4]+' --lon '+ \
                           row[3]+' --ccsm_input '+options.ccsm_input+ \
                           ' --startyear '+row[6]+' --endyear '+row[7]+' --numxpts '+ \
@@ -140,10 +143,10 @@ ygrid_T62     = int((lat+90)/1.9)
 #---------------------Create domain data --------------------------------------------------
 
 print('Creating domain data')
-os.system('mkdir -p '+options.csmdir+'/scripts/acme/pointclm/temp')
+os.system('mkdir -p '+options.csmdir+'/cime/scripts-acme/pointclm/temp')
 domainfile_orig = options.ccsm_input+'/atm/datm7/domain.clm/' \
     +'domain.360x720_ORCHIDEE0to360.100409.nc'
-domainfile_new = options.csmdir+'/scripts/acme/pointclm/temp/' \
+domainfile_new = options.csmdir+'/cime/scripts-acme/pointclm/temp/' \
     +'domain.lnd.'+str(numxpts)+'x'+str(numypts)+'pt_'+options.site+'_navy.nc'
 if (os.path.isfile(domainfile_new)):
     print('Warning:  Removing existing domain file')
@@ -197,12 +200,12 @@ if (options.compset == 'I2000CN'):
 #    +'surfdata_0.5x0.5_simyr1850.nc'
 if (options.clm40):
     surffile_orig = options.ccsm_input+'/lnd/clm2/surfdata/surfdata_360x720_nourb_simyr1850_c120717.nc'
-    surffile_new  = options.csmdir+'/scripts/acme/pointclm/temp/surfdata_'+str(numxpts)+'x' \
+    surffile_new  = options.csmdir+'/cime/scripts-acme/pointclm/temp/surfdata_'+str(numxpts)+'x' \
                     +str(numypts)+'pt_'+options.mycase+'_simyr'+str(mysimyr)+'.nc'
 else:
     #surffile_orig = options.ccsm_input+'/lnd/clm2/surfdata_map/surfdata_360x720cru_simyr1850_c130415.nc'
     surffile_orig = options.ccsm_input+'/lnd/clm2/surfdata_map/surfdata_360x720cru_simyr1850_c130927.nc'
-    surffile_new =  options.csmdir+'/scripts/acme/pointclm/temp/surfdata_'+str(numxpts)+'x'+str(numypts)+'pt_'+ \
+    surffile_new =  options.csmdir+'/cime/scripts-acme/pointclm/temp/surfdata_'+str(numxpts)+'x'+str(numypts)+'pt_'+ \
                     options.mycase+'_simyr'+str(mysimyr)+'.nc'
 
 print(surffile_orig)
@@ -362,9 +365,10 @@ ierr = putvar(surffile_new, 'MONTHLY_LAI', monthly_lai)
 
 #-------------------- create pftdyn surface data ----------------------------------
 
-if (options.compset == 'I20TRCLM45CN' or options.compset == 'I20TRCN'):
+if ('20TR' in options.compset):
 
     print('Creating dynpft data')
+
 
     #pftdyn_orig = options.ccsm_input+'/lnd/clm2/surfdata/' \
     #  +'surfdata.pftdyn_0.5x0.5_simyr1850-2010_ACME.nc'
@@ -373,10 +377,10 @@ if (options.compset == 'I20TRCLM45CN' or options.compset == 'I20TRCN'):
 
     print 'using '+surffile_new+' for 1850 information'
     if (options.clm40):
-        pftdyn_new = options.csmdir+'/scripts/acme/pointclm/temp/' \
+        pftdyn_new = options.csmdir+'/cime/scripts-acme/pointclm/temp/' \
           +'surfdata.pftdyn_'+str(numxpts)+'x'+str(numypts)+'pt_'+options.mycase+'.nc'
     else:
-        pftdyn_new = options.csmdir+'/scripts/acme/pointclm/temp/' \
+        pftdyn_new = options.csmdir+'/cime/scripts-acme/pointclm/temp/' \
           +'surfdata.pftdyn_'+str(numxpts)+'x'+str(numypts)+'pt_'+options.mycase+'.nc'
         
     print pftdyn_new
