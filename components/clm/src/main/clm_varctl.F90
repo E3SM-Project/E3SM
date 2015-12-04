@@ -323,6 +323,14 @@ module clm_varctl
   logical, public :: pf_cmode     = .false.                 ! switch for 'C' mode coupling (will be updated in interface)
   logical, public :: initth_pf2clm= .false.                 ! switch for initializing CLM TH states from pflotran
 
+  ! cpl_bypass
+   character(len=fname_len), public :: metdata_type   = ' '    ! metdata type for CPL_BYPASS mode
+   character(len=fname_len), public :: metdata_bypass = ' '    ! met data directory for CPL_BYPASS mode (site, qian, cru_ncep)
+   character(len=fname_len), public :: metdata_biases = ' '    ! met biases files for CPL_BYPASS mode
+   character(len=fname_len), public :: co2_file       = ' '    ! co2 file for CPL_BYPASS mode
+   character(len=fname_len), public :: aero_file      = ' '    ! aerosol deposition file for CPL_BYPASS mode
+
+
 contains
 
   !---------------------------------------------------------------------------

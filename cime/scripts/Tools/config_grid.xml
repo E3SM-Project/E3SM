@@ -23,7 +23,7 @@ Each grid is associated with five names
 
 <GRID sname="gx1v6_gx1v6"         alias="g16_g16" compset="DATM.+DROF" support_level="Non-standard grid for testing of the interpolation in DATM rather than coupler"    >a%gx1v6_l%gx1v6_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null</GRID>
 
-<GRID sname="CLM_USRDAT"          compset="DATM.+CLM">a%CLM_USRDAT_l%CLM_USRDAT_oi%CLM_USRDAT_r%null_m%reg_g%null_w%null</GRID>
+<GRID sname="CLM_USRDAT"          compset="(DATM|SATM).+CLM">a%CLM_USRDAT_l%CLM_USRDAT_oi%CLM_USRDAT_r%null_m%reg_g%null_w%null</GRID>
 <GRID sname="1x1_numaIA"          compset="DATM.+CLM">a%1x1_numaIA_l%1x1_numaIA_oi%1x1_numaIA_r%null_m%reg_g%null_w%null</GRID>
 <GRID sname="1x1_brazil"          compset="DATM.+CLM">a%1x1_brazil_l%1x1_brazil_oi%1x1_brazil_r%null_m%reg_g%null_w%null</GRID>
 <GRID sname="1x1_smallvilleIA"    compset="DATM.+CLM">a%1x1_smallvilleIA_l%1x1_smallvilleIA_oi%1x1_smallvilleIA_r%null_m%reg_g%null_w%null</GRID>
