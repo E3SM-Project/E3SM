@@ -108,7 +108,7 @@ contains
       rswa(bounds%begp:bounds%endp,1:nlevgrnd)      = 0._r8
       rsmn(bounds%begp:bounds%endp,1:nlevgrnd)      = 0._r8
       frootc_dz(bounds%begp:bounds%endp,1:nlevgrnd) = 0._r8
-
+      root_depth(bounds%begp:bounds%endp)           = 0._r8
 
       !---------------------------------------------------------------
       ! Set root depth, dynamic for crops, fixed for other vegetation
