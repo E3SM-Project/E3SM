@@ -12,6 +12,8 @@ DATE_STAMP=$(date "+%Y-%m-%d_%H%M%S")
 
 $SCRIPT_DIR/jenkins_generic_job "$@" >& JENKINS_$DATE_STAMP
 
+cd $SCRIPT_DIR
+
 for SUB in $(git submodule status | awk '{print $2}'); do
     git submodule deinit ${SUB}
 done
