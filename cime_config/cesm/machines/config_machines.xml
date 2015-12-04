@@ -860,7 +860,7 @@
       <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
       <init_path lang="sh">/opt/modules/default/init/sh</init_path>
       <init_path lang="csh">/opt/modules/default/init/csh</init_path>
-      <!-- This is a guess!! -->
+      
       <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
@@ -882,7 +882,7 @@
       </modules>
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.4.0.223</command>
+	<command name="switch">cce cce/8.4.0</command>
 	<command name="load">cray-libsci/13.0.4</command>
       </modules>
       <modules compiler="gnu">
@@ -901,7 +901,7 @@
 	<command name="load">cray-parallel-netcdf/1.6.1</command>
       </modules>
       <modules>
-	<command name="load">cmake/2.8.11.2</command>
+	<command name="load">cmake3</command>
       </modules>
     </module_system>
     <environment_variables>
