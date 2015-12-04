@@ -8900,121 +8900,86 @@ contains
        endif
 
        ! biogeochemistry
-       if (.not. pkgColumnBiogeochemistryActive) then
+       if (.not. pkgTracerBrineActive) then
+          call set_stand_in_tracer_array(block, "brineFraction")
+       endif
+       if (.not. pkgTracerMobileFractionActive) then
+          call set_stand_in_tracer_array(block, "mobileFraction")
+       endif
+       if (.not. pkgTracerSkeletalAlgaeActive) then
           call set_stand_in_tracer_array(block, "skeletalAlgaeConc")
+       endif
+       if (.not. pkgTracerSkeletalNitrateActive) then
+          call set_stand_in_tracer_array(block, "skeletalNitrateConc")
+       endif
+       if (.not. pkgTracerSkeletalSilicateActive) then
+          call set_stand_in_tracer_array(block, "skeletalSilicateConc")
+       endif
+       if (.not. pkgTracerSkeletalAmmoniumActive) then
+             call set_stand_in_tracer_array(block, "skeletalAmmoniumConc")
+       endif
+       if (.not. pkgTracerSkeletalDMSActive) then
+          call set_stand_in_tracer_array(block, "skeletalDMSPpConc")
+          call set_stand_in_tracer_array(block, "skeletalDMSPpConc")
+          call set_stand_in_tracer_array(block, "skeletalDMSConc")
+       endif
+       if (.not. pkgTracerSkeletalCarbonActive) then
           call set_stand_in_tracer_array(block, "skeletalDOCConc")
           call set_stand_in_tracer_array(block, "skeletalDICConc")
+       endif
+       if (.not. pkgTracerSkeletalDONActive) then
           call set_stand_in_tracer_array(block, "skeletalDONConc")
-          call set_stand_in_tracer_array(block, "skeletalNitrateConc")
-          call set_stand_in_tracer_array(block, "skeletalSilicateConc")
-          call set_stand_in_tracer_array(block, "skeletalAmmoniumConc")
-          call set_stand_in_tracer_array(block, "skeletalDMSConc")
-          call set_stand_in_tracer_array(block, "skeletalDMSPpConc")
-          call set_stand_in_tracer_array(block, "skeletalDMSPdConc")
+       endif
+       if (.not. pkgTracerSkeletalNonreactiveActive) then
           call set_stand_in_tracer_array(block, "skeletalNonreactiveConc")
+       endif
+       if (.not. pkgTracerSkeletalHumicsActive) then
           call set_stand_in_tracer_array(block, "skeletalHumicsConc")
+       endif
+       if (.not. pkgTracerSkeletalIronActive) then
           call set_stand_in_tracer_array(block, "skeletalParticulateIronConc")
           call set_stand_in_tracer_array(block, "skeletalDissolvedIronConc")
+       endif          
+       if (.not. pkgTracerVerticalAlgaeActive) then
           call set_stand_in_tracer_array(block, "verticalAlgaeConc")
-          call set_stand_in_tracer_array(block, "verticalDOCConc")
-          call set_stand_in_tracer_array(block, "verticalDICConc")
-          call set_stand_in_tracer_array(block, "verticalDONConc")
+       endif
+       if (.not. pkgTracerVerticalNitrateActive) then
           call set_stand_in_tracer_array(block, "verticalNitrateConc")
+       endif
+       if (.not. pkgTracerVerticalSilicateActive) then
           call set_stand_in_tracer_array(block, "verticalSilicateConc")
+       endif
+       if (.not. pkgTracerVerticalAmmoniumActive) then
           call set_stand_in_tracer_array(block, "verticalAmmoniumConc")
-          call set_stand_in_tracer_array(block, "verticalDMSConc")
+       endif
+       if (.not. pkgTracerVerticalDMSActive) then
           call set_stand_in_tracer_array(block, "verticalDMSPpConc")
           call set_stand_in_tracer_array(block, "verticalDMSPdConc")
+          call set_stand_in_tracer_array(block, "verticalDMSConc")
+       endif
+       if (.not. pkgTracerVerticalCarbonActive) then
+          call set_stand_in_tracer_array(block, "verticalDOCConc")
+          call set_stand_in_tracer_array(block, "verticalDICConc")
+       endif
+       if (.not. pkgTracerVerticalDONActive) then
+          call set_stand_in_tracer_array(block, "verticalDONConc")
+       endif
+       if (.not. pkgTracerVerticalNonreactiveActive) then
           call set_stand_in_tracer_array(block, "verticalNonreactiveConc")
+       endif
+       if (.not. pkgTracerVerticalHumicsActive) then
           call set_stand_in_tracer_array(block, "verticalHumicsConc")
+       endif
+       if (.not. pkgTracerVerticalIronActive) then
           call set_stand_in_tracer_array(block, "verticalParticulateIronConc")
           call set_stand_in_tracer_array(block, "verticalDissolvedIronConc")
+       endif     
+       if (.not. pkgTracerZAerosolsActive) then
           call set_stand_in_tracer_array(block, "verticalAerosolsConc")
-          call set_stand_in_tracer_array(block, "brineFraction")
-          call set_stand_in_tracer_array(block, "mobileFraction")
+       endif       
+       if (.not. pkgTracerZSalinityActive) then
           call set_stand_in_tracer_array(block, "verticalSalinity")
-       else
-          if (.not. pkgTracerBrineActive) then
-             call set_stand_in_tracer_array(block, "brineFraction")
-          endif
-          if (.not. pkgTracerMobileFractionActive) then
-             call set_stand_in_tracer_array(block, "mobileFraction")
-          endif
-          if (.not. pkgTracerSkeletalAlgaeActive) then
-             call set_stand_in_tracer_array(block, "skeletalAlgaeConc")
-          endif
-          if (.not. pkgTracerSkeletalNitrateActive) then
-             call set_stand_in_tracer_array(block, "skeletalNitrateConc")
-          endif
-          if (.not. pkgTracerSkeletalSilicateActive) then
-             call set_stand_in_tracer_array(block, "skeletalSilicateConc")
-          endif
-          if (.not. pkgTracerSkeletalAmmoniumActive) then
-             call set_stand_in_tracer_array(block, "skeletalAmmoniumConc")
-          endif
-          if (.not. pkgTracerSkeletalDMSActive) then
-             call set_stand_in_tracer_array(block, "skeletalDMSPpConc")
-             call set_stand_in_tracer_array(block, "skeletalDMSPpConc")
-             call set_stand_in_tracer_array(block, "skeletalDMSConc")
-          endif
-          if (.not. pkgTracerSkeletalCarbonActive) then
-             call set_stand_in_tracer_array(block, "skeletalDOCConc")
-             call set_stand_in_tracer_array(block, "skeletalDICConc")
-          endif
-          if (.not. pkgTracerSkeletalDONActive) then
-             call set_stand_in_tracer_array(block, "skeletalDONConc")
-          endif
-          if (.not. pkgTracerSkeletalNonreactiveActive) then
-             call set_stand_in_tracer_array(block, "skeletalNonreactiveConc")
-          endif
-          if (.not. pkgTracerSkeletalHumicsActive) then
-             call set_stand_in_tracer_array(block, "skeletalHumicsConc")
-          endif
-          if (.not. pkgTracerSkeletalIronActive) then
-             call set_stand_in_tracer_array(block, "skeletalParticulateIronConc")
-             call set_stand_in_tracer_array(block, "skeletalDissolvedIronConc")
-          endif          
-          if (.not. pkgTracerVerticalAlgaeActive) then
-             call set_stand_in_tracer_array(block, "verticalAlgaeConc")
-          endif
-          if (.not. pkgTracerVerticalNitrateActive) then
-             call set_stand_in_tracer_array(block, "verticalNitrateConc")
-          endif
-          if (.not. pkgTracerVerticalSilicateActive) then
-             call set_stand_in_tracer_array(block, "verticalSilicateConc")
-          endif
-          if (.not. pkgTracerVerticalAmmoniumActive) then
-             call set_stand_in_tracer_array(block, "verticalAmmoniumConc")
-          endif
-          if (.not. pkgTracerVerticalDMSActive) then
-             call set_stand_in_tracer_array(block, "verticalDMSPpConc")
-             call set_stand_in_tracer_array(block, "verticalDMSPdConc")
-             call set_stand_in_tracer_array(block, "verticalDMSConc")
-          endif
-          if (.not. pkgTracerVerticalCarbonActive) then
-             call set_stand_in_tracer_array(block, "verticalDOCConc")
-             call set_stand_in_tracer_array(block, "verticalDICConc")
-          endif
-          if (.not. pkgTracerVerticalDONActive) then
-             call set_stand_in_tracer_array(block, "verticalDONConc")
-          endif
-          if (.not. pkgTracerVerticalNonreactiveActive) then
-             call set_stand_in_tracer_array(block, "verticalNonreactiveConc")
-          endif
-          if (.not. pkgTracerVerticalHumicsActive) then
-             call set_stand_in_tracer_array(block, "verticalHumicsConc")
-          endif
-          if (.not. pkgTracerVerticalIronActive) then
-             call set_stand_in_tracer_array(block, "verticalParticulateIronConc")
-             call set_stand_in_tracer_array(block, "verticalDissolvedIronConc")
-          endif     
-          if (.not. pkgTracerZAerosolsActive) then
-             call set_stand_in_tracer_array(block, "verticalAerosolsConc")
-          endif       
-          if (.not. pkgTracerZSalinityActive) then
-             call set_stand_in_tracer_array(block, "verticalSalinity")
-          endif     
-       endif
+       endif    
 
        !-----------------------------------------------------------------------
        ! other column packages
