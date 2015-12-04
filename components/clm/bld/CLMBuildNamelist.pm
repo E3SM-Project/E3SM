@@ -22,6 +22,7 @@
 # 2012-07-01  Kluzek           Add some common CESM namelist options
 # 2013-12     Andre            Refactor everything into subroutines
 # 2013-12     Muszala          Add Ecosystem Demography functionality
+# 2015-09-30  X.Shi            Add pdep streams capability 
 #--------------------------------------------------------------------------------------------
 
 package CLMBuildNamelist;
@@ -1524,6 +1525,11 @@ sub process_namelist_inline_logic {
   # namelist group: ndepdyn_nml #
   ###############################
   setup_logic_nitrogen_deposition($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
+  
+  ###############################
+  # namelist group: pdepdyn_nml #
+  ###############################
+  setup_logic_phosphorus_deposition($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
 
   #################################
   # namelist group: popd_streams  #
@@ -2588,6 +2594,67 @@ sub setup_logic_nitrogen_deposition {
 
 #-------------------------------------------------------------------------------
 
+sub setup_logic_phosphorus_deposition {
+  my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+
+  #
+  # Phosphorus deposition for bgc=CN
+  #
+
+ # if ( $physv->as_long() == $physv->as_long("clm4_0") && $nl_flags->{'bgc_mode'} ne "none" ) {
+ #   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'pdepmapalgo', 'phys'=>$nl_flags->{'phys'},
+ #               'bgc'=>$nl_flags->{'bgc_mode'}, 'hgrid'=>$nl_flags->{'res'} );
+ #   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_first_pdep', 'phys'=>$nl_flags->{'phys'},
+ #               'bgc'=>$nl_flags->{'bgc_mode'}, 'sim_year'=>$nl_flags->{'sim_year'},
+ #               'sim_year_range'=>$nl_flags->{'sim_year_range'});
+ #   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_last_pdep', 'phys'=>$nl_flags->{'phys'},
+ #               'bgc'=>$nl_flags->{'bgc_mode'}, 'sim_year'=>$nl_flags->{'sim_year'},
+ #               'sim_year_range'=>$nl_flags->{'sim_year_range'});
+
+    # Set align year, if first and last years are different
+ #   if ( $nl->get_value('stream_year_first_pdep') != $nl->get_value('stream_year_last_pdep') ) {
+ #     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'model_year_align_pdep', 'sim_year'=>$nl_flags->{'sim_year'},
+ #                 'sim_year_range'=>$nl_flags->{'sim_year_range'});
+ #   }
+
+ #   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_fldfilename_pdep', 'phys'=>$nl_flags->{'phys'},
+ #               'bgc'=>$nl_flags->{'bgc_mode'}, 'rcp'=>$nl_flags->{'rcp'},
+ #               'hgrid'=>"1.9x2.5" );
+
+ # } elsif ( $physv->as_long() >= $physv->as_long("clm4_5") && $nl_flags->{'bgc_mode'} ne "sp" ) {
+    if ( $physv->as_long() >= $physv->as_long("clm4_5") && $nl_flags->{'bgc_mode'} ne "sp" ) {
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'pdepmapalgo', 'phys'=>$nl_flags->{'phys'},
+                'use_cn'=>$nl_flags->{'use_cn'}, 'hgrid'=>$nl_flags->{'res'} );
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_first_pdep', 'phys'=>$nl_flags->{'phys'},
+                'use_cn'=>$nl_flags->{'use_cn'}, 'sim_year'=>$nl_flags->{'sim_year'},
+                'sim_year_range'=>$nl_flags->{'sim_year_range'});
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_last_pdep', 'phys'=>$nl_flags->{'phys'},
+                'use_cn'=>$nl_flags->{'use_cn'}, 'sim_year'=>$nl_flags->{'sim_year'},
+                'sim_year_range'=>$nl_flags->{'sim_year_range'});
+    # Set align year, if first and last years are different
+    if ( $nl->get_value('stream_year_first_pdep') != $nl->get_value('stream_year_last_pdep') ) {
+      add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'model_year_align_pdep', 'sim_year'=>$nl_flags->{'sim_year'},
+                  'sim_year_range'=>$nl_flags->{'sim_year_range'});
+    }
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_fldfilename_pdep', 'phys'=>$nl_flags->{'phys'},
+                'use_cn'=>$nl_flags->{'use_cn'}, 'rcp'=>$nl_flags->{'rcp'},
+                'hgrid'=>"1.9x2.5" );
+   } else {
+    # If bgc is NOT CN/CNDV then make sure none of the pdep settings are set!
+    if ( defined($nl->get_value('stream_year_first_pdep')) ||
+         defined($nl->get_value('stream_year_last_pdep'))  ||
+         defined($nl->get_value('model_year_align_pdep'))  ||
+         defined($nl->get_value('stream_fldfilename_pdep'))
+       ) {
+      fatal_error("When bgc is NOT CN or CNDV none of: stream_year_first_pdep," .
+                  "stream_year_last_pdep, model_year_align_pdep, nor stream_fldfilename_pdep" .
+                  " can be set!\n");
+    }
+  }
+}
+
+#-------------------------------------------------------------------------------
+
 sub setup_logic_popd_streams {
   # population density streams require clm4_5/clm5_0 and CN/BGC
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
@@ -2802,9 +2869,10 @@ sub write_output_files {
     # Eventually only list namelists that are actually used when CN on
     #if ( $nl_flags->{'bgc_mode'}  eq "cn" ) {
       push @groups, "ndepdyn_nml";
+      push @groups, "pdepdyn_nml";
     #}
   } else {
-    @groups = qw(clm_inparm ndepdyn_nml popd_streams light_streams lai_streams clm_canopyhydrology_inparm 
+    @groups = qw(clm_inparm ndepdyn_nml pdepdyn_nml popd_streams light_streams lai_streams clm_canopyhydrology_inparm 
                  clm_soilhydrology_inparm dynamic_subgrid finidat_consistency_checks dynpft_consistency_checks 
                  clmu_inparm clm_soilstate_inparm clm_pflotran_inparm betr_inparm);
     #@groups = qw(clm_inparm clm_canopyhydrology_inparm clm_soilhydrology_inparm 
