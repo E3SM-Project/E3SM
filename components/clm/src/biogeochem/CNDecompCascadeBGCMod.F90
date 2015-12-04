@@ -44,10 +44,10 @@ module CNDecompCascadeBGCMod
      real(r8):: cn_s1_bgc     !C:N for SOM 1
      real(r8):: cn_s2_bgc     !C:N for SOM 2
      real(r8):: cn_s3_bgc     !C:N for SOM 3
-
-     real(r8):: np_s1_new_bgc        !N:P for SOM 1
-     real(r8):: np_s2_new_bgc        !N:P for SOM 2
-     real(r8):: np_s3_new_bgc        !N:P for SOM 3
+     
+     real(r8):: np_s1_new_bgc  !C:P for SOM 1
+     real(r8):: np_s2_new_bgc  !C:P for SOM 2
+     real(r8):: np_s3_new_bgc  !C:P for SOM 3
 
      real(r8):: cp_s1_new_bgc        !C:P for SOM 1
      real(r8):: cp_s2_new_bgc        !C:P for SOM 2
@@ -275,8 +275,6 @@ contains
     real(r8) :: np_s1_new
     real(r8) :: np_s2_new
     real(r8) :: np_s3_new
-
-
     !real(r8) :: f_s1s2(bounds%begc:bounds%endc,1:nlevdecomp)
     !real(r8) :: f_s1s3(bounds%begc:bounds%endc,1:nlevdecomp)
     real(r8), allocatable :: f_s1s2(:,:)
@@ -378,124 +376,124 @@ contains
       end do
 
       !-------------------  list of pools and their attributes  ------------
-      i_litr1 = i_met_lit
-      floating_cn_ratio_decomp_pools(i_litr1) = .true.
-      floating_cp_ratio_decomp_pools(i_litr1) = .true.
-      decomp_pool_name_restart(i_litr1) = 'litr1'
-      decomp_pool_name_history(i_litr1) = 'LITR1'
-      decomp_pool_name_long(i_litr1) = 'litter 1'
-      decomp_pool_name_short(i_litr1) = 'L1'
-      is_litter(i_litr1) = .true.
-      is_soil(i_litr1) = .false.
-      is_cwd(i_litr1) = .false.
-      initial_cn_ratio(i_litr1) = 90._r8
-      initial_cp_ratio(i_litr1) = 900._r8
-      initial_stock(i_litr1) = 0._r8
-      is_metabolic(i_litr1) = .true.
-      is_cellulose(i_litr1) = .false.
-      is_lignin(i_litr1) = .false.
+      i_litr1                                  = i_met_lit
+      floating_cn_ratio_decomp_pools (i_litr1) = .true.
+      floating_cp_ratio_decomp_pools (i_litr1) = .true.
+      decomp_pool_name_restart       (i_litr1) = 'litr1'
+      decomp_pool_name_history       (i_litr1) = 'LITR1'
+      decomp_pool_name_long          (i_litr1) = 'litter 1'
+      decomp_pool_name_short         (i_litr1) = 'L1'
+      is_litter                      (i_litr1) = .true.
+      is_soil                        (i_litr1) = .false.
+      is_cwd                         (i_litr1) = .false.
+      initial_cn_ratio               (i_litr1) = 90._r8
+      initial_cp_ratio               (i_litr1) = 900._r8
+      initial_stock                  (i_litr1) = 0._r8
+      is_metabolic                   (i_litr1) = .true.
+      is_cellulose                   (i_litr1) = .false.
+      is_lignin                      (i_litr1) = .false.
 
-      i_litr2 = i_cel_lit
-      floating_cn_ratio_decomp_pools(i_litr2) = .true.
-      floating_cp_ratio_decomp_pools(i_litr2) = .true.
-      decomp_pool_name_restart(i_litr2) = 'litr2'
-      decomp_pool_name_history(i_litr2) = 'LITR2'
-      decomp_pool_name_long(i_litr2) = 'litter 2'
-      decomp_pool_name_short(i_litr2) = 'L2'      
-      is_litter(i_litr2) = .true.
-      is_soil(i_litr2) = .false.
-      is_cwd(i_litr2) = .false.
-      initial_cn_ratio(i_litr2) = 90._r8
-      initial_cp_ratio(i_litr2) = 900._r8
-      initial_stock(i_litr2) = 0._r8
-      is_metabolic(i_litr2) = .false.
-      is_cellulose(i_litr2) = .true.
-      is_lignin(i_litr2) = .false.
+      i_litr2                                  = i_cel_lit
+      floating_cn_ratio_decomp_pools (i_litr2) = .true.
+      floating_cp_ratio_decomp_pools (i_litr2) = .true.
+      decomp_pool_name_restart       (i_litr2) = 'litr2'
+      decomp_pool_name_history       (i_litr2) = 'LITR2'
+      decomp_pool_name_long          (i_litr2) = 'litter 2'
+      decomp_pool_name_short         (i_litr2) = 'L2'
+      is_litter                      (i_litr2) = .true.
+      is_soil                        (i_litr2) = .false.
+      is_cwd                         (i_litr2) = .false.
+      initial_cn_ratio               (i_litr2) = 90._r8
+      initial_cp_ratio               (i_litr2) = 900._r8
+      initial_stock                  (i_litr2) = 0._r8
+      is_metabolic                   (i_litr2) = .false.
+      is_cellulose                   (i_litr2) = .true.
+      is_lignin                      (i_litr2) = .false.
 
-      i_litr3 = i_lig_lit
-      floating_cn_ratio_decomp_pools(i_litr3) = .true.
-      floating_cp_ratio_decomp_pools(i_litr3) = .true.
-      decomp_pool_name_restart(i_litr3) = 'litr3'
-      decomp_pool_name_history(i_litr3) = 'LITR3'
-      decomp_pool_name_long(i_litr3) = 'litter 3'
-      decomp_pool_name_short(i_litr3) = 'L3'
-      is_litter(i_litr3) = .true.
-      is_soil(i_litr3) = .false.
-      is_cwd(i_litr3) = .false.
-      initial_cn_ratio(i_litr3) = 90._r8
-      initial_cp_ratio(i_litr3) = 900._r8
-      initial_stock(i_litr3) = 0._r8
-      is_metabolic(i_litr3) = .false.
-      is_cellulose(i_litr3) = .false.
-      is_lignin(i_litr3) = .true.
+      i_litr3                                  = i_lig_lit
+      floating_cn_ratio_decomp_pools (i_litr3) = .true.
+      floating_cp_ratio_decomp_pools (i_litr3) = .true.
+      decomp_pool_name_restart       (i_litr3) = 'litr3'
+      decomp_pool_name_history       (i_litr3) = 'LITR3'
+      decomp_pool_name_long          (i_litr3) = 'litter 3'
+      decomp_pool_name_short         (i_litr3) = 'L3'
+      is_litter                      (i_litr3) = .true.
+      is_soil                        (i_litr3) = .false.
+      is_cwd                         (i_litr3) = .false.
+      initial_cn_ratio               (i_litr3) = 90._r8
+      initial_cp_ratio               (i_litr3) = 900._r8
+      initial_stock                  (i_litr3) = 0._r8
+      is_metabolic                   (i_litr3) = .false.
+      is_cellulose                   (i_litr3) = .false.
+      is_lignin                      (i_litr3) = .true.
 
       ! CWD
-      floating_cn_ratio_decomp_pools(i_cwd) = .true.
-      floating_cp_ratio_decomp_pools(i_cwd) = .true.
-      decomp_pool_name_restart(i_cwd) = 'cwd'
-      decomp_pool_name_history(i_cwd) = 'CWD'
-      decomp_pool_name_long(i_cwd) = 'coarse woody debris'
-      decomp_pool_name_short(i_cwd) = 'CWD'
-      is_litter(i_cwd) = .false.
-      is_soil(i_cwd) = .false.
-      is_cwd(i_cwd) = .true.
-      initial_cn_ratio(i_cwd) = 90._r8
-      initial_cp_ratio(i_cwd) = 900._r8
-      initial_stock(i_cwd) = 0._r8
-      is_metabolic(i_cwd) = .false.
-      is_cellulose(i_cwd) = .false.
-      is_lignin(i_cwd) = .false.
+      floating_cn_ratio_decomp_pools (i_cwd)   = .true.
+      floating_cp_ratio_decomp_pools (i_cwd)   = .true.
+      decomp_pool_name_restart       (i_cwd)   = 'cwd'
+      decomp_pool_name_history       (i_cwd)   = 'CWD'
+      decomp_pool_name_long          (i_cwd)   = 'coarse woody debris'
+      decomp_pool_name_short         (i_cwd)   = 'CWD'
+      is_litter                      (i_cwd)   = .false.
+      is_soil                        (i_cwd)   = .false.
+      is_cwd                         (i_cwd)   = .true.
+      initial_cn_ratio               (i_cwd)   = 90._r8
+      initial_cp_ratio               (i_cwd)   = 900._r8
+      initial_stock                  (i_cwd)   = 0._r8
+      is_metabolic                   (i_cwd)   = .false.
+      is_cellulose                   (i_cwd)   = .false.
+      is_lignin                      (i_cwd)   = .false.
 
-      i_soil1 = 5
-      floating_cn_ratio_decomp_pools(i_soil1) = .false.
-      floating_cp_ratio_decomp_pools(i_soil1) = .true.
-      decomp_pool_name_restart(i_soil1) = 'soil1'
-      decomp_pool_name_history(i_soil1) = 'SOIL1'
-      decomp_pool_name_long(i_soil1) = 'soil 1'
-      decomp_pool_name_short(i_soil1) = 'S1'
-      is_litter(i_soil1) = .false.
-      is_soil(i_soil1) = .true.
-      is_cwd(i_soil1) = .false.
-      initial_cn_ratio(i_soil1) = cn_s1
-      initial_cp_ratio(i_soil1) = cn_s1*np_s1_new 
-      initial_stock(i_soil1) = 20._r8
-      is_metabolic(i_soil1) = .false.
-      is_cellulose(i_soil1) = .false.
-      is_lignin(i_soil1) = .false.
+      i_soil1                                  = 5
+      floating_cn_ratio_decomp_pools (i_soil1) = .false.
+      floating_cp_ratio_decomp_pools (i_soil1) = .true.
+      decomp_pool_name_restart       (i_soil1) = 'soil1'
+      decomp_pool_name_history       (i_soil1) = 'SOIL1'
+      decomp_pool_name_long          (i_soil1) = 'soil 1'
+      decomp_pool_name_short         (i_soil1) = 'S1'
+      is_litter                      (i_soil1) = .false.
+      is_soil                        (i_soil1) = .true.
+      is_cwd                         (i_soil1) = .false.
+      initial_cn_ratio               (i_soil1) = cn_s1
+      initial_cp_ratio               (i_soil1) = cn_s1*np_s1_new
+      initial_stock                  (i_soil1) = 20._r8
+      is_metabolic                   (i_soil1) = .false.
+      is_cellulose                   (i_soil1) = .false.
+      is_lignin                      (i_soil1) = .false.
 
-      i_soil2 = 6
-      floating_cn_ratio_decomp_pools(i_soil2) = .false.
-      floating_cp_ratio_decomp_pools(i_soil2) = .true.
-      decomp_pool_name_restart(i_soil2) = 'soil2'
-      decomp_pool_name_history(i_soil2) = 'SOIL2'
-      decomp_pool_name_long(i_soil2) = 'soil 2'
-      decomp_pool_name_short(i_soil2) = 'S2'
-      is_litter(i_soil2) = .false.
-      is_soil(i_soil2) = .true.
-      is_cwd(i_soil2) = .false.
-      initial_cn_ratio(i_soil2) = cn_s2
-      initial_cp_ratio(i_soil2) = cn_s2*np_s2_new
-      initial_stock(i_soil2) = 20._r8
-      is_metabolic(i_soil2) = .false.
-      is_cellulose(i_soil2) = .false.
-      is_lignin(i_soil2) = .false.
+      i_soil2                                  = 6
+      floating_cn_ratio_decomp_pools (i_soil2) = .false.
+      floating_cp_ratio_decomp_pools (i_soil2) = .true.
+      decomp_pool_name_restart       (i_soil2) = 'soil2'
+      decomp_pool_name_history       (i_soil2) = 'SOIL2'
+      decomp_pool_name_long          (i_soil2) = 'soil 2'
+      decomp_pool_name_short         (i_soil2) = 'S2'
+      is_litter                      (i_soil2) = .false.
+      is_soil                        (i_soil2) = .true.
+      is_cwd                         (i_soil2) = .false.
+      initial_cn_ratio               (i_soil2) = cn_s2
+      initial_cp_ratio               (i_soil2) = cn_s2*np_s2_new
+      initial_stock                  (i_soil2) = 20._r8
+      is_metabolic                   (i_soil2) = .false.
+      is_cellulose                   (i_soil2) = .false.
+      is_lignin                      (i_soil2) = .false.
 
-      i_soil3 = 7
-      floating_cn_ratio_decomp_pools(i_soil3) = .false.
-      floating_cp_ratio_decomp_pools(i_soil3) = .true.
-      decomp_pool_name_restart(i_soil3) = 'soil3'
-      decomp_pool_name_history(i_soil3) = 'SOIL3'
-      decomp_pool_name_long(i_soil3) = 'soil 3'
-      decomp_pool_name_short(i_soil3) = 'S3'
-      is_litter(i_soil3) = .false.
-      is_soil(i_soil3) = .true.
-      is_cwd(i_soil3) = .false.
-      initial_cn_ratio(i_soil3) = cn_s3
-      initial_cp_ratio(i_soil3) = cn_s3*np_s3_new
-      initial_stock(i_soil3) = 20._r8
-      is_metabolic(i_soil3) = .false.
-      is_cellulose(i_soil3) = .false.
-      is_lignin(i_soil3) = .false.
+      i_soil3                                  = 7
+      floating_cn_ratio_decomp_pools (i_soil3) = .false.
+      floating_cp_ratio_decomp_pools (i_soil3) = .true.
+      decomp_pool_name_restart       (i_soil3) = 'soil3'
+      decomp_pool_name_history       (i_soil3) = 'SOIL3'
+      decomp_pool_name_long          (i_soil3) = 'soil 3'
+      decomp_pool_name_short         (i_soil3) = 'S3'
+      is_litter                      (i_soil3) = .false.
+      is_soil                        (i_soil3) = .true.
+      is_cwd                         (i_soil3) = .false.
+      initial_cn_ratio               (i_soil3) = cn_s3
+      initial_cp_ratio               (i_soil3) = cn_s3*np_s3_new
+      initial_stock                  (i_soil3) = 20._r8
+      is_metabolic                   (i_soil3) = .false.
+      is_cellulose                   (i_soil3) = .false.
+      is_lignin                      (i_soil3) = .false.
 
       spinup_factor(i_litr1) = 1._r8
       spinup_factor(i_litr2) = 1._r8

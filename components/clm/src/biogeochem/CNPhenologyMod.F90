@@ -32,9 +32,10 @@ module CNPhenologyMod
   use ColumnType          , only : col                
   use GridcellType        , only : grc                
   use PatchType           , only : pft                
-
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
+  use clm_varctl          , only : nu_com 
+  
   !
   implicit none
   save
@@ -252,11 +253,11 @@ contains
 
     call CNOffsetLitterfall(num_soilp, filter_soilp, &
          cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars,&
-         phosphorusflux_vars)
+         phosphorusflux_vars, nitrogenstate_vars,phosphorusstate_vars)
 
     call CNBackgroundLitterfall(num_soilp, filter_soilp, &
          cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars,&
-         phosphorusflux_vars)
+         phosphorusflux_vars, nitrogenstate_vars, phosphorusstate_vars)
 
     call CNLivewoodTurnover(num_soilp, filter_soilp, &
          carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
@@ -2261,7 +2262,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CNOffsetLitterfall (num_soilp, filter_soilp, &
        cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars,&
-       phosphorusflux_vars)
+       phosphorusflux_vars, nitrogenstate_vars,phosphorusstate_vars)
     !
     ! !DESCRIPTION:
     ! Determines the flux of C and N from displayed pools to litter
@@ -2278,6 +2279,8 @@ contains
     type(carbonflux_type)   , intent(inout) :: carbonflux_vars
     type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars
     type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
+    type(nitrogenstate_type)  , intent(in)   :: nitrogenstate_vars
+    type(phosphorusstate_type), intent(in)   :: phosphorusstate_vars
     !
     ! !LOCAL VARIABLES:
     integer :: p, c         ! indices
@@ -2330,7 +2333,24 @@ contains
          grainp_to_food        =>    phosphorusflux_vars%grainp_to_food_patch      , & ! Output: [real(r8) (:) ]  grain P to food (gP/m2/s)                         
          leafp_to_litter       =>    phosphorusflux_vars%leafp_to_litter_patch     , & ! Output: [real(r8) (:) ]  leaf P litterfall (gP/m2/s)                       
          leafp_to_retransp     =>    phosphorusflux_vars%leafp_to_retransp_patch   , & ! Output: [real(r8) (:) ]  leaf P to retranslocated P pool (gP/m2/s)         
-         frootp_to_litter      =>    phosphorusflux_vars%frootp_to_litter_patch      & ! Output: [real(r8) (:) ]  fine root P litterfall (gP/m2/s)                  
+         frootp_to_litter      =>    phosphorusflux_vars%frootp_to_litter_patch    , & ! Output: [real(r8) (:) ]  fine root P litterfall (gP/m2/s) 
+         
+         prev_leafn_to_litter  =>    nitrogenflux_vars%prev_leafn_to_litter_patch    , & ! Output: [real(r8) (:) ]  previous timestep leaf N litterfall flux (gN/m2/s)
+         prev_frootn_to_litter =>    nitrogenflux_vars%prev_frootn_to_litter_patch   , & ! Output: [real(r8) (:) ]  previous timestep froot N litterfall flux (gN/m2/s)
+         prev_leafp_to_litter  =>    phosphorusflux_vars%prev_leafp_to_litter_patch  , & ! Output: [real(r8) (:) ]  previous timestep leaf P litterfall flux (gP/m2/s)
+         prev_frootp_to_litter =>    phosphorusflux_vars%prev_frootp_to_litter_patch , & ! Output: [real(r8) (:) ]  previous timestep froot P litterfall flux (gP/m2/s)
+         leafn                 =>    nitrogenstate_vars%leafn_patch                  , & ! Input:  [real(r8) (:) ]  (gN/m2) leaf N                                  
+         frootn                =>    nitrogenstate_vars%frootn_patch                 , & ! Input:  [real(r8) (:) ]  (gN/m2) fine root N                               
+         livestemn             =>    nitrogenstate_vars%livestemn_patch              , & ! Input:  [real(r8) (:) ]  (gN/m2) livestem N                               
+         leafp                 =>    phosphorusstate_vars%leafp_patch                , & ! Input:  [real(r8) (:) ]  (gP/m2) leaf P                                 
+         frootp                =>    phosphorusstate_vars%frootp_patch               , & ! Input:  [real(r8) (:) ]  (gP/m2) fine root P                               
+         livestemp             =>    phosphorusstate_vars%livestemp_patch            , & ! Input:  [real(r8) (:) ]  (gP/m2) livestem P                              
+         npool_to_leafn        =>    nitrogenflux_vars%npool_to_leafn_patch          , &
+         npool_to_frootn       =>    nitrogenflux_vars%npool_to_frootn_patch         , &
+         npool_to_livestemn    =>    nitrogenflux_vars%npool_to_livestemn_patch      , &
+         ppool_to_leafp        =>    phosphorusflux_vars%ppool_to_leafp_patch        , &
+         ppool_to_frootp       =>    phosphorusflux_vars%ppool_to_frootp_patch       , &
+         ppool_to_livestemp    =>    phosphorusflux_vars%ppool_to_livestemp_patch      &
          )
 
       ! The litterfall transfer rate starts at 0.0 and increases linearly
@@ -2360,29 +2380,73 @@ contains
                frootc_to_litter(p) = prev_frootc_to_litter(p) + t1*(frootc(p) - prev_frootc_to_litter(p)*offset_counter(p))
             end if
 
-            ! calculate the leaf N litterfall and retranslocation
-            leafn_to_litter(p)   = leafc_to_litter(p)  / lflitcn(ivt(p))
-            leafn_to_retransn(p) = (leafc_to_litter(p) / leafcn(ivt(p))) - leafn_to_litter(p)
+            if ( nu_com .eq. 'RD') then
+               ! calculate the leaf N litterfall and retranslocation
+               leafn_to_litter(p)   = leafc_to_litter(p)  / lflitcn(ivt(p))
+               leafn_to_retransn(p) = (leafc_to_litter(p) / leafcn(ivt(p))) - leafn_to_litter(p)
 
-            ! calculate fine root N litterfall (no retranslocation of fine root N)
-            frootn_to_litter(p) = frootc_to_litter(p) / frootcn(ivt(p))
+               ! calculate fine root N litterfall (no retranslocation of fine root N)
+               frootn_to_litter(p) = frootc_to_litter(p) / frootcn(ivt(p))
 
-            if (ivt(p) >= npcropmin) then
-               livestemn_to_litter(p) = livestemc_to_litter(p) / livewdcn(ivt(p))
+               ! calculate the leaf P litterfall and retranslocation
+               leafp_to_litter(p)   = leafc_to_litter(p)  / lflitcp(ivt(p))
+               leafp_to_retransp(p) = (leafc_to_litter(p) / leafcp(ivt(p))) - leafp_to_litter(p)
+
+               ! calculate fine root P litterfall (no retranslocation of fine root N)
+               frootp_to_litter(p) = frootc_to_litter(p) / frootcp(ivt(p))
+                
+               if (ivt(p) >= npcropmin) then
+                  livestemn_to_litter(p) = livestemc_to_litter(p) / livewdcn(ivt(p))
+                  livestemp_to_litter(p) = livestemc_to_litter(p) / livewdcp(ivt(p))
+                  grainp_to_food(p) = grainc_to_food(p) / graincp(ivt(p))
+               end if
+            else
+               if (offset_counter(p) == dt) then
+                  t1 = 1.0_r8 / dt
+                  if (ivt(p) >= npcropmin) then
+                     ! this assumes that offset_counter == dt for crops
+                     ! if this were ever changed, we'd need to add code to the "else"
+                     leafn_to_litter(p) = min(((1.0_r8 - presharv(ivt(p))) * ((t1 * leafn(p)) + npool_to_leafn(p))),leafn(p))* 0.38_r8 ! 62% N resorption rate; LEONARDUS VERGUTZ 2012 Ecological Monographs 82(2) 205-220.
+                     leafn_to_retransn(p) = min(((1.0_r8 - presharv(ivt(p))) * ((t1 * leafn(p)) + npool_to_leafn(p))),leafn(p))* 0.62_r8
+
+                     leafp_to_litter(p) = min(((1.0_r8 - presharv(ivt(p))) * ((t1 * leafp(p)) + ppool_to_leafp(p))),leafp(p))* 0.35_r8 ! 65% N resorption rate; LEONARDUS VERGUTZ 2012 Ecological Monographs 82(2) 205-220.
+                     leafp_to_retransp(p) = min(((1.0_r8 - presharv(ivt(p))) * ((t1 * leafp(p)) + ppool_to_leafp(p))),frootp(p))* 0.65_r8
+                        
+                     frootn_to_litter(p) = min(t1 * frootn(p) + npool_to_frootn(p),frootn(p))
+                     frootp_to_litter(p) = min(t1 * frootp(p) + ppool_to_frootp(p),frootp(p))
+
+                     livestemn_to_litter(p) = min((1.0_r8 - presharv(ivt(p))) * ((t1 * livestemn(p)) + npool_to_livestemn(p)),livestemn(p))
+                     livestemp_to_litter(p) = min((1.0_r8 - presharv(ivt(p))) * ((t1 * livestemp(p)) + ppool_to_livestemp(p)),livestemp(p))
+                        
+                     !grainp_to_food(p) = grainc_to_food(p) / graincp(ivt(p))
+                  else
+                     leafn_to_litter(p)  = (t1 * leafn(p)  + npool_to_leafn(p))*0.38_r8
+                     leafn_to_retransn(p) = (t1 * leafn(p)  + npool_to_leafn(p))*0.62_r8
+                     frootn_to_litter(p) = t1 * frootn(p) + npool_to_frootn(p)
+
+                     leafp_to_litter(p)  = (t1 * leafp(p)  + ppool_to_leafp(p))*0.35_r8
+                     leafp_to_retransp(p) = (t1 * leafp(p)  + ppool_to_leafp(p))*0.65_r8
+                     frootp_to_litter(p) = t1 * frootp(p) + ppool_to_frootp(p)
+                  end if
+               else
+                  t1 = dt * 2.0_r8 / (offset_counter(p) * offset_counter(p))
+                  leafn_to_litter(p)  = min((prev_leafn_to_litter(p)  + t1*(leafn(p)  - prev_leafn_to_litter(p)*offset_counter(p))),leafn(p))*0.38_r8
+                  leafn_to_retransn(p) = min((prev_leafn_to_litter(p)  + t1*(leafn(p)  - prev_leafn_to_litter(p)*offset_counter(p))),leafn(p))*0.62_r8
+                  frootn_to_litter(p) = min(prev_frootn_to_litter(p) + t1*(frootn(p) - prev_frootn_to_litter(p)*offset_counter(p)),frootn(p))
+                  
+                  leafp_to_litter(p)  = min((prev_leafp_to_litter(p)  + t1*(leafp(p)  - prev_leafp_to_litter(p)*offset_counter(p))),leafp(p))*0.35_r8
+                  leafp_to_retransp(p) =min((prev_leafp_to_litter(p)  + t1*(leafp(p)  - prev_leafp_to_litter(p)*offset_counter(p))),leafp(p))*0.65_r8
+                  frootp_to_litter(p) = min(prev_frootp_to_litter(p) + t1*(frootp(p) - prev_frootp_to_litter(p)*offset_counter(p)),frootp(p))
+               end if
+
+               ! save the current litterfall fluxes
+               prev_leafn_to_litter(p)  = leafn_to_litter(p)
+               prev_frootn_to_litter(p) = frootn_to_litter(p)
+                
+               prev_leafp_to_litter(p)  = leafp_to_litter(p)
+               prev_frootp_to_litter(p) = frootp_to_litter(p)
             end if
-
-            ! calculate the leaf P litterfall and retranslocation
-            leafp_to_litter(p)   = leafc_to_litter(p)  / lflitcp(ivt(p))
-            leafp_to_retransp(p) = (leafc_to_litter(p) / leafcp(ivt(p))) - leafp_to_litter(p)
-
-            ! calculate fine root P litterfall (no retranslocation of fine root N)
-            frootp_to_litter(p) = frootc_to_litter(p) / frootcp(ivt(p))
-
-            if (ivt(p) >= npcropmin) then
-               livestemp_to_litter(p) = livestemc_to_litter(p) / livewdcp(ivt(p))
-               grainp_to_food(p) = grainc_to_food(p) / graincp(ivt(p))
-            end if
-
+            
             ! save the current litterfall fluxes
             prev_leafc_to_litter(p)  = leafc_to_litter(p)
             prev_frootc_to_litter(p) = frootc_to_litter(p)
@@ -2398,7 +2462,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CNBackgroundLitterfall (num_soilp, filter_soilp, &
        cnstate_vars, carbonstate_vars, carbonflux_vars, nitrogenflux_vars,& 
-       phosphorusflux_vars)
+       phosphorusflux_vars, nitrogenstate_vars, phosphorusstate_vars)
     !
     ! !DESCRIPTION:
     ! Determines the flux of C and N from displayed pools to litter
@@ -2412,6 +2476,8 @@ contains
     type(carbonflux_type)   , intent(inout) :: carbonflux_vars
     type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars
     type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
+    type(nitrogenstate_type)  , intent(in)    :: nitrogenstate_vars
+    type(phosphorusstate_type), intent(in)    :: phosphorusstate_vars
     !
     ! !LOCAL VARIABLES:
     integer :: p            ! indices
@@ -2443,7 +2509,12 @@ contains
 
          leafp_to_litter   =>    phosphorusflux_vars%leafp_to_litter_patch   , & ! Output: [real(r8) (:) ]                                                    
          leafp_to_retransp =>    phosphorusflux_vars%leafp_to_retransp_patch , & ! Output: [real(r8) (:) ]                                                    
-         frootp_to_litter  =>    phosphorusflux_vars%frootp_to_litter_patch    & ! Output: [real(r8) (:) ]                                                    
+         frootp_to_litter  =>    phosphorusflux_vars%frootp_to_litter_patch  , & ! Output: [real(r8) (:) ]   
+         
+         leafn             =>    nitrogenstate_vars%leafn_patch              , &
+         frootn            =>    nitrogenstate_vars%frootn_patch             , &
+         leafp             =>    phosphorusstate_vars%leafp_patch            , &
+         frootp            =>    phosphorusstate_vars%frootp_patch             &
          )
 
       ! patch loop
@@ -2456,21 +2527,36 @@ contains
             leafc_to_litter(p)  = bglfr(p) * leafc(p)
             frootc_to_litter(p) = bglfr(p) * frootc(p)
 
-            ! calculate the leaf N litterfall and retranslocation
-            leafn_to_litter(p)   = leafc_to_litter(p)  / lflitcn(ivt(p))
-            leafn_to_retransn(p) = (leafc_to_litter(p) / leafcn(ivt(p))) - leafn_to_litter(p)
+            if ( nu_com .eq. 'RD') then
+               ! calculate the leaf N litterfall and retranslocation
+               leafn_to_litter(p)   = leafc_to_litter(p)  / lflitcn(ivt(p))
+               leafn_to_retransn(p) = (leafc_to_litter(p) / leafcn(ivt(p))) - leafn_to_litter(p)
 
-            ! calculate fine root N litterfall (no retranslocation of fine root N)
-            frootn_to_litter(p) = frootc_to_litter(p) / frootcn(ivt(p))
+               ! calculate fine root N litterfall (no retranslocation of fine root N)
+               frootn_to_litter(p) = frootc_to_litter(p) / frootcn(ivt(p))
 
-            ! calculate the leaf P litterfall and retranslocation
-            leafp_to_litter(p)   = leafc_to_litter(p)  / lflitcp(ivt(p))
-            leafp_to_retransp(p) = (leafc_to_litter(p) / leafcp(ivt(p))) - leafp_to_litter(p)
+               ! calculate the leaf P litterfall and retranslocation
+               leafp_to_litter(p)   = leafc_to_litter(p)  / lflitcp(ivt(p))
+               leafp_to_retransp(p) = (leafc_to_litter(p) / leafcp(ivt(p))) - leafp_to_litter(p)
 
-            ! calculate fine root P litterfall (no retranslocation of fine root P)
-            frootp_to_litter(p) = frootc_to_litter(p) / frootcp(ivt(p))
+               ! calculate fine root P litterfall (no retranslocation of fine root P)
+               frootp_to_litter(p) = frootc_to_litter(p) / frootcp(ivt(p))
+            else
+               ! calculate the leaf N litterfall and retranslocation
+               leafn_to_litter(p)   = bglfr(p) * leafn(p) * 0.38_r8 ! 62% N resorption rate; LEONARDUS VERGUTZ 2012 Ecological Monographs 82(2) 205-220.
+               leafn_to_retransn(p) = bglfr(p) * leafn(p) - leafn_to_litter(p)
+
+               ! calculate fine root N litterfall (no retranslocation of fine root N)
+               frootn_to_litter(p) = bglfr(p) * frootn(p)
+
+               ! calculate the leaf P litterfall and retranslocation
+               leafp_to_litter(p)   = bglfr(p) * leafp(p) * 0.35_r8 ! 65% P resorption rate; LEONARDUS VERGUTZ 2012 Ecological Monographs 82(2) 205-220.
+               leafp_to_retransp(p) = bglfr(p) * leafp(p) - leafp_to_litter(p)
+
+               ! calculate fine root P litterfall (no retranslocation of fine root P)
+               frootp_to_litter(p) = bglfr(p) * frootp(p) ! fine root P retranslocation occur (but not N retranslocation), why not include it here
+            end if
          end if
-
       end do
 
     end associate 
@@ -2534,7 +2620,7 @@ contains
          livestemp_to_deadstemp   =>    phosphorusflux_vars%livestemp_to_deadstemp_patch   , & ! Output: [real(r8) (:) ]                                                    
          livestemp_to_retransp    =>    phosphorusflux_vars%livestemp_to_retransp_patch    , & ! Output: [real(r8) (:) ]                                                    
          livecrootp_to_deadcrootp =>    phosphorusflux_vars%livecrootp_to_deadcrootp_patch , & ! Output: [real(r8) (:) ]                                                    
-         livecrootp_to_retransp   =>    phosphorusflux_vars%livecrootp_to_retransp_patch     & ! Output: [real(r8) (:) ]                                                    
+         livecrootp_to_retransp   =>    phosphorusflux_vars%livecrootp_to_retransp_patch     & ! Output: [real(r8) (:) ]                                              
          )
 
       ! patch loop
@@ -2543,31 +2629,57 @@ contains
 
          ! only calculate these fluxes for woody types
          if (woody(ivt(p)) > 0._r8) then
+            if ( nu_com .eq. 'RD') then
+               ! live stem to dead stem turnover
 
-            ! live stem to dead stem turnover
+               ctovr = livestemc(p) * lwtop
+               ntovr = ctovr / livewdcn(ivt(p))
+               ptovr = ctovr / livewdcp(ivt(p))
 
-            ctovr = livestemc(p) * lwtop
-            ntovr = ctovr / livewdcn(ivt(p))
-            ptovr = ctovr / livewdcp(ivt(p))
+               livestemc_to_deadstemc(p) = ctovr
+               livestemn_to_deadstemn(p) = ctovr / deadwdcn(ivt(p))
+               livestemn_to_retransn(p)  = ntovr - livestemn_to_deadstemn(p)
+               
+               livestemp_to_deadstemp(p) = ctovr / deadwdcp(ivt(p))
+               livestemp_to_retransp(p)  = ptovr - livestemp_to_deadstemp(p)
+               ! live coarse root to dead coarse root turnover
 
-            livestemc_to_deadstemc(p) = ctovr
-            livestemn_to_deadstemn(p) = ctovr / deadwdcn(ivt(p))
-            livestemn_to_retransn(p)  = ntovr - livestemn_to_deadstemn(p)
+               ctovr = livecrootc(p) * lwtop
+               ntovr = ctovr / livewdcn(ivt(p))
+               ptovr = ctovr / livewdcp(ivt(p))
 
-            livestemp_to_deadstemp(p) = ctovr / deadwdcp(ivt(p))
-            livestemp_to_retransp(p)  = ptovr - livestemp_to_deadstemp(p)
-            ! live coarse root to dead coarse root turnover
+               livecrootc_to_deadcrootc(p) = ctovr
+               livecrootn_to_deadcrootn(p) = ctovr / deadwdcn(ivt(p))
+               livecrootn_to_retransn(p)  = ntovr - livecrootn_to_deadcrootn(p)
 
-            ctovr = livecrootc(p) * lwtop
-            ntovr = ctovr / livewdcn(ivt(p))
-            ptovr = ctovr / livewdcp(ivt(p))
+               livecrootp_to_deadcrootp(p) = ctovr / deadwdcp(ivt(p))
+               livecrootp_to_retransp(p)  = ptovr - livecrootp_to_deadcrootp(p)
+            else
+               ! live stem to dead stem turnover
 
-            livecrootc_to_deadcrootc(p) = ctovr
-            livecrootn_to_deadcrootn(p) = ctovr / deadwdcn(ivt(p))
-            livecrootn_to_retransn(p)  = ntovr - livecrootn_to_deadcrootn(p)
+               ctovr = livestemc(p) * lwtop
+               ntovr = livestemn(p) * lwtop
+               ptovr = livestemp(p) * lwtop
 
-            livecrootp_to_deadcrootp(p) = ctovr / deadwdcp(ivt(p))
-            livecrootp_to_retransp(p)  = ptovr - livecrootp_to_deadcrootp(p)
+               livestemc_to_deadstemc(p) = ctovr
+               livestemn_to_deadstemn(p) = ntovr * 0.1 ! 90%  N retranslocation
+               livestemn_to_retransn(p)  = ntovr - livestemn_to_deadstemn(p)
+
+               livestemp_to_deadstemp(p) = ptovr* 0.1  ! 90%  P retranslocation
+               livestemp_to_retransp(p)  = ptovr - livestemp_to_deadstemp(p)
+               ! live coarse root to dead coarse root turnover
+
+               ctovr = livecrootc(p) * lwtop
+               ntovr = livecrootn(p) * lwtop
+               ptovr = livecrootp(p) * lwtop
+
+               livecrootc_to_deadcrootc(p) = ctovr
+               livecrootn_to_deadcrootn(p) = ntovr * 0.1 ! 90%  N retranslocation
+               livecrootn_to_retransn(p)  = ntovr - livecrootn_to_deadcrootn(p)
+
+               livecrootp_to_deadcrootp(p) = ptovr * 0.1 ! 90%  P retranslocation
+               livecrootp_to_retransp(p)  = ptovr - livecrootp_to_deadcrootp(p)
+            end if
 
          end if
 
