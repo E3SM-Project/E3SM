@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 
 #
 # Wrapper around jenkins_generic_job that will allow output
@@ -6,8 +6,6 @@
 # recoverable if Jenkins is forced to kill the job. This is the
 # script that should be used from Jenkins.
 #
-
-set -o pipefail
 
 SCRIPT_DIR=$( cd "$( dirname "$0" )" && pwd )
 DATE_STAMP=$(date "+%Y-%m-%d_%H%M%S")
