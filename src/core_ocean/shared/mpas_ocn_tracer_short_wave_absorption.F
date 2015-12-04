@@ -107,7 +107,6 @@ contains
 
       call MPAS_pool_get_config(ocnConfigs, 'config_sw_absorption_type', config_sw_absorption_type)
 
-      write(stderrUnit,*) 'in swTend',config_sw_absorption_type
       if (trim(config_sw_absorption_type)=='none') return
 
       err = 0
