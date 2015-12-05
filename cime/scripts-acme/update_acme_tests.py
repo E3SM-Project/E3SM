@@ -68,6 +68,7 @@ _TEST_SUITES = {
                            ("PFS.ne30_ne30.FC5", None),
                            ("SEQ_IOP_PFC.f19_g16.X", None),
                            ("SEQ_PFC.f45_g37.B1850C5", None),
+                           ("SMS.ne30_m120.A_B1850CN", None),
                            ("SMS.ne16_ne16.FC5AQUAP", None),
                            ("SMS_D.f19_g16.B20TRC5", None),
                            ("SMS_D_Ld3.ne16_ne16.FC5", None)]
