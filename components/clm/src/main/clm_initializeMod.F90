@@ -397,7 +397,6 @@ contains
     use ndepStreamMod         , only : ndep_init, ndep_interp
     use CNEcosystemDynMod     , only : CNEcosystemDynInit
     use CNEcosystemDynBetrMod , only : CNEcosystemDynBetrInit    
-    use pdepStreamMod         , only : pdep_init, pdep_interp
     use CNDecompCascadeBGCMod , only : init_decompcascade_bgc
     use CNDecompCascadeCNMod  , only : init_decompcascade_cn
     use CNDecompCascadeContype, only : init_decomp_cascade_constants
@@ -994,18 +993,6 @@ contains
        call ndep_interp(bounds_proc, atm2lnd_vars)
        call t_stopf('init_ndep')
     end if
-    
-    ! ------------------------------------------------------------------------
-    ! Initialize phosphorus deposition
-    ! ------------------------------------------------------------------------
-
-    if (use_cn) then
-       call t_startf('init_pdep')
-       call pdep_init(bounds_proc)
-       call pdep_interp(bounds_proc, atm2lnd_vars)
-       call t_stopf('init_pdep')
-    end if
- 
 
     ! ------------------------------------------------------------------------
     ! Initialize active history fields. 
