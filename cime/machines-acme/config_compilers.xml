@@ -831,10 +831,8 @@ for mct, etc.
 <compiler COMPILER="gnu" MACH="blues">
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
-  <MPI_PATH MPILIB="openmpi">/soft/openmpi/1.6.5-gcc-4.7.2</MPI_PATH>
-  <MPI_PATH MPILIB="mpich">/soft/mpich2/1.4.1-gcc-4.7.2/</MPI_PATH>
-  <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
-  <MPI_LIB_NAME MPILIB="mpich">mpich</MPI_LIB_NAME>
+  <MPI_PATH MPILIB="mvapich">/soft/mvapich2/2.2b_psm/gnu-5.2/</MPI_PATH>
+  <MPI_LIB_NAME MPILIB="mvapich">mpi</MPI_LIB_NAME>
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas</ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
 </compiler>
