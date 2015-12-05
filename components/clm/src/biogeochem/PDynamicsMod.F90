@@ -35,6 +35,7 @@ module PDynamicsMod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
+  public :: PDeposition
   public :: PWeathering
   public :: PAdsorption
   public :: PDesorption
@@ -46,6 +47,40 @@ module PDynamicsMod
   !-----------------------------------------------------------------------
 
 contains
+  !-----------------------------------------------------------------------
+  subroutine PDeposition( bounds, &
+       atm2lnd_vars, phosphorusflux_vars )
+    ! BY X. SHI
+    ! !DESCRIPTION:
+    ! On the radiation time step, update the phosphorus deposition rate
+    ! from atmospheric forcing. For now it is assumed that all the atmospheric
+    ! P deposition goes to the soil mineral P pool.
+    ! This could be updated later to divide the inputs between mineral P absorbed
+    ! directly into the canopy and mineral P entering the soil pool.
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)        , intent(in)    :: bounds
+    type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
+    type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer :: g,c                    ! indices
+    !-----------------------------------------------------------------------
+
+    associate(&
+         forc_pdep     =>  atm2lnd_vars%forc_pdep_grc           , & ! Input:  [real(r8) (:)]  Phosphorus deposition rate (gP/m2/s)                
+         pdep_to_sminp =>  phosphorusflux_vars%pdep_to_sminp_col   & ! Output: [real(r8) (:)]                                                    
+         )
+
+      ! Loop through columns
+      do c = bounds%begc, bounds%endc
+         g = col%gridcell(c)
+         pdep_to_sminp(c) = forc_pdep(g)
+      end do
+
+    end associate
+
+  end subroutine PDeposition
 
   !-----------------------------------------------------------------------
   subroutine PWeathering(num_soilc, filter_soilc, &

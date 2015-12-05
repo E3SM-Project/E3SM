@@ -411,6 +411,48 @@ this mask will have smb calculated over the entire global land surface
 <ndepmapalgo use_cn=".true."   hgrid="1x1_tropicAtl"       >nn</ndepmapalgo>
 <ndepmapalgo use_cn=".true."   hgrid="5x5_amazon"          >nn</ndepmapalgo>
 
+<!-- Phosphorus deposition streams namelist defaults -->
+<stream_year_first_pdep use_cn=".true."   sim_year="2000" >2000</stream_year_first_pdep>
+<stream_year_last_pdep  use_cn=".true."   sim_year="2000" >2000</stream_year_last_pdep>
+
+<stream_year_first_pdep use_cn=".true."   sim_year="1850" >2000</stream_year_first_pdep>
+<stream_year_last_pdep  use_cn=".true."   sim_year="1850" >2000</stream_year_last_pdep>
+
+<stream_year_first_pdep use_cn=".true."   sim_year="1000" >2000</stream_year_first_pdep>
+<stream_year_last_pdep  use_cn=".true."   sim_year="1000" >2000</stream_year_last_pdep>
+
+<stream_year_first_pdep use_cn=".true."   sim_year="constant" sim_year_range="1000-1002" >2000</stream_year_first_pdep>
+<stream_year_last_pdep  use_cn=".true."   sim_year="constant" sim_year_range="1000-1002" >2000</stream_year_last_pdep>
+
+<stream_year_first_pdep use_cn=".true."   sim_year="constant" sim_year_range="1000-1004" >2000</stream_year_first_pdep>
+<stream_year_last_pdep  use_cn=".true."   sim_year="constant" sim_year_range="1000-1004" >2000</stream_year_last_pdep>
+
+<stream_year_first_pdep use_cn=".true."   sim_year="constant" sim_year_range="1850-2000" >1850</stream_year_first_pdep>
+<stream_year_last_pdep  use_cn=".true."   sim_year="constant" sim_year_range="1850-2000" >2000</stream_year_last_pdep>
+
+<stream_year_first_pdep use_cn=".true."   sim_year="constant" sim_year_range="1850-2100" >1850</stream_year_first_pdep>
+<stream_year_last_pdep  use_cn=".true."   sim_year="constant" sim_year_range="1850-2100" >2100</stream_year_last_pdep>
+
+<stream_year_first_pdep use_cn=".true."   sim_year="constant" sim_year_range="2000-2100" >2000</stream_year_first_pdep>
+<stream_year_last_pdep  use_cn=".true."   sim_year="constant" sim_year_range="2000-2100" >2100</stream_year_last_pdep>
+
+<stream_fldfilename_pdep hgrid="1.9x2.5"   use_cn=".true."   >lnd/clm2/pdepdata/fpdep_clm_hist_simyr2000_1.9x2.5_c150929.nc</stream_fldfilename_pdep>
+<stream_fldfilename_pdep hgrid="1.9x2.5"   use_cn=".true."   rcp="8.5" >lnd/clm2/pdepdata/fpdep_clm_hist_simyr2000_1.9x2.5_c150929.nc</stream_fldfilename_pdep>
+<stream_fldfilename_pdep hgrid="1.9x2.5"   use_cn=".true."   rcp="6"   >lnd/clm2/pdepdata/fpdep_clm_hist_simyr2000_1.9x2.5_c150929.nc</stream_fldfilename_pdep>
+<stream_fldfilename_pdep hgrid="1.9x2.5"   use_cn=".true."   rcp="4.5" >lnd/clm2/pdepdata/fpdep_clm_hist_simyr2000_1.9x2.5_c150929.nc</stream_fldfilename_pdep>
+<stream_fldfilename_pdep hgrid="1.9x2.5"   use_cn=".true."   rcp="2.6" >lnd/clm2/pdepdata/fpdep_clm_hist_simyr2000_1.9x2.5_c150929.nc</stream_fldfilename_pdep>
+
+<pdepmapalgo use_cn=".true."                               >bilinear</pdepmapalgo>
+
+<pdepmapalgo use_cn=".true."   hgrid="1x1_brazil"          >nn</pdepmapalgo>
+<pdepmapalgo use_cn=".true."   hgrid="1x1_mexicocityMEX"   >nn</pdepmapalgo>
+<pdepmapalgo use_cn=".true."   hgrid="1x1_vancouverCAN"    >nn</pdepmapalgo>
+<pdepmapalgo use_cn=".true."   hgrid="1x1_urbanc_alpha"    >nn</pdepmapalgo>
+<pdepmapalgo use_cn=".true."   hgrid="1x1_camdenNJ"        >nn</pdepmapalgo>
+<pdepmapalgo use_cn=".true."   hgrid="1x1_asphaltjungleNJ" >nn</pdepmapalgo>
+<pdepmapalgo use_cn=".true."   hgrid="1x1_tropicAtl"       >nn</pdepmapalgo>
+<pdepmapalgo use_cn=".true."   hgrid="5x5_amazon"          >nn</pdepmapalgo>
+
 <!-- LAI streams namelist defaults -->
 <use_lai_streams        >.false.</use_lai_streams>
 <stream_year_first_lai  >2001</stream_year_first_lai>
