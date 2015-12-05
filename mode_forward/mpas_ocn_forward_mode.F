@@ -431,13 +431,15 @@ module ocn_forward_mode
 
 
       type (MPAS_timeInterval_type) :: timeStep
-      character(len=StrKIND), pointer :: config_restart_timestamp_name
+      character(len=StrKIND), pointer :: config_restart_timestamp_name, config_sw_absorption_type
+
       logical, pointer :: config_write_output_on_startup
 
       ierr = 0
 
       call mpas_pool_get_config(domain % configs, 'config_write_output_on_startup', config_write_output_on_startup)
       call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
+      call mpas_pool_get_config(domain % configs, 'config_sw_absorption_type', config_sw_absorption_type)
 
       ! Eventually, dt should be domain specific
       timeStep = mpas_get_clock_timestep(domain % clock, ierr=ierr)
@@ -535,7 +537,8 @@ module ocn_forward_mode
             open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
             write(22, *) trim(timeStamp)
             close(22)
-            call ocn_shortwave_forcing_write_restart(domain)
+
+            if(trim(config_sw_absorption_type)=='ohlmann00') call ocn_shortwave_forcing_write_restart(domain)
          end if
 
          call mpas_timer_start('reset_io_alarms', .false.)
