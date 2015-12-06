@@ -2,7 +2,7 @@
 Implementation of create_test functionality from CIME
 """
 
-import sys, os, shutil, traceback, stat, glob, threading, Queue, time
+import sys, os, shutil, traceback, stat, glob, threading, time
 
 import acme_util, compare_namelists, wait_for_tests
 
@@ -55,16 +55,16 @@ class CreateTest(object):
         # Oversubscribe by 1/4
         pes = int(acme_util.get_machine_info("MAX_TASKS_PER_NODE"))
 
-        # Threads members must be protected with mutex
+        # This is the only data that multiple threads will simultaneously access
+        # Each test has it's own index and setting/retrieving items from a list
+        # is atomic, so this should be fine to use without mutex
         self._test_states    = [ (INITIAL_PHASE, TEST_PASS_STATUS) ] * len(test_names)
+
         self._proc_pool = int(pes * 1.25)
 
         # Since the name-list phase can fail without aborting later phases, we
         # need some extra state to remember tests that had namelist problems
         self._tests_with_nl_problems = [None] * len(test_names)
-
-        self._mutex          = threading.Lock()
-        self._available_work = Queue.Queue()
 
         # Setup phases
         self._phases = list(PHASES)
@@ -113,8 +113,6 @@ class CreateTest(object):
     ###########################################################################
     def _get_test_data(self, test_name):
     ###########################################################################
-        assert self._mutex.locked()
-
         state_idx = self._test_names.index(test_name)
         return self._test_states[state_idx]
 
@@ -133,12 +131,13 @@ class CreateTest(object):
     ###########################################################################
     def _get_test_status(self, test_name, phase=None):
     ###########################################################################
+        curr_phase = self._get_test_phase(test_name)
         if (phase == NAMELIST_PHASE and test_name in self._tests_with_nl_problems):
             return NAMELIST_FAIL_STATUS
-        elif (phase is None or phase == self._get_test_phase(test_name)):
+        elif (phase is None or phase == curr_phase):
             return self._get_test_data(test_name)[1]
         else:
-            expect(phase is None or self._phases.index(phase) < self._phases.index(self._get_test_phase(test_name)),
+            expect(phase is None or self._phases.index(phase) < self._phases.index(curr_phase),
                    "Tried to see the future")
             # Assume all older phases PASSed
             return TEST_PASS_STATUS
@@ -151,8 +150,6 @@ class CreateTest(object):
     ###########################################################################
     def _update_test_status(self, test_name, phase, status):
     ###########################################################################
-        assert self._mutex.locked()
-
         state_idx = self._test_names.index(test_name)
         phase_idx = self._phases.index(phase)
         old_phase, old_status = self._test_states[state_idx]
@@ -427,68 +424,82 @@ class CreateTest(object):
                 self._log_output(test_name, "VERY BAD! Could not read TestStatus file '%s': '%s'" % (test_status_file, str(e)))
 
     ###########################################################################
-    def _consumer(self):
+    def _wait_for_something_to_finish(self, threads_in_flight):
     ###########################################################################
-        while (True):
-            found_work = False
-            with self._mutex:
-                if (not self._available_work.empty()):
-                    test_name, test_phase, phase_method, procs_needed = self._available_work.get()
-                    found_work = True
+        expect(len(threads_in_flight) <= self._parallel_jobs, "Oversubscribed?")
+        finished_tests = []
+        while (not finished_tests):
+            for test_name, thread_info in threads_in_flight.iteritems():
+                if (not thread_info[0].is_alive()):
+                    finished_tests.append( (test_name, thread_info[1]) )
 
-            if (found_work):
-                before_time = time.time()
-                success = self._run_catch_exceptions(test_name, test_phase, phase_method)
-                elapsed_time = time.time() - before_time
-                status  = (TEST_PENDING_STATUS if test_phase == RUN_PHASE and not self._no_batch else TEST_PASS_STATUS) if success else TEST_FAIL_STATUS
+            if (not finished_tests):
+                time.sleep(0.2)
 
-                with self._mutex:
-                    if (status != TEST_PENDING_STATUS):
-                        self._update_test_status(test_name, test_phase, status)
-                    self._proc_pool += procs_needed
-                    self._handle_test_status_file(test_name, test_phase, success)
+        for finished_test, procs_needed in finished_tests:
+            self._proc_pool += procs_needed
+            del threads_in_flight[finished_test]
 
-                sys.stdout.write("Finished %s for test %s in %f seconds (%s)\n" % (test_phase, test_name, elapsed_time, status))
+    ###########################################################################
+    def _consumer(self, test_name, test_phase, phase_method):
+    ###########################################################################
+        before_time = time.time()
+        success = self._run_catch_exceptions(test_name, test_phase, phase_method)
+        elapsed_time = time.time() - before_time
+        status  = (TEST_PENDING_STATUS if test_phase == RUN_PHASE and not self._no_batch else TEST_PASS_STATUS) if success else TEST_FAIL_STATUS
 
-            else:
-                # Check if this thread is still needed
-                with self._mutex:
-                    num_tests_that_still_have_work = 0
-                    for test_name in self._test_names:
-                        if (self._work_remains(test_name)):
-                            num_tests_that_still_have_work += 1
+        if (status != TEST_PENDING_STATUS):
+            self._update_test_status(test_name, test_phase, status)
+        self._handle_test_status_file(test_name, test_phase, success)
 
-                    if (num_tests_that_still_have_work < self._parallel_jobs):
-                        self._parallel_jobs -= 1
-                        break
-
-                time.sleep(5)
-
-        sys.stdout.write("CONSUMER THREAD EXITING\n")
+        status_str = "Finished %s for test %s in %f seconds (%s)\n" % (test_phase, test_name, elapsed_time, status)
+        if (not success):
+            status_str += "    Case dir: %s\n" % self._get_test_dir(test_name)
+        sys.stdout.write(status_str)
 
     ###########################################################################
     def _producer(self):
     ###########################################################################
-        work_to_do = True
-        while (work_to_do):
+        threads_in_flight = {} # test-name -> (thread, procs)
+        while (True):
             work_to_do = False
-            with self._mutex:
-                for test_name in self._test_names:
-                    test_phase, test_status = self._get_test_data(test_name)
-                    if (self._work_remains(test_name)):
-                        work_to_do = True
-                        if (test_status != TEST_PENDING_STATUS):
-                            next_phase = self._phases[self._phases.index(test_phase) + 1]
-                            procs_needed = self._get_procs_needed(test_name, next_phase)
-                            if (procs_needed <= self._proc_pool):
-                                self._proc_pool -= procs_needed
-                                sys.stdout.write("Starting %s for test %s with %d procs\n" % (next_phase, test_name, procs_needed)) # Necessary when multi threads
-                                self._update_test_status(test_name, next_phase, TEST_PENDING_STATUS)
-                                self._available_work.put( (test_name, next_phase, getattr(self, "_%s_phase" % next_phase.lower()), procs_needed ) )
+            num_threads_launched_this_iteration = 0
+            for test_name in self._test_names:
 
-            time.sleep(1)
+                # If we have no workers available, immediately wait
+                if (len(threads_in_flight) == self._parallel_jobs):
+                    self._wait_for_something_to_finish(threads_in_flight)
 
-        sys.stdout.write("MAIN THREAD EXITING\n")
+                if (self._work_remains(test_name)):
+                    work_to_do = True
+                    if (test_name not in threads_in_flight):
+                        test_phase, test_status = self._get_test_data(test_name)
+                        expect(test_status != TEST_PENDING_STATUS, test_name)
+                        next_phase = self._phases[self._phases.index(test_phase) + 1]
+                        procs_needed = self._get_procs_needed(test_name, next_phase)
+
+                        if (procs_needed <= self._proc_pool):
+                            self._proc_pool -= procs_needed
+
+                            # Necessary to print this way when multiple threads printing
+                            sys.stdout.write("Starting %s for test %s with %d procs\n" % (next_phase, test_name, procs_needed))
+
+                            self._update_test_status(test_name, next_phase, TEST_PENDING_STATUS)
+                            t = threading.Thread(target=self._consumer,
+                                                 args=(test_name, next_phase, getattr(self, "_%s_phase" % next_phase.lower()) ))
+                            threads_in_flight[test_name] = (t, procs_needed)
+                            t.start()
+                            num_threads_launched_this_iteration += 1
+
+            if (not work_to_do):
+                break
+
+            if (num_threads_launched_this_iteration == 0):
+                # No free resources, wait for something in flight to finish
+                self._wait_for_something_to_finish(threads_in_flight)
+
+        for thread_info in threads_in_flight.values():
+            thread_info[0].join()
 
     ###########################################################################
     def _setup_cs_files(self):
@@ -532,17 +543,11 @@ class CreateTest(object):
         for test_name in self._test_names:
             print " ", test_name
 
-        # TODO - unit tests where possible
         # TODO - documentation
-
-        for _ in xrange(self._parallel_jobs):
-            t = threading.Thread(target=self._consumer)
-            t.start()
 
         self._producer()
 
-        while (threading.active_count() > 1):
-            time.sleep(1)
+        expect(threading.active_count() == 1, "Leftover threads?")
 
         # Setup cs files
         self._setup_cs_files()
@@ -560,6 +565,8 @@ class CreateTest(object):
                 rv = False
             else:
                 print status, test_name, phase
+
+            print "    Case dir: %s" % self._get_test_dir(test_name)
 
         print "create_test took", time.time() - start_time, "seconds"
 
