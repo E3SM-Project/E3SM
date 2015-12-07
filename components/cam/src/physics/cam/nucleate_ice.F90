@@ -174,7 +174,9 @@ subroutine nucleati(  &
       Ni_preice = ni_in*rhoair                    ! (convert from #/kg -> #/m3)
       Ni_preice = Ni_preice / max(mincld,cldn)   ! in-cloud ice number density 
 
-      if (Ni_preice > 10.0_r8) then    ! > 0.01/L = 10/m3   
+!!== KZ_BUGFIX 
+      if (Ni_preice > 10.0_r8 .and. qi > 1.e-10_r8 ) then    ! > 0.01/L = 10/m3   
+!!== KZ_BUGFIX 
          Shom = -1.5_r8   ! if Shom<1 , Shom will be recalculated in SUBROUTINE Vpreice, according to Ren & McKenzie, 2005
          lami = (gamma4*ci*ni_in/qi)**(1._r8/3._r8)
          Ri_preice = 0.5_r8/lami                  ! radius
