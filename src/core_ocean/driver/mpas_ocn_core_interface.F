@@ -225,7 +225,7 @@ module ocn_core_interface
       call mpas_pool_get_package(packagePool,'variableShortwaveActive',variableShortwaveActive)
       call mpas_pool_get_config(configPool,'config_sw_absorption_type',config_sw_absorption_type)
       if (trim (config_sw_absorption_type) == 'ohlmann00') then
-         variableShortwaveActive = .false.
+         variableShortwaveActive = .true.
       end if
 
       !

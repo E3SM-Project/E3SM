@@ -610,7 +610,7 @@
 					description="Integer value defining the water type used in Jerlov short wave absorption."
 					possible_values="Integer values between 1 and 5"
 		/>
-		<nml_option name="config_forcing_restart_file" type="character" default_value="restart_forcing_time_stamp"
+		<nml_option name="config_forcing_restart_file" type="character" default_value="Restart_forcing_time_stamp"
 					description="Filename for the restart timestamp in the forcing file"
 		/>
 	</nml_record>
@@ -738,7 +738,7 @@
 		/>
 	</nml_record>
 	<nml_record name="bottom_drag" mode="forward">
-		<nml_option name="config_bottom_drag_coeff" type="real" default_value="1.0e-2" units="unitless"
+		<nml_option name="config_bottom_drag_coeff" type="real" default_value="1.0e-3" units="unitless"
 					description="Dimensionless bottom drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"
 		/>
@@ -1226,6 +1226,8 @@
 			<var_array name="vertNonLocalFlux"/>
 			<var name="effectiveDensityInLandIce"/>
 			<var_struct name="ecosysAuxiliary"/>
+			<var name="accumulatedFrazilIceMass"/>
+			<var name="frazilSurfacePressure"/>
 		</stream>
 
 		<stream name="output" 
