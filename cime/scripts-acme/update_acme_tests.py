@@ -25,7 +25,8 @@ _TEST_SUITES = {
                    ),
 
     "acme_land_developer" : (None,
-                             [("SMS.f19_f19.I1850CLM45CN", None),
+                             [("ERS.f19_g16.ICLM45","allactive/clm/betr"),
+                              ("SMS.f19_f19.I1850CLM45CN", None),
                               ("SMS.f09_g16.I1850CLM45CN", None),
                               ("SMS.hcru_hcru.I1850CRUCLM45CN", None)]
                              ),

@@ -58,7 +58,7 @@ contains
 
   end subroutine InitAllocate
   !-------------------------------------------------------------------------------
-  
+
   subroutine DDeallocate(this)
     !
     ! !DESCRIPTION:
@@ -73,7 +73,7 @@ contains
   end subroutine DDeallocate
 
   !-------------------------------------------------------------------------------
-  
+
   subroutine AAssign(this, zi_t,us_t)
     !
     ! !DESCRIPTION:
@@ -129,7 +129,7 @@ contains
 
   end subroutine init_transportmod
   !-------------------------------------------------------------------------------
-  
+
   subroutine calc_interface_conductance(bounds, lbj, ubj, jtop, numfl, filter, bulkdiffus, dz, hmconductance)
     !
     ! !DESCRIPTION:
@@ -497,7 +497,7 @@ contains
 
    end subroutine DiffusTransp_solid_tridiag
    !-------------------------------------------------------------------------------
-   
+
    subroutine DiffusTransp_solid(bounds, lbj, ubj, lbn, numfl, filter, ntrcs, trcin,&
         hmconductance,  dtime_col, dz, source, update_col, dtracer)
      !
@@ -634,7 +634,7 @@ contains
      integer  :: length, lengthp2
      real(r8) :: mass_curve(0:ubj-lbj+5 , ntrcs) !total number of nodes + two ghost cells at each boundary
      real(r8) :: cmass_curve(0:ubj-lbj+5, ntrcs)
-     real(r8) :: mass_new(1:ubj-lbj+1   , ntrcs)
+     real(r8) :: mass_new(0:ubj-lbj+1   , ntrcs)
      real(r8) :: cmass_new(0:ubj-lbj+1  , ntrcs)
      real(r8) :: zold(0:ubj-lbj+1)
      real(r8) :: di(0:ubj-lbj+5)
@@ -723,7 +723,7 @@ contains
            endif
         enddo
         !compute cumulative mass curve
-        call cumsum(mass_curve(0:lengthp2,1:ntr), cmass_curve(0:lengthp2, 1:ntr),idim=1)
+        call cumsum(mass_curve(0:lengthp2,1:ntrcs), cmass_curve(0:lengthp2, 1:ntrcs),idim=1)
 
         !do mass interpolation
         do ntr = 1, ntrcs
@@ -787,7 +787,7 @@ contains
      enddo
    end subroutine cmass_mono_smoother
    !-------------------------------------------------------------------------------
-   
+
    function is_ascending_vec(zcor)result(ans)
      !
      ! DESCRIPTION:
@@ -863,9 +863,9 @@ contains
      call ode_rk2(trajectory, zi(3:neq+2), neq, time, dtime, zold)
 
    end subroutine backward_advection
-   
+
    !-------------------------------------------------------------------------------
-   
+
    subroutine trajectory(y0, dt, ti, neq, dxdt)
      !
      ! !DESCRIPTION:
