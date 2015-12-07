@@ -40,10 +40,10 @@ module ocn_tracer_short_wave_absorption_variable
 
    public :: ocn_tracer_short_wave_absorption_variable_tend, &
              ocn_tracer_short_wave_absorption_variable_init, &
-             ocn_get_variable_sw_fraction,					 &
-             ocn_get_os00_coeffs,							 &
-             ocn_init_shortwave_forcing_ohlmann,				 &
-             ocn_get_shortWaveData,								 &
+             ocn_get_variable_sw_fraction,                   &
+             ocn_get_os00_coeffs,                            &
+             ocn_init_shortwave_forcing_ohlmann,             &
+             ocn_get_shortWaveData,                          &
              ocn_shortwave_forcing_write_restart
 
    !--------------------------------------------------------------------
@@ -80,8 +80,8 @@ contains
 
 
       type (mpas_pool_type), intent(in) :: &
-         meshPool,						   &          !< Input: mesh information
-         swForcingPool,                                         &	   		  !< Input: chlorophyll, cloud, zenith data
+         meshPool,                         &          !< Input: mesh information
+         swForcingPool,                    &          !< Input: chlorophyll, cloud, zenith data
          forcingPool
 
       real (kind=RKIND), dimension(:), intent(in) :: &
@@ -126,7 +126,7 @@ contains
       character (len=StrKIND), pointer :: config_sw_absorption_type
       real (kind=RKIND), dimension(4) :: Avals, Kvals
       real (kind=RKIND) :: cloudRatio ! cloud Ratio = 1 - incident_sfc_sw_radiation/clearSkyRadiation
-	  
+
       err = 0
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -153,9 +153,9 @@ contains
            depth = 0.0_RKIND
            cloudRatio = min(1.0_RKIND, 1.0_RKIND - penetrativeTemperatureFlux(iCell)/hflux_factor/clearSkyRadiation(iCell))
            cloudRatio = max(0.0_RKIND, cloudRatio)
-           
+
            call ocn_get_os00_coeffs(chlorophyllA(iCell),zenithAngle(iCell),cloudRatio,Avals, Kvals)
-           
+
            do k = 1, maxLevelCell(iCell)
              depth = depth + layerThickness(k, iCell)
 
@@ -188,8 +188,8 @@ contains
 
    !--------------------------------------------------------------------
 
-	  type(domain_type) :: domain
-	  
+      type(domain_type) :: domain
+
       integer, intent(out) :: err !< Output: error flag
 
       character (len=StrKIND), pointer :: config_sw_absorption_type
@@ -205,7 +205,7 @@ contains
          write(stderrUnit,*) "Shortwave parameterization type unknown: ", trim(config_sw_absorption_type)
          call MPAS_dmpar_global_abort('Unknown config_sw_absortion_type')
       end select
-          
+
 
    end subroutine ocn_tracer_short_wave_absorption_variable_init!}}}
 
@@ -216,7 +216,7 @@ contains
 !  routine ocn_init_shortwave_forcing_ohlmann
 !
 !> \brief   Initializes forcing group if parameterization of Ohlmann and Siegel (2000) or Ohlmann(2003)
-!> 			This parameterization only requires chlorophyll-a concentrations, so only add that
+!>          This parameterization only requires chlorophyll-a concentrations, so only add that
 !> \author  Luke Van Roekel
 !> \date    11/10/15
 !> \details 
@@ -229,69 +229,69 @@ contains
    type(domain_type) :: domain
    
    character(len=strKind), pointer :: &
-   		config_forcing_restart_file
-   		
-   	logical, pointer :: &
-   		config_do_restart
-   		
-   	character(len=strKIND) :: &
-   		forcingIntervalMonthly,  &
-   		forcingReferenceTimeMonthly
-   		
-   	call MPAS_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
-   	call MPAS_pool_get_config(domain % configs, 'config_forcing_restart_file', config_forcing_restart_file)
-   	
-   	forcingIntervalMonthly = "0000-01-00_00:00:00"
-   	forcingReferenceTimeMonthly = "0000-01-01_00:00:00"
-   	
-   	call MPAS_forcing_init_group( shortwaveForcingGroup,  &
-   		"shortwave_monthly_observations", &
-   		domain, &
-   		'0000-01-01_00:00:00', &
-   		'0000-01-01_00:00:00', &
-   		'0001-00-00_00:00:00', &
-   		config_do_restart, &
-   		config_forcing_restart_file)
-   		
-   	call MPAS_forcing_init_field( domain % streamManager, &
-   		shortwaveForcingGroup, &
-   		'shortwave_monthly_observations', &
-   		'chlorophyllData', &
-   		'shortwave_forcing_data', &
-   		'shortwave',  &
-   		'chlorophyllData',  &
-   		'constant',  &
-   		forcingReferenceTimeMonthly,  &
-   		forcingIntervalMonthly)
-       	
-    call MPAS_forcing_init_field( domain % streamManager, &
-   		shortwaveForcingGroup, &
-   		'shortwave_monthly_observations', &
-   		'clearSkyRadiation', &
-   		'shortwave_forcing_data', &
-   		'shortwave',  &
-   		'clearSkyRadiation',  &
-   		'constant',  &
-   		forcingReferenceTimeMonthly,  &
-   		forcingIntervalMonthly)
+        config_forcing_restart_file
+        
+   logical, pointer :: &
+        config_do_restart
+        
+   character(len=strKIND) :: &
+        forcingIntervalMonthly,  &
+        forcingReferenceTimeMonthly
+        
+   call MPAS_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
+   call MPAS_pool_get_config(domain % configs, 'config_forcing_restart_file', config_forcing_restart_file)
+
+   forcingIntervalMonthly = "0000-01-00_00:00:00"
+   forcingReferenceTimeMonthly = "0000-01-01_00:00:00"
+
+   call MPAS_forcing_init_group( shortwaveForcingGroup,  &
+        "shortwave_monthly_observations", &
+        domain, &
+        '0000-01-01_00:00:00', &
+        '0000-01-01_00:00:00', &
+        '0001-00-00_00:00:00', &
+        config_do_restart, &
+        config_forcing_restart_file)
+
+   call MPAS_forcing_init_field( domain % streamManager, &
+        shortwaveForcingGroup, &
+        'shortwave_monthly_observations', &
+        'chlorophyllData', &
+        'shortwave_forcing_data', &
+        'shortwave',  &
+        'chlorophyllData',  &
+        'constant',  &
+        forcingReferenceTimeMonthly,  &
+        forcingIntervalMonthly)
+
+   call MPAS_forcing_init_field( domain % streamManager, &
+        shortwaveForcingGroup, &
+        'shortwave_monthly_observations', &
+        'clearSkyRadiation', &
+        'shortwave_forcing_data', &
+        'shortwave',  &
+        'clearSkyRadiation',  &
+        'constant',  &
+        forcingReferenceTimeMonthly,  &
+        forcingIntervalMonthly)
   
-    call MPAS_forcing_init_field( domain % streamManager, &
-   		shortwaveForcingGroup, &
-   		'shortwave_monthly_observations', &
-   		'zenithAngle', &
-   		'shortwave_forcing_data', &
-   		'shortwave',  &
-   		'zenithAngle',  &
-   		'constant',  &
-   		forcingReferenceTimeMonthly,  &
-   		forcingIntervalMonthly)
-   		 		
-   	call MPAS_forcing_init_field_data( shortwaveForcingGroup, &
-   		'shortwave_monthly_observations', &
-   		domain % streamManager)
-   		
-   	end subroutine ocn_init_shortwave_forcing_ohlmann!}}}
-   	   	
+   call MPAS_forcing_init_field( domain % streamManager, &
+        shortwaveForcingGroup, &
+        'shortwave_monthly_observations', &
+        'zenithAngle', &
+        'shortwave_forcing_data', &
+        'shortwave',  &
+        'zenithAngle',  &
+        'constant',  &
+        forcingReferenceTimeMonthly,  &
+        forcingIntervalMonthly)
+
+   call MPAS_forcing_init_field_data( shortwaveForcingGroup, &
+        'shortwave_monthly_observations', &
+        domain % streamManager)
+
+   end subroutine ocn_init_shortwave_forcing_ohlmann!}}}
+
 !***********************************************************************
 
 !***********************************************************************
@@ -308,41 +308,41 @@ contains
 !-----------------------------------------------------------------------
 
     subroutine ocn_get_shortWaveData( streamManager, &
-    	domain, &
-    	simulationClock, &
-    	firstTimeStep) !{{{
-    	
-    	type (MPAS_streamManager_type), intent(inout) :: streamManager
-    	
-    	type (domain_type) :: domain
-        type (MPAS_timeInterval_type) :: timeStepSW
-    	type (MPAS_clock_type) :: simulationClock
+        domain, &
+        simulationClock, &
+        firstTimeStep) !{{{
 
-        logical,pointer :: config_use_activeTracers_surface_bulk_forcing        
-    	logical, intent(in) :: firstTimeStep
-    	character(len=strKind), pointer :: config_sw_absorption_type
-    	character(len=strKind), pointer :: config_dt
-    	real(kind=RKIND) :: dt
+        type (MPAS_streamManager_type), intent(inout) :: streamManager
+
+        type (domain_type) :: domain
+        type (MPAS_timeInterval_type) :: timeStepSW
+        type (MPAS_clock_type) :: simulationClock
+
+        logical,pointer :: config_use_activeTracers_surface_bulk_forcing
+        logical, intent(in) :: firstTimeStep
+        character(len=strKind), pointer :: config_sw_absorption_type
+        character(len=strKind), pointer :: config_dt
+        real(kind=RKIND) :: dt
 
 
         call MPAS_pool_get_config(domain%configs, 'config_use_activeTracers_surface_bulk_forcing', config_use_activeTracers_surface_bulk_forcing)
-    	call MPAS_pool_get_config(domain%configs, 'config_sw_absorption_type', config_sw_absorption_type)
-    	call MPAS_pool_get_config(domain%configs, 'config_dt', config_dt)
-    	
+        call MPAS_pool_get_config(domain%configs, 'config_sw_absorption_type', config_sw_absorption_type)
+        call MPAS_pool_get_config(domain%configs, 'config_dt', config_dt)
+
         call mpas_set_timeInterval(timeStepSW,timeString=config_dt)
         call mpas_get_timeInterval(timeStepSW,dt=dt)
 
-    	if(trim(config_sw_absorption_type) == 'ohlmann00' .and. config_use_activeTracers_surface_bulk_forcing) then
-    	     call MPAS_forcing_get_forcing(shortwaveForcingGroup, &
-    	     		'shortwave_monthly_observations', streamManager, dt)
-    	endif
-    	
-    end subroutine ocn_get_shortWaveData!}}}
-    
+        if(trim(config_sw_absorption_type) == 'ohlmann00' .and. config_use_activeTracers_surface_bulk_forcing) then
+             call MPAS_forcing_get_forcing(shortwaveForcingGroup, &
+                  'shortwave_monthly_observations', streamManager, dt)
+        endif
 
-!***********************************************************************	
-    	
-    	
+    end subroutine ocn_get_shortWaveData!}}}
+
+
+!***********************************************************************
+
+
 !***********************************************************************
 !
 !  routine ocn_get_variable_fractions
@@ -395,10 +395,10 @@ contains
       endif
    end subroutine ocn_get_variable_sw_fraction!}}}
    
-!***********************************************************************	
-    	
-    	
-    	
+!***********************************************************************
+
+
+
 !***********************************************************************
 !
 !  routine ocn_get_os00_coeffs
@@ -408,7 +408,7 @@ contains
 !> \date    11/10/2015
 !> \details 
 !>   This will fill in coefficients for the penetrating shortwave parameterization
-!> 		A1*exp(-K1*depth) + A2*exp(-K2*depth) + A3*exp(-K3*depth) + A4*exp(-K4*depth)
+!>      A1*exp(-K1*depth) + A2*exp(-K2*depth) + A3*exp(-K3*depth) + A4*exp(-K4*depth)
 !>   For Ohlmann and Siegel (2000) A4 no approximations are made
 !>   Here the IR portion of the spectrum is also decomposed.  Four exponential terms are used 
 !>   NOTE: other schemes can be easily recovered.  For example, Ohlmann (2003) requires a 
@@ -424,32 +424,32 @@ contains
   
      real(kind=RKIND), intent(in) :: chlorophyllA, zenithAngle, cloudFraction
      real(kind=RKIND), intent(out), dimension(4) :: Avals, Kvals
-     
+
      if(cloudFraction > 0.1) then ! cloudy skies
-     	Avals(1) = 0.026_RKIND*chlorophyllA + 0.112_RKIND*cloudFraction + 0.366_RKIND  
-     	Avals(2) = -0.009_RKIND*chlorophyllA + 0.034_RKIND*cloudFraction + 0.207_RKIND  
-     	Avals(3) = -0.015_RKIND*chlorophyllA -0.006_RKIND*cloudFraction + 0.188_RKIND  
-     	Avals(4) = -0.003_RKIND*chlorophyllA -0.131_RKIND*cloudFraction + 0.169_RKIND  
-     	Kvals(1) = 0.063_RKIND*chlorophyllA -0.015_RKIND*cloudFraction + 0.082_RKIND  
-     	Kvals(2) = 0.278_RKIND*chlorophyllA -0.562_RKIND*cloudFraction + 1.02_RKIND  
-     	Kvals(3) = 3.91_RKIND*chlorophyllA -12.91_RKIND*cloudFraction + 16.62_RKIND  
-     	Kvals(4) = 16.64_RKIND*chlorophyllA -478.28_RKIND*cloudFraction + 736.56_RKIND  
+         Avals(1) = 0.026_RKIND*chlorophyllA + 0.112_RKIND*cloudFraction + 0.366_RKIND  
+         Avals(2) = -0.009_RKIND*chlorophyllA + 0.034_RKIND*cloudFraction + 0.207_RKIND  
+         Avals(3) = -0.015_RKIND*chlorophyllA -0.006_RKIND*cloudFraction + 0.188_RKIND  
+         Avals(4) = -0.003_RKIND*chlorophyllA -0.131_RKIND*cloudFraction + 0.169_RKIND  
+         Kvals(1) = 0.063_RKIND*chlorophyllA -0.015_RKIND*cloudFraction + 0.082_RKIND  
+         Kvals(2) = 0.278_RKIND*chlorophyllA -0.562_RKIND*cloudFraction + 1.02_RKIND  
+         Kvals(3) = 3.91_RKIND*chlorophyllA -12.91_RKIND*cloudFraction + 16.62_RKIND  
+         Kvals(4) = 16.64_RKIND*chlorophyllA -478.28_RKIND*cloudFraction + 736.56_RKIND  
      else ! clear skies
-     	Avals(1) = 0.033_RKIND*chlorophyllA -0.025_RKIND*zenithAngle + 0.419_RKIND  
-     	Avals(2) = -0.010_RKIND*chlorophyllA -0.007_RKIND*zenithAngle + 0.231_RKIND  
-     	Avals(3) = -0.019_RKIND*chlorophyllA -0.003_RKIND*zenithAngle + 0.195_RKIND  
-     	Avals(4) = -0.006_RKIND*chlorophyllA -0.004_RKIND*zenithAngle + 0.154_RKIND  
-     	Kvals(1) = 0.066_RKIND*chlorophyllA + 0.006_RKIND*zenithAngle + 0.066_RKIND  
-     	Kvals(2) = 0.396_RKIND*chlorophyllA -0.027_RKIND*zenithAngle + 0.866_RKIND  
-     	Kvals(3) = 7.68_RKIND*chlorophyllA -2.49_RKIND*zenithAngle + 17.81_RKIND  
-     	Kvals(4) = 51.27_RKIND*chlorophyllA + 13.14_RKIND*zenithAngle + 665.19_RKIND  
+         Avals(1) = 0.033_RKIND*chlorophyllA -0.025_RKIND*zenithAngle + 0.419_RKIND  
+         Avals(2) = -0.010_RKIND*chlorophyllA -0.007_RKIND*zenithAngle + 0.231_RKIND  
+         Avals(3) = -0.019_RKIND*chlorophyllA -0.003_RKIND*zenithAngle + 0.195_RKIND  
+         Avals(4) = -0.006_RKIND*chlorophyllA -0.004_RKIND*zenithAngle + 0.154_RKIND  
+         Kvals(1) = 0.066_RKIND*chlorophyllA + 0.006_RKIND*zenithAngle + 0.066_RKIND  
+         Kvals(2) = 0.396_RKIND*chlorophyllA -0.027_RKIND*zenithAngle + 0.866_RKIND  
+         Kvals(3) = 7.68_RKIND*chlorophyllA -2.49_RKIND*zenithAngle + 17.81_RKIND  
+         Kvals(4) = 51.27_RKIND*chlorophyllA + 13.14_RKIND*zenithAngle + 665.19_RKIND  
      endif
    
    end subroutine ocn_get_os00_coeffs!}}}
-     
-!***********************************************************************	
-    	
-    	
+
+!***********************************************************************
+
+
 !***********************************************************************
 !
 !  routine ocn_shortwave_forcing_write_restart
@@ -460,27 +460,26 @@ contains
 
 !
 !-----------------------------------------------------------------------   
-   	    	
+
    subroutine ocn_shortwave_forcing_write_restart(domain)!{{{
    
       type(domain_type) :: domain
-      
+
       character(len=strKind), pointer :: config_forcing_restart_file,   &
-      		config_sw_absorption_type
-      
-     
+                                         config_sw_absorption_type
+
+
       call MPAS_pool_get_config(domain % configs, "config_sw_absorption_type", config_sw_absorption_type)
-      
+
       if( trim(config_sw_absorption_type) == 'ohlmann00'  ) then
-      		call MPAS_pool_get_config(domain % configs, "config_forcing_restart_file", config_forcing_restart_file)
-      		
-      		call MPAS_forcing_write_restart_times(shortwaveForcingGroup, config_forcing_restart_file)
-      		
+          call MPAS_pool_get_config(domain % configs, "config_forcing_restart_file", config_forcing_restart_file)
+
+          call MPAS_forcing_write_restart_times(shortwaveForcingGroup, config_forcing_restart_file)
       endif
-      
+
     end subroutine ocn_shortwave_forcing_write_restart!}}}
-    
-    
+
+
 end module ocn_tracer_short_wave_absorption_variable
 
 
