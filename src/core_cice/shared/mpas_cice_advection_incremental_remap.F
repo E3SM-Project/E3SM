@@ -130,15 +130,6 @@ module cice_advection_incremental_remap
 !!   integer, parameter :: etestGlobal = 3473       ! test edge for spherical hex test case
 !!   integer, parameter :: vtestGlobal = 2585       ! test vertex for spherical hex test case
 
-   ! logic for conservation and monotonicity check
-   ! These could be turned off for production runs to reduce computation, but it is safer to leave them on.
-   logical, parameter :: conservationCheck = .true.  ! if true, check for exact conservation
-   logical, parameter :: monotonicityCheck = .true.  ! if true, check for tracer monotonicity
-
-   ! logic for verifying that reconstructed tracer fields recover the mean
-   ! If this is true once, it is generally true for all time, so this check is turned off by default
-   logical, parameter :: recoverTracerMeansCheck = .false.
-
    ! verbose options; set to true for extensive diagnostic output      
    ! WHL: I often debug with verboseInit/Run/Construct/Geometry/Fluxes/Global set to true.
 !   logical, parameter :: verboseInit = .true.
@@ -2355,6 +2346,10 @@ contains
 
     type (dm_info), pointer :: dminfo
 
+    logical, pointer :: &
+         configConservationCheck, & ! namelist configuration whether perform conservation check
+         configMonotonicityCheck    ! namelist configuration whether perform monotonicity check
+
     ! 1D fields (nVertices)
     type(field1DReal), pointer :: &
          uVelocityField, &
@@ -2440,7 +2435,8 @@ contains
     ! Optional check for conservation of mass and mass*tracer
     ! Note: This check must be done outside the block loop because it requires global sums
 
-    if (conservationCheck) then
+    call MPAS_pool_get_config(domain % configs, "config_conservation_check", configConservationCheck)
+    if (configConservationCheck) then
 
        call mpas_timer_start("incr remap tracer cons check")
        call check_tracer_conservation(dminfo, tracersHead)
@@ -2452,7 +2448,8 @@ contains
     ! Note: This check should be done outside the block loop because it requires a halo update.
     !       (However, monotonicity should hold in most cases without the halo update.)
 
-    if (monotonicityCheck) then
+    call MPAS_pool_get_config(domain % configs, "config_monotonicity_check", configMonotonicityCheck)
+    if (configMonotonicityCheck) then
 
        call mpas_timer_start("incr remap tracer mono check")
        call check_tracer_monotonicity(domain, tracersHead)
@@ -2679,6 +2676,11 @@ contains
 
     integer, parameter :: iCatTest = 1   ! category for which diagnostics are written
 
+    logical, pointer :: &
+         configConservationCheck, & ! namelist configuration whether perform conservation check
+         configMonotonicityCheck, & ! namelist configuration whether perform monotonicity check
+         configRecoverTracerMeansCheck       ! namelist configuration whether perform recover tracer means check
+
     if (present(timeLevelIn)) then
        timeLevel = timeLevelIn
     else
@@ -2821,7 +2823,8 @@ contains
          nCells,    &
          tracersHead)
 
-    if (monotonicityCheck) then
+    call MPAS_pool_get_config(block % configs, "config_monotonicity_check", configMonotonicityCheck)
+    if (configMonotonicityCheck) then
 
        if (verboseRun) write(stderrUnit,*) 'Compute local mins and maxes'
 
@@ -3017,7 +3020,8 @@ contains
     !  (using the center/xGrad/yGrad values found in construct_linear_tracer_fields).
     !------------------------------------------------------------------- 
 
-    if (recoverTracerMeansCheck) then
+    call MPAS_pool_get_config(block % configs, "config_recover_tracer_means_check", configRecoverTracerMeansCheck)
+    if (configRecoverTracerMeansCheck) then
 
        if (verboseRun) then
           write(stderrUnit,*) 'Recover tracer means'
@@ -3040,7 +3044,8 @@ contains
     ! Compute initial sums of mass*tracer over the locally owned cells
     !------------------------------------------------------------------- 
 
-    if (conservationCheck) then
+    call MPAS_pool_get_config(block % configs, "config_conservation_check", configConservationCheck)
+    if (configConservationCheck) then
 
        ! compute initial sums of mass*tracer
        call sum_tracers(&
@@ -3070,7 +3075,8 @@ contains
     ! Compute final sums of mass*tracer over the locally owned cells
     !------------------------------------------------------------------- 
 
-    if (conservationCheck) then
+    call MPAS_pool_get_config(block % configs, "config_conservation_check", configConservationCheck)
+    if (configConservationCheck) then
 
        ! compute new mass*tracer products
        call compute_mass_tracer_products(&
