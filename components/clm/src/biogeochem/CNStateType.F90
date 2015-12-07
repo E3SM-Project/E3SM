@@ -72,12 +72,12 @@ module CNStateType
      real(r8) , pointer :: fpi_p_vr_col                (:,:)   ! col fraction of potential immobilization (no units) 
      real(r8) , pointer :: fpi_p_col                   (:)     ! col fraction of potential immobilization (no units) 
      real(r8),  pointer :: fpg_p_col                   (:)     ! col fraction of potential gpp (no units)
-     real(r8) , pointer :: pdep_prof_col               (:,:)   ! col (1/m) profile for P deposition additions 
 
      real(r8) , pointer :: rf_decomp_cascade_col       (:,:,:) ! col respired fraction in decomposition step (frac)
      real(r8) , pointer :: pathfrac_decomp_cascade_col (:,:,:) ! col what fraction of C leaving a given pool passes through a given transition (frac) 
      real(r8) , pointer :: nfixation_prof_col          (:,:)   ! col (1/m) profile for N fixation additions 
-     real(r8) , pointer :: ndep_prof_col               (:,:)   ! col (1/m) profile for N fixation additions 
+     real(r8) , pointer :: ndep_prof_col               (:,:)   ! col (1/m) profile for N fixation additions
+     real(r8) , pointer :: pdep_prof_col               (:,:)   ! col (1/m) profile for P deposition additions 
      real(r8) , pointer :: som_adv_coef_col            (:,:)   ! col SOM advective flux (m/s) 
      real(r8) , pointer :: som_diffus_coef_col         (:,:)   ! col SOM diffusivity due to bio/cryo-turbation (m2/s) 
 
@@ -248,6 +248,7 @@ contains
 
     allocate(this%nfixation_prof_col  (begc:endc,1:nlevdecomp_full)) ; this%nfixation_prof_col  (:,:) = spval
     allocate(this%ndep_prof_col       (begc:endc,1:nlevdecomp_full)) ; this%ndep_prof_col       (:,:) = spval
+    allocate(this%pdep_prof_col       (begc:endc,1:nlevdecomp_full)) ; this%pdep_prof_col       (:,:) = spval
     allocate(this%som_adv_coef_col    (begc:endc,1:nlevdecomp_full)) ; this%som_adv_coef_col    (:,:) = spval
     allocate(this%som_diffus_coef_col (begc:endc,1:nlevdecomp_full)) ; this%som_diffus_coef_col (:,:) = spval
 
@@ -381,7 +382,7 @@ contains
 
     this%pdep_prof_col(begc:endc,:) = spval
     call hist_addfld_decomp (fname='PDEP_PROF', units='1/m',  type2d='levdcmp', &
-         avgflag='A', long_name='profile for P  deposition', &
+         avgflag='A', long_name='profile for atmospheric P  deposition', &
          ptr_col=this%pdep_prof_col, default='inactive')
 
     this%som_adv_coef_col(begc:endc,:) = spval
