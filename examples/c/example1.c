@@ -226,8 +226,8 @@ char err_buffer[MPI_MAX_ERROR_STRING];
 	niotasks = ntasks; 
 
 	/* Initialize the IO system. */
-	if ((ret = PIOc_Init_Intracomm(MPI_COMM_WORLD, niotasks, stride, optBase, PIO_REARR_SUBSET,
-				       &pio_io_system)))
+	if ((ret = PIOc_Init_Intracomm(MPI_COMM_WORLD, niotasks, stride, optBase,
+				       PIO_REARR_SUBSET, &pio_io_system)))
 	    ERR(ret);
 
 	/* Finalize the IO system. */

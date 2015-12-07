@@ -1,12 +1,9 @@
 /**
- * @file pioc.c
+ * @file 
  * @author Jim Edwards
  * @date  2014
  * @brief PIO C interface 
  *
- * 
- * 
- * 
  * @see http://code.google.com/p/parallelio/
  */
 
@@ -464,8 +461,12 @@ int PIOc_set_hint(const int iosysid, char hint[], const char hintval[])
 
 }
 
-/**
- ** @brief Clean up data structures and exit the pio library
+/** @ingroup PIO_finalize
+ * @brief Clean up data structures and exit the pio library.
+ *
+ * @param iosysid: the io system ID provided by PIOc_Init_Intracomm().
+ *
+ * @returns 0 for success or non-zero for error.
  */
 
 int PIOc_finalize(const int iosysid)
