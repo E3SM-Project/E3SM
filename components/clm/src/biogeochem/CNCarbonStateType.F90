@@ -9,6 +9,7 @@ module CNCarbonStateType
   use landunit_varcon        , only : istcrop 
   use clm_varctl             , only : iulog, use_vertsoilc, use_cndv, spinup_state 
   use decompMod              , only : bounds_type
+  use CNStateType            , only : cnstate_type
   use pftvarcon              , only : npcropmin
   use CNDecompCascadeConType , only : decomp_cascade_con
   use EcophysConType         , only : ecophyscon
@@ -59,6 +60,7 @@ module CNCarbonStateType
      real(r8), pointer :: rootc_col                (:)     ! col (gC/m2) root carbon at column level (fire)
      real(r8), pointer :: totvegc_col              (:)     ! col (gC/m2) column-level totvegc (fire)
      real(r8), pointer :: leafc_col                (:)     ! col (gC/m2) column-level leafc (fire)
+     real(r8), pointer :: deadstemc_col            (:)     ! col (gC/m2) column-level deadstemc (fire)
      real(r8), pointer :: fuelc_col                (:)     ! col fuel avalability factor for Reg.C (0-1)
      real(r8), pointer :: fuelc_crop_col           (:)     ! col fuel avalability factor for Reg.A (0-1)
 
@@ -119,7 +121,7 @@ module CNCarbonStateType
      procedure , public  :: ZeroDWT
      procedure , public  :: Restart
      procedure , public  :: Summary
-     procedure , private :: InitAllocate
+     procedure , private :: InitAllocate 
      procedure , private :: InitHistory  
      procedure , private :: InitCold     
 
@@ -212,6 +214,7 @@ contains
     allocate(this%rootc_col                (begc :endc))                   ;     this%rootc_col                (:)   = nan
     allocate(this%totvegc_col              (begc :endc))                   ;     this%totvegc_col              (:)   = nan
     allocate(this%leafc_col                (begc :endc))                   ;     this%leafc_col                (:)   = nan
+    allocate(this%deadstemc_col            (begc :endc))                   ;     this%deadstemc_col            (:)   = nan
     allocate(this%fuelc_col                (begc :endc))                   ;     this%fuelc_col                (:)   = nan
     allocate(this%fuelc_crop_col           (begc :endc))                   ;     this%fuelc_crop_col           (:)   = nan
     allocate(this%decomp_cpools_col        (begc :endc,1:ndecomp_pools))   ;     this%decomp_cpools_col        (:,:) = nan
@@ -1281,7 +1284,7 @@ contains
   end subroutine InitCold
 
   !-----------------------------------------------------------------------
-  subroutine Restart ( this,  bounds, ncid, flag, carbon_type, c12_carbonstate_vars )
+  subroutine Restart ( this,  bounds, ncid, flag, carbon_type, c12_carbonstate_vars, cnstate_vars)
     !
     ! !DESCRIPTION: 
     ! Read/write CN restart data for carbon state
@@ -1291,6 +1294,8 @@ contains
     use shr_const_mod    , only : SHR_CONST_PDB
     use clm_time_manager , only : is_restart, get_nstep
     use clm_varcon       , only : c13ratio, c14ratio
+    use clm_varctl       , only : spinup_mortality_factor, spinup_state
+
     use restUtilMod
     use ncdio_pio
     !
@@ -1301,6 +1306,8 @@ contains
     character(len=*)          , intent(in)           :: flag   !'read' or 'write'
     character(len=3)          , intent(in)           :: carbon_type ! 'c12' or 'c13' or 'c14'
     type (carbonstate_type)   , intent(in), optional :: c12_carbonstate_vars 
+    type (cnstate_type)       , intent(in)           :: cnstate_vars
+
     !
     ! !LOCAL VARIABLES:
     integer  :: i,j,k,l,c
@@ -1311,7 +1318,7 @@ contains
     real(r8) :: c4_r1               ! isotope ratio (13c/12c) for C4 photosynthesis
     real(r8) :: c3_r2               ! isotope ratio (13c/[12c+13c]) for C3 photosynthesis
     real(r8) :: c4_r2               ! isotope ratio (13c/[12c+13c]) for C4 photosynthesis
-    real(r8) :: m                   ! multiplier for the exit_spinup code
+    real(r8) :: m, m_veg            ! multiplier for the exit_spinup code
     real(r8), pointer :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
     real(r8), pointer :: ptr1d(:)   ! temp. pointers for slicing larger arrays
     character(len=128) :: varname   ! temporary
@@ -2667,16 +2674,27 @@ contains
                    errMsg(__FILE__, __LINE__))
            endif
            do k = 1, ndecomp_pools
-              if ( exit_spinup ) then
-                 m = decomp_cascade_con%spinup_factor(k)
-              else if ( enter_spinup ) then
-                 m = 1. / decomp_cascade_con%spinup_factor(k)
-              end if
               do c = bounds%begc, bounds%endc
                  do j = 1, nlevdecomp
+		    if ( exit_spinup ) then
+		      m = decomp_cascade_con%spinup_factor(k)
+                      if (decomp_cascade_con%spinup_factor(k) > 1) m = m / cnstate_vars%scalaravg_col(c)
+                    else if ( enter_spinup ) then 
+		      m = 1. / decomp_cascade_con%spinup_factor(k)
+		      if (decomp_cascade_con%spinup_factor(k) > 1) m = m * cnstate_vars%scalaravg_col(c)
+		    end if
                     this%decomp_cpools_vr_col(c,j,k) = this%decomp_cpools_vr_col(c,j,k) * m
                  end do
               end do
+           end do
+           do i = bounds%begp, bounds%endp
+              if (exit_spinup) then 
+                 m_veg = spinup_mortality_factor
+              else if (enter_spinup) then 
+                 m_veg = 1._r8 / spinup_mortality_factor
+              end if
+              this%deadstemc_patch(i)  = this%deadstemc_patch(i) * m_veg
+              this%deadcrootc_patch(i) = this%deadcrootc_patch(i) * m_veg
            end do
         end if
      end if
@@ -2757,6 +2775,7 @@ contains
        this%rootc_col(i)      = value_column
        this%totvegc_col(i)    = value_column
        this%leafc_col(i)      = value_column
+       this%deadstemc_col(i)  = value_column
        this%fuelc_col(i)      = value_column
        this%fuelc_crop_col(i) = value_column
        this%totlitc_1m_col(i) = value_column
