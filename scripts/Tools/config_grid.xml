@@ -49,6 +49,9 @@ Each grid is associated with five names
 <GRID sname="T62_tx1v1"   alias="T62_s11" compset="(DATM|XATM|SATM)">a%T62_l%T62_oi%tx1v1_r%rx1_m%tx1v1_g%null_w%null</GRID>
 <GRID sname="T62_tx0.1v2" alias="T62_t12" compset="(DATM|XATM|SATM)">a%T62_l%T62_oi%tx0.1v2_r%rx1_m%tx0.1v2_g%null_w%null</GRID>
 <GRID sname="T62_gx1v6"   alias="T62_g16" compset="(DATM|XATM|SATM)">a%T62_l%T62_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null</GRID>
+<GRID sname="T62_oQU480" alias="T62_m480" compset="(DATM|XATM|SATM)">a%T62_l%T62_oi%oQU480_r%rx1_m%oQU480_g%null_w%null</GRID>
+<GRID sname="T62_oQU240" alias="T62_m240" compset="(DATM|XATM|SATM)">a%T62_l%T62_oi%oQU240_r%rx1_m%oQU240_g%null_w%null</GRID>
+<GRID sname="T62_oQU120" alias="T62_m120" compset="(DATM|XATM|SATM)">a%T62_l%T62_oi%oQU120_r%rx1_m%oQU120_g%null_w%null</GRID>
 <GRID sname="T62_mpas120" alias="T62_m120" compset="(DATM|XATM|SATM)">a%T62_l%T62_oi%mpas120_r%rx1_m%mpas120_g%null_w%null</GRID>
 <GRID sname="T62_mpasgx1" alias="T62_mgx1" compset="(DATM|XATM|SATM)">a%T62_l%T62_oi%mpasgx1_r%rx1_m%mpasgx1_g%null_w%null</GRID>
 <GRID sname="T62_oEC60to30" alias="T62_oEC60to30" compset="(DATM|XATM|SATM)">a%T62_l%T62_oi%oEC60to30_r%rx1_m%oEC60to30_g%null_w%null</GRID>
@@ -372,6 +375,24 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <desc>mpasgx1 is a MPAS cice grid that is roughly 1 degree resolution:</desc>
 </gridhorz>
 
+<gridhorz name="oQU480">
+  <support_level>Experimental, under development</support_level>
+  <nx>1793</nx>  <ny>1</ny>  
+  <desc>oQU480 is an MPAS ocean mesh with quasi-uniform 480 km grid cells, nominally 4 degree resolution:</desc>
+</gridhorz>
+
+<gridhorz name="oQU240">
+  <support_level>Experimental, under development</support_level>
+  <nx>7153</nx>  <ny>1</ny>  
+  <desc>oQU240 is an MPAS ocean mesh with quasi-uniform 240 km grid cells, nominally 2 degree resolution:</desc>
+</gridhorz>
+
+<gridhorz name="oQU120">
+  <support_level>Experimental, under development</support_level>
+  <nx>28574</nx>  <ny>1</ny>  
+  <desc>oQU120 is an MPAS ocean mesh with quasi-uniform 120 km grid cells, nominally 1 degree resolution:</desc>
+</gridhorz>
+
 <gridhorz name="mpas120">
   <support_level>Experimental, under development</support_level>
   <nx>28574</nx>  <ny>1</ny>  
@@ -381,7 +402,7 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <gridhorz name="oEC60to30">
   <support_level>Experimental, under development</support_level>
   <nx>234988</nx>  <ny>1</ny>  
-  <desc>oEC60to30 is a MPAS ocean grid generated with the eddy closure density function that is roughly comparable to the pop 1 degree resolution:</desc>
+  <desc>oEC60to30 is a MPAS ocean grid generated with the eddy closure density function, with 30 km gridcells at the equator, 60 km at mid-latitudes, and 35 km at high latitudes.  It is roughly comparable to the POP 1 degree resolution:</desc>
 </gridhorz>
 
 <gridhorz name="oRRS30to10">
@@ -515,6 +536,21 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <griddom grid="mp120v1" mask="mp120v1">
   <ICE_DOMAIN_FILE>domain.ocn.mp120v1.111018.nc</ICE_DOMAIN_FILE>
   <OCN_DOMAIN_FILE>domain.ocn.mp120v1.111018.nc</OCN_DOMAIN_FILE>
+</griddom>
+
+<griddom grid="oQU480" mask="oQU480">
+  <ICE_DOMAIN_FILE>domain.ocn.oQU480.151209.nc</ICE_DOMAIN_FILE>
+  <OCN_DOMAIN_FILE>domain.ocn.oQU480.151209.nc</OCN_DOMAIN_FILE>
+</griddom>
+
+<griddom grid="oQU240" mask="oQU240">
+  <ICE_DOMAIN_FILE>domain.ocn.oQU240.151209.nc</ICE_DOMAIN_FILE>
+  <OCN_DOMAIN_FILE>domain.ocn.oQU240.151209.nc</OCN_DOMAIN_FILE>
+</griddom>
+
+<griddom grid="oQU120" mask="oQU120">
+  <ICE_DOMAIN_FILE>domain.ocn.oQU120.151209.nc</ICE_DOMAIN_FILE>
+  <OCN_DOMAIN_FILE>domain.ocn.oQU120.151209.nc</OCN_DOMAIN_FILE>
 </griddom>
 
 <griddom grid="mpas120" mask="mpas120">
@@ -1162,6 +1198,21 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <LND_DOMAIN_FILE>domain.lnd.T62_mpasgx1.150903.nc</LND_DOMAIN_FILE>
 </griddom>
 
+<griddom grid="T62" mask="oQU480"> <!--- datm/slnd/drof only -->
+  <ATM_DOMAIN_FILE>domain.lnd.T62_oQU480.151209.nc</ATM_DOMAIN_FILE>
+  <LND_DOMAIN_FILE>domain.lnd.T62_oQU480.151209.nc</LND_DOMAIN_FILE>
+</griddom>
+
+<griddom grid="T62" mask="oQU240"> <!--- datm/slnd/drof only -->
+  <ATM_DOMAIN_FILE>domain.lnd.T62_oQU240.151209.nc</ATM_DOMAIN_FILE>
+  <LND_DOMAIN_FILE>domain.lnd.T62_oQU240.151209.nc</LND_DOMAIN_FILE>
+</griddom>
+
+<griddom grid="T62" mask="oQU120"> <!--- datm/slnd/drof only -->
+  <ATM_DOMAIN_FILE>domain.lnd.T62_oQU120.151209.nc</ATM_DOMAIN_FILE>
+  <LND_DOMAIN_FILE>domain.lnd.T62_oQU120.151209.nc</LND_DOMAIN_FILE>
+</griddom>
+
 <griddom grid="T62" mask="mpas120"> <!--- datm/slnd/drof only -->
   <ATM_DOMAIN_FILE>domain.lnd.T62_mpas120.121116.nc</ATM_DOMAIN_FILE>
   <LND_DOMAIN_FILE>domain.lnd.T62_mpas120.121116.nc</LND_DOMAIN_FILE>
@@ -1207,6 +1258,30 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <ATM2OCN_VMAPNAME>cpl/cpl6/map_T62_to_tx0.1v2_bilin_da_090220.nc</ATM2OCN_VMAPNAME>
   <OCN2ATM_FMAPNAME>cpl/cpl6/map_tx0.1v2_to_T62_aave_da_090220.nc</OCN2ATM_FMAPNAME>
   <OCN2ATM_SMAPNAME>cpl/cpl6/map_tx0.1v2_to_T62_aave_da_090220.nc</OCN2ATM_SMAPNAME>
+</gridmap>
+
+<gridmap atm_grid="T62" ocn_grid="oQU480">
+  <ATM2OCN_FMAPNAME>cpl/gridmaps/T62/map_T62_TO_oQU480_aave.151209.nc</ATM2OCN_FMAPNAME>
+  <ATM2OCN_SMAPNAME>cpl/gridmaps/T62/map_T62_TO_oQU480_blin.151209.nc</ATM2OCN_SMAPNAME>
+  <ATM2OCN_VMAPNAME>cpl/gridmaps/T62/map_T62_TO_oQU480_patc.151209.nc</ATM2OCN_VMAPNAME>
+  <OCN2ATM_FMAPNAME>cpl/gridmaps/oQU480/map_oQU480_TO_T62_aave.151209.nc</OCN2ATM_FMAPNAME>
+  <OCN2ATM_SMAPNAME>cpl/gridmaps/oQU480/map_oQU480_TO_T62_aave.151209.nc</OCN2ATM_SMAPNAME>
+</gridmap>
+
+<gridmap atm_grid="T62" ocn_grid="oQU240">
+  <ATM2OCN_FMAPNAME>cpl/gridmaps/T62/map_T62_TO_oQU240_aave.151209.nc</ATM2OCN_FMAPNAME>
+  <ATM2OCN_SMAPNAME>cpl/gridmaps/T62/map_T62_TO_oQU240_blin.151209.nc</ATM2OCN_SMAPNAME>
+  <ATM2OCN_VMAPNAME>cpl/gridmaps/T62/map_T62_TO_oQU240_patc.151209.nc</ATM2OCN_VMAPNAME>
+  <OCN2ATM_FMAPNAME>cpl/gridmaps/oQU240/map_oQU240_TO_T62_aave.151209.nc</OCN2ATM_FMAPNAME>
+  <OCN2ATM_SMAPNAME>cpl/gridmaps/oQU240/map_oQU240_TO_T62_aave.151209.nc</OCN2ATM_SMAPNAME>
+</gridmap>
+
+<gridmap atm_grid="T62" ocn_grid="oQU120">
+  <ATM2OCN_FMAPNAME>cpl/gridmaps/T62/map_T62_TO_oQU120_aave.151209.nc</ATM2OCN_FMAPNAME>
+  <ATM2OCN_SMAPNAME>cpl/gridmaps/T62/map_T62_TO_oQU120_blin.151209.nc</ATM2OCN_SMAPNAME>
+  <ATM2OCN_VMAPNAME>cpl/gridmaps/T62/map_T62_TO_oQU120_patc.151209.nc</ATM2OCN_VMAPNAME>
+  <OCN2ATM_FMAPNAME>cpl/gridmaps/oQU120/map_oQU120_TO_T62_aave.151209.nc</OCN2ATM_FMAPNAME>
+  <OCN2ATM_SMAPNAME>cpl/gridmaps/oQU120/map_oQU120_TO_T62_aave.151209.nc</OCN2ATM_SMAPNAME>
 </gridmap>
 
 <gridmap atm_grid="T62" ocn_grid="mpas120">
@@ -1475,6 +1550,15 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 </gridmap>
 <gridmap rof_grid="rx1" ocn_grid="mpasgx1" >
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_mpasgx1_nn_150910.nc</ROF2OCN_RMAPNAME>
+</gridmap>
+<gridmap rof_grid="rx1" ocn_grid="oQU480" >
+  <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_oQU480_nn_151209.nc</ROF2OCN_RMAPNAME>
+</gridmap>
+<gridmap rof_grid="rx1" ocn_grid="oQU240" >
+  <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_oQU240_nn_151209.nc</ROF2OCN_RMAPNAME>
+</gridmap>
+<gridmap rof_grid="rx1" ocn_grid="oQU120" >
+  <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_oQU120_nn_151209.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 <gridmap rof_grid="rx1" ocn_grid="mpas120" >
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_mpas120_nn_131217.nc</ROF2OCN_RMAPNAME>
