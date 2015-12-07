@@ -41,6 +41,9 @@
 <config_1dCVTgenerator_dzSeed>1.2</config_1dCVTgenerator_dzSeed>
 
 <!-- time_integration -->
+<config_dt ocn_grid="oQU480">'01:00:00'</config_dt>
+<config_dt ocn_grid="oQU240">'01:00:00'</config_dt>
+<config_dt ocn_grid="oQU120">'00:30:00'</config_dt>
 <config_dt ocn_grid="mpas120">'00:30:00'</config_dt>
 <config_dt ocn_grid="oEC60to30">'00:20:00'</config_dt>
 <config_dt ocn_grid="oRRS30to10" >'00:06:00'</config_dt>
@@ -69,6 +72,9 @@
 <config_check_ssh_consistency>.true.</config_check_ssh_consistency>
 
 <!-- hmix -->
+<config_hmix_scaleWithMesh ocn_grid="oQU480">.false.</config_hmix_scaleWithMesh>
+<config_hmix_scaleWithMesh ocn_grid="oQU240">.false.</config_hmix_scaleWithMesh>
+<config_hmix_scaleWithMesh ocn_grid="oQU120">.false.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="mpas120">.false.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oEC60to30">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS30to10">.true.</config_hmix_scaleWithMesh>
@@ -84,6 +90,9 @@
 <!-- hmix_del4 -->
 <config_use_mom_del4>.true.</config_use_mom_del4>
 <config_use_tracer_del4>.false.</config_use_tracer_del4>
+<config_mom_del4 ocn_grid="oQU480">1.6e15</config_mom_del4>
+<config_mom_del4 ocn_grid="oQU240">2.0e14</config_mom_del4>
+<config_mom_del4 ocn_grid="oQU120">2.6e13</config_mom_del4>
 <config_mom_del4 ocn_grid="mpas120">5.0e12</config_mom_del4>
 <config_mom_del4 ocn_grid="oEC60to30">4.0e11</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS30to10">1.5e10</config_mom_del4>
