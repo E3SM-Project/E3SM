@@ -432,32 +432,6 @@
     We will not document this further in this guide.</desc>
   </entry> 
 
-  <entry id="DOUT_S_SAVE_DATES_RESTART_FILE_SET"> 
-    <type>string</type>
-    <default_value>all</default_value>
-    <group>run_data_archive</group>
-    <file>env_run.xml</file>
-    <desc>Comma separated List with dates of the month to save restart file sets in the $DOUT_S_ROOT/$CASE/rest directory.
-      If one of the list elements is last, then it saves the last day of the month where the date is 28,29,30 or 31 
-      depending on the month. For example, if the list contains 10,20,last, then the corresponding restart sets
-      saved in $DOUT_S_ROOT/$CASE/rest are 2016-01-10-00000, 2016-01-20-00000, 2016-01-31-00000 for January and
-      2016-02-10-00000, 2016-02-20-00000, 2016-02-29-00000 for February due to 2016 being a leap year. 
-      If the list is set to none, then all restart sets are deleted.
-      If the list is set to all (default), then all restart sets are saved.
-      This variable is used by the clobber_archive script to selectively delete files in the short-term archive locations.</desc>
-  </entry> 
-
-  <entry id="DOUT_S_CREATE_LINKED_ARCHIVE"> 
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>TRUE</default_value>
-    <group>run_data_archive</group>
-    <file>env_run.xml</file>
-    <desc>Logical to save contents of the short term archive on disk.
-      If TRUE, create hardlinks from the short term archive $DOUT_S_ROOT/archive.locked/$CASE
-      directory to the $DOUT_S_ROOT/archive/$CASE directory.</desc>
-  </entry> 
-
   <entry id="DOUT_L_MS"> 
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
