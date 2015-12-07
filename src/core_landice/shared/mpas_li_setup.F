@@ -157,11 +157,13 @@ contains
       real (kind=RKIND), dimension(:), pointer :: layerThicknessFractions, layerCenterSigma, layerInterfaceSigma
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness1, layerThickness2
+      logical, pointer :: config_do_restart
       ! Truly locals
       integer :: k
       real (kind=RKIND) :: fractionTotal
 
       ! Get pool stuff
+      call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       ! layerThicknessFractions is provided by input
       call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
@@ -173,6 +175,7 @@ contains
 
       ! Check that layerThicknessFractions are valid
       ! TODO - switch to having the user input the sigma levels instead???
+      if (.not. config_do_restart) then   ! This would be applied an additional time on each restart, messing up the vertical levels (very, very slightly)
       fractionTotal = sum(layerThicknessFractions)
       if (fractionTotal /= 1.0_RKIND) then
          if (abs(fractionTotal - 1.0_RKIND) > 0.001_RKIND) then
@@ -181,6 +184,7 @@ contains
          end if
          write (stdoutUnit,*) 'Adjusting upper layerThicknessFrac by small amount because sum of layerThicknessFractions is slightly different from 1.0.'
          layerThicknessFractions(1) = layerThicknessFractions(1) - (fractionTotal - 1.0_RKIND)
+      endif
       endif
 
       ! layerCenterSigma is the fractional vertical position (0-1) of each layer center, with 0.0 at the ice surface and 1.0 at the ice bed
