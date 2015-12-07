@@ -1226,6 +1226,8 @@
 			<var_array name="vertNonLocalFlux"/>
 			<var name="effectiveDensityInLandIce"/>
 			<var_struct name="ecosysAuxiliary"/>
+			<var name="accumulatedFrazilIceMass"/>
+			<var name="frazilSurfacePressure"/>
 		</stream>
 
 		<stream name="output" 
