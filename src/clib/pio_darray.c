@@ -1,14 +1,10 @@
 /** @file
  * 
- * @brief This file contains the routines that read and write
- * distributed arrays in PIO. 
- *
- * When arrays are distributed, each processor holds some of the
- * array. Only by combining the distributed arrays from all processor
- * can the full array be obtained.
+ *  @brief This file contains the routines that read and write
+ *  distributed arrays in PIO.
  *  
- * @author Jim Edwards
- * @bug No Known bugs
+ *  @author Jim Edwards
+ *  @bug No Known bugs
  */
 
 #include <pio.h>
@@ -748,32 +744,20 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 
  }
 
+#ifdef PIO_WRITE_BUFFERING
 /** @brief Write a distributed array to the output file. 
  *  @ingroup PIO_write_darray
  *
- *  This routine aggregates output on the compute nodes and only sends
- *  it to the IO nodes when the compute buffer is full or when a flush
- *  is triggered.
+ *  This routine aggregates output on the compute nodes and only sends it to the IO nodes when the
+ *  compute buffer is full or when a flush is triggered.  
  *
  *   @param[in] ncid: the ncid of the open netCDF file.
- *   @param[in] vid: the variable ID returned by PIOc_def_var().
- *   @param[in] ioid: the I/O description ID as passed back by
- *   PIOc_InitDecomp().
-
- *   @param[in] arraylen: the length of the array to be written. This
- *   is the length of the distrubited array. That is, the length of
- *   the portion of the data that is on the processor.
-
- *   @param[in] array: pointer to the data to be written. This is a
- *   pointer to the distributed portion of the array that is on this
- *   processor.
-
- *   @param[in] fillvalue: pointer to the fill value to be used for
- *   missing data.
- *
- * @returns 0 for success, non-zero error code for failure.
+ *   @param[in] vid: the variable ID.
+ *   @param[in] ioid: 
+ *   @param[in] arraylen: the length of the array to be written.
+ *   @param[in] array: pointer to the data to be written.
+ *   @param[in] fillvalue: pointer to the fill value to be used for missing data.
  */ 
-#ifdef PIO_WRITE_BUFFERING
  int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_Offset arraylen, void *array, void *fillvalue)
  {
    iosystem_desc_t *ios;
@@ -975,6 +959,13 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
  
  }
 #else
+
+/** @brief Write a distributed array to the output file 
+ *  @ingroup PIO_write_darray
+ *
+ *  This version of the routine does not buffer, all data is communicated to the io tasks 
+ *  before the routine returns
+ */
  int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_Offset arraylen, void *array, void *fillvalue)
  {
    iosystem_desc_t *ios;
