@@ -417,11 +417,9 @@ class CreateTest(object):
 
             try:
                 statuses = wait_for_tests.parse_test_status_file(test_status_file)[0]
-                if (RUN_PHASE not in statuses):
+                if ( RUN_PHASE not in statuses or
+                     statuses[RUN_PHASE] in [TEST_PASS_STATUS, TEST_PENDING_STATUS] ):
                     self._update_test_status_file(test_name)
-                elif (statuses[RUN_PHASE] in [TEST_PASS_STATUS, TEST_PENDING_STATUS]):
-                    self._log_output(test_name,
-                                     "VERY BAD! How was infrastructure able to log a TestState but not change it to FAIL?")
 
             except Exception as e:
                 self._log_output(test_name, "VERY BAD! Could not read TestStatus file '%s': '%s'" % (test_status_file, str(e)))
