@@ -1,6 +1,5 @@
 #ifndef __PIO_INTERNAL__
 #define __PIO_INTERNAL__
-#include <config.h>
 #include <pio.h>
 // It seems that some versions of openmpi fail to define MPI_OFFSET
 #ifdef OMPI_OFFSET_DATATYPE

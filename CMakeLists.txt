@@ -17,14 +17,7 @@ option (PIO_ENABLE_TIMING    "Enable the use of the GPTL timing library"    ON)
 option (PIO_TEST_BIG_ENDIAN  "Enable test to see if machine is big endian"  ON)
 option (PIO_USE_MPIIO        "Enable support for MPI-IO auto detect"        ON)
 option (PIO_USE_MPISERIAL    "Enable mpi-serial support (instead of MPI)"   OFF)
-option (PIO_USE_MALLOC       "Use native malloc (instead of bget package)"  OFF)
 option (WITH_PNETCDF         "Require the use of PnetCDF"                   ON)
-
-if(PIO_USE_MALLOC)
-  set(USE_MALLOC 1)
-else()
-  set(USE_MALLOC 0)
-endif()
 
 #===== Library Variables =====
 set (PIO_FILESYSTEM_HINTS IGNORE CACHE STRING "Filesystem hints (lustre or gpfs)")
@@ -101,13 +94,6 @@ if (CMAKE_Fortran_COMPILER_NAME STREQUAL "XL")
 endif ()
 set (CMAKE_Fortran_COMPILER_DIRECTIVE "CPR${CMAKE_Fortran_COMPILER_NAME}"
      CACHE STRING "Fortran compiler name preprocessor directive")
-
-# configure a header file to pass some of the CMake settings
-# to the source code
-configure_file (
-  "${PROJECT_SOURCE_DIR}/src/clib/config.h.in"
-  "${PROJECT_BINARY_DIR}/src/clib/config.h"
-  )
 
 #==============================================================================
 #  INCLUDE SOURCE DIRECTORIES
