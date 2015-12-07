@@ -97,7 +97,7 @@ program mkatmsrffile
   call openfile_and_initdecomp(iosystem, atmfilename, npes, iam, gsmap_atm, atmnx, atmnxg)
 
  
-  call shr_mct_queryConfigFile(MPI_COMM_WORLD, "mkatmsrffile.rc",
+  call shr_mct_queryConfigFile(MPI_COMM_WORLD, "mkatmsrffile.rc", &
        "srf2atmFmapname:",mapname,"srf2atmFmaptype:",maptype)
     
   call shr_mct_sMatPInitnc(sMatP,gsmap_srf, gsmap_atm, &
@@ -244,7 +244,7 @@ program mkatmsrffile
      do j=1,npft
         total_land=total_land+apft(j)%fld(i)
      end do
-     fraction_soilw = total_land - (alake(i)+wetland(i))
+     fraction_soilw = total_land - (alake(i)+awetland(i))
      if(total_land < 1.0_r8) then
         alake(i) = alake(i) + (1.0_r8 - total_land)
      end if
