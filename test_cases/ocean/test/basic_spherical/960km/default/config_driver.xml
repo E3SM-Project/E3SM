@@ -1,0 +1,5 @@
+<driver_script name="run_test.py">
+	<case name="test">
+		<step executable="./run.py"/>
+	</case>
+</driver_script>
