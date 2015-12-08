@@ -9,7 +9,8 @@ module CNAllocationMod
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use clm_varcon          , only : dzsoi_decomp
-  use clm_varctl          , only : use_c13, use_c14, use_nitrif_denitrif
+  use clm_varctl          , only : use_c13, use_c14, use_nitrif_denitrif, spinup_state
+  use clm_varctl          , only : nyears_ad_carbon_only
   use abortutils          , only : endrun
   use decompMod           , only : bounds_type
   use subgridAveMod       , only : p2c
@@ -174,7 +175,7 @@ contains
     !
     ! !USES:
     use clm_varcon      , only: secspday
-    use clm_time_manager, only: get_step_size
+    use clm_time_manager, only: get_step_size, get_curr_date
     use clm_varpar      , only: crop_prog
     use clm_varctl      , only: iulog, cnallocate_carbon_only_set
     use clm_varctl      , only: cnallocate_carbonnitrogen_only_set
@@ -188,6 +189,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     character(len=32) :: subname = 'CNAllocationInit'
+    integer :: yr, mon, day, sec
     logical :: carbon_only
     logical :: carbonnitrogen_only
     logical :: carbonphosphorus_only
@@ -264,6 +266,11 @@ contains
         nu_com_phosphatase = .false.
     end if
     
+    call get_curr_date(yr, mon, day, sec)
+    if (spinup_state == 1 .and. yr .le. nyears_ad_carbon_only) then
+      Carbon_only = .true.
+     end if
+
     call cnallocate_carbon_only_set(carbon_only)
     call cnallocate_carbonnitrogen_only_set(carbonnitrogen_only)
     call cnallocate_carbonphosphorus_only_set(carbonphosphorus_only)
@@ -285,9 +292,9 @@ contains
     use pftvarcon        , only: arooti, fleafi, allconsl, allconss, grperc, grpnow, nsoybean
     use clm_varpar       , only: nlevdecomp
     use clm_varcon       , only: nitrif_n2o_loss_frac, secspday
+    use clm_varctl       , only: cnallocate_carbon_only_set
 !    use landunit_varcon  , only: istsoil, istcrop
-    use clm_time_manager , only: get_step_size
-
+    use clm_time_manager , only: get_step_size, get_curr_date
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -356,6 +363,7 @@ contains
     real(r8) cng                                                     !C:N ratio for grain (= cnlw for now; slevis)
     real(r8) fleaf                                                   !fraction allocated to leaf
     real(r8) t1                                                      !temporary variable
+    integer :: yr, mon, day, sec
 
     !! Local P variables
     real(r8):: cpl,cpfr,cplw,cpdw,cpg                                    !C:N ratios for leaf, fine root, and wood
@@ -643,8 +651,13 @@ contains
 
       ! set time steps
       dt = real( get_step_size(), r8 )
-      
-      ! loop over patches to assess the total plant N demand and P demand
+
+      call get_curr_date(yr, mon, day, sec)
+      if (spinup_state == 1 .and. yr .gt. nyears_ad_carbon_only) then 
+        call cnallocate_carbon_only_set(.false.)
+      end if
+
+     ! loop over patches to assess the total plant N demand and P demand
       do fp=1,num_soilp
          p = filter_soilp(fp)
 

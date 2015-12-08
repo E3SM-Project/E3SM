@@ -859,7 +859,8 @@ contains
   end subroutine InitCold
 
   !-----------------------------------------------------------------------
-  subroutine Restart ( this,  bounds, ncid, flag )
+  subroutine Restart ( this,  bounds, ncid, flag, cnstate_vars)
+
     !
     ! !DESCRIPTION: 
     ! Read/write CN restart data for carbon state
@@ -867,13 +868,16 @@ contains
     ! !USES:
     use shr_infnan_mod      , only : isnan => shr_infnan_isnan, nan => shr_infnan_nan, assignment(=)
     use clm_time_manager    , only : is_restart, get_nstep
+    use clm_varctl          , only : spinup_mortality_factor
+    use CNStateType         , only : cnstate_type
     use restUtilMod
     use ncdio_pio
     !
     ! !ARGUMENTS:
     class (phosphorusstate_type) :: this
     type(bounds_type)          , intent(in)    :: bounds 
-    type(file_desc_t)          , intent(inout) :: ncid
+    type(file_desc_t)          , intent(inout) :: ncid   
+    type(cnstate_type)         , intent(in)    :: cnstate_vars
     character(len=*)           , intent(in)    :: flag   !'read' or 'write' or 'define'
     !
     ! !LOCAL VARIABLES:
@@ -882,7 +886,7 @@ contains
     integer            :: idata
     logical            :: exit_spinup = .false.
     logical            :: enter_spinup = .false.
-    real(r8)           :: m          ! multiplier for the exit_spinup code
+    real(r8)           :: m, m_veg         ! multiplier for the exit_spinup code
     real(r8), pointer  :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
     real(r8), pointer  :: ptr1d(:)   ! temp. pointers for slicing larger arrays
     character(len=128) :: varname    ! temporary
@@ -1243,17 +1247,30 @@ contains
                errMsg(__FILE__, __LINE__))
        endif
        do k = 1, ndecomp_pools
-          if ( exit_spinup ) then
-             m = decomp_cascade_con%spinup_factor(k)
-          else if ( enter_spinup ) then
-             m = 1. / decomp_cascade_con%spinup_factor(k)
-          end if
           do c = bounds%begc, bounds%endc
-             do j = 1, nlevdecomp
-                this%decomp_ppools_vr_col(c,j,k) = this%decomp_ppools_vr_col(c,j,k) * m
+            do j = 1, nlevdecomp
+	       if ( exit_spinup ) then
+		 m = decomp_cascade_con%spinup_factor(k)
+                 if (decomp_cascade_con%spinup_factor(k) > 1) m = m  / cnstate_vars%scalaravg_col(c)
+               else if ( enter_spinup ) then 
+                 m = 1. / decomp_cascade_con%spinup_factor(k)
+		 if (decomp_cascade_con%spinup_factor(k) > 1) m = m  * cnstate_vars%scalaravg_col(c)
+               end if 
+               this%decomp_ppools_vr_col(c,j,k) = this%decomp_ppools_vr_col(c,j,k) * m
              end do
           end do
        end do
+
+       do i = bounds%begp, bounds%endp
+          if (exit_spinup) then
+             m_veg = spinup_mortality_factor
+          else if (enter_spinup) then
+             m_veg = 1._r8 / spinup_mortality_factor
+          end if
+          this%deadstemp_patch(i)  = this%deadstemp_patch(i) * m_veg
+          this%deadcrootp_patch(i) = this%deadcrootp_patch(i) * m_veg
+       end do
+
     end if
 
   end subroutine Restart

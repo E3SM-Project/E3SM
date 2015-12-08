@@ -47,9 +47,10 @@ module CNFireMod
   use ColumnType             , only : col                
   use PatchType              , only : pft                
   use mct_mod
-
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
+  use CNSharedParamsMod      , only : CNParamsShareInst
+
   !
   implicit none
   save
@@ -125,7 +126,7 @@ contains
     use clm_time_manager, only: get_step_size, get_days_per_year, get_curr_date, get_nstep
     use clm_varpar      , only: max_patch_per_col
     use clm_varcon      , only: secspday
-    use clm_varctl      , only: flanduse_timeseries, use_nofire
+    use clm_varctl      , only: flanduse_timeseries, use_nofire, spinup_state, spinup_mortality_factor
     use pftvarcon       , only: nc4_grass, nc3crop, ndllf_evr_tmp_tree
     use pftvarcon       , only: nbrdlf_evr_trp_tree, nbrdlf_dcd_trp_tree, nbrdlf_evr_shrub
     !
@@ -245,11 +246,13 @@ contains
          leafc              =>    carbonstate_vars%leafc_patch              , & ! Input:  [real(r8) (:)     ]  (gC/m2) leaf C                                    
          leafc_storage      =>    carbonstate_vars%leafc_storage_patch      , & ! Input:  [real(r8) (:)     ]  (gC/m2) leaf C storage                            
          leafc_xfer         =>    carbonstate_vars%leafc_xfer_patch         , & ! Input:  [real(r8) (:)     ]  (gC/m2) leaf C transfer                           
+         deadstemc          =>    carbonstate_vars%deadstemc_patch          , & ! Input:[real(r8) (:)       ]  (gC/m2) dead stem C             
          totlitc            =>    carbonstate_vars%totlitc_col              , & ! Input:  [real(r8) (:)     ]  (gC/m2) total lit C (column-level mean)           
          decomp_cpools_vr   =>    carbonstate_vars%decomp_cpools_vr_col     , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  VR decomp. (litter, cwd, soil)
          rootc_col          =>    carbonstate_vars%rootc_col                , & ! Output: [real(r8) (:)     ]  root carbon                                       
          totvegc_col        =>    carbonstate_vars%totvegc_col              , & ! Output: [real(r8) (:)     ]  totvegc at column level                           
          leafc_col          =>    carbonstate_vars%leafc_col                , & ! Output: [real(r8) (:)     ]  leaf carbon at column level                       
+         deadstemc_col      =>    carbonstate_vars%deadstemc_col            , & ! Output: [real(r8) (:)     ] dead stem carbon at column level
          fuelc              =>    carbonstate_vars%fuelc_col                , & ! Output: [real(r8) (:)     ]  fuel avalability factor for Reg.C                 
          fuelc_crop         =>    carbonstate_vars%fuelc_crop_col             & ! Output: [real(r8) (:)     ]  fuel avalability factor for Reg.A                 
          )
@@ -272,6 +275,10 @@ contains
       call p2c(bounds, num_soilc, filter_soilc, &
            leafc(bounds%begp:bounds%endp), &
            leafc_col(bounds%begc:bounds%endc))
+     
+      call p2c(bounds, num_soilc, filter_soilc, &
+           deadstemc(bounds%begp:bounds%endp), &
+           deadstemc_col(bounds%begc:bounds%endc))
 
      call get_curr_date (kyr, kmo, kda, mcsec)
      dayspyr = get_days_per_year()
@@ -557,8 +564,17 @@ contains
               farea_burned(c)=min(1.0_r8,baf_crop(c)+baf_peatf(c))
            else
               fuelc(c) = totlitc(c)+totvegc_col(c)-rootc_col(c)-fuelc_crop(c)*cropf_col(c)
-              do j = 1, nlevdecomp  
-                 fuelc(c) = fuelc(c)+decomp_cpools_vr(c,j,i_cwd) * dzsoi_decomp(j)
+              if (spinup_state == 1) fuelc(c) = fuelc(c) + ((spinup_mortality_factor - 1._r8)*deadstemc_col(c))
+              do j = 1, nlevdecomp 
+                if (spinup_state == 1 .and. kyr < 40) then 
+                  fuelc(c) = fuelc(c)+decomp_cpools_vr(c,j,i_cwd) *dzsoi_decomp(j) * &
+                    decomp_cascade_con%spinup_factor(i_cwd) 
+                else if (spinup_state == 1 .and. kyr >= 40) then 
+                  fuelc(c) = fuelc(c)+decomp_cpools_vr(c,j,i_cwd) *dzsoi_decomp(j) * &
+                    decomp_cascade_con%spinup_factor(i_cwd) / cnstate_vars%scalaravg_col(c)
+                else  
+                  fuelc(c) = fuelc(c)+decomp_cpools_vr(c,j,i_cwd) * dzsoi_decomp(j)
+                end if 
               end do
               fuelc(c) = fuelc(c)/(1._r8-cropf_col(c))
               fb       = max(0.0_r8,min(1.0_r8,(fuelc(c)-lfuel)/(ufuel-lfuel)))
@@ -652,7 +668,8 @@ contains
    use pftvarcon        , only: nc3crop,lf_flab,lf_fcel,lf_flig,fr_flab,fr_fcel,fr_flig
    use clm_time_manager , only: get_step_size,get_days_per_year,get_curr_date
    use clm_varpar       , only: max_patch_per_col
-   use clm_varctl       , only: flanduse_timeseries, use_cndv
+   use clm_varctl       , only: flanduse_timeseries, use_cndv, spinup_state, spinup_mortality_factor
+
    use clm_varcon       , only: secspday
    !
    ! !ARGUMENTS:
@@ -673,6 +690,7 @@ contains
    !
    ! !LOCAL VARIABLES:
    integer :: g,c,p,j,l,pi,kyr, kmo, kda, mcsec   ! indices
+   real(r8):: m_veg                ! speedup factor for accelerated decomp
    integer :: fp,fc                ! filter indices
    real(r8):: f                    ! rate for fire effects (1/s)
    real(r8):: dt                   ! time step variable (s)
@@ -962,13 +980,16 @@ contains
         ! apply this rate to the pft state variables to get flux rates
         ! biomass burning
         ! carbon fluxes
+
+	m_veg = 1.0_r8
+        if (spinup_state == 1) m_veg = spinup_mortality_factor
         m_leafc_to_fire(p)               =  leafc(p)              * f * cc_leaf(pft%itype(p))
         m_leafc_storage_to_fire(p)       =  leafc_storage(p)      * f * cc_other(pft%itype(p))
         m_leafc_xfer_to_fire(p)          =  leafc_xfer(p)         * f * cc_other(pft%itype(p))
         m_livestemc_to_fire(p)           =  livestemc(p)          * f * cc_lstem(pft%itype(p))
         m_livestemc_storage_to_fire(p)   =  livestemc_storage(p)  * f * cc_other(pft%itype(p))
         m_livestemc_xfer_to_fire(p)      =  livestemc_xfer(p)     * f * cc_other(pft%itype(p))
-        m_deadstemc_to_fire(p)           =  deadstemc(p)          * f * cc_dstem(pft%itype(p))
+        m_deadstemc_to_fire(p)           =  deadstemc(p)          * m_veg * f * cc_dstem(pft%itype(p))
         m_deadstemc_storage_to_fire(p)   =  deadstemc_storage(p)  * f * cc_other(pft%itype(p))
         m_deadstemc_xfer_to_fire(p)      =  deadstemc_xfer(p)     * f * cc_other(pft%itype(p))
         m_frootc_to_fire(p)              =  frootc(p)             * f * 0._r8
@@ -977,7 +998,7 @@ contains
         m_livecrootc_to_fire(p)          =  livecrootc(p)         * f * 0._r8
         m_livecrootc_storage_to_fire(p)  =  livecrootc_storage(p) * f * cc_other(pft%itype(p)) 
         m_livecrootc_xfer_to_fire(p)     =  livecrootc_xfer(p)    * f * cc_other(pft%itype(p)) 
-        m_deadcrootc_to_fire(p)          =  deadcrootc(p)         * f * 0._r8
+        m_deadcrootc_to_fire(p)          =  deadcrootc(p)         * m_veg * f * 0._r8
         m_deadcrootc_storage_to_fire(p)  =  deadcrootc_storage(p) * f*  cc_other(pft%itype(p)) 
         m_deadcrootc_xfer_to_fire(p)     =  deadcrootc_xfer(p)    * f * cc_other(pft%itype(p)) 
         m_gresp_storage_to_fire(p)       =  gresp_storage(p)      * f * cc_other(pft%itype(p))
@@ -991,7 +1012,7 @@ contains
         m_livestemn_to_fire(p)           =  livestemn(p)          * f * cc_lstem(pft%itype(p))
         m_livestemn_storage_to_fire(p)   =  livestemn_storage(p)  * f * cc_other(pft%itype(p))
         m_livestemn_xfer_to_fire(p)      =  livestemn_xfer(p)     * f * cc_other(pft%itype(p))
-        m_deadstemn_to_fire(p)           =  deadstemn(p)          * f * cc_dstem(pft%itype(p))
+        m_deadstemn_to_fire(p)           =  deadstemn(p)          * m_veg * f * cc_dstem(pft%itype(p))
         m_deadstemn_storage_to_fire(p)   =  deadstemn_storage(p)  * f * cc_other(pft%itype(p))
         m_deadstemn_xfer_to_fire(p)      =  deadstemn_xfer(p)     * f * cc_other(pft%itype(p))
         m_frootn_to_fire(p)              =  frootn(p)             * f * 0._r8
@@ -1000,7 +1021,7 @@ contains
         m_livecrootn_to_fire(p)          =  livecrootn(p)         * f * 0._r8 
         m_livecrootn_storage_to_fire(p)  =  livecrootn_storage(p) * f * cc_other(pft%itype(p)) 
         m_livecrootn_xfer_to_fire(p)     =  livecrootn_xfer(p)    * f * cc_other(pft%itype(p))
-        m_deadcrootn_to_fire(p)          =  deadcrootn(p)         * f * 0._r8
+        m_deadcrootn_to_fire(p)          =  deadcrootn(p)         * m_veg * f * 0._r8
         m_deadcrootn_xfer_to_fire(p)     =  deadcrootn_xfer(p)    * f * cc_other(pft%itype(p)) 
         m_deadcrootn_storage_to_fire(p)  =  deadcrootn_storage(p) * f * cc_other(pft%itype(p))
         m_retransn_to_fire(p)            =  retransn(p)           * f * cc_other(pft%itype(p))
@@ -1049,7 +1070,7 @@ contains
         m_livestemc_to_deadstemc_fire(p)            =  livestemc(p) * f * &
              (1._r8 - cc_lstem(pft%itype(p))) * &
              (fm_lstem(pft%itype(p))-fm_droot(pft%itype(p)))
-        m_deadstemc_to_litter_fire(p)               =  deadstemc(p) * f * &
+        m_deadstemc_to_litter_fire(p)               =  deadstemc(p) * m_veg * f * &
              (1._r8 - cc_dstem(pft%itype(p))) * &
              fm_droot(pft%itype(p))    
         m_deadstemc_storage_to_litter_fire(p)       =  deadstemc_storage(p) * f * &
@@ -1072,7 +1093,7 @@ contains
              fm_other(pft%itype(p)) 
         m_livecrootc_to_deadcrootc_fire(p)          =  livecrootc(p)         * f * &
              (fm_lroot(pft%itype(p))-fm_droot(pft%itype(p)))
-        m_deadcrootc_to_litter_fire(p)              =  deadcrootc(p)         * f * &
+        m_deadcrootc_to_litter_fire(p)              =  deadcrootc(p)   * m_veg * f * &
              fm_droot(pft%itype(p))
         m_deadcrootc_storage_to_litter_fire(p)      =  deadcrootc_storage(p) * f * &
              fm_other(pft%itype(p))
@@ -1122,7 +1143,7 @@ contains
              fm_other(pft%itype(p)) 
         m_livecrootn_to_deadcrootn_fire(p)         =  livecrootn(p)         * f * &
              (fm_lroot(pft%itype(p))-fm_droot(pft%itype(p)))
-        m_deadcrootn_to_litter_fire(p)             =  deadcrootn(p)         * f * &
+        m_deadcrootn_to_litter_fire(p)             =  deadcrootn(p)    * m_veg * f * &
              fm_droot(pft%itype(p))
         m_deadcrootn_storage_to_litter_fire(p)     =  deadcrootn_storage(p) * f * &
              fm_other(pft%itype(p))
@@ -1328,6 +1349,13 @@ contains
               if ( is_cwd(l) ) then
                  m_decomp_cpools_to_fire_vr(c,j,l) = decomp_cpools_vr(c,j,l) * &
                       (f-baf_crop(c)) * 0.25_r8
+                 call get_curr_date(kyr, kmo, kda, mcsec)
+                 if (spinup_state == 1) then 
+                   m_decomp_cpools_to_fire_vr(c,j,l) = m_decomp_cpools_to_fire_vr(c,j,l) * &
+                     decomp_cascade_con%spinup_factor(l) 
+                   if (kyr >= 40) m_decomp_cpools_to_fire_vr(c,j,l) = &
+                     m_decomp_cpools_to_fire_vr(c,j,l) / cnstate_vars%scalaravg_col(c)
+                 end if
               end if
            end do
 
@@ -1339,7 +1367,13 @@ contains
               if ( is_cwd(l) ) then
                  m_decomp_npools_to_fire_vr(c,j,l) = decomp_npools_vr(c,j,l) * &
                       (f-baf_crop(c)) * 0.25_r8
-              end if
+                 if (spinup_state == 1) then 
+                   m_decomp_npools_to_fire_vr(c,j,l) = m_decomp_npools_to_fire_vr(c,j,l) * &
+                     decomp_cascade_con%spinup_factor(l) 
+                   if (kyr >= 40) m_decomp_npools_to_fire_vr(c,j,l) = &
+                     m_decomp_npools_to_fire_vr(c,j,l) / cnstate_vars%scalaravg_col(c)
+                 end if             
+             end if
            end do
 
            ! phosphorus fluxes - loss due to fire
