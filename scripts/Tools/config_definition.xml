@@ -3425,7 +3425,7 @@
   <entry id="DOUT_S" 
 	 type="logical"
 	 valid_values="TRUE,FALSE"  
-	 value="TRUE" 
+	 value="FALSE" 
 	 group="run_dout"
 	 sdesc="logical to turn on short term archiving"
 	 ldesc="
