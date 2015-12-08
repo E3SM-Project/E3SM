@@ -748,7 +748,7 @@ contains
 ! Aerosol processes ...
 !
 
-    call aero_model_gasaerexch( imozart-1, ncol, lchnk, delt, reaction_rates, &
+    call aero_model_gasaerexch( imozart-1, ncol, lchnk, delt, latndx, lonndx, reaction_rates, &
                                 tfld, pmid, pdel, mbar, relhum, &
                                 zm,  qh2o, cwat, cldfr, ncldwtr, &
                                 invariants(:,:,indexm), invariants, del_h2so4_gasprod,  &
