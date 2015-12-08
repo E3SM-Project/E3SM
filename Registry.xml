@@ -3006,15 +3006,15 @@
 			type="integer" dimensions="nCells" units="unitless"
 			description="a copy of the smoothing mask used to iteratively expand the mask in the buffer region of open ocean around land ice."
 		/>
-		<var name="maxLevelCellNewScratch" 
-			persistence="scratch" 
-			type="integer" dimensions="nCells" units="unitless"
-			description="a copy of maxLevelCell used in constraining the bathymetry to vary by at most one level where constrained by the Haney number (rx1)."
-		/>
 		<var name="layerThicknessNewScratch" 
 			persistence="scratch" 
 			type="real" dimensions="nVertLevels nCells" units="m"
 			description="a copy of layerThickness used during smoothing of the vertical grid while constraining the Haney number (rx1)"
+		/>
+		<var name="bottomDepthMaxLevelScratch" 
+			persistence="scratch" 
+			type="real" dimensions="nCells" units="unitless"
+			description="the linearly interpolated level at which z=-bottomDepth in a z-level coordinate, used to prevent vertical grid from getting too squashed."
 		/>
 	</var_struct>
 
