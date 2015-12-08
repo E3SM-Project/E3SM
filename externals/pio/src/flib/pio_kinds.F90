@@ -19,7 +19,8 @@
 ! !USES:
 !  uses mpi if available
 #ifndef NO_MPIMOD
-   use mpi, only : MPI_OFFSET_KIND, MPI_OFFSET ! _EXTERNAL
+!   use mpi, only : MPI_OFFSET_KIND, MPI_OFFSET ! _EXTERNAL
+   use mpi, only : MPI_OFFSET_KIND ! _EXTERNAL
 #endif
 
    implicit none
@@ -44,8 +45,8 @@
 !
 !  MPI defines MPI_OFFSET_KIND as the byte size of the 
 !  type, which is not nessasarily the type kind
-!
-   integer, parameter, public :: PIO_OFFSET=MPI_OFFSET
+!  We don't need this and it's broken in many mpi implementations
+!   integer, parameter, public :: PIO_OFFSET=MPI_OFFSET
    
    integer, parameter, public :: PIO_OFFSET_KIND=i8
 
