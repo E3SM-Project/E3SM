@@ -793,8 +793,8 @@ if (options.refcase == 'none'):
                +options.co2_file+"'\n")
 	    output.write(" aero_file = '"+options.ccsm_input+"/atm/cam/chem/" \
                +"trop_mozart_aero/aero/aerosoldep_monthly_1849-2006_1.9x2.5_c090803.nc'\n")
-        #output.write(" nyears_ad_carbon_only = 20\n")
-        #output.write(" spinup_mortality_factor = 10\n")
+        output.write(" nyears_ad_carbon_only = 20\n")
+        output.write(" spinup_mortality_factor = 10\n")
 
         output.close()
 
