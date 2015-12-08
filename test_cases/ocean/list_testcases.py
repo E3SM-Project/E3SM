@@ -1,4 +1,16 @@
 #!/usr/bin/env python
+"""
+This script is used to list available test cases.
+
+It iterates through the directory structure and prints out configuration
+options to setup specific test cases. Additionally, the -o, -c, -r, and -t
+flags can be used to narrow the information that this script prints. If any of
+them are passed in, the script will only print test cases that match all
+criteria.
+
+Additionally, if -n is passed in to get information about a single test case,
+it will only print the flags needed to setup that specific test case.
+"""
 
 import os, fnmatch
 import argparse

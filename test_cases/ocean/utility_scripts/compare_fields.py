@@ -51,11 +51,13 @@ for t in range( 0, time_length):
 	pass_time = True
 	diff = field1[t][:] - field2[t][:]
 	l2_norm = sum(diff * diff)
-	l2_norm = l2_norm / size(field1[t][:])
+	l2_norm = l2_norm / np.sum(field1[t][:].shape)
+	l2_norm = np.max(l2_norm)
 	
 	l1_norm = sum(diff)
-	l1_norm = l1_norm / size(field1[t][:])
-	
+	l1_norm = l1_norm / np.sum(field1[t][:].shape)
+	l1_norm = np.max(l1_norm)
+
 	if np.amax(diff) > linf_norm:
 		linf_norm = np.amax(diff)
 
@@ -86,6 +88,6 @@ for t in range( 0, time_length):
 	del diff
 
 if pass_val:
-	quit(0)
+	sys.exit(0)
 else:
-	quit(1)
+	sys.exit(1)

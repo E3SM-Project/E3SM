@@ -1,4 +1,16 @@
 #!/usr/bin/env python
+"""
+This script is used to manage regression suites. A regression suite is a set of
+test cases that ensure one or more features in a model meet certain criteria.
+
+Using this script one can setup or clean a regression suite.
+
+When setting up a regression suite, this script will generate a script to run
+all tests in the suite, and additionally setup each individual test case.
+
+When cleaning a regression suite, this script will remove any generated files
+for each individual test case, and the run script that runs all test cases.
+"""
 
 import sys, os, glob, shutil, numpy, math
 import fnmatch
@@ -7,7 +19,7 @@ import xml.etree.ElementTree as ET
 import subprocess
 import ConfigParser
 
-def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_script):#{{{
+def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_script, baseline_dir):#{{{
 	dev_null = open('/dev/null', 'a')
 
 	# Process test attributes
@@ -16,44 +28,49 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_scr
 	except:
 		print "ERROR: <test> tag is missing 'name' attribute."
 		print "Exiting..."
-		quit(1)
+		sys.exit(1)
 	
 	try:
 		test_core = test_tag.attrib['core']
 	except:
 		print "ERROR: <test> tag with name '%s' is missing 'core' attribute."%(test_name)
 		print "Exiting..."
-		quit(1)
+		sys.exit(1)
 
 	try:
 		test_configuration = test_tag.attrib['configuration']
 	except:
 		print "ERROR: <test> tag with name '%s' is missing 'configuration' attribute."%(test_name)
 		print "Exiting..."
-		quit(1)
+		sys.exit(1)
 
 	try:
 		test_resolution = test_tag.attrib['resolution']
 	except:
 		print "ERROR: <test> tag with name '%s' is missing 'resolution' attribute."%(test_name)
 		print "Exiting..."
-		quit(1)
+		sys.exit(1)
 
 	try:
 		test_test = test_tag.attrib['test']
 	except:
 		print "ERROR: <test> tag with name '%s' is missing 'test' attribute."%(test_name)
 		print "Exiting..."
-		quit(1)
+		sys.exit(1)
 	
 	# Determine the file name for the test case output
 	case_output_name = test_name.replace(' ', '_')
 	
 	# Setup test case
 
-	subprocess.check_call(['./setup_testcase.py', '-f', config_file, '--work_dir', work_dir,
-							'-o', test_core, '-c', test_configuration, '-r', test_resolution, '-t', test_test,
-							'-m', model_runtime], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+	if baseline_dir == 'NONE':
+		subprocess.check_call(['./setup_testcase.py', '-f', config_file, '--work_dir', work_dir,
+								'-o', test_core, '-c', test_configuration, '-r', test_resolution, '-t', test_test,
+								'-m', model_runtime], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+	else:
+		subprocess.check_call(['./setup_testcase.py', '-f', config_file, '--work_dir', work_dir,
+								'-o', test_core, '-c', test_configuration, '-r', test_resolution, '-t', test_test,
+								'-m', model_runtime, '-b', baseline_dir], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 	
 	print "   -- Setup case '%s': -o %s -c %s -r %s -t %s"%(test_name, test_core, test_configuration, test_resolution, test_test)
 
@@ -74,7 +91,7 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_scr
 			except:
 				print "ERROR: <script> tag is missing 'name' attribute."
 				print 'Exiting...'
-				quit(1)
+				sys.exit(1)
 
 			command = "subprocess.check_call(['%s/%s/%s/%s/%s/%s']"%(work_dir, test_core, test_configuration, test_resolution, test_test, script_name)
 			command = '%s, stdout=case_output, stderr=case_output'%(command)
@@ -103,35 +120,35 @@ def process_test_clean(test_tag, work_dir, suite_script):#{{{
 	except:
 		print "ERROR: <test> tag is missing 'name' attribute."
 		print "Exiting..."
-		quit(1)
+		sys.exit(1)
 	
 	try:
 		test_core = test_tag.attrib['core']
 	except:
 		print "ERROR: <test> tag with name '%s' is missing 'core' attribute."%(test_name)
 		print "Exiting..."
-		quit(1)
+		sys.exit(1)
 
 	try:
 		test_configuration = test_tag.attrib['configuration']
 	except:
 		print "ERROR: <test> tag with name '%s' is missing 'configuration' attribute."%(test_name)
 		print "Exiting..."
-		quit(1)
+		sys.exit(1)
 
 	try:
 		test_resolution = test_tag.attrib['resolution']
 	except:
 		print "ERROR: <test> tag with name '%s' is missing 'resolution' attribute."%(test_name)
 		print "Exiting..."
-		quit(1)
+		sys.exit(1)
 
 	try:
 		test_test = test_tag.attrib['test']
 	except:
 		print "ERROR: <test> tag with name '%s' is missing 'test' attribute."%(test_name)
 		print "Exiting..."
-		quit(1)
+		sys.exit(1)
 	
 
 	# Clean test case
@@ -144,13 +161,13 @@ def process_test_clean(test_tag, work_dir, suite_script):#{{{
 
 #}}}
 
-def setup_suite(suite_tag, work_dir, model_runtime, config_file):#{{{
+def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir):#{{{
 	try:
 		suite_name = suite_tag.attrib['name']
 	except:
 		print "ERROR: <regression_suite> tag is missing 'name' attribute."
 		print 'Exiting...'
-		quit(1)
+		sys.exit(1)
 
 	if not os.path.exists('%s'%(work_dir)):
 		os.makedirs('%s'%(work_dir))
@@ -164,7 +181,7 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file):#{{{
 	regression_script.write('\n')
 	regression_script.write('### This script was written by manage_regression_suite.py as part of a regression_suite file\n')
 	regression_script.write('\n')
-	regression_script.write('import os\n')
+	regression_script.write('import sys, os\n')
 	regression_script.write('import subprocess\n')
 	regression_script.write('\n')
 	regression_script.write("if not os.path.exists('case_outputs'):\n")
@@ -175,7 +192,7 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file):#{{{
 	for child in suite_tag:
 		# Process <test> tags within the test suite
 		if child.tag == 'test':
-			process_test_setup(child, config_file, work_dir, model_runtime, regression_script)
+			process_test_setup(child, config_file, work_dir, model_runtime, regression_script, baseline_dir)
 	
 	regression_script.close()
 
@@ -190,7 +207,7 @@ def clean_suite(suite_tag, work_dir):#{{{
 	except:
 		print "ERROR: <regression_suite> tag is missing 'name' attribute."
 		print 'Exiting...'
-		quit(1)
+		sys.exit(1)
 
 	# Remove the regression suite script, if it exists
 	regression_script = '%s/%s.py'%(work_dir, suite_name)
@@ -216,35 +233,35 @@ def summarize_suite(suite_tag):#{{{
 			except:
 				print "<test> tag is missing a 'name' attribute"
 				print "Exiting..."
-				quit(1)
+				sys.exit(1)
 
 			try:
 				test_core = child.attrib['core']
 			except:
 				print "<test> tag named '%s' is missing a 'core' attribute"%(test_name)
 				print "Exiting..."
-				quit(1)
+				sys.exit(1)
 
 			try:
 				test_configuration = child.attrib['configuration']
 			except:
 				print "<test> tag named '%s' is missing a 'configuration' attribute"%(test_name)
 				print "Exiting..."
-				quit(1)
+				sys.exit(1)
 
 			try:
 				test_resolution = child.attrib['resolution']
 			except:
 				print "<test> tag named '%s' is missing a 'resolution' attribute"%(test_name)
 				print "Exiting..."
-				quit(1)
+				sys.exit(1)
 
 			try:
 				test_test = child.attrib['test']
 			except:
 				print "<test> tag named '%s' is missing a 'test' attribute"%(test_name)
 				print "Exiting..."
-				quit(1)
+				sys.exit(1)
 
 			test_path = '%s/%s/%s/%s'%(test_core, test_configuration, test_resolution, test_test)
 			# Loop over all files in test_path that have the .xml extension.
@@ -299,6 +316,7 @@ parser.add_argument("-f", "--config_file", dest="config_file", help="Configurati
 parser.add_argument("-s", "--setup", dest="setup", help="Option to determine if regression suite should be setup or not.", action="store_true")
 parser.add_argument("-c", "--clean", dest="clean", help="Option to determine if regression suite should be cleaned or not.", action="store_true")
 parser.add_argument("-m", "--model_runtime", dest="model_runtime", help="Definition of how to build model run commands on this machine", metavar="FILE")
+parser.add_argument("-b", "--baseline_dir", dest="baseline_dir", help="Location of baseslines that can be compared to", metavar="PATH")
 parser.add_argument("--work_dir", dest="work_dir", help="If set, script will setup the test suite in work_dir rather in this script's location.", metavar="PATH")
 
 args = parser.parse_args()
@@ -309,6 +327,9 @@ if not args.work_dir:
 if not args.model_runtime:
 	args.model_runtime = '%s/runtime_definitions/mpirun.xml'%(os.path.dirname(os.path.realpath(__file__)))
 	print 'WARNING: No model runtime specified. Using the default of %s'%(args.model_runtime)
+
+if not args.baseline_dir:
+	args.baseline_dir = 'NONE'
 
 # Parse regression_suite file
 suite_tree = ET.parse(args.test_suite)
@@ -324,6 +345,6 @@ if suite_root.tag == 'regression_suite':
 	if args.setup:
 		print "\n"
 		print "Setting Up Test Cases:"
-		setup_suite(suite_root, args.work_dir, args.model_runtime, args.config_file)
+		setup_suite(suite_root, args.work_dir, args.model_runtime, args.config_file, args.baseline_dir)
 		summarize_suite(suite_root)
 

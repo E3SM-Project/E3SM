@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+"""
+This script is used to clean one or more test cases that have already been
+setup.
+
+It will remove directories / driver scripts that were generated as part of
+setting up a test case.
+"""
 
 import sys, os, shutil, fnmatch
 import argparse
