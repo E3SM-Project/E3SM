@@ -34,7 +34,7 @@ module seq_io_mod
 
   ! !USES:
 
-  use shr_kind_mod, only: r8 => shr_kind_r8, in => shr_kind_in
+  use shr_kind_mod, only: r4 => shr_kind_r4, r8 => shr_kind_r8, in => shr_kind_in
   use shr_kind_mod, only: cl => shr_kind_cl, cs => shr_kind_cs
   use shr_sys_mod       ! system calls
   use seq_comm_mct
@@ -487,10 +487,11 @@ end function seq_io_sec2hms
           call seq_flds_lookup(itemc,longname=lname,stdname=sname,units=cunit)
 	  if (luse_float) then 
              rcode = pio_def_var(cpl_io_file,trim(name1),PIO_REAL,dimid,varid)
+             rcode = pio_put_att(cpl_io_file,varid,"_FillValue",real(lfillvalue,r4))
           else
              rcode = pio_def_var(cpl_io_file,trim(name1),PIO_DOUBLE,dimid,varid)
+             rcode = pio_put_att(cpl_io_file,varid,"_FillValue",lfillvalue)
           end if
-          rcode = pio_put_att(cpl_io_file,varid,"_FillValue",lfillvalue)
           rcode = pio_put_att(cpl_io_file,varid,"units",trim(cunit))
           rcode = pio_put_att(cpl_io_file,varid,"long_name",trim(lname))
           rcode = pio_put_att(cpl_io_file,varid,"standard_name",trim(sname))
@@ -680,10 +681,11 @@ end function seq_io_sec2hms
           call seq_flds_lookup(itemc,longname=lname,stdname=sname,units=cunit)
 	  if (luse_float) then 
              rcode = pio_def_var(cpl_io_file,trim(name1),PIO_REAL,dimid,varid)
+             rcode = pio_put_att(cpl_io_file,varid,"_FillValue",real(lfillvalue,r4))
           else
              rcode = pio_def_var(cpl_io_file,trim(name1),PIO_DOUBLE,dimid,varid)
+             rcode = pio_put_att(cpl_io_file,varid,"_FillValue",lfillvalue)
           end if
-          rcode = pio_put_att(cpl_io_file,varid,"_FillValue",lfillvalue)
           rcode = pio_put_att(cpl_io_file,varid,"units",trim(cunit))
           rcode = pio_put_att(cpl_io_file,varid,"long_name",trim(lname))
           rcode = pio_put_att(cpl_io_file,varid,"standard_name",trim(sname))
@@ -899,10 +901,11 @@ end function seq_io_sec2hms
           call seq_flds_lookup(itemc,longname=lname,stdname=sname,units=cunit)
 	  if (luse_float) then 
              rcode = pio_def_var(cpl_io_file,trim(name1),PIO_REAL,dimid,varid)
+             rcode = pio_put_att(cpl_io_file,varid,"_FillValue",real(lfillvalue,r4))
           else
              rcode = pio_def_var(cpl_io_file,trim(name1),PIO_DOUBLE,dimid,varid)
+             rcode = pio_put_att(cpl_io_file,varid,"_FillValue",lfillvalue)
           end if
-          rcode = pio_put_att(cpl_io_file,varid,"_FillValue",lfillvalue)
           rcode = pio_put_att(cpl_io_file,varid,"units",trim(cunit))
           rcode = pio_put_att(cpl_io_file,varid,"long_name",trim(lname))
           rcode = pio_put_att(cpl_io_file,varid,"standard_name",trim(sname))
