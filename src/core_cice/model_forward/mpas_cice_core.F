@@ -59,6 +59,11 @@ module cice_core
 
       iErr = 0
 
+      ! write out namelist options
+      write(stderrUnit,*) ; write(stderrUnit,*) " ----- namelist options used -----" ;  write(stderrUnit,*)
+      call mpas_pool_print_summary(domain % configs, MPAS_POOL_CONFIG)
+      write(stderrUnit,*) ; write(stderrUnit,*) " ----- done listing namelist options used -----" ; write(stderrUnit,*)
+
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
 
