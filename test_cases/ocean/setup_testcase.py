@@ -28,14 +28,34 @@ except ImportError:
 	from utils import defaultdict
 
 # *** Namelist setup functions *** #{{{
-def generate_namelist_files(config_file, case_path, template_namelist, configs):#{{{
+def generate_namelist_files(config_file, case_path, configs):#{{{
 	config_tree = ET.parse(config_file)
 	config_root = config_tree.getroot()
 
 	# Iterate over all namelists to be generated
 	for namelists in config_root.iter('namelist'):
 		# Determine the name of the namelist that will be generated
-		namelist_file = '%s/%s'%(case_path, namelists.attrib['name'])
+		try:
+			namelist_file = '%s/%s'%(case_path, namelists.attrib['name'])
+		except:
+			print "ERROR: <namelist> tag is missing the 'name' attribute"
+			print "Exiting..."
+			sys.exit(1)
+
+
+		try:
+			namelist_mode = namelists.attrib['mode']
+		except:
+			print "ERROR: <namelist> tag is missing the 'mode' attribute."
+			print "Exiting..."
+			sys.exit(1)
+
+		if not configs.has_option("namelists", namelist_mode):
+			print "Error. Configuration file '%s' requires paths for streams and namelist files for '%s' mode."%(config_file, namelist_mode)
+			print "Exiting..."
+			sys.exit(1)
+
+		template_namelist = configs.get("namelists", namelist_mode)
 
 		# Ingest namelist template into a dictionary
 		namelist_dict = defaultdict(lambda : defaultdict(list))
@@ -148,7 +168,7 @@ def write_namelist(namelist_dict, outfilename, infilename):#{{{
 
 # *** Streams setup functions *** #{{{
 
-def generate_streams_files(config_file, case_path, template_streams, configs):#{{{
+def generate_streams_files(config_file, case_path, configs):#{{{
 	config_tree = ET.parse(config_file)
 	config_root = config_tree.getroot()
 
@@ -158,6 +178,20 @@ def generate_streams_files(config_file, case_path, template_streams, configs):#{
 		if streams.tag == "streams":
 			# Determine the path to the template streams file
 			streams_filename = '%s/%s'%(case_path, streams.attrib['name'])
+
+			try:
+				streams_mode = streams.attrib['mode']
+			except:
+				print "ERROR: <streams> tag is missing the 'mode' attribute."
+				print "Exiting..."
+				sys.exit(1)
+
+			if not configs.has_option("streams", streams_mode):
+				print "Error. Configuration file '%s' requires paths for streams and namelist files for '%s' mode."%(config_file, streams_mode)
+				print "Exiting..."
+				sys.exit(1)
+
+			template_streams = configs.get("streams", streams_mode)
 
 			# Parse the template
 			streams_tree = ET.parse(template_streams)
@@ -850,19 +884,6 @@ def add_links(config_file, configs):#{{{
 	dev_null.close()
 #}}}
 
-def get_case_mode(config_file):#{{{
-	config_tree = ET.parse(config_file)
-	config_root = config_tree.getroot()
-
-	# Get the mode attribute of the config file.
-	mode = config_root.attrib['mode']
-
-	del config_tree
-	del config_root
-
-	return mode
-#}}}
-
 def make_case_dir(config_file, base_path):#{{{
 	config_tree = ET.parse(config_file)
 	config_root = config_tree.getroot()
@@ -1233,24 +1254,13 @@ for case_num in case_list:
 				# Set case_dir path for function calls
 				config.set('script_paths', 'case_dir', '%s/%s'%(config.get('script_paths', 'test_dir'), case_name))
 
-				# Determine the mode of the case, to build template streams and namelist files
-				case_mode = get_case_mode(config_file)
-
 				case_path = '%s/%s'%(work_dir, case_dir)
 
-				# Get template streams and namelist file names.
-				if not config.has_option("streams", case_mode) or not config.has_option("namelists", case_mode):
-					print "Error. Configuration file '%s' requires paths for streams and namelist files for '%s' mode."%(args.config_file, case_mode)
-					sys.exit(1)
-				else:
-					case_streams_template = config.get("streams", case_mode)
-					case_namelist_template = config.get("namelists", case_mode)
-
 				# Generate all namelists for this case
-				generate_namelist_files(config_file, case_path, case_namelist_template, config)
+				generate_namelist_files(config_file, case_path, config)
 
 				# Generate all streams files for this case
-				generate_streams_files(config_file, case_path, case_streams_template, config)
+				generate_streams_files(config_file, case_path, config)
 
 				# Ensure required files exist for this case
 				get_defined_files(config_file, '%s'%(case_path), config)
