@@ -1095,10 +1095,23 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
 
    if (nmodes == MAM3_nmodes .or. nmodes == MAM4_nmodes) then
 
-      if (aer(ii,kk,bc_accum)*1.0e-3_r8 > 1.0e-30_r8 .and. bc_num > 1.0e-3_r8) then
-         r_bc = ( 3._r8/(4*pi*specdens_bc)*aer(ii,kk,bc_accum)/(bc_num*1.0e6_r8) )**(1._r8/3._r8)
+      if (nmodes == MAM3_nmodes) then
+
+        if (aer(ii,kk,bc_accum)*1.0e-3_r8 > 1.0e-30_r8 .and. bc_num > 1.0e-3_r8) then
+           r_bc = ( 3._r8/(4*pi*specdens_bc)*aer(ii,kk,bc_accum)/(bc_num*1.0e6_r8) )**(1._r8/3._r8)
+        else
+           r_bc = 0.04e-6_r8
+        end if
+
       else
-         r_bc = 0.04e-6_r8
+        if ((aer(ii,kk,bc_accum)+aer(ii,kk,bc_pcarbon))*1.0e-3_r8 > 1.0e-30_r8 &
+            .and. bc_num > 1.0e-3_r8) then
+            r_bc = ( 3._r8/(4*pi*specdens_bc)*(aer(ii,kk,bc_accum)+aer(ii,kk,bc_pcarbon))/ &
+                    (bc_num*1.0e6_r8) )**(1._r8/3._r8)
+        else
+            r_bc = 0.067e-6_r8 ! from emission size
+        end if
+
       end if
 
       if (aer(ii,kk,dst_accum)*1.0e-3_r8 > 1.0e-30_r8 .and. dst1_num > 1.0e-3_r8) then
@@ -1168,11 +1181,20 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       !   But ratio1/ratio2 == tmp1/tmp2, and coding below avoids possible overflow 
 
       ! bc
-      vol_shell(1) = vol_shell(2)
-      vol_core(1) = aer(ii,kk,bc_accum)/(specdens_bc*rhoair)
-      tmp1 = vol_shell(1)*(r_bc*2._r8)*fac_volsfc_bc
-      tmp2 = max(6.0_r8*dr_so4_monolayers_dust*vol_core(1), 0.0_r8)
-      dstcoat(1) = tmp1/tmp2
+      if (nmodes == MAM3_nmodes) then
+        vol_shell(1) = vol_shell(2)
+        vol_core(1) = aer(ii,kk,bc_accum)/(specdens_bc*rhoair)
+        tmp1 = vol_shell(1)*(r_bc*2._r8)*fac_volsfc_bc
+        tmp2 = max(6.0_r8*dr_so4_monolayers_dust*vol_core(1), 0.0_r8)
+        dstcoat(1) = tmp1/tmp2
+      else
+        fac_volsfc_bc      = exp(2.5_r8*alnsg_mode_pcarbon**2)
+        vol_shell(1) = ( aer(ii,kk,pom_pcarbon)*pom_equivso4_factor/specdens_pom )/rhoair
+        vol_core(1)  = aer(ii,kk,bc_pcarbon)/(specdens_bc*rhoair)
+        tmp1 = vol_shell(1)*(r_bc*2._r8)*fac_volsfc_bc
+        tmp2 = max(6.0_r8*dr_so4_monolayers_dust*vol_core(1), 0.0_r8)
+        dstcoat(1) = tmp1/tmp2
+      end if
 
       ! dust_a1
       tmp1 = vol_shell(2)*(r_dust_a1*2._r8)*fac_volsfc_dust_a1
