@@ -4,7 +4,7 @@
 
 
 <!-- cice_model -->
-<config_dt>1800.0</config_dt>
+<config_dt>1800.00</config_dt>
 <config_calendar_type>'gregorian_noleap'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
@@ -25,7 +25,10 @@
 
 <!-- restart -->
 <config_do_restart>false</config_do_restart>
-<config_restart_timestamp_name>'restart_timestamp'</config_restart_timestamp_name>
+<config_restart_timestamp_name>'rpointer.ice'</config_restart_timestamp_name>
+<config_do_restart_hbrine>false</config_do_restart_hbrine>
+<config_do_restart_zsalinity>false</config_do_restart_zsalinity>
+<config_do_restart_bgc>false</config_do_restart_bgc>
 
 <!-- initialize -->
 <config_initial_condition_type>'cice_default'</config_initial_condition_type>
@@ -39,8 +42,8 @@
 <config_initial_vvelocity>0.0</config_initial_vvelocity>
 
 <!-- use_sections -->
-<config_use_velocity_solver>false</config_use_velocity_solver>
-<config_use_advection>false</config_use_advection>
+<config_use_velocity_solver>true</config_use_velocity_solver>
+<config_use_advection>true</config_use_advection>
 <config_use_forcing>false</config_use_forcing>
 <config_use_column_package>true</config_use_column_package>
 
@@ -48,7 +51,7 @@
 <config_atmospheric_forcing_type>'CORE'</config_atmospheric_forcing_type>
 <config_forcing_start_time>'2000-01-01_00:00:00'</config_forcing_start_time>
 <config_forcing_cycle_start>'2000-01-01_00:00:00'</config_forcing_cycle_start>
-<config_forcing_cycle_duration>'1-00-00_00:00:00'</config_forcing_cycle_duration>
+<config_forcing_cycle_duration>'2-00-00_00:00:00'</config_forcing_cycle_duration>
 <config_forcing_restart_file>'restart_forcing_timestamps'</config_forcing_restart_file>
 <config_forcing_precipitation_units>'mm_per_sec'</config_forcing_precipitation_units>
 <config_forcing_sst_type>'ncar'</config_forcing_sst_type>
@@ -62,40 +65,68 @@
 
 <!-- velocity_solver -->
 <config_dynamics_subcycle_number>1</config_dynamics_subcycle_number>
-<config_rotate_cartesian_grid>false</config_rotate_cartesian_grid>
+<config_rotate_cartesian_grid>true</config_rotate_cartesian_grid>
 <config_include_metric_terms>true</config_include_metric_terms>
 <config_elastic_subcycle_number>120</config_elastic_subcycle_number>
 <config_stress_divergence_scheme>'variational'</config_stress_divergence_scheme>
 <config_variational_basis>'wachspress'</config_variational_basis>
 <config_revised_evp>false</config_revised_evp>
+<config_use_air_stress>true</config_use_air_stress>
+<config_use_ocean_stress>true</config_use_ocean_stress>
+<config_use_surface_tilt>true</config_use_surface_tilt>
 
 <!-- advection -->
-<config_convert_volume_to_thickness>true</config_convert_volume_to_thickness>
-<config_limit_ice_concentration>true</config_limit_ice_concentration>
-<config_conservation_check>true</config_conservation_check>
-<config_clean_tracers>true</config_clean_tracers>
-<config_vert_tracer_adv>'stencil'</config_vert_tracer_adv>
-<config_vert_tracer_adv_order>2</config_vert_tracer_adv_order>
-<config_horiz_tracer_adv_order>2</config_horiz_tracer_adv_order>
-<config_coef_3rd_order>0.25</config_coef_3rd_order>
+<config_advection_type>'incremental_remap'</config_advection_type>
 <config_monotonic>.true.</config_monotonic>
+<config_conservation_check>false</config_conservation_check>
+<config_monotonicity_check>false</config_monotonicity_check>
+<config_recover_tracer_means_check>false</config_recover_tracer_means_check>
 
 <!-- column_package -->
 <config_use_column_shortwave>true</config_use_column_shortwave>
 <config_use_column_vertical_thermodynamics>true</config_use_column_vertical_thermodynamics>
+<config_use_column_biogeochemistry>false</config_use_column_biogeochemistry>
 <config_use_column_itd_thermodynamics>true</config_use_column_itd_thermodynamics>
 <config_use_column_ridging>true</config_use_column_ridging>
 
 <!-- column_tracers -->
-<config_use_ice_age>false</config_use_ice_age>
-<config_use_first_year_ice>false</config_use_first_year_ice>
-<config_use_level_ice>false</config_use_level_ice>
-<config_use_meltponds>false</config_use_meltponds>
+<config_use_ice_age>true</config_use_ice_age>
+<config_use_first_year_ice>true</config_use_first_year_ice>
+<config_use_level_ice>true</config_use_level_ice>
 <config_use_cesm_meltponds>false</config_use_cesm_meltponds>
-<config_use_level_meltponds>false</config_use_level_meltponds>
+<config_use_level_meltponds>true</config_use_level_meltponds>
 <config_use_topo_meltponds>false</config_use_topo_meltponds>
 <config_use_aerosols>false</config_use_aerosols>
+
+<!-- biogeochemistry -->
 <config_use_brine>false</config_use_brine>
+<config_use_vertical_zsalinity>false</config_use_vertical_zsalinity>
+<config_use_vertical_biochemistry>false</config_use_vertical_biochemistry>
+<config_use_shortwave_bioabsorption>false</config_use_shortwave_bioabsorption>
+<config_use_vertical_tracers>false</config_use_vertical_tracers>
+<config_use_skeletal_biochemistry>false</config_use_skeletal_biochemistry>
+<config_use_nitrate>false</config_use_nitrate>
+<config_use_carbon>false</config_use_carbon>
+<config_use_chlorophyll>false</config_use_chlorophyll>
+<config_use_ammonium>false</config_use_ammonium>
+<config_use_silicate>false</config_use_silicate>
+<config_use_DMS>false</config_use_DMS>
+<config_use_nonreactive>false</config_use_nonreactive>
+<config_use_humics>false</config_use_humics>
+<config_use_DON>false</config_use_DON>
+<config_use_iron>false</config_use_iron>
+<config_use_modal_aerosols>false</config_use_modal_aerosols>
+<config_use_zaerosols>false</config_use_zaerosols>
+<config_skeletal_bgc_flux_type>'Jin2006'</config_skeletal_bgc_flux_type>
+<config_scale_initial_vertical_bgc>false</config_scale_initial_vertical_bgc>
+<config_biogrid_bottom_molecular_sublayer>0.006</config_biogrid_bottom_molecular_sublayer>
+<config_biogrid_top_molecular_sublayer>0.006</config_biogrid_top_molecular_sublayer>
+<config_bio_gravity_drainage_length_scale>0.024</config_bio_gravity_drainage_length_scale>
+<config_zsalinity_molecular_sublayer>0.0</config_zsalinity_molecular_sublayer>
+<config_zsalinity_gravity_drainage_scale>0.028</config_zsalinity_gravity_drainage_scale>
+<config_snow_porosity_at_ice_surface>-0.3</config_snow_porosity_at_ice_surface>
+<config_new_ice_fraction_biotracer>0.80</config_new_ice_fraction_biotracer>
+<config_fraction_biotracer_in_frazil>0.80</config_fraction_biotracer_in_frazil>
 
 <!-- shortwave -->
 <config_shortwave_type>'dEdd'</config_shortwave_type>
@@ -156,5 +187,98 @@
 <config_min_friction_velocity>0.0005</config_min_friction_velocity>
 <config_ocean_heat_transfer_type>'constant'</config_ocean_heat_transfer_type>
 <config_sea_freezing_temperature_type>'mushy'</config_sea_freezing_temperature_type>
+
+<!-- AM_highFrequencyOutput -->
+<config_AM_highFrequencyOutput_enable>.false.</config_AM_highFrequencyOutput_enable>
+<config_AM_highFrequencyOutput_compute_interval>'output_interval'</config_AM_highFrequencyOutput_compute_interval>
+<config_AM_highFrequencyOutput_output_stream>'highFrequencyOutput'</config_AM_highFrequencyOutput_output_stream>
+<config_AM_highFrequencyOutput_compute_on_startup>.true.</config_AM_highFrequencyOutput_compute_on_startup>
+<config_AM_highFrequencyOutput_write_on_startup>.true.</config_AM_highFrequencyOutput_write_on_startup>
+
+<!-- AM_temperatures -->
+<config_AM_temperatures_enable>.false.</config_AM_temperatures_enable>
+<config_AM_temperatures_compute_interval>'dt'</config_AM_temperatures_compute_interval>
+<config_AM_temperatures_output_stream>'output'</config_AM_temperatures_output_stream>
+<config_AM_temperatures_compute_on_startup>.false.</config_AM_temperatures_compute_on_startup>
+<config_AM_temperatures_write_on_startup>.false.</config_AM_temperatures_write_on_startup>
+
+<!-- AM_regionalStatistics -->
+<config_AM_regionalStatistics_enable>.false.</config_AM_regionalStatistics_enable>
+<config_AM_regionalStatistics_compute_interval>'output_interval'</config_AM_regionalStatistics_compute_interval>
+<config_AM_regionalStatistics_output_stream>'regionalStatisticsOutput'</config_AM_regionalStatistics_output_stream>
+<config_AM_regionalStatistics_compute_on_startup>.false.</config_AM_regionalStatistics_compute_on_startup>
+<config_AM_regionalStatistics_write_on_startup>.false.</config_AM_regionalStatistics_write_on_startup>
+<config_AM_regionalStatistics_ice_extent_limit>0.15</config_AM_regionalStatistics_ice_extent_limit>
+
+<!-- AM_ridgingDiagnostics -->
+<config_AM_ridgingDiagnostics_enable>.false.</config_AM_ridgingDiagnostics_enable>
+<config_AM_ridgingDiagnostics_compute_interval>'dt'</config_AM_ridgingDiagnostics_compute_interval>
+<config_AM_ridgingDiagnostics_output_stream>'output'</config_AM_ridgingDiagnostics_output_stream>
+<config_AM_ridgingDiagnostics_compute_on_startup>.false.</config_AM_ridgingDiagnostics_compute_on_startup>
+<config_AM_ridgingDiagnostics_write_on_startup>.false.</config_AM_ridgingDiagnostics_write_on_startup>
+
+<!-- AM_conservationCheck -->
+<config_AM_conservationCheck_enable>.false.</config_AM_conservationCheck_enable>
+<config_AM_conservationCheck_compute_interval>'dt'</config_AM_conservationCheck_compute_interval>
+<config_AM_conservationCheck_output_stream>'conservationCheckOutput'</config_AM_conservationCheck_output_stream>
+<config_AM_conservationCheck_compute_on_startup>.false.</config_AM_conservationCheck_compute_on_startup>
+<config_AM_conservationCheck_write_on_startup>.false.</config_AM_conservationCheck_write_on_startup>
+<config_AM_conservationCheck_write_to_logfile>.true.</config_AM_conservationCheck_write_to_logfile>
+
+<!-- AM_geographicalVectors -->
+<config_AM_geographicalVectors_enable>.false.</config_AM_geographicalVectors_enable>
+<config_AM_geographicalVectors_compute_interval>'dt'</config_AM_geographicalVectors_compute_interval>
+<config_AM_geographicalVectors_output_stream>'output'</config_AM_geographicalVectors_output_stream>
+<config_AM_geographicalVectors_compute_on_startup>.false.</config_AM_geographicalVectors_compute_on_startup>
+<config_AM_geographicalVectors_write_on_startup>.false.</config_AM_geographicalVectors_write_on_startup>
+
+<!-- AM_icePresent -->
+<config_AM_icePresent_enable>.false.</config_AM_icePresent_enable>
+<config_AM_icePresent_compute_interval>'dt'</config_AM_icePresent_compute_interval>
+<config_AM_icePresent_output_stream>'none'</config_AM_icePresent_output_stream>
+<config_AM_icePresent_compute_on_startup>.false.</config_AM_icePresent_compute_on_startup>
+<config_AM_icePresent_write_on_startup>.false.</config_AM_icePresent_write_on_startup>
+
+<!-- AM_timeSeriesStatsDaily -->
+<config_AM_timeSeriesStatsDaily_enable>.false.</config_AM_timeSeriesStatsDaily_enable>
+<config_AM_timeSeriesStatsDaily_compute_on_startup>.false.</config_AM_timeSeriesStatsDaily_compute_on_startup>
+<config_AM_timeSeriesStatsDaily_write_on_startup>.false.</config_AM_timeSeriesStatsDaily_write_on_startup>
+<config_AM_timeSeriesStatsDaily_compute_interval>'dt'</config_AM_timeSeriesStatsDaily_compute_interval>
+<config_AM_timeSeriesStatsDaily_output_stream>'timeSeriesStatsDailyOutput'</config_AM_timeSeriesStatsDaily_output_stream>
+<config_AM_timeSeriesStatsDaily_restart_stream>'timeSeriesStatsDailyRestart'</config_AM_timeSeriesStatsDaily_restart_stream>
+<config_AM_timeSeriesStatsDaily_add_mesh>.true.</config_AM_timeSeriesStatsDaily_add_mesh>
+<config_AM_timeSeriesStatsDaily_operation>'avg'</config_AM_timeSeriesStatsDaily_operation>
+<config_AM_timeSeriesStatsDaily_reference_times>'initial_time'</config_AM_timeSeriesStatsDaily_reference_times>
+<config_AM_timeSeriesStatsDaily_duration_intervals>'repeat_interval'</config_AM_timeSeriesStatsDaily_duration_intervals>
+<config_AM_timeSeriesStatsDaily_repeat_intervals>'reset_interval'</config_AM_timeSeriesStatsDaily_repeat_intervals>
+<config_AM_timeSeriesStatsDaily_reset_intervals>'00-00-01_00:00:00'</config_AM_timeSeriesStatsDaily_reset_intervals>
+
+<!-- AM_timeSeriesStatsMonthly -->
+<config_AM_timeSeriesStatsMonthly_enable>.false.</config_AM_timeSeriesStatsMonthly_enable>
+<config_AM_timeSeriesStatsMonthly_compute_on_startup>.false.</config_AM_timeSeriesStatsMonthly_compute_on_startup>
+<config_AM_timeSeriesStatsMonthly_write_on_startup>.false.</config_AM_timeSeriesStatsMonthly_write_on_startup>
+<config_AM_timeSeriesStatsMonthly_compute_interval>'dt'</config_AM_timeSeriesStatsMonthly_compute_interval>
+<config_AM_timeSeriesStatsMonthly_output_stream>'timeSeriesStatsMonthlyOutput'</config_AM_timeSeriesStatsMonthly_output_stream>
+<config_AM_timeSeriesStatsMonthly_restart_stream>'timeSeriesStatsMonthlyRestart'</config_AM_timeSeriesStatsMonthly_restart_stream>
+<config_AM_timeSeriesStatsMonthly_add_mesh>.true.</config_AM_timeSeriesStatsMonthly_add_mesh>
+<config_AM_timeSeriesStatsMonthly_operation>'avg'</config_AM_timeSeriesStatsMonthly_operation>
+<config_AM_timeSeriesStatsMonthly_reference_times>'initial_time'</config_AM_timeSeriesStatsMonthly_reference_times>
+<config_AM_timeSeriesStatsMonthly_duration_intervals>'repeat_interval'</config_AM_timeSeriesStatsMonthly_duration_intervals>
+<config_AM_timeSeriesStatsMonthly_repeat_intervals>'reset_interval'</config_AM_timeSeriesStatsMonthly_repeat_intervals>
+<config_AM_timeSeriesStatsMonthly_reset_intervals>'00-01-00_00:00:00'</config_AM_timeSeriesStatsMonthly_reset_intervals>
+
+<!-- AM_timeSeriesStatsClimatology -->
+<config_AM_timeSeriesStatsClimatology_enable>.false.</config_AM_timeSeriesStatsClimatology_enable>
+<config_AM_timeSeriesStatsClimatology_compute_on_startup>.false.</config_AM_timeSeriesStatsClimatology_compute_on_startup>
+<config_AM_timeSeriesStatsClimatology_write_on_startup>.false.</config_AM_timeSeriesStatsClimatology_write_on_startup>
+<config_AM_timeSeriesStatsClimatology_compute_interval>'dt'</config_AM_timeSeriesStatsClimatology_compute_interval>
+<config_AM_timeSeriesStatsClimatology_output_stream>'timeSeriesStatsClimatologyOutput'</config_AM_timeSeriesStatsClimatology_output_stream>
+<config_AM_timeSeriesStatsClimatology_restart_stream>'timeSeriesStatsClimatologyRestart'</config_AM_timeSeriesStatsClimatology_restart_stream>
+<config_AM_timeSeriesStatsClimatology_add_mesh>.true.</config_AM_timeSeriesStatsClimatology_add_mesh>
+<config_AM_timeSeriesStatsClimatology_operation>'avg'</config_AM_timeSeriesStatsClimatology_operation>
+<config_AM_timeSeriesStatsClimatology_reference_times>''</config_AM_timeSeriesStatsClimatology_reference_times>
+<config_AM_timeSeriesStatsClimatology_duration_intervals>''</config_AM_timeSeriesStatsClimatology_duration_intervals>
+<config_AM_timeSeriesStatsClimatology_repeat_intervals>''</config_AM_timeSeriesStatsClimatology_repeat_intervals>
+<config_AM_timeSeriesStatsClimatology_reset_intervals>''</config_AM_timeSeriesStatsClimatology_reset_intervals>
 
 </namelist_defaults>

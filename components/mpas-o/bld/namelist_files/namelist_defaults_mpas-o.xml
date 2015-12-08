@@ -19,6 +19,7 @@
 <config_write_output_on_startup>.true.</config_write_output_on_startup>
 <config_pio_num_iotasks>0</config_pio_num_iotasks>
 <config_pio_stride>1</config_pio_stride>
+<config_restart_forcing_fields>.true.</config_restart_forcing_fields>
 
 <!-- decomposition -->
 <config_num_halos>3</config_num_halos>
@@ -30,9 +31,9 @@
 <!-- init_setup -->
 <config_vert_levels>-1</config_vert_levels>
 <config_init_configuration>'none'</config_init_configuration>
-<config_expand_sphere>false</config_expand_sphere>
-<config_realistic_coriolis_parameter>false</config_realistic_coriolis_parameter>
-<config_write_cull_cell_mask>true</config_write_cull_cell_mask>
+<config_expand_sphere>.false.</config_expand_sphere>
+<config_realistic_coriolis_parameter>.false.</config_realistic_coriolis_parameter>
+<config_write_cull_cell_mask>.true.</config_write_cull_cell_mask>
 <config_vertical_grid>'uniform'</config_vertical_grid>
 
 <!-- CVTgenerator -->
@@ -51,7 +52,6 @@
 <config_use_min_max_thickness>.false.</config_use_min_max_thickness>
 <config_min_thickness>1.0</config_min_thickness>
 <config_max_thickness_factor>6.0</config_max_thickness_factor>
-<config_set_restingThickness_to_IC>.true.</config_set_restingThickness_to_IC>
 <config_dzdk_positive>.false.</config_dzdk_positive>
 
 <!-- ALE_frequency_filtered_thickness -->
@@ -63,10 +63,9 @@
 <config_highFreqThick_del2>100.0</config_highFreqThick_del2>
 
 <!-- partial_bottom_cells -->
-<config_alter_ICs_for_pbcs>.true.</config_alter_ICs_for_pbcs>
-<config_pbc_alteration_type>'partial_cell'</config_pbc_alteration_type>
+<config_alter_ICs_for_pbcs>.false.</config_alter_ICs_for_pbcs>
+<config_pbc_alteration_type>'full_cell'</config_pbc_alteration_type>
 <config_min_pbc_fraction>0.10</config_min_pbc_fraction>
-<config_check_ssh_consistency>.true.</config_check_ssh_consistency>
 
 <!-- hmix -->
 <config_hmix_scaleWithMesh ocn_grid="mpas120">.false.</config_hmix_scaleWithMesh>
@@ -87,6 +86,7 @@
 <config_mom_del4 ocn_grid="mpas120">5.0e12</config_mom_del4>
 <config_mom_del4 ocn_grid="oEC60to30">4.0e11</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS30to10">1.5e10</config_mom_del4>
+<config_mom_del4_div_factor>1.0</config_mom_del4_div_factor>
 <config_tracer_del4>0.0</config_tracer_del4>
 
 <!-- hmix_Leith -->
@@ -175,17 +175,27 @@
 <config_cvmix_kpp_stop_OBL_search>100.0</config_cvmix_kpp_stop_OBL_search>
 
 <!-- forcing -->
-<config_use_bulk_wind_stress>.false.</config_use_bulk_wind_stress>
-<config_use_bulk_thickness_flux>.false.</config_use_bulk_thickness_flux>
+<config_use_bulk_wind_stress>.true.</config_use_bulk_wind_stress>
+<config_use_bulk_thickness_flux>.true.</config_use_bulk_thickness_flux>
 <config_flux_attenuation_coefficient>0.001</config_flux_attenuation_coefficient>
-<config_frazil_ice_formation>.false.</config_frazil_ice_formation>
+
+<!-- shortwaveRadiation -->
 <config_sw_absorption_type>'jerlov'</config_sw_absorption_type>
 <config_jerlov_water_type>3</config_jerlov_water_type>
-<config_fixed_jerlov_weights>.true.</config_fixed_jerlov_weights>
+<config_forcing_restart_file>'restart_forcing_time_stamp'</config_forcing_restart_file>
+
+<!-- frazil_ice -->
+<config_use_frazil_ice_formation>.true.</config_use_frazil_ice_formation>
+<config_frazil_heat_of_fusion>3.3337e5</config_frazil_heat_of_fusion>
+<config_frazil_sea_ice_density>0.917e3</config_frazil_sea_ice_density>
+<config_frazil_fractional_thickness_limit>0.1</config_frazil_fractional_thickness_limit>
+<config_specific_heat_sea_water>3.996e3</config_specific_heat_sea_water>
+<config_frazil_maximum_depth>100.0</config_frazil_maximum_depth>
+<config_frazil_ice_reference_salinity>4.0</config_frazil_ice_reference_salinity>
+<config_frazil_maximum_freezing_temperature>0.0</config_frazil_maximum_freezing_temperature>
 
 <!-- land_ice_fluxes -->
-<config_use_land_ice_fluxes>.false.</config_use_land_ice_fluxes>
-<config_compute_land_ice_fluxes_in_ocean>.true.</config_compute_land_ice_fluxes_in_ocean>
+<config_land_ice_flux_mode>'off'</config_land_ice_flux_mode>
 <config_land_ice_flux_formulation>'Jenkins'</config_land_ice_flux_formulation>
 <config_land_ice_flux_useHollandJenkinsAdvDiff>.false.</config_land_ice_flux_useHollandJenkinsAdvDiff>
 <config_land_ice_flux_attenuation_coefficient>10.0</config_land_ice_flux_attenuation_coefficient>
@@ -254,6 +264,7 @@
 <config_disable_redi_horizontal_term2>.false.</config_disable_redi_horizontal_term2>
 <config_disable_redi_horizontal_term3>.false.</config_disable_redi_horizontal_term3>
 <config_check_zlevel_consistency>.false.</config_check_zlevel_consistency>
+<config_check_ssh_consistency>.true.</config_check_ssh_consistency>
 <config_filter_btr_mode>.false.</config_filter_btr_mode>
 <config_prescribe_velocity>.false.</config_prescribe_velocity>
 <config_prescribe_thickness>.false.</config_prescribe_thickness>
@@ -280,7 +291,7 @@
 
 <!-- baroclinic_channel -->
 <config_baroclinic_channel_vert_levels>20</config_baroclinic_channel_vert_levels>
-<config_baroclinic_channel_use_distances>false</config_baroclinic_channel_use_distances>
+<config_baroclinic_channel_use_distances>.false.</config_baroclinic_channel_use_distances>
 <config_baroclinic_channel_surface_temperature>13.1</config_baroclinic_channel_surface_temperature>
 <config_baroclinic_channel_bottom_temperature>10.1</config_baroclinic_channel_bottom_temperature>
 <config_baroclinic_channel_temperature_difference>1.2</config_baroclinic_channel_temperature_difference>
@@ -346,6 +357,16 @@
 <config_global_ocean_tracer_lon_varname>'none'</config_global_ocean_tracer_lon_varname>
 <config_global_ocean_tracer_method>'bilinear_interpolation'</config_global_ocean_tracer_method>
 <config_global_ocean_smooth_TS_iterations>0</config_global_ocean_smooth_TS_iterations>
+<config_global_ocean_swData_file>'none'</config_global_ocean_swData_file>
+<config_global_ocean_swData_nlat_dimname>'none'</config_global_ocean_swData_nlat_dimname>
+<config_global_ocean_swData_nlon_dimname>'none'</config_global_ocean_swData_nlon_dimname>
+<config_global_ocean_swData_lat_varname>'none'</config_global_ocean_swData_lat_varname>
+<config_global_ocean_swData_lon_varname>'none'</config_global_ocean_swData_lon_varname>
+<config_global_ocean_swData_latlon_degrees>.true.</config_global_ocean_swData_latlon_degrees>
+<config_global_ocean_swData_method>'bilinear_interpolation'</config_global_ocean_swData_method>
+<config_global_ocean_chlorophyll_varname>'none'</config_global_ocean_chlorophyll_varname>
+<config_global_ocean_zenithAngle_varname>'none'</config_global_ocean_zenithAngle_varname>
+<config_global_ocean_clearSky_varname>'none'</config_global_ocean_clearSky_varname>
 <config_global_ocean_piston_velocity>5.0e-5</config_global_ocean_piston_velocity>
 <config_global_ocean_interior_restore_rate>1.0e-7</config_global_ocean_interior_restore_rate>
 <config_global_ocean_topography_file>'none'</config_global_ocean_topography_file>
@@ -401,27 +422,27 @@
 <config_iso_main_channel_depth>4000.0</config_iso_main_channel_depth>
 <config_iso_north_wall_lat>-50</config_iso_north_wall_lat>
 <config_iso_south_wall_lat>-70</config_iso_south_wall_lat>
-<config_iso_ridge_flag>true</config_iso_ridge_flag>
+<config_iso_ridge_flag>.true.</config_iso_ridge_flag>
 <config_iso_ridge_center_lon>180</config_iso_ridge_center_lon>
 <config_iso_ridge_height>2000.0</config_iso_ridge_height>
 <config_iso_ridge_width>2000000</config_iso_ridge_width>
-<config_iso_plateau_flag>true</config_iso_plateau_flag>
+<config_iso_plateau_flag>.true.</config_iso_plateau_flag>
 <config_iso_plateau_center_lon>300</config_iso_plateau_center_lon>
 <config_iso_plateau_center_lat>-58</config_iso_plateau_center_lat>
 <config_iso_plateau_height>2000</config_iso_plateau_height>
 <config_iso_plateau_radius>200000</config_iso_plateau_radius>
 <config_iso_plateau_slope_width>1000000</config_iso_plateau_slope_width>
-<config_iso_shelf_flag>true</config_iso_shelf_flag>
+<config_iso_shelf_flag>.true.</config_iso_shelf_flag>
 <config_iso_shelf_depth>500</config_iso_shelf_depth>
 <config_iso_shelf_width>120000</config_iso_shelf_width>
-<config_iso_cont_slope_flag>true</config_iso_cont_slope_flag>
+<config_iso_cont_slope_flag>.true.</config_iso_cont_slope_flag>
 <config_iso_max_cont_slope>0.01</config_iso_max_cont_slope>
-<config_iso_embayment_flag>true</config_iso_embayment_flag>
+<config_iso_embayment_flag>.true.</config_iso_embayment_flag>
 <config_iso_embayment_center_lon>60</config_iso_embayment_center_lon>
 <config_iso_embayment_center_lat>-71</config_iso_embayment_center_lat>
 <config_iso_embayment_radius>500000</config_iso_embayment_radius>
 <config_iso_embayment_depth>2000</config_iso_embayment_depth>
-<config_iso_depression_flag>true</config_iso_depression_flag>
+<config_iso_depression_flag>.true.</config_iso_depression_flag>
 <config_iso_depression_center_lon>60</config_iso_depression_center_lon>
 <config_iso_depression_south_lat>-72</config_iso_depression_south_lat>
 <config_iso_depression_north_lat>-65</config_iso_depression_north_lat>
@@ -464,19 +485,19 @@
 <config_iso_temperature_sponge_h1>1000</config_iso_temperature_sponge_h1>
 <config_iso_temperature_sponge_l1>120000</config_iso_temperature_sponge_l1>
 <config_iso_temperature_sponge_tau1>10.0</config_iso_temperature_sponge_tau1>
-<config_iso_temperature_restore_region1_flag>true</config_iso_temperature_restore_region1_flag>
+<config_iso_temperature_restore_region1_flag>.true.</config_iso_temperature_restore_region1_flag>
 <config_iso_temperature_restore_t1>-1</config_iso_temperature_restore_t1>
 <config_iso_temperature_restore_lcx1>600000</config_iso_temperature_restore_lcx1>
 <config_iso_temperature_restore_lcy1>600000</config_iso_temperature_restore_lcy1>
-<config_iso_temperature_restore_region2_flag>true</config_iso_temperature_restore_region2_flag>
+<config_iso_temperature_restore_region2_flag>.true.</config_iso_temperature_restore_region2_flag>
 <config_iso_temperature_restore_t2>-1</config_iso_temperature_restore_t2>
 <config_iso_temperature_restore_lcx2>600000</config_iso_temperature_restore_lcx2>
 <config_iso_temperature_restore_lcy2>250000</config_iso_temperature_restore_lcy2>
-<config_iso_temperature_restore_region3_flag>true</config_iso_temperature_restore_region3_flag>
+<config_iso_temperature_restore_region3_flag>.true.</config_iso_temperature_restore_region3_flag>
 <config_iso_temperature_restore_t3>-1</config_iso_temperature_restore_t3>
 <config_iso_temperature_restore_lcx3>600000</config_iso_temperature_restore_lcx3>
 <config_iso_temperature_restore_lcy3>250000</config_iso_temperature_restore_lcy3>
-<config_iso_temperature_restore_region4_flag>true</config_iso_temperature_restore_region4_flag>
+<config_iso_temperature_restore_region4_flag>.true.</config_iso_temperature_restore_region4_flag>
 <config_iso_temperature_restore_t4>-1</config_iso_temperature_restore_t4>
 <config_iso_temperature_restore_lcx4>600000</config_iso_temperature_restore_lcx4>
 <config_iso_temperature_restore_lcy4>250000</config_iso_temperature_restore_lcy4>
@@ -497,9 +518,51 @@
 <config_soma_surface_temperature>20.0</config_soma_surface_temperature>
 <config_soma_surface_salinity>33.0</config_soma_surface_salinity>
 
+<!-- ziso -->
+<config_ziso_vert_levels>100</config_ziso_vert_levels>
+<config_ziso_add_easterly_wind_stress_ASF>false</config_ziso_add_easterly_wind_stress_ASF>
+<config_ziso_wind_transition_position>800000.0</config_ziso_wind_transition_position>
+<config_ziso_antarctic_shelf_front_width>600000</config_ziso_antarctic_shelf_front_width>
+<config_ziso_wind_stress_shelf_front_max>-0.05</config_ziso_wind_stress_shelf_front_max>
+<config_ziso_use_slopping_bathymetry>false</config_ziso_use_slopping_bathymetry>
+<config_ziso_meridional_extent>2.0e6</config_ziso_meridional_extent>
+<config_ziso_zonal_extent>1.0e6</config_ziso_zonal_extent>
+<config_ziso_bottom_depth>2500.0</config_ziso_bottom_depth>
+<config_ziso_shelf_depth>500.0</config_ziso_shelf_depth>
+<config_ziso_slope_half_width>1.0e5</config_ziso_slope_half_width>
+<config_ziso_slope_center_position>5.0e5</config_ziso_slope_center_position>
+<config_ziso_reference_coriolis>-1e-4</config_ziso_reference_coriolis>
+<config_ziso_coriolis_gradient>1e-11</config_ziso_coriolis_gradient>
+<config_ziso_wind_stress_max>0.2</config_ziso_wind_stress_max>
+<config_ziso_mean_restoring_temp>3.0</config_ziso_mean_restoring_temp>
+<config_ziso_restoring_temp_dev_ta>2.0</config_ziso_restoring_temp_dev_ta>
+<config_ziso_restoring_temp_dev_tb>2.0</config_ziso_restoring_temp_dev_tb>
+<config_ziso_restoring_temp_tau>30.0</config_ziso_restoring_temp_tau>
+<config_ziso_restoring_temp_piston_vel>1.93e-5</config_ziso_restoring_temp_piston_vel>
+<config_ziso_restoring_temp_ze>1250.0</config_ziso_restoring_temp_ze>
+<config_ziso_restoring_sponge_l>8.0e4</config_ziso_restoring_sponge_l>
+<config_ziso_initial_temp_t1>6.0</config_ziso_initial_temp_t1>
+<config_ziso_initial_temp_t2>3.6</config_ziso_initial_temp_t2>
+<config_ziso_initial_temp_h1>300.0</config_ziso_initial_temp_h1>
+<config_ziso_initial_temp_mt>7.5e-5</config_ziso_initial_temp_mt>
+<config_ziso_frazil_enable>false</config_ziso_frazil_enable>
+<config_ziso_frazil_temperature_anomaly>-3.0</config_ziso_frazil_temperature_anomaly>
+
+<!-- periodic_planar -->
+<config_periodic_planar_vert_levels>100</config_periodic_planar_vert_levels>
+<config_periodic_planar_bottom_depth>2500.0</config_periodic_planar_bottom_depth>
+<config_periodic_planar_velocity_strength>1.0</config_periodic_planar_velocity_strength>
+
+<!-- ecosys_column -->
+<config_ecosys_column_vert_levels>100</config_ecosys_column_vert_levels>
+<config_ecosys_column_vertical_grid>'100layerACMEv1'</config_ecosys_column_vertical_grid>
+<config_ecosys_column_TS_filename>'unknown'</config_ecosys_column_TS_filename>
+<config_ecosys_column_ecosys_filename>'unknown'</config_ecosys_column_ecosys_filename>
+<config_ecosys_column_bottom_depth>6000.0</config_ecosys_column_bottom_depth>
+
 <!-- tracer_forcing_activeTracers -->
 <config_use_activeTracers>.true.</config_use_activeTracers>
-<config_use_activeTracers_surface_bulk_forcing>.false.</config_use_activeTracers_surface_bulk_forcing>
+<config_use_activeTracers_surface_bulk_forcing>.true.</config_use_activeTracers_surface_bulk_forcing>
 <config_use_activeTracers_surface_restoring>.false.</config_use_activeTracers_surface_restoring>
 <config_use_activeTracers_interior_restoring>.false.</config_use_activeTracers_interior_restoring>
 <config_use_activeTracers_exponential_decay>.false.</config_use_activeTracers_exponential_decay>
@@ -515,6 +578,36 @@
 <config_use_debugTracers_idealAge_forcing>.false.</config_use_debugTracers_idealAge_forcing>
 <config_use_debugTracers_ttd_forcing>.false.</config_use_debugTracers_ttd_forcing>
 
+<!-- tracer_forcing_ecosysTracers -->
+<config_use_ecosysTracers>.false.</config_use_ecosysTracers>
+<config_use_ecosysTracers_surface_bulk_forcing>.false.</config_use_ecosysTracers_surface_bulk_forcing>
+<config_use_ecosysTracers_surface_restoring>.false.</config_use_ecosysTracers_surface_restoring>
+<config_use_ecosysTracers_interior_restoring>.false.</config_use_ecosysTracers_interior_restoring>
+<config_use_ecosysTracers_exponential_decay>.false.</config_use_ecosysTracers_exponential_decay>
+<config_use_ecosysTracers_idealAge_forcing>.false.</config_use_ecosysTracers_idealAge_forcing>
+<config_use_ecosysTracers_ttd_forcing>.false.</config_use_ecosysTracers_ttd_forcing>
+<config_use_ecosysTracers_surface_value>.false.</config_use_ecosysTracers_surface_value>
+
+<!-- tracer_forcing_DMSTracers -->
+<config_use_DMSTracers>.false.</config_use_DMSTracers>
+<config_use_DMSTracers_surface_bulk_forcing>.false.</config_use_DMSTracers_surface_bulk_forcing>
+<config_use_DMSTracers_surface_restoring>.false.</config_use_DMSTracers_surface_restoring>
+<config_use_DMSTracers_interior_restoring>.false.</config_use_DMSTracers_interior_restoring>
+<config_use_DMSTracers_exponential_decay>.false.</config_use_DMSTracers_exponential_decay>
+<config_use_DMSTracers_idealAge_forcing>.false.</config_use_DMSTracers_idealAge_forcing>
+<config_use_DMSTracers_ttd_forcing>.false.</config_use_DMSTracers_ttd_forcing>
+<config_use_DMSTracers_surface_value>.false.</config_use_DMSTracers_surface_value>
+
+<!-- tracer_forcing_MacroMoleculesTracers -->
+<config_use_MacroMoleculesTracers>.false.</config_use_MacroMoleculesTracers>
+<config_use_MacroMoleculesTracers_surface_bulk_forcing>.false.</config_use_MacroMoleculesTracers_surface_bulk_forcing>
+<config_use_MacroMoleculesTracers_surface_restoring>.false.</config_use_MacroMoleculesTracers_surface_restoring>
+<config_use_MacroMoleculesTracers_interior_restoring>.false.</config_use_MacroMoleculesTracers_interior_restoring>
+<config_use_MacroMoleculesTracers_exponential_decay>.false.</config_use_MacroMoleculesTracers_exponential_decay>
+<config_use_MacroMoleculesTracers_idealAge_forcing>.false.</config_use_MacroMoleculesTracers_idealAge_forcing>
+<config_use_MacroMoleculesTracers_ttd_forcing>.false.</config_use_MacroMoleculesTracers_ttd_forcing>
+<config_use_MacroMoleculesTracers_surface_value>.false.</config_use_MacroMoleculesTracers_surface_value>
+
 <!-- AM_globalStats -->
 <config_AM_globalStats_enable>.false.</config_AM_globalStats_enable>
 <config_AM_globalStats_compute_interval>'output_interval'</config_AM_globalStats_compute_interval>
@@ -522,19 +615,19 @@
 <config_AM_globalStats_write_on_startup>.false.</config_AM_globalStats_write_on_startup>
 <config_AM_globalStats_text_file>.false.</config_AM_globalStats_text_file>
 <config_AM_globalStats_directory>'analysis_members'</config_AM_globalStats_directory>
-<config_AM_globalStats_stream_name>'globalStatsOutput'</config_AM_globalStats_stream_name>
+<config_AM_globalStats_output_stream>'globalStatsOutput'</config_AM_globalStats_output_stream>
 
 <!-- AM_surfaceAreaWeightedAverages -->
 <config_AM_surfaceAreaWeightedAverages_enable>.false.</config_AM_surfaceAreaWeightedAverages_enable>
 <config_AM_surfaceAreaWeightedAverages_compute_on_startup>.true.</config_AM_surfaceAreaWeightedAverages_compute_on_startup>
 <config_AM_surfaceAreaWeightedAverages_write_on_startup>.true.</config_AM_surfaceAreaWeightedAverages_write_on_startup>
 <config_AM_surfaceAreaWeightedAverages_compute_interval>'output_interval'</config_AM_surfaceAreaWeightedAverages_compute_interval>
-<config_AM_surfaceAreaWeightedAverages_stream_name>'surfaceAreaWeightedAveragesOutput'</config_AM_surfaceAreaWeightedAverages_stream_name>
+<config_AM_surfaceAreaWeightedAverages_output_stream>'surfaceAreaWeightedAveragesOutput'</config_AM_surfaceAreaWeightedAverages_output_stream>
 
 <!-- AM_waterMassCensus -->
 <config_AM_waterMassCensus_enable>.false.</config_AM_waterMassCensus_enable>
 <config_AM_waterMassCensus_compute_interval>'output_interval'</config_AM_waterMassCensus_compute_interval>
-<config_AM_waterMassCensus_stream_name>'waterMassCensusOutput'</config_AM_waterMassCensus_stream_name>
+<config_AM_waterMassCensus_output_stream>'waterMassCensusOutput'</config_AM_waterMassCensus_output_stream>
 <config_AM_waterMassCensus_compute_on_startup>.false.</config_AM_waterMassCensus_compute_on_startup>
 <config_AM_waterMassCensus_write_on_startup>.false.</config_AM_waterMassCensus_write_on_startup>
 <config_AM_waterMassCensus_minTemperature>-2.0</config_AM_waterMassCensus_minTemperature>
@@ -547,14 +640,14 @@
 <config_AM_layerVolumeWeightedAverage_compute_interval>'output_interval'</config_AM_layerVolumeWeightedAverage_compute_interval>
 <config_AM_layerVolumeWeightedAverage_compute_on_startup>.false.</config_AM_layerVolumeWeightedAverage_compute_on_startup>
 <config_AM_layerVolumeWeightedAverage_write_on_startup>.false.</config_AM_layerVolumeWeightedAverage_write_on_startup>
-<config_AM_layerVolumeWeightedAverage_stream_name>'layerVolumeWeightedAverageOutput'</config_AM_layerVolumeWeightedAverage_stream_name>
+<config_AM_layerVolumeWeightedAverage_output_stream>'layerVolumeWeightedAverageOutput'</config_AM_layerVolumeWeightedAverage_output_stream>
 
 <!-- AM_zonalMean -->
 <config_AM_zonalMean_enable>.false.</config_AM_zonalMean_enable>
 <config_AM_zonalMean_compute_on_startup>.true.</config_AM_zonalMean_compute_on_startup>
 <config_AM_zonalMean_write_on_startup>.true.</config_AM_zonalMean_write_on_startup>
 <config_AM_zonalMean_compute_interval>'output_interval'</config_AM_zonalMean_compute_interval>
-<config_AM_zonalMean_stream_name>'zonalMeanOutput'</config_AM_zonalMean_stream_name>
+<config_AM_zonalMean_output_stream>'zonalMeanOutput'</config_AM_zonalMean_output_stream>
 <config_AM_zonalMean_num_bins>180</config_AM_zonalMean_num_bins>
 <config_AM_zonalMean_min_bin>-1.0e34</config_AM_zonalMean_min_bin>
 <config_AM_zonalMean_max_bin>-1.0e34</config_AM_zonalMean_max_bin>
@@ -564,7 +657,7 @@
 <config_AM_okuboWeiss_compute_on_startup>.true.</config_AM_okuboWeiss_compute_on_startup>
 <config_AM_okuboWeiss_write_on_startup>.true.</config_AM_okuboWeiss_write_on_startup>
 <config_AM_okuboWeiss_compute_interval>'output_interval'</config_AM_okuboWeiss_compute_interval>
-<config_AM_okuboWeiss_stream_name>'okuboWeissOutput'</config_AM_okuboWeiss_stream_name>
+<config_AM_okuboWeiss_output_stream>'okuboWeissOutput'</config_AM_okuboWeiss_output_stream>
 <config_AM_okuboWeiss_directory>'analysis_members'</config_AM_okuboWeiss_directory>
 <config_AM_okuboWeiss_threshold_value>-0.2</config_AM_okuboWeiss_threshold_value>
 <config_AM_okuboWeiss_normalization>1e-10</config_AM_okuboWeiss_normalization>
@@ -578,7 +671,7 @@
 <config_AM_meridionalHeatTransport_compute_interval>'output_interval'</config_AM_meridionalHeatTransport_compute_interval>
 <config_AM_meridionalHeatTransport_compute_on_startup>.true.</config_AM_meridionalHeatTransport_compute_on_startup>
 <config_AM_meridionalHeatTransport_write_on_startup>.true.</config_AM_meridionalHeatTransport_write_on_startup>
-<config_AM_meridionalHeatTransport_stream_name>'meridionalHeatTransportOutput'</config_AM_meridionalHeatTransport_stream_name>
+<config_AM_meridionalHeatTransport_output_stream>'meridionalHeatTransportOutput'</config_AM_meridionalHeatTransport_output_stream>
 <config_AM_meridionalHeatTransport_num_bins>180</config_AM_meridionalHeatTransport_num_bins>
 <config_AM_meridionalHeatTransport_min_bin>-1.0e34</config_AM_meridionalHeatTransport_min_bin>
 <config_AM_meridionalHeatTransport_max_bin>-1.0e34</config_AM_meridionalHeatTransport_max_bin>
@@ -588,32 +681,47 @@
 <config_AM_testComputeInterval_compute_interval>'00-00-01_00:00:00'</config_AM_testComputeInterval_compute_interval>
 <config_AM_testComputeInterval_compute_on_startup>.true.</config_AM_testComputeInterval_compute_on_startup>
 <config_AM_testComputeInterval_write_on_startup>.true.</config_AM_testComputeInterval_write_on_startup>
-<config_AM_testComputeInterval_stream_name>'testComputeIntervalOutput'</config_AM_testComputeInterval_stream_name>
+<config_AM_testComputeInterval_output_stream>'testComputeIntervalOutput'</config_AM_testComputeInterval_output_stream>
 
 <!-- AM_highFrequencyOutput -->
 <config_AM_highFrequencyOutput_enable>.false.</config_AM_highFrequencyOutput_enable>
 <config_AM_highFrequencyOutput_compute_interval>'output_interval'</config_AM_highFrequencyOutput_compute_interval>
-<config_AM_highFrequencyOutput_stream_name>'highFrequencyOutput'</config_AM_highFrequencyOutput_stream_name>
+<config_AM_highFrequencyOutput_output_stream>'highFrequencyOutput'</config_AM_highFrequencyOutput_output_stream>
 <config_AM_highFrequencyOutput_compute_on_startup>.true.</config_AM_highFrequencyOutput_compute_on_startup>
 <config_AM_highFrequencyOutput_write_on_startup>.true.</config_AM_highFrequencyOutput_write_on_startup>
 
 <!-- AM_timeFilters -->
 <config_AM_timeFilters_enable>.false.</config_AM_timeFilters_enable>
 <config_AM_timeFilters_compute_interval>'dt'</config_AM_timeFilters_compute_interval>
-<config_AM_timeFilters_stream_name>'timeFiltersOutput'</config_AM_timeFilters_stream_name>
+<config_AM_timeFilters_output_stream>'timeFiltersOutput'</config_AM_timeFilters_output_stream>
+<config_AM_timeFilters_restart_stream>'timeFiltersRestart'</config_AM_timeFilters_restart_stream>
 <config_AM_timeFilters_compute_on_startup>.true.</config_AM_timeFilters_compute_on_startup>
 <config_AM_timeFilters_write_on_startup>.true.</config_AM_timeFilters_write_on_startup>
-<config_AM_timeFilters_do_restart>.false.</config_AM_timeFilters_do_restart>
 <config_AM_timeFilters_initialize_filters>.true.</config_AM_timeFilters_initialize_filters>
 <config_AM_timeFilters_tau>'90_00:00:00'</config_AM_timeFilters_tau>
+
+<!-- AM_lagrPartTrack -->
+<config_AM_lagrPartTrack_enable>.false.</config_AM_lagrPartTrack_enable>
+<config_AM_lagrPartTrack_compute_interval>'dt'</config_AM_lagrPartTrack_compute_interval>
+<config_AM_lagrPartTrack_compute_on_startup>.false.</config_AM_lagrPartTrack_compute_on_startup>
+<config_AM_lagrPartTrack_output_stream>'lagrPartTrackOutput'</config_AM_lagrPartTrack_output_stream>
+<config_AM_lagrPartTrack_restart_stream>'lagrPartTrackRestart'</config_AM_lagrPartTrack_restart_stream>
+<config_AM_lagrPartTrack_input_stream>'lagrPartTrackInput'</config_AM_lagrPartTrack_input_stream>
+<config_AM_lagrPartTrack_write_on_startup>.true.</config_AM_lagrPartTrack_write_on_startup>
+<config_AM_lagrPartTrack_filter_number>0</config_AM_lagrPartTrack_filter_number>
+<config_AM_lagrPartTrack_reset_criteria>'none'</config_AM_lagrPartTrack_reset_criteria>
+<config_AM_lagrPartTrack_reset_global_timestamp>'0000_00:00:00'</config_AM_lagrPartTrack_reset_global_timestamp>
+<config_AM_lagrPartTrack_region_stream>'lagrPartTrackRegions'</config_AM_lagrPartTrack_region_stream>
+<config_AM_lagrPartTrack_reset_if_outside_region>.false.</config_AM_lagrPartTrack_reset_if_outside_region>
+<config_AM_lagrPartTrack_reset_if_inside_region>.false.</config_AM_lagrPartTrack_reset_if_inside_region>
 
 <!-- AM_eliassenPalm -->
 <config_AM_eliassenPalm_enable>.false.</config_AM_eliassenPalm_enable>
 <config_AM_eliassenPalm_compute_interval>'output_interval'</config_AM_eliassenPalm_compute_interval>
-<config_AM_eliassenPalm_stream_name>'eliassenPalmOutput'</config_AM_eliassenPalm_stream_name>
+<config_AM_eliassenPalm_output_stream>'eliassenPalmOutput'</config_AM_eliassenPalm_output_stream>
+<config_AM_eliassenPalm_restart_stream>'eliassenPalmRestart'</config_AM_eliassenPalm_restart_stream>
 <config_AM_eliassenPalm_compute_on_startup>.true.</config_AM_eliassenPalm_compute_on_startup>
 <config_AM_eliassenPalm_write_on_startup>.true.</config_AM_eliassenPalm_write_on_startup>
-<config_AM_eliassenPalm_do_restart>.false.</config_AM_eliassenPalm_do_restart>
 <config_AM_eliassenPalm_debug>.false.</config_AM_eliassenPalm_debug>
 <config_AM_eliassenPalm_nBuoyancyLayers>45</config_AM_eliassenPalm_nBuoyancyLayers>
 <config_AM_eliassenPalm_rhomin_buoycoor>900</config_AM_eliassenPalm_rhomin_buoycoor>
@@ -622,7 +730,7 @@
 <!-- AM_mixedLayerDepths -->
 <config_AM_mixedLayerDepths_enable>.false.</config_AM_mixedLayerDepths_enable>
 <config_AM_mixedLayerDepths_compute_interval>'output_interval'</config_AM_mixedLayerDepths_compute_interval>
-<config_AM_mixedLayerDepths_stream_name>'mixedLayerDepthsOutput'</config_AM_mixedLayerDepths_stream_name>
+<config_AM_mixedLayerDepths_output_stream>'mixedLayerDepthsOutput'</config_AM_mixedLayerDepths_output_stream>
 <config_AM_mixedLayerDepths_write_on_startup>.true.</config_AM_mixedLayerDepths_write_on_startup>
 <config_AM_mixedLayerDepths_compute_on_startup>.true.</config_AM_mixedLayerDepths_compute_on_startup>
 <config_AM_mixedLayerDepths_Tthreshold>.true.</config_AM_mixedLayerDepths_Tthreshold>
@@ -635,5 +743,19 @@
 <config_AM_mixedLayerDepths_temp_gradient_threshold>5E-7</config_AM_mixedLayerDepths_temp_gradient_threshold>
 <config_AM_mixedLayerDepths_den_gradient_threshold>5E-8</config_AM_mixedLayerDepths_den_gradient_threshold>
 <config_AM_mixedLayerDepths_interp_method>1</config_AM_mixedLayerDepths_interp_method>
+
+<!-- AM_timeSeriesStats -->
+<config_AM_timeSeriesStats_enable>.false.</config_AM_timeSeriesStats_enable>
+<config_AM_timeSeriesStats_compute_on_startup>.false.</config_AM_timeSeriesStats_compute_on_startup>
+<config_AM_timeSeriesStats_write_on_startup>.false.</config_AM_timeSeriesStats_write_on_startup>
+<config_AM_timeSeriesStats_compute_interval>'dt'</config_AM_timeSeriesStats_compute_interval>
+<config_AM_timeSeriesStats_output_stream>'timeSeriesStatsOutput'</config_AM_timeSeriesStats_output_stream>
+<config_AM_timeSeriesStats_restart_stream>'timeSeriesStatsRestart'</config_AM_timeSeriesStats_restart_stream>
+<config_AM_timeSeriesStats_add_mesh>.true.</config_AM_timeSeriesStats_add_mesh>
+<config_AM_timeSeriesStats_operation>'avg'</config_AM_timeSeriesStats_operation>
+<config_AM_timeSeriesStats_reference_times>'initial_time'</config_AM_timeSeriesStats_reference_times>
+<config_AM_timeSeriesStats_duration_intervals>'repeat_interval'</config_AM_timeSeriesStats_duration_intervals>
+<config_AM_timeSeriesStats_repeat_intervals>'reset_interval'</config_AM_timeSeriesStats_repeat_intervals>
+<config_AM_timeSeriesStats_reset_intervals>'00-00-01_00:00:00'</config_AM_timeSeriesStats_reset_intervals>
 
 </namelist_defaults>
