@@ -16,35 +16,35 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_scr
 	except:
 		print "ERROR: <test> tag is missing 'name' attribute."
 		print "Exiting..."
-		quit(1)
+		sys.exit(1)
 	
 	try:
 		test_core = test_tag.attrib['core']
 	except:
 		print "ERROR: <test> tag with name '%s' is missing 'core' attribute."%(test_name)
 		print "Exiting..."
-		quit(1)
+		sys.exit(1)
 
 	try:
 		test_configuration = test_tag.attrib['configuration']
 	except:
 		print "ERROR: <test> tag with name '%s' is missing 'configuration' attribute."%(test_name)
 		print "Exiting..."
-		quit(1)
+		sys.exit(1)
 
 	try:
 		test_resolution = test_tag.attrib['resolution']
 	except:
 		print "ERROR: <test> tag with name '%s' is missing 'resolution' attribute."%(test_name)
 		print "Exiting..."
-		quit(1)
+		sys.exit(1)
 
 	try:
 		test_test = test_tag.attrib['test']
 	except:
 		print "ERROR: <test> tag with name '%s' is missing 'test' attribute."%(test_name)
 		print "Exiting..."
-		quit(1)
+		sys.exit(1)
 	
 	# Determine the file name for the test case output
 	case_output_name = test_name.replace(' ', '_')
@@ -79,7 +79,7 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_scr
 			except:
 				print "ERROR: <script> tag is missing 'name' attribute."
 				print 'Exiting...'
-				quit(1)
+				sys.exit(1)
 
 			command = "subprocess.check_call(['%s/%s/%s/%s/%s/%s']"%(work_dir, test_core, test_configuration, test_resolution, test_test, script_name)
 			command = '%s, stdout=case_output, stderr=case_output'%(command)
@@ -108,35 +108,35 @@ def process_test_clean(test_tag, work_dir, suite_script):#{{{
 	except:
 		print "ERROR: <test> tag is missing 'name' attribute."
 		print "Exiting..."
-		quit(1)
+		sys.exit(1)
 	
 	try:
 		test_core = test_tag.attrib['core']
 	except:
 		print "ERROR: <test> tag with name '%s' is missing 'core' attribute."%(test_name)
 		print "Exiting..."
-		quit(1)
+		sys.exit(1)
 
 	try:
 		test_configuration = test_tag.attrib['configuration']
 	except:
 		print "ERROR: <test> tag with name '%s' is missing 'configuration' attribute."%(test_name)
 		print "Exiting..."
-		quit(1)
+		sys.exit(1)
 
 	try:
 		test_resolution = test_tag.attrib['resolution']
 	except:
 		print "ERROR: <test> tag with name '%s' is missing 'resolution' attribute."%(test_name)
 		print "Exiting..."
-		quit(1)
+		sys.exit(1)
 
 	try:
 		test_test = test_tag.attrib['test']
 	except:
 		print "ERROR: <test> tag with name '%s' is missing 'test' attribute."%(test_name)
 		print "Exiting..."
-		quit(1)
+		sys.exit(1)
 	
 
 	# Clean test case
@@ -155,7 +155,7 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir):#
 	except:
 		print "ERROR: <regression_suite> tag is missing 'name' attribute."
 		print 'Exiting...'
-		quit(1)
+		sys.exit(1)
 
 	if not os.path.exists('%s'%(work_dir)):
 		os.makedirs('%s'%(work_dir))
@@ -169,7 +169,7 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir):#
 	regression_script.write('\n')
 	regression_script.write('### This script was written by manage_regression_suite.py as part of a regression_suite file\n')
 	regression_script.write('\n')
-	regression_script.write('import os\n')
+	regression_script.write('import sys, os\n')
 	regression_script.write('import subprocess\n')
 	regression_script.write('\n')
 	regression_script.write("if not os.path.exists('case_outputs'):\n")
@@ -195,7 +195,7 @@ def clean_suite(suite_tag, work_dir):#{{{
 	except:
 		print "ERROR: <regression_suite> tag is missing 'name' attribute."
 		print 'Exiting...'
-		quit(1)
+		sys.exit(1)
 
 	# Remove the regression suite script, if it exists
 	regression_script = '%s/%s.py'%(work_dir, suite_name)
@@ -221,35 +221,35 @@ def summarize_suite(suite_tag):#{{{
 			except:
 				print "<test> tag is missing a 'name' attribute"
 				print "Exiting..."
-				quit(1)
+				sys.exit(1)
 
 			try:
 				test_core = child.attrib['core']
 			except:
 				print "<test> tag named '%s' is missing a 'core' attribute"%(test_name)
 				print "Exiting..."
-				quit(1)
+				sys.exit(1)
 
 			try:
 				test_configuration = child.attrib['configuration']
 			except:
 				print "<test> tag named '%s' is missing a 'configuration' attribute"%(test_name)
 				print "Exiting..."
-				quit(1)
+				sys.exit(1)
 
 			try:
 				test_resolution = child.attrib['resolution']
 			except:
 				print "<test> tag named '%s' is missing a 'resolution' attribute"%(test_name)
 				print "Exiting..."
-				quit(1)
+				sys.exit(1)
 
 			try:
 				test_test = child.attrib['test']
 			except:
 				print "<test> tag named '%s' is missing a 'test' attribute"%(test_name)
 				print "Exiting..."
-				quit(1)
+				sys.exit(1)
 
 			test_path = '%s/%s/%s/%s'%(test_core, test_configuration, test_resolution, test_test)
 			# Loop over all files in test_path that have the .xml extension.

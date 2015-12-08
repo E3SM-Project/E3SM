@@ -88,6 +88,6 @@ for t in range( 0, time_length):
 	del diff
 
 if pass_val:
-	quit(0)
+	sys.exit(0)
 else:
-	quit(1)
+	sys.exit(1)
