@@ -602,10 +602,15 @@ def process_compare_fields_step(compare_tag, configs, script):#{{{
 		print 'Exiting...'
 		quit(1)
 	
+	baseline_root = configs.get('script_paths', 'baseline_dir')
+	baseline_root = '%s/%s'%(baseline_root, configs.get('script_paths', 'test_dir'))
+	
 	for child in compare_tag:
 		# Process field comparisions
 		if child.tag == 'field':
 			process_field_definition(child, configs, script, file1, file2)
+			process_field_definition(child, configs, script, file1, '%s/%s'%(baseline_root, file1))
+			process_field_definition(child, configs, script, file2, '%s/%s'%(baseline_root, file2))
 		# Process field comparision template
 		elif child.tag == 'template':
 			# Get template information, and build full path to template file
@@ -624,6 +629,8 @@ def process_compare_fields_step(compare_tag, configs, script):#{{{
 							for field in compare_fields:
 								if field.tag == 'field':
 									process_field_definition(field, configs, script, file1, file2)
+									process_field_definition(field, configs, script, file1, '%s/%s'%(baseline_root, file1))
+									process_field_definition(field, configs, script, file2, '%s/%s'%(baseline_root, file2))
 			del template_root
 			del template_tree
 			del template_info
@@ -652,12 +659,13 @@ def process_field_definition(field_tag, configs, script, file1, file2):#{{{
 	command = '%s], env=os.environ.copy())'%(command)
 
 	# Write the pass/fail logic.
-	script.write('try:\n')
-	script.write('\t%s\n'%(command))
-	script.write("\tprint ' ** PASS Comparison of %s'\n"%(field_name))
-	script.write('except:\n')
-	script.write("\tprint ' ** FAIL Comparison of %s'\n"%(field_name))
-	script.write('\terror = True\n')
+	script.write('if os.path.exists("%s") and os.path.exists("%s"):\n'%(file1, file2))
+	script.write('\ttry:\n')
+	script.write('\t\t%s\n'%(command))
+	script.write("\t\tprint ' ** PASS Comparison of %s between %s and %s'\n"%(field_name, file1, file2))
+	script.write('\texcept:\n')
+	script.write("\t\tprint ' ** FAIL Comparison of %s between %s and %s'\n"%(field_name, file1, file2))
+	script.write('\t\terror = True\n')
 #}}}
 
 def process_model_run_step(model_run_tag, configs, script):#{{{
@@ -1078,6 +1086,7 @@ parser.add_argument("-t", "--test", dest="test", help="Test name within a resolu
 parser.add_argument("-n", "--case_number", dest="case_num", help="Case number to setup, as listed from list_testcases.py. Can be a comma delimited list of case numbers.", metavar="NUM")
 parser.add_argument("-f", "--config_file", dest="config_file", help="Configuration file for test case setup", metavar="FILE", required=True)
 parser.add_argument("-m", "--model_runtime", dest="model_runtime", help="Definition of how to build model run commands on this machine", metavar="FILE")
+parser.add_argument("-b", "--baseline_dir", dest="baseline_dir", help="Location of baseslines that can be compared to", metavar="PATH")
 parser.add_argument("--no_download", dest="no_download", help="If set, script will not auto-download base_mesh files", action="store_true")
 parser.add_argument("--copy_instead_of_symlink", dest="nolink_copy", help="If set, script will replace symlinks with copies of files.", action="store_true")
 parser.add_argument("--work_dir", dest="work_dir", help="If set, script will create case directories in work_dir rather than the current directory.", metavar="PATH")
@@ -1123,12 +1132,18 @@ for arg in sys.argv:
 # This allows passing config around with all of the config options needed to
 # build paths, and determine options.
 config.add_section('script_input_arguments')
+config.add_section('script_paths')
 
 if not use_case_list:
 	config.set('script_input_arguments', 'core', args.core)
 	config.set('script_input_arguments', 'configuration', args.configuration)
 	config.set('script_input_arguments', 'resolution', args.resolution)
 	config.set('script_input_arguments', 'test', args.test)
+
+if args.baseline_dir:
+	config.set('script_paths', 'baseline_dir', args.baseline_dir)
+else:
+	config.set('script_paths', 'baseline_dir', 'NONE')
 
 if args.nolink_copy:
 	config.set('script_input_arguments', 'nolink_copy', 'yes')
@@ -1140,7 +1155,6 @@ if args.no_download:
 else:
 	config.set('script_input_arguments', 'no_download', 'no')
 
-config.add_section('script_paths')
 config.set('script_paths', 'script_path', os.path.dirname(os.path.realpath(__file__)))
 config.set('script_paths', 'work_dir', args.work_dir)
 config.set('script_paths', 'utility_scripts', '%s/utility_scripts'%(config.get('script_paths', 'script_path')))

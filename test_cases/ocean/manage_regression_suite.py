@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 import subprocess
 import ConfigParser
 
-def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_script):#{{{
+def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_script, baseline_dir):#{{{
 	dev_null = open('/dev/null', 'a')
 
 	# Process test attributes
@@ -51,9 +51,14 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_scr
 	
 	# Setup test case
 
-	subprocess.check_call(['./setup_testcase.py', '-f', config_file, '--work_dir', work_dir,
-							'-o', test_core, '-c', test_configuration, '-r', test_resolution, '-t', test_test,
-							'-m', model_runtime], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+	if baseline_dir == 'NONE':
+		subprocess.check_call(['./setup_testcase.py', '-f', config_file, '--work_dir', work_dir,
+								'-o', test_core, '-c', test_configuration, '-r', test_resolution, '-t', test_test,
+								'-m', model_runtime], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+	else:
+		subprocess.check_call(['./setup_testcase.py', '-f', config_file, '--work_dir', work_dir,
+								'-o', test_core, '-c', test_configuration, '-r', test_resolution, '-t', test_test,
+								'-m', model_runtime, '-b', baseline_dir], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 	
 	print "   -- Setup case '%s': -o %s -c %s -r %s -t %s"%(test_name, test_core, test_configuration, test_resolution, test_test)
 
@@ -144,7 +149,7 @@ def process_test_clean(test_tag, work_dir, suite_script):#{{{
 
 #}}}
 
-def setup_suite(suite_tag, work_dir, model_runtime, config_file):#{{{
+def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir):#{{{
 	try:
 		suite_name = suite_tag.attrib['name']
 	except:
@@ -175,7 +180,7 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file):#{{{
 	for child in suite_tag:
 		# Process <test> tags within the test suite
 		if child.tag == 'test':
-			process_test_setup(child, config_file, work_dir, model_runtime, regression_script)
+			process_test_setup(child, config_file, work_dir, model_runtime, regression_script, baseline_dir)
 	
 	regression_script.close()
 
@@ -299,6 +304,7 @@ parser.add_argument("-f", "--config_file", dest="config_file", help="Configurati
 parser.add_argument("-s", "--setup", dest="setup", help="Option to determine if regression suite should be setup or not.", action="store_true")
 parser.add_argument("-c", "--clean", dest="clean", help="Option to determine if regression suite should be cleaned or not.", action="store_true")
 parser.add_argument("-m", "--model_runtime", dest="model_runtime", help="Definition of how to build model run commands on this machine", metavar="FILE")
+parser.add_argument("-b", "--baseline_dir", dest="baseline_dir", help="Location of baseslines that can be compared to", metavar="PATH")
 parser.add_argument("--work_dir", dest="work_dir", help="If set, script will setup the test suite in work_dir rather in this script's location.", metavar="PATH")
 
 args = parser.parse_args()
@@ -309,6 +315,9 @@ if not args.work_dir:
 if not args.model_runtime:
 	args.model_runtime = '%s/runtime_definitions/mpirun.xml'%(os.path.dirname(os.path.realpath(__file__)))
 	print 'WARNING: No model runtime specified. Using the default of %s'%(args.model_runtime)
+
+if not args.baseline_dir:
+	args.baseline_dir = 'NONE'
 
 # Parse regression_suite file
 suite_tree = ET.parse(args.test_suite)
@@ -324,6 +333,6 @@ if suite_root.tag == 'regression_suite':
 	if args.setup:
 		print "\n"
 		print "Setting Up Test Cases:"
-		setup_suite(suite_root, args.work_dir, args.model_runtime, args.config_file)
+		setup_suite(suite_root, args.work_dir, args.model_runtime, args.config_file, args.baseline_dir)
 		summarize_suite(suite_root)
 
