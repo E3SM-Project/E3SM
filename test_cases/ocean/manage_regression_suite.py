@@ -1,4 +1,16 @@
 #!/usr/bin/env python
+"""
+This script is used to manage regression suites. A regression suite is a set of
+test cases that ensure one or more features in a model meet certain criteria.
+
+Using this script one can setup or clean a regression suite.
+
+When setting up a regression suite, this script will generate a script to run
+all tests in the suite, and additionally setup each individual test case.
+
+When cleaning a regression suite, this script will remove any generated files
+for each individual test case, and the run script that runs all test cases.
+"""
 
 import sys, os, glob, shutil, numpy, math
 import fnmatch

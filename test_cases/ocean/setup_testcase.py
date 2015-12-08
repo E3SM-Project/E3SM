@@ -1,4 +1,16 @@
 #!/usr/bin/env python
+"""
+This script is used to manage setup individual test cases. Available test cases
+can be see using the list_testcases.py script.
+
+Specifically, this script parses XML files that define cases (steps in test
+cases) and driver scripts, and generates directories and scripts to run each
+step in the process of creating a test case.
+
+Some test cases are single XML files, but other test cases require multiple
+steps (such as setting up initial conditions or performing multiple runs), so
+the information within each test case can vary quite a bit.
+"""
 
 import sys, os, glob, shutil, numpy, math
 import fnmatch

@@ -67,6 +67,7 @@ what children can be placed below the tag.
                  Relative to the <core>/<configuration>/<resolution> directory.
     - Children:
         * <field>
+		* <template>
 
 <field> - This tag is used to define a field that will be compared within a
           <compare_fields> tag. Any norm thresholds that are specified all must pass to
@@ -82,3 +83,12 @@ what children can be placed below the tag.
         * linf_norm: This attribute defines the threshold for an L-Infinity norm, to
                     define a pass. If not specified, the L-Infinity norm will not be used in
                     determining if the comparison passes or fails.
+
+<template> - This tag defines a template that should be applied to define a list of field comparisions.
+    - Attributes:
+        * file: The file that contains the template that should be expanded here.
+        * path_base: The base that the path attribute should be used relative
+                     to. Can have a value of:
+                - Can use pre-defined paths (see doc/README.config)
+        * path: The path that the file lives in, relative to path_base.
+
