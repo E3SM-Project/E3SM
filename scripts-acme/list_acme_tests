@@ -62,7 +62,7 @@ def list_tests(thing_to_list, categories):
     for category in categories:
         tests = update_acme_tests.get_test_suite(category)
         for test in tests:
-            testcase, grid, compset = acme_util.parse_test_name(test)[:3]
+            testcase, _, grid, compset = acme_util.parse_test_name(test)[:4]
             if (thing_to_list == "compsets"):
                 things.add(compset)
             elif (thing_to_list == "grids"):
