@@ -351,7 +351,6 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
   iosystem_desc_t *iosys;
   int ierr;
   int ustride;
-  MPI_Group compgroup, iogroup;
   int lbase;
   iosys = (iosystem_desc_t *) malloc(sizeof(iosystem_desc_t));
 
@@ -410,11 +409,12 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
   if(iosys->comp_rank == iosys->ioranks[0])
     iosys->iomaster = true;
 
-  CheckMPIReturn(MPI_Comm_group(comp_comm, &compgroup),__FILE__,__LINE__);
+  CheckMPIReturn(MPI_Comm_group(comp_comm, &(iosys->compgroup)),__FILE__,__LINE__);
 			
-  CheckMPIReturn(MPI_Group_incl(compgroup, iosys->num_iotasks, iosys->ioranks, &iogroup),__FILE__,__LINE__);
+  CheckMPIReturn(MPI_Group_incl(iosys->compgroup, iosys->num_iotasks, iosys->ioranks,
+				&(iosys->iogroup)),__FILE__,__LINE__);
 
-  CheckMPIReturn(MPI_Comm_create(comp_comm, iogroup, &(iosys->io_comm)),__FILE__,__LINE__);
+  CheckMPIReturn(MPI_Comm_create(comp_comm, iosys->iogroup, &(iosys->io_comm)),__FILE__,__LINE__);
   if(iosys->ioproc)
     CheckMPIReturn(MPI_Comm_rank(iosys->io_comm, &(iosys->io_rank)),__FILE__,__LINE__);
   else
@@ -488,6 +488,9 @@ int PIOc_finalize(const int iosysid)
 
   free_cn_buffer_pool(*ios);
 
+  /* Free the MPI groups. */
+  MPI_Group_free(&(ios->compgroup));
+  MPI_Group_free(&(ios->iogroup));
 
   if(ios->io_comm != MPI_COMM_NULL){
     MPI_Comm_free(&(ios->io_comm));
