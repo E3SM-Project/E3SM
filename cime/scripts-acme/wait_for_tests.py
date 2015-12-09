@@ -224,8 +224,9 @@ def reduce_stati(stati, check_throughput=False, check_memory=False, ignore_namel
                  (ignore_namelists and phase == NAMELIST_PHASE) ):
                 continue
 
-            if (status == NAMELIST_FAIL_STATUS and rv == TEST_PASS_STATUS):
-                rv = NAMELIST_FAIL_STATUS
+            if (status == NAMELIST_FAIL_STATUS):
+                if (rv == TEST_PASS_STATUS):
+                    rv = NAMELIST_FAIL_STATUS
 
             elif (rv in [NAMELIST_FAIL_STATUS, TEST_PASS_STATUS] and phase == HIST_COMPARE_PHASE):
                 rv = TEST_DIFF_STATUS
@@ -251,7 +252,8 @@ def parse_test_status(file_contents):
             if (test_name is None):
                 test_name = curr_test_name
             if (phase in rv):
-                rv[phase] = reduce_stati({phase : status, phase : rv[phase]})
+                # Phase names don't matter here, just need something unique
+                rv[phase] = reduce_stati({"%s_" % phase : status, phase : rv[phase]})
             else:
                 rv[phase] = status
         else:
@@ -285,6 +287,8 @@ def interpret_status(file_contents, check_throughput=False, check_memory=False, 
     ('testname', 'NLFAIL')
     >>> interpret_status('PASS testname RUN\nNLFAIL testname nlcomp', ignore_namelists=True)
     ('testname', 'PASS')
+    >>> interpret_status('PASS testname compare\nNLFAIL testname nlcomp\nFAIL testname compare')
+    ('testname', 'DIFF')
     """
     statuses, test_name = parse_test_status(file_contents)
     if (RUN_PHASE not in statuses.keys()):
