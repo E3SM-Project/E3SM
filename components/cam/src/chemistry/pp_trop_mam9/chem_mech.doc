@@ -1,0 +1,215 @@
+  
+  
+     Solution species
+      (  1)  H2O2            
+      (  2)  H2SO4           
+      (  3)  SO2             
+      (  4)  DMS                (CH3SCH3)
+      (  5)  NH3             
+      (  6)  SOAG               (C)
+      (  7)  so4_a1             (SO4)
+      (  8)  nh4_a1             (NH4)
+      (  9)  pom_a1             (C)
+      ( 10)  soa_a1             (C)
+      ( 11)  bc_a1              (C)
+      ( 12)  ncl_a1             (NaCl)
+      ( 13)  mpoly_a1           (C8520H11360O8520)
+      ( 14)  mprot_a1           (C5539)
+      ( 15)  mlip_a1            (C18H36O2)
+      ( 16)  num_a1             (H)
+      ( 17)  so4_a2             (SO4)
+      ( 18)  nh4_a2             (NH4)
+      ( 19)  soa_a2             (C)
+      ( 20)  ncl_a2             (NaCl)
+      ( 21)  mpoly_a2           (C8520H11360O8520)
+      ( 22)  mprot_a2           (C5539)
+      ( 23)  mlip_a2            (C18H36O2)
+      ( 24)  num_a2             (H)
+      ( 25)  pom_a3             (C)
+      ( 26)  bc_a3              (C)
+      ( 27)  mpoly_a3           (C8520H11360O8520)
+      ( 28)  mprot_a3           (C5539)
+      ( 29)  mlip_a3            (C18H36O2)
+      ( 30)  num_a3             (H)
+      ( 31)  ncl_a4             (NaCl)
+      ( 32)  so4_a4             (SO4)
+      ( 33)  nh4_a4             (NH4)
+      ( 34)  num_a4             (H)
+      ( 35)  dst_a5             (AlSiO5)
+      ( 36)  so4_a5             (SO4)
+      ( 37)  nh4_a5             (NH4)
+      ( 38)  num_a5             (H)
+      ( 39)  ncl_a6             (NaCl)
+      ( 40)  so4_a6             (SO4)
+      ( 41)  nh4_a6             (NH4)
+      ( 42)  num_a6             (H)
+      ( 43)  dst_a7             (AlSiO5)
+      ( 44)  so4_a7             (SO4)
+      ( 45)  nh4_a7             (NH4)
+      ( 46)  num_a7             (H)
+      ( 47)  mpoly_a8           (C8520H11360O8520)
+      ( 48)  mprot_a8           (C5539)
+      ( 49)  mlip_a8            (C18H36O2)
+      ( 50)  num_a8             (H)
+      ( 51)  mpoly_a9           (C8520H11360O8520)
+      ( 52)  mprot_a9           (C5539)
+      ( 53)  mlip_a9            (C18H36O2)
+      ( 54)  num_a9             (H)
+  
+  
+     Invariant species
+      (  1)  M               
+      (  2)  N2              
+      (  3)  O2              
+      (  4)  H2O             
+      (  5)  O3              
+      (  6)  OH              
+      (  7)  NO3             
+      (  8)  HO2             
+  
+  
+     Column integrals
+   ( 1)  O3               -  0.000E+00
+   ( 2)  O2               -  0.000E+00
+  
+Class List
+==========
+  
+ Implicit  
+ --------
+      (  1)  H2O2            
+      (  2)  H2SO4           
+      (  3)  SO2             
+      (  4)  DMS             
+      (  5)  NH3             
+      (  6)  SOAG            
+      (  7)  so4_a1          
+      (  8)  nh4_a1          
+      (  9)  pom_a1          
+      ( 10)  soa_a1          
+      ( 11)  bc_a1           
+      ( 12)  ncl_a1          
+      ( 13)  mpoly_a1        
+      ( 14)  mprot_a1        
+      ( 15)  mlip_a1         
+      ( 16)  num_a1          
+      ( 17)  so4_a2          
+      ( 18)  nh4_a2          
+      ( 19)  soa_a2          
+      ( 20)  ncl_a2          
+      ( 21)  mpoly_a2        
+      ( 22)  mprot_a2        
+      ( 23)  mlip_a2         
+      ( 24)  num_a2          
+      ( 25)  pom_a3          
+      ( 26)  bc_a3           
+      ( 27)  mpoly_a3        
+      ( 28)  mprot_a3        
+      ( 29)  mlip_a3         
+      ( 30)  num_a3          
+      ( 31)  ncl_a4          
+      ( 32)  so4_a4          
+      ( 33)  nh4_a4          
+      ( 34)  num_a4          
+      ( 35)  dst_a5          
+      ( 36)  so4_a5          
+      ( 37)  nh4_a5          
+      ( 38)  num_a5          
+      ( 39)  ncl_a6          
+      ( 40)  so4_a6          
+      ( 41)  nh4_a6          
+      ( 42)  num_a6          
+      ( 43)  dst_a7          
+      ( 44)  so4_a7          
+      ( 45)  nh4_a7          
+      ( 46)  num_a7          
+      ( 47)  mpoly_a8        
+      ( 48)  mprot_a8        
+      ( 49)  mlip_a8         
+      ( 50)  num_a8          
+      ( 51)  mpoly_a9        
+      ( 52)  mprot_a9        
+      ( 53)  mlip_a9         
+      ( 54)  num_a9          
+  
+     Photolysis
+  jh2o2            (  1)   H2O2 + hv -> (No products)                                           rate = ** User defined **         (  1)
+  
+     Reactions
+  usr_HO2_HO2      (  1)   HO2 + HO2 ->  H2O2                                                   rate = ** User defined **         (  2)
+                   (  2)   H2O2 + OH ->  H2O + HO2                                              rate = 2.90E-12*exp(   -160./t)   (  3)
+  usr_SO2_OH       (  3)   SO2 + OH ->  H2SO4                                                   rate = ** User defined **         (  4)
+                   (  4)   DMS + OH ->  SO2                                                     rate = 9.60E-12*exp(   -234./t)   (  5)
+  usr_DMS_OH       (  5)   DMS + OH ->  .5*SO2 + .5*HO2                                         rate = ** User defined **         (  6)
+                   (  6)   DMS + NO3 ->  SO2 + {HNO3}                                           rate = 1.90E-13*exp(    520./t)   (  7)
+                   (  7)   NH3 + OH ->  H2O                                                     rate = 1.70E-12*exp(   -710./t)   (  8)
+  
+Extraneous prod/loss species
+ ( 1)   SO2   (dataset)
+ ( 2)   so4_a1   (dataset)
+ ( 3)   so4_a2   (dataset)
+ ( 4)   num_a1   (dataset)
+ ( 5)   num_a2   (dataset)
+ ( 6)   pom_a3   (dataset)
+ ( 7)   bc_a3   (dataset)
+ ( 8)   num_a3   (dataset)
+  
+  
+ Equation Report
+  
+    d(H2O2)/dt = r1                                                                                                     
+                  - j1*H2O2  - r2*OH*H2O2                                                                               
+    d(H2SO4)/dt = r3*OH*SO2                                                                                             
+    d(SO2)/dt = r4*OH*DMS  + .5*r5*OH*DMS  + r6*NO3*DMS                                                                 
+                 - r3*OH*SO2                                                                                            
+    d(DMS)/dt =  - r4*OH*DMS  - r5*OH*DMS  - r6*NO3*DMS                                                                 
+    d(NH3)/dt =  - r7*OH*NH3                                                                                            
+    d(SOAG)/dt = 0                                                                                                      
+    d(so4_a1)/dt = 0                                                                                                    
+    d(nh4_a1)/dt = 0                                                                                                    
+    d(pom_a1)/dt = 0                                                                                                    
+    d(soa_a1)/dt = 0                                                                                                    
+    d(bc_a1)/dt = 0                                                                                                     
+    d(ncl_a1)/dt = 0                                                                                                    
+    d(mpoly_a1)/dt = 0                                                                                                  
+    d(mprot_a1)/dt = 0                                                                                                  
+    d(mlip_a1)/dt = 0                                                                                                   
+    d(num_a1)/dt = 0                                                                                                    
+    d(so4_a2)/dt = 0                                                                                                    
+    d(nh4_a2)/dt = 0                                                                                                    
+    d(soa_a2)/dt = 0                                                                                                    
+    d(ncl_a2)/dt = 0                                                                                                    
+    d(mpoly_a2)/dt = 0                                                                                                  
+    d(mprot_a2)/dt = 0                                                                                                  
+    d(mlip_a2)/dt = 0                                                                                                   
+    d(num_a2)/dt = 0                                                                                                    
+    d(pom_a3)/dt = 0                                                                                                    
+    d(bc_a3)/dt = 0                                                                                                     
+    d(mpoly_a3)/dt = 0                                                                                                  
+    d(mprot_a3)/dt = 0                                                                                                  
+    d(mlip_a3)/dt = 0                                                                                                   
+    d(num_a3)/dt = 0                                                                                                    
+    d(ncl_a4)/dt = 0                                                                                                    
+    d(so4_a4)/dt = 0                                                                                                    
+    d(nh4_a4)/dt = 0                                                                                                    
+    d(num_a4)/dt = 0                                                                                                    
+    d(dst_a5)/dt = 0                                                                                                    
+    d(so4_a5)/dt = 0                                                                                                    
+    d(nh4_a5)/dt = 0                                                                                                    
+    d(num_a5)/dt = 0                                                                                                    
+    d(ncl_a6)/dt = 0                                                                                                    
+    d(so4_a6)/dt = 0                                                                                                    
+    d(nh4_a6)/dt = 0                                                                                                    
+    d(num_a6)/dt = 0                                                                                                    
+    d(dst_a7)/dt = 0                                                                                                    
+    d(so4_a7)/dt = 0                                                                                                    
+    d(nh4_a7)/dt = 0                                                                                                    
+    d(num_a7)/dt = 0                                                                                                    
+    d(mpoly_a8)/dt = 0                                                                                                  
+    d(mprot_a8)/dt = 0                                                                                                  
+    d(mlip_a8)/dt = 0                                                                                                   
+    d(num_a8)/dt = 0                                                                                                    
+    d(mpoly_a9)/dt = 0                                                                                                  
+    d(mprot_a9)/dt = 0                                                                                                  
+    d(mlip_a9)/dt = 0                                                                                                   
+    d(num_a9)/dt = 0                                                                                                    

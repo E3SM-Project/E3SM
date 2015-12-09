@@ -37,6 +37,7 @@ module tracer_data
   public :: trcdata_init
   public :: advance_trcdata
   public :: get_fld_data
+  public :: put_fld_data
   public :: get_fld_ndx
   public :: write_trc_restart
   public :: read_trc_restart
@@ -686,6 +687,40 @@ contains
     enddo
 
  end subroutine get_fld_data
+
+!-------------------------------------------------------------------
+!-------------------------------------------------------------------
+  subroutine put_fld_data( flds, field_name, data, ncol, lchnk, pbuf )
+
+    use physics_buffer, only : physics_buffer_desc, pbuf_get_field
+
+    implicit none
+
+    type(trfld), intent(inout) :: flds(:)
+    character(len=*), intent(in) :: field_name
+    real(r8), intent(in) :: data(:,:)
+    integer, intent(in) :: lchnk
+    integer, intent(in) :: ncol
+    type(physics_buffer_desc), pointer :: pbuf(:)
+    
+
+    integer :: f, nflds
+    real(r8),pointer  :: tmpptr(:,:)
+
+    nflds = size(flds)
+
+    do f = 1, nflds
+       if ( trim(flds(f)%fldnam) == trim(field_name) ) then
+          if ( flds(f)%pbuf_ndx>0 ) then
+             call pbuf_get_field(pbuf, flds(f)%pbuf_ndx, tmpptr)
+             tmpptr(:ncol,:) = data(:ncol,:)
+          else
+             flds(f)%data(:ncol,:,lchnk) = data(:ncol,:)
+          endif
+       endif
+    enddo
+
+ end subroutine put_fld_data
 
 !-------------------------------------------------------------------
 !-------------------------------------------------------------------
