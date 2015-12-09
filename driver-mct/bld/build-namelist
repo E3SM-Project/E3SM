@@ -333,6 +333,7 @@ my $flds_co2a     = ".false.";
 my $flds_co2b     = ".false.";
 my $flds_co2c     = ".false.";
 my $flds_co2_dmsa = ".false.";
+my $flds_bgc      = ".false.";
 if ($CCSM_BGC eq 'CO2A') {
     $flds_co2a = ".true.";
 } elsif ($CCSM_BGC eq 'CO2B') {
@@ -350,6 +351,7 @@ add_default($nl, 'flds_co2a',    'val'=>"$flds_co2a");
 add_default($nl, 'flds_co2b',    'val'=>"$flds_co2b");
 add_default($nl, 'flds_co2c',    'val'=>"$flds_co2c");
 add_default($nl, 'flds_co2_dmsa','val'=>"$flds_co2_dmsa");
+add_default($nl, 'flds_bgc',     'val'=>"$flds_bgc");
 add_default($nl, 'glc_nec',      'val'=>"$glc_nec");
     
 #############################################
