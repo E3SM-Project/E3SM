@@ -1339,7 +1339,7 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
   int ierr=PIO_NOERR;
 #ifdef _PNETCDF
   int *status;
-  PIO_Offset usage;
+  PIO_Offset usage = 0;
 #ifdef TIMING
   GPTLstart("PIO:flush_output_buffer");
 #endif
