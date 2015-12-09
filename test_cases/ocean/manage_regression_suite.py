@@ -103,7 +103,7 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_scr
 			suite_script.write('\t%s\n'%(command))
 			suite_script.write("\tprint '      PASS'\n")
 			suite_script.write('except:\n')
-			suite_script.write("\tprint '   ** FAIL (See case_output/%s for more information)'\n"%(case_output_name))
+			suite_script.write("\tprint '   ** FAIL (See case_outputs/%s for more information)'\n"%(case_output_name))
 	
 	# Finish writing test case output
 	suite_script.write("case_output.close()\n")

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<config case="test" mode="forward">
+<config case="test">
 
 	<get_file hash="j62arymcxl" dest_path="mesh_database" file_name="mesh.QU.960km.151026.nc">
 		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database"/>
@@ -11,9 +11,9 @@
 	<add_link source_path="utility_scripts" source="make_graph_file.py" dest="make_graph_file.py"/>
 	<add_link source_path="mesh_database" source="mesh.QU.642.151008.nc" dest="base_mesh.nc"/>
 
-	<namelist name="namelist.test"/>
+	<namelist name="namelist.test" mode="forward"/>
 
-	<streams name="streams.test" keep="immutable">
+	<streams name="streams.test" keep="immutable" mode="forward">
 		<stream name="input">
 			<attribute name="filename_template">base_mesh.nc</attribute>
 		</stream>
