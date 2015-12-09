@@ -583,10 +583,10 @@ class TestUpdateACMETests(unittest.TestCase):
     ###########################################################################
     def test_update_acme_tests(self):
     ###########################################################################
-        # Add some BS to acme tests
+        # Add some testable stuff to acme tests
         update_acme_tests._TEST_SUITES["acme_tiny"] = \
-            (None, [("ERS.f19_g16_rx1.A", "test/test_mod"),
-                    ("NCK.f19_g16_rx1.A", "test/test_mod")]
+            (None, (("ERS.f19_g16_rx1.A", "jgftestmodtest/test_mod"),
+                    ("NCK.f19_g16_rx1.A", "jgftestmodtest/test_mod"))
              )
 
         try:
@@ -595,8 +595,31 @@ class TestUpdateACMETests(unittest.TestCase):
             traceback.print_tb(sys.exc_info()[2])
             self.assertTrue(False, str(sys.exc_info()[1]))
 
-        stat = run_cmd("grep 'test/test_mod' %s" % self._testlist_allactive, ok_to_fail=True)[0]
+        stat = run_cmd("grep 'jgftestmodtest/test_mod' %s" % self._testlist_allactive, ok_to_fail=True)[0]
         self.assertEqual(stat, 0, msg="update_acme_tests did not update XML")
+
+    ###########################################################################
+    def test_update_acme_tests_test_mods(self):
+    ###########################################################################
+        machine = "melvin"
+        not_my_machine = "%s_jgftest" % machine
+
+        # Add some testable stuff to acme tests
+        update_acme_tests._TEST_SUITES["acme_tiny"] = \
+            (None, (("ERS.f19_g16_rx1.A", "test_mod"),
+                    ("ERS.f19_g16_rx1.B", "test_mod", machine),
+                    ("ERS.f19_g16_rx1.C", "test_mod", (machine, not_my_machine)),
+                    ("ERS.f19_g16_rx1.D", "test_mod", not_my_machine),
+                    "ERS.f19_g16_rx1.E")
+             )
+
+        tests = update_acme_tests.get_test_suite("acme_tiny", compiler="gnu")
+        self.assertEqual(5, len(tests))
+        self.assertTrue("ERS.f19_g16_rx1.A.melvin_gnu.test_mod" in tests)
+        self.assertTrue("ERS.f19_g16_rx1.B.melvin_gnu.test_mod" in tests)
+        self.assertTrue("ERS.f19_g16_rx1.C.melvin_gnu.test_mod" in tests)
+        self.assertTrue("ERS.f19_g16_rx1.D.melvin_gnu" in tests)
+        self.assertTrue("ERS.f19_g16_rx1.E.melvin_gnu" in tests)
 
 ###########################################################################
 
