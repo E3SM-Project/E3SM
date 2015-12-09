@@ -489,8 +489,8 @@ int PIOc_finalize(const int iosysid)
   free_cn_buffer_pool(*ios);
 
   /* Free the MPI groups. */
-  /* MPI_Group_free(&(ios->compgroup)); */
-  /* MPI_Group_free(&(ios->iogroup)); */
+  MPI_Group_free(&(ios->compgroup));
+  MPI_Group_free(&(ios->iogroup));
 
   if(ios->io_comm != MPI_COMM_NULL){
     MPI_Comm_free(&(ios->io_comm));
