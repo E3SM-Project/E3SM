@@ -1492,6 +1492,36 @@ List of possible MEGAN compounds to use
 </entry> 
 
 <!-- ========================================================================================  -->
+<!-- Namelist options controlling prescribed subgrid dynamics                                  -->
+<!-- ========================================================================================  -->
+
+<entry id="flanduse_timeseries" type="char*256" category="datasets"
+       input_pathname="abs" group="dynamic_subgrid" valid_values="" >
+Full pathname of time varying landuse data file. This causes the land-use types of
+the initial surface dataset to vary over time.
+</entry>
+
+<entry id="do_transient_pfts" type="logical" category="physics"
+       group="dynamic_subgrid" valid_values="" >
+If TRUE, apply transient natural PFTs from flanduse_timeseries file.
+(Only valid for transient runs, where there is a flanduse_timeseries file.)
+</entry>
+
+<entry id="do_transient_crops" type="logical" category="physics"
+       group="dynamic_subgrid" valid_values="" >
+If TRUE, apply transient crops from flanduse_timeseries file.
+(Only valid for transient runs, where there is a flanduse_timeseries file.)
+(Also, only valid for use_crop = true.)
+</entry>
+
+<entry id="do_harvest" type="logical" category="physics"
+       group="dynamic_subgrid" valid_values="" >
+If TRUE, apply harvest from flanduse_timeseries file.
+(Only valid for transient runs, where there is a flanduse_timeseries file.)
+(Also, only valid for use_cn = true.)
+</entry>
+
+<!-- ========================================================================================  -->
 <!-- Namelist options related to finidat consistency checks                                    -->
 <!-- ========================================================================================  -->
 
