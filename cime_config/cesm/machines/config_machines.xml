@@ -326,7 +326,7 @@
       </modules>
       <modules mpilib="!mpi-serial">
 	<command name="load">cray-netcdf-hdf5parallel/4.3.2</command>
-	<command name="load">cray-parallel-netcdf/1.6.0</command>
+	<command name="load">cray-parallel-netcdf/1.6.1</command>
       </modules>
       <modules mpilib="mpi-serial">
 	<command name="load">cray-netcdf/4.3.2</command>
@@ -722,7 +722,7 @@
       <modules mpilib="!mpi-serial">
 	<command name="load">cray-netcdf-hdf5parallel/4.3.3.1</command>
 	<command name="load">cray-hdf5-parallel/1.8.14</command>
-	<command name="load">cray-parallel-netcdf/1.6.0</command>
+	<command name="load">cray-parallel-netcdf/1.6.1</command>
       </modules>
       <modules>
 	<command name="load">perl/5.20.0</command>
@@ -1640,7 +1640,7 @@
 	<command name="load"> esmf-6.3.0rp1-defio-uni-O</command>
       </modules>
       <modules compiler="pgi">
-	<command name="load">pgi/15.1</command>
+	<command name="load">pgi/15.10</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">gnu/5.2.0</command>
@@ -1650,7 +1650,7 @@
       </modules>
       <modules mpilib="!mpi-serial">
 	<command name="load">netcdf-mpi/4.3.3.1</command>
-	<command name="load">pnetcdf/1.6.0</command>
+	<command name="load">pnetcdf/1.6.1</command>
       </modules>
       <modules>
 	<command name="load">ncarcompilers/1.0</command>

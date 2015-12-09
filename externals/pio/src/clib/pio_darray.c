@@ -592,7 +592,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 	     if(vdesc->request[reqn] == NC_REQ_NULL){
 	       vdesc->request[reqn] = PIO_REQ_NULL;  //keeps wait calls in sync
 	     }
-	     vdesc->nreqs += reqn+1;
+	     vdesc->nreqs = reqn;
 
 	     //	     printf("%s %d %d %d\n",__FILE__,__LINE__,vdesc->nreqs,vdesc->request[reqn]);
 	   }

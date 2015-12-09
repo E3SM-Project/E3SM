@@ -2293,6 +2293,14 @@
     <desc>pio number of io tasks</desc>
   </entry>
 
+  <entry id="PIO_REARRANGER">
+    <type>integer</type>
+    <default_value>2</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger choice box=1, subset=2 </desc>
+  </entry>
+
   <entry id="PIO_TYPENAME">
     <type>char</type>
     <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,default</valid_values>
@@ -2315,7 +2323,7 @@
     <default_value>-1</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio blocksize</desc>
+    <desc>pio blocksize for box decompositions</desc>
   </entry>
 
   <entry id="PIO_BUFFER_SIZE_LIMIT">
@@ -2323,7 +2331,7 @@
     <default_value>-1</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio buffer size limit</desc>
+    <desc>pio buffer size limit for pnetcdf output</desc>
   </entry>
 
   <entry id="OCN_PIO_STRIDE">
@@ -2332,6 +2340,14 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio stride</desc>
+  </entry>
+
+  <entry id="OCN_PIO_REARRANGER">
+    <type>integer</type>
+    <default_value>2</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger choice box=1, subset=2 </desc>
   </entry>
 
   <entry id="OCN_PIO_ROOT">
@@ -2367,6 +2383,14 @@
     <desc>pio stride</desc>
   </entry>
 
+  <entry id="LND_PIO_REARRANGER">
+    <type>integer</type>
+    <default_value>2</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger choice box=1, subset=2 </desc>
+  </entry>
+
   <entry id="LND_PIO_ROOT">
     <type>integer</type>
     <default_value>-99</default_value>
@@ -2398,6 +2422,14 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio stride</desc>
+  </entry>
+
+  <entry id="ROF_PIO_REARRANGER">
+    <type>integer</type>
+    <default_value>2</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger choice box=1, subset=2 </desc>
   </entry>
 
   <entry id="ROF_PIO_ROOT">
@@ -2433,6 +2465,14 @@
     <desc>pio stride</desc>
   </entry>
 
+  <entry id="ICE_PIO_REARRANGER">
+    <type>integer</type>
+    <default_value>2</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger choice box=1, subset=2 </desc>
+  </entry>
+
   <entry id="ICE_PIO_ROOT">
     <type>integer</type>
     <default_value>-99</default_value>
@@ -2464,6 +2504,14 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio stride</desc>
+  </entry>
+
+  <entry id="ATM_PIO_REARRANGER">
+    <type>integer</type>
+    <default_value>2</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger choice box=1, subset=2 </desc>
   </entry>
 
   <entry id="ATM_PIO_ROOT">
@@ -2499,6 +2547,14 @@
     <desc>pio stride</desc>
   </entry>
 
+  <entry id="CPL_PIO_REARRANGER">
+    <type>integer</type>
+    <default_value>2</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger choice box=1, subset=2 </desc>
+  </entry>
+
   <entry id="CPL_PIO_ROOT">
     <type>integer</type>
     <default_value>-99</default_value>
@@ -2532,6 +2588,14 @@
     <desc>pio stride</desc>
   </entry>
 
+  <entry id="GLC_PIO_REARRANGER">
+    <type>integer</type>
+    <default_value>2</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger choice box=1, subset=2 </desc>
+  </entry>
+
   <entry id="GLC_PIO_ROOT">
     <type>integer</type>
     <default_value>-99</default_value>
@@ -2563,6 +2627,14 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio stride</desc>
+  </entry>
+
+  <entry id="WAV_PIO_REARRANGER">
+    <type>integer</type>
+    <default_value>2</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger choice box=1, subset=2 </desc>
   </entry>
 
   <entry id="WAV_PIO_ROOT">
