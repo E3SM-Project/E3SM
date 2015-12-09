@@ -1,0 +1,8 @@
+<driver_script name="run_test.py">
+	<case name="init_step">
+		<step executable="./run.py"/>
+	</case>
+	<case name="forward">
+		<step executable="./run.py"/>
+	</case>
+</driver_script>
