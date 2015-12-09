@@ -122,7 +122,7 @@
 		<stream name="lagrPartTrackRestart" type="input;output"
 				mode="forward"
 				runtime_format="single_file"
-				filename_template="analysis_members/lagrangianParticleTrackingRestart.$Y-$M-$D_$h.$m.$s.nc"
+				filename_template="restarts/lagrangianParticleTrackingRestart.$Y-$M-$D_$h.$m.$s.nc"
 				filename_interval="output_interval"
 				clobber_mode="truncate"
 				input_interval="initial_only"
