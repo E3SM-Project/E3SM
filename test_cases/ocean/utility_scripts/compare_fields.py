@@ -43,10 +43,12 @@ field2 = f2.variables[args.variable]
 if not field1.shape == field2.shape:
 	print "ERROR: Field sizes don't match in different files."
 
-if args.linf_norm:
-	linf_norm = -(sys.float_info.max)
+linf_norm = -(sys.float_info.max)
 
 pass_val = True
+
+print "Comparing field '%s'"%(args.variable)
+
 for t in range( 0, time_length):
 	pass_time = True
 	diff = field1[t][:] - field2[t][:]
