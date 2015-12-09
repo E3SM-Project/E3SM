@@ -310,7 +310,7 @@ for mct, etc.
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
   <ESMF_LIBDIR>/projects/ccsm/esmf-6.3.0rp1/lib/libO/Linux.intel.64.openmpi.default</ESMF_LIBDIR>
-  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -lblas -llapack </ADD_SLIBS>
+  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -L/projects/ccsm/BLAS-intel -lblas_LINUX</ADD_SLIBS>
   <ADD_CPPFLAGS> -DHAVE_COMM_F2C </ADD_CPPFLAGS>
   <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
 </compiler>
@@ -319,7 +319,7 @@ for mct, etc.
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
   <ESMF_LIBDIR>/projects/ccsm/esmf-6.3.0rp1/lib/libO/Linux.intel.64.openmpi.default</ESMF_LIBDIR>
-  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -lblas -llapack</ADD_SLIBS>
+  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -L/projects/ccsm/BLAS-intel -lblas_LINUX</ADD_SLIBS>
   <ADD_CPPFLAGS> -DHAVE_COMM_F2C </ADD_CPPFLAGS>
   <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
 </compiler>
@@ -485,7 +485,7 @@ for mct, etc.
   <!-- interfaces from certain argument checks. Should not be necessary in   -->
   <!-- libraries that only use the F90 module interface. mpibcast and        -->
   <!-- mpiscatterv are actually CAM wrappers for MPI.                        -->
-  <FFLAGS      > -kind=byte -wmismatch=mpi_send,mpi_recv,mpi_bcast,mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,mpi_scatterv,mpi_allgather,mpi_alltoallv,mpi_file_read_all,mpi_file_write_all,mpibcast,mpiscatterv,mpi_alltoallw,nfmpi_get_vara_all,NFMPI_IPUT_VARA,NFMPI_GET_VAR_ALL,NFMPI_PUT_VARA,NFMPI_PUT_ATT_REAL,NFMPI_PUT_ATT_DOUBLE,NFMPI_PUT_ATT_INT,NFMPI_GET_ATT_REAL,NFMPI_GET_ATT_INT,NFMPI_GET_ATT_DOUBLE,NFMPI_PUT_VARA_DOUBLE_ALL,NFMPI_PUT_VARA_REAL_ALL,NFMPI_PUT_VARA_INT_ALL    -convert=BIG_ENDIAN </FFLAGS>
+  <FFLAGS      > -kind=byte -wmismatch=mpi_send,mpi_recv,mpi_bcast,mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,mpi_scatterv,mpi_allgather,mpi_alltoallv,mpi_file_read_all,mpi_file_write_all,mpibcast,mpiscatterv,mpi_alltoallw    -convert=BIG_ENDIAN </FFLAGS>
   <FFLAGS_NOOPT> $(FFLAGS) </FFLAGS_NOOPT>
 
   <!-- DEBUG vs. non-DEBUG runs.                                             -->
@@ -585,7 +585,7 @@ for mct, etc.
 <compiler COMPILER="gnu" MACH="melvin">
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
-  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -lblas -llapack</ADD_SLIBS>
+  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -L/home/jgfouca/BLAS -lblas_LINUX</ADD_SLIBS>
   <ADD_CPPFLAGS> -DHAVE_COMM_F2C </ADD_CPPFLAGS>
 </compiler>
  
@@ -887,25 +887,6 @@ for mct, etc.
   <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
   <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi </SLIBS>
 </compiler>
-<compiler COMPILER="pgi" MACH="constance">
-  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
-  <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
-  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
-  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi </SLIBS>
-</compiler>
-
-<compiler COMPILER="intel" MACH="constance">
-  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
-  <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
-  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
-  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt</SLIBS>
-</compiler>
 
 <compiler COMPILER="intel" MACH="olympus">
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
@@ -940,18 +921,14 @@ for mct, etc.
 
 <compiler COMPILER="intel" MACH="cascade">
   <NETCDF_PATH> $(NETCDF_LIB)/..</NETCDF_PATH>
-  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <CONFIG_ARGS> --host=Linux --enable-filesystem-hints=lustre</CONFIG_ARGS>
   <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
   <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
-  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt </SLIBS>
+  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L/msc/apps/compilers/intel/14.0/composer_xe_2013_sp1.1.106/mkl/lib/intel64 -lmkl_rt </SLIBS>
 </compiler>
  
 <compiler COMPILER="nag" MACH="cascade">
  <NETCDF_PATH>$(NETCDF_ROOT)</NETCDF_PATH >
- <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
- <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
  <MPI_PATH MPILIB="mvapich2"> $(MPI_LIB)</MPI_PATH >
  <ADD_CPPDEFS> -DnoI8 </ADD_CPPDEFS>
  <ADD_LDFLAGS compile_threaded="true">  </ADD_LDFLAGS>
@@ -962,7 +939,7 @@ for mct, etc.
  -->
  <ADD_FFLAGS DEBUG="TRUE" >  -gline  -C=all  -g  -O0 -v  </ADD_FFLAGS>
  <ADD_FFLAGS DEBUG="TRUE" MODEL="cam">  -gline  -C=all  -g  -nan -O0 -v  </ADD_FFLAGS>
- <ADD_SLIBS> -L$(NETCDF_ROOT)/lib -lnetcdf -lnetcdff -L$(MKL_PATH) -lmkl_rt</ADD_SLIBS>
+ <ADD_SLIBS> -L$(NETCDF_ROOT)/lib -lnetcdf -lnetcdff</ADD_SLIBS>
 </compiler> 
 
 <compiler COMPILER="intel" MACH="evergreen">
@@ -973,6 +950,16 @@ for mct, etc.
   <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lcurl </SLIBS>
   <ADD_FFLAGS> -heap_arrays </ADD_FFLAGS>
   <ADD_CFLAGS> -heap_arrays </ADD_CFLAGS>
+</compiler>
+
+<compiler COMPILER="pgi" MACH="hera">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <NETCDF_PATH>/usr/local/tools/netcdf-pgi-4.1.3</NETCDF_PATH>
+  <MPI_PATH>/usr/local/tools/mvapich2-pgi-1.7/</MPI_PATH>
+  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
+  <ADD_SLIBS>$(shell /usr/local/tools/netcdf-pgi-4.1.3/bin/nc-config --flibs)</ADD_SLIBS>    
+  <ADD_LDFLAGS> -Wl,-rpath /usr/local/tools/netcdf-pgi-4.1.3/lib</ADD_LDFLAGS>
 </compiler>
 
 <compiler COMPILER="pgi" MACH="hopper">
@@ -1025,13 +1012,6 @@ for mct, etc.
   <ADD_LDFLAGS> -Wl,-rpath /usr/local/tools/netcdf-pgi-4.1.3/lib</ADD_LDFLAGS>
 </compiler>
 
-<compiler MACH="cab">
-  <NETCDF_PATH>/usr/local/tools/netcdf-pgi-4.1.3</NETCDF_PATH>
-  <MPI_PATH>/usr/local/tools/mvapich2-pgi-1.7/</MPI_PATH>
-  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <ADD_SLIBS>$(shell /usr/local/tools/netcdf-pgi-4.1.3/bin/nc-config --flibs)</ADD_SLIBS>    
-  <ADD_LDFLAGS> -Wl,-rpath /usr/local/tools/netcdf-pgi-4.1.3/lib</ADD_LDFLAGS>
-</compiler>
 
 <compiler MACH="goldbach">
  <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
