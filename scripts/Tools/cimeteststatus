@@ -1,14 +1,23 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as etree
 import xml.dom
 import argparse
 import os, glob, re
+import sys
 import urllib
 import urllib2
 import json
 import pprint
+if sys.hexversion < 0x02070000:
+    print(70 * "*")
+    print("ERROR: {0} requires python >= 2.7.x. ".format(sys.argv[0]))
+    print("It appears that you are running python {0}".format(
+        ".".join(str(x) for x in sys.version_info[0:3])))
+    print(70 * "*")
+    sys.exit(1)
+
 testdburl = "https://csegwebdev.cgd.ucar.edu/testdb/cgi-bin/processXMLtest.cgi"
 
 class CimeTestStatus():
@@ -240,8 +249,13 @@ class CimeTestStatus():
             return None
     def name(self):
         return self._test_status['name']
+    # Get the status of the history comparison plus the name
     def histcompareline(self):
         return self._test_status['test functionality']['summary'] + " " + self._test_status['name']
+    # get the status of the baseline comparison plus the name 
+    def baselinecompareline(self):
+        return self._test_status['baseline comparison']['summary'] + " " + self._test_status['name']
+    # get the failing history files as a string 
     def histcomparefail(self):
         histcomparefails = (self._test_status['name'] + "\n")
         testfunc = self._test_status['test functionality']
@@ -253,6 +267,8 @@ class CimeTestStatus():
             return histcomparefails
         else:
             return None
+
+    
     def baselinecomparefail(self):
         blcomparefail = (self._test_status['name'] + "\n")
         testfunc = self._test_status['baseline comparison']
@@ -264,8 +280,6 @@ class CimeTestStatus():
             return blcomparefail
         else:
             return None
-    def baselinecompareline(self):
-        return self._test_status['baseline comparison']['summary'] + " " + self._test_status['name']
     #def testStatus(self):
     #    return self.overallstatus +  " " + self.testname  + "\n" + self.output
 
@@ -288,7 +302,7 @@ def getSuiteInfo(testid):
         for file in glob.glob("testspec*xml"):
             xmlfile = file
     
-    tree = ET.parse(xmlfile)
+    tree = etree.parse(xmlfile)
     root = tree.getroot()
     suiteinfo = {}
     testlist = []
@@ -310,7 +324,14 @@ def getSuiteInfo(testid):
     
     for t in root.findall('test'):
         testlist.append(t.attrib['case'])
+        if 'machine' not in suiteinfo.keys():
+            machnodelist = t.findall('mach')
+            suiteinfo['machine'] = machnodelist[0].text
+        if 'compiler' not in suiteinfo.keys(): 
+            compnodelist = t.findall('compiler')
+            suiteinfo['compiler'] = compnodelist[0].text
     
+    print(suiteinfo)
     suiteinfo['testlist'] = testlist
     return suiteinfo
             
@@ -416,9 +437,38 @@ def sendTestReport(suiteinfo, cimetests):
     #print json.dumps(suiteinfo) 
     #for test in cimetests:
     #    print CimeTestStatusEncoder().encode(test)
-    
     username = 'jshollen'
     password = '1vyb3ll$!'
+    testrecord = etree.Element('testrecord');
+    mach = etree.SubElement(testrecord, 'mach')
+    mach.text = suiteinfo['machine']
+    compiler = etree.SubElement(testrecord, 'compiler')
+    compiler.text = suiteinfo['compiler']
+    mpilib = etree.SubElement(testrecord, 'mpilib')
+    mpilib.text = suiteinfo['mpilib']
+    testroot = etree.SubElement(testrecord, 'testroot')
+    testroot.text = suiteinfo['testroot']
+    testtype = etree.SubElement(testrecord, 'testtype')
+    testtype.text = suiteinfo['testtype']
+    tagname = etree.SubElement(testrecord, 'tagname')
+    tagname.text = suiteinfo['tagname']
+    baselinetag = etree.SubElement(testrecord, 'baselinetag')
+    baselinetag.text = suiteinfo['baselinetag']
+
+    for test in cimetests:
+        testelement = test.as_xml()
+
+
+    data = urllib.urlencode({'username':username,
+                             'password':password,
+                             'testXML':testrecord})
+    req = urllib2.Request(testdburl, data)
+    response = urllib2.urlopen()
+    status = response.read()
+    print("status: ", status)
+    tree = etree.ElementTree(testrecord)
+    tree.write("cimeteststatus.dump.xml")
+   
 
 #------------------------------------------------------------------------------
 # main function
@@ -428,7 +478,12 @@ def main():
 
     parser.add_argument('-i', '--testid', help='test id of the particular test suite', required=False)
     parser.add_argument('-s', '--summary', action='store_true', help='Generate summary', required=False)
-    parser.add_argument('-t', '--sendtestreport', action='store_true', help='Send the test report to CSEG\'s Test Database', required=False)
+    #parser.add_argument('-t', '--testreport', action='store_true', help='Send the test report to CSEG\'s Test Database', required=False)
+
+    tgroup = parser.add_argument_group('testreport', 'Test Report specific options')
+    tgroup.add_argument('-t', '--testreport', action='store_true', help='Send the test report to CSEG\'s Test Database', required=False)
+    tgroup.add_argument( '-tn', '--tagname', help='The tag name being sent to the CSEG test database', required=False)
+    tgroup.add_argument( '-tt', '--testtype', help='The test type being sent to the CSEG test database', required=False)
     
     args = parser.parse_args()
     #print args
@@ -441,7 +496,10 @@ def main():
     
     if(args.summary==True):
         printSummary(suiteinfo, cimetests)
-    elif(args.sendtestreport==True):
+    elif(args.testreport==True):
+        if(not args.testtype and not args.tagname):
+            print("testtype and tagname must be defined to send test reports")
+            sys.exit(1);
         sendTestReport(suiteinfo, cimetests)
     else:
         printStatus(cimetests)
