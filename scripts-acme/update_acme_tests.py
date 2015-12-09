@@ -5,87 +5,119 @@ from acme_util import expect, warning
 
 # Here are the tests belonging to acme suites. Format is
 # <test>.<grid>.<compset>.
-# suite_name -> (inherits_from, [(test, mods)])
+# suite_name -> (inherits_from, [test [, mods[, machines]]])
+#   To elaborate, if no mods are needed, a string representing the testname is all that is needed.
+#   If testmods are needed, a 2-ple must be provided  (test, mods)
+#   If you want to restrict the test mods to certain machines, than a 3-ple is needed (test, mods, [machines])
 _TEST_SUITES = {
     "acme_tiny" : (None,
-                   [("ERS.f19_g16_rx1.A", None),
-                    ("NCK.f19_g16_rx1.A", None)]
+                   ("ERS.f19_g16_rx1.A",
+                    "NCK.f19_g16_rx1.A")
                    ),
 
     "acme_test_only_pass" : (None,
-                   [("TESTRUNPASS_P1.f19_g16_rx1.A", None),
-                    ("TESTRUNPASS_P1.ne30_g16_rx1.A", None),
-                    ("TESTRUNPASS_P1.f45_g37_rx1.A", None)]
+                   ("TESTRUNPASS_P1.f19_g16_rx1.A",
+                    "TESTRUNPASS_P1.ne30_g16_rx1.A",
+                    "TESTRUNPASS_P1.f45_g37_rx1.A")
                    ),
 
     "acme_test_only" : (None,
-                   [("TESTBUILDFAIL.f19_g16_rx1.A", None),
-                    ("TESTRUNFAIL_P1.f19_g16_rx1.A", None),
-                    ("TESTRUNPASS_P1.f19_g16_rx1.A", None)]
+                   ("TESTBUILDFAIL.f19_g16_rx1.A",
+                    "TESTRUNFAIL_P1.f19_g16_rx1.A",
+                    "TESTRUNPASS_P1.f19_g16_rx1.A")
                    ),
 
     "acme_land_developer" : (None,
-                             [("SMS.f19_f19.I1850CLM45CN", None),
-                              ("SMS.f09_g16.I1850CLM45CN", None),
-                              ("SMS.hcru_hcru.I1850CRUCLM45CN", None)]
+                             ("SMS.f19_f19.I1850CLM45CN",
+                              "SMS.f09_g16.I1850CLM45CN",
+                              "SMS.hcru_hcru.I1850CRUCLM45CN")
                              ),
 
     "acme_developer" : ("acme_land_developer",
-                        [("ERS.f19_g16_rx1.A", None),
-                         ("ERS.f45_g37_rx1.DTEST", None),
-                         ("ERS.ne16_ne16.FC5PLMOD", None),
-                         ("ERS.ne16_ne16.FC5MAM4", None),
-                         ("ERS.ne30_g16_rx1.A", None),
-                         ("ERS_IOP.f19_g16_rx1.A", None),
-                         ("ERS_IOP.f45_g37_rx1.DTEST", None),
-                         ("ERS_IOP.ne30_g16_rx1.A", None),
-                         ("ERS_IOP4c.f19_g16_rx1.A", None),
-                         ("ERS_IOP4c.ne30_g16_rx1.A", None),
-                         ("ERS_IOP4p.f19_g16_rx1.A", None),
-                         ("ERS_IOP4p.ne30_g16_rx1.A", None),
-                         ("NCK.f19_g16_rx1.A", None),
-                         ("PEA_P1_M.f45_g37_rx1.A", None),
-                         ("SMS.ne30_f19_g16_rx1.A", None),
-                         ("ERS_Ld5.T62_mpas120.C_MPAS_NORMAL_YEAR", None),
-                         ("ERS.f09_g16_g.MPASLI_ONLY", None),
-                         ("SMS.T62_mpas120_gis20.MPAS_LISIO_TEST", None),
-                         ("SMS.f09_g16_a.IGCLM45_MLI", None)]
+                        ("ERS.f19_g16_rx1.A",
+                         "ERS.f45_g37_rx1.DTEST",
+                         ("ERS.ne16_ne16.FC5PLMOD", "force_netcdf_pio", "melvin"),
+                         ("ERS.ne16_ne16.FC5MAM4", "force_netcdf_pio", "melvin"),
+                         "ERS.ne30_g16_rx1.A",
+                         "ERS_IOP.f19_g16_rx1.A",
+                         "ERS_IOP.f45_g37_rx1.DTEST",
+                         "ERS_IOP.ne30_g16_rx1.A",
+                         "ERS_IOP4c.f19_g16_rx1.A",
+                         "ERS_IOP4c.ne30_g16_rx1.A",
+                         "ERS_IOP4p.f19_g16_rx1.A",
+                         "ERS_IOP4p.ne30_g16_rx1.A",
+                         "NCK.f19_g16_rx1.A",
+                         "PEA_P1_M.f45_g37_rx1.A",
+                         "SMS.ne30_f19_g16_rx1.A",
+                         "ERS_Ld5.T62_mpas120.C_MPAS_NORMAL_YEAR",
+                         "ERS.f09_g16_g.MPASLI_ONLY",
+                         "SMS.T62_mpas120_gis20.MPAS_LISIO_TEST",
+                         "SMS.f09_g16_a.IGCLM45_MLI")
                         ),
 
     "acme_integration" : ("acme_developer",
-                          [("ERS.ne30_g16.B1850C5", None),
-                           ("ERS.f19_f19.FAMIPC5", None),
-                           ("ERS.ne16_ne16.FC5PM", None),
-                           ("ERS.ne16_g37.B1850C5", None),
-                           ("ERS.f45_g37.B1850C5", None),
-                           ("ERS_D.f45_g37.B1850C5", None),
-                           ("ERS_IOP_Ld3.f19_f19.FAMIPC5", None),
-                           ("ERS_Ld3.ne16_g37.FC5", None),
-                           ("ERS_Ld3.ne30_ne30.FC5", None),
-                           ("ERT.ne16_g37.B1850C5", None),
-                           ("PET_PT.f19_g16.X", None),
-                           ("PET_PT.f45_g37_rx1.A", None),
-                           ("PFS.ne30_ne30.FC5", None),
-                           ("SEQ_IOP_PFC.f19_g16.X", None),
-                           ("SEQ_PFC.f45_g37.B1850C5", None),
-                           ("SMS.ne16_ne16.FC5AQUAP", None),
-                           ("SMS_D.f19_g16.B20TRC5", None),
-                           ("SMS_D_Ld3.ne16_ne16.FC5", None)]
+                          ("ERS.ne30_g16.B1850C5",
+                           "ERS.f19_f19.FAMIPC5",
+                           "ERS.ne16_ne16.FC5PM",
+                           "ERS.ne16_g37.B1850C5",
+                           "ERS.f45_g37.B1850C5",
+                           "ERS_D.f45_g37.B1850C5",
+                           "ERS_IOP_Ld3.f19_f19.FAMIPC5",
+                           "ERS_Ld3.ne16_g37.FC5",
+                           "ERS_Ld3.ne30_ne30.FC5",
+                           "ERT.ne16_g37.B1850C5",
+                           "PET_PT.f19_g16.X",
+                           "PET_PT.f45_g37_rx1.A",
+                           "PFS.ne30_ne30.FC5",
+                           "SEQ_IOP_PFC.f19_g16.X",
+                           "SEQ_PFC.f45_g37.B1850C5",
+                           "SMS.ne16_ne16.FC5AQUAP",
+                           "SMS_D.f19_g16.B20TRC5",
+                           "SMS_D_Ld3.ne16_ne16.FC5")
                           ),
 }
 
 ###############################################################################
-def get_test_suite(suite):
+def get_test_suite(suite, machine=None, compiler=None):
 ###############################################################################
+    """
+    Return a list of FULL test names for a suite.
+    """
     expect(suite in _TEST_SUITES, "Unknown test suite: '%s'" % suite)
-    inherits_from, tests = _TEST_SUITES[suite]
-    tests = list(tests)
+
+    machine = acme_util.probe_machine_name() if machine is None else machine
+    compiler = acme_util.get_machine_info("COMPILERS", machine=machine)[0] if compiler is None else compiler
+
+    inherits_from, tests_raw = _TEST_SUITES[suite]
+    tests = []
+    for item in tests_raw:
+        test_mod = None
+        if (isinstance(item, str)):
+            test_name = item
+        else:
+            expect(isinstance(item, tuple), "Bad item type for item '%s'" % str(item))
+            expect(len(item) in [2, 3], "Expected two or three items in item '%s'" % str(item))
+            expect(isinstance(item[0], str), "Expected string in first field of item '%s'" % str(item))
+            expect(isinstance(item[1], str), "Expected string in second field of item '%s'" % str(item))
+
+            test_name = item[0]
+            if (len(item) == 2):
+                test_mod = item[1]
+            else:
+                expect(type(item[2]) in [str, tuple], "Expected string or tuple for third field of item '%s'" % str(item))
+                test_mod_machines = [item[2]] if isinstance(item[2], str) else item[2]
+                if (machine in test_mod_machines):
+                    test_mod = item[1]
+
+        tests.append(acme_util.get_full_test_name(test_name, machine, compiler, testmod=test_mod))
+
     if (inherits_from is not None):
         inherited_tests = get_test_suite(inherits_from)
 
         expect(len(set(tests) & set(inherited_tests)) == 0,
-               "Tests %s defined in multiple suites" % ", ".join(set(item[0] for item in tests) & set(item[0] for item in inherited_tests)))
+               "Tests %s defined in multiple suites" % ", ".join(set(tests) & set(inherited_tests)))
         tests.extend(inherited_tests)
+
     return tests
 
 ###############################################################################
@@ -124,8 +156,7 @@ def get_full_test_names(testargs, machine, compiler):
         if (testarg.startswith("^")):
             negations.add(testarg[1:])
         elif (testarg in acme_test_suites):
-            for test, testmod in get_test_suite(testarg):
-                tests_to_run.add(acme_util.get_full_test_name(test, machine, compiler, testmod))
+            tests_to_run.update(get_test_suite(testarg))
         else:
             tests_to_run.add(acme_util.get_full_test_name(testarg, machine, compiler))
 
@@ -187,10 +218,9 @@ def generate_acme_test_entries(category, platforms):
 ###############################################################################
     test_file = tempfile.NamedTemporaryFile(mode="w", delete = False)
 
-    tests = get_test_suite(category)
-    for test, mods in tests:
-        for machine, compiler in platforms:
-            test_file.write("%s.%s_%s%s\n"%(test, machine, compiler, "" if mods is None else ".%s" % mods))
+    for machine, compiler in platforms:
+        tests = get_test_suite(category, machine, compiler)
+        test_file.write("\n".join(tests))
 
     name = test_file.name
     test_file.close()
