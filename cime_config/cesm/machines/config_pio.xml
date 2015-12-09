@@ -28,6 +28,7 @@
       <value mach="eos">16</value>
       <value mach="mira">256</value>
       <value mach="titan">16</value>
+      <value mach="yellowstone">30</value>
       <value mach="yellowstone" grid="a%ne120.+oi%gx1">60</value>
       <value mach="pronghorn">16</value>
     </values>
