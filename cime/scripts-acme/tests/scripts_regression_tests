@@ -397,62 +397,61 @@ class TestCreateTestImpl(TestCreateTestCommon):
         self.assertTrue("RUNFAIL" in run_fail_test, msg="Wrong test '%s'" % run_fail_test)
         self.assertTrue("RUNPASS" in pass_test, msg="Wrong test '%s'" % pass_test)
 
-        with ct._mutex:
-            for idx, phase in enumerate(ct._phases):
-                for test in tests:
-                    if (phase == create_test_impl.INITIAL_PHASE):
-                        continue
+        for idx, phase in enumerate(ct._phases):
+            for test in tests:
+                if (phase == create_test_impl.INITIAL_PHASE):
+                    continue
 
-                    elif (phase == create_test_impl.BUILD_PHASE):
+                elif (phase == create_test_impl.BUILD_PHASE):
+                    ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
+
+                    if (test == build_fail_test):
+                        ct._update_test_status(test, phase, wait_for_tests.TEST_FAIL_STATUS)
+                        self.assertTrue(ct._is_broken(test))
+                        self.assertFalse(ct._work_remains(test))
+                    else:
+                        ct._update_test_status(test, phase, wait_for_tests.TEST_PASS_STATUS)
+                        self.assertFalse(ct._is_broken(test))
+                        self.assertTrue(ct._work_remains(test))
+
+                elif (phase == create_test_impl.RUN_PHASE):
+                    if (test == build_fail_test):
+                        with self.assertRaises(SystemExit):
+                            ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
+                    else:
                         ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
+                        self.assertFalse(ct._work_remains(test))
 
-                        if (test == build_fail_test):
+                        if (test == run_fail_test):
                             ct._update_test_status(test, phase, wait_for_tests.TEST_FAIL_STATUS)
                             self.assertTrue(ct._is_broken(test))
-                            self.assertFalse(ct._work_remains(test))
                         else:
                             ct._update_test_status(test, phase, wait_for_tests.TEST_PASS_STATUS)
                             self.assertFalse(ct._is_broken(test))
-                            self.assertTrue(ct._work_remains(test))
 
-                    elif (phase == create_test_impl.RUN_PHASE):
-                        if (test == build_fail_test):
-                            with self.assertRaises(SystemExit):
-                                ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
-                        else:
-                            ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
-                            self.assertFalse(ct._work_remains(test))
+                    self.assertFalse(ct._work_remains(test))
 
-                            if (test == run_fail_test):
-                                ct._update_test_status(test, phase, wait_for_tests.TEST_FAIL_STATUS)
-                                self.assertTrue(ct._is_broken(test))
-                            else:
-                                ct._update_test_status(test, phase, wait_for_tests.TEST_PASS_STATUS)
-                                self.assertFalse(ct._is_broken(test))
+                else:
+                    with self.assertRaises(SystemExit):
+                        ct._update_test_status(test, ct._phases[idx+1], wait_for_tests.TEST_PENDING_STATUS)
 
-                        self.assertFalse(ct._work_remains(test))
-
-                    else:
-                        with self.assertRaises(SystemExit):
-                            ct._update_test_status(test, ct._phases[idx+1], wait_for_tests.TEST_PENDING_STATUS)
-
-                        with self.assertRaises(SystemExit):
-                            ct._update_test_status(test, phase, wait_for_tests.TEST_PASS_STATUS)
-
-                        ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
-                        self.assertFalse(ct._is_broken(test))
-                        self.assertTrue(ct._work_remains(test))
-
-                        with self.assertRaises(SystemExit):
-                            ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
-
+                    with self.assertRaises(SystemExit):
                         ct._update_test_status(test, phase, wait_for_tests.TEST_PASS_STATUS)
 
-                        with self.assertRaises(SystemExit):
-                            ct._update_test_status(test, phase, wait_for_tests.TEST_FAIL_STATUS)
+                    ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
+                    self.assertFalse(ct._is_broken(test))
+                    self.assertTrue(ct._work_remains(test))
 
-                        self.assertFalse(ct._is_broken(test))
-                        self.assertTrue(ct._work_remains(test))
+                    with self.assertRaises(SystemExit):
+                        ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
+
+                    ct._update_test_status(test, phase, wait_for_tests.TEST_PASS_STATUS)
+
+                    with self.assertRaises(SystemExit):
+                        ct._update_test_status(test, phase, wait_for_tests.TEST_FAIL_STATUS)
+
+                    self.assertFalse(ct._is_broken(test))
+                    self.assertTrue(ct._work_remains(test))
 
     ###########################################################################
     def test_full(self):
