@@ -33,6 +33,17 @@ _TEST_SUITES = {
                               "SMS.hcru_hcru.I1850CRUCLM45CN")
                              ),
 
+    "acme_atm_developer" : (None,
+                            [("ERS.ne16_ne16.FC5MAM4", None),
+                             ("ERS.ne16_ne16.FC5PLMOD", None),
+                             ("ERS.ne16_ne16.FC5CLBMG2", None),
+                             ("ERS.ne16_ne16.FC5CLBMG2MAM4", None),
+                             ("ERS.ne16_ne16.FC5CLBMG2MAM4RESUS", None),
+                             ("ERS.ne16_ne16.FC5CLBMG2MAM4RESUSCOSP", None),
+                             ("ERS.ne16_ne16.FC5CLBMG2MAM4RESUSCOSPBC", None),
+                             ("ERS.ne16_ne16.FC5ATMMOD", None)]
+                            ),
+
     "acme_developer" : ("acme_land_developer",
                         ("ERS.f19_g16_rx1.A",
                          "ERS.f45_g37_rx1.DTEST",

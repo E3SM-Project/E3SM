@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<use_hetfrz_classnuc>.true.</use_hetfrz_classnuc>
+<use_preexisting_ice>.true.</use_preexisting_ice>
+<hist_hetfrz_classnuc>.true.</hist_hetfrz_classnuc>
+<micro_mg_dcs_tdep>.true.</micro_mg_dcs_tdep>
+<microp_aero_wsub_scheme>2</microp_aero_wsub_scheme>
+
+<sscav_tuning>.true.</sscav_tuning>
+<convproc_do_aer>.true.</convproc_do_aer>
+<convproc_do_gas>.false.</convproc_do_gas>
+<convproc_method_activate>2</convproc_method_activate>
+<demott_ice_nuc>.true.</demott_ice_nuc>
+<liqcf_fix>.true.</liqcf_fix>
+<regen_fix>.true.</regen_fix>
+<resus_fix>.true.</resus_fix>
+
+<ssalt_tuning>.true.</ssalt_tuning>
+
+<history_amwg>.true.</history_amwg>
+<history_aerosol>.true.</history_aerosol>
+<history_aero_optics>.true.</history_aero_optics>
+
+</namelist_defaults>

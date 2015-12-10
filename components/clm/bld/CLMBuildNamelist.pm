@@ -1486,7 +1486,7 @@ sub process_namelist_inline_logic {
   setup_logic_start_type($nl_flags, $nl);
   setup_logic_delta_time($opts, $nl_flags, $definition, $defaults, $nl);
   setup_logic_decomp_performance($opts->{'test'}, $nl_flags, $definition, $defaults, $nl);
-  setup_logic_snow($opts->{'test_files'}, $nl_flags, $definition, $defaults, $nl, $physv);
+  setup_logic_snow($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_glacier($opts, $nl_flags, $definition, $defaults, $nl,  $envxml_ref, $physv);
   setup_logic_params_file($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_create_crop_landunit($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
@@ -1741,7 +1741,19 @@ sub setup_logic_decomp_performance {
 #-------------------------------------------------------------------------------
 
 sub setup_logic_snow {
-  my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+
+  my $test_files = $opts->{"test_files"};
+
+  my $fsnowoptics = $nl->get_value('fsnowoptics');
+
+  my $var = "fsnowoptics";
+
+  if ( $opts->{$var} ne "default" ) {
+      add_default($opts->{$var}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var, 'val'=>$opts->{$var} );
+  } else {
+      add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var );
+  }
 
   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fsnowoptics' );
   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fsnowaging' );
