@@ -1,0 +1,17 @@
+<regression_suite name="nightly_ocean_test_suite">
+	<test name="Global Ocean 240km - Smoke Test" core="ocean" configuration="global_ocean" resolution="QU_240km" test="default">
+		<script name="run_test.py"/>
+	</test>
+	<test name="ZISO 20km - Smoke Test" core="ocean" configuration="ziso" resolution="20km" test="default">
+		<script name="run_test.py"/>
+	</test>
+	<test name="Baroclinic Channel 10km - Thread Test" core="ocean" configuration="baroclinic_channel" resolution="10km" test="threads_test">
+		<script name="run_test.py"/>
+	</test>
+	<test name="Baroclinic Channel 10km - Decomp Test" core="ocean" configuration="baroclinic_channel" resolution="10km" test="decomp_test">
+		<script name="run_test.py"/>
+	</test>
+	<test name="Baroclinic Channel 10km - Restart Test" core="ocean" configuration="baroclinic_channel" resolution="10km" test="restart_test">
+		<script name="run_test.py"/>
+	</test>
+</regression_suite>
