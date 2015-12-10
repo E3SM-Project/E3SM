@@ -634,19 +634,22 @@ def process_validation_step(validation_tag, configs, script):#{{{
 #}}}
 
 def process_compare_fields_step(compare_tag, configs, script):#{{{
+	missing_file1 = False
+	missing_file2 = False
 	# Determine comparision attributes
 	try:
 		file1 = compare_tag.attrib['file1']
 	except:
-		print "ERROR: <compare_fields> tag missing 'file1' attribute"
-		print 'Exiting...'
-		sys.exit(1)
+		missing_file1 = True
 
 	try:
 		file2 = compare_tag.attrib['file2']
 	except:
-		print "ERROR: <compare_fields> tag missing 'file2' attribute"
-		print 'Exiting...'
+		missing_file2 = True
+
+	if missing_file1 and missing_file2:
+		print "ERROR: <compare_fields> tag is missing both 'file1' and 'file2' tags. At least one is required."
+		print "Exiting..."
 		sys.exit(1)
 	
 	baseline_root = configs.get('script_paths', 'baseline_dir')
@@ -675,9 +678,14 @@ def process_compare_fields_step(compare_tag, configs, script):#{{{
 						if compare_fields.tag == 'compare_fields':
 							for field in compare_fields:
 								if field.tag == 'field':
-									process_field_definition(field, configs, script, file1, file2)
-									process_field_definition(field, configs, script, file1, '%s/%s'%(baseline_root, file1))
-									process_field_definition(field, configs, script, file2, '%s/%s'%(baseline_root, file2))
+									if not (missing_file1 or missing_file2):
+										process_field_definition(field, configs, script, file1, file2)
+
+									if not missing_file1:
+										process_field_definition(field, configs, script, file1, '%s/%s'%(baseline_root, file1))
+
+									if not missing_file2:
+										process_field_definition(field, configs, script, file2, '%s/%s'%(baseline_root, file2))
 			del template_root
 			del template_tree
 			del template_info
