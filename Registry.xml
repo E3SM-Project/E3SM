@@ -181,15 +181,15 @@
 		<nml_option name="config_read_ssh_and_ssp_from_stream" type="logical" default_value=".false." units="unitless"
 					description="Logical flag that determines if the sea-surface height and pressure have been read from an input stream instead of being calculated.  This allows iterative balancing of the two fields using both init and forward mode."
 
-					possible_values="true or false"
+					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_update_ssh_not_ssp" type="logical" default_value=".false." units="unitless"
 					description="Logical flag that determines if the SSH gets modified based on a previous forward run.  By default, the SSP gets modified instead."
-					possible_values="true or false"
+					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_modify_open_ocean_ssh" type="logical" default_value=".false." units="unitless"
 					description="Logical flag that determines if the SSH gets modified in the open ocean (where modifySSHMask == 1) to attempt to put the system in balance there.  By default, regions of open ocean are not balanced."
-					possible_values="true or false"
+					possible_values=".true. or .false."
 		/>
 	</nml_record>
 
@@ -1017,10 +1017,6 @@
 		<nml_option name="config_rx1_horiz_smooth_open_ocean_cells" type="integer" default_value="20" units="unitless"
 					description="The size (in cells) of a buffer region around land ice for smoothing.  Smoothing is performed under land ice and in the buffer region of open ocean."
 					possible_values="any non-negative integer, 0 indiates no buffer region." 
-		/>
-		<nml_option name="config_rx1_min_layer_thickness_fraction" type="real" default_value="0.8" units="unitless"
-					description="each layer cannot be thinner than this fraction of the thickness of the layer above."
-					possible_values="Between 0 and 1" 
 		/>
 		<nml_option name="config_rx1_min_levels" type="integer" default_value="3" units="unitless"
 					description="The minimum number of layers in the ocean column in the smoothed region."
@@ -2923,43 +2919,43 @@
 			 description="btrvel_temp"
 		/>
 		<!-- FIELDS FOR LAND-ICE FORCING -->
-		<var name="boundaryLayerTemperatureScratch" 
-			persistence="scratch" 
+		<var name="boundaryLayerTemperatureScratch"
+			persistence="scratch"
 			type="real" dimensions="nCells" units="^\circ C"
 			description="temperature averaged vertically over the sub-ice-shelf boundary layer"
 		/>
-		<var name="boundaryLayerSalinityScratch" 
-			persistence="scratch" 
+		<var name="boundaryLayerSalinityScratch"
+			persistence="scratch"
 			type="real" dimensions="nCells" units="PSU"
 			description="salinity averaged vertically over the sub-ice-shelf boundary layer"
 		/>
-		<var name="freezeInterfaceSalinityScratch" 
-			persistence="scratch" 
+		<var name="freezeInterfaceSalinityScratch"
+			persistence="scratch"
 			type="real" dimensions="nCells" units="PSU"
 			description="salinity at land ice-ocean interface where freezing is occurring"
 		/>
-		<var name="freezeInterfaceTemperatureScratch" 
-			persistence="scratch" 
+		<var name="freezeInterfaceTemperatureScratch"
+			persistence="scratch"
 			type="real" dimensions="nCells" units="^\circ C"
 			description="temperature at land ice-ocean interface where freezing is occurring"
 		/>
-		<var name="freezeThicknessFluxScratch" 
-			persistence="scratch" 
+		<var name="freezeThicknessFluxScratch"
+			persistence="scratch"
 			type="real" dimensions="nCells" units="m s^{-1}"
 			description="thickness flux at land ice-ocean interface where freezing is occurring"
 		/>
-		<var name="freezeTemperatureFluxScratch" 
-			persistence="scratch" 
+		<var name="freezeTemperatureFluxScratch"
+			persistence="scratch"
 			type="real" dimensions="nCells" units="^\circ C m s^{-1}"
 			description="ocean temperature flux at land ice-ocean interface where freezing is occurring"
 		/>
-		<var name="freezeIceTemperatureFluxScratch" 
-			persistence="scratch" 
+		<var name="freezeIceTemperatureFluxScratch"
+			persistence="scratch"
 			type="real" dimensions="nCells" units="^\circ C m s^{-1}"
 			description="ice temperature flux at land ice-ocean interface where freezing is occurring"
 		/>
-		<var name="effectiveDensityScratch" 
-			persistence="scratch" 
+		<var name="effectiveDensityScratch"
+			persistence="scratch"
 			type="real" dimensions="nCells" units="kg m^{-3}"
 			description="effective seawater density in land ice before horizontal averaging"
 		/>
@@ -2975,44 +2971,44 @@
 			type="real" dimensions="nVertLevels nCells" units="m"
 			description="reference z-midpoint of cells for interpolation"
 		/>
-                <!-- FIELDS FOR RX1 INITIALIZATION -->
-		<var name="zInterfaceScratch" 
-			persistence="scratch" 
+		<!-- FIELDS FOR RX1 INITIALIZATION -->
+		<var name="zInterfaceScratch"
+			persistence="scratch"
 			type="real" dimensions="nVertLevelsP1 nCells" units="m"
 			description="location of layer interfaces at cell centers, used for thickening layers constrained by the Haney number (rx1)"
 		/>
-		<var name="zTopScratch" 
-			persistence="scratch" 
+		<var name="zTopScratch"
+			persistence="scratch"
 			type="real" dimensions="nCells" units="m"
 			description="location of the upper layer used to compute the Haney number (rx1), equal to ssh for top layer and zMid of the layer for subsequent layers"
 		/>
-		<var name="zBotScratch" 
-			persistence="scratch" 
+		<var name="zBotScratch"
+			persistence="scratch"
 			type="real" dimensions="nCells" units="m"
 			description="location of the lower layer used to compute the Haney number (rx1), equal zMid of the layer lower layer (but a 1D filed is needed for halo exchanges)"
 		/>
-		<var name="zBotNewScratch" 
-			persistence="scratch" 
+		<var name="zBotNewScratch"
+			persistence="scratch"
 			type="real" dimensions="nCells" units="m"
 			description="updated location of the lower layer used to compute the Haney number (rx1), needed so update is agnostic to the order in which cells are accessed"
 		/>
-		<var name="smoothingMaskScratch" 
-			persistence="scratch" 
+		<var name="smoothingMaskScratch"
+			persistence="scratch"
 			type="integer" dimensions="nCells" units="unitless"
 			description="a mask indicating where smoothing is to be performed."
 		/>
-		<var name="smoothingMaskNewScratch" 
-			persistence="scratch" 
+		<var name="smoothingMaskNewScratch"
+			persistence="scratch"
 			type="integer" dimensions="nCells" units="unitless"
 			description="a copy of the smoothing mask used to iteratively expand the mask in the buffer region of open ocean around land ice."
 		/>
-		<var name="layerThicknessNewScratch" 
-			persistence="scratch" 
+		<var name="layerThicknessNewScratch"
+			persistence="scratch"
 			type="real" dimensions="nVertLevels nCells" units="m"
 			description="a copy of layerThickness used during smoothing of the vertical grid while constraining the Haney number (rx1)"
 		/>
-		<var name="bottomDepthMaxLevelScratch" 
-			persistence="scratch" 
+		<var name="bottomDepthMaxLevelScratch"
+			persistence="scratch"
 			type="real" dimensions="nCells" units="unitless"
 			description="the linearly interpolated level at which z=-bottomDepth in a z-level coordinate, used to prevent vertical grid from getting too squashed."
 		/>
