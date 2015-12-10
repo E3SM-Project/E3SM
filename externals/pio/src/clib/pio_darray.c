@@ -1,10 +1,14 @@
 /** @file
  * 
- *  @brief This file contains the routines that read and write
- *  distributed arrays in PIO.
+ * @brief This file contains the routines that read and write
+ * distributed arrays in PIO. 
+ *
+ * When arrays are distributed, each processor holds some of the
+ * array. Only by combining the distributed arrays from all processor
+ * can the full array be obtained.
  *  
- *  @author Jim Edwards
- *  @bug No Known bugs
+ * @author Jim Edwards
+ * @bug No Known bugs
  */
 
 #include <pio.h>
@@ -592,7 +596,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 	     if(vdesc->request[reqn] == NC_REQ_NULL){
 	       vdesc->request[reqn] = PIO_REQ_NULL;  //keeps wait calls in sync
 	     }
-	     vdesc->nreqs = reqn;
+	     vdesc->nreqs += reqn+1;
 
 	     //	     printf("%s %d %d %d\n",__FILE__,__LINE__,vdesc->nreqs,vdesc->request[reqn]);
 	   }
@@ -744,20 +748,32 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 
  }
 
-#ifdef PIO_WRITE_BUFFERING
 /** @brief Write a distributed array to the output file. 
  *  @ingroup PIO_write_darray
  *
- *  This routine aggregates output on the compute nodes and only sends it to the IO nodes when the
- *  compute buffer is full or when a flush is triggered.  
+ *  This routine aggregates output on the compute nodes and only sends
+ *  it to the IO nodes when the compute buffer is full or when a flush
+ *  is triggered.
  *
  *   @param[in] ncid: the ncid of the open netCDF file.
- *   @param[in] vid: the variable ID.
- *   @param[in] ioid: 
- *   @param[in] arraylen: the length of the array to be written.
- *   @param[in] array: pointer to the data to be written.
- *   @param[in] fillvalue: pointer to the fill value to be used for missing data.
+ *   @param[in] vid: the variable ID returned by PIOc_def_var().
+ *   @param[in] ioid: the I/O description ID as passed back by
+ *   PIOc_InitDecomp().
+
+ *   @param[in] arraylen: the length of the array to be written. This
+ *   is the length of the distrubited array. That is, the length of
+ *   the portion of the data that is on the processor.
+
+ *   @param[in] array: pointer to the data to be written. This is a
+ *   pointer to the distributed portion of the array that is on this
+ *   processor.
+
+ *   @param[in] fillvalue: pointer to the fill value to be used for
+ *   missing data.
+ *
+ * @returns 0 for success, non-zero error code for failure.
  */ 
+#ifdef PIO_WRITE_BUFFERING
  int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_Offset arraylen, void *array, void *fillvalue)
  {
    iosystem_desc_t *ios;
@@ -1330,10 +1346,12 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
   int ierr=PIO_NOERR;
 #ifdef _PNETCDF
   int *status;
-  PIO_Offset usage;
+  PIO_Offset usage = 0;
 #ifdef TIMING
   GPTLstart("PIO:flush_output_buffer");
 #endif
+  pioassert(file!=NULL,"file pointer not defined",__FILE__,__LINE__);
+
 
   ierr = ncmpi_inq_buffer_usage(file->fh, &usage);
 
@@ -1348,32 +1366,37 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
     maxusage = usage;
   }
   if(force || usage>=PIO_BUFFER_SIZE_LIMIT){
-    int request[2*PIO_MAX_VARS];
-    int status[2*PIO_MAX_VARS];
-    int rcnt=0;
+    int rcnt;
     bool prev_dist=false;
     int prev_record=-1;
     int prev_type=0;
-
+    int  maxreq;
+    int reqcnt;
+    maxreq = 0;
+    reqcnt=0;
+    rcnt=0;
     for(int i=0; i<PIO_MAX_VARS; i++){
       vdesc = file->varlist+i;
+      reqcnt+=vdesc->nreqs;
+      if(vdesc->nreqs>0) maxreq = i;
+    }
+    int request[reqcnt];
+    int status[reqcnt];
 
-
+    for(int i=0; i<=maxreq; i++){
+      vdesc = file->varlist+i;
 #ifdef MPIO_ONESIDED
       /*onesided optimization requires that all of the requests in a wait_all call represent 
 	a contiguous block of data in the file */
       if(rcnt>0 && (prev_record != vdesc->record ||
 		    vdesc->nreqs==0)){
-	status = malloc(rcnt*sizeof(int));
 	ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
-	free(status);
 	rcnt=0;
       }
       prev_record = vdesc->record;
 #endif
       //      printf("%s %d %d %d %d \n",__FILE__,__LINE__,i,vdesc->nreqs,vdesc->request);
-
-      for(int reqcnt=0;reqcnt<vdesc->nreqs;reqcnt++){
+      for(reqcnt=0;reqcnt<vdesc->nreqs;reqcnt++){
 	request[rcnt++] = max(vdesc->request[reqcnt],NC_REQ_NULL);
       }
       free(vdesc->request);
