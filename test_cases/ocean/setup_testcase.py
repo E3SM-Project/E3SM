@@ -658,9 +658,14 @@ def process_compare_fields_step(compare_tag, configs, script):#{{{
 	for child in compare_tag:
 		# Process field comparisions
 		if child.tag == 'field':
-			process_field_definition(child, configs, script, file1, file2)
-			process_field_definition(child, configs, script, file1, '%s/%s'%(baseline_root, file1))
-			process_field_definition(child, configs, script, file2, '%s/%s'%(baseline_root, file2))
+			if not (missing_file1 or missing_file2):
+				process_field_definition(child, configs, script, file1, file2)
+
+			if not missing_file1:
+				process_field_definition(child, configs, script, file1, '%s/%s'%(baseline_root, file1))
+
+			if not missing_file2:
+				process_field_definition(child, configs, script, file2, '%s/%s'%(baseline_root, file2))
 		# Process field comparision template
 		elif child.tag == 'template':
 			# Get template information, and build full path to template file

@@ -37,8 +37,15 @@ try:
 except:
 	time_length = 1
 
-field1 = f1.variables[args.variable]
-field2 = f2.variables[args.variable]
+try:
+	field1 = f1.variables[args.variable]
+	field2 = f2.variables[args.variable]
+except:
+	print "ERROR: Field '%s' does not exist in both"%(args.variable)
+	print "           file1: %s"%(args.filename1)
+	print "       and file2: %s"%(args.filename2)
+	print "Exiting with a successful comparision, since no comparision can be done."
+	sys.exit(0)
 
 if not field1.shape == field2.shape:
 	print "ERROR: Field sizes don't match in different files."
