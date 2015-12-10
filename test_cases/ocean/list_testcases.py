@@ -15,6 +15,7 @@ it will only print the flags needed to setup that specific test case.
 import os, fnmatch
 import argparse
 import xml.etree.ElementTree as ET
+import re
 
 # Define and process input arguments
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
@@ -54,16 +55,19 @@ for core_dir in os.listdir('.'):
 				for res_dir in os.listdir(config_path):
 					res_path = '%s/%s'%(config_path, res_dir)
 					if os.path.isdir(res_path):
+						# Iterate over all tests within a resolution
 						for test_dir in os.listdir(res_path):
 							test_path = '%s/%s'%(res_path, test_dir)
 							if os.path.isdir(test_path):
 								print_case = False
-								# Iterate over all files within a resolution
+								# Iterate over all files within a test
 								for case_file in os.listdir(test_path):
 									if fnmatch.fnmatch(case_file, '*.xml'):
 										tree = ET.parse('%s/%s'%(test_path, case_file))
 										root = tree.getroot()
 
+										# Check to make sure the test is either
+										# a config file or a driver_script file
 										if root.tag == 'config' or root.tag == 'driver_script':
 											print_case = True
 
@@ -73,10 +77,10 @@ for core_dir in os.listdir('.'):
 								# Print the options if a case file was found.
 								if print_case:
 									if not quiet:
-										if (not args.core) or args.core == core_dir:
-											if (not args.configuration) or args.configuration == config_dir:
-												if (not args.resolution) or args.resolution == res_dir:
-													if (not args.test) or args.test == test_dir:
+										if (not args.core) or re.match(args.core, core_dir):
+											if (not args.configuration) or re.match(args.configuration, config_dir):
+												if (not args.resolution) or re.match(args.resolution, res_dir):
+													if (not args.test) or re.match(args.test, test_dir):
 														print "  %d: -o %s -c %s -r %s -t %s"%(case_num, core_dir, config_dir, res_dir, test_dir)
 									if quiet and case_num == print_num:
 										print "-o %s -c %s -r %s -t %s"%(core_dir, config_dir, res_dir, test_dir)
