@@ -184,6 +184,8 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir):#
 	regression_script.write('import sys, os\n')
 	regression_script.write('import subprocess\n')
 	regression_script.write('\n')
+	regression_script.write("os.environ['PYTHONUNBUFFERED'] = '1'\n")
+	regression_script.write('\n')
 	regression_script.write("if not os.path.exists('case_outputs'):\n")
 	regression_script.write("\tos.makedirs('case_outputs')\n")
 	regression_script.write('\n')
