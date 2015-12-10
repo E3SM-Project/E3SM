@@ -14,6 +14,7 @@ it will only print the flags needed to setup that specific test case.
 
 import os, fnmatch
 import argparse
+import xml.etree.ElementTree as ET
 
 # Define and process input arguments
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
@@ -60,7 +61,14 @@ for core_dir in os.listdir('.'):
 								# Iterate over all files within a resolution
 								for case_file in os.listdir(test_path):
 									if fnmatch.fnmatch(case_file, '*.xml'):
-										print_case = True
+										tree = ET.parse('%s/%s'%(test_path, case_file))
+										root = tree.getroot()
+
+										if root.tag == 'config' or root.tag == 'driver_script':
+											print_case = True
+
+										del root
+										del tree
 
 								# Print the options if a case file was found.
 								if print_case:
