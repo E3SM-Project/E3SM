@@ -395,7 +395,8 @@
 	    <var name="verticalSalinity"/>               
 	    <var name="brineFraction"/>                    
 	    <var name="mobileFraction"/>   
-            <var name="newlyFormedIce"/>        
+            <var name="newlyFormedIce"/>
+	    <var name="maximumIcePresence"/>
 	  </stream>
 
 	  <stream name="output" 				

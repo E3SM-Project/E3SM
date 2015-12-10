@@ -31,8 +31,10 @@ module cice_analysis_driver
    use cice_ridging_diagnostics
    use cice_conservation_check
    use cice_geographical_vectors
-   use cice_time_series_stats
+   use cice_load_balance
+   use cice_maximum_ice_presence
    use cice_ice_present
+   use cice_time_series_stats
 !   use cice_TEMP_LATE
 
    implicit none
@@ -143,6 +145,8 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'ridgingDiagnostics', 1)
       call mpas_pool_add_config(analysisMemberList, 'conservationCheck', 1)
       call mpas_pool_add_config(analysisMemberList, 'geographicalVectors', 1)
+      call mpas_pool_add_config(analysisMemberList, 'loadBalance', 1)
+      call mpas_pool_add_config(analysisMemberList, 'maximumIcePresence', 1)
       call mpas_pool_add_config(analysisMemberList, 'icePresent', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsDaily', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsMonthly', 1)
@@ -989,6 +993,10 @@ contains
          call cice_bootstrap_conservation_check(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
          call cice_bootstrap_geographical_vectors(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'loadBalance' ) then
+         call cice_bootstrap_load_balance(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'maximumIcePresence' ) then
+         call cice_bootstrap_maximum_ice_presence(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_bootstrap_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
@@ -1041,6 +1049,10 @@ contains
          call cice_init_conservation_check(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
          call cice_init_geographical_vectors(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'loadBalance' ) then
+         call cice_init_load_balance(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'maximumIcePresence' ) then
+         call cice_init_maximum_ice_presence(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_init_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
@@ -1094,6 +1106,10 @@ contains
          call cice_precompute_conservation_check(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
          call cice_precompute_geographical_vectors(domain, '', timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'loadBalance' ) then
+         call cice_precompute_load_balance(domain, '', timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'maximumIcePresence' ) then
+         call cice_precompute_maximum_ice_presence(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_precompute_ice_present(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
@@ -1147,6 +1163,10 @@ contains
          call cice_compute_conservation_check(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
          call cice_compute_geographical_vectors(domain, '', timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'loadBalance' ) then
+         call cice_compute_load_balance(domain, '', timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'maximumIcePresence' ) then
+         call cice_compute_maximum_ice_presence(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_compute_ice_present(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
@@ -1199,6 +1219,10 @@ contains
          call cice_restart_conservation_check(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
          call cice_restart_geographical_vectors(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'loadBalance' ) then
+         call cice_restart_load_balance(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'maximumIcePresence' ) then
+         call cice_restart_maximum_ice_presence(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_restart_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
@@ -1251,6 +1275,10 @@ contains
          call cice_finalize_conservation_check(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'geographicalVectors' ) then
          call cice_finalize_geographical_vectors(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'loadBalance' ) then
+         call cice_finalize_load_balance(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'maximumIcePresence' ) then
+         call cice_finalize_maximum_ice_presence(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_finalize_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
