@@ -1343,6 +1343,8 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
 #ifdef TIMING
   GPTLstart("PIO:flush_output_buffer");
 #endif
+  pioassert(file!=NULL,"file pointer not defined",__FILE__,__LINE__);
+
 
   ierr = ncmpi_inq_buffer_usage(file->fh, &usage);
 
@@ -1357,32 +1359,37 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
     maxusage = usage;
   }
   if(force || usage>=PIO_BUFFER_SIZE_LIMIT){
-    int request[2*PIO_MAX_VARS];
-    int status[2*PIO_MAX_VARS];
-    int rcnt=0;
+    int rcnt;
     bool prev_dist=false;
     int prev_record=-1;
     int prev_type=0;
-
+    int  maxreq;
+    int reqcnt;
+    maxreq = 0;
+    reqcnt=0;
+    rcnt=0;
     for(int i=0; i<PIO_MAX_VARS; i++){
       vdesc = file->varlist+i;
+      reqcnt+=vdesc->nreqs;
+      if(vdesc->nreqs>0) maxreq = i;
+    }
+    int request[reqcnt];
+    int status[reqcnt];
 
-
+    for(int i=0; i<=maxreq; i++){
+      vdesc = file->varlist+i;
 #ifdef MPIO_ONESIDED
       /*onesided optimization requires that all of the requests in a wait_all call represent 
 	a contiguous block of data in the file */
       if(rcnt>0 && (prev_record != vdesc->record ||
 		    vdesc->nreqs==0)){
-	status = malloc(rcnt*sizeof(int));
 	ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
-	free(status);
 	rcnt=0;
       }
       prev_record = vdesc->record;
 #endif
       //      printf("%s %d %d %d %d \n",__FILE__,__LINE__,i,vdesc->nreqs,vdesc->request);
-
-      for(int reqcnt=0;reqcnt<vdesc->nreqs;reqcnt++){
+      for(reqcnt=0;reqcnt<vdesc->nreqs;reqcnt++){
 	request[rcnt++] = max(vdesc->request[reqcnt],NC_REQ_NULL);
       }
       free(vdesc->request);
