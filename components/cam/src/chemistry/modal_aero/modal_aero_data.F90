@@ -23,6 +23,18 @@
     integer, parameter :: ntot_amode = 3
 #endif
 
+#if (( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE )) && ( defined RAIN_EVAP_TO_COARSE_AERO )
+    logical, parameter :: rain_evap_to_coarse_aero = .true.
+#else
+    logical, parameter :: rain_evap_to_coarse_aero = .false.
+#endif
+
+    ! carbonaceous species counters - will eventually be set by configuration options
+    integer, parameter :: nbc   = 1  ! number of differently tagged black-carbon      aerosol species
+    integer, parameter :: npoa  = 1  ! number of differently tagged primary-organic   aerosol species
+    integer, parameter :: nsoa  = 1  ! number of differently tagged secondary-organic aerosol species
+    integer, parameter :: nsoag = 1  ! number of differently tagged secondary-organic gas     species
+
     !
     ! definitions for aerosol chemical components
     !
@@ -105,14 +117,24 @@
 #if ( defined MODAL_AERO_7MODE )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 4, 2, 3, 3, 3, 3 /)  ! SS
 #elif ( defined MODAL_AERO_9MODE )
-    integer, parameter :: nspec_amode(ntot_amode)           = (/ 9, 7, 5, 3, 3, 3, 3, 3, 3/)  ! SS
+    integer, parameter :: nspec_amode(ntot_amode)           = (/ 9, 7, 5, 3, 3, 3, 3, 3, 3
+/)  ! SS
 #elif ( defined MODAL_AERO_4MODE_MOM )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 3, 3 /)
 #elif ( defined MODAL_AERO_4MODE )
+#if (defined RAIN_EVAP_TO_COARSE_AERO)
+    integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 3, 6, 2 /)
+#else
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 3, 3, 2 /)
+#endif
 #elif ( defined MODAL_AERO_3MODE )
+#if (defined RAIN_EVAP_TO_COARSE_AERO)
+    integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 3, 6 /)
+#else
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 3, 3 /)
 #endif
+#endif
+
     !   input mprognum_amode, mdiagnum_amode, mprogsfc_amode, mcalcwater_amode
 #if ( defined MODAL_AERO_7MODE )
     integer, parameter ::     mprognum_amode(ntot_amode)   = (/ 1, 1, 1, 1, 1, 1, 1/)
@@ -212,6 +234,10 @@
           modeptr_finedust,  modeptr_fineseas,                          &   !
           modeptr_coardust,  modeptr_coarseas
 
+      integer &
+          lptr2_soa_a_amode(ntot_amode,nsoa), &
+          lptr2_soa_g_amode(nsoag)
+
       real(r8) ::             &
           specmw_so4_amode,     specdens_so4_amode,       &
           specmw_nh4_amode,     specdens_nh4_amode,       &
@@ -229,11 +255,22 @@
 				!     cldphysics, aerosol, gas )
 
 
+      ! REASTER 08/04/2015 - used in precip evap resuspension to coarse mode
+      integer :: mam_prevap_resusp_optaa = 10
+!     0 = no resuspension
+!    10 = original mam method with resus_fix=.false.       (so4_a1 --> so4_a1, so4_c1 --> so4_c1) 
+!    20 = original mam method with resus_fix=.true.        (so4_a1 & so4_c1 --> so4_a1)
+!    30 = resuspend to coarse mode, full non-linear method (so4_a1 & so4_c1 --> so4_a3)
+!    11 = like 10 but output column resuspension tendencies (rcscavt & rsscavt) to history
+!    21 = like 20 but a with a few xxx = max( 0.0, xxx) added in werdepa_v2
+
+      integer :: mmtoo_prevap_resusp(pcnst), ntoo_prevap_resusp(pcnst)
 
 !   threshold for reporting negatives from subr qneg3
       real(r8) :: qneg3_worst_thresh_amode(pcnst)
 
       integer, private :: qqcw(pcnst)=-1 ! Remaps modal_aero indices into pbuf
+
       contains
 
         subroutine qqcw_set_ptr(index, iptr)
