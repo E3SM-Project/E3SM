@@ -1182,6 +1182,7 @@ if ($aer_model eq 'mam' ) {
 	[qw(A A A)],
 	[qw(A A A)],
 	);
+  }
 
   } elsif($aero_modes eq '4mode_mom') {
       # For 4 modes

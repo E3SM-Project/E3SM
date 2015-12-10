@@ -117,7 +117,8 @@
 #if ( defined MODAL_AERO_7MODE )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 4, 2, 3, 3, 3, 3 /)  ! SS
 #elif ( defined MODAL_AERO_9MODE )
-    integer, parameter :: nspec_amode(ntot_amode)           = (/ 9, 7, 5, 3, 3, 3, 3, 3, 3/)  ! SS
+    integer, parameter :: nspec_amode(ntot_amode)           = (/ 9, 7, 5, 3, 3, 3, 3, 3, 3
+/)  ! SS
 #elif ( defined MODAL_AERO_4MODE_MOM )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 3, 3 /)
 #elif ( defined MODAL_AERO_4MODE )
@@ -132,6 +133,8 @@
 #else
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 3, 3 /)
 #endif
+#endif
+
     !   input mprognum_amode, mdiagnum_amode, mprogsfc_amode, mcalcwater_amode
 #if ( defined MODAL_AERO_7MODE )
     integer, parameter ::     mprognum_amode(ntot_amode)   = (/ 1, 1, 1, 1, 1, 1, 1/)
