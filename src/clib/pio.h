@@ -1,8 +1,8 @@
 /**
- * @file pio.h
+ * @file 
  * @author Jim Edwards
  * @date  2014
- * @brief Public headers for the PIO C interface
+ * @brief Public headers for the PIO C interface.
  *
  * 
  * 
@@ -28,13 +28,19 @@
 #include <pnetcdf.h>
 #endif
 
-// In some MPI implementations MPI_OFFSET is not properly defined.  
 #ifndef MPI_OFFSET
+/** MPI_OFFSET is an integer type of size sufficient to represent the
+ * size (in bytes) of the largest file supported by MPI. In some MPI
+ * implementations MPI_OFFSET is not properly defined.  */
 #define MPI_OFFSET  MPI_LONG_LONG
 #endif
 
+/** PIO_Offset is an integer type of size sufficient to represent the
+ * size (in bytes) of the largest file supported by MPI. */
 #define PIO_OFFSET MPI_OFFSET
 #define PIO_Offset MPI_Offset
+
+/** The maximum number of variables allowed in a netCDF file. */
 #define PIO_MAX_VARS NC_MAX_VARS
 
 
