@@ -92,6 +92,7 @@ if ( $COMPILER == "nag" ) then
   soft add +gcc-4.7.2
 #  soft add +netcdf-4.3.1-serial-nag
   setenv NETCDFROOT /home/jacob/netcdf-4.3.3.1nag6
+  setenv NETCDF_PATH $NETCDFROOT
   # Get newer netcdf
   setenv PATH $NETCDFROOT/bin:$PATH
   setenv LD_LIBRARY_PATH $NETCDFROOT/lib:$LD_LIBRARY_PATH
