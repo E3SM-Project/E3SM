@@ -19,9 +19,9 @@
 #include <gptl.h>
 #endif
 
-/** This is the fiename used for the netCDF file created by this
- * example. */
-#define FILENAME "example1.nc"
+/** The number of possible output netCDF output flavors available to
+ * the ParallelIO library. */
+#define NUM_NETCDF_FLAVORS 4	
 
 /** The number of dimensions in the example data. In this simple
     example, we are using one-dimensional data. */
@@ -32,6 +32,19 @@
  * them will be spread between all the processors used to run this
  * example. */
 #define DIM_LEN 16
+
+/** The name of the dimension in the netCDF output file. */
+#define DIM_NAME "x"
+
+/** The name of the variable in the netCDF output file. */
+#define VAR_NAME "foo"
+
+/** Return code when netCDF output file does not match
+ * expectations. */
+#define ERR_BAD 1001
+
+/** The meaning of life, the universe, and everything. */
+#define START_DATA_VAL 42
 
 /** Handle MPI errors. This should only be used with MPI library
  * function calls. */
@@ -57,6 +70,74 @@ char err_buffer[MPI_MAX_ERROR_STRING];
 /** This is the length of the most recent MPI error message, stored
  * int the global error string. */
 int resultlen;
+
+/** @brief Check the output file.
+ *
+ *  Use netCDF to check that the output is as expected. 
+ *
+ * @param ntasks The number of processors running the example. 
+ * @param filename The name of the example file to check. 
+ *
+ * @return 0 if example file is correct, non-zero otherwise. */
+int check_file(int ntasks, char *filename) {
+    
+    int ncid;         /**< File ID from netCDF. */
+    int ndims;        /**< Number of dimensions. */
+    int nvars;        /**< Number of variables. */
+    int ngatts;       /**< Number of global attributes. */
+    int unlimdimid;   /**< ID of unlimited dimension. */
+    size_t dimlen;    /**< Length of the dimension. */
+    int natts;        /**< Number of variable attributes. */
+    nc_type xtype;    /**< NetCDF data type of this variable. */
+    int ret;          /**< Return code for function calls. */
+    int dimids[NDIM]; /**< Dimension ids for this variable. */
+    char dim_name[NC_MAX_NAME];   /**< Name of the dimension. */
+    char var_name[NC_MAX_NAME];   /**< Name of the variable. */
+    size_t start[NDIM];           /**< Zero-based index to start read. */
+    size_t count[NDIM];           /**< Number of elements to read. */
+    int buffer[DIM_LEN];          /**< Buffer to read in data. */
+    int expected[DIM_LEN];        /**< Data values we expect to find. */
+    
+    /* Open the file. */
+    if ((ret = nc_open(filename, 0, &ncid)))
+	return ret;
+
+    /* Check the metadata. */
+    if ((ret = nc_inq(ncid, &ndims, &nvars, &ngatts, &unlimdimid)))
+	return ret;
+    if (ndims != NDIM || nvars != 1 || ngatts != 0 || unlimdimid != -1)
+	return ERR_BAD;
+    if ((ret = nc_inq_dim(ncid, 0, dim_name, &dimlen)))
+	return ret;
+    if (dimlen != DIM_LEN || strcmp(dim_name, DIM_NAME))
+	return ERR_BAD;
+    if ((ret = nc_inq_var(ncid, 0, var_name, &xtype, &ndims, dimids, &natts)))
+	return ret;
+    if (xtype != NC_INT || ndims != NDIM || dimids[0] != 0 || natts != 0)
+	return ERR_BAD;
+
+    /* Use the number of processors to figure out what the data in the
+     * file should look like. */
+    int div = DIM_LEN/ntasks;
+    for (int d = 0; d < DIM_LEN; d++)
+	expected[d] = START_DATA_VAL + d/div;
+    
+    /* Check the data. */
+    start[0] = 0;
+    count[0] = DIM_LEN;
+    if ((ret = nc_get_vara(ncid, 0, start, count, buffer)))
+	return ret;
+    for (int d = 0; d < DIM_LEN; d++)
+	if (buffer[d] != expected[d])
+	    return ERR_BAD;
+
+    /* Close the file. */
+    if ((ret = nc_close(ncid)))
+	return ret;
+
+    /* Everything looks good! */
+    return 0;
+}
 
 /** @brief Main execution of code.
 
@@ -107,6 +188,27 @@ int resultlen;
 	/** Number of processors involved in current execution. */
 	int ntasks;
 
+	/** Different output flavors. The example file is written (and
+	 * then read) four times. The first two flavors,
+	 * parallel-netcdf, and netCDF serial, both produce a netCDF
+	 * classic format file (but with different libraries). The
+	 * last two produce netCDF4/HDF5 format files, written with
+	 * and without using netCDF-4 parallel I/O. */
+	int format[NUM_NETCDF_FLAVORS] = {PIO_IOTYPE_PNETCDF, 
+					  PIO_IOTYPE_NETCDF,
+					  PIO_IOTYPE_NETCDF4C,
+					  PIO_IOTYPE_NETCDF4P};
+
+	/** Names for the output files. Two of them (pnetcdf and
+	 * classic) will be in classic netCDF format, the others
+	 * (serial4 and parallel4) will be in netCDF-4/HDF5
+	 * format. All four can be read by the netCDF library, and all
+	 * will contain the same contents. */
+	char filename[NUM_NETCDF_FLAVORS][NC_MAX_NAME] = {"example1_pnetcdf.nc",
+							  "example1_classic.nc",
+							  "example1_serial4.nc",
+							  "example1_parallel4.nc"};
+	
 	/** Number of processors that will do IO. In this example we
 	 * will do IO from all processors. */
 	int niotasks;
@@ -240,62 +342,70 @@ int resultlen;
 	    ERR(ret);
 	free(compdof);
 	
-	/* Set the format of the output file. */
-	iotype = PIO_IOTYPE_NETCDF;
+	/* Use PIO to create the example file in each of the four
+	 * available ways. */
+	for (int fmt = 0; fmt < NUM_NETCDF_FLAVORS; fmt++) 
+	{
+	    /* Create the netCDF output file. */
+	    if (verbose)
+		printf("rank: %d Creating sample file %s with format %d...\n",
+		       my_rank, filename[fmt], format[fmt]);
+	    if ((ret = PIOc_createfile(iosysid, &ncid, &(format[fmt]), filename[fmt],
+				       PIO_CLOBBER)))
+		ERR(ret);
 	
-	/* Create the netCDF output file. */
-	if (verbose)
-	    printf("rank: %d Creating sample file %s with iotype %d...\n",
-		   my_rank, FILENAME, iotype);
-	if ((ret = PIOc_createfile(iosysid, &ncid, &iotype, FILENAME, PIO_CLOBBER)))
-	    ERR(ret);
+	    /* Define netCDF dimension and variable. */
+	    if (verbose)
+		printf("rank: %d Defining netCDF metadata...\n", my_rank);
+	    if ((ret = PIOc_def_dim(ncid, DIM_NAME, (PIO_Offset)dim_len[0], &dimid)))
+		ERR(ret);
+	    if ((ret = PIOc_def_var(ncid, VAR_NAME, PIO_INT, NDIM, &dimid, &varid)))
+		ERR(ret);
+	    if ((ret = PIOc_enddef(ncid)))
+		ERR(ret);
 	
-	/* Define netCDF dimension and variable. */
-	if (verbose)
-	    printf("rank: %d Defining netCDF metadata...\n", my_rank);
-	if ((ret = PIOc_def_dim(ncid, "x", (PIO_Offset)dim_len[0], &dimid)))
-	    ERR(ret);
-	if ((ret = PIOc_def_var(ncid, "foo", PIO_INT, NDIM, &dimid, &varid)))
-	    ERR(ret);
-	if ((ret = PIOc_enddef(ncid)))
-	    ERR(ret);
-	
-	/* /\* Prepare sample data. *\/ */
-	/* if (!(buffer = malloc(elements_per_pe * sizeof(int)))) */
-	/*     return PIO_ENOMEM; */
-	/* for (int i = 0; i < elements_per_pe; i++) */
-	/*     buffer[i] = 42 + my_rank; */
+	    /* Prepare sample data. */
+	    if (!(buffer = malloc(elements_per_pe * sizeof(int))))
+	        return PIO_ENOMEM;
+	    for (int i = 0; i < elements_per_pe; i++)
+	        buffer[i] = START_DATA_VAL + my_rank;
 
-	/* /\* Write data to the file. *\/ */
-	/* if (verbose) */
-	/*     printf("rank: %d Writing sample data...\n", my_rank); */
-	/* if ((ret = PIOc_write_darray(ncid, varid, ioid, (PIO_Offset)elements_per_pe, */
-	/* 			     buffer, NULL))) */
-	/*     ERR(ret); */
-	/* if ((ret = PIOc_sync(ncid))) */
-	/*     ERR(ret); */
+	    /* Write data to the file. */
+	    if (verbose)
+	        printf("rank: %d Writing sample data...\n", my_rank);
+	    if ((ret = PIOc_write_darray(ncid, varid, ioid, (PIO_Offset)elements_per_pe,
+	    			     buffer, NULL)))
+	        ERR(ret);
+	    if ((ret = PIOc_sync(ncid)))
+	        ERR(ret);
 
-	/* /\* Free buffer space used in this example. *\/ */
-	/* free(buffer); */
+	    /* Free buffer space used in this example. */
+	    free(buffer);
 	
-	/* Close the netCDF file. */
-	if (verbose)
-	    printf("rank: %d Closing the sample data file...\n", my_rank);
-	if ((ret = PIOc_closefile(ncid)))
-	    ERR(ret);
+	    /* Close the netCDF file. */
+	    if (verbose)
+		printf("rank: %d Closing the sample data file...\n", my_rank);
+	    if ((ret = PIOc_closefile(ncid)))
+		ERR(ret);
+	}
 	
 	/* Free the PIO decomposition. */
 	if (verbose)
 	    printf("rank: %d Freeing PIO decomposition...\n", my_rank);
 	if ((ret = PIOc_freedecomp(iosysid, ioid)))
 	    ERR(ret);
-	     
 	
 	/* Finalize the IO system. */
 	if (verbose)
 	    printf("rank: %d Freeing PIO resources...\n", my_rank);
 	if ((ret = PIOc_finalize(iosysid)))
 	    ERR(ret);
+
+	/* Check the output file. */
+	if (!my_rank)
+	    for (int fmt = 0; fmt < NUM_NETCDF_FLAVORS; fmt++) 
+		if ((ret = check_file(ntasks, filename[fmt])))
+		    ERR(ret);
 
 	/* Finalize the MPI library. */
 	MPI_Finalize();
