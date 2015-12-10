@@ -79,7 +79,7 @@ typedef struct examplePioClass
     /** Number of the aggregator? */
     int numAggregator;
 
-    /** */
+    /** Zero-based rank of first processor to be involved in I/O. */
     int optBase;
 
     /** Specifies the flavor of netCDF output format. */
@@ -187,7 +187,7 @@ struct examplePioClass* epc_init( struct examplePioClass* this )
         
     this->stride        = 1;
     this->numAggregator = 0;
-    this->optBase       = 1;
+    this->optBase       = 0;
     this->iotype        = PIO_IOTYPE_NETCDF;
     this->fileName      = "examplePio_c.nc";
     this->dimLen[0]     = LEN;
