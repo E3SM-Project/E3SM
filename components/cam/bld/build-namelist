@@ -1214,7 +1214,7 @@ if ($aer_model eq 'mam' ) {
 	[qw(so4_c2 soa_c2 ncl_c2 mom_c2)],
 	[qw(dst_c3 ncl_c3 so4_c3)],
 	[qw(pom_c4 bc_c4 mom_c4)],
-	);
+	); 
       
     @mode_num_src  = qw(A A A A);
     @mode_spec_src = (
