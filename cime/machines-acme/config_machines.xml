@@ -825,12 +825,12 @@
          <TESTS>acme_developer</TESTS>
 	 <COMPILERS>pgi,pgicuda,intel,cray</COMPILERS>
 	 <MPILIBS>mpich,mpi-serial</MPILIBS>
-         <CESMSCRATCHROOT>$ENV{MEMBERWORK}/$PROJECT</CESMSCRATCHROOT>
-         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-         <EXEROOT>$CASEROOT/bld</EXEROOT>
+         <CESMSCRATCHROOT>$ENV{HOME}/acme_scratch/$PROJECT</CESMSCRATCHROOT>
+         <RUNDIR>$ENV{MEMBERWORK}/$PROJECT/$CASE/run</RUNDIR>
+         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/lustre/atlas1/cli900/world-shared/cesm/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/lustre/atlas1/cli900/world-shared/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_S_ROOT>$ENV{MEMBERWORK}/$PROJECT/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/lustre/atlas1/cli900/world-shared/cesm/baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc.titan</CCSM_CPRNC>
