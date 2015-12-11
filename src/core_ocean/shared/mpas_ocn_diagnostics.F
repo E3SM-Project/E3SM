@@ -849,16 +849,11 @@ contains
         maxLevelCell, maxLevelEdgeBot
       integer, dimension(:,:), pointer :: edgesOnCell, edgeSignOnCell
 
-      real (kind=RKIND) :: flux, invAreaCell
+      real (kind=RKIND) :: flux, invAreaCell, div_hu_btr
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell
-      !real (kind=RKIND), dimension(:), allocatable :: &
-      !   div_hu_btr       !> barotropic divergence of (thickness*velocity)
       real (kind=RKIND), dimension(:), pointer :: &
-         div_hu_btr       !> barotropic divergence of (thickness*velocity)
-      type (field1DReal), pointer :: div_hu_btrField
-      !real (kind=RKIND), dimension(:,:), allocatable :: &
-      !   ALE_Thickness, & !> ALE thickness at new time
-      !   div_hu           !> divergence of (thickness*velocity)
+         projectedSSH       !> projected SSH at new time
+      type (field1DReal), pointer :: projectedSSHField
       real (kind=RKIND), dimension(:,:), pointer :: &
          ALE_Thickness, & !> ALE thickness at new time
          div_hu           !> divergence of (thickness*velocity)
@@ -887,38 +882,38 @@ contains
       end if
 
 
-      !allocate(div_hu(nVertLevels,nCells), div_hu_btr(nCells), ALE_Thickness(nVertLevels,nCells))
       call mpas_pool_get_field(scratchPool, 'div_hu', div_huField)
-      call mpas_pool_get_field(scratchPool, 'div_hu_btr', div_hu_btrField)
+      call mpas_pool_get_field(scratchPool, 'projectedSSH', projectedSSHField)
       call mpas_pool_get_field(scratchPool, 'ALE_Thickness', ALE_ThicknessField)
       call mpas_allocate_scratch_field(div_huField, .true.)
-      call mpas_allocate_scratch_field(div_hu_btrField, .true.)
+      call mpas_allocate_scratch_field(projectedSSHField, .true.)
       call mpas_allocate_scratch_field(ALE_ThicknessField, .true.)
 
       call mpas_threading_barrier()
 
       div_hu => div_huField % array
-      div_hu_btr => div_hu_btrField % array
+      projectedSSH => projectedSSHField % array
       ALE_Thickness => ALE_ThicknessField % array
 
       !
       ! thickness-weighted divergence and barotropic divergence
       !
       ! See Ringler et al. (2010) jcp paper, eqn 19, 21, and fig. 3.
-      !$omp do schedule(runtime) private(invAreaCell, i, iEdge, k, flux)
+      !$omp do schedule(runtime) private(invAreaCell, i, iEdge, k, flux, div_hu_btr)
       do iCell = 1, nCells
-         div_hu(:,iCell) = 0.0
-         div_hu_btr(iCell) = 0.0
-         invAreaCell = 1.0 / areaCell(iCell)
+         div_hu(:,iCell) = 0.0_RKIND
+         div_hu_btr = 0.0_RKIND
+         invAreaCell = 1.0_RKIND / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
 
             do k = 1, maxLevelEdgeBot(iEdge)
                flux = layerThicknessEdge(k, iEdge) * normalVelocity(k, iEdge) * dvEdge(iEdge) * edgeSignOnCell(i, iCell) * invAreaCell
                div_hu(k,iCell) = div_hu(k,iCell) - flux
-               div_hu_btr(iCell) = div_hu_btr(iCell) - flux
+               div_hu_btr = div_hu_btr - flux
             end do
          end do
+         projectedSSH(iCell) = oldSSH(iCell) - dt*div_hu_btr
       end do
       !$omp end do
 
@@ -926,9 +921,9 @@ contains
       ! Compute desired thickness at new time
       !
       if (present(newHighFreqThickness)) then
-        call ocn_ALE_thickness(meshPool, verticalMeshPool, oldSSH, div_hu_btr, dt, ALE_thickness, err, newHighFreqThickness)
+        call ocn_ALE_thickness(meshPool, verticalMeshPool, projectedSSH, ALE_thickness, err, newHighFreqThickness)
       else
-        call ocn_ALE_thickness(meshPool, verticalMeshPool, oldSSH, div_hu_btr, dt, ALE_thickness, err)
+        call ocn_ALE_thickness(meshPool, verticalMeshPool, projectedSSH, ALE_thickness, err)
       endif
 
       call mpas_threading_barrier()
@@ -942,8 +937,8 @@ contains
 
       !$omp do schedule(runtime) private(k)
       do iCell = 1,nCells
-         vertAleTransportTop(1,iCell) = 0.0
-         vertAleTransportTop(maxLevelCell(iCell)+1,iCell) = 0.0
+         vertAleTransportTop(1,iCell) = 0.0_RKIND
+         vertAleTransportTop(maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
          do k = maxLevelCell(iCell),2,-1
             vertAleTransportTop(k,iCell) = vertAleTransportTop(k+1,iCell) - div_hu(k,iCell) &
               - (ALE_Thickness(k,iCell) - oldLayerThickness(k,iCell))/dt
@@ -953,7 +948,7 @@ contains
 
       call mpas_threading_barrier()
       call mpas_deallocate_scratch_field(div_huField, .true.)
-      call mpas_deallocate_scratch_field(div_hu_btrField, .true.)
+      call mpas_deallocate_scratch_field(projectedSSHField, .true.)
       call mpas_deallocate_scratch_field(ALE_ThicknessField, .true.)
 
    end subroutine ocn_vert_transport_velocity_top!}}}
