@@ -37,6 +37,9 @@
 #define Y_DIM_LEN 4
 /**@}*/
 
+/** The number of timesteps of data to write. */
+#define NUM_TIMESTEPS 2
+
 /** The name of the variable in the netCDF output file. */
 #define VAR_NAME "foo"
 
@@ -375,21 +378,27 @@ int resultlen;
 		ERR(ret);
 	    if ((ret = PIOc_enddef(ncid)))
 	    	ERR(ret);
-	
-	    /* Prepare sample data. */
-	    if (!(buffer = malloc(elements_per_pe * sizeof(int))))
-	        return PIO_ENOMEM;
-	    for (int i = 0; i < elements_per_pe; i++)
-	        buffer[i] = START_DATA_VAL + my_rank;
 
-	    /* Write data to the file. */
-	    if (verbose)
-	        printf("rank: %d Writing sample data...\n", my_rank);
-	    if ((ret = PIOc_write_darray(ncid, varid, ioid, (PIO_Offset)elements_per_pe,
-	    			     buffer, NULL)))
-	        ERR(ret);
-	    if ((ret = PIOc_sync(ncid)))
-	        ERR(ret);
+	    /* Allocate space for sample data. */
+	    if (!(buffer = malloc(elements_per_pe * sizeof(int))))
+		return PIO_ENOMEM;
+
+	    /* Write data for each timestep. */
+	    for (int ts = 0; ts < NUM_TIMESTEPS; ts++) {
+
+		/* Create sample data. */
+		for (int i = 0; i < elements_per_pe; i++)
+		    buffer[i] = START_DATA_VAL + my_rank + ts;
+
+		/* Write data to the file. */
+		if (verbose)
+		    printf("rank: %d Writing sample data...\n", my_rank);
+		if ((ret = PIOc_write_darray(ncid, varid, ioid, (PIO_Offset)elements_per_pe,
+					     buffer, NULL)))
+		    ERR(ret);
+		if ((ret = PIOc_sync(ncid)))
+		    ERR(ret);
+	    }
 
 	    /* Free buffer space used in this example. */
 	    free(buffer);
