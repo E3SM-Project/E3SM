@@ -42,8 +42,8 @@ kcut_fm       = 2
 /
 &vert_nl
 vform         = "ccm"
-vfile_mid     = "../vcoord/camm-26.fbin.littleendian"
-vfile_int     = "../vcoord/cami-26.fbin.littleendian"
+vfile_mid     = "../vcoord/camm-26.ascii"
+vfile_int     = "../vcoord/cami-26.ascii"
 /
 &analysis_nl
 output_timeunits=1,1

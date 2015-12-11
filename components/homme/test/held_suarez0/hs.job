@@ -5,8 +5,6 @@
 #  directories
 #        ~/scratch1    is a link to your account on the parallel filesystem  
 #        $HOMME        homme svn checkout  (see set HOMME = below)
-#        $src          $HOMME/build.Linux
-#                      (HOMME should already be setup to build here)
 #        $wdir         run and data output directory
 #                      ~/scratch1/preqx/hs-* (constructed from run parameters
 #                                             see below)
@@ -66,25 +64,6 @@
 #SBATCH -N 80
 #SBATCH --account=FY104068
 #SBATCH --time=1:00:00
-
-
-
-# ORNL jaguar PBS options
-#PBS -l size=16
-#PBS -A CLI017DEV
-
-# ANL intrepid
-# intrepid does not have #PBS options
-# user will run this script, and then it will qsub itself
-# with the --batch argument
-# 180min = medium que, 60min = short que.  ques:  prod, prod-devel
-set NTIME = 720
-#set NNODES=256
-#set BGPQUE = prod-devel
-set NNODES=4096
-#set NNODES=2048
-set BGPQUE = prod
-
 
 set NCPU = 24
 if ( ${?PBS_NODEFILE} ) then
@@ -156,93 +135,50 @@ if ( $ndays == 0 ) then
   set sfreq = $nmax
 endif
 
-configure for $NPTS and #nlev
-
-if ( $NPTS == 8 ) then
-   set mesh = ne${ne}t${tstep}l${nlev}
-else
-   set mesh = ne${ne}-${NPTS}t${tstep}l${nlev}
-endif
-set name = hs-${mesh}-nu${nu}-$subcycle
-
-
+set mesh = ne${ne}-${NPTS}t${tstep}l${nlev}
+set name = hs-${mesh}-nu${nu}
 echo $name
 
 
-#
-#  default  linux workstations, SNL linux clusters
-#  aix      bluefire at NCAR
-#  jaguar   ORNL xt3
-#  encanto  SGI NMCAC machine   
-#
-set machine = default
-if ( AIX == `uname` ) set machine = aix
-if ( jaguar == `hostname | head -c 6` ) set machine = jaguar
-if ( yodjag == `hostname | head -c 6` ) set machine = jaguar
-if ( intrepid.alcf.anl.gov  == `hostname -f | tail --bytes 22` ) set machine = intrepid
-echo machine = $machine
-
 set input = `pwd`
 set HOMME = `pwd`/../..
-set src = $HOMME/build/preqx
+set MACH = $HOMME/cmake/machineFiles/rhel5.cmake
 set wdir = ~/scratch1/preqx
+set bld = $wdir/bld
+set exe = $bld/src/preqx/preqx
+
+mkdir -p $bld
+cd $bld
+set exe = $bld/src/preqx/preqx
+# rm $bld/CMakeCache.txt    # remove this file to force re-configure
+if (! -f CMakeCache.txt) then
+   rm -rf CMakeFiles CMakeCache.txt src
+   #rm -rf utils/pio  utils/timing utils/cprnc   # may also need to do this
+   echo "running CMAKE to configure the model"
+
+   cmake -C $MACH -DQSIZE_D=$qsize -DPREQX_PLEV=$nlev -DPREQX_NP=4  \
+   -DBUILD_HOMME_SWDGX=FALSE                     \
+   -DBUILD_HOMME_SWEQX=FALSE                     \
+   -DBUILD_HOMME_PRIMDGX=FALSE                   \
+   -DPREQX_USE_ENERGY=TRUE  $HOMME
+
+   make -j4 clean
+endif
+make -j4 preqx
+if ($status) exit
+
+
 
 
 # setup the work directory
 mkdir $wdir
-ln -s $HOMME/test/vcoord $wdir/vcoord
+cp -f $HOMME/test/vcoord/*.ascii $wdir/vcoord
+
 
 set wdir = $wdir/$name
 mkdir $wdir
 mkdir $wdir/movies
 mkdir $wdir/restart
-
-
-set build = 1
-set bigendian = 0
-set stdoutfilt = " "
-set mpirun = "mpirun"
-set mpiopts = "-np $NCPU"
-
-##########################################################
-# ORNL jaguar
-##########################################################
-if ( $machine == jaguar  ) then
-   # nodes dont have access to home directory
-   rm -f $wdir/../vcoord
-   rsync -a  $HOMME/test/vcoord/ $wdir/../vcoord
-   #needed for NE=240 on 
-   #default: setenv MPICH_MSGS_PER_PROC = 16384
-   setenv MPICH_MSGS_PER_PROC   131072
-   setenv MPICH_PTL_UNEX_EVENTS  80000
-
-   set mpirun = aprun
-   set mpiopts = "-n $NCPU"
-endif
-##########################################################
-# ANL intreped
-##########################################################
-if ( $machine == intrepid  ) then
-   set depend = " "
-   #set depend = "--dependencies 83333"
-
-   if ( "$1" != "--batch" ) then
-    # run qsub
-    echo qsub $depend -q $BGPQUE -t $NTIME -n $NNODES --mode script $0 --batch $*
-         qsub $depend -q $BGPQUE -t $NTIME -n $NNODES --mode script $0 --batch $*
-    exit
-   endif
-   @ NCPU = $NNODES * 4
-   set mpirun = cobalt-mpirun
-   set mpiopts = "-np $NCPU -mode VN"
-
-   # nodes dont have access to home directory
-   rm -f $wdir/../vcoord
-   rsync -a  $HOMME/test/vcoord/ $wdir/../vcoord
-   set bigendian = 1
-endif
-
-
 
 
 
@@ -271,21 +207,6 @@ sed s/restartfreq.\*/"restartfreq = $rfreq"/ |\
 sed s/\qsize.\*/"qsize = $qsize"/ |\
 sed s/ORDER/$hypervis/ | sed s/SUBCYCLE/$subcycle/ > $wdir/input.nl
 
-if ( $bigendian == 1 ) then
-   echo "editing input file for bigendian vertial coords"
-   mv -f $wdir/input.nl $wdir/tmp.nl
-   sed  s/.littleendian//g $wdir/tmp.nl > $wdir/input.nl
-endif
-
-
-if ( $build == 1 ) then
-  cd $src
-  ./configure --enable-blas --enable-lapack --with-netcdf=$NETCDF_PATH \
-    --with-pnetcdf=$PNETCDF_PATH NP=$NPTS PLEV=$nlev  --enable-energy-diagnostics
-  make -j4 depends; make clean
-  make -j4 preqx
-  mv -f preqx preqx.hs
-endif
 
 cd $wdir
 
@@ -297,7 +218,7 @@ cat  $wdir/input.nl
 ############################################################
 date
 set echo
-$mpirun $mpiopts $src/preqx.hs < $wdir/input.nl $stdoutfilt
+mpirun -np $NCPU $exe < $wdir/input.nl 
 date
 
 # save timing data
