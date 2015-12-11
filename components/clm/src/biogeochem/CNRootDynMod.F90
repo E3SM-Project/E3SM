@@ -108,7 +108,7 @@ contains
       rswa(bounds%begp:bounds%endp,1:nlevgrnd)      = 0._r8
       rsmn(bounds%begp:bounds%endp,1:nlevgrnd)      = 0._r8
       frootc_dz(bounds%begp:bounds%endp,1:nlevgrnd) = 0._r8
-
+      root_depth(bounds%begp:bounds%endp)           = 0._r8
 
       !---------------------------------------------------------------
       ! Set root depth, dynamic for crops, fixed for other vegetation
@@ -119,7 +119,9 @@ contains
          c = pcolumn(p)
          if (ivt(p) /= noveg) then
             if ((ivt(p)) >= npcropmin) then !skip generic crop types
-               root_depth(p) = max(zi(c,2), min(hui(p)/huigrain(p)* root_dmx(ivt(p)), root_dmx(ivt(p))))
+               if (huigrain(p) > 0._r8) then
+                  root_depth(p) = max(zi(c,2), min(hui(p)/huigrain(p)* root_dmx(ivt(p)), root_dmx(ivt(p))))
+               end if
             else
                ! this can be changed to any depth (i.e. the maximum soil depth)
                root_depth(p) = zi(c,nlevsoi)

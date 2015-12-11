@@ -206,7 +206,7 @@ contains
     allocate(this%vf_patch            (begp:endp))                   ; this%vf_patch            (:)   = 0.0_r8
     allocate(this%gddmaturity_patch   (begp:endp))                   ; this%gddmaturity_patch   (:)   = spval
     allocate(this%huileaf_patch       (begp:endp))                   ; this%huileaf_patch       (:)   = nan
-    allocate(this%huigrain_patch      (begp:endp))                   ; this%huigrain_patch      (:)   = nan
+    allocate(this%huigrain_patch      (begp:endp))                   ; this%huigrain_patch      (:)   = 0.0_r8
     allocate(this%aleafi_patch        (begp:endp))                   ; this%aleafi_patch        (:)   = nan
     allocate(this%astemi_patch        (begp:endp))                   ; this%astemi_patch        (:)   = nan
     allocate(this%aleaf_patch         (begp:endp))                   ; this%aleaf_patch         (:)   = nan
