@@ -377,8 +377,6 @@ int check_file(int ntasks, char *filename) {
 	    }
 	    if ((ret = PIOc_def_var(ncid, VAR_NAME, PIO_INT, NDIM, dimids, &varid)))
 	    	ERR(ret);
-	    if ((ret = PIOc_setframe(ncid, varid, 0)))
-		ERR(ret);
 	    if ((ret = PIOc_enddef(ncid)))
 	    	ERR(ret);
 
@@ -396,6 +394,9 @@ int check_file(int ntasks, char *filename) {
 		/* Write data to the file. */
 		if (verbose)
 		    printf("rank: %d Writing sample data...\n", my_rank);
+
+		if ((ret = PIOc_setframe(ncid, varid, ts)))
+		    ERR(ret);
 		if ((ret = PIOc_write_darray(ncid, varid, ioid, (PIO_Offset)elements_per_pe,
 					     buffer, NULL)))
 		    ERR(ret);
