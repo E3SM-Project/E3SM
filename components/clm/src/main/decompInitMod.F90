@@ -498,6 +498,7 @@ contains
     integer :: i,g,k,l,n,np       ! indices
     integer :: cid,pid            ! indices
     integer :: begg,endg          ! beg,end gridcells
+    integer :: begt,endt          ! beg,end topographic units
     integer :: begl,endl          ! beg,end landunits
     integer :: begc,endc          ! beg,end columns
     integer :: begp,endp          ! beg,end pfts
@@ -532,7 +533,7 @@ contains
 
     !init 
 
-    call get_proc_bounds(begg, endg, begl, endl, begc, endc, begp, endp, &
+    call get_proc_bounds(begg, endg, begt, endt, begl, endl, begc, endc, begp, endp, &
          begCohort, endCohort)
     call get_proc_global(ng=numg, nl=numl, nc=numc, np=nump, nCohorts=numCohort)
 
