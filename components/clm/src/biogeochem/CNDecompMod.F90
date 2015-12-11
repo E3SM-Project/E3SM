@@ -414,7 +414,8 @@ contains
                cnstate_vars,                                        &
                carbonstate_vars, carbonflux_vars,                   &
                nitrogenstate_vars, nitrogenflux_vars,               &
-               phosphorusstate_vars,phosphorusflux_vars)
+               phosphorusstate_vars,phosphorusflux_vars,            &
+               soilstate_vars,waterstate_vars)
       call t_stopf('CNAllocation - phase-2')
 
       
@@ -553,6 +554,8 @@ contains
           do j = 1,nlevdecomp
               soil_n_immob_flux_vr(c,j) = 0.0_r8
               soil_p_immob_flux_vr(c,j) = 0.0_r8
+              gross_nmin_vr(c,j) = 0.0_r8
+              gross_pmin_vr(c,j) = 0.0_r8
           end do
       end do
       do k = 1, ndecomp_cascade_transitions
@@ -571,7 +574,7 @@ contains
                else
                    soil_p_grossmin_flux(c) = soil_p_grossmin_flux(c) -1.0_r8*pmpf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
                end if
-          	end do
+             end do
           end do
        end do
        
