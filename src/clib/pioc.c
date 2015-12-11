@@ -500,9 +500,17 @@ int PIOc_finalize(const int iosysid)
   MPI_Group_free(&(ios->compgroup));
   MPI_Group_free(&(ios->iogroup));
 
+  /* Free the MPI communicators. */
+  if(ios->intercomm != MPI_COMM_NULL){
+    MPI_Comm_free(&(ios->intercomm));
+  }
   if(ios->io_comm != MPI_COMM_NULL){
     MPI_Comm_free(&(ios->io_comm));
   }
+  /* if(ios->comp_comm != MPI_COMM_NULL){ */
+  /*   MPI_Comm_free(&(ios->comp_comm)); */
+  /* } */
+
   return pio_delete_iosystem_from_list(iosysid);
 
   

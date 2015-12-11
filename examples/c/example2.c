@@ -75,6 +75,12 @@ char err_buffer[MPI_MAX_ERROR_STRING];
  * int the global error string. */
 int resultlen;
 
+/** The dimension names. */
+char dim_name[NDIM][NC_MAX_NAME + 1] = {"timestep", "x", "y"};
+
+/** Length of the dimensions in the sample data. */
+int dim_len[NDIM] = {NC_UNLIMITED, X_DIM_LEN, Y_DIM_LEN};
+
 /** @brief Check the output file.
  *
  *  Use netCDF to check that the output is as expected. 
@@ -83,65 +89,68 @@ int resultlen;
  * @param filename The name of the example file to check. 
  *
  * @return 0 if example file is correct, non-zero otherwise. */
-/* int check_file(int ntasks, char *filename) { */
+int check_file(int ntasks, char *filename) {
     
-/*     int ncid;         /\**< File ID from netCDF. *\/ */
-/*     int ndims;        /\**< Number of dimensions. *\/ */
-/*     int nvars;        /\**< Number of variables. *\/ */
-/*     int ngatts;       /\**< Number of global attributes. *\/ */
-/*     int unlimdimid;   /\**< ID of unlimited dimension. *\/ */
-/*     size_t dimlen;    /\**< Length of the dimension. *\/ */
-/*     int natts;        /\**< Number of variable attributes. *\/ */
-/*     nc_type xtype;    /\**< NetCDF data type of this variable. *\/ */
-/*     int ret;          /\**< Return code for function calls. *\/ */
-/*     int dimids[NDIM]; /\**< Dimension ids for this variable. *\/ */
-/*     char dim_name[NC_MAX_NAME + 1];   /\**< Name of the dimension. *\/ */
-/*     char var_name[NC_MAX_NAME + 1];   /\**< Name of the variable. *\/ */
-/*     size_t start[NDIM];           /\**< Zero-based index to start read. *\/ */
-/*     size_t count[NDIM];           /\**< Number of elements to read. *\/ */
-/*     int buffer[X_DIM_LEN];          /\**< Buffer to read in data. *\/ */
-/*     int expected[DIM_LEN];        /\**< Data values we expect to find. *\/ */
+    int ncid;         /**< File ID from netCDF. */
+    int ndims;        /**< Number of dimensions. */
+    int nvars;        /**< Number of variables. */
+    int ngatts;       /**< Number of global attributes. */
+    int unlimdimid;   /**< ID of unlimited dimension. */
+    size_t dimlen;    /**< Length of the dimension. */
+    int natts;        /**< Number of variable attributes. */
+    nc_type xtype;    /**< NetCDF data type of this variable. */
+    int ret;          /**< Return code for function calls. */
+    int dimids[NDIM]; /**< Dimension ids for this variable. */
+    char my_dim_name[NC_MAX_NAME + 1]; /**< Name of the dimension. */
+    char var_name[NC_MAX_NAME + 1];    /**< Name of the variable. */
+    size_t start[NDIM];                /**< Zero-based index to start read. */
+    size_t count[NDIM];                /**< Number of elements to read. */
+    int buffer[X_DIM_LEN];             /**< Buffer to read in data. */
+    int expected[X_DIM_LEN];           /**< Data values we expect to find. */
     
-/*     /\* Open the file. *\/ */
-/*     if ((ret = nc_open(filename, 0, &ncid))) */
-/* 	return ret; */
+    /* Open the file. */
+    if ((ret = nc_open(filename, 0, &ncid)))
+	return ret;
 
-/*     /\* Check the metadata. *\/ */
-/*     if ((ret = nc_inq(ncid, &ndims, &nvars, &ngatts, &unlimdimid))) */
-/* 	return ret; */
-/*     if (ndims != NDIM || nvars != 1 || ngatts != 0 || unlimdimid != -1) */
-/* 	return ERR_BAD; */
-/*     if ((ret = nc_inq_dim(ncid, 0, dim_name, &dimlen))) */
-/* 	return ret; */
-/*     if (dimlen != DIM_LEN || strcmp(dim_name, DIM_NAME)) */
-/* 	return ERR_BAD; */
-/*     if ((ret = nc_inq_var(ncid, 0, var_name, &xtype, &ndims, dimids, &natts))) */
-/* 	return ret; */
-/*     if (xtype != NC_INT || ndims != NDIM || dimids[0] != 0 || natts != 0) */
-/* 	return ERR_BAD; */
+    /* Check the metadata. */
+    if ((ret = nc_inq(ncid, &ndims, &nvars, &ngatts, &unlimdimid)))
+	return ret;
+    if (ndims != NDIM || nvars != 1 || ngatts != 0 || unlimdimid != -1)
+	return ERR_BAD;
+    for (int d = 0; d < ndims; d++)
+    {
+	if ((ret = nc_inq_dim(ncid, d, my_dim_name, &dimlen)))
+	    return ret;
+	if (dimlen != X_DIM_LEN || strcmp(my_dim_name, dim_name[d]))
+	    return ERR_BAD;
+    }
+    if ((ret = nc_inq_var(ncid, 0, var_name, &xtype, &ndims, dimids, &natts)))
+	return ret;
+    if (xtype != NC_INT || ndims != NDIM || dimids[0] != 0 || natts != 0)
+	return ERR_BAD;
 
-/*     /\* Use the number of processors to figure out what the data in the */
-/*      * file should look like. *\/ */
-/*     int div = DIM_LEN/ntasks; */
-/*     for (int d = 0; d < DIM_LEN; d++) */
-/* 	expected[d] = START_DATA_VAL + d/div; */
+    /* Use the number of processors to figure out what the data in the
+     * file should look like. */
+    int div = X_DIM_LEN * Y_DIM_LEN / ntasks;
+    for (int d = 0; d < X_DIM_LEN; d++)
+	expected[d] = START_DATA_VAL + d/div;
     
-/*     /\* Check the data. *\/ */
-/*     start[0] = 0; */
-/*     count[0] = DIM_LEN; */
-/*     if ((ret = nc_get_vara(ncid, 0, start, count, buffer))) */
-/* 	return ret; */
-/*     for (int d = 0; d < DIM_LEN; d++) */
-/* 	if (buffer[d] != expected[d]) */
-/* 	    return ERR_BAD; */
+    /* Check the data. */
+    start[0] = 0;
+    count[0] = X_DIM_LEN;
+    if ((ret = nc_get_vara(ncid, 0, start, count, buffer)))
+	return ret;
+    for (int d = 0; d < X_DIM_LEN; d++)
+	if (buffer[d] != expected[d])
+	    return ERR_BAD;
 
-/*     /\* Close the file. *\/ */
-/*     if ((ret = nc_close(ncid))) */
-/* 	return ret; */
+    /* Close the file. */
+    if ((ret = nc_close(ncid)))
+	return ret;
 
-/*     /\* Everything looks good! *\/ */
-/*     return 0; */
-/* } */
+    /* Everything looks good! */
+    return 0;
+}
 
 /** @brief Main execution of code.
 
@@ -233,17 +242,11 @@ int resultlen;
 	/** The dimension IDs. */
 	int dimids[NDIM];
 
-	/** The dimension names. */
-	char dim_name[NDIM][NC_MAX_NAME + 1] = {"timestep", "x", "y"};
-
 	/** Array index per processing unit. This is the number of
 	 * elements of the data array that will be handled by each
 	 * processor. In this example there are 16 data elements. If the
 	 * example is run on 4 processors, then arrIdxPerPe will be 4. */
 	PIO_Offset elements_per_pe;
-
-	/* Length of the dimensions in the data. */
-	int dim_len[NDIM] = {NC_UNLIMITED, X_DIM_LEN, Y_DIM_LEN};
 
 	/** The ID for the parallel I/O system. It is set by
 	 * PIOc_Init_Intracomm(). It references an internal structure
