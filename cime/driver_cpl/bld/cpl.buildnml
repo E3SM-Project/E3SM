@@ -13,17 +13,7 @@ unshift @INC, @dirs;
 require SetupTools;
 my $sysmod; 
 
-my $ATM_GRID		= `./xmlquery  ATM_GRID		-value`;
-my $CASEBUILD		= `./xmlquery  CASEBUILD	-value`;
-my $CASEROOT		= `./xmlquery  CASEROOT		-value`;
-my $CAM_CONFIG_OPTS	= `./xmlquery  CAM_CONFIG_OPTS	-value`;
-my $CIMEROOT		= `./xmlquery  CIMEROOT		-value`;
-my $GRID		= `./xmlquery  GRID		-value`;
-my $LND_GRID		= `./xmlquery  LND_GRID		-value`;
-my $OCN_GRID		= `./xmlquery  OCN_GRID		-value`;
-my $ROF_GRID		= `./xmlquery  ROF_GRID		-value`;
-my $RUNDIR		= `./xmlquery  RUNDIR		-value`;
-my $WAV_GRID		= `./xmlquery  WAV_GRID		-value`;
+my ($ATM_GRID, $CASEBUILD, $CASEROOT, $CAM_CONFIG_OPTS, $CIMEROOT, $GRID, $LND_GRID, $OCN_GRID, $ROF_GRID, $RUNDIR, $WAV_GRID) = split('JGFSEP', `./xmlquery -s JGFSEP ATM_GRID CASEBUILD CASEROOT CAM_CONFIG_OPTS CIMEROOT GRID LND_GRID OCN_GRID ROF_GRID RUNDIR WAV_GRID`);
 
 if (! -d "$CASEBUILD/cplconf" ) {
     $sysmod = "mkdir $CASEBUILD/cplconf";

@@ -225,7 +225,7 @@ if [ -z "$cprnc_exe" ]; then
 	exit 1
     fi
     cd $CASEROOT
-    cprnc_exe=`./xmlquery CCSM_CPRNC -value`
+    cprnc_exe=`./xmlquery CCSM_CPRNC`
 fi
 
 #------------------------------------------------------------------

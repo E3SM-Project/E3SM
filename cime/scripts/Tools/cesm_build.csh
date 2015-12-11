@@ -3,9 +3,14 @@
 # This wrapper script assures that modules in env_mach_specific are properly 
 # loaded before compiling
 
-setenv MPILIB     `./xmlquery  MPILIB   -value `
-setenv COMPILER	  `./xmlquery  COMPILER	-value `
-setenv CASEROOT   `./xmlquery  CASEROOT	-value `
+set xmlquery_data=`./xmlquery -s JGFSEP MPILIB COMPILER CASEROOT`
+set MPILIB=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set COMPILER=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
+set CASEROOT=`echo $xmlquery_data | awk -F'JGFSEP' '{print $3}'`
+
+setenv MPILIB $MPILIB
+setenv COMPILER	$COMPILER
+setenv CASEROOT $CASEROOT
 
 echo " .... determining environment variables from env_mach_specific "
 

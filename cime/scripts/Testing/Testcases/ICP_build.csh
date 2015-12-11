@@ -3,13 +3,14 @@
 ./Tools/check_lockedfiles || exit -1
 
 # NOTE - Are assumming that are already in $CASEROOT here
-set CASE        = `./xmlquery CASE		-value`
-set EXEROOT     = `./xmlquery EXEROOT		-value`
-set ICE_GRID	= `./xmlquery ICE_GRID		-value`
-set ICE_NX	= `./xmlquery ICE_NX		-value`
-set ICE_NY	= `./xmlquery ICE_NY		-value`
-set NTASKS_ICE	= `./xmlquery NTASKS_ICE	-value`
-set NTHRDS_ICE	= `./xmlquery NTASKS_ICE	-value`
+set xmlquery_data=`./xmlquery -s JGFSEP CASE EXEROOT ICE_GRID ICE_NX ICE_NY NTASKS_ICE NTASKS_ICE`
+set CASE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set EXEROOT=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
+set ICE_GRID=`echo $xmlquery_data | awk -F'JGFSEP' '{print $3}'`
+set ICE_NX=`echo $xmlquery_data | awk -F'JGFSEP' '{print $4}'`
+set ICE_NY=`echo $xmlquery_data | awk -F'JGFSEP' '{print $5}'`
+set NTASKS_ICE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $6}'`
+set NTHRDS_ICE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $7}'`
 
 touch cice_perf.out
 
@@ -164,21 +165,23 @@ foreach bx ($bxvals)
         cp -f env_build.xml env_build.xml.${acnt}
         cp -f $EXEROOT/cesm.exe $EXEROOT/cesm.exe.${acnt}
       else
-	set ICE_GRID		= `./xmlquery ICE_GRID			-value`
-	set CICE_BLCKX		= `./xmlquery CICE_BLCKX		-value`
-	set CICE_BLCKY		= `./xmlquery CICE_BLCKY		-value`
-	set CICE_MXBLCKS	= `./xmlquery CICE_MXBLCKS		-value`
-	set CICE_DECOMPTYPE	= `./xmlquery CICE_DECOMPTYPE		-value `  
-	set CICE_DECOMPSETTING	= `./xmlquery CICE_DECOMPSETTING	-value `  
-	set NTASKS_ICE		= `./xmlquery NTASKS_ICE		-value`
-	set NTHRDS_ICE		= `./xmlquery NTHRDS_ICE		-value`
+	set xmlquery_data=`./xmlquery -s JGFSEP ICE_GRID CICE_BLCKX CICE_BLCKY CICE_MXBLCKS CICE_DECOMPTYPE CICE_DECOMPSETTING NTASKS_ICE NTHRDS_ICE`
+	set ICE_GRID=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+	set CICE_BLCKX=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
+	set CICE_BLCKY=`echo $xmlquery_data | awk -F'JGFSEP' '{print $3}'`
+	set CICE_MXBLCKS=`echo $xmlquery_data | awk -F'JGFSEP' '{print $4}'`
+	set CICE_DECOMPTYPE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $5}'`
+	set CICE_DECOMPSETTING=`echo $xmlquery_data | awk -F'JGFSEP' '{print $6}'`
+	set NTASKS_ICE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $7}'`
+	set NTHRDS_ICE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $8}'`
         echo "precheck... $ICE_GRID ${ice_pes} $NTASKS_ICE $NTHRDS_ICE $CICE_BLCKX $CICE_BLCKY $CICE_MXBLCKS $CICE_DECOMPTYPE $CICE_DECOMPSETTING"
       endif
 
     else
-      set ICE_GRID		= `./xmlquery ICE_GRID			-value`
-      set NTASKS_ICE		= `./xmlquery NTASKS_ICE		-value`
-      set NTHRDS_ICE		= `./xmlquery NTHRDS_ICE		-value`
+      set xmlquery_data=`./xmlquery -s JGFSEP ICE_GRID NTASKS_ICE NTHRDS_ICE`
+      set ICE_GRID=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+      set NTASKS_ICE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
+      set NTHRDS_ICE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $3}'`
       if ($precheck == 0) then
         echo "  skip..... $ICE_GRID ${ice_pes} $NTASKS_ICE $NTHRDS_ICE $bx $by $mxt $decomp" >> cice_perf.out
       else

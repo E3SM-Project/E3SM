@@ -39,12 +39,7 @@ GetOptions(
     )  or usage();
 
 
-my $CASE	 = `./xmlquery CASE         -value `;
-my $CASEROOT	 = `./xmlquery CASEROOT	    -value `;
-my $CCSMUSER	 = `./xmlquery CCSMUSER	    -value `;
-my $CONTINUE_RUN = `./xmlquery CONTINUE_RUN -value `;
-my $RUNDIR	 = `./xmlquery RUNDIR	    -value `;
-my $RUN_TYPE	 = `./xmlquery RUN_TYPE	    -value `;
+my ($CASE, $CASEROOT, $CCSMUSER, $CONTINUE_RUN, $RUNDIR, $RUN_TYPE) = split('JGFSEP', `./xmlquery -s JGFSEP CASE CASEROOT CCSMUSER CONTINUE_RUN RUNDIR RUN_TYPE`);
 
 my $lid = $opts{'lid'};
 my $timeroot = "$CASEROOT/Tools";

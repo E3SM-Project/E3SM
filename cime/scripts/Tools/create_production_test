@@ -96,8 +96,7 @@ require ConfigCase;
 # Read $caseroot xml files and 
 #-----------------------------------------------------------------------------------------------
 
-my $cimeroot = `./xmlquery CIMEROOT -value`;
-my $casename = `./xmlquery CASE     -value`;
+my ($cimeroot, $casename) = split('JGFSEP', `./xmlquery -s JGFSEP CIMEROOT CASE`);
 my $testroot = "$caseroot/..";
 my $testname = "${casename}_${test}";
 
@@ -126,6 +125,6 @@ $testenv->write_file("$testroot/$testname/env_test.xml");
 
 chdir("$testroot/$testname");
 
-my $caseroot_test = `./xmlquery CASEROOT -value`;
+my $caseroot_test = `./xmlquery CASEROOT`;
 
 system("$cimeroot/scripts/Tools/testcase_setup -caseroot $caseroot_test");

@@ -74,33 +74,7 @@ if (! -e "$caseroot/xmlquery" ) {
 # Test case setup
 #-----------------------------------------------------------------------------------------------
 
-my $mach		=  `./xmlquery MACH			-value`;
-my $ccsm_machdir	=  `./xmlquery CCSM_MACHDIR		-value`;
-my $cimeroot		=  `./xmlquery CIMEROOT			-value`;
-my $rundir              =  `./xmlquery RUNDIR			-value`;
-my $exeroot             =  `./xmlquery EXEROOT			-value`;
-my $libroot             =  `./xmlquery LIBROOT			-value`;
-my $scriptsroot         =  `./xmlquery SCRIPTSROOT		-value`;
-my $dout_s_root         =  `./xmlquery DOUT_S_ROOT		-value`;
-my $caseroot		=  `./xmlquery CASEROOT			-value`;
-my $case		=  `./xmlquery CASE			-value`;
-my $casebaseid		=  `./xmlquery CASEBASEID		-value`;
-my $testcase		=  `./xmlquery TESTCASE			-value`;
-my $test_argv		=  `./xmlquery TEST_ARGV		-value`;
-my $test_testid		=  `./xmlquery TEST_TESTID		-value`;
-my $baselineroot	=  `./xmlquery BASELINE_ROOT		-value`;
-my $basegen_case	=  `./xmlquery BASEGEN_CASE		-value`;
-my $basecmp_case        =  `./xmlquery BASECMP_CASE		-value`;
-my $basegen_name	=  `./xmlquery BASELINE_NAME_GEN	-value`;
-my $basecmp_name        =  `./xmlquery BASELINE_NAME_CMP	-value`;
-my $compare_baseline	=  `./xmlquery COMPARE_BASELINE		-value`;
-my $generate_baseline	=  `./xmlquery GENERATE_BASELINE	-value`;
-my $cleanup             =  `./xmlquery CLEANUP	                -value`;
-my $ccsm_baseline       =  `./xmlquery CCSM_BASELINE            -value`;
-my $casetools           =  `./xmlquery CASETOOLS            -value`;
-my $compiler            =  `./xmlquery COMPILER             -value`;
-my $mpilib              =  `./xmlquery MPILIB               -value`;
-my $build_threaded      =  `./xmlquery BUILD_THREADED       -value`;
+my ($mach, $ccsm_machdir, $cimeroot, $rundir, $exeroot, $libroot, $scriptsroot, $dout_s_root, $caseroot, $case, $casebaseid, $testcase, $test_argv, $test_testid, $baselineroot, $basegen_case, $basecmp_case, $basegen_name, $basecmp_name, $compare_baseline, $generate_baseline, $cleanup, $ccsm_baseline, $casetools, $compiler, $mpilib, $build_threaded) = split('JGFSEP', `./xmlquery -s JGFSEP MACH CCSM_MACHDIR CIMEROOT RUNDIR EXEROOT LIBROOT SCRIPTSROOT DOUT_S_ROOT CASEROOT CASE CASEBASEID TESTCASE TEST_ARGV TEST_TESTID BASELINE_ROOT BASEGEN_CASE BASECMP_CASE BASELINE_NAME_GEN BASELINE_NAME_CMP COMPARE_BASELINE GENERATE_BASELINE CLEANUP CCSM_BASELINE CASETOOLS COMPILER MPILIB BUILD_THREADED`);
 
 # generate baseline test flag
 my $basegen_dir;
@@ -302,7 +276,7 @@ my $testcase_begin = <<'END_BEGIN';
        set msg = "iop_${IOP_TYPE}_test"
     else
        set add_iop = ''
-       set testname = `./xmlquery TESTCASE -value`
+       set testname = `./xmlquery TESTCASE`
        set msg = "${testname}_test"
     endif
 
@@ -316,7 +290,7 @@ system($sysmod) == 0 or die "ERROR: $sysmod failed: $? $eol";
 my $testcase_iop = <<'END_IOP';
 
     # for now skip netcdf4p and netcdf4c tests
-    set pio_type = `./xmlquery PIO_TYPENAME -value`
+    set pio_type = `./xmlquery PIO_TYPENAME`
     set	IOP_TYPE = unset
     if ("$pio_type" == "pnetcdf") set IOP_TYPE = netcdf
     if ("$pio_type" == "netcdf" ) set IOP_TYPE = pnetcdf
@@ -345,7 +319,7 @@ my $testcase_iop = <<'END_IOP';
        set msg = "iop_${IOP_TYPE}_test"
     else
        set add_iop = ''
-       set testname = `./xmlquery TESTCASE -value`
+       set testname = `./xmlquery TESTCASE`
        set msg = "${testname}_test"
     endif
 

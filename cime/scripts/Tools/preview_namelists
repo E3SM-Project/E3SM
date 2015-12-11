@@ -38,27 +38,7 @@ if (@ARGV) {
     usage();
 }
 
-my $EXEROOT		= `./xmlquery  EXEROOT		-value`;
-my $LIBROOT		= `./xmlquery  LIBROOT		-value`;
-my $INCROOT		= `./xmlquery  INCROOT		-value`;
-my $RUNDIR		= `./xmlquery  RUNDIR	 	-value`;
-my $SHAREDLIBROOT	= `./xmlquery  SHAREDLIBROOT	-value`;
-my $CASEROOT		= `./xmlquery  CASEROOT		-value`;
-my $CASEBUILD		= `./xmlquery  CASEBUILD	-value`;
-my $COMP_CPL		= `./xmlquery  COMP_CPL		-value`;
-my $COMP_ATM		= `./xmlquery  COMP_ATM		-value`;
-my $COMP_LND		= `./xmlquery  COMP_LND		-value`;
-my $COMP_ICE		= `./xmlquery  COMP_ICE		-value`;
-my $COMP_OCN		= `./xmlquery  COMP_OCN		-value`;
-my $COMP_GLC		= `./xmlquery  COMP_GLC		-value`;
-my $COMP_WAV		= `./xmlquery  COMP_WAV		-value`;
-my $COMP_ROF		= `./xmlquery  COMP_ROF		-value`;
-my $CIMEROOT             	= `./xmlquery  CIMEROOT		-value`;
-my $COMPILER             	= `./xmlquery  COMPILER		-value`;
-my $CIMEROOT             	= `./xmlquery  CIMEROOT		-value`;
-my $MACH             	        = `./xmlquery  MACH		-value`;
-my $MPILIB             	= `./xmlquery  MPILIB		-value`;
-my $DEBUG             	= `./xmlquery  DEBUG		-value`;
+my ($EXEROOT, $LIBROOT, $INCROOT, $RUNDIR, $SHAREDLIBROOT, $CASEROOT, $CASEBUILD, $COMP_CPL, $COMP_ATM, $COMP_LND, $COMP_ICE, $COMP_OCN, $COMP_GLC, $COMP_WAV, $COMP_ROF, $CIMEROOT, $COMPILER, $CIMEROOT, $MACH, $MPILIB, $DEBUG) = split('JGFSEP', `./xmlquery -s JGFSEP EXEROOT LIBROOT INCROOT RUNDIR SHAREDLIBROOT CASEROOT CASEBUILD COMP_CPL COMP_ATM COMP_LND COMP_ICE COMP_OCN COMP_GLC COMP_WAV COMP_ROF CIMEROOT COMPILER CIMEROOT MACH MPILIB DEBUG`);
 # ------------------------------------------
 #  Load Modules
 # ------------------------------------------

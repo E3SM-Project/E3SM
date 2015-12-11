@@ -6,13 +6,14 @@
 
 cd $CASEROOT
 
-set CIMEROOT	= `./xmlquery  CIMEROOT	 -value `
-set CASETOOLS	= `./xmlquery  CASETOOLS -value `
-set GMAKE	= `./xmlquery  GMAKE	 -value ` 
-set GMAKE_J	= `./xmlquery  GMAKE_J	 -value ` 
-set MACH	= `./xmlquery  MACH	 -value ` 
-set MPILIB	= `./xmlquery  MPILIB	 -value ` 
-set OS		= `./xmlquery  OS	 -value ` 
+set xmlquery_data=`./xmlquery -s JGFSEP CIMEROOT CASETOOLS GMAKE GMAKE_J MACH MPILIB OS`
+set CIMEROOT=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set CASETOOLS=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
+set GMAKE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $3}'`
+set GMAKE_J=`echo $xmlquery_data | awk -F'JGFSEP' '{print $4}'`
+set MACH=`echo $xmlquery_data | awk -F'JGFSEP' '{print $5}'`
+set MPILIB=`echo $xmlquery_data | awk -F'JGFSEP' '{print $6}'`
+set OS=`echo $xmlquery_data | awk -F'JGFSEP' '{print $7}'`
 
 setenv LIBDIR     $1
 setenv MCT_DIR    $CIMEROOT/externals/mct   # mct directory

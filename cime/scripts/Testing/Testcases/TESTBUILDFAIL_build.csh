@@ -2,8 +2,9 @@
 
 ./Tools/check_lockedfiles || exit -1
 
-set EXEROOT  = `./xmlquery EXEROOT -value`
-set TESTID   = `./xmlquery TEST_TESTID -value`
+set xmlquery_data=`./xmlquery -s JGFSEP EXEROOT TEST_TESTID`
+set EXEROOT=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set TESTID=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
 
 echo "ERROR: Intentional fail for testing infrastructure" | tee $EXEROOT/cesm.bldlog.$TESTID
 

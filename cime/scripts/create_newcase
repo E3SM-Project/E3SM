@@ -885,8 +885,9 @@ my @files = (
     "$scriptsroot/Tools/archive_metadata.sh", 
     "$scriptsroot/Tools/check_case", 
     "$scriptsroot/Tools/create_production_test", 
+    "$cimeroot/scripts-acme/xmlquery",
+    "$cimeroot/scripts-acme/preview_namelists",
     "$scriptsroot/Tools/xmlchange",
-    "$scriptsroot/Tools/xmlquery",
     "$scriptsroot/Tools/st_archive", 
     "$scriptsroot/Tools/README.post_process", 
     ); 
@@ -933,7 +934,7 @@ if (! -f "$mkbatch") {
     #"$mkbatch");
 
 foreach my $file (@files) {
-    $sysmod = "cp -p $file $caseroot/Tools/. "; 
+    $sysmod = "cp -p $file $caseroot/Tools/. ";
     system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 
@@ -960,13 +961,6 @@ system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 # Create $case.l_archive
 #my $sysmod = "env CCSMUSER=$ccsmuser CASE=$case CASEROOT=$caseroot PROJECT=$project env PHASE=set_larch $mkbatch";
 #system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
-# Create $caseroot preview_namelist file
-my $file = "${caseroot}/preview_namelists"; 
-$sysmod = "cp  $scriptsroot/Tools/preview_namelists $file"; 
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-$sysmod = "chmod 755 $file";
-system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 # Copy relevant files into $caseroot/Tools/XML directory
 $sysmod = "cp -p $cimeroot/utils/perl5lib/XML/Lite.pm    $caseroot/Tools/XML"; 

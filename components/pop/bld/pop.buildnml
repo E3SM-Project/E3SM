@@ -13,24 +13,7 @@ unshift @INC, @dirs;
 require SetupTools;
 my $sysmod; 
 
-my $CASEROOT                    = `./xmlquery CASEROOT                  -value`;
-my $CASEBUILD                   = `./xmlquery CASEBUILD                 -value`;
-my $SRCROOT                     = `./xmlquery SRCROOT                  -value`;
-my $OBJROOT                     = `./xmlquery OBJROOT                   -value`;
-my $SCRIPTSROOT                 = `./xmlquery SCRIPTSROOT               -value`;
-my $CASETOOLS                   = `./xmlquery CASETOOLS                 -value`;
-my $CONTINUE_RUN                = `./xmlquery CONTINUE_RUN              -value`;
-my $DIN_LOC_ROOT                = `./xmlquery DIN_LOC_ROOT              -value`;
-my $EXEROOT                     = `./xmlquery EXEROOT                   -value`;
-my $GET_REFCASE                 = `./xmlquery GET_REFCASE               -value`;
-my $NINST_OCN                   = `./xmlquery NINST_OCN                 -value`;
-my $OCN_GRID                    = `./xmlquery OCN_GRID                  -value`;
-my $OCN_TRACER_MODULES          = `./xmlquery OCN_TRACER_MODULES        -value`;
-my $RUN_TYPE                    = `./xmlquery RUN_TYPE                  -value`;
-my $RUN_REFCASE                 = `./xmlquery RUN_REFCASE               -value`;
-my $RUN_REFDATE                 = `./xmlquery RUN_REFDATE               -value`;
-my $RUNDIR                      = `./xmlquery RUNDIR                    -value`;
-my $BUILD_COMPLETE              = `./xmlquery BUILD_COMPLETE            -value`;
+my ($CASEROOT, $CASEBUILD, $SRCROOT, $OBJROOT, $SCRIPTSROOT, $CASETOOLS, $CONTINUE_RUN, $DIN_LOC_ROOT, $EXEROOT, $GET_REFCASE, $NINST_OCN, $OCN_GRID, $OCN_TRACER_MODULES, $RUN_TYPE, $RUN_REFCASE, $RUN_REFDATE, $RUNDIR, $BUILD_COMPLETE) = split('JGFSEP', `./xmlquery -s JGFSEP CASEROOT CASEBUILD SRCROOT OBJROOT SCRIPTSROOT CASETOOLS CONTINUE_RUN DIN_LOC_ROOT EXEROOT GET_REFCASE NINST_OCN OCN_GRID OCN_TRACER_MODULES RUN_TYPE RUN_REFCASE RUN_REFDATE RUNDIR BUILD_COMPLETE`);
 
 if (! -d "$EXEROOT/ocn/obj" ) {
     $sysmod = "mkdir -p $EXEROOT/ocn/obj";

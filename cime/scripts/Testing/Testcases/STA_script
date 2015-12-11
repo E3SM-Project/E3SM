@@ -1,3 +1,4 @@
+#!/bin/csh -f
 
 #======================================================================
 # Setup
@@ -12,9 +13,10 @@ if ($?COMPARE_BASELINE ) then
   set COMPARE_THROUGHPUT
 endif
 
-set STOP_N      = `./xmlquery STOP_N      -value`
-set STOP_OPTION = `./xmlquery STOP_OPTION -value`
-set DOUT_S_ROOT = `./xmlquery DOUT_S_ROOT -value`
+set xmlquery_data=`./xmlquery -s JGFSEP STOP_N STOP_OPTION DOUT_S_ROOT`
+set STOP_N=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set STOP_OPTION=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
+set DOUT_S_ROOT=`echo $xmlquery_data | awk -F'JGFSEP' '{print $3}'`
 
 if (${STOP_N} < 3) then
   echo "ERROR in ${0}:  stop_n too short" >>& $TESTSTATUS_LOG
@@ -112,7 +114,7 @@ else
     exit -1
 endif
 
-set NINST_ATM   = `./xmlquery NINST_ATM   -value`
+set NINST_ATM   = `./xmlquery NINST_ATM`
 
 if ($NINST_ATM == 1) then
   $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base"
@@ -166,7 +168,7 @@ else
     exit -1
 endif
 
-set NINST_ATM  = `./xmlquery NINST_ATM   -value`
+set NINST_ATM  = `./xmlquery NINST_ATM`
 
 if ($NINST_ATM == 1) then
   $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "rest_sta"

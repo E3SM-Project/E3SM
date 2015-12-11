@@ -2,10 +2,11 @@
 
 cd $CASEROOT
 
-set CIMEROOT  = `./xmlquery  CIMEROOT	-value `
-set CASETOOLS = `./xmlquery  CASETOOLS	-value `
-set GMAKE     = `./xmlquery  GMAKE	-value ` 
-set GMAKE_J   = `./xmlquery  GMAKE_J	-value ` 
+set xmlquery_data=`./xmlquery -s JGFSEP CIMEROOT CASETOOLS GMAKE GMAKE_J`
+set CIMEROOT=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set CASETOOLS=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
+set GMAKE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $3}'`
+set GMAKE_J=`echo $xmlquery_data | awk -F'JGFSEP' '{print $4}'`
 set BLDROOT = $1
 # directory in which pio is built
 set pio_dir=$BLDROOT/pio

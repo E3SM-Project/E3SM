@@ -9,9 +9,10 @@
 # eos - this incomplete list of unloads seems to avoid the problem: JPE
 #
 
-set COMPILER = `./xmlquery COMPILER -value`
-set MPILIB = `./xmlquery MPILIB -value`
-set DEBUG = `./xmlquery DEBUG -value`
+set xmlquery_data=`./xmlquery -s JGFSEP COMPILER MPILIB DEBUG`
+set COMPILER=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set MPILIB=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
+set DEBUG=`echo $xmlquery_data | awk -F'JGFSEP' '{print $3}'`
 if (-e /opt/modules/default/init/csh) then
   source /opt/modules/default/init/csh
 #  module rm PrgEnv-cray 

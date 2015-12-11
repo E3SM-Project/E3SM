@@ -8,16 +8,7 @@ if ($#ARGV == -1) {
 my ($CASEROOT) = @ARGV;
 chdir "${CASEROOT}";
 
-my $CASEBUILD    = `./xmlquery CASEBUILD    -value`;
-my $CASETOOLS    = `./xmlquery CASETOOLS    -value`;
-my $OBJROOT      = `./xmlquery OBJROOT	    -value`;
-my $LIBROOT      = `./xmlquery LIBROOT	    -value`;
-my $GMAKE_J      = `./xmlquery GMAKE_J	    -value`;
-my $GMAKE        = `./xmlquery GMAKE	    -value`;
-my $MACH         = `./xmlquery MACH         -value`;
-my $CICE_BLCKX   = `./xmlquery CICE_BLCKX   -value`;
-my $CICE_BLCKY   = `./xmlquery CICE_BLCKY   -value`;
-my $CICE_MXBLCKS = `./xmlquery CICE_MXBLCKS -value`;
+my ($CASEBUILD, $CASETOOLS, $OBJROOT, $LIBROOT, $GMAKE_J, $GMAKE, $MACH, $CICE_BLCKX, $CICE_BLCKY, $CICE_MXBLCKS) = split('JGFSEP', `./xmlquery -s JGFSEP CASEBUILD CASETOOLS OBJROOT LIBROOT GMAKE_J GMAKE MACH CICE_BLCKX CICE_BLCKY CICE_MXBLCKS`);
 
 chdir "${OBJROOT}/ice/obj";
 
@@ -58,7 +49,7 @@ my $sysmod = "cp -f $OBJROOT/ice/obj/CICE_cppdefs.new $OBJROOT/ice/obj/CICE_cppd
 system($sysmod) == 0 or die "ERROR: cice.buidexe $sysmod failed: $?\n";
 
 chdir $CASEROOT;
-my $cppdefs = `./xmlquery CICE_CPPDEFS -value`;
+my $cppdefs = `./xmlquery CICE_CPPDEFS`;
 chomp($cppdefs);
 
 #-------------------------------------------------------

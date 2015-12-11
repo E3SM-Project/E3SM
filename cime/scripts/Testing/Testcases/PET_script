@@ -1,3 +1,4 @@
+#!/bin/csh -f
 
 #======================================================================
 # Test setup:
@@ -24,8 +25,9 @@ endif
 ./cesm_setup
 
 # Set env_run.xml values for run
-set STOP_N      = `./xmlquery STOP_N      -value`
-set STOP_OPTION = `./xmlquery STOP_OPTION -value`
+set xmlquery_data=`./xmlquery -s JGFSEP STOP_N STOP_OPTION`
+set STOP_N=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set STOP_OPTION=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
 
 ./xmlchange -file env_run.xml -id CONTINUE_RUN -val FALSE
 ./xmlchange -file env_run.xml -id REST_OPTION  -val never

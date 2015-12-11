@@ -10,13 +10,7 @@ chdir "${CASEROOT}";
 my $model = "wav";
 my $comp  = "xwav";
 
-my $CASETOOLS = `./xmlquery CASETOOLS -value`;
-my $CIMEROOT  = `./xmlquery CIMEROOT  -value`;
-my $MACH      = `./xmlquery MACH      -value`;
-my $OBJROOT   = `./xmlquery OBJROOT   -value`;
-my $LIBROOT   = `./xmlquery LIBROOT   -value`;
-my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
-my $GMAKE     = `./xmlquery GMAKE     -value`;
+my ($CASETOOLS, $CIMEROOT, $MACH, $OBJROOT, $LIBROOT, $GMAKE_J, $GMAKE) = split('JGFSEP', `./xmlquery -s JGFSEP CASETOOLS CIMEROOT MACH OBJROOT LIBROOT GMAKE_J GMAKE`);
 
 chdir "${OBJROOT}/${model}/obj";
 

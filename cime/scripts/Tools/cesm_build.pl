@@ -20,17 +20,17 @@ no if ($PERL_VERSION ge v5.18.0), 'warnings' => 'experimental::smartmatch';
 # Global data. 
 #-----------------------------------------------------------------------------------------------
 
-my $CASEROOT; 
+my $CASE;
+my $CASEROOT;
+my $CCSMROOT;
+my $BUILD_THREADED;
 my $CASEBUILD;
 my $CASETOOLS;
-my $CIMEROOT;
-my $LIBROOT;
-my $INCROOT; 
-my $SHAREDLIBROOT;
-my $COMPILER; 
-my $CASE; 
 my $EXEROOT;
-my $BUILD_THREADED;
+my $CIMEROOT;
+my $INCROOT;
+my $LIBROOT;
+my $SHAREDLIBROOT;
 my $COMP_ATM;
 my $COMP_LND;
 my $COMP_ICE;
@@ -38,18 +38,52 @@ my $COMP_OCN;
 my $COMP_GLC;
 my $COMP_WAV;
 my $COMP_ROF;
+my $COMPILER;
 my $COMP_INTERFACE;
-my $DEBUG;
-my $USE_ESMF_LIB;
 my $MPILIB;
-my $SMP_VALUE;
+my $USE_ESMF_LIB;
+my $DEBUG;
 my $NINST_BUILD;
+my $SMP_VALUE;
 my $CLM_USE_PETSC;
 my $CISM_USE_TRILINOS;
 my $MPASLI_USE_ALBANY;
-my $SHAREDPATH;
 my $CLM_CONFIG_OPTS;
 my $CAM_CONFIG_OPTS;
+my $MACH;
+my $OS;
+my $COMP_CPL;
+my $OCN_SUBMODEL;
+my $PROFILE_PAPI_ENABLE;
+my $DIN_LOC_ROOT;
+my $GET_REFCASE;
+my $RUN_TYPE;
+my $RUN_REFDATE;
+my $RUN_REFCASE;
+my $RUN_REFDIR;
+my $RUNDIR;
+my $CONTINUE_RUN;
+my $NTHRDS_CPL;
+my $NTHRDS_ATM;
+my $NTHRDS_LND;
+my $NTHRDS_ICE;
+my $NTHRDS_OCN;
+my $NTHRDS_GLC;
+my $NTHRDS_WAV;
+my $NTHRDS_ROF;
+my $NINST_ATM;
+my $NINST_LND;
+my $NINST_ICE;
+my $NINST_OCN;
+my $NINST_GLC;
+my $NINST_WAV;
+my $NINST_ROF;
+my $NINST_VALUE;
+my $SMP_BUILD;
+my $BUILD_STATUS;
+my $LOGDIR;
+my $SHAREDPATH;
+
 my $sysmod;
 
 # Stash the build log paths here..
@@ -68,49 +102,14 @@ sub main {
 
     chdir "$CASEROOT" or die "Could not cd to $CASEROOT: $!\n";
 
-    $CASE = `./xmlquery  CASE -value `;
-    if (! -f "$CASE.run") {
-	die "ERROR: must invoke cesm_setup script before calling build script ";
-    }
-
     $sysmod = "./Tools/check_lockedfiles";
     system($sysmod) == 0 or die "$sysmod failed: $?\n";
 
-#pw++
-    my $CCSMROOT        = `./xmlquery  CCSMROOT 	-value `;
-#pw--
-    $BUILD_THREADED	= `./xmlquery  BUILD_THREADED	-value `;
-    $CASEBUILD	        = `./xmlquery  CASEBUILD	-value `;
-    $CASETOOLS          = `./xmlquery  CASETOOLS	-value `;
-    $EXEROOT	        = `./xmlquery  EXEROOT		-value `;
-    $CIMEROOT		= `./xmlquery  CIMEROOT		-value `;
-    $INCROOT		= `./xmlquery  INCROOT		-value `;
-    $LIBROOT		= `./xmlquery  LIBROOT		-value `;
-    $SHAREDLIBROOT	= `./xmlquery  SHAREDLIBROOT	-value `;
-    $COMP_ATM		= `./xmlquery  COMP_ATM		-value `;
-    $COMP_LND		= `./xmlquery  COMP_LND		-value `;
-    $COMP_ICE		= `./xmlquery  COMP_ICE		-value `;
-    $COMP_OCN		= `./xmlquery  COMP_OCN		-value `;
-    $COMP_GLC		= `./xmlquery  COMP_GLC		-value `;
-    $COMP_WAV		= `./xmlquery  COMP_WAV		-value `;
-    $COMP_ROF		= `./xmlquery  COMP_ROF		-value `;
-    $COMPILER		= `./xmlquery  COMPILER		-value `;
-    $COMP_INTERFACE	= `./xmlquery  COMP_INTERFACE	-value `;
-    $MPILIB		= `./xmlquery  MPILIB		-value `;
-    $USE_ESMF_LIB	= `./xmlquery  USE_ESMF_LIB	-value `;
-    $DEBUG		= `./xmlquery  DEBUG		-value `;
-    $NINST_BUILD        = `./xmlquery  NINST_BUILD	-value `;
-    $SMP_VALUE          = `./xmlquery  SMP_VALUE	-value `;
-    $CLM_USE_PETSC = `./xmlquery  CLM_USE_PETSC -value`; 
-    $CISM_USE_TRILINOS  = `./xmlquery  CISM_USE_TRILINOS -value`; 
-    $MPASLI_USE_ALBANY  = `./xmlquery  MPASLI_USE_ALBANY -value`;
-    $CLM_CONFIG_OPTS    = `./xmlquery  CLM_CONFIG_OPTS   -value`;
-    $CAM_CONFIG_OPTS    = `./xmlquery  CAM_CONFIG_OPTS   -value`;
+    ($CASE, $CCSMROOT, $BUILD_THREADED, $CASEBUILD, $CASETOOLS, $EXEROOT, $CIMEROOT, $INCROOT, $LIBROOT, $SHAREDLIBROOT, $COMP_ATM, $COMP_LND, $COMP_ICE, $COMP_OCN, $COMP_GLC, $COMP_WAV, $COMP_ROF, $COMPILER, $COMP_INTERFACE, $MPILIB, $USE_ESMF_LIB, $DEBUG, $NINST_BUILD, $SMP_VALUE, $CLM_USE_PETSC, $CISM_USE_TRILINOS, $MPASLI_USE_ALBANY, $CLM_CONFIG_OPTS, $CAM_CONFIG_OPTS, $NINST_VALUE, $MACH, $OS, $COMP_CPL, $OCN_SUBMODEL, $PROFILE_PAPI_ENABLE, $DIN_LOC_ROOT, $GET_REFCASE, $RUN_TYPE, $RUN_REFDATE, $RUN_REFCASE, $RUN_REFDIR, $RUNDIR, $CONTINUE_RUN, $NTHRDS_CPL, $NTHRDS_ATM, $NTHRDS_LND, $NTHRDS_ICE, $NTHRDS_OCN, $NTHRDS_GLC, $NTHRDS_WAV, $NTHRDS_ROF, $NINST_ATM, $NINST_LND, $NINST_ICE, $NINST_OCN, $NINST_GLC, $NINST_WAV, $NINST_ROF, $SMP_BUILD, $BUILD_STATUS, $LOGDIR) = split('JGFSEP', `./xmlquery -s JGFSEP CASE CCSMROOT BUILD_THREADED CASEBUILD CASETOOLS EXEROOT CIMEROOT INCROOT LIBROOT SHAREDLIBROOT COMP_ATM COMP_LND COMP_ICE COMP_OCN COMP_GLC COMP_WAV COMP_ROF COMPILER COMP_INTERFACE MPILIB USE_ESMF_LIB DEBUG NINST_BUILD SMP_VALUE CLM_USE_PETSC CISM_USE_TRILINOS MPASLI_USE_ALBANY CLM_CONFIG_OPTS CAM_CONFIG_OPTS NINST_VALUE MACH OS COMP_CPL OCN_SUBMODEL PROFILE_PAPI_ENABLE DIN_LOC_ROOT GET_REFCASE RUN_TYPE RUN_REFDATE RUN_REFCASE RUN_REFDIR RUNDIR CONTINUE_RUN NTHRDS_CPL NTHRDS_ATM NTHRDS_LND NTHRDS_ICE NTHRDS_OCN NTHRDS_GLC NTHRDS_WAV NTHRDS_ROF NINST_ATM NINST_LND NINST_ICE NINST_OCN NINST_GLC NINST_WAV NINST_ROF SMP_BUILD BUILD_STATUS LOGDIR`);
 
-    my $NINST_VALUE	= `./xmlquery  NINST_VALUE	-value `;
-    my $MACH		= `./xmlquery  MACH		-value `;
-    my $OS	        = `./xmlquery  OS		-value `;
-    my $COMP_CPL	= `./xmlquery  COMP_CPL		-value `;
+    if (! -f "$CASE.run") {
+	die "ERROR: must invoke cesm_setup script before calling build script ";
+    }
 
     $ENV{CIMEROOT}		= $CIMEROOT		;
     $ENV{CASETOOLS}		= $CASETOOLS		;
@@ -138,9 +137,8 @@ sub main {
     $ENV{COMP_ROF}		= $COMP_ROF		;	
     $ENV{CLM_CONFIG_OPTS}       = $CLM_CONFIG_OPTS      ;
     $ENV{CAM_CONFIG_OPTS}       = $CAM_CONFIG_OPTS      ;
-    
-    $ENV{OCN_SUBMODEL}        = `./xmlquery  OCN_SUBMODEL	 -value `;
-    $ENV{PROFILE_PAPI_ENABLE} = `./xmlquery  PROFILE_PAPI_ENABLE -value `;
+    $ENV{OCN_SUBMODEL}          = $OCN_SUBMODEL;
+    $ENV{PROFILE_PAPI_ENABLE}   = $PROFILE_PAPI_ENABLE;
 #pw    $ENV{LID}  =  "`date +%y%m%d-%H%M%S`";
 #pw++
     my $lid  =  "`date +%y%m%d-%H%M%S`";
@@ -215,15 +213,6 @@ sub checkInputData()
     print "    .... calling data prestaging  \n";
 
     chdir "$CASEROOT" or die "Could not cd to $CASEROOT: $!\n";
-
-    my $DIN_LOC_ROOT	= `./xmlquery DIN_LOC_ROOT	-value`;
-    my $GET_REFCASE	= `./xmlquery GET_REFCASE	-value`;
-    my $RUN_TYPE	= `./xmlquery RUN_TYPE		-value`;
-    my $RUN_REFDATE	= `./xmlquery RUN_REFDATE	-value`;
-    my $RUN_REFCASE	= `./xmlquery RUN_REFCASE	-value`;
-    my $RUN_REFDIR	= `./xmlquery RUN_REFDIR	-value`;
-    my $RUNDIR		= `./xmlquery RUNDIR		-value`;
-    my $CONTINUE_RUN	= `./xmlquery CONTINUE_RUN	-value`;
 
     my @inputdatacheck = qx(./check_input_data -inputdata $DIN_LOC_ROOT -check);
 
@@ -317,25 +306,6 @@ sub buildChecks()
 	
     chdir "$CASEROOT" or die "Could not cd to $CASEROOT: $!\n";
 	
-    my $NTHRDS_CPL   = `./xmlquery  NTHRDS_CPL		-value `;
-    my $NTHRDS_ATM   = `./xmlquery  NTHRDS_ATM		-value `;
-    my $NTHRDS_LND   = `./xmlquery  NTHRDS_LND		-value `;
-    my $NTHRDS_ICE   = `./xmlquery  NTHRDS_ICE		-value `;
-    my $NTHRDS_OCN   = `./xmlquery  NTHRDS_OCN		-value `;
-    my $NTHRDS_GLC   = `./xmlquery  NTHRDS_GLC		-value `;
-    my $NTHRDS_WAV   = `./xmlquery  NTHRDS_WAV		-value `;
-    my $NTHRDS_ROF   = `./xmlquery  NTHRDS_ROF		-value `;
-    my $NINST_ATM    = `./xmlquery  NINST_ATM		-value `;
-    my $NINST_LND    = `./xmlquery  NINST_LND		-value `;
-    my $NINST_ICE    = `./xmlquery  NINST_ICE		-value `;
-    my $NINST_OCN    = `./xmlquery  NINST_OCN		-value `;
-    my $NINST_GLC    = `./xmlquery  NINST_GLC		-value `;
-    my $NINST_WAV    = `./xmlquery  NINST_WAV		-value `;
-    my $NINST_ROF    = `./xmlquery  NINST_ROF		-value `;
-    my $NINST_VALUE  = `./xmlquery  NINST_VALUE		-value `;
-    my $SMP_BUILD    = `./xmlquery  SMP_BUILD		-value `;
-    my $BUILD_STATUS = `./xmlquery  BUILD_STATUS	-value `;
-
     my $atmstr = 0;
     my $lndstr = 0;
     my $icestr = 0;
@@ -528,8 +498,6 @@ sub buildModel()
     print "    .... calling cesm builds for component libraries  \n";
 
     chdir "$CASEROOT" or die "Could not cd to $CASEROOT: $!\n";
-
-    my $LOGDIR          = `./xmlquery LOGDIR          -value `;
 
     my @modelsbuildorder = qw( atm lnd ice ocn glc wav rof );
     my %models = ( atm => $COMP_ATM, lnd => $COMP_LND, ice => $COMP_ICE,

@@ -3,8 +3,9 @@
 ./Tools/check_lockedfiles || exit -1
 
 # NOTE - Are assumming that are already in $CASEROOT here
-set CASE     = `./xmlquery CASE    -value`
-set EXEROOT  = `./xmlquery EXEROOT -value`
+set xmlquery_data=`./xmlquery -s JGFSEP CASE EXEROOT`
+set CASE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set EXEROOT=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
 
 ./xmlchange -file env_build.xml -id USE_ESMF_LIB   -val TRUE
 

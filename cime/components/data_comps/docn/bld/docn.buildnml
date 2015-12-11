@@ -13,11 +13,7 @@ unshift @INC, @dirs;
 require SetupTools;
 my $sysmod; 
 
-my $CASEBUILD	= `./xmlquery  CASEBUILD   -value`;
-my $CIMEROOT	= `./xmlquery  CIMEROOT	   -value`;
-my $NINST_OCN	= `./xmlquery  NINST_OCN   -value`;
-my $RUNDIR	= `./xmlquery  RUNDIR      -value`;
-my $SCRIPTSROOT	= `./xmlquery  SCRIPTSROOT -value`;
+my ($CASEBUILD, $CIMEROOT, $NINST_OCN, $RUNDIR, $SCRIPTSROOT) = split('JGFSEP', `./xmlquery -s JGFSEP CASEBUILD CIMEROOT NINST_OCN RUNDIR SCRIPTSROOT`);
 
 if (! -d "$CASEBUILD/docnconf" ) {
     $sysmod = "mkdir $CASEBUILD/docnconf";

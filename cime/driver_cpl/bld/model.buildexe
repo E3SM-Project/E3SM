@@ -8,12 +8,7 @@ print " ------------------------------------------------------------------------
 my ($CASEROOT) = @ARGV;
 chdir "${CASEROOT}";
 
-my $CASETOOLS = `./xmlquery CASETOOLS -value`;
-my $CIMEROOT  = `./xmlquery CIMEROOT  -value`;
-my $OBJROOT   = `./xmlquery OBJROOT   -value`;
-my $EXEROOT   = `./xmlquery EXEROOT   -value`;
-my $MACH      = `./xmlquery MACH      -value`;
-my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
+my ($CASETOOLS, $CIMEROOT, $OBJROOT, $EXEROOT, $MACH, $GMAKE_J) = split('JGFSEP', `./xmlquery -s JGFSEP CASETOOLS CIMEROOT OBJROOT EXEROOT MACH GMAKE_J`);
 
 chdir "${OBJROOT}/cesm/obj";
 

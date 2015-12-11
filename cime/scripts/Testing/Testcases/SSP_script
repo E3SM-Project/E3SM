@@ -1,3 +1,4 @@
+#!/bin/csh -f
 
 #======================================================================
 # Test setup:
@@ -20,8 +21,8 @@ set CASE0   = ${CASE}
 
 cd $CASER0
 ./xmlchange DOUT_S_SAVE_ALL_ON_DISK=FALSE
-set STOP_N      = `./xmlquery STOP_N          -value`
-set STOP_OPTION = `./xmlquery STOP_OPTION     -value`
+set STOP_N      = `./xmlquery STOP_N`
+set STOP_OPTION = `./xmlquery STOP_OPTION`
 
 @ stopnf = ${STOP_N}
 @ stopn1 = ${STOP_N} / 2
@@ -46,11 +47,13 @@ echo "doing a ${stopn1} ${STOP_OPTION} initial spinup test, writing restarts at 
 echo " short term archiving is on" >>& $TESTSTATUS_LOG 
 
 # set up run
-set DOUT_S_ROOT          = `./xmlquery DOUT_S_ROOT     -value`
+set xmlquery_data=`./xmlquery -s JGFSEP DOUT_S_ROOT CLM_BLDNML_OPTS CASE`
+set DOUT_S_ROOT=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set orig_clm_bldnml_opts=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
+set CASE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $3}'`
+
 set DOUT_S_ROOT_LOCKED   = `echo $DOUT_S_ROOT | sed 's/archive/archive.locked/'`
 set DOUTSR0              =  $DOUT_S_ROOT_LOCKED
-set orig_clm_bldnml_opts = `./xmlquery CLM_BLDNML_OPTS -value`
-set CASE                 = `./xmlquery CASE -value`
 ./xmlchange -file env_run.xml -id STOP_N          -val ${stopn1}                || exit -1
 ./xmlchange -file env_run.xml -id CLM_BLDNML_OPTS -val "-bgc_spinup on" -append || exit -1
 
@@ -103,7 +106,7 @@ echo "doing a ${stopn2} ${STOP_OPTION} final spinup test" >>& $TESTSTATUS_LOG
 echo " short term archiving is off" >>& $TESTSTATUS_LOG 
 
 # determine refdate for run
-set RUNDIR  = `./xmlquery RUNDIR   -value`
+set RUNDIR  = `./xmlquery RUNDIR`
 mkdir -p $RUNDIR
 set refdate = `ls -1dt ${DOUTSR0}/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///" ` || exit -1
 ln -s ${DOUTSR0}/rest/${refdate}-00000/*${refdate}*  $RUNDIR/.
@@ -117,7 +120,7 @@ ln -s ${DOUTSR0}/rest/${refdate}-00000/*${refdate}*  $RUNDIR/.
 ./xmlchange DOUT_S=FALSE
 ./xmlchange -file env_run.xml -id CLM_BLDNML_OPTS -val "$orig_clm_bldnml_opts -bgc_spinup off" || exit -1
 
-set CASE = `./xmlquery CASE -value`
+set CASE = `./xmlquery CASE`
 
 ./$CASE.run
 if ($status != 0) then

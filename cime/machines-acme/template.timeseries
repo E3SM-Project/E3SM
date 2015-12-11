@@ -11,8 +11,9 @@
 mpirun={_mpirun_}
 
 # xmlquery to get POSTPROCESS_VIRTUALENV, BATCHSUBMIT variable settings
-virtualEnvDir=`./xmlquery POSTPROCESS_VIRTUALENV -value`
-caseRoot=`./xmlquery CASEROOT -value`
+xmlquery_data=`./xmlquery -s JGFSEP POSTPROCESS_VIRTUALENV CASEROOT`
+virtualEnvDir=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+caseRoot=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
 
 cd $virtualEnvDir/bin
 activate virtualenv

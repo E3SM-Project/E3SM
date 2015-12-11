@@ -3,8 +3,8 @@
 ./Tools/check_lockedfiles || exit -1
 
 # NOTE - Are assumming that are already in $CASEROOT here
-set CASE        = `./xmlquery CASE		-value`
-set EXEROOT     = `./xmlquery EXEROOT		-value`
+set CASE        = `./xmlquery CASE`
+set EXEROOT     = `./xmlquery EXEROOT`
 
 # Reset all previous env_mach_pes settings
 if ( -e env_mach_pes.xml.1 )  then
@@ -28,23 +28,23 @@ endif
 mv -f $EXEROOT/cesm.exe $EXEROOT/cesm.exe.1
 cp -f env_build.xml    env_build.xml.1
 
-set NTASKS_ATM  = `./xmlquery NTASKS_ATM	-value`
-set NTASKS_LND  = `./xmlquery NTASKS_LND	-value`
-set NTASKS_ROF  = `./xmlquery NTASKS_ROF	-value`
-set NTASKS_WAV  = `./xmlquery NTASKS_WAV	-value`
-set NTASKS_OCN  = `./xmlquery NTASKS_OCN	-value`
-set NTASKS_ICE  = `./xmlquery NTASKS_ICE	-value`
-set NTASKS_GLC  = `./xmlquery NTASKS_GLC	-value`
-set NTASKS_CPL  = `./xmlquery NTASKS_CPL	-value`
-
-set NTHRDS_ATM  = `./xmlquery NTHRDS_ATM	-value`
-set NTHRDS_LND  = `./xmlquery NTHRDS_LND	-value`
-set NTHRDS_ROF  = `./xmlquery NTHRDS_ROF	-value`
-set NTHRDS_WAV  = `./xmlquery NTHRDS_WAV	-value`
-set NTHRDS_OCN  = `./xmlquery NTHRDS_OCN	-value`
-set NTHRDS_ICE  = `./xmlquery NTHRDS_ICE	-value`
-set NTHRDS_GLC  = `./xmlquery NTHRDS_GLC	-value`
-set NTHRDS_CPL  = `./xmlquery NTHRDS_CPL	-value`
+set xmlquery_data=`./xmlquery -s JGFSEP NTASKS_ATM NTASKS_LND NTASKS_ROF NTASKS_WAV NTASKS_OCN NTASKS_ICE NTASKS_GLC NTASKS_CPL NTHRDS_ATM NTHRDS_LND NTHRDS_ROF NTHRDS_WAV NTHRDS_OCN NTHRDS_ICE NTHRDS_GLC NTHRDS_CPL`
+set NTASKS_ATM=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set NTASKS_LND=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
+set NTASKS_ROF=`echo $xmlquery_data | awk -F'JGFSEP' '{print $3}'`
+set NTASKS_WAV=`echo $xmlquery_data | awk -F'JGFSEP' '{print $4}'`
+set NTASKS_OCN=`echo $xmlquery_data | awk -F'JGFSEP' '{print $5}'`
+set NTASKS_ICE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $6}'`
+set NTASKS_GLC=`echo $xmlquery_data | awk -F'JGFSEP' '{print $7}'`
+set NTASKS_CPL=`echo $xmlquery_data | awk -F'JGFSEP' '{print $8}'`
+set NTHRDS_ATM=`echo $xmlquery_data | awk -F'JGFSEP' '{print $9}'`
+set NTHRDS_LND=`echo $xmlquery_data | awk -F'JGFSEP' '{print $10}'`
+set NTHRDS_ROF=`echo $xmlquery_data | awk -F'JGFSEP' '{print $11}'`
+set NTHRDS_WAV=`echo $xmlquery_data | awk -F'JGFSEP' '{print $12}'`
+set NTHRDS_OCN=`echo $xmlquery_data | awk -F'JGFSEP' '{print $13}'`
+set NTHRDS_ICE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $14}'`
+set NTHRDS_GLC=`echo $xmlquery_data | awk -F'JGFSEP' '{print $15}'`
+set NTHRDS_CPL=`echo $xmlquery_data | awk -F'JGFSEP' '{print $16}'`
 
 # Halve the number of tasks 
 if ( $NTASKS_ATM > 1) then

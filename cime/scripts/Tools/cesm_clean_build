@@ -3,15 +3,13 @@ use strict;
 use Getopt::Long;
 use File::Path;
 
-my $CASE   = `./xmlquery  CASE		  -value `;
-my $GMAKE	    = `./xmlquery  GMAKE	  -value `;
-my $CASETOOLS  = `./xmlquery  CASETOOLS -value `;
+my ($CASE, $GMAKE, $CASETOOLS, $CASEROOT, $DEBUG, $USE_ESMF_LIB, $COMP_INTERFACE) = split('JGFSEP', `./xmlquery -s JGFSEP CASE GMAKE CASETOOLS CASEROOT DEBUG USE_ESMF_LIB COMP_INTERFACE`);
 # these are needed by the makefile and need to be in the environment
 
-$ENV{CASEROOT} = `./xmlquery  CASEROOT -value `;
-$ENV{DEBUG} = `./xmlquery  DEBUG -value `;
-$ENV{USE_ESMF_LIB}= `./xmlquery USE_ESMF_LIB -value `;
-$ENV{COMP_INTERFACE}= `./xmlquery COMP_INTERFACE -value `;
+$ENV{CASEROOT} = $CASEROOT;
+$ENV{DEBUG} = $DEBUG;
+$ENV{USE_ESMF_LIB}= $USE_ESMF_LIB;
+$ENV{COMP_INTERFACE}= $COMP_INTERFACE;
 
 sub usage {
     die <<EOF;

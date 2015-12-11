@@ -1,3 +1,4 @@
+#!/bin/csh -f
 
 #======================================================================
 # (1) do an initial run test
@@ -5,9 +6,10 @@
 
 cd $CASEROOT
 
-set RUN_STARTDATE      = `./xmlquery RUN_STARTDATE -value`
-set DOUT_S_ROOT        = `./xmlquery DOUT_S_ROOT   -value`
-set DOUT_L_MSROOT      = `./xmlquery DOUT_L_MSROOT -value`
+set xmlquery_data=`./xmlquery -s JGFSEP RUN_STARTDATE DOUT_S_ROOT DOUT_L_MSROOT`
+set RUN_STARTDATE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set DOUT_S_ROOT=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
+set DOUT_L_MSROOT=`echo $xmlquery_data | awk -F'JGFSEP' '{print $3}'`
 
 echo "doing an initial test" >>& $TESTSTATUS_LOG 
 

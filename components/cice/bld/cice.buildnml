@@ -13,27 +13,7 @@ unshift @INC, @dirs;
 require SetupTools;
 my $sysmod;
 
-my $CASEROOT		= `./xmlquery  CASEROOT			-value`;
-my $CASEBUILD		= `./xmlquery  CASEBUILD		-value`;
-my $CCSMROOT		= `./xmlquery  CCSMROOT			-value`;
-my $OBJROOT		= `./xmlquery  OBJROOT			-value`;
-my $SCRIPTSROOT		= `./xmlquery  SCRIPTSROOT		-value`;
-my $CICE_AUTO_DECOMP    = `./xmlquery  CICE_AUTO_DECOMP		-value`;
-my $CICE_NAMELIST_OPTS  = `./xmlquery  CICE_NAMELIST_OPTS	-value`;
-my $CICE_CONFIG_OPTS    = `./xmlquery  CICE_CONFIG_OPTS		-value`;
-my $CICE_MODE           = `./xmlquery  CICE_MODE		-value`;
-my $CICE_BLCKX          = `./xmlquery  CICE_BLCKX               -value`;
-my $CICE_BLCKY          = `./xmlquery  CICE_BLCKY               -value`;
-my $CICE_MXBLCKS        = `./xmlquery  CICE_MXBLCKS             -value`;
-my $COMP_INTERFACE	= `./xmlquery  COMP_INTERFACE		-value`;
-my $ICE_GRID		= `./xmlquery  ICE_GRID			-value`;
-my $ICE_NX		= `./xmlquery  ICE_NX			-value`;
-my $ICE_NY 	        = `./xmlquery  ICE_NY			-value`;
-my $ICE_NCPL		= `./xmlquery  ICE_NCPL			-value`;
-my $NTHRDS_ICE		= `./xmlquery  NTHRDS_ICE		-value`;
-my $NTASKS_ICE		= `./xmlquery  NTASKS_ICE		-value`;
-my $NINST_ICE		= `./xmlquery  NINST_ICE		-value`;
-my $RUNDIR		= `./xmlquery  RUNDIR			-value`;
+my ($CASEROOT, $CASEBUILD, $CCSMROOT, $OBJROOT, $SCRIPTSROOT, $CICE_AUTO_DECOMP, $CICE_NAMELIST_OPTS, $CICE_CONFIG_OPTS, $CICE_MODE, $CICE_BLCKX, $CICE_BLCKY, $CICE_MXBLCKS, $COMP_INTERFACE, $ICE_GRID, $ICE_NX, $ICE_NY, $ICE_NCPL, $NTHRDS_ICE, $NTASKS_ICE, $NINST_ICE, $RUNDIR) = split('JGFSEP', `./xmlquery -s JGFSEP CASEROOT CASEBUILD CCSMROOT OBJROOT SCRIPTSROOT CICE_AUTO_DECOMP CICE_NAMELIST_OPTS CICE_CONFIG_OPTS CICE_MODE CICE_BLCKX CICE_BLCKY CICE_MXBLCKS COMP_INTERFACE ICE_GRID ICE_NX ICE_NY ICE_NCPL NTHRDS_ICE NTASKS_ICE NINST_ICE RUNDIR`);
 
 if (! -d "$CASEBUILD/ciceconf" ) {
     $sysmod = "mkdir $CASEBUILD/ciceconf";

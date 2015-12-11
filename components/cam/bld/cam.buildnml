@@ -13,37 +13,7 @@ unshift @INC, @dirs;
 require SetupTools;
 my $sysmod; 
 
-my $ATM_GRID		= `./xmlquery  ATM_GRID			-value`;
-my $ATM_NCPL		= `./xmlquery  ATM_NCPL			-value`;
-my $BUILD_COMPLETE	= `./xmlquery  BUILD_COMPLETE		-value`;
-my $CAM_CONFIG_OPTS	= `./xmlquery  CAM_CONFIG_OPTS		-value`;
-my $CAM_NAMELIST_OPTS	= `./xmlquery  CAM_NAMELIST_OPTS	-value`;
-my $CAM_NML_USE_CASE	= `./xmlquery  CAM_NML_USE_CASE		-value`;
-my $CAM_DYCORE		= `./xmlquery  CAM_DYCORE		-value`;
-my $CASEBUILD		= `./xmlquery  CASEBUILD		-value`;
-my $CCSM_CO2_PPMV	= `./xmlquery  CCSM_CO2_PPMV		-value`;
-my $CCSMROOT		= `./xmlquery  CCSMROOT			-value`;
-my $COMP_INTERFACE	= `./xmlquery  COMP_INTERFACE		-value`;
-my $COMP_OCN		= `./xmlquery  COMP_OCN			-value`;
-my $DEBUG		= `./xmlquery  DEBUG			-value`;
-my $DIN_LOC_ROOT	= `./xmlquery  DIN_LOC_ROOT		-value`;
-my $EXEROOT		= `./xmlquery  EXEROOT 		        -value`;
-my $MPILIB		= `./xmlquery  MPILIB			-value`;
-my $NTHRDS_ATM		= `./xmlquery  NTHRDS_ATM		-value`;
-my $NTASKS_ATM		= `./xmlquery  NTASKS_ATM		-value`;
-my $NINST_ATM		= `./xmlquery  NINST_ATM		-value`;
-my $PTS_MODE		= `./xmlquery  PTS_MODE			-value`;
-my $PTS_LON		= `./xmlquery  PTS_LON			-value`;
-my $PTS_LAT		= `./xmlquery  PTS_LAT			-value`;
-my $RUNDIR		= `./xmlquery  RUNDIR			-value`;
-my $RUN_TYPE		= `./xmlquery  RUN_TYPE			-value`;
-my $RUN_STARTDATE	= `./xmlquery  RUN_STARTDATE		-value`;
-my $RUN_REFCASE	        = `./xmlquery  RUN_REFCASE		-value`;
-my $RUN_REFDATE	        = `./xmlquery  RUN_REFDATE		-value`;
-my $RUN_REFTOD	        = `./xmlquery  RUN_REFTOD		-value`;
-my $UTILROOT		= `./xmlquery  UTILROOT			-value`;
-my $DOCN_MODE		= `./xmlquery  DOCN_MODE		-value`;
-my $COMPILER		= `./xmlquery  COMPILER                 -value`; # for chem preprocessor 
+my ($ATM_GRID, $ATM_NCPL, $BUILD_COMPLETE, $CAM_CONFIG_OPTS, $CAM_NAMELIST_OPTS, $CAM_NML_USE_CASE, $CAM_DYCORE, $CASEBUILD, $CCSM_CO2_PPMV, $CCSMROOT, $COMP_INTERFACE, $COMP_OCN, $DEBUG, $DIN_LOC_ROOT, $EXEROOT, $MPILIB, $NTHRDS_ATM, $NTASKS_ATM, $NINST_ATM, $PTS_MODE, $PTS_LON, $PTS_LAT, $RUNDIR, $RUN_TYPE, $RUN_STARTDATE, $RUN_REFCASE, $RUN_REFDATE, $RUN_REFTOD, $UTILROOT, $DOCN_MODE, $COMPILER) = split('JGFSEP', `./xmlquery -s JGFSEP ATM_GRID ATM_NCPL BUILD_COMPLETE CAM_CONFIG_OPTS CAM_NAMELIST_OPTS CAM_NML_USE_CASE CAM_DYCORE CASEBUILD CCSM_CO2_PPMV CCSMROOT COMP_INTERFACE COMP_OCN DEBUG DIN_LOC_ROOT EXEROOT MPILIB NTHRDS_ATM NTASKS_ATM NINST_ATM PTS_MODE PTS_LON PTS_LAT RUNDIR RUN_TYPE RUN_STARTDATE RUN_REFCASE RUN_REFDATE RUN_REFTOD UTILROOT DOCN_MODE COMPILER`);
 
 if (! -d "$CASEBUILD/camconf" ) {
     $sysmod = "mkdir $CASEBUILD/camconf";

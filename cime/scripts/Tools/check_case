@@ -36,8 +36,7 @@ usage() if $opts{'help'};
 my $sysmod = "./Tools/check_lockedfiles";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
-my $CASE           = `./xmlquery CASE           -value`;
-my $BUILD_COMPLETE = `./xmlquery BUILD_COMPLETE -value`;
+my ($CASE, $BUILD_COMPLETE) = split('JGFSEP', `./xmlquery -s JGFSEP CASE BUILD_COMPLETE`);
 
 my $sysmod = "./preview_namelists";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";

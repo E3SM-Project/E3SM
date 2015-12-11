@@ -13,15 +13,10 @@ unshift @INC, @dirs;
 require SetupTools;
 my $sysmod; 
 
-my $CASEBUILD	= `./xmlquery  CASEBUILD   -value`;
-my $CIMEROOT	= `./xmlquery  CIMEROOT	   -value`;
-my $NINST_ROF	= `./xmlquery  NINST_ROF   -value`;
-my $RUNDIR	= `./xmlquery  RUNDIR      -value`;
-my $SCRIPTSROOT	= `./xmlquery  SCRIPTSROOT -value`;
+my ($CASEBUILD, $CIMEROOT, $NINST_ROF, $RUNDIR, $SCRIPTSROOT, $ROF_GRID) = split('JGFSEP', `./xmlquery -s JGFSEP CASEBUILD CIMEROOT NINST_ROF RUNDIR SCRIPTSROOT ROF_GRID`);
 
 # Verify rof grid is supported
 my $check_grid = "fail";
-my $ROF_GRID    = `./xmlquery  ROF_GRID    -value`;
 if (${ROF_GRID} eq "rx1" ) {$check_grid = "OK";}
 if (${ROF_GRID} eq "null") {$check_grid = "OK";}
 if (${check_grid} ne "OK") {

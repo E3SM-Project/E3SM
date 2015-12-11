@@ -12,8 +12,10 @@ else
   cp -f env_build.xml   env_build.xml.1
 endif
 
-set CASE    = `./xmlquery CASE	  -value`
-set EXEROOT = `./xmlquery EXEROOT -value`
+set xmlquery_data=`./xmlquery -s JGFSEP CASE EXEROOT MPILIB`
+set CASE=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set EXEROOT=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
+set MPILIB=`echo $xmlquery_data | awk -F'JGFSEP' '{print $3}'`
 
 if(-e mpilib.original) then
   set mpiliborig=`cat mpilib.original`
@@ -21,7 +23,6 @@ if(-e mpilib.original) then
   ./cesm_setup -clean
   ./cesm_setup
 else
-  set MPILIB  = `./xmlquery MPILIB  -value`
   echo $MPILIB > mpilib.original
 endif
 

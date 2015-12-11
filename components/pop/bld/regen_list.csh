@@ -7,11 +7,12 @@
 # Usage:   Execute regen_list.csh in the $case directory
 #==============================================================================
 
-set CASEROOT           = `./xmlquery CASEROOT            -value`
-set SRCROOT            = `./xmlquery SRCROOT             -value`
-set EXEROOT            = `./xmlquery EXEROOT             -value`
-set OCNGRID            = `./xmlquery OCNGRID             -value`
-set OCN_TRACER_MODULES = `./xmlquery OCN_TRACER_MODULES  -value`
+set xmlquery_data=`./xmlquery -s JGFSEP CASEROOT SRCROOT EXEROOT OCNGRID OCN_TRACER_MODULES`
+set CASEROOT=`echo $xmlquery_data | awk -F'JGFSEP' '{print $1}'`
+set SRCROOT=`echo $xmlquery_data | awk -F'JGFSEP' '{print $2}'`
+set EXEROOT=`echo $xmlquery_data | awk -F'JGFSEP' '{print $3}'`
+set OCNGRID=`echo $xmlquery_data | awk -F'JGFSEP' '{print $4}'`
+set OCN_TRACER_MODULES=`echo $xmlquery_data | awk -F'JGFSEP' '{print $5}'`
 
 set srcdir          = $SRCROOT/components/pop
 set my_path         = $CASEROOT/SourceMods/src.pop
