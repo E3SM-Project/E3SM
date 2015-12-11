@@ -141,7 +141,7 @@ echo $name
 
 
 set input = `pwd`
-set HOMME = `pwd`/../..
+set HOMME = ~/codes/acme/components/homme
 set MACH = $HOMME/cmake/machineFiles/rhel5.cmake
 set wdir = ~/scratch1/preqx
 set bld = $wdir/bld
@@ -153,7 +153,7 @@ set exe = $bld/src/preqx/preqx
 # rm $bld/CMakeCache.txt    # remove this file to force re-configure
 if (! -f CMakeCache.txt) then
    rm -rf CMakeFiles CMakeCache.txt src
-   #rm -rf utils/pio  utils/timing utils/cprnc   # may also need to do this
+   rm -rf utils/pio  utils/timing utils/cprnc   # may also need to do this
    echo "running CMAKE to configure the model"
 
    cmake -C $MACH -DQSIZE_D=$qsize -DPREQX_PLEV=$nlev -DPREQX_NP=4  \
@@ -202,6 +202,8 @@ rm -f $wdir/explicit.nl
 sed s/NE/$ne/ explicit${nlev}.nl.sed | sed s/TSTEP/$tstep/ | sed s/SFREQ/$sfreq/ |\
 sed s/R0001/$rname/ | sed s/RUNTYPE/$runtype/ |\
 sed s/NU1/$nu/ |\
+sed s/NU2/$nu/ |\
+sed s/NUP/$nu/ |\
 sed s/\ndays.\*/"$RUNLEN"/ |\
 sed s/restartfreq.\*/"restartfreq = $rfreq"/ |\
 sed s/\qsize.\*/"qsize = $qsize"/ |\
