@@ -64,26 +64,18 @@ if ( $COMPILER == "pgi" ) then
 endif
 
 if ( $COMPILER == "gnu" ) then
-  soft add +gcc-4.7.2
-  soft add +netcdf-4.3.1-serial-gcc
-  setenv NETCDFROOT /soft/netcdf/4.3.1-serial/gcc-4.7.2
-  if ( $MPILIB == "openmpi") then
-    #soft add +openmpi-1.6.5-gnu-4.7.2-psm
-    echo "ERROR: OpenMPI+pnetcdf is currently not supported with gnu compilers"
-    echo "OpenMPI is currently supported only with pgi compilers"
-    exit 1
-  endif
+  soft add +gcc-5.2
+  soft add +netcdf-4.3.3.1-gnu5.2-serial
+  setenv NETCDFROOT /soft/netcdf_serial/4.3.3.1/gnu-5.2
   if ( $MPILIB == "mpi-serial") then
    setenv PNETCDFROOT ""
-  else if ( $MPILIB == "mpich") then
-    soft add +mpich2-1.4.1-gcc-4.7.2
-    soft add +pnetcdf-1.5.0-mpich2-gcc-4.7.2
-    setenv PNETCDFROOT /soft/pnetcdf/1.5.0/gcc-4.7.2/mpich2-1.4.1
+  else if ( $MPILIB == "mvapich") then
+    soft add +mvapich2-2.2b-gcc-5.2-psm
+    setenv PNETCDFROOT /soft/climate/pnetcdf/1.6.1/gcc-5.2/mvapich2-2.2b-gcc-5.2-psm
   else
-    # default - mpich + pnetcdf
-    soft add +mpich2-1.4.1-gcc-4.7.2
-    soft add +pnetcdf-1.5.0-mpich2-gcc-4.7.2
-    setenv PNETCDFROOT /soft/pnetcdf/1.5.0/gcc-4.7.2/mpich2-1.4.1
+    # default - mvapich + pnetcdf
+    soft add +mvapich2-2.2b-gcc-5.2-psm
+    setenv PNETCDFROOT /soft/climate/pnetcdf/1.6.1/gcc-5.2/mvapich2-2.2b-gcc-5.2-psm
   endif
 endif
 
