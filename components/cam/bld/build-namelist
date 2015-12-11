@@ -2339,7 +2339,7 @@ if ($chem eq 'waccm_mozart_mam3') {
     }
 
 }
-if ($chem eq 'trop_mam4') {
+if ($chem eq 'trop_mam4' || $chem eq 'trop_mam4_resus') {
 
     my %species;
 
