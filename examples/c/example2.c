@@ -205,10 +205,10 @@ int resultlen;
 	 * (serial4 and parallel4) will be in netCDF-4/HDF5
 	 * format. All four can be read by the netCDF library, and all
 	 * will contain the same contents. */
-	char filename[NUM_NETCDF_FLAVORS][NC_MAX_NAME + 1] = {"example1_pnetcdf.nc",
-							  "example1_classic.nc",
-							  "example1_serial4.nc",
-							  "example1_parallel4.nc"};
+	char filename[NUM_NETCDF_FLAVORS][NC_MAX_NAME + 1] = {"example2_pnetcdf.nc",
+							      "example2_classic.nc",
+							      "example2_serial4.nc",
+							      "example2_parallel4.nc"};
 	
 	/** Number of processors that will do IO. In this example we
 	 * will do IO from all processors. */
@@ -371,6 +371,8 @@ int resultlen;
 	    }
 	    if ((ret = PIOc_def_var(ncid, VAR_NAME, PIO_INT, NDIM, dimids, &varid)))
 	    	ERR(ret);
+	    if ((ret = PIOc_setframe(ncid, varid, 0)))
+		ERR(ret);
 	    if ((ret = PIOc_enddef(ncid)))
 	    	ERR(ret);
 	
