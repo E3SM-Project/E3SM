@@ -54,7 +54,13 @@ logical :: do_aitacc_transfer_default
 integer :: dgnum_idx = -1
 
 integer, parameter, public :: maxpair_csizxf = 1
+#ifdef MODAL_AERO
 integer, parameter, public :: maxspec_csizxf = ntot_aspectype
+#else
+! TODO: this is a kludge.  This value should probably be assigned
+! elsewhere for the non-modal case.  S.M. Burrows.
+integer, parameter, public :: maxspec_csizxf = 8
+#endif
 
 integer, public :: npair_csizxf = -123456789
 integer, public :: modefrm_csizxf(maxpair_csizxf)
