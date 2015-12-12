@@ -1280,7 +1280,7 @@ contains
 #if ( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM )
        ntoo = modeptr_coarse
 #else
-       call endrun( 'modal_aero_wetscav_init: new resuspension not implemented for 7-mode')
+       call endrun( 'modal_aero_wetscav_init: new resuspension not implemented for 7-mode or 9-mode MAM.')
 #endif
 
        do n = 1, ntot_amode   ! loop over aerosol modes that was wet-removed

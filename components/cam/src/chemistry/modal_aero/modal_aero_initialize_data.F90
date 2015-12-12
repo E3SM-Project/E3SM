@@ -158,13 +158,25 @@ contains
             'mpoly_c3', 'mprot_c3', 'mlip_c3 ' /)
        xname_spectype(:nspec_amode(3),3)  = (/ 'p-organic ', 'black-c   ', &
             'm-poly    ', 'm-prot    ', 'm-lip     ' /)
-#elif ( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE )
        ! mode 3 (coarse dust & seasalt) species
 #if (defined RAIN_EVAP_TO_COARSE_AERO)
           xname_massptr(:nspec_amode(3),3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ', 'bc_a3   ','pom_a3  ','soa_a3  ' /)
           xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ', 'bc_c3   ','pom_c3  ','soa_c3  ' /)
           xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ', 'black-c   ','p-organic ', &
                's-organic ' /)
+#else
+          xname_massptr(:nspec_amode(3),3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ' /)
+          xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ' /)
+          xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ' /)
+#endif
+#elif ( defined MODAL_AERO_4MODE_MOM )
+       ! mode 3 (coarse dust & seasalt) species
+#if (defined RAIN_EVAP_TO_COARSE_AERO)
+          xname_massptr(:nspec_amode(3),3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ', 'bc_a3   ','pom_a3  ','soa_a3  ', 'mom_a3' /)
+          xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ', 'bc_c3   ','pom_c3  ','soa_c3  ', 'mom_a3' /)
+          xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ', 'black-c   ','p-organic ', &
+               's-organic ', 'm-organic ' /)
 #else
           xname_massptr(:nspec_amode(3),3)   = (/ 'dst_a3  ', 'ncl_a3  ', 'so4_a3  ' /)
           xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ' /)

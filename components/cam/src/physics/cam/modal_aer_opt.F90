@@ -279,7 +279,7 @@ subroutine modal_aer_opt_init()
       call add_default ('SSAVIS'       , 1, ' ')
       call add_default ('EXTINCT'      , 1, ' ')
   end if
-  if (cam_chempkg_is('trop_mam4').or.cam_chempkg_is('trop_mam4_resus').or.cam_chempkg_is('trop_mam4_mom').or.cam_chempkg_is('trop_mam7').or.cam_chempkg_is('trop_mam9').or.cam_chempkg_is('trop_strat_mam7')) then
+  if (cam_chempkg_is('trop_mam4').or.cam_chempkg_is('trop_mam4_resus').or.cam_chempkg_is('trop_mam4_mom').or.cam_chempkg_is('trop_mam4_resus_mom').or.cam_chempkg_is('trop_mam7').or.cam_chempkg_is('trop_mam9').or.cam_chempkg_is('trop_strat_mam7')) then
      call addfld ('AODDUST4','  ',1,    'A','Aerosol optical depth 550 nm model 4 from dust',phys_decomp, flag_xyfill=.true.)     
      call addfld ('AODMODE4','  ',1,    'A','Aerosol optical depth 550 nm mode 4',phys_decomp, flag_xyfill=.true.)
      call addfld ('BURDEN4','kg/m2',1,    'A','Aerosol burden mode 4',phys_decomp, flag_xyfill=.true.)

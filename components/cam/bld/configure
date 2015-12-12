@@ -1319,6 +1319,9 @@ my $chem_src_dir = '';
 if (($rain_evap_to_coarse_aero == 1) && ($chem_pkg eq 'trop_mam4')) {
     $chem_pkg = 'trop_mam4_resus'
 }
+if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg eq 'trop_mam4_mom')) {
+    $chem_pkg = 'trop_mam4_resus_mom'
+}
 
 if (!$prog_species) {
   $chem_src_dir = "$cam_root/components/cam/src/chemistry/pp_$chem_pkg";
@@ -1355,7 +1358,7 @@ if (($chem_pkg ne 'none') || ($prog_species)) {
 }
 if ($chem_pkg =~ '_mam3') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_3MODE ';
-} elsif ($chem_pkg =~ '_mam4_mom') {
+} elsif ($chem_pkg =~ '_mam4_mom' || $chem_pkg eq 'trop_mam4_resus_mom') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE_MOM ';
 } elsif ($chem_pkg =~ '_mam4' || $chem_pkg eq 'trop_mam4_resus') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE ';
@@ -1365,7 +1368,7 @@ if ($chem_pkg =~ '_mam3') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_9MODE ';
 }
 
-if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg =~ '_mam3' || $chem_pkg =~ '_mam4' || $chem_pkg eq 'trop_mam4_resus')) {
+if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg =~ '_mam3' || $chem_pkg =~ '_mam4' || $chem_pkg eq 'trop_mam4_resus' || $chem_pkg eq 'trop_mam4_resus_mom')) {
     $chem_cppdefs = "$chem_cppdefs  -DRAIN_EVAP_TO_COARSE_AERO "
 }
 

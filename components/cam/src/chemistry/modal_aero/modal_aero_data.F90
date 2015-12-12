@@ -23,7 +23,7 @@
     integer, parameter :: ntot_amode = 3
 #endif
 
-#if (( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE )) && ( defined RAIN_EVAP_TO_COARSE_AERO )
+#if (( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM )) && ( defined RAIN_EVAP_TO_COARSE_AERO )
     logical, parameter :: rain_evap_to_coarse_aero = .true.
 #else
     logical, parameter :: rain_evap_to_coarse_aero = .false.
@@ -119,7 +119,11 @@
 #elif ( defined MODAL_AERO_9MODE )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 9, 7, 5, 3, 3, 3, 3, 3, 3/)  ! SS
 #elif ( defined MODAL_AERO_4MODE_MOM )
+#if (defined RAIN_EVAP_TO_COARSE_AERO)
+    integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 7, 3 /)
+#else
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 3, 3 /)
+#endif
 #elif ( defined MODAL_AERO_4MODE )
 #if (defined RAIN_EVAP_TO_COARSE_AERO)
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 3, 6, 2 /)
@@ -132,6 +136,8 @@
 #else
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 3, 3 /)
 #endif
+#endif
+
     !   input mprognum_amode, mdiagnum_amode, mprogsfc_amode, mcalcwater_amode
 #if ( defined MODAL_AERO_7MODE )
     integer, parameter ::     mprognum_amode(ntot_amode)   = (/ 1, 1, 1, 1, 1, 1, 1/)
