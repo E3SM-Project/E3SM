@@ -22,7 +22,7 @@
 
 /** The number of possible output netCDF output flavors available to
  * the ParallelIO library. */
-#define NUM_NETCDF_FLAVORS 4	
+#define NUM_NETCDF_FLAVORS 4
 
 /** The number of dimensions in the example data. In this example, we
  * are using three-dimensional data. */
@@ -257,7 +257,7 @@ int check_file(int ntasks, char *filename) {
 	int iosysid;
 
 	/** The ncid of the netCDF file created in this example. */
-	int ncid;
+	int ncid = 0;
 
 	/** The ID of the netCDF varable in the example file. */
 	int varid;
