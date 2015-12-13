@@ -206,7 +206,7 @@
 <bnd_topo hgrid="ne240np4"  >atm/cam/topo/USGS_gtopo30_0.23x0.31_smooth1000-50_ne240np4_c061107.nc</bnd_topo>
 
 <bnd_topo hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/inic/homme/USGS-gtopo30_arm_x8v3_lowcon_tensor12xconsistentSGH.nc</bnd_topo>
-<bnd_topo hgrid="ne0np4_conus_x4v1_lowcon"  >atm/cam/topo/USGS_conusx4v1-tensor12x_c150612.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_conus_x4v1_lowcon"  >atm/cam/topo/USGS_conusx4v1-tensor12x_consistentSGH_c150924.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_svalbard_x8v1_lowcon"  >atm/cam/topo/USGS_svalbardx8v1-tensor12x_c150612.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  >atm/cam/topo/USGS_sooberingoax4x8v1-tensor12x_c150612.nc</bnd_topo>
 
