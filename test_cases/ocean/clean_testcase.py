@@ -20,6 +20,7 @@ parser.add_argument("-c", "--configuration", dest="configuration", help="Configu
 parser.add_argument("-r", "--resolution", dest="resolution", help="Resolution of configuration to clean", metavar="RES")
 parser.add_argument("-t", "--test", dest="test", help="Test name within a resolution to clean", metavar="TEST")
 parser.add_argument("-n", "--case_number", dest="case_num", help="Case number to clean, as listed from list_testcases.py. Can be a comma delimited list of case numbers.", metavar="NUM")
+parser.add_argument("-q", "--quiet", dest="quiet", help="If set, script will not write a command_history file", action="store_true")
 parser.add_argument("-a", "--all", dest="clean_all", help="Is set, the script will clean all test cases in the work_dir.", action="store_true")
 parser.add_argument("--work_dir", dest="work_dir", help="If set, script will clean case directories in work_dir rather than the current directory.", metavar="PATH")
 
@@ -136,7 +137,7 @@ for case_num in case_list:
 
 # Write the history of this command to the command_history file, for
 # provenance.
-if write_history:
+if write_history and not args.quiet:
 	history_file_path = '%s/command_history'%(args.work_dir)
 	if os.path.exists(history_file_path):
 		history_file = open(history_file_path, 'a')

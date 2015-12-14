@@ -64,11 +64,11 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_scr
 	# Setup test case
 
 	if baseline_dir == 'NONE':
-		subprocess.check_call(['./setup_testcase.py', '-f', config_file, '--work_dir', work_dir,
+		subprocess.check_call(['./setup_testcase.py', '-q', '-f', config_file, '--work_dir', work_dir,
 								'-o', test_core, '-c', test_configuration, '-r', test_resolution, '-t', test_test,
 								'-m', model_runtime], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 	else:
-		subprocess.check_call(['./setup_testcase.py', '-f', config_file, '--work_dir', work_dir,
+		subprocess.check_call(['./setup_testcase.py', 'q', '-f', config_file, '--work_dir', work_dir,
 								'-o', test_core, '-c', test_configuration, '-r', test_resolution, '-t', test_test,
 								'-m', model_runtime, '-b', baseline_dir], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 	
@@ -152,7 +152,7 @@ def process_test_clean(test_tag, work_dir, suite_script):#{{{
 	
 
 	# Clean test case
-	subprocess.check_call(['./clean_testcase.py', '--work_dir', work_dir, '-o', test_core, '-c', 
+	subprocess.check_call(['./clean_testcase.py', '-q', '--work_dir', work_dir, '-o', test_core, '-c', 
 							test_configuration, '-r', test_resolution, '-t', test_test], stdout=dev_null, stderr=dev_null)
 	
 	print "   -- Cleaned case '%s': -o %s -c %s -r %s -t %s"%(test_name, test_core, test_configuration, test_resolution, test_test)
@@ -343,6 +343,8 @@ if not args.baseline_dir:
 if not args.setup and not args.clean:
 	print 'WARNING: Neither the setup (-s/--setup) nor the clean (-c/--clean) flags were provided. Script will perform no actions.'
 
+write_history = False
+
 # Parse regression_suite file
 suite_tree = ET.parse(args.test_suite)
 suite_root = suite_tree.getroot()
@@ -353,10 +355,34 @@ if suite_root.tag == 'regression_suite':
 	if args.clean:
 		print "Cleaning Test Cases:"
 		clean_suite(suite_root, args.work_dir)
+		write_history = True
 	# If setting up, set up the suite
 	if args.setup:
 		print "\n"
 		print "Setting Up Test Cases:"
 		setup_suite(suite_root, args.work_dir, args.model_runtime, args.config_file, args.baseline_dir)
 		summarize_suite(suite_root)
+		write_history = True
 
+# Write the history of this command to the command_history file, for
+# provenance.
+if write_history:
+	# Build variables for history output
+	git_version = subprocess.check_output(['git', 'describe', '--tags', '--dirty'])
+	git_version = git_version.strip('\n')
+	calling_command = ""
+	for arg in sys.argv:
+		calling_command = "%s%s "%(calling_command, arg)
+
+	history_file_path = '%s/command_history'%(args.work_dir)
+	if os.path.exists(history_file_path):
+		history_file = open(history_file_path, 'a')
+		history_file.write('\n')
+	else:
+		history_file = open(history_file_path, 'w')
+
+	history_file.write('***********************************************************************\n')
+	history_file.write('git_version: %s\n'%(git_version))
+	history_file.write('command: %s\n'%(calling_command))
+	history_file.write('***********************************************************************\n')
+	history_file.close()

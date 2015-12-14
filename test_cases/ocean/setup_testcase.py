@@ -1198,6 +1198,7 @@ parser.add_argument("-n", "--case_number", dest="case_num", help="Case number to
 parser.add_argument("-f", "--config_file", dest="config_file", help="Configuration file for test case setup", metavar="FILE")
 parser.add_argument("-m", "--model_runtime", dest="model_runtime", help="Definition of how to build model run commands on this machine", metavar="FILE")
 parser.add_argument("-b", "--baseline_dir", dest="baseline_dir", help="Location of baseslines that can be compared to", metavar="PATH")
+parser.add_argument("-q", "--quiet", dest="quiet", help="If set, script will not write a command_history file", action="store_true")
 parser.add_argument("--no_download", dest="no_download", help="If set, script will not auto-download base_mesh files", action="store_true")
 parser.add_argument("--work_dir", dest="work_dir", help="If set, script will create case directories in work_dir rather than the current directory.", metavar="PATH")
 
@@ -1358,7 +1359,7 @@ for case_num in case_list:
 
 # Write the history of this command to the command_history file, for
 # provenance.
-if write_history:
+if write_history and not args.quiet:
 	history_file_path = '%s/command_history'%(config.get('script_paths', 'work_dir'))
 	if os.path.exists(history_file_path):
 		history_file = open(history_file_path, 'a')
