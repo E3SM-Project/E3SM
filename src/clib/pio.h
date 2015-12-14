@@ -35,7 +35,7 @@
 #define MPI_OFFSET  MPI_LONG_LONG
 #endif
 
-/** PIO_Offset is an integer type of size sufficient to represent the
+/** PIO_OFFSET is an integer type of size sufficient to represent the
  * size (in bytes) of the largest file supported by MPI. */
 #define PIO_OFFSET MPI_OFFSET
 #define PIO_Offset MPI_Offset
@@ -251,6 +251,7 @@ enum PIO_ERROR_HANDLERS{
 #define PIO_UNLIMITED NC_UNLIMITED
 #define PIO_DOUBLE NC_DOUBLE
 #define PIO_REAL   NC_FLOAT
+#define PIO_FLOAT  NC_FLOAT
 #define PIO_INT    NC_INT
 #define PIO_CHAR   NC_CHAR
 #define PIO_NOERR  NC_NOERR
