@@ -34,10 +34,10 @@ echo using NCPU = $NCPU
 set NPTS = 4
 # CSLAM points points within each element:
 set NC = 4  
-set ne = 0 ; 
+set ne = 4 ; 
 
-set HOMME = ~/codes/homme  # path to HOMME code
-#set MACH = $HOMME/cmake/machineFiles/redsky.cmake
+set HOMME = ~/codes/acme-dev/components/homme  # path to HOMME code
+set MACH = $HOMME/cmake/machineFiles/skybridge.cmake
 #set MACH = $HOMME/cmake/machineFiles/climate.cmake
 #set MACH = $HOMME/cmake/machineFiles/rhel5.cmake
 #set MACH = $HOMME/cmake/machineFiles/darwin.cmake

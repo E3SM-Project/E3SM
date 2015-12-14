@@ -1356,6 +1356,9 @@ contains
     use reduction_mod, only : parallelmax
     use prim_advection_mod, only : vertical_remap
     use fvm_control_volume_mod, only : n0_fvm
+#ifndef CAM
+    use column_model_mod, only : ApplyColumnModel
+#endif
 #if USE_OPENACC
     use openacc_utils_mod, only: copy_qdp_h2d, copy_qdp_d2h
 #endif

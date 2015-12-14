@@ -76,8 +76,11 @@ contains
 
     ! RK2 advection  switch to TIME SPLIT and since Q is advected
     ! with RK2, use dt instead of 2dt
-    if (tstep_type == 1) then  
-       nfrc=tl%np1     ! TIME SPLIT 
+    if (tstep_type > 0) then  
+       nfrc=tl%np1     ! called from prim_run_subcycle after timesteps
+                       ! np1 = current time.  
+                       ! n0  = t - dt
+                       ! nmt  = t - 2*dt
        dtf_q = dt
     endif
         

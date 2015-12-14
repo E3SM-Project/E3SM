@@ -9,7 +9,6 @@ statefreq     = SFREQ
 tstep_type    = 1
 qsize         = 1
 rsplit        = 0
-ftype         = 0 
 restartfreq   =  30
 restartfile   = "restart/R0001"
 restartdir    = "./restart/"
@@ -47,12 +46,13 @@ vfile_int     = "../vcoord/cami-26.ascii"
 /
 &analysis_nl
 output_timeunits=1,1
-output_frequency=0,0
-output_start_time=575,575
+output_frequency=1,1
+output_start_time=600,600
 output_end_time=30000,30000
-output_varnames1='u','v','T','zeta','ps','Q','DIFFT'
+output_varnames1='u','v','T','zeta','ps'
+!output_varnames1='u','v','T','zeta','ps','Q','DIFFT'
 !output_varnames2='DIFFT','DIFFU','DIFFV','CONVU','CONVV','FU','FV'
-io_stride = 8
+io_stride = 32
 /
 
 &prof_inparm
