@@ -2278,6 +2278,10 @@
 			 description="The maximum Haney number (rx1) in a vertical column, measured at edges."
 			 packages="initMode"
 		/>
+		<var name="globalMaxRx1Edge" type="real" dimensions="Time" units="unitless"
+			 description="The global maximum Haney number (rx1)."
+			 packages="initMode"
+		/>
 	</var_struct>
 	<var_struct name="shortwave" time_levs="1">
 		<!-- **********************************************************************

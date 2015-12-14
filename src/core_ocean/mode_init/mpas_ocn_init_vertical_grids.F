@@ -638,15 +638,17 @@ contains
 !>  hydrostatic consistency
 !
 !-----------------------------------------------------------------------
-    subroutine ocn_compute_Haney_number(meshPool, diagnosticsPool, iErr)
+    subroutine ocn_compute_Haney_number(dminfo, meshPool, diagnosticsPool, iErr)
 
       type (mpas_pool_type), intent(in) :: meshPool
       type (mpas_pool_type), intent(inout) :: diagnosticsPool
       integer, intent(out) :: iErr
+      type (dm_info), intent(in) :: dminfo
 
       real (kind=RKIND), dimension(:,:), pointer :: zMid
       real (kind=RKIND), dimension(:,:), pointer :: rx1Edge, rx1Cell
       real (kind=RKIND), dimension(:), pointer :: rx1MaxEdge, rx1MaxCell
+      real (kind=RKIND), pointer :: globalMaxRx1Edge
 
       integer, pointer :: nCells, nVertLevels, nEdges
       integer, dimension(:), pointer :: maxLevelCell
@@ -654,7 +656,7 @@ contains
 
       integer :: iEdge, c1, c2, k, maxLevelEdge
 
-      real (kind=RKIND) :: dzVert1, dzVert2, dzEdgeK, dzEdgeKp1, rx1
+      real (kind=RKIND) :: dzVert1, dzVert2, dzEdgeK, dzEdgeKp1, rx1, localMaxRx1Edge
 
       iErr = 0
 
@@ -671,6 +673,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'rx1Cell', rx1Cell)
       call mpas_pool_get_array(diagnosticsPool, 'rx1MaxEdge', rx1MaxEdge)
       call mpas_pool_get_array(diagnosticsPool, 'rx1MaxCell', rx1MaxCell)
+      call mpas_pool_get_array(diagnosticsPool, 'globalMaxRx1Edge', globalMaxRx1Edge)
 
       rx1Edge(:,:) = 0.0_RKIND
       rx1Cell(:,:) = 0.0_RKIND
@@ -697,6 +700,10 @@ contains
           rx1MaxCell(c1) = max(rx1MaxCell(c1),rx1)
         end do
       end do
+
+      localMaxRx1Edge = maxval(rx1MaxEdge)
+      call mpas_dmpar_max_real(dminfo, localMaxRx1Edge, globalMaxRx1Edge)
+      write (stdoutUnit,'(a, es10.2)') ' global max of rx1Edge:', globalMaxRx1Edge
 
     end subroutine ocn_compute_Haney_number
 
