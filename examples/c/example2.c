@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <mpi.h>
 #include <pio.h>
+#include <math.h>
 #ifdef TIMING
 #include <gptl.h>
 #endif
@@ -36,12 +37,12 @@
  * responsibilty for writing and reading them will be spread between
  * all the processors used to run this example. */
 /**@{*/
-#define X_DIM_LEN 4
-#define Y_DIM_LEN 4
+#define X_DIM_LEN 400
+#define Y_DIM_LEN 400
 /**@}*/
 
 /** The number of timesteps of data to write. */
-#define NUM_TIMESTEPS 2
+#define NUM_TIMESTEPS 3
 
 /** The name of the variable in the netCDF output file. */
 #define VAR_NAME "foo"
@@ -57,7 +58,7 @@
  * function calls. */
 #define MPIERR(e) do {                                                  \
 	MPI_Error_string(e, err_buffer, &resultlen);			\
-	printf("MPI error, line %d, file %s: %s\n", __LINE__, __FILE__, err_buffer); \
+	fprintf(stderr, "MPI error, line %d, file %s: %s\n", __LINE__, __FILE__, err_buffer); \
 	MPI_Finalize();							\
 	return 2;							\
     } while (0) 
@@ -65,6 +66,7 @@
 /** Handle non-MPI errors by finalizing the MPI library and exiting
  * with an exit code. */
 #define ERR(e) do {				\
+        fprintf(stderr, "Error %d in %s, line %d\n", e, __FILE__, __LINE__); \
 	MPI_Finalize();				\
 	return e;				\
     } while (0) 
@@ -84,10 +86,13 @@ char dim_name[NDIM][NC_MAX_NAME + 1] = {"timestep", "x", "y"};
 /** Length of the dimensions in the sample data. */
 int dim_len[NDIM] = {NC_UNLIMITED, X_DIM_LEN, Y_DIM_LEN};
 
+/** Length of chunksizes to use in netCDF-4 files. */
+size_t chunksize[NDIM] = {1, X_DIM_LEN/2, Y_DIM_LEN/2};
+
 #ifdef HAVE_MPE
 /** Number of MPE events. The start and stop of each event will be
  * tracked, and graphed. */
-#define NUM_EVENTS 7
+#define NUM_EVENTS 10
 
 /** Start and end for each MPE event. */
 /**@{*/
@@ -100,12 +105,15 @@ int dim_len[NDIM] = {NC_UNLIMITED, X_DIM_LEN, Y_DIM_LEN};
  * Jumpshot program. */
 /**@{*/
 #define INIT 0
-#define CREATE 1
-#define CALCULATE 2
-#define WRITE 3
-#define CLOSE 4
-#define FREE 5
-#define READ 6
+#define CREATE_PNETCDF 1
+#define CREATE_CLASSIC 2
+#define CREATE_SERIAL4 3
+#define CREATE_PARALLEL4 4
+#define CALCULATE 5
+#define WRITE 6
+#define CLOSE 7
+#define FREE 8
+#define READ 9
 /**@}*/
 #endif /* HAVE_MPE */
 
@@ -137,37 +145,56 @@ init_logging(int my_rank, int event_num[][NUM_EVENTS])
 {
 #ifdef HAVE_MPE
 /* Get a bunch of event numbers. */
-event_num[START][INIT] = MPE_Log_get_event_number();
-event_num[END][INIT] = MPE_Log_get_event_number();
-event_num[START][CREATE] = MPE_Log_get_event_number();
-event_num[END][CREATE] = MPE_Log_get_event_number();
-event_num[START][CALCULATE] = MPE_Log_get_event_number();
-event_num[END][CALCULATE] = MPE_Log_get_event_number();
-event_num[START][WRITE] = MPE_Log_get_event_number();
-event_num[END][WRITE] = MPE_Log_get_event_number();
-event_num[START][CLOSE] = MPE_Log_get_event_number();
-event_num[END][CLOSE] = MPE_Log_get_event_number();
-event_num[START][FREE] = MPE_Log_get_event_number();
-event_num[END][FREE] = MPE_Log_get_event_number();
-event_num[START][READ] = MPE_Log_get_event_number();
-event_num[END][READ] = MPE_Log_get_event_number();
+    event_num[START][INIT] = MPE_Log_get_event_number();
+    event_num[END][INIT] = MPE_Log_get_event_number();
+    event_num[START][CREATE_PNETCDF] = MPE_Log_get_event_number();
+    event_num[END][CREATE_PNETCDF] = MPE_Log_get_event_number();
+    event_num[START][CREATE_CLASSIC] = MPE_Log_get_event_number();
+    event_num[END][CREATE_CLASSIC] = MPE_Log_get_event_number();
+    event_num[START][CREATE_SERIAL4] = MPE_Log_get_event_number();
+    event_num[END][CREATE_SERIAL4] = MPE_Log_get_event_number();
+    event_num[START][CREATE_PARALLEL4] = MPE_Log_get_event_number();
+    event_num[END][CREATE_PARALLEL4] = MPE_Log_get_event_number();
+    event_num[START][CALCULATE] = MPE_Log_get_event_number();
+    event_num[END][CALCULATE] = MPE_Log_get_event_number();
+    event_num[START][WRITE] = MPE_Log_get_event_number();
+    event_num[END][WRITE] = MPE_Log_get_event_number();
+    event_num[START][CLOSE] = MPE_Log_get_event_number();
+    event_num[END][CLOSE] = MPE_Log_get_event_number();
+    event_num[START][FREE] = MPE_Log_get_event_number();
+    event_num[END][FREE] = MPE_Log_get_event_number();
+    event_num[START][READ] = MPE_Log_get_event_number();
+    event_num[END][READ] = MPE_Log_get_event_number();
 
 /* You should track at least initialization and partitioning, data
  * ingest, update computation, all communications, any memory
  * copies (if you do that), any output rendering, and any global
  * communications. */
-if (!my_rank)
-{
-MPE_Describe_state(event_num[START][INIT], event_num[END][INIT], "init", "yellow");
-MPE_Describe_state(event_num[START][CREATE], event_num[END][CREATE], "create", "red");
-MPE_Describe_state(event_num[START][CALCULATE], event_num[END][CALCULATE], "calculate", "orange");
-MPE_Describe_state(event_num[START][WRITE], event_num[END][WRITE], "write", "green");
-MPE_Describe_state(event_num[START][CLOSE], event_num[END][CLOSE], "close", "purple");
-MPE_Describe_state(event_num[START][FREE], event_num[END][FREE], "free", "blue");
-MPE_Describe_state(event_num[START][READ], event_num[END][READ], "read", "pink");
-}
+    if (!my_rank)
+    {
+	MPE_Describe_state(event_num[START][INIT], event_num[END][INIT],
+			   "init", "yellow");
+	MPE_Describe_state(event_num[START][CREATE_PNETCDF], event_num[END][CREATE_PNETCDF],
+			   "create pnetcdf", "red");
+	MPE_Describe_state(event_num[START][CREATE_CLASSIC], event_num[END][CREATE_CLASSIC],
+			   "create classic", "red");
+	MPE_Describe_state(event_num[START][CREATE_SERIAL4], event_num[END][CREATE_SERIAL4],
+			   "create netcdf-4 serial", "red");
+	MPE_Describe_state(event_num[START][CREATE_PARALLEL4], event_num[END][CREATE_PARALLEL4],
+			   "create netcdf-4 parallel", "red");
+	MPE_Describe_state(event_num[START][CALCULATE], event_num[END][CALCULATE],
+			   "calculate", "orange");
+	MPE_Describe_state(event_num[START][WRITE], event_num[END][WRITE],
+			   "write", "green");
+	MPE_Describe_state(event_num[START][CLOSE], event_num[END][CLOSE],
+			   "close", "purple");
+	MPE_Describe_state(event_num[START][FREE], event_num[END][FREE],
+			   "free", "blue");
+	MPE_Describe_state(event_num[START][READ], event_num[END][READ],
+			   "read", "pink");
+    }
 #endif /* HAVE_MPE */
-return 0;
+    return 0;
 }
 
 /** @brief Check the output file.
@@ -180,65 +207,80 @@ return 0;
  * @return 0 if example file is correct, non-zero otherwise. */
 int check_file(int ntasks, char *filename) {
     
-int ncid;         /**< File ID from netCDF. */
-int ndims;        /**< Number of dimensions. */
-int nvars;        /**< Number of variables. */
-int ngatts;       /**< Number of global attributes. */
-int unlimdimid;   /**< ID of unlimited dimension. */
-size_t dimlen;    /**< Length of the dimension. */
-int natts;        /**< Number of variable attributes. */
-nc_type xtype;    /**< NetCDF data type of this variable. */
-int ret;          /**< Return code for function calls. */
-int dimids[NDIM]; /**< Dimension ids for this variable. */
-char my_dim_name[NC_MAX_NAME + 1]; /**< Name of the dimension. */
-char var_name[NC_MAX_NAME + 1];    /**< Name of the variable. */
-size_t start[NDIM];                /**< Zero-based index to start read. */
-size_t count[NDIM];                /**< Number of elements to read. */
-int buffer[X_DIM_LEN];             /**< Buffer to read in data. */
-int expected[X_DIM_LEN];           /**< Data values we expect to find. */
+    int ncid;         /**< File ID from netCDF. */
+    int ndims;        /**< Number of dimensions. */
+    int nvars;        /**< Number of variables. */
+    int ngatts;       /**< Number of global attributes. */
+    int unlimdimid;   /**< ID of unlimited dimension. */
+    size_t dimlen;    /**< Length of the dimension. */
+    int natts;        /**< Number of variable attributes. */
+    nc_type xtype;    /**< NetCDF data type of this variable. */
+    int ret;          /**< Return code for function calls. */
+    int dimids[NDIM]; /**< Dimension ids for this variable. */
+    char my_dim_name[NC_MAX_NAME + 1]; /**< Name of the dimension. */
+    char var_name[NC_MAX_NAME + 1];    /**< Name of the variable. */
+    size_t start[NDIM];                /**< Zero-based index to start read. */
+    size_t count[NDIM];                /**< Number of elements to read. */
+    int buffer[X_DIM_LEN];             /**< Buffer to read in data. */
+    int expected[X_DIM_LEN];           /**< Data values we expect to find. */
     
 /* Open the file. */
-if ((ret = nc_open(filename, 0, &ncid)))
-    return ret;
+    if ((ret = nc_open(filename, 0, &ncid)))
+	return ret;
 
 /* Check the metadata. */
-if ((ret = nc_inq(ncid, &ndims, &nvars, &ngatts, &unlimdimid)))
-    return ret;
-if (ndims != NDIM || nvars != 1 || ngatts != 0 || unlimdimid != -1)
-    return ERR_BAD;
-for (int d = 0; d < ndims; d++)
-{
-if ((ret = nc_inq_dim(ncid, d, my_dim_name, &dimlen)))
-    return ret;
-if (dimlen != X_DIM_LEN || strcmp(my_dim_name, dim_name[d]))
-    return ERR_BAD;
-}
-if ((ret = nc_inq_var(ncid, 0, var_name, &xtype, &ndims, dimids, &natts)))
-    return ret;
-if (xtype != NC_INT || ndims != NDIM || dimids[0] != 0 || natts != 0)
-    return ERR_BAD;
+    if ((ret = nc_inq(ncid, &ndims, &nvars, &ngatts, &unlimdimid)))
+	return ret;
+    if (ndims != NDIM || nvars != 1 || ngatts != 0 || unlimdimid != -1)
+	return ERR_BAD;
+    for (int d = 0; d < ndims; d++)
+    {
+	if ((ret = nc_inq_dim(ncid, d, my_dim_name, &dimlen)))
+	    return ret;
+	if (dimlen != X_DIM_LEN || strcmp(my_dim_name, dim_name[d]))
+	    return ERR_BAD;
+    }
+    if ((ret = nc_inq_var(ncid, 0, var_name, &xtype, &ndims, dimids, &natts)))
+	return ret;
+    if (xtype != NC_FLOAT || ndims != NDIM || dimids[0] != 0 || natts != 0)
+	return ERR_BAD;
 
 /* Use the number of processors to figure out what the data in the
  * file should look like. */
-int div = X_DIM_LEN * Y_DIM_LEN / ntasks;
-for (int d = 0; d < X_DIM_LEN; d++)
-    expected[d] = START_DATA_VAL + d/div;
+    int div = X_DIM_LEN * Y_DIM_LEN / ntasks;
+    for (int d = 0; d < X_DIM_LEN; d++)
+	expected[d] = START_DATA_VAL + d/div;
     
 /* Check the data. */
-start[0] = 0;
-count[0] = X_DIM_LEN;
-if ((ret = nc_get_vara(ncid, 0, start, count, buffer)))
-    return ret;
-for (int d = 0; d < X_DIM_LEN; d++)
-    if (buffer[d] != expected[d])
-	return ERR_BAD;
+    start[0] = 0;
+    count[0] = X_DIM_LEN;
+    if ((ret = nc_get_vara(ncid, 0, start, count, buffer)))
+	return ret;
+    for (int d = 0; d < X_DIM_LEN; d++)
+	if (buffer[d] != expected[d])
+	    return ERR_BAD;
 
 /* Close the file. */
-if ((ret = nc_close(ncid)))
-    return ret;
+    if ((ret = nc_close(ncid)))
+	return ret;
 
 /* Everything looks good! */
-return 0;
+    return 0;
+}
+
+/** Calculate sample data. This function is deliberately slow in order to take up some time calculating. 
+ * @param my_rank the rank of the processor running the code.
+ * @param timestep the timestep.
+ * @param datap pointer where we should write datum.
+ * 
+ * @return zero for success, non-zero otherwise.
+ */
+int calculate_value(int my_rank, int timestep, float *datap)
+{
+    *datap = my_rank + timestep;
+    for (int i = 0; i < 50; i++)
+	*datap += atan(cos(my_rank * timestep));
+    return 0;
 }
 
 /** @brief Main execution of code.
@@ -359,7 +401,7 @@ int main(int argc, char* argv[])
      * vary depending on how many processors are involved in the
      * execution of the example code. It's length will be the same
      * as elements_per_pe.*/
-    int *buffer;
+    float *buffer;
 
     /** A buffer for reading data back from the file. The size of
      * this array will vary depending on how many processors are
@@ -449,14 +491,12 @@ int main(int argc, char* argv[])
 	return PIO_ENOMEM;
     for (int i = 0; i < elements_per_pe; i++) {
 	compdof[i] = my_rank * elements_per_pe + i + 1;
-	if (verbose)
-	    printf("rank %d: compdof[%d]=%d\n", my_rank, i, compdof[i]);
     }
 	
     /* Create the PIO decomposition for this example. */
     if (verbose)
 	printf("rank: %d Creating decomposition...\n", my_rank);
-    if ((ret = PIOc_InitDecomp(iosysid, PIO_INT, 2, &dim_len[1], (PIO_Offset)elements_per_pe,
+    if ((ret = PIOc_InitDecomp(iosysid, PIO_FLOAT, 2, &dim_len[1], (PIO_Offset)elements_per_pe,
 			       compdof, &ioid, NULL, NULL, NULL)))
 	ERR(ret);
     free(compdof);
@@ -473,7 +513,7 @@ int main(int argc, char* argv[])
     {
 #ifdef HAVE_MPE
 	/* Log with MPE that we are starting CREATE. */
-	if ((ret = MPE_Log_event(event_num[START][CREATE], 0, "start create")))
+	if ((ret = MPE_Log_event(event_num[START][CREATE_PNETCDF+fmt], 0, "start create")))
 	    MPIERR(ret);
 #endif /* HAVE_MPE */
 
@@ -495,19 +535,25 @@ int main(int argc, char* argv[])
 	    if ((ret = PIOc_def_dim(ncid, dim_name[d], (PIO_Offset)dim_len[d], &dimids[d])))
 		ERR(ret);
 	}
-	if ((ret = PIOc_def_var(ncid, VAR_NAME, PIO_INT, NDIM, dimids, &varid)))
+	if ((ret = PIOc_def_var(ncid, VAR_NAME, PIO_FLOAT, NDIM, dimids, &varid)))
 	    ERR(ret);
+	/* /\* For netCDF-4 files, set the chunksize to improve performance. *\/ */
+	/* if (!my_rank) */
+	/*     if (format[fmt] == PIO_IOTYPE_NETCDF4C || format[fmt] == PIO_IOTYPE_NETCDF4P) */
+	/* 	if ((ret = nc_def_var_chunking(ncid, 0, NC_CHUNKED, chunksize))) */
+	/* 	    ERR(ret); */
+	
 	if ((ret = PIOc_enddef(ncid)))
 	    ERR(ret);
 
 #ifdef HAVE_MPE
 	/* Log with MPE that we are done with CREATE. */
-	if ((ret = MPE_Log_event(event_num[END][CREATE], 0, "end create")))
+	if ((ret = MPE_Log_event(event_num[END][CREATE_PNETCDF + fmt], 0, "end create")))
 	    MPIERR(ret);
 #endif /* HAVE_MPE */
 
 	/* Allocate space for sample data. */
-	if (!(buffer = malloc(elements_per_pe * sizeof(int))))
+	if (!(buffer = malloc(elements_per_pe * sizeof(float))))
 	    return PIO_ENOMEM;
 
 	/* Write data for each timestep. */
@@ -519,9 +565,10 @@ int main(int argc, char* argv[])
 		MPIERR(ret);
 #endif /* HAVE_MPE */
 
-	    /* Calculate sample data. */
+	    /* Calculate sample data. Add some math function calls to make this slower. */
 	    for (int i = 0; i < elements_per_pe; i++)
-		buffer[i] = START_DATA_VAL + my_rank + ts;
+		if ((ret = calculate_value(my_rank, ts, &buffer[i])))
+		    ERR(ret);
 
 #ifdef HAVE_MPE
 	    /* Log with MPE that we are done with CALCULATE. */
@@ -570,6 +617,11 @@ int main(int argc, char* argv[])
 	if ((ret = MPE_Log_event(event_num[END][CLOSE], 0, "end close")))
 	    MPIERR(ret);
 #endif /* HAVE_MPE */
+
+	/* After each file is closed, make all processors wait so that
+	 * all start creating the next file at the same time. */
+	if ((ret = MPI_Barrier(MPI_COMM_WORLD)))
+	    MPIERR(ret);
     }
 	
 #ifdef HAVE_MPE
