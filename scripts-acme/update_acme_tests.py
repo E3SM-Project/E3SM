@@ -34,14 +34,14 @@ _TEST_SUITES = {
                              ),
 
     "acme_atm_developer" : (None,
-                            [("ERS.ne16_ne16.FC5MAM4", None),
-                             ("ERS.ne16_ne16.FC5PLMOD", None),
-                             ("ERS.ne16_ne16.FC5CLBMG2", None),
-                             ("ERS.ne16_ne16.FC5CLBMG2MAM4", None),
-                             ("ERS.ne16_ne16.FC5CLBMG2MAM4RESUS", None),
-                             ("ERS.ne16_ne16.FC5CLBMG2MAM4RESUSCOSP", None),
-                             ("ERS.ne16_ne16.FC5CLBMG2MAM4RESUSCOSPBC", None),
-                             ("ERS.ne16_ne16.FC5ATMMOD", None)]
+                            ("ERS.ne16_ne16.FC5MAM4",
+                             "ERS.ne16_ne16.FC5PLMOD",
+                             "ERS.ne16_ne16.FC5CLBMG2",
+                             "ERS.ne16_ne16.FC5CLBMG2MAM4",
+                             "ERS.ne16_ne16.FC5CLBMG2MAM4RESUS",
+                             "ERS.ne16_ne16.FC5CLBMG2MAM4RESUSCOSP",
+                             "ERS.ne16_ne16.FC5CLBMG2MAM4RESUSCOSPBC",
+                             "ERS.ne16_ne16.FC5ATMMOD")
                             ),
 
     "acme_developer" : ("acme_land_developer",
