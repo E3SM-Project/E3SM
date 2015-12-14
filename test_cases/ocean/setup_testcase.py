@@ -1033,6 +1033,10 @@ def get_defined_files(config_file, init_path, configs):#{{{
 					print " Exiting..."
 					sys.exit(1)
 
+			# if the dest_path doesn't exist, create it
+			if not os.path.exists(dest_path):
+				os.makedirs(dest_path)
+
 			# If the file doesn't exist in dest_path, process it's mirrors
 			if not os.path.exists('%s/%s'%(dest_path, file_name)):
 				file_found = False
