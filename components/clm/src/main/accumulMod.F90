@@ -108,9 +108,11 @@ contains
     integer :: begp, endp   ! per-proc beginning and ending pft indices
     integer :: begc, endc   ! per-proc beginning and ending column indices
     integer :: begl, endl   ! per-proc beginning and ending landunit indices
+    integer :: begt, endt   ! per-proc beginning and ending topographic unit indices
     integer :: begg, endg   ! per-proc gridcell ending gridcell indices
     integer :: begCohort, endCohort   ! per-proc beg end cohort indices
     integer :: numg         ! total number of gridcells across all processors
+    integer :: numt         ! total number of topographic units all processors
     integer :: numl         ! total number of landunits across all processors
     integer :: numc         ! total number of columns across all processors
     integer :: nump         ! total number of pfts across all processors
@@ -119,9 +121,9 @@ contains
 
     ! Determine necessary indices
 
-    call get_proc_bounds(begg, endg, begl, endl, begc, endc, begp, endp, &
+    call get_proc_bounds(begg, endg, begt, endt, begl, endl, begc, endc, begp, endp, &
          begCohort, endCohort )
-    call get_proc_global(numg, numl, numc, nump, numCohort)
+    call get_proc_global(numg, numt, numl, numc, nump, numCohort)
 
     ! update field index
     ! Consistency check that number of accumulated does not exceed maximum.

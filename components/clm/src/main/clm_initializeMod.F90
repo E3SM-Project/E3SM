@@ -63,7 +63,8 @@ module clm_initializeMod
   use CNDVType               , only : dgv_ecophyscon     ! Constants 
   use EcophysConType         , only : ecophyscon         ! Constants 
   use SoilorderConType       , only : soilordercon         ! Constants 
-  use GridcellType           , only : grc                
+  use GridcellType           , only : grc
+  use TopounitType           , only : top_pp, top_es, top_ws
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
   use PatchType              , only : pft                
@@ -297,6 +298,12 @@ contains
     ! can depend on other elements of the subgrid in the calls below
 
     call grc%Init (bounds_proc%begg, bounds_proc%endg)
+    ! --ALM-v1: add initialization for topographic unit data types. 
+    ! For preliminary testing, use the same dimensions as gridcell (one topounit per gridcell)
+    call top_pp%Init (bounds_proc%begg, bounds_proc%endg) ! topology and physical properties
+    call top_es%Init (bounds_proc%begg, bounds_proc%endg) ! energy state
+    call top_ws%Init (bounds_proc%begg, bounds_proc%endg) ! water state
+    ! --end ALM-v1 block
     call lun%Init (bounds_proc%begl, bounds_proc%endl)
     call col%Init (bounds_proc%begc, bounds_proc%endc)
     call pft%Init (bounds_proc%begp, bounds_proc%endp)
