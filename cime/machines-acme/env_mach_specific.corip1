@@ -76,6 +76,7 @@ else
 endif
 
 #module load perl/5.20.0
+module load python
 module load cmake
 module load cray-petsc
 module load cray-libsci
