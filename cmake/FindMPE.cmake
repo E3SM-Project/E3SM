@@ -1,8 +1,8 @@
 # - Try to find MPE
 #
-# This can be controlled by setting the MPE_PATH (or, equivalently, the 
-# NETCDF environment variable), or MPE_<lang>_PATH CMake variables, where
-# <lang> is the COMPONENT language one needs.
+# This can be controlled by setting the MPE_PATH (or, equivalently,
+# the MPE environment variable), or MPE_<lang>_PATH CMake variables,
+# where <lang> is the COMPONENT language one needs.
 #
 # Once done, this will define:
 #
@@ -13,8 +13,7 @@
 #   MPE_<lang>_LIBRARY      (FILE) - Path to the C library file
 #   MPE_<lang>_LIBRARIES    (LIST) - link these to use MPE
 #
-# The available COMPONENTS are: C Fortran
-# If no components are specified, it assumes only C
+# The available COMPONENTS are: C 
 include (LibFind)
 include (LibCheck)
 
@@ -23,12 +22,6 @@ define_package_component (MPE DEFAULT
   COMPONENT C
   INCLUDE_NAMES mpe.h
   LIBRARY_NAMES mpe)
-
-# Define MPE Fortran Component
-define_package_component (MPE
-  COMPONENT Fortran
-  INCLUDE_NAMES netcdf.mod netcdf.inc
-  LIBRARY_NAMES netcdff)
 
 # Search for list of valid components requested
 find_valid_components (MPE)
