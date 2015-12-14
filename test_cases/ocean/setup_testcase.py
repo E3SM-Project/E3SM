@@ -934,10 +934,7 @@ def add_links(config_file, configs):#{{{
 			old_cwd = os.getcwd()
 			os.chdir(base_path)
 
-			if configs.get('script_input_arguments', 'nolink_copy') == 'yes':
-				subprocess.check_call(['cp', '%s'%(source_file), '%s'%(dest)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
-			else:
-				subprocess.check_call(['ln', '-sf', '%s'%(source_file), '%s'%(dest)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+			subprocess.check_call(['ln', '-sf', '%s'%(source_file), '%s'%(dest)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 			os.chdir(old_cwd)
 			del source
 			del dest
@@ -1202,7 +1199,6 @@ parser.add_argument("-f", "--config_file", dest="config_file", help="Configurati
 parser.add_argument("-m", "--model_runtime", dest="model_runtime", help="Definition of how to build model run commands on this machine", metavar="FILE")
 parser.add_argument("-b", "--baseline_dir", dest="baseline_dir", help="Location of baseslines that can be compared to", metavar="PATH")
 parser.add_argument("--no_download", dest="no_download", help="If set, script will not auto-download base_mesh files", action="store_true")
-parser.add_argument("--copy_instead_of_symlink", dest="nolink_copy", help="If set, script will replace symlinks with copies of files.", action="store_true")
 parser.add_argument("--work_dir", dest="work_dir", help="If set, script will create case directories in work_dir rather than the current directory.", metavar="PATH")
 
 args = parser.parse_args()
@@ -1236,9 +1232,6 @@ config.read(args.config_file)
 if not args.no_download:
 	args.no_download = False
 
-if not args.nolink_copy:
-	args.nolink_copy = False
-
 if not args.work_dir:
 	args.work_dir = os.getcwd()
 
@@ -1265,11 +1258,6 @@ if args.baseline_dir:
 	config.set('script_paths', 'baseline_dir', args.baseline_dir)
 else:
 	config.set('script_paths', 'baseline_dir', 'NONE')
-
-if args.nolink_copy:
-	config.set('script_input_arguments', 'nolink_copy', 'yes')
-else:
-	config.set('script_input_arguments', 'nolink_copy', 'no')
 
 if args.no_download:
 	config.set('script_input_arguments', 'no_download', 'yes')
