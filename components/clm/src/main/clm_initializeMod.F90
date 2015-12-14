@@ -63,7 +63,7 @@ module clm_initializeMod
   use CNDVType               , only : dgv_ecophyscon     ! Constants 
   use EcophysConType         , only : ecophyscon         ! Constants 
   use SoilorderConType       , only : soilordercon         ! Constants 
-  use GridcellType           , only : grc                
+  use GridcellType           , only : grc
   use TopounitType           , only : top_pp, top_es, top_ws
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
