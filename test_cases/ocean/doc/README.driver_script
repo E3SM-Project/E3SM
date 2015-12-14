@@ -65,6 +65,7 @@ what children can be placed below the tag.
                case specific validations might happen in separate steps.
     - Children:
         * <compare_fields>
+        * <compare_timers>
 
 <compare_fields> - This tag is used to define a comparison of specifed
                    fields in two netcdf files.
@@ -104,3 +105,20 @@ what children can be placed below the tag.
                 - Can use pre-defined paths (see doc/README.config)
         * path: The path that the file lives in, relative to path_base.
 
+<compare_timers> - This tag is used to define a comparison of timers in two run directories.
+                   The comparison will work with native or gptl timers automatically.
+    - Attributes:
+        * rundir1: This is the first run directory to compare. If it is the
+                   only one specified timers in it will be compared only against it's
+                   baseline.
+        * rundir2: This is the second run directory to compare. If it is the
+                   only one specified timers in it will be compared only against it's
+                   baseline.
+    - Children:
+        * <timer>
+
+<timer> - This tag is used to define a timer that should be compared between two run directories.
+    - Attributes:
+        * name: This is the name of the timer to compare. It should be the full
+                expected name of the timer, not the printed name from the timer
+                library.
