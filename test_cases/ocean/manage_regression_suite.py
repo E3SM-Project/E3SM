@@ -68,7 +68,7 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_scr
 								'-o', test_core, '-c', test_configuration, '-r', test_resolution, '-t', test_test,
 								'-m', model_runtime], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 	else:
-		subprocess.check_call(['./setup_testcase.py', 'q', '-f', config_file, '--work_dir', work_dir,
+		subprocess.check_call(['./setup_testcase.py', '-q', '-f', config_file, '--work_dir', work_dir,
 								'-o', test_core, '-c', test_configuration, '-r', test_resolution, '-t', test_test,
 								'-m', model_runtime, '-b', baseline_dir], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 	
