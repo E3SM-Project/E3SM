@@ -1773,7 +1773,7 @@
 		<var name="brineBottomChange"		      type="real"     dimensions="nCategories nCells"            name_in_code="brineBottomChange"   packages="pkgTracerBrine"/>
 		<var name="zSalinityIceDensity"		      type="real"     dimensions="nCategories nCells Time"       name_in_code="zSalinityIceDensity"/>
 		<var name="peakVerticalAlgalConc"             type="real"     dimensions="nAlgae nCells Time"            name_in_code="peakVerticalAlgalConc" packages="pkgTracerVerticalAlgae"/>
-		<var name="netSpecificAlgalGrowthRate"        type="real"     dimensions="nCells Time"                   name_in_code="netSpecificAlgalGrowthRate" packages="pkgTracerVerticalAlgae;pkgTracerSkeletalAlgae"/>
+		<var name="netSpecificAlgalGrowthRate"        type="real"     dimensions="nCells Time"                   name_in_code="netSpecificAlgalGrowthRate"/>
 		<var name="verticalNitrogenLosses"	      type="real"     dimensions="nBioLayersP3 nCategories nCells Time"   name_in_code="verticalNitrogenLosses"/>
 		<var name="netNitrateUptake"                  type="real"     dimensions="nCells Time"                   name_in_code="netNitrateUptake"/>
 		<var name="netAmmoniumUptake"                 type="real"     dimensions="nCells Time"                   name_in_code="netAmmoniumUptake"/>
