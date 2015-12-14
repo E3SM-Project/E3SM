@@ -7,7 +7,7 @@ It will remove directories / driver scripts that were generated as part of
 setting up a test case.
 """
 
-import sys, os, shutil, fnmatch
+import sys, os, shutil, fnmatch, re
 import argparse
 import subprocess
 import xml.etree.ElementTree as ET
@@ -20,25 +20,44 @@ parser.add_argument("-c", "--configuration", dest="configuration", help="Configu
 parser.add_argument("-r", "--resolution", dest="resolution", help="Resolution of configuration to clean", metavar="RES")
 parser.add_argument("-t", "--test", dest="test", help="Test name within a resolution to clean", metavar="TEST")
 parser.add_argument("-n", "--case_number", dest="case_num", help="Case number to clean, as listed from list_testcases.py. Can be a comma delimited list of case numbers.", metavar="NUM")
+parser.add_argument("-q", "--quiet", dest="quiet", help="If set, script will not write a command_history file", action="store_true")
+parser.add_argument("-a", "--all", dest="clean_all", help="Is set, the script will clean all test cases in the work_dir.", action="store_true")
 parser.add_argument("--work_dir", dest="work_dir", help="If set, script will clean case directories in work_dir rather than the current directory.", metavar="PATH")
 
 args = parser.parse_args()
 
-if not args.case_num and ( not args.core and not args.configuration and not args.resolution and not arg.test):
-	print 'Must be run with either the --case_number argument, or the core, configuration, resolution, and test arguments.'
+if not args.case_num and ( not args.core and not args.configuration and not args.resolution and not args.test) and not args.clean_all:
+	print 'Must be run with either the --case_number argument, the --all argument, or all of the core, configuration, resolution, and test arguments.'
 	parser.error(' Invalid configuration. Exiting...')
 
-if args.case_num and args.core and args.configuration and args.resoltuion and args.test:
-	print 'Can only be configured with either --case_number (-n) or --core (-o), --configuration (-c), --resolution (-r), and --test (-t).'
+if args.case_num and args.core and args.configuration and args.resoltuion and args.test and args.clean_all:
+	print 'Can only be configured with either --case_number (-n), --all (-a), or all of --core (-o), --configuration (-c), --resolution (-r), and --test (-t).'
 	parser.error(' Invalid configuration. Too many options used. Exiting...')
 
-if args.case_num:
-	use_case_list = True
-	case_list = args.case_num.split(',')
+if not args.clean_all:
+	if args.case_num:
+		use_case_list = True
+		case_list = args.case_num.split(',')
+	else:
+		use_case_list = False
+		case_list = list()
+		case_list.append(0)
 else:
-	use_case_list = False
+	use_case_list = True
+	valid_case = 1
+	case_num = 1
 	case_list = list()
-	case_list.append(0)
+
+	regex = re.compile('(\d):')
+	core_configuration = subprocess.check_output(['./list_testcases.py'])
+	for line in core_configuration.split('\n'):
+		if not regex.search(line) == None:
+			conf_arr = line.replace(":", " ").split()
+			case_num = int(conf_arr[0])
+			del conf_arr
+			case_list.append(case_num)
+	del core_configuration
+	del regex
 
 if not args.work_dir:
 	args.work_dir = os.getcwd()
@@ -47,6 +66,7 @@ if not args.work_dir:
 git_version = subprocess.check_output(['git', 'describe', '--tags', '--dirty'])
 git_version = git_version.strip('\n')
 calling_command = ""
+write_history = False
 for arg in sys.argv:
 	calling_command = "%s%s "%(calling_command, arg)
 
@@ -117,7 +137,7 @@ for case_num in case_list:
 
 # Write the history of this command to the command_history file, for
 # provenance.
-if write_history:
+if write_history and not args.quiet:
 	history_file_path = '%s/command_history'%(args.work_dir)
 	if os.path.exists(history_file_path):
 		history_file = open(history_file_path, 'a')
