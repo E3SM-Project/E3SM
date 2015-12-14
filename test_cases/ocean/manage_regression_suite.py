@@ -314,7 +314,7 @@ def summarize_suite(suite_tag):#{{{
 # Define and process input arguments
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument("-t", "--test_suite", dest="test_suite", help="Path to file containing a test suite to setup", metavar="FILE", required=True)
-parser.add_argument("-f", "--config_file", dest="config_file", help="Configuration file for test case setup", metavar="FILE", required=True)
+parser.add_argument("-f", "--config_file", dest="config_file", help="Configuration file for test case setup", metavar="FILE")
 parser.add_argument("-s", "--setup", dest="setup", help="Option to determine if regression suite should be setup or not.", action="store_true")
 parser.add_argument("-c", "--clean", dest="clean", help="Option to determine if regression suite should be cleaned or not.", action="store_true")
 parser.add_argument("-m", "--model_runtime", dest="model_runtime", help="Definition of how to build model run commands on this machine", metavar="FILE")
@@ -322,6 +322,13 @@ parser.add_argument("-b", "--baseline_dir", dest="baseline_dir", help="Location 
 parser.add_argument("--work_dir", dest="work_dir", help="If set, script will setup the test suite in work_dir rather in this script's location.", metavar="PATH")
 
 args = parser.parse_args()
+
+if not args.config_file:
+	print "WARNING: Not configuration file specified. Using the default of 'local.config'"
+	args.config_file = 'local.config'
+
+if not os.path.exists(args.config_file):
+	parser.error("Configuration file '%s' does not exist. Please create and setup before running again."%(args.config_file))
 
 if not args.work_dir:
 	args.work_dir = os.path.dirname(os.path.realpath(__file__))
@@ -332,6 +339,9 @@ if not args.model_runtime:
 
 if not args.baseline_dir:
 	args.baseline_dir = 'NONE'
+
+if not args.setup and not args.clean:
+	print 'WARNING: Neither the setup (-s/--setup) nor the clean (-c/--clean) flags were provided. Script will perform no actions.'
 
 # Parse regression_suite file
 suite_tree = ET.parse(args.test_suite)

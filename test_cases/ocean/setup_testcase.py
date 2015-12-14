@@ -1198,7 +1198,7 @@ parser.add_argument("-c", "--configuration", dest="configuration", help="Configu
 parser.add_argument("-r", "--resolution", dest="resolution", help="Resolution of configuration to setup", metavar="RES")
 parser.add_argument("-t", "--test", dest="test", help="Test name within a resolution to setup", metavar="TEST")
 parser.add_argument("-n", "--case_number", dest="case_num", help="Case number to setup, as listed from list_testcases.py. Can be a comma delimited list of case numbers.", metavar="NUM")
-parser.add_argument("-f", "--config_file", dest="config_file", help="Configuration file for test case setup", metavar="FILE", required=True)
+parser.add_argument("-f", "--config_file", dest="config_file", help="Configuration file for test case setup", metavar="FILE")
 parser.add_argument("-m", "--model_runtime", dest="model_runtime", help="Definition of how to build model run commands on this machine", metavar="FILE")
 parser.add_argument("-b", "--baseline_dir", dest="baseline_dir", help="Location of baseslines that can be compared to", metavar="PATH")
 parser.add_argument("--no_download", dest="no_download", help="If set, script will not auto-download base_mesh files", action="store_true")
@@ -1206,6 +1206,13 @@ parser.add_argument("--copy_instead_of_symlink", dest="nolink_copy", help="If se
 parser.add_argument("--work_dir", dest="work_dir", help="If set, script will create case directories in work_dir rather than the current directory.", metavar="PATH")
 
 args = parser.parse_args()
+
+if not args.config_file:
+	print "WARNING: No configuration file specified. Using the default of 'local.config'"
+	args.config_file = 'local.config'
+
+if not os.path.exists(args.config_file):
+	parser.error(" Configuration file '%s' does not exist. Please create and setup before running again."%(args.config_file))
 
 if not args.case_num and not ( args.core and args.configuration and args.resolution and args.test):
 	print 'Must be run with either the --case_number argument, or the core, configuration, resolution, and test arguments.'
