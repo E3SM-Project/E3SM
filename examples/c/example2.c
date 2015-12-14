@@ -1,6 +1,6 @@
 /**
  * @file 
- * @brief A simple C example for the ParallelIO Library.
+ * A simple C example for the ParallelIO Library.
  *
  * This example creates a netCDF output file with one 3D variable. One
  * of the dimensions will be unlimited.  The example first writes the
@@ -9,6 +9,16 @@
  *
  * This example can be run in parallel for 1, 2, 4, 8, or 16
  * processors.
+ *
+ * This example uses the MPE performace profiling library, if it is
+ * present on the build machine. After the program is run, MPE will
+ * produce a file called example2.clog2. In order to see the nice
+ * graphs, execute the commands: 
+ *
+ * <pre>
+ * clog2ToSlog2 example2.clog2
+ * jumpshot example2.slog2 
+ * </pre>
  */
 
 #include <stdio.h>
