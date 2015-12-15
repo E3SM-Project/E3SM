@@ -139,6 +139,10 @@
 					description="Variable name for the topography in the topography file."
 					possible_values="Variable name from input file."
 		/>
+		<nml_option name="config_global_ocean_topography_method" type="character" default_value="nearest_neighbor" units="unitless"
+					description="Method to interpolate topography data to MPAS mesh."
+					possible_values="bilinear_interpolation, nearest_neighbor"
+		/>
 		<nml_option name="config_global_ocean_smooth_topography" type="logical" default_value=".true." units="unitless"
 					description="Logical flag that controls if topograhy should be smoothed after being interpolated."
 					possible_values=".true. or .false."

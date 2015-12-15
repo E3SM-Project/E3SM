@@ -4,7 +4,8 @@ OBJS = mpas_ocn_init_mode.o
 
 UTILS = mpas_ocn_init_spherical_utils.o \
         mpas_ocn_init_vertical_grids.o \
-        mpas_ocn_init_cell_markers.o
+        mpas_ocn_init_cell_markers.o \
+        mpas_ocn_init_interpolation.o
 
 TEST_CASES = mpas_ocn_init_baroclinic_channel.o \
              mpas_ocn_init_lock_exchange.o \
@@ -26,6 +27,8 @@ init_mode: $(UTILS) $(TEST_CASES) $(OBJS)
 mpas_ocn_init_mode.o: $(UTILS) $(TEST_CASES)
 
 mpas_ocn_init_cell_markers.o:
+
+mpas_ocn_init_interpolation.o:
 
 mpas_ocn_init_spherical_utils.o:
 
