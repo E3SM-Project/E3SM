@@ -2344,7 +2344,7 @@
 
   <entry id="OCN_PIO_REARRANGER">
     <type>integer</type>
-    <default_value>2</default_value>
+    <default_value>-99</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio rearranger choice box=1, subset=2 </desc>
@@ -2385,7 +2385,7 @@
 
   <entry id="LND_PIO_REARRANGER">
     <type>integer</type>
-    <default_value>2</default_value>
+    <default_value>-99</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio rearranger choice box=1, subset=2 </desc>
@@ -2426,7 +2426,7 @@
 
   <entry id="ROF_PIO_REARRANGER">
     <type>integer</type>
-    <default_value>2</default_value>
+    <default_value>-99</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio rearranger choice box=1, subset=2 </desc>
@@ -2467,7 +2467,7 @@
 
   <entry id="ICE_PIO_REARRANGER">
     <type>integer</type>
-    <default_value>2</default_value>
+    <default_value>-99</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio rearranger choice box=1, subset=2 </desc>
@@ -2508,7 +2508,7 @@
 
   <entry id="ATM_PIO_REARRANGER">
     <type>integer</type>
-    <default_value>2</default_value>
+    <default_value>-99</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio rearranger choice box=1, subset=2 </desc>
@@ -2549,7 +2549,7 @@
 
   <entry id="CPL_PIO_REARRANGER">
     <type>integer</type>
-    <default_value>2</default_value>
+    <default_value>-99</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio rearranger choice box=1, subset=2 </desc>
@@ -2590,7 +2590,7 @@
 
   <entry id="GLC_PIO_REARRANGER">
     <type>integer</type>
-    <default_value>2</default_value>
+    <default_value>-99</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio rearranger choice box=1, subset=2 </desc>
@@ -2631,7 +2631,7 @@
 
   <entry id="WAV_PIO_REARRANGER">
     <type>integer</type>
-    <default_value>2</default_value>
+    <default_value>-99</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio rearranger choice box=1, subset=2 </desc>
