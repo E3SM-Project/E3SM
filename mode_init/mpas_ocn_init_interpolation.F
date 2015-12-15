@@ -71,12 +71,15 @@ contains
 !
 !  routine ocn_init_interpolation_linear_vert
 !
-!> \brief   linearly interpolate a filed in the vertical
+!> \brief   linearly interpolate a field in the vertical
 !> \author  Xylar Asay-Davis
 !> \date    10/12/2015
 !> \details 
 !>  Perform vertical linear interpolation of a field from a reference field 
-!>  with data located at inZ to new locations outZ.  
+!>  with data located at inZ to new locations outZ.  Out-of-range values of
+!>  outZ are clamped to the nearest in-range value.  That is, wherever 
+!>  outZ > inZ(1), outField = inField(1); wherever outZ < inZ(inNVertLevels),
+!>  outFiled = inField(inNVertLevels)
 
 !-----------------------------------------------------------------------
 
