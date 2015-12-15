@@ -34,6 +34,7 @@ module ocn_init_global_ocean
    use ocn_constants
    use ocn_init_cell_markers
    use ocn_init_vertical_grids
+   use ocn_init_interpolation
 
    implicit none
    private
@@ -124,9 +125,9 @@ contains
       call ocn_init_setup_global_ocean_create_model_topo(domain, iErr)
       write(stderrUnit,*) 'Cleaning up topography IC fields'
       call ocn_init_global_ocean_destroy_topo_fields()
-	  
+
       if(trim(config_sw_absorption_type) == 'ohlmann00') then
-	  
+
       write(stderrUnit,*) 'Reading penetrating shortwave lat/lon data'
       call ocn_init_setup_global_ocean_read_swData_lat_lon(domain,iErr)
       write(stderrUnit,*) 'Interpolating penetrating shortwave data'
@@ -302,11 +303,13 @@ contains
        integer :: iCell, coc, j, k, maxLevel
        integer :: minimum_levels
 
+       character (len=StrKIND), pointer :: config_global_ocean_topography_method
        logical, pointer :: config_global_ocean_smooth_topography
        real (kind=RKIND), pointer :: config_global_ocean_minimum_depth
 
        iErr = 0
 
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_method', config_global_ocean_topography_method)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_minimum_depth', config_global_ocean_minimum_depth)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_smooth_topography', config_global_ocean_smooth_topography)
 
@@ -334,33 +337,29 @@ contains
              end if
           end do
 
+          ! Record depth of the bottom of the ocean, before any alterations for modeling purposes.
+          if (config_global_ocean_topography_method .eq. "nearest_neighbor") then
+ 
+             call ocn_init_interpolation_nearest_horiz(topoLon % array, topoLat % array, &
+                                                       topoIC % array, nLonTopo, nLatTopo, &
+                                                       lonCell, latCell, bottomDepthObserved, nCells, &
+                                                       inXPeriod = 2.0_RKIND * pii)
+          elseif (config_global_ocean_topography_method .eq. "bilinear_interpolation") then
+             call ocn_init_interpolation_bilinear_horiz(topoLon % array, topoLat % array, &
+                                                        topoIC % array, nLonTopo, nLatTopo, &
+                                                        lonCell, latCell, bottomDepthObserved, nCells, &
+                                                        inXPeriod = 2.0_RKIND * pii)
+          else
+             write(stderrUnit,*) 'ERROR: Invalid choice of config_global_ocean_topography_method.'
+             iErr = 1
+             call mpas_dmpar_finalize(domain % dminfo)
+          endif
+
           do iCell = 1, nCells
-             currentLat = latCell(iCell)
-             currentLon = lonCell(iCell)
-
-             lonSearch = 1
-             minDist = 2.0_RKIND * pii
-             do searchIdx = 1, nLonTopo 
-                dist = abs(currentLon - topoLon % array(searchIdx))
-                if (dist < minDist) then
-                   minDist = dist
-                   lonSearch = searchIdx
-                end if
-             end do
-
-             latSearch = 1
-             minDist = 2.0_RKIND * pii
-             do searchIdx = 1, nLatTopo
-                dist = abs(currentLat - topoLat % array(searchIdx))
-                if (dist < minDist) then
-                   minDist = dist
-                   latSearch = searchIdx
-                end if
-             end do
-
-             if (topoIC % array(lonSearch, latSearch) < 0.0_RKIND) then
-                ! Record depth of the bottom of the ocean, before any alterations for modeling purposes.
-                bottomDepthObserved(iCell) = abs(topoIC % array(lonSearch, latSearch))
+             ! Record depth of the bottom of the ocean, before any alterations for modeling purposes.
+             ! Flip the sign to positive down.
+             bottomDepthObserved(iCell) = -bottomDepthObserved(iCell)
+             if (bottomDepthObserved(iCell) > 0.0_RKIND) then
 
                 ! Enforce minimum depth
                 bottomDepth(iCell) = max(bottomDepthObserved(iCell), refBottomDepth(minimum_levels))
@@ -1083,7 +1082,7 @@ contains
        integer :: xInd1, xInd2, yInd1, yInd2
        integer, pointer :: idxSalinity, idxTemperature, nCells, nVertLevels, nCellsSolve, idxTracer1
 
-       type (field2DReal), pointer :: smoothedTemperatureField, smoothedSalinityField
+       type (field2DReal), pointer :: smoothedTemperatureField, smoothedSalinityField, interpTracerField
        type (field3DReal), pointer :: activeTracersField
 
        integer, dimension(:), pointer :: maxLevelCell, nEdgesOnCell
@@ -1139,134 +1138,47 @@ contains
           call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
           call mpas_pool_get_array(tracersPool, 'debugTracers', debugTracers, 1)
 
-          if (config_global_ocean_tracer_method .eq. "nearest_neighbor") then
-             do iCell = 1, nCells
-                currentLat = latCell(iCell)
-                currentLon = lonCell(iCell)
+          if(associated(debugTracers)) then
+             debugTracers(idxTracer1,:,:) = 1.0_RKIND
+          end if
 
-                lonSearch = 1
-                minDist = 2.0_RKIND * pii
-                do iLon = 1, nLonTracer
-                   dist = abs(currentLon - tracerLon % array(iLon))
-                   if (dist < minDist) then
-                      minDist = dist
-                      lonSearch = iLon
-                   end if
-                end do
+          if ( associated(activeTracers) ) then
+             call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
+             call mpas_pool_get_field(scratchPool, 'interpTracer', interpTracerField)
+             call mpas_allocate_scratch_field(interpTracerField, .true.)
+             if (config_global_ocean_tracer_method .eq. "nearest_neighbor") then
+                call ocn_init_interpolation_nearest_horiz(tracerLon % array, tracerLat % array, &
+                                                          temperatureIC % array, nLonTracer, nLatTracer, &
+                                                          lonCell, latCell, interpTracerField % array, nCells, &
+                                                          inXPeriod = 2.0_RKIND * pii)
+                activeTracers(idxTemperature,:,:) = interpTracerField % array(:,:)
 
-                latSearch = 1
-                minDist = 2.0_RKIND * pii
-                do iLat = 1, nLatTracer
-                   dist = abs(currentLat - tracerLat % array(iLat))
-                   if (dist < minDist) then
-                      minDist = dist
-                      latSearch = iLat
-                   end if
-                end do
+                call ocn_init_interpolation_nearest_horiz(tracerLon % array, tracerLat % array, &
+                                                          salinityIC % array, nLonTracer, nLatTracer, &
+                                                          lonCell, latCell, interpTracerField % array, nCells, &
+                                                          inXPeriod = 2.0_RKIND * pii)
+                activeTracers(idxSalinity,:,:) = interpTracerField % array(:,:)
 
-                do k = 1, maxLevelCell(iCell)
-                   if ( associated(activeTracers) ) then
-                      activeTracers(idxTemperature, k, iCell) = temperatureIC % array(lonSearch, latSearch, k)
-                      activeTracers(idxSalinity, k, iCell) = salinityIC % array(lonSearch, latSearch, k)
-                   end if
-                end do
-             end do
+             elseif (config_global_ocean_tracer_method .eq. "bilinear_interpolation") then
+                call ocn_init_interpolation_bilinear_horiz(tracerLon % array, tracerLat % array, &
+                                                          temperatureIC % array, nLonTracer, nLatTracer, &
+                                                          lonCell, latCell, interpTracerField % array, nCells, &
+                                                          inXPeriod = 2.0_RKIND * pii)
+                activeTracers(idxTemperature,:,:) = interpTracerField % array(:,:)
 
-          elseif (config_global_ocean_tracer_method .eq. "bilinear_interpolation") then
+                call ocn_init_interpolation_bilinear_horiz(tracerLon % array, tracerLat % array, &
+                                                          salinityIC % array, nLonTracer, nLatTracer, &
+                                                          lonCell, latCell, interpTracerField % array, nCells, &
+                                                          inXPeriod = 2.0_RKIND * pii)
+                activeTracers(idxSalinity,:,:) = interpTracerField % array(:,:)
 
-             do iCell = 1, nCells
-                x = lonCell(iCell)
-                y = latCell(iCell)
-
-                ! Set up bilinear interpolation indices in longitude, watching for periodic boundary at 0 and 2 pi
-                xInd1 = 0
-                if (x .le. tracerLon % array(1)) then
-                   xInd1 = nLonTracer
-                   xInd2 = 1
-                   x1 = tracerLon % array(xInd1) - 2.0*pii
-                   x2 = tracerLon % array(xInd2)
-                elseif (x .ge. tracerLon % array(nLonTracer)) then
-                   xInd1 = nLonTracer
-                   xInd2 = 1
-                   x1 = tracerLon % array(xInd1)
-                   x2 = tracerLon % array(xInd2) + 2.0*pii
-                else
-                   do iLon = 1, nLonTracer-1
-                      if (x .le. tracerLon % array(iLon+1)) then
-                         xInd1 = iLon
-                         xInd2 = iLon+1
-                         x1 = tracerLon % array(xInd1)
-                         x2 = tracerLon % array(xInd2)
-                         exit
-                      end if
-                   end do
-                endif
-
-                yInd1 = 0
-                if (y .le. tracerLat % array(1)) then
-                   ! if south of the southernmost data point, extrapolate as a constant in latitude
-                   yInd1 = 1
-                   yInd2 = 1
-                   coef   = 1.0_RKIND/(x2-x1)
-                   coef11 = 1.0_RKIND*(x2-x )
-                   coef21 = 1.0_RKIND*(x -x1)
-                   coef12 = 0.0_RKIND
-                   coef22 = 0.0_RKIND
-                elseif (y .ge. tracerLat % array(nLatTracer)) then
-                   ! if north of the northernmost data point, extrapolate as a constant in latitude
-                   yInd1 = nLatTracer
-                   yInd2 = nLatTracer
-                   coef   = 1.0_RKIND/(x2-x1)
-                   coef11 = 1.0_RKIND*(x2-x )
-                   coef21 = 1.0_RKIND*(x -x1)
-                   coef12 = 0.0_RKIND
-                   coef22 = 0.0_RKIND
-                else
-                   ! Set up bilinear interpolation coefficients in latitude
-                   do iLat = 1, nLatTracer-1
-                      if (y .le. tracerLat % array(iLat+1)) then
-                         yInd1 = iLat
-                         yInd2 = iLat+1
-                         exit
-                      end if
-                   end do
-                   y1 = tracerLat % array(yInd1)
-                   y2 = tracerLat % array(yInd2)
-                   coef   = 1.0_RKIND/(x2-x1)/(y2-y1)
-                   coef11 = 1.0_RKIND*(x2-x )*(y2-y )
-                   coef21 = 1.0_RKIND*(x -x1)*(y2-y )
-                   coef12 = 1.0_RKIND*(x2-x )*(y -y1)
-                   coef22 = 1.0_RKIND*(x -x1)*(y -y1)
-                endif
-
-                ! Assign T&S using bilinear interpolation
-                ! formulas from http://en.wikipedia.org/wiki/Bilinear_interpolation
-                do k = 1, maxLevelCell(iCell)
-
-                   if ( associated(activeTracers) ) then
-                      activeTracers(idxTemperature, k, iCell) = coef*( &
-                             coef11* temperatureIC % array(xInd1,yInd1, k) &
-                           + coef21* temperatureIC % array(xInd2,yInd1, k) &
-                           + coef12* temperatureIC % array(xInd1,yInd2, k) &
-                           + coef22* temperatureIC % array(xInd2,yInd2, k) )
-
-                      activeTracers(idxSalinity, k, iCell) = coef*( &
-                             coef11* salinityIC % array(xInd1,yInd1, k) &
-                           + coef21* salinityIC % array(xInd2,yInd1, k) &
-                           + coef12* salinityIC % array(xInd1,yInd2, k) &
-                           + coef22* salinityIC % array(xInd2,yInd2, k) )
-                   end if
-
-                end do
-
-             end do
-
-          else
-             write(stderrUnit,*) 'ERROR: Invalid choice of config_global_ocean_tracer_method.'
-             iErr = 1
-             call mpas_dmpar_finalize(domain % dminfo)
-          endif
-
+             else
+                write(stderrUnit,*) 'ERROR: Invalid choice of config_global_ocean_tracer_method.'
+                iErr = 1
+                call mpas_dmpar_finalize(domain % dminfo)
+             endif
+             call mpas_deallocate_scratch_field(interpTracerField, .true.)
+          end if
 
           block_ptr => block_ptr % next
        end do
@@ -1480,8 +1392,7 @@ subroutine ocn_init_setup_global_ocean_interpolate_swData(domain, iErr)!{{{
    type (MPAS_Stream_type) :: zenithStream, chlorophyllStream, clearSkyStream
    type (mpas_pool_type), pointer :: meshPool, statePool, scratchPool, shortwavePool, diagnosticsPool
 
-   type(MPAS_TimeInterval_type) :: &
-				          timeStep ! time step interval
+   type(MPAS_TimeInterval_type) :: timeStep ! time step interval
    type(MPAS_Time_Type) :: currentTime
    character(len=STRKIND) :: currentTimeStamp
    
@@ -1504,9 +1415,9 @@ subroutine ocn_init_setup_global_ocean_interpolate_swData(domain, iErr)!{{{
 
    character (len=StrKIND), pointer :: config_global_ocean_swData_method, xtime
    character (len=StrKIND), pointer :: config_global_ocean_swData_file, config_global_ocean_zenithAngle_varname, &
-				   config_global_ocean_swData_nlon_dimname, config_global_ocean_swData_nlat_dimname, &
-				   config_global_ocean_chlorophyll_varname, config_global_ocean_clearSky_varname
-									   
+                                       config_global_ocean_swData_nlon_dimname, config_global_ocean_swData_nlat_dimname, &
+                                       config_global_ocean_chlorophyll_varname, config_global_ocean_clearSky_varname
+
    iErr = 0
 
    call mpas_pool_get_config(domain % configs, 'config_global_ocean_swData_method', config_global_ocean_swData_method)
@@ -1572,167 +1483,68 @@ subroutine ocn_init_setup_global_ocean_interpolate_swData(domain, iErr)!{{{
    do monIndex=1,12
    block_ptr => domain % blocklist
    do while(associated(block_ptr))
-	  call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-	  call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-	  call mpas_pool_get_subpool(block_ptr % structs, 'shortwave', shortwavePool)
-	  call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
-	  
-	  call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-	  call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+      call mpas_pool_get_subpool(block_ptr % structs, 'shortwave', shortwavePool)
+      call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
+      
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
-	  call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
-	  call mpas_pool_get_array(meshPool, 'latCell', latCell)
-	  call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
-	  call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
+      call mpas_pool_get_array(meshPool, 'latCell', latCell)
+      call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
-	  call mpas_pool_get_array(shortwavePool, 'chlorophyllData', chlorophyllData)
-	  call mpas_pool_get_array(shortWavePool, 'zenithAngle', zenithAngle)
-	  call mpas_pool_get_array(shortWavePool, 'clearSkyRadiation', clearSkyRadiation)
+      call mpas_pool_get_array(shortwavePool, 'chlorophyllData', chlorophyllData)
+      call mpas_pool_get_array(shortWavePool, 'zenithAngle', zenithAngle)
+      call mpas_pool_get_array(shortWavePool, 'clearSkyRadiation', clearSkyRadiation)
 
    ! Read stream
-      	   
-         call MPAS_readStream(zenithStream, monIndex, iErr)
-         call MPAS_readStream(chlorophyllStream, monIndex, iErr)
-         call MPAS_readStream(clearSkyStream, monIndex, iErr)
+      
+      call MPAS_readStream(zenithStream, monIndex, iErr)
+      call MPAS_readStream(chlorophyllStream, monIndex, iErr)
+      call MPAS_readStream(clearSkyStream, monIndex, iErr)
      
       
-	  if (config_global_ocean_swData_method .eq. "nearest_neighbor") then
-		 do iCell = 1, nCells
-			currentLat = latCell(iCell)
-			currentLon = lonCell(iCell)
+      if (config_global_ocean_swData_method .eq. "nearest_neighbor") then
+         call ocn_init_interpolation_nearest_horiz(swDataLon % array, swDataLat % array, &
+                                                   chlorophyllIC % array, nLonSW, nLatSW, &
+                                                   lonCell, latCell, chlorophyllData, nCells, &
+                                                   inXPeriod = 2.0_RKIND * pii)
 
-			lonSearch = 1
-			minDist = 2.0_RKIND * pii
-			do iLon = 1, nLonSW
-			   dist = abs(currentLon - swDataLon % array(iLon))
-			   if (dist < minDist) then
-				  minDist = dist
-				  lonSearch = iLon
-			   end if
-			end do
+         call ocn_init_interpolation_nearest_horiz(swDataLon % array, swDataLat % array, &
+                                                   zenithAngleIC % array, nLonSW, nLatSW, &
+                                                   lonCell, latCell, zenithAngle, nCells, &
+                                                   inXPeriod = 2.0_RKIND * pii)
 
-			latSearch = 1
-			minDist = 2.0_RKIND * pii
-			do iLat = 1, nLatSW
-			   dist = abs(currentLat - swDataLat % array(iLat))
-			   if (dist < minDist) then
-				  minDist = dist
-				  latSearch = iLat
-			   end if
-			end do
+         call ocn_init_interpolation_nearest_horiz(swDataLon % array, swDataLat % array, &
+                                                   clearSKYIC % array, nLonSW, nLatSW, &
+                                                   lonCell, latCell, clearSkyRadiation, nCells, &
+                                                   inXPeriod = 2.0_RKIND * pii)
 
-  		    if ( associated(chlorophyllData) ) then
-			  chlorophyllData(iCell) = chlorophyllIC % array(lonSearch, latSearch)
-		    end if
-  		    if ( associated(zenithAngle) ) then
-			  zenithAngle(iCell) = zenithAngleIC % array(lonSearch, latSearch)
-		    end if
-  		    if ( associated(clearSkyRadiation) ) then
-			  clearSkyRadiation(iCell) = clearSKYIC % array(lonSearch, latSearch)
-		    end if
-		 end do
+      elseif (config_global_ocean_swData_method .eq. "bilinear_interpolation") then
+         call ocn_init_interpolation_bilinear_horiz(swDataLon % array, swDataLat % array, &
+                                                    chlorophyllIC % array, nLonSW, nLatSW, &
+                                                    lonCell, latCell, chlorophyllData, nCells, &
+                                                    inXPeriod = 2.0_RKIND * pii)
+ 
+         call ocn_init_interpolation_bilinear_horiz(swDataLon % array, swDataLat % array, &
+                                                    zenithAngleIC % array, nLonSW, nLatSW, &
+                                                    lonCell, latCell, zenithAngle, nCells, &
+                                                    inXPeriod = 2.0_RKIND * pii)
 
-	  elseif (config_global_ocean_swData_method .eq. "bilinear_interpolation") then
+         call ocn_init_interpolation_bilinear_horiz(swDataLon % array, swDataLat % array, &
+                                                    clearSKYIC % array, nLonSW, nLatSW, &
+                                                    lonCell, latCell, clearSkyRadiation, nCells, &
+                                                    inXPeriod = 2.0_RKIND * pii)
+     else
+         write(stderrUnit,*) 'ERROR: Invalid choice of config_global_ocean_swData_method.'
+         iErr = 1
+         call mpas_dmpar_finalize(domain % dminfo)
+      endif
 
-		 do iCell = 1, nCells
-			x = lonCell(iCell)
-			y = latCell(iCell)
-
-			! Set up bilinear interpolation indices in longitude, watching for periodic boundary at 0 and 2 pi
-			xInd1 = 0
-			if (x .le. swDataLon % array(1)) then
-			   xInd1 = nLonSW
-			   xInd2 = 1
-			   x1 = swDataLon % array(xInd1) - 2.0*pii
-			   x2 = swDataLon % array(xInd2)
-			elseif (x .ge. swDataLon % array(nLonSW)) then
-			   xInd1 = nLonSW
-			   xInd2 = 1
-			   x1 = swDataLon % array(xInd1)
-			   x2 = swDataLon % array(xInd2) + 2.0*pii
-			else
-			   do iLon = 1, nLonSW-1
-				  if (x .le. swDataLon % array(iLon+1)) then
-					 xInd1 = iLon
-					 xInd2 = iLon+1
-					 x1 = swDataLon % array(xInd1)
-					 x2 = swDataLon % array(xInd2)
-					 exit
-				  end if
-			   end do
-			endif
-
-			yInd1 = 0
-			if (y .le. swDataLat % array(1)) then
-			   ! if south of the southernmost data point, extrapolate as a constant in latitude
-			   yInd1 = 1
-			   yInd2 = 1
-			   coef   = 1.0_RKIND/(x2-x1)
-			   coef11 = 1.0_RKIND*(x2-x )
-			   coef21 = 1.0_RKIND*(x -x1)
-			   coef12 = 0.0_RKIND
-			   coef22 = 0.0_RKIND
-			elseif (y .ge. swDataLat % array(nLatSW)) then
-			   ! if north of the northernmost data point, extrapolate as a constant in latitude
-			   yInd1 = nLatSW
-			   yInd2 = nLatSW
-			   coef   = 1.0_RKIND/(x2-x1)
-			   coef11 = 1.0_RKIND*(x2-x )
-			   coef21 = 1.0_RKIND*(x -x1)
-			   coef12 = 0.0_RKIND
-			   coef22 = 0.0_RKIND
-			else
-			   ! Set up bilinear interpolation coefficients in latitude
-			   do iLat = 1, nLatSW-1
-				  if (y .le. swDataLat % array(iLat+1)) then
-					 yInd1 = iLat
-					 yInd2 = iLat+1
-					 exit
-				  end if
-			   end do
-			   y1 = swDataLat % array(yInd1)
-			   y2 = swDataLat % array(yInd2)
-			   coef   = 1.0_RKIND/(x2-x1)/(y2-y1)
-			   coef11 = 1.0_RKIND*(x2-x )*(y2-y )
-			   coef21 = 1.0_RKIND*(x -x1)*(y2-y )
-			   coef12 = 1.0_RKIND*(x2-x )*(y -y1)
-			   coef22 = 1.0_RKIND*(x -x1)*(y -y1)
-			endif
-
-			   if ( associated(chlorophyllData) ) then
-				  chlorophyllData(iCell) = coef*( &
-						 coef11* chlorophyllIC % array(xInd1,yInd1) &
-					   + coef21* chlorophyllIC % array(xInd2,yInd1) &
-					   + coef12* chlorophyllIC % array(xInd1,yInd2) &
-					   + coef22* chlorophyllIC % array(xInd2,yInd2) )
-			   end if
-			   
-			   if ( associated(zenithAngle) ) then
-				  zenithAngle(iCell) = coef*( &
-						 coef11* zenithAngleIC % array(xInd1,yInd1) &
-					   + coef21* zenithAngleIC % array(xInd2,yInd1) &
-					   + coef12* zenithAngleIC % array(xInd1,yInd2) &
-					   + coef22* zenithAngleIC % array(xInd2,yInd2) )
-			   end if
-			   
-			   if ( associated(clearSkyRadiation) ) then
-				  clearSkyRadiation(iCell) = coef*( &
-						 coef11* clearSKYIC % array(xInd1,yInd1) &
-					   + coef21* clearSKYIC % array(xInd2,yInd1) &
-					   + coef12* clearSKYIC % array(xInd1,yInd2) &
-					   + coef22* clearSKYIC % array(xInd2,yInd2) )
-			   end if
-
-		 end do
-
-	  else
-		 write(stderrUnit,*) 'ERROR: Invalid choice of config_global_ocean_swData_method.'
-		 iErr = 1
-		 call mpas_dmpar_finalize(domain % dminfo)
-	  endif
-
-
-	  block_ptr => block_ptr % next
+      block_ptr => block_ptr % next
    end do !loop on blocks
  
   ! increment clock with month string
@@ -1742,7 +1554,7 @@ subroutine ocn_init_setup_global_ocean_interpolate_swData(domain, iErr)!{{{
 
    xtime=currentTimeStamp
    call mpas_stream_mgr_write(domain % streamManager, streamID='shortwave_forcing_data_init', &
-   		 forceWriteNow=.true., ierr=ierr)
+                              forceWriteNow=.true., ierr=ierr)
    call mpas_set_timeInterval(timeStep, dt=real(daysInMonth(monIndex),RKIND)*86400.0_RKIND)
    call mpas_advance_clock(domain % clock, timeStep)
    
@@ -1763,8 +1575,8 @@ subroutine ocn_init_setup_global_ocean_interpolate_swData(domain, iErr)!{{{
 
    xtime=currentTimeStamp
    call mpas_stream_mgr_reset_alarms(domain%streamManager, streamID='shortwave_forcing_data_init', &
-   		direction=MPAS_STREAM_OUTPUT, ierr=ierr)
-   		
+                                     direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+
 end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
 
 !***********************************************************************
@@ -1945,121 +1757,35 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
           call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional)
 
           if (config_global_ocean_windstress_method .eq. "nearest_neighbor") then
-             do iCell = 1, nCellsSolve
-                currentLat = latCell(iCell)
-                currentLon = lonCell(iCell)
+             call ocn_init_interpolation_nearest_horiz(windLon % array, windLat % array, &
+                                                       zonalWindIC % array, nLonWind, nLatWind, &
+                                                       lonCell, latCell, windStressZonal, nCells, &
+                                                       inXPeriod = 2.0_RKIND * pii)
 
-                minDist = 2.0_RKIND * pii
-                lonSearch = 1
-                do iLon = 1, nLonWind
-                   dist = abs(currentLon - windLon % array(iLon))
-                   if (dist < minDist) then
-                      minDist = dist
-                      lonSearch = iLon
-                   end if
-                end do
-
-                minDist = 2.0_RKIND * pii
-                latSearch = 1
-                do iLat = 1, nLatWind
-                   dist = abs(currentLat - windLat % array(iLat))
-                   if (dist < minDist) then
-                      minDist = dist
-                      latSearch = iLat
-                   end if
-                end do
-
-                windStressZonal(iCell) = zonalWindIC % array(lonSearch, latSearch) * config_global_ocean_windstress_conversion_factor
-                windStressMeridional(iCell) = meridionalWindIC % array(lonSearch, latSearch) * config_global_ocean_windstress_conversion_factor
-
-             end do
+             call ocn_init_interpolation_nearest_horiz(windLon % array, windLat % array, &
+                                                       meridionalWindIC % array, nLonWind, nLatWind, &
+                                                       lonCell, latCell, windStressMeridional, nCells, &
+                                                       inXPeriod = 2.0_RKIND * pii)
 
           elseif (config_global_ocean_windstress_method .eq. "bilinear_interpolation") then
+             call ocn_init_interpolation_bilinear_horiz(windLon % array, windLat % array, &
+                                                       zonalWindIC % array, nLonWind, nLatWind, &
+                                                       lonCell, latCell, windStressZonal, nCells, &
+                                                       inXPeriod = 2.0_RKIND*pii)
 
-             do iCell = 1, nCells
-                x = lonCell(iCell)
-                y = latCell(iCell)
-
-                ! Set up bilinear interpolation indices in longitude, watching for periodic boundary at 0 and 2 pi
-                xInd1 = 0
-                if (x .le. windLon % array(1)) then
-                   xInd1 = nLonWind
-                   xInd2 = 1
-                   x1 = windLon % array(xInd1) - 2.0_RKIND*pii
-                   x2 = windLon % array(xInd2)
-                elseif (x .ge. windLon % array(nLonWind)) then
-                   xInd1 = nLonWind
-                   xInd2 = 1
-                   x1 = windLon % array(xInd1)
-                   x2 = windLon % array(xInd2) + 2.0_RKIND*pii
-                else
-                   do iLon = 1, nLonWind-1
-                      if (x .le. windLon % array(iLon+1)) then
-                         xInd1 = iLon
-                         xInd2 = iLon+1
-                         x1 = windLon % array(xInd1)
-                         x2 = windLon % array(xInd2)
-                         exit
-                      end if
-                   end do
-                endif
-
-                yInd1 = 0
-                if (y .le. windLat % array(1)) then
-                   ! if south of the southernmost data point, extrapolate as a constant in latitude
-                   yInd1 = 1
-                   yInd2 = 1
-                   coef   = 1.0_RKIND/(x2-x1)
-                   coef11 = 1.0_RKIND*(x2-x )
-                   coef21 = 1.0_RKIND*(x -x1)
-                   coef12 = 0.0_RKIND
-                   coef22 = 0.0_RKIND
-                elseif (y .ge. windLat % array(nLatWind)) then
-                   ! if north of the northernmost data point, extrapolate as a constant in latitude
-                   yInd1 = nLatWind
-                   yInd2 = nLatWind
-                   coef   = 1.0_RKIND/(x2-x1)
-                   coef11 = 1.0_RKIND*(x2-x )
-                   coef21 = 1.0_RKIND*(x -x1)
-                   coef12 = 0.0_RKIND
-                   coef22 = 0.0_RKIND
-                else
-                   ! Set up bilinear interpolation coefficients in latitude
-                   do iLat = 1, nLatWind-1
-                      if (y .le. windLat % array(iLat+1)) then
-                         yInd1 = iLat
-                         yInd2 = iLat+1
-                         exit
-                      end if
-                   end do
-                   y1 = windLat % array(yInd1)
-                   y2 = windLat % array(yInd2)
-                   coef   = 1.0_RKIND/(x2-x1)/(y2-y1)
-                   coef11 = 1.0_RKIND*(x2-x )*(y2-y )
-                   coef21 = 1.0_RKIND*(x -x1)*(y2-y )
-                   coef12 = 1.0_RKIND*(x2-x )*(y -y1)
-                   coef22 = 1.0_RKIND*(x -x1)*(y -y1)
-                endif
-
-                windStressZonal(iCell) = coef*config_global_ocean_windstress_conversion_factor*( &
-                     coef11* zonalWindIC % array(xInd1, yInd1) &
-                     + coef21* zonalWindIC % array(xInd2, yInd1) &
-                     + coef12* zonalWindIC % array(xInd1, yInd2) &
-                     + coef22* zonalWindIC % array(xInd2, yInd2) )
-
-                windStressMeridional(iCell) = coef*config_global_ocean_windstress_conversion_factor*( &
-                     coef11* meridionalWindIC % array(xInd1, yInd1) &
-                     + coef21* meridionalWindIC % array(xInd2, yInd1) &
-                     + coef12* meridionalWindIC % array(xInd1, yInd2) &
-                     + coef22* meridionalWindIC % array(xInd2, yInd2) )
-
-             end do
+             call ocn_init_interpolation_bilinear_horiz(windLon % array, windLat % array, &
+                                                       meridionalWindIC % array, nLonWind, nLatWind, &
+                                                       lonCell, latCell, windStressMeridional, nCells, &
+                                                       inXPeriod = 2.0_RKIND*pii)
 
           else
              write(stderrUnit,*) 'ERROR: Invalid choice of config_global_ocean_windstress_method.'
              iErr = 1
              call mpas_dmpar_finalize(domain % dminfo)
           endif
+
+          windStressZonal(:) = windStressZonal(:) * config_global_ocean_windstress_conversion_factor
+          windStressMeridional(:) = windStressMeridional(:) * config_global_ocean_windstress_conversion_factor
 
           block_ptr => block_ptr % next
        end do
