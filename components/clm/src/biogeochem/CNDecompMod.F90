@@ -563,13 +563,13 @@ contains
                    soil_n_immob_flux(c) = soil_n_immob_flux(c) + pmnf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
                    soil_n_immob_flux_vr(c,j) = soil_n_immob_flux_vr(c,j) + pmnf_decomp_cascade(c,j,k)
                else
-                   soil_n_grossmin_flux(c) = soil_n_grossmin_flux(c) + -1.0*pmnf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
+                   soil_n_grossmin_flux(c) = soil_n_grossmin_flux(c) -1.0_r8*pmnf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
                end if
                if (pmpf_decomp_cascade(c,j,k) > 0._r8) then 
                    soil_p_immob_flux(c) = soil_p_immob_flux(c) + pmpf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
                    soil_p_immob_flux_vr(c,j) = soil_p_immob_flux_vr(c,j) + pmpf_decomp_cascade(c,j,k)
                else
-                   soil_p_grossmin_flux(c) = soil_p_grossmin_flux(c) + -1.0*pmpf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
+                   soil_p_grossmin_flux(c) = soil_p_grossmin_flux(c) -1.0_r8*pmpf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
                end if
           	end do
           end do

@@ -82,7 +82,6 @@ module EcophysConType
      real(r8), allocatable :: presharv      (:)   ! porportion of residue harvested (crop)
      real(r8), allocatable :: convfact      (:)   ! converstion factor to bu/acre (crop)
      real(r8), allocatable :: fyield        (:)   ! fraction of grain that is actually harvested (crop)
-
      real(r8), allocatable :: leafcp        (:)   ! leaf C:P (gC/gP)
      real(r8), allocatable :: lflitcp       (:)   ! leaf litter C:P (gC/gP)
      real(r8), allocatable :: frootcp       (:)   ! fine root C:P (gC/gP)
@@ -276,7 +275,6 @@ contains
        ecophyscon%presharv(m)     = presharv(m)
        ecophyscon%convfact(m)     = convfact(m)
        ecophyscon%fyield(m)       = fyield(m)
-
        ecophyscon%leafcp(m)       = leafcp(m)
        ecophyscon%lflitcp(m)      = lflitcp(m)
        ecophyscon%frootcp(m)      = frootcp(m)

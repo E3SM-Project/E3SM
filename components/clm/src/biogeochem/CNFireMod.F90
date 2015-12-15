@@ -695,6 +695,59 @@ contains
    real(r8):: f                    ! rate for fire effects (1/s)
    real(r8):: dt                   ! time step variable (s)
    real(r8):: dayspyr              ! days per year
+
+   real(r8), pointer :: m_leafn_to_litter_fire                  (:)
+   real(r8), pointer :: m_leafn_storage_to_litter_fire          (:)
+   real(r8), pointer :: m_leafn_xfer_to_litter_fire             (:)
+   real(r8), pointer :: m_livestemn_to_litter_fire              (:)
+   real(r8), pointer :: m_livestemn_storage_to_litter_fire      (:)
+   real(r8), pointer :: m_livestemn_xfer_to_litter_fire         (:)
+   real(r8), pointer :: m_livestemn_to_deadstemn_fire           (:)
+   real(r8), pointer :: m_deadstemn_to_litter_fire              (:)
+   real(r8), pointer :: m_deadstemn_storage_to_litter_fire      (:)
+   real(r8), pointer :: m_deadstemn_xfer_to_litter_fire         (:)
+   real(r8), pointer :: m_frootn_to_litter_fire                 (:)
+   real(r8), pointer :: m_frootn_storage_to_litter_fire         (:)
+   real(r8), pointer :: m_frootn_xfer_to_litter_fire            (:)
+   real(r8), pointer :: m_livecrootn_to_litter_fire             (:)
+   real(r8), pointer :: m_livecrootn_storage_to_litter_fire     (:)
+   real(r8), pointer :: m_livecrootn_xfer_to_litter_fire        (:)
+   real(r8), pointer :: m_livecrootn_to_deadcrootn_fire         (:)
+   real(r8), pointer :: m_deadcrootn_to_litter_fire             (:)
+   real(r8), pointer :: m_deadcrootn_storage_to_litter_fire     (:)
+   real(r8), pointer :: m_deadcrootn_xfer_to_litter_fire        (:)
+   real(r8), pointer :: m_retransn_to_litter_fire               (:)
+   real(r8), pointer :: m_decomp_npools_to_fire_vr              (:,:,:)
+   real(r8), pointer :: m_n_to_litr_met_fire                    (:,:)
+   real(r8), pointer :: m_n_to_litr_cel_fire                    (:,:)
+   real(r8), pointer :: m_n_to_litr_lig_fire                    (:,:)
+
+   real(r8), pointer :: m_leafp_to_litter_fire                  (:)
+   real(r8), pointer :: m_leafp_storage_to_litter_fire          (:)
+   real(r8), pointer :: m_leafp_xfer_to_litter_fire             (:)
+   real(r8), pointer :: m_livestemp_to_litter_fire              (:)
+   real(r8), pointer :: m_livestemp_storage_to_litter_fire      (:)
+   real(r8), pointer :: m_livestemp_xfer_to_litter_fire         (:)
+   real(r8), pointer :: m_livestemp_to_deadstemp_fire           (:)
+   real(r8), pointer :: m_deadstemp_to_litter_fire              (:)
+   real(r8), pointer :: m_deadstemp_storage_to_litter_fire      (:)
+   real(r8), pointer :: m_deadstemp_xfer_to_litter_fire         (:)
+   real(r8), pointer :: m_frootp_to_litter_fire                 (:)
+   real(r8), pointer :: m_frootp_storage_to_litter_fire         (:)
+   real(r8), pointer :: m_frootp_xfer_to_litter_fire            (:)
+   real(r8), pointer :: m_livecrootp_to_litter_fire             (:)
+   real(r8), pointer :: m_livecrootp_storage_to_litter_fire     (:)
+   real(r8), pointer :: m_livecrootp_xfer_to_litter_fire        (:)
+   real(r8), pointer :: m_livecrootp_to_deadcrootp_fire         (:)
+   real(r8), pointer :: m_deadcrootp_to_litter_fire             (:)
+   real(r8), pointer :: m_deadcrootp_storage_to_litter_fire     (:)
+   real(r8), pointer :: m_deadcrootp_xfer_to_litter_fire        (:)
+   real(r8), pointer :: m_retransp_to_litter_fire               (:)
+   real(r8), pointer :: m_decomp_ppools_to_fire_vr              (:,:,:)
+   real(r8), pointer :: m_p_to_litr_met_fire                    (:,:)
+   real(r8), pointer :: m_p_to_litr_cel_fire                    (:,:)
+   real(r8), pointer :: m_p_to_litr_lig_fire                    (:,:)
+
    !-----------------------------------------------------------------------
 
    ! NOTE: VR      = Vertically Resolved
@@ -892,62 +945,62 @@ contains
         m_decomp_cpools_to_fire_vr          =>    carbonflux_vars%m_decomp_cpools_to_fire_vr_col              , & ! Output: [real(r8) (:,:,:) ]  (gC/m3/s) VR decomp. C fire loss
         m_c_to_litr_met_fire                =>    carbonflux_vars%m_c_to_litr_met_fire_col                    , & ! Output: [real(r8) (:,:)   ]                                                  
         m_c_to_litr_cel_fire                =>    carbonflux_vars%m_c_to_litr_cel_fire_col                    , & ! Output: [real(r8) (:,:)   ]                                                  
-        m_c_to_litr_lig_fire                =>    carbonflux_vars%m_c_to_litr_lig_fire_col                    , & ! Output: [real(r8) (:,:)   ]                                                  
-        
-        m_leafn_to_litter_fire              =>    nitrogenflux_vars%m_leafn_to_litter_fire_patch              , & ! Output: [real(r8) (:)     ]                                                    
-        m_leafn_storage_to_litter_fire      =>    nitrogenflux_vars%m_leafn_storage_to_litter_fire_patch      , & ! Output: [real(r8) (:)     ]                                                    
-        m_leafn_xfer_to_litter_fire         =>    nitrogenflux_vars%m_leafn_xfer_to_litter_fire_patch         , & ! Output: [real(r8) (:)     ]                                                    
-        m_livestemn_to_litter_fire          =>    nitrogenflux_vars%m_livestemn_to_litter_fire_patch          , & ! Output: [real(r8) (:)     ]                                                    
-        m_livestemn_storage_to_litter_fire  =>    nitrogenflux_vars%m_livestemn_storage_to_litter_fire_patch  , & ! Output: [real(r8) (:)     ]                                                    
-        m_livestemn_xfer_to_litter_fire     =>    nitrogenflux_vars%m_livestemn_xfer_to_litter_fire_patch     , & ! Output: [real(r8) (:)     ]                                                    
-        m_livestemn_to_deadstemn_fire       =>    nitrogenflux_vars%m_livestemn_to_deadstemn_fire_patch       , & ! Output: [real(r8) (:)     ]                                                    
-        m_deadstemn_to_litter_fire          =>    nitrogenflux_vars%m_deadstemn_to_litter_fire_patch          , & ! Output: [real(r8) (:)     ]                                                    
-        m_deadstemn_storage_to_litter_fire  =>    nitrogenflux_vars%m_deadstemn_storage_to_litter_fire_patch  , & ! Output: [real(r8) (:)     ]                                                    
-        m_deadstemn_xfer_to_litter_fire     =>    nitrogenflux_vars%m_deadstemn_xfer_to_litter_fire_patch     , & ! Output: [real(r8) (:)     ]                                                    
-        m_frootn_to_litter_fire             =>    nitrogenflux_vars%m_frootn_to_litter_fire_patch             , & ! Output: [real(r8) (:)     ]                                                    
-        m_frootn_storage_to_litter_fire     =>    nitrogenflux_vars%m_frootn_storage_to_litter_fire_patch     , & ! Output: [real(r8) (:)     ]                                                    
-        m_frootn_xfer_to_litter_fire        =>    nitrogenflux_vars%m_frootn_xfer_to_litter_fire_patch        , & ! Output: [real(r8) (:)     ]                                                    
-        m_livecrootn_to_litter_fire         =>    nitrogenflux_vars%m_livecrootn_to_litter_fire_patch         , & ! Output: [real(r8) (:)     ]                                                    
-        m_livecrootn_storage_to_litter_fire =>    nitrogenflux_vars%m_livecrootn_storage_to_litter_fire_patch , & ! Output: [real(r8) (:)     ]                                                    
-        m_livecrootn_xfer_to_litter_fire    =>    nitrogenflux_vars%m_livecrootn_xfer_to_litter_fire_patch    , & ! Output: [real(r8) (:)     ]                                                    
-        m_livecrootn_to_deadcrootn_fire     =>    nitrogenflux_vars%m_livecrootn_to_deadcrootn_fire_patch     , & ! Output: [real(r8) (:)     ]                                                    
-        m_deadcrootn_to_litter_fire         =>    nitrogenflux_vars%m_deadcrootn_to_litter_fire_patch         , & ! Output: [real(r8) (:)     ]                                                    
-        m_deadcrootn_storage_to_litter_fire =>    nitrogenflux_vars%m_deadcrootn_storage_to_litter_fire_patch , & ! Output: [real(r8) (:)     ]                                                    
-        m_deadcrootn_xfer_to_litter_fire    =>    nitrogenflux_vars%m_deadcrootn_xfer_to_litter_fire_patch    , & ! Output: [real(r8) (:)     ]                                                    
-        m_retransn_to_litter_fire           =>    nitrogenflux_vars%m_retransn_to_litter_fire_patch           , & ! Output: [real(r8) (:)     ]                                                    
-        m_decomp_npools_to_fire_vr          =>    nitrogenflux_vars%m_decomp_npools_to_fire_vr_col            , & ! Output: [real(r8) (:,:,:) ]  VR decomp. N fire loss (gN/m3/s)
-        m_n_to_litr_met_fire                =>    nitrogenflux_vars%m_n_to_litr_met_fire_col                  , & ! Output: [real(r8) (:,:)   ]                                                  
-        m_n_to_litr_cel_fire                =>    nitrogenflux_vars%m_n_to_litr_cel_fire_col                  , & ! Output: [real(r8) (:,:)   ]                                                  
-        m_n_to_litr_lig_fire                =>    nitrogenflux_vars%m_n_to_litr_lig_fire_col                  ,  & ! Output: [real(r8) (:,:)   ]                                                  
-
-
-        m_leafp_to_litter_fire              =>    phosphorusflux_vars%m_leafp_to_litter_fire_patch              , & ! Output: [real(r8) (:)     ]                                                    
-        m_leafp_storage_to_litter_fire      =>    phosphorusflux_vars%m_leafp_storage_to_litter_fire_patch      , & ! Output: [real(r8) (:)     ]                                                    
-        m_leafp_xfer_to_litter_fire         =>    phosphorusflux_vars%m_leafp_xfer_to_litter_fire_patch         , & ! Output: [real(r8) (:)     ]                                                    
-        m_livestemp_to_litter_fire          =>    phosphorusflux_vars%m_livestemp_to_litter_fire_patch          , & ! Output: [real(r8) (:)     ]                                                    
-        m_livestemp_storage_to_litter_fire  =>    phosphorusflux_vars%m_livestemp_storage_to_litter_fire_patch  , & ! Output: [real(r8) (:)     ]                                                    
-        m_livestemp_xfer_to_litter_fire     =>    phosphorusflux_vars%m_livestemp_xfer_to_litter_fire_patch     , & ! Output: [real(r8) (:)     ]                                                    
-        m_livestemp_to_deadstemp_fire       =>    phosphorusflux_vars%m_livestemp_to_deadstemp_fire_patch       , & ! Output: [real(r8) (:)     ]                                                    
-        m_deadstemp_to_litter_fire          =>    phosphorusflux_vars%m_deadstemp_to_litter_fire_patch          , & ! Output: [real(r8) (:)     ]                                                    
-        m_deadstemp_storage_to_litter_fire  =>    phosphorusflux_vars%m_deadstemp_storage_to_litter_fire_patch  , & ! Output: [real(r8) (:)     ]                                                    
-        m_deadstemp_xfer_to_litter_fire     =>    phosphorusflux_vars%m_deadstemp_xfer_to_litter_fire_patch     , & ! Output: [real(r8) (:)     ]                                                    
-        m_frootp_to_litter_fire             =>    phosphorusflux_vars%m_frootp_to_litter_fire_patch             , & ! Output: [real(r8) (:)     ]                                                    
-        m_frootp_storage_to_litter_fire     =>    phosphorusflux_vars%m_frootp_storage_to_litter_fire_patch     , & ! Output: [real(r8) (:)     ]                                                    
-        m_frootp_xfer_to_litter_fire        =>    phosphorusflux_vars%m_frootp_xfer_to_litter_fire_patch        , & ! Output: [real(r8) (:)     ]                                                    
-        m_livecrootp_to_litter_fire         =>    phosphorusflux_vars%m_livecrootp_to_litter_fire_patch         , & ! Output: [real(r8) (:)     ]                                                    
-        m_livecrootp_storage_to_litter_fire =>    phosphorusflux_vars%m_livecrootp_storage_to_litter_fire_patch , & ! Output: [real(r8) (:)     ]                                                    
-        m_livecrootp_xfer_to_litter_fire    =>    phosphorusflux_vars%m_livecrootp_xfer_to_litter_fire_patch    , & ! Output: [real(r8) (:)     ]                                                    
-        m_livecrootp_to_deadcrootp_fire     =>    phosphorusflux_vars%m_livecrootp_to_deadcrootp_fire_patch     , & ! Output: [real(r8) (:)     ]                                                    
-        m_deadcrootp_to_litter_fire         =>    phosphorusflux_vars%m_deadcrootp_to_litter_fire_patch         , & ! Output: [real(r8) (:)     ]                                                    
-        m_deadcrootp_storage_to_litter_fire =>    phosphorusflux_vars%m_deadcrootp_storage_to_litter_fire_patch , & ! Output: [real(r8) (:)     ]                                                    
-        m_deadcrootp_xfer_to_litter_fire    =>    phosphorusflux_vars%m_deadcrootp_xfer_to_litter_fire_patch    , & ! Output: [real(r8) (:)     ]                                                    
-        m_retransp_to_litter_fire           =>    phosphorusflux_vars%m_retransp_to_litter_fire_patch           , & ! Output: [real(r8) (:)     ]                                                    
-        m_decomp_ppools_to_fire_vr          =>    phosphorusflux_vars%m_decomp_ppools_to_fire_vr_col            , & ! Output: [real(r8) (:,:,:) ]  VR decomp. N fire loss (gN/m3/s)
-        m_p_to_litr_met_fire                =>    phosphorusflux_vars%m_p_to_litr_met_fire_col                  , & ! Output: [real(r8) (:,:)   ]                                                  
-        m_p_to_litr_cel_fire                =>    phosphorusflux_vars%m_p_to_litr_cel_fire_col                  , & ! Output: [real(r8) (:,:)   ]                                                  
-        m_p_to_litr_lig_fire                =>    phosphorusflux_vars%m_p_to_litr_lig_fire_col                    & ! Output: [real(r8) (:,:)   ]                                                  
+        m_c_to_litr_lig_fire                =>    carbonflux_vars%m_c_to_litr_lig_fire_col                      & ! Output: [real(r8) (:,:)   ]
 
         )
+
+     m_leafn_to_litter_fire              =>    nitrogenflux_vars%m_leafn_to_litter_fire_patch              
+     m_leafn_storage_to_litter_fire      =>    nitrogenflux_vars%m_leafn_storage_to_litter_fire_patch      
+     m_leafn_xfer_to_litter_fire         =>    nitrogenflux_vars%m_leafn_xfer_to_litter_fire_patch         
+     m_livestemn_to_litter_fire          =>    nitrogenflux_vars%m_livestemn_to_litter_fire_patch          
+     m_livestemn_storage_to_litter_fire  =>    nitrogenflux_vars%m_livestemn_storage_to_litter_fire_patch  
+     m_livestemn_xfer_to_litter_fire     =>    nitrogenflux_vars%m_livestemn_xfer_to_litter_fire_patch     
+     m_livestemn_to_deadstemn_fire       =>    nitrogenflux_vars%m_livestemn_to_deadstemn_fire_patch       
+     m_deadstemn_to_litter_fire          =>    nitrogenflux_vars%m_deadstemn_to_litter_fire_patch          
+     m_deadstemn_storage_to_litter_fire  =>    nitrogenflux_vars%m_deadstemn_storage_to_litter_fire_patch  
+     m_deadstemn_xfer_to_litter_fire     =>    nitrogenflux_vars%m_deadstemn_xfer_to_litter_fire_patch     
+     m_frootn_to_litter_fire             =>    nitrogenflux_vars%m_frootn_to_litter_fire_patch             
+     m_frootn_storage_to_litter_fire     =>    nitrogenflux_vars%m_frootn_storage_to_litter_fire_patch     
+     m_frootn_xfer_to_litter_fire        =>    nitrogenflux_vars%m_frootn_xfer_to_litter_fire_patch        
+     m_livecrootn_to_litter_fire         =>    nitrogenflux_vars%m_livecrootn_to_litter_fire_patch         
+     m_livecrootn_storage_to_litter_fire =>    nitrogenflux_vars%m_livecrootn_storage_to_litter_fire_patch 
+     m_livecrootn_xfer_to_litter_fire    =>    nitrogenflux_vars%m_livecrootn_xfer_to_litter_fire_patch    
+     m_livecrootn_to_deadcrootn_fire     =>    nitrogenflux_vars%m_livecrootn_to_deadcrootn_fire_patch     
+     m_deadcrootn_to_litter_fire         =>    nitrogenflux_vars%m_deadcrootn_to_litter_fire_patch         
+     m_deadcrootn_storage_to_litter_fire =>    nitrogenflux_vars%m_deadcrootn_storage_to_litter_fire_patch 
+     m_deadcrootn_xfer_to_litter_fire    =>    nitrogenflux_vars%m_deadcrootn_xfer_to_litter_fire_patch    
+     m_retransn_to_litter_fire           =>    nitrogenflux_vars%m_retransn_to_litter_fire_patch           
+     m_decomp_npools_to_fire_vr          =>    nitrogenflux_vars%m_decomp_npools_to_fire_vr_col            
+     m_n_to_litr_met_fire                =>    nitrogenflux_vars%m_n_to_litr_met_fire_col                  
+     m_n_to_litr_cel_fire                =>    nitrogenflux_vars%m_n_to_litr_cel_fire_col                  
+     m_n_to_litr_lig_fire                =>    nitrogenflux_vars%m_n_to_litr_lig_fire_col                  
+
+
+     m_leafp_to_litter_fire              =>    phosphorusflux_vars%m_leafp_to_litter_fire_patch              
+     m_leafp_storage_to_litter_fire      =>    phosphorusflux_vars%m_leafp_storage_to_litter_fire_patch      
+     m_leafp_xfer_to_litter_fire         =>    phosphorusflux_vars%m_leafp_xfer_to_litter_fire_patch         
+     m_livestemp_to_litter_fire          =>    phosphorusflux_vars%m_livestemp_to_litter_fire_patch          
+     m_livestemp_storage_to_litter_fire  =>    phosphorusflux_vars%m_livestemp_storage_to_litter_fire_patch  
+     m_livestemp_xfer_to_litter_fire     =>    phosphorusflux_vars%m_livestemp_xfer_to_litter_fire_patch     
+     m_livestemp_to_deadstemp_fire       =>    phosphorusflux_vars%m_livestemp_to_deadstemp_fire_patch       
+     m_deadstemp_to_litter_fire          =>    phosphorusflux_vars%m_deadstemp_to_litter_fire_patch          
+     m_deadstemp_storage_to_litter_fire  =>    phosphorusflux_vars%m_deadstemp_storage_to_litter_fire_patch  
+     m_deadstemp_xfer_to_litter_fire     =>    phosphorusflux_vars%m_deadstemp_xfer_to_litter_fire_patch     
+     m_frootp_to_litter_fire             =>    phosphorusflux_vars%m_frootp_to_litter_fire_patch             
+     m_frootp_storage_to_litter_fire     =>    phosphorusflux_vars%m_frootp_storage_to_litter_fire_patch     
+     m_frootp_xfer_to_litter_fire        =>    phosphorusflux_vars%m_frootp_xfer_to_litter_fire_patch        
+     m_livecrootp_to_litter_fire         =>    phosphorusflux_vars%m_livecrootp_to_litter_fire_patch         
+     m_livecrootp_storage_to_litter_fire =>    phosphorusflux_vars%m_livecrootp_storage_to_litter_fire_patch 
+     m_livecrootp_xfer_to_litter_fire    =>    phosphorusflux_vars%m_livecrootp_xfer_to_litter_fire_patch    
+     m_livecrootp_to_deadcrootp_fire     =>    phosphorusflux_vars%m_livecrootp_to_deadcrootp_fire_patch     
+     m_deadcrootp_to_litter_fire         =>    phosphorusflux_vars%m_deadcrootp_to_litter_fire_patch         
+     m_deadcrootp_storage_to_litter_fire =>    phosphorusflux_vars%m_deadcrootp_storage_to_litter_fire_patch 
+     m_deadcrootp_xfer_to_litter_fire    =>    phosphorusflux_vars%m_deadcrootp_xfer_to_litter_fire_patch    
+     m_retransp_to_litter_fire           =>    phosphorusflux_vars%m_retransp_to_litter_fire_patch           
+     m_decomp_ppools_to_fire_vr          =>    phosphorusflux_vars%m_decomp_ppools_to_fire_vr_col            
+     m_p_to_litr_met_fire                =>    phosphorusflux_vars%m_p_to_litr_met_fire_col                  
+     m_p_to_litr_cel_fire                =>    phosphorusflux_vars%m_p_to_litr_cel_fire_col                  
+     m_p_to_litr_lig_fire                =>    phosphorusflux_vars%m_p_to_litr_lig_fire_col                  
 
      ! Get model step size
      ! calculate burned area fraction per sec

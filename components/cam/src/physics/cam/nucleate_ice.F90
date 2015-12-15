@@ -342,10 +342,10 @@ subroutine nucleati(  &
       !++iceMP
 
       if(clim_modal_aero) then
-         if(cam_chempkg_is('trop_mam7')) then
-           na500_1  = dst1_num*0.566_r8
-         elseif(cam_chempkg_is('trop_mam3') .or. cam_chempkg_is('trop_mam4')) then !ASK Hailong about trop_mam4 
-            na500_1 = dst1_num*0.488_r8
+         if(cam_chempkg_is('trop_mam7') .or. cam_chempkg_is('trop_mam9')) then
+           na500_1  = dst1_num*0.566_r8 
+         elseif(cam_chempkg_is('trop_mam3') .or. cam_chempkg_is('trop_mam4') .or. cam_chempkg_is('trop_mam4_mom') .or. cam_chempkg_is('trop_mam4_resus')) then !ASK Hailong about trop_mam4
+            na500_1 = dst1_num*0.488_r8   
          else
             na500_1 = dst1_num*0.488_r8 + dst2_num + dst3_num + dst4_num   ! scaled for D>0.5-1 um from 0.1-1 um
          endif

@@ -1955,7 +1955,7 @@ end subroutine clubb_init_cnst
       ! Take into account the surface fluxes of heat and moisture
       te_b(i) = te_b(i)+(cam_in%shf(i)+(cam_in%lhf(i)/latvap)*(latvap+latice))*hdtime
 
-      ! Limit the energy fixer to find highest layer where CLUBB is active
+      ! Limit the energy fixer to find highest layer where CLUBB is active 
       ! Find first level where wp2 is higher than lowest threshold
       clubbtop = 1
       do while (wp2(i,clubbtop) .eq. w_tol_sqd .and. clubbtop .lt. pver-1)
@@ -1965,12 +1965,13 @@ end subroutine clubb_init_cnst
       ! Compute the disbalance of total energy, over depth where CLUBB is active
       se_dis = (te_a(i) - te_b(i))/(state1%pint(i,pverp)-state1%pint(i,clubbtop))
 
-      ! Apply this fixer throughout the column evenly, but only at layers where
+      ! Fix the total energy coming out of CLUBB so it achieves enery conservation.
+      ! Apply this fixer throughout the column evenly, but only at layers where 
       ! CLUBB is active.
       do k=clubbtop,pver
          clubb_s(k) = clubb_s(k) - se_dis*gravit
-      enddo    
-
+      enddo
+     
       !  Now compute the tendencies of CLUBB to CAM, note that pverp is the ghost point
       !  for all variables and therefore is never called in this loop
       do k=1,pver
