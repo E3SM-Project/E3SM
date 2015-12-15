@@ -263,6 +263,7 @@ class CimeTestStatus():
     def name(self):
         """ Simply return the name
         """
+        self._test_status['name'] = self._test_status['name'].rstrip("\n")
         return self._test_status['name']
 
     def histcompareline(self):
@@ -384,10 +385,15 @@ def printSummary(suiteinfo, cimetests):
     banner = '=' * 80
     
     # Get the count of tests by status. 
+    passpattern = re.compile('PASS|DONE')
+    passes = [t for t in cimetests if passpattern.match(t.overallstatus())]
     cfails = [t for t in cimetests if t.overallstatus() == 'CFAIL']
-    passes = [t for t in cimetests if t.overallstatus() == 'DONE']
     sfails = [t for t in cimetests if t.overallstatus() == 'SFAIL']
-    runs =   [r for r in cimetests if r.overallstatus() == 'RUN' ]
+    runs =   [t for t in cimetests if t.overallstatus() == 'RUN' ]
+    pends =   [t for t in cimetests if t.overallstatus() == 'PEND' ]
+    gens =   [t for t in cimetests if t.overallstatus() == 'GEN' ]
+    tfails =   [t for t in cimetests if t.overallstatus() == 'TFAIL' ]
+    builds =   [t for t in cimetests if t.overallstatus() == 'BUILD' ]
     testcomparefails = [t for t in cimetests if t.histcomparestatus() == 'FAIL']
     baselinecomparefails = [t for t in cimetests if t.baselinecomparestatus() == 'FAIL']
     
@@ -407,6 +413,10 @@ def printSummary(suiteinfo, cimetests):
         print(len(cfails), " Tests had compile fails")
     if runs:
         print(len(runs), " Tests failed to finish running")
+    if gens:
+        print(len(gens), " Tests are generated")
+    if tfails:
+        print(len(gens), " Tests are test fail (TFAIL) ")
     print(banner)
     
     if testcomparefails:
@@ -431,6 +441,24 @@ def printSummary(suiteinfo, cimetests):
         for p in passes:
             print(p.name())
 
+    if gens:
+        print(banner)
+        print("These tests are generated ")
+        print(banner)
+        for g in gens:
+            print(g.name())
+    if tfails:
+        print(banner)
+        print("These tests are generated ")
+        print(banner)
+        for t in tfails:
+            print(t.name())
+    if builds:
+        print(banner)
+        print("These tests have built but have not been submitted")
+        print(banner)
+        for b in builds:
+            print(b.name())
     if runs:
         print(banner)
         print("These tests failed to finish running")
