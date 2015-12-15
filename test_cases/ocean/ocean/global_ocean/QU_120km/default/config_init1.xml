@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <config case="init_step1">
 
-	<get_file hash="ph1dyjmvcc" dest_path="mesh_database" file_name="mesh.QU.10242.151022.nc">
+	<get_file hash="ph1dyjmvcc" dest_path="mesh_database" file_name="mesh.QU.40962.151225.nc">
 		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/"/>
 	</get_file>
 
-	<get_file dest_path="mesh_database" file_name="graph.QU.10242.151022.info">
+	<get_file dest_path="mesh_database" file_name="graph.QU.40962.151225.info">
 		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/"/>
 	</get_file>
 
@@ -32,8 +32,8 @@
 	<add_executable source="model" dest="ocean_model"/>
 	<add_executable source="cell_culler" dest="MpasCellCuller.x"/>
 
-	<add_link source_path="mesh_database" source="mesh.QU.10242.151022.nc" dest="base_mesh.nc"/>
-	<add_link source_path="mesh_database" source="graph.QU.10242.151022.info" dest="graph.info"/>
+	<add_link source_path="mesh_database" source="mesh.QU.40962.151225.nc" dest="base_mesh.nc"/>
+	<add_link source_path="mesh_database" source="graph.QU.40962.151225.info" dest="graph.info"/>
 	<add_link source_path="initial_condition_database" source="PotentialTemperature.01.filled.60levels.PHC.151106.nc" dest="temperature.nc"/>
 	<add_link source_path="initial_condition_database" source="Salinity.01.filled.60levels.PHC.151106.nc" dest="salinity.nc"/>
 	<add_link source_path="initial_condition_database" source="windStress.ncep_1958-2000avg.interp3600x2431.151106.nc" dest="wind_stress.nc"/>
@@ -45,6 +45,7 @@
 
 	<streams name="streams.ocean" keep="immutable" mode="init">
 		<template file="template_init1.xml" path_base="script_core_dir" path="global_ocean"/>
+		<option name="config_write_cull_cell_mask">.true.</option>
 	</streams>
 
 	<run_script name="run.py">
