@@ -140,7 +140,7 @@ module seasalt_model
    integer             :: fmoa = 1
 
 ! TODO SMB: Implement better mechanism for setting this switch.
-#if (defined MODAL_AERO_9MODE || MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
    logical :: has_mam_mom = .true.
 #else
    logical :: has_mam_mom = .false.
@@ -600,7 +600,9 @@ end subroutine ocean_data_readnl
 
 add_om_species: if ( has_mam_mom ) then
 ! Calculate emission of MOM mass.
-   write(iulog, *) "Adding MOM species in seasalt_model.F90"
+   if(masterproc .and. debug_mam_mom) then
+      write(iulog, *) "Adding MOM species in seasalt_model.F90"
+   endif
 
 ! Determine which modes to emit MOM in depending on mixing state assumption
 
@@ -647,7 +649,7 @@ add_om_species: if ( has_mam_mom ) then
           cflx(:ncol,mn)=0.0_r8
           ! add number tracers for organics-only modes
           if (emit_this_mode(m_om)) then
-             if (debug_mam_mom) then
+             if(masterproc .and. debug_mam_mom) then
                 write(iulog,"(A30,A10,I3)") "Constituent name and number: ", trim(seasalt_names(nslt+m_om)), mn ! for debugging
              endif
              section_loop_OM_num: do i=1, nsections
