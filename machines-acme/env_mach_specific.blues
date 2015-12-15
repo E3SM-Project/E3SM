@@ -43,7 +43,7 @@ endif
 #
 if ( $COMPILER == "intel" ) then
   soft add +intel-15.0
-  setenv NETCDFROOT /soft/climate/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1
+  setenv NETCDFROOT /soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1
   setenv PATH $NETCDFROOT/bin:$PATH
   setenv LD_LIBRARY_PATH $NETCDFROOT/lib:$LD_LIBRARY_PATH
   setenv NETCDF_INCLUDES $NETCDFROOT/include
