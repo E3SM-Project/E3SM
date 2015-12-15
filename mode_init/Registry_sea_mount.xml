@@ -55,6 +55,10 @@
 					description="Height of sea mount, $H_0$"
 					possible_values="Any positive real number."
 		/>
+		<nml_option name="config_sea_mount_radius" type="real" default_value="10.0e3" units="m"
+					description="Radius of sea mount"
+					possible_values="Any positive real number."
+		/>
 		<nml_option name="config_sea_mount_width" type="real" default_value="40.0e3" units="m"
 					description="Width parameter of sea mount, $L$."
 					possible_values="Any positive real number."

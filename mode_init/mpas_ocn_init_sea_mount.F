@@ -80,7 +80,7 @@ contains
       integer, intent(out) :: iErr
       real (kind=RKIND) :: yMin, yMax, xMin, xMax, dcEdgeMin, dcEdgeMinGlobal
       real (kind=RKIND) :: yMinGlobal, yMaxGlobal, yMidGlobal, xMinGlobal, xMaxGlobal, xMidGlobal
-      real (kind=RKIND) :: densityCell, z
+      real (kind=RKIND) :: densityCell, z, radius
 
       type (block_type), pointer :: block_ptr
 
@@ -94,9 +94,8 @@ contains
       ! Define config variable pointers
       character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid, config_sea_mount_layer_type, config_sea_mount_stratification_type
       real (kind=RKIND), pointer :: config_sea_mount_width, &
-                                    config_sea_mount_gradient_width_frac, &
                                     config_sea_mount_bottom_depth, &
-                                    config_sea_mount_height, &
+                                    config_sea_mount_height,config_sea_mount_radius, &
                                     config_sea_mount_density_coef_linear, config_sea_mount_density_coef_exp, &
                                     config_sea_mount_density_gradient_linear, config_sea_mount_density_gradient_exp,&
                                     config_sea_mount_density_depth_linear, config_sea_mount_density_depth_exp,&
@@ -131,9 +130,9 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_layer_type', config_sea_mount_layer_type)
       call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_stratification_type', config_sea_mount_stratification_type)
       call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_width', config_sea_mount_width)
-      call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_gradient_width_frac', config_sea_mount_gradient_width_frac)
       call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_bottom_depth', config_sea_mount_bottom_depth)
       call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_height', config_sea_mount_height)
+      call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_radius', config_sea_mount_radius)
       call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_density_coef_linear', config_sea_mount_density_coef_linear)
       call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_density_gradient_linear', config_sea_mount_density_gradient_linear)
       call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_density_depth_linear', config_sea_mount_density_depth_linear)
@@ -246,8 +245,10 @@ contains
 
         do iCell = 1, nCellsSolve
 
+           radius =  sqrt( (xCell(iCell)-xMidGlobal)**2 + (yCell(iCell)-yMidGlobal)**2 )
+
            ! Set bottomDepth.  See Beckmann and Haidvogel 1993 eqn 12, Shchepetkin 2003 eqn 4.2
-           bottomDepth(iCell) = config_sea_mount_bottom_depth - config_sea_mount_height * exp(-((xCell(iCell)-xMidGlobal)**2 + (yCell(iCell)-yMidGlobal)**2 )/ config_sea_mount_width**2)
+           bottomDepth(iCell) = config_sea_mount_bottom_depth - config_sea_mount_height * exp(-(max(radius-config_sea_mount_radius,0.0))**2/ config_sea_mount_width**2)
 
            ! Set maxLevelCell and layerThickness 
            if ( trim(config_sea_mount_layer_type) == 'z-level' ) then
