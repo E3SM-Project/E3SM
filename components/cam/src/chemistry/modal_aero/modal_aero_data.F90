@@ -17,7 +17,7 @@
     integer, parameter :: ntot_amode = 7
 #elif ( defined MODAL_AERO_9MODE )
     integer, parameter :: ntot_amode = 9
-#elif ( defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_MOM )
+#elif ( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) )
     integer, parameter :: ntot_amode = 4
 #elif ( defined MODAL_AERO_3MODE )
     integer, parameter :: ntot_amode = 3
@@ -89,7 +89,7 @@
          'coarse_dust     ', &
          'accum_marine    ', &
          'aitken_marine   '/)
-#elif ( defined MODAL_AERO_4MODE || MODAL_AERO_4MODE_MOM )
+#elif ( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) )
     character(len=*), parameter :: modename_amode(ntot_amode) = (/ &
          'accum           ', &
          'aitken          ', &
@@ -124,7 +124,7 @@
     integer, parameter ::     mdiagnum_amode(ntot_amode)   = (/ 0, 0, 0, 0, 0, 0, 0, 0, 0/)
     integer, parameter ::     mprogsfc_amode(ntot_amode)   = (/ 0, 0, 0, 0, 0, 0, 0, 0, 0/)
     integer, parameter ::     mcalcwater_amode(ntot_amode) = (/ 1, 1, 1, 1, 1, 1, 1, 1, 1/)
-#elif ( defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_MOM )
+#elif ( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) )
     integer, parameter ::     mprognum_amode(ntot_amode)   = (/ 1, 1, 1, 1/)
     integer, parameter ::     mdiagnum_amode(ntot_amode)   = (/ 0, 0, 0, 0/)
     integer, parameter ::     mprogsfc_amode(ntot_amode)   = (/ 0, 0, 0, 0/)
