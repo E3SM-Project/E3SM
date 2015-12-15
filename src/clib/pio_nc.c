@@ -1,5 +1,5 @@
 /**
-* @file   pio_nc.c
+* @file  
 * @author Jim Edwards (jedwards@ucar.edu)
 * @date     Feburary 2014 
 * @brief    PIO interfaces to [NetCDF](http://www.unidata.ucar.edu/software/netcdf/docs/modules.html) support functions
@@ -14,12 +14,25 @@
 #include <pio_internal.h>
 
 /** 
- * @name    PIOc_inq_att
- * @brief   The PIO-C interface for the NetCDF function nc_inq_att.
- * @details This routine is called collectively by all tasks in the communicator 
- *           ios.union_comm. For more information on the underlying NetCDF commmand
- *           please read about this function in the NetCDF documentation at: 
- *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ * @ingroup PIO_inq_att
+ * The PIO-C interface for the NetCDF function nc_inq_att. 
+ *
+ * This routine is called collectively by all tasks in the
+ * communicator ios.union_comm. For more information on the underlying
+ * NetCDF commmand please read about this function in the NetCDF
+ * documentation at:
+ * http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ *
+ * @param ncid the ncid of the open file, obtained from
+ * PIOc_openfile() or PIOc_createfile().
+ *
+ * @param varid the variable ID.
+ * @param name the name of the attribute to inquire about.
+ * @param xtypep a pointer that will get the type of the attribute.
+ * @param lenp a pointer to a PIO_Offset that will get the length of
+ * this attribute.
+ * 
+ * @return PIO_NOERR for success, error code otherwise.
  */
 int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Offset *lenp) 
 {
@@ -83,12 +96,14 @@ int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Of
 }
 
 /** 
- * @name    PIOc_inq_format
- * @brief   The PIO-C interface for the NetCDF function nc_inq_format.
- * @details This routine is called collectively by all tasks in the communicator 
- *           ios.union_comm. For more information on the underlying NetCDF commmand
- *           please read about this function in the NetCDF documentation at: 
- *           http://www.unidata.ucar.edu/software/netcdf/docs/group__datasets.html
+ * @ingroup PIO_inq_format
+ * The PIO-C interface for the NetCDF function nc_inq_format.
+ * 
+ * This routine is called collectively by all tasks in the
+ * communicator ios.union_comm. For more information on the underlying
+ * NetCDF commmand please read about this function in the NetCDF
+ * documentation at:
+ * http://www.unidata.ucar.edu/software/netcdf/docs/group__datasets.html
  */
 int PIOc_inq_format (int ncid, int *formatp) 
 {
@@ -377,12 +392,14 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims, const in
 }
 
 /** 
- * @name    PIOc_inq_var
- * @brief   The PIO-C interface for the NetCDF function nc_inq_var.
- * @details This routine is called collectively by all tasks in the communicator 
- *           ios.union_comm. For more information on the underlying NetCDF commmand
- *           please read about this function in the NetCDF documentation at: 
- *           http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ * @ingroup PIO_inq_var
+ * The PIO-C interface for the NetCDF function nc_inq_var.
+ *
+ * This routine is called collectively by all tasks in the
+ * communicator ios.union_comm. For more information on the underlying
+ * NetCDF commmand please read about this function in the NetCDF
+ * documentation at:
+ * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
  */
 int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp, int *dimidsp, int *nattsp) 
 {
@@ -459,12 +476,14 @@ int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
 }
 
 /** 
- * @name    PIOc_inq_varname
- * @brief   The PIO-C interface for the NetCDF function nc_inq_varname.
- * @details This routine is called collectively by all tasks in the communicator 
- *           ios.union_comm. For more information on the underlying NetCDF commmand
- *           please read about this function in the NetCDF documentation at: 
- *           http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ * @ingroup PIO_inq_varname
+ * The PIO-C interface for the NetCDF function nc_inq_varname.
+ * 
+ * This routine is called collectively by all tasks in the
+ * communicator ios.union_comm. For more information on the underlying
+ * NetCDF commmand please read about this function in the NetCDF
+ * documentation at:
+ * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
  */
 int PIOc_inq_varname (int ncid, int varid, char *name) 
 {

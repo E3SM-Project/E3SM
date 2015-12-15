@@ -548,11 +548,8 @@ int main(int argc, char* argv[])
 	if ((ret = PIOc_def_var(ncid, VAR_NAME, PIO_FLOAT, NDIM, dimids, &varid)))
 	    ERR(ret);
 	/* For netCDF-4 files, set the chunksize to improve performance. */
-	if (format[fmt] == PIO_IOTYPE_NETCDF4C && !my_rank)
-	    if ((ret = nc_def_var_chunking(ncid, 0, NC_CHUNKED, chunksize)))
-		ERR(ret);
-	if (format[fmt] == PIO_IOTYPE_NETCDF4P)
-	    if ((ret = nc_def_var_chunking(ncid, 0, NC_CHUNKED, chunksize)))
+	if (format[fmt] == PIO_IOTYPE_NETCDF4C || format[fmt] == PIO_IOTYPE_NETCDF4P)
+	    if ((ret = PIOc_def_var_chunking(ncid, 0, NC_CHUNKED, chunksize)))
 		ERR(ret);
 	
 	if ((ret = PIOc_enddef(ncid)))
