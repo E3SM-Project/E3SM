@@ -126,7 +126,7 @@
 				filename_interval="output_interval"
 				clobber_mode="truncate"
 				input_interval="initial_only"
-				output_interval="0030_00:00:00"
+				output_interval="stream:restart:output_interval"
 				packages="lagrPartTrackAMPKG"
 			immutable="false">
 
