@@ -152,7 +152,7 @@
 				clobber_mode="truncate"
 				input_interval="initial_only"
 				packages="timeSeriesStatsAMPKG"
-				output_interval="0005_00:00:00"
+				output_interval="stream:restart:output_interval"
 				immutable="false"
 				mode="forward;analysis" />
 
