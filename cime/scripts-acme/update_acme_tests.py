@@ -21,6 +21,12 @@ _TEST_SUITES = {
                     "TESTRUNPASS_P1.f45_g37_rx1.A")
                    ),
 
+    "acme_test_only_slow_pass" : (None,
+                   ("TESTRUNSLOWPASS_P1.f19_g16_rx1.A",
+                    "TESTRUNSLOWPASS_P1.ne30_g16_rx1.A",
+                    "TESTRUNSLOWPASS_P1.f45_g37_rx1.A")
+                   ),
+
     "acme_test_only" : (None,
                    ("TESTBUILDFAIL.f19_g16_rx1.A",
                     "TESTRUNFAIL_P1.f19_g16_rx1.A",
