@@ -45,7 +45,8 @@ module ocn_init_vertical_grids
 
    public :: ocn_generate_vertical_grid, &
              ocn_compute_layerThickness_zMid_from_bottomDepth, &
-             ocn_alter_bottomDepth_for_pbcs
+             ocn_alter_bottomDepth_for_pbcs, &
+             ocn_compute_Haney_number
 
    !--------------------------------------------------------------------
    !
@@ -624,6 +625,87 @@ contains
       endif
 
     end subroutine ocn_alter_bottomDepth_for_pbcs
+
+!***********************************************************************
+!
+!  routine ocn_compute_Haney_number
+!
+!> \brief   computes the Haney number (rx1)
+!> \author  Xylar Asay-Davis
+!> \date    11/20/2015
+!> \details 
+!>  This routine computes the Haney number (rx1), which is a measure of
+!>  hydrostatic consistency
+!
+!-----------------------------------------------------------------------
+    subroutine ocn_compute_Haney_number(dminfo, meshPool, diagnosticsPool, iErr)
+
+      type (mpas_pool_type), intent(in) :: meshPool
+      type (mpas_pool_type), intent(inout) :: diagnosticsPool
+      integer, intent(out) :: iErr
+      type (dm_info), intent(in) :: dminfo
+
+      real (kind=RKIND), dimension(:,:), pointer :: zMid
+      real (kind=RKIND), dimension(:,:), pointer :: rx1Edge, rx1Cell
+      real (kind=RKIND), dimension(:), pointer :: rx1MaxEdge, rx1MaxCell
+      real (kind=RKIND), pointer :: globalMaxRx1Edge
+
+      integer, pointer :: nCells, nVertLevels, nEdges
+      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:,:), pointer :: cellsOnEdge
+
+      integer :: iEdge, c1, c2, k, maxLevelEdge
+
+      real (kind=RKIND) :: dzVert1, dzVert2, dzEdgeK, dzEdgeKp1, rx1, localMaxRx1Edge
+
+      iErr = 0
+
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+
+      call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
+
+      call mpas_pool_get_array(diagnosticsPool, 'rx1Edge', rx1Edge)
+      call mpas_pool_get_array(diagnosticsPool, 'rx1Cell', rx1Cell)
+      call mpas_pool_get_array(diagnosticsPool, 'rx1MaxEdge', rx1MaxEdge)
+      call mpas_pool_get_array(diagnosticsPool, 'rx1MaxCell', rx1MaxCell)
+      call mpas_pool_get_array(diagnosticsPool, 'globalMaxRx1Edge', globalMaxRx1Edge)
+
+      rx1Edge(:,:) = 0.0_RKIND
+      rx1Cell(:,:) = 0.0_RKIND
+      rx1MaxEdge(:) = 0.0_RKIND
+      rx1MaxCell(:) = 0.0_RKIND
+      do iEdge = 1,nEdges
+        c1 = cellsOnEdge(1,iEdge)
+        c2 = cellsOnEdge(2,iEdge)
+        maxLevelEdge = min(maxLevelCell(c1), maxLevelCell(c2))
+        do k = 1,maxLevelEdge-1
+          dzVert1 = zMid(k,c1)-zMid(k+1,c1)
+          dzVert2 = zMid(k,c2)-zMid(k+1,c2)
+          dzEdgeK = zMid(k,c2)-zMid(k,c1)
+          dzEdgeKp1 = zMid(k+1,c2)-zMid(k+1,c1)
+
+          rx1 = abs(dzEdgeK+dzEdgeKp1)/(dzVert1+dzVert2)
+
+          rx1Edge(k,iEdge) = rx1
+          rx1Cell(k,c1) = max(rx1Cell(k,c1),rx1)
+          rx1Cell(k,c2) = max(rx1Cell(k,c2),rx1)
+
+          rx1MaxEdge(iEdge) = max(rx1MaxEdge(iEdge),rx1)
+          rx1MaxCell(c2) = max(rx1MaxCell(c2),rx1)
+          rx1MaxCell(c1) = max(rx1MaxCell(c1),rx1)
+        end do
+      end do
+
+      localMaxRx1Edge = maxval(rx1MaxEdge)
+      call mpas_dmpar_max_real(dminfo, localMaxRx1Edge, globalMaxRx1Edge)
+      write (stdoutUnit,'(a, es10.2)') ' global max of rx1Edge:', globalMaxRx1Edge
+
+    end subroutine ocn_compute_Haney_number
 
 !***********************************************************************
 

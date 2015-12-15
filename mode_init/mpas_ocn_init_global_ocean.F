@@ -461,6 +461,8 @@ contains
              restingThickness(:, iCell) = layerThickness(:, iCell)
           end do
 
+          call ocn_compute_Haney_number(domain % dminfo, meshPool, diagnosticsPool, iErr)
+
           block_ptr => block_ptr % next
        end do
 
