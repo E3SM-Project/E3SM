@@ -139,6 +139,15 @@ typedef struct iosystem_desc_t
   MPI_Comm comp_comm;
   MPI_Comm intercomm;
   MPI_Comm my_comm;
+
+  /** This MPI group contains the processors involved in
+   * computation. It is created in PIOc_Init_Intracomm(), and freed my
+   * PIO_finalize(). */
+  MPI_Group compgroup;
+    
+  /** This MPI group contains the processors involved in I/O. It is
+   * created in PIOc_Init_Intracomm(), and freed my PIOc_finalize(). */
+  MPI_Group iogroup;
   
   int num_iotasks;
   int num_comptasks;

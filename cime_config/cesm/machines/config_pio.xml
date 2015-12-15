@@ -57,12 +57,6 @@
       <value mach="eastwind">netcdf</value>
       <value mach="pleiades.*">netcdf</value>
       <value mpilib="mpi-serial">netcdf</value>
-      <value mach="hobart" compiler="!intel">netcdf</value>
-      <value mach="hobart" compiler="intel" mpilib="!mpi-serial">pnetcdf</value> 
-      <value mach="hobart" compiler="intel" mpilib="mpi-serial">netcdf</value>
-      <value grid="l%1x1">netcdf</value>
-      <value grid="l%5x5">netcdf</value>
-      <value grid="l%CLM_USRDAT">netcdf</value>
     </values>
   </entry>
 

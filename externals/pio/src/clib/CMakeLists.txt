@@ -23,6 +23,11 @@ set (PIO_GENNC_SRCS ${CMAKE_CURRENT_BINARY_DIR}/pio_nc.c
 
 add_library (pioc ${PIO_C_SRCS} ${PIO_GENNC_SRCS})
 
+# set up include-directories
+include_directories(
+  "${PROJECT_SOURCE_DIR}"   # to find foo/foo.h
+  "${PROJECT_BINARY_DIR}")  # to find foo/config.h
+
 # Include the clib source directory
 target_include_directories (pioc
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

@@ -1,12 +1,9 @@
 /**
- * @file pioc.c
+ * @file 
  * @author Jim Edwards
  * @date  2014
  * @brief PIO C interface 
  *
- * 
- * 
- * 
  * @see http://code.google.com/p/parallelio/
  */
 
@@ -354,7 +351,6 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
   iosystem_desc_t *iosys;
   int ierr;
   int ustride;
-  MPI_Group compgroup, iogroup;
   int lbase;
   iosys = (iosystem_desc_t *) malloc(sizeof(iosystem_desc_t));
 
@@ -413,11 +409,12 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
   if(iosys->comp_rank == iosys->ioranks[0])
     iosys->iomaster = true;
 
-  CheckMPIReturn(MPI_Comm_group(comp_comm, &compgroup),__FILE__,__LINE__);
+  CheckMPIReturn(MPI_Comm_group(comp_comm, &(iosys->compgroup)),__FILE__,__LINE__);
 			
-  CheckMPIReturn(MPI_Group_incl(compgroup, iosys->num_iotasks, iosys->ioranks, &iogroup),__FILE__,__LINE__);
+  CheckMPIReturn(MPI_Group_incl(iosys->compgroup, iosys->num_iotasks, iosys->ioranks,
+				&(iosys->iogroup)),__FILE__,__LINE__);
 
-  CheckMPIReturn(MPI_Comm_create(comp_comm, iogroup, &(iosys->io_comm)),__FILE__,__LINE__);
+  CheckMPIReturn(MPI_Comm_create(comp_comm, iosys->iogroup, &(iosys->io_comm)),__FILE__,__LINE__);
   if(iosys->ioproc)
     CheckMPIReturn(MPI_Comm_rank(iosys->io_comm, &(iosys->io_rank)),__FILE__,__LINE__);
   else
@@ -464,8 +461,12 @@ int PIOc_set_hint(const int iosysid, char hint[], const char hintval[])
 
 }
 
-/**
- ** @brief Clean up data structures and exit the pio library
+/** @ingroup PIO_finalize
+ * @brief Clean up data structures and exit the pio library.
+ *
+ * @param iosysid: the io system ID provided by PIOc_Init_Intracomm().
+ *
+ * @returns 0 for success or non-zero for error.
  */
 
 int PIOc_finalize(const int iosysid)
@@ -487,6 +488,9 @@ int PIOc_finalize(const int iosysid)
 
   free_cn_buffer_pool(*ios);
 
+  /* Free the MPI groups. */
+  MPI_Group_free(&(ios->compgroup));
+  MPI_Group_free(&(ios->iogroup));
 
   if(ios->io_comm != MPI_COMM_NULL){
     MPI_Comm_free(&(ios->io_comm));

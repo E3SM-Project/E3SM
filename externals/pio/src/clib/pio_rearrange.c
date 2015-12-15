@@ -190,7 +190,7 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
   PIO_Offset bsizeT[msgcnt];
   int blocksize;
   int numinds;
-  PIO_Offset *lindex;
+  PIO_Offset *lindex = NULL;
 
   numinds=0;
   for(int j=0;j<msgcnt;j++){
@@ -261,6 +261,8 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
 	pos+=mcount[i];
       }
     }
+    if (lindex)
+	free(lindex);
 
   }
 
