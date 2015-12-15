@@ -52,7 +52,7 @@
 /**@}*/
 
 /** The number of timesteps of data to write. */
-#define NUM_TIMESTEPS 3
+#define NUM_TIMESTEPS 30
 
 /** The name of the variable in the netCDF output file. */
 #define VAR_NAME "foo"
@@ -97,7 +97,7 @@ char dim_name[NDIM][NC_MAX_NAME + 1] = {"timestep", "x", "y"};
 int dim_len[NDIM] = {NC_UNLIMITED, X_DIM_LEN, Y_DIM_LEN};
 
 /** Length of chunksizes to use in netCDF-4 files. */
-size_t chunksize[NDIM] = {1, X_DIM_LEN/2, Y_DIM_LEN/2};
+size_t chunksize[NDIM] = {10, X_DIM_LEN/2, Y_DIM_LEN/2};
 
 #ifdef HAVE_MPE
 /** Number of MPE events. The start and stop of each event will be
@@ -207,7 +207,7 @@ init_logging(int my_rank, int event_num[][NUM_EVENTS])
     return 0;
 }
 
-/** @brief Check the output file.
+/** Check the output file.
  *
  *  Use netCDF to check that the output is as expected. 
  *
@@ -293,7 +293,7 @@ int calculate_value(int my_rank, int timestep, float *datap)
     return 0;
 }
 
-/** @brief Main execution of code.
+/** Main execution of code.
 
     Executes the functions to:
     - create a new examplePioClass instance
@@ -547,11 +547,13 @@ int main(int argc, char* argv[])
 	}
 	if ((ret = PIOc_def_var(ncid, VAR_NAME, PIO_FLOAT, NDIM, dimids, &varid)))
 	    ERR(ret);
-	/* /\* For netCDF-4 files, set the chunksize to improve performance. *\/ */
-	/* if (!my_rank) */
-	/*     if (format[fmt] == PIO_IOTYPE_NETCDF4C || format[fmt] == PIO_IOTYPE_NETCDF4P) */
-	/* 	if ((ret = nc_def_var_chunking(ncid, 0, NC_CHUNKED, chunksize))) */
-	/* 	    ERR(ret); */
+	/* For netCDF-4 files, set the chunksize to improve performance. */
+	if (format[fmt] == PIO_IOTYPE_NETCDF4C && !my_rank)
+	    if ((ret = nc_def_var_chunking(ncid, 0, NC_CHUNKED, chunksize)))
+		ERR(ret);
+	if (format[fmt] == PIO_IOTYPE_NETCDF4P)
+	    if ((ret = nc_def_var_chunking(ncid, 0, NC_CHUNKED, chunksize)))
+		ERR(ret);
 	
 	if ((ret = PIOc_enddef(ncid)))
 	    ERR(ret);
