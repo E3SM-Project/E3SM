@@ -6,7 +6,11 @@ SET (CMAKE_Fortran_COMPILER mpif90 CACHE FILEPATH "")
 SET (CMAKE_C_COMPILER mpicc CACHE FILEPATH "")
 SET (CMAKE_CXX_COMPILER mpicc CACHE FILEPATH "")
 
-SET (USE_MPI_OPTIONS "--map-by node:SPAN" CACHE FILEPATH "")
+# Openmpi 1.8 only
+#SET (USE_MPI_OPTIONS "--map-by node:SPAN" CACHE FILEPATH "")
+
+# Openmpi 1.6
+SET (USE_MPI_OPTIONS "-loadbalance" CACHE FILEPATH "")
 
 # this is ignored if we use FORCE_Fortran_FLAGS
 SET (ADD_Fortran_FLAGS "-traceback" CACHE STRING "")

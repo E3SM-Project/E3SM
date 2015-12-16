@@ -62,6 +62,7 @@ _TEST_SUITES = {
                          "ERS_IOP4p.f19_g16_rx1.A",
                          "ERS_IOP4p.ne30_g16_rx1.A",
                          ("ERP_Ln9.ne30_ne30.FC5", "cam-outfrq9s"),
+                         "HOMME_P24.f19_g16_rx1.A",
                          "NCK.f19_g16_rx1.A",
                          "PEA_P1_M.f45_g37_rx1.A",
                          "SMS.ne30_f19_g16_rx1.A",

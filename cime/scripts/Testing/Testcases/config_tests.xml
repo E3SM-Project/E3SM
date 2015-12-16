@@ -80,6 +80,15 @@
           CHECK_TIMING="FALSE"
           DOUT_S="FALSE" />
 
+<ccsmtest NAME="HOMME"
+          DESC="Run homme tests."
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          STOP_OPTION="ndays"
+          STOP_N="11"
+          CHECK_TIMING="FALSE"
+          DOUT_S="FALSE" />
+
 <ccsmtest NAME="ERT"
           DESC="exact restart from startup, default 2 month + 1 month (ERS with info dbug = 1)"
           INFO_DBUG="1"
