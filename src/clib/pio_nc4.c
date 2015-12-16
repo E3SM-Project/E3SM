@@ -13,6 +13,11 @@
  * attempts to choose sensible chunk sizes by default, but for best
  * performance check chunking against access patterns.
  *
+ * See the discussion of chunksizes in this paper from the HDF5
+ * developers: <a
+ * href="https://www.hdfgroup.org/HDF5/PHDF5/parallelhdf5hints.pdf">Parallel
+ * HDF5 Hints</a>
+ *
  * @param ncid the ncid of the open file.
  * @param varid the ID of the variable to set chunksizes for.
  * @param storage NC_CONTIGUOUS or NC_CHUNKED.
