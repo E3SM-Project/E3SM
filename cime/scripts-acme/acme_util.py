@@ -9,14 +9,19 @@ _VERBOSE = False
 _MACHINE_INFO = None
 
 # batch-system-name -> ( cmd-to-list-all-jobs-for-user, cmd-to-delete-job )
+# TODO -> This info should be derived from config_batch.xml
 BATCH_INFO = \
 {
     "slurm" : (
-        "squeue -o '%i' -h -u",
+        "squeue -o '%i' -h -u USER",
         "scancel"
     ),
     "pbs" : (
-        "qselect -u",
+        "qselect -u USER",
+        "qdel"
+    ),
+    "cobalt" : (
+        "qstat -u USER | tail -n+3 | awk '{print $1}'",
         "qdel"
     ),
 }
@@ -430,46 +435,36 @@ def find_proc_id(proc_name=None,
     return list(rv)
 
 ###############################################################################
-def probe_batch_system():
+def get_batch_system(machine=None):
 ###############################################################################
-    import distutils.spawn
-    for batch_system, cmds in BATCH_INFO.iteritems():
-        exe = cmds[0].split()[0]
-        exe_path = distutils.spawn.find_executable(exe)
-        if (exe_path is not None):
-            return batch_system
-
-    return None
+    return get_machine_info("BATCH_SYSTEM", machine=machine)
 
 ###############################################################################
-def get_my_queued_jobs(batch_system=None):
+def get_my_queued_jobs():
 ###############################################################################
     """
     Return a list of job ids for the current user
     """
     import getpass
-    if (batch_system is None):
-        batch_system = probe_batch_system()
+    batch_system = get_batch_system()
     expect(batch_system is not None, "Failed to probe batch system")
 
-    list_cmd = "%s %s" % (BATCH_INFO[batch_system][0], getpass.getuser())
+    list_cmd = BATCH_INFO[batch_system][0].replace("USER", getpass.getuser())
     return run_cmd(list_cmd).split()
 
 ###############################################################################
-def get_batch_system_info(batch_system=None):
+def delete_jobs(jobs):
 ###############################################################################
     """
-    Return information on batch system. If no arg provided, probe for batch
-    system.
+    Return a list of job ids for the current user.
 
-    Info returned as tuple (SUBMIT CMD, DELETE CMD)
+    Returns (status, output, errput)
     """
-    if (batch_system is None):
-        batch_system = probe_batch_system()
+    batch_system = get_batch_system()
     expect(batch_system is not None, "Failed to probe batch system")
-    expect(batch_system in BATCH_INFO, "No info for batch system '%s'" % batch_system)
 
-    return BATCH_INFO[batch_system]
+    del_cmd = "%s %s" % (BATCH_INFO[batch_system][1], " ".join(jobs))
+    return run_cmd(del_cmd, ok_to_fail=True, verbose=True)
 
 ###############################################################################
 def parse_config_machines():
@@ -494,14 +489,11 @@ def parse_config_machines():
                 expect(mach_name not in _MACHINE_INFO, "Duplicate machine entry '%s'" % mach_name)
                 data = {}
                 for item in machine:
-                    if (item.text is not None):
-                        item_data = item.text.strip()
-                        if (item.tag in ["COMPILERS", "MPILIBS"]):
-                            item_data = [strip_item.strip() for strip_item in item_data.split(",")]
-                        elif(item.tag == "batch_system"):
-                            item_data = item.attrib["type"]
-                    else:
-                        item_data = ""
+                    item_data = "" if item.text is None else item.text.strip()
+                    if (item.tag in ["COMPILERS", "MPILIBS"]):
+                        item_data = [strip_item.strip() for strip_item in item_data.split(",")]
+                    elif(item.tag == "batch_system"):
+                        item_data = item.attrib["type"]
 
                     data[item.tag.upper()] = item_data
 
@@ -577,6 +569,7 @@ def get_machine_info(items, machine=None, user=None, project=None, case=None, ra
                     item_data = item_data.replace("$PROJECT", project)
 
                 # $CASE is another special case, it can only be provided by user
+                # TODO: It actually comes from one of the env xml files
                 if ("$CASE" in item_data):
                     expect(case is not None, "Data for '%s' required case information but none provided" % item)
                     item_data = item_data.replace("$CASE", case)
