@@ -189,9 +189,6 @@ OPTIONS
 
     -output|-out List out the contents of the archive directory.
 
-    -dryrun      List files that will be moved and/or copied from the \$RUNDIR to the
-                 \$DOUT_S_ROOT without actually moving and/or copying.
-
     -undo        move all the files from the \$DOUT_S_ROOT back into the \$RUNDIR
 
     -loglevel    set level of output from this script DEBUG, INFO, WARN, ERROR, FATAL (default INFO)
@@ -214,7 +211,6 @@ sub getOptions
 	"h|help"        => \$opts{'help'},
         "in|input"      => \$opts{'input'}, 	
         "out|output"    => \$opts{'output'}, 	
-	"dryrun"        => \$opts{'dryrun'}, 	
 	"undo"          => \$opts{'undo'},
 	"loglevel"      => \$opts{loglevel}
     );
@@ -469,7 +465,7 @@ sub moveFiles
 {
     my $keep_last_in_rundir = shift;
     my $suffix = shift;
-    my $dest = shift;
+    my $destdir = shift;
     my $restdir = shift;
     my $dname = shift;
     my $runfilesref = shift;
@@ -494,23 +490,9 @@ sub moveFiles
     my $numfiles = @files;
     if( $numfiles > 0 ) 
     {
-	foreach my $file (@files) {
-	    if ( -f $file ) {
-##		my $sb = stat($file);
-##		$time{$file} = $sb->mtime();
-#
-# splice the filename out of the runfiles array so it's not revisited
-# should only match on one filename since they must be unique filenames in the rundir
-#
-		my @index = grep { $runfiles[$_] eq $file } 0..$#runfiles;
-		splice @runfiles, $index[0], 1;
-	    }
-	}
 #
 # get the most recent copy to keep in the RUNDIR
 #
-##	my @skeys = sort { $time{$b} <=> $time{$a} } keys %time;
-##	my $keepFile = $skeys[0];
 	my $keepFile = $files[$#files];
 
 	if( $keep_last_in_rundir eq 'true' ) {
@@ -518,8 +500,8 @@ sub moveFiles
 # copy the last file into the destination dir and the restdir
 #
 	    $logger->debug("keepFile = $keepFile"); 
-	    copy( $keepFile, $dest );
-	    if( $dest !~ /$dname$/ )
+	    copy( $keepFile, $destdir );
+	    if( $destdir !~ /$dname$/ )
 	    {
 		copy( $keepFile, $restdir )
 	    }
@@ -529,37 +511,47 @@ sub moveFiles
 #
 # move all the remaining files except the last file into the destination dir
 #
-		    move( $file, $dest );
+		    move( $file, $destdir );
 		}
 	    }
 	}
 	else {
 	    foreach my $file (@files) {
-		move( $file, $dest );
+		move( $file, $destdir );
+	    }
+	}
+#
+# splice the filename out of the runfiles array so it's not revisited
+# should only match on one filename since they must be unique filenames in the rundir
+#
+	foreach my $file (@files) {
+	    if ( -f $file ) {
+		my @index = grep { $runfiles[$_] eq $file } 0..$#runfiles;
+		splice @runfiles, $index[0], 1;
 	    }
 	}
     }
 # 
 # also get the file that matches the dname for this suffix and
-# copy to the restdir for a complete restart set
+# copy to the restdir for a complete restart set - should already be done!
 #
 
-    if( uc($config{'DOUT_S_SAVE_INTERIM_RESTART_FILES'}) == 'TRUE' && ($dest =~ /rest$/) )
-    {
-	my @restFiles = grep(/${dname}/, @files);
-	if( $#restFiles == 0 ) {
-	    my @path = split /\//, $restFiles[$#restFiles]; 
-	    if ( $#path >= 0 ) {
-		$restFile = $path[$#path];
-		if ( -f $dest . "/" . $restFile ) {
-		    copy( $dest . "/" . $restFile, $restdir . "/" . $restFile );
-		}
-	    }
-	}
-	elsif( $#restFiles > 0 && $keep_last_in_rundir eq 'true') {
-	    $logger->info("st_archive: multiple restart files found for suffix=$suffix");
-	}
-    }
+##    if( uc($config{'DOUT_S_SAVE_INTERIM_RESTART_FILES'}) == 'TRUE' && ($destdir =~ /rest$/) )
+##    {
+##	my @restFiles = grep(/${dname}/, @files);
+##	if( $#restFiles == 0 ) {
+##	    my @path = split /\//, $restFiles[$#restFiles]; 
+##	    if ( $#path >= 0 ) {
+##		$restFile = $path[$#path];
+##		if ( -f $destdir . "/" . $restFile ) {
+##		    copy( $destdir . "/" . $restFile, $restdir . "/" . $restFile );
+##		}
+##	    }
+##	}
+##	elsif( $#restFiles > 0 && $keep_last_in_rundir eq 'true') {
+##	    $logger->info("st_archive: multiple restart files found for suffix=$suffix");
+##	}
+##   }
 
     return $numfiles, \@runfiles;
 }
@@ -580,7 +572,7 @@ sub archiveProcess
     my %comp = ();
     my ($source, $destdir, $linkdir, $outfile) = '';
 #
-# create the rest dir for a complete restart set with the coupler extension
+# create the restdir for a complete restart set with the coupler extension
 #
     my $restdir = qq($config{'DOUT_S_ROOT'}/rest/$dname);
     mkpath( $restdir, {verbose => 1, error => \my $err_list} )  unless ( -d $restdir );
@@ -658,7 +650,7 @@ sub archiveProcess
 
 
 #----------------------------------------------------------------------------------------------
-# remove restart duplicate files from the comp/rest and rest/dname directories-
+# remove restart duplicate files from the comp/rest and rest/dname directories
 #-----------------------------------------------------------------------------------------------
 sub removeDups
 {
@@ -681,8 +673,9 @@ sub removeDups
 	my @matchfiles  = File::Find::Rule->file->name($file)->in($config{'DOUT_S_ROOT'});
 
 	foreach my $matchfile (@matchfiles) {
-	    if( $matchfile =~ /\/rest\// && $matchfile !~ /\/$dname\// ) {
-		unlink( $matchfile );
+	    if( $matchfile =~ /\/rest\// && $matchfile ne $restfile && $matchfile !~ /\/hist\// ) {
+		$logger->info("Deleting matchfile=$matchfile matches restfile=$restfile");
+#		unlink( $matchfile );
 	    }
 	}
     }
@@ -736,19 +729,13 @@ sub main
 # get the date name from the most current coupler log file
 	$dname  = getDname();
 
-	if( defined $opts{'dryrun'} ) {
-# show what the archive process will do without actually doing it
-	    dryRun( $XMLin, $dname, \@runfiles );
-	}
-# run the short term archive process
-	else
+# run the archive process
+	archiveProcess( $XMLin, $dname, \@runfiles );
+
+	if( uc($config{'DOUT_S_SAVE_INTERIM_RESTART_FILES'}) == 'TRUE' )
 	{
-	    archiveProcess( $XMLin, $dname, \@runfiles );
-	    if( uc($config{'DOUT_S_SAVE_INTERIM_RESTART_FILES'}) == 'TRUE' )
-	    {
 # remove restart duplicate files from the comp/rest and rest/dname directories
-		removeDups( $dname )
-	    }
+##	    removeDups( $dname )
 	}
 
 	$logger->info("st_archive process complete.");
