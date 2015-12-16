@@ -44,8 +44,8 @@ module li_time_integration_fe
    !--------------------------------------------------------------------
 
    !WHL - debug
-!   logical, parameter :: new_thickness_adv = .true.
-   logical, parameter :: new_thickness_adv = .false.
+   logical, parameter :: new_thickness_adv = .true.
+!   logical, parameter :: new_thickness_adv = .false.
       
    !--------------------------------------------------------------------
    !
