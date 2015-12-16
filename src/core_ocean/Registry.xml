@@ -765,7 +765,7 @@
 					possible_values="Jackett McDougall EOS = 'jm' and Linear EOS = 'linear'"
 		/>
 	</nml_record>
-	<nml_record name="eos_linear" mode="forward;analysis">
+	<nml_record name="eos_linear" mode="forward;analysis;init">
 		<nml_option name="config_eos_linear_alpha" type="real" default_value="0.2" units="kg m^{-3} C^{-1}"
 					description="Linear thermal expansion coefficient"
 					possible_values="any positive real"

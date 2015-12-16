@@ -75,7 +75,7 @@ module ocn_init_sub_ice_shelf_2D
      integer, intent(out) :: iErr
      real (kind=RKIND) :: yMin, yMax, xMin, xMax, dcEdgeMin, dcEdgeMinGlobal, maxDepth
      real (kind=RKIND) :: yMinGlobal, yMaxGlobal, yMidGlobal, xMinGlobal, xMaxGlobal
-     real (kind=RKIND) :: totalSubIceThickness, y1,y2,y3, d1,d2,d3, surfaceDepression, surfaceSalinity, bottomSalinity
+     real (kind=RKIND) :: totalSubIceThickness, y1,y2,y3, d1,d2,d3, surfaceDepression
      real (kind=RKIND), dimension(:), allocatable :: midDepth
 
      type (block_type), pointer :: block_ptr
@@ -90,9 +90,12 @@ module ocn_init_sub_ice_shelf_2D
 
      ! Define config variable pointers
      character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid
-     real (kind=RKIND), pointer :: config_sub_ice_shelf_2D_bottom_depth, config_sub_ice_shelf_2D_seaSurfacePressure_factor, config_sub_ice_shelf_2D_cavity_thickness, config_sub_ice_shelf_2D_edge_width, config_sub_ice_shelf_2D_temperature, config_sub_ice_shelf_2D_surface_salinity, config_sub_ice_shelf_2D_bottom_salinity
+     real (kind=RKIND), pointer :: config_sub_ice_shelf_2D_bottom_depth, config_sub_ice_shelf_2D_seaSurfacePressure_factor, &
+          config_sub_ice_shelf_2D_cavity_thickness, config_sub_ice_shelf_2D_edge_width, config_sub_ice_shelf_2D_temperature, &
+          config_sub_ice_shelf_2D_surface_salinity, config_sub_ice_shelf_2D_bottom_salinity, &
+          config_sub_ice_shelf_2D_y1, config_sub_ice_shelf_2D_y2,config_sub_ice_shelf_2D_slope_height
 
-     real (kind=RKIND) :: config_eos_linear_alpha, config_eos_linear_beta, config_eos_linear_Tref, config_eos_linear_Sref, config_eos_linear_densityref
+     real (kind=RKIND), pointer :: config_eos_linear_alpha, config_eos_linear_beta, config_eos_linear_Tref, config_eos_linear_Sref, config_eos_linear_densityref
 
      ! Define dimension pointers
      integer, pointer :: nCellsSolve, nEdgesSolve, nVertLevels, nVertLevelsP1
@@ -124,26 +127,28 @@ module ocn_init_sub_ice_shelf_2D
      call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_surface_salinity', config_sub_ice_shelf_2D_surface_salinity)
      call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_bottom_salinity', config_sub_ice_shelf_2D_bottom_salinity)
      call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_seaSurfacePressure_factor',config_sub_ice_shelf_2D_seaSurfacePressure_factor)
+     call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_y1', config_sub_ice_shelf_2D_y1)
+     call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_y2', config_sub_ice_shelf_2D_y2)
+     call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_slope_height', config_sub_ice_shelf_2D_slope_height)
 
-     ! Change these to flags later
-     config_eos_linear_alpha = 0.2
-     config_eos_linear_beta = 0.8
-     config_eos_linear_Tref = 5.0
-     config_eos_linear_Sref = 35.0
-     config_eos_linear_densityref = 1000.0
+     call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_alpha', config_eos_linear_alpha)
+     call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_beta', config_eos_linear_beta)
+     call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_Tref', config_eos_linear_Tref)
+     call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_Sref', config_eos_linear_Sref)
+     call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_densityref', config_eos_linear_densityref)
 
      ! points 1 and 2 are where angles on ice shelf are located.
      ! point 3 is at the surface.
      ! d variables are total water thickness below ice shelf.
-     y1=30.0e3
-     y2=60.0e3
-     y3=60.0e3 + config_sub_ice_shelf_2D_edge_width
+     y1=config_sub_ice_shelf_2D_y1
+     y2=config_sub_ice_shelf_2D_y2
+     y3=config_sub_ice_shelf_2D_y2 + config_sub_ice_shelf_2D_edge_width
      d1=config_sub_ice_shelf_2D_cavity_thickness
-     d2=config_sub_ice_shelf_2D_cavity_thickness+500.0
+     d2=config_sub_ice_shelf_2D_cavity_thickness+config_sub_ice_shelf_2D_slope_height
      d3=config_sub_ice_shelf_2D_bottom_depth
 
-     bottomSalinity = config_sub_ice_shelf_2D_bottom_salinity
-     surfaceSalinity = config_sub_ice_shelf_2D_surface_salinity
+     config_sub_ice_shelf_2D_bottom_salinity = config_sub_ice_shelf_2D_bottom_salinity
+     config_sub_ice_shelf_2D_surface_salinity = config_sub_ice_shelf_2D_surface_salinity
 
      ! Determine vertical grid for configuration
      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
@@ -277,7 +282,7 @@ module ocn_init_sub_ice_shelf_2D
            enddo
            idx = index_salinity
            do k = nVertLevels, 1, -1
-              activeTracers(idx, k, iCell) = surfaceSalinity + (bottomSalinity - surfaceSalinity) * (midDepth(k)/config_sub_ice_shelf_2D_bottom_depth)
+              activeTracers(idx, k, iCell) = config_sub_ice_shelf_2D_surface_salinity + (config_sub_ice_shelf_2D_bottom_salinity - config_sub_ice_shelf_2D_surface_salinity) * (midDepth(k)/config_sub_ice_shelf_2D_bottom_depth)
            end do
 
            ! Set sea surface pressure
@@ -289,12 +294,12 @@ module ocn_init_sub_ice_shelf_2D
            ! with some assumed density profile.  Here we use a linear equation of state for the density
            ! and integrate analytically:
            !   p = g c int_{z=-eta}}{0} ( rho_0 - alpha*(T-Tref) + beta*(S-Sref) ) dz
-           ! mrp: note this formulation is for a constant T and linear stratification is S.
+           ! Note this formulation is for a constant T and linear stratification is S.
            seaSurfacePressure(iCell) = gravity * surfaceDepression * config_sub_ice_shelf_2D_seaSurfacePressure_factor*(&
                 config_eos_linear_densityref &
                 - config_eos_linear_alpha * ( config_sub_ice_shelf_2D_temperature - config_eos_linear_Tref) &
-                + config_eos_linear_beta  * ( -config_eos_linear_Sref + surfaceSalinity  &
-                + (bottomSalinity-surfaceSalinity)/maxDepth/2.0* surfaceDepression ))
+                + config_eos_linear_beta  * ( -config_eos_linear_Sref + config_sub_ice_shelf_2D_surface_salinity  &
+                + (config_sub_ice_shelf_2D_bottom_salinity-config_sub_ice_shelf_2D_surface_salinity)/maxDepth/2.0* surfaceDepression ))
 
         end do
 
