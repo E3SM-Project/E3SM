@@ -55,6 +55,8 @@ module li_tendency
    !
    !--------------------------------------------------------------------
 
+   !WHL - debug
+   integer, parameter :: iTest = 485
 
  contains
 
@@ -85,7 +87,8 @@ module li_tendency
         scratchPool,            &
         layerThicknessTendency, &
         allowableDt,            &
-        err)
+        err,                    &
+        advectTracersIn)
 
       !-----------------------------------------------------------------
       !
@@ -101,6 +104,10 @@ module li_tendency
 
       type (mpas_pool_type), intent(in) :: &
            velocityPool           !< Input: velocity information
+
+      logical, intent(in), optional :: &
+           advectTracersIn        !< Input: if true, then advect tracers as well as thickness
+                                  !         (default is true)
 
       !-----------------------------------------------------------------
       !
@@ -154,6 +161,7 @@ module li_tendency
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            normalVelocity,        & ! normal component of velocity on cell edges
+           layerThicknessEdge,    & ! layer thickness on upstream edge of cell
            oldLayerThickness        ! old layer thickness
 
       real (kind=RKIND), dimension(:,:), pointer :: &
@@ -185,19 +193,24 @@ module li_tendency
       real (kind=RKIND), pointer :: &
            config_ice_density
 
+      logical :: advectTracers     ! if true, then advect tracers as well as thickness
+
       integer :: err_tmp
 
       !WHL - debug
       integer, dimension(:), pointer :: indexToCellID
       integer, pointer :: nCells
       integer, pointer :: config_stats_cell_ID
+      integer :: iEdge, iEdgeOnCell
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: edgesOnCell
 
       !WHL - debug - for test-case diagnostics
-      logical, parameter :: dome_test = .false.
+      logical, parameter :: dome_test = .true.
       logical, parameter :: circular_shelf_test = .false.
       integer :: nCellsPerRow
       integer :: nRows
-      integer :: i, iRow, iCell, iLayer
+      integer :: i, k, iRow, iCell, iLayer
 
       if (circular_shelf_test) then
          nCellsPerRow = 40
@@ -210,6 +223,15 @@ module li_tendency
       err = 0
       err_tmp = 0
 
+      ! Decide whether to advect tracers
+      ! If not, then advect thickness only
+
+      if (present(advectTracersIn)) then
+         advectTracers = advectTracersIn
+      else
+         advectTracers = .false.
+      endif
+
       ! Assuming tendency will always be calculated using time level 1!
 
       ! get dimensions
@@ -221,6 +243,7 @@ module li_tendency
       call mpas_pool_get_array(geometryPool, 'groundedBasalMassBal', groundedBasalMassBal)
       call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
       call mpas_pool_get_array(geometryPool, 'layerThickness', oldLayerThickness)
+      call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
       ! get arrays from the velocity pool
@@ -235,6 +258,8 @@ module li_tendency
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
 
       !WHL - debug
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
       call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
@@ -269,50 +294,61 @@ module li_tendency
          if (config_print_thickness_advection_info) then
             write(stderrUnit,*) 'Using first-order upwind for thickness and tracer advection'
          endif
-
-         ! Copy the old tracer values into the oldTracerAdvection array.
-         ! This requires setting a tracer pointer to either temperature or enthalpy,
-         !  depending on the value of config_thermal_solver.
-         ! Currently (as of Nov. 2015), this is the only tracer transported, but others
-         !  may be added later.
-
-         call tracer_setup(&
-              meshPool,          &
-              geometryPool,      &
-              thermalPool,       &
-              thermalTracers,    &
-              oldTracerAdvection)
-
+         
          !WHL - debug
          if (dome_test .and. config_print_thickness_advection_info) then
             write(stderrUnit,*) ' '
             write(stderrUnit,*) 'Dome test diagnostics:'
             write(stderrUnit,*) ' '
             iLayer = 1
-            write(stderrUnit,*) 'Initial thickness, layer =', iLayer
+!            write(stderrUnit,*) 'Initial thickness, layer =', iLayer
             do iRow = nRows, 1, -1
                if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                  write(stderrUnit,'(a3)',advance='no') '    '
+!                  write(stderrUnit,'(a3)',advance='no') '    '
                endif
                do i = nCellsPerRow/2 - 2, nCellsPerRow
                   iCell = (iRow-1)*nCellsPerRow + i
-                  write(stderrUnit,'(f8.3)',advance='no') oldLayerThickness(iLayer,iCell)
+!                  write(stderrUnit,'(f8.3)',advance='no') oldLayerThickness(iLayer,iCell)
                enddo
-               write(stderrUnit,*) ' '
+!               write(stderrUnit,*) ' '
             enddo
-            write(stderrUnit,*) ' '
-            write(stderrUnit,*) 'Initial tracer 1, layer =', iLayer
-            iLayer = 1
-            do iRow = nRows, 1, -1
-               if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                  write(stderrUnit,'(a4)',advance='no') '    '
-               endif
-               do i = nCellsPerRow/2 - 2, nCellsPerRow
-                  iCell = (iRow-1)*nCellsPerRow + i
-                  write(stderrUnit,'(f10.4)',advance='no') oldTracerAdvection(1,iLayer,iCell)
+         endif
+
+         if (advectTracers) then
+
+            ! Copy the old tracer values into the oldTracerAdvection array.
+            ! This requires setting a tracer pointer to either temperature or enthalpy,
+            !  depending on the value of config_thermal_solver.
+            ! Currently (as of Nov. 2015), this is the only tracer transported, but others
+            !  may be added later.
+
+            call tracer_setup(&
+                 meshPool,          &
+                 geometryPool,      &
+                 thermalPool,       &
+                 thermalTracers,    &
+                 oldTracerAdvection)
+
+            if (dome_test .and. config_print_thickness_advection_info) then
+!               write(stderrUnit,*) ' '
+!               write(stderrUnit,*) 'Initial tracer 1, layer =', iLayer
+               iLayer = 1
+               do iRow = nRows, 1, -1
+                  if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+!                     write(stderrUnit,'(a4)',advance='no') '    '
+                  endif
+                  do i = nCellsPerRow/2 - 2, nCellsPerRow
+                     iCell = (iRow-1)*nCellsPerRow + i
+!                     write(stderrUnit,'(f10.4)',advance='no') oldTracerAdvection(1,iLayer,iCell)
+                  enddo
+!                  write(stderrUnit,*) ' '
                enddo
-               write(stderrUnit,*) ' '
-            enddo
+               
+            endif
+
+         else   ! no tracer advection; pass a tracer array full of zeroes
+
+            oldTracerAdvection(:,:,:) = 0.0_RKIND
 
          endif
 
@@ -333,6 +369,10 @@ module li_tendency
                if (indexToCellID(iCell) == config_stats_cell_ID) then
                   write(stderrUnit,*) 'Before thickness advection, iCell (local, global), thickness:', &
                        iCell, indexToCellID(iCell), sum(oldLayerThickness(:,iCell))
+                  do iEdgeOnCell = 1, nEdgesOnCell(iCell)
+                     iEdge = edgesOnCell(iEdgeOnCell,iCell)
+                     write(stderrUnit,*) 'iEdge, normalVelocity:', iEdge, normalVelocity(1,iEdge)
+                  enddo
                endif
             enddo
          endif
@@ -341,6 +381,8 @@ module li_tendency
               dt,                      &
               meshPool,                &
               normalVelocity,          &
+              layerThicknessEdge,      &
+              layerThicknessTendency,  &  !WHL TODO - Remove tendency from argument list?
               oldLayerThickness,       &
               oldTracerAdvection,      &
               newLayerThickness,       &
@@ -351,58 +393,61 @@ module li_tendency
          if (config_print_thickness_advection_info) then
             do iCell = 1, nCells
                if (indexToCellID(iCell) == config_stats_cell_ID) then
-                  write(stderrUnit,*) 'After thickness advection, iCell (local, global), thickness:', &
-                       iCell, indexToCellID(iCell), sum(newLayerThickness(:,iCell))
+                  write(stderrUnit,*) 'After thickness advection, iCell, new layer thickness:'
+                  do k = 1, nVertLevels
+                     write(stderrUnit,*) iCell, newLayerThickness(k,iCell)
+                  enddo
                endif
             enddo
          endif
 
          !WHL - debug
          if (dome_test .and. config_print_thickness_advection_info) then
-            write(stderrUnit,*) ' '
+!            write(stderrUnit,*) ' '
             iLayer = 1
-            write(stderrUnit,*) 'New thickness, layer =', iLayer
+!            write(stderrUnit,*) 'New thickness, layer =', iLayer
             do iRow = nRows, 1, -1
                if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                  write(stderrUnit,'(a3)',advance='no') '    '
+!                  write(stderrUnit,'(a3)',advance='no') '    '
                endif
                do i = nCellsPerRow/2 - 2, nCellsPerRow
                   iCell = (iRow-1)*nCellsPerRow + i
-                  write(stderrUnit,'(f8.3)',advance='no') newLayerThickness(iLayer,iCell)
+!                  write(stderrUnit,'(f8.3)',advance='no') newLayerThickness(iLayer,iCell)
                enddo
-               write(stderrUnit,*) ' '
+!               write(stderrUnit,*) ' '
             enddo
-            write(stderrUnit,*) ' '
-            write(stderrUnit,*) 'New tracer 1, layer =', iLayer
+!            write(stderrUnit,*) ' '
+!            write(stderrUnit,*) 'New tracer 1, layer =', iLayer
             iLayer = 1
             do iRow = nRows, 1, -1
                if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                  write(stderrUnit,'(a4)',advance='no') '    '
+!                  write(stderrUnit,'(a4)',advance='no') '    '
                endif
                do i = nCellsPerRow/2 - 2, nCellsPerRow
                   iCell = (iRow-1)*nCellsPerRow + i
-                  write(stderrUnit,'(f10.4)',advance='no') newTracerAdvection(1,iLayer,iCell)
+!                  write(stderrUnit,'(f10.4)',advance='no') newTracerAdvection(1,iLayer,iCell)
                enddo
-               write(stderrUnit,*) ' '
+!               write(stderrUnit,*) ' '
             enddo
          endif
 
          ! compute the layer thickness tendency
-         layerThicknessTendency(:,:) = (newLayerThickness(:,:) - oldLayerThickness(:,:)) / dt
+         !WHL - Currently done in subroutine
+!!         layerThicknessTendency(:,:) = (newLayerThickness(:,:) - oldLayerThickness(:,:)) / dt
 
          if (dome_test .and. config_print_thickness_advection_info) then
-            write(stderrUnit,*) ' '
+!            write(stderrUnit,*) ' '
             iLayer = 1
-            write(stderrUnit,*) 'layerThicknessTendency*dt, layer =', iLayer
+!            write(stderrUnit,*) 'layerThicknessTendency*dt, layer =', iLayer
             do iRow = nRows, 1, -1
                if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                  write(stderrUnit,'(a3)',advance='no') '    '
+!                  write(stderrUnit,'(a3)',advance='no') '    '
                endif
                do i = nCellsPerRow/2 - 2, nCellsPerRow
                   iCell = (iRow-1)*nCellsPerRow + i
-                  write(stderrUnit,'(f8.3)',advance='no') layerThicknessTendency(iLayer,iCell)*dt
+!                  write(stderrUnit,'(f8.3)',advance='no') layerThicknessTendency(iLayer,iCell)*dt
                enddo
-               write(stderrUnit,*) ' '
+!               write(stderrUnit,*) ' '
             enddo
          endif
 
@@ -438,7 +483,7 @@ module li_tendency
          end where
 
          ! Add surface mass balance to tendency
-        ! TODO: Need to decide how to deal with negative SMB that eliminates top layer or all ice (check for negative thickness?)
+         ! TODO: Need to decide how to deal with negative SMB that eliminates top layer or all ice (check for negative thickness?)
 
          layerThicknessTendency(1,:) = layerThicknessTendency(1,:) &
                                      + sfcMassBal / config_ice_density  ! (tendency in m/s)
@@ -458,18 +503,27 @@ module li_tendency
          !       For now, use the layerThicknessTendency in each column to compute the new
          !        thickness in each column, and to the vertical remapping based on that thickness.
 
-         call vertical_remap(meshPool, newLayerThickness, newTracerAdvection, err_tmp)
-         err = ior(err, err_tmp)
+         if (advectTracers) then
 
-         ! Copy the newTracerAdvection values into the thermal tracer arrays
-         ! (temperature, waterfrac, enthalpy)
+            !WHL - Without tracer advection, vertical remapping is currently called from mpas_diagnostics module
+            call vertical_remap(meshPool, newLayerThickness, newTracerAdvection, err_tmp)
+            err = ior(err, err_tmp)
 
-         call tracer_finish(&
-              meshPool,              &
-              geometryPool,          &
-              thermalPool,           &
-              newTracerAdvection,    &
-              thermalTracers)
+            ! Copy the newTracerAdvection values into the thermal tracer arrays
+            ! (temperature, waterfrac, enthalpy)
+
+            call tracer_finish(&
+                 meshPool,              &
+                 geometryPool,          &
+                 thermalPool,           &
+                 newTracerAdvection,    &
+                 thermalTracers)
+
+         else
+
+            ! no tracers to update, so do nothing
+
+         endif
 
       case ('none')
 
@@ -578,14 +632,17 @@ module li_tendency
       integer, pointer :: nCells
       integer, pointer :: config_stats_cell_ID
       logical, pointer :: config_print_thickness_advection_info
+      integer :: iEdge, iEdgeOnCell
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: edgesOnCell
 
       !WHL - debug - for test-case diagnostics
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
-      logical, parameter :: dome_test = .false.
+      logical, parameter :: dome_test = .true.
       logical, parameter :: circular_shelf_test = .false.
       integer :: nCellsPerRow
       integer :: nRows
-      integer :: i, iRow, iCell, iLayer
+      integer :: i, k, iRow, iCell, iLayer
 
       if (circular_shelf_test) then
          nCellsPerRow = 40
@@ -612,6 +669,8 @@ module li_tendency
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
 
       !WHL - debug
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
       call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
@@ -639,16 +698,16 @@ module li_tendency
             write(stderrUnit,*) ' '
             call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness, timeLevel=1)
             iLayer = 1
-            write(stderrUnit,*) 'Initial thickness, layer =', iLayer
+!            write(stderrUnit,*) 'Initial thickness, layer =', iLayer
             do iRow = nRows, 1, -1
                if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                  write(stderrUnit,'(a3)',advance='no') '    '
+!                  write(stderrUnit,'(a3)',advance='no') '    '
                endif
                do i = nCellsPerRow/2 - 2, nCellsPerRow
                   iCell = (iRow-1)*nCellsPerRow + i
-                  write(stderrUnit,'(f8.3)',advance='no') layerThickness(iLayer,iCell)
+!                  write(stderrUnit,'(f8.3)',advance='no') layerThickness(iLayer,iCell)
                enddo
-               write(stderrUnit,*) ' '
+!               write(stderrUnit,*) ' '
             enddo
          endif
 
@@ -659,6 +718,10 @@ module li_tendency
                if (indexToCellID(iCell) == config_stats_cell_ID) then
                   write(stderrUnit,*) 'Before thickness advection, iCell (local, global), thickness:', &
                        iCell, indexToCellID(iCell), sum(layerThickness(:,iCell))
+                  do iEdgeOnCell = 1, nEdgesOnCell(iCell)
+                     iEdge = edgesOnCell(iEdgeOnCell,iCell)
+                     write(stderrUnit,*) 'iEdge, normalVelocity:', iEdge, normalVelocity(1,iEdge)
+                  enddo
                endif
             enddo
          endif
@@ -670,38 +733,40 @@ module li_tendency
          if (config_print_thickness_advection_info) then
             do iCell = 1, nCells
                if (indexToCellID(iCell) == config_stats_cell_ID) then
-                  write(stderrUnit,*) 'After thickness advection, iCell (local, global), thickness:', &
-                       iCell, indexToCellID(iCell), sum(layerThickness(:,iCell)) + sum(layerThicknessTendency(:,iCell))*dt
+                  write(stderrUnit,*) 'After thickness advection, iCell, new layer thickness:'
+                  do k = 1, nVertLevels
+                     write(stderrUnit,*) iCell, layerThickness(k,iCell) + layerThicknessTendency(k,iCell)*dt
+                  enddo
                endif
             enddo
          endif
 
          !WHL - debug
          if (dome_test) then
-            write(stderrUnit,*) ' '
+!            write(stderrUnit,*) ' '
             iLayer = 1
-            write(stderrUnit,*) 'New thickness, layer =', iLayer
+!            write(stderrUnit,*) 'New thickness, layer =', iLayer
             do iRow = nRows, 1, -1
                if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                  write(stderrUnit,'(a3)',advance='no') '    '
+!                  write(stderrUnit,'(a3)',advance='no') '    '
                endif
                do i = nCellsPerRow/2 - 2, nCellsPerRow
                   iCell = (iRow-1)*nCellsPerRow + i
-                  write(stderrUnit,'(f8.3)',advance='no') layerThickness(iLayer,iCell) + layerThicknessTendency(iLayer,iCell)*dt
+!                  write(stderrUnit,'(f8.3)',advance='no') layerThickness(iLayer,iCell) + layerThicknessTendency(iLayer,iCell)*dt
                enddo
-               write(stderrUnit,*) ' '
+!               write(stderrUnit,*) ' '
             enddo
-            write(stderrUnit,*) ' '
-            write(stderrUnit,*) 'layerThicknessTendency*dt, layer =', iLayer
+!            write(stderrUnit,*) ' '
+!            write(stderrUnit,*) 'layerThicknessTendency*dt, layer =', iLayer
             do iRow = nRows, 1, -1
                if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                  write(stderrUnit,'(a3)',advance='no') '    '
+!                  write(stderrUnit,'(a3)',advance='no') '    '
                endif
                do i = nCellsPerRow/2 - 2, nCellsPerRow
                   iCell = (iRow-1)*nCellsPerRow + i
-                  write(stderrUnit,'(f8.3)',advance='no') layerThicknessTendency(iLayer,iCell)*dt
+!                  write(stderrUnit,'(f8.3)',advance='no') layerThicknessTendency(iLayer,iCell)*dt
                enddo
-               write(stderrUnit,*) ' '
+!               write(stderrUnit,*) ' '
             enddo
          endif
 
@@ -1367,6 +1432,8 @@ module li_tendency
          dt,                     &
          meshPool,               &
          normalVelocity,         &
+         layerThicknessEdge,     &
+         layerThicknessTendency, &  !WHL TODO - Remove tendency from argument list?
          oldLayerThickness,      &
          oldTracers,             &
          newlayerThickness,      &
@@ -1387,13 +1454,23 @@ module li_tendency
            meshPool              !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-           normalVelocity        !< Input: normal velocity on cell edges
+           normalVelocity,     & !< Input: normal velocity on cell edges
+           layerThicknessEdge    !< Input: layer thickness on upstream edge
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
            oldLayerThickness     !< Input: old layer thickness
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
            oldTracers            !< Input: old tracer values
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(inout) :: &
+           layerThicknessTendency  !< Input/output: layer thickness tendency
 
       !-----------------------------------------------------------------
       !
@@ -1444,8 +1521,9 @@ module li_tendency
            maxAllowableDt,         & ! max allowable dt based on advective CFL condition
            layerNormalVelocity,    & ! normal velocity averaged from interfaces to layer midpoints
            thicknessFluxEdge,      & ! thickness flux on an edge
-           thicknessFlux,          & ! net flux into a cell
-           layerThicknessEdge,     & ! layer thickness in upwind cell
+!           thicknessFlux,          & ! net flux into a cell
+           thicknessTendency,      & ! net thickness tendency for a cell
+!!           layerThicknessEdge,     & ! layer thickness in upwind cell
            newThickness              ! new layer thickness
 
       integer :: iEdge, iCell, iCell1, iCell2, iEdgeOnCell, k
@@ -1454,10 +1532,13 @@ module li_tendency
 
       real (kind=RKIND), dimension(:), allocatable :: &
            tracersEdge,            & ! upstream tracer values on an edge
-           thicknessTracerFlux,    & ! net thickness*tracer flux into a cell
+!           thicknessTracerFlux,    & ! net thickness*tracer flux into a cell
+           thicknessTracerTendency, & ! net thickness*tracer tendency for a cell
            newThicknessTracers       ! new values of thickness*tracer
 
       real (kind=RKIND), parameter :: bigNumber = 1.0e16_RKIND  ! This is ~300 million years in seconds, but it is small enough not too overflow
+
+      real(kind=RKIND) :: velSign     ! = 1.0_RKIND or -1.0_RKIND depending on sign of velocity
 
       integer :: err_tmp
 
@@ -1476,7 +1557,8 @@ module li_tendency
 
       ! allocate temporary arrays
       allocate(tracersEdge(nTracers))
-      allocate(thicknessTracerFlux(nTracers))
+!      allocate(thicknessTracerFlux(nTracers))
+      allocate(thicknessTracerTendency(nTracers))
       allocate(newThicknessTracers(nTracers))
 
       ! get dimensions
@@ -1522,12 +1604,21 @@ module li_tendency
 !!        invAreaCell = 1.0 / areaCell(iCell)
          invAreaCell = 1.0_RKIND / areaCell(iCell)
 
+         if (iCell == itest) then
+            write(stderrUnit,*) 'In advect_thickness_tracer, iCell =', iCell
+            write(stderrUnit,*)
+            write(stderrUnit,*) 'k, iEdgeOnCell, layerNormalVelocity, layerThicknessEdge, thicknessFluxEdge, thicknessTendency' 
+         endif
+
          ! loop over layers
          do k = 1, nVertLevels
 
-            ! initialize the fluxes for this layer
-            thicknessFlux = 0.0_RKIND
-            thicknessTracerFlux(:) = 0.0_RKIND
+!            ! initialize the fluxes for this layer
+!            thicknessFlux = 0.0_RKIND
+!            thicknessTracerFlux(:) = 0.0_RKIND
+            ! initialize the tendencies for this layer
+            thicknessTendency = 0.0_RKIND
+            thicknessTracerTendency(:) = 0.0_RKIND
 
             ! compute fluxes for each edge of the cell
             do iEdgeOnCell = 1, nEdgesOnCell(iCell)
@@ -1555,26 +1646,51 @@ module li_tendency
                endif
                minOfMaxAllowableDt = min(minOfMaxAllowableDt, maxAllowableDt)
 
+               velSign = sign(1.0_RKIND, layerNormalVelocity)
+               !WHL - layerThicknessEdge is passed in
+               !TODO - Compute layerThicknessEdge here? No, because model results then change at roundoff level.
+               !WHL - debug
+!!               layerThicknessEdge2 = max(velSign * oldLayerThickness(k,iCell1),   &
+!!                                        velSign * (-1.0_RKIND) * oldLayerThickness(k,iCell2))
+               tracersEdge(:) = max(velSign * oldTracers(:,k,iCell1),   &
+                                    velSign * (-1.0_RKIND) * oldTracers(:,k,iCell2))
+               
                ! Get thickness and tracer values in the upwind cell
-               if (layerNormalVelocity > 0.0_RKIND) then   ! flow is from cell 1 to cell 2
-                  layerThicknessEdge = oldLayerThickness(k,iCell1)
-                  tracersEdge(:) = oldTracers(:,k,iCell1)
-               else ! flow is from cell 2 to cell 1
-                  layerThicknessEdge = oldLayerThickness(k,iCell2)
-                  tracersEdge(:) = oldTracers(:,k,iCell2)
-               endif
+!               if (layerNormalVelocity > 0.0_RKIND) then   ! flow is from cell 1 to cell 2
+!                  layerThicknessEdge = oldLayerThickness(k,iCell1)
+!                  tracersEdge(:) = oldTracers(:,k,iCell1)
+!               else ! flow is from cell 2 to cell 1
+!                  layerThicknessEdge = oldLayerThickness(k,iCell2)
+!                  tracersEdge(:) = oldTracers(:,k,iCell2)
+!               endif
 
-               ! Increment the thickness and thickness*tracer fluxes
-               thicknessFluxEdge = edgeSignOnCell(iEdgeOnCell,iCell) * layerNormalVelocity * dvEdge(iEdge) * layerThicknessEdge
-               thicknessFlux = thicknessFlux + thicknessFluxEdge
-               thicknessTracerFlux(:) = thicknessTracerFlux(:) + thicknessFluxEdge * tracersEdge(:)
+               ! Increment the thickness and thickness*tracer tendencies
+!               thicknessFluxEdge = edgeSignOnCell(iEdgeOnCell,iCell) * layerNormalVelocity * dvEdge(iEdge) * layerThicknessEdge
+!               thicknessFlux = thicknessFlux + thicknessFluxEdge
+!               thicknessTracerFlux(:) = thicknessTracerFlux(:) + thicknessFluxEdge * tracersEdge(:)
+               thicknessFluxEdge = layerNormalVelocity * dvEdge(iEdge) * layerThicknessEdge(k,iEdge)
+               thicknessTendency = thicknessTendency &
+                                 + edgeSignOnCell(iEdgeOnCell,iCell) * thicknessFluxEdge * invAreaCell
+               thicknessTracerTendency(:) = thicknessTracerTendency(:) &
+                                 + edgeSignOnCell(iEdgeOnCell,iCell) * thicknessFluxEdge * invAreaCell * tracersEdge(:)
+
+               !WHL - debug
+               if (iCell == itest .and. k==1) then
+                  write(stderrUnit,*) k, iEdgeOnCell, layerNormalVelocity, layerThicknessEdge(k,iEdge), thicknessFluxEdge, thicknessTendency 
+               endif
 
             enddo    ! iEdgeOnCell
 
             ! Compute the new layer thickness and tracers
 
-            newLayerThickness(k,iCell) = oldLayerThickness(k,iCell) + thicknessFlux * dt * invAreaCell
-            newThicknessTracers(:) = oldLayerThickness(k,iCell)*oldTracers(:,k,iCell) + thicknessTracerFlux(:) * dt * invAreaCell
+!            newLayerThickness(k,iCell) = oldLayerThickness(k,iCell) + thicknessFlux * dt * invAreaCell
+!            newThicknessTracers(:) = oldLayerThickness(k,iCell)*oldTracers(:,k,iCell) + thicknessTracerFlux(:) * dt * invAreaCell
+
+            !WHL TODO - Do not compute and pass out layer thickness tendency?
+            layerThicknessTendency(k,iCell) = thicknessTendency
+
+            newLayerThickness(k,iCell) = oldLayerThickness(k,iCell) + thicknessTendency * dt
+            newThicknessTracers(:) = oldLayerThickness(k,iCell)*oldTracers(:,k,iCell) + thicknessTracerTendency(:) * dt
             if (newLayerThickness(k,iCell) > 0.0_RKIND) then
                newTracers(:,k,iCell) = newThicknessTracers(:) / newLayerThickness(k,iCell)
             else
@@ -1618,7 +1734,8 @@ module li_tendency
 
       ! clean up
       deallocate(tracersEdge)
-      deallocate(thicknessTracerFlux)
+!      deallocate(thicknessTracerFlux)
+      deallocate(thicknessTracerTendency)
       deallocate(newThicknessTracers)
 
       ! Optional check for mass conservation
@@ -1729,8 +1846,17 @@ module li_tendency
 
       do iCell = 1, nCells
         invAreaCell = 1.0 / areaCell(iCell)
+
+        !WHL - debug
+         if (iCell == itest) then
+            write(stderrUnit,*) 'In tend_layerThickness, iCell =', iCell
+            write(stderrUnit,*)
+            write(stderrUnit,*) 'k, iEdgeOnCell, layerNormalVelocity, layerThicknessEdge, thicknessFluxEdge, thicknessTendency' 
+         endif
+
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
+
           do k = 1, nVertLevels
 
             ! Average native velocities from layer interfaces to layer midpoints for advection
@@ -1750,6 +1876,12 @@ module li_tendency
 
             flux = layerNormalVelocity * dvEdge(iEdge) * layerThicknessEdge(k, iEdge)
             tend(k, iCell) = tend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell
+
+            !WHL - debug
+            if (iCell == itest .and. k==1) then
+               write(stderrUnit,*) k, i, layerNormalVelocity, layerThicknessEdge(k,iEdge), flux, tend(k,iCell)
+            endif
+
           end do
         end do
       end do

@@ -43,6 +43,10 @@ module li_time_integration_fe
    !
    !--------------------------------------------------------------------
 
+   !WHL - debug
+!   logical, parameter :: new_thickness_adv = .true.
+   logical, parameter :: new_thickness_adv = .false.
+      
    !--------------------------------------------------------------------
    !
    ! Public member functions
@@ -311,7 +315,24 @@ module li_time_integration_fe
                  allowableAdvecDt,       &
                  err_tmp)
 
-         else
+         elseif (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'none' .and. new_thickness_adv) then
+
+            write(stderrUnit,*) 'Advect thickness (but not tracers) using new scheme...'
+
+            !WHL - debug - Try to get thickness-only results from new scheme that are BFB compared to old scheme
+
+            call li_tendency_thickness_tracers(&   ! aiming to get same results as old default
+                 dtSeconds,              &
+                 meshPool,               &
+                 velocityPool,           &
+                 geometryPool,           &
+                 thermalPool,            &
+                 scratchPool,            &
+                 layerThicknessTendency, &
+                 allowableAdvecDt,       &
+                 err_tmp,   advectTracersIn = .false.)
+
+         else  ! old default
 
             call li_tendency_thickness(&
                  meshPool,               &
@@ -552,10 +573,17 @@ module li_time_integration_fe
       real (kind=RKIND), dimension(:,:), pointer :: layerThicknessOld, layerThicknessNew, layerThicknessTendency 
       integer, dimension(:), allocatable :: masktmp  ! Temporary mask for assessing new thickness field
 
+      !WHL - debug
+      integer, pointer :: config_stats_cell_ID
+      integer :: iCell
+
       err = 0
 
       dminfo => domain % dminfo
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
+
+      !WHL - debug
+      call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
 
       block => domain % blocklist
       do while (associated(block))
@@ -591,6 +619,19 @@ module li_time_integration_fe
 
          layerThicknessNew = layerThicknessOld + layerThicknessTendency * deltat
          thickness = sum(layerThicknessNew, 1)
+
+         !WHL - debug
+         iCell = config_stats_cell_ID
+         write(stderrUnit,*) 'iCell, old thickness, delta, new thickness:', &
+              iCell, sum(layerThicknessOld(:,iCell)), sum(layerThicknessTendency(:,iCell))*deltat, sum(layerThicknessNew(:,iCell))
+
+         write(stderrUnit,*) ' '
+         write(stderrUnit,*) 'After prognostic update: iCell, new thickness:'
+         do iCell = 1, nCells
+            if (thickness(iCell) > 0.0_RKIND) then
+               write(stderrUnit,*) iCell, thickness(iCell)
+            endif
+         enddo
 
          !Optionally print some information about the new thickness
          !print *, 'thickness_tend maxval:', maxval(thickness_tend(1:mesh % nCellsSolve))       

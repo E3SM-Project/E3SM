@@ -450,6 +450,10 @@ contains
 
       integer :: err_tmp
 
+      !WHL - debug - WARNING: This must be declared in time_integration_fe also
+!      logical, parameter :: new_thickness_adv = .true.
+      logical, parameter :: new_thickness_adv = .false.
+
       err = 0
       err_tmp = 0
 
@@ -622,7 +626,10 @@ contains
           !       For the old option where only thickness is advected, the vertical_remap call is done here to avoid answer changes. 
 
           if (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'fo') then
-             ! do nothing, because vertical remapping is done in the li_tendency module
+             ! do nothing, because vertical remapping has already been done in the li_tendency module
+!!          elseif (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'none' .and. new_thickness_adv) then
+             !WHL - debug
+             ! do nothing, because vertical remapping has already been done in this case too
           else
              call vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err_tmp)
           endif
