@@ -378,6 +378,50 @@ contains
 
     real(r8):: temp_sminn_to_plant(bounds%begc:bounds%endc)
     real(r8):: temp_sminp_to_plant(bounds%begc:bounds%endc)
+
+   real(r8), pointer :: leafc_storage(:)
+   real(r8), pointer :: leafc_xfer(:)
+
+   real(r8), pointer :: col_plant_ndemand_vr(:,:)
+   real(r8), pointer :: col_plant_nh4demand_vr(:,:)
+   real(r8), pointer :: col_plant_no3demand_vr(:,:)
+   real(r8), pointer :: col_plant_pdemand_vr(:,:)
+   real(r8), pointer :: plant_nh4demand_vr_patch(:,:)
+   real(r8), pointer :: plant_no3demand_vr_patch(:,:)
+   real(r8), pointer :: plant_ndemand_vr_patch(:,:)
+   real(r8), pointer :: actual_immob_no3(:)
+   real(r8), pointer :: actual_immob_nh4(:)
+   real(r8), pointer :: smin_nh4_to_plant_patch(:)
+   real(r8), pointer :: smin_no3_to_plant_patch(:)
+   real(r8), pointer :: sminn_to_plant_patch(:)
+   real(r8), pointer :: pnup_pfrootc(:)
+   real(r8), pointer :: pgpp_pleafc(:)
+   real(r8), pointer :: pgpp_pleafn(:)
+   real(r8), pointer :: pgpp_pleafp(:)
+   real(r8), pointer :: plant_n_uptake_flux(:)
+
+   real(r8), pointer :: leafn(:)
+   real(r8), pointer :: leafn_storage(:)
+   real(r8), pointer :: leafn_xfer(:)
+
+   real(r8), pointer :: labilep_vr(:,:)
+   real(r8), pointer :: secondp_vr(:,:)
+   real(r8), pointer :: actual_leafcp(:)
+   real(r8), pointer :: actual_frootcp(:)
+   real(r8), pointer :: actual_livewdcp(:)
+   real(r8), pointer :: actual_deadwdcp(:)
+   real(r8), pointer :: leafp(:)
+
+   real(r8), pointer :: plant_pdemand_vr_patch(:,:)
+   real(r8), pointer :: plant_p_uptake_flux(:)
+   real(r8), pointer :: sminp_to_plant_patch(:)
+   real(r8), pointer :: adsorb_to_labilep_vr(:,:)
+   real(r8), pointer :: desorb_to_solutionp_vr(:,:)
+   real(r8), pointer :: primp_to_labilep_vr_col(:,:)
+   real(r8), pointer :: biochem_pmin_vr_col(:,:)
+   real(r8), pointer :: secondp_to_labilep_vr_col(:,:)
+   real(r8), pointer :: labilep_to_secondp_vr_col(:,:)
+
     !-----------------------------------------------------------------------
 
     associate(                                                                                   &
@@ -606,48 +650,53 @@ contains
          km_den                       => ecophyscon%km_den                                     , &
          decompmicc_patch_vr          => ecophyscon%decompmicc_patch_vr                        , &
          t_scalar                     => carbonflux_vars%t_scalar_col                          , &
-         w_scalar                     => carbonflux_vars%w_scalar_col                          , &
-         smin_nh4_to_plant_patch      => nitrogenflux_vars%smin_nh4_to_plant_patch             , &                                   
-         smin_no3_to_plant_patch      => nitrogenflux_vars%smin_no3_to_plant_patch             , &
-         sminn_to_plant_patch         => nitrogenflux_vars%sminn_to_plant_patch                , &
-         pnup_pfrootc                 => nitrogenflux_vars%pnup_pfrootc_patch                  , &
-         pgpp_pleafc                  => nitrogenflux_vars%pgpp_pleafc_patch                   , &
-         pgpp_pleafn                  => nitrogenflux_vars%pgpp_pleafn_patch                   , &
-         pgpp_pleafp                  => nitrogenflux_vars%pgpp_pleafp_patch                   , &
-         leafn                        => nitrogenstate_vars%leafn_patch                        , &
-         sminp_to_plant_patch         => phosphorusflux_vars%sminp_to_plant_patch              , &
-         secondp_vr                   => phosphorusstate_vars%secondp_vr_col                   , &               
-         actual_leafcp                => phosphorusstate_vars%actual_leafcp                    , &
-         actual_frootcp               => phosphorusstate_vars%actual_frootcp                   , &
-         actual_livewdcp              => phosphorusstate_vars%actual_livewdcp                  , &
-         actual_deadwdcp              => phosphorusstate_vars%actual_deadwdcp                  , &
-         leafp                        => phosphorusstate_vars%leafp_patch                      , &
-         col_plant_ndemand_vr         => nitrogenflux_vars%col_plant_ndemand_vr                , &
-         col_plant_nh4demand_vr       => nitrogenflux_vars%col_plant_nh4demand_vr              , &
-         col_plant_no3demand_vr       => nitrogenflux_vars%col_plant_no3demand_vr              , &
-         col_plant_pdemand_vr         => nitrogenflux_vars%col_plant_pdemand_vr                , &
-         plant_nh4demand_vr_patch     => nitrogenflux_vars%plant_nh4demand_vr_patch            , &
-         plant_no3demand_vr_patch     => nitrogenflux_vars%plant_no3demand_vr_patch            , &
-         plant_ndemand_vr_patch       => nitrogenflux_vars%plant_ndemand_vr_patch              , &
-         plant_pdemand_vr_patch       => phosphorusflux_vars%plant_pdemand_vr_patch            , &
-         actual_immob_no3             => nitrogenflux_vars%actual_immob_no3_col                , &
-         actual_immob_nh4             => nitrogenflux_vars%actual_immob_nh4_col                , &
-         adsorb_to_labilep_vr         => phosphorusflux_vars%adsorb_to_labilep_vr              , &
-         desorb_to_solutionp_vr       => phosphorusflux_vars%desorb_to_solutionp_vr            , &
-         primp_to_labilep_vr_col      => phosphorusflux_vars%primp_to_labilep_vr_col           , &
-         biochem_pmin_vr_col          => phosphorusflux_vars%biochem_pmin_vr_col               , &
-         secondp_to_labilep_vr_col    => phosphorusflux_vars%secondp_to_labilep_vr_col         , &
-         labilep_to_secondp_vr_col    => phosphorusflux_vars%labilep_to_secondp_vr_col         , &
-         labilep_vr                   => phosphorusstate_vars%labilep_vr_col                   , &
-         
-         ! for debug
-         plant_n_uptake_flux	      => nitrogenflux_vars%plant_n_uptake_flux	               , &
-         plant_p_uptake_flux	      => phosphorusflux_vars%plant_p_uptake_flux	       , &
-         leafc_storage                => carbonstate_vars%leafc_storage_patch    	       , &
-         leafc_xfer                   => carbonstate_vars%leafc_xfer_patch       	       , &
-         leafn_storage                => nitrogenstate_vars%leafn_storage_patch		       , &
-         leafn_xfer                   => nitrogenstate_vars%leafn_xfer_patch       		 &
+         w_scalar                     => carbonflux_vars%w_scalar_col                            &
          )
+
+
+         leafc_storage                => carbonstate_vars%leafc_storage_patch
+         leafc_xfer                   => carbonstate_vars%leafc_xfer_patch
+
+         col_plant_ndemand_vr         => nitrogenflux_vars%col_plant_ndemand_vr
+         col_plant_nh4demand_vr       => nitrogenflux_vars%col_plant_nh4demand_vr
+         col_plant_no3demand_vr       => nitrogenflux_vars%col_plant_no3demand_vr
+         col_plant_pdemand_vr         => nitrogenflux_vars%col_plant_pdemand_vr
+         plant_nh4demand_vr_patch     => nitrogenflux_vars%plant_nh4demand_vr_patch
+         plant_no3demand_vr_patch     => nitrogenflux_vars%plant_no3demand_vr_patch
+         plant_ndemand_vr_patch       => nitrogenflux_vars%plant_ndemand_vr_patch
+         actual_immob_no3             => nitrogenflux_vars%actual_immob_no3_col
+         actual_immob_nh4             => nitrogenflux_vars%actual_immob_nh4_col
+         smin_nh4_to_plant_patch      => nitrogenflux_vars%smin_nh4_to_plant_patch
+         smin_no3_to_plant_patch      => nitrogenflux_vars%smin_no3_to_plant_patch
+         sminn_to_plant_patch         => nitrogenflux_vars%sminn_to_plant_patch
+         pnup_pfrootc                 => nitrogenflux_vars%pnup_pfrootc_patch
+         pgpp_pleafc                  => nitrogenflux_vars%pgpp_pleafc_patch
+         pgpp_pleafn                  => nitrogenflux_vars%pgpp_pleafn_patch
+         pgpp_pleafp                  => nitrogenflux_vars%pgpp_pleafp_patch
+         plant_n_uptake_flux          => nitrogenflux_vars%plant_n_uptake_flux
+
+         leafn                        => nitrogenstate_vars%leafn_patch
+         leafn_storage                => nitrogenstate_vars%leafn_storage_patch
+         leafn_xfer                   => nitrogenstate_vars%leafn_xfer_patch
+
+         labilep_vr                   => phosphorusstate_vars%labilep_vr_col
+         secondp_vr                   => phosphorusstate_vars%secondp_vr_col
+         actual_leafcp                => phosphorusstate_vars%actual_leafcp
+         actual_frootcp               => phosphorusstate_vars%actual_frootcp
+         actual_livewdcp              => phosphorusstate_vars%actual_livewdcp
+         actual_deadwdcp              => phosphorusstate_vars%actual_deadwdcp
+         leafp                        => phosphorusstate_vars%leafp_patch
+
+         plant_pdemand_vr_patch       => phosphorusflux_vars%plant_pdemand_vr_patch
+         plant_p_uptake_flux          => phosphorusflux_vars%plant_p_uptake_flux
+         sminp_to_plant_patch         => phosphorusflux_vars%sminp_to_plant_patch
+         adsorb_to_labilep_vr         => phosphorusflux_vars%adsorb_to_labilep_vr
+         desorb_to_solutionp_vr       => phosphorusflux_vars%desorb_to_solutionp_vr
+         primp_to_labilep_vr_col      => phosphorusflux_vars%primp_to_labilep_vr_col
+         biochem_pmin_vr_col          => phosphorusflux_vars%biochem_pmin_vr_col
+         secondp_to_labilep_vr_col    => phosphorusflux_vars%secondp_to_labilep_vr_col
+         labilep_to_secondp_vr_col    => phosphorusflux_vars%labilep_to_secondp_vr_col
+
 
       ! set time steps
       dt = real( get_step_size(), r8 )

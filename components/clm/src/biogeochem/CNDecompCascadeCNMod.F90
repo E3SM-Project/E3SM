@@ -954,8 +954,9 @@ contains
          !as a first test, use level 4 (10cm) - this is used to cacluate location-specific acceleration factors
 	 do fc=1,num_soilc
 	   c = filter_soilc(fc) 
-             cnstate_vars%scalaravg_col(c) = max(cnstate_vars%scalaravg_col(c) + &
-               (t_scalar(c,4) * w_scalar(c,4) * o_scalar(c,4) ) * dt / (86400 * 365 * 20._r8), 1e-2)
+             cnstate_vars%scalaravg_col(c) = cnstate_vars%scalaravg_col(c) + &
+                  (t_scalar(c,4) * w_scalar(c,4) * o_scalar(c,4) ) * dt / (86400._r8 * 365._r8 * 20._r8)
+             if (cnstate_vars%scalaravg_col(c) < 1.0e-2) cnstate_vars%scalaravg_col(c) = 1.0e-2
          end do
        else if (year < 20) then 
           do fc=1,num_soilc
