@@ -92,22 +92,19 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     return args.generate_baselines, args.submit_to_cdash, args.baseline_name, args.cdash_build_name, args.cdash_project, args.namelists_only, args.test_suite, args.cdash_build_group, args.baseline_compare
 
 ###############################################################################
-def cleanup_queue(set_of_jobs_we_created, batch_system):
+def cleanup_queue(set_of_jobs_we_created):
 ###############################################################################
     """
     Delete all jobs left in the queue
     """
-    current_jobs = set(acme_util.get_my_queued_jobs(batch_system))
+    current_jobs = set(acme_util.get_my_queued_jobs())
     jobs_to_delete = set_of_jobs_we_created & current_jobs
 
-    for job_to_delete in jobs_to_delete:
-        warning("Found leftover job: %s" % job_to_delete)
-        del_cmd = "%s %s" % (acme_util.get_batch_system_info(batch_system)[1], job_to_delete)
-        stat = acme_util.run_cmd(del_cmd, verbose=True, ok_to_fail=True)[0]
+    if (jobs_to_delete):
+        warning("Found leftover batch jobs that need to be deleted: %s" % ", ".join(jobs_to_delete))
+        stat = acme_util.delete_jobs(jobs_to_delete)[0]
         if (stat != 0):
-            warning("FAILED to clean up leftover job: %s" % job_to_delete)
-        else:
-            warning("Deleted leftover job: %s" % job_to_delete)
+            warning("FAILED to clean up leftover jobs!")
 
 ###############################################################################
 def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
@@ -123,8 +120,8 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
     test_root = os.path.join(scratch_root, "jenkins")
 
     if (use_batch):
-        batch_system = acme_util.probe_batch_system()
-        expect(batch_system is not None, "Failed to probe batch system")
+        batch_system = acme_util.get_batch_system()
+        expect(batch_system is not None, "Bad XML. Batch machine has no batch_system configuration.")
 
     #
     # Env changes
@@ -190,7 +187,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
         #
 
         if (use_batch):
-            preexisting_queued_jobs = acme_util.get_my_queued_jobs(batch_system)
+            preexisting_queued_jobs = acme_util.get_my_queued_jobs()
 
         #
         # Set up create_test command and run it
@@ -226,7 +223,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
             # previous implementation which just assumed all queued jobs for this
             # user came from create_test.
             # TODO: change this to probe test_root for jobs ids
-            our_jobs = set(acme_util.get_my_queued_jobs(batch_system)) - set(preexisting_queued_jobs)
+            our_jobs = set(acme_util.get_my_queued_jobs()) - set(preexisting_queued_jobs)
 
         #
         # Wait for tests
@@ -247,7 +244,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
                                                      cdash_build_group)
         if (not tests_passed and use_batch and wait_for_tests.SIGNAL_RECEIVED):
             # Cleanup
-            cleanup_queue(our_jobs, batch_system)
+            cleanup_queue(our_jobs)
 
         return tests_passed and create_test_stat == 0
     finally:
