@@ -28,7 +28,8 @@ module li_time_integration_fe
    use mpas_timer
    use mpas_vector_reconstruction
    use li_velocity, only: li_velocity_solve
-   use li_tendency
+   use li_tendency   !TODO - li_tendency to be deprecated
+   use li_advection
    use li_calving, only: li_calve_ice, li_restore_calving_front
    use li_thermal, only: li_thermal_solver
    use li_diagnostic_vars
@@ -296,15 +297,14 @@ module li_time_integration_fe
          ! Calculate thickness tendency using state at time n =========
          ! Optionally, return new tracer values also.
 
-         !TODO - Remove the older li_tendency_thickness subroutine, and make tracer advection optional
-         !       in the newer li_tendency_thickness_tracers subroutine.
+         !TODO - Remove the older li_tendency_thickness subroutine
 
          if (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'fo') then
 
             ! Note: This subroutine requires that layerThickness and tracers are correct in halos.
             ! Note: This subroutine does not return tracer tendencies. Instead, it returns the updated tracer values.
 
-            call li_tendency_thickness_tracers(&
+            call li_advection_thickness_tracers(&
                  dtSeconds,              &
                  meshPool,               &
                  velocityPool,           &
@@ -319,9 +319,9 @@ module li_time_integration_fe
 
             write(stderrUnit,*) 'Advect thickness (but not tracers) using new scheme...'
 
-            !WHL - debug - Try to get thickness-only results from new scheme that are BFB compared to old scheme
+            !WHL - Get thickness-only results from new scheme that are BFB compared to old scheme
 
-            call li_tendency_thickness_tracers(&   ! aiming to get same results as old default
+            call li_advection_thickness_tracers(&
                  dtSeconds,              &
                  meshPool,               &
                  velocityPool,           &
