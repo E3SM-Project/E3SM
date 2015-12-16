@@ -279,7 +279,7 @@ contains
 
    subroutine ocn_init_interpolation_bilinear_horiz_2D(inX, inY, inField, inNx, inNy, &
                                                    outX, outY, outField, outN, &
-                                                   inXPeriod, inYPeriod)!{{{
+                                                   inXPeriod, inYPeriod, extrapX, extrapY)!{{{
 
    !--------------------------------------------------------------------
 
@@ -290,6 +290,7 @@ contains
       real (kind=RKIND), dimension(outN), intent(in) :: outX, outY
       real (kind=RKIND), dimension(outN), intent(out) :: outField
       real (kind=RKIND), intent(in), optional :: inXPeriod, inYPeriod
+      logical, intent(in), optional :: extrapX, extrapY
 
       ! Define variable pointers
       integer :: outIndex, xInd1, xInd2, yInd1, yInd2, k
@@ -305,10 +306,30 @@ contains
             call getLinearCoeffs(x, inX, inNx, xInd1, xInd2, xFrac)
          end if
          
+         ! if we're not extrapolating, limit xFrac
+         if(present(extrapX)) then
+            if(.not. extrapX) then
+               xFrac = min(1.0_RKIND,max(0.0_RKIND,xFrac))
+            end if
+         else
+            ! by default, we don't extrapolate
+            xFrac = min(1.0_RKIND,max(0.0_RKIND,xFrac))
+         end if
+         
          if(present(inYPeriod)) then
             call getLinearCoeffs(y, inY, inNy, yInd1, yInd2, yFrac, inYPeriod)
          else
             call getLinearCoeffs(y, inY, inNy, yInd1, yInd2, yFrac)
+         end if
+
+         ! if we're not extrapolating, limit yFrac
+         if(present(extrapY)) then
+            if(.not. extrapY) then
+               yFrac = min(1.0_RKIND,max(0.0_RKIND,yFrac))
+            end if
+         else
+            ! by default, we don't extrapolate
+            yFrac = min(1.0_RKIND,max(0.0_RKIND,yFrac))
          end if
          
          outField(outIndex) =  &
@@ -340,7 +361,7 @@ contains
 
    subroutine ocn_init_interpolation_bilinear_horiz_3D(inX, inY, inField, inNx, inNy, &
                                                    outX, outY, outField, outN, &
-                                                   inXPeriod, inYPeriod)!{{{
+                                                   inXPeriod, inYPeriod, extrapX, extrapY)!{{{
 
    !--------------------------------------------------------------------
 
@@ -351,6 +372,7 @@ contains
       real (kind=RKIND), dimension(outN), intent(in) :: outX, outY
       real (kind=RKIND), dimension(:,:), intent(out) :: outField
       real (kind=RKIND), intent(in), optional :: inXPeriod, inYPeriod
+      logical, intent(in), optional :: extrapX, extrapY
 
       ! Define variable pointers
       integer :: outIndex, xInd1, xInd2, yInd1, yInd2, k
@@ -366,12 +388,32 @@ contains
             call getLinearCoeffs(x, inX, inNx, xInd1, xInd2, xFrac)
          end if
          
+         ! if we're not extrapolating, limit xFrac
+         if(present(extrapX)) then
+            if(.not. extrapX) then
+               xFrac = min(1.0_RKIND,max(0.0_RKIND,xFrac))
+            end if
+         else
+            ! by default, we don't extrapolate
+            xFrac = min(1.0_RKIND,max(0.0_RKIND,xFrac))
+         end if
+         
          if(present(inYPeriod)) then
             call getLinearCoeffs(y, inY, inNy, yInd1, yInd2, yFrac, inYPeriod)
          else
             call getLinearCoeffs(y, inY, inNy, yInd1, yInd2, yFrac)
          end if
-         
+
+         ! if we're not extrapolating, limit yFrac
+         if(present(extrapY)) then
+            if(.not. extrapY) then
+               yFrac = min(1.0_RKIND,max(0.0_RKIND,yFrac))
+            end if
+         else
+            ! by default, we don't extrapolate
+            yFrac = min(1.0_RKIND,max(0.0_RKIND,yFrac))
+         end if
+
          outField(:,outIndex) =  &
             (1.0_RKIND-xFrac)*(1.0_RKIND-yFrac)*inField(xInd1,yInd1,:) &
             + xFrac*(1.0_RKIND-yFrac)*inField(xInd2,yInd1,:) &
@@ -416,7 +458,7 @@ contains
       if(present(period)) then
          ! Set up bilinear interpolation indices in x, watching for periodic boundary 
          ! shift x to be within the range of [xArray(1),xArray(1)+period)
-         x = mod(x-xArray(1),period) + xArray(1)
+         x = modulo(x-xArray(1),period) + xArray(1)
          if (x >= xArray(nx)) then
             ! at the periodic boundary so treat as special case
             index1 = nx
