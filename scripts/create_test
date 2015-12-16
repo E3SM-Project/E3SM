@@ -742,6 +742,14 @@ sub checkOptions
         $opts{'sharedlibroot'} = $opts{scratchroot}.'/sharedlibroot.' . $opts{'testid'};
         $logger->debug("sharedlibroot: $opts{'sharedlibroot'}\n");
     }
+    
+    # Need to get the machine's mpilib for the testspec xml file. 
+    my @mnodes = $xml->findnodes(".//machine[\@MACH=\"$machine\"]/MPILIBS");
+    my $mpivalues = $mnodes[0]->textContent();
+    if($mpivalues)
+    {
+        $opts{'testspec_mpilib'} = (split(',', $mpivalues))[0];
+    }
 
     # If the nlcompareonly option was invoked, we only want to generate a test suite, compare the namelist
     # et al to a set of namelist baselines. 
@@ -1580,6 +1588,7 @@ sub writeTestListXML
   <cimeroot>$opts{'cimeroot'}</cimeroot>
   <baselinetag>$baselinetag</baselinetag>
   <compiler>$compiler</compiler>
+  <mpilib>$opts{'testspec_mpilib'}</mpilib>
   <nobatch>$opts{'nobatch'}</nobatch>
   <nobuild>$opts{'nobuild'}</nobuild>
   <autosubmit>$opts{'autosubmit'}</autosubmit>
@@ -1630,8 +1639,8 @@ sub testBuildSubmit
     chmod 0755, "$opts{'testroot'}/testreporter.pl";
     copy("$scriptsroot/Tools/cs.submit", "$opts{'testroot'}/$cssubmit");
     chmod 0755, "$opts{'testroot'}/$cssubmit";
-    copy("$scriptsroot/Tools/cs.status", "$opts{'testroot'}/$csstatus");
-    chmod 0755, "$opts{'testroot'}/$csstatus";
+    copy("$scriptsroot/Tools/cimeteststatus", "$opts{'testroot'}/cimeteststatus");
+    chmod 0755, "$opts{'testroot'}/cimeteststatus";
     chdir("$opts{'testroot'}");
 
   exec("./$cssubmit --testspec $testspecfile");

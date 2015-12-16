@@ -14,7 +14,27 @@
  * input used in their production; they are not affected by this license.
  *
  */ /*! \page examp Examples
- Examples of the usage of PIO
+
+## Examples Included with PIO Distribution
+
+The PIO library examples can be found under the examples
+subdirectory. They are built with the make test or make check build
+target.
+
+### C Examples
+
+The C examples are in the examples/c subdirectory.
+
+- examplePio.c A simple example showing a write, then read, of a 1D variable.
+
+- example1.c Another simple example showing a write, then read, of a
+  1D variable.
+
+### Fortran Examples
+
+The Fortran examples are in the examples/f03 subdirectory.
+
+- examplePio.f90 A simple example showing a write, then read, of a 1D variable.
 
   PIO has been implemented in several geophysical component models, including the 
 Community Atmosphere Model (CAM), the Community Land Model (CLM), the Parallel Ocean Program 

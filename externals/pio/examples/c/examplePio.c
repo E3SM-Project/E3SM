@@ -594,6 +594,12 @@ int main(int argc, char* argv[])
     pioExInst->closeFile(pioExInst);
     pioExInst->cleanUp(pioExInst);
     
+#ifdef TIMING    
+	/* Finalize the GPTL timing library. */
+	if ((ret = GPTLfinalize ()))
+	    return ret;
+#endif    
+
     free(pioExInst);
     return 0;
 }
