@@ -175,13 +175,6 @@ contains
     if(pio_async_interface) then
        call pio_init(total_comps,mpi_comm_world, comp_comm, io_comm, iosystems)
        i=1
-       if(comp_comm_iam(i)==0) then
-          write(shr_log_unit,*) io_compname(i),' : pio_numiotasks = ',pio_comp_settings(i)%pio_numiotasks
-          write(shr_log_unit,*) io_compname(i),' : pio_stride = ',pio_comp_settings(i)%pio_stride
-          write(shr_log_unit,*) io_compname(i),' : pio_root = ',pio_comp_settings(i)%pio_root
-          write(shr_log_unit,*) io_compname(i),' : pio_iotype = ',pio_comp_settings(i)%pio_iotype
-       end if
-
     else
        do i=1,total_comps
           if(comp_iamin(i)) then
@@ -201,21 +194,18 @@ contains
                   pio_comp_settings(i)%pio_stride, &
                   pio_comp_settings(i)%pio_rearranger, iosystems(i), &
                   base=pio_comp_settings(i)%pio_root)
-
-             if(comp_comm_iam(i)==0) then
-                write(shr_log_unit,*) io_compname(i),' : pio_numiotasks = ',pio_comp_settings(i)%pio_numiotasks
-                write(shr_log_unit,*) io_compname(i),' : pio_stride = ',pio_comp_settings(i)%pio_stride
-                write(shr_log_unit,*) io_compname(i),' : pio_root = ',pio_comp_settings(i)%pio_root
-                write(shr_log_unit,*) io_compname(i),' : pio_iotype = ',pio_comp_settings(i)%pio_iotype
-             end if
-
-
-
           end if
        end do
     end if
-
-
+    do i=1,total_comps
+       if(comp_comm_iam(i)==0) then
+          write(shr_log_unit,*) io_compname(i),' : pio_numiotasks = ',pio_comp_settings(i)%pio_numiotasks
+          write(shr_log_unit,*) io_compname(i),' : pio_stride = ',pio_comp_settings(i)%pio_stride
+          write(shr_log_unit,*) io_compname(i),' : pio_rearranger = ',pio_comp_settings(i)%pio_rearranger
+          write(shr_log_unit,*) io_compname(i),' : pio_root = ',pio_comp_settings(i)%pio_root
+          write(shr_log_unit,*) io_compname(i),' : pio_iotype = ',pio_comp_settings(i)%pio_iotype
+       end if
+    enddo
 
 
   end subroutine shr_pio_init2
@@ -607,7 +597,7 @@ contains
     else
 #endif
 
-
+    
 
 
 
@@ -623,8 +613,11 @@ contains
        pio_numiotasks = npes/pio_stride
        pio_numiotasks = max(1, pio_numiotasks)
     end if
+    if(pio_stride == 1) then
+       pio_root = 0
+    endif
 
-
+   
     if (pio_root + (pio_stride)*(pio_numiotasks-1) >= npes .or. &
          pio_stride<=0 .or. pio_numiotasks<=0 .or. pio_root < 0 .or. &
          pio_root > npes-1) then
