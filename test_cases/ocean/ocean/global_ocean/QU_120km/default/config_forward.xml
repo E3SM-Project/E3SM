@@ -8,8 +8,8 @@
 	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="forward">
-		<template file="template_forward.xml" path_base="script_configuration_dir"/>
-		<template file="template_forward.xml" path_base="script_resolution_dir"/>
+		<template file="template_forward.xml" path_base="script_core_dir" path="global_ocean"/>
+		<template file="template_forward.xml" path_base="script_core_dir" path="global_ocean/QU_120km"/>
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 	</namelist>
 

@@ -1,0 +1,72 @@
+<template>
+	<namelist>
+		<option name="config_init_configuration">'global_ocean'</option>
+		<option name="config_vert_levels">-1</option>
+		<option name="config_ocean_run_mode">'init'</option>
+		<option name="config_write_cull_cell_mask">.true.</option>
+
+		<option name="config_global_ocean_swData_file">'swData.nc'</option>
+		<option name="config_global_ocean_swData_nlat_dimname">'t_lat'</option>
+		<option name="config_global_ocean_swData_nlon_dimname">'t_lon'</option>
+		<option name="config_global_ocean_swData_lat_varname">'t_lat'</option>
+		<option name="config_global_ocean_swData_lon_varname">'t_lon'</option>
+		<option name="config_global_ocean_swData_latlon_degrees">.true.</option>
+		<option name="config_global_ocean_swData_method">'bilinear_interpolation'</option>
+		<option name="config_global_ocean_chlorophyll_varname">'Chlorophyll'</option>
+		<option name="config_global_ocean_zenithAngle_varname">'zenithAngle'</option>
+		<option name="config_global_ocean_clearSky_varname">'clearSky'</option>
+
+		<option name="config_global_ocean_minimum_depth">15</option>
+		<option name="config_global_ocean_depth_file">'temperature.nc'</option>
+		<option name="config_global_ocean_depth_dimname">'depth_t'</option>
+		<option name="config_global_ocean_depth_varname">'depth_t'</option>
+		<option name="config_global_ocean_depth_conversion_factor">0.01</option>
+		<option name="config_global_ocean_temperature_file">'temperature.nc'</option>
+		<option name="config_global_ocean_salinity_file">'salinity.nc'</option>
+		<option name="config_global_ocean_tracer_nlat_dimname">'t_lat'</option>
+		<option name="config_global_ocean_tracer_nlon_dimname">'t_lon'</option>
+		<option name="config_global_ocean_temperature_varname">'TEMP'</option>
+		<option name="config_global_ocean_salinity_varname">'SALT'</option>
+		<option name="config_global_ocean_tracer_latlon_degrees">.true.</option>
+		<option name="config_global_ocean_tracer_lat_varname">'t_lat'</option>
+		<option name="config_global_ocean_tracer_lon_varname">'t_lon'</option>
+		<option name="config_global_ocean_tracer_method">'bilinear_interpolation'</option>
+		<option name="config_global_ocean_smooth_TS_iterations">5</option>
+		<option name="config_global_ocean_piston_velocity">5.0e-5</option>
+		<option name="config_global_ocean_interior_restore_rate">1.0e-7</option>
+		<option name="config_global_ocean_topography_file">'topography.nc'</option>
+		<option name="config_global_ocean_topography_nlat_dimname">'y'</option>
+		<option name="config_global_ocean_topography_nlon_dimname">'x'</option>
+		<option name="config_global_ocean_topography_latlon_degrees">.true.</option>
+		<option name="config_global_ocean_topography_lat_varname">'y'</option>
+		<option name="config_global_ocean_topography_lon_varname">'x'</option>
+		<option name="config_global_ocean_topography_varname">'z'</option>
+		<option name="config_global_ocean_smooth_topography">.true.</option>
+		<option name="config_global_ocean_cull_inland_seas">.true.</option>
+		<option name="config_global_ocean_windstress_file">'wind_stress.nc'</option>
+		<option name="config_global_ocean_windstress_nlat_dimname">'u_lat'</option>
+		<option name="config_global_ocean_windstress_nlon_dimname">'u_lon'</option>
+		<option name="config_global_ocean_windstress_latlon_degrees">.true.</option>
+		<option name="config_global_ocean_windstress_lat_varname">'u_lat'</option>
+		<option name="config_global_ocean_windstress_lon_varname">'u_lon'</option>
+		<option name="config_global_ocean_windstress_zonal_varname">'TAUX'</option>
+		<option name="config_global_ocean_windstress_meridional_varname">'TAUY'</option>
+		<option name="config_global_ocean_windstress_method">'bilinear_interpolation'</option>
+		<option name="config_global_ocean_windstress_conversion_factor">1</option>
+	</namelist>
+	<streams>
+		<stream name="input_init">
+			<attribute name="filename_template">base_mesh.nc</attribute>
+		</stream>
+		<stream name="output_init">
+			<attribute name="type">output</attribute>
+			<attribute name="output_interval">0000_00:00:01</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="filename_template">ocean.nc</attribute>
+			<add_contents>
+				<member name="input_init" type="stream"/>
+				<member name="cullCell" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>
