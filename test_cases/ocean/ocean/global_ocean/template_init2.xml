@@ -12,6 +12,7 @@
 		<option name="config_pbc_alteration_type">'partial_cell'</option>
 
 		<option name="config_use_activeTracers_surface_restoring">.true.</option>
+		<option name="config_use_debugTracers">.true.</option>
 		<option name="config_use_bulk_wind_stress">.true.</option>
 
 		<option name="config_global_ocean_swData_file">'swData.nc'</option>

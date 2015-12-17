@@ -65,20 +65,6 @@
 			<attribute name="filename_template">ocean.nc</attribute>
 			<add_contents>
 				<member name="input_init" type="stream"/>
-				<member name="tracers" type="var_struct"/>
-				<member name="refZMid" type="var"/>
-				<member name="normalVelocity" type="var"/>
-				<member name="layerThickness" type="var"/>
-				<member name="restingThickness" type="var"/>
-				<member name="surfaceStress" type="var"/>
-				<member name="seaSurfacePressure" type="var"/>
-				<member name="boundaryLayerDepth" type="var"/>
-				<member name="refBottomDepth" type="var"/>
-				<member name="bottomDepth" type="var"/>
-				<member name="bottomDepthObserved" type="var"/>
-				<member name="maxLevelCell" type="var"/>
-				<member name="vertCoordMovementWeights" type="var"/>
-				<member name="edgeMask" type="var"/>
 				<member name="cullCell" type="var"/>
 			</add_contents>
 		</stream>
