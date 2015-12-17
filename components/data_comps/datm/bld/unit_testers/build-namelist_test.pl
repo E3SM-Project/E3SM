@@ -8,6 +8,7 @@
 
 use Test::More;
 use IO::File;
+use Cwd qw(abs_path);
 
 #########################
 
@@ -70,23 +71,22 @@ my $CASEROOT = "$cwd/testcase";
 print "CASEROOT = $CASEROOT\n";
 my $confdir = "$CASEROOT/Buildconf/datmconf";
 
-# Check that SCRIPTSROOT set so can run
-if ( $ENV{'SCRIPTSROOT'} eq "" ) {
-   my $dir = "../../../../../scripts"; 
-   if ( ! -d "$dir" ) {
-      die "SCRIPTSROOT NOT set, and scripts directory $dir does not exist\n";
+# Check that CIMEROOT set so can run
+if ( $ENV{'CIMEROOT'} eq "" ) {
+   my $dir = abs_path("../../../../.."); 
+   if ( ! -d "$dir/scripts" ) {
+      die "CIMEROOT NOT set, and scripts directory $dir/scripts does not exist\n";
    }
-   $ENV{'SCRIPTSROOT'} = $dir;
-   print "SCRIPTSROOT = $ENV{'SCRIPTSROOT'}\n";
+   $ENV{'CIMEROOT'} = $dir;
+   print "CIMEROOT = $ENV{'CIMEROOT'}\n";
 } else {
-   if ( ! -d "$ENV{'SCRIPTSROOT'}" ) {
-      die "SCRIPTSROOT dir does not exist\n";
+   if ( ! -d "$ENV{'CIMEROOT'}"."/scripts" ) {
+      die "CIMEROOT scripts dir does not exist\n";
    }
 }
 #
 # 
-my $cimeroot = "$ENV{'SCRIPTSROOT'}/../";
-my $bldnml = "../build-namelist -debug -caseroot $CASEROOT -cimeroot $cimeroot";
+my $bldnml = "../build-namelist -debug -caseroot $CASEROOT -cimeroot $ENV{'CIMEROOT'}";
 
 my $tempfile = "temp_file.txt";
 if ( -f $tempfile ) {
@@ -322,7 +322,7 @@ my $stat = `fgrep \$ $confdir/datm_atm_in`;
 isnt( $?, 0, "check for unresolved env variables" );
 system( "/bin/rm -rf $confdir"         );
 # Run different DATM_MODE
-foreach my $mode ( "CORE2_NYF", "CORE2_IAF", "CPLHIST3HrWx", "CLMCRUNCEP","CLMCRUNCEP_V5" ) {
+foreach my $mode ( "CORE2_NYF", "CORE2_IAF", "CPLHIST3HrWx", "CLMCRUNCEP","CLMCRUNCEP_V5", "CLMGSWP3" ) {
    $xmlenv{'DATM_MODE'} = $mode;
    print "DATM_MODE       = $xmlenv{'DATM_MODE'}\n";
    &writeEnv( %xmlenv );
