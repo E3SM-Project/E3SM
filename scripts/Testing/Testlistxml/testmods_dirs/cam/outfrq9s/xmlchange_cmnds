@@ -1,0 +1,5 @@
+if [ `./xmlquery MACH -value` = "melvin" ]; then
+    ./xmlchange PIO_TYPENAME=netcdf
+fi
+
+./xmlchange ROF_NCPL=48
