@@ -116,6 +116,7 @@ what children can be placed below the tag.
                    baseline.
     - Children:
         * <timer>
+        * <template>
 
 <timer> - This tag is used to define a timer that should be compared between two run directories.
     - Attributes:

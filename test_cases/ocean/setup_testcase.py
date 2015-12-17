@@ -127,11 +127,15 @@ def apply_namelist_template(namelist_dict, template_tag, configs):#{{{
 	template_root = template_tree.getroot()
 
 	# Apply the template, by changing each option
-	for namelist in template_root.findall('namelist'):
-		for option in namelist.findall('option'):
-			option_name = option.attrib['name']
-			option_val = option.text
-			set_namelist_val(namelist_dict, option_name, option_val)
+	for child in template_root:
+		if child.tag == 'namelist':
+			for grandchild in child:
+				if grandchild.tag == 'option':
+					option_name = grandchild.attrib['name']
+					option_val = grandchild.text
+					set_namelist_val(namelist_dict, option_name, option_val)
+				elif grandchild.tag == 'template':
+					apply_namelist_template(namelist_dict, grandchild, configs)
 	
 	del template_root
 	del template_tree
@@ -228,25 +232,16 @@ def modify_stream_definition(streams_file, stream_conf):#{{{
 	found = False
 
 	# Check if stream already exists:
-	for stream in streams_file.findall('immutable_stream'):
-		name = stream.attrib['name']
-		if name.strip() == name_to_modify.strip():
-			if not found:
-				found = True
-				stream_to_modify = stream
-			else:
-				print "ERROR: Stream %s found multiple times in template. Exiting..."%(name.strip())
-				sys.exit(1)
-
-	for stream in streams_file.findall('stream'):
-		name = stream.attrib['name']
-		if name.strip() == name_to_modify.strip():
-			if not found:
-				found = True
-				stream_to_modify = stream
-			else:
-				print "ERROR: Stream %s found multiple times in template. Exiting..."%(name.strip())
-				sys.exit(1)
+	for stream in streams_file:
+		if stream.tag == 'stream' or stream.tag == 'immutable_stream':
+			name = stream.attrib['name']
+			if name.strip() == name_to_modify.strip():
+				if not found:
+					found = True
+					stream_to_modify = stream
+				else:
+					print "ERROR: Stream %s found multiple times in template. Exiting..."%(name.strip())
+					sys.exit(1)
 
 	# If not found, need to create it
 	if not found:
@@ -322,9 +317,13 @@ def apply_stream_template(streams_file, template_tag, configs):#{{{
 	template_root = template_tree.getroot()
 
 	# Apply the streams portion of the template to the streams file
-	for streams in template_root.findall('streams'):
-		for stream in streams.findall('stream'):
-			modify_stream_definition(streams_file, stream)
+	for child in template_root:
+		if child.tag == 'streams':
+			for grandchild in child:
+				if grandchild.tag == 'stream':
+					modify_stream_definition(streams_file, grandchild)
+				elif grandchild.tag == 'template':
+					apply_stream_template(streams_file, grandchild, configs)
 
 	del template_tree
 	del template_root
@@ -651,6 +650,7 @@ def process_validation_step(validation_tag, configs, script):#{{{
 			process_compare_timers_step(child, configs, script)
 #}}}
 
+# *** Field Comparison Functions *** ##{{{
 def process_compare_fields_step(compare_tag, configs, script):#{{{
 	missing_file1 = False
 	missing_file2 = False
@@ -686,120 +686,62 @@ def process_compare_fields_step(compare_tag, configs, script):#{{{
 				process_field_definition(child, configs, script, file2, '%s/%s'%(baseline_root, file2))
 		# Process field comparision template
 		elif child.tag == 'template':
-			# Get template information, and build full path to template file
-			template_info = get_template_info(child, configs)
-			template_file = '%s/%s'%(template_info['template_path'], template_info['template_file'])
-
-			# Parse template file
-			template_tree = ET.parse(template_file)
-			template_root = template_tree.getroot()
-
-			# Find a child tag that is validation->compare_fields->field, and add each field
-			for validation in template_root:
-				if validation.tag == 'validation':
-					for compare_fields in validation:
-						if compare_fields.tag == 'compare_fields':
-							for field in compare_fields:
-								if field.tag == 'field':
-									if not (missing_file1 or missing_file2):
-										process_field_definition(field, configs, script, file1, file2)
-
-									if not missing_file1:
-										process_field_definition(field, configs, script, file1, '%s/%s'%(baseline_root, file1))
-
-									if not missing_file2:
-										process_field_definition(field, configs, script, file2, '%s/%s'%(baseline_root, file2))
-			del template_root
-			del template_tree
-			del template_info
+			apply_compare_fields_template(child, compare_tag, configs, script)
 #}}}
 
-def process_compare_timers_step(compare_tag, configs, script):#{{{
-	baseline_root = configs.get('script_paths', 'baseline_dir')
-	baseline_root = '%s/%s'%(baseline_root, configs.get('script_paths', 'test_dir'))
-
-	missing_rundir1 = True
-	missing_rundir2 = True
+def apply_compare_fields_template(template_tag, compare_tag, configs, script):#{{{
+	missing_file1 = False
+	missing_file2 = False
+	# Determine comparision attributes
+	try:
+		file1 = compare_tag.attrib['file1']
+	except:
+		missing_file1 = True
 
 	try:
-		rundir1 = compare_tag.attrib['rundir1']
-		missing_rundir1 = False
+		file2 = compare_tag.attrib['file2']
 	except:
-		missing_rundir1 = True
+		missing_file2 = True
 
-	try:
-		rundir2 = compare_tag.attrib['rundir2']
-		missing_rundir2 = False
-	except:
-		missing_rundir2 = True
-
-	base_command = 'subprocess.check_call(["%s"'
-
-	for child in compare_tag:
-		if child.tag == 'timer':
-			try:
-				child_name = child.attrib['name']
-			except:
-				print "ERROR: <timer> tag is missing the 'name' attribute."
-				print "Exiting..."
-				sys.exit(1)
-
-			if not (missing_rundir1 or missing_rundir2):
-				process_timer_definition(child, configs, script, rundir1, rundir2)
-
-			if not missing_rundir1:
-				process_timer_definition(child, configs, script, '%s/%s'%(baseline_root, rundir1), rundir1)
-
-			if not missing_rundir2:
-				process_timer_definition(child, configs, script, '%s/%s'%(baseline_root, rundir2), rundir2)
-		elif child.tag == 'template':
-			template_info = get_template_info(child, configs)
-			template_file = '%s/%s'%(template_info['template_path'], template_info['template_file'])
-			
-			# Parse template file
-			template_tree = ET.parse(template_file)
-			template_root = template_tree.getroot()
-
-			for validation in template_root:
-				if validation.tag == 'validation':
-					for compare_timers in validation:
-						if compare_timers.tag == 'compare_timers':
-							for timer in compare_timers:
-								if timer.tag == 'timer':
-									if not (missing_rundir1 or missing_rundir2):
-										process_timer_definition(timer, configs, script, rundir1, rundir2)
-
-									if not missing_rundir1:
-										process_timer_definition(timer, configs, script, '%s/%s'%(baseline_root, rundir1), rundir1)
-
-									if not missing_rundir2:
-										process_timer_definition(timer, configs, script, '%s/%s'%(baseline_root, rundir2), rundir2)
-			del template_root
-			del template_tree
-			del template_info
-
-#}}}
-
-def process_timer_definition(timer_tag, configs, script, basedir, compdir):#{{{
-	compare_script = '%s/compare_timers.py'%(configs.get('script_paths', 'utility_scripts'))
-
-	try:
-		timer_name = timer_tag.attrib['name']
-	except:
-		print "ERROR: <timer> tag is missing the 'name' attribute."
+	if missing_file1 and missing_file2:
+		print "ERROR: <compare_fields> tag is missing both 'file1' and 'file2' tags. At least one is required."
 		print "Exiting..."
 		sys.exit(1)
 
-	command = 'subprocess.check_call(["%s", "-b", "%s", "-c", "%s", "-t", "%s"], env=os.environ.copy())'%(compare_script, basedir, compdir, timer_name)
+	# Build the path to the baselines
+	baseline_root = configs.get('script_paths', 'baseline_dir')
+	baseline_root = '%s/%s'%(baseline_root, configs.get('script_paths', 'test_dir'))
 
-	script.write('\n')
-	script.write('if os.path.exists("%s") and os.path.exists("%s"):\n'%(basedir, compdir))
-	script.write('\ttry:\n')
-	script.write('\t\t%s\n'%(command))
-	script.write("\t\tprint ' ** PASS Comparision of timer %s between %s and %s'\n"%(timer_name, basedir, compdir))
-	script.write('\texcept:\n')
-	script.write("\t\tprint ' ** FAIL Comparision of timer %s between %s and %s'\n"%(timer_name, basedir, compdir))
-	script.write("\t\terror = True\n")
+	# Determine template information, like path and filename
+	template_info = get_template_info(template_tag, configs)
+
+	template_file = '%s/%s'%(template_info['template_path'], template_info['template_file'])
+
+	# Parse the template
+	template_tree = ET.parse(template_file)
+	template_root = template_tree.getroot()
+
+	# Find a child tag that is validation->compare_fields->field, and add each field
+	for validation in template_root:
+		if validation.tag == 'validation':
+			for compare_fields in validation:
+				if compare_fields.tag == 'compare_fields':
+					for field in compare_fields:
+						if field.tag == 'field':
+							if not (missing_file1 or missing_file2):
+								process_field_definition(field, configs, script, file1, file2)
+
+							if not missing_file1:
+								process_field_definition(field, configs, script, file1, '%s/%s'%(baseline_root, file1))
+
+							if not missing_file2:
+								process_field_definition(field, configs, script, file2, '%s/%s'%(baseline_root, file2))
+						elif field.tag == 'template':
+							apply_compare_fields_template(field, compare_tag, configs, script)
+
+	del template_root
+	del template_tree
+	del template_info
 #}}}
 
 def process_field_definition(field_tag, configs, script, file1, file2):#{{{
@@ -832,6 +774,122 @@ def process_field_definition(field_tag, configs, script, file1, file2):#{{{
 	script.write('\texcept:\n')
 	script.write("\t\tprint ' ** FAIL Comparison of %s between %s and %s'\n"%(field_name, file1, file2))
 	script.write('\t\terror = True\n')
+#}}}
+#}}}
+
+# *** Timer Comparison Functions *** ##{{{
+def process_compare_timers_step(compare_tag, configs, script):#{{{
+	baseline_root = configs.get('script_paths', 'baseline_dir')
+	baseline_root = '%s/%s'%(baseline_root, configs.get('script_paths', 'test_dir'))
+
+	missing_rundir1 = True
+	missing_rundir2 = True
+
+	try:
+		rundir1 = compare_tag.attrib['rundir1']
+		missing_rundir1 = False
+	except:
+		missing_rundir1 = True
+
+	try:
+		rundir2 = compare_tag.attrib['rundir2']
+		missing_rundir2 = False
+	except:
+		missing_rundir2 = True
+
+	for child in compare_tag:
+		if child.tag == 'timer':
+			try:
+				child_name = child.attrib['name']
+			except:
+				print "ERROR: <timer> tag is missing the 'name' attribute."
+				print "Exiting..."
+				sys.exit(1)
+
+			if not (missing_rundir1 or missing_rundir2):
+				process_timer_definition(child, configs, script, rundir1, rundir2)
+
+			if not missing_rundir1:
+				process_timer_definition(child, configs, script, '%s/%s'%(baseline_root, rundir1), rundir1)
+
+			if not missing_rundir2:
+				process_timer_definition(child, configs, script, '%s/%s'%(baseline_root, rundir2), rundir2)
+		elif child.tag == 'template':
+			apply_compare_timers_template(child, compare_tag, configs, script)
+
+#}}}
+
+def apply_compare_timers_template(template_tag, compare_tag, configs, script):#{{{
+	# Build the path to the baselines
+	baseline_root = configs.get('script_paths', 'baseline_dir')
+	baseline_root = '%s/%s'%(baseline_root, configs.get('script_paths', 'test_dir'))
+
+	missing_rundir1 = True
+	missing_rundir2 = True
+
+	try:
+		rundir1 = compare_tag.attrib['rundir1']
+		missing_rundir1 = False
+	except:
+		missing_rundir1 = True
+
+	try:
+		rundir2 = compare_tag.attrib['rundir2']
+		missing_rundir2 = False
+	except:
+		missing_rundir2 = True
+
+	# Get the template information and build the template file
+	template_info = get_template_info(template_tag, configs)
+	template_file = '%s/%s'%(template_info['template_path'], template_info['template_file'])
+	
+	# Parse template file
+	template_tree = ET.parse(template_file)
+	template_root = template_tree.getroot()
+
+	for validation in template_root:
+		if validation.tag == 'validation':
+			for compare_timers in validation:
+				if compare_timers.tag == 'compare_timers':
+					for timer in compare_timers:
+						if timer.tag == 'timer':
+							if not (missing_rundir1 or missing_rundir2):
+								process_timer_definition(timer, configs, script, rundir1, rundir2)
+
+							if not missing_rundir1:
+								process_timer_definition(timer, configs, script, '%s/%s'%(baseline_root, rundir1), rundir1)
+
+							if not missing_rundir2:
+								process_timer_definition(timer, configs, script, '%s/%s'%(baseline_root, rundir2), rundir2)
+						elif timer.tag == 'template':
+							apply_compare_timers_template(timer, compare_tag, configs, script)
+	del template_root
+	del template_tree
+	del template_info
+
+#}}}
+
+def process_timer_definition(timer_tag, configs, script, basedir, compdir):#{{{
+	compare_script = '%s/compare_timers.py'%(configs.get('script_paths', 'utility_scripts'))
+
+	try:
+		timer_name = timer_tag.attrib['name']
+	except:
+		print "ERROR: <timer> tag is missing the 'name' attribute."
+		print "Exiting..."
+		sys.exit(1)
+
+	command = 'subprocess.check_call(["%s", "-b", "%s", "-c", "%s", "-t", "%s"], env=os.environ.copy())'%(compare_script, basedir, compdir, timer_name)
+
+	script.write('\n')
+	script.write('if os.path.exists("%s") and os.path.exists("%s"):\n'%(basedir, compdir))
+	script.write('\ttry:\n')
+	script.write('\t\t%s\n'%(command))
+	script.write("\t\tprint ' ** PASS Comparision of timer %s between %s and %s'\n"%(timer_name, basedir, compdir))
+	script.write('\texcept:\n')
+	script.write("\t\tprint ' ** FAIL Comparision of timer %s between %s and %s'\n"%(timer_name, basedir, compdir))
+	script.write("\t\terror = True\n")
+#}}}
 #}}}
 
 def process_model_run_step(model_run_tag, configs, script):#{{{
