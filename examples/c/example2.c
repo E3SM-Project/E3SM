@@ -52,7 +52,7 @@
 /**@}*/
 
 /** The number of timesteps of data to write. */
-#define NUM_TIMESTEPS 30
+#define NUM_TIMESTEPS 6
 
 /** The name of the variable in the netCDF output file. */
 #define VAR_NAME "foo"
@@ -97,7 +97,7 @@ char dim_name[NDIM][NC_MAX_NAME + 1] = {"timestep", "x", "y"};
 int dim_len[NDIM] = {NC_UNLIMITED, X_DIM_LEN, Y_DIM_LEN};
 
 /** Length of chunksizes to use in netCDF-4 files. */
-size_t chunksize[NDIM] = {10, X_DIM_LEN/2, Y_DIM_LEN/2};
+size_t chunksize[NDIM] = {2, X_DIM_LEN/2, Y_DIM_LEN/2};
 
 #ifdef HAVE_MPE
 /** Number of MPE events. The start and stop of each event will be
