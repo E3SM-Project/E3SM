@@ -20,16 +20,8 @@
 
   <entry id="PIO_STRIDE">
     <values>
-      <value mach="babbage">16</value> 
-      <value mach="babbageknc">32</value>
-      <value mach="bluewaters">32</value>
-      <value mach="brutus">32</value>
-      <value mach="edison">24</value>
-      <value mach="eos">16</value>
-      <value mach="mira">256</value>
-      <value mach="titan">16</value>
+      <value>$MAX_TASKS_PER_NODE</value>
       <value mach="yellowstone" grid="a%ne120.+oi%gx1">60</value>
-      <value mach="pronghorn">16</value>
     </values>
   </entry>
   

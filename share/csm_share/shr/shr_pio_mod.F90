@@ -386,7 +386,7 @@ contains
     pio_buffer_size_limit = -99 ! io task memory buffer maximum set internally in pio when < 0
     pio_debug_level = 0 ! no debug info by default
     pio_async_interface = .false.   ! pio tasks are a subset of component tasks
-    pio_rearranger = pio_rearr_subset
+    pio_rearranger = PIO_REARR_SUBSET
 
     if(iamroot) then
        unitn=shr_file_getunit()
@@ -481,7 +481,7 @@ contains
     pio_numiotasks = -99 ! set based on pio_stride   value when initialized < 0
     pio_root     = -99
     pio_typename = 'nothing'
-    pio_rearranger = PIO_REARR_SUBSET
+    pio_rearranger = -99
 
     if(iamroot) then
        unitn=shr_file_getunit()
@@ -519,6 +519,7 @@ contains
 
           if(pio_stride== -99) pio_stride = pio_default_stride
           if(pio_root == -99) pio_root = pio_default_root
+          if(pio_rearranger == -99) pio_rearranger = pio_default_rearranger
           if(pio_numiotasks == -99) then
 #if defined(BGP) || defined(BGL)
              if(pio_default_numiotasks < 0 ) then
@@ -615,6 +616,9 @@ contains
     end if
     if(pio_stride == 1) then
        pio_root = 0
+    endif
+    if(pio_rearranger .ne. PIO_REARR_SUBSET .and. pio_rearranger .ne. PIO_REARR_BOX) then
+       call shr_sys_abort( subname//':: pio_rearranger setting not defined')
     endif
 
    

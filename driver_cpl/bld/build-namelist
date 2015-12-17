@@ -664,6 +664,7 @@ add_default($nl, 'profile_barrier');
 add_default($nl, 'pio_async_interface', 'PIO_ASYNC_INTERFACE'=>"$xmlvars{'PIO_ASYNC_INTERFACE'}");
 add_default($nl, 'pio_stride');
 add_default($nl, 'pio_root');
+add_default($nl, 'pio_rearranger');
 add_default($nl, 'pio_numiotasks');
 add_default($nl, 'pio_typename');
 add_default($nl, 'pio_debug_level');
