@@ -20,7 +20,7 @@ use File::Find;
 use File::stat;
 use File::Glob;
 
-# the st_archive is run in the CASEROOT
+# the st_archive is run in the CASEROOT/Tools
 my $cimeroot  = `./xmlquery CIMEROOT  -value`;
 my @dirs = ("$cimeroot/utils/perl5lib" );
 
@@ -358,15 +358,6 @@ sub getDname
     my $DIR = $config{'RUNDIR'};
     opendir( my $dh, $DIR ) or $logger->logdie("st_archive: Error - cannot open directory $DIR. Exiting...");
 
-#    my @files = sort { $b->[10] <=> $a->[10] } 
-#                map {[ $_, CORE::stat "$DIR/$_" ]} 
-#                grep m/^*\.cpl\.r\.*/, readdir $dh;
-#    closedir $dh;
-#
-#    my ($name, @stat) = @{$files[0]};
-#    $name =~ s/\.nc//;
-#    $name =~ s/^.*\.r\.//;
-
     my @files = sort( grep(m/^*\.cpl\.r.(.*).nc$/, readdir $dh) );
 
     my @names = split(/\./,$files[$#files]);
@@ -531,27 +522,6 @@ sub moveFiles
 	    }
 	}
     }
-# 
-# also get the file that matches the dname for this suffix and
-# copy to the restdir for a complete restart set - should already be done!
-#
-
-##    if( uc($config{'DOUT_S_SAVE_INTERIM_RESTART_FILES'}) == 'TRUE' && ($destdir =~ /rest$/) )
-##    {
-##	my @restFiles = grep(/${dname}/, @files);
-##	if( $#restFiles == 0 ) {
-##	    my @path = split /\//, $restFiles[$#restFiles]; 
-##	    if ( $#path >= 0 ) {
-##		$restFile = $path[$#path];
-##		if ( -f $destdir . "/" . $restFile ) {
-##		    copy( $destdir . "/" . $restFile, $restdir . "/" . $restFile );
-##		}
-##	    }
-##	}
-##	elsif( $#restFiles > 0 && $keep_last_in_rundir eq 'true') {
-##	    $logger->info("st_archive: multiple restart files found for suffix=$suffix");
-##	}
-##   }
 
     return $numfiles, \@runfiles;
 }
@@ -674,8 +644,8 @@ sub removeDups
 
 	foreach my $matchfile (@matchfiles) {
 	    if( $matchfile =~ /\/rest\// && $matchfile ne $restfile && $matchfile !~ /\/hist\// ) {
-		$logger->info("Deleting matchfile=$matchfile matches restfile=$restfile");
-#		unlink( $matchfile );
+		$logger->debug("Dedebugng matchfile=$matchfile matches restfile=$restfile");
+		unlink( $matchfile );
 	    }
 	}
     }
@@ -735,7 +705,7 @@ sub main
 	if( uc($config{'DOUT_S_SAVE_INTERIM_RESTART_FILES'}) == 'TRUE' )
 	{
 # remove restart duplicate files from the comp/rest and rest/dname directories
-##	    removeDups( $dname )
+	    removeDups( $dname );
 	}
 
 	$logger->info("st_archive process complete.");
