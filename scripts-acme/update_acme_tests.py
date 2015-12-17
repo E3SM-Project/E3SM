@@ -158,6 +158,9 @@ def get_full_test_names(testargs, machine, compiler):
     >>> get_full_test_names(["acme_tiny"], "melvin", "gnu")
     ['ERS.f19_g16_rx1.A.melvin_gnu', 'NCK.f19_g16_rx1.A.melvin_gnu']
 
+    >>> get_full_test_names(["acme_tiny"], "melvin", "intel")
+    ['ERS.f19_g16_rx1.A.melvin_intel', 'NCK.f19_g16_rx1.A.melvin_intel']
+
     >>> get_full_test_names(["acme_tiny", "PEA_P1_M.f45_g37_rx1.A"], "melvin", "gnu")
     ['ERS.f19_g16_rx1.A.melvin_gnu', 'NCK.f19_g16_rx1.A.melvin_gnu', 'PEA_P1_M.f45_g37_rx1.A.melvin_gnu']
 
@@ -176,13 +179,13 @@ def get_full_test_names(testargs, machine, compiler):
         if (testarg.startswith("^")):
             negations.add(testarg[1:])
         elif (testarg in acme_test_suites):
-            tests_to_run.update(get_test_suite(testarg))
+            tests_to_run.update(get_test_suite(testarg, machine, compiler))
         else:
             tests_to_run.add(acme_util.get_full_test_name(testarg, machine, compiler))
 
     for negation in negations:
         if (negation in acme_test_suites):
-            for test, testmod in get_test_suite(negation):
+            for test, testmod in get_test_suite(negation, machine, compiler):
                 fullname = acme_util.get_full_test_name(test, machine, compiler, testmod)
                 if (fullname in tests_to_run):
                     tests_to_run.remove(fullname)
