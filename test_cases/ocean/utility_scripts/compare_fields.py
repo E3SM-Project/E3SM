@@ -74,17 +74,17 @@ for t in range( 0, time_length):
 	if args.l1_norm:
 		if float(args.l1_norm) < abs(l1_norm):
 			pass_time = False
-	diff_str = '%s l1: %lf '%(diff_str, l1_norm)
+	diff_str = '%s l1: %16.14e '%(diff_str, l1_norm)
 
 	if args.l2_norm:
 		if float(args.l2_norm) < abs(l2_norm):
 			pass_time = False
-	diff_str = '%s l2: %lf '%(diff_str, l2_norm)
+	diff_str = '%s l2: %16.14e '%(diff_str, l2_norm)
 
 	if args.linf_norm:
 		if float(args.linf_norm) < abs(linf_norm):
 			pass_time = False
-	diff_str = '%s linf: %lf '%(diff_str, linf_norm)
+	diff_str = '%s linf: %16.14e '%(diff_str, linf_norm)
 
 	if not args.quiet:
 		print diff_str
