@@ -40,7 +40,7 @@ def set_up_signal_handlers():
 def get_test_time(test_path):
 ###############################################################################
     cmd = "grep TIME %s" % os.path.join(test_path, TEST_STATUS_FILENAME)
-    stat, output, _ = acme_util.run_cmd(cmd, ok_to_fail=True, verbose=True)
+    stat, output, _ = acme_util.run_cmd(cmd, ok_to_fail=True)
     if (stat == 0):
         return int(output.split()[-1])
     else:
