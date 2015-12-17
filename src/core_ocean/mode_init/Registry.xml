@@ -7,6 +7,7 @@
 #include "Registry_iso.xml"
 #include "Registry_soma.xml"
 #include "Registry_ziso.xml"
+#include "Registry_sub_ice_shelf_2D.xml"
 #include "Registry_periodic_planar.xml"
 #include "Registry_ecosys.xml"
 // #include "Registry_TEMPLATE.xml"
