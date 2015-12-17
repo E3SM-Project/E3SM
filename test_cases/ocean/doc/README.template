@@ -24,6 +24,7 @@ what children can be placed below the tag.
              tag.
     - Children:
         * <option>
+        * <template> (child template)
 
 <option> - This tag defines an option that should be modified in the namelist file.
     - Attributes:
@@ -69,4 +70,45 @@ what children can be placed below the tag.
         * type: The type of the member to add (This is ignored if it's within a
                 <remove_contents> tag). Example values are var, var_array,
                 var_struct, and stream.
+
+<validation> - This tag defines a set of templated validations that can be applied from a template file.
+               The validation template tag can only be applied to driver script files.
+    - Children:
+        * <compare_fields>
+        * <compare_timers>
+
+<compare_fields> - This tag contains a list of fields that should be compared
+                   if the template is used within a <compare_fields> tag.
+    - Children:
+        * <field>
+        * <template>
+
+<field> - This tag defines a specific field that should be compared if this
+          template is used within a <compare_fields> tag. See
+          doc/README.driver_script for configuration information.
+
+<compare_timers> - This tag contains a list of timers that should be compared
+                   if the template is used within a <compare_timers> tag.
+    - Children:
+        * <timer>
+        * <template>
+
+<field> - This tag defines a specific field that should be compared if this
+          template is used within a <compare_timers> tag. See
+          doc/README.driver_script for configuration information.
+
+<template> (child template) - This tag allows another template to be applied from within a template file.
+                              WARNING: A template can include any other template (including it self) so 
+                              it is possible to create an infinite loop of template application.
+    - Attributes:
+        * file: The file that contains the template that should be expanded here. When
+                used within a <namelist> tag, the namelist portion of the template
+                will be applied. When used within a <stream> tag, the streams portion
+                of the template will be applied. Additionally, <template> tags
+                can be used within <compare_fields> and <compare_timers> tags
+                to define template fields and timers to compare.
+        * path_base: The base that the path attribute should be used relative
+                     to. Can have a value of:
+                - Can use pre-defined paths (see doc/README.config for more information)
+        * path: The path that the file lives in, relative to path_base.
 
