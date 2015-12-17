@@ -804,9 +804,11 @@ for mct, etc.
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
   <MPI_PATH MPILIB="openmpi">/soft/openmpi/1.8.2/pgi-13.9</MPI_PATH>
   <MPI_PATH MPILIB="mpich">/soft/mpich2/1.4.1-pgi-13.9/</MPI_PATH>
+  <MPI_LIB_NAME MPILIB="mvapich"> mpi</MPI_LIB_NAME>
   <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
   <MPI_LIB_NAME MPILIB="mpich">mpich</MPI_LIB_NAME>
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas</ADD_SLIBS>
+  <ADD_SLIBS> -rpath $(NETCDFROOT)/lib </ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
 </compiler>
 
