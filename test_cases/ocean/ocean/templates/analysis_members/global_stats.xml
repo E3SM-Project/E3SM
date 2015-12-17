@@ -1,10 +1,10 @@
 <template>
 	<namelist>
 		<option name="config_AM_globalStats_enable">.true.</option>
-		<option name="config_AM_globalStats_compute_interval">'dt'</option>
+		<option name="config_AM_globalStats_compute_interval">'output_interval'</option>
 		<option name="config_AM_globalStats_compute_on_startup">.true.</option>
 		<option name="config_AM_globalStats_write_on_startup">.true.</option>
-		<option name="config_AM_globalStats_text_file">.true.</option>
+		<option name="config_AM_globalStats_text_file">.false.</option>
 		<option name="config_AM_globalStats_directory">'analysis_members'</option>
 		<option name="config_AM_globalStats_output_stream">'globalStatsOutput'</option>
 	</namelist>
