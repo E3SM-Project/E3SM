@@ -76,7 +76,7 @@ def generate_namelist_files(config_file, case_path, configs):#{{{
 
 def ingest_namelist(namelist_file, namelist_dict):#{{{
 	# Read the template file
-	namelistfile = open(namelist_file, 'r+')
+	namelistfile = open(namelist_file, 'r')
 	lines = namelistfile.readlines()
 
 	record_name = 'NONE!!!'
