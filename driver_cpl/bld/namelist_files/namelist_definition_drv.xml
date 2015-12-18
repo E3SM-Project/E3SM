@@ -1902,6 +1902,14 @@ io task root in pio used generically, component based value takes precedent.
 </entry>
 
 <entry 
+id="pio_rearranger"
+type="integer"
+category="pio" 
+group="pio_default_inparm">
+Rearranger method for pio 1=box, 2=subset.
+</entry>
+
+<entry 
 id="pio_numiotasks"
 type="integer"
 category="pio" 

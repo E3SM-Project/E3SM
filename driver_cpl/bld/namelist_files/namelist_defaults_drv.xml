@@ -149,6 +149,7 @@
 <pio_typename         >$PIO_TYPENAME</pio_typename>
 <pio_debug_level      >$PIO_DEBUG_LEVEL</pio_debug_level>
 <pio_blocksize        >$PIO_BLOCKSIZE</pio_blocksize>
+<pio_rearranger>$PIO_REARRANGER</pio_rearranger>
 <pio_buffer_size_limit>$PIO_BUFFER_SIZE_LIMIT</pio_buffer_size_limit>
 <pio_async_interface PIO_ASYNC_INTERFACE="TRUE">.true.</pio_async_interface>
 <pio_async_interface PIO_ASYNC_INTERFACE="FALSE">.false.</pio_async_interface>

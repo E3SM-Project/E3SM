@@ -287,12 +287,27 @@ int PIOc_inq_varnatts (int ncid, int varid, int *nattsp)
 }
 
 /** 
- * @name    PIOc_def_var
- * @brief   The PIO-C interface for the NetCDF function nc_def_var.
- * @details This routine is called collectively by all tasks in the communicator 
- *           ios.union_comm. For more information on the underlying NetCDF commmand
- *           please read about this function in the NetCDF documentation at: 
- *           http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ * @brief Define a new variable in the netCDF file.
+ * 
+ * This routine is called collectively by all tasks in the
+ * communicator ios.union_comm. 
+ *
+ * For more information on the underlying NetCDF commmand please read
+ * about this function in the <a
+ * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">NetCDF
+ * documentation</a>.
+ *
+ * @param ncid: the ncid of the netCDF file, from PIOc_createfile() or
+ * PIOc_openfile().
+ * @param name: the name for the new variable.
+ * @param xtype: the netCDF type of the variable.
+ * @param ndims: the number of dimensions for the variable.
+ * @param dimidsp: an array holding the dimension IDs to associate
+ * with this variable.
+ * @param varidp: a pointer to an int that will get the variable ID
+ * for the newly created variable.
+ *
+ * @returns: 0 for success, non-zero error code for failure.
  */
 int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims, const int *dimidsp, int *varidp) 
 {

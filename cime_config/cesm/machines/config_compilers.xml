@@ -629,18 +629,18 @@ for mct, etc.
 
 
 <compiler COMPILER="ibm" MACH="mira">
-  <SFC> mpixlf2003_r </SFC>
-  <MPIFC> mpixlf2003_r </MPIFC>
-  <SCC> mpixlc_r </SCC>
-  <MPICC> mpixlc_r </MPICC>
+  <SFC> /home/pkcoff/mpich-sandboxes/master/install-production/bin/mpixlf2003_r </SFC>
+  <MPIFC> /home/pkcoff/mpich-sandboxes/master/install-production/bin/mpixlf2003_r </MPIFC>
+  <SCC> /home/pkcoff/mpich-sandboxes/master/install-production/bin/mpixlc_r </SCC>
+  <MPICC> /home/pkcoff/mpich-sandboxes/master/install-production/bin/mpixlc_r </MPICC>
   <!-- This LD is a workaround for darshan initialization on mira (Darshan does -->
   <!-- not run if f90 or higher is used for linking -->
-   <LD> mpixlf77_r </LD>
+   <LD> /home/pkcoff/mpich-sandboxes/master/install-production/bin/mpixlf77_r </LD>
   <NETCDF_PATH>/soft/libraries/netcdf/4.3.3-f4.4.1/cnk-xl/current/</NETCDF_PATH>
-  <PNETCDF_PATH>/soft/libraries/pnetcdf/1.6.0/cnk-xl/current/</PNETCDF_PATH>
+  <PNETCDF_PATH>/soft/libraries/pnetcdf/1.6.1/cnk-xl/current/</PNETCDF_PATH>
   <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_IBM</PFUNIT_PATH>
-  <HDF5_PATH>/soft/libraries/hdf5/1.8.14/cnk-xl/current/ </HDF5_PATH>
-   <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf -L/soft/libraries/hdf5/1.8.14/cnk-xl/current/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </ADD_SLIBS>
+  <HDF5_PATH>$(HDF5)</HDF5_PATH>
+   <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf -L$(HDF5)/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
   <ADD_FFLAGS>-qfloat=nomaf</ADD_FFLAGS>
   <ADD_CFLAGS>-qfloat=nomaf</ADD_CFLAGS>
