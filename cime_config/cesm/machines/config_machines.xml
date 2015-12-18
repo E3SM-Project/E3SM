@@ -1570,7 +1570,7 @@
     <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>              
     <CCSM_BASELINE>$ENV{CESMDATAROOT}/ccsm_baselines</CCSM_BASELINE>                   
-    <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cprnc/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc</CCSM_CPRNC>
     <PERL5LIB>/glade/apps/opt/perlmods/lib64/perl5:/glade/apps/opt/perlmods/share/perl5</PERL5LIB>
     <BATCHQUERY>bjobs -w</BATCHQUERY>                                                                     
     <BATCHSUBMIT>bsub</BATCHSUBMIT>
