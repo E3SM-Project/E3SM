@@ -82,7 +82,7 @@ foreach my $test (keys %tests) {
    my $extra_args = $tests{$test}{'extra_args'};
 
    open (my $file, ">", "$outfile") or die "ERROR opening $outfile";
-   print $file `cprnc $extra_args test_inputs/$control_file test_inputs/$test_file`;
+   print $file `./cprnc $extra_args test_inputs/$control_file test_inputs/$test_file`;
    close $file;
 }
 
