@@ -19,12 +19,14 @@ module compare_vars_mod
 
 contains
 
-  subroutine compare_vars(n,file, vtotal, ndiffs, nfilldiffs, vfailed, vnotfound )
+  subroutine compare_vars(n,file, vtotal, ndiffs, nfilldiffs, vsizes_differ, &
+       vnot_analyzed, vnotfound )
     integer, intent(in) :: n       ! number of files to analyze (1 or 2)
     integer, intent(out) :: vtotal
     integer, intent(out) :: ndiffs     ! number of fields with differences (not counting fields that differ only in the fill pattern)
     integer, intent(out) :: nfilldiffs ! number of fields with differences in fill pattern
-    integer, intent(out) :: vfailed
+    integer, intent(out) :: vsizes_differ
+    integer, intent(out) :: vnot_analyzed
     integer, intent(out) :: vnotfound
 
 
@@ -44,7 +46,8 @@ contains
 
 
     vtotal = 0
-    vfailed = 0
+    vsizes_differ = 0
+    vnot_analyzed = 0
     vnotfound=0
     if(n==2 .and. .not.ignoretime) then
        call checknf90(nf90_inq_varid(file(1)%fh, 'time', vid1))
@@ -93,8 +96,9 @@ contains
           vtotal = vtotal+1
           
           call compare_one_var(v1=v1, numcases=n, file=file, varnum=i, &
-                               vnotfound=vnotfound, vfailed=vfailed, &
-                               ndiffs=ndiffs, nfilldiffs=nfilldiffs)
+               vnotfound=vnotfound, vsizes_differ=vsizes_differ, &
+               vnot_analyzed=vnot_analyzed, &
+               ndiffs=ndiffs, nfilldiffs=nfilldiffs)
 
        end if
     end do
@@ -129,7 +133,7 @@ contains
                 Write(6,*) 'Found common timesteps:', t1, t2
              else if(tdiff > timeepsilon) then
                 Write(6,*) 'No matching time found.'
-                vfailed = nvars
+                vnot_analyzed = nvars
                 return
              end if
              if(verbose) print *,__FILE__,__LINE__,time(t1,1),time(t2,2), t1, t2, time(:,:)
@@ -149,9 +153,10 @@ contains
                 write(6,145) trim(v1%name),trim(dimstr), t1, t2
 
                 call compare_one_var(v1=v1, numcases=n, file=file, varnum=i, &
-                                     vnotfound=vnotfound, vfailed=vfailed, &
-                                     ndiffs=ndiffs, nfilldiffs=nfilldiffs, &
-                                     tindex=(/t1, t2/))
+                     vnotfound=vnotfound, vsizes_differ=vsizes_differ, &
+                     vnot_analyzed=vnot_analyzed, &
+                     ndiffs=ndiffs, nfilldiffs=nfilldiffs, &
+                     tindex=(/t1, t2/))
 
              end if
           end do
@@ -167,48 +172,51 @@ contains
   ! Compare a single variable, and update counts
   ! For variables with multiple time slices, this just does comparisons for a single time slice
   subroutine compare_one_var(v1, numcases, file, varnum, &
-                             vnotfound, vfailed, ndiffs, nfilldiffs, &
+                             vnotfound, vsizes_differ, vnot_analyzed, ndiffs, nfilldiffs, &
                              tindex)
     type(var_t) , intent(in) :: v1             ! variable info for the variable in file 1
     integer     , intent(in) :: numcases
     type(file_t), intent(in) :: file(numcases)
     integer     , intent(in) :: varnum
     integer  , intent(inout) :: vnotfound
-    integer  , intent(inout) :: vfailed
+    integer  , intent(inout) :: vsizes_differ
+    integer  , intent(inout) :: vnot_analyzed
     integer  , intent(inout) :: ndiffs
     integer  , intent(inout) :: nfilldiffs
     integer     , intent(in), optional :: tindex(numcases)
 
-    integer :: idiff, ifilldiff, ierr, inotfound
+    integer :: idiff, ifilldiff, isizes_differ, inotfound, inot_analyzed
 
     ! initialize output arguments of compare_var in case compare_var doesn't get called
     idiff = 0
     ifilldiff = 0
-    ierr = 0
+    isizes_differ = 0
     inotfound = 0
+    inot_analyzed = 0
 
     select case(v1%xtype)
     case(nf90_int)
        call compare_var_int(numcases,file,(/varnum,v1%matchid/), &
-                            idiff, ifilldiff, ierr, inotfound, &
+                            idiff, ifilldiff, isizes_differ, inotfound, &
                             tindex)
     case(nf90_float)
        call compare_var_real(numcases,file,(/varnum,v1%matchid/), &
-                             idiff, ifilldiff, ierr, inotfound, &
+                             idiff, ifilldiff, isizes_differ, inotfound, &
                              tindex)
     case(nf90_double)
        call compare_var_double(numcases,file,(/varnum,v1%matchid/), &
-                               idiff, ifilldiff, ierr, inotfound, &
+                               idiff, ifilldiff, isizes_differ, inotfound, &
                                tindex)
     case(nf90_char)
-       ierr = 1
+       inot_analyzed = 1
        !             call compare_var_char(file1,file2,i,v1%matchid)
     case default   
        print *,'Type not recognized for variable: ', v1%name
     end select
 
     vnotfound = vnotfound+inotfound
-    vfailed = vfailed+ierr
+    vsizes_differ = vsizes_differ+isizes_differ
+    vnot_analyzed = vnot_analyzed+inot_analyzed
     ndiffs = ndiffs+idiff
     nfilldiffs = nfilldiffs + ifilldiff
   end subroutine compare_one_var
@@ -262,7 +270,8 @@ contains
        s2 = vdimsize(file(2)%dim, file(2)%var(vid(2))%dimids)
 
        if(s1 /= s2) then
-          print *, 'Variable ',trim(file(1)%var(vid(1))%name),' sizes differ'
+          write(6,*), 'WARNING: Variable ',trim(file(1)%var(vid(1))%name),' sizes differ'
+          write(6,'(a,a32)') ' DIMSIZEDIFF ', file(1)%var(vid(1))%name
           ifail = 1
           return
        end if
