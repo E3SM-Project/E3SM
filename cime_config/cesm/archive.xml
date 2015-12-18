@@ -241,6 +241,70 @@
     </files>
   </comp_archive_spec>
 
+  <comp_archive_spec name="mosart">
+    <rootdir>rof</rootdir>
+    <files>
+      <file_extension suffix=".log\..*">
+	<subdir>logs</subdir> 
+	<keep_last_in_rundir>false</keep_last_in_rundir>
+      </file_extension>
+      <file_extension suffix=".r\..*">
+	<subdir>rest</subdir> 
+	<keep_last_in_rundir>true</keep_last_in_rundir>
+      </file_extension>
+      <file_extension suffix=".rh0\..*">
+	<subdir>rest</subdir> 
+	<keep_last_in_rundir>true</keep_last_in_rundir>
+      </file_extension>
+      <file_extension suffix=".rh1\..*">
+	<subdir>rest</subdir> 
+	<keep_last_in_rundir>true</keep_last_in_rundir>
+      </file_extension>
+      <file_extension suffix=".rh2\..*">
+	<subdir>rest</subdir> 
+	<keep_last_in_rundir>true</keep_last_in_rundir>
+      </file_extension>
+      <file_extension suffix=".rh3\..*">
+	<subdir>rest</subdir> 
+	<keep_last_in_rundir>true</keep_last_in_rundir>
+      </file_extension>
+      <file_extension suffix=".h0\..*">      
+	<subdir>hist</subdir> 
+	<keep_last_in_rundir>true</keep_last_in_rundir>
+      </file_extension>
+      <file_extension suffix=".h1\..*">      
+	<subdir>hist</subdir> 
+	<keep_last_in_rundir>true</keep_last_in_rundir>
+      </file_extension>
+      <file_extension suffix=".h2\..*">      
+	<subdir>hist</subdir> 
+	<keep_last_in_rundir>true</keep_last_in_rundir>
+      </file_extension>
+      <file_extension suffix=".h3\..*">      
+	<subdir>hist</subdir> 
+	<keep_last_in_rundir>true</keep_last_in_rundir>
+      </file_extension>
+    </files>
+  </comp_archive_spec>
+
+  <comp_archive_spec name="drof">
+    <rootdir>rof</rootdir>
+    <files>
+      <file_extension suffix=".r\..*">
+	<subdir>rest</subdir> 
+	<keep_last_in_rundir>true</keep_last_in_rundir>
+      </file_extension>
+      <file_extension suffix=".rs\..*">
+	<subdir>rest</subdir> 
+	<keep_last_in_rundir>true</keep_last_in_rundir>
+      </file_extension>
+      <file_extension suffix=".h\..*">      
+	<subdir>hist</subdir> 
+	<keep_last_in_rundir>true</keep_last_in_rundir>
+      </file_extension>
+    </files>
+  </comp_archive_spec>
+
   <comp_archive_spec name="cice">
     <rootdir>ice</rootdir>
     <files>
@@ -280,7 +344,6 @@
       </file_extension>
     </files>
   </comp_archive_spec>
-
 
   <comp_archive_spec name="pop">
     <rootdir>ocn</rootdir>

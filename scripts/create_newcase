@@ -900,9 +900,7 @@ sub _create_caseroot_tools
     }
     
     # Copy relevant files into $caseroot/Tools/
-    @files = ("$cimeroot/cime_config/${model}/archive.xml",
-	      "$cimeroot/cime_config/${model}/archive.xsd",
-	      "$cimeroot/scripts/Tools/check_lockedfiles", 
+    @files = ("$cimeroot/scripts/Tools/check_lockedfiles", 
 	      "$cimeroot/scripts/Tools/lt_archive.sh", 
 	      "$cimeroot/scripts/Tools/st_archive", 
 	      "$cimeroot/scripts/Tools/getTiming", 
