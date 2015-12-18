@@ -412,7 +412,7 @@
 	    <var name="verticalSalinity"/>               
 	    <var name="brineFraction"/>                    
 	    <var name="mobileFraction"/>   
-            <var name="newlyFormedIce"/>        
+            <var name="newlyFormedIce"/>       
 	  </stream>
 
 	  <stream name="output" 				
@@ -468,7 +468,18 @@
 	    <var name="totalVerticalBiologySnow"/>
 	    <var name="totalVerticalSalinity"/>               
 	    <var name="brineFractionCell"/>    
-            <var name="newlyFormedIce"/>         
+            <var name="newlyFormedIce"/>   
+	    <var name="verticalAerosolsConc"/>   
+	    <var name="atmosBlackCarbonFlux"/>     
+	    <var name="atmosDustFlux"/> 
+            <var name="oceanDustIronFlux"/>	
+            <var name="atmosBioFluxes"/>
+            <var name="snowScatteringAerosol"/>
+            <var name="snowBodyAerosol"/>
+            <var name="iceScatteringAerosol"/>
+            <var name="iceBodyAerosol"/>
+            <var name="atmosAerosolFlux"/>
+            <var name="oceanAerosolFlux"/>     
 	  </stream>
 
         <!-- forcing streams -->
@@ -1724,7 +1735,7 @@
 	<var_struct name="biogeochemistry" time_levs="1" packages="pkgColumnBiogeochemistry">
 		<var name="newlyFormedIce"                    type="integer"  dimensions="nCategories nCells"            name_in_code="newlyFormedIce" packages="pkgColumnBiogeochemistry;pkgColumnPackage"/>
 		<var name="rayleighCriteriaReal"              type="real"     dimensions="nCells"            name_in_code="rayleighCriteriaReal"/>
-		<var name="atmosBioFluxes"		      type="real"     dimensions="nZBGCTracers nCells"	         name_in_code="atmosBioFluxes"/>
+		<var name="atmosBioFluxes"		      type="real"     dimensions="nZBGCTracers nCells Time"	         name_in_code="atmosBioFluxes"/>
 		<var name="atmosIceBioFluxes"		      type="real"     dimensions="nZBGCTracers nCells Time"      name_in_code="atmosIceBioFluxes"/>
 		<var name="snowIceBioFluxes"		      type="real"     dimensions="nZBGCTracers nCells Time"      name_in_code="snowIceBioFluxes"/>
 		<var name="atmosBlackCarbonFlux"	      type="real"     dimensions="maxBCType nCells Time"         name_in_code="atmosBlackCarbonFlux"/>

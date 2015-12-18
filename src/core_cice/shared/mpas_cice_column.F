@@ -2940,15 +2940,23 @@ contains
                oceanZAerosolConc(:,iCell), &
                oceanBioConcentrations(:,iCell), &
                oceanHumicsConc(iCell))
-
-          indexj = 2*maxAlgaeType + maxDOCType + maxDICType + maxDONType + 2*maxIronType + 7
+#else
           do iBioTracers = 1, maxBCType
-             atmosBioFluxes(indexj + iBioTracers,iCell) = atmosBlackCarbonFlux(iBioTracers,iCell)
+             atmosBlackCarbonFlux(iBioTracers,iCell) =  1.e-12_RKIND
           enddo
           do iBioTracers = 1, maxDustType
-             atmosBioFluxes(indexj + maxBCType + iBioTracers, iCell) = atmosDustFlux(iBioTracers,iCell)
+             atmosDustFlux(iBioTracers,iCell) =  1.e-13_RKIND
           enddo
 #endif
+
+          indexj = ciceTracerObject % index_verticalAerosolsConcLayer(1) 
+          do iBioTracers = 1, maxBCType
+             atmosBioFluxes(indexj -1 + iBioTracers,iCell) = atmosBlackCarbonFlux(iBioTracers,iCell)
+          enddo
+          do iBioTracers = maxBCType + 1, nzAerosols 
+             atmosBioFluxes(indexj -1 + iBioTracers, iCell) = atmosDustFlux(iBioTracers,iCell)
+          enddo
+
           do iBioTracers = 1, ciceTracerObject % nBioTracers
              iBioData = ciceTracerObject % index_LayerIndexToDataArray(iBioTracers)
              oceanBioConcentrationsUsed(iBioTracers) = oceanBioConcentrations(iBioData,iCell)
