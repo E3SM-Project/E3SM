@@ -73,6 +73,7 @@ my $num_tests = keys %tests;
 print "Running $num_tests tests...\n";
 
 foreach my $test (keys %tests) {
+   print "$test\n";
    my $test_file = $test;
    my $control_file = $tests{$test}{'control'};
    my $outfile = "$opts{'outdir'}/${test}.out";

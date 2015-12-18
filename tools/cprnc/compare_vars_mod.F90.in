@@ -399,14 +399,16 @@ contains
                 write(6,811) ' RMS ', file(1)%var(vid(1))%name, rms, ' NORMALIZED ', 0
 #else                
                 write(6,803) s2, buf(1,1), buf(2,1)
-                write(6,812) ' RMS ', file(1)%var(vid(1))%name, rms, ' NORMALIZED ', 0
+                write(6,812) ' RMS ', file(1)%var(vid(1))%name, rms, ' NORMALIZED ', 0.
 #endif
 
              else 
                 write(6,800) diffcnt, s1, trim(max_str(1)),trim(min_str(1)), trim(dmax_str), trim(rdmax_str)
 #if ({ITYPE} == TYPEINT)
-                write(6,903) s2, max_val(1), space(1:spacelen),min_val(1), m1, buf(l1(1),1), rdbar, buf(rdmaxloc,1), &
-                     count(mask(:,2)),  max_val(2), space(1:spacelen),min_val(2), buf(l1(1),2), buf(rdmaxloc,2)
+                ! Note that rdmaxloc is NOT computed in this case, so we print 0 in place
+                ! of buf(rdmaxloc,1) and buf(rdmaxloc,2)
+                write(6,903) s2, max_val(1), space(1:spacelen),min_val(1), m1, buf(l1(1),1), rdbar, 0, &
+                     count(mask(:,2)),  max_val(2), space(1:spacelen),min_val(2), buf(l1(1),2), 0
                 write(6,810) s1, trim(max_str(2)), trim(min_str(2))
                 !          write(6,905) avgval(1), rms, rdbar, avgval(2), rdlogbar, log10(1./rdmax)
                 write(6,811) ' RMS ', file(1)%var(vid(1))%name, rms, ' NORMALIZED ', rms_normalized
