@@ -26,7 +26,7 @@
 # VPATH -------- GNU make path. (Defaults to current directory)
 #
 #------------------------------------------------------------------------
-include Macros
+include Macros.make
 # Set up special characters
 null  :=
 
