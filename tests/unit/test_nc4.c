@@ -269,12 +269,12 @@ main(int argc, char **argv)
 	    if ((ret = PIOc_def_var_chunking(ncid, 0, NC_CHUNKED, chunksize)))
 		ERR(ret);
 
-	    /** Check that the inq function works. */
+	    /** Check that the inq_var_chunking function works. */
 	    int storage;
 	    size_t my_chunksize[NDIM];
 	    if ((ret = PIOc_inq_var_chunking(ncid, 0, &storage, my_chunksize)))
 	    	ERR(ret);
-
+	    
 	    /** For serial netCDF-4, only processor rank 0 gets the answers. */
 	    if (format[fmt] == PIO_IOTYPE_NETCDF4C && !my_rank ||
 		format[fmt] == PIO_IOTYPE_NETCDF4P)
@@ -285,6 +285,25 @@ main(int argc, char **argv)
 		    if (my_chunksize[d] != chunksize[d])
 		    	ERR(ERR_AWFUL);
 	    }
+
+	    /* Check that the inv_var_deflate functions works. */
+	    int shuffle;
+	    int deflate;
+	    int deflate_level;
+	    if ((ret = PIOc_inq_var_deflate(ncid, 0, &shuffle, &deflate, &deflate_level)))
+	    	ERR(ret);
+
+	    /** For serial netCDF-4, only processor rank 0 gets the
+	     * answers. Also deflate is turned on by default */
+	    if (format[fmt] == PIO_IOTYPE_NETCDF4C && !my_rank)
+		if (shuffle || !deflate || deflate_level != 1)
+		    ERR(ERR_AWFUL);
+
+	    /* For parallel netCDF, no compression available. :-( */
+	    if (format[fmt] == PIO_IOTYPE_NETCDF4P)
+		if (shuffle || deflate)
+		    ERR(ERR_AWFUL);
+
 	} else {
 	    /* Trying to set chunking for non-netCDF-4 files results
 	     * in the PIO_ENOTNC4 error. */
