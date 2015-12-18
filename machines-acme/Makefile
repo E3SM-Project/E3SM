@@ -588,6 +588,9 @@ endif
 ifdef PIO_FILESYSTEM_HINTS
 	CMAKE_OPTS += -D PIO_FILESYSTEM_HINTS:STRING="$(PIO_FILESYSTEM_HINTS)"
 endif
+ifdef PIO_CONFIG_OPTS
+  CMAKE_OPTS += $(PIO_CONFIG_OPTS)
+endif
 
 # This captures the many cism-specific options to cmake
 CMAKE_OPTS += $(USER_CMAKE_OPTS)
