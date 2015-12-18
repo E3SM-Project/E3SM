@@ -362,6 +362,7 @@ int PIOc_inq_varid (int ncid, const char *name, int *varidp);
 int PIOc_inq_varnatts (int ncid, int varid, int *nattsp); 
 int PIOc_def_var (int ncid, const char *name, nc_type xtype,  int ndims, const int *dimidsp, int *varidp);
 int PIOc_def_var_chunking(int ncid, int varid, int storage, const size_t *chunksizesp);
+int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizesp);
 int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp, int *dimidsp, int *nattsp); 
 int PIOc_inq_varname (int ncid, int varid, char *name); 
 int PIOc_put_att_double (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const double *op); 

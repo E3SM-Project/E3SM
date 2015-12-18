@@ -95,7 +95,7 @@ int PIOc_def_var_chunking(int ncid, int varid, int storage,
  * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
-int nc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizesp)
+int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizesp)
 {
     int ierr;
     int msg;

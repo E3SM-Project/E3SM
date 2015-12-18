@@ -70,7 +70,7 @@ int dim_len[NDIM] = {NC_UNLIMITED, X_DIM_LEN, Y_DIM_LEN};
 size_t chunksize[NDIM] = {2, X_DIM_LEN/2, Y_DIM_LEN/2};
 
 /** Error code for when things go wrong. */
-#define ERR_AWFUL 1
+#define ERR_AWFUL 1111
 
 /** Run Tests for NetCDF-4 Functions.
  *
@@ -262,10 +262,35 @@ main(int argc, char **argv)
 	}
 	if ((ret = PIOc_def_var(ncid, VAR_NAME, PIO_FLOAT, NDIM, dimids, &varid)))
 	    ERR(ret);
+
 	/* For netCDF-4 files, set the chunksize to improve performance. */
 	if (format[fmt] == PIO_IOTYPE_NETCDF4C || format[fmt] == PIO_IOTYPE_NETCDF4P)
+	{
 	    if ((ret = PIOc_def_var_chunking(ncid, 0, NC_CHUNKED, chunksize)))
 		ERR(ret);
+
+	    /** Check that the inq function works. */
+	    int storage;
+	    size_t my_chunksize[NDIM];
+	    if ((ret = PIOc_inq_var_chunking(ncid, 0, &storage, my_chunksize)))
+	    	ERR(ret);
+
+	    /** For serial netCDF-4, only processor rank 0 gets the answers. */
+	    if (format[fmt] == PIO_IOTYPE_NETCDF4C && !my_rank ||
+		format[fmt] == PIO_IOTYPE_NETCDF4P)
+	    {
+		if (storage != NC_CHUNKED)
+		    ERR(ERR_AWFUL);
+		for (int d = 0; d < NDIM; d++)
+		    if (my_chunksize[d] != chunksize[d])
+		    	ERR(ERR_AWFUL);
+	    }
+	} else {
+	    /* Trying to set chunking for non-netCDF-4 files results
+	     * in the PIO_ENOTNC4 error. */
+	    if ((ret = PIOc_def_var_chunking(ncid, 0, NC_CHUNKED, chunksize)) != PIO_ENOTNC4)
+		ERR(ERR_AWFUL);
+	}	    
 	
 	if ((ret = PIOc_enddef(ncid)))
 	    ERR(ret);
