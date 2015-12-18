@@ -1720,8 +1720,8 @@
 
 	<!-- aerosols -->
 	<var_struct name="aerosols" time_levs="1" packages="pkgColumnPackage">
-		<var name="atmosAerosolFlux"                  type="real"     dimensions="nAerosols nCells"               name_in_code="atmosAerosolFlux"/>
-		<var name="oceanAerosolFlux"                  type="real"     dimensions="nAerosols nCells"               name_in_code="oceanAerosolFlux"/>
+		<var name="atmosAerosolFlux"		      type="real"     dimensions="nAerosols nCells Time"               name_in_code="atmosAerosolFlux"/>
+		<var name="oceanAerosolFlux"		      type="real"     dimensions="nAerosols nCells Time"               name_in_code="oceanAerosolFlux"/>
 		<var name="aerosolMassExtinctionCrossSection" type="real"     dimensions="nSpectralIntervals maxAerosolType"   name_in_code="aerosolMassExtinctionCrossSection"/>
 		<var name="aerosolSingleScatterAlbedo"        type="real"     dimensions="nSpectralIntervals maxAerosolType"   name_in_code="aerosolSingleScatterAlbedo"/>
 		<var name="aerosolAsymmetryParameter"         type="real"     dimensions="nSpectralIntervals maxAerosolType"   name_in_code="aerosolAsymmetryParameter"/>
