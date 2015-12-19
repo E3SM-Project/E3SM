@@ -41,16 +41,13 @@ class CreateTest(object):
         self._test_id        = test_id       if test_id is not None else acme_util.get_utc_timestamp()
         self._project        = project       if project is not None else acme_util.get_machine_project()
         self._baseline_root  = baseline_root if baseline_root is not None else acme_util.get_machine_info("CCSM_BASELINE", project=self._project)
+        self._baseline_name  = None
         self._compiler       = compiler      if compiler is not None else acme_util.get_machine_info("COMPILERS")[0]
-        self._baseline_name  = baseline_name if baseline_name is not None else os.path.join(self._compiler, acme_util.get_current_branch(repo=self._cime_root))
         self._clean          = clean
         self._compare        = compare
         self._generate       = generate
         self._namelists_only = namelists_only
         self._parallel_jobs  = parallel_jobs if parallel_jobs is not None else min(len(self._test_names), int(acme_util.get_machine_info("MAX_TASKS_PER_NODE")))
-
-        if (not self._baseline_name.startswith("%s/" % self._compiler)):
-            self._baseline_name = os.path.join(self._compiler, self._baseline_name)
 
         # Oversubscribe by 1/4
         pes = int(acme_util.get_machine_info("MAX_TASKS_PER_NODE"))
@@ -72,8 +69,18 @@ class CreateTest(object):
             self._phases.remove(BUILD_PHASE)
         if (no_run):
             self._phases.remove(RUN_PHASE)
+
         if (not self._compare and not self._generate):
             self._phases.remove(NAMELIST_PHASE)
+        else:
+            if (baseline_name is None):
+                branch_name = acme_util.get_current_branch(repo=self._cime_root)
+                expect(branch_name is not None, "Could not determine baseline name from branch, please use -b option")
+                self._baseline_name = os.path.join(self._compiler, branch_name)
+            else:
+                self._baseline_name  = baseline_name
+                if (not self._baseline_name.startswith("%s/" % self._compiler)):
+                    self._baseline_name = os.path.join(self._compiler, self._baseline_name)
 
         # Validate any assumptions that were not caught by the arg parser
 
