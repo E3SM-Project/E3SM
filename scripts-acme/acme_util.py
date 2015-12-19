@@ -318,7 +318,7 @@ def get_acme_scripts_location_within_acme():
     """
     From within ACME, return subdirectory where ACME scripts live.
     """
-    os.path.join(get_cime_location_within_acme(), get_acme_scripts_location_within_cime())
+    return os.path.join(get_cime_location_within_acme(), get_acme_scripts_location_within_cime())
 
 ###############################################################################
 def get_cime_root():
