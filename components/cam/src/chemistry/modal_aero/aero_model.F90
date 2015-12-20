@@ -466,20 +466,6 @@ contains
           endif
        enddo
 
-#if (defined MODAL_AERO_9MODE || MODAL_AERO_4MODE_MOM)
-       dummy = 'SSTSFMBL_OM'
-       call addfld (dummy,'kg/m2/s',1, 'A','Mobilization flux of marine organic matter at surface',phys_decomp)
-       if (history_aerosol) then
-          call add_default (dummy, 1, ' ')
-       endif
-
-       dummy = 'F_eff'
-       call addfld (dummy,'1',1, 'A','Effective enrichment factor of marine organic matter',phys_decomp)
-       if (history_aerosol) then
-          call add_default (dummy, 1, ' ')
-       endif
-#endif
-
     endif
 
     
@@ -717,76 +703,6 @@ contains
     index_tot_mass(1,4) = get_spc_ndx('bc_a1' )
     index_tot_mass(1,5) = get_spc_ndx('dst_a1')
     index_tot_mass(1,6) = get_spc_ndx('ncl_a1')
-    index_tot_mass(1,7) = get_spc_ndx('mom_a1')
-    index_chm_mass(1,1) = get_spc_ndx('so4_a1')
-    index_chm_mass(1,2) = get_spc_ndx('soa_a1')
-    index_chm_mass(1,3) = get_spc_ndx('bc_a1' )
-    !
-    ! aitken mode
-    !
-    index_tot_mass(2,1) = get_spc_ndx('so4_a2')
-    index_tot_mass(2,2) = get_spc_ndx('soa_a2')
-    index_tot_mass(2,3) = get_spc_ndx('ncl_a2')
-    index_tot_mass(2,4) = get_spc_ndx('mom_a2')
-    index_chm_mass(2,1) = get_spc_ndx('so4_a2')
-    index_chm_mass(2,2) = get_spc_ndx('soa_a2')
-    !
-    ! coarse mode
-    !
-    index_tot_mass(3,1) = get_spc_ndx('dst_a3')
-    index_tot_mass(3,2) = get_spc_ndx('ncl_a3')
-    index_tot_mass(3,3) = get_spc_ndx('mom_a3')
-    index_tot_mass(3,3) = get_spc_ndx('so4_a3')
-    index_chm_mass(3,1) = get_spc_ndx('so4_a3')
-    !
-#elif ( defined MODAL_AERO_4MODE_MOM )
-    !
-    ! accumulation mode #1
-    !
-    index_tot_mass(1,1) = get_spc_ndx('so4_a1')
-    index_tot_mass(1,2) = get_spc_ndx('pom_a1')
-    index_tot_mass(1,3) = get_spc_ndx('soa_a1')
-    index_tot_mass(1,4) = get_spc_ndx('bc_a1' )
-    index_tot_mass(1,5) = get_spc_ndx('dst_a1')
-    index_tot_mass(1,6) = get_spc_ndx('ncl_a1')
-    index_tot_mass(1,7) = get_spc_ndx('mom_a1')
-    index_chm_mass(1,1) = get_spc_ndx('so4_a1')
-    index_chm_mass(1,2) = get_spc_ndx('soa_a1')
-    index_chm_mass(1,3) = get_spc_ndx('bc_a1' )
-    !
-    ! aitken mode
-    !
-    index_tot_mass(2,1) = get_spc_ndx('so4_a2')
-    index_tot_mass(2,2) = get_spc_ndx('soa_a2')
-    index_tot_mass(2,3) = get_spc_ndx('ncl_a2')
-    index_tot_mass(2,4) = get_spc_ndx('mom_a2')
-    index_chm_mass(2,1) = get_spc_ndx('so4_a2')
-    index_chm_mass(2,2) = get_spc_ndx('soa_a2')
-    !
-    ! coarse mode
-    !
-    index_tot_mass(3,1) = get_spc_ndx('dst_a3')
-    index_tot_mass(3,2) = get_spc_ndx('ncl_a3')
-    index_tot_mass(3,3) = get_spc_ndx('so4_a3')
-    index_chm_mass(3,1) = get_spc_ndx('so4_a3')
-    !
-    ! POM mode
-    !
-    index_tot_mass(4,1) = get_spc_ndx('pom_a4')
-    index_tot_mass(4,2) = get_spc_ndx('bc_a4')
-    index_tot_mass(4,3) = get_spc_ndx('mom_a4')
-    index_chm_mass(4,1) = get_spc_ndx('bc_a1' )
-    !
-#elif ( defined MODAL_AERO_4MODE )
-    !
-    ! accumulation mode #1
-    !
-    index_tot_mass(1,1) = get_spc_ndx('so4_a1')
-    index_tot_mass(1,2) = get_spc_ndx('pom_a1')
-    index_tot_mass(1,3) = get_spc_ndx('soa_a1')
-    index_tot_mass(1,4) = get_spc_ndx('bc_a1' )
-    index_tot_mass(1,5) = get_spc_ndx('dst_a1')
-    index_tot_mass(1,6) = get_spc_ndx('ncl_a1')
     index_chm_mass(1,1) = get_spc_ndx('so4_a1')
     index_chm_mass(1,2) = get_spc_ndx('soa_a1')
     index_chm_mass(1,3) = get_spc_ndx('bc_a1' )
@@ -806,13 +722,8 @@ contains
     index_tot_mass(3,3) = get_spc_ndx('so4_a3')
     index_chm_mass(3,1) = get_spc_ndx('so4_a3')
     !
-    ! POM mode
-    !
-    index_tot_mass(4,1) = get_spc_ndx('pom_a4')
-    index_tot_mass(4,2) = get_spc_ndx('bc_a4')
-    index_chm_mass(4,1) = get_spc_ndx('bc_a1' )
-    !
-#elif ( defined MODAL_AERO_7MODE )
+#endif
+#if ( defined MODAL_AERO_7MODE )
     !
     ! accumulation mode #1
     !
@@ -870,86 +781,6 @@ contains
     index_tot_mass(7,3) = get_spc_ndx('dst_a7')
     index_chm_mass(7,1) = get_spc_ndx('so4_a7')
     index_chm_mass(7,2) = get_spc_ndx('nh4_a7')
-    !
-#elif ( defined MODAL_AERO_9MODE )
-    !
-    ! accumulation mode #1
-    !
-    index_tot_mass(1,1) = get_spc_ndx('so4_a1')
-    index_tot_mass(1,2) = get_spc_ndx('nh4_a1')
-    index_tot_mass(1,3) = get_spc_ndx('pom_a1')
-    index_tot_mass(1,4) = get_spc_ndx('soa_a1')
-    index_tot_mass(1,5) = get_spc_ndx('bc_a1' )
-    index_tot_mass(1,6) = get_spc_ndx('ncl_a1')
-    index_tot_mass(1,7) = get_spc_ndx('mpoly_a1')
-    index_tot_mass(1,8) = get_spc_ndx('mprot_a1')
-    index_tot_mass(1,9) = get_spc_ndx('mlip_a1')
-    index_chm_mass(1,1) = get_spc_ndx('so4_a1')
-    index_chm_mass(1,2) = get_spc_ndx('nh4_a1')
-    index_chm_mass(1,3) = get_spc_ndx('soa_a1')
-    index_chm_mass(1,4) = get_spc_ndx('bc_a1' )
-    !
-    ! aitken mode
-    !
-    index_tot_mass(2,1) = get_spc_ndx('so4_a2')
-    index_tot_mass(2,2) = get_spc_ndx('nh4_a2')
-    index_tot_mass(2,3) = get_spc_ndx('soa_a2')
-    index_tot_mass(2,4) = get_spc_ndx('ncl_a2')
-    index_tot_mass(2,5) = get_spc_ndx('mpoly_a2')
-    index_tot_mass(2,6) = get_spc_ndx('mprot_a2')
-    index_tot_mass(2,7) = get_spc_ndx('mlip_a2')
-    index_chm_mass(2,1) = get_spc_ndx('so4_a2')
-    index_chm_mass(2,2) = get_spc_ndx('nh4_a2')
-    index_chm_mass(2,3) = get_spc_ndx('soa_a2')
-    !
-    ! primary carbon mode not added 
-    !
-    ! fine sea salt 
-    !
-    index_tot_mass(4,1) = get_spc_ndx('so4_a4')
-    index_tot_mass(4,2) = get_spc_ndx('nh4_a4')
-    index_tot_mass(4,3) = get_spc_ndx('ncl_a4')
-    index_tot_mass(4,4) = get_spc_ndx('mpoly_a4')
-    index_tot_mass(4,5) = get_spc_ndx('mprot_a4')
-    index_tot_mass(4,6) = get_spc_ndx('mlip_a4')
-    index_chm_mass(4,1) = get_spc_ndx('so4_a4')
-    index_chm_mass(4,2) = get_spc_ndx('nh4_a4')
-    !
-    ! fine soil dust 
-    !
-    index_tot_mass(5,1) = get_spc_ndx('so4_a5')
-    index_tot_mass(5,2) = get_spc_ndx('nh4_a5')
-    index_tot_mass(5,3) = get_spc_ndx('dst_a5')
-    index_chm_mass(5,1) = get_spc_ndx('so4_a5')
-    index_chm_mass(5,2) = get_spc_ndx('nh4_a5')
-    !
-    ! coarse sea salt 
-    !
-    index_tot_mass(6,1) = get_spc_ndx('so4_a6')
-    index_tot_mass(6,2) = get_spc_ndx('nh4_a6')
-    index_tot_mass(6,3) = get_spc_ndx('ncl_a6')
-    index_chm_mass(6,1) = get_spc_ndx('so4_a6')
-    index_chm_mass(6,2) = get_spc_ndx('nh4_a6')
-    !
-    ! coarse soil dust 
-    !
-    index_tot_mass(7,1) = get_spc_ndx('so4_a7')
-    index_tot_mass(7,2) = get_spc_ndx('nh4_a7')
-    index_tot_mass(7,3) = get_spc_ndx('dst_a7')
-    index_chm_mass(7,1) = get_spc_ndx('so4_a7')
-    index_chm_mass(7,2) = get_spc_ndx('nh4_a7')
-    !
-    ! marine organics - accumulation marine
-    !
-    index_tot_mass(8,1) = get_spc_ndx('mpoly_a8')
-    index_tot_mass(8,2) = get_spc_ndx('mprot_a8')
-    index_tot_mass(8,3) = get_spc_ndx('mlip_a8')
-    !
-    ! marine organics - Aitken marine
-    !
-    index_tot_mass(9,1) = get_spc_ndx('mpoly_a9')
-    index_tot_mass(9,2) = get_spc_ndx('mprot_a9')
-    index_tot_mass(9,3) = get_spc_ndx('mlip_a9')
     !
 #endif
 
@@ -2584,8 +2415,7 @@ do_lphase2_conditional: &
   !=============================================================================
   !=============================================================================
   subroutine aero_model_emissions( state, cam_in )
-    use seasalt_model, only: seasalt_emis, seasalt_names, seasalt_indices, seasalt_active,seasalt_nbin, &
-         has_mam_mom, F_eff_out, nslt_om
+    use seasalt_model, only: seasalt_emis, seasalt_names, seasalt_indices, seasalt_active,seasalt_nbin
     use dust_model,    only: dust_emis, dust_names, dust_indices, dust_active,dust_nbin, dust_nnum
     use physics_types, only: physics_state
 
@@ -2601,9 +2431,6 @@ do_lphase2_conditional: &
     real(r8) :: soil_erod_tmp(pcols)
     real(r8) :: sflx(pcols)   ! accumulate over all bins for output
     real(r8) :: u10cubed(pcols)
-    real(r8) :: u10(pcols)               ! Needed in Gantt et al. calculation of organic mass fraction
-    real(r8) :: F_eff(pcols) ! optional diagnostic output -- organic enrichment ratio
-
     real (r8), parameter :: z0=0.0001_r8  ! m roughness length over oceans--from ocean model
 
     lchnk = state%lchnk
@@ -2625,45 +2452,25 @@ do_lphase2_conditional: &
     endif
 
     if (seasalt_active) then
-       u10(:ncol)=sqrt(state%u(:ncol,pver)**2+state%v(:ncol,pver)**2)
+       u10cubed(:ncol)=sqrt(state%u(:ncol,pver)**2+state%v(:ncol,pver)**2)
        ! move the winds to 10m high from the midpoint of the gridbox:
        ! follows Tie and Seinfeld and Pandis, p.859 with math.
 
-       u10cubed(:ncol)=u10(:ncol)*log(10._r8/z0)/log(state%zm(:ncol,pver)/z0)
+       u10cubed(:ncol)=u10cubed(:ncol)*log(10._r8/z0)/log(state%zm(:ncol,pver)/z0)
 
        ! we need them to the 3.41 power, according to Gong et al., 1997:
        u10cubed(:ncol)=u10cubed(:ncol)**3.41_r8
 
        sflx(:)=0._r8
-       F_eff(:)=0._r8
 
-       call seasalt_emis(u10, u10cubed, lchnk, cam_in%sst, cam_in%ocnfrac, ncol, cam_in%cflx, seasalt_emis_scale, F_eff)
+       call seasalt_emis( u10cubed, cam_in%sst, cam_in%ocnfrac, ncol, cam_in%cflx, seasalt_emis_scale )
 
-       ! Write out salt mass fluxes to history files
-       do m=1,seasalt_nbin-nslt_om
+       do m=1,seasalt_nbin
           mm = seasalt_indices(m)
           sflx(:ncol)=sflx(:ncol)+cam_in%cflx(:ncol,mm)
           call outfld(trim(seasalt_names(m))//'SF',cam_in%cflx(:,mm),pcols,lchnk)
        enddo
-       ! accumulated flux
        call outfld('SSTSFMBL',sflx(:),pcols,lchnk)
-
-       ! Write out marine organic mass fluxes to history files
-       if ( has_mam_mom ) then
-          sflx(:)=0._r8
-          do m=seasalt_nbin-nslt_om+1,seasalt_nbin
-             mm = seasalt_indices(m)
-             sflx(:ncol)=sflx(:ncol)+cam_in%cflx(:ncol,mm)
-             call outfld(trim(seasalt_names(m))//'SF',cam_in%cflx(:,mm),pcols,lchnk)
-          end do
-          ! accumulated flux
-          call outfld('SSTSFMBL_OM',sflx(:),pcols,lchnk)
-
-          if ( F_eff_out ) then
-             call outfld('F_eff',F_eff(:),pcols,lchnk)
-          endif
-       end if
-
     endif
 
   end subroutine aero_model_emissions

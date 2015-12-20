@@ -106,10 +106,8 @@ contains
     integer :: i,k
 
     logical :: mode7
-    logical :: mode9
 
     mode7 = ntot_amode == 7
-    mode9 = ntot_amode == 9
 
     conc_obj => cldaero_allocate()
 
@@ -126,8 +124,8 @@ contains
 
     conc_obj%no3c(:,:) = 0._r8
 
-    if (mode7 .or. mode9) then
-#if ( defined MODAL_AERO_7MODE || defined MODAL_AERO_9MODE )
+    if (mode7) then
+#if ( defined MODAL_AERO_7MODE )
 !put ifdef here so ifort will compile 
        id_so4_1a = lptr_so4_cw_amode(1) - loffset
        id_so4_2a = lptr_so4_cw_amode(2) - loffset
