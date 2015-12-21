@@ -648,7 +648,7 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: zMid
       real (kind=RKIND), dimension(:,:), pointer :: rx1Edge, rx1Cell
       real (kind=RKIND), dimension(:), pointer :: rx1MaxEdge, rx1MaxCell
-      real (kind=RKIND), pointer :: globalMaxRx1Edge
+      real (kind=RKIND), pointer :: globalRx1Max
 
       integer, pointer :: nCells, nVertLevels, nEdges
       integer, dimension(:), pointer :: maxLevelCell
@@ -673,7 +673,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'rx1Cell', rx1Cell)
       call mpas_pool_get_array(diagnosticsPool, 'rx1MaxEdge', rx1MaxEdge)
       call mpas_pool_get_array(diagnosticsPool, 'rx1MaxCell', rx1MaxCell)
-      call mpas_pool_get_array(diagnosticsPool, 'globalMaxRx1Edge', globalMaxRx1Edge)
+      call mpas_pool_get_array(diagnosticsPool, 'globalRx1Max', globalRx1Max)
 
       rx1Edge(:,:) = 0.0_RKIND
       rx1Cell(:,:) = 0.0_RKIND
@@ -704,8 +704,8 @@ contains
       end do
 
       localMaxRx1Edge = maxval(rx1MaxEdge)
-      call mpas_dmpar_max_real(dminfo, localMaxRx1Edge, globalMaxRx1Edge)
-      write (stdoutUnit,'(a, es10.2)') ' global max of rx1Edge:', globalMaxRx1Edge
+      call mpas_dmpar_max_real(dminfo, localMaxRx1Edge, globalRx1Max)
+      write (stdoutUnit,'(a, es10.2)') ' global max of rx1:', globalRx1Max
 
     end subroutine ocn_compute_Haney_number
 

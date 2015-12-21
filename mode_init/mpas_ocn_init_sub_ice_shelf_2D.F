@@ -104,7 +104,7 @@ module ocn_init_sub_ice_shelf_2D
      ! Define variable pointers
      integer, dimension(:), pointer :: maxLevelCell, modifySSHMask
      real (kind=RKIND), dimension(:), pointer :: xCell, yCell,refBottomDepth, refZMid, &
-          vertCoordMovementWeights, bottomDepth, seaSurfacePressure, &
+          vertCoordMovementWeights, bottomDepth, &
           fCell, fEdge, fVertex, dcEdge
      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
