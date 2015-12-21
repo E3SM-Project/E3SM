@@ -12,6 +12,7 @@
 		<option name="config_ocean_run_mode">'init'</option>
 		<option name="config_write_cull_cell_mask">.false.</option>
 		<option name="config_land_ice_flux_mode">'standalone'</option>
+		<option name="config_eos_type">'jm'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">
@@ -38,6 +39,11 @@
 				<member name="vertCoordMovementWeights" type="var"/>
 				<member name="edgeMask" type="var"/>
 				<member name="cullCell" type="var"/>
+				<member name="rx1Cell" type="var"/>
+				<member name="rx1Edge" type="var"/>
+				<member name="rx1MaxCell" type="var"/>
+				<member name="rx1MaxEdge" type="var"/>
+				<member name="globalRx1Max" type="var"/>
 			</add_contents>
 		</stream>
 		<stream name="forcing_data_init">

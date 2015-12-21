@@ -30,6 +30,8 @@
 				<member name="xtime" type="var"/>
 				<member name="normalVelocity" type="var"/>
 				<member name="layerThickness" type="var"/>
+				<member name="ssh" type="var"/>
+				<member name="seaSurfacePressure" type="var"/>
 			</add_contents>
 		</stream>
 	</streams>
