@@ -76,14 +76,16 @@ contains
 !> \date    10/12/2015
 !> \details 
 !>  Perform vertical linear interpolation of a field from a reference field 
-!>  with data located at inZ to new locations outZ.  Out-of-range values of
+!>  with data located at inZ to new locations outZ.  Bu default, out-of-range values of
 !>  outZ are clamped to the nearest in-range value.  That is, wherever 
 !>  outZ > inZ(1), outField = inField(1); wherever outZ < inZ(inNVertLevels),
-!>  outFiled = inField(inNVertLevels)
+!>  outFiled = inField(inNVertLevels).  If the optional extrapolate argument
+!>  is present and set to .true., linear extrapolation is perfored outside the
+!>  bounds of inZ.
 
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_interpolation_linear_vert(inZ, inField, inNVertLevels, outZ, outField, outNVertLevels)!{{{
+   subroutine ocn_init_interpolation_linear_vert(inZ, inField, inNVertLevels, outZ, outField, outNVertLevels, extrapolate)!{{{
 
    !--------------------------------------------------------------------
 
@@ -91,29 +93,63 @@ contains
       real (kind=RKIND), dimension(inNVertLevels), intent(in) :: inZ, inField
       real (kind=RKIND), dimension(outNVertLevels), intent(in) :: outZ
       real (kind=RKIND), dimension(outNVertLevels), intent(out) :: outField
+      logical, optional, intent(in) :: extrapolate
 
       ! Define variable pointers
       integer :: outK, inK
       real (kind=RKIND) :: z, frac
 
+      logical :: doExtrapolate
+
       if(outNVertLevels <= 0) return
 
-      do outK=1,outNVertLevels
-        z = outZ(outK)
-        if(z >= inZ(1)) then
-          inK = 1
-          frac = 0.0_RKIND 
-        else if(z <= inZ(inNVertLevels)) then
-          inK = inNVertLevels-1
-          frac = 1.0_RKIND
-        else
-          do inK = 1, inNVertLevels-1
-            if(z >= inZ(inK+1)) exit
-          end do
+      ! handle single level of input data as a special case
+      if(inNVertLevels == 1) then
+        outField(1:outNVertLevels) = inField(1)
+        return
+      end if
+
+      doExtrapolate = .false.
+      if(present(extrapolate)) then
+        doExtrapolate = extrapolate
+      end if
+
+      if(doExtrapolate) then
+        do outK=1,outNVertLevels
+          z = outZ(outK)
+          if(z >= inZ(1)) then
+            inK = 1
+          else if(z <= inZ(inNVertLevels)) then
+            inK = inNVertLevels-1
+          else
+            do inK = 1, inNVertLevels-1
+              if(z >= inZ(inK+1)) exit
+            end do
+          end if
+          ! frac can be outside [0,1) if we're extrapolating
           frac = (z - inZ(inK))/(inZ(inK+1) - inZ(inK))
-        end if
-        outField(outK) = (1.0_RKIND - frac)*inField(inK) + frac*inField(inK+1)
-      end do
+          outField(outK) = (1.0_RKIND - frac)*inField(inK) + frac*inField(inK+1)
+        end do
+      else ! not extrapolating
+        do outK=1,outNVertLevels
+          z = outZ(outK)
+          if(z >= inZ(1)) then
+            inK = 1
+            frac = 0.0_RKIND 
+          else if(z <= inZ(inNVertLevels)) then
+            inK = inNVertLevels-1
+            frac = 1.0_RKIND
+          else
+            do inK = 1, inNVertLevels-1
+              if(z >= inZ(inK+1)) exit
+            end do
+            ! frac should always be inside [0,1)
+            frac = (z - inZ(inK))/(inZ(inK+1) - inZ(inK))
+          end if
+          outField(outK) = (1.0_RKIND - frac)*inField(inK) + frac*inField(inK+1)
+        end do
+      end if
+
 
    !--------------------------------------------------------------------
 
