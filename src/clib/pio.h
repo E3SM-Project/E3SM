@@ -35,7 +35,7 @@
 #define MPI_OFFSET  MPI_LONG_LONG
 #endif
 
-/** PIO_Offset is an integer type of size sufficient to represent the
+/** PIO_OFFSET is an integer type of size sufficient to represent the
  * size (in bytes) of the largest file supported by MPI. */
 #define PIO_OFFSET MPI_OFFSET
 #define PIO_Offset MPI_Offset
@@ -251,6 +251,7 @@ enum PIO_ERROR_HANDLERS{
 #define PIO_UNLIMITED NC_UNLIMITED
 #define PIO_DOUBLE NC_DOUBLE
 #define PIO_REAL   NC_FLOAT
+#define PIO_FLOAT  NC_FLOAT
 #define PIO_INT    NC_INT
 #define PIO_CHAR   NC_CHAR
 #define PIO_NOERR  NC_NOERR
@@ -359,7 +360,9 @@ int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Of
 int PIOc_inq_format (int ncid, int *formatp); 
 int PIOc_inq_varid (int ncid, const char *name, int *varidp); 
 int PIOc_inq_varnatts (int ncid, int varid, int *nattsp); 
-int PIOc_def_var (int ncid, const char *name, nc_type xtype,  int ndims, const int *dimidsp, int *varidp); 
+int PIOc_def_var (int ncid, const char *name, nc_type xtype,  int ndims, const int *dimidsp, int *varidp);
+int PIOc_def_var_chunking(int ncid, int varid, int storage, const size_t *chunksizesp);
+int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizesp);
 int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp, int *dimidsp, int *nattsp); 
 int PIOc_inq_varname (int ncid, int varid, char *name); 
 int PIOc_put_att_double (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const double *op); 

@@ -75,9 +75,17 @@ int PIOc_advanceframe(int ncid, int varid)
 } 
 
 /**
- ** @brief Set the unlimited dimension of the given variable
+ * @ingroup PIO_setframe 
+ * @brief Set the unlimited dimension of the given variable
+ * 
+ * @param ncid the ncid of the file.
+ * @param varid the varid of the variable
+ * @param frame the value of the unlimited dimension.  In c 0 for the
+ * first record, 1 for the second
+ *
+ * @return PIO_NOERR for no error, or error code.
  */
-int PIOc_setframe(const int ncid, const int varid,const int frame)
+int PIOc_setframe(const int ncid, const int varid, const int frame)
 {
   file_desc_t *file;
   file = pio_get_file_from_id(ncid);
@@ -492,9 +500,17 @@ int PIOc_finalize(const int iosysid)
   MPI_Group_free(&(ios->compgroup));
   MPI_Group_free(&(ios->iogroup));
 
+  /* Free the MPI communicators. */
+  if(ios->intercomm != MPI_COMM_NULL){
+    MPI_Comm_free(&(ios->intercomm));
+  }
   if(ios->io_comm != MPI_COMM_NULL){
     MPI_Comm_free(&(ios->io_comm));
   }
+  /* if(ios->comp_comm != MPI_COMM_NULL){ */
+  /*   MPI_Comm_free(&(ios->comp_comm)); */
+  /* } */
+
   return pio_delete_iosystem_from_list(iosysid);
 
   

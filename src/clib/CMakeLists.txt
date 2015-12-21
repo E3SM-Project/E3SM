@@ -18,8 +18,9 @@ set (PIO_C_SRCS topology.c
                 bget.c)
 
 set (PIO_GENNC_SRCS ${CMAKE_CURRENT_BINARY_DIR}/pio_nc.c
-                    ${CMAKE_CURRENT_BINARY_DIR}/pio_put_nc.c 
-                    ${CMAKE_CURRENT_BINARY_DIR}/pio_get_nc.c)
+  ${CMAKE_CURRENT_BINARY_DIR}/pio_nc4.c
+  ${CMAKE_CURRENT_BINARY_DIR}/pio_put_nc.c 
+  ${CMAKE_CURRENT_BINARY_DIR}/pio_get_nc.c)
 
 add_library (pioc ${PIO_C_SRCS} ${PIO_GENNC_SRCS})
 
@@ -195,9 +196,12 @@ else ()
                                              pio_get_nc.c
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_nc.c
                                              pio_nc.c
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/pio_nc4.c
+                                             pio_nc4.c
             DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/pio_put_nc.c
                     ${CMAKE_CURRENT_SOURCE_DIR}/pio_get_nc.c
-                    ${CMAKE_CURRENT_SOURCE_DIR}/pio_nc.c)
+                    ${CMAKE_CURRENT_SOURCE_DIR}/pio_nc.c
+                    ${CMAKE_CURRENT_SOURCE_DIR}/pio_nc4.c)
 endif ()
 
 
