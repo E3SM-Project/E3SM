@@ -974,7 +974,7 @@ contains
 
   !=============================================================================
   !=============================================================================
-  subroutine aero_model_gasaerexch( loffset, ncol, lchnk, delt, latndx, lonndx, reaction_rates, &
+  subroutine aero_model_gasaerexch( loffset, ncol, lchnk, delt, reaction_rates, &
                                     tfld, pmid, pdel, mbar, relhum, &
                                     zm,  qh2o, cwat, cldfr, cldnum, &
                                     airdens, invariants, del_h2so4_gasprod,  &
@@ -1010,10 +1010,6 @@ contains
     real(r8), intent(inout) :: vmr(:,:,:)         ! mixing ratios ( vmr )
     type(physics_buffer_desc), pointer :: pbuf(:)
     
-    ! These are declared here so that arguments remain consistent with modal aerosol version.
-    integer, intent(in)  ::  latndx(pcols)                         ! chunk lat indicies
-    integer, intent(in)  ::  lonndx(pcols)                         ! chunk lon indicies
-
     ! local vars 
 
     real(r8) :: vmrcw(ncol,pver,gas_pcnst)            ! cloud-borne aerosol (vmr)
