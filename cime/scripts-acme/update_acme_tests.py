@@ -133,7 +133,7 @@ def get_test_suite(suite, machine=None, compiler=None):
         tests.append(acme_util.get_full_test_name(test_name, machine, compiler, testmod=test_mod))
 
     if (inherits_from is not None):
-        inherited_tests = get_test_suite(inherits_from)
+        inherited_tests = get_test_suite(inherits_from, machine, compiler)
 
         expect(len(set(tests) & set(inherited_tests)) == 0,
                "Tests %s defined in multiple suites" % ", ".join(set(tests) & set(inherited_tests)))
