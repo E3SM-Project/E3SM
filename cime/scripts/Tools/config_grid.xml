@@ -34,7 +34,8 @@ Each grid is associated with five names
 <GRID sname="1x1_urbanc_alpha"    compset="DATM.+CLM">a%1x1_urbanc_alpha_l%1x1_urbanc_alpha_oi%1x1_urbanc_alpha_r%null_m%reg_g%null_w%null</GRID>
 
 <GRID sname="5x5_amazon" alias="5amazon" compset="DATM.+CLM">a%5x5_amazon_l%5x5_amazon_oi%5x5_amazon_r%null_m%reg_g%null_w%null</GRID>
-<GRID sname="hcru_hcru"                  compset="DATM.+CLM">a%360x720cru_l%360x720cru_oi%360x720cru_r%r05_m%360x720cru_g%null_w%null</GRID>
+<GRID sname="hcru_hcru"           compset="DATM.+CLM">a%360x720cru_l%360x720cru_oi%360x720cru_r%r05_m%360x720cru_g%null_w%null</GRID>
+<GRID sname="NLDAS_NLDAS"         compset="DATM.+CLM">a%NLDAS_l%NLDAS_oi%NLDAS_r%NLDAS_m%NLDAS_g%null_w%null</GRID>
 
 <!-- eulerian grids -->
 
@@ -213,6 +214,11 @@ Each grid is associated with five names
 <gridhorz name="360x720cru">
   <nx>720</nx> <ny>360</ny>
   <desc>Exact half-degree CRUNCEP datm forcing grid with CRUNCEP land-mask -- only valid for DATM/CLM compset</desc>
+</gridhorz>
+
+<gridhorz name="NLDAS">
+  <nx>464</nx> <ny>224</ny>
+  <desc>NLDAS US one eighth degree grid -- only valid for DATM/CLM compset</desc>
 </gridhorz>
 
 
@@ -732,6 +738,17 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <griddom grid="360x720cru" mask="360x720cru">
   <ATM_DOMAIN_FILE>domain.lnd.360x720_cruncep.100429.nc</ATM_DOMAIN_FILE>   
   <LND_DOMAIN_FILE>domain.lnd.360x720_cruncep.100429.nc</LND_DOMAIN_FILE>  
+  <ATM_DOMAIN_PATH>$DIN_LOC_ROOT/share/domains/domain.clm</ATM_DOMAIN_PATH>
+  <LND_DOMAIN_PATH>$DIN_LOC_ROOT/share/domains/domain.clm</LND_DOMAIN_PATH>
+</griddom>
+
+<!-- ====================  -->
+<!--  atm NLDAS: (datm)     -->
+<!-- ====================  -->
+
+<griddom grid="NLDAS" mask="NLDAS">
+  <ATM_DOMAIN_FILE>domain.lnd.nldas2_0224x0464_c110415.nc</ATM_DOMAIN_FILE>   
+  <LND_DOMAIN_FILE>domain.lnd.nldas2_0224x0464_c110415.nc</LND_DOMAIN_FILE>  
   <ATM_DOMAIN_PATH>$DIN_LOC_ROOT/share/domains/domain.clm</ATM_DOMAIN_PATH>
   <LND_DOMAIN_PATH>$DIN_LOC_ROOT/share/domains/domain.clm</LND_DOMAIN_PATH>
 </griddom>
