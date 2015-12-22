@@ -219,7 +219,6 @@ OPTIONS
                         Makefile defaults.
      -cosp              Enable the COSP simulator.
      -debug             Switch to turn on building CAM with debugging compiler options.
-     -rain_evap_to_coarse_aero   Switch to turn on BC, POM and SOA in the MAM3 and MAM4 coarse mode (mam mode 3)
      -defaults <file>   Specify a configuration file which will be used to supply defaults instead of
                         one of the config_files/defaults_*.xml files.  This file is used to specify model
                         configuration parameters only.  Parameters relating to the build which
@@ -319,7 +318,6 @@ GetOptions(
     "cosp"                      => \$opts{'cosp'},
     "cppdefs=s"                 => \$opts{'cppdefs'},
     "debug"                     => \$opts{'debug'},
-    "rain_evap_to_coarse_aero"  => \$opts{'rain_evap_to_coarse_aero'},
     "defaults=s"                => \$opts{'defaults'},
     "dyn=s"                     => \$opts{'dyn'},
     "edit_chem_mech"            => \$opts{'edit_chem_mech'},
@@ -826,14 +824,6 @@ if (defined $opts{'waccmx'}) {
     $cfg_ref->set('waccmx', $opts{'waccmx'});
 }
 my $waccmx = $cfg_ref->get('waccmx');
-
-# Use "rain_evap_to_coarse_aero" in MAM3 or MAM4? [BSINGH -  For extra coarse mode species for BC, POM and SOA]
-my $rain_evap_to_coarse_aero_opt = (defined $opts{'rain_evap_to_coarse_aero'}) ? 1 : 0;
-$cfg_ref->set('rain_evap_to_coarse_aero', $rain_evap_to_coarse_aero_opt);
-my $rain_evap_to_coarse_aero = $rain_evap_to_coarse_aero_opt ? 1:0;
-
-if ($print>=2) { print "Is rain_evap_to_coarse_aero active (0-NO; 1-YES)?: $rain_evap_to_coarse_aero$eol"; }
-
 
 #-----------------------------------------------------------------------------------------------
 
@@ -1355,10 +1345,6 @@ if ($chem_pkg =~ '_mam3') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE ';
 } elsif ($chem_pkg =~ '_mam7') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_7MODE ';
-}
-
-if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg =~ '_mam3' || $chem_pkg =~ '_mam4')) {
-    $chem_cppdefs = "$chem_cppdefs  -DRAIN_EVAP_TO_COARSE_AERO "
 }
 
 my $carma_nadv = 0;

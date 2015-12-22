@@ -11,7 +11,6 @@
 
 ! !USES:
    use shr_kind_mod,    only:  r8 => shr_kind_r8
-   use cam_logfile,     only:  iulog
    use chem_mods,       only:  gas_pcnst
    use modal_aero_data, only:  maxd_aspectype
 
@@ -20,7 +19,7 @@
   save
 
 ! !PUBLIC MEMBER FUNCTIONS:
-  public :: modal_aero_coag_sub, modal_aero_coag_init, getcoags_wrapper_f
+  public modal_aero_coag_sub, modal_aero_coag_init
 
 ! !PUBLIC DATA MEMBERS:
   integer, parameter :: pcnstxx = gas_pcnst
@@ -87,7 +86,7 @@
    use modal_aero_gasaerexch, only:  n_so4_monolayers_pcage, &
                                      soa_equivso4_factor
 
-   use cam_abortutils,   only: endrun
+   use cam_abortutils,       only: endrun
    use cam_history,      only: outfld, fieldname_len
    use chem_mods,        only: adv_mass
    use constituents,     only: pcnst, cnst_name
@@ -210,7 +209,7 @@
 	dotend(:) = .false.
 	dqdt(1:ncol,:,:) = 0.0_r8
 
-	lunout = iulog
+	lunout = 6
 
 
 !
@@ -760,7 +759,7 @@ main_ipair2: do ipair = 1, npair_acoag
 	use modal_aero_gasaerexch, only:  &
 		modefrm_pcage, nspecfrm_pcage, lspecfrm_pcage, lspectoo_pcage
 
-	use cam_abortutils,  only: endrun
+	use cam_abortutils,      only: endrun
 	use cam_history,     only: addfld, add_default, fieldname_len, phys_decomp
 	use constituents,    only: pcnst, cnst_name
 	use spmd_utils,      only: masterproc
@@ -786,7 +785,7 @@ main_ipair2: do ipair = 1, npair_acoag
     
         call phys_getopts( history_aerosol_out        = history_aerosol   )
 
-	lunout = iulog
+	lunout = 6
 !
 !   define "from mode" and "to mode" for each coagulation pairing
 !	currently just a2-->a1 coagulation
@@ -816,9 +815,9 @@ main_ipair2: do ipair = 1, npair_acoag
 	    modetoo_acoag(3) = modeptr_pcarbon
 	    modetooeff_acoag(3) = modeptr_accum
 	    if (modefrm_pcage <= 0) then
-		write(iulog,*) '*** modal_aero_coag_init error'
-		write(iulog,*) '    pair_option_acoag, modefrm_pcage mismatch'
-		write(iulog,*) '    pair_option_acoag, modefrm_pcage =', &
+		write(*,*) '*** modal_aero_coag_init error'
+		write(*,*) '    pair_option_acoag, modefrm_pcage mismatch'
+		write(*,*) '    pair_option_acoag, modefrm_pcage =', &
 		    pair_option_acoag, modefrm_pcage
 		call endrun( 'modal_aero_coag_init error' )
 	    end if
@@ -839,9 +838,9 @@ aa_ipair: do ipair = 1, npair_acoag
 	if ( (mfrm < 1) .or. (mfrm > ntot_amode) .or.   &
 	     (mtoo < 1) .or. (mtoo > ntot_amode) .or.   &
 	     (mtef < 1) .or. (mtef > ntot_amode) ) then
-	    write(iulog,*) '*** modal_aero_coag_init error'
-	    write(iulog,*) '    ipair, ntot_amode =', ipair, ntot_amode
-	    write(iulog,*) '    mfrm, mtoo, mtef  =', mfrm, mtoo, mtef
+	    write(*,*) '*** modal_aero_coag_init error'
+	    write(*,*) '    ipair, ntot_amode =', ipair, ntot_amode
+	    write(*,*) '    mfrm, mtoo, mtef  =', mfrm, mtoo, mtef
 	    call endrun( 'modal_aero_coag_init error' )
 	end if
 
@@ -984,11 +983,9 @@ aa_iqfrm: do iqfrm = 1, nspec_amode(mfrm)
             if ( history_aerosol ) then 
                call add_default( fieldname, 1, ' ' )
 	    endif
-	    if ( masterproc ) write(iulog,'(3(a,2x))') &
+	    if ( masterproc ) write(*,'(3(a,2x))') &
 		'modal_aero_coag_init addfld', fieldname, unit
 	end do ! l = ...
-	if ( masterproc ) write(iulog,'(a)') &
-		'modal_aero_coag_init ALL DONE'
 
 
 	return

@@ -208,9 +208,6 @@ User specified Fortran compiler overrides Makefile default.
 Type of Fortran compiler.  Used when -fc specifies a generic wrapper script
 such as mpif90 or ftn.
 </entry>
-<entry id="rain_evap_to_coarse_aero" valid_values="0,1" value="0">
-Switch to enable extra species (BC, POM and SOA) in coarse mode for MAM3 and MAM4 simulations: 0=off, 1=on.
-</entry>
 <entry id="debug" valid_values="0,1" value="0">
 Switch to enable debugging options for Fortran compiler: 0=off, 1=on.
 </entry>

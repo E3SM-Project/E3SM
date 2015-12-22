@@ -859,9 +859,6 @@
 <convproc_method_activate>2</convproc_method_activate>
 <convproc_do_gas         >.false.</convproc_do_gas>
 
-<!-- To turn on amicphys codes in cam-->
-<mam_amicphys_optaa      >0</mam_amicphys_optaa>
-
 <!--  wet deposition option by PNNL -->
 <resus_fix>.false.</resus_fix>
 
