@@ -22,7 +22,7 @@ from acme_util import expect, warning, verbose_print, run_cmd
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-usage="""\n%s [-n] [-r <TESTROOT>] [-t <TESTID>] [<TEST> <TEST> ...] [--verbose]
+usage="""\n%s [-n] [-r <TESTROOT>] [-b <BRANCH>] [-c <COMPILER>] [<TEST> <TEST> ...] [--verbose]
 OR
 %s --help
 OR
@@ -38,7 +38,7 @@ OR
     \033[1;32m# From most recent run, bless only namelist changes to test foo and bar only \033[0m
     > %s -n foo bar
     \033[1;32m# From most recent run of jenkins, bless history changes for next \033[0m
-    > %s -r /home/jenkins/acme/scratch/jenkins -b next -t jenkins_next_20151218_083102 --hist-only
+    > %s -r /home/jenkins/acme/scratch/jenkins -b next --hist-only
 """ % ((os.path.basename(args[0]), ) * 8),
 
 description=description,
@@ -61,7 +61,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         help="Only analyze history files.")
 
     parser.add_argument("-b", "--baseline-name", default=default_baseline_name,
-                        help="Name of baselines to use.")
+                        help="Name of baselines to use, corresponds to branch used.")
 
     parser.add_argument("-c", "--compiler", default=default_compiler,
                         help="Compiler of run you want to bless")
@@ -169,7 +169,7 @@ def bless_history(test_name, baseline_tag, baseline_dir_for_test, testcase_dir_f
 ###############################################################################
 def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelists_only=False, hist_only=False, report_only=False, force=False, bless_tests=None):
 ###############################################################################
-    test_id_glob = "*" if test_id is None else ("*%s" % test_id)
+    test_id_glob = "*%s*%s*" % (compiler, baseline_name) if test_id is None else "*%s" % test_id
     test_status_files = glob.glob("%s/%s/TestStatus" % (test_root, test_id_glob))
     expect(test_status_files, "No matching test cases found in for %s/%s/TestStatus" % (test_root, test_id_glob))
 
@@ -236,7 +236,12 @@ def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelis
                     continue
 
                 # Get testcase dir for this test
-                globs = glob.glob("%s/%s%s" % (test_root, test_name, test_id_glob))
+                if (test_id is None):
+                    # The full name already contains the compiler, so we just need to glob for the branch name
+                    globs = glob.glob("%s/%s*%s*" % (test_root, test_name, baseline_name))
+                else:
+                    globs = glob.glob("%s/%s%s" % (test_root, test_name, test_id_glob))
+
                 if (len(globs) != 1):
                     warning("Expected exactly one match for testcase area for test '%s', found '%s'" % (test_name, globs))
                     broken_blesses.append(test_name)
