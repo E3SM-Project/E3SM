@@ -525,7 +525,7 @@ def generate_driver_scripts(config_file, configs):#{{{
 			# Process <step> tags
 			elif child.tag == 'step':
 				script.write('os.chdir(base_path)\n')
-				process_script_step(child, configs, script)
+				process_script_step(child, configs, '', script)
 			# Process <compare_fields> tags
 			elif child.tag == 'validation':
 				script.write('os.chdir(base_path)\n')
