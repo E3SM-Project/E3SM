@@ -111,12 +111,17 @@
      <batch_directive>#SBATCH</batch_directive>
      <jobid_pattern>(\d+)$</jobid_pattern>
      <depend_string> --dependency=afterok:jobid</depend_string>
+     <submit_args>
+       <arg flag="--time" name="wall_time"/>
+       <arg flag="-p" name="queue"/>
+       <arg flag="--account" name="project"/>
+     </submit_args>
      <directives>
-       <directive> -J {{ job_id }}</directive>
-       <directive> --time={{ wall_time }} </directive>
+       <directive> --job-name={{ job_id }}</directive>
        <directive> --nodes={{ num_nodes }}</directive>
        <directive> --ntasks-per-node={{ tasks_per_node }}</directive>
-       <directive> --qos={{ queue }}</directive>
+       <directive> --output={{ output_error_path }}   </directive>
+       <directive> --exclusive                        </directive>
      </directives>
    </batch_system>
 
@@ -145,6 +150,18 @@
      </directives>
    </batch_system>
 
+   <!-- Constance is slurm -->
+
+   <batch_system MACH="constance" version="x.y">
+    <directives>
+       <directive>-A  climate</directive>
+       <directive>--mail-type=END</directive>
+       <directive>--mail-user=email@pnnl.gov</directive>
+       <directive>--output=slurm.out</directive>
+       <directive>--error=slurm.err</directive>
+    </directives>
+   </batch_system>
+
    <batch_system MACH="redsky" version="x.y">
      <directives>
        <directive>--account={{ project }}</directive>
@@ -165,6 +182,18 @@
 		<directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
 	</directives>
     </batch_system>
+
+   <batch_system MACH="oic2" version="x.y">
+         <directives>
+                 <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+         </directives>
+   </batch_system>
+
+   <batch_system MACH="oic5" version="x.y">
+         <directives>
+                 <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+         </directives>
+   </batch_system>
 
    <batch_system MACH="titan" version="x.y">
      <jobid_pattern>(\d+)</jobid_pattern>

@@ -428,11 +428,11 @@ if ($CONTINUE_RUN eq 'TRUE') {
 }
 #######################
 # namelist group: io  #
-#######################
 
 add_default($nl, 'config_write_output_on_startup');
 add_default($nl, 'config_pio_num_iotasks');
 add_default($nl, 'config_pio_stride');
+add_default($nl, 'config_restart_forcing_fields');
 
 #################################
 # Namelist group: decomposition #
@@ -478,11 +478,6 @@ add_default($nl, 'config_vert_coord_movement');
 add_default($nl, 'config_use_min_max_thickness');
 add_default($nl, 'config_min_thickness');
 add_default($nl, 'config_max_thickness_factor');
-if ($CONTINUE_RUN eq 'TRUE') {
-	add_default($nl, 'config_set_restingThickness_to_IC', 'val'=>'.false.');
-} else {
-	add_default($nl, 'config_set_restingThickness_to_IC', 'val'=>'.true.');
-}
 add_default($nl, 'config_dzdk_positive');
 
 ####################################################
@@ -500,15 +495,9 @@ add_default($nl, 'config_highFreqThick_del2');
 # Namelist group: partial_bottom_cells #
 ########################################
 
-# if ($RUN_TYPE eq 'startup' && $topography_opt eq 'bathymetry') {
-if ($CONTINUE_RUN eq 'TRUE' ) {
-	add_default($nl, 'config_alter_ICs_for_pbcs', 'val'=>".false.");
-} else {
-	add_default($nl, 'config_alter_ICs_for_pbcs', 'val'=>".true.");
-}
+add_default($nl, 'config_alter_ICs_for_pbcs');
 add_default($nl, 'config_pbc_alteration_type');
 add_default($nl, 'config_min_pbc_fraction');
-add_default($nl, 'config_check_ssh_consistency');
 
 ########################
 # Namelist group: hmix #
@@ -534,6 +523,7 @@ add_default($nl, 'config_tracer_del2');
 add_default($nl, 'config_use_mom_del4');
 add_default($nl, 'config_use_tracer_del4');
 add_default($nl, 'config_mom_del4');
+add_default($nl, 'config_mom_del4_div_factor');
 add_default($nl, 'config_tracer_del4');
 
 ##############################
@@ -658,17 +648,33 @@ add_default($nl, 'config_cvmix_kpp_stop_OBL_search');
 add_default($nl, 'config_use_bulk_wind_stress');
 add_default($nl, 'config_use_bulk_thickness_flux');
 add_default($nl, 'config_flux_attenuation_coefficient');
-add_default($nl, 'config_frazil_ice_formation');
+
+######################################
+# Namelist group: shortwaveRadiation #
+######################################
+
 add_default($nl, 'config_sw_absorption_type');
 add_default($nl, 'config_jerlov_water_type');
-add_default($nl, 'config_fixed_jerlov_weights');
+add_default($nl, 'config_forcing_restart_file');
+
+##############################
+# Namelist group: frazil_ice #
+##############################
+
+add_default($nl, 'config_use_frazil_ice_formation');
+add_default($nl, 'config_frazil_heat_of_fusion');
+add_default($nl, 'config_frazil_sea_ice_density');
+add_default($nl, 'config_frazil_fractional_thickness_limit');
+add_default($nl, 'config_specific_heat_sea_water');
+add_default($nl, 'config_frazil_maximum_depth');
+add_default($nl, 'config_frazil_ice_reference_salinity');
+add_default($nl, 'config_frazil_maximum_freezing_temperature');
 
 ###################################
 # Namelist group: land_ice_fluxes #
 ###################################
 
-add_default($nl, 'config_use_land_ice_fluxes');
-add_default($nl, 'config_compute_land_ice_fluxes_in_ocean');
+add_default($nl, 'config_land_ice_flux_mode');
 add_default($nl, 'config_land_ice_flux_formulation');
 add_default($nl, 'config_land_ice_flux_useHollandJenkinsAdvDiff');
 add_default($nl, 'config_land_ice_flux_attenuation_coefficient');
@@ -764,6 +770,7 @@ add_default($nl, 'config_disable_redi_horizontal_term1');
 add_default($nl, 'config_disable_redi_horizontal_term2');
 add_default($nl, 'config_disable_redi_horizontal_term3');
 add_default($nl, 'config_check_zlevel_consistency');
+add_default($nl, 'config_check_ssh_consistency');
 add_default($nl, 'config_filter_btr_mode');
 add_default($nl, 'config_prescribe_velocity');
 add_default($nl, 'config_prescribe_thickness');
@@ -871,6 +878,16 @@ add_default($nl, 'config_global_ocean_tracer_lat_varname');
 add_default($nl, 'config_global_ocean_tracer_lon_varname');
 add_default($nl, 'config_global_ocean_tracer_method');
 add_default($nl, 'config_global_ocean_smooth_TS_iterations');
+add_default($nl, 'config_global_ocean_swData_file');
+add_default($nl, 'config_global_ocean_swData_nlat_dimname');
+add_default($nl, 'config_global_ocean_swData_nlon_dimname');
+add_default($nl, 'config_global_ocean_swData_lat_varname');
+add_default($nl, 'config_global_ocean_swData_lon_varname');
+add_default($nl, 'config_global_ocean_swData_latlon_degrees');
+add_default($nl, 'config_global_ocean_swData_method');
+add_default($nl, 'config_global_ocean_chlorophyll_varname');
+add_default($nl, 'config_global_ocean_zenithAngle_varname');
+add_default($nl, 'config_global_ocean_clearSky_varname');
 add_default($nl, 'config_global_ocean_piston_velocity');
 add_default($nl, 'config_global_ocean_interior_restore_rate');
 add_default($nl, 'config_global_ocean_topography_file');
@@ -1031,6 +1048,57 @@ add_default($nl, 'config_soma_density_difference_linear');
 add_default($nl, 'config_soma_surface_temperature');
 add_default($nl, 'config_soma_surface_salinity');
 
+########################
+# Namelist group: ziso #
+########################
+
+add_default($nl, 'config_ziso_vert_levels');
+add_default($nl, 'config_ziso_add_easterly_wind_stress_ASF');
+add_default($nl, 'config_ziso_wind_transition_position');
+add_default($nl, 'config_ziso_antarctic_shelf_front_width');
+add_default($nl, 'config_ziso_wind_stress_shelf_front_max');
+add_default($nl, 'config_ziso_use_slopping_bathymetry');
+add_default($nl, 'config_ziso_meridional_extent');
+add_default($nl, 'config_ziso_zonal_extent');
+add_default($nl, 'config_ziso_bottom_depth');
+add_default($nl, 'config_ziso_shelf_depth');
+add_default($nl, 'config_ziso_slope_half_width');
+add_default($nl, 'config_ziso_slope_center_position');
+add_default($nl, 'config_ziso_reference_coriolis');
+add_default($nl, 'config_ziso_coriolis_gradient');
+add_default($nl, 'config_ziso_wind_stress_max');
+add_default($nl, 'config_ziso_mean_restoring_temp');
+add_default($nl, 'config_ziso_restoring_temp_dev_ta');
+add_default($nl, 'config_ziso_restoring_temp_dev_tb');
+add_default($nl, 'config_ziso_restoring_temp_tau');
+add_default($nl, 'config_ziso_restoring_temp_piston_vel');
+add_default($nl, 'config_ziso_restoring_temp_ze');
+add_default($nl, 'config_ziso_restoring_sponge_l');
+add_default($nl, 'config_ziso_initial_temp_t1');
+add_default($nl, 'config_ziso_initial_temp_t2');
+add_default($nl, 'config_ziso_initial_temp_h1');
+add_default($nl, 'config_ziso_initial_temp_mt');
+add_default($nl, 'config_ziso_frazil_enable');
+add_default($nl, 'config_ziso_frazil_temperature_anomaly');
+
+###################################
+# Namelist group: periodic_planar #
+###################################
+
+add_default($nl, 'config_periodic_planar_vert_levels');
+add_default($nl, 'config_periodic_planar_bottom_depth');
+add_default($nl, 'config_periodic_planar_velocity_strength');
+
+#################################
+# Namelist group: ecosys_column #
+#################################
+
+add_default($nl, 'config_ecosys_column_vert_levels');
+add_default($nl, 'config_ecosys_column_vertical_grid');
+add_default($nl, 'config_ecosys_column_TS_filename');
+add_default($nl, 'config_ecosys_column_ecosys_filename');
+add_default($nl, 'config_ecosys_column_bottom_depth');
+
 ################################################
 # Namelist group: tracer_forcing_activeTracers #
 ################################################
@@ -1055,6 +1123,45 @@ add_default($nl, 'config_use_debugTracers_exponential_decay');
 add_default($nl, 'config_use_debugTracers_idealAge_forcing');
 add_default($nl, 'config_use_debugTracers_ttd_forcing');
 
+################################################
+# Namelist group: tracer_forcing_ecosysTracers #
+################################################
+
+add_default($nl, 'config_use_ecosysTracers');
+add_default($nl, 'config_use_ecosysTracers_surface_bulk_forcing');
+add_default($nl, 'config_use_ecosysTracers_surface_restoring');
+add_default($nl, 'config_use_ecosysTracers_interior_restoring');
+add_default($nl, 'config_use_ecosysTracers_exponential_decay');
+add_default($nl, 'config_use_ecosysTracers_idealAge_forcing');
+add_default($nl, 'config_use_ecosysTracers_ttd_forcing');
+add_default($nl, 'config_use_ecosysTracers_surface_value');
+
+#############################################
+# Namelist group: tracer_forcing_DMSTracers #
+#############################################
+
+add_default($nl, 'config_use_DMSTracers');
+add_default($nl, 'config_use_DMSTracers_surface_bulk_forcing');
+add_default($nl, 'config_use_DMSTracers_surface_restoring');
+add_default($nl, 'config_use_DMSTracers_interior_restoring');
+add_default($nl, 'config_use_DMSTracers_exponential_decay');
+add_default($nl, 'config_use_DMSTracers_idealAge_forcing');
+add_default($nl, 'config_use_DMSTracers_ttd_forcing');
+add_default($nl, 'config_use_DMSTracers_surface_value');
+
+########################################################
+# Namelist group: tracer_forcing_MacroMoleculesTracers #
+########################################################
+
+add_default($nl, 'config_use_MacroMoleculesTracers');
+add_default($nl, 'config_use_MacroMoleculesTracers_surface_bulk_forcing');
+add_default($nl, 'config_use_MacroMoleculesTracers_surface_restoring');
+add_default($nl, 'config_use_MacroMoleculesTracers_interior_restoring');
+add_default($nl, 'config_use_MacroMoleculesTracers_exponential_decay');
+add_default($nl, 'config_use_MacroMoleculesTracers_idealAge_forcing');
+add_default($nl, 'config_use_MacroMoleculesTracers_ttd_forcing');
+add_default($nl, 'config_use_MacroMoleculesTracers_surface_value');
+
 ##################################
 # Namelist group: AM_globalStats #
 ##################################
@@ -1065,7 +1172,7 @@ add_default($nl, 'config_AM_globalStats_compute_on_startup');
 add_default($nl, 'config_AM_globalStats_write_on_startup');
 add_default($nl, 'config_AM_globalStats_text_file');
 add_default($nl, 'config_AM_globalStats_directory');
-add_default($nl, 'config_AM_globalStats_stream_name');
+add_default($nl, 'config_AM_globalStats_output_stream');
 
 ##################################################
 # Namelist group: AM_surfaceAreaWeightedAverages #
@@ -1075,7 +1182,7 @@ add_default($nl, 'config_AM_surfaceAreaWeightedAverages_enable');
 add_default($nl, 'config_AM_surfaceAreaWeightedAverages_compute_on_startup');
 add_default($nl, 'config_AM_surfaceAreaWeightedAverages_write_on_startup');
 add_default($nl, 'config_AM_surfaceAreaWeightedAverages_compute_interval');
-add_default($nl, 'config_AM_surfaceAreaWeightedAverages_stream_name');
+add_default($nl, 'config_AM_surfaceAreaWeightedAverages_output_stream');
 
 ######################################
 # Namelist group: AM_waterMassCensus #
@@ -1083,7 +1190,7 @@ add_default($nl, 'config_AM_surfaceAreaWeightedAverages_stream_name');
 
 add_default($nl, 'config_AM_waterMassCensus_enable');
 add_default($nl, 'config_AM_waterMassCensus_compute_interval');
-add_default($nl, 'config_AM_waterMassCensus_stream_name');
+add_default($nl, 'config_AM_waterMassCensus_output_stream');
 add_default($nl, 'config_AM_waterMassCensus_compute_on_startup');
 add_default($nl, 'config_AM_waterMassCensus_write_on_startup');
 add_default($nl, 'config_AM_waterMassCensus_minTemperature');
@@ -1099,7 +1206,7 @@ add_default($nl, 'config_AM_layerVolumeWeightedAverage_enable');
 add_default($nl, 'config_AM_layerVolumeWeightedAverage_compute_interval');
 add_default($nl, 'config_AM_layerVolumeWeightedAverage_compute_on_startup');
 add_default($nl, 'config_AM_layerVolumeWeightedAverage_write_on_startup');
-add_default($nl, 'config_AM_layerVolumeWeightedAverage_stream_name');
+add_default($nl, 'config_AM_layerVolumeWeightedAverage_output_stream');
 
 ################################
 # Namelist group: AM_zonalMean #
@@ -1109,7 +1216,7 @@ add_default($nl, 'config_AM_zonalMean_enable');
 add_default($nl, 'config_AM_zonalMean_compute_on_startup');
 add_default($nl, 'config_AM_zonalMean_write_on_startup');
 add_default($nl, 'config_AM_zonalMean_compute_interval');
-add_default($nl, 'config_AM_zonalMean_stream_name');
+add_default($nl, 'config_AM_zonalMean_output_stream');
 add_default($nl, 'config_AM_zonalMean_num_bins');
 add_default($nl, 'config_AM_zonalMean_min_bin');
 add_default($nl, 'config_AM_zonalMean_max_bin');
@@ -1122,7 +1229,7 @@ add_default($nl, 'config_AM_okuboWeiss_enable');
 add_default($nl, 'config_AM_okuboWeiss_compute_on_startup');
 add_default($nl, 'config_AM_okuboWeiss_write_on_startup');
 add_default($nl, 'config_AM_okuboWeiss_compute_interval');
-add_default($nl, 'config_AM_okuboWeiss_stream_name');
+add_default($nl, 'config_AM_okuboWeiss_output_stream');
 add_default($nl, 'config_AM_okuboWeiss_directory');
 add_default($nl, 'config_AM_okuboWeiss_threshold_value');
 add_default($nl, 'config_AM_okuboWeiss_normalization');
@@ -1139,7 +1246,7 @@ add_default($nl, 'config_AM_meridionalHeatTransport_enable');
 add_default($nl, 'config_AM_meridionalHeatTransport_compute_interval');
 add_default($nl, 'config_AM_meridionalHeatTransport_compute_on_startup');
 add_default($nl, 'config_AM_meridionalHeatTransport_write_on_startup');
-add_default($nl, 'config_AM_meridionalHeatTransport_stream_name');
+add_default($nl, 'config_AM_meridionalHeatTransport_output_stream');
 add_default($nl, 'config_AM_meridionalHeatTransport_num_bins');
 add_default($nl, 'config_AM_meridionalHeatTransport_min_bin');
 add_default($nl, 'config_AM_meridionalHeatTransport_max_bin');
@@ -1152,7 +1259,7 @@ add_default($nl, 'config_AM_testComputeInterval_enable');
 add_default($nl, 'config_AM_testComputeInterval_compute_interval');
 add_default($nl, 'config_AM_testComputeInterval_compute_on_startup');
 add_default($nl, 'config_AM_testComputeInterval_write_on_startup');
-add_default($nl, 'config_AM_testComputeInterval_stream_name');
+add_default($nl, 'config_AM_testComputeInterval_output_stream');
 
 ##########################################
 # Namelist group: AM_highFrequencyOutput #
@@ -1160,7 +1267,7 @@ add_default($nl, 'config_AM_testComputeInterval_stream_name');
 
 add_default($nl, 'config_AM_highFrequencyOutput_enable');
 add_default($nl, 'config_AM_highFrequencyOutput_compute_interval');
-add_default($nl, 'config_AM_highFrequencyOutput_stream_name');
+add_default($nl, 'config_AM_highFrequencyOutput_output_stream');
 add_default($nl, 'config_AM_highFrequencyOutput_compute_on_startup');
 add_default($nl, 'config_AM_highFrequencyOutput_write_on_startup');
 
@@ -1170,12 +1277,30 @@ add_default($nl, 'config_AM_highFrequencyOutput_write_on_startup');
 
 add_default($nl, 'config_AM_timeFilters_enable');
 add_default($nl, 'config_AM_timeFilters_compute_interval');
-add_default($nl, 'config_AM_timeFilters_stream_name');
+add_default($nl, 'config_AM_timeFilters_output_stream');
+add_default($nl, 'config_AM_timeFilters_restart_stream');
 add_default($nl, 'config_AM_timeFilters_compute_on_startup');
 add_default($nl, 'config_AM_timeFilters_write_on_startup');
-add_default($nl, 'config_AM_timeFilters_do_restart');
 add_default($nl, 'config_AM_timeFilters_initialize_filters');
 add_default($nl, 'config_AM_timeFilters_tau');
+
+####################################
+# Namelist group: AM_lagrPartTrack #
+####################################
+
+add_default($nl, 'config_AM_lagrPartTrack_enable');
+add_default($nl, 'config_AM_lagrPartTrack_compute_interval');
+add_default($nl, 'config_AM_lagrPartTrack_compute_on_startup');
+add_default($nl, 'config_AM_lagrPartTrack_output_stream');
+add_default($nl, 'config_AM_lagrPartTrack_restart_stream');
+add_default($nl, 'config_AM_lagrPartTrack_input_stream');
+add_default($nl, 'config_AM_lagrPartTrack_write_on_startup');
+add_default($nl, 'config_AM_lagrPartTrack_filter_number');
+add_default($nl, 'config_AM_lagrPartTrack_reset_criteria');
+add_default($nl, 'config_AM_lagrPartTrack_reset_global_timestamp');
+add_default($nl, 'config_AM_lagrPartTrack_region_stream');
+add_default($nl, 'config_AM_lagrPartTrack_reset_if_outside_region');
+add_default($nl, 'config_AM_lagrPartTrack_reset_if_inside_region');
 
 ###################################
 # Namelist group: AM_eliassenPalm #
@@ -1183,10 +1308,10 @@ add_default($nl, 'config_AM_timeFilters_tau');
 
 add_default($nl, 'config_AM_eliassenPalm_enable');
 add_default($nl, 'config_AM_eliassenPalm_compute_interval');
-add_default($nl, 'config_AM_eliassenPalm_stream_name');
+add_default($nl, 'config_AM_eliassenPalm_output_stream');
+add_default($nl, 'config_AM_eliassenPalm_restart_stream');
 add_default($nl, 'config_AM_eliassenPalm_compute_on_startup');
 add_default($nl, 'config_AM_eliassenPalm_write_on_startup');
-add_default($nl, 'config_AM_eliassenPalm_do_restart');
 add_default($nl, 'config_AM_eliassenPalm_debug');
 add_default($nl, 'config_AM_eliassenPalm_nBuoyancyLayers');
 add_default($nl, 'config_AM_eliassenPalm_rhomin_buoycoor');
@@ -1198,7 +1323,7 @@ add_default($nl, 'config_AM_eliassenPalm_rhomax_buoycoor');
 
 add_default($nl, 'config_AM_mixedLayerDepths_enable');
 add_default($nl, 'config_AM_mixedLayerDepths_compute_interval');
-add_default($nl, 'config_AM_mixedLayerDepths_stream_name');
+add_default($nl, 'config_AM_mixedLayerDepths_output_stream');
 add_default($nl, 'config_AM_mixedLayerDepths_write_on_startup');
 add_default($nl, 'config_AM_mixedLayerDepths_compute_on_startup');
 add_default($nl, 'config_AM_mixedLayerDepths_Tthreshold');
@@ -1211,6 +1336,23 @@ add_default($nl, 'config_AM_mixedLayerDepths_Dgradient');
 add_default($nl, 'config_AM_mixedLayerDepths_temp_gradient_threshold');
 add_default($nl, 'config_AM_mixedLayerDepths_den_gradient_threshold');
 add_default($nl, 'config_AM_mixedLayerDepths_interp_method');
+
+######################################
+# Namelist group: AM_timeSeriesStats #
+######################################
+
+add_default($nl, 'config_AM_timeSeriesStats_enable');
+add_default($nl, 'config_AM_timeSeriesStats_compute_on_startup');
+add_default($nl, 'config_AM_timeSeriesStats_write_on_startup');
+add_default($nl, 'config_AM_timeSeriesStats_compute_interval');
+add_default($nl, 'config_AM_timeSeriesStats_output_stream');
+add_default($nl, 'config_AM_timeSeriesStats_restart_stream');
+add_default($nl, 'config_AM_timeSeriesStats_add_mesh');
+add_default($nl, 'config_AM_timeSeriesStats_operation');
+add_default($nl, 'config_AM_timeSeriesStats_reference_times');
+add_default($nl, 'config_AM_timeSeriesStats_duration_intervals');
+add_default($nl, 'config_AM_timeSeriesStats_repeat_intervals');
+add_default($nl, 'config_AM_timeSeriesStats_reset_intervals');
 
 
 #-----------------------------------------------------------------------------------------------
@@ -1242,6 +1384,8 @@ my @groups = qw(run_modes
                 vmix_tanh
                 cvmix
                 forcing
+                shortwaveradiation
+                frazil_ice
                 land_ice_fluxes
                 advection
                 bottom_drag
@@ -1260,8 +1404,14 @@ my @groups = qw(run_modes
                 cvmix_wswsbf
                 iso
                 soma
+                ziso
+                periodic_planar
+                ecosys_column
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
+                tracer_forcing_ecosystracers
+                tracer_forcing_dmstracers
+                tracer_forcing_macromoleculestracers
                 am_globalstats
                 am_surfaceareaweightedaverages
                 am_watermasscensus
@@ -1272,8 +1422,10 @@ my @groups = qw(run_modes
                 am_testcomputeinterval
                 am_highfrequencyoutput
                 am_timefilters
+                am_lagrparttrack
                 am_eliassenpalm
                 am_mixedlayerdepths
+                am_timeseriesstats
                 );
 
 # Check for variables in the "derived" group, add them to appropriate group

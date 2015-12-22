@@ -96,6 +96,27 @@ over-productive.
     ALL            = Supplemental Phosphorus is active for all vegetation types
 </entry>
 
+
+<entry id="nu_com" type="char*15" category="clm_physics"
+       group="clm_inparm" valid_values="RD,ECA,MIC" >
+Nutrient competition mode. In each specific mode, plants/soil microbes have the different
+priority to access soil nitrogen and phosphorus.
+    RD           = competition scaled by relative nutrient demand
+    ECA          = competition scaled by equilibrium chemical approximation theory
+    MIC          = always assume that soil microbes out-compete plants
+</entry>
+
+<entry id="nu_com_phosphatase" type="logical" category="clm_physics"
+       group="clm_inparm" valid_values="" >
+If TRUE, use new phosphatase activity algorithm that comes with nu_com module
+</entry>
+
+<entry id="nu_com_nfix" type="logical" category="clm_physics"
+       group="clm_inparm" valid_values="" >
+If TRUE, use new N2 fixation algorithm that comes with nu_com module
+</entry>
+
+
 <entry id="create_crop_landunit" type="logical" category="clm_physics"
        group="clm_inparm" valid_values="" >
 If TRUE, separate the vegetated landunit into a crop landunit and a natural vegetation landunit
@@ -198,6 +219,11 @@ This downscaling is conservative.
 <default>Default: .true.</default>
 </entry>
 
+<entry id="use_betr" type="logical" category="physics"
+        group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on the BeTR
+(BETR = 'on' is EXPERIMENTAL NOT SUPPORTED!)
+</entry>
 
 <entry id="use_ed" type="logical" category="physics"
         group="clm_inparm" valid_values="" value=".false.">
@@ -353,6 +379,26 @@ Per tape series history write frequency.
     negative means hours
 (i.e. 5 means every 24 time-steps and -24 means every day
 <default>Default: 0,-24,-24,-24,-24,-24</default>
+</entry>
+
+<entry id="metdata_type" type="char*400" category="datasets"
+       group="clm_inparm" valid_values="">
+</entry>
+
+<entry id="metdata_bypass" type="char*400" category="datasets"
+       group="clm_inparm" valid_values="">
+</entry>
+
+<entry id="metdata_biases" type="char*400" category="datasets"
+       group="clm_inparm" valid_values="">
+</entry>
+
+<entry id="co2_file" type="char*400" category="datasets"
+       group="clm_inparm" valid_values="">
+</entry>
+
+<entry id="aero_file" type="char*400" category="datasets"
+       group="clm_inparm" valid_values="">
 </entry>
 
 <entry id="nsegspc" type="integer" category="clm_performance"
@@ -849,6 +895,42 @@ Mapping method from Nitrogen deposition input file to the model resolution
 </entry>
 
 <!-- ========================================================================================  -->
+<!-- pdepdyn streams Namelist (only used when bgc=cn/cndv)                                     -->
+<!-- ========================================================================================  -->
+
+<entry id="stream_year_first_pdep" type="integer" category="datasets"
+       group="pdepdyn_nml" valid_values="" >
+First year to loop over for Phosphorus Deposition data
+</entry>
+
+<entry id="stream_year_last_pdep" type="integer" category="datasets"
+       group="pdepdyn_nml" valid_values="" >
+Last year to loop over for Phosphorus Deposition data
+</entry>
+
+<entry id="model_year_align_pdep" type="integer" category="datasets"
+       group="pdepdyn_nml" valid_values="" >
+Simulation year that aligns with stream_year_first_pdep value
+</entry>
+
+<entry id="stream_fldfilename_pdep" type="char*256" category="datasets"
+       input_pathname="abs" group="pdepdyn_nml" valid_values="" >
+Filename of input stream data for Phosphorus Deposition
+</entry>
+
+<entry id="pdepmapalgo" type="char*256" category="datasets"
+       group="pdepdyn_nml" valid_values="bilinear,nn,nnoni,nnonj,spval,copy" >
+Mapping method from Phosphorus deposition input file to the model resolution
+    bilinear = bilinear interpolation
+    nn       = nearest neighbor
+    nnoni    = nearest neighbor on the "i" (longitude) axis
+    nnonj    = nearest neighbor on the "j" (latitude) axis
+    spval    = set to special value
+    copy     = copy using the same indices
+</entry>
+
+
+<!-- ========================================================================================  -->
 <!-- lai_streams streams Namelist (when phys = CLM4_5)                              -->
 <!-- ========================================================================================  -->
 
@@ -1137,6 +1219,14 @@ Flag for setting the state of the Accelerated decomposition spinup state for the
 Entering and exiting spinup mode occurs automatically by comparing the namelist and restart file values for this variable.
 </entry>
 
+<entry id="nyears_ad_carbon_only" type="integer" category="clm_vertcn"
+       group="clm_inparm" valid_values="" >
+</entry>
+
+<entry id="spinup_mortality_factor" type="real" category="clm_vertcn"
+       group="clm_inparm" valid_values="" >
+</entry>
+
 <!-- vertical mixing switches    -->
 <entry id="som_adv_flux" type="real" category="clm_vertcn"
        group="clm_inparm" valid_values="" >
@@ -1273,6 +1363,14 @@ Set to 1 to
 Visible and Near-infrared albedo values for melting lakes. Albedo will relax to these values as temperature
 reaches melting when ice is present with no snow layers. Represents puddling, ice disintegration, and white ice.
 Set to alblak values (0.6, 0.4) to keep albedo constant for ice-covered lakes without snow layers.
+</entry>
+
+<!-- ========================================================================================  -->
+<!-- namelist elements associated with the betr_initializeMod                                  -->
+<!-- ========================================================================================  -->
+<entry id="bgc_method" type="char*256" category="clm_betr"
+       group="betr_inparm" valid_values="" >
+Specify what bgc module will be used within the betr framework. 
 </entry>
 
 <!-- ========================================================================================  -->
@@ -1428,6 +1526,7 @@ and pct_nat_pft read from the surface dataset.
 <!-- =========================================================================================  -->
 <!-- Namelist options related to the bgc & pflotran interface
 <!-- ========================================================================================  -->
+
 <entry id="use_bgc_interface" type="logical" category="default_settings"
     group="clm_inparm" valid_values="">
     Runtime flag to turn on/off bgc interface.
@@ -1451,6 +1550,25 @@ and pct_nat_pft read from the surface dataset.
 <entry id="pflotran_prefix" type="char*256" category="clm_pflotran"
     group="clm_pflotran_inparm" valid_values="" >
     pflotran file prefix.
+</entry>
+
+<!-- ========================================================================================  -->
+<!-- Namelist options related to Variably Saturated Flow Model (VSFM)                          -->
+<!-- ========================================================================================  -->
+
+<entry id="use_vsfm" type="logical" category="default_settings"
+        group="clm_inparm" valid_values="">
+Runtime flag to turn on/off VSFM.
+</entry>
+
+<entry id="vsfm_satfunc_type" type="char*32" category="clm_physics"
+       group="clm_inparm"
+       valid_values="brooks_corey,smooth_brooks_corey_bz2,smooth_brooks_corey_bz3,van_genuchten" >
+Type of saturation function used in VSFM.
+    brooks_corey             = use the Brooks Corey model
+    smooth_brooks_corey_bz2  = use the smooth approximation of Brooks Corey Model with no quadratic term
+    smooth_brooks_corey_bz3  = use the smooth approximation of Brooks Corey Model with no cubic term
+    van_genuchten            = use the van Genuchten model
 </entry>
 
 </namelist_definition>

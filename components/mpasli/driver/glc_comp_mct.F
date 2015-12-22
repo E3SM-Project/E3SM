@@ -136,7 +136,7 @@ contains
     character(len=StrKIND) :: cpl_seq_option
 
     type (MPAS_Time_Type) :: currTime
-    integer :: iam,ierr
+    integer :: iam, ierr, ierr_local
     integer :: iyear0, imonth0
     character(len=StrKIND)  :: starttype          ! infodata start type
     character(len=StrKIND)  :: timeStamp
@@ -470,9 +470,6 @@ contains
     !
     call mpas_bootstrap_framework_phase2(domain)
 
-    call mpas_timer_start("total time")
-
-
 
     ! Initialize the MPASLI core
     ierr = domain % core % core_init(domain, timeStamp)
@@ -570,7 +567,8 @@ contains
     if ( alarmTimeStep < denInterval ) then
        ierr = 1
     end if
-    call mpas_dmpar_max_int(domain % dminfo, ierr, ierr)
+    ierr_local = ierr
+    call mpas_dmpar_max_int(domain % dminfo, ierr_local, ierr)
 
     if ( ierr == 1 ) then
        write(stderrUnit, *) ' ERROR: Coupling interval is: ', trim(coupleTimeStamp)
@@ -584,7 +582,8 @@ contains
        ierr = 1
     end if
 
-    call mpas_dmpar_max_int(domain % dminfo, ierr, ierr)
+    ierr_local = ierr
+    call mpas_dmpar_max_int(domain % dminfo, ierr_local, ierr)
 
     if ( ierr == 1 ) then
        write(stderrUnit, *) ' ERROR: Coupling interval is: ', trim(coupleTimeStamp)
@@ -869,6 +868,10 @@ contains
          ! ===
          call mpas_timer_start("write output")
 
+         ! Reset the restart alarm to prevent restart files being written without the coupler requesting it.
+         call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', ierr=err_tmp)
+         err = ior(err, err_tmp)
+
          ! These calls will handle ALL output streams that need writing.
          ! [Could add them individually, as the ocean does, if some other actions are needed when a
          ! specific alarm is ringing (e.g., global stats calculated only when output stream gets written)]
@@ -917,9 +920,11 @@ contains
       ! Check if coupler wants us to write a restart file.
       ! We only write restart files at the end of a coupling interval
       if (seq_timemgr_RestartAlarmIsOn(EClock)) then
-         open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
-         write(22, *) trim(timeStamp)
-         close(22)
+         if ( domain % dminfo % my_proc_id == 0 ) then
+            open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
+            write(22, *) trim(timeStamp)
+            close(22)
+         end if
 
          ! Write a restart file, because the coupler asked for it.
          call mpas_stream_mgr_write(domain % streamManager, forceWriteNow=.true., streamID='restart', ierr=err_tmp)
@@ -1009,7 +1014,6 @@ contains
        call mpas_dmpar_global_abort('ERROR: Core finalize failed for core ' // trim(domain % core % coreName))
     end if
 
-    call mpas_timer_stop("total time")
     call mpas_timer_write()
     call MPAS_stream_mgr_finalize(domain % streamManager)
     call mpas_framework_finalize(domain % dminfo, domain, io_system)

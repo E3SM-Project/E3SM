@@ -67,6 +67,8 @@ public :: &
 
 integer, parameter :: r8 = selected_real_kind(12)      ! 8 byte real
 
+logical  :: dcs_tdep
+
 real(r8) :: g              !gravity
 real(r8) :: r              !Dry air Gas constant
 real(r8) :: rv             !water vapor gas contstant
@@ -123,6 +125,10 @@ real(r8) :: lammaxr
 real(r8) :: lammins
 real(r8) :: lammaxs
 
+!!== KZ_DCS 
+real(r8) :: lammini_lc 
+!!== KZ_DCS 
+
 ! parameters for snow/rain fraction for convective clouds
 real(r8) :: tmax_fsnow ! max temperature for transition to convective snow
 real(r8) :: tmin_fsnow ! min temperature for transition to convective snow
@@ -147,7 +153,7 @@ contains
 subroutine micro_mg_init( &
      kind, gravit, rair, rh2o, cpair,  &
      rhoh2o, tmelt_in, latvap, latice, &
-     rhmini_in, micro_mg_dcs, use_hetfrz_classnuc_in, &
+     rhmini_in, micro_mg_dcs, micro_mg_dcs_tdep, use_hetfrz_classnuc_in, &
      micro_mg_precip_frac_method_in, micro_mg_berg_eff_factor_in, errstring)
 
 !----------------------------------------------------------------------- 
@@ -170,6 +176,7 @@ real(r8),         intent(in)  :: latvap
 real(r8),         intent(in)  :: latice
 real(r8),         intent(in)  :: rhmini_in       ! Minimum rh for ice cloud fraction > 0.
 real(r8),         intent(in)  :: micro_mg_dcs
+logical,          intent(in)  :: micro_mg_dcs_tdep
 logical,          intent(in)  :: use_hetfrz_classnuc_in
 character(len=16),intent(in)  :: micro_mg_precip_frac_method_in  ! type of precipitation fraction method
 real(r8),         intent(in)  :: micro_mg_berg_eff_factor_in     ! berg efficiency factor
@@ -286,6 +293,8 @@ f2r = 0.32_r8
 ! autoconversion size threshold for cloud ice to snow (m)
 
 Dcs = micro_mg_dcs
+
+dcs_tdep = micro_mg_dcs_tdep
 
 ! smallest mixing ratio considered in microphysics
 
@@ -491,6 +500,10 @@ real(r8), intent(out) :: freqs(pcols,pver)
 real(r8), intent(out) :: freqr(pcols,pver)
 real(r8), intent(out) :: nfice(pcols,pver)
 real(r8), intent(out) :: prer_evap(pcols,pver)
+
+!!== KZ_DCS
+real(r8) :: dcst(pcols,pver) ! DCS
+!!== KZ_DCS
 
 real(r8) :: nevapr2(pcols,pver)
 
@@ -830,6 +843,10 @@ real(r8) :: frztmp
 
 logical  :: do_clubb_sgs
 
+#ifdef MODIFY_ACTIVATE || USE_UNICON
+! Move droplet activation
+real(r8) :: ncold(pcols,pver)
+#endif
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 ! Return error message
@@ -911,6 +928,18 @@ mincld=0.0001_r8
 q(1:ncol,1:pver)=qn(1:ncol,1:pver)
 t(1:ncol,1:pver)=tn(1:ncol,1:pver)
 
+#ifdef MODIFY_ACTIVATE || USE_UNICON
+!++ag/hm 8/17/12
+!initialize aerosol number
+dum2l(1:ncol,1:pver) = 0._r8
+dum2i(1:ncol,1:pver) = 0._r8
+#endif
+
+!!== KZ_DCS 
+call get_dcst(ncol,pcols,pver,tn,dcst) 
+!!== KZ_DCS 
+
+
 ! initialize time-varying parameters
 
 do k=1,pver
@@ -937,6 +966,37 @@ do k=1,pver
 
       dz(i,k)= pdel(i,k)/(rho(i,k)*g)
 
+#ifdef MODIFY_ACTIVATE || USE_UNICON
+      ! droplet activation
+      ! hm, modify 5/12/11 
+      ! get provisional droplet number after activation. This is used for
+      ! all microphysical process calculations, for consistency with update of
+      ! droplet mass before microphysics 
+
+      ! calculate potential for droplet activation if cloud water is present
+      ! tendency from activation (npccnin) is read in from companion routine
+
+      ! hm note: npccn and ncmax are no longer needed below this code - so this can  
+      ! be rewwritten and these parameters can be removed
+
+      !NOTE: cldm not set yet, need to set it...
+
+      if (qc(i,k).ge.qsmall) then
+         npccn(k) = max(0._r8,npccnin(i,k))
+         dum2l(i,k)=(nc(i,k)+npccn(k)*deltat)/max(cldn(i,k),mincld)  !cldm(i,k)
+         dum2l(i,k)=max(dum2l(i,k),cdnl/rho(i,k)) ! sghan minimum in #/cm3  
+         ncmax = dum2l(i,k)*max(cldn(i,k),mincld)  !cldm(i,k)
+
+      else
+         npccn(k)=0._r8
+         dum2l(i,k)=0._r8
+         ncmax = 0._r8
+      end if
+
+      ! hm update with activation tendency, keep old nc for later
+      ncold(i,k)=nc(i,k)
+      nc(i,k)=nc(i,k)+npccn(k)*deltat
+#endif
    end do
 end do
 
@@ -988,10 +1048,14 @@ rainrt1(1:ncol,1:pver) = 0._r8
 ! initialize precip fraction and output tendencies
 cldmax(1:ncol,1:pver)=mincld
 
+#ifdef MODIFY_ACTIVATE || USE_UNICON
+!++ag/hm 8/17/12: Activation moved above
+#else
 !initialize aerosol number
 !        naer2(1:ncol,1:pver,:)=0._r8
 dum2l(1:ncol,1:pver)=0._r8
 dum2i(1:ncol,1:pver)=0._r8
+#endif
 
 ! initialize avg precip rate
 prect1(1:ncol)=0._r8
@@ -1128,11 +1192,21 @@ do k=top_lev,pver
                     niic(i,k)/qiic(i,k))**(1._r8/di)
                n0i(k) = niic(i,k)*lami(k)
 
+!!== KZ_DCS 
+               if(dcs_tdep) then 
+                  lammini_lc = 1._r8/(2._r8*dcst(i,k))
+               else
+                  lammini_lc = lammini
+               end if 
+!!== KZ_DCS 
+
                ! check for slope
                ! adjust vars
-               if (lami(k).lt.lammini) then
+!!== KZ_DCS 
+               if (lami(k).lt.lammini_lc) then
 
-                  lami(k) = lammini
+                  lami(k) = lammini_lc
+!!== KZ_DCS 
                   n0i(k) = lami(k)**(di+1._r8)*qiic(i,k)/(ci*cons1)
                else if (lami(k).gt.lammaxi) then
                   lami(k) = lammaxi
@@ -1255,11 +1329,21 @@ do k=top_lev,pver
               niic(i,k)/qiic(i,k))**(1._r8/di)
          n0i(k) = niic(i,k)*lami(k)
 
+!!== KZ_DCS 
+         if(dcs_tdep) then 
+            lammini_lc = 1._r8/(2._r8*dcst(i,k))
+         else
+            lammini_lc = lammini
+         end if 
+!!== KZ_DCS 
+
          ! check for slope
          ! adjust vars
-         if (lami(k).lt.lammini) then
+!!== KZ_DCS 
+         if (lami(k).lt.lammini_lc) then
 
-            lami(k) = lammini
+            lami(k) = lammini_lc
+!!== KZ_DCS 
             n0i(k) = lami(k)**(di+1._r8)*qiic(i,k)/(ci*cons1)
          else if (lami(k).gt.lammaxi) then
             lami(k) = lammaxi
@@ -1555,6 +1639,9 @@ do i=1,ncol
 
          cmeout(i,k) = cmeout(i,k)+cmei(i,k)
 
+#ifdef MODIFY_ACTIVATE || USE_UNICON
+         !--ag/hm 8/12/2012  Activation moved above.
+#else
          !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
          ! droplet activation
          ! calculate potential for droplet activation if cloud water is present
@@ -1574,6 +1661,7 @@ do i=1,ncol
             dum2l(i,k)=0._r8
             ncmax = 0._r8
          end if
+#endif
 
          !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
          ! get size distribution parameters based on in-cloud cloud water/ice 
@@ -1591,12 +1679,22 @@ do i=1,ncol
             lami(k) = (cons1*ci*niic(i,k)/qiic(i,k))**(1._r8/di)
             n0i(k) = niic(i,k)*lami(k)
 
+!!== KZ_DCS 
+            if(dcs_tdep) then 
+               lammini_lc = 1._r8/(2._r8*dcst(i,k))
+            else
+               lammini_lc = lammini
+            end if 
+!!== KZ_DCS 
+
             ! check for slope
             ! adjust vars
 
-            if (lami(k).lt.lammini) then
+!!== KZ_DCS 
+            if (lami(k).lt.lammini_lc) then
 
-               lami(k) = lammini
+               lami(k) = lammini_lc
+!!== KZ_DCS 
                n0i(k) = lami(k)**(di+1._r8)*qiic(i,k)/(ci*cons1)
                niic(i,k) = n0i(k)/lami(k)
             else if (lami(k).gt.lammaxi) then
@@ -1734,12 +1832,20 @@ do i=1,ncol
             if (t(i,k).le.273.15_r8.and.qiic(i,k).ge.qsmall) then
 
                ! note: assumes autoconversion timescale of 180 sec
-               
-               nprci(k) = n0i(k)/(lami(k)*180._r8)*exp(-lami(k)*dcs)
 
-               prci(k) = pi*rhoi*n0i(k)/(6._r8*180._r8)* &
-                    (cons23/lami(k)+3._r8*cons24/lami(k)**2+ &
-                    6._r8*dcs/lami(k)**3+6._r8/lami(k)**4)*exp(-lami(k)*dcs)
+!!== KZ_DCS 
+               if(dcs_tdep) then 
+                  nprci(k) = n0i(k)/(lami(k)*180._r8)*exp(-lami(k)*dcst(i,k))
+                  prci(k) = pi*rhoi*n0i(k)/(6._r8*180._r8)* &
+                       (dcst(i,k)**3/lami(k)+3._r8*dcst(i,k)**2/lami(k)**2+ &
+                       6._r8*dcst(i,k)/lami(k)**3+6._r8/lami(k)**4)*exp(-lami(k)*dcst(i,k))
+               else
+                  nprci(k) = n0i(k)/(lami(k)*180._r8)*exp(-lami(k)*dcs)
+                  prci(k) = pi*rhoi*n0i(k)/(6._r8*180._r8)* &
+                       (cons23/lami(k)+3._r8*cons24/lami(k)**2+ &
+                       6._r8*dcs/lami(k)**3+6._r8/lami(k)**4)*exp(-lami(k)*dcs)
+               end if 
+!!== KZ_DCS 
             else
                prci(k)=0._r8
                nprci(k)=0._r8
@@ -1754,8 +1860,15 @@ do i=1,ncol
          ! add autoconversion to flux from level above to get provisional snow mixing ratio
          ! and number concentration (qniic and nsic)
 
-         dum=(asn(i,k)*cons25)
-         dum1=(asn(i,k)*cons25)
+!!== KZ_DCS 
+         if(dcs_tdep) then 
+            dum=(asn(i,k)*dcst(i,k)**bs)
+            dum1=(asn(i,k)*dcst(i,k)**bs)
+         else
+            dum=(asn(i,k)*cons25)
+            dum1=(asn(i,k)*cons25)
+         end if
+!!== KZ_DCS 
 
          if (k.eq.top_lev) then
             qniic(i,k)=prci(k)*icldm(i,k)*dz(i,k)/cldmax(i,k)/dum
@@ -2315,7 +2428,12 @@ do i=1,ncol
          ! include mixing timescale  (mtime)
 
          qce=(qc(i,k) - berg(i,k)*deltat)
+#ifdef MODIFY_ACTIVATE || USE_UNICON
+         !++ag/hm 8/17/12, modify for moving activation before microphysics
+         nce=nc(i,k)
+#else
          nce=(nc(i,k)+npccn(k)*deltat*mtime)
+#endif
          qie=(qi(i,k)+(cmei(i,k)+berg(i,k))*deltat)
          nie=(ni(i,k)+nnuccd(k)*deltat*mtime)
 
@@ -2536,7 +2654,12 @@ do i=1,ncol
 
          ! multiply activation/nucleation by mtime to account for fast timescale
 
+#ifdef MODIFY_ACTIVATE || USE_UNICON
+         !++ag/hm 8/17/12, don't include activation tendency (already included earlier)
+         nctend(i,k) = nctend(i,k)+ &
+#else
          nctend(i,k) = nctend(i,k)+ npccn(k)*mtime+&
+#endif
               (-nnuccc(k)-nnucct(k)-npsacws(k)+nsubc(k) & 
               -npra(k)-nprc1(k))*lcldm(i,k)      
 
@@ -2560,9 +2683,14 @@ do i=1,ncol
          ! maximum (existing N + source terms*dt), which is possible due to
          ! fast nucleation timescale
 
+#ifdef MODIFY_ACTIVATE || USE_UNICON
+         !++ag/hm 8/17/12, don't include timescale for droplet activation - not needed with
+         ! Ghan formulation based on mixing 
+#else
          if (nctend(i,k).gt.0._r8.and.nc(i,k)+nctend(i,k)*deltat.gt.ncmax) then
             nctend(i,k)=max(0._r8,(ncmax-nc(i,k))/deltat)
          end if
+#endif
 
          if (do_cldice .and. nitend(i,k).gt.0._r8.and.ni(i,k)+nitend(i,k)*deltat.gt.nimax) then
             nitend(i,k)=max(0._r8,(nimax-ni(i,k))/deltat)
@@ -2986,6 +3114,14 @@ do i=1,ncol
       dumnc(i,k) = max((nc(i,k)+nctend(i,k)*deltat)/lcldm(i,k),0._r8)
       dumni(i,k) = max((ni(i,k)+nitend(i,k)*deltat)/icldm(i,k),0._r8)
 
+!!== KZ_DCS 
+      if(dcs_tdep) then 
+         lammini_lc = 1._r8/(2._r8*dcst(i,k))
+      else
+         lammini_lc = lammini
+      end if
+!!== KZ_DCS 
+
       ! obtain new slope parameter to avoid possible singularity
 
       if (dumi(i,k).ge.qsmall) then
@@ -2994,7 +3130,9 @@ do i=1,ncol
 
          lami(k) = (cons1*ci* &
               dumni(i,k)/dumi(i,k))**(1._r8/di)
-         lami(k)=max(lami(k),lammini)
+!!== KZ_DCS 
+         lami(k)=max(lami(k),lammini_lc)
+!!== KZ_DCS 
          lami(k)=min(lami(k),lammaxi)
       else
          lami(k)=0._r8
@@ -3183,6 +3321,12 @@ do i=1,ncol
 
    do k=top_lev,pver
 
+#ifdef MODIFY_ACTIVATE || USE_UNICON
+      !++ag/hm 8/17/12, modify for activation tendency
+      ! *note: this still includes conditional on npccnin that should be removed
+      nctend(i,k)=nctend(i,k)+max(0._r8,npccnin(i,k))
+      nc(i,k)=ncold(i,k)
+#endif
       dumc(i,k) = max(qc(i,k)+qctend(i,k)*deltat,0._r8)
       dumi(i,k) = max(qi(i,k)+qitend(i,k)*deltat,0._r8)
       dumnc(i,k) = max(nc(i,k)+nctend(i,k)*deltat,0._r8)
@@ -3320,8 +3464,18 @@ do i=1,ncol
          dumni(i,k)=min(dumni(i,k),dumi(i,k)*1.e20_r8)
          lami(k) = (cons1*ci*dumni(i,k)/dumi(i,k))**(1._r8/di)
 
-         if (lami(k).lt.lammini) then
-            lami(k) = lammini
+!!== KZ_DCS 
+         if(dcs_tdep) then 
+            lammini_lc = 1._r8/(2._r8*dcst(i,k))
+         else
+            lammini_lc = lammini
+         end if 
+!!== KZ_DCS 
+
+!!== KZ_DCS 
+         if (lami(k).lt.lammini_lc) then
+            lami(k) = lammini_lc
+!!== KZ_DCS 
             n0i(k) = lami(k)**(di+1._r8)*dumi(i,k)/(ci*cons1)
             niic(i,k) = n0i(k)/lami(k)
             ! adjust number conc if needed to keep mean size in reasonable range
@@ -3673,5 +3827,40 @@ pure subroutine micro_mg_get_cols(ncol, nlev, top_lev, qcn, qin, &
   end do
 
 end subroutine micro_mg_get_cols
+
+!!== KZ_DCS 
+subroutine get_dcst(ncol,pcols,pver,temp,dcst) 
+
+implicit none 
+
+integer,  intent(in) :: ncol
+integer,  intent(in) :: pcols                ! size of column (first) index
+integer,  intent(in) :: pver                 ! number of layers in columns
+real(r8), intent(in) :: temp(pcols,pver)       ! input temperature (K)
+real(r8), intent(out) :: dcst(pcols,pver)      ! temperature dependent dcs 
+
+integer :: i,k 
+real(r8) :: st 
+
+
+dcst = 400.e-6_r8
+
+do k=1,pver
+   do i=1,ncol 
+      st = temp(i,k) - 273.15 
+      if(st.le.-70.) then 
+         dcst(i,k) = 100.e-6_r8  
+      elseif(st.gt.-70. .and. st.le.-10.) then 
+         dcst(i,k) = 5.e-6_r8 * st  + 450.e-6_r8  
+      elseif(st.gt.-10.) then
+         dcst(i,k) = 400.e-6_r8  
+      end if
+   end do
+end do
+
+return
+
+end subroutine get_dcst 
+!!== KZ_DCS 
 
 end module micro_mg1_0

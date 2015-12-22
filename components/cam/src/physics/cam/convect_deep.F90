@@ -136,6 +136,8 @@ subroutine convect_deep_init(pref_edge)
   case('ZM') !    1 ==> Zhang-McFarlane (default)
      if (masterproc) write(iulog,*)'convect_deep initializing Zhang-McFarlane convection'
      call zm_conv_init(pref_edge)
+  case('UNICON')
+     if (masterproc) write(iulog,*)'convect_deep: deep convection done by UNICON'
   case default
      if (masterproc) write(iulog,*)'WARNING: convect_deep: no deep convection scheme. May fail.'
   end select
@@ -239,7 +241,7 @@ subroutine convect_deep_tend( &
    call pbuf_get_field(pbuf, icwmrdp_idx, ql    )
 
   select case ( deep_scheme )
-  case('off', 'CLUBB_SGS') !    0 ==> no deep convection
+  case('off', 'CLUBB_SGS', 'UNICON') !    0 ==> no deep convection
     zero = 0     
     mcon = 0
     dlf = 0
@@ -281,7 +283,8 @@ subroutine convect_deep_tend( &
           rliq    , &
           ztodt   , &
           jctop, jcbot , &
-          state   ,ptend   ,landfrac, pbuf)
+          state   ,ptend   ,landfrac, pbuf, mu, eu, &
+          du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath)
 
 
   end select
@@ -341,7 +344,8 @@ subroutine convect_deep_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, &
    integer, intent(in) :: species_class(:)
 
    if ( deep_scheme .eq. 'ZM' ) then  !    1 ==> Zhang-McFarlane (default)
-      call zm_conv_tend_2( state,   ptend,  ztodt,  pbuf, species_class) 
+      call zm_conv_tend_2( state,   ptend,  ztodt,  pbuf,mu, eu, &
+     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class) 
    else
       call physics_ptend_init(ptend, state%psetcols, 'convect_deep')
    end if

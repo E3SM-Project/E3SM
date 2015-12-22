@@ -98,7 +98,7 @@ contains
     ! Initial code by C. Koven and W. Riley
     !
     ! !USES:
-    use clm_time_manager , only : get_step_size
+    use clm_time_manager , only : get_step_size, get_curr_date
     use clm_varpar       , only : nlevdecomp, ndecomp_pools, nlevdecomp_full
     use clm_varcon       , only : zsoi, dzsoi_decomp, zisoi
     use TridiagonalMod   , only : Tridiagonal
@@ -153,6 +153,8 @@ contains
     integer  :: zerolev_diffus
     real(r8) :: spinup_term                   ! spinup accelerated decomposition factor, used to accelerate transport as well
     real(r8) :: epsilon                       ! small number
+    integer  :: year, mon, day, sec
+
     !-----------------------------------------------------------------------
 
     ! Set statement functions
@@ -268,6 +270,8 @@ contains
             endif
          end select
 
+	 call get_curr_date(year, mon, day, sec)
+
          if (use_vertsoilc) then
 
             do s = 1, ndecomp_pools
@@ -288,13 +292,21 @@ contains
                         if ( abs(som_adv_coef(c,j)) * spinup_term < epsilon ) then
                            adv_flux(c,j) = epsilon
                         else
-                           adv_flux(c,j) = som_adv_coef(c,j) * spinup_term
+			   if (spinup_term > 1 .and. year >= 40 .and. spinup_state .eq. 1) then 
+                             adv_flux(c,j) = som_adv_coef(c,j) * spinup_term / cnstate_vars%scalaravg_col(c)
+ 			   else
+                             adv_flux(c,j) = som_adv_coef(c,j) * spinup_term
+			   end if			     
                         endif
                         !
                         if ( abs(som_diffus_coef(c,j)) * spinup_term < epsilon ) then
                            diffus(c,j) = epsilon
                         else
-                           diffus(c,j) = som_diffus_coef(c,j) * spinup_term
+			   if (spinup_term > 1 .and. year >= 40 .and. spinup_state .eq. 1) then 
+                             diffus(c,j) = som_diffus_coef(c,j) * spinup_term / cnstate_vars%scalaravg_col(c)
+                           else
+                             diffus(c,j) = som_diffus_coef(c,j) * spinup_term
+			   end if
                         endif
                         !
                      end do
@@ -437,7 +449,6 @@ contains
                         trcr_tendency_ptr(c,j,s) = trcr_tendency_ptr(c,j,s) / dtime
                      end do
                   end do
-
 
                else
                   ! for CWD pools, just add

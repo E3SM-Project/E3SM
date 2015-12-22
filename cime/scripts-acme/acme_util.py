@@ -27,6 +27,7 @@ _MACHINE_PROJECTS = {
     "redsky"    : "fy150001",
     "skybridge" : "fy150001",
     "edison"    : "acme",
+    "corip1"    : "acme",
     "blues"     : "ACME",
     "titan"     : "cli115",
     "mira"      : "HiRes_EarthSys",
@@ -178,13 +179,13 @@ def parse_test_name(test_name):
     ['ERS', ['D', 'P1'], 'fe12_123', 'JGF', None, None, None]
     >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler')
     ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', None]
-    >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler.test/mods')
+    >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler.test-mods')
     ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', 'test/mods']
     """
     rv = [None] * 6
     num_dots = test_name.count(".")
     expect(num_dots >= 2 and num_dots <= 4,
-           "'%s' does not look like an ACME test name, expect TESTCASE.GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]]")
+           "'%s' does not look like an ACME test name, expect TESTCASE.GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]]" % test_name)
 
     rv[0:num_dots+1] = test_name.split(".")
     testcase_field_underscores = rv[0].count("_")
@@ -200,6 +201,9 @@ def parse_test_name(test_name):
         rv[4:5] = rv[4].split("_")
         rv.pop()
 
+    if (rv[-1] is not None):
+        rv[-1] = rv[-1].replace("-", "/")
+
     return rv
 
 ###############################################################################
@@ -213,11 +217,11 @@ def get_full_test_name(test, machine, compiler, testmod=None):
     'ERS.ne16_fe16.JGF.melvin_gnu'
     >>> get_full_test_name("ERS.ne16_fe16.JGF.melvin_gnu.mods", "melvin", "gnu")
     'ERS.ne16_fe16.JGF.melvin_gnu.mods'
-    >>> get_full_test_name("ERS.ne16_fe16.JGF", "melvin", "gnu", "mods")
-    'ERS.ne16_fe16.JGF.melvin_gnu.mods'
+    >>> get_full_test_name("ERS.ne16_fe16.JGF", "melvin", "gnu", "mods/test")
+    'ERS.ne16_fe16.JGF.melvin_gnu.mods-test'
     """
     if (test.count(".") == 2):
-        return "%s.%s_%s%s" % (test, machine, compiler, "" if testmod is None else ".%s" % testmod)
+        return "%s.%s_%s%s" % (test, machine, compiler, "" if testmod is None else ".%s" % testmod.replace("/", "-"))
     else:
         _, _, _, _, test_machine, test_compiler, test_testmod = parse_test_name(test)
         expect(machine == test_machine,
@@ -225,7 +229,7 @@ def get_full_test_name(test, machine, compiler, testmod=None):
         expect(compiler == test_compiler,
                "Found testname/compiler mismatch, test is '%s', your current compiler is '%s'" % (test, compiler))
         if (test_testmod is None):
-            return "%s%s" % (test, "" if testmod is None else ".%s" % testmod)
+            return "%s%s" % (test, "" if testmod is None else ".%s" % testmod.replace("/", "-"))
         else:
             return test
 
@@ -269,9 +273,8 @@ def get_current_branch(repo=None):
             branch = branch.replace("origin/", "", 1)
         return branch
     else:
-        stat, output, errput = run_cmd("git symbolic-ref HEAD", from_dir=repo, ok_to_fail=True)
+        stat, output, _ = run_cmd("git symbolic-ref HEAD", from_dir=repo, ok_to_fail=True)
         if (stat != 0):
-            warning("Couldn't get current git branch, error: '%s'" % errput)
             return None
         else:
             return output.replace("refs/heads/", "")
@@ -507,7 +510,7 @@ def parse_config_machines():
                 warning("Ignoring unrecognized tag: '%s'" % machine.tag)
 
 ###############################################################################
-def get_machine_info(items, machine=None, user=None, project=None, raw=False):
+def get_machine_info(items, machine=None, user=None, project=None, case=None, raw=False):
 ###############################################################################
     """
     Return information on machine. If no arg provided, probe for machine.
@@ -519,10 +522,15 @@ def get_machine_info(items, machine=None, user=None, project=None, raw=False):
     (compiler, test_suite, use_batch, project, testroot, baseline_root, proxy)
 
     >>> parse_config_machines()
-    >>> get_machine_info("EXEROOT", machine="melvin") == os.path.join(os.environ["HOME"], "acme/scratch/$CASE/bld")
-    True
-    >>> get_machine_info(["NODENAME_REGEX", "TESTS"], machine="melvin")
-    ['melvin', 'acme_developer']
+
+    >>> get_machine_info(["NODENAME_REGEX", "TESTS"], machine="skybridge")
+    ['skybridge-login', 'acme_integration']
+
+    >>> get_machine_info("CESMSCRATCHROOT", machine="melvin", user="jenkins")
+    '/home/jenkins/acme/scratch'
+
+    >>> get_machine_info("EXEROOT", machine="melvin", user="jenkins", case="Foo")
+    '/home/jenkins/acme/scratch/Foo/bld'
     """
     parse_config_machines()
 
@@ -534,7 +542,7 @@ def get_machine_info(items, machine=None, user=None, project=None, raw=False):
     expect(machine is not None, "Failed to probe machine. Please provide machine to whatever script you just ran")
     expect(machine in _MACHINE_INFO, "No info for machine '%s'" % machine)
 
-    if (type(items) is str):
+    if (isinstance(items, str)):
         items = [items]
 
     rv = []
@@ -546,7 +554,7 @@ def get_machine_info(items, machine=None, user=None, project=None, raw=False):
         env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
         for item in items:
             item_data = _MACHINE_INFO[machine][item] if item in _MACHINE_INFO[machine] else None
-            if (type(item_data) is str):
+            if (isinstance(item_data, str)):
                 for m in env_ref_re.finditer(item_data):
                     env_var = m.groups()[0]
                     expect(env_var in os.environ,
@@ -559,10 +567,19 @@ def get_machine_info(items, machine=None, user=None, project=None, raw=False):
                         item_data = item_data.replace(m.group(), get_machine_info(ref, machine=machine, user=user, project=project))
 
                 item_data = item_data.replace("$USER", user)
+                # Need extra logic to handle case where user string was brought in from env ($HOME)
+                if (user != getpass.getuser()):
+                    item_data = item_data.replace(getpass.getuser(), user, 1)
+
                 if ("$PROJECT" in item_data):
                     project = get_machine_project(machine=machine) if project is None else project
                     expect(project is not None, "Cannot evaluate '%s' without project information" % item)
                     item_data = item_data.replace("$PROJECT", project)
+
+                # $CASE is another special case, it can only be provided by user
+                if ("$CASE" in item_data):
+                    expect(case is not None, "Data for '%s' required case information but none provided" % item)
+                    item_data = item_data.replace("$CASE", case)
 
             rv.append(item_data)
 

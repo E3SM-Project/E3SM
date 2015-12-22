@@ -2124,11 +2124,23 @@ Autoconversion size threshold for cloud ice to snow (m)
 Default: set by build-namelist
 </entry>
 
+<entry id="micro_mg_dcs_tdep" type="logical" category="microphysics"
+       group="micro_mg_nl" valid_values="" >
+Switch to turn on temperature dependent DCS.
+Default: .false.
+</entry>
+
 <!-- micro_aero -->
 <entry id="microp_aero_bulk_scale" type="real" category="microphysics"
        group="microp_aero_nl" valid_values="" >
 prescribed aerosol bulk sulfur scale factor
 Default: 2 
+</entry>
+
+<entry id="microp_aero_wsub_scheme" type="integer" category="microphysics"
+       group="microp_aero_nl" valid_values="" >
+Updraft velocity paramterization option for ice nucleation.
+Default: 1
 </entry>
 
 <entry id="use_hetfrz_classnuc" type="logical" category="microphys"
@@ -2568,6 +2580,12 @@ boundary layer).
 Default: 100.e3 (hPa)
 </entry>
 
+<entry id="eddy_moist_entrain_a2l" type="real" category="conv"
+       group="vert_diff_nl" valid_values="" >
+Moist entrainment enhancement parameter.
+Default: set by build-namelist
+</entry>
+
 <entry id="kv_top_pressure" type="real" category="conv"
        group="vert_diff_nl" valid_values="" >
 Pressure (Pa) that defined the upper atmosphere for adjustment of
@@ -2664,6 +2682,92 @@ Default: FALSE
        group="clubbpbl_diff_nl" valid_values="" >
 Switch for CLUBBND_CAM
 Default: FALSE
+</entry>
+
+<!-- Clubb tunable parameters -->
+
+<entry id="C1" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Constant associated with the dissipation of the variance of vertical velocity
+Default: 1.0. See clubb/parameters_tunable.F90
+</entry>
+
+<entry id="C2rt" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Constant associated with the dissipation of the variance of total water
+Default: 1.0
+</entry>
+
+<entry id="C6rt" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Low skewness of Newtonian damping of water flux
+Default: 4.0
+</entry>
+
+<entry id="C6rtb" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+High skewness of Newtonian damping of water flux
+Default: 6.0
+</entry>
+
+<entry id="C7" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Low skewness of buoyancy damping of water flux
+Default: 0.5
+</entry>
+
+<entry id="C7b" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+High skewness of buoyancy damping of water flux
+Default: 0.5
+</entry>
+
+<entry id="C8" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Constant associated with Newtonian damping of the third moment of vertical velocity
+Default: 4.2
+</entry>
+
+<entry id="C11" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Low skewnes of buoyancy damping of the third moment of vertical velocity
+Default: 0.7
+</entry>
+
+<entry id="C11b" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+High skewnes of buoyancy damping of the third moment of vertical velocity
+Default: 0.35
+</entry>
+
+<entry id="C14" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Constant of Newtonian damping of the variances of u-wind and v-wind
+Default: 1.0
+</entry>
+
+<entry id="beta" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Constant related to skewness of liquid water potential temperature and total water
+Default: 2.4
+</entry>
+
+<entry id="gamma_coef" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Constant of the width of PDF in w-coordinate
+Default: 0.32
+</entry>
+
+<entry id="mu" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Fractional parcel entrainment rate per unit height (1/m)
+Default: 0.001
+</entry>
+
+<entry id="nu1" type="real" category="pblrad"
+       group="initvars" valid_values="" >
+Background coefficient of eddy diffusion
+Default: 20.0
 </entry>
 
 <!-- CARMA Sectional Microphysics -->
@@ -3861,6 +3965,18 @@ Default: set by build-namelist.
 <entry id="aer_drydep_list" type="char*16(1000)" category="cam_chem"
        group="aerosol_nl" valid_values="" >
 List of aerosol species that undergo sediment (dry deposition).
+Default: set by build-namelist.
+</entry>
+
+<entry id="sol_factb_interstitial" type="real" category="cam_chem"
+       group="aerosol_nl" valid_values="" >
+Tuning for below cloud scavenging of interstitial modal aerosols.
+Default: set by build-namelist.
+</entry>
+
+<entry id="sol_factic_interstitial" type="real" category="cam_chem"
+       group="aerosol_nl" valid_values="" >
+Tuning for in-cloud scavenging of interstitial modal aerosols.
 Default: set by build-namelist.
 </entry>
 

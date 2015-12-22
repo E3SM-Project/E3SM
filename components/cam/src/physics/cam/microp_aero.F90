@@ -25,7 +25,7 @@ use shr_kind_mod,     only: r8=>shr_kind_r8
 use spmd_utils,       only: masterproc
 use ppgrid,           only: pcols, pver, pverp
 use ref_pres,         only: top_lev => trop_cloud_top_lev
-use physconst,        only: rair
+use physconst,        only: rair, gravit, pi
 use constituents,     only: cnst_get_ind
 use physics_types,    only: physics_state, physics_ptend, physics_ptend_init
 use physics_buffer,   only: physics_buffer_desc, pbuf_get_index, pbuf_old_tim_idx, pbuf_get_field
@@ -57,6 +57,10 @@ public :: microp_aero_init, microp_aero_run, microp_aero_readnl, microp_aero_reg
 character(len=16)   :: eddy_scheme
 logical             :: micro_do_icesupersat
 
+!!   icenul_wsub_scheme = 1 : f(TKE) as default
+!!                        2 : Mean updraft calculated from Gausssian PDF, with stddev=f(TKE)
+integer             :: icenul_wsub_scheme = 1
+ 
 ! contact freezing due to dust
 ! dust number mean radius (m), Zender et al JGR 2003 assuming number mode radius of 0.6 micron, sigma=2
 real(r8), parameter :: rn_dst1 = 0.258e-6_r8
@@ -314,6 +318,12 @@ subroutine microp_aero_init
    call addfld('WSUB     ', 'm/s     ', pver, 'A', 'Diagnostic sub-grid vertical velocity'                   ,phys_decomp)
    call addfld('WSUBI    ', 'm/s     ', pver, 'A', 'Diagnostic sub-grid vertical velocity for ice'           ,phys_decomp)
 
+   call addfld('WLARGE', 'm/s', pver, 'A', 'Large-scale vertical velocity', phys_decomp)
+   call addfld('WSIG',   'm/s', pver, 'A', 'Subgrid standard deviation of vertical velocity',  phys_decomp)
+   call addfld('WSUBI2', 'm/s', pver, 'A', 'Mean updraft, with stddev=f(TKE)',                 phys_decomp)
+   call addfld('RHICE', '0-1',  pver, 'A', 'RHi for ice nucleation', phys_decomp)
+
+
    if (history_amwg) then
       call add_default ('WSUB     ', 1, ' ')
    end if
@@ -335,12 +345,14 @@ subroutine microp_aero_readnl(nlfile)
 
    ! Namelist variables
    real(r8) :: microp_aero_bulk_scale = 2._r8  ! prescribed aerosol bulk sulfur scale factor
+   integer  :: microp_aero_wsub_scheme = 1     ! updraft velocity parameterization option for ice nucleation
  
    ! Local variables
    integer :: unitn, ierr
    character(len=*), parameter :: subname = 'microp_aero_readnl'
 
-   namelist /microp_aero_nl/ microp_aero_bulk_scale
+   namelist /microp_aero_nl/ microp_aero_bulk_scale, microp_aero_wsub_scheme 
+
    !-----------------------------------------------------------------------------
 
    if (masterproc) then
@@ -360,10 +372,12 @@ subroutine microp_aero_readnl(nlfile)
 #ifdef SPMD
    ! Broadcast namelist variable
    call mpibcast(microp_aero_bulk_scale, 1, mpir8, 0, mpicom)
+   call mpibcast(microp_aero_wsub_scheme, 1, mpiint, 0, mpicom)
 #endif
 
    ! set local variables
    bulk_scale = microp_aero_bulk_scale
+   icenul_wsub_scheme = microp_aero_wsub_scheme
 
    call nucleate_ice_cam_readnl(nlfile)
    call hetfrz_classnuc_cam_readnl(nlfile)
@@ -448,7 +462,12 @@ subroutine microp_aero_run ( &
 
    real(r8) :: wsub(pcols,pver)    ! diagnosed sub-grid vertical velocity st. dev. (m/s)
    real(r8) :: wsubi(pcols,pver)   ! diagnosed sub-grid vertical velocity ice (m/s)
+   real(r8) :: wsubice(pcols,pver) ! final updraft velocity for ice nucleation (m/s)
+   real(r8) :: wsig(pcols,pver)    ! diagnosed standard deviation of vertical velocity ~ f(TKE)
    real(r8) :: nucboast
+
+   real(r8) :: w0(pcols,pver)      ! large scale velocity (m/s) 
+   real(r8) :: w2(pcols,pver)      ! subgrid mean updraft velocity, Gaussian PDF, stddev=f(tke)
 
    real(r8) :: wght
 
@@ -459,10 +478,12 @@ subroutine microp_aero_run ( &
       lchnk => state%lchnk,             &
       ncol  => state%ncol,              &
       t     => state%t,                 &
-      qc    => state%q(:,:,cldliq_idx), &
-      qi    => state%q(:,:,cldice_idx), &
-      nc    => state%q(:,:,numliq_idx), &
+      qc    => state%q(:pcols,:pver,cldliq_idx), &
+      qi    => state%q(:pcols,:pver,cldice_idx), &
+      nc    => state%q(:pcols,:pver,numliq_idx), &
+      omega => state%omega,             &
       pmid  => state%pmid               )
+
 
    itim_old = pbuf_old_tim_idx()
    call pbuf_get_field(pbuf, ast_idx,      ast, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
@@ -577,6 +598,7 @@ subroutine microp_aero_run ( &
    ! Set minimum values above top_lev.
    wsub(:ncol,:top_lev-1)  = 0.20_r8
    wsubi(:ncol,:top_lev-1) = 0.001_r8
+   wsig(:ncol,:top_lev-1)  = 0.001_r8
 
    do k = top_lev, pver
       do i = 1, ncol
@@ -585,6 +607,7 @@ subroutine microp_aero_run ( &
          case ('diag_TKE', 'CLUBB_SGS')
             wsub(i,k) = sqrt(0.5_r8*(tke(i,k) + tke(i,k+1))*(2._r8/3._r8))
             wsub(i,k) = min(wsub(i,k),10._r8)
+            wsig(i,k) = max(0.001_r8, wsub(i,k))
          case default 
             ! get sub-grid vertical velocity from diff coef.
             ! following morrison et al. 2005, JAS
@@ -611,15 +634,57 @@ subroutine microp_aero_run ( &
       end do
    end do
 
+   !!.......................................................... 
+   !! Initialization
+   !!.......................................................... 
+
+   w0(1:ncol,1:pver) = 0._r8
+   w2(1:ncol,1:pver) = 0._r8
+   wsubice(1:ncol,1:pver) = 0._r8
+
+   !!.......................................................... 
+   !!  Convert from omega to w 
+   !!  Negative omega means rising motion
+   !!.......................................................... 
+
+   do k = top_lev, pver
+      do i = 1, ncol
+         w0(i,k) = -1._r8*omega(i,k)/(rho(i,k)*gravit)
+      enddo
+   enddo
+
+   !!.......................................................... 
+   !! icenul_wsub_scheme = 2 : Mean updraft calculated from Gausssian PDF, with
+   !stddev=f(TKE)    
+   !!.......................................................... 
+
+   call subgrid_mean_updraft(ncol, w0, wsig, w2)
+
+
+   select case (icenul_wsub_scheme)
+
+   case(1)
+         wsubice(1:ncol,1:pver) = wsubi(1:ncol,1:pver)
+   case(2)
+         wsubice(1:ncol,1:pver) = w2(1:ncol,1:pver)
+   case default
+         call endrun('nucleate_ice_cam_calc : icenul_wsub_scheme not set')
+   end select
+
    call outfld('WSUB',   wsub, pcols, lchnk)
-   call outfld('WSUBI', wsubi, pcols, lchnk)
+   call outfld('WSUBI',  wsubice, pcols, lchnk)
+   call outfld('WSIG',   wsig, pcols, lchnk)
+   call outfld('WLARGE', w0, pcols, lchnk)
+   call outfld('WSUBI2', w2, pcols, lchnk)
+
+
 
    if (trim(eddy_scheme) == 'CLUBB_SGS') deallocate(tke)
 
    !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
    !ICE Nucleation
 
-   call nucleate_ice_cam_calc(state, wsubi, pbuf)
+   call nucleate_ice_cam_calc(state, wsubice, pbuf)
 
    !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
    ! get liquid cloud fraction, check for minimum
@@ -781,5 +846,78 @@ subroutine microp_aero_run ( &
 end subroutine microp_aero_run
 
 !=========================================================================================
+
+subroutine subgrid_mean_updraft(ncol, w0, wsig, ww)
+
+!---------------------------------------------------------------------------------
+! Purpose: Calculate the mean updraft velocity inside a GCM grid assuming the 
+!          vertical velocity distribution is Gaussian and peaks at the 
+!          GCM resolved large-scale vertical velocity. 
+!          When icenul_wsub_scheme = 2, the model uses the mean updraft velocity as the 
+!          characteristic updraft velocity to calculate the ice nucleation rate. 
+! Author:  Kai Zhang (kai.zhang@pnnl.gov) 
+! Last Modified: Oct, 2015 
+!---------------------------------------------------------------------------------
+
+   !! interface 
+
+   integer,  intent(in) :: ncol              ! number of cols 
+   real(r8), intent(in) :: wsig(pcols,pver ) ! standard deviation (m/s)
+   real(r8), intent(in) :: w0(pcols,pver ) ! large scale vertical velocity (m/s) 
+   real(r8), intent(out):: ww(pcols,pver) ! mean updraft velocity(m/s) -> characteristic w*
+
+   !! local 
+   integer, parameter :: nbin = 50
+
+   real(r8) :: wlarge,sigma
+   real(r8) :: xx, yy 
+   real(r8) :: zz(nbin) 
+   real(r8) :: wa(nbin) 
+   integer  :: kp(nbin) 
+   integer  :: i, k
+   integer  :: ibin
+
+   !! program begins 
+
+   do k = 1, pver
+   do i = 1, ncol
+
+      sigma  = max(0.001_r8, wsig(i,k))
+      wlarge = w0(i,k)
+
+      xx = 6._r8 * sigma / nbin
+
+      do ibin = 1, nbin
+         yy = wlarge - 3._r8*sigma + 0.5*xx
+         yy = yy + (ibin-1)*xx
+         !! wbar = integrator < w * f(w) * dw > 
+         zz(ibin) = yy * exp(-1.*(yy-wlarge)**2/(2*sigma**2))/(sigma*sqrt(2*pi))*xx
+      end do 
+
+      kp(:) = 0 
+      wa(:) = 0._r8 
+ 
+      where(zz.gt.0._r8) 
+         kp = 1 
+         wa = zz
+      elsewhere 
+         kp = 0 
+         wa = 0._r8 
+      end where 
+
+      if(sum(kp).gt.0) then 
+         !! wbar = integrator < w * f(w) * dw > 
+         ww(i,k) = sum(wa)
+      else 
+         ww(i,k) = 0.001_r8
+      end if 
+
+      !!write(6,*) 'i, k, w0, wsig, ww : ', i, k, w0(i,k), wsig(i,k), ww(i,k) 
+
+  end do
+  end do
+
+end subroutine subgrid_mean_updraft
+!================================================================================================
 
 end module microp_aero

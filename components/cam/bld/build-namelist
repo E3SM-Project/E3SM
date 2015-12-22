@@ -2268,7 +2268,7 @@ if ($chem eq 'waccm_mozart_mam3') {
     }
 
 }
-if ($chem eq 'trop_mam4') {
+if ($chem eq 'trop_mam4' || $chem eq 'trop_mam4_resus') {
 
     my %species;
 
@@ -2772,6 +2772,8 @@ if ($clubb_sgs  =~ /$TRUE/io) {
 #in-cloud scav tuning for cloud-borne aerosol
 if ($chem =~ /_mam/) {
     add_default($nl, 'sol_facti_cloud_borne');
+    add_default($nl, 'sol_factb_interstitial');
+    add_default($nl, 'sol_factic_interstitial');
 }
 
 #Sea Salt aerosol emission scale factors
@@ -2851,6 +2853,7 @@ add_default($nl, 'kv_freetrop_scale');
 add_default($nl, 'eddy_lbulk_max');
 add_default($nl, 'eddy_leng_max');
 add_default($nl, 'eddy_max_bot_pressure');
+add_default($nl, 'eddy_moist_entrain_a2l');
 add_default($nl, 'diff_cnsrv_mass_check');
 
 # Pressure limits for molecular diffusion.

@@ -5,41 +5,16 @@ module QSatMod
   ! Computes saturation mixing ratio and the change in saturation
   !
   ! !PUBLIC TYPES:
+  use shr_kind_mod , only: r8 => shr_kind_r8
   implicit none
   save
+  private 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: QSat
+  public :: rhoSat
   !-----------------------------------------------------------------------
 
-contains
-
-  !-----------------------------------------------------------------------
-  subroutine QSat (T, p, es, esdT, qs, qsdT)
-    !
-    ! !DESCRIPTION:
-    ! Computes saturation mixing ratio and the change in saturation
-    ! mixing ratio with respect to temperature.
-    ! Reference:  Polynomial approximations from:
-    !             Piotr J. Flatau, et al.,1992:  Polynomial fits to saturation
-    !             vapor pressure.  Journal of Applied Meteorology, 31, 1507-1513.
-    !
-    ! !USES:
-    use shr_kind_mod , only: r8 => shr_kind_r8
-    use shr_const_mod, only: SHR_CONST_TKFRZ
-    !
-    ! !ARGUMENTS:
-    implicit none
-    real(r8), intent(in)  :: T        ! temperature (K)
-    real(r8), intent(in)  :: p        ! surface atmospheric pressure (pa)
-    real(r8), intent(out) :: es       ! vapor pressure (pa)
-    real(r8), intent(out) :: esdT     ! d(es)/d(T)
-    real(r8), intent(out) :: qs       ! humidity (kg/kg)
-    real(r8), intent(out) :: qsdT     ! d(qs)/d(T)
-    !
-    ! !LOCAL VARIABLES:
-    real(r8) :: T_limit
-    real(r8) :: td,vp,vp1,vp2
     ! For water vapor (temperature range 0C-100C)
     real(r8), parameter :: a0 =  6.11213476_r8
     real(r8), parameter :: a1 =  0.444007856_r8
@@ -79,7 +54,37 @@ contains
     real(r8), parameter :: d5 =  0.257180651e-08_r8
     real(r8), parameter :: d6 =  0.133268878e-10_r8
     real(r8), parameter :: d7 =  0.394116744e-13_r8
-    real(r8), parameter :: d8 =  0.498070196e-16_r8
+    real(r8), parameter :: d8 =  0.498070196e-16_r8  
+contains
+
+
+
+  !-----------------------------------------------------------------------
+  subroutine QSat (T, p, es, esdT, qs, qsdT)
+    !
+    ! !DESCRIPTION:
+    ! Computes saturation mixing ratio and the change in saturation
+    ! mixing ratio with respect to temperature.
+    ! Reference:  Polynomial approximations from:
+    !             Piotr J. Flatau, et al.,1992:  Polynomial fits to saturation
+    !             vapor pressure.  Journal of Applied Meteorology, 31, 1507-1513.
+    !
+    ! !USES:
+    use shr_kind_mod , only: r8 => shr_kind_r8
+    use shr_const_mod, only: SHR_CONST_TKFRZ
+    !
+    ! !ARGUMENTS:
+    implicit none
+    real(r8), intent(in)  :: T        ! temperature (K)
+    real(r8), intent(in)  :: p        ! surface atmospheric pressure (pa)
+    real(r8), intent(out) :: es       ! vapor pressure (pa)
+    real(r8), intent(out) :: esdT     ! d(es)/d(T)
+    real(r8), intent(out) :: qs       ! humidity (kg/kg)
+    real(r8), intent(out) :: qsdT     ! d(qs)/d(T)
+    !
+    ! !LOCAL VARIABLES:
+    real(r8) :: T_limit
+    real(r8) :: td,vp,vp1,vp2
     !-----------------------------------------------------------------------
 
     T_limit = T - SHR_CONST_TKFRZ
@@ -90,18 +95,24 @@ contains
     if (td >= 0.0_r8) then
        es   = a0 + td*(a1 + td*(a2 + td*(a3 + td*(a4 &
             + td*(a5 + td*(a6 + td*(a7 + td*a8)))))))
-       esdT = b0 + td*(b1 + td*(b2 + td*(b3 + td*(b4 &
+            
+      esdT = b0 + td*(b1 + td*(b2 + td*(b3 + td*(b4 &
             + td*(b5 + td*(b6 + td*(b7 + td*b8)))))))
+
     else
        es   = c0 + td*(c1 + td*(c2 + td*(c3 + td*(c4 &
             + td*(c5 + td*(c6 + td*(c7 + td*c8)))))))
+
        esdT = d0 + td*(d1 + td*(d2 + td*(d3 + td*(d4 &
             + td*(d5 + td*(d6 + td*(d7 + td*d8)))))))
+
     endif
 
     es    = es    * 100._r8            ! pa
+
     esdT  = esdT  * 100._r8            ! pa/K
 
+    
     vp    = 1.0_r8   / (p - 0.378_r8*es)
     vp1   = 0.622_r8 * vp
     vp2   = vp1   * vp
@@ -109,6 +120,50 @@ contains
     qs    = es    * vp1             ! kg/kg
     qsdT  = esdT  * vp2 * p         ! 1 / K
 
+
   end subroutine QSat
 
+
+  
+!-------------------------------------------------------------------------------
+  subroutine rhoSat(T, rho, rhodT)
+    ! compute the saturated vapor pressure density and its derivative against the temperature
+    ! jyt
+    use clm_varcon,    only: rwat
+    use shr_const_mod, only: SHR_CONST_TKFRZ
+
+    implicit none
+    real(r8)           , intent(in)  :: T
+    real(r8)           , intent(out) :: rho
+    real(r8), optional , intent(out) :: rhodT
+
+
+    !------------------
+
+    real(r8) :: T_limit
+    real(r8) :: td, es, esdT
+
+    T_limit = T - SHR_CONST_TKFRZ
+    if (T_limit > 100.0_r8) T_limit=100.0_r8
+    if (T_limit < -75.0_r8) T_limit=-75.0_r8
+
+    td       = T_limit
+    if (td >= 0.0_r8) then
+       es   = a0 + td*(a1 + td*(a2 + td*(a3 + td*(a4 &
+               + td*(a5 + td*(a6 + td*(a7 + td*a8)))))))
+       esdT = b0 + td*(b1 + td*(b2 + td*(b3 + td*(b4 &
+               + td*(b5 + td*(b6 + td*(b7 + td*b8)))))))
+    else
+       es   = c0 + td*(c1 + td*(c2 + td*(c3 + td*(c4 &
+               + td*(c5 + td*(c6 + td*(c7 + td*c8)))))))
+       esdT = d0 + td*(d1 + td*(d2 + td*(d3 + td*(d4 &
+               + td*(d5 + td*(d6 + td*(d7 + td*d8)))))))
+    endif
+
+    es    = es    * 100._r8            ! pa
+    rho   = es/(rwat*T)                !kg  m^-3
+
+    if(present(rhodT)) rhodT= esdT/(rwat*T)-rho/T         !kg  m^-3 K^-1
+
+  end subroutine rhoSat
 end module QSatMod

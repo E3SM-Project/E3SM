@@ -1,0 +1,59 @@
+
+
+
+FIND_PATH(Zoltan_INCLUDE_DIR 
+          zoltan.h
+          PATHS ${ZOLTAN_DIR} ${Homme_ZOLTAN_DIR}
+          PATH_SUFFIXES include
+          NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+
+INCLUDE(CheckSymbolExists)
+CHECK_SYMBOL_EXISTS(HAVE_PARMETIS "${Zoltan_INCLUDE_DIR}/Zoltan_config.h" ZOLTAN_REQUIRE_PARMETIS)
+CHECK_SYMBOL_EXISTS(HAVE_SCOTCH "${Zoltan_INCLUDE_DIR}/Zoltan_config.h" ZOLTAN_REQUIRE_SCOTCH)
+CHECK_SYMBOL_EXISTS(HAVE_PATOH "${Zoltan_INCLUDE_DIR}/Zoltan_config.h" ZOLTAN_REQUIRE_PATOH)
+
+IF (ZOLTAN_REQUIRE_PATOH)
+  #FIND_PACKAGE(Patoh REQUIRED)
+  MESSAGE(FATAL_ERROR "PaToH not supported through Zoltan")
+ENDIF ()
+
+IF (${PREFER_SHARED})
+  FIND_LIBRARY(Zoltan_LIBRARY
+               NAMES zoltan
+               HINTS ${Zoltan_INCLUDE_DIR}/../lib
+               NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+ELSE ()
+  FIND_LIBRARY(Zoltan_LIBRARY 
+               NAMES libzoltan.a zoltan
+               HINTS ${Zoltan_INCLUDE_DIR}/../lib
+               NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+ENDIF ()
+
+SET(Zoltan_LIBRARIES ${Zoltan_LIBRARY} )
+SET(Zoltan_INCLUDE_DIRS ${Zoltan_INCLUDE_DIR} )
+
+IF (ZOLTAN_REQUIRE_SCOTCH)
+  FIND_PACKAGE(Scotch REQUIRED)
+  SET(Zoltan_LIBRARIES ${Zoltan_LIBRARIES} ${Scotch_LIBRARIES} )
+  SET(Zoltan_INCLUDE_DIRS ${Zoltan_INCLUDE_DIRS} ${Scotch_INCLUDE_DIRS})
+ENDIF ()
+
+IF (ZOLTAN_REQUIRE_PARMETIS)
+  FIND_PACKAGE(Parmetis REQUIRED)
+  SET(Zoltan_LIBRARIES ${Zoltan_LIBRARIES} ${Parmetis_LIBRARIES} )
+  SET(Zoltan_INCLUDE_DIRS ${Zoltan_INCLUDE_DIRS} ${Parmetis_INCLUDE_DIRS})
+ENDIF ()
+
+IF (Zoltan_INCLUDE_DIR AND Zoltan_LIBRARY)
+  SET(Zoltan_FOUND TRUE)
+  MESSAGE(STATUS "Found Zoltan:")
+  MESSAGE(STATUS "  Libraries: ${Zoltan_LIBRARIES}")
+  MESSAGE(STATUS "  Includes:  ${Zoltan_INCLUDE_DIRS}")
+ELSE()
+  SET(Zoltan_FOUND FALSE)
+ENDIF()
+
+IF(Zoltan_FIND_REQUIRED AND NOT Zoltan_FOUND)
+  MESSAGE(STATUS "Did not find required library Zoltan.\n"
+          "Please set location of Zoltan with -DZOLTAN_DIR")
+ENDIF()

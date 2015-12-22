@@ -238,7 +238,8 @@ subroutine phys_ctl_readnl(nlfile)
       write(iulog,*)'waccm: illegal value of waccmx_opt:', waccmx_opt
       call endrun('waccm: illegal value of waccmx_opt')
    endif
-   if (.not. (shallow_scheme .eq. 'Hack' .or. shallow_scheme .eq. 'UW' .or. shallow_scheme .eq. 'CLUBB_SGS' &
+   if (.not. (shallow_scheme .eq. 'Hack' .or. shallow_scheme .eq. 'UW' .or. &
+              shallow_scheme .eq. 'CLUBB_SGS' .or. shallow_scheme == 'UNICON' &
        .or. shallow_scheme.eq.'off')) then
       write(iulog,*)'phys_setopts: illegal value of shallow_scheme:', shallow_scheme
       call endrun('phys_setopts: illegal value of shallow_scheme')
@@ -295,6 +296,7 @@ subroutine phys_ctl_readnl(nlfile)
    ! prog_modal_aero determines whether prognostic modal aerosols are present in the run.
    prog_modal_aero = (     cam_chempkg_is('trop_mam3') &
                       .or. cam_chempkg_is('trop_mam4') &
+                      .or. cam_chempkg_is('trop_mam4_resus') &
                       .or. cam_chempkg_is('trop_mam7') &
                       .or. cam_chempkg_is('super_fast_llnl_mam3') &
                       .or. cam_chempkg_is('trop_mozart_mam3') &

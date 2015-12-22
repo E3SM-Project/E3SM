@@ -786,6 +786,41 @@ Mapping method from Nitrogen deposition input file to the model resolution
     copy     = copy using the same indices
 </entry>
 
+<!-- pdepdyn streams Namelist (only used when bgc=cn/cndv)                                     -->
+<!-- ========================================================================================  -->
+
+<entry id="stream_year_first_pdep" type="integer" category="datasets"
+       group="pdepdyn_nml" valid_values="" >
+First year to loop over for Phosphorus Deposition data
+</entry>
+
+<entry id="stream_year_last_pdep" type="integer" category="datasets"
+       group="pdepdyn_nml" valid_values="" >
+Last year to loop over for Phosphorus Deposition data
+</entry>
+
+<entry id="model_year_align_pdep" type="integer" category="datasets"
+       group="pdepdyn_nml" valid_values="" >
+Simulation year that aligns with stream_year_first_pdep value
+</entry>
+
+<entry id="stream_fldfilename_pdep" type="char*256" category="datasets"
+       input_pathname="abs" group="pdepdyn_nml" valid_values="" >
+Filename of input stream data for Phosphorus Deposition
+</entry>
+
+<entry id="pdepmapalgo" type="char*256" category="datasets"
+       group="pdepdyn_nml" valid_values="bilinear,nn,nnoni,nnonj,spval,copy" >
+Mapping method from Phosphorus deposition input file to the model resolution
+    bilinear = bilinear interpolation
+    nn       = nearest neighbor
+    nnoni    = nearest neighbor on the "i" (longitude) axis
+    nnonj    = nearest neighbor on the "j" (latitude) axis
+    spval    = set to special value
+    copy     = copy using the same indices
+</entry>
+
+
 <!-- ========================================================================================  -->
 <!-- light_streams streams Namelist (when CN an CLM4_5 is active)                              -->
 <!-- ========================================================================================  -->
@@ -1159,6 +1194,14 @@ reaches melting when ice is present with no snow layers. Represents puddling, ic
 Set to alblak values (0.6, 0.4) to keep albedo constant for ice-covered lakes without snow layers.
 </entry>
 
+<!-- ========================================================================================  -->
+<!-- namelist elements associated with the betr_initializeMod                                  -->
+<!-- ========================================================================================  -->
+<entry id="bgc_method" type="char*256" category="clm_betr"
+       group="betr_inparm" valid_values="" >
+Specify what bgc module will be used within the betr framework. 
+</entry>
+ 
 <!-- ========================================================================================  -->
 <!-- namelist elements associated with the Hydrology1Mod                                       -->
 <!-- ========================================================================================  -->

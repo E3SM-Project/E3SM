@@ -180,7 +180,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpasli/$STREAM_NAME" ) {
 	print $stream_file "					  reference_time=" . '"0000-01-01_00:00:00"' . "\n";
 	print $stream_file "					  clobber_mode=" . '"truncate"' . "\n";
 	print $stream_file "					  input_interval=" . '"initial_only"' . "\n";
-	print $stream_file "					  output_interval=" . '"01-00-00_00:00:00"' . "/>\n";
+	print $stream_file "					  output_interval=" . '"00-00-00_00:00:01"' . "/>\n";
 	print $stream_file "\n";
 	print $stream_file "	<!--\n";
 	print $stream_file "	output is the main history output stream. You can add auxiliary streams to\n";

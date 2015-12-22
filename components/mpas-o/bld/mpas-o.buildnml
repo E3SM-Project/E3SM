@@ -42,14 +42,19 @@ my $decomp_prefix = '';
 my $ic_prefix = '';
 
 if ( $OCN_GRID eq 'oEC60to30' ) {
-	$grid_date .= '150729';
+	$grid_date .= '151031';
 	$grid_prefix .= 'oEC60to30';
 	$ic_prefix .= 'oEC60to30';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'mpas120' ) {
-	$grid_date .= '121116';
+	$grid_date .= '151031';
 	$grid_prefix .= 'ocean120km';
 	$ic_prefix .= 'ocean120km';
+	$decomp_prefix .= 'mpas-o.graph.info.';
+} elsif ( $OCN_GRID eq 'oRRS30to10' ) {
+	$grid_date .= '151031';
+	$grid_prefix .= 'ocean.RRS.30-10km';
+	$ic_prefix .= 'ocean.RRS.30-10km';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 }
 
@@ -231,8 +236,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME" ) {
 	print $stream_file "	<var name=" . '"indexBoundaryLayerDepth"/>' . "\n";
 	print $stream_file "	<var name=" . '"indexSurfaceLayerDepth"/>' . "\n";
 	print $stream_file "	<var name=" . '"surfaceFrictionVelocity"/>' . "\n";
-	print $stream_file "	<var name=" . '"windStressZonalDiag"/>' . "\n";
-	print $stream_file "	<var name=" . '"windStressMeridionalDiag"/>' . "\n";
 	print $stream_file "	<var name=" . '"surfaceBuoyancyForcing"/>' . "\n";
 	print $stream_file "	<var name=" . '"seaSurfacePressure"/>' . "\n";
 	print $stream_file "\n";
@@ -507,35 +510,6 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME" ) {
 	print $stream_file "stream to write a file for the fileds, or add the stream to another stream that\n";
 	print $stream_file "will already be written.  \n";
 	print $stream_file "-->\n";
-	print $stream_file "\n";
-	print $stream_file "<stream name=" . '"averages"' . "\n";
-	print $stream_file "		type=" . '"none"' . "\n";
-	print $stream_file "		filename_template=" . '"ocn.average_variables.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
-	print $stream_file "		filename_interval=" . '"01-00-00_00:00:00"' . "\n";
-	print $stream_file "		reference_time=" . '"0000-01-01_00:00:00"' . "\n";
-	print $stream_file "		clobber_mode=" . '"truncate"' . "\n";
-	print $stream_file ">\n";
-	print $stream_file "\n";
-	print $stream_file "	<stream name=" . '"mesh"/>' . "\n";
-	print $stream_file "	<var_array name=" . '"avgTracersSurfaceValue"/>' . "\n";
-	print $stream_file "	<var_array name=" . '"avgSurfaceVelocity"/>' . "\n";
-	print $stream_file "	<var_array name=" . '"avgSSHGradient"/>' . "\n";
-	print $stream_file "	<var name=" . '"nAverage"/>' . "\n";
-	print $stream_file "	<var name=" . '"avgSSH"/>' . "\n";
-	print $stream_file "	<var name=" . '"avgNormalVelocity"/>' . "\n";
-	print $stream_file "	<var name=" . '"avgVelocityZonal"/>' . "\n";
-	print $stream_file "	<var name=" . '"avgVelocityMeridional"/>' . "\n";
-	print $stream_file "	<var name=" . '"avgVertVelocityTop"/>' . "\n";
-	print $stream_file "	<var name=" . '"avgNormalTransportVelocity"/>' . "\n";
-	print $stream_file "	<var name=" . '"avgTransportVelocityZonal"/>' . "\n";
-	print $stream_file "	<var name=" . '"avgTransportVelocityMeridional"/>' . "\n";
-	print $stream_file "	<var name=" . '"avgVertTransportVelocityTop"/>' . "\n";
-	print $stream_file "	<var name=" . '"varSSH"/>' . "\n";
-	print $stream_file "	<var name=" . '"varNormalVelocity"/>' . "\n";
-	print $stream_file "	<var name=" . '"varVelocityZonal"/>' . "\n";
-	print $stream_file "	<var name=" . '"varVelocityMeridional"/>' . "\n";
-	print $stream_file "\n";
-	print $stream_file "</stream>\n";
 	print $stream_file "\n";
 	print $stream_file "<stream name=" . '"forcing"' . "\n";
 	print $stream_file "		type=" . '"none"' . "\n";

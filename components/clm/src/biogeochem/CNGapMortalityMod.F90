@@ -89,7 +89,7 @@ contains
     use clm_time_manager , only: get_days_per_year
     use clm_varcon       , only: secspday
     use pftvarcon        , only: npcropmin
-    use clm_varctl       , only: use_cndv
+    use clm_varctl       , only: use_cndv, spinup_state, spinup_mortality_factor
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -177,6 +177,10 @@ contains
          carbonflux_vars%m_deadstemc_to_litter_patch(p)           = carbonstate_vars%deadstemc_patch(p)           * m
          carbonflux_vars%m_livecrootc_to_litter_patch(p)          = carbonstate_vars%livecrootc_patch(p)          * m
          carbonflux_vars%m_deadcrootc_to_litter_patch(p)          = carbonstate_vars%deadcrootc_patch(p)          * m
+         if (spinup_state >= 1) then 
+           carbonflux_vars%m_deadstemc_to_litter_patch(p)         = carbonstate_vars%deadstemc_patch(p)  * m * spinup_mortality_factor
+           carbonflux_vars%m_deadcrootc_to_litter_patch(p)        = carbonstate_vars%deadcrootc_patch(p) * m * spinup_mortality_factor
+         end if
 
          ! storage pools
          carbonflux_vars%m_leafc_storage_to_litter_patch(p)       = carbonstate_vars%leafc_storage_patch(p)       * m
@@ -210,7 +214,12 @@ contains
          if (ivt(p) < npcropmin) then
             nitrogenflux_vars%m_retransn_to_litter_patch(p) = nitrogenstate_vars%retransn_patch(p) * m
          end if
-            
+
+         if (spinup_state >= 1) then
+           nitrogenflux_vars%m_deadstemn_to_litter_patch(p)         = nitrogenstate_vars%deadstemn_patch(p)  * m * spinup_mortality_factor
+           nitrogenflux_vars%m_deadcrootn_to_litter_patch(p)        = nitrogenstate_vars%deadcrootn_patch(p) * m * spinup_mortality_factor
+         end if
+   
          ! storage pools
          nitrogenflux_vars%m_leafn_storage_to_litter_patch(p)       = nitrogenstate_vars%leafn_storage_patch(p)       * m
          nitrogenflux_vars%m_frootn_storage_to_litter_patch(p)      = nitrogenstate_vars%frootn_storage_patch(p)      * m
@@ -241,7 +250,12 @@ contains
          if (ivt(p) < npcropmin) then
             phosphorusflux_vars%m_retransp_to_litter_patch(p) = phosphorusstate_vars%retransp_patch(p) * m
          end if
-            
+
+         if (spinup_state >= 1) then
+           phosphorusflux_vars%m_deadstemp_to_litter_patch(p)         = phosphorusstate_vars%deadstemp_patch(p)  * m * spinup_mortality_factor
+           phosphorusflux_vars%m_deadcrootp_to_litter_patch(p)        = phosphorusstate_vars%deadcrootp_patch(p) * m * spinup_mortality_factor
+         end if
+           
          ! storage pools
          phosphorusflux_vars%m_leafp_storage_to_litter_patch(p)       = phosphorusstate_vars%leafp_storage_patch(p)       * m
          phosphorusflux_vars%m_frootp_storage_to_litter_patch(p)      = phosphorusstate_vars%frootp_storage_patch(p)      * m
@@ -430,7 +444,6 @@ contains
                           (m_livestemc_to_litter(p) + m_deadstemc_to_litter(p))  * wtcol(p) * stem_prof(p,j)
                      gap_mortality_c_to_cwdc(c,j) = gap_mortality_c_to_cwdc(c,j) + &
                           (m_livecrootc_to_litter(p) + m_deadcrootc_to_litter(p)) * wtcol(p) * croot_prof(p,j)
-
                      ! storage gap mortality carbon fluxes
                      gap_mortality_c_to_litr_met_c(c,j)      = gap_mortality_c_to_litr_met_c(c,j)      + &
                           (m_leafc_storage_to_litter(p) + m_gresp_storage_to_litter(p))      * wtcol(p) * leaf_prof(p,j)

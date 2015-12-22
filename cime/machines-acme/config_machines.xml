@@ -186,6 +186,116 @@
          </mpirun>
 </machine>
 
+<machine MACH="corip1">
+    <DESC>NERSC XC30 Haswell, os is CNL, 32 pes/node, batch system is Slurm</DESC>
+    <NODENAME_REGEX>cori</NODENAME_REGEX>
+    <TESTS>acme_developer</TESTS>
+    <COMPILERS>intel,gnu,cray</COMPILERS>
+    <MPILIBS>mpt,mpi-serial</MPILIBS>
+    <CESMSCRATCHROOT>$ENV{SCRATCH}/acme_scratch</CESMSCRATCHROOT>
+    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <CCSM_BASELINE>/project/projectdirs/acme/baselines</CCSM_BASELINE>
+    <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
+    <SAVE_TIMING_DIR>/project/projectdirs/$PROJECT</SAVE_TIMING_DIR>
+    <OS>CNL</OS>
+    <BATCHQUERY>squeue</BATCHQUERY>
+    <BATCHSUBMIT>sbatch</BATCHSUBMIT>
+    <BATCHREDIRECT></BATCHREDIRECT>
+    <SUPPORTED_BY>acme</SUPPORTED_BY>
+    <GMAKE_J>8</GMAKE_J>
+    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>32</PES_PER_NODE>
+    <batch_system type="slurm" version="x.y">
+      <queues>
+        <queue walltimemax="00:06:00" jobmin="1" jobmax="16384" >regular</queue>
+        <queue walltimemax="00:04:00" jobmin="16385" jobmax="32768" >regular</queue>
+        <queue walltimemax="00:02:00" jobmin="32769" jobmax="52096" >regular</queue>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="4096" default="true">debug</queue>
+      </queues>
+      <walltimes>
+        <walltime default="true">00:30:00</walltime>
+        <walltime ccsm_estcost="1">00:30:00</walltime>
+        <walltime ccsm_estcost="3">00:30:00</walltime>
+      </walltimes>
+    </batch_system>
+    <mpirun mpilib="default">
+      <executable>srun</executable>
+      <arguments>
+	<arg name="label"> --label</arg>
+	<arg name="num_tasks" > -n {{ num_tasks }}</arg>
+	<arg name="thread_count" > -c {{ thread_count }}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
+      <init_path lang="sh">/opt/modules/default/init/sh</init_path>
+      <init_path lang="csh">/opt/modules/default/init/csh</init_path>
+      <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+	<command name="rm">PrgEnv-intel</command>
+	<command name="rm">PrgEnv-cray</command>
+	<command name="rm">PrgEnv-gnu</command>
+	<command name="rm">intel</command>
+	<command name="rm">cce</command>
+	<command name="rm">cray-parallel-netcdf</command>
+	<command name="rm">cray-parallel-hdf5</command>
+	<command name="rm">pmi</command>
+	<command name="rm">cray-libsci</command>
+	<command name="rm">cray-mpich2</command>
+	<command name="rm">cray-mpich</command>
+	<command name="rm">cray-netcdf</command>
+	<command name="rm">cray-hdf5</command>
+	<command name="rm">cray-netcdf-hdf5parallel</command>
+	<command name="rm">craype-sandybridge</command>
+	<command name="rm">craype-ivybridge</command>
+	<command name="rm">craype</command>
+      </modules>
+      <modules compiler="intel">
+	<command name="load">PrgEnv-intel</command>
+	<command name="switch">intel intel/2016.0.109</command>
+	<command name="rm">cray-libsci</command>
+      </modules>
+      <modules compiler="cray">
+	<command name="load">PrgEnv-cray</command>
+	<command name="switch">cce cce/8.4.0</command>
+      </modules>
+      <modules compiler="gnu">
+	<command name="load">PrgEnv-gnu</command>
+	<command name="switch">gcc gcc/5.1.0</command>
+      </modules>
+      <modules>
+	<command name="load">papi/5.4.1.2</command>
+	<command name="swap">craype craype/2.4.2</command>
+      </modules>
+      <modules compiler="!intel">
+	<command name="switch">cray-libsci/13.2.0</command>
+      </modules>
+      <modules>
+	<command name="load">cray-mpich/7.2.5</command>
+      </modules>
+      <modules mpilib="mpi-serial">
+	<command name="load">cray-hdf5/1.8.14</command>
+	<command name="load">cray-netcdf/4.3.3.1</command>
+      </modules>
+      <modules mpilib="!mpi-serial">
+	<command name="load">cray-netcdf-hdf5parallel/4.3.3.1</command>
+	<command name="load">cray-hdf5-parallel/1.8.14</command>
+	<command name="load">cray-parallel-netcdf/1.6.1</command>
+      </modules>
+      <modules>
+	<command name="load">cmake/3.3.2</command>
+      </modules>
+    </module_system>
+</machine>
+
+
 <machine MACH="mac">
     <DESC>Mac OS/X workstation or laptop</DESC>
     <NODENAME_REGEX></NODENAME_REGEX>
@@ -240,13 +350,13 @@
 
 <machine MACH="melvin">
     <DESC>Linux workstation for Jenkins testing</DESC>
-    <NODENAME_REGEX>melvin</NODENAME_REGEX>
+    <NODENAME_REGEX>(melvin|watson)</NODENAME_REGEX>
     <PROXY>sonproxy.sandia.gov:80</PROXY>
     <TESTS>acme_developer</TESTS>
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>openmpi,mpi-serial</MPILIBS>
-    <CESMSCRATCHROOT>/home/$USER/acme/scratch</CESMSCRATCHROOT>
+    <CESMSCRATCHROOT>$ENV{HOME}/acme/scratch</CESMSCRATCHROOT>
     <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
     <DIN_LOC_ROOT>/home/jgfouca/acme/inputdata</DIN_LOC_ROOT>
@@ -298,7 +408,7 @@
          <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
          <GMAKE_J>4</GMAKE_J>
-         <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
+         <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
 	 <PIO_BUFFER_SIZE_LIMIT>1</PIO_BUFFER_SIZE_LIMIT>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <batch_system type="slurm" version="x.y">
@@ -430,7 +540,7 @@
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
          <batch_system type="cobalt">
            <queues>
-             <queue waltimemin="5" walltimemax="59" jobmin="64" jobmax="2048" default="true">default</queue>
+             <queue walltimemin="5" walltimemax="59" jobmin="64" jobmax="2048" default="true">default</queue>
            </queues>
            <walltimes>
              <walltime default="true">59</walltime>
@@ -484,7 +594,7 @@
          <TESTS>acme_developer</TESTS>
          <COMPILERS>ibm</COMPILERS>
          <MPILIBS>ibm</MPILIBS>
-         <CESMSCRATCHROOT>/projects/$PROJECT/usr/$USER</CESMSCRATCHROOT>
+         <CESMSCRATCHROOT>/projects/$PROJECT/$USER</CESMSCRATCHROOT>
          <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
          <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
@@ -505,10 +615,10 @@
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
          <batch_system type="cobalt">
            <queues>
-             <queue waltimemin="0" walltimemax="360" jobmin="512" jobmax="4096" default="true">default</queue>
+             <queue walltimemin="0" walltimemax="360" jobmin="512" jobmax="4096" default="true">default</queue>
            </queues>
            <walltimes>
-             <walltime default="true">15</walltime>
+             <walltime default="true">30</walltime>
              <walltime ccsm_estcost="-3">60</walltime>
              <walltime ccsm_estcost="0">60</walltime>
            </walltimes>
@@ -576,6 +686,50 @@
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
 </machine>
 
+<machine MACH="constance">
+         <DESC>PNL Haswell cluster, OS is Linux, batch system is SLURM</DESC>
+         <OS>LINUX</OS>
+         <COMPILERS>pgi,intel</COMPILERS>
+         <MPILIBS>mpich</MPILIBS>
+	 <NODENAME_REGEX>constance</NODENAME_REGEX>
+         <RUNDIR>/pic/scratch/$CCSMUSER/csmruns/$CASE/run</RUNDIR>
+         <EXEROOT>/pic/scratch/$CCSMUSER/csmruns/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/pic/scratch/$USER</CESMSCRATCHROOT>
+         <DIN_LOC_ROOT>/pic/projects/climate/csmdata/</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/pic/projects/climate/csmdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>/pic/scratch/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
+         <CCSM_BASELINE>/pic/projects/climate/acme_baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>/pic/projects/climate/acme_baselines/cprnc</CCSM_CPRNC>
+         <BATCHQUERY>squeue</BATCHQUERY>
+         <BATCHSUBMIT>sbatch</BATCHSUBMIT>
+	 <BATCHREDIRECT></BATCHREDIRECT>
+         <SUPPORTED_BY>balwinder.singh -at- pnnl.gov</SUPPORTED_BY>
+         <GMAKE_J>8</GMAKE_J>
+	 <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
+	 <batch_system type="slurm" version="x.y">
+	   <queues>
+	     <queue jobmin="1" jobmax="9999" default="true">batch</queue>
+	   </queues>
+	   <walltimes>
+	     <walltime default="true">0:59:00</walltime>
+	   </walltimes>
+	 </batch_system>
+	 <mpirun mpilib="mpich">
+	   <executable>srun</executable>
+	   <arguments>
+	     <arg name="mpinone"> --mpi=none</arg>
+	     <arg name="num_tasks"> --ntasks={{ num_tasks }}</arg>
+	     <arg name="cpubind"> --cpu_bind=sockets</arg>
+	     <arg name="cpubind"> --cpu_bind=verbose</arg>
+             <arg name="killonbadexit"> --kill-on-bad-exit</arg>
+	   </arguments>
+	 </mpirun>
+	 <mpirun mpilib="mpi-serial">
+           <executable></executable>
+	 </mpirun>
+
+</machine>
 <machine MACH="oic2">
          <DESC>ORNL XK6, os is Linux, 8 pes/node, batch system is PBS</DESC>
          <NODENAME_REGEX>oic2</NODENAME_REGEX>
@@ -594,6 +748,24 @@
          <SUPPORTED_BY>dmricciuto</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
+         <batch_system type="pbs">
+            <queues>
+              <queue default="true">esd08q</queue>
+            </queues>
+            <walltimes>
+              <walltime default="true">24:00:00</walltime>
+            </walltimes>
+         </batch_system>
+         <mpirun mpilib="mpich">
+              <executable args="default">/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpirun </executable>
+	      <arguments>
+			<arg name="num_tasks"> -np {{ num_tasks }}</arg>
+			<arg name="machine_file">-hostfile $ENV{'PBS_NODEFILE'}</arg>
+	      </arguments>
+         </mpirun>
+         <mpirun mpilib = "mpi-serial">
+              <executable> </executable>
+         </mpirun>
 </machine>
 
 <machine MACH="oic5">
@@ -614,6 +786,25 @@
          <SUPPORTED_BY>dmricciuto</SUPPORTED_BY>
          <GMAKE_J>32</GMAKE_J>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+         <batch_system type="pbs">
+            <queues>
+              <queue default="true">esd13q</queue>
+              <queue walltimemax="1:00">esddbg13q</queue>
+            </queues>
+            <walltimes>
+              <walltime default="true">24:00:00</walltime>
+            </walltimes>
+         </batch_system>
+         <mpirun mpilib="mpich">
+              <executable args="default">/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpirun </executable>
+	      <arguments>
+			<arg name="num_tasks"> -np {{ num_tasks }}</arg>
+                        <arg name="machine_file">-f $ENV{'PBS_NODEFILE'}</arg>
+	      </arguments>
+         </mpirun>
+         <mpirun mpilib = "mpi-serial">
+              <executable> </executable>
+         </mpirun>
 </machine>
 
 <machine MACH="titan">
@@ -663,14 +854,14 @@
 	<COMPILERS>intel,gnu</COMPILERS>
 	<MPILIBS>openmpi,mvapich,mpi-serial</MPILIBS>
 	<OS>LINUX</OS>
-	<RUNDIR>/lustre/scratch1/turquoise/$USER/ACME/cases/$CASE/run</RUNDIR>
-	<EXEROOT>/lustre/scratch1/turquoise/$USER/ACME/cases/$CASE/bld</EXEROOT>
-	<DIN_LOC_ROOT>/lustre/scratch1/turquoise/$USER/ACME/input_data</DIN_LOC_ROOT>
-	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch1/turquoise/$USER/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-	<DOUT_S_ROOT>/lustre/scratch1/turquoise/$USER/ACME/archive/$CASE</DOUT_S_ROOT>
+	<RUNDIR>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
+	<EXEROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
+	<DIN_LOC_ROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data</DIN_LOC_ROOT>
+	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+	<DOUT_S_ROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
 	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-	<CCSM_BASELINE>/lustre/scratch1/turquoise/$USER/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
-	<CESMSCRATCHROOT>/lustre/scratch1/turquoise/$USER/ACME</CESMSCRATCHROOT>
+	<CCSM_BASELINE>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
+	<CESMSCRATCHROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME</CESMSCRATCHROOT>
 	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/mustang/cprnc/v0.40/cprnc</CCSM_CPRNC>
 	<BATCHQUERY>mshow</BATCHQUERY>
 	<BATCHSUBMIT>msub</BATCHSUBMIT>
@@ -715,14 +906,14 @@
 	<COMPILERS>intel,gnu</COMPILERS>
 	<MPILIBS>openmpi,mvapich,mpi-serial</MPILIBS>
 	<OS>LINUX</OS>
-	<RUNDIR>/lustre/scratch1/turquoise/$USER/ACME/cases/$CASE/run</RUNDIR>
-	<EXEROOT>/lustre/scratch1/turquoise/$USER/ACME/cases/$CASE/bld</EXEROOT>
-	<DIN_LOC_ROOT>/lustre/scratch1/turquoise/$USER/ACME/input_data</DIN_LOC_ROOT>
-	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch1/turquoise/$USER/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-	<DOUT_S_ROOT>/lustre/scratch1/turquoise/$USER/ACME/archive/$CASE</DOUT_S_ROOT>
+	<RUNDIR>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/run</RUNDIR>
+	<EXEROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/cases/$CASE/bld</EXEROOT>
+	<DIN_LOC_ROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data</DIN_LOC_ROOT>
+	<DIN_LOC_ROOT_CLMFORC>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+	<DOUT_S_ROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME/archive/$CASE</DOUT_S_ROOT>
 	<DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-	<CCSM_BASELINE>/lustre/scratch1/turquoise/$USER/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
-	<CESMSCRATCHROOT>/lustre/scratch1/turquoise/$USER/ACME</CESMSCRATCHROOT>
+	<CCSM_BASELINE>/lustre/scratch1/turquoise/$ENV{USER}/ACME/input_data/ccsm_baselines</CCSM_BASELINE>
+	<CESMSCRATCHROOT>/lustre/scratch1/turquoise/$ENV{USER}/ACME</CESMSCRATCHROOT>
 	<CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
 	<BATCHQUERY>mshow</BATCHQUERY>
 	<BATCHSUBMIT>msub</BATCHSUBMIT>

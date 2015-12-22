@@ -85,9 +85,18 @@
       use ice_mechred, only: kstrength, krdg_partic, krdg_redist
       use ice_dyn_evp, only: ndte, kdyn, evp_damping, yield_curve, &
           maskhalo_dyn, maskhalo_stress, splitcomm_dyn
+#ifdef MODAL_AER
+      !mgf++
+      use ice_shortwave, only: albicev, albicei, albsnowv, albsnowi, &
+                               shortwave, albedo_type, R_ice, R_pnd, &
+                               R_snw, dT_mlt_in, rsnw_melt_in, &
+                               kaer_bc_tab, waer_bc_tab, gaer_bc_tab, bcenh
+      !mgf--
+#else
       use ice_shortwave, only: albicev, albicei, albsnowv, albsnowi, &
                                shortwave, albedo_type, R_ice, R_pnd, &
                                R_snw, dT_mlt_in, rsnw_melt_in
+#endif
       use ice_atmo, only: atmbndy, calc_strair
       use ice_transport_driver, only: advection
       use ice_state, only: nt_Tsfc, nt_iage, nt_FY, nt_volpn, nt_aero, &
@@ -101,6 +110,11 @@
       use ice_meltpond, only: restart_pond
       use ice_therm_vertical, only: calc_Tsfc, heat_capacity
       use ice_restoring
+#ifdef MODAL_AER
+      !mgf++
+      use netcdf 
+      !mgf--
+#endif
 !
 ! !INPUT/OUTPUT PARAMETERS:
 !
@@ -115,6 +129,16 @@
 
 #ifdef CCSMCOUPLED
       logical :: exists
+#endif
+
+#ifdef MODAL_AER
+      !mgf++
+      integer (kind=int_kind) :: fid   ! file id
+      integer (kind=int_kind) :: & 
+           varid,           & ! netcdf id for field
+           status             ! status output from netcdf routines
+      character (len=256) :: filename_optics 
+      !mgf--
 #endif
 
       !-----------------------------------------------------------------
@@ -785,6 +809,41 @@
       call broadcast_scalar(nt_volpn, master_task)
       call broadcast_scalar(nt_aero,  master_task)
 
+#ifdef MODAL_AER
+      !mgf++
+      if (my_task == master_task) then
+!         filename_optics = '/nobackup/flanner/optprops/snicar_optics_5bnd_mam_c140303.nc'
+         filename_optics = '/pic/projects/climate/csmdata/lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc'
+         
+         status = nf90_open(filename_optics, NF90_NOWRITE, fid)
+
+         status = nf90_inq_varid(fid, 'ext_cff_mss_bc_mam_cice', varid)
+         status = nf90_get_var(fid, varid, kaer_bc_tab)
+         
+         status = nf90_inq_varid(fid, 'ss_alb_bc_mam_cice', varid)
+         status = nf90_get_var(fid, varid, waer_bc_tab)
+         
+         status = nf90_inq_varid(fid, 'asm_prm_bc_mam_cice', varid)
+         status = nf90_get_var(fid, varid, gaer_bc_tab)
+         
+         status = nf90_inq_varid(fid, 'bcint_enh_mam_cice', varid)
+         status = nf90_get_var(fid, varid, bcenh)
+         
+         status = nf90_close(fid)
+
+         write (nu_diag,*) "MGFICE ext_cff_mss_bc = ", kaer_bc_tab(1,1), kaer_bc_tab(2,1), kaer_bc_tab(1,2), kaer_bc_tab(3,1),kaer_bc_tab(3,10) 
+         write (nu_diag,*) "MGFICE ss_alb_bc = ", waer_bc_tab(1,1), waer_bc_tab(2,1), waer_bc_tab(1,2), waer_bc_tab(3,1), waer_bc_tab(3,10)
+         write (nu_diag,*) "MGFICE asm_prm_bc = ", gaer_bc_tab(1,1), gaer_bc_tab(2,1), gaer_bc_tab(1,2), gaer_bc_tab(3,1), gaer_bc_tab(3,10)
+         write (nu_diag,*) "MGFICE bcenh = ", bcenh(1,1,1), bcenh(1,2,1), bcenh(1,1,2), bcenh(2,1,1), bcenh(3,10,1), bcenh(3,1,8), bcenh(3,10,8)
+
+      endif
+
+      call broadcast_array(kaer_bc_tab, master_task)
+      call broadcast_array(waer_bc_tab, master_task)
+      call broadcast_array(gaer_bc_tab, master_task)
+      call broadcast_array(bcenh, master_task)
+      !mgf--
+#endif
       end subroutine input_data
 
 !=======================================================================

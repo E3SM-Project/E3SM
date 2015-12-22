@@ -37,16 +37,16 @@ module soilorder_varcon
   integer :: rock_land
   integer :: Ice_Glacier
 
-  real(r8), allocatable :: smax(:)
-  real(r8), allocatable :: ks_sorption(:)
-  real(r8), allocatable :: r_weather(:)
-  real(r8), allocatable :: r_adsorp(:)
-  real(r8), allocatable :: r_desorp(:)
-  real(r8), allocatable :: r_occlude(:)
-  real(r8), allocatable :: k_s1_biochem(:)
-  real(r8), allocatable :: k_s2_biochem(:)
-  real(r8), allocatable :: k_s3_biochem(:)
-  real(r8), allocatable :: k_s4_biochem(:)
+  real(r8), pointer :: smax(:)
+  real(r8), pointer :: ks_sorption(:)
+  real(r8), pointer :: r_weather(:)
+  real(r8), pointer :: r_adsorp(:)
+  real(r8), pointer :: r_desorp(:)
+  real(r8), pointer :: r_occlude(:)
+  real(r8), pointer :: k_s1_biochem(:)
+  real(r8), pointer :: k_s2_biochem(:)
+  real(r8), pointer :: k_s3_biochem(:)
+  real(r8), pointer :: k_s4_biochem(:)
 
 
 
@@ -66,11 +66,12 @@ contains
     ! Read and initialize soil order dependent constants
     !
     ! !USES:
-    use fileutils ,  only : getfil
-    use ncdio_pio ,  only : ncd_io, ncd_pio_closefile, ncd_pio_openfile,file_desc_t, &
+    use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
+    use fileutils      , only : getfil
+    use ncdio_pio      , only : ncd_io, ncd_pio_closefile, ncd_pio_openfile,file_desc_t, &
                             ncd_inqdid, ncd_inqdlen
-    use clm_varctl,  only : fsoilordercon
-    use spmdMod   ,  only : masterproc
+    use clm_varctl     , only : fsoilordercon
+    use spmdMod        , only : masterproc
 
     ! !ARGUMENTS:
     implicit none
@@ -112,16 +113,16 @@ contains
     /)
 !-----------------------------------------------------------------------
 
-    allocate( smax        (0:nsoilorder) )
-    allocate( ks_sorption (0:nsoilorder) )
-    allocate( r_weather   (0:nsoilorder) )
-    allocate( r_adsorp    (0:nsoilorder) )
-    allocate( r_desorp    (0:nsoilorder) )
-    allocate( r_occlude   (0:nsoilorder) )
-    allocate(k_s1_biochem (0:nsoilorder) )
-    allocate(k_s2_biochem (0:nsoilorder) )
-    allocate(k_s3_biochem (0:nsoilorder) )
-    allocate(k_s4_biochem (0:nsoilorder) )
+    allocate( smax        (0:nsoilorder) ); smax         (:) = nan
+    allocate( ks_sorption (0:nsoilorder) ); ks_sorption  (:) = nan
+    allocate( r_weather   (0:nsoilorder) ); r_weather    (:) = nan
+    allocate( r_adsorp    (0:nsoilorder) ); r_adsorp     (:) = nan
+    allocate( r_desorp    (0:nsoilorder) ); r_desorp     (:) = nan
+    allocate( r_occlude   (0:nsoilorder) ); r_occlude    (:) = nan
+    allocate(k_s1_biochem (0:nsoilorder) ); k_s1_biochem (:) = nan
+    allocate(k_s2_biochem (0:nsoilorder) ); k_s2_biochem (:) = nan
+    allocate(k_s3_biochem (0:nsoilorder) ); k_s3_biochem (:) = nan
+    allocate(k_s4_biochem (0:nsoilorder) ); k_s4_biochem (:) = nan
 
    ! Set specific soil order values
 

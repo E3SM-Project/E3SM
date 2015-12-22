@@ -11,7 +11,7 @@ module CNBalanceCheckMod
   use decompMod           , only : bounds_type
   use abortutils          , only : endrun
   use clm_varctl          , only : iulog, use_nitrif_denitrif, use_ed
-  use clm_time_manager    , only : get_step_size
+  use clm_time_manager    , only : get_step_size,get_nstep
   use clm_varpar          , only : crop_prog
   use CNCarbonFluxType    , only : carbonflux_type
   use CNCarbonStateType   , only : carbonstate_type
@@ -236,14 +236,22 @@ contains
             err_index = c
          end if
       end do ! end of columns loop
-
+      
       if (.not. use_ed) then
          if (err_found) then
             c = err_index
             write(iulog,*)'column cbalance error = ', col_errcb(c), c
             write(iulog,*)'Latdeg,Londeg=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
+            write(iulog,*)'input=',col_cinputs*dt
+            write(iulog,*)'output=',col_coutputs*dt
+            write(iulog,*)'er=',er(c)*dt,carbonflux_vars%hr_col(c)*dt
+            write(iulog,*)'fire=',col_fire_closs(c)*dt
+            write(iulog,*)'dwt=',dwt_closs(c)*dt
+            write(iulog,*)'product=',product_closs(c)*dt
+            write(iulog,*)'hrv=',col_hrv_xsmrpool_to_atm(c)*dt
+            write(iulog,*)'leach=',som_c_leached(c)*dt
             write(iulog,*)'begcb       = ',col_begcb(c)
-            write(iulog,*)'endcb       = ',col_endcb(c)
+            write(iulog,*)'endcb       = ',col_endcb(c),carbonstate_vars%totsomc_col(c)
             write(iulog,*)'delta store = ',col_endcb(c)-col_begcb(c)
             call endrun(msg=errMsg(__FILE__, __LINE__))
          end if
@@ -262,6 +270,7 @@ contains
     ! On the radiation time step, perform nitrogen mass conservation check
     ! for column and pft
     !
+    use tracer_varcon,  only : is_active_betr_bgc
     ! !ARGUMENTS:
     type(bounds_type)         , intent(in)    :: bounds          
     integer                   , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -322,13 +331,19 @@ contains
          ! calculate total column-level outputs
          col_noutputs(c) = denit(c) + col_fire_nloss(c) + dwt_nloss(c) + product_nloss(c)
 
-         if (.not. use_nitrif_denitrif) then
-            col_noutputs(c) = col_noutputs(c) + sminn_leached(c)
-         else
+         if(is_active_betr_bgc)then
             col_noutputs(c) = col_noutputs(c) + f_n2o_nit(c)
 
             col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
-         end if
+         else
+           if (.not. use_nitrif_denitrif) then
+            col_noutputs(c) = col_noutputs(c) + sminn_leached(c)
+           else
+            col_noutputs(c) = col_noutputs(c) + f_n2o_nit(c)
+
+            col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
+           end if
+         endif
 
          col_noutputs(c) = col_noutputs(c) - som_n_leached(c)
 
@@ -356,14 +371,28 @@ contains
 
       if (err_found) then
          c = err_index
-         write(iulog,*)'column nbalance error = ', col_errnb(c), c
-         write(iulog,*)'Latdeg,Londeg=',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
-         write(iulog,*)'begnb       = ',col_begnb(c)
-         write(iulog,*)'endnb       = ',col_endnb(c)
-         write(iulog,*)'delta store = ',col_endnb(c)-col_begnb(c)
-         write(iulog,*)'input mass  = ',col_ninputs(c)*dt
-         write(iulog,*)'output mass = ',col_noutputs(c)*dt
-         write(iulog,*)'net flux    = ',(col_ninputs(c)-col_noutputs(c))*dt
+         write(iulog,*)'column nbalance error = ', col_errnb(c), c, get_nstep()
+         write(iulog,*)'Latdeg,Londeg         = ',grc%latdeg(col%gridcell(c)),grc%londeg(col%gridcell(c))
+         write(iulog,*)'begnb                 = ',col_begnb(c)
+         write(iulog,*)'endnb                 = ',col_endnb(c)
+         write(iulog,*)'delta store           = ',col_endnb(c)-col_begnb(c)
+         write(iulog,*)'input mass            = ',col_ninputs(c)*dt
+         write(iulog,*)'output mass           = ',col_noutputs(c)*dt
+         write(iulog,*)'net flux              = ',(col_ninputs(c)-col_noutputs(c))*dt
+         write(iulog,*)'denit                 = ',denit(c)*dt
+         write(iulog,*)'n2onit                = ',f_n2o_nit(c)*dt
+         write(iulog,*)'no3 leach             = ', smin_no3_leached(c)*dt 
+         write(iulog,*)'no3 runof             = ', smin_no3_runoff(c)*dt
+         write(iulog,*)'ndep                  = ',ndep_to_sminn(c)*dt
+         write(iulog,*)'nfix                  = ', nfix_to_sminn(c)*dt
+         write(iulog,*)'nsup                  = ',supplement_to_sminn(c)*dt
+         if(crop_prog) then
+            write(iulog,*)'fertm                 = ',fert_to_sminn(c)*dt
+            write(iulog,*)'soyfx                 = ',soyfixn_to_sminn(c)*dt
+         endif
+         write(iulog,*)'fire                  = ',col_fire_nloss(c)*dt
+         write(iulog,*)'dwt                   = ',dwt_nloss(c)*dt 
+         write(iulog,*)'prod                  = ',product_nloss(c)*dt
          call endrun(msg=errMsg(__FILE__, __LINE__))
       end if
 

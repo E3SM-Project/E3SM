@@ -63,6 +63,7 @@ module physpkg
   integer ::  snow_dp_idx        = 0
   integer ::  prec_sh_idx        = 0
   integer ::  snow_sh_idx        = 0
+  integer ::  rice2_idx          = 0
   integer :: species_class(pcnst)  = -1 !BSINGH: Moved from modal_aero_data.F90 as it is being used in second call to zm deep convection scheme (convect_deep_tend_2)
 
   save
@@ -808,7 +809,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     call radheat_init(pref_mid)
 
-    call convect_shallow_init(pref_edge)
+    call convect_shallow_init(pref_edge, pbuf2d)
 
     call cldfrc_init()
     call cldfrc2m_init()
@@ -842,6 +843,10 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     snow_dp_idx  = pbuf_get_index('SNOW_DP')
     prec_sh_idx  = pbuf_get_index('PREC_SH')
     snow_sh_idx  = pbuf_get_index('SNOW_SH')
+
+    if (shallow_scheme .eq. 'UNICON') then
+        rice2_idx    = pbuf_get_index('rice2')
+    endif
 
     call phys_getopts(prog_modal_aero_out=prog_modal_aero)
 
@@ -884,7 +889,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 #if (defined BFB_CAM_SCAM_IOP )
     use cam_history,    only: outfld
 #endif
-    use comsrf,         only: fsns, fsnt, flns, sgh30, flnt, landm, fsds
+    use comsrf,         only: fsns, fsnt, flns, sgh, sgh30, flnt, landm, fsds
     use cam_abortutils,     only: endrun
 #if ( defined OFFLINE_DYN )
      use metdata,       only: get_met_srf1
@@ -987,7 +992,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 
           call tphysbc (ztodt, fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), phys_state(c),        &
                        phys_tend(c), phys_buffer_chunk,  fsds(1,c), landm(1,c),          &
-                       sgh30(1,c), cam_out(c), cam_in(c) )
+                       sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c) )
 
        end do
 
@@ -1280,6 +1285,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use clubb_intr,         only: clubb_surface
     use perf_mod
     use flux_avg,           only: flux_avg_run
+    use unicon_cam,         only: unicon_cam_org_diags
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
 
     implicit none
@@ -1597,6 +1603,23 @@ if (l_ac_energy_chk) then
 
     call pbuf_set_field(pbuf, teout_idx, state%te_cur, (/1,itim_old/),(/pcols,1/))       
 
+    if (shallow_scheme .eq. 'UNICON') then
+
+       ! ------------------------------------------------------------------------
+       ! Insert the organization-related heterogeneities computed inside the
+       ! UNICON into the tracer arrays here before performing advection.
+       ! This is necessary to prevent any modifications of organization-related
+       ! heterogeneities by non convection-advection process, such as
+       ! dry and wet deposition of aerosols, MAM, etc.
+       ! Again, note that only UNICON and advection schemes are allowed to
+       ! changes to organization at this stage, although we can include the
+       ! effects of other physical processes in future.
+       ! ------------------------------------------------------------------------
+
+       call unicon_cam_org_diags(state, pbuf)
+
+    end if
+
 
     !*** BAB's FV heating kludge *** apply the heating as temperature tendency.
     !*** BAB's FV heating kludge *** modify the temperature in the state structure
@@ -1658,7 +1681,7 @@ end subroutine tphysac
 subroutine tphysbc (ztodt,               &
        fsns,    fsnt,    flns,    flnt,    state,   &
        tend,    pbuf,     fsds,    landm,            &
-       sgh30, cam_out, cam_in )
+       sgh, sgh30, cam_out, cam_in )
     !----------------------------------------------------------------------- 
     ! 
     ! Purpose: 
@@ -1726,14 +1749,15 @@ subroutine tphysbc (ztodt,               &
     !
     ! Arguments
     !
-    real(r8), intent(in) :: ztodt                          ! 2 delta t (model time increment)
+    real(r8), intent(in) :: ztodt                            ! 2 delta t (model time increment)
     real(r8), intent(inout) :: fsns(pcols)                   ! Surface solar absorbed flux
     real(r8), intent(inout) :: fsnt(pcols)                   ! Net column abs solar flux at model top
     real(r8), intent(inout) :: flns(pcols)                   ! Srf longwave cooling (up-down) flux
     real(r8), intent(inout) :: flnt(pcols)                   ! Net outgoing lw flux at model top
     real(r8), intent(inout) :: fsds(pcols)                   ! Surface solar down flux
-    real(r8), intent(in) :: landm(pcols)                   ! land fraction ramp
-    real(r8), intent(in) :: sgh30(pcols)                   ! Std. deviation of 30 s orography for tms
+    real(r8), intent(in) :: landm(pcols)                     ! land fraction ramp
+    real(r8), intent(in) :: sgh(pcols)                       ! Std. deviation of orography
+    real(r8), intent(in) :: sgh30(pcols)                     ! Std. deviation of 30 s orography for tms
 
     type(physics_state), intent(inout) :: state
     type(physics_tend ), intent(inout) :: tend
@@ -1803,6 +1827,8 @@ subroutine tphysbc (ztodt,               &
     real(r8),pointer :: snow_dp(:)                ! snow from ZM convection
     real(r8),pointer :: prec_sh(:)                ! total precipitation from Hack convection
     real(r8),pointer :: snow_sh(:)                ! snow from Hack convection
+
+    real(r8),pointer :: rice2(:)                  ! reserved ice from UNICON [m/s]
 
     ! carma precipitation variables
     real(r8) :: prec_sed_carma(pcols)          ! total precip from cloud sedimentation (CARMA)
@@ -1913,10 +1939,13 @@ subroutine tphysbc (ztodt,               &
 
 !<songxl 2011-09-20---------------------------
 !   if(trigmem)then
+#ifdef USE_UNICON
+#else
       ifld = pbuf_get_index('TM1')
       call pbuf_get_field(pbuf, ifld, tm1, (/1,1/),(/pcols,pver/))
       ifld = pbuf_get_index('QM1')
       call pbuf_get_field(pbuf, ifld, qm1, (/1,1/),(/pcols,pver/))
+#endif
 !   endif
 !>songxl 2011-09-20---------------------------
 
@@ -2086,7 +2115,7 @@ end if
 
     call convect_shallow_tend (ztodt   , cmfmc,  cmfmc2  ,&
          dlf        , dlf2   ,  rliq   , rliq2, & 
-         state      , ptend  ,  pbuf   , sh_e_ed_ratio) 
+         state      , ptend  ,  pbuf   , sh_e_ed_ratio   , sgh, sgh30, cam_in) 
     call t_stopf ('convect_shallow_tend')
 
     call physics_update(state, ptend, ztodt, tend)
@@ -2360,6 +2389,10 @@ if (l_tracer_aero) then
        if (clim_modal_aero .and. .not. prog_modal_aero) then
           call modal_aero_calcsize_diag(state, pbuf)
           call modal_aero_wateruptake_dr(state, pbuf)
+       endif
+
+       if (do_clubb_sgs) then
+          sh_e_ed_ratio = 0.0_r8
        endif
 
        call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state, sh_e_ed_ratio,       & !Intent-ins

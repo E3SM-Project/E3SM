@@ -335,7 +335,7 @@ end function radiation_nextsw_cday
     use radiation_data, only: init_rad_data
     use phys_control,   only: phys_getopts
     use cospsimulator_intr, only: docosp, cospsimulator_intr_init
-
+    use time_manager, only: get_step_size
     integer :: nstep                       ! current timestep number
     logical :: history_amwg                ! output the variables used by the AMWG diag package
     logical :: history_vdiag               ! output the variables used by the AMWG variability diag package
@@ -343,6 +343,7 @@ end function radiation_nextsw_cday
                                            ! temperature, water vapor, cloud ice and cloud
                                            ! liquid budgets.
     integer :: history_budget_histfile_num ! output history file number for budget fields
+    integer :: dTime      ! integer timestep size
     !-----------------------------------------------------------------------
 
     call radconstants_init()

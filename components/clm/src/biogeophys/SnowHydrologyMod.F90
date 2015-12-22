@@ -45,8 +45,10 @@ module SnowHydrologyMod
   !
   ! !PUBLIC DATA MEMBERS:
   !  Aerosol species indices:
-  !  1= hydrophillic black carbon 
-  !  2= hydrophobic black carbon
+  !  1= hydrophillic (bulk model) or within-ice (modal model) black carbon 
+  !  2= hydrophobic (bulk model) or external (modal model) black carbon
+!  !  1= hydrophillic black carbon 
+!  !  2= hydrophobic black carbon
   !  3= hydrophilic organic carbon
   !  4= hydrophobic organic carbon
   !  5= dust species 1
@@ -63,6 +65,17 @@ module SnowHydrologyMod
   real(r8), public, parameter :: scvng_fct_mlt_dst3  = 0.01_r8 ! scavenging factor for dust species 3 inclusion in meltwater  [frc]
   real(r8), public, parameter :: scvng_fct_mlt_dst4  = 0.01_r8 ! scavenging factor for dust species 4 inclusion in meltwater  [frc]
   !-----------------------------------------------------------------------
+  !H. Wang ++
+  !  "Rfast" parameters used by Flanner et al (2012, ACP)
+  !real(r8), public, parameter :: scvng_fct_mlt_bcphi = 1.00_r8   ! scavenging factor for hydrophillic BC inclusion in meltwater [frc]
+  !real(r8), public, parameter :: scvng_fct_mlt_bcpho = 0.03_r8   ! scavenging factor for hydrophobic BC inclusion in meltwater [frc]
+  !real(r8), public, parameter :: scvng_fct_mlt_ocphi = 1.00_r8   ! scavenging factor for hydrophillic OC inclusion in meltwater [frc]
+  !real(r8), public, parameter :: scvng_fct_mlt_ocpho = 0.03_r8   ! scavenging factor for hydrophobic OC inclusion in meltwater [frc]
+  !real(r8), public, parameter :: scvng_fct_mlt_dst1  = 0.03_r8   ! scavenging factor for dust species 1 inclusion in meltwater [frc]
+  !real(r8), public, parameter :: scvng_fct_mlt_dst2  = 0.03_r8   ! scavenging factor for dust species 2 inclusion in meltwater [frc]
+  !real(r8), public, parameter :: scvng_fct_mlt_dst3  = 0.03_r8   ! scavenging factor for dust species 3 inclusion in meltwater [frc]
+  !real(r8), public, parameter :: scvng_fct_mlt_dst4  = 0.03_r8   ! scavenging factor for dust species 4 inclusion in meltwater [frc]
+  ! ++
 
 contains
 
@@ -88,6 +101,7 @@ contains
     use landunit_varcon   , only : istsoil
     use clm_time_manager  , only : get_step_size
     use AerosolMod        , only : AerosolFluxes
+    use clm_varctl        , only : use_vsfm
     !
     ! !ARGUMENTS:
     type(bounds_type)     , intent(in)    :: bounds            
@@ -128,6 +142,15 @@ contains
     real(r8) :: eff_porosity(bounds%begc:bounds%endc,-nlevsno+1:0) ! effective porosity = porosity - vol_ice
     real(r8) :: mss_liqice(bounds%begc:bounds%endc,-nlevsno+1:0)   ! mass of liquid+ice in a layer
     !-----------------------------------------------------------------------
+    !mgf++
+    real(r8) :: refrzsnow                   ! re-frozen snow [kg m-2]
+    real(r8) :: subsnow                     ! sublimated snow [kg m-2]
+    real(r8) :: frc_refrz                   ! fraction of layer mass that is re-frozen snow [frc]
+    real(r8) :: frc_sub                     ! fraction of layer mass that has sublimated [frc]
+    real(r8) :: frc_transfer                ! frc_refrz + frc_sub
+    real(r8) :: dm_int                      ! mass transfer [kg]
+    !mgf--
+
 
     associate(                                                 & 
          dz             => col%dz                            , & ! Input:  [real(r8) (:,:) ] layer depth (m)                        
@@ -149,6 +172,9 @@ contains
          qflx_dew_grnd  => waterflux_vars%qflx_dew_grnd_col  , & ! Input:  [real(r8) (:)   ] ground surface dew formation (mm H2O /s) [+]
          qflx_snow_melt => waterflux_vars%qflx_snow_melt_col , & ! Output: [real(r8) (:)   ] net snow melt                           
          qflx_top_soil  => waterflux_vars%qflx_top_soil_col  , & ! Output: [real(r8) (:)   ] net water input into soil from top (mm/s)
+!         qflx_snofrz_lyr => cwf%qflx_snofrz_lyr     , & ! HW+++ snow freezing rate (col,lyr) [kg m-2 s-1]
+
+         mflx_neg_snow_col_1d =>  waterflux_vars%mflx_neg_snow_col_1d , & ! Output:  [real(r8) (:)   ]  mass flux from top soil layer due to negative water content in snow layers (kg H2O /s)
 
          mss_bcphi      => aerosol_vars%mss_bcphi_col        , & ! Output: [real(r8) (:,:) ] hydrophillic BC mass in snow (col,lyr) [kg]
          mss_bcpho      => aerosol_vars%mss_bcpho_col        , & ! Output: [real(r8) (:,:) ] hydrophobic  BC mass in snow (col,lyr) [kg]
@@ -169,6 +195,8 @@ contains
 
       ! Renew the mass of ice lens (h2osoi_ice) and liquid (h2osoi_liq) in the
       ! surface snow layer resulting from sublimation (frost) / evaporation (condense)
+
+      mflx_neg_snow_col_1d(:) = 0._r8
 
       do fc = 1,num_snowc
          c = filter_snowc(fc)
@@ -201,7 +229,11 @@ contains
                wgdif=h2osoi_liq(c,j)
                if (wgdif >= 0._r8) exit
                h2osoi_liq(c,j) = 0._r8
-               h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) + wgdif
+               if (.not.(j+1 > 0 .and. use_vsfm)) then
+                  h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) + wgdif
+               else
+                  mflx_neg_snow_col_1d(c-bounds%begc+1) = wgdif/dtime
+               endif
             enddo
          end if
       end do
@@ -412,6 +444,67 @@ contains
          if (h2osno(c) <= 0) frac_sno(c) = 0.
       end do
 
+#ifdef MODAL_AER
+    !mgf++ 
+    ! 
+    ! Transfer BC and OC from the within-ice state to the external
+    ! state based on snow sublimation and re-freezing of liquid water.
+    ! Re-freezing effect is inactived by default because of
+    ! uncertainty in how this process operates.
+    do j = -nlevsno+1, 0
+       do fc = 1, num_snowc
+          c = filter_snowc(fc)
+          if (j >= snl(c)+1) then
+             !! snow that has re-frozen [kg/m2]
+             !refrzsnow = max(0._r8, (qflx_snofrz_lyr(c,j)*dtime))
+             !
+             !! fraction of layer mass that is re-frozen
+             !if ((h2osoi_liq(c,j) + h2osoi_ice(c,j)) > 0._r8) then
+             !   frc_refrz = refrzsnow / (h2osoi_liq(c,j) + h2osoi_ice(c,j))
+             !else
+             !   frc_refrz = 0._r8
+             !endif
+
+             if (j == snl(c)+1) then
+                ! snow that has sublimated [kg/m2] (top layer only)
+                subsnow = max(0._r8, (qflx_sub_snow(c)*dtime))
+
+                ! fraction of layer mass that has sublimated:
+                if ((h2osoi_liq(c,j) + h2osoi_ice(c,j)) > 0._r8) then
+                   frc_sub = subsnow / (h2osoi_liq(c,j) + h2osoi_ice(c,j))
+                else
+                   frc_sub = 0._r8
+                endif
+             else
+                ! prohibit sublimation effect to operate on
+                ! sub-surface layers:
+                frc_sub = 0._r8
+             endif
+
+             ! fraction of layer mass transformed (sublimation only)
+             !frc_transfer = frc_refrz + frc_sub
+             frc_transfer = frc_sub
+
+             ! cap the fraction at 1
+             if (frc_transfer > 1._r8) then
+                frc_transfer = 1._r8
+             endif
+
+             ! transfer proportionate mass of BC and OC:
+             dm_int         = mss_bcphi(c,j)*frc_transfer
+             mss_bcphi(c,j) = mss_bcphi(c,j) - dm_int
+             mss_bcpho(c,j) = mss_bcpho(c,j) + dm_int
+
+             dm_int         = mss_ocphi(c,j)*frc_transfer
+             mss_ocphi(c,j) = mss_ocphi(c,j) - dm_int
+             mss_ocpho(c,j) = mss_ocpho(c,j) + dm_int
+
+          end if
+       end do
+    end do
+    !mgf--
+#endif
+
     end associate 
 
    end subroutine SnowWater
@@ -590,6 +683,7 @@ contains
      use landunit_varcon  , only : istsoil, istdlak, istsoil, istwet, istice, istice_mec, istcrop
      use LakeCon          , only : lsadz
      use clm_time_manager , only : get_step_size
+     use clm_varcon       , only : denh2o     
      !
      ! !ARGUMENTS:
      type(bounds_type)      , intent(in)    :: bounds          
@@ -639,8 +733,10 @@ contains
           h2osoi_ice       => waterstate_vars%h2osoi_ice_col      , & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)                       
           h2osoi_liq       => waterstate_vars%h2osoi_liq_col      , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)                   
           snw_rds          => waterstate_vars%snw_rds_col         , & ! Output: [real(r8) (:,:) ] effective snow grain radius (col,lyr) [microns, m^-6]
+          mflx_snowlyr_col => waterflux_vars%mflx_snowlyr_col     , & ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
 
           qflx_sl_top_soil => waterflux_vars%qflx_sl_top_soil_col , & ! Output: [real(r8) (:)   ] liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
+          qflx_snow2topsoi => waterflux_vars%qflx_snow2topsoi_col , & ! Output: [real(r8) (:)   ] liquid water merged into top soil from snow
 
           snl              => col%snl                             , & ! Output: [integer  (:)   ] number of snow layers                     
           dz               => col%dz                              , & ! Output: [real(r8) (:,:) ] layer depth (m)                        
@@ -673,6 +769,8 @@ contains
 
           msn_old(c) = snl(c)
           qflx_sl_top_soil(c) = 0._r8
+          qflx_snow2topsoi(c) = 0._r8          
+          mflx_snowlyr_col(c) = 0._r8
        end do
 
        ! The following loop is NOT VECTORIZED
@@ -689,6 +787,7 @@ contains
 
                    if (j == 0) then
                       qflx_sl_top_soil(c) = (h2osoi_liq(c,j) + h2osoi_ice(c,j))/dtime
+                      mflx_snowlyr_col(c) = mflx_snowlyr_col(c) + qflx_sl_top_soil(c)
                    end if
 
                    if (j /= 0) dz(c,j+1) = dz(c,j+1) + dz(c,j)
@@ -807,6 +906,8 @@ contains
                 if (ltype(l) == istsoil .or. urbpoi(l) .or. ltype(l) == istcrop) then
                    h2osoi_liq(c,0) = 0.0_r8
                    h2osoi_liq(c,1) = h2osoi_liq(c,1) + zwliq(c)
+                   qflx_snow2topsoi(c) = zwliq(c)/dtime                   
+                   mflx_snowlyr_col(c) = mflx_snowlyr_col(c) + zwliq(c)/dtime
                 end if
                 if (ltype(l) == istwet) then             
                    h2osoi_liq(c,0) = 0.0_r8
@@ -1163,7 +1264,18 @@ contains
                 mdst2(c,2) = mdst2(c,2)+zmdst2  ! (combo)
                 mdst3(c,2) = mdst3(c,2)+zmdst3  ! (combo)
                 mdst4(c,2) = mdst4(c,2)+zmdst4  ! (combo)
-                rds(c,2) = rds(c,1) ! (combo)
+#ifdef MODAL_AER
+             !mgf++ bugfix
+             rds(c,2) = (rds(c,2)*(swliq(c,2)+swice(c,2)) + rds(c,1)*(zwliq+zwice))/(swliq(c,2)+swice(c,2)+zwliq+zwice)
+               if ((rds(c,2) < 30.) .or. (rds(c,2) > 1500.)) then
+                  write (iulog,*) "2. SNICAR ERROR: snow grain radius of",rds(c,2),rds(c,1)
+                  write (iulog,*) "swliq, swice, zwliq, zwice", swliq(c,2), swice(c,2),zwliq, zwice
+                  write (iulog,*) "layers ", msno
+               endif
+             !mgf--
+#else
+             rds(c,2) = rds(c,1) ! (combo)
+#endif
 
                 call Combo (dzsno(c,2), swliq(c,2), swice(c,2), tsno(c,2), drr, &
                      zwliq, zwice, tsno(c,1))
@@ -1268,7 +1380,18 @@ contains
                 mdst2(c,3) = mdst2(c,3)+zmdst2  ! (combo)
                 mdst3(c,3) = mdst3(c,3)+zmdst3  ! (combo)
                 mdst4(c,3) = mdst4(c,3)+zmdst4  ! (combo)
-                rds(c,3) = rds(c,2) ! (combo)
+#ifdef MODAL_AER
+             !mgf++ bugfix
+             rds(c,3) = (rds(c,3)*(swliq(c,3)+swice(c,3)) + rds(c,2)*(zwliq+zwice))/(swliq(c,3)+swice(c,3)+zwliq+zwice)
+               if ((rds(c,3) < 30.) .or. (rds(c,3) > 1500.)) then
+                  write (iulog,*) "3. SNICAR ERROR: snow grain radius of",rds(c,3),rds(c,2)
+                  write (iulog,*) "swliq, swice, zwliq, zwice", swliq(c,3), swice(c,3),zwliq, zwice
+                  write (iulog,*) "layers ", msno
+               endif
+             !mgf--
+#else
+             rds(c,3) = rds(c,2) ! (combo)
+#endif
 
                 call Combo (dzsno(c,3), swliq(c,3), swice(c,3), tsno(c,3), drr, &
                      zwliq, zwice, tsno(c,2))
@@ -1373,7 +1496,18 @@ contains
                 mdst2(c,4) = mdst2(c,4)+zmdst2  ! (combo)
                 mdst3(c,4) = mdst3(c,4)+zmdst3  ! (combo)
                 mdst4(c,4) = mdst4(c,4)+zmdst4  ! (combo)
-                rds(c,4) = rds(c,3) ! (combo)
+#ifdef MODAL_AER
+             !mgf++ bugfix
+             rds(c,4) = (rds(c,4)*(swliq(c,4)+swice(c,4)) + rds(c,3)*(zwliq+zwice))/(swliq(c,4)+swice(c,4)+zwliq+zwice)
+               if ((rds(c,4) < 30.) .or. (rds(c,4) > 1500.)) then
+                  write (iulog,*) "4. SNICAR ERROR: snow grain radius of",rds(c,4),rds(c,3)
+                  write (iulog,*) "swliq, swice, zwliq, zwice", swliq(c,4), swice(c,4),zwliq, zwice
+                  write (iulog,*) "layers ", msno
+               endif
+             !mgf--
+#else
+             rds(c,4) = rds(c,3) ! (combo)
+#endif
 
                 call Combo (dzsno(c,4), swliq(c,4), swice(c,4), tsno(c,4), drr, &
                      zwliq, zwice, tsno(c,3))
@@ -1478,7 +1612,18 @@ contains
                 mdst2(c,5) = mdst2(c,5)+zmdst2  ! (combo)
                 mdst3(c,5) = mdst3(c,5)+zmdst3  ! (combo)
                 mdst4(c,5) = mdst4(c,5)+zmdst4  ! (combo)
-                rds(c,5) = rds(c,4) ! (combo)
+#ifdef MODAL_AER
+             !mgf++ bugfix
+             rds(c,5) = (rds(c,5)*(swliq(c,5)+swice(c,5)) + rds(c,4)*(zwliq+zwice))/(swliq(c,5)+swice(c,5)+zwliq+zwice)
+               if ((rds(c,5) < 30.) .or. (rds(c,5) > 1500.)) then
+                  write (iulog,*) "5. SNICAR ERROR: snow grain radius of",rds(c,5),rds(c,4)
+                  write (iulog,*) "swliq, swice, zwliq, zwice", swliq(c,5), swice(c,5),zwliq, zwice
+                  write (iulog,*) "layers ", msno
+               endif
+             !mgf--
+#else
+             rds(c,5) = rds(c,4) ! (combo)
+#endif
 
                 call Combo (dzsno(c,5), swliq(c,5), swice(c,5), tsno(c,5), drr, &
                      zwliq, zwice, tsno(c,4))

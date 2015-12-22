@@ -198,7 +198,16 @@ contains
          decomp_cascade_ctransfer_vr      =>    carbonflux_vars%decomp_cascade_ctransfer_vr_col        , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
          decomp_k                         =>    carbonflux_vars%decomp_k_col                           , & ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec)      
          phr_vr                           =>    carbonflux_vars%phr_vr_col                             , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)                           
-         fphr                             =>    carbonflux_vars%fphr_col                                 & ! Output: [real(r8) (:,:)   ]  fraction of potential SOM + LITTER heterotrophic
+         fphr                             =>    carbonflux_vars%fphr_col                               , & ! Output: [real(r8) (:,:)   ]  fraction of potential SOM + LITTER heterotrophic
+         
+         soil_n_immob_flux                =>    nitrogenflux_vars%soil_n_immob_flux                    , &
+         soil_n_immob_flux_vr             =>    nitrogenflux_vars%soil_n_immob_flux_vr                 , &
+         soil_n_grossmin_flux             =>    nitrogenflux_vars%soil_n_grossmin_flux                 , &
+         soil_p_immob_flux                =>    phosphorusflux_vars%soil_p_immob_flux                  , &
+         soil_p_immob_flux_vr             =>    phosphorusflux_vars%soil_p_immob_flux_vr               , &
+         soil_p_grossmin_flux             =>    phosphorusflux_vars%soil_p_grossmin_flux               , &
+         actual_immob_vr                  =>    nitrogenflux_vars%actual_immob_vr_col                  , &
+         actual_immob_p_vr                =>    phosphorusflux_vars%actual_immob_p_vr_col                &
          )
 
 !!-------------------------------------------------------------------------------------------------
@@ -208,7 +217,7 @@ contains
                canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
       else
           call decomp_rate_constants_cn(bounds, num_soilc, filter_soilc, &
-               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars)
+               canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars, cnstate_vars)
       end if
 !!-------------------------------------------------------------------------------------------------
 
@@ -403,11 +412,12 @@ contains
       call CNAllocation2_ResolveNPLimit(bounds,                     &
                num_soilc, filter_soilc, num_soilp, filter_soilp,    &
                cnstate_vars,                                        &
+               carbonstate_vars, carbonflux_vars,                   &
                nitrogenstate_vars, nitrogenflux_vars,               &
                phosphorusstate_vars,phosphorusflux_vars)
       call t_stopf('CNAllocation - phase-2')
 
-
+      
       ! column loop to calculate actual immobilization and decomp rates, following
       ! resolution of plant/heterotroph  competition for mineral N
 
@@ -463,7 +473,7 @@ contains
       ! Only the immobilization steps are limited by fpi_vr (pmnf > 0)
       ! Also calculate denitrification losses as a simple proportion
       ! of mineralization flux.
-
+       
       do k = 1, ndecomp_cascade_transitions
          do j = 1,nlevdecomp
             do fc = 1,num_soilc
@@ -533,8 +543,38 @@ contains
             end do
          end do
       end do
-
-
+      
+      do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          soil_n_immob_flux(c) =0.0_r8
+          soil_p_immob_flux(c) = 0.0_r8
+          soil_n_grossmin_flux(c) = 0.0_r8
+          soil_p_grossmin_flux(c) = 0.0_r8
+          do j = 1,nlevdecomp
+              soil_n_immob_flux_vr(c,j) = 0.0_r8
+              soil_p_immob_flux_vr(c,j) = 0.0_r8
+          end do
+      end do
+      do k = 1, ndecomp_cascade_transitions
+         do j = 1,nlevdecomp
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+          	   if (pmnf_decomp_cascade(c,j,k) > 0._r8) then 
+                   soil_n_immob_flux(c) = soil_n_immob_flux(c) + pmnf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
+                   soil_n_immob_flux_vr(c,j) = soil_n_immob_flux_vr(c,j) + pmnf_decomp_cascade(c,j,k)
+               else
+                   soil_n_grossmin_flux(c) = soil_n_grossmin_flux(c) + -1.0*pmnf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
+               end if
+               if (pmpf_decomp_cascade(c,j,k) > 0._r8) then 
+                   soil_p_immob_flux(c) = soil_p_immob_flux(c) + pmpf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
+                   soil_p_immob_flux_vr(c,j) = soil_p_immob_flux_vr(c,j) + pmpf_decomp_cascade(c,j,k)
+               else
+                   soil_p_grossmin_flux(c) = soil_p_grossmin_flux(c) + -1.0*pmpf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
+               end if
+          	end do
+          end do
+       end do
+       
       if (use_lch4) then
          ! Calculate total fraction of potential HR, for methane code
          do j = 1,nlevdecomp
@@ -764,6 +804,7 @@ contains
       call t_startf('CNAllocation - phase-3')
       call CNAllocation3_PlantCNPAlloc (bounds                      , &
                 num_soilc, filter_soilc, num_soilp, filter_soilp    , &
+                canopystate_vars                                    , &
                 cnstate_vars, carbonstate_vars, carbonflux_vars     , &
                 c13_carbonflux_vars, c14_carbonflux_vars            , &
                 nitrogenstate_vars, nitrogenflux_vars               , &

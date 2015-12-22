@@ -35,7 +35,8 @@ contains
     use parallel_mod,     only: par
     use bndry_mod,     only: bndry_exchangev
     use dof_mod, only           : putUniquePoints
-    use edge_mod, only : edgevpack, edgevunpack, InitEdgeBuffer, FreeEdgeBuffer, EdgeBuffer_t
+    use edge_mod, only : edgevpack, edgevunpack, InitEdgeBuffer, FreeEdgeBuffer
+    use edgetype_mod, only : EdgeBuffer_t
     use ncdio_atm, only : infld
     use cam_abortutils,     only: endrun
     use pio, only : file_desc_t, io_desc_t, pio_double, pio_get_local_array_size, pio_freedecomp
@@ -105,23 +106,23 @@ contains
     end do
     
     ! update non-unique points:
-    call initEdgeBuffer(edge, 3)
+    call initEdgeBuffer(par, edge, elem, 3, numthreads_in=1)
     do ie=1,nelemd
        kptr=0
-       call edgeVpack(edge, SGH30dyn(:,:,ie),1,kptr,elem(ie)%desc)
+       call edgeVpack(edge, SGH30dyn(:,:,ie),1,kptr,ie)
        kptr=kptr+1
-       call edgeVpack(edge, SGHdyn(:,:,ie),1,kptr,elem(ie)%desc)
+       call edgeVpack(edge, SGHdyn(:,:,ie),1,kptr,ie)
        kptr=kptr+1
-       call edgeVpack(edge, PHISdyn(:,:,ie),1,kptr,elem(ie)%desc)
+       call edgeVpack(edge, PHISdyn(:,:,ie),1,kptr,ie)
     end do
     call bndry_exchangeV(par,edge)
     do ie=1,nelemd
        kptr=0
-       call edgeVunpack(edge, SGH30dyn(:,:,ie),1,kptr,elem(ie)%desc)
+       call edgeVunpack(edge, SGH30dyn(:,:,ie),1,kptr,ie)
        kptr=kptr+1
-       call edgeVunpack(edge, SGHdyn(:,:,ie),1,kptr,elem(ie)%desc)
+       call edgeVunpack(edge, SGHdyn(:,:,ie),1,kptr,ie)
        kptr=kptr+1
-       call edgeVunpack(edge, PHISdyn(:,:,ie),1,kptr,elem(ie)%desc)
+       call edgeVunpack(edge, PHISdyn(:,:,ie),1,kptr,ie)
     end do
     call FreeEdgeBuffer(edge)
      

@@ -174,7 +174,9 @@ subroutine nucleati(  &
       Ni_preice = ni_in*rhoair                    ! (convert from #/kg -> #/m3)
       Ni_preice = Ni_preice / max(mincld,cldn)   ! in-cloud ice number density 
 
-      if (Ni_preice > 10.0_r8) then    ! > 0.01/L = 10/m3   
+!!== KZ_BUGFIX 
+      if (Ni_preice > 10.0_r8 .and. qi > 1.e-10_r8 ) then    ! > 0.01/L = 10/m3   
+!!== KZ_BUGFIX 
          Shom = -1.5_r8   ! if Shom<1 , Shom will be recalculated in SUBROUTINE Vpreice, according to Ren & McKenzie, 2005
          lami = (gamma4*ci*ni_in/qi)**(1._r8/3._r8)
          Ri_preice = 0.5_r8/lami                  ! radius
@@ -342,7 +344,7 @@ subroutine nucleati(  &
       if(clim_modal_aero) then
          if(cam_chempkg_is('trop_mam7')) then
            na500_1  = dst1_num*0.566_r8
-         elseif(cam_chempkg_is('trop_mam3') .or. cam_chempkg_is('trop_mam4')) then !ASK Hailong about trop_mam4 
+         elseif(cam_chempkg_is('trop_mam3') .or. cam_chempkg_is('trop_mam4') .or. cam_chempkg_is('trop_mam4_resus')) then !ASK Hailong about trop_mam4 
             na500_1 = dst1_num*0.488_r8
          else
             na500_1 = dst1_num*0.488_r8 + dst2_num + dst3_num + dst4_num   ! scaled for D>0.5-1 um from 0.1-1 um

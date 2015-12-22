@@ -3,6 +3,9 @@
   <compset name="A">
     <grid name="f19_g16_rx1">
       <test name="ERS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_tiny">blues</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel" testtype="acme_tiny">edison</machine>
@@ -32,6 +35,8 @@
         <machine compiler="intel" testtype="acme_tiny">wolf</machine>
       </test>
       <test name="ERS_IOP">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -52,6 +57,8 @@
         <machine compiler="intel" testtype="acme_integration">wolf</machine>
       </test>
       <test name="ERS_IOP4c">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -72,6 +79,8 @@
         <machine compiler="intel" testtype="acme_integration">wolf</machine>
       </test>
       <test name="ERS_IOP4p">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -92,6 +101,9 @@
         <machine compiler="intel" testtype="acme_integration">wolf</machine>
       </test>
       <test name="NCK">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_tiny">blues</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="intel" testtype="acme_tiny">edison</machine>
@@ -123,6 +135,8 @@
     </grid>
     <grid name="f45_g37_rx1">
       <test name="PEA_P1_M">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -143,6 +157,7 @@
         <machine compiler="intel" testtype="acme_integration">wolf</machine>
       </test>
       <test name="PET_PT">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_integration">melvin</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
@@ -156,6 +171,8 @@
     </grid>
     <grid name="ne30_f19_g16_rx1">
       <test name="SMS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -178,6 +195,8 @@
     </grid>
     <grid name="ne30_g16_rx1">
       <test name="ERS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -198,6 +217,8 @@
         <machine compiler="intel" testtype="acme_integration">wolf</machine>
       </test>
       <test name="ERS_IOP">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -218,6 +239,8 @@
         <machine compiler="intel" testtype="acme_integration">wolf</machine>
       </test>
       <test name="ERS_IOP4c">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -238,6 +261,8 @@
         <machine compiler="intel" testtype="acme_integration">wolf</machine>
       </test>
       <test name="ERS_IOP4p">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -303,6 +328,7 @@
     </grid>
     <grid name="f45_g37">
       <test name="ERS">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_integration">melvin</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
@@ -314,6 +340,7 @@
         <machine compiler="intel" testtype="acme_integration">wolf</machine>
       </test>
       <test name="ERS_D">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_integration">melvin</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
@@ -325,6 +352,7 @@
         <machine compiler="intel" testtype="acme_integration">wolf</machine>
       </test>
       <test name="SEQ_PFC">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_integration">melvin</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
@@ -338,6 +366,7 @@
     </grid>
     <grid name="ne16_g37">
       <test name="ERS">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_integration">melvin</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
@@ -349,6 +378,7 @@
         <machine compiler="intel" testtype="acme_integration">wolf</machine>
       </test>
       <test name="ERT">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_integration">melvin</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
@@ -362,6 +392,7 @@
     </grid>
     <grid name="ne30_g16">
       <test name="ERS">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_integration">melvin</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
@@ -509,6 +540,7 @@
   <compset name="B20TRC5">
     <grid name="f19_g16">
       <test name="SMS_D">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_integration">melvin</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
@@ -716,6 +748,8 @@
   <compset name="C_MPAS_NORMAL_YEAR">
     <grid name="T62_mpas120">
       <test name="ERS_Ld5">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -740,6 +774,8 @@
   <compset name="DTEST">
     <grid name="f45_g37_rx1">
       <test name="ERS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -760,6 +796,8 @@
         <machine compiler="intel" testtype="acme_integration">wolf</machine>
       </test>
       <test name="ERS_IOP">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -784,6 +822,7 @@
   <compset name="FAMIPC5">
     <grid name="f19_f19">
       <test name="ERS">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_integration">melvin</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
@@ -795,6 +834,7 @@
         <machine compiler="intel" testtype="acme_integration">wolf</machine>
       </test>
       <test name="ERS_IOP_Ld3">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_integration">melvin</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
@@ -810,6 +850,7 @@
   <compset name="FC5">
     <grid name="ne16_g37">
       <test name="ERS_Ld3">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_integration">melvin</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
@@ -823,6 +864,7 @@
     </grid>
     <grid name="ne16_ne16">
       <test name="SMS_D_Ld3">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_integration">melvin</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
@@ -836,6 +878,7 @@
     </grid>
     <grid name="ne30_ne30">
       <test name="ERS_Ld3">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_integration">melvin</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
@@ -847,6 +890,7 @@
         <machine compiler="intel" testtype="acme_integration">wolf</machine>
       </test>
       <test name="PFS">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_integration">melvin</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
@@ -862,6 +906,75 @@
   <compset name="FC5AQUAP">
     <grid name="ne16_ne16">
       <test name="SMS">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="FC5MAM4">
+    <grid name="ne16_ne16">
+      <test name="ERS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="FC5PLMOD">
+    <grid name="ne16_ne16">
+      <test name="ERS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="FC5PM">
+    <grid name="ne16_ne16">
+      <test name="ERS">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_integration">melvin</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
@@ -877,6 +990,8 @@
   <compset name="I1850CLM45CN">
     <grid name="f09_g16">
       <test name="SMS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -899,6 +1014,8 @@
     </grid>
     <grid name="f19_f19">
       <test name="SMS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -923,6 +1040,8 @@
   <compset name="I1850CRUCLM45CN">
     <grid name="hcru_hcru">
       <test name="SMS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -947,6 +1066,8 @@
   <compset name="IGCLM45_MLI">
     <grid name="f09_g16_a">
       <test name="SMS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -971,6 +1092,8 @@
   <compset name="MPASLI_ONLY">
     <grid name="f09_g16_g">
       <test name="ERS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -995,6 +1118,8 @@
   <compset name="MPAS_LISIO_TEST">
     <grid name="T62_mpas120_gis20">
       <test name="SMS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_developer">edison</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_developer">melvin</machine>
@@ -1019,6 +1144,7 @@
   <compset name="X">
     <grid name="f19_g16">
       <test name="PET_PT">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_integration">melvin</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>
@@ -1030,6 +1156,7 @@
         <machine compiler="intel" testtype="acme_integration">wolf</machine>
       </test>
       <test name="SEQ_IOP_PFC">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
         <machine compiler="intel" testtype="acme_integration">edison</machine>
         <machine compiler="gnu" testtype="acme_integration">melvin</machine>
         <machine compiler="ibm" testtype="acme_integration">mira</machine>

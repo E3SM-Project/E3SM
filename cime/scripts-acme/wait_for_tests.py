@@ -8,7 +8,7 @@ from collections import OrderedDict
 
 TEST_STATUS_FILENAME      = "TestStatus"
 TEST_PENDING_STATUS       = "PEND"
-TEST_PASSED_STATUS        = "PASS"
+TEST_PASS_STATUS          = "PASS"
 TEST_FAIL_STATUS          = "FAIL"
 TEST_DIFF_STATUS          = "DIFF"
 NAMELIST_FAIL_STATUS      = "NLFAIL"
@@ -150,7 +150,7 @@ NightlyStartTime: %s UTC
 
     for test_name in sorted(results):
         test_path, test_status = results[test_name]
-        test_passed = test_status == TEST_PASSED_STATUS
+        test_passed = test_status == TEST_PASS_STATUS
         test_norm_path = test_path if os.path.isdir(test_path) else os.path.dirname(test_path)
 
         full_test_elem = xmlet.SubElement(testing_elem, "Test")
@@ -213,21 +213,22 @@ def reduce_stati(stati, check_throughput=False, check_memory=False, ignore_namel
     is given to unfinished stati since we don't want to stop waiting for a test
     that hasn't finished. Namelist diffs are given the lowest precedence.
     """
-    rv = TEST_PASSED_STATUS
+    rv = TEST_PASS_STATUS
     for phase, status in stati.iteritems():
         if (status == TEST_PENDING_STATUS):
             return status
 
-        elif (status != TEST_PASSED_STATUS):
+        elif (status != TEST_PASS_STATUS):
             if ( (not check_throughput and THROUGHPUT_TEST_STR in phase) or
                  (not check_memory and MEMORY_TEST_STR in phase) or
                  (ignore_namelists and phase == NAMELIST_PHASE) ):
                 continue
 
-            if (status == NAMELIST_FAIL_STATUS and rv == TEST_PASSED_STATUS):
-                rv = NAMELIST_FAIL_STATUS
+            if (status == NAMELIST_FAIL_STATUS):
+                if (rv == TEST_PASS_STATUS):
+                    rv = NAMELIST_FAIL_STATUS
 
-            elif (rv in [NAMELIST_FAIL_STATUS, TEST_PASSED_STATUS] and phase == HIST_COMPARE_PHASE):
+            elif (rv in [NAMELIST_FAIL_STATUS, TEST_PASS_STATUS] and phase == HIST_COMPARE_PHASE):
                 rv = TEST_DIFF_STATUS
 
             else:
@@ -251,7 +252,8 @@ def parse_test_status(file_contents):
             if (test_name is None):
                 test_name = curr_test_name
             if (phase in rv):
-                rv[phase] = reduce_stati({phase : status, phase : rv[phase]})
+                # Phase names don't matter here, just need something unique
+                rv[phase] = reduce_stati({"%s_" % phase : status, phase : rv[phase]})
             else:
                 rv[phase] = status
         else:
@@ -285,6 +287,8 @@ def interpret_status(file_contents, check_throughput=False, check_memory=False, 
     ('testname', 'NLFAIL')
     >>> interpret_status('PASS testname RUN\nNLFAIL testname nlcomp', ignore_namelists=True)
     ('testname', 'PASS')
+    >>> interpret_status('PASS testname compare\nNLFAIL testname nlcomp\nFAIL testname compare')
+    ('testname', 'DIFF')
     """
     statuses, test_name = parse_test_status(file_contents)
     if (RUN_PHASE not in statuses.keys()):
@@ -382,7 +386,7 @@ def wait_for_tests(test_paths,
         test_path, test_status = test_data
         print "Test '%s' finished with status '%s'" % (test_name, test_status)
         verbose_print("    Path: %s" % test_path)
-        all_pass &= test_status == TEST_PASSED_STATUS
+        all_pass &= test_status == TEST_PASS_STATUS
 
     if (cdash_build_name):
         create_cdash_xml(test_results, cdash_build_name, cdash_project, cdash_build_group)

@@ -11,6 +11,8 @@ module pftvarcon
   use abortutils  , only : endrun
   use clm_varpar  , only : mxpft, numrad, ivis, inir
   use clm_varctl  , only : iulog, use_cndv, use_vertsoilc
+  use clm_varpar  , only : nlevdecomp, nsoilorder
+  use clm_varctl  , only : nu_com
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -175,6 +177,38 @@ module pftvarcon
   real(r8), parameter :: allom1s = 250.0_r8  !modified for shrubs by
   real(r8), parameter :: allom2s =   8.0_r8  !X.D.Z
 
+  ! Q. Zhu add pft dependent parameters for phosphorus for nutrient competition
+  real(r8), allocatable :: VMAX_PLANT_NH4(:)   ! VMAX for plant NH4 uptake
+  real(r8), allocatable :: VMAX_PLANT_NO3(:)   ! VMAX for plant NO3 uptake
+  real(r8), allocatable :: VMAX_PLANT_P(:)     ! VMAX for plant P uptake
+  real(r8), allocatable :: VMAX_MINSURF_P_vr(:,:)! VMAX for P adsorption -> move to soilorder_varcon
+  real(r8), allocatable :: KM_PLANT_NH4(:)     ! KM for plant NH4 uptake
+  real(r8), allocatable :: KM_PLANT_NO3(:)     ! KM for plant NO3 uptake
+  real(r8), allocatable :: KM_PLANT_P(:)       ! KM for plant P uptake
+  real(r8), allocatable :: KM_MINSURF_P_vr(:,:)! KM for P adsorption -> move to soilorder_varcon
+  real(r8)              :: KM_DECOMP_NH4       ! KM for microbial decomposer NH4 uptake
+  real(r8)              :: KM_DECOMP_NO3       ! KM for microbial decomposer NO3 uptake
+  real(r8)              :: KM_DECOMP_P         ! KM for microbial decomposer P uptake
+  real(r8)              :: KM_NIT              ! KM for nitrifier NH4 uptake
+  real(r8)              :: KM_DEN              ! KM for denitrifier NO3 uptake
+  real(r8), allocatable :: decompmicc_patch_vr(:,:) ! microbial decomposer biomass gC/m3
+  real(r8)              :: VMAX_NFIX           ! VMAX of symbiotic N2 fixation
+  real(r8)              :: KM_NFIX             ! KM of symbiotic N2 fixation
+  real(r8), allocatable :: VMAX_PTASE_vr(:)    ! VMAX of biochemical P production
+  real(r8)              :: KM_PTASE            ! KM of biochemical P production
+  real(r8)              :: lamda_ptase         ! critical value that incur biochemical production
+  real(r8), allocatable :: i_vc(:)             ! intercept of photosynthesis vcmax ~ leaf N content regression model
+  real(r8), allocatable :: s_vc(:)             ! slope of photosynthesis vcmax ~ leaf N content regression model
+  ! new stoichiometry
+  real(r8), allocatable :: leafcn_obs(:)       !leaf C:N [gC/gN]
+  real(r8), allocatable :: frootcn_obs(:)      !fine root C:N (gC/gN)
+  real(r8), allocatable :: livewdcn_obs(:)     !live wood (phloem and ray parenchyma) C:N (gC/gN)
+  real(r8), allocatable :: deadwdcn_obs(:)     !dead wood (xylem and heartwood) C:N (gC/gN)
+  real(r8), allocatable :: leafcp_obs(:)       !leaf C:P [gC/gP]
+  real(r8), allocatable :: frootcp_obs(:)      !fine root C:P (gC/gP)
+  real(r8), allocatable :: livewdcp_obs(:)     !live wood (phloem and ray parenchyma) C:P (gC/gP)
+  real(r8), allocatable :: deadwdcp_obs(:)     !dead wood (xylem and heartwood) C:P (gC/gP)
+  
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: pftconrd ! Read and initialize vegetation (PFT) constants
@@ -365,6 +399,29 @@ contains
     allocate( pftpar30      (0:mxpft) )   
     allocate( pftpar31      (0:mxpft) )   
 
+    allocate( VMAX_PLANT_NH4(0:mxpft) )
+    allocate( VMAX_PLANT_NO3(0:mxpft) )
+    allocate( VMAX_PLANT_P(0:mxpft) )
+    allocate( VMAX_MINSURF_P_vr(1:nlevdecomp,0:nsoilorder))
+    allocate( KM_PLANT_NH4(0:mxpft) ) 
+    allocate( KM_PLANT_NO3(0:mxpft) )
+    allocate( KM_PLANT_P(0:mxpft) )
+    allocate( KM_MINSURF_P_vr(1:nlevdecomp,0:nsoilorder))
+    allocate( decompmicc_patch_vr (1:nlevdecomp,0:mxpft))
+    allocate( VMAX_PTASE_vr(1:nlevdecomp))
+    allocate( i_vc               (0:mxpft) ) 
+    allocate( s_vc               (0:mxpft) ) 
+    ! new stoichiometry
+    allocate( leafcn_obs         (0:mxpft) )   
+    allocate( frootcn_obs        (0:mxpft) )   
+    allocate( livewdcn_obs       (0:mxpft) )
+    allocate( deadwdcn_obs       (0:mxpft) )      
+    allocate( leafcp_obs         (0:mxpft) )   
+    allocate( frootcp_obs        (0:mxpft) )   
+    allocate( livewdcp_obs       (0:mxpft) )
+    allocate( deadwdcp_obs       (0:mxpft) ) 
+
+  
     ! Set specific vegetation type values
 
     if (masterproc) then
@@ -607,6 +664,68 @@ contains
     call ncd_io('max_SH_planting_date',mxSHplantdate, 'read', ncid, readvar=readv)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
 
+    if (nu_com .ne. 'RD') then
+        call ncd_io('VMAX_PLANT_NH4',VMAX_PLANT_NH4, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft VMAX_PLANT_NH4'//errMsg(__FILE__, __LINE__))
+        call ncd_io('VMAX_PLANT_NO3',VMAX_PLANT_NO3, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft VMAX_PLANT_NO3'//errMsg(__FILE__, __LINE__))
+        call ncd_io('VMAX_PLANT_P',VMAX_PLANT_P, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft VMAX_PLANT_P'//errMsg(__FILE__, __LINE__))
+        call ncd_io('VMAX_MINSURF_P_vr',VMAX_MINSURF_P_vr, 'read', ncid, readvar=readv)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in soil order VMAX_MINSURF_P_vr'//errMsg(__FILE__, __LINE__))
+        call ncd_io('KM_PLANT_NH4',KM_PLANT_NH4, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft KM_PLANT_NH4'//errMsg(__FILE__, __LINE__))
+        call ncd_io('KM_PLANT_NO3',KM_PLANT_NO3, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft KM_PLANT_NO3'//errMsg(__FILE__, __LINE__))
+        call ncd_io('KM_PLANT_P',KM_PLANT_P, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft KM_PLANT_P'//errMsg(__FILE__, __LINE__))
+        call ncd_io('KM_MINSURF_P_vr',KM_MINSURF_P_vr, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in soil order KM_MINSURF_P_vr'//errMsg(__FILE__, __LINE__))
+        call ncd_io('KM_DECOMP_NH4',KM_DECOMP_NH4, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_DECOMP_NH4'//errMsg(__FILE__, __LINE__))
+        call ncd_io('KM_DECOMP_NO3',KM_DECOMP_NO3, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_DECOMP_NO3'//errMsg(__FILE__, __LINE__))
+        call ncd_io('KM_DECOMP_P',KM_DECOMP_P, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_DECOMP_P'//errMsg(__FILE__, __LINE__))
+        call ncd_io('KM_NIT',KM_NIT, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_NIT'//errMsg(__FILE__, __LINE__))
+        call ncd_io('KM_DEN',KM_DEN, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_DEN'//errMsg(__FILE__, __LINE__))
+        call ncd_io('decompmicc_patch_vr',decompmicc_patch_vr, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft decompmicc_patch_vr'//errMsg(__FILE__, __LINE__))
+        call ncd_io('VMAX_NFIX',VMAX_NFIX, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in VMAX_NFIX'//errMsg(__FILE__, __LINE__))
+        call ncd_io('KM_NFIX',KM_NFIX, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_NFIX'//errMsg(__FILE__, __LINE__))
+        call ncd_io('VMAX_PTASE_vr',VMAX_PTASE_vr, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in VMAX_PTASE_vr'//errMsg(__FILE__, __LINE__))
+        call ncd_io('KM_PTASE',KM_PTASE, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_PTASE'//errMsg(__FILE__, __LINE__))
+        call ncd_io('lamda_ptase',lamda_ptase, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in lamda_ptase'//errMsg(__FILE__, __LINE__))
+        call ncd_io('i_vc',i_vc, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in i_vc'//errMsg(__FILE__, __LINE__))
+        call ncd_io('s_vc',s_vc, 'read', ncid, readvar=readv)  
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in s_vc'//errMsg(__FILE__, __LINE__))
+        ! new stoichiometry
+        call ncd_io('leafcn_obs',leafcn_obs, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+        call ncd_io('frootcn_obs',frootcn_obs, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+        call ncd_io('livewdcn_obs',livewdcn_obs, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+        call ncd_io('deadwdcn_obs',deadwdcn_obs, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+        call ncd_io('leafcp_obs',leafcp_obs, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+        call ncd_io('frootcp_obs',frootcp_obs, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+        call ncd_io('livewdcp_obs',livewdcp_obs, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+        call ncd_io('deadwdcp_obs',deadwdcp_obs, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+    end if
+    
     !
     ! ED variables
     !

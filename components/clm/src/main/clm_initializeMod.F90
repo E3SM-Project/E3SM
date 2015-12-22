@@ -11,10 +11,11 @@ module clm_initializeMod
   use abortutils       , only : endrun
   use clm_varctl       , only : nsrest, nsrStartup, nsrContinue, nsrBranch
   use clm_varctl       , only : create_glacier_mec_landunit, iulog
-  use clm_varctl       , only : use_lch4, use_cn, use_cndv, use_voc, use_c13, use_c14, use_ed
+  use clm_varctl       , only : use_lch4, use_cn, use_cndv, use_voc, use_c13, use_c14, use_ed, use_betr  
   use clm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
   use perf_mod         , only : t_startf, t_stopf
-  use readParamsMod    , only : readParameters
+  !use readParamsMod    , only : readParameters
+  use readParamsMod    , only : readSharedParameters, readPrivateParameters
   use ncdio_pio        , only : file_desc_t
   ! 
   !-----------------------------------------
@@ -70,8 +71,8 @@ module clm_initializeMod
   use EDBioType              , only : EDbio_type         ! ED type used to interact with CLM variables
   use EDVecPatchType         , only : EDpft                   
   use EDVecCohortType        , only : coh                ! unique to ED, used for domain decomp
-  ! bgc interface
   use clm_bgc_interface_data , only : clm_bgc_interface_data_type
+  use ChemStateType          , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh
   !
   implicit none
   save
@@ -118,11 +119,10 @@ module clm_initializeMod
   type(glc_diagnostics_type)  :: glc_diagnostics_vars
   class(soil_water_retention_curve_type), allocatable :: soil_water_retention_curve
   type(EDbio_type)            :: EDbio_vars
-
   type(phosphorusstate_type)    :: phosphorusstate_vars
   type(phosphorusflux_type)     :: phosphorusflux_vars
-  !! bgc interface:
   type(clm_bgc_interface_data_type) :: clm_bgc_data
+  type(chemstate_type)        :: chemstate_vars  
   !
   public :: initialize1  ! Phase one initialization
   public :: initialize2  ! Phase two initialization
@@ -370,7 +370,7 @@ contains
     use shr_orb_mod           , only : shr_orb_decl
     use shr_scam_mod          , only : shr_scam_getCloseLatLon
     use seq_drydep_mod        , only : n_drydep, drydep_method, DD_XLND
-    use clm_varpar            , only : nlevsno, numpft, crop_prog
+    use clm_varpar            , only : nlevsno, numpft, crop_prog, nlevsoi    
     use clm_varcon            , only : h2osno_max, bdsno, c13ratio, c14ratio, spval
     use landunit_varcon       , only : istice, istice_mec, istsoil
     use clm_varctl            , only : finidat, finidat_interp_source, finidat_interp_dest, fsurdat
@@ -395,7 +395,9 @@ contains
     use restFileMod           , only : restFile_read, restFile_write 
     use accumulMod            , only : print_accum_fields 
     use ndepStreamMod         , only : ndep_init, ndep_interp
-    use CNEcosystemDynMod     , only : CNEcosystemDynInit 
+    use CNEcosystemDynMod     , only : CNEcosystemDynInit
+    use CNEcosystemDynBetrMod , only : CNEcosystemDynBetrInit    
+    use pdepStreamMod         , only : pdep_init, pdep_interp
     use CNDecompCascadeBGCMod , only : init_decompcascade_bgc
     use CNDecompCascadeCNMod  , only : init_decompcascade_cn
     use CNDecompCascadeContype, only : init_decomp_cascade_constants
@@ -412,9 +414,12 @@ contains
     use glc2lndMod            , only : glc2lnd_type
     use lnd2glcMod            , only : lnd2glc_type 
     use SoilWaterRetentionCurveFactoryMod   , only : create_soil_water_retention_curve
-    ! bgc interface & pflotran:
     use clm_varctl                          , only : use_bgc_interface, use_pflotran
     use clm_pflotran_interfaceMod           , only : clm_pf_interface_init !!, clm_pf_set_restart_stamp
+    use betr_initializeMod    , only : betr_initialize
+    use betr_initializeMod    , only : betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars
+    use betr_initializeMod    , only : bgc_reaction
+    use tracer_varcon         , only : is_active_betr_bgc    
     !
     ! !ARGUMENTS    
     implicit none
@@ -463,11 +468,10 @@ contains
     nclumps = get_proc_clumps()
 
     ! ------------------------------------------------------------------------
-    ! Read in parameters files
+    ! Read in shared parameters files
     ! ------------------------------------------------------------------------
 
-    call readParameters()
-
+    call readSharedParameters()
     ! ------------------------------------------------------------------------
     ! Initialize time manager
     ! ------------------------------------------------------------------------
@@ -642,8 +646,10 @@ contains
          soilstate_vars%watsat_col(begc:endc, 1:), &
          temperature_vars%t_soisno_col(begc:endc, -nlevsno+1:) )
 
+    
     call waterflux_vars%init(bounds_proc)
 
+    call chemstate_vars%Init(bounds_proc)    
     ! WJS (6-24-14): Without the following write statement, the assertion in
     ! energyflux_vars%init fails with pgi 13.9 on yellowstone. So for now, I'm leaving
     ! this write statement in place as a workaround for this problem.
@@ -675,6 +681,16 @@ contains
     allocate(soil_water_retention_curve, &
          source=create_soil_water_retention_curve())
 
+
+    ! --------------------------------------------------------------
+    ! Initialise the BeTR 
+    ! --------------------------------------------------------------
+
+    if(use_betr)then
+      !state variables will be initialized inside betr_initialize
+      call betr_initialize(bounds_proc, 1, nlevsoi, waterstate_vars)
+    endif
+    
     call SnowOptics_init( ) ! SNICAR optical parameters:
 
     call SnowAge_init( )    ! SNICAR aging   parameters:
@@ -689,16 +705,26 @@ contains
        call vocemis_vars%Init(bounds_proc)
     end if
 
-    if (use_cn) then
-
+    ! ------------------------------------------------------------------------
+    ! Read in private parameters files, this should be preferred for mulitphysics
+    ! implementation, jinyun Tang, Feb. 11, 2015
+    ! ------------------------------------------------------------------------
+    if(use_cn) then
        call init_decomp_cascade_constants()
-       if (use_century_decomp) then
-          ! Note that init_decompcascade_bgc needs cnstate_vars to be initialized
-          call init_decompcascade_bgc(bounds_proc, cnstate_vars, soilstate_vars)
-       else 
-          ! Note that init_decompcascade_cn needs cnstate_vars to be initialized
-          call init_decompcascade_cn(bounds_proc, cnstate_vars)
-       end if
+    endif
+    !read bgc implementation specific parameters when needed
+    call readPrivateParameters()
+    
+    if (use_cn) then
+       if (.not. is_active_betr_bgc)then
+          if (use_century_decomp) then
+           ! Note that init_decompcascade_bgc needs cnstate_vars to be initialized
+             call init_decompcascade_bgc(bounds_proc, cnstate_vars, soilstate_vars)
+          else 
+           ! Note that init_decompcascade_cn needs cnstate_vars to be initialized
+             call init_decompcascade_cn(bounds_proc, cnstate_vars)
+          end if
+       endif
 
        ! Note - always initialize the memory for the c13_carbonstate_vars and
        ! c14_carbonstate_vars data structure so that they can be used in 
@@ -729,6 +755,8 @@ contains
        call nitrogenstate_vars%Init(bounds_proc,                      &
             carbonstate_vars%leafc_patch(begp:endp),                  &
             carbonstate_vars%leafc_storage_patch(begp:endp),          &
+            carbonstate_vars%frootc_patch(begp:endp),                 &
+            carbonstate_vars%frootc_storage_patch(begp:endp),         &
             carbonstate_vars%deadstemc_patch(begp:endp),              &
             carbonstate_vars%decomp_cpools_vr_col(begc:endc, 1:, 1:), &
             carbonstate_vars%decomp_cpools_col(begc:endc, 1:),        &
@@ -740,6 +768,8 @@ contains
        call phosphorusstate_vars%Init(bounds_proc,                    &
             carbonstate_vars%leafc_patch(begp:endp),                  &
             carbonstate_vars%leafc_storage_patch(begp:endp),          &
+            carbonstate_vars%frootc_patch(begp:endp),                 &
+            carbonstate_vars%frootc_storage_patch(begp:endp),         &
             carbonstate_vars%deadstemc_patch(begp:endp),              &
             carbonstate_vars%decomp_cpools_vr_col(begc:endc, 1:, 1:), &
             carbonstate_vars%decomp_cpools_col(begc:endc, 1:),        &
@@ -807,7 +837,11 @@ contains
     ! ------------------------------------------------------------------------
 
     if (use_cn) then
-       call CNEcosystemDynInit(bounds_proc)
+       if(is_active_betr_bgc)then
+          call CNEcosystemDynBetrInit(bounds_proc)         
+       else
+          call CNEcosystemDynInit(bounds_proc)
+       endif
     else
        call SatellitePhenologyInit(bounds_proc)
     end if
@@ -856,9 +890,10 @@ contains
                carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
                ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
                nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-               soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-               waterflux_vars, waterstate_vars, EDbio_vars,&
-               phosphorusstate_vars,phosphorusflux_vars )
+               soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
+               waterflux_vars, waterstate_vars, EDbio_vars,                                   &
+               phosphorusstate_vars,phosphorusflux_vars,                                      &
+               betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars )
        end if
 
     else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
@@ -870,12 +905,17 @@ contains
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
             ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-            waterflux_vars, waterstate_vars, EDbio_vars,&
-            phosphorusstate_vars,phosphorusflux_vars )
+            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
+            waterflux_vars, waterstate_vars, EDbio_vars,                                   &
+            phosphorusstate_vars,phosphorusflux_vars,                                      &
+            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
     end if
-
+       
+    if (use_betr)then
+       call bgc_reaction%init_betr_alm_bgc_coupler(bounds_proc, &
+            carbonstate_vars, nitrogenstate_vars, betrtracer_vars, tracerstate_vars)
+    endif
     ! ------------------------------------------------------------------------
     ! Initialize filters and weights
     ! ------------------------------------------------------------------------
@@ -910,9 +950,10 @@ contains
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
             ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-            waterflux_vars, waterstate_vars, EDbio_vars,&
-            phosphorusstate_vars,phosphorusflux_vars )
+            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
+            waterflux_vars, waterstate_vars, EDbio_vars,                                   &
+            phosphorusstate_vars,phosphorusflux_vars,                                      &
+           betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
        ! Interpolate finidat onto new template file
        call getfil( finidat_interp_source, fnamer,  0 )
@@ -924,9 +965,10 @@ contains
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
             ch4_vars, dgvs_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
             nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,   &
-            waterflux_vars, waterstate_vars, EDbio_vars,&
-            phosphorusstate_vars,phosphorusflux_vars )
+            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
+            waterflux_vars, waterstate_vars, EDbio_vars,                                   &
+            phosphorusstate_vars,phosphorusflux_vars,                                      &
+            betrtracer_vars, tracerstate_vars, tracerflux_vars, tracercoeff_vars)
 
        ! Reset finidat to now be finidat_interp_dest 
        ! (to be compatible with routines still using finidat)
@@ -952,6 +994,18 @@ contains
        call ndep_interp(bounds_proc, atm2lnd_vars)
        call t_stopf('init_ndep')
     end if
+    
+    ! ------------------------------------------------------------------------
+    ! Initialize phosphorus deposition
+    ! ------------------------------------------------------------------------
+
+    if (use_cn) then
+       call t_startf('init_pdep')
+       call pdep_init(bounds_proc)
+       call pdep_interp(bounds_proc, atm2lnd_vars)
+       call t_stopf('init_pdep')
+    end if
+ 
 
     ! ------------------------------------------------------------------------
     ! Initialize active history fields. 
@@ -1094,5 +1148,231 @@ contains
     call t_stopf('clm_init2')
 
   end subroutine initialize2
+
+  !-----------------------------------------------------------------------
+  subroutine initialize3( )
+    !
+    ! !DESCRIPTION:
+    ! CLM initialization - third phase
+    !
+    ! !USES:
+    use spmdMod                , only : mpicom
+    use clm_varctl             , only : use_vsfm
+    use filterMod              , only : filter
+    use decompMod              , only : get_proc_clumps
+    use clm_varpar             , only : nlevgrnd
+    use clm_varctl             , only : finidat
+    use shr_infnan_mod         , only : shr_infnan_isnan
+    use abortutils             , only : endrun
+    use SoilWaterMovementMod   , only : init_vsfm_condition_ids
+#ifdef USE_PETSC_LIB
+    use MultiPhysicsProbVSFM     , only : vsfm_mpp
+    use MultiPhysicsProbConstants, only : VAR_MASS
+    use MultiPhysicsProbConstants, only : VAR_SOIL_MATRIX_POT
+    use MultiPhysicsProbConstants, only : VAR_PRESSURE
+    use MultiPhysicsProbConstants, only : AUXVAR_INTERNAL
+#endif
+    !
+    ! !ARGUMENTS
+    implicit none
+    !
+#ifdef USE_PETSC_LIB
+#include "finclude/petscsys.h"
+#endif
+    !
+    ! !LOCAL VARIABLES:
+    integer               :: nclumps               ! number of clumps on this processor
+    integer               :: nc                    ! clump index
+    integer               :: c,fc,j                ! do loop indices
+    type(bounds_type)     :: bounds_proc
+    real(r8)              :: z_up, z_dn            ! [m]
+
+    real(r8), pointer     :: zi(:,:)               ! interface level below a "z" level (m)
+    real(r8), pointer     :: h2osoi_liq(:,:)       ! liquid water (kg/m2)
+    real(r8), pointer     :: h2osoi_ice(:,:)       ! ice water (kg/m2)
+    real(r8), pointer     :: smp_l(:,:)            ! soil matrix potential [mm]
+    real(r8), pointer     :: zwt(:)                ! water table depth (m)
+    real(r8), pointer     :: vsfm_mass_col_1d(:)   ! liquid mass per unit area from VSFM [kg H2O/m^2]
+    real(r8), pointer     :: vsfm_smpl_col_1d(:)   ! 1D soil matrix potential liquid from VSFM [m]
+    real(r8), pointer     :: mflx_snowlyr_col_1d(:)! mass flux to top soil layer due to disappearance of snow (kg H2O /s)
+    real(r8), pointer     :: mflx_snowlyr_col(:)   ! mass flux to top soil layer due to disappearance of snow (kg H2O /s)
+    real(r8), pointer     :: soilp_col(:,:)        ! soil liquid pressure [Pa]
+    real(r8), pointer     :: vsfm_soilp_col_1d(:)  ! 1D soil liquid pressure for VSFM [Pa]
+    logical               :: restart_vsfm          ! does VSFM need to be restarted
+#ifdef USE_PETSC_LIB
+    PetscInt              :: jwt                   ! index of first unsaturated soil layer
+    PetscInt              :: idx                   ! 1D index for (c,j)
+    PetscInt              :: soe_auxvar_id         ! Index of system-of-equation's (SoE's) auxvar
+    PetscErrorCode        :: ierr                  ! get error code from PETSc
+#endif
+    character(len=32)     :: subname = 'initialize3'
+    !----------------------------------------------------------------------
+
+    zi                   =>    col%zi                             ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
+
+    h2osoi_liq           =>    waterstate_vars%h2osoi_liq_col     ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)
+    h2osoi_ice           =>    waterstate_vars%h2osoi_ice_col     ! Output: [real(r8) (:,:) ]  ice water (kg/m2)
+    smp_l                =>    soilstate_vars%smp_l_col           ! Output: [real(r8) (:,:) ]  soil matrix potential [mm]
+    zwt                  =>    soilhydrology_vars%zwt_col         ! Output: [real(r8) (:)   ]  water table depth (m)
+    vsfm_mass_col_1d     =>    waterstate_vars%vsfm_mass_col_1d   ! Output: [real(r8) (:)   ]  1D liquid mass per unit area from VSFM [kg H2O/m^2]
+    vsfm_smpl_col_1d     =>    waterstate_vars%vsfm_smpl_col_1d   ! Output: [real(r8) (:)   ]  1D soil matrix potential liquid from VSFM [m]
+    mflx_snowlyr_col_1d  =>    waterflux_vars%mflx_snowlyr_col_1d ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
+    mflx_snowlyr_col     =>    waterflux_vars%mflx_snowlyr_col    ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
+    vsfm_soilp_col_1d    =>    waterstate_vars%vsfm_soilp_col_1d  ! Output: [real(r8) (:)   ]  1D soil liquid pressure from VSFM [Pa]
+    soilp_col            =>    waterstate_vars%soilp_col          ! Input:  [real(r8) (:)   ]  col soil liquid pressure
+
+    call t_startf('clm_init3')
+
+    if (.not.use_vsfm) return
+
+#ifdef USE_PETSC_LIB
+
+    ! Initialize PETSc
+    PETSC_COMM_WORLD = mpicom
+    call PetscInitialize(PETSC_NULL_CHARACTER, ierr);CHKERRQ(ierr)
+
+    PETSC_COMM_SELF  = MPI_COMM_SELF
+    PETSC_COMM_WORLD = mpicom
+
+    call get_proc_bounds(bounds_proc)
+    nclumps = get_proc_clumps()
+
+    if (nclumps /= 1) then
+       call endrun(msg='ERROR clm_initializeMod: '//&
+           'VSFM model only supported for clumps = 1')
+    endif
+
+    nc = 1
+
+    ! Allocate memory and setup data structure for VSFM-MPP
+    call vsfm_mpp%Setup(bounds_proc%begc,            &
+                        bounds_proc%endc,            &
+                        filter(nc)%num_hydrologyc,   &
+                        filter(nc)%hydrologyc,       &
+                        soilstate_vars,              &
+                        waterstate_vars,             &
+                        soilhydrology_vars)
+
+    ! Determing the source-sinks IDs of VSFM to map forcing data from
+    ! CLM to VSFM.
+    call init_vsfm_condition_ids()
+
+    restart_vsfm = .false.
+
+    if (nsrest == nsrStartup) then
+
+       if (finidat == ' ') then
+       else
+          restart_vsfm = .true.
+       end if
+
+    else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
+       restart_vsfm = .true.
+    end if
+
+    if (restart_vsfm) then
+
+       if (masterproc) then
+          write(iulog,*)'Setting initial conditions for VSFM'
+       end if
+
+       ! Save data in 1D array for VSFM
+       do c = bounds_proc%begc, bounds_proc%endc
+          do j = 1, nlevgrnd
+
+             ! Ensure that soilp_col has valid values
+             if (shr_infnan_isnan(soilp_col(c,j))) then
+                write(iulog, *) 'VSFM is on and soilp_col = NaN for: '
+                write(iulog, *) 'c = ',c
+                write(iulog, *) 'j = ',j
+                write(iulog, *) 'Possible source of error: The finidat or restart file being ' // &
+                   'used may have been produced with VSFM turned off.'
+                call endrun(msg=errMsg(__FILE__, __LINE__))
+             endif
+
+             idx = (c-bounds_proc%begc)*nlevgrnd + j
+             vsfm_soilp_col_1d(idx) = soilp_col(c,j)
+          end do
+          idx = c-bounds_proc%begc+1
+          mflx_snowlyr_col_1d(idx) = mflx_snowlyr_col(c)
+       end do
+
+       ! Set the initial conditions
+       call vsfm_mpp%Restart(vsfm_soilp_col_1d)
+
+       ! PreSolve: Allows saturation value to be computed based on ICs and stored
+       !           in GE auxvar
+       call vsfm_mpp%sysofeqns%SetDtime(1.d0)
+       call vsfm_mpp%sysofeqns%PreSolve()
+
+       ! PostSolve: Allows saturation value stored in GE auxvar to be copied into
+       !            SoE auxvar
+       call vsfm_mpp%sysofeqns%PostSolve()
+
+    else
+       mflx_snowlyr_col_1d(:) = 0._r8
+    end if
+
+
+    ! Get total mass
+    soe_auxvar_id = 1;
+    call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL,   &
+                                          VAR_MASS,          &
+                                          soe_auxvar_id,     &
+                                          vsfm_mass_col_1d)
+
+    ! Get liquid soil matrix potential
+    soe_auxvar_id = 1;
+    call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL,       &
+                                          VAR_SOIL_MATRIX_POT,   &
+                                          soe_auxvar_id,         &
+                                          vsfm_smpl_col_1d)
+
+    ! Put the data in CLM's data structure
+    do fc = 1,filter(nc)%num_hydrologyc
+       c = filter(nc)%hydrologyc(fc)
+
+       ! initialization
+       jwt = -1
+
+       ! Loops in decreasing j so WTD can be computed in the same loop
+       do j = nlevgrnd, 1, -1
+          idx = (c-bounds_proc%begc)*nlevgrnd + j
+
+          if (.not. restart_vsfm) then
+             h2osoi_liq(c,j) = vsfm_mass_col_1d(idx)
+             h2osoi_ice(c,j) = 0.d0
+          end if
+
+          smp_l(c,j)      = vsfm_smpl_col_1d(idx)*1.000_r8      ! [m] --> [mm]
+
+          if (jwt == -1) then
+             ! Find the first soil that is unsaturated
+             if (smp_l(c,j) < 0._r8) jwt = j
+          end if
+
+       end do
+
+       if (jwt == -1 .or. jwt == nlevgrnd) then
+          ! Water table below or in the last layer
+          zwt(c) = zi(c,nlevgrnd)
+       else
+          z_dn = (zi(c,jwt-1) + zi(c,jwt  ))/2._r8
+          z_up = (zi(c,jwt ) + zi(c,jwt+1))/2._r8
+          zwt(c) = (0._r8 - smp_l(c,jwt))/(smp_l(c,jwt) - &
+                   smp_l(c,jwt+1))*(z_dn - z_up) + z_dn
+        endif
+    end do
+
+#else
+
+    call endrun(msg='ERROR clm_initializeMod: '//&
+                'use_vsfm = true but code was not compiled ' // &
+                'using -DUSE_PETSC_LIB')
+#endif
+
+    call t_stopf('clm_init3')
+
+  end subroutine initialize3
 
 end module clm_initializeMod
