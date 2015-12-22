@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <config case="init_step1">
 
-	<get_file hash="ut8mre2rir" dest_path="mesh_database" file_name="planar_5km_50x230km.151216.nc">
+	<get_file hash="qfdrqh616l" dest_path="mesh_database" file_name="doubly_periodic_5km_50x230km_planar.151218.nc">
 		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/"/>
 	</get_file>
 
-	<add_link source_path="mesh_database" source="planar_5km_50x230km.151216.nc" dest="base_mesh.nc"/>
+	<add_link source_path="mesh_database" source="doubly_periodic_5km_50x230km_planar.151218.nc" dest="base_mesh.nc"/>
 
 	<add_executable source="model" dest="ocean_model"/>
 	<add_executable source="cell_culler" dest="MpasCellCuller.x"/>
@@ -29,20 +29,6 @@
 			<attribute name="filename_template">ocean.nc</attribute>
 			<add_contents>
 				<member name="input_init" type="stream"/>
-				<member name="tracers" type="var_struct"/>
-				<member name="refZMid" type="var"/>
-				<member name="normalVelocity" type="var"/>
-				<member name="layerThickness" type="var"/>
-				<member name="restingThickness" type="var"/>
-				<member name="surfaceStress" type="var"/>
-				<member name="seaSurfacePressure" type="var"/>
-				<member name="boundaryLayerDepth" type="var"/>
-				<member name="refBottomDepth" type="var"/>
-				<member name="bottomDepth" type="var"/>
-				<member name="bottomDepthObserved" type="var"/>
-				<member name="maxLevelCell" type="var"/>
-				<member name="vertCoordMovementWeights" type="var"/>
-				<member name="edgeMask" type="var"/>
 				<member name="cullCell" type="var"/>
 			</add_contents>
 		</stream>
