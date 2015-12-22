@@ -404,7 +404,7 @@ if ($MPASLI_USE_ALBANY eq 'TRUE') {
 # Namelist group: velocity_solver #
 ###################################
 
-add_default($nl, 'config_velocity_solver');
+add_default($nl, 'config_velocity_solver', 'mpasli_use_albany'=>"$MPASLI_USE_ALBANY");
 add_default($nl, 'config_sia_tangent_slope_calculation');
 add_default($nl, 'config_flowParamA_calculation');
 add_default($nl, 'config_do_velocity_reconstruction_for_external_dycore');
