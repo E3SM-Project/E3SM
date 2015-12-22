@@ -5167,12 +5167,12 @@ implicit none
 
 ! set ngas, name_gas, and igas_xxx
 ! set naer, name_aerpfx, and iaer_xxx
-      name_gas    = '???'
-      name_aerpfx = '???'
-      name_aer    = '???'
-      name_aercw  = '???'
-      name_num    = '???'
-      name_numcw  = '???'
+      name_gas    = "???"
+      name_aerpfx = "???"
+      name_aer    = "???"
+      name_aercw  = "???"
+      name_num    = "???"
+      name_numcw  = "???"
 
       igas_h2so4 = 0 ; igas_nh3 = 0
       iaer_bc  = 0 ; iaer_dst = 0 
