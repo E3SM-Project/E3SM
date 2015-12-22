@@ -489,7 +489,7 @@
 <machine MACH="blues">
          <DESC>ANL/LCRC Linux Cluster</DESC>
          <NODENAME_REGEX>blogin</NODENAME_REGEX>
-         <TESTS>acme_developer</TESTS>
+         <TESTS>acme_integration</TESTS>
          <COMPILERS>pgi,intel,gnu,nag</COMPILERS>
          <MPILIBS>mvapich,mpich,openmpi,mpi-serial</MPILIBS>
          <CESMSCRATCHROOT>/lcrc/project/$PROJECT/$USER/acme_scratch</CESMSCRATCHROOT>
