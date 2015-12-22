@@ -52,6 +52,9 @@ module li_diagnostic_vars
    !
    !--------------------------------------------------------------------
 
+   !WHL - debug
+   logical :: firstCall = .true.
+   integer, parameter :: itest = 485
 
 
 !***********************************************************************
@@ -386,7 +389,8 @@ contains
       use mpas_geometry_utils, only: mpas_cells_to_points_using_baryweights
       use mpas_vector_operations, only: mpas_tangential_vector_1d
    
-      use li_tendency, only: li_vertical_remap
+      !WHL - debug
+      use li_advection, only: new_thickness_advection, li_vertical_remap
 
       !-----------------------------------------------------------------
       !
@@ -452,9 +456,10 @@ contains
 
       integer :: err_tmp
 
-      !WHL - debug - WARNING: This must be declared in time_integration_fe also
-      logical, parameter :: new_thickness_adv = .true.
-!      logical, parameter :: new_thickness_adv = .false.
+      !WHL - debug
+      integer, pointer :: nVertLevels
+      logical, pointer :: config_print_thickness_advection_info
+      integer :: k
 
       err = 0
       err_tmp = 0
@@ -527,6 +532,9 @@ contains
           call mpas_pool_get_dimension(thermalPool, 'index_temperature', index_temperature)
           call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
 
+          !WHL - debug
+          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+          call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
 
           ! Lower surface is based on floatation for floating ice.  For grounded ice (and non-ice areas) it is the bed.
           where ( li_mask_is_floating_ice(cellMask) )
@@ -623,20 +631,44 @@ contains
 
 
           ! Do vertical remapping of layerThickness and tracers
-          ! Note: It is better to do vertical remapping immediately after the horizontal advection and mass balance calculations.
-          !       This is done with the new advection code, which advects thickness and tracers together using a first-order upwind scheme.
-          !       For the old option where only thickness is advected, the vertical_remap call is done here to avoid answer changes. 
+          ! Note: For the new advection scheme, vertical remapping is done immediately after the horizontal advection 
+          !       and mass balance calculations. It need not be repeated here.
 
-          !TODO - Can we call the new remapping routine when running thickness-only and still be BFB?
           if (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'fo') then
-             ! do nothing, because vertical remapping has already been done in the li_tendency module
-!!          elseif (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'none' .and. new_thickness_adv) then
-             !WHL - debug
-             ! do nothing, because vertical remapping has already been done in this case too
-          else
-             call li_vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err_tmp)
+
+             ! do nothing, because vertical remapping has already been done in the li_advection module
+
+          else  ! no tracer advection; check whether the new vertical_remap suborutine has been called yet
+
+             !WHL - debug - If new_thickness_advection = T, then vertical remapping has been done already
+             if (.not.new_thickness_advection) then
+
+                call li_vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err_tmp)
+
+             elseif (firstCall) then
+
+                !WHL - debug
+                ! With the old advection scheme, li_vertical_remap is called before the first diagnostic solve.
+                ! This call is not strictly necessary, but skipping it changes the answers.
+                ! So if this is the first call, call li_vertical_remap here instead of waiting until advection is called.
+                ! TODO - This call can be removed once the BFB requirement is relaxed.
+                firstCall = .false.
+                call li_vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err_tmp)
+
+             endif  ! firstCall
+
           endif
 
+          !WHL - debug
+          if (config_print_thickness_advection_info) then
+             write(stderrUnit,*) ' '
+             write(stderrUnit,*) 'Diag solve before velocity (after vertical_remap), iCell =', itest
+             write(stderrUnit,*) 'layerThickness:'
+             do k = 1, nVertLevels
+                write(stderrunit,*) k, layerThickness(k,itest)
+             enddo
+          endif
+          
           err = ior(err, err_tmp)
 
           ! This information is only needed by external dycores.
@@ -781,6 +813,11 @@ contains
       integer :: iEdge, cell1, cell2, k
       real (kind=RKIND) :: VelSign
 
+      !WHL - debug
+      integer, pointer :: nCells
+      logical, pointer :: config_print_thickness_advection_info
+      integer :: iCell
+
       err = 0
 
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
@@ -793,6 +830,11 @@ contains
       call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge)
       call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
 
+      !WHL - debug
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
+      call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
+
       ! Calculate h_edge.  This is used by both thickness and tracer advection on the following Forward Euler time step.  
       ! Note: FO-Upwind thickness advection does not explicitly use h_edge but a FO h_edge is implied.
       ! Note: SIA velocity solver uses its own local calculation of h_edge that is always 2nd order.
@@ -800,7 +842,10 @@ contains
       ! NOTE: This calculates FO upwind h edge
 
       ! Both thickness and layerThickness should be updated by this time.
+      !TODO - Move the layerThickness calculation to the start of the advection routine in the next time step?
+      !       Not sure if layerThicknessEdge is needed for any purpose before then.
       if (config_thickness_advection == 'fo') then
+
          ! If using FO-Upwind then h_edge must be FO.
          do iEdge=1,nEdges
             cell1 = cellsOnEdge(1,iEdge)
@@ -823,6 +868,17 @@ contains
       endif
 
       ! Note: the outmost layerThicknessEdge may be wrong if its upwind cell is off this block - halo update should be done if this variable will be used.
+
+      !WHL - debug
+      if (config_print_thickness_advection_info) then
+         write(stderrUnit,*) ' '
+         write(stderrUnit,*) 'End of timestep: iCell, new thickness:'
+         do iCell = 1, nCells
+            if (layerThickness(1,iCell) > 0.0_RKIND) then
+               write(stderrUnit,*) iCell, sum(layerThickness(:,iCell))
+            endif
+         enddo
+      endif
 
    end subroutine diagnostic_solve_after_velocity
 
