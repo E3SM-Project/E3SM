@@ -55,8 +55,8 @@ module li_advection
    integer, parameter :: iTest = 485
 
    !WHL - debug                                                                                                                                                    
-!   logical, parameter :: new_thickness_advection = .true.
-   logical, parameter :: new_thickness_advection = .false. 
+   logical, parameter :: new_thickness_advection = .true.
+!   logical, parameter :: new_thickness_advection = .false. 
    public :: new_thickness_advection
 
  contains
