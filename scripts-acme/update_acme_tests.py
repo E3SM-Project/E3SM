@@ -93,7 +93,8 @@ _TEST_SUITES = {
                            "SMS.ne30_m120.A_B1850CN",
                            "SMS.ne16_ne16.FC5AQUAP",
                            "SMS_D.f19_g16.B20TRC5",
-                           "SMS_D_Ld3.ne16_ne16.FC5")
+                           "SMS_D_Ld3.ne16_ne16.FC5",
+                           "SMS.f09_g16_a.MPASLIALB_ONLY")
                           ),
 }
 
