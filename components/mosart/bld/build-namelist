@@ -17,7 +17,7 @@ use strict;
 #use warnings;
 #use diagnostics;
 
-use Cwd;
+use Cwd qw(getcwd abs_path);
 use English;
 use Getopt::Long;
 use IO::File;
@@ -71,7 +71,7 @@ my $cwd = getcwd();                    # current working directory
 my $cfgdir;                            # absolute pathname of directory that contains this script
 my $nm = "ProgName::";                 # name to use if script dies
 if ($ProgDir) { 
-    $cfgdir = absolute_path($ProgDir);
+    $cfgdir = abs_path($ProgDir);
 } else {
     $cfgdir = $cwd;
 }
@@ -144,20 +144,41 @@ EOF
 # Make sure we can find required perl modules, definition, and defaults files.
 # Look for them under the directory that contains the configure script.
 
-# The root directory to cesm utils Tools
-my $cesm_tools = &absolute_path( "$SCRIPTSROOT/ccsm_utils/Tools" );
+my $cesmroot = abs_path( "$cfgdir/../../../");
+my $perl5dir = "$cesmroot/cime/utils/perl5lib";
 
-# The XML::Lite module is required to parse the XML files.
-(-f "$cesm_tools/perl5lib/XML/Lite.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"XML/Lite.pm\" in directory 
-    \"$cesm_tools/perl5lib\" **
-EOF
+# The root directory to cesm utils Tools
+
+my $SetupTools_dir = "$cesmroot/cime/scripts/Tools";
+(-f "$SetupTools_dir/SetupTools.pm")  or
+    fatal_error("Cannot find perl module \"SetupTools.pm\" in directory\n" .
+                "\"$SetupTools_dir\" \n");
 
 # The Build::Config module provides utilities to access the configuration information
 # in the config_cache.xml file
-(-f "$cesm_tools/perl5lib/Build/Config.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/Config.pm\" in directory 
-    \"$cesm_tools/perl5lib\" **
+my $file = "$perl5dir/Build/Config.pm";
+(-f "$file")  or  die <<"EOF";
+** $ProgName - Cannot find perl module $file **
+EOF
+
+# The Build::NamelistDefinition module provides utilities to validate that the output
+# namelists are consistent with the namelist definition file
+my $file = "$perl5dir/Build/NamelistDefinition.pm";
+(-f "$file")  or  die <<"EOF";
+** $ProgName - Cannot find perl module $file **
+EOF
+
+# The Build::NamelistDefaults module provides a utility to obtain default values of namelist
+# variables based on finding a best fit with the attributes specified in the defaults file.
+my $file = "$perl5dir/Build/NamelistDefaults.pm";
+(-f "$file")  or  die <<"EOF";
+** $ProgName - Cannot find perl module $file **
+EOF
+
+# The Build::Namelist module provides utilities to parse input namelists, to query and modify
+# namelists, and to write output namelists.
+(-f "$file")  or  die <<"EOF";
+** $ProgName - Cannot find perl module $file **
 EOF
 
 # The namelist definition file contains entries for all namelist variables that
@@ -168,13 +189,6 @@ my $nl_definition_file = "$cfgdir/namelist_files/namelist_definition_mosart.xml"
 EOF
 if ($print>=2) { print "Using namelist definition file $nl_definition_file$eol"; }
 
-# The Build::NamelistDefinition module provides utilities to validate that the output
-# namelists are consistent with the namelist definition file
-(-f "$cesm_tools/perl5lib/Build/NamelistDefinition.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/NamelistDefinition.pm\" in directory 
-    \"$cesm_tools/perl5lib\" **
-EOF
-
 # The namelist defaults file contains default values for all required namelist variables.
 my $nl_defaults_file = "$cfgdir/namelist_files/namelist_defaults_mosart.xml"; 
 (-f "$nl_defaults_file")  or  die <<"EOF";
@@ -182,37 +196,19 @@ my $nl_defaults_file = "$cfgdir/namelist_files/namelist_defaults_mosart.xml";
 EOF
 if ($print>=2) { print "Using namelist defaults file $nl_defaults_file$eol"; }
 
-# The Build::NamelistDefaults module provides a utility to obtain default values of namelist
-# variables based on finding a best fit with the attributes specified in the defaults file.
-(-f "$cesm_tools/perl5lib/Build/NamelistDefaults.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/NamelistDefaults.pm\" in directory 
-    \"$cesm_tools//perl5lib\" **
-EOF
-
-# The Build::Namelist module provides utilities to parse input namelists, to query and modify
-# namelists, and to write output namelists.
-(-f "$cesm_tools/perl5lib/Build/Namelist.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/Namelist.pm\" in directory 
-    \"$cesm_tools/perl5lib\" **
-EOF
-
 #-----------------------------------------------------------------------------------------------
-# Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
-my @dirs = ( "$cfgdir/..", "$cesm_tools/perl5lib");
-unshift @INC, @dirs;
-require XML::Lite;
+my @dirs = ( "$cfgdir/..", "$perl5dir", "$SetupTools_dir" );
+unshift @INC, "$CASEROOT/Tools", @dirs;
+
 require Build::Config;
 require Build::NamelistDefinition;
 require Build::NamelistDefaults;
 require Build::Namelist;
-require Streams::TemplateGeneric;
+require SetupTools;
 
 #-----------------------------------------------------------------------------------------------
 # Create a configuration object from the MOSART config_cache.xml file. 
 my $cfg = Build::Config->new('config_cache.xml');
-
-# Validate some of the commandline option values.
-validate_options("commandline", $cfg, \%opts);
 
 # Create a namelist definition object.  This object provides a method for verifying that the
 # output namelist variables are in the definition file, and are output in the correct
@@ -276,20 +272,9 @@ if (defined $opts{'infile'}) {
 ####################################
 
 my %xmlvars = ();
-my @files = <${CASEROOT}/*xml>;
-foreach my $file (@files) {
-    my $xml = XML::Lite->new( "$file" );
-    my @e = $xml->elements_by_name('entry');
-    while ( my $e = shift @e ) {
-	my %a = $e->get_attributes();
-	$xmlvars{$a{'id'}} = $a{'value'};
-    }
-}
+SetupTools::getxmlvars($CASEROOT, \%xmlvars);
 foreach my $attr (keys %xmlvars) {
-    if ( $xmlvars{$attr} =~ m/\$/ ) {
-	$xmlvars{$attr} = expand_env_xml($xmlvars{$attr});
-	$xmlvars{$attr} = expand_env_xml($xmlvars{$attr});
-    }
+  $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
 }
 
 my $DIN_LOC_ROOT    = $xmlvars{'DIN_LOC_ROOT'};
@@ -299,7 +284,7 @@ my $ROF_GRID        = $xmlvars{'ROF_GRID'};
 my $LND_GRID        = $xmlvars{'LND_GRID'};
 my $ROF_NCPL        = $xmlvars{'ROF_NCPL'};
 
-(-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
+(-d $DIN_LOC_ROOT)  or  mkdir $DIN_LOC_ROOT;
 if ($print>=2) { 
     print "CESM inputdata root directory: $DIN_LOC_ROOT \n"; 
 }
@@ -308,10 +293,6 @@ if ($print>=2) {
 # namelist group: mosart_inparm       #
 ####################################
 
-#if ($PTS_MODE eq "TRUE") {
-#    
-#}
-
 if ($ROF_GRID eq "null") {
     if ($MOSART_MODE ne "NULL") {
 	die "$ProgName ERROR:: ROF_GRID null MOSART_MODE not NULL.\n";
@@ -319,7 +300,7 @@ if ($ROF_GRID eq "null") {
 }
 
 if ($MOSART_MODE eq "NULL") {
-    add_default($nl, 'do_rtm', 'val'=>".false.");
+    add_default($nl, 'rtm_mode', 'val'=>"$MOSART_MODE");
 }
 else {
     # Set Initial conditions if there is a file for this grid and sim-yr
@@ -580,69 +561,6 @@ sub set_abs_filepath {
     return $out;
 }
 
-#-----------------------------------------------------------------------------------------------
-
-sub absolute_path {
-#
-# Convert a pathname into an absolute pathname, expanding any . or .. characters.
-# Assumes pathnames refer to a local filesystem.
-# Assumes the directory separator is "/".
-#
-  my $path = shift;
-  my $cwd = getcwd();  # current working directory
-  my $abspath;         # resulting absolute pathname
-
-# Strip off any leading or trailing whitespace.  (This pattern won't match if
-# there's embedded whitespace.
-  $path =~ s!^\s*(\S*)\s*$!$1!;
-
-# Convert relative to absolute path.
-
-  if ($path =~ m!^\.$!) {          # path is "."
-      return $cwd;
-  } elsif ($path =~ m!^\./!) {     # path starts with "./"
-      $path =~ s!^\.!$cwd!;
-  } elsif ($path =~ m!^\.\.$!) {   # path is ".."
-      $path = "$cwd/..";
-  } elsif ($path =~ m!^\.\./!) {   # path starts with "../"
-      $path = "$cwd/$path";
-  } elsif ($path =~ m!^[^/]!) {    # path starts with non-slash character
-      $path = "$cwd/$path";
-  }
-
-  my ($dir, @dirs2);
-  my @dirs = split "/", $path, -1;   # The -1 prevents split from stripping trailing nulls
-                                     # This enables correct processing of the input "/".
-
-  # Remove any "" that are not leading.
-  for (my $i=0; $i<=$#dirs; ++$i) {
-      if ($i == 0 or $dirs[$i] ne "") {
-	  push @dirs2, $dirs[$i];
-      }
-  }
-  @dirs = ();
-
-  # Remove any "."
-  foreach $dir (@dirs2) {
-      unless ($dir eq ".") {
-	  push @dirs, $dir;
-      }
-  }
-  @dirs2 = ();
-
-  # Remove the "subdir/.." parts.
-  foreach $dir (@dirs) {
-    if ( $dir !~ /\.\./ ) {
-        push @dirs2, $dir;
-    } else {
-        pop @dirs2;   # remove previous dir when current dir is ..
-    }
-  }
-  if ($#dirs2 == 0 and $dirs2[0] eq "") { return "/"; }
-  $abspath = join '/', @dirs2;
-  return( $abspath );
-}
-
 #-------------------------------------------------------------------------------
 
 sub valid_option {
@@ -660,17 +578,6 @@ sub valid_option {
 
 #-------------------------------------------------------------------------------
 
-sub validate_options {
-
-    my $source = shift;   # text string declaring the source of the options being validated
-    my $cfg    = shift;   # configure object
-    my $opts   = shift;   # reference to hash that contains the options
-
-    my ($opt, $old, @expect);
-}
-
-#-------------------------------------------------------------------------------
-
 sub quote_string {
     my $str = shift;
     $str =~ s/^\s+//;
@@ -681,17 +588,6 @@ sub quote_string {
     return $str;
 }
 
-#-------------------------------------------------------------------------------
 
-sub expand_env_xml {
-
-    my $value = shift;
-
-    if ($value =~ /\$([\w_]+)(.*)$/) {
-	my $subst = $xmlvars{$1};
-	$value =~ s/\$${1}/$subst/g;
-    }
-    return $value; 
-}	 
 
 
