@@ -701,7 +701,7 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
       io_comprank=0;
     
     //    printf("scount[%d]=%d\n",i,scount[i]);
-    if(scount[i] > 0) {
+    if(scount[i] > 0 && sbuf != NULL) {
       sendcounts[io_comprank]=1;
       MPI_Type_hvector(nvars, 1, (MPI_Aint) iodesc->ndof*tsize, iodesc->stype[i], sendtypes+io_comprank);
       if(sendtypes[io_comprank] == MPI_DATATYPE_NULL){
@@ -1276,7 +1276,8 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   }
 
   for(i=0;i<maplen;i++){
-    pioassert(compmap[i]>=0 && compmap[i]<=totalgridsize, "Compmap value out of bounds",__FILE__,__LINE__);
+    //  turns out this can be allowed in some cases 
+    //    pioassert(compmap[i]>=0 && compmap[i]<=totalgridsize, "Compmap value out of bounds",__FILE__,__LINE__);
     if(compmap[i]>0){
       (iodesc->scount[0])++;
     }

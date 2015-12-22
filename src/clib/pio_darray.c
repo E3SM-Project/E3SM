@@ -114,6 +114,7 @@ void compute_buffer_init(iosystem_desc_t ios)
 
    ierr = PIOc_inq_varndims(file->fh, vid, &fndims);
 
+
    if(ios->ioproc){
      io_region *region;
      int ncid = file->fh;
@@ -652,8 +653,8 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
        
    iodesc = pio_get_iodesc_from_id(ioid);
    if(iodesc == NULL){
-     print_trace(NULL);
-     fprintf(stderr,"iodesc handle not found %d %d\n",ioid,__LINE__);
+     //     print_trace(NULL);
+     //fprintf(stderr,"iodesc handle not found %d %d\n",ioid,__LINE__);
      return PIO_EBADID;
    }
     
@@ -696,9 +697,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 	 }
        }
      }
-   
      ierr = rearrange_comp2io(*ios, iodesc, array, vdesc0->iobuf, nvars);
-
    }/*  this is wrong, need to think about it
    else{
      vdesc0->iobuf = array;
@@ -975,6 +974,13 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
  
  }
 #else
+
+/** @brief Write a distributed array to the output file 
+ *  @ingroup PIO_write_darray
+ *
+ *  This version of the routine does not buffer, all data is communicated to the io tasks 
+ *  before the routine returns
+ */
  int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_Offset arraylen, void *array, void *fillvalue)
  {
    iosystem_desc_t *ios;
@@ -1070,6 +1076,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
   
   ndims = iodesc->ndims;
   ierr = PIOc_inq_varndims(file->fh, vid, &fndims);
+  
   if(fndims==ndims) 
     vdesc->record=-1;
   
