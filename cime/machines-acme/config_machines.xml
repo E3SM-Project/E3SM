@@ -859,6 +859,58 @@
          </mpirun>
 </machine>
 
+<machine MACH="eos">
+         <DESC>ORNL XC30, os is CNL, 16 pes/node, batch system is PBS</DESC>
+         <NODENAME_REGEX>edison</NODENAME_REGEX>
+         <TESTS>acme_developer</TESTS>
+         <COMPILERS>intel</COMPILERS>
+         <MPILIBS>mpich,mpi-serial</MPILIBS>
+         <CESMSCRATCHROOT>$ENV{HOME}/acme_scratch/$PROJECT</CESMSCRATCHROOT>
+         <RUNDIR>$MEMBERWORK/$PROJECT/$CASE/run</RUNDIR>
+         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+         <DIN_LOC_ROOT>/lustre/atlas1/cli900/world-shared/cesm/inputdata</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/lustre/atlas1/cli900/world-shared/cesm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>$MEMBERWORK/$PROJECT/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+         <CCSM_BASELINE>/lustre/atlas1/cli900/world-shared/cesm/baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>/lustre/atlas1/cli900/world-shared/cesm/tools/cprnc/cprnc.eos</CCSM_CPRNC>
+         <SAVE_TIMING_DIR>$ENV{PROJWORK}/$PROJECT</SAVE_TIMING_DIR>
+         <OS>CNL</OS>
+         <BATCHQUERY>qstat -f</BATCHQUERY>
+         <BATCHSUBMIT>qsub</BATCHSUBMIT>
+         <BATCHREDIRECT></BATCHREDIRECT>
+         <SUPPORTED_BY>acme</SUPPORTED_BY>
+         <GMAKE_J>8</GMAKE_J>
+         <PES_PER_NODE>16</PES_PER_NODE>
+         <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+         <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
+         <batch_system type="pbs" version="x.y">
+           <queues>
+             <queue jobmin="1" jobmax="9999" default="true">batch</queue>
+           </queues>
+           <walltimes>
+             <walltime default="true">01:15:00</walltime>
+             <walltime ccsm_estcost="1">01:50:00</walltime>
+             <walltime ccsm_estcost="3">05:00:00</walltime>
+           </walltimes>
+         </batch_system>
+         <mpirun mpilib="mpich">
+           <executable>aprun</executable>
+           <arguments>
+             <arg name="hyperthreading" default="2"> -j {{ hyperthreading }}</arg>
+             <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
+             <arg name="num_tasks" > -n {{ num_tasks }}</arg>
+             <arg name="tasks_per_node" > -N {{ tasks_per_node }}</arg>
+             <arg name="thread_count" > -d {{ thread_count }}</arg>
+             <arg name="numa_node" > -cc {{ numa_node }}</arg>
+           </arguments>
+         </mpirun>
+         <mpirun mpilib="mpi-serial">
+           <executable></executable>
+         </mpirun>
+</machine>
+
 <machine MACH="mustang">
 	<DESC>LANL Linux Cluster, 24 pes/node, batch system Moab</DESC>
         <NODENAME_REGEX>mustang</NODENAME_REGEX>
