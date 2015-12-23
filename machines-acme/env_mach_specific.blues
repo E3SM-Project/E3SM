@@ -7,11 +7,10 @@ setenv P4_GLOBMEMSIZE 500000000
 soft add +cmake-2.8.12
 
 #
-# Tried mvapich2 1.8.1, 1.9 and 2.0 and they
-# all failed an ERS test.  So mvapich2 is not supported.
+# Intel13.1 was the workhorse for ACME for a while so keep it around
 #
 #
-if ( $COMPILER == "intel" ) then
+if ( $COMPILER == "intel13" ) then
   soft add +intel-13.1
   soft add +netcdf-4.3.1-serial-intel
   soft add +mkl
@@ -33,6 +32,30 @@ if ( $COMPILER == "intel" ) then
    soft add +mpich2-1.4.1-intel-13.1
    soft add +pnetcdf-1.5.0-mpich2-intel-13.1
    setenv PNETCDFROOT /soft/pnetcdf/1.5.0/intel-13.1/mpich2-1.4.1
+  endif
+endif
+
+#
+# default intel compiler
+#
+if ( $COMPILER == "intel" ) then
+  soft add +intel-15.0
+  setenv NETCDFROOT /soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1
+  setenv PATH $NETCDFROOT/bin:$PATH
+  setenv LD_LIBRARY_PATH $NETCDFROOT/lib:$LD_LIBRARY_PATH
+  setenv NETCDF_INCLUDES $NETCDFROOT/include
+  setenv NETCDF_LIBS $NETCDFROOT/lib
+  if ( $MPILIB == "mpi-serial") then
+   setenv PNETCDFROOT ""
+  else if ( $MPILIB == "mvapich") then
+   soft add +mvapich2-2.2b-intel-15.0-psm
+   soft add +pnetcdf-1.6.1-mvapich2-2.2a-intel-15.0
+   setenv PNETCDFROOT /soft/climate/pnetcdf/1.6.1/intel-15.0.1/mvapich2-2.2a-intel-15.0
+  else
+   # default - mvapich+pnetcdf
+   soft add +mvapich2-2.2b-intel-15.0-psm
+   soft add +pnetcdf-1.6.1-mvapich2-2.2a-intel-15.0
+   setenv PNETCDFROOT /soft/climate/pnetcdf/1.6.1/intel-15.0.1/mvapich2-2.2a-intel-15.0
   endif
 endif
 
