@@ -288,7 +288,7 @@ subroutine gw_init()
      write(iulog,*) ' '
      write(iulog,*) "GW_DRAG: pgwv = ", pgwv
      do l = -pgwv, pgwv
-        write (iulog,'(A,I2,A,F7.2)') "GW_DRAG: cref(",l,") = ",cref(l)
+        write (iulog,'(A,I4,A,F7.2)') "GW_DRAG: cref(",l,") = ",cref(l)
      enddo
      write(iulog,*) 'GW_DRAG: kwv = ', kwv
      write(iulog,*) 'GW_DRAG: fcrit2 = ', fcrit2
