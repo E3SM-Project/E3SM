@@ -1378,7 +1378,7 @@ contains
       configs => block_ptr % configs
       call mpas_pool_get_config(configs, "config_thermodynamics_type", config_thermodynamics_type)
       call mpas_pool_get_config(configs, "config_use_aerosols", config_use_aerosols)
-      call mpas_pool_get_config(configs, "config_use_modal_aerosols", config_use_aerosols)
+      call mpas_pool_get_config(configs, "config_use_modal_aerosols", config_use_modal_aerosols)
       call mpas_pool_get_config(configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
 
       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
