@@ -141,6 +141,9 @@ module li_thermal
            nCellsSolve,              & ! number of locally owned cells
            nVertLevels                 ! number of vertical layers
 
+      integer, dimension(:), pointer :: &
+           indexToCellID               ! global ID for each local cell
+
       real (kind=RKIND), dimension(:), pointer :: &
            layerCenterSigma,         & ! sigma coordinate at midpoint of each layer
            layerInterfaceSigma         ! sigma coordinate at layer interfaces (including top and bottom)
@@ -243,6 +246,7 @@ module li_thermal
          ! get arrays from the mesh pool
          call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
          call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
+         call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
 
          ! get arrays from the geometry pool
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
@@ -472,19 +476,21 @@ module li_thermal
                      write(stderrUnit,*) ' '
                   enddo
 
-                  !TODO - Use indexToCellID to make this more robust?
-                  iCell = config_stats_cell_ID
-                  write(stderrUnit,*) ' '
-                  write(stderrUnit,*) 'Diagnostic cell =', iCell
-                  write(stderrUnit,*) 'Thickness =', thickness(iCell)
-                  write(stderrUnit,*) ' '
-                  write(stderrUnit,*) 'Temperature profile (C):'
-                  write(stderrUnit,*) 'Sfc:', surfaceTemperature(iCell) - kelvin_to_celsius
-                  do iLayer = 1, nVertLevels
-                     write(stderrUnit,*) iLayer, layerCenterSigma(iLayer), temperature(iLayer,iCell) - kelvin_to_celsius
+                  do iCell = 1, nCellsSolve
+                     if (indexToCellID(iCell) == config_stats_cell_ID) then
+                        write(stderrUnit,*) ' '
+                        write(stderrUnit,*) 'Diagnostic cell =', iCell
+                        write(stderrUnit,*) 'Thickness =', thickness(iCell)
+                        write(stderrUnit,*) ' '
+                        write(stderrUnit,*) 'Temperature profile (C):'
+                        write(stderrUnit,*) 'Sfc:', surfaceTemperature(iCell) - kelvin_to_celsius
+                        do iLayer = 1, nVertLevels
+                           write(stderrUnit,*) iLayer, layerCenterSigma(iLayer), temperature(iLayer,iCell) - kelvin_to_celsius
+                        enddo
+                        write(stderrUnit,*) 'Bed:', basalTemperature(iCell) - kelvin_to_celsius
+                     endif
                   enddo
-                  write(stderrUnit,*) 'Bed:', basalTemperature(iCell) - kelvin_to_celsius
-                  
+
                endif  ! shelf or dome test
 
             endif  ! config_print_thermal_info
@@ -780,15 +786,18 @@ module li_thermal
 
             if (config_print_thermal_info) then
                write(stderrUnit,*) ' '
-               iCell = config_stats_cell_ID
-               write(stderrUnit,*) 'thickness =', thickness(iCell)
-               write(stderrUnit,*) 'Initial temperature, iCell =', iCell
-               write(stderrUnit,*) 0, surfaceTemperature(iCell)
-               do k = 1, nVertLevels
-                  write(stderrUnit,*) k, temperature(k,iCell)
+               do iCell = 1, nCellsSolve
+                  if (indexToCellID(iCell) == config_stats_cell_ID) then
+                     write(stderrUnit,*) 'thickness =', thickness(iCell)
+                     write(stderrUnit,*) 'Initial temperature, iCell =', iCell
+                     write(stderrUnit,*) 0, surfaceTemperature(iCell)
+                     do k = 1, nVertLevels
+                        write(stderrUnit,*) k, temperature(k,iCell)
+                     enddo
+                     write(stderrUnit,*) nVertLevels+1, basalTemperature(iCell)
+                     write(stderrUnit,*) 'Loop over cells'
+                  endif
                enddo
-               write(stderrUnit,*) nVertLevels+1, basalTemperature(iCell)
-               write(stderrUnit,*) 'Loop over cells'
             endif
 
             ! loop over locally owned cells
@@ -1203,7 +1212,7 @@ module li_thermal
             ! Compute total basal mass balance
             basalMassBal(iCell) = groundedBasalMassBal(iCell) + floatingBasalMassBal(iCell)
 
-            if (config_print_thermal_info .and. iCell == config_stats_cell_ID) then
+            if (config_print_thermal_info .and. indexToCellID(iCell) == config_stats_cell_ID) then
                write(stderrUnit,*) 'iCell, basal mass balance (m/yr) (grounded, floating, total):', &
                     iCell, groundedBasalMassBal(iCell)*scyr/rhoi, floatingBasalMassBal(iCell)*scyr/rhoi, basalMassBal(iCell)*scyr/rhoi
             endif
