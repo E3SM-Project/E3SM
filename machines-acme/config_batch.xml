@@ -141,6 +141,16 @@
       </directives>
     </batch_system> 
 
+    <!-- eos is PBS -->
+    <batch_system MACH="eos" version="x.y">
+    <jobid_pattern>^(\d+)</jobid_pattern>
+    <directives>
+      <directive>-A {{ project }}</directive>
+      <directive>-l mppwidth={{ mppwidth }}</directive>
+      <directive>-l  nodes={{ num_nodes }}</directive>
+    </directives>
+   </batch_system>
+
      <!-- skybridge is slurm -->
 
    <batch_system MACH="skybridge" version="x.y">
