@@ -3684,7 +3684,7 @@ module mpas_io
    end subroutine MPAS_io_put_att_int1d
 
 
-   subroutine MPAS_io_put_att_real0d(handle, attName, attValue, fieldname, syncVal, ierr)
+   subroutine MPAS_io_put_att_real0d(handle, attName, attValue, fieldname, syncVal, precision, ierr)
 
       implicit none
 
@@ -3693,11 +3693,13 @@ module mpas_io
       real (kind=RKIND), intent(in) :: attValue
       character (len=*), intent(in), optional :: fieldname
       logical, intent(in), optional :: syncVal
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
       integer :: varid
       real (kind=RKIND) :: attValueLocal
+      real (kind=R4KIND) :: singleVal
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: attlist_cursor, new_attlist_node
 
@@ -3728,6 +3730,11 @@ module mpas_io
       new_attlist_node % attHandle % attType = MPAS_ATT_REAL
       new_attlist_node % attHandle % attValueReal = attValue
 
+      if (present(precision)) then
+         new_attlist_node % attHandle % precision = precision
+      else
+         new_attlist_node % attHandle % precision = MPAS_IO_NATIVE_PRECISION
+      end if
 
       !
       ! For variable attributes, find the structure for fieldname
@@ -3820,7 +3827,14 @@ module mpas_io
          end if
       end if
 
-      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValueLocal) 
+      if ((new_attlist_node % attHandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
+          (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
+         singleVal = real(attValueLocal,R4KIND)
+         pio_ierr = PIO_put_att(handle % pio_file, varid, attName, singleVal) 
+      else
+         pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValueLocal) 
+      end if
+
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
@@ -3831,7 +3845,7 @@ module mpas_io
    end subroutine MPAS_io_put_att_real0d
 
 
-   subroutine MPAS_io_put_att_real1d(handle, attName, attValue, fieldname, syncVal, ierr)
+   subroutine MPAS_io_put_att_real1d(handle, attName, attValue, fieldname, syncVal, precision, ierr)
 
       implicit none
 
@@ -3840,11 +3854,13 @@ module mpas_io
       real (kind=RKIND), dimension(:), intent(in) :: attValue
       character (len=*), intent(in), optional :: fieldname
       logical, intent(in), optional :: syncVal
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
       integer :: varid
       real (kind=RKIND), dimension(:), allocatable :: attValueLocal
+      real (kind=R4KIND), dimension(:), allocatable :: singleVal
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: attlist_cursor, new_attlist_node
 
@@ -3878,6 +3894,11 @@ module mpas_io
       allocate(new_attlist_node % attHandle % attValueRealA(size(attValue)))
       new_attlist_node % attHandle % attValueRealA = attValue
 
+      if (present(precision)) then
+         new_attlist_node % attHandle % precision = precision
+      else
+         new_attlist_node % attHandle % precision = MPAS_IO_NATIVE_PRECISION
+      end if
 
       !
       ! For variable attributes, find the structure for fieldname
@@ -3978,7 +3999,15 @@ module mpas_io
          end if
       end if
 
-      pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValueLocal) 
+      if ((new_attlist_node % attHandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
+          (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
+         allocate(singleVal(size(attValueLocal)))
+         singleVal(:) = real(attValueLocal(:),R4KIND)
+         pio_ierr = PIO_put_att(handle % pio_file, varid, attName, singleVal) 
+         deallocate(singleVal)
+      else
+         pio_ierr = PIO_put_att(handle % pio_file, varid, attName, attValueLocal) 
+      end if
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
