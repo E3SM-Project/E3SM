@@ -133,3 +133,11 @@ times.
   variables, identical & different real-valued variables, and
   variables with different spatial dimensions (e.g., landunit, pft,
   and lat x lon).
+
+--- FILES COMPARED AGAINST control_attributes.nc ---
+
+Note: This file is like control.nc, but contains some global attributes
+
+- diffs_in_attribute.nc: one global attribute is the same, one differs; in
+  addition, one global attribute is missing, and there is a new one on this file
+  that is not present on the control.nc file
