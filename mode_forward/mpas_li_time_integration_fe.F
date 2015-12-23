@@ -619,8 +619,12 @@ module li_time_integration_fe
       type (mpas_pool_type), pointer :: thermalPool
       type (mpas_pool_type), pointer :: scratchPool
 
+      type (field1DReal), pointer :: thicknessField
+
       type (field2DReal), pointer :: layerThicknessField
       type (field2DReal), pointer :: layerThicknessEdgeField
+
+      type (field3DReal), pointer :: tracersField
 
       real (kind=RKIND), dimension(:), pointer :: thickness
 
@@ -679,6 +683,11 @@ module li_time_integration_fe
 
       integer :: err_tmp
 
+      !WHL - debug
+      integer, pointer :: config_stats_cell_ID
+      integer, dimension(:), pointer :: indexToCellID
+      integer :: iCell
+
       err = 0
 
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
@@ -698,15 +707,16 @@ module li_time_integration_fe
       !        at the end of subroutine li_calculate_diagnostic_vars.
       !       The thermal tracers (temperature, waterfrac, enthalpy) are updated at the end of li_thermal_solver.
       !       But layerThickness (which is used by subroutine li_advection_thickness_tracers) needs an update here.
-      !   
+      !        We use timeLevel=2 to get the value from the previous timestep.
+
       call mpas_timer_start("halo updates")
       call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
-      call mpas_pool_get_field(geometryPool, 'layerThickness', layerThicknessField)
+      call mpas_pool_get_field(geometryPool, 'layerThickness', layerThicknessField, timeLevel=2)
       call mpas_dmpar_exch_halo_field(layerThicknessField)
       call mpas_timer_stop("halo updates")
 
       ! ===
-      ! === Thickness and tracer tendencies
+      ! === Advect thickness and tracers
       ! ===
       allowableAdvecDtOnProc = 1.0e36 ! set to large number
       allowableDiffDtOnProc = 1.0e36 ! set to large number
@@ -724,6 +734,11 @@ module li_time_integration_fe
          ! TODO - Remove the time levels, and simply fetch the layer thickness from the previous timestep?
          call mpas_pool_get_array(geometryPool, 'layerThickness', layerThicknessOld, timeLevel=2)
          call mpas_pool_get_array(geometryPool, 'layerThickness', layerThicknessNew, timeLevel=1)
+
+         !WHL - debug
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
+         call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
 
          if (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'fo') then
 
@@ -788,10 +803,6 @@ module li_time_integration_fe
 
          block => block % next
       end do
-
-      ! Now that we have exited the block loop, do any needed halo updates.
-      ! TODO - Update new layer thickness or tracers?
-
 
       ! Local advective CFL info
       call mpas_set_timeInterval(allowableAdvecDtOnProcInterval, dt=allowableAdvecDtOnProc, ierr=err_tmp)
@@ -886,7 +897,7 @@ module li_time_integration_fe
       endif
 
       if (err > 0) then
-           write(stderrUnit,*) 'Error in calculating thickness tendency  (possibly CFL violation)'
+           write(stderrUnit,*) 'Error in calculating thickness advection  (possibly CFL violation)'
       endif
 
 
@@ -913,23 +924,18 @@ module li_time_integration_fe
 
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel=1)
 
-         ! State at time n
-!!         call mpas_pool_get_array(geometryPool, 'layerThickness', layerThicknessOld, timeLevel=2)
-
-         ! State at time n+1 (advanced by dt by Forward Euler)
-!!         call mpas_pool_get_array(geometryPool, 'layerThickness', layerThicknessNew, timeLevel=1)
          
          allocate( masktmp(nCells + 1) )
          masktmp = 0
 
-         ! reset negative thickness to 0.  This should not happen unless negative MB is larger than entire ice column.
-         !TODO - Should layerThickness also be set to 0?
          where (thickness < 0.0_RKIND)
             masktmp = 1
             thickness = 0.0_RKIND
+            !TODO - Should layerThickness also be set to 0?
          end where
 
          if (config_print_thickness_advection_info) then
@@ -952,6 +958,21 @@ module li_time_integration_fe
          block => block % next
       end do
 
+      ! Halo updates
+      call mpas_timer_start("halo updates")
+
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+      call mpas_pool_get_field(geometryPool, 'layerThickness', layerThicknessField, timeLevel=1)
+      call mpas_dmpar_exch_halo_field(layerThicknessField)
+      call mpas_pool_get_field(geometryPool, 'thickness', thicknessField)
+      call mpas_dmpar_exch_halo_field(thicknessField)
+
+      !TODO - Replace tracer var_array structure
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'thermal', thermalPool)
+      call mpas_pool_get_field(thermalPool, 'tracers', tracersField)
+      call mpas_dmpar_exch_halo_field(tracersField)
+
+      call mpas_timer_stop("halo updates")
 
       ! === error check
       if (err > 0) then

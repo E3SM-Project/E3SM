@@ -52,9 +52,6 @@ module li_tendency
    !
    !--------------------------------------------------------------------
 
-   !WHL - debug
-   integer, parameter :: iTest = 485
-
  contains
 
 
@@ -191,8 +188,6 @@ module li_tendency
 
          if (config_print_thickness_advection_info) then
             write(stderrUnit,*) 'Using first-order upwind for thickness advection'
-            !WHL - debug
-            write(stderrUnit,*) 'itest, cellMask:', itest, cellMask(itest)
          endif
 
 !!!        ! Alternate call to calculate thickness tendency for entire ice column (deprecated)
@@ -439,6 +434,8 @@ module li_tendency
 
       !WHL - debug
       logical, pointer :: config_print_thickness_advection_info
+      integer, dimension(:), pointer :: indexToCellID
+      integer, pointer :: config_stats_cell_ID
 
       err = 0
 
@@ -453,6 +450,8 @@ module li_tendency
 
       !WHL - debug
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
+      call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
+      call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
 
       MinOfMaxAllowableDt = bigNumber
 
@@ -460,8 +459,8 @@ module li_tendency
         invAreaCell = 1.0 / areaCell(iCell)
 
         !WHL - debug
-         if (iCell == itest .and. config_print_thickness_advection_info) then
-            write(stderrUnit,*) 'In tend_layerThickness, iCell =', iCell
+         if (indexToCellID(iCell) == config_stats_cell_ID .and. config_print_thickness_advection_info) then
+            write(stderrUnit,*) 'In tend_layerThickness, iCell (local, global) =', iCell, indexToCellID(iCell)
             write(stderrUnit,*)
             write(stderrUnit,*) 'k, iEdgeOnCell, layerNormalVelocity, layerThicknessEdge, thicknessFluxEdge, thicknessTendency' 
          endif
@@ -490,7 +489,7 @@ module li_tendency
             tend(k, iCell) = tend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell
 
             !WHL - debug
-            if (iCell == itest .and. k==1 .and. config_print_thickness_advection_info) then
+            if (indexToCellID(iCell) == config_stats_cell_ID .and. k==1 .and. config_print_thickness_advection_info) then
                write(stderrUnit,*) k, i, layerNormalVelocity, layerThicknessEdge(k,iEdge), flux, tend(k,iCell)
             endif
 

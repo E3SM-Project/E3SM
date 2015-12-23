@@ -51,9 +51,6 @@ module li_advection
    !
    !--------------------------------------------------------------------
 
-   !WHL - debug
-   integer, parameter :: iTest = 485
-
    !WHL - debug                                                                                                                                                    
    logical, parameter :: new_thickness_advection = .true.
 !   logical, parameter :: new_thickness_advection = .false. 
@@ -456,9 +453,8 @@ module li_advection
 
          ! Update the thickness and cellMask before the vertical remap calculation
 
-         do iCell = 1, nCells
-            thickness(iCell) = sum(layerThicknessNew(:,iCell))
-         enddo
+         thickness = sum(LayerThicknessNew, 1)
+
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
          
          ! Remap tracers to the standard vertical sigma coordinate
@@ -861,6 +857,12 @@ module li_advection
       logical, pointer :: &
            config_print_thickness_advection_info
 
+      integer, dimension(:), pointer :: &
+           indexToCellID      ! global index for local cells
+
+      integer, pointer :: &
+           config_stats_cell_ID      ! global index of diagnostic cell
+
       real (kind=RKIND) :: &
            invAreaCell,            & ! 1.0/areaCell
            maxAllowableDt,         & ! max allowable dt based on advective CFL condition
@@ -914,9 +916,11 @@ module li_advection
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
 
       ! get config variables
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
+      call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
 
       ! initialize output variables
       minOfMaxAllowableDt = bigNumber
@@ -944,7 +948,7 @@ module li_advection
 
          invAreaCell = 1.0_RKIND / areaCell(iCell)
 
-         if (iCell == itest .and. config_print_thickness_advection_info) then
+         if (indexToCellID(iCell) == config_stats_cell_ID .and. config_print_thickness_advection_info) then
             write(stderrUnit,*) 'In advect_thickness_tracer, iCell =', iCell
             write(stderrUnit,*)
             write(stderrUnit,*) 'k, iEdgeOnCell, layerNormalVelocity, layerThicknessEdge, thicknessFluxEdge, thicknessTendency' 
@@ -1000,7 +1004,7 @@ module li_advection
                                  + edgeSignOnCell(iEdgeOnCell,iCell) * thicknessFluxEdge * invAreaCell * tracersEdge(:)
 
                !WHL - debug
-               if (iCell == itest .and. k==1 .and. config_print_thickness_advection_info) then
+               if (indexToCellID(iCell) == config_stats_cell_ID .and. k==1 .and. config_print_thickness_advection_info) then
                   write(stderrUnit,*) k, iEdgeOnCell, layerNormalVelocity, layerThicknessEdge(k,iEdge), thicknessFluxEdge, thicknessTendency 
                endif
 
@@ -1137,7 +1141,7 @@ module li_advection
       real (kind=RKIND), dimension(:,:), allocatable :: hTsum
 
       ! counters, mesh variables, index variables
-      integer, pointer :: nCellsSolve, nVertLevels
+      integer, pointer :: nCells, nVertLevels
       integer :: nTracers, iCell, k, k1, k2, nt
 
       ! stuff for making calculations
@@ -1150,20 +1154,31 @@ module li_advection
       real (kind=RKIND), parameter :: eps11 = 1.e-11_RKIND
       real(kind=RKIND), parameter :: eps30 = 1.0d-30  ! Make a tiny value so we don't corrupt any cells with ice 
 
+      !WHL - debug
+      integer, dimension(:), pointer :: indexToCellID
+      integer, pointer :: config_stats_cell_ID
+
       err = 0
 
-      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       nTracers = size(tracers, 1)
 
       call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
       call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
 
+      !WHL - debug
+      call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
+      call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
+
       allocate(layerInterfaceSigma_Input(nVertLevels+1))
       allocate(hTsum(nTracers, nVertLevels))
 
-      ! loop over locally owned cells
-      do iCell = 1, nCellsSolve
+      !TODO WHL - We could avoid the eps30 by inserting 'if (thickness(iCell) > 0.0_RKIND'
+      !           Not sure whether it is critical to avoid the 'if'
+
+      ! loop over cells
+      do iCell = 1, nCells
 
          if (checkConservation) then   ! compute sum of layerThickness*tracer1 in the column
             initEnergySum = sum(layerThickness(:,iCell)*tracers(1,:,iCell))
@@ -1180,14 +1195,31 @@ module li_advection
          end do
          layerInterfaceSigma_Input(nVertLevels+1) = 1.0_RKIND
          
+         !WHL - debug
+         if (indexToCellID(iCell) == config_stats_cell_ID) then
+!            write(stderrUnit,*) ' '
+!            write(stderrUnit,*) 'thisThk:', thisThk
+!            write(stderrUnit,*) 'Start layer 1:', layerThickness(1,iCell)
+         endif
+
          ! *** Compute new layer thicknesses (layerInterfaceSigma coordinates)
          
          do k = 1, nVertLevels
             layerThickness(k,iCell) = layerThicknessFractions(k) * (thisThk + eps30)
          end do
 
+         !WHL - debug
+         if (indexToCellID(iCell) == config_stats_cell_ID) then
+!            write(stderrUnit,*) 'New layer 1:', layerThickness(1,iCell)
+         endif
+
          ! Check for conservation of mass.  Put any residual in the top layer.
          layerThickness(1,iCell) = layerThickness(1,iCell) + (thisThk - sum(layerThickness(:,iCell)) )
+
+         !WHL - debug
+         if (indexToCellID(iCell) == config_stats_cell_ID) then
+!            write(stderrUnit,*) 'Final layer 1:', layerThickness(1,iCell)
+         endif
 
          ! TODO This conservation check may make layerThicknesses inconsistent with the sigma levels (which are used below in tracer remapping).
 
@@ -1217,7 +1249,7 @@ module li_advection
          
          do k = 1, nVertLevels
             do nt = 1, nTracers
-               tracers(nt,k,iCell) = hTsum(nt,k) / layerThickness(k, iCell)
+               tracers(nt,k,iCell) = hTsum(nt,k) / (layerThickness(k, iCell) + eps30)
                !TODO - Remove the following line of code. Matt uses this in the old vertical remap code.
                layerThickness(k,iCell) = layerThickness(k,iCell) * real(li_mask_is_ice_int(cellMask(iCell)), RKIND)
                ! Note: the last term is used to multiply by 0 where there is no ice in order to clear out garbage introduced by eps30 
@@ -1227,9 +1259,11 @@ module li_advection
          if (checkConservation) then   ! compute new sum of layerThickness*tracer1 in the column
             finalEnergySum = sum(layerThickness(:,iCell)*tracers(1,:,iCell))
             difference = abs(finalEnergySum - initEnergySum)
-            if (difference/initEnergySum > eps11) then
-               write(stderrUnit,*) 'WARNING: vertical_remap, mass*tracer conservation error, iCell =', iCell
-               write(stderrUnit,*) 'init energy, final energy, difference:', initEnergySum, finalEnergySum, finalEnergySum - initEnergySum
+            if (initEnergySum > eps11) then
+               if (difference/initEnergySum > eps11) then
+                  write(stderrUnit,*) 'WARNING: vertical_remap, mass*tracer conservation error, iCell =', iCell
+                  write(stderrUnit,*) 'init energy, final energy, difference:', initEnergySum, finalEnergySum, finalEnergySum - initEnergySum
+               endif
             endif
          endif
          
