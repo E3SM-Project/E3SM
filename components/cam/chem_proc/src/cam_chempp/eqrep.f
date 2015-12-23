@@ -162,7 +162,11 @@
                   end if
                   production = .true.
                   rxno = rxmap(j,1,i)
-                  if( coeff_ind(rxno) /= 0 .and. coeffs(k-(i+1),coeff_ind(rxno)) /= 1.e0 ) then
+!BSINGH(12/20/2013): Original line: if( coeff_ind(rxno) /= 0 .and. coeffs(k-(i+1),coeff_ind(rxno)) /= 1.e0 ) then
+!BSINGH(12/20/2013): Mods start (first check if coeff_ind(rxno) is non zero before using it as an index of coeffs array)
+                  if( coeff_ind(rxno) /= 0) then
+                     if( coeffs(k-(i+1),coeff_ind(rxno)) /= 1.e0 ) then
+!BSINGH -ENDS
                      call NUMCON( eq_piece(buf_pos:), coeffs(k-(i+1),coeff_ind(rxno)), 'l' )
                      buf_pos = LEN_TRIM( eq_piece ) + 1
                      if( rxno > phtcnt ) then
@@ -179,6 +183,9 @@
                      end if
                      buf_pos = buf_pos + 1
                   end if
+!BSINGH(12/20/2013): Mods start
+               endif
+!BSINGH -ENDS
                   if( rxno > phtcnt ) then
                      call NUMCON( eq_piece(buf_pos:), REAL(rxno-phtcnt), 'l' )
                   else

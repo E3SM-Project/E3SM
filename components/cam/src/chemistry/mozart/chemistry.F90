@@ -917,8 +917,8 @@ end function chem_is_active
     call phys_getopts( cam_chempkg_out=chem_name, &
                        history_aerosol_out=history_aerosol )
 
-    ! Initialize aerosols
-    call aero_model_init( pbuf2d, species_class ) 
+    ! Initialize aerosols - part 1   ! REASTER 8/4/2015
+    call aero_model_init( pbuf2d, species_class, 1 ) 
 
     ! aqueous chem initialization
     call sox_inti()
@@ -1049,6 +1049,10 @@ end function chem_is_active
                 trim(shr_megan_mechcomps(n)%name)//' MEGAN emissions flux',phys_decomp)
         enddo
      endif
+
+    ! Initialize aerosols - part 2   ! REASTER 8/4/2015
+    call aero_model_init( pbuf2d, species_class, 2 ) 
+
   end subroutine chem_init
 
 !================================================================================
