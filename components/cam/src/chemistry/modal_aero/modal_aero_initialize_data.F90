@@ -1,4 +1,3 @@
-
 module modal_aero_initialize_data
   use cam_logfile,           only : iulog
   use cam_abortutils,            only: endrun
@@ -314,7 +313,6 @@ contains
        !-----------------------------------------------------------------------
 
        pi = 4._r8*atan(1._r8)    
-
        call phys_getopts(convproc_do_gas_out = convproc_do_gas, &
             convproc_do_aer_out = convproc_do_aer, &
             mam_amicphys_optaa_out = mam_amicphys_optaa ) 
