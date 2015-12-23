@@ -82,6 +82,7 @@
       character (len=StrKIND) :: attName
       integer :: attType
       integer :: attValueInt
+      integer :: precision
       integer, dimension(:), pointer :: attValueIntA => null()
       real (kind=RKIND) :: attValueReal
       real (kind=RKIND), dimension(:), pointer :: attValueRealA => null()
