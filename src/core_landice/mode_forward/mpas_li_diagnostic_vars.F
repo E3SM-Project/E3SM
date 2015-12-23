@@ -54,8 +54,6 @@ module li_diagnostic_vars
 
    !WHL - debug
    logical :: firstCall = .true.
-   integer, parameter :: itest = 485
-
 
 !***********************************************************************
 
@@ -457,7 +455,9 @@ contains
       integer :: err_tmp
 
       !WHL - debug
+      integer, dimension(:), pointer :: indexToCellID
       integer, pointer :: nVertLevels
+      integer, pointer :: config_stats_cell_ID
       logical, pointer :: config_print_thickness_advection_info
       integer :: k
 
@@ -534,7 +534,9 @@ contains
 
           !WHL - debug
           call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+          call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
           call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
+          call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
 
           ! Lower surface is based on floatation for floating ice.  For grounded ice (and non-ice areas) it is the bed.
           where ( li_mask_is_floating_ice(cellMask) )
@@ -576,6 +578,7 @@ contains
                 endif
              end do  ! edges
           endif
+
           ! The remaining calculations are only needed by the SIA solver
           if (trim(config_velocity_solver) == 'sia') then
              call mpas_pool_get_config(liConfigs, 'config_sia_tangent_slope_calculation', config_sia_tangent_slope_calculation)
@@ -630,9 +633,9 @@ contains
           end if ! SIA variables
 
 
-          ! Do vertical remapping of layerThickness and tracers
+          ! Optionally, do vertical remapping of layerThickness and tracers
           ! Note: For the new advection scheme, vertical remapping is done immediately after the horizontal advection 
-          !       and mass balance calculations. It need not be repeated here.
+          !       and mass balance calculations. It does not need to be done here.
 
           if (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'fo') then
 
@@ -661,11 +664,15 @@ contains
 
           !WHL - debug
           if (config_print_thickness_advection_info) then
-             write(stderrUnit,*) ' '
-             write(stderrUnit,*) 'Diag solve before velocity (after vertical_remap), iCell =', itest
-             write(stderrUnit,*) 'layerThickness:'
-             do k = 1, nVertLevels
-                write(stderrunit,*) k, layerThickness(k,itest)
+             do iCell = 1, nCells
+                if (indexToCellID(iCell) == config_stats_cell_ID) then
+                   write(stderrUnit,*) ' '
+                   write(stderrUnit,*) 'Diag solve before velocity (after vertical_remap), iCell (local, global) =', iCell, indexToCellID(iCell)
+                   write(stderrUnit,*) 'layerThickness:'
+                   do k = 1, nVertLevels
+                      write(stderrunit,*) k, layerThickness(k,iCell)
+                   enddo
+                endif
              enddo
           endif
           
@@ -814,7 +821,8 @@ contains
       real (kind=RKIND) :: VelSign
 
       !WHL - debug
-      integer, pointer :: nCells
+      integer, pointer :: nCells, config_stats_cell_ID
+      integer, dimension(:), pointer :: indexToCellID, indexToEdgeID
       logical, pointer :: config_print_thickness_advection_info
       integer :: iCell
 
@@ -832,7 +840,10 @@ contains
 
       !WHL - debug
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
+      call mpas_pool_get_array(meshPool, 'indexToEdgeID', indexToEdgeID)
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
+      call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
 
       ! Calculate h_edge.  This is used by both thickness and tracer advection on the following Forward Euler time step.  
@@ -872,10 +883,10 @@ contains
       !WHL - debug
       if (config_print_thickness_advection_info) then
          write(stderrUnit,*) ' '
-         write(stderrUnit,*) 'End of timestep: iCell, new thickness:'
+         write(stderrUnit,*) 'End of timestep: iCell (global), new thickness:'
          do iCell = 1, nCells
             if (layerThickness(1,iCell) > 0.0_RKIND) then
-               write(stderrUnit,*) iCell, sum(layerThickness(:,iCell))
+               write(stderrUnit,*) indexToCellID(iCell), sum(layerThickness(:,iCell))
             endif
          enddo
       endif
