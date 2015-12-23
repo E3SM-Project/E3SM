@@ -296,6 +296,7 @@ subroutine phys_ctl_readnl(nlfile)
    ! prog_modal_aero determines whether prognostic modal aerosols are present in the run.
    prog_modal_aero = (     cam_chempkg_is('trop_mam3') &
                       .or. cam_chempkg_is('trop_mam4') &
+                      .or. cam_chempkg_is('trop_mam4_resus') &
                       .or. cam_chempkg_is('trop_mam7') &
                       .or. cam_chempkg_is('super_fast_llnl_mam3') &
                       .or. cam_chempkg_is('trop_mozart_mam3') &
