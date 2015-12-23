@@ -48,7 +48,6 @@ typedef int MPI_Group;
 #define MPI_ERR_IN_STATUS  (-1)
 #define MPI_ERR_LASTCODE   (-1)
 
-
 /*
  * MPI_UNDEFINED
  *
@@ -190,6 +189,14 @@ typedef struct                  /* Fortran: INTEGER status(MPI_STATUS_SIZE) */
 #define MPI_STATUS_IGNORE    ((MPI_Status *)0)
 #define MPI_STATUSES_IGNORE  ((MPI_Status *)0)
 
+
+/*
+ * MPI Errhandling stubs (Not functional currently)
+ */
+typedef int MPI_Errhandler;
+
+#define MPI_ERRORS_ARE_FATAL ((MPI_Errhandler)0)
+#define MPI_ERRORS_RETURN    ((MPI_Errhandler)-1)
 
 
 /*
@@ -388,6 +395,9 @@ extern int MPI_Iprobe(int source, int tag, MPI_Comm comm,
                       int *flag, MPI_Status *status);
 
 extern int MPI_Pack_size(int incount, MPI_Datatype type, MPI_Comm comm, MPI_Aint * size);
+
+/* Error handling stub, not currently functional */
+extern int MPI_Errhandler_set(MPI_Comm comm, MPI_Errhandler handle);
 
 /* new type functions */
 extern int MPI_Get_count(MPI_Status *status, MPI_Datatype datatype, int *count);
