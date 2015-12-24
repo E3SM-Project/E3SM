@@ -43,8 +43,9 @@ module li_advection
    !--------------------------------------------------------------------
    public :: li_advection_thickness_tracers
 
-   public :: li_vertical_remap  !TODO - can make this private once the old advection scheme is removed
-
+   !TODO - can make the following private once the old advection scheme is removed
+   public :: li_vertical_remap, tracer_setup, tracer_finish  
+ 
    !--------------------------------------------------------------------
    !
    ! Private module variables
@@ -158,7 +159,7 @@ module li_advection
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,           & ! interior ice temperature
-           waterfrac,             & ! interior ice water fraction
+           waterfrac,             & ! interior water fraction
            enthalpy                 ! interior ice enthalpy
 
       real (kind=RKIND), dimension(:,:), pointer :: &
@@ -172,9 +173,6 @@ module li_advection
       type (field3DReal), pointer :: &
            advectedTracersOldField, & ! scratch field containing old values of advected tracers
            advectedTracersNewField    ! scratch field containing new values of advected tracers
-
-      real (kind=RKIND), dimension(:,:,:), pointer :: &
-           thermalTracers           ! thermal tracers (temperature, waterfrac, enthalpy)
 
       integer, dimension(:), pointer :: &
            cellMask                 ! integer bitmask for cells
@@ -243,7 +241,9 @@ module li_advection
       call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
 
       ! get arrays from the thermal pool
-      call mpas_pool_get_array(thermalPool, 'tracers', thermalTracers)
+      call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+      call mpas_pool_get_array(thermalPool, 'waterfrac', waterfrac)
+      call mpas_pool_get_array(thermalPool, 'enthalpy', enthalpy)
 
       ! get config variables
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
@@ -312,7 +312,6 @@ module li_advection
                  meshPool,          &
                  geometryPool,      &
                  thermalPool,       &
-                 thermalTracers,    &
                  advectedTracersOld)
 
             if (dome_test .and. config_print_thickness_advection_info) then
@@ -473,8 +472,7 @@ module li_advection
                  meshPool,              &
                  geometryPool,          &
                  thermalPool,           &
-                 advectedTracersNew,    &
-                 thermalTracers)
+                 advectedTracersNew)
 
          endif
 
@@ -525,7 +523,6 @@ module li_advection
          meshPool,       &
          geometryPool,   &
          thermalPool,    &
-         thermalTracers, &
          advectedTracers)
 
       use li_thermal, only: li_temperature_to_enthalpy
@@ -544,9 +541,6 @@ module li_advection
 
       type (mpas_pool_type), intent(inout) :: &
            thermalPool          !< Input: temperature/enthalpy information
-
-      real (kind=RKIND), dimension(:,:,:), pointer :: &
-           thermalTracers       !> Input: tracers from thermal pool
 
       !-----------------------------------------------------------------
       !
@@ -570,10 +564,10 @@ module li_advection
       integer, pointer :: &
            nCellsSolve                ! number of locally owned cells
 
-      integer, pointer :: &
-           index_temperature, &       ! indices of the tracers in the thermal pool
-           index_waterfrac,   &
-           index_enthalpy
+      real (kind=RKIND), dimension(:,:), pointer :: &
+           temperature,           & ! interior ice temperature
+           waterfrac,             & ! interior water fraction
+           enthalpy                 ! interior ice enthalpy
 
       real (kind=RKIND), dimension(:), pointer :: &
            layerCenterSigma           ! sigma coordinate at midpoint of each layer
@@ -585,9 +579,6 @@ module li_advection
 
       ! get dimensions
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
-      call mpas_pool_get_dimension(thermalPool, 'index_temperature', index_temperature)
-      call mpas_pool_get_dimension(thermalPool, 'index_waterfrac', index_waterfrac)
-      call mpas_pool_get_dimension(thermalPool, 'index_enthalpy', index_enthalpy)
 
       ! get arrays from mesh pool
       call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
@@ -595,9 +586,10 @@ module li_advection
       ! get arrays from geometry pool
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
 
-      call mpas_pool_get_dimension(thermalPool, 'index_temperature', index_temperature)
-      call mpas_pool_get_dimension(thermalPool, 'index_waterfrac', index_waterfrac)
-      call mpas_pool_get_dimension(thermalPool, 'index_enthalpy', index_enthalpy)
+      ! get arrays from thermal pool
+      call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+      call mpas_pool_get_array(thermalPool, 'waterfrac', waterfrac)
+      call mpas_pool_get_array(thermalPool, 'enthalpy', enthalpy)
 
       ! get config variables
       call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
@@ -621,17 +613,17 @@ module li_advection
             call li_temperature_to_enthalpy(&
                  layerCenterSigma,      &
                  thickness(iCell),      &
-                 thermalTracers(index_temperature,:,iCell),  &
-                 thermalTracers(index_waterfrac,:,iCell),    &
-                 thermalTracers(index_enthalpy,:,iCell))
+                 temperature(:,iCell),  &
+                 waterfrac(:,iCell),    &
+                 enthalpy(:,iCell))
 
          enddo
 
-         advectedTracers(iTracer,:,:) = thermalTracers(index_enthalpy,:,:)
+         advectedTracers(iTracer,:,:) = enthalpy(:,:)
 
       elseif (trim(config_thermal_solver) == 'temperature') then  ! advect temperature
 
-         advectedTracers(iTracer,:,:) = thermalTracers(index_temperature,:,:)
+         advectedTracers(iTracer,:,:) = temperature(:,:)
 
       endif
 
@@ -657,8 +649,7 @@ module li_advection
          meshPool,           &
          geometryPool,       &
          thermalPool,        &
-         advectedTracers,    &
-         thermalTracers)
+         advectedTracers)
 
       use li_thermal, only: li_enthalpy_to_temperature
 
@@ -678,17 +669,14 @@ module li_advection
       type (mpas_pool_type), intent(in) :: &
            geometryPool         !< Input: geometry information
 
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
       type (mpas_pool_type), intent(inout) :: &
-           thermalPool          !< Input: temperature/enthalpy information
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:,:,:), intent(out) :: &
-           thermalTracers       !< Output: tracers from thermal pool
+           thermalPool          !< Input/output: temperature/enthalpy information
 
       !-----------------------------------------------------------------
       !
@@ -702,33 +690,32 @@ module li_advection
       integer, pointer :: &
            nCellsSolve                ! number of locally owned cells
 
-      integer, pointer :: &
-           index_temperature, &       ! indices of the tracers in the thermal pool
-           index_waterfrac,   &
-           index_enthalpy
-
       real (kind=RKIND), dimension(:), pointer :: &
            layerCenterSigma           ! sigma coordinate at midpoint of each layer
 
       real (kind=RKIND), dimension(:), pointer :: &
            thickness                  ! ice thickness
 
-      real (kind=RKIND), dimension(:), pointer :: &
-           temperature
+      real (kind=RKIND), dimension(:,:), pointer :: &
+           temperature,             & ! interior ice temperature
+           waterfrac,               & ! water fraction
+           enthalpy                   ! interior ice enthalpy
 
       integer :: iCell, iTracer
 
       ! get dimensions
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
-      call mpas_pool_get_dimension(thermalPool, 'index_temperature', index_temperature)
-      call mpas_pool_get_dimension(thermalPool, 'index_waterfrac', index_waterfrac)
-      call mpas_pool_get_dimension(thermalPool, 'index_enthalpy', index_enthalpy)
 
       ! get arrays from mesh pool
       call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
 
       ! get arrays from geometry pool
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+
+      ! get arrays from thermal pool
+      call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+      call mpas_pool_get_array(thermalPool, 'waterfrac', waterfrac)
+      call mpas_pool_get_array(thermalPool, 'enthalpy', enthalpy)
 
       ! get config variables
       call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
@@ -738,7 +725,7 @@ module li_advection
       if (trim(config_thermal_solver) == 'enthalpy') then
 
          ! update the enthalpy
-         thermalTracers(index_enthalpy,:,:) = advectedTracers(iTracer,:,:)
+         enthalpy(:,:) = advectedTracers(iTracer,:,:)
 
          ! given the enthalpy, compute the temperature and water fraction
 
@@ -747,16 +734,16 @@ module li_advection
             call li_enthalpy_to_temperature(&
                  layerCenterSigma,                           &
                  thickness(iCell),                           &
-                 thermalTracers(index_enthalpy,:,iCell),     &
-                 thermalTracers(index_temperature,:,iCell),  &
-                 thermalTracers(index_waterfrac,:,iCell))
+                 enthalpy(:,iCell),     &
+                 temperature(:,iCell),  &
+                 waterfrac(:,iCell))
 
          enddo
 
       elseif (trim(config_thermal_solver) == 'temperature') then
 
          ! update the temperature
-         thermalTracers(index_temperature,:,:) = advectedTracers(iTracer,:,:)
+         temperature(:,:) = advectedTracers(iTracer,:,:)
 
       endif
 
@@ -858,7 +845,8 @@ module li_advection
            config_print_thickness_advection_info
 
       integer, dimension(:), pointer :: &
-           indexToCellID      ! global index for local cells
+           indexToCellID,   & ! global index for local cells
+           indexToEdgeID      ! global index for local edges
 
       integer, pointer :: &
            config_stats_cell_ID      ! global index of diagnostic cell
@@ -917,6 +905,7 @@ module li_advection
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
+      call mpas_pool_get_array(meshPool, 'indexToEdgeID', indexToEdgeID)
 
       ! get config variables
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
@@ -926,10 +915,6 @@ module li_advection
       minOfMaxAllowableDt = bigNumber
       newLayerThickness(:,:) = 0.0_RKIND
       newTracers(:,:,:) = 0.0_RKIND
-
-      ! Note: This loop structure (nCells loop outside nEdgesOnCell loop) results in double calculation of fluxes
-      !       across each edge. Upwind advection is so cheap, however, that the extra cost is minimal.
-      ! TODO: Reorganize as a loop over edges, and then cells?
 
       if (checkConservation) then
 
@@ -942,6 +927,10 @@ module li_advection
          enddo
 
       endif
+
+      ! Note: This loop structure (nCells loop outside nEdgesOnCell loop) results in double calculation of fluxes
+      !       across each edge. Upwind advection is so cheap, however, that the extra cost is minimal.
+      ! TODO: Reorganize as a loop over edges, and then cells?
 
       ! loop over locally owned cells
       do iCell = 1, nCellsSolve
@@ -981,8 +970,7 @@ module li_advection
                endif
 
                if ( maxAllowableDt < dt ) then
-                  !TODO - Modify to write global edge index
-                  write(stderrUnit,*) 'CFL violation at level, edge', k, iEdge
+                  write(stderrUnit,*) 'CFL violation at level, edge ID (local, global):', k, iEdge, indexToEdgeID(iEdge)
                   err = err + 1
                endif
                minOfMaxAllowableDt = min(minOfMaxAllowableDt, maxAllowableDt)
@@ -1174,8 +1162,8 @@ module li_advection
       allocate(layerInterfaceSigma_Input(nVertLevels+1))
       allocate(hTsum(nTracers, nVertLevels))
 
-      !TODO WHL - We could avoid the eps30 by inserting 'if (thickness(iCell) > 0.0_RKIND'
-      !           Not sure whether it is critical to avoid the 'if'
+      !TODO  We could avoid the eps30 by inserting 'if (thickness(iCell) > 0.0_RKIND'
+      !      Not sure how important it is to avoid the 'if'
 
       ! loop over cells
       do iCell = 1, nCells
@@ -1250,7 +1238,6 @@ module li_advection
          do k = 1, nVertLevels
             do nt = 1, nTracers
                tracers(nt,k,iCell) = hTsum(nt,k) / (layerThickness(k, iCell) + eps30)
-               !TODO - Remove the following line of code. Matt uses this in the old vertical remap code.
                layerThickness(k,iCell) = layerThickness(k,iCell) * real(li_mask_is_ice_int(cellMask(iCell)), RKIND)
                ! Note: the last term is used to multiply by 0 where there is no ice in order to clear out garbage introduced by eps30 
             enddo         ! nt

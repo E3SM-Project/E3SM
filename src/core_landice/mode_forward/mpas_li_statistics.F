@@ -107,7 +107,7 @@ module li_statistics
      real (kind=RKIND), dimension(:),     pointer :: upperSurface
      real (kind=RKIND), dimension(:),     pointer :: surfaceTemperature, basalTemperature
      real (kind=RKIND), dimension(:,:),   pointer :: layerThickness, normalVelocity
-     real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+     real (kind=RKIND), dimension(:,:),   pointer :: temperature
 
      ! scratch variables
      type (field1dInteger), pointer :: iceCellMaskField
@@ -124,7 +124,7 @@ module li_statistics
      integer, pointer :: statsCellID       ! global ID of cell for which we write stats/diagnostics
 
      ! other pointers
-     integer, pointer :: indexTemperature
+!     integer, pointer :: indexTemperature
 
      ! work variables and arrays
      real (kind=RKIND) :: localSum, localMin, localMax, localVertSumMin, localVertSumMax
@@ -237,19 +237,18 @@ module li_statistics
         call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness, timeLevel = 1)
         call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
 
-        ! scratch fields
+        ! scratch arrays
         call mpas_pool_get_field(scratchPool, 'iceCellMask', iceCellMaskField)
         call mpas_pool_get_field(scratchPool, 'iceEdgeMask', iceEdgeMaskField)
         call mpas_pool_get_field(scratchPool, 'workLevelCell', workLevelCellField)
 
-        ! velocity variables
+        ! velocity arrays
         call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
 
-        ! thermal variables
-        call mpas_pool_get_array(thermalPool, 'tracers', tracers)
+        ! thermal arrays
+        call mpas_pool_get_array(thermalPool, 'temperature', temperature)
         call mpas_pool_get_array(thermalPool, 'surfaceTemperature', surfaceTemperature)
         call mpas_pool_get_array(thermalPool, 'basalTemperature', basalTemperature)
-        call mpas_pool_get_dimension(thermalPool, 'index_temperature', indexTemperature)
 
         ! config settings
         call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
@@ -343,7 +342,7 @@ module li_statistics
 
         call li_compute_field_local_stats(dminfo,                                    &
                                           nVertLevels,        nCellsSolve,           &
-                                          tracers(indexTemperature,:,1:nCellsSolve), &
+                                          temperature(:,1:nCellsSolve),              &
                                           iceCellMask(1:nCellsSolve),                &
                                           localSum,                                  &
                                           localMin,           localMax,              &
@@ -371,7 +370,7 @@ module li_statistics
                                            nVertLevels,                     nCellsSolve,  &
                                            areaCell(1:nCellsSolve),                       &
                                            layerThickness(:,1:nCellsSolve),               & 
-                                           tracers(indexTemperature,:,1:nCellsSolve),     &
+                                           temperature(:,1:nCellsSolve),                  &
                                            iceCellMask(1:nCellsSolve),                    &
                                            localSum,                                      &
                                            localMin,                        localMax,     &
@@ -457,7 +456,7 @@ module li_statistics
               iEdge = edgesOnCell(1,iCell)  ! arbitrarily choose edge #1 for velocity diagnostics
                                             ! alternatively, could write out the cell-center velocity
               diagnosticSpeed(:) = normalVelocity(:,iEdge) * scyr  ! convert from m/s to m/yr
-              diagnosticTemperature(:) = tracers(indexTemperature,:,iCell)
+              diagnosticTemperature(:) = temperature(:,iCell)
            endif
         enddo
         

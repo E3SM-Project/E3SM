@@ -388,7 +388,9 @@ contains
       use mpas_vector_operations, only: mpas_tangential_vector_1d
    
       !WHL - debug
-      use li_advection, only: new_thickness_advection, li_vertical_remap
+      !TODO - Remove these use statements after old advection scheme is removed
+      use li_advection, only: new_thickness_advection
+      use li_advection, only: li_vertical_remap, tracer_setup, tracer_finish
 
       !-----------------------------------------------------------------
       !
@@ -434,8 +436,7 @@ contains
       integer, dimension(:,:), pointer :: baryCellsOnVertex
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, baryWeightsOnVertex
       real (kind=RKIND), dimension(:,:), pointer :: flowParamA
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
-      integer, pointer :: index_temperature
+      real (kind=RKIND), dimension(:,:), pointer :: temperature
       type (field1DInteger), pointer :: cellMaskField, edgeMaskField, vertexMaskField, floatingEdgesField
       integer, pointer :: nCells, nVertices, nEdges
       integer, pointer :: anyDynamicVertexMaskChanged
@@ -460,6 +461,11 @@ contains
       integer, pointer :: config_stats_cell_ID
       logical, pointer :: config_print_thickness_advection_info
       integer :: k
+      type (mpas_pool_type), pointer :: scratchPool
+      real (kind=RKIND), dimension(:,:,:), pointer :: &
+           advectedTracers       ! values of advected tracers
+      type (field3DReal), pointer :: &
+           advectedTracersField  ! scratch field containing values of advected tracers
 
       err = 0
       err_tmp = 0
@@ -528,9 +534,9 @@ contains
           call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
           call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
           call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness, timeLevel = 1)
-          call mpas_pool_get_array(thermalPool, 'tracers', tracers)
-          call mpas_pool_get_dimension(thermalPool, 'index_temperature', index_temperature)
           call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+
+          call mpas_pool_get_array(thermalPool, 'temperature', temperature)
 
           !WHL - debug
           call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
@@ -592,7 +598,7 @@ contains
              call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
 
              ! Calculate flowA
-             call calculate_flowParamA(meshPool, tracers(index_temperature,:,:), thickness, flowParamA, err_tmp)
+             call calculate_flowParamA(meshPool, temperature(:,:), thickness, flowParamA, err_tmp)
              err = ior(err, err_tmp)
 
              ! Calculate upperSurfaceVertex if needed
@@ -632,7 +638,7 @@ contains
 
           end if ! SIA variables
 
-
+          !TODO - Simplify the following when the old advection scheme is removed; no need to call vertical remapping here
           ! Optionally, do vertical remapping of layerThickness and tracers
           ! Note: For the new advection scheme, vertical remapping is done immediately after the horizontal advection 
           !       and mass balance calculations. It does not need to be done here.
@@ -643,22 +649,40 @@ contains
 
           else  ! no tracer advection; check whether the new vertical_remap suborutine has been called yet
 
+             ! create a temporary tracer field to pass to li_vertical_remap
+             call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+             call mpas_pool_get_field(scratchPool, 'workTracerLevelCell', advectedTracersField)
+             call mpas_allocate_scratch_field(advectedTracersField, .true.)
+             advectedTracers => advectedTracersField % array
+
              !WHL - debug - If new_thickness_advection = T, then vertical remapping has been done already
-             if (.not.new_thickness_advection) then
-
-                call li_vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err_tmp)
-
-             elseif (firstCall) then
+             if (.not.new_thickness_advection .or. firstCall) then
 
                 !WHL - debug
                 ! With the old advection scheme, li_vertical_remap is called before the first diagnostic solve.
                 ! This call is not strictly necessary, but skipping it changes the answers.
                 ! So if this is the first call, call li_vertical_remap here instead of waiting until advection is called.
                 ! TODO - This call can be removed once the BFB requirement is relaxed.
-                firstCall = .false.
-                call li_vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err_tmp)
 
-             endif  ! firstCall
+                ! Note: I am calling this subroutine tracer_setup instead of li_tracer_setup because it will be private to li_advection after cleanup
+                call tracer_setup(&
+                     meshPool,          &
+                     geometryPool,      &
+                     thermalPool,       &
+                     advectedTracers)
+
+                call li_vertical_remap(thickness, cellMask, meshPool, layerThickness, advectedTracers, err_tmp)
+
+                ! Note: I am calling this subroutine tracer_finish instead of li_tracer_finish because it will be private to li_advection after cleanup
+                call tracer_finish(&
+                     meshPool,          &
+                     geometryPool,      &
+                     thermalPool,       &
+                     advectedTracers)
+
+                firstCall = .false.
+
+             endif  ! old thickness advection or firstCall
 
           endif
 
