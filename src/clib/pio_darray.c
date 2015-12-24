@@ -407,15 +407,10 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
      ncid = file->fh;
      region = firstregion;
 
-     /*     if(vdesc->record >= 0){
-       if(ndims<fndims){
-	 ndims++;
-       
-     }
-     */
+     
      rrcnt=0;
      for(regioncnt=0;regioncnt<maxregions;regioncnt++){
-       printf("%s %d %d %d %d %d %d\n",__FILE__,__LINE__,region->start[0],region->count[0],ndims,fndims,vdesc->record);
+       // printf("%s %d %d %d %d %d %d\n",__FILE__,__LINE__,region->start[0],region->count[0],ndims,fndims,vdesc->record);
        for(i=0;i<fndims;i++){
 	 start[i] = 0;
 	 count[i] = 0;
@@ -609,8 +604,10 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 	     //	     printf("%s %d %d %d\n",__FILE__,__LINE__,vdesc->nreqs,vdesc->request[reqn]);
 	   }
 	   for(i=0;i<rrcnt;i++){
-	     for(j=0;j<fndims;j++){
-	       printf("pio_darray: %d %d %d %ld %ld \n",__LINE__,i,j,startlist[i][j],countlist[i][j]);
+	     if(ierr != PIO_NOERR){
+	       for(j=0;j<fndims;j++){
+		 printf("pio_darray: %d %d %d %ld %ld \n",__LINE__,i,j,startlist[i][j],countlist[i][j]);
+	       }
 	     }
 	     free(startlist[i]);
 	     free(countlist[i]);
