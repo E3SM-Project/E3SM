@@ -132,11 +132,6 @@ module li_thermal
       integer, pointer :: &
            config_stats_cell_ID             ! cell ID for diagnostic output
 
-      integer, pointer :: &            
-           index_temperature,  &       ! indices of the tracers in the thermal pool
-           index_waterfrac,    &
-           index_enthalpy
-
       integer, pointer :: &
            nCellsSolve,              & ! number of locally owned cells
            nVertLevels                 ! number of vertical layers
@@ -150,8 +145,6 @@ module li_thermal
 
       real (kind=RKIND), dimension(:), pointer :: &
            thickness                   ! ice thickness
-
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,              & ! interior ice temperature (K)
@@ -172,7 +165,9 @@ module li_thermal
            surfaceTemperatureField,  &
            basalTemperatureField
 
-      type (field3DReal), pointer :: tracersField
+      type (field2DReal), pointer :: &
+           temperatureField,  &
+           waterfracField
 
       real (kind=RKIND), dimension(:), allocatable :: &
            pmptemp                     ! pressure melting point temp in ice interior
@@ -239,9 +234,6 @@ module li_thermal
          ! get dimensions
          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
-         call mpas_pool_get_dimension(thermalPool, 'index_temperature', index_temperature)
-         call mpas_pool_get_dimension(thermalPool, 'index_waterfrac', index_waterfrac)
-         call mpas_pool_get_dimension(thermalPool, 'index_enthalpy', index_enthalpy)
 
          ! get arrays from the mesh pool
          call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
@@ -252,16 +244,13 @@ module li_thermal
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
 
          ! get arrays from the thermal pool
-         call mpas_pool_get_array(thermalPool, 'tracers', tracers)
+         call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+         call mpas_pool_get_array(thermalPool, 'waterfrac', waterfrac)
+         call mpas_pool_get_array(thermalPool, 'enthalpy', enthalpy)
          call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature', surfaceTemperature)
          call mpas_pool_get_array(thermalPool, 'basalTemperature',   basalTemperature)
          call mpas_pool_get_array(thermalPool, 'basalHeatFlux', basalHeatFlux)
-
-         !TODO - Modify to avoid strides?
-         temperature => tracers(index_temperature,:,:)
-         waterfrac => tracers(index_waterfrac,:,:)
-         enthalpy => tracers(index_enthalpy,:,:)
 
          if (config_print_thermal_info) then
             write(stderrUnit,*) 'Initialize thermal solver, config_temperature_init = ', trim(config_temperature_init)
@@ -515,9 +504,14 @@ module li_thermal
       call mpas_pool_get_field(thermalPool, 'basalTemperature', basalTemperatureField)
       call mpas_dmpar_exch_halo_field(basalTemperatureField)
 
-      ! tracersField includes temperature, waterfrac and enthalpy
-      call mpas_pool_get_field(thermalPool, 'tracers', tracersField)
-      call mpas_dmpar_exch_halo_field(tracersField)
+      call mpas_pool_get_field(thermalPool, 'temperature', temperatureField)
+      call mpas_dmpar_exch_halo_field(temperatureField)
+
+      if (trim(config_thermal_solver) == 'enthalpy') then
+         ! prognostic variables are temperature and waterfrac, so need to update waterfrac too
+         call mpas_pool_get_field(thermalPool, 'waterfrac', waterfracField)
+         call mpas_dmpar_exch_halo_field(waterfracField)
+      endif
 
       call mpas_timer_stop("halo updates")
 
@@ -579,11 +573,6 @@ module li_thermal
            nCellsSolve,              & ! number of locally owned cells
            nVertLevels                 ! number of vertical layers
 
-      integer, pointer :: &
-           index_temperature,  &       ! indices of the tracers in the thermal pool 
-           index_waterfrac,  &
-           index_enthalpy
-
       logical, pointer :: &
            config_print_thermal_info   ! if true, print debug info
 
@@ -630,8 +619,6 @@ module li_thermal
            lowerSurface,             & ! lower surface elevation (m)
            bedTopography               ! bed topography (m; negative below sea level)
 
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
-
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,              & ! interior ice temperature (K)
            waterfrac,                & ! interior water fraction (unitless)
@@ -644,7 +631,9 @@ module li_thermal
            surfaceTemperatureField,  &
            basalTemperatureField
 
-      type (field3DReal), pointer :: tracersField
+      type (field2DReal), pointer :: &
+           temperatureField,  &
+           waterfracField
 
       real(kind=RKIND), dimension(:), allocatable :: &
            subdiagonal, diagonal, superdiagonal,   &  ! tridiagonal matrix elements
@@ -691,9 +680,6 @@ module li_thermal
          ! get dimensions
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-         call mpas_pool_get_dimension(thermalPool, 'index_temperature', index_temperature)
-         call mpas_pool_get_dimension(thermalPool, 'index_waterfrac', index_waterfrac)
-         call mpas_pool_get_dimension(thermalPool, 'index_enthalpy', index_enthalpy)
 
          ! get fields from the mesh pool
          call mpas_pool_get_array(meshPool, 'xCell', xCell)
@@ -712,7 +698,9 @@ module li_thermal
          call mpas_pool_get_array(geometryPool, 'basalWaterThickness', basalWaterThickness)
 
          ! get fields from the thermal pool
-         call mpas_pool_get_array(thermalPool, 'tracers', tracers)
+         call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+         call mpas_pool_get_array(thermalPool, 'waterfrac', waterfrac)
+         call mpas_pool_get_array(thermalPool, 'enthalpy', enthalpy)
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature', surfaceTemperature)
          call mpas_pool_get_array(thermalPool, 'basalTemperature',   basalTemperature)
          call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
@@ -721,11 +709,6 @@ module li_thermal
          call mpas_pool_get_array(thermalPool, 'basalHeatFlux', basalHeatFlux)
          call mpas_pool_get_array(thermalPool, 'basalFrictionFlux', basalFrictionFlux)
          call mpas_pool_get_array(thermalPool, 'heatDissipation', heatDissipation)
-
-         !TODO - Modify to avoid strides?
-         temperature => tracers(index_temperature,:,:)
-         waterfrac => tracers(index_waterfrac,:,:)
-         enthalpy => tracers(index_enthalpy,:,:)
 
          ! get fields from the scratch pool
          call mpas_pool_get_field(scratchPool, 'iceCellMask', thermalCellMaskField)
@@ -1242,9 +1225,14 @@ module li_thermal
       call mpas_pool_get_field(thermalPool, 'basalTemperature', basalTemperatureField)
       call mpas_dmpar_exch_halo_field(basalTemperatureField)
 
-      ! tracersField includes temperature, waterfrac and enthalpy
-      call mpas_pool_get_field(thermalPool, 'tracers', tracersField)
-      call mpas_dmpar_exch_halo_field(tracersField)
+      call mpas_pool_get_field(thermalPool, 'temperature', temperatureField)
+      call mpas_dmpar_exch_halo_field(temperatureField)
+
+      if (trim(config_thermal_solver) == 'enthalpy') then
+         ! prognostic variables are temperature and waterfrac, so need to update waterfrac too
+         call mpas_pool_get_field(thermalPool, 'waterfrac', waterfracField)
+         call mpas_dmpar_exch_halo_field(waterfracField)
+      endif
 
       call mpas_timer_stop("halo updates")
 

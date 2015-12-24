@@ -403,13 +403,12 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-      integer, pointer :: index_temperature
+
       real (kind=RKIND), dimension(:), pointer :: &
          thickness, bedTopography, lowerSurface, upperSurface, layerThicknessFractions, betaSolve, sfcMassBal
       real (kind=RKIND), dimension(:,:), pointer :: &
          normalVelocity, uReconstructX, uReconstructY, uReconstructZ
-      real (kind=RKIND), dimension(:,:,:), pointer :: &
-         tracers
+      real (kind=RKIND), dimension(:,:), pointer :: temperature
       real (kind=RKIND), pointer :: deltat
       integer, dimension(:), pointer :: vertexMask, cellMask, edgeMask, floatingEdges
       integer, dimension(:,:), pointer :: dirichletVelocityMask
@@ -445,8 +444,7 @@ contains
       call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
 
       ! Thermal variables
-      call mpas_pool_get_array(thermalPool, 'tracers', tracers)
-      call mpas_pool_get_dimension(thermalPool, 'index_temperature', index_temperature)
+      call mpas_pool_get_array(thermalPool, 'temperature', temperature)
 
       ! Velocity variables
       call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
@@ -493,10 +491,9 @@ contains
       case ('L1L2') ! ===============================================
 #ifdef USE_EXTERNAL_L1L2
           call mpas_timer_start("velocity_solver_solve_L1L2")
-          call velocity_solver_solve_L1L2(lowerSurface, thickness, betaSolve, tracers(index_temperature,:,:), &
+          call velocity_solver_solve_L1L2(lowerSurface, thickness, betaSolve, temperature, &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, uReconstructX, uReconstructY)  ! return values
-!         call velocity_solver_estimate_SS_SMB(normalVelocity, mesh % sfcMassBal % array)
           call mpas_timer_stop("velocity_solver_solve_L1L2")
 
           if (config_output_external_velocity_solver_data) then
@@ -516,7 +513,7 @@ contains
 #ifdef USE_EXTERNAL_FIRSTORDER
           call mpas_timer_start("velocity_solver_solve_FO")
           call velocity_solver_solve_FO(bedTopography, lowerSurface, thickness, &
-                betaSolve, sfcMassBal, tracers(index_temperature,:,:), &
+                betaSolve, sfcMassBal, temperature, &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, uReconstructX, uReconstructY, deltat)  ! return values
 !	  call velocity_solver_estimate_SS_SMB(normalVelocity, mesh % sfcMassBal % array)  ! this was used only for some ice2sea experiments, and is not a general routine to use
@@ -536,7 +533,7 @@ contains
       case ('Stokes') ! ===============================================
 #ifdef USE_EXTERNAL_STOKES
           call mpas_timer_start("velocity_solver_solve_stokes")
-          call velocity_solver_solve_stokes(lowerSurface, thickness, betaSolve, tracers(index_temperature,:,:), &
+          call velocity_solver_solve_stokes(lowerSurface, thickness, betaSolve, temperature, &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, uReconstructX, uReconstructY, uReconstructZ)  ! return values
           uReconstructZ = uReconstructZ / (365.0*24.0*3600.0)  ! convert from m/yr to m/s
