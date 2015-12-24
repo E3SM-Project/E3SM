@@ -231,7 +231,7 @@ main(int argc, char **argv)
 #endif /* HAVE_MPE */
 
     /* How many flavors will we be running for? */
-    int num_flavors = 1;
+    int num_flavors = 0;
     int fmtidx = 0;
 #ifdef _PNETCDF
     num_flavors++;
