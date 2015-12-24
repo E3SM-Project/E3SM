@@ -1,6 +1,6 @@
 #define VARINT 1 
-#define VARREAL 1
-#define VARDOUBLE 1
+!#define VARREAL 1
+!#define VARDOUBLE 1
 
 program pioperformance
 #ifndef NO_MPIMOD
@@ -26,7 +26,9 @@ program pioperformance
   integer :: niotasks(max_io_task_array_size)
   integer :: nv, nframes, nvars(max_nvars)
   integer :: vs, varsize(max_nvars) !  Local size of array for idealized decomps
-  namelist /pioperf/ decompfile, pio_typenames, rearrangers, niotasks, nframes, nvars, varsize
+  logical :: unlimdimindof
+  namelist /pioperf/ decompfile, pio_typenames, rearrangers, niotasks, nframes, &
+       nvars, varsize, unlimdimindof
 #ifdef BGQTRY
   external :: print_memusage
 #endif
@@ -56,6 +58,7 @@ program pioperformance
   piotypes = -1
   varsize = 0
   varsize(1) = 1
+  unlimdimindof=.false.
   if(mype==0) then
      open(unit=12,file='pioperf.nl',status='old')
      read(12,pioperf)
@@ -82,6 +85,7 @@ program pioperformance
   call MPI_Bcast(rearrangers, 2, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
   call MPI_Bcast(niotasks, max_io_task_array_size, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
   call MPI_Bcast(nframes, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(unlimdimindof, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
   call MPI_Bcast(nvars, max_nvars, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
   call MPI_Bcast(varsize, max_nvars, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
 
@@ -102,8 +106,8 @@ program pioperformance
         if(varsize(vs) > 0 ) then
            do nv=1,max_nvars
               if(nvars(nv)>0) then
-                 call pioperformancetest(decompfile(i), piotypes(1:niotypes), mype, npe, rearrangers, & 
-                                         niotasks, nframes, nvars(nv), varsize(vs))
+                 call pioperformancetest(decompfile(i), piotypes(1:niotypes), mype, npe, &
+                      rearrangers, niotasks, nframes, nvars(nv), varsize(vs),unlimdimindof) 
               endif
            enddo
         endif
@@ -114,7 +118,8 @@ program pioperformance
   call MPI_Finalize(ierr)
 contains
 
-  subroutine pioperformancetest(filename, piotypes, mype, npe_base, rearrangers, niotasks,nframes, nvars, varsize)
+  subroutine pioperformancetest(filename, piotypes, mype, npe_base, &
+       rearrangers, niotasks,nframes, nvars, varsize, unlimdimindof)
     use pio
     use pio_support, only : pio_readdof
     use perf_mod
@@ -126,7 +131,8 @@ contains
     integer, intent(in) :: nframes 
     integer, intent(in) :: nvars
     integer, intent(in) :: varsize
-    integer(kind=PIO_Offset_kind), pointer :: compmap(:)
+    logical, intent(in) :: unlimdimindof
+    integer(kind=PIO_Offset_kind), pointer :: compmap(:), compmap2(:)
     integer :: ntasks
     integer :: comm
     integer :: npe
@@ -164,7 +170,8 @@ contains
        call pio_readdof(filename, ndims, gdims, compmap, MPI_COMM_WORLD)
     endif
     maplen = size(compmap)
-
+    allocate(compmap2(maplen))
+    compmap2=compmap
 !    color = 0
 !    if(maplen>0) then
        color = 1
@@ -243,54 +250,67 @@ contains
 		
                 ierr =  PIO_CreateFile(iosystem, File, iotype, trim(fname), mode)
 
-                call WriteMetadata(File, gdims, vari, varr, vard)
+                call WriteMetadata(File, gdims, vari, varr, vard, unlimdimindof)
                 call MPI_Barrier(comm,ierr)
                 call t_stampf(wall(1), usr(1), sys(1))
+                if(.not. unlimdimindof) then
 #ifdef VARINT
-                call PIO_InitDecomp(iosystem, PIO_INT, gdims, compmap, iodesc_i4, rearr=rearr)
+                   call PIO_InitDecomp(iosystem, PIO_INT, gdims, compmap, iodesc_i4, rearr=rearr)
 #endif
 #ifdef VARREAL
-                call PIO_InitDecomp(iosystem, PIO_REAL, gdims, compmap, iodesc_r4, rearr=rearr)
+                   call PIO_InitDecomp(iosystem, PIO_REAL, gdims, compmap, iodesc_r4, rearr=rearr)
 #endif
 #ifdef VARDOUBLE
-                call PIO_InitDecomp(iosystem, PIO_DOUBLE, gdims, compmap, iodesc_r8, rearr=rearr)
+                   call PIO_InitDecomp(iosystem, PIO_DOUBLE, gdims, compmap, iodesc_r8, rearr=rearr)
 #endif
+                endif
 !                print *,__FILE__,__LINE__,minval(dfld),maxval(dfld),minloc(dfld),maxloc(dfld)
 
                 do frame=1,nframes
                    if(mype==0) print *,__FILE__,__LINE__,'Frame: ',frame
+                   if( unlimdimindof) then
+                      compmap = compmap2 + (frame-1)*gdims(ndims)
+                      print *,__FILE__,__LINE__,compmap
+#ifdef VARINT
+                      call PIO_InitDecomp(iosystem, PIO_INT, gdims, compmap, iodesc_i4, rearr=rearr)
+#endif
+#ifdef VARREAL
+                      call PIO_InitDecomp(iosystem, PIO_REAL, gdims, compmap, iodesc_r4, rearr=rearr)
+#endif
+#ifdef VARDOUBLE
+                      call PIO_InitDecomp(iosystem, PIO_DOUBLE, gdims, compmap, iodesc_r8, rearr=rearr)
+#endif
+                   endif
+
                    do nv=1,nvars   
                       if(mype==0) print *,__FILE__,__LINE__,'var: ',nv
 #ifdef VARINT
-                      call PIO_setframe(File, vari(nv), frame)
+                      if(.not.unlimdimindof) call PIO_setframe(File, vari(nv), frame)
                       call pio_write_darray(File, vari(nv), iodesc_i4, ifld(:,nv)    , ierr, fillval= PIO_FILL_INT)
 #endif
 #ifdef VARREAL
-                      call PIO_setframe(File, varr(nv), frame)
+                      if(.not.unlimdimindof) call PIO_setframe(File, varr(nv), frame)
                       call pio_write_darray(File, varr(nv), iodesc_r4, rfld(:,nv)    , ierr, fillval= PIO_FILL_FLOAT)
 #endif
 #ifdef VARDOUBLE
-                      call PIO_setframe(File, vard(nv), frame)
+                      if(.not. unlimdimindof) call PIO_setframe(File, vard(nv), frame)
                       call pio_write_darray(File, vard(nv), iodesc_r8, dfld(:,nv)    , ierr, fillval= PIO_FILL_DOUBLE)
 #endif
                    enddo
-! multiversion  
-!                 call pio_write_darray(File, vari, iodesc_i4, ifld, ierr)
-
-!!$
-!!$                   
-!!$                   call PIO_setframe(File, varr, frame)
-!!$                   call pio_write_darray(File, varr, iodesc_r4, rfld, ierr)
-!!$                   
-!!$                   
-!!$                   call PIO_setframe(File, vard, frame)
-!!$                   
-!!$                   call pio_write_darray(File, vard, iodesc_r8, dfld, ierr)
-!!$
-!!$
+                   if(unlimdimindof) then
+#ifdef VARREAL                
+                      call PIO_freedecomp(File, iodesc_r4)
+#endif
+#ifdef VARDOUBLE
+                      call PIO_freedecomp(File, iodesc_r8)
+#endif
+#ifdef VARINT
+                      call PIO_freedecomp(File, iodesc_i4)
+#endif                
+                   endif
                 enddo
                 call pio_closefile(File)
-!                print *,__FILE__,__LINE__
+
 
                 call MPI_Barrier(comm,ierr)
 
@@ -331,6 +351,20 @@ contains
                    ierr =  pio_inq_varid(File, varname, vard(nv))
 #endif
                 enddo
+
+                if( unlimdimindof) then
+#ifdef VARINT
+                   call PIO_InitDecomp(iosystem, PIO_INT, gdims, compmap, iodesc_i4, rearr=rearr)
+#endif
+#ifdef VARREAL
+                   call PIO_InitDecomp(iosystem, PIO_REAL, gdims, compmap, iodesc_r4, rearr=rearr)
+#endif
+#ifdef VARDOUBLE
+                   call PIO_InitDecomp(iosystem, PIO_DOUBLE, gdims, compmap, iodesc_r8, rearr=rearr)
+#endif
+                endif
+
+
                 call MPI_Barrier(comm,ierr)
                 call t_stampf(wall(1), usr(1), sys(1))
                 
@@ -493,18 +527,12 @@ contains
   end subroutine init_ideal_dof
 
 
-    
-
-
-
-
-
-
-  subroutine WriteMetadata(File, gdims, vari, varr, vard)
+  subroutine WriteMetadata(File, gdims, vari, varr, vard,unlimdimindof)
     use pio
     type(file_desc_t) :: File
     integer, intent(in) :: gdims(:)
     type(var_desc_t),intent(out) :: vari(:), varr(:), vard(:)
+    logical, intent(in) :: unlimdimindof
     integer :: ndims
     character(len=12) :: dimname
     character(len=8) :: varname
@@ -515,14 +543,15 @@ contains
     nvars = size(vari)
 
     ndims = size(gdims)
-    
-    allocate(dimid(ndims+1))
-
-    do i=1,ndims
-       write(dimname,'(a,i6.6)') 'dim',i  
-       iostat = PIO_def_dim(File, trim(dimname), int(gdims(i),pio_offset_kind), dimid(i))
-    enddo
-    iostat = PIO_def_dim(File, 'time', PIO_UNLIMITED, dimid(ndims+1))
+    if(unlimdimindof) then
+       ndims=ndims-1
+   endif
+   allocate(dimid(ndims+1))
+   do i=1,ndims
+      write(dimname,'(a,i6.6)') 'dim',i  
+      iostat = PIO_def_dim(File, trim(dimname), int(gdims(i),pio_offset_kind), dimid(i))
+   enddo
+   iostat = PIO_def_dim(File, 'time', PIO_UNLIMITED, dimid(ndims+1))
 
     do nv=1,nvars
 #ifdef VARINT
@@ -541,8 +570,6 @@ contains
        iostat = PIO_put_att(File, vard(nv), "_FillValue", PIO_FILL_DOUBLE);
 #endif
     enddo
-
-
 
     iostat = PIO_enddef(File)
 
