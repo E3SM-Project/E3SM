@@ -1164,7 +1164,7 @@ void get_start_and_count_regions(const int ndims, const int gdims[],const int ma
 
     regionlen = find_region(ndims, gdims, maplen-nmaplen, 
 				  map+nmaplen, region->start, region->count);
-
+    printf("%s %d %d %d\n",__FILE__,__LINE__,region->start[0],region->count[0]);
     pioassert(region->start[0]>=0,"failed to find region",__FILE__,__LINE__);
     
     nmaplen = nmaplen+regionlen;

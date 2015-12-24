@@ -132,7 +132,7 @@ contains
     integer, intent(in) :: nvars
     integer, intent(in) :: varsize
     logical, intent(in) :: unlimdimindof
-    integer(kind=PIO_Offset_kind), pointer :: compmap(:), compmap2(:)
+    integer(kind=PIO_Offset_kind), pointer :: compmap(:)
     integer :: ntasks
     integer :: comm
     integer :: npe
@@ -150,7 +150,7 @@ contains
     type(file_desc_t) :: File
     type(io_desc_t) :: iodesc_i4, iodesc_r4, iodesc_r8
     integer :: ierr
-    integer(kind=pio_offset_kind) :: frame=1
+    integer(kind=pio_offset_kind) :: frame=1, recnum
     integer :: iotype, rearr, rearrtype
     integer :: j, k, errorcnt
     character(len=8) :: varname
@@ -170,8 +170,6 @@ contains
        call pio_readdof(filename, ndims, gdims, compmap, MPI_COMM_WORLD)
     endif
     maplen = size(compmap)
-    allocate(compmap2(maplen))
-    compmap2=compmap
 !    color = 0
 !    if(maplen>0) then
        color = 1
@@ -267,10 +265,11 @@ contains
 !                print *,__FILE__,__LINE__,minval(dfld),maxval(dfld),minloc(dfld),maxloc(dfld)
 
                 do frame=1,nframes
-                   if(mype==0) print *,__FILE__,__LINE__,'Frame: ',frame
+                   recnum = frame
                    if( unlimdimindof) then
-                      compmap = compmap2 + (frame-1)*gdims(ndims)
-                      print *,__FILE__,__LINE__,compmap
+                      recnum = 1 + (frame-1)*gdims(ndims)
+!                      compmap = compmap2 + (frame-1)*gdims(ndims)
+!                      print *,__FILE__,__LINE__,compmap
 #ifdef VARINT
                       call PIO_InitDecomp(iosystem, PIO_INT, gdims, compmap, iodesc_i4, rearr=rearr)
 #endif
@@ -281,19 +280,20 @@ contains
                       call PIO_InitDecomp(iosystem, PIO_DOUBLE, gdims, compmap, iodesc_r8, rearr=rearr)
 #endif
                    endif
+                   if(mype==0) print *,__FILE__,__LINE__,'Frame: ',recnum
 
                    do nv=1,nvars   
                       if(mype==0) print *,__FILE__,__LINE__,'var: ',nv
 #ifdef VARINT
-                      if(.not.unlimdimindof) call PIO_setframe(File, vari(nv), frame)
+                      call PIO_setframe(File, vari(nv), recnum)
                       call pio_write_darray(File, vari(nv), iodesc_i4, ifld(:,nv)    , ierr, fillval= PIO_FILL_INT)
 #endif
 #ifdef VARREAL
-                      if(.not.unlimdimindof) call PIO_setframe(File, varr(nv), frame)
+                      call PIO_setframe(File, varr(nv), recnum)
                       call pio_write_darray(File, varr(nv), iodesc_r4, rfld(:,nv)    , ierr, fillval= PIO_FILL_FLOAT)
 #endif
 #ifdef VARDOUBLE
-                      if(.not. unlimdimindof) call PIO_setframe(File, vard(nv), frame)
+                      call PIO_setframe(File, vard(nv), recnum)
                       call pio_write_darray(File, vard(nv), iodesc_r8, dfld(:,nv)    , ierr, fillval= PIO_FILL_DOUBLE)
 #endif
                    enddo
