@@ -229,10 +229,27 @@ main(int argc, char **argv)
     if ((ret = MPE_Log_event(event_num[END][INIT], 0, "end init")))
 	MPIERR(ret);
 #endif /* HAVE_MPE */
-	
+
+    /* How many flavors will we be running for? */
+    int num_flavors = 1;
+    int fmtidx = 0;
+#ifdef _PNETCDF
+    num_flavors++;
+    format[fmtidx++] = PIO_IOTYPE_PNETCDF;
+#endif
+#ifdef _NETCDF
+    num_flavors++;
+    format[fmtidx++] = PIO_IOTYPE_NETCDF;
+#endif
+#ifdef _NETCDF4
+    num_flavors += 2;
+    format[fmtidx++] = PIO_IOTYPE_NETCDF4C;
+    format[fmtidx] = PIO_IOTYPE_NETCDF4P;
+#endif
+    
     /* Use PIO to create the example file in each of the four
      * available ways. */
-    for (int fmt = 0; fmt < NUM_NETCDF_FLAVORS; fmt++) 
+    for (int fmt = 0; fmt < num_flavors; fmt++) 
     {
 #ifdef HAVE_MPE
 	/* Log with MPE that we are starting CREATE. */
