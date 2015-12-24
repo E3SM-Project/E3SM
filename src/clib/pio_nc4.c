@@ -57,9 +57,8 @@ int PIOc_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
 	    ierr = nc_def_var_deflate(file->fh, varid, shuffle, deflate, deflate_level);
 	    break;
 	case PIO_IOTYPE_NETCDF4C:
-	    if(ios->io_rank==0){
+	    if (!ios->io_rank)
 		ierr = nc_def_var_deflate(file->fh, varid, shuffle, deflate, deflate_level);
-	    }
 	    break;
 #endif
 	case PIO_IOTYPE_NETCDF:
