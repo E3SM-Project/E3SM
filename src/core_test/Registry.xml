@@ -76,8 +76,12 @@
 		<var name="xtime"                             type="text"     dimensions="Time"/>
 	</var_struct>
 	<var_struct name="mesh" time_levs="1">
-		<var name="latCell"                           type="real"     dimensions="nCells"/>
-		<var name="lonCell"                           type="real"     dimensions="nCells"/>
+		<var_array name="arrTest" type="real" dimensions="nCells">
+			<var name="test1" units="units1" description="Test var 1 in a var_array" array_group="arrTest"/>
+			<var name="test2" units="units2" description="Test var 2 in a var_array" array_group="arrTest"/>
+		</var_array>
+		<var name="latCell"                           type="real"     dimensions="nCells" description="Latitude of cell centers" units="radians"/>
+		<var name="lonCell"                           type="real"     dimensions="nCells" description="Longitude of cell centers" units="radians"/>
 		<var name="xCell"                             type="real"     dimensions="nCells"/>
 		<var name="yCell"                             type="real"     dimensions="nCells"/>
 		<var name="zCell"                             type="real"     dimensions="nCells"/>
