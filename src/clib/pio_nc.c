@@ -1,5 +1,5 @@
 /**
-* @file  
+* @file   pio_nc.c
 * @author Jim Edwards (jedwards@ucar.edu)
 * @date     Feburary 2014 
 * @brief    PIO interfaces to [NetCDF](http://www.unidata.ucar.edu/software/netcdf/docs/modules.html) support functions
@@ -14,25 +14,12 @@
 #include <pio_internal.h>
 
 /** 
- * @ingroup PIO_inq_att
- * The PIO-C interface for the NetCDF function nc_inq_att. 
- *
- * This routine is called collectively by all tasks in the
- * communicator ios.union_comm. For more information on the underlying
- * NetCDF commmand please read about this function in the NetCDF
- * documentation at:
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
- *
- * @param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
- *
- * @param varid the variable ID.
- * @param name the name of the attribute to inquire about.
- * @param xtypep a pointer that will get the type of the attribute.
- * @param lenp a pointer to a PIO_Offset that will get the length of
- * this attribute.
- * 
- * @return PIO_NOERR for success, error code otherwise.
+ * @name    PIOc_inq_att
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_att.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
  */
 int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Offset *lenp) 
 {
@@ -84,11 +71,11 @@ int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Of
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(xtypep != NULL) mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);
   if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
   if(errstr != NULL) free(errstr);
@@ -96,14 +83,12 @@ int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Of
 }
 
 /** 
- * @ingroup PIO_inq_format
- * The PIO-C interface for the NetCDF function nc_inq_format.
- * 
- * This routine is called collectively by all tasks in the
- * communicator ios.union_comm. For more information on the underlying
- * NetCDF commmand please read about this function in the NetCDF
- * documentation at:
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__datasets.html
+ * @name    PIOc_inq_format
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_format.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__datasets.html
  */
 int PIOc_inq_format (int ncid, int *formatp) 
 {
@@ -155,11 +140,11 @@ int PIOc_inq_format (int ncid, int *formatp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(formatp , 1, MPI_INT, ios->ioroot, ios->my_comm);
   if(errstr != NULL) free(errstr);
   return ierr;
@@ -223,11 +208,11 @@ int PIOc_inq_varid (int ncid, const char *name, int *varidp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(varidp,1, MPI_INT, ios->ioroot, ios->my_comm);
   if(errstr != NULL) free(errstr);
   return ierr;
@@ -291,38 +276,23 @@ int PIOc_inq_varnatts (int ncid, int varid, int *nattsp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(nattsp,1, MPI_INT, ios->ioroot, ios->my_comm);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
 
 /** 
- * @brief Define a new variable in the netCDF file.
- * 
- * This routine is called collectively by all tasks in the
- * communicator ios.union_comm. 
- *
- * For more information on the underlying NetCDF commmand please read
- * about this function in the <a
- * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">NetCDF
- * documentation</a>.
- *
- * @param ncid: the ncid of the netCDF file, from PIOc_createfile() or
- * PIOc_openfile().
- * @param name: the name for the new variable.
- * @param xtype: the netCDF type of the variable.
- * @param ndims: the number of dimensions for the variable.
- * @param dimidsp: an array holding the dimension IDs to associate
- * with this variable.
- * @param varidp: a pointer to an int that will get the variable ID
- * for the newly created variable.
- *
- * @returns: 0 for success, non-zero error code for failure.
+ * @name    PIOc_def_var
+ * @brief   The PIO-C interface for the NetCDF function nc_def_var.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
  */
 int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims, const int *dimidsp, int *varidp) 
 {
@@ -381,25 +351,23 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims, const in
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(varidp , 1, MPI_INT, ios->ioroot, ios->my_comm);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
 
 /** 
- * @ingroup PIO_inq_var
- * The PIO-C interface for the NetCDF function nc_inq_var.
- *
- * This routine is called collectively by all tasks in the
- * communicator ios.union_comm. For more information on the underlying
- * NetCDF commmand please read about this function in the NetCDF
- * documentation at:
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ * @name    PIOc_inq_var
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_var.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
  */
 int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp, int *dimidsp, int *nattsp) 
 {
@@ -451,11 +419,11 @@ int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     if(xtypep != NULL) mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);
     if(ndimsp != NULL){ mpierr = MPI_Bcast(ndimsp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
       file->varlist[varid].ndims = (*ndimsp);}
@@ -476,14 +444,12 @@ int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
 }
 
 /** 
- * @ingroup PIO_inq_varname
- * The PIO-C interface for the NetCDF function nc_inq_varname.
- * 
- * This routine is called collectively by all tasks in the
- * communicator ios.union_comm. For more information on the underlying
- * NetCDF commmand please read about this function in the NetCDF
- * documentation at:
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ * @name    PIOc_inq_varname
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_varname.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
  */
 int PIOc_inq_varname (int ncid, int varid, char *name) 
 {
@@ -535,11 +501,11 @@ int PIOc_inq_varname (int ncid, int varid, char *name)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     if(name != NULL){
       int slen;
       if(ios->iomaster)
@@ -609,11 +575,11 @@ int PIOc_put_att_double (int ncid, int varid, const char *name, nc_type xtype, P
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -676,11 +642,11 @@ int PIOc_put_att_int (int ncid, int varid, const char *name, nc_type xtype, PIO_
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -743,11 +709,11 @@ int PIOc_rename_att (int ncid, int varid, const char *name, const char *newname)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -810,83 +776,16 @@ int PIOc_get_att_ubyte (int ncid, int varid, const char *name, unsigned char *ip
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
     sprintf(errstr,"name %s in file %s",name,__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
         mpierr = MPI_Bcast(ip , (int) attlen, MPI_BYTE, ios->ioroot, ios->my_comm);
       }
-  if(errstr != NULL) free(errstr);
-  return ierr;
-}
-
-/** 
- * @name    PIOc_del_att
- * @brief   The PIO-C interface for the NetCDF function nc_del_att.
- * @details This routine is called collectively by all tasks in the communicator 
- *           ios.union_comm. For more information on the underlying NetCDF commmand
- *           please read about this function in the NetCDF documentation at: 
- *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
- */
-int PIOc_del_att (int ncid, int varid, const char *name) 
-{
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  char *errstr;
-
-  errstr = NULL;
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_DEL_ATT;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_del_att(file->fh, varid, name);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_del_att(file->fh, varid, name);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      ierr = ncmpi_del_att(file->fh, varid, name);;
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
-   if(ierr != PIO_NOERR){
-    errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
-    sprintf(errstr,"in file %s",__FILE__);
-  }
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -949,12 +848,79 @@ int PIOc_inq_natts (int ncid, int *ngattsp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(ngattsp,1, MPI_INT, ios->ioroot, ios->my_comm);
+  if(errstr != NULL) free(errstr);
+  return ierr;
+}
+
+/** 
+ * @name    PIOc_del_att
+ * @brief   The PIO-C interface for the NetCDF function nc_del_att.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
+ */
+int PIOc_del_att (int ncid, int varid, const char *name) 
+{
+  int ierr;
+  int msg;
+  int mpierr;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+  char *errstr;
+
+  errstr = NULL;
+  ierr = PIO_NOERR;
+
+  file = pio_get_file_from_id(ncid);
+  if(file == NULL)
+    return PIO_EBADID;
+  ios = file->iosystem;
+  msg = PIO_MSG_DEL_ATT;
+
+  if(ios->async_interface && ! ios->ioproc){
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
+  }
+
+
+  if(ios->ioproc){
+    switch(file->iotype){
+#ifdef _NETCDF
+#ifdef _NETCDF4
+    case PIO_IOTYPE_NETCDF4P:
+      ierr = nc_del_att(file->fh, varid, name);;
+      break;
+    case PIO_IOTYPE_NETCDF4C:
+#endif
+    case PIO_IOTYPE_NETCDF:
+      if(ios->io_rank==0){
+	ierr = nc_del_att(file->fh, varid, name);;
+      }
+      break;
+#endif
+#ifdef _PNETCDF
+    case PIO_IOTYPE_PNETCDF:
+      ierr = ncmpi_del_att(file->fh, varid, name);;
+      break;
+#endif
+    default:
+      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
+    }
+  }
+
+   if(ierr != PIO_NOERR){
+    errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
+    sprintf(errstr,"in file %s",__FILE__);
+  }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -1017,11 +983,11 @@ int PIOc_inq (int ncid, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ndimsp != NULL)
         mpierr = MPI_Bcast(ndimsp, 1, MPI_INT, ios->ioroot, ios->my_comm);
        if(nvarsp != NULL)
@@ -1092,11 +1058,11 @@ int PIOc_get_att_text (int ncid, int varid, const char *name, char *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
     sprintf(errstr,"name %s in file %s",name,__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -1164,11 +1130,11 @@ int PIOc_get_att_short (int ncid, int varid, const char *name, short *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
     sprintf(errstr,"name %s in file %s",name,__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -1236,11 +1202,11 @@ int PIOc_put_att_long (int ncid, int varid, const char *name, nc_type xtype, PIO
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -1303,11 +1269,11 @@ int PIOc_redef (int ncid)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -1370,11 +1336,11 @@ int PIOc_set_fill (int ncid, int fillmode, int *old_modep)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -1437,11 +1403,11 @@ int PIOc_enddef (int ncid)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -1504,11 +1470,11 @@ int PIOc_rename_var (int ncid, int varid, const char *name)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -1571,11 +1537,11 @@ int PIOc_put_att_short (int ncid, int varid, const char *name, nc_type xtype, PI
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -1638,11 +1604,11 @@ int PIOc_put_att_text (int ncid, int varid, const char *name, PIO_Offset len, co
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -1705,11 +1671,11 @@ int PIOc_inq_attname (int ncid, int varid, int attnum, char *name)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     if(name != NULL){
       int slen;
       if(ios->iomaster)
@@ -1779,11 +1745,11 @@ int PIOc_get_att_ulonglong (int ncid, int varid, const char *name, unsigned long
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
     sprintf(errstr,"name %s in file %s",name,__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -1851,11 +1817,11 @@ int PIOc_get_att_ushort (int ncid, int varid, const char *name, unsigned short *
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
     sprintf(errstr,"name %s in file %s",name,__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -1923,11 +1889,11 @@ int PIOc_put_att_ulonglong (int ncid, int varid, const char *name, nc_type xtype
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -1990,12 +1956,80 @@ int PIOc_inq_dimlen (int ncid, int dimid, PIO_Offset *lenp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
+  if(errstr != NULL) free(errstr);
+  return ierr;
+}
+
+/** 
+ * @name    PIOc_inq_var_fill
+ * @brief   The PIO-C interface for the NetCDF function nc_inq_var_fill.
+ * @details This routine is called collectively by all tasks in the communicator 
+ *           ios.union_comm. For more information on the underlying NetCDF commmand
+ *           please read about this function in the NetCDF documentation at: 
+ *           http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ */
+int PIOc_inq_var_fill (int ncid, int varid, int *no_fill, void *fill_value) 
+{
+  int ierr;
+  int msg;
+  int mpierr;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+  char *errstr;
+
+  errstr = NULL;
+  ierr = PIO_NOERR;
+
+  file = pio_get_file_from_id(ncid);
+  if(file == NULL)
+    return PIO_EBADID;
+  ios = file->iosystem;
+  msg = PIO_MSG_INQ_VAR_FILL;
+
+  if(ios->async_interface && ! ios->ioproc){
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
+  }
+
+
+  if(ios->ioproc){
+    switch(file->iotype){
+#ifdef _NETCDF
+#ifdef _NETCDF4
+    case PIO_IOTYPE_NETCDF4P:
+      ierr = nc_inq_var_fill(file->fh, varid, no_fill, fill_value);;
+      break;
+    case PIO_IOTYPE_NETCDF4C:
+#endif
+    case PIO_IOTYPE_NETCDF:
+      if(ios->io_rank==0){
+	ierr = nc_inq_var_fill(file->fh, varid, no_fill, fill_value);;
+      }
+      break;
+#endif
+#ifdef _PNETCDF
+    case PIO_IOTYPE_PNETCDF:
+      ierr = ncmpi_inq_var_fill(file->fh, varid, no_fill, fill_value);;
+      break;
+#endif
+    default:
+      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
+    }
+  }
+
+   if(ierr != PIO_NOERR){
+    errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
+    sprintf(errstr,"in file %s",__FILE__);
+  }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
+    mpierr = MPI_Bcast(fill_value, 1, MPI_INT, ios->ioroot, ios->my_comm);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -2058,11 +2092,11 @@ int PIOc_get_att_uint (int ncid, int varid, const char *name, unsigned int *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
     sprintf(errstr,"name %s in file %s",name,__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -2130,11 +2164,11 @@ int PIOc_get_att_longlong (int ncid, int varid, const char *name, long long *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
     sprintf(errstr,"name %s in file %s",name,__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -2202,11 +2236,11 @@ int PIOc_put_att_schar (int ncid, int varid, const char *name, nc_type xtype, PI
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -2269,11 +2303,11 @@ int PIOc_put_att_float (int ncid, int varid, const char *name, nc_type xtype, PI
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -2336,11 +2370,11 @@ int PIOc_inq_nvars (int ncid, int *nvarsp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(nvarsp,1, MPI_INT, ios->ioroot, ios->my_comm);
   if(errstr != NULL) free(errstr);
   return ierr;
@@ -2404,11 +2438,11 @@ int PIOc_rename_dim (int ncid, int dimid, const char *name)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -2475,11 +2509,11 @@ int PIOc_inq_varndims (int ncid, int varid, int *ndimsp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(ndimsp,1, MPI_INT, ios->ioroot, ios->my_comm);
     file->varlist[varid].ndims = (*ndimsp);
   if(errstr != NULL) free(errstr);
@@ -2544,11 +2578,11 @@ int PIOc_get_att_long (int ncid, int varid, const char *name, long *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
     sprintf(errstr,"name %s in file %s",name,__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -2616,11 +2650,11 @@ int PIOc_inq_dim (int ncid, int dimid, char *name, PIO_Offset *lenp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     if(name != NULL){ 
       int slen;
       if(ios->iomaster)
@@ -2691,11 +2725,11 @@ int PIOc_inq_dimid (int ncid, const char *name, int *idp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);
   if(errstr != NULL) free(errstr);
   return ierr;
@@ -2759,11 +2793,12 @@ int PIOc_inq_unlimdim (int ncid, int *unlimdimidp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
+    mpierr = MPI_Bcast(unlimdimidp,1, MPI_INT, ios->ioroot, ios->my_comm);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -2826,11 +2861,11 @@ int PIOc_inq_vardimid (int ncid, int varid, int *dimidsp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     if(ierr==PIO_NOERR){
       int ndims;
       PIOc_inq_varndims(file->fh, varid, &ndims);
@@ -2898,11 +2933,11 @@ int PIOc_inq_attlen (int ncid, int varid, const char *name, PIO_Offset *lenp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
   if(errstr != NULL) free(errstr);
   return ierr;
@@ -2966,11 +3001,11 @@ int PIOc_inq_dimname (int ncid, int dimid, char *name)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     if(name != NULL){
       int slen;
       if(ios->iomaster)
@@ -3040,11 +3075,11 @@ int PIOc_put_att_ushort (int ncid, int varid, const char *name, nc_type xtype, P
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -3107,11 +3142,11 @@ int PIOc_get_att_float (int ncid, int varid, const char *name, float *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
     sprintf(errstr,"name %s in file %s",name,__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -3179,11 +3214,11 @@ int PIOc_put_att_longlong (int ncid, int varid, const char *name, nc_type xtype,
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -3246,11 +3281,11 @@ int PIOc_put_att_uint (int ncid, int varid, const char *name, nc_type xtype, PIO
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -3313,11 +3348,11 @@ int PIOc_get_att_schar (int ncid, int varid, const char *name, signed char *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
     sprintf(errstr,"name %s in file %s",name,__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -3385,11 +3420,11 @@ int PIOc_inq_attid (int ncid, int varid, const char *name, int *idp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);
   if(errstr != NULL) free(errstr);
   return ierr;
@@ -3453,11 +3488,11 @@ int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);
   if(errstr != NULL) free(errstr);
   return ierr;
@@ -3521,11 +3556,11 @@ int PIOc_inq_ndims (int ncid, int *ndimsp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(ndimsp , 1, MPI_INT, ios->ioroot, ios->my_comm);
   if(errstr != NULL) free(errstr);
   return ierr;
@@ -3589,11 +3624,11 @@ int PIOc_inq_vartype (int ncid, int varid, nc_type *xtypep)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);
   if(errstr != NULL) free(errstr);
   return ierr;
@@ -3657,11 +3692,11 @@ int PIOc_get_att_int (int ncid, int varid, const char *name, int *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
     sprintf(errstr,"name %s in file %s",name,__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -3729,11 +3764,11 @@ int PIOc_get_att_double (int ncid, int varid, const char *name, double *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
     sprintf(errstr,"name %s in file %s",name,__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
@@ -3801,11 +3836,11 @@ int PIOc_put_att_ubyte (int ncid, int varid, const char *name, nc_type xtype, PI
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -3868,11 +3903,11 @@ int PIOc_inq_atttype (int ncid, int varid, const char *name, nc_type *xtypep)
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
     mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);
   if(errstr != NULL) free(errstr);
   return ierr;
@@ -3936,11 +3971,11 @@ int PIOc_put_att_uchar (int ncid, int varid, const char *name, nc_type xtype, PI
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
     sprintf(errstr,"in file %s",__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
   if(errstr != NULL) free(errstr);
   return ierr;
 }
@@ -4003,11 +4038,11 @@ int PIOc_get_att_uchar (int ncid, int varid, const char *name, unsigned char *ip
     }
   }
 
-  ierr = check_netcdf(file, ierr, errstr,__LINE__);
    if(ierr != PIO_NOERR){
     errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
     sprintf(errstr,"name %s in file %s",name,__FILE__);
   }
+  ierr = check_netcdf(file, ierr, errstr,__LINE__);
       if(ierr == PIO_NOERR){
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
