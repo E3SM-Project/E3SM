@@ -184,8 +184,6 @@ main(int argc, char **argv)
     /* Initialize MPI. */
     if ((ret = MPI_Init(&argc, &argv)))
 	MPIERR(ret);
-    if ((ret = MPI_Errhandler_set(MPI_COMM_WORLD, MPI_ERRORS_RETURN)))
-	MPIERR(ret);
 
     /* Learn my rank and the total number of processors. */
     if ((ret = MPI_Comm_rank(MPI_COMM_WORLD, &my_rank)))
