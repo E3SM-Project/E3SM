@@ -17,7 +17,7 @@ int add_package_to_list(const char * package, const char * package_list);
 int build_struct_package_lists(ezxml_t currentPosition, char * out_packages);
 int get_dimension_information(ezxml_t registry, const char *test_dimname, int *has_time, int *decomp);
 int build_dimension_information(ezxml_t registry, ezxml_t var, int *ndims, int *has_time, int *decomp);
-int get_field_information(const char *vartype, const char *varval, char *default_value, int *type);
+int get_field_information(const char *vartype, const char *varval, char *default_value, const char *varmissval, char *missing_value, int *type);
 int write_set_field_pointer(FILE *fd, const char *spacing, const char *iterator_name, const char *pool_name);
 void write_default_namelist(ezxml_t registry);
 int parse_packages_from_registry(ezxml_t registry);

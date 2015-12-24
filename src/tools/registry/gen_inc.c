@@ -424,7 +424,7 @@ int build_dimension_information(ezxml_t registry, ezxml_t var, int *ndims, int *
 }/*}}}*/
 
 
-int get_field_information(const char *vartype, const char *varval, char *default_value, int *type){/*{{{*/
+int get_field_information(const char *vartype, const char *varval, char *default_value, const char *varmissval, char *missing_value, int *type){/*{{{*/
 	if (strcmp(vartype, "real") == 0){
 		(*type) = REAL;
 		if(!varval){
@@ -445,6 +445,29 @@ int get_field_information(const char *vartype, const char *varval, char *default
 			snprintf(default_value, 1024, "''");
 		} else {
 			snprintf(default_value, 1024, "%s", varval);
+		}
+	}
+
+	if (strcmp(vartype, "real") == 0){
+		(*type) = REAL;
+		if(!varmissval){
+			snprintf(missing_value, 1024, "MPAS_REAL_FILLVAL");
+		} else {
+			snprintf(missing_value, 1024, "%s", varmissval);
+		}
+	} else if (strcmp(vartype, "integer") == 0){
+		(*type) = INTEGER;
+		if(!varmissval){
+			snprintf(missing_value, 1024, "MPAS_INT_FILLVAL");
+		} else {
+			snprintf(missing_value, 1024, "%s", varmissval);
+		}
+	} else if (strcmp(vartype, "text") == 0){
+		(*type) = CHARACTER;
+		if(!varmissval){
+			snprintf(missing_value, 1024, "MPAS_CHAR_FILLVAL");
+		} else {
+			snprintf(missing_value, 1024, "'%s'", varmissval);
 		}
 	}
 
@@ -952,7 +975,7 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 
 	const char *structname, *structlevs, *structpackages;
 	const char *substructname;
-	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrdefaultval, *vararrpackages;
+	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrdefaultval, *vararrpackages, *vararrmissingval;
 	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *vardefaultval, *varpackages;
 	const char *varname2, *vararrgroup2, *vararrname_in_code;
 	const char *varname_in_code;
@@ -974,6 +997,7 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	char pointer_name[1024];
 	char spacing[1024], sub_spacing[1024];
 	char default_value[1024];
+	char missing_value[1024];
 
 	structname = ezxml_attr(superStruct, "name");
 
@@ -986,6 +1010,7 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	vararrdims = ezxml_attr(var_arr_xml, "dimensions");
 	vararrpersistence = ezxml_attr(var_arr_xml, "persistence");
 	vararrdefaultval = ezxml_attr(var_arr_xml, "default_value");
+	vararrmissingval = ezxml_attr(var_arr_xml, "missing_value");
 	vararrpackages = ezxml_attr(var_arr_xml, "packages");
 	vararrtimelevs = ezxml_attr(var_arr_xml, "time_levs");
 	vararrname_in_code = ezxml_attr(var_arr_xml, "name_in_code");
@@ -1016,7 +1041,7 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	snprintf(spacing, 1024, "      ");
 
 	// Determine field type and default value.
-	get_field_information(vararrtype, vararrdefaultval, default_value, &type);
+	get_field_information(vararrtype, vararrdefaultval, default_value, vararrmissingval, missing_value, &type);
 
 	// Determine ndims, hasTime, and decomp type
 	build_dimension_information(registry, var_arr_xml, &ndims, &hasTime, &decomp);
@@ -1290,25 +1315,26 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 			vardesc = ezxml_attr(var_xml, "description");
 			varunits = ezxml_attr(var_xml, "units");
 
-			if ( vardesc != NULL || varunits != NULL) {
-				if(!varname_in_code){
-					varname_in_code = ezxml_attr(var_xml, "name");
-				}
-
-				fortprintf(fd, "      if (associated(newSubPool)) then\n");
-				fortprintf(fd, "         call mpas_pool_get_dimension(newSubPool, 'index_%s', const_index)\n", varname_in_code);
-				fortprintf(fd, "      end if\n");
-				fortprintf(fd, "      if (const_index > 0) then\n", spacing);
-				if ( vardesc != NULL ) {
-					fortprintf(fd, "         call mpas_add_att(%s(%d) %% attLists(const_index) %% attList, 'long_name', '%s')\n", pointer_name, time_lev, vardesc);
-				}
-
-				if ( varunits != NULL ) {
-					fortprintf(fd, "         call mpas_add_att(%s(%d) %% attLists(const_index) %% attList, 'units', '%s')\n", pointer_name, time_lev, varunits);
-				}
-				fortprintf(fd, "         %s(%d) %% constituentNames(const_index) = '%s'\n", pointer_name, time_lev, varname);
-				fortprintf(fd, "      end if\n", spacing);
+			if(!varname_in_code){
+				varname_in_code = ezxml_attr(var_xml, "name");
 			}
+
+			fortprintf(fd, "      if (associated(newSubPool)) then\n");
+			fortprintf(fd, "         call mpas_pool_get_dimension(newSubPool, 'index_%s', const_index)\n", varname_in_code);
+			fortprintf(fd, "      end if\n");
+			fortprintf(fd, "      if (const_index > 0) then\n", spacing);
+			if ( vardesc != NULL ) {
+				fortprintf(fd, "         call mpas_add_att(%s(%d) %% attLists(const_index) %% attList, 'long_name', '%s')\n", pointer_name, time_lev, vardesc);
+			}
+
+			if ( varunits != NULL ) {
+				fortprintf(fd, "         call mpas_add_att(%s(%d) %% attLists(const_index) %% attList, 'units', '%s')\n", pointer_name, time_lev, varunits);
+			}
+
+			fortprintf(fd, "         call mpas_add_att(%s(%d) %% attLists(const_index) %% attList, 'missing_value', %s)\n", pointer_name, time_lev, missing_value);
+			fortprintf(fd, "         call mpas_add_att(%s(%d) %% attLists(const_index) %% attList, '_FillValue', %s)\n", pointer_name, time_lev, missing_value);
+			fortprintf(fd, "         %s(%d) %% constituentNames(const_index) = '%s'\n", pointer_name, time_lev, varname);
+			fortprintf(fd, "      end if\n", spacing);
 		}
 
 
@@ -1356,7 +1382,7 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	const char *structtimelevs, *vartimelevs;
 	const char *structname, *structlevs, *structpackages;
 	const char *substructname;
-	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *vardefaultval, *varpackages;
+	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *vardefaultval, *varpackages, *varmissingval;
 	const char *varname2, *vararrgroup2;
 	const char *varname_in_code;
 	const char *streamname, *streamname2;
@@ -1373,6 +1399,7 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	char pointer_name[1024];
 	char package_spacing[1024];
 	char default_value[1024];
+	char missing_value[1024];
 
 	var_xml = currentVar;
 
@@ -1390,6 +1417,7 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	varname_in_code = ezxml_attr(var_xml, "name_in_code");
 	varunits = ezxml_attr(var_xml, "units");
 	vardesc = ezxml_attr(var_xml, "description");
+	varmissingval = ezxml_attr(var_xml, "missing_value");
 
 	if(!varname_in_code){
 		varname_in_code = ezxml_attr(var_xml, "name");
@@ -1412,9 +1440,8 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 
 	fortprintf(fd, "! Define variable %s\n", varname);
 
-
 	// Determine field type and default value.
-	get_field_information(vartype, vardefaultval, default_value, &type);
+	get_field_information(vartype, vardefaultval, default_value, varmissingval, missing_value, &type);
 
 	// Determine ndims, hasTime, and decomp type
 	build_dimension_information(registry, var_xml, &ndims, &hasTime, &decomp);
@@ -1469,8 +1496,9 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 			free(tofree);
 		}
 
+		fortprintf(fd, "     %s(%d) %% defaultValue = %s\n", pointer_name, time_lev, default_value);
+		fortprintf(fd, "     %s(%d) %% defaultValue = %s\n", pointer_name, time_lev, default_value);
 		if ( ndims > 0 ) {
-			fortprintf(fd, "     %s(%d) %% defaultValue = %s\n", pointer_name, time_lev, default_value);
 			fortprintf(fd, "     nullify(%s(%d) %% array)\n", pointer_name, time_lev);
 		} else {
 			fortprintf(fd, "     %s(%d) %% scalar = %s\n", pointer_name, time_lev, default_value);
@@ -1489,6 +1517,9 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 		if ( vardesc != NULL ) {
 			fortprintf(fd, "      call mpas_add_att(%s(%d) %% attLists(1) %% attList, 'long_name', '%s')\n", pointer_name, time_lev, vardesc);
 		}
+
+		fortprintf(fd, "      call mpas_add_att(%s(%d) %% attLists(1) %% attList, 'missing_value', %s)\n", pointer_name, time_lev, missing_value);
+		fortprintf(fd, "      call mpas_add_att(%s(%d) %% attLists(1) %% attList, '_FillValue', %s)\n", pointer_name, time_lev, missing_value);
 
 		fortprintf(fd, "      %s(%d) %% block => block\n", pointer_name, time_lev);
 
@@ -1690,7 +1721,7 @@ int generate_struct_links(FILE *fd, int curLevel, ezxml_t superStruct, ezxml_t r
 	const char *structname;
 	const char *vartimelevs;
 	const char *varname, *vardims, *vartype;
-	const char *vardefaultval;
+	const char *vardefaultval, *varmissingval;
 	const char *varname_in_code;
 	int depth;
 	int err;
@@ -1701,6 +1732,7 @@ int generate_struct_links(FILE *fd, int curLevel, ezxml_t superStruct, ezxml_t r
 	char *string, *tofree, *token;
 	char pointer_name[1024];
 	char default_value[1024];
+	char missing_value[1024];
 
 	depth = curLevel + 1;
 
@@ -1743,6 +1775,7 @@ int generate_struct_links(FILE *fd, int curLevel, ezxml_t superStruct, ezxml_t r
 			vartimelevs = ezxml_attr(var_arr_xml, "time_levs");
 			vartype = ezxml_attr(var_arr_xml, "type");
 			vardefaultval = ezxml_attr(var_arr_xml, "default_value");
+			varmissingval = ezxml_attr(var_arr_xml, "missing_value");
 
 			if(!vartimelevs){
 				vartimelevs = ezxml_attr(subStruct, "time_levs");
@@ -1757,8 +1790,12 @@ int generate_struct_links(FILE *fd, int curLevel, ezxml_t superStruct, ezxml_t r
 				time_levs = 1;
 			}
 
+			if(!varmissingval){
+				varmissingval = vardefaultval;
+			}
+
 			// Determine field type and default value.
-			get_field_information(vartype, vardefaultval, default_value, &type);
+			get_field_information(vartype, vardefaultval, default_value, varmissingval, missing_value, &type);
 
 			// Determine number of dimensions
 			// and decomp type
@@ -1809,6 +1846,7 @@ int generate_struct_links(FILE *fd, int curLevel, ezxml_t superStruct, ezxml_t r
 			vartimelevs = ezxml_attr(var_xml, "time_levs");
 			vartype = ezxml_attr(var_xml, "type");
 			vardefaultval = ezxml_attr(var_xml, "default_value");
+			varmissingval = ezxml_attr(var_xml, "missing_value");
 			varname_in_code = ezxml_attr(var_xml, "name_in_code");
 
 			if(!vartimelevs){
@@ -1828,8 +1866,12 @@ int generate_struct_links(FILE *fd, int curLevel, ezxml_t superStruct, ezxml_t r
 				varname_in_code = ezxml_attr(var_xml, "name");
 			}
 
+			if(!varmissingval){
+				varmissingval = vardefaultval;
+			}
+
 			// Determine field type and default value.
-			get_field_information(vartype, vardefaultval, default_value, &type);
+			get_field_information(vartype, vardefaultval, default_value, varmissingval, missing_value, &type);
 
 			// Determine number of dimensions
 			// and decomp type
