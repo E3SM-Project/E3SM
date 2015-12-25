@@ -183,6 +183,8 @@ module clubb_intr
   character(len=8)   :: cnst_names(ncnst)
   logical            :: do_cnst=.false.
 
+  logical :: liqcf_fix  ! HW for liquid cloud fraction fix
+
   contains
   
   ! =============================================================================== !
@@ -516,7 +518,8 @@ end subroutine clubb_init_cnst
 
     call phys_getopts(prog_modal_aero_out=prog_modal_aero, &
                       history_amwg_out=history_amwg, &
-                      history_clubb_out=history_clubb)
+                      history_clubb_out=history_clubb,&
+                      liqcf_fix_out   = liqcf_fix)
 
     !  Select variables to apply tendencies back to CAM
  
@@ -848,7 +851,7 @@ end subroutine clubb_init_cnst
    subroutine clubb_tend_cam( &
                               state,   ptend_all,   pbuf,     hdtime, &
                               cmfmc,   cam_in,   sgh30, & 
-                              macmic_it, cld_macmic_num_steps,dlf, det_s, det_ice)
+                              macmic_it, cld_macmic_num_steps,dlf, det_s, det_ice, alst_o)
 
 !-------------------------------------------------------------------------------
 ! Description: Provide tendencies of shallow convection, turbulence, and 
@@ -933,6 +936,7 @@ end subroutine clubb_init_cnst
    real(r8),            intent(out)   :: det_s(pcols)              ! Integral of detrained static energy from ice
    real(r8),            intent(out)   :: det_ice(pcols)            ! Integral of detrained ice for energy check
 
+   real(r8), intent(out) :: alst_o(pcols,pver)  ! H. Wang: for old liquid status fraction 
         
    ! --------------- !
    ! Local Variables !
@@ -2205,7 +2209,12 @@ end subroutine clubb_init_cnst
    !                                                                                   !
    !  FIRST PART COMPUTES THE STRATIFORM CLOUD FRACTION FROM CLUBB CLOUD FRACTION      !
    ! --------------------------------------------------------------------------------- ! 
- 
+
+  ! HW: set alst to alst_o before getting updated
+  if(liqcf_fix) then
+      if(.not.is_first_step()) alst_o(:ncol,:pver) = alst(:ncol,:pver)
+   endif
+
    !  initialize variables 
    alst(:,:) = 0.0_r8
    qlst(:,:) = 0.0_r8 
@@ -2216,7 +2225,13 @@ end subroutine clubb_init_cnst
          qlst(i,k) = rcm(i,k)/max(0.01_r8,alst(i,k))  ! Incloud stratus condensate mixing ratio
       enddo
    enddo
- 
+
+   ! HW
+   if(liqcf_fix) then
+      if(is_first_step()) alst_o(:ncol,:pver) = alst(:ncol,:pver)
+   endif
+   !HW
+
    ! --------------------------------------------------------------------------------- !  
    !  THIS PART COMPUTES CONVECTIVE AND DEEP CONVECTIVE CLOUD FRACTION                 !
    ! --------------------------------------------------------------------------------- ! 
