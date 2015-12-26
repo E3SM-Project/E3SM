@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<config case="init_iter">
+	<add_link source="../init_step1/culled_mesh.nc" dest="mesh.nc"/>
+	<add_link source="../init_step1/culled_graph.info" dest="graph.info"/>
+
+	<add_link source="../init_step2/ocean.nc" dest="ocean.nc"/>
+	<add_link source="../init_step2/graph.info" dest="graph.info"/>
+	<add_link source="../init_step2/init_mode_forcing_data.nc" dest="init_mode_forcing_data.nc"/>
+
+	<add_executable source="model" dest="ocean_model"/>
+	<add_executable source="metis" dest="metis"/>
+
+	<namelist name="namelist.ocean" mode="init">
+		<template file="template_init.xml" path_base="script_configuration_dir"/>
+		<option name="config_write_cull_cell_mask">.false.</option>
+		<option name="config_read_ssh_and_ssp_from_stream">.true.</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="init">
+		<template file="template_init.xml" path_base="script_configuration_dir"/>
+		<stream name="input_ssh_ssp">
+			<attribute name="filename_template">../forward_iter/ssh_ssp.nc</attribute>
+			<attribute name="input_interval">initial_only</attribute>
+			<attribute name="type">input</attribute>
+			<add_contents>
+				<member name="ssh" type="var"/>
+				<member name="seaSurfacePressure" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+
+	<run_script name="run.py">
+		<model_run procs="1" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+
+</config>
