@@ -30,7 +30,7 @@ module ocn_init_isomip
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
 
-   use ocn_init_seaSurfaceHeightAndPressure
+   use ocn_init_ssh_and_ssp
 
    implicit none
    private
@@ -127,12 +127,12 @@ contains
       integer, pointer :: index_temperature, index_salinity, index_tracer1
 
       ! Define variable pointers
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: maxLevelCell, modifySSHMask
       real (kind=RKIND), dimension(:), pointer :: xCell, yCell,refBottomDepth, &
                                                   vertCoordMovementWeights, bottomDepth, &
                                                   fCell, fEdge, fVertex, dcEdge, &
-                                                  ssh, landIceFraction, landIceSurfaceTemperature, &
-                                                  landIcePressure, effectiveDensity
+                                                  refSSH, landIceFraction, landIceSurfaceTemperature, &
+                                                  effectiveDensity
       !real (kind=RKIND), dimension(:), pointer :: temperatureRestore, salinityRestore, maskRestore
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness, zMid
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
@@ -147,8 +147,7 @@ contains
 
       real(kind=RKIND), dimension(5) :: yFit, zFit, fracFit
 
-      real(kind=RKIND), dimension(:), pointer :: columnThicknessFraction, bottomPressure
-      type (field1DReal), pointer :: bottomPressureField
+      real(kind=RKIND), dimension(:), pointer :: columnThicknessFraction
 
       iErr = 0
 
@@ -274,43 +273,34 @@ contains
         call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
         call mpas_pool_get_array(tracersPool, 'debugTracers', debugTracers, 1)
         call mpas_pool_get_dimension(tracersPool, 'index_tracer1', index_tracer1)
-        call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
         call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction, 1)
         call mpas_pool_get_array(forcingPool, 'landIceSurfaceTemperature', landIceSurfaceTemperature, 1)
-        call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure, 1)
 
         call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
+        call mpas_pool_get_array(diagnosticsPool, 'refSSH', refSSH)
+        call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
 
         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
-
-        call mpas_pool_get_field(scratchPool, 'isomip_bottomPressure', bottomPressureField)
-
-        call mpas_allocate_scratch_field(bottomPressureField, .true.)
 
         call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
         call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', activeTracersPistonVelocity, 1)
         call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', activeTracersSurfaceRestoringValue, 1)
 
 
-        bottomPressure => bottomPressureField % array
-
-        call ocn_mark_north_boundary(meshPool, yNorth, dcEdgeMinGlobal, iErr)
-        call ocn_mark_south_boundary(meshPool, ySouth, dcEdgeMinGlobal, iErr)
-        call ocn_mark_east_boundary(meshPool, xEast, dcEdgeMinGlobal, iErr)
-        call ocn_mark_west_boundary(meshPool, xWest, dcEdgeMinGlobal, iErr)
-
-        !call mpas_pool_get_array(meshPool, 'temperatureRestore', temperatureRestore)
-        !call mpas_pool_get_array(meshPool, 'salinityRestore', salinityRestore)
-        !call mpas_pool_get_array(meshPool, 'maskRestore', maskRestore)
-
         ! flat bottom
         maxLevelCell(:) = nVertLevels
+        maxLevelCell(nCells+1) = -1
         bottomDepth(:) =  abs(config_isomip_bottom_depth)
         do iCell = 1, nCells
           do k = 1, nVertLevels
              restingThickness(k, iCell) = columnThicknessFraction(k)*bottomDepth(iCell)
           end do
         end do
+
+        call ocn_mark_north_boundary(meshPool, yNorth, dcEdgeMinGlobal, iErr)
+        call ocn_mark_south_boundary(meshPool, ySouth, dcEdgeMinGlobal, iErr)
+        call ocn_mark_east_boundary(meshPool, xEast, dcEdgeMinGlobal, iErr)
+        call ocn_mark_west_boundary(meshPool, xWest, dcEdgeMinGlobal, iErr)
 
         ! Set refBottomDepth
         refBottomDepth(1) =  columnThicknessFraction(1)*abs(config_isomip_bottom_depth)
@@ -324,6 +314,7 @@ contains
 
         landIceFraction(:) = 0.0_RKIND
         landIceSurfaceTemperature(:) = -25.0_RKIND !doesn't matter because ice is insulating
+        modifySSHMask(:) = 0
 
 
         do iCell = 1, nCells
@@ -333,18 +324,29 @@ contains
 
           ! Compute iceDraft by linear fit
           do iFit = 1, 4 
-            if(y >= yFit(iFit) .and. (y <= yFit(iFit+1))) then
-              ssh(iCell) = (zFit(iFit+1) - zFit(iFit))*(y - yFit(iFit)) &
+            if((y >= yFit(iFit)) .and. (y <= yFit(iFit+1))) then
+              refSSH(iCell) = (zFit(iFit+1) - zFit(iFit))*(y - yFit(iFit)) &
                          / (yFit(iFit+1) - yFit(iFit)) + zFit(iFit)
               landIceFraction(iCell) = (fracFit(iFit+1) - fracFit(iFit))*(y - yFit(iFit)) &
                          / (yFit(iFit+1) - yFit(iFit)) + fracFit(iFit)
               exit
             end if
           end do
+          if(landIceFraction(iCell) > 0.0_RKIND) then
+            modifySSHMask(iCell) = 1
+          end if
+         
+
+          if(.not. associated(activeTracers)) then
+            write(stderrUnit,*) 'ERROR: isomip test case needs activeTracers package to be active.'
+            return
+          end if
 
           activeTracers(index_temperature, :, iCell) = config_isomip_temperature
           activeTracers(index_salinity, :, iCell) = config_isomip_salinity
-          debugTracers(index_tracer1, :, iCell) = 1.0_RKIND
+          if(associated(debugTracers)) then
+            debugTracers(index_tracer1, :, iCell) = 1.0_RKIND
+          end if
 
            ! Set surface temperature restoring value and rate
            ! Value in units of C, piston velocity in units of m/s
@@ -370,44 +372,6 @@ contains
 
         end do
 
-        ! first, compute the bottom pressure assuming ssh = 0 (omitting ssh argument)
-        ! compute the layer thicknesses and zMid based on topography
-        call ocn_init_zstar_from_ssh(meshPool, bottomDepth, maxLevelCell, &
-                                     restingThickness, layerThickness, zMid, iErr)
-        if(iErr .ne. 0) then
-           write(stderrUnit,*) 'ERROR: ocn_init_zstar_from_ssh failed.'
-           return
-         end if
-
-        call ocn_init_bottom_pressure(meshPool, statePool, diagnosticsPool, &
-                                     layerThickness, landIcePressure, iErr)
-
-        if(iErr .ne. 0) then
-           write(stderrUnit,*) 'ERROR: ocn_init_bottom_pressure failed.'
-           return
-         end if
-
-        ! now compute sea-surface pressure from bottom pressure with ssh != 0
-        ! compute the new layer thicknesses and zMid based on topography
-        call ocn_init_zstar_from_ssh(meshPool, bottomDepth, maxLevelCell, &
-                                     restingThickness, layerThickness, zMid, iErr, ssh)
-        if(iErr .ne. 0) then
-           write(stderrUnit,*) 'ERROR: ocn_init_zstar_from_ssh failed.'
-           return
-         end if
-
-        call ocn_init_bottom_pressure(meshPool, statePool, diagnosticsPool, &
-                                     layerThickness, bottomPressure, iErr)
-
-        if(iErr .ne. 0) then
-           write(stderrUnit,*) 'ERROR: ocn_init_bottom_pressure failed.'
-           return
-         end if
-
-        landIcePressure(:) = landIcePressure(:) - bottomPressure(:)
-
-        call mpas_deallocate_scratch_field(bottomPressureField, .true.)
-
         if(trim(config_land_ice_flux_mode) == 'coupled') then
           call mpas_pool_get_config(ocnConfigs, 'config_isomip_effective_density', config_isomip_effective_density)
           call mpas_pool_get_array(statePool, 'effectiveDensityInLandIce', effectiveDensity, 1)
@@ -418,6 +382,39 @@ contains
       end do
 
       deallocate(columnThicknessFraction)
+
+
+      ! compute the vertical grid (layerThickness, restingThickness, maxLevelCell, zMid) based on ssh, bottomDepth and refBottomDepth
+      call ocn_init_ssh_and_ssp_vertical_grid(domain, iErr)
+           
+      if(iErr .ne. 0) then
+        write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_ssp_vertical_grid failed.'
+        return
+      end if
+
+      ! compute or update the SSP (or possibly SSH), also computing density and bottomPressure along the way
+      ! If this is the initial guess, the vertical grid and activeTracers may also be recomputed based on SSH
+      call ocn_init_ssh_and_ssp_balance(domain, iErr)
+
+      if(iErr .ne. 0) then
+         write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_ssp_balance failed.'
+         return
+      end if
+
+      block_ptr => domain % blocklist
+      do while(associated(block_ptr))
+        call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
+
+        call ocn_compute_Haney_number(domain % dminfo, meshPool, diagnosticsPool, iErr)
+
+        if(iErr .ne. 0) then
+           write(stderrUnit,*) 'ERROR: ocn_compute_Haney_number failed.'
+           return
+        end if
+
+        block_ptr => block_ptr % next
+      end do
 
    !--------------------------------------------------------------------
 
