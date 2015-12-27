@@ -247,7 +247,11 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
   
          if(config_read_ssh_and_ssp_from_stream) then
-           deltaSSH(:) = ssh(:) - refSSH(:)
+           where(modifySSHMask(:) == 1)
+             deltaSSH(:) = ssh(:) - refSSH(:)
+           elsewhere
+             deltaSSH(:) = 0.0_RKIND
+           end where
          end if
          if(.not. config_update_ssh_not_ssp) then
            ! we're updating SSP so we want to keep ssh fixed refSSH
