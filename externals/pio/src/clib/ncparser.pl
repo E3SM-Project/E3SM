@@ -96,6 +96,7 @@ foreach my $func (keys %{$functions}){
   next if($func=~/default_format/);
   next if($func=~/copy_att/);
   next if($func=~/abort/);
+  next if($func=~/def_var_fill/);
   next if($func=~/string/);
   next if($func=~/t_att$/); # skip void versions of get and put att
   next if($functions->{$func}{pnetcdf} =~ /\(void\)/);
@@ -182,6 +183,18 @@ foreach my $func (keys %{$functions}){
 		  $line =~ s/\(\)/$args/;
 	      }
 	  }
+	  if($line =~ /check_netcdf/){
+	      print F "   if(ierr != PIO_NOERR){\n";
+	      if($func =~ /get_att/){
+		  print F "    errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));\n";
+		  print F "    sprintf(errstr,\"name %s in file %s\",name,__FILE__);\n";
+	      }else{
+		  print F "    errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));\n";
+		  print F "    sprintf(errstr,\"in file %s\",__FILE__);\n";
+	      }	      
+              print F "  }\n";
+	  }
+
 
 	  print F $line;
 	  if($func =~ /sync/ && $line =~   /case PIO_IOTYPE_PNETCDF/){
@@ -208,19 +221,10 @@ foreach my $func (keys %{$functions}){
 	  }
 
 	  if($line =~ /check_netcdf/){
-	      print F "   if(ierr != PIO_NOERR){\n";
-	      if($func =~ /get_att/){
-		  print F "    errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));\n";
-		  print F "    sprintf(errstr,\"name %s in file %s\",name,__FILE__);\n";
-	      }else{
-		  print F "    errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));\n";
-		  print F "    sprintf(errstr,\"in file %s\",__FILE__);\n";
-	      }	      
-              print F "  }\n";
-
-
 	      if($func =~ /inq_varid/){
 		  print F "    mpierr = MPI_Bcast(varidp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
+	      }elsif($func =~ /inq_unlimdim/){
+		  print F "    mpierr = MPI_Bcast(unlimdimidp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_ndims/){
 		  print F "    mpierr = MPI_Bcast(ndimsp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";	
 	      }elsif($func =~ /var_fill/){

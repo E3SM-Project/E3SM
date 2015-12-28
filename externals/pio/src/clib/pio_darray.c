@@ -114,6 +114,7 @@ void compute_buffer_init(iosystem_desc_t ios)
 
    ierr = PIOc_inq_varndims(file->fh, vid, &fndims);
 
+
    if(ios->ioproc){
      io_region *region;
      int ncid = file->fh;
@@ -406,25 +407,27 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
      ncid = file->fh;
      region = firstregion;
 
-     if(vdesc->record >= 0 && ndims<fndims){
-       ndims++;
-     }
+     
      rrcnt=0;
      for(regioncnt=0;regioncnt<maxregions;regioncnt++){
-       for(i=0;i<ndims;i++){
+       // printf("%s %d %d %d %d %d %d\n",__FILE__,__LINE__,region->start[0],region->count[0],ndims,fndims,vdesc->record);
+       for(i=0;i<fndims;i++){
 	 start[i] = 0;
 	 count[i] = 0;
        }
        if(region != NULL){
 	 // this is a record based multidimensional array
 	 if(vdesc->record >= 0){
-	   start[0] = frame[0];
-	   for(i=1;i<ndims;i++){
-	     start[i] = region->start[i-1];
-	     count[i] = region->count[i-1];
+	   for(i=fndims-ndims;i<fndims;i++){
+	     start[i] = region->start[i-(fndims-ndims)];
+	     count[i] = region->count[i-(fndims-ndims)];
 	   }
-	  if(count[1]>0)
-	    count[0] = 1;
+	   if(fndims>1 && ndims<fndims && count[1]>0){
+	     count[0] = 1;
+	     start[0] = frame[0];
+	   }else if(fndims==ndims){
+	     start[0]+=vdesc->record;
+	   }
 	 // Non-time dependent array
 	 }else{
 	   for( i=0;i<ndims;i++){
@@ -439,7 +442,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 #ifdef _NETCDF4
        case PIO_IOTYPE_NETCDF4P:
 	 for(int nv=0; nv<nvars; nv++){
-	   if(vdesc->record >= 0){
+	   if(vdesc->record >= 0 && ndims<fndims){
 	     start[0] = frame[nv];
 	   }
 	   if(region != NULL){
@@ -484,7 +487,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 
 	       if(buflen>0){
   	         for(int nv=0; nv<nvars; nv++){
-		   if(vdesc->record >= 0){
+		   if(vdesc->record >= 0 && ndims<fndims){
 		     tstart[0] = frame[nv];
 		   }
 
@@ -569,7 +572,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 	   //printf("%s %d %ld \n",__FILE__,__LINE__,IOBUF);
 	   for(int nv=0; nv<nvars; nv++){
 	     vdesc = (file->varlist)+vid[nv];
-	     if(vdesc->record >= 0){
+	     if(vdesc->record >= 0 && ndims<fndims){
 	       for(int rc=0;rc<rrcnt;rc++){
 		 startlist[rc][0] = frame[nv];
 	       }
@@ -601,7 +604,11 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 	     //	     printf("%s %d %d %d\n",__FILE__,__LINE__,vdesc->nreqs,vdesc->request[reqn]);
 	   }
 	   for(i=0;i<rrcnt;i++){
-             //printf("%d %ld %ld %ld %ld\n",i,startlist[i][0],startlist[i][1],countlist[i][0],countlist[i][1]);
+	     if(ierr != PIO_NOERR){
+	       for(j=0;j<fndims;j++){
+		 printf("pio_darray: %d %d %d %ld %ld \n",__LINE__,i,j,startlist[i][j],countlist[i][j]);
+	       }
+	     }
 	     free(startlist[i]);
 	     free(countlist[i]);
 	   }
@@ -652,8 +659,8 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
        
    iodesc = pio_get_iodesc_from_id(ioid);
    if(iodesc == NULL){
-     print_trace(NULL);
-     fprintf(stderr,"iodesc handle not found %d %d\n",ioid,__LINE__);
+     //     print_trace(NULL);
+     //fprintf(stderr,"iodesc handle not found %d %d\n",ioid,__LINE__);
      return PIO_EBADID;
    }
     
@@ -696,9 +703,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 	 }
        }
      }
-   
      ierr = rearrange_comp2io(*ios, iodesc, array, vdesc0->iobuf, nvars);
-
    }/*  this is wrong, need to think about it
    else{
      vdesc0->iobuf = array;
@@ -842,10 +847,10 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
        }
 #ifdef _PNETCDF
        /* flush the previous record before starting a new one. this is collective */
-       if(vdesc->request != NULL && (vdesc->request[0] != NC_REQ_NULL) ||
-	  (wmb->frame != NULL && vdesc->record != wmb->frame[0])){
-	 needsflush = 2;  // flush to disk
-       }
+       //       if(vdesc->request != NULL && (vdesc->request[0] != NC_REQ_NULL) ||
+       //	  (wmb->frame != NULL && vdesc->record != wmb->frame[0])){
+       //	 needsflush = 2;  // flush to disk
+       //  }
 #endif
      }else{
        while(wmb->next != NULL && wmb->ioid!= -(ioid)){
@@ -1077,6 +1082,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
   
   ndims = iodesc->ndims;
   ierr = PIOc_inq_varndims(file->fh, vid, &fndims);
+  
   if(fndims==ndims) 
     vdesc->record=-1;
   

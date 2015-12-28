@@ -20,7 +20,7 @@
 
   <entry id="PIO_STRIDE">
     <values>
-      <value>$MAX_TASKS_PER_NODE</value>
+      <value>$PES_PER_NODE</value>
       <value mach="yellowstone" grid="a%ne120.+oi%gx1">60</value>
     </values>
   </entry>
