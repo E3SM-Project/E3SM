@@ -52,7 +52,7 @@ my $func="";
 open(F,">pio_nc.c");
 print F 
 "/**
-* \@file   pio_nc.c
+* \@file   
 * \@author Jim Edwards (jedwards\@ucar.edu)
 * \@date     Feburary 2014 
 * \@brief    PIO interfaces to [NetCDF](http://www.unidata.ucar.edu/software/netcdf/docs/modules.html) support functions
@@ -143,13 +143,22 @@ foreach my $func (keys %{$functions}){
 
 		  print F 
 "/** 
- * \@name    PIOc_$func
- * \@brief   The PIO-C interface for the NetCDF function nc_$func.
- * \@details This routine is called collectively by all tasks in the communicator 
- *           ios.union_comm. For more information on the underlying NetCDF commmand
- *           please read about this function in the NetCDF documentation at: 
- *           ".$currurl."
- */\n";
+ * \@ingroup PIOc_$func
+ * The PIO-C interface for the NetCDF function nc_$func.
+ *
+ * This routine is called collectively by all tasks in the communicator 
+ * ios.union_comm. For more information on the underlying NetCDF commmand
+ * please read about this function in the NetCDF documentation at: 
+ * ".$currurl."
+ *
+ * \@param ncid the ncid of the open file, obtained from
+ * PIOc_openfile() or PIOc_createfile().\n";
+		  if($functions->{$func}{pnetcdf} =~ /varid/){
+		      print F " * \@param varid the variable ID.\n";
+		  }
+
+		  print F " */\n";
+
 
 	      }else{
 		  my $args;
