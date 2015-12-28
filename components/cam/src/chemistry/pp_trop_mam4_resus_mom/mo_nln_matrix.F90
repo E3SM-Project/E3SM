@@ -3,6 +3,8 @@
 
 
 
+
+
       module mo_nln_matrix
 
       use shr_kind_mod, only : r8 => shr_kind_r8
@@ -74,6 +76,7 @@
          mat( 29) = lmat( 29)
          mat( 30) = lmat( 30)
          mat( 31) = lmat( 31)
+         mat( 32) = lmat( 32)
          mat( 1) = mat( 1) - dti
          mat( 2) = mat( 2) - dti
          mat( 4) = mat( 4) - dti
@@ -103,5 +106,6 @@
          mat( 29) = mat( 29) - dti
          mat( 30) = mat( 30) - dti
          mat( 31) = mat( 31) - dti
+         mat( 32) = mat( 32) - dti
       end subroutine nlnmat_finit
       end module mo_nln_matrix

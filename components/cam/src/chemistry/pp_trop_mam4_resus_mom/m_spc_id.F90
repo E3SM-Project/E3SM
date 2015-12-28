@@ -3,6 +3,8 @@
 
 
 
+
+
       module m_spc_id
 
       implicit none
@@ -31,11 +33,12 @@
       integer, parameter :: id_bc_a3 = 22
       integer, parameter :: id_pom_a3 = 23
       integer, parameter :: id_soa_a3 = 24
-      integer, parameter :: id_num_a3 = 25
-      integer, parameter :: id_pom_a4 = 26
-      integer, parameter :: id_bc_a4 = 27
-      integer, parameter :: id_mom_a4 = 28
-      integer, parameter :: id_num_a4 = 29
+      integer, parameter :: id_mom_a3 = 25
+      integer, parameter :: id_num_a3 = 26
+      integer, parameter :: id_pom_a4 = 27
+      integer, parameter :: id_bc_a4 = 28
+      integer, parameter :: id_mom_a4 = 29
+      integer, parameter :: id_num_a4 = 30
 
 
       end module m_spc_id

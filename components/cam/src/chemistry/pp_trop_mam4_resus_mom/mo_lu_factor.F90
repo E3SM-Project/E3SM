@@ -3,6 +3,8 @@
 
 
 
+
+
       module mo_lu_factor
 
       private
@@ -79,6 +81,8 @@
          lu(30) = 1._r8 / lu(30)
 
          lu(31) = 1._r8 / lu(31)
+
+         lu(32) = 1._r8 / lu(32)
 
 
       end subroutine lu_fac01

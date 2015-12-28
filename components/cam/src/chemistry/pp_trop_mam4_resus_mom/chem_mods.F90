@@ -3,6 +3,8 @@
 
 
 
+
+
       module chem_mods
 !--------------------------------------------------------------
 ! ... Basic chemistry parameters and arrays
@@ -18,16 +20,16 @@
                             rxntot = 7, & ! number of total reactions
                             gascnt = 6, & ! number of gas phase reactions
                             nabscol = 2, & ! number of absorbing column densities
-                            gas_pcnst = 29, & ! number of "gas phase" species
+                            gas_pcnst = 30, & ! number of "gas phase" species
                             nfs = 8, & ! number of "fixed" species
                             relcnt = 0, & ! number of relationship species
                             grpcnt = 0, & ! number of group members
-                            nzcnt = 31, & ! number of non-zero matrix entries
+                            nzcnt = 32, & ! number of non-zero matrix entries
                             extcnt = 8, & ! number of species with external forcing
                             clscnt1 = 0, & ! number of species in explicit class
                             clscnt2 = 0, & ! number of species in hov class
                             clscnt3 = 0, & ! number of species in ebi class
-                            clscnt4 = 29, & ! number of species in implicit class
+                            clscnt4 = 30, & ! number of species in implicit class
                             clscnt5 = 0, & ! number of species in rodas class
                             indexm = 1, & ! index of total atm density in invariant array
                             indexh2o = 4, & ! index of water vapor density

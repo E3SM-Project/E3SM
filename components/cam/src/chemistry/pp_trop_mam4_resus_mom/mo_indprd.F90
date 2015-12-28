@@ -3,6 +3,8 @@
 
 
 
+
+
       module mo_indprd
 
       use shr_kind_mod, only : r8 => shr_kind_r8
@@ -84,13 +86,15 @@
 
          prod(:,:,25) = 0._r8
 
-         prod(:,:,26) = + extfrc(:,:,4)
+         prod(:,:,26) = 0._r8
 
-         prod(:,:,27) = + extfrc(:,:,5)
+         prod(:,:,27) = + extfrc(:,:,4)
 
-         prod(:,:,28) = 0._r8
+         prod(:,:,28) = + extfrc(:,:,5)
 
-         prod(:,:,29) = + extfrc(:,:,8)
+         prod(:,:,29) = 0._r8
+
+         prod(:,:,30) = + extfrc(:,:,8)
 
       end if
 

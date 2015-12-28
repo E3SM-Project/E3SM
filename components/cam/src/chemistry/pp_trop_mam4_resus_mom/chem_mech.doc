@@ -34,11 +34,12 @@
       ( 22)  bc_a3              (C)
       ( 23)  pom_a3             (C)
       ( 24)  soa_a3             (C)
-      ( 25)  num_a3             (H)
-      ( 26)  pom_a4             (C)
-      ( 27)  bc_a4              (C)
-      ( 28)  mom_a4             (C8520H11360O8520)
-      ( 29)  num_a4             (H)
+      ( 25)  mom_a3             (C8520H11360O8520)
+      ( 26)  num_a3             (H)
+      ( 27)  pom_a4             (C)
+      ( 28)  bc_a4              (C)
+      ( 29)  mom_a4             (C8520H11360O8520)
+      ( 30)  num_a4             (H)
   
   
      Invariant species
@@ -82,14 +83,15 @@ Class List
       ( 19)  dst_a3          
       ( 20)  ncl_a3          
       ( 21)  so4_a3          
-      ( 22)  bc_a3           
-      ( 23)  pom_a3          
-      ( 24)  soa_a3          
-      ( 25)  num_a3          
-      ( 26)  pom_a4          
-      ( 27)  bc_a4           
-      ( 28)  mom_a4          
-      ( 29)  num_a4          
+      ( 22)  mom_a3          
+      ( 23)  bc_a3           
+      ( 24)  pom_a3          
+      ( 25)  soa_a3          
+      ( 26)  num_a3          
+      ( 27)  pom_a4          
+      ( 28)  bc_a4           
+      ( 29)  mom_a4          
+      ( 30)  num_a4          
   
      Photolysis
   jh2o2            (  1)   H2O2 + hv -> (No products)                                           rate = ** User defined **         (  1)
@@ -141,6 +143,7 @@ Extraneous prod/loss species
     d(bc_a3)/dt = 0                                                                                                     
     d(pom_a3)/dt = 0                                                                                                    
     d(soa_a3)/dt = 0                                                                                                    
+    d(mom_a3)/dt = 0                                                                                                    
     d(num_a3)/dt = 0                                                                                                    
     d(pom_a4)/dt = 0                                                                                                    
     d(bc_a4)/dt = 0                                                                                                     
