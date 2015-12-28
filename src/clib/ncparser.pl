@@ -157,7 +157,36 @@ foreach my $func (keys %{$functions}){
 		      print F " * \@param varid the variable ID.\n";
 		  }
 
-		  print F " */\n";
+		  if($functions->{$func}{pnetcdf} =~ /int attnum/){
+		      print F " * \@param attnum the attribute ID.\n";
+		  }
+
+		  if($functions->{$func}{pnetcdf} =~ /const char *name/){
+		      print F " * \@param name the attribute name.\n";
+		  }
+
+		  if($functions->{$func}{pnetcdf} =~ /\*xtypep/){
+		      print F " * \@param xtypep a pointer that will get the type of the attribute.\n";
+		  }
+		  if($functions->{$func}{pnetcdf} =~ /\*idp/){
+		      print F " * \@param idp a pointer that will get the id of the variable or attribute.\n";
+		  }
+		  if($functions->{$func}{pnetcdf} =~ /\*lenp/){
+		      print F " * \@param lenp a pointer that will get the number of values \n";
+		  }
+		  if($functions->{$func}{pnetcdf} =~ /\*varidp/){
+		      print F " * \@param varidp a pointer that will get the variable id \n";
+		  }
+		  if($functions->{$func}{pnetcdf} =~ /\*formatp/){
+		      print F " * \@param formatp a pointer that will get the file format \n";
+		  }
+		  if($functions->{$func}{pnetcdf} =~ /\*nattsp/){
+		      print F " * \@param nattsp a pointer that will get the number of attributes \n";
+		  }
+		  
+print F 
+" * \@return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
+ */\n";
 
 
 	      }else{
