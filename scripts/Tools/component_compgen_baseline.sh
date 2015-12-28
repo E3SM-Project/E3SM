@@ -217,7 +217,7 @@ fi
 overall_compare_status='PASS'
 overall_generate_status='PASS'
 
-models=( cam cice cism clm2 cpl pop )
+models=( cam cice cism clm2 cpl pop rtm mosart)
 for model in ${models[*]}; do
     if [ "$model" = "cism" ]; then
 	extensions=(h)
@@ -231,6 +231,10 @@ for model in ${models[*]}; do
 	extensions=(h0 h1 h2 h3 h4 h5 h6 h7)
     elif [ "$model" = "pop" ]; then
 	extensions=(h)
+    elif [ "$model" = "rtm" ]; then
+	extensions=(h0 h1 h2)
+    elif [ "$model" = "mosart" ]; then
+	extensions=(h0 h1 h2)
     fi
 
     #------------------------------------------------------------------
