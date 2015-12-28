@@ -19,7 +19,6 @@ set CASERR1 = ${CASEROOT}.ref1
 set CASE0   = ${CASE}
 
 cd $CASER0
-./xmlchange DOUT_S_SAVE_ALL_ON_DISK=FALSE
 set STOP_N      = `./xmlquery STOP_N          -value`
 set STOP_OPTION = `./xmlquery STOP_OPTION     -value`
 
@@ -47,8 +46,9 @@ echo " short term archiving is on" >>& $TESTSTATUS_LOG
 
 # set up run
 set DOUT_S_ROOT          = `./xmlquery DOUT_S_ROOT     -value`
-set DOUT_S_ROOT_LOCKED   = `echo $DOUT_S_ROOT | sed 's/archive/archive.locked/'`
-set DOUTSR0              =  $DOUT_S_ROOT_LOCKED
+#set DOUT_S_ROOT_LOCKED   = `echo $DOUT_S_ROOT | sed 's/archive/archive.locked/'`
+#set DOUTSR0              =  $DOUT_S_ROOT_LOCKED
+set DOUTSR0              =  $DOUT_S_ROOT
 set orig_clm_bldnml_opts = `./xmlquery CLM_BLDNML_OPTS -value`
 set CASE                 = `./xmlquery CASE -value`
 ./xmlchange -file env_run.xml -id STOP_N          -val ${stopn1}                || exit -1
@@ -69,7 +69,7 @@ if($status != 0) then
 endif 
 
 # must look in short term archiving directory for cpl log files
-set CplLogFile = `ls -1t $DOUT_S_ROOT_LOCKED/cpl/logs/cpl.log* | head -1`
+set CplLogFile = `ls -1t $DOUT_S_ROOT/cpl/logs/cpl.log* | head -1`
 if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
