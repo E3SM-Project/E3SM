@@ -26,10 +26,6 @@
    private
 #ifdef NO_MPIMOD
 #include <mpif.h>
-
-#ifndef MPI_OFFSET
-#define MPI_OFFSET	MPI_INTEGER8
-#endif
 #endif
 ! !DEFINED PARAMETERS:
 
@@ -44,8 +40,9 @@
 !
 !  MPI defines MPI_OFFSET_KIND as the byte size of the 
 !  type, which is not nessasarily the type kind
+!
    
-   integer, parameter, public :: PIO_OFFSET_KIND=i8
+   integer, parameter, public :: PIO_OFFSET_KIND=MPI_OFFSET_KIND
 
 !EOP
 !BOC
