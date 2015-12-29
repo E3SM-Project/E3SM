@@ -41,6 +41,22 @@ endif ()
 # Test Timeout (4 min = 240 sec)
 set (DEFAULT_TEST_TIMEOUT 240)
 
+add_executable (test_fillval EXCLUDE_FROM_ALL test_fillval.c)
+target_link_libraries (test_fillval pioc)
+add_dependencies (tests test_fillval)
+
+if (PIO_USE_MPISERIAL)
+    add_test(NAME test_fillval
+        COMMAND test_fillval)
+    set_tests_properties(test_fillval
+        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+else ()
+    add_mpi_test(test_fillval
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/test_fillval
+        NUMPROCS 4
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
+endif ()
+
 #===== pio_init_finalize =====
 add_executable (pio_init_finalize EXCLUDE_FROM_ALL 
     pio_init_finalize.F90
@@ -308,14 +324,20 @@ add_executable (pio_decomp_fillval EXCLUDE_FROM_ALL
 target_link_libraries (pio_decomp_fillval piof)
 add_dependencies (tests pio_decomp_fillval)
 
+add_executable (pio_decomp_fillval2 EXCLUDE_FROM_ALL
+    pio_decomp_fillval2.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
+target_link_libraries (pio_decomp_fillval2 piof)
+add_dependencies (tests pio_decomp_fillval2)
+
 if (PIO_USE_MPISERIAL)
-    add_test(NAME pio_decomp_fillval
-        COMMAND pio_decomp_fillval)
-    set_tests_properties(pio_decomp_fillval
+    add_test(NAME pio_decomp_fillval2
+        COMMAND pio_decomp_fillval2)
+    set_tests_properties(pio_decomp_fillval2
         PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 else ()
-    add_mpi_test(pio_decomp_fillval
-        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_fillval
+    add_mpi_test(pio_decomp_fillval2
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/pio_decomp_fillval2
         NUMPROCS 4
         TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 endif ()
