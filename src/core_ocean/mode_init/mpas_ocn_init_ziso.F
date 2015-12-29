@@ -402,7 +402,7 @@ contains
           if(config_use_debugTracers) then
              idx = index_tracer1
              do k = 1, nVertLevels
-                debugTracers(idx, k, iCell) = exp(-(refZMid(k)+1250.0)**2/250.0**2) * exp(-(yCell(iCell)-1250.0*1000.0)**2/(150.0*1000.0)**2)
+                debugTracers(idx, k, iCell) = 1.0_RKIND + 100000.0_RKIND*exp(-(refZMid(k)+1250.0)**2/100.0**2) * exp(-(yCell(iCell)-1250.0*1000.0)**2/(50.0*1000.0)**2)
              enddo 
           endif
 
