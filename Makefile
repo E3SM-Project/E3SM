@@ -337,11 +337,25 @@ LIBS =
 ifneq ($(wildcard $(PIO)/lib), ) # Check for newer PIO version
 	CPPINCLUDES = -I$(PIO)/include
 	FCINCLUDES = -I$(PIO)/include
-	LIBS = -L$(PIO)/lib -lpio
+	ifneq ($(wildcard $(PIO)/lib/libpioc.a), ) # CHECK FOR SEPARATE C AND FORTRAN LIBS
+		LIBS = -L$(PIO)/lib -lpiof -lpioc
+	else
+		LIBS = -L$(PIO)/lib -lpio
+	endif
+	ifneq ($(wildcard $(PIO)/lib/libgptl.a), ) # CHECK FOR TIMING LIBRARY
+		LIBS += -lgptl
+	endif
 else
 	CPPINCLUDES = -I$(PIO)
 	FCINCLUDES = -I$(PIO)
-	LIBS = -L$(PIO) -lpio
+	ifneq ($(wildcard $(PIO)/lib/libpioc.a), ) # CHECK FOR SEPARATE C AND FORTRAN LIBS
+		LIBS = -L$(PIO) -lpiof -lpioc
+	else
+		LIBS = -L$(PIO) -lpio
+	endif
+	ifneq ($(wildcard $(PIO)/lib/libgptl.a), ) # CHECK FOR TIMING LIBRARY
+		LIBS += -lgptl
+	endif
 endif
 
 ifneq "$(PNETCDF)" ""

@@ -1060,12 +1060,12 @@ module mpas_io
       type (fieldlist_type), pointer :: field_cursor
       integer :: pio_type
       integer :: ndims
-      integer (kind=PIO_OFFSET) :: pd, indx
+      integer (kind=MPAS_IO_OFFSET_KIND) :: pd, indx
       integer :: i 
       integer :: early_return, early_return_global
-      integer (kind=PIO_OFFSET) :: i1, i2, i3, i4, i5
+      integer (kind=MPAS_IO_OFFSET_KIND) :: i1, i2, i3, i4, i5
       integer, dimension(:), pointer :: dimlist
-      integer (kind=PIO_OFFSET), dimension(:), pointer :: compdof
+      integer (kind=MPAS_IO_OFFSET_KIND), dimension(:), pointer :: compdof
       type (decomplist_type), pointer :: decomp_cursor, new_decomp
 
 !      write(stderrUnit,*) 'Called MPAS_io_set_var_indices()'
@@ -1226,11 +1226,11 @@ module mpas_io
       do i=1,ndims-1
          dimlist(i) = field_cursor % fieldhandle % dims(i) % dimsize
          new_decomp % decomphandle % dims(i) = dimlist(i)
-         pd = pd * int(dimlist(i),PIO_OFFSET)
+         pd = pd * int(dimlist(i),MPAS_IO_OFFSET_KIND)
       end do
       new_decomp % decomphandle % dims(ndims) = field_cursor % fieldhandle % dims(ndims) % dimsize
       dimlist(ndims) = size(indices)
-      pd = pd * int(dimlist(ndims),PIO_OFFSET)
+      pd = pd * int(dimlist(ndims),MPAS_IO_OFFSET_KIND)
 
       allocate(compdof(pd)) 
 
@@ -1242,10 +1242,10 @@ module mpas_io
          do i2=1,dimlist(2)
          do i1=1,dimlist(1)
             compdof(indx) = i1 &
-                          + (i2-1)*int(dimlist(1),PIO_OFFSET) &
-                          + (i3-1)*int(dimlist(2),PIO_OFFSET)*int(dimlist(1),PIO_OFFSET) &
-                          + (i4-1)*int(dimlist(3),PIO_OFFSET)*int(dimlist(2),PIO_OFFSET)*int(dimlist(1),PIO_OFFSET) &
-                          + int(indices(i5)-1,PIO_OFFSET)*int(dimlist(4),PIO_OFFSET)*int(dimlist(3),PIO_OFFSET)*int(dimlist(2),PIO_OFFSET)*int(dimlist(1),PIO_OFFSET)
+                          + (i2-1)*int(dimlist(1),MPAS_IO_OFFSET_KIND) &
+                          + (i3-1)*int(dimlist(2),MPAS_IO_OFFSET_KIND)*int(dimlist(1),MPAS_IO_OFFSET_KIND) &
+                          + (i4-1)*int(dimlist(3),MPAS_IO_OFFSET_KIND)*int(dimlist(2),MPAS_IO_OFFSET_KIND)*int(dimlist(1),MPAS_IO_OFFSET_KIND) &
+                          + int(indices(i5)-1,MPAS_IO_OFFSET_KIND)*int(dimlist(4),MPAS_IO_OFFSET_KIND)*int(dimlist(3),MPAS_IO_OFFSET_KIND)*int(dimlist(2),MPAS_IO_OFFSET_KIND)*int(dimlist(1),MPAS_IO_OFFSET_KIND)
             indx = indx + 1
          end do
          end do
@@ -1258,9 +1258,9 @@ module mpas_io
          do i2=1,dimlist(2)
          do i1=1,dimlist(1)
             compdof(indx) = i1 &
-                          + (i2-1)*int(dimlist(1),PIO_OFFSET) &
-                          + (i3-1)*int(dimlist(2),PIO_OFFSET)*int(dimlist(1),PIO_OFFSET) &
-                          + int(indices(i4)-1,PIO_OFFSET)*int(dimlist(3),PIO_OFFSET)*int(dimlist(2),PIO_OFFSET)*int(dimlist(1),PIO_OFFSET)
+                          + (i2-1)*int(dimlist(1),MPAS_IO_OFFSET_KIND) &
+                          + (i3-1)*int(dimlist(2),MPAS_IO_OFFSET_KIND)*int(dimlist(1),MPAS_IO_OFFSET_KIND) &
+                          + int(indices(i4)-1,MPAS_IO_OFFSET_KIND)*int(dimlist(3),MPAS_IO_OFFSET_KIND)*int(dimlist(2),MPAS_IO_OFFSET_KIND)*int(dimlist(1),MPAS_IO_OFFSET_KIND)
             indx = indx + 1
          end do
          end do
@@ -1270,7 +1270,7 @@ module mpas_io
          do i3=1,dimlist(3)
          do i2=1,dimlist(2)
          do i1=1,dimlist(1)
-            compdof(indx) = i1 + (i2-1)*int(dimlist(1),PIO_OFFSET) + int(indices(i3)-1,PIO_OFFSET)*int(dimlist(2),PIO_OFFSET)*int(dimlist(1),PIO_OFFSET)
+            compdof(indx) = i1 + (i2-1)*int(dimlist(1),MPAS_IO_OFFSET_KIND) + int(indices(i3)-1,MPAS_IO_OFFSET_KIND)*int(dimlist(2),MPAS_IO_OFFSET_KIND)*int(dimlist(1),MPAS_IO_OFFSET_KIND)
             indx = indx + 1
          end do
          end do
@@ -1278,13 +1278,13 @@ module mpas_io
       else if (ndims == 2) then
          do i2=1,dimlist(2)
          do i1=1,dimlist(1)
-            compdof(indx) = i1 + int(indices(i2)-1,PIO_OFFSET)*int(dimlist(1),PIO_OFFSET)
+            compdof(indx) = i1 + int(indices(i2)-1,MPAS_IO_OFFSET_KIND)*int(dimlist(1),MPAS_IO_OFFSET_KIND)
             indx = indx + 1
          end do
          end do
       else if (ndims == 1) then
          do i1=1,dimlist(1)
-            compdof(indx) = int(indices(i1),PIO_OFFSET)
+            compdof(indx) = int(indices(i1),MPAS_IO_OFFSET_KIND)
             indx = indx + 1
          end do
       end if
@@ -1385,7 +1385,11 @@ module mpas_io
 
 !      write(stderrUnit,*) 'Checking for unlimited dim'
       if (field_cursor % fieldhandle % has_unlimited_dim) then
+#ifdef USE_PIO2
+         call PIO_setframe(handle % pio_file, field_cursor % fieldhandle % field_desc, handle % frame_number)
+#else
          call PIO_setframe(field_cursor % fieldhandle % field_desc, handle % frame_number)
+#endif
          start1(1) = handle % frame_number
          count1(1) = 1
      
@@ -2084,7 +2088,11 @@ module mpas_io
 
       if (field_cursor % fieldhandle % has_unlimited_dim) then
 
+#ifdef USE_PIO2
+         call PIO_setframe(handle % pio_file, field_cursor % fieldhandle % field_desc, handle % frame_number)
+#else
          call PIO_setframe(field_cursor % fieldhandle % field_desc, handle % frame_number)
+#endif
          start1(1) = handle % frame_number
          count1(1) = 1
      
@@ -2698,7 +2706,12 @@ module mpas_io
 
       integer :: pio_ierr
       integer :: varid
-      integer :: xtype, len
+      integer :: xtype
+#ifdef USE_PIO2
+      integer (kind=MPAS_IO_OFFSET_KIND) :: len
+#else
+      integer :: len
+#endif
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: att_cursor, new_att_node
 
@@ -2832,7 +2845,12 @@ module mpas_io
 
       integer :: pio_ierr
       integer :: varid
-      integer :: xtype, len, attlen
+      integer :: xtype
+#ifdef USE_PIO2
+      integer (kind=MPAS_IO_OFFSET_KIND) :: len, attlen
+#else
+      integer :: len, attlen
+#endif
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: att_cursor, new_att_node
 
@@ -2977,7 +2995,12 @@ module mpas_io
 
       integer :: pio_ierr
       integer :: varid
-      integer :: xtype, len
+      integer :: xtype
+#ifdef USE_PIO2
+      integer (kind=MPAS_IO_OFFSET_KIND) :: len
+#else
+      integer :: len
+#endif
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: att_cursor, new_att_node
 
@@ -3111,7 +3134,12 @@ module mpas_io
 
       integer :: pio_ierr
       integer :: varid
-      integer :: xtype, len, attlen
+      integer :: xtype
+#ifdef USE_PIO2
+      integer (kind=MPAS_IO_OFFSET_KIND) :: len, attlen
+#else
+      integer :: len, attlen
+#endif
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: att_cursor, new_att_node
 
@@ -3256,7 +3284,12 @@ module mpas_io
 
       integer :: pio_ierr
       integer :: varid
-      integer :: xtype, len
+      integer :: xtype
+#ifdef USE_PIO2
+      integer (kind=MPAS_IO_OFFSET_KIND) :: len
+#else
+      integer :: len
+#endif
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: att_cursor, new_att_node
 
