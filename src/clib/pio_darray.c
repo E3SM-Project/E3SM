@@ -422,6 +422,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 	     start[i] = region->start[i-(fndims-ndims)];
 	     count[i] = region->count[i-(fndims-ndims)];
 	   }
+
 	   if(fndims>1 && ndims<fndims && count[1]>0){
 	     count[0] = 1;
 	     start[0] = frame[0];
@@ -466,12 +467,12 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
        case PIO_IOTYPE_NETCDF:
 	 {
 	   mpierr = MPI_Type_size(basetype, &dsize);
-	   size_t tstart[ndims], tcount[ndims];
+	   size_t tstart[fndims], tcount[fndims];
 	   if(ios->io_rank==0){
 	     for(int iorank=0;iorank<num_aiotasks;iorank++){
 	       if(iorank==0){	    
 	         buflen=1;
-		 for(j=0;j<ndims;j++){
+		 for(j=0;j<fndims;j++){
 		   tstart[j] =  start[j];
 		   tcount[j] =  count[j];
 		   buflen *= tcount[j];
@@ -480,17 +481,17 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 		 mpierr = MPI_Send( &ierr, 1, MPI_INT, iorank, 0, ios->io_comm);  // handshake - tell the sending task I'm ready
 		 mpierr = MPI_Recv( &buflen, 1, MPI_INT, iorank, 1, ios->io_comm, &status);
 		 if(buflen>0){
-		   mpierr = MPI_Recv( tstart, ndims, MPI_OFFSET, iorank, ios->num_iotasks+iorank, ios->io_comm, &status);
-		   mpierr = MPI_Recv( tcount, ndims, MPI_OFFSET, iorank,2*ios->num_iotasks+iorank, ios->io_comm, &status);
+		   mpierr = MPI_Recv( tstart, fndims, MPI_OFFSET, iorank, ios->num_iotasks+iorank, ios->io_comm, &status);
+		   mpierr = MPI_Recv( tcount, fndims, MPI_OFFSET, iorank,2*ios->num_iotasks+iorank, ios->io_comm, &status);
 		 }
 	       }
 
 	       if(buflen>0){
   	         for(int nv=0; nv<nvars; nv++){
-		   if(vdesc->record >= 0 && ndims<fndims){
+		   /*if(vdesc->record >= 0 && ndims<fndims){
 		     tstart[0] = frame[nv];
 		   }
-
+		   */
 		   //		   printf("%s %d %d %d %d %d %ld\n",__FILE__,__LINE__,iodesc->llen, buflen, iodesc->maxiobuflen, nvars, tcount[0]);
 
 
@@ -515,14 +516,14 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 		   }
 		   if(ierr != PIO_NOERR){
 		     for(i=0;i<fndims;i++)
-		       fprintf(stderr,"vid %d dim %d start %ld count %ld\n",vid[nv],i,tstart[i],tcount[i]);
+		       fprintf(stderr,"vid %d dim %d start %ld count %ld \n",vid[nv],i,tstart[i],tcount[i]);
 		   }
 	         }
 	       }
 	     }
 	   }else if(ios->io_rank < num_aiotasks ){
 	     buflen=1;
-	     for(i=0;i<ndims;i++){
+	     for(i=0;i<fndims;i++){
 	       tstart[i] = (size_t) start[i];
 	       tcount[i] = (size_t) count[i];
 	       buflen*=tcount[i];
@@ -532,8 +533,8 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 	     mpierr = MPI_Recv( &ierr, 1, MPI_INT, 0, 0, ios->io_comm, &status);  // task0 is ready to recieve
 	     mpierr = MPI_Rsend( &buflen, 1, MPI_INT, 0, 1, ios->io_comm);
 	     if(buflen>0) {
-	       mpierr = MPI_Rsend( tstart, ndims, MPI_OFFSET, 0, ios->num_iotasks+ios->io_rank, ios->io_comm);
-	       mpierr = MPI_Rsend( tcount, ndims, MPI_OFFSET, 0,2*ios->num_iotasks+ios->io_rank, ios->io_comm);
+	       mpierr = MPI_Rsend( tstart, fndims, MPI_OFFSET, 0, ios->num_iotasks+ios->io_rank, ios->io_comm);
+	       mpierr = MPI_Rsend( tcount, fndims, MPI_OFFSET, 0,2*ios->num_iotasks+ios->io_rank, ios->io_comm);
 
 	       for(int nv=0; nv<nvars; nv++){
        	         bufptr = (void *)((char *) IOBUF + tsize*(nv*llen + region->loffset));
@@ -549,7 +550,7 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 #endif
 #ifdef _PNETCDF
        case PIO_IOTYPE_PNETCDF:
-	 for( i=0,dsize=1;i<ndims;i++){
+	 for( i=0,dsize=1;i<fndims;i++){
 	   dsize*=count[i];
 	 }
 	 tdsize += dsize;
