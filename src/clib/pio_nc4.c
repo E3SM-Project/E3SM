@@ -797,7 +797,9 @@ int PIOc_inq_var_endian(int ncid, int varid, int *endianp)
  *
  * Set chunk cache netCDF files to be opened/created.
  *
- * This function has no effect on netCDF classic files. Calling this function with iotype of PIO_IOTYPE_PNETCDF or PIO_IOTYPE_NETCDF returns an error 
+ * This function has no effect on netCDF classic files. Calling this
+ * function with iotype of PIO_IOTYPE_PNETCDF or PIO_IOTYPE_NETCDF
+ * returns an error.
  *
  * The file chunk cache for HDF5 can be set, and will apply for any
  * files opened or created until the program ends, or the settings are
@@ -810,10 +812,6 @@ int PIOc_inq_var_endian(int ncid, int varid, int *endianp)
  * variable documentation</a> for details about the operation of this
  * function.
  * 
- * Chunksizes have important performance repercussions. NetCDF
- * attempts to choose sensible chunk sizes by default, but for best
- * performance check chunking against access patterns.
- *
  * @param iotype the iotype of files to be created or opened.
 `* @param io_rank the rank of the calling process.
  * @param size size of file cache.
@@ -878,7 +876,17 @@ int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size,
 
 /**
  * @ingroup PIO_def_var
- * Set chunksizes for a variable.
+ * Get current file chunk cache settings from HDF5.
+ *
+ * This function has no effect on netCDF classic files. Calling this
+ * function with iotype of PIO_IOTYPE_PNETCDF or PIO_IOTYPE_NETCDF
+ * returns an error.
+ *
+ * The file chunk cache for HDF5 can be set, and will apply for any
+ * files opened or created until the program ends, or the settings are
+ * changed again. The cache settings apply only to the open file. They
+ * do not persist with the file, and must be set each time the file is
+ * opened, before it is opened, if they are to have effect.
  *
  * See the <a
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
@@ -889,15 +897,67 @@ int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size,
  * attempts to choose sensible chunk sizes by default, but for best
  * performance check chunking against access patterns.
  *
- * @param ncid the ncid of the open file.
- * @param varid the ID of the variable to set chunksizes for.
- * @param storage NC_CONTIGUOUS or NC_CHUNKED.
- * @param chunksizep an array of chunksizes. Must have a chunksize for
- * every variable dimension.
+ * @param iotype the iotype of files to be created or opened.
+`* @param io_rank the rank of the calling process.
+ * @param sizep gets the size of file cache.
+ * @param nelemsp gets the number of elements in file cache.
+ * @param preemptionp gets the preemption setting for file cache.
  * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
-/*int PIOc_get_chunk_cache(size_t *sizep, size_t *nelemsp, float *preemptionp);*/
+int PIOc_get_chunk_cache(int iotype, int io_rank, size_t *sizep,
+			 size_t *nelemsp, float *preemptionp)
+{
+    int ierr;
+    int msg;
+    int mpierr;
+    char *errstr;
+
+    errstr = NULL;
+    ierr = PIO_NOERR;
+
+    /* Since this is a property of the running HDF5 instance, not the
+     * file, it's not clear if this message passing will apply. For
+     * now, comment it out. EJH */
+    /* msg = PIO_MSG_INQ_VAR_FLETCHER32; */
+
+    /* if(ios->async_interface && ! ios->ioproc){ */
+    /* 	if(ios->compmaster)  */
+    /* 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm); */
+    /* 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm); */
+    /* } */
+
+    switch(iotype){
+#ifdef _NETCDF
+#ifdef _NETCDF4
+    case PIO_IOTYPE_NETCDF4P:
+	ierr = nc_get_chunk_cache(sizep, nelemsp, preemptionp);
+	break;
+    case PIO_IOTYPE_NETCDF4C:
+	if (!io_rank)
+	    ierr = nc_get_chunk_cache(sizep, nelemsp, preemptionp);
+	break;
+#endif
+    case PIO_IOTYPE_NETCDF:
+	return PIO_ENOTNC4;
+	break;
+#endif
+#ifdef _PNETCDF
+    case PIO_IOTYPE_PNETCDF:
+	return PIO_ENOTNC4;
+	break;
+#endif
+    default:
+	ierr = iotype_error(iotype,__FILE__,__LINE__);
+    }
+
+    if(ierr != PIO_NOERR){
+	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
+	sprintf(errstr,"in file %s",__FILE__);
+    }
+    if(errstr != NULL) free(errstr);
+    return ierr;
+}
 
 /**
  * @ingroup PIO_def_var

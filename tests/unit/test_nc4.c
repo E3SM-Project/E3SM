@@ -380,12 +380,9 @@ main(int argc, char **argv)
 	    if ((ret = PIOc_set_chunk_cache(format[fmt], my_rank, chunk_cache_size, nelems,
 	    				    preemption)) != PIO_ENOTNC4)
 	    	ERR(ret);
-	    /* /\* if ((ret = PIOc_get_chunk_cache(format[fmt], my_rank, &my_chunk_cache_size, *\/ */
-	    /* /\* 				    &my_nelems, &my_preemption)) != PIO_ENOTNC4) *\/ */
-	    /* /\* 	ERR(ret); *\/ */
-	    /* if ((ret = PIOc_get_chunk_cache(&chunk_cache_size, */
-	    /* 				    &nelems, &preemption)) != PIO_ENOTNC4) */
-	    /* 	ERR(ret); */
+	    if ((ret = PIOc_get_chunk_cache(format[fmt], my_rank, &chunk_cache_size,
+	    				    &nelems, &preemption)) != PIO_ENOTNC4)
+	    	ERR(ret);
 	}	    
 	
 	if ((ret = PIOc_enddef(ncid)))
