@@ -794,7 +794,16 @@ int PIOc_inq_var_endian(int ncid, int varid, int *endianp)
 
 /**
  * @ingroup PIO_def_var
- * Set chunksizes for a variable.
+ *
+ * Set chunk cache netCDF files to be opened/created.
+ *
+ * This function has no effect on netCDF classic files. Calling this function with iotype of PIO_IOTYPE_PNETCDF or PIO_IOTYPE_NETCDF returns an error 
+ *
+ * The file chunk cache for HDF5 can be set, and will apply for any
+ * files opened or created until the program ends, or the settings are
+ * changed again. The cache settings apply only to the open file. They
+ * do not persist with the file, and must be set each time the file is
+ * opened, before it is opened, if they are to have effect.
  *
  * See the <a
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
@@ -805,15 +814,16 @@ int PIOc_inq_var_endian(int ncid, int varid, int *endianp)
  * attempts to choose sensible chunk sizes by default, but for best
  * performance check chunking against access patterns.
  *
- * @param ncid the ncid of the open file.
- * @param varid the ID of the variable to set chunksizes for.
- * @param storage NC_CONTIGUOUS or NC_CHUNKED.
- * @param chunksizep an array of chunksizes. Must have a chunksize for
- * every variable dimension.
+ * @param iotype the iotype of files to be created or opened.
+`* @param io_rank the rank of the calling process.
+ * @param size size of file cache.
+ * @param nelems number of elements in file cache.
+ * @param preemption preemption setting for file cache.
  * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
-int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size, size_t nelems, float preemption)
+int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size,
+			 size_t nelems, float preemption)
 {
     int ierr;
     int msg;
@@ -824,7 +834,7 @@ int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size, size_t nelems, fl
 
     errstr = NULL;
     ierr = PIO_NOERR;
-    msg = PIO_MSG_SET_CHUNK_CACHE;
+    /*msg = PIO_MSG_SET_CHUNK_CACHE;*/
 
     /* if(ios->async_interface && ! ios->ioproc){ */
     /* 	if(ios->compmaster)  */
@@ -832,7 +842,8 @@ int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size, size_t nelems, fl
     /* 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm); */
     /* } */
 
-    switch(iotype){
+    switch(iotype)
+    {
 #ifdef _NETCDF
 #ifdef _NETCDF4
     case PIO_IOTYPE_NETCDF4P:

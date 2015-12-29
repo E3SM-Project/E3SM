@@ -39,6 +39,14 @@
 /** Error code for when things go wrong. */
 #define ERR_AWFUL 1111
 
+/** Values for some netcdf-4 settings. */
+/**@{*/
+#define VAR_CACHE_SIZE (1024 * 1024)
+#define VAR_CACHE_NELEMS 10
+#define VAR_CACHE_PREEMPTION 0.5
+/**@}*/
+
+
 /** Handle MPI errors. This should only be used with MPI library
  * function calls. */
 #define MPIERR(e) do {                                                  \
@@ -363,15 +371,15 @@ main(int argc, char **argv)
 		ERR(ret);
 	    if ((ret = PIOc_inq_var_endian(ncid, 0, &endianness)) != PIO_ENOTNC4)
 	    	ERR(ret);
-	    /* if ((ret = PIOc_set_var_chunk_cache(format[fmt], my_rank, chunk_cache_size, nelems, */
-	    /* 				    preemption)) != PIO_ENOTNC4) */
-	    /* 	ERR(ret); */
+	    if ((ret = PIOc_set_var_chunk_cache(ncid, 0, VAR_CACHE_SIZE, VAR_CACHE_NELEMS,
+						VAR_CACHE_PREEMPTION)) != PIO_ENOTNC4)
+	    	ERR(ret);
 	    if ((ret = PIOc_get_var_chunk_cache(ncid, 0, &var_cache_size, &var_cache_nelems,
 						&var_cache_preemption)) != PIO_ENOTNC4)
 		ERR(ret);
-	    /* if ((ret = PIOc_set_chunk_cache(format[fmt], my_rank, chunk_cache_size, nelems, */
-	    /* 				    preemption)) != PIO_ENOTNC4) */
-	    /* 	ERR(ret); */
+	    if ((ret = PIOc_set_chunk_cache(format[fmt], my_rank, chunk_cache_size, nelems,
+	    				    preemption)) != PIO_ENOTNC4)
+	    	ERR(ret);
 	    /* /\* if ((ret = PIOc_get_chunk_cache(format[fmt], my_rank, &my_chunk_cache_size, *\/ */
 	    /* /\* 				    &my_nelems, &my_preemption)) != PIO_ENOTNC4) *\/ */
 	    /* /\* 	ERR(ret); *\/ */
