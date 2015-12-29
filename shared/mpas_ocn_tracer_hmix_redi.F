@@ -293,7 +293,7 @@ contains
 
             ! Approximation of values on the top and bottom interfaces through the idea of having ghost cells above
             ! the top and below the bottom layers of the same depths and tracer concentration.
-            gradTracerTopOfEdge(1,iEdge) = gradTracerEdge(1,iEdge)
+            gradTracerTopOfEdge(1,iEdge) = gradTracerEdge(2,iEdge)
             gradTracerTopOfEdge(maxLevelEdgeTop(iEdge)+1,iEdge) = gradTracerEdge(max(maxLevelEdgeTop(iEdge),1),iEdge)
          end do
          !$omp end do
