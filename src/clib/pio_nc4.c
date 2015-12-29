@@ -886,7 +886,7 @@ int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size, size_t nelems, fl
  * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
-int PIOc_get_chunk_cache(size_t *sizep, size_t *nelemsp, float *preemptionp);
+/*int PIOc_get_chunk_cache(size_t *sizep, size_t *nelemsp, float *preemptionp);*/
 
 /**
  * @ingroup PIO_def_var
@@ -969,6 +969,87 @@ int PIOc_set_var_chunk_cache(int ncid, int varid, size_t size, size_t nelems,
     return ierr;
 }    
 
+/**
+ * @ingroup PIO_inq_var
+ * Get the variable chunk cache settings.
+ *
+ * Note that these settings are not part of the data file - they apply
+ * only to the open file as long as it is open.
+ *
+ *  See the <a
+ * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
+ * variable documentation</a> for details about the operation of this
+ * function.
+ * 
+ * @param ncid the ncid of the open file.
+ * @param varid the ID of the variable to set chunksizes for.
+ * @param sizep will get the size of the cache in bytes.
+ * @param nelemsp will get the number of elements in the cache.
+ * @param preemptionp will get the cache preemption value.
+ * 
+ * @return PIO_NOERR for success, otherwise an error code.
+ */
 int PIOc_get_var_chunk_cache(int ncid, int varid, size_t *sizep, size_t *nelemsp,
-			     float *preemptionp);
+			     float *preemptionp)
+{
+    int ierr;
+    int msg;
+    int mpierr;
+    iosystem_desc_t *ios;
+    file_desc_t *file;
+    char *errstr;
+
+    errstr = NULL;
+    ierr = PIO_NOERR;
+
+    if (!(file = pio_get_file_from_id(ncid)))
+	return PIO_EBADID;
+    ios = file->iosystem;
+
+    /* Since this is a property of the running HDF5 instance, not the
+     * file, it's not clear if this message passing will apply. For
+     * now, comment it out. EJH */
+    /* msg = PIO_MSG_INQ_VAR_FLETCHER32; */
+
+    /* if(ios->async_interface && ! ios->ioproc){ */
+    /* 	if(ios->compmaster)  */
+    /* 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm); */
+    /* 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm); */
+    /* } */
+
+    if(ios->ioproc){
+	switch(file->iotype){
+#ifdef _NETCDF
+#ifdef _NETCDF4
+	case PIO_IOTYPE_NETCDF4P:
+	    ierr = nc_get_var_chunk_cache(file->fh, varid,  sizep, nelemsp, preemptionp);
+	    break;
+	case PIO_IOTYPE_NETCDF4C:
+	    if (!ios->io_rank)
+		ierr = nc_get_var_chunk_cache(file->fh, varid,  sizep, nelemsp, preemptionp);
+	    break;
+#endif
+	case PIO_IOTYPE_NETCDF:
+	    return PIO_ENOTNC4;
+	    break;
+#endif
+#ifdef _PNETCDF
+	case PIO_IOTYPE_PNETCDF:
+	    return PIO_ENOTNC4;
+	    break;
+#endif
+	default:
+	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
+	}
+    }
+
+    ierr = check_netcdf(file, ierr, errstr,__LINE__);
+    if(ierr != PIO_NOERR){
+	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
+	sprintf(errstr,"in file %s",__FILE__);
+    }
+    if(errstr != NULL) free(errstr);
+    return ierr;
+}    
+
 	    

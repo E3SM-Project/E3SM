@@ -134,6 +134,45 @@ main(int argc, char **argv)
     /** The ID of the netCDF varable. */
     int varid;
 
+    /** Storage of netCDF-4 files (contiguous vs. chunked). */
+    int storage;
+
+    /** Chunksizes set in the file. */
+    size_t my_chunksize[NDIM];
+    
+    /** The shuffle filter setting in the netCDF-4 test file. */
+    int shuffle;
+    
+    /** Non-zero if deflate set for the variable in the netCDF-4 test file. */
+    int deflate;
+
+    /** The deflate level set for the variable in the netCDF-4 test file. */
+    int deflate_level;
+
+    /** Non-zero if fletcher32 filter is used for variable. */
+    int fletcher32;
+
+    /** Endianness of variable. */
+    int endianness;
+
+    /* Size of the file chunk cache. */
+    size_t chunk_cache_size;
+
+    /* Number of elements in file cache. */
+    size_t nelems;
+
+    /* File cache preemption. */
+    float preemption;
+
+    /* Size of the var chunk cache. */
+    size_t var_cache_size;
+
+    /* Number of elements in var cache. */
+    size_t var_cache_nelems;
+
+    /* Var cache preemption. */    
+    float var_cache_preemption;
+    
     /** The I/O description ID. */
     int ioid;
 
@@ -262,8 +301,6 @@ main(int argc, char **argv)
 		ERR(ret);
 
 	    /** Check that the inq_var_chunking function works. */
-	    int storage;
-	    size_t my_chunksize[NDIM];
 	    if ((ret = PIOc_inq_var_chunking(ncid, 0, &storage, my_chunksize)))
 	    	ERR(ret);
 	    
@@ -279,9 +316,6 @@ main(int argc, char **argv)
 	    }
 
 	    /* Check that the inq_var_deflate functions works. */
-	    int shuffle;
-	    int deflate;
-	    int deflate_level;
 	    if ((ret = PIOc_inq_var_deflate(ncid, 0, &shuffle, &deflate, &deflate_level)))
 	    	ERR(ret);
 
@@ -296,6 +330,21 @@ main(int argc, char **argv)
 		if (shuffle || deflate)
 		    ERR(ERR_AWFUL);
 
+	    /* Check that the def/inq_var_fletcher32 functions
+	     * work. Starts as off. */
+	    if ((ret = PIOc_inq_var_fletcher32(ncid, 0, &fletcher32)))
+	    	ERR(ret);
+	    if (format[fmt] == PIO_IOTYPE_NETCDF4C && !my_rank)
+		if (fletcher32)
+		    ERR(ERR_AWFUL);
+	    if (format[fmt] == PIO_IOTYPE_NETCDF4P)
+		if (fletcher32)
+		    ERR(ERR_AWFUL);
+
+	    /* Turn on fletcher32 filter. */
+	    /*if ((ret = PIOc_def_var_fletcher32(ncid, 0, 1)))
+	      ERR(ret);*/
+	    
 	} else {
 	    /* Trying to set or inq netCDF-4 settings for non-netCDF-4
 	     * files results in the PIO_ENOTNC4 error. */
@@ -303,6 +352,32 @@ main(int argc, char **argv)
 		ERR(ERR_AWFUL);
 	    if ((ret = PIOc_inq_var_chunking(ncid, 0, &storage, my_chunksize)) != PIO_ENOTNC4)
 		ERR(ERR_AWFUL);
+	    if ((ret = PIOc_inq_var_deflate(ncid, 0, &shuffle, &deflate, &deflate_level))
+		!= PIO_ENOTNC4)
+	    	ERR(ret);
+	    if ((ret = PIOc_def_var_fletcher32(ncid, 0, 1)) != PIO_ENOTNC4)
+		ERR(ret);
+	    if ((ret = PIOc_inq_var_fletcher32(ncid, 0, &fletcher32)) != PIO_ENOTNC4)
+	    	ERR(ret);
+	    if ((ret = PIOc_def_var_endian(ncid, 0, 1)) != PIO_ENOTNC4)
+		ERR(ret);
+	    if ((ret = PIOc_inq_var_endian(ncid, 0, &endianness)) != PIO_ENOTNC4)
+	    	ERR(ret);
+	    /* if ((ret = PIOc_set_var_chunk_cache(format[fmt], my_rank, chunk_cache_size, nelems, */
+	    /* 				    preemption)) != PIO_ENOTNC4) */
+	    /* 	ERR(ret); */
+	    if ((ret = PIOc_get_var_chunk_cache(ncid, 0, &var_cache_size, &var_cache_nelems,
+						&var_cache_preemption)) != PIO_ENOTNC4)
+		ERR(ret);
+	    /* if ((ret = PIOc_set_chunk_cache(format[fmt], my_rank, chunk_cache_size, nelems, */
+	    /* 				    preemption)) != PIO_ENOTNC4) */
+	    /* 	ERR(ret); */
+	    /* /\* if ((ret = PIOc_get_chunk_cache(format[fmt], my_rank, &my_chunk_cache_size, *\/ */
+	    /* /\* 				    &my_nelems, &my_preemption)) != PIO_ENOTNC4) *\/ */
+	    /* /\* 	ERR(ret); *\/ */
+	    /* if ((ret = PIOc_get_chunk_cache(&chunk_cache_size, */
+	    /* 				    &nelems, &preemption)) != PIO_ENOTNC4) */
+	    /* 	ERR(ret); */
 	}	    
 	
 	if ((ret = PIOc_enddef(ncid)))
