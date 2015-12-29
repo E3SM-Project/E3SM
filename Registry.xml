@@ -330,6 +330,22 @@
 					description="If true, the standard GM for the tracer advection and mixing is turned on. This includes the redi portion which is captured in hmix."
 					possible_values=".true. or .false."
 		/>
+                <nml_option name="config_use_Redi_surface_layer_tapering" type="logical" default_value=".false." units="NA"
+                                        description="If true, the Redi K33 vertical mixing is limited in and just below the ocean boundary layer."
+                                        possible_values=".true. or .false."
+                />
+                <nml_option name="config_Redi_surface_layer_tapering_extent" type="real" default_value="0.0" units="non-dimensional"
+                                        description="Vertical component of Redi mixing limited in top config_Redi_surface_layer_tapering_extent*boundaryLayerDepth"
+                                        possible_values="Any positive real value, typically between 1 and 2."
+                />
+                <nml_option name="config_use_Redi_bottom_layer_tapering" type="logical" default_value=".false." units="NA"
+                                        description="If true, the Redi K33 vertical mixing is limited in bottom boundary layer."
+                                        possible_values=".true. or .false."
+                />
+                <nml_option name="config_Redi_bottom_layer_tapering_depth" type="real" default_value="0.0" units="m"
+                                        description="Vertical component of Redi mixing limited in bottom config_Redi_surface_layer_tapering_depth"
+                                        possible_values="Any positive real value, typically between 100 and 500 m."
+                />
 		<nml_option name="config_standardGM_tracer_kappa" type="real" default_value="0.0" units="m^2 s^{-1}"
 					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$"
 					possible_values="Any positive real value."
