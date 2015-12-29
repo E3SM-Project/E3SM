@@ -422,7 +422,7 @@ contains
       if(config_use_Redi_bottom_layer_tapering) then
          do iCell=1,nCells
            do k = 1, maxLevelCell(iCell)
-             rtmp = (zMid(k,iCell)-zMid(maxLevelCell(iCell),iCell))/config_Redi_bottom_layer_tapering_depth
+             rtmp = (zMid(k,iCell)-zMid(maxLevelCell(iCell),iCell))/(config_Redi_bottom_layer_tapering_depth++epsGM)
              rtmp = max(0.0,rtmp)
              rtmp = min(1.0,rtmp)
              relativeSlopeTaperingCell(k,iCell) = rtmp*relativeSlopeTaperingCell(k,iCell)
