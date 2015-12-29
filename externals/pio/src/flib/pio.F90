@@ -9,7 +9,7 @@ module pio
 
 ! only pio_offset is intended for export from kinds
 
-  use pio_kinds, only : pio_offset, pio_offset_kind
+  use pio_kinds, only : pio_offset_kind
 
   use piolib_mod, only : pio_initdecomp, &
        pio_openfile, pio_closefile, pio_createfile, pio_setdebuglevel, &
