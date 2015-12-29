@@ -201,7 +201,6 @@ CONTAINS
     count=1
     count(clen) = vlen
     ierr = PIOc_get_vara_text (ncid, varid-1, cindex, count, ival)
-!    print *,__FILE__,__LINE__,vlen, ival(1:vlen)
     deallocate(cindex)
     deallocate(count)
 #ifdef TIMING
@@ -464,11 +463,10 @@ CONTAINS
     enddo
 
     ierr = PIOc_get_vara_text (ncid, varid-1, cstart, ccount, ival)
-    deallocate(ccount, cstart)
     do j=1,nstrs
-       call replace_c_null(ival(j))
-!       print *,__FILE__,__LINE__,trim(ival(j))
+       call replace_c_null(ival(j),ccount(ndims))
     end do
+    deallocate(ccount, cstart)
   end function get_vara_text_internal
 
 ! TYPE int,real,double
