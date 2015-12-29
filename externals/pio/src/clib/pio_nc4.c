@@ -7,6 +7,7 @@
 
 /**
  * @ingroup PIO_def_var
+<<<<<<< HEAD
  * Set deflate (zlib) settings for a variable.
  *
  * See the <a
@@ -643,6 +644,9 @@ int PIOc_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
  * variable documentation</a> for details about the operation of this
  * function.
+=======
+ * Set chunksizes for a variable.
+>>>>>>> acf24ddb8c15ee9d28b9ebccb3c83d7d03b84947
  * 
  * Chunksizes have important performance repercussions. NetCDF
  * attempts to choose sensible chunk sizes by default, but for best
@@ -656,7 +660,12 @@ int PIOc_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
  * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
+<<<<<<< HEAD
 int PIOc_def_var_endian(int ncid, int varid, int endian)
+=======
+int PIOc_def_var_chunking(int ncid, int varid, int storage,
+			  const size_t *chunksizesp) 
+>>>>>>> acf24ddb8c15ee9d28b9ebccb3c83d7d03b84947
 {
     int ierr;
     int msg;
@@ -671,7 +680,11 @@ int PIOc_def_var_endian(int ncid, int varid, int endian)
     if (!(file = pio_get_file_from_id(ncid)))
 	return PIO_EBADID;
     ios = file->iosystem;
+<<<<<<< HEAD
     msg = PIO_MSG_DEF_VAR_ENDIAN;
+=======
+    msg = PIO_MSG_DEF_VAR_CHUNKING;
+>>>>>>> acf24ddb8c15ee9d28b9ebccb3c83d7d03b84947
 
     if(ios->async_interface && ! ios->ioproc){
 	if(ios->compmaster) 
@@ -684,11 +697,19 @@ int PIOc_def_var_endian(int ncid, int varid, int endian)
 #ifdef _NETCDF
 #ifdef _NETCDF4
 	case PIO_IOTYPE_NETCDF4P:
+<<<<<<< HEAD
 	    ierr = nc_def_var_endian(file->fh, varid, endian);
 	    break;
 	case PIO_IOTYPE_NETCDF4C:
 	    if(ios->io_rank==0){
 		ierr = nc_def_var_endian(file->fh, varid, endian);
+=======
+	    ierr = nc_def_var_chunking(file->fh, varid, storage, chunksizesp);
+	    break;
+	case PIO_IOTYPE_NETCDF4C:
+	    if(ios->io_rank==0){
+		ierr = nc_def_var_chunking(file->fh, varid, storage, chunksizesp);
+>>>>>>> acf24ddb8c15ee9d28b9ebccb3c83d7d03b84947
 	    }
 	    break;
 #endif
@@ -718,11 +739,14 @@ int PIOc_def_var_endian(int ncid, int varid, int endian)
 /**
  * @ingroup PIO_inq_var
  * Inquire about chunksizes for a variable.
+<<<<<<< HEAD
  *
  * See the <a
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
  * variable documentation</a> for details about the operation of this
  * function.
+=======
+>>>>>>> acf24ddb8c15ee9d28b9ebccb3c83d7d03b84947
  * 
  * @param ncid the ncid of the open file.
  * @param varid the ID of the variable to set chunksizes for.
@@ -734,7 +758,11 @@ int PIOc_def_var_endian(int ncid, int varid, int endian)
  * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
+<<<<<<< HEAD
 int PIOc_inq_var_endian(int ncid, int varid, int *endianp)
+=======
+int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizesp)
+>>>>>>> acf24ddb8c15ee9d28b9ebccb3c83d7d03b84947
 {
     int ierr;
     int msg;
@@ -762,6 +790,7 @@ int PIOc_inq_var_endian(int ncid, int varid, int *endianp)
 #ifdef _NETCDF
 #ifdef _NETCDF4
 	case PIO_IOTYPE_NETCDF4P:
+<<<<<<< HEAD
 	    ierr = nc_inq_var_endian(file->fh, varid, endianp);
 	    break;
 	case PIO_IOTYPE_NETCDF4C:
@@ -943,6 +972,13 @@ int PIOc_set_var_chunk_cache(int ncid, int varid, size_t size, size_t nelems,
 	case PIO_IOTYPE_NETCDF4C:
 	    if(ios->io_rank==0){
 		ierr = nc_set_var_chunk_cache(file->fh, varid, size, nelems, preemption);
+=======
+	    ierr = nc_inq_var_chunking(file->fh, varid, storagep, chunksizesp);
+	    break;
+	case PIO_IOTYPE_NETCDF4C:
+	    if(ios->io_rank==0){
+		ierr = nc_inq_var_chunking(file->fh, varid, storagep, chunksizesp);
+>>>>>>> acf24ddb8c15ee9d28b9ebccb3c83d7d03b84947
 	    }
 	    break;
 #endif
@@ -967,8 +1003,13 @@ int PIOc_set_var_chunk_cache(int ncid, int varid, size_t size, size_t nelems,
     }
     if(errstr != NULL) free(errstr);
     return ierr;
+<<<<<<< HEAD
 }    
 
 int PIOc_get_var_chunk_cache(int ncid, int varid, size_t *sizep, size_t *nelemsp,
 			     float *preemptionp);
+=======
+}
+
+>>>>>>> acf24ddb8c15ee9d28b9ebccb3c83d7d03b84947
 	    
