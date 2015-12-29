@@ -58,7 +58,7 @@ logical,            public :: oldcldoptics = .false.
 ! Private module data
 
 ! max number of strings in mode definitions
-integer, parameter :: n_mode_str = 60
+integer, parameter :: n_mode_str = 100    ! max number of strings in mode definitions
 
 ! max number of externally mixed entities in the climate/diag lists
 integer, parameter :: n_rad_cnst = N_RAD_CNST
@@ -205,6 +205,28 @@ end interface
 logical :: verbose = .true.
 character(len=1), parameter :: nl = achar(10)
 
+#if ( defined MODAL_AERO_9MODE )
+integer, parameter :: num_mode_types = 10
+integer, parameter :: num_spec_types = 11
+character(len=14), parameter :: mode_type_names(num_mode_types) = (/ &
+   'accum         ', 'aitken        ', 'primary_carbon', 'fine_seasalt  ', &
+   'fine_dust     ', 'coarse        ', 'coarse_seasalt', 'coarse_dust   ', &
+   'accum_marine  ', 'aitken_marine ' /)
+character(len=9), parameter :: spec_type_names(num_spec_types) = (/ &
+   'sulfate  ', 'ammonium ', 'nitrate  ', 'p-organic', &
+   's-organic', 'black-c  ', 'seasalt  ', 'dust     ', &
+   'm-poly   ', 'm-prot   ', 'm-lip    ' /)
+#elif ( defined MODAL_AERO_4MODE_MOM )
+integer, parameter :: num_mode_types = 8
+integer, parameter :: num_spec_types = 9
+character(len=14), parameter :: mode_type_names(num_mode_types) = (/ &
+   'accum         ', 'aitken        ', 'primary_carbon', 'fine_seasalt  ', &
+   'fine_dust     ', 'coarse        ', 'coarse_seasalt', 'coarse_dust   '  /)
+character(len=9), parameter :: spec_type_names(num_spec_types) = (/ &
+   'sulfate  ', 'ammonium ', 'nitrate  ', 'p-organic', &
+   's-organic', 'black-c  ', 'seasalt  ', 'dust     ', &
+   'm-organic' /)
+#else
 integer, parameter :: num_mode_types = 8
 integer, parameter :: num_spec_types = 8
 character(len=14), parameter :: mode_type_names(num_mode_types) = (/ &
@@ -213,6 +235,7 @@ character(len=14), parameter :: mode_type_names(num_mode_types) = (/ &
 character(len=9), parameter :: spec_type_names(num_spec_types) = (/ &
    'sulfate  ', 'ammonium ', 'nitrate  ', 'p-organic', &
    's-organic', 'black-c  ', 'seasalt  ', 'dust     '/)
+#endif
 
 
 !==============================================================================

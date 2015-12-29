@@ -35,7 +35,7 @@
       character(len=max_len) :: line
       character(len=64)      :: frmt
       character(len=24)      :: number
-      character(len=12)      :: num12
+      character(len=14)      :: num14
       character(len=16)      :: rxt_string
       character(len=16)       :: wrk_chr(5)
       logical  ::  flush
@@ -172,12 +172,12 @@
          do n = 1,new_nq
             number = ' '
             if ( temp_mass(n) > 1. ) then
-               write(num12,'(f12.6)') temp_mass(n)
+               write(num14,'(f14.6)') temp_mass(n)
             else
-               write(num12,'(g12.6)') temp_mass(n)
+               write(num14,'(g14.6)') temp_mass(n)
             endif
-            numlen = len_trim(num12)
-            number(12-numlen+1:12) = num12(1:numlen)
+            numlen = len_trim(num14)
+            number(14-numlen+1:14) = num14(1:numlen)
             lpos   = scan( number, '0123456789', back=.true. ) + 1
             if( n < new_nq ) then
                if( mod(n,5) /= 0 ) then
@@ -220,9 +220,9 @@
          lstrt = m
          do n = 1,new_nq
             number = ' '
-            write(num12,'(f12.6)') temp_mass(n)
-            numlen = len_trim(num12)
-            number(12-numlen+1:12) = num12(1:numlen)
+            write(num14,'(f14.6)') temp_mass(n)
+            numlen = len_trim(num14)
+            number(14-numlen+1:14) = num14(1:numlen)
             lpos   = scan( number, '0123456789', back=.true. ) + 1
             if( n < new_nq ) then
                if( mod(n,5) /= 0 ) then
