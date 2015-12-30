@@ -69,7 +69,7 @@ foreach my $lockedfile (@lockedfiles) {
 	    `./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val FALSE`;
 	    `./xmlchange -noecho -file env_build.xml -id BUILD_STATUS -val 1`;
 	} elsif ($file =~ /.*env_mach_pes.*/) {
-	    $logger->logdie ("Invoke case_setup -clean followed by case_setup ");
+	    $logger->logdie ("Invoke case.setup -clean followed by case.setup ");
 	} else {
 	    $logger->logdie ("Cannot change $file, please recover the original copy from LockedFiles");
 	}
