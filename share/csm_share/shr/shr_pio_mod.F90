@@ -589,19 +589,11 @@ contains
     endif
     pio_root = min(pio_root,npes-1)
 
-
-#if defined(BGP) || defined(BGL)
-! On Bluegene machines a negative numiotasks refers to the number of iotasks per ionode, this code
-! allows for that special case.
-    if(pio_numiotasks<0) then
-       pio_stride=0       
-    else
-#endif
-
-    
-
-
-
+    if(npes > 1 .and. pio_stride>= npes .and. &
+         (pio_iotype .eq. PIO_IOTYPE_PNETCDF .or. &
+         pio_iotype .eq. PIO_IOTYPE_NETCDF4P)) then
+       pio_stride = pio_stride/2
+    endif
     !--------------------------------------------------------------------------
     ! check/set/correct io pio parameters
     !--------------------------------------------------------------------------
