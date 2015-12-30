@@ -717,7 +717,6 @@ contains
     index_tot_mass(1,4) = get_spc_ndx('bc_a1' )
     index_tot_mass(1,5) = get_spc_ndx('dst_a1')
     index_tot_mass(1,6) = get_spc_ndx('ncl_a1')
-    index_tot_mass(1,7) = get_spc_ndx('mom_a1')
     index_chm_mass(1,1) = get_spc_ndx('so4_a1')
     index_chm_mass(1,2) = get_spc_ndx('soa_a1')
     index_chm_mass(1,3) = get_spc_ndx('bc_a1' )
@@ -727,7 +726,6 @@ contains
     index_tot_mass(2,1) = get_spc_ndx('so4_a2')
     index_tot_mass(2,2) = get_spc_ndx('soa_a2')
     index_tot_mass(2,3) = get_spc_ndx('ncl_a2')
-    index_tot_mass(2,4) = get_spc_ndx('mom_a2')
     index_chm_mass(2,1) = get_spc_ndx('so4_a2')
     index_chm_mass(2,2) = get_spc_ndx('soa_a2')
     !
@@ -735,7 +733,6 @@ contains
     !
     index_tot_mass(3,1) = get_spc_ndx('dst_a3')
     index_tot_mass(3,2) = get_spc_ndx('ncl_a3')
-    index_tot_mass(3,3) = get_spc_ndx('mom_a3')
     index_tot_mass(3,3) = get_spc_ndx('so4_a3')
     index_chm_mass(3,1) = get_spc_ndx('so4_a3')
     !
