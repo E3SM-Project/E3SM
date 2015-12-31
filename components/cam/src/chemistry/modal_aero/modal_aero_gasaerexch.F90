@@ -273,10 +273,6 @@ implicit none
    if ( do_soag ) dotend(l_soag) = .true.
    ntot_soamode = 0
    do n = 1, ntot_amode
-!SMB: add #if and #endif flags for compliance (modeptr_maccum and modeptr_maitken are only defined under this condition)
-#if ( defined MODAL_AERO_9MODE )
-      if (n==modeptr_maccum .or. n==modeptr_maitken) cycle     !++xl for testing mam9 -- marine organics
-#endif
       l = lptr_so4_a_amode(n)-loffset
       if ((l > 0) .and. (l <= pcnstxx)) then
          dotend(l) = .true.
