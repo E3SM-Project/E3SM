@@ -28,7 +28,7 @@ echo "CTEST_CMD=`which ctest`" >> runctest.slurm
 echo "\$CTEST_CMD -S ${scrdir}/CTestScript-Test.cmake,${model} -V" >> runctest.slurm
 
 # Submit the job to the queue
-jobid=`sbatch runctest.slurm`
+jobid=`sbatch runctest.slurm| egrep -o -e "\b[0-9]+$"`
 
 # Wait for the job to complete before exiting
 while true; do
