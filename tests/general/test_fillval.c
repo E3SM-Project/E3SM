@@ -256,9 +256,19 @@ main(int argc, char **argv)
 	if (verbose)
 	    printf("rank: %d Creating sample file %s with format %d...\n",
 		   my_rank, filename[fmt], format[fmt]);
+
+	PIOc_Set_IOSystem_Error_Handling(iosysid, PIO_BCAST_ERROR);
+
 	if ((ret = PIOc_createfile(iosysid, &ncid, &(format[fmt]), filename[fmt],
-				   PIO_CLOBBER)))
+				   PIO_CLOBBER))){
+	  if(ret == PIO_EBADIOTYPE){
+	    printf("IOtype %d not defined in build - skipping test\n",fmt);
+	    continue;
+	  }else{
 	    ERR(ret);
+	  }
+	}
+	PIOc_Set_IOSystem_Error_Handling(iosysid, PIO_INTERNAL_ERROR);
 	
 	/* Define netCDF dimensions and variable. */
 	if (verbose)
