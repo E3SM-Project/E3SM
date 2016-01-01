@@ -32,7 +32,7 @@ jobid=`sbatch runctest.slurm`
 
 # Wait for the job to complete before exiting
 while true; do
-	status=`squeue $jobid`
+	status=`squeue -j $jobid`
 	if [ "$status" == "" ]; then
 		break
 	else
