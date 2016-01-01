@@ -9,4 +9,4 @@
 NP=$1
 shift
 
-aprun -n $NP $@
+srun -n $NP $@
