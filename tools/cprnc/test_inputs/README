@@ -141,3 +141,10 @@ Note: This file is like control.nc, but contains some global attributes
 - diffs_in_attribute.nc: one global attribute is the same, one differs; in
   addition, one global attribute is missing, and there is a new one on this file
   that is not present on the control.nc file
+
+--- FILES COMPARED AGAINST control_char.nc ---
+
+Note: This file just has a character variable, in order to test what is output
+for character variables (which cannot be analyzed).
+
+- copy_char.nc: identical to control_char.nc
