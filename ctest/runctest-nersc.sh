@@ -26,16 +26,16 @@ echo "#SBATCH --export PIO_DASHBOARD_SITE,PIO_DASHBOARD_BUILD_NAME,PIO_DASHBOARD
 #echo "cd \$PBS_O_WORKDIR" >> runctest.pbs
 echo "CTEST_CMD=`which ctest`" >> runctest.slurm
 echo "\$CTEST_CMD -S ${scrdir}/CTestScript-Test.cmake,${model} -V" >> runctest.slurm
-
+chmod +x runctest.slurm
 # Submit the job to the queue
-jobid=`sbatch runctest.slurm| egrep -o -e "\b[0-9]+$"`
-
+#jobid=`sbatch runctest.slurm| egrep -o -e "\b[0-9]+$"`
+salloc -N 1 runctest.slurm
 # Wait for the job to complete before exiting
-while true; do
-	status=`squeue -j $jobid`
-	if [ "$status" == "" ]; then
-		break
-	else
-		sleep 10
-	fi
-done
+#while true; do
+#	status=`squeue -j $jobid`
+#	if [ "$status" == "" ]; then
+#		break
+#	else
+#		sleep 10
+#	fi
+#done
