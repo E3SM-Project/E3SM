@@ -682,6 +682,8 @@ contains
       do iEdge = 1,nEdges
         c1 = cellsOnEdge(1,iEdge)
         c2 = cellsOnEdge(2,iEdge)
+        ! not a valid edge
+        if((c1 > nCells) .or. (c2 > nCells)) cycle
         maxLevelEdge = min(maxLevelCell(c1), maxLevelCell(c2))
         do k = 1,maxLevelEdge-1
           dzVert1 = zMid(k,c1)-zMid(k+1,c1)

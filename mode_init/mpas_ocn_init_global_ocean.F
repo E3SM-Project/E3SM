@@ -430,7 +430,7 @@ contains
           call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
           call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
 
-          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
           call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
           call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
@@ -448,7 +448,7 @@ contains
                refBottomDepth,refBottomDepth(nVertLevels), &
                nVertLevels,nVertLevels,iErr)
 
-          do iCell = 1, nCellsSolve 
+          do iCell = 1, nCells 
              call ocn_alter_bottomDepth_for_pbcs(bottomDepth(iCell), refBottomDepth, maxLevelCell(iCell), iErr)
 
              ! Compute LayerThickness and zMid
