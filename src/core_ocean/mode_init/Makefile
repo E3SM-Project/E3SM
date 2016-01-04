@@ -18,6 +18,7 @@ TEST_CASES = mpas_ocn_init_baroclinic_channel.o \
              mpas_ocn_init_sub_ice_shelf_2D.o \
              mpas_ocn_init_periodic_planar.o \
              mpas_ocn_init_ecosys_column.o \
+             mpas_ocn_init_sea_mount.o \
              mpas_ocn_init_global_ocean.o
              #mpas_ocn_init_TEMPLATE.o
 
@@ -57,6 +58,7 @@ mpas_ocn_init_periodic_planar.o: $(UTILS)
 
 mpas_ocn_init_ecosys_column.o: $(UTILS)
 
+mpas_ocn_init_sea_mount.o: $(UTILS)
 
 #mpas_ocn_init_TEMPLATE.o: $(UTILS)
 
