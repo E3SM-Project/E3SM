@@ -104,6 +104,7 @@ def process_test_setup(test_tag, config_file, work_dir, model_runtime, suite_scr
 			suite_script.write("\tprint '      PASS'\n")
 			suite_script.write('except:\n')
 			suite_script.write("\tprint '   ** FAIL (See case_outputs/%s for more information)'\n"%(case_output_name))
+			suite_script.write("\ttest_failed = True\n")
 	
 	# Finish writing test case output
 	suite_script.write("case_output.close()\n")
@@ -185,6 +186,7 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir):#
 	regression_script.write('import subprocess\n')
 	regression_script.write('\n')
 	regression_script.write("os.environ['PYTHONUNBUFFERED'] = '1'\n")
+	regression_script.write("test_failed = False\n")
 	regression_script.write('\n')
 	regression_script.write("if not os.path.exists('case_outputs'):\n")
 	regression_script.write("\tos.makedirs('case_outputs')\n")
@@ -196,6 +198,10 @@ def setup_suite(suite_tag, work_dir, model_runtime, config_file, baseline_dir):#
 		if child.tag == 'test':
 			process_test_setup(child, config_file, work_dir, model_runtime, regression_script, baseline_dir)
 	
+	regression_script.write("if test_failed:\n")
+	regression_script.write("\tsys.exit(1)\n")
+	regression_script.write("else:\n")
+	regression_script.write("\tsys.exit(0)\n")
 	regression_script.close()
 
 	dev_null = open('/dev/null', 'a')
