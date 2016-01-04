@@ -22,7 +22,8 @@ module load cray-parallel-netcdf/1.6.1
 export CC=cc
 export FC=ftn
 
-export PIO_DASHBOARD_ROOT=`pwd`/dashboard
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export PIO_DASHBOARD_ROOT=${SCRIPT_DIR}/dashboard
 export PIO_COMPILER_ID=Cray-`$CC -V 2>&1 | cut -d' ' -f5`
 
 if [ ! -d "$PIO_DASHBOARD_ROOT" ]; then
@@ -31,7 +32,7 @@ fi
 cd "$PIO_DASHBOARD_ROOT"
 
 if [ ! -d src ]; then
-  git clone https://github.com/PARALLELIO/ParallelIO src
+  git clone https://github.com/Katetc/ParallelIO src
 fi
 cd src
 
