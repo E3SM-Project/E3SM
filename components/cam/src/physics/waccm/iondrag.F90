@@ -1,4 +1,5 @@
- 
+
+
 module iondrag
   !-------------------------------------------------------------------------------
   ! Purpose:
@@ -30,7 +31,7 @@ module iondrag
 
   use shr_kind_mod ,only: r8 => shr_kind_r8
   use ppgrid       ,only: pcols, pver
-  use cam_history  ,only: addfld, phys_decomp, add_default, outfld
+  use cam_history  ,only: addfld, add_default, outfld
   use physics_types,only: physics_state, physics_ptend, physics_ptend_init
   
   use physics_buffer, only : pbuf_get_index, physics_buffer_desc, pbuf_get_field
@@ -375,8 +376,8 @@ contains
     if (.not.doiodrg) return
 
     ! Add to masterfield list
-    call addfld('UIONTEND','M/S2',pver,'A','u-tendency due to ion drag',phys_decomp)
-    call addfld('VIONTEND','M/S2',pver,'A','v-tendency due to ion drag',phys_decomp)
+    call addfld('UIONTEND',(/ 'lev' /),'A','M/S2','u-tendency due to ion drag')
+    call addfld('VIONTEND',(/ 'lev' /),'A','M/S2','v-tendency due to ion drag')
 
     ue_idx = pbuf_get_index('UE')
     ve_idx = pbuf_get_index('VE')
@@ -439,21 +440,21 @@ contains
     ! Set up fields to history files.
     !-------------------------------------------------------------------------------
 
-    call addfld('QIONSUM ','S-1' ,pver,'I','Ion prod sum',phys_decomp)
-    call addfld('ELECDEN ','CM-3',pver,'I','NE (ion sum)',phys_decomp)
-    call addfld( 'SIGMAPED', 'siemens/m', pver, 'I', 'Pederson conductivity', phys_decomp )
-    call addfld( 'SIGMAHAL', 'siemens/m', pver, 'I', 'Hall conductivity', phys_decomp )
-    call addfld('LAMDA1'  ,'S-1',pver,'I' ,'LAMDA PED',phys_decomp)
-    call addfld('LAMDA2'  ,'S-1',pver,'I' ,'LAMDA HALL',phys_decomp)
+    call addfld('QIONSUM',(/ 'lev' /),'I','S-1' ,'Ion prod sum')
+    call addfld('ELECDEN',(/ 'lev' /),'I','CM-3','NE (ion sum)')
+    call addfld( 'SIGMAPED', (/ 'lev' /), 'I', 'siemens/m', 'Pederson conductivity' )
+    call addfld( 'SIGMAHAL', (/ 'lev' /), 'I', 'siemens/m', 'Hall conductivity' )
+    call addfld('LAMDA1'  ,(/ 'lev' /),'I' ,'S-1','LAMDA PED')
+    call addfld('LAMDA2'  ,(/ 'lev' /),'I' ,'S-1','LAMDA HALL')
 
-    call addfld('LXX','S-1',pver,'I','LXX',phys_decomp)
-    call addfld('LYY','S-1',pver,'I','LYY',phys_decomp)
-    call addfld('LXY','S-1',pver,'I','LXY',phys_decomp)
-    call addfld('LYX','S-1',pver,'I','LYX',phys_decomp)
+    call addfld('LXX',(/ 'lev' /),'I','S-1','LXX')
+    call addfld('LYY',(/ 'lev' /),'I','S-1','LYY')
+    call addfld('LXY',(/ 'lev' /),'I','S-1','LXY')
+    call addfld('LYX',(/ 'lev' /),'I','S-1','LYX')
     !
     ! Joule heating, and tn before and after joule heating tendencies are applied:
     !
-    call addfld( 'QJOULE  ', 'K/s' , pver, 'I', 'Joule Heat', phys_decomp )  ! joule heating
+    call addfld( 'QJOULE', (/ 'lev' /), 'I', 'K/s' , 'Joule Heat' )  ! joule heating
     call add_default( 'QJOULE  ', 1, ' ' )                                   ! joule heating (K/s)
 
   end subroutine ions_init
@@ -467,7 +468,7 @@ contains
     !
 
     use ppgrid
-    use cam_history, only: add_default, addfld, phys_decomp
+    use cam_history, only: add_default, addfld
     use cam_abortutils,  only: endrun
 
     !------------------Input arguments---------------------------------------

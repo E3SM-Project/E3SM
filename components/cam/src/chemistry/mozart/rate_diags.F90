@@ -5,7 +5,7 @@ module rate_diags
 
   use shr_kind_mod, only : r8 => shr_kind_r8
   use cam_history,  only : fieldname_len
-  use cam_history,  only : addfld,phys_decomp
+  use cam_history,  only : addfld
   use cam_history,  only : outfld
   use chem_mods,    only : rxt_tag_cnt, rxt_tag_lst, rxt_tag_map
   use ppgrid,       only : pver
@@ -40,7 +40,7 @@ contains
        endif
        len = min(fieldname_len,len_trim(name))
        rate_names(i) = trim(name(1:len))
-       call addfld(rate_names(i), 'molecules/cm3/sec', pver,'A','reaction rate', phys_decomp)
+       call addfld(rate_names(i), (/ 'lev' /),'A', 'molecules/cm3/sec','reaction rate')
     enddo
 
   end subroutine rate_diags_init

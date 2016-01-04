@@ -141,7 +141,7 @@ contains
 !-------------------------------------------------------------------
 ! **** Initialize the aircraft aerosol data handling ****
 !-------------------------------------------------------------------
-    use cam_history,    only: addfld, phys_decomp, add_default
+    use cam_history,    only: addfld, add_default
     use ppgrid,         only: pver
     use tracer_data,    only: trcdata_init
     use physics_types,  only: physics_state
@@ -201,8 +201,8 @@ contains
           forcings_air(m)%filelist         = spc_flist(m)
 !         forcings_air(m)%file%curr_filename    = spc_fname(m)
           forcings_air(m)%filename         = spc_fname(m)
-          call addfld( trim(spc_name),  '1/s', pver, 'A', &
-                       'aircraft emission '//trim(spc_name),   phys_decomp )
+          call addfld( trim(spc_name), (/ 'lev' /), 'A',  '1/s',     &
+                       'aircraft emission '//trim(spc_name) )
           call add_default( trim(spc_name), 1, ' ' )
     end do species_loop
 

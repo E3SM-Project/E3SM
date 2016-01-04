@@ -83,7 +83,7 @@ end subroutine setsoa
 subroutine soa_inti_old
 
   use mo_chem_utls, only : get_spc_ndx, get_rxt_ndx
-  use cam_history,  only : addfld, phys_decomp
+  use cam_history,  only : addfld
   use ppgrid,       only : pver
   use spmd_utils,   only : masterproc
 
@@ -196,7 +196,7 @@ subroutine soa_inti_old
   fraction(6)   = 0.1_r8
   bulk_yield(6) = 200._r8
 !
-  call addfld( 'SOA_PROD', 'kg/kg/s', pver, 'A', 'production of SOA', phys_decomp )
+  call addfld( 'SOA_PROD', (/ 'lev' /), 'A', 'kg/kg/s', 'production of SOA' )
 
   return
 end subroutine soa_inti_old
@@ -446,7 +446,7 @@ end function soa_yield
   subroutine soa_inti_equil(pbuf2d)
 
     use mo_chem_utls, only : get_spc_ndx, get_rxt_ndx
-    use cam_history,  only : addfld, phys_decomp
+    use cam_history,  only : addfld
     use ppgrid,       only : pver
     use spmd_utils,   only : masterproc
     use cam_control_mod, only: nsrest
@@ -627,17 +627,17 @@ end function soa_yield
     T1(10)         = 295._r8
     delH(10)       = 42.e3_r8
     !
-    call addfld( 'SOAM_PROD', 'molec/molec/s', pver, 'A', 'production of SOAM', phys_decomp )
-    call addfld( 'SOAI_PROD', 'molec/molec/s', pver, 'A', 'production of SOAI', phys_decomp )
-    call addfld( 'SOAT_PROD', 'molec/molec/s', pver, 'A', 'production of SOAT', phys_decomp )
-    call addfld( 'SOAB_PROD', 'molec/molec/s', pver, 'A', 'production of SOAB', phys_decomp )
-    call addfld( 'SOAX_PROD', 'molec/molec/s', pver, 'A', 'production of SOAX', phys_decomp )
+    call addfld( 'SOAM_PROD', (/ 'lev' /), 'A', 'molec/molec/s', 'production of SOAM' )
+    call addfld( 'SOAI_PROD', (/ 'lev' /), 'A', 'molec/molec/s', 'production of SOAI' )
+    call addfld( 'SOAT_PROD', (/ 'lev' /), 'A', 'molec/molec/s', 'production of SOAT' )
+    call addfld( 'SOAB_PROD', (/ 'lev' /), 'A', 'molec/molec/s', 'production of SOAB' )
+    call addfld( 'SOAX_PROD', (/ 'lev' /), 'A', 'molec/molec/s', 'production of SOAX' )
 
-    call addfld( 'SOAM_dens', 'ug/m3', pver, 'A', 'density of SOAM', phys_decomp )
-    call addfld( 'SOAI_dens', 'ug/m3', pver, 'A', 'density of SOAI', phys_decomp )
-    call addfld( 'SOAT_dens', 'ug/m3', pver, 'A', 'density of SOAT', phys_decomp )
-    call addfld( 'SOAB_dens', 'ug/m3', pver, 'A', 'density of SOAB', phys_decomp )
-    call addfld( 'SOAX_dens', 'ug/m3', pver, 'A', 'density of SOAX', phys_decomp )
+    call addfld( 'SOAM_dens', (/ 'lev' /), 'A', 'ug/m3', 'density of SOAM' )
+    call addfld( 'SOAI_dens', (/ 'lev' /), 'A', 'ug/m3', 'density of SOAI' )
+    call addfld( 'SOAT_dens', (/ 'lev' /), 'A', 'ug/m3', 'density of SOAT' )
+    call addfld( 'SOAB_dens', (/ 'lev' /), 'A', 'ug/m3', 'density of SOAB' )
+    call addfld( 'SOAX_dens', (/ 'lev' /), 'A', 'ug/m3', 'density of SOAX' )
 
     !
     !initialize fracsoa for first timestep and store values for future

@@ -57,7 +57,7 @@ subroutine cam_initfiles_open()
    call getfil (ncdata, ncdata_loc)
 
    allocate(fh_ini)
-   call cam_pio_openfile(fh_ini, ncdata_loc, PIO_NOWRITE, .TRUE.)
+   call cam_pio_openfile(fh_ini, ncdata_loc, PIO_NOWRITE)
    ! Backward compatibility: look for topography data on initial file if topo file name not provided.
    if (trim(bnd_topo) /= 'bnd_topo' .and. len_trim(bnd_topo) > 0) then
       allocate(fh_topo)

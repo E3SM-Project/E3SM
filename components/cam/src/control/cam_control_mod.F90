@@ -19,8 +19,6 @@ module cam_control_mod
 
   logical :: indirect          ! True => include indirect radiative effects of sulfate aerosols
 
-  logical :: use_64bit_nc = .true.   ! true => use new 64-bit netCDF format for cam history files
-
 ! Earth's orbital characteristics
 !	
 ! Orbital information after processed by orbit_params

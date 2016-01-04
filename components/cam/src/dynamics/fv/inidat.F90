@@ -228,7 +228,7 @@ contains
 
     fieldname = 'PS'
     call infld(fieldname, ncid_ini, 'lon', 'lat', ifirstxy, ilastxy, jfirstxy, jlastxy, &
-         dyn_in%ps  , readvar, grid_map='DYN')
+         dyn_in%ps  , readvar, gridname='fv_centers')
     if(.not. readvar) call endrun(trim(subname)//' ERROR: PS not found on initial dataset.')
 
     call process_inidat(ncid_ini, ncid_topo, grid, dyn_in, 'PS')
@@ -240,7 +240,7 @@ contains
     else
        allocate(phis_tmp(im, jm))
        call infld(fieldname, ncid_topo, 'lon', 'lat', ifirstxy, ilastxy, jfirstxy, jlastxy, &
-            dyn_in%phis, readvar, grid_map='dyn')
+            dyn_in%phis, readvar, gridname='fv_centers')
        if (.not. readvar) &
             call endrun(trim(subname)//' ERROR: PHIS not found on topo dataset.')
        call process_inidat(ncid_ini, ncid_topo, grid, dyn_in, 'PHIS')
@@ -256,20 +256,20 @@ contains
     fieldname = 'US'
     dyn_in%u3s = fillvalue
 
-    call infld(fieldname, ncid_ini, 'lon', 'lev', 'slat',  ifirstxy, ilastxy, jfirstxy, jlastxy, 1, km, &
-        dyn_in%u3s, readvar, grid_map='DYN')
+    call infld(fieldname, ncid_ini, 'lon', 'slat', 'lev',  ifirstxy, ilastxy, jfirstxy, jlastxy, 1, km, &
+        dyn_in%u3s, readvar, gridname='fv_u_stagger')
 
     if(.not. readvar) call endrun()
 
     fieldname = 'VS'
-    call infld(fieldname, ncid_ini, 'slon', 'lev', 'lat',  ifirstxy, ilastxy, jfirstxy, jlastxy, 1, km, &
-         dyn_in%v3s, readvar, grid_map='DYN')
+    call infld(fieldname, ncid_ini, 'slon', 'lat', 'lev',  ifirstxy, ilastxy, jfirstxy, jlastxy, 1, km, &
+         dyn_in%v3s, readvar, gridname='fv_v_stagger')
     if(.not. readvar) call endrun()
 
     fieldname = 'T'
 
-    call infld(fieldname, ncid_ini, 'lon', 'lev', 'lat', ifirstxy, ilastxy, jfirstxy, jlastxy, 1, km, &
-       dyn_in%t3, readvar, grid_map='DYN')
+    call infld(fieldname, ncid_ini, 'lon', 'lat', 'lev', ifirstxy, ilastxy, jfirstxy, jlastxy, 1, km, &
+       dyn_in%t3, readvar, gridname='fv_centers')
     call process_inidat(ncid_ini, ncid_topo, grid, dyn_in, 'T')
         
 
@@ -279,8 +279,8 @@ contains
        readvar   = .false.
        fieldname = cnst_name(m)
        if(cnst_read_iv(m)) then
-          call infld(fieldname, ncid_ini, 'lon', 'lev', 'lat', ifirstxy, ilastxy, jfirstxy, jlastxy, 1, km, &
-               dyn_in%tracer(:,:,:,m), readvar, grid_map='DYN')
+          call infld(fieldname, ncid_ini, 'lon', 'lat', 'lev', ifirstxy, ilastxy, jfirstxy, jlastxy, 1, km, &
+               dyn_in%tracer(:,:,:,m), readvar, gridname='fv_centers')
        end if
 	
        call process_inidat(ncid_ini, ncid_topo, grid, dyn_in, 'CONSTS', m_cnst=m)

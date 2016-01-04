@@ -1,16 +1,20 @@
 module mo_solar_parms
 
-  use shr_kind_mod, only : r8 => shr_kind_r8
+  use shr_kind_mod,     only : r8 => shr_kind_r8, shr_kind_cl
   use cam_abortutils,   only : endrun
-  use cam_logfile,  only : iulog
-  use time_utils,   only : flt_date
+  use cam_logfile,      only : iulog
+  use time_utils,       only : flt_date
+  use spmd_utils,       only : masterproc
 
   implicit none
 
   private
+
+  public :: solar_parms_readnl
   public :: solar_parms_init
   public :: solar_parms_timestep_init
-  public :: get_solar_parms
+  public :: solar_parms_get
+  public :: solar_parms_on
 
   save
 
@@ -24,22 +28,63 @@ module mo_solar_parms
   real(r8), allocatable :: kp(:)
   real(r8), allocatable :: ap(:)
 
-contains
+  logical,protected :: solar_parms_on = .false.
 
-  subroutine solar_parms_init (solar_parms_file)
+  character(len=shr_kind_cl) :: solar_parms_file = ' '     ! solar variability parameters
+
+contains
+  !---------------------------------------------------------------
+  !---------------------------------------------------------------
+  subroutine solar_parms_readnl(nlfile)
+
+    use namelist_utils, only: find_group_name
+    use units,          only: getunit, freeunit
+#ifdef SPMD
+    use mpishorthand,   only: mpichar, mpicom
+#endif
+
+    ! arguments
+    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
+
+    ! local vars
+    integer :: unitn, ierr
+
+    namelist /solar_parms_nl/ solar_parms_file
+
+    if (masterproc) then
+       unitn = getunit()
+       open( unitn, file=trim(nlfile), status='old' )
+       call find_group_name(unitn, 'solar_parms_nl', status=ierr)
+       if (ierr == 0) then
+          read(unitn, solar_parms_nl, iostat=ierr)
+          if (ierr /= 0) then
+             call endrun('solar_parms_readnl: ERROR reading namelist')
+          end if
+       end if
+       close(unitn)
+       call freeunit(unitn)
+    end if
+
+#ifdef SPMD
+    ! broadcast the options to all MPI tasks
+    call mpibcast(solar_parms_file, len(solar_parms_file),   mpichar, 0, mpicom)
+#endif
+
+    solar_parms_on = len_trim(solar_parms_file)>0
+
+  end subroutine solar_parms_readnl
+
+  subroutine solar_parms_init ()
     !---------------------------------------------------------------
     !	... initialize solar parmaters
     !---------------------------------------------------------------
 
-    use spmd_utils,     only: masterproc
     use ioFileMod
     use time_manager,   only: get_curr_date
     use error_messages, only: alloc_err
     use cam_pio_utils,  only: cam_pio_openfile
     use pio,            only: file_desc_t, var_desc_t, pio_get_var, pio_inq_dimid, &
                               pio_inq_varid, pio_closefile, pio_inq_dimlen, pio_nowrite
-
-    character(len=*), intent(in) :: solar_parms_file
 
     !---------------------------------------------------------------
     !	... local variables
@@ -56,6 +101,8 @@ contains
     integer  :: ndx(1)
     character(len=256) :: locfn
     integer :: ierr
+
+    if (.not.solar_parms_on) return
 
     !-----------------------------------------------------------------------
     !	... readin the solar parms dataset
@@ -104,7 +151,7 @@ contains
     allocate( f107(ntimes), f107a(ntimes), &
          kp(ntimes), ap(ntimes), stat=astat )
     if( astat /= 0 ) then
-       call alloc_err( astat, 'solar_parms_init', 'f107 ... ap', ntimes )
+       call alloc_err( astat, 'solar_parms_init', 'f107 ... ap ', ntimes )
     end if
     ierr = pio_inq_varid( ncid, 'f107', varid )
     ierr = pio_get_var( ncid, varid, f107 )
@@ -137,6 +184,8 @@ subroutine solar_parms_timestep_init
  integer  :: yr, mon, day, ncsec
  real(r8) :: wrk_time
 
+ if (.not.solar_parms_on) return
+
  if( is_end_curr_day() ) then
     call get_curr_date( yr, mon, day, ncsec )
     wrk_date = 10000*yr + 100*mon + day
@@ -159,7 +208,7 @@ subroutine solar_parms_timestep_init
 
 end subroutine solar_parms_timestep_init
 
-subroutine get_solar_parms( f107_s, f107a_s, ap_s, kp_s, hp_s )
+subroutine solar_parms_get( f107_s, f107a_s, ap_s, kp_s, hp_s )
   !---------------------------------------------------------------
   !	... set,retrieve solar parmaters
   !---------------------------------------------------------------
@@ -181,6 +230,8 @@ subroutine get_solar_parms( f107_s, f107a_s, ap_s, kp_s, hp_s )
  integer  :: tnp
  real(r8) :: wkp                                             ! wrk solar mag factor
 
+ if (.not.solar_parms_on) return
+
  tnp = tim_ndx + 1
  if( present( f107_s ) ) then
     f107_s  =  f107(tim_ndx) + dels*(f107(tnp) - f107(tim_ndx))
@@ -199,6 +250,6 @@ subroutine get_solar_parms( f107_s, f107a_s, ap_s, kp_s, hp_s )
     hp_s = max( 3._r8,-2.78_r8 + 9.39_r8*wkp )
  end if
 
-end subroutine get_solar_parms
+end subroutine solar_parms_get
 
 end module mo_solar_parms

@@ -1,3 +1,4 @@
+
 !---------------------------------------------------------------------------------
 ! this file is based on structure of gw_drag from WACCMX 3.5.48
 !---------------------------------------------------------------------------------
@@ -107,7 +108,7 @@ contains
 !-----------------------------------------------------------------------
 ! Time independent initialization for ionosphere simulation.
 !-----------------------------------------------------------------------
-    use cam_history,      only : addfld, add_default, phys_decomp ! Routines and variables for adding fields to history output
+    use cam_history,      only : addfld, add_default ! Routines and variables for adding fields to history output
     use dycore,           only : get_resolution
     use interpolate_data, only : lininterp
      
@@ -116,26 +117,26 @@ contains
 !-------------------------------------------------------------------------------
 !  Add history variables for ionosphere 
 !-------------------------------------------------------------------------------
-    call addfld ('IONOS_NDENSN2', '1/m3',pver, 'I','N2 Number Density-Ionos', phys_decomp)
-    call addfld ('IONOS_NDENSO2', '1/m3',pver, 'I','O2 Number Density-Ionos', phys_decomp)
-    call addfld ('IONOS_NDENSO1', '1/m3',pver, 'I','O1 Number Density-Ionos', phys_decomp)
-    call addfld ('IONOS_NDENSNO', '1/m3',pver, 'I','NO Number Density-Ionos', phys_decomp)
-    call addfld ('IONOS_NDENSN1', '1/m3',pver, 'I','NO Number Density-Ionos', phys_decomp)
-    call addfld ('IONOS_NDENSE' , '1/m3',pver, 'I','E Number Density-Ionos',  phys_decomp)
-    call addfld ('IONOS_NDENSOP' ,'1/m3',pver, 'I','OP Number Density-Ionos', phys_decomp)
-    call addfld ('IONOS_NDENSO2P','1/m3',pver, 'I','O2P Number Density-Ionos',phys_decomp)
-    call addfld ('IONOS_NDENSNOP','1/m3',pver, 'I','NOP Number Density-Ionos',phys_decomp)
+    call addfld ('IONOS_NDENSN2',(/ 'lev' /), 'I', '1/m3','N2 Number Density-Ionos')
+    call addfld ('IONOS_NDENSO2',(/ 'lev' /), 'I', '1/m3','O2 Number Density-Ionos')
+    call addfld ('IONOS_NDENSO1',(/ 'lev' /), 'I', '1/m3','O1 Number Density-Ionos')
+    call addfld ('IONOS_NDENSNO',(/ 'lev' /), 'I', '1/m3','NO Number Density-Ionos')
+    call addfld ('IONOS_NDENSN1',(/ 'lev' /), 'I', '1/m3','NO Number Density-Ionos')
+    call addfld ('IONOS_NDENSE' ,(/ 'lev' /), 'I', '1/m3','E Number Density-Ionos')
+    call addfld ('IONOS_NDENSOP' ,(/ 'lev' /), 'I','1/m3','OP Number Density-Ionos')
+    call addfld ('IONOS_NDENSO2P',(/ 'lev' /), 'I','1/m3','O2P Number Density-Ionos')
+    call addfld ('IONOS_NDENSNOP',(/ 'lev' /), 'I','1/m3','NOP Number Density-Ionos')
 
-    call addfld ('TE'           , 'K',pver, 'I','Electron Temperature', phys_decomp)
-    call addfld ('TI'           , 'K',pver, 'I','Ion Temperature', phys_decomp)
-    call addfld ('QIN'          , 'J/kg/s',pver, 'I','JOULE+IN Heating', phys_decomp)
-    call addfld ('LOSS_g3'     , ' ',pver         , 'I','Loss Term g3',  phys_decomp)
-    call addfld ('LOSS_EI'      , ' ',pver         , 'I','Loss Term EI',  phys_decomp)
-    call addfld ('LOSS_IN'      , ' ',pver         , 'I','Loss Term IN',  phys_decomp)
-    call addfld ('IONI_RATE'    , ' ',pver         , 'I','Total ionization',  phys_decomp)
-    call addfld ('IONI_Eff'     , ' ',pver         , 'I','ionization efficiency',  phys_decomp)
-    call addfld ('SOURCE_g4'    , ' ',pver         , 'I','SOURCE g4',  phys_decomp)
-    call addfld ('AUR_IRATESUM' , ' ',pver         , 'I','Auroral ionization',  phys_decomp)
+    call addfld ('TE'           ,(/ 'lev' /), 'I', 'K','Electron Temperature')
+    call addfld ('TI'           ,(/ 'lev' /), 'I', 'K','Ion Temperature')
+    call addfld ('QIN'          ,(/ 'lev' /), 'I', 'J/kg/s','JOULE+IN Heating')
+    call addfld ('LOSS_g3'     ,(/ 'lev' /)         , 'I', ' ','Loss Term g3')
+    call addfld ('LOSS_EI'      ,(/ 'lev' /)         , 'I', ' ','Loss Term EI')
+    call addfld ('LOSS_IN'      ,(/ 'lev' /)         , 'I', ' ','Loss Term IN')
+    call addfld ('IONI_RATE'    ,(/ 'lev' /)         , 'I', ' ','Total ionization')
+    call addfld ('IONI_Eff'     ,(/ 'lev' /)         , 'I', ' ','ionization efficiency')
+    call addfld ('SOURCE_g4'    ,(/ 'lev' /)         , 'I', ' ','SOURCE g4')
+    call addfld ('AUR_IRATESUM' ,(/ 'lev' /)         , 'I', ' ','Auroral ionization')
 
 !-------------------------------------------------------------------------------
 !  Set default values for ionosphere history variables
@@ -250,7 +251,7 @@ contains
 ! Time independent initialization for ionosphere simulation called in phys_init
 ! of physpkg module which is called in cam_comp module
 !------------------------------------------------------------------------------
-    use cam_history,      only : addfld, add_default, phys_decomp ! Routines/variables needed for outputting fields
+    use cam_history,      only : addfld, add_default ! Routines/variables needed for outputting fields
     use dycore,           only : get_resolution
     use interpolate_data, only : lininterp
     use constituents,     only : cnst_get_ind, cnst_mw            ! Routines to get molecular weights for constituents
@@ -802,7 +803,7 @@ contains
 ! ambipolar diffusion calculations.
 !-----------------------------------------------------------------------
 
-    use cam_history,     only : addfld, add_default, phys_decomp
+    use cam_history,     only : addfld, add_default
     use phys_grid,       only : get_lat_p, get_lon_p, get_rlat_p,get_rlon_p
     use physconst,       only : gravit ! Gravity (m/s2)
     use cam_control_mod, only : nsrest        ! Variable to determine if this is an initial run or a restart/branch

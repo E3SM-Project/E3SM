@@ -27,7 +27,7 @@
 !-----------------------------------------------------------------------
         subroutine init_airglow
           use mo_chem_utls, only : get_rxt_ndx
-          use cam_history,  only : addfld, phys_decomp
+          use cam_history,  only : addfld
           use ppgrid,       only : pver
 
           implicit none
@@ -39,9 +39,9 @@
 
           if (.not. has_airglow) return
 
-          call addfld( 'AG1',   'K/s ', pver, 'I', 'O2_1S -> O2 + 762nm airglow loss', phys_decomp )
-          call addfld( 'AG2',   'K/s ', pver, 'I', 'O2_1D -> O2 + 1.27 micron airglow loss', phys_decomp )
-          call addfld( 'AGTOT', 'K/s ', pver, 'I', 'airglow total loss', phys_decomp )
+          call addfld( 'AG1', (/ 'lev' /), 'I',   'K/s', 'O2_1S -> O2 + 762nm airglow loss' )
+          call addfld( 'AG2', (/ 'lev' /), 'I',   'K/s', 'O2_1D -> O2 + 1.27 micron airglow loss' )
+          call addfld( 'AGTOT', (/ 'lev' /), 'I', 'K/s', 'airglow total loss' )
 
         endsubroutine init_airglow
 

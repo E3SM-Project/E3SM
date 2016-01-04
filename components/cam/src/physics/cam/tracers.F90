@@ -1,3 +1,4 @@
+
 !======================================================================
 ! This is an interface for 3 test tracers: tr1,tr2,tr3
 !
@@ -183,7 +184,7 @@ subroutine tracers_init
 !-----------------------------------------------------------------------
 
    use tracers_suite,   only: init_tr, get_tracer_name
-   use cam_history,     only: addfld, add_default, phys_decomp
+   use cam_history,     only: addfld, horiz_only, add_default
    use ppgrid,          only: pver
    use constituents,    only: cnst_get_ind, cnst_name, cnst_longname, sflxnam
 
@@ -196,8 +197,8 @@ subroutine tracers_init
       do m = 1,trac_ncnst 
          name = get_tracer_name(m)
          call cnst_get_ind(name, mm)
-         call addfld (cnst_name(mm), 'kg/kg   ', pver, 'A', cnst_longname(mm), phys_decomp)
-         call addfld (sflxnam(mm),   'kg/m2/s ',    1, 'A', trim(cnst_name(mm))//' surface flux', phys_decomp)
+         call addfld (cnst_name(mm), (/ 'lev' /), 'A', 'kg/kg', cnst_longname(mm))
+         call addfld (sflxnam(mm),    horiz_only, 'A',   'kg/m2/s', trim(cnst_name(mm))//' surface flux')
 
          call add_default (cnst_name(mm), 1, ' ')
          call add_default (sflxnam(mm),   1, ' ')

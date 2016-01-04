@@ -3260,8 +3260,7 @@ if ($cfg->get('dyn') =~ /se/) {
                   hypervis_subcycle hypervis_subcycle_q
                   statefreq se_partmethod se_topology se_ftype
                   integration nu nu_div nu_p nu_q nu_top  se_phys_tscale
-                  interpolate_analysis interp_nlat interp_nlon vert_remap_q_alg
-                  interp_type interp_gridtype se_limiter_option qsplit rsplit tstep_type
+                  vert_remap_q_alg se_limiter_option qsplit rsplit tstep_type
                   hypervis_scaling mesh_file);
 
     foreach my $var (@vars) {
@@ -3303,6 +3302,22 @@ if ($history_vdiag =~ m/$TRUE/io) {
     }
 }
 
+# Check incompatible history options
+my $interpolate_output = $nl->get_value('interpolate_output');
+my @interp_output = split /,/, $interpolate_output;
+for my $i (0 .. $#interp_output) {
+  if ($interp_output[$i] =~ /$TRUE/io) {
+    # Currently, interpolated output is only supported for the SE dycore
+    if ( ! ($dyn =~ /se/) ) {
+      die "$ProgName - ERROR: interpolate_output is not supported for $dyn dycore";
+    }
+    # Currently, interpolated output is incompatible with regional output
+    my $region = $nl->get_value('fincl${i}lonlat');
+    if (defined $region) {
+      die "$ProgName - ERROR: interpolate_output is currently incompatible with regional output (e.g., fincl${i}lonlat)";
+    }
+  }
+}
 
 
 #-----------------------------------------------------------------------------------------------

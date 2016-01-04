@@ -1,4 +1,5 @@
-   module convect_shallow
+
+module convect_shallow
 
    !----------------------------------------------- !
    ! Purpose:                                       !
@@ -14,7 +15,7 @@
    use physconst,         only : cpair, zvir
    use ppgrid,            only : pver, pcols, pverp
    use zm_conv,           only : zm_conv_evap
-   use cam_history,       only : outfld, addfld, phys_decomp
+   use cam_history,       only : outfld, addfld, horiz_only
    use cam_logfile,       only : iulog
    use phys_control,      only : phys_getopts
 
@@ -137,7 +138,7 @@
   ! Purpose : Declare output fields, and initialize variables needed by convection !
   !------------------------------------------------------------------------------- !
 
-  use cam_history,       only : addfld, add_default, phys_decomp
+  use cam_history,       only : addfld, horiz_only, add_default
   use ppgrid,            only : pcols, pver
   use hk_conv,           only : mfinti
   use uwshcu,            only : init_uwshcu
@@ -163,98 +164,98 @@
   ! Variables for detailed abalysis of UW-ShCu scheme !
   ! ------------------------------------------------- !
 
-  call addfld( 'qt_pre_Cu    ', 'kg/kg'   ,  pver ,  'I' , 'qt_preCU'                                         ,  phys_decomp )
-  call addfld( 'sl_pre_Cu    ', 'J/kg'    ,  pver ,  'I' , 'sl_preCU'                                         ,  phys_decomp )
-  call addfld( 'slv_pre_Cu   ', 'J/kg'    ,  pver ,  'I' , 'slv_preCU'                                        ,  phys_decomp )
-  call addfld( 'u_pre_Cu     ', 'm/s'     ,  pver ,  'I' , 'u_preCU'                                          ,  phys_decomp )
-  call addfld( 'v_pre_Cu     ', 'm/s'     ,  pver ,  'I' , 'v_preCU'                                          ,  phys_decomp )
-  call addfld( 'qv_pre_Cu    ', 'kg/kg'   ,  pver ,  'I' , 'qv_preCU'                                         ,  phys_decomp )
-  call addfld( 'ql_pre_Cu    ', 'kg/kg'   ,  pver ,  'I' , 'ql_preCU'                                         ,  phys_decomp )
-  call addfld( 'qi_pre_Cu    ', 'kg/kg'   ,  pver ,  'I' , 'qi_preCU'                                         ,  phys_decomp )
-  call addfld( 't_pre_Cu     ', 'K'       ,  pver ,  'I' , 't_preCU'                                          ,  phys_decomp )
-  call addfld( 'rh_pre_Cu    ', '%'       ,  pver ,  'I' , 'rh_preCU'                                         ,  phys_decomp )
+  call addfld( 'qt_pre_Cu',  (/ 'lev' /) ,  'I' , 'kg/kg'   , 'qt_preCU'                                          )
+  call addfld( 'sl_pre_Cu',  (/ 'lev' /) ,  'I' , 'J/kg'    , 'sl_preCU'                                          )
+  call addfld( 'slv_pre_Cu',  (/ 'lev' /) ,  'I' , 'J/kg'    , 'slv_preCU'                                         )
+  call addfld( 'u_pre_Cu',  (/ 'lev' /) ,  'I' , 'm/s'     , 'u_preCU'                                           )
+  call addfld( 'v_pre_Cu',  (/ 'lev' /) ,  'I' , 'm/s'     , 'v_preCU'                                           )
+  call addfld( 'qv_pre_Cu',  (/ 'lev' /) ,  'I' , 'kg/kg'   , 'qv_preCU'                                          )
+  call addfld( 'ql_pre_Cu',  (/ 'lev' /) ,  'I' , 'kg/kg'   , 'ql_preCU'                                          )
+  call addfld( 'qi_pre_Cu',  (/ 'lev' /) ,  'I' , 'kg/kg'   , 'qi_preCU'                                          )
+  call addfld( 't_pre_Cu',  (/ 'lev' /) ,  'I' , 'K'       , 't_preCU'                                           )
+  call addfld( 'rh_pre_Cu',  (/ 'lev' /) ,  'I' , '%'       , 'rh_preCU'                                          )
 
-  call addfld( 'qt_aft_Cu    ', 'kg/kg'   ,  pver ,  'I' , 'qt_afterCU'                                       ,  phys_decomp )
-  call addfld( 'sl_aft_Cu    ', 'J/kg'    ,  pver ,  'I' , 'sl_afterCU'                                       ,  phys_decomp )
-  call addfld( 'slv_aft_Cu   ', 'J/kg'    ,  pver ,  'I' , 'slv_afterCU'                                      ,  phys_decomp )
-  call addfld( 'u_aft_Cu     ', 'm/s'     ,  pver ,  'I' , 'u_afterCU'                                        ,  phys_decomp )
-  call addfld( 'v_aft_Cu     ', 'm/s'     ,  pver ,  'I' , 'v_afterCU'                                        ,  phys_decomp )
-  call addfld( 'qv_aft_Cu    ', 'kg/kg'   ,  pver ,  'I' , 'qv_afterCU'                                       ,  phys_decomp )
-  call addfld( 'ql_aft_Cu    ', 'kg/kg'   ,  pver ,  'I' , 'ql_afterCU'                                       ,  phys_decomp )
-  call addfld( 'qi_aft_Cu    ', 'kg/kg'   ,  pver ,  'I' , 'qi_afterCU'                                       ,  phys_decomp )
-  call addfld( 't_aft_Cu     ', 'K'       ,  pver ,  'I' , 't_afterCU'                                        ,  phys_decomp )
-  call addfld( 'rh_aft_Cu    ', '%'       ,  pver ,  'I' , 'rh_afterCU'                                       ,  phys_decomp )
+  call addfld( 'qt_aft_Cu',  (/ 'lev' /) ,  'I' , 'kg/kg'   , 'qt_afterCU'                                        )
+  call addfld( 'sl_aft_Cu',  (/ 'lev' /) ,  'I' , 'J/kg'    , 'sl_afterCU'                                        )
+  call addfld( 'slv_aft_Cu',  (/ 'lev' /) ,  'I' , 'J/kg'    , 'slv_afterCU'                                       )
+  call addfld( 'u_aft_Cu',  (/ 'lev' /) ,  'I' , 'm/s'     , 'u_afterCU'                                         )
+  call addfld( 'v_aft_Cu',  (/ 'lev' /) ,  'I' , 'm/s'     , 'v_afterCU'                                         )
+  call addfld( 'qv_aft_Cu',  (/ 'lev' /) ,  'I' , 'kg/kg'   , 'qv_afterCU'                                        )
+  call addfld( 'ql_aft_Cu',  (/ 'lev' /) ,  'I' , 'kg/kg'   , 'ql_afterCU'                                        )
+  call addfld( 'qi_aft_Cu',  (/ 'lev' /) ,  'I' , 'kg/kg'   , 'qi_afterCU'                                        )
+  call addfld( 't_aft_Cu',  (/ 'lev' /) ,  'I' , 'K'       , 't_afterCU'                                         )
+  call addfld( 'rh_aft_Cu',  (/ 'lev' /) ,  'I' , '%'       , 'rh_afterCU'                                        )
 
-  call addfld( 'tten_Cu      ', 'K/s'     ,  pver ,  'I' , 'Temprtaure tendency by cumulus convection'        ,  phys_decomp )
-  call addfld( 'rhten_Cu     ', '%/s'     ,  pver ,  'I' , 'RH tendency by cumumus convection'                ,  phys_decomp )
+  call addfld( 'tten_Cu',  (/ 'lev' /) ,  'I' , 'K/s'     , 'Temprtaure tendency by cumulus convection'         )
+  call addfld( 'rhten_Cu',  (/ 'lev' /) ,  'I' , '%/s'     , 'RH tendency by cumumus convection'                 )
 
   ! ------------------------------------------- !
   ! Common Output for Shallow Convection Scheme !
   ! ------------------------------------------- !
 
-  call addfld( 'CMFDT   '     , 'K/s     ',  pver ,  'A' , &
-       'T tendency - shallow convection'                           ,  phys_decomp )
-  call addfld( 'CMFDQ   '     , 'kg/kg/s ',  pver ,  'A' , &
-       'QV tendency - shallow convection'                          ,  phys_decomp )
-  call addfld( 'CMFDLIQ '     , 'kg/kg/s ',  pver ,  'A' , &
-       'Cloud liq tendency - shallow convection'                   ,  phys_decomp )
-  call addfld( 'CMFDICE '     , 'kg/kg/s ',  pver ,  'A' , &
-       'Cloud ice tendency - shallow convection'                   ,  phys_decomp )
-  call addfld( 'CMFDQR  '     , 'kg/kg/s ',  pver ,  'A' , &
-       'Q tendency - shallow convection rainout'                   ,  phys_decomp )
-  call addfld( 'EVAPTCM '     , 'K/s     ',  pver ,  'A' , &
-       'T tendency - Evaporation/snow prod from Hack convection'   ,  phys_decomp )
-  call addfld( 'FZSNTCM '     , 'K/s     ',  pver ,  'A' , &
-       'T tendency - Rain to snow conversion from Hack convection' ,  phys_decomp )
-  call addfld( 'EVSNTCM '     , 'K/s     ',  pver ,  'A' , &
-       'T tendency - Snow to rain prod from Hack convection'       ,  phys_decomp )
-  call addfld( 'EVAPQCM '     , 'kg/kg/s ',  pver ,  'A' , &
-       'Q tendency - Evaporation from Hack convection'             ,  phys_decomp )
-  call addfld( 'QC      '     , 'kg/kg/s ',  pver ,  'A' , &
-       'Q tendency - shallow convection LW export'                 ,  phys_decomp )
-  call addfld( 'PRECSH  '     , 'm/s     ',  1,      'A' , &
-       'Shallow Convection precipitation rate'                     ,  phys_decomp )
-  call addfld( 'CMFMC   '     , 'kg/m2/s ',  pverp,  'A' , &
-       'Moist convection (deep+shallow) mass flux'                 ,  phys_decomp )
-  call addfld( 'CMFSL   '     , 'W/m2    ',  pverp,  'A' , &
-       'Moist shallow convection liquid water static energy flux'  ,  phys_decomp )
-  call addfld( 'CMFLQ   '     , 'W/m2    ',  pverp,  'A' , &
-       'Moist shallow convection total water flux'                 ,  phys_decomp )
-  call addfld( 'CIN     '     , 'J/kg    ',  1    ,  'A' , &
-       'Convective inhibition'                                     ,  phys_decomp )
-  call addfld( 'CBMF    '     , 'kg/m2/s ',  1    ,  'A' , &
-       'Cloud base mass flux'                                      ,  phys_decomp )
-  call addfld( 'CLDTOP  '     , '1       ',  1    ,  'I' , &
-       'Vertical index of cloud top'                               ,  phys_decomp )
-  call addfld( 'CLDBOT  '     , '1       ',  1    ,  'I' , &
-       'Vertical index of cloud base'                              ,  phys_decomp )
-  call addfld( 'PCLDTOP '     , '1       ',  1    ,  'A' , &
-       'Pressure of cloud top'                                     ,  phys_decomp )
-  call addfld( 'PCLDBOT '     , '1       ',  1    ,  'A' , &
-       'Pressure of cloud base'                                    ,  phys_decomp )
+  call addfld( 'CMFDT'     ,  (/ 'lev' /) ,  'A' , 'K/s', &
+       'T tendency - shallow convection'                            )
+  call addfld( 'CMFDQ'     ,  (/ 'lev' /) ,  'A' , 'kg/kg/s', &
+       'QV tendency - shallow convection'                           )
+  call addfld( 'CMFDLIQ'     ,  (/ 'lev' /) ,  'A' , 'kg/kg/s', &
+       'Cloud liq tendency - shallow convection'                    )
+  call addfld( 'CMFDICE'     ,  (/ 'lev' /) ,  'A' , 'kg/kg/s', &
+       'Cloud ice tendency - shallow convection'                    )
+  call addfld( 'CMFDQR'     ,  (/ 'lev' /) ,  'A' , 'kg/kg/s', &
+       'Q tendency - shallow convection rainout'                    )
+  call addfld( 'EVAPTCM'     ,  (/ 'lev' /) ,  'A' , 'K/s', &
+       'T tendency - Evaporation/snow prod from Hack convection'    )
+  call addfld( 'FZSNTCM'     ,  (/ 'lev' /) ,  'A' , 'K/s', &
+       'T tendency - Rain to snow conversion from Hack convection'  )
+  call addfld( 'EVSNTCM'     ,  (/ 'lev' /) ,  'A' , 'K/s', &
+       'T tendency - Snow to rain prod from Hack convection'        )
+  call addfld( 'EVAPQCM'     ,  (/ 'lev' /) ,  'A' , 'kg/kg/s', &
+       'Q tendency - Evaporation from Hack convection'              )
+  call addfld( 'QC'     ,  (/ 'lev' /) ,  'A' , 'kg/kg/s', &
+       'Q tendency - shallow convection LW export'                  )
+  call addfld( 'PRECSH'     ,  horiz_only,      'A' , 'm/s', &
+       'Shallow Convection precipitation rate'                      )
+  call addfld( 'CMFMC'     ,  (/ 'ilev' /),  'A' , 'kg/m2/s', &
+       'Moist shallow convection mass flux'                         )
+  call addfld( 'CMFSL'     ,  (/ 'ilev' /),  'A' , 'W/m2', &
+       'Moist shallow convection liquid water static energy flux'   )
+  call addfld( 'CMFLQ'     ,  (/ 'ilev' /),  'A' , 'W/m2', &
+       'Moist shallow convection total water flux'                  )
+  call addfld( 'CIN'     ,  horiz_only    ,  'A' , 'J/kg', &
+       'Convective inhibition'                                      )
+  call addfld( 'CBMF'     ,  horiz_only    ,  'A' , 'kg/m2/s', &
+       'Cloud base mass flux'                                       )
+  call addfld( 'CLDTOP'     ,  horiz_only    ,  'I' , '1', &
+       'Vertical index of cloud top'                                )
+  call addfld( 'CLDBOT'     ,  horiz_only    ,  'I' , '1', &
+       'Vertical index of cloud base'                               )
+  call addfld( 'PCLDTOP'     ,  horiz_only    ,  'A' , '1', &
+       'Pressure of cloud top'                                      )
+  call addfld( 'PCLDBOT'     ,  horiz_only    ,  'A' , '1', &
+       'Pressure of cloud base'                                     )
 
-  call addfld( 'FREQSH '      , 'fraction',  1    ,  'A' , &
-       'Fractional occurance of shallow convection'                ,  phys_decomp )
+  call addfld( 'FREQSH'      ,  horiz_only    ,  'A' , 'fraction', &
+       'Fractional occurance of shallow convection'                 )
                                                                                                                     
-  call addfld( 'HKFLXPRC'     , 'kg/m2/s ',  pverp,  'A' , &
-       'Flux of precipitation from HK convection'                  ,  phys_decomp )
-  call addfld( 'HKFLXSNW'     , 'kg/m2/s ',  pverp,  'A' , &
-       'Flux of snow from HK convection'                           ,  phys_decomp )
-  call addfld( 'HKNTPRPD'     , 'kg/kg/s ',  pver ,  'A' , &
-       'Net precipitation production from HK convection'           ,  phys_decomp )
-  call addfld( 'HKNTSNPD'     , 'kg/kg/s ',  pver ,  'A' , &
-       'Net snow production from HK convection'                    ,  phys_decomp )
-  call addfld( 'HKEIHEAT'     , 'W/kg'    ,  pver ,  'A' , &
-       'Heating by ice and evaporation in HK convection'           ,  phys_decomp )
+  call addfld( 'HKFLXPRC'     ,  (/ 'ilev' /),  'A' , 'kg/m2/s', &
+       'Flux of precipitation from HK convection'                   )
+  call addfld( 'HKFLXSNW'     ,  (/ 'ilev' /),  'A' , 'kg/m2/s', &
+       'Flux of snow from HK convection'                            )
+  call addfld( 'HKNTPRPD'     ,  (/ 'lev' /) ,  'A' , 'kg/kg/s', &
+       'Net precipitation production from HK convection'            )
+  call addfld( 'HKNTSNPD'     ,  (/ 'lev' /) ,  'A' , 'kg/kg/s', &
+       'Net snow production from HK convection'                     )
+  call addfld( 'HKEIHEAT'     ,  (/ 'lev' /) ,  'A' , 'W/kg'    , &
+       'Heating by ice and evaporation in HK convection'            )
 
-  call addfld ('ICWMRSH  '    , 'kg/kg   ',  pver,   'A' , &
-       'Shallow Convection in-cloud water mixing ratio '           ,  phys_decomp )
+  call addfld ('ICWMRSH'    ,  (/ 'lev' /),   'A' , 'kg/kg', &
+       'Shallow Convection in-cloud water mixing ratio '            )
 
   if( shallow_scheme .eq. 'UW' ) then
-     call addfld( 'UWFLXPRC'     , 'kg/m2/s ',  pverp,  'A' , &
-          'Flux of precipitation from UW shallow convection'          ,  phys_decomp )
-     call addfld( 'UWFLXSNW'     , 'kg/m2/s ',  pverp,  'A' , &
-          'Flux of snow from UW shallow convection'                   ,  phys_decomp )
+     call addfld( 'UWFLXPRC'     ,  (/ 'ilev' /),  'A' , 'kg/m2/s', &
+          'Flux of precipitation from UW shallow convection'           )
+     call addfld( 'UWFLXSNW'     ,  (/ 'ilev' /),  'A' , 'kg/m2/s', &
+          'Flux of snow from UW shallow convection'                    )
   end if
 
 

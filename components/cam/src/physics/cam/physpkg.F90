@@ -324,6 +324,8 @@ subroutine phys_inidat( cam_out, pbuf2d )
 
 
     use cam_initfiles,       only: initial_file_get_id, topo_file_get_id
+    use cam_grid_support,    only: cam_grid_check, cam_grid_id
+    use cam_grid_support,    only: cam_grid_get_dim_names
     use pio,                 only: file_desc_t
     use ncdio_atm,           only: infld
     use dycore,              only: dycore_is
@@ -346,8 +348,9 @@ subroutine phys_inidat( cam_out, pbuf2d )
 
     logical :: found=.false., found2=.false.
     integer :: ierr
-    character(len=4) :: dim1name
+    character(len=8) :: dim1name, dim2name
     integer :: ixcldice, ixcldliq
+    integer                   :: grid_id  ! grid ID for data mapping
     nullify(tptr,tptr3d,tptr3d_2,cldptr,convptr_3d)
 
     fh_ini=>initial_file_get_id()
@@ -355,39 +358,40 @@ subroutine phys_inidat( cam_out, pbuf2d )
     !   dynamics variables are handled in dyn_init - here we read variables needed for physics 
     !   but not dynamics
 
-    if(dycore_is('UNSTRUCTURED')) then  
-       dim1name='ncol'
-    else
-       dim1name='lon'
+    grid_id = cam_grid_id('physgrid')
+    if (.not. cam_grid_check(grid_id)) then
+      call endrun(trim(subname)//': Internal error, no "physgrid" grid')
     end if
+    call cam_grid_get_dim_names(grid_id, dim1name, dim2name)
+
     if(aqua_planet) then
        sgh = 0._r8
        sgh30 = 0._r8
        landm = 0._r8
     else
        fh_topo=>topo_file_get_id()
-       call infld('SGH', fh_topo, dim1name, 'lat', 1, pcols, begchunk, endchunk, &
-            sgh, found, grid_map='PHYS')
+       call infld('SGH', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
+            sgh, found, gridname='physgrid')
        if(.not. found) call endrun('ERROR: SGH not found on topo file')
 
-       call infld('SGH30', fh_topo, dim1name, 'lat', 1, pcols, begchunk, endchunk, &
-            sgh30, found, grid_map='PHYS')
+       call infld('SGH30', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
+            sgh30, found, gridname='physgrid')
        if(.not. found) then
           if (masterproc) write(iulog,*) 'Warning: Error reading SGH30 from topo file.'
           if (masterproc) write(iulog,*) 'The field SGH30 will be filled using data from SGH.'
           sgh30 = sgh
        end if
 
-       call infld('LANDM_COSLAT', fh_topo, dim1name, 'lat', 1, pcols, begchunk, endchunk, &
-            landm, found, grid_map='PHYS')
+       call infld('LANDM_COSLAT', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
+            landm, found, gridname='physgrid')
 
        if(.not.found) call endrun(' ERROR: LANDM_COSLAT not found on topo dataset.')
     end if
 
     allocate(tptr(1:pcols,begchunk:endchunk))
 
-    call infld('PBLH', fh_ini, dim1name, 'lat', 1, pcols, begchunk, endchunk, &
-         tptr(:,:), found, grid_map='PHYS')
+    call infld('PBLH', fh_ini, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
+         tptr(:,:), found, gridname='physgrid')
     if(.not. found) then
        tptr(:,:) = 0._r8
        if (masterproc) write(iulog,*) 'PBLH initialized to 0.'
@@ -396,8 +400,8 @@ subroutine phys_inidat( cam_out, pbuf2d )
 
     call pbuf_set_field(pbuf2d, pblh_idx, tptr)
 
-    call infld('TPERT', fh_ini, dim1name, 'lat', 1, pcols, begchunk, endchunk, &
-         tptr(:,:), found, grid_map='PHYS')
+    call infld('TPERT', fh_ini, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
+         tptr(:,:), found, gridname='physgrid')
     if(.not. found) then
        tptr(:,:) = 0._r8
        if (masterproc) write(iulog,*) 'TPERT initialized to 0.'
@@ -408,8 +412,8 @@ subroutine phys_inidat( cam_out, pbuf2d )
     fieldname='QPERT'  
     qpert_idx = pbuf_get_index( 'qpert',ierr)
     if (qpert_idx > 0) then
-       call infld(fieldname, fh_ini, dim1name, 'lat', 1, pcols, begchunk, endchunk, &
-            tptr, found, grid_map='PHYS')
+       call infld(fieldname, fh_ini, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
+            tptr, found, gridname='physgrid')
        if(.not. found) then
           tptr=0_r8
           if (masterproc) write(iulog,*) trim(fieldname), ' initialized to 0.'
@@ -425,8 +429,8 @@ subroutine phys_inidat( cam_out, pbuf2d )
 
     fieldname='CUSH'
     m = pbuf_get_index('cush')
-    call infld(fieldname, fh_ini, dim1name, 'lat', 1, pcols, begchunk, endchunk, &
-         tptr, found, grid_map='PHYS')
+    call infld(fieldname, fh_ini, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
+         tptr, found, gridname='physgrid')
     if(.not.found) then
        if(masterproc) write(iulog,*) trim(fieldname), ' initialized to 1000.'
        tptr=1000._r8
@@ -448,8 +452,8 @@ subroutine phys_inidat( cam_out, pbuf2d )
 
     fieldname='CLOUD'
     m = pbuf_get_index('CLD')
-    call infld(fieldname, fh_ini, dim1name, 'lev', 'lat', 1, pcols, 1, pver, begchunk, endchunk, &
-         tptr3d, found, grid_map='PHYS')
+    call infld(fieldname, fh_ini, dim1name, 'lev', dim2name, 1, pcols, 1, pver, begchunk, endchunk, &
+         tptr3d, found, gridname='physgrid')
     if(found) then
        do n = 1, dyn_time_lvls
           call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
@@ -462,11 +466,11 @@ subroutine phys_inidat( cam_out, pbuf2d )
     fieldname='QCWAT'
     m = pbuf_get_index(fieldname,ierr)
     if (m > 0) then
-       call infld(fieldname, fh_ini, dim1name, 'lev', 'lat', 1, pcols, 1, pver, begchunk, endchunk, &
-            tptr3d, found, grid_map='PHYS')
+       call infld(fieldname, fh_ini, dim1name, 'lev', dim2name, 1, pcols, 1, pver, begchunk, endchunk, &
+            tptr3d, found, gridname='physgrid')
        if(.not. found) then
-          call infld('Q',fh_ini,dim1name, 'lev', 'lat', 1, pcols, 1, pver, begchunk, endchunk, &
-               tptr3d, found, grid_map='PHYS')
+          call infld('Q',fh_ini,dim1name, 'lev', dim2name, 1, pcols, 1, pver, begchunk, endchunk, &
+               tptr3d, found, gridname='physgrid')
           if (found) then
              if (masterproc) write(iulog,*) trim(fieldname), ' initialized with Q'
              if(dycore_is('LR')) call polar_average(pver, tptr3d) 	
@@ -482,16 +486,16 @@ subroutine phys_inidat( cam_out, pbuf2d )
     fieldname = 'ICCWAT'
     m = pbuf_get_index(fieldname, ierr)
     if (m > 0) then
-       call infld(fieldname, fh_ini, dim1name, 'lev', 'lat', 1, pcols, 1, pver, begchunk, endchunk, &
-          tptr3d, found, grid_map='phys')
+       call infld(fieldname, fh_ini, dim1name, 'lev', dim2name, 1, pcols, 1, pver, begchunk, endchunk, &
+          tptr3d, found, gridname='physgrid')
        if(found) then
           do n = 1, dyn_time_lvls
              call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
           end do
        else
           call cnst_get_ind('CLDICE', ixcldice)
-          call infld('CLDICE',fh_ini,dim1name, 'lev', 'lat', 1, pcols, 1, pver, begchunk, endchunk, &
-             tptr3d, found, grid_map='PHYS')
+          call infld('CLDICE',fh_ini,dim1name, 'lev', dim2name, 1, pcols, 1, pver, begchunk, endchunk, &
+             tptr3d, found, gridname='physgrid')
           if(found) then
              do n = 1, dyn_time_lvls
                 call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
@@ -512,8 +516,8 @@ subroutine phys_inidat( cam_out, pbuf2d )
     fieldname = 'LCWAT'
     m = pbuf_get_index(fieldname,ierr)
     if (m > 0) then
-       call infld(fieldname, fh_ini, dim1name, 'lev', 'lat', 1, pcols, 1, pver, begchunk, endchunk, &
-            tptr3d, found, grid_map='phys')
+       call infld(fieldname, fh_ini, dim1name, 'lev', dim2name, 1, pcols, 1, pver, begchunk, endchunk, &
+            tptr3d, found, gridname='physgrid')
        if(found) then
           do n = 1, dyn_time_lvls
              call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
@@ -522,10 +526,10 @@ subroutine phys_inidat( cam_out, pbuf2d )
           allocate(tptr3d_2(pcols,pver,begchunk:endchunk))     
           call cnst_get_ind('CLDICE', ixcldice)
           call cnst_get_ind('CLDLIQ', ixcldliq)
-          call infld('CLDICE',fh_ini,dim1name, 'lev', 'lat', 1, pcols, 1, pver, begchunk, endchunk, &
-               tptr3d, found, grid_map='PHYS')
-          call infld('CLDLIQ',fh_ini,dim1name, 'lev', 'lat', 1, pcols, 1, pver, begchunk, endchunk, &
-               tptr3d_2, found2, grid_map='PHYS')
+          call infld('CLDICE',fh_ini,dim1name, 'lev', dim2name, 1, pcols, 1, pver, begchunk, endchunk, &
+               tptr3d, found, gridname='physgrid')
+          call infld('CLDLIQ',fh_ini,dim1name, 'lev', dim2name, 1, pcols, 1, pver, begchunk, endchunk, &
+               tptr3d_2, found2, gridname='physgrid')
           if(found .and. found2) then
              tptr3d(:,:,:)=tptr3d(:,:,:)+tptr3d_2(:,:,:)
              if (masterproc) write(iulog,*) trim(fieldname), ' initialized with CLDICE + CLDLIQ'
@@ -555,11 +559,11 @@ subroutine phys_inidat( cam_out, pbuf2d )
     fieldname = 'TCWAT'
     m = pbuf_get_index(fieldname,ierr)
     if (m > 0) then
-       call infld(fieldname, fh_ini, dim1name, 'lev', 'lat', 1, pcols, 1, pver, begchunk, endchunk, &
-            tptr3d, found, grid_map='phys')
+       call infld(fieldname, fh_ini, dim1name, 'lev', dim2name, 1, pcols, 1, pver, begchunk, endchunk, &
+            tptr3d, found, gridname='physgrid')
        if(.not.found) then
-          call infld('T', fh_ini, dim1name, 'lev', 'lat', 1, pcols, 1, pver, begchunk, endchunk, &
-               tptr3d, found, grid_map='phys')
+          call infld('T', fh_ini, dim1name, 'lev', dim2name, 1, pcols, 1, pver, begchunk, endchunk, &
+               tptr3d, found, gridname='physgrid')
           if(dycore_is('LR')) call polar_average(pver, tptr3d) 	
           if (masterproc) write(iulog,*) trim(fieldname), ' initialized with T'
        end if
@@ -573,8 +577,8 @@ subroutine phys_inidat( cam_out, pbuf2d )
 
     fieldname = 'TKE'
     m = pbuf_get_index( 'tke')
-    call infld(fieldname, fh_ini, dim1name, 'ilev', 'lat', 1, pcols, 1, pverp, begchunk, endchunk, &
-         tptr3d, found, grid_map='phys')
+    call infld(fieldname, fh_ini, dim1name, 'ilev', dim2name, 1, pcols, 1, pverp, begchunk, endchunk, &
+         tptr3d, found, gridname='physgrid')
     if (found) then
        call pbuf_set_field(pbuf2d, m, tptr3d)
     else
@@ -585,8 +589,8 @@ subroutine phys_inidat( cam_out, pbuf2d )
 
     fieldname = 'KVM'
     m = pbuf_get_index('kvm')
-    call infld(fieldname, fh_ini, dim1name, 'ilev', 'lat', 1, pcols, 1, pverp, begchunk, endchunk, &
-         tptr3d, found, grid_map='phys')
+    call infld(fieldname, fh_ini, dim1name, 'ilev', dim2name, 1, pcols, 1, pverp, begchunk, endchunk, &
+         tptr3d, found, gridname='physgrid')
     if (found) then
        call pbuf_set_field(pbuf2d, m, tptr3d)
     else
@@ -597,8 +601,8 @@ subroutine phys_inidat( cam_out, pbuf2d )
 
     fieldname = 'KVH'
     m = pbuf_get_index('kvh')
-    call infld(fieldname, fh_ini, dim1name, 'ilev', 'lat', 1, pcols, 1, pverp, begchunk, endchunk, &
-         tptr3d, found, grid_map='phys')
+    call infld(fieldname, fh_ini, dim1name, 'ilev', dim2name, 1, pcols, 1, pverp, begchunk, endchunk, &
+         tptr3d, found, gridname='physgrid')
     if (found) then
        call pbuf_set_field(pbuf2d, m, tptr3d)
     else
@@ -611,8 +615,8 @@ subroutine phys_inidat( cam_out, pbuf2d )
 
     fieldname = 'CONCLD'
     m = pbuf_get_index('CONCLD')
-    call infld(fieldname, fh_ini, dim1name, 'lev', 'lat', 1, pcols, 1, pver, begchunk, endchunk, &
-         tptr3d, found, grid_map='phys')
+    call infld(fieldname, fh_ini, dim1name, 'lev', dim2name, 1, pcols, 1, pver, begchunk, endchunk, &
+         tptr3d, found, gridname='physgrid')
     if(found) then
        do n = 1, dyn_time_lvls
           call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))

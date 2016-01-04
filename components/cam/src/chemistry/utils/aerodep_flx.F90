@@ -114,7 +114,7 @@ contains
   subroutine aerodep_flx_init()
     
     use tracer_data, only : trcdata_init
-    use cam_history, only : addfld, phys_decomp
+    use cam_history, only : addfld, horiz_only
     use physics_buffer, only : physics_buffer_desc
     use modal_aero_deposition, only : modal_aero_deposition_init
     
@@ -161,7 +161,7 @@ contains
           endif
        endif
        if (ndx>0) then
-          call addfld(trim(fields(i)%fldnam)//'_D',fields(i)%units, 1, 'A', 'prescribed aero dep', phys_decomp )
+          call addfld(trim(fields(i)%fldnam)//'_D', horiz_only, 'A',fields(i)%units, 'prescribed aero dep' )
        else
           call endrun('aerodep_flx_init: aerosol flux name not recognized: '//trim(fields(i)%fldnam))
        endif

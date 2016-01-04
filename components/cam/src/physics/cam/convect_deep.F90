@@ -1,4 +1,5 @@
 
+
 module convect_deep
 !---------------------------------------------------------------------------------
 ! Purpose:
@@ -116,7 +117,7 @@ subroutine convect_deep_init(pref_edge)
 ! Purpose:  declare output fields, initialize variables needed by convection
 !----------------------------------------
 
-  use cam_history,   only: phys_decomp, addfld                          
+  use cam_history,   only:  addfld                          
   use pmgrid,        only: plevp
   use spmd_utils,    only: masterproc
   use zm_conv_intr,  only: zm_conv_init
@@ -150,7 +151,7 @@ subroutine convect_deep_init(pref_edge)
   pblh_idx   = pbuf_get_index('pblh')
   tpert_idx  = pbuf_get_index('tpert')
 
-  call addfld ('ICWMRDP  ', 'kg/kg   ', pver, 'A', 'Deep Convection in-cloud water mixing ratio '            ,phys_decomp)
+  call addfld ('ICWMRDP', (/ 'lev' /), 'A', 'kg/kg', 'Deep Convection in-cloud water mixing ratio '            )
 
 end subroutine convect_deep_init
 !=========================================================================================

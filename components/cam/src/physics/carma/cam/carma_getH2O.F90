@@ -2,13 +2,13 @@
   !
   ! NOTE: This needs to be in its own file to avoid circular references.
   subroutine carma_getH2O(h2o)
-    use shr_kind_mod, only: r8 => shr_kind_r8
-    use cam_initfiles,only: initial_file_get_id
-    use pio,          only: file_desc_t
-    use ncdio_atm,    only: infld
-    use pmgrid,       only: plat, plev, plevp, plon
-    use ppgrid,       only: pcols, pver, pverp
-    use cam_abortutils,   only: endrun
+    use shr_kind_mod,   only: r8 => shr_kind_r8
+    use cam_initfiles,  only: initial_file_get_id
+    use pio,            only: file_desc_t
+    use cam_pio_utils,  only: cam_pio_get_var
+    use pmgrid,         only: plat, plev, plevp, plon
+    use ppgrid,         only: pcols, pver, pverp
+    use cam_abortutils, only: endrun
 
     real(r8), intent(out)   :: h2o(pver)      ! midpoint h2o mmr (kg/kg)
 
@@ -23,11 +23,10 @@
     nullify(init_h2o)
 
     allocate(init_h2o(plon,pver,plat))
-    call infld('Q', ncid_ini, 'lon', 'lev', 'lat', 1, plon, 1, pver, &
-         1, plat, init_h2o, found, grid_map='GLOBAL', array_order_in='xyz')
+    call cam_pio_get_var('Q', ncid_ini, init_h2o, found=found)
             
     if (.not. found) then
-      call endrun('carma_init::infld failed to find field Q.')
+      call endrun('carma_init::cam_pio_get_var failed to find field Q.')
     end if
 
     ! Just do a simple average. Could get gw and do a weighted average.

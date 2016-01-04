@@ -1,3 +1,4 @@
+
 module modal_aer_opt
 
 ! parameterizes aerosol coefficients using chebychev polynomial
@@ -25,7 +26,7 @@ use physics_buffer, only : pbuf_get_index,physics_buffer_desc, pbuf_get_field
 use pio,               only: file_desc_t, var_desc_t, pio_inq_dimlen, pio_inq_dimid, pio_inq_varid, &
                              pio_get_var, pio_nowrite, pio_closefile
 use cam_pio_utils,     only: cam_pio_openfile
-use cam_history,       only: phys_decomp, addfld, add_default, outfld
+use cam_history,       only:  addfld, horiz_only, add_default, outfld
 use cam_history_support, only: fillvalue
 use cam_logfile,       only: iulog
 use perf_mod,          only: t_startf, t_stopf
@@ -173,35 +174,35 @@ subroutine modal_aer_opt_init()
 
    ! Add diagnostic fields to history output.
 
-   call addfld ('EXTINCT','/m  ',pver,    'A','Aerosol extinction',phys_decomp, flag_xyfill=.true.)
-   call addfld ('ABSORB','/m  ',pver,    'A','Aerosol absorption',phys_decomp, flag_xyfill=.true.)
-   call addfld ('AODVIS','  ',1,    'A','Aerosol optical depth 550 nm',phys_decomp, flag_xyfill=.true.)
-   call addfld ('AODUV','  ',1,    'A','Aerosol optical depth 350 nm',phys_decomp, flag_xyfill=.true.)  
-   call addfld ('AODNIR','  ',1,    'A','Aerosol optical depth 850 nm',phys_decomp, flag_xyfill=.true.) 
-   call addfld ('AODABS','  ',1,    'A','Aerosol absorption optical depth 550 nm',phys_decomp, flag_xyfill=.true.)
-   call addfld ('AODMODE1','  ',1,    'A','Aerosol optical depth 550 nm mode 1'           ,phys_decomp, flag_xyfill=.true.)
-   call addfld ('AODMODE2','  ',1,    'A','Aerosol optical depth 550 nm mode 2'           ,phys_decomp, flag_xyfill=.true.)
-   call addfld ('AODMODE3','  ',1,    'A','Aerosol optical depth 550 nm mode 3'           ,phys_decomp, flag_xyfill=.true.)
-   call addfld ('AODDUST1','  ',1,    'A','Aerosol optical depth 550 nm model 1 from dust',phys_decomp, flag_xyfill=.true.)
-   call addfld ('AODDUST2','  ',1,    'A','Aerosol optical depth 550 nm model 2 from dust',phys_decomp, flag_xyfill=.true.)
-   call addfld ('AODDUST3','  ',1,    'A','Aerosol optical depth 550 nm model 3 from dust',phys_decomp, flag_xyfill=.true.)
-   call addfld ('AODDUST','  ',1,    'A','Aerosol optical depth 550 nm from dust',phys_decomp, flag_xyfill=.true.)
-   call addfld ('AODSO4','  ',1,    'A','Aerosol optical depth 550 nm from SO4',phys_decomp, flag_xyfill=.true.)
-   call addfld ('AODPOM','  ',1,    'A','Aerosol optical depth 550 nm from POM',phys_decomp, flag_xyfill=.true.)
-   call addfld ('AODSOA','  ',1,    'A','Aerosol optical depth 550 nm from SOA',phys_decomp, flag_xyfill=.true.)
-   call addfld ('AODBC','  ',1,    'A','Aerosol optical depth 550 nm from BC',phys_decomp, flag_xyfill=.true.)
-   call addfld ('AODSS','  ',1,    'A','Aerosol optical depth 550 nm from seasalt',phys_decomp, flag_xyfill=.true.)
-   call addfld ('AODABSBC','  ',1, 'A','Aerosol absorption optical depth 550 nm from BC',phys_decomp, flag_xyfill=.true.)
-   call addfld ('BURDEN1','kg/m2'      ,1,  'A','Aerosol burden mode 1'      ,phys_decomp, flag_xyfill=.true.)
-   call addfld ('BURDEN2','kg/m2'      ,1,  'A','Aerosol burden mode 2'      ,phys_decomp, flag_xyfill=.true.)
-   call addfld ('BURDEN3','kg/m2'      ,1,  'A','Aerosol burden mode 3'      ,phys_decomp, flag_xyfill=.true.)
-   call addfld ('BURDENDUST','kg/m2'   ,1,  'A','Dust aerosol burden'        ,phys_decomp, flag_xyfill=.true.)
-   call addfld ('BURDENSO4','kg/m2'    ,1,  'A','Sulfate aerosol burden'     ,phys_decomp, flag_xyfill=.true.)
-   call addfld ('BURDENPOM','kg/m2'    ,1,  'A','POM aerosol burden'         ,phys_decomp, flag_xyfill=.true.)
-   call addfld ('BURDENSOA','kg/m2'    ,1,  'A','SOA aerosol burden'         ,phys_decomp, flag_xyfill=.true.)
-   call addfld ('BURDENBC','kg/m2'     ,1,  'A','Black carbon aerosol burden',phys_decomp, flag_xyfill=.true.)
-   call addfld ('BURDENSEASALT','kg/m2',1,  'A','Seasalt aerosol burden'     ,phys_decomp, flag_xyfill=.true.)
-   call addfld ('SSAVIS','  ',1,    'A','Aerosol singel-scatter albedo',phys_decomp, flag_xyfill=.true.)
+   call addfld ('EXTINCT',(/ 'lev' /),    'A','/m','Aerosol extinction', flag_xyfill=.true.)
+   call addfld ('ABSORB',(/ 'lev' /),    'A','/m','Aerosol absorption', flag_xyfill=.true.)
+   call addfld ('AODVIS',horiz_only,    'A','  ','Aerosol optical depth 550 nm', flag_xyfill=.true.)
+   call addfld ('AODUV',horiz_only,    'A','  ','Aerosol optical depth 350 nm', flag_xyfill=.true.)  
+   call addfld ('AODNIR',horiz_only,    'A','  ','Aerosol optical depth 850 nm', flag_xyfill=.true.) 
+   call addfld ('AODABS',horiz_only,    'A','  ','Aerosol absorption optical depth 550 nm', flag_xyfill=.true.)
+   call addfld ('AODMODE1',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 1'           , flag_xyfill=.true.)
+   call addfld ('AODMODE2',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 2'           , flag_xyfill=.true.)
+   call addfld ('AODMODE3',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 3'           , flag_xyfill=.true.)
+   call addfld ('AODDUST1',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 1 from dust', flag_xyfill=.true.)
+   call addfld ('AODDUST2',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 2 from dust', flag_xyfill=.true.)
+   call addfld ('AODDUST3',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 3 from dust', flag_xyfill=.true.)
+   call addfld ('AODDUST',horiz_only,    'A','  ','Aerosol optical depth 550 nm from dust', flag_xyfill=.true.)
+   call addfld ('AODSO4',horiz_only,    'A','  ','Aerosol optical depth 550 nm from SO4', flag_xyfill=.true.)
+   call addfld ('AODPOM',horiz_only,    'A','  ','Aerosol optical depth 550 nm from POM', flag_xyfill=.true.)
+   call addfld ('AODSOA',horiz_only,    'A','  ','Aerosol optical depth 550 nm from SOA', flag_xyfill=.true.)
+   call addfld ('AODBC',horiz_only,    'A','  ','Aerosol optical depth 550 nm from BC', flag_xyfill=.true.)
+   call addfld ('AODSS',horiz_only,    'A','  ','Aerosol optical depth 550 nm from seasalt', flag_xyfill=.true.)
+   call addfld ('AODABSBC',horiz_only, 'A','  ','Aerosol absorption optical depth 550 nm from BC', flag_xyfill=.true.)
+   call addfld ('BURDEN1',horiz_only,  'A','kg/m2'      ,'Aerosol burden mode 1'      , flag_xyfill=.true.)
+   call addfld ('BURDEN2',horiz_only,  'A','kg/m2'      ,'Aerosol burden mode 2'      , flag_xyfill=.true.)
+   call addfld ('BURDEN3',horiz_only,  'A','kg/m2'      ,'Aerosol burden mode 3'      , flag_xyfill=.true.)
+   call addfld ('BURDENDUST',horiz_only,  'A','kg/m2'   ,'Dust aerosol burden'        , flag_xyfill=.true.)
+   call addfld ('BURDENSO4',horiz_only,  'A','kg/m2'    ,'Sulfate aerosol burden'     , flag_xyfill=.true.)
+   call addfld ('BURDENPOM',horiz_only,  'A','kg/m2'    ,'POM aerosol burden'         , flag_xyfill=.true.)
+   call addfld ('BURDENSOA',horiz_only,  'A','kg/m2'    ,'SOA aerosol burden'         , flag_xyfill=.true.)
+   call addfld ('BURDENBC',horiz_only,  'A','kg/m2'     ,'Black carbon aerosol burden', flag_xyfill=.true.)
+   call addfld ('BURDENSEASALT',horiz_only,  'A','kg/m2','Seasalt aerosol burden'     , flag_xyfill=.true.)
+   call addfld ('SSAVIS',horiz_only,    'A','  ','Aerosol singel-scatter albedo', flag_xyfill=.true.)
 
  
    if (history_amwg) then 
@@ -249,10 +250,10 @@ subroutine modal_aer_opt_init()
       call add_default ('SSAVIS'       , 1, ' ')
       call add_default ('EXTINCT'      , 1, ' ')
   end if
-  if (cam_chempkg_is('trop_mam4').or.cam_chempkg_is('trop_mam4_resus').or.cam_chempkg_is('trop_mam7').or.cam_chempkg_is('trop_strat_mam7')) then
-     call addfld ('AODDUST4','  ',1,    'A','Aerosol optical depth 550 nm model 4 from dust',phys_decomp, flag_xyfill=.true.)     
-     call addfld ('AODMODE4','  ',1,    'A','Aerosol optical depth 550 nm mode 4',phys_decomp, flag_xyfill=.true.)
-     call addfld ('BURDEN4','kg/m2',1,    'A','Aerosol burden mode 4',phys_decomp, flag_xyfill=.true.)
+ if (cam_chempkg_is('trop_mam4').or.cam_chempkg_is('trop_mam4_resus').or.cam_chempkg_is('trop_mam7').or.cam_chempkg_is('trop_strat_mam7')) then
+     call addfld ('AODDUST4',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 4 from dust', flag_xyfill=.true.)     
+     call addfld ('AODMODE4',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 4', flag_xyfill=.true.)
+     call addfld ('BURDEN4',horiz_only,    'A','kg/m2','Aerosol burden mode 4', flag_xyfill=.true.)
 
      if (history_aero_optics) then
         call add_default ('AODDUST4', 1, ' ')
@@ -261,15 +262,15 @@ subroutine modal_aer_opt_init()
      end if
   end if
    if (cam_chempkg_is('trop_mam7').or.cam_chempkg_is('trop_strat_mam7')) then      
-      call addfld ('AODDUST5','  ',1,    'A','Aerosol optical depth 550 nm model 5 from dust',phys_decomp, flag_xyfill=.true.)
-      call addfld ('AODDUST6','  ',1,    'A','Aerosol optical depth 550 nm model 6 from dust',phys_decomp, flag_xyfill=.true.)
-      call addfld ('AODDUST7','  ',1,    'A','Aerosol optical depth 550 nm model 7 from dust',phys_decomp, flag_xyfill=.true.)
-      call addfld ('AODMODE5','  ',1,    'A','Aerosol optical depth 550 nm mode 5',phys_decomp, flag_xyfill=.true.)
-      call addfld ('AODMODE6','  ',1,    'A','Aerosol optical depth 550 nm mode 6',phys_decomp, flag_xyfill=.true.)
-      call addfld ('AODMODE7','  ',1,    'A','Aerosol optical depth 550 nm mode 7',phys_decomp, flag_xyfill=.true.)
-      call addfld ('BURDEN5','kg/m2',1,    'A','Aerosol burden mode 5',phys_decomp, flag_xyfill=.true.)
-      call addfld ('BURDEN6','kg/m2',1,    'A','Aerosol burden mode 6',phys_decomp, flag_xyfill=.true.)
-      call addfld ('BURDEN7','kg/m2',1,    'A','Aerosol burden mode 7',phys_decomp, flag_xyfill=.true.)
+      call addfld ('AODDUST5',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 5 from dust', flag_xyfill=.true.)
+      call addfld ('AODDUST6',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 6 from dust', flag_xyfill=.true.)
+      call addfld ('AODDUST7',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 7 from dust', flag_xyfill=.true.)
+      call addfld ('AODMODE5',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 5', flag_xyfill=.true.)
+      call addfld ('AODMODE6',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 6', flag_xyfill=.true.)
+      call addfld ('AODMODE7',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 7', flag_xyfill=.true.)
+      call addfld ('BURDEN5',horiz_only,    'A','kg/m2','Aerosol burden mode 5', flag_xyfill=.true.)
+      call addfld ('BURDEN6',horiz_only,    'A','kg/m2','Aerosol burden mode 6', flag_xyfill=.true.)
+      call addfld ('BURDEN7',horiz_only,    'A','kg/m2','Aerosol burden mode 7', flag_xyfill=.true.)
       if (history_aero_optics) then 
          call add_default ('AODDUST5', 1, ' ')
          call add_default ('AODDUST6', 1, ' ')
@@ -286,14 +287,14 @@ subroutine modal_aer_opt_init()
    do ilist = 1, n_diag
       if (call_list(ilist)) then
          
-         call addfld ('EXTINCT'//diag(ilist),'/m  ', pver, 'A', &
-              'Aerosol extinction',phys_decomp, flag_xyfill=.true.)
-         call addfld ('ABSORB'//diag(ilist),'/m  ',  pver, 'A', &
-              'Aerosol absorption',phys_decomp, flag_xyfill=.true.)
-         call addfld ('AODVIS'//diag(ilist),'  ',       1, 'A', &
-              'Aerosol optical depth 550 nm',phys_decomp, flag_xyfill=.true.)
-         call addfld ('AODABS'//diag(ilist),'  ',       1, 'A', &
-              'Aerosol absorption optical depth 550 nm',phys_decomp, flag_xyfill=.true.)
+         call addfld ('EXTINCT'//diag(ilist), (/ 'lev' /), 'A','/m', &
+              'Aerosol extinction', flag_xyfill=.true.)
+         call addfld ('ABSORB'//diag(ilist),  (/ 'lev' /), 'A','/m', &
+              'Aerosol absorption', flag_xyfill=.true.)
+         call addfld ('AODVIS'//diag(ilist),       horiz_only, 'A','  ', &
+              'Aerosol optical depth 550 nm', flag_xyfill=.true.)
+         call addfld ('AODABS'//diag(ilist),       horiz_only, 'A','  ', &
+              'Aerosol absorption optical depth 550 nm', flag_xyfill=.true.)
          
          call add_default ('EXTINCT'//diag(ilist), 1, ' ')
          call add_default ('ABSORB'//diag(ilist),  1, ' ')

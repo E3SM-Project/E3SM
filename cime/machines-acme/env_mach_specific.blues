@@ -48,12 +48,12 @@ if ( $COMPILER == "intel" ) then
   if ( $MPILIB == "mpi-serial") then
    setenv PNETCDFROOT ""
   else if ( $MPILIB == "mvapich") then
-   soft add +mvapich2-2.2b-intel-15.0-psm
+   soft add +mvapich2-2.2b-intel-15.0 #soft add +mvapich2-2.2b-intel-15.0-psm #BSINGH
    soft add +pnetcdf-1.6.1-mvapich2-2.2a-intel-15.0
    setenv PNETCDFROOT /soft/climate/pnetcdf/1.6.1/intel-15.0.1/mvapich2-2.2a-intel-15.0
   else
    # default - mvapich+pnetcdf
-   soft add +mvapich2-2.2b-intel-15.0-psm
+   soft add +mvapich2-2.2b-intel-15.0 #soft add +mvapich2-2.2b-intel-15.0-psm #BSINGH
    soft add +pnetcdf-1.6.1-mvapich2-2.2a-intel-15.0
    setenv PNETCDFROOT /soft/climate/pnetcdf/1.6.1/intel-15.0.1/mvapich2-2.2a-intel-15.0
   endif

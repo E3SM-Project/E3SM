@@ -31,15 +31,15 @@ contains
 
 subroutine constituent_burden_init
 
-  use cam_history,   only: addfld, phys_decomp
+  use cam_history,   only: addfld, horiz_only
   use constituents,  only: cnst_name
 
   integer :: m
 
   do m = 2, pcnst
     burdennam(m) = 'TM'//cnst_name(m)
-    call addfld (burdennam(m), 'kg/m2', 1, 'A', &
-                 trim(cnst_name(m)) // ' column burden', phys_decomp)
+    call addfld (burdennam(m), horiz_only, 'A', 'kg/m2', &
+                 trim(cnst_name(m)) // ' column burden')
   end do
 
 end subroutine constituent_burden_init

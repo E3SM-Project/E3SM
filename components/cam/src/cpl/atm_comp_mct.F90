@@ -42,7 +42,7 @@ module atm_comp_mct
 #endif
   use time_manager     , only: get_curr_calday, advance_timestep, get_curr_date, get_nstep, &
                                get_step_size, timemgr_init, timemgr_check_restart
-  use ioFileMod             
+  use ioFileMod
   use perf_mod
   use cam_logfile      , only: iulog
   use co2_cycle        , only: co2_readFlux_ocn, co2_readFlux_fuel
@@ -749,7 +749,7 @@ CONTAINS
   subroutine atm_read_srfrest_mct( EClock, x2a_a, a2x_a)
 
     !-----------------------------------------------------------------------
-    use cam_pio_utils
+    use cam_pio_utils, only: cam_pio_openfile, cam_pio_closefile, pio_subsystem
     !
     ! Arguments
     !
@@ -819,7 +819,7 @@ CONTAINS
     end do
 
     call pio_freedecomp(File,iodesc)
-    call pio_closefile(File)
+    call cam_pio_closefile(File)
     deallocate(tmp)
 
   end subroutine atm_read_srfrest_mct
@@ -830,7 +830,8 @@ CONTAINS
        yr_spec, mon_spec, day_spec, sec_spec)
 
     !-----------------------------------------------------------------------
-    use cam_pio_utils
+    use cam_pio_utils, only: cam_pio_createfile, cam_pio_closefile, pio_subsystem
+    use cam_history_support, only: fillvalue
     !
     ! Arguments
     !
@@ -898,7 +899,7 @@ CONTAINS
     deallocate(varid_x2a, varid_a2x)
 
     call pio_freedecomp(File,iodesc)
-    call pio_closefile(file)
+    call cam_pio_closefile(file)
 
 
   end subroutine atm_write_srfrest_mct

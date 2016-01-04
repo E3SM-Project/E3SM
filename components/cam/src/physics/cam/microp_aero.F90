@@ -1,3 +1,4 @@
+
 module microp_aero
 
 !---------------------------------------------------------------------------------
@@ -42,7 +43,7 @@ use ndrop_bam,        only: ndrop_bam_init, ndrop_bam_run, ndrop_bam_ccn
 use hetfrz_classnuc_cam, only: hetfrz_classnuc_cam_readnl, hetfrz_classnuc_cam_register, hetfrz_classnuc_cam_init, &
                                hetfrz_classnuc_cam_save_cbaero, hetfrz_classnuc_cam_calc
 
-use cam_history,      only: addfld, phys_decomp, add_default, outfld
+use cam_history,      only: addfld, add_default, outfld
 use cam_logfile,      only: iulog
 use cam_abortutils,       only: endrun
 
@@ -313,16 +314,15 @@ subroutine microp_aero_init
 
    end if
 
-   call addfld('LCLOUD', ' ', pver, 'A', 'Liquid cloud fraction used in stratus activation', phys_decomp)
+   call addfld('LCLOUD', (/ 'lev' /), 'A', ' ', 'Liquid cloud fraction used in stratus activation')
 
-   call addfld('WSUB     ', 'm/s     ', pver, 'A', 'Diagnostic sub-grid vertical velocity'                   ,phys_decomp)
-   call addfld('WSUBI    ', 'm/s     ', pver, 'A', 'Diagnostic sub-grid vertical velocity for ice'           ,phys_decomp)
+   call addfld('WSUB',  (/ 'lev' /), 'A', 'm/s', 'Diagnostic sub-grid vertical velocity'                   )
+   call addfld('WSUBI', (/ 'lev' /), 'A', 'm/s', 'Diagnostic sub-grid vertical velocity for ice'           )
 
-   call addfld('WLARGE', 'm/s', pver, 'A', 'Large-scale vertical velocity', phys_decomp)
-   call addfld('WSIG',   'm/s', pver, 'A', 'Subgrid standard deviation of vertical velocity',  phys_decomp)
-   call addfld('WSUBI2', 'm/s', pver, 'A', 'Mean updraft, with stddev=f(TKE)',                 phys_decomp)
-   call addfld('RHICE', '0-1',  pver, 'A', 'RHi for ice nucleation', phys_decomp)
-
+   call addfld('WLARGE',(/ 'lev' /), 'A', 'm/s', 'Large-scale vertical velocity'                           )
+   call addfld('WSIG',  (/ 'lev' /), 'A', 'm/s', 'Subgrid standard deviation of vertical velocity'         )
+   call addfld('WSUBI2',(/ 'lev' /), 'A', 'm/s', 'Mean updraft, with stddev=f(TKE)'                        )
+   call addfld('RHICE', (/ 'lev' /), 'A', '0-1', 'RHi for ice nucleation'                                  )
 
    if (history_amwg) then
       call add_default ('WSUB     ', 1, ' ')

@@ -21,7 +21,7 @@ use physics_buffer,   only: pbuf_add_field, dtype_r8, dyn_time_lvls, pbuf_old_ti
                             physics_buffer_desc, pbuf_get_index, pbuf_get_field, pbuf_set_field
 
 use phys_control,     only: phys_getopts
-use cam_history,      only: outfld, addfld, phys_decomp, add_default
+use cam_history,      only: outfld, addfld, horiz_only, add_default
 
 use time_manager,     only: is_first_step
 use cam_abortutils,   only: endrun
@@ -440,203 +440,203 @@ subroutine unicon_cam_init(pbuf2d)
 
    ! Sungsu for advection of convective organization
 
-   call addfld('ORGawk', 'no', pver,  'A', 'Convective Organization - Wake Area', phys_decomp )
-   call addfld('ORGthl', 'K', pver,  'A', 'Convective Organization - Perturbation of thl in the non-wake area', phys_decomp )
-   call addfld('ORGqto', 'kg/kg', pver,  'A', 'Convective Organization - Perturbation of qt  in the non-wake area', phys_decomp )
-   call addfld('ORGuoo', 'm/s', pver,  'A', 'Convective Organization - Perturbation of u  in the non-wake area', phys_decomp )
-   call addfld('ORGvoo', 'm/s', pver,  'A', 'Convective Organization - Perturbation of v  in the non-wake area', phys_decomp )
+   call addfld('ORGawk', (/ 'lev' /),  'A', 'no', 'Convective Organization - Wake Area' )
+   call addfld('ORGthl', (/ 'lev' /),  'A', 'K', 'Convective Organization - Perturbation of thl in the non-wake area' )
+   call addfld('ORGqto', (/ 'lev' /),  'A', 'kg/kg', 'Convective Organization - Perturbation of qt  in the non-wake area' )
+   call addfld('ORGuoo', (/ 'lev' /),  'A', 'm/s', 'Convective Organization - Perturbation of u  in the non-wake area' )
+   call addfld('ORGvoo', (/ 'lev' /),  'A', 'm/s', 'Convective Organization - Perturbation of v  in the non-wake area' )
 
    ! From the main unified convection scheme
 
-   call addfld( 'flxrain_SP' , 'kg/m/s2', pverp, 'A', 'Convective net rain flux', phys_decomp )
-   call addfld( 'flxsnow_SP' , 'kg/m/s2', pverp, 'A', 'Convective net snow flux', phys_decomp )
+   call addfld( 'flxrain_SP' , (/ 'ilev' /), 'A', 'kg/m/s2', 'Convective net rain flux' )
+   call addfld( 'flxsnow_SP' , (/ 'ilev' /), 'A', 'kg/m/s2', 'Convective net snow flux' )
 
-   call addfld('cmf_SP',   'kg/m2/s', pverp, 'A', 'Convective net mass flux', phys_decomp)
-   call addfld('qtflx_SP', 'kg/m2/s', pverp, 'A', 'Convective net qt flux', phys_decomp)
-   call addfld('slflx_SP', 'J/m2/s' , pverp, 'A', 'Convective net sl flux', phys_decomp)
-   call addfld('uflx_SP',  'kg/m/s2', pverp, 'A', 'Convective net u flux', phys_decomp)
-   call addfld('vflx_SP',  'kg/m/s2', pverp, 'A', 'Convective net v flux', phys_decomp)
+   call addfld('cmf_SP', (/ 'ilev' /), 'A',   'kg/m2/s', 'Convective net mass flux')
+   call addfld('qtflx_SP', (/ 'ilev' /), 'A', 'kg/m2/s', 'Convective net qt flux')
+   call addfld('slflx_SP', (/ 'ilev' /), 'A', 'J/m2/s' , 'Convective net sl flux')
+   call addfld('uflx_SP', (/ 'ilev' /), 'A',  'kg/m/s2', 'Convective net u flux')
+   call addfld('vflx_SP', (/ 'ilev' /), 'A',  'kg/m/s2', 'Convective net v flux')
 
-   call addfld('cmf_u_SP',   'kg/m2/s', pverp, 'A', 'Convective updraft mass flux', phys_decomp)
-   call addfld('qtflx_u_SP', 'kg/m2/s', pverp, 'A', 'Convective updraft qt flux', phys_decomp)
-   call addfld('slflx_u_SP', 'J/m2/s' , pverp, 'A', 'Convective updraft sl flux', phys_decomp)
-   call addfld('uflx_u_SP',  'kg/m/s2', pverp, 'A', 'Convective updraft u flux', phys_decomp)
-   call addfld('vflx_u_SP',  'kg/m/s2', pverp, 'A', 'Convective updraft v flux', phys_decomp)
+   call addfld('cmf_u_SP', (/ 'ilev' /), 'A',   'kg/m2/s', 'Convective updraft mass flux')
+   call addfld('qtflx_u_SP', (/ 'ilev' /), 'A', 'kg/m2/s', 'Convective updraft qt flux')
+   call addfld('slflx_u_SP', (/ 'ilev' /), 'A', 'J/m2/s' , 'Convective updraft sl flux')
+   call addfld('uflx_u_SP', (/ 'ilev' /), 'A',  'kg/m/s2', 'Convective updraft u flux')
+   call addfld('vflx_u_SP', (/ 'ilev' /), 'A',  'kg/m/s2', 'Convective updraft v flux')
 
-   call addfld('cmf_d_SP',   'kg/m2/s', pverp, 'A', 'Convective downdraft mass flux', phys_decomp)
-   call addfld('qtflx_d_SP', 'kg/m2/s', pverp, 'A', 'Convective downdraft qt flux', phys_decomp)
-   call addfld('slflx_d_SP', 'J/m2/s' , pverp, 'A', 'Convective downdraft sl flux', phys_decomp)
-   call addfld('uflx_d_SP',  'kg/m/s2', pverp, 'A', 'Convective downdraft u flux', phys_decomp)
-   call addfld('vflx_d_SP',  'kg/m/s2', pverp, 'A', 'Convective downdraft v flux', phys_decomp)
+   call addfld('cmf_d_SP', (/ 'ilev' /), 'A',   'kg/m2/s', 'Convective downdraft mass flux')
+   call addfld('qtflx_d_SP', (/ 'ilev' /), 'A', 'kg/m2/s', 'Convective downdraft qt flux')
+   call addfld('slflx_d_SP', (/ 'ilev' /), 'A', 'J/m2/s' , 'Convective downdraft sl flux')
+   call addfld('uflx_d_SP', (/ 'ilev' /), 'A',  'kg/m/s2', 'Convective downdraft u flux')
+   call addfld('vflx_d_SP', (/ 'ilev' /), 'A',  'kg/m/s2', 'Convective downdraft v flux')
 
-   call addfld('qtten_u_SP', 'kg/kg/s', pver, 'A', 'Convective tendency qt by updraft', phys_decomp)
-   call addfld('slten_u_SP', 'J/kg/s',  pver, 'A', 'Convective tendency sl by updraft', phys_decomp)
-   call addfld('uten_u_SP',  'm/s/s',   pver, 'A', 'Convective tendency u  by updraft', phys_decomp)
-   call addfld('vten_u_SP',  'm/s/s' ,  pver, 'A', 'Convective tendency v  by updraft', phys_decomp)
-   call addfld('sten_u_SP',  'J/kg/s',  pver, 'A', 'Convective tendency s  by updraft', phys_decomp)
-   call addfld('qvten_u_SP', 'kg/kg/s', pver, 'A', 'Convective tendency qv by updraft', phys_decomp)
-   call addfld('qlten_u_SP', 'kg/kg/s', pver, 'A', 'Convective tendency ql by updraft', phys_decomp)
-   call addfld('qiten_u_SP', 'kg/kg/s', pver, 'A', 'Convective tendency qi by updraft', phys_decomp)
-   call addfld('nlten_u_SP', '1/kg/s',  pver, 'A', 'Convective tendency nl by updraft', phys_decomp)
-   call addfld('niten_u_SP', '1/kg/s',  pver, 'A', 'Convective tendency ni by updraft', phys_decomp)
+   call addfld('qtten_u_SP', (/ 'lev' /), 'A', 'kg/kg/s', 'Convective tendency qt by updraft')
+   call addfld('slten_u_SP',  (/ 'lev' /), 'A', 'J/kg/s', 'Convective tendency sl by updraft')
+   call addfld('uten_u_SP',   (/ 'lev' /), 'A',  'm/s/s', 'Convective tendency u  by updraft')
+   call addfld('vten_u_SP',  (/ 'lev' /), 'A',  'm/s/s' , 'Convective tendency v  by updraft')
+   call addfld('sten_u_SP',  (/ 'lev' /), 'A',  'J/kg/s', 'Convective tendency s  by updraft')
+   call addfld('qvten_u_SP', (/ 'lev' /), 'A', 'kg/kg/s', 'Convective tendency qv by updraft')
+   call addfld('qlten_u_SP', (/ 'lev' /), 'A', 'kg/kg/s', 'Convective tendency ql by updraft')
+   call addfld('qiten_u_SP', (/ 'lev' /), 'A', 'kg/kg/s', 'Convective tendency qi by updraft')
+   call addfld('nlten_u_SP',  (/ 'lev' /), 'A', '1/kg/s', 'Convective tendency nl by updraft')
+   call addfld('niten_u_SP',  (/ 'lev' /), 'A', '1/kg/s', 'Convective tendency ni by updraft')
 
-   call addfld('qtten_d_SP',  'kg/kg/s', pver, 'A', 'Convective tendency qt by downdraft', phys_decomp)
-   call addfld('slten_d_SP',  'J/kg/s',  pver, 'A', 'Convective tendency sl by downdraft', phys_decomp)
-   call addfld('uten_d_SP',   'm/s/s',   pver, 'A', 'Convective tendency u  by downdraft', phys_decomp)
-   call addfld('vten_d_SP',   'm/s/s',   pver, 'A', 'Convective tendency v  by downdraft', phys_decomp)
-   call addfld('sten_d_SP',   'J/kg/s',  pver, 'A', 'Convective tendency s  by downdraft', phys_decomp)
-   call addfld('qvten_d_SP',  'kg/kg/s', pver, 'A', 'Convective tendency qv by downdraft', phys_decomp)
-   call addfld('qlten_d_SP',  'kg/kg/s', pver, 'A', 'Convective tendency ql by downdraft', phys_decomp)
-   call addfld('qiten_d_SP',  'kg/kg/s', pver, 'A', 'Convective tendency qi by downdraft', phys_decomp)
-   call addfld('nlten_d_SP',  '1/kg/s',  pver, 'A', 'Convective tendency nl by downdraft', phys_decomp)
-   call addfld('niten_d_SP',  '1/kg/s',  pver, 'A', 'Convective tendency ni by downdraft', phys_decomp)
+   call addfld('qtten_d_SP', (/ 'lev' /), 'A',  'kg/kg/s', 'Convective tendency qt by downdraft')
+   call addfld('slten_d_SP',  (/ 'lev' /), 'A',  'J/kg/s', 'Convective tendency sl by downdraft')
+   call addfld('uten_d_SP',   (/ 'lev' /), 'A',   'm/s/s', 'Convective tendency u  by downdraft')
+   call addfld('vten_d_SP',   (/ 'lev' /), 'A',   'm/s/s', 'Convective tendency v  by downdraft')
+   call addfld('sten_d_SP',  (/ 'lev' /), 'A',   'J/kg/s', 'Convective tendency s  by downdraft')
+   call addfld('qvten_d_SP', (/ 'lev' /), 'A',  'kg/kg/s', 'Convective tendency qv by downdraft')
+   call addfld('qlten_d_SP', (/ 'lev' /), 'A',  'kg/kg/s', 'Convective tendency ql by downdraft')
+   call addfld('qiten_d_SP', (/ 'lev' /), 'A',  'kg/kg/s', 'Convective tendency qi by downdraft')
+   call addfld('nlten_d_SP',  (/ 'lev' /), 'A',  '1/kg/s', 'Convective tendency nl by downdraft')
+   call addfld('niten_d_SP',  (/ 'lev' /), 'A',  '1/kg/s', 'Convective tendency ni by downdraft')
 
-   call addfld('qtten_evp_SP', 'kg/kg/s', pver, 'A', 'Convective tendency qt by evap of precip within environment', phys_decomp)
-   call addfld('slten_evp_SP', 'J/kg/s',  pver, 'A', 'Convective tendency sl by evap of precip within environment', phys_decomp)
-   call addfld('uten_evp_SP',  'm/s/s',   pver, 'A', 'Convective tendency u  by evap of precip within environment', phys_decomp)
-   call addfld('vten_evp_SP',  'm/s/s',   pver, 'A', 'Convective tendency v  by evap of precip within environment', phys_decomp)
-   call addfld('sten_evp_SP',  'J/kg/s',  pver, 'A', 'Convective tendency s  by evap of precip within environment', phys_decomp)
-   call addfld('qvten_evp_SP', 'kg/kg/s', pver, 'A', 'Convective tendency qv by evap of precip within environment', phys_decomp)
-   call addfld('qlten_evp_SP', 'kg/kg/s', pver, 'A', 'Convective tendency ql by evap of precip within environment', phys_decomp)
-   call addfld('qiten_evp_SP', 'kg/kg/s', pver, 'A', 'Convective tendency qi by evap of precip within environment', phys_decomp)
-   call addfld('nlten_evp_SP', '#/kg/s',  pver, 'A', 'Convective tendency nl by evap of precip within environment', phys_decomp)
-   call addfld('niten_evp_SP', '#/kg/s',  pver, 'A', 'Convective tendency ni by evap of precip within environment', phys_decomp)
+   call addfld('qtten_evp_SP', (/ 'lev' /), 'A', 'kg/kg/s', 'Convective tendency qt by evap of precip within environment')
+   call addfld('slten_evp_SP',  (/ 'lev' /), 'A', 'J/kg/s', 'Convective tendency sl by evap of precip within environment')
+   call addfld('uten_evp_SP',   (/ 'lev' /), 'A',  'm/s/s', 'Convective tendency u  by evap of precip within environment')
+   call addfld('vten_evp_SP',   (/ 'lev' /), 'A',  'm/s/s', 'Convective tendency v  by evap of precip within environment')
+   call addfld('sten_evp_SP',  (/ 'lev' /), 'A',  'J/kg/s', 'Convective tendency s  by evap of precip within environment')
+   call addfld('qvten_evp_SP', (/ 'lev' /), 'A', 'kg/kg/s', 'Convective tendency qv by evap of precip within environment')
+   call addfld('qlten_evp_SP', (/ 'lev' /), 'A', 'kg/kg/s', 'Convective tendency ql by evap of precip within environment')
+   call addfld('qiten_evp_SP', (/ 'lev' /), 'A', 'kg/kg/s', 'Convective tendency qi by evap of precip within environment')
+   call addfld('nlten_evp_SP',  (/ 'lev' /), 'A', '#/kg/s', 'Convective tendency nl by evap of precip within environment')
+   call addfld('niten_evp_SP',  (/ 'lev' /), 'A', '#/kg/s', 'Convective tendency ni by evap of precip within environment')
 
-   call addfld('qtten_dis_SP', 'kg/kg/s', pver, 'A', 'Convective tendency qt by dissipative heating', phys_decomp)
-   call addfld('slten_dis_SP', 'J/kg/s',  pver, 'A', 'Convective tendency sl by dissipative heating', phys_decomp)
-   call addfld('uten_dis_SP',  'm/s/s',   pver, 'A', 'Convective tendency u  by dissipative heating', phys_decomp)
-   call addfld('vten_dis_SP',  'm/s/s',   pver, 'A', 'Convective tendency v  by dissipative heating', phys_decomp)
-   call addfld('sten_dis_SP',  'J/kg/s',  pver, 'A', 'Convective tendency s  by dissipative heating', phys_decomp)
-   call addfld('qvten_dis_SP', 'kg/kg/s', pver, 'A', 'Convective tendency qv by dissipative heating', phys_decomp)
-   call addfld('qlten_dis_SP', 'kg/kg/s', pver, 'A', 'Convective tendency ql by dissipative heating', phys_decomp)
-   call addfld('qiten_dis_SP', 'kg/kg/s', pver, 'A', 'Convective tendency qi by dissipative heating', phys_decomp)
-   call addfld('nlten_dis_SP', '1/kg/s',  pver, 'A', 'Convective tendency nl by dissipative heating', phys_decomp)
-   call addfld('niten_dis_SP', '1/kg/s',  pver, 'A', 'Convective tendency ni by dissipative heating', phys_decomp)
+   call addfld('qtten_dis_SP', (/ 'lev' /), 'A', 'kg/kg/s', 'Convective tendency qt by dissipative heating')
+   call addfld('slten_dis_SP',  (/ 'lev' /), 'A', 'J/kg/s', 'Convective tendency sl by dissipative heating')
+   call addfld('uten_dis_SP',   (/ 'lev' /), 'A',  'm/s/s', 'Convective tendency u  by dissipative heating')
+   call addfld('vten_dis_SP',   (/ 'lev' /), 'A',  'm/s/s', 'Convective tendency v  by dissipative heating')
+   call addfld('sten_dis_SP',  (/ 'lev' /), 'A',  'J/kg/s', 'Convective tendency s  by dissipative heating')
+   call addfld('qvten_dis_SP', (/ 'lev' /), 'A', 'kg/kg/s', 'Convective tendency qv by dissipative heating')
+   call addfld('qlten_dis_SP', (/ 'lev' /), 'A', 'kg/kg/s', 'Convective tendency ql by dissipative heating')
+   call addfld('qiten_dis_SP', (/ 'lev' /), 'A', 'kg/kg/s', 'Convective tendency qi by dissipative heating')
+   call addfld('nlten_dis_SP',  (/ 'lev' /), 'A', '1/kg/s', 'Convective tendency nl by dissipative heating')
+   call addfld('niten_dis_SP',  (/ 'lev' /), 'A', '1/kg/s', 'Convective tendency ni by dissipative heating')
 
-   call addfld('qtten_pos_SP', 'kg/kg/s', pver, 'A', 'Convective tendency qt by positive tracer constraints', phys_decomp)
-   call addfld('slten_pos_SP', 'J/kg/s',  pver, 'A', 'Convective tendency sl by positive tracer constraints', phys_decomp)
-   call addfld('uten_pos_SP',  'm/s/s',   pver, 'A', 'Convective tendency u  by positive tracer constraints', phys_decomp)
-   call addfld('vten_pos_SP',  'm/s/s',   pver, 'A', 'Convective tendency v  by positive tracer constraints', phys_decomp)
-   call addfld('sten_pos_SP',  'J/kg/s',  pver, 'A', 'Convective tendency s  by positive tracer constraints', phys_decomp)
-   call addfld('qvten_pos_SP', 'kg/kg/s', pver, 'A', 'Convective tendency qv by positive tracer constraints', phys_decomp)
-   call addfld('qlten_pos_SP', 'kg/kg/s', pver, 'A', 'Convective tendency ql by positive tracer constraints', phys_decomp)
-   call addfld('qiten_pos_SP', 'kg/kg/s', pver, 'A', 'Convective tendency qi by positive tracer constraints', phys_decomp)
-   call addfld('nlten_pos_SP', '1/kg/s',  pver, 'A', 'Convective tendency nl by positive tracer constraints', phys_decomp)
-   call addfld('niten_pos_SP', '1/kg/s',  pver, 'A', 'Convective tendency ni by positive tracer constraints', phys_decomp)
+   call addfld('qtten_pos_SP', (/ 'lev' /), 'A', 'kg/kg/s', 'Convective tendency qt by positive tracer constraints')
+   call addfld('slten_pos_SP',  (/ 'lev' /), 'A', 'J/kg/s', 'Convective tendency sl by positive tracer constraints')
+   call addfld('uten_pos_SP',   (/ 'lev' /), 'A',  'm/s/s', 'Convective tendency u  by positive tracer constraints')
+   call addfld('vten_pos_SP',   (/ 'lev' /), 'A',  'm/s/s', 'Convective tendency v  by positive tracer constraints')
+   call addfld('sten_pos_SP',  (/ 'lev' /), 'A',  'J/kg/s', 'Convective tendency s  by positive tracer constraints')
+   call addfld('qvten_pos_SP', (/ 'lev' /), 'A', 'kg/kg/s', 'Convective tendency qv by positive tracer constraints')
+   call addfld('qlten_pos_SP', (/ 'lev' /), 'A', 'kg/kg/s', 'Convective tendency ql by positive tracer constraints')
+   call addfld('qiten_pos_SP', (/ 'lev' /), 'A', 'kg/kg/s', 'Convective tendency qi by positive tracer constraints')
+   call addfld('nlten_pos_SP',  (/ 'lev' /), 'A', '1/kg/s', 'Convective tendency nl by positive tracer constraints')
+   call addfld('niten_pos_SP',  (/ 'lev' /), 'A', '1/kg/s', 'Convective tendency ni by positive tracer constraints')
 
-   call addfld('qlten_sub_SP', 'kg/kg/s', pver, 'A', 'Convective tendency ql by compensating subsidence', phys_decomp)
-   call addfld('qiten_sub_SP', 'kg/kg/s', pver, 'A', 'Convective tendency qi by compensating subsidence', phys_decomp)
+   call addfld('qlten_sub_SP', (/ 'lev' /), 'A', 'kg/kg/s', 'Convective tendency ql by compensating subsidence')
+   call addfld('qiten_sub_SP', (/ 'lev' /), 'A', 'kg/kg/s', 'Convective tendency qi by compensating subsidence')
 
-   call addfld('qlten_det_SP', 'kg/kg/s', pver, 'A', 'Convective tendency ql by detrainment', phys_decomp)
-   call addfld('qiten_det_SP', 'kg/kg/s', pver, 'A', 'Convective tendency qi by detrainment', phys_decomp)
+   call addfld('qlten_det_SP', (/ 'lev' /), 'A', 'kg/kg/s', 'Convective tendency ql by detrainment')
+   call addfld('qiten_det_SP', (/ 'lev' /), 'A', 'kg/kg/s', 'Convective tendency qi by detrainment')
 
-   !f  call addfld('exit_Cu_SP', '1', 1, 'A', 'Exit identifier of UNICON', phys_decomp)
-   call addfld('cush_SP',    'm', 1, 'A', 'Cumulus top height from UNICON',              phys_decomp)
-   call addfld('cushavg_SP', 'm', 1, 'A', 'Mean cumulus top height from UNICON',         phys_decomp)
-   call addfld('cuorg_SP',   '1', 1, 'A', 'Cumulus organization parameter from UNICON',  phys_decomp)
-   call addfld('Radius_SP',  'm', 1, 'A', 'Cumulus plume radius at surface from UNICON', phys_decomp)
-   !d  call addfld('orgforce_SP', 'kg/m/s^2', 1, 'A', 'Various organization forcing of UNICON',                  phys_decomp)
-   !d  call addfld('tau_org_SP',  's',        1, 'A', 'Damping time scale of convective organization of UNICON', phys_decomp)
-   !d  call addfld('tau_TKE_SP',  's',        1, 'A', 'Damping time scale of meso-scale TKE of UNICON',          phys_decomp)
-   call addfld('sgh_SP',   'm', 1, 'A', 'Standard deviation of subgrid topography',           phys_decomp)
-   call addfld('sgh30_SP', 'm', 1, 'A', 'Standard deviation of subgrid topography at 30 sec', phys_decomp)
+   !f  call addfld('exit_Cu_SP', '1', 1, 'A', 'Exit identifier of UNICON')
+   call addfld('cush_SP', horiz_only, 'A',    'm', 'Cumulus top height from UNICON')
+   call addfld('cushavg_SP', horiz_only, 'A', 'm', 'Mean cumulus top height from UNICON')
+   call addfld('cuorg_SP', horiz_only, 'A',   '1', 'Cumulus organization parameter from UNICON')
+   call addfld('Radius_SP', horiz_only, 'A',  'm', 'Cumulus plume radius at surface from UNICON')
+   !d  call addfld('orgforce_SP', 'kg/m/s^2', 1, 'A', 'Various organization forcing of UNICON')
+   !d  call addfld('tau_org_SP',  's',        1, 'A', 'Damping time scale of convective organization of UNICON')
+   !d  call addfld('tau_TKE_SP',  's',        1, 'A', 'Damping time scale of meso-scale TKE of UNICON')
+   call addfld('sgh_SP', horiz_only, 'A',   'm', 'Standard deviation of subgrid topography')
+   call addfld('sgh30_SP', horiz_only, 'A', 'm', 'Standard deviation of subgrid topography at 30 sec')
 
-   call addfld('CMFR_DET', 'kg/m2/s', pver, 'A', 'Detrained convective mass flux', phys_decomp)
-   call addfld('QLR_DET',  'kg/kg',   pver, 'A', 'Detrained convective LWC', phys_decomp)
-   call addfld('QIR_DET',  'kg/kg',   pver, 'A', 'Detrained convective IWC', phys_decomp)
+   call addfld('CMFR_DET', (/ 'lev' /), 'A', 'kg/m2/s', 'Detrained convective mass flux')
+   call addfld('QLR_DET',   (/ 'lev' /), 'A',  'kg/kg', 'Detrained convective LWC')
+   call addfld('QIR_DET',   (/ 'lev' /), 'A',  'kg/kg', 'Detrained convective IWC')
 
-   call addfld('kw_SP', 'no', 1, 'A', 'Internally computed kw from SPARKCONV', phys_decomp )
+   call addfld('kw_SP', horiz_only, 'A', 'no', 'Internally computed kw from SPARKCONV' )
 
-   call addfld('sigma_w_SP',   'm/s',  1, 'A', 'Standard deviation of updraft w at surface from UNICON',   phys_decomp)
-   call addfld('sigma_thl_SP', 'K',    1, 'A', 'Standard deviation of updraft thl at surface from UNICON', phys_decomp)
-   call addfld('sigma_qt_SP',  'g/kg', 1, 'A', 'Standard deviation of updraft qt at surface from UNICON',  phys_decomp)
-   call addfld('sigma_u_SP',   'm/s',  1, 'A', 'Standard deviation of updraft u at surface from UNICON',   phys_decomp)
-   call addfld('sigma_v_SP',   'm/s',  1, 'A', 'Standard deviation of updraft v at surface from UNICON',   phys_decomp)
+   call addfld('sigma_w_SP',  horiz_only, 'A',   'm/s', 'Standard deviation of updraft w at surface from UNICON')
+   call addfld('sigma_thl_SP',    horiz_only, 'A', 'K', 'Standard deviation of updraft thl at surface from UNICON')
+   call addfld('sigma_qt_SP', horiz_only, 'A',  'g/kg', 'Standard deviation of updraft qt at surface from UNICON')
+   call addfld('sigma_u_SP',  horiz_only, 'A',   'm/s', 'Standard deviation of updraft u at surface from UNICON')
+   call addfld('sigma_v_SP',  horiz_only, 'A',   'm/s', 'Standard deviation of updraft v at surface from UNICON')
 
-   call addfld('w_org_SP',   'm2/s2', 1, 'A', 'Organization-generated additional w at surface from UNICON',   phys_decomp)
-   call addfld('thl_org_SP', 'K',     1, 'A', 'Organization-generated additional thl at surface from UNICON', phys_decomp)
-   call addfld('qt_org_SP',  'g/kg',  1, 'A', 'Organization-generated additional qt at surface from UNICON',  phys_decomp)
-   call addfld('u_org_SP',   'm/s',   1, 'A', 'Organization-generated additional u at surface from UNICON',   phys_decomp)
-   call addfld('v_org_SP',   'm/s',   1, 'A', 'Organization-generated additional v at surface from UNICON',   phys_decomp)
+   call addfld('w_org_SP', horiz_only, 'A',   'm2/s2', 'Organization-generated additional w at surface from UNICON')
+   call addfld('thl_org_SP',     horiz_only, 'A', 'K', 'Organization-generated additional thl at surface from UNICON')
+   call addfld('qt_org_SP',  horiz_only, 'A',  'g/kg', 'Organization-generated additional qt at surface from UNICON')
+   call addfld('u_org_SP',   horiz_only, 'A',   'm/s', 'Organization-generated additional u at surface from UNICON')
+   call addfld('v_org_SP',   horiz_only, 'A',   'm/s', 'Organization-generated additional v at surface from UNICON')
 
-   call addfld('tkes_SP',     'm2/s2', 1, 'A', 'TKE at surface within UNICON',                                  phys_decomp)
-   call addfld('went_SP',     'm/s',   1, 'A', 'Entrainment rate at the PBL top interface from UW PBL',         phys_decomp)
-   call addfld('went_eff_SP', 'm/s',   1, 'A', 'Effective entrainment rate at the PBL top interface in UNICON', phys_decomp)
+   call addfld('tkes_SP', horiz_only, 'A',     'm2/s2', 'TKE at surface within UNICON')
+   call addfld('went_SP',   horiz_only, 'A',     'm/s', 'Entrainment rate at the PBL top interface from UW PBL')
+   call addfld('went_eff_SP',   horiz_only, 'A', 'm/s', 'Effective entrainment rate at the PBL top interface in UNICON')
 
-   call addfld('am_u_SP', '1', pver, 'A', 'Convective updraft fractional area at mid-layer',   phys_decomp)
-   call addfld('am_d_SP', '1', pver, 'A', 'Convective downdraft fractional area at mid-layer', phys_decomp)
+   call addfld('am_u_SP', (/ 'lev' /), 'A', '1', 'Convective updraft fractional area at mid-layer')
+   call addfld('am_d_SP', (/ 'lev' /), 'A', '1', 'Convective downdraft fractional area at mid-layer')
 
-   call addfld('qlm_u_SP', 'kg/kg', pver, 'A', 'Area-weighted in-cumulus LWC condensate of updraft at mid-layer',   phys_decomp)
-   call addfld('qlm_d_SP', 'kg/kg', pver, 'A', 'Area-weighted in-cumulus IWC condensate of downdraft at mid-layer', phys_decomp)
+   call addfld('qlm_u_SP', (/ 'lev' /), 'A', 'kg/kg', 'Area-weighted in-cumulus LWC condensate of updraft at mid-layer')
+   call addfld('qlm_d_SP', (/ 'lev' /), 'A', 'kg/kg', 'Area-weighted in-cumulus IWC condensate of downdraft at mid-layer')
 
-   call addfld('qim_u_SP', 'kg/kg', pver, 'A', 'Area-weighted in-cumulus LWC condensate of updraft at mid-layer',   phys_decomp)
-   call addfld('qim_d_SP', 'kg/kg', pver, 'A', 'Area-weighted in-cumulus IWC condensate of downdraft at mid-layer', phys_decomp)
+   call addfld('qim_u_SP', (/ 'lev' /), 'A', 'kg/kg', 'Area-weighted in-cumulus LWC condensate of updraft at mid-layer')
+   call addfld('qim_d_SP', (/ 'lev' /), 'A', 'kg/kg', 'Area-weighted in-cumulus IWC condensate of downdraft at mid-layer')
 
-   call addfld('thl_u_SP',  'K',     pverp, 'A', 'Mass-flux weighted updraft mean thl',                phys_decomp)
-   call addfld('qt_u_SP',   'kg/kg', pverp, 'A', 'Mass-flux weighted updraft mean qt',                 phys_decomp)
-   call addfld('u_u_SP',    'm/s',   pverp, 'A', 'Mass-flux weighted updraft mean u',                  phys_decomp)
-   call addfld('v_u_SP',    'm/s',   pverp, 'A', 'Mass-flux weighted updraft mean v',                  phys_decomp)
-   call addfld('w_u_SP',    'm/s',   pverp, 'A', 'Mass-flux weighted updraft mean w',                  phys_decomp)
-   call addfld('ql_u_SP',   'kg/kg', pverp, 'A', 'Mass-flux weighted updraft mean ql',                 phys_decomp)
-   call addfld('qi_u_SP',   'kg/kg', pverp, 'A', 'Mass-flux weighted updraft mean qi',                 phys_decomp)
-   call addfld('wa_u_SP',   'm/s',   pverp, 'A', 'Area weighted updraft mean w',                       phys_decomp)
-   call addfld('qla_u_SP',  'kg/kg', pverp, 'A', 'Area weighted updraft mean ql',                      phys_decomp)
-   call addfld('qia_u_SP',  'kg/kg', pverp, 'A', 'Area weighted updraft mean qi',                      phys_decomp)
-   call addfld('a_u_SP',    '1',     pverp, 'A', 'Convective updraft fractional area',                 phys_decomp)
-   call addfld('rad_u_SP',  'm',     pverp, 'A', 'Number-weighted effective radius of updraft plumes', phys_decomp)
-   call addfld('num_u_SP',  '1/m^2', pverp, 'A', 'Number concentration of updraft plumes',             phys_decomp)
-   call addfld('gamw_u_SP', 'ratio', pverp, 'A', 'The ratio of w_u to wa_u',                           phys_decomp)
-   call addfld('nl_u_SP',   '1/kg',  pverp, 'A', 'Mass-flux weighted updraft mean nl',                 phys_decomp)
-   call addfld('ni_u_SP',   '1/kg',  pverp, 'A', 'Mass-flux weighted updraft mean ni',                 phys_decomp)
-   call addfld('thva_u_SP', 'K',     pverp, 'A', 'Area weighted updraft mean thv',                     phys_decomp)
+   call addfld('thl_u_SP',     (/ 'ilev' /), 'A',  'K', 'Mass-flux weighted updraft mean thl')
+   call addfld('qt_u_SP', (/ 'ilev' /), 'A',   'kg/kg', 'Mass-flux weighted updraft mean qt')
+   call addfld('u_u_SP',   (/ 'ilev' /), 'A',    'm/s', 'Mass-flux weighted updraft mean u')
+   call addfld('v_u_SP',   (/ 'ilev' /), 'A',    'm/s', 'Mass-flux weighted updraft mean v')
+   call addfld('w_u_SP',   (/ 'ilev' /), 'A',    'm/s', 'Mass-flux weighted updraft mean w')
+   call addfld('ql_u_SP', (/ 'ilev' /), 'A',   'kg/kg', 'Mass-flux weighted updraft mean ql')
+   call addfld('qi_u_SP', (/ 'ilev' /), 'A',   'kg/kg', 'Mass-flux weighted updraft mean qi')
+   call addfld('wa_u_SP',   (/ 'ilev' /), 'A',   'm/s', 'Area weighted updraft mean w')
+   call addfld('qla_u_SP', (/ 'ilev' /), 'A',  'kg/kg', 'Area weighted updraft mean ql')
+   call addfld('qia_u_SP', (/ 'ilev' /), 'A',  'kg/kg', 'Area weighted updraft mean qi')
+   call addfld('a_u_SP',     (/ 'ilev' /), 'A',    '1', 'Convective updraft fractional area')
+   call addfld('rad_u_SP',     (/ 'ilev' /), 'A',  'm', 'Number-weighted effective radius of updraft plumes')
+   call addfld('num_u_SP', (/ 'ilev' /), 'A',  '1/m^2', 'Number concentration of updraft plumes')
+   call addfld('gamw_u_SP', (/ 'ilev' /), 'A', 'ratio', 'The ratio of w_u to wa_u')
+   call addfld('nl_u_SP',  (/ 'ilev' /), 'A',   '1/kg', 'Mass-flux weighted updraft mean nl')
+   call addfld('ni_u_SP',  (/ 'ilev' /), 'A',   '1/kg', 'Mass-flux weighted updraft mean ni')
+   call addfld('thva_u_SP',     (/ 'ilev' /), 'A', 'K', 'Area weighted updraft mean thv')
 
-   call addfld('thl_d_SP', 'K',     pverp, 'A', 'Mass-flux weighted downdraft mean thl', phys_decomp)
-   call addfld('qt_d_SP',  'kg/kg', pverp, 'A', 'Mass-flux weighted downdraft mean qt',  phys_decomp)
-   call addfld('u_d_SP',   'm/s',   pverp, 'A', 'Mass-flux weighted downdraft mean u',   phys_decomp)
-   call addfld('v_d_SP',   'm/s',   pverp, 'A', 'Mass-flux weighted downdraft mean v',   phys_decomp)
-   call addfld('w_d_SP',   'm/s',   pverp, 'A', 'Mass-flux weighted downdraft mean w',   phys_decomp)
-   call addfld('ql_d_SP',  'kg/kg', pverp, 'A', 'Mass-flux weighted downdraft mean ql',  phys_decomp)
-   call addfld('qi_d_SP',  'kg/kg', pverp, 'A', 'Mass-flux weighted downdraft mean qi',  phys_decomp)
-   call addfld('wa_d_SP' , 'm/s',   pverp, 'A', 'Area weighted downdraft mean w',        phys_decomp)
-   call addfld('qla_d_SP', 'kg/kg', pverp, 'A', 'Area weighted downdraft mean ql',       phys_decomp)
-   call addfld('qia_d_SP', 'kg/kg', pverp, 'A', 'Area weighted downdraft mean qi',       phys_decomp)
-   call addfld('a_d_SP',   '1',     pverp, 'A', 'Convective downdraft fractional area',  phys_decomp)
-   call addfld('nl_d_SP',  '1/kg',  pverp, 'A', 'Mass-flux weighted downdraft mean nl',  phys_decomp)
-   call addfld('ni_d_SP',  '1/kg',  pverp, 'A', 'Mass-flux weighted downdraft mean ni',  phys_decomp)
+   call addfld('thl_d_SP',     (/ 'ilev' /), 'A', 'K', 'Mass-flux weighted downdraft mean thl')
+   call addfld('qt_d_SP', (/ 'ilev' /), 'A',  'kg/kg', 'Mass-flux weighted downdraft mean qt')
+   call addfld('u_d_SP',   (/ 'ilev' /), 'A',   'm/s', 'Mass-flux weighted downdraft mean u')
+   call addfld('v_d_SP',   (/ 'ilev' /), 'A',   'm/s', 'Mass-flux weighted downdraft mean v')
+   call addfld('w_d_SP',   (/ 'ilev' /), 'A',   'm/s', 'Mass-flux weighted downdraft mean w')
+   call addfld('ql_d_SP', (/ 'ilev' /), 'A',  'kg/kg', 'Mass-flux weighted downdraft mean ql')
+   call addfld('qi_d_SP', (/ 'ilev' /), 'A',  'kg/kg', 'Mass-flux weighted downdraft mean qi')
+   call addfld('wa_d_SP' ,   (/ 'ilev' /), 'A', 'm/s', 'Area weighted downdraft mean w')
+   call addfld('qla_d_SP', (/ 'ilev' /), 'A', 'kg/kg', 'Area weighted downdraft mean ql')
+   call addfld('qia_d_SP', (/ 'ilev' /), 'A', 'kg/kg', 'Area weighted downdraft mean qi')
+   call addfld('a_d_SP',     (/ 'ilev' /), 'A',   '1', 'Convective downdraft fractional area')
+   call addfld('nl_d_SP',  (/ 'ilev' /), 'A',  '1/kg', 'Mass-flux weighted downdraft mean nl')
+   call addfld('ni_d_SP',  (/ 'ilev' /), 'A',  '1/kg', 'Mass-flux weighted downdraft mean ni')
 
-   call addfld('thv_b_SP',   'K', pverp, 'A', 'thv_b : Environmental buoyancy at the base interface',                phys_decomp)
-   call addfld('thv_t_SP',   'K', pverp, 'A', 'thv_t : Environmental buoyancy at the top interface',                 phys_decomp)
-   call addfld('thv_mt_SP',  'K', pverp, 'A', 'thv_mt : Environmental buoyancy at the top interface of lower layer', phys_decomp)
-   call addfld('thv_min_SP', 'K', pverp, 'A', 'thv_min : Minimum environmental buoyancy for downdraft sorting',      phys_decomp)
+   call addfld('thv_b_SP', (/ 'ilev' /), 'A',   'K', 'thv_b : Environmental buoyancy at the base interface')
+   call addfld('thv_t_SP', (/ 'ilev' /), 'A',   'K', 'thv_t : Environmental buoyancy at the top interface')
+   call addfld('thv_mt_SP', (/ 'ilev' /), 'A',  'K', 'thv_mt : Environmental buoyancy at the top interface of lower layer')
+   call addfld('thv_min_SP', (/ 'ilev' /), 'A', 'K', 'thv_min : Minimum environmental buoyancy for downdraft sorting')
 
-   !a  call addfld('CFL_SP', '1', pver, 'A', 'Numerical stability parameter of UNICON', phys_decomp)
+   !a  call addfld('CFL_SP', '1', pver, 'A', 'Numerical stability parameter of UNICON')
 
-   call addfld('cu_cmfr_SP', 'kg/m2/s', pver, 'A', 'Mass flux of mixing environmental airs', phys_decomp)
-   call addfld('cu_thlr_SP', 'K',       pver, 'A', 'thl       of mixing environmental airs', phys_decomp)
-   call addfld('cu_qtr_SP',  'kg/kg',   pver, 'A', 'qt        of mixing environmental airs', phys_decomp)
-   call addfld('cu_qlr_SP',  'kg/kg',   pver, 'A', 'ql        of mixing environmental airs', phys_decomp)
-   call addfld('cu_qir_SP',  'kg/kg',   pver, 'A', 'qi        of mixing environmental airs', phys_decomp)
-   call addfld('cu_ur_SP',   'm/s',     pver, 'A', 'u         of mixing environmental airs', phys_decomp)
-   call addfld('cu_vr_SP',   'm/s',     pver, 'A', 'v         of mixing environmental airs', phys_decomp)
-   call addfld('cu_thvr_SP', 'K',       pver, 'A', 'thv       of mixing environmental airs', phys_decomp)
-   call addfld('cu_rhr_SP',  '1',       pver, 'A', 'rh        of mixing environmental airs', phys_decomp)
-   call addfld('cu_nlr_SP',  '1/kg',    pver, 'A', 'nl        of mixing environmental airs', phys_decomp)
-   call addfld('cu_nir_SP',  '1/kg',    pver, 'A', 'ni        of mixing environmental airs', phys_decomp)
+   call addfld('cu_cmfr_SP', (/ 'lev' /), 'A', 'kg/m2/s', 'Mass flux of mixing environmental airs')
+   call addfld('cu_thlr_SP',       (/ 'lev' /), 'A', 'K', 'thl       of mixing environmental airs')
+   call addfld('cu_qtr_SP',   (/ 'lev' /), 'A',  'kg/kg', 'qt        of mixing environmental airs')
+   call addfld('cu_qlr_SP',   (/ 'lev' /), 'A',  'kg/kg', 'ql        of mixing environmental airs')
+   call addfld('cu_qir_SP',   (/ 'lev' /), 'A',  'kg/kg', 'qi        of mixing environmental airs')
+   call addfld('cu_ur_SP',     (/ 'lev' /), 'A',   'm/s', 'u         of mixing environmental airs')
+   call addfld('cu_vr_SP',     (/ 'lev' /), 'A',   'm/s', 'v         of mixing environmental airs')
+   call addfld('cu_thvr_SP',       (/ 'lev' /), 'A', 'K', 'thv       of mixing environmental airs')
+   call addfld('cu_rhr_SP',       (/ 'lev' /), 'A',  '1', 'rh        of mixing environmental airs')
+   call addfld('cu_nlr_SP',    (/ 'lev' /), 'A',  '1/kg', 'nl        of mixing environmental airs')
+   call addfld('cu_nir_SP',    (/ 'lev' /), 'A',  '1/kg', 'ni        of mixing environmental airs')
 
-   call addfld( 'a_p_SP'    , 'fraction', pverp, 'A', 'Convective precipitation area' &
-   , phys_decomp )
-   call addfld( 'am_evp_SP' , 'fraction', pver,  'A', 'Convective evaporation area'   &
-   , phys_decomp )
-   call addfld( 'am_pu_SP'  , 'fraction', pver,  'A', 'Overlapping area between conv precipitation and sat updraft area'    &
-   , phys_decomp )
-   call addfld( 'x_um_SP'   , 'm',        pver,  'A', 'Zonal displacement of the updraft area from the surface'             &
-   , phys_decomp )
-   call addfld( 'y_um_SP'   , 'm',        pver,  'A', 'Meridional displacement of the updraft area from the surface'        &
-   , phys_decomp )
-   call addfld( 'x_p_SP'    , 'm',        pverp, 'A', 'Zonal displacement of the precipitation area from the surface'       &
-   , phys_decomp )
-   call addfld( 'y_p_SP'    , 'm',        pverp, 'A', 'Meridional displacement of the precipitation area from the surface'  &
-   , phys_decomp )
+   call addfld( 'a_p_SP'    , (/ 'ilev' /), 'A', 'fraction', 'Convective precipitation area' &
+    )
+   call addfld( 'am_evp_SP' , (/ 'lev' /),  'A', 'fraction', 'Convective evaporation area'   &
+    )
+   call addfld( 'am_pu_SP'  , (/ 'lev' /),  'A', 'fraction', 'Overlapping area between conv precipitation and sat updraft area'    &
+    )
+   call addfld( 'x_um_SP'   ,        (/ 'lev' /),  'A', 'm', 'Zonal displacement of the updraft area from the surface'             &
+    )
+   call addfld( 'y_um_SP'   ,        (/ 'lev' /),  'A', 'm', 'Meridional displacement of the updraft area from the surface'        &
+    )
+   call addfld( 'x_p_SP'    ,        (/ 'ilev' /), 'A', 'm', 'Zonal displacement of the precipitation area from the surface'       &
+    )
+   call addfld( 'y_p_SP'    ,        (/ 'ilev' /), 'A', 'm', 'Meridional displacement of the precipitation area from the surface'  &
+    )
 
    do l = 1, pcnst
 
@@ -647,23 +647,23 @@ subroutine unicon_cam_init(pbuf2d)
 
          varname = trim(cnst_name(l))//'_u_SP'
          surname = trim(cnst_name(l))//' tendency by convective updraft from UNICON'
-         call addfld(trim(varname), units, pver, 'A', trim(surname), phys_decomp)
+         call addfld(trim(varname), (/ 'lev' /), 'A', units, trim(surname))
 
          varname = trim(cnst_name(l))//'_d_SP'
          surname = trim(cnst_name(l))//' tendency by convective downdraft from UNICON'
-         call addfld(trim(varname), units, pver, 'A', trim(surname), phys_decomp)
+         call addfld(trim(varname), (/ 'lev' /), 'A', units, trim(surname))
 
          varname = trim(cnst_name(l))//'_evp_SP'
          surname = trim(cnst_name(l))//' tendency by evap. of precip in env. from UNICON'
-         call addfld(trim(varname), units, pver, 'A', trim(surname), phys_decomp)
+         call addfld(trim(varname), (/ 'lev' /), 'A', units, trim(surname))
 
          varname = trim(cnst_name(l))//'_dis_SP'
          surname = trim(cnst_name(l))//' tendency by dissipative heating from UNICON'
-         call addfld(trim(varname), units, pver, 'A', trim(surname), phys_decomp)
+         call addfld(trim(varname), (/ 'lev' /), 'A', units, trim(surname))
 
          varname = trim(cnst_name(l))//'_pos_SP'
          surname = trim(cnst_name(l))//' tendency by positive moisture from UNICON'
-         call addfld(trim(varname), units, pver, 'A', trim(surname), phys_decomp)
+         call addfld(trim(varname), (/ 'lev' /), 'A', units, trim(surname))
 
       end if
    end do
@@ -676,134 +676,134 @@ subroutine unicon_cam_init(pbuf2d)
 
       ! The properties of individual updraft segment       
 
-      call addfld('thl_u'//numcha//'_SP', 'K',        pverp, 'A', numcha//' updraft segment : updraft thl'            , phys_decomp)
-      call addfld('qt_u'//numcha//'_SP',  'kg/kg',    pverp, 'A', numcha//' updraft segment : updraft qt'             , phys_decomp)
-      call addfld('u_u'//numcha//'_SP',   'm/s',      pverp, 'A', numcha//' updraft segment : updraft u'              , phys_decomp)
-      call addfld('v_u'//numcha//'_SP',   'm/s',      pverp, 'A', numcha//' updraft segment : updraft v'              , phys_decomp)
-      call addfld('w_u'//numcha//'_SP',   'm/s',      pverp, 'A', numcha//' updraft segment : updraft w'              , phys_decomp)
-      call addfld('ql_u'//numcha//'_SP',  'kg/kg',    pverp, 'A', numcha//' updraft segment : updraft ql'             , phys_decomp)
-      call addfld('qi_u'//numcha//'_SP',  'kg/kg',    pverp, 'A', numcha//' updraft segment : updraft qi'             , phys_decomp)
-      call addfld('cmf_u'//numcha//'_SP', 'kg/s/m^2', pverp, 'A', numcha//' updraft segment : updraft cmf'            , phys_decomp)
-      call addfld('a_u'//numcha//'_SP',   '1',        pverp, 'A', numcha//' updraft segment : updraft fractional area', phys_decomp)
-      call addfld('num_u'//numcha//'_SP', '1/m^2',    pverp, 'A', numcha//' updraft segment : updraft number density' , phys_decomp)
-      call addfld('rad_u'//numcha//'_SP', 'm',        pverp, 'A', numcha//' updraft segment : updraft plume radius'   , phys_decomp)
-      call addfld('nl_u'//numcha//'_SP',  '1/kg',     pverp, 'A', numcha//' updraft segment : updraft nl'             , phys_decomp)
-      call addfld('ni_u'//numcha//'_SP',  '1/kg',     pverp, 'A', numcha//' updraft segment : updraft ni'             , phys_decomp)
+      call addfld('thl_u'//numcha//'_SP',        (/ 'ilev' /), 'A', 'K', numcha//' updraft segment : updraft thl'            )
+      call addfld('qt_u'//numcha//'_SP',    (/ 'ilev' /), 'A',  'kg/kg', numcha//' updraft segment : updraft qt'             )
+      call addfld('u_u'//numcha//'_SP',      (/ 'ilev' /), 'A',   'm/s', numcha//' updraft segment : updraft u'              )
+      call addfld('v_u'//numcha//'_SP',      (/ 'ilev' /), 'A',   'm/s', numcha//' updraft segment : updraft v'              )
+      call addfld('w_u'//numcha//'_SP',      (/ 'ilev' /), 'A',   'm/s', numcha//' updraft segment : updraft w'              )
+      call addfld('ql_u'//numcha//'_SP',    (/ 'ilev' /), 'A',  'kg/kg', numcha//' updraft segment : updraft ql'             )
+      call addfld('qi_u'//numcha//'_SP',    (/ 'ilev' /), 'A',  'kg/kg', numcha//' updraft segment : updraft qi'             )
+      call addfld('cmf_u'//numcha//'_SP', (/ 'ilev' /), 'A', 'kg/s/m^2', numcha//' updraft segment : updraft cmf'            )
+      call addfld('a_u'//numcha//'_SP',        (/ 'ilev' /), 'A',   '1', numcha//' updraft segment : updraft fractional area')
+      call addfld('num_u'//numcha//'_SP',    (/ 'ilev' /), 'A', '1/m^2', numcha//' updraft segment : updraft number density' )
+      call addfld('rad_u'//numcha//'_SP',        (/ 'ilev' /), 'A', 'm', numcha//' updraft segment : updraft plume radius'   )
+      call addfld('nl_u'//numcha//'_SP',     (/ 'ilev' /), 'A',  '1/kg', numcha//' updraft segment : updraft nl'             )
+      call addfld('ni_u'//numcha//'_SP',     (/ 'ilev' /), 'A',  '1/kg', numcha//' updraft segment : updraft ni'             )
 
-      call addfld('eps0_u'//numcha//'_SP',     '1/Pa',     pverp, 'A', numcha//' updraft segment : updraft eps0'    , phys_decomp)
-      call addfld('eps_u'//numcha//'_SP' ,     '1/Pa',     pverp, 'A', numcha//' updraft segment : updraft eps'     , phys_decomp)
-      call addfld('del_u'//numcha//'_SP' ,     '1/Pa',     pverp, 'A', numcha//' updraft segment : updraft del'     , phys_decomp)
-      call addfld('eeps_u'//numcha//'_SP',     '1',        pverp, 'A', numcha//' updraft segment : updraft eeps'    , phys_decomp)
-      call addfld('ddel_u'//numcha//'_SP',     '1',        pverp, 'A', numcha//' updraft segment : updraft ddel'    , phys_decomp)
-      call addfld('xc_u'//numcha//'_SP',       '1',        pverp, 'A', numcha//' updraft segment : updraft xc'      , phys_decomp)
-      call addfld('xs_u'//numcha//'_SP',       '1',        pverp, 'A', numcha//' updraft segment : updraft xs'      , phys_decomp)
-      call addfld('xemin_u'//numcha//'_SP',    '1',        pverp, 'A', numcha//' updraft segment : updraft xemin'   , phys_decomp)
-      call addfld('xemax_u'//numcha//'_SP',    '1',        pverp, 'A', numcha//' updraft segment : updraft xemax'   , phys_decomp)
-      call addfld('cridis_u'//numcha//'_SP',   'm',        pverp, 'A', numcha//' updraft segment : updraft cridis'  , phys_decomp)
-      call addfld('thvcuenv_u'//numcha//'_SP', 'K',        pverp, 'A', numcha//' updraft segment : updraft thvcuenv', phys_decomp)
-      call addfld('thvegenv_u'//numcha//'_SP', 'K',        pverp, 'A', numcha//' updraft segment : updraft thvegenv', phys_decomp)
-      call addfld('thvxsenv_u'//numcha//'_SP', 'K',        pverp, 'A', numcha//' updraft segment : updraft thvxsenv', phys_decomp)
-      call addfld('fmix_u'//numcha//'_SP',     '1',        pverp, 'A', numcha//' updraft segment : updraft fmix'    , phys_decomp)
-      call addfld('cmfumix_u'//numcha//'_SP',  'kg/s/m^2', pverp, 'A', numcha//' updraft segment : updraft cmfumix' , phys_decomp)
+      call addfld('eps0_u'//numcha//'_SP',     (/ 'ilev' /), 'A',     '1/Pa', numcha//' updraft segment : updraft eps0'    )
+      call addfld('eps_u'//numcha//'_SP' ,     (/ 'ilev' /), 'A',     '1/Pa', numcha//' updraft segment : updraft eps'     )
+      call addfld('del_u'//numcha//'_SP' ,     (/ 'ilev' /), 'A',     '1/Pa', numcha//' updraft segment : updraft del'     )
+      call addfld('eeps_u'//numcha//'_SP',        (/ 'ilev' /), 'A',     '1', numcha//' updraft segment : updraft eeps'    )
+      call addfld('ddel_u'//numcha//'_SP',        (/ 'ilev' /), 'A',     '1', numcha//' updraft segment : updraft ddel'    )
+      call addfld('xc_u'//numcha//'_SP',        (/ 'ilev' /), 'A',       '1', numcha//' updraft segment : updraft xc'      )
+      call addfld('xs_u'//numcha//'_SP',        (/ 'ilev' /), 'A',       '1', numcha//' updraft segment : updraft xs'      )
+      call addfld('xemin_u'//numcha//'_SP',        (/ 'ilev' /), 'A',    '1', numcha//' updraft segment : updraft xemin'   )
+      call addfld('xemax_u'//numcha//'_SP',        (/ 'ilev' /), 'A',    '1', numcha//' updraft segment : updraft xemax'   )
+      call addfld('cridis_u'//numcha//'_SP',        (/ 'ilev' /), 'A',   'm', numcha//' updraft segment : updraft cridis'  )
+      call addfld('thvcuenv_u'//numcha//'_SP',        (/ 'ilev' /), 'A', 'K', numcha//' updraft segment : updraft thvcuenv')
+      call addfld('thvegenv_u'//numcha//'_SP',        (/ 'ilev' /), 'A', 'K', numcha//' updraft segment : updraft thvegenv')
+      call addfld('thvxsenv_u'//numcha//'_SP',        (/ 'ilev' /), 'A', 'K', numcha//' updraft segment : updraft thvxsenv')
+      call addfld('fmix_u'//numcha//'_SP',        (/ 'ilev' /), 'A',     '1', numcha//' updraft segment : updraft fmix'    )
+      call addfld('cmfumix_u'//numcha//'_SP', (/ 'ilev' /), 'A',  'kg/s/m^2', numcha//' updraft segment : updraft cmfumix' )
 
-      ! call addfld('ktop'//numcha//'_SP', '1', 1, 'A', numcha//' updraft segment : top layer index', phys_decomp)
-      call addfld('ptop'//numcha//'_SP', 'Pa', 1, 'A', numcha//' updraft segment : updraft top pressure', phys_decomp)
-      call addfld('ztop'//numcha//'_SP', 'm',  1, 'A', numcha//' updraft segment : updraft top height',   phys_decomp)
+      ! call addfld('ktop'//numcha//'_SP', '1', 1, 'A', numcha//' updraft segment : top layer index')
+      call addfld('ptop'//numcha//'_SP', horiz_only, 'A', 'Pa', numcha//' updraft segment : updraft top pressure')
+      call addfld('ztop'//numcha//'_SP',  horiz_only, 'A', 'm', numcha//' updraft segment : updraft top height')
 
       ! The properties of mass flux weighted ( or area-weighted or net=sum ) downdraft properties for individual updraft segment       
 
-      call addfld('thl_d'//numcha//'_SP', 'K',         pverp, 'A',&
-         'Mass-flux weighted  mean downdraft thl for '// numcha//' updraft segment', phys_decomp)
-      call addfld('qt_d'//numcha//'_SP' , 'kg/kg',     pverp, 'A',&
-         'Mass-flux weighted  mean downdraft  qt for '// numcha//' updraft segment', phys_decomp)
-      call addfld('u_d'//numcha//'_SP'  , 'm/s',       pverp, 'A',&
-         'Mass-flux weighted  mean downdraft   u for '// numcha//' updraft segment', phys_decomp)
-      call addfld('v_d'//numcha//'_SP'  , 'm/s',       pverp, 'A',&
-         'Mass-flux weighted  mean downdraft   v for '// numcha//' updraft segment', phys_decomp)
-      call addfld('w_d'//numcha//'_SP'  , 'm/s',       pverp, 'A',&
-         'Mass-flux weighted  mean downdraft   w for '// numcha//' updraft segment', phys_decomp)
-      call addfld('ql_d'//numcha//'_SP' , 'kg/kg',     pverp, 'A',&
-         'Mass-flux weighted  mean downdraft  ql for '// numcha//' updraft segment', phys_decomp)
-      call addfld('qi_d'//numcha//'_SP' , 'kg/kg',     pverp, 'A',&
-         'Mass-flux weighted  mean downdraft  qi for '// numcha//' updraft segment', phys_decomp)
-      call addfld('wa_d'//numcha//'_SP' , 'm/s',       pverp, 'A',&
-         'Area      weighted  mean downdraft   w for '// numcha//' updraft segment', phys_decomp)
-      call addfld('qla_d'//numcha//'_SP', 'kg/kg',     pverp, 'A',&
-         'Area      weighted  mean downdraft  ql for '// numcha//' updraft segment', phys_decomp)
-      call addfld('qia_d'//numcha//'_SP', 'kg/kg',     pverp, 'A',&
-         'Area      weighted  mean downdraft  qi for '// numcha//' updraft segment', phys_decomp)
-      call addfld('cmf_d'//numcha//'_SP', 'kg/s/m^2',  pverp, 'A',&
-         'Net                      downdraft cmf for '// numcha//' updraft segment', phys_decomp)
-      call addfld('a_d'//numcha//'_SP'  , 'fraction',  pverp, 'A',&
-         'Net                      downdraft   a for '// numcha//' updraft segment', phys_decomp)
-      call addfld('nl_d'//numcha//'_SP' , '#/kg',      pverp, 'A',&
-         'Mass-flux weighted  mean downdraft  nl for '// numcha//' updraft segment', phys_decomp)
-      call addfld('ni_d'//numcha//'_SP' , '#/kg',      pverp, 'A',&
-         'Mass-flux weighted  mean downdraft  ni for '// numcha//' updraft segment', phys_decomp)
+      call addfld('thl_d'//numcha//'_SP',         (/ 'ilev' /), 'A', 'K',&
+         'Mass-flux weighted  mean downdraft thl for '// numcha//' updraft segment')
+      call addfld('qt_d'//numcha//'_SP' ,     (/ 'ilev' /), 'A', 'kg/kg',&
+         'Mass-flux weighted  mean downdraft  qt for '// numcha//' updraft segment')
+      call addfld('u_d'//numcha//'_SP'  ,       (/ 'ilev' /), 'A', 'm/s',&
+         'Mass-flux weighted  mean downdraft   u for '// numcha//' updraft segment')
+      call addfld('v_d'//numcha//'_SP'  ,       (/ 'ilev' /), 'A', 'm/s',&
+         'Mass-flux weighted  mean downdraft   v for '// numcha//' updraft segment')
+      call addfld('w_d'//numcha//'_SP'  ,       (/ 'ilev' /), 'A', 'm/s',&
+         'Mass-flux weighted  mean downdraft   w for '// numcha//' updraft segment')
+      call addfld('ql_d'//numcha//'_SP' ,     (/ 'ilev' /), 'A', 'kg/kg',&
+         'Mass-flux weighted  mean downdraft  ql for '// numcha//' updraft segment')
+      call addfld('qi_d'//numcha//'_SP' ,     (/ 'ilev' /), 'A', 'kg/kg',&
+         'Mass-flux weighted  mean downdraft  qi for '// numcha//' updraft segment')
+      call addfld('wa_d'//numcha//'_SP' ,       (/ 'ilev' /), 'A', 'm/s',&
+         'Area      weighted  mean downdraft   w for '// numcha//' updraft segment')
+      call addfld('qla_d'//numcha//'_SP',     (/ 'ilev' /), 'A', 'kg/kg',&
+         'Area      weighted  mean downdraft  ql for '// numcha//' updraft segment')
+      call addfld('qia_d'//numcha//'_SP',     (/ 'ilev' /), 'A', 'kg/kg',&
+         'Area      weighted  mean downdraft  qi for '// numcha//' updraft segment')
+      call addfld('cmf_d'//numcha//'_SP',  (/ 'ilev' /), 'A', 'kg/s/m^2',&
+         'Net                      downdraft cmf for '// numcha//' updraft segment')
+      call addfld('a_d'//numcha//'_SP'  ,  (/ 'ilev' /), 'A', 'fraction',&
+         'Net                      downdraft   a for '// numcha//' updraft segment')
+      call addfld('nl_d'//numcha//'_SP' ,      (/ 'ilev' /), 'A', '#/kg',&
+         'Mass-flux weighted  mean downdraft  nl for '// numcha//' updraft segment')
+      call addfld('ni_d'//numcha//'_SP' ,      (/ 'ilev' /), 'A', '#/kg',&
+         'Mass-flux weighted  mean downdraft  ni for '// numcha//' updraft segment')
 
    enddo
 
    ! Nov.16.2012. Additional detailed diagnostic output
 
-   call addfld('thl_orgfce_SP', 'K/s',      1, 'A', &
-      'Total   organization forcing generating thl difference between non-wake and grid-mean areas', phys_decomp)
-   call addfld('qt_orgfce_SP',  'kg/kg/s',  1, 'A', &
-      'Total   organization forcing generating qt  difference between non-wake and grid-mean areas', phys_decomp)
-   call addfld('u_orgfce_SP',   'm/s/s',    1, 'A', &
-      'Total   organization forcing generating u   difference between non-wake and grid-mean areas', phys_decomp)
-   call addfld('v_orgfce_SP',   'm/s/s',    1, 'A', &
-      'Total   organization forcing generating v   difference between non-wake and grid-mean areas', phys_decomp)
-   call addfld('awk_orgfce_SP', '1/s',      1, 'A', &
-      'Total   organization forcing generating wake area',                                           phys_decomp)
+   call addfld('thl_orgfce_SP',      horiz_only, 'A', 'K/s', &
+      'Total   organization forcing generating thl difference between non-wake and grid-mean areas')
+   call addfld('qt_orgfce_SP',  horiz_only, 'A',  'kg/kg/s', &
+      'Total   organization forcing generating qt  difference between non-wake and grid-mean areas')
+   call addfld('u_orgfce_SP',    horiz_only, 'A',   'm/s/s', &
+      'Total   organization forcing generating u   difference between non-wake and grid-mean areas')
+   call addfld('v_orgfce_SP',    horiz_only, 'A',   'm/s/s', &
+      'Total   organization forcing generating v   difference between non-wake and grid-mean areas')
+   call addfld('awk_orgfce_SP',      horiz_only, 'A', '1/s', &
+      'Total   organization forcing generating wake area')
 
-   call addfld('thl_orgfce_f_SP', 'K/s',      1, 'A', &
-      'PBL top flux-related forcing generating thl difference between non-wake and grid-mean areas', phys_decomp)
-   call addfld('qt_orgfce_f_SP',  'kg/kg/s',  1, 'A', &
-      'PBL top flux-related forcing generating qt  difference between non-wake and grid-mean areas', phys_decomp)
-   call addfld('u_orgfce_f_SP',   'm/s/s',    1, 'A', &
-      'PBL top flux-related forcing generating u   difference between non-wake and grid-mean areas', phys_decomp)
-   call addfld('v_orgfce_f_SP',   'm/s/s',    1, 'A', &
-      'PBL top flux-related forcing generating v   difference between non-wake and grid-mean areas', phys_decomp)
-   call addfld('awk_orgfce_f_SP', '1/s',      1, 'A', &
-      'PBL top flux-related forcing generating wake area',                                           phys_decomp)
+   call addfld('thl_orgfce_f_SP',      horiz_only, 'A', 'K/s', &
+      'PBL top flux-related forcing generating thl difference between non-wake and grid-mean areas')
+   call addfld('qt_orgfce_f_SP',  horiz_only, 'A',  'kg/kg/s', &
+      'PBL top flux-related forcing generating qt  difference between non-wake and grid-mean areas')
+   call addfld('u_orgfce_f_SP',    horiz_only, 'A',   'm/s/s', &
+      'PBL top flux-related forcing generating u   difference between non-wake and grid-mean areas')
+   call addfld('v_orgfce_f_SP',    horiz_only, 'A',   'm/s/s', &
+      'PBL top flux-related forcing generating v   difference between non-wake and grid-mean areas')
+   call addfld('awk_orgfce_f_SP',      horiz_only, 'A', '1/s', &
+      'PBL top flux-related forcing generating wake area')
 
-   call addfld('thl_orgfce_u_SP', 'K/s',     1, 'A', &
-      'Up-and-Down diabatic forcing generating thl difference between non-wake and grid-mean areas', phys_decomp)
-   call addfld('qt_orgfce_u_SP',  'kg/kg/s', 1, 'A', &
-      'Up-and-Down diabatic forcing generating qt  difference between non-wake and grid-mean areas', phys_decomp)
-   call addfld('u_orgfce_u_SP',   'm/s/s',   1, 'A', &
-      'Up-and-Down diabatic forcing generating u   difference between non-wake and grid-mean areas', phys_decomp)
-   call addfld('v_orgfce_u_SP',   'm/s/s',   1, 'A', &
-      'Up-and-Down diabatic forcing generating v   difference between non-wake and grid-mean areas', phys_decomp)
-   call addfld('awk_orgfce_m_SP', '1/s',     1, 'A', &
-      'Lateral-Mixing       forcing for wake area',                                                  phys_decomp)
+   call addfld('thl_orgfce_u_SP',     horiz_only, 'A', 'K/s', &
+      'Up-and-Down diabatic forcing generating thl difference between non-wake and grid-mean areas')
+   call addfld('qt_orgfce_u_SP', horiz_only, 'A',  'kg/kg/s', &
+      'Up-and-Down diabatic forcing generating qt  difference between non-wake and grid-mean areas')
+   call addfld('u_orgfce_u_SP',   horiz_only, 'A',   'm/s/s', &
+      'Up-and-Down diabatic forcing generating u   difference between non-wake and grid-mean areas')
+   call addfld('v_orgfce_u_SP',   horiz_only, 'A',   'm/s/s', &
+      'Up-and-Down diabatic forcing generating v   difference between non-wake and grid-mean areas')
+   call addfld('awk_orgfce_m_SP',     horiz_only, 'A', '1/s', &
+      'Lateral-Mixing       forcing for wake area')
 
-   call addfld('thl_orgfce_e_SP', 'K/s',      1, 'A', &
-      'Environment diabatic forcing generating thl difference between non-wake and grid-mean areas', phys_decomp)
-   call addfld('qt_orgfce_e_SP',  'kg/kg/s',  1, 'A', &
-      'Environment diabatic forcing generating qt  difference between non-wake and grid-mean areas', phys_decomp)
-   call addfld('u_orgfce_e_SP',   'm/s/s',    1, 'A', &
-      'Environment diabatic forcing generating u   difference between non-wake and grid-mean areas', phys_decomp)
-   call addfld('v_orgfce_e_SP',   'm/s/s',    1, 'A', &
-      'Environment diabatic forcing generating v   difference between non-wake and grid-mean areas', phys_decomp)
-   call addfld('cmf_d_orgh_SP',   'kg/m^2/s', 1, 'A', &
-      'Organization-inducing downdraft mass flux at the PBL top interface',                          phys_decomp)
+   call addfld('thl_orgfce_e_SP',      horiz_only, 'A', 'K/s', &
+      'Environment diabatic forcing generating thl difference between non-wake and grid-mean areas')
+   call addfld('qt_orgfce_e_SP',  horiz_only, 'A',  'kg/kg/s', &
+      'Environment diabatic forcing generating qt  difference between non-wake and grid-mean areas')
+   call addfld('u_orgfce_e_SP',    horiz_only, 'A',   'm/s/s', &
+      'Environment diabatic forcing generating u   difference between non-wake and grid-mean areas')
+   call addfld('v_orgfce_e_SP',    horiz_only, 'A',   'm/s/s', &
+      'Environment diabatic forcing generating v   difference between non-wake and grid-mean areas')
+   call addfld('cmf_d_orgh_SP', horiz_only, 'A',   'kg/m^2/s', &
+      'Organization-inducing downdraft mass flux at the PBL top interface')
 
-   call addfld('taui_thl_SP', '1/s', 1, 'A', &
-      'Inverse of damping time scale of the difference between off-wake and grid-mean thl',          phys_decomp)
-   call addfld('taui_qt_SP',  '1/s', 1, 'A', &
-      'Inverse of damping time scale of the difference between off-wake and grid-mean qt',           phys_decomp)
-   call addfld('taui_u_SP',   '1/s', 1, 'A', &
-      'Inverse of damping time scale of the difference between off-wake and grid-mean u',            phys_decomp)
-   call addfld('taui_v_SP',   '1/s', 1, 'A', &
-      'Inverse of damping time scale of the difference between off-wake and grid-mean v',            phys_decomp)
-   call addfld('taui_awk_SP', '1/s', 1, 'A', &
-      'Inverse of damping time scale of the wake area',                                              phys_decomp)
+   call addfld('taui_thl_SP', horiz_only, 'A', '1/s', &
+      'Inverse of damping time scale of the difference between off-wake and grid-mean thl')
+   call addfld('taui_qt_SP', horiz_only, 'A',  '1/s', &
+      'Inverse of damping time scale of the difference between off-wake and grid-mean qt')
+   call addfld('taui_u_SP', horiz_only, 'A',   '1/s', &
+      'Inverse of damping time scale of the difference between off-wake and grid-mean u')
+   call addfld('taui_v_SP', horiz_only, 'A',   '1/s', &
+      'Inverse of damping time scale of the difference between off-wake and grid-mean v')
+   call addfld('taui_awk_SP', horiz_only, 'A', '1/s', &
+      'Inverse of damping time scale of the wake area')
 
-   call addfld('del_org_SP',  '1/s', 1, 'A', &
-      'Detrainment rate of the cold pool from UNICON',                                               phys_decomp)
-   call addfld('del0_org_SP', '1/s', 1, 'A', &
-      'Effective detrainment rate of the cold pool from UNICON',                                     phys_decomp)
+   call addfld('del_org_SP', horiz_only, 'A',  '1/s', &
+      'Detrainment rate of the cold pool from UNICON')
+   call addfld('del0_org_SP', horiz_only, 'A', '1/s', &
+      'Effective detrainment rate of the cold pool from UNICON')
 
 #endif
 

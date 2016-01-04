@@ -159,7 +159,7 @@ end subroutine prescribed_ghg_readnl
   subroutine prescribed_ghg_init()
 
     use tracer_data, only : trcdata_init
-    use cam_history, only : addfld, phys_decomp
+    use cam_history, only : addfld
     use ppgrid,      only : pver
     use error_messages, only: handle_err
     use ppgrid,         only: pcols, pver, begchunk, endchunk
@@ -200,7 +200,7 @@ end subroutine prescribed_ghg_readnl
        if (ndx < 1) then
           call endrun('prescribed_ghg_init: '//trim(fields(i)%fldnam)//' is not one of the named ghg fields in pbuf2d')
        endif
-       call addfld( fields(i)%fldnam,'kg/kg', pver, 'I', 'prescribed ghg', phys_decomp )
+       call addfld( fields(i)%fldnam, (/ 'lev' /), 'I','kg/kg', 'prescribed ghg' )
     enddo
 
   end subroutine prescribed_ghg_init

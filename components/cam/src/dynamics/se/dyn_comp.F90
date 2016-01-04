@@ -84,11 +84,10 @@ CONTAINS
 
     use pmgrid,              only: dyndecomp_set
     use dyn_grid,            only: dyn_grid_init, fvm, elem, get_dyn_grid_parm,&
-                                   set_horiz_grid_cnt_d
+                                   set_horiz_grid_cnt_d, define_cam_grids
     use rgrid,               only: fullgrid
     use spmd_utils,          only: mpi_integer, mpicom, mpi_logical
     use spmd_dyn,            only: spmd_readnl
-    use interpolate_mod,     only: interpolate_analysis
     use native_mapping,      only: create_native_mapping_files, native_mapping_readnl
     use time_manager,        only: get_nstep, dtime
 
@@ -113,7 +112,6 @@ CONTAINS
     integer omp_get_num_threads
 #endif
     integer :: neltmp(3)
-    logical :: nellogtmp(7)
     integer :: npes_se
 
     !----------------------------------------------------------------------
@@ -183,34 +181,27 @@ CONTAINS
     
        call set_horiz_grid_cnt_d(GlobalUniqueCols)
 
-
        neltmp(1) = nelemdmax
        neltmp(2) = nelem
        neltmp(3) = get_dyn_grid_parm('plon')
-       nellogtmp(1:7) = interpolate_analysis(1:7)
     else
        nelemd = 0
        neltmp(1) = 0
        neltmp(2) = 0
        neltmp(3) = 0
-       nellogtmp(1:7) = .true.
     endif
 
     dyndecomp_set = .true.
-
-
 
     if (par%nprocs .lt. npes_cam) then
 ! Broadcast quantities to auxiliary processes
 #ifdef SPMD
        call mpibcast(neltmp, 3, mpi_integer, 0, mpicom)
-       call mpibcast(nellogtmp, 7, mpi_logical, 0, mpicom)
 #endif
        if (iam .ge. par%nprocs) then
           nelemdmax = neltmp(1)
           nelem     = neltmp(2)
           call set_horiz_grid_cnt_d(neltmp(3))
-          interpolate_analysis(1:7) = nellogtmp(1:7)
        endif
     endif
 
@@ -241,6 +232,10 @@ CONTAINS
 
     ! initial SE (subcycled) nstep
     TimeLevel%nstep0 = 0
+
+    ! Define the CAM grids (this has to be after dycore spinup).
+    ! Physics-grid will be defined later by phys_grid_init
+    call define_cam_grids()
 
   end subroutine dyn_init1
 

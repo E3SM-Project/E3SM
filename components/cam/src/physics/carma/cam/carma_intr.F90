@@ -1,3 +1,4 @@
+
 !! This module is a coupler between the CAM model and the Community Aerosol
 !! and Radiation Model for Atmospheres (CARMA) microphysics model. It adds the
 !! capabilities of CARMA to CAM, allowing for binned microphysics studies
@@ -505,7 +506,7 @@ contains
   !! @author  Chuck Bardeen
   !! @version May 2009
   subroutine carma_init
-    use cam_history,  only: addfld, add_default, phys_decomp
+    use cam_history,  only: addfld, horiz_only, add_default
     use ioFileMod,    only : getfil
     use wrap_nf
     use time_manager, only: is_first_step
@@ -567,28 +568,28 @@ contains
             
             etndname(ielem, ibin) = trim(cnst_name(icnst))
             
-            call addfld(cnst_name(icnst),             'kg/kg   ', pver, 'A', cnst_longname(icnst), phys_decomp)
+            call addfld(cnst_name(icnst), (/ 'lev' /), 'A',             'kg/kg', cnst_longname(icnst))
             call add_default(cnst_name(icnst), 1, ' ')
     
-            call addfld(trim(etndname(ielem, ibin))//'TC', 'kg/kg/s ', pver, 'A', &
-                 trim(cnst_name(icnst)) // ' tendency', phys_decomp)
-            call addfld(trim(etndname(ielem, ibin))//'SF', 'kg/m2/s ', 1,    'A', &
-                 trim(cnst_name(icnst)) // ' surface emission', phys_decomp)
-            call addfld(trim(etndname(ielem, ibin))//'EM', 'kg/kg/s ', pver, 'A', &
-                 trim(cnst_name(icnst)) // ' emission', phys_decomp)
-            call addfld(trim(etndname(ielem, ibin))//'WD', 'kg/kg/s ', pver, 'A', &
-                 trim(cnst_name(icnst)) // ' wet deposition', phys_decomp)
-            call addfld(trim(etndname(ielem, ibin))//'SW', 'kg/m2/s ', 1,    'A', &
-                 trim(cnst_name(icnst)) // ' wet deposition flux at surface', phys_decomp)
+            call addfld(trim(etndname(ielem, ibin))//'TC', (/ 'lev' /), 'A', 'kg/kg/s', &
+                 trim(cnst_name(icnst)) // ' tendency')
+            call addfld(trim(etndname(ielem, ibin))//'SF', horiz_only,    'A', 'kg/m2/s', &
+                 trim(cnst_name(icnst)) // ' surface emission')
+            call addfld(trim(etndname(ielem, ibin))//'EM', (/ 'lev' /), 'A', 'kg/kg/s', &
+                 trim(cnst_name(icnst)) // ' emission')
+            call addfld(trim(etndname(ielem, ibin))//'WD', (/ 'lev' /), 'A', 'kg/kg/s', &
+                 trim(cnst_name(icnst)) // ' wet deposition')
+            call addfld(trim(etndname(ielem, ibin))//'SW', horiz_only,    'A', 'kg/m2/s', &
+                 trim(cnst_name(icnst)) // ' wet deposition flux at surface')
 
             if (do_drydep) then
-              call addfld(trim(etndname(ielem, ibin))//'DD', 'kg/m2/s ', 1,  'A', &
-                   trim(cnst_name(icnst)) // ' dry deposition', phys_decomp)
+              call addfld(trim(etndname(ielem, ibin))//'DD', horiz_only,  'A', 'kg/m2/s', &
+                   trim(cnst_name(icnst)) // ' dry deposition')
             end if
 
             if (carma_do_pheat) then
-              call addfld(trim(etndname(ielem, ibin))//'TP', 'K     ', pver, 'A', &
-                   trim(cnst_name(icnst)) // ' delta particle temperature', phys_decomp)
+              call addfld(trim(etndname(ielem, ibin))//'TP', (/ 'lev' /), 'A', 'K', &
+                   trim(cnst_name(icnst)) // ' delta particle temperature')
             end if
           end if
         end if
@@ -603,18 +604,18 @@ contains
       !
       ! NOTE: Would like use flag_xf_fill for the reffective radius fields, but cam_history
       ! currently only supports fill values in the entire column.
-      call addfld(trim(sname)//'ND', '#/cm3   ', pver, 'A', trim(sname) // ' number density', phys_decomp)
-      call addfld(trim(sname)//'AD', 'um2/cm3 ', pver, 'A', trim(sname) // ' surface area density', phys_decomp)
-      call addfld(trim(sname)//'MD', 'g/cm3   ', pver, 'A', trim(sname) // ' mass density', phys_decomp)
-      call addfld(trim(sname)//'RE', 'um      ', pver, 'A', trim(sname) // ' effective radius', phys_decomp)
-      call addfld(trim(sname)//'RM', 'um      ', pver, 'A', trim(sname) // ' Mitchell effective radius', phys_decomp)
-      call addfld(trim(sname)//'JN', '#/cm3/s ', pver, 'A', trim(sname) // ' nucleation rate', phys_decomp)
-      call addfld(trim(sname)//'MR', 'kg/kg   ', pver, 'A', trim(sname) // ' mass mixing ratio', phys_decomp)
-      call addfld(trim(sname)//'EX', 'km-1    ', pver, 'A', trim(sname) // ' extinction', phys_decomp)
-      call addfld(trim(sname)//'OD', '        ', pver, 'A', trim(sname) // ' optical depth', phys_decomp)
-      call addfld(trim(sname)//'PA', 'cm2     ', pver, 'A', trim(sname) // ' projected area', phys_decomp)
-      call addfld(trim(sname)//'AR', '        ', pver, 'A', trim(sname) // ' area ratio', phys_decomp)
-      call addfld(trim(sname)//'VM', 'm/s     ', pver, 'A', trim(sname) // ' fall velocity', phys_decomp)
+      call addfld(trim(sname)//'ND', (/ 'lev' /), 'A', '#/cm3', trim(sname) // ' number density')
+      call addfld(trim(sname)//'AD', (/ 'lev' /), 'A', 'um2/cm3', trim(sname) // ' surface area density')
+      call addfld(trim(sname)//'MD', (/ 'lev' /), 'A', 'g/cm3', trim(sname) // ' mass density')
+      call addfld(trim(sname)//'RE', (/ 'lev' /), 'A', 'um', trim(sname) // ' effective radius')
+      call addfld(trim(sname)//'RM', (/ 'lev' /), 'A', 'um', trim(sname) // ' Mitchell effective radius')
+      call addfld(trim(sname)//'JN', (/ 'lev' /), 'A', '#/cm3/s', trim(sname) // ' nucleation rate')
+      call addfld(trim(sname)//'MR', (/ 'lev' /), 'A', 'kg/kg', trim(sname) // ' mass mixing ratio')
+      call addfld(trim(sname)//'EX', (/ 'lev' /), 'A', 'km-1', trim(sname) // ' extinction')
+      call addfld(trim(sname)//'OD', (/ 'lev' /), 'A', '        ', trim(sname) // ' optical depth')
+      call addfld(trim(sname)//'PA', (/ 'lev' /), 'A', 'cm2', trim(sname) // ' projected area')
+      call addfld(trim(sname)//'AR', (/ 'lev' /), 'A', '        ', trim(sname) // ' area ratio')
+      call addfld(trim(sname)//'VM', (/ 'lev' /), 'A', 'm/s', trim(sname) // ' fall velocity')
 
       call add_default(trim(sname)//'ND', 1, ' ')
       call add_default(trim(sname)//'AD', 1, ' ')
@@ -635,8 +636,8 @@ contains
       ! Per bin stats ..
       if (do_drydep) then
         do ibin = 1, NBIN
-          call addfld(trim(btndname(igroup, ibin))//'VD', 'm/s     ', 1,    'A', &
-               trim(sname) // ' dry deposition velocity', phys_decomp)
+          call addfld(trim(btndname(igroup, ibin))//'VD', horiz_only,    'A', 'm/s', &
+               trim(sname) // ' dry deposition velocity')
         end do
       end if
 
@@ -650,32 +651,32 @@ contains
       lq_carma(icnst) = .true.
       gtndname(igas) = trim(cnst_name(icnst)) // 'TC'
 
-      call addfld(gtndname(igas),     'kg/kg/s ', pver, 'A', &
-           trim(cnst_name(icnst)) // ' CARMA tendency', phys_decomp)
+      call addfld(gtndname(igas), (/ 'lev' /), 'A',     'kg/kg/s', &
+           trim(cnst_name(icnst)) // ' CARMA tendency')
 
-      call addfld(trim(cnst_name(icnst))//'SI', 'ratio   ', pver, 'A', &
-           trim(cnst_name(icnst)) // ' saturation wrt ice', phys_decomp)
-      call addfld(trim(cnst_name(icnst))//'SL', 'ratio   ', pver, 'A', &
-           trim(cnst_name(icnst)) // ' saturation wrt liquid', phys_decomp)
-      call addfld(trim(cnst_name(icnst))//'EI', 'mol/mol ', pver, 'A', &
-           trim(cnst_name(icnst)) // ' equilibrium vmr wrt ice', phys_decomp)
-      call addfld(trim(cnst_name(icnst))//'EL', 'mol/mol ', pver, 'A', &
-           trim(cnst_name(icnst)) // ' equilibrium vmr wrt liquid', phys_decomp)
-      call addfld(trim(cnst_name(icnst))//'WT', '%       ', pver, 'A', &
-           trim(cnst_name(icnst)) // ' weight percent aerosol composition', phys_decomp)
+      call addfld(trim(cnst_name(icnst))//'SI', (/ 'lev' /), 'A', 'ratio', &
+           trim(cnst_name(icnst)) // ' saturation wrt ice')
+      call addfld(trim(cnst_name(icnst))//'SL', (/ 'lev' /), 'A', 'ratio', &
+           trim(cnst_name(icnst)) // ' saturation wrt liquid')
+      call addfld(trim(cnst_name(icnst))//'EI', (/ 'lev' /), 'A', 'mol/mol', &
+           trim(cnst_name(icnst)) // ' equilibrium vmr wrt ice')
+      call addfld(trim(cnst_name(icnst))//'EL', (/ 'lev' /), 'A', 'mol/mol', &
+           trim(cnst_name(icnst)) // ' equilibrium vmr wrt liquid')
+      call addfld(trim(cnst_name(icnst))//'WT', (/ 'lev' /), 'A', '%', &
+           trim(cnst_name(icnst)) // ' weight percent aerosol composition')
       
       call add_default(trim(cnst_name(icnst))//'SI', 1, ' ')
       call add_default(trim(cnst_name(icnst))//'SL', 1, ' ')
     end do
     
     if (carma_do_thermo) then
-       call addfld('CRTT',     'K/s ', pver, 'A', ' CARMA temperature tendency', phys_decomp)
+       call addfld('CRTT', (/ 'lev' /), 'A',     'K/s', ' CARMA temperature tendency')
     end if
  
     ! Add fields for diagnostic fields, and make them defaults on the first tape.
     if (carma_do_substep) then
-      call addfld('CRNSTEP',  '        ', pver, 'A', 'number of carma substeps', phys_decomp)
-      call addfld('CRLNSTEP', '        ', pver, 'A', 'ln(number of carma substeps)', phys_decomp)
+      call addfld('CRNSTEP', (/ 'lev' /), 'A',  '        ', 'number of carma substeps')
+      call addfld('CRLNSTEP', (/ 'lev' /), 'A', '        ', 'ln(number of carma substeps)')
      
       call add_default('CRNSTEP', 1, ' ')
       call add_default('CRLNSTEP', 1, ' ')

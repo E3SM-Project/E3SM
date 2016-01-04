@@ -1,16 +1,9 @@
 module restart_dynamics
   use shr_kind_mod, only: r8 => shr_kind_r8
 
-  use dyn_comp, only : dyn_import_t, dyn_export_t
-  use pio, only : var_desc_t, io_desc_t, file_desc_t
-  use pio, only : pio_global, pio_unlimited, pio_double, pio_def_dim, &
-         pio_put_att, pio_def_var, pio_initdecomp, &
-         pio_setdebuglevel, pio_inq_dimid
-  use pio, only : file_desc_t, pio_global, pio_double, pio_offset, &
-         pio_get_att, pio_inq_dimid, pio_inq_dimlen, pio_initdecomp, pio_inq_varid, &
-         pio_read_darray, pio_setframe, file_desc_t, io_desc_t, pio_double
-  use spmd_utils, only : iam
-
+  use dyn_comp,    only : dyn_import_t, dyn_export_t
+  use pio,         only : var_desc_t
+  use spmd_utils,  only : iam
   use cam_logfile, only : iulog
 
   implicit none
@@ -28,10 +21,10 @@ module restart_dynamics
 
 CONTAINS
 
-  subroutine init_restart_dynamics(File, hdimids, dyn_out)
+  subroutine init_restart_dynamics(File, dyn_out)
     use pio, only : pio_global, pio_unlimited, pio_double, pio_def_dim, &
-         pio_put_att, pio_def_var, pio_initdecomp, &
-         pio_setdebuglevel, pio_inq_dimid
+         pio_put_att, pio_def_var,  &
+         pio_setdebuglevel, pio_inq_dimid, file_desc_t
     use cam_pio_utils, only : pio_subsystem
     use dimensions_mod, only : np, ne, nlev, qsize_d, nlevp, nelem , nelemd
     use constituents, only : cnst_name
@@ -39,24 +32,16 @@ CONTAINS
     use hycoef, only: init_restart_hycoef
 
     type(file_desc_t),  intent(inout) :: file
-    integer,            pointer       :: hdimids(:)
     type(dyn_export_t), intent(in)    :: dyn_out
 
     integer :: vdimids(2)
-    integer :: ierr, i, ncols, dummy, j, k, ie
+    integer :: ierr, i, dummy, j, k, ie
     integer :: timelevels_dimid
 
     call init_restart_hycoef(File, vdimids)
 
-    call get_horiz_grid_dim_d(ncols)
-
-    allocate(hdimids(1))
-
     call PIO_Setdebuglevel(0)
     ierr = PIO_Def_Dim(File,'ncol_d',nelem*np*np,ncol_dimid)
-
-!   To be used by physics
-    ierr = PIO_Def_Dim(File, 'ncol', ncols ,hdimids(1))
 
     ierr = PIO_Def_Dim(File,'timelevels',PIO_UNLIMITED,timelevels_dimid)
 
@@ -91,9 +76,9 @@ CONTAINS
 
 
   subroutine write_restart_dynamics(File, dyn_out)
-    use pio, only : pio_offset, io_desc_t, pio_double, pio_write_darray, &
-         pio_setframe, pio_put_var, pio_initdecomp, pio_setframe, pio_def_dim, &
-         pio_freedecomp, pio_enddef
+    use pio, only : pio_offset_kind, io_desc_t, pio_double, pio_write_darray, &
+         pio_put_var, pio_initdecomp, pio_setframe, &
+         pio_freedecomp, pio_enddef, file_desc_t
     use cam_pio_utils, only : pio_subsystem
     use dyn_comp, only : timelevel
     use control_mod, only: qsplit
@@ -113,7 +98,7 @@ CONTAINS
 
     type(io_desc_t) :: iodesc2d, iodesc3d
     integer :: st, ie, k, en, tl, tlQdp, ierr, vsize3d, vsize2d, q
-    integer(kind=PIO_OFFSET), parameter :: t = 1
+    integer(kind=pio_offset_kind), parameter :: t = 1
 
     real(kind=r8),pointer :: vartmp(:,:,:), var3d(:,:,:,:), var2d(:,:,:)
     integer :: i, j
@@ -194,7 +179,7 @@ CONTAINS
           end do
        end do
     end do
-    call PIO_SetFrame(PSdesc, t)
+    call PIO_Setframe(File,PSdesc, t)
     call PIO_Write_Darray(File,PSdesc,iodesc2d, var2d,ierr)
 
     ! Write the U component of Velocity
@@ -210,7 +195,7 @@ CONTAINS
     end do
 
 
-    call PIO_SetFrame(Udesc, t)
+    call PIO_Setframe(File,Udesc, t)
     call PIO_Write_Darray(File,Udesc,iodesc3d,var3d,ierr)
 
 
@@ -226,7 +211,7 @@ CONTAINS
        end do
     end do
 
-    call PIO_SetFrame(Vdesc, t)
+    call PIO_Setframe(File,Vdesc, t)
     call PIO_Write_Darray(File,Vdesc,iodesc3d,var3d,ierr)
 
     ! Write T
@@ -241,7 +226,7 @@ CONTAINS
        end do
     end do
 
-    call PIO_SetFrame(Tdesc, t)
+    call PIO_Setframe(File,Tdesc, t)
     call PIO_Write_Darray(File,Tdesc,iodesc3d,var3d,ierr)
 
 
@@ -258,7 +243,7 @@ CONTAINS
              end do
           end do
        end do
-       call PIO_SetFrame(Qdesc(q), t)
+       call PIO_Setframe(File,Qdesc(q), t)
        call PIO_Write_Darray(File,Qdesc(q),iodesc3d,var3d,ierr)
 
        ! Write Q
@@ -272,7 +257,7 @@ CONTAINS
              end do
           end do
        end do
-       call PIO_SetFrame(Qdesc_dp(q), t)
+       call PIO_Setframe(File,Qdesc_dp(q), t)
        call PIO_Write_Darray(File,Qdesc_dp(q),iodesc3d,var3d,ierr)
 
     end do
@@ -328,7 +313,7 @@ CONTAINS
     use dyn_comp, only : timelevel
     use parallel_mod, only : initmp, par
     use element_mod, only : element_t
-    use pio, only : file_desc_t, pio_global, pio_double, pio_offset, &
+    use pio, only : file_desc_t, pio_global, pio_double, pio_offset_kind, &
          pio_get_att, pio_inq_dimid, pio_inq_dimlen, pio_initdecomp, pio_inq_varid, &
          pio_read_darray, pio_setframe, file_desc_t, io_desc_t, pio_double
     use dyn_comp, only : dyn_init1, dyn_init2
@@ -336,12 +321,12 @@ CONTAINS
     use cam_abortutils,   only: endrun
     use namelist_mod, only: readnl
     use constituents, only : cnst_name
-    use bndry_mod,   only: bndry_exchangeV
     use cam_pio_utils, only : pio_subsystem
     use spmd_dyn, only: spmd_readnl
     use fvm_control_volume_mod, only: fvm_struct
-    use control_mod, only: qsplit
-    use time_mod, only: TimeLevel_Qdp
+    use control_mod,            only: qsplit
+    use time_mod,               only: TimeLevel_Qdp
+
     !
     ! Input arguments
     !
@@ -357,7 +342,7 @@ CONTAINS
     integer, pointer :: ldof(:)
     type(element_t), pointer :: elem(:)               ! pointer to dyn_in element array
     type(fvm_struct), pointer :: fvm(:)
-    integer(kind=PIO_OFFSET), parameter :: t = 1
+    integer(kind=pio_offset_kind), parameter :: t = 1
     integer :: i, k, cnt, st, en, tl, tlQdp, ii, jj, s2d, q, j
     integer :: timelevel_dimid, timelevel_chk
     integer :: npes_se
@@ -431,8 +416,7 @@ CONTAINS
        ierr = PIO_Inq_varid(File, "dp"//cnst_name(q) ,Qdesc_dp(q))
     end do
 
-
-    call pio_setframe(phisdesc, int(1,kind=PIO_OFFSET))
+    call pio_setframe(File,phisdesc, int(1,kind=pio_offset_kind))
 
     call pio_read_darray(File, phisdesc, iodesc2d, var2d, ierr)
 
@@ -472,7 +456,7 @@ CONTAINS
     tl = timelevel%n0
     call TimeLevel_Qdp(timelevel, qsplit, tlQdp)
 
-    call pio_setframe(psdesc, t)
+    call pio_setframe(File,psdesc, t)
     call pio_read_darray(File, psdesc, iodesc2d, var2d, ierr)
 
     cnt=0
@@ -486,7 +470,7 @@ CONTAINS
        end do
     end do
 
-    call pio_setframe(udesc, t)
+    call pio_setframe(File,udesc, t)
     call pio_read_darray(File, udesc, iodesc3d, var3d, ierr)
 
     cnt=0
@@ -501,7 +485,7 @@ CONTAINS
        end do
     end do
 
-    call pio_setframe(vdesc, t)
+    call pio_setframe(File,vdesc, t)
     call pio_read_darray(File, vdesc, iodesc3d, var3d, ierr)
     cnt=0
     do k=1,nlev
@@ -515,7 +499,7 @@ CONTAINS
        end do
     end do
 
-    call pio_setframe(tdesc, t)
+    call pio_setframe(File,tdesc, t)
     call pio_read_darray(File, tdesc, iodesc3d, var3d, ierr)
     cnt=0
     do k=1,nlev
@@ -530,8 +514,7 @@ CONTAINS
     end do
 
     do q=1,qsize_d
-
-       call pio_setframe(qdesc(q), t)
+       call pio_setframe(File,qdesc(q), t)
        call pio_read_darray(File, qdesc(q), iodesc3d, var3d, ierr)
        cnt=0
        do k=1,nlev
@@ -545,7 +528,7 @@ CONTAINS
           end do
        end do
 
-       call pio_setframe(qdesc_dp(q), t)
+       call pio_setframe(File,qdesc_dp(q), t)
        call pio_read_darray(File, qdesc_dp(q), iodesc3d, var3d, ierr)
        cnt=0
        do k=1,nlev

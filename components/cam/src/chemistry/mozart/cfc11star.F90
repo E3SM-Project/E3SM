@@ -51,7 +51,7 @@ contains
 !---------------------------------------------------------------------------------
   subroutine init_cfc11star(pbuf2d)
     use constituents, only : cnst_get_ind
-    use cam_history,  only : addfld, phys_decomp
+    use cam_history,  only : addfld
     use infnan,       only : nan, assignment(=)
     use physics_buffer, only : physics_buffer_desc, pbuf_set_field
 
@@ -87,7 +87,7 @@ contains
     call pbuf_set_field(pbuf2d, pbf_idx, real_nan)
 
     rel_rf(:) = cfc_rf(:) / cfc_rf(1)
-    call addfld(pbufname,'kg/kg',pver,'A','cfc11star for radiation', phys_decomp )
+    call addfld(pbufname,(/ 'lev' /),'A','kg/kg','cfc11star for radiation' )
     
     if (masterproc) then
        write(iulog,*) 'init_cfc11star: CFC11STAR is added to pbuf2d for radiation'
