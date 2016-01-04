@@ -30,14 +30,8 @@
 !>  
 !>  4. Copy and change TEMPLATE lines in src/core_ocean/mode_init/mpas_ocn_init_mode.F
 !>  
-!>  5. Add these lines for default namelist parsing:
-!>     in src/core_ocean/Makefile:
-!>     (cd default_inputs; $(NL_GEN) ../Registry_processed.xml namelist.ocean.init.TEMPLATE mode=init configuration=TEMPLATE)
-!>
-!>     in src/core_ocean/Registry.xml, add your case to
-!>     nml_option name="config_init_configuration"
-!>     as 
-!>     TEMPLATE_value="TEMPLATE"
+!>  5. Add these dependency lines by following TEMPLATE examples in:
+!>     in src/core_ocean/mode_init/Makefile
 !
 !-----------------------------------------------------------------------
 
@@ -233,7 +227,7 @@ contains
        call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
 
        call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
-       call mpas_pool_get_array(tracersPool, 'layerThickness', layerThickness, 1)
+       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
        call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
        call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
@@ -284,6 +278,7 @@ contains
        block_ptr => block_ptr % next
     end do
 
+    deallocate(interfaceLocations)
     !--------------------------------------------------------------------
 
   end subroutine ocn_init_setup_TEMPLATE!}}}
