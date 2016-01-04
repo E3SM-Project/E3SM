@@ -179,6 +179,11 @@ main(int argc, char **argv)
 
     /** Return code. */
     int ret;
+
+    /* loop counters */
+    int i, fmt, d;
+
+
     
 #ifdef TIMING    
     /* Initialize the GPTL timing library. */
@@ -219,7 +224,7 @@ main(int argc, char **argv)
     elements_per_pe = X_DIM_LEN * Y_DIM_LEN / ntasks;
     if (!(compdof = malloc(elements_per_pe * sizeof(PIO_Offset))))
 	return PIO_ENOMEM;
-    for (int i = 0; i < elements_per_pe; i++) {
+    for ( i = 0; i < elements_per_pe; i++) {
 	compdof[i] = my_rank * elements_per_pe + i + 1;
     }
 	
@@ -239,7 +244,7 @@ main(int argc, char **argv)
 	
     /* Use PIO to create the example file in each of the four
      * available ways. */
-    for (int fmt = 0; fmt < NUM_NETCDF_FLAVORS; fmt++) 
+    for ( fmt = 0; fmt < NUM_NETCDF_FLAVORS; fmt++) 
     {
 #ifdef HAVE_MPE
 	/* Log with MPE that we are starting CREATE. */
@@ -251,14 +256,24 @@ main(int argc, char **argv)
 	if (verbose)
 	    printf("rank: %d Creating sample file %s with format %d...\n",
 		   my_rank, filename[fmt], format[fmt]);
+
+	PIOc_Set_IOSystem_Error_Handling(iosysid, PIO_BCAST_ERROR);
+
 	if ((ret = PIOc_createfile(iosysid, &ncid, &(format[fmt]), filename[fmt],
-				   PIO_CLOBBER)))
+				   PIO_CLOBBER))){
+	  if(ret == PIO_EBADIOTYPE){
+	    printf("IOtype %d not defined in build - skipping test\n",fmt);
+	    continue;
+	  }else{
 	    ERR(ret);
+	  }
+	}
+	PIOc_Set_IOSystem_Error_Handling(iosysid, PIO_INTERNAL_ERROR);
 	
 	/* Define netCDF dimensions and variable. */
 	if (verbose)
 	    printf("rank: %d Defining netCDF metadata...\n", my_rank);
-	for (int d = 0; d < NDIM; d++) {
+	for ( d = 0; d < NDIM; d++) {
 	    if (verbose)
 		printf("rank: %d Defining netCDF dimension %s, length %d\n", my_rank,
 		       dim_name[d], dim_len[d]);
@@ -286,7 +301,7 @@ main(int argc, char **argv)
 	    {
 		if (storage != NC_CHUNKED)
 		    ERR(ERR_AWFUL);
-		for (int d = 0; d < NDIM; d++)
+		for ( d = 0; d < NDIM; d++)
 		    if (my_chunksize[d] != chunksize[d])
 		    	ERR(ERR_AWFUL);
 	    }
