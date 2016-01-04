@@ -13,6 +13,5 @@
 		<option name="config_bottom_drag_coeff">1.0e-3</option>
 		<option name="config_use_bulk_wind_stress">.true.</option>
 		<option name="config_use_activeTracers_surface_restoring">.true.</option>
-		<option name="config_use_debugTracers">.true.</option>
 	</namelist>
 </template>
