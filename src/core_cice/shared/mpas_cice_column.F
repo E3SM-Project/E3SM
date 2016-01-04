@@ -9193,122 +9193,86 @@ contains
        endif
 
        ! biogeochemistry
-       if (.not. pkgColumnBiogeochemistryActive) then
+       if (.not. pkgTracerBrineActive) then
+          call finalize_stand_in_tracer_array(block, "brineFraction")
+       endif
+       if (.not. pkgTracerMobileFractionActive) then
+          call finalize_stand_in_tracer_array(block, "mobileFraction")
+       endif
+       if (.not. pkgTracerSkeletalAlgaeActive) then
           call finalize_stand_in_tracer_array(block, "skeletalAlgaeConc")
+       endif
+       if (.not. pkgTracerSkeletalNitrateActive) then
+          call finalize_stand_in_tracer_array(block, "skeletalNitrateConc")
+       endif
+       if (.not. pkgTracerSkeletalSilicateActive) then
+          call finalize_stand_in_tracer_array(block, "skeletalSilicateConc")
+       endif
+       if (.not. pkgTracerSkeletalAmmoniumActive) then
+             call finalize_stand_in_tracer_array(block, "skeletalAmmoniumConc")
+       endif
+       if (.not. pkgTracerSkeletalDMSActive) then
+          call finalize_stand_in_tracer_array(block, "skeletalDMSPpConc")
+          call finalize_stand_in_tracer_array(block, "skeletalDMSPpConc")
+          call finalize_stand_in_tracer_array(block, "skeletalDMSConc")
+       endif
+       if (.not. pkgTracerSkeletalCarbonActive) then
           call finalize_stand_in_tracer_array(block, "skeletalDOCConc")
           call finalize_stand_in_tracer_array(block, "skeletalDICConc")
+       endif
+       if (.not. pkgTracerSkeletalDONActive) then
           call finalize_stand_in_tracer_array(block, "skeletalDONConc")
-          call finalize_stand_in_tracer_array(block, "skeletalNitrateConc")
-          call finalize_stand_in_tracer_array(block, "skeletalSilicateConc")
-          call finalize_stand_in_tracer_array(block, "skeletalAmmoniumConc")
-          call finalize_stand_in_tracer_array(block, "skeletalDMSConc")
-          call finalize_stand_in_tracer_array(block, "skeletalDMSPpConc")
-          call finalize_stand_in_tracer_array(block, "skeletalDMSPdConc")
+       endif
+       if (.not. pkgTracerSkeletalNonreactiveActive) then
           call finalize_stand_in_tracer_array(block, "skeletalNonreactiveConc")
+       endif
+       if (.not. pkgTracerSkeletalHumicsActive) then
           call finalize_stand_in_tracer_array(block, "skeletalHumicsConc")
+       endif
+       if (.not. pkgTracerSkeletalIronActive) then
           call finalize_stand_in_tracer_array(block, "skeletalParticulateIronConc")
           call finalize_stand_in_tracer_array(block, "skeletalDissolvedIronConc")
+       endif          
+       if (.not. pkgTracerVerticalAlgaeActive) then
           call finalize_stand_in_tracer_array(block, "verticalAlgaeConc")
-          call finalize_stand_in_tracer_array(block, "verticalDOCConc")
-          call finalize_stand_in_tracer_array(block, "verticalDICConc")
-          call finalize_stand_in_tracer_array(block, "verticalDONConc")
+       endif
+       if (.not. pkgTracerVerticalNitrateActive) then
           call finalize_stand_in_tracer_array(block, "verticalNitrateConc")
+       endif
+       if (.not. pkgTracerVerticalSilicateActive) then
           call finalize_stand_in_tracer_array(block, "verticalSilicateConc")
+       endif
+       if (.not. pkgTracerVerticalAmmoniumActive) then
           call finalize_stand_in_tracer_array(block, "verticalAmmoniumConc")
-          call finalize_stand_in_tracer_array(block, "verticalDMSConc")
+       endif
+       if (.not. pkgTracerVerticalDMSActive) then
           call finalize_stand_in_tracer_array(block, "verticalDMSPpConc")
           call finalize_stand_in_tracer_array(block, "verticalDMSPdConc")
+          call finalize_stand_in_tracer_array(block, "verticalDMSConc")
+       endif
+       if (.not. pkgTracerVerticalCarbonActive) then
+          call finalize_stand_in_tracer_array(block, "verticalDOCConc")
+          call finalize_stand_in_tracer_array(block, "verticalDICConc")
+       endif
+       if (.not. pkgTracerVerticalDONActive) then
+          call finalize_stand_in_tracer_array(block, "verticalDONConc")
+       endif
+       if (.not. pkgTracerVerticalNonreactiveActive) then
           call finalize_stand_in_tracer_array(block, "verticalNonreactiveConc")
+       endif
+       if (.not. pkgTracerVerticalHumicsActive) then
           call finalize_stand_in_tracer_array(block, "verticalHumicsConc")
+       endif
+       if (.not. pkgTracerVerticalIronActive) then
           call finalize_stand_in_tracer_array(block, "verticalParticulateIronConc")
           call finalize_stand_in_tracer_array(block, "verticalDissolvedIronConc")
+       endif     
+       if (.not. pkgTracerZAerosolsActive) then
           call finalize_stand_in_tracer_array(block, "verticalAerosolsConc")
+       endif       
+       if (.not. pkgTracerZSalinityActive) then
           call finalize_stand_in_tracer_array(block, "verticalSalinity")
-          call finalize_stand_in_tracer_array(block, "brineFraction")
-          call finalize_stand_in_tracer_array(block, "mobileFraction")
-          call finalize_stand_in_tracer_array(block, "verticalSalinity")
-       else
-          if (.not. pkgTracerBrineActive) then
-             call finalize_stand_in_tracer_array(block, "brineFraction")
-          endif
-          if (.not. pkgTracerMobileFractionActive) then
-             call finalize_stand_in_tracer_array(block, "mobileFraction")
-          endif
-          if (.not. pkgTracerSkeletalAlgaeActive) then
-             call finalize_stand_in_tracer_array(block, "skeletalAlgaeConc")
-          endif
-          if (.not. pkgTracerSkeletalNitrateActive) then
-             call finalize_stand_in_tracer_array(block, "skeletalNitrateConc")
-          endif
-          if (.not. pkgTracerSkeletalSilicateActive) then
-             call finalize_stand_in_tracer_array(block, "skeletalSilicateConc")
-          endif
-          if (.not. pkgTracerSkeletalAmmoniumActive) then
-             call finalize_stand_in_tracer_array(block, "skeletalAmmoniumConc")
-          endif
-          if (.not. pkgTracerSkeletalDMSActive) then
-             call finalize_stand_in_tracer_array(block, "skeletalDMSPpConc")
-             call finalize_stand_in_tracer_array(block, "skeletalDMSPdConc")
-             call finalize_stand_in_tracer_array(block, "skeletalDMSConc")
-          endif
-          if (.not. pkgTracerSkeletalCarbonActive) then
-             call finalize_stand_in_tracer_array(block, "skeletalDOCConc")
-             call finalize_stand_in_tracer_array(block, "skeletalDICConc")
-          endif
-          if (.not. pkgTracerSkeletalDONActive) then
-             call finalize_stand_in_tracer_array(block, "skeletalDONConc")
-          endif
-          if (.not. pkgTracerSkeletalNonreactiveActive) then
-             call finalize_stand_in_tracer_array(block, "skeletalNonreactiveConc")
-          endif
-          if (.not. pkgTracerSkeletalHumicsActive) then
-             call finalize_stand_in_tracer_array(block, "skeletalHumicsConc")
-          endif
-          if (.not. pkgTracerSkeletalIronActive) then
-             call finalize_stand_in_tracer_array(block, "skeletalParticulateIronConc")
-             call finalize_stand_in_tracer_array(block, "skeletalDissolvedIronConc")
-          endif          
-          if (.not. pkgTracerVerticalAlgaeActive) then
-             call finalize_stand_in_tracer_array(block, "verticalAlgaeConc")
-          endif
-          if (.not. pkgTracerVerticalNitrateActive) then
-             call finalize_stand_in_tracer_array(block, "verticalNitrateConc")
-          endif
-          if (.not. pkgTracerVerticalSilicateActive) then
-             call finalize_stand_in_tracer_array(block, "verticalSilicateConc")
-          endif
-          if (.not. pkgTracerVerticalAmmoniumActive) then
-             call finalize_stand_in_tracer_array(block, "verticalAmmoniumConc")
-          endif
-          if (.not. pkgTracerVerticalDMSActive) then
-             call finalize_stand_in_tracer_array(block, "verticalDMSPpConc")
-             call finalize_stand_in_tracer_array(block, "verticalDMSPdConc")
-             call finalize_stand_in_tracer_array(block, "verticalDMSConc")
-          endif
-          if (.not. pkgTracerVerticalCarbonActive) then
-             call finalize_stand_in_tracer_array(block, "verticalDOCConc")
-             call finalize_stand_in_tracer_array(block, "verticalDICConc")
-          endif
-          if (.not. pkgTracerVerticalDONActive) then
-             call finalize_stand_in_tracer_array(block, "verticalDONConc")
-          endif
-          if (.not. pkgTracerVerticalNonreactiveActive) then
-             call finalize_stand_in_tracer_array(block, "verticalNonreactiveConc")
-          endif
-          if (.not. pkgTracerVerticalHumicsActive) then
-             call finalize_stand_in_tracer_array(block, "verticalHumicsConc")
-          endif
-          if (.not. pkgTracerVerticalIronActive) then
-             call finalize_stand_in_tracer_array(block, "verticalParticulateIronConc")
-             call finalize_stand_in_tracer_array(block, "verticalDissolvedIronConc")
-          endif     
-          if (.not. pkgTracerZAerosolsActive) then
-             call finalize_stand_in_tracer_array(block, "verticalAerosolsConc")
-          endif       
-          if (.not. pkgTracerZSalinityActive) then
-             call finalize_stand_in_tracer_array(block, "verticalSalinity")
-          endif     
-       endif
+       endif    
 
        !-----------------------------------------------------------------------
        ! other column packages
