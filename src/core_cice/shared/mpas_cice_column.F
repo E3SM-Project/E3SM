@@ -2954,7 +2954,7 @@ contains
              atmosBioFluxes(indexj -1 + iBioTracers,iCell) = atmosBlackCarbonFlux(iBioTracers,iCell)
           enddo
           do iBioTracers = maxBCType + 1, nzAerosols 
-             atmosBioFluxes(indexj -1 + iBioTracers, iCell) = atmosDustFlux(iBioTracers,iCell)
+             atmosBioFluxes(indexj -1 + iBioTracers, iCell) = atmosDustFlux(iBioTracers-maxBCType,iCell)
           enddo
 
           do iBioTracers = 1, ciceTracerObject % nBioTracers
