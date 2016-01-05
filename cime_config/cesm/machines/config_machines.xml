@@ -443,15 +443,19 @@
     <PES_PER_NODE>32</PES_PER_NODE>
     <batch_system type="slurm" version="x.y">
       <queues>
-        <queue walltimemax="00:06:00" jobmin="1" jobmax="16384" >regular</queue>
-        <queue walltimemax="00:04:00" jobmin="16385" jobmax="32768" >regular</queue>
-        <queue walltimemax="00:02:00" jobmin="32769" jobmax="52096" >regular</queue>
-	<queue walltimemax="00:30:00" jobmin="1" jobmax="4096" default="true">debug</queue>
+        <queue walltimemax="06:00:00" jobmin="1" jobmax="16384" default="true">regular</queue>
+		<!--
+        <queue walltimemax="04:00:00" jobmin="16385" jobmax="32768" >regular</queue>
+        <queue walltimemax="02:00:00" jobmin="32769" jobmax="52096" >regular</queue>
+	    <queue walltimemax="00:30:00" jobmin="1" jobmax="4096" default="true">debug</queue>
+        -->
       </queues>
       <walltimes>
-	<walltime default="true">00:30:00</walltime>
+	<walltime default="true">04:00:00</walltime>
+    <!--
 	<walltime ccsm_estcost="1">01:50:00</walltime>
 	<walltime ccsm_estcost="3">05:00:00</walltime>
+    -->
       </walltimes>
     </batch_system>
     <mpirun mpilib="default">
@@ -459,8 +463,7 @@
       <arguments>
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n {{ num_tasks }}</arg>
-
-     	<arg name="thread_count" > -c {{ thread_count }}</arg>
+    <arg name="thread_count" > -c {{ thread_count }}</arg>
 
       </arguments>
     </mpirun>
