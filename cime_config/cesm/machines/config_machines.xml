@@ -611,7 +611,7 @@
   </machine>
 
   <machine MACH="edison">
-    <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is PBS</DESC>
+    <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is SLURM</DESC>
     <COMPILERS>intel,gnu,cray</COMPILERS>
     <MPILIBS>mpt,mpi-serial</MPILIBS>
     <CESMSCRATCHROOT>$ENV{SCRATCH}</CESMSCRATCHROOT>
@@ -624,20 +624,17 @@
     <CCSM_BASELINE>/project/projectdirs/ccsm1/ccsm_baselines</CCSM_BASELINE>
     <CCSM_CPRNC>/project/projectdirs/ccsm1/tools/cprnc.edison/cprnc</CCSM_CPRNC>
     <OS>CNL</OS>
-    <BATCHQUERY>qstat -f</BATCHQUERY>
-    <BATCHSUBMIT>qsub</BATCHSUBMIT>
+    <BATCHQUERY>squeue</BATCHQUERY>
+    <BATCHSUBMIT>sbatch</BATCHSUBMIT>
     <BATCHREDIRECT></BATCHREDIRECT>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>24</PES_PER_NODE>
-    <!-- pbs is for crays.. -->
-    <batch_system type="pbs" version="x.y">
+    <batch_system type="slurm" version="x.y">
       <queues>
-        <queue walltimemax="48:00:00" jobmin="1" jobmax="16368" >regular</queue>
-        <queue walltimemax="36:00:00" jobmin="98304" jobmax="49152" >regular</queue>
-        <queue walltimemax="12:00:00" jobmin="98305" jobmax="131088" default="true">regular</queue>
-	<queue walltimemax="00:30:00" jobmin="1" jobmax="512">debug</queue>
+        <queue walltimemax="36:00:00" jobmin="1" jobmax="130181" >regular</queue>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="12288" default="true">debug</queue>
       </queues>
       <walltimes>
 	<walltime default="true">00:30:00</walltime>
@@ -645,15 +642,15 @@
 	<walltime ccsm_estcost="3">05:00:00</walltime>
       </walltimes>
     </batch_system>
+
     <mpirun mpilib="default">
-      <executable>aprun</executable>
+      <executable>srun</executable>
       <arguments>
-	<arg name="hyperthreading" default="2"> -j {{ hyperthreading }}</arg>
+	<arg name="label"> --label</arg>
 	<arg name="num_tasks" > -n {{ num_tasks }}</arg>
-	<arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
-	<arg name="tasks_per_node" > -N {{ tasks_per_node }}</arg>
-	<arg name="thread_count" > -d {{ thread_count }}</arg>
-	<arg name="numa_node" > -cc {{ numa_node }}</arg>
+
+     	<arg name="thread_count" > -c {{ thread_count }}</arg>
+
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -690,30 +687,30 @@
 	<command name="use">/global/project/projectdirs/ccsm1/modulefiles/edison</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" >
-	<command name="load">esmf/6.3.0rp1-defio-intel15.0-mpi-0</command>
+	<command name="load">esmf/6.3.0rp1-defio-intel15.0-mpi-O</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" >
-        <command name="load">esmf/6.3.0rp1-defio-intel15.0-mpiuni-0</command>
+        <command name="load">esmf/6.3.0rp1-defio-intel15.0-mpiuni-O</command>
       </modules>
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.4.0.223</command>
+	<command name="switch">cce cce/8.4.2</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
-	<command name="switch">gcc gcc/4.9.2</command>
+	<command name="switch">gcc gcc/5.2.0</command>
       </modules>
       <modules>
-	<command name="load">papi/5.4.1.1</command>
-	<command name="swap">craype craype/2.3.1</command>
+	<command name="load">papi/5.4.1.3</command>
+	<command name="swap">craype craype/2.5.0</command>
 	<command name="load">craype-ivybridge</command>
       </modules>
       <modules compiler="!intel">
-	<command name="switch">cray-libsci/13.0.4</command>
+	<command name="switch">cray-libsci/13.3.0</command>
       </modules>
       <modules>
-	<command name="load">cray-mpich/7.2.2</command>
-	<command name="load">pmi/5.0.6-1.0000.10439.140.2.ari</command>
+	<command name="load">cray-mpich/7.3.0</command>
+<!--	<command name="load">pmi/5.0.6-1.0000.10439.140.2.ari</command> -->
       </modules>
       <modules mpilib="mpi-serial">
 	<command name="load">cray-hdf5/1.8.14</command>
@@ -722,7 +719,7 @@
       <modules mpilib="!mpi-serial">
 	<command name="load">cray-netcdf-hdf5parallel/4.3.3.1</command>
 	<command name="load">cray-hdf5-parallel/1.8.14</command>
-	<command name="load">cray-parallel-netcdf/1.6.0</command>
+	<command name="load">cray-parallel-netcdf/1.6.1</command>
       </modules>
       <modules>
 	<command name="load">perl/5.20.0</command>
