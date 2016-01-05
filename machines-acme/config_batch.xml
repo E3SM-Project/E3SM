@@ -133,11 +133,11 @@
       </directives>
     </batch_system> 
 
-    <!-- edison is PBS -->
+    <!-- edison is SLURM as of Jan-4-2016 -->
     <batch_system MACH="edison" version="x.y">
       <directives>
-	<directive>-l mppwidth={{ mppwidth }}</directive>
-      <directive> -A {{ account }} </directive>
+        <directive> -A {{ account }} </directive>
+        <directive>--partition={{ queue }}</directive>
       </directives>
     </batch_system> 
 
