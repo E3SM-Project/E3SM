@@ -24,6 +24,7 @@ module ocn_init_lock_exchange
    use mpas_io_units
    use mpas_derived_types
    use mpas_pool_routines
+   use mpas_dmpar
 
    use ocn_constants
    use ocn_init_vertical_grids
