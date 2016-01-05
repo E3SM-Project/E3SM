@@ -893,6 +893,7 @@ for mct, etc.
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
   <MPI_PATH MPILIB="mpich">/home/robl/soft/mpich-3.1.4-nag-6.0</MPI_PATH>
   <MPI_LIB_NAME MPILIB="mpich"> mpi </MPI_LIB_NAME>
+  <ADD_FFLAGS DEBUG="TRUE" >  -C=all  -g  -O0 -v  </ADD_FFLAGS>
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas</ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
 </compiler>

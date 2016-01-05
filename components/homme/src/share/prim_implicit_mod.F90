@@ -2,9 +2,9 @@
 #include "config.h"
 #endif
 
-#ifdef TRILINOS
 
 module prim_implicit_mod
+#ifdef TRILINOS
   use kinds, only : real_kind
   use edgetype_mod, only : EdgeBuffer_t
   use parallel_mod, only : abortmp, parallel_t, iam
@@ -1395,7 +1395,6 @@ contains
     call t_adj_detailf(-1)
 
   end subroutine rhs_advance_hypervis_dp
-
+#endif ! TRILINOS
 end module prim_implicit_mod
 
-#endif ! TRILINOS
