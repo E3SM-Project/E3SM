@@ -22,6 +22,7 @@ module ocn_init_sub_ice_shelf_2D
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_constants
+   use mpas_dmpar
 
    use ocn_constants
    use ocn_init_vertical_grids

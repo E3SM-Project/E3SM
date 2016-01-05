@@ -24,6 +24,7 @@ module ocn_lagrangian_particle_tracking_interpolations
   use mpas_rbf_interpolation
   use mpas_geometry_utils
   use mpas_vector_reconstruction
+  use mpas_dmpar
 
   implicit none
 

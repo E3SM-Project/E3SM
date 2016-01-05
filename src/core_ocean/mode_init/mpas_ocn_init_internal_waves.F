@@ -24,6 +24,7 @@ module ocn_init_internal_waves
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_constants
+   use mpas_dmpar
 
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
