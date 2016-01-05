@@ -63,7 +63,7 @@ module load craype/2.1.1
 if( $COMPILER != "intel" ) then
   module load cray-libsci/13.0.1
 endif
-module load cray-mpich
+module load cray-mpich/7.3.0
 module load pmi/5.0.6-1.0000.10439.140.2.ari
 
 if ( $MPILIB == "mpi-serial") then
