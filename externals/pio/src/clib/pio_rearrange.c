@@ -701,7 +701,7 @@ int rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
       io_comprank=0;
     
     //    printf("scount[%d]=%d\n",i,scount[i]);
-    if(scount[i] > 0) {
+    if(scount[i] > 0 && sbuf != NULL) {
       sendcounts[io_comprank]=1;
       MPI_Type_hvector(nvars, 1, (MPI_Aint) iodesc->ndof*tsize, iodesc->stype[i], sendtypes+io_comprank);
       if(sendtypes[io_comprank] == MPI_DATATYPE_NULL){
@@ -1164,7 +1164,7 @@ void get_start_and_count_regions(const int ndims, const int gdims[],const int ma
 
     regionlen = find_region(ndims, gdims, maplen-nmaplen, 
 				  map+nmaplen, region->start, region->count);
-
+    //    printf("%s %d %d %d\n",__FILE__,__LINE__,region->start[0],region->count[0]);
     pioassert(region->start[0]>=0,"failed to find region",__FILE__,__LINE__);
     
     nmaplen = nmaplen+regionlen;
@@ -1276,7 +1276,8 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, PIO_Offs
   }
 
   for(i=0;i<maplen;i++){
-    pioassert(compmap[i]>=0 && compmap[i]<=totalgridsize, "Compmap value out of bounds",__FILE__,__LINE__);
+    //  turns out this can be allowed in some cases 
+    //    pioassert(compmap[i]>=0 && compmap[i]<=totalgridsize, "Compmap value out of bounds",__FILE__,__LINE__);
     if(compmap[i]>0){
       (iodesc->scount[0])++;
     }

@@ -5,16 +5,7 @@ and send the test results back to the test database.
 Authors: Jay Shollenberger and Ben Andre
 """ 
 from __future__ import print_function
-import xml.etree.ElementTree as etree
-import xml.dom
-import argparse
-import os, glob, re
 import sys
-import urllib
-import urllib2
-import json
-import pprint
-import getpass
 if sys.hexversion < 0x02070000:
     print(70 * "*")
     print("ERROR: {0} requires python >= 2.7.x. ".format(sys.argv[0]))
@@ -22,6 +13,15 @@ if sys.hexversion < 0x02070000:
         ".".join(str(x) for x in sys.version_info[0:3])))
     print(70 * "*")
     sys.exit(1)
+import xml.etree.ElementTree as etree
+import xml.dom
+import argparse
+import os, glob, re
+import urllib
+import urllib2
+import json
+import pprint
+import getpass
 
 testdburl = "https://csegweb.cgd.ucar.edu/testdb/cgi-bin/processXMLtest.cgi"
 
@@ -100,6 +100,7 @@ class CimeTestStatus():
         use....
         """
         line = self._status_buffer[0]
+        self.fullname = line
         name = line.split(' ')[1]
         if len(name.split('.')) > 5:
             name = name.split('.')
@@ -111,7 +112,8 @@ class CimeTestStatus():
     def _parse_seperator(self, line):
         """parse a section seperator to extract the current section name.
         """
-        section_re = re.compile("[\s]*---([\w\s]+)---")
+        #section_re = re.compile("\s*---([\w\s\W*]+)---")
+        section_re = re.compile("\s*---([\w\s]+)\W*---")
         match = section_re.search(line)
         if match:
             self._current_section = match.group(1).strip()
@@ -205,6 +207,8 @@ class CimeTestStatus():
             use_section = section
 
         if use_section:
+            if use_section not in self._test_status:
+                self._test_status[use_section] = {}
             self._test_status[use_section][key] = value
         else:
             self._test_status[key] = value
@@ -376,6 +380,7 @@ def printStatus(cimetests):
     for test in cimetests:
         print(test.rawteststatus())
 
+
 def printSummary(suiteinfo, cimetests):
     """ Print a detailed test suite summary.  Note the 
         count of test failures, print the tests sorted by status. 
@@ -383,6 +388,7 @@ def printSummary(suiteinfo, cimetests):
         failing history files will be printed. 
     """
     banner = '=' * 80
+    
     
     # Get the count of tests by status. 
     passpattern = re.compile('PASS|DONE')
