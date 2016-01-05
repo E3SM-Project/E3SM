@@ -27,6 +27,7 @@ module ocn_init_periodic_planar
    use mpas_pool_routines
    use mpas_constants
    use mpas_stream_manager
+   use mpas_dmpar
 
    use ocn_constants
    use ocn_init_vertical_grids
