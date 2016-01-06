@@ -48,7 +48,7 @@ contains
 
   subroutine seq_domain_check( infodata, &
        atm, ice, lnd, ocn, rof, glc, &
-       samegrid_al, samegrid_ao, samegrid_ro)
+       samegrid_al, samegrid_ao, samegrid_ro, samegrid_lg)
 
     !-----------------------------------------------------------
     ! Uses
@@ -58,7 +58,7 @@ contains
     use prep_atm_mod, only: prep_atm_get_mapper_Fo2a
     use prep_lnd_mod, only: prep_lnd_get_mapper_Fa2l
     use prep_ocn_mod, only: prep_ocn_get_mapper_SFi2o
-    use prep_glc_mod, only: prep_glc_get_mapper_SFl2g
+    use prep_glc_mod, only: prep_glc_get_mapper_Fl2g
     !
     ! Arguments
     !
@@ -72,6 +72,7 @@ contains
     logical                  , intent(in)    :: samegrid_al ! atm lnd grid same
     logical                  , intent(in)    :: samegrid_ao ! atm ocn grid same
     logical                  , intent(in)    :: samegrid_ro ! rof ocn grid same
+    logical                  , intent(in)    :: samegrid_lg ! lnd glc grid same
     !
     ! Local variables
     !
@@ -158,7 +159,7 @@ contains
     mapper_i2a => prep_atm_get_mapper_Fi2a()
     mapper_i2o => prep_ocn_get_mapper_SFi2o()
     mapper_o2a => prep_atm_get_mapper_Fo2a()
-    mapper_l2g => prep_glc_get_mapper_SFl2g()
+    mapper_l2g => prep_glc_get_mapper_Fl2g()
     mapper_a2l => prep_lnd_get_mapper_Fa2l()
     mapper_l2a => prep_atm_get_mapper_Fl2a()
 
@@ -182,10 +183,12 @@ contains
 
     ! Get info
 
-    gsmap_a  => component_get_gsmap_cx(atm) ! gsmap_ax
-    atmdom_a => component_get_dom_cx(atm)   ! dom_ax
-    atmsize  = mct_avect_lsize(atmdom_a%data)
-    gatmsize = mct_gsMap_gsize(gsMap_a)
+    if (atm_present) then
+       gsmap_a  => component_get_gsmap_cx(atm) ! gsmap_ax
+       atmdom_a => component_get_dom_cx(atm)   ! dom_ax
+       atmsize  = mct_avect_lsize(atmdom_a%data)
+       gatmsize = mct_gsMap_gsize(gsMap_a)
+    end if
 
     if (atm_present .and. lnd_present) then
        gsmap_l  => component_get_gsmap_cx(lnd) ! gsmap_lx
@@ -280,30 +283,35 @@ contains
        glcsize  = mct_avect_lsize(glcdom_g%data)
        gglcsize = mct_gsMap_gsize(gsMap_g) 
 
-       if (gglcsize /= glndsize) then
+       if (samegrid_lg .and. gglcsize /= glndsize) then
           write(logunit,*) subname,' error: global glcsize = ',gglcsize,' global lndsize= ',glndsize
           call shr_sys_flush(logunit)
           call shr_sys_abort(subname//' glc and lnd grid must have the same global size')
        end if
+
        if (iamroot) write(logunit,F00) ' --- checking glc maskfrac ---'
        call seq_domain_check_fracmask(glcdom_g%data)
        if (iamroot) write(logunit,F00) ' --- checking lnd maskfrac ---'
        call seq_domain_check_fracmask(lnddom_l%data)
-       call mct_gGrid_init(oGGrid=lnddom_g, iGGrid=lnddom_l, lsize=glcsize)
-       call mct_aVect_zero(lnddom_g%data)
-       call seq_map_map(mapper_l2g, lnddom_l%data, lnddom_g%data, norm=.false.)
-       if (iamroot) write(logunit,F00) ' --- checking glc/lnd domains ---'
-       npts = glcsize
-       allocate(mask(npts),stat=rcode)
-       if(rcode /= 0) call shr_sys_abort(subname//' allocate mask')
-       call mct_aVect_getRAttr(lnddom_g%data,"mask",mask,rcode)
-       where (mask < eps_axmask) mask = 0.0_R8
-       call seq_domain_check_grid(glcdom_g%data, lnddom_g%data, 'mask', eps=eps_axmask, mpicom=mpicom_cplid, mask=mask)
-       call seq_domain_check_grid(glcdom_g%data, lnddom_g%data, 'lat' , eps=eps_axgrid, mpicom=mpicom_cplid, mask=mask)
-       call seq_domain_check_grid(glcdom_g%data, lnddom_g%data, 'lon' , eps=eps_axgrid, mpicom=mpicom_cplid, mask=mask)
-       call seq_domain_check_grid(glcdom_g%data, lnddom_g%data, 'area', eps=eps_axarea, mpicom=mpicom_cplid, mask=mask)
-       deallocate(mask,stat=rcode)
-       if(rcode /= 0) call shr_sys_abort(subname//' deallocate mask')
+       
+       if (samegrid_lg) then
+          call mct_gGrid_init(oGGrid=lnddom_g, iGGrid=lnddom_l, lsize=glcsize)
+          call mct_aVect_zero(lnddom_g%data)
+          call seq_map_map(mapper_l2g, lnddom_l%data, lnddom_g%data, norm=.false.)
+          if (iamroot) write(logunit,F00) ' --- checking glc/lnd domains ---'
+          npts = glcsize
+          allocate(mask(npts),stat=rcode)
+          if(rcode /= 0) call shr_sys_abort(subname//' allocate mask')
+          call mct_aVect_getRAttr(lnddom_g%data,"mask",mask,rcode)
+          where (mask < eps_axmask) mask = 0.0_R8
+          call seq_domain_check_grid(glcdom_g%data, lnddom_g%data, 'mask', eps=eps_axmask, mpicom=mpicom_cplid, mask=mask)
+          call seq_domain_check_grid(glcdom_g%data, lnddom_g%data, 'lat' , eps=eps_axgrid, mpicom=mpicom_cplid, mask=mask)
+          call seq_domain_check_grid(glcdom_g%data, lnddom_g%data, 'lon' , eps=eps_axgrid, mpicom=mpicom_cplid, mask=mask)
+          call seq_domain_check_grid(glcdom_g%data, lnddom_g%data, 'area', eps=eps_axarea, mpicom=mpicom_cplid, mask=mask)
+          deallocate(mask,stat=rcode)
+          if(rcode /= 0) call shr_sys_abort(subname//' deallocate mask')
+       end if
+
     endif
 
     if (ice_present .and. ocn_present) then
@@ -397,54 +405,56 @@ contains
     ! Check consistency of land fraction with ocean mask on grid
     !------------------------------------------------------------------------------
 
-    my_eps_frac = eps_frac
-    if (samegrid_ao) my_eps_frac = eps_frac_samegrid
-    if (.not. samegrid_al) my_eps_frac = eps_big
+    if (atm_present) then
+       my_eps_frac = eps_frac
+       if (samegrid_ao) my_eps_frac = eps_frac_samegrid
+       if (.not. samegrid_al) my_eps_frac = eps_big
 
-    if (iamroot) write(logunit,F00) ' --- checking fractions in domains ---'
-    dmaxi = 0.0_R8
-    dmaxo = 0.0_R8
-    do n = 1,atmsize
-       if (atm_present .and. lnd_present .and. ice_present) then
-          diff = abs(1._R8 - fracl(n) - fraci(n))
-          dmaxi = max(diff,dmaxi)
-          if (diff > my_eps_frac) then
-             write(logunit,*)'inconsistency between land fraction and sea ice fraction'
-             write(logunit,*)'n= ',n,' fracl= ',fracl(n),' fraci= ',fraci(n),' sum= ',fracl(n)+fraci(n)
-             call shr_sys_flush(logunit)
-             call shr_sys_abort(subname//' inconsistency between land fraction and sea ice fraction')
-          end if
-          if ((1._R8-fraci(n)) > eps_frac .and. fracl(n) < eps_tiny) then
-             write(logunit,*)'inconsistency between land mask and sea ice mask'
-             write(logunit,*)'n= ',n,' fracl= ',fracl(n),' fraci= ',fraci(n)
-             call shr_sys_flush(logunit)
-             call shr_sys_abort(subname//'  inconsistency between land mask and sea ice mask')
-          end if
-       endif
-       if (atm_present .and. lnd_present .and. ocn_present) then
-          diff = abs(1._R8 - fracl(n) - fraco(n))
-          dmaxo = max(diff,dmaxo)
-          if (diff > my_eps_frac) then
-             write(logunit,*)'inconsistency between land fraction and ocn land fraction'
-             write(logunit,*)'n= ',n,' fracl= ',fracl(n),' fraco= ',fraco(n),' sum= ',fracl(n)+fraco(n)
-             call shr_sys_flush(logunit)
-             call shr_sys_abort(subname//'  inconsistency between land fraction and ocn land fraction')
-          end if
-          if ((1._R8-fraco(n)) > eps_frac .and. fracl(n) < eps_tiny) then
-             write(logunit,*)'inconsistency between land mask and ocn land mask'
-             write(logunit,*)'n= ',n,' fracl= ',fracl(n),' fraco= ',fraco(n)
-             call shr_sys_flush(logunit)
-             call shr_sys_abort(subname//'  inconsistency between land mask and ocn land mask')
-          end if
-       endif
-    end do 
-    if (iamroot) then
-       write(logunit,F02) ' maximum           difference for ofrac sum ',dmaxo
-       write(logunit,F02) ' maximum           difference for ifrac sum ',dmaxi
-       write(logunit,F02) ' maximum allowable difference for  frac sum ',my_eps_frac
-       write(logunit,F02) ' maximum allowable tolerance for valid frac ',eps_frac
-       call shr_sys_flush(logunit)
-    endif
+       if (iamroot) write(logunit,F00) ' --- checking fractions in domains ---'
+       dmaxi = 0.0_R8
+       dmaxo = 0.0_R8
+       do n = 1,atmsize
+          if (lnd_present .and. ice_present) then
+             diff = abs(1._R8 - fracl(n) - fraci(n))
+             dmaxi = max(diff,dmaxi)
+             if (diff > my_eps_frac) then
+                write(logunit,*)'inconsistency between land fraction and sea ice fraction'
+                write(logunit,*)'n= ',n,' fracl= ',fracl(n),' fraci= ',fraci(n),' sum= ',fracl(n)+fraci(n)
+                call shr_sys_flush(logunit)
+                call shr_sys_abort(subname//' inconsistency between land fraction and sea ice fraction')
+             end if
+             if ((1._R8-fraci(n)) > eps_frac .and. fracl(n) < eps_tiny) then
+                write(logunit,*)'inconsistency between land mask and sea ice mask'
+                write(logunit,*)'n= ',n,' fracl= ',fracl(n),' fraci= ',fraci(n)
+                call shr_sys_flush(logunit)
+                call shr_sys_abort(subname//'  inconsistency between land mask and sea ice mask')
+             end if
+          endif
+          if (lnd_present .and. ocn_present) then
+             diff = abs(1._R8 - fracl(n) - fraco(n))
+             dmaxo = max(diff,dmaxo)
+             if (diff > my_eps_frac) then
+                write(logunit,*)'inconsistency between land fraction and ocn land fraction'
+                write(logunit,*)'n= ',n,' fracl= ',fracl(n),' fraco= ',fraco(n),' sum= ',fracl(n)+fraco(n)
+                call shr_sys_flush(logunit)
+                call shr_sys_abort(subname//'  inconsistency between land fraction and ocn land fraction')
+             end if
+             if ((1._R8-fraco(n)) > eps_frac .and. fracl(n) < eps_tiny) then
+                write(logunit,*)'inconsistency between land mask and ocn land mask'
+                write(logunit,*)'n= ',n,' fracl= ',fracl(n),' fraco= ',fraco(n)
+                call shr_sys_flush(logunit)
+                call shr_sys_abort(subname//'  inconsistency between land mask and ocn land mask')
+             end if
+          endif
+       end do
+       if (iamroot) then
+          write(logunit,F02) ' maximum           difference for ofrac sum ',dmaxo
+          write(logunit,F02) ' maximum           difference for ifrac sum ',dmaxi
+          write(logunit,F02) ' maximum allowable difference for  frac sum ',my_eps_frac
+          write(logunit,F02) ' maximum allowable tolerance for valid frac ',eps_frac
+          call shr_sys_flush(logunit)
+       end if
+    end if
 
     !------------------------------------------------------------------------------
     ! Clean up allocated memory

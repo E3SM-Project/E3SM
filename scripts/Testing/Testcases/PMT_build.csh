@@ -1,4 +1,5 @@
 #!/bin/csh -f 
+setenv CIMEROOT `./xmlquery CIMEROOT    -value`
 
 ./Tools/check_lockedfiles || exit -1
 
@@ -11,8 +12,8 @@ if ( -e env_mach_pes.xml.1 )  then
   cp -f env_mach_pes.xml.1 env_mach_pes.xml
 endif
 
-./cesm_setup -clean -testmode
-./cesm_setup 
+./case.setup -clean -testmode
+./case.setup 
 
 cp -f env_mach_pes.xml env_mach_pes.xml.1
 cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml.locked
@@ -20,7 +21,7 @@ cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml.locked
 ./xmlchange -file env_run.xml -id BFBFLAG -val TRUE
 echo "b4b_flag=.true." >> user_nl_pop
 
-./$CASE.build
+./case.build -testmode
 if ($status != 0) then
    echo "Error: build for default PE layout failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus
@@ -97,15 +98,15 @@ if ($NTHRDS_ICE == 1) then
 endif
 
 # Build with half the tasks and double the threads
-./cesm_setup -clean -testmode
-./cesm_setup
+./case.setup -clean -testmode
+./case.setup
 ./xmlchange -file env_build.xml -id SMP_BUILD -val 0
 
-./cesm_setup -clean
-./cesm_setup
-./$CASE.clean_build -all 
+./case.setup -clean
+./case.setup
+./case.clean_build -all 
 
-./$CASE.build
+./case.build -testmode
 if ($status != 0) then
    echo "Error: build for default half tasks twice threads failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus

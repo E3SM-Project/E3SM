@@ -3,8 +3,7 @@
 #
 # create_production_test
 #
-# This utility allows the users to specify configuration
-# cesm tests from an existing case directory
+# This utility allows the users to specify configuration tests from an existing case directory
 #
 #-----------------------------------------------------------------------------------------------
 
@@ -14,6 +13,7 @@ use English;
 use Getopt::Long;
 use IO::File;
 use IO::Handle;
+use XML::LibXML;
 
 sub usage {
     die <<EOF;
@@ -59,73 +59,105 @@ EOF
 }
 
 my %opts;
-my @allowedtests = qw(ERS ERS_Lm3 ERI LAR PFS NCK CME);
-
 GetOptions(
 	   "test=s" => \$opts{'test'},
 	   "h|help" => \$opts{'help'},) or usage();
 
 usage() if $opts{'help'};
 
-my $test;
+# If specify input test - determine if it is supported by create_production_test
+my $testname = "ERS_Lm3";
 if ($opts{'test'}) {
-    $test = $opts{'test'};
+    $testname = $opts{'test'};
     my $accepttest;
+    my @allowedtests = qw(ERS ERS_Lm3 ERI LAR PFS NCK CME);
     foreach my $allowedtest (@allowedtests) { 
-	if ($test eq $allowedtest) {
+	if ($testname eq $allowedtest) {
 	    $accepttest = 'yes';
 	    last;
 	}
     }
     if (! $accepttest) {
 	print " ERROR: allowed supported tests are @allowedtests \n";
-	die "        $test is not part of the allowed supported tests \n";
+	die "        $testname is not part of the allowed supported tests \n";
     }
-} else {
-    $test = "ERS_Lm3";   # default test
 }
 
-my $caseroot = getcwd();
+# Create caseroot and case for call to create_clone
+my $cimeroot  = `./xmlquery CIMEROOT -value`;
+my $clonecase = `./xmlquery CASE     -value`;
+my $cloneroot = `./xmlquery CASEROOT -value`;
+my $testroot  = "$cloneroot/../${clonecase}_${testname}";
+print "\nCreating test $testroot\n";
 
-my $dirs = "$caseroot/Tools";
-unshift @INC, $dirs;
+# Create a new clone case directory
+my $sysmod = "$cimeroot/scripts/create_clone -case $testroot -clone $cloneroot";
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
-require ConfigCase;
+# Change to the new cloned test directory
+chdir("$testroot");
+
+# Write env_test.xml in the cloned test directory, needed by the test environment setup 
+my $test = $testname;
+if  ($testname eq 'ERS_Lm3') {
+    $test = "ERS";
+}
+writeEnvTestXML($testroot, $test);
+if  ($testname eq 'ERS_Lm3') {
+    $sysmod = "./xmlchange -noecho STOP_OPTION=nmonths"	; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    $sysmod = "./xmlchange -noecho STOP_N=3"	; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}
+
+# Create the testing file $testroot/$testname.test
+my $sysmod = "$cimeroot/scripts/Tools/testcase_setup -caseroot $testroot";
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+
+# Cleanly exit
+exit 0;
 
 #-----------------------------------------------------------------------------------------------
-# Read $caseroot xml files and 
+#                               Private routines
 #-----------------------------------------------------------------------------------------------
 
-my $cimeroot = `./xmlquery CIMEROOT -value`;
-my $casename = `./xmlquery CASE     -value`;
-my $testroot = "$caseroot/..";
-my $testname = "${casename}_${test}";
+sub writeEnvTestXML
+{
+    my ($testroot, $testname) = @_;
 
-print "\nCreating test ${testroot}/${testname}\n";
+    my $model    = `./xmlquery MODEL    -value`;
+    my $cimeroot = `./xmlquery CIMEROOT -value`;
 
-system("$cimeroot/scripts/create_clone -case $testroot/$testname -clone $caseroot -testname $test");
+    my @dirs = ("$cimeroot/utils/perl5lib/Config");
+    unshift @INC, @dirs;
+    require ConfigCase;
 
-# Write env_test.xml, needed by the test environment setup 
-my $testenv = ConfigCase->new("${cimeroot}/scripts/Tools/config_definition.xml");
-$testenv->set('TESTCASE', $test);
-my $testid = `date +%y%m%d-%H%M%S`;
-chomp $testid;
+    # First create empty config object
+    my $config = ConfigCase->new("");
 
-$testenv->set('TEST_TESTID'		, $testid);
-$testenv->set('TEST_ARGV'		, 'UNSET');
-$testenv->set('CASEBASEID'		, 'UNSET');
-$testenv->set('BASELINE_NAME_GEN'	, 'UNSET');
-$testenv->set('BASELINE_NAME_CMP'	, 'UNSET');
-$testenv->set('BASEGEN_CASE'		, 'UNSET');
-$testenv->set('BASECMP_CASE'		, 'UNSET');
-$testenv->set('CLEANUP'			, 'FALSE');
-$testenv->set('BASELINE_ROOT'		, 'UNSET');
-$testenv->set('GENERATE_BASELINE'	, 'FALSE');
-$testenv->set('COMPARE_BASELINE'	, 'FALSE');
-$testenv->write_file("$testroot/$testname/env_test.xml");
+    # Add all the elements of the driver config_component.xml file to $config
+    my $file = "$cimeroot/driver_cpl/cime_config/config_component.xml"; 
+    $config->add_config_variables($file, 'unset', $cimeroot, $model);
 
-chdir("$testroot/$testname");
+    # Then set some new values in $config 
+    my $testid = `date +%y%m%d-%H%M%S`;
+    chomp $testid;
+    $config->set('TESTCASE'    , $testname);
+    $config->set('TEST_TESTID' , $testid);
 
-my $caseroot_test = `./xmlquery CASEROOT -value`;
+    # Set the parameters for the specified testname.  
+    # If no testname matches are found then issue error message.
+    my $file = "$cimeroot/scripts/Testing/Testcases/config_tests.xml";
+    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("$file");
+    my @tests = $xml->findnodes(".//test[\@NAME=\"$testname\"]");
+    if ($#tests == -1) {
+	die "ERROR create_production_test: no tests with $testname were found in $file \n";
+    }
+    foreach my $node ($tests[0]->findnodes("./*")) {
+	my $name  = $node->nodeName();
+	my $value = $node->textContent();
+	$config->set($name, $value);
+    }
 
-system("$cimeroot/scripts/Tools/testcase_setup -caseroot $caseroot_test");
+    # Create the file env_test.xml
+    my $caseheaders = "";
+    $config->write_file("${testroot}/env_test.xml", $caseheaders, $testroot, $cimeroot );
+}

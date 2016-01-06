@@ -3,9 +3,9 @@ runoff_map
 obj
 src/*.o
 src/*.mod
-src/Macros
-src/build.csh
-src/env_mach_specific
+src/Macros.make
+src/.env_mach*
+src/env_mach*
 src/makdep
 src/*.d
 src/Depends*

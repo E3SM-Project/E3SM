@@ -18,9 +18,9 @@ set STOP_OPTION = `./xmlquery STOP_OPTION -value`
 cd $CASEROOT
 echo "doing a ${STOP_N} ${STOP_OPTION} test with no restart files" >>& $TESTSTATUS_LOG 
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 
@@ -49,7 +49,7 @@ echo "" >>& $TESTSTATUS_LOG
 
 echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >&! $TESTSTATUS_OUT
 echo "--- Test Functionality: ---" >>& $TESTSTATUS_OUT
-echo "this test just measures performance - so there are no PASS/FAIL metrics
+echo "this test just measures performance - so there are no PASS/FAIL metrics"
 
 
 

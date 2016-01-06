@@ -15,17 +15,17 @@ if ( -e env_mach_pes.xml.1 )  then
   cp -f env_build.xml.1      LockedFiles/env_build.xml.locked
 else
   echo " ERROR: env_mach_pes.xml.1 does not exist" 
-  echo "   this would been produced in the build - must run $CASE.test_build"
+  echo "   this would been produced in the build - must run case.test_build"
   exit -1
 endif
 
 # note - if you change the env_mach_pes.xml file - should always
-# rerun the following two cesm_setup commands to ensure that the right
+# rerun the following two case.setup commands to ensure that the right
 # settings are in the run script
 # note that the following two commands will eliminate all the batch files except
 # for the test file and copy the env_mach_pes.xml to the LockedFiles directory
-./cesm_setup -clean -testmode
-./cesm_setup
+./case.setup -clean -testmode
+./case.setup
 
 # Set env_run.xml settings 
 set STOP_N      = `./xmlquery STOP_N      -value`
@@ -45,9 +45,9 @@ cd $CASEROOT
 echo "" >>& $TESTSTATUS_LOG 
 echo "doing an ${STOP_N} ${STOP_OPTION} initial test, no restarts written" >>& $TESTSTATUS_LOG 
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 
@@ -88,17 +88,17 @@ echo "doing an ${STOP_N} ${STOP_OPTION} initial test with half tasks, same threa
 
 cp -f env_mach_pes.xml.2 env_mach_pes.xml
 cp -f env_mach_pes.xml.2 LockedFiles/env_mach_pes.xml
-./cesm_setup -clean -testmode
-./cesm_setup
+./case.setup -clean -testmode
+./case.setup
 
 rm $EXEROOT/cesm.exe >& /dev/null
 cp -f $EXEROOT/cesm.exe.2 $EXEROOT/cesm.exe || exit -9
 cp -f env_build.xml.2    env_build.xml
 cp -f env_build.xml.2    LockedFiles/env_build.xml.locked
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 

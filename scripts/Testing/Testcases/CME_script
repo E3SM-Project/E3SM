@@ -27,14 +27,14 @@ cd $CASEROOT
 echo "doing a ${STOP_N} ${STOP_OPTION} mct test" >>& $TESTSTATUS_LOG 
 
 # need to source the env_mach_specific file for the mct environment
-source $CASEROOT/env_mach_specific
+source $CASEROOT/.env_mach_specific.csh
 if ($status != 0) then
    echo "Error: problem sourcing env_mach_specific"; exit -2
 endif 
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 
@@ -70,14 +70,14 @@ cp -f env_build.xml.esmf  env_build.xml
 cp -f env_build.xml.esmf  LockedFiles/env_build.xml.locked
 
 # need to source the env_mach_specific file for the esmf environment
-source $CASEROOT/env_mach_specific
+source $CASEROOT/.env_mach_specific.csh
 if ($status != 0) then
    echo "Error: problem sourcing env_mach_specific"; exit -2
 endif 
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 

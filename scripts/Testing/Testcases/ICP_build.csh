@@ -1,4 +1,5 @@
 #!/bin/csh -f
+setenv CIMEROOT `./xmlquery CIMEROOT    -value`
 
 ./Tools/check_lockedfiles || exit -1
 
@@ -150,7 +151,7 @@ foreach bx ($bxvals)
       cp env_build.xml LockedFiles/env_build.xml.locked
 
       if ($precheck == 0) then
-        ./*.build
+        ./case.build -testmode
         if ($status != 0) then
           echo "Error: build NTASKS_ICE $NTASKS_ICE and NTHRDS_ICE $NTHRDS_ICE  failed" >! ./TestStatus
           echo "CFAIL $CASE" > ./TestStatus

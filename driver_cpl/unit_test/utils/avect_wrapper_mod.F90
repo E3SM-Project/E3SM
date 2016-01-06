@@ -10,7 +10,11 @@ module avect_wrapper_mod
   save
 
 
-  public :: create_aVect_with_data    ! creates an attribute vector with a given set of real-valued fields, and fills it with the given data
+  ! The following two routines are the same, except for the meaning of the two dimensions
+  ! of the 'data' array
+  public :: create_aVect_with_data_rows_are_points    ! creates an attribute vector with a given set of real-valued fields, and fills it with the given data
+  public :: create_aVect_with_data_rows_are_fields    ! creates an attribute vector with a given set of real-valued fields, and fills it with the given data
+
   public :: create_aVect_without_data ! creates an attribute vector with a given set of real-valued fields
   public :: aVect_importRattr         ! wrapper to mct_aVect_importRattr which doesn't require a pointer input
   public :: aVect_exportRattr         ! wrapper to mct_aVect_exportRattr which doesn't require pointer management for the output
@@ -18,7 +22,7 @@ module avect_wrapper_mod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine create_aVect_with_data(av, attr_tags, data)
+  subroutine create_aVect_with_data_rows_are_points(av, attr_tags, data)
     !
     ! !DESCRIPTION:
     ! Creates an attribute vector with a given set of fields, which are all assumed to be
@@ -40,7 +44,7 @@ contains
     integer :: npoints
     integer :: field_index
     
-    character(len=*), parameter :: subname = 'create_aVect_with_data'
+    character(len=*), parameter :: subname = 'create_aVect_with_data_rows_are_points'
     !-----------------------------------------------------------------------
 
     npoints = size(data, 1)
@@ -54,11 +58,34 @@ contains
     call create_aVect_without_data(av, attr_tags, npoints)
 
     do field_index = 1, nfields
-       call aVect_importRattr(av, attr_tags(field_index), data(:,field_index))
+       call aVect_importRattr(av, trim(attr_tags(field_index)), data(:,field_index))
     end do
     
-  end subroutine create_aVect_with_data
+  end subroutine create_aVect_with_data_rows_are_points
 
+  !-----------------------------------------------------------------------
+  subroutine create_aVect_with_data_rows_are_fields(av, attr_tags, data)
+    !
+    ! !DESCRIPTION:
+    ! Creates an attribute vector with a given set of fields, which are all assumed to be
+    ! real-valued. Then fills it with the given data.
+    !
+    ! The data should be given as a 2-d array, [field, point]. So the first dimension
+    ! should be the same size as the attr_tags array, with data(i,:) being used to fill
+    ! the attr_tags(i) variable.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    type(mct_aVect), intent(inout) :: av
+    character(len=*), intent(in) :: attr_tags(:)
+    real(r8), intent(in) :: data(:,:)
+    !-----------------------------------------------------------------------
+
+    call create_aVect_with_data_rows_are_points(av, attr_tags, transpose(data))
+    
+  end subroutine create_aVect_with_data_rows_are_fields
+  
   !-----------------------------------------------------------------------
   subroutine create_aVect_without_data(av, attr_tags, lsize)
     !
@@ -117,7 +144,7 @@ contains
 
     allocate(data_ptr(size(data)))
     data_ptr(:) = data(:)
-    call mct_aVect_importRattr(av, attr_tag, data_ptr)
+    call mct_aVect_importRattr(av, trim(attr_tag), data_ptr)
     deallocate(data_ptr)
     
   end subroutine aVect_importRattr
@@ -144,7 +171,7 @@ contains
     !-----------------------------------------------------------------------
 
     nullify(data_ptr)
-    call mct_aVect_exportRattr(av, attr_tag, data_ptr)
+    call mct_aVect_exportRattr(av, trim(attr_tag), data_ptr)
     data = data_ptr
     deallocate(data_ptr)
   end function aVect_exportRattr

@@ -63,7 +63,7 @@ contains
     ! cells: A (50%), B (25%), C (25%)
 
     ! Set up attribute vectors
-    call create_aVect_with_data(this%av_s, &
+    call create_aVect_with_data_rows_are_points(this%av_s, &
          attr_tags = ['data'], &
          data = reshape(data_source, [npts_source,1]))
     call create_aVect_without_data(this%av_d, &
@@ -103,7 +103,7 @@ contains
     ! Setup
 
     ! Set up attribute vectors
-    call create_aVect_with_data(this%av_s, &
+    call create_aVect_with_data_rows_are_points(this%av_s, &
          attr_tags = ['data'], &
          data = reshape(data_source, [npts_source,1]))
     call create_aVect_without_data(this%av_d, &

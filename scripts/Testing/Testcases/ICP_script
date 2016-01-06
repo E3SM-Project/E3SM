@@ -50,9 +50,9 @@ while ($cnt < $cntmax && $found == 1)
       cd $CASEROOT
       cp -f user_nl_cice.mh${maskhalo} user_nl_cice
 
-      ./$CASE.run
+      ./case.run
       if ($status != 0) then
-	  echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+	  echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
 	  exit -1
       endif
 

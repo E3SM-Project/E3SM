@@ -1,4 +1,5 @@
 #!/bin/csh -f
+setenv CIMEROOT `./xmlquery CIMEROOT    -value`
 
 ./Tools/check_lockedfiles || exit -1
 
@@ -26,45 +27,45 @@ set NTHRDS_CPL  = `./xmlquery NTHRDS_CPL  -value`
 
 if ( $NTHRDS_ATM <= 1) then
   echo "WARNING: component ATM is not threaded, changing NTHRDS_ATM to 2" 
-  xmlchange -file env_mach_pes.xml -id NTHRDS_ATM -val 2
+  ./xmlchange -file env_mach_pes.xml -id NTHRDS_ATM -val 2
 endif
 if ( $NTHRDS_LND <= 1) then
   echo "WARNING: component LND is not threaded, changing NTHRDS_LND to 2" 
-  xmlchange -file env_mach_pes.xml -id NTHRDS_LND -val 2
+  ./xmlchange -file env_mach_pes.xml -id NTHRDS_LND -val 2
 endif
 if ( $NTHRDS_ROF <= 1) then
   echo "WARNING: component ROF is not threaded, changing NTHRDS_ROF to 2" 
-  xmlchange -file env_mach_pes.xml -id NTHRDS_ROF -val 2
+  ./xmlchange -file env_mach_pes.xml -id NTHRDS_ROF -val 2
 endif
 if ( $NTHRDS_ICE <= 1) then
   echo "WARNING: component ICE is not threaded, changing NTHRDS_ICE to 2" 
-  xmlchange -file env_mach_pes.xml -id NTHRDS_ICE -val 2
+  ./xmlchange -file env_mach_pes.xml -id NTHRDS_ICE -val 2
 endif
 if ( $NTHRDS_OCN <= 1) then
   echo "WARNING: component OCN is not threaded, changing NTHRDS_OCN to 2" 
-  xmlchange -file env_mach_pes.xml -id NTHRDS_OCN -val 2
+  ./xmlchange -file env_mach_pes.xml -id NTHRDS_OCN -val 2
 endif
 if ( $NTHRDS_GLC <= 1) then
   echo "WARNING: component GLC is not threaded, changing NTHRDS_GOC to 2" 
-  xmlchange -file env_mach_pes.xml -id NTHRDS_GLC -val 2
+  ./xmlchange -file env_mach_pes.xml -id NTHRDS_GLC -val 2
 endif
 if ( $NTHRDS_CPL <= 1) then
   echo "WARNING: component CPL is not threaded, changing NTHRDS_CPL to 2" 
-  xmlchange -file env_mach_pes.xml -id NTHRDS_CPL -val 2
+  ./xmlchange -file env_mach_pes.xml -id NTHRDS_CPL -val 2
 endif
 if ( $NTHRDS_WAV <= 1) then
   echo "WARNING: component WAV is not threaded, changing NTHRDS_WAV to 2" 
-  xmlchange -file env_mach_pes.xml -id NTHRDS_WAV -val 2
+  ./xmlchange -file env_mach_pes.xml -id NTHRDS_WAV -val 2
 endif
 
 cp -f env_mach_pes.xml env_mach_pes.xml.1
 
-# Since possibly changed the PE layout as above - must run cesm_setup -clean WITHOUT the -testmode flag
-# in order for the $CASE.test script to be regenerated with the correct batch processor settings
-./cesm_setup -clean 
-./cesm_setup 
+# Since possibly changed the PE layout as above - must run case.setup -clean WITHOUT the -testmode flag
+# in order for the case.test script to be regenerated with the correct batch processor settings
+./case.setup -clean 
+./case.setup 
 
-./$CASE.build
+./case.build -testmode
 if ($status != 0) then
    echo "Error: build failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus
