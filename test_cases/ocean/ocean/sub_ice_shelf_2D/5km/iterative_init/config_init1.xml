@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <config case="init_step1">
 
-	<get_file hash="ut8mre2rir" dest_path="mesh_database" file_name="planar_5km_50x230km.151216.nc">
+	<get_file hash="qfdrqh616l" dest_path="mesh_database" file_name="doubly_periodic_5km_50x230km_planar.151218.nc">
 		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mesh_database/"/>
 	</get_file>
 
-	<add_link source_path="mesh_database" source="planar_5km_50x230km.151216.nc" dest="base_mesh.nc"/>
+	<add_link source_path="mesh_database" source="doubly_periodic_5km_50x230km_planar.151218.nc" dest="base_mesh.nc"/>
 
 	<add_executable source="model" dest="ocean_model"/>
 	<add_executable source="cell_culler" dest="MpasCellCuller.x"/>
