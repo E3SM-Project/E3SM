@@ -2965,7 +2965,7 @@ module mpas_io
    end subroutine MPAS_io_get_att_int1d
 
 
-   subroutine MPAS_io_get_att_real0d(handle, attName, attValue, fieldname, ierr)
+   subroutine MPAS_io_get_att_real0d(handle, attName, attValue, fieldname, precision, ierr)
 
       implicit none
 
@@ -2973,11 +2973,14 @@ module mpas_io
       character (len=*), intent(in) :: attName
       real (kind=RKIND), intent(out) :: attValue
       character (len=*), intent(in), optional :: fieldname
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
       integer :: varid
       integer :: xtype, len
+      integer :: local_precision
+      real (kind=R4KIND) :: singleVal
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: att_cursor, new_att_node
 
@@ -3043,18 +3046,38 @@ module mpas_io
          varid = PIO_global
       end if
 
+      if (present(precision)) then
+         local_precision = precision
+      else
+         local_precision = MPAS_IO_NATIVE_PRECISION
+      end if
+
       ! Query attribute value
       pio_ierr = PIO_inq_att(handle % pio_file, varid, attName, xtype, len)
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
-      if (xtype /= PIO_REALKIND) then
-         if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
-         return
-      end if
 
-      pio_ierr = PIO_get_att(handle % pio_file, varid, attName, attValue)
+      if ((local_precision == MPAS_IO_SINGLE_PRECISION) .and. &
+          (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
+
+         if (xtype /= PIO_REAL) then
+            if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
+            return
+         end if
+         pio_ierr = PIO_get_att(handle % pio_file, varid, attName, singleVal)
+         attValue = real(singleVal,RKIND)
+
+      else
+
+         if (xtype /= PIO_DOUBLE .and. xtype /= PIO_REAL) then
+            if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
+            return
+         end if
+         pio_ierr = PIO_get_att(handle % pio_file, varid, attName, attValue)
+
+      end if
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
@@ -3067,6 +3090,7 @@ module mpas_io
       new_att_node % atthandle % attName = attName
       new_att_node % atthandle % attType = MPAS_ATT_REAL
       new_att_node % atthandle % attValueReal = attValue
+      new_att_node % atthandle % precision = local_precision
 
       if (present(fieldname)) then
          if (.not. associated(field_cursor % fieldhandle % attlist_head)) then
@@ -3099,7 +3123,7 @@ module mpas_io
    end subroutine MPAS_io_get_att_real0d
 
 
-   subroutine MPAS_io_get_att_real1d(handle, attName, attValue, fieldname, ierr)
+   subroutine MPAS_io_get_att_real1d(handle, attName, attValue, fieldname, precision, ierr)
 
       implicit none
 
@@ -3107,11 +3131,14 @@ module mpas_io
       character (len=*), intent(in) :: attName
       real (kind=RKIND), dimension(:), pointer :: attValue
       character (len=*), intent(in), optional :: fieldname
+      integer, intent(in), optional :: precision
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
       integer :: varid
       integer :: xtype, len, attlen
+      integer :: local_precision
+      real (kind=R4KIND), dimension(:), allocatable :: singleVal
       type (fieldlist_type), pointer :: field_cursor
       type (attlist_type), pointer :: att_cursor, new_att_node
 
@@ -3179,15 +3206,16 @@ module mpas_io
          varid = PIO_global
       end if
 
+      if (present(precision)) then
+         local_precision = precision
+      else
+         local_precision = MPAS_IO_NATIVE_PRECISION
+      end if
+
       ! Query attribute value
       pio_ierr = PIO_inq_att(handle % pio_file, varid, attName, xtype, len)
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
-         return
-      end if
-
-      if (xtype /= PIO_REALKIND) then
-         if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
          return
       end if
 
@@ -3197,8 +3225,29 @@ module mpas_io
          return
       end if
 
-      allocate(attValue(attlen))
-      pio_ierr = PIO_get_att(handle % pio_file, varid, attName, attValue)
+      if ((local_precision == MPAS_IO_SINGLE_PRECISION) .and. &
+          (MPAS_IO_NATIVE_PRECISION /= MPAS_IO_SINGLE_PRECISION)) then
+
+         if (xtype /= PIO_REAL) then
+            if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
+            return
+         end if
+         allocate(attValue(attlen))
+         allocate(singleVal(attlen))
+         pio_ierr = PIO_get_att(handle % pio_file, varid, attName, singleVal)
+         attValue(:) = real(singleVal(:),RKIND)
+         deallocate(singleVal)
+
+      else
+
+         if (xtype /= PIO_DOUBLE .and. xtype /= PIO_REAL) then
+            if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
+            return
+         end if
+         allocate(attValue(attlen))
+         pio_ierr = PIO_get_att(handle % pio_file, varid, attName, attValue)
+
+      end if
       if (pio_ierr /= PIO_noerr) then
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
@@ -3212,6 +3261,7 @@ module mpas_io
       new_att_node % atthandle % attType = MPAS_ATT_REALA
       allocate(new_att_node % atthandle % attValueRealA(attlen))
       new_att_node % atthandle % attValueRealA = attValue
+      new_att_node % atthandle % precision = local_precision
 
       if (present(fieldname)) then
          if (.not. associated(field_cursor % fieldhandle % attlist_head)) then
