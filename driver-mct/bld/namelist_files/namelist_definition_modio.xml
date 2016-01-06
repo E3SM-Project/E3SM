@@ -72,6 +72,14 @@ valid_values="">
 </entry>
 
 <entry 
+id="pio_rearranger"
+type="integer"
+category="pio" 
+group="pio_inparm"
+valid_values="-99,1,2">
+</entry>
+
+<entry 
 id="pio_numiotasks"
 type="integer"
 category="pio" 

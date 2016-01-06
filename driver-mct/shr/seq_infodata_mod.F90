@@ -105,6 +105,7 @@ MODULE seq_infodata_mod
       real(SHR_KIND_R8)       :: wv_sat_table_spacing! Saturation pressure table resolution
       character(SHR_KIND_CL)  :: flux_epbal      ! selects E,P,R adjustment technique 
       logical                 :: flux_albav      ! T => no diurnal cycle in ocn albedos
+      logical                 :: flux_diurnal    ! T => diurnal cycle in atm/ocn fluxes
       real(SHR_KIND_R8)       :: wall_time_limit ! force stop time limit (hours)
       character(SHR_KIND_CS)  :: force_stop_at   ! when to force a stop (month, day, etc)
       character(SHR_KIND_CL)  :: atm_gnam        ! atm grid
@@ -136,6 +137,14 @@ MODULE seq_infodata_mod
       logical                 :: histaux_l2x1yr  ! cpl writes aux hist files: l2x annual all
       logical                 :: histaux_l2x     ! cpl writes aux hist files: l2x every c2l comm
       logical                 :: histaux_r2x     ! cpl writes aux hist files: r2x every c2o comm
+      logical                 :: histavg_atm     ! cpl writes atm fields in average history file
+      logical                 :: histavg_lnd     ! cpl writes lnd fields in average history file
+      logical                 :: histavg_ocn     ! cpl writes ocn fields in average history file
+      logical                 :: histavg_ice     ! cpl writes ice fields in average history file
+      logical                 :: histavg_rof     ! cpl writes rof fields in average history file
+      logical                 :: histavg_glc     ! cpl writes glc fields in average history file
+      logical                 :: histavg_wav     ! cpl writes wav fields in average history file
+      logical                 :: histavg_xao     ! cpl writes flux xao fields in average history file
       real(SHR_KIND_R8)       :: eps_frac        ! fraction error tolerance
       real(SHR_KIND_R8)       :: eps_amask       ! atm mask error tolerance
       real(SHR_KIND_R8)       :: eps_agrid       ! atm grid error tolerance
@@ -302,6 +311,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
     real(SHR_KIND_R8)      :: wv_sat_table_spacing   ! Saturation pressure table resolution
     character(SHR_KIND_CL) :: flux_epbal         ! selects E,P,R adjustment technique 
     logical                :: flux_albav         ! T => no diurnal cycle in ocn albedos
+    logical                :: flux_diurnal       ! T => diurnal cycle in atm/ocn fluxes
     real(SHR_KIND_R8)      :: wall_time_limit    ! force stop time limit (hours)
     character(SHR_KIND_CS) :: force_stop_at      ! when to force a stop (month, day, etc)
     character(SHR_KIND_CL) :: atm_gnam           ! atm grid
@@ -332,6 +342,14 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
     logical                :: histaux_l2x1yr     ! cpl writes aux hist files: l2x annual all
     logical                :: histaux_l2x        ! cpl writes aux hist files: l2x every c2l comm
     logical                :: histaux_r2x        ! cpl writes aux hist files: r2x every c2o comm
+    logical                :: histavg_atm        ! cpl writes atm fields in average history file
+    logical                :: histavg_lnd        ! cpl writes lnd fields in average history file
+    logical                :: histavg_ocn        ! cpl writes ocn fields in average history file
+    logical                :: histavg_ice        ! cpl writes ice fields in average history file
+    logical                :: histavg_rof        ! cpl writes rof fields in average history file
+    logical                :: histavg_glc        ! cpl writes glc fields in average history file
+    logical                :: histavg_wav        ! cpl writes wav fields in average history file
+    logical                :: histavg_xao        ! cpl writes flux xao fields in average history file
     logical                :: drv_threading      ! is threading control in driver turned on
     real(SHR_KIND_R8)      :: eps_frac           ! fraction error tolerance
     real(SHR_KIND_R8)      :: eps_amask          ! atm mask error tolerance
@@ -355,7 +373,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
          brnch_retain_casename, info_debug, bfbflag,       &
          restart_pfile, restart_file, run_barriers,        &
          single_column, scmlat, force_stop_at,             &
-         scmlon, logFilePostFix, outPathRoot,              &
+         scmlon, logFilePostFix, outPathRoot, flux_diurnal,&
          perpetual, perpetual_ymd, flux_epbal, flux_albav, &
          orb_iyear_align, orb_mode, wall_time_limit,       &
          orb_iyear, orb_obliq, orb_eccen, orb_mvelp,       &
@@ -369,6 +387,8 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
          budget_ann, budget_ltann, budget_ltend,           &
          histaux_a2x    ,histaux_a2x3hr,histaux_a2x3hrp,   &
          histaux_a2x24hr,histaux_l2x   ,histaux_r2x,       &
+         histavg_atm, histavg_lnd, histavg_ocn, histavg_ice, &
+         histavg_rof, histavg_glc, histavg_wav, histavg_xao, &
          histaux_l2x1yr, cpl_seq_option,                   &
          cpl_cdf64, eps_frac, eps_amask,                   &
          eps_agrid, eps_aarea, eps_omask, eps_ogrid,       &
@@ -426,6 +446,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        wv_sat_table_spacing  = 1.0
        flux_epbal            = 'off'
        flux_albav            = .false.
+       flux_diurnal          = .false.
        wall_time_limit       = -1.0
        force_stop_at         = 'month'
        atm_gnam              = 'undefined'
@@ -456,6 +477,14 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        histaux_l2x1yr        = .false.
        histaux_l2x           = .false.
        histaux_r2x           = .false.
+       histavg_atm           = .true.
+       histavg_lnd           = .true.
+       histavg_ocn           = .true.
+       histavg_ice           = .true.
+       histavg_rof           = .true.
+       histavg_glc           = .true.
+       histavg_wav           = .true.
+       histavg_xao           = .true.
        drv_threading         = .false.
        eps_frac              = 1.0e-02_SHR_KIND_R8
        eps_amask             = 1.0e-13_SHR_KIND_R8
@@ -519,6 +548,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        infodata%wv_sat_table_spacing  = wv_sat_table_spacing
        infodata%flux_epbal            = flux_epbal
        infodata%flux_albav            = flux_albav
+       infodata%flux_diurnal          = flux_diurnal
        infodata%wall_time_limit       = wall_time_limit
        infodata%force_stop_at         = force_stop_at
        infodata%atm_gnam              = atm_gnam
@@ -549,6 +579,14 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        infodata%histaux_l2x1yr        = histaux_l2x1yr
        infodata%histaux_l2x           = histaux_l2x    
        infodata%histaux_r2x           = histaux_r2x    
+       infodata%histavg_atm           = histavg_atm
+       infodata%histavg_lnd           = histavg_lnd
+       infodata%histavg_ocn           = histavg_ocn
+       infodata%histavg_ice           = histavg_ice
+       infodata%histavg_rof           = histavg_rof
+       infodata%histavg_glc           = histavg_glc
+       infodata%histavg_wav           = histavg_wav
+       infodata%histavg_xao           = histavg_xao
        infodata%drv_threading         = drv_threading
        infodata%eps_frac              = eps_frac
        infodata%eps_amask             = eps_amask
@@ -794,11 +832,13 @@ SUBROUTINE seq_infodata_GetData( infodata, case_name, case_desc, timing_dir,  &
            shr_map_dopole, vect_map, aoflux_grid, flux_epbalfact,             &
            nextsw_cday, precip_fact, flux_epbal, flux_albav, glcrun_alarm,    &
            glc_g2lupdate, atm_aero, run_barriers, esmf_map_flag,              &
-           do_budgets, do_histinit, drv_threading,                            &
+           do_budgets, do_histinit, drv_threading, flux_diurnal,              &
            budget_inst, budget_daily, budget_month, wall_time_limit,          &
            budget_ann, budget_ltann, budget_ltend , force_stop_at,            &
            histaux_a2x    , histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yr, &
            histaux_a2x24hr, histaux_l2x   , histaux_r2x     , orb_obliq,      &
+           histavg_atm, histavg_lnd, histavg_ocn, histavg_ice,                &
+           histavg_rof, histavg_glc, histavg_wav, histavg_xao,                &
            cpl_cdf64, orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
            orb_eccen, orb_obliqr, orb_lambm0, orb_mvelpp, wv_sat_scheme,      &
            wv_sat_transition_start, wv_sat_use_tables, wv_sat_table_spacing,  &
@@ -856,6 +896,7 @@ SUBROUTINE seq_infodata_GetData( infodata, case_name, case_desc, timing_dir,  &
    real(SHR_KIND_R8)   ,optional, intent(OUT) :: wv_sat_table_spacing  ! Saturation pressure table resolution
    character(len=*)    ,optional, intent(OUT) :: flux_epbal    ! selects E,P,R adjustment technique 
    logical             ,optional, intent(OUT) :: flux_albav    ! T => no diurnal cycle in ocn albedos
+   logical             ,optional, intent(OUT) :: flux_diurnal  ! T => diurnal cycle in atm/ocn flux
    real(SHR_KIND_R8)   ,optional, intent(OUT) :: wall_time_limit ! force stop wall time (hours)
    character(len=*)    ,optional, intent(OUT) :: force_stop_at ! force stop at next (month, day, etc)
    character(len=*)    ,optional, intent(OUT) :: atm_gnam      ! atm grid
@@ -884,8 +925,16 @@ SUBROUTINE seq_infodata_GetData( infodata, case_name, case_desc, timing_dir,  &
    logical             ,optional, intent(OUT) :: histaux_a2x3hrp
    logical             ,optional, intent(OUT) :: histaux_a2x24hr
    logical             ,optional, intent(OUT) :: histaux_l2x1yr
-   logical             ,optional, intent(OUT) :: histaux_l2x   
-   logical             ,optional, intent(OUT) :: histaux_r2x    
+   logical             ,optional, intent(OUT) :: histaux_l2x
+   logical             ,optional, intent(OUT) :: histaux_r2x
+   logical             ,optional, intent(OUT) :: histavg_atm
+   logical             ,optional, intent(OUT) :: histavg_lnd
+   logical             ,optional, intent(OUT) :: histavg_ocn
+   logical             ,optional, intent(OUT) :: histavg_ice
+   logical             ,optional, intent(OUT) :: histavg_rof
+   logical             ,optional, intent(OUT) :: histavg_glc
+   logical             ,optional, intent(OUT) :: histavg_wav
+   logical             ,optional, intent(OUT) :: histavg_xao
    logical             ,optional, intent(OUT) :: drv_threading ! driver threading control flag
    real(SHR_KIND_R8)   ,optional, intent(OUT) :: eps_frac      ! fraction error tolerance
    real(SHR_KIND_R8)   ,optional, intent(OUT) :: eps_amask     ! atm mask error tolerance
@@ -1004,6 +1053,7 @@ SUBROUTINE seq_infodata_GetData( infodata, case_name, case_desc, timing_dir,  &
     if ( present(wv_sat_table_spacing)) wv_sat_table_spacing = infodata%wv_sat_table_spacing
     if ( present(flux_epbal)     ) flux_epbal     = infodata%flux_epbal
     if ( present(flux_albav)     ) flux_albav     = infodata%flux_albav
+    if ( present(flux_diurnal)   ) flux_diurnal   = infodata%flux_diurnal
     if ( present(wall_time_limit)) wall_time_limit= infodata%wall_time_limit
     if ( present(force_stop_at)  ) force_stop_at  = infodata%force_stop_at
     if ( present(atm_gnam)       ) atm_gnam       = infodata%atm_gnam
@@ -1034,6 +1084,14 @@ SUBROUTINE seq_infodata_GetData( infodata, case_name, case_desc, timing_dir,  &
     if ( present(histaux_l2x1yr) ) histaux_l2x1yr = infodata%histaux_l2x1yr
     if ( present(histaux_l2x)    ) histaux_l2x    = infodata%histaux_l2x
     if ( present(histaux_r2x)    ) histaux_r2x    = infodata%histaux_r2x
+    if ( present(histavg_atm)    ) histavg_atm    = infodata%histavg_atm
+    if ( present(histavg_lnd)    ) histavg_lnd    = infodata%histavg_lnd
+    if ( present(histavg_ocn)    ) histavg_ocn    = infodata%histavg_ocn
+    if ( present(histavg_ice)    ) histavg_ice    = infodata%histavg_ice
+    if ( present(histavg_rof)    ) histavg_rof    = infodata%histavg_rof
+    if ( present(histavg_glc)    ) histavg_glc    = infodata%histavg_glc
+    if ( present(histavg_wav)    ) histavg_wav    = infodata%histavg_wav
+    if ( present(histavg_xao)    ) histavg_xao    = infodata%histavg_xao
     if ( present(drv_threading)  ) drv_threading  = infodata%drv_threading
     if ( present(eps_frac)       ) eps_frac       = infodata%eps_frac
     if ( present(eps_amask)      ) eps_amask      = infodata%eps_amask
@@ -1143,11 +1201,13 @@ SUBROUTINE seq_infodata_PutData( infodata, case_name, case_desc, timing_dir,  &
            shr_map_dopole, vect_map, aoflux_grid, run_barriers,               &
            nextsw_cday, precip_fact, flux_epbal, flux_albav, glcrun_alarm,    &
            glc_g2lupdate, atm_aero, esmf_map_flag, wall_time_limit,           &
-           do_budgets, do_histinit, drv_threading,                            &
+           do_budgets, do_histinit, drv_threading, flux_diurnal,              &
            budget_inst, budget_daily, budget_month, force_stop_at,            &
            budget_ann, budget_ltann, budget_ltend ,                           &
            histaux_a2x    , histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yr, &
            histaux_a2x24hr, histaux_l2x   , histaux_r2x     , orb_obliq,      &
+           histavg_atm, histavg_lnd, histavg_ocn, histavg_ice,                &
+           histavg_rof, histavg_glc, histavg_wav, histavg_xao,                &
            cpl_cdf64, orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
            orb_eccen, orb_obliqr, orb_lambm0, orb_mvelpp, wv_sat_scheme,      &
            wv_sat_transition_start, wv_sat_use_tables, wv_sat_table_spacing,  &
@@ -1205,6 +1265,7 @@ SUBROUTINE seq_infodata_PutData( infodata, case_name, case_desc, timing_dir,  &
    real(SHR_KIND_R8)   ,optional, intent(IN) :: wv_sat_table_spacing  ! Saturation pressure table resolution
    character(len=*)    ,optional, intent(IN) :: flux_epbal    ! selects E,P,R adjustment technique 
    logical             ,optional, intent(IN) :: flux_albav    ! T => no diurnal cycle in ocn albedos
+   logical             ,optional, intent(IN) :: flux_diurnal  ! T => diurnal cycle in atm/ocn flux
    real(SHR_KIND_R8)   ,optional, intent(IN) :: wall_time_limit ! force stop wall time (hours)
    character(len=*)    ,optional, intent(IN) :: force_stop_at ! force a stop at next (month, day, etc)
    character(len=*)    ,optional, intent(IN) :: atm_gnam   ! atm grid
@@ -1233,8 +1294,16 @@ SUBROUTINE seq_infodata_PutData( infodata, case_name, case_desc, timing_dir,  &
    logical             ,optional, intent(IN) :: histaux_a2x3hrp
    logical             ,optional, intent(IN) :: histaux_a2x24hr
    logical             ,optional, intent(IN) :: histaux_l2x1yr
-   logical             ,optional, intent(IN) :: histaux_l2x   
-   logical             ,optional, intent(IN) :: histaux_r2x    
+   logical             ,optional, intent(IN) :: histaux_l2x
+   logical             ,optional, intent(IN) :: histaux_r2x
+   logical             ,optional, intent(IN) :: histavg_atm
+   logical             ,optional, intent(IN) :: histavg_lnd
+   logical             ,optional, intent(IN) :: histavg_ocn
+   logical             ,optional, intent(IN) :: histavg_ice
+   logical             ,optional, intent(IN) :: histavg_rof
+   logical             ,optional, intent(IN) :: histavg_glc
+   logical             ,optional, intent(IN) :: histavg_wav
+   logical             ,optional, intent(IN) :: histavg_xao
    logical             ,optional, intent(IN) :: drv_threading ! driver threading control flag
    real(SHR_KIND_R8)   ,optional, intent(IN) :: eps_frac      ! fraction error tolerance
    real(SHR_KIND_R8)   ,optional, intent(IN) :: eps_amask     ! atm mask error tolerance
@@ -1351,6 +1420,7 @@ SUBROUTINE seq_infodata_PutData( infodata, case_name, case_desc, timing_dir,  &
     if ( present(wv_sat_table_spacing)) infodata%wv_sat_table_spacing = wv_sat_table_spacing
     if ( present(flux_epbal)     ) infodata%flux_epbal     = flux_epbal
     if ( present(flux_albav)     ) infodata%flux_albav     = flux_albav
+    if ( present(flux_diurnal)   ) infodata%flux_diurnal   = flux_diurnal
     if ( present(wall_time_limit)) infodata%wall_time_limit= wall_time_limit
     if ( present(force_stop_at)  ) infodata%force_stop_at  = force_stop_at
     if ( present(atm_gnam)       ) infodata%atm_gnam       = atm_gnam
@@ -1381,6 +1451,14 @@ SUBROUTINE seq_infodata_PutData( infodata, case_name, case_desc, timing_dir,  &
     if ( present(histaux_l2x1yr) ) infodata%histaux_l2x1yr = histaux_l2x1yr
     if ( present(histaux_l2x)    ) infodata%histaux_l2x    = histaux_l2x
     if ( present(histaux_r2x)    ) infodata%histaux_r2x    = histaux_r2x
+    if ( present(histavg_atm)    ) infodata%histavg_atm    = histavg_atm
+    if ( present(histavg_lnd)    ) infodata%histavg_lnd    = histavg_lnd
+    if ( present(histavg_ocn)    ) infodata%histavg_ocn    = histavg_ocn
+    if ( present(histavg_ice)    ) infodata%histavg_ice    = histavg_ice
+    if ( present(histavg_rof)    ) infodata%histavg_rof    = histavg_rof
+    if ( present(histavg_glc)    ) infodata%histavg_glc    = histavg_glc
+    if ( present(histavg_wav)    ) infodata%histavg_wav    = histavg_wav
+    if ( present(histavg_xao)    ) infodata%histavg_xao    = histavg_xao
     if ( present(drv_threading)  ) infodata%drv_threading  = drv_threading
     if ( present(eps_frac)       ) infodata%eps_frac       = eps_frac
     if ( present(eps_amask)      ) infodata%eps_amask      = eps_amask
@@ -1520,6 +1598,7 @@ subroutine seq_infodata_bcast(infodata,mpicom)
     call shr_mpi_bcast(infodata%wv_sat_table_spacing,  mpicom)
     call shr_mpi_bcast(infodata%flux_epbal,            mpicom)
     call shr_mpi_bcast(infodata%flux_albav,            mpicom)
+    call shr_mpi_bcast(infodata%flux_diurnal,          mpicom)
     call shr_mpi_bcast(infodata%wall_time_limit,       mpicom)
     call shr_mpi_bcast(infodata%force_stop_at,         mpicom)
     call shr_mpi_bcast(infodata%atm_gnam,              mpicom)
@@ -1550,6 +1629,14 @@ subroutine seq_infodata_bcast(infodata,mpicom)
     call shr_mpi_bcast(infodata%histaux_l2x1yr        ,mpicom)
     call shr_mpi_bcast(infodata%histaux_l2x           ,mpicom)
     call shr_mpi_bcast(infodata%histaux_r2x           ,mpicom)
+    call shr_mpi_bcast(infodata%histavg_atm           ,mpicom)
+    call shr_mpi_bcast(infodata%histavg_lnd           ,mpicom)
+    call shr_mpi_bcast(infodata%histavg_ocn           ,mpicom)
+    call shr_mpi_bcast(infodata%histavg_ice           ,mpicom)
+    call shr_mpi_bcast(infodata%histavg_rof           ,mpicom)
+    call shr_mpi_bcast(infodata%histavg_glc           ,mpicom)
+    call shr_mpi_bcast(infodata%histavg_wav           ,mpicom)
+    call shr_mpi_bcast(infodata%histavg_xao           ,mpicom)
     call shr_mpi_bcast(infodata%drv_threading,         mpicom)
     call shr_mpi_bcast(infodata%eps_frac,              mpicom)
     call shr_mpi_bcast(infodata%eps_amask,             mpicom)
@@ -2143,6 +2230,7 @@ SUBROUTINE seq_infodata_print( infodata )
 
        write(logunit,F0A) subname,'flux_epbal               = ', trim(infodata%flux_epbal)
        write(logunit,F0L) subname,'flux_albav               = ', infodata%flux_albav
+       write(logunit,F0L) subname,'flux_diurnal             = ', infodata%flux_diurnal
        write(logunit,F0R) subname,'wall_time_limit          = ', infodata%wall_time_limit
        write(logunit,F0A) subname,'force_stop_at            = ', trim(infodata%force_stop_at)
        write(logunit,F0A) subname,'atm_gridname             = ', trim(infodata%atm_gnam)
@@ -2171,8 +2259,16 @@ SUBROUTINE seq_infodata_print( infodata )
        write(logunit,F0L) subname,'histaux_a2x3hrp          = ', infodata%histaux_a2x3hrp
        write(logunit,F0L) subname,'histaux_a2x24hr          = ', infodata%histaux_a2x24hr
        write(logunit,F0L) subname,'histaux_l2x1yr           = ', infodata%histaux_l2x1yr
-       write(logunit,F0L) subname,'histaux_l2x              = ', infodata%histaux_l2x   
-       write(logunit,F0L) subname,'histaux_r2x              = ', infodata%histaux_r2x   
+       write(logunit,F0L) subname,'histaux_l2x              = ', infodata%histaux_l2x
+       write(logunit,F0L) subname,'histaux_r2x              = ', infodata%histaux_r2x
+       write(logunit,F0L) subname,'histavg_atm              = ', infodata%histavg_atm
+       write(logunit,F0L) subname,'histavg_lnd              = ', infodata%histavg_lnd
+       write(logunit,F0L) subname,'histavg_ocn              = ', infodata%histavg_ocn
+       write(logunit,F0L) subname,'histavg_ice              = ', infodata%histavg_ice
+       write(logunit,F0L) subname,'histavg_rof              = ', infodata%histavg_rof
+       write(logunit,F0L) subname,'histavg_glc              = ', infodata%histavg_glc
+       write(logunit,F0L) subname,'histavg_wav              = ', infodata%histavg_wav
+       write(logunit,F0L) subname,'histavg_xao              = ', infodata%histavg_xao
        write(logunit,F0L) subname,'drv_threading            = ', infodata%drv_threading
 
        write(logunit,F0R) subname,'eps_frac                 = ', infodata%eps_frac

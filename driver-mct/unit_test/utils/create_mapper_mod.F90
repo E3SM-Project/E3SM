@@ -42,8 +42,8 @@ contains
     ! destination decomposition, which is irrelevant for a single-processor unit test
     mapper%strategy = 'X'
 
-    ! TODO(wjs, 2015-01-14) May need to make this more sophisticated if it causes problems
-    ! to use 0 for all mappers
+    ! May need to make this more sophisticated if it causes problems to use 0 for all
+    ! mappers
     mapper%counter = 0
 
     allocate(mapper%gsmap_s)

@@ -123,11 +123,12 @@ module seq_flds_mod
  
    use shr_kind_mod,   only : CX => shr_kind_CX, CXX => shr_kind_CXX
    use shr_sys_mod,    only : shr_sys_abort
-   use seq_drydep_mod, only : seq_drydep_init, seq_drydep_read, lnd_drydep
+   use seq_drydep_mod, only : seq_drydep_init, seq_drydep_readnl, lnd_drydep
    use seq_comm_mct,   only : seq_comm_iamroot, seq_comm_setptrs, logunit
    use shr_megan_mod,  only : shr_megan_readnl, shr_megan_mechcomps_n
+   use shr_fire_emis_mod,  only : shr_fire_emis_readnl, shr_fire_emis_mechcomps_n, shr_fire_emis_ztop_token
    use shr_carma_mod,  only : shr_carma_readnl
-
+   
    implicit none
    public
    save
@@ -140,8 +141,10 @@ module seq_flds_mod
    integer, parameter, private :: CLL = 1024
    character(len=CXX) :: seq_drydep_fields   ! List of dry-deposition fields
    character(len=CXX) :: megan_voc_fields    ! List of MEGAN VOC emission fields
+   character(len=CXX) :: fire_emis_fields    ! List of fire emission fields
    character(len=CX)  :: carma_fields        ! List of CARMA fields from lnd->atm
-   integer            :: seq_flds_glc_nec    ! number of glc elevation classes
+   integer            :: ice_ncat            ! number of sea ice thickness categories
+   logical            :: seq_flds_i2o_per_cat! .true. if select per ice thickness category fields are passed from ice to ocean
 
    !----------------------------------------------------------------------------
    ! metadata
@@ -150,7 +153,7 @@ module seq_flds_mod
    character(len=*),parameter :: undef     = 'undefined'
    integer         ,parameter :: nmax      = 1000        ! maximum number of entries in lookup_entry
    integer                    :: n_entries = 0           ! actual number of entries in lookup_entry
-   character(len=80), dimension(nmax, 4) :: lookup_entry = undef
+   character(len=CSS), dimension(nmax, 4) :: lookup_entry = undef
 
    !----------------------------------------------------------------------------
    ! for the domain
@@ -174,9 +177,13 @@ module seq_flds_mod
    character(CXX) :: seq_flds_x2i_fluxes
 
    character(CXX) :: seq_flds_l2x_states 
+   character(CXX) :: seq_flds_l2x_states_to_glc 
    character(CXX) :: seq_flds_l2x_fluxes 
+   character(CXX) :: seq_flds_l2x_fluxes_to_glc 
    character(CXX) :: seq_flds_x2l_states 
+   character(CXX) :: seq_flds_x2l_states_from_glc
    character(CXX) :: seq_flds_x2l_fluxes
+   character(CXX) :: seq_flds_x2l_fluxes_from_glc
 
    character(CXX) :: seq_flds_o2x_states 
    character(CXX) :: seq_flds_o2x_fluxes 
@@ -184,7 +191,9 @@ module seq_flds_mod
    character(CXX) :: seq_flds_x2o_fluxes
 
    character(CXX) :: seq_flds_g2x_states 
+   character(CXX) :: seq_flds_g2x_states_to_lnd
    character(CXX) :: seq_flds_g2x_fluxes 
+   character(CXX) :: seq_flds_g2x_fluxes_to_lnd 
    character(CXX) :: seq_flds_x2g_states 
    character(CXX) :: seq_flds_x2g_fluxes
 
@@ -196,6 +205,7 @@ module seq_flds_mod
    character(CXX) :: seq_flds_xao_albedo
    character(CXX) :: seq_flds_xao_states 
    character(CXX) :: seq_flds_xao_fluxes
+   character(CXX) :: seq_flds_xao_diurnl  ! for diurnal cycle
 
    character(CXX) :: seq_flds_r2x_states 
    character(CXX) :: seq_flds_r2x_fluxes
@@ -212,13 +222,16 @@ module seq_flds_mod
    character(CXX) :: seq_flds_i2x_fields 
    character(CXX) :: seq_flds_x2i_fields 
    character(CXX) :: seq_flds_l2x_fields 
+   character(CXX) :: seq_flds_l2x_fields_to_glc
    character(CXX) :: seq_flds_x2l_fields 
+   character(CXX) :: seq_flds_x2l_fields_from_glc 
    character(CXX) :: seq_flds_o2x_fields 
    character(CXX) :: seq_flds_x2o_fields 
    character(CXX) :: seq_flds_xao_fields 
    character(CXX) :: seq_flds_r2x_fields
    character(CXX) :: seq_flds_x2r_fields
    character(CXX) :: seq_flds_g2x_fields 
+   character(CXX) :: seq_flds_g2x_fields_to_lnd 
    character(CXX) :: seq_flds_x2g_fields 
    character(CXX) :: seq_flds_w2x_fields 
    character(CXX) :: seq_flds_x2w_fields 
@@ -245,6 +258,7 @@ module seq_flds_mod
      use shr_file_mod,   only : shr_file_getUnit, shr_file_freeUnit
      use shr_string_mod, only : shr_string_listIntersect
      use shr_mpi_mod,    only : shr_mpi_bcast
+     use glc_elevclass_mod, only : glc_elevclass_init
 
 ! !INPUT/OUTPUT PARAMETERS:
      character(len=*), intent(in) :: nmlfile   ! Name-list filename
@@ -275,20 +289,27 @@ module seq_flds_mod
      character(CXX) :: x2i_states = ''
      character(CXX) :: x2i_fluxes = ''
      character(CXX) :: l2x_states = ''
+     character(CXX) :: l2x_states_to_glc = ''
      character(CXX) :: l2x_fluxes = ''
+     character(CXX) :: l2x_fluxes_to_glc = ''
      character(CXX) :: x2l_states = ''
+     character(CXX) :: x2l_states_from_glc = ''
      character(CXX) :: x2l_fluxes = ''
+     character(CXX) :: x2l_fluxes_from_glc = ''
      character(CXX) :: o2x_states = ''
      character(CXX) :: o2x_fluxes = ''
      character(CXX) :: x2o_states = ''
      character(CXX) :: x2o_fluxes = ''
      character(CXX) :: g2x_states = ''
+     character(CXX) :: g2x_states_to_lnd = ''
      character(CXX) :: g2x_fluxes = ''
+     character(CXX) :: g2x_fluxes_to_lnd = ''
      character(CXX) :: x2g_states = ''
      character(CXX) :: x2g_fluxes = ''
      character(CXX) :: xao_albedo = ''
      character(CXX) :: xao_states = ''
      character(CXX) :: xao_fluxes = ''
+     character(CXX) :: xao_diurnl = ''
      character(CXX) :: r2x_states = ''
      character(CXX) :: r2x_fluxes = ''
      character(CXX) :: x2r_states = ''
@@ -313,7 +334,8 @@ module seq_flds_mod
      integer :: glc_nec
 
      namelist /seq_cplflds_inparm/  &
-          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, glc_nec
+          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, glc_nec, &
+          ice_ncat, seq_flds_i2o_per_cat
 
      ! user specified new fields
      integer,  parameter :: nfldmax = 200
@@ -341,6 +363,8 @@ module seq_flds_mod
         flds_co2c = .false.
         flds_co2_dmsa = .false.
         glc_nec   = 0
+        ice_ncat  = 1
+        seq_flds_i2o_per_cat = .false.
 
         unitn = shr_file_getUnit()
         write(logunit,"(A)") subname//': read seq_cplflds_inparm namelist from: '&
@@ -362,8 +386,11 @@ module seq_flds_mod
      call shr_mpi_bcast(flds_co2c    , mpicom)
      call shr_mpi_bcast(flds_co2_dmsa, mpicom)
      call shr_mpi_bcast(glc_nec      , mpicom)
-     seq_flds_glc_nec = glc_nec
+     call shr_mpi_bcast(ice_ncat     , mpicom)
+     call shr_mpi_bcast(seq_flds_i2o_per_cat, mpicom)
 
+     call glc_elevclass_init(glc_nec)
+     
      !---------------------------------------------------------------------------
      ! Read in namelists for user specified new fields
      !---------------------------------------------------------------------------
@@ -497,14 +524,14 @@ module seq_flds_mod
      call seq_flds_add(dom_other,'mask')
      longname = ''
      stdname  = 'mask'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'mask'
      call metadata_set(attname, longname, stdname, units)
 
      call seq_flds_add(dom_other,'frac')
      longname = 'area_fraction'
      stdname  = 'area fraction'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'frac' 
      call metadata_set(attname, longname, stdname, units)
 
@@ -520,6 +547,15 @@ module seq_flds_mod
      stdname  = 'height'
      units    = 'm'
      attname  = 'Sa_z'
+     call metadata_set(attname, longname, stdname, units)
+
+     ! topographic height (m)
+     call seq_flds_add(a2x_states,"Sa_topo")
+     call seq_flds_add(x2l_states,"Sa_topo")
+     longname = 'Surface height'
+     stdname  = 'height'
+     units    = 'm'
+     attname  = 'Sa_topo'
      call metadata_set(attname, longname, stdname, units)
 
      ! zonal wind at the lowest model level (m/s)
@@ -884,7 +920,7 @@ module seq_flds_mod
      call seq_flds_add(x2a_states,'Sf_ofrac')
      longname = 'Surface land fraction'
      stdname  = 'land_area_fraction'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Sf_lfrac'
      call metadata_set(attname, longname, stdname, units)
      longname = 'Surface ice fraction'
@@ -903,7 +939,7 @@ module seq_flds_mod
      call seq_flds_add(x2a_states,"Sx_avsdr")
      longname = 'Direct albedo (visible radiation)'
      stdname  = 'surface_direct_albedo_due_to_visible_radiation'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Si_avsdr'
      call metadata_set(attname, longname, stdname, units)
      attname  = 'Sl_avsdr'
@@ -920,7 +956,7 @@ module seq_flds_mod
      call seq_flds_add(x2a_states,"Sx_anidr")
      longname = 'Direct albedo (near-infrared radiation)'
      stdname  = 'surface_direct_albedo_due_to_near_infrared_radiation'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Si_anidr'
      call metadata_set(attname, longname, stdname, units)
      attname  = 'Sl_anidr'
@@ -937,7 +973,7 @@ module seq_flds_mod
      call seq_flds_add(x2a_states,"Sx_avsdf")
      longname = 'Diffuse albedo (visible radiation)'
      stdname  = 'surface_diffuse_albedo_due_to_visible_radiation'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Si_avsdf'
      call metadata_set(attname, longname, stdname, units)
      attname  = 'Sl_avsdf'
@@ -954,7 +990,7 @@ module seq_flds_mod
      call seq_flds_add(x2a_states,"Sx_anidf")
      longname = 'Diffuse albedo (near-infrared radiation)'
      stdname  = 'surface_diffuse_albedo_due_to_near_infrared_radiation'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Si_anidf'
      call metadata_set(attname, longname, stdname, units)
      attname  = 'Sl_anidf'
@@ -1027,6 +1063,12 @@ module seq_flds_mod
      ! Aerodynamical resistance (land/atm only)
      call seq_flds_add(l2x_states,"Sl_ram1")
      call seq_flds_add(x2a_states,"Sl_ram1")
+     longname = 'aerodynamic resistance'
+     stdname = 'aerodynamic_resistance'
+     attname = 'SI_ram1'
+     units = 's/m'
+     call metadata_set(attname, longname, stdname, units)
+
 
      ! Surface snow water equivalent (land/atm only) 
      call seq_flds_add(l2x_states,"Sl_snowh")
@@ -1276,7 +1318,7 @@ module seq_flds_mod
      call seq_flds_add(x2w_states,"Si_ifrac")
      longname = 'Fractional ice coverage wrt ocean'
      stdname  = 'sea_ice_area_fraction'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Si_ifrac'
      call metadata_set(attname, longname, stdname, units)
 
@@ -1376,17 +1418,49 @@ module seq_flds_mod
      attname  = 'So_bldepth'
      call metadata_set(attname, longname, stdname, units)
 
+     call seq_flds_add(xao_states,"So_fswpen")
+     call seq_flds_add(o2x_states,"So_fswpen")
+     longname = 'Fraction of sw penetrating surface layer for diurnal cycle'
+     stdname  = 'Fraction of sw penetrating surface layer for diurnal cycle'
+     units    = '1'
+     attname  = 'So_fswpen'
+     call metadata_set(attname, longname, stdname, units)
+
      !-----------------------------
      ! lnd->rof exchange
      ! TODO: put in attributes below
      !-----------------------------
 
-     call seq_flds_add(l2x_fluxes,'Flrl_rofl')
-     call seq_flds_add(x2r_fluxes,'Flrl_rofl')
-     longname = 'Water flux from land (liquid)'
-     stdname  = 'water_flux_into_runoff'
+     call seq_flds_add(l2x_fluxes,'Flrl_rofsur')
+     call seq_flds_add(x2r_fluxes,'Flrl_rofsur')
+     longname = 'Water flux from land (liquid surface)'
+     stdname  = 'water_flux_into_runoff_surface'
      units    = 'kg m-2 s-1'
-     attname  = 'Flrl_rofl'
+     attname  = 'Flrl_rofsur'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(l2x_fluxes,'Flrl_rofgwl')
+     call seq_flds_add(x2r_fluxes,'Flrl_rofgwl')
+     longname = 'Water flux from land (liquid glacier, wetland, and lake)'
+     stdname  = 'water_flux_into_runoff_from_gwl'
+     units    = 'kg m-2 s-1'
+     attname  = 'Flrl_rofgwl'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(l2x_fluxes,'Flrl_rofsub')
+     call seq_flds_add(x2r_fluxes,'Flrl_rofsub')
+     longname = 'Water flux from land (liquid subsurface)'
+     stdname  = 'water_flux_into_runoff_subsurface'
+     units    = 'kg m-2 s-1'
+     attname  = 'Flrl_rofsub'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(l2x_fluxes,'Flrl_rofdto')
+     call seq_flds_add(x2r_fluxes,'Flrl_rofdto')
+     longname = 'Water flux from land direct to ocean'
+     stdname  = 'water_flux_direct_to_ocean'
+     units    = 'kg m-2 s-1'
+     attname  = 'Flrl_rofdto'
      call metadata_set(attname, longname, stdname, units)
 
      call seq_flds_add(l2x_fluxes,'Flrl_rofi')
@@ -1441,10 +1515,18 @@ module seq_flds_mod
 
      call seq_flds_add(r2x_fluxes,'Flrr_volr')
      call seq_flds_add(x2l_fluxes,'Flrr_volr')
-     longname = 'River channel water volume'
+     longname = 'River channel total water volume'
      stdname  = 'rtm_volr'
      units    = 'm'
      attname  = 'Flrr_volr'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(r2x_fluxes,'Flrr_volrmch')
+     call seq_flds_add(x2l_fluxes,'Flrr_volrmch')
+     longname = 'River channel main channel water volume'
+     stdname  = 'rtm_volrmch'
+     units    = 'm'
+     attname  = 'Flrr_volrmch'
      call metadata_set(attname, longname, stdname, units)
 
      !-----------------------------
@@ -1484,6 +1566,158 @@ module seq_flds_mod
      call metadata_set(attname, longname, stdname, units)
 
      !-----------------------------
+     ! New xao_states diagnostic
+     ! fields for history output only 
+     !-----------------------------
+
+     call seq_flds_add(xao_fluxes,"Faox_swdn")
+     longname = 'Downward solar radiation'
+     stdname  = 'surface_downward_shortwave_flux'
+     units    = 'W m-2'
+     attname  = 'Faox_swdn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_fluxes,"Faox_swup")
+     longname = 'Upward solar radiation'
+     stdname  = 'surface_upward_shortwave_flux'
+     units    = 'W m-2'
+     attname  = 'Faox_swup'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_tbulk_diurn")
+     longname = 'atm/ocn flux temperature bulk'
+     stdname  = 'aoflux_tbulk'
+     units    = 'K'
+     attname  = 'So_tbulk_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_tskin_diurn")
+     longname = 'atm/ocn flux temperature skin'
+     stdname  = 'aoflux_tskin'
+     units    = 'K'
+     attname  = 'So_tskin_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_tskin_night_diurn")
+     longname = 'atm/ocn flux temperature skin at night'
+     stdname  = 'aoflux_tskin_night'
+     units    = 'K'
+     attname  = 'So_tskin_night_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_tskin_day_diurn")
+     longname = 'atm/ocn flux temperature skin at day'
+     stdname  = 'aoflux_tskin_day'
+     units    = 'K'
+     attname  = 'So_tskin_day_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_cskin_diurn")
+     longname = 'atm/ocn flux cool skin'
+     stdname  = 'aoflux_cskin'
+     units    = 'K'
+     attname  = 'So_cskin_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_cskin_night_diurn")
+     longname = 'atm/ocn flux cool skin at night'
+     stdname  = 'aoflux_cskin_night'
+     units    = 'K'
+     attname  = 'So_cskin_night_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_warm_diurn")
+     longname = 'atm/ocn flux warming'
+     stdname  = 'aoflux_warm'
+     units    = 'unitless'
+     attname  = 'So_warm_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_salt_diurn")
+     longname = 'atm/ocn flux salting'
+     stdname  = 'aoflux_salt'
+     units    = 'unitless'
+     attname  = 'So_salt_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_speed_diurn")
+     longname = 'atm/ocn flux speed'
+     stdname  = 'aoflux_speed'
+     units    = 'unitless'
+     attname  = 'So_speed_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_regime_diurn")
+     longname = 'atm/ocn flux regime'
+     stdname  = 'aoflux_regime'
+     units    = 'unitless'
+     attname  = 'So_regime_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_warmmax_diurn")
+     longname = 'atm/ocn flux warming dialy max'
+     stdname  = 'aoflux_warmmax'
+     units    = 'unitless'
+     attname  = 'So_warmmax_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_windmax_diurn")
+     longname = 'atm/ocn flux wind daily max'
+     stdname  = 'aoflux_windmax'
+     units    = 'unitless'
+     attname  = 'So_windmax_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_qsolavg_diurn")
+     longname = 'atm/ocn flux q-solar daily avg'
+     stdname  = 'aoflux_qsolavg'
+     units    = 'unitless'
+     attname  = 'So_qsolavg_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_windavg_diurn")
+     longname = 'atm/ocn flux wind daily avg'
+     stdname  = 'aoflux_windavg'
+     units    = 'unitless'
+     attname  = 'So_windavg_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_warmmaxinc_diurn")
+     longname = 'atm/ocn flux daily max increment'
+     stdname  = 'aoflux_warmmaxinc'
+     units    = 'unitless'
+     attname  = 'So_warmmaxinc_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_windmaxinc_diurn")
+     longname = 'atm/ocn flux wind daily max increment'
+     stdname  = 'aoflux_windmaxinc'
+     units    = 'unitless'
+     attname  = 'So_windmaxinc_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_qsolinc_diurn")
+     longname = 'atm/ocn flux q-solar increment'
+     stdname  = 'aoflux_qsolinc'
+     units    = 'unitless'
+     attname  = 'So_qsolinc_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_windinc_diurn")
+     longname = 'atm/ocn flux wind increment'
+     stdname  = 'aoflux_windinc'
+     units    = 'unitless'
+     attname  = 'So_windinc_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(xao_diurnl,"So_ninc_diurn")
+     longname = 'atm/ocn flux increment counter'
+     stdname  = 'aoflux_ninc'
+     units    = 'unitless'
+     attname  = 'So_ninc_diurn'
+     call metadata_set(attname, longname, stdname, units)
+
+     !-----------------------------
      ! glc fields
      !-----------------------------
 
@@ -1513,89 +1747,113 @@ module seq_flds_mod
 
      name = 'Sg_icemask'
      call seq_flds_add(g2x_states,trim(name))     
+     call seq_flds_add(g2x_states_to_lnd,trim(name))     
      call seq_flds_add(x2l_states,trim(name))
+     call seq_flds_add(x2l_states_from_glc,trim(name))
      longname = 'Ice sheet grid coverage on global grid'
      stdname  = 'ice_sheet_grid_mask'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Sg_icemask'
      call metadata_set(attname, longname, stdname, units)     
 
      name = 'Sg_icemask_coupled_fluxes'
      call seq_flds_add(g2x_states,trim(name))     
+     call seq_flds_add(g2x_states_to_lnd,trim(name))     
      call seq_flds_add(x2l_states,trim(name))
+     call seq_flds_add(x2l_states_from_glc,trim(name))
      longname = 'Ice sheet mask where we are potentially sending non-zero fluxes'
      stdname  = 'icemask_coupled_fluxes'
-     units    = 'unitless'
+     units    = '1'
      attname  = 'Sg_icemask_coupled_fluxes'
      call metadata_set(attname, longname, stdname, units)     
 
-     ! If glc_nec > 0, then create coupling fields for all glc elevation classes
-     ! (1:glc_nec) plus bare land (index 0). Note that, if glc_nec = 0, then we don't
-     ! even need the bare land (0) index.
-     if (seq_flds_glc_nec > 0) then
-        do num = 0,seq_flds_glc_nec
-           write(cnum,'(i2.2)') num
+     ! glc fields with multiple elevation classes: lnd->glc
+     !
+     ! Note that these fields are sent in multiple elevation classes from lnd->cpl, but
+     ! the fields sent from cpl->glc do NOT have elevation classes
+     !
+     ! Also note that we need to keep track of the l2x fields destined for glc in the
+     ! additional variables, l2x_fluxes_to_glc and l2x_states_to_glc. This is needed so that
+     ! we can set up an additional attribute vector holding accumulated quantities of just
+     ! these fields. (We can't determine these field lists with a call to
+     ! mct_aVect_initSharedFields, because the field names differ between l2x and x2g.)
+     
+     name = 'Flgl_qice'
+     longname = 'New glacier ice flux'
+     stdname  = 'ice_flux_out_of_glacier'
+     units    = 'kg m-2 s-1'
+     attname  = 'Fgll_qice'
+     call set_glc_elevclass_field(name, attname, longname, stdname, units, l2x_fluxes)
+     call set_glc_elevclass_field(name, attname, longname, stdname, units, l2x_fluxes_to_glc, &
+          additional_list = .true.)
+     call seq_flds_add(x2g_fluxes,trim(name))
+     call metadata_set(attname, longname, stdname, units)
 
-           ! glc fields: lnd->glc 
+     name = 'Sl_tsrf'
+     longname = 'Surface temperature of glacier'
+     stdname  = 'surface_temperature'
+     units    = 'deg C'
+     attname  = 'Sl_tsrf'
+     call set_glc_elevclass_field(name, attname, longname, stdname, units, l2x_states)
+     call set_glc_elevclass_field(name, attname, longname, stdname, units, l2x_states_to_glc, &
+          additional_list = .true.)
+     call seq_flds_add(x2g_states,trim(name))
+     call metadata_set(attname, longname, stdname, units)
 
-           name = 'Sl_tsrf' // cnum
-           call seq_flds_add(l2x_states,trim(name))
-           call seq_flds_add(x2g_states,trim(name))
-           longname = 'Surface temperature  of glacier elevation class ' // cnum 
-           stdname  = 'surface_temperature'
-           units    = 'deg C'
-           attname  = 'Sl_tsrf' // cnum
-           call metadata_set(attname, longname, stdname, units)
+     ! Sl_topo is sent from lnd -> cpl, but is NOT sent to glc (it is only used for the
+     ! remapping in the coupler)
+     name = 'Sl_topo'
+     longname = 'Surface height'
+     stdname  = 'height'
+     units    = 'm'
+     attname  = 'Sl_topo'
+     call set_glc_elevclass_field(name, attname, longname, stdname, units, l2x_states)
+     call set_glc_elevclass_field(name, attname, longname, stdname, units, l2x_states_to_glc, &
+          additional_list = .true.)
 
-           name = 'Sl_topo' // cnum
-           call seq_flds_add(l2x_states,trim(name))
-           call seq_flds_add(x2g_states,trim(name))
-           longname = 'Surface height of glacier elevation class ' // cnum 
-           stdname  = 'height'
-           units    = 'm'
-           attname  = 'Sl_topo' // cnum
-           call metadata_set(attname, longname, stdname, units)
+     ! glc fields with multiple elevation classes: glc->lnd
+     !
+     ! Note that the fields sent from glc->cpl do NOT have elevation classes, but the
+     ! fields from cpl->lnd are broken into multiple elevation classes
 
-           name = 'Flgl_qice' // cnum
-           call seq_flds_add(l2x_fluxes,trim(name))
-           call seq_flds_add(x2g_fluxes,trim(name))
-           longname = 'New glacier ice flux of elevation class ' // cnum
-           stdname  = 'ice_flux_out_of_glacier'
-           units    = 'kg m-2 s-1'
-           attname  = 'Fgll_qice' // cnum
-           call metadata_set(attname, longname, stdname, units)
+     name = 'Sg_ice_covered'
+     longname = 'Fraction of glacier area'
+     stdname  = 'glacier_area_fraction'
+     units    = '1'    
+     attname  = 'Sg_ice_covered'
+     call seq_flds_add(g2x_states,trim(name))
+     call seq_flds_add(g2x_states_to_lnd,trim(name))
+     call metadata_set(attname, longname, stdname, units)
+     call set_glc_elevclass_field(name, attname, longname, stdname, units, x2l_states)
+     call set_glc_elevclass_field(name, attname, longname, stdname, units, x2l_states_from_glc, &
+          additional_list = .true.)
+     
+     name = 'Sg_topo'
+     longname = 'Surface height of glacier'
+     stdname  = 'height'
+     units    = 'm'
+     attname  = 'Sg_topo'
+     call seq_flds_add(g2x_states,trim(name))
+     call seq_flds_add(g2x_states_to_lnd,trim(name))
+     call metadata_set(attname, longname, stdname, units)
+     call set_glc_elevclass_field(name, attname, longname, stdname, units, x2l_states)
+     call set_glc_elevclass_field(name, attname, longname, stdname, units, x2l_states_from_glc, &
+          additional_list = .true.)
 
-           ! glc fields: glc->lnd 
+     name = 'Flgg_hflx'
+     longname = 'Downward heat flux from glacier interior'
+     stdname  = 'downward_heat_flux_in_glacier'
+     units    = 'W m-2'    
+     attname  = 'Flgg_hflx'
+     call seq_flds_add(g2x_fluxes,trim(name))
+     call seq_flds_add(g2x_fluxes_to_lnd,trim(name))
+     call metadata_set(attname, longname, stdname, units)
+     call set_glc_elevclass_field(name, attname, longname, stdname, units, x2l_fluxes)
+     call set_glc_elevclass_field(name, attname, longname, stdname, units, x2l_fluxes_from_glc, &
+          additional_list = .true.)
 
-           name = 'Sg_frac' // cnum
-           call seq_flds_add(g2x_states,trim(name))
-           call seq_flds_add(x2l_states,trim(name))
-           longname = 'Fraction of glacier area of elevation class ' // cnum
-           stdname  = 'glacier_area_fraction'
-           units    = 'unitless'    
-           attname  = 'Sg_frac' // cnum
-           call metadata_set(attname, longname, stdname, units)
-
-           name = 'Sg_topo' // cnum
-           call seq_flds_add(g2x_states,trim(name))
-           call seq_flds_add(x2l_states,trim(name))
-           longname = 'Surface height of glacier of elevation class ' // cnum
-           stdname  = 'height'
-           units    = 'm'
-           attname  = 'Sg_topo' // cnum
-           call metadata_set(attname, longname, stdname, units)
-
-           name = 'Flgg_hflx' // cnum
-           call seq_flds_add(g2x_fluxes,trim(name))
-           call seq_flds_add(x2l_fluxes,trim(name))
-           longname = 'Downward heat flux from glacier interior of elevation class ' // cnum
-           stdname  = 'downward_heat_flux_in_glacier'
-           units    = 'W m-2'    
-           attname  = 'Flgg_hflx' // cnum
-           call metadata_set(attname, longname, stdname, units)
-        end do
-     end if
-
+     ! Done glc fields
+     
      if (flds_co2a) then
 
         call seq_flds_add(a2x_states, "Sa_co2prog")
@@ -1721,6 +1979,67 @@ module seq_flds_mod
      endif
 
      !-----------------------------------------------------------------------------
+     ! optional per thickness category fields
+     !-----------------------------------------------------------------------------
+
+     if (seq_flds_i2o_per_cat) then
+        do num = 1, ice_ncat
+           write(cnum,'(i2.2)') num
+
+           ! Fractional ice coverage wrt ocean
+
+           name = 'Si_ifrac_' // cnum
+           call seq_flds_add(i2x_states,name)
+           call seq_flds_add(x2o_states,name)
+           longname = 'fractional ice coverage wrt ocean for thickness category ' // cnum
+           stdname  = 'sea_ice_area_fraction'
+           units    = '1'
+           attname  = name
+           call metadata_set(attname, longname, stdname, units)
+
+           ! Net shortwave radiation
+
+           name = 'PFioi_swpen_ifrac_' // cnum
+           call seq_flds_add(i2x_fluxes,name)
+           call seq_flds_add(x2o_fluxes,name)
+           longname = 'net shortwave radiation penetrating into ice and ocean times ice fraction for thickness category ' // cnum
+           stdname  = 'product_of_net_downward_shortwave_flux_at_sea_water_surface_and_sea_ice_area_fraction'
+           units    = 'W m-2'
+           attname  = name
+           call metadata_set(attname, longname, stdname, units)
+
+        end do
+
+        ! Fractional atmosphere coverage wrt ocean
+
+        name = 'Sf_afrac'
+        call seq_flds_add(x2o_states,name)
+        longname = 'fractional atmosphere coverage wrt ocean'
+        stdname  = 'atmosphere_area_fraction'
+        units    = '1'
+        attname  = name
+        call metadata_set(attname, longname, stdname, units)
+
+        name = 'Sf_afracr'
+        call seq_flds_add(x2o_states,name)
+        longname = 'fractional atmosphere coverage used in radiation computations wrt ocean'
+        stdname  = 'atmosphere_area_fraction'
+        units    = '1'
+        attname  = name
+        call metadata_set(attname, longname, stdname, units)
+
+        ! Net shortwave radiation
+
+        name = 'Foxx_swnet_afracr'
+        call seq_flds_add(x2o_fluxes,name)
+        longname = 'net shortwave radiation times atmosphere fraction'
+        stdname = 'product_of_net_downward_shortwave_flux_at_sea_water_surface_and_atmosphere_area_fraction'
+        units = 'W m-2'
+        attname = name
+        call metadata_set(attname, longname, stdname, units)
+     endif
+
+     !-----------------------------------------------------------------------------
      ! Read namelist for CARMA 
      ! if carma_flds are specified then setup fields for CLM to CAM communication
      !-----------------------------------------------------------------------------
@@ -1729,6 +2048,10 @@ module seq_flds_mod
      if (carma_fields /= ' ') then
         call seq_flds_add(l2x_fluxes, trim(carma_fields))
         call seq_flds_add(x2a_fluxes, trim(carma_fields))
+        longname = 'Volumetric soil water'
+        stdname  = 'soil_water'
+        units    = 'm3/m3'
+        call metadata_set(carma_fields, longname, stdname, units)
      endif
 
      !-----------------------------------------------------------------------------
@@ -1737,10 +2060,39 @@ module seq_flds_mod
      ! (emissions fluxes)
      !-----------------------------------------------------------------------------
 
-     call shr_megan_readnl(nlfilename='drv_flds_in', megan_fields=megan_voc_fields)
+     call shr_megan_readnl(nlfilename='drv_flds_in', ID=ID, megan_fields=megan_voc_fields)
      if (shr_megan_mechcomps_n>0) then
         call seq_flds_add(l2x_fluxes, trim(megan_voc_fields))
         call seq_flds_add(x2a_fluxes, trim(megan_voc_fields))
+        longname = 'MEGAN emission fluxes'
+        stdname  = 'megan_fluxes'
+        units    = 'molecules/m2/sec'
+        call metadata_set(megan_voc_fields, longname, stdname, units)
+     endif
+
+     !-----------------------------------------------------------------------------
+     ! Read namelist for Fire Emissions
+     ! if fire emission are specified then setup fields for CLM to CAM communication 
+     ! (emissions fluxes)
+     !-----------------------------------------------------------------------------
+
+     call shr_fire_emis_readnl(nlfilename='drv_flds_in', ID=ID, emis_fields=fire_emis_fields)
+     if (shr_fire_emis_mechcomps_n>0) then
+        call seq_flds_add(l2x_fluxes, trim(fire_emis_fields))
+        call seq_flds_add(x2a_fluxes, trim(fire_emis_fields))
+        longname = 'wild fire emission fluxes'
+        stdname  = 'fire_emis'
+        units    = 'kg/m2/sec'
+        call metadata_set(fire_emis_fields, longname, stdname, units)
+
+        call seq_flds_add(l2x_states, trim(shr_fire_emis_ztop_token))
+        call seq_flds_add(x2a_states, trim(shr_fire_emis_ztop_token))
+        longname = 'wild fire plume height'
+        stdname  = 'fire_plume_top'
+        units    = 'm'
+        
+        call metadata_set(shr_fire_emis_ztop_token, longname, stdname, units)
+
      endif
 
      !-----------------------------------------------------------------------------
@@ -1752,10 +2104,16 @@ module seq_flds_mod
      ! Note: CAM and CLM will then call seq_drydep_setHCoeff
      !-----------------------------------------------------------------------------
 
-     call seq_drydep_read(nlfilename="drv_flds_in", seq_drydep_fields=seq_drydep_fields)
+     call seq_drydep_readnl(nlfilename="drv_flds_in", ID=ID, seq_drydep_fields=seq_drydep_fields)
      if ( lnd_drydep ) then
-        call seq_flds_add(l2x_states, trim(seq_drydep_fields))
-        call seq_flds_add(x2a_states, trim(seq_drydep_fields))
+        call seq_flds_add(l2x_states, seq_drydep_fields)
+        call seq_flds_add(x2a_states, seq_drydep_fields)
+        
+        longname = 'dry deposition velocity'
+        stdname  = 'drydep_vel'
+        units    = 'cm/sec'
+        call metadata_set(seq_drydep_fields, longname, stdname, units)
+
      endif
      call seq_drydep_init( )
 
@@ -1769,13 +2127,17 @@ module seq_flds_mod
      seq_flds_i2x_states = trim(i2x_states)
      seq_flds_x2i_states = trim(x2i_states)
      seq_flds_l2x_states = trim(l2x_states)
+     seq_flds_l2x_states_to_glc = trim(l2x_states_to_glc)
      seq_flds_x2l_states = trim(x2l_states)
+     seq_flds_x2l_states_from_glc = trim(x2l_states_from_glc)
      seq_flds_o2x_states = trim(o2x_states)
      seq_flds_x2o_states = trim(x2o_states)
      seq_flds_g2x_states = trim(g2x_states)
+     seq_flds_g2x_states_to_lnd = trim(g2x_states_to_lnd)
      seq_flds_x2g_states = trim(x2g_states)
      seq_flds_xao_states = trim(xao_states)
      seq_flds_xao_albedo = trim(xao_albedo)
+     seq_flds_xao_diurnl = trim(xao_diurnl)
      seq_flds_r2x_states = trim(r2x_states)
      seq_flds_x2r_states = trim(x2r_states)
      seq_flds_w2x_states = trim(w2x_states)
@@ -1787,10 +2149,13 @@ module seq_flds_mod
      seq_flds_i2x_fluxes = trim(i2x_fluxes)
      seq_flds_x2i_fluxes = trim(x2i_fluxes)
      seq_flds_l2x_fluxes = trim(l2x_fluxes)
+     seq_flds_l2x_fluxes_to_glc = trim(l2x_fluxes_to_glc)
      seq_flds_x2l_fluxes = trim(x2l_fluxes)
+     seq_flds_x2l_fluxes_from_glc = trim(x2l_fluxes_from_glc)
      seq_flds_o2x_fluxes = trim(o2x_fluxes)
      seq_flds_x2o_fluxes = trim(x2o_fluxes)
      seq_flds_g2x_fluxes = trim(g2x_fluxes)
+     seq_flds_g2x_fluxes_to_lnd = trim(g2x_fluxes_to_lnd)
      seq_flds_x2g_fluxes = trim(x2g_fluxes)
      seq_flds_xao_fluxes = trim(xao_fluxes)
      seq_flds_r2x_fluxes = trim(r2x_fluxes)
@@ -1822,6 +2187,7 @@ module seq_flds_mod
         write(logunit,"(A)") subname//': seq_flds_xao_states= ',trim(seq_flds_xao_states)
         write(logunit,"(A)") subname//': seq_flds_xao_fluxes= ',trim(seq_flds_xao_fluxes)
         write(logunit,"(A)") subname//': seq_flds_xao_albedo= ',trim(seq_flds_xao_albedo)
+        write(logunit,"(A)") subname//': seq_flds_xao_diurnl= ',trim(seq_flds_xao_diurnl)
         write(logunit,"(A)") subname//': seq_flds_r2x_states= ',trim(seq_flds_r2x_states)
         write(logunit,"(A)") subname//': seq_flds_r2x_fluxes= ',trim(seq_flds_r2x_fluxes)
         write(logunit,"(A)") subname//': seq_flds_x2r_states= ',trim(seq_flds_x2r_states)
@@ -1838,13 +2204,17 @@ module seq_flds_mod
      call catFields(seq_flds_i2x_fields, seq_flds_i2x_states, seq_flds_i2x_fluxes)
      call catFields(seq_flds_x2i_fields, seq_flds_x2i_states, seq_flds_x2i_fluxes)
      call catFields(seq_flds_l2x_fields, seq_flds_l2x_states, seq_flds_l2x_fluxes)
+     call catFields(seq_flds_l2x_fields_to_glc, seq_flds_l2x_states_to_glc, seq_flds_l2x_fluxes_to_glc)
      call catFields(seq_flds_x2l_fields, seq_flds_x2l_states, seq_flds_x2l_fluxes)
+     call catFields(seq_flds_x2l_fields_from_glc, seq_flds_x2l_states_from_glc, seq_flds_x2l_fluxes_from_glc)
      call catFields(seq_flds_o2x_fields, seq_flds_o2x_states, seq_flds_o2x_fluxes)
      call catFields(seq_flds_x2o_fields, seq_flds_x2o_states, seq_flds_x2o_fluxes)
      call catFields(seq_flds_g2x_fields, seq_flds_g2x_states, seq_flds_g2x_fluxes)
+     call catFields(seq_flds_g2x_fields_to_lnd, seq_flds_g2x_states_to_lnd, seq_flds_g2x_fluxes_to_lnd)
      call catFields(seq_flds_x2g_fields, seq_flds_x2g_states, seq_flds_x2g_fluxes)
-     call catFields(stringtmp          , seq_flds_xao_albedo, seq_flds_xao_states)
-     call catFields(seq_flds_xao_fields, stringtmp          , seq_flds_xao_fluxes)
+     call catFields(seq_flds_xao_fields, seq_flds_xao_albedo, seq_flds_xao_states)
+     call catFields(stringtmp          , seq_flds_xao_fields, seq_flds_xao_fluxes)
+     call catFields(seq_flds_xao_fields, stringtmp          , seq_flds_xao_diurnl)
      call catFields(seq_flds_r2x_fields, seq_flds_r2x_states, seq_flds_r2x_fluxes)
      call catFields(seq_flds_x2r_fields, seq_flds_x2r_states, seq_flds_x2r_fluxes)
      call catFields(seq_flds_w2x_fields, seq_flds_w2x_states, seq_flds_w2x_fluxes)
@@ -1995,7 +2365,8 @@ module seq_flds_mod
    end subroutine seq_flds_getField
 
    !===============================================================================
-
+! If the attname passed in contains colons it is assumed to be a list of fields 
+! all of which have the same names and units
    subroutine metadata_set(attname , longname, stdname , units   )
 
      ! !USES:
@@ -2009,20 +2380,98 @@ module seq_flds_mod
 
      !EOP
      character(len=*),parameter :: subname = '(seq_flds_metadata_set) '
+     integer :: i, j
+     
+     i = index(attname,':')
+     j=1
 
+     do while(i>j .and. i<=len_trim(attname))
+        n_entries = n_entries + 1
+        lookup_entry(n_entries,1) = attname(j:i-1) 
+        lookup_entry(n_entries,2) = trim(longname)
+        lookup_entry(n_entries,3) = trim(stdname )
+        lookup_entry(n_entries,4) = trim(units   )
+        j=i+1
+        i =  index(attname(j:),':') + j - 1
+     enddo
      n_entries = n_entries + 1
-     if (n_entries > nmax) then
-        write(logunit,*)'n_entries= ',n_entries,' nmax = ',nmax,' attname= ',trim(attname)
-        call shr_sys_abort(subname//'ERROR: nmax fields in lookup_entry table exceeded') 
-     end if
-
-     lookup_entry(n_entries,1) = trim(attname )
+     i = len_trim(attname)
+     lookup_entry(n_entries,1) = attname(j:i)
      lookup_entry(n_entries,2) = trim(longname)
      lookup_entry(n_entries,3) = trim(stdname )
      lookup_entry(n_entries,4) = trim(units   )
 
 
+
+
+     if (n_entries .ge. nmax) then
+        write(logunit,*)'n_entries= ',n_entries,' nmax = ',nmax,' attname= ',trim(attname)
+        call shr_sys_abort(subname//'ERROR: nmax fields in lookup_entry table exceeded') 
+     end if
+
    end subroutine metadata_set
+
+   !===============================================================================
+
+   subroutine set_glc_elevclass_field(name, attname, longname, stdname, units, fieldlist, &
+                                      additional_list)
+
+     ! Sets a coupling field for all glc elevation classes (1:glc_nec) plus bare land
+     ! (index 0).
+     !
+     ! Note that, if glc_nec = 0, then we don't create any coupling fields (not even the
+     ! bare land (0) index)
+     !
+     ! Puts the coupling fields in the given fieldlist, and also does the appropriate
+     ! metadata_set calls.
+     !
+     ! additional_list should be .false. (or absent) the first time this is called for a
+     ! given set of coupling fields. However, if this same set of coupling fields is being
+     ! added to multiple field lists, then additional_list should be set to true for the
+     ! second and subsequent calls; in this case, the metadata_set calls are not done
+     ! (because they have already been done).
+     !
+     ! name, attname and longname give the base name of the field; the elevation class
+     ! index will be appended as a suffix
+
+     ! !USES:
+     use glc_elevclass_mod, only : glc_get_num_elevation_classes, glc_elevclass_as_string
+
+     ! !INPUT/OUTPUT PARAMETERS:
+     character(len=*), intent(in) :: name     ! base field name to add to fieldlist
+     character(len=*), intent(in) :: attname  ! base field name for metadata
+     character(len=*), intent(in) :: longname ! base long name for metadata
+     character(len=*), intent(in) :: stdname  ! standard name for metadata
+     character(len=*), intent(in) :: units    ! units for metadata
+     character(len=*), intent(inout) :: fieldlist  ! field list into which the fields should be added
+
+     logical, intent(in), optional :: additional_list  ! whether this is an additional list for the same set of coupling fields (see above for details; defaults to false)
+     
+     !EOP
+     integer            :: num
+     character(len= 16) :: cnum
+     logical :: l_additional_list  ! local version of the optional additional_list argument
+
+     l_additional_list = .false.
+     if (present(additional_list)) then
+        l_additional_list = additional_list
+     end if
+     
+     if (glc_get_num_elevation_classes() > 0) then
+        do num = 0, glc_get_num_elevation_classes()
+           cnum = glc_elevclass_as_string(num)
+
+           call seq_flds_add(fieldlist, trim(name) // trim(cnum))
+
+           if (.not. l_additional_list) then
+              call metadata_set(attname  = trim(attname) // trim(cnum), &
+                   longname = trim(longname) // ' of elevation class ' // trim(cnum), &
+                   stdname  = stdname, &
+                   units    = units)
+           end if
+        end do
+     end if
+   end subroutine set_glc_elevclass_field
 
    !===============================================================================
 
@@ -2042,7 +2491,7 @@ module seq_flds_mod
 
      !--- local ---
      integer :: i,n
-     character(len=80) :: llongname, lstdname, lunits, lshortname  ! local copies
+     character(len=CSS) :: llongname, lstdname, lunits, lshortname  ! local copies
      character(len=*),parameter :: undef = 'undefined'
      character(len=*),parameter :: unknown = 'unknown'
      logical :: found

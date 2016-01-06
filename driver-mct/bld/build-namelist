@@ -3,7 +3,7 @@
 #
 # build-namelist
 #
-# This script builds the namelists for the DRV configuration of CESM1.
+# This script builds the namelists for the Driver-cpl 
 #
 # build-namelist uses a config_cache.xml file that current contains the ocean grid information.
 # build-namelist reads this file to obtain information it needs to provide
@@ -39,13 +39,14 @@ OPTIONS
      -silent               Turn on silent mode
      -verbose              Turn on verbose echoing of informational messages.
      -caseroot             CASEROOT directory variable
-     -scriptsroot          SCRIPTSROOT directory variable
+     -cimeroot             CIMEROOT directory variable
      -grid                 GRID variable
      -rof_grid             ROF_GRID variable
      -wav_grid             WAV_GRID variable
      -atm_grid             ATM_GRID variable
      -lnd_grid             LND_GRID variable 
      -ocn_grid             OCN_GRID variable
+     
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
       1. namelist values set by specific command-line options, i.e. (none right now)
@@ -79,7 +80,7 @@ if ($ProgDir) {
 my %opts = ( help        => 0,
 	     silent      => 0,
 	     caseroot    => 0,
-	     scriptsroot => 0,
+	     cimeroot    => 0,
 	     grid        => 0,
 	     rof_grid    => 0,
 	     wav_grid    => 0,
@@ -94,7 +95,7 @@ GetOptions(
     "s|silent"      => \$opts{'silent'},
     "v|verbose"     => \$opts{'verbose'},
     "caseroot=s"    => \$opts{'caseroot'},
-    "scriptsroot=s" => \$opts{'scriptsroot'},
+    "cimeroot=s"    => \$opts{'cimeroot'},
     "grid=s"        => \$opts{'grid'},	   
     "rof_grid=s"    => \$opts{'rof_grid'},
     "wav_grid=s"    => \$opts{'wav_grid'},
@@ -122,7 +123,7 @@ if ($opts{'verbose'}) { $print = 2; }
 my $eol = "\n";
 
 my $CASEROOT    = $opts{'caseroot'}; 
-my $SCRIPTSROOT = $opts{'scriptsroot'};       
+my $CIMEROOT    = $opts{'cimeroot'};       
 my $GRID        = $opts{'grid'}; 
 my $ROF_GRID    = $opts{'rof_grid'}; 
 my $WAV_GRID    = $opts{'wav_grid'}; 
@@ -153,8 +154,9 @@ print $fh  <<"EOF";
 </config_definition>
 EOF
 $fh->close;
+
 if ($print>=2) { print "Wrote file $config_cache $eol"; }
-(-f "config_cache.xml")  or  die <<"EOF";
+(-f "$CASEROOT/Buildconf/cplconf/config_cache.xml")  or  die <<"EOF";
 ** $ProgName - Cannot find configuration cache file: config_cache.xml\" **
 EOF
     
@@ -163,7 +165,7 @@ EOF
 # Look for them under the directory that contains the configure script.
     
 # The root directory for the perl5 required utilities 
-my $perl5lib_dir = "${SCRIPTSROOT}/../utils/perl5lib";
+my $perl5lib_dir = "${CIMEROOT}/utils/perl5lib";
 
 # The XML::Lite module is required to parse the XML files.
 (-f "$perl5lib_dir/XML/Lite.pm")  or  die <<"EOF";
@@ -231,7 +233,7 @@ require Build::Namelist;
 #-----------------------------------------------------------------------------------------------
 # Create a configuration object from the DRV config_cache.xml file-  created by 
 # pop2.cpl7.template in $CASEROOT/Buildconf/cplconf
-my $cfg = Build::Config->new('config_cache.xml');
+my $cfg = Build::Config->new("$CASEROOT/Buildconf/cplconf/config_cache.xml");
 
 # Create a namelist definition object.  This object provides a method for verifying that the
 # output namelist variables are in the definition file, and are output in the correct
@@ -303,21 +305,17 @@ foreach my $file (@files) {
     }
 }
 my $DIN_LOC_ROOT = $xmlvars{'DIN_LOC_ROOT'};
-(-d $DIN_LOC_ROOT)  or  die <<"EOF";
-** $ProgName - CCSM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
-EOF
-if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
+if ($print>=2) { print "inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 # Note - $USER is not in the config_defintion.xml file - it is only in the environment
 $xmlvars{'USER'} = $ENV{'USER'};
-unshift @INC, "$CASEROOT/Tools";
-require XML::Lite;
-require SetupTools;
+unshift @INC, "${CIMEROOT}/utils/perl5lib";
+require Config::SetupTools;
 
 my %xmlvars = ();
 SetupTools::getxmlvars($CASEROOT, \%xmlvars);
 foreach my $attr (keys %xmlvars) {
-  $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
+    $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -346,11 +344,18 @@ if ($CCSM_BGC eq 'CO2A') {
 my $glc_nec = "$xmlvars{'GLC_NEC'}";
 if ( ! defined $glc_nec ) {$glc_nec = 0;}
 
+my $ice_ncat = $xmlvars{'ICE_NCAT'};
+
+my $seq_flds_i2o_per_cat = ".false.";
+if ($xmlvars{'CPL_I2O_PER_CAT'} eq 'TRUE') { $seq_flds_i2o_per_cat = ".true." }
+
 add_default($nl, 'flds_co2a',    'val'=>"$flds_co2a");
 add_default($nl, 'flds_co2b',    'val'=>"$flds_co2b");
 add_default($nl, 'flds_co2c',    'val'=>"$flds_co2c");
 add_default($nl, 'flds_co2_dmsa','val'=>"$flds_co2_dmsa");
 add_default($nl, 'glc_nec',      'val'=>"$glc_nec");
+add_default($nl, 'ice_ncat',     'val'=>"$ice_ncat", 'xml'=>'ICE_NCAT');
+add_default($nl, 'seq_flds_i2o_per_cat', 'val'=>"$seq_flds_i2o_per_cat", 'xml'=>'CPL_I2O_PER_CAT');
     
 #############################################
 # namelist group: seq_cplflds_userspec      #
@@ -375,9 +380,8 @@ add_default($nl, 'start_type', 'val'=>"$start_type",'xml'=>'RUN_TYPE');
 
 add_default($nl, 'case_name',     'val'=>"$xmlvars{'CASE'}",         'xml'=>'CASE');
 add_default($nl, 'case_desc',     'val'=>"$xmlvars{'CASESTR'}",      'xml'=>'CASESTR');
-add_default($nl, 'username' ,     'val'=>"$xmlvars{'CCSMUSER'}",     'xml'=>'CCSMUSER');
+add_default($nl, 'username' ,     'val'=>"$xmlvars{'USER'}",         'xml'=>'USER');
 add_default($nl, 'hostname' ,     'val'=>"$xmlvars{'MACH'}",         'xml'=>'MACH');
-add_default($nl, 'model_version', 'val'=>"$xmlvars{'CCSM_REPOTAG'}", 'xml'=>'CCSM_REPOTAG');
 
 add_default($nl, 'atm_gnam',      'val'=>"$xmlvars{'ATM_GRID'}",     'xml'=>'ATM_GRID');
 add_default($nl, 'lnd_gnam',      'val'=>"$xmlvars{'LND_GRID'}",     'xml'=>'LND_GRID');
@@ -395,8 +399,18 @@ add_default($nl, 'run_barriers', 'COMP_RUN_BARRIERS'=>"$xmlvars{'COMP_RUN_BARRIE
 add_default($nl, 'bfbflag', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'do_budgets','BUDGETS'=>"$xmlvars{'BUDGETS'}");
 
-add_default($nl, 'flux_albav');
-add_default($nl, 'flux_epbal');
+if (defined $xmlvars{'CPL_ALBAV'}) {
+    add_default($nl, 'flux_albav', 'val'=>".$xmlvars{'CPL_ALBAV'}.");
+} else {
+    add_default($nl, 'flux_albav', 'val'=>".false.");
+}
+if (defined $xmlvars{'CPL_EPBAL'}) {
+    add_default($nl, 'flux_epbal', 'val'=>"$xmlvars{'CPL_EPBAL'}");
+} else {
+    add_default($nl, 'flux_epbal', 'val'=>"off");
+}
+add_default($nl, 'flux_diurnal');
+
 add_default($nl, 'info_debug');
 add_default($nl, 'cpl_decomp');
 add_default($nl, 'wall_time_limit');
@@ -430,6 +444,14 @@ add_default($nl, 'histaux_a2x24hr');
 add_default($nl, 'histaux_l2x');
 add_default($nl, 'histaux_r2x');
 add_default($nl, 'histaux_l2x1yr');
+add_default($nl, 'histavg_atm');
+add_default($nl, 'histavg_lnd');
+add_default($nl, 'histavg_ocn');
+add_default($nl, 'histavg_ice');
+add_default($nl, 'histavg_rof');
+add_default($nl, 'histavg_glc');
+add_default($nl, 'histavg_wav');
+add_default($nl, 'histavg_xao');
 
 add_default($nl, 'vect_map');
 add_default($nl, 'eps_frac');
@@ -642,6 +664,7 @@ add_default($nl, 'profile_barrier');
 add_default($nl, 'pio_async_interface', 'PIO_ASYNC_INTERFACE'=>"$xmlvars{'PIO_ASYNC_INTERFACE'}");
 add_default($nl, 'pio_stride');
 add_default($nl, 'pio_root');
+add_default($nl, 'pio_rearranger');
 add_default($nl, 'pio_numiotasks');
 add_default($nl, 'pio_typename');
 add_default($nl, 'pio_debug_level');
@@ -714,6 +737,10 @@ add_default($nl, 'rof2ocn_fmapname');
 add_default($nl, 'rof2ocn_rmapname');
 add_default($nl, 'glc2ocn_rmapname');
 add_default($nl, 'glc2ice_rmapname');
+add_default($nl, 'lnd2glc_fmapname');
+add_default($nl, 'lnd2glc_smapname');
+add_default($nl, 'glc2lnd_fmapname');
+add_default($nl, 'glc2lnd_smapname');
 add_default($nl, 'atm2wav_smapname');
 add_default($nl, 'ocn2wav_smapname');
 add_default($nl, 'ice2wav_smapname');
@@ -745,6 +772,10 @@ add_default($nl, 'rof2ocn_fmaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'rof2ocn_rmaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'glc2ocn_rmaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'glc2ice_rmaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
+add_default($nl, 'lnd2glc_fmaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
+add_default($nl, 'lnd2glc_smaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
+add_default($nl, 'glc2lnd_fmaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
+add_default($nl, 'glc2lnd_smaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'atm2wav_smaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'ocn2wav_smaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'ice2wav_smaptype', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
@@ -826,48 +857,56 @@ foreach my $model (qw(cpl atm lnd ice ocn glc rof wav)) {
 	    add_default($nlio, 'pio_root',      'val'=>"$xmlvars{'CPL_PIO_ROOT'}");
 	    add_default($nlio, 'pio_numiotasks','val'=>"$xmlvars{'CPL_PIO_NUMTASKS'}");
 	    add_default($nlio, 'pio_typename',  'val'=>"$xmlvars{'CPL_PIO_TYPENAME'}");
+	    add_default($nlio, 'pio_rearranger',  'val'=>"$xmlvars{'CPL_PIO_REARRANGER'}");
 	}
 	if ($model eq 'atm') {
 	    add_default($nlio, 'pio_stride',     'val'=>"$xmlvars{'ATM_PIO_STRIDE'}");
 	    add_default($nlio, 'pio_root',       'val'=>"$xmlvars{'ATM_PIO_ROOT'}");
 	    add_default($nlio, 'pio_numiotasks', 'val'=>"$xmlvars{'ATM_PIO_NUMTASKS'}");
 	    add_default($nlio, 'pio_typename',   'val'=>"$xmlvars{'ATM_PIO_TYPENAME'}");
+	    add_default($nlio, 'pio_rearranger',  'val'=>"$xmlvars{'ATM_PIO_REARRANGER'}");
 	}
 	if ($model eq 'lnd') {
 	    add_default($nlio, 'pio_stride',     'val'=>"$xmlvars{'LND_PIO_STRIDE'}");
 	    add_default($nlio, 'pio_root',       'val'=>"$xmlvars{'LND_PIO_ROOT'}");
 	    add_default($nlio, 'pio_numiotasks', 'val'=>"$xmlvars{'LND_PIO_NUMTASKS'}");
 	    add_default($nlio, 'pio_typename',   'val'=>"$xmlvars{'LND_PIO_TYPENAME'}");
+	    add_default($nlio, 'pio_rearranger',  'val'=>"$xmlvars{'LND_PIO_REARRANGER'}");
 	}
 	if ($model eq 'rof') {
 	    add_default($nlio, 'pio_stride',     'val'=>"$xmlvars{'ROF_PIO_STRIDE'}");
 	    add_default($nlio, 'pio_root',       'val'=>"$xmlvars{'ROF_PIO_ROOT'}");
 	    add_default($nlio, 'pio_numiotasks', 'val'=>"$xmlvars{'ROF_PIO_NUMTASKS'}");
 	    add_default($nlio, 'pio_typename',   'val'=>"$xmlvars{'ROF_PIO_TYPENAME'}");
+	    add_default($nlio, 'pio_rearranger',  'val'=>"$xmlvars{'ROF_PIO_REARRANGER'}");
 	}
 	if ($model eq 'wav') {
 	    add_default($nlio, 'pio_stride',     'val'=>"$xmlvars{'WAV_PIO_STRIDE'}");
 	    add_default($nlio, 'pio_root',       'val'=>"$xmlvars{'WAV_PIO_ROOT'}");
 	    add_default($nlio, 'pio_numiotasks', 'val'=>"$xmlvars{'WAV_PIO_NUMTASKS'}");
 	    add_default($nlio, 'pio_typename',   'val'=>"$xmlvars{'WAV_PIO_TYPENAME'}");
+	    add_default($nlio, 'pio_rearranger',  'val'=>"$xmlvars{'WAV_PIO_REARRANGER'}");
 	}
 	if ($model eq 'ice') {
 	    add_default($nlio, 'pio_stride',     'val'=>"$xmlvars{'ICE_PIO_STRIDE'}");
 	    add_default($nlio, 'pio_root',       'val'=>"$xmlvars{'ICE_PIO_ROOT'}");
 	    add_default($nlio, 'pio_numiotasks', 'val'=>"$xmlvars{'ICE_PIO_NUMTASKS'}");
 	    add_default($nlio, 'pio_typename',   'val'=>"$xmlvars{'ICE_PIO_TYPENAME'}");
+	    add_default($nlio, 'pio_rearranger',  'val'=>"$xmlvars{'ICE_PIO_REARRANGER'}");
 	}
 	if ($model eq 'ocn') {
 	    add_default($nlio, 'pio_stride',     'val'=>"$xmlvars{'OCN_PIO_STRIDE'}");
 	    add_default($nlio, 'pio_root',       'val'=>"$xmlvars{'OCN_PIO_ROOT'}");
 	    add_default($nlio, 'pio_numiotasks', 'val'=>"$xmlvars{'OCN_PIO_NUMTASKS'}");
 	    add_default($nlio, 'pio_typename',   'val'=>"$xmlvars{'OCN_PIO_TYPENAME'}");
+	    add_default($nlio, 'pio_rearranger',  'val'=>"$xmlvars{'OCN_PIO_REARRANGER'}");
 	}
 	if ($model eq 'glc') {
 	    add_default($nlio, 'pio_stride',     'val'=>"$xmlvars{'GLC_PIO_STRIDE'}");
 	    add_default($nlio, 'pio_root',       'val'=>"$xmlvars{'GLC_PIO_ROOT'}");
 	    add_default($nlio, 'pio_numiotasks', 'val'=>"$xmlvars{'GLC_PIO_NUMTASKS'}");
 	    add_default($nlio, 'pio_typename',   'val'=>"$xmlvars{'GLC_PIO_TYPENAME'}");
+	    add_default($nlio, 'pio_rearranger',  'val'=>"$xmlvars{'GLC_PIO_REARRANGER'}");
 	}
 	$nlio->write($modeliofile, 'groups'=>\@iogroup);
 	if ($print>=2) { print "Writing io namelist to $modeliofile $eol"; }	
@@ -912,7 +951,7 @@ sub add_default {
 #
 # ***** N.B. ***** This routine assumes the following variables are in package main::
 #  $definition        -- the namelist definition object
-#  $inputdata_rootdir -- CCSM inputdata root directory
+#  $inputdata_rootdir -- inputdata root directory
 
     my $nl = shift;     # namelist object
     my $var = shift;    # name of namelist variable
@@ -978,7 +1017,7 @@ sub add_default {
 
     # The default values for input pathnames are relative.  If the namelist
     # variable is defined to be an absolute pathname, then prepend
-    # the CCSM inputdata root directory.
+    # the inputdata root directory.
     if ($is_input_pathname eq 'abs') {
 	$val =~ s/ //g;
 	if ($val eq 'idmap') {
