@@ -427,6 +427,7 @@ int PIOc_sync (int ncid)
 	brel(twmb);
       }
     }
+    flush_output_buffer(file, true, 0);
 
     if(ios->ioproc){
       switch(file->iotype){
@@ -445,7 +446,6 @@ int PIOc_sync (int ncid)
 #endif
 #ifdef _PNETCDF
       case PIO_IOTYPE_PNETCDF:
-	flush_output_buffer(file, true, 0);
 	ierr = ncmpi_sync(file->fh);;
 	break;
 #endif
