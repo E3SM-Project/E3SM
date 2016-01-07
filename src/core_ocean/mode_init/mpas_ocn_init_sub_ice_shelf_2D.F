@@ -201,7 +201,6 @@ module ocn_init_sub_ice_shelf_2D
         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
 
-        call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
         call mpas_pool_get_array(meshPool, 'xCell', xCell)
