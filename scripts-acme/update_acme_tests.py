@@ -50,6 +50,15 @@ _TEST_SUITES = {
                              "ERS.ne16_ne16.FC5ATMMOD")
                             ),
 
+    "cime_developer" : (None,
+                            ("NCK_Ld3.f45_g37_rx1.A",
+                             "ERI_D.f45_g37_rx1.A",
+                             "SEQ_PFC_Ld3.f09_g16.X",
+                             "ERS_Ld3.ne30_g16_rx1.A",
+                             "ERS_N2_Ld3.f19_g16_rx1.A",
+                             "ERS_Ld3.f45_g37_rx1.A")
+                            ),
+
     "acme_developer" : ("acme_land_developer",
                         ("ERS.f19_g16_rx1.A",
                          "ERS.f45_g37_rx1.DTEST",
