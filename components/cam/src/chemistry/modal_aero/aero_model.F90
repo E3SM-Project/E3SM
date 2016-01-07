@@ -175,7 +175,7 @@ contains
   subroutine aero_model_init( pbuf2d, species_class, iflagaa )
 
     use mo_chem_utls,    only: get_inv_ndx
-    use cam_history,     only: addfld, add_default, phys_decomp
+    use cam_history,     only: addfld, horiz_only, add_default
     use phys_control,    only: phys_getopts
     use mo_chem_utls,    only: get_rxt_ndx, get_spc_ndx
     use modal_aero_data, only: cnst_name_cw, rain_evap_to_coarse_aero, mam_prevap_resusp_optaa
@@ -468,13 +468,13 @@ contains
 
 #if (defined MODAL_AERO_9MODE || MODAL_AERO_4MODE_MOM)
        dummy = 'SSTSFMBL_OM'
-       call addfld (dummy,'kg/m2/s',1, 'A','Mobilization flux of marine organic matter at surface',phys_decomp)
+       call addfld (dummy,horiz_only, 'A','kg/m2/s','Mobilization flux of marine organic matter at surface')
        if (history_aerosol) then
           call add_default (dummy, 1, ' ')
        endif
 
        dummy = 'F_eff'
-       call addfld (dummy,'1',1, 'A','Effective enrichment factor of marine organic matter',phys_decomp)
+       call addfld (dummy,horiz_only, 'A','1','Effective enrichment factor of marine organic matter')
        if (history_aerosol) then
           call add_default (dummy, 1, ' ')
        endif

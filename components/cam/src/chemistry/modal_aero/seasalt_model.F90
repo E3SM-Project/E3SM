@@ -1124,7 +1124,7 @@ subroutine init_ocean_data()
     !-----------------------------------------------------------------------
 
     use tracer_data,      only : trcdata_init
-    use cam_history,      only : addfld, add_default, phys_decomp
+    use cam_history,      only : addfld, horiz_only, add_default
     use spmd_utils,       only : masterproc
     use sslt_sections,    only : nsections
 
@@ -1185,10 +1185,10 @@ subroutine init_ocean_data()
 !!$       ! Set names of variable tendencies and declare them as history variables
 !!$       !    addfld(fname,                 unite,              numlev, avgflag, long_name, decomp_type, ...)
        if ( trim(fields(i)%fldnam) == "chla" ) then
-          call addfld(trim(fields(i)%fldnam), 'mg L-1 ', 1, 'A', 'ocean input data: '//fields(i)%fldnam, phys_decomp ) 
+          call addfld(trim(fields(i)%fldnam), horiz_only, 'A', 'mg L-1 ', 'ocean input data: '//fields(i)%fldnam ) 
           call add_default (fields(i)%fldnam, 1, ' ')
        else
-          call addfld(trim(fields(i)%fldnam), 'uM C ', 1, 'A', 'ocean input data: '//fields(i)%fldnam, phys_decomp ) 
+          call addfld(trim(fields(i)%fldnam), horiz_only, 'A', 'uM C ', 'ocean input data: '//fields(i)%fldnam ) 
           call add_default (fields(i)%fldnam, 1, ' ')
        endif
 
@@ -1196,19 +1196,19 @@ subroutine init_ocean_data()
 
 ! FOR DEBUGGING
     debug: if (debug_mam_mom) then
-       call addfld('mpoly_debug', ' ', 1, 'A', 'mpoly_debug', phys_decomp ) 
+       call addfld('mpoly_debug', horiz_only, 'A', ' ', 'mpoly_debug' ) 
        call add_default ('mpoly_debug', 1, ' ')
 
-       call addfld('mass_frac_bub_tot', ' ', 1, 'A', 'total organic mass fraction of bubble', phys_decomp ) 
+       call addfld('mass_frac_bub_tot', horiz_only, 'A', ' ', 'total organic mass fraction of bubble' ) 
        call add_default ('mass_frac_bub_tot', 1, ' ')
 
-       call addfld('mass_frac_bub_poly', ' ', 1, 'A', 'total organic mass fraction (poly)', phys_decomp ) 
+       call addfld('mass_frac_bub_poly', horiz_only, 'A', ' ', 'total organic mass fraction (poly)' ) 
        call add_default ('mass_frac_bub_poly', 1, ' ')
 
-       call addfld('mass_frac_bub_prot', ' ', 1, 'A', 'total organic mass fraction (prot)', phys_decomp ) 
+       call addfld('mass_frac_bub_prot', horiz_only, 'A', ' ', 'total organic mass fraction (prot)' ) 
        call add_default ('mass_frac_bub_prot', 1, ' ')
 
-       call addfld('mass_frac_bub_lip', ' ', 1, 'A', 'total organic mass fraction (lip)', phys_decomp ) 
+       call addfld('mass_frac_bub_lip', horiz_only, 'A', ' ', 'total organic mass fraction (lip)' ) 
        call add_default ('mass_frac_bub_lip', 1, ' ')
 
        om_mode_loop: do m_om=1,nslt_om
@@ -1217,17 +1217,17 @@ subroutine init_ocean_data()
 #elif ( defined MODAL_AERO_4MODE_MOM )
           m = nslt+m_om
 #endif
-          call addfld('cflx_'//trim(seasalt_names(m))//'_debug', ' ', 1, 'A', 'accumulation organic mass emissions', phys_decomp ) 
+          call addfld('cflx_'//trim(seasalt_names(m))//'_debug', horiz_only, 'A', ' ', 'accumulation organic mass emissions' ) 
           call add_default ('cflx_'//trim(seasalt_names(m))//'_debug', 1, ' ')
        enddo om_mode_loop
 
-       call addfld('omf_bub_section_mpoly',' ', nsections, 'A', 'omf poly', phys_decomp ) 
+       call addfld('omf_bub_section_mpoly', (/ 'ilev' /), 'A',' ', 'omf poly' ) 
        call add_default ('omf_bub_section_mpoly', 1, ' ')
 
-       call addfld('omf_bub_section_mprot',' ', nsections, 'A', 'omf prot', phys_decomp ) 
+       call addfld('omf_bub_section_mprot', (/ 'ilev' /), 'A',' ', 'omf prot' ) 
        call add_default ('omf_bub_section_mprot', 1, ' ')
 
-       call addfld('omf_bub_section_mlip',' ', nsections, 'A', 'omf lip', phys_decomp ) 
+       call addfld('omf_bub_section_mlip', (/ 'ilev' /), 'A',' ', 'omf lip' ) 
        call add_default ('omf_bub_section_mlip', 1, ' ')
 
     endif debug
