@@ -52,8 +52,15 @@ program cesm_driver
    !--------------------------------------------------------------------------
    ! Read in the configuration information and initialize the time manager.
    !--------------------------------------------------------------------------
+   ! Timer initialization has to be after determination of the maximum number
+   ! of threads used across all components, so called inside of 
+   ! ccsm_pre_init2, as are t_startf and t_stopf for CPL:INIT and 
+   ! cesm_pre_init2.
+   !--------------------------------------------------------------------------
    call cesm_pre_init2()
 
+   call t_startf('CPL:INIT')
+   call t_adj_detailf(+1)
 #ifdef USE_ESMF_LIB
 
    !--------------------------------------------------------------------------
@@ -77,6 +84,9 @@ program cesm_driver
    call ESMF_CplCompInitialize(drvcomp, rc=localrc)
    if (localrc /= 0) call shr_sys_abort('failed to esmf initialize')
 
+   call t_adj_detailf(-1)
+   call t_stopf('CPL:INIT')
+
    call ESMF_CplCompRun(drvcomp, rc=localrc)
    if (localrc /= 0) call shr_sys_abort('failed to esmf run')
 
@@ -90,6 +100,10 @@ program cesm_driver
    ! routines directly.
    !--------------------------------------------------------------------------
    call cesm_init()
+
+   call t_adj_detailf(-1)
+   call t_stopf('CPL:INIT')
+
    call cesm_run()
    call cesm_final()
 
