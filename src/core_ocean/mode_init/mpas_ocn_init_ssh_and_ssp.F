@@ -76,7 +76,7 @@ contains
 !>  zMid and restingThickness) needed for computing SSH from
 !>  SSP or visa versa. bottomDepth, refBottomDepth and maxLevelCell
 !>  must have been computed by the test case before calling this
-!>  routine.  If config_update_ssh_not_ssp = .false., the test 
+!>  routine.  If config_iterative_init_variable = 'ssp', the test 
 !>  case must compute refSSH before calling this routine.
 !>  modifySSHMask should be set to 1 wherever the ssh or ssp
 !>  should be modified for consistency (e.g. under land ice).
@@ -105,8 +105,8 @@ contains
 !> \author  Xylar Asay-Davis
 !> \date    10/21/2015
 !> \details 
-!>  This routine either updates SSH based on SSP (if config_update_ssh_not_ssp = .true.)
-!>  or visa versa (if config_update_ssh_not_ssp = .false.).  The routine either produces
+!>  This routine either updates SSH based on SSP (if config_iterative_init_variable = 'ssh')
+!>  or visa versa (if config_iterative_init_variable = 'ssp').  The routine either produces
 !>  and initial guess at SSP or SSH (if config_read_ssh_and_ssp_from_stream = .false.) 
 !>  or it updates SSP or SSH based on the change in SSH over a forward run
 !>  (if config_read_ssh_and_ssp_from_stream = .true.).  
@@ -129,19 +129,20 @@ contains
      type (domain_type), intent(inout) :: domain
      integer, intent(out) :: iErr
 
-     logical, pointer :: config_read_ssh_and_ssp_from_stream , &
-                         config_update_ssh_not_ssp
+     logical, pointer :: config_read_ssh_and_ssp_from_stream
+
+     character (len=StrKIND), pointer :: config_iterative_init_variable
 
    !--------------------------------------------------------------------
 
      iErr = 0
 
      call mpas_pool_get_config(ocnConfigs, 'config_read_ssh_and_ssp_from_stream', config_read_ssh_and_ssp_from_stream)
-     call mpas_pool_get_config(ocnConfigs, 'config_update_ssh_not_ssp', config_update_ssh_not_ssp)
+     call mpas_pool_get_config(ocnConfigs, 'config_iterative_init_variable', config_iterative_init_variable)
 
 
      if(config_read_ssh_and_ssp_from_stream) then
-       if(.not. config_update_ssh_not_ssp) then
+       if(config_iterative_init_variable == 'ssp') then
          call ocn_update_ssp_from_ssh(domain, iErr)
 
          if(iErr .ne. 0) then
@@ -182,7 +183,7 @@ contains
 !>  zMid and restingThickness) needed for computing SSH from
 !>  SSP or visa versa. bottomDepth, refBottomDepth and maxLevelCell
 !>  must have been computed by the test case before calling this
-!>  routine.  If config_update_ssh_not_ssp = .false., the test 
+!>  routine.  If config_iterative_init_variable = 'ssp', the test 
 !>  case must compute refSSH before calling this routine.
 
 !-----------------------------------------------------------------------
@@ -200,8 +201,9 @@ contains
      type (mpas_pool_type), pointer :: meshPool, statePool, diagnosticsPool, verticalMeshPool
 
      logical, pointer :: config_read_ssh_and_ssp_from_stream , &
-                         config_update_ssh_not_ssp, &
                          config_modify_open_ocean_ssh
+
+     character (len=StrKIND), pointer :: config_iterative_init_variable
 
      ! Define dimension pointers
      integer, pointer :: nCells, nVertLevels
@@ -221,7 +223,14 @@ contains
      iErr = 0
 
      call mpas_pool_get_config(ocnConfigs, 'config_read_ssh_and_ssp_from_stream', config_read_ssh_and_ssp_from_stream)
-     call mpas_pool_get_config(ocnConfigs, 'config_update_ssh_not_ssp', config_update_ssh_not_ssp)
+     call mpas_pool_get_config(ocnConfigs, 'config_iterative_init_variable', config_iterative_init_variable)
+
+     if(config_iterative_init_variable .ne. 'ssh' &
+        .and. config_iterative_init_variable .ne. 'ssp') then
+       iErr = 1
+       write(stderrUnit,*) 'ERROR: invalid value for config_iterative_init_variable', trim(config_iterative_init_variable)
+       return
+     end if
 
      initZStarWithSSH = updateOnly .or. config_read_ssh_and_ssp_from_stream
      initZStarWithoutSSH = .not. updateOnly .and. .not. config_read_ssh_and_ssp_from_stream
@@ -246,7 +255,7 @@ contains
          if(config_read_ssh_and_ssp_from_stream) then
            deltaSSH(:) = ssh(:) - refSSH(:)
          end if
-         if(.not. config_update_ssh_not_ssp) then
+         if(config_iterative_init_variable == 'ssp') then
            ! we're updating SSP so we want to keep ssh fixed refSSH
            ssh(:) = refSSH(:)
          end if
@@ -366,13 +375,13 @@ contains
      type (field2DReal), pointer :: refZMidField
      integer, pointer :: nCells, nVertLevels
 
-     logical, pointer :: config_update_ssh_not_ssp
+     character (len=StrKIND), pointer :: config_iterative_init_variable
 
      integer :: iCell
 
      iErr = 0
 
-     call mpas_pool_get_config(ocnConfigs, 'config_update_ssh_not_ssp', config_update_ssh_not_ssp)
+     call mpas_pool_get_config(ocnConfigs, 'config_iterative_init_variable', config_iterative_init_variable)
      call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
 
      call mpas_pool_get_field(scratchPool, 'scratchZMid', refZMidField)
@@ -412,13 +421,13 @@ contains
          return
        end if
 
-       do iCell = 1, nCells
-         if(config_update_ssh_not_ssp) then
+       if(config_iterative_init_variable == 'ssh') then
+         do iCell = 1, nCells
            ! compute ssh where pressure equals seaSurfacePressure
            ssh(iCell) = find_z_given_pressure(seaSurfacePressure(iCell), density(:,iCell), &
                                               layerThickness(:,iCell), nVertLevels, maxLevelCell(iCell))
-         end if
-       end do
+         end do
+       end if
 
        ! save the old zMid for use in tracer inerpolation
        refZMid(:,:) = zMid(:,:)
@@ -465,7 +474,7 @@ contains
          return
        end if
 
-       if(.not. config_update_ssh_not_ssp) then
+       if(config_iterative_init_variable == 'ssp') then
          ! now compute what the weight of each ocean column with the new layer thickness,
          ! stored temporarily in seaSurfacePressure to not require an extra scratch variable
          call compute_density_and_bottom_pressure(meshPool, statePool, diagnosticsPool, scratchPool, &

@@ -183,9 +183,9 @@
 
 					possible_values="true or false"
 		/>
-		<nml_option name="config_update_ssh_not_ssp" type="logical" default_value=".false." units="unitless"
-					description="Logical flag that determines if the SSH gets modified based on a previous forward run.  By default, the SSP gets modified instead."
-					possible_values="true or false"
+		<nml_option name="config_iterative_init_variable" type="character" default_value="ssp" units="unitless"
+					description="Which variable, ssh or ssp, is modified based on a previous forward run with the other held fixed during each init."
+					possible_values="'ssh' or 'ssp'"
 		/>
 		<nml_option name="config_modify_open_ocean_ssh" type="logical" default_value=".false." units="unitless"
 					description="Logical flag that determines if the SSH gets modified in the open ocean (where modifySSHMask == 1) to attempt to put the system in balance there.  By default, regions of open ocean are not balanced."
