@@ -135,9 +135,6 @@ $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -su
 echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
-echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >&! $TESTSTATUS_OUT
-echo "--- Test Functionality  ---:" >>& $TESTSTATUS_OUT
-
 $SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 "base" -suffix2 "modpes" $add_iop -msg "$msg" >>& $TESTSTATUS_OUT
 
 

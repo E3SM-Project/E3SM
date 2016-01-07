@@ -18,6 +18,8 @@
         <machine compiler="pgi" testtype="prebeta">bluewaters</machine>
         <machine compiler="intel" testtype="prealpha">edison</machine>
         <machine compiler="intel" testtype="prebeta">edison</machine>
+        <machine compiler="gnu" testtype="prebeta">melvin</machine>
+        <machine compiler="intel" testtype="prebeta">skybridge</machine>
         <machine compiler="intel" testtype="prealpha">eos</machine>
         <machine compiler="cray" testtype="prebeta">eos</machine>
       </test>
@@ -43,6 +45,8 @@
       <test name="ERS_N2_Ld3">
         <machine compiler="pgi" testtype="prebeta">bluewaters</machine>
         <machine compiler="intel" testtype="prebeta">edison</machine>
+        <machine compiler="gnu" testtype="prebeta">melvin</machine>
+        <machine compiler="intel" testtype="prebeta">skybridge</machine>
         <machine compiler="intel" testtype="prebeta">eos</machine>
       </test>
       <test name="NCK_Ld3">
@@ -73,6 +77,10 @@
         <machine compiler="intel" testtype="prebeta">edison</machine>
         <machine compiler="intel" testtype="prealpha">hobart</machine>
         <machine compiler="pgi" testtype="prealpha">hobart</machine>
+        <machine compiler="gnu" testtype="prebeta">melvin</machine>
+        <machine compiler="intel" testtype="prebeta">skybridge</machine>
+        <machine compiler="intel" testtype="prealpha">goldbach</machine>
+        <machine compiler="pgi" testtype="prealpha">goldbach</machine>
         <machine compiler="intel" testtype="prealpha">stampede</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="pgi" testtype="prealpha">yellowstone</machine>
@@ -85,6 +93,8 @@
       <test name="NCK_Ld3">
         <machine compiler="pgi" testtype="prebeta">bluewaters</machine>
         <machine compiler="intel" testtype="prebeta">edison</machine>
+        <machine compiler="gnu" testtype="prebeta">melvin</machine>
+        <machine compiler="intel" testtype="prebeta">skybridge</machine>
         <machine compiler="intel" testtype="prebeta">eos</machine>
       </test>
       <test name="PEA_P1_Ld3">
@@ -125,6 +135,8 @@
       </test>
       <test name="ERS_Ld3">
         <machine compiler="intel" testtype="prebeta">edison</machine>
+        <machine compiler="gnu" testtype="prebeta">melvin</machine>
+        <machine compiler="intel" testtype="prebeta">skybridge</machine>
       </test>
     </grid>
   </compset>
@@ -153,6 +165,8 @@
     <grid name="f09_g16">
       <test name="SEQ_PFC_Ld3">
         <machine compiler="intel" testtype="prebeta">edison</machine>
+        <machine compiler="gnu" testtype="prebeta">melvin</machine>
+        <machine compiler="intel" testtype="prebeta">skybridge</machine>
       </test>
     </grid>
     <grid name="f19_g16">

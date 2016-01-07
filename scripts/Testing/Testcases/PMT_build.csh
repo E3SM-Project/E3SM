@@ -23,8 +23,6 @@ echo "b4b_flag=.true." >> user_nl_pop
 
 ./case.build -testmode
 if ($status != 0) then
-   echo "Error: build for default PE layout failed" >! ./TestStatus
-   echo "CFAIL $CASE" > ./TestStatus
    exit -1    
 endif 
 
@@ -108,8 +106,6 @@ endif
 
 ./case.build -testmode
 if ($status != 0) then
-   echo "Error: build for default half tasks twice threads failed" >! ./TestStatus
-   echo "CFAIL $CASE" > ./TestStatus
    exit -1    
 endif 
 

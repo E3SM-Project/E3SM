@@ -382,6 +382,16 @@ if ( $GRID eq "CLM_USRDAT" && $CLM_USRDAT_NAME =~ /^(UNSET|)$/ ) {
 EOF
 }
 
+(-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
+if ($print>=2) { print "Inputdata root directory: $DIN_LOC_ROOT$eol"; }
+
+if ($opts{'test'}) {
+    (-d $DIN_LOC_ROOT)  or  die <<"EOF";
+** $ProgName - Inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
+EOF
+}
+my $test_files = $opts{'test'};
+
 my $var   = "DATM_MODE";
 my $group = $definition->get_group_name($var);
 $nl->set_variable_value( $group, $var, "\'$xmlvars{$var}\'" );

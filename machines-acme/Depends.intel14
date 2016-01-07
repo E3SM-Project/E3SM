@@ -1,0 +1,28 @@
+#
+# 12/03/2012 the intel compiler on yellowstone 12.1.5 20120612
+# does not converge the pH computation without the -CU flag
+# root cause has not been determined.  JPE
+# this problem is resolved in intel 13.0.1
+#ecosys_mod.o: ecosys_mod.F90
+#	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -CU $<
+
+prim_advection_mod.o: prim_advection_mod.F90
+		      $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -O3  -no-prec-div  $<
+
+edge_mod.o: edge_mod.F90
+		      $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -no-prec-div  $<
+
+derivative_mod.o: derivative_mod.F90
+		      $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -no-prec-div  $<
+
+bndry_mod.o: bndry_mod.F90
+		      $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -no-prec-div  $<
+
+prim_advance_mod.o: prim_advance_mod.F90
+		      $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -no-prec-div  $<
+
+uwshcu.o: uwshcu.F90
+		      $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -no-prec-div  $<
+
+wetdep.o: wetdep.F90
+		      $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -no-prec-div  $<

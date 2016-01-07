@@ -198,11 +198,14 @@ sub makeBatchScript()
     $logger->debug("In makeBatchScript 5");
     $self->setProject();
     $logger->debug("In makeBatchScript 6");
-    $self->setBatchDirectives();
-    $logger->debug("In makeBatchScript 7");
     $self->getLtArchiveOptions();
-    $logger->debug("In makeBatchScript 8");
+    $logger->debug("In makeBatchScript 7");
     $self->setCESMRun();
+    # In some cases we need the optimized number of nodes calculated
+    # by setCESMRun() to set the batch directives. So setBatchDirectives()
+    # needs to follow setCESMRun()
+    $logger->debug("In makeBatchScript 8");
+    $self->setBatchDirectives();
     $logger->debug("In makeBatchScript 9");
     $self->writeBatchScript($inputfilename, $outputfilename);
 }
@@ -554,6 +557,14 @@ sub setQueue()
     {
         my $defelement = $defaultqueue[0];
         $self->{'queue'} = $defelement->textContent();
+
+        my $jobmin = $defelement->getAttribute('jobmin');
+        my $jobmax = $defelement->getAttribute('jobmax');
+        # if the fullsum is between the min and max # jobs, then use this queue.
+        if(defined $jobmin && defined $jobmax && $self->{'fullsum'} >= $jobmin && $self->{'fullsum'} <= $jobmax)
+        {
+            return;
+        }
     }
 
     # We may have a default queue at this point, but if there is a queue that our job's node count
@@ -570,7 +581,16 @@ sub setQueue()
 	# if the fullsum is between the min and max # jobs, then use this queue.  
 	if(defined $jobmin && defined $jobmax && $self->{'fullsum'} >= $jobmin && $self->{'fullsum'} <= $jobmax)
 	{
-	    $self->{'queue'} = $qelem->textContent();
+            # get the minimum/maximum # nodes allowed for each queue.  
+
+            my $jobmin = $qelem->getAttribute('jobmin');
+            my $jobmax = $qelem->getAttribute('jobmax');
+
+            # if the fullsum is between the min and max # jobs, then use this queue.  
+            if(defined $jobmin && defined $jobmax && $self->{'fullsum'} >= $jobmin && $self->{'fullsum'} <= $jobmax)
+            {
+                $self->{'queue'} = $qelem->textContent();
+            }
 	}
     }
     if(defined $self->{queue}){  
@@ -593,12 +613,30 @@ sub setCESMRun()
     my @suffixes = $configmachinesparser->findnodes("/config_machines/default_run_suffix");
     if(! @suffixes)
     {
-	die "no default run suffix defined!";
+        die "no default run suffix defined!";
+    }
+
+    my ($defaultrunexe, $defaultrunmiscsuffix);
+    @suffixes = $configmachinesparser->findnodes("/config_machines/default_run_suffix/default_run_exe");
+    if(! @suffixes)
+    {
+        die "no default run exe defined!";
+    }
+    $defaultrunexe = $suffixes[0]->textContent();
+    @suffixes = $configmachinesparser->findnodes("/config_machines/default_run_suffix/default_run_misc_suffix");
+    if(! @suffixes)
+    {
+        $defaultrunmiscsuffix = "";
+    }
+    else{
+        $defaultrunmiscsuffix = $suffixes[0]->textContent();
     }
     
-    my $defaultrunsuffix = $suffixes[0]->textContent();
+    #my $defaultrunsuffix = $suffixes[0]->textContent();
+    my $defaultrunsuffix = $defaultrunexe . $defaultrunmiscsuffix;
     # get the batch system type for this machine.  
     my @batchtype = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/batch_system");
+
 
     if(! @batchtype)
     {
@@ -697,59 +735,80 @@ sub setCESMRun()
     # arguments. 
     foreach my $exeelem(@exeelems)
     {
-	$executableString = $exeelem->textContent();
-        
-	my @arguments = $chosenmpielem->findnodes("./arguments/arg");
-	
-	# Iterate through the arg elements..
-	foreach my $arg(@arguments)
-	{
-	    my $tmpArg = undef;
-	    
-	    
-	    my $argName = $arg->getAttribute('name');
-	    my $argValue = $arg->textContent();
-	    
-	    # If the arg value is wrapped in double underscores, we
-	    # we need to replace the double underscore with either 
-	    # actual value if defined, the default value if defined and no
-	    # instance variable exists, or discard the argument completely 
-	    # if neither are defined. 
-	    while($argValue =~ /({{ \w+ }})/)
-	    {
-		# get the matched string, and get the
-		# string we need to replace without the underscores. 
-		my $matchedString = $1;
-		my $stringToReplace = $matchedString;
-		$stringToReplace =~ s/{{ //g;
-		$stringToReplace =~ s/ }}//g;
+        $executableString = $exeelem->textContent();
+        my @arguments = $chosenmpielem->findnodes("./arguments/arg");
+        if(scalar @arguments != 0)
+        {
+            # Iterate through the arg elements..
+            foreach my $arg(@arguments)
+            {
+                my $tmpArg = undef;
+                
+                
+                my $argName = $arg->getAttribute('name');
+                my $argValue = $arg->textContent();
+                
+                # If the arg value is wrapped in double underscores, we
+                # we need to replace the double underscore with either 
+                # actual value if defined, the default value if defined and no
+                # instance variable exists, or discard the argument completely 
+                # if neither are defined. 
+                while($argValue =~ /({{ \w+ }})/)
+                {
+                    # get the matched string, and get the
+                    # string we need to replace without the underscores. 
+                    my $matchedString = $1;
+                    my $stringToReplace = $matchedString;
+                    $stringToReplace =~ s/{{ //g;
+                    $stringToReplace =~ s/ }}//g;
 
-		# the actual argument is stored here, 
-		# this way we can transform the thing as we
-		# need to 
-		
-		# if we don't have an instance variable, and we do have a default value, 
-		# use the default value for the double underscore substitution. 
-		if(! defined $self->{$stringToReplace} && $arg->hasAttribute('default'))
-		{
-		    my $defaultAttr = $arg->getAttribute('default');
-		    $argValue =~ s/$matchedString/$defaultAttr/g;
-		    
-		}
-		elsif( defined $self->{$stringToReplace} && ! $arg->hasAttribute('default'))
-		{
-		    my $instanceVar = $self->{$stringToReplace};
-		    $argValue =~ s/$matchedString/$instanceVar/g;
-		    #print "matched string: $matchedString\n";
-		    #print "actual argument is now: $argValue\n";
-		}
-		elsif(! defined $self->{$stringToReplace} && ! $arg->hasAttribute('default'))
-		{	
-		    $argValue = '';
-		}
-	    }
-	    $mpiargstring .= $argValue . ' ' ;
-	}
+                    # the actual argument is stored here, 
+                    # this way we can transform the thing as we
+                    # need to 
+                    
+                    # if we don't have an instance variable, and we do have a default value, 
+                    # use the default value for the double underscore substitution. 
+                    if(! defined $self->{$stringToReplace} && $arg->hasAttribute('default'))
+                    {
+                        my $defaultAttr = $arg->getAttribute('default');
+                        $argValue =~ s/$matchedString/$defaultAttr/g;
+                        
+                    }
+                    elsif( defined $self->{$stringToReplace} && ! $arg->hasAttribute('default'))
+                    {
+                        my $instanceVar = $self->{$stringToReplace};
+                        $argValue =~ s/$matchedString/$instanceVar/g;
+                        #print "matched string: $matchedString\n";
+                        #print "actual argument is now: $argValue\n";
+                    }
+                    elsif(! defined $self->{$stringToReplace} && ! $arg->hasAttribute('default'))
+                    {	
+                        $argValue = '';
+                    }
+                }
+                $mpiargstring .= $argValue . ' ' ;
+            }
+        }
+        else{
+            # Check if the user has specified "args=default" indicating
+            # that the executable's mpi args are generated by the 
+            # taskmaker
+            # 
+            if($exeelem->hasAttribute('args'))
+            {
+                my $attrValue = $exeelem->getAttribute('args');
+                if($attrValue eq 'default')
+                {
+                    if($self->{'taskmaker'}->hasOptMpirun($executableString) && 
+                       (!defined $self->{'overridenodecount'}))
+                    {
+                        $mpiargstring .= $self->{'taskmaker'}->optMpirun($executableString, $defaultrunexe);
+                        $defaultrunsuffix = $defaultrunmiscsuffix;
+                        $self->{'num_nodes'} = $self->{'taskmaker'}->optNodeCount();
+                    }
+                }
+            }
+        }
     }
     
     $self->{'mpirun'} .= "qx( " . $executableString . " " . $mpiargstring .  " " . $defaultrunsuffix . ");";
@@ -1091,6 +1150,10 @@ E2
     
 }
 
+#==============================================================================
+package Batch::BatchMaker_cetus;
+use base qw (Batch::BatchMaker_mira );
+#==============================================================================
 
 package Batch::BatchMaker_gaea;
 use base qw (Batch::BatchMaker );

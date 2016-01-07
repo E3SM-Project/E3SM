@@ -33,8 +33,6 @@ endif
 ./case.clean_build
 ./case.build -testmode
 if ($status != 0) then
-   echo "Error: build with MPI failed" >! ./TestStatus
-   echo "CFAIL $CASE" > ./TestStatus
    exit -1    
 endif 
 
@@ -54,8 +52,6 @@ mv -f Macros Macros.1
 ./case.clean_build
 ./case.build -testmode
 if ($status != 0) then
-   echo "Error: build with mpi-serial failed" >! ./TestStatus
-   echo "CFAIL $CASE" > ./TestStatus
    exit -1    
 endif 
 

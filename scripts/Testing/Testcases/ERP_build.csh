@@ -30,8 +30,6 @@ endif
 
 ./case.build -testmode
 if ($status != 0) then
-   echo "Error: build for default PE layout failed" >! ./TestStatus
-   echo "CFAIL $CASE" > ./TestStatus
    exit -1    
 endif 
 
@@ -168,8 +166,6 @@ endif
 
 ./case.build -testmode
 if ($status != 0) then
-   echo "Error: build for half tasks/threads failed" >! ./TestStatus
-   echo "CFAIL $CASE" > ./TestStatus
    exit -1    
 endif 
 

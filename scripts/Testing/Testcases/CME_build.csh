@@ -15,8 +15,6 @@ set EXEROOT  = `./xmlquery EXEROOT -value`
 
 ./case.build -testmode
 if ($status != 0) then
-   echo "Error: build for MCT failed" >! ./TestStatus
-   echo "CFAIL $CASE" > ./TestStatus
    exit -1    
 endif 
 
@@ -29,8 +27,6 @@ cp -f env_build.xml      env_build.xml.mct
 
 ./case.build -testmode
 if ($status != 0) then
-   echo "Error: build for ESMF failed" >! ./TestStatus
-   echo "CFAIL $CASE" > ./TestStatus
    exit -1    
 endif 
 

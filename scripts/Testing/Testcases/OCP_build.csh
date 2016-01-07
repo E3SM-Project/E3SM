@@ -102,8 +102,6 @@ while (${bx} < ${OCN_NX})
       if ($precheck == 0) then
         ./*.build
         if ($status != 0) then
-          echo "Error: build NTASKS_OCN $NTASKS_OCN and NTHRDS_OCN $NTHRDS_OCN  failed" >! ./TestStatus
-          echo "CFAIL $CASE" > ./TestStatus
           exit -1    
         endif 
 

@@ -105,5 +105,5 @@ if ($pass == 0) then
    set basestatus = "FAIL"
 endif
 
-echo "$basestatus ${CASEBASEID} " >&! $TESTSTATUS_OUT
+echo "$basestatus ${CASEBASEID} ARCHIVE" >>&! $TESTSTATUS_OUT
 

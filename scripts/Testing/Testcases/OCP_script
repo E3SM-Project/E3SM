@@ -84,9 +84,6 @@ endif
 
 set CPLLOG = $CplLogFile
 
-echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >&! $TESTSTATUS_OUT
-echo " --- Test Functionality: ---" >>& $TESTSTATUS_OUT
-
 echo "DONE ${CASEBASEID} : ($msg finished, successful coupler log) " >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 

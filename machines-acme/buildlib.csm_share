@@ -1,0 +1,100 @@
+#!/usr/bin/env perl
+use strict;
+use File::Path;
+
+#===============================================================================
+# Purpose: Build csm_share library
+#===============================================================================
+
+if ($#ARGV == -1) {
+    die " ERROR buildlib_csm_share: must specify a caseroot input argument";
+}
+my ($sharedlibroot, $CASEROOT) = @ARGV;
+
+chdir "${CASEROOT}";
+
+my $CIMEROOT		= `./xmlquery CIMEROOT		-value`;
+my $COMP_INTERFACE	= `./xmlquery COMP_INTERFACE	-value`;
+my $USE_ESMF_LIB	= `./xmlquery USE_ESMF_LIB	-value`;
+my $GMAKE_J		= `./xmlquery GMAKE_J		-value`;
+my $GMAKE		= `./xmlquery GMAKE		-value`;
+my $CASETOOLS		= `./xmlquery CASETOOLS		-value`;
+my $NINST_ATM		= `./xmlquery NINST_ATM		-value`;
+my $NINST_ICE		= `./xmlquery NINST_ICE		-value`;
+my $NINST_GLC		= `./xmlquery NINST_GLC		-value`;
+my $NINST_LND		= `./xmlquery NINST_LND		-value`;
+my $NINST_OCN		= `./xmlquery NINST_OCN		-value`;
+my $NINST_ROF		= `./xmlquery NINST_ROF		-value`;
+my $NINST_WAV		= `./xmlquery NINST_WAV		-value`;
+my $NINST_VALUE		= `./xmlquery NINST_VALUE	-value`;
+
+#--------------------------------------------------------------------
+# Filepath: list of source code directories (in order of importance).
+#--------------------------------------------------------------------
+
+my $comp="mct";
+$comp = "esmf" if ($COMP_INTERFACE eq "ESMF");
+
+my $useesmf = "noesmf";
+$useesmf = "esmf" if ($USE_ESMF_LIB eq "TRUE");
+
+my $libdir = "$sharedlibroot/${COMP_INTERFACE}/$useesmf/${NINST_VALUE}/csm_share";
+mkpath($libdir) unless -d $libdir;
+chdir($libdir) or die "Could not cd to $libdir: $!\n";
+
+my @filepath = ( "$CASEROOT/SourceMods/src.share",
+		 "$CIMEROOT/driver_cpl/shr",
+		 "$CIMEROOT/components/xcpl_models/xshare",
+		 "$CIMEROOT/share/csm_share/shr",
+		 );
+
+if($useesmf eq "noesmf"){
+    push(@filepath,"$CIMEROOT/share/esmf_wrf_timemgr");
+}else{
+    push(@filepath,"$CIMEROOT/driver_cpl/shr_esmf");
+} 
+
+my @fp;    
+if (-e "Filepath"){
+    open(F,"Filepath");
+    @fp = <F>;
+    close(F);
+}
+# if the number of lines in @filepath is different than the number of lines in @fp then create a new Filepath file
+if($#fp != $#filepath){
+    open(F,">Filepath");
+    foreach(@filepath){
+	print F "$_\n";
+    }
+    close(F);
+}
+my $multiinst_cppdefs = "";
+$multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_ATM=$NINST_ATM";
+$multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_LND=$NINST_LND";
+$multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_OCN=$NINST_OCN"; 
+$multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_ICE=$NINST_ICE"; 
+$multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_GLC=$NINST_GLC";
+$multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_WAV=$NINST_WAV";
+$multiinst_cppdefs = "$multiinst_cppdefs -DNUM_COMP_INST_ROF=$NINST_ROF";
+
+my $bld = "$GMAKE  complib -j $GMAKE_J MODEL=csm_share COMPLIB=libcsm_share.a USER_CPPDEFS=\" $multiinst_cppdefs\" -f $CASETOOLS/Makefile ";
+
+my $rc = system($bld);
+if ($rc==0xff00){
+    die "$bld failed with: $!\n";
+} elsif($rc > 0x80) {
+    $rc >>= 8;
+    die "$bld returned non-zero exit status $rc\n";
+} elsif($rc != 0) {
+    print "$bld ran with ";
+    if ($rc & 0x80){
+	$rc &= ~0x80;
+	print "coredump from ";
+    }
+    die "signal $rc\n";
+}  
+
+#system("cp -p -f libcsm_share.a $sharedlibroot/lib");
+#system("cp -p -f *.mod $sharedlibroot/include/");
+
+

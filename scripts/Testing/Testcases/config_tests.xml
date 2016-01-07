@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 
+<<<<<<< HEAD
 <config_test>
 
   <test NAME="APT">
@@ -68,6 +69,46 @@
     <AVGHIST_OPTION>nmonths</AVGHIST_OPTION>
     <AVGHIST_N>1</AVGHIST_N>
     <DOUT_S>FALSE</DOUT_S> 
+  </test>
+
+  <test NAME="TESTBUILDFAIL">
+    <DESC>For testing infra only. Insta-fail build step.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="TESTRUNFAIL">
+    <DESC>For testing infra only. Insta-fail run step.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="TESTRUNPASS">
+    <DESC>For testing infra only. Insta-pass run step.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="TESTRUNSLOWPASS">
+    <DESC>For testing infra only. After 5 minutes of sleep, pass run step.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
   </test>
 
   <test NAME="ICP">

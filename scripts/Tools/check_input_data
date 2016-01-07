@@ -24,8 +24,9 @@ OPTIONS
      -export                Export missing data into "inputdata",
      -prestage <prestage>   Prestage data from inputdata to prestage
      -datalistdir <dir>     Directory which will be searched for .input_data_list files
-                            Default is $CASEROOT/Buildconf.  Optional.
      -loglevel             Set output verbosity. Optional.
+     -svnloc <svnloc>       Location of the svn inputdata repository from which to export
+                            missing data. Optional.
      -help [or -h]          Print usage to STDOUT.  Optional.
 SUMMARY
 
@@ -47,6 +48,7 @@ my %opts = ( inputdata      => undef,
 	     prestage       => 0,
 	     datalistdir    => undef,
 	     loglevel => "INFO",
+	     svnloc         => undef,
 	     help           => 0
 	    );
 
@@ -57,6 +59,7 @@ GetOptions(
     "prestage=s"                => \$opts{'prestage'},
     "datalistdir=s"             => \$opts{'datalistdir'},
     "loglevel=s"                 => \$opts{'loglevel'},
+    "svnloc=s"                  => \$opts{'svnloc'},
     "h|help"                    => \$opts{'help'},
 )  or usage();
 
@@ -146,7 +149,14 @@ if ($prestageopt) {
 }    
 
 # Subversion repository location.
-my $svn_loc = 'https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/';
+my $svn_loc = undef;
+if (defined($opts{'svnloc'})) {
+    $svn_loc = "$opts{'svnloc'}/";
+}
+else {
+    $svn_loc = 'https://acme-svn2.ornl.gov/acme-repo/acme/inputdata/';
+}
+my $svn_loc_backup = 'https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/';
 
 # If export option is set, test for svn install, and server
 if ($exportopt) {
@@ -154,8 +164,8 @@ if ($exportopt) {
   if ($error eq '') {
     $logger->logdie ("Error: the subversion client svn was not found.");
   }
-  my $error = `svn list $svn_loc > /dev/null`;
 
+  my $error = `svn --non-interactive --trust-server-cert list $svn_loc > /dev/null`;
 }
 
 $inputdata_rootdir .= "/";
@@ -231,10 +241,22 @@ foreach $i (@filelocations) {
               }
            }
 	   if (($isinput) && ($exportopt) && (!-e $fileneed)) {
-	      my $fileloc = $svn_loc.$filend;     # Location in subversion repository.
-  	      my $lsearch = $fileloc;             # Variable used in  searches for symbolic links.
-	      isinrepository($fileloc) ? dataexport($fileneed, $fileloc) : 
-		 $logger->warn( "File was not found in svn repo: $fileloc ");
+               my $fileloc = $svn_loc.$filend;     # Location in subversion repository.
+               my $lsearch = $fileloc;             # Variable used in  searches for symbolic links.
+               if (isinrepository($fileloc)) {
+                   dataexport($fileneed, $fileloc);
+               }
+               else {
+                   $logger->warn("File was not found in svn repo: $fileloc, trying backup...");
+                   $fileloc = $svn_loc_backup.$filend;     # Location in subversion repository.
+                   $lsearch = $fileloc;             # Variable used in  searches for symbolic links.
+                   if (isinrepository($fileloc)) {
+                       dataexport($fileneed, $fileloc);
+                   }
+                   else {
+                       $logger->warn("File was not found in backup svn repo: $fileloc");
+                   }
+               }
 	   }
 	   if (($isinput) && ($prestageopt)) {
 	      my $filecopy = $prestage_rootdir.$filend;
@@ -269,12 +291,12 @@ exit( $status );
 
 # Check for existence of a file in the subversion repository, returns 1 if so.
 sub isinrepository($) {
-    return 1 if `svn ls $_[0]`;
+    return 1 if `svn --non-interactive --trust-server-cert ls $_[0]`;
 }
 
 # Checks a link in the subversion repository and returns the target location of that link.
 sub linktarget($) {
-    my $filetext = `svn cat $_[0]`;
+    my $filetext = `svn --non-interactive --trust-server-cert cat $_[0]`;
     $filetext =~ s/link // or return 0;  # File relative path from link.
     (my $linktar = $_[0]) =~ s!(.*)/+.*?$!$1/!;
     $linktar .= $filetext;               # Absolute path target of link.
@@ -287,7 +309,7 @@ sub dataexport($$) {
     $_[0] =~ m!(.*)/(.*)!;                             # Stores directory containing file in $1.
     my $dir = $1;
     $logger->info( "export $_[1] $_[0] ..... " );
-    my $listing = `svn ls $_[1]`;
+    my $listing = `svn --non-interactive --trust-server-cert ls $_[1]`;
     if ($2 and $listing =~ /^$2\b/) {                  # Check if input is a file or directory (links treated as files).
 	unless (-e $dir) {                             # Make containing directory unless it already exists.
 	    my $dexist = $dir;
@@ -296,9 +318,9 @@ sub dataexport($$) {
 	    }
 	    system("umask 2; mkdir -p -m 775 $dir");
 	}
-	system("svn export $_[1] $_[0] 1>/dev/null"); # Export file.
+	system("svn --non-interactive --trust-server-cert export $_[1] $_[0] 1>/dev/null"); # Export file.
     } else {
-	system("svn export --depth=files $_[1] $_[0] 1>/dev/null"); # Export dir.
+	system("svn --non-interactive --trust-server-cert export --depth=files $_[1] $_[0] 1>/dev/null"); # Export dir.
     }
     if (-f $_[0]) {                                    # Store checksum.
         my $checksumfile = $dir.'/.checksums';         # Checksums saved here.

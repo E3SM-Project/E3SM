@@ -62,6 +62,8 @@ sub new
 		$self->{$layoutstring} = $config{$layoutstring};
 	}
 	
+  $self->{'EXEROOT'} = $config{'EXEROOT'};
+  $self->{'DEFAULT_RUN_EXE_TEMPLATE_STR'} = '__DEFAULT_RUN_EXE__';
 	
 	# set the compiler, and MAX_TASKS_PER_NODE
 	$self->{'COMPILER'} = $config{'COMPILER'};
@@ -218,11 +220,15 @@ sub _computeValues
 	my $taskgeom = "(0";
 	my $threadgeom = " $maxt[0]";
 	my $taskcount = 1;
+	my $maxtaskcount = $totaltasks;
 	my $threadcount = $maxt[0];
+	my $maxthreadcount = $maxt[0];
 	my $aprun = "";
 	my $pbsrs = "";
 
 	my ($taskpernode, $nodecnt);
+  my $totalnodecount = 0;
+  my $maxtotalnodecount = 0;
 	for (my $c1=1; $c1 < $totaltasks; $c1++)
 	{
 	        $sum = $sum + $maxt[$c1];
@@ -249,17 +255,27 @@ sub _computeValues
 			    $taskpernode = $self->{'MAX_TASKS_PER_NODE'} / $threadcount;
 			}
 			$taskpernode = ($taskpernode > $taskcount) ? $taskcount : $taskpernode;
-			$aprun = $aprun . " -n $taskcount  -N $taskpernode -d $threadcount \${$self->{'EXEROOT'}/cesm.exe";
+			$aprun = $aprun . " -n $taskcount  -N $taskpernode -d $threadcount $self->{'DEFAULT_RUN_EXE_TEMPLATE_STR'} :";
 			my $nodecount = $taskcount / $taskpernode;
+      $totalnodecount += ceil($nodecount);
 			$pbsrs = $pbsrs . "${nodecount}:ncpus=$self->{'MAX_TASKS_PER_NODE'}:mpiprocs=${taskpernode}:ompthreads=${threadcount}:model=";
 			$threadcount = $maxt[$c1];
+			$maxthreadcount = max($maxthreadcount, $maxt[$c1]);
 			$taskcount = 1;
-		    }
+    }
 		else
 		{
 			$taskcount += 1;
 		}
 	}
+
+  my $maxtaskpernode = 1;
+  $maxtaskpernode = $self->{'MAX_TASKS_PER_NODE'}/$maxthreadcount;
+  if(defined $self->{'PES_PER_NODE'}){
+    $maxtaskpernode = min($self->{'PES_PER_NODE'},$maxtaskpernode);
+  }
+  $maxtaskpernode = ($maxtaskpernode > $maxtaskcount) ? $maxtaskcount : $maxtaskpernode;
+  $maxtotalnodecount = ceil($maxtaskcount/$maxtaskpernode);
 	
 	$fullsum = $fullsum + $sum;
 	$self->{'fullsum'} = $fullsum;
@@ -271,28 +287,30 @@ sub _computeValues
 	    $taskpernode = $self->{'MAX_TASKS_PER_NODE'} / $threadcount;
 	}
 	$taskpernode = ($taskpernode > $taskcount) ? $taskcount : $taskpernode;
-	
+
+  $totalnodecount += ceil($taskcount/$taskpernode);
+
 	if($self->{'COMPILER'} eq "intel" && $taskpernode > 1)
 	{
 		my $taskpernuma = ceil($taskpernode / 2);
 		$aprun .= " -S $taskpernuma -cc numa_node ";
 	}
+	$aprun  .= " -n $taskcount -N $taskpernode -d $threadcount $self->{'DEFAULT_RUN_EXE_TEMPLATE_STR'} ";
 
 	# add all the calculated numbers as instance data. 
 	$self->{'totaltasks'} = $totaltasks;
-	$self->{'taskpernode'} = $taskpernode;
+	$self->{'taskpernode'} = $maxtaskpernode;
     $self->{'taskpernuma'}  = ceil($taskpernode / 2);
 	$self->{'maxthreads'} = $maxthreads;
 	$self->{'minthreads'} = $minthreads;
 	$self->{'taskgeom'} = $taskgeom;
 	$self->{'threadgeom'} = $threadgeom;
-	$self->{'taskcount'} = $taskcount;
-	$self->{'threadcount'} = $threadcount;
-	$self->{'aprun'}  .= " -S $taskpernode -d $threadcount \${EXEROOT}/cesm.exe";
-	$self->{'nodecount'} = $taskcount / $taskpernode; 
+	$self->{'taskcount'} = $maxtaskcount;
+	$self->{'threadcount'} = $maxthreadcount;
+	$self->{'aprun'}  .= $aprun;
+	$self->{'optnodecount'} = $totalnodecount;
+	$self->{'nodecount'} = $maxtotalnodecount;
 
-	# Make sure we have enough nodes to cover our task count..
-	$self->{'nodecount'} = ceil($self->{'nodecount'}) if ( $taskcount % $taskpernode != 0);
 	$self->{'pbsrs'} = $pbsrs . "$self->{nodecount}:ncpus=$self->{'MAX_TASKS_PER_NODE'}:mpiprocs=${taskpernode}:ompthreads=${threadcount}:model=";
 
 	# calculate ptile..  
@@ -302,8 +320,26 @@ sub _computeValues
 		$ptile = floor($self->{'MAX_TASKS_PER_NODE'} / $self->{'maxthreads'});
 	}
 	$self->{'ptile'} = $ptile;
+}
 
+#=============================================================================
+# has optimized mpirun command?
+#=============================================================================
+sub hasOptMpirun
+{
+  my($self, $mpirunexe) = @_;
+  return (defined $self->{$mpirunexe});
+}
 
+#=============================================================================
+# get optimized mpirun command
+#=============================================================================
+sub optMpirun
+{
+  my ($self, $mpirunexe, $cesmexe) = @_;
+  my $optruncmd = $self->{$mpirunexe};
+  $optruncmd =~ s/$self->{'DEFAULT_RUN_EXE_TEMPLATE_STR'}/$cesmexe/g;
+  return $optruncmd;
 }
 
 #==============================================================================
@@ -385,6 +421,14 @@ sub nodeCount()
 	return $self->{'nodecount'};
 }
 
+#==============================================================================
+# get the optimized node count
+#==============================================================================
+sub optNodeCount()
+{
+	my $self = shift;
+	return $self->{'optnodecount'};
+}
 #==============================================================================
 # TODO remove the aprun stuff from this module
 # It is being constructed properly via XML configuration files. 

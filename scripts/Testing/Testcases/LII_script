@@ -12,6 +12,17 @@ set STOP_OPTION = `./xmlquery STOP_OPTION -value`
 ./xmlchange -file env_run.xml -id HIST_OPTION  -val ${STOP_OPTION}
 ./xmlchange -file env_run.xml -id HIST_N       -val ${STOP_N}
 
+#--- This only works on AIX systems
+if ($OS != AIX) then
+  echo "${0}:  running APT test on AIX system - Error" >>& $TESTSTATUS_LOG
+  echo "ERROR: APT test must be run on AIX system" >>& $TESTSTATUS_LOG
+  set basestatus = "ERROR"
+  echo "$basestatus ${CASEBASEID} " >>& $TESTSTATUS_OUT
+  exit -1
+else
+  echo "${0}:  running APT test on AIX system - OK" >>& $TESTSTATUS_LOG
+endif
+
 #======================================================================
 # do a run with use_init_interp false
 #======================================================================
@@ -103,6 +114,7 @@ if ! ( $?IOP_ON ) then
 endif
 
 echo "DONE ${CASEBASEID} : ($msg finished, successful coupler log) " >>& $TESTSTATUS_LOG
+
 echo "" >>& $TESTSTATUS_LOG
 
 $SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 interp $add_iop -msg "$msg" >>& $TESTSTATUS_OUT

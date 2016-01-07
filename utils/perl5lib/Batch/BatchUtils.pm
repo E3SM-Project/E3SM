@@ -824,6 +824,9 @@ sub getSubmitArguments()
 }
 
 #==============================================================================
+package Batch::BatchUtils_cetus;
+use base qw( Batch::BatchUtils_mira );
+#==============================================================================
 # Red herring method so the factory will work. 
 #==============================================================================
 sub _test()

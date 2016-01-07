@@ -473,6 +473,19 @@ for mct, etc.
   <ADD_GPTL_CPPDEFS> -DHAVE_PAPI </ADD_GPTL_CPPDEFS>
 </compiler>
 
+<compiler COMPILER="intel" MACH="skybridge">
+  <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>  
+  <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>  
+  <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <ESMF_LIBDIR>/projects/ccsm/esmf-6.3.0rp1/lib/libO/Linux.intel.64.openmpi.default</ESMF_LIBDIR>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -L/projects/ccsm/BLAS-intel -lblas_LINUX</ADD_SLIBS>
+  <ADD_CPPFLAGS> -DHAVE_COMM_F2C </ADD_CPPFLAGS>
+  <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
+</compiler>
+
+
 <compiler COMPILER="gnu" MACH="yellowstone">
   <LAPACK_LIBDIR> /glade/apps/opt/lib </LAPACK_LIBDIR>
   <PIO_TYPENAME>netcdf</PIO_TYPENAME>

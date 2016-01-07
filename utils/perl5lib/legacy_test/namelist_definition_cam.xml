@@ -1011,6 +1011,12 @@ Flag indicating whether the mpi_barrier in t_barrierf should be called.
 Default: FALSE
 </entry>
 
+<entry id="profile_ovhd_measurement" type="logical"  catagory="performance"
+       group="prof_inparm" valid_values="">
+Flag indicating whether to measure overhead of profiling directly.
+Default: FALSE
+</entry>
+
 <entry id="profile_depth_limit" type="integer"  catagory="performance"
        group="prof_inparm" valid_values="">
 Maximum number of levels of timer nesting .

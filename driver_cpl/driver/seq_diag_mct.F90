@@ -223,7 +223,7 @@ module seq_diag_mct
    integer :: index_x2r_Flrl_rofdto
    integer :: index_x2r_Flrl_rofi
 
-   integer :: index_o2x_Fioo_q
+   integer :: index_o2x_Fioo_frazil
 
    integer :: index_xao_Faox_lwup
    integer :: index_xao_Faox_lat
@@ -255,7 +255,7 @@ module seq_diag_mct
    integer :: index_x2i_Faxa_lwdn
    integer :: index_x2i_Faxa_rain
    integer :: index_x2i_Faxa_snow
-   integer :: index_x2i_Fioo_q
+   integer :: index_x2i_Fioo_frazil
    integer :: index_x2i_Fixx_rofi
 
    integer :: index_g2x_Fogg_rofl
@@ -926,7 +926,7 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, do_o2x, do_x2o, do_xao)
 
    if (present(do_o2x)) then
       if (first_time) then
-         index_o2x_Fioo_q      = mct_aVect_indexRA(o2x_o,'Fioo_q')
+         index_o2x_Fioo_frazil = mct_aVect_indexRA(o2x_o,'Fioo_frazil')
       end if
 
       lSize = mct_avect_lSize(o2x_o)
@@ -935,9 +935,10 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, do_o2x, do_x2o, do_xao)
          do =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ko,n)
          di =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ki,n)
          if = f_area; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + do
-         if = f_hfrz; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_q,n))
+         if = f_hfrz; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_frazil,n))
       end do
-      budg_dataL(f_wfrz,ic,ip) = budg_dataL(f_hfrz,ic,ip) * HFLXtoWFLX
+      budg_dataL(f_wfrz,ic,ip) = budg_dataL(f_hfrz,ic,ip) * HFLXtoWFLX &
+                               * shr_const_rhoice * shr_const_latice
    end if
 
    if (present(do_xao)) then
@@ -1105,7 +1106,7 @@ subroutine seq_diag_ice_mct( ice, frac_i, do_i2x, do_x2i)
          index_x2i_Faxa_lwdn   = mct_aVect_indexRA(x2i_i,'Faxa_lwdn') 
          index_x2i_Faxa_rain   = mct_aVect_indexRA(x2i_i,'Faxa_rain')  
          index_x2i_Faxa_snow   = mct_aVect_indexRA(x2i_i,'Faxa_snow')  
-         index_x2i_Fioo_q      = mct_aVect_indexRA(x2i_i,'Fioo_q')  
+         index_x2i_Fioo_frazil = mct_aVect_indexRA(x2i_i,'Fioo_frazil')  
          index_x2i_Fixx_rofi   = mct_aVect_indexRA(x2i_i,'Fixx_rofi')
       end if
 
@@ -1123,16 +1124,18 @@ subroutine seq_diag_ice_mct( ice, frac_i, do_i2x, do_x2i)
          if = f_wrain; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Faxa_rain,n)
          if = f_wsnow; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Faxa_snow,n)
          if = f_wioff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Fixx_rofi,n)
-         if = f_hfrz ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - (do+di)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_q,n))
+         if = f_hfrz ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - (do+di)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_frazil,n))
       end do
       ic = c_inh_is  
       budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
-      budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX
+      budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX &
+                                *  shr_const_rhoice * shr_const_latice
       ic = c_ish_is
       budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
-      budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX
+      budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX &
+                                *  shr_const_rhoice * shr_const_latice
    end if
 
    first_time = .false.

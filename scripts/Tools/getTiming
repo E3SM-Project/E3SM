@@ -619,8 +619,8 @@ sub gettime{
     if ($#tmp == 0) {
 	#       print $fh "tcx2 $tmp[0]\n";
 	#pw       if ($tmp[0] =~ m/\s*${strw}\s*\d+\s*(\d*\.\d+)\s*\(.*\)\s*(\d*\.\d+)\s*\(.*\)/) {
-	#jpe       if ($tmp[0] =~ m/\s*${strw}\s*\d+\s*\d+\s*\S+\s*\S+\s*(\d*\.\d+)\s*\(.*\)\s*(\d*\.\d+)\s*\(.*\)/) {
-	if ($tmp[0] =~ m/\s*${strw}\s*[^\(]+\s+(\d*\.\d+)\s*\(.*\)\s*(\d*\.\d+)\s*\(.*\)/) {
+	#pw2 if ($tmp[0] =~ m/\s*${strw}\s*[^\(]+\s+(\d*\.\d+)\s*\(.*\)\s*(\d*\.\d+)\s*\(.*\)/) {
+	if ($tmp[0] =~ m/\s*${strw}\s*\d+\s*\d+\s*\S+\s*\S+\s*(\d*\.\d+)\s*\(.*\)\s*(\d*\.\d+)\s*\(.*\)/) {
 	    #	   print $fh "tcxa $tmp[0]\n";
 	    #           print $fh "tcxb $1 $2 \n";
 	    $max=$1;
@@ -650,9 +650,12 @@ sub gettime2{
     my @tmp = grep( /$strw/, @$fin_ref );
 
     if ($#tmp == 0) {
-	if ($tmp[0] =~ /\s*${strw}\s+([\.\de\+]+)\s+(\d+)\s/) {
-	    $procs=$2;
-	    $count=$1;
+	#pw2 if ($tmp[0] =~ /\s*${strw}\s+([\.\de\+]+)\s+(\d+)\s/) {
+	if ($tmp[0] =~ m/\s*${strw}\s*(\d+)\s*\d+\s*(\S+)/) {
+#pw	    $procs=$2;
+#pw	    $count=$1;
+	    $procs=$1;
+	    $count=$2;
 	}
 	elsif ($tmp[0] =~ /\s*${strw}\s+(\d+)\s/) {
 	    $procs = 1;
