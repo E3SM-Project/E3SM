@@ -1,3 +1,4 @@
+INCLUDE(FortranCInterface)
 FortranCInterface_HEADER(cmake_fortran_c_interface.h
                          MACRO_NAMESPACE  "FCI_")
 
