@@ -329,7 +329,7 @@ contains
 #ifdef VARDOUBLE
                    nvarmult = nvarmult+2
 #endif
-                   print *, 'write ',rearr_name(rearr), varsize, ntasks, nvars, &
+                   print *, 'RESULT: write ',rearr_name(rearr), piotypes(k), ntasks, nvars, &
                                      nvarmult*nvars*nframes*gmaplen*4.0/(1048576.0*wall(2))
 #ifdef BGQTRY
   call print_memusage()
@@ -465,7 +465,7 @@ contains
 #ifdef VARDOUBLE
                    nvarmult = nvarmult+2
 #endif
-                   print *, 'read ',rearr_name(rearr), varsize, ntasks,nvars, nvarmult*nvars*nframes*gmaplen*4.0/(1048576.0*wall(2))
+                   print *, 'RESULT: read ',rearr_name(rearr), piotypes(k), ntasks, nvars, nvarmult*nvars*nframes*gmaplen*4.0/(1048576.0*wall(2))
 #ifdef BGQTRY 
   call print_memusage()
 #endif
