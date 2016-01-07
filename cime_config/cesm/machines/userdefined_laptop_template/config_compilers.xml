@@ -9,7 +9,6 @@
       <ADD_CFLAGS compile_threaded="true"> -fopenmp </ADD_CFLAGS>
       <ADD_FFLAGS compile_threaded="true"> -fopenmp </ADD_FFLAGS>
       <ADD_LDFLAGS compile_threaded="true"> -L /usr/local/Cellar/gcc/4.9.2/lib/gcc/x86_64-apple-darwin14.0.0/4.9.2 -fopenmp </ADD_LDFLAGS>
-      <ADD_CMAKE_OPTS MODEL="cism"> -D CISM_GNU=ON </ADD_CMAKE_OPTS>
       <FIXEDFLAGS>  -ffixed-form </FIXEDFLAGS>
       <FREEFLAGS> -ffree-form </FREEFLAGS>
       <ADD_FFLAGS DEBUG="TRUE"> -g -Wall </ADD_FFLAGS>
@@ -38,7 +37,6 @@
       <ADD_CFLAGS compile_threaded="true"> -fopenmp </ADD_CFLAGS>
       <ADD_FFLAGS compile_threaded="true"> -fopenmp </ADD_FFLAGS>
       <ADD_LDFLAGS compile_threaded="true"> -fopenmp </ADD_LDFLAGS>
-      <ADD_CMAKE_OPTS MODEL="cism"> -D CISM_GNU=ON </ADD_CMAKE_OPTS>
       <FIXEDFLAGS>  -ffixed-form </FIXEDFLAGS>
       <FREEFLAGS> -ffree-form </FREEFLAGS>
       <ADD_FFLAGS DEBUG="TRUE"> -g -Wall </ADD_FFLAGS>
