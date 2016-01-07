@@ -419,6 +419,8 @@ def printSummary(suiteinfo, cimetests):
         print(len(cfails), " Tests had compile fails")
     if runs:
         print(len(runs), " Tests failed to finish running")
+    if pends:
+        print(len(pends), " Tests are pending")
     if gens:
         print(len(gens), " Tests are generated")
     if tfails:
@@ -445,6 +447,12 @@ def printSummary(suiteinfo, cimetests):
         print("These tests passed ")
         print(banner)
         for p in passes:
+            print(p.name())
+    if pends:
+        print(banner)
+        print("These tests are pending")
+        print(banner)
+        for p in pends:
             print(p.name())
 
     if gens:
