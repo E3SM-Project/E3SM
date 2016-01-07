@@ -99,11 +99,12 @@ int dim_len[NDIM] = {NC_UNLIMITED, X_DIM_LEN, Y_DIM_LEN};
 /** Length of chunksizes to use in netCDF-4 files. */
 size_t chunksize[NDIM] = {2, X_DIM_LEN/2, Y_DIM_LEN/2};
 
-#ifdef HAVE_MPE
+
 /** Number of MPE events. The start and stop of each event will be
- * tracked, and graphed. */
+ * tracked, and graphed. This value is used outside of HAVE_MPE ifdefs.*/
 #define NUM_EVENTS 10
 
+#ifdef HAVE_MPE
 /** Start and end for each MPE event. */
 /**@{*/
 #define START 0
