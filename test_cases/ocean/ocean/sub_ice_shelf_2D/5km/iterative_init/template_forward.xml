@@ -3,7 +3,7 @@
 		<option name="config_ocean_run_mode">'forward'</option>
 		<option name="config_dt">'00:05:00'</option>
 		<option name="config_run_duration">'0000_00:10:00'</option>
-		<option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
+		<option name="config_block_decomp_file_prefix">'ic/graph.info.part.'</option>
 		<option name="config_time_integrator">'split_explicit'</option>
 		<option name="config_use_mom_del2">.true.</option>
 		<option name="config_mom_del2">10.0</option>
@@ -14,10 +14,23 @@
 
 	<streams>
 		<stream name="mesh">
-			<attribute name="filename_template">init.nc</attribute>
+			<attribute name="filename_template">ic/ocean.nc</attribute>
 		</stream>
 		<stream name="input">
-			<attribute name="filename_template">init.nc</attribute>
+			<attribute name="filename_template">ic/ocean.nc</attribute>
+		</stream>
+		<stream name="forcing_data">
+			<attribute name="filename_template">ic/init_mode_forcing_data.nc</attribute>
+			<attribute name="input_interval">initial_only</attribute>
+			<attribute name="type">input</attribute>
+			<attribute name="name">forcing_data</attribute>
+			<add_contents>
+				<member name="windStressZonal" type="var"/>
+				<member name="windStressMeridional" type="var"/>
+				<member name="landIceFraction" type="var"/>
+				<member name="landIceSurfaceTemperature" type="var"/>
+				<member name="seaSurfacePressure" type="var"/>
+			</add_contents>
 		</stream>
 		<stream name="output">
 			<attribute name="type">output</attribute>

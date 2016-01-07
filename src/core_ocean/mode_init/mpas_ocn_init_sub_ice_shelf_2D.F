@@ -28,6 +28,8 @@ module ocn_init_sub_ice_shelf_2D
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
 
+   use ocn_init_ssh_and_ssp
+
    implicit none
    private
    save
@@ -76,8 +78,7 @@ module ocn_init_sub_ice_shelf_2D
      integer, intent(out) :: iErr
      real (kind=RKIND) :: yMin, yMax, xMin, xMax, dcEdgeMin, dcEdgeMinGlobal, maxDepth
      real (kind=RKIND) :: yMinGlobal, yMaxGlobal, yMidGlobal, xMinGlobal, xMaxGlobal
-     real (kind=RKIND) :: totalSubIceThickness, y1,y2,y3, d1,d2,d3, surfaceDepression
-     real (kind=RKIND), dimension(:), allocatable :: midDepth
+     real (kind=RKIND) :: totalSubIceThickness, y1,y2,y3, d1,d2,d3, surfaceDepression, surfaceSalinity, bottomSalinity
 
      type (block_type), pointer :: block_ptr
 
@@ -91,29 +92,30 @@ module ocn_init_sub_ice_shelf_2D
 
      ! Define config variable pointers
      character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid
-     real (kind=RKIND), pointer :: config_sub_ice_shelf_2D_bottom_depth, config_sub_ice_shelf_2D_seaSurfacePressure_factor, &
+     real (kind=RKIND), pointer :: config_sub_ice_shelf_2D_bottom_depth, &
           config_sub_ice_shelf_2D_cavity_thickness, config_sub_ice_shelf_2D_edge_width, config_sub_ice_shelf_2D_temperature, &
           config_sub_ice_shelf_2D_surface_salinity, config_sub_ice_shelf_2D_bottom_salinity, &
           config_sub_ice_shelf_2D_y1, config_sub_ice_shelf_2D_y2,config_sub_ice_shelf_2D_slope_height
 
-     real (kind=RKIND), pointer :: config_eos_linear_alpha, config_eos_linear_beta, config_eos_linear_Tref, config_eos_linear_Sref, config_eos_linear_densityref
-
      ! Define dimension pointers
-     integer, pointer :: nCellsSolve, nEdgesSolve, nVertLevels, nVertLevelsP1
+     integer, pointer :: nCellsSolve, nEdgesSolve, nVertLevels, nVertLevelsP1, nCells
      integer, pointer :: index_temperature, index_salinity
 
      ! Define variable pointers
-     integer, dimension(:), pointer :: maxLevelCell
+     integer, dimension(:), pointer :: maxLevelCell, modifySSHMask
      real (kind=RKIND), dimension(:), pointer :: xCell, yCell,refBottomDepth, refZMid, &
-          vertCoordMovementWeights, bottomDepth, seaSurfacePressure, &
+          vertCoordMovementWeights, bottomDepth, &
           fCell, fEdge, fVertex, dcEdge
-     real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
      ! Define local interfaceLocations variable
      real (kind=RKIND), dimension(:), pointer :: interfaceLocations
 
      logical, pointer :: on_a_sphere
+
+     type (mpas_pool_type), pointer :: diagnosticsPool
+     real(kind=RKIND), dimension(:), pointer :: landIceFraction, refSSH
+     real (kind=RKIND), dimension(:,:), pointer :: zMid
 
      iErr = 0
 
@@ -127,16 +129,9 @@ module ocn_init_sub_ice_shelf_2D
      call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_temperature', config_sub_ice_shelf_2D_temperature)
      call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_surface_salinity', config_sub_ice_shelf_2D_surface_salinity)
      call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_bottom_salinity', config_sub_ice_shelf_2D_bottom_salinity)
-     call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_seaSurfacePressure_factor',config_sub_ice_shelf_2D_seaSurfacePressure_factor)
      call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_y1', config_sub_ice_shelf_2D_y1)
      call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_y2', config_sub_ice_shelf_2D_y2)
      call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_slope_height', config_sub_ice_shelf_2D_slope_height)
-
-     call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_alpha', config_eos_linear_alpha)
-     call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_beta', config_eos_linear_beta)
-     call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_Tref', config_eos_linear_Tref)
-     call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_Sref', config_eos_linear_Sref)
-     call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_densityref', config_eos_linear_densityref)
 
      ! points 1 and 2 are where angles on ice shelf are located.
      ! point 3 is at the surface.
@@ -148,16 +143,14 @@ module ocn_init_sub_ice_shelf_2D
      d2=config_sub_ice_shelf_2D_cavity_thickness+config_sub_ice_shelf_2D_slope_height
      d3=config_sub_ice_shelf_2D_bottom_depth
 
-     config_sub_ice_shelf_2D_bottom_salinity = config_sub_ice_shelf_2D_bottom_salinity
-     config_sub_ice_shelf_2D_surface_salinity = config_sub_ice_shelf_2D_surface_salinity
+     bottomSalinity = config_sub_ice_shelf_2D_bottom_salinity
+     surfaceSalinity = config_sub_ice_shelf_2D_surface_salinity
 
      ! Determine vertical grid for configuration
      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
      call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
      call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
-
-     allocate(midDepth(nVertLevels))
 
      ! you may restrict your case geometry as follows:
      if ( on_a_sphere ) call mpas_dmpar_global_abort('ERROR: The sub_ice_shelf_2D configuration can only be applied to a planar mesh. Exiting...')
@@ -206,12 +199,10 @@ module ocn_init_sub_ice_shelf_2D
         call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
         call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-        call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
 
         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
-
-        call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
-        call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
+        call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
         call mpas_pool_get_array(meshPool, 'xCell', xCell)
         call mpas_pool_get_array(meshPool, 'yCell', yCell)
@@ -219,17 +210,12 @@ module ocn_init_sub_ice_shelf_2D
         call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', vertCoordMovementWeights)
         call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-        call mpas_pool_get_array(meshPool, 'fCell', fCell)
-        call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
-        call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
-
-        call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
-        call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
         call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
-        call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
 
-        call mpas_pool_get_array(forcingPool, 'seaSurfacePressure',seaSurfacePressure)
+        call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+        call mpas_pool_get_array(diagnosticsPool, 'refSSH', refSSH)
+        call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
 
         call ocn_mark_north_boundary(meshPool, yMaxGlobal, dcEdgeMinGlobal, iErr)
         call ocn_mark_south_boundary(meshPool, yMinGlobal, dcEdgeMinGlobal, iErr)
@@ -245,9 +231,11 @@ module ocn_init_sub_ice_shelf_2D
 
         maxDepth = refBottomDepth(nVertLevels)
 
-        do iCell = 1, nCellsSolve
+        if(associated(landIceFraction)) &
+          landIceFraction(:) = 0.0_RKIND
+        modifySSHMask(:) = 0
 
-           ! Set layerThickness and restingThickness
+        do iCell = 1, nCells
            ! set up sub ice shelf thicknesses
            if (yCell(iCell) < y1 ) then
               totalSubIceThickness = d1
@@ -258,18 +246,54 @@ module ocn_init_sub_ice_shelf_2D
            else
               totalSubIceThickness = d3
            endif
+           refSSH(iCell) = -config_sub_ice_shelf_2D_bottom_depth + totalSubIceThickness
+        end do
 
-           do k = 1, nVertLevels
-              layerThickness(k, iCell) = totalSubIceThickness/nVertLevels
-              restingThickness(k, iCell) = config_sub_ice_shelf_2D_bottom_depth/nVertLevels
-           end do
+        do iCell = 1, nCells
+           if (yCell(iCell) < y3 ) then
+              if(associated(landIceFraction)) &
+                landIceFraction(iCell) = 1.0_RKIND
+              modifySSHMask(iCell) = 1
+           end if
 
            ! Set bottomDepth
            bottomDepth(iCell) = refBottomDepth(nVertLevels)
 
            ! Set maxLevelCell
            maxLevelCell(iCell) = nVertLevels
+        end do
 
+        block_ptr => block_ptr % next
+     end do
+
+     ! compute the vertical grid (layerThickness, restingThickness, maxLevelCell, zMid) based on ssh, bottomDepth and refBottomDepth
+     call ocn_init_ssh_and_ssp_vertical_grid(domain, iErr)
+           
+     if(iErr .ne. 0) then
+        write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_ssp_vertical_grid failed.'
+        return
+     end if
+
+     block_ptr => domain % blocklist
+     do while(associated(block_ptr))
+        call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
+        call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+
+        call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+        call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
+        call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
+
+        call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
+
+        call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
+
+        ! compute active tracer fields
+        ! If we are constructing an initial guess (rather than reading ssh in from a stream), these are reference activeTracers
+        ! on a vertical grid that has not been displaced by the ssh
+        do iCell = 1, nCells
            ! Set temperature
            idx = index_temperature
            do k = 1, nVertLevels
@@ -277,37 +301,40 @@ module ocn_init_sub_ice_shelf_2D
            end do
 
            ! Set up salinity stratification
-           midDepth(nVertLevels) =  config_sub_ice_shelf_2D_bottom_depth - 0.5*layerThickness(nVertLevels,iCell)
-           do k=nVertLevels-1,1,-1
-              midDepth(k) = midDepth(k+1) - 0.5*(layerThickness(k+1,iCell)+layerThickness(k,iCell))
-           enddo
            idx = index_salinity
-           do k = nVertLevels, 1, -1
-              activeTracers(idx, k, iCell) = config_sub_ice_shelf_2D_surface_salinity + (config_sub_ice_shelf_2D_bottom_salinity - config_sub_ice_shelf_2D_surface_salinity) * (midDepth(k)/config_sub_ice_shelf_2D_bottom_depth)
+           do k = 1, nVertLevels
+              activeTracers(idx, k, iCell) = surfaceSalinity + (bottomSalinity - surfaceSalinity) &
+                                                             * (zMid(k,iCell)/(-config_sub_ice_shelf_2D_bottom_depth))
            end do
-
-           ! Set sea surface pressure
-           surfaceDepression = bottomDepth(iCell) - sum(layerThickness(1:maxLevelCell(iCell),iCell))
-
-           ! Compute sea surface pressure as  
-           !    p = g int_{z=-eta}}{0} rho(z) dz
-           ! that is, integrate density from the bottom of the sea surface (bottom of ice) to z=0
-           ! with some assumed density profile.  Here we use a linear equation of state for the density
-           ! and integrate analytically:
-           !   p = g c int_{z=-eta}}{0} ( rho_0 - alpha*(T-Tref) + beta*(S-Sref) ) dz
-           ! Note this formulation is for a constant T and linear stratification is S.
-           seaSurfacePressure(iCell) = gravity * surfaceDepression * config_sub_ice_shelf_2D_seaSurfacePressure_factor*(&
-                config_eos_linear_densityref &
-                - config_eos_linear_alpha * ( config_sub_ice_shelf_2D_temperature - config_eos_linear_Tref) &
-                + config_eos_linear_beta  * ( -config_eos_linear_Sref + config_sub_ice_shelf_2D_surface_salinity  &
-                + (config_sub_ice_shelf_2D_bottom_salinity-config_sub_ice_shelf_2D_surface_salinity)/maxDepth/2.0* surfaceDepression ))
-
         end do
 
         block_ptr => block_ptr % next
      end do
 
-     deallocate(midDepth)
+     ! compute or update the SSP (or possibly SSH), also computing density and bottomPressure along the way
+     ! If this is the initial guess, the vertical grid and activeTracers may also be recomputed based on SSH
+     call ocn_init_ssh_and_ssp_balance(domain, iErr)
+
+     if(iErr .ne. 0) then
+        write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_ssp_balance failed.'
+        return
+     end if
+
+     block_ptr => domain % blocklist
+     do while(associated(block_ptr))
+        call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
+
+        call ocn_compute_Haney_number(domain % dminfo, meshPool, diagnosticsPool, iErr)
+
+        if(iErr .ne. 0) then
+           write(stderrUnit,*) 'ERROR: ocn_compute_Haney_number failed.'
+           return
+        end if
+
+        block_ptr => block_ptr % next
+     end do
+
      !--------------------------------------------------------------------
 
    end subroutine ocn_init_setup_sub_ice_shelf_2D!}}}

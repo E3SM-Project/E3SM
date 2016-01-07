@@ -7,7 +7,7 @@
 					description="Depth of the bottom of the ocean for the this test case."
 					possible_values="Any positive real number."
 		/>
-		<nml_option name="config_sub_ice_shelf_2D_cavity_thickness" type="real" default_value="10.0" units="m"
+		<nml_option name="config_sub_ice_shelf_2D_cavity_thickness" type="real" default_value="25.0" units="m"
 					description="Vertical thickness of ocean sub-ice cavity."
 					possible_values="Any positive real number."
 		/>
@@ -38,10 +38,6 @@
 		<nml_option name="config_sub_ice_shelf_2D_bottom_salinity" type="real" default_value="34.7" units="PSU"
 					description="Salinity of the water in the entire domain."
 					possible_values="Any real number greater than 0."
-		/>
-		<nml_option name="config_sub_ice_shelf_2D_seaSurfacePressure_factor" type="real" default_value="1.0" units="unitless"
-					description="multiply seaSurfacePressure by this factor on start-up"
-					possible_values="{\color{red} temporary, for sea ice test."
 		/>
 	</nml_record>
 
