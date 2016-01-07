@@ -1,0 +1,11 @@
+dyn_comp.o: dyn_comp.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS_NOOPT) $(FREEFLAGS) $<
+
+uwshcu.o: uwshcu.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS_NOOPT) $(FREEFLAGS) $<
+
+mo_drydep.o: mo_drydep.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS_NOOPT) $(FREEFLAGS) $<
+
+micro_mg1_5.o: micro_mg1_5.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS_NOOPT) $(FREEFLAGS) $<

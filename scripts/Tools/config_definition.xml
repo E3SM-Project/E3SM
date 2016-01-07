@@ -122,7 +122,7 @@
 
   <entry id="COMP_ICE" 
 	 type="char"
-	 valid_values="cice,dice,xice,sice" 
+	 valid_values="cice,dice,xice,sice,mpas-cice"
 	 value="cice"  
 	 group="case_comp" 
 	 sdesc="Name of sea ice component"
@@ -130,7 +130,7 @@
 
   <entry id="COMP_GLC" 
 	 type="char"
-	 valid_values="cism,xglc,sglc" 
+	 valid_values="cism,xglc,sglc,mpasli" 
 	 value="sglc"  
 	 group="case_comp" 
 	 sdesc="Name of land ice-sheet component"
@@ -382,7 +382,7 @@
 
   <entry id="GLC_GRID" 
 	 type="char"
-         valid_values="gland20,gland10,gland5,gland5UM,gland4,null"  
+         valid_values=""
 	 value="UNSET" 
 	 group="build_grid"
          sdesc="glacier (glc) grid - DO NOT EDIT (for experts only)"
@@ -1418,6 +1418,20 @@
 		This is an advanced flag and should only be used by expert users."
 	 ></entry> 
 
+  <entry id="CLM_USE_PETSC"
+	 type="logical"
+	 valid_values="TRUE,FALSE"
+	 value="FALSE"
+	 group="build_component_clm"
+	 sdesc="TRUE implies CLM is built with support for the PETSc library"
+	 ldesc="
+                The Variably Saturated Flow Model (VSFM) solver in CLM uses the PETSc library.
+                In order to use the VSFM solver, CLM must be built with PETSc
+                support and linking to PETSc must occur when building the ACME executable.
+                This occurs if this variable is set to TRUE.
+                Note that is only available on a limited set of machines/compilers."
+	 ></entry>
+
   <!-- ======================================================================= -->
   <!-- VIC                                                                     -->
   <!-- ======================================================================= -->
@@ -1884,6 +1898,49 @@
 	 value="true" 
 	 group="run_component_cism"
 	 sdesc="true => do surface mass balance, false => PDD, nec_glc is set to 1" 
+	 ></entry>
+
+
+  <!-- ======================================================================= -->
+  <!-- MPASLI                                                                 -->
+  <!-- ======================================================================= -->
+
+  <entry id="MPASLI_CONFIG_OPTS"
+        type="char"
+        valid_values=""
+        value=""
+        group="build_component_mpasli"
+        sdesc="MPASLI configure options"
+        ldesc="
+        Currently not used"
+        ></entry>
+
+  <entry id="MPASLI_USE_ALBANY"
+	 type="logical"
+	 valid_values="TRUE,FALSE"
+	 value="FALSE"
+	 group="build_component_mpasli"
+	 sdesc="TRUE implies MPASLI is built with support for the Albany library"
+	 ldesc="
+                The first-order velocity solver in MPASLI uses the Albany library.
+                In order to use that velocity solver, MPASLI must be built with Albany
+                support and linking to Albany must occur when building the ACME executable.
+                This occurs if this variable is set to TRUE.
+                Note that is only available on a limited set of machines/compilers.
+                This must remain FALSE to run MPASLI on a machine that does not have Albany,
+                or for which the CIME scripts are not aware of the existence of Albany."
+	 ></entry>
+
+
+  <!-- ======================================================================= -->
+  <!-- MPASLI                                                                  -->
+  <!-- ======================================================================= -->
+  <entry id="GLC_SMB"
+	 type="logical"
+	 valid_values="true,false"
+	 value="true"
+	 group="run_component_mpasli"
+	 sdesc="true => have LND calculate surface mass balance"
 	 ></entry>
 
   <!-- ======================================================================= -->
@@ -2888,6 +2945,17 @@
 		The default is FALSE."
 	 ></entry> 
 
+  <entry id="USE_PETSC"
+	 type="logical"
+	 valid_values="TRUE,FALSE"
+	 value="FALSE"
+	 group="build_def"
+	 sdesc="TRUE implies linking to the PETSc library - set automatically by XXX_USE_PETSC options (do not edit)"
+	 ldesc="
+		Flag to turn on linking to the PETSc library. Currently this is
+		used by CLM. This is currently only supported for certain machines."
+	 ></entry>
+
   <entry id="USE_TRILINOS"
 	 type="logical"
 	 valid_values="TRUE,FALSE"
@@ -2898,6 +2966,19 @@
 		Flag to turn on linking to the trilinos library. Currently this is
 		used by CISM. Note that trilinos is a C++ library, so setting this
 		variable to TRUE will involve the inclusion of C++ code in the CESM
+		executable. This is currently only supported for certain machines."
+	 ></entry>
+
+  <entry id="USE_ALBANY"
+	 type="logical"
+	 valid_values="TRUE,FALSE"
+	 value="FALSE"
+	 group="build_def"
+	 sdesc="TRUE implies linking to the Albany library - set automatically by XXX_USE_ALBANY options (do not edit)"
+	 ldesc="
+		Flag to turn on linking to the Albany library. Currently this is
+		used by MPASLI. Note that Albany is a C++ library, so setting this
+		variable to TRUE will involve the inclusion of C++ code in the MPASLI
 		executable. This is currently only supported for certain machines."
 	 ></entry>
 
@@ -3344,7 +3425,7 @@
   <entry id="DOUT_S" 
 	 type="logical"
 	 valid_values="TRUE,FALSE"  
-	 value="TRUE" 
+	 value="FALSE" 
 	 group="run_dout"
 	 sdesc="logical to turn on short term archiving"
 	 ldesc="
@@ -3696,7 +3777,7 @@
   <entry id="PIO_TYPENAME"
 	 type="char"
 	 valid_values="netcdf,pnetcdf,netcdf4p,netcdf4c,default"
-	 value="netcdf" 
+	 value="pnetcdf" 
 	 group="run_pio"
 	 sdesc="pio io type"
 	 ></entry> 

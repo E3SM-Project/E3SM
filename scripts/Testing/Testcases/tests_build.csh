@@ -7,8 +7,6 @@ set CASE     = `./xmlquery CASE    -value`
 
 ./$CASE.build
 if ($status != 0) then
-   echo "Error: build failed" >! ./TestStatus
-   echo "CFAIL $CASE" > ./TestStatus
-   exit -1    
-endif 
+   exit -1
+endif
 

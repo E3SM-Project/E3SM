@@ -21,6 +21,7 @@ echo "MPILIB=$MPILIB"
 if (-e /opt/modules/default/init/csh) then
   source /opt/modules/default/init/csh
   module rm PrgEnv-intel
+  module rm pgi
   module rm PrgEnv-pgi
   module rm PrgEnv-cray 
   module rm PrgEnv-gnu
@@ -32,7 +33,7 @@ if (-e /opt/modules/default/init/csh) then
   module rm parallel-netcdf
   module rm netcdf
   module rm cmake
-  module rm cray-mpich
+# module rm cray-mpich
   module rm cray-mpich2
   module rm cray-libsci
   module rm xt-libsci
@@ -42,9 +43,10 @@ if (-e /opt/modules/default/init/csh) then
   
   if ($COMPILER == "pgicuda") then
     module load PrgEnv-pgi
-    module switch pgi       pgi/14.2.0 
-    module load cray-mpich/7.0.4
-    module load cray-libsci/13.0.1
+    module switch pgi pgi/15.3.0
+    #module switch pgi       pgi/14.2.0 
+    module switch cray-mpich cray-mpich/7.2.5
+    module switch cray-libsci cray-libsci/13.0.4
     module load esmf/5.2.0rp2
     module switch atp atp/1.7.5
     # NOTE(wjs, 2015-03-12) The following line is needed for bit-for-bit reproducibility
@@ -55,52 +57,59 @@ if (-e /opt/modules/default/init/csh) then
   
   if ( $COMPILER == "pgi" ) then
       module load PrgEnv-pgi
-      module switch pgi       pgi/14.2.0 
-      module load cray-mpich/7.0.4
-      module load cray-libsci/13.0.1
+      module switch pgi pgi/15.3.0 
+      module switch cray-mpich cray-mpich/7.2.5
+      module switch cray-libsci cray-libsci/13.0.4
       module load esmf/5.2.0rp2
       module switch atp atp/1.7.5
       # NOTE(wjs, 2015-03-12) The following line is needed for bit-for-bit reproducibility
       setenv CRAY_CPU_TARGET istanbul
   endif    
+
   if ( $COMPILER == "intel" ) then
       module load PrgEnv-intel 
-      module switch intel intel/14.0.2.144
-      module load cray-mpich/7.0.4
+      module switch intel intel/15.0.2.164
+      module switch cray-libsci cray-libsci/13.0.4
+      module switch cray-mpich cray-mpich/7.2.5
+      module switch atp atp/1.7.5
   endif
   
   if ( $COMPILER == "cray" ) then
       module load PrgEnv-cray
-      module load cce/8.2.5
-      module load cray-mpich/7.0.4
+      module load cce
+      module swap cray-mpich cray-mpich/7.2.5
   endif
 
   if ( $MPILIB == "mpi-serial") then
-    module load cray-netcdf/4.3.0
+    module load cray-netcdf/4.3.3.1
   else
-    module load cray-netcdf-hdf5parallel/4.3.2
+    module load cray-netcdf-hdf5parallel/4.3.3.1
     module load cray-parallel-netcdf/1.5.0
   endif
 
   module load subversion
   module load cmake/2.8.11.2
-# module list
 endif
+
+module list >& software_environment.txt
 #-------------------------------------------------------------------------------
 # Runtime environment variables
 #-------------------------------------------------------------------------------
 
+limit coredumpsize unlimited
+limit stacksize unlimited
+
+# Capture logical to physics PE assignment and active environment variable
+# settings
 setenv MPICH_ENV_DISPLAY 1
 setenv MPICH_VERSION_DISPLAY 1
 setenv MPICH_CPUMASK_DISPLAY 1
-setenv MPICH_RANK_REORDER_DISPLAY 1
+#setenv MPICH_RANK_REORDER_DISPLAY 1
 
-limit coredumpsize unlimited
-limit stacksize unlimited
 # The environment variable below increase the stack size, which is necessary for
 # CICE to run threaded on this machine. 
-setenv MPSTKZ 64M
-setenv OMP_STACKSIZE 64M
+setenv MPSTKZ 128M 
+setenv OMP_STACKSIZE 128M
 
 if ( $COMPILER == "intel" ) then
   setenv XTPE_LINK_TYPE dynamic

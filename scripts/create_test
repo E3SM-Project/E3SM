@@ -660,16 +660,7 @@ sub checkOptions
 # Read options from config_machines.xml
     my $machine = (defined $opts{mach}) ? $opts{mach} : $opts{xml_mach};
 
-    # If we're running namelist comparison tests, we want to set the machine to Yellowstone, 
-    # otherwise use the supplied machine value. 
-    if( defined $opts{'nlcompareonly'})
-	{
-        $cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", "yellowstone", 0);
-	}
-	else
-	{
-        $cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", $machine, 0);
-	}
+    $cfg_ref->set_machine("$opts{mach_dir}/config_machines.xml", $machine, 0);
 
     if(!defined $opts{'baselineroot'}) {
 	# TODO (mvertens, 2015-01-31) - check if the following change will be a problem
@@ -817,14 +808,6 @@ sub ExpandXmlList
 	  my @test_elems = $grid_elem->childNodes();
 	  foreach my $test_elem (@test_elems) {
 	      my $test_val  = $test_elem->getAttribute('name');
-	      if ($opts{'nlcompareonly'}) {
-		  # Replace the test type with SBN
-		  $test_val = "SBN";
-		  my $optidx = index( $test_val, "_" );
-		  if ( $optidx >= 0 ) {
-		      $test_val .= substr( $test_val, $optidx );
-		  }
-	      }
 
 	      my @mach_elems = $test_elem->childNodes();
 	      foreach my $mach_elem (@mach_elems) {
@@ -1126,7 +1109,7 @@ sub runCreateNewcase
 {
   my %test = %{ shift() };
   my $caseroot = "$opts{'testroot'}/$test{'case'}";
-  my $cn_args = " -silent -case $caseroot -res $test{'grid'} -mach $test{'mach'} -compset $test{'compset'} -testname $test{'testname'}";
+  my $cn_args = " -silent -case $caseroot -res $test{'grid'} -mach $test{'mach'} -compset $test{'compset'} -testname $test{'testname'} -nosavetiming";
 
   if(defined $test{'confopts'})
   {
@@ -1376,7 +1359,12 @@ sub testcaseSetup
   {
     $test->{'status'}="GEN";
     open my $TESTSTATUS, ">", "$caseroot/TestStatus" or print $!;
-    print $TESTSTATUS "GEN ".$test->{'case'}."\n";
+    if ( defined $opts{'nlcompareonly'}) {
+        print $TESTSTATUS "PASS ".$test->{'case'}."\n";
+    }
+    else {
+        print $TESTSTATUS "GEN ".$test->{'case'}."\n";
+    }
     close $TESTSTATUS;
   }
 }
@@ -1616,7 +1604,8 @@ sub namelistCompare
     }
 
     chdir($testpath) or die "couldn't change directory to $testpath\n";
-    my $cprnml = "$testpath/Tools/compare_namelists.pl";
+    my $cprnml = "$testpath/Tools/compare_namelists";
+    my $altcpr = "$testpath/Tools/simple_compare";
 
     my $configtemplate = "$scriptsroot/Tools/config_definition.xml";
     &Debug("config template is $configtemplate\n");
@@ -1669,9 +1658,13 @@ sub namelistCompare
 	       if(! -e "$basecmpdir/$nml"){
 		   print "WARNING: no baseline file exists for $nml\n";
 	       }else{
-		   my $compare_command = "$cprnml $buildconfpath/$nml $basecmpdir/$nml $test";
-		   my $output = `$compare_command`;
-		   $nlcompoutput .= $output;
+                   my $compare_command = "$cprnml $basecmpdir/$nml $buildconfpath/$nml -c $test 2>&1";
+                   my $output = `$compare_command`;
+                   if ($output =~ /does not appear to be a namelist file/) {
+                       $compare_command = "$altcpr -c $test $basecmpdir/$nml $buildconfpath/$nml 2>&1";
+                       $output = `$compare_command`;
+                   }
+                   $nlcompoutput .= $output;
 	       }
 	   }
 	   #also compare the user_nl_* files
@@ -1685,9 +1678,13 @@ sub namelistCompare
 	       if(! -e "$basecase/$nml"){
 		   print "WARNING: no baseline file exists for $nml\n";
 	       }else{
-		   my $compare_command = "$cprnml $testpath/$nml $basecase/$nml $test";
-		   my $output = `$compare_command`;
-		   $nlcompoutput .= $output;
+                   my $compare_command = "$cprnml $basecase/$nml $testpath/$nml -c $test 2>&1";
+                   my $output = `$compare_command`;
+                   if ($output =~ /does not appear to be a namelist file/) {
+                       $compare_command = "$altcpr -c $test $basecmpdir/$nml $testpath/$nml 2>&1";
+                       $output = `$compare_command`;
+                   }
+                   $nlcompoutput .= $output;
 	       }
 	   }
         } else {
@@ -1748,14 +1745,14 @@ sub namelistCompare
     if ($opts{'generate'}) {
 	my $genpath = "$baseroot/".$opts{'generate'}."/$basename";
 	if(-d $genpath){
-	    print "WARNING: Baseline directory is $genpath and already exists - WILL NOT OVERWRITE \n.";
+	    print "WARNING: Baseline directory is $genpath and already exists.";
 	}else{
 	    umask 0000;
 	    mkpath $genpath, 1, 0775;
-	    system("cp -r $buildconfpath $genpath"); 
-	    system("cp $buildconfpath/../user_nl* $genpath") ;
 	    print "Couldnt create Baseline directory $genpath" unless -d "$genpath/CaseDocs"; 
 	}
+        system("cp -fr $buildconfpath $genpath");
+        system("cp -f $buildconfpath/../user_nl* $genpath") ;
     }
 }
 
@@ -1862,26 +1859,28 @@ sub main
 	if($opts{'compare'} or $opts{'generate'}){
 	    namelistCompareSuite(@testspec);
 	}
-	testBuildSubmit($testspecfilename);
-	if($opts{'compare'} or $opts{'generate'}){
-	    my $cnt=0;
-	    my $pass=0;
-	    my $sfail=0;
-	    my $fail=0;
-	    my $gen=0;
-	    foreach my $test (@testspec){
-		$cnt++;
-		$sfail++ if($test->{status} eq "SFAIL");
-		$fail++ if($test->{status} eq "FAIL");
-		$pass++ if($test->{status} eq "PASS");
-		$gen++ if($test->{status} eq "GEN");
-	    }
-	    if($opts{'compare'}){
-		print "Summary: $cnt tests were run, $pass passed, $fail failed, $sfail failed to configure\n";
-	    }else{
-		print "Summary: $cnt tests were run, $gen baselines were generated, $sfail failed to configure\n" ;
-	    }
-	}
+        if( ! defined $opts{'nlcompareonly'}) {
+            testBuildSubmit($testspecfilename);
+            if($opts{'compare'} or $opts{'generate'}){
+                my $cnt=0;
+                my $pass=0;
+                my $sfail=0;
+                my $fail=0;
+                my $gen=0;
+                foreach my $test (@testspec){
+                    $cnt++;
+                    $sfail++ if($test->{status} eq "SFAIL");
+                    $fail++ if($test->{status} eq "FAIL");
+                    $pass++ if($test->{status} eq "PASS");
+                    $gen++ if($test->{status} eq "GEN");
+                }
+                if($opts{'compare'}){
+                    print "Summary: $cnt tests were run, $pass passed, $fail failed, $sfail failed to configure\n";
+                }else{
+                    print "Summary: $cnt tests were run, $gen baselines were generated, $sfail failed to configure\n" ;
+                }
+            }
+        }
     }else{ #Create a single test. 
 	# check the options for a single test. 
 	checkSingleTestOptions();

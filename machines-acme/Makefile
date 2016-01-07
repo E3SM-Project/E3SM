@@ -65,11 +65,13 @@ endif
 
 # Determine whether any C++ code will be included in the build;
 # currently, C++ code is included if and only if we're linking to the
-# trilinos library.
+# trilinos library or the Albany library.
+USE_CXX = false
 ifeq ($(strip $(USE_TRILINOS)), TRUE)
    USE_CXX = true
-else
-   USE_CXX = false
+endif
+ifeq ($(strip $(USE_ALBANY)), TRUE)
+   USE_CXX = true
 endif
 
 ifndef MOD_SUFFIX
@@ -200,6 +202,24 @@ ifdef PNETCDF_PATH
   endif
 endif
 
+# Set PETSc info if it is being used
+ifeq ($(strip $(USE_PETSC)), TRUE)
+  ifdef PETSC_PATH
+    ifndef INC_PETSC
+      INC_PETSC:=$(PETSC_PATH)/include
+    endif
+    ifndef LIB_PETSC
+      LIB_PETSC:=$(PETSC_PATH)/lib
+    endif
+  else
+    $(error PETSC_PATH must be defined when USE_PETSC is TRUE)
+  endif
+
+  # Get the "PETSC_LIB" list an env var
+  include $(PETSC_PATH)/conf/variables
+endif
+
+# Set Trilinos info if it is being used
 ifeq ($(strip $(USE_TRILINOS)), TRUE)
   ifdef TRILINOS_PATH
     ifndef INC_TRILINOS
@@ -216,6 +236,24 @@ ifeq ($(strip $(USE_TRILINOS)), TRUE)
   # these variables begin with "Trilinos_"
   include $(INC_TRILINOS)/Makefile.export.Trilinos
 endif
+
+# Set Albany info if it is being used
+ifeq ($(strip $(USE_ALBANY)), TRUE)
+  ifdef ALBANY_PATH
+    ifndef INC_ALBANY
+      INC_ALBANY:=$(ALBANY_PATH)/include
+    endif
+    ifndef LIB_ALBANY
+      LIB_ALBANY:=$(ALBANY_PATH)/lib
+    endif
+  else
+    $(error ALBANY_PATH must be defined when USE_ALBANY is TRUE)
+  endif
+
+  # get the "ALBANY_LINK_LIBS" list as an env var
+  include $(ALBANY_PATH)/export_albany.in
+endif
+
 
 
 # Set HAVE_SLASHPROC on LINUX systems which are not bluegene or Darwin (OSx)
@@ -288,6 +326,12 @@ endif
 #===============================================================================
 INCLDIR += -I$(SHAREDPATH)/include -I$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share
 
+#
+#  Tell gmake to look in the csm_share directory for shr_*.mod files
+#
+
+vpath  shr%.mod $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share
+
 ifdef INC_NETCDF
   INCLDIR += -I$(INC_NETCDF)
 endif
@@ -300,8 +344,14 @@ endif
 ifdef INC_PNETCDF
   INCLDIR += -I$(INC_PNETCDF)
 endif
+ifdef INC_PETSC
+  INCLDIR += -I$(INC_PETSC)
+endif
 ifdef INC_TRILINOS
   INCLDIR += -I$(INC_TRILINOS)
+endif
+ifdef INC_ALBANY
+  INCLDIR += -I$(INC_ALBANY)
 endif
 
 ifeq ($(MODEL),driver)
@@ -432,11 +482,22 @@ ifeq ($(USE_ESMF_LIB), TRUE)
   SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
 endif
 
+# Add PETSc libraries
+ifeq ($(strip $(USE_PETSC)), TRUE)
+  SLIBS += -L${LIB_PETSC} ${PETSC_LIB}
+endif
+
 # Add trilinos libraries; too be safe, we include all libraries included in the trilinos build,
 # as well as all necessary third-party libraries
 ifeq ($(strip $(USE_TRILINOS)), TRUE)
   SLIBS += -L$(LIB_TRILINOS) $(Trilinos_LIBRARIES) $(Trilinos_TPL_LIBRARY_DIRS) $(Trilinos_TPL_LIBRARIES)
 endif
+
+# Add Albany libraries.  These are defined in the ALBANY_LINK_LIBS env var that was included above
+ifeq ($(strip $(USE_ALBANY)), TRUE)
+  SLIBS += $(ALBANY_LINK_LIBS)
+endif
+
 
 # Add libraries and flags that we need on the link line when C++ code is included
 # We need to do these additions after CONFIG_ARGS is set, because they can sometimes break configure for mct, etc.,
@@ -526,6 +587,9 @@ else
 endif
 ifdef PIO_FILESYSTEM_HINTS
 	CMAKE_OPTS += -D PIO_FILESYSTEM_HINTS:STRING="$(PIO_FILESYSTEM_HINTS)"
+endif
+ifdef PIO_CONFIG_OPTS
+  CMAKE_OPTS += $(PIO_CONFIG_OPTS)
 endif
 
 # This captures the many cism-specific options to cmake

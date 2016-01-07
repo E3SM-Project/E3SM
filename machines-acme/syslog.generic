@@ -1,0 +1,16 @@
+#!/bin/csh
+# generic syslog script: 
+#  mach_syslog <sampling interval (in seconds)> <job identifier> <timestamp> <run directory> <timing directory> <output directory> 
+
+# set sec = 0
+set sample_interval = $1
+set jid = $2
+set lid = $3
+set run = $4
+set timing = $5
+set dir = $6
+
+# while (1)
+#   sleep $sample_interval
+# end
+

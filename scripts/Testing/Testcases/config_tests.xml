@@ -44,6 +44,42 @@
           STOP_N="11"
           DOUT_S="FALSE" />
 
+<ccsmtest NAME="TESTBUILDFAIL"
+          DESC="For testing infra only. Insta-fail build step."
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          STOP_OPTION="ndays"
+          STOP_N="11"
+          CHECK_TIMING="FALSE"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="TESTRUNFAIL"
+          DESC="For testing infra only. Insta-fail run step."
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          STOP_OPTION="ndays"
+          STOP_N="11"
+          CHECK_TIMING="FALSE"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="TESTRUNPASS"
+          DESC="For testing infra only. Insta-pass run step."
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          STOP_OPTION="ndays"
+          STOP_N="11"
+          CHECK_TIMING="FALSE"
+          DOUT_S="FALSE" />
+
+<ccsmtest NAME="TESTRUNSLOWPASS"
+          DESC="For testing infra only. After 5 minutes of sleep, pass run step."
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          STOP_OPTION="ndays"
+          STOP_N="11"
+          CHECK_TIMING="FALSE"
+          DOUT_S="FALSE" />
+
 <ccsmtest NAME="ERT"
           DESC="exact restart from startup, default 2 month + 1 month (ERS with info dbug = 1)"
           INFO_DBUG="1"

@@ -16,7 +16,7 @@ set STOP_OPTION = `./xmlquery STOP_OPTION -value`
 
 if (${STOP_N} < 3) then
   echo "ERROR:  stop_n too short" >>& $TESTSTATUS_LOG
-  echo "TFAIL ${CASE} "     >&! $TESTSTATUS_OUT
+  echo "TFAIL ${CASE} "     >>& $TESTSTATUS_OUT
   exit -1
 endif
 
@@ -120,11 +120,6 @@ $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -su
 #======================================================================
 
 set CPLLOG = $CplLogFile
-
-if ! ( $?IOP_ON ) then
-    echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >&! $TESTSTATUS_OUT
-    echo "--- Test Functionality  ---:" >>& $TESTSTATUS_OUT
-endif
 
 echo "DONE ${CASEBASEID} : ($msg finished, successful coupler log) " >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG

@@ -129,6 +129,7 @@ OPTIONS
   -user_grid_file <name>   Full pathname of grid file to use (optional)
                            This should be a "copy" of Tools/config_grid.xml
                            with the new user grid changes added to it
+  -nosavetiming            Change the default for SAVE_TIMING in env_run.xml to .FALSE. (optional).
   -help [or -h]            Print usage to STDOUT (optional).
   -list <type>             Only list valid values, type can be [compsets, grids, machines] (optional).
   -testlist                List valid values for tests [normally only invoked by create_test] (optional).
@@ -176,6 +177,7 @@ GetOptions(
     "pes_file=s"                => \$opts{'pes_file'}, 
     "compset_file=s"            => \$opts{'compset_file'},
     "user_grid_file=s"          => \$opts{'user_grid_file'},
+    "nosavetiming"              => \$opts{'nosavetiming'},
     "s|silent"                  => \$opts{'silent'},
     "testname=s"                => \$opts{'testname'},
     "testlist"                  => \$opts{'testlist'},
@@ -910,17 +912,17 @@ if (! -f "$mkbatch") {
     "$scriptsroot/Tools/config_archive.xml",
     "$scriptsroot/Tools/config_archive.xsd",
     "$scriptsroot/Tools/ConfigCase.pm",
-    "$scriptsroot/Tools/cesm_buildnml", 
-    "$scriptsroot/Tools/cesm_prestage", 
-    "$scriptsroot/Tools/cesm_prerun_setup", 
-    "$scriptsroot/Tools/cesm_postrun_setup", 
     "$scriptsroot/Tools/check_lockedfiles", 
     "$scriptsroot/Tools/lt_archive.sh", 
     "$scriptsroot/Tools/st_archive", 
     "$scriptsroot/Tools/getTiming", 
     "$scriptsroot/Tools/SetupTools.pm",
     "$scriptsroot/Tools/ProjectTools.pm",
-    "$scriptsroot/Tools/compare_namelists.pl",
+    "$cimeroot/scripts-acme/acme_util.py",
+    "$cimeroot/scripts-acme/compare_namelists",
+    "$cimeroot/scripts-acme/compare_namelists.py",
+    "$cimeroot/scripts-acme/simple_compare",
+    "$cimeroot/scripts-acme/simple_compare.py",
     "$scriptsroot/Tools/mdiag_reduce.csh",
     "$scriptsroot/Tools/mdiag_reduce.pl",
     "$machdir/ccsm_getenv", 
@@ -1070,38 +1072,38 @@ if( -e "$machdir/Depends.$compiler" ) {
 
 # The following creates cesm_postbuild, cesm_prerun, cesm_postrun, cesm_postrun2, and mach_syslog
 # The following creates cesm_postbuild
-if( -e "$scriptsroot/Tools/cesm_postbuild" ) {
-  $sysmod = "cp $scriptsroot/Tools/cesm_postbuild $caseroot/Tools/cesm_postbuild";
+if( -e "$machdir/cesm_postbuild.perf_archive" ) {
+  $sysmod = "cp $machdir/cesm_postbuild.perf_archive $caseroot/Tools/cesm_postbuild";
   system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }else{
-  $sysmod = "cp $scriptsroot/Tools/cesm_postbuild.noop $caseroot/Tools/cesm_postbuild";
+  $sysmod = "cp $machdir/cesm_postbuild $caseroot/Tools/cesm_postbuild";
   system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 
 # The following creates cesm_prerun
-if( -e "$machdir/cesm_prerun.$mach" ) {
-  $sysmod = "cp $machdir/cesm_prerun.$mach $caseroot/Tools/cesm_prerun";
+if( -e "$machdir/cesm_prerun.perf_archive" ) {
+  $sysmod = "cp $machdir/cesm_prerun.perf_archive $caseroot/Tools/cesm_prerun";
   system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }else{
-  $sysmod = "cp $machdir/cesm_prerun.noop $caseroot/Tools/cesm_prerun";
+  $sysmod = "cp $machdir/cesm_prerun $caseroot/Tools/cesm_prerun";
   system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 
 # The following creates cesm_postrun
-if( -e "$machdir/cesm_postrun.$mach" ) {
-  $sysmod = "cp $machdir/cesm_postrun.$mach $caseroot/Tools/cesm_postrun";
+if( -e "$machdir/cesm_postrun.perf_archive" ) {
+  $sysmod = "cp $machdir/cesm_postrun.perf_archive $caseroot/Tools/cesm_postrun";
   system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }else{
-  $sysmod = "cp $machdir/cesm_postrun.noop $caseroot/Tools/cesm_postrun";
+  $sysmod = "cp $machdir/cesm_postrun $caseroot/Tools/cesm_postrun";
   system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 
 # The following creates cesm_postrun2
-if( -e "$machdir/cesm_postrun2.$mach" ) {
-  $sysmod = "cp $machdir/cesm_postrun2.$mach $caseroot/Tools/cesm_postrun2";
+if( -e "$machdir/cesm_postrun2.perf_archive" ) {
+  $sysmod = "cp $machdir/cesm_postrun2.perf_archive $caseroot/Tools/cesm_postrun2";
   system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }else{
-  $sysmod = "cp $machdir/cesm_postrun2.noop $caseroot/Tools/cesm_postrun2";
+  $sysmod = "cp $machdir/cesm_postrun2 $caseroot/Tools/cesm_postrun2";
   system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 
@@ -1143,6 +1145,15 @@ $year = 1900+$year;
 $mon = 1+$mon;
 print $fh "$commandline\n";
 printf ($fh "case created %04u-%02u-%02u %02u:%02u:%02u\n",$year,$mon,$mday,$hour,$min,$sec);
+
+# set the default to not archive performance data and associated provenance
+if ($opts{'nosavetiming'}) {
+  my $cwd = getcwd(); # current working directory
+  chdir "$caseroot";
+  $sysmod = './xmlchange -file env_run.xml -id SAVE_TIMING -val "FALSE"';
+  system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+  chdir "$cwd";
+}
 
 # Copy the user_mods_dir files in and apply them
 if ( defined($user_mods_dir) ) {
