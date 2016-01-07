@@ -1,0 +1,1194 @@
+<?xml version="1.0"?>
+<testlist>
+  <compset name="A">
+    <grid name="f19_g16_rx1">
+      <test name="ERS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_tiny">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="intel" testtype="acme_tiny">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="gnu" testtype="acme_tiny">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="ibm" testtype="acme_tiny">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="gnu" testtype="acme_tiny">mustang</machine>
+        <machine compiler="intel" testtype="acme_tiny">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="intel" testtype="acme_tiny">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="pgi" testtype="acme_tiny">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+        <machine compiler="gnu" testtype="acme_tiny">wolf</machine>
+        <machine compiler="intel" testtype="acme_tiny">wolf</machine>
+      </test>
+      <test name="ERS_IOP">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+      <test name="ERS_IOP4c">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+      <test name="ERS_IOP4p">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+      <test name="NCK">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_tiny">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="intel" testtype="acme_tiny">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="gnu" testtype="acme_tiny">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="ibm" testtype="acme_tiny">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="gnu" testtype="acme_tiny">mustang</machine>
+        <machine compiler="intel" testtype="acme_tiny">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="intel" testtype="acme_tiny">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="pgi" testtype="acme_tiny">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+        <machine compiler="gnu" testtype="acme_tiny">wolf</machine>
+        <machine compiler="intel" testtype="acme_tiny">wolf</machine>
+      </test>
+    </grid>
+    <grid name="f45_g37_rx1">
+      <test name="PEA_P1_M">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+      <test name="PET_PT">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+    <grid name="ne30_f19_g16_rx1">
+      <test name="SMS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+    <grid name="ne30_g16_rx1">
+      <test name="ERS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+      <test name="ERS_IOP">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+      <test name="ERS_IOP4c">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+      <test name="ERS_IOP4p">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="B">
+    <grid name="f19_g16">
+      <test name="STA_N2">
+        <machine compiler="intel" testtype="prealpha">yellowstone</machine>
+        <machine compiler="intel" testtype="prebeta">yellowstone</machine>
+      </test>
+    </grid>
+    <grid name="f45_g37">
+      <test name="PEA_P1_M">
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">hobart</machine>
+        <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">hobart</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="B1850BDRD">
+    <grid name="f09_g16">
+      <test name="ERS_Ld11">
+        <machine compiler="ibm" testtype="prebeta" testmods="allactive/default">mira</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="B1850BPRPC5L45BGC">
+    <grid name="f19_g16">
+      <test name="ERS_Ld11">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="B1850BPRPL45BGC">
+    <grid name="f19_g16">
+      <test name="ERS_Ld11">
+        <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">bluewaters</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="B1850C5">
+    <grid name="f19_g16">
+      <test name="PET_PT">
+        <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">bluewaters</machine>
+      </test>
+    </grid>
+    <grid name="f45_g37">
+      <test name="ERS">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+      <test name="ERS_D">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+      <test name="SEQ_PFC">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+    <grid name="ne16_g37">
+      <test name="ERS">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+      <test name="ERT">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+    <grid name="ne30_g16">
+      <test name="ERS">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="B1850C5CN">
+    <grid name="f09_g16">
+      <test name="ERS">
+        <machine compiler="pgi" testtype="prealpha" testmods="allactive/default">bluewaters</machine>
+        <machine compiler="ibm" testtype="prealpha" testmods="allactive/default">mira</machine>
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="B1850C5L45BGC">
+    <grid name="T31_g37">
+      <test name="CME_D_Ld5">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+      <test name="CME_Ld5">
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">edison</machine>
+      </test>
+      <test name="ERS_E_Ld7">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+    </grid>
+    <grid name="T31_g37">
+      <test name="NCR_P4x1D">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+    </grid>
+    <grid name="f09_g16">
+      <test name="ERI">
+        <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">bluewaters</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">edison</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">eos</machine>
+      </test>
+      <test name="PFS">
+        <machine compiler="pgi " testtype="prebeta">bluewaters</machine>
+        <machine compiler="intel" testtype="prealpha">yellowstone</machine>
+        <machine compiler="intel" testtype="prebeta">yellowstone</machine>
+      </test>
+    </grid>
+    <grid name="f19_g16">
+      <test name="ERS_D_Ld7">
+        <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">bluewaters</machine>
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+      <test name="PET_PT">
+        <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">titan</machine>
+        <machine compiler="gnu" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="gnu" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+    </grid>
+    <grid name="ne120_g16">
+      <test name="ERS_Ld9">
+        <machine compiler="ibm" testtype="prebeta" testmods="allactive/default">mira</machine>
+      </test>
+    </grid>
+    <grid name="ne30_g16">
+      <test name="ERI">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+      <test name="ERS_D_Ld7">
+        <machine compiler="ibm" testtype="prebeta" testmods="allactive/default">mira</machine>
+      </test>
+      <test name="ERS_IOP_Ld7">
+        <machine compiler="ibm" testtype="prebeta" testmods="allactive/default">mira</machine>
+        <machine compiler="gnu" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="gnu" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+      <test name="ERS_Ld7">
+        <machine compiler="gnu" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="gnu" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+      <test name="ERS_Ld9">
+        <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">titan</machine>
+      </test>
+      <test name="PET_PT">
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">eos</machine>
+      </test>
+      <test name="PFS">
+        <machine compiler="ibm " testtype="prebeta">mira</machine>
+        <machine compiler="intel " testtype="prealpha">yellowstone</machine>
+        <machine compiler="intel " testtype="prebeta">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="B1850CN">
+    <grid name="T31_g37">
+      <test name="NOC">
+        <machine compiler="intel" testtype="prealpha">yellowstone</machine>
+        <machine compiler="intel" testtype="prebeta">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="B1850RMCN">
+    <grid name="f09_g16">
+      <test name="ERS_Ld7">
+        <machine compiler="ibm" testtype="prebeta" testmods="allactive/default">mira</machine>
+      </test>
+    </grid>
+    <grid name="f19_g16">
+      <test name="ERS_Ld7">
+        <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">bluewaters</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="B1850W5CN">
+    <grid name="f19_g16">
+      <test name="ERS_Ld7">
+        <machine compiler="ibm" testtype="prebeta" testmods="allactive/default">mira</machine>
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="B2000CNCHM">
+    <grid name="f19_g16">
+      <test name="ERS_Ld7">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="B2013WBCCN">
+    <grid name="f19_g16">
+      <test name="ERS_Ld7">
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">janus</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="B20TRC5">
+    <grid name="f19_g16">
+      <test name="SMS_D">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BC5">
+    <grid name="ne16_g37">
+      <test name="ERS_Ld7">
+        <machine compiler="intel15" testtype="prebeta" testmods="allactive/default">babbageKnc</machine>
+      </test>
+      <test name="SMS_Ld7">
+        <machine compiler="intel15" testtype="prebeta" testmods="allactive/default">babbageKnc</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BC5L45BGC">
+    <grid name="f19_g16">
+      <test name="NCK_Ld5">
+        <machine compiler="gnu" testtype="prealpha" testmods="allactive/cism/test_coupling">yellowstone</machine>
+        <machine compiler="gnu" testtype="prebeta" testmods="allactive/cism/test_coupling">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BG1850C5L45BGCIS2">
+    <grid name="T31_g37_gl20">
+      <test name="SMS_D_Ld5">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/cism/test_coupling">yellowstone</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/cism/test_coupling">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BGC5L45BGC">
+    <grid name="T31_g37">
+      <test name="SMS_D_Ld5">
+        <machine compiler="nag" testtype="prebeta" testmods="allactive/cism/test_coupling">hobart</machine>
+      </test>
+    </grid>
+    <grid name="f19_g16">
+      <test name="NCK_Ld5">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/cism/test_coupling">yellowstone</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/cism/test_coupling">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BHISTBDRD">
+    <grid name="f09_g16">
+      <test name="ERS_Ld11">
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">eos</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BHISTC5CN">
+    <grid name="f19_g16">
+      <test name="ERS_N2_Ld7">
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">edison</machine>
+        <machine compiler="gnu" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="gnu" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BHISTC5L45BGC">
+    <grid name="ne120_g16">
+      <test name="ERS_Ld9">
+        <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">bluewaters</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BHISTCNCHM">
+    <grid name="f09_g16">
+      <test name="ERS_Ld7">
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">eos</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BMOZ">
+    <grid name="f45_g37">
+      <test name="ERS_Ld7">
+        <machine compiler="gnu" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="gnu" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BPIPDC5L45BGC">
+    <grid name="f09_g16">
+      <test name="ERS_Ld7">
+        <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">bluewaters</machine>
+      </test>
+      <test name="SMS_D">
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">edison</machine>
+      </test>
+    </grid>
+    <grid name="f19_g16">
+      <test name="ERS_IOP_Ld7">
+        <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">bluewaters</machine>
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+      </test>
+      <test name="ERS_N2_Ld7">
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">hobart</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BRCP26CN">
+    <grid name="f09_g16">
+      <test name="ERS_PT_Ld7">
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">janus</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BRCP26W5CN">
+    <grid name="f19_g16">
+      <test name="ERS_Ld7">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BRCP45BDRD">
+    <grid name="f09_g16">
+      <test name="ERS_Ld11">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BRCP45W5CN">
+    <grid name="f19_g16">
+      <test name="ERS_Ld7">
+        <machine compiler="pgi" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BRCP85BPRP">
+    <grid name="f09_g16">
+      <test name="SMS_Ld5">
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">edison</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BRCP85C5L45BGC">
+    <grid name="f09_g16">
+      <test name="ERS">
+        <machine compiler="ibm" testtype="prebeta" testmods="allactive/default">mira</machine>
+      </test>
+      <test name="ERS_PT_Ld7">
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">edison</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BRCP85W5CN">
+    <grid name="f19_g16">
+      <test name="ERS_Ld7">
+        <machine compiler="gnu" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="gnu" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BTSC4L40CCMIR2">
+    <grid name="f19_g16">
+      <test name="ERS_Ld7">
+        <machine compiler="pgi" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BTSC4L40CCMIS2R45">
+    <grid name="f19_g16">
+      <test name="ERS_D_Ld7">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BWMC4L40CCMIR2">
+    <grid name="f19_g16">
+      <test name="ERS_Ld7">
+        <machine compiler="gnu" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="gnu" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BWMC4L40CCMIS2R85">
+    <grid name="f19_g16">
+      <test name="ERS_Ld7">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="BWTC4L40CCMIR2">
+    <grid name="f19_g16">
+      <test name="ERS_Ld7">
+        <machine compiler="pgi" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="C_MPAS_NORMAL_YEAR">
+    <grid name="T62_mpas120">
+      <test name="ERS_Ld5">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="DTEST">
+    <grid name="f45_g37_rx1">
+      <test name="ERS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+      <test name="ERS_IOP">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="FAMIPC5">
+    <grid name="f19_f19">
+      <test name="ERS">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+      <test name="ERS_IOP_Ld3">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="FC5">
+    <grid name="ne16_g37">
+      <test name="ERS_Ld3">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+    <grid name="ne16_ne16">
+      <test name="SMS_D_Ld3">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+    <grid name="ne30_ne30">
+      <test name="ERS_Ld3">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+      <test name="PFS">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="FC5AQUAP">
+    <grid name="ne16_ne16">
+      <test name="SMS">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="FC5MAM4">
+    <grid name="ne16_ne16">
+      <test name="ERS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="FC5PLMOD">
+    <grid name="ne16_ne16">
+      <test name="ERS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="FC5PM">
+    <grid name="ne16_ne16">
+      <test name="ERS">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="I1850CLM45CN">
+    <grid name="f09_g16">
+      <test name="SMS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+    <grid name="f19_f19">
+      <test name="SMS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="I1850CRUCLM45CN">
+    <grid name="hcru_hcru">
+      <test name="SMS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="IGCLM45_MLI">
+    <grid name="f09_g16_a">
+      <test name="SMS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="MPASLIALB_ONLY">
+    <grid name="f09_g16_a">
+      <test name="SMS">
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="MPASLI_ONLY">
+    <grid name="f09_g16_g">
+      <test name="ERS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="MPAS_LISIO_TEST">
+    <grid name="T62_mpas120_gis20">
+      <test name="SMS">
+        <machine compiler="intel" testtype="acme_developer">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_developer">edison</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_developer">melvin</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_developer">mira</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_developer">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">mustang</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_developer">skybridge</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_developer">titan</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_developer">wolf</machine>
+        <machine compiler="intel" testtype="acme_developer">wolf</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="X">
+    <grid name="f19_g16">
+      <test name="PET_PT">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+      <test name="SEQ_IOP_PFC">
+        <machine compiler="intel" testtype="acme_integration">blues</machine>
+        <machine compiler="intel" testtype="acme_integration">edison</machine>
+        <machine compiler="gnu" testtype="acme_integration">melvin</machine>
+        <machine compiler="ibm" testtype="acme_integration">mira</machine>
+        <machine compiler="gnu" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">mustang</machine>
+        <machine compiler="intel" testtype="acme_integration">skybridge</machine>
+        <machine compiler="pgi" testtype="acme_integration">titan</machine>
+        <machine compiler="gnu" testtype="acme_integration">wolf</machine>
+        <machine compiler="intel" testtype="acme_integration">wolf</machine>
+      </test>
+    </grid>
+  </compset>
+</testlist>
