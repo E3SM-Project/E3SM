@@ -1515,12 +1515,11 @@ subroutine cesm_init()
    if (wav_prognostic .and. .not.wav_present) then
       call shr_sys_abort(subname//' ERROR: if prognostic wav must also have wav present')
    endif
+#ifndef CPL_BYPASS
    if ((ice_prognostic .or. ocn_prognostic .or. lnd_prognostic) .and. .not. atm_present) then
       call shr_sys_abort(subname//' ERROR: if prognostic surface model must also have atm present')
    endif
-   if (glc_prognostic .and. .not.lnd_present) then
-      call shr_sys_abort(subname//' ERROR: if prognostic glc must also have lnd present')
-   endif
+#endif
    if ((glclnd_present .or. glcocn_present .or. glcice_present) .and. .not.glc_present) then
       call shr_sys_abort(subname//' ERROR: if glcxxx present must also have glc present')
    endif
@@ -3594,10 +3593,12 @@ end subroutine cesm_init
             cktime = time_estep-time_bstep
             cktime_acc(1) = cktime_acc(1) + cktime
             cktime_cnt(1) = cktime_cnt(1) + 1
+#ifndef CPL_BYPASS
             write(logunit,101) ' tStamp_write: model date = ',ymd,tod, &
                  ' wall clock = ',dstr(1:4),'-',dstr(5:6),'-',dstr(7:8),' ',&
                  tstr(1:2),':',tstr(3:4),':',tstr(5:6), &
                  ' avg dt = ',cktime_acc(1)/cktime_cnt(1),' dt = ',cktime 
+#endif
             Time_bstep = mpi_wtime()
             call shr_sys_flush(logunit)
             if(cktime > max_cplstep_time .and. max_cplstep_time > 0.0) then
@@ -3650,9 +3651,11 @@ end subroutine cesm_init
               glc(ens1)%iamroot_compid .or. &
               wav(ens1)%iamroot_compid) then
             call shr_mem_getusage(msize,mrss)
+#ifndef CPL_BYPASS
             write(logunit,105) ' memory_write: model date = ',ymd,tod, &
                  ' memory = ',mrss,' MB (highwater)    ',msize,' MB (usage)', &
                  '  (pe=',iam_GLOID,' comps=',trim(complist)//')'
+#endif
          endif
       endif
       if (info_debug > 1) then

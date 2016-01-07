@@ -155,7 +155,7 @@ if ($exportopt) {
   if ($error eq '') {
     die "Error: the subversion client svn was not found.\n";
   }
-  my $error = `svn list $svn_loc > /dev/null`;
+  my $error = `svn --non-interactive --trust-server-cert list $svn_loc > /dev/null`;
 }
 
 $inputdata_rootdir .= "/";
@@ -282,12 +282,12 @@ exit( $status );
 
 # Check for existence of a file in the subversion repository, returns 1 if so.
 sub isinrepository($) {
-    return 1 if `svn ls $_[0]`;
+    return 1 if `svn --non-interactive --trust-server-cert ls $_[0]`;
 }
 
 # Checks a link in the subversion repository and returns the target location of that link.
 sub linktarget($) {
-    my $filetext = `svn cat $_[0]`;
+    my $filetext = `svn --non-interactive --trust-server-cert cat $_[0]`;
     $filetext =~ s/link // or return 0;  # File relative path from link.
     (my $linktar = $_[0]) =~ s!(.*)/+.*?$!$1/!;
     $linktar .= $filetext;               # Absolute path target of link.
@@ -300,7 +300,7 @@ sub dataexport($$) {
     $_[0] =~ m!(.*)/(.*)!;                             # Stores directory containing file in $1.
     my $dir = $1;
     print "export $_[1] $_[0] ..... " ;
-    my $listing = `svn ls $_[1]`;
+    my $listing = `svn --non-interactive --trust-server-cert ls $_[1]`;
     if ($2 and $listing =~ /^$2\b/) {                  # Check if input is a file or directory (links treated as files).
 	unless (-e $dir) {                             # Make containing directory unless it already exists.
 	    my $dexist = $dir;
@@ -309,9 +309,9 @@ sub dataexport($$) {
 	    }
 	    system("umask 2; mkdir -p -m 775 $dir");
 	}
-	system("svn export $_[1] $_[0] 1>/dev/null"); # Export file.
+	system("svn --non-interactive --trust-server-cert export $_[1] $_[0] 1>/dev/null"); # Export file.
     } else {
-	system("svn export --depth=files $_[1] $_[0] 1>/dev/null"); # Export dir.
+	system("svn --non-interactive --trust-server-cert export --depth=files $_[1] $_[0] 1>/dev/null"); # Export dir.
     }
     if (-f $_[0]) {                                    # Store checksum.
         my $checksumfile = $dir.'/.checksums';         # Checksums saved here.

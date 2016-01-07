@@ -1,0 +1,26 @@
+#! /bin/csh -cvf
+
+# -------------------------------------------------------------------------
+# Linux
+# This file sets env for ACME to be built on a Linux m/c
+# NETCDF : Environment variable that points to the NetCDF installation 
+#          directory
+#          (If not set, we assume NetCDF is installed in /usr )
+# -------------------------------------------------------------------------
+
+if $?NETCDF then
+  setenv NETCDF_PATH $NETCDF
+  setenv NETCDF_DIR $NETCDF
+else
+  echo 'WARNING: The $NETCDF environment variable is not defined assuming /usr .'
+  setenv NETCDF_PATH "/usr"
+  setenv NETCDF_DIR "/usr"
+endif
+
+if $?PNETCDF then
+  setenv PNETCDF_PATH $PNETCDF
+  setenv PNETCDF_DIR $PNETCDF
+endif
+if ( $?PERL ) then
+  printenv
+endif

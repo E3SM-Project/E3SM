@@ -17,6 +17,7 @@
         <machine compiler="pgi" testtype="prebeta">bluewaters</machine>
         <machine compiler="intel" testtype="prealpha">edison</machine>
         <machine compiler="intel" testtype="prebeta">edison</machine>
+        <machine compiler="gnu" testtype="prebeta">melvin</machine>
         <machine compiler="intel" testtype="prebeta">skybridge</machine>
         <machine compiler="intel" testtype="prealpha">eos</machine>
         <machine compiler="intel" testtype="prebeta">eos</machine>
@@ -43,6 +44,7 @@
       <test name="ERS_N2_D_Ld3">
         <machine compiler="pgi" testtype="prebeta">bluewaters</machine>
         <machine compiler="intel" testtype="prebeta">edison</machine>
+        <machine compiler="gnu" testtype="prebeta">melvin</machine>
         <machine compiler="intel" testtype="prebeta">skybridge</machine>
         <machine compiler="intel" testtype="prebeta">eos</machine>
       </test>
@@ -67,6 +69,7 @@
       </test>
       <test name="ERS_D_Ld3">
         <machine compiler="intel" testtype="prebeta">edison</machine>
+        <machine compiler="gnu" testtype="prebeta">melvin</machine>
         <machine compiler="intel" testtype="prebeta">skybridge</machine>
         <machine compiler="intel" testtype="prealpha">goldbach</machine>
         <machine compiler="pgi" testtype="prealpha">goldbach</machine>
@@ -82,6 +85,7 @@
       <test name="NCK_Ld3">
         <machine compiler="pgi" testtype="prebeta">bluewaters</machine>
         <machine compiler="intel" testtype="prebeta">edison</machine>
+        <machine compiler="gnu" testtype="prebeta">melvin</machine>
         <machine compiler="intel" testtype="prebeta">skybridge</machine>
         <machine compiler="intel" testtype="prebeta">eos</machine>
       </test>
@@ -123,6 +127,7 @@
       </test>
       <test name="ERS_Ld3">
         <machine compiler="intel" testtype="prebeta">edison</machine>
+        <machine compiler="gnu" testtype="prebeta">melvin</machine>
         <machine compiler="intel" testtype="prebeta">skybridge</machine>
       </test>
     </grid>
@@ -152,6 +157,7 @@
     <grid name="f09_g16">
       <test name="SEQ_PFC_Ld3">
         <machine compiler="intel" testtype="prebeta">edison</machine>
+        <machine compiler="gnu" testtype="prebeta">melvin</machine>
         <machine compiler="intel" testtype="prebeta">skybridge</machine>
       </test>
     </grid>

@@ -1,0 +1,44 @@
+#! /bin/csh -f
+
+#===============================================================================
+# Titan machine specific settings
+#===============================================================================
+
+#-------------------------------------------------------------------------------
+# Modules
+#-------------------------------------------------------------------------------
+
+if (-e /opt/modules/default/init/csh) then
+  source /opt/modules/default/init/csh
+#  module switch PGI PGI/2013-64bit
+#  module switch mpi mpi/openmpi-1.4.3-pgi 
+# module list
+endif
+#-------------------------------------------------------------------------------
+# Runtime environment variables
+#-------------------------------------------------------------------------------
+#ulimit -d unlimited 
+setenv MPICH_ENV_DISPLAY 1
+setenv MPICH_VERSION_DISPLAY 1
+setenv MPICH_CPUMASK_DISPLAY 1
+setenv MPICH_RANK_REORDER_DISPLAY 1
+#setenv LD_LIBRARY_PATH /usr/lib64:${LD_LIBRARY_PATH}
+if ( $COMPILER == "gnu" ) then
+  setenv INC_NETCDF /projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4-nonetcdf/include
+  setenv LIB_NETCDF /projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4-nonetcdf/lib
+endif
+if ( $COMPILER == "pgi" ) then
+  setenv INC_NETCDF /home/zdr/opt/netcdf-4.1.3_pgf95/include
+  setenv LIB_NETCDF /home/zdr/opt/netcdf-4.1.3_pgf95/lib
+endif
+
+limit coredumpsize unlimited
+limit stacksize unlimited
+# The environment variable below increase the stack size, which is necessary for
+# CICE to run threaded on this machine. 
+setenv MPSTKZ 64M
+setenv OMP_STACKSIZE 64M
+#
+if ( $?PERL ) then
+  printenv
+endif

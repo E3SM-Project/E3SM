@@ -62,8 +62,6 @@ endif
 
 ./$CASE.build
 if ($status != 0) then
-   echo "Error: build for single instance failed" >! ./TestStatus
-   echo "CFAIL $CASE" > ./TestStatus
    exit -1    
 endif 
 
@@ -113,8 +111,6 @@ set NTASKS_CPL  = `./xmlquery NTASKS_CPL -value`
 
 ./$CASE.build
 if ($status != 0) then
-   echo "Error: build for multi instance failed" >! ./TestStatus
-   echo "CFAIL $CASE" > ./TestStatus
    exit -1    
 endif 
 

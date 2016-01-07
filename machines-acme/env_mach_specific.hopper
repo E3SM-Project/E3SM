@@ -34,11 +34,11 @@ if (-e /opt/modules/default/init/csh) then
   module rm cray-netcdf
   module rm cray-netcdf-hdf5parallel
   module rm cray-parallel-netcdf
-  module load subversion/1.7.2
+  module load subversion/1.8.11
 endif
 
 if ( $COMPILER == "pgi" ) then
-    module load PrgEnv-pgi/4.1.40
+    module load PrgEnv-pgi/5.2.40
     module switch pgi pgi/14.7.0
 endif    
 if ( $COMPILER == "intel" ) then
@@ -57,20 +57,19 @@ if ( $COMPILER == "gnu" ) then
     module load PrgEnv-gnu
     module switch gcc       gcc/4.7.1
 endif    
-module switch xt-asyncpe xt-asyncpe/5.23
-module load cray-mpich/6.2.0
+module load cray-mpich/7.1.1
 if ( $COMPILER != "intel" ) then
   module switch cray-libsci cray-libsci/12.1.3
 endif
 
 if ( $MPILIB == "mpi-serial") then
-  module load cray-netcdf/4.3.0
+  module load cray-netcdf/4.3.2
 else
-  module load cray-netcdf-hdf5parallel/4.3.0
-  module load cray-parallel-netcdf/1.3.1.1
+  module load cray-netcdf-hdf5parallel/4.3.2
+  module load cray-parallel-netcdf/1.5.0
 endif
 
-module load cmake/2.8.11.2
+module load cmake/3.1.3
 
 module use /global/project/projectdirs/ccsm1/modulefiles/hopper
 if( $DEBUG == "TRUE" ) then
@@ -79,17 +78,20 @@ else
   module load esmf/6.2.0-defio-mpi-O
 endif
 
-
+module list >& software_environment.txt
 
 #-------------------------------------------------------------------------------
 # Runtime environment variables
 #-------------------------------------------------------------------------------
 
-setenv MPICH_ENV_DISPLAY 1
-setenv MPICH_VERSION_DISPLAY 1
-
 limit coredumpsize unlimited
 limit stacksize unlimited
+
+# Capture logical to physics PE assignment and active environment variable
+# settings
+setenv MPICH_ENV_DISPLAY 1
+setenv MPICH_VERSION_DISPLAY 1
+setenv MPICH_CPUMASK_DISPLAY 1
 
 # The environment variable below increase the stack size, which is necessary for
 # CICE to run threaded on this machine.  

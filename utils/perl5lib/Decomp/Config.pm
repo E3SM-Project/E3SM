@@ -10,14 +10,14 @@
 #
 #  # Create a new decomp object
 #  my $config = Decomp::Config->new( \%opts );
-#  # Read in XML file with decomposition information for platform, res, #-procs, etc.
+#  # Read in XML file with decomposition information for res, #-procs, etc.
 #  my %decomp = ();
 #  my %decompresult = $config( $file, \%decomp );
 #
 # DESCRIPTION
 #
 #  This is a perl module to read in decomposition information from an XML file
-#  for different: platforms, resolutions, #-processors, models etc.
+#  for different: resolutions, #-processors etc.
 #
 # Methods:
 #
@@ -51,11 +51,6 @@ sub new {
 #
 #     res ---------- resolution
 #     nproc -------- number of processors
-#     platform ----- platform
-#     model -------- model name
-#     ProgName ----- Main Program name
-#     ProgDir ------ Main Program directory
-#     cmdline ------ Main Program command line
 #     printing ----- if debug printing should be done
 #
   my $class     = shift;
@@ -65,10 +60,8 @@ sub new {
   my %opts = %$opts_ref;
 
   # Error check that input and opts hash has the expected variables
-  my $ProgName     = $opts{'ProgName'};
-  my $nm = "${ProgName}::new";
-  my @required_list = ( "res", "nproc", "platform", "model", "ProgName", "cmdline",
-                        "ProgDir", "printing" );
+  my $nm = "decomp::new";
+  my @required_list = ( "res", "nproc", "printing" );
   my $self = {};
   foreach my $var ( @required_list ) {
      if ( ! defined($opts{$var}) ) {
@@ -103,18 +96,16 @@ sub ReadXML {
   my $file       = shift;
   my $decomp_ref = shift;
 
-  my $ProgName = $self->{'ProgName'};
-  my $nm = "${ProgName}::readXML";
+  my $nm = "decomp::readXML";
 
   if ( ref($decomp_ref) ne "HASH" ) { die "ERROR::($nm) input decomp is not a hash!\n"; }
 
   # Initialize some local variables
   my $printing = $self->{'printing'};
-  my $cmdline  = $self->{'cmdline'};
   my $matches  = undef;
 
   # Open file
-#DBG  print "($nm) Read: $file\n" if $printing;
+  #DBG  print "($nm) Read: $file\n" if $printing;
   my $xml = XML::Lite->new( $file );
   if ( ! defined($xml) ) {
     die "ERROR($nm): Trouble opening or reading $file\n";
@@ -154,7 +145,7 @@ sub ReadXML {
       # Check that all values match the appropriate settings
       #
       foreach my $key ( @keys ) {
-         foreach my $var ( ( "res", "platform", "nproc", "model" ) ) {
+         foreach my $var ( ( "res", "nproc" ) ) {
             # Match given var
             my $match = $atts{$key};
             if ( ($key eq $var) && ($self->{$var} !~ /^${match}$/ ) ) {

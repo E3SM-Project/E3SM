@@ -74,10 +74,27 @@ function print_status {
 	info_str="($info)"
     else
 	info_str=""
-    fi    
+    fi
 
     # Print formatted test result
-    printf '%-3s %s %s\n' "$status" "${testcase}" "$info_str"
+    printf '%-3s %s compare\n' "$status" "${testcase}"
+
+    echo "COMMENT $info"
+}
+
+function print_comment {
+    local status="$1"
+    local info="$2"
+    local testcase="$3"
+
+    # Enclose info in parentheses
+    if [ -n "$info" ]; then
+	info_str="($info)"
+    else
+	info_str=""
+    fi
+
+    echo "COMMENT for $testcase $info"
 }
 
 #======================================================================
@@ -205,6 +222,10 @@ for model in ${models[*]}; do
 	extensions=(h0 h1 h2 h3 h4 h5 h6 h7 h8 h9 hs)
     elif [ "$model" = "pop" ]; then
 	extensions=(h)
+        if [ "$suffix2" = "rest" ]; then
+            # Skip restart checks for pop! Temporary hack until MPAS goes in!
+            continue
+        fi
     fi
 
     #------------------------------------------------------------------
@@ -239,7 +260,7 @@ for model in ${models[*]}; do
 		    compare_result=`${tools_dir}/component_compare.sh -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist1" -test_hist "$hist2_0001" -cprnc_exe "$cprnc_exe"`
 		    compare_status=`get_status "$compare_result"`
 		    compare_info=`get_info "$compare_result"`
-		    print_status "$compare_status" "$compare_info" "${testcase_base}.${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix1} and .${suffix2} for _0001)"
+		    print_comment "$compare_status" "$compare_info: ${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix1} and .${suffix2} for _0001)" "${testcase_base}"
 		    if [ "$compare_status" != "PASS" ]; then
 			overall_status="FAIL"
 		    fi
@@ -247,7 +268,7 @@ for model in ${models[*]}; do
 		    compare_result=`${tools_dir}/component_compare.sh -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist1" -test_hist "$hist2_0002" -cprnc_exe "$cprnc_exe"`
 		    compare_status=`get_status "$compare_result"`
 		    compare_info=`get_info "$compare_result"`
-		    print_status "$compare_status" "$compare_info" "${testcase_base}.${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix1} and .${suffix2} for _0002)"
+		    print_comment "$compare_status" "$compare_info: ${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix1} and .${suffix2} for _0002)" "${testcase_base}"
 		    if [ "$compare_status" != "PASS" ]; then
 			overall_status="FAIL"
 		    fi
@@ -267,7 +288,7 @@ for model in ${models[*]}; do
 		compare_result=`${tools_dir}/component_compare.sh -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist1_0001" -test_hist "$hist1_0002" -cprnc_exe "$cprnc_exe"`
 		compare_status=`get_status "$compare_result"`
 		compare_info=`get_info "$compare_result"`
-		print_status "$compare_status" "$compare_info" "${testcase_base}.${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix1} for _0001 and .${suffix2} for _0001)"
+		print_comment "$compare_status" "$compare_info: ${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix1} for _0001 and .${suffix2} for _0001)" "${testcase_base}"
 		if [ "$compare_status" != "PASS" ]; then
 		    overall_status="FAIL"
 		fi
@@ -275,7 +296,7 @@ for model in ${models[*]}; do
 		compare_result=`${tools_dir}/component_compare.sh -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist2_0002" -test_hist "$hist2_0002" -cprnc_exe "$cprnc_exe"`
 		compare_status=`get_status "$compare_result"`
 		compare_info=`get_info "$compare_result"`
-		print_status "$compare_status" "$compare_info" "${testcase_base}.${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix1} for _0002 and .${suffix2} for _0002)"
+		print_comment "$compare_status" "$compare_info: ${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix1} for _0002 and .${suffix2} for _0002)" "${testcase_base}"
 		if [ "$compare_status" != "PASS" ]; then
 		    overall_status="FAIL"
 		fi
@@ -296,7 +317,7 @@ for model in ${models[*]}; do
 		    compare_result=`${tools_dir}/component_compare.sh -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist1" -test_hist "$hist2" -cprnc_exe "$cprnc_exe"`
 		    compare_status=`get_status "$compare_result"`
 		    compare_info=`get_info "$compare_result"`
-		    print_status "$compare_status" "$compare_info" "${testcase_base}.${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix1} and .${suffix2} files)"
+		    print_comment "$compare_status" "$compare_info: ${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix1} and .${suffix2} files)" "${testcase_base}"
 		    if [ "$compare_status" != "PASS" ]; then
 			overall_status="FAIL"
 		    fi
@@ -317,7 +338,7 @@ for model in ${models[*]}; do
 			overall_status="FAIL"
 		    fi
 		    compare_info=`get_info "$compare_result"`
-		    print_status "$compare_status" "$compare_info" "${testcase_base}.${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix1} and .${suffix1}_${add_iop} files)"
+		    print_comment "$compare_status" "$compare_info: ${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix1} and .${suffix1}_${add_iop} files)" "${testcase_base}"
 		fi
 		
 		hist1=`cd $rundir; ls -1 ${testcase}.${model}*.${extension}.*.nc.${suffix2}            2>/dev/null | tail -1`
@@ -330,7 +351,7 @@ for model in ${models[*]}; do
 			overall_status="FAIL"
 		    fi
 		    compare_info=`get_info "$compare_result"`
-		    print_status "$compare_status" "$compare_info" "${testcase_base}.${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix2} and .${suffix2}_${add_iop} files)"
+		    print_comment "$compare_status" "$compare_info: ${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix2} and .${suffix2}_${add_iop} files)" "${testcase_base}"
 		fi
 
 	    fi
@@ -344,7 +365,7 @@ for model in ${models[*]}; do
 		compare_result=`${tools_dir}/component_compare.sh -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist1" -test_hist "$hist2" -cprnc_exe "$cprnc_exe"`
 		compare_status=`get_status "$compare_result"`
 		compare_info=`get_info "$compare_result"`
-		print_status "$compare_status" "$compare_info" "${testcase_base}.${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix1} and .${suffix2} files)"
+		print_comment "$compare_status" "$compare_info: ${model}.${extension}.nc : test compare ${model}.${extension} (.${suffix1} and .${suffix2} files)" "${testcase_base}"
 		if [ "$compare_status" != "PASS" ]; then
 		    overall_status="FAIL"
 		fi
@@ -357,9 +378,9 @@ for model in ${models[*]}; do
 done  # loop over models
 
 if [ -z "$msg" ]; then 
-    print_status "$overall_status" "$compare_info" "${testcase_base} : test functionality summary"
+    print_status "$overall_status" "$compare_info: test functionality summary" "${testcase_base}"
 else
-    print_status "$overall_status" "$compare_info" "${testcase_base} : test functionality summary ($msg)"
+    print_status "$overall_status" "$compare_info: test functionality summary ($msg)" "${testcase_base}"
 fi
 
 
