@@ -877,9 +877,9 @@ sub _create_caseroot_tools
 	"$cimeroot/scripts/Tools/archive_metadata.sh", 
 	"$cimeroot/scripts/Tools/check_case", 
 	"$cimeroot/scripts/Tools/create_production_test", 
+	"$cimeroot/scripts/Tools/st_archive", 
 	"$cimeroot/scripts/Tools/xmlchange",
 	"$cimeroot/scripts/Tools/xmlquery",
-	"$cimeroot/scripts/Tools/st_archive", 
 	"$cimeroot/scripts/Tools/README.post_process", 
 	); 
     foreach my $file (@files) {
@@ -902,7 +902,6 @@ sub _create_caseroot_tools
     # Copy relevant files into $caseroot/Tools/
     @files = ("$cimeroot/scripts/Tools/check_lockedfiles", 
 	      "$cimeroot/scripts/Tools/lt_archive.sh", 
-	      "$cimeroot/scripts/Tools/st_archive", 
 	      "$cimeroot/scripts/Tools/getTiming", 
 	      "$cimeroot/scripts/Tools/compare_namelists.pl",
 	      "$machines_dir/taskmaker.pl", 

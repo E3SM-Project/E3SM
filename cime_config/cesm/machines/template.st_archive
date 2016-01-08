@@ -47,7 +47,7 @@ if(-e $testlog){
     close(TL);
 }
 $logger->info("st_archive starting");
-system("./st_archive >> stArchiveStatus 2>&1");
+system("$config{CASEROOT}/st_archive >> stArchiveStatus 2>&1");
 if(-e $testlog){
     open(TL,">>$testlog");
     print TL "st_archive complete\n";
