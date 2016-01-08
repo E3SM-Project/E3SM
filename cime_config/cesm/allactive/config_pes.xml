@@ -1516,6 +1516,45 @@
       </pes>
     </mach>
   </grid>
+
+  <grid name="a%0.9x1.25.+l%0.9x1.25.+oi%gx1" >
+    <mach name="yellowstone">
+      <pes pesize="any" compset="B1850">
+	<comment>none</comment>
+	<ntasks>
+	  <ntasks_atm>1728</ntasks_atm> 
+	  <ntasks_lnd>210</ntasks_lnd> 
+	  <ntasks_rof>210</ntasks_rof> 
+	  <ntasks_ice>256</ntasks_ice> 
+	  <ntasks_ocn>30</ntasks_ocn>  
+	  <ntasks_glc>1</ntasks_glc> 
+	  <ntasks_wav>1</ntasks_wav> 
+	  <ntasks_cpl>1728</ntasks_cpl> 
+	</ntasks>
+	<nthrds>
+	  <nthrds_atm>2</nthrds_atm> 
+	  <nthrds_lnd>2</nthrds_lnd> 
+	  <nthrds_rof>2</nthrds_rof> 
+	  <nthrds_ice>2</nthrds_ice> 
+	  <nthrds_ocn>2</nthrds_ocn> 
+	  <nthrds_glc>2</nthrds_glc> 
+	  <nthrds_wav>2</nthrds_wav> 
+	  <nthrds_cpl>2</nthrds_cpl> 
+	</nthrds>
+	<rootpe>
+	  <rootpe_atm>0</rootpe_atm>
+	  <rootpe_lnd>0</rootpe_lnd>
+	  <rootpe_rof>0</rootpe_rof>
+	  <rootpe_ice>1472</rootpe_ice>
+	  <rootpe_ocn>1728</rootpe_ocn>
+	  <rootpe_glc>0</rootpe_glc>
+	  <rootpe_wav>0</rootpe_wav>
+	  <rootpe_cpl>0</rootpe_cpl>
+	</rootpe>
+      </pes>
+    </mach>
+  </grid>
+
   <grid name="a%0.47x0.63.+l%0.47x0.63.+oi%tx0.1v2">
     <mach name='any'>
       <pes pesize="any" compset="any">
