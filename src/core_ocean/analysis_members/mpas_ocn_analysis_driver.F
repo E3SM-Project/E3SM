@@ -380,7 +380,7 @@ contains
 
       character (len=StrKIND) :: configName, alarmName, streamName, timerName
       logical, pointer :: config_AM_enable
-      character (len=StrKIND), pointer :: config_AM_compute_interval, config_AM_output_stream
+      character (len=StrKIND), pointer :: config_AM_compute_interval, config_AM_output_stream, config_start_time
       integer :: nameLength
       type (mpas_pool_iterator_type) :: poolItr
 
@@ -432,15 +432,24 @@ contains
                end if
             end if
             
+            if ( config_AM_compute_interval == 'output_interval' .and. config_AM_output_stream == 'none') then
+               call mpas_dmpar_global_abort('ERROR: Analysis member as compute_interval of ''output_interval'' without an output stream.')
+            end if
 
-            if ( config_AM_compute_interval /= 'output_interval' .and. config_AM_output_stream /= 'none') then
+            if ( config_AM_compute_interval /= 'output_interval' ) then
                alarmName = poolItr % memberName(1:nameLength) // computeAlarmSuffix
                call mpas_set_timeInterval(alarmTimeStep, timeString=config_AM_compute_interval, ierr=err_tmp)
-               call MPAS_stream_mgr_get_property(domain % streamManager, config_AM_output_stream, MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
-               call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
+               if ( config_AM_output_stream /= 'none' ) then
+                  call MPAS_stream_mgr_get_property(domain % streamManager, config_AM_output_stream, MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
+                  call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
+               else
+                  call mpas_pool_get_config(domain % configs, 'config_start_time', config_start_time)
+                  call mpas_set_time(referenceTime, dateTimeString=config_start_time, ierr=err_tmp)
+               end if
                call mpas_add_clock_alarm(domain % clock, alarmName, referenceTime, alarmTimeStep, ierr=err_tmp)
                call mpas_reset_clock_alarm(domain % clock, alarmName, ierr=err_tmp)
             end if
+
             call mpas_timer_stop(timerName)
          end if
       end do
