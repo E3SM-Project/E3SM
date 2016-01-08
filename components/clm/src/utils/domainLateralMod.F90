@@ -12,6 +12,7 @@ module domainLateralMod
   ! - PETSc-based framework to exchange data across processors.
   !
   ! !USES:
+  use shr_log_mod , only : errMsg => shr_log_errMsg
   use shr_kind_mod, only : r8 => shr_kind_r8
   use shr_sys_mod , only : shr_sys_abort
   use spmdMod     , only : masterproc
@@ -88,6 +89,9 @@ module domainLateralMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public domainlateral_init          ! allocates/nans domain types
+  public create_ugdm
+  public destroy_ugdm
+  public ScatterDataG2L
   !
   !EOP
   !------------------------------------------------------------------------------
@@ -656,6 +660,113 @@ contains
 
   end subroutine create_ugdm
 
+
+  !------------------------------------------------------------------------------
+  subroutine destroy_ugdm(ugdm)
+    !
+    ! !DESCRIPTION:
+    ! This subroutine cleans up an object to manage data for an unstructured
+    ! grid.
+    !
+    implicit none
+    !
+    ! !ARGUMENTS:
+    type(ugdm_type), pointer  :: ugdm                !
+    !
+    ! !LOCAL VARIABLES:
+    PetscErrorCode            :: ierr                ! get error code from PETSc
+
+    if (.not.associated(ugdm)) return
+
+     call ISDestroy(ugdm%is_ghosted_lorder, ierr); CHKERRQ(ierr)
+     call ISDestroy(ugdm%is_ghosted_porder, ierr); CHKERRQ(ierr)
+     call ISDestroy(ugdm%is_local_lorder  , ierr); CHKERRQ(ierr)
+     call ISDestroy(ugdm%is_local_porder  , ierr); CHKERRQ(ierr)
+     call ISDestroy(ugdm%is_local_norder  , ierr); CHKERRQ(ierr)
+
+     call VecScatterDestroy(ugdm%scatter_l2g, ierr); CHKERRQ(ierr)
+     call VecScatterDestroy(ugdm%scatter_g2l, ierr); CHKERRQ(ierr)
+     call VecScatterDestroy(ugdm%scatter_l2l, ierr); CHKERRQ(ierr)
+     call VecScatterDestroy(ugdm%scatter_g2n, ierr); CHKERRQ(ierr)
+     call VecScatterDestroy(ugdm%scatter_n2g, ierr); CHKERRQ(ierr)
+
+     call ISLocalToGlobalMappingDestroy(ugdm%mapping_ltog, ierr); CHKERRQ(ierr)
+
+     call VecDestroy(ugdm%global_vec, ierr); CHKERRQ(ierr)
+     call VecDestroy(ugdm%local_vec , ierr); CHKERRQ(ierr)
+
+     nullify(ugdm)
+
+   end subroutine destroy_ugdm
+
+  !------------------------------------------------------------------------
+  subroutine ScatterDataG2L(nblocks, ndata_send, data_send, ndata_recv, data_recv)
+    !
+    ! !DESCRIPTION:
+    ! Scatters data from global to local PETSc order.
+    !
+    implicit none
+    !
+#include "finclude/petscsys.h"
+#include "finclude/petscvec.h"
+#include "finclude/petscvec.h90"
+#include "finclude/petscmat.h"
+#include "finclude/petscmat.h90"
+#include "finclude/petscdm.h"
+#include "finclude/petscdm.h90"
+#include "finclude/petscis.h"
+#include "finclude/petscis.h90"
+    !
+    ! !ARGUMENTS:
+    integer , intent(in )          :: nblocks
+    integer , intent(in )          :: ndata_send
+    real(r8), intent(in ), pointer :: data_send(:)
+    integer , intent(in )          :: ndata_recv
+    real(r8), intent(out), pointer :: data_recv(:)
+    !
+    ! !LOCAL VARIABLES:
+    type(ugdm_type), pointer       :: dm
+    PetscReal      , pointer       :: real_ptr(:)                   ! temporary
+    PetscErrorCode                 :: ierr                          ! get error code from PETSc
+    PetscInt                       :: size_send, size_recv
+
+    ! Create DM
+    allocate(dm)
+
+    call create_ugdm(ldomain_lateral%ugrid, dm, nblocks)
+
+    ! Check the size of the data to be sent
+    call VecGetLocalSize(dm%global_vec, size_send, ierr); CHKERRQ(ierr);
+    if (size_send /= ndata_send) then
+       call endrun(msg="ERROR size_send /= ndata_send "//errmsg(__FILE__, __LINE__))
+    endif
+
+    ! Check the size of the data to be received
+    call VecGetLocalSize(dm%local_vec, size_recv, ierr); CHKERRQ(ierr);
+    if (size_recv /= ndata_recv) then
+       call endrun(msg="ERROR size_recv /= ndata_recv "//errmsg(__FILE__, __LINE__))
+    endif
+
+    ! Copy the data into a global PETSc Vector
+    call VecGetArrayF90(dm%global_vec, real_ptr, ierr); CHKERRQ(ierr);
+    real_ptr(1:size_send) = data_send(1:size_send)
+    call VecRestoreArrayF90(dm%global_vec, real_ptr, ierr); CHKERRQ(ierr);
+
+    ! Scatter: Global-to-Local
+    call VecScatterBegin(dm%scatter_g2l, dm%global_vec, dm%local_vec, INSERT_VALUES, SCATTER_FORWARD, ierr);
+    CHKERRQ(ierr);
+    call VecScatterEnd(dm%scatter_g2l, dm%global_vec, dm%local_vec, INSERT_VALUES, SCATTER_FORWARD, ierr);
+    CHKERRQ(ierr);
+
+    ! Copy the data from a local PETSc Vector
+    call VecGetArrayF90(dm%local_vec, real_ptr, ierr); CHKERRQ(ierr)
+    data_recv(1:size_recv) = real_ptr(1:size_recv)
+    call VecRestoreArrayF90(dm%local_vec, real_ptr, ierr); CHKERRQ(ierr);
+
+    ! Clean up
+    call destroy_ugdm(dm)
+
+  end subroutine ScatterDataG2L
 
 #else
 
