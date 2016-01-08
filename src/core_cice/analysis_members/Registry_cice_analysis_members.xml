@@ -6,5 +6,8 @@
 #include "Registry_cice_geographical_vectors.xml"
 #include "Registry_cice_load_balance.xml"
 #include "Registry_cice_maximum_ice_presence.xml"
+#include "Registry_cice_miscellaneous.xml"
+#include "Registry_cice_area_variables.xml"
+#include "Registry_cice_pond_diagnostics.xml"
 #include "Registry_cice_ice_present.xml"
 #include "Registry_cice_time_series_stats.xml"

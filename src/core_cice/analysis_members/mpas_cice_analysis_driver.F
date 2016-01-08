@@ -33,6 +33,9 @@ module cice_analysis_driver
    use cice_geographical_vectors
    use cice_load_balance
    use cice_maximum_ice_presence
+   use cice_miscellaneous
+   use cice_area_variables
+   use cice_pond_diagnostics
    use cice_ice_present
    use cice_time_series_stats
 !   use cice_TEMP_LATE
@@ -147,6 +150,9 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'geographicalVectors', 1)
       call mpas_pool_add_config(analysisMemberList, 'loadBalance', 1)
       call mpas_pool_add_config(analysisMemberList, 'maximumIcePresence', 1)
+      call mpas_pool_add_config(analysisMemberList, 'miscellaneous', 1)
+      call mpas_pool_add_config(analysisMemberList, 'areaVariables', 1)
+      call mpas_pool_add_config(analysisMemberList, 'pondDiagnostics', 1)
       call mpas_pool_add_config(analysisMemberList, 'icePresent', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsDaily', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsMonthly', 1)
@@ -376,7 +382,7 @@ contains
 
       character (len=StrKIND) :: configName, alarmName, streamName, timerName
       logical, pointer :: config_AM_enable
-      character (len=StrKIND), pointer :: config_AM_compute_interval, config_AM_output_stream
+      character (len=StrKIND), pointer :: config_AM_compute_interval, config_AM_output_stream, config_start_time
       integer :: nameLength
       type (mpas_pool_iterator_type) :: poolItr
 
@@ -429,11 +435,20 @@ contains
             end if
             
 
-            if ( config_AM_compute_interval /= 'output_interval' .and. config_AM_output_stream /= 'none') then
+            if ( config_AM_compute_interval == 'output_interval' .and. config_AM_output_stream == 'none') then
+               call mpas_dmpar_global_abort('ERROR: Analysis member as compute_interval of ''output_interval'' without an output stream.')
+            end if
+
+            if ( config_AM_compute_interval /= 'output_interval') then
                alarmName = poolItr % memberName(1:nameLength) // computeAlarmSuffix
                call mpas_set_timeInterval(alarmTimeStep, timeString=config_AM_compute_interval, ierr=err_tmp)
-               call MPAS_stream_mgr_get_property(domain % streamManager, config_AM_output_stream, MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
-               call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
+               if ( config_AM_output_stream /= 'none' ) then
+                  call MPAS_stream_mgr_get_property(domain % streamManager, config_AM_output_stream, MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
+                  call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
+               else
+                  call mpas_pool_get_config(domain % configs, 'config_start_time', config_start_time)
+                  call mpas_set_time(referenceTime, dateTimeString=config_start_time, ierr=err_tmp)
+               end if
                call mpas_add_clock_alarm(domain % clock, alarmName, referenceTime, alarmTimeStep, ierr=err_tmp)
                call mpas_reset_clock_alarm(domain % clock, alarmName, ierr=err_tmp)
             end if
@@ -997,6 +1012,12 @@ contains
          call cice_bootstrap_load_balance(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'maximumIcePresence' ) then
          call cice_bootstrap_maximum_ice_presence(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'miscellaneous' ) then
+         call cice_bootstrap_miscellaneous(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'areaVariables' ) then
+         call cice_bootstrap_area_variables(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'pondDiagnostics' ) then
+         call cice_bootstrap_pond_diagnostics(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_bootstrap_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
@@ -1053,6 +1074,12 @@ contains
          call cice_init_load_balance(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'maximumIcePresence' ) then
          call cice_init_maximum_ice_presence(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'miscellaneous' ) then
+         call cice_init_miscellaneous(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'areaVariables' ) then
+         call cice_init_area_variables(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'pondDiagnostics' ) then
+         call cice_init_pond_diagnostics(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_init_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
@@ -1110,6 +1137,12 @@ contains
          call cice_precompute_load_balance(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'maximumIcePresence' ) then
          call cice_precompute_maximum_ice_presence(domain, '', timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'miscellaneous' ) then
+         call cice_precompute_miscellaneous(domain, '', timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'areaVariables' ) then
+         call cice_precompute_area_variables(domain, '', timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'pondDiagnostics' ) then
+         call cice_precompute_pond_diagnostics(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_precompute_ice_present(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
@@ -1167,6 +1200,12 @@ contains
          call cice_compute_load_balance(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'maximumIcePresence' ) then
          call cice_compute_maximum_ice_presence(domain, '', timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'miscellaneous' ) then
+         call cice_compute_miscellaneous(domain, '', timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'areaVariables' ) then
+         call cice_compute_area_variables(domain, '', timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'pondDiagnostics' ) then
+         call cice_compute_pond_diagnostics(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_compute_ice_present(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
@@ -1223,6 +1262,12 @@ contains
          call cice_restart_load_balance(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'maximumIcePresence' ) then
          call cice_restart_maximum_ice_presence(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'miscellaneous' ) then
+         call cice_restart_miscellaneous(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'areaVariables' ) then
+         call cice_restart_area_variables(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'pondDiagnostics' ) then
+         call cice_restart_pond_diagnostics(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_restart_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
@@ -1279,6 +1324,12 @@ contains
          call cice_finalize_load_balance(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'maximumIcePresence' ) then
          call cice_finalize_maximum_ice_presence(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'miscellaneous' ) then
+         call cice_finalize_miscellaneous(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'areaVariables' ) then
+         call cice_finalize_area_variables(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'pondDiagnostics' ) then
+         call cice_finalize_pond_diagnostics(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_finalize_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
