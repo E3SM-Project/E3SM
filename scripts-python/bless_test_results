@@ -10,6 +10,7 @@ Be aware that restart test will overwrite the original namelist files
 with versions of the files that you should not bless.
 """
 
+import add_util_path
 import acme_util
 acme_util.check_minimum_python_version(2, 7)
 

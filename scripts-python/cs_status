@@ -5,6 +5,7 @@ List test results based on TestStatus files. Returns True if
 no errors occured (not based on test statuses).
 """
 
+import add_util_path
 import acme_util
 acme_util.check_minimum_python_version(2, 7)
 import wait_for_tests

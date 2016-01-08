@@ -7,6 +7,7 @@ wait_for_tests that handles cleanup of old test results and
 ensures that the batch system is left in a clean state.
 """
 
+import add_util_path
 import acme_util
 acme_util.check_minimum_python_version(2, 7)
 import wait_for_tests

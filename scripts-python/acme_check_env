@@ -8,6 +8,7 @@ Be sure to source your env_mach_specific file before running this check.
 
 import sys, os
 
+import add_util_path
 import acme_util
 acme_util.check_minimum_python_version(2, 7)
 from acme_util import run_cmd

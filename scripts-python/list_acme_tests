@@ -5,6 +5,7 @@ List acme test suites. Can be used to show what's being tested. Can just
 list tested grids, compsets, etc.
 """
 
+import add_util_path
 import acme_util
 from acme_util import expect
 acme_util.check_minimum_python_version(2, 7)

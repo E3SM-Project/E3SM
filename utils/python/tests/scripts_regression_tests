@@ -2,10 +2,12 @@
 
 import unittest, sys, os, tempfile, shutil, re, threading, time, signal, glob, stat, traceback
 
-SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(SCRIPT_DIR)
+LIB_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(LIB_DIR)
 from acme_util import run_cmd
 import acme_util, update_acme_tests, create_test_impl, wait_for_tests
+
+SCRIPT_DIR = acme_util.get_acme_scripts_root()
 
 DART_CONFIG = "DartConfiguration.tcl"
 DART_BACKUP = "temp_dart_backup"
@@ -44,7 +46,7 @@ class RunUnitTests(unittest.TestCase):
 
     def test_acme_util_unit_test(self):
         # A little different since this is a library, not an executable
-        stat, output, _ = run_cmd("python -m doctest acme_util.py -v 2>&1", ok_to_fail=True, from_dir=SCRIPT_DIR)
+        stat, output, _ = run_cmd("python -m doctest acme_util.py -v 2>&1", ok_to_fail=True, from_dir=LIB_DIR)
         self.assertEqual(stat, 0, msg=output)
 
 ###############################################################################

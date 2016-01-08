@@ -302,7 +302,7 @@ def get_acme_scripts_location_within_cime():
     """
     From within CIME, return subdirectory where ACME scripts live.
     """
-    return "scripts-acme"
+    return "scripts-python"
 
 ###############################################################################
 def get_cime_location_within_acme():
@@ -311,6 +311,13 @@ def get_cime_location_within_acme():
     From within ACME, return subdirectory where CIME lives.
     """
     return "cime"
+
+###############################################################################
+def get_python_libs_location_with_cime():
+###############################################################################
+    """
+    """
+    return os.path.join("utils", "python")
 
 ###############################################################################
 def get_acme_scripts_location_within_acme():
@@ -329,18 +336,15 @@ def get_cime_root():
     >>> os.path.isdir(os.path.join(get_cime_root(), get_acme_scripts_location_within_cime()))
     True
     """
-    acme_script_absdir = os.path.abspath(os.path.dirname(__file__))
-    assert acme_script_absdir.endswith(get_acme_scripts_location_within_cime())
-    return os.path.normpath(acme_script_absdir[:len(acme_script_absdir)-len(get_acme_scripts_location_within_cime())])
+    acme_script_absdir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+    assert acme_script_absdir.endswith(get_python_libs_location_with_cime()), acme_script_absdir
+    return os.path.normpath(acme_script_absdir[:len(acme_script_absdir)-len(get_python_libs_location_with_cime())])
 
 ###############################################################################
 def get_acme_root():
 ###############################################################################
     """
     Return the absolute path to the root of ACME that contains this script
-
-    >>> os.path.isdir(os.path.join(get_acme_root(), '.git'))
-    True
     """
     cime_absdir = get_cime_root()
     assert cime_absdir.endswith(get_cime_location_within_acme()), cime_absdir
@@ -352,7 +356,15 @@ def get_acme_scripts_root():
     """
     Get absolute path to acme scripts
     """
-    return os.path.abspath(os.path.dirname(__file__))
+    return os.path.join(get_cime_root(), get_acme_scripts_location_within_cime())
+
+###############################################################################
+def get_python_libs_root():
+###############################################################################
+    """
+    Get absolute path to acme scripts
+    """
+    return os.path.join(get_cime_root(), get_python_libs_location_with_cime())
 
 ###############################################################################
 def stop_buffering_output():
@@ -475,7 +487,7 @@ def parse_config_machines():
     if (_MACHINE_INFO is None):
         _MACHINE_INFO = {}
         import xml.etree.ElementTree as ET
-        config_machines_xml = os.path.join(get_cime_root(), "machines-acme", "config_machines.xml")
+        config_machines_xml = os.path.join(get_cime_root(), "cime_config", "acme", "machines", "config_machines.xml")
         tree = ET.parse(config_machines_xml)
         root = tree.getroot()
         expect(root.tag == "config_machines",

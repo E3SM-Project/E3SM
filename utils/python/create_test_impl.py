@@ -216,7 +216,7 @@ class CreateTest(object):
             # Just let every case build it's own
             sharedlibroot = os.path.join(test_dir, "sharedlibroot.%s" % self._test_id)
 
-        create_newcase_cmd = "%s -silent -case %s -res %s -mach %s -compiler %s -compset %s -testname %s -project %s -nosavetiming -sharedlibroot %s" % \
+        create_newcase_cmd = "%s -model acme -silent -case %s -res %s -mach %s -compiler %s -compset %s -testname %s -project %s -nosavetiming -sharedlibroot %s" % \
                               (os.path.join(self._cime_root, "scripts", "create_newcase"),
                                test_dir, grid, machine, compiler, compset, test_case, self._project,
                                sharedlibroot)
@@ -511,8 +511,9 @@ class CreateTest(object):
     def _setup_cs_files(self):
     ###########################################################################
         try:
+            python_libs_root = acme_util.get_python_libs_root()
             acme_scripts_root = acme_util.get_acme_scripts_root()
-            template_file = os.path.join(acme_scripts_root, "cs.status.template")
+            template_file = os.path.join(python_libs_root, "cs.status.template")
             template = open(template_file, "r").read()
             template = template.replace("<PATH>", acme_scripts_root).replace("<TESTID>", self._test_id)
 
@@ -521,7 +522,7 @@ class CreateTest(object):
                 fd.write(template)
             os.chmod(cs_status_file, os.stat(cs_status_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
 
-            template_file = os.path.join(acme_scripts_root, "cs.submit.template")
+            template_file = os.path.join(python_libs_root, "cs.submit.template")
             template = open(template_file, "r").read()
             build_cmd = "./*.test_build" if self._no_build else ":"
             run_cmd = "./*.test" if self._no_batch else "./*.submit"

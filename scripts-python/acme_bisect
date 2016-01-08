@@ -5,6 +5,7 @@ A script to help track down the commit that caused a test to fail. This
 script is intended to be run by git bisect.
 """
 
+import add_util_path
 import acme_util
 acme_util.check_minimum_python_version(2, 7)
 
