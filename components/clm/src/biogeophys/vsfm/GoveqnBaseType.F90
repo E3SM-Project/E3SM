@@ -1,7 +1,6 @@
-#ifdef USE_PETSC_LIB
-
-
 module GoverningEquationBaseType
+
+#ifdef USE_PETSC_LIB
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -502,5 +501,6 @@ contains
 
   end subroutine GoveqnBasePreSolve
 
-end module GoverningEquationBaseType
 #endif
+
+end module GoverningEquationBaseType

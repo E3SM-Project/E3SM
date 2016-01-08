@@ -1,7 +1,7 @@
-#ifdef USE_PETSC_LIB
-
 
 module RichardsMod
+
+#ifdef USE_PETSC_LIB
 
   ! !USES:
   use clm_varctl  , only : iulog
@@ -215,6 +215,6 @@ contains
 
   end subroutine RichardsFlux
 
-end module RichardsMod
-
 #endif
+
+end module RichardsMod

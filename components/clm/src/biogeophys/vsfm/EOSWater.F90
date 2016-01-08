@@ -1,8 +1,7 @@
-#ifdef USE_PETSC_LIB
-
 
 module EOSWaterMod
 
+#ifdef USE_PETSC_LIB
 
   ! !USES:
   use clm_varctl         , only : iulog
@@ -183,5 +182,6 @@ contains
 
   end subroutine Viscosity
 
-end module EOSWaterMod
 #endif
+
+end module EOSWaterMod

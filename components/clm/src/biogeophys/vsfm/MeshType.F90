@@ -1,7 +1,7 @@
-#ifdef USE_PETSC_LIB
-
 
 module MeshType
+
+#ifdef USE_PETSC_LIB
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -437,6 +437,6 @@ contains
 
   end subroutine Clean
 
-end module MeshType
-
 #endif
+
+end module MeshType

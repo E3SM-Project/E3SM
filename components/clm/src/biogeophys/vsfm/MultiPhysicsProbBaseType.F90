@@ -1,7 +1,7 @@
-#ifdef USE_PETSC_LIB
-
 
 module MultiPhysicsProbBaseType
+
+#ifdef USE_PETSC_LIB
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -101,6 +101,6 @@ contains
 
   end subroutine MMPBaseClean
 
-end module MultiPhysicsProbBaseType
-
 #endif
+
+end module MultiPhysicsProbBaseType

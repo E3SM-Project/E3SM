@@ -1,7 +1,7 @@
-#ifdef USE_PETSC_LIB
-
 
 module MultiPhysicsProbConstants
+
+#ifdef USE_PETSC_LIB
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -81,7 +81,7 @@ module MultiPhysicsProbConstants
   PetscReal, parameter, public :: GRAVITY_CONSTANT                 = 9.8068d0      ! [m s^{-2}]
   PetscReal, parameter, public :: FMWH2O                           = 18.01534d0    ! [kg kmol^{-1}]
 
+#endif
+
 
 end module MultiPhysicsProbConstants
-
-#endif

@@ -1,7 +1,8 @@
-#ifdef USE_PETSC_LIB
-
 
 module MultiPhysicsProbVSFM
+
+#ifdef USE_PETSC_LIB
+
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Object for variably saturated flow model
@@ -939,6 +940,6 @@ contains
 
   end subroutine VSFMMPPClean
 
-end module MultiPhysicsProbVSFM
-
 #endif
+
+end module MultiPhysicsProbVSFM

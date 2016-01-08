@@ -1,7 +1,6 @@
-#ifdef USE_PETSC_LIB
-
-
 module ArrayDimThree
+
+#ifdef USE_PETSC_LIB
 
   !
   ! !PUBLIC TYPES:
@@ -15,5 +14,6 @@ module ArrayDimThree
      PetscReal, dimension(3) :: arr
   end type array_dim3_type
 
-end module ArrayDimThree
 #endif
+
+end module ArrayDimThree

@@ -1,7 +1,6 @@
-#ifdef USE_PETSC_LIB
-
-
 module SaturationFunction
+
+#ifdef USE_PETSC_LIB
 
   ! !USES:
   use clm_varctl         , only : iulog
@@ -1193,6 +1192,6 @@ contains
 
   end subroutine SatFunc_Copy
 
+#endif
 
 end module SaturationFunction
-#endif

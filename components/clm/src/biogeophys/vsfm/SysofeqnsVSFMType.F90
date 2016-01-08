@@ -1,7 +1,7 @@
-#ifdef USE_PETSC_LIB
-
 
 module SystemOfEquationsVSFMType
+
+#ifdef USE_PETSC_LIB
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -1133,6 +1133,6 @@ contains
   end subroutine VSFMSGetConditionNames
   !------------------------------------------------------------------------
 
-end module SystemOfEquationsVSFMType
-
 #endif
+
+end module SystemOfEquationsVSFMType

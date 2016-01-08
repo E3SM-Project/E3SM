@@ -1,7 +1,6 @@
-#ifdef USE_PETSC_LIB
-
-
 module ConnectionSetType
+
+#ifdef USE_PETSC_LIB
 
   use ArrayDimThree, only : array_dim3_type
   !
@@ -185,6 +184,6 @@ contains
 
   end subroutine ConnectionSetListClean
 
-end module ConnectionSetType
-
 #endif
+
+end module ConnectionSetType

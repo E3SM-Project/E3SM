@@ -1,7 +1,7 @@
-#ifdef USE_PETSC_LIB
-
 
 module SystemOfEquationsBasePointerType
+
+#ifdef USE_PETSC_LIB
 
   ! !USES:
   use SystemOfEquationsBaseType    , only : sysofeqns_base_type
@@ -156,5 +156,6 @@ contains
 
   end subroutine SOEComputeOperators
 
-end module SystemOfEquationsBasePointerType
 #endif
+
+end module SystemOfEquationsBasePointerType

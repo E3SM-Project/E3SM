@@ -1,7 +1,7 @@
-#ifdef USE_PETSC_LIB
-
 
 module PorosityFunctionMod
+
+#ifdef USE_PETSC_LIB
 
   ! !USES:
   use clm_varctl         , only : iulog
@@ -193,6 +193,6 @@ contains
 
   end subroutine PorosityFunctionCopy
 
-end module PorosityFunctionMod
-
 #endif
+
+end module PorosityFunctionMod

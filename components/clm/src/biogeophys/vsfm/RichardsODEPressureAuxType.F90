@@ -1,7 +1,6 @@
-#ifdef USE_PETSC_LIB
-
-
 module RichardsODEPressureAuxType
+
+#ifdef USE_PETSC_LIB
 
   ! !USES:
   use clm_varctl          , only : iulog
@@ -281,7 +280,6 @@ contains
 
   end subroutine RichODEPressureAuxVarCompute
 
+#endif
 
 end module RichardsODEPressureAuxType
-
-#endif

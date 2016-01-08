@@ -1,7 +1,6 @@
-#ifdef USE_PETSC_LIB
-
-
 module ConditionType
+
+#ifdef USE_PETSC_LIB
 
   ! !USES:
   use ConnectionSetType  , only : connection_set_type
@@ -230,5 +229,6 @@ contains
 
   end subroutine ConditionDestroy
 
-end module ConditionType
 #endif
+
+end module ConditionType

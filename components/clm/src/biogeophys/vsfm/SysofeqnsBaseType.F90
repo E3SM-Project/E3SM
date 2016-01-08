@@ -1,7 +1,7 @@
-#ifdef USE_PETSC_LIB
-
 
 module SystemOfEquationsBaseType
+
+#ifdef USE_PETSC_LIB
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -790,6 +790,6 @@ contains
 
   end subroutine SOEBaseClean
 
-end module SystemOfEquationsBaseType
-
 #endif
+
+end module SystemOfEquationsBaseType

@@ -1,7 +1,7 @@
-#ifdef USE_PETSC_LIB
-
 
 module SystemOfEquationsVSFMAuxType
+
+#ifdef USE_PETSC_LIB
 
   ! !USES:
   use clm_varctl         , only : iulog
@@ -166,6 +166,6 @@ contains
 
   end subroutine VSFMSOEAuxVarGetValue
 
-end module SystemOfEquationsVSFMAuxType
-
 #endif
+
+end module SystemOfEquationsVSFMAuxType
