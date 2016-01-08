@@ -499,7 +499,7 @@ def generate_driver_scripts(config_file, configs):#{{{
 				case_name = child.attrib['name']
 				case_dict[case_name] = '1'
 
-		for case in case_dict.keys():
+		for case_name in case_dict.keys():
 			script.write('parser.add_argument("--no_%s", dest="no_%s", help="If set, %s case will not be run during execution of this script.", action="store_true")\n'%(case_name, case_name, case_name))
 
 		del case_dict
