@@ -29,6 +29,7 @@ module decompInitMod
   public decompInit_clumps       ! initializes atm grid decomposition into clumps
   public decompInit_glcp         ! initializes g,l,c,p decomp info
   public decompInit_lnd_using_gp ! initialize lnd grid decomposition into clumps and processors using graph partitioning approach
+  public decompInit_ghosts       ! initialize ghost/halo for land grid
   !
   ! !PRIVATE TYPES:
   private
@@ -1593,5 +1594,169 @@ contains
 #endif
 
   end subroutine decompInit_lnd_using_gp
+
+  !------------------------------------------------------------------------------
+  subroutine decompInit_ghosts(glcmask)
+    !
+    ! !DESCRIPTION:
+    ! On each proc, determine the number of following ghost/halo subgrid quantities:
+    !  - landunits,
+    !  - columns,
+    !  - PFTs, and
+    !  - cohorts.
+    !
+    ! !USES:
+    use clm_varctl       , only : lateral_connectivity
+    use subgridMod       , only : subgrid_get_gcellinfo
+#ifdef USE_PETSC_LIB
+    use domainLateralMod  , only : ldomain_lateral, ScatterDataG2L
+#endif
+    !
+    implicit none
+    !
+    ! !ARGUMENTS:
+    integer , pointer, optional  :: glcmask(:)             ! glc mask
+    !
+    ! !LOCAL VARIABLES:
+    integer                      :: begg,endg              ! begin/end indices for grid
+    integer                      :: anumg                  ! lnd num gridcells
+    integer                      :: ln                     ! temporary
+    integer                      :: nblocks                ! block size for PETSc vector
+    integer                      :: ilunits                ! temporary
+    integer                      :: icols                  ! temporary
+    integer                      :: ipfts                  ! temporary
+    integer                      :: icohorts               ! temporary
+    integer                      :: ighost                 ! temporary
+    integer                      :: ighost_beg, ighost_end ! temporary
+    real(r8), pointer            :: data_send(:)
+    real(r8), pointer            :: data_recv(:)
+    integer                      :: ndata_send
+    integer                      :: ndata_recv
+    character(len=32), parameter :: subname = 'decompInit_ghosts'
+
+    if (.not.lateral_connectivity) then
+
+       ! No ghost cells
+       procinfo%ncells_ghost    = 0
+       procinfo%nlunits_ghost   = 0
+       procinfo%ncols_ghost     = 0
+       procinfo%npfts_ghost     = 0
+       procinfo%nCohorts_ghost  = 0
+
+       procinfo%begg_ghost      = 0
+       procinfo%begl_ghost      = 0
+       procinfo%begc_ghost      = 0
+       procinfo%begp_ghost      = 0
+       procinfo%begCohort_ghost = 0
+       procinfo%endg_ghost      = 0
+       procinfo%endl_ghost      = 0
+       procinfo%endc_ghost      = 0
+       procinfo%endp_ghost      = 0
+       procinfo%endCohort_ghost = 0
+
+       ! All = local (as no ghost cells)
+       procinfo%ncells_all      = procinfo%ncells
+       procinfo%nlunits_all     = procinfo%nlunits
+       procinfo%ncols_all       = procinfo%ncols
+       procinfo%npfts_all       = procinfo%npfts
+       procinfo%nCohorts_all    = procinfo%nCohorts
+
+       procinfo%begg_all        = procinfo%begg
+       procinfo%begl_all        = procinfo%begl
+       procinfo%begc_all        = procinfo%begc
+       procinfo%begp_all        = procinfo%begp
+       procinfo%begCohort_all   = procinfo%begCohort
+       procinfo%endg_all        = procinfo%endg
+       procinfo%endl_all        = procinfo%endl
+       procinfo%endc_all        = procinfo%endc
+       procinfo%endp_all        = procinfo%endp
+       procinfo%endCohort_all   = procinfo%endCohort
+
+    else
+
+#ifndef USE_PETSC_LIB
+
+    call endrun(msg='ERROR ' // trim(subname) //': decompInit_ghosts requires '//&
+         'PETSc, but the code was compiled without -DUSE_PETSC_LIB')
+
+#else
+       call get_proc_bounds(begg, endg)
+
+       ! Approach:
+       ! 1) For a global PETSc vector, save the number of subgrid
+       !    quantities for each grid cell.
+       ! 2) Scatter the global PETSc vector to a local PETSc vector
+       ! 3) Finally count the number of subgrid quantities for all
+       !    ghost grid cells in the local PETSc vector
+
+       nblocks = 4 ! lun + col + pft + cohort
+
+       ndata_send = nblocks*ldomain_lateral%ugrid%ngrid_local
+       ndata_recv = nblocks*ldomain_lateral%ugrid%ngrid_ghosted
+
+       allocate(data_send(ndata_send))
+       allocate(data_recv(ndata_recv))
+
+       data_send(:) = 0.d0
+
+       ! Save information about number of subgrid categories for
+       ! local grid cells
+
+       do anumg = begg,endg
+          ln  = anumg
+          if (present(glcmask)) then
+             call subgrid_get_gcellinfo (ln, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+                  ncohorts=icohorts, glcmask=glcmask(ln))
+          else
+             call subgrid_get_gcellinfo (ln, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+                  ncohorts=icohorts )
+          endif
+
+          data_send((anumg-begg)*nblocks + 1) = ilunits
+          data_send((anumg-begg)*nblocks + 2) = icols
+          data_send((anumg-begg)*nblocks + 3) = ipfts
+          data_send((anumg-begg)*nblocks + 4) = icohorts
+
+       enddo
+
+       ! Scatter: Global-to-Local
+       call ScatterDataG2L(nblocks, ndata_send, data_send, ndata_recv, data_recv)
+
+       ! Get number of ghost quantites at all subgrid categories
+       procinfo%ncells_ghost    = ldomain_lateral%ugrid%ngrid_ghost
+       procinfo%nlunits_ghost   = 0
+       procinfo%ncols_ghost     = 0
+       procinfo%npfts_ghost     = 0
+       procinfo%nCohorts_ghost  = 0
+
+       ighost_beg = ldomain_lateral%ugrid%ngrid_local   + 1
+       ighost_end = ldomain_lateral%ugrid%ngrid_ghosted
+
+       do ighost = ighost_beg, ighost_end
+          procinfo%nlunits_ghost  = procinfo%nlunits_ghost  + data_recv((ighost-1)*nblocks + 1)
+          procinfo%ncols_ghost    = procinfo%ncols_ghost    + data_recv((ighost-1)*nblocks + 2)
+          procinfo%npfts_ghost    = procinfo%npfts_ghost    + data_recv((ighost-1)*nblocks + 3)
+          procinfo%ncohorts_ghost = procinfo%ncohorts_ghost + data_recv((ighost-1)*nblocks + 4)
+       enddo
+
+       ! Set 'begin' index for subgrid categories
+       procinfo%begg_all        = procinfo%begg
+       procinfo%begl_all        = procinfo%begl
+       procinfo%begc_all        = procinfo%begc
+       procinfo%begp_all        = procinfo%begp
+       procinfo%begCohort_all   = procinfo%begCohort
+
+       ! Set 'end' index for subgrid categories
+       procinfo%endg_all        = procinfo%endg      + procinfo%ncells_ghost
+       procinfo%endl_all        = procinfo%endl      + procinfo%nlunits_ghost
+       procinfo%endc_all        = procinfo%endc      + procinfo%ncols_ghost
+       procinfo%endp_all        = procinfo%endp      + procinfo%npfts_ghost
+       procinfo%endCohort_all   = procinfo%endCohort + procinfo%nCohorts_ghost
+
+#endif
+
+    endif
+
+  end subroutine decompInit_ghosts
 
 end module decompInitMod

@@ -115,6 +115,7 @@ contains
     integer :: nvalues
 
     ! Check the size of data
+    call NumValuesPerColumn(nvalues)
     if (size(values) /= nvalues) then
        call endrun(msg="ERROR Size of data is incorrect "//errmsg(__FILE__, __LINE__))
     endif
