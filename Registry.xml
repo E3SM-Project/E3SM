@@ -1945,7 +1945,6 @@
 		/>
 		<var name="pressure" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
 			 description="pressure used in the momentum equation"
-			 packages="forwardMode;analysisMode"
 		/>
 		<var name="bottomPressure" type="real" dimensions="nCells Time" units="N m^{-2}"
 			 description="pressure at the sea floor"
