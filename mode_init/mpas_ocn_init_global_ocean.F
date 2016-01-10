@@ -135,32 +135,33 @@ contains
       write(stderrUnit,*) 'Cleaning up topography IC fields'
       call ocn_init_global_ocean_destroy_topo_fields()
 
-      if(trim(config_sw_absorption_type) == 'ohlmann00') then
-
-      write(stderrUnit,*) 'Reading penetrating shortwave lat/lon data'
-      call ocn_init_setup_global_ocean_read_swData_lat_lon(domain,iErr)
-      write(stderrUnit,*) 'Interpolating penetrating shortwave data'
-      call ocn_init_setup_global_ocean_interpolate_swData(domain,iErr)
-      write(stderrUnit,*) 'Cleaning penetrating shortwave data'
-      call ocn_init_global_ocean_destroy_swData_fields()
-
-      endif
-
-      if (config_global_ocean_cull_inland_seas) then
-         write(stderrUnit,*) 'Removing inland seas.'
-         call ocn_init_setup_global_ocean_cull_inland_seas(domain, iErr)
-      end if
-
       if (config_global_ocean_depress_by_land_ice) then
          write(stderrUnit,*) 'Reading land ice topography data.'
          call ocn_init_setup_global_ocean_read_land_ice_topography(domain, iErr)
          write(stderrUnit,*) 'Interpolating land ice topography data.'
          call ocn_init_setup_global_ocean_interpolate_land_ice_topography(domain, iErr)
-         write(stderrUnit,*) 'Recalculating ocean layer topography due to land ice depression'
-         call ocn_init_global_ocean_depress_ice_sheet(domain, iErr)
-         write(stderrUnit,*) 'Cleaning up land ice topography IC fields'
-         call ocn_init_global_ocean_destroy_land_ice_topography_fields()
       end if
+
+      write(stderrUnit,*) 'Initializing vertical coordinate with ssh = 0.'
+      ! compute the vertical grid (layerThickness, restingThickness, maxLevelCell, zMid) 
+      ! based on bottomDepth and refBottomDepth (and refSSH if land ice is present)
+      call ocn_init_ssh_and_ssp_vertical_grid(domain, iErr)
+           
+      if(iErr .ne. 0) then
+        write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_ssp_vertical_grid failed.'
+        call mpas_dmpar_finalize(domain % dminfo)
+      end if
+
+      if(trim(config_sw_absorption_type) == 'ohlmann00') then
+
+         write(stderrUnit,*) 'Reading penetrating shortwave lat/lon data'
+         call ocn_init_setup_global_ocean_read_swData_lat_lon(domain,iErr)
+         write(stderrUnit,*) 'Interpolating penetrating shortwave data'
+         call ocn_init_setup_global_ocean_interpolate_swData(domain,iErr)
+         write(stderrUnit,*) 'Cleaning penetrating shortwave data'
+         call ocn_init_global_ocean_destroy_swData_fields()
+      
+      endif
 
       write(stderrUnit,*) 'Reading temperature IC.'
       call ocn_init_setup_global_ocean_read_temperature(domain, iErr)
@@ -170,8 +171,6 @@ contains
       call ocn_init_setup_global_ocean_read_tracer_lat_lon(domain, iErr)
       write(stderrUnit,*) 'Interpolating tracers'
       call ocn_init_setup_global_ocean_interpolate_tracers(domain, iErr)
-      write(stderrUnit,*) 'Cleaning up tracer IC fields'
-      call ocn_init_global_ocean_destroy_tracer_fields()
 
       write(stderrUnit,*) 'Reading windstress IC.'
       call ocn_init_setup_global_ocean_read_windstress(domain, iErr)
@@ -179,6 +178,36 @@ contains
       call ocn_init_setup_global_ocean_interpolate_windstress(domain, iErr)
       write(stderrUnit,*) 'Destroying windstress fields'
       call ocn_init_global_ocean_destroy_windstress_fields()
+
+      if (config_global_ocean_depress_by_land_ice) then
+         write(stderrUnit,*) 'Recalculating ocean layer topography due to land ice depression'
+         ! compute or update the SSP (or possibly SSH), also computing density and bottomPressure along the way
+         ! If this is the initial guess, the vertical grid and activeTracers may also be recomputed based on SSH
+         call ocn_init_ssh_and_ssp_balance(domain, iErr)
+
+         if(iErr .ne. 0) then
+           write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_ssp_balance failed.'
+           call mpas_dmpar_finalize(domain % dminfo)
+         end if        
+
+         write(stderrUnit,*) 'Cleaning up land ice topography IC fields'
+         call ocn_init_global_ocean_destroy_land_ice_topography_fields()
+      end if
+
+      write(stderrUnit,*) 'Copying restoring fields'
+      ! this occurs after ocn_init_ssh_and_ssp_balance because activeTracers may have been remapped
+      ! to a new vertical coordinate
+      call ocn_init_setup_global_ocean_interpolate_restoring(domain, iErr)
+      write(stderrUnit,*) 'Cleaning up tracer IC fields'
+      call ocn_init_global_ocean_destroy_tracer_fields()
+
+      write(stderrUnit,*) 'Compute Haney number'
+      call ocn_compute_Haney_number(domain, iErr)
+      if(iErr .ne. 0) then
+        write(stderrUnit,*) 'ERROR: ocn_compute_Haney_number failed.'
+        call mpas_dmpar_finalize(domain % dminfo)
+      end if        
+
 
       if (config_global_ocean_cull_inland_seas) then
          write(stderrUnit,*) 'Removing inland seas.'
@@ -477,7 +506,7 @@ contains
 
        real (kind=RKIND), dimension(:), pointer :: latCell, lonCell, bottomDepth, bottomDepthObserved, &
             refBottomDepth, refLayerThickness, refZMid, oceanFracObserved
-       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness, zMid
+       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
 
        integer, pointer :: nCells, nCellsSolve, nVertLevels
 
@@ -637,41 +666,19 @@ contains
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
           call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
           call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
 
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
           call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
-          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-          call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
 
-          call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
           call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
           call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
-
-          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
-          call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
 
           ! Compute refLayerThickness and refZMid
           call ocn_compute_layerThickness_zMid_from_bottomDepth(refLayerThickness,refZMid, &
                refBottomDepth,refBottomDepth(nVertLevels), &
                nVertLevels,nVertLevels,iErr)
-
-          do iCell = 1, nCells
-             call ocn_alter_bottomDepth_for_pbcs(bottomDepth(iCell), refBottomDepth, maxLevelCell(iCell), iErr)
-
-             ! Compute LayerThickness and zMid
-             call ocn_compute_layerThickness_zMid_from_bottomDepth(layerThickness(:,iCell),zMid(:,iCell), &
-                  refBottomDepth,bottomDepth(iCell), &
-                  maxLevelCell(iCell),nVertLevels,iErr)
-
-             ! Compute restingThickness
-             restingThickness(:, iCell) = layerThickness(:, iCell)
-          end do
-
-          call ocn_compute_Haney_number(domain % dminfo, meshPool, diagnosticsPool, iErr)
 
           block_ptr => block_ptr % next
        end do
@@ -706,7 +713,7 @@ contains
                                                    bottomDepth
 
        integer, pointer :: nCells
-       integer, dimension(:), pointer :: maxLevelCell
+       integer, dimension(:), pointer :: maxLevelCell, modifySSHMask
        real (kind=RKIND), pointer :: config_land_ice_flux_rho_ice
        character (len=StrKIND), pointer :: config_global_ocean_topography_method, config_iterative_init_variable
 
@@ -740,6 +747,7 @@ contains
           call mpas_pool_get_array(landIceInitPool, 'landIceFracObserved', landIceFracObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceGroundedFracObserved', landIceGroundedFracObserved)
           call mpas_pool_get_array(diagnosticsPool, 'refSSH', refSSH)
+          call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
           call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
           call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
 
@@ -794,6 +802,7 @@ contains
 
           refSSH(:) = 0.0_RKIND
           landIceFraction(:) = 0.0_RKIND
+          modifySSHMask(:) = 0
            do iCell = 1, nCells
              if(landIceGroundedFracObserved(iCell) >= groundedThreshold) then
                 ! Land ice is grounded.  Remove the full column from the ocean.
@@ -814,6 +823,7 @@ contains
              ! nothing to do here if the cell is open ocean or land
              if (landIceFraction(iCell) <= 0.0_RKIND .or. maxLevelCell(iCell) <= 0) cycle
   
+             modifySSHMask(iCell) = 1
              if(config_iterative_init_variable == 'ssh') then
                 ! we compute the SSP first and find out the SSH
                 seaSurfacePressure(iCell) = config_land_ice_flux_rho_ice &
@@ -1430,11 +1440,11 @@ contains
 !  routine ocn_init_setup_global_ocean_interoplate_tracers
 !
 !> \brief   Interpolate tracer quantities to MPAS grid
-!> \author  Doug Jacobsen
+!> \author  Doug Jacobsen, Xylar Asay-Davis
 !> \date    03/05/2014
 !> \details
 !>  This routine interpolates the temperature/salinity data read in from the
-!>  initial condition file to the MPAS grid. Currently it uses a nearest neighbor interpolation.
+!>  initial condition file to the MPAS grid.
 !
 !-----------------------------------------------------------------------
 
@@ -1444,7 +1454,6 @@ contains
 
        type (block_type), pointer :: block_ptr
        type (mpas_pool_type), pointer :: meshPool, statePool, scratchPool, tracersPool, forcingPool
-       type (mpas_pool_type), pointer :: tracersSurfaceRestoringFieldsPool, tracersInteriorRestoringFieldsPool
 
        real (kind=RKIND) :: counter
        real (kind=RKIND) :: x, x1, x2, y, y1, y2, coef, coef11, coef12, coef21, coef22
@@ -1463,13 +1472,9 @@ contains
        real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
        real (kind=RKIND), dimension(:, :), pointer :: smoothedTemperature, smoothedSalinity
        real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
-       real (kind=RKIND), dimension(:, :), pointer ::    activeTracersPistonVelocity, activeTracersSurfaceRestoringValue
-       real (kind=RKIND), dimension(:, :, :), pointer :: activeTracersInteriorRestoringValue, activeTracersInteriorRestoringRate
 
        character (len=StrKIND), pointer :: config_global_ocean_tracer_method
        integer, pointer ::  config_global_ocean_smooth_TS_iterations
-       real (kind=RKIND), pointer :: config_global_ocean_piston_velocity
-       real (kind=RKIND), pointer :: config_global_ocean_interior_restore_rate
 
        ! These variables needed to interpolate tracers for partial bottom cells.
        ! Might remove once we interpolate to an arbitrary vertical grid.
@@ -1482,21 +1487,16 @@ contains
 
        iErr = 0
 
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_method', config_global_ocean_tracer_method)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_method', &
+                                 config_global_ocean_tracer_method)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_smooth_TS_iterations', &
                                  config_global_ocean_smooth_TS_iterations)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_piston_velocity', config_global_ocean_piston_velocity)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_interior_restore_rate', &
-                                 config_global_ocean_interior_restore_rate)
 
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
           call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
           call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
           call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-          call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
-          call mpas_pool_get_subpool(forcingPool, 'tracersInteriorRestoringFields', tracersInteriorRestoringFieldsPool)
 
           call mpas_pool_get_dimension(tracersPool, 'index_temperature', idxTemperature)
           call mpas_pool_get_dimension(tracersPool, 'index_salinity', idxSalinity)
@@ -1577,9 +1577,6 @@ contains
                 call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
                 call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
                 call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-                call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-                call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
-                call mpas_pool_get_subpool(forcingPool, 'tracersInteriorRestoringFields', tracersInteriorRestoringFieldsPool)
 
                 call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
                 call mpas_pool_get_dimension(tracersPool, 'index_temperature', idxTemperature)
@@ -1705,11 +1702,46 @@ contains
        endif
        ! end: Interpolate tracers for partial bottom cells.
 
+    end subroutine ocn_init_setup_global_ocean_interpolate_tracers!}}}
+
+!***********************************************************************
+!
+!  routine ocn_init_setup_global_ocean_interoplate_restoring
+!
+!> \brief   Copy tracer quantities for restoring
+!> \author  Doug Jacobsen, Xylar Asay-Davis
+!> \date    03/05/2014
+!> \details
+!>  This routine copies temperature/salinity into surface and interior restoring fields.
+!
+!-----------------------------------------------------------------------
+
+    subroutine ocn_init_setup_global_ocean_interpolate_restoring(domain, iErr)!{{{
+       type (domain_type), intent(inout) :: domain
+       integer, intent(out) :: iErr
+
+       type (block_type), pointer :: block_ptr
+       type (mpas_pool_type), pointer :: meshPool, statePool, tracersPool, forcingPool
+       type (mpas_pool_type), pointer :: tracersSurfaceRestoringFieldsPool, tracersInteriorRestoringFieldsPool
+
+       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
+       real (kind=RKIND), dimension(:, :), pointer ::    activeTracersPistonVelocity, activeTracersSurfaceRestoringValue
+       real (kind=RKIND), dimension(:, :, :), pointer :: activeTracersInteriorRestoringValue, activeTracersInteriorRestoringRate
+
+       character (len=StrKIND), pointer :: config_global_ocean_tracer_method
+       integer, pointer ::  config_global_ocean_smooth_TS_iterations
+       real (kind=RKIND), pointer :: config_global_ocean_piston_velocity
+       real (kind=RKIND), pointer :: config_global_ocean_interior_restore_rate
+
+       iErr = 0
+
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_piston_velocity', config_global_ocean_piston_velocity)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_interior_restore_rate', config_global_ocean_interior_restore_rate)
+
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
           call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
           call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
           call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
 
           call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
@@ -1748,14 +1780,14 @@ contains
        end do
 
 
-    end subroutine ocn_init_setup_global_ocean_interpolate_tracers!}}}
+    end subroutine ocn_init_setup_global_ocean_interpolate_restoring!}}}
 
 !***********************************************************************
 !
 !  routine ocn_init_setup_global_ocean_interoplate_swData
 !
 !> \brief   Interpolate penetrating shortwave radiation quantities to MPAS grid
-!> \author  Luke Van Roekel
+!> \author  Luke Van Roekel, Xylar Asay-Davis
 !> \date    11/11/2015
 !> \details
 !>  This routine interpolates the penetrating swData data read in from the
@@ -2476,26 +2508,6 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
    !--------------------------------------------------------------------
 
    end subroutine ocn_init_validate_global_ocean!}}}
-
-!***********************************************************************
-!
-!  routine ocn_init_global_ocean_depress_ice_sheet
-!
-!> \brief   Recalculate layer thickness due to ice sheet depression
-!> \author  Mark Petersen
-!> \date    09/23/2015
-!> \details
-!>  This routine recalculates the ocean layer thickness to allow for overlying
-!>  ice sheet/ice shelf pressure
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_init_global_ocean_depress_ice_sheet(domain, iErr)!{{{
-     type (domain_type), intent(inout) :: domain
-     integer, intent(out) :: iErr
-     iErr = 0
-
-   end subroutine ocn_init_global_ocean_depress_ice_sheet
 
 !***********************************************************************
 
