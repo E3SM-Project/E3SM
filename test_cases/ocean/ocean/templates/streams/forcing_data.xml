@@ -15,6 +15,7 @@
 				<member name="windStressMeridional" type="var"/>
 				<member name="landIceFraction" type="var"/>
 				<member name="landIceSurfaceTemperature" type="var"/>
+				<member name="seaSurfacePressure" type="var"/>
 				<member name="latentHeatFlux" type="var"/>
 				<member name="sensibleHeatFlux" type="var"/>
 				<member name="shortWaveHeatFlux" type="var"/>
