@@ -282,22 +282,13 @@
 		<var name="landIceDraftObserved" type="real" dimensions="nCells" units="m"
 			 description="z-coordinate of land ice bottom, read in from data file"
 		/>
-		<var name="landIceDraft" type="real" dimensions="nCells" units="m"
-			 description="z-coordinate of land ice bottom, after manipulation for ocean initial condition."
-		/>
 		<var name="landIceThkObserved" type="real" dimensions="nCells" units="m"
 			 description="Thickness of land ice, read in from data file"
-		/>
-		<var name="landIceThk" type="real" dimensions="nCells" units="m"
-			 description="Thickness of land ice, after manipulation for ocean initial condition."
 		/>
 		<var name="landIceFracObserved" type="real" dimensions="nCells" units="unitless"
 			 description="Fraction of land ice, read in from data file"
 		/>
 		<var name="landIceGroundedFracObserved" type="real" dimensions="nCells" units="unitless"
 			 description="Fraction of grounded land ice, read in from data file"
-		/>
-		<var name="totalLayerThickness" type="real" dimensions="nCells" units="m"
-			 description="Thickness of full ocean column"
 		/>
 	</var_struct>
