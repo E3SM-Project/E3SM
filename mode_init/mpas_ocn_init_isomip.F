@@ -406,7 +406,7 @@ contains
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
 
-        call ocn_compute_Haney_number(domain % dminfo, meshPool, diagnosticsPool, iErr)
+        call ocn_compute_Haney_number(domain, iErr)
 
         if(iErr .ne. 0) then
            write(stderrUnit,*) 'ERROR: ocn_compute_Haney_number failed.'
