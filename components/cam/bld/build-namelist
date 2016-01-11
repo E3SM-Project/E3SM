@@ -1050,6 +1050,7 @@ if ($aer_model eq 'mam' ) {
   my $aero_modes = '3mode';
   if ($chem =~ /_mam4/) {$aero_modes = '4mode';}
   if ($chem =~ /_mam4_mom/) {$aero_modes = '4mode_mom';}
+  if ($chem =~ /_mam4_resus_mom/) {$aero_modes = '4mode_mom';}
   if ($chem =~ /_mam7/) {$aero_modes = '7mode';}
   if ($chem =~ /_mam9/) {$aero_modes = '9mode';}
 

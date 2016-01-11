@@ -701,9 +701,6 @@
 <rsf_file                     >atm/waccm/phot/RSF_GT200nm_v3.0_c080811.nc</rsf_file>
 <rsf_file     chem="trop_mam3">atm/waccm/phot/RSF_GT200nm_v3.0_c080416.nc</rsf_file>
 <rsf_file     chem="trop_mam4">atm/waccm/phot/RSF_GT200nm_v3.0_c080416.nc</rsf_file>
-<rsf_file     chem="trop_mam4_resus">atm/waccm/phot/RSF_GT200nm_v3.0_c080416.nc</rsf_file>
-<rsf_file     chem="trop_mam4_resus_mom">atm/waccm/phot/RSF_GT200nm_v3.0_c080416.nc</rsf_file>
-<rsf_file     chem="trop_mam4_mom">atm/waccm/phot/RSF_GT200nm_v3.0_c080416.nc</rsf_file>
 <exo_coldens_file>atm/cam/chem/trop_mozart/phot/exo_coldens.nc</exo_coldens_file>
 
 <!-- WACCM Upper boundary conditions -->
