@@ -654,6 +654,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use prescribed_ozone,   only: prescribed_ozone_init
     use prescribed_ghg,     only: prescribed_ghg_init
     use prescribed_aero,    only: prescribed_aero_init
+    use seasalt_model,      only: init_ocean_data, has_mam_mom
     use aerodep_flx,        only: aerodep_flx_init
     use aircraft_emit,      only: aircraft_emit_init
     use prescribed_volcaero,only: prescribed_volcaero_init
@@ -779,6 +780,11 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call aerodep_flx_init()
     call aircraft_emit_init()
     call prescribed_volcaero_init()
+
+    ! Initialize ocean data
+    if (has_mam_mom) then
+       call init_ocean_data()
+    end if
 
     ! co2 cycle            
     if (co2_transport()) then
@@ -2542,6 +2548,7 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use prescribed_volcaero, only: prescribed_volcaero_adv
   use nudging,             only: Nudge_Model,nudging_timestep_init
 
+  use seasalt_model,       only: advance_ocean_data, has_mam_mom
 
   implicit none
 
@@ -2567,6 +2574,10 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   call prescribed_aero_adv(phys_state, pbuf2d)
   call aircraft_emit_adv(phys_state, pbuf2d)
   call prescribed_volcaero_adv(phys_state, pbuf2d)
+
+  if (has_mam_mom) then
+     call advance_ocean_data(phys_state, pbuf2d)
+  end if
 
   ! prescribed aerosol deposition fluxes
   call aerodep_flx_adv(phys_state, pbuf2d, cam_out)

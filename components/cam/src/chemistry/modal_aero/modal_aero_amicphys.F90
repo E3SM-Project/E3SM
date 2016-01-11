@@ -93,7 +93,7 @@
 #if ( defined MODAL_AERO_3MODE )
   integer, parameter :: max_gas = nsoa + 1
   integer, parameter :: max_aer = nsoa + npoa + nbc + 3
-#elif ( defined MODAL_AERO_4MODE )
+#elif (( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ))
   integer, parameter :: max_gas = nsoa + 1
   integer, parameter :: max_aer = nsoa + npoa + nbc + 3
 #elif ( ( defined MODAL_AERO_7MODE ) && ( defined MOSAIC_SPECIES ) )
@@ -110,7 +110,7 @@
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4 + 5
 #endif
 
-#if ( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE )
+#if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ))
   integer, parameter :: ntot_amode_extd = ntot_amode
 #else
   integer, parameter :: ntot_amode_extd = ntot_amode + 1
