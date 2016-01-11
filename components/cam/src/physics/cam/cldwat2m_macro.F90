@@ -16,7 +16,7 @@
    use cam_abortutils,   only: endrun
    use physconst,        only: cpair, latvap, latice, rh2o, gravit, rair
    use wv_saturation,    only: qsat_water, svp_water, svp_ice, qsat_ice, qsat
-   use cam_history,      only: addfld, phys_decomp, outfld, hist_fld_active
+   use cam_history,      only: addfld, outfld, hist_fld_active
    use cam_logfile,      only: iulog
    use ref_pres,         only: top_lev=>trop_cloud_top_lev
    use cldfrc2m,         only: astG_PDF_single, astG_PDF, astG_RHU_single, &
@@ -104,7 +104,7 @@
    !--------------------------------------------------------------------- !
 
    use cloud_fraction, only: cldfrc_getparams
-   use cam_history,    only: addfld, phys_decomp
+   use cam_history,    only: addfld
 
    integer,  intent(in) :: rhminl_opt_in
    integer,  intent(in) :: rhmini_opt_in
@@ -127,12 +127,12 @@
    end if
 
 
-   call addfld ('RHMIN_LIQ',     'fraction', pver, 'A', 'Default critical RH for liquid-stratus', phys_decomp)
-   call addfld ('RHMIN_ICE',     'fraction', pver, 'A', 'Default critical RH for    ice-stratus', phys_decomp)
-   call addfld ('DRHMINPBL_LIQ', 'fraction', pver, 'A', 'Drop of liquid-stratus critical RH by PBL turbulence', phys_decomp)
-   call addfld ('DRHMINPBL_ICE', 'fraction', pver, 'A', 'Drop of    ice-stratus critical RH by PBL turbulence', phys_decomp)
-   call addfld ('DRHMINDET_LIQ', 'fraction', pver, 'A', 'Drop of liquid-stratus critical RH by convective detrainment', phys_decomp)
-   call addfld ('DRHMINDET_ICE', 'fraction', pver, 'A', 'Drop of    ice-stratus critical RH by convective detrainment', phys_decomp)
+   call addfld ('RHMIN_LIQ', (/ 'lev' /), 'A',     'fraction', 'Default critical RH for liquid-stratus')
+   call addfld ('RHMIN_ICE', (/ 'lev' /), 'A',     'fraction', 'Default critical RH for    ice-stratus')
+   call addfld ('DRHMINPBL_LIQ', (/ 'lev' /), 'A', 'fraction', 'Drop of liquid-stratus critical RH by PBL turbulence')
+   call addfld ('DRHMINPBL_ICE', (/ 'lev' /), 'A', 'fraction', 'Drop of    ice-stratus critical RH by PBL turbulence')
+   call addfld ('DRHMINDET_LIQ', (/ 'lev' /), 'A', 'fraction', 'Drop of liquid-stratus critical RH by convective detrainment')
+   call addfld ('DRHMINDET_ICE', (/ 'lev' /), 'A', 'fraction', 'Drop of    ice-stratus critical RH by convective detrainment')
 
    end subroutine ini_macro
 

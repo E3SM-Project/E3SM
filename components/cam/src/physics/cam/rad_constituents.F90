@@ -1,3 +1,4 @@
+
 module rad_constituents
 
 !------------------------------------------------------------------------------------------------
@@ -19,7 +20,7 @@ use constituents,   only: cnst_name, cnst_get_ind
 use radconstants,   only: gasnamelength, nradgas, rad_gas_index, ot_length
 use phys_prop,      only: physprop_accum_unique_files, physprop_init, &
                           physprop_get_id, physprop_get
-use cam_history,    only: addfld, fieldname_len, phys_decomp, add_default, outfld
+use cam_history,    only: addfld, horiz_only, fieldname_len, add_default, outfld
 use physics_buffer, only: physics_buffer_desc, pbuf_get_field, pbuf_get_index
 
 
@@ -1256,12 +1257,12 @@ subroutine rad_gas_diag_init(glist)
       name = 'm_' // trim(glist%gas(i)%camname) // trim(suffix)
       glist%gas(i)%mass_name = name
       long_name = trim(glist%gas(i)%camname)//' mass per layer'//long_name_description
-      call addfld(trim(name), 'kg/m^2', pver, 'A', trim(long_name), phys_decomp)
+      call addfld(trim(name), (/ 'lev' /), 'A', 'kg/m^2', trim(long_name))
 
       ! construct names for column burden diagnostics
       name = 'cb_' // trim(glist%gas(i)%camname) // trim(suffix)
       long_name = trim(glist%gas(i)%camname)//' column burden'//long_name_description
-      call addfld(trim(name), 'kg/m^2', 1, 'A', trim(long_name), phys_decomp)
+      call addfld(trim(name), horiz_only, 'A', 'kg/m^2', trim(long_name))
 
       ! error check for name length
       if (len_trim(name) > fieldname_len) then
@@ -1308,12 +1309,12 @@ subroutine rad_aer_diag_init(alist)
       name = 'm_' // trim(alist%aer(i)%camname) // trim(suffix)
       alist%aer(i)%mass_name = name
       long_name = trim(alist%aer(i)%camname)//' mass per layer'//long_name_description
-      call addfld(trim(name), 'kg/m^2', pver, 'A', trim(long_name), phys_decomp)
+      call addfld(trim(name), (/ 'lev' /), 'A', 'kg/m^2', trim(long_name))
 
       ! construct names for column burden diagnostic fields
       name = 'cb_' // trim(alist%aer(i)%camname) // trim(suffix)
       long_name = trim(alist%aer(i)%camname)//' column burden'//long_name_description
-      call addfld(trim(name), 'kg/m^2', 1, 'A', trim(long_name), phys_decomp)
+      call addfld(trim(name), horiz_only, 'A', 'kg/m^2', trim(long_name))
 
       ! error check for name length
       if (len_trim(name) > fieldname_len) then

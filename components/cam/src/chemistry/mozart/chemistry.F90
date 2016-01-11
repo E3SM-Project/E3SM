@@ -883,7 +883,7 @@ end function chem_is_active
     use physics_buffer,      only : physics_buffer_desc, pbuf_get_index
     
     use constituents,        only : cnst_get_ind, cnst_longname
-    use cam_history,         only : addfld, add_default, phys_decomp, fieldname_len
+    use cam_history,         only : addfld, horiz_only, add_default, fieldname_len
     use chem_mods,           only : gas_pcnst, nfs, inv_lst
     use mo_chemini,          only : chemini
     use mo_ghg_chem,         only : ghg_chem_init
@@ -940,8 +940,8 @@ end function chem_is_active
     ndx_cldtop = pbuf_get_index('CLDTOP')
     ndx_pblh   = pbuf_get_index('pblh')
 
-    call addfld( 'HEIGHT',    'm',        pverp,'A', 'geopotential height above surface at interfaces (m)', phys_decomp )
-    call addfld( 'CT_H2O_GHG','kg/kg/s ', pver, 'A', 'ghg-chem h2o source/sink',                            phys_decomp )
+    call addfld( 'HEIGHT',        (/ 'ilev' /),'A',    'm', 'geopotential height above surface at interfaces (m)' )
+    call addfld( 'CT_H2O_GHG', (/ 'lev' /), 'A','kg/kg/s', 'ghg-chem h2o source/sink' )
 
 !-----------------------------------------------------------------------
 ! Set names of chemistry variable tendencies and declare them as history variables
@@ -950,7 +950,7 @@ end function chem_is_active
        spc_name = solsym(m)
        srcnam(m) = 'CT_' // spc_name ! chem tendancy (source/sink)
 
-       call addfld( srcnam(m), 'kg/kg/s ', pver, 'A', trim(spc_name)//' source/sink', phys_decomp )
+       call addfld( srcnam(m), (/ 'lev' /), 'A', 'kg/kg/s', trim(spc_name)//' source/sink' )
        !call add_default (srcnam(m),     1, ' ')
        call cnst_get_ind(solsym(m), n, abort=.false. ) 
        if ( n > 0 ) then
@@ -961,7 +961,7 @@ end function chem_is_active
              unit_basename = 'kg'  
           endif
 
-          call addfld (sflxnam(n),  unit_basename//'/m2/s',1,    'A',trim(solsym(m))//' surface flux',phys_decomp)
+          call addfld (sflxnam(n),horiz_only,    'A',  unit_basename//'/m2/s',trim(solsym(m))//' surface flux')
           if ( history_aerosol ) then 
              call add_default( sflxnam(n), 1, ' ' )
           endif
@@ -1045,8 +1045,8 @@ end function chem_is_active
            endif
 
            ! MEGAN  history fields
-           call addfld( 'MEG_'//trim(shr_megan_mechcomps(n)%name),'kg/m2/sec',1,'A',&
-                trim(shr_megan_mechcomps(n)%name)//' MEGAN emissions flux',phys_decomp)
+           call addfld( 'MEG_'//trim(shr_megan_mechcomps(n)%name),horiz_only,'A','kg/m2/sec',&
+                trim(shr_megan_mechcomps(n)%name)//' MEGAN emissions flux')
         enddo
      endif
 

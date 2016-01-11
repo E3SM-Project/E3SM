@@ -47,7 +47,7 @@ contains
 subroutine neu_wetdep_init
 !
   use constituents, only : cnst_get_ind,cnst_mw
-  use cam_history,  only : addfld, add_default, phys_decomp
+  use cam_history,  only : addfld, add_default
   use ppgrid,       only : pver
 !
   integer :: m,l
@@ -161,15 +161,15 @@ subroutine neu_wetdep_init
 ! define output
 !
   do m=1,gas_wetdep_cnt
-    call addfld     ('DTWR_'//trim(gas_wetdep_list(m)),'mol/mol/s',pver, 'A','wet removal Neu scheme tendency',phys_decomp)
+    call addfld     ('DTWR_'//trim(gas_wetdep_list(m)),(/ 'lev' /), 'A','mol/mol/s','wet removal Neu scheme tendency')
     call add_default('DTWR_'//trim(gas_wetdep_list(m)), 1, ' ')
   end do
 !
   if ( do_diag ) then
-    call addfld     ('QT_RAIN_HNO3','mol/mol/s',pver, 'A','wet removal Neu scheme rain tendency',phys_decomp)
-    call addfld     ('QT_RIME_HNO3','mol/mol/s',pver, 'A','wet removal Neu scheme rain tendency',phys_decomp)
-    call addfld     ('QT_WASH_HNO3','mol/mol/s',pver, 'A','wet removal Neu scheme rain tendency',phys_decomp)
-    call addfld     ('QT_EVAP_HNO3','mol/mol/s',pver, 'A','wet removal Neu scheme rain tendency',phys_decomp)
+    call addfld     ('QT_RAIN_HNO3',(/ 'lev' /), 'A','mol/mol/s','wet removal Neu scheme rain tendency')
+    call addfld     ('QT_RIME_HNO3',(/ 'lev' /), 'A','mol/mol/s','wet removal Neu scheme rain tendency')
+    call addfld     ('QT_WASH_HNO3',(/ 'lev' /), 'A','mol/mol/s','wet removal Neu scheme rain tendency')
+    call addfld     ('QT_EVAP_HNO3',(/ 'lev' /), 'A','mol/mol/s','wet removal Neu scheme rain tendency')
     call add_default('QT_RAIN_HNO3',1,' ')
     call add_default('QT_RIME_HNO3',1,' ')
     call add_default('QT_WASH_HNO3',1,' ')

@@ -33,10 +33,12 @@ subroutine cam_initial( dyn_in, dyn_out, NLFileName )
 
    dyn_state => get_dyn_state()
 
-   call dyn_init(initial_file_get_id(), dyn_state, dyn_in, dyn_out, NLFileName )
-
    ! Initialize dynamics grid
+   ! This has to be before dyn_init because it defines the grid coords (needed
+   !      by define_cam_grids to define coords and grids).
    call initcom
+
+   call dyn_init(initial_file_get_id(), dyn_state, dyn_in, dyn_out, NLFileName )
 
    ! Define physics data structures
    call phys_grid_init

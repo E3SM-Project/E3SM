@@ -20,7 +20,7 @@ use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_mode_idx, rad_cnst_g
 
 use physics_buffer, only: pbuf_add_field, dtype_r8, pbuf_old_tim_idx, &
                           pbuf_get_index, pbuf_get_field
-use cam_history,    only: addfld, phys_decomp, add_default, outfld
+use cam_history,    only: addfld, add_default, outfld
 
 use ref_pres,       only: top_lev => trop_cloud_top_lev
 use wv_saturation,  only: svp_water, svp_ice
@@ -220,70 +220,70 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
    ! pbuf fields used by hetfrz_classnuc
    ast_idx      = pbuf_get_index('AST')
 
-   call addfld('bc_num', '#/cm3', pver, 'A', 'total bc number', phys_decomp)
-   call addfld('dst1_num', '#/cm3', pver, 'A', 'total dst1 number', phys_decomp)
-   call addfld('dst3_num', '#/cm3', pver, 'A', 'total dst3 number', phys_decomp)
-   call addfld('bcc_num', '#/cm3', pver, 'A', 'coated bc number', phys_decomp)
-   call addfld('dst1c_num', '#/cm3', pver, 'A', 'coated dst1 number', phys_decomp)
-   call addfld('dst3c_num', '#/cm3', pver, 'A', 'coated dst3 number', phys_decomp)
-   call addfld('bcuc_num', '#/cm3', pver, 'A', 'uncoated bc number', phys_decomp)
-   call addfld('dst1uc_num', '#/cm3', pver, 'A', 'uncoated dst1 number', phys_decomp)
-   call addfld('dst3uc_num', '#/cm3', pver, 'A', 'uncoated dst3 number', phys_decomp)
+   call addfld('bc_num', (/ 'lev' /), 'A', '#/cm3', 'total bc number')
+   call addfld('dst1_num', (/ 'lev' /), 'A', '#/cm3', 'total dst1 number')
+   call addfld('dst3_num', (/ 'lev' /), 'A', '#/cm3', 'total dst3 number')
+   call addfld('bcc_num', (/ 'lev' /), 'A', '#/cm3', 'coated bc number')
+   call addfld('dst1c_num', (/ 'lev' /), 'A', '#/cm3', 'coated dst1 number')
+   call addfld('dst3c_num', (/ 'lev' /), 'A', '#/cm3', 'coated dst3 number')
+   call addfld('bcuc_num', (/ 'lev' /), 'A', '#/cm3', 'uncoated bc number')
+   call addfld('dst1uc_num', (/ 'lev' /), 'A', '#/cm3', 'uncoated dst1 number')
+   call addfld('dst3uc_num', (/ 'lev' /), 'A', '#/cm3', 'uncoated dst3 number')
 
-   call addfld('bc_a1_num', '#/cm3', pver, 'A', 'interstitial bc number', phys_decomp)
-   call addfld('dst_a1_num', '#/cm3', pver, 'A', 'interstitial dst1 number', phys_decomp)
-   call addfld('dst_a3_num', '#/cm3', pver, 'A', 'interstitial dst3 number', phys_decomp)
-   call addfld('bc_c1_num', '#/cm3', pver, 'A', 'cloud borne bc number', phys_decomp)
-   call addfld('dst_c1_num', '#/cm3', pver, 'A', 'cloud borne dst1 number', phys_decomp)
-   call addfld('dst_c3_num', '#/cm3', pver, 'A', 'cloud borne dst3 number', phys_decomp)
+   call addfld('bc_a1_num', (/ 'lev' /), 'A', '#/cm3', 'interstitial bc number')
+   call addfld('dst_a1_num', (/ 'lev' /), 'A', '#/cm3', 'interstitial dst1 number')
+   call addfld('dst_a3_num', (/ 'lev' /), 'A', '#/cm3', 'interstitial dst3 number')
+   call addfld('bc_c1_num', (/ 'lev' /), 'A', '#/cm3', 'cloud borne bc number')
+   call addfld('dst_c1_num', (/ 'lev' /), 'A', '#/cm3', 'cloud borne dst1 number')
+   call addfld('dst_c3_num', (/ 'lev' /), 'A', '#/cm3', 'cloud borne dst3 number')
     
-   call addfld('fn_bc_c1_num', '#/cm3', pver, 'A', 'cloud borne bc number derived from fn', phys_decomp)
-   call addfld('fn_dst_c1_num', '#/cm3', pver, 'A', 'cloud borne dst1 number derived from fn', phys_decomp)
-   call addfld('fn_dst_c3_num', '#/cm3', pver, 'A', 'cloud borne dst3 number derived from fn', phys_decomp)
+   call addfld('fn_bc_c1_num', (/ 'lev' /), 'A', '#/cm3', 'cloud borne bc number derived from fn')
+   call addfld('fn_dst_c1_num', (/ 'lev' /), 'A', '#/cm3', 'cloud borne dst1 number derived from fn')
+   call addfld('fn_dst_c3_num', (/ 'lev' /), 'A', '#/cm3', 'cloud borne dst3 number derived from fn')
 
-   call addfld('na500', '#/cm3', pver, 'A', 'interstitial aerosol number with D>500 nm', phys_decomp)
-   call addfld('totna500', '#/cm3', pver, 'A', 'total aerosol number with D>500 nm', phys_decomp)
+   call addfld('na500', (/ 'lev' /), 'A', '#/cm3', 'interstitial aerosol number with D>500 nm')
+   call addfld('totna500', (/ 'lev' /), 'A', '#/cm3', 'total aerosol number with D>500 nm')
 
-   call addfld('FREQIMM', 'fraction', pver, 'A', 'Fractional occurance of immersion  freezing', phys_decomp)
-   call addfld('FREQCNT', 'fraction', pver, 'A', 'Fractional occurance of contact    freezing', phys_decomp)
-   call addfld('FREQDEP', 'fraction', pver, 'A', 'Fractional occurance of deposition freezing', phys_decomp)
-   call addfld('FREQMIX', 'fraction', pver, 'A', 'Fractional occurance of mixed-phase clouds' , phys_decomp)
+   call addfld('FREQIMM', (/ 'lev' /), 'A', 'fraction', 'Fractional occurance of immersion  freezing')
+   call addfld('FREQCNT', (/ 'lev' /), 'A', 'fraction', 'Fractional occurance of contact    freezing')
+   call addfld('FREQDEP', (/ 'lev' /), 'A', 'fraction', 'Fractional occurance of deposition freezing')
+   call addfld('FREQMIX', (/ 'lev' /), 'A', 'fraction', 'Fractional occurance of mixed-phase clouds' )
 
-   call addfld('DSTFREZIMM', 'm-3s-1', pver, 'A', 'dust immersion  freezing rate', phys_decomp)
-   call addfld('DSTFREZCNT', 'm-3s-1', pver, 'A', 'dust contact    freezing rate', phys_decomp)
-   call addfld('DSTFREZDEP', 'm-3s-1', pver, 'A', 'dust deposition freezing rate', phys_decomp)
+   call addfld('DSTFREZIMM', (/ 'lev' /), 'A', 'm-3s-1', 'dust immersion  freezing rate')
+   call addfld('DSTFREZCNT', (/ 'lev' /), 'A', 'm-3s-1', 'dust contact    freezing rate')
+   call addfld('DSTFREZDEP', (/ 'lev' /), 'A', 'm-3s-1', 'dust deposition freezing rate')
 
-   call addfld('BCFREZIMM', 'm-3s-1', pver, 'A', 'bc immersion  freezing rate', phys_decomp)
-   call addfld('BCFREZCNT', 'm-3s-1', pver, 'A', 'bc contact    freezing rate', phys_decomp)
-   call addfld('BCFREZDEP', 'm-3s-1', pver, 'A', 'bc deposition freezing rate', phys_decomp)
+   call addfld('BCFREZIMM', (/ 'lev' /), 'A', 'm-3s-1', 'bc immersion  freezing rate')
+   call addfld('BCFREZCNT', (/ 'lev' /), 'A', 'm-3s-1', 'bc contact    freezing rate')
+   call addfld('BCFREZDEP', (/ 'lev' /), 'A', 'm-3s-1', 'bc deposition freezing rate')
 
-   call addfld('NIMIX_IMM', '#/m3', pver, 'A', &
-               'Activated Ice Number Concentration due to het immersion freezing in Mixed Clouds', phys_decomp)
-   call addfld('NIMIX_CNT', '#/m3', pver, 'A', &
-               'Activated Ice Number Concentration due to het contact freezing in Mixed Clouds', phys_decomp)
-   call addfld('NIMIX_DEP', '#/m3', pver, 'A', &
-               'Activated Ice Number Concentration due to het deposition freezing in Mixed Clouds', phys_decomp)
+   call addfld('NIMIX_IMM', (/ 'lev' /), 'A', '#/m3', &
+               'Activated Ice Number Concentration due to het immersion freezing in Mixed Clouds')
+   call addfld('NIMIX_CNT', (/ 'lev' /), 'A', '#/m3', &
+               'Activated Ice Number Concentration due to het contact freezing in Mixed Clouds')
+   call addfld('NIMIX_DEP', (/ 'lev' /), 'A', '#/m3', &
+               'Activated Ice Number Concentration due to het deposition freezing in Mixed Clouds')
 
-   call addfld('DSTNIDEP', '#/m3', pver, 'A', &
-               'Activated Ice Number Concentration due to dst dep freezing in Mixed Clouds', phys_decomp)
-   call addfld('DSTNICNT', '#/m3', pver, 'A', &
-               'Activated Ice Number Concentration due to dst cnt freezing in Mixed Clouds', phys_decomp)
-   call addfld('DSTNIIMM', '#/m3', pver, 'A', &
-               'Activated Ice Number Concentration due to dst imm freezing in Mixed Clouds', phys_decomp)
+   call addfld('DSTNIDEP', (/ 'lev' /), 'A', '#/m3', &
+               'Activated Ice Number Concentration due to dst dep freezing in Mixed Clouds')
+   call addfld('DSTNICNT', (/ 'lev' /), 'A', '#/m3', &
+               'Activated Ice Number Concentration due to dst cnt freezing in Mixed Clouds')
+   call addfld('DSTNIIMM', (/ 'lev' /), 'A', '#/m3', &
+               'Activated Ice Number Concentration due to dst imm freezing in Mixed Clouds')
 
-   call addfld('BCNIDEP', '#/m3', pver, 'A', &
-               'Activated Ice Number Concentration due to bc dep freezing in Mixed Clouds', phys_decomp)
-   call addfld('BCNICNT', '#/m3', pver, 'A', &
-               'Activated Ice Number Concentration due to bc cnt freezing in Mixed Clouds', phys_decomp)
-   call addfld('BCNIIMM', '#/m3', pver, 'A', &
-               'Activated Ice Number Concentration due to bc imm freezing in Mixed Clouds', phys_decomp)
+   call addfld('BCNIDEP', (/ 'lev' /), 'A', '#/m3', &
+               'Activated Ice Number Concentration due to bc dep freezing in Mixed Clouds')
+   call addfld('BCNICNT', (/ 'lev' /), 'A', '#/m3', &
+               'Activated Ice Number Concentration due to bc cnt freezing in Mixed Clouds')
+   call addfld('BCNIIMM', (/ 'lev' /), 'A', '#/m3', &
+               'Activated Ice Number Concentration due to bc imm freezing in Mixed Clouds')
 
-   call addfld('NUMICE10s', '#/m3', pver, 'A', &
-               'Ice Number Concentration due to het freezing in Mixed Clouds during 10-s period', phys_decomp)
-   call addfld('NUMIMM10sDST', '#/m3', pver, 'A', &
-               'Ice Number Concentration due to imm freezing by dst in Mixed Clouds during 10-s period', phys_decomp)
-   call addfld('NUMIMM10sBC', '#/m3', pver, 'A', &
-               'Ice Number Concentration due to imm freezing by bc in Mixed Clouds during 10-s period', phys_decomp)
+   call addfld('NUMICE10s', (/ 'lev' /), 'A', '#/m3', &
+               'Ice Number Concentration due to het freezing in Mixed Clouds during 10-s period')
+   call addfld('NUMIMM10sDST', (/ 'lev' /), 'A', '#/m3', &
+               'Ice Number Concentration due to imm freezing by dst in Mixed Clouds during 10-s period')
+   call addfld('NUMIMM10sBC', (/ 'lev' /), 'A', '#/m3', &
+               'Ice Number Concentration due to imm freezing by bc in Mixed Clouds during 10-s period')
 
    if (hist_hetfrz_classnuc) then
 

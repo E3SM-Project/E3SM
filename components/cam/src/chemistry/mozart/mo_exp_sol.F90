@@ -12,7 +12,7 @@ contains
     use mo_tracname, only : solsym
     use chem_mods,   only : clscnt1, clsmap
     use ppgrid,      only : pver
-    use cam_history, only : addfld, add_default, phys_decomp
+    use cam_history, only : addfld, add_default
 
     implicit none
 
@@ -21,8 +21,8 @@ contains
     do i = 1,clscnt1
 
        j = clsmap(i,1)
-       call addfld( trim(solsym(j))//'_CHMP', '/cm3/s ', pver, 'I', 'chemical production rate', phys_decomp )
-       call addfld( trim(solsym(j))//'_CHML', '/cm3/s ', pver, 'I', 'chemical loss rate',       phys_decomp )
+       call addfld( trim(solsym(j))//'_CHMP', (/ 'lev' /), 'I', '/cm3/s', 'chemical production rate' )
+       call addfld( trim(solsym(j))//'_CHML', (/ 'lev' /), 'I', '/cm3/s', 'chemical loss rate' )
 
     enddo
   end subroutine exp_sol_inti

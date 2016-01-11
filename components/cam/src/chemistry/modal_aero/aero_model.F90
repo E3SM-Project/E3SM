@@ -175,7 +175,7 @@ contains
   subroutine aero_model_init( pbuf2d, species_class, iflagaa )
 
     use mo_chem_utls,    only: get_inv_ndx
-    use cam_history,     only: addfld, add_default, phys_decomp
+    use cam_history,     only: addfld, horiz_only, add_default
     use phys_control,    only: phys_getopts
     use mo_chem_utls,    only: get_rxt_ndx, get_spc_ndx
     use modal_aero_data, only: cnst_name_cw, rain_evap_to_coarse_aero, mam_prevap_resusp_optaa
@@ -413,12 +413,12 @@ contains
        call inidrydep(rair, gravit)
 
        dummy = 'RAM1'
-       call addfld (dummy,'frac ',1, 'A','RAM1',phys_decomp)
+       call addfld (dummy,horiz_only, 'A','frac','RAM1')
        if ( history_aerosol ) then  
           call add_default (dummy, 1, ' ')
        endif
        dummy = 'airFV'
-       call addfld (dummy,'frac ',1, 'A','FV',phys_decomp)
+       call addfld (dummy,horiz_only, 'A','frac','FV')
        if ( history_aerosol ) then  
           call add_default (dummy, 1, ' ')
        endif
@@ -430,20 +430,20 @@ contains
 
        do m = 1, dust_nbin+dust_nnum
           dummy = trim(dust_names(m)) // 'SF'
-          call addfld (dummy,'kg/m2/s ',1, 'A',trim(dust_names(m))//' dust surface emission',phys_decomp)
+          call addfld (dummy,horiz_only, 'A','kg/m2/s',trim(dust_names(m))//' dust surface emission')
           if (history_aerosol) then
              call add_default (dummy, 1, ' ')
           endif
        enddo
 
        dummy = 'DSTSFMBL'
-       call addfld (dummy,'kg/m2/s',1, 'A','Mobilization flux at surface',phys_decomp)
+       call addfld (dummy,horiz_only, 'A','kg/m2/s','Mobilization flux at surface')
        if (history_aerosol) then
           call add_default (dummy, 1, ' ')
        endif
 
        dummy = 'LND_MBL'
-       call addfld (dummy,'frac ',1, 'A','Soil erodibility factor',phys_decomp)
+       call addfld (dummy,horiz_only, 'A','frac','Soil erodibility factor')
        if (history_aerosol) then
           call add_default (dummy, 1, ' ')
        endif
@@ -453,14 +453,14 @@ contains
     if (seasalt_active) then
        
        dummy = 'SSTSFMBL'
-       call addfld (dummy,'kg/m2/s',1, 'A','Mobilization flux at surface',phys_decomp)
+       call addfld (dummy,horiz_only, 'A','kg/m2/s','Mobilization flux at surface')
        if (history_aerosol) then
           call add_default (dummy, 1, ' ')
        endif
 
        do m = 1, seasalt_nbin
           dummy = trim(seasalt_names(m)) // 'SF'
-          call addfld (dummy,'kg/m2/s ',1, 'A',trim(seasalt_names(m))//' seasalt surface emission',phys_decomp)
+          call addfld (dummy,horiz_only, 'A','kg/m2/s',trim(seasalt_names(m))//' seasalt surface emission')
           if (history_aerosol) then
              call add_default (dummy, 1, ' ')
           endif
@@ -499,16 +499,16 @@ contains
           unit_basename = 'kg'  
        endif
 
-       call addfld (trim(drydep_list(m))//'DDF',unit_basename//'/m2/s ',   1, 'A', &
-            trim(drydep_list(m))//' dry deposition flux at bottom (grav + turb)',phys_decomp)
-       call addfld (trim(drydep_list(m))//'TBF',unit_basename//'/m2/s',   1, 'A', &
-            trim(drydep_list(m))//' turbulent dry deposition flux',phys_decomp)
-       call addfld (trim(drydep_list(m))//'GVF',unit_basename//'/m2/s ',   1, 'A', &
-            trim(drydep_list(m))//' gravitational dry deposition flux',phys_decomp)
-       call addfld (trim(drydep_list(m))//'DTQ',unit_basename//'/kg/s ',pver, 'A', &
-            trim(drydep_list(m))//' dry deposition',phys_decomp)
-       call addfld (trim(drydep_list(m))//'DDV','m/s     ',pver, 'A', &
-            trim(drydep_list(m))//' deposition velocity',phys_decomp)
+       call addfld (trim(drydep_list(m))//'DDF',   horiz_only, 'A',unit_basename//'/m2/s ', &
+            trim(drydep_list(m))//' dry deposition flux at bottom (grav + turb)')
+       call addfld (trim(drydep_list(m))//'TBF',   horiz_only, 'A',unit_basename//'/m2/s', &
+            trim(drydep_list(m))//' turbulent dry deposition flux')
+       call addfld (trim(drydep_list(m))//'GVF',   horiz_only, 'A',unit_basename//'/m2/s ', &
+            trim(drydep_list(m))//' gravitational dry deposition flux')
+       call addfld (trim(drydep_list(m))//'DTQ',(/ 'lev' /), 'A',unit_basename//'/kg/s ', &
+            trim(drydep_list(m))//' dry deposition')
+       call addfld (trim(drydep_list(m))//'DDV',(/ 'lev' /), 'A','m/s', &
+            trim(drydep_list(m))//' deposition velocity')
 
        if ( history_aerosol ) then 
           call add_default (trim(drydep_list(m))//'DDF', 1, ' ')
@@ -528,43 +528,43 @@ contains
           unit_basename = 'kg'  
        endif
 
-       call addfld (trim(wetdep_list(m))//'SFWET',unit_basename//'/m2/s ', &
-            1,  'A','Wet deposition flux at surface',phys_decomp)
-       call addfld (trim(wetdep_list(m))//'SFSIC',unit_basename//'/m2/s ', &
-            1,  'A','Wet deposition flux (incloud, convective) at surface',phys_decomp)
-       call addfld (trim(wetdep_list(m))//'SFSIS',unit_basename//'/m2/s ', &
-            1,  'A','Wet deposition flux (incloud, stratiform) at surface',phys_decomp)
-       call addfld (trim(wetdep_list(m))//'SFSBC',unit_basename//'/m2/s ', &
-            1,  'A','Wet deposition flux (belowcloud, convective) at surface',phys_decomp)
-       call addfld (trim(wetdep_list(m))//'SFSBS',unit_basename//'/m2/s ', &
-            1,  'A','Wet deposition flux (belowcloud, stratiform) at surface',phys_decomp)
+       call addfld (trim(wetdep_list(m))//'SFWET', &
+            horiz_only,  'A',unit_basename//'/m2/s ','Wet deposition flux at surface')
+       call addfld (trim(wetdep_list(m))//'SFSIC', &
+            horiz_only,  'A',unit_basename//'/m2/s ','Wet deposition flux (incloud, convective) at surface')
+       call addfld (trim(wetdep_list(m))//'SFSIS', &
+            horiz_only,  'A',unit_basename//'/m2/s ','Wet deposition flux (incloud, stratiform) at surface')
+       call addfld (trim(wetdep_list(m))//'SFSBC', &
+            horiz_only,  'A',unit_basename//'/m2/s ','Wet deposition flux (belowcloud, convective) at surface')
+       call addfld (trim(wetdep_list(m))//'SFSBS', &
+            horiz_only,  'A',unit_basename//'/m2/s ','Wet deposition flux (belowcloud, stratiform) at surface')
 
        if ( history_aero_prevap_resusp ) then
-          call addfld (trim(wetdep_list(m))//'SFSEC','kg/m2/s ', &
-               1,  'A','Wet deposition flux (precip evap, convective) at surface',phys_decomp)  !RCE
-          call addfld (trim(wetdep_list(m))//'SFSES','kg/m2/s ', &
-               1,  'A','Wet deposition flux (precip evap, stratiform) at surface',phys_decomp)  !RCE
+          call addfld (trim(wetdep_list(m))//'SFSEC', &
+               horiz_only,  'A','kg/m2/s','Wet deposition flux (precip evap, convective) at surface')  !RCE
+          call addfld (trim(wetdep_list(m))//'SFSES', &
+               horiz_only,  'A','kg/m2/s','Wet deposition flux (precip evap, stratiform) at surface')  !RCE
           if (convproc_do_aer .and. deepconv_wetdep_history) then
-          call addfld (trim(wetdep_list(m))//'SFSED','kg/m2/s ', &
-               1,  'A','Wet deposition flux (precip evap, deep convective) at surface',phys_decomp)  !RCE
+          call addfld (trim(wetdep_list(m))//'SFSED', &
+               horiz_only,  'A','kg/m2/s','Wet deposition flux (precip evap, deep convective) at surface')  !RCE
           endif
        endif
        if (convproc_do_aer .and. deepconv_wetdep_history) then
-          call addfld (trim(wetdep_list(m))//'SFSID','kg/m2/s ', &
-               1,  'A','Wet deposition flux (incloud, deep convective) at surface',phys_decomp)  !RCE
-          call addfld (trim(wetdep_list(m))//'SFSBD','kg/m2/s ', &
-               1,  'A','Wet deposition flux (belowcloud, deep convective) at surface',phys_decomp)  !RCE
+                    call addfld (trim(wetdep_list(m))//'SFSID', &
+               horiz_only,  'A','kg/m2/s','Wet deposition flux (incloud, deep convective) at surface')  !RCE
+          call addfld (trim(wetdep_list(m))//'SFSBD', &
+               horiz_only,  'A','kg/m2/s','Wet deposition flux (belowcloud, deep convective) at surface')  !RCE
        endif
 
-       call addfld (trim(wetdep_list(m))//'WET',unit_basename//'/kg/s ',pver, 'A','wet deposition tendency',phys_decomp)
-       call addfld (trim(wetdep_list(m))//'SIC',unit_basename//'/kg/s ',pver, 'A', &
-            trim(wetdep_list(m))//' ic wet deposition',phys_decomp)
-       call addfld (trim(wetdep_list(m))//'SIS',unit_basename//'/kg/s ',pver, 'A', &
-            trim(wetdep_list(m))//' is wet deposition',phys_decomp)
-       call addfld (trim(wetdep_list(m))//'SBC',unit_basename//'/kg/s ',pver, 'A', &
-            trim(wetdep_list(m))//' bc wet deposition',phys_decomp)
-       call addfld (trim(wetdep_list(m))//'SBS',unit_basename//'/kg/s ',pver, 'A', &
-            trim(wetdep_list(m))//' bs wet deposition',phys_decomp)
+       call addfld (trim(wetdep_list(m))//'WET',(/ 'lev' /), 'A',unit_basename//'/kg/s ','wet deposition tendency')
+       call addfld (trim(wetdep_list(m))//'SIC',(/ 'lev' /), 'A',unit_basename//'/kg/s ', &
+            trim(wetdep_list(m))//' ic wet deposition')
+       call addfld (trim(wetdep_list(m))//'SIS',(/ 'lev' /), 'A',unit_basename//'/kg/s ', &
+            trim(wetdep_list(m))//' is wet deposition')
+       call addfld (trim(wetdep_list(m))//'SBC',(/ 'lev' /), 'A',unit_basename//'/kg/s ', &
+            trim(wetdep_list(m))//' bc wet deposition')
+       call addfld (trim(wetdep_list(m))//'SBS',(/ 'lev' /), 'A',unit_basename//'/kg/s ', &
+            trim(wetdep_list(m))//' bs wet deposition')
        
        if ( history_aerosol ) then          
           call add_default (trim(wetdep_list(m))//'SFWET', 1, ' ')
@@ -588,10 +588,10 @@ contains
           unit_basename = 'kg'  ! Units 'kg' or '1' 
        end if
 
-       call addfld( 'GS_'//trim(solsym(m)), unit_basename//'/m2/s ',1,  'A', &
-                    trim(solsym(m))//' gas chemistry/wet removal (for gas species)', phys_decomp)
-       call addfld( 'AQ_'//trim(solsym(m)), unit_basename//'/m2/s ',1,  'A', &
-                    trim(solsym(m))//' aqueous chemistry (for gas species)', phys_decomp)
+       call addfld( 'GS_'//trim(solsym(m)),horiz_only,  'A', unit_basename//'/m2/s ', &
+                    trim(solsym(m))//' gas chemistry/wet removal (for gas species)')
+       call addfld( 'AQ_'//trim(solsym(m)),horiz_only,  'A', unit_basename//'/m2/s ', &
+                    trim(solsym(m))//' aqueous chemistry (for gas species)')
        if ( history_aerosol ) then 
           call add_default( 'GS_'//trim(solsym(m)), 1, ' ')
           call add_default( 'AQ_'//trim(solsym(m)), 1, ' ')
@@ -602,10 +602,10 @@ contains
        if( nspc > 0 ) then                                      ! REASTER 08/04/2015
         if ( .not. cnst_name_cw(nspc) == ' ') then              ! REASTER 08/04/2015
           if ( history_aero_prevap_resusp ) then
-             call addfld (trim(cnst_name_cw(nspc))//'SFSEC','kg/m2/s ',1,  'A', &
-                  trim(cnst_name_cw(nspc))//' wet deposition flux (precip evap, convective) at surface',phys_decomp)  !RCE
-             call addfld (trim(cnst_name_cw(nspc))//'SFSES','kg/m2/s ',1,  'A', &
-                  trim(cnst_name_cw(nspc))//' wet deposition flux (precip evap, stratiform) at surface',phys_decomp)  !RCE             
+             call addfld (trim(cnst_name_cw(nspc))//'SFSEC',horiz_only,  'A','kg/m2/s', &
+                  trim(cnst_name_cw(nspc))//' wet deposition flux (precip evap, convective) at surface')  !RCE
+             call addfld (trim(cnst_name_cw(nspc))//'SFSES',horiz_only,  'A','kg/m2/s', &
+                  trim(cnst_name_cw(nspc))//' wet deposition flux (precip evap, stratiform) at surface')  !RCE             
              if(history_aerosol) then
                 call add_default (trim(cnst_name_cw(nspc))//'SFSEC', 1, ' ')  !RCE
                 call add_default (trim(cnst_name_cw(nspc))//'SFSES', 1, ' ')  !RCE
@@ -625,24 +625,24 @@ contains
              unit_basename = 'kg'  
           endif
 
-          call addfld( cnst_name_cw(n),                unit_basename//'/kg ', pver, 'A', &
-               trim(cnst_name_cw(n))//' in cloud water',phys_decomp)
-          call addfld (trim(cnst_name_cw(n))//'SFWET', unit_basename//'/m2/s ',1,  'A', &
-               trim(cnst_name_cw(n))//' wet deposition flux at surface',phys_decomp)
-          call addfld (trim(cnst_name_cw(n))//'SFSIC', unit_basename//'/m2/s ',1,  'A', &
-               trim(cnst_name_cw(n))//' wet deposition flux (incloud, convective) at surface',phys_decomp)
-          call addfld (trim(cnst_name_cw(n))//'SFSIS', unit_basename//'/m2/s ',1,  'A', &
-               trim(cnst_name_cw(n))//' wet deposition flux (incloud, stratiform) at surface',phys_decomp)
-          call addfld (trim(cnst_name_cw(n))//'SFSBC', unit_basename//'/m2/s ',1,  'A', &
-               trim(cnst_name_cw(n))//' wet deposition flux (belowcloud, convective) at surface',phys_decomp)
-          call addfld (trim(cnst_name_cw(n))//'SFSBS', unit_basename//'/m2/s ',1,  'A', &
-               trim(cnst_name_cw(n))//' wet deposition flux (belowcloud, stratiform) at surface',phys_decomp)
-          call addfld (trim(cnst_name_cw(n))//'DDF',   unit_basename//'/m2/s ',   1, 'A', &
-               trim(cnst_name_cw(n))//' dry deposition flux at bottom (grav + turb)',phys_decomp)
-          call addfld (trim(cnst_name_cw(n))//'TBF',   unit_basename//'/m2/s ',   1, 'A', &
-               trim(cnst_name_cw(n))//' turbulent dry deposition flux',phys_decomp)
-          call addfld (trim(cnst_name_cw(n))//'GVF',   unit_basename//'/m2/s ',   1, 'A', &
-               trim(cnst_name_cw(n))//' gravitational dry deposition flux',phys_decomp)     
+          call addfld( cnst_name_cw(n), (/ 'lev' /), 'A',                unit_basename//'/kg ', &
+               trim(cnst_name_cw(n))//' in cloud water')
+          call addfld (trim(cnst_name_cw(n))//'SFWET',horiz_only,  'A', unit_basename//'/m2/s ', &
+               trim(cnst_name_cw(n))//' wet deposition flux at surface')
+          call addfld (trim(cnst_name_cw(n))//'SFSIC',horiz_only,  'A', unit_basename//'/m2/s ', &
+               trim(cnst_name_cw(n))//' wet deposition flux (incloud, convective) at surface')
+          call addfld (trim(cnst_name_cw(n))//'SFSIS',horiz_only,  'A', unit_basename//'/m2/s ', &
+               trim(cnst_name_cw(n))//' wet deposition flux (incloud, stratiform) at surface')
+          call addfld (trim(cnst_name_cw(n))//'SFSBC',horiz_only,  'A', unit_basename//'/m2/s ', &
+               trim(cnst_name_cw(n))//' wet deposition flux (belowcloud, convective) at surface')
+          call addfld (trim(cnst_name_cw(n))//'SFSBS',horiz_only,  'A', unit_basename//'/m2/s ', &
+               trim(cnst_name_cw(n))//' wet deposition flux (belowcloud, stratiform) at surface')
+          call addfld (trim(cnst_name_cw(n))//'DDF',   horiz_only, 'A',   unit_basename//'/m2/s ', &
+               trim(cnst_name_cw(n))//' dry deposition flux at bottom (grav + turb)')
+          call addfld (trim(cnst_name_cw(n))//'TBF',   horiz_only, 'A',   unit_basename//'/m2/s ', &
+               trim(cnst_name_cw(n))//' turbulent dry deposition flux')
+          call addfld (trim(cnst_name_cw(n))//'GVF',   horiz_only, 'A',   unit_basename//'/m2/s ', &
+               trim(cnst_name_cw(n))//' gravitational dry deposition flux')     
 
           if ( history_aerosol ) then 
              call add_default( cnst_name_cw(n), 1, ' ' )
@@ -661,7 +661,7 @@ contains
     do n=1,ntot_amode
        dgnum_name(n) = ' '
        write(dgnum_name(n),fmt='(a,i1)') 'dgnumwet',n
-       call addfld( dgnum_name(n), 'm', pver, 'I', 'Aerosol mode wet diameter', phys_decomp )
+       call addfld( dgnum_name(n), (/ 'lev' /), 'I', 'm', 'Aerosol mode wet diameter' )
        if ( history_aerosol ) then 
           call add_default( dgnum_name(n), 1, ' ' )
        endif

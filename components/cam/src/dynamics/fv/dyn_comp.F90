@@ -1,18 +1,18 @@
 module dyn_comp
 
-use shr_kind_mod,       only: r8 => shr_kind_r8, r4 => shr_kind_r4
-use dynamics_vars,      only: T_FVDYCORE_GRID,            &
-                              T_FVDYCORE_STATE, T_FVDYCORE_CONSTANTS
+use shr_kind_mod,           only: r8 => shr_kind_r8, r4 => shr_kind_r4
+use dynamics_vars,          only: T_FVDYCORE_GRID,            &
+                                  T_FVDYCORE_STATE, T_FVDYCORE_CONSTANTS
 use cam_abortutils,         only: endrun
 
 #if defined(SPMD)
-use mpishorthand,       only: mpicom, mpir8
+use mpishorthand,           only: mpicom, mpir8
 #endif
 
 use perf_mod
-use cam_logfile,        only: iulog
-use hycoef,             only: hycoef_init, hyai, hybi
-use pio,                only: file_desc_t
+use cam_logfile,            only: iulog
+use hycoef,                 only: hycoef_init, hyai, hybi
+use pio,                    only: file_desc_t
 
 implicit none
 private
@@ -148,25 +148,26 @@ subroutine dyn_init(file, dyn_state, dyn_in, dyn_out, NLFileName )
 !   
 !==================================================================================
 
-   use constituents,         only : pcnst
-   use pmgrid,               only : plon, plat, plev, plevp,                   &
-                                    beglonxy, endlonxy, beglatxy, endlatxy,    &
-                                    beglat,   endlat,   beglev,   endlev,      &
-                                    npr_y, npr_z, nprxy_x, nprxy_y,            &
-                                    twod_decomp, mod_geopk, mod_transpose,     &
-                                    mod_gatscat
-   use time_manager,         only : get_step_size
-   use pmgrid, only : dyndecomp_set
+   use constituents,  only : pcnst
+   use pmgrid,        only : plon, plat, plev, plevp,                         &
+                                    beglonxy, endlonxy, beglatxy, endlatxy,   &
+                                    beglat,   endlat,   beglev,   endlev,     &
+                                    npr_y, npr_z, nprxy_x, nprxy_y,           &
+                                    twod_decomp
+   use time_manager,  only : get_step_size
+   use pmgrid,        only : dyndecomp_set
    use dynamics_vars, only : dynamics_init
-   use dycore,      only: get_resolution
+   use dycore,        only : get_resolution
+   use dyn_grid,      only : define_cam_grids, initgrid
 #if ( defined OFFLINE_DYN )
-   use metdata, only:  metdata_dyn_init
+  use metdata, only:  metdata_dyn_init
 #endif
-   use spmd_utils, only: npes, masterproc
+  use spmd_utils, only: npes, masterproc
 #if defined(SPMD)
    use parutilitiesmodule, only : gid, parcollective, maxop
    use spmd_dyn, only : geopkdist, geopkblocks, geopk16byte,                 &
                         npes_xy, npes_yz, mpicom_xy, mpicom_yz, mpicom_nyz,  &
+                        modcomm_transpose, modcomm_geopk, modcomm_gatscat,   &
                         modc_sw_dynrun, modc_hs_dynrun,                      &
                         modc_send_dynrun, modc_mxreq_dynrun,                 &
                         modc_sw_cdcore, modc_hs_cdcore,                      &
@@ -215,8 +216,8 @@ subroutine dyn_init(file, dyn_state, dyn_in, dyn_out, NLFileName )
 ! Local variables
 
   integer, parameter    :: MAXPES = 256
-   real(r8), parameter ::  D0_0                  =   0.0_r8
-   real(r8), parameter ::  D1E5                  =   1.0e5_r8
+  real(r8), parameter ::  D0_0                  =   0.0_r8
+  real(r8), parameter ::  D1E5                  =   1.0e5_r8
 
   type (T_FVDYCORE_GRID)      , pointer :: GRID      ! For convenience
   type (T_FVDYCORE_CONSTANTS) , pointer :: CONSTANTS ! For convenience
@@ -225,7 +226,7 @@ subroutine dyn_init(file, dyn_state, dyn_in, dyn_out, NLFileName )
 #if defined(SPMD)
   integer :: tmp(npes)
 #endif
-  integer, allocatable :: jmyz(:),kmyz(:),imxy(:),jmxy(:)                         ! used for nonblocking receive
+  integer, allocatable :: jmyz(:),kmyz(:),imxy(:),jmxy(:) ! used for nonblocking receive
 
   integer :: nstep, nymd, nhms
   integer :: yr, mm, dd, h, m, s, itmp
@@ -251,12 +252,12 @@ subroutine dyn_init(file, dyn_state, dyn_in, dyn_out, NLFileName )
   integer             :: ks               !  True # press. levs
 
 #if !defined( SPMD )
-   integer :: npes_xy=1
-   integer :: npes_yz=1
-   integer :: mpicom=0
-   integer :: mpicom_xy=0
-   integer :: mpicom_yz=0
-   integer :: mpicom_nyz=0
+  integer :: npes_xy=1
+  integer :: npes_yz=1
+  integer :: mpicom=0
+  integer :: mpicom_xy=0
+  integer :: mpicom_yz=0
+  integer :: mpicom_nyz=0
 #endif
 
   !----------------------------------------------------------------------
@@ -279,10 +280,10 @@ subroutine dyn_init(file, dyn_state, dyn_in, dyn_out, NLFileName )
   allocate( ak(plev+1) )
   allocate( bk(plev+1) )
   do k = 1, plev+1
-     ak(k) = hyai(k) * D1E5
-     bk(k) = hybi(k)
-     if( bk(k) == D0_0 ) ks = k-1
-  end do  
+    ak(k) = hyai(k) * D1E5
+    bk(k) = hybi(k)
+    if( bk(k) == D0_0 ) ks = k-1
+  end do
 !
 ! Get the layout and store directly in the GRID data structure
 !
@@ -327,7 +328,7 @@ subroutine dyn_init(file, dyn_state, dyn_in, dyn_out, NLFileName )
   allocate (kmyz(npr_z))
   allocate (imxy(nprxy_x))
   allocate (jmxy(nprxy_y))
-    
+
 !
 ! SPMD-related stuff
 !
@@ -336,144 +337,144 @@ subroutine dyn_init(file, dyn_state, dyn_in, dyn_out, NLFileName )
     grid%geopkdist= geopkdist
     grid%geopk16byte = geopk16byte
     grid%geopkblocks = geopkblocks
-    grid%mod_method = mod_transpose
-    grid%mod_geopk  = mod_geopk
-    grid%mod_gatscat  = mod_gatscat
+    grid%mod_method = modcomm_transpose
+    grid%mod_geopk  = modcomm_geopk
+    grid%mod_gatscat  = modcomm_gatscat
 
-    grid%modc_dynrun(1)   = modc_sw_dynrun
-    if (modc_hs_dynrun) then
-       grid%modc_dynrun(2) = 1
-    else
-       grid%modc_dynrun(2) = 0
-    endif
-    if (modc_send_dynrun) then
-       grid%modc_dynrun(3) = 1
-    else
-       grid%modc_dynrun(3) = 0
-    endif
-    grid%modc_dynrun(4) = modc_mxreq_dynrun
+  grid%modc_dynrun(1)   = modc_sw_dynrun
+  if (modc_hs_dynrun) then
+    grid%modc_dynrun(2) = 1
+  else
+    grid%modc_dynrun(2) = 0
+  end if
+  if (modc_send_dynrun) then
+    grid%modc_dynrun(3) = 1
+  else
+    grid%modc_dynrun(3) = 0
+  end if
+  grid%modc_dynrun(4) = modc_mxreq_dynrun
 
-    grid%modc_cdcore(1)   = modc_sw_cdcore
-    if (modc_hs_cdcore) then
-       grid%modc_cdcore(2) = 1
-    else
-       grid%modc_cdcore(2) = 0
-    endif
-    if (modc_send_cdcore) then
-       grid%modc_cdcore(3) = 1
-    else
-       grid%modc_cdcore(3) = 0
-    endif
-    grid%modc_cdcore(4) = modc_mxreq_cdcore
+  grid%modc_cdcore(1)   = modc_sw_cdcore
+  if (modc_hs_cdcore) then
+    grid%modc_cdcore(2) = 1
+  else
+    grid%modc_cdcore(2) = 0
+  end if
+  if (modc_send_cdcore) then
+    grid%modc_cdcore(3) = 1
+  else
+    grid%modc_cdcore(3) = 0
+  end if
+  grid%modc_cdcore(4) = modc_mxreq_cdcore
 
-    grid%modc_gather(1)   = modc_sw_gather
-    if (modc_hs_gather) then
-       grid%modc_gather(2) = 1
-    else
-       grid%modc_gather(2) = 0
-    endif
-    if (modc_send_gather) then
-       grid%modc_gather(3) = 1
-    else
-       grid%modc_gather(3) = 0
-    endif
-    grid%modc_gather(4) = modc_mxreq_gather
+  grid%modc_gather(1)   = modc_sw_gather
+  if (modc_hs_gather) then
+    grid%modc_gather(2) = 1
+  else
+    grid%modc_gather(2) = 0
+  end if
+  if (modc_send_gather) then
+    grid%modc_gather(3) = 1
+  else
+    grid%modc_gather(3) = 0
+  end if
+  grid%modc_gather(4) = modc_mxreq_gather
 
-    grid%modc_scatter(1)   = modc_sw_scatter
-    if (modc_hs_scatter) then
-       grid%modc_scatter(2) = 1
-    else
-       grid%modc_scatter(2) = 0
-    endif
-    if (modc_send_scatter) then
-       grid%modc_scatter(3) = 1
-    else
-       grid%modc_scatter(3) = 0
-    endif
-    grid%modc_scatter(4) = modc_mxreq_scatter
+  grid%modc_scatter(1)   = modc_sw_scatter
+  if (modc_hs_scatter) then
+    grid%modc_scatter(2) = 1
+  else
+    grid%modc_scatter(2) = 0
+  end if
+  if (modc_send_scatter) then
+    grid%modc_scatter(3) = 1
+  else
+    grid%modc_scatter(3) = 0
+  end if
+  grid%modc_scatter(4) = modc_mxreq_scatter
 
-    grid%modc_tracer(1)   = modc_sw_tracer
-    if (modc_hs_tracer) then
-       grid%modc_tracer(2) = 1
-    else
-       grid%modc_tracer(2) = 0
-    endif
-    if (modc_send_tracer) then
-       grid%modc_tracer(3) = 1
-    else
-       grid%modc_tracer(3) = 0
-    endif
-    grid%modc_tracer(4) = modc_mxreq_tracer
+  grid%modc_tracer(1)   = modc_sw_tracer
+  if (modc_hs_tracer) then
+    grid%modc_tracer(2) = 1
+  else
+    grid%modc_tracer(2) = 0
+  endif
+  if (modc_send_tracer) then
+    grid%modc_tracer(3) = 1
+  else
+    grid%modc_tracer(3) = 0
+  end if
+  grid%modc_tracer(4) = modc_mxreq_tracer
 
-    grid%modc_onetwo       = modc_onetwo
-    grid%modc_tracers      = modc_tracers
+  grid%modc_onetwo       = modc_onetwo
+  grid%modc_tracers      = modc_tracers
 
 !
 !  Define imxy, jmxy, jmyz, kmyz from ifirstxy, ilastxy, etc.
 !
-     tmp = 0
-     tmp(gid+1) = ilastxy-ifirstxy+1
-     call parcollective( mpicom, maxop, npes, tmp )
-     imxy(1:nprxy_x) = tmp(1:nprxy_x)
+  tmp = 0
+  tmp(gid+1) = ilastxy-ifirstxy+1
+  call parcollective( mpicom, maxop, npes, tmp )
+  imxy(1:nprxy_x) = tmp(1:nprxy_x)
 
-     tmp = 0
-     tmp(gid+1) = jlastxy-jfirstxy+1
-     call parcollective( mpicom, maxop, npes, tmp )
-     do k=1,nprxy_y
-       jmxy(k) = tmp((k-1)*nprxy_x+1)
-     enddo
+  tmp = 0
+  tmp(gid+1) = jlastxy-jfirstxy+1
+  call parcollective( mpicom, maxop, npes, tmp )
+  do k=1,nprxy_y
+    jmxy(k) = tmp((k-1)*nprxy_x+1)
+  end do
 
-     tmp = 0
-     tmp(gid+1)   = jlast-jfirst+1
-     call parcollective( mpicom, maxop, npes, tmp )
-     jmyz(1:npr_y) = tmp(1:npr_y)
+  tmp = 0
+  tmp(gid+1)   = jlast-jfirst+1
+  call parcollective( mpicom, maxop, npes, tmp )
+  jmyz(1:npr_y) = tmp(1:npr_y)
 
-     tmp = 0
-     tmp(gid+1)   = klast-kfirst+1
-     call parcollective( mpicom, maxop, npes, tmp )
-     do k=1,npr_z
-        kmyz(k) = tmp((k-1)*npr_y+1)
-     enddo
+  tmp = 0
+  tmp(gid+1)   = klast-kfirst+1
+  call parcollective( mpicom, maxop, npes, tmp )
+  do k=1,npr_z
+    kmyz(k) = tmp((k-1)*npr_y+1)
+  end do
 
 #else
 !
 ! Sensible initializations for OMP-only  (hopefully none of these variables are used...)
 !
-    grid%twod_decomp = 0
-    grid%geopkdist   = .false.
-    grid%geopk16byte = .false.
-    grid%geopkblocks = 1
-    grid%mod_method  = 0
-    grid%mod_geopk   = 0
-    grid%mod_gatscat = 0
+  grid%twod_decomp = 0
+  grid%geopkdist   = .false.
+  grid%geopk16byte = .false.
+  grid%geopkblocks = 1
+  grid%mod_method  = 0
+  grid%mod_geopk   = 0
+  grid%mod_gatscat = 0
 
-    grid%modc_dynrun(1)  = 0
-    grid%modc_dynrun(2)  = 1
-    grid%modc_dynrun(3)  = 1
-    grid%modc_dynrun(4)  = -1
+  grid%modc_dynrun(1)  = 0
+  grid%modc_dynrun(2)  = 1
+  grid%modc_dynrun(3)  = 1
+  grid%modc_dynrun(4)  = -1
 
-    grid%modc_cdcore(1)  = 0
-    grid%modc_cdcore(2)  = 1
-    grid%modc_cdcore(3)  = 1
-    grid%modc_cdcore(4)  = -1
+  grid%modc_cdcore(1)  = 0
+  grid%modc_cdcore(2)  = 1
+  grid%modc_cdcore(3)  = 1
+  grid%modc_cdcore(4)  = -1
+    
+  grid%modc_gather(1)  = 0
+  grid%modc_gather(2)  = 1
+  grid%modc_gather(3)  = 1
+  grid%modc_gather(4)  = -1
 
-    grid%modc_gather(1)  = 0
-    grid%modc_gather(2)  = 1
-    grid%modc_gather(3)  = 1
-    grid%modc_gather(4)  = -1
+  grid%modc_scatter(1) = 0
+  grid%modc_scatter(2) = 1
+  grid%modc_scatter(3) = 1
+  grid%modc_scatter(4) = -1
 
-    grid%modc_scatter(1) = 0
-    grid%modc_scatter(2) = 1
-    grid%modc_scatter(3) = 1
-    grid%modc_scatter(4) = -1
+  grid%modc_tracer(1)  = 0
+  grid%modc_tracer(2)  = 1
+  grid%modc_tracer(3)  = 1
+  grid%modc_tracer(4)  = -1
 
-    grid%modc_tracer(1)  = 0
-    grid%modc_tracer(2)  = 1
-    grid%modc_tracer(3)  = 1
-    grid%modc_tracer(4)  = -1
-
-    grid%modc_onetwo     = 1
-    grid%modc_tracers    = 0
+  grid%modc_onetwo     = 1
+  grid%modc_tracers    = 0
 
 #endif
 
@@ -499,12 +500,12 @@ subroutine dyn_init(file, dyn_state, dyn_in, dyn_out, NLFileName )
   DYN_STATE%CONSV     = dyn_conservative
   DYN_STATE%FILTCW    = filtcw
   if (filtcw .gt. 0) then
-     if (masterproc) then
-        write (iulog,*) ' '
-        write (iulog,*) 'Filtering of c-grid winds turned on'
-        write (iulog,*) ' '
-     endif
-  endif
+    if (masterproc) then
+      write (iulog,*) ' '
+      write (iulog,*) 'Filtering of c-grid winds turned on'
+      write (iulog,*) ' '
+    end if
+  end if
 
 !
 ! Calculation of orders for the C grid is fixed by D-grid IORD, JORD
@@ -512,13 +513,13 @@ subroutine dyn_init(file, dyn_state, dyn_in, dyn_out, NLFileName )
     DYN_STATE%ICD =  1
   else
     DYN_STATE%ICD = -2
-  endif
+  end if
 
   if( jord <= 2 ) then
     DYN_STATE%JCD =  1
   else
     DYN_STATE%JCD =  -2
-  endif
+  end if
 
 !
 ! Calculate NSPLIT if it was specified as 0
@@ -526,19 +527,18 @@ subroutine dyn_init(file, dyn_state, dyn_in, dyn_out, NLFileName )
 
 ! Calculate NSPLTRAC if it was specified as 0
   if (NSPLTRAC <= 0) then
-     if (get_resolution() == '0.23x0.31') then
-        DYN_STATE%NSPLTRAC = max ( 1, DYN_STATE%NSPLIT/2 )
-     else
-        DYN_STATE%NSPLTRAC = max ( 1, DYN_STATE%NSPLIT/4 )
-     endif
-  endif
-
+    if (get_resolution() == '0.23x0.31') then
+      DYN_STATE%NSPLTRAC = max ( 1, DYN_STATE%NSPLIT/2 )
+    else
+      DYN_STATE%NSPLTRAC = max ( 1, DYN_STATE%NSPLIT/4 )
+    end if
+  end if
 
 
 ! Set NSPLTVRM to 1 if it was specified as 0
   if (NSPLTVRM <= 0) then
-     DYN_STATE%NSPLTVRM = 1
-  endif
+    DYN_STATE%NSPLTVRM = 1
+  end if
 !
 !
 ! Create the dynamics interface
@@ -571,19 +571,27 @@ subroutine dyn_init(file, dyn_state, dyn_in, dyn_out, NLFileName )
   DYN_STATE%NUM_CALLS = 0
 
 #if ( defined OFFLINE_DYN )
-   call metdata_dyn_init(grid)
+  call metdata_dyn_init(grid)
 #endif
-   dyndecomp_set=.true.
-   call history_defaults()
+  dyndecomp_set=.true.
 
-   call ctem_init( NLFileName )
+  deallocate (jmyz)
+  deallocate (kmyz)
+  deallocate (imxy)
+  deallocate (jmxy)
+  deallocate (ak)
+  deallocate (bk)
 
-   deallocate (jmyz)
-   deallocate (kmyz)
-   deallocate (imxy)
-   deallocate (jmxy)
-   deallocate (ak)
-   deallocate (bk)
+  ! Call initgrid (nee initcom, initializes some coordinate info)
+  call initgrid()
+  ! Define the CAM grids (this has to be after dycore spinup).
+  call define_cam_grids()
+
+  ! Setup circulation diagnostics (has to be after define_cam_grids)
+  call ctem_init( NLFileName )
+
+  ! Set history defaults (has to be after grids are defined)
+  call history_defaults()
 
   return
 
@@ -766,7 +774,7 @@ end subroutine dyn_create_interface
         use constituents, only: pcnst, cnst_name, cnst_longname, tottnam, cnst_get_ind
         use ppgrid,       only: pver, pverp
         use pmgrid,       only: plev, plevp
-        use cam_history,  only: dyn_stagger_decomp, dyn_decomp, addfld, add_default
+        use cam_history,  only: addfld, add_default, horiz_only
         use phys_control, only: phys_getopts
 
         implicit none
@@ -789,39 +797,35 @@ end subroutine dyn_create_interface
         !----------------------------------------------------------------------------
         ! Dynamics variables which belong in dynamics specific initialization modules
         !----------------------------------------------------------------------------
-        call addfld ('US      ','m/s ',plev, 'A','Zonal wind, staggered',dyn_stagger_decomp)
-        call addfld ('VS      ','m/s ',plev, 'A','Meridional wind, staggered',dyn_decomp)
-        call addfld ('US&IC   ','m/s ',plev, 'I','Zonal wind, staggered',dyn_stagger_decomp )
-        call addfld ('VS&IC   ','m/s ',plev, 'I','Meridional wind, staggered',dyn_decomp )
-        call addfld ('PS&IC      ','Pa      ',1,    'I','Surface pressure',dyn_decomp )
-        call addfld ('T&IC       ','K       ',plev, 'I','Temperature',dyn_decomp )
+        call addfld ('US',    (/ 'lev' /),'A','m/s','Zonal wind, staggered', gridname='fv_u_stagger' )
+        call addfld ('VS',    (/ 'lev' /),'A','m/s','Meridional wind, staggered', gridname='fv_v_stagger' )
+        call addfld ('US&IC', (/ 'lev' /),'I','m/s','Zonal wind, staggered',gridname='fv_u_stagger' )
+        call addfld ('VS&IC', (/ 'lev' /),'I','m/s','Meridional wind, staggered',gridname='fv_v_stagger' )
+        call addfld ('PS&IC', horiz_only, 'I','Pa', 'Surface pressure',gridname='fv_centers' )
+        call addfld ('T&IC',  (/ 'lev' /),'I','K',  'Temperature',gridname='fv_centers' )
         do m = 1,pcnst
-           call addfld (trim(cnst_name(m))//'&IC','kg/kg   ',plev, 'I',cnst_longname(m)                 ,dyn_decomp )
+           call addfld (trim(cnst_name(m))//'&IC',(/ 'lev' /),'I','kg/kg',cnst_longname(m),gridname='fv_centers' )
         end do
 
         do m=1,pcnst
-           ! there are no matching outfld calls for the quantities that at commented out
-           !call addfld (hadvnam(m), 'kg/kg/s ',pver, 'A',trim(cnst_name(m))//' horizontal advection tendency ',dyn_decomp)
-           !call addfld (vadvnam(m), 'kg/kg/s ',pver, 'A',trim(cnst_name(m))//' vertical advection tendency ',dyn_decomp)
-           !call addfld (tendnam(m), 'kg/kg/s ',pver, 'A',trim(cnst_name(m))//' total tendency ',dyn_decomp)
-           call addfld (tottnam(m), 'kg/kg/s ',pver, 'A',trim(cnst_name(m))//' horz + vert + fixer tendency ',dyn_decomp)
-           !call addfld (fixcnam(m), 'kg/kg/s ',pver, 'A',trim(cnst_name(m))//' tendency due to slt fixer',dyn_decomp)
+           call addfld (tottnam(m),(/ 'lev' /),'A','kg/kg/s',trim(cnst_name(m))//' horz + vert + fixer tendency ',  &
+                gridname='fv_centers')
         end do
 
-        call addfld ('DUH     ','K/s     ',plev, 'A','U horizontal diffusive heating',dyn_decomp)
-        call addfld ('DVH     ','K/s     ',plev, 'A','V horizontal diffusive heating',dyn_decomp)
-        call addfld ('ENGYCORR','W/m2    ',plev, 'A','Energy correction for over-all conservation',dyn_decomp)
+        call addfld ('DUH',      (/ 'lev' /), 'A','K/s','U horizontal diffusive heating',                 gridname='fv_centers')
+        call addfld ('DVH',      (/ 'lev' /), 'A','K/s','V horizontal diffusive heating',                 gridname='fv_centers')
+        call addfld ('ENGYCORR', (/ 'lev' /), 'A','W/m2','Energy correction for over-all conservation',   gridname='fv_centers')
 
-        call addfld ('FU      ','m/s2    ',plev, 'A','Zonal wind forcing term',dyn_decomp)
-        call addfld ('FV      ','m/s2    ',plev, 'A','Meridional wind forcing term',dyn_decomp)
-        call addfld ('FU_S    ','m/s2    ',plev, 'A','Zonal wind forcing term on staggered grid',dyn_stagger_decomp)
-        call addfld ('FV_S    ','m/s2    ',plev, 'A','Meridional wind forcing term on staggered grid',dyn_decomp)
-        call addfld ('UTEND   ','m/s2    ',plev, 'A','U tendency',dyn_decomp)
-        call addfld ('VTEND   ','m/s2    ',plev, 'A','V tendency',dyn_decomp)
-        call addfld ('TTEND   ','K/s     ',plev, 'A','Total T tendency (all processes)',dyn_decomp)
-        call addfld ('LPSTEN  ','Pa/s    ',1,    'A','Surface pressure tendency',dyn_decomp)
-        call addfld ('VAT     ','K/s     ',plev, 'A','Vertical advective tendency of T',dyn_decomp)
-        call addfld ('KTOOP   ','K/s     ',plev, 'A','(Kappa*T)*(omega/P)',dyn_decomp)
+        call addfld ('FU',       (/ 'lev' /), 'A','m/s2','Zonal wind forcing term',                       gridname='fv_centers')
+        call addfld ('FV',       (/ 'lev' /), 'A','m/s2','Meridional wind forcing term',                  gridname='fv_centers')
+        call addfld ('FU_S',     (/ 'lev' /), 'A','m/s2','Zonal wind forcing term on staggered grid',     gridname='fv_u_stagger')
+        call addfld ('FV_S',     (/ 'lev' /), 'A','m/s2','Meridional wind forcing term on staggered grid',gridname='fv_v_stagger')
+        call addfld ('UTEND',    (/ 'lev' /), 'A','m/s2','U tendency',                                    gridname='fv_centers')
+        call addfld ('VTEND',    (/ 'lev' /), 'A','m/s2','V tendency',                                    gridname='fv_centers')
+        call addfld ('TTEND',    (/ 'lev' /), 'A','K/s','Total T tendency (all processes)',               gridname='fv_centers')
+        call addfld ('LPSTEN',   horiz_only,  'A','Pa/s','Surface pressure tendency',                     gridname='fv_centers')
+        call addfld ('VAT',      (/ 'lev' /), 'A','K/s','Vertical advective tendency of T',               gridname='fv_centers')
+        call addfld ('KTOOP',    (/ 'lev' /), 'A','K/s','(Kappa*T)*(omega/P)',                            gridname='fv_centers')
 
         !----------------------------------------------------------------------------
         ! Determine defaults variables
@@ -2538,6 +2542,3 @@ end subroutine dyn_final
 
 
 end module dyn_comp
-
-
-

@@ -1360,7 +1360,7 @@ Default: none
 <!-- History and Initial Conditions Output -->
 
 <entry id="avgflag_pertape" type="char*1(6)"  category="history"
-       group="cam_inparm" valid_values="A,B,I,X,M" >
+       group="cam_history_nl" valid_values="A,B,I,X,M" >
 Sets the averaging flag for all variables on a particular history file
 series. Valid values are:
 
@@ -1377,51 +1377,51 @@ Defaults: set in code via the addfld and add_default subroutine calls.
 </entry>
 
 <entry id="empty_htapes" type="logical"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 If true don't put any of the variables on the history tapes by
 default. Only output the variables that the user explicitly lists in
 the <varname>fincl#</varname> namelist items.  Default: FALSE
 </entry>
 
 <entry id="fexcl1" type="char*24(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 List of fields to exclude from the 1st history file (by default the name
 of this file contains the string "h0").
 Default: none
 </entry>
 <entry id="fexcl2" type="char*24(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 List of fields to exclude from the 2nd history file (by default the name
 of this file contains the string "h1").
 Default: none
 </entry>
 <entry id="fexcl3" type="char*24(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 List of fields to exclude from the 3rd history file (by default the name
 of this file contains the string "h2").
 Default: none
 </entry>
 <entry id="fexcl4" type="char*24(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 List of fields to exclude from the 4th history file (by default the name
 of this file contains the string "h3").
 Default: none
 </entry>
 <entry id="fexcl5" type="char*24(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 List of fields to exclude from the 5th history file (by default the name
 of this file contains the string "h4").
 Default: none
 </entry>
 <entry id="fexcl6" type="char*24(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 List of fields to exclude from the 6th history file (by default the name
 of this file contains the string "h5").
 Default: none
 </entry>
 
 <entry id="fincl1" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 List of fields to include on the first history file (by default the name of
 this file contains the string "h0").  The added fields must be in Master
 Field List.  The averaging flag for the output field can be specified by
@@ -1437,31 +1437,31 @@ are:
 Default:  set in code via the addfld and add_default subroutine calls.
 </entry>
 <entry id="fincl2" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Same as <varname>fincl1</varname>, but for the 2nd history file (by default
 the name of this file contains the string "h1").
 Default: none.
 </entry>
 <entry id="fincl3" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Same as <varname>fincl1</varname>, but for the 3rd history file (by default
 the name of this file contains the string "h2").
 Default: none.
 </entry>
 <entry id="fincl4" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Same as <varname>fincl1</varname>, but for the 4th history file (by default
 the name of this file contains the string "h3").
 Default: none.
 </entry>
 <entry id="fincl5" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Same as <varname>fincl1</varname>, but for the 5th history file (by default
 the name of this file contains the string "h4").
 Default: none.
 </entry>
 <entry id="fincl6" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Same as <varname>fincl1</varname>, but for the 6th history file (by default
 the name of this file contains the string "h5").
 Default: none.
@@ -1514,13 +1514,13 @@ Default: none.
 </entry>
 
 <entry id="collect_column_output" type="logical(6)" category="history"
-   group="cam_inparm" valid_values="">
+   group="cam_history_nl" valid_values="">
 Collect all column data into a single field and output in ncol format,
 much faster than default when you have a lot of columns.
 </entry>
 
 <entry id="fincl1lonlat" type="char*128(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 List of columns or contiguous columns at which the fincl1 fields will be
 output. Individual columns are specified as a string using a longitude
 degree (greater or equal to 0.) followed by a single character
@@ -1535,66 +1535,66 @@ north to 20 north.
 Default: none
 </entry>
 <entry id="fincl2lonlat" type="char*128(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Same as <varname>fincl1lonlat</varname>, but for 2nd history file.
 </entry>
 <entry id="fincl3lonlat" type="char*128(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Same as <varname>fincl1lonlat</varname>, but for 3rd history file.
 </entry>
 <entry id="fincl4lonlat" type="char*128(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Same as <varname>fincl1lonlat</varname>, but for 4th history file.
 </entry>
 <entry id="fincl5lonlat" type="char*128(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Same as <varname>fincl1lonlat</varname>, but for 5th history file.
 </entry>
 <entry id="fincl6lonlat" type="char*128(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Same as <varname>fincl1lonlat</varname>, but for 6th history file.
 </entry>
 
 
 <entry id="fwrtpr1" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Specific fields which will be written using the non-default precision on
 the 1st history file.
 Default: none
 </entry>
 <entry id="fwrtpr2" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Specific fields which will be written using the non-default precision on
 the 2nd history file.
 Default: none
 </entry>
 <entry id="fwrtpr3" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Specific fields which will be written using the non-default precision on
 the 3rd history file.
 Default: none
 </entry>
 <entry id="fwrtpr4" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Specific fields which will be written using the non-default precision on
 the 4th history file.
 Default: none
 </entry>
 <entry id="fwrtpr5" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Specific fields which will be written using the non-default precision on
 the 5th history file.
 Default: none
 </entry>
 <entry id="fwrtpr6" type="char*26(750)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Specific fields which will be written using the non-default precision on
 the 6th history file.
 Default: none
 </entry>
 
 <entry id="hfilename_spec" type="char*256(6)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 
 Array of history filename specifiers.  The filenames of up to six history
 output files can be controlled via this variable.  Filename specifiers give
@@ -1661,7 +1661,7 @@ Default: 1
 </entry>
 
 <entry id="inithist" type="char*8"  category="history"
-       group="cam_inparm" valid_values="NONE,6-HOURLY,DAILY,MONTHLY,YEARLY,CAMIOP,ENDOFRUN" >
+       group="cam_history_nl" valid_values="NONE,6-HOURLY,DAILY,MONTHLY,YEARLY,CAMIOP,ENDOFRUN" >
 Frequency that initial files will be output: 6-hourly, daily, monthly,
 yearly, or never.  Valid values: 'NONE', '6-HOURLY', 'DAILY', 'MONTHLY',
 'YEARLY', 'CAMIOP', 'ENDOFRUN'.
@@ -1669,14 +1669,14 @@ Default: 'YEARLY'
 </entry>
 
 <entry id="inithist_all" type="logical"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 If false then include only REQUIRED fields on IC file.  If true then
 include required AND optional fields on IC file.  
 Default: FALSE
 </entry>
 
 <entry id="mfilt" type="integer(6)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Array containing the maximum number of time samples written to a history
 file.  The first value applies to the primary history file, the second
 through sixth to the auxillary history files.
@@ -1684,7 +1684,7 @@ Default: 1,30,30,30,30,30
 </entry>
 
 <entry id="lcltod_start" type="integer(6)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Array containing the starting time of day for local time history averaging. 
 Used in conjuction with lcltod_stop. If lcltod_stop is less than lcltod_start, 
 then the time range wraps around 24 hours. The start time is included in the 
@@ -1694,7 +1694,7 @@ Default: none
 </entry>
 
 <entry id="lcltod_stop" type="integer(6)"  category="history"
-       group="cam_inparm" valid_values="" >
+       group="cam_history_nl" valid_values="" >
 Array containing the stopping time of day for local time history averaging. 
 Used in conjuction with lcltod_start. If lcltod_stop is less than lcltod_start, 
 then the time range wraps around 24 hours. The stop time is not included in the 
@@ -1704,7 +1704,7 @@ Default: none
 </entry>
 
 <entry id="ndens" type="integer(6)"  category="history"
-       group="cam_inparm" valid_values="1,2" > 
+       group="cam_history_nl" valid_values="1,2" > 
 
 Array specifying the precision of real data written to each history file
 series. Valid values are 1 or 2. '1' implies output real values are 8-byte
@@ -1715,7 +1715,7 @@ Default: 2,2,2,2,2,2
 
 
 <entry id="nhtfrq" type="integer(6)"  category="history"
-       group="cam_inparm" valid_values="" > 
+       group="cam_history_nl" valid_values="" > 
 
 Array of write frequencies for each history file series.
 If <varname>nhtfrq(1)</varname> = 0, the file will be a monthly average.
@@ -1725,6 +1725,46 @@ timesteps.  If <varname>nhtfrq(i)</varname> &lt; 0, frequency is specified
 as number of hours.
 
 Default: 0,-24,-24,-24,-24,-24
+</entry>
+
+<entry id="interpolate_output" type="logical(10)" category="history"
+    group="cam_history_nl" valid_values="">
+If interpolate_output(k) = .true., then the k'th history file will be
+interpolated to a lat/lon grid before output.
+Default: .false.
+</entry>
+
+<entry id="interpolate_nlat" type="integer(10)" category="history"
+    group="cam_history_nl" valid_values="">
+Size of latitude dimension of grid for interpolated output.
+If interpolate_nlat and interpolate_nlon are zero, reasonable values
+will be chosen by the dycore based on the run resolution.
+Default: 0
+</entry>
+
+<entry id="interpolate_nlon" type="integer(10)" category="history"
+    group="cam_history_nl" valid_values="">
+Size of longitude dimension of grid for interpolated output.
+If interpolate_nlat and interpolate_nlon are zero, reasonable values
+will be chosen by the dycore based on the run resolution.
+Default: 0
+</entry>
+
+<entry id="interpolate_type" type="integer(10)" category="history"
+    group="cam_history_nl" valid_values="0,1">
+Selects interpolation method for output on lat/lon grid.
+0: Use SE's native high-order method.
+1: Use a bilinear method.
+Default: 1 (bilinear)
+</entry>
+
+<entry id="interpolate_gridtype" type="integer(10)" category="history"
+    group="cam_history_nl" valid_values="1,2,3">
+Selects output grid type for lat/lon interpolated output.
+1: Equally spaced, including poles (FV scalars output grid).
+2: Gauss grid (CAM Eulerian).
+3: Equally spaced, no poles (FV staggered velocity).
+Default: 1
 </entry>
 
 <!-- Initial Conditions -->
@@ -1772,13 +1812,6 @@ try reading constituent data from the IC file; just use the
 internally-specified defaults.
 Default: TRUE
 </entry>
-
-<entry id="use_64bit_nc" type="logical"  category="history"
-       group="cam_inparm" valid_values="" >
-Use 64-bit netCDF format for cam history files.
-Default: TRUE
-</entry>
-
 
 <!-- COSP Cloud Simulator control LOGICALS -->
 
@@ -5170,46 +5203,6 @@ Default: TRUE
 
 
 <!-- SE dycore -->
-
-<entry id="interpolate_analysis" type="logical(6)" category="se"
-    group="analysis_nl" valid_values="">
-If interpolate_analysis(k) = .true., then the k'th history file will be
-interpolated to a lat/lon grid before output.
-Default: Set by build-namelist (probably all .false.).
-</entry>
-
-<entry id="interp_nlat" type="integer" category="se"
-    group="analysis_nl" valid_values="">
-Latitude dimension of grid for interpolated output.
-If interp_nlat and interp_nlon are zero, reasonable values will be chosen
-based on the cubed-sphere resolution.
-Default: Set by build-namelist.
-</entry>
-
-<entry id="interp_nlon" type="integer" category="se"
-    group="analysis_nl" valid_values="">
-Longitude dimension of grid for interpolated output.
-If interp_nlat and interp_nlon are zero, reasonable values will be chosen
-based on the cubed-sphere resolution.
-Default: Set by build-namelist.
-</entry>
-
-<entry id="interp_type" type="integer" category="se"
-    group="analysis_nl" valid_values="0,1">
-Selects interpolation method for output on lat/lon grid.
-0: Use SE's native high-order method.
-1: Use a bilinear method.
-Default: Set by build-namelist.
-</entry>
-
-<entry id="interp_gridtype" type="integer" category="se"
-    group="analysis_nl" valid_values="1,2,3">
-Selects output grid type for lat/lon interpolated output.
-1: Equally spaced, including poles (FV scalars output grid).
-2: Gauss grid (CAM Eulerian).
-3: Equally spaced, no poles (FV staggered velocity).
-Default: Set by build-namelist.
-</entry>
 
 <entry id="se_nsplit" type="integer" category="se"
        group="ctl_nl" valid_values="" >

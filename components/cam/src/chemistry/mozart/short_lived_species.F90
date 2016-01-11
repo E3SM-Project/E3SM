@@ -89,7 +89,7 @@ contains
        n = map(m)
        fieldname = solsym(n)
        call infld( fieldname,ncid_ini,dim1name, 'lev', 'lat', 1, pcols, 1, pver, begchunk, endchunk, &
-                   tmpptr, found, grid_map='PHYS')
+                   tmpptr, found, gridname='physgrid')
        call pbuf_set_field(pbuf2d, pbf_idx, tmpptr, start=(/1,1,m/),kount=(/pcols,pver,1/))
     enddo
 

@@ -52,7 +52,7 @@ contains
 
     use mo_chem_utls,only : get_inv_ndx
     use tracer_data, only : trcdata_init
-    use cam_history, only : addfld, phys_decomp
+    use cam_history, only : addfld
     use ppgrid,      only : pver
     use error_messages, only: handle_err
     use ppgrid,         only: pcols, pver, begchunk, endchunk
@@ -93,8 +93,8 @@ contains
 
        tracer_cnst_flds(i) = fields(i)%fldnam
 
-       call addfld(trim(fields(i)%fldnam),'mol/mol ', pver, &
-                   'I', 'prescribed tracer constituent', phys_decomp )
+       call addfld(trim(fields(i)%fldnam), (/ 'lev' /), &
+                   'I','mol/mol', 'prescribed tracer constituent' )
     enddo 
 
     allocate(data_q(pcols,pver,num_tracer_cnst,begchunk:endchunk), stat=istat)

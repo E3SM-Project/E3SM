@@ -164,7 +164,7 @@ end subroutine check_energy_get_integrals
 ! Initialize the energy conservation module
 ! 
 !-----------------------------------------------------------------------
-    use cam_history,       only: addfld, add_default, phys_decomp
+    use cam_history,       only: addfld, horiz_only, add_default
     use phys_control,      only: phys_getopts
 
     implicit none
@@ -178,10 +178,10 @@ end subroutine check_energy_get_integrals
                        history_budget_histfile_num_out = history_budget_histfile_num)
 
 ! register history variables
-    call addfld('TEINP   ', 'W/m2', 1,    'A', 'Total energy of physics input',    phys_decomp)
-    call addfld('TEOUT   ', 'W/m2', 1,    'A', 'Total energy of physics output',   phys_decomp)
-    call addfld('TEFIX   ', 'W/m2', 1,    'A', 'Total energy after fixer',         phys_decomp)
-    call addfld('DTCORE'  , 'K/s' , pver, 'A', 'T tendency due to dynamical core', phys_decomp)
+    call addfld('TEINP', horiz_only,    'A', 'W/m2', 'Total energy of physics input')
+    call addfld('TEOUT', horiz_only,    'A', 'W/m2', 'Total energy of physics output')
+    call addfld('TEFIX', horiz_only,    'A', 'W/m2', 'Total energy after fixer')
+    call addfld('DTCORE'  , (/ 'lev' /), 'A', 'K/s' , 'T tendency due to dynamical core')
 
     if (masterproc) then
        write (iulog,*) ' print_energy_errors is set', print_energy_errors

@@ -1,3 +1,4 @@
+
 !===============================================================================
 ! cloud cover output
 !===============================================================================
@@ -5,7 +6,7 @@ module cloud_cover_diags
 
   use shr_kind_mod,  only: r8=>shr_kind_r8
   use ppgrid,        only: pcols, pver,pverp
-  use cam_history,   only: addfld, add_default, phys_decomp, outfld
+  use cam_history,   only: addfld, horiz_only, add_default, outfld
   use phys_control,  only: phys_getopts
 
   implicit none
@@ -24,11 +25,11 @@ subroutine cloud_cover_diags_init(sampling_seq)
   character(len=*), intent(in) :: sampling_seq
   logical :: history_amwg         ! output the variables used by the AMWG diag package
 
-  call addfld ('CLOUD   ','fraction',pver, 'A','Cloud fraction'                        ,phys_decomp, sampling_seq=sampling_seq)
-  call addfld ('CLDTOT  ','fraction',1,    'A','Vertically-integrated total cloud'     ,phys_decomp, sampling_seq=sampling_seq)
-  call addfld ('CLDLOW  ','fraction',1,    'A','Vertically-integrated low cloud'       ,phys_decomp, sampling_seq=sampling_seq)
-  call addfld ('CLDMED  ','fraction',1,    'A','Vertically-integrated mid-level cloud' ,phys_decomp, sampling_seq=sampling_seq)
-  call addfld ('CLDHGH  ','fraction',1,    'A','Vertically-integrated high cloud'      ,phys_decomp, sampling_seq=sampling_seq)
+  call addfld ('CLOUD',(/ 'lev' /), 'A','fraction','Cloud fraction'                        , sampling_seq=sampling_seq)
+  call addfld ('CLDTOT',horiz_only,    'A','fraction','Vertically-integrated total cloud'     , sampling_seq=sampling_seq)
+  call addfld ('CLDLOW',horiz_only,    'A','fraction','Vertically-integrated low cloud'       , sampling_seq=sampling_seq)
+  call addfld ('CLDMED',horiz_only,    'A','fraction','Vertically-integrated mid-level cloud' , sampling_seq=sampling_seq)
+  call addfld ('CLDHGH',horiz_only,    'A','fraction','Vertically-integrated high cloud'      , sampling_seq=sampling_seq)
 
   ! determine the add_default fields
   call phys_getopts(history_amwg_out           = history_amwg  )

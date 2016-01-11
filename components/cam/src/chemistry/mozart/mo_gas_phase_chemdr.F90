@@ -37,7 +37,7 @@ contains
   subroutine gas_phase_chemdr_inti()
 
     use mo_chem_utls,      only : get_spc_ndx, get_extfrc_ndx, get_inv_ndx, get_rxt_ndx
-    use cam_history,       only : addfld,phys_decomp
+    use cam_history,       only : addfld, horiz_only
     use cam_abortutils,        only : endrun
     use cam_history,       only : add_default
     use mo_chm_diags,      only : chm_diags_inti
@@ -74,16 +74,16 @@ contains
     do m = 1,extcnt
        WRITE(UNIT=string, FMT='(I2.2)') m
        extfrc_name(m) = 'extfrc_'// trim(string)
-       call addfld( extfrc_name(m), ' ', pver, 'I', 'ext frcing', phys_decomp )
+       call addfld( extfrc_name(m), (/ 'lev' /), 'I', ' ', 'ext frcing' )
        !call add_default( extfrc_name(m), 3, ' ' )
     end do
 
     do n = 1,rxt_tag_cnt
        tag_names(n) = trim(rxt_tag_lst(n))
        if (n<=phtcnt) then
-          call addfld( tag_names(n), '/s ', pver, 'I', 'photolysis rate', phys_decomp )
+          call addfld( tag_names(n), (/ 'lev' /), 'I', '/s', 'photolysis rate' )
        else
-          call addfld( tag_names(n), '/cm3/s ', pver, 'I', 'reaction rate', phys_decomp )
+          call addfld( tag_names(n), (/ 'lev' /), 'I', '/cm3/s', 'reaction rate' )
        endif
        !call add_default( tag_names(n), 1, ' ' )
     enddo
@@ -91,47 +91,47 @@ contains
     do n = 1,phtcnt
        WRITE(UNIT=string, FMT='(I3.3)') n
        pht_names(n) = 'J_' // trim(string)
-       call addfld( pht_names(n), '/s ', pver, 'I', 'photolysis rate', phys_decomp )
+       call addfld( pht_names(n), (/ 'lev' /), 'I', '/s', 'photolysis rate' )
        !call add_default( pht_names(n), 3, ' ' )
     enddo
 
     do n = 1,rxntot-phtcnt
        WRITE(UNIT=string, FMT='(I3.3)') n
        rxn_names(n) = 'R_' // trim(string)
-       call addfld( rxn_names(n), '/cm3/s ', pver, 'I', 'reaction rate', phys_decomp )
+       call addfld( rxn_names(n), (/ 'lev' /), 'I', '/cm3/s', 'reaction rate' )
        !call add_default( rxn_names(n), 1, ' ' )
     enddo
 
-    call addfld( 'DTCBS',   ' ',  1, 'I','photolysis diagnostic black carbon OD', phys_decomp )
-    call addfld( 'DTOCS',   ' ',  1, 'I','photolysis diagnostic organic carbon OD', phys_decomp )
-    call addfld( 'DTSO4',   ' ',  1, 'I','photolysis diagnostic SO4 OD', phys_decomp )
-    call addfld( 'DTSOA',   ' ',  1, 'I','photolysis diagnostic SOA OD', phys_decomp )
-    call addfld( 'DTANT',   ' ',  1, 'I','photolysis diagnostic NH4SO4 OD', phys_decomp )
-    call addfld( 'DTSAL',   ' ',  1, 'I','photolysis diagnostic salt OD', phys_decomp )
-    call addfld( 'DTDUST',  ' ',  1, 'I','photolysis diagnostic dust OD', phys_decomp )
-    call addfld( 'DTTOTAL', ' ',  1, 'I','photolysis diagnostic total aerosol OD', phys_decomp )   
-    call addfld( 'FRACDAY', ' ',  1, 'I','photolysis diagnostic fraction of day', phys_decomp )
+    call addfld( 'DTCBS',  horiz_only, 'I',   ' ','photolysis diagnostic black carbon OD' )
+    call addfld( 'DTOCS',  horiz_only, 'I',   ' ','photolysis diagnostic organic carbon OD' )
+    call addfld( 'DTSO4',  horiz_only, 'I',   ' ','photolysis diagnostic SO4 OD' )
+    call addfld( 'DTSOA',  horiz_only, 'I',   ' ','photolysis diagnostic SOA OD' )
+    call addfld( 'DTANT',  horiz_only, 'I',   ' ','photolysis diagnostic NH4SO4 OD' )
+    call addfld( 'DTSAL',  horiz_only, 'I',   ' ','photolysis diagnostic salt OD' )
+    call addfld( 'DTDUST',  horiz_only, 'I',  ' ','photolysis diagnostic dust OD' )
+    call addfld( 'DTTOTAL',  horiz_only, 'I', ' ','photolysis diagnostic total aerosol OD' )   
+    call addfld( 'FRACDAY',  horiz_only, 'I', ' ','photolysis diagnostic fraction of day' )
 
-    call addfld( 'QDSAD', '/s ', pver, 'I', 'water vapor sad delta', phys_decomp )
-    call addfld( 'SAD', 'cm2/cm3 ', pver, 'I', 'sulfate aerosol SAD', phys_decomp )
-    call addfld( 'SAD_SULFC', 'cm2/cm3 ', pver, 'I', 'chemical sulfate aerosol SAD', phys_decomp )
-    call addfld( 'SAD_SAGE', 'cm2/cm3 ', pver, 'I', 'SAGE sulfate aerosol SAD', phys_decomp )
-    call addfld( 'SAD_LNAT', 'cm2/cm3 ', pver, 'I', 'large-mode NAT aerosol SAD', phys_decomp )
-    call addfld( 'SAD_ICE', 'cm2/cm3 ', pver, 'I', 'water-ice aerosol SAD', phys_decomp )
-    call addfld( 'RAD_SULFC', 'cm ', pver, 'I', 'chemical sad sulfate', phys_decomp )
-    call addfld( 'RAD_LNAT', 'cm ', pver, 'I', 'large nat radius', phys_decomp )
-    call addfld( 'RAD_ICE', 'cm ', pver, 'I', 'sad ice', phys_decomp )
-    call addfld( 'SAD_TROP', 'cm2/cm3 ', pver, 'I', 'tropospheric aerosol SAD', phys_decomp )
-    call addfld( 'HNO3_STS', 'mol/mol', pver, 'I', 'STS condensed HNO3', phys_decomp )
-    call addfld( 'HNO3_NAT', 'mol/mol', pver, 'I', 'NAT condensed HNO3', phys_decomp )
-    call addfld( 'QDSETT', '/s ', pver, 'I', 'water vapor settling delta', phys_decomp )
-    call addfld( 'QDCHEM', '/s ', pver, 'I', 'water vapor chemistry delta', phys_decomp )
-    call addfld( 'HNO3_GAS', 'mol/mol', pver, 'I', 'gas-phase hno3', phys_decomp )
-    call addfld( 'H2O_GAS', 'mol/mol', pver, 'I', 'gas-phase h2o', phys_decomp )
+    call addfld( 'QDSAD', (/ 'lev' /), 'I', '/s', 'water vapor sad delta' )
+    call addfld( 'SAD', (/ 'lev' /), 'I', 'cm2/cm3', 'sulfate aerosol SAD' )
+    call addfld( 'SAD_SULFC', (/ 'lev' /), 'I', 'cm2/cm3', 'chemical sulfate aerosol SAD' )
+    call addfld( 'SAD_SAGE', (/ 'lev' /), 'I', 'cm2/cm3', 'SAGE sulfate aerosol SAD' )
+    call addfld( 'SAD_LNAT', (/ 'lev' /), 'I', 'cm2/cm3', 'large-mode NAT aerosol SAD' )
+    call addfld( 'SAD_ICE', (/ 'lev' /), 'I', 'cm2/cm3', 'water-ice aerosol SAD' )
+    call addfld( 'RAD_SULFC', (/ 'lev' /), 'I', 'cm', 'chemical sad sulfate' )
+    call addfld( 'RAD_LNAT', (/ 'lev' /), 'I', 'cm', 'large nat radius' )
+    call addfld( 'RAD_ICE', (/ 'lev' /), 'I', 'cm', 'sad ice' )
+    call addfld( 'SAD_TROP', (/ 'lev' /), 'I', 'cm2/cm3', 'tropospheric aerosol SAD' )
+    call addfld( 'HNO3_STS', (/ 'lev' /), 'I', 'mol/mol', 'STS condensed HNO3' )
+    call addfld( 'HNO3_NAT', (/ 'lev' /), 'I', 'mol/mol', 'NAT condensed HNO3' )
+    call addfld( 'QDSETT', (/ 'lev' /), 'I', '/s', 'water vapor settling delta' )
+    call addfld( 'QDCHEM', (/ 'lev' /), 'I', '/s', 'water vapor chemistry delta' )
+    call addfld( 'HNO3_GAS', (/ 'lev' /), 'I', 'mol/mol', 'gas-phase hno3' )
+    call addfld( 'H2O_GAS', (/ 'lev' /), 'I', 'mol/mol', 'gas-phase h2o' )
     if (het1_ndx>0) then
-       call addfld( 'het1_total', '/s', pver, 'I', 'total N2O5 + H2O het rate constant', phys_decomp )
+       call addfld( 'het1_total', (/ 'lev' /), 'I', '/s', 'total N2O5 + H2O het rate constant' )
     endif
-    call addfld( 'SZA', 'degrees', 1, 'I', 'solar zenith angle', phys_decomp )
+    call addfld( 'SZA', horiz_only, 'I', 'degrees', 'solar zenith angle' )
 
     call chm_diags_inti()
     call rate_diags_init()

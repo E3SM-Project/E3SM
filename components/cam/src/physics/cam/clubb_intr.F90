@@ -447,7 +447,7 @@ end subroutine clubb_init_cnst
 
     !  From CAM libraries
     use physics_types,          only: physics_state, physics_ptend
-    use cam_history,            only: addfld, add_default, phys_decomp
+    use cam_history,            only: addfld, horiz_only, add_default
     use ppgrid,                 only: pver, pverp, pcols
     use ref_pres,               only: pref_mid
     use hb_diff,                only: init_hb_diff
@@ -656,8 +656,8 @@ end subroutine clubb_init_cnst
        call init_tms( r8, tms_orocnst, tms_z0fac, karman, gravit, rair, errstring)
        call handle_errmsg(errstring, subname="init_tms")
 
-       call addfld( 'TAUTMSX' ,'N/m2  ',  1,  'A',  'Zonal      turbulent mountain surface stress',  phys_decomp )
-       call addfld( 'TAUTMSY' ,'N/m2  ',  1,  'A',  'Meridional turbulent mountain surface stress',  phys_decomp )
+       call addfld( 'TAUTMSX' ,  horiz_only,  'A','N/m2',  'Zonal      turbulent mountain surface stress' )
+       call addfld( 'TAUTMSY' ,  horiz_only,  'A','N/m2',  'Meridional turbulent mountain surface stress' )
        if (history_amwg) then
           call add_default( 'TAUTMSX ', 1, ' ' )
           call add_default( 'TAUTMSY ', 1, ' ' )
@@ -674,56 +674,56 @@ end subroutine clubb_init_cnst
     ! ----------------------------------------------------------------- !
 
     if (clubb_do_deep) then
-       call addfld ('MU_CLUBB','1/m',1,'A','CLUBB value of entrainment',phys_decomp)
+       call addfld ('MU_CLUBB',horiz_only,'A','1/m','CLUBB value of entrainment')
     endif
 
     !  These are default CLUBB output.  Not the higher order history budgets
-    call addfld ('RHO_CLUBB',        'kg/m3',    pverp, 'A', 'Air Density', phys_decomp)
-    call addfld ('UP2_CLUBB',        'm2/s2',    pverp, 'A', 'Zonal Velocity Variance', phys_decomp)
-    call addfld ('VP2_CLUBB',        'm2/s2',    pverp, 'A', 'Meridional Velocity Variance', phys_decomp)
-    call addfld ('WP2_CLUBB',        'm2/s2',    pverp, 'A', 'Vertical Velocity Variance', phys_decomp)
-    call addfld ('UPWP_CLUBB',       'm2/s2',    pverp, 'A', 'Zonal Momentum Flux', phys_decomp)
-    call addfld ('VPWP_CLUBB',       'm2/s2',    pverp, 'A', 'Meridional Momentum Flux', phys_decomp)
-    call addfld ('WP3_CLUBB',        'm3/s3',    pverp, 'A', 'Third Moment Vertical Velocity', phys_decomp)
-    call addfld ('WPTHLP_CLUBB',     'W/m2',     pverp, 'A', 'Heat Flux', phys_decomp)
-    call addfld ('WPRTP_CLUBB',      'W/m2',     pverp, 'A', 'Moisture Flux', phys_decomp)
-    call addfld ('RTP2_CLUBB',       'g^2/kg^2', pverp, 'A', 'Moisture Variance', phys_decomp)
-    call addfld ('THLP2_CLUBB',      'K^2',      pverp, 'A', 'Temperature Variance', phys_decomp)
-    call addfld ('RTPTHLP_CLUBB',    'K g/kg',   pverp, 'A', 'Temp. Moist. Covariance', phys_decomp)
-    call addfld ('RCM_CLUBB',        'g/kg',     pverp, 'A', 'Cloud Water Mixing Ratio', phys_decomp)
-    call addfld ('WPRCP_CLUBB',      'W/m2',     pverp, 'A', 'Liquid Water Flux', phys_decomp)
-    call addfld ('CLOUDFRAC_CLUBB',  'fraction', pver,  'A', 'Cloud Fraction', phys_decomp)
-    call addfld ('RCMINLAYER_CLUBB', 'g/kg',     pverp, 'A', 'Cloud Water in Layer', phys_decomp)
-    call addfld ('CLOUDCOVER_CLUBB', 'fraction', pverp, 'A', 'Cloud Cover', phys_decomp) 
-    call addfld ('WPTHVP_CLUBB',     'W/m2',     pver,  'A', 'Buoyancy Flux',phys_decomp)
-    call addfld ('RVMTEND_CLUBB',    'g/kg /s',  pver,  'A', 'Water vapor tendency',phys_decomp)
-    call addfld ('STEND_CLUBB',      'k/s',      pver,  'A', 'Temperature tendency',phys_decomp)
-    call addfld ('RCMTEND_CLUBB',    'g/kg /s',  pver,  'A', 'Cloud Liquid Water Tendency',phys_decomp)
-    call addfld ('RIMTEND_CLUBB',    'g/kg /s',  pver,  'A', 'Cloud Ice Tendency',phys_decomp)
-    call addfld ('UTEND_CLUBB',      'm/s /s',   pver,  'A', 'U-wind Tendency',phys_decomp)
-    call addfld ('VTEND_CLUBB',      'm/s /s',   pver,  'A', 'V-wind Tendency',phys_decomp)
-    call addfld ('ZT_CLUBB',         'm',        pverp, 'A', 'Thermodynamic Heights',phys_decomp)
-    call addfld ('ZM_CLUBB',         'm',        pverp, 'A', 'Momentum Heights',phys_decomp)     
-    call addfld ('UM_CLUBB',         'm/s',      pverp, 'A', 'Zonal Wind',phys_decomp)
-    call addfld ('VM_CLUBB',         'm/s',      pverp, 'A', 'Meridional Wind',phys_decomp)
-    call addfld ('THETAL',           'K',        pver,  'A', 'Liquid Water Potential Temperature',phys_decomp)
-    call addfld ('PBLH',             'm',        1,     'A', 'PBL height',phys_decomp)
-    call addfld ('QT',               'kg/kg',    pver,  'A', 'Total water mixing ratio',phys_decomp)
-    call addfld ('SL',               'J/kg',     pver,  'A', 'Liquid water static energy',phys_decomp)
-    call addfld ('CLDST',            'fraction', pver,  'A', 'Stratus cloud fraction',phys_decomp)
-    call addfld ('ZMDLF',            'kg/kg/s',  pver,  'A', 'Detrained liquid water from ZM convection',phys_decomp)
-    call addfld ('TTENDICE',         'K/s ',     pver,  'A', 'T tendency from Ice Saturation Adjustment',phys_decomp)
-    call addfld ('QVTENDICE',        'kg/kg/s ', pver,  'A', 'Q tendency from Ice Saturation Adjustment',phys_decomp)
-    call addfld ('QITENDICE',        'kg/kg/s ', pver,  'A', 'CLDICE tendency from Ice Saturation Adjustment',phys_decomp)
-    call addfld ('NITENDICE',        'kg/kg/s ', pver,  'A', 'NUMICE tendency from Ice Saturation Adjustment',phys_decomp)  
-    call addfld ('DPDLFLIQ ',        'kg/kg/s ', pver,  'A', 'Detrained liquid water from deep convection',phys_decomp)
-    call addfld ('DPDLFICE ',        'kg/kg/s ', pver,  'A', 'Detrained ice from deep convection',phys_decomp)  
-    call addfld ('DPDLFT   ',        'K/s     ', pver,  'A', 'T-tendency due to deep convective detrainment',phys_decomp) 
-    call addfld ('RELVAR   ',        '-       ', pver,  'A', 'Relative cloud water variance',phys_decomp)
+    call addfld ('RHO_CLUBB',    (/ 'ilev' /), 'A',        'kg/m3', 'Air Density')
+    call addfld ('UP2_CLUBB',    (/ 'ilev' /), 'A',        'm2/s2', 'Zonal Velocity Variance')
+    call addfld ('VP2_CLUBB',    (/ 'ilev' /), 'A',        'm2/s2', 'Meridional Velocity Variance')
+    call addfld ('WP2_CLUBB',    (/ 'ilev' /), 'A',        'm2/s2', 'Vertical Velocity Variance')
+    call addfld ('UPWP_CLUBB',    (/ 'ilev' /), 'A',       'm2/s2', 'Zonal Momentum Flux')
+    call addfld ('VPWP_CLUBB',    (/ 'ilev' /), 'A',       'm2/s2', 'Meridional Momentum Flux')
+    call addfld ('WP3_CLUBB',    (/ 'ilev' /), 'A',        'm3/s3', 'Third Moment Vertical Velocity')
+    call addfld ('WPTHLP_CLUBB',     (/ 'ilev' /), 'A',     'W/m2', 'Heat Flux')
+    call addfld ('WPRTP_CLUBB',     (/ 'ilev' /), 'A',      'W/m2', 'Moisture Flux')
+    call addfld ('RTP2_CLUBB', (/ 'ilev' /), 'A',       'g^2/kg^2', 'Moisture Variance')
+    call addfld ('THLP2_CLUBB',      (/ 'ilev' /), 'A',      'K^2', 'Temperature Variance')
+    call addfld ('RTPTHLP_CLUBB',   (/ 'ilev' /), 'A',    'K g/kg', 'Temp. Moist. Covariance')
+    call addfld ('RCM_CLUBB',     (/ 'ilev' /), 'A',        'g/kg', 'Cloud Water Mixing Ratio')
+    call addfld ('WPRCP_CLUBB',     (/ 'ilev' /), 'A',      'W/m2', 'Liquid Water Flux')
+    call addfld ('CLOUDFRAC_CLUBB', (/ 'lev' /),  'A',  'fraction', 'Cloud Fraction')
+    call addfld ('RCMINLAYER_CLUBB',     (/ 'ilev' /), 'A', 'g/kg', 'Cloud Water in Layer')
+    call addfld ('CLOUDCOVER_CLUBB', (/ 'ilev' /), 'A', 'fraction', 'Cloud Cover') 
+    call addfld ('WPTHVP_CLUBB',     (/ 'lev' /),  'A',     'W/m2', 'Buoyancy Flux')
+    call addfld ('RVMTEND_CLUBB',  (/ 'lev' /),  'A',    'g/kg /s', 'Water vapor tendency')
+    call addfld ('STEND_CLUBB',      (/ 'lev' /),  'A',      'k/s', 'Temperature tendency')
+    call addfld ('RCMTEND_CLUBB',  (/ 'lev' /),  'A',    'g/kg /s', 'Cloud Liquid Water Tendency')
+    call addfld ('RIMTEND_CLUBB',  (/ 'lev' /),  'A',    'g/kg /s', 'Cloud Ice Tendency')
+    call addfld ('UTEND_CLUBB',   (/ 'lev' /),  'A',      'm/s /s', 'U-wind Tendency')
+    call addfld ('VTEND_CLUBB',   (/ 'lev' /),  'A',      'm/s /s', 'V-wind Tendency')
+    call addfld ('ZT_CLUBB',        (/ 'ilev' /), 'A',         'm', 'Thermodynamic Heights')
+    call addfld ('ZM_CLUBB',        (/ 'ilev' /), 'A',         'm', 'Momentum Heights')     
+    call addfld ('UM_CLUBB',      (/ 'ilev' /), 'A',         'm/s', 'Zonal Wind')
+    call addfld ('VM_CLUBB',      (/ 'ilev' /), 'A',         'm/s', 'Meridional Wind')
+    call addfld ('THETAL',        (/ 'lev' /),  'A',           'K', 'Liquid Water Potential Temperature')
+    call addfld ('PBLH',        horiz_only,     'A',             'm', 'PBL height')
+    call addfld ('QT',    (/ 'lev' /),  'A',               'kg/kg', 'Total water mixing ratio')
+    call addfld ('SL',     (/ 'lev' /),  'A',               'J/kg', 'Liquid water static energy')
+    call addfld ('CLDST', (/ 'lev' /),  'A',            'fraction', 'Stratus cloud fraction')
+    call addfld ('ZMDLF',  (/ 'lev' /),  'A',            'kg/kg/s', 'Detrained liquid water from ZM convection')
+    call addfld ('TTENDICE',     (/ 'lev' /),  'A',         'K/s', 'T tendency from Ice Saturation Adjustment')
+    call addfld ('QVTENDICE', (/ 'lev' /),  'A',        'kg/kg/s', 'Q tendency from Ice Saturation Adjustment')
+    call addfld ('QITENDICE', (/ 'lev' /),  'A',        'kg/kg/s', 'CLDICE tendency from Ice Saturation Adjustment')
+    call addfld ('NITENDICE', (/ 'lev' /),  'A',        'kg/kg/s', 'NUMICE tendency from Ice Saturation Adjustment')  
+    call addfld ('DPDLFLIQ', (/ 'lev' /),  'A',        'kg/kg/s', 'Detrained liquid water from deep convection')
+    call addfld ('DPDLFICE', (/ 'lev' /),  'A',        'kg/kg/s', 'Detrained ice from deep convection')  
+    call addfld ('DPDLFT', (/ 'lev' /),  'A',        'K/s', 'T-tendency due to deep convective detrainment') 
+    call addfld ('RELVAR', (/ 'lev' /),  'A',        '-', 'Relative cloud water variance')
 
 
-    call addfld ('CONCLD   ',        'fraction', pver,  'A', 'Convective cloud cover',phys_decomp)
-    call addfld ('CMELIQ   ',        'kg/kg/s ', pver,  'A', 'Rate of cond-evap of liq within the cloud',phys_decomp)
+    call addfld ('CONCLD', (/ 'lev' /),  'A',        'fraction', 'Convective cloud cover')
+    call addfld ('CMELIQ', (/ 'lev' /),  'A',        'kg/kg/s', 'Rate of cond-evap of liq within the cloud')
 
     !  Initialize statistics, below are dummy variables
     dum1 = 300._r8
@@ -2700,7 +2700,7 @@ end function diag_ustar
     use stats_sfc_module,       only: nvarmax_sfc, stats_init_sfc ! 
     use error_code,             only: clubb_at_least_debug_level ! 
     use constants_clubb,        only: fstderr, var_length !     
-    use cam_history,            only: addfld, phys_decomp
+    use cam_history,            only: addfld
     use namelist_utils,         only: find_group_name
     use units,                  only: getunit, freeunit
     use cam_abortutils,         only: endrun
@@ -3094,8 +3094,8 @@ end function diag_ustar
       sub   = temp1
       if (len(temp1) .gt. 16) sub = temp1(1:16)
      
-       call addfld(trim(sub),trim(stats_zt%file%var(i)%units),nnzp,&
-            'A',trim(stats_zt%file%var(i)%description),phys_decomp)
+       call addfld(trim(sub),(/ 'ilev' /),&
+            'A',trim(stats_zt%file%var(i)%units),trim(stats_zt%file%var(i)%description))
     enddo
     
     do i = 1, stats_zm%num_output_fields
@@ -3104,25 +3104,25 @@ end function diag_ustar
       sub   = temp1
       if (len(temp1) .gt. 16) sub = temp1(1:16)
     
-      call addfld(trim(sub),trim(stats_zm%file%var(i)%units),nnzp,&
-           'A',trim(stats_zm%file%var(i)%description),phys_decomp)
+      call addfld(trim(sub),(/ 'ilev' /),&
+           'A',trim(stats_zm%file%var(i)%units),trim(stats_zm%file%var(i)%description))
     enddo
 
     if (l_output_rad_files) then     
       do i = 1, stats_rad_zt%num_output_fields
-        call addfld(trim(stats_rad_zt%file%var(i)%name),trim(stats_rad_zt%file%var(i)%units),nnzp,&
-           'A',trim(stats_rad_zt%file%var(i)%description),phys_decomp)
+        call addfld(trim(stats_rad_zt%file%var(i)%name),(/ 'foobar' /),&
+           'A',trim(stats_rad_zt%file%var(i)%units),trim(stats_rad_zt%file%var(i)%description))
       enddo
     
       do i = 1, stats_rad_zm%num_output_fields
-        call addfld(trim(stats_rad_zm%file%var(i)%name),trim(stats_rad_zm%file%var(i)%units),nnzp,&
-           'A',trim(stats_rad_zm%file%var(i)%description),phys_decomp)
+        call addfld(trim(stats_rad_zm%file%var(i)%name),(/ 'foobar' /),&
+           'A',trim(stats_rad_zm%file%var(i)%units),trim(stats_rad_zm%file%var(i)%description))
       enddo
     endif 
     
     do i = 1, stats_sfc%num_output_fields
-      call addfld(trim(stats_sfc%file%var(i)%name),trim(stats_sfc%file%var(i)%units),1,&
-           'A',trim(stats_sfc%file%var(i)%description),phys_decomp)
+      call addfld(trim(stats_sfc%file%var(i)%name),horiz_only,&
+           'A',trim(stats_sfc%file%var(i)%units),trim(stats_sfc%file%var(i)%description))
     enddo
 
     return

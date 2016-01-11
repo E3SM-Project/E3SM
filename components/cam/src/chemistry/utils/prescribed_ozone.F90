@@ -61,7 +61,7 @@ contains
   subroutine prescribed_ozone_init()
 
     use tracer_data, only : trcdata_init
-    use cam_history, only : addfld, phys_decomp
+    use cam_history, only : addfld
     use ppgrid,      only : pver
     use error_messages, only: handle_err
     use ppgrid,         only: pcols, pver, begchunk, endchunk
@@ -88,8 +88,8 @@ contains
     call trcdata_init( specifier, filename, filelist, datapath, fields, file, &
                        rmv_file, cycle_yr, fixed_ymd, fixed_tod, data_type)
 
-    call addfld(ozone_name,'mol/mol ', pver, &
-         'I', 'prescribed ozone', phys_decomp )
+    call addfld(ozone_name, (/ 'lev' /), &
+         'I','mol/mol', 'prescribed ozone' )
 
   end subroutine prescribed_ozone_init
 

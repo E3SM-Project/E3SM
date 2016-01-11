@@ -46,7 +46,7 @@ contains
     !-----------------------------------------------------------------------
     use mo_chem_utls, only : get_spc_ndx, get_rxt_ndx
     use cam_abortutils, only : endrun
-    use cam_history, only : addfld, add_default, phys_decomp
+    use cam_history, only : addfld, add_default
     use ppgrid, only : pver
     use mo_tracname, only : solsym
     implicit none
@@ -296,8 +296,8 @@ contains
     endif
     do i = 1,clscnt4
        j = clsmap(i,4)
-       call addfld( trim(solsym(j))//'_CHMP', '/cm3/s ', pver, 'I', 'chemical production rate', phys_decomp )
-       call addfld( trim(solsym(j))//'_CHML', '/cm3/s ', pver, 'I', 'chemical loss rate',       phys_decomp )
+       call addfld( trim(solsym(j))//'_CHMP', (/ 'lev' /), 'I', '/cm3/s', 'chemical production rate' )
+       call addfld( trim(solsym(j))//'_CHML', (/ 'lev' /), 'I', '/cm3/s', 'chemical loss rate' )
     enddo
   end subroutine imp_slv_inti
   subroutine imp_sol( base_sol, reaction_rates, het_rates, extfrc, delt, &

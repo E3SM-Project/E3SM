@@ -183,7 +183,7 @@ contains
     !          (declare history variables)
     !-----------------------------------------------------------------------
 
-    use cam_history,    only: addfld, add_default, phys_decomp
+    use cam_history,    only: addfld, add_default
 
     integer :: m, mm
     !-----------------------------------------------------------------------
@@ -194,8 +194,8 @@ contains
 
     do m = 1, ncnst
        mm = ifirst+m-1
-       call addfld (cnst_name(mm), 'kg/kg   ', pver, 'A', cnst_longname(mm), phys_decomp)
-       call addfld (src_names(m),  'kg/kg/s ', pver, 'A', trim(cnst_name(mm))//' source/sink', phys_decomp)
+       call addfld (cnst_name(mm), (/ 'lev' /), 'A', 'kg/kg', cnst_longname(mm))
+       call addfld (src_names(m), (/ 'lev' /), 'A',  'kg/kg/s', trim(cnst_name(mm))//' source/sink')
 
        call add_default (cnst_name(mm), 1, ' ')
        call add_default (src_names(m),  1, ' ')

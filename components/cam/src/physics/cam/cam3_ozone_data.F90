@@ -119,12 +119,12 @@ subroutine cam3_ozone_data_init(phys_state)
 !           J. Edwards, Dec 2005, functionality now performed by zonalbndrydata
 !-----------------------------------------------------------------------
 
-   use cam_history,      only: addfld, phys_decomp
+   use cam_history,      only: addfld
 
    type(physics_state), intent(in) :: phys_state(begchunk:endchunk) 
    !-----------------------------------------------------------------------
     
-   call addfld ('O3VMR', 'm3/m3', pver, 'A', 'Ozone volume mixing ratio', phys_decomp, sampling_seq='rad_lwsw')
+   call addfld ('O3VMR', (/ 'lev' /), 'A', 'm3/m3', 'Ozone volume mixing ratio', sampling_seq='rad_lwsw')
 
 
    ! Initialize for one field (arg_4=1) and do not vertically interpolate (arg_6=3)

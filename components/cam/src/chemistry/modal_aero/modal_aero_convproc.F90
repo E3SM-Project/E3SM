@@ -18,7 +18,7 @@ module modal_aero_convproc
    use shr_kind_mod, only: r8=>shr_kind_r8
    use physconst,    only: gravit                              
    use ppgrid,       only: pver, pcols, pverp, begchunk, endchunk
-   use cam_history,  only: outfld, addfld, add_default, phys_decomp
+   use cam_history,  only: outfld, addfld, horiz_only, add_default
    use cam_logfile,  only: iulog
    use cam_abortutils, only: endrun
    use physconst,    only: spec_class_aerosol, spec_class_gas
@@ -102,7 +102,7 @@ subroutine ma_convproc_init
 ! Purpose:  declare output fields, initialize variables needed by convection
 !----------------------------------------
 
-  use cam_history,    only: outfld, addfld, add_default, phys_decomp
+  use cam_history,    only: outfld, addfld, horiz_only, add_default
   use physics_buffer, only: pbuf_add_field
   use phys_control,   only: phys_getopts
   use ppgrid,         only: pcols, pver
@@ -124,19 +124,19 @@ subroutine ma_convproc_init
         convproc_do_gas_out = convproc_do_gas, &
         convproc_method_activate_out = convproc_method_activate )
 
-    call addfld(      'SH_MFUP_MAX', 'kg/m2', 1, 'A', &
-                      'Shallow conv. column-max updraft mass flux', phys_decomp )
-    call addfld(      'SH_WCLDBASE', 'm/s', 1, 'A', &
-                      'Shallow conv. cloudbase vertical velocity', phys_decomp )
-    call addfld(      'SH_KCLDBASE', '1', 1, 'A', &
-                      'Shallow conv. cloudbase level index', phys_decomp )
+    call addfld(      'SH_MFUP_MAX', horiz_only, 'A', 'kg/m2', &
+                      'Shallow conv. column-max updraft mass flux' )
+    call addfld(      'SH_WCLDBASE', horiz_only, 'A', 'm/s', &
+                      'Shallow conv. cloudbase vertical velocity' )
+    call addfld(      'SH_KCLDBASE', horiz_only, 'A', '1', &
+                      'Shallow conv. cloudbase level index' )
 
-    call addfld(      'DP_MFUP_MAX', 'kg/m2', 1, 'A', &
-                      'Deep conv. column-max updraft mass flux', phys_decomp )
-    call addfld(      'DP_WCLDBASE', 'm/s', 1, 'A', &
-                      'Deep conv. cloudbase vertical velocity', phys_decomp )
-    call addfld(      'DP_KCLDBASE', '1', 1, 'A', &
-                      'Deep conv. cloudbase level index', phys_decomp )
+    call addfld(      'DP_MFUP_MAX', horiz_only, 'A', 'kg/m2', &
+                      'Deep conv. column-max updraft mass flux' )
+    call addfld(      'DP_WCLDBASE', horiz_only, 'A', 'm/s', &
+                      'Deep conv. cloudbase vertical velocity' )
+    call addfld(      'DP_KCLDBASE', horiz_only, 'A', '1', &
+                      'Deep conv. cloudbase level index' )
 
     if ( history_aerosol .and. convproc_do_aer ) then
        call add_default( 'SH_MFUP_MAX', 1, ' ' )

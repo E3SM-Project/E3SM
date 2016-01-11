@@ -1,3 +1,4 @@
+
 module ndrop
 
 !---------------------------------------------------------------------------------
@@ -25,8 +26,8 @@ use shr_spfn_mod,     only: erf => shr_spfn_erf
 use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_mode_num, rad_cnst_get_aer_mmr, &
                             rad_cnst_get_aer_props, rad_cnst_get_mode_props,                &
                             rad_cnst_get_mam_mmr_idx, rad_cnst_get_mode_num_idx
-use cam_history,      only: addfld, add_default, phys_decomp, fieldname_len, outfld
-use cam_abortutils,   only: endrun
+use cam_history,      only: addfld, horiz_only, add_default, fieldname_len, outfld
+use cam_abortutils,       only: endrun
 use cam_logfile,      only: iulog
 
 implicit none
@@ -236,10 +237,10 @@ subroutine ndrop_init
 
             ! Add tendency fields to the history only when prognostic MAM is enabled.
             long_name = trim(tmpname) // ' dropmixnuc mixnuc column tendency'
-            call addfld(fieldname(mm), unit, 1, 'A', long_name, phys_decomp)
+            call addfld(fieldname(mm), horiz_only, 'A', unit, long_name)
 
             long_name = trim(tmpname_cw) // ' dropmixnuc mixnuc column tendency'
-            call addfld(fieldname_cw(mm), unit, 1, 'A', long_name, phys_decomp)
+            call addfld(fieldname_cw(mm), horiz_only, 'A', unit, long_name)
 
             if (history_aerosol) then
                call add_default(fieldname(mm), 1, ' ')
@@ -253,19 +254,19 @@ subroutine ndrop_init
       end do
    end do
 
-   call addfld('CCN1    ','#/cm3   ',pver, 'A','CCN concentration at S=0.02%',phys_decomp)
-   call addfld('CCN2    ','#/cm3   ',pver, 'A','CCN concentration at S=0.05%',phys_decomp)
-   call addfld('CCN3    ','#/cm3   ',pver, 'A','CCN concentration at S=0.1%',phys_decomp)
-   call addfld('CCN4    ','#/cm3   ',pver, 'A','CCN concentration at S=0.2%',phys_decomp)
-   call addfld('CCN5    ','#/cm3   ',pver, 'A','CCN concentration at S=0.5%',phys_decomp)
-   call addfld('CCN6    ','#/cm3   ',pver, 'A','CCN concentration at S=1.0%',phys_decomp)
+   call addfld('CCN1',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=0.02%')
+   call addfld('CCN2',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=0.05%')
+   call addfld('CCN3',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=0.1%')
+   call addfld('CCN4',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=0.2%')
+   call addfld('CCN5',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=0.5%')
+   call addfld('CCN6',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=1.0%')
 
 
-   call addfld('WTKE     ', 'm/s     ', pver, 'A', 'Standard deviation of updraft velocity', phys_decomp)
-   call addfld('NDROPMIX ', '#/kg/s  ', pver, 'A', 'Droplet number mixing',                  phys_decomp)
-   call addfld('NDROPSRC ', '#/kg/s  ', pver, 'A', 'Droplet number source',                  phys_decomp)
-   call addfld('NDROPSNK ', '#/kg/s  ', pver, 'A', 'Droplet number loss by microphysics',    phys_decomp)
-   call addfld('NDROPCOL ', '#/m2    ', 1,    'A', 'Column droplet number',                  phys_decomp)
+   call addfld('WTKE', (/ 'lev' /), 'A', 'm/s', 'Standard deviation of updraft velocity')
+   call addfld('NDROPMIX', (/ 'lev' /), 'A', '#/kg/s', 'Droplet number mixing')
+   call addfld('NDROPSRC', (/ 'lev' /), 'A', '#/kg/s', 'Droplet number source')
+   call addfld('NDROPSNK', (/ 'lev' /), 'A', '#/kg/s', 'Droplet number loss by microphysics')
+   call addfld('NDROPCOL', horiz_only,    'A', '#/m2', 'Column droplet number')
 
    ! set the add_default fields  
    if (history_amwg) then

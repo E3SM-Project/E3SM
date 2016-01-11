@@ -121,8 +121,8 @@ module namelist_mod
   use cg_mod, only : cg_no_debug
   !-----------------
 
-  use interpolate_mod, only : vector_uvars, vector_vvars, max_vecvars, interpolate_analysis, replace_vec_by_vordiv
 #ifndef CAM
+  use interpolate_mod, only : vector_uvars, vector_vvars, max_vecvars, interpolate_analysis, replace_vec_by_vordiv
   use common_io_mod, only : &
        output_prefix,       &
        output_type,         &
@@ -358,13 +358,14 @@ module namelist_mod
          output_varnames3,    &
          output_varnames4,    &
          output_varnames5
-#endif
     namelist /analysis_nl/    &
         interp_nlat,          &
         interp_nlon,          &
         interp_gridtype,      &
         interp_type,          &
         interpolate_analysis
+#endif
+! ^ ifndef CAM
 
 !=======================================================================================================!
 !   Adding for SW DG                                                                                    !
@@ -612,7 +613,7 @@ module namelist_mod
          write(iulog,*) '  vfile_int=',vfile_int
        end if
 #endif
-#endif
+
 !      Default interpolation grid  (0 = auto compute based on ne,nv)  interpolation is off by default
 #ifdef PIO_INTERP
        interpolate_analysis=.true.
@@ -632,7 +633,6 @@ module namelist_mod
        vector_vvars(1:12) = (/ &
             'V         ','VBOT      ','V200      ','V250      ','V850      ','FV        ',&
             'CONVV     ','DIFFV     ','VTGWORO   ','VFLX      ','MET_V     ','MET_V_tend' /)
-#ifndef CAM
        infilenames(:) = ''
        output_prefix = ""
        output_start_time=0
@@ -652,23 +652,8 @@ module namelist_mod
        num_io_procs=0
        output_type = 'netcdf' ! Change by MNL
 !     output_type = 'pnetcdf'
-#endif
 
        write(iulog,*)"reading analysis namelist..."
-#if defined(CAM)
-       unitn=getunit()
-       open( unitn, file=trim(nlfilename), status='old' )
-       ierr = 1
-       do while ( ierr > 0 )
-          read (unitn,analysis_nl,iostat=ierr)
-          if (ierr < 0) then
-             print *,'analysis_nl namelist read returns an'// &
-                  ' end of file or end of record condition, ignoring.'
-          end if
-       end do
-       close( unitn )
-       call freeunit( unitn )
-#else
 #if defined(OSF1) || defined(__bg__) || defined(_NAMELIST_FROM_FILE)
        read(unit=7,nml=analysis_nl)
 #else
@@ -741,6 +726,7 @@ module namelist_mod
        close(unit=7)
 #endif
 #endif
+! ^ ifndef CAM
     end if
 
 #ifdef CAM
@@ -1071,6 +1057,7 @@ module namelist_mod
 #ifdef CAM
     nmpi_per_node=1
 #endif
+#ifndef CAM
     call MPI_bcast(interpolate_analysis, 7,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(interp_nlat , 1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(interp_nlon , 1,MPIinteger_t,par%root,par%comm,ierr)
@@ -1094,6 +1081,8 @@ module namelist_mod
           call set_interp_parameter('nlon',interp_nlon)
        endif
     endif
+#endif
+! ^ ifndef CAM
 
     ! some default diffusion coefficiets
     if(nu_s<0) nu_s=nu
@@ -1300,7 +1289,6 @@ module namelist_mod
            write(iulog, *) 'Using analytical winds for CSLAM test'
          end select
        end if
-#endif
        write(iulog,*)" analysis interpolation = ", interpolate_analysis
        if(any(interpolate_analysis)) then
           write(iulog,*)" analysis interp nlat = ",interp_nlat
@@ -1308,6 +1296,8 @@ module namelist_mod
           write(iulog,*)" analysis interp gridtype = ",interp_gridtype
           write(iulog,*)" analysis interpolation type = ",interp_type
        end if
+#endif
+! ^ ifndef CAM
 !=======================================================================================================!
 !      Adding for SW DG                                                                                 !
 !=======================================================================================================!

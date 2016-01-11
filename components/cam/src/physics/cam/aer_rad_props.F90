@@ -16,7 +16,7 @@ use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_mmr, &
                             rad_cnst_get_aer_props
 use wv_saturation,    only: qsat
 use modal_aer_opt,    only: modal_aero_sw, modal_aero_lw
-use cam_history,      only: fieldname_len, addfld, phys_decomp, outfld, add_default
+use cam_history,      only: fieldname_len, addfld, horiz_only, outfld, add_default
 use cam_history_support, only : fillvalue
 ! Placed here due to PGI bug.
 use ref_pres,     only: clim_modal_aero_top_lev
@@ -62,8 +62,8 @@ subroutine aer_rad_props_init()
    ! Limit modal aerosols with top_lev here.
    if (prog_modal_aero) top_lev = clim_modal_aero_top_lev
 
-   call addfld ('AEROD_v ', '1', 1, 'A', &
-      'Total Aerosol Optical Depth in visible band', phys_decomp, flag_xyfill=.true.)
+   call addfld ('AEROD_v', horiz_only, 'A', '1', &
+      'Total Aerosol Optical Depth in visible band', flag_xyfill=.true.)
 
    ! Contributions to AEROD_v from individual aerosols (climate species).
 
@@ -79,8 +79,8 @@ subroutine aer_rad_props_init()
    allocate(odv_names(numaerosols))
    do i = 1, numaerosols
       odv_names(i) = 'ODV_'//trim(aernames(i))
-      call addfld (odv_names(i), '1', 1, 'A', &
-         trim(aernames(i))//' optical depth in visible band', phys_decomp, flag_xyfill=.true.)
+      call addfld (odv_names(i), horiz_only, 'A', '1', &
+         trim(aernames(i))//' optical depth in visible band', flag_xyfill=.true.)
    end do
 
    ! Determine default fields

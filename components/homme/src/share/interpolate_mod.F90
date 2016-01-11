@@ -23,12 +23,15 @@ module interpolate_mod
 
   implicit none
   private
-  integer, parameter, public :: MAX_VECVARS=25
+  save
 
   logical   :: debug=.false.
-
+#ifndef CAM
+  integer, parameter, public :: MAX_VECVARS=25
   character(len=10), public :: vector_uvars(MAX_VECVARS), vector_vvars(MAX_VECVARS)
   logical, public :: replace_vec_by_vordiv(MAX_VECVARS)
+#endif
+! ^ ifndef CAM
 
   type, public :: interpolate_t
      real (kind=real_kind), dimension(:,:), pointer :: Imat  ! P_k(xj)*wj/gamma(k)
@@ -75,7 +78,10 @@ module interpolate_mod
   public :: get_interp_gweight
   public :: get_interp_lat
   public :: get_interp_lon
+#ifndef CAM
   public :: var_is_vector_uvar, var_is_vector_vvar
+#endif
+! ^ ifndef CAM
   public :: cube_facepoint_ne
   public :: cube_facepoint_unstructured
   public :: parametric_coordinates
@@ -105,9 +111,14 @@ module interpolate_mod
   ! gridtype = 2       Gauss grid (CAM Eulerian)
   ! gridtype = 3       equally spaced, no poles (FV staggered velocity)
   ! Seven possible history files, last one is inithist and should be native grid
-  logical, public, save :: interpolate_analysis(8) = (/.true.,.false.,.false.,.false.,.false.,.false.,.false.,.false./)
+#ifndef CAM
+  logical, public :: interpolate_analysis(8) = (/.true.,.false.,.false.,.false.,.false.,false.,.false.,.false./)
+#endif
   integer :: nlat,nlon
-  real (kind=real_kind), pointer,dimension(:)   :: lat(:),lon(:),gweight(:)
+  real (kind=real_kind), pointer, public   :: lat(:)     => NULL()
+  real (kind=real_kind), pointer, public   :: lon(:)     => NULL()
+  real (kind=real_kind), pointer, public   :: gweight(:) => NULL()
+
   integer :: gridtype = 1        !
   integer :: itype = 1           ! 0 = native high order
                                  ! 1 = bilinear
@@ -1293,8 +1304,6 @@ end subroutine interpol_spelt_latlon
     type (quadrature_t)       :: gp
 
 
-    logical,save                                  :: first_time=.TRUE.
-
     ! Array to make sure each interp point is on exactly one process
     type (cartesian2D_t),allocatable    :: cart_vec(:,:)
     integer :: k
@@ -1315,22 +1324,18 @@ end subroutine interpol_spelt_latlon
        interpdata(ii)%n_interp=0  ! reset counter
     enddo
 
-    if(first_time)then
-       NULLIFY(lat)
-       NULLIFY(gweight)
-       NULLIFY(lon)
-       first_time=.FALSE.
-    end if
-
     if (associated(lat))then
-       if(size(lat)>0)deallocate(lat)
+       deallocate(lat)
+       nullify(lat)
     endif
     if (associated(gweight))then
-       if(size(gweight)>0)deallocate(gweight)
+       deallocate(gweight)
+       nullify(gweight)
     endif
 
     if (associated(lon))then
-       if(size(lon)>0)deallocate(lon)
+       deallocate(lon)
+       nullify(lon)
     endif
 
     allocate(lat(nlat))
@@ -1934,6 +1939,8 @@ end subroutine interpolate_ce
        end do
     end do
   end subroutine interpolate_vector3d
+
+#ifndef CAM
   function var_is_vector_uvar(name)
     character(len=*), intent(in) :: name
     integer :: i, var_is_vector_uvar, null_index
@@ -1950,21 +1957,6 @@ end subroutine interpolate_ce
           exit
        end if
     end do
-#if 0
-DISABLED: breaks in many cases, like UV
-    if (var_is_vector_uvar==0) then
-       ! default rules: if variable starts with U and was not found, add it to the list:
-       if (name(1:1).eq.'U') then
-          if (null_index==0) then
-             call abortmp("Error: MAX_VECVARS too small")
-          endif
-          vector_uvars(null_index)=name
-          vector_vvars(null_index)=name
-          vector_vvars(null_index)(1:1)='V'
-          var_is_vector_uvar=null_index
-       endif
-    endif
-#endif
   end function var_is_vector_uvar
 
 
@@ -1984,28 +1976,10 @@ DISABLED: breaks in many cases, like UV
           exit
        end if
     end do
-#if 0
-DISABLED: breaks in many cases, like UV
-    if (var_is_vector_vvar==0) then
-       ! default rules: if variable starts with V and was not found, add it to the list:
-       if (name(1:1).eq.'V') then
-          if (null_index==0) then
-             call abortmp("Error: MAX_VECVARS too small")
-          endif
-          vector_uvars(null_index)=name
-          vector_uvars(null_index)(1:1)='U'
-          vector_vvars(null_index)=name
-          var_is_vector_vvar=null_index
-       endif
-    endif
-#endif
-
 
   end function var_is_vector_vvar
-
-
-
-
+#endif
+! ^ ifndef CAM
 
 
 !  ================================================

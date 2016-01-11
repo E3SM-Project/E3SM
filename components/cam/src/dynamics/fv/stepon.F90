@@ -97,7 +97,7 @@ CONTAINS
 ! !ROUTINE:  stepon_init --- Time stepping initialization
 !
 ! !INTERFACE:
-subroutine stepon_init( gw, etamid, dyn_in, dyn_out )
+subroutine stepon_init( dyn_in, dyn_out )
 ! !USES:
    use constituents,       only: pcnst, cnst_get_type_byind
    use time_manager,       only: get_step_size
@@ -108,8 +108,6 @@ subroutine stepon_init( gw, etamid, dyn_in, dyn_out )
 !-----------------------------------------------------------------------
 ! !OUTPUT PARAMETERS
 !
-  real(r8), intent(out) :: gw(plat)           ! Gaussian weights
-  real(r8), intent(out) :: etamid(plev)       ! vertical coords at midpoints
   type (dyn_import_t)   :: dyn_in             ! Dynamics import container
   type (dyn_export_t)   :: dyn_out            ! Dynamics export container
 ! !DESCRIPTION:
@@ -131,8 +129,6 @@ subroutine stepon_init( gw, etamid, dyn_in, dyn_out )
 !-----------------------------------------------------------------------
 
    if (nsrest/=0) nlres=.true.
-
-   gw(:) = w(:)
 
    grid => get_dyn_state_grid()
    im      =  grid%im
@@ -169,7 +165,6 @@ subroutine stepon_init( gw, etamid, dyn_in, dyn_out )
    endif
    grid%ks   = ks
    grid%ptop = ptop
-   etamid(:) = hyam(:) + hybm(:)
 
    !----------------------------------------------------------
    ! Lin-Rood dynamical core initialization
@@ -498,8 +493,7 @@ end subroutine stepon_run2
 
 !-----------------------------------------------------------------------
 
-subroutine stepon_run3( dtime, etamid, cam_out, phys_state,             &
-                        dyn_in, dyn_out )
+subroutine stepon_run3( dtime, cam_out, phys_state, dyn_in, dyn_out )
 ! !USES:
    use time_manager,     only: get_curr_date
    use fv_prints,        only: fv_out
@@ -510,7 +504,6 @@ subroutine stepon_run3( dtime, etamid, cam_out, phys_state,             &
 !
    type(physics_state), intent(in):: phys_state(begchunk:endchunk)
    real(r8), intent(in) :: dtime            ! Time-step
-   real(r8), intent(in) :: etamid(plev)     ! vertical coords at midpoints
    type (dyn_import_t), intent(inout) :: dyn_in  ! Dynamics import container
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
 !

@@ -41,7 +41,7 @@
       use mo_chem_utls,  only : get_spc_ndx, get_rxt_ndx
       use interpolate_data, only : lininterp_init, lininterp, lininterp_finish, interp_type
       use tracer_data,   only : trcdata_init
-      use cam_history,   only : addfld, phys_decomp
+      use cam_history,   only : addfld
 
       implicit none
 
@@ -81,7 +81,7 @@
       call trcdata_init( fld_names, sulf_file, filelist, datapath, fields, file, &
            rmv_file, cycle_yr, fixed_ymd, fixed_tod, datatype)
 
-      call addfld('SULFATE','VMR', pver, 'I', 'sulfate data', phys_decomp )
+      call addfld('SULFATE', (/ 'lev' /), 'I','VMR', 'sulfate data' )
 
       end subroutine sulf_inti
 

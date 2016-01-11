@@ -20,7 +20,7 @@ use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_mmr, rad_cnst_ge
 
 use physics_buffer, only: pbuf_add_field, dtype_r8, pbuf_old_tim_idx, &
                           pbuf_get_index, pbuf_get_field
-use cam_history,    only: addfld, phys_decomp, add_default, outfld
+use cam_history,    only: addfld, add_default, outfld
 
 use ref_pres,       only: top_lev => trop_cloud_top_lev
 use wv_saturation,  only: qsat_water
@@ -173,24 +173,24 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
    call cnst_get_ind('CLDICE', cldice_idx)
    call cnst_get_ind('NUMICE', numice_idx)
 
-   call addfld('NIHF',  '1/m3', pver, 'A', 'Activated Ice Number Concentation due to homogenous freezing',  phys_decomp)
-   call addfld('NIDEP', '1/m3', pver, 'A', 'Activated Ice Number Concentation due to deposition nucleation',phys_decomp)
-   call addfld('NIIMM', '1/m3', pver, 'A', 'Activated Ice Number Concentation due to immersion freezing',   phys_decomp)
-   call addfld('NIMEY', '1/m3', pver, 'A', 'Activated Ice Number Concentation due to meyers deposition',    phys_decomp)
+   call addfld('NIHF', (/ 'lev' /), 'A',  '1/m3', 'Activated Ice Number Concentation due to homogenous freezing')
+   call addfld('NIDEP', (/ 'lev' /), 'A', '1/m3', 'Activated Ice Number Concentation due to deposition nucleation')
+   call addfld('NIIMM', (/ 'lev' /), 'A', '1/m3', 'Activated Ice Number Concentation due to immersion freezing')
+   call addfld('NIMEY', (/ 'lev' /), 'A', '1/m3', 'Activated Ice Number Concentation due to meyers deposition')
 
    if (use_preexisting_ice) then
-      call addfld('fhom     ', 'fraction', pver, 'A', 'Fraction of cirrus where homogeneous freezing occur'   ,phys_decomp) 
-      call addfld ('WICE      ', 'm/s   ', pver, 'A','Vertical velocity Reduction caused by preexisting ice'  ,phys_decomp)
-      call addfld ('WEFF      ', 'm/s   ', pver, 'A','Effective Vertical velocity for ice nucleation' ,phys_decomp)
-      call addfld ('INnso4    ','1/m3   ', pver, 'A','Number Concentation so4 used for ice_nucleation',phys_decomp)
-      call addfld ('INnbc     ','1/m3   ', pver, 'A','Number Concentation bc  used for ice_nucleation',phys_decomp)
-      call addfld ('INndust   ','1/m3   ', pver, 'A','Number Concentation dustused for ice_nucleation',phys_decomp)
-      call addfld ('INhet     ','1/m3   ', pver, 'A', &
-                'contribution for in-cloud ice number density increase by het nucleation in ice cloud',phys_decomp)
-      call addfld ('INhom     ','1/m3   ', pver, 'A', &
-                'contribution for in-cloud ice number density increase by hom nucleation in ice cloud',phys_decomp)
-      call addfld ('INFrehom  ','frequency',pver,'A','hom IN frequency ice cloud',phys_decomp)
-      call addfld ('INFreIN   ','frequency',pver,'A','frequency of ice nucleation occur',phys_decomp)
+      call addfld('fhom', (/ 'lev' /), 'A', 'fraction', 'Fraction of cirrus where homogeneous freezing occur'   ) 
+      call addfld ('WICE', (/ 'lev' /), 'A', 'm/s','Vertical velocity Reduction caused by preexisting ice'  )
+      call addfld ('WEFF', (/ 'lev' /), 'A', 'm/s','Effective Vertical velocity for ice nucleation' )
+      call addfld ('INnso4', (/ 'lev' /), 'A','1/m3','Number Concentation so4 used for ice_nucleation')
+      call addfld ('INnbc', (/ 'lev' /), 'A','1/m3','Number Concentation bc  used for ice_nucleation')
+      call addfld ('INndust', (/ 'lev' /), 'A','1/m3','Number Concentation dustused for ice_nucleation')
+      call addfld ('INhet', (/ 'lev' /), 'A','1/m3', &
+                'contribution for in-cloud ice number density increase by het nucleation in ice cloud')
+      call addfld ('INhom', (/ 'lev' /), 'A','1/m3', &
+                'contribution for in-cloud ice number density increase by hom nucleation in ice cloud')
+      call addfld ('INFrehom',(/ 'lev' /),'A','frequency','hom IN frequency ice cloud')
+      call addfld ('INFreIN',(/ 'lev' /),'A','frequency','frequency of ice nucleation occur')
 
       if (hist_preexisting_ice) then
          call add_default ('WSUBI   ', 1, ' ')  ! addfld/outfld calls are in microp_aero

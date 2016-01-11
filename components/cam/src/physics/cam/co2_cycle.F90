@@ -1,4 +1,5 @@
 
+
 module co2_cycle
 
 !------------------------------------------------------------------------------------------------
@@ -196,7 +197,7 @@ subroutine co2_init
 !
 !-----------------------------------------------------------------------
 
-    use cam_history, only: addfld, add_default, phys_decomp
+    use cam_history, only: addfld, horiz_only, add_default
  
     integer :: m, mm
       
@@ -206,9 +207,9 @@ subroutine co2_init
     do m = 1, ncnst
        call cnst_get_ind(c_names(m), mm)
 
-       call addfld(trim(cnst_name(mm))//'_BOT', 'kg/kg',     1, 'A', trim(cnst_longname(mm))//', Bottom Layer', phys_decomp)
-       call addfld(cnst_name(mm),               'kg/kg',  pver, 'A', cnst_longname(mm), phys_decomp)
-       call addfld(sflxnam(mm),                 'kg/m2/s',   1, 'A', trim(cnst_name(mm))//' surface flux', phys_decomp)
+       call addfld(trim(cnst_name(mm))//'_BOT',     horiz_only, 'A', 'kg/kg', trim(cnst_longname(mm))//', Bottom Layer')
+       call addfld(cnst_name(mm),  (/ 'lev' /), 'A',               'kg/kg', cnst_longname(mm))
+       call addfld(sflxnam(mm),   horiz_only, 'A',                 'kg/m2/s', trim(cnst_name(mm))//' surface flux')
 
        call add_default(cnst_name(mm), 1, ' ')
        call add_default(sflxnam(mm),   1, ' ')

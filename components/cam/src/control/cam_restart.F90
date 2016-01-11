@@ -10,8 +10,8 @@ module cam_restart
    use pmgrid,           only: plev, plevp, plat
    use rgrid,            only: nlon, wnummax, fullgrid
    use ioFileMod,        only: getfil, opnfil
-   use cam_abortutils,       only: endrun
-   use camsrfexch,       only: cam_out_t     
+   use cam_abortutils,   only: endrun
+   use camsrfexch,       only: cam_in_t, cam_out_t     
    use dyn_comp,         only: dyn_import_t, dyn_export_t
 
 #ifdef SPMD
@@ -140,7 +140,7 @@ end subroutine restart_printopts
 
 !=========================================================================================
 
-   subroutine cam_write_restart( cam_out, dyn_out, pbuf2d, &
+   subroutine cam_write_restart( cam_in, cam_out, dyn_out, pbuf2d, &
 	                         yr_spec, mon_spec, day_spec, sec_spec )
 
 !----------------------------------------------------------------------- 
@@ -162,7 +162,6 @@ end subroutine restart_printopts
       use radiation,        only: radiation_do
       use time_manager,     only: timemgr_write_restart
       use filenames,        only: caseid, interpret_filename_spec
-      use dycore,           only: dycore_is
 
       use time_manager,     only: timemgr_write_restart, timemgr_init_restart
       use restart_dynamics, only: write_restart_dynamics, init_restart_dynamics
@@ -172,6 +171,7 @@ end subroutine restart_printopts
       !
       ! Arguments
       !
+      type(cam_in_t),      intent(in) :: cam_in(begchunk:endchunk)
       type(cam_out_t),     intent(in) :: cam_out(begchunk:endchunk)
       
       type(dyn_export_t),  intent(in) :: dyn_out
@@ -190,7 +190,6 @@ end subroutine restart_printopts
       integer :: aeres_int = 0
       integer :: ierr
       type(file_desc_t) :: File
-      integer, pointer :: hdimids(:)
 
 
       !-----------------------------------------------------------------------
@@ -215,10 +214,9 @@ end subroutine restart_printopts
 
       call cam_pio_createfile(File, trim(fname), 0)
       call timemgr_init_restart(File)
-      call init_restart_dynamics(File, hdimids, dyn_out)
-      call init_restart_physics(File, cam_out, pbuf2d, hdimids)
+      call init_restart_dynamics(File, dyn_out)
+      call init_restart_physics(File, pbuf2d)
       call init_restart_history(File)
-      deallocate(hdimids)
 
       ierr = PIO_Put_att(File, PIO_GLOBAL, 'caseid', caseid)
       ierr = PIO_Put_att(File, PIO_GLOBAL, 'aeres', aeres_int)
@@ -234,7 +232,7 @@ end subroutine restart_printopts
       !-----------------------------------------------------------------------
       call timemgr_write_restart(File)
       call write_restart_dynamics(File, dyn_out)
-      call write_restart_physics(File, cam_out, pbuf2d)
+      call write_restart_physics(File, cam_in, cam_out, pbuf2d)
 
       if (present(yr_spec).and.present(mon_spec).and.&
            present(day_spec).and.present(sec_spec)) then
@@ -259,7 +257,7 @@ end subroutine restart_printopts
 
 !#######################################################################
 
-   subroutine cam_read_restart( cam_out, dyn_in, dyn_out, pbuf2d, stop_ymd, stop_tod, NLFileName )
+   subroutine cam_read_restart( cam_in, cam_out, dyn_in, dyn_out, pbuf2d, stop_ymd, stop_tod, NLFileName )
 
 !----------------------------------------------------------------------- 
 ! 
@@ -277,12 +275,11 @@ end subroutine restart_printopts
       use restart_dynamics, only: read_restart_dynamics
       use chem_surfvals,    only: chem_surfvals_init
       use phys_grid,        only: phys_grid_init
-      use camsrfexch,       only: atm2hub_alloc
+      use camsrfexch,       only: hub2atm_alloc, atm2hub_alloc
 #if (defined SPMD)
       use spmd_dyn,         only: spmdbuf
 #endif
       use cam_history,      only: read_restart_history
-      use dycore,           only: dycore_is
 
       use cam_pio_utils,    only: cam_pio_openfile, clean_iodesc_list
       use spmd_utils,       only: iam, mpicom
@@ -295,6 +292,7 @@ end subroutine restart_printopts
 !
 ! Arguments
 !
+   type(cam_in_t),     pointer     :: cam_in(:)
    type(cam_out_t),    pointer     :: cam_out(:)
    type(dyn_import_t), intent(inout) :: dyn_in
    type(dyn_export_t), intent(inout) :: dyn_out
@@ -380,17 +378,19 @@ end subroutine restart_printopts
       ! Dynamics, physics, History
       !-----------------------------------------------------------------------
 
+   call initcom ()
    call read_restart_dynamics(File, dyn_in, dyn_out, NLFileName)   
 
-   call initcom ()
    call phys_grid_init
+
+   call hub2atm_alloc( cam_in )
    call atm2hub_alloc( cam_out )
 
 
    ! Initialize physics grid reference pressures (needed by initialize_radbuffer)
    call ref_pres_init()
 
-   call read_restart_physics( File, cam_out, pbuf2d )
+   call read_restart_physics( File, cam_in, cam_out, pbuf2d )
 
    if (nlres .and. .not.lbrnch) then
       call read_restart_history ( File )
