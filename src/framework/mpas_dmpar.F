@@ -100,6 +100,7 @@ include 'mpif.h'
    public :: mpas_dmpar_exch_group_add_field
    public :: mpas_dmpar_exch_group_remove_field
    public :: mpas_dmpar_exch_group_begin_halo_exch
+   public :: mpas_dmpar_exch_group_local_halo_exch
 
 
    interface mpas_dmpar_alltoall_field
@@ -177,6 +178,17 @@ include 'mpif.h'
       module procedure mpas_dmpar_exch_group_pack_buffer_field4d_real
       module procedure mpas_dmpar_exch_group_pack_buffer_field5d_real
    end interface
+
+   interface mpas_dmpar_exch_group_local_exch_field
+      module procedure mpas_dmpar_exch_group_local_exch_field1d_integer
+      module procedure mpas_dmpar_exch_group_local_exch_field2d_integer
+      module procedure mpas_dmpar_exch_group_local_exch_field3d_integer
+      module procedure mpas_dmpar_exch_group_local_exch_field1d_real
+      module procedure mpas_dmpar_exch_group_local_exch_field2d_real
+      module procedure mpas_dmpar_exch_group_local_exch_field3d_real
+      module procedure mpas_dmpar_exch_group_local_exch_field4d_real
+      module procedure mpas_dmpar_exch_group_local_exch_field5d_real
+   end interface mpas_dmpar_exch_group_local_exch_field
 
 
    contains
@@ -6879,6 +6891,54 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
    end subroutine mpas_dmpar_exch_group_begin_halo_exch!}}}
 
 
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_local_halo_exch
+!
+!> \brief MPAS dmpar exchange group local halo exchange routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This routine performs the local exchange portion of a halo exchange using
+!>  an exchange group.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_local_halo_exch(domain, groupName, iErr)!{{{
+
+      type (domain_type), intent(inout) :: domain
+      character (len=*), intent(in) :: groupName
+      integer, optional, intent(out) :: iErr
+
+      type (mpas_exchange_group), pointer :: exchGroupPtr
+      integer :: nLen
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      nLen = len_trim(groupName)
+      DMPAR_DEBUG_WRITE(' -- Trying to perform local copies for exchange group ' // trim(groupName))
+
+      exchGroupPtr => domain % exchangeGroups
+      do while (associated(exchGroupPtr))
+         if ( nLen == exchGroupPtr % nLen) then
+            if ( groupName(1:nLen) == exchGroupPtr % groupName(1:exchGroupPtr % nLen) ) then
+               DMPAR_DEBUG_WRITE(' -- Performing local copies for exchange group ' // trim(groupName))
+               call mpas_dmpar_exch_group_local_exch_fields(domain % blocklist % allFields, exchGroupPtr)
+               return
+            end if
+         end if
+         exchGroupPtr => exchGroupPtr % next
+      end do
+
+      write(stderrUnit, *) 'ERROR: No exchange group found named ''' // trim(groupName) // '''.'
+      write(stderrUnit, *) '       Cannot perform halo exchange on group.'
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_MISSING_GROUP
+      end if
+
+   end subroutine mpas_dmpar_exch_group_local_halo_exch!}}}
+
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! Private routines for performing the beginning of halo exchanges
@@ -7458,6 +7518,132 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
    end subroutine mpas_dmpar_exch_group_pack_buffers!}}}
 
 
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_local_exch_fields
+!
+!> \brief MPAS dmpar exchange group local exchange routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine performs the actual local exchanges for each field in
+!>  an exchange group.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_local_exch_fields(allFieldsPool, exchangeGroup, iErr)!{{{
+      type (mpas_pool_type), intent(in) :: allFieldsPool
+      type (mpas_exchange_group), intent(inout) :: exchangeGroup
+      integer, optional, intent(out) :: iErr
+
+      type (field1DInteger), pointer :: intField1D
+      type (field2DInteger), pointer :: intField2D
+      type (field3DInteger), pointer :: intField3D
+      type (field1DReal), pointer :: realField1D
+      type (field2DReal), pointer :: realField2D
+      type (field3DReal), pointer :: realField3D
+      type (field4DReal), pointer :: realField4D
+      type (field5DReal), pointer :: realField5D
+
+      type (mpas_exchange_field_list), pointer :: exchFieldListPtr
+
+      integer :: iTimeLevel, iHalo
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      exchFieldListPtr => exchangeGroup % fieldList
+      do while ( associated(exchFieldListPtr) )
+         DMPAR_DEBUG_WRITE(' -- Local copy for field ' // trim(exchFieldListPtr % fieldName))
+         do iTimeLevel = 1, size(exchFieldListPtr % timeLevels)
+            if ( exchFieldListPtr % timeLevels(iTimeLevel) ) then
+               if ( exchFieldListPtr % fieldType == MPAS_POOL_REAL ) then
+                  if ( exchFieldListPtr % nDims == 1 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField1D, iTimeLevel)
+                     if ( realField1D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_local_exch_field(realField1D, iHalo)
+                           end if
+                        end do
+                     end if
+                  else if ( exchFieldListPtr % nDims == 2 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField2D, iTimeLevel)
+                     if ( realField2D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_local_exch_field(realField2D, iHalo)
+                           end if
+                        end do
+                     end if
+                  else if ( exchFieldListPtr % nDims == 3 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField3D, iTimeLevel)
+                     if ( realField3D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_local_exch_field(realField3D, iHalo)
+                           end if
+                        end do
+                     end if
+                  else if ( exchFieldListPtr % nDims == 4 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField4D, iTimeLevel)
+                     if ( realField4D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_local_exch_field(realField4D, iHalo)
+                           end if
+                        end do
+                     end if
+                  else if ( exchFieldListPtr % nDims == 5 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField5D, iTimeLevel)
+                     if ( realField5D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_local_exch_field(realField5D, iHalo)
+                           end if
+                        end do
+                     end if
+                  end if
+               else if ( exchFieldListPtr % fieldType == MPAS_POOL_INTEGER ) then
+                  if ( exchFieldListPtr % nDims == 1 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, intField1D, iTimeLevel)
+                     if ( intField1D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_local_exch_field(intField1D, iHalo)
+                           end if
+                        end do
+                     end if
+                  else if ( exchFieldListPtr % nDims == 2 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, intField2D, iTimeLevel)
+                     if ( intField2D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_local_exch_field(intField2D, iHalo)
+                           end if
+                        end do
+                     end if
+                  else if ( exchFieldListPtr % nDims == 3 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, intField3D, iTimeLevel)
+                     if ( intField3D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_local_exch_field(intField3D, iHalo)
+                           end if
+                        end do
+                     end if
+                  end if
+               end if
+            end if
+         end do
+
+         exchFieldListPtr => exchFieldListPtr % next
+      end do
+
+      call mpas_threading_barrier()
+
+   end subroutine mpas_dmpar_exch_group_local_exch_fields!}}}
+
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! Private routines for packing send buffers
@@ -7991,6 +8177,455 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       end do
 
    end subroutine mpas_dmpar_exch_group_pack_buffer_field5d_real!}}}
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! Private routines for performing local exchanges
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_local_exch_field1d_integer
+!
+!> \brief MPAS dmpar exchange pack 1D integer field routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine exchanges a 1D integer field between local blocks
+!>  It exchanges a specific halo layer, as defined by the haloLayer input argument.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_local_exch_field1d_integer(field, haloLayer, iErr)!{{{
+      type (field1DInteger), pointer :: field
+      integer, intent(in) :: haloLayer
+      integer, optional, intent(out) :: iErr
+
+      type (field1DInteger), pointer :: fieldCursor, fieldCursor2
+
+      type (mpas_exchange_list), pointer :: exchListPtr
+
+      integer :: iExch
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      fieldCursor => field
+      do while ( associated(fieldCursor) )
+         exchListPtr => fieldCursor % copyList % halos(haloLayer) % exchList
+
+         do while ( associated(exchListPtr) )
+            fieldCursor2 => field
+            do while ( associated(fieldCursor2) )
+               if ( exchListPtr % endPointID == fieldCursor2 % block % localBlockID ) then
+                  !$omp do schedule(runtime)
+                  do iExch = 1, exchListPtr % nList
+                     fieldCursor2 % array(exchListPtr % destList(iExch)) = fieldCursor % array(exchListPtr % srcList(iExch))
+                  end do
+                  !$omp end do
+               end if
+
+               fieldCursor2 => fieldCursor2 % next
+            end do
+
+            exchListPtr => exchListPtr % next
+         end do
+
+         call mpas_threading_barrier()
+
+         fieldCursor => fieldCursor % next
+      end do
+
+   end subroutine mpas_dmpar_exch_group_local_exch_field1d_integer!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_local_exch_field2d_integer
+!
+!> \brief MPAS dmpar exchange pack 2D integer field routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine exchanges a 2D integer field between local blocks
+!>  It exchanges a specific halo layer, as defined by the haloLayer input argument.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_local_exch_field2d_integer(field, haloLayer, iErr)!{{{
+      type (field2DInteger), pointer :: field
+      integer, intent(in) :: haloLayer
+      integer, optional, intent(out) :: iErr
+
+      type (field2DInteger), pointer :: fieldCursor, fieldCursor2
+
+      type (mpas_exchange_list), pointer :: exchListPtr
+
+      integer :: iExch
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      fieldCursor => field
+      do while ( associated(fieldCursor) )
+         exchListPtr => fieldCursor % copyList % halos(haloLayer) % exchList
+
+         do while ( associated(exchListPtr) )
+            fieldCursor2 => field
+            do while ( associated(fieldCursor2) )
+               if ( exchListPtr % endPointID == fieldCursor2 % block % localBlockID ) then
+                  !$omp do schedule(runtime)
+                  do iExch = 1, exchListPtr % nList
+                     fieldCursor2 % array(:, exchListPtr % destList(iExch)) = fieldCursor % array(:, exchListPtr % srcList(iExch))
+                  end do
+                  !$omp end do
+               end if
+
+               fieldCursor2 => fieldCursor2 % next
+            end do
+
+            exchListPtr => exchListPtr % next
+         end do
+
+         call mpas_threading_barrier()
+
+         fieldCursor => fieldCursor % next
+      end do
+
+   end subroutine mpas_dmpar_exch_group_local_exch_field2d_integer!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_local_exch_field3d_integer
+!
+!> \brief MPAS dmpar exchange pack 3D integer field routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine exchanges a 3D integer field between local blocks
+!>  It exchanges a specific halo layer, as defined by the haloLayer input argument.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_local_exch_field3d_integer(field, haloLayer, iErr)!{{{
+      type (field3DInteger), pointer :: field
+      integer, intent(in) :: haloLayer
+      integer, optional, intent(out) :: iErr
+
+      type (field3DInteger), pointer :: fieldCursor, fieldCursor2
+
+      type (mpas_exchange_list), pointer :: exchListPtr
+
+      integer :: iExch
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      fieldCursor => field
+      do while ( associated(fieldCursor) )
+         exchListPtr => fieldCursor % copyList % halos(haloLayer) % exchList
+
+         do while ( associated(exchListPtr) )
+            fieldCursor2 => field
+            do while ( associated(fieldCursor2) )
+               if ( exchListPtr % endPointID == fieldCursor2 % block % localBlockID ) then
+                  !$omp do schedule(runtime)
+                  do iExch = 1, exchListPtr % nList
+                     fieldCursor2 % array(:, :, exchListPtr % destList(iExch)) = &
+                                  fieldCursor % array(:, :, exchListPtr % srcList(iExch))
+                  end do
+                  !$omp end do
+               end if
+
+               fieldCursor2 => fieldCursor2 % next
+            end do
+
+            exchListPtr => exchListPtr % next
+         end do
+
+         call mpas_threading_barrier()
+
+         fieldCursor => fieldCursor % next
+      end do
+
+   end subroutine mpas_dmpar_exch_group_local_exch_field3d_integer!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_local_exch_field1d_real
+!
+!> \brief MPAS dmpar exchange pack 1D real field routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine exchanges a 1D real field between local blocks
+!>  It exchanges a specific halo layer, as defined by the haloLayer input argument.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_local_exch_field1d_real(field, haloLayer, iErr)!{{{
+      type (field1DReal), pointer :: field
+      integer, intent(in) :: haloLayer
+      integer, optional, intent(out) :: iErr
+
+      type (field1DReal), pointer :: fieldCursor, fieldCursor2
+
+      type (mpas_exchange_list), pointer :: exchListPtr
+
+      integer :: iExch
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      fieldCursor => field
+      do while ( associated(fieldCursor) )
+         exchListPtr => fieldCursor % copyList % halos(haloLayer) % exchList
+
+         do while ( associated(exchListPtr) )
+            fieldCursor2 => field
+            do while ( associated(fieldCursor2) )
+               if ( exchListPtr % endPointID == fieldCursor2 % block % localBlockID ) then
+                  !$omp do schedule(runtime)
+                  do iExch = 1, exchListPtr % nList
+                     fieldCursor2 % array(exchListPtr % destList(iExch)) = fieldCursor % array(exchListPtr % srcList(iExch))
+                  end do
+                  !$omp end do
+               end if
+
+               fieldCursor2 => fieldCursor2 % next
+            end do
+
+            exchListPtr => exchListPtr % next
+         end do
+
+         call mpas_threading_barrier()
+
+         fieldCursor => fieldCursor % next
+      end do
+
+   end subroutine mpas_dmpar_exch_group_local_exch_field1d_real!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_local_exch_field2d_real
+!
+!> \brief MPAS dmpar exchange pack 2D real field routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine exchanges a 2D real field between local blocks
+!>  It exchanges a specific halo layer, as defined by the haloLayer input argument.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_local_exch_field2d_real(field, haloLayer, iErr)!{{{
+      type (field2DReal), pointer :: field
+      integer, intent(in) :: haloLayer
+      integer, optional, intent(out) :: iErr
+
+      type (field2DReal), pointer :: fieldCursor, fieldCursor2
+
+      type (mpas_exchange_list), pointer :: exchListPtr
+
+      integer :: iExch
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      fieldCursor => field
+      do while ( associated(fieldCursor) )
+         exchListPtr => fieldCursor % copyList % halos(haloLayer) % exchList
+
+         do while ( associated(exchListPtr) )
+            fieldCursor2 => field
+            do while ( associated(fieldCursor2) )
+               if ( exchListPtr % endPointID == fieldCursor2 % block % localBlockID ) then
+                  !$omp do schedule(runtime)
+                  do iExch = 1, exchListPtr % nList
+                     fieldCursor2 % array(:, exchListPtr % destList(iExch)) = fieldCursor % array(:, exchListPtr % srcList(iExch))
+                  end do
+                  !$omp end do
+               end if
+
+               fieldCursor2 => fieldCursor2 % next
+            end do
+
+            exchListPtr => exchListPtr % next
+         end do
+
+         call mpas_threading_barrier()
+
+         fieldCursor => fieldCursor % next
+      end do
+
+   end subroutine mpas_dmpar_exch_group_local_exch_field2d_real!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_local_exch_field3d_real
+!
+!> \brief MPAS dmpar exchange pack 3D real field routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine exchanges a 3D real field between local blocks
+!>  It exchanges a specific halo layer, as defined by the haloLayer input argument.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_local_exch_field3d_real(field, haloLayer, iErr)!{{{
+      type (field3DReal), pointer :: field
+      integer, intent(in) :: haloLayer
+      integer, optional, intent(out) :: iErr
+
+      type (field3DReal), pointer :: fieldCursor, fieldCursor2
+
+      type (mpas_exchange_list), pointer :: exchListPtr
+
+      integer :: iExch
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      fieldCursor => field
+      do while ( associated(fieldCursor) )
+         exchListPtr => fieldCursor % copyList % halos(haloLayer) % exchList
+
+         do while ( associated(exchListPtr) )
+            fieldCursor2 => field
+            do while ( associated(fieldCursor2) )
+               if(exchListPtr % endPointID == fieldCursor2 % block % localBlockID) then
+                  !$omp do schedule(runtime)
+                  do iExch = 1, exchListPtr % nList
+                     fieldCursor2 % array(:, :, exchListPtr % destList(iExch)) = &
+                                  fieldCursor % array(:, :, exchListPtr % srcList(iExch))
+                  end do
+                  !$omp end do
+               end if
+
+               fieldCursor2 => fieldCursor2 % next
+            end do
+
+            exchListPtr => exchListPtr % next
+         end do
+
+         call mpas_threading_barrier()
+
+         fieldCursor => fieldCursor % next
+      end do
+
+   end subroutine mpas_dmpar_exch_group_local_exch_field3d_real!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_local_exch_field4d_real
+!
+!> \brief MPAS dmpar exchange pack 4D real field routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine exchanges a 4D real field between local blocks
+!>  It exchanges a specific halo layer, as defined by the haloLayer input argument.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_local_exch_field4d_real(field, haloLayer, iErr)!{{{
+      type (field4DReal), pointer :: field
+      integer, intent(in) :: haloLayer
+      integer, optional, intent(out) :: iErr
+
+      type (field4DReal), pointer :: fieldCursor, fieldCursor2
+
+      type (mpas_exchange_list), pointer :: exchListPtr
+
+      integer :: iExch
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      fieldCursor => field
+      do while ( associated(fieldCursor) )
+         exchListPtr => fieldCursor % copyList % halos(haloLayer) % exchList
+
+         do while ( associated(exchListPtr) )
+            fieldCursor2 => field
+            do while ( associated(fieldCursor2) )
+               if ( exchListPtr % endPointID == fieldCursor2 % block % localBlockID ) then
+                  !$omp do schedule(runtime)
+                  do iExch = 1, exchListPtr % nList
+                     fieldCursor2 % array(:, :, :, exchListPtr % destList(iExch)) = &
+                                  fieldCursor % array(:, :, :, exchListPtr % srcList(iExch))
+                  end do
+                  !$omp end do
+               end if
+
+               fieldCursor2 => fieldCursor2 % next
+            end do
+
+            exchListPtr => exchListPtr % next
+         end do
+
+         call mpas_threading_barrier()
+
+         fieldCursor => fieldCursor % next
+      end do
+
+   end subroutine mpas_dmpar_exch_group_local_exch_field4d_real!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_local_exch_field5d_real
+!
+!> \brief MPAS dmpar exchange pack 5D real field routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine exchanges a 5D real field between local blocks
+!>  It exchanges a specific halo layer, as defined by the haloLayer input argument.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_local_exch_field5d_real(field, haloLayer, iErr)!{{{
+      type (field5DReal), pointer :: field
+      integer, intent(in) :: haloLayer
+      integer, optional, intent(out) :: iErr
+
+      type (field5DReal), pointer :: fieldCursor, fieldCursor2
+
+      type (mpas_exchange_list), pointer :: exchListPtr
+
+      integer :: iExch
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      fieldCursor => field
+      do while ( associated(fieldCursor) )
+         exchListPtr => fieldCursor % copyList % halos(haloLayer) % exchList
+
+         do while ( associated(exchListPtr) )
+            fieldCursor2 => field
+            do while ( associated(fieldCursor2) )
+               if ( exchListPtr % endPointID == fieldCursor2 % block % localBlockID ) then
+                  !$omp do schedule(runtime)
+                  do iExch = 1, exchListPtr % nList
+                     fieldCursor2 % array(:, :, :, :, exchListPtr % destList(iExch)) = &
+                                  fieldCursor % array(:, :, :, :, exchListPtr % srcList(iExch))
+                  end do
+                  !$omp end do
+               end if
+
+               fieldCursor2 => fieldCursor2 % next
+            end do
+
+            exchListPtr => exchListPtr % next
+         end do
+
+         call mpas_threading_barrier()
+
+         fieldCursor => fieldCursor % next
+      end do
+
+   end subroutine mpas_dmpar_exch_group_local_exch_field5d_real!}}}
 
 
 end module mpas_dmpar
