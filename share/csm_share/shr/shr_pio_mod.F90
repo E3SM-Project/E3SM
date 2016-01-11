@@ -488,6 +488,11 @@ contains
        open( unitn, file=trim(nlfilename), status='old' , iostat=ierr)
        if( ierr /= 0) then
           write(shr_log_unit,*) 'No ',trim(nlfilename),' found, using defaults for pio settings'
+           pio_stride     = pio_default_stride
+           pio_root       = pio_default_root
+           pio_numiotasks = pio_default_numiotasks
+           pio_iotype     = pio_default_iotype
+           pio_rearranger = pio_default_rearranger
        else
           ierr = 1
           do while( ierr /= 0 )
@@ -594,6 +599,7 @@ contains
          pio_iotype .eq. PIO_IOTYPE_NETCDF4P)) then
        pio_stride = pio_stride/2
     endif
+
     !--------------------------------------------------------------------------
     ! check/set/correct io pio parameters
     !--------------------------------------------------------------------------
