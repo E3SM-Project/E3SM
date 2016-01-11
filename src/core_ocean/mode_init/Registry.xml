@@ -11,4 +11,5 @@
 #include "Registry_periodic_planar.xml"
 #include "Registry_ecosys.xml"
 #include "Registry_sea_mount.xml"
+#include "Registry_isomip.xml"
 // #include "Registry_TEMPLATE.xml"
