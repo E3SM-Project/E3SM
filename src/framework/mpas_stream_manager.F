@@ -3994,7 +3994,7 @@ module mpas_stream_manager
 
                         if ( is_decomposed_dim(real1DField % dimNames(1))) then
                             STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
-                            call mpas_dmpar_exch_halo_field(real1DField)
+                            call mpas_dmpar_field_halo_exch(real1DField % block % domain, fieldItr % memberName, timeLevel=timeLevel)
                         end if
                     else if ( fieldInfo % fieldType == MPAS_POOL_INTEGER ) then
                         if ( timeLevel <= fieldInfo % nTimeLevels ) then
@@ -4004,7 +4004,7 @@ module mpas_stream_manager
                         end if
                         if ( is_decomposed_dim(int1DField % dimNames(1))) then
                             STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
-                            call mpas_dmpar_exch_halo_field(int1DField)
+                            call mpas_dmpar_field_halo_exch(int1DField % block % domain, fieldItr % memberName, timeLevel=timeLevel)
                         end if
                     end if
 
@@ -4017,7 +4017,7 @@ module mpas_stream_manager
                         end if
                         if ( is_decomposed_dim(real2DField % dimNames(2))) then
                             STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
-                            call mpas_dmpar_exch_halo_field(real2DField)
+                            call mpas_dmpar_field_halo_exch(real2DField % block % domain, fieldItr % memberName, timeLevel=timeLevel)
                         end if
                     else if ( fieldInfo % fieldType == MPAS_POOL_INTEGER ) then
                         if ( timeLevel <= fieldInfo % nTimeLevels ) then
@@ -4027,7 +4027,7 @@ module mpas_stream_manager
                         end if
                         if ( is_decomposed_dim(int2DField % dimNames(2))) then
                             STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
-                            call mpas_dmpar_exch_halo_field(int2DField)
+                            call mpas_dmpar_field_halo_exch(int2DField % block % domain, fieldItr % memberName, timeLevel=timeLevel)
                         end if
                     end if
 
@@ -4040,7 +4040,7 @@ module mpas_stream_manager
                         end if
                         if ( is_decomposed_dim(real3DField % dimNames(3))) then
                             STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
-                            call mpas_dmpar_exch_halo_field(real3DField)
+                            call mpas_dmpar_field_halo_exch(real3DField % block % domain, fieldItr % memberName, timeLevel=timeLevel)
                         end if
                     else if ( fieldInfo % fieldType == MPAS_POOL_INTEGER ) then
                         if ( timeLevel <= fieldInfo % nTimeLevels ) then
@@ -4050,7 +4050,7 @@ module mpas_stream_manager
                         end if
                         if ( is_decomposed_dim(int3DField % dimNames(3))) then
                             STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
-                            call mpas_dmpar_exch_halo_field(int3DField)
+                            call mpas_dmpar_field_halo_exch(int3DField % block % domain, fieldItr % memberName, timeLevel=timeLevel)
                         end if
                     end if
 
@@ -4063,7 +4063,7 @@ module mpas_stream_manager
                         end if
                         if ( is_decomposed_dim(real4DField % dimNames(4))) then
                             STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
-                            call mpas_dmpar_exch_halo_field(real4DField)
+                            call mpas_dmpar_field_halo_exch(real4DField % block % domain, fieldItr % memberName, timeLevel=timeLevel)
                         end if
                     end if
 
@@ -4076,7 +4076,7 @@ module mpas_stream_manager
                         end if
                         if ( is_decomposed_dim(real5DField % dimNames(5))) then
                             STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
-                            call mpas_dmpar_exch_halo_field(real5DField)
+                            call mpas_dmpar_field_halo_exch(real5DField % block % domain, fieldItr % memberName, timeLevel=timeLevel)
                         end if
                     end if
                 end if
