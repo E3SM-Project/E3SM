@@ -66,7 +66,7 @@
 
   <compset>
     <alias>B1850</alias>
-    <lname>1850_CAM55_CLM50%BGC-CROP_CICE_POP2_MOSART_SGLC_SWAV</lname>
+    <lname>1850_CAM55_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM1%NOEVOLVE_SWAV_BGC%BDRD</lname>
   </compset>
 
   <compset>
@@ -270,6 +270,23 @@
   </compset>
 
   <entries>
+    <entry id="RUN_TYPE"> 
+      <values>
+	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null"	compset="1850_CAM55_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM1%NOEVOLVE_SWAV_BGC%BDRD"	   >hybrid</value>
+      </values>
+    </entry>
+    <entry id="RUN_REFCASE"> 
+      <values>
+	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null" compset="1850_CAM55_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM1%NOEVOLVE_SWAV_BGC%BDRD">b.e15.B1850G.f09_g16.pi_control.25</value> 
+      </values> 
+    </entry>   
+    <entry id="RUN_REFDATE"> 
+      <values>
+	<value grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null"		compset="1850_CAM55_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM1%NOEVOLVE_SWAV_BGC%BDRD"			   >0041-01-01</value> 
+      </values> 
+    </entry>   
+
+
 <!-- Reference cases from older cesm versions are no longer valid
     <entry id="RUN_TYPE"> 
       <values>
