@@ -1439,7 +1439,7 @@
 	        <var name="shortwaveIRDiffuseDown"            type="real"     dimensions="nCells"                   name_in_code="shortwaveIRDiffuseDown"/>
 	        <var name="longwaveDown"                      type="real"     dimensions="nCells"                   name_in_code="longwaveDown"/>
 	        <var name="rainfallRate"                      type="real"     dimensions="nCells Time"              name_in_code="rainfallRate"/>
-	        <var name="snowfallRate"                      type="real"     dimensions="nCells"                   name_in_code="snowfallRate"/>
+	        <var name="snowfallRate"                      type="real"     dimensions="nCells Time"                   name_in_code="snowfallRate"/>
 	        <var name="uAirVelocity"                      type="real"     dimensions="nCells Time"              name_in_code="uAirVelocity"/>
 	        <var name="vAirVelocity"                      type="real"     dimensions="nCells Time"              name_in_code="vAirVelocity"/>
 	        <var name="atmosReferenceSpeed10m"            type="real"     dimensions="nCells"                   name_in_code="atmosReferenceSpeed10m"/>
