@@ -11,6 +11,9 @@
       ! Also store parallelization info here
       type (dm_info), pointer :: dminfo
 
+      ! Store exchange group information here
+      type (mpas_exchange_group), pointer :: exchangeGroups => null()
+
       ! Domain specific constants
       logical :: on_a_sphere = .true.
       logical :: is_periodic = .false.
