@@ -32,14 +32,20 @@ contains
 !! @public
 !! @brief Remove null termination (C-style) from strings for Fortran.
 !<
-  subroutine replace_c_null(istr)
+  subroutine replace_c_null(istr, ilen)
     use iso_c_binding, only : C_NULL_CHAR
     character(len=*),intent(inout) :: istr
-    integer :: i
-    do i=1,len(istr)
+    integer(kind=pio_offset_kind), optional, intent(in) :: ilen
+    integer :: i, slen
+    if(present(ilen)) then
+       slen = ilen
+    else
+       slen = len(istr)
+    endif
+    do i=1,slen
        if(istr(i:i) == C_NULL_CHAR) exit
     end do
-    istr(i:len(istr))=''
+    istr(i:slen)=''
   end subroutine replace_c_null
 
 !>

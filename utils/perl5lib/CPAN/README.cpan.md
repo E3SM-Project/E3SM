@@ -28,3 +28,8 @@ http://cpansearch.perl.org/src/BOBTFISH/MRO-Compat-0.12/lib/MRO/Compat.pm
 http://cpansearch.perl.org/src/DOY/Try-Tiny-0.22/lib/Try/Tiny.pm
 http://cpansearch.perl.org/src/ZEFRAM/Module-Runtime-0.014/lib/Module/Runtime.pm
 
+add the 3 modules for File::Find::Rule
+
+http://search.cpan.org/~rclamp/Text-Glob-0.09/lib/Text/Glob.pm
+http://search.cpan.org/~rclamp/Number-Compare-0.03/lib/Number/Compare.pm
+http://search.cpan.org/~rclamp/File-Find-Rule-0.34/lib/File/Find/Rule.pm

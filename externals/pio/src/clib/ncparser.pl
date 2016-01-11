@@ -52,7 +52,7 @@ my $func="";
 open(F,">pio_nc.c");
 print F 
 "/**
-* \@file   pio_nc.c
+* \@file   
 * \@author Jim Edwards (jedwards\@ucar.edu)
 * \@date     Feburary 2014 
 * \@brief    PIO interfaces to [NetCDF](http://www.unidata.ucar.edu/software/netcdf/docs/modules.html) support functions
@@ -96,6 +96,7 @@ foreach my $func (keys %{$functions}){
   next if($func=~/default_format/);
   next if($func=~/copy_att/);
   next if($func=~/abort/);
+  next if($func=~/def_var_fill/);
   next if($func=~/string/);
   next if($func=~/t_att$/); # skip void versions of get and put att
   next if($functions->{$func}{pnetcdf} =~ /\(void\)/);
@@ -142,13 +143,51 @@ foreach my $func (keys %{$functions}){
 
 		  print F 
 "/** 
- * \@name    PIOc_$func
- * \@brief   The PIO-C interface for the NetCDF function nc_$func.
- * \@details This routine is called collectively by all tasks in the communicator 
- *           ios.union_comm. For more information on the underlying NetCDF commmand
- *           please read about this function in the NetCDF documentation at: 
- *           ".$currurl."
+ * \@ingroup PIOc_$func
+ * The PIO-C interface for the NetCDF function nc_$func.
+ *
+ * This routine is called collectively by all tasks in the communicator 
+ * ios.union_comm. For more information on the underlying NetCDF commmand
+ * please read about this function in the NetCDF documentation at: 
+ * ".$currurl."
+ *
+ * \@param ncid the ncid of the open file, obtained from
+ * PIOc_openfile() or PIOc_createfile().\n";
+		  if($functions->{$func}{pnetcdf} =~ /varid/){
+		      print F " * \@param varid the variable ID.\n";
+		  }
+
+		  if($functions->{$func}{pnetcdf} =~ /int attnum/){
+		      print F " * \@param attnum the attribute ID.\n";
+		  }
+
+		  if($functions->{$func}{pnetcdf} =~ /const char *name/){
+		      print F " * \@param name the attribute name.\n";
+		  }
+
+		  if($functions->{$func}{pnetcdf} =~ /\*xtypep/){
+		      print F " * \@param xtypep a pointer that will get the type of the attribute.\n";
+		  }
+		  if($functions->{$func}{pnetcdf} =~ /\*idp/){
+		      print F " * \@param idp a pointer that will get the id of the variable or attribute.\n";
+		  }
+		  if($functions->{$func}{pnetcdf} =~ /\*lenp/){
+		      print F " * \@param lenp a pointer that will get the number of values \n";
+		  }
+		  if($functions->{$func}{pnetcdf} =~ /\*varidp/){
+		      print F " * \@param varidp a pointer that will get the variable id \n";
+		  }
+		  if($functions->{$func}{pnetcdf} =~ /\*formatp/){
+		      print F " * \@param formatp a pointer that will get the file format \n";
+		  }
+		  if($functions->{$func}{pnetcdf} =~ /\*nattsp/){
+		      print F " * \@param nattsp a pointer that will get the number of attributes \n";
+		  }
+		  
+print F 
+" * \@return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
  */\n";
+
 
 	      }else{
 		  my $args;
@@ -182,6 +221,18 @@ foreach my $func (keys %{$functions}){
 		  $line =~ s/\(\)/$args/;
 	      }
 	  }
+	  if($line =~ /check_netcdf/){
+	      print F "   if(ierr != PIO_NOERR){\n";
+	      if($func =~ /get_att/){
+		  print F "    errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));\n";
+		  print F "    sprintf(errstr,\"name %s in file %s\",name,__FILE__);\n";
+	      }else{
+		  print F "    errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));\n";
+		  print F "    sprintf(errstr,\"in file %s\",__FILE__);\n";
+	      }	      
+              print F "  }\n";
+	  }
+
 
 	  print F $line;
 	  if($func =~ /sync/ && $line =~   /case PIO_IOTYPE_PNETCDF/){
@@ -208,19 +259,10 @@ foreach my $func (keys %{$functions}){
 	  }
 
 	  if($line =~ /check_netcdf/){
-	      print F "   if(ierr != PIO_NOERR){\n";
-	      if($func =~ /get_att/){
-		  print F "    errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));\n";
-		  print F "    sprintf(errstr,\"name %s in file %s\",name,__FILE__);\n";
-	      }else{
-		  print F "    errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));\n";
-		  print F "    sprintf(errstr,\"in file %s\",__FILE__);\n";
-	      }	      
-              print F "  }\n";
-
-
 	      if($func =~ /inq_varid/){
 		  print F "    mpierr = MPI_Bcast(varidp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
+	      }elsif($func =~ /inq_unlimdim/){
+		  print F "    mpierr = MPI_Bcast(unlimdimidp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_ndims/){
 		  print F "    mpierr = MPI_Bcast(ndimsp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";	
 	      }elsif($func =~ /var_fill/){

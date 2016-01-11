@@ -1,12 +1,9 @@
 /**
- * @file pioc.c
+ * @file 
  * @author Jim Edwards
  * @date  2014
  * @brief PIO C interface 
  *
- * 
- * 
- * 
  * @see http://code.google.com/p/parallelio/
  */
 
@@ -78,9 +75,17 @@ int PIOc_advanceframe(int ncid, int varid)
 } 
 
 /**
- ** @brief Set the unlimited dimension of the given variable
+ * @ingroup PIO_setframe 
+ * @brief Set the unlimited dimension of the given variable
+ * 
+ * @param ncid the ncid of the file.
+ * @param varid the varid of the variable
+ * @param frame the value of the unlimited dimension.  In c 0 for the
+ * first record, 1 for the second
+ *
+ * @return PIO_NOERR for no error, or error code.
  */
-int PIOc_setframe(const int ncid, const int varid,const int frame)
+int PIOc_setframe(const int ncid, const int varid, const int frame)
 {
   file_desc_t *file;
   file = pio_get_file_from_id(ncid);
@@ -354,7 +359,6 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
   iosystem_desc_t *iosys;
   int ierr;
   int ustride;
-  MPI_Group compgroup, iogroup;
   int lbase;
   iosys = (iosystem_desc_t *) malloc(sizeof(iosystem_desc_t));
 
@@ -413,11 +417,12 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
   if(iosys->comp_rank == iosys->ioranks[0])
     iosys->iomaster = true;
 
-  CheckMPIReturn(MPI_Comm_group(comp_comm, &compgroup),__FILE__,__LINE__);
+  CheckMPIReturn(MPI_Comm_group(comp_comm, &(iosys->compgroup)),__FILE__,__LINE__);
 			
-  CheckMPIReturn(MPI_Group_incl(compgroup, iosys->num_iotasks, iosys->ioranks, &iogroup),__FILE__,__LINE__);
+  CheckMPIReturn(MPI_Group_incl(iosys->compgroup, iosys->num_iotasks, iosys->ioranks,
+				&(iosys->iogroup)),__FILE__,__LINE__);
 
-  CheckMPIReturn(MPI_Comm_create(comp_comm, iogroup, &(iosys->io_comm)),__FILE__,__LINE__);
+  CheckMPIReturn(MPI_Comm_create(comp_comm, iosys->iogroup, &(iosys->io_comm)),__FILE__,__LINE__);
   if(iosys->ioproc)
     CheckMPIReturn(MPI_Comm_rank(iosys->io_comm, &(iosys->io_rank)),__FILE__,__LINE__);
   else
@@ -464,8 +469,12 @@ int PIOc_set_hint(const int iosysid, char hint[], const char hintval[])
 
 }
 
-/**
- ** @brief Clean up data structures and exit the pio library
+/** @ingroup PIO_finalize
+ * @brief Clean up data structures and exit the pio library.
+ *
+ * @param iosysid: the io system ID provided by PIOc_Init_Intracomm().
+ *
+ * @returns 0 for success or non-zero for error.
  */
 
 int PIOc_finalize(const int iosysid)
@@ -487,10 +496,21 @@ int PIOc_finalize(const int iosysid)
 
   free_cn_buffer_pool(*ios);
 
+  /* Free the MPI groups. */
+  MPI_Group_free(&(ios->compgroup));
+  MPI_Group_free(&(ios->iogroup));
 
+  /* Free the MPI communicators. */
+  if(ios->intercomm != MPI_COMM_NULL){
+    MPI_Comm_free(&(ios->intercomm));
+  }
   if(ios->io_comm != MPI_COMM_NULL){
     MPI_Comm_free(&(ios->io_comm));
   }
+  /* if(ios->comp_comm != MPI_COMM_NULL){ */
+  /*   MPI_Comm_free(&(ios->comp_comm)); */
+  /* } */
+
   return pio_delete_iosystem_from_list(iosysid);
 
   

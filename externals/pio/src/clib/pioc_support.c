@@ -1,3 +1,6 @@
+/** @file 
+ * Support functions.
+ */
 #include <pio.h>
 #include <pio_internal.h>
 
@@ -111,11 +114,16 @@ void pioassert(_Bool expression, const char *msg, const char *fname, const int l
 
 }
 
-
-
-
-
-int check_netcdf(file_desc_t *file,int status, const char *fname, const int line){
+/** Check the result of a netCDF API call. 
+ * 
+ * @param file pointer to the PIO structure describing this file.
+ * @param status the return value from the netCDF call.
+ * @param fname the name of the code file. 
+ * @param line the line number of the netCDF call in the code. 
+ * 
+ * @return the error code
+*/
+int check_netcdf(file_desc_t *file, int status, const char *fname, const int line){
   iosystem_desc_t *ios;
   int ierr;
   char errstr[160];

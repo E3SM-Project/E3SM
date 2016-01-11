@@ -432,32 +432,6 @@
     We will not document this further in this guide.</desc>
   </entry> 
 
-  <entry id="DOUT_S_SAVE_DATES_RESTART_FILE_SET"> 
-    <type>string</type>
-    <default_value>all</default_value>
-    <group>run_data_archive</group>
-    <file>env_run.xml</file>
-    <desc>Comma separated List with dates of the month to save restart file sets in the $DOUT_S_ROOT/$CASE/rest directory.
-      If one of the list elements is last, then it saves the last day of the month where the date is 28,29,30 or 31 
-      depending on the month. For example, if the list contains 10,20,last, then the corresponding restart sets
-      saved in $DOUT_S_ROOT/$CASE/rest are 2016-01-10-00000, 2016-01-20-00000, 2016-01-31-00000 for January and
-      2016-02-10-00000, 2016-02-20-00000, 2016-02-29-00000 for February due to 2016 being a leap year. 
-      If the list is set to none, then all restart sets are deleted.
-      If the list is set to all (default), then all restart sets are saved.
-      This variable is used by the clobber_archive script to selectively delete files in the short-term archive locations.</desc>
-  </entry> 
-
-  <entry id="DOUT_S_CREATE_LINKED_ARCHIVE"> 
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>TRUE</default_value>
-    <group>run_data_archive</group>
-    <file>env_run.xml</file>
-    <desc>Logical to save contents of the short term archive on disk.
-      If TRUE, create hardlinks from the short term archive $DOUT_S_ROOT/archive.locked/$CASE
-      directory to the $DOUT_S_ROOT/archive/$CASE directory.</desc>
-  </entry> 
-
   <entry id="DOUT_L_MS"> 
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
@@ -2293,6 +2267,14 @@
     <desc>pio number of io tasks</desc>
   </entry>
 
+  <entry id="PIO_REARRANGER">
+    <type>integer</type>
+    <default_value>2</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger choice box=1, subset=2 </desc>
+  </entry>
+
   <entry id="PIO_TYPENAME">
     <type>char</type>
     <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,default</valid_values>
@@ -2315,7 +2297,7 @@
     <default_value>-1</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio blocksize</desc>
+    <desc>pio blocksize for box decompositions</desc>
   </entry>
 
   <entry id="PIO_BUFFER_SIZE_LIMIT">
@@ -2323,7 +2305,7 @@
     <default_value>-1</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio buffer size limit</desc>
+    <desc>pio buffer size limit for pnetcdf output</desc>
   </entry>
 
   <entry id="OCN_PIO_STRIDE">
@@ -2332,6 +2314,14 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio stride</desc>
+  </entry>
+
+  <entry id="OCN_PIO_REARRANGER">
+    <type>integer</type>
+    <default_value>-99</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger choice box=1, subset=2 </desc>
   </entry>
 
   <entry id="OCN_PIO_ROOT">
@@ -2367,6 +2357,14 @@
     <desc>pio stride</desc>
   </entry>
 
+  <entry id="LND_PIO_REARRANGER">
+    <type>integer</type>
+    <default_value>-99</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger choice box=1, subset=2 </desc>
+  </entry>
+
   <entry id="LND_PIO_ROOT">
     <type>integer</type>
     <default_value>-99</default_value>
@@ -2398,6 +2396,14 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio stride</desc>
+  </entry>
+
+  <entry id="ROF_PIO_REARRANGER">
+    <type>integer</type>
+    <default_value>-99</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger choice box=1, subset=2 </desc>
   </entry>
 
   <entry id="ROF_PIO_ROOT">
@@ -2433,6 +2439,14 @@
     <desc>pio stride</desc>
   </entry>
 
+  <entry id="ICE_PIO_REARRANGER">
+    <type>integer</type>
+    <default_value>-99</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger choice box=1, subset=2 </desc>
+  </entry>
+
   <entry id="ICE_PIO_ROOT">
     <type>integer</type>
     <default_value>-99</default_value>
@@ -2464,6 +2478,14 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio stride</desc>
+  </entry>
+
+  <entry id="ATM_PIO_REARRANGER">
+    <type>integer</type>
+    <default_value>-99</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger choice box=1, subset=2 </desc>
   </entry>
 
   <entry id="ATM_PIO_ROOT">
@@ -2499,6 +2521,14 @@
     <desc>pio stride</desc>
   </entry>
 
+  <entry id="CPL_PIO_REARRANGER">
+    <type>integer</type>
+    <default_value>-99</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger choice box=1, subset=2 </desc>
+  </entry>
+
   <entry id="CPL_PIO_ROOT">
     <type>integer</type>
     <default_value>-99</default_value>
@@ -2532,6 +2562,14 @@
     <desc>pio stride</desc>
   </entry>
 
+  <entry id="GLC_PIO_REARRANGER">
+    <type>integer</type>
+    <default_value>-99</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger choice box=1, subset=2 </desc>
+  </entry>
+
   <entry id="GLC_PIO_ROOT">
     <type>integer</type>
     <default_value>-99</default_value>
@@ -2563,6 +2601,14 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio stride</desc>
+  </entry>
+
+  <entry id="WAV_PIO_REARRANGER">
+    <type>integer</type>
+    <default_value>-99</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger choice box=1, subset=2 </desc>
   </entry>
 
   <entry id="WAV_PIO_ROOT">
@@ -2818,7 +2864,7 @@
       <value compset="_DATM%COPYALL_NPS"    >72</value> 
       <value compset="_DATM.*_CLM"          >48</value>  
       <value compset="_DATM.*_DICE.*_POP2"  >4</value>
-      <value compset="_DATM.*_CICE.*_POP2"  >48</value>
+      <value compset="_DATM.*_CICE.*_POP2"  >24</value>
       <value compset="_DATM.*_CICE.*_DOCN"  >24</value>
       <value compset="_DATM.*_DOCN%US20"    >24</value> 
       <value compset="_MPAS"                >1</value>  

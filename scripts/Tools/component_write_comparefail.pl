@@ -15,8 +15,9 @@ foreach my $file (@cprnc_files) {
 
     my $ndiffs     = `grep RMS $file | wc -l`;
     my $nfilldiffs = `grep FILLDIFF $file | wc -l`;
+    my $ndimsizediffs = `grep DIMSIZEDIFF $file | wc -l`;
 
-    if (($ndiffs > 0) || ($nfilldiffs > 0)) {
+    if (($ndiffs > 0) || ($nfilldiffs > 0) || ($ndimsizediffs > 0)) {
 	print fhout "$file had the following fields that are NOT b4b  \n";
 	print fhout "\n";
     }
@@ -35,6 +36,16 @@ foreach my $file (@cprnc_files) {
 	open(fhin, "<$file") or die "Could not open file $file to read";
 	while (my $line = <fhin>) {
 	    if ($line =~ /FILLDIFF\s+(\S+)/) {
+		print fhout"  $line "; 
+	    }
+	}
+	close(fhin);
+    }
+
+    if ($ndimsizediffs > 0) {
+	open(fhin, "<$file") or die "Could not open file $file to read";
+	while (my $line = <fhin>) {
+	    if ($line =~ /DIMSIZEDIFF\s+(\S+)/) {
 		print fhout"  $line "; 
 	    }
 	}

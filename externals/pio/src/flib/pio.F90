@@ -9,7 +9,7 @@ module pio
 
 ! only pio_offset is intended for export from kinds
 
-  use pio_kinds, only : pio_offset_kind
+  use pio_kinds, only :  pio_offset_kind
 
   use piolib_mod, only : pio_initdecomp, &
        pio_openfile, pio_closefile, pio_createfile, pio_setdebuglevel, &
@@ -109,6 +109,11 @@ contains
     ierr = PIOc_iam_iotask(iosystem%iosysid, ctask)
     task = ctask
   end function pio_iam_iotask
+  
+!>
+!! @public
+!! @brief Integer function returns rank of IO task.
+!<
   function pio_iotask_rank(iosystem) result(rank)
     type(iosystem_desc_t), intent(in) :: iosystem
     integer :: rank, ierr
@@ -124,6 +129,10 @@ contains
     ierr = PIOc_iotask_rank(iosystem%iosysid, rank)
   end function pio_iotask_rank
 
+!>
+!! @public
+!! @brief Sets active to true if IO system is active.
+!<
   subroutine pio_iosystem_is_active(iosystem, active)
     use iso_c_binding
     type(iosystem_desc_t), intent(in) :: iosystem
@@ -141,8 +150,6 @@ contains
 
     ierr = PIOc_iosystem_is_active(iosystem%iosysid, lactive)
     active = lactive
-
-
   end subroutine pio_iosystem_is_active
 
 
