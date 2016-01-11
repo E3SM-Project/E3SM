@@ -17,11 +17,17 @@
 !-----------------------------------------------------------------------
 module mpas_dmpar
 
+#define COMMA ,
+#define DMPAR_DEBUG_WRITE(M) ! write(stderrUnit,*) M
+#define DMPAR_WARNING_WRITE(M) write(stderrUnit,*) 'WARNING: '//M
+#define DMPAR_ERROR_WRITE(M) write(stderrUnit,*) 'ERROR: '//M
+
    use mpas_derived_types
    use mpas_sort
    use mpas_hash
    use mpas_io_units
    use mpas_threading
+   use mpas_pool_routines
 
 #ifdef _MPI
 #ifndef NOMPIMOD
@@ -89,6 +95,11 @@ include 'mpif.h'
    public :: mpas_dmpar_destroy_communication_list
    public :: mpas_dmpar_destroy_exchange_list
    public :: mpas_dmpar_get_time
+   public :: mpas_dmpar_exch_group_create
+   public :: mpas_dmpar_exch_group_destroy
+   public :: mpas_dmpar_exch_group_add_field
+   public :: mpas_dmpar_exch_group_remove_field
+
 
    interface mpas_dmpar_alltoall_field
       module procedure mpas_dmpar_alltoall_field1d_integer
@@ -6342,6 +6353,464 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 #endif
 
    end subroutine mpas_dmpar_get_time!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_create
+!
+!> \brief MPAS dmpar exchange group creation routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This routine creates a new exchange group named 'groupName' within a
+!>  domain's list of exchange groups.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_create(domain, groupName, iErr)!{{{
+
+      type (domain_type), intent(inout) :: domain
+      character (len=*), intent(in) :: groupName
+      integer, optional, intent(out) :: iErr
+
+      type (mpas_exchange_group), pointer :: exchGroupPtr, prevExchGroupPtr
+      integer :: nLen
+      integer :: threadNum
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      threadNum = mpas_threading_get_thread_num()
+
+      if ( threadNum == 0 ) then
+         nLen = len_trim(groupName)
+         DMPAR_DEBUG_WRITE(' -- Creating exchange group ' // trim(groupName))
+
+         ! If no exchange group has been created yet, allocate the first
+         if ( .not. associated(domain % exchangeGroups) ) then
+            allocate(domain % exchangeGroups)
+            exchGroupPtr => domain % exchangeGroups
+         ! Otherwise, make sure the group has not already been created, and add it to the end of the list
+         else
+            exchGroupPtr => domain % exchangeGroups
+            do while (associated(exchGroupPtr))
+               if ( nLen == exchGroupPtr % nLen) then
+                  if ( groupName(1:nLen) == exchGroupPtr % groupName(1:exchGroupPtr % nLen) ) then
+                     write(stderrUnit, *) 'ERROR: Exchange group ''' // groupName(1:nLen) // ''' already exists.'
+                     write(stderrUnit, *) '       Cannot create group.'
+                     if ( present(iErr) ) then
+                        iErr = MPAS_DMPAR_EXISTING_GROUP
+                     end if
+                     return
+                  end if
+               end if
+               prevExchGroupPtr => exchGroupPtr
+               exchGroupPtr => exchGroupPtr % next
+            end do
+
+            allocate(prevExchGroupPtr % next)
+            exchGroupPtr => prevExchGroupPtr % next
+         end if
+
+         exchGroupPtr % nLen = nLen
+         exchGroupPtr % groupName = trim(groupName)
+
+         call mpas_pool_create_pool(exchGroupPtr % fieldPool)
+      end if
+
+   end subroutine mpas_dmpar_exch_group_create!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_destroy
+!
+!> \brief MPAS dmpar exchange group destruction routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This routine destroys an exchange group named 'groupName' within a
+!>  domain's list of exchange groups.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_destroy(domain, groupName, iErr)!{{{
+
+      type (domain_type), intent(inout) :: domain
+      character (len=*), intent(in) :: groupName
+      integer, optional, intent(out) :: iErr
+
+      type (mpas_exchange_field_list), pointer :: exchFieldListPtr
+      type (mpas_exchange_group), pointer :: exchGroupPtr, prevExchGroupPtr
+      integer :: nLen
+      integer :: threadNum
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      threadNum = mpas_threading_get_thread_num()
+
+      if ( threadNum == 0 ) then
+         nLen = len_trim(groupName)
+         DMPAR_DEBUG_WRITE(' -- Destroying exchange group ' // trim(groupName))
+
+         nullify(prevExchGroupPtr)
+         exchGroupPtr => domain % exchangeGroups
+         do while (associated(exchGroupPtr))
+            if ( nLen == exchGroupPtr % nLen) then
+               if ( groupName(1:nLen) == exchGroupPtr % groupName(1:exchGroupPtr % nLen) ) then
+                  if ( associated(prevExchGroupPtr) ) then
+                     prevExchGroupPtr % next => exchGroupPtr % next
+                  else
+                     if ( associated(exchGroupPtr % next) ) then
+                        domain % exchangeGroups => exchGroupPtr % next
+                     else
+                        nullify(domain % exchangeGroups)
+                     end if
+                  end if
+
+                  call mpas_pool_destroy_pool(exchGroupPtr % fieldPool)
+
+                  ! Destroy field list
+                  do while ( associated(exchGroupPtr % fieldList) )
+                     exchFieldListPtr => exchGroupPtr % fieldList
+                     if ( associated(exchFieldListPtr % next) ) then
+                        exchGroupPtr % fieldList => exchFieldListPtr % next
+                     else
+                        nullify(exchGroupPtr % fieldList)
+                     end if
+
+                     if ( associated(exchFieldListPtr % haloLayers) ) then
+                        deallocate(exchFieldListPtr % haloLayers)
+                     end if
+
+                     if ( associated(exchFieldListPtr % timeLevels) ) then
+                        deallocate(exchFieldListPtr % timeLevels)
+                     end if
+
+                     nullify(exchFieldListPtr % next)
+                     deallocate(exchFieldListPtr)
+                  end do
+
+                  deallocate(exchGroupPtr)
+
+                  return
+               end if
+            end if
+            prevExchGroupPtr => exchGroupPtr
+            exchGroupPtr => exchGroupPtr % next
+         end do
+
+         write(stderrUnit, *) 'ERROR: No exchange group found named ''' // trim(groupName) // '''.'
+         write(stderrUnit, *) '       Cannot destroy group.'
+         if ( present(iErr) ) then
+            iErr = MPAS_DMPAR_MISSING_GROUP
+         end if
+      end if
+
+   end subroutine mpas_dmpar_exch_group_destroy!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_add_field
+!
+!> \brief MPAS dmpar exchange group add field routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This routine adds a field named 'fieldName' to an exchange group named
+!>  'groupName' within a domain's list of exchange groups.
+!>  The timeLevel argument allows control over which timeLevel(s) will be
+!>    exchanged as part of this group. If the timeLevel argument is omitted or if it
+!>    has a value of -1, all time levels will be exchanged.
+!>  The haloLayers argument allows an input array to define the halo layers
+!>    that should be exchanged as part of this exchange group. If it is
+!>    omitted, all halo layers will be exchanged.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_add_field(domain, groupName, fieldName, timeLevel, haloLayers, iErr)!{{{
+
+      type (domain_type), intent(inout) :: domain
+      character (len=*), intent(in) :: groupName
+      character (len=*), intent(in) :: fieldName
+      integer, optional, intent(in) :: timeLevel
+      integer, dimension(:), optional, intent(in) :: haloLayers
+      integer, optional, intent(out) :: iErr
+
+      type (mpas_exchange_field_list), pointer :: exchFieldListPtr
+      type (mpas_exchange_group), pointer :: exchGroupPtr
+      integer :: nLen, fieldNLen, timeLevelLocal
+      type (mpas_pool_field_info_type) :: fieldInfo
+      integer :: iHalo
+      integer :: threadNum
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      threadNum = mpas_threading_get_thread_num()
+
+      if ( threadNum == 0 ) then
+         nLen = len_trim(groupName)
+         fieldNLen = len_trim(fieldName)
+
+         DMPAR_DEBUG_WRITE(' -- Adding field ' // trim(fieldName) // ' to exchange group ' // trim(groupName) )
+
+         ! Check that field exists
+         fieldInfo % fieldType = -1
+         fieldInfo % nDims = -1
+         fieldInfo % nTimeLevels = -1
+         fieldInfo % isActive = .false.
+         call mpas_pool_get_field_info(domain % blocklist % allFields, fieldName, fieldInfo)
+
+         if ( fieldInfo % fieldType == -1 .and. fieldInfo % nDims == -1 .and. fieldInfo % nTimeLevels == -1 ) then
+            write(stderrUnit, *) 'ERROR: Field ''' // trim(fieldName) // ''' does not exist.'
+            write(stderrUnit, *) '       Cannot add field.'
+            if ( present(iErr) ) then
+               iErr = MPAS_DMPAR_MISSING_FIELD
+            end if
+            return
+         end if
+
+         ! Validate dimensions
+         if ( fieldInfo % nDims == 0 ) then
+            write(stderrUnit, *) 'WARNING: Field ''' // trim(fieldName) // &
+                                 ''' has zero dimensions and cannot be added to exchange group ''' // &
+                                 trim(groupName) // '''.'
+            return
+         end if
+
+         ! Validate field type
+         if ( fieldInfo % fieldType /= MPAS_POOL_REAL .and. fieldInfo % fieldType /= MPAS_POOL_INTEGER ) then
+            write(stderrUnit, *) 'WARNING: Field ''' // trim(fieldName) // &
+                                 ''' is an incorrect type for a halo exchange, and cannot be added to exchange group ''' // &
+                                 trim(groupName) // '''.'
+            return
+         end if
+
+         ! Setup and validate time level
+         if ( present(timeLevel) ) then
+            timeLevelLocal = timeLevel
+         else
+            timeLevelLocal = -1
+         end if
+
+         if ( timeLevelLocal > fieldInfo % nTimeLevels ) then
+            write(stderrUnit, *) 'ERROR: Field ''' // trim(fieldName) // &
+                                 ''' has fewer time levels than the level requested. Cannot add to exchange group ''' // &
+                                trim(groupName) // '''.'
+            if ( present(iErr) ) then
+               iErr = MPAS_DMPAR_FIELD_TIMELEVEL_ERR
+            end if
+            return
+         else if ( timeLevelLocal < -1 ) then
+            write(stderrUnit, '(a62, i2, a)') 'ERROR: timeLevel argument can only have a value between -1 and ', &
+                                             fieldInfo % nTimeLevels, ' when adding field ''' // trim(fieldName) &
+                                             // ''' to exchange group ''' // trim(groupName) // '''.'
+            if ( present(iErr) ) then
+               iErr = MPAS_DMPAR_FIELD_TIMELEVEL_ERR
+            end if
+            return
+         end if
+
+         if ( present(haloLayers) ) then
+            do iHalo = 1, size(haloLayers)
+               if ( haloLayers(iHalo) > fieldInfo % nHaloLayers ) then
+                  write(stderrUnit, '(a60, i2, a)') 'ERROR: haloLayers argument contains an invalid halo index of ', &
+                                                    haloLayers(iHalo), ' when adding field ''' // trim(fieldName) // &
+                                                    ''' to exchange group ''' // trim(groupName) // '''.'
+                  if ( present(iErr) ) then
+                     iErr = MPAS_DMPAR_FIELD_HALO_ERR
+                  end if
+                  return
+               end if
+            end do
+         end if
+
+         exchGroupPtr => domain % exchangeGroups
+         do while (associated(exchGroupPtr))
+            if ( nLen == exchGroupPtr % nLen) then
+               if ( groupName(1:nLen) == exchGroupPtr % groupName(1:exchGroupPtr % nLen) ) then
+                  call mpas_pool_add_config(exchGroupPtr % fieldPool, fieldName, timeLevelLocal)
+
+                  ! Add field to exchange group's fieldList
+                  if ( associated(exchGroupPtr % fieldList) ) then
+                     ! If the field is already added, find it.
+                     exchFieldListPtr => exchGroupPtr % fieldList
+                     do while ( associated(exchFieldListPtr) )
+                        if ( fieldNLen == exchFieldListPtr % nLen )  then
+                           if ( fieldName(1:fieldNLen) == exchFieldListPtr % fieldName(1:exchFieldListPtr % nLen) ) then
+                              ! Make sure this field is marked for the correct
+                              ! halo exchanges, as defined by the input
+                              ! arguments
+                              ! TODO
+                              if ( timeLevelLocal == -1 ) then
+                                 exchFieldListPtr % timeLevels(:) = .true.
+                              else
+                                 exchFieldListPtr % timeLevels(timeLevel) = .true.
+                              end if
+
+                              if ( present(haloLayers) ) then
+                                 do iHalo = 1, size(haloLayers)
+                                    exchFieldListPtr % haloLayers( haloLayers(iHalo) ) = .true.
+                                 end do
+                              else
+                                 exchFieldListPtr % haloLayers(:) = .true.
+                              end if
+
+                              ! Return, as the field has already been added
+                              return
+                           end if
+                        end if
+
+                        exchFieldListPtr => exchFieldListPtr % next
+                     end do
+                  end if
+
+                  ! Add the field to the beginning of the list, since it
+                  ! isn't in the list.
+                  allocate(exchFieldListPtr)
+                  exchFieldListPtr % nLen = fieldNLen
+                  exchFieldListPtr % fieldName = trim(fieldName)
+                  exchFieldListPtr % nDims = fieldInfo % nDims
+                  exchFieldListPtr % fieldType = fieldInfo % fieldType
+                  allocate(exchFieldListPtr % haloLayers(fieldInfo % nHaloLayers))
+                  allocate(exchFieldListPtr % timeLevels(fieldInfo % nTimeLevels))
+                  exchFieldListPtr % haloLayers(:) = .false.
+                  exchFieldListPtr % timeLevels(:) = .false.
+
+                  if ( timeLevelLocal == -1 ) then
+                     exchFieldListPtr % timeLevels(:) = .true.
+                  else
+                     exchFieldListPtr % timeLevels(timeLevelLocal) = .true.
+                  end if
+
+                  if ( present(haloLayers) ) then
+                     do iHalo = 1, size(haloLayers)
+                        exchFieldListPtr % haloLayers( haloLayers(iHalo) ) = .true.
+                     end do
+                  else
+                     exchFieldListPtr % haloLayers(:) = .true.
+                  end if
+
+                  ! The next pointer is null by default, so only update it if
+                  ! there is a fieldList already.
+                  if ( associated(exchGroupPtr % fieldList) ) then
+                     exchFieldListPtr % next => exchGroupPtr % fieldList
+                  end if
+                  exchGroupPtr % fieldList => exchFieldListPtr
+
+                  return
+               end if
+            end if
+            exchGroupPtr => exchGroupPtr % next
+         end do
+
+         write(stderrUnit, *) 'ERROR: No exchange group found named ''' // trim(groupName) // '''.'
+         write(stderrUnit, *) '       Cannot add field ''' // trim(fieldName) // ''' to group.'
+         if ( present(iErr) ) then
+            iErr = MPAS_DMPAR_MISSING_GROUP
+         end if
+      end if
+
+   end subroutine mpas_dmpar_exch_group_add_field!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_remove_field
+!
+!> \brief MPAS dmpar exchange group remove field routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This routine removes a field named 'fieldName' from an exchange group named
+!>  'groupName' within a domain's list of exchange groups.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_remove_field(domain, groupName, fieldName, iErr)!{{{
+
+      type (domain_type), intent(inout) :: domain
+      character (len=*), intent(in) :: groupName
+      character (len=*), intent(in) :: fieldName
+      integer, optional, intent(out) :: iErr
+
+      type (mpas_exchange_field_list), pointer :: exchFieldListPtr, prevFieldListPtr
+      type (mpas_exchange_group), pointer :: exchGroupPtr
+      integer :: nLen, fieldNLen
+      integer :: threadNum
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      threadNum = mpas_threading_get_thread_num()
+
+      if ( threadNum == 0 ) then
+         nLen = len_trim(groupName)
+         fieldNLen = len_trim(fieldName)
+         DMPAR_DEBUG_WRITE(' -- Removing field ' // trim(fieldName) // ' from exchange group ' // trim(groupName))
+
+         exchGroupPtr => domain % exchangeGroups
+         do while (associated(exchGroupPtr))
+            if ( nLen == exchGroupPtr % nLen) then
+               if ( groupName(1:nLen) == exchGroupPtr % groupName(1:exchGroupPtr % nLen) ) then
+                  ! Remove after the transition to exchange_field_lists is complete
+                  call mpas_pool_remove_config(exchGroupPtr % fieldPool, fieldName)
+
+                  if ( associated(exchGroupPtr % fieldList) ) then
+                     exchFieldListPtr => exchGroupPtr % fieldList
+                     nullify(prevFieldListPtr)
+                     do while ( associated(exchFieldListPtr) )
+                        if ( fieldNLen == exchFieldListPtr % nLen ) then
+                           if ( fieldName(1:fieldNLen) == exchFieldListPtr % fieldName(1:exchFieldListPtr % nLen) ) then
+                              ! Remove exchFieldListPtr, as it's the field we're looking for.
+                              if ( associated(prevFieldListPtr) ) then
+                                 if ( associated(exchFieldListPtr % next) ) then
+                                    prevFieldListPtr % next => exchFieldListPtr % next
+                                 else
+                                    nullify(prevFieldListPtr % next)
+                                 end if
+                              else
+                                 if ( associated(exchFieldListPtr % next) ) then
+                                    exchGroupPtr % fieldList => exchFieldListPtr % next
+                                 else
+                                    nullify(exchGroupPtr % fieldList)
+                                 end if
+                              end if
+
+                              if ( associated(exchFieldListPtr % haloLayers) ) then
+                                 deallocate(exchFieldListPtr % haloLayers)
+                              end if
+                              if ( associated(exchFieldListPtr % timeLevels) ) then
+                                 deallocate(exchFieldListPtr % timeLevels)
+                              end if
+                              nullify(exchFieldListPtr % next)
+                              deallocate(exchFieldListPtr)
+
+                              ! Return, as we've successfully removed the field
+                              ! from the field list.
+                              return
+                           end if
+                        end if
+
+                        prevFieldListPtr => exchFieldListPtr
+                        exchFieldListPtr => exchFieldListPtr % next
+                     end do
+                  end if
+
+                  return
+               end if
+            end if
+            exchGroupPtr => exchGroupPtr % next
+         end do
+
+         write(stderrUnit, *) 'ERROR: No exchange group found named ''' // trim(groupName) // '''.'
+         write(stderrUnit, *) '       Cannot add field ''' // trim(fieldName) // ''' to group.'
+         if ( present(iErr) ) then
+            iErr = MPAS_DMPAR_MISSING_GROUP
+         end if
+      end if
+
+   end subroutine mpas_dmpar_exch_group_remove_field!}}}
 
 
 end module mpas_dmpar
