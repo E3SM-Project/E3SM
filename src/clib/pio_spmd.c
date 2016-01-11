@@ -248,7 +248,6 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
   CheckMPIReturn(MPI_Comm_size(comm, &nprocs),__FILE__,__LINE__);
   CheckMPIReturn(MPI_Comm_rank(comm, &mytask),__FILE__,__LINE__);
 
-#ifndef OPEN_MPI
   if(max_requests == 0) {
 #ifdef DEBUG
     int totalrecv=0;
@@ -261,10 +260,31 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
     printf("%s %d totalsend %d totalrecv %d \n",__FILE__,__LINE__,totalsend,totalrecv);
 
 #endif
+#ifdef OPEN_MPI
+    for(int i=0;i<nprocs;i++){
+      if(stypes[i]==MPI_DATATYPE_NULL){
+	stypes[i]=MPI_CHAR;
+      }
+      if(rtypes[i]==MPI_DATATYPE_NULL){
+	rtypes[i]=MPI_CHAR;
+      }
+    }
+#endif
     CheckMPIReturn(MPI_Alltoallw( sndbuf, sndlths, sdispls, stypes, rcvbuf, rcvlths, rdispls, rtypes, comm),__FILE__,__LINE__);
+    
+#ifdef OPEN_MPI
+    for(int i=0;i<nprocs;i++){
+      if(stypes[i]==MPI_CHAR){
+        stypes[i]=MPI_DATATYPE_NULL;
+      }
+      if(rtypes[i]==MPI_CHAR){
+	rtypes[i]=MPI_DATATYPE_NULL;
+      }
+    }
+#endif
     return PIO_NOERR;
   }
-#endif
+
 
   int tag;
   int offset_t;

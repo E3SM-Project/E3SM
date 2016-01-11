@@ -3,7 +3,6 @@
  */
 #include <pio.h>
 #include <pio_internal.h>
-#include "gptl.h"   
 
 #include <execinfo.h>
 #define versno 2001
