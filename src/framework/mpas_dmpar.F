@@ -88,7 +88,6 @@ include 'mpif.h'
    public :: mpas_dmpar_destroy_mulithalo_exchange_list
    public :: mpas_dmpar_destroy_communication_list
    public :: mpas_dmpar_destroy_exchange_list
-   public :: mpas_dmpar_global_abort
    public :: mpas_dmpar_get_time
 
    interface mpas_dmpar_alltoall_field
@@ -6316,43 +6315,6 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
    end subroutine mpas_dmpar_copy_field5d_real!}}}
 
 !-----------------------------------------------------------------------
-!  routine mpas_dmpar_global_abort
-!
-!> \brief MPAS dmpar global abort routine.
-!> \author Michael Duda
-!> \date   03/26/13
-!> \details
-!>  This routine aborts MPI. A call to it kills the model through the use of MPI_Abort on the world communicator, and outputs a message.
-!
-!-----------------------------------------------------------------------
-   subroutine mpas_dmpar_global_abort(mesg)!{{{
-
-      implicit none
-
-      character (len=*), intent(in) :: mesg !< Input: Abort message
-      integer :: threadNum
-
-#ifdef _MPI
-      integer :: mpi_ierr, mpi_errcode
-#endif
-
-      threadNum = mpas_threading_get_thread_num()
-
-#ifdef _MPI
-      if ( threadNum == 0 ) then
-        write(stderrUnit,*) trim(mesg)
-      end if
-      call MPI_Abort(MPI_COMM_WORLD, mpi_errcode, mpi_ierr)
-#endif
-
-      if ( threadNum == 0 ) then
-        write(stderrUnit,*) trim(mesg)
-      end if
-      stop
-
-   end subroutine mpas_dmpar_global_abort!}}}
-
-!-----------------------------------------------------------------------
 !  routine mpas_dmpar_get_time
 !
 !> \brief MPAS dmpar get time routine
@@ -6381,5 +6343,59 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
    end subroutine mpas_dmpar_get_time!}}}
 
+
 end module mpas_dmpar
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_global_abort
+!
+!> \brief MPAS dmpar global abort routine.
+!> \author Michael Duda
+!> \date   03/26/13
+!> \details
+!>  This routine aborts MPI. A call to it kills the model through the use of MPI_Abort on the world communicator, and outputs a message.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_global_abort(mesg)!{{{
+
+      use mpas_io_units
+      use mpas_threading
+
+#ifdef _MPI
+#ifndef NOMPIMOD
+      use mpi, only: MPI_Abort, MPI_COMM_WORLD
+#endif
+#endif
+
+      implicit none
+
+#ifdef _MPI
+#ifdef NOMPIMOD
+include 'mpif.h'
+#endif
+#endif
+
+      character (len=*), intent(in) :: mesg !< Input: Abort message
+      integer :: threadNum
+
+#ifdef _MPI
+      integer :: mpi_ierr, mpi_errcode
+#endif
+
+      threadNum = mpas_threading_get_thread_num()
+
+#ifdef _MPI
+      if ( threadNum == 0 ) then
+        write(stderrUnit,*) trim(mesg)
+      end if
+      call MPI_Abort(MPI_COMM_WORLD, mpi_errcode, mpi_ierr)
+#endif
+
+      if ( threadNum == 0 ) then
+        write(stderrUnit,*) trim(mesg)
+      end if
+      stop
+
+   end subroutine mpas_dmpar_global_abort!}}}
+
 
