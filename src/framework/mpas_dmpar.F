@@ -102,6 +102,8 @@ include 'mpif.h'
    public :: mpas_dmpar_exch_group_begin_halo_exch
    public :: mpas_dmpar_exch_group_local_halo_exch
    public :: mpas_dmpar_exch_group_end_halo_exch
+   public :: mpas_dmpar_exch_group_full_halo_exch
+   public :: mpas_dmpar_field_halo_exch
 
 
    interface mpas_dmpar_alltoall_field
@@ -6999,6 +7001,109 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       end if
 
    end subroutine mpas_dmpar_exch_group_end_halo_exch!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_full_halo_exch
+!
+!> \brief MPAS dmpar exchange group full halo exchange routine
+!> \author Doug Jacobsen
+!> \date   01/11/2016
+!> \details
+!>  This routine performs a full halo exchange on an exchange group.
+!>  It is blocking, in that the routine doesn't return until the full
+!>  exchange is complete.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_full_halo_exch(domain, groupName, iErr)!{{{
+
+      type (domain_type), intent(inout) :: domain
+      character (len=*), intent(in) :: groupName
+      integer, optional, intent(out) :: iErr
+
+      type (mpas_exchange_group), pointer :: exchGroupPtr
+      integer :: nLen
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      nLen = len_trim(groupName)
+      DMPAR_DEBUG_WRITE(' -- Trying to perform a full exchange for group ' // trim(groupName))
+
+      exchGroupPtr => domain % exchangeGroups
+      do while (associated(exchGroupPtr))
+         if ( nLen == exchGroupPtr % nLen) then
+            if ( groupName(1:nLen) == exchGroupPtr % groupName(1:exchGroupPtr % nLen) ) then
+               DMPAR_DEBUG_WRITE(' -- Performing a full exchange for group ' // trim(groupName))
+               ! Setup exchange (should be the same as begin_halo_exch)
+               call mpas_dmpar_exch_group_build_buffers(domain % blocklist % allFields, exchGroupPtr)
+               call mpas_dmpar_exch_group_start_recv(domain % dminfo, exchGroupPtr)
+               call mpas_dmpar_exch_group_pack_buffers(domain % blocklist % allFields, exchGroupPtr)
+               call mpas_dmpar_exch_group_start_send(domain % dminfo, exchGroupPtr)
+
+               ! Perform local copies (should be teh same as local_halo_exch)
+               call mpas_dmpar_exch_group_local_exch_fields(domain % blocklist % allFields, exchGroupPtr)
+
+               ! Finish the halo exchange (should be the same as end_halo_exch)
+               call mpas_dmpar_exch_group_unpack_buffers(domain % blocklist % allFields, exchGroupPtr)
+               return
+            end if
+         end if
+         exchGroupPtr => exchGroupPtr % next
+      end do
+
+      write(stderrUnit, *) 'ERROR: No exchange group found named ''' // trim(groupName) // '''.'
+      write(stderrUnit, *) '       Cannot perform halo exchange on group.'
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_MISSING_GROUP
+      end if
+
+   end subroutine mpas_dmpar_exch_group_full_halo_exch!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_field_halo_exch
+!
+!> \brief MPAS dmpar full halo exchange routine
+!> \author Doug Jacobsen
+!> \date   01/11/2016
+!> \details
+!>  This routine performs a full halo exchange on a specific field.
+!>  It is blocking, in that the routine doesn't return until the full
+!>  exchange is complete.
+!>  It creates a temporary exchange group, adds this field to it, exchanges it,
+!>  and destroys the group.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_field_halo_exch(domain, fieldName, timeLevel, haloLayers, iErr)!{{{
+
+      type (domain_type), intent(inout) :: domain
+      character (len=*), intent(in) :: fieldName
+      integer, optional, intent(in) :: timeLevel
+      integer, dimension(:), optional, intent(in) :: haloLayers
+      integer, optional, intent(out) :: iErr
+
+      character (len=StrKIND) :: groupName
+      type (mpas_exchange_group), pointer :: exchGroupPtr
+      integer :: nLen
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      DMPAR_DEBUG_WRITE(' -- Performing a single field halo exchange for ' // trim(fieldName))
+
+      groupName = 'TEMPSingleFieldGroup'
+      call mpas_dmpar_exch_group_create(domain, groupName)
+
+      call mpas_dmpar_exch_group_add_field(domain, groupName, fieldName, timeLevel=timeLevel, haloLayers=haloLayers)
+
+      call mpas_dmpar_exch_group_full_halo_exch(domain, groupName)
+
+      call mpas_dmpar_exch_group_destroy(domain, groupName)
+
+   end subroutine mpas_dmpar_field_halo_exch!}}}
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
