@@ -1451,7 +1451,7 @@
 		/>
 	</var_struct>
 	<var_struct name="tend" time_levs="1">
-		<var_array name="tracers" type="real" dimensions="nVertLevels nCells Time" packages="forwardMode">
+		<var_array name="tendTracers" name_in_code="tracers" type="real" dimensions="nVertLevels nCells Time" packages="forwardMode">
 			<var name="tendTemperature" array_group="dynamics" units="K s^{-1}" name_in_code="temperature"
 				 description="time tendency of potential temperature"
 			/>
