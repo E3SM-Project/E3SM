@@ -1577,8 +1577,8 @@
     <BATCHREDIRECT>&lt; </BATCHREDIRECT>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
-    <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>16</PES_PER_NODE>
+    <MAX_TASKS_PER_NODE>30</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>15</PES_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <batch_system type="lsf" version="9.1">
       <queues>
@@ -1666,6 +1666,9 @@
       <env name="MP_MPILIB">$MPILIB</env>
       <env name="MP_STDOUTMODE">unordered</env>
       <env name="MP_RC_USE_LMC">yes</env>
+    </environment_variables>
+    <environment_variables debug="true">
+      <env name="MP_EAGER_LIMIT">0</env>
     </environment_variables>
   </machine>
 
