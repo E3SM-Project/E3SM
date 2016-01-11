@@ -903,6 +903,11 @@ def process_model_run_step(model_run_tag, configs, script):#{{{
 	run_config_tree = ET.parse(run_definition_file)
 	run_config_root = run_config_tree.getroot()
 
+	try:
+		executable_name = model_run_tag.attrib['executable']
+	except:
+		executable_name = 'model'
+
 	# Process each part of the run script
 	for child in run_config_root:
 		# Process each <step> tag
@@ -913,7 +918,7 @@ def process_model_run_step(model_run_tag, configs, script):#{{{
 					arg_text = grandchild.text
 
 					if arg_text == 'model':
-						grandchild.text = config.get('executables', 'model')
+						grandchild.text = config.get('executables', executable_name)
 					elif arg_text.find('attr_') >= 0:
 						attr_array = arg_text.split('_')
 						try:
