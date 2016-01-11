@@ -99,6 +99,7 @@ include 'mpif.h'
    public :: mpas_dmpar_exch_group_destroy
    public :: mpas_dmpar_exch_group_add_field
    public :: mpas_dmpar_exch_group_remove_field
+   public :: mpas_dmpar_exch_group_begin_halo_exch
 
 
    interface mpas_dmpar_alltoall_field
@@ -165,6 +166,18 @@ include 'mpif.h'
    private :: mpas_dmpar_copy_field3d_real
    private :: mpas_dmpar_copy_field4d_real
    private :: mpas_dmpar_copy_field5d_real
+
+   interface mpas_dmpar_exch_group_pack_buffer_field
+      module procedure mpas_dmpar_exch_group_pack_buffer_field1d_integer
+      module procedure mpas_dmpar_exch_group_pack_buffer_field2d_integer
+      module procedure mpas_dmpar_exch_group_pack_buffer_field3d_integer
+      module procedure mpas_dmpar_exch_group_pack_buffer_field1d_real
+      module procedure mpas_dmpar_exch_group_pack_buffer_field2d_real
+      module procedure mpas_dmpar_exch_group_pack_buffer_field3d_real
+      module procedure mpas_dmpar_exch_group_pack_buffer_field4d_real
+      module procedure mpas_dmpar_exch_group_pack_buffer_field5d_real
+   end interface
+
 
    contains
 
@@ -6811,6 +6824,1173 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       end if
 
    end subroutine mpas_dmpar_exch_group_remove_field!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_begin_halo_exch
+!
+!> \brief MPAS dmpar exchange group begin halo exchange routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This routine starts a halo exchange for an exchange group. This includes
+!>  creating the buffers, packing the buffers, and starting the ISend / IRecv
+!>  commands.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_begin_halo_exch(domain, groupName, iErr)!{{{
+
+      type (domain_type), intent(inout) :: domain
+      character (len=*), intent(in) :: groupName
+      integer, optional, intent(out) :: iErr
+
+      type (mpas_exchange_group), pointer :: exchGroupPtr
+      integer :: nLen
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      DMPAR_DEBUG_WRITE(' -- Trying to start halo exchange for group ' // trim(groupName))
+
+      nLen = len_trim(groupName)
+
+      exchGroupPtr => domain % exchangeGroups
+      do while (associated(exchGroupPtr))
+         if ( nLen == exchGroupPtr % nLen) then
+            if ( groupName(1:nLen) == exchGroupPtr % groupName(1:exchGroupPtr % nLen) ) then
+               DMPAR_DEBUG_WRITE(' -- Starting halo exchange for group ' // trim(groupName))
+               call mpas_dmpar_exch_group_build_buffers(domain % blocklist % allFields, exchGroupPtr)
+               call mpas_dmpar_exch_group_start_recv(domain % dminfo, exchGroupPtr)
+               call mpas_dmpar_exch_group_pack_buffers(domain % blocklist % allFields, exchGroupPtr)
+               call mpas_dmpar_exch_group_start_send(domain % dminfo, exchGroupPtr)
+               return
+            end if
+         end if
+         exchGroupPtr => exchGroupPtr % next
+      end do
+
+      write(stderrUnit, *) 'ERROR: No exchange group found named ''' // trim(groupName) // '''.'
+      write(stderrUnit, *) '       Cannot perform halo exchange on group.'
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_MISSING_GROUP
+      end if
+
+   end subroutine mpas_dmpar_exch_group_begin_halo_exch!}}}
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! Private routines for performing the beginning of halo exchanges
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_build_buffers
+!
+!> \brief MPAS dmpar exchange group buffer construction routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine creates the buffers and communication lists for an exchange group.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_build_buffers(allFieldsPool, exchangeGroup, iErr)!{{{
+      type (mpas_pool_type), intent(in) :: allFieldsPool
+      type (mpas_exchange_group), intent(inout) :: exchangeGroup
+      integer, optional, intent(out) :: iErr
+
+      type (field1DInteger), pointer :: intField1D
+      type (field2DInteger), pointer :: intField2D
+      type (field3DInteger), pointer :: intField3D
+      type (field1DReal), pointer :: realField1D
+      type (field2DReal), pointer :: realField2D
+      type (field3DReal), pointer :: realField3D
+      type (field4DReal), pointer :: realField4D
+      type (field5DReal), pointer :: realField5D
+
+      type (mpas_exchange_field_list), pointer :: exchFieldListPtr
+      type (mpas_communication_list), pointer :: commListPtr
+
+      integer :: iHalo, iTimeLevel
+      integer :: threadNum
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      threadNum = mpas_threading_get_thread_num()
+
+      if ( threadNum == 0 ) then
+         ! Allocate communication lists, and setup dead header nodes
+         allocate(exchangeGroup % sendList)
+         nullify(exchangeGroup % sendList % next)
+         exchangeGroup % sendList % procID = -1
+         exchangeGroup % sendList % nList = 0
+
+         allocate(exchangeGroup % recvList)
+         nullify(exchangeGroup % recvList % next)
+         exchangeGroup % recvList % procID = -1
+         exchangeGroup % recvList % nList = 0
+      end if
+
+      call mpas_threading_barrier()
+
+      exchFieldListPtr => exchangeGroup % fieldList
+      do while ( associated(exchFieldListPtr) )
+         DMPAR_DEBUG_WRITE(' -- Building buffers for field ' // trim(exchFieldListPtr % fieldName))
+         do iTimeLevel = 1, size(exchFieldListPtr % timeLevels)
+            if ( exchFieldListPtr % timeLevels(iTimeLevel) ) then
+               if ( exchFieldListPtr % fieldType == MPAS_POOL_REAL ) then
+                  if ( exchFieldListPtr % nDims == 1 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField1D, iTimeLevel)
+
+                     if ( realField1D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_aggregate_exch_list(realField1D % sendList, exchangeGroup % sendList, &
+                                                                             realField1D % dimSizes, iHalo)
+                              call mpas_dmpar_exch_group_aggregate_exch_list(realField1D % recvList, exchangeGroup % recvList, &
+                                                                             realField1D % dimSizes, iHalo, .true.)
+                           end if
+                        end do
+                     end if
+                  else if ( exchFieldListPtr % nDims == 2 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField2D, iTimeLevel)
+
+                     if ( realField2D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_aggregate_exch_list(realField2D % sendList, exchangeGroup % sendList, &
+                                                                             realField2D % dimSizes, iHalo)
+                              call mpas_dmpar_exch_group_aggregate_exch_list(realField2D % recvList, exchangeGroup % recvList, &
+                                                                             realField2D % dimSizes, iHalo, .true.)
+                           end if
+                        end do
+                     end if
+                  else if ( exchFieldListPtr % nDims == 3 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField3D, iTimeLevel)
+
+                     if ( realField3D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_aggregate_exch_list(realField3D % sendList, exchangeGroup % sendList, &
+                                                                             realField3D % dimSizes, iHalo)
+                              call mpas_dmpar_exch_group_aggregate_exch_list(realField3D % recvList, exchangeGroup % recvList, &
+                                                                             realField3D % dimSizes, iHalo, .true.)
+                           end if
+                        end do
+                     end if
+                  else if ( exchFieldListPtr % nDims == 4 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField4D, iTimeLevel)
+
+                     if ( realField4D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_aggregate_exch_list(realField4D % sendList, exchangeGroup % sendList, &
+                                                                             realField4D % dimSizes, iHalo)
+                              call mpas_dmpar_exch_group_aggregate_exch_list(realField4D % recvList, exchangeGroup % recvList, &
+                                                                             realField4D % dimSizes, iHalo, .true.)
+                           end if
+                        end do
+                     end if
+                  else if ( exchFieldListPtr % nDims == 5 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField5D, iTimeLevel)
+
+                     if ( realField5D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_aggregate_exch_list(realField5D % sendList, exchangeGroup % sendList, &
+                                                                             realField5D % dimSizes, iHalo)
+                              call mpas_dmpar_exch_group_aggregate_exch_list(realField5D % recvList, exchangeGroup % recvList, &
+                                                                             realField5D % dimSizes, iHalo, .true.)
+                           end if
+                        end do
+                     end if
+                  end if
+               else if ( exchFieldListPtr % fieldType == MPAS_POOL_INTEGER ) then
+                  if ( exchFieldListPtr % nDims == 1 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, intField1D, iTimeLevel)
+
+                     if ( intField1D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_aggregate_exch_list(intField1D % sendList, exchangeGroup % sendList, &
+                                                                             intField1D % dimSizes, iHalo)
+                              call mpas_dmpar_exch_group_aggregate_exch_list(intField1D % recvList, exchangeGroup % recvList, &
+                                                                             intField1D % dimSizes, iHalo, .true.)
+                           end if
+                        end do
+                     end if
+                  else if ( exchFieldListPtr % nDims == 2 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, intField2D, iTimeLevel)
+
+                     if ( intField2D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_aggregate_exch_list(intField2D % sendList, exchangeGroup % sendList, &
+                                                                             intField2D % dimSizes, iHalo)
+                              call mpas_dmpar_exch_group_aggregate_exch_list(intField2D % recvList, exchangeGroup % recvList, &
+                                                                             intField2D % dimSizes, iHalo, .true.)
+                           end if
+                        end do
+                     end if
+                  else if ( exchFieldListPtr % nDims == 3 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, intField3D, iTimeLevel)
+
+                     if ( intField3D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_aggregate_exch_list(intField3D % sendList, exchangeGroup % sendList, &
+                                                                             intField3D % dimSizes, iHalo)
+                              call mpas_dmpar_exch_group_aggregate_exch_list(intField3D % recvList, exchangeGroup % recvList, &
+                                                                             intField3D % dimSizes, iHalo, .true.)
+                           end if
+                        end do
+                     end if
+                  end if
+               end if
+            end if
+         end do
+
+         exchFieldListPtr => exchFieldListPtr % next
+      end do
+
+      if ( threadNum == 0 ) then
+         ! Remove dead header nodes on communication lists
+         commListPtr => exchangeGroup % sendList
+         if ( associated(exchangeGroup % sendList % next) ) then
+            exchangeGroup % sendList => exchangeGroup % sendList % next
+         else
+            nullify(exchangeGroup % sendList)
+         end if
+         deallocate(commListPtr)
+
+         commListPtr => exchangeGroup % recvList
+         if ( associated(exchangeGroup % recvList % next) ) then
+            exchangeGroup % recvList => exchangeGroup % recvList % next
+         else
+            nullify(exchangeGroup % recvList)
+         end if
+         deallocate(commListPtr)
+
+
+         ! Allocate buffers for each processor's communication list
+         commListPtr => exchangeGroup % sendList
+         do while ( associated(commListPtr) )
+            if ( associated(commListPtr % rbuffer) ) then
+               write(stderrUnit, *) 'ERROR: Communication buffer already exists. A halo exchange might be ' // &
+                                    'in progress for group ''' // trim(exchangeGroup % groupName) // '''.'
+               if ( present(iErr) ) then
+                  iErr = MPAS_DMPAR_BUFFER_EXISTS
+               end if
+               return
+            end if
+            allocate(commListPtr % rbuffer(commListPtr % nList))
+            commListPtr % bufferOffset = 0
+
+            commListPtr => commListPtr % next
+         end do
+
+         commListPtr => exchangeGroup % recvList
+         do while ( associated(commListPtr) )
+            if ( associated(commListPtr % rbuffer) ) then
+               write(stderrUnit, *) 'ERROR: Communication buffer already exists. A halo exchange might be ' // &
+                                    'in progress for group ''' // trim(exchangeGroup % groupName) // '''.'
+               if ( present(iErr) ) then
+                  iErr = MPAS_DMPAR_BUFFER_EXISTS
+               end if
+               return
+            end if
+            allocate(commListPtr % rbuffer(commListPtr % nList))
+            commListPtr % bufferOffset = 0
+
+            commListPtr => commListPtr % next
+         end do
+      end if
+
+      call mpas_threading_barrier()
+
+   end subroutine mpas_dmpar_exch_group_build_buffers!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_aggregate_exch_list
+!
+!> \brief MPAS dmpar exchange group exchange list aggregation routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine aggregates a multihalo exchange list into a communication list.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_aggregate_exch_list(multiHaloExchList, commList, dimSizes, haloLayer, recvList, iErr)!{{{
+      type (mpas_multihalo_exchange_list), pointer :: multiHaloExchList
+      type (mpas_communication_list), pointer :: commList
+      integer,  dimension(:), intent(in) :: dimSizes
+      integer, intent(in) :: haloLayer
+      logical, optional, intent(in) :: recvList
+      integer, optional, intent(out) :: iErr
+
+      type (mpas_multihalo_exchange_list), pointer :: multiHaloExchListPtr
+      type (mpas_exchange_list), pointer :: exchListPtr
+      type (mpas_communication_list), pointer :: commListPtr, commListPtr2
+
+      logical :: comm_list_found = .false.
+      logical :: recvListLocal
+      integer :: bufferOffset, nAdded
+      integer :: dimProd
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      if ( present(recvList) ) then
+         recvListLocal = recvList
+      else
+         recvListLocal = .false.
+      end if
+
+      call mpas_dmpar_build_dim_size_product(dimSizes, dimProd)
+
+      multiHaloExchListPtr => multiHaloExchList
+      do while ( associated(multiHaloExchListPtr) )
+         ! Aggregate this fields send list for this halo into the buffer size
+         exchListPtr => multiHaloExchListPtr % halos(haloLayer) % exchList
+         do while (associated(exchListPtr))
+            comm_list_found = .false.
+
+            commListPtr => commList
+            do while(associated(commListPtr))
+               if ( commListPtr % procID == exchListPtr % endPointID ) then
+                  comm_list_found = .true.
+                  if ( .not. recvListLocal ) then
+                     commListPtr % nList = commListPtr % nList + exchListPtr % nList * dimProd
+                  end if
+                  exit
+               end if
+               commListPtr => commListPtr % next
+            end do
+
+            ! Set up a new communication list for this exchange list
+            ! because it was not found. Put it at the head of the list to make insertion quick.
+            if ( .not. comm_list_found ) then
+               commListPtr => commList
+
+               allocate(commListPtr2)
+               if ( associated(commListPtr % next) ) then
+                  commListPtr2 % next => commListPtr % next
+               else
+                  nullify(commListPtr2 % next)
+               end if
+               commListPtr2 % procID = exchListPtr % endPointID
+               if ( .not. recvListLocal ) then
+                  commListPtr2 % nList = exchListPtr % nList * dimProd
+               else
+                  commListPtr2 % nList = 0
+               end if
+               nullify(commListPtr2 % rbuffer)
+               nullify(commListPtr2 % ibuffer)
+
+               commListPtr % next => commListPtr2
+            end if
+
+            exchListPtr => exchListPtr % next
+         end do
+         multiHaloExchListPtr => multiHaloExchListPtr % next
+      end do
+
+      ! If this is a recive list, nlist needs to be build differently.
+      ! Determine size of receive lists
+      if ( recvListLocal ) then
+         commListPtr => commList
+         do while(associated(commListPtr))
+            bufferOffset = 0
+            nAdded = 0
+
+            multiHaloExchListPtr => multiHaloExchList
+            do while(associated(multiHaloExchListPtr))
+               exchListPtr => multiHaloExchListPtr % halos(haloLayer) % exchList
+               do while(associated(exchListPtr))
+                  if(exchListPtr % endPointID == commListPtr % procID) then
+                     nAdded = max(nAdded, maxval(exchListPtr % srcList) * dimProd)
+                  end if
+                  exchListPtr => exchListPtr % next
+               end do
+
+               multiHaloExchListPtr => multiHaloExchListPtr % next
+            end do
+            bufferOffset = bufferOffset + nAdded
+            commListPtr % nList = commListPtr % nList + nAdded
+            commListPtr % bufferOffset = 0
+
+            commListPtr => commListPtr % next
+         end do  ! commListPtr
+      end if
+
+
+   end subroutine mpas_dmpar_exch_group_aggregate_exch_list!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_build_dim_size_product
+!
+!> \brief MPAS dmpar build dimension size product routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine determines the dimension size product for a field,
+!>  which is used when building the size of a halo exchange buffer.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_build_dim_size_product(dimSizes, dimSizeProd)!{{{
+      integer, dimension(:), intent(in) :: dimSizes
+      integer, intent(out) :: dimSizeProd
+
+      integer :: iDimen
+
+      dimSizeProd = 1
+
+      do iDimen = 1, size(dimSizes) - 1
+         dimSizeProd = dimSizeProd * dimSizes(iDimen)
+      end do
+
+   end subroutine mpas_dmpar_build_dim_size_product!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_start_recv
+!
+!> \brief MPAS dmpar exchange group start irecv routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine starts the irecv commands for each communication in an exchange group.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_start_recv(dminfo, exchangeGroup)!{{{
+      type (dm_info), intent(in) :: dminfo
+      type (mpas_exchange_group), intent(inout) :: exchangeGroup
+
+      type (mpas_communication_list), pointer :: commListPtr
+
+      integer :: threadNum
+      integer :: mpi_ierr
+
+      threadNum = mpas_threading_get_thread_num()
+
+      if ( threadNum == 0 ) then
+         commListPtr => exchangeGroup % recvList
+         do while ( associated(commListPtr) )
+            call MPI_Irecv(commListPtr % rbuffer, commListPtr % nList, MPI_REALKIND, commListPtr % procID, commListPtr % procID, dminfo % comm, commListPtr % reqID, mpi_ierr)
+
+            commListPtr => commListPtr % next
+         end do
+      end if
+
+      call mpas_threading_barrier()
+
+   end subroutine mpas_dmpar_exch_group_start_recv!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_start_send
+!
+!> \brief MPAS dmpar exchange group start isend routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine starts the isend commands for each communication in an exchange group.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_start_send(dminfo, exchangeGroup)!{{{
+      type (dm_info), intent(in) :: dminfo
+      type (mpas_exchange_group), intent(inout) :: exchangeGroup
+
+      type (mpas_communication_list), pointer :: commListPtr
+
+      integer :: threadNum
+      integer :: mpi_ierr
+
+      threadNum = mpas_threading_get_thread_num()
+
+      if ( threadNum == 0 ) then
+         commListPtr => exchangeGroup % sendList
+         do while ( associated(commListPtr) )
+            call MPI_Isend(commListPtr % rbuffer, commListPtr % nList, MPI_REALKIND, commListPtr % procID, dminfo % my_proc_id, dminfo % comm, commListPtr % reqID, mpi_ierr)
+
+            commListPtr => commListPtr % next
+         end do
+      end if
+
+      call mpas_threading_barrier()
+
+   end subroutine mpas_dmpar_exch_group_start_send!}}}
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! Private routines for group operations on a list of fields
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_pack_buffers
+!
+!> \brief MPAS dmpar exchange group buffer pack routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine packs all fields into their send buffers for an exchange group
+!>  It packs a specific halo layer, as defined by the haloLayer input argument.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_pack_buffers(allFieldsPool, exchangeGroup, iErr)!{{{
+      type (mpas_pool_type), intent(in) :: allFieldsPool
+      type (mpas_exchange_group), intent(inout) :: exchangeGroup
+      integer, optional, intent(out) :: iErr
+
+      type (mpas_exchange_field_list), pointer :: exchFieldListPtr
+
+      type (field1DInteger), pointer :: intField1D
+      type (field2DInteger), pointer :: intField2D
+      type (field3DInteger), pointer :: intField3D
+      type (field1DReal), pointer :: realField1D
+      type (field2DReal), pointer :: realField2D
+      type (field3DReal), pointer :: realField3D
+      type (field4DReal), pointer :: realField4D
+      type (field5DReal), pointer :: realField5D
+
+      integer :: iTimeLevel, iHalo
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      ! Pack each feild entirely before moving on to the next field
+      exchFieldListPtr => exchangeGroup % fieldList
+      do while ( associated(exchFieldListPtr) )
+         DMPAR_DEBUG_WRITE(' -- Packing buffers for field ' // trim(exchFieldListPtr % fieldName))
+         do iTimeLevel = 1, size(exchFieldListPtr % timeLevels)
+            if ( exchFieldListPtr % timeLevels(iTimeLevel) ) then
+
+               if ( exchFieldListPtr % fieldType == MPAS_POOL_REAL ) then
+                  if ( exchFieldListPtr % nDims == 1 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField1D, iTimeLevel)
+                     if ( realField1D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_pack_buffer_field(exchangeGroup, realField1D, iHalo)
+                           end if
+                        end do
+                     end if
+                  else if ( exchFieldListPtr % nDims == 2 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField2D, iTimeLevel)
+                     if ( realField2D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_pack_buffer_field(exchangeGroup, realField2D, iHalo)
+                           end if
+                        end do
+                     end if
+                  else if ( exchFieldListPtr % nDims == 3 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField3D, iTimeLevel)
+                     if ( realField3D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_pack_buffer_field(exchangeGroup, realField3D, iHalo)
+                           end if
+                        end do
+                     end if
+                  else if ( exchFieldListPtr % nDims == 4 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField4D, iTimeLevel)
+                     if ( realField4D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_pack_buffer_field(exchangeGroup, realField4D, iHalo)
+                           end if
+                        end do
+                     end if
+                  else if ( exchFieldListPtr % nDims == 5 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField5D, iTimeLevel)
+                     if ( realField5D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_pack_buffer_field(exchangeGroup, realField5D, iHalo)
+                           end if
+                        end do
+                     end if
+                  end if
+               else if ( exchFieldListPtr % fieldType == MPAS_POOL_INTEGER ) then
+                  if ( exchFieldListPtr % nDims == 1 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, intField1D, iTimeLevel)
+                     if ( intField1D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_pack_buffer_field(exchangeGroup, intField1D, iHalo)
+                           end if
+                        end do
+                     end if
+                  else if ( exchFieldListPtr % nDims == 2 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, intField2D, iTimeLevel)
+                     if ( intField2D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_pack_buffer_field(exchangeGroup, intField2D, iHalo)
+                           end if
+                        end do
+                     end if
+                  else if ( exchFieldListPtr % nDims == 3 ) then
+                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, intField3D, iTimeLevel)
+                     if ( intField3D % isActive ) then
+                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                              call mpas_dmpar_exch_group_pack_buffer_field(exchangeGroup, intField3D, iHalo)
+                           end if
+                        end do
+                     end if
+                  end if
+               end if
+            end if
+         end do
+
+         exchFieldListPtr => exchFieldListPtr % next
+      end do
+
+   end subroutine mpas_dmpar_exch_group_pack_buffers!}}}
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! Private routines for packing send buffers
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_pack_buffer_field1d_integer
+!
+!> \brief MPAS dmpar exchange pack 1D integer field routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine packs a 1D integer field into the send buffers
+!>  It packs a specific halo layer, as defined by the haloLayer input argument.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_pack_buffer_field1d_integer(exchangeGroup, field, haloLayer, iErr)!{{{
+      type (mpas_exchange_group), intent(inout) :: exchangeGroup
+      type (field1DInteger), pointer :: field
+      integer, intent(in) :: haloLayer
+      integer, optional, intent(out) :: iErr
+
+      type (field1DInteger), pointer :: fieldCursor
+
+      type (mpas_exchange_list), pointer :: exchListPtr
+      type (mpas_communication_list), pointer :: commListPtr
+
+      integer :: iExch, iBuffer, bufferOffset
+      integer :: nAdded
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      commListPtr => exchangeGroup % sendList
+      do while ( associated(commListPtr) )
+         bufferOffset = commListPtr % bufferOffset
+         nAdded = 0
+         fieldCursor => field
+         do while ( associated(fieldCursor) )
+            exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
+            do while ( associated(exchListPtr) )
+               if ( exchListPtr % endPointID == commListPtr % procID ) then
+                  !$omp do schedule(runtime) private(iBuffer)
+                  do iExch = 1, exchListPtr % nList
+                     iBuffer = exchListPtr % destList(iExch) + bufferOffset
+                     commListPtr % rbuffer(iBuffer) = real(fieldCursor % array(exchListPtr % srcList(iExch)), kind=RKIND)
+                  end do
+                  !$omp end do
+                  nAdded = nAdded + exchListPtr % nList
+               end if
+               exchListPtr => exchListPtr % next
+            end do
+            fieldCursor => fieldCursor % next
+         end do
+         bufferOffset = bufferOffset + nAdded
+         !$omp master
+         commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
+         !$omp end master
+         call mpas_threading_barrier()
+         commListPtr => commListPtr % next
+      end do
+
+   end subroutine mpas_dmpar_exch_group_pack_buffer_field1d_integer!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_pack_buffer_field2d_integer
+!
+!> \brief MPAS dmpar exchange pack 2D integer field routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine packs a 2D integer field into the send buffers
+!>  It packs a specific halo layer, as defined by the haloLayer input argument.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_pack_buffer_field2d_integer(exchangeGroup, field, haloLayer, iErr)!{{{
+      type (mpas_exchange_group), intent(inout) :: exchangeGroup
+      type (field2DInteger), pointer :: field
+      integer, intent(in) :: haloLayer
+      integer, optional, intent(out) :: iErr
+
+      type (field2DInteger), pointer :: fieldCursor
+
+      type (mpas_exchange_list), pointer :: exchListPtr
+      type (mpas_communication_list), pointer :: commListPtr
+
+      integer :: iExch, iBuffer, bufferOffset
+      integer :: nAdded
+      integer :: j
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      commListPtr => exchangeGroup % sendList
+      do while ( associated(commListPtr) )
+         bufferOffset = commListPtr % bufferOffset
+         nAdded = 0
+         fieldCursor => field
+         do while ( associated(fieldCursor) )
+            exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
+            do while ( associated(exchListPtr) )
+               if ( exchListPtr % endPointID == commListPtr % procID ) then
+                  !$omp do schedule(runtime) private(j, iBuffer)
+                  do iExch = 1, exchListPtr % nList
+                     do j = 1, fieldCursor % dimSizes(1)
+                        iBuffer = (exchListPtr % destList(iExch)-1) * fieldCursor % dimSizes(1) + j + bufferOffset
+                        commListPtr % rbuffer(iBuffer) = real(fieldCursor % array(j, exchListPtr % srcList(iExch)), kind=RKIND)
+                     end do
+                  end do
+                  !$omp end do
+                  nAdded = nAdded + exchListPtr % nList * fieldCursor % dimSizes(1)
+               end if
+               exchListPtr => exchListPtr % next
+            end do
+            fieldCursor => fieldCursor % next
+         end do
+         bufferOffset = bufferOffset + nAdded
+         !$omp master
+         commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
+         !$omp end master
+         call mpas_threading_barrier()
+         commListPtr => commListPtr % next
+      end do
+
+   end subroutine mpas_dmpar_exch_group_pack_buffer_field2d_integer!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_pack_buffer_field3d_integer
+!
+!> \brief MPAS dmpar exchange pack 3D integer field routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine packs a 3D integer field into the send buffers
+!>  It packs a specific halo layer, as defined by the haloLayer input argument.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_pack_buffer_field3d_integer(exchangeGroup, field, haloLayer, iErr)!{{{
+      type (mpas_exchange_group), intent(inout) :: exchangeGroup
+      type (field3DInteger), pointer :: field
+      integer, intent(in) :: haloLayer
+      integer, optional, intent(out) :: iErr
+
+      type (field3DInteger), pointer :: fieldCursor
+
+      type (mpas_exchange_list), pointer :: exchListPtr
+      type (mpas_communication_list), pointer :: commListPtr
+
+      integer :: iExch, iBuffer, bufferOffset
+      integer :: nAdded
+      integer :: j, k
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      commListPtr => exchangeGroup % sendList
+      do while ( associated(commListPtr) )
+         bufferOffset = commListPtr % bufferOffset
+         nAdded = 0
+         fieldCursor => field
+         do while ( associated(fieldCursor) )
+            exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
+            do while ( associated(exchListPtr) )
+               if ( exchListPtr % endPointID == commListPtr % procID ) then
+                  !$omp do schedule(runtime) private(j, k, iBuffer)
+                  do iExch = 1, exchListPtr % nList
+                     do j = 1, fieldCursor % dimSizes(2)
+                        do k = 1, fieldCursor % dimSizes(1)
+                           iBuffer = (exchListPtr % destList(iExch) - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
+                                   + (j - 1) * fieldCursor % dimSizes(1) + k + bufferOffset
+                           commListPtr % rbuffer(iBuffer) = real(fieldCursor % array(k, j, exchListPtr % srcList(iExch)), kind=RKIND)
+                        end do
+                     end do
+                  end do
+                  !$omp end do
+                  nAdded = nAdded + exchListPtr % nList * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2)
+               end if
+               exchListPtr => exchListPtr % next
+            end do
+            fieldCursor => fieldCursor % next
+         end do
+         bufferOffset = bufferOffset + nAdded
+         !$omp master
+         commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
+         !$omp end master
+         call mpas_threading_barrier()
+         commListPtr => commListPtr % next
+      end do
+
+   end subroutine mpas_dmpar_exch_group_pack_buffer_field3d_integer!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_pack_buffer_field1d_real
+!
+!> \brief MPAS dmpar exchange pack 1D real field routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine packs a 1D real field into the send buffers
+!>  It packs a specific halo layer, as defined by the haloLayer input argument.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_pack_buffer_field1d_real(exchangeGroup, field, haloLayer, iErr)!{{{
+      type (mpas_exchange_group), intent(inout) :: exchangeGroup
+      type (field1DReal), pointer :: field
+      integer, intent(in) :: haloLayer
+      integer, optional, intent(out) :: iErr
+
+      type (field1DReal), pointer :: fieldCursor
+
+      type (mpas_exchange_list), pointer :: exchListPtr
+      type (mpas_communication_list), pointer :: commListPtr
+
+      integer :: iExch, iBuffer, bufferOffset
+      integer :: nAdded
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      commListPtr => exchangeGroup % sendList
+      do while ( associated(commListPtr) )
+         bufferOffset = commListPtr % bufferOffset
+         nAdded = 0
+         fieldCursor => field
+         do while ( associated(fieldCursor) )
+            exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
+            do while ( associated(exchListPtr) )
+               if ( exchListPtr % endPointID == commListPtr % procID ) then
+                  !$omp do schedule(runtime) private(iBuffer)
+                  do iExch = 1, exchListPtr % nList
+                     iBuffer = exchListPtr % destList(iExch) + bufferOffset
+                     commListPtr % rbuffer(iBuffer) = fieldCursor % array(exchListPtr % srcList(iExch))
+                  end do
+                  !$omp end do
+                  nAdded = nAdded + exchListPtr % nList
+               end if
+               exchListPtr => exchListPtr % next
+            end do
+            fieldCursor => fieldCursor % next
+         end do
+         bufferOffset = bufferOffset + nAdded
+         !$omp master
+         commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
+         !$omp end master
+         call mpas_threading_barrier()
+         commListPtr => commListPtr % next
+      end do
+
+   end subroutine mpas_dmpar_exch_group_pack_buffer_field1d_real!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_pack_buffer_field2d_real
+!
+!> \brief MPAS dmpar exchange pack 2D real field routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine packs a 2D real field into the send buffers
+!>  It packs a specific halo layer, as defined by the haloLayer input argument.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_pack_buffer_field2d_real(exchangeGroup, field, haloLayer, iErr)!{{{
+      type (mpas_exchange_group), intent(inout) :: exchangeGroup
+      type (field2DReal), pointer :: field
+      integer, intent(in) :: haloLayer
+      integer, optional, intent(out) :: iErr
+
+      type (field2DReal), pointer :: fieldCursor
+
+      type (mpas_exchange_list), pointer :: exchListPtr
+      type (mpas_communication_list), pointer :: commListPtr
+
+      integer :: iExch, iBuffer, bufferOffset
+      integer :: nAdded
+      integer :: j
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      commListPtr => exchangeGroup % sendList
+      do while ( associated(commListPtr) )
+         bufferOffset = commListPtr % bufferOffset
+         nAdded = 0
+         fieldCursor => field
+         do while ( associated(fieldCursor) )
+            exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
+            do while ( associated(exchListPtr) )
+               if ( exchListPtr % endPointID == commListPtr % procID ) then
+                  !$omp do schedule(runtime) private(j, iBuffer)
+                  do iExch = 1, exchListPtr % nList
+                     do j = 1, fieldCursor % dimSizes(1)
+                        iBuffer = (exchListPtr % destList(iExch)-1) * fieldCursor % dimSizes(1) + j + bufferOffset
+                        commListPtr % rbuffer(iBuffer) = fieldCursor % array(j, exchListPtr % srcList(iExch))
+                     end do
+                  end do
+                  !$omp end do
+                  nAdded = nAdded + exchListPtr % nList * fieldCursor % dimSizes(1)
+               end if
+               exchListPtr => exchListPtr % next
+            end do
+            fieldCursor => fieldCursor % next
+         end do
+         bufferOffset = bufferOffset + nAdded
+         !$omp master
+         commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
+         !$omp end master
+         call mpas_threading_barrier()
+         commListPtr => commListPtr % next
+      end do
+
+   end subroutine mpas_dmpar_exch_group_pack_buffer_field2d_real!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_pack_buffer_field3d_real
+!
+!> \brief MPAS dmpar exchange pack 3D real field routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine packs a 3D real field into the send buffers
+!>  It packs a specific halo layer, as defined by the haloLayer input argument.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_pack_buffer_field3d_real(exchangeGroup, field, haloLayer, iErr)!{{{
+      type (mpas_exchange_group), intent(inout) :: exchangeGroup
+      type (field3DReal), pointer :: field
+      integer, intent(in) :: haloLayer
+      integer, optional, intent(out) :: iErr
+
+      type (field3DReal), pointer :: fieldCursor
+
+      type (mpas_exchange_list), pointer :: exchListPtr
+      type (mpas_communication_list), pointer :: commListPtr
+
+      integer :: iExch, iBuffer, bufferOffset
+      integer :: nAdded
+      integer :: j, k
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      commListPtr => exchangeGroup % sendList
+      do while ( associated(commListPtr) )
+         bufferOffset = commListPtr % bufferOffset
+         nAdded = 0
+         fieldCursor => field
+         do while ( associated(fieldCursor) )
+            exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
+            do while ( associated(exchListPtr) )
+               if ( exchListPtr % endPointID == commListPtr % procID ) then
+                  !$omp do schedule(runtime) private(j, k, iBuffer)
+                  do iExch = 1, exchListPtr % nList
+                     do j = 1, fieldCursor % dimSizes(2)
+                        do k = 1, fieldCursor % dimSizes(1)
+                           iBuffer = (exchListPtr % destList(iExch) - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
+                                   + (j - 1) * fieldCursor % dimSizes(1) + k + bufferOffset
+                           commListPtr % rbuffer(iBuffer) = fieldCursor % array(k, j, exchListPtr % srcList(iExch))
+                        end do
+                     end do
+                  end do
+                  !$omp end do
+                  nAdded = nAdded + exchListPtr % nList * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2)
+               end if
+               exchListPtr => exchListPtr % next
+            end do
+            fieldCursor => fieldCursor % next
+         end do
+         bufferOffset = bufferOffset + nAdded
+         !$omp master
+         commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
+         !$omp end master
+         call mpas_threading_barrier()
+         commListPtr => commListPtr % next
+      end do
+
+   end subroutine mpas_dmpar_exch_group_pack_buffer_field3d_real!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_pack_buffer_field4d_real
+!
+!> \brief MPAS dmpar exchange pack 4D real field routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine packs a 4D real field into the send buffers
+!>  It packs a specific halo layer, as defined by the haloLayer input argument.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_pack_buffer_field4d_real(exchangeGroup, field, haloLayer, iErr)!{{{
+      type (mpas_exchange_group), intent(inout) :: exchangeGroup
+      type (field4DReal), pointer :: field
+      integer, intent(in) :: haloLayer
+      integer, optional, intent(out) :: iErr
+
+      type (field4DReal), pointer :: fieldCursor
+
+      type (mpas_exchange_list), pointer :: exchListPtr
+      type (mpas_communication_list), pointer :: commListPtr
+
+      integer :: iExch, iBuffer, bufferOffset
+      integer :: nAdded
+      integer :: j, k, l
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      commListPtr => exchangeGroup % sendList
+      do while ( associated(commListPtr) )
+         bufferOffset = commListPtr % bufferOffset
+         nAdded = 0
+         fieldCursor => field
+         do while ( associated(fieldCursor) )
+            exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
+            do while ( associated(exchListPtr) )
+               if ( exchListPtr % endPointID == commListPtr % procID ) then
+                  !$omp do schedule(runtime) private(j, k, l, iBuffer)
+                  do iExch = 1, exchListPtr % nList
+                     do j = 1, fieldCursor % dimSizes(3)
+                        do k = 1, fieldCursor % dimSizes(2)
+                           do l = 1, fieldCursor % dimSizes(1)
+                              iBuffer = (exchListPtr % destList(iExch) - 1) * fieldCursor % dimSizes(1) &
+                                      * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3) &
+                                      + (j - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
+                                      + (k - 1) * fieldCursor % dimSizes(1) + l + bufferOffset
+                              commListPtr % rbuffer(iBuffer) = fieldCursor % array(l, k, j, exchListPtr % srcList(iExch))
+                           end do
+                        end do
+                     end do
+                  end do
+                  !$omp end do
+                  nAdded = nAdded + exchListPtr % nList * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3)
+               end if
+               exchListPtr => exchListPtr % next
+            end do
+            fieldCursor => fieldCursor % next
+         end do
+         bufferOffset = bufferOffset + nAdded
+         !$omp master
+         commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
+         !$omp end master
+         call mpas_threading_barrier()
+         commListPtr => commListPtr % next
+      end do
+
+   end subroutine mpas_dmpar_exch_group_pack_buffer_field4d_real!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_pack_buffer_field5d_real
+!
+!> \brief MPAS dmpar exchange pack 5D real field routine
+!> \author Doug Jacobsen
+!> \date   01/05/2016
+!> \details
+!>  This private routine packs a 5D real field into the send buffers
+!>  It packs a specific halo layer, as defined by the haloLayer input argument.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_pack_buffer_field5d_real(exchangeGroup, field, haloLayer, iErr)!{{{
+      type (mpas_exchange_group), intent(inout) :: exchangeGroup
+      type (field5DReal), pointer :: field
+      integer, intent(in) :: haloLayer
+      integer, optional, intent(out) :: iErr
+
+      type (field5DReal), pointer :: fieldCursor
+
+      type (mpas_exchange_list), pointer :: exchListPtr
+      type (mpas_communication_list), pointer :: commListPtr
+
+      integer :: iExch, iBuffer, bufferOffset
+      integer :: nAdded
+      integer :: j, k, l, m
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      commListPtr => exchangeGroup % sendList
+      do while ( associated(commListPtr) )
+         bufferOffset = commListPtr % bufferOffset
+         nAdded = 0
+         fieldCursor => field
+         do while ( associated(fieldCursor) )
+            exchListPtr => fieldCursor % sendList % halos(haloLayer) % exchList
+            do while ( associated(exchListPtr) )
+               if ( exchListPtr % endPointID == commListPtr % procID ) then
+                  !$omp do schedule(runtime) private(j, k, l, m, iBuffer)
+                  do iExch = 1, exchListPtr % nList
+                     do j = 1, fieldCursor % dimSizes(4)
+                        do k = 1, fieldCursor % dimSizes(3)
+                           do l = 1, fieldCursor % dimSizes(2)
+                              do m = 1, fieldCursor % dimSizes(1)
+                                 iBuffer = (exchListPtr % destList(iExch) - 1) * fieldCursor % dimSizes(1) &
+                                         * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3) * fieldCursor % dimSizes(4)&
+                                         + (j - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) * fieldCursor % dimSizes(3) &
+                                         + (k - 1) * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
+                                         + (l - 1) * fieldCursor % dimSizes(1) + m + bufferOffset
+                                 commListPtr % rbuffer(iBuffer) = fieldCursor % array(m, l, k, j, exchListPtr % srcList(iExch))
+                              end do
+                           end do
+                        end do
+                     end do
+                  end do
+                  !$omp end do
+                  nAdded = nAdded + exchListPtr % nList * fieldCursor % dimSizes(1) * fieldCursor % dimSizes(2) &
+                         * fieldCursor % dimSizes(3) * fieldCursor % dimSizes(4)
+               end if
+               exchListPtr => exchListPtr % next
+            end do
+            fieldCursor => fieldCursor % next
+         end do
+         bufferOffset = bufferOffset + nAdded
+         !$omp master
+         commListPtr % bufferOffset = commListPtr % bufferOffset + nAdded
+         !$omp end master
+         call mpas_threading_barrier()
+         commListPtr => commListPtr % next
+      end do
+
+   end subroutine mpas_dmpar_exch_group_pack_buffer_field5d_real!}}}
 
 
 end module mpas_dmpar
