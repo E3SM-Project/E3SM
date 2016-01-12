@@ -588,10 +588,10 @@ contains
     pio_root = min(pio_root,npes-1)
 
 ! If you are asking for parallel IO then you should use at least two io pes
-    if(npes > 1 .and. pio_stride>= npes .and. &
+    if(npes > 1 .and. pio_numiotasks == 1 .and. &
          (pio_iotype .eq. PIO_IOTYPE_PNETCDF .or. &
          pio_iotype .eq. PIO_IOTYPE_NETCDF4P)) then
-       pio_stride = pio_stride/2
+       pio_numiotasks = 2
     endif
 
     !--------------------------------------------------------------------------
