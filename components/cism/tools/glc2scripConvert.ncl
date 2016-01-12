@@ -10,8 +10,6 @@ begin
 ; read in glimmer grid file
 ;************************************************
 
-; infile    = addfile ("gland20km.nc","r")
-; infile    = addfile ("gland10km.nc","r")
 infile    = addfile ("gland5km.nc","r")
 
 lat = infile->lat
@@ -25,6 +23,11 @@ delete(infile)
 ; -------------------------------------
 ; calculate 1-D arrays of lats and lons
 ; -------------------------------------
+
+; This code assumes that the grid file provides lats and lons of the grid cell
+; corners. In actuality, the grid files we use give lats and lons of the grid
+; cell CENTERS. But, for the sake of this tool-chain, this small difference is
+; not important.
 
 grid_size    = (nx-1)*(ny-1)
 grid_corners = 4
@@ -62,16 +65,12 @@ end do
 ; write out lats and lons in SCRIP format
 ; ---------------------------------------
 
-; outfile = "gland20km_scrip.nc"
-; outfile = "gland10km_scrip.nc"
 outfile = "gland5km_scrip.nc"
 system("/bin/rm -f " + outfile)
 
 fout1 = addfile(outfile,"c")
 
 globalAtt             = True
-; globalAtt@title       = "Glimmer Greenland 20 km Grid"
-; globalAtt@title       = "Glimmer Greenland 10 km Grid"
 globalAtt@title       = "Glimmer Greenland 5 km Grid"
 globalAtt@history     = "GLC_to_SCRIP conversion " + systemfunc("date")
 fileattdef( fout1, globalAtt )

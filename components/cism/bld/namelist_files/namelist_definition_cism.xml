@@ -44,15 +44,6 @@ Determines whether extra diagnostics are printed in the cism log file
 Default: false
 </entry>
 
-<entry id="cesm_history_vars" 
-type="char*1024" 
-category="cism" 
-group="cism_params" 
-valid_values="">
-Space-delimited list of variables output to history file
-Default: 'acab artm thk usurf topg uvel vvel uflx vflx temp bmlt bwat'
-</entry>
-
 <entry id="ice_flux_routing"
 type="char*64"
 category="cism"
@@ -66,45 +57,39 @@ Default: ocn
 </entry>
 
 <!-- =============================================================  -->
-<!-- group: grid_nml                                                -->
+<!-- group: cism_history                                            -->
 <!-- =============================================================  -->
 
-<entry id="horiz_grid_opt" 
-type="char*256" 
-category="grid"
-group="grid_nml" 
-valid_values="file">
-How grid is being specified: from file or internally
-Currently, only 'file' is supported
-Default: file
+<entry id="cesm_history_vars" 
+type="char*1024" 
+category="history" 
+group="cism_history" 
+valid_values="">
+Space-delimited list of variables output to history file
+Default: 'acab artm thk usurf topg uvel vvel uflx vflx temp bmlt bwat'
 </entry>
 
-<entry id="horiz_grid_file" 
-type="char*256" 
-category="grid" 
-input_pathname="abs" 
-group="grid_nml" 
-valid_values="">
-Filename of file to specify horizontal grid resolution
-Default: resolution-dependent (e.g., grid file for 0.9x1.25 deg)
+<entry id="history_option"
+type="char*64"
+category="history"
+group="cism_history"
+valid_values="nyears,coupler">
+How history frequency is specified
+nyears: Write history every N years
+coupler: Get history frequency from coupler (HIST_OPTION/HIST_N xml variables)
+         WARNING: SHOULD NOT BE USED IN PRODUCTION RUNS - frequency metadata not set properly
+Default: nyears
 </entry>
 
-<entry id="mask_varname" 
-type="char*128" 
-category="grid"
-group="grid_nml" 
+<entry id="history_frequency"
+type="integer"
+category="history"
+group="cism_history"
 valid_values="">
-Variable name for mask
-Default: LANDMASK
-</entry>
-
-<entry id="frac_varname" 
-type="char*128" 
-category="grid"
-group="grid_nml" 
-valid_values="">
-Variable name for fraction
-Default: LANDFRAC
+History frequency
+e.g., if history_option=nyears, then 1 = annual, 2 = every two years, etc.
+Ignored for history_option = 'coupler'
+Default: 1
 </entry>
 
 <!-- =============================================================  -->
@@ -252,7 +237,9 @@ Default: 0 (start overrides at beginning of run)
 type="real"
 category="overrides"
 group="glc_override_nml" >
-Fractional decrease in glacier area, per day (multiplicative) (should be positive).
+Fractional decrease in glacier area, per day (should be positive).
+(days_elapsed * decrease_frac) determines the elevation threshold below which ice_covered is set to 0.
+When this factor reaches 1, all elevations below 3500 m are set to non-ice-covered.
 Default: 0 (no decrease)
 </entry>
 
@@ -260,7 +247,9 @@ Default: 0 (no decrease)
 type="real"
 category="overrides"
 group="glc_override_nml" >
-Fractional increase in glacier area, per day (additive).
+Fractional increase in glacier area, per day.
+(days_elapsed * increase_frac) determines the elevation threshold above which ice_covered is set to 1.
+When this factor reaches 1, all elevations >= 0 m are set to ice-covered.
 Default: 0 (no increase)
 </entry>
 
@@ -268,7 +257,7 @@ Default: 0 (no increase)
 type="integer"
 category="overrides"
 group="glc_override_nml" >
-Frequency (days) at which we flip the order of the elevation classes.
+Frequency (days) at which we rearrange elevation classes.
 Default: 0 (no flips ever)
 </entry>
 
@@ -355,47 +344,12 @@ Default: 1
 </entry>
 
 <entry 
-id="precip_mode" 
-type="integer" 
-category="cism_config_climate"
-group="cism_config_climate"
-valid_values="1,2" >
-Method of precipitation downscaling:
-1: Use large-scale precipitation rate
-2: Use parameterization of Roe and Lindzen
-Default: 1
-</entry>
-
-<entry 
-id="acab_mode" 
-type="integer" 
-category="cism_config_climate"
-group="cism_config_climate"
-valid_values="0" >
-Mass-balance model to use.
-In the CESM context, this should be set to 0 (receive surface mass balance from climate model)
-Default: 0
-</entry>
-
-<entry 
 id="ice_tstep_multiply" 
 type="integer" 
 category="cism_config_climate"
 group="cism_config_climate" >
 Ice time-step multiplier: allows asynchronous climate-ice coupling
 Default: 1
-</entry>
-
-<entry 
-id="mean_preserving" 
-type="integer" 
-category="cism_config_climate"
-group="cism_config_climate"
-valid_values="0,1" >
-Flag to control if mean-preserving interpolation is used
-0: Do not use mean-preserving interpolation
-1: Use mean-preserving interpolation
-Default: 0
 </entry>
 
 <entry id="test_coupling"
@@ -421,6 +375,9 @@ Default: Depends on GLC_TWO_WAY_COUPLING xml variable
 
 <!-- =============================================================  -->
 <!-- group: cism.config: projection                                 -->
+<!--                                                                -->
+<!-- NOTE(wjs, 2015-04-03) With the replacement of glint by glad,   -->
+<!-- it's likely that we no longer need this section                -->
 <!-- =============================================================  -->
 
 <entry 
@@ -499,12 +456,13 @@ id="dycore"
 type="integer"
 category="cism_config_options"
 group="cism_config_options"
-valid_values="0,1,2" >
+valid_values="0,2" >
 Which dycore to use
 0: glide dycore (SIA, serial only)
-1: glam dycore (HO, FDM, serial or parallel)
+1: NOT SUPPORTED: glam dycore (HO, FDM, serial or parallel)
+   Note that this option is not allowed within CESM, because it is buggy
 2: glissade dycore (HO, FEM, serial or parallel)
-Default: 0 for cism1, 1 for cism2
+Default: 0 for cism1, 2 for cism2
 </entry>
 
 <entry 
@@ -720,16 +678,6 @@ Default: Depends on resolution and physics option
 
 <entry 
 id="ntem"
-type="integer" 
-category="cism_config_time"
-group="cism_config_time" >
-Multiplier of ice sheet timestep, dt
-(in theory, can be real-valued, but values less than 1 are not handled properly, so restricted to being an integer)
-Default: 1
-</entry>
-
-<entry 
-id="nvel"
 type="integer" 
 category="cism_config_time"
 group="cism_config_time" >
@@ -979,16 +927,16 @@ Default: 3
 </entry>
 
 <entry
-id="which_disp"
+id="which_ho_disp"
 type="integer"
 category="cism_config_ho_options"
 group="cism_config_ho_options"
-valid_values="0,1,2" >
+valid_values="-1,0,1" >
 Method for computing the dissipation during the temperature calculation
+-1: no dissipation
 0: 0-order SIA approx.
 1: 1st order solution (e.g., Blatter-Pattyn)
-2: 1st order depth-integrated solution (SSA)
-Default: 0
+Default: 1
 </entry>
 
 <entry
@@ -1003,7 +951,7 @@ Method for solving the sparse linear system that arises from the higher-order so
 2: Conjugate gradient, incomplete LU preconditioner
 3: Conjugate gradient, structured grid, parallel-enabled
 4: standalone interface to Trilinos
-Default: 4 when building with trilinos, 1 otherwise
+Default: 3
 </entry>
 
 <entry
@@ -1015,7 +963,37 @@ valid_values="0,1" >
 Method for solving the nonlinear iteration when solving the first-order momentum balance
 0: use the standard Picard iteration
 1: use Jacobian Free Newton Krylov (JFNK) method
-Default: 1
+Default: 0
+</entry>
+
+<entry
+id="which_ho_gradient_margin"
+type="integer"
+category="cism_config_ho_options"
+group="cism_config_ho_options"
+valid_values="0,1,2" >
+How to compute the gradient at the ice margin in the glissade dycore.
+Not valid for other dycores.
+0: Use info from all neighbor cells, ice-covered or ice-free
+1: Use info from ice-covered and/or land cells, not ice-free ocean
+2: Use info from ice-covered cells only
+Default: (use hard-coded default)
+</entry>
+
+<entry
+id="which_ho_approx"
+type="integer"
+category="cism_config_ho_options"
+group="cism_config_ho_options"
+valid_values="-1,0,1,2,3" >
+Flag that indicates which Stokes approximation to use with the glissade dycore.
+Not valid for other dycores.
+-1: Shallow-ice approximation, Glide-type calculation (uses glissade_velo_sia)
+0: Shallow-ice approximation, vertical-shear stresses only (uses glissade_velo_higher)
+1: Shallow-shelf approximation, horizontal-plane stresses only (uses glissade_velo_higher)
+2: Blatter-Pattyn approximation with both vertical-shear and horizontal-plane stresses (uses glissade_velo_higher)
+3:  Vertically integrated 'L1L2' approximation with vertical-shear and horizontal-plane stresses (uses glissade_velo_higher)
+Default: (use hard-coded default)
 </entry>
 
 <!-- =============================================================  -->

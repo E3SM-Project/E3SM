@@ -1,0 +1,113 @@
+#! /usr/bin/env perl
+use strict;
+use Cwd;
+
+if ($#ARGV == -1) {
+    die " ERROR cism.buildexe: must specify a caseroot input argument";
+}
+my ($CASEROOT) = @ARGV;
+chdir "${CASEROOT}";
+
+my @dirs = ("$CASEROOT/Tools");
+unshift @INC, @dirs;
+require SetupTools;
+my $sysmod; 
+
+my $CASEBUILD           = `./xmlquery CASEBUILD         -value`;
+my $GLC_GRID            = `./xmlquery GLC_GRID          -value`;
+my $CISM_PHYS           = `./xmlquery CISM_PHYS         -value`;
+my $CISM_USE_TRILINOS   = `./xmlquery CISM_USE_TRILINOS -value`;
+my $CCSMROOT            = `./xmlquery CCSMROOT          -value`;
+my $LND_GRID            = `./xmlquery LND_GRID          -value`;
+my $NINST_GLC           = `./xmlquery NINST_GLC         -value`;
+my $RUNDIR              = `./xmlquery RUNDIR            -value`;
+my $SCRIPTSROOT         = `./xmlquery SCRIPTSROOT       -value`;
+my $UTILROOT            = `./xmlquery UTILROOT          -value`;
+
+if (! -d "$CASEBUILD/cismconf" ) {
+    $sysmod = "mkdir $CASEBUILD/cismconf";
+    system($sysmod) == 0 or die "ERROR cism.buildnml: $sysmod failed: $?\n";
+}
+chdir "$CASEBUILD/cismconf";
+
+my $inst_string;
+my $inst_counter = 1;
+while ($inst_counter <= $NINST_GLC) {
+
+    # -----------------------------------------------------
+    # determine instance string 
+    # -----------------------------------------------------
+
+    $inst_string = "";       
+    if ($NINST_GLC > 1) {
+        $inst_string = `printf _%04d $inst_counter`;
+
+        # If multi-instance case does not have restart file, use single-case restart
+        # for each instance
+        if ( (! -e "$RUNDIR/rpointer.glc${inst_string}") && (-e "$RUNDIR/rpointer.glc") ) {
+            $sysmod = "cp -v $RUNDIR/rpointer.glc $RUNDIR/rpointer.glc${inst_string}";
+            system($sysmod) == 0 or die "ERROR cism.buildnml: $sysmod failed: $?\n";
+         }
+    }
+
+    # -----------------------------------------------------
+    # create cismconf/cesm_namelist
+    # -----------------------------------------------------
+
+    SetupTools::create_namelist_infile("$CASEROOT", 
+                                       "$CASEROOT/user_nl_cism${inst_string}", 
+                                       "$CASEBUILD/cismconf/cesm_namelist");
+
+    # -----------------------------------------------------
+    # call build-namelist
+    # -----------------------------------------------------
+
+    if (-e "$CASEBUILD/cism.input_data_list") {
+        $sysmod = "rm $CASEBUILD/cism.input_data_list";
+        system($sysmod) == 0 or die "ERROR cism.buildnml: $sysmod failed: $?\n";
+    }
+
+    $sysmod = "$CCSMROOT/components/cism/bld/build-namelist";
+    $sysmod = "$sysmod -infile $CASEBUILD/cismconf/cesm_namelist";
+    $sysmod = "$sysmod -caseroot $CASEROOT";
+    $sysmod = "$sysmod -scriptsroot $SCRIPTSROOT";
+    $sysmod = "$sysmod -inst_string \"$inst_string\" ";
+    $sysmod = "$sysmod -paramfile cism.config${inst_string}";
+    $sysmod = "$sysmod -lnd_grid $LND_GRID -glc_grid $GLC_GRID";
+    $sysmod = "$sysmod -cism_phys $CISM_PHYS";
+    system($sysmod) == 0 or die "ERROR cism.buildnml: $sysmod failed: $?\n";
+
+    if (-d ${RUNDIR}) {
+        $sysmod = "cp $CASEBUILD/cismconf/cism_in  ${RUNDIR}/cism_in${inst_string}";
+        system($sysmod) == 0 or die "ERROR cism.buildnml: $sysmod failed: $?\n";
+
+        $sysmod = "cp $CASEBUILD/cismconf/cism.config ${RUNDIR}/cism.config${inst_string}";
+        system($sysmod) == 0 or die "ERROR cism.buildnml: $sysmod failed: $?\n";
+    }
+
+    # -----------------------------------------------------
+    # increment instance counter
+    # -----------------------------------------------------
+
+    $inst_counter = $inst_counter + 1;
+}
+
+if ($CISM_USE_TRILINOS eq "TRUE") {
+    my $sourcemod_dir = "$CASEROOT/SourceMods/src.cism";
+    if (-e "${sourcemod_dir}/trilinosOptions.xml") {
+        $sysmod = "cp ${sourcemod_dir}/trilinosOptions.xml ${RUNDIR}";
+        system($sysmod) == 0 or die "ERROR cism.buildnml: $sysmod failed: $?\n";
+    } else {
+        my $trilinos_options_dir = "$CCSMROOT/components/cism/bld/trilinosOptions";
+        my $trilinos_file = "trilinosOptions_${GLC_GRID}.xml";
+        if (-e "${trilinos_options_dir}/${trilinos_file}") {
+            $sysmod = "cp ${trilinos_options_dir}/${trilinos_file} ${RUNDIR}/trilinosOptions.xml";
+            system($sysmod) == 0 or die "ERROR cism.buildnml: $sysmod failed: $?\n";
+        } else {
+            die "ERROR: no trilinosOptions file found in $trilinos_options_dir for GLC_GRID=$GLC_GRID \n";
+        }
+    }
+}
+
+exit (0);
+

@@ -64,10 +64,6 @@ contains
 
     has_ocn_coupling = (liq_to_ocean .or. ice_to_ocean)
 
-    ! TODO: Remove this line once the coupler can handle glc -> ocn coupling (having the
-    ! necessary mapping files, etc.)
-    has_ocn_coupling = .false.
-
   end function has_ocn_coupling
 
 !***********************************************************************
@@ -90,10 +86,6 @@ contains
 !-----------------------------------------------------------------------
 
     has_ice_coupling = ice_needs_sea_ice_coupling()
-
-    ! TODO: Remove this line once the coupler can handle glc -> ocn coupling (having the
-    ! necessary mapping files, etc.)
-    has_ice_coupling = .false.
 
   end function has_ice_coupling
 

@@ -19,8 +19,9 @@
    use glc_time_management, only:  thour, time_manager, check_time_flag, init_time_flag
    use shr_sys_mod
    use glc_communicate, only: my_task, master_task
-   use glc_constants, only: verbose, stdout, glc_nec, glc_smb
-
+   use glc_constants, only: verbose, stdout, glc_smb
+   use glc_exit_mod, only : exit_glc, sigAbort
+   
    implicit none
    private
    save
@@ -51,7 +52,7 @@
 ! !IROUTINE: glc_run
 ! !INTERFACE:
 
- subroutine glc_run
+ subroutine glc_run(EClock)
 
 ! !DESCRIPTION:
 !  This routine advances the simulation one timestep.
@@ -61,12 +62,16 @@
 
 ! !USES:
 
-   use glint_main
+   use glad_main
    use glimmer_log
-   use glint_global_interp
-   use glint_example_clim
-   use glc_global_fields 
+   use glc_fields 
+   use glc_history, only : glc_history_write
+   use esmf, only : ESMF_Clock
 
+! !ARGUMENTS:
+   type(ESMF_Clock),     intent(in)    :: EClock
+   
+   
 !EOP
 !BOC
 !-----------------------------------------------------------------------
@@ -75,9 +80,7 @@
 !
 !-----------------------------------------------------------------------
 
-   logical, save ::    &
-      first_call = .true.,        &! flag for initializing timers
-      first_global_budget = .true.
+   logical, save :: first_call = .true.        ! flag for initializing timers
 
   character(fname_length) ::  & 
      paramfile     ! Name of the top-level configuration file
@@ -88,12 +91,6 @@
      nx,ny          ! Size of global glc_grid 
 
   ! Scalar model outputs
- 
-  !TODO - These are needed only for PDD option (not yet implemented)
-  real(r8) ::      & 
-     twin         ,&! Timestep-integrated input water flux (kg) 
-     twout        ,&! Timestep-integrated output water flux (kg) 
-     ice_vol        ! Total ice volume (m^3) 
  
   ! Other variables
  
@@ -119,7 +116,7 @@
 
 !-----------------------------------------------------------------------
 !
-!  Take one GLINT time step 
+!  Take one GLAD time step 
 !  Note: For SMB scheme, tsfc = ground surface temperature (Celsius)
 !                        qsmb = flux of new glacier ice (kg/m^2s)
 !
@@ -131,67 +128,26 @@
 
          if (verbose .and. my_task==master_task) then 
             write(stdout,*) ' '
-            write(stdout,*) 'Call glint, thour =', thour
+            write(stdout,*) 'Call glad, thour =', thour
             write(stdout,*) ' '
-             !TODO - Make sure iglint_global and jglint_global are defined appropriately for the global grid
-             !      (Currently hardwired in glint_type)
-!            write(stdout,*) 'Global fields from CLM to Glint'
-!            do n = 1, glc_nec
-!               i = iglint_global
-!               j = jglint_global   ! N to S global indexing as in Glint
-!               write(stdout,*) ' '
-!               write(stdout,*) 'i, j, n =', i, j, n
-!               write(stdout,*) 'tsfc(n) =', tsfc(i,j,n)
-!               write(stdout,*) 'topo(n) =', topo(i,j,n)
-!               write(stdout,*) 'qsmb(n) =', qsmb(i,j,n)
-!            enddo
          endif
 
-         call glint_gcm (ice_sheet,        nint(thour),     &
-                         qsmb,             tsfc,            &
-                         topo,                              &
-                         ice_tstep = ice_tstep,             & 
-                         gfrac = gfrac,    gtopo = gtopo,   &
-                         grofi = grofi,    grofl = grofl,   &
-                         ghflx = ghflx,                     &
-                         ice_sheet_grid_mask=ice_sheet_grid_mask, &
-                         icemask_coupled_fluxes=icemask_coupled_fluxes)
-
-         if (verbose .and. my_task==master_task) then
-!            write(stdout,*) ' '
-!            write(stdout,*) 'Global fields from GLINT to CLM:'
-             !TODO - Make sure iglint_global and jglint_global are defined appropriately for the global grid
-!            i = iglint_global
-!            j = jglint_global   ! N to S global indexing as in GLINT
-!            do n = 1, glc_nec
-!               write(stdout,*) ' '
-!               write(stdout,*) 'i, j, n =', i, j, n
-!               write(stdout,*) 'gfrac(n) =', gfrac(i,j,n)
-!               write(stdout,*) 'gtopo(n) =', gtopo(i,j,n)
-!               write(stdout,*) 'ghflx(n) =', ghflx(i,j,n)
-!            enddo
-!            write(stdout,*) 'grofi =', grofi(i,j)
-!            write(stdout,*) 'grofl =', grofl(i,j)
-         endif
+         ! TODO(wjs, 2015-03-23) We will need a loop over instances, either here or
+         ! around the call to glc_run
+         
+         call glad_gcm (params = ice_sheet, instance_index = 1,        &
+                        time = nint(thour),                            &
+                        qsmb = qsmb, tsfc = tsfc,                      &
+                        ice_covered = ice_covered, topo = topo,        &
+                        rofi = rofi, rofl = rofl, hflx = hflx,         &
+                        ice_sheet_grid_mask=ice_sheet_grid_mask,       &
+                        icemask_coupled_fluxes=icemask_coupled_fluxes, &
+                        ice_tstep = ice_tstep)
 
      else    ! use PDD scheme
 
 !TODO - Implement and test PDD option
-         write(stdout,*) 'Using positive-degree-day scheme'
-         write(stdout,*) 'WARNING: This has not been tested!'
-
-         call glint (ice_sheet,                  &
-                     nint(thour),                &
-                     tsfc(:,:,1),                &  ! 2-m air temp
-                     qsmb(:,:,1),                &  ! precip
-                     orog,                       &
-                     output_flag     = outflag,  &
-                     ice_frac        = ice_frac, &
-                     water_out       = fw,       &
-                     water_in        = fw_in,    &
-                     total_water_in  = twin,     &
-                     total_water_out = twout,    &
-                     ice_volume      = ice_vol)
+        call exit_glc(sigAbort, 'ERROR: attempt to use PDD scheme, which has not been implemented')
 
      endif   ! glc_smb
 
@@ -208,6 +164,13 @@
       write(stdout,*) 'Called time manager: new hour =', thour 
    endif
 
+   !-----------------------------------------------------------------------
+   ! Write a history file if it's time to do so
+   !-----------------------------------------------------------------------
+
+   ! TODO loop over instances
+   call glc_history_write(ice_sheet%instances(1), EClock)
+   
 !-----------------------------------------------------------------------
 !EOC
 

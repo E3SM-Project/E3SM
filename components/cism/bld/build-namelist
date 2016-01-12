@@ -22,7 +22,7 @@
 # 2012-01-30  Vertenstein      Original version
 #--------------------------------------------------------------------------------------------
 use strict;
-use Cwd;
+use Cwd qw(getcwd abs_path);
 use English;
 use Getopt::Long;
 use IO::File;
@@ -45,7 +45,7 @@ OPTIONS
      -inst_string          INST_STRING variable
      -paramfile            name of top-level configuration file
      -lnd_grid             LND_GRID variable
-     -glc_grid             CISM_GRID variable
+     -glc_grid             GLC_GRID variable
      -cism_phys            CISM_PHYS variable
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
@@ -86,7 +86,7 @@ my $ProgDir = $1;                      # name of directory containing this scrip
 my $cwd = getcwd();                    # current working directory
 my $cfgdir;                            # absolute pathname of directory that contains this script
 if ($ProgDir) { 
-    $cfgdir = absolute_path($ProgDir);
+    $cfgdir = abs_path($ProgDir);
 } else {
     $cfgdir = $cwd;
 }
@@ -147,9 +147,6 @@ my $LND_GRID    = $opts{'lnd_grid'};
 my $GLC_GRID    = $opts{'glc_grid'}; 
 my $CISM_PHYS   = $opts{'cism_phys'};
 
-# Validate some of the commandline option values.
-validate_options("commandline", \%opts);
-
 #-----------------------------------------------------------------------------------------------
 # Build empty config_cache.xml file (needed below)  
 
@@ -184,12 +181,10 @@ EOF
 # Look for them under the directory that contains the configure script.
 
 # The root directory for the perl5 required utilities 
-my $perl5lib_dir = "${SCRIPTSROOT}/ccsm_utils/Tools/perl5lib";
+my $perl5lib_dir = "${SCRIPTSROOT}/../utils/perl5lib";
 
-# The XML::Lite module is required to parse the XML files.
-(-f "$perl5lib_dir/XML/Lite.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"XML/Lite.pm\" in directory \"$perl5lib_dir\" **
-EOF
+# The root diretory for the perl SetupTools.pm module
+my $SetupTools_dir = "${SCRIPTSROOT}/Tools";
 
 # The Build::Config module provides utilities to access the configuration information
 # in the config_cache.xml file (see below)
@@ -242,12 +237,12 @@ if ($print>=2) { print "Using namelist defaults file $nl_defaults_file$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Add $perl5lib_dir to the list of paths that Perl searches for modules
-unshift @INC, "$perl5lib_dir";
-require XML::Lite;
+unshift @INC, "$CASEROOT/Tools/", "$perl5lib_dir";
 require Build::Config;
 require Build::NamelistDefinition;
 require Build::NamelistDefaults;
 require Build::Namelist;
+require SetupTools;
 
 #-----------------------------------------------------------------------------------------------
 # Create a configuration object from the CISM config_cache.xml file-  created by 
@@ -338,17 +333,9 @@ if (defined $opts{'infile'}) {
 ####################################
 
 my %xmlvars = ();
-my @files = <${CASEROOT}/*xml>;
-foreach my $file (@files) {
-    my $xml = XML::Lite->new($file);
-    my @e = $xml->elements_by_name('entry');
-    while ( my $e = shift @e ) {
-	my %a = $e->get_attributes();
-	$xmlvars{$a{'id'}} = $a{'value'};
-    }
-}
+SetupTools::getxmlvars($CASEROOT, \%xmlvars);
 foreach my $attr (keys %xmlvars) {
-    if ( $xmlvars{$attr} =~ m/\$/ ) {$xmlvars{$attr} = expand_env_xml($xmlvars{$attr});}
+  $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
 }
 
 my $CASE                   = $xmlvars{'CASE'};
@@ -371,6 +358,12 @@ my $CISM_OBSERVED_IC       = $xmlvars{'CISM_OBSERVED_IC'};
 
 (-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
+
+####################################
+# Preliminary consistency checks
+####################################
+
+check_grid($GLC_GRID, $CISM_PHYS);
 
 ####################################
 # namelist group: time_manager_nml #
@@ -403,21 +396,11 @@ add_default($nl, 'date_separator');
 add_default($nl, 'stop_option');
 
 ####################################
-# namelist group: grid_nml #
-####################################
-
-add_default($nl, 'horiz_grid_opt');
-add_default($nl, 'horiz_grid_file');
-add_default($nl, 'mask_varname');
-add_default($nl, 'frac_varname');
-
-####################################
 # namelist group: cism_params      #
 ####################################
 
 add_default($nl, 'paramfile', 'noprepend'=>'1' );
 add_default($nl, 'cism_debug');
-add_default($nl, 'cesm_history_vars');
 add_default($nl, 'ice_flux_routing');
 
 my $hotstart;
@@ -443,6 +426,16 @@ else {
 }
 
 ####################################
+# namelist group: cism_history     #
+####################################
+
+add_default($nl, 'cesm_history_vars');
+add_default($nl, 'history_option');
+if (!($nl->get_value('history_option') =~ /coupler/)) {
+   add_default($nl, 'history_frequency');
+}
+
+####################################
 # namelist group: glc_override_nml #
 ####################################
 
@@ -459,7 +452,7 @@ if ($nl->get_value('enable_frac_overrides') =~ $TRUE) {
 #-----------------------------------------------------------------------------------------------
 # Set namelist groups to be written out
 
-my @groups = qw(cism_params grid_nml time_manager_nml glc_override_nml); 
+my @groups = qw(cism_params cism_history time_manager_nml glc_override_nml); 
 
 # Write out all groups  to cism_in
 my $outfile = "./cism_in";
@@ -485,10 +478,8 @@ add_default($nl, 'dew');
 add_default($nl, 'dns');
 $nl->write_cism_config($fh, "cism_config_grid");
 
-print $fh "\n[GLINT climate]\n";
+print $fh "\n[GLAD climate]\n";
 add_default($nl, 'evolve_ice');
-add_default($nl, 'precip_mode');
-add_default($nl, 'acab_mode');
 add_default($nl, 'test_coupling');
 add_default($nl, 'zero_gcm_fluxes', 'glc_two_way_coupling'=>"$GLC_TWO_WAY_COUPLING");
 $nl->write_cism_config($fh, "cism_config_climate");
@@ -534,7 +525,6 @@ else {
 print $fh "\n[time]\n";
 add_default($nl, 'dt');
 add_default($nl, 'ntem');
-add_default($nl, 'nvel');
 add_default($nl, 'dt_diag');
 add_default($nl, 'idiag');
 add_default($nl, 'jdiag');
@@ -556,9 +546,9 @@ if ($nl->get_value('dycore') != 0) {
     add_default($nl, 'which_ho_babc');
     add_default($nl, 'which_ho_efvs');
     add_default($nl, 'which_ho_resid');
-    add_default($nl, 'which_disp');
-    add_default($nl, 'which_ho_sparse', 'cism_use_trilinos'=>"$CISM_USE_TRILINOS");
-    add_default($nl, 'which_ho_nonlinear');
+    add_default($nl, 'which_ho_disp');
+    add_default($nl, 'which_ho_sparse', 'dycore'=>$nl->get_value('dycore'), 'cism_use_trilinos'=>"$CISM_USE_TRILINOS");
+    add_default($nl, 'which_ho_nonlinear', 'dycore'=>$nl->get_value('dycore'));
     $nl->write_cism_config($fh, "cism_config_ho_options");
 }
 else {
@@ -847,70 +837,6 @@ sub set_abs_filepath {
     return $out;
 }
 
-#-----------------------------------------------------------------------------------------------
-
-
-sub absolute_path {
-#
-# Convert a pathname into an absolute pathname, expanding any . or .. characters.
-# Assumes pathnames refer to a local filesystem.
-# Assumes the directory separator is "/".
-#
-  my $path = shift;
-  my $cwd = getcwd();  # current working directory
-  my $abspath;         # resulting absolute pathname
-
-# Strip off any leading or trailing whitespace.  (This pattern won't match if
-# there's embedded whitespace.
-  $path =~ s!^\s*(\S*)\s*$!$1!;
-
-# Convert relative to absolute path.
-
-  if ($path =~ m!^\.$!) {          # path is "."
-      return $cwd;
-  } elsif ($path =~ m!^\./!) {     # path starts with "./"
-      $path =~ s!^\.!$cwd!;
-  } elsif ($path =~ m!^\.\.$!) {   # path is ".."
-      $path = "$cwd/..";
-  } elsif ($path =~ m!^\.\./!) {   # path starts with "../"
-      $path = "$cwd/$path";
-  } elsif ($path =~ m!^[^/]!) {    # path starts with non-slash character
-      $path = "$cwd/$path";
-  }
-
-  my ($dir, @dirs2);
-  my @dirs = split "/", $path, -1;   # The -1 prevents split from stripping trailing nulls
-                                     # This enables correct processing of the input "/".
-
-  # Remove any "" that are not leading.
-  for (my $i=0; $i<=$#dirs; ++$i) {
-      if ($i == 0 or $dirs[$i] ne "") {
-	  push @dirs2, $dirs[$i];
-      }
-  }
-  @dirs = ();
-
-  # Remove any "."
-  foreach $dir (@dirs2) {
-      unless ($dir eq ".") {
-	  push @dirs, $dir;
-      }
-  }
-  @dirs2 = ();
-
-  # Remove the "subdir/.." parts.
-  foreach $dir (@dirs) {
-    if ( $dir !~ /\.\./ ) {
-        push @dirs2, $dir;
-    } else {
-        pop @dirs2;   # remove previous dir when current dir is ..
-    }
-  }
-  if ($#dirs2 == 0 and $dirs2[0] eq "") { return "/"; }
-  $abspath = join '/', @dirs2;
-  return( $abspath );
-}
-
 #-------------------------------------------------------------------------------
 
 sub valid_option {
@@ -928,17 +854,6 @@ sub valid_option {
 
 #-------------------------------------------------------------------------------
 
-sub validate_options {
-
-    my $source = shift;   # text string declaring the source of the options being validated
-    my $opts   = shift;   # reference to hash that contains the options
-
-    my ($opt, $old, @expect);
-
-}
-
-#-------------------------------------------------------------------------------
-
 sub quote_string {
     my $str = shift;
     $str =~ s/^\s+//;
@@ -948,19 +863,6 @@ sub quote_string {
     }
     return $str;
 }
-
-#-------------------------------------------------------------------------------
-
-sub expand_env_xml {
-
-    my $value = shift;
-
-    if ($value =~ /\$([\w_]+)(.*)$/) {
-	my $subst = $xmlvars{$1};
-	$value =~ s/\$${1}/$subst/g;
-    }
-    return $value; 
-}	 
 
 #-------------------------------------------------------------------------------
 
@@ -999,6 +901,43 @@ sub get_glc_dt {
   return ($dt_option, $dt_count);
 }
   
+#-------------------------------------------------------------------------------
+
+sub check_grid {
+
+# Usage: check_grid($glc_grid, $cism_phys)
+#
+# Checks that the glc_grid is valid given the cism_phys setting
+
+   my ($glc_grid, $cism_phys) = @_;
+
+   # we only care about the keys in allowed_grids, not the values; but we use a
+   # hash for easy lookup later
+   my %allowed_grids;
+
+   if ($cism_phys eq "cism1") {
+      %allowed_grids = (gland20  => 1, 
+                        gland10  => 1,
+                        gland5   => 1, 
+                        gland5UM => 1,
+                       );
+   }
+   elsif ($cism_phys eq "cism2") {
+      %allowed_grids = (gland20 => 1,
+                        gland4  => 1,
+                       );
+   }
+
+   if (!exists($allowed_grids{$glc_grid})) {
+      print "ERROR: For cism_phys = $cism_phys, allowable grids are:\n";
+      print join(", ", sort keys %allowed_grids);
+      print "\n";
+      print "Current value of GLC_GRID is: $glc_grid\n";
+      die;
+   }
+}
+   
+
 #-------------------------------------------------------------------------------
 
 sub check_consistency {

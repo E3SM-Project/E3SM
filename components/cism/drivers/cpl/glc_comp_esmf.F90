@@ -19,16 +19,15 @@ module glc_comp_esmf
 
   use glc_import_export
   use glc_cpl_indices
-  use glc_constants,       only: verbose, stdout, stderr, nml_in, radius, radian
+  use glc_constants,       only: verbose, stdout, stderr, nml_in, radius
   use glc_errormod,        only: glc_success
   use glc_InitMod,         only: glc_initialize
   use glc_RunMod,          only: glc_run
   use glc_FinalMod,        only: glc_final
-  use glc_io,              only: glc_io_write_restart, glc_io_write_history
+  use glc_io,              only: glc_io_write_restart
   use glc_communicate,     only: init_communicate, my_task, master_task
   use glc_time_management, only: iyear,imonth,iday,ihour,iminute,isecond,runtype
-  use glc_global_fields,   only: ice_sheet
-  use glc_global_grid,     only: glc_grid, glc_landmask, glc_landfrac
+  use glc_fields,          only: ice_sheet
 
   implicit none
   SAVE
@@ -103,7 +102,8 @@ CONTAINS
     use glc_ensemble       , only : set_inst_vars, write_inst_vars, get_inst_name
     use glc_files          , only : set_filenames, ionml_filename
     use glc_coupling_flags , only : has_ocn_coupling, has_ice_coupling
-
+    use glc_indexing_info  , only : nx_tot, ny_tot, npts_tot
+    
     !-----------------------------------------------------------------------
     ! !DESCRIPTION:
     ! Initialize glc model
@@ -122,13 +122,10 @@ CONTAINS
     type(ESMF_VM)            :: vm
     integer(IN)              :: ierr 
     integer(IN)              :: i,j,n
-    integer(IN)              :: nxg_tot, nyg_tot  ! total nx & ny points across all tasks
-    integer(IN)              :: lsize
     integer(IN)              :: shrlogunit, shrloglev  
     character(CL)            :: starttype
     real(R8), pointer        :: fptr(:,:)
-    integer                  :: mpicom_loc, mpicom_vm, gsize
-    integer                  :: num 
+    integer                  :: mpicom_loc, mpicom_vm
     character(ESMF_MAXSTR)   :: convCIM, purpComp
     integer(IN)              :: COMPID
     character(CS)            :: myModelName
@@ -219,7 +216,7 @@ CONTAINS
     endif
     call init_communicate(mpicom_loc)
 
-    call glc_initialize(errorCode)
+    call glc_initialize(EClock, errorCode)
 
     if (verbose .and. my_task == master_task) then
        write(stdout,F01) ' GLC Initial Date ',iyear,imonth,iday,ihour,iminute,isecond
@@ -233,10 +230,10 @@ CONTAINS
 
     ! Initialize glc distgrid
 
-    distgrid = glc_distgrid_esmf(gsize, nxg_tot, nyg_tot, rc=rc)
+    distgrid = glc_distgrid_esmf(rc=rc)
     if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-    call ESMF_AttributeSet(export_state, name="gsize", value=gsize, rc=rc)
+    call ESMF_AttributeSet(export_state, name="gsize", value=npts_tot, rc=rc)
     if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
     ! Initialize glc domain (needs glc initialization info)
@@ -290,10 +287,10 @@ CONTAINS
     call ESMF_AttributeSet(export_state, name="glc_prognostic", value=.true., rc=rc)
     if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-    call ESMF_AttributeSet(export_state, name="glc_nx", value=nxg_tot, rc=rc)
+    call ESMF_AttributeSet(export_state, name="glc_nx", value=nx_tot, rc=rc)
     if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-    call ESMF_AttributeSet(export_state, name="glc_ny", value=nyg_tot, rc=rc)
+    call ESMF_AttributeSet(export_state, name="glc_ny", value=ny_tot, rc=rc)
     if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
 #ifdef USE_ESMF_METADATA
@@ -366,11 +363,9 @@ CONTAINS
     integer(IN)   :: glcYMD            ! glc model date
     integer(IN)   :: glcTOD            ! glc model sec 
     logical       :: stop_alarm        ! is it time to stop
-    logical       :: hist_alarm        ! is it time to write a history file
     logical       :: rest_alarm        ! is it time to write a restart
     logical       :: done              ! time loop logical
     integer(IN)   :: shrlogunit, shrloglev  
-    integer       :: num 
     real(R8), pointer :: fptr(:,:)
     type(ESMF_Array)  :: x2g, g2x 
     character(*), parameter :: F00   = "('(glc_run_esmf) ',8a)"
@@ -420,7 +415,7 @@ CONTAINS
           call shr_sys_abort('glc error overshot time')
        endif
 
-       call glc_run
+       call glc_run(EClock)
 
        glcYMD = iyear*10000 + imonth*100 + iday
        glcTOD = ihour*3600 + iminute*60 + isecond
@@ -455,14 +450,6 @@ CONTAINS
        write(stdout,F01) ' GLC  Date ',glcYMD,glcTOD
        call shr_sys_flush(stdout)
     end if
-
-    ! If time to write history, do so
-
-    hist_alarm = seq_timemgr_HistoryAlarmIsOn( EClock )
-    if (hist_alarm) then
-       ! TODO loop over instances
-       call glc_io_write_history(ice_sheet%instances(1), EClock)
-    endif
 
     ! If time to write restart, do so
 
@@ -555,16 +542,16 @@ CONTAINS
   
 !=================================================================================
 
-  function glc_distgrid_esmf(gsize, nxg_tot, nyg_tot, rc)
+  function glc_distgrid_esmf(rc)
 
+    ! Initialize global index space array
+    
     use glc_broadcast, only: broadcast_scalar
+    use glc_indexing_info, only : local_indices, global_indices, nx, ny, npts
 
     !-------------------------------------------------------------------
     ! Arguments
     implicit none
-    integer, intent(out):: gsize    ! global total number of points
-    integer, intent(out):: nxg_tot  ! total nx points across all tasks
-    integer, intent(out):: nyg_tot  ! total ny points across all tasks
     integer, intent(out):: rc
 
     ! Return:
@@ -573,7 +560,6 @@ CONTAINS
     ! Local Variables
     integer,allocatable :: gindex(:)
     integer :: i, j, n
-    integer :: nxg, nyg, lsize      ! number of points that this task is responsible for
     integer :: ier
 
     !--- formats ---
@@ -581,51 +567,18 @@ CONTAINS
     character(*), parameter :: subName = "(glc_DistGrid_esmf) "
     !-------------------------------------------------------------------
 
-    ! Note that the following assumes that the master task is responsible for all points
-
-    if (my_task == master_task) then
-
-       nxg = glc_grid%nx
-       nyg = glc_grid%ny
-       lsize = nxg*nyg
-
-       ! Initialize global index space array (the simple method used here only works
-       ! because the master task is responsible for all points)
-       allocate(gindex(lsize))
-       do j = 1,nyg
-          do i = 1,nxg
-             n = (j-1)*nxg + i
-             gindex(n) = n
-          enddo
+    allocate(gindex(npts))
+    do j = 1,ny
+       do i = 1,nx
+          n = local_indices(i,j)
+          gindex(n) = global_indices(i,j)
        enddo
-
-    else
-
-       nxg = 0
-       nyg = 0
-       lsize = 0
-       allocate(gindex(lsize))
-
-    end if
-
+    enddo
+       
     glc_DistGrid_esmf = mct2esmf_init(gindex, rc=rc)
     if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
     deallocate(gindex)
-
-
-    ! Determine other output arguments, relating to the total grid size (across all tasks)
-    ! The following assumes that the master task is responsible for all points
-
-    if (my_task == master_task) then
-       nxg_tot = nxg
-       nyg_tot = nyg
-       gsize = nxg_tot * nyg_tot
-    end if
-
-    call broadcast_scalar(nxg_tot, master_task)
-    call broadcast_scalar(nyg_tot, master_task)
-    call broadcast_scalar(gsize  , master_task)
 
   end function glc_DistGrid_esmf
 
@@ -634,19 +587,24 @@ CONTAINS
   subroutine glc_domain_esmf( dom, rc )
 
     !-------------------------------------------------------------------
+    use glc_indexing_info, only : nx, ny, local_indices
+    use glad_main, only : glad_get_lat_lon, glad_get_areas
+    
     implicit none
     type(ESMF_Array), intent(inout)     :: dom
     integer, intent(out)                :: rc
 
     ! Local Variables
-    integer :: j,i,n,nxg,nyg          
+    integer :: j,i,n
     integer :: klon,klat,karea,kmask,kfrac ! domain fields
     real(R8), pointer :: fptr(:,:)
+    real(r8), allocatable :: lats(:,:)  ! latitude of each point (degrees)
+    real(r8), allocatable :: lons(:,:)  ! longitude of each point (degrees)
+    real(r8), allocatable :: areas(:,:) ! area of each point (square meters)
     !-------------------------------------------------------------------
 
     ! Initialize domain type
-    ! lat/lon in degrees,  area in radians^2, mask is 1 (land), 0 (non-land)
-    ! Note that in addition land carries around landfrac for the purposes of domain checking
+    ! lat/lon in degrees,  area in radians^2
     ! 
     rc = ESMF_SUCCESS
 
@@ -670,22 +628,37 @@ CONTAINS
     if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
     ! Fill in correct values for domain components
-    ! Note aream will be filled in in the atm-lnd mapper
 
-    nxg = glc_grid%nx
-    nyg = glc_grid%ny
+    allocate(lats(nx, ny))
+    allocate(lons(nx, ny))
+    allocate(areas(nx, ny))
+    
+    ! TODO(wjs, 2015-04-02) The following may need a loop over instances
+    call glad_get_lat_lon(ice_sheet, instance_index = 1, &
+         lats = lats, lons = lons)
+    call glad_get_areas(ice_sheet, instance_index = 1, areas = areas)
+    
     fptr(:,:) = -9999.0_R8
     fptr(kmask,:) = -0.0_R8
-    do j = 1,nyg
-       do i = 1,nxg
-          n = (j-1)*nxg + i
-          fptr(klon , n) = glc_grid%lons(i)
-          fptr(klat , n) = glc_grid%lats(j)
-          fptr(karea, n) = glc_grid%box_areas(i,j)/(radius*radius)
-          fptr(kmask, n) = real(glc_landmask(i,j), r8)  ! data is r8, glc_landmask is i4
-          fptr(kfrac, n) = glc_landfrac(i,j)
+    do j = 1,ny
+       do i = 1,nx
+          n = local_indices(i,j)
+          fptr(klon , n) = lons(i,j)
+          fptr(klat , n) = lats(i,j)
+
+          ! convert from m^2 to radians^2
+          fptr(karea, n) = areas(i,j)/(radius*radius)
+
+          ! For now, assume mask and frac are 1 everywhere. This may need to be changed
+          ! in the future.
+          fptr(kmask, n) = 1._r8
+          fptr(kfrac, n) = 1._r8
        end do
     end do
+
+    deallocate(lats)
+    deallocate(lons)
+    deallocate(areas)
 
   end subroutine glc_domain_esmf
 

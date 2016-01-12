@@ -17,16 +17,15 @@ module glc_comp_mct
 
   use glc_import_export
   use glc_cpl_indices
-  use glc_constants,       only: verbose, stdout, stderr, nml_in, radius, radian
+  use glc_constants,       only: verbose, stdout, stderr, nml_in, radius
   use glc_errormod,        only: glc_success
   use glc_InitMod,         only: glc_initialize
   use glc_RunMod,          only: glc_run
   use glc_FinalMod,        only: glc_final
-  use glc_io,              only: glc_io_write_restart, glc_io_write_history
+  use glc_io,              only: glc_io_write_restart
   use glc_communicate,     only: init_communicate, my_task, master_task
   use glc_time_management, only: iyear,imonth,iday,ihour,iminute,isecond,runtype
-  use glc_global_fields,   only: ice_sheet
-  use glc_global_grid,     only: glc_grid, glc_landmask, glc_landfrac
+  use glc_fields,          only: ice_sheet
 
   ! Public types:
   implicit none
@@ -66,7 +65,8 @@ CONTAINS
     use glc_ensemble       , only : set_inst_vars, write_inst_vars, get_inst_name
     use glc_files          , only : set_filenames, ionml_filename
     use glc_coupling_flags , only : has_ocn_coupling, has_ice_coupling
-
+    use glc_indexing_info  , only : nx_tot, ny_tot, npts
+    
     ! input/output parameters:
 
     type(ESMF_Clock)         , intent(inout) :: EClock
@@ -76,10 +76,9 @@ CONTAINS
 
     !--- local variables ---
     integer(IN)              :: ierr        ! error code
-    integer(IN)              :: i,j,n,nxg,nyg
+    integer(IN)              :: i,j,n
     integer(IN)              :: COMPID
     integer(IN)              :: mpicom
-    integer(IN)              :: lsize
     type(mct_gsMap), pointer :: gsMap
     type(mct_gGrid), pointer :: dom
     type(seq_infodata_type), pointer :: infodata   ! Input init object
@@ -161,16 +160,12 @@ CONTAINS
        call shr_sys_flush(stdout)
     endif
     call init_communicate(mpicom)
-    call glc_initialize(errorCode)
+    call glc_initialize(EClock, errorCode)
     if (verbose .and. my_task == master_task) then
        write(stdout,F01) ' GLC Initial Date ',iyear,imonth,iday,ihour,iminute,isecond
        write(stdout,F01) ' Initialize Done', errorCode
        call shr_sys_flush(stdout)
     endif
-
-    nxg = glc_grid%nx
-    nyg = glc_grid%ny
-    lsize = nxg*nyg
 
     ! Initialize MCT gsmap
 
@@ -178,7 +173,7 @@ CONTAINS
 
     ! Initialize MCT domain
 
-    call glc_domain_mct(lsize,gsMap,dom)
+    call glc_domain_mct(gsMap,dom)
 
     ! Set flags in infodata
 
@@ -186,14 +181,14 @@ CONTAINS
        glclnd_present = .true., &
        glcocn_present=has_ocn_coupling(), &
        glcice_present=has_ice_coupling(), &
-       glc_prognostic = .true., glc_nx=nxg, glc_ny=nyg)
+       glc_prognostic = .true., glc_nx=nx_tot, glc_ny=ny_tot)
 
     ! Initialize MCT attribute vectors
 
-    call mct_aVect_init(g2x, rList=seq_flds_g2x_fields, lsize=lsize)
+    call mct_aVect_init(g2x, rList=seq_flds_g2x_fields, lsize=npts)
     call mct_aVect_zero(g2x)
 
-    call mct_aVect_init(x2g, rList=seq_flds_x2g_fields, lsize=lsize)
+    call mct_aVect_init(x2g, rList=seq_flds_x2g_fields, lsize=npts)
     call mct_aVect_zero(x2g)
 
     ! Create initial glc export state
@@ -247,13 +242,10 @@ subroutine glc_run_mct( EClock, cdata, x2g, g2x)
    integer(IN)   :: n                 ! index
    integer(IN)   :: nf                ! fields loop index
    integer(IN)   :: ki                ! index of ifrac
-   integer(IN)   :: lsize             ! size of AttrVect
-   integer(IN)   :: nxg,nyg           ! global grid size
    real(R8)      :: lat               ! latitude
    real(R8)      :: lon               ! longitude
    integer(IN)   :: shrlogunit, shrloglev  
    logical       :: stop_alarm        ! is it time to stop
-   logical       :: hist_alarm        ! is it time to write a history file
    logical       :: rest_alarm        ! is it time to write a restart
    logical       :: done              ! time loop logical
    integer           :: num 
@@ -272,10 +264,6 @@ subroutine glc_run_mct( EClock, cdata, x2g, g2x)
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
     call shr_file_setLogUnit (stdout)
-
-    lsize = mct_avect_lsize(x2g)
-    nxg = glc_grid%nx
-    nyg = glc_grid%ny
 
     ! Set internal time info
  
@@ -304,7 +292,7 @@ subroutine glc_run_mct( EClock, cdata, x2g, g2x)
           call shr_sys_abort('glc error overshot time')
        endif
 
-       call glc_run
+       call glc_run(EClock)
 
        glcYMD = iyear*10000 + imonth*100 + iday
        glcTOD = ihour*3600 + iminute*60 + isecond
@@ -333,14 +321,6 @@ subroutine glc_run_mct( EClock, cdata, x2g, g2x)
        write(stdout,F01) ' GLC  Date ',glcYMD,glcTOD
        call shr_sys_flush(stdout)
     end if
-
-    ! If time to write history, do so
-
-    hist_alarm = seq_timemgr_HistoryAlarmIsOn( EClock )
-    if (hist_alarm) then
-       ! TODO loop over instances
-       call glc_io_write_history(ice_sheet%instances(1), EClock)
-    endif
 
     ! If time to write restart, do so
 
@@ -427,147 +407,135 @@ subroutine glc_final_mct( EClock, cdata, x2d, d2x)
    call shr_file_setLogLevel(shrloglev)
    call shr_sys_flush(stdout)
 
- end subroutine glc_final_mct
+end subroutine glc_final_mct
 
 !=================================================================================
 
-  subroutine glc_setgsmap_mct( mpicom_g, GLCID, gsMap_g )
+subroutine glc_setgsmap_mct( mpicom_g, GLCID, gsMap_g )
+  
+  ! Initialize MCT global seg map
+  
+  use glc_indexing_info, only : local_indices, global_indices, nx, ny, npts
 
-    integer        , intent(in)  :: mpicom_g
-    integer        , intent(in)  :: GLCID
-    type(mct_gsMap), intent(out) :: gsMap_g
+  integer        , intent(in)  :: mpicom_g
+  integer        , intent(in)  :: GLCID
+  type(mct_gsMap), intent(out) :: gsMap_g
 
-    ! Local Variables
+  ! Local Variables
 
-    integer,allocatable :: gindex(:)
-    integer :: i, j, n, nxg, nyg
-    integer :: lsize
-    integer :: ier
+  integer,allocatable :: gindex(:)
+  integer :: i, j, n
+  integer :: ier
 
-    !--- formats ---
-    character(*), parameter :: F02   = "('(glc_SetgsMap_mct) ',a,4es13.6)"
-    character(*), parameter :: subName = "(glc_SetgsMap_mct) "
-    !-------------------------------------------------------------------
+  !--- formats ---
+  character(*), parameter :: F02   = "('(glc_SetgsMap_mct) ',a,4es13.6)"
+  character(*), parameter :: subName = "(glc_SetgsMap_mct) "
+  !-------------------------------------------------------------------
 
-    ! Note that the following assumes that the master task is responsible for all points
+  allocate(gindex(npts))
 
-    if (my_task == master_task) then
+  do j = 1,ny
+     do i = 1,nx
+        n = local_indices(i,j)
+        gindex(n) = global_indices(i,j)
+     enddo
+  enddo
 
-       nxg = glc_grid%nx
-       nyg = glc_grid%ny
-       lsize = nxg*nyg
+  call mct_gsMap_init( gsMap_g, gindex, mpicom_g, GLCID )
 
-       ! Initialize MCT global seg map (the simple method used here only works because the
-       ! master task is responsible for all points)
+  deallocate(gindex)
 
-       allocate(gindex(lsize))
-       do j = 1,nyg
-          do i = 1,nxg
-             n = (j-1)*nxg + i
-             gindex(n) = n
-          enddo
-       enddo
-
-    else
-       
-       nxg = 0
-       nyg = 0
-       lsize = 0
-       allocate(gindex(lsize))
-
-    end if
-
-    call mct_gsMap_init( gsMap_g, gindex, mpicom_g, GLCID, lsize )
-
-    deallocate(gindex)
-
-  end subroutine glc_SetgsMap_mct
+end subroutine glc_SetgsMap_mct
 
 !===============================================================================
 
-  subroutine glc_domain_mct( lsize, gsMap_g, dom_g )
+  subroutine glc_domain_mct( gsMap_g, dom_g )
 
+    use glc_indexing_info, only : npts, nx, ny, local_indices
+    use glad_main, only : glad_get_lat_lon, glad_get_areas
+    
     !-------------------------------------------------------------------
-    integer        , intent(in)    :: lsize
     type(mct_gsMap), intent(inout) :: gsMap_g
     type(mct_ggrid), intent(out)   :: dom_g      
 
     ! Local Variables
 
-    integer :: g,i,j,n,nxg,nyg    ! index
+    integer :: i,j,n            ! index
     real(r8), pointer :: data(:)  ! temporary
     integer , pointer :: idata(:) ! temporary
+    real(r8), allocatable :: lats(:,:)  ! latitude of each point (degrees)
+    real(r8), allocatable :: lons(:,:)  ! longitude of each point (degrees)
+    real(r8), allocatable :: areas(:,:) ! area of each point (square meters)
     character(*), parameter :: subName = "(glc_domain_mct) "
     !-------------------------------------------------------------------
-
-    nxg = glc_grid%nx
-    nyg = glc_grid%ny
 
     ! Initialize mct domain type
 
     call mct_gGrid_init( GGrid=dom_g, CoordChars=trim(seq_flds_dom_coord), &
-       OtherChars=trim(seq_flds_dom_other), lsize=lsize )
+       OtherChars=trim(seq_flds_dom_other), lsize=npts )
 
     ! Initialize attribute vector with special value
 
-    allocate(data(lsize))
+    allocate(data(npts))
     dom_g%data%rAttr(:,:) = -9999.0_R8
     dom_g%data%iAttr(:,:) = -9999
     data(:) = 0.0_R8     
-    call mct_gGrid_importRAttr(dom_g,"mask" ,data,lsize) 
-    call mct_gGrid_importRAttr(dom_g,"frac" ,data,lsize) 
+    call mct_gGrid_importRAttr(dom_g,"mask" ,data,npts) 
+    call mct_gGrid_importRAttr(dom_g,"frac" ,data,npts) 
 
     ! Determine global gridpoint number attribute, GlobGridNum, which is set automatically by MCT
 
     call mct_gsMap_orderedPoints(gsMap_g, my_task, idata)
-    call mct_gGrid_importIAttr(dom_g,'GlobGridNum',idata,lsize)
+    call mct_gGrid_importIAttr(dom_g,'GlobGridNum',idata,npts)
 
     ! Fill in correct values for domain components
     ! lat/lon in degrees, area in radians^2, real-valued mask and frac
-    do j = 1,nyg
-    do i = 1,nxg
-       n = (j-1)*nxg + i
-       data(n) = glc_grid%lons(i)   ! Note: degrees, not radians
-    end do
-    end do
-    call mct_gGrid_importRattr(dom_g,"lon",data,lsize) 
 
-    do j = 1,nyg
-    do i = 1,nxg
-       n = (j-1)*nxg + i
-       data(n) = glc_grid%lats(j)   ! Note: degrees, not radians
+    allocate(lats(nx, ny))
+    allocate(lons(nx, ny))
+    allocate(areas(nx, ny))
+    
+    ! TODO(wjs, 2015-04-02) The following may need a loop over instances
+    call glad_get_lat_lon(ice_sheet, instance_index = 1, &
+         lats = lats, lons = lons)
+    call glad_get_areas(ice_sheet, instance_index = 1, areas = areas)
+    
+    do j = 1,ny
+       do i = 1,nx
+          n = local_indices(i,j)
+          data(n) = lons(i,j)
+       end do
     end do
-    end do
-    call mct_gGrid_importRattr(dom_g,"lat",data,lsize) 
+    call mct_gGrid_importRattr(dom_g,"lon",data,npts) 
 
-    do j = 1,nyg
-    do i = 1,nxg
-       n = (j-1)*nxg + i
-       data(n) = glc_grid%box_areas(i,j)/(radius*radius)
+    do j = 1,ny
+       do i = 1,nx
+          n = local_indices(i,j)
+          data(n) = lats(i,j)
+       end do
     end do
-    end do
-    call mct_gGrid_importRattr(dom_g,"area",data,lsize) 
+    call mct_gGrid_importRattr(dom_g,"lat",data,npts) 
 
-    ! Note: glc_landmask and glc_landfrac are read from file when grid is initialized
-    do j = 1,nyg
-    do i = 1,nxg
-       n = (j-1)*nxg + i
-       data(n) = real(glc_landmask(i,j), r8)  ! data is r8, glc_landmask is i4
+    do j = 1,ny
+       do i = 1,nx
+          n = local_indices(i,j)
+          ! convert from m^2 to radians^2
+          data(n) = areas(i,j)/(radius*radius)
+       end do
     end do
-    end do
+    call mct_gGrid_importRattr(dom_g,"area",data,npts) 
 
-    call mct_gGrid_importRattr(dom_g,"mask",data,lsize) 
-
-    do j = 1,nyg
-    do i = 1,nxg
-       n = (j-1)*nxg + i
-       data(n) = glc_landfrac(i,j)
-    end do
-    end do
-    call mct_gGrid_importRattr(dom_g,"frac",data,lsize) 
+    ! For now, assume mask and frac are 1 everywhere. This may need to be changed in the
+    ! future.
+    data(:) = 1._r8
+    call mct_gGrid_importRattr(dom_g,"mask",data,npts) 
+    call mct_gGrid_importRattr(dom_g,"frac",data,npts) 
 
     deallocate(data)
     deallocate(idata)
+    deallocate(lats)
+    deallocate(lons)
+    deallocate(areas)
 
     if (verbose .and. my_task==master_task) then
        i = mct_aVect_nIattr(dom_g%data)

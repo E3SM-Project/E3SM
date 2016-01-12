@@ -16,7 +16,7 @@ OPTIONS
      -scriptsroot          SCRIPTSROOT directory variable
      -inst_string          INST_STRING variable
      -lnd_grid             LND_GRID variable
-     -glc_grid             CISM_GRID variable
+     -glc_grid             GLC_GRID variable
      -cism_phys            CISM_PHYS variable
 
 The precedence for setting the values of namelist variables is (highest to
@@ -34,19 +34,18 @@ Summary of build-namelist
 
 build-namelist 
 
-  - exists in $CODEROOT/glc/cism/bld (throughout this document, $ALLCAPS
-    denotes an environment or xml variable while $nocaps denotes a perl
-    variable)
+  - exists in $CCSMROOT/components/cism/bld (throughout this document, 
+    $ALLCAPS denotes an xml variable while $nocaps denotes a perl variable)
   
-  - is called from $CASEBUILD/cism.buildnml.csh
+  - is called from $CASEBUILD/cism.buildnml
 
-    (cism.buildnml.csh is now just a wrapper to build-namelist)
+    (cism.buildnml is now just a wrapper to build-namelist)
 
   - allows the user to edit existing namlist variables or introduce new
     variables if that is desired
     (see "user_nl_cism" and "CISM Use Cases" sections below for details)
 
-  - depends on two files in $CODEROOT/glc/cism/bld/namelist_files
+  - depends on two files in $CCSMROOT/components/cism/bld/namelist_files
 
       1. namelist_defaults_cism.xml
       2. namelist_definition_cism.xml
@@ -54,7 +53,7 @@ build-namelist
     (see "namelist_definition_cism.xml" and "namelist defaults.xml" sections
     below for details)
 
-  - is invoked upon every build -AND- upon every call to cism.buildnml.csh
+  - is invoked upon every build -AND- upon every call to cism.buildnml
 
 
 ============================================================================
@@ -99,7 +98,7 @@ namelist_definition_cism.xml
 ============================================================================
 
 The file namelist_definition_cism.xml is located in the directory
-$CODEROOT/glc/cism/bld/namelist_files/. It contains entries for all namelist
+$CCSMROOT/components/cism/bld/namelist_files/. It contains entries for all namelist
 variables that can be output by build-namelist.
 
 As mentioned in the "CISM Use Cases" section below, a modified copy of this
@@ -179,7 +178,7 @@ namelist_defaults_cism.xml
 ============================================================================
 
 The file namelist_defaults_cism.xml is located in the directory
-$CODEROOT/glc/cism/bld/namelist_files/. It provides default values for
+$CCSMROOT/components/cism/bld/namelist_files/. It provides default values for
 variables contained in the input namelist definition file. 
 
 The build-namelist script is passed the glc_grid, lnd_grid and cism_phys
@@ -249,36 +248,32 @@ build-namelist has four perl objects that it uses
 
        my $nl = Build::Namelist->new();
 
---- Required $SCRIPTSROOT/ccsm_utils/Tools/perl5lib perl files  ---
+--- Required $SCRIPTSROOT/../perl5lib perl files  ---
 
 The root directory for the perl5 required utilities is
 
-  my $perl5lib_dir = ${SCRIPTSROOT}/ccsm_utils/Tools/perl5lib";
+  my $perl5lib_dir = ${SCRIPTSROOT}/../perl5lib";
 
 This directory contains all the required perl files:
 
-  1. The XML::Lite module is required to parse the XML files.
-
-       $perl5lib_dir/XML/Lite.pm
-
-  2. The Build::Config module provides utilities to access the configuration
+  1. The Build::Config module provides utilities to access the configuration
      information in the config_cache.xml file
 
        $perl5lib_dir/Build/Config.pm
 
-  3. The Build::NamelistDefinition module provides utilities to validate
+  2. The Build::NamelistDefinition module provides utilities to validate
      that the output namelists are consistent with the namelist definition
      file
 
        $perl5lib_dir/Build/NamelistDefinition.pm
 
-  4. The Build::NamelistDefaults module provides a utility to obtain default
+  3. The Build::NamelistDefaults module provides a utility to obtain default
      values of namelist variables based on finding a best fit with the
      attributes specified in the defaults file.
 
        $perl5lib_dir/Build/NamelistDefaults.pm
 
-  5. The Build::Namelist module provides utilities to parse input namelists,
+  4. The Build::Namelist module provides utilities to parse input namelists,
      to query and modify namelists, and to write output namelists.
 
        $perl5lib_dir/Build/Namelist.pm
@@ -479,7 +474,7 @@ Q: Rather than making the same changes to user_nl_cism over and over, can
    I change the default values used by build-namelist?
 
 A: Yes, you can modify the namelist_defaults_cism.xml file in
-   $CODEROOT/glc/cism/bld/namelist_files to change the default values. For
+   $CCSMROOT/components/cism/bld/namelist_files to change the default values. For
    example:
 
    1. If you want to change geothermal from -5.e-2 to -6.e-2, you
@@ -514,7 +509,7 @@ A: Yes, you can modify the namelist_defaults_cism.xml file in
         ntem = 2.
         ...
 
-      for any runs with CISM_GRID=gland5, while not changing the value for
+      for any runs with GLC_GRID=gland5, while not changing the value for
       other grids.
 
 ----------------------------------------------------------------------------

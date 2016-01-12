@@ -17,7 +17,10 @@
 # -----------------------------------------------------------------------------
 cd $cism_confIOdir
 
-foreach file (glide glint glint_mbal)
+# NOTE(wjs, 2015-04-03): glint is no longer used by CESM. However, I'm keeping
+# the glint stuff here for now so that we can keep the glint default i/o files
+# up-to-date (since I use this mechanism to regenerate the default i/o files)
+foreach file (glide glad glad_mbal glint glint_mbal)
   set file_varsdef = ${file}_vars.def
   set file_ioF90 = ${file}_io.F90
   if (-f ${file_varsdef}) then

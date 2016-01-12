@@ -11,23 +11,15 @@ begin
 ; must contain regrid information from a CLM grid to a GLC grid
 ; -------------------------------------------------------------
 
-; infileS    = addfile ("map_T31_to_GLC_Gland20km_bilin_da_100303.nc","r")
-; infileS    = addfile ("map_T31_to_GLC_Gland10km_bilin_da_100304.nc","r")
-; infileS    = addfile ("map_T31_to_GLC_Gland5km_bilin_da_100304.nc","r")
-; infileS    = addfile ("map_fv1.9x2.5_to_GLC_Gland20km_bilin_da_100304.nc","r")
-; infileS    = addfile ("map_fv1.9x2.5_to_GLC_Gland10km_bilin_da_100304.nc","r")
-; infileS    = addfile ("map_fv1.9x2.5_to_GLC_Gland5km_bilin_da_100304.nc","r")
-infileS    = addfile ("map_fv0.9x1.25_to_GLC_Gland20km_bilin_da_100304.nc","r")
-; infileS    = addfile ("map_fv0.9x1.25_to_GLC_Gland10km_bilin_da_100304.nc","r")
-; infileS    = addfile ("map_fv0.9x1.25_to_GLC_Gland5km_bilin_da_100304.nc","r")
+infileS = addfile("map_fv0.9x1.25_TO_gland_aave.141105.nc","r")
 
 ; ---------------------------------------
 ; read in corresponding CLM fracdata file
 ; ---------------------------------------
 
-; infileF    = addfile ("/fis01/cgd/cseg/csm/inputdata/lnd/clm2/griddata/fracdata_48x96_gx3v7_c090915.nc","r")
-; infileF    = addfile ("/fis01/cgd/cseg/csm/inputdata/lnd/clm2/griddata/fracdata_1.9x2.5_gx1v6_c090206.nc","r")
-infileF    = addfile ("/fis01/cgd/cseg/csm/inputdata/lnd/clm2/griddata/fracdata_0.9x1.25_gx1v6_c090317.nc","r")
+; infileF    = addfile ("$CESMDATAROOT/inputdata/lnd/clm2/griddata/fracdata_48x96_gx3v7_c090915.nc","r")
+; infileF    = addfile ("$CESMDATAROOT/inputdata/lnd/clm2/griddata/fracdata_1.9x2.5_gx1v6_c090206.nc","r")
+infileF    = addfile ("$CESMDATAROOT/inputdata/lnd/clm2/griddata/fracdata_0.9x1.25_gx1v6_c090317.nc","r")
 
 ; ------------------------------------------------
 ; read in necessary information from the two files
@@ -84,7 +76,7 @@ do j=0,nlon_map-1
    do i=0,nlat_map-1
       ij = (i*nlon_map) + j
       glcmask2D(i,j) = 0
-      if( (glcmask1D(ij) .eq. 1) .and. (landmask(i,j) .eq. 1)) then
+      if( (glcmask1D(ij) .eq. 1) ) then
          glcmask2D(i,j) = 1
       end if
    end do
@@ -94,30 +86,14 @@ end do
 ; write out GLCMASKs to new glcmaskdata file
 ; ------------------------------------------
 
-; outfile = "glcmaskdata_48x96_Gland20km.nc"
-; outfile = "glcmaskdata_48x96_Gland10km.nc"
-; outfile = "glcmaskdata_48x96_Gland5km.nc"
-; outfile = "glcmaskdata_1.9x2.5_Gland20km.nc"
-; outfile = "glcmaskdata_1.9x2.5_Gland10km.nc"
-; outfile = "glcmaskdata_1.9x2.5_Gland5km.nc"
-outfile = "glcmaskdata_0.9x1.25_Gland20km.nc"
-; outfile = "glcmaskdata_0.9x1.25_Gland10km.nc"
-; outfile = "glcmaskdata_0.9x1.25_Gland5km.nc"
+outfile = "glcmaskdata_0.9x1.25_gland_c141105.nc"
 system("/bin/rm -f " + outfile)
 
 fout1 = addfile(outfile,"c")
 
 globalAtt             = True
-; globalAtt@title       = "GLCMASK file for T31 to Glimmer Greenland 20 km Grid"
-; globalAtt@title       = "GLCMASK file for T31 to Glimmer Greenland 10 km Grid"
-; globalAtt@title       = "GLCMASK file for T31 to Glimmer Greenland 5 km Grid"
-; globalAtt@title       = "GLCMASK file for fv1.9x2.5 to Glimmer Greenland 20 km Grid"
-; globalAtt@title       = "GLCMASK file for fv1.9x2.5 to Glimmer Greenland 10 km Grid"
-; globalAtt@title       = "GLCMASK file for fv1.9x2.5 to Glimmer Greenland 5 km Grid"
-globalAtt@title       = "GLCMASK file for fv0.9x1.25 to Glimmer Greenland 20 km Grid"
-; globalAtt@title       = "GLCMASK file for fv0.9x1.25 to Glimmer Greenland 10 km Grid"
-; globalAtt@title       = "GLCMASK file for fv0.9x1.25 to Glimmer Greenland 5 km Grid"
-globalAtt@history     = "SCRIP to GLCMASK conversion " + systemfunc("date")
+globalAtt@title = "GLCMASK file for fv0.9x1.25, for Greenland"
+globalAtt@history     = "SCRIP to GLCMASK conversion, using models/glc/cism/tools/scrip2CLMoverlap.nc " + systemfunc("date")
 fileattdef( fout1, globalAtt )
 
 dimNames = (/"lsmlon", "lsmlat" /)  

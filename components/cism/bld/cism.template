@@ -1,0 +1,81 @@
+#! /usr/bin/env perl
+use strict;
+
+if ($#ARGV == -1) {
+    die " ERROR cism.buildn_usernl: must specify a caseroot input argument";
+}
+my ($CASEROOT) = @ARGV;
+my $sysmod;
+
+my $CCSMROOT  = `./xmlquery CCSMROOT  -value`;
+my $CASEBUILD = `./xmlquery CASEBUILD -value`;
+
+#-------------------------------------------------------------------------------
+# stage variable definition files and related scripts and templates to
+# $CASEBUILD/cismIOconf, so users can modify easily modify IO fields
+#-------------------------------------------------------------------------------
+
+my $IOCONF_DIR = "$CASEBUILD/cismIOconf";
+my $GLIMMER_CISM_ROOT = "$CCSMROOT/components/cism/glimmer-cism";
+if (! -d "$IOCONF_DIR") {
+    $sysmod = "mkdir $IOCONF_DIR";
+    system($sysmod) == 0 or die "ERROR cism.build_usernl: $sysmod failed: $?\n";
+}
+$sysmod = "cp $CCSMROOT/components/cism/bld/cismIO/README.cismIO        $IOCONF_DIR/";
+system($sysmod) == 0 or die "ERROR cism.build_usernl: $sysmod failed: $?\n";
+
+$sysmod = "cp $GLIMMER_CISM_ROOT/utils/build/generate_ncvars.py  $IOCONF_DIR/";
+system($sysmod) == 0 or die "ERROR cism.build_usernl: $sysmod failed: $?\n";
+
+$sysmod = "cp $GLIMMER_CISM_ROOT/libglimmer/ncdf_template.F90.in $IOCONF_DIR/";
+system($sysmod) == 0 or die "ERROR cism.build_usernl: $sysmod failed: $?\n";
+
+$sysmod = "cp $GLIMMER_CISM_ROOT/libglide/glide_vars.def         $IOCONF_DIR/";
+system($sysmod) == 0 or die "ERROR cism.build_usernl: $sysmod failed: $?\n";
+
+$sysmod = "cp $GLIMMER_CISM_ROOT/libglad/glad_vars.def         $IOCONF_DIR/";
+system($sysmod) == 0 or die "ERROR cism.build_usernl: $sysmod failed: $?\n";
+
+$sysmod = "cp $GLIMMER_CISM_ROOT/libglad/glad_mbal_vars.def    $IOCONF_DIR/";
+system($sysmod) == 0 or die "ERROR cism.build_usernl: $sysmod failed: $?\n";
+
+# NOTE(wjs, 2015-04-03) glint is no longer used by CESM. However, I'm keeping
+# the glint stuff here for now so that we can keep the glint default i/o files
+# up-to-date (since I use this mechanism to regenerate the default i/o files)
+
+$sysmod = "cp $GLIMMER_CISM_ROOT/libglint/glint_vars.def         $IOCONF_DIR/";
+system($sysmod) == 0 or die "ERROR cism.build_usernl: $sysmod failed: $?\n";
+
+$sysmod = "cp $GLIMMER_CISM_ROOT/libglint/glint_mbal_vars.def    $IOCONF_DIR/";
+system($sysmod) == 0 or die "ERROR cism.build_usernl: $sysmod failed: $?\n";
+
+#-------------------------------------------------------------------------------
+# create cism.buildIO.csh script to allow users to modify the IO fields
+#-------------------------------------------------------------------------------
+
+my $buildIO_script = "$IOCONF_DIR/cism.buildIO.csh";
+open(file,">$buildIO_script") or die "Could not open file $buildIO_script to write";
+
+my $output = <<END_OUTPUT;
+#! /bin/csh -f
+
+# -----------------------------------------------------------------------------
+# NOTICE: This script was custom-generated for $CASEROOT.
+#
+#         DO NOT COPY to another case!
+#
+#         Use this script ONLY in $CASEROOT.
+# -----------------------------------------------------------------------------
+
+set sourcemod_dir  = $CASEROOT/SourceMods/src.cism/glimmer-cism
+set cism_confIOdir = $IOCONF_DIR
+
+END_OUTPUT
+
+$sysmod = "cat $CCSMROOT/components/cism/bld/cismIO/cism.buildIO.template.csh >> $buildIO_script";
+system($sysmod) == 0 or die "ERROR cism.build_usernl: $sysmod failed: $?\n";
+
+$sysmod = "chmod u+x $buildIO_script";
+system($sysmod) == 0 or die "ERROR cism.build_usernl: $sysmod failed: $?\n";
+
+exit(0);

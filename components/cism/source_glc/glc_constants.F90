@@ -20,8 +20,7 @@
 
   use glc_kinds_mod
   use shr_const_mod, only: radius=> SHR_CONST_REARTH,&
-        	 	   tkfrz=>  SHR_CONST_TKFRZ,&
-			   pi=>     SHR_CONST_PI
+        	 	   tkfrz=>  SHR_CONST_TKFRZ
 
 !lipscomb - Previously, stdout was defined in glc_constants.
 !           Moved to glimmer_paramets so that it can be accessed from
@@ -47,15 +46,11 @@
 
   logical, parameter :: verbose = .false.
 
-  integer ::   &
-     glc_nec              ! number of elevation classes
-                          ! set in glc_cpl_indices_set - consistent with clm now
-
   logical ::   &
      glc_smb              ! if true, get surface mass balance from CLM via coupler
                           ! (in multiple elevation classes)
                           ! if false, use PDD scheme in GLIMMER
-                          ! set in glc_cpl_indices_set - based on glc_nec
+                          ! set in glc_cpl_indices_set
 
    !-----------------------------------------------------------------
    !  common formats for formatted output
@@ -86,9 +81,7 @@
  
    real (r8), parameter, public :: &
       c0     =    0.0_r8   ,&
-      c1     =    1.0_r8   ,&
-      eps    = 1.0e-10_r8  ,&
-      radian = 180.0_r8/pi
+      c1     =    1.0_r8
 
 !EOP
 !

@@ -6,8 +6,6 @@
 
 * glc2scripConvert.ncl                  - converts GLC native grids to SCRIP 
                                           formatted grid files
-* scrip_make_wgts_CCSM_to_GLC_bilin.csh - runs SCRIP using a GLC grid in SCRIP
-                                          format and a CCSM grid
-* scrip2CLMoverlap.ncl                  - creates a GLC overlap file from a SCRIP
+* scrip2CLMoverlap.ncl                  - creates a GLC overlap file from an ESMF
                                           interpolation weight file and a CLM
                                           fracdata file

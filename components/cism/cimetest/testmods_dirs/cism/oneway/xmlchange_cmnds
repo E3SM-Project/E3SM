@@ -1,1 +1,2 @@
 ./xmlchange GLC_TWO_WAY_COUPLING=FALSE
+./xmlchange GLC_TWO_WAY_COUPLING=FALSE

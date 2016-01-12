@@ -4,13 +4,13 @@ module glc_override_frac
 
   !---------------------------------------------------------------------------
   ! !DESCRIPTION:
-  ! This module provides functionality to allow overriding the ice fractions that are
-  ! sent to the coupler
+  ! This module provides functionality to allow overriding the ice fractions (i.e., the
+  ! ice_covered field) and topographic heights that are sent to the coupler
 
   ! !USES:
 
   use glc_kinds_mod
-
+  
   implicit none
   private
   save
@@ -22,18 +22,22 @@ module glc_override_frac
 
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: read_namelist        ! read namelist setting options in this module
-  private :: apply_increase_frac  ! apply increase_frac to glc frac
-  private :: apply_decrease_frac  ! apply decrease_frac to glc frac
-  private :: apply_rearrange_freq ! apply rearrange_freq to glc frac
+  private :: apply_increase_frac
+  private :: apply_decrease_frac
+  private :: apply_rearrange_freq
   private :: time_since_baseline  ! return time (days) since the baseline for adjustments
   
   
   ! !PRIVATE DATA MEMBERS:
   logical(log_kind) :: enable_frac_overrides  ! whether the overrides in this module are enabled for this run
   integer(int_kind) :: override_delay         ! time delay before beginning any overrides (days)
-  real(r8)          :: decrease_frac          ! fractional decrease per day (multiplicative) (should be positive)
-  real(r8)          :: increase_frac          ! fractional increase per day (additive)
-  integer(int_kind) :: rearrange_freq         ! frequency (days) at which we flip the order of the elevation classes
+  real(r8)          :: decrease_frac          ! fractional decrease per day (should be positive)
+  real(r8)          :: increase_frac          ! fractional increase per day
+  integer(int_kind) :: rearrange_freq         ! frequency (days) at which we rearrange elevation classes
+
+  ! Assumed maximum topographic height. It's okay for heights to go above this value, but
+  ! they may not be handled exactly as desired by the overrides here.
+  real(r8), parameter :: max_height = 3500._r8
   !---------------------------------------------------------------------------
 
 contains
@@ -150,145 +154,123 @@ contains
   end function frac_overrides_enabled
 
   !-----------------------------------------------------------------------
-  subroutine do_frac_overrides(gfrac, ice_sheet_grid_mask)
+  subroutine do_frac_overrides(ice_covered, topo, ice_sheet_grid_mask)
     !
     ! !DESCRIPTION:
     ! Do all overrides of glc fraction
     !
     ! !USES:
     use shr_log_mod     , only : errMsg => shr_log_errMsg
-    use glc_constants   , only : glc_nec
-    use glc_global_grid , only : glc_grid
     !
     ! !ARGUMENTS:
-    real(r8), intent(inout) :: gfrac(:, :, 0:)
+    real(r8), intent(inout) :: ice_covered(:,:)
+    real(r8), intent(inout) :: topo(:,:)
     real(r8), intent(in)    :: ice_sheet_grid_mask(:,:)
     !
     ! !LOCAL VARIABLES:
     
     character(len=*), parameter :: subname = 'do_frac_overrides'
     !-----------------------------------------------------------------------
-    
-    SHR_ASSERT_ALL((ubound(gfrac) == (/glc_grid%nx, glc_grid%ny, glc_nec/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(ice_sheet_grid_mask) == (/glc_grid%nx, glc_grid%ny/)), errMsg(__FILE__, __LINE__))
 
-    call apply_increase_frac(gfrac, ice_sheet_grid_mask)
-    call apply_decrease_frac(gfrac, ice_sheet_grid_mask)
-    call apply_rearrange_freq(gfrac, ice_sheet_grid_mask)
+    call apply_increase_frac(ice_covered, topo, ice_sheet_grid_mask)
+    call apply_decrease_frac(ice_covered, topo, ice_sheet_grid_mask)
+    call apply_rearrange_freq(topo, ice_sheet_grid_mask)
 
   end subroutine do_frac_overrides
 
   !-----------------------------------------------------------------------
-  subroutine apply_increase_frac(gfrac, ice_sheet_grid_mask)
+  subroutine apply_increase_frac(ice_covered, topo, ice_sheet_grid_mask)
     !
     ! !DESCRIPTION:
-    ! Apply increase_frac to gfrac
+    ! Apply increase_frac to ice_covered
     !
     ! !USES:
     !
     ! !ARGUMENTS:
-    real(r8), intent(inout) :: gfrac(:, :, 0:)
+    real(r8), intent(inout) :: ice_covered(:,:)
+    real(r8), intent(in)    :: topo(:,:)
     real(r8), intent(in)    :: ice_sheet_grid_mask(:,:)
     !
     ! !LOCAL VARIABLES:
-    real(r8) :: current_increase  ! additive increase
-    integer(int_kind) :: i, j     ! indices
+    real(r8) :: increase_topo_threshold
 
     character(len=*), parameter :: subname = 'apply_increase_frac'
     !-----------------------------------------------------------------------
     
     if (time_since_baseline() > 0) then
-       current_increase = time_since_baseline() * increase_frac
+       ! When time_since_baseline * increase_frac is 0, we'll set elevations >= max_height
+       !   to ice_covered = 1
+       ! When time_since_baseline * increase_frac is 1, we'll set all elevations >= 0 to
+       !   ice_covered = 1
+       ! In between those times, we'll use an intermediate threshold
+       increase_topo_threshold = (1._r8 - time_since_baseline() * increase_frac) * max_height
+       increase_topo_threshold = max(increase_topo_threshold, 0._r8)
+       increase_topo_threshold = min(increase_topo_threshold, max_height)
 
-       do j = 1, size(gfrac,2)
-          do i = 1, size(gfrac,1)
-             if (ice_sheet_grid_mask(i,j) > 0._r8) then
-                ! Increase the area of all elevation classes within the icemask
-                gfrac(i, j, 1:) = gfrac(i, j, 1:) + current_increase
-
-                ! Make sure total glacier area does not exceed 1
-                if (sum(gfrac(i, j, 1:)) > 1._r8) then
-                   gfrac(i, j, 1:) = gfrac(i, j, 1:) / sum(gfrac(i, j, 1:))
-                end if
-
-                ! Set bare land fraction to be the remainder of the grid cell
-                gfrac(i,j,0) = 1._r8 - sum(gfrac(i, j, 1:))
-                ! Correct for rounding errors:
-                gfrac(i,j,0) = max(gfrac(i,j,0), 0._r8)
-             end if
-          end do
-       end do
-
+       where (ice_sheet_grid_mask > 0._r8 .and. topo >= increase_topo_threshold)
+          ice_covered = 1._r8
+       end where
     end if
 
   end subroutine apply_increase_frac
 
   !-----------------------------------------------------------------------
-  subroutine apply_decrease_frac(gfrac, ice_sheet_grid_mask)
+  subroutine apply_decrease_frac(ice_covered, topo, ice_sheet_grid_mask)
     !
     ! !DESCRIPTION:
-    ! Apply decrease_frac to gfrac
+    ! Apply decrease_frac to ice_covered
     !
     ! !USES:
     !
     ! !ARGUMENTS:
-    real(r8), intent(inout) :: gfrac(:, :, 0:)
+    real(r8), intent(inout) :: ice_covered(:,:)
+    real(r8), intent(in)    :: topo(:,:)
     real(r8), intent(in)    :: ice_sheet_grid_mask(:,:)
     !
     ! !LOCAL VARIABLES:
-    real(r8) :: current_decrease  ! multiplicative decrease
-    integer(int_kind) :: i, j     ! indices
+    real(r8) :: decrease_topo_threshold
     
     character(len=*), parameter :: subname = 'apply_decrease_frac'
     !-----------------------------------------------------------------------
-    
+
     if (time_since_baseline() > 0) then
-       current_decrease = 1.0_r8 - (time_since_baseline() * decrease_frac)
-       if (current_decrease < 0._r8) then
-          current_decrease = 0._r8
-       end if
+       ! When time_since_baseline * decrease_frac is 0, we'll set elevations < 0 to
+       !   ice_covered = 0
+       ! When time_since_baseline * decrease_frac is 1, we'll set all elevations < max_height
+       !   to ice_covered = 0
+       ! In between those times, we'll use an intermediate threshold
+       decrease_topo_threshold = (time_since_baseline() * decrease_frac) * max_height
+       decrease_topo_threshold = max(decrease_topo_threshold, 0._r8)
+       decrease_topo_threshold = min(decrease_topo_threshold, max_height)
 
-       do j = 1, size(gfrac,2)
-          do i = 1, size(gfrac,1)
-             if (ice_sheet_grid_mask(i,j) > 0._r8) then
-                ! Decrease the area of all elevation classes within the icemask
-                gfrac(i, j, 1:) = gfrac(i, j, 1:) * current_decrease
-
-                ! Set bare land fraction to be the remainder of the grid cell
-                gfrac(i,j,0) = 1._r8 - sum(gfrac(i, j, 1:))
-                ! Correct for rounding errors:
-                gfrac(i,j,0) = max(gfrac(i,j,0), 0._r8)
-             end if
-          end do
-       end do
+       where (ice_sheet_grid_mask > 0._r8 .and. topo < decrease_topo_threshold)
+          ice_covered = 0._r8
+       end where
     end if
-
+    
   end subroutine apply_decrease_frac
 
   !-----------------------------------------------------------------------
-  subroutine apply_rearrange_freq(gfrac, ice_sheet_grid_mask)
+  subroutine apply_rearrange_freq(topo, ice_sheet_grid_mask)
     !
     ! !DESCRIPTION:
-    ! Apply rearrange_freq to gfrac.
+    ! Apply rearrange_freq to topographic heights.
     !
     ! Example: if rearrange_freq = 3, then for the first 3 days, there will be no
-    ! rearrangement, for the next 3 days (days 4-6) the columns will be swapped, for the
-    ! next 3 days (days 7-9) the columns will be back to normal, etc.
+    ! rearrangement, for the next 3 days (days 4-6) the topographic heights will be
+    ! rearranged, for the next 3 days (days 7-9) the topographic heights will be back to
+    ! normal, etc.
     !
     ! If rearrange_frac is <= 0, no rearrangement is done.
     !
     ! !USES:
     !
     ! !ARGUMENTS:
-    real(r8), intent(inout) :: gfrac(:, :, 0:)
+    real(r8), intent(inout) :: topo(:,:)
     real(r8), intent(in)    :: ice_sheet_grid_mask(:,:)
     !
     ! !LOCAL VARIABLES:
-    integer(int_kind) :: nec           ! number of elevation classes
-    integer(int_kind) :: ec            ! elevation class index
-    integer(int_kind) :: ec_swap       ! elevation class to swap with
     integer(int_kind) :: num_intervals ! number of intervals of rearrange_freq
-    real(r8), allocatable :: gfrac_temp(:,:)  ! temporary gfrac for one elevation class
 
     character(len=*), parameter :: subname = 'apply_rearrange_freq'
     !-----------------------------------------------------------------------
@@ -297,22 +279,11 @@ contains
        ! num_intervals will be 0 in the first interval, 1 in the second, etc.
        num_intervals = time_since_baseline() / rearrange_freq
 
-       ! Swap elevation classes half the time
+       ! Rearrange topographic heights half the time
        if (modulo(num_intervals, 2) == 1) then
-          allocate(gfrac_temp(size(gfrac,1), size(gfrac,2)))
-
-          ! Swap elevation classes: swap first with last, second with second-to-last, etc.
-          nec = ubound(gfrac,3)
-          do ec = 1, nec/2
-             ec_swap = nec - (ec - 1)
-             where(ice_sheet_grid_mask > 0._r8)
-                gfrac_temp(:,:) = gfrac(:,:,ec)
-                gfrac(:,:,ec) = gfrac(:,:,ec_swap)
-                gfrac(:,:,ec_swap) = gfrac_temp(:,:)
-             end where
-          end do
-             
-          deallocate(gfrac_temp)
+          where(ice_sheet_grid_mask > 0._r8)
+             topo = max(0._r8, max_height - topo)
+          end where
        end if
     end if
     

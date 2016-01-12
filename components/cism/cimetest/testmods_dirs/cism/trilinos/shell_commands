@@ -1,1 +1,2 @@
 ./xmlchange CISM_USE_TRILINOS=TRUE
+./xmlchange CISM_USE_TRILINOS=TRUE
