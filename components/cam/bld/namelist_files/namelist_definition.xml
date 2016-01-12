@@ -3383,7 +3383,7 @@ Default: set by build-namelist
 
 <entry id="cam_chempkg" type="char*16" category="build"
        group="phys_ctl_nl" valid_values="waccm_mozart,waccm_ghg,trop_mozart,
-                                         trop_ghg,trop_bam,trop_mam3,trop_mam4,trop_mam7,
+                                         trop_ghg,trop_bam,trop_mam3,trop_mam4,trop_mam4_mom,trop_mam7,trop_mam9,
                                          super_fast_llnl,super_fast_llnl_mam3,none " >
 Name of the CAM chemistry package.  N.B. this variable may not be set by
 the user.  It is set by build-namelist via information in the configure
@@ -3644,7 +3644,7 @@ Default: FALSE
 </entry>
 
 
-<entry id="mode_defs" type="char*256(60)"  category="radiation"
+<entry id="mode_defs" type="char*256(100)"  category="radiation"
        group="rad_cnst_nl" valid_values="" >
 Definitions for the aerosol modes that may be used in the rad_climate and
 rad_diag_* variables.
@@ -4456,6 +4456,99 @@ The time of day (seconds) corresponding to <varname>ssaerodep_flx_fixed_ymd</var
 at which the prescribed aerosol flux data is fixed
 if <varname>saerodep_flx_type</varname> is 'FIXED'.
 Default: 0 seconds
+</entry>
+
+<entry id="mam_mom_datapath" type="char*256" input_pathname="abs" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+Full pathname of the directory that contains the files specified in
+<varname>mam_mom_filelist</varname>.
+Default: 'atm/cam/chem/trop_mam/marine_BGC/'
+</entry>
+
+<entry id="mam_mom_filename" type="char*256" input_pathname="rel:mam_mom_datapath" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+Filename of dataset for prescribed marine organic matter ocean concentrations.
+Default: 'monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc'
+</entry>
+
+<entry id="mam_mom_filelist" type="char*256" input_pathname="rel:mam_mom_datapath" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+Filename of file that contains a sequence of filenames for prescribed
+marine organic matter ocean concentrations.  The filenames in this
+file are relative to the directory specified
+by <varname>mam_mom_datapath</varname>.
+Default: none
+</entry>
+
+<entry id="mam_mom_rmfile" type="logical" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+Remove the file containing prescribed aerosol deposition fluxes from
+local disk when no longer needed.
+Default: FALSE
+</entry>
+
+<entry id="mam_mom_specifier" type="char*32(22)" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+Names of variables containing aerosol data in the prescribed aerosol datasets.
+Default: 'chla:CHL1','mpoly:TRUEPOLYC','mprot:TRUEPROTC','mlip:TRUELIPC'
+</entry>
+
+<entry id="mam_mom_datatype" type="char*32" category="cam_chem"
+       group="mam_mom_nl" valid_values="CYCLICAL,SERIAL,INTERP_MISSING_MONTHS,FIXED" >
+Type of time interpolation for data in mam_mom files.
+Can be set to 'CYCLICAL', 'SERIAL', 'INTERP_MISSING_MONTHS', or 'FIXED'.
+Default: 'CYCLICAL'
+</entry>
+
+<entry id="mam_mom_cycle_yr" type="integer" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+The  cycle year of the prescribed aerosol flux data
+if <varname>mam_mom_type</varname>  is 'CYCLICAL'.
+Format: YYYY
+Default: 1
+</entry>
+
+<entry id="mam_mom_fixed_ymd" type="integer" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+The date at which the prescribed aerosol flux data is fixed
+if <varname>mam_mom_type</varname> is 'FIXED'.
+Format: YYYYMMDD
+Default: 0
+</entry>
+
+<entry id="mam_mom_fixed_tod" type="integer" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+The time of day (seconds) corresponding to <varname>mam_mom_fixed_ymd</varname>
+at which the prescribed aerosol flux data is fixed
+if <varname>mam_mom_type</varname> is 'FIXED'.
+Default: 0 seconds
+</entry>
+
+<entry id="mam_mom_bubble_thickness" type="real" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+Bubble film thickness (in m) for marine organic aerosol emission
+mechanism.  The physically reasonable range is approximately
+(0.1 - 1) x 10^ -6.
+Default: 0.1e-6
+</entry>
+
+<entry id="mam_mom_mixing_state" type="integer" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+Switch to select mixing state assumption in marine organic aerosol
+code. Currently implemented options: 0 : total external mixture, add
+to mass; 1 : total external mixture, replace mass; 2 : total internal
+mixture, add to mass; 3 : total internal mixture, replace mass.
+Default:0
+</entry>
+
+<entry id="mam_mom_parameterization" type="integer" category="cam_chem"
+       group="mam_mom_nl" valid_values="" >
+Selection of alternate parameterizations for marine organic matter
+emissions.  Set fmoa=1 for Burrows et al., 2014 parameterization;
+fmoa=2 for Gantt et al. (2011, ACP) parameterization; fmoa=3 for
+simple parameterization based on Quinn et al., 2014; fmoa=4 for
+Rinaldi et al. (JGR, 2013).
+Default:1
 </entry>
 
 <entry id="prescribed_ghg_datapath" type="char*256" input_pathname="abs" category="cam_chem"
