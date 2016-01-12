@@ -11,6 +11,7 @@ module mo_gas_phase_chemdr
   use spmd_utils,       only : iam
   use phys_control,     only : phys_getopts
   use carma_flags_mod,  only : carma_do_hetchem
+  use cam_logfile,      only : iulog
 
   implicit none
   save
@@ -26,15 +27,17 @@ module mo_gas_phase_chemdr
   integer :: het1_ndx
   integer :: ndx_cldfr, ndx_cmfdqr, ndx_nevapr, ndx_cldtop, ndx_prain, ndx_sadsulf
   integer :: ndx_h2so4
+  integer :: inv_ndx_cnst_o3, inv_ndx_m
 
   character(len=fieldname_len),dimension(rxntot-phtcnt) :: rxn_names
   character(len=fieldname_len),dimension(phtcnt)        :: pht_names
   character(len=fieldname_len),dimension(rxt_tag_cnt)   :: tag_names
   character(len=fieldname_len),dimension(extcnt)        :: extfrc_name
   logical :: convproc_do_aer 
+
 contains
 
-  subroutine gas_phase_chemdr_inti()
+  subroutine gas_phase_chemdr_inti(chem_name)
 
     use mo_chem_utls,      only : get_spc_ndx, get_extfrc_ndx, get_inv_ndx, get_rxt_ndx
     use cam_history,       only : addfld, horiz_only
@@ -48,6 +51,8 @@ contains
     use rad_constituents,  only : rad_cnst_get_info
 
     implicit none
+
+    character(len=*), intent(in) :: chem_name
 
     character(len=3)  :: string
     integer           :: n, m
@@ -147,6 +152,20 @@ contains
 
     if (carma_do_hetchem) ndx_sadsulf= pbuf_get_index('SADSULF')
     
+!-----------------------------------------------------------------------
+! get fixed oxidant (troposphere) index for Linoz_MAM
+!-----------------------------------------------------------------------
+   
+     inv_ndx_cnst_o3 = get_inv_ndx( 'cnst_O3' ) ! prescribed O3 oxidant field
+     inv_ndx_m       = get_inv_ndx( 'M' )        ! airmass.  Elsewhere this variable is known as m_ndx
+     
+     if ( chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' ) then
+       if ( inv_ndx_cnst_o3 < 1 ) then
+          call endrun('ERROR: chem_name = '//trim(chem_name)//' requies cnst_O3 fixed oxidant field. Use cnst_O3:O3 in namelist tracer_cnst_specifier')
+       end if
+     end if
+
+
   end subroutine gas_phase_chemdr_inti
 
 
@@ -459,6 +478,21 @@ contains
     sad_sage(:,:) = 0.0_r8
     call strato_sad_set( pmid, sad_sage, ncol, lchnk)
 
+    !-----------------------------------------------------------------------      
+    !        ... set tropospheric ozone for Linoz_MAM  (pjc, 2015)
+    !-----------------------------------------------------------------------
+    if ( chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' ) then
+!     write(iulog,*) 'Set tropospheric ozone for linoz_mam: inv_ndx_cnst_o3 =',inv_ndx_cnst_o3
+      do k = 1, pver                !Following loop logic from below.  However, reordering loops can get rid of IF statement.
+         do i = 1, ncol
+            if( k > troplev(i) ) then
+              vmr(i,k,o3_ndx) = invariants(i,k,inv_ndx_cnst_o3) / invariants(i,k,inv_ndx_m)   ! O3 and cnst_o3
+            endif
+         end do
+      end do
+    end if
+
+
     if (carma_do_hetchem) then 
     !-----------------------------------------------------------------------      
     !        ... use CARMA sulfate bins for surface area
@@ -698,7 +732,8 @@ contains
        call outfld( tag_names(i), reaction_rates(:ncol,:,rxt_tag_map(i)), ncol, lchnk )
     enddo
 
-    if ( has_linoz_data ) then
+    if ( has_linoz_data .and. .not. &
+       (chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom') ) then
        ltrop_sol(:ncol) = troplev(:ncol)
     else
        ltrop_sol(:ncol) = 0 ! apply solver to all levels

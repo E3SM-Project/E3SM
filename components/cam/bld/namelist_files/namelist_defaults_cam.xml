@@ -58,6 +58,7 @@
 <ncdata dyn="fv"  hgrid="10x15"     nlev="64"  ic_ymd="101"     >atm/cam/inic/fv/cami_0000-01-01_10x15_L64_c081013.nc</ncdata>
 
 <ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="30"  chem="trop_mam3" ic_ymd="101">atm/cam/inic/fv/cami-mam3_0000-01-01_1.9x2.5_L30_c090306.nc</ncdata>
+<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="30"  chem="linoz_mam3" ic_ymd="101">atm/cam/inic/fv/cami-mam3_0000-01-01_1.9x2.5_L30_c090306.nc</ncdata>
 
 <ncdata dyn="fv"  hgrid="0.47x0.63" nlev="26"  ocn="aquaplanet"  ic_ymd="101" >atm/cam/inic/fv/cami_0000-01-01_0.47x0.63_L26_APE_c080227.nc</ncdata>
 <ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="26"  ocn="aquaplanet"  ic_ymd="101" >atm/cam/inic/fv/cami_0000-01-01_1.9x2.5_L26_APE_c080203.nc</ncdata>
@@ -308,6 +309,9 @@
 <seasalt_emis_scale chem="trop_mam4_resus">   1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam4_resus_mom">1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_strat_mam4">   1.35 </seasalt_emis_scale>
+<seasalt_emis_scale chem="linoz_mam3">        1.35 </seasalt_emis_scale>
+<seasalt_emis_scale chem="linoz_mam4_resus">  1.35 </seasalt_emis_scale>
+<seasalt_emis_scale chem="linoz_mam4_resus_mom"> 1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam7">         1.62 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_strat_mam7">   1.62 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam9">         1.62 </seasalt_emis_scale>
@@ -671,6 +675,9 @@
 <drydep_method chem="trop_mam4_mom">xactive_atm</drydep_method>
 <drydep_method chem="trop_mam7">xactive_atm</drydep_method>
 <drydep_method chem="trop_mam9">xactive_atm</drydep_method>
+<drydep_method chem="linoz_mam3">xactive_atm</drydep_method>
+<drydep_method chem="linoz_mam4_resus">xactive_atm</drydep_method>
+<drydep_method chem="linoz_mam4_resus_mom">xactive_atm</drydep_method>
 <drydep_method chem="waccm_mozart_mam3">xactive_atm</drydep_method>
 
 <!-- Dry Dep surface data file needed by prognostic MAM on unstructured grid only. -->
@@ -698,6 +705,8 @@
 <xs_long_file >atm/waccm/phot/temp_prs_GT200nm_JPL10_c130206.nc</xs_long_file>
 <xs_short_file chem="trop_mam3">atm/waccm/phot/xs_short_jpl06_c080930.nc</xs_short_file>
 <xs_long_file  chem="trop_mam3">atm/waccm/phot/temp_prs_GT200nm_jpl06_c080930.nc</xs_long_file>
+<xs_short_file chem="linoz_mam3">atm/waccm/phot/xs_short_jpl06_c080930.nc</xs_short_file>
+<xs_long_file  chem="linoz_mam3">atm/waccm/phot/temp_prs_GT200nm_jpl06_c080930.nc</xs_long_file>
 <rsf_file                     >atm/waccm/phot/RSF_GT200nm_v3.0_c080811.nc</rsf_file>
 <rsf_file     chem="trop_mam3">atm/waccm/phot/RSF_GT200nm_v3.0_c080416.nc</rsf_file>
 <rsf_file     chem="trop_mam4">atm/waccm/phot/RSF_GT200nm_v3.0_c080416.nc</rsf_file>
