@@ -175,23 +175,15 @@ if (PIO_ENABLE_TIMING)
     find_package (GPTL COMPONENTS Fortran_Perf QUIET)
 endif ()
 
-if (MPIMOD_PATH)
-    check_macro (MPI_HAS_Fortran_MOD
-                 NAME TryMPIMod.f90
-                 HINTS ${CMAKE_MODULE_PATH}
-                 DEFINITIONS -I${MPIMOD_PATH}
-                 COMMENT "whether MPI Fortran module is supported")
-    if (${MPI_HAS_Fortran_MOD})
-        message (STATUS "MPI Fortran module verified and enabled.")
-    else ()
-        message (STATUS "MPI Fortran module failed verification and therefore disabled.")
-        if (PIO_ENABLE_TIMING AND NOT GPTL_Fortran_Perf_FOUND)
-          target_compile_definitions (gptl
-            PUBLIC NO_MPIMOD)
-        endif()
-    endif ()
+check_macro (MPI_HAS_Fortran_MOD
+             NAME TryMPIMod.f90
+             HINTS ${CMAKE_MODULE_PATH}
+             DEFINITIONS -I${MPIMOD_PATH}
+             COMMENT "whether MPI Fortran module is supported")
+if (${MPI_HAS_Fortran_MOD})
+    message (STATUS "MPI Fortran module verified and enabled.")
 else ()
-    message (STATUS "MPI Fortran module not detected and therefore disabled.")
+    message (STATUS "MPI Fortran module failed verification and therefore disabled.")
     if (PIO_ENABLE_TIMING AND NOT GPTL_Fortran_Perf_FOUND)
       target_compile_definitions (gptl
         PUBLIC NO_MPIMOD)

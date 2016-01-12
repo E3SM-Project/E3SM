@@ -275,21 +275,17 @@ int PIOc_freedecomp(int iosysid, int ioid)
     brel(iodesc->rfrom);
   if(iodesc->rtype != NULL){
     for(i=0; i<iodesc->nrecvs; i++){
-#ifdef HAVE_MPI
       if(iodesc->rtype[i] != MPI_DATATYPE_NULL){
         MPI_Type_free(iodesc->rtype+i);
       }
-#endif
     }
     brel(iodesc->rtype);
   }
   if(iodesc->stype != NULL){
     for(i=0; i<iodesc->num_stypes; i++){
-#ifdef HAVE_MPI
       if(iodesc->stype[i] != MPI_DATATYPE_NULL){
         MPI_Type_free(iodesc->stype+i);
       }
-#endif
     }
     iodesc->num_stypes = 0;
     brel(iodesc->stype);
@@ -307,11 +303,9 @@ int PIOc_freedecomp(int iosysid, int ioid)
   if(iodesc->firstregion != NULL)
     free_region_list(iodesc->firstregion);
 
-#ifdef HAVE_MPI
   if(iodesc->rearranger == PIO_REARR_SUBSET){
     MPI_Comm_free(&(iodesc->subset_comm));
   }
-#endif
 
   return pio_delete_iodesc_from_list(ioid);
 

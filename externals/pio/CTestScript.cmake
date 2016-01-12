@@ -55,8 +55,7 @@ elseif (HOSTNAME MATCHES "^mira" OR
     set (HOSTNAME_ID "alcf")
 # ALCF/Argonne Machines
 elseif (HOSTNAME MATCHES "^edison" OR
-        HOSTNAME MATCHES "^carver" OR
-        HOSTNAME MATCHES "^hopper" OR
+        HOSTNAME MATCHES "^cori" OR
         HOSTNAME MATCHES "^nid")
     set (HOSTNAME_ID "nersc")
 # Blue Waters at NCSA

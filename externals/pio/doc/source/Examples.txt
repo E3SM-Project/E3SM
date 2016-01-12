@@ -28,7 +28,12 @@ The C examples are in the examples/c subdirectory.
 - examplePio.c A simple example showing a write, then read, of a 1D variable.
 
 - example1.c Another simple example showing a write, then read, of a
-  1D variable.
+  1D variable. This produces the same output as examplePio.c.
+
+- example2.c This example writes a 3D floating point variable, with an
+  unlimited dimension. The data are written in slices along the
+  unlimited dimension. This example also incorporates (if installed)
+  the MPE profiling system to generate graphical output.
 
 ### Fortran Examples
 

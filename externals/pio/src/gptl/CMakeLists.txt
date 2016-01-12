@@ -129,23 +129,17 @@ endif ()
 find_path(MPIMOD_PATH
           NAMES mpi.mod MPI.mod
           PATHS ${MPI_Fortran_INCLUDE_PATH})
-if (MPIMOD_PATH)
-    check_macro (MPI_HAS_Fortran_MOD
+check_macro (MPI_HAS_Fortran_MOD
                  NAME TryMPIMod.f90
                  HINTS ${CMAKE_MODULE_PATH}
                  DEFINITIONS -I${MPIMOD_PATH}
                  COMMENT "whether MPI Fortran module is supported")
-    if (${MPI_HAS_Fortran_MOD})
-        message (STATUS "MPI Fortran module verified and enabled.")
-    else ()
-        message (STATUS "MPI Fortran module failed verification and therefore disabled.")
-        target_compile_definitions (gptl
-            PUBLIC NO_MPIMOD)
-    endif ()
+if (${MPI_HAS_Fortran_MOD})
+    message (STATUS "MPI Fortran module verified and enabled.")
 else ()
-    message (STATUS "MPI Fortran module not detected and therefore disabled.")
+    message (STATUS "MPI Fortran module failed verification and therefore disabled.")
     target_compile_definitions (gptl
-        PUBLIC NO_MPIMOD)
+            PUBLIC NO_MPIMOD)
 endif ()
         
 #===== GetTimeOfDay =====
