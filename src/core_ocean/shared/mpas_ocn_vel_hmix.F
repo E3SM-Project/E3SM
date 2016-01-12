@@ -56,8 +56,6 @@ module ocn_vel_hmix
    !--------------------------------------------------------------------
 
    logical :: hmixOn
-   type (timer_node), pointer :: del2Timer, del2TensorTimer, leithTimer, del4Timer, del4TensorTimer
-
 
 !***********************************************************************
 
@@ -148,29 +146,29 @@ contains
       viscosity = 0.0
       err = 0
 
-      call mpas_timer_start("del2", .false., del2Timer)
+      call mpas_timer_start("del2")
       call ocn_vel_hmix_del2_tend(meshPool, divergence, relativeVorticity, viscosity, tend, err1)
-      call mpas_timer_stop("del2", del2Timer)
+      call mpas_timer_stop("del2")
       err = ior(err1, err)
 
-      call mpas_timer_start("del2_tensor", .false., del2TensorTimer)
+      call mpas_timer_start("del2_tensor")
       call ocn_vel_hmix_del2_tensor_tend(meshPool, normalVelocity, tangentialVelocity, viscosity, scratchPool, tend, err1)
-      call mpas_timer_stop("del2_tensor", del2TensorTimer)
+      call mpas_timer_stop("del2_tensor")
       err = ior(err1, err)
 
-      call mpas_timer_start("leith", .false., leithTimer)
+      call mpas_timer_start("leith")
       call ocn_vel_hmix_leith_tend(meshPool, divergence, relativeVorticity, viscosity, tend, err1)
-      call mpas_timer_stop("leith", leithTimer)
+      call mpas_timer_stop("leith")
       err = ior(err1, err)
 
-      call mpas_timer_start("del4", .false., del4Timer)
+      call mpas_timer_start("del4")
       call ocn_vel_hmix_del4_tend(meshPool, divergence, relativeVorticity, tend, err1)
-      call mpas_timer_stop("del4", del4Timer)
+      call mpas_timer_stop("del4")
       err = ior(err1, err)
 
-      call mpas_timer_start("del4_tensor", .false., del4TensorTimer)
+      call mpas_timer_start("del4_tensor")
       call ocn_vel_hmix_del4_tensor_tend(meshPool, normalVelocity, tangentialVelocity, viscosity, scratchPool, tend, err1)
-      call mpas_timer_stop("del4_tensor", del4TensorTimer)
+      call mpas_timer_stop("del4_tensor")
       err = ior(err1, err)
 
    !--------------------------------------------------------------------
