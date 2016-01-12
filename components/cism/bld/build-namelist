@@ -549,6 +549,9 @@ if ($nl->get_value('dycore') != 0) {
     add_default($nl, 'which_ho_disp');
     add_default($nl, 'which_ho_sparse', 'dycore'=>$nl->get_value('dycore'), 'cism_use_trilinos'=>"$CISM_USE_TRILINOS");
     add_default($nl, 'which_ho_nonlinear', 'dycore'=>$nl->get_value('dycore'));
+    add_default($nl, 'which_ho_approx');
+    add_default($nl, 'which_ho_precond');
+    add_default($nl, 'which_ho_assemble_beta');
     $nl->write_cism_config($fh, "cism_config_ho_options");
 }
 else {

@@ -72,6 +72,9 @@ set cism_confIOdir = $IOCONF_DIR
 
 END_OUTPUT
 
+print file $output;
+close(file);
+
 $sysmod = "cat $CCSMROOT/components/cism/bld/cismIO/cism.buildIO.template.csh >> $buildIO_script";
 system($sysmod) == 0 or die "ERROR cism.build_usernl: $sysmod failed: $?\n";
 

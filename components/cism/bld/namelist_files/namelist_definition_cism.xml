@@ -753,7 +753,7 @@ category="cism_config_parameters"
 group="cism_config_parameters" >
 Thickness below which ice dynamics is ignored (m)
 Below this limit, ice is only accumulated
-Default: 100.
+Default: 100 for cism1, 1 for cism2
 </entry>
 
 <entry 
@@ -967,6 +967,19 @@ Default: 0
 </entry>
 
 <entry
+id="which_ho_gradient"
+type="integer"
+category="cism_config_ho_options"
+group="cism_config_ho_options"
+valid_values="0,1,2" >
+Which gradient operator to use in the glissade dycore.
+Not valid in other dycores.
+0: Centered gradient.
+1: Upstream gradient (may be better for ice evolution because it damps checkerboard noise).
+Default: (use hard-coded default)
+</entry>
+
+<entry
 id="which_ho_gradient_margin"
 type="integer"
 category="cism_config_ho_options"
@@ -985,15 +998,42 @@ id="which_ho_approx"
 type="integer"
 category="cism_config_ho_options"
 group="cism_config_ho_options"
-valid_values="-1,0,1,2,3" >
+valid_values="-1,0,1,2,3,4" >
 Flag that indicates which Stokes approximation to use with the glissade dycore.
 Not valid for other dycores.
 -1: Shallow-ice approximation, Glide-type calculation (uses glissade_velo_sia)
 0: Shallow-ice approximation, vertical-shear stresses only (uses glissade_velo_higher)
 1: Shallow-shelf approximation, horizontal-plane stresses only (uses glissade_velo_higher)
 2: Blatter-Pattyn approximation with both vertical-shear and horizontal-plane stresses (uses glissade_velo_higher)
-3:  Vertically integrated 'L1L2' approximation with vertical-shear and horizontal-plane stresses (uses glissade_velo_higher)
-Default: (use hard-coded default)
+3: Vertically integrated 'L1L2' approximation with vertical-shear and horizontal-plane stresses (uses glissade_velo_higher)
+4: Depth-integrated viscosity approximation based on Goldberg (2011) (uses glissade_velo_higher)
+Default: 4
+</entry>
+
+<entry
+id="which_ho_precond"
+type="integer"
+category="cism_config_ho_options"
+group="cism_config_ho_options"
+valid_values="0,1,2" >
+Flag that indicates which Stokes preconditioner to use in the glissade dycore.
+Not valid for other dycores.
+0: No preconditioner
+1: Diagonal preconditioner
+2: Physics-based shallow-ice preconditioner
+Default: 1
+</entry>
+
+<entry
+id="which_ho_assemble_beta"
+type="integer"
+category="cism_config_ho_options"
+group="cism_config_ho_options"
+valid_values="0,1" >
+Flag that describes how beta terms are assembled in the glissade finite-element calculation
+0: Standard finite-element calculation (which effectively smooths beta)
+1: Apply local value of beta at each vertex
+Default: 0
 </entry>
 
 <!-- =============================================================  -->

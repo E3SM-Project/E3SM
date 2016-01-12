@@ -209,7 +209,8 @@ attributes to express the dependency.
 
 <log_level>6</log_level>
 
-<ice_limit>100.</ice_limit>
+<ice_limit cism_phys="cism1">100.</ice_limit>
+<ice_limit cism_phys="cism2">1.</ice_limit>
 
 <marine_limit>-200.</marine_limit>
 
@@ -252,5 +253,11 @@ attributes to express the dependency.
 
 <which_ho_nonlinear dycore="1">1</which_ho_nonlinear>
 <which_ho_nonlinear dycore="2">0</which_ho_nonlinear>
+
+<which_ho_approx>4</which_ho_approx>
+
+<which_ho_precond>1</which_ho_precond>
+
+<which_ho_assemble_beta>0</which_ho_assemble_beta>
 
 </namelist_defaults>
