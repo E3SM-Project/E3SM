@@ -32,6 +32,9 @@
 		<package name="globalStatsAMPKG" description="This package includes variables required for the global statistics analysis member."/>
 	</packages>
 	<var_struct name="globalStatsAM" time_levs="1" packages="globalStatsAMPKG">
+		<var name="timeInDays" type="real" dimensions="Time" units="days"
+			 description="Time since config_start_time, for plotting"
+		/>
 		<var_array name="minGlobalStats" type="real" dimensions="Time">
 			<var name="layerThicknessMin" array_group="mins" units="m"
 				 description="Minimum global value of layerThickness in ocean cells."
@@ -421,6 +424,7 @@
 				runtime_format="single_file">
 
 			<var name="xtime"/>
+			<var name="timeInDays"/>
 			<var_array name="minGlobalStats"/>
 			<var_array name="maxGlobalStats"/>
 			<var_array name="sumGlobalStats"/>
