@@ -25,7 +25,7 @@ module cice_forcing
   public :: &
        cice_forcing_init, &
        cice_forcing_get, &
-       cice_forcing_write_restart, &
+       cice_forcing_write_restart_times, &
        cice_reset_coupler_fluxes,  &
        post_atmospheric_coupling,  &
        post_atmospheric_forcing,   &
@@ -1853,7 +1853,7 @@ contains
 !-----------------------------------------------------------------------
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  
+!  cice_forcing_write_restart_times
 !
 !> \brief 
 !> \author Adrian K. Turner, LANL
@@ -1863,7 +1863,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_forcing_write_restart(domain)
+  subroutine cice_forcing_write_restart_times(domain)
 
     type(domain_type) :: domain
 
@@ -1883,7 +1883,7 @@ contains
     
     endif
 
-  end subroutine cice_forcing_write_restart
+  end subroutine cice_forcing_write_restart_times
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !

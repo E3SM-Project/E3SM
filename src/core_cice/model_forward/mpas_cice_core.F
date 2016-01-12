@@ -238,7 +238,7 @@ module cice_core
       use mpas_kind_types
       use mpas_stream_manager
       use mpas_timer
-      use cice_forcing, only: cice_forcing_get, cice_forcing_write_restart
+      use cice_forcing, only: cice_forcing_get, cice_forcing_write_restart_times
       use cice_initialize, only: cice_init_post_clock_advance
       use cice_debug, only: istep
       
@@ -308,20 +308,21 @@ module cice_core
          ! reinitialize fluxes
          call cice_column_reinitialize_fluxes(domain)
 
-         ! update the restart_timestamp file with the new time if needed
-         if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr) ) then
-            open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
-            write(22, *) timeStamp
-            close(22)
-            call cice_forcing_write_restart(domain)
-         end if
-
          ! update analysis members
          call cice_analysis_compute(domain, ierr)
          call cice_analysis_restart(domain, ierr)
          call cice_analysis_write(domain, ierr)
 
          call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
+
+         ! update the restart_timestamp file with the new time if needed
+         if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr) ) then
+            open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
+            write(22, *) timeStamp
+            close(22)
+            call cice_forcing_write_restart_times(domain)
+         end if
+
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
          ! check if the simulation is finished
