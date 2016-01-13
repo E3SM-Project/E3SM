@@ -216,7 +216,9 @@ class CreateTest(object):
             # Just let every case build it's own
             sharedlibroot = os.path.join(test_dir, "sharedlibroot.%s" % self._test_id)
 
-        create_newcase_cmd = "%s -model acme -silent -case %s -res %s -mach %s -compiler %s -compset %s -testname %s -project %s -nosavetiming -sharedlibroot %s" % \
+        # Add for worley:
+        # create_newcase_cmd = "%s -model acme -silent -case %s -res %s -mach %s -compiler %s -compset %s -testname %s -project %s -nosavetiming -sharedlibroot %s" % \
+        create_newcase_cmd = "%s -model acme -case %s -res %s -mach %s -compiler %s -compset %s -testname %s -project %s -sharedlibroot %s" % \
                               (os.path.join(self._cime_root, "scripts", "create_newcase"),
                                test_dir, grid, machine, compiler, compset, test_case, self._project,
                                sharedlibroot)
@@ -239,7 +241,7 @@ class CreateTest(object):
         xml_file = os.path.join(self._get_test_dir(test_name), "env_test.xml")
         xml_bridge_cmd = os.path.join(acme_util.get_acme_scripts_root(), "xml_bridge")
 
-        mach_dir = os.path.join(self._cime_root, "machines-acme")
+        mach_dir = os.path.join(self._cime_root, "acme", "machines-acme")
         xml_bridge_cmd += " %s %s %s" % (mach_dir, machine, xml_file)
 
         xml_bridge_cmd += " TESTCASE,%s" % test_case
@@ -284,7 +286,7 @@ class CreateTest(object):
         else:
             shutil.copy(os.path.join(test_case_definition_dir, "tests_build.csh"), test_build)
 
-        return self._run_phase_command(test_name, "./cesm_setup", SETUP_PHASE, from_dir=test_dir)
+        return self._run_phase_command(test_name, "./case.setup", SETUP_PHASE, from_dir=test_dir)
 
     ###########################################################################
     def _nlcomp_phase(self, test_name):

@@ -8,7 +8,8 @@ set TESTID   = `./xmlquery TEST_TESTID -value`
 
 echo "#! /bin/bash" > $EXEROOT/cesm.exe
 echo "echo Insta fail" >> $EXEROOT/cesm.exe
-echo "echo Insta fail > $RUNDIR/cpl.log.$TESTID" >> $EXEROOT/cesm.exe
+echo -n "echo Insta fail > $RUNDIR/cpl.log." >> $EXEROOT/cesm.exe
+echo '$LID' >> $EXEROOT/cesm.exe
 echo "exit -1" >> $EXEROOT/cesm.exe
 
 chmod +x $EXEROOT/cesm.exe

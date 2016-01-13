@@ -7,7 +7,7 @@ sub main
 {
     my $script_loc = abs_path(dirname(__FILE__));
     my $cimeroot = abs_path("$script_loc/..");
-    my @dirs = ("$cimeroot/scripts/Tools", "$cimeroot/utils/perl5lib");
+    my @dirs = ("$cimeroot/scripts/Tools", "$cimeroot/utils/perl5lib/Config", "$cimeroot/utils/perl5lib");
     unshift @INC, @dirs;
     require ConfigCase;
 
@@ -19,10 +19,14 @@ sub main
     print "machine: $machine\n";
     print "xml_file: $xml_file\n";
 
-    my $config_def_file = "config_definition.xml";
-    my $cfg_ref = ConfigCase->new("$cimeroot/scripts/Tools/$config_def_file");
+    my $file = "$cimeroot/driver_cpl/cime_config/config_component.xml";
+    my $srcroot  = abs_path("$cimeroot/../");
+    my $caseroot = dirname($xml_file);
+    my $cfg_ref = ConfigCase->new("");
 
-    $cfg_ref->set_machine("${mach_dir}/config_machines.xml", $machine, 0);
+    $cfg_ref->add_config_variables($file, $srcroot, $cimeroot);
+
+    # $cfg_ref->set_machine("${mach_dir}/config_machines.xml", $machine, 0);
 
     while (my $value = shift) {
         my @key_val_pair = split(",", $value);
@@ -31,7 +35,9 @@ sub main
     }
 
     print "About to write file!!\n";
-    $cfg_ref->write_file($xml_file, "xml", $cimeroot);
+    my $caseheaders = "";
+    $cfg_ref->write_file($xml_file, $caseheaders, $caseroot, $cimeroot);
+    print "File write complete!!\n";
 }
 
 main(@ARGV) unless caller();

@@ -140,7 +140,7 @@ def bless_history(test_name, baseline_tag, baseline_dir_for_test, testcase_dir_f
     case = os.path.basename(testcase_dir_for_test)
     cime_root = acme_util.get_cime_root()
     compgen = os.path.join(cime_root, "scripts", "Tools", "component_compgen_baseline.sh")
-    machine_env = os.path.join(cime_root, "machines-acme", "env_mach_specific.%s" % acme_util.probe_machine_name())
+    machine_env = os.path.join(cime_root, "cime_config", "acme", "machines", "env_mach_specific.%s" % acme_util.probe_machine_name())
     run_dir = os.path.join(acme_root, case, "run")
     cprnc_loc = acme_util.get_machine_info("CPRNC_ROOT")
     compgen_cmd = "tcsh -c 'source %s && %s -baseline_dir %s -testcase %s -testcase_base %s -test_dir %s -cprnc_exe %s -generate_tag %s'" % \

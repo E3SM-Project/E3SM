@@ -273,7 +273,7 @@ if (! $clean ) {
 
 
 	
-	my $inputbatchscript  = "$xmlvars{'MACHDIR'}/template.cesmrun";
+	my $inputbatchscript  = "$xmlvars{'MACHDIR'}/template.case.run";
 	my $outputbatchscript = "$xmlvars{'CASEROOT'}/case.run";
 
 	$batchmaker->makeBatchScript($inputbatchscript, $outputbatchscript);

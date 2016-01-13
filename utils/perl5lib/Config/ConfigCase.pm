@@ -288,7 +288,7 @@ sub write_file
     if ($output_xml_file =~ /env_archive.xml/) {
 
 	if (! $input_xml_file ) {
-	    $logger->logdie ("ERROR write_file: must specify input_xml_file as argument for writing out $output_xml_file \n");
+	    die "ERROR write_file: must specify input_xml_file as argument for writing out $output_xml_file \n";
 	} else {
 	    open CONFIG_ARCHIVE, $input_xml_file or die $!;
 	    while (<CONFIG_ARCHIVE>) {
@@ -350,7 +350,7 @@ sub write_file
 				write_xml_entry($fh, $id, $value, $type, $valid_values, $desc, $group, $is_list_value, $indent);
 			    }
 			} else {
-			    $logger->logdie("file attribute for variable $id is not defined \n");
+			    die "file attribute for variable $id is not defined \n";
 			}
 		    }
 		}

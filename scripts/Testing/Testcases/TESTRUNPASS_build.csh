@@ -8,8 +8,8 @@ set TESTID   = `./xmlquery TEST_TESTID -value`
 
 echo "#! /bin/bash" > $EXEROOT/cesm.exe
 echo "echo Insta pass" >> $EXEROOT/cesm.exe
-echo "echo SUCCESSFUL TERMINATION > $RUNDIR/cpl.log.$TESTID" >> $EXEROOT/cesm.exe
-
+echo -n "echo SUCCESSFUL TERMINATION > $RUNDIR/cpl.log." >> $EXEROOT/cesm.exe
+echo '$LID' >> $EXEROOT/cesm.exe
 chmod +x $EXEROOT/cesm.exe
 
 echo "Build phase complete, just made simple script for cesm.exe" | tee $EXEROOT/cesm.bldlog.$TESTID
