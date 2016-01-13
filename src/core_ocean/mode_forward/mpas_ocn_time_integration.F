@@ -23,6 +23,7 @@ module ocn_time_integration
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_constants
+   use mpas_timekeeping
    use mpas_dmpar
    use mpas_vector_reconstruction
    use mpas_spline_interpolation
@@ -100,6 +101,9 @@ module ocn_time_integration
       type (mpas_pool_type), pointer :: diagnosticsPool, statePool
 
       character (len=StrKIND), pointer :: xtime
+      real (kind=RKIND), pointer :: daysSinceStartOfSim
+      character (len=StrKIND), pointer :: simulationStartTime
+      type (MPAS_Time_type) :: xtime_timeType, simulationStartTime_timeType
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
 
 
@@ -118,6 +122,14 @@ module ocn_time_integration
         call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
 
         xtime = timeStamp
+
+        ! compute time since start of simulation, in days
+        call mpas_pool_get_array(diagnosticsPool, 'simulationStartTime', simulationStartTime)
+        call mpas_pool_get_array(diagnosticsPool, 'daysSinceStartOfSim',daysSinceStartOfSim)
+        call mpas_set_time(xtime_timeType, dateTimeString=xtime)
+        call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime)
+        call mpas_get_timeInterval(xtime_timeType - simulationStartTime_timeType,dt=daysSinceStartOfSim)
+        daysSinceStartOfSim = daysSinceStartOfSim*days_per_second
 
         nanCheck = sum(normalVelocity)
 
