@@ -18,7 +18,7 @@ from acme_util import expect, warning, verbose_print
 SENTINEL_FILE = "ONGOING_TEST"
 
 # Don't know if this belongs here longterm
-MACHINES_THAT_MAINTAIN_BASELINES = ("redksy", "melvin", "skybridge")
+MACHINES_THAT_MAINTAIN_BASELINES = ("redsky", "melvin", "skybridge")
 
 ###############################################################################
 def parse_command_line(args, description):
