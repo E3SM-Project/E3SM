@@ -103,7 +103,7 @@ module clm_cpl_indices
   integer, public ::index_x2l_Flrr_volr      ! rtm->lnd rof volr
 
   ! In the following, index 0 is bare land, other indices are glc elevation classes
-  integer, public ::index_x2l_Sg_frac(0:glc_nec_max)   = 0   ! Fraction of glacier from glc model
+  integer, public ::index_x2l_Sg_ice_covered(0:glc_nec_max)   = 0   ! Fraction of glacier from glc model
   integer, public ::index_x2l_Sg_topo(0:glc_nec_max)   = 0   ! Topo height from glc model 
   integer, public ::index_x2l_Flgg_hflx(0:glc_nec_max) = 0   ! Heat flux from glc model
   
@@ -258,13 +258,13 @@ contains
     do num = 0,glc_nec_max 
     
        write(cnum,'(i2.2)') num
-       name = 'Sg_frac' // cnum
-       index_x2l_Sg_frac(num)   = mct_avect_indexra(x2l,trim(name),perrwith='quiet') 
+       name = 'Sg_ice_covered' // cnum
+       index_x2l_Sg_ice_covered(num)   = mct_avect_indexra(x2l,trim(name),perrwith='quiet') 
        name = 'Sg_topo' // cnum
        index_x2l_Sg_topo(num)   = mct_avect_indexra(x2l,trim(name),perrwith='quiet')
        name = 'Flgg_hflx' // cnum
        index_x2l_Flgg_hflx(num) = mct_avect_indexra(x2l,trim(name),perrwith='quiet')
-       if ( index_x2l_Sg_frac(num)   == 0 .and. &
+       if ( index_x2l_Sg_ice_covered(num)   == 0 .and. &
             index_x2l_Sg_topo(num)   == 0 .and. &
             index_x2l_Flgg_hflx(num) == 0 ) then
           exit

@@ -20,7 +20,6 @@ module clm_cpl_indices
   !
   integer , public :: glc_nec     ! number of elevation classes for glacier_mec landunits 
                                   ! (from coupler) - must equal maxpatch_glcmec from namelist
-  integer , parameter, private:: glc_nec_max = 100
 
   ! lnd -> drv (required)
 
@@ -55,9 +54,9 @@ module clm_cpl_indices
   integer, public ::index_l2x_Fall_flxvoc     ! MEGAN fluxes
 
   ! In the following, index 0 is bare land, other indices are glc elevation classes
-  integer, public ::index_l2x_Sl_tsrf(0:glc_nec_max)   = 0 ! glc MEC temperature
-  integer, public ::index_l2x_Sl_topo(0:glc_nec_max)   = 0 ! glc MEC topo height
-  integer, public ::index_l2x_Flgl_qice(0:glc_nec_max) = 0 ! glc MEC ice flux
+  integer, allocatable, public ::index_l2x_Sl_tsrf(:)   ! glc MEC temperature
+  integer, allocatable, public ::index_l2x_Sl_topo(:)   ! glc MEC topo height
+  integer, allocatable, public ::index_l2x_Flgl_qice(:) ! glc MEC ice flux
 
   integer, public ::index_x2l_Sa_methane
   integer, public ::index_l2x_Fall_methane
@@ -103,9 +102,9 @@ module clm_cpl_indices
   integer, public ::index_x2l_Flrr_volr      ! rtm->lnd rof volr
 
   ! In the following, index 0 is bare land, other indices are glc elevation classes
-  integer, public ::index_x2l_Sg_frac(0:glc_nec_max)   = 0   ! Fraction of glacier from glc model
-  integer, public ::index_x2l_Sg_topo(0:glc_nec_max)   = 0   ! Topo height from glc model 
-  integer, public ::index_x2l_Flgg_hflx(0:glc_nec_max) = 0   ! Heat flux from glc model
+  integer, allocatable, public ::index_x2l_Sg_ice_covered(:) ! Fraction of glacier from glc model
+  integer, allocatable, public ::index_x2l_Sg_topo(:)        ! Topo height from glc model 
+  integer, allocatable, public ::index_x2l_Flgg_hflx(:)      ! Heat flux from glc model
   
   integer, public ::index_x2l_Sg_icemask
   integer, public ::index_x2l_Sg_icemask_coupled_fluxes
@@ -130,6 +129,7 @@ contains
     use seq_drydep_mod , only: drydep_fields_token, lnd_drydep
     use shr_megan_mod  , only: shr_megan_fields_token, shr_megan_mechcomps_n
     use clm_varctl     , only: use_voc
+    use glc_elevclass_mod, only: glc_get_num_elevation_classes, glc_elevclass_as_string
     !
     ! !ARGUMENTS:
     implicit none
@@ -142,7 +142,7 @@ contains
     type(mct_aVect)   :: l2x      ! temporary, land to coupler
     type(mct_aVect)   :: x2l      ! temporary, coupler to land
     integer           :: num 
-    character(len= 2) :: cnum
+    character(len=:), allocatable :: nec_str  ! string version of glc elev. class number
     character(len=64) :: name
     character(len=32) :: subname = 'clm_cpl_indices_set'  ! subroutine name
     !-----------------------------------------------------------------------
@@ -254,43 +254,37 @@ contains
     ! glc coupling
     !-------------------------------------------------------------
 
-    glc_nec = 0
+    index_x2l_Sg_icemask = mct_avect_indexra(x2l,'Sg_icemask')
+    index_x2l_Sg_icemask_coupled_fluxes = mct_avect_indexra(x2l,'Sg_icemask_coupled_fluxes')
 
-    do num = 0,glc_nec_max 
-    
-       write(cnum,'(i2.2)') num
-       name = 'Sg_frac' // cnum
-       index_x2l_Sg_frac(num)   = mct_avect_indexra(x2l,trim(name),perrwith='quiet') 
-       name = 'Sg_topo' // cnum
-       index_x2l_Sg_topo(num)   = mct_avect_indexra(x2l,trim(name),perrwith='quiet')
-       name = 'Flgg_hflx' // cnum
-       index_x2l_Flgg_hflx(num) = mct_avect_indexra(x2l,trim(name),perrwith='quiet')
-       if ( index_x2l_Sg_frac(num)   == 0 .and. &
-            index_x2l_Sg_topo(num)   == 0 .and. &
-            index_x2l_Flgg_hflx(num) == 0 ) then
-          exit
-       end if
-       glc_nec = num
-    end do
-    
-    index_x2l_Sg_icemask = mct_avect_indexra(x2l,'Sg_icemask',perrwith='quiet')
-    index_x2l_Sg_icemask_coupled_fluxes = mct_avect_indexra(x2l,'Sg_icemask_coupled_fluxes',perrwith='quiet')
-    
-    if (glc_nec == glc_nec_max) then
-       call shr_sys_abort (subname // 'error: glc_nec_cpl cannot equal glc_nec_max')
-    end if
+    glc_nec = glc_get_num_elevation_classes()
 
     ! If glc_nec > 0, then create coupling fields for all glc elevation classes
-    ! (1:glc_nec) plus bare land (index 0). Note that, if glc_nec = 0, then we don't
-    ! even need the bare land (0) index.
+    ! (1:glc_nec) plus bare land (index 0). Note that, if glc_nec = 0, then we don't even
+    ! need the bare land (0) index.
     if (glc_nec > 0) then
+       allocate(index_l2x_Sl_tsrf(0:glc_nec))
+       allocate(index_l2x_Sl_topo(0:glc_nec))
+       allocate(index_l2x_Flgl_qice(0:glc_nec))
+       allocate(index_x2l_Sg_ice_covered(0:glc_nec))
+       allocate(index_x2l_Sg_topo(0:glc_nec))
+       allocate(index_x2l_Flgg_hflx(0:glc_nec))
+
        do num = 0,glc_nec
-          write(cnum,'(i2.2)') num
-          name = 'Sl_tsrf' // cnum
+          nec_str = glc_elevclass_as_string(num)
+
+          name = 'Sg_ice_covered' // nec_str
+          index_x2l_Sg_ice_covered(num) = mct_avect_indexra(x2l,trim(name))
+          name = 'Sg_topo' // nec_str
+          index_x2l_Sg_topo(num)   = mct_avect_indexra(x2l,trim(name))
+          name = 'Flgg_hflx' // nec_str
+          index_x2l_Flgg_hflx(num) = mct_avect_indexra(x2l,trim(name))
+
+          name = 'Sl_tsrf' // nec_str
           index_l2x_Sl_tsrf(num)   = mct_avect_indexra(l2x,trim(name))
-          name = 'Sl_topo' // cnum
+          name = 'Sl_topo' // nec_str
           index_l2x_Sl_topo(num)   = mct_avect_indexra(l2x,trim(name))
-          name = 'Flgl_qice' // cnum
+          name = 'Flgl_qice' // nec_str
           index_l2x_Flgl_qice(num) = mct_avect_indexra(l2x,trim(name))
        end do
     end if
