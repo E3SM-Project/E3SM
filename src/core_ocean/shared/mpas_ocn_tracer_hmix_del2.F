@@ -13,8 +13,8 @@
 !> \author Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date   September 2011
 !> \details
-!>  This module contains the main driver routine for computing 
-!>  horizontal mixing tendencies.  
+!>  This module contains the main driver routine for computing
+!>  horizontal mixing tendencies.
 !>
 !>  It provides an init and a tend function. Each are described below.
 !
@@ -68,7 +68,7 @@ contains
 !> \brief   Computes Laplacian tendency term for horizontal tracer mixing
 !> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the horizontal mixing tendency for tracers
 !>  based on current state using a Laplacian parameterization.
 !
@@ -155,7 +155,7 @@ contains
           cell2 = cellsOnEdge(2,iEdge)
 
           r_tmp = meshScalingDel2(iEdge) * eddyDiff2 * dvEdge(iEdge) / dcEdge(iEdge)
-           
+
           do k = 1, maxLevelEdgeTop(iEdge)
             do iTracer = 1, num_tracers
               ! \kappa_2 \nabla \phi on edge
@@ -183,9 +183,9 @@ contains
 !> \brief   Initializes ocean tracer horizontal mixing quantities
 !> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date    September 2011
-!> \details 
-!>  This routine initializes a variety of quantities related to 
-!>  Laplacian horizontal velocity mixing in the ocean. 
+!> \details
+!>  This routine initializes a variety of quantities related to
+!>  Laplacian horizontal velocity mixing in the ocean.
 !
 !-----------------------------------------------------------------------
 

@@ -162,7 +162,7 @@ contains
 
       integer :: iLevel, iLevelTarget
       integer, pointer :: nVertLevels
-      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, kineticEnergyAt100m, relativeVorticityAt100m 
+      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, kineticEnergyAt100m, relativeVorticityAt100m
       real (kind=RKIND), dimension(:), pointer :: divergenceAt100m, relativeVorticityVertexAt100m
       real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell, relativeVorticityCell, activeTracersAtSurface
       real (kind=RKIND), dimension(:,:), pointer :: relativeVorticity, divergence

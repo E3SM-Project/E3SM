@@ -13,8 +13,8 @@
 !> \author Mark Petersen
 !> \date   September 2011
 !> \details
-!>  This module contains the routines for computing 
-!>  richardson vertical mixing coefficients.  
+!>  This module contains the routines for computing
+!>  richardson vertical mixing coefficients.
 !>
 !
 !-----------------------------------------------------------------------
@@ -70,7 +70,7 @@ contains
 !> \brief   Computes coefficients for vertical mixing
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the vertical mixing coefficients for momentum
 !>  and activeTracers based user choices of mixing parameterization.
 !
@@ -131,7 +131,7 @@ contains
       !-----------------------------------------------------------------
       !
       ! call relevant routines for computing tendencies
-      ! note that the user can choose multiple options and the 
+      ! note that the user can choose multiple options and the
       !   tendencies will be added together
       !
       !-----------------------------------------------------------------
@@ -166,13 +166,13 @@ contains
       ! compute in-place density
       call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, 0, 'relative', density, err, timeLevelIn=timeLevel)
 
-      ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.  
+      ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.
       ! That is, layer k has been displaced to the depth of layer k+1.
       call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, 1, 'relative', displacedDensity, err, timeLevelIn=timeLevel)
 
       call mpas_timer_stop("eos rich", richEOSTimer)
 
-      call ocn_vmix_get_rich_numbers(meshPool, scratchPool, indexTemperature, indexSalinity, normalVelocity, layerThickness, layerThicknessEdge, & 
+      call ocn_vmix_get_rich_numbers(meshPool, scratchPool, indexTemperature, indexSalinity, normalVelocity, layerThickness, layerThicknessEdge, &
                                   density, displacedDensity, activeTracers, RiTopOfEdge, RiTopOfCell, err1)
 
       call ocn_vel_vmix_coefs_rich(meshPool, RiTopOfEdge, layerThicknessEdge, vertViscTopOfEdge, err2)
@@ -191,7 +191,7 @@ contains
 !> \brief   Computes coefficients for vertical momentum mixing
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the richardson vertical mixing coefficients for momentum
 !
 !-----------------------------------------------------------------------
@@ -285,7 +285,7 @@ contains
 !> \brief   Computes coefficients for vertical tracer mixing
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the richardson vertical mixing coefficients for activeTracers
 !
 !-----------------------------------------------------------------------
@@ -358,7 +358,7 @@ contains
             ! Perhaps there is a more efficient way to do this.
             if (RiTopOfCell(k,iCell)>0.0) then
                vertDiffTopOfCell(k,iCell) = vertDiffTopOfCell(k, iCell) + config_bkrd_vert_diff &
-                  + (config_bkrd_vert_visc & 
+                  + (config_bkrd_vert_visc &
                      + config_rich_mix / (1.0 + 5.0*RiTopOfCell(k,iCell))**2) &
                   / (1.0 + 5.0*RiTopOfCell(k,iCell))
                if (vertDiffTopOfCell(k,iCell) > config_convective_diff) then
@@ -383,7 +383,7 @@ contains
 !> \brief   Build richardson numbers for vertical mixing
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine builds the arrays needed for richardson number vertical
 !>  mixing coefficients.
 !
@@ -408,7 +408,7 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in) :: normalVelocity       !< Input: horizontal velocity
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness       !< Input: thickness
-      real (kind=RKIND), dimension(:,:), intent(in) :: layerThicknessEdge  !< Input: thickness at edge 
+      real (kind=RKIND), dimension(:,:), intent(in) :: layerThicknessEdge  !< Input: thickness at edge
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: activeTracers !< Input: activeTracers
 
@@ -511,7 +511,7 @@ contains
          do k = 2, maxLevelEdgeTop(iEdge)
             ddensityTopOfEdge(k,iEdge) = &
                (ddensityTopOfCell(k,cell1) + &
-                ddensityTopOfCell(k,cell2))/2  
+                ddensityTopOfCell(k,cell2))/2
          end do
        end do
        !$omp end do
@@ -582,11 +582,11 @@ contains
 !> \brief   Initializes ocean momentum vertical mixing quantities
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
-!>  This routine initializes a variety of quantities related to 
-!>  vertical velocity mixing in the ocean. Since a variety of 
+!> \details
+!>  This routine initializes a variety of quantities related to
+!>  vertical velocity mixing in the ocean. Since a variety of
 !>  parameterizations are available, this routine primarily calls the
-!>  individual init routines for each parameterization. 
+!>  individual init routines for each parameterization.
 !
 !-----------------------------------------------------------------------
 

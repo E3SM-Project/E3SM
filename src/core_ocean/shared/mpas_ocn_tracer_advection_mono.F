@@ -28,7 +28,7 @@ module ocn_tracer_advection_mono
 
    implicit none
    private
-   save 
+   save
 
    real (kind=RKIND) :: coef_3rd_order
    integer :: horizOrder
@@ -183,7 +183,7 @@ module ocn_tracer_advection_mono
         high_order_horiz_flux = 0.0_RKIND
         !$omp end workshare
 
-        !  Compute the high order vertical flux. Also determine bounds on tracer_cur. 
+        !  Compute the high order vertical flux. Also determine bounds on tracer_cur.
         !$omp do schedule(runtime) private(k, verticalWeightK, verticalWeightKm1, i)
         do iCell = 1, nCells
           k = 1
@@ -196,7 +196,7 @@ module ocn_tracer_advection_mono
           high_order_vert_flux(k,iCell) = w(k,iCell)*(verticalWeightK*tracer_cur(k,iCell)+verticalWeightKm1*tracer_cur(k-1,iCell))
           tracer_max(k,iCell) = max(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
           tracer_min(k,iCell) = min(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
-             
+
           do k=3,maxLevelCell(iCell)-1
              if(vert4thOrder) then
                high_order_vert_flux(k, iCell) = mpas_tracer_advection_vflux4( tracer_cur(k-2,iCell),tracer_cur(k-1,iCell),  &
@@ -211,8 +211,8 @@ module ocn_tracer_advection_mono
              end if
              tracer_max(k,iCell) = max(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
              tracer_min(k,iCell) = min(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
-          end do 
- 
+          end do
+
           k = max(1, maxLevelCell(iCell))
           verticalWeightK = verticalCellSize(k-1, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
           verticalWeightKm1 = verticalCellSize(k, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
@@ -328,7 +328,7 @@ module ocn_tracer_advection_mono
             tracer_min_new = (tracer_cur(k,iCell)*layerThickness(k,iCell) + dt*(upwind_tendency(k,iCell)+flux_outgoing(k,iCell))) * inv_h_new(k,iCell)
             tracer_max_new = (tracer_cur(k,iCell)*layerThickness(k,iCell) + dt*(upwind_tendency(k,iCell)+flux_incoming(k,iCell))) * inv_h_new(k,iCell)
             tracer_upwind_new = (tracer_cur(k,iCell)*layerThickness(k,iCell) + dt*upwind_tendency(k,iCell)) * inv_h_new(k,iCell)
-           
+
             scale_factor = (tracer_max(k,iCell)-tracer_upwind_new)/(tracer_max_new-tracer_upwind_new+eps)
             flux_incoming(k,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
 

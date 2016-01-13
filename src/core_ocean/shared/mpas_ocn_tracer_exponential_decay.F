@@ -60,7 +60,7 @@ contains
 !> \brief   computes a tracer tendency due to exponential decay
 !> \author  Todd Ringler
 !> \date    06/09/2015
-!> \details 
+!> \details
 !>  This routine computes a tracer tendency due to exponential decay
 !
 !-----------------------------------------------------------------------
@@ -98,7 +98,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
-        tracer_tend 
+        tracer_tend
 
       !-----------------------------------------------------------------
       !
@@ -128,7 +128,7 @@ contains
                                                         * exp(-tracersExponentialDecayRate(iTracer)) )
             enddo
          enddo
-      enddo 
+      enddo
       !$omp end do
 
    !--------------------------------------------------------------------
@@ -142,7 +142,7 @@ contains
 !> \brief   Initializes ocean surface restoring
 !> \author  Todd Ringler
 !> \date    06/09/2015
-!> \details 
+!> \details
 !>  This routine initializes fields required for tracer surface flux restoring
 !
 !-----------------------------------------------------------------------

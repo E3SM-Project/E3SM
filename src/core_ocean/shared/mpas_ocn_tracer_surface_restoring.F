@@ -60,7 +60,7 @@ contains
 !> \brief   computes a surface tracer flux due to surface restoring
 !> \author  Todd Ringler
 !> \date    06/09/2015
-!> \details 
+!> \details
 !>  This routine computes a surface tracer flux due to surface restoring
 !
 !-----------------------------------------------------------------------
@@ -94,7 +94,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-        tracersSurfaceFlux 
+        tracersSurfaceFlux
 
       !-----------------------------------------------------------------
       !
@@ -137,7 +137,7 @@ contains
 !> \brief   Initializes ocean surface restoring
 !> \author  Todd Ringler
 !> \date    06/09/2015
-!> \details 
+!> \details
 !>  This routine initializes fields required for tracer surface flux restoring
 !
 !-----------------------------------------------------------------------

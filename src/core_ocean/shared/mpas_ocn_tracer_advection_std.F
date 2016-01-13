@@ -28,7 +28,7 @@ module ocn_tracer_advection_std
 
    implicit none
    private
-   save 
+   save
 
    real (kind=RKIND) :: coef_3rd_order
    integer :: horizOrder
@@ -133,14 +133,14 @@ module ocn_tracer_advection_std
         high_order_horiz_flux = 0.0_RKIND
         !$omp end workshare
 
-        !  Compute the high order vertical flux. Also determine bounds on tracer_cur. 
+        !  Compute the high order vertical flux. Also determine bounds on tracer_cur.
         !$omp do schedule(runtime) private(k, verticalWeightK, verticalWeightKm1)
         do iCell = 1, nCells
           k = max(1, min(maxLevelCell(iCell), 2))
           verticalWeightK = verticalCellSize(k-1, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
           verticalWeightKm1 = verticalCellSize(k, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
           high_order_vert_flux(k,iCell) = w(k,iCell)*(verticalWeightK*tracer_cur(k,iCell)+verticalWeightKm1*tracer_cur(k-1,iCell))
-             
+
           do k=3,maxLevelCell(iCell)-1
              if(vert4thOrder) then
                high_order_vert_flux(k, iCell) = mpas_tracer_advection_vflux4( tracer_cur(k-2,iCell),tracer_cur(k-1,iCell),  &
@@ -153,8 +153,8 @@ module ocn_tracer_advection_std
                verticalWeightKm1 = verticalCellSize(k, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
                high_order_vert_flux(k,iCell) = w(k,iCell)*(verticalWeightK*tracer_cur(k,iCell)+verticalWeightKm1*tracer_cur(k-1,iCell))
              end if
-          end do 
- 
+          end do
+
           k = max(1, maxLevelCell(iCell))
           verticalWeightK = verticalCellSize(k-1, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
           verticalWeightKm1 = verticalCellSize(k, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))

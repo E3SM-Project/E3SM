@@ -13,8 +13,8 @@
 !> \author Doug Jacobsen
 !> \date   12/17/12
 !> \details
-!>  This module contains the routine for computing 
-!>  surface flux tendencies.  
+!>  This module contains the routine for computing
+!>  surface flux tendencies.
 !
 !-----------------------------------------------------------------------
 
@@ -64,7 +64,7 @@ contains
 !> \brief   Computes tendency term for surface fluxes
 !> \author  Doug Jacobsen
 !> \date    12/17/12
-!> \details 
+!> \details
 !>  This routine computes the tendency for tracers based on surface fluxes.
 !
 !-----------------------------------------------------------------------
@@ -157,7 +157,7 @@ contains
 !> \brief   Initializes ocean tracer surface flux quantities
 !> \author  Doug Jacobsen
 !> \date    12/17/12
-!> \details 
+!> \details
 !>  This routine initializes quantities related to surface fluxes in the ocean.
 !
 !-----------------------------------------------------------------------

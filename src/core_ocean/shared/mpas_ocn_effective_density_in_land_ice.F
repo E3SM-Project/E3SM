@@ -111,7 +111,7 @@ contains
                                                   effectiveDensityNew, &
                                                   effectiveDensityScratch
 
-      type (field1DReal), pointer :: effectiveDensityField                                                                                              
+      type (field1DReal), pointer :: effectiveDensityField
 
       real (kind=RKIND) :: weightSum
 

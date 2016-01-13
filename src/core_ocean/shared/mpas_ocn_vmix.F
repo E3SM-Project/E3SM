@@ -13,8 +13,8 @@
 !> \author Mark Petersen
 !> \date   September 2011
 !> \details
-!>  This module is the main driver for 
-!>  vertical mixing in the ocean. 
+!>  This module is the main driver for
+!>  vertical mixing in the ocean.
 !>
 !
 !-----------------------------------------------------------------------
@@ -56,7 +56,7 @@ module ocn_vmix
              ocn_vel_vmix_tend_implicit, &
              ocn_tracer_vmix_tend_implicit, &
              ocn_vmix_init, &
-             ocn_vmix_implicit 
+             ocn_vmix_implicit
 
    !--------------------------------------------------------------------
    !
@@ -77,7 +77,7 @@ contains
 !> \brief   Computes coefficients for vertical mixing
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the vertical mixing coefficients for momentum
 !>  and tracers based user choices of mixing parameterization.
 !
@@ -95,7 +95,7 @@ contains
          meshPool          !< Input: mesh information
 
       type (mpas_pool_type), intent(in) :: scratchPool !< Input/Output: Scratch structure
-      
+
       integer, intent(in), optional :: timeLevelIn !< Input: Time level for state pool
 
       !-----------------------------------------------------------------
@@ -183,7 +183,7 @@ contains
 !> \brief   Computes tendencies for implicit momentum vertical mixing
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the tendencies for implicit vertical mixing for momentum
 !>  using computed coefficients.
 !
@@ -261,7 +261,7 @@ contains
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
-      allocate(A(nVertLevels),B(nVertLevels),C(nVertLevels),velTemp(nVertLevels)) 
+      allocate(A(nVertLevels),B(nVertLevels),C(nVertLevels),velTemp(nVertLevels))
       A(1)=0
 
       !$omp do schedule(runtime) private(N, cell1, cell2, k)
@@ -325,7 +325,7 @@ contains
 !> \brief   Computes tendencies for implicit tracer vertical mixing
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the tendencies for implicit vertical mixing for
 !>  tracers using computed coefficients.
 !
@@ -441,7 +441,7 @@ contains
 !> \brief   Driver for implicit vertical mixing
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine is a driver for handling implicit vertical mixing
 !>  of both momentum and tracers for a block. It's intended to reduce
 !>  redundant code.
@@ -493,7 +493,7 @@ contains
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-               
+
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
@@ -555,9 +555,9 @@ contains
 !> \brief   Initializes ocean vertical mixing quantities
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
-!>  This routine initializes a variety of quantities related to 
-!>  vertical mixing in the ocean. 
+!> \details
+!>  This routine initializes a variety of quantities related to
+!>  vertical mixing in the ocean.
 !
 !-----------------------------------------------------------------------
 
@@ -611,7 +611,7 @@ contains
 !> \brief   Solve the matrix equation Ax=r for x, where A is tridiagonal.
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  Solve the matrix equation Ax=r for x, where A is tridiagonal.
 !>  A is an nxn matrix, with:
 !>  a sub-diagonal, filled from 1:n-1 (a(1) appears on row 2)
@@ -620,7 +620,7 @@ contains
 !
 !-----------------------------------------------------------------------
    subroutine tridiagonal_solve(a,b,c,r,x,n) !{{{
-      
+
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -651,14 +651,14 @@ contains
       ! Use work variables for b and r
       bTemp(1) = b(1)
       rTemp(1) = r(1)
-      
+
       ! First pass: set the coefficients
       do i = 2,n
          m = a(i-1)/bTemp(i-1)
          bTemp(i) = b(i) - m*c(i-1)
          rTemp(i) = r(i) - m*rTemp(i-1)
-      end do 
-      
+      end do
+
       x(n) = rTemp(n)/bTemp(n)
        ! Second pass: back-substition
       do i = n-1, 1, -1
@@ -674,7 +674,7 @@ contains
 !> \brief   Solve multiple matrix equations Ax=r for x, where A is tridiagonal.
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  Solve the matrix equation Ax=r for x, where A is tridiagonal.
 !>  A is an nxn matrix, with:
 !>  a sub-diagonal, filled from 1:n-1 (a(1) appears on row 2)
@@ -692,22 +692,22 @@ subroutine tridiagonal_solve_mult(a,b,c,r,x,n,nDim,nSystems)!{{{
    real (KIND=RKIND), dimension(nSystems,n) :: rTemp
    real (KIND=RKIND) :: m
    integer i,j
- 
+
    ! Use work variables for b and r
    bTemp(1) = b(1)
    do j = 1,nSystems
       rTemp(j,1) = r(j,1)
    end do
- 
+
    ! First pass: set the coefficients
    do i = 2,n
       m = a(i-1)/bTemp(i-1)
       bTemp(i) = b(i) - m*c(i-1)
       do j = 1,nSystems
          rTemp(j,i) = r(j,i) - m*rTemp(j,i-1)
-      end do 
-   end do 
- 
+      end do
+   end do
+
    do j = 1,nSystems
       x(j,n) = rTemp(j,n)/bTemp(n)
    end do
@@ -717,7 +717,7 @@ subroutine tridiagonal_solve_mult(a,b,c,r,x,n,nDim,nSystems)!{{{
          x(j,i) = (rTemp(j,i) - c(i)*x(j,i+1))/bTemp(i)
       end do
    end do
- 
+
 end subroutine tridiagonal_solve_mult!}}}
 
 !***********************************************************************

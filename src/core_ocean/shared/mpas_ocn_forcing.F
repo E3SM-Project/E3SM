@@ -69,7 +69,7 @@ contains
 !> \brief   Initializes forcing module
 !> \author  Doug Jacobsen
 !> \date    12/13/12
-!> \details 
+!> \details
 !>  This routine initializes the forcing modules.
 !
 !-----------------------------------------------------------------------
@@ -89,7 +89,7 @@ contains
 !> \brief   fraction absorbed coefficient array for surface forcing.
 !> \author  Doug Jacobsen
 !> \date    10/03/2013
-!> \details 
+!> \details
 !>  This subroutine builds the fractionAbsorbed coefficient array for use in
 !>  applying surface fluxes deeper than the surface layer.
 !
@@ -160,7 +160,7 @@ contains
 !> \brief   Transmission coefficient for surface forcing.
 !> \author  Doug Jacobsen
 !> \date    05/03/2013
-!> \details 
+!> \details
 !>  This function computes and returns the transmission coefficient for surface
 !>  forcing based on depth. It uses an exponential decay function to determine the
 !>  coefficients.

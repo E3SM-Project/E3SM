@@ -62,9 +62,9 @@ contains
 !> \brief   Computes desired ALE thickness at new time
 !> \author  Mark Petersen
 !> \date    August 2013
-!> \details 
+!> \details
 !>  This routine computes the desired Arbitrary Lagrangian-Eulerian (ALE)
-!>  thickness at the new time. It uses the ALE formulation, and includes 
+!>  thickness at the new time. It uses the ALE formulation, and includes
 !>  contributions from SSH variations (z-star), high-frequency divergence
 !>  (z-tilde), and imposes a minimum layer thickness.
 !
@@ -159,7 +159,7 @@ contains
          SSH_ALE_Thickness = SSH_ALE_Thickness / thicknessSum
 
          ! Note that restingThickness is nonzero, and remaining terms are perturbations about zero.
-         ALE_Thickness(1:kMax, iCell) = & 
+         ALE_Thickness(1:kMax, iCell) = &
              restingThickness(1:kMax,iCell) &
            + SSH_ALE_Thickness(1:kMax)
       enddo
@@ -169,7 +169,7 @@ contains
          !$omp do schedule(runtime) private(kMax)
          do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
-   
+
             ALE_Thickness(1:kMax, iCell) = &
                 ALE_Thickness(1:kMax, iCell) &
               + newHighFreqThickness(1:kMax,iCell)
@@ -191,7 +191,7 @@ contains
             remainder = 0.0
             do k = 1, kMax
                newThickness = max(min(prelim_ALE_Thickness(k) + remainder, config_max_thickness_factor * restingThickness(k,iCell)), config_min_thickness)
-               min_ALE_thickness_down(k) = newThickness - prelim_ALE_Thickness(k) 
+               min_ALE_thickness_down(k) = newThickness - prelim_ALE_Thickness(k)
                remainder = remainder - min_ALE_thickness_down(k)
             end do
 
@@ -200,7 +200,7 @@ contains
             prelim_ALE_Thickness(1:kMax) = prelim_ALE_Thickness(1:kMax) + min_ALE_thickness_down(1:kMax)
             do k = kMax-1, 1, -1
                newThickness = max(min(prelim_ALE_Thickness(k) + remainder, config_max_thickness_factor * restingThickness(k,iCell)), config_min_thickness)
-               min_ALE_thickness_up(k) = newThickness - prelim_ALE_Thickness(k) 
+               min_ALE_thickness_up(k) = newThickness - prelim_ALE_Thickness(k)
                remainder = remainder - min_ALE_thickness_up(k)
             end do
             min_ALE_thickness_up(1) = min_ALE_thickness_up(1) + remainder
@@ -223,7 +223,7 @@ contains
 !> \brief   Initializes flags used within diagnostics routines.
 !> \author  Mark Petersen
 !> \date    August 2013
-!> \details 
+!> \details
 !>  This routine initializes flags related to quantities computed within
 !>  other diagnostics routines.
 !

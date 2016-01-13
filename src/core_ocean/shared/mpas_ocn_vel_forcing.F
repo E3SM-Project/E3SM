@@ -13,8 +13,8 @@
 !> \author Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date   September 2011
 !> \details
-!>  This module contains the main driver routine for computing 
-!>  tendencies from forcings.  
+!>  This module contains the main driver routine for computing
+!>  tendencies from forcings.
 !
 !-----------------------------------------------------------------------
 
@@ -65,7 +65,7 @@ contains
 !> \brief   Computes tendency term from forcings
 !> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date    15 September 2011
-!> \details 
+!> \details
 !>  This routine computes the forcing tendency for momentum
 !>  based on current state and user choices of forcings.
 !>  Multiple forcings may be chosen and added together.  These
@@ -125,7 +125,7 @@ contains
       !-----------------------------------------------------------------
       !
       ! call relevant routines for computing tendencies
-      ! note that the user can choose multiple options and the 
+      ! note that the user can choose multiple options and the
       !   tendencies will be added together
       !
       !-----------------------------------------------------------------
@@ -147,11 +147,11 @@ contains
 !> \brief   Initializes ocean forcings
 !> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date    September 2011
-!> \details 
-!>  This routine initializes quantities related to forcings 
-!>  in the ocean. Since a multiple forcings are available, 
+!> \details
+!>  This routine initializes quantities related to forcings
+!>  in the ocean. Since a multiple forcings are available,
 !>  this routine primarily calls the
-!>  individual init routines for each forcing. 
+!>  individual init routines for each forcing.
 !
 !-----------------------------------------------------------------------
 

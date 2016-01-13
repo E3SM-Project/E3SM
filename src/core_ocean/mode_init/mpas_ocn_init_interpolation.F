@@ -74,10 +74,10 @@ contains
 !> \brief   linearly interpolate a field in the vertical
 !> \author  Xylar Asay-Davis
 !> \date    10/12/2015
-!> \details 
-!>  Perform vertical linear interpolation of a field from a reference field 
+!> \details
+!>  Perform vertical linear interpolation of a field from a reference field
 !>  with data located at inZ to new locations outZ.  Bu default, out-of-range values of
-!>  outZ are clamped to the nearest in-range value.  That is, wherever 
+!>  outZ are clamped to the nearest in-range value.  That is, wherever
 !>  outZ > inZ(1), outField = inField(1); wherever outZ < inZ(inNVertLevels),
 !>  outFiled = inField(inNVertLevels).  If the optional extrapolate argument
 !>  is present and set to .true., linear extrapolation is perfored outside the
@@ -135,7 +135,7 @@ contains
           z = outZ(outK)
           if(z >= inZ(1)) then
             inK = 1
-            frac = 0.0_RKIND 
+            frac = 0.0_RKIND
           else if(z <= inZ(inNVertLevels)) then
             inK = inNVertLevels-1
             frac = 1.0_RKIND
@@ -162,8 +162,8 @@ contains
 !> \brief   nearest-neighbor interpolation in horiz.
 !> \author  Xylar Asay-Davis
 !> \date    10/30/2015
-!> \details 
-!>  Perform horizontal nearest-neighbor interpolation of a field from 
+!> \details
+!>  Perform horizontal nearest-neighbor interpolation of a field from
 !>  values on a logically rectangular grid.
 
 !-----------------------------------------------------------------------
@@ -223,7 +223,7 @@ contains
       end do
 
    !--------------------------------------------------------------------
-      
+
    end subroutine ocn_init_interpolation_nearest_horiz_2D!}}}
 
 !***********************************************************************
@@ -233,8 +233,8 @@ contains
 !> \brief   nearest-neighbor interpolation in horiz.
 !> \author  Xylar Asay-Davis
 !> \date    10/30/2015
-!> \details 
-!>  Perform horizontal nearest-neighbor interpolation of a field from 
+!> \details
+!>  Perform horizontal nearest-neighbor interpolation of a field from
 !>  values on a logically rectangular grid.
 
 !-----------------------------------------------------------------------
@@ -294,7 +294,7 @@ contains
       end do
 
    !--------------------------------------------------------------------
-      
+
    end subroutine ocn_init_interpolation_nearest_horiz_3D!}}}
 
 !***********************************************************************
@@ -304,11 +304,11 @@ contains
 !> \brief   bilinear interpolation in horiz.
 !> \author  Xylar Asay-Davis
 !> \date    10/30/2015
-!> \details 
-!>  Perform horizontal bilinear interpolation of a field from 
+!> \details
+!>  Perform horizontal bilinear interpolation of a field from
 !>  values on a logically rectangular grid. Optional parameters
 !>  inXPeriod and inYPeriod are used to specify the period of the
-!>  input grid.  If either or both are omitted, the grid is not 
+!>  input grid.  If either or both are omitted, the grid is not
 !>  treated as being periodic in either or both dimensions.
 
 !-----------------------------------------------------------------------
@@ -341,7 +341,7 @@ contains
          else
             call getLinearCoeffs(x, inX, inNx, xInd1, xInd2, xFrac)
          end if
-         
+
          ! if we're not extrapolating, limit xFrac
          if(present(extrapX)) then
             if(.not. extrapX) then
@@ -351,7 +351,7 @@ contains
             ! by default, we don't extrapolate
             xFrac = min(1.0_RKIND,max(0.0_RKIND,xFrac))
          end if
-         
+
          if(present(inYPeriod)) then
             call getLinearCoeffs(y, inY, inNy, yInd1, yInd2, yFrac, inYPeriod)
          else
@@ -367,7 +367,7 @@ contains
             ! by default, we don't extrapolate
             yFrac = min(1.0_RKIND,max(0.0_RKIND,yFrac))
          end if
-         
+
          outField(outIndex) =  &
             (1.0_RKIND-xFrac)*(1.0_RKIND-yFrac)*inField(xInd1,yInd1) &
             + xFrac*(1.0_RKIND-yFrac)*inField(xInd2,yInd1) &
@@ -386,11 +386,11 @@ contains
 !> \brief   bilinear interpolation in horiz.
 !> \author  Xylar Asay-Davis
 !> \date    10/30/2015
-!> \details 
-!>  Perform horizontal bilinear interpolation of a field from 
+!> \details
+!>  Perform horizontal bilinear interpolation of a field from
 !>  values on a logically rectangular grid. Optional parameters
 !>  inXPeriod and inYPeriod are used to specify the period of the
-!>  input grid.  If either or both are omitted, the grid is not 
+!>  input grid.  If either or both are omitted, the grid is not
 !>  treated as being periodic in either or both dimensions.
 
 !-----------------------------------------------------------------------
@@ -423,7 +423,7 @@ contains
          else
             call getLinearCoeffs(x, inX, inNx, xInd1, xInd2, xFrac)
          end if
-         
+
          ! if we're not extrapolating, limit xFrac
          if(present(extrapX)) then
             if(.not. extrapX) then
@@ -433,7 +433,7 @@ contains
             ! by default, we don't extrapolate
             xFrac = min(1.0_RKIND,max(0.0_RKIND,xFrac))
          end if
-         
+
          if(present(inYPeriod)) then
             call getLinearCoeffs(y, inY, inNy, yInd1, yInd2, yFrac, inYPeriod)
          else
@@ -468,7 +468,7 @@ contains
 !> \brief   compute coefficients for linear interpolation
 !> \author  Xylar Asay-Davis
 !> \date    10/30/2015
-!> \details 
+!> \details
 !>  Given a point and an array of locations, returns the indices
 !>  the point is bounded by, as a fraction, where the point lies
 !>  between the nearest two points in array of locations.
@@ -492,7 +492,7 @@ contains
       x = xValue
 
       if(present(period)) then
-         ! Set up bilinear interpolation indices in x, watching for periodic boundary 
+         ! Set up bilinear interpolation indices in x, watching for periodic boundary
          ! shift x to be within the range of [xArray(1),xArray(1)+period)
          x = modulo(x-xArray(1),period) + xArray(1)
          if (x >= xArray(nx)) then

@@ -66,7 +66,7 @@ contains
 !> \brief   Determines the tracers forcing array used for the bulk forcing.
 !> \author  Doug Jacobsen
 !> \date    04/25/12
-!> \details 
+!> \details
 !>  This routine computes the tracers forcing arrays used later in MPAS.
 !
 !-----------------------------------------------------------------------
@@ -119,7 +119,7 @@ contains
 !> \brief   Determines the velocity forcing array used for the bulk forcing.
 !> \author  Doug Jacobsen
 !> \date    04/25/12
-!> \details 
+!> \details
 !>  This routine computes the velocity forcing arrays used later in MPAS.
 !
 !-----------------------------------------------------------------------
@@ -207,7 +207,7 @@ contains
 !> \brief   Determines the thickness forcing array used for the bulk forcing.
 !> \author  Doug Jacobsen
 !> \date    04/25/12
-!> \details 
+!> \details
 !>  This routine computes the thickness forcing arrays used later in MPAS.
 !
 !-----------------------------------------------------------------------
@@ -284,7 +284,7 @@ contains
 !> \brief   Initializes bulk forcing module
 !> \author  Doug Jacobsen
 !> \date    04/25/12
-!> \details 
+!> \details
 !>  This routine initializes the bulk forcing module.
 !
 !-----------------------------------------------------------------------
@@ -319,7 +319,7 @@ contains
 !> \brief   Determines the active tracers forcing array used for the bulk forcing.
 !> \author  Doug Jacobsen
 !> \date    04/25/12
-!> \details 
+!> \details
 !>  This routine computes the active tracers forcing arrays used later in MPAS.
 !
 !-----------------------------------------------------------------------

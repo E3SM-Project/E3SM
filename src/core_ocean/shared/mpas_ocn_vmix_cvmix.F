@@ -137,7 +137,7 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: vertNonLocalFlux
       integer, pointer :: index_vertNonLocalFluxTemp
       integer, dimension(:,:), pointer :: edgesOnCell
-      
+
       logical, pointer :: config_use_cvmix_shear, config_use_cvmix_convection, config_use_cvmix_kpp
       logical, pointer :: config_use_cvmix_fixed_boundary_layer
       real (kind=RKIND), pointer :: config_cvmix_kpp_stop_OBL_search, config_cvmix_kpp_criticalBulkRichardsonNumber
@@ -202,7 +202,7 @@ contains
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
-      
+
       !
       ! set pointers for fields related to position on sphere
       !
@@ -399,7 +399,7 @@ contains
                  sfc_layer_depth = cvmix_variables % BoundaryLayerDepth * config_cvmix_kpp_surface_layer_extent
                  do kav=1,kIndexOBL
                     if(cvmix_variables%zw_iface(kav+1) < -sfc_layer_depth) exit
-                 enddo   
+                 enddo
 
                 !compute shear contribution assuming BLdepth is cell bottom
 
@@ -415,10 +415,10 @@ contains
                enddo
 
                bulkRichardsonNumberShear(kIndexOBL,iCell) = max(deltaVelocitySquared, 1.0e-15_RKIND)
-                 
+
                bulkRichardsonNumberBuoy(kIndexOBL,iCell) = gravity * (density(kIndexOBL,iCell) - &
                                  sum(density(1:kav,iCell))/real(kav, kind=RKIND)) / rho_sw
-            
+
               enddo ! do kIndexOBL
               call mpas_timer_stop('Bulk Richardson kIndexOBL loop')
 

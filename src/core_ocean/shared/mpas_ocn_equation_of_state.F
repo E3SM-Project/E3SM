@@ -67,7 +67,7 @@ contains
 !> \brief   Calls equation of state
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine calls the equation of state to update the density
 !
 !-----------------------------------------------------------------------
@@ -80,13 +80,13 @@ contains
    !
    ! Input: mesh - mesh metadata
    !        s - state: activeTracers
-   !        k_displaced 
+   !        k_displaced
    !
-   !  If k_displaced==0, density is returned with no displacement 
+   !  If k_displaced==0, density is returned with no displacement
    !
    !  If k_displaced~=0, density is returned, and is for
-   !  a parcel adiabatically displaced from its original level to level 
-   !  k_displaced.  When using the linear EOS, state % displacedDensity is 
+   !  a parcel adiabatically displaced from its original level to level
+   !  k_displaced.  When using the linear EOS, state % displacedDensity is
    !  still filled, but depth (i.e. pressure) does not modify the output.
    !
    ! Output: s - state: computed density
@@ -150,11 +150,11 @@ contains
 !> \brief   Initializes ocean momentum horizontal mixing quantities
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
-!>  This routine initializes a variety of quantities related to 
-!>  horizontal velocity mixing in the ocean. Since a variety of 
+!> \details
+!>  This routine initializes a variety of quantities related to
+!>  horizontal velocity mixing in the ocean. Since a variety of
 !>  parameterizations are available, this routine primarily calls the
-!>  individual init routines for each parameterization. 
+!>  individual init routines for each parameterization.
 !
 !----------------------------------------------------------------------
 

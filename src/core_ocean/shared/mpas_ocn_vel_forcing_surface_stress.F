@@ -13,8 +13,8 @@
 !> \author Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date   September 2011
 !> \details
-!>  This module contains the routine for computing 
-!>  tendencies from surface stress.  
+!>  This module contains the routine for computing
+!>  tendencies from surface stress.
 !
 !-----------------------------------------------------------------------
 
@@ -64,7 +64,7 @@ contains
 !> \brief   Computes tendency term from surface stress
 !> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date    15 September 2011
-!> \details 
+!> \details
 !>  This routine computes the surface stress tendency for momentum
 !>  based on current state.
 !
@@ -122,7 +122,7 @@ contains
       !-----------------------------------------------------------------
       !
       ! call relevant routines for computing tendencies
-      ! note that the user can choose multiple options and the 
+      ! note that the user can choose multiple options and the
       !   tendencies will be added together
       !
       !-----------------------------------------------------------------
@@ -179,9 +179,9 @@ contains
 !> \brief   Initializes ocean surface stress forcing
 !> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date    September 2011
-!> \details 
-!>  This routine initializes quantities related to surface stress 
-!>  in the ocean. 
+!> \details
+!>  This routine initializes quantities related to surface stress
+!>  in the ocean.
 !
 !-----------------------------------------------------------------------
 

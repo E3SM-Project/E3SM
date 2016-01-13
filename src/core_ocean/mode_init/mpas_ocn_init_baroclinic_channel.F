@@ -13,7 +13,7 @@
 !> \author Doug Jacobsen
 !> \date   02/18/2014
 !> \details
-!>  This module contains the routines for initializing the 
+!>  This module contains the routines for initializing the
 !>  the baroclinic channel test case
 !
 !-----------------------------------------------------------------------
@@ -67,7 +67,7 @@ contains
 !> \brief   Setup for baroclinic channel test case
 !> \author  Doug Jacobsen
 !> \date    02/19/2014
-!> \details 
+!> \details
 !>  This routine sets up the initial conditions for the baroclinic channel test case.
 !>  It should also ensure the mesh that was input is valid for the configuration.
 !
@@ -186,8 +186,8 @@ contains
       call mpas_dmpar_min_real(domain % dminfo, dcEdgeMin, dcEdgeMinGlobal)
 
       yMidGlobal = (yMinGlobal + yMaxGlobal) * 0.5_RKIND
-      xPerturbationMin = xMinGlobal + 4.0_RKIND * (xMaxGlobal - xMinGlobal) / 6.0_RKIND 
-      xPerturbationMax = xMinGlobal + 5.0_RKIND * (xMaxGlobal - xMinGlobal) / 6.0_RKIND 
+      xPerturbationMin = xMinGlobal + 4.0_RKIND * (xMaxGlobal - xMinGlobal) / 6.0_RKIND
+      xPerturbationMax = xMinGlobal + 5.0_RKIND * (xMaxGlobal - xMinGlobal) / 6.0_RKIND
       if(config_baroclinic_channel_use_distances) then
          perturbationWidth = config_baroclinic_channel_gradient_width_dist
       else
@@ -323,7 +323,7 @@ contains
 !> \brief   Validation for baroclinic channel test case
 !> \author  Doug Jacobsen
 !> \date    02/20/2014
-!> \details 
+!> \details
 !>  This routine validates the configuration options for the baroclinic channel test case.
 !
 !-----------------------------------------------------------------------

@@ -29,7 +29,7 @@ module ocn_time_average_coupled
     save
     public
 
-    contains 
+    contains
 
 !***********************************************************************
 !
@@ -38,7 +38,7 @@ module ocn_time_average_coupled
 !> \brief   Coupled time averager initialization
 !> \author  Doug Jacobsen
 !> \date    06/08/2013
-!> \details 
+!> \details
 !>  This routine initializes the coupled time averaging fields
 !
 !-----------------------------------------------------------------------
@@ -88,7 +88,7 @@ module ocn_time_average_coupled
 !> \brief   Coupled time averager accumulation
 !> \author  Doug Jacobsen
 !> \date    06/08/2013
-!> \details 
+!> \details
 !>  This routine accumulated the coupled time averaging fields
 !
 !-----------------------------------------------------------------------
