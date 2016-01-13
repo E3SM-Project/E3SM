@@ -6,19 +6,18 @@ if [ $# -eq 0 ]; then
 else
 	model=$1
 fi
-
-module purge
+module rm PrgEnv-intel
+module load craype-network-aries
 module load PrgEnv-cray
-module load craype-ivybridge
+module load craype-haswell
 module load cray-shmem
 module load cray-mpich
-module swap cce cce/8.4.0.223
-module load torque
-module load git/2.4.6 
-module load cmake/3.0.0
+module swap cce cce/8.4.2
+module load git/2.6.3
+module load cmake/3.3.2
 module load cray-hdf5-parallel/1.8.14
 module load cray-netcdf-hdf5parallel/4.3.3.1
-module load cray-parallel-netcdf/1.6.0
+module load cray-parallel-netcdf/1.6.1
 
 export CC=cc
 export FC=ftn

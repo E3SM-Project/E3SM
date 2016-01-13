@@ -442,6 +442,7 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
   ierr = pio_swapm( iodesc->scount, send_counts, send_displs, sr_types, 
                     recv_buf,  recv_counts, recv_displs, sr_types,
 		    mycomm, false, false, maxreq);
+
   nrecvs = 0;
   if(ios.ioproc){
     //       printf("recv_buf = ");
@@ -476,6 +477,7 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
     }
     brel(recv_buf);
   }
+
   iodesc->nrecvs = nrecvs;
   if(iodesc->sindex == NULL && iodesc->ndof>0){
     iodesc->sindex = (PIO_Offset *) bget(iodesc->ndof * sizeof(PIO_Offset));
@@ -564,11 +566,10 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int maple
     printf("%ld ",s2rindex[i]);
   printf("\n");
   */
-
+  //  printf("%s %d %d %d %d %d %d %d\n",__FILE__,__LINE__,send_counts[0],recv_counts[0],send_displs[0],recv_displs[0],sr_types[0],iodesc->llen);
   ierr = pio_swapm( s2rindex, send_counts, send_displs, sr_types, 
 		    iodesc->rindex, recv_counts, recv_displs, sr_types,
   		    mycomm, false, false, 0);
-
   // printf("%s %d\n",__FILE__,__LINE__);
 
   //  rindex is an array of the indices of the data to be sent from
@@ -1020,7 +1021,7 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
     for(i=0; i<ndims; i++){
       printf("%d %d %d ",i,iodesc->firstregion->start[i],iodesc->firstregion->count[i]);
     }
-
+    printf("\n%s %d\n",__FILE__,__LINE__);
   }
   */
 
@@ -1035,6 +1036,9 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
   pio_swapm(&(iodesc->llen), sndlths, sdispls, dtypes,
 	    iomaplen, recvlths, rdispls, dtypes, 	
 	    ios.union_comm, false, false, maxreq);
+
+
+
 
   /*
   printf("%s %d %d\n",__FILE__,__LINE__,nioprocs);
@@ -1058,11 +1062,11 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
       recvlths[ io_comprank ] = ndims;
       
       // The count from iotask i is sent to all compute tasks
-
+      
       pio_swapm(iodesc->firstregion->count,  sndlths, sdispls, dtypes,
 		count, recvlths, rdispls, dtypes, 
 		ios.union_comm, false, false, maxreq);
-
+      
       // The start from iotask i is sent to all compute tasks
       pio_swapm(iodesc->firstregion->start,  sndlths, sdispls, dtypes,
 		start, recvlths, rdispls, dtypes, 

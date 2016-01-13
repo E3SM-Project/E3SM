@@ -41,6 +41,7 @@
     - \ref PIO_inq_attname
     - \ref PIO_inq_att
     - \ref PIO_inq_attlen
+    - \ref PIO_inq_var
     - \ref PIO_inq_varid
     - \ref PIO_inq_varname
     - \ref PIO_inq_vartype
@@ -54,6 +55,7 @@
     - \ref PIO_inq_nvars
     - \ref PIO_inq_natts
     - \ref PIO_inquire_variable
+    - \ref PIO_inquire_dimension
     - \ref PIO_inquire_dimension
 
 */

@@ -9,6 +9,9 @@
  * @ingroup PIO_def_var
  * Set deflate (zlib) settings for a variable.
  *
+ * This function only applies to netCDF-4 files. When used with netCDF
+ * classic files, the error PIO_ENOTNC4 will be returned.
+ *
  * See the <a
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
  * variable documentation</a> for details about the operation of this
@@ -86,6 +89,9 @@ int PIOc_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
 
 /**
  * @ingroup PIO_inq_var
+ *
+ * This function only applies to netCDF-4 files. When used with netCDF
+ * classic files, the error PIO_ENOTNC4 will be returned.
  *
  * Inquire about deflate (zlib compression) settings for a variable.
  *
@@ -169,6 +175,9 @@ int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
  * @ingroup PIO_inq_var
  * Inquire about szip settings for a variable.
  *
+ * This function only applies to netCDF-4 files. When used with netCDF
+ * classic files, the error PIO_ENOTNC4 will be returned.
+ *
  * Szip is a read-only compression format in netCDF-4. Only raw HDF5
  * can create szip files, but netcdf-4 can read them.
  *
@@ -245,14 +254,23 @@ int PIOc_inq_var_szip(int ncid, int varid, int *options_maskp,
 
 /**
  * @ingroup PIO_def_var
- * Set the fletcher32 filter for a variable.
+ * Turn on checksums for a variable (serial netCDF-4 only).
  * 
- * The fletcher32 filter may help with compression of integer values.
+ * This function only applies to netCDF-4 files. When used with netCDF
+ * classic files, the error PIO_ENOTNC4 will be returned.
+ *
+ * This function turns on the fletcher32 filter for this variable in
+ * the HDF5 layer. This causes a 4-byte checksum to be written for
+ * each chunk of data. These checksums are checked automatically when
+ * the file is read, and an error thrown if they don't match. There
+ * will be a performance penalty on read for checking the checksum.
+ *
+ * This function is only available for netCDF-4 Serial files. It is
+ * not available for netCDF-4 parallel files.
  *
  * See the <a
- * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
- * variable documentation</a> for details about the operation of this
- * function.
+ * href="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf-c/nc_005fdef_005fvar_005ffletcher32.html#nc_005fdef_005fvar_005ffletcher32">netCDF
+ * documentation</a> for details about the operation of this function.
  *
  * @param ncid the ncid of the open file.
  * @param varid the ID of the variable to set chunksizes for.
@@ -322,6 +340,9 @@ int PIOc_def_var_fletcher32(int ncid, int varid, int fletcher32)
 /**
  * @ingroup PIO_inq_var
  * Inquire about chunksizes for a variable.
+ *
+ * This function only applies to netCDF-4 files. When used with netCDF
+ * classic files, the error PIO_ENOTNC4 will be returned.
  *
  * See the <a
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
@@ -400,6 +421,9 @@ int PIOc_inq_var_fletcher32(int ncid, int varid, int *fletcher32p)
  * @ingroup PIO_def_var
  * Set chunksizes for a variable.
  * 
+ * This function only applies to netCDF-4 files. When used with netCDF
+ * classic files, the error PIO_ENOTNC4 will be returned.
+ *
  * Chunksizes have important performance repercussions. NetCDF
  * attempts to choose sensible chunk sizes by default, but for best
  * performance check chunking against access patterns.
@@ -481,6 +505,9 @@ int PIOc_def_var_chunking(int ncid, int varid, int storage,
  * @ingroup PIO_inq_var
  * Inquire about chunksizes for a variable.
  *
+ * This function only applies to netCDF-4 files. When used with netCDF
+ * classic files, the error PIO_ENOTNC4 will be returned.
+ *
  * See the <a
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
  * variable documentation</a> for details about the operation of this
@@ -558,6 +585,9 @@ int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizes
 /**
  * @ingroup PIO_def_var
  * Set chunksizes for a variable.
+ *
+ * This function only applies to netCDF-4 files. When used with netCDF
+ * classic files, the error PIO_ENOTNC4 will be returned.
  *
  * See the <a
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
@@ -639,6 +669,9 @@ int PIOc_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
  * @ingroup PIO_def_var
  * Set chunksizes for a variable.
  *
+ * This function only applies to netCDF-4 files. When used with netCDF
+ * classic files, the error PIO_ENOTNC4 will be returned.
+ *
  * See the <a
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
  * variable documentation</a> for details about the operation of this
@@ -719,6 +752,9 @@ int PIOc_def_var_endian(int ncid, int varid, int endian)
  * @ingroup PIO_inq_var
  * Inquire about chunksizes for a variable.
  *
+ * This function only applies to netCDF-4 files. When used with netCDF
+ * classic files, the error PIO_ENOTNC4 will be returned.
+ *
  * See the <a
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
  * variable documentation</a> for details about the operation of this
@@ -794,26 +830,33 @@ int PIOc_inq_var_endian(int ncid, int varid, int *endianp)
 
 /**
  * @ingroup PIO_def_var
- * Set chunksizes for a variable.
+ *
+ * Set chunk cache netCDF files to be opened/created.
+ *
+ * This function only applies to netCDF-4 files. When used with netCDF
+ * classic files, the error PIO_ENOTNC4 will be returned.
+ *
+ * The file chunk cache for HDF5 can be set, and will apply for any
+ * files opened or created until the program ends, or the settings are
+ * changed again. The cache settings apply only to the open file. They
+ * do not persist with the file, and must be set each time the file is
+ * opened, before it is opened, if they are to have effect.
  *
  * See the <a
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
  * variable documentation</a> for details about the operation of this
  * function.
  * 
- * Chunksizes have important performance repercussions. NetCDF
- * attempts to choose sensible chunk sizes by default, but for best
- * performance check chunking against access patterns.
- *
- * @param ncid the ncid of the open file.
- * @param varid the ID of the variable to set chunksizes for.
- * @param storage NC_CONTIGUOUS or NC_CHUNKED.
- * @param chunksizep an array of chunksizes. Must have a chunksize for
- * every variable dimension.
+ * @param iotype the iotype of files to be created or opened.
+`* @param io_rank the rank of the calling process.
+ * @param size size of file cache.
+ * @param nelems number of elements in file cache.
+ * @param preemption preemption setting for file cache.
  * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
-int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size, size_t nelems, float preemption)
+int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size,
+			 size_t nelems, float preemption)
 {
     int ierr;
     int msg;
@@ -824,7 +867,7 @@ int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size, size_t nelems, fl
 
     errstr = NULL;
     ierr = PIO_NOERR;
-    msg = PIO_MSG_SET_CHUNK_CACHE;
+    /*msg = PIO_MSG_SET_CHUNK_CACHE;*/
 
     /* if(ios->async_interface && ! ios->ioproc){ */
     /* 	if(ios->compmaster)  */
@@ -832,7 +875,8 @@ int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size, size_t nelems, fl
     /* 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm); */
     /* } */
 
-    switch(iotype){
+    switch(iotype)
+    {
 #ifdef _NETCDF
 #ifdef _NETCDF4
     case PIO_IOTYPE_NETCDF4P:
@@ -867,7 +911,17 @@ int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size, size_t nelems, fl
 
 /**
  * @ingroup PIO_def_var
- * Set chunksizes for a variable.
+ * Get current file chunk cache settings from HDF5.
+ *
+ * This function has no effect on netCDF classic files. Calling this
+ * function with iotype of PIO_IOTYPE_PNETCDF or PIO_IOTYPE_NETCDF
+ * returns an error.
+ *
+ * The file chunk cache for HDF5 can be set, and will apply for any
+ * files opened or created until the program ends, or the settings are
+ * changed again. The cache settings apply only to the open file. They
+ * do not persist with the file, and must be set each time the file is
+ * opened, before it is opened, if they are to have effect.
  *
  * See the <a
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
@@ -878,19 +932,74 @@ int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size, size_t nelems, fl
  * attempts to choose sensible chunk sizes by default, but for best
  * performance check chunking against access patterns.
  *
- * @param ncid the ncid of the open file.
- * @param varid the ID of the variable to set chunksizes for.
- * @param storage NC_CONTIGUOUS or NC_CHUNKED.
- * @param chunksizep an array of chunksizes. Must have a chunksize for
- * every variable dimension.
+ * @param iotype the iotype of files to be created or opened.
+`* @param io_rank the rank of the calling process.
+ * @param sizep gets the size of file cache.
+ * @param nelemsp gets the number of elements in file cache.
+ * @param preemptionp gets the preemption setting for file cache.
  * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
-int PIOc_get_chunk_cache(size_t *sizep, size_t *nelemsp, float *preemptionp);
+int PIOc_get_chunk_cache(int iotype, int io_rank, size_t *sizep,
+			 size_t *nelemsp, float *preemptionp)
+{
+    int ierr;
+    int msg;
+    int mpierr;
+    char *errstr;
+
+    errstr = NULL;
+    ierr = PIO_NOERR;
+
+    /* Since this is a property of the running HDF5 instance, not the
+     * file, it's not clear if this message passing will apply. For
+     * now, comment it out. EJH */
+    /* msg = PIO_MSG_INQ_VAR_FLETCHER32; */
+
+    /* if(ios->async_interface && ! ios->ioproc){ */
+    /* 	if(ios->compmaster)  */
+    /* 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm); */
+    /* 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm); */
+    /* } */
+
+    switch(iotype){
+#ifdef _NETCDF
+#ifdef _NETCDF4
+    case PIO_IOTYPE_NETCDF4P:
+	ierr = nc_get_chunk_cache(sizep, nelemsp, preemptionp);
+	break;
+    case PIO_IOTYPE_NETCDF4C:
+	if (!io_rank)
+	    ierr = nc_get_chunk_cache(sizep, nelemsp, preemptionp);
+	break;
+#endif
+    case PIO_IOTYPE_NETCDF:
+	return PIO_ENOTNC4;
+	break;
+#endif
+#ifdef _PNETCDF
+    case PIO_IOTYPE_PNETCDF:
+	return PIO_ENOTNC4;
+	break;
+#endif
+    default:
+	ierr = iotype_error(iotype,__FILE__,__LINE__);
+    }
+
+    if(ierr != PIO_NOERR){
+	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
+	sprintf(errstr,"in file %s",__FILE__);
+    }
+    if(errstr != NULL) free(errstr);
+    return ierr;
+}
 
 /**
  * @ingroup PIO_def_var
  * Set chunksizes for a variable.
+ *
+ * This function only applies to netCDF-4 files. When used with netCDF
+ * classic files, the error PIO_ENOTNC4 will be returned.
  *
  * See the <a
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
@@ -969,6 +1078,90 @@ int PIOc_set_var_chunk_cache(int ncid, int varid, size_t size, size_t nelems,
     return ierr;
 }    
 
+/**
+ * @ingroup PIO_inq_var
+ * Get the variable chunk cache settings.
+ *
+ * This function only applies to netCDF-4 files. When used with netCDF
+ * classic files, the error PIO_ENOTNC4 will be returned.
+ *
+ * Note that these settings are not part of the data file - they apply
+ * only to the open file as long as it is open.
+ *
+ *  See the <a
+ * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
+ * variable documentation</a> for details about the operation of this
+ * function.
+ * 
+ * @param ncid the ncid of the open file.
+ * @param varid the ID of the variable to set chunksizes for.
+ * @param sizep will get the size of the cache in bytes.
+ * @param nelemsp will get the number of elements in the cache.
+ * @param preemptionp will get the cache preemption value.
+ * 
+ * @return PIO_NOERR for success, otherwise an error code.
+ */
 int PIOc_get_var_chunk_cache(int ncid, int varid, size_t *sizep, size_t *nelemsp,
-			     float *preemptionp);
+			     float *preemptionp)
+{
+    int ierr;
+    int msg;
+    int mpierr;
+    iosystem_desc_t *ios;
+    file_desc_t *file;
+    char *errstr;
+
+    errstr = NULL;
+    ierr = PIO_NOERR;
+
+    if (!(file = pio_get_file_from_id(ncid)))
+	return PIO_EBADID;
+    ios = file->iosystem;
+
+    /* Since this is a property of the running HDF5 instance, not the
+     * file, it's not clear if this message passing will apply. For
+     * now, comment it out. EJH */
+    /* msg = PIO_MSG_INQ_VAR_FLETCHER32; */
+
+    /* if(ios->async_interface && ! ios->ioproc){ */
+    /* 	if(ios->compmaster)  */
+    /* 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm); */
+    /* 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm); */
+    /* } */
+
+    if(ios->ioproc){
+	switch(file->iotype){
+#ifdef _NETCDF
+#ifdef _NETCDF4
+	case PIO_IOTYPE_NETCDF4P:
+	    ierr = nc_get_var_chunk_cache(file->fh, varid,  sizep, nelemsp, preemptionp);
+	    break;
+	case PIO_IOTYPE_NETCDF4C:
+	    if (!ios->io_rank)
+		ierr = nc_get_var_chunk_cache(file->fh, varid,  sizep, nelemsp, preemptionp);
+	    break;
+#endif
+	case PIO_IOTYPE_NETCDF:
+	    return PIO_ENOTNC4;
+	    break;
+#endif
+#ifdef _PNETCDF
+	case PIO_IOTYPE_PNETCDF:
+	    return PIO_ENOTNC4;
+	    break;
+#endif
+	default:
+	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
+	}
+    }
+
+    ierr = check_netcdf(file, ierr, errstr,__LINE__);
+    if(ierr != PIO_NOERR){
+	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
+	sprintf(errstr,"in file %s",__FILE__);
+    }
+    if(errstr != NULL) free(errstr);
+    return ierr;
+}    
+
 	    

@@ -9,7 +9,7 @@ fi
 
 module reset
 module unload netcdf
-module swap intel gnu/5.2.0
+module swap intel gnu/5.3.0
 module load git/2.3.0
 module load cmake/3.0.2
 module load netcdf-mpi/4.3.3.1

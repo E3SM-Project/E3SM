@@ -282,13 +282,17 @@ void compute_buffer_init(iosystem_desc_t ios)
 	   //			     IOBUF, iodesc->llen, iodesc->basetype);
 	   int reqn=0;
 
-	   if(vdesc->request == NULL){
-	     vdesc->request = malloc(sizeof(int)*iodesc->maxregions);
-	     for(int i=0;i<iodesc->maxregions;i++){
+
+	   if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	     vdesc->request = realloc(vdesc->request, 
+				      sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
+	     
+	     for(int i=vdesc->nreqs;i<vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK;i++){
 	       vdesc->request[i]=NC_REQ_NULL;
 	     }
+	     reqn = vdesc->nreqs;
 	   }else{
-	     while(vdesc->request[reqn] != NC_REQ_NULL){
+	     while(vdesc->request[reqn] != NC_REQ_NULL ){
 	       reqn++;
 	     }
 	   }
@@ -581,11 +585,14 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 	     bufptr = (void *)((char *) IOBUF + nv*tsize*llen);
 
 	     int reqn=0;
-	     if(vdesc->request == NULL){
-	       vdesc->request = malloc(sizeof(int)*maxregions);
-	       for(int i=0;i<maxregions;i++){
+	     if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
+	       vdesc->request = realloc(vdesc->request, 
+					sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
+	     
+	       for(int i=vdesc->nreqs;i<vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK;i++){
 		 vdesc->request[i]=NC_REQ_NULL;
 	       }
+	       reqn = vdesc->nreqs;
 	     }else{
 	       while(vdesc->request[reqn] != NC_REQ_NULL){
 		 reqn++;
@@ -1419,9 +1426,14 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
     //   printf("%s %d %d\n",__FILE__,__LINE__,rcnt);
     // }
     if(rcnt>0){
-      //   if(file->iosystem->io_rank==0){
-      //	printf("%s %d %d\n",__FILE__,__LINE__,rcnt);
-      // }
+      /*
+      if(file->iosystem->io_rank==0){
+	printf("%s %d %d ",__FILE__,__LINE__,rcnt);
+	for(int i=0; i<rcnt; i++){
+	  printf("%d ",request[i]);
+	}
+	printf("\n");
+	}*/
       ierr = ncmpi_wait_all(file->fh, rcnt,  request,status);
     }
     for(int i=0; i<PIO_MAX_VARS; i++){
