@@ -1742,6 +1742,36 @@
     </desc>
   </entry>
 
+  <entry id="NODENAME_REGEX"> 
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>run_din</group>
+    <file>env_run.xml</file>
+    <desc>
+      A regular expression to match machine node names to ACME machine.
+    </desc>
+  </entry> 
+
+  <entry id="PROXY"> 
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>run_din</group>
+    <file>env_run.xml</file>
+    <desc>
+      Proxy (if any) setting for http_proxy to allow web access on this machine.
+    </desc>
+  </entry> 
+
+  <entry id="TESTS"> 
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>run_din</group>
+    <file>env_run.xml</file>
+    <desc>
+      The default test suite for this machine.
+    </desc>
+  </entry> 
+
   <entry id="DIN_LOC_ROOT"> 
     <type>char</type>
     <default_value>UNSET</default_value>
@@ -2274,6 +2304,51 @@
     <file>env_run.xml</file>
     <desc>pio rearranger choice box=1, subset=2 </desc>
   </entry>
+
+  <entry id="PIO_REARR_COMM_TYPE">
+    <type>char</type>
+    <valid_values>p2p,coll,default</valid_values>
+    <value>p2p</value> 
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger communication type</desc>
+  </entry> 
+
+  <entry id="PIO_REARR_COMM_FCD">
+    <type>char</type>
+    <valid_values>2denable,io2comp,comp2io,disable,default</valid_values>
+    <value>2denable</value> 
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger communication flow control direction</desc>
+  </entry> 
+
+  <entry id="PIO_REARR_COMM_MAX_PEND_REQ">
+    <type>integer</type>
+    <valid_values></valid_values> 
+    <value>64</value> 
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger communication max pending requests</desc>
+  </entry>
+
+  <entry id="PIO_REARR_COMM_ENABLE_HS">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>  
+    <value>TRUE</value> 
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger communiation options: TRUE implies enable handshake</desc> 
+  </entry> 
+
+  <entry id="PIO_REARR_COMM_ENABLE_ISEND">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>  
+    <value>FALSE</value> 
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger communiation options: TRUE implies enable isend</desc> 
+  </entry> 
 
   <entry id="PIO_TYPENAME">
     <type>char</type>
