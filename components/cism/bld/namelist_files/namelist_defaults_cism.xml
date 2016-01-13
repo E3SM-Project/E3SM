@@ -39,7 +39,8 @@ attributes to express the dependency.
 <!-- group: cism_history                                            -->
 <!-- =============================================================  -->
 
-<cesm_history_vars>'acab artm thk usurf topg uvel vvel uflx vflx temp bmlt bwat'</cesm_history_vars>
+<cesm_history_vars cism_phys="cism1">'acab artm thk usurf topg uvel vvel uflx vflx temp bmlt bwat'</cesm_history_vars>
+<cesm_history_vars cism_phys="cism2">'acab artm thk usurf topg uvel vvel temp bmlt bwat beta_internal'</cesm_history_vars>
 
 <history_option>nyears</history_option>
 
@@ -158,6 +159,8 @@ attributes to express the dependency.
 
 <marine_margin>1</marine_margin>
 
+<calving_domain>1</calving_domain>
+
 <slip_coeff>0</slip_coeff>
 
 <evolution cism_phys="cism1">0</evolution>
@@ -181,7 +184,7 @@ attributes to express the dependency.
      code in a more typical configuration (i.e., with a sub-annual time step) -->
 <dt glc_grid="gland20"  cism_phys="cism2">0.5</dt>
 
-<dt glc_grid="gland4"   cism_phys="cism2">0.0083333333333333333</dt>
+<dt glc_grid="gland4"   cism_phys="cism2">0.05</dt>
 
 <ntem>1</ntem>
 
@@ -211,6 +214,8 @@ attributes to express the dependency.
 
 <ice_limit cism_phys="cism1">100.</ice_limit>
 <ice_limit cism_phys="cism2">1.</ice_limit>
+
+<max_slope>0.1</max_slope>
 
 <marine_limit>-200.</marine_limit>
 
@@ -254,10 +259,22 @@ attributes to express the dependency.
 <which_ho_nonlinear dycore="1">1</which_ho_nonlinear>
 <which_ho_nonlinear dycore="2">0</which_ho_nonlinear>
 
+<which_ho_gradient>0</which_ho_gradient>
+
+<which_ho_gradient_margin>1</which_ho_gradient_margin>
+
 <which_ho_approx>4</which_ho_approx>
 
 <which_ho_precond>1</which_ho_precond>
 
 <which_ho_assemble_beta>0</which_ho_assemble_beta>
+
+<which_ho_assemble_bfric>1</which_ho_assemble_bfric>
+
+<which_ho_ground>0</which_ho_ground>
+
+<which_ho_flotation_function>1</which_ho_flotation_function>
+
+<glissade_maxiter>50</glissade_maxiter>
 
 </namelist_defaults>

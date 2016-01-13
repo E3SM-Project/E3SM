@@ -535,6 +535,30 @@ Default: 1
 </entry>
 
 <entry 
+id="calving_domain"
+type="integer" 
+category="cism_config_options"
+group="cism_config_options"
+valid_values="0,1,2" >
+0: Calve only at ocean edge
+1: Calve wherever the calving criterion is met
+2: Calve where the calving criterion is met, and there is a connected path
+   to the ocean through other cells where the criterion is met
+Default: 1
+</entry>
+
+<entry 
+id="calving_init"
+type="integer" 
+category="cism_config_options"
+group="cism_config_options"
+valid_values="0,1" >
+0: Do not calve at initialization
+1: Calve at initialization
+Default: (use hard-coded default)
+</entry>
+
+<entry 
 id="slip_coeff"
 type="integer" 
 category="cism_config_options"
@@ -757,6 +781,16 @@ Default: 100 for cism1, 1 for cism2
 </entry>
 
 <entry 
+id="max_slope"
+type="real" 
+category="cism_config_parameters"
+group="cism_config_parameters" >
+Maximum surface slope used in the glissade driving-stress calculation (unitless)
+Not valid for other dycores
+Default: 0.1
+</entry>
+
+<entry 
 id="marine_limit"
 type="real" 
 category="cism_config_parameters"
@@ -875,6 +909,15 @@ global domain
 Default: 0.
 </entry>
 
+<entry
+id="ho_beta_const"
+type="real"
+category="cism_config_parameters"
+group="cism_config_parameters" >
+Spatially uniform beta for higher-order dycores (Pa yr m-1)
+Default: (use hard-coded default)
+</entry>
+
 <!-- =============================================================  -->
 <!-- group: cism.config: ho_options (higher-order options)          -->
 <!-- =============================================================  -->
@@ -976,7 +1019,7 @@ Which gradient operator to use in the glissade dycore.
 Not valid in other dycores.
 0: Centered gradient.
 1: Upstream gradient (may be better for ice evolution because it damps checkerboard noise).
-Default: (use hard-coded default)
+Default: 0
 </entry>
 
 <entry
@@ -990,7 +1033,7 @@ Not valid for other dycores.
 0: Use info from all neighbor cells, ice-covered or ice-free
 1: Use info from ice-covered and/or land cells, not ice-free ocean
 2: Use info from ice-covered cells only
-Default: (use hard-coded default)
+Default: 1
 </entry>
 
 <entry
@@ -1035,6 +1078,70 @@ Flag that describes how beta terms are assembled in the glissade finite-element 
 1: Apply local value of beta at each vertex
 Default: 0
 </entry>
+
+<entry
+id="which_ho_assemble_taud"
+type="integer"
+category="cism_config_ho_options"
+group="cism_config_ho_options"
+valid_values="0,1" >
+Flag that describes how driving-stress terms are assembled in the glissade finite-element calculation
+Not valid for other dycores
+0: Standard finite-element calculation (which effectively smooths the driving stress)
+1: Apply local value of driving stress at each vertex
+Default: (use hard-coded default)
+</entry>
+
+<entry
+id="which_ho_assemble_bfric"
+type="integer"
+category="cism_config_ho_options"
+group="cism_config_ho_options"
+valid_values="0,1" >
+Flag that describes how the basal friction heat flux is computed in the glissade finite-element calculation
+Not valid for other dycores
+0: Standard finite-element calculation summing over quadrature points
+1: Apply local value of beta*(u^2 + v^2) at each vertex
+Default: 1
+</entry>
+
+<entry
+id="which_ho_ground"
+type="integer"
+category="cism_config_ho_options"
+group="cism_config_ho_options"
+valid_values="0,1,2" >
+Flag that indicates how the grounded ice fraction is computed in the glissade dycore
+Not valid for other dycores
+0: fground = 0 in floating cells (based on flotation condition), else fground = 1 
+1: fground between 0 and 1 (inclusive), based on a grounding line parameterization
+2: fground = 1 in all cells
+Default: 0
+</entry>
+
+<entry
+id="which_ho_flotation_function"
+type="integer"
+category="cism_config_ho_options"
+group="cism_config_ho_options"
+valid_values="0,1,2" >
+Flag that indicates how to compute the flotation function at and near vertices in the glissade dycore
+Not valid for other dycores
+0: f_flotation = (-rhow*b/rhoi*H) = f_pattyn; less than or equal to 1 for grounded, greater than 1 for floating
+1: f_flotation = (rhoi*H)/(-rhow*b) = 1/f_pattyn; greater than or equal to 1 for grounded, less than 1 for floating
+2: f_flotation = -rhow*b - rhoi*H = ocean cavity thickness; less than or equal to 0 for grounded, greater than 0 for floating 
+Default: 1
+</entry>
+
+<entry
+id="glissade_maxiter"
+type="integer"
+category="cism_config_ho_options"
+group="cism_config_ho_options" >
+Maximum number of nonlinear iterations to be used by the Glissade velocity solver
+Default: 50
+</entry>
+
 
 <!-- =============================================================  -->
 <!-- group: cism.config: GTHF (geothermal heat flux)                -->

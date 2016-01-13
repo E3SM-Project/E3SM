@@ -4,6 +4,160 @@ This file describes what main-trunk tags were created and why
 
 ================================================================================
 Originator: sacks
+Date: Jan 13, 2016
+Model: cism
+Version: cism2_1_13
+One-line summary: Clean up ChangeLog entry for last tag
+
+Purpose of changes:
+
+   Just minor ChangeLog cleanup
+
+Changes answers relative to previous tag: NO
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       ChangeLog
+
+Summary of testing: NONE
+
+Externals used for testing: N/A
+
+cism tag used for baseline comparisons: N/A
+
+Any other externals that differed in baseline: N/A
+
+================================================================================
+Originator: sacks
+Date: Jan 12, 2016
+Model: cism
+Version: cism2_1_12
+One-line summary: Port CISM to NAG
+
+Purpose of changes:
+
+   Port CISM to NAG
+
+Changes answers relative to previous tag: NO
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+*** Point to new external, which is ported to NAG
+M       SVN_EXTERNAL_DIRECTORIES
+
+*** Introduce hobart_nag tests, and fix test that has been CFAILing for a while
+M       cime_config/testdefs/testlist_cism.xml
+
+Summary of testing:
+
+   Ran full aux_glc test suite: yellowstone & hobart. All tests passed.
+
+Externals used for testing: cesm1_5_beta04, with cime at branch cism_nag_port
+(git describe: cime4.3.10-3-g3de3528)
+
+cism tag used for baseline comparisons: cism2_1_11
+
+Any other externals that differed in baseline: cime may have been the version
+out-of-the-box in cesm1_5_beta04
+
+================================================================================
+Originator: sacks
+Date: Jan 7, 2016
+Model: cism
+Version: cism2_1_11
+One-line summary: Update external, tweak some namelist items
+
+Purpose of changes:
+
+(1) Update to latest version of piscees/develop
+
+(2) For cism2, exclude uflx and vflx history fields (these aren't set)
+
+(3) For cism2, include beta_internal history field
+
+(4) Add ho_beta_const to namelist_definition, so it can be changed via
+    user_nl_cism
+
+
+Changes answers relative to previous tag: NO
+   however, there are namelist changes
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       bld/namelist_files/namelist_defaults_cism.xml
+M       bld/namelist_files/namelist_definition_cism.xml
+M       SVN_EXTERNAL_DIRECTORIES
+
+Summary of testing:
+
+   Ran full yellowstone aux_glc test suite. All tests passed, EXCEPT this
+   expected failure:
+
+   CFAIL ERS_Ly20_E.f09_g16_gl5.TGHIST.yellowstone_intel
+
+Externals used for testing: cesm1_5_beta02, but with cime at
+1e5b15f424d9d7bc57ef5158c3da7bcc0ef02fc3 (return_reverted_drv branch)
+
+cism tag used for baseline comparisons: cism2_1_10
+
+Any other externals that differed in baseline: none
+
+================================================================================
+Originator: sacks
+Date: Nov 13, 2015
+Model: cism
+Version: cism2_1_10
+One-line summary: Update external, change some higher-order config settings
+
+Purpose of changes:
+
+   Update to a version of CISM and config setting changes which, together, allow
+   for long runs of CISM2.
+
+Changes answers relative to previous tag: YES
+
+   Changes answers for all CISM2 runs (but not CISM1)
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+========= Point to Bill Lipscomb's branch (not yet merged to 'develop')
+M       SVN_EXTERNAL_DIRECTORIES
+
+========= New config settings, and changed defaults for others
+M       bld/build-namelist
+M       bld/namelist_files/namelist_defaults_cism.xml
+M       bld/namelist_files/namelist_definition_cism.xml
+
+========= In aux_glc test list, change 1-year SMS test of 4-km CISM2 to 3-year
+          ERS test: performance of CISM2 has improved so that this is feasible
+          (just about 2-min run time). Also add 4-km tests back to prealpha /
+          prebeta test suites.
+M       cime_config/testdefs/testlist_cism.xml
+
+Summary of testing:
+
+   Ran full yellowstone aux_glc test suite. All tests passed, EXCEPT this
+   expected failure:
+
+   CFAIL ERS_Ly20_E.f09_g16_gl5.TGHIST.yellowstone_intel.GC.1113-0634.intel
+
+Externals used for testing: cesm1_5_beta02, but with cime at
+1e5b15f424d9d7bc57ef5158c3da7bcc0ef02fc3 (return_reverted_drv branch)
+
+cism tag used for baseline comparisons: cism2_1_08
+
+Any other externals that differed in baseline: cime at slightly different version
+
+================================================================================
+Originator: sacks
 Date: Sept 25, 2015
 Model: cism
 Version: cism2_1_06

@@ -503,6 +503,7 @@ add_default($nl, 'basal_mass_balance');
 add_default($nl, 'gthf');
 add_default($nl, 'isostasy');
 add_default($nl, 'marine_margin');
+add_default($nl, 'calving_domain');
 add_default($nl, 'slip_coeff');
 add_default($nl, 'evolution');
 add_default($nl, 'vertical_integration');
@@ -533,6 +534,7 @@ $nl->write_cism_config($fh, "cism_config_time");
 print $fh "\n[parameters]\n";
 add_default($nl, 'log_level');
 add_default($nl, 'ice_limit');
+add_default($nl, 'max_slope');
 add_default($nl, 'marine_limit');
 add_default($nl, 'geothermal');
 add_default($nl, 'flow_factor');
@@ -549,9 +551,15 @@ if ($nl->get_value('dycore') != 0) {
     add_default($nl, 'which_ho_disp');
     add_default($nl, 'which_ho_sparse', 'dycore'=>$nl->get_value('dycore'), 'cism_use_trilinos'=>"$CISM_USE_TRILINOS");
     add_default($nl, 'which_ho_nonlinear', 'dycore'=>$nl->get_value('dycore'));
+    add_default($nl, 'which_ho_gradient');
+    add_default($nl, 'which_ho_gradient_margin');
     add_default($nl, 'which_ho_approx');
     add_default($nl, 'which_ho_precond');
     add_default($nl, 'which_ho_assemble_beta');
+    add_default($nl, 'which_ho_assemble_bfric');
+    add_default($nl, 'which_ho_ground');
+    add_default($nl, 'which_ho_flotation_function');
+    add_default($nl, 'glissade_maxiter');
     $nl->write_cism_config($fh, "cism_config_ho_options");
 }
 else {
