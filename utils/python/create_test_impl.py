@@ -216,9 +216,7 @@ class CreateTest(object):
             # Just let every case build it's own
             sharedlibroot = os.path.join(test_dir, "sharedlibroot.%s" % self._test_id)
 
-        # Add for worley:
-        # create_newcase_cmd = "%s -model acme -silent -case %s -res %s -mach %s -compiler %s -compset %s -testname %s -project %s -nosavetiming -sharedlibroot %s" % \
-        create_newcase_cmd = "%s -model acme -case %s -res %s -mach %s -compiler %s -compset %s -testname %s -project %s -sharedlibroot %s" % \
+        create_newcase_cmd = "%s -model acme -case %s -res %s -mach %s -compiler %s -compset %s -testname %s -project %s -nosavetiming -sharedlibroot %s" % \
                               (os.path.join(self._cime_root, "scripts", "create_newcase"),
                                test_dir, grid, machine, compiler, compset, test_case, self._project,
                                sharedlibroot)
