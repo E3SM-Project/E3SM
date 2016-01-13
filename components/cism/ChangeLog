@@ -158,6 +158,76 @@ Any other externals that differed in baseline: cime at slightly different versio
 
 ================================================================================
 Originator: sacks
+Date: Nov 8, 2015
+Model: cism
+Version: cism2_1_09
+One-line summary: Add a single-processor TG test to the prealpha test suite
+
+Purpose of changes:
+
+   I realized we don't have any single-processor TG tests in the prealpha or
+   prebeta test suites, and recent CIME changes have broken these.
+
+Changes answers relative to previous tag: NO
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       cime_config/testdefs/testlist_cism.xml
+
+Summary of testing: NONE
+
+Externals used for testing: N/A
+
+cism tag used for baseline comparisons: N/A
+
+Any other externals that differed in baseline: N/A
+
+================================================================================
+Originator: sacks
+Date: Sept 25, 2015
+Model: cism
+Version: cism2_1_07
+One-line summary: Remove failing tests from prealpha / prebeta test lists
+
+Purpose of changes:
+
+   4km CISM2 tests are currently failing. Thus, temporarily replace them with
+   20-km tests. I am using _D tests for the replacement tests so that the
+   replacement tests match tests that I have in the aux_glc test suite.
+
+Changes answers relative to previous tag:
+
+Bugs fixed (include bugzilla ID) (http://bugs.cgd.ucar.edu/):
+
+List all modified files, and describe the changes:
+
+M       cime_config/testdefs/testlist_cism.xml
+
+prealpha:
+6c6
+< SMS_Ly1.f09_g16_gl4.TGIS2.yellowstone_intel # include one short test of the typical production resolution for CISM2
+---
+> SMS_D_Ly1.f09_g16_gl20.TGIS2.yellowstone_intel
+
+prebeta:
+8c8
+< SMS_Ly1.f09_g16_gl4.TGIS2.hopper_pgi # included simply to have a test on hopper
+---
+> SMS_D_Ly1.f09_g16_gl20.TGIS2.hopper_pgi # included simply to have a test on hopper
+
+
+Summary of testing: NONE
+
+Externals used for testing: N/A
+
+cism tag used for baseline comparisons: N/A
+
+Any other externals that differed in baseline: N/A
+
+================================================================================
+Originator: sacks
 Date: Sept 25, 2015
 Model: cism
 Version: cism2_1_06
