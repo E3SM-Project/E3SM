@@ -293,8 +293,8 @@ class CreateTest(object):
         casedoc_dir       = os.path.join(test_dir, "CaseDocs")
         baseline_dir      = os.path.join(self._baseline_root, self._baseline_name, test_name)
         baseline_casedocs = os.path.join(baseline_dir, "CaseDocs")
-        compare_nl        = os.path.join(test_dir, "Tools/compare_namelists")
-        simple_compare    = os.path.join(test_dir, "Tools/simple_compare")
+        compare_nl        = os.path.join(acme_util.get_acme_scripts_root(), "compare_namelists")
+        simple_compare    = os.path.join(acme_util.get_acme_scripts_root(), "simple_compare")
 
         if (self._compare):
             has_fails = False

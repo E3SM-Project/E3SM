@@ -285,15 +285,15 @@ def update_acme_tests(xml_file, categories, platform=None):
     for category in categories:
         # Remove any existing acme test category from the file.
         if (platform is None):
-            acme_util.run_cmd("%s -component allactive -removetests -category %s" % (manage_xml_entries, category))
+            acme_util.run_cmd("%s -model acme -component allactive -removetests -category %s" % (manage_xml_entries, category))
         else:
-            acme_util.run_cmd("%s -component allactive -removetests -category %s -machine %s -compiler %s"
+            acme_util.run_cmd("%s -model acme -component allactive -removetests -category %s -machine %s -compiler %s"
                               % (manage_xml_entries, category, platforms[0][0], platforms[0][1]))
 
         # Generate a list of test entries corresponding to our suite at the top
         # of the file.
         new_test_file = generate_acme_test_entries(category, platforms)
-        acme_util.run_cmd("%s -component allactive -addlist -file %s -category %s" %
+        acme_util.run_cmd("%s -model acme -component allactive -addlist -file %s -category %s" %
                           (manage_xml_entries, new_test_file, category))
         os.unlink(new_test_file)
 

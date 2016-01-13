@@ -313,19 +313,17 @@ def get_cime_location_within_acme():
     return "cime"
 
 ###############################################################################
-def get_python_libs_location_with_cime():
+def get_python_libs_location_within_cime():
 ###############################################################################
     """
+    From within CIME, return subdirectory of python libraries
     """
     return os.path.join("utils", "python")
 
 ###############################################################################
-def get_acme_scripts_location_within_acme():
+def get_acme_config_location_within_cime():
 ###############################################################################
-    """
-    From within ACME, return subdirectory where ACME scripts live.
-    """
-    return os.path.join(get_cime_location_within_acme(), get_acme_scripts_location_within_cime())
+    return os.path.join("cime_config", "acme")
 
 ###############################################################################
 def get_cime_root():
@@ -337,8 +335,8 @@ def get_cime_root():
     True
     """
     acme_script_absdir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
-    assert acme_script_absdir.endswith(get_python_libs_location_with_cime()), acme_script_absdir
-    return os.path.normpath(acme_script_absdir[:len(acme_script_absdir)-len(get_python_libs_location_with_cime())])
+    assert acme_script_absdir.endswith(get_python_libs_location_within_cime()), acme_script_absdir
+    return os.path.normpath(acme_script_absdir[:len(acme_script_absdir)-len(get_python_libs_location_within_cime())])
 
 ###############################################################################
 def get_acme_root():
@@ -355,6 +353,9 @@ def get_acme_scripts_root():
 ###############################################################################
     """
     Get absolute path to acme scripts
+
+    >>> os.path.isdir(get_acme_scripts_root())
+    True
     """
     return os.path.join(get_cime_root(), get_acme_scripts_location_within_cime())
 
@@ -363,8 +364,22 @@ def get_python_libs_root():
 ###############################################################################
     """
     Get absolute path to acme scripts
+
+    >>> os.path.isdir(get_python_libs_root())
+    True
     """
-    return os.path.join(get_cime_root(), get_python_libs_location_with_cime())
+    return os.path.join(get_cime_root(), get_python_libs_location_within_cime())
+
+###############################################################################
+def get_acme_config_root():
+###############################################################################
+    """
+    Get absolute path to acme config area"
+
+    >>> os.path.isdir(get_acme_config_root())
+    True
+    """
+    return os.path.join(get_cime_root(), get_acme_config_location_within_cime())
 
 ###############################################################################
 def stop_buffering_output():

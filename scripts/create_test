@@ -1691,8 +1691,8 @@ sub namelistCompare
     }
 
     chdir($testpath) or $logger->logdie( "couldn't change directory to $testpath");
-    my $cprnml = "$testpath/Tools/compare_namelists";
-    my $altcpr = "$testpath/Tools/simple_compare";
+    my $cprnml = "$cimeroot/scripts-python/compare_namelists";
+    my $altcpr = "$cimeroot/scripts-python/simple_compare";
 
     $logger->debug("test path is  $testpath");
 

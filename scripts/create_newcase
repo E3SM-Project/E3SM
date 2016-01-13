@@ -906,7 +906,6 @@ sub _create_caseroot_tools
 	      "$cimeroot/scripts/Tools/lt_archive.sh", 
 	      "$cimeroot/scripts/Tools/st_archive", 
 	      "$cimeroot/scripts/Tools/getTiming", 
-	      "$cimeroot/scripts/Tools/compare_namelists.pl",
 	      "$machines_dir/taskmaker.pl", 
 	      "$machines_dir/Makefile",
 	      "$machines_dir/mkSrcfiles", 

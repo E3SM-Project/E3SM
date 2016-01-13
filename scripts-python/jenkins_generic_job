@@ -70,7 +70,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-n", "--namelists-only", action="store_true",
                         help="Only compare/generate namelists. Useful for quick namelist-only operations")
 
-    parser.add_argument("-b", "--baseline-name", default=acme_util.get_current_branch(repo=acme_util.get_acme_root()),
+    parser.add_argument("-b", "--baseline-name", default=acme_util.get_current_branch(repo=acme_util.get_cime_root()),
                         help="Baseline name for baselines to use. Also impacts dashboard job name. Useful for testing a branch other than next or master")
 
     parser.add_argument("-t", "--test-suite", default=default_test_suite,
@@ -135,7 +135,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
     # Update submodules (Jenkins is struggling with this at the moment)
     #
 
-    acme_util.run_cmd("git submodule update --init", from_dir=acme_util.get_acme_root())
+    acme_util.run_cmd("git submodule update --init", from_dir=acme_util.get_cime_root())
 
     #
     # Cleanup previous test leftovers. Code beyond here assumes that

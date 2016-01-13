@@ -77,9 +77,8 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 ###############################################################################
 def acme_bisect(testname, good, bad, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory):
 ###############################################################################
-    create_test_rel = os.path.join(acme_util.get_acme_scripts_location_within_acme(), "create_test")
-    wait_for_test_rel = os.path.join(acme_util.get_acme_scripts_location_within_acme(), "wait_for_tests")
-    expect(create_test_rel, "Please run from root of repository")
+    create_test = os.path.join(acme_util.get_acme_scripts_root(), "create_test")
+    wait_for_tests = os.path.join(acme_util.get_acme_scripts_root(), "wait_for_tests")
 
     # Important: we only want to test merges
     commits_we_want_to_test = run_cmd("git rev-list %s..%s --merges --first-parent" % (good, bad)).splitlines()
@@ -99,13 +98,13 @@ def acme_bisect(testname, good, bad, testroot, compiler, project, baseline_name,
 
     compare_args = "-c -b %s" % baseline_name if baseline_name is not None else ""
     bisect_cmd = "/bin/rm -rf %s/*acme_bisect && %s %s --test-root %s -t acme_bisect --compiler %s -p %s %s" % \
-        (testroot, create_test_rel, testname, testroot, compiler, project, compare_args)
+        (testroot, create_test, testname, testroot, compiler, project, compare_args)
 
     is_batch = acme_util.does_machine_have_batch()
     if (is_batch):
         # Forumulate the wait_for_tests command.
 
-        wait_for_tests_cmd = "%s %s/*acme_bisect/TestStatus" % (wait_for_test_rel, testroot)
+        wait_for_tests_cmd = "%s %s/*acme_bisect/TestStatus" % (wait_for_tests, testroot)
         if (check_throughput):
             wait_for_tests_cmd += " -t"
         if (check_memory):
