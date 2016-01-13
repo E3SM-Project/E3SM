@@ -340,6 +340,7 @@ for mct, etc.
   <ADD_CFLAGS compile_threaded="true"> -fopenmp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -fopenmp </ADD_FFLAGS>
   <ADD_LDFLAGS compile_threaded="true"> -fopenmp </ADD_LDFLAGS>
+  <ADD_CMAKE_OPTS MODEL="cism"> -D CISM_GNU=ON </ADD_CMAKE_OPTS>
   <FIXEDFLAGS>  -ffixed-form </FIXEDFLAGS>
   <FREEFLAGS> -ffree-form </FREEFLAGS>
   <ADD_FFLAGS DEBUG="TRUE"> -g -Wall </ADD_FFLAGS>
