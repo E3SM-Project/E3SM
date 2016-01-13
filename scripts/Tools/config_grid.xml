@@ -1512,7 +1512,7 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_QU120km_nn_151110.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 <gridmap rof_grid="r05" ocn_grid="oEC60to30" >
-  <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_TO_oEC60to30_nn.151209.nc</ROF2OCN_RMAPNAME>
+  <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_oEC60to30_nn.160113.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 <gridmap rof_grid="r05" ocn_grid="tx1v1" >
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_tx1v1_e1000r500_080505.nc</ROF2OCN_RMAPNAME>
