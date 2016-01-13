@@ -148,7 +148,7 @@ module ocn_forward_mode
       !
       call mpas_timer_start('io_read', .false.)
       call MPAS_stream_mgr_read(domain % streamManager, streamID='mesh', whence=MPAS_STREAM_NEAREST, ierr=err_tmp)
-      
+
       if ( config_do_restart ) then
          if ( config_read_nearest_restart ) then
             call MPAS_stream_mgr_read(domain % streamManager, streamID='restart', whence=MPAS_STREAM_NEAREST, ierr=err_tmp)
@@ -456,13 +456,13 @@ module ocn_forward_mode
           call mpas_stream_mgr_write(domain % streamManager, 'output', forceWriteNow=.true., ierr=ierr)
           call mpas_timer_stop('io_write')
       endif
-      	 
+
 	  ! read initial data required for variable shortwave
 	  call mpas_timer_start('io_shortwave',.false.)
       call ocn_get_shortWaveData(domain % streamManager, domain, domain % clock, .true.)
       call mpas_timer_stop('io_shortwave')
-      
-      
+
+
       ! During integration, time level 1 stores the model state at the beginning of the
       !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
       itimestep = 0
@@ -518,8 +518,8 @@ module ocn_forward_mode
             block_ptr => block_ptr % next
          end do
 
-         call ocn_analysis_compute(domain, err) 
-         call ocn_analysis_restart(domain, err) 
+         call ocn_analysis_compute(domain, err)
+         call ocn_analysis_restart(domain, err)
          call ocn_analysis_write(domain, err)
 
          call mpas_timer_start('io_write', .false.)
@@ -551,12 +551,12 @@ module ocn_forward_mode
          call mpas_timer_start('reset_io_alarms', .false.)
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
          call mpas_timer_stop('reset_io_alarms')
-         
+
          ! read next time level data required for variable shortwave
          call mpas_timer_start('io_shortwave',.false.)
          call ocn_get_shortWaveData(domain % streamManager, domain, domain % clock, .false.)
       	 call mpas_timer_stop('io_shortwave')
-      	 
+
       end do
 
    end function ocn_forward_mode_run!}}}

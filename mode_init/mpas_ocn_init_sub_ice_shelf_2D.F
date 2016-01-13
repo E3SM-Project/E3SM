@@ -66,7 +66,7 @@ module ocn_init_sub_ice_shelf_2D
    !> \brief   Setup for this initial condition
    !> \author  Mark Petersen
    !> \date    9/2/2015
-   !> \details 
+   !> \details
    !>  This routine sets up the initial conditions for this case.
    !
    !-----------------------------------------------------------------------
@@ -267,7 +267,7 @@ module ocn_init_sub_ice_shelf_2D
 
      ! compute the vertical grid (layerThickness, restingThickness, maxLevelCell, zMid) based on ssh, bottomDepth and refBottomDepth
      call ocn_init_ssh_and_ssp_vertical_grid(domain, iErr)
-           
+
      if(iErr .ne. 0) then
         write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_ssp_vertical_grid failed.'
         return
@@ -345,7 +345,7 @@ module ocn_init_sub_ice_shelf_2D
    !> \brief   Validation for this initial condition
    !> \author  Mark Petersen
    !> \date    9/2/2015
-   !> \details 
+   !> \details
    !>  This routine validates the configuration options for this case.
    !
    !-----------------------------------------------------------------------

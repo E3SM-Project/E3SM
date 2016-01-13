@@ -13,7 +13,7 @@
 !> \author Doug Jacobsen
 !> \date   02/18/2014
 !> \details
-!>  This module contains the routines for initializing the 
+!>  This module contains the routines for initializing the
 !>  the internal waves test case
 !
 !-----------------------------------------------------------------------
@@ -65,7 +65,7 @@ contains
 !> \brief   Setup for internal waves test case
 !> \author  Doug Jacobsen
 !> \date    02/19/2014
-!> \details 
+!> \details
 !>  This routine sets up the initial conditions for the internal waves test case.
 !
 !-----------------------------------------------------------------------
@@ -171,7 +171,7 @@ contains
       call mpas_dmpar_min_real(domain % dminfo, xMin, xMinGlobal)
       call mpas_dmpar_max_real(domain % dminfo, xMax, xMaxGlobal)
       call mpas_dmpar_min_real(domain % dminfo, dcEdgEMin, dcEdgeMinGlobal)
- 
+
       yMidGlobal = (yMinGlobal + yMaxGlobal) * 0.5_RKIND
       if(config_internal_waves_use_distances) then
          perturbationWidth = config_internal_waves_amplitude_width_dist
@@ -231,7 +231,7 @@ contains
               refTemperature(k) = refTemperature(1) - (k-1)*deltaTemperature
               refZTop(k) = refZTop(k-1) - config_internal_waves_bottom_depth / nVertLevels
            end do
-          
+
         endif
 
         ! Set vertCoordMovementWeights
@@ -334,7 +334,7 @@ contains
 !> \brief   Validation for internal waves test case
 !> \author  Doug Jacobsen
 !> \date    02/20/2014
-!> \details 
+!> \details
 !>  This routine validates the configuration options for the internal waves test case.
 !
 !-----------------------------------------------------------------------

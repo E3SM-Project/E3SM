@@ -13,7 +13,7 @@
 !> \author Mark Petersen
 !> \date   08/10/15
 !> \details
-!>  This module contains the routines for initializing the 
+!>  This module contains the routines for initializing the
 !>  the sea mount test case
 !
 !-----------------------------------------------------------------------
@@ -67,7 +67,7 @@ contains
 !> \brief   Setup for sea mount test case
 !> \author  Mark Petersen
 !> \date    08/10/15
-!> \details 
+!> \details
 !>  This routine sets up the initial conditions for the sea mount test case.
 !>  It should also ensure the mesh that was input is valid for the configuration.
 !
@@ -251,7 +251,7 @@ contains
            ! Set bottomDepth.  See Beckmann and Haidvogel 1993 eqn 12, Shchepetkin 2003 eqn 4.2
            bottomDepth(iCell) = config_sea_mount_bottom_depth - config_sea_mount_height * exp(-(max(radius-config_sea_mount_radius,0.0))**2/ config_sea_mount_width**2)
 
-           ! Set maxLevelCell and layerThickness 
+           ! Set maxLevelCell and layerThickness
            if ( trim(config_sea_mount_layer_type) == 'z-level' ) then
               maxLevelCell(iCell) = -1
               do k = 1, nVertLevels
@@ -326,7 +326,7 @@ contains
 !> \brief   Validation for sea mount test case
 !> \author  Mark Petersen
 !> \date    08/10/15
-!> \details 
+!> \details
 !>  This routine validates the configuration options for the sea mount test case.
 !
 !-----------------------------------------------------------------------

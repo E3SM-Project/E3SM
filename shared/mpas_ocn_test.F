@@ -71,7 +71,7 @@ contains
 !> \brief   Call all internal start-up tests
 !> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date    October 2013
-!> \details 
+!> \details
 !>  Call all routines to test various MPAS-Ocean components.
 !
 !-----------------------------------------------------------------------
@@ -116,7 +116,7 @@ contains
 !> \brief   set up scratch variables to test strain rate and tensor divergence operators
 !> \author  Mark Petersen
 !> \date    May 2013
-!> \details 
+!> \details
 !>  This routine sets up scratch variables to test strain rate and tensor divergence operators.
 !
 !-----------------------------------------------------------------------
@@ -243,7 +243,7 @@ contains
 !> \brief   Initialize Gent-McWilliams test functions
 !> \author  Mark Petersen
 !> \date    May 2014
-!> \details 
+!> \details
 !>  For the initial temperature distribution
 !>  T = T_1 + T_2*y/y_{max} + T_3*z/z_{max}
 !>  and linear EOS with T coefficient alpha, this subroutine computes
@@ -312,7 +312,7 @@ contains
 
       yRelativeSlopeSolution   => yRelativeSlopeSolutionField % array
       yGMStreamFuncSolution    => yGMStreamFuncSolutionField % array
-      yGMBolusVelocitySolution => yGMBolusVelocitySolutionField % array 
+      yGMBolusVelocitySolution => yGMBolusVelocitySolutionField % array
 
       ! These are flags that must match your initial conditions settings.  See gm_analytic initial condition in mode_init.
       config_gm_analytic_temperature2 = 10
@@ -322,7 +322,7 @@ contains
 
       ! zMax is associated with linear temperature profile in z
       zMax = -config_gm_analytic_bottom_depth
-      ! zBot is location we apply boundary conditions on the ODE for stream function.  
+      ! zBot is location we apply boundary conditions on the ODE for stream function.
       zBot = zMax
 
       L = config_gravWaveSpeed_trunc * sqrt(rho_sw * zMax / gravity / config_eos_linear_alpha / config_gm_analytic_temperature3)

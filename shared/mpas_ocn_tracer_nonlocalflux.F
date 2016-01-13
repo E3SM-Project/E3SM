@@ -14,7 +14,7 @@
 !> \date   11/25/13
 !> \version SVN:$Id:$
 !> \details
-!>  This module contains the routine for computing 
+!>  This module contains the routine for computing
 !>  tracer tendencies due to non-local vertical fluxes computed in CVMix KPP
 !
 !-----------------------------------------------------------------------
@@ -63,7 +63,7 @@ contains
 !> \brief   Computes tendency term due to non-local flux transport
 !> \author  Todd Ringler
 !> \date    11/25/13
-!> \details 
+!> \details
 !>  This routine computes the tendency for tracers based the vertical divergence of non-local fluxes.
 !
 !-----------------------------------------------------------------------
@@ -165,7 +165,7 @@ contains
 !> \author  Todd Ringler
 !> \date    11/25/13
 !> \version SVN:$Id$
-!> \details 
+!> \details
 !>  This routine initializes quantities related to nonlocal flux computation
 !
 !-----------------------------------------------------------------------

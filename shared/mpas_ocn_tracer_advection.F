@@ -14,7 +14,7 @@
 !> \date   03/09/12
 !> \details
 !>  This module contains driver routine for tracer advection tendencys
-!>  as well as the routines for setting up advection coefficients and 
+!>  as well as the routines for setting up advection coefficients and
 !>  initialization of the advection routines.
 !
 !-----------------------------------------------------------------------
@@ -31,7 +31,7 @@ module ocn_tracer_advection
    use ocn_tracer_advection_mono
 
    use ocn_constants
-     
+
    implicit none
    private
    save
@@ -106,7 +106,7 @@ module ocn_tracer_advection
 !> \author Doug Jacobsen
 !> \date   03/09/12
 !> \details
-!>  This routine is the driver routine for initialization of 
+!>  This routine is the driver routine for initialization of
 !>  the tracer advection routines.
 !
 !-----------------------------------------------------------------------

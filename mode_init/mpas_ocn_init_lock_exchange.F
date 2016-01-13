@@ -13,7 +13,7 @@
 !> \author Doug Jacobsen
 !> \date   02/18/2014
 !> \details
-!>  This module contains the routines for initializing the 
+!>  This module contains the routines for initializing the
 !>  the lock exchange test case
 !
 !-----------------------------------------------------------------------
@@ -66,7 +66,7 @@ contains
 !> \brief   Setup for lock exchange test case
 !> \author  Doug Jacobsen
 !> \date    02/18/2014
-!> \details 
+!> \details
 !>  This routine sets up the initial conditions for the lock exchange test case.
 !>  It is setup in the y direction, such that everything in the southern half of
 !>  the domain has a temperature of 5.0C and the northern half has a value of
@@ -280,7 +280,7 @@ contains
 !> \brief   Validation for lock exchange test case
 !> \author  Doug Jacobsen
 !> \date    02/20/2014
-!> \details 
+!> \details
 !>  This routine validates the configuration options for the lock exchange test case.
 !
 !-----------------------------------------------------------------------

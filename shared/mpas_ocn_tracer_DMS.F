@@ -85,7 +85,7 @@ contains
 !> \brief   computes a tracer tendency due to DMS
 !> \author  Mathew Maltrud
 !> \date    11/01/2015
-!> \details 
+!> \details
 !>  This routine computes a tracer tendency due to DMS
 !
 !-----------------------------------------------------------------------
@@ -131,7 +131,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
-         DMSTracersTend 
+         DMSTracersTend
 
       !-----------------------------------------------------------------
       !
@@ -207,14 +207,14 @@ contains
 !> \brief   computes a tracer tendency due to DMS
 !> \author  Mathew Maltrud
 !> \date    11/01/2015
-!> \details 
+!> \details
 !>  This routine computes a tracer tendency due to DMS
 !
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_DMS_surface_flux_compute(activeTracers, DMSTracers, forcingPool,  &
       nTracers, nCellsSolve, zMid, indexTemperature, indexSalinity, DMSSurfaceFlux, err)!{{{
-     
+
 
       !-----------------------------------------------------------------
       !
@@ -316,7 +316,7 @@ contains
 !> \brief   Initializes ocean surface restoring
 !> \author  Mathew Maltrud
 !> \date    11/01/2015
-!> \details 
+!> \details
 !>  This routine initializes fields required for tracer surface flux restoring
 !
 !-----------------------------------------------------------------------
@@ -346,7 +346,7 @@ contains
       ! get tracers pools
       !
 
-      err = 0 
+      err = 0
 
       !
       ! Get tracer group so we can get the number of tracers in it
@@ -465,11 +465,11 @@ contains
       allocate ( DMS_forcing%windSpeedSquared10m(numColumnsMax) )
       allocate ( DMS_forcing%SST(numColumnsMax) )
       allocate ( DMS_forcing%SSS(numColumnsMax) )
-    
+
       allocate ( DMS_forcing%netFlux(numColumnsMax, DMS_tracer_cnt) )
-    
+
       allocate ( DMS_output%DMS_tendencies(nVertLevels, numColumnsMax, DMS_tracer_cnt) )
-    
+
     !---------------------------------------------------------------------------
     !   allocate flux diagnostic output fields
     !---------------------------------------------------------------------------

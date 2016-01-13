@@ -63,7 +63,7 @@ contains
    !> \brief   North boundary marker
    !> \author  Doug Jacobsen
    !> \date    03/30/2015
-   !> \details 
+   !> \details
    !>  This routine marks cells along the north boundary of a domain for removal.
    !>  It can only be applied to a planar mesh. North-south is defined as the y direction.
    !
@@ -111,7 +111,7 @@ contains
    !> \brief   south boundary marker
    !> \author  Doug Jacobsen
    !> \date    03/30/2015
-   !> \details 
+   !> \details
    !>  This routine marks cells along the south boundary of a domain for removal.
    !>  It can only be applied to a planar mesh. north-south is defined as the y direction.
    !
@@ -159,7 +159,7 @@ contains
    !> \brief   East boundary marker
    !> \author  Doug Jacobsen
    !> \date    03/30/2015
-   !> \details 
+   !> \details
    !>  This routine marks cells along the east boundary of a domain for removal.
    !>  It can only be applied to a planar mesh. west-east is defined as the x direction.
    !
@@ -207,7 +207,7 @@ contains
    !> \brief   West boundary marker
    !> \author  Doug Jacobsen
    !> \date    03/30/2015
-   !> \details 
+   !> \details
    !>  This routine marks cells along the west boundary of a domain for removal.
    !>  It can only be applied to a planar mesh. west-east is defined as the x direction.
    !
@@ -255,7 +255,7 @@ contains
    !> \brief   MaxLevelCell cell marker
    !> \author  Doug Jacobsen
    !> \date    03/31/2015
-   !> \details 
+   !> \details
    !>  This routine marks cells for removal that have maxLevelCell <= 0.
    !
    !-----------------------------------------------------------------------

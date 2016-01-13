@@ -13,7 +13,7 @@
 !> \author Doug Jacobsen
 !> \date   02/18/2014
 !> \details
-!>  This module contains the routines for initializing the 
+!>  This module contains the routines for initializing the
 !>  the overflow test case
 !
 !-----------------------------------------------------------------------
@@ -66,7 +66,7 @@ contains
 !> \brief   Setup for overflow test case
 !> \author  Doug Jacobsen
 !> \date    02/18/2014
-!> \details 
+!> \details
 !>  This routine sets up the initial conditions for the overflow test case.
 !
 !-----------------------------------------------------------------------
@@ -111,7 +111,7 @@ contains
                                     config_overflow_plug_temperature, config_overflow_domain_temperature, config_overflow_salinity, &
                                     config_overflow_isopycnal_min_thickness
 
-     
+
      real (kind=RKIND), dimension(:), pointer :: interfaceLocations
 
       iErr = 0
@@ -220,7 +220,7 @@ contains
            ! From Mehmet Ilicak:
            ! depth=2000
            ! val1 = 500 is top of ridge
-           ! h(i,j) = val1 + 0.5*(depth-val1) * (1.0+TANH((lon(i,j)-40000.0)/7000.0)) 
+           ! h(i,j) = val1 + 0.5*(depth-val1) * (1.0+TANH((lon(i,j)-40000.0)/7000.0))
            bottomDepth(iCell) = config_overflow_ridge_depth &
                      + 0.5_RKIND*(config_overflow_bottom_depth - config_overflow_ridge_depth) &
                      * (1.0_RKIND+tanh((yCell(iCell) - slopeCenter)/slopeWidth))
@@ -313,7 +313,7 @@ contains
 !> \brief   Validation for overflow test case
 !> \author  Doug Jacobsen
 !> \date    02/20/2014
-!> \details 
+!> \details
 !>  This routine validates the configuration options for the overflow test case.
 !
 !-----------------------------------------------------------------------

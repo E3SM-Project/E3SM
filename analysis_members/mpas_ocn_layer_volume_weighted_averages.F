@@ -440,7 +440,7 @@ contains
    integer :: iCell
    real(kind=RKIND) :: dtr
 
-   dtr = 4.0_RKIND*atan(1.0_RKIND) / 180.0_RKIND 
+   dtr = 4.0_RKIND*atan(1.0_RKIND) / 180.0_RKIND
    workMask(:) = 0.0_RKIND
    do iCell=1,nCellsSolve
       if(iLevel.le.maxLevelCell(iCell)) workMask(iCell) = 1.0_RKIND

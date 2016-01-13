@@ -186,7 +186,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: seaIceEnergy
 
       real (kind=RKIND), dimension(:), pointer :: surfaceThicknessFlux
-      real (kind=RKIND), dimension(:,:), pointer :: activeTracersSurfaceFlux 
+      real (kind=RKIND), dimension(:,:), pointer :: activeTracersSurfaceFlux
       real (kind=RKIND), dimension(:), pointer ::  penetrativeTemperatureFlux
 
       real (kind=RKIND), dimension(:), pointer :: seaIceSalinityFlux

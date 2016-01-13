@@ -14,7 +14,7 @@
 !> \date   May 2015
 !> \details
 !>  MPAS ocean analysis core member: test_compute_interval
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -67,8 +67,8 @@ contains
 !> \brief   Initialize MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    May 2015
-!> \details 
-!>  This routine conducts all initializations required for the 
+!> \details
+!>  This routine conducts all initializations required for the
 !>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
@@ -128,7 +128,7 @@ contains
 !> \brief   Compute MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    May 2015
-!> \details 
+!> \details
 !>  This routine conducts all computation required for this
 !>  MPAS-Ocean analysis member.
 !
@@ -209,7 +209,7 @@ contains
 !> \brief   Save restart for MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    May 2015
-!> \details 
+!> \details
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-Ocean analysis member.
 !
@@ -256,7 +256,7 @@ contains
 !> \brief   Finalize MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    May 2015
-!> \details 
+!> \details
 !>  This routine conducts all finalizations required for this
 !>  MPAS-Ocean analysis member.
 !

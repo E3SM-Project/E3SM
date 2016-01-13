@@ -84,7 +84,7 @@ contains
 !> \brief   computes a tracer tendency due to ecosys
 !> \author  Mathew Maltrud
 !> \date    11/01/2015
-!> \details 
+!> \details
 !>  This routine computes a tracer tendency due to ecosys
 !
 !-----------------------------------------------------------------------
@@ -134,7 +134,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
-        ecosysTracersTend 
+        ecosysTracersTend
 
       !-----------------------------------------------------------------
       !
@@ -505,14 +505,14 @@ contains
 !> \brief   computes a tracer tendency due to ecosys
 !> \author  Mathew Maltrud
 !> \date    11/01/2015
-!> \details 
+!> \details
 !>  This routine computes a tracer tendency due to ecosys
 !
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_ecosys_surface_flux_compute(activeTracers, ecosysTracers, forcingPool,  &
       nTracers, nCellsSolve, zMid, indexTemperature, indexSalinity, ecosysSurfaceFlux, err)!{{{
-     
+
 
       !-----------------------------------------------------------------
       !
@@ -724,7 +724,7 @@ contains
 !> \brief   Initializes ocean surface restoring
 !> \author  Mathew Maltrud
 !> \date    11/01/2015
-!> \details 
+!> \details
 !>  This routine initializes fields required for tracer surface flux restoring
 !
 !-----------------------------------------------------------------------
@@ -754,7 +754,7 @@ contains
       ! get tracers pools
       !
 
-      err = 0 
+      err = 0
 
       !
       ! Get tracer group so we can get the number of tracers in it
@@ -926,7 +926,7 @@ contains
       allocate ( BGC_forcing%NO3_CLIM(nVertLevels, numColumnsMax) )
       allocate ( BGC_forcing%PO4_CLIM(nVertLevels, numColumnsMax) )
       allocate ( BGC_forcing%SiO3_CLIM(nVertLevels, numColumnsMax) )
-    
+
       allocate ( BGC_forcing%dust_FLUX_IN(numColumnsMax) )
       allocate ( BGC_forcing%ShortWaveFlux_surface(numColumnsMax) )
       allocate ( BGC_forcing%surfacePressure(numColumnsMax) )
@@ -939,7 +939,7 @@ contains
       allocate ( BGC_forcing%surfaceDepth(numColumnsMax) )
       allocate ( BGC_forcing%SST(numColumnsMax) )
       allocate ( BGC_forcing%SSS(numColumnsMax) )
-    
+
       allocate ( BGC_forcing%depositionFlux(numColumnsMax, BGC_tracer_cnt) )
       allocate ( BGC_forcing%riverFlux(numColumnsMax, BGC_tracer_cnt) )
       allocate ( BGC_forcing%gasFlux(numColumnsMax, BGC_tracer_cnt) )
@@ -950,15 +950,15 @@ contains
       BGC_forcing%gasFlux        = 0.0_RKIND
       BGC_forcing%seaIceFlux     = 0.0_RKIND
       BGC_forcing%netFlux        = 0.0_RKIND
-    
+
       allocate ( BGC_output%BGC_tendencies(nVertLevels, numColumnsMax, BGC_tracer_cnt) )
       allocate ( BGC_output%PH_PREV_3D(nVertLevels, numColumnsMax) )
       allocate ( BGC_output%PH_PREV_ALT_CO2_3D(nVertLevels, numColumnsMax) )
-    
+
         !---------------------------------------------------------------------------
         !   allocate flux diagnostic output fields
         !---------------------------------------------------------------------------
-    
+
       allocate (BGC_flux_diagnostic_fields%pistonVel_O2(numColumnsMax) )
       allocate (BGC_flux_diagnostic_fields%pistonVel_CO2(numColumnsMax) )
       allocate (BGC_flux_diagnostic_fields%SCHMIDT_O2(numColumnsMax) )
@@ -973,11 +973,11 @@ contains
       allocate (BGC_flux_diagnostic_fields%dco2star_alt_co2(numColumnsMax) )
       allocate (BGC_flux_diagnostic_fields%pco2surf_alt_co2(numColumnsMax) )
       allocate (BGC_flux_diagnostic_fields%dpco2_alt_co2(numColumnsMax) )
-  
+
       !---------------------------------------------------------------------------
       !   allocate diagnostic output fields
       !---------------------------------------------------------------------------
-  
+
   ! 3D stuff
       allocate (BGC_diagnostic_fields%diag_tot_Nfix(nVertLevels, numColumnsMax) )
       allocate (BGC_diagnostic_fields%diag_O2_PRODUCTION(nVertLevels, numColumnsMax) )
@@ -1040,7 +1040,7 @@ contains
       allocate (BGC_diagnostic_fields%diag_SedDenitrif(nVertLevels, numColumnsMax) )
       allocate (BGC_diagnostic_fields%diag_OtherRemin(nVertLevels, numColumnsMax) )
       allocate (BGC_diagnostic_fields%diag_tot_CaCO3_form(nVertLevels, numColumnsMax) )
-  
+
 ! 3D stuff for each autotroph
       allocate (BGC_diagnostic_fields%diag_N_lim(nVertLevels, numColumnsMax, autotroph_cnt) )
       allocate (BGC_diagnostic_fields%diag_P_lim(nVertLevels, numColumnsMax, autotroph_cnt) )
@@ -1069,7 +1069,7 @@ contains
 ! 2D vertical integrals for photoC
       allocate (BGC_diagnostic_fields%diag_photoC_TOT_zint(numColumnsMax) )
       allocate (BGC_diagnostic_fields%diag_photoC_NO3_TOT_zint(numColumnsMax) )
-  
+
 ! 2D vertical integrals for nutrients
       allocate (BGC_diagnostic_fields%diag_Jint_Ctot(numColumnsMax) )
       allocate (BGC_diagnostic_fields%diag_Jint_100m_Ctot(numColumnsMax) )
@@ -1087,7 +1087,7 @@ contains
       allocate (BGC_diagnostic_fields%diag_zsatarag(numColumnsMax) )
       allocate (BGC_diagnostic_fields%diag_O2_ZMIN(numColumnsMax) )
       allocate (BGC_diagnostic_fields%diag_O2_ZMIN_DEPTH(numColumnsMax) )
-  
+
       end if  !  associated(ecosysTracers)
 
    !--------------------------------------------------------------------

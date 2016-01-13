@@ -63,7 +63,7 @@ contains
 !> \brief   MPAS-Ocean Spherical Expansion Routine
 !> \author  Doug Jacobsen
 !> \date    03/20/2015
-!> \details 
+!> \details
 !>  This routine expands mesh quantities to sphere of radius newRadius.
 !
 !-----------------------------------------------------------------------
@@ -188,7 +188,7 @@ contains
            oldZ = zCell(iCell)
 
            norm = sqrt(oldX**2 + oldY**2 + oldZ**2)
-           
+
            xCell(iCell) = (oldX / norm) * newRadius
            yCell(iCell) = (oldY / norm) * newRadius
            zCell(iCell) = (oldZ / norm) * newRadius
@@ -248,7 +248,7 @@ contains
         block_ptr % domain % sphere_radius = newRadius
         sphere_radius = newRadius
         block_ptr => block_ptr % next
- 
+
       end do
 
    !--------------------------------------------------------------------
@@ -262,7 +262,7 @@ contains
 !> \brief   MPAS-Ocean Sphere radius update routine
 !> \author  Doug Jacobsen
 !> \date    09/09/2015
-!> \details 
+!> \details
 !>  This routine updates the value of sphere_radius in all pools that contain
 !>  it.
 !
@@ -300,7 +300,7 @@ contains
 !> \brief   MPAS-Ocean Tranform LatLon to XYZ
 !> \author  Todd Ringler
 !> \date    02/19/2014
-!> \details 
+!> \details
 !>  This routine converts a (lat, lon) coordinate into an (x, y, z) coordinate
 !>    INTENT(IN)
 !>    xin = x position
@@ -397,7 +397,7 @@ contains
 !> \brief   MPAS-Ocean transform XYZ to LatLon
 !> \author  Todd Ringler
 !> \date    02/19/2014
-!> \details 
+!> \details
 !>  This routine converts an (x, y, z) coordinate into a (lat, lon) coordinate
 !>    INTENT(IN)
 !>    xin = x position
@@ -494,7 +494,7 @@ contains
 !> \brief   MPAS-Ocean 3D unit vector
 !> \author  Todd Ringler
 !> \date    02/19/2014
-!> \details 
+!> \details
 !>  This routine normalizes a vector in 3space.
 !
 !-----------------------------------------------------------------------
@@ -530,7 +530,7 @@ contains
 !> \brief   MPAS-Ocean Vector on a tangent plane
 !> \author  Todd Ringler
 !> \date    02/19/2014
-!> \details 
+!> \details
 !> Given two points measured in (x,y,z) and lying on
 !> the unit sphere, find the vector (p_out) that lies on the plane
 !> perpendicular to the p_1 vector and points in the direction of
@@ -590,7 +590,7 @@ contains
 !> \brief   MPAS-Ocean Cross product in 3D
 !> \author  Todd Ringler
 !> \date    02/19/2014
-!> \details 
+!> \details
 !>  compute p_1 cross p_2 and place in p_out
 !
 !-----------------------------------------------------------------------

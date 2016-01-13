@@ -63,19 +63,19 @@ contains
 !> \brief   Calls JM equation of state
 !> \author  Mark Petersen and Todd Ringler
 !> \date    September 2011, updated August 2013
-!> \details 
-!>  This routine uses a JM equation of state to update the density. 
+!> \details
+!>  This routine uses a JM equation of state to update the density.
 !>
-!>  Density can be computed in-situ using k_displaced=0 and 
+!>  Density can be computed in-situ using k_displaced=0 and
 !>      displacement_type = 'relative'.
 !>
-!>  Potential density (referenced to top layer) can be computed 
+!>  Potential density (referenced to top layer) can be computed
 !>      using k_displaced=1 and displacement_type = 'absolute'.
 !>
-!>  The density of SST/SSS after adiabatic displacement to each layer 
+!>  The density of SST/SSS after adiabatic displacement to each layer
 !>      can be computed using displacement_type = 'surfaceDisplaced'.
 !>
-!>  When using displacement_type = 'surfaceDisplaced', k_displaced is 
+!>  When using displacement_type = 'surfaceDisplaced', k_displaced is
 !>      ignored and tracersSurfaceLayerValue must be present.
 !
 !-----------------------------------------------------------------------
@@ -93,11 +93,11 @@ contains
    !
    ! Input: mesh - mesh metadata
    !        s - state: tracers
-   !        k_displaced 
+   !        k_displaced
 
    !  If k_displaced=0, density is returned with no displacement
    !  If k_displaced>0,the density returned is that for a parcel
-   !  adiabatically displaced from its original level to level 
+   !  adiabatically displaced from its original level to level
    !  k_displaced.
 
    !
@@ -123,7 +123,7 @@ contains
       integer, dimension(:), pointer :: maxLevelCell
       character(len=60) :: displacement_type_local
 
-      real (kind=RKIND) :: & 
+      real (kind=RKIND) :: &
          depth, &
          DRDT0,             &! d(density)/d(temperature), for surface
          DRDS0,             &! d(density)/d(salinity   ), for surface
@@ -167,7 +167,7 @@ contains
          unt3 =  1.001685e-4,           &
          unt4 = -1.120083e-6,           &
          unt5 =  6.536332e-9
-   
+
       !*** for dependence of surface density on salinity (UNESCO)
 
       real (kind=RKIND), parameter ::              &
@@ -180,39 +180,39 @@ contains
          unsqt1 =  1.0227e-4,           &
          unsqt2 = -1.6546e-6,           &
          uns2t0 =  4.8314e-4
-   
+
       !*** from Table A1 of Jackett and McDougall
-   
+
       real (kind=RKIND), parameter ::              &
          bup0s0t0 =  1.965933e+4,       &
          bup0s0t1 =  1.444304e+2,       &
          bup0s0t2 = -1.706103   ,       &
          bup0s0t3 =  9.648704e-3,       &
          bup0s0t4 = -4.190253e-5
-   
+
       real (kind=RKIND), parameter ::              &
          bup0s1t0 =  5.284855e+1,       &
          bup0s1t1 = -3.101089e-1,       &
          bup0s1t2 =  6.283263e-3,       &
          bup0s1t3 = -5.084188e-5
-   
+
       real (kind=RKIND), parameter ::              &
          bup0sqt0 =  3.886640e-1,       &
          bup0sqt1 =  9.085835e-3,       &
          bup0sqt2 = -4.619924e-4
-   
+
       real (kind=RKIND), parameter ::              &
          bup1s0t0 =  3.186519   ,       &
          bup1s0t1 =  2.212276e-2,       &
          bup1s0t2 = -2.984642e-4,       &
-         bup1s0t3 =  1.956415e-6 
-   
+         bup1s0t3 =  1.956415e-6
+
       real (kind=RKIND), parameter ::              &
          bup1s1t0 =  6.704388e-3,       &
          bup1s1t1 = -1.847318e-4,       &
          bup1s1t2 =  2.059331e-7,       &
-         bup1sqt0 =  1.480266e-4 
-   
+         bup1sqt0 =  1.480266e-4
+
       real (kind=RKIND), parameter ::              &
          bup2s0t0 =  2.102898e-4,       &
          bup2s0t1 = -1.202016e-5,       &
@@ -220,11 +220,11 @@ contains
          bup2s1t0 = -2.040237e-6,       &
          bup2s1t1 =  6.128773e-8,       &
          bup2s1t2 =  6.207323e-10
-   
+
       integer :: k_test, k_ref
-   
+
       err = 0
-   
+
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
 
@@ -237,13 +237,13 @@ contains
 
 !  Jackett and McDougall
       tmin = -2.0  ! valid pot. temp. range
-      tmax = 40.0 
-      smin =  0.0  ! valid salinity, in psu   
-      smax = 42.0 
+      tmax = 40.0
+      smin =  0.0  ! valid salinity, in psu
+      smax = 42.0
 
 !  This function computes pressure in bars from depth in meters
-!  using a mean density derived from depth-dependent global 
-!  average temperatures and salinities from Levitus 1994, and 
+!  using a mean density derived from depth-dependent global
+!  average temperatures and salinities from Levitus 1994, and
 !  integrating using hydrostatic balance.
 
       allocate(pRefEOS(nVertLevels),p(nVertLevels),p2(nVertLevels))
@@ -370,7 +370,7 @@ contains
          do k=1,maxLevelCell(iCell)
             SQ(k,iCell)  = max(min(tracerSalt(k),smax),smin)
             TQ(k,iCell)  = max(min(tracerTemp(k),tmax),tmin)
-   
+
             SQR(k,iCell) = sqrt(SQ(k,iCell))
             T2(k,iCell)  = TQ(k,iCell)*TQ(k,iCell)
 
@@ -378,7 +378,7 @@ contains
             !*** first calculate surface (p=0) values from UNESCO eqns.
             !***
 
-            WORK1(k,iCell) = uns1t0 + uns1t1*TQ(k,iCell) + & 
+            WORK1(k,iCell) = uns1t0 + uns1t1*TQ(k,iCell) + &
                    (uns1t2 + uns1t3*TQ(k,iCell) + uns1t4*T2(k,iCell))*T2(k,iCell)
             WORK2(k,iCell) = SQR(k,iCell)*(unsqt0 + unsqt1*TQ(k,iCell) + unsqt2*T2(k,iCell))
 
@@ -386,7 +386,7 @@ contains
                             + (uns2t0*SQ(k,iCell) + WORK1(k,iCell) + WORK2(k,iCell))*SQ(k,iCell)
 
             !***
-            !*** now calculate bulk modulus at pressure p from 
+            !*** now calculate bulk modulus at pressure p from
             !*** Jackett and McDougall formula
             !***
 
@@ -396,16 +396,16 @@ contains
                     p2(k)*(bup2s1t0 + bup2s1t1*TQ(k,iCell) + bup2s1t2*T2(k,iCell))
             WORK4(k,iCell) = SQR(k,iCell)*(bup0sqt0 + bup0sqt1*TQ(k,iCell) + bup0sqt2*T2(k,iCell) + &
                          bup1sqt0*p(k))
-   
+
             BULK_MOD(k,iCell)  = bup0s0t0 + bup0s0t1*TQ(k,iCell) +                    &
                         (bup0s0t2 + bup0s0t3*TQ(k,iCell) + bup0s0t4*T2(k,iCell))*T2(k,iCell) + &
                         p(k) *(bup1s0t0 + bup1s0t1*TQ(k,iCell) +                &
                         (bup1s0t2 + bup1s0t3*TQ(k,iCell))*T2(k,iCell)) +           &
                         p2(k)*(bup2s0t0 + bup2s0t1*TQ(k,iCell) + bup2s0t2*T2(k,iCell)) + &
                         SQ(k,iCell)*(WORK3(k,iCell) + WORK4(k,iCell))
-  
+
             DENOMK(k,iCell) = 1.0/(BULK_MOD(k,iCell) - p(k))
-   
+
             density(k,iCell) = (unt0 + RHO_S(k,iCell))*BULK_MOD(k,iCell)*DENOMK(k,iCell)
 
          end do
@@ -486,11 +486,11 @@ contains
 !> \brief   Initializes ocean momentum horizontal mixing quantities
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
-!>  This routine initializes a variety of quantities related to 
-!>  horizontal velocity mixing in the ocean. Since a variety of 
+!> \details
+!>  This routine initializes a variety of quantities related to
+!>  horizontal velocity mixing in the ocean. Since a variety of
 !>  parameterizations are available, this routine primarily calls the
-!>  individual init routines for each parameterization. 
+!>  individual init routines for each parameterization.
 !
 !-----------------------------------------------------------------------
 

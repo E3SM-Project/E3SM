@@ -158,7 +158,7 @@ contains
       call mpas_dmpar_min_real_array(dminfo, 1, minBin, minBinDomain)
       call mpas_dmpar_max_real_array(dminfo, 1, maxBin, maxBinDomain)
 
-      ! Set up bins. 
+      ! Set up bins.
       binBoundaryZonalMean = -1.0e34_RKIND
       binCenterZonalMean = -1.0e34_RKIND
 

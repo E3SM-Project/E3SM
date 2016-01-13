@@ -243,7 +243,7 @@ module ocn_analysis_mode
       call mpas_timer_stop("diagnostic solve")
 
       if (config_write_output_on_startup) then
-         call ocn_analysis_compute_startup(domain, err) 
+         call ocn_analysis_compute_startup(domain, err)
          call mpas_timer_start('io_write', .false.)
          call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
          call mpas_timer_stop('io_write')

@@ -12,11 +12,11 @@ module ocn_gm
    use mpas_timer
    use mpas_constants
    use mpas_threading
-   
+
    use ocn_constants
 
    implicit none
-   private 
+   private
    save
 
    !--------------------------------------------------------------------
@@ -60,7 +60,7 @@ contains
 !> \brief   Computes GM Bolus velocity
 !> \author  Qingshan Chen, Mark Petersen, Todd Ringler
 !> \date    January 2013
-!> \details 
+!> \details
 !>  This routine is the main driver for the Gent-McWilliams (GM) parameterization.
 !>  It computes horizontal and vertical density gradients, the slope
 !>  of isopycnal surfaces, and solves a boundary value problem in each column
@@ -113,7 +113,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'displacedDensity', displacedDensity)
       call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
 
-      call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity) 
+      call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfEdge', relativeSlopeTopOfEdge)
       call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfCell', relativeSlopeTopOfCell)
       call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTapering', relativeSlopeTapering)
@@ -190,16 +190,16 @@ contains
       k33(:,:) = 0.0_RKIND
       normalGMBolusVelocity(:,:) = 0.0_RKIND
       !$omp end workshare
-      
+
       !--------------------------------------------------------------------
       !
       ! Compute vertical derivative of density at top of cell, interpolate to top of edge
       ! This is required for Redi and Bolus parts.
       !
       !--------------------------------------------------------------------
-      
+
       ! Compute vertical derivative of density (dDensityDzTopOfCell) at cell center and layer interface
-      ! Note that displacedDensity is used from the upper cell, so that the EOS reference level for 
+      ! Note that displacedDensity is used from the upper cell, so that the EOS reference level for
       ! pressure is the same for both displacedDensity(k-1,iCell) and density(k,iCell).
       !$omp do schedule(runtime) private(k, rtmp)
       do iCell = 1, nCells
@@ -234,7 +234,7 @@ contains
       !
       !--------------------------------------------------------------------
 
-      ! Compute density gradient (gradDensityEdge) and gradient of zMid (gradZMidEdge) 
+      ! Compute density gradient (gradDensityEdge) and gradient of zMid (gradZMidEdge)
       ! along the constant coordinate surface.
       ! The computed variables lives at edge and mid-layer depth
       !$omp do schedule(runtime) private(cell1, cell2, k)
@@ -253,7 +253,7 @@ contains
       !$omp do schedule(runtime) private(k, h1, h2)
       do iEdge = 1, nEdges
          ! The interpolation can only be carried out on non-boundary edges
-         if (maxLevelEdgeTop(iEdge) .GE. 1) then 
+         if (maxLevelEdgeTop(iEdge) .GE. 1) then
             do k = 2, maxLevelEdgeTop(iEdge)
                h1 = layerThicknessEdge(k-1,iEdge)
                h2 = layerThicknessEdge(k,iEdge)
@@ -323,7 +323,7 @@ contains
       ! slope can be unbounded in regions of neutral stability, reset to the large, but bounded, value
       ! values is hardwrite to 1.0, this is equivalent to a slope of 45 degrees
       !$omp workshare
-      where(relativeSlopeTopOfEdge < -1.0_RKIND) relativeSlopeTopOfEdge = -1.0_RKIND 
+      where(relativeSlopeTopOfEdge < -1.0_RKIND) relativeSlopeTopOfEdge = -1.0_RKIND
       where(relativeSlopeTopOfEdge >  1.0_RKIND) relativeSlopeTopOfEdge =  1.0_RKIND
 
       ! average relative slope to cell centers
@@ -340,7 +340,7 @@ contains
             areaEdge = 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
             do k = 1, maxLevelEdgeTop(iEdge)
                rtmp = areaEdge * relativeSlopeTopOfEdge(k, iEdge)**2
-               relativeSlopeTopOfCell(k, iCell) = relativeSlopeTopOfCell(k, iCell) + rtmp 
+               relativeSlopeTopOfCell(k, iCell) = relativeSlopeTopOfCell(k, iCell) + rtmp
                areaCellSum(k, iCell) = areaCellSum(k, iCell) + areaEdge
             end do
          end do
@@ -416,7 +416,7 @@ contains
          ! Construct the tridiagonal matrix
          if (maxLevelEdgeTop(iEdge) .GE. 3) then
             ! First row
-            k = 2       
+            k = 2
             BruntVaisalaFreqTopEdge = 0.5_RKIND * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
             BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
             tridiagB(k-1) = - 2.0_RKIND * config_gravWaveSpeed_trunc**2/(layerThicknessEdge(k-1,iEdge)*layerThicknessEdge(k,iEdge)) - BruntVaisalaFreqTopEdge
@@ -434,7 +434,7 @@ contains
             end do
 
             ! Last row
-            k = maxLevelEdgeTop(iEdge)                
+            k = maxLevelEdgeTop(iEdge)
             BruntVaisalaFreqTopEdge = 0.5_RKIND * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
             BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
             tridiagA(k-2) = 2.0_RKIND * config_gravWaveSpeed_trunc**2/layerThicknessEdge(k-1,iEdge)/(layerThicknessEdge(k-1,iEdge)+layerThicknessEdge(k,iEdge))
@@ -509,7 +509,7 @@ contains
 !> \brief   Solve the matrix equation Ax=r for x, where A is tridiagonal.
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  Solve the matrix equation Ax=r for x, where A is tridiagonal.
 !>  A is an nxn matrix, with:
 !>  a sub-diagonal, filled from 1:n-1 (a(1) appears on row 2)
@@ -519,7 +519,7 @@ contains
 !-----------------------------------------------------------------------
 ! mrp note:  This subroutine also appears in vmix and should really be put in the framework.
    subroutine tridiagonal_solve(a,b,c,r,x,n) !{{{
-      
+
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -550,14 +550,14 @@ contains
       ! Use work variables for b and r
       bTemp(1) = b(1)
       rTemp(1) = r(1)
-      
+
       ! First pass: set the coefficients
       do i = 2,n
          m = a(i-1)/bTemp(i-1)
          bTemp(i) = b(i) - m*c(i-1)
          rTemp(i) = r(i) - m*rTemp(i-1)
-      end do 
-      
+      end do
+
       x(n) = rTemp(n)/bTemp(n)
        ! Second pass: back-substition
       do i = n-1, 1, -1
@@ -573,7 +573,7 @@ contains
 !> \brief   Initializes ocean momentum horizontal pressure gradient
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine initializes parameters required for the computation of the
 !>  horizontal pressure gradient.
 !

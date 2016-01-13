@@ -103,7 +103,7 @@ contains
 !> \brief   Computes thickness tendency
 !> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the thickness tendency for the ocean
 !
 !-----------------------------------------------------------------------
@@ -134,7 +134,7 @@ contains
 
       call mpas_pool_get_array(forcingPool, 'surfaceThicknessFlux', surfaceThicknessFlux)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
-                  
+
       !
       ! height tendency: start accumulating tendency terms
       !
@@ -160,7 +160,7 @@ contains
       !
       ! height tendency: horizontal advection term -\nabla\cdot ( hu)
       !
-      ! See Ringler et al. (2010) jcp paper, eqn 19, 21, and fig. 3. 
+      ! See Ringler et al. (2010) jcp paper, eqn 19, 21, and fig. 3.
       ! for explanation of divergence operator.
       !
       ! QC Comment (3/15/12): need to make sure that uTranport is the right
@@ -191,7 +191,7 @@ contains
       call mpas_timer_stop("frazil thickness tendency")
 
       call mpas_timer_stop("ocn_tend_thick")
-   
+
    end subroutine ocn_tend_thick!}}}
 
 !***********************************************************************
@@ -201,7 +201,7 @@ contains
 !> \brief   Computes velocity tendency
 !> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the velocity tendency for the ocean
 !
 !-----------------------------------------------------------------------
@@ -270,7 +270,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'surfaceFluxAttenuationCoefficient', surfaceFluxAttenuationCoefficient)
 
       call mpas_pool_get_array(tendPool, 'normalVelocity', tend_normalVelocity)
-                  
+
       call mpas_pool_get_array(forcingPool, 'surfaceStress', surfaceStress)
       call mpas_pool_get_array(forcingPool, 'surfaceStressMagnitude', surfaceStressMagnitude)
 
@@ -364,7 +364,7 @@ contains
 !> \brief   Computes tracer tendency
 !> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes tracer tendencies for the ocean
 !
 !-----------------------------------------------------------------------
@@ -534,7 +534,7 @@ contains
             call mpas_pool_get_config(ocnConfigs, modifiedConfigName, config_use_tracerGroup)
 
             if ( config_use_tracerGroup ) then
-               modifiedConfigName = 'config_use_' // trim(groupItr % memberName) // '_surface_bulk_forcing' 
+               modifiedConfigName = 'config_use_' // trim(groupItr % memberName) // '_surface_bulk_forcing'
                call mpas_pool_get_config(ocnConfigs, modifiedConfigName, config_use_tracerGroup_surface_bulk_forcing)
                modifiedConfigName = 'config_use_' // trim(groupItr % memberName) // '_surface_restoring'
                call mpas_pool_get_config(ocnConfigs, modifiedConfigName, config_use_tracerGroup_surface_restoring)
@@ -636,7 +636,7 @@ contains
                !
                ! ocean surface restoring
                !
-                 if (config_use_tracerGroup_surface_restoring) then 
+                 if (config_use_tracerGroup_surface_restoring) then
                      call mpas_timer_start("surface_restoring_" // trim(groupItr % memberName), .false.)
                      call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
                      modifiedGroupName = trim(groupItr % memberName) // "PistonVelocity"
@@ -658,9 +658,9 @@ contains
                !
 
                !
-               ! now begin to accumulate the RHS tracer tendencies. 
+               ! now begin to accumulate the RHS tracer tendencies.
                !
-                
+
                !
                ! interior restoring forcing tendency
                !
@@ -794,8 +794,8 @@ contains
 !> \brief   Compute tendencies needed for frequency filtered thickness
 !> \author  Mark Petersen
 !> \date    July 2013
-!> \details 
-!>  This routine compute high frequency thickness tendency and the 
+!> \details
+!>  This routine compute high frequency thickness tendency and the
 !>  low freqency divergence.  It is only called when
 !>  config_freq_filtered_thickness is true (z-tilde)
 !
@@ -925,7 +925,7 @@ contains
 !> \brief   Initializes flags used within tendency routines.
 !> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date    4 November 2011
-!> \details 
+!> \details
 !>  This routine initializes flags related to quantities computed within
 !>  other tendency routines.
 !

@@ -13,7 +13,7 @@
 !> \author Mark Petersen
 !> \date   September 2011
 !> \details
-!>  This module contains the routine for computing 
+!>  This module contains the routine for computing
 !>  tendencie from the horizontal pressure gradient.
 !>
 !
@@ -70,7 +70,7 @@ contains
 !> \brief   Computes tendency term for horizontal pressure gradient
 !> \author  Mark Petersen
 !> \date    February 2014
-!> \details 
+!> \details
 !>  This routine computes the pressure gradient tendency for momentum
 !>  based on current state.
 !
@@ -95,7 +95,7 @@ contains
          potentialDensity         !< Input: potentialDensity
 
       real (kind=RKIND), dimension(:,:), intent(in), optional :: &
-         inSituThermalExpansionCoeff, &  
+         inSituThermalExpansionCoeff, &
          inSituSalineContractionCoeff
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers
@@ -170,7 +170,7 @@ contains
 
       elseif (config_pressure_gradient_type.eq.'MontgomeryPotential') then
 
-         ! For pure isopycnal coordinates, this is just grad(M), 
+         ! For pure isopycnal coordinates, this is just grad(M),
          ! the gradient of Montgomery Potential
 
          !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, k)
@@ -320,7 +320,7 @@ contains
 !> \brief   Computes density-Jacobian
 !> \author  Mark Petersen
 !> \date    February 2014
-!> \details 
+!> \details
 !>  This routine computes the density-Jacobian in common_level form.
 !>  See Shchepetkin and McWilliams (2003) Ocean Modeling, sections 2-4
 !
@@ -335,10 +335,10 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:), intent(in) :: &
-         rho1, & ! density of column 1 
+         rho1, & ! density of column 1
          rho2, & ! density of column 2
-         z1,   & ! z-coordinate at middle of cell, column 1 
-         z2      ! z-coordinate at middle of cell, column 2 
+         z1,   & ! z-coordinate at middle of cell, column 1
+         z2      ! z-coordinate at middle of cell, column 2
 
       real (kind=RKIND), intent(in) :: &
          gamma   ! weight between zStar (original Jacobian) and z_C (weighted Jacobian)
@@ -377,7 +377,7 @@ contains
          ! eqn 2.7 in Shchepetkin and McWilliams (2003)
          ! Note delta x was removed.  It must be an error in the paper,
          ! as it makes the units incorrect.
-         Area = 0.5*(z1(k-1) - z1(k) + z2(k-1) - z2(k) ) 
+         Area = 0.5*(z1(k-1) - z1(k) + z2(k-1) - z2(k) )
 
          ! eqn 2.8
          zStar = ( z2(k-1)*z1(k-1) - z2(k)*z1(k) )/(z2(k-1)-z2(k) + z1(k-1)-z1(k))
@@ -404,7 +404,7 @@ contains
 !> \brief   Computes density-Jacobian
 !> \author  Mark Petersen
 !> \date    February 2014
-!> \details 
+!> \details
 !>  This routine computes the density-Jacobian in POM/SCRUM form.
 !>  See Shchepetkin and McWilliams (2003) Ocean Modeling, section 2.
 !
@@ -419,10 +419,10 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:), intent(in) :: &
-         rho1, & ! density of column 1 
+         rho1, & ! density of column 1
          rho2, & ! density of column 2
-         z1,   & ! z-coordinate at middle of cell, column 1 
-         z2      ! z-coordinate at middle of cell, column 2 
+         z1,   & ! z-coordinate at middle of cell, column 1
+         z2      ! z-coordinate at middle of cell, column 2
 
       integer, intent(in) :: &
          kMax  ! maximum level
@@ -456,7 +456,7 @@ contains
 
          ! eqn 2.3 in Shchepetkin and McWilliams (2003)
          JacobianDxDs(k) = 0.25*(&
-              (rho1(k) + rho1(k-1) - rho2(k) - rho2(k-1) )*(z1(k-1) - z1(k) + z2(k-1) - z2(k) ) & 
+              (rho1(k) + rho1(k-1) - rho2(k) - rho2(k-1) )*(z1(k-1) - z1(k) + z2(k-1) - z2(k) ) &
             - (rho1(k-1) - rho1(k) + rho2(k-1) - rho2(k) )*(z1(k) + z1(k-1) - z2(k) - z2(k-1) ) )
       end do
 
@@ -469,7 +469,7 @@ contains
 !> \brief   Computes density-Jacobian
 !> \author  Mark Petersen
 !> \date    February 2014
-!> \details 
+!> \details
 !>  This routine computes the density-Jacobian in diagonal form.
 !>  See Shchepetkin and McWilliams (2003) Ocean Modeling, section 2.
 !
@@ -484,10 +484,10 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:), intent(in) :: &
-         rho1, & ! density of column 1 
+         rho1, & ! density of column 1
          rho2, & ! density of column 2
-         z1,   & ! z-coordinate at middle of cell, column 1 
-         z2      ! z-coordinate at middle of cell, column 2 
+         z1,   & ! z-coordinate at middle of cell, column 1
+         z2      ! z-coordinate at middle of cell, column 2
 
       integer, intent(in) :: &
          kMax
@@ -521,7 +521,7 @@ contains
 
          ! eqn 2.5 in Shchepetkin and McWilliams (2003)
          JacobianDxDs(k) = 0.5*( &
-              (rho1(k-1) - rho2(k))*(z2(k-1) - z1(k) ) & 
+              (rho1(k-1) - rho2(k))*(z2(k-1) - z1(k) ) &
             + (rho1(k) - rho2(k-1))*(z1(k-1) - z2(k)) )
       end do
 
@@ -534,7 +534,7 @@ contains
 !> \brief   Computes density-Jacobian
 !> \author  Mark Petersen
 !> \date    February 2014
-!> \details 
+!> \details
 !>  This routine computes the density-Jacobian in pseudo_flux form.
 !>  See Shchepetkin and McWilliams (2003) Ocean Modeling, section 2.
 !
@@ -549,10 +549,10 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:), intent(in) :: &
-         rho1, & ! density of column 1 
+         rho1, & ! density of column 1
          rho2, & ! density of column 2
-         z1,   & ! z-coordinate at middle of cell, column 1 
-         z2      ! z-coordinate at middle of cell, column 2 
+         z1,   & ! z-coordinate at middle of cell, column 1
+         z2      ! z-coordinate at middle of cell, column 2
 
       integer, intent(in) :: &
          kMax
@@ -579,7 +579,7 @@ contains
       !-----------------------------------------------------------------
 
       integer :: k
-      real (kind=RKIND) :: FLeft, FTop, FRight, FBottom 
+      real (kind=RKIND) :: FLeft, FTop, FRight, FBottom
 
       JacobianDxDs = 0.0
 
@@ -591,7 +591,7 @@ contains
          FBottom = 0.5*( rho1(k) + rho2(k) ) * (z2(k) - z1(k))
 
          ! eqn 2.11 in Shchepetkin and McWilliams (2003)
-         JacobianDxDs(k) = FLeft + FTop - FRight - FBottom 
+         JacobianDxDs(k) = FLeft + FTop - FRight - FBottom
       end do
 
    end subroutine pGrad_Jacobian_pseudo_flux
@@ -603,7 +603,7 @@ contains
 !> \brief   Initializes ocean momentum horizontal pressure gradient
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine initializes parameters required for the computation of the
 !>  horizontal pressure gradient.
 !

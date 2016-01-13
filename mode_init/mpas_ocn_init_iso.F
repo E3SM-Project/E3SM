@@ -13,7 +13,7 @@
 !> \author Juan A. Saenz, based on idealized_acc and others
 !> \date   12/08/2014
 !> \details
-!>  This module contains the routines for initializing the 
+!>  This module contains the routines for initializing the
 !>  the idealized Southern Ocean (ISO) test case
 !
 !-----------------------------------------------------------------------
@@ -66,7 +66,7 @@ contains
 !> \brief   Setup for ISO test case
 !> \author  Juan A. Saenz
 !> \date    02/26/2014
-!> \details 
+!> \details
 !>  This routine sets up the initial conditions for the
 !>  Idealized Southern Ocean configuration.
 !
@@ -81,7 +81,7 @@ contains
 
       ! local work variables
       type (block_type), pointer :: block_ptr
-      
+
       type (mpas_pool_type), pointer :: meshPool, verticalMeshPool, statePool, forcingPool, tracersPool
       type (mpas_pool_type), pointer :: tracersSurfaceRestoringFieldsPool, tracersInteriorRestoringFieldsPool
 
@@ -89,7 +89,7 @@ contains
 
       real (kind=RKIND) :: distance, xDistance, yDistance, zMid, sphereRadius
       real (kind=RKIND) :: currentLon, currentLat
-      real (kind=RKIND) :: location, amplitude 
+      real (kind=RKIND) :: location, amplitude
       real (kind=RKIND) :: Tbottom, Tmin, TminGlobal
       real (kind=RKIND) :: depth, contSlopeWidthRad, widthWindASFRad, windStress
       real (kind=RKIND) :: widthQSouth, widthQMiddle, widthQNorth, heatFluxZonal, heatFlux1, heatFlux2
@@ -97,11 +97,11 @@ contains
       real (kind=RKIND), dimension(30) :: featureDepth
 
       real (kind=RKIND), dimension(:), pointer :: interfaceLocations
-      
-      
+
+
       ! Define config variable pointers
       character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid
-      
+
       integer, pointer :: config_iso_vert_levels
       real (kind=RKIND), pointer :: config_iso_main_channel_depth
       real (kind=RKIND), pointer :: config_iso_north_wall_lat
@@ -167,9 +167,9 @@ contains
       real (kind=RKIND), pointer :: config_iso_heat_flux_region2_radius
       real (kind=RKIND), pointer :: config_iso_temperature_sponge_t1
       real (kind=RKIND), pointer :: config_iso_temperature_sponge_h1
-      real (kind=RKIND), pointer :: config_iso_temperature_sponge_l1 
-      real (kind=RKIND), pointer :: config_iso_temperature_sponge_tau1 
-      
+      real (kind=RKIND), pointer :: config_iso_temperature_sponge_l1
+      real (kind=RKIND), pointer :: config_iso_temperature_sponge_tau1
+
       logical, pointer :: config_iso_temperature_restore_region1_flag
       real (kind=RKIND), pointer :: config_iso_temperature_restore_t1
       real (kind=RKIND), pointer :: config_iso_temperature_restore_lcx1
@@ -190,7 +190,7 @@ contains
       ! Define dimension pointers
       integer, pointer :: nVertLevels, nCells, nVertLevelsP1
       integer, pointer :: index_temperature, index_salinity, index_tracer1
-      
+
       ! Define variable pointers
       logical, pointer :: on_a_sphere
       integer, dimension(:), pointer :: maxLevelCell
@@ -208,10 +208,10 @@ contains
       real (kind=RKIND) :: mainChannelDepth, northWallLat, southWallLat
       logical :: ridgeFlag
       real (kind=RKIND) :: ridgeCenterLon, ridgeHeight, ridgeWidth
-      logical :: plateauFlag 
+      logical :: plateauFlag
       real (kind=RKIND) :: plateauCenterLon, plateauCenterLat
       real (kind=RKIND) :: plateauHeight, plateauRadius, plateauSlopeWidth
-      logical :: shelfFlag 
+      logical :: shelfFlag
       real (kind=RKIND) :: shelfDepth, shelfWidth
       logical :: contSlopeFlag
       real (kind=RKIND) :: maxContSlope
@@ -244,7 +244,7 @@ contains
 
       call mpas_pool_get_config(domain % configs, 'config_init_configuration', config_init_configuration)
       if(config_init_configuration .ne. trim('iso')) return
-      
+
       ! get config variables
       call mpas_pool_get_config(domain % configs, 'config_vertical_grid', config_vertical_grid)
       call mpas_pool_get_config(domain % configs, 'config_iso_vert_levels', config_iso_vert_levels)
@@ -314,7 +314,7 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_sponge_h1', config_iso_temperature_sponge_h1)
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_sponge_l1', config_iso_temperature_sponge_l1)
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_sponge_tau1', config_iso_temperature_sponge_tau1)
-      
+
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_region1_flag', config_iso_temperature_restore_region1_flag)
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_t1', config_iso_temperature_restore_t1)
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_lcx1', config_iso_temperature_restore_lcx1)
@@ -339,7 +339,7 @@ contains
       call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
       sphereRadius = sphere_radius
 
-      
+
       if(.not. on_a_sphere) then
         write(stderrUnit, *) 'ERROR: ISO test case can only be defined on a spherical mesh.'
         iErr = 1
@@ -418,9 +418,9 @@ contains
       heatRegion2Radius = config_iso_heat_flux_region2_radius
       tempSpongeT1 = config_iso_temperature_sponge_t1
       tempSpongeh1 = config_iso_temperature_sponge_h1
-      tempSpongeWeightL1 = config_iso_temperature_sponge_l1 
-      tempSpongeTau1 = config_iso_temperature_sponge_tau1 
-      
+      tempSpongeWeightL1 = config_iso_temperature_sponge_l1
+      tempSpongeTau1 = config_iso_temperature_sponge_tau1
+
       tempRestoreFlag1 = config_iso_temperature_restore_region1_flag
       tempRestoreT1 = config_iso_temperature_restore_t1
       tempRestoreLcx1 = config_iso_temperature_restore_lcx1
@@ -442,7 +442,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!
       ! Setup the vertical grid
       !!!!!!!!!!!!!!!!!!!!!!!!!
-      
+
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -453,7 +453,7 @@ contains
         call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
         call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
-        
+
         ! Set layerThickness and restingThickness
         do k = 1, nVertLevels
            layerThickness(k, :) = config_iso_main_channel_depth * ( interfaceLocations(k+1) - interfaceLocations(k) )
@@ -467,7 +467,7 @@ contains
          end do
 
         block_ptr => block_ptr % next
-      
+
       end do
 
       !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -482,28 +482,28 @@ contains
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
         call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
         call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
-        
+
         ! calculate the width of the continental slope,
         ! based on the specified max value of the slope of the continental slope, maxContSlope
         contSlopeWidthRad = &
            pii * 0.5 * (-shelfDepth + mainChannelDepth) / maxContSlope / sphereRadius
-        
+
         do iCell = 1, nCells
            currentLon = lonCell(iCell)
            currentLat = latCell(iCell)
 
            bottomDepth(iCell) = 0.0
-           
+
            !!!!!!!!!!!!!!!!!!!!!!!!!
            ! Main channel
            if (currentLat <= northWallLat .and. currentLat >= southWallLat) then
               bottomDepth(iCell) = mainChannelDepth
            endif
-           
+
            !!!!!!!!!!!!!!!!!!!!!!!!!
            ! set up fill-in features
            featureDepth = 1.0E6
-           
+
            ! feature 1: Add Ridge
            if (ridgeFlag) then
              distance = (currentLon - ridgeCenterLon) &
@@ -513,7 +513,7 @@ contains
                   ridgeHeight * exp(-2.0*(distance / ridgeWidth / 0.4)**2)
              endif
            endif
-           
+
            ! feature 2: Add Plateau
            if (plateauFlag) then
              distance = sqrt( &
@@ -541,14 +541,14 @@ contains
 
            ! choose the shallowest
            bottomDepth(iCell) = min(minval(featureDepth), bottomDepth(iCell))
-           
+
 
            !!!!!!!!!!!!!!!!!!!!!!!!!
            ! Set up dig-out features
            featureDepth = 0.0
 
            ! feature 1: Continental shelf
-           if (shelfFlag) then 
+           if (shelfFlag) then
              if (currentLat <= southWallLat .and. currentLat >= southWallLat-shelfWidth/sphereRadius) then
                featureDepth(1) = shelfDepth
              endif
@@ -574,11 +574,11 @@ contains
                featureDepth(3) = depressionDepth
              endif
            endif
-           
+
            ! choose the deepest one
            bottomDepth(iCell) = max(maxval(featureDepth), bottomDepth(iCell))
-           
-           
+
+
            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
            ! Set maxLevelCell to -1 for cells to be culled
            if (bottomDepth(iCell) > 0.0) then
@@ -586,8 +586,8 @@ contains
            else
              maxLevelCell(iCell) = -1
            endif
-          
-           
+
+
            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
            ! Determine maxLevelCell based on bottomDepth and refBottomDepth
            ! Also set botomDepth based on refBottomDepth, since
@@ -605,9 +605,9 @@ contains
                 end do
              end if
            end if
-        
+
         enddo ! Looping through with iCell
-        
+
         block_ptr => block_ptr % next
       enddo ! done setting topography
 
@@ -659,7 +659,7 @@ contains
         do iCell = 1, nCells
            currentLon = lonCell(iCell)
            currentLat = latCell(iCell)
-           
+
            ! Set initial temperature
            idx = index_temperature
            do k = 1, nVertLevels
@@ -669,7 +669,7 @@ contains
                 * (-tempLatS+currentLat)*( 1.0/(-tempLatS+tempLatN) )
               activeTracers(idx, k, iCell) = temperature
            enddo
-           
+
            ! Set initial salinity
            idx = index_salinity
            activeTracers(idx, :, iCell) = salinity0
@@ -679,12 +679,12 @@ contains
            if ( associated(debugTracers) ) then
               debugTracers(idx, :, iCell) = 1.0_RKIND
            end if
-           
+
            ! Heat fluxes
            heatFluxZonal = 0.0_RKIND
            heatFlux1 = 0.0_RKIND
            heatFlux2 = 0.0_RKIND
-           
+
            ! Setup zonally constant surface heat fluxes
            widthQSouth  = transSM - transSS
            widthQMiddle = transMN - transSM
@@ -696,8 +696,8 @@ contains
            elseif (currentLat > transMN .and. currentLat < northWallLat) then
                heatFluxZonal = QNorth*sin(pii*(currentLat-northWallLat)/widthQNorth)**2
            endif
-           
-           ! Setup heat flux over localized region 1 
+
+           ! Setup heat flux over localized region 1
            if (heatRegionFlag1) then
               distance = sqrt( &
                 ( (currentLon - regionCenterLon1) * sphereRadius*cos(currentLat) )**2 &
@@ -727,19 +727,19 @@ contains
            ! Set interior restoring
            do k = 1, nVertLevels
               zMid = refZMid(k)
-               
+
               !Temperature
-              !Interior restoring along northern wall 
+              !Interior restoring along northern wall
               distance = sphereRadius * ( currentLat - northWallLat)
               if(abs(distance) <= 3.0_RKIND*tempSpongeWeightL1) then
                  idx = index_temperature
                  temperature = tempSpongeT1 * exp(zMid/tempSpongeh1)
                  activeTracersInteriorRestoringValue(idx, k, iCell) = temperature
-              
+
                  idx = index_temperature
                  activeTracersInteriorRestoringRate(idx, k, iCell) = exp(-abs(distance)/tempSpongeWeightL1) * ( 1.0_RKIND / (tempSpongeTau1*86400.0_RKIND))
               endif
-             
+
               ! Interior restoring at localized region 1
               if (tempRestoreFlag1) then
                  xDistance = (currentLon - regionCenterLon1) * sphereRadius*cos(currentLat)
@@ -747,13 +747,13 @@ contains
                  if (abs(yDistance) <= tempRestoreLcy1 .and. abs(xDistance) <= tempRestoreLcx1) then
                     idx = index_temperature
                     activeTracersInteriorRestoringValue(idx, k, iCell) = TempRestoreT1
-                 
+
                     idx = index_temperature
                     activeTracersInteriorRestoringRate(idx, k, iCell) = ( 1.0_RKIND / (tempSpongeTau1*86400.0_RKIND)) * &
                        exp(-(2.0_RKIND*xDistance/tempRestoreLcx1)**2 - (2.0_RKIND*yDistance/tempRestoreLcy1)**2 )
                  endif
               endif
- 
+
               ! Interior restoring at localized region 2
               if (tempRestoreFlag2) then
                  xDistance = (currentLon - regionCenterLon2) * sphereRadius*cos(currentLat)
@@ -761,13 +761,13 @@ contains
                  if (abs(yDistance) <= tempRestoreLcy2 .and. abs(xDistance) <= tempRestoreLcx2) then
                     idx = index_temperature
                     activeTracersInteriorRestoringValue(idx, k, iCell) = TempRestoreT2
-                    
+
                     idx = index_temperature
                     activeTracersInteriorRestoringRate(idx, k, iCell) = ( 1.0_RKIND / (tempSpongeTau1*86400.0_RKIND)) * &
                        exp(-(2.0_RKIND*xDistance/tempRestoreLcx2)**2 - (2.0_RKIND*yDistance/tempRestoreLcy2)**2 )
                  endif
               endif
-              
+
               ! Interior restoring at localized region 3
               if (tempRestoreFlag3) then
                  xDistance = (currentLon - regionCenterLon3) * sphereRadius*cos(currentLat)
@@ -775,13 +775,13 @@ contains
                  if (abs(yDistance) <= tempRestoreLcy3 .and. abs(xDistance) <= tempRestoreLcx3) then
                     idx = index_temperature
                     activeTracersInteriorRestoringValue(idx, k, iCell) = TempRestoreT3
-                    
+
                     idx = index_temperature
                     activeTracersInteriorRestoringRate(idx, k, iCell) = ( 1.0_RKIND / (tempSpongeTau1*86400.0_RKIND)) * &
                        exp(-(2.0_RKIND*xDistance/tempRestoreLcx3)**2 - (2.0_RKIND*yDistance/tempRestoreLcy3)**2 )
                  endif
               endif
-              
+
               ! Interior restoring at localized region 4
               if (tempRestoreFlag4) then
                  xDistance = (currentLon - regionCenterLon4) * sphereRadius*cos(currentLat)
@@ -789,22 +789,22 @@ contains
                  if (abs(yDistance) <= tempRestoreLcy4 .and. abs(xDistance) <= tempRestoreLcx4) then
                     idx = index_temperature
                     activeTracersInteriorRestoringValue(idx, k, iCell) = TempRestoreT4
-                    
+
                     idx = index_temperature
                     activeTracersInteriorRestoringRate(idx, k, iCell) = ( 1.0_RKIND / (tempSpongeTau1*86400.0_RKIND)) * &
                        exp(-(2.0_RKIND*xDistance/tempRestoreLcx4)**2 - (2.0_RKIND*yDistance/tempRestoreLcy4)**2 )
                 endif
                endif
-              
-              ! Salinity 
+
+              ! Salinity
               idx = index_salinity
               activeTracersInteriorRestoringValue(idx, k, iCell) = salinity0
               idx = index_salinity
               activeTracersInteriorRestoringRate(idx, k, iCell) = 0.0_RKIND
 
            enddo ! k = 1, nVertLevels, interior restoring loop
-          
-           
+
+
         end do ! iCell = 1, nCells
 
         ! fill activeTracersSurfaceRestoringValue surface restoring values
@@ -813,7 +813,7 @@ contains
         activeTracersPistonVelocity(index_temperature,:) = tempPistonVel
         activeTracersSurfaceRestoringValue(index_salinity,:) = activeTracers(index_salinity, 1, :)
         activeTracersPistonVelocity(index_salinity,:) = 0.0_RKIND
-        
+
         ! Set wind stress
         widthWindASFRad = 1.1*contSlopeWidthRad
         do iCell = 1, nCells
@@ -822,10 +822,10 @@ contains
            windStress = 0.0
 
             ! Set wind stress over the ACC, or main channel
-            if (currentLat > latWindTrans) then 
+            if (currentLat > latWindTrans) then
               windStress = windACC * &
                 sin( pii * (currentLat - latWindTrans) &
-                    / (northWallLat-latWindTrans) )**2 
+                    / (northWallLat-latWindTrans) )**2
             ! Set the wind over the continental slope front, over continental slope region
             else if (currentLat > latWindTrans - widthWindASFRad .and. currentLat < latWindTrans) then
               windStress = windASF * sin( pii * (latWindTrans-currentLat) / widthWindASFRad )**2
@@ -839,7 +839,7 @@ contains
       end do
 
       write(*,*) 'exiting ocn_init_setup_iso'
-   
+
    !--------------------------------------------------------------------
 
    end subroutine ocn_init_setup_iso!}}}
@@ -849,9 +849,9 @@ contains
 !  routine ocn_init_validate_iso
 !
 !> \brief   Validation for ISO test case
-!> \author  Juan A. Saenz 
+!> \author  Juan A. Saenz
 !> \date    02/26/2014
-!> \details 
+!> \details
 !>  This routine validates the configuration options for the ISO test case.
 !
 !-----------------------------------------------------------------------
@@ -863,7 +863,7 @@ contains
       type (mpas_pool_type), intent(inout) :: configPool, packagePool
       type (mpas_io_context_type), intent(inout) :: iocontext
       integer, intent(out) :: iErr
-      
+
       character (len=StrKIND), pointer :: config_init_configuration
       integer, pointer :: config_vert_levels, config_iso_vert_levels
 
@@ -874,7 +874,7 @@ contains
 
       call mpas_pool_get_config(configPool, 'config_vert_levels', config_vert_levels)
       call mpas_pool_get_config(configPool, 'config_iso_vert_levels', config_iso_vert_levels)
-      
+
       if(config_vert_levels <= 0 .and. config_iso_vert_levels > 0) then
          config_vert_levels = config_iso_vert_levels
       else if (config_vert_levels <= 0) then

@@ -13,8 +13,8 @@
 !> \author Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date   September 2011
 !> \details
-!>  This module contains routines and variables for computing 
-!>  horizontal mixing tendencies using a biharmonic formulation. 
+!>  This module contains routines and variables for computing
+!>  horizontal mixing tendencies using a biharmonic formulation.
 !
 !-----------------------------------------------------------------------
 
@@ -67,11 +67,11 @@ contains
 !> \brief   Computes tendency term for biharmonic horizontal momentum mixing
 !> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the horizontal mixing tendency for momentum
 !>  based on a biharmonic form for the mixing.  This mixing tendency
 !>  takes the form  \f$-\nu_4 \nabla^4 u\f$
-!>  but is computed as 
+!>  but is computed as
 !>  \f$\nabla^2 u = \nabla divergence + k \times \nabla relativeVorticity\f$
 !>  applied recursively.
 !>  This formulation is only valid for constant \f$\nu_4\f$ .
@@ -111,7 +111,7 @@ contains
       ! output variables
       !
       !-----------------------------------------------------------------
-    
+
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
@@ -234,7 +234,7 @@ contains
       end do
       !$omp end do
 
-      ! Compute - \kappa \nabla^4 u 
+      ! Compute - \kappa \nabla^4 u
       ! as  \nabla div(\nabla^2 u) + k \times \nabla ( k \cross curl(\nabla^2 u) )
       !$omp do schedule(runtime) private(cell1, cell2, vertex1, vertex2, invDcEdge, invDvEdge, r_tmp, u_diffusion)
       do iEdge=1,nEdgesSolve
@@ -272,10 +272,10 @@ contains
 !> \brief   Computes tendency term for Laplacian horizontal momentum mixing
 !> \author  Mark Petersen
 !> \date    July 2013
-!> \details 
+!> \details
 !>  This routine computes the horizontal mixing tendency for momentum
-!>  using tensor operations, 
-!>  based on a Laplacian form for the mixing, 
+!>  using tensor operations,
+!>  based on a Laplacian form for the mixing,
 !>  \f$-\nabla\cdot( \sqrt{\nu_4} \nabla(\nabla\cdot( \sqrt{\nu_4} \nabla(u))))\f$
 !>  where \f$\nu_4\f$ is the del4 viscosity.
 !
@@ -400,10 +400,10 @@ contains
 
       ! The following loop could possibly be reduced to nEdgesSolve
       !$omp do schedule(runtime) private(visc4_sqrt, k)
-      do iEdge = 1, nEdges 
+      do iEdge = 1, nEdges
          visc4_sqrt = sqrt(config_mom_del4_tensor * meshScalingDel4(iEdge))
          do k = 1, maxLevelEdgeTop(iEdge)
-            strainRateR3Edge(:,k,iEdge) = visc4_sqrt * strainRateR3Edge(:,k,iEdge) 
+            strainRateR3Edge(:,k,iEdge) = visc4_sqrt * strainRateR3Edge(:,k,iEdge)
          end do
          ! Impose zero strain rate at land boundaries
          do k = maxLevelEdgeTop(iEdge)+1, nVertLevels
@@ -427,11 +427,11 @@ contains
 
       ! The following loop could possibly be reduced to nEdgesSolve
       !$omp do schedule(runtime) private(visc4_sqrt, k)
-      do iEdge = 1, nEdges  
+      do iEdge = 1, nEdges
          visc4_sqrt = sqrt(config_mom_del4_tensor * meshScalingDel4(iEdge))
          viscosity(:,iEdge) = viscosity(:,iEdge) + config_mom_del4_tensor * meshScalingDel4(iEdge)
          do k = 1, maxLevelEdgeTop(iEdge)
-            strainRateR3Edge(:,k,iEdge) = visc4_sqrt * strainRateR3Edge(:,k,iEdge) 
+            strainRateR3Edge(:,k,iEdge) = visc4_sqrt * strainRateR3Edge(:,k,iEdge)
          end do
          ! Impose zero strain rate at land boundaries
          do k = maxLevelEdgeTop(iEdge)+1, nVertLevels
@@ -473,9 +473,9 @@ contains
 !> \brief   Initializes ocean momentum biharmonic horizontal mixing
 !> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date    September 2011
-!> \details 
-!>  This routine initializes a variety of quantities related to 
-!>  biharmonic horizontal tracer mixing in the ocean.  
+!> \details
+!>  This routine initializes a variety of quantities related to
+!>  biharmonic horizontal tracer mixing in the ocean.
 !
 !-----------------------------------------------------------------------
 

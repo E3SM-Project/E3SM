@@ -13,7 +13,7 @@
 !> \author  Mark Petersen
 !> \date    July 2013
 !> \details
-!>  This module contains the main driver routine for computing 
+!>  This module contains the main driver routine for computing
 !>  horizontal mixing tendencies for high frequency thickness mixing
 !
 !-----------------------------------------------------------------------
@@ -64,8 +64,8 @@ contains
 !> \brief   Computes Laplacian tendency term for horizontal highFreqThickness mixing
 !> \author  Mark Petersen
 !> \date    July 2013
-!> \details 
-!>  This routine computes the horizontal mixing tendency for 
+!> \details
+!>  This routine computes the horizontal mixing tendency for
 !>  high frequency thickness
 !>  based on current state using a Laplacian parameterization.
 !
@@ -146,7 +146,7 @@ contains
             cell2 = cellsOnEdge(2,iEdge)
 
             r_tmp = meshScalingDel2(iEdge) * config_highFreqThick_del2 * dvEdge(iEdge) / dcEdge(iEdge)
-           
+
             do k = 1, maxLevelEdgeTop(iEdge)
                ! \nabla h^{hf} on edge
                hhf_turb_flux = highFreqThickness(k,cell2) - highFreqThickness(k,cell1)
@@ -170,10 +170,10 @@ contains
 !> \brief   Initializes horizontal highFreqThickness mixing
 !> \author  Mark Petersen
 !> \date    July 2013
-!> \details 
-!>  This routine initializes the module for horizontal mixing of 
+!> \details
+!>  This routine initializes the module for horizontal mixing of
 !>  high frequency thickness
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 

@@ -30,7 +30,7 @@ module ocn_core_interface
    !> \brief   Ocean core setup routine
    !> \author  Doug Jacobsen
    !> \date    03/18/2015
-   !> \details 
+   !> \details
    !>  This routine is intended to setup the necessary variables within a core_type
    !>  for the ocean core.
    !
@@ -66,7 +66,7 @@ module ocn_core_interface
    !> \brief   Ocean domain setup routine
    !> \author  Doug Jacobsen
    !> \date    03/18/2015
-   !> \details 
+   !> \details
    !>  This routine is intended to setup the necessary variables within a domain_type
    !>  for the ocean core.
    !
@@ -86,7 +86,7 @@ module ocn_core_interface
    !> \brief   Pacakge setup routine
    !> \author  Doug Jacobsen
    !> \date    03/12/2015
-   !> \details 
+   !> \details
    !>  This function is intended to correctly configure the packages for this MPAS
    !>   core. It can use any Fortran logic to properly configure packages, and it
    !>   can also make use of any namelist options. All variables in the model are
@@ -164,7 +164,7 @@ module ocn_core_interface
       call mpas_pool_get_package(packagePool, 'analysisModeActive', analysisModeActive)
       call mpas_pool_get_package(packagePool, 'initModeActive', initModeActive)
       call mpas_pool_get_config(configPool, 'config_ocean_run_mode', config_ocean_run_mode)
-      
+
       if ( trim(config_ocean_run_mode) == 'forward' ) then
          forwardModeActive = .true.
       endif
@@ -181,7 +181,7 @@ module ocn_core_interface
       !
       call mpas_pool_get_package(packagePool, 'splitTimeIntegratorActive', splitTimeIntegratorActive)
       call mpas_pool_get_config(configPool, 'config_time_integrator', config_time_integrator)
-      if ( forwardModeActive ) then 
+      if ( forwardModeActive ) then
          if (    config_time_integrator == trim('split_explicit') &
             .or. config_time_integrator == trim('unsplit_explicit') ) then
             splitTimeIntegratorActive = .true.
@@ -246,7 +246,7 @@ module ocn_core_interface
       ! test for use of frazil ice formation, frazilIceActive
       !
       call mpas_pool_get_package(packagePool, 'frazilIceActive', frazilIceActive)
-      call mpas_pool_get_config(configPool, 'config_use_frazil_ice_formation', config_use_frazil_ice_formation)      
+      call mpas_pool_get_config(configPool, 'config_use_frazil_ice_formation', config_use_frazil_ice_formation)
       if (config_use_frazil_ice_formation) then
          frazilIceActive = .true.
       end if
@@ -277,7 +277,7 @@ module ocn_core_interface
       ierr = ior(ierr, err_tmp)
 
 
-      ! 
+      !
       ! if in init mode, validate configuration
       !
       if ( initModeActive ) then
@@ -389,7 +389,7 @@ module ocn_core_interface
    !> \brief   Decomposition setup routine
    !> \author  Doug Jacobsen
    !> \date    04/08/2015
-   !> \details 
+   !> \details
    !>  This routine is intended to create the decomposition list within a
    !>  domain type, and register any decompositons the core wants within it.
    !
@@ -428,12 +428,12 @@ module ocn_core_interface
    !> \brief   Pacakge setup routine
    !> \author  Michael Duda
    !> \date    6 August 2014
-   !> \details 
+   !> \details
    !>  The purpose of this function is to allow the core to set up a simulation
    !>  clock that will be used by the I/O subsystem for timing reads and writes
    !>  of I/O streams.
-   !>  This function is called from the superstructure after the framework 
-   !>  has been initialized but before any fields have been allocated and 
+   !>  This function is called from the superstructure after the framework
+   !>  has been initialized but before any fields have been allocated and
    !>  initial fields have been read from input files. However, all namelist
    !>  options are available.
    !
@@ -471,10 +471,10 @@ module ocn_core_interface
    !> \brief   Returns the name of the stream containing mesh information
    !> \author  Michael Duda
    !> \date    8 August 2014
-   !> \details 
+   !> \details
    !>  This function returns the name of the I/O stream containing dimensions,
-   !>  attributes, and mesh fields needed by the framework bootstrapping 
-   !>  routine. At the time this routine is called, only namelist options 
+   !>  attributes, and mesh fields needed by the framework bootstrapping
+   !>  routine. At the time this routine is called, only namelist options
    !>  are available.
    !
    !-----------------------------------------------------------------------
@@ -512,7 +512,7 @@ module ocn_core_interface
    !> \brief   Ocean block setup function
    !> \author  Doug Jacobsen
    !> \date    03/18/2015
-   !> \details 
+   !> \details
    !>  This function is a wrapper function to properly setup a block to be a
    !>  ocean core block.
    !
