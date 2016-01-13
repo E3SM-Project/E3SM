@@ -1422,8 +1422,10 @@
                 <var name="xxyyAvgCell"                       type="real"     dimensions="nCells"                   name_in_code="xxyyAvgCell"/>
                 <var name="xyyyAvgCell"                       type="real"     dimensions="nCells"                   name_in_code="xyyyAvgCell"/>
                 <var name="yyyyAvgCell"                       type="real"     dimensions="nCells"                   name_in_code="yyyyAvgCell"/>
-	        <var name="workCategoryCell"                  type="real"     dimensions="nCategories nCells"       name_in_code="workCategoryCell"/>
+                <var name="maskEdge"                          type="integer"  dimensions="nEdges"                   name_in_code="maskEdge"/>
+                <var name="maskCell"                          type="integer"  dimensions="nCells"                   name_in_code="maskCell"/>
                 <var name="maskCategoryCell"                  type="integer"  dimensions="nCategories nCells"       name_in_code="maskCategoryCell"/>
+	        <var name="workCategoryCell"                  type="real"     dimensions="nCategories nCells"       name_in_code="workCategoryCell"/>
 	</var_struct>
 
 	<!--atmos coupling -->
