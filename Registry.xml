@@ -1272,6 +1272,7 @@
 			<var name="normalBarotropicVelocity"/>
 			<var name="vertCoordMovementWeights"/>
 			<var name="xtime"/>
+			<var name="simulationStartTime"/>
 			<var name="boundaryLayerDepth"/>
 			<var name="seaSurfacePressure" packages="restartForcingFields"/>
 			<var_array name="tracersSurfaceValue"/>
@@ -1861,6 +1862,12 @@
 	<var_struct name="diagnostics" time_levs="1">
 		<var name="xtime" type="text" dimensions="Time" units="unitless"
 			 description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
+		/>
+		<var name="simulationStartTime" type="text" dimensions="" units="unitless" default_value="'no_date_available'"
+			 description="start time of first simulation, with format 'YYYY-MM-DD_HH:MM:SS'"
+		/>
+		<var name="daysSinceStartOfSim" type="real" dimensions="Time" units="days"
+			 description="Time since simulationStartTime, for plotting"
 		/>
 		<var_array name="tracersSurfaceValue" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
 			<var name="temperatureSurfaceValue" array_group="surfaceValues" units="degrees Celsius" name_in_code="temperatureSurfaceValue"
