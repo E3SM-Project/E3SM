@@ -1,0 +1,56 @@
+#[]
+#dimensions:    time, y1, x1
+#units:         
+#long_name:     
+#data:          
+#factor:        
+
+# setup for code generator
+[VARSET]
+# prefix of the generated module
+name:     glad
+# f90 type containing all necessary data
+datatype: glad_instance
+# module where type is defined
+datamod:  glad_type 
+
+[lat]
+dimensions:    time, y1, x1
+units:         degreeN
+long_name:     latitude
+standard_name: latitude
+data:          data%lat
+load:          1
+standard_name: latitude
+
+[lon]
+dimensions:    time, y1, x1
+units:         degreeE
+long_name:     longitude
+data:          data%lon
+load:          1
+standard_name: longitude
+
+[rofi_tavg]
+dimensions:    time, y1, x1
+units:         kg m-2 s-1
+long_name:     solid calving flux
+data:          data%rofi_tavg
+load:          1
+coordinates:   lon lat
+
+[rofl_tavg]
+dimensions:    time, y1, x1
+units:         kg m-2 s-1
+long_name:     liquid runoff flux
+data:          data%rofl_tavg
+load:          1
+coordinates:   lon lat
+
+[hflx_tavg]
+dimensions:    time, y1, x1
+units:         W m-2
+long_name:     heat flux to ice surface
+data:          data%hflx_tavg
+load:          1
+coordinates:   lon lat

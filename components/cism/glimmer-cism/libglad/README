@@ -1,0 +1,36 @@
+This directory contains an alternative to glint that can be used when a GCM
+passes already-downscaled fields: glad (where the "a.d." stands for "already
+downscaled"). glad acts as a lightweight layer between the GCM and the rest of
+CISM. It is responsible for:
+
+(1) Handling time stepping and temporal averaging
+
+(2) Providing a simpler interface to the climate model, rather than requiring
+the climate model to make detailed calls to things like glide_tstep_p1, etc.
+
+(3) Translating inputs and outputs into appropriate quantities
+
+Eventually, it is possible that this layer could be removed, moving some of its
+functionality up into the GLC layer of CESM/ACME, and some of its functionality
+down into the rest of the CISM code. However, we may choose to keep this
+lightweight layer in place, because it does have some value.
+
+----
+
+The main differences between the code here and the code in libglint are:
+
+(1) libglad does not do any upscaling / downscaling / interpolation
+
+(2) libglad currently only works with SMB inputs - not PDD, etc.
+
+----
+
+Note that a few modules here are also used by libglint, including:
+
+- glad_constants.F90
+
+- glad_restart_gcm.F90
+
+So those may contain a bit of code that is needed by libglint but not by
+libglad.
+

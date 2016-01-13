@@ -1,0 +1,189 @@
+----------------------------------------------------------------------
+                                 The
+                    Sparse Linear Algebra Package
+
+                @@@@@@@  @            @@@    @@@@@@@@
+               @       @ @           @   @   @       @
+               @         @          @     @  @       @
+                @@@@@@@  @         @       @ @@@@@@@@
+                       @ @         @@@@@@@@@ @
+               @       @ @         @       @ @        
+                @@@@@@@  @@@@@@@@@ @       @ @        
+                                        
+      @       @                            @@@@@@@        @@@@@
+      @       @                           @       @      @    @@ 
+      @       @  @@@@@@@  @ @@                    @     @    @  @
+      @       @ @       @ @@  @             @@@@@@      @   @   @
+       @     @  @@@@@@@@@ @                @            @  @    @
+        @   @   @         @               @         @@@  @@    @ 
+         @@@     @@@@@@@  @               @@@@@@@@@ @@@   @@@@@  
+
+----------------------------------------------------------------------
+
+SLAP    This  is the  official release version  2.0 of the Sparse  Linear
+        Algebra  Package:  a SLAP  for  the  Masses!  It  contains "core"
+        routines  for  the iterative solution symmetric and non-symmetric
+        positive definite  and  positive  semi-definite   linear systems.
+        Included  in   this  package  are core routines  to  do Iterative
+        Refinement  iteration,   Preconditioned      Conjugate   Gradient
+        iteration,  Preconditioned Conjugate  Gradient iteration  on  the
+        Normal  Equations, Preconditioned BiConjugate Gradient iteration,
+        Preconditioned BiConjugate  Gradient Squared  iteration, Orthomin
+        iteration  and Generalized   Minimum  Residual iteration.    Core
+        routines  require the user   to supply   "MATVEC"  (Matrix Vector
+        Multiply)  and "MSOLVE" (Preconditioning)  routines.  This allows
+        the  core  routines to  be written  in   a way  that   makes them
+        independent of the matrix data structure.   For each core routine
+        there are several   drivers and support  routines that  allow the
+        user  to   utilize      Diagonal    Scaling   and      Incomplete
+        Cholesky/Incomplete LU  factorization as  preconditioners with no
+        coding.  The price for this convenience  is that one must use the
+        a specific matrix  data   structure:  SLAP Column or  SLAP  Triad
+        format.
+
+Comments and suggestions should be sent to:
+        Dr. Mark K. Seager
+        Lawrence Livermore National Lab.
+        PO Box 808, L-300
+        Livermore, CA 94550
+        (415) 423-3141
+        seager@lll-crg.llnl.gov
+or
+        Dr. Anne Greenbaum
+        Courant Institute of Mathematical Sciences
+        New York University
+        251 Mercer St.
+        New York, NY 10012
+        (212)998-3145
+        greenbau@nyu.edu
+
+ ********************************************************************** 
+             GETTING STARTED ON ==> NON UNIX <== SYSTEMS
+ ********************************************************************** 
+To  generate the SLAP test program  and  library on *NON* Un*x systems
+get the following files:
+  READ.ME       This very file.
+  slapqc.f      Quick Check driver routine.  Read the comments in this
+                file for more information about porting the test code.
+  slap.f        Source code for SLAP 2.0.  The first "routine" is a
+                "RoadMap" document routine that describes the package 
+                in gory detail.
+  dlapqc.f      Quick Check driver routine for double precision 
+                routines.  Read the comments in this file for more 
+                information about porting the test code.
+  dlap.f        Source code for SLAP 2.0 double precision routines.  
+                The first "routine" is a "RoadMap" document routine 
+                that describes the package in gory detail.
+Additional routines  required    for correct execution  that  are  not
+supplied directly with the package are the  BLAS and the  SLATEC error
+handling  package.   These can  be obtained from  the   SLATEC library
+itself.
+
+To   make   the  library simply   compile  "slap.f"  with  the highest
+optimization level you have at you disposal.  Then look at the listing
+to make sure  that   the "inner loops"   in the routines SSMV,  SSMTV,
+SSLI2,  SLLTI2,  SSLUI2,  SSLUI4  and  SSMMI2   vectorized.   Compiler
+directives have been set up for the  Alliant FX/Fortran, Cray  CFT and
+LCC Civic compilers, but you may want to  verify  the vectorization of
+these loops anyway.  Now do what ever is necessary to  turn the binary
+from "slap.f" into a library.
+
+To make the test program compile the "slapqc.f" and link this with the
+SLAP library made in the last step and the SLATEC library (to get the
+SLATEC error handling package and the BLAS).
+
+********************************************************************** 
+                   GETTING STARTED ON UNIX SYSTEMS
+********************************************************************** 
+To generate the SLAP test program and library on Un*x systems edit the
+makefile included in this distribution and change the make macros:
+1) FFLAGS   to what ever   your Fortran77 compiler  needs  to optimize
+   things.  
+2) LFLAGS to what ever  libraries you  need  to  load in.  
+3) OWNER  to the  owner of the    library   file to   be  created with 
+   "make install" ( "root"  or your login name are two obvious choices 
+   here).  
+3) GROUP to the group who should have privileges on the  library  file.
+4) LIBDIR to the directory where to put the library.     The choice in
+   the makefile distribution is the standard Un*x place.
+
+To make the  SLAP  library type "make  install" and the makefile  will
+construct the libslap.a file and install it in $(LIBDIR) with $(OWNER)
+and $(GROUP) privileges.
+        
+Also, the files xersla.f, blas.f and mach.f  contain routines that are
+usually contained in the SLATEC library and are included to be used if
+you don't have them in some library  somewhere.  xersla.f is the error
+handler for SLATEC.  Add it to the load line for slapqc:
+
+slapqc : slapqc.o ${OBJS} xersla.o
+        $(FC) ${FFLAGS} slapqc.o ${OBJS} xersla.o -o slapqc ${LFLAGS}
+
+if  you  don't have the  SLATEC library  installed  and referenced  in
+${LFLAGS}.   mach.f   contains the  machine   constants  for   various
+machines.  If you get unsatisfied externals R1MACH and I1MACH then you
+need to add   mach.o  to the  load line   for  slapqc.  Uncomment  the
+machine constants for you machine (or add them if needed) and run make
+again.  blas.f contains the "LINPACK BLAS" and you should use the hand
+coded   versions, if your    machine vendor supplied   them  (most  do
+now-a-days).   If you don't have them then add blas.o to the load line
+and rerun make.
+
+After editing the makefile do "make slapqc" or  just "make" to get the
+SLAP  Quick Test program  made.   
+
+********************************************************************** 
+                   RUNNING THE SLAP 2.0 QUICK CHECK
+********************************************************************** 
+The SLAP 2.0  SLATEC quick check  test program   "slapqc" requires one
+input parameter "KPRINT" from  the STANDARD IN (I1MACH(1)) Fortran I/O
+unit (this is all described  in the  source file "slapqc.f")  KPRINT=2
+gives nice  output about the progression  of tests.  Running the Quick
+Test will  generate output  to  the  STANDARD  OUT  (I1MACH(2)).   All
+iterative methods should complete  their iteration without  error.  If
+all went  well  with the quick  checks  then  the following message is
+printed out at the end of the test:
+****************************************************
+**** All SLAP Quick Checks Passed.   No Errors. ****
+****************************************************
+
+********************************************************************** 
+
+                               Notice                                   
+        This computer code  material was prepared as  an account  of
+        work sponsored by the United States Government.  Neither the
+        United  States nor the  United States  Department of Energy,
+        nor any of  their employees,  nor any  of their contractors,
+        subcontractors,  or  their  employees,  makes  any warranty,
+        express  or implied,   or  assumes any   legal  liability or
+        responsibility for the accuracy, completeness  or usefulness
+        of any information, apparatus, product or process disclosed,
+        or  represents  that      its   use  would   not    infringe
+        privately-owned rights.
+                                                                        
+********************************************************************** 
+                                                                        
+                               DISCLAIMER                               
+        This document was prepared  as an  account of work sponsored
+        by  an agency of the  United States Government.  Neither the
+        United States  Government  nor  the University of California
+        nor any of  their employees, makes  any warranty, express or
+        implied,  or assumes  any legal  liability or responsibility
+        for   the  accuracy, completeness    or  usefulness   of any
+        information,  apparatus,  product or   process disclosed, or
+        represents that its use would  not infringe privately  owned
+        rights.   Reference herein    to  any  specific   commercial
+        products,  process,   or service by  trade name,  trademark,
+        manufacturer, or  otherwise, does not necessarily constitute
+        or imply its endorsement, recommendation, or favoring by the
+        United  States Government or  the University  of California.
+        The views  and opinions of authors  expressed herein  do not
+        necessarily  state or  reflect those   of the United  States
+        Government thereof, and shall not be used for advertising or
+        product endorsement purposes.
+
+        Work performed under the auspices  of the U.S. Department of
+        Energy  by Lawrence  Livermore   National  Laboratory  under
+        contract number W-7405-Eng-48.
+
+********************************************************************** 

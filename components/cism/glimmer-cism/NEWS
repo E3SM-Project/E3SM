@@ -1,0 +1,35 @@
+CISM NEWS 
+
+CISM Version 2.0
+================
+
+CISM2.0, which originated from Glimmer-CISM and Glimmer, has a number of major changes
+relative to these previous codes:
+
+* addition of robust, parallel, 3D, 1st-order accurate approximation to the Stokes momentum 
+    balance ("Glissade" dynamical core)
+* adition of 3D, parallel mass and temperature transport
+* addition of software interfaces to modern C++ based solver libraries (e.g., Trilinos)
+* replacement of the Autotools build system with Cmake build system
+* addition of new test cases for higher-order models
+* re-ordering of the time step to be fully consistent with explicit forward Euler scheme
+* addition of a new high level "cism_driver", which replaces and reproduces functionality of several 
+    old drivers and allows for more flexible integration of additional and/or external dycores
+* re-arrangement of the directory structure 
+* modifications to the GLINT coupling software to support coupling with CESM and other climate models 
+    that compute surface mass balance external to the ice sheet model
+* new and updated documentation
+
+More information including full documentation of the code can be found at:
+http://oceans11.lanl.gov/cism/index.html
+
+The original Glimmer-CISM and Glimmer codes can be found at the Glimmer-CISM Github organization:
+https://github.com/glimmer-cism
+
+updated 8/27/2014
+
+
+
+
+
+

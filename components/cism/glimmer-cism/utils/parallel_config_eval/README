@@ -1,0 +1,2 @@
+This directory includes a Fortran 90 program for evaluating possible decompositions for a CISM grid (dimensions of which are entered manually at run-time).  
+It must be compiled manually.

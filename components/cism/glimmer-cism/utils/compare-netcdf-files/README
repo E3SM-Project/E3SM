@@ -1,0 +1,5 @@
+This directory contains a C++ program to compare any variables common to two netcdf files.  
+See compare.cpp for more details.
+
+The code must be compiled manually using the included Makefile.  It may need to be modified to work with your system, but is quite simple, so any changes will probably be minor.
+

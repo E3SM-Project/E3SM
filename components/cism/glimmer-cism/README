@@ -1,0 +1,58 @@
+
+CISM README file:
+===================
+
+CISM is a land ice model designed to be used as part of an earth-system model 
+or as a stand-alone model. Full documentation can be found at:
+http://oceans11.lanl.gov/cism/documentation.html
+
+Licensing:
+=========
+
+CISM is issued under the Lesser GNU General Public Licence (see LICENSE in the main directory).
+
+Note that this licence DOES NOT APPLY to the SLAP linear algebra library, used by the serial
+code, which is included here in its own directory (./libglimmer-solve/SLAP), and is in the public 
+domain.
+
+
+Mailing list:
+=============
+
+There are two mailing lists, once for general users and one for developers:
+
+1. The general user mailing list can be signed up for by sending an email to:
+   cism-users+subscribe@googlegroups.com
+
+1. The developers mailing list can be signed up for by sending an email to:
+   cism-devel+subscribe@googlegroups.com
+
+Note that because these lists are managed by GoogleGroups, they will *always* attempt to associate
+you with a Google email address. To insure that the email you would like to use is associated with the
+list, please make sure you entirely log out of any Google services before attempting to sign up for the
+mailing list. The sign-up process will require you to authenticate the email address you wish to use by
+taking you to a website where you will be prompted to enter that information.  
+
+
+Discussion Board:
+=================
+
+A discussion board for getting help with running CISM, either in stand-alone mode or as part of CESM, can
+be found at: http://bb.cgd.ucar.edu/forums/ice-sheet-modeling-cism  
+
+
+Bug Reporting:
+==============
+
+Pleae report unresolved problems using the bug reporting facility at the CISM Github website 
+(under "Issues"): https://github.com/cism/cism/issues
+
+
+Building / Installing CISM:
+===========================
+
+For detailed instructions on how to install and build CISM, please see Chapter 2 of the users
+guide (available at: http://oceans11.lanl.gov/cism/documentation.html)
+
+
+last updated: 10/21/2014

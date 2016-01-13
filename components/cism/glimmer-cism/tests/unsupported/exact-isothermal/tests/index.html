@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <title>Verifying GLIMMER with exact solutions</title>
+  </head>
+
+  <body>
+    <h1>Verifying GLIMMER with exact solutions</h1>
+    <p>
+      The tests used here are based on the exact solutions for isothermal ice sheets by Ed Bueler and others. 
+      Their tests are coded in matlab and can be found on <a href="http://www.cs.uaf.edu/~bueler/iceflowpage.htm">their web page</a>.
+    </p>
+    <p>
+      Tests B, C and D are run with the linear and non-linear solver. The ADI solver is not used here.
+    </p>
+    <h2>References</h2>
+    <ul>
+    <li> E. Bueler, C. S. Lingle, J. A. Kallen-Brown, D. N. Covey, L. N. Bowman 
+(2005) "Exact solutions and numerical verification for isothermal ice sheets,"
+J. Glaciol. 51 (no. 173), 291--306.</li>
+    </ul>
+ 
+    <h2>Overview</h2>
+    <table>
+	<tr>
+	  <td>
+	    <img src="time.png" alt="runtimes and timesteps" title="runtimes and timesteps">
+	  </td>
+	  <td>
+	    <img src="errors.png" alt="max and dome errors" title="max and dome errors">
+	  </td>
+	</tr>
+    </table>
+    <h2>Test B</h2>
+    <table>
+	<tr>
+	  <th>Linear Solver</th><th>Non-linear Solver</th>
+	</tr>
+	<tr>
+	  <td>
+	    <img src="test_B_lin_50km_10.00a.png" alt="dx=50km dt=10a" title="dx=50km dt=10a">
+	  </td>
+	  <td>
+	    <img src="test_B_non-lin_50km_10.00a.png" alt="dx=50km dt=10a" title="dx=50km dt=10a">
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    <img src="test_B_lin_20km_2.00a.png" alt="dx=20km dt=2a" title="dx=20km dt=2a">
+	  </td>
+	  <td>
+	    <img src="test_B_non-lin_20km_2.00a.png" alt="dx=20km dt=2a" title="dx=20km dt=2a">
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    <img src="test_B_lin_10km_0.50a.png" alt="dx=10km dt=0.5a" title="dx=10km dt=0.5a">
+	  </td>
+	  <td>
+	    <img src="test_B_non-lin_10km_0.50a.png" alt="dx=10km dt=0.5a" title="dx=10km dt=0.5a">
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    <img src="test_B_lin_5km_0.10a.png" alt="dx=5km dt=0.1a" title="dx=5km dt=0.1a">
+	  </td>
+	  <td>
+	    <img src="test_B_non-lin_5km_0.10a.png" alt="dx=5km dt=0.1a" title="dx=5km dt=0.1a">
+	  </td>
+	</tr>
+    </table>
+    <h2>Test C</h2>
+    <table>
+	<tr align=center>
+	  <td colspan=2>
+	    <img src="vole_c.png" alt="volume error" title="volume error">
+	  <td>
+	</tr>
+	<tr>
+	  <th>Linear Solver</th><th>Non-linear Solver</th>
+	</tr>
+	<tr>
+	  <td>
+	    <img src="test_C_lin_50km_5.00a.png" alt="dx=50km dt=5a" title="dx=50km dt=5a">
+	  </td>
+	  <td>
+	    <img src="test_C_non-lin_50km_5.00a.png" alt="dx=50km dt=5a" title="dx=50km dt=5a">
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    <img src="test_C_lin_20km_1.00a.png" alt="dx=20km dt=1a" title="dx=20km dt=1a">
+	  </td>
+	  <td>
+	    <img src="test_C_non-lin_20km_1.00a.png" alt="dx=20km dt=1a" title="dx=20km dt=1a">
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    <img src="test_C_lin_10km_0.50a.png" alt="dx=10km dt=0.5a" title="dx=10km dt=0.5a">
+	  </td>
+	  <td>
+	    <img src="test_C_non-lin_10km_0.50a.png" alt="dx=10km dt=0.5a" title="dx=10km dt=0.5a">
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    <img src="test_C_lin_5km_0.10a.png" alt="dx=5km dt=0.1a" title="dx=5km dt=0.1a">
+	  </td>
+	  <td>
+	    <img src="test_C_non-lin_5km_0.10a.png" alt="dx=5km dt=0.1a" title="dx=5km dt=0.1a">
+	  </td>
+	</tr>
+    </table>    
+    <h2>Test D</h2>
+    <table>
+	<tr align=center>
+	  <td colspan=2>
+	    <img src="vole_d.png" alt="volume error" title="volume error">
+	  <td>
+	</tr>
+	<tr>
+	  <th>Linear Solver</th><th>Non-linear Solver</th>
+	</tr>
+	<tr>
+	  <td>
+	    <img src="test_D_lin_50km_5.00a.png" alt="dx=50km dt=5a" title="dx=50km dt=5a">
+	  </td>
+	  <td>
+	    <img src="test_D_non-lin_50km_5.00a.png" alt="dx=50km dt=5a" title="dx=50km dt=5a">
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    <img src="test_D_lin_20km_1.00a.png" alt="dx=20km dt=1a" title="dx=20km dt=1a">
+	  </td>
+	  <td>
+	    <img src="test_D_non-lin_20km_1.00a.png" alt="dx=20km dt=1a" title="dx=20km dt=1a">
+	  </td>
+	</tr>
+    </table>    
+    <hr>
+    <address><a href="mailto:Magnus.Hagdorn@ed.ac.uk">Magnus Hagdorn</a></address>
+<!-- Created: Mon Nov  7 14:57:12 GMT 2005 -->
+<!-- hhmts start -->
+Last modified: Mon Nov  7 15:28:38 GMT 2005
+<!-- hhmts end -->
+  </body>
+</html>

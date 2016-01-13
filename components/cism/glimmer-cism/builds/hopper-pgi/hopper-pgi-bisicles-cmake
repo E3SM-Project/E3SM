@@ -1,0 +1,128 @@
+# run this script by typing: source hopper-pgi-cmake
+# After thus script completes, type: make -j 8
+# If rebuilding, type 'make clean' before running 'make -j 8'
+
+# This cmake configuration script builds cism_driver
+# on hopper using the PGI compiler suite.  It no longer relies on a build
+# of Trilinos, but does need a BISICLES build located in BISICLES_INTERFACE_DIR
+# (currently set to /global/u2/d/dmartin/BISICLES/code/interface)
+
+
+# This script should be run from the builds/hopper-pgi subdirectory
+# of the main seacism repository (reflected in the two instances
+# of "../.." below).
+
+# BUILD OPTIONS:
+# The call to cmake below includes several input ON/OFF switch parameters, to
+# provide a simple way to select different build options.  These are:
+# CISM_BUILD_CISM_DRIVER -- ON by default, set to OFF to only build the CISM libraries.
+# CISM_ENABLE_BISICLES -- OFF by default, set to ON to build a BISICLES-capable cism_driver.
+# CISM_ENABLE_FELIX -- OFF by default, set to ON to build a FELIX-capable cism_driver.
+# CISM_USE_TRILINOS -- OFF by default, set to on for builds with Trilinos.
+# CISM_MPI_MODE -- ON by default, only set to OFF for serial builds.
+# CISM_SERIAL_MODE -- OFF by default, set to ON for serial builds.
+# CISM_USE_GPTL_INSTRUMENTATION -- ON by default, set to OFF to not use GPTL instrumentation.
+# CISM_COUPLED -- OFF by default, set to ON to build with CESM.
+echo
+echo Run this script by typing: source hopper-bisicles-pgi-cmake
+echo
+echo Warning: Python problem.  After the last hopper system updates 1/28/13, in order to run simple_glide
+echo or simple_bisicles, you need to replace the python/2.7.3 module with the python/2.7.1 module.
+echo The easiest way to do this: In your .cshrc.ext or .bashrc.ext add the lines:
+echo module unload python 
+echo module load python/2.7.1
+echo
+#echo Warning: Python problem.  After the last hopper system updates 1/28/13, in order to run simple_glide
+#echo or simple_bisicles, you need to replace the python/2.7.3 module with the python/2.7.1 module.
+#echo The easiest way to do this: In your .cshrc.ext or .bashrc.ext add the lines:
+#echo module unload python 
+#echo module load python/2.7.1
+#echo
+
+module unload cmake
+module unload PrgEnv-cray PrgEnv-gnu PrgEnv-intel PrgEnv-pathscale PrgEnv-pgi
+module unload hdf5 
+module unload hdf5-parallel
+module unload cray-hdf5-parallel
+module unload cray-netcdf-hdf5parallel
+module unload netcdf
+module unload python
+module unload cray-shmem
+module unload cray-mpich2
+
+#module --silent purge
+
+module load modules
+module load cmake/2.8.10.1
+module load PrgEnv-pgi/4.2.34
+module load cray-hdf5-parallel/1.8.11
+module load cray-netcdf-hdf5parallel/4.3.0
+module load python/2.7.5
+module load cray-shmem/6.0.1
+module load cray-mpich/6.0.1
+
+# remove old build data:
+rm ./CMakeCache.txt
+rm -r ./CMakeFiles
+
+# run a script that creates some CISM source files:
+#pushd .
+#cd ..
+#../cmake-scripts/autogenerate-script
+#popd
+
+echo
+echo "Doing CMake Configuration step"
+
+
+cmake \
+  -D CISM_BUILD_CISM_DRIVER:BOOL=ON \
+  -D CISM_ENABLE_BISICLES=ON \
+  -D CISM_ENABLE_FELIX=OFF \
+\
+  -D CISM_USE_TRILINOS:BOOL=OFF \
+  -D CISM_MPI_MODE:BOOL=ON \
+  -D CISM_SERIAL_MODE:BOOL=OFF \
+\
+  -D CISM_USE_GPTL_INSTRUMENTATION:BOOL=OFF \
+  -D CISM_COUPLED:BOOL=OFF \
+\
+  -D CISM_TRILINOS_DIR=/project/projectdirs/piscees/trilinos-default/hopper-pgi/install \
+  -D CISM_TRILINOS_GPTL_DIR=/project/projectdirs/piscees/trilinos-default/hopper-pgi-gptl/install \
+  -D CISM_TRILINOS_ALBANY_DIR=/project/projectdirs/piscees/trilinos-default/hopper-pgi-albany/install \
+\
+  -D CISM_NETCDF_DIR=$NETCDF_DIR \
+  -D CISM_FMAIN=/opt/pgi/13.6.0/linux86-64/13.6/lib/f90main.o \
+\
+  -D CMAKE_INSTALL_PREFIX:PATH=$PWD/install \
+  -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
+  -D CMAKE_VERBOSE_CONFIGURE:BOOL=ON \
+\
+  -D CMAKE_CXX_COMPILER=CC \
+  -D CMAKE_C_COMPILER=cc \
+  -D CMAKE_Fortran_COMPILER=ftn \
+\
+  -D CISM_MPI_BASE_DIR=$CRAY_MPICH2_DIR \
+  -D CISM_SCI_LIB_DIR=$CRAY_LIBSCI_PREFIX_DIR/lib \
+  -D CISM_GPTL_DIR=/project/projectdirs/ccsm1/libgptl/libgptl-pgi \
+\
+  -D CMAKE_CXX_FLAGS:STRING="-O2 --diag_suppress 554,111,611 -DH5_USE_16_API" \
+  -D CISM_Fortran_FLAGS:STRING="-O2 -DNO_RESCALE" \
+  -D BISICLES_LIB_SUBDIR=libpgi \
+  -D BISICLES_INTERFACE_DIR=$PWD/../../../BISICLES/CISM-interface/interface \
+  -D CISM_MPI_LIBS:STRING="mpichf90" \
+  -D CISM_STATIC_LINKING:BOOL=OFF \
+  ../..
+
+
+# Note: last argument above  "../.."  is path to top seacism directory
+
+# ADD: 
+
+#  -D CMAKE_PREFIX_PATH="$HDF5_DIR" \
+
+#  -D TPL_ENABLE_MPI:BOOL=ON \
+
+
+#  -D CISM_HDF5_LIB_DIR=$HDF5_DIR/lib \
+#  -D CISM_HDF5_LIBS="-lhdf5_pgi_parallel -lz" \
