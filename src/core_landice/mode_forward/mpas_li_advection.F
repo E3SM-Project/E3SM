@@ -52,11 +52,6 @@ module li_advection
    !
    !--------------------------------------------------------------------
 
-   !WHL - debug                                                                                                                                                    
-   logical, parameter :: new_thickness_advection = .true.
-!   logical, parameter :: new_thickness_advection = .false. 
-   public :: new_thickness_advection
-
  contains
 
 
@@ -106,7 +101,7 @@ module li_advection
 
       logical, intent(in), optional :: &
            advectTracersIn        !< Input: if true, then advect tracers as well as thickness
-                                  !         (default is true)
+                                  !TODO: Default is currently false; change to true
 
       !-----------------------------------------------------------------
       !
@@ -278,7 +273,8 @@ module li_advection
       case ('fo')
 
          if (config_print_thickness_advection_info) then
-            write(stderrUnit,*) 'Using first-order upwind for thickness and tracer advection'
+            write(stderrUnit,*) 'Using first-order upwind for thickness advection'
+            write(stderrUnit,*) 'advectTracers =', advectTracers
          endif
          
          !WHL - debug
@@ -776,7 +772,8 @@ module li_advection
          newlayerThickness,      &
          newTracers,             &
          minOfMaxAllowableDt,    &
-         err)
+         err,                    &
+         advectTracersIn)
 
       !-----------------------------------------------------------------
       !
@@ -799,6 +796,10 @@ module li_advection
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
            oldTracers            !< Input: old tracer values
+
+      logical, intent(in), optional :: &
+           advectTracersIn       !< Input: if true, then advect tracers as well as thickness
+                                 !  Default (if not passed in) is to advect tracers
 
       !-----------------------------------------------------------------
       !
@@ -861,12 +862,14 @@ module li_advection
 
       integer :: iEdge, iCell, iCell1, iCell2, iEdgeOnCell, k
 
-      integer :: nTracers
+      integer :: nTracers            ! number of tracers
+
+      logical :: advectTracers       ! if true, then advect tracers as well as thickness
 
       real (kind=RKIND), dimension(:), allocatable :: &
-           tracersEdge,             & ! upstream tracer values on an edge
-           thicknessTracerTendency, & ! net thickness*tracer tendency for a cell
-           newThicknessTracers        ! new values of thickness*tracer
+           tracersEdge,             &! upstream tracer values on an edge
+           thicknessTracerTendency, &! net thickness*tracer tendency for a cell
+           newThicknessTracers       ! new values of thickness*tracer
 
       real (kind=RKIND), parameter :: bigNumber = 1.0e16_RKIND  ! This is ~300 million years in seconds, but it is small enough not to overflow
 
@@ -884,6 +887,12 @@ module li_advection
       real (kind=RKIND), parameter :: eps11 = 1.e-11_RKIND
 
       err = 0
+
+      if (present(advectTracersIn)) then
+         advectTracers = advectTracersIn
+      else
+         advectTracers = .true.
+      endif
 
       nTracers = size(oldTracers,1)
 
@@ -929,8 +938,7 @@ module li_advection
       endif
 
       ! Note: This loop structure (nCells loop outside nEdgesOnCell loop) results in double calculation of fluxes
-      !       across each edge. Upwind advection is so cheap, however, that the extra cost is minimal.
-      ! TODO: Reorganize as a loop over edges, and then cells?
+      !       across each edge. But upwind advection is cheap, so the extra cost is minimal.
 
       ! loop over locally owned cells
       do iCell = 1, nCellsSolve
@@ -975,40 +983,49 @@ module li_advection
                endif
                minOfMaxAllowableDt = min(minOfMaxAllowableDt, maxAllowableDt)
 
-               velSign = sign(1.0_RKIND, layerNormalVelocity)
-
-               ! Assign the upwind tracer values to each edge
-               ! Note: layerThicknessEdge is passed in and does not need to be computed here
-
-               tracersEdge(:) = max(velSign * oldTracers(:,k,iCell1),   &
-                                    velSign * (-1.0_RKIND) * oldTracers(:,k,iCell2))
-               
                ! Increment the thickness and thickness*tracer tendencies
 
                thicknessFluxEdge = layerNormalVelocity * dvEdge(iEdge) * layerThicknessEdge(k,iEdge)
                thicknessTendency = thicknessTendency &
                                  + edgeSignOnCell(iEdgeOnCell,iCell) * thicknessFluxEdge * invAreaCell
-               thicknessTracerTendency(:) = thicknessTracerTendency(:) &
-                                 + edgeSignOnCell(iEdgeOnCell,iCell) * thicknessFluxEdge * invAreaCell * tracersEdge(:)
+
+               if (advectTracers) then
+
+                  velSign = sign(1.0_RKIND, layerNormalVelocity)
+
+                  ! Assign the upwind tracer values to each edge
+                  ! Note: layerThicknessEdge is passed in and does not need to be computed here
+
+                  tracersEdge(:) = max(velSign * oldTracers(:,k,iCell1),   &
+                                       velSign * (-1.0_RKIND) * oldTracers(:,k,iCell2))
+               
+                  thicknessTracerTendency(:) = thicknessTracerTendency(:) &
+                                             + edgeSignOnCell(iEdgeOnCell,iCell) * thicknessFluxEdge * invAreaCell * tracersEdge(:)
+
+               endif   ! advectTracers
 
                !WHL - debug
                if (indexToCellID(iCell) == config_stats_cell_ID .and. k==1 .and. config_print_thickness_advection_info) then
                   write(stderrUnit,*) k, iEdgeOnCell, layerNormalVelocity, layerThicknessEdge(k,iEdge), thicknessFluxEdge, thicknessTendency 
                endif
 
-            enddo    ! iEdgeOnCell
+            enddo      ! iEdgeOnCell
 
             ! Compute the new layer thickness and tracers
 
             newLayerThickness(k,iCell) = oldLayerThickness(k,iCell) + thicknessTendency * dt
 
-            newThicknessTracers(:) = oldLayerThickness(k,iCell)*oldTracers(:,k,iCell) + thicknessTracerTendency(:) * dt
+            if (advectTracers) then
 
-            if (newLayerThickness(k,iCell) > 0.0_RKIND) then
-               newTracers(:,k,iCell) = newThicknessTracers(:) / newLayerThickness(k,iCell)
-            else
-               newTracers(:,k,iCell) = 0.0_RKIND
-            endif
+               newThicknessTracers(:) = oldLayerThickness(k,iCell)*oldTracers(:,k,iCell) + thicknessTracerTendency(:) * dt
+
+               if (newLayerThickness(k,iCell) > 0.0_RKIND) then
+                  newTracers(:,k,iCell) = newThicknessTracers(:) / newLayerThickness(k,iCell)
+               else
+                  newTracers(:,k,iCell) = 0.0_RKIND
+               endif
+
+            endif  ! advectTracers
 
          enddo     ! k
 

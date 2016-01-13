@@ -389,7 +389,6 @@ contains
    
       !WHL - debug
       !TODO - Remove these use statements after old advection scheme is removed
-      use li_advection, only: new_thickness_advection
       use li_advection, only: li_vertical_remap, tracer_setup, tracer_finish
 
       !-----------------------------------------------------------------
@@ -655,8 +654,7 @@ contains
              call mpas_allocate_scratch_field(advectedTracersField, .true.)
              advectedTracers => advectedTracersField % array
 
-             !WHL - debug - If new_thickness_advection = T, then vertical remapping has been done already
-             if (.not.new_thickness_advection .or. firstCall) then
+             if (firstCall) then
 
                 !WHL - debug
                 ! With the old advection scheme, li_vertical_remap is called before the first diagnostic solve.
@@ -682,7 +680,7 @@ contains
 
                 firstCall = .false.
 
-             endif  ! old thickness advection or firstCall
+             endif  ! firstCall
 
           endif
 
@@ -877,8 +875,6 @@ contains
       ! NOTE: This calculates FO upwind h edge
 
       ! Both thickness and layerThickness should be updated by this time.
-      !TODO - Move the layerThickness calculation to the start of the advection routine in the next time step?
-      !       Not sure if layerThicknessEdge is needed for any purpose before then.
       if (config_thickness_advection == 'fo') then
 
          ! If using FO-Upwind then h_edge must be FO.
