@@ -1,0 +1,42 @@
+MISMIP test case
+========
+This directory contains two Python scripts for running the MISMIP experiments on a fixed domain on a linearly tilted bed topography.
+(WHL: Just one python script for now)
+To run the experiment, enter the following on a terminal command line:
+
+For a serial job: ./mismipInit.py
+
+For a parallel job: ./mismipInit.py -m number_of_processors, for example:
+
+./mismipInit.py -m 8 
+
+... will run the test case on 8 processors.
+
+Execute: ./mismipInit.py --help
+for a list of all options available.
+
+To run with a specific configuration file: ./mismipInit.py -c mismip_config_filename
+
+If no config file is specified, the default is mismipInit.config.
+
+To run with a specific executable: ./mismipInit.py -e cism_executable_name
+
+If no executable is specified, the default is cism_driver.
+You can either copy the cism_driver executable to this directory or create a link, e.g.:
+
+ln -s ../../../builds/mac-gnu/cism_driver/cism_driver cism_driver
+
+The default configuration file is set to use the higher-order Glissade dycore.
+The current option is the DIVA solver (which_ho_approx = 3), based on Goldberg (2011).
+
+The script performs the following steps:
+1. Create a netCDF input file for CISM.
+2. Run CISM, creating a netCDF output file.
+
+PREREQUISITES:
+In order to use the mismip.py script, you will need to have Python and one of the
+following Python modules installed:
+Scientific.IO.NetCDF, netCDF4, or pycdf
+
+To view the results use ncview or another utility for viewing netCDF files.
+

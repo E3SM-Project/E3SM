@@ -1,0 +1,72 @@
+# Run this script by typing: source yellowstone-intel-cmake
+# After this script completes, type: make -j 8
+# If rebuilding, type 'make clean' before running 'make -j 8'
+
+# This cmake configuration script is set up to perform a parallel build with Trilinos
+
+module purge
+module load ncarenv/1.0
+module load ncarbinlibs/1.0
+module load intel/13.1.2
+module load mkl/11.0.1
+module load trilinos/11.0.3
+module load netcdf-mpi/4.3.0
+module load ncarcompilers/1.0
+module load pnetcdf/1.3.0
+module load cmake/2.8.10.2
+module load python
+module load all-python-libs
+
+# remove old build data:
+rm ./CMakeCache.txt
+rm -r ./CMakeFiles
+
+echo
+echo "Doing CMake Configuration step"
+
+# Note: the compilation flags were taken from the defaults for a CESM build on
+# yellowstone-intel (using Machines_140218). Some of these options (e.g.,
+# -convert big_endian and -assume byterecl) are probably unnecessary for a
+# standalone build, but I am keeping things consistent with the CESM build for
+# simplicity.
+
+# A few non-intuitive things:
+#
+# - CISM_FORCE_FORTRAN_LINKER: without this, cmake tries to use a C++ linker, which doesn't work
+#
+# - CISM_INCLUDE_IMPLICIT_LINK_LIBRARIES: if this is on (the default), some
+#   libraries are included on the link line which can't be found (e.g.,
+#   hdf5). This may be related to the fact that trilinos on yellowstone is old,
+#   and/or the fact that cmake wants to use a C++ linker but we're telling it to
+#   use a fortran linker.
+
+cmake \
+  -D CISM_BUILD_CISM_DRIVER:BOOL=ON \
+  -D CISM_ENABLE_BISICLES=OFF \
+  -D CISM_ENABLE_FELIX=OFF \
+\
+  -D CISM_USE_TRILINOS:BOOL=OFF \
+  -D CISM_MPI_MODE:BOOL=ON \
+  -D CISM_SERIAL_MODE:BOOL=OFF \
+\
+  -D CISM_USE_GPTL_INSTRUMENTATION:BOOL=OFF \
+  -D CISM_COUPLED:BOOL=OFF \
+  -D CISM_USE_CISM_FRONT_END:BOOL=OFF \
+\
+  -D CISM_TRILINOS_DIR=$TRILINOS_PATH \
+  -D CISM_NETCDF_DIR=$NETCDF \
+  -D CISM_FORCE_FORTRAN_LINKER:BOOL=ON \
+  -D CISM_INCLUDE_IMPLICIT_LINK_LIBRARIES:BOOL=OFF \
+  -D CMAKE_VERBOSE_MAKEFILE:BOOL=OFF \
+\
+  -D CMAKE_CXX_COMPILER=mpiicpc \
+  -D CMAKE_C_COMPILER=mpicc \
+  -D CMAKE_Fortran_COMPILER=mpif90 \
+\
+  -D CMAKE_Fortran_FLAGS:STRING="-fp-model source -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -xHost -O2" \
+  -D CMAKE_C_FLAGS:STRING="-O2 -fp-model precise -xHost" \
+  -D CMAKE_CXX_FLAGS:STRING="-O2 -fp-model precise -xHost" \
+ ../..
+
+# Note: last argument above  "../.."  is path to top seacism directory
+# Note: last argument above  "../.."  is path to top seacism directory

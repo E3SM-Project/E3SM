@@ -1,0 +1,4 @@
+The various subdirectories in this directory hold utilities that may be useful for working with CISM.  
+The 'build' subdirectory holds scripts that are used by the cmake build system when building the code 
+and is necessary for successful compiling.  The other subdirectories hold miscellaneous tools that are 
+not required, but may be useful.  See the individual README files in each subdirectory for details.

@@ -1,0 +1,120 @@
+# run this script by typing: source titan-gnu-cmake
+# After thus script completes, type: make -j 8
+# If rebuilding, type 'make clean' before running 'make -j 8'
+
+# This cmake configuration script builds cism_driver
+# on titan using the GNU compiler suite.
+
+# This script should be run from the builds/titan-gnu subdirectory
+# of the main CISM repository (reflected in the two instances
+# of "../.." below).
+
+# BUILD OPTIONS:
+# The call to cmake below includes several input ON/OFF switch parameters, to
+# provide a simple way to select different build options.  These are:
+# CISM_BUILD_CISM_DRIVER -- ON by default, set to OFF to only build the CISM libraries.
+# CISM_ENABLE_BISICLES -- OFF by default, set to ON to build a BISICLES-capable cism_driver.
+# CISM_ENABLE_FELIX -- OFF by default, set to ON to build a FELIX-capable cism_driver.
+# CISM_USE_TRILINOS -- OFF by default, set to on for builds with Trilinos.
+# CISM_MPI_MODE -- ON by default, only set to OFF for serial builds.
+# CISM_SERIAL_MODE -- OFF by default, set to ON for serial builds.
+# CISM_USE_GPTL_INSTRUMENTATION -- ON by default, set to OFF to not use GPTL instrumentation.
+# CISM_COUPLED -- OFF by default, set to ON to build with CESM.
+
+echo
+echo Run this script by typing: source titan-gnu-cmake
+echo
+
+module unload PrgEnv-gnu PrgEnv-pgi
+
+module --silent purge
+
+#module unload cmake
+#module unload cray-hdf5 
+#module unload cray-hdf5-parallel
+#module unload netcdf
+#module unload python
+#module unload cray-shmem
+#module unload cray-mpich2
+#module unload netcdf-hdf5parallel cray-netcdf-hdf5parallel boost gcc
+#module unload PrgEnv-cray PrgEnv-gnu PrgEnv-intel PrgEnv-pathscale PrgEnv-pgi
+
+module load modules
+module load cmake/2.8.10.2
+module load PrgEnv-gnu
+module load gcc/4.8.2
+module load cray-shmem
+module load cray-mpich
+module load cray-netcdf-hdf5parallel/4.3.0
+module load python
+module load boost/1.54.0
+
+# remove old build data:
+rm -f ./CMakeCache.txt
+rm -rf ./CMakeFiles
+
+# run a script that creates some CISM source files:
+#pushd .
+#cd ..
+#../cmake-scripts/autogenerate-script
+#popd
+
+echo
+echo "Doing CMake Configuration step"
+
+cmake \
+  -D CISM_BUILD_CISM_DRIVER:BOOL=ON \
+  -D CISM_ENABLE_BISICLES=OFF \
+  -D CISM_ENABLE_FELIX=OFF \
+\
+  -D CISM_USE_TRILINOS:BOOL=OFF \
+  -D CISM_MPI_MODE:BOOL=ON \
+  -D CISM_SERIAL_MODE:BOOL=OFF \
+\
+  -D CISM_USE_GPTL_INSTRUMENTATION:BOOL=OFF \
+  -D CISM_COUPLED:BOOL=OFF \
+\
+  -D CISM_TRILINOS_DIR=/lustre/atlas/world-shared/cli900/cesm/software/Trilinos/Trilinos-11.10.2_gptl/titan-gnu-ci-nophal/install \
+  -D CISM_TRILINOS_GPTL_DIR=/lustre/atlas/world-shared/cli900/cesm/software/Trilinos/Trilinos-11.10.2_gptl/titan-gnu-ci-nophal/install \
+  -D CISM_TRILINOS_ALBANY_DIR=/lustre/atlas/world-shared/cli900/cesm/software/Trilinos/Trilinos-11.10.2_gptl/titan-gnu-ci-nophal/install \
+\
+  -D CISM_GPTL_DIR=/lustre/atlas/world-shared/cli900/cesm/software/libgptl/libgptl-titan-gnu \
+  -D CISM_NETCDF_DIR=/opt/cray/netcdf-hdf5parallel/4.3.0/GNU/48 \
+\
+  -D CMAKE_INSTALL_PREFIX:PATH=$PWD/install \
+  -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
+  -D CMAKE_VERBOSE_CONFIGURE:BOOL=ON \
+\
+  -D CMAKE_CXX_COMPILER=CC \
+  -D CMAKE_C_COMPILER=cc \
+  -D CMAKE_Fortran_COMPILER=ftn \
+\
+  -D CMAKE_CXX_FLAGS:STRING="-O2" \
+  -D CISM_Fortran_FLAGS:STRING="-O2 -ffree-line-length-none -fno-range-check" \
+  -D BISICLES_LIB_SUBDIR=libgnu \
+  -D BISICLES_INTERFACE_DIR=$PWD/../../../BISICLES/CISM-interface/interface \
+  -D CISM_MPI_LIBS:STRING="mpichf90" \
+  -D CISM_USE_CXX_IMPLICIT_LIBS:BOOL=OFF \
+  -D CISM_STATIC_LINKING:BOOL=ON \
+  ../..
+
+
+#  -D CISM_TRILINOS_DIR=/tmp/proj/cli054/trilinos-10.12/FEB2013_FAST_PGI/install \
+
+#  -D CMAKE_CXX_FLAGS:STRING="-O2 --diag_suppress 554,111,611 -DH5_USE_16_API" \
+#  -D CISM_Fortran_FLAGS:STRING="-O2" \
+
+
+#  -D CISM_FMAIN=/opt/pgi/13.7.0/linux86-64/13.7/lib/f90main.o \
+
+# Note: last argument above  "../.."  is path to top seacism directory
+
+# ADD: 
+
+#  -D CMAKE_PREFIX_PATH="/opt/cray/hdf5/1.8.8/pgi/119;/opt/cray/hdf5-parallel/1.8.8/pgi/119" \
+
+#  -D TPL_ENABLE_MPI:BOOL=ON \
+
+
+#  -D CISM_HDF5_LIB_DIR=/opt/cray/hdf5-parallel/1.8.8/pgi/119/lib \
+#  -D CISM_HDF5_LIBS="-lhdf5_pgi_parallel -lz" \

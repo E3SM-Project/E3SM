@@ -1,0 +1,41 @@
+# cmake configuration script that works on Andy's Linux box with GCC
+# Others will need to modify the Trilinos and Netcdf paths.
+# This script needs to be run from a subdirectory (e.g. build-linux)
+# of the main seacism repository (reflected in the several instances of
+# ".." below).
+
+# After this executes, do:
+#   make -j 8
+#   cp example-drivers/simple_glide/src/sgcmake .
+#
+
+rm ./CMakeCache.txt
+
+echo
+echo "Doing CMake Configuration step"
+
+TRILINOS_DIR=/home/ikalash/Trilinos_Albany/Trilinos/build/install 
+ALBANY_DIR=/home/ikalash/Desktop/clean/Albany/cism-build/install
+NETCDF_DIR=/home/ikalash/Install/netcdf-4.0.1
+
+cmake \
+  -D CISM_BUILD_CISM_DRIVER:BOOL=ON \
+  -D CISM_ENABLE_BISICLES=OFF \
+  -D CISM_ENABLE_FELIX=OFF \
+\
+  -D CISM_USE_TRILINOS:BOOL=OFF \
+  -D CISM_MPI_MODE:BOOL=ON \
+  -D CISM_SERIAL_MODE:BOOL=OFF \
+\
+  -D CISM_USE_GPTL_INSTRUMENTATION:BOOL=OFF \
+  -D CISM_COUPLED:BOOL=OFF \
+# Note: last argument above  ".."  is path to top seacism directory
+#  -D ALBANY_BUILD_DIR="/home/ikalash/Desktop/clean/Albany_clean/build_cism" \
+#  -D ALBANY_BASE_DIR="/home/ikalash/Desktop/clean/Albany_clean" \
+
+#About the DEBUG_OUTPUT_VERBOSITY: 
+#-D DEBUG_OUTPUT_VERBOSITY:INT=O \ No debug output
+#-D DEBUG_OUTPUT_VERBOSITY:INT=1 \ Minimal debug output
+#-D DEBUG_OUTPUT_VERBOSITY:INT=2 \ Maximal debug output
+#It is set to 1 by default.
+#It is set to 1 by default.

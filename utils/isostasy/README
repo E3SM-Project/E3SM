@@ -1,0 +1,4 @@
+This directory contains the file relaxed.F90, from the original Glimmer release.
+This is a utility to add relaxed bedrock topography to netCDF input files.
+It has not been tested recently, but is retained in case it may be useful in the future.
+

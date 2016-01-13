@@ -1,0 +1,8 @@
+#!/bin/bash
+#PBS -A PBS_A
+#PBS -q PBS_q
+#PBS -N PBS_N 
+#PBS -l walltime=PBS_walltime
+#PBS -l PBS_RES=RES_NUM
+#PBS -j oe
+#PBS -m ae

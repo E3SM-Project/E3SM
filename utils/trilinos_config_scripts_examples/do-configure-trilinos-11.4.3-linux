@@ -1,0 +1,78 @@
+# This do-configure script is an example for configuring Trilinos 11.4.3
+# on a 'typical' Linux setup.  This script is also likely to work for other
+# versions of Trilinos, but minor adjustments may be needed.
+# See CISM documentation for details of how to obtain, configure, and build
+# Trilinos for use with CISM.
+#
+# Modify these lines below to point to the appropriate places on your system:
+# -D CMAKE_INSTALL_PREFIX:PATH=/usr/local/trilinos-11.4.3-Install \   # <-- this is where you want Trilinos to be installed
+# /usr/local/trilinos-11.4.3-Source      # <-- this is the location of the Trilinos source code (where you unarchived it after downloading it from http://trilinos.sandia.gov/)
+#
+# Also, you may need to modify your compiler locations and flags.  
+# The values below will likely work for a 'typical' Linux installation, 
+# so if you aren't sure what to use, try the current values first.
+#
+# This script should be executed from a build directory that is separate
+# from the source and install directories, e.g., in this example:
+# /usr/local/trilinos-11.4.3-Build
+# (Do NOT run it from its present location!)
+# The script can be run with "source do-configure-trilinos-11.4.3-linux"
+# Then run "make -j 4" (or specify a different number of processors after the -j)
+
+
+
+EXTRA_ARGS=$@
+cmake \
+-D CMAKE_BUILD_TYPE:STRING=RELEASE \
+-D TPL_ENABLE_MPI:STRING=ON \
+\
+-D MPI_BASE_DIR:PATH="/usr" \
+-D MPI_BIN_DIR:PATH="/usr/bin" \
+-D MPI_C_COMPILER:FILEPATH="/usr/bin/mpicc" \
+-D MPI_CXX_COMPILER:FILEPATH="/usr/bin/mpic++" \
+-D MPI_Fortran_COMPILER:FILEPATH="/usr/bin/mpif90" \
+-D MPI_EXEC:FILEPATH="/usr/bin/mpirun" \
+-D TPL_MPI_INCLUDE_DIRS:PATH="/usr/include" \
+\
+-D BUILD_SHARED_LIBS:BOOL=ON \
+\
+\
+-D Trilinos_ENABLE_ALL_PACKAGES:BOOL=OFF \
+\
+      -D Trilinos_ENABLE_Teuchos:BOOL=ON \
+      -D Trilinos_ENABLE_Epetra:BOOL=ON \
+      -D Trilinos_ENABLE_EpetraExt:BOOL=ON \
+      -D Trilinos_ENABLE_Ifpack:BOOL=ON \
+      -D Trilinos_ENABLE_AztecOO:BOOL=ON \
+      -D Trilinos_ENABLE_Amesos:BOOL=ON \
+      -D Trilinos_ENABLE_Anasazi:BOOL=ON \
+      -D Trilinos_ENABLE_Belos:BOOL=ON \
+      -D Trilinos_ENABLE_ML:BOOL=ON \
+      -D Trilinos_ENABLE_NOX:BOOL=ON \
+      -D Trilinos_ENABLE_Stratimikos:BOOL=ON \
+      -D Trilinos_ENABLE_Thyra:BOOL=ON \
+      -D Trilinos_ENABLE_Piro:BOOL=ON \
+\
+      -D Belos_ENABLE_TEUCHOS_TIME_MONITOR:BOOL=ON \
+      -D Stratimikos_ENABLE_TEUCHOS_TIME_MONITOR:BOOL=ON \
+\
+      -D Trilinos_ENABLE_TESTS:BOOL=ON \
+      -D Trilinos_ENABLE_EXAMPLES:BOOL=OFF \
+      -D Piro_ENABLE_TESTS:BOOL=ON \
+      -D Trilinos_VERBOSE_CONFIGURE:BOOL=OFF \
+      -D CMAKE_VERBOSE_MAKEFILE:BOOL=OFF \
+      -D Trilinos_ENABLE_Export_Makefiles:BOOL=ON \
+\
+\
+-D CMAKE_Fortran_FLAGS:STRING="" \
+-D CMAKE_CXX_FLAGS:STRING="" \
+-D CMAKE_C_FLAGS:STRING="" \
+-D CMAKE_INSTALL_PREFIX:PATH=/usr/local/trilinos-11.4.3-Install \
+\
+\
+-D Trilinos_EXTRA_LINK_FLAGS:STRING="-L/usr/lib -lmpi -lmpi_f77 -lmpi_f90 -lmpi_cxx  -L/usr/lib -llapack -lblas -lpthread" \
+\
+\
+$EXTRA_ARGS \
+/usr/local/trilinos-11.4.3-Source
+

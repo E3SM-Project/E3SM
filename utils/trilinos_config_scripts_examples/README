@@ -1,0 +1,5 @@
+This directory holds example do-configure scripts for building Trilinos for use with CISM.
+Refer to comments in the scripts and the CISM Documentation for details.
+Note that these scripts should NOT be run in the location, but moved to your Trilinos
+build location after downloading Trilinos source code from http://trilinos.sandia.gov/.
+They are provided as examples with the required Trilinos packages and settings enabled.

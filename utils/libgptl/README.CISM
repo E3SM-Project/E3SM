@@ -1,0 +1,14 @@
+General Purpose Timing Library (GPTL) is a third-party library for performing timing.  It is included as an optional library that can be built into CISM.  This version of GPTL is modified from the version in CESM, which is at least a year behind the official version.  Documentation for the official version can be found at this link: http://jmrosinski.github.io/GPTL/
+
+To use GPTL with CISM, one first must build the GPTL libraries, and then build CISM with the GPTL libraries linked.  
+
+Building GPTL is completely separate from the CISM build system.  To do so, use one of the included Makefiles.  Makefile.mac is a generic build for a Mac that may require some adjusting for your system.  It could also be modified to work with a Linux machine fairly easily.
+
+To build CISM with GPTL, add the following flags to your cmake build script:
+  -D CISM_USE_GPTL_INSTRUMENTATION:BOOL=ON \
+  -D CISM_GPTL_DIR=/your/path/to/libgptl \
+Then re-source your build script and re-run make.
+
+When running with a GPTL-enabled CISM executable, you will see the following additional output files in your run directory that include timing information per processor and overall timing statistics:
+  cism_timing.N     where N is the processor number
+  cism_timing_stats 

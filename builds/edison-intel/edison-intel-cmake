@@ -1,0 +1,121 @@
+# run this script by typing: source edison-intel-cmake
+# After thus script completes, type: make -j 8
+# If rebuilding, type 'make clean' before running 'make -j 8'
+
+# This cmake configuration script builds cism_driver
+# on edison using the INTEL compiler suite.  It no longer relies on a build
+# of Trilinos, but does need a BISICLES build located in BISICLES_INTERFACE_DIR
+# (currently set to ./../../../BISICLES/CISM-interface/interface )
+
+# This script should be run from the builds/edison-intel subdirectory
+# of the main seacism repository (reflected in the two instances
+# of "../.." below).
+
+# BUILD OPTIONS:
+# The call to cmake below includes several input ON/OFF switch parameters, to
+# provide a simple way to select different build options.  These are:
+# CISM_BUILD_CISM_DRIVER -- ON by default, set to OFF to only build the CISM libraries.
+# CISM_ENABLE_BISICLES -- OFF by default, set to ON to build a BISICLES-capable cism_driver.
+# CISM_ENABLE_FELIX -- OFF by default, set to ON to build a FELIX-capable cism_driver.
+# CISM_USE_TRILINOS -- OFF by default, set to on for builds with Trilinos.
+# CISM_MPI_MODE -- ON by default, only set to OFF for serial builds.
+# CISM_SERIAL_MODE -- OFF by default, set to ON for serial builds.
+# CISM_USE_GPTL_INSTRUMENTATION -- ON by default, set to OFF to not use GPTL instrumentation.
+# CISM_COUPLED -- OFF by default, set to ON to build with CESM.
+echo
+echo Run this script by typing: source edison-intel-cmake
+echo
+
+module unload cmake
+module unload PrgEnv-cray PrgEnv-gnu PrgEnv-intel PrgEnv-pathscale PrgEnv-pgi
+module unload hdf5 
+module unload hdf5-parallel
+module unload cray-hdf5-parallel
+module unload cray-netcdf-hdf5parallel
+module unload netcdf
+module unload python
+module unload cray-shmem
+module unload cray-mpich2
+
+#module --silent purge
+
+module load modules
+module load cmake
+module load PrgEnv-intel
+module load cray-hdf5-parallel
+module load cray-netcdf-hdf5parallel
+module load python
+module load cray-shmem
+module load cray-mpich
+
+module unload darshan
+
+# (hopefully) temporary fix for PKG_CONFIG_PATH problem
+source PKG_CONFIG_PATH_fix.csh
+
+# remove old build data:
+rm ./CMakeCache.txt
+rm -r ./CMakeFiles
+
+# run a script that creates some CISM source files:
+#pushd .
+#cd ..
+#../cmake-scripts/autogenerate-script
+#popd
+
+echo
+echo "Doing CMake Configuration step"
+
+cmake \
+  -D CISM_BUILD_CISM_DRIVER:BOOL=ON \
+  -D CISM_ENABLE_BISICLES=OFF \
+  -D CISM_ENABLE_FELIX=OFF \
+\
+  -D CISM_USE_TRILINOS:BOOL=OFF \
+  -D CISM_MPI_MODE:BOOL=ON \
+  -D CISM_SERIAL_MODE:BOOL=OFF \
+\
+  -D CISM_USE_GPTL_INSTRUMENTATION:BOOL=ON \
+  -D CISM_COUPLED:BOOL=OFF \
+\
+  -D CISM_TRILINOS_DIR=/project/projectdirs/piscees/trilinos-default/hopper-pgi/install \
+  -D CISM_TRILINOS_GPTL_DIR=/project/projectdirs/piscees/cism_gptl/Trilinos/edison-intel-ci-nophal/install \
+  -D CISM_TRILINOS_ALBANY_DIR=/project/projectdirs/piscees/trilinos-default/hopper-pgi-albany/install \
+\
+  -D CISM_NETCDF_DIR=$NETCDF_DIR \
+  -D CISM_FMAIN=/opt/intel/composer_xe_2013.5.192/compiler/lib/intel64/for_main.o \
+\
+  -D CMAKE_INSTALL_PREFIX:PATH=$PWD/install \
+  -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
+  -D CMAKE_VERBOSE_CONFIGURE:BOOL=ON \
+\
+  -D CMAKE_CXX_COMPILER=CC \
+  -D CMAKE_C_COMPILER=cc \
+  -D CMAKE_Fortran_COMPILER=ftn \
+\
+  -D CISM_MPI_BASE_DIR=$CRAY_MPICH2_DIR \
+  -D CISM_SCI_LIB_DIR=$CRAY_LIBSCI_PREFIX_DIR/lib \
+  -D CISM_GPTL_DIR=/project/projectdirs/piscees/cism_gptl/libgptl/libgptl-edison-intel \
+\
+  -D CMAKE_CXX_FLAGS:STRING="-O2 -openmp" \
+  -D CISM_Fortran_FLAGS:STRING="-O2 -openmp" \
+  -D BISICLES_LIB_SUBDIR=libintel \
+  -D BISICLES_INTERFACE_DIR=$PWD/../../../BISICLES/CISM-interface/interface \
+  -D CISM_MPI_LIBS:STRING="mpichf90" \
+  -D CISM_STATIC_LINKING:BOOL=ON \
+  ../..
+
+
+# Note: last argument above  "../.."  is path to top seacism directory
+
+# ADD: 
+
+#  -D CMAKE_PREFIX_PATH="$HDF5_DIR" \
+
+#  -D TPL_ENABLE_MPI:BOOL=ON \
+
+
+#  -D CISM_HDF5_LIB_DIR=$HDF5_DIR/lib \
+#  -D CISM_HDF5_LIBS="-lhdf5_intel_parallel -lz" \
+
+#  -D CISM_FMAIN=/opt/pgi/13.6.0/linux86-64/13.6/lib/f90main.o \

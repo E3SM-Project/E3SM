@@ -1,0 +1,85 @@
+# run this script by typing: source mac-gnu-cmake-serial
+# After this script completes, type: make -j 8
+# If rebuilding, type 'make clean' before running 'make -j 8'
+
+# This cmake configuration script builds simple_glide, and if you enable it below, 
+# and cism_driver on a Mac using the Gnu compiler suite.  
+# This build is serial.  See the mac-gnu directory for a parallel build.
+# Trilinos is not used.
+
+# This script should be run from the builds/mac-gnu subdirectory
+# of the main seacism repository (reflected in the two instances
+# of "../.." below).
+
+# 
+
+# BUILD OPTIONS:
+# The call to cmake below include several input ON/OFF switch parameters, to
+# provide a simple way to select different build options.  These are:
+# CISM_SERIAL_MODE -- OFF by default, set to ON here for a serial build.
+# CISM_MPI_MODE -- ON by default, set to OFF here for a serial build.
+# CISM_USE_TRILINOS -- Set OFF below to exclude Trilinos from the build.
+# CISM_BUILD_SIMPLE_GLIDE -- ON by default, set to OFF to not build simple_glide
+# CISM_BUILD_SIMPLE_BISICLES -- OFF by default, set to ON to build simple_bisicles
+#      Setting NO_TRILINOS to ON will generate a much smaller executable for this build.
+# CISM_BUILD_EXTRA_EXECUTABLES -- OFF by default, set to ON to build eis_glide and others
+# CISM_USE_GPTL_INSTRUMENTATION -- OFF by default, set to ON to use GPTL instrumentation
+
+# Serial Build Notes:  Setting CISM_USE_TRILINOS=OFF, CISM_MPI_MODE=OFF, CISM_SERIAL_MODE=ON will
+# configure for a serial build.  (Note that the openmpi compilers will be used if specified, but act as
+# pass-throughs to the underlying serial compilers in this case.  If MPI is not installed,
+# set the serial compilers directly.)
+
+# You may need to manually set the NETCDF_PATH variable below to point to your NetCDF installation.  
+# If you have NetCDF installed with MacPorts, you can use that by setting it to "/opt/local" 
+# (assuming default MacPorts installation location).
+
+# NOTE: There is currently an incompatibility between simple_bisicles and GPTL.  If
+# the CISM_BUILD_SIMPLE_BISICLES is ON, the GPTL instrumentation is turned OFF.
+
+echo
+echo Run this script by typing: source mac-cmake
+echo
+
+# remove old build data:
+rm -f ./CMakeCache.txt
+rm -rf ./CMakeFiles
+
+echo
+echo "Doing CMake Configuration step"
+
+NETCDF_PATH="/opt/local"
+
+cmake \
+  -D CISM_SERIAL_MODE:BOOL=ON \
+  -D CISM_MPI_MODE:BOOL=OFF \
+  -D CISM_USE_TRILINOS:BOOL=OFF \
+  -D CISM_COUPLED:BOOL=OFF \
+  -D CISM_BUILD_CISM_DRIVER:BOOL=ON \
+  -D CISM_BUILD_SIMPLE_GLIDE:BOOL=OFF \
+  -D CISM_BUILD_SIMPLE_BISICLES:BOOL=OFF \
+  -D CISM_BUILD_GLINT_EXAMPLE:BOOL=OFF \
+  -D CISM_BUILD_EXTRA_EXECUTABLES:BOOL=OFF \
+  -D CISM_USE_GPTL_INSTRUMENTATION:BOOL=OFF \
+  -D CISM_USE_DEFAULT_IO:BOOL=OFF \
+\
+  -D CISM_NETCDF_DIR=$NETCDF_PATH \
+\
+  -D CMAKE_INSTALL_PREFIX:PATH=$PWD/install \
+  -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
+  -D CMAKE_VERBOSE_CONFIGURE:BOOL=ON \
+\
+  -D CMAKE_CXX_COMPILER=gxx \
+  -D CMAKE_C_COMPILER=gcc \
+  -D CMAKE_Fortran_COMPILER=gfortran \
+\
+\
+  -D CMAKE_CXX_FLAGS:STRING="-g " \
+  -D CMAKE_Fortran_FLAGS="-g -O3 -ffree-line-length-none -fbacktrace" \
+\
+  -D CISM_EXTRA_LIBS="-lblas" \
+\
+\
+  ../..
+
+# Note: last argument above  "../.."  is path to top seacism directory

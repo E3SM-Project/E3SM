@@ -1,0 +1,101 @@
+------------------------------------------------------------------------
+Notes on parallelization of libglint
+
+         Bill Sacks
+         Jan 15, 2013
+------------------------------------------------------------------------
+
+The challenge in making glint parallel-capable is in doing the
+interpolations between the global (land) grid and the decomposed
+icesheet grid.
+
+The goal in parallelizing glint is NOT to make it work WELL, but just
+to make it work, in the context of CESM runs (which use the smb
+scheme, not the pdd scheme). Thus, for things needed for CESM
+coupling, I have modified glint to make it parallel-capable, but in a
+non-ideal way: the main task does all of the regridding, with the
+necessary gathers / scatters.
+
+For callers of glint routines, it is important to keep in mind that
+many of the output variables are only valid on the main
+task. Similarly, initialise_glint should be called with 0-size lats &
+longs for all but the main task.
+
+Some particular design items to note:
+
+   - All variables on the global (land) grid are valid only on the main
+     task. It is especially important for callers of the glint routines
+     to keep this in mind: many of the output variables are only valid on
+     the main task.
+
+   - In many cases, global (land) grid variables still exist on other
+     tasks, but have size 0. For example, all tasks still call
+     new_global_grid and do array allocations, but they allocate
+     arrays of size 0. This was done to minimize the code changes
+     needed to support parallelization.
+
+   - In general, glint variables on the icesheet grid have remained
+     unchanged: these variables stay on the task's own portion of the
+     icesheet grid
+
+   - For upscaling & downscaling: new, temporary variables are created on
+     the main task, which span the full icesheet domain
+
+   - Before a call to an upscaling routine, a distributed_gather call is
+     done to fill new, temporary variables on the main task that apply
+     over the whole domain
+
+   - Downscaling is done to new, temporary variables on the main
+     task. After downscaling, a distributed_scatter call is done.
+
+
+
+
+Some parts of glint that (I believe) are not currently needed for CESM
+coupling are not yet parallel-capable. I have added checks (which look
+like: 'if (tasks > 1)') in a few places, but probably not all.
+
+Some things that almost certainly won't work right in a parallel
+environment are:
+
+   - glint_remove_bath, in glint_timestep.F90.
+
+   - flow_router, from glimmer_routing.F90.
+
+   - interp_wind_to_local.
+
+   - a number of output arguments that are not used for the smb
+     option, which give the domain-sum of a field
+
+Some other things that might not work right are:
+
+   - mean_to_local
+
+   - pointwise_to_global
+
+   - output of inmask (which uses the downs variable, which is only
+     valid on the main task)
+
+
+Note that there may be other things that don't work right in a
+parallel environment in addition to those in the above lists.
+
+
+
+------------------------------------------------------------------------
+Alternative design (rejected)
+------------------------------------------------------------------------
+
+I also considered an alternative design, where all tasks have copies
+of the global (land) data. For sending data from the land model to
+CISM, all tasks would have a copy of the land data, and do their own
+downscaling to their locally-owned grid. For sending data from CISM to
+the land model, each task would do its own upscaling, then at a higher
+level (in the source_glc code in CESM), we would do a final merge of
+the locally-owned land grids onto a final land grid that is the merge.
+
+However, I rejected this design mainly because of the large memory
+requirement of having the global (land) variables replicated on all
+tasks. Minimizing this memory use would introduce more complexity than
+I wanted at the moment.
+

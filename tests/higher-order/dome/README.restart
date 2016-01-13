@@ -1,0 +1,65 @@
+These are instructions for demonstrating exact restart for the evolving-dome problem.
+
+Assume the standard config file is dome.config and runs for 10 years.
+
+(1) Create a file called dome.config.5yr.  Here is how it should differ from dome.config:
+
+< tend = 10.
+---
+> tend = 5.
+44c44,50
+< name = dome.out.nc
+---
+> name = dome.5yr.out.nc
+> 
+> [CF output]
+> variables = restart
+> xtype = double
+> start = 5
+> frequency = 5
+> name = dome.restart.nc
+
+The 'start = 5' line is needed to ensure that restart fields are written only after year 5, and not at startup.
+
+Note: For the dome problem, velocities are zero on the global boundaries.  If velocities on global boundaries
+      are nonzero (as in MISMIP), you must add the following under [options]:
+
+restart_extend_velo = 1
+
+(2) Create a file called dome.config.5yr.continue.  Here is how it should differ from dome.config:
+
+< tstart = 0.
+---
+> tstart = 5.
+22a23
+> restart = 1
+38,39c39,40
+< name = dome.nc
+< time = 1
+---
+> name = dome.restart.nc
+> time = 1
+44c45,46
+< name = dome.out.nc
+---
+> name = dome.5yr.continue.out.nc
+
+(3) Run the standard 10-year evolving-dome test:
+
+> cism driver dome.config
+
+NOTE: To test exact restart, we **cannot** use the Python script dome.py.  
+This is because the Python script will replace the existing dome.restart.nc with a standard dome input file
+that is called dome.restart.nc but contains only topg and thk as input.
+
+(4) Run the 5-yr evolving-dome test, writing a restart file at the end:
+
+> cism_driver dome.config.5yr
+
+(5) Run the continuation test from year 5 to year 10:
+
+> cism_driver dome.config.5yr.continue
+
+(6) Compare log files (dome.config.log v. dome.config.5yr.continue.log) and netCDF output files 
+    (dome.out.nc v. dome.5yr.continue.out.nc) and make sure results are bit-for-bit.
+

@@ -1,0 +1,69 @@
+# cmake configuration script that works on the Linux box in Matt's office (blueskies) with GCC
+# Others will need to modify the Netcdf path.
+# This config script is setup to perform a serial build without Trilinos.
+#
+# BUILD OPTIONS:
+# The call to cmake below include several input ON/OFF switch parameters, to
+# provide a simple way to select different build options.  These are:
+# NO_TRILINOS -- OFF by default, set to on for builds without Trilinos
+# CISM_MPI_MODE -- ON by default, only set to OFF for serial builds
+# CISM_SERIAL_MODE -- OFF by default, set to ON for serial builds.
+# CISM_BUILD_SIMPLE_GLIDE -- ON by default, set to OFF to not build simple_glide
+# CISM_BUILD_SIMPLE_BISICLES -- OFF by default, set to ON to build simple_bisicles
+#      Setting NO_TRILINOS to ON will generate a much smaller executable for this build.
+# CISM_BUILD_EXTRA_EXECUTABLES -- OFF by default, set to ON to build eis_glide and others
+# CISM_USE_GPTL_INSTRUMENTATION -- OFF by default, set to ON to use GPTL instrumentation
+
+# Serial Build Notes:  Setting NO_TRILINOS=ON, CISM_MPI_MODE=OFF, CISM_SERIAL_MODE=ON will
+# configure for a serial build.  (Note that the openmpi compilers will be used, but act as
+# pass-throughs to the underlying serial compilers in this case.  If MPI is not installed,
+# set the serial compilers directly.)
+
+# NOTE: There is currently an incompatibility between simple_bisicles and GPTL.  If
+# the CISM_BUILD_SIMPLE_BISICLES is ON, the GPTL instrumentation is turned OFF.
+
+
+# After this executes, do:
+#   make -j 8
+#
+
+echo
+echo Run this script by typing: source linux-gnu-cism-cmake-serial
+echo
+
+# remove old build data:
+rm ./CMakeCache.txt
+rm -r ./CMakeFiles
+
+echo
+echo "Doing CMake Configuration step"
+
+cmake \
+  -D CISM_USE_TRILINOS:BOOL=OFF \
+  -D CISM_COUPLED:BOOL=OFF \
+  -D CISM_MPI_MODE:BOOL=OFF \
+  -D CISM_SERIAL_MODE:BOOL=ON \
+  -D CISM_BUILD_CISM_DRIVER=ON \
+  -D CISM_BUILD_SIMPLE_GLIDE:BOOL=OFF \
+  -D CISM_BUILD_SIMPLE_BISICLES:BOOL=OFF \
+  -D CISM_BUILD_GLINT_EXAMPLE:BOOL=OFF \
+  -D CISM_USE_GPTL_INSTRUMENTATION:BOOL=OFF \
+  -D CISM_USE_DEFAULT_IO:BOOL=OFF \
+  -D CISM_USE_CISM_FRONT_END:BOOL=ON \
+\
+  -D CISM_NETCDF_DIR="/usr" \
+  -D CISM_NETCDF_LIBS="netcdff" \
+\
+  -D CMAKE_Fortran_FLAGS="-g -O2 -ffree-line-length-none -fPIC -fno-range-check" \
+\
+  -D CMAKE_CXX_COMPILER=g++ \
+  -D CMAKE_C_COMPILER=gcc \
+  -D CMAKE_Fortran_COMPILER=gfortran \
+\
+  -D CISM_EXTRA_LIBS:STRING="-lblas" \
+\
+  -D CMAKE_VERBOSE_MAKEFILE=OFF \
+  ../..
+
+# Note: last argument above  "../.."  is path to top seacism directory
+
