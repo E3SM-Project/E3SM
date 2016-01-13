@@ -1,8 +1,0 @@
-export FC=mpif90
-export CC=mpicc
-export CXX=mpicxx
-
-export FCFLAGS="-O2 -ffree-form -ffree-line-length-none"
-
-#./bootstrap
-./configure --with-netcdf=/home/agsalin/install/netcdf --with-trilinos="/home/agsalin/Trilinos/may11/install"
