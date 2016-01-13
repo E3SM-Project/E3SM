@@ -143,7 +143,7 @@ contains
     real(r8)          ::   f107a
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
 
-    call gas_phase_chemdr_inti()
+    call gas_phase_chemdr_inti(chem_name)
 
     call init_mean_mass
     call init_mass_xforms

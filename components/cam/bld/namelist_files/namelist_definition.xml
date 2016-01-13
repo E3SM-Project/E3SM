@@ -3384,6 +3384,7 @@ Default: set by build-namelist
 <entry id="cam_chempkg" type="char*16" category="build"
        group="phys_ctl_nl" valid_values="waccm_mozart,waccm_ghg,trop_mozart,
                                          trop_ghg,trop_bam,trop_mam3,trop_mam4,trop_mam4_mom,trop_mam7,trop_mam9,
+                                         linoz_mam3,linoz_mam4_resus,linoz_mam4_resus_mom,
                                          super_fast_llnl,super_fast_llnl_mam3,none " >
 Name of the CAM chemistry package.  N.B. this variable may not be set by
 the user.  It is set by build-namelist via information in the configure
@@ -4882,7 +4883,7 @@ Default: 1
 
 <entry id="chlorine_loading_file" type="char*256" input_pathname="abs" category="cam_chem"
        group="chem_inparm" valid_values="" >
-Filename of dataset for linoz cholirine loading.
+Filename of dataset for linoz chlorine loading.
 Default: none.
 </entry>
 <entry id="chlorine_loading_type" type="char*8" category="cam_chem"

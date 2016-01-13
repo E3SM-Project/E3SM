@@ -1,0 +1,144 @@
+  
+  
+           |--------------------------------------------------------------------------------------------------|
+           |                                                                                                  |
+           |                                                                                                  |
+           |                                AdditionofLinoztotrop_mam4_resus                                  |
+           |                                                                                                  |
+           |                                                                                                  |
+           |--------------------------------------------------------------------------------------------------|
+  
+  
+     Solution species
+      (  1)  O3              
+      (  2)  H2O2            
+      (  3)  H2SO4           
+      (  4)  SO2             
+      (  5)  DMS                (CH3SCH3)
+      (  6)  SOAG               (C)
+      (  7)  so4_a1             (NH4HSO4)
+      (  8)  pom_a1             (C)
+      (  9)  soa_a1             (C)
+      ( 10)  bc_a1              (C)
+      ( 11)  dst_a1             (AlSiO5)
+      ( 12)  ncl_a1             (NaCl)
+      ( 13)  num_a1             (H)
+      ( 14)  so4_a2             (NH4HSO4)
+      ( 15)  soa_a2             (C)
+      ( 16)  ncl_a2             (NaCl)
+      ( 17)  num_a2             (H)
+      ( 18)  dst_a3             (AlSiO5)
+      ( 19)  ncl_a3             (NaCl)
+      ( 20)  so4_a3             (NH4HSO4)
+      ( 21)  bc_a3              (C)
+      ( 22)  pom_a3             (C)
+      ( 23)  soa_a3             (C)
+      ( 24)  num_a3             (H)
+      ( 25)  pom_a4             (C)
+      ( 26)  bc_a4              (C)
+      ( 27)  num_a4             (H)
+  
+  
+     Invariant species
+      (  1)  M               
+      (  2)  N2              
+      (  3)  O2              
+      (  4)  H2O             
+      (  5)  OH              
+      (  6)  NO3             
+      (  7)  HO2             
+      (  8)  cnst_O3         
+  
+  
+     Column integrals
+   ( 1)  O3               -  0.000E+00
+   ( 2)  O2               -  0.000E+00
+  
+Class List
+==========
+ Explicit  
+ --------
+      (  1)  O3              
+  
+ Implicit  
+ --------
+      (  1)  H2O2            
+      (  2)  H2SO4           
+      (  3)  SO2             
+      (  4)  DMS             
+      (  5)  SOAG            
+      (  6)  so4_a1          
+      (  7)  pom_a1          
+      (  8)  soa_a1          
+      (  9)  bc_a1           
+      ( 10)  dst_a1          
+      ( 11)  ncl_a1          
+      ( 12)  num_a1          
+      ( 13)  so4_a2          
+      ( 14)  soa_a2          
+      ( 15)  ncl_a2          
+      ( 16)  num_a2          
+      ( 17)  dst_a3          
+      ( 18)  ncl_a3          
+      ( 19)  so4_a3          
+      ( 20)  bc_a3           
+      ( 21)  pom_a3          
+      ( 22)  soa_a3          
+      ( 23)  num_a3          
+      ( 24)  pom_a4          
+      ( 25)  bc_a4           
+      ( 26)  num_a4          
+  
+     Photolysis
+  jh2o2            (  1)   H2O2 + hv -> (No products)                                           rate = ** User defined **         (  1)
+  
+     Reactions
+  usr_HO2_HO2      (  1)   HO2 + HO2 ->  H2O2                                                   rate = ** User defined **         (  2)
+                   (  2)   H2O2 + OH ->  H2O + HO2                                              rate = 2.90E-12*exp(   -160./t)   (  3)
+  usr_SO2_OH       (  3)   SO2 + OH ->  H2SO4                                                   rate = ** User defined **         (  4)
+                   (  4)   DMS + OH ->  SO2                                                     rate = 9.60E-12*exp(   -234./t)   (  5)
+  usr_DMS_OH       (  5)   DMS + OH ->  .5*SO2 + .5*HO2                                         rate = ** User defined **         (  6)
+                   (  6)   DMS + NO3 ->  SO2 + {HNO3}                                           rate = 1.90E-13*exp(    520./t)   (  7)
+  
+Extraneous prod/loss species
+ ( 1)   SO2   (dataset)
+ ( 2)   so4_a1   (dataset)
+ ( 3)   so4_a2   (dataset)
+ ( 4)   pom_a4   (dataset)
+ ( 5)   bc_a4   (dataset)
+ ( 6)   num_a1   (dataset)
+ ( 7)   num_a2   (dataset)
+ ( 8)   num_a4   (dataset)
+  
+  
+ Equation Report
+  
+    d(O3)/dt = 0                                                                                                        
+    d(H2O2)/dt = r1                                                                                                     
+                  - j1*H2O2  - r2*OH*H2O2                                                                               
+    d(H2SO4)/dt = 3*OH*SO2                                                                                              
+    d(SO2)/dt = 4*OH*DMS  + .5*r5*OH*DMS  + 6*NO3*DMS                                                                   
+                 - r3*OH*SO2                                                                                            
+    d(DMS)/dt =  - r4*OH*DMS  - r5*OH*DMS  - r6*NO3*DMS                                                                 
+    d(SOAG)/dt = 0                                                                                                      
+    d(so4_a1)/dt = 0                                                                                                    
+    d(pom_a1)/dt = 0                                                                                                    
+    d(soa_a1)/dt = 0                                                                                                    
+    d(bc_a1)/dt = 0                                                                                                     
+    d(dst_a1)/dt = 0                                                                                                    
+    d(ncl_a1)/dt = 0                                                                                                    
+    d(num_a1)/dt = 0                                                                                                    
+    d(so4_a2)/dt = 0                                                                                                    
+    d(soa_a2)/dt = 0                                                                                                    
+    d(ncl_a2)/dt = 0                                                                                                    
+    d(num_a2)/dt = 0                                                                                                    
+    d(dst_a3)/dt = 0                                                                                                    
+    d(ncl_a3)/dt = 0                                                                                                    
+    d(so4_a3)/dt = 0                                                                                                    
+    d(bc_a3)/dt = 0                                                                                                     
+    d(pom_a3)/dt = 0                                                                                                    
+    d(soa_a3)/dt = 0                                                                                                    
+    d(num_a3)/dt = 0                                                                                                    
+    d(pom_a4)/dt = 0                                                                                                    
+    d(bc_a4)/dt = 0                                                                                                     
+    d(num_a4)/dt = 0                                                                                                    
