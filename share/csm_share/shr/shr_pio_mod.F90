@@ -521,23 +521,16 @@ contains
 
 
           call shr_pio_getiotypefromname(pio_typename, pio_iotype, pio_default_iotype)
-
-          if(pio_stride== -99) pio_stride = pio_default_stride
-          if(pio_root == -99) pio_root = pio_default_root
-          if(pio_rearranger == -99) pio_rearranger = pio_default_rearranger
-          if(pio_numiotasks == -99) then
-#if defined(BGP) || defined(BGL)
-             if(pio_default_numiotasks < 0 ) then
-                pio_numiotasks = pio_default_numiotasks
-             else
-                pio_numiotasks = min(pio_default_numiotasks,npes/pio_stride)
-             end if
-#else
-             pio_numiotasks = min(pio_default_numiotasks,npes/pio_stride)
-#endif
-          endif
+       end if
+       if(pio_stride== -99) pio_stride = pio_default_stride
+       if(pio_root == -99) pio_root = pio_default_root
+       if(pio_rearranger == -99) pio_rearranger = pio_default_rearranger
+       if(pio_numiotasks == -99) then
+          pio_numiotasks = min(pio_default_numiotasks,npes/pio_stride)
        endif
-    end if
+    endif
+
+
 
     call shr_pio_namelist_set(npes, Comm, pio_stride, pio_root, pio_numiotasks, pio_iotype, &
          iamroot, pio_rearranger)
@@ -594,10 +587,11 @@ contains
     endif
     pio_root = min(pio_root,npes-1)
 
-    if(npes > 1 .and. pio_stride>= npes .and. &
+! If you are asking for parallel IO then you should use at least two io pes
+    if(npes > 1 .and. pio_numiotasks == 1 .and. &
          (pio_iotype .eq. PIO_IOTYPE_PNETCDF .or. &
          pio_iotype .eq. PIO_IOTYPE_NETCDF4P)) then
-       pio_stride = pio_stride/2
+       pio_numiotasks = 2
     endif
 
     !--------------------------------------------------------------------------
@@ -608,7 +602,7 @@ contains
     else if(pio_numiotasks>0 .and. pio_stride<0) then
        pio_stride = npes/pio_numiotasks
     else if(pio_numiotasks<0 .and. pio_stride<0) then
-       pio_stride = 4
+       pio_stride = npes/4
        pio_numiotasks = npes/pio_stride
        pio_numiotasks = max(1, pio_numiotasks)
     end if
@@ -642,9 +636,6 @@ contains
                pio_stride,pio_numiotasks, pio_root
        end if
     end if
-#if defined(BGP) || defined(BGL)
-    end if
-#endif
 
   end subroutine shr_pio_namelist_set
 
