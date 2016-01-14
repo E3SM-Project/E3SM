@@ -195,7 +195,7 @@ for mct, etc.
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
 </compiler>
 
-<compiler COMPILER="pgicuda">
+<compiler COMPILER="pgi_acc">
   <!-- http://www.pgroup.com/resources/docs.htm                                              -->
   <!-- Notes:  (see pgi man page & user's guide for the details) -->
   <!--  -Mextend        => Allow 132-column source lines -->
@@ -228,9 +228,9 @@ for mct, etc.
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 -DUSE_CUDA_FORTRAN -DCPRPGI </ADD_CPPDEFS>
   <CFLAGS> -Mlist -time </CFLAGS>
 
-  <ADD_CFLAGS compile_threaded="false"> -nomp </ADD_CFLAGS>
-  <ADD_FFLAGS compile_threaded="false"> -nomp </ADD_FFLAGS>
-  <ADD_LDFLAGS compile_threaded="false"> -nomp </ADD_LDFLAGS>
+  <ADD_CFLAGS compile_threaded="false"> </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="false"> </ADD_FFLAGS>
+  <ADD_LDFLAGS compile_threaded="false"> </ADD_LDFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -mp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -mp </ADD_FFLAGS>
   <ADD_LDFLAGS compile_threaded="true"> -mp </ADD_LDFLAGS>
@@ -240,9 +240,9 @@ for mct, etc.
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
 
   <FFLAGS>  -i4 -Mlist  -time -Mextend -byteswapio -Mflushz -Kieee  </FFLAGS>
-  <ADD_FFLAGS MODEL="cam"> -ta=nvidia -Mcuda=5.5,cc35  </ADD_FFLAGS>
+  <ADD_FFLAGS MODEL="cam"> -acc -ta=tesla,pin,cuda7.0,cc35,ptxinfo -Minfo=accel -DUSE_OPENACC=1 </ADD_FFLAGS>
   <FFLAGS_NOOPT> -O0 -g -Ktrap=fp -Mbounds -Kieee  </FFLAGS_NOOPT>
-  <ADD_FFLAGS_NOOPT compile_threaded="false"> -nomp </ADD_FFLAGS_NOOPT>
+  <ADD_FFLAGS_NOOPT compile_threaded="false"> </ADD_FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -mp </ADD_FFLAGS_NOOPT>
   
   <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </ADD_FFLAGS>
@@ -252,7 +252,7 @@ for mct, etc.
   <ADD_FFLAGS MODEL="dwav"> -Mnovect </ADD_FFLAGS>
   <ADD_FFLAGS MODEL="dice"> -Mnovect </ADD_FFLAGS>
   <ADD_FFLAGS MODEL="docn"> -Mnovect </ADD_FFLAGS>
-  <LDFLAGS> -time -Wl,--allow-multiple-definition -ta=nvidia -Mcuda=5.0,cc35 </LDFLAGS>
+  <LDFLAGS> -time -Wl,--allow-multiple-definition -acc -ta=tesla,pin,cuda7.0,cc35,ptxinfo </LDFLAGS>
   <SCC> pgcc </SCC>
   <SFC> pgf95 </SFC>
   <SCXX> pgc++ </SCXX>
@@ -721,7 +721,7 @@ for mct, etc.
   <ALBANY_PATH>/ccs/proj/cli106/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
-<compiler COMPILER="pgicuda" MACH="titan">
+<compiler COMPILER="pgi_acc" MACH="titan">
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
