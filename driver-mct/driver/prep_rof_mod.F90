@@ -246,9 +246,13 @@ contains
     !
     ! Local variables
     integer       :: i
-    integer, save :: index_l2x_Flrl_rofl
+    integer, save :: index_l2x_Flrl_rofsur
+    integer, save :: index_l2x_Flrl_rofgwl
+    integer, save :: index_l2x_Flrl_rofsub
     integer, save :: index_l2x_Flrl_rofi
-    integer, save :: index_x2r_Flrl_rofl
+    integer, save :: index_x2r_Flrl_rofsur
+    integer, save :: index_x2r_Flrl_rofgwl
+    integer, save :: index_x2r_Flrl_rofsub
     integer, save :: index_x2r_Flrl_rofi
     integer, save :: index_lfrac
     logical, save :: first_time = .true.
@@ -273,21 +277,31 @@ contains
           mrgstr(i) = subname//'x2r%'//trim(field)//' ='
        enddo
 
-       index_l2x_Flrl_rofl = mct_aVect_indexRA(l2x_r,'Flrl_rofl' )
-       index_l2x_Flrl_rofi = mct_aVect_indexRA(l2x_r,'Flrl_rofi' )
-       index_x2r_Flrl_rofl = mct_aVect_indexRA(x2r_r,'Flrl_rofl' )
-       index_x2r_Flrl_rofi = mct_aVect_indexRA(x2r_r,'Flrl_rofi' )
+       index_l2x_Flrl_rofsur = mct_aVect_indexRA(l2x_r,'Flrl_rofsur' )
+       index_l2x_Flrl_rofgwl = mct_aVect_indexRA(l2x_r,'Flrl_rofgwl' )
+       index_l2x_Flrl_rofsub = mct_aVect_indexRA(l2x_r,'Flrl_rofsub' )
+       index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_r,'Flrl_rofi' )
+       index_x2r_Flrl_rofsur = mct_aVect_indexRA(x2r_r,'Flrl_rofsur' )
+       index_x2r_Flrl_rofgwl = mct_aVect_indexRA(x2r_r,'Flrl_rofgwl' )
+       index_x2r_Flrl_rofsub = mct_aVect_indexRA(x2r_r,'Flrl_rofsub' )
+       index_x2r_Flrl_rofi   = mct_aVect_indexRA(x2r_r,'Flrl_rofi' )
        index_lfrac = mct_aVect_indexRA(fractions_r,"lfrac")
 
-       mrgstr(index_x2r_Flrl_rofl) = trim(mrgstr(index_x2r_Flrl_rofl))//' = '// &
-          'lfrac*l2x%Flrl_rofl'
+       mrgstr(index_x2r_Flrl_rofsur) = trim(mrgstr(index_x2r_Flrl_rofsur))//' = '// &
+          'lfrac*l2x%Flrl_rofsur'
+       mrgstr(index_x2r_Flrl_rofgwl) = trim(mrgstr(index_x2r_Flrl_rofgwl))//' = '// &
+          'lfrac*l2x%Flrl_rofgwl'
+       mrgstr(index_x2r_Flrl_rofsub) = trim(mrgstr(index_x2r_Flrl_rofsub))//' = '// &
+          'lfrac*l2x%Flrl_rofsub'
        mrgstr(index_x2r_Flrl_rofi) = trim(mrgstr(index_x2r_Flrl_rofi))//' = '// &
           'lfrac*l2x%Flrl_rofi'
     end if
 
     do i = 1,lsize
        lfrac = fractions_r%rAttr(index_lfrac,i)
-       x2r_r%rAttr(index_x2r_Flrl_rofl,i) = l2x_r%rAttr(index_l2x_Flrl_rofl,i) * lfrac
+       x2r_r%rAttr(index_x2r_Flrl_rofsur,i) = l2x_r%rAttr(index_l2x_Flrl_rofsur,i) * lfrac
+       x2r_r%rAttr(index_x2r_Flrl_rofgwl,i) = l2x_r%rAttr(index_l2x_Flrl_rofgwl,i) * lfrac
+       x2r_r%rAttr(index_x2r_Flrl_rofsub,i) = l2x_r%rAttr(index_l2x_Flrl_rofsub,i) * lfrac
        x2r_r%rAttr(index_x2r_Flrl_rofi,i) = l2x_r%rAttr(index_l2x_Flrl_rofi,i) * lfrac
     end do
 
