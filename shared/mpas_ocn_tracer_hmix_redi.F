@@ -197,11 +197,11 @@ contains
       areaCellSum => areaCellSumField % array
 
       !$omp workshare
-      gradTracerEdge = 0.0
-      gradTracerTopOfEdge = 0.0
-      gradHTracerSlopedTopOfCell = 0.0
-      dTracerdZTopOfCell = 0.0
-      dTracerdZTopOfEdge = 0.0
+      gradTracerEdge = 0.0_RKIND
+      gradTracerTopOfEdge = 0.0_RKIND
+      gradHTracerSlopedTopOfCell = 0.0_RKIND
+      dTracerdZTopOfCell = 0.0_RKIND
+      dTracerdZTopOfEdge = 0.0_RKIND
       !$omp end workshare
 
       ! this is the "standard" del2 term, but forced to use config_redi_kappa
@@ -209,7 +209,7 @@ contains
 
          !$omp do schedule(runtime) private(invAreaCell, i, iEdge, cell1, cell2, r_tmp, k, s_tmp, iTracer, tracer_turb_flux, flux)
          do iCell = 1, nCells
-            invAreaCell = 1.0 / areaCell(iCell)
+            invAreaCell = 1.0_RKIND / areaCell(iCell)
             do i = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i, iCell)
                cell1 = cellsOnEdge(1,iEdge)
@@ -253,8 +253,8 @@ contains
             ! Approximation of dTracerdZTopOfCell on the top and bottom interfaces through the idea of having
             ! ghost cells above the top and below the bottom layers of the same depths and tracer density.
             ! Essentially, this enforces the boundary condition (d tracer)/dz = 0 at the top and bottom.
-            dTracerdZTopOfCell(1,iCell) = 0.0
-            dTracerdZTopOfCell(maxLevelCell(iCell)+1,iCell) = 0.0
+            dTracerdZTopOfCell(1,iCell) = 0.0_RKIND
+            dTracerdZTopOfCell(maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
          end do
          !$omp end do
 
@@ -277,9 +277,9 @@ contains
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             do k = 1, maxLevelEdgeTop(iEdge)
-               dTracerdZTopOfEdge(k,iEdge) = 0.5 * (dTracerdZTopOfCell(k,cell1) + dTracerdZTopOfCell(k,cell2))
+               dTracerdZTopOfEdge(k,iEdge) = 0.5_RKIND * (dTracerdZTopOfCell(k,cell1) + dTracerdZTopOfCell(k,cell2))
             end do
-            dTracerdZTopOfEdge(maxLevelEdgeTop(iEdge)+1,iEdge) = 0.0
+            dTracerdZTopOfEdge(maxLevelEdgeTop(iEdge)+1,iEdge) = 0.0_RKIND
          end do
          !$omp end do
 
@@ -323,17 +323,17 @@ contains
 
          ! Compute dz * d(relativeSlope\cdot\nabla\phi)/dz  (so the dz cancel out)
          !$omp workshare
-         gradHTracerSlopedTopOfCell = 0.0
+         gradHTracerSlopedTopOfCell = 0.0_RKIND
          !$omp end workshare
 
          ! Compute relativeSlope\cdot\nabla\phi (variable gradHTracerSlopedTopOfCell) at non-boundary edges
-         areaCellSum = 1.0e-34
+         areaCellSum = 1.0e-34_RKIND
 
          !$omp do schedule(runtime) private(i, iedge, areaEdge, k, r_tmp)
          do iCell = 1, nCells
             do i = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i, iCell)
-               areaEdge = 0.5 * dcEdge(iEdge) * dvEdge(iEdge)
+               areaEdge = 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
                do k = 1, maxLevelEdgeTop(iEdge)
                   r_tmp = areaEdge * relativeSlopeTopOfEdge(k,iEdge) * gradTracerTopOfEdge(k,iEdge)
                   gradHTracerSlopedTopOfCell(k, iCell) = gradHTracerSlopedTopOfCell(k, iCell) + r_tmp
@@ -355,8 +355,8 @@ contains
             !$omp do schedule(runtime) private(k, s_tmp)
             do iCell = 1, nCells
                ! impose no-flux boundary conditions at top and bottom of column
-               gradHTracerSlopedTopOfCell(1,iCell) = 0.0
-               gradHTracerSlopedTopOfCell(maxLevelCell(iCell)+1,iCell) = 0.0
+               gradHTracerSlopedTopOfCell(1,iCell) = 0.0_RKIND
+               gradHTracerSlopedTopOfCell(maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
                do k = 1, maxLevelCell(iCell)
                   s_tmp = relativeSlopeTaperingCell(k,iCell)
                   tend(iTracer,k,iCell) = tend(iTracer,k,iCell) + s_tmp * config_Redi_kappa * &

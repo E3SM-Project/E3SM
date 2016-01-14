@@ -160,8 +160,8 @@ contains
          vertex1 = verticesOnEdge(1,iEdge)
          vertex2 = verticesOnEdge(2,iEdge)
 
-         invLength1 = 1.0 / dcEdge(iEdge)
-         invLength2 = 1.0 / dvEdge(iEdge)
+         invLength1 = 1.0_RKIND / dcEdge(iEdge)
+         invLength2 = 1.0_RKIND / dvEdge(iEdge)
 
          do k = 1, maxLevelEdgeTop(iEdge)
 
@@ -322,7 +322,7 @@ contains
          end do
          ! Impose zero strain rate at land boundaries
          do k = maxLevelEdgeTop(iEdge)+1, nVertLevels
-            strainRateR3Edge(:,k,iEdge) = 0.0
+            strainRateR3Edge(:,k,iEdge) = 0.0_RKIND
          end do
       end do
       !$omp end do
@@ -386,7 +386,7 @@ contains
 
    hmixDel2On = .false.
 
-   if ( config_mom_del2 > 0.0 ) then
+   if ( config_mom_del2 > 0.0_RKIND ) then
       hmixDel2On = .true.
    endif
 

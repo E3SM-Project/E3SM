@@ -180,8 +180,8 @@ contains
 
       ! set center of SOMA domain
       ! Convert center locations to radians from degrees
-      latCenter = config_soma_center_latitude * pii / 180.0
-      lonCenter = config_soma_center_longitude * pii / 180.0
+      latCenter = config_soma_center_latitude * pii / 180.0_RKIND
+      lonCenter = config_soma_center_longitude * pii / 180.0_RKIND
 
       ! Setup the vertical grid and layerThickness initial condition
       write(stderrUnit,*) 'setting up vertical grid and layer thickness'
@@ -239,13 +239,13 @@ contains
            factor = 1.0 - distance**2 / config_soma_domain_width**2
 
            if(factor > config_soma_shelf_width) then
-              bottomDepth(iCell) =  config_soma_shelf_depth + (config_soma_bottom_depth-config_soma_shelf_depth)/2.0 * (1.0 + tanh(factor/config_soma_phi))
+              bottomDepth(iCell) =  config_soma_shelf_depth + (config_soma_bottom_depth-config_soma_shelf_depth)/2.0_RKIND * (1.0 + tanh(factor/config_soma_phi))
            else
               bottomDepth(iCell) = -1.0_RKIND
            endif
 
            ! Set maxLevelCell to -1 for cells to be culled
-           if (bottomDepth(iCell) > 0.0) then
+           if (bottomDepth(iCell) > 0.0_RKIND) then
              maxLevelCell(iCell) = 1
            else
              maxLevelCell(iCell) = -1
@@ -346,7 +346,7 @@ contains
            latCurrent = latCell(iCell)
 
            deltay =  sphereRadius * ( latCurrent - latCenter )
-           factor = 1.0 - 0.5 * deltay / config_soma_domain_width
+           factor = 1.0_RKIND - 0.5 * deltay / config_soma_domain_width
            windstress = factor * 0.1 * exp( -(deltay / config_soma_domain_width)**2 ) &
                  * cos(pii * deltay / config_soma_domain_width)
 

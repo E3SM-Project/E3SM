@@ -211,7 +211,7 @@ contains
       ! would only change the diffusion value very slightly.
       do k = 2, nVertLevels
          !$omp workshare
-         vertViscTopOfEdge(k,:) = vertViscTopOfEdge(k,:) - (config_max_visc_tanh - config_min_visc_tanh) / 2.0 &
+         vertViscTopOfEdge(k,:) = vertViscTopOfEdge(k,:) - (config_max_visc_tanh - config_min_visc_tanh) / 2.0_RKIND &
             * tanh((refBottomDepth(k-1) + config_ZMid_tanh) &
                   / config_zWidth_tanh) &
             + (config_max_visc_tanh + config_min_visc_tanh) / 2
@@ -293,7 +293,7 @@ contains
       ! would only change the diffusion value very slightly.
       do k=2,nVertLevels
          !$omp workshare
-         vertDiffTopOfCell(k,:) = vertDiffTopOfCell(k,:) - (config_max_diff_tanh - config_min_diff_tanh) / 2.0 &
+         vertDiffTopOfCell(k,:) = vertDiffTopOfCell(k,:) - (config_max_diff_tanh - config_min_diff_tanh) / 2.0_RKIND &
             * tanh((refBottomDepth(k-1) + config_ZMid_tanh) &
                   / config_zWidth_tanh) &
             + (config_max_diff_tanh + config_min_diff_tanh) / 2

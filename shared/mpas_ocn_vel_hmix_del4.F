@@ -183,9 +183,9 @@ contains
       delsq_relativeVorticity => delsq_relativeVorticityField % array
 
       !$omp workshare
-      delsq_u(:,:) = 0.0
-      delsq_relativeVorticity(:,:) = 0.0
-      delsq_divergence(:,:) = 0.0
+      delsq_u(:,:) = 0.0_RKIND
+      delsq_relativeVorticity(:,:) = 0.0_RKIND
+      delsq_divergence(:,:) = 0.0_RKIND
       !$omp end workshare
 
       !Compute delsq_u
@@ -197,8 +197,8 @@ contains
          vertex1 = verticesOnEdge(1,iEdge)
          vertex2 = verticesOnEdge(2,iEdge)
 
-         invDcEdge = 1.0 / dcEdge(iEdge)
-         invDvEdge = 1.0 / max(dvEdge(iEdge), 0.25_RKIND*dcEdge(iEdge))
+         invDcEdge = 1.0_RKIND / dcEdge(iEdge)
+         invDvEdge = 1.0_RKIND / max(dvEdge(iEdge), 0.25_RKIND*dcEdge(iEdge))
 
          do k=1,maxLevelEdgeTop(iEdge)
             ! Compute \nabla^2 u = \nabla divergence + k \times \nabla relativeVorticity
@@ -211,7 +211,7 @@ contains
       ! Compute delsq_relativeVorticity
       !$omp do schedule(runtime) private(invAreaTri1, i, iEdge, k)
       do iVertex = 1, nVertices
-         invAreaTri1 = 1.0 / areaTriangle(iVertex)
+         invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
          do i = 1, vertexDegree
             iEdge = edgesOnVertex(i, iVertex)
             do k = 1, maxLevelVertexTop(iVertex)
@@ -224,7 +224,7 @@ contains
       ! Compute delsq_divergence
       !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, k)
       do iCell = 1, nCells
-         invAreaCell1 = 1.0 / areaCell(iCell)
+         invAreaCell1 = 1.0_RKIND / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
             do k = 1, maxLevelCell(iCell)
@@ -243,8 +243,8 @@ contains
          vertex1 = verticesOnEdge(1,iEdge)
          vertex2 = verticesOnEdge(2,iEdge)
 
-         invDcEdge = 1.0 / dcEdge(iEdge)
-         invDvEdge = 1.0 / dvEdge(iEdge)
+         invDcEdge = 1.0_RKIND / dcEdge(iEdge)
+         invDvEdge = 1.0_RKIND / dvEdge(iEdge)
          r_tmp = config_mom_del4 * meshScalingDel4(iEdge)
 
          do k=1,maxLevelEdgeTop(iEdge)
@@ -407,7 +407,7 @@ contains
          end do
          ! Impose zero strain rate at land boundaries
          do k = maxLevelEdgeTop(iEdge)+1, nVertLevels
-            strainRateR3Edge(:,k,iEdge) = 0.0
+            strainRateR3Edge(:,k,iEdge) = 0.0_RKIND
          end do
       end do
       !$omp end do
@@ -435,7 +435,7 @@ contains
          end do
          ! Impose zero strain rate at land boundaries
          do k = maxLevelEdgeTop(iEdge)+1, nVertLevels
-            strainRateR3Edge(:,k,iEdge) = 0.0
+            strainRateR3Edge(:,k,iEdge) = 0.0_RKIND
          end do
       end do
       !$omp end do
@@ -499,7 +499,7 @@ contains
 
    hmixDel4On = .false.
 
-   if ( config_mom_del4 > 0.0 ) then
+   if ( config_mom_del4 > 0.0_RKIND ) then
       hmixDel4On = .true.
    endif
 

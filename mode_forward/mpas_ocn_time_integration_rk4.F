@@ -358,7 +358,7 @@ module ocn_time_integration_rk4
         call mpas_pool_get_field(diagnosticsPool, 'relativeVorticity', relativeVorticityField)
 
         call mpas_dmpar_exch_halo_field(normalizedRelativeVorticityEdgeField)
-        if (config_mom_del4 > 0.0) then
+        if (config_mom_del4 > 0.0_RKIND) then
            call mpas_dmpar_exch_halo_field(divergenceField)
            call mpas_dmpar_exch_halo_field(relativeVorticityField)
         end if

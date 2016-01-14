@@ -322,7 +322,7 @@ contains
         real :: h(3,3), p(3), q(3), g(3), X1(3,3), X2(3,3), trans_X2_to_X1(3,3), r
         integer :: i,j,k
         logical :: l_Pole
-        real, parameter :: epsvt = 1.0e-10
+        real, parameter :: epsvt = 1.0e-10_RKIND
 
         !-----------------------------------------------------------------------
         ! define the e1, e2, and e3 directions
@@ -350,7 +350,7 @@ contains
         l_Pole = .false.
         r = g(1)*h(3,1) + g(2)*h(3,2) + g(3)*h(3,3)
         r = abs(r) + epsvt
-        if(r.gt.1.0) then
+        if(r.gt.1.0_RKIND) then
            l_Pole = .true.
            h(3,:) = h(3,:) + epsvt
            call ocn_unit_vector_in_3space(h(3,:))
@@ -419,7 +419,7 @@ contains
         real :: h(3,3), p(3), q(3), g(3), X1(3,3), X2(3,3), trans_X1_to_X2(3,3), r
         integer :: i,j,k
         logical :: l_Pole
-        real, parameter :: epsvt = 1.0e-10
+        real, parameter :: epsvt = 1.0e-10_RKIND
 
         !-----------------------------------------------------------------------
         ! define the e1, e2, and e3 directions
@@ -447,7 +447,7 @@ contains
         l_Pole = .false.
         r = g(1)*h(3,1) + g(2)*h(3,2) + g(3)*h(3,3)
         r = abs(r) + epsvt
-        if(r.gt.1.0) then
+        if(r.gt.1.0_RKIND) then
            l_Pole = .true.
            h(3,:) = h(3,:) + epsvt
            call ocn_unit_vector_in_3space(h(3,:))

@@ -148,7 +148,7 @@ contains
       !
       !$omp do schedule(runtime) private(invAreaCell, i, iEdge, cell1, cell2, r_tmp, k, iTracer, tracer_turb_flux, flux)
       do iCell = 1, nCells
-        invAreaCell = 1.0 / areaCell(iCell)
+        invAreaCell = 1.0_RKIND / areaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
           cell1 = cellsOnEdge(1,iEdge)
@@ -212,7 +212,7 @@ contains
       del2on = .false.
 
       if ( config_use_tracer_del2 ) then
-         if ( config_tracer_del2 > 0.0 ) then
+         if ( config_tracer_del2 > 0.0_RKIND ) then
             del2On = .true.
             eddyDiff2 = config_tracer_del2
          endif

@@ -140,14 +140,14 @@ contains
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
 
-         invLength = 1.0 / dcEdge(iEdge)
+         invLength = 1.0_RKIND / dcEdge(iEdge)
 
          do k = 1, maxLevelEdgeTop(iEdge)
 
-            q = 0.0
+            q = 0.0_RKIND
             do j = 1,nEdgesOnEdge(iEdge)
                eoe = edgesOnEdge(j,iEdge)
-               workVorticity = 0.5 &
+               workVorticity = 0.5_RKIND &
                   * (  normalizedRelativeVorticityEdge(k,iEdge) + RK4On * normalizedPlanetaryVorticityEdge(k,iEdge) &
                      + normalizedRelativeVorticityEdge(k,eoe)   + RK4On * normalizedPlanetaryVorticityEdge(k,eoe))
                q = q + weightsOnEdge(j,iEdge) * normalVelocity(k,eoe) * workVorticity * layerThicknessEdge(k,eoe)

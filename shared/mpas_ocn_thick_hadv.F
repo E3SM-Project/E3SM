@@ -145,7 +145,7 @@ contains
 
       !$omp do schedule(runtime) private(invAreaCell, i, iEdge, k, flux)
       do iCell = 1, nCells
-        invAreaCell = 1.0 / areaCell(iCell)
+        invAreaCell = 1.0_RKIND / areaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
           do k = 1, maxLevelEdgeBot(iEdge)

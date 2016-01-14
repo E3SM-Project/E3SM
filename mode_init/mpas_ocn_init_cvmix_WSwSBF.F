@@ -266,7 +266,7 @@ contains
               BLdepth = refZMid(k)
            else
               activeTracers(index_temperature, k, iCell) = config_cvmix_WSwSBF_surface_temperature
-              BLdepth = 0.0
+              BLdepth = 0.0_RKIND
            endif
 
            ! find the first level below the mixed layer
@@ -298,7 +298,7 @@ contains
                BLdepth = refZMid(k)
             else
                activeTracers(index_salinity, k, iCell) = config_cvmix_WSwSBF_surface_salinity
-               BLdepth = 0.0
+               BLdepth = 0.0_RKIND
             endif
 
             ! find the first level below the mixed layer

@@ -138,14 +138,14 @@ contains
         k = maxLevelCell(iCell)
         do iTracer = 1, nTracers
           fluxTopOfCell = surfaceTracerFlux(iTracer, iCell) * vertNonLocalFlux(1, k, iCell)
-          fluxBottomOfCell = 0.0
+          fluxBottomOfCell = 0.0_RKIND
           tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + (fluxTopOfCell-fluxBottomOfCell)
         end do
 
         ! enforce boundary conditions at top of column
         k = 1
         do iTracer = 1, nTracers
-          fluxTopOfCell = 0.0
+          fluxTopOfCell = 0.0_RKIND
           fluxBottomOfCell = surfaceTracerFlux(iTracer, iCell) * vertNonLocalFlux(1, k+1, iCell)
           tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + (fluxTopOfCell-fluxBottomOfCell)
         end do

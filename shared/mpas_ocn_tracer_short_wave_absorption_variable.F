@@ -425,7 +425,7 @@ contains
      real(kind=RKIND), intent(in) :: chlorophyllA, zenithAngle, cloudFraction
      real(kind=RKIND), intent(out), dimension(4) :: Avals, Kvals
 
-     if(cloudFraction > 0.1) then ! cloudy skies
+     if(cloudFraction > 0.1_RKIND) then ! cloudy skies
          Avals(1) = 0.026_RKIND*chlorophyllA + 0.112_RKIND*cloudFraction + 0.366_RKIND
          Avals(2) = -0.009_RKIND*chlorophyllA + 0.034_RKIND*cloudFraction + 0.207_RKIND
          Avals(3) = -0.015_RKIND*chlorophyllA -0.006_RKIND*cloudFraction + 0.188_RKIND

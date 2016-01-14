@@ -269,14 +269,14 @@ contains
       call mpas_pool_get_array(globalStatsAMPool, 'vertSumMinGlobalStats', verticalSumMins)
       call mpas_pool_get_array(globalStatsAMPool, 'vertSumMaxGlobalStats', verticalSumMaxes)
 
-      sums = 0.0
-      sumSquares = 0.0
-      mins = 1.0e34
-      maxes = -1.0e34
-      averages = 0.0
-      verticalSumMins = 1.0e34
-      verticalSumMaxes = -1.0e34
-      reductions = 0.0
+      sums = 0.0_RKIND
+      sumSquares = 0.0_RKIND
+      mins = 1.0e34_RKIND
+      maxes = -1.0e34_RKIND
+      averages = 0.0_RKIND
+      verticalSumMins = 1.0e34_RKIND
+      verticalSumMaxes = -1.0e34_RKIND
+      reductions = 0.0_RKIND
 
       block => domain % blocklist
       do while (associated(block))
@@ -546,7 +546,7 @@ contains
          nSums = nSums + 1
          sums(nSums) = sums(nSums) + nVerticesSolve
 
-         localCFL = 0.0
+         localCFL = 0.0_RKIND
          do elementIndex = 1,nEdgesSolve
             ! note: dt not connected.  dt will not be available in post processing mode.
             !localCFL = max(localCFL, maxval(dt*normalVelocity(:,elementIndex)/dcEdge(elementIndex)))
@@ -597,7 +597,7 @@ contains
       ! time, in days, using a 360 day calendar
       read (xtime, '(i4,10(a1,i2))') timeYYYY, timeChar, timeMM, timeChar, timeDD, timeChar, timeH, timeChar, timeM, timeChar, timeS
       ! subtract 31.0 because calendar starts on 00-01-01
-      time_days = timeYYYY*360.0 + timeMM*30.0 + timeDD + (timeH + (timeM + timeS/60.0)/60.0)/24.0 - 31.0
+      time_days = timeYYYY*360.0_RKIND + timeMM*30.0_RKIND + timeDD + (timeH + (timeM + timeS/60.0_RKIND)/60.0_RKIND)/24.0_RKIND - 31.0_RKIND
 
       ! layerThickness
       variableIndex = variableIndex + 1
@@ -842,12 +842,12 @@ contains
       integer :: elementIndex
       real (kind=RKIND) :: colSum, colRMS, colSumAbs
 
-      localSum = 0.0
-      localRMS = 0.0
-      localMin =  1.0e34
-      localMax = -1.0e34
-      localVertSumMin =  1.0e34
-      localVertSumMax = -1.0e34
+      localSum = 0.0_RKIND
+      localRMS = 0.0_RKIND
+      localMin =  1.0e34_RKIND
+      localMax = -1.0e34_RKIND
+      localVertSumMin =  1.0e34_RKIND
+      localVertSumMax = -1.0e34_RKIND
 
       do elementIndex = 1, nElements
         colSum = sum(field(1:maxLevel(elementIndex),elementIndex))
@@ -880,12 +880,12 @@ contains
       real (kind=RKIND) :: thicknessWeightedColSum, thicknessWeightedColRMS, thicknessWeightedColSumAbs
       real (kind=RKIND), dimension(nVertLevels, nElements) :: hTimesField
 
-      localSum = 0.0
-      localRMS = 0.0
-      localMin =  1.0e34
-      localMax = -1.0e34
-      localVertSumMin =  1.0e34
-      localVertSumMax = -1.0e34
+      localSum = 0.0_RKIND
+      localRMS = 0.0_RKIND
+      localMin =  1.0e34_RKIND
+      localMax = -1.0e34_RKIND
+      localVertSumMin =  1.0e34_RKIND
+      localVertSumMax = -1.0e34_RKIND
 
       do elementIndex = 1, nElements
         thicknessWeightedColSum = sum(layerThickness(1:maxLevel(elementIndex),elementIndex)*field(1:maxLevel(elementIndex),elementIndex))

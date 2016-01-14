@@ -275,19 +275,19 @@ contains
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
          do k = 1, N
-            layerThicknessEdge(k,iEdge) = 0.5 * (layerThickness(k,cell1) + layerThickness(k,cell2))
+            layerThicknessEdge(k,iEdge) = 0.5_RKIND * (layerThickness(k,cell1) + layerThickness(k,cell2))
          end do
 
          ! A is lower diagonal term
          do k = 2, N
-            A(k) = -2.0*dt*vertViscTopOfEdge(k,iEdge) &
+            A(k) = -2.0_RKIND*dt*vertViscTopOfEdge(k,iEdge) &
                / (layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge)) &
                / layerThicknessEdge(k,iEdge)
          enddo
 
          ! C is upper diagonal term
          do k = 1, N-1
-            C(k) = -2.0*dt*vertViscTopOfEdge(k+1,iEdge) &
+            C(k) = -2.0_RKIND*dt*vertViscTopOfEdge(k+1,iEdge) &
                / (layerThicknessEdge(k,iEdge) + layerThicknessEdge(k+1,iEdge)) &
                / layerThicknessEdge(k,iEdge)
          enddo
@@ -306,7 +306,7 @@ contains
          call tridiagonal_solve(A(2:N),B,C(1:N-1),normalVelocity(:,iEdge),velTemp,N)
 
          normalVelocity(1:N,iEdge) = velTemp(1:N)
-         normalVelocity(N+1:nVertLevels,iEdge) = 0.0
+         normalVelocity(N+1:nVertLevels,iEdge) = 0.0_RKIND
 
         end if
       end do
@@ -403,16 +403,16 @@ contains
          ! A is lower diagonal term
          A(1)=0
          do k = 2, N
-            A(k) = -2.0*dt*vertDiffTopOfCell(k,iCell) &
+            A(k) = -2.0_RKIND*dt*vertDiffTopOfCell(k,iCell) &
                  / (layerThickness(k-1,iCell) + layerThickness(k,iCell)) / layerThickness(k,iCell)
          enddo
 
          ! C is upper diagonal term
          do k = 1, N-1
-            C(k) = -2.0*dt*vertDiffTopOfCell(k+1,iCell) &
+            C(k) = -2.0_RKIND*dt*vertDiffTopOfCell(k+1,iCell) &
                  / (layerThickness(k,iCell) + layerThickness(k+1,iCell)) / layerThickness(k,iCell)
          enddo
-         C(N) = 0.0
+         C(N) = 0.0_RKIND
 
          ! B is diagonal term
          do k = 1, N
@@ -506,14 +506,14 @@ contains
 
       call mpas_timer_start('CVMix avg', .false.)
       !$omp workshare
-      vertViscTopOfEdge(:,:) = 0.0
+      vertViscTopOfEdge(:,:) = 0.0_RKIND
       !$omp end workshare
       !$omp do schedule(runtime) private(cell1, cell2, k)
       do iEdge=1,nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
          do k=1,maxLevelEdgeTop(iEdge)
-           vertViscTopOfEdge(k,iEdge) = 0.5*(vertViscTopOfCell(k,cell2)+vertViscTopOfCell(k,cell1))
+           vertViscTopOfEdge(k,iEdge) = 0.5_RKIND*(vertViscTopOfCell(k,cell2)+vertViscTopOfCell(k,cell1))
          enddo
       enddo
       !$omp end do

@@ -319,7 +319,7 @@ contains
             call compute_mask(iLevel, maxLevelCell, nCells, nCellsSolve, iRegion, lonCell, latCell, workMask)
 
             ! copy data into work array
-            workArray( :,:) = 0.0
+            workArray( :,:) = 0.0_RKIND
             workArray( 1,:) = workMask(:)
             workArray( 2,:) = areaCell(:)
             workArray( 3,:) = layerThickness(iLevel,:)
@@ -504,7 +504,7 @@ contains
    integer :: iCell, iDataField
    real(kind=RKIND) :: cellMask, cellArea, cellVolume
 
-   workSum = 0.0
+   workSum = 0.0_RKIND
    do iCell=1,nCellsSolve
     cellMask   = workMask(iCell)                                           ! mask
     cellArea   = cellMask * workArray(2,iCell)                             ! area

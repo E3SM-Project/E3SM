@@ -607,7 +607,7 @@ contains
                ! Change value of maxLevelCell for partial bottom cells
                k = maxLevelCell
                minBottomDepth = refBottomDepth(k) - (1.0-config_min_pbc_fraction)*(refBottomDepth(k) - refBottomDepth(k-1))
-               minBottomDepthMid = 0.5*(minBottomDepth + refBottomDepth(k-1))
+               minBottomDepthMid = 0.5_RKIND*(minBottomDepth + refBottomDepth(k-1))
                if (bottomDepth .lt. minBottomDepthMid) then
                   ! Round up to cell above
                   maxLevelCell = maxLevelCell - 1
@@ -974,7 +974,7 @@ contains
                                       + weight*layerThickness(2,iCell)
               do k = 2, nVertLevels-1
                 layerThicknessNew(k,iCell) = (1.0_RKIND - weight)*layerThickness(k,iCell) &
-                                        + weight*0.5*(layerThickness(k-1,iCell)+layerThickness(k+1,iCell))
+                                        + weight*0.5_RKIND*(layerThickness(k-1,iCell)+layerThickness(k+1,iCell))
               end do
               layerThicknessNew(nVertLevels,iCell) = (1.0_RKIND - weight)*layerThickness(nVertLevels,iCell) &
                                       + weight*layerThickness(nVertLevels-1,iCell)
