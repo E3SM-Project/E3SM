@@ -146,7 +146,7 @@
 
   <entry id="COMP_ROF" 
 	 type="char"
-	 valid_values="rtm,drof,srof,xrof" 
+	 valid_values="rtm,mosart,drof,srof,xrof" 
 	 value="rtm"  
 	 group="case_comp"
 	 sdesc="Name of river runoff component "
@@ -1534,6 +1534,48 @@
 		you should use your own user-defined component sets via using create_newcase 
 		with a compset_file argument."
 	 ></entry>
+
+  <!-- ======================================================================= -->
+  <!-- MOSART                                                                  -->
+  <!-- ======================================================================= -->
+
+  <entry id="MOSART_MODE"
+         type="char"
+         valid_values="ACTIVE,NULL"
+         value="ACTIVE"
+         group="build_component_mosart"
+         sdesc="mode for mosart model, NULL means mosart is turned off"
+         ></entry>
+
+  <entry id="MOSART_FLOOD_MODE"
+         type="char"
+         valid_values="ACTIVE,NULL"
+         value="NULL"
+         group="build_component_mosart"
+         sdesc="mode for mosart flood feature, NULL means mosart flood is turned off"
+         ></entry>
+
+  <entry id="MOSART_BLDNML_OPTS"
+         type="char"
+         valid_values=""
+         value=""
+         group="run_component_mosart"
+         sdesc="MOSART build-namelist options"
+         ></entry>
+
+  <entry id="MOSART_NAMELIST_OPTS"
+         type="char"
+         valid_values=""
+         value=""
+         group="run_component_mosart"
+         sdesc="MOSART specific namelist settings"
+         ldesc="MOSART-specific namelist settings in the MOSART build-namelist.
+                MOSART_NAMELIST_OPTS is normally set as a compset variable
+                and in general should not be modified for supported compsets.
+                It is recommended that if you want to modify this value for your experiment,
+                you should use your own user-defined component sets via using create_newcase
+                with a compset_file argument."
+         ></entry>
 
 
   <!-- ======================================================================= -->
