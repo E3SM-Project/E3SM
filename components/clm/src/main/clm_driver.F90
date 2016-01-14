@@ -898,7 +898,6 @@ contains
                      filter(nc)%num_nolakep, filter(nc)%nolakep,    &
                      waterstate_vars, canopystate_vars)
              end if
-             call t_stopf('ecosysdyn')
 
            end if  ! end of if-use_cn
 
