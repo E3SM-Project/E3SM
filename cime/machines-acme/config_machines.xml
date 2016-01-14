@@ -110,19 +110,20 @@
          <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.edison/cprnc</CCSM_CPRNC>
          <SAVE_TIMING_DIR>/project/projectdirs/$PROJECT</SAVE_TIMING_DIR>
          <OS>CNL</OS>
-         <BATCHQUERY>qstat -f</BATCHQUERY>
-         <BATCHSUBMIT>qsub</BATCHSUBMIT>
+         <BATCHQUERY>sqs -f</BATCHQUERY>
+         <BATCHSUBMIT>sbatch</BATCHSUBMIT>
          <BATCHREDIRECT></BATCHREDIRECT>
-         <SUPPORTED_BY>jnjohnson at lbl dot gov</SUPPORTED_BY>
+         <SUPPORTED_BY>acme</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
     	 <PES_PER_NODE>24</PES_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
-          <!-- pbs is for crays.. -->
-         <batch_system type="pbs" version="x.y">
+         <batch_system type="slurm" version="x.y">
            <queues>
-             <queue walltimemax="00:30:00" jobmin="1" jobmax="512" default="true">regular</queue>
+             <queue walltimemax="36:00:00" jobmin="1" jobmax="682" default="true">regular</queue>
+             <queue walltimemax="36:00:00" jobmin="683" jobmax="5462" >regular</queue>
+             <queue walltimemax="00:30:00" jobmin="1" jobmax="512">debug</queue>
            </queues>
            <walltimes>
              <walltime default="true">01:15:00</walltime>
@@ -131,14 +132,11 @@
            </walltimes>
          </batch_system>
          <mpirun mpilib="default">
-           <executable>aprun</executable>
+           <executable>srun</executable>
            <arguments>
-             <arg name="hyperthreading" default="2"> -j {{ hyperthreading }}</arg>
+             <arg name="label"> --label</arg>
              <arg name="num_tasks" > -n {{ num_tasks }}</arg>
-             <arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
-             <arg name="tasks_per_node" > -N {{ tasks_per_node }}</arg>
-             <arg name="thread_count" > -d {{ thread_count }}</arg>
-             <arg name="numa_node" > -cc {{ numa_node }}</arg>
+             <arg name="thread_count" > -c {{ thread_count }}</arg>
            </arguments>
          </mpirun>
 </machine>
@@ -218,9 +216,9 @@
 	<queue walltimemax="00:30:00" jobmin="1" jobmax="4096">debug</queue>
       </queues>
       <walltimes>
-        <walltime default="true">00:30:00</walltime>
-        <walltime ccsm_estcost="1">00:30:00</walltime>
-        <walltime ccsm_estcost="3">00:30:00</walltime>
+        <walltime default="true">01:15:00</walltime>
+        <walltime ccsm_estcost="1">01:50:00</walltime>
+        <walltime ccsm_estcost="3">05:00:00</walltime>
       </walltimes>
     </batch_system>
     <mpirun mpilib="default">
@@ -861,7 +859,7 @@
 
 <machine MACH="eos">
          <DESC>ORNL XC30, os is CNL, 16 pes/node, batch system is PBS</DESC>
-         <NODENAME_REGEX>edison</NODENAME_REGEX>
+         <NODENAME_REGEX>eos</NODENAME_REGEX>
          <TESTS>acme_developer</TESTS>
          <COMPILERS>intel</COMPILERS>
          <MPILIBS>mpich,mpi-serial</MPILIBS>
