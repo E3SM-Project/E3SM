@@ -11,7 +11,7 @@ import acme_util
 acme_util.check_minimum_python_version(2, 7)
 import wait_for_tests
 
-import argparse, sys, os, shutil, glob, doctest
+import argparse, sys, os, shutil, glob, doctest, time
 
 from acme_util import expect, warning, verbose_print
 
@@ -66,9 +66,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-p", "--cdash-project", default=wait_for_tests.ACME_MAIN_CDASH,
                         help="The name of the CDash project where results should be uploaded")
 
-    parser.add_argument("-n", "--namelists-only", action="store_true",
-                        help="Only compare/generate namelists. Useful for quick namelist-only operations")
-
     parser.add_argument("-b", "--baseline-name", default=acme_util.get_current_branch(repo=acme_util.get_acme_root()),
                         help="Baseline name for baselines to use. Also impacts dashboard job name. Useful for testing a branch other than next or master")
 
@@ -89,7 +86,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     expect(not (args.cdash_project is not wait_for_tests.ACME_MAIN_CDASH and not args.submit_to_cdash),
            "Does not make sense to use -p without -d")
 
-    return args.generate_baselines, args.submit_to_cdash, args.baseline_name, args.cdash_build_name, args.cdash_project, args.namelists_only, args.test_suite, args.cdash_build_group, args.baseline_compare
+    return args.generate_baselines, args.submit_to_cdash, args.baseline_name, args.cdash_build_name, args.cdash_project, args.test_suite, args.cdash_build_group, args.baseline_compare
 
 ###############################################################################
 def cleanup_queue(set_of_jobs_we_created):
@@ -109,9 +106,11 @@ def cleanup_queue(set_of_jobs_we_created):
 ###############################################################################
 def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
                         arg_cdash_build_name, cdash_project,
-                        namelists_only, arg_test_suite,
+                        arg_test_suite,
                         cdash_build_group, baseline_compare):
 ###############################################################################
+    start_time = time.time()
+
     use_batch = acme_util.does_machine_have_batch()
     compilers, test_suite, scratch_root, proxy = \
         acme_util.get_machine_info(["COMPILERS", "TESTS", "CESMSCRATCHROOT", "PROXY"])
@@ -203,18 +202,11 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
         create_test_cmd = "./create_test %s --test-root %s -t %s %s" % \
                           (test_suite, test_root, test_id, baseline_args)
 
-        if (namelists_only):
-            create_test_cmd += " -n"
-
         if (not wait_for_tests.SIGNAL_RECEIVED):
             create_test_stat = acme_util.run_cmd(create_test_cmd, from_dir=acme_util.get_acme_scripts_root(),
                                                  verbose=True, arg_stdout=None, arg_stderr=None, ok_to_fail=True)[0]
             if (create_test_stat != 0):
                 warning("create_test FAILED!")
-
-        # TODO: the testing scripts should produce all PASS when only generating namelists
-        if (namelists_only and generate_baselines):
-            return True
 
         if (use_batch):
             # This is not fullproof. Any jobs that happened to be
@@ -241,7 +233,8 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
                                                      False, # don't ignore namelist diffs
                                                      cdash_build_name,
                                                      cdash_project,
-                                                     cdash_build_group)
+                                                     cdash_build_group,
+                                                     start_time)
         if (not tests_passed and use_batch and wait_for_tests.SIGNAL_RECEIVED):
             # Cleanup
             cleanup_queue(our_jobs)
@@ -260,10 +253,10 @@ def _main_func(description):
 
     acme_util.stop_buffering_output()
 
-    generate_baselines, submit_to_cdash, cdash_build_name, cdash_project, baseline_branch, namelists_only, test_suite, cdash_build_group, no_baseline_compare = \
+    generate_baselines, submit_to_cdash, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare = \
         parse_command_line(sys.argv, description)
 
-    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, cdash_build_name, cdash_project, baseline_branch, namelists_only, test_suite, cdash_build_group, no_baseline_compare) else 1)
+    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare) else 1)
 
 ###############################################################################
 
