@@ -33,14 +33,13 @@ if (-e /opt/modules/default/init/csh) then
   module rm cray-hdf5
   module rm cray-netcdf-hdf5parallel
   module rm craype-sandybridge
-  module rm craype-ivybridge
+#  module rm craype-ivybridge
   module rm craype
 endif
 
 if ( $COMPILER == "intel" ) then
     module load PrgEnv-intel 
     module switch intel intel/15.0.1.133
-    module load mkl/13.0.3
     module use /global/project/projectdirs/ccsm1/modulefiles/edison
     if( $DEBUG == "TRUE" ) then
          module load esmf/6.2.0-defio-mpi-g
@@ -58,12 +57,13 @@ if ( $COMPILER == "gnu" ) then
 endif    
 
 module load papi/5.3.2
-module swap craype craype/2.1.1
-module load craype-ivybridge
+module unload craype
+module load craype/2.1.1
+#module load craype-ivybridge
 if( $COMPILER != "intel" ) then
   module load cray-libsci/13.0.1
 endif
-module load cray-mpich/7.2.1
+module load cray-mpich/7.3.0
 module load pmi/5.0.6-1.0000.10439.140.2.ari
 
 if ( $MPILIB == "mpi-serial") then
