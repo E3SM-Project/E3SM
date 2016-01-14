@@ -4,7 +4,7 @@ module rof_comp_mct
 ! DESCRIPTION:
 ! Interface of the active runoff component of CESM 
 ! with the main CESM driver. This is a thin interface taking CESM driver information
-! in MCT (Model Coupling Toolkit) format and converting it to use by RTM
+! in MCT (Model Coupling Toolkit) format and converting it to use by MOSART
 
   use seq_flds_mod
   use shr_kind_mod     , only : r8 => shr_kind_r8
@@ -19,18 +19,21 @@ module rof_comp_mct
                                 seq_infodata_start_type_start, seq_infodata_start_type_cont,   &
                                 seq_infodata_start_type_brnch
   use seq_comm_mct     , only : seq_comm_suffix, seq_comm_inst, seq_comm_name
-  use RunoffMod        , only : runoff
+  use RunoffMod        , only : rtmCTL, TRunoff
   use RtmVar           , only : rtmlon, rtmlat, ice_runoff, iulog, &
                                 nsrStartup, nsrContinue, nsrBranch, & 
-                                inst_index, inst_suffix, inst_name, RtmVarSet, &
-                                rtm_active, flood_active
-  use RtmSpmd          , only : masterproc, mpicom_rof, iam, RtmSpmdInit
+                                inst_index, inst_suffix, inst_name, RtmVarSet
+  use RtmSpmd          , only : masterproc, mpicom_rof, npes, iam, RtmSpmdInit, ROFID
   use RtmMod           , only : Rtmini, Rtmrun
   use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size, advance_timestep 
   use perf_mod         , only : t_startf, t_stopf, t_barrierf
-  use rtm_cpl_indices  , only : rtm_cpl_indices_set, nt_rtm, rtm_tracers
-  use rof_import_export
-
+  use rof_cpl_indices  , only : rof_cpl_indices_set, nt_rtm, rtm_tracers, &
+                                index_x2r_Flrl_rofsur, index_x2r_Flrl_rofi, &
+                                index_x2r_Flrl_rofgwl, index_x2r_Flrl_rofsub, &
+                                index_x2r_Flrl_rofdto, &
+                                index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
+                                index_r2x_Flrr_flood, &
+                                index_r2x_Flrr_volr, index_r2x_Flrr_volrmch
   use mct_mod
   use ESMF
 !
@@ -40,18 +43,19 @@ module rof_comp_mct
   private                              ! By default make data private
 !
 ! PUBLIC MEMBER FUNCTIONS:
-
   public :: rof_init_mct               ! rof initialization
   public :: rof_run_mct                ! rof run phase
   public :: rof_final_mct              ! rof finalization/cleanup
 !
+! PUBLIC DATA MEMBERS:
+! None
+!
 ! PRIVATE MEMBER FUNCTIONS:
-
   private :: rof_SetgsMap_mct         ! Set the river runoff model MCT GS map
   private :: rof_domain_mct           ! Set the river runoff model domain information
+  private :: rof_export_mct           ! Export the river runoff model data to the CESM coupler
 !
 ! PRIVATE DATA MEMBERS:
-  real(r8), pointer :: totrunin(:,:)   ! cell tracer lnd forcing on rtm grid (mm/s)
 
 ! REVISION HISTORY:
 ! Author: Mariana Vertenstein
@@ -76,8 +80,9 @@ contains
     character(len=*), optional, intent(in)    :: NLFilename ! Namelist filename to read
     !
     ! !LOCAL VARIABLES:
-    integer :: ROFID	                             ! rof identifyer
-    integer :: mpicom_rof                            ! mpi communicator
+    logical :: rof_prognostic                        ! flag
+    logical :: flood_present                         ! flag
+    integer :: mpicom_loc                            ! mpi communicator
     type(mct_gsMap),         pointer :: gsMap_rof    ! runoff model MCT GS map
     type(mct_gGrid),         pointer :: dom_r        ! runoff model domain
     type(seq_infodata_type), pointer :: infodata     ! CESM driver level info data
@@ -108,14 +113,14 @@ contains
 
     ! Obtain cdata_r (initalized in ccsm_comp_mod.F90 in the call to 
     ! seq_cdata_init for cdata_rr)
-    call seq_cdata_setptrs(cdata_r, ID=ROFID, mpicom=mpicom_rof, &
+    call seq_cdata_setptrs(cdata_r, ID=ROFID, mpicom=mpicom_loc, &
          gsMap=gsMap_rof, dom=dom_r, infodata=infodata)
 
     ! Determine attriute vector indices
-    call rtm_cpl_indices_set()
+    call rof_cpl_indices_set()
 
-    ! Initialize rtm MPI communicator 
-    call RtmSpmdInit(mpicom_rof)
+    ! Initialize mosart MPI communicator 
+    call RtmSpmdInit(mpicom_loc)
 
 #if (defined _MEMTRACE)
     if(masterproc) then
@@ -136,15 +141,21 @@ contains
           iulog = shr_file_getUnit()
           call shr_file_setIO('rof_modelio.nml'//trim(inst_suffix),iulog)
        end if
-       write(iulog,format) "RTM land model initialization"
+       write(iulog,format) "MOSART model initialization"
     else
        iulog = shrlogunit
     end if
     
     call shr_file_getLogLevel(shrloglev)
     call shr_file_setLogUnit (iulog)
-    
-    ! Initialize rtm
+
+    if (masterproc) then
+       write(iulog,*) ' mosart npes = ',npes
+       write(iulog,*) ' mosart iam  = ',iam
+       write(iulog,*) ' inst_name = ',trim(inst_name)
+    endif
+
+    ! Initialize mosart
     call seq_timemgr_EClockGetData(EClock,                               &
                                    start_ymd=start_ymd,                  &
                                    start_tod=start_tod, ref_ymd=ref_ymd, &
@@ -179,13 +190,12 @@ contains
                    hostname_in=hostname, username_in=username)
 
     ! Read namelist, grid and surface data
-    call Rtmini()
+    call Rtmini(rtm_active=rof_prognostic,flood_active=flood_present)
 
-    if (rtm_active) then
+    if (rof_prognostic) then
        ! Initialize memory for input state
-       begr = runoff%begr
-       endr = runoff%endr
-       allocate (totrunin(begr:endr,nt_rtm))
+       begr = rtmCTL%begr
+       endr = rtmCTL%endr
        
        ! Initialize rof gsMap for ocean rof and land rof
        call rof_SetgsMap_mct( mpicom_rof, ROFID, gsMap_rof)
@@ -194,23 +204,22 @@ contains
        lsize = mct_gsMap_lsize(gsMap_rof, mpicom_rof)
        call rof_domain_mct( lsize, gsMap_rof, dom_r )
        
-       ! Initialize lnd -> rtm attribute vector		
+       ! Initialize lnd -> mosart attribute vector		
        call mct_aVect_init(x2r_r, rList=seq_flds_x2r_fields, lsize=lsize)
        call mct_aVect_zero(x2r_r)
        
-       ! Initialize rtm -> ocn attribute vector		
+       ! Initialize mosart -> ocn attribute vector		
        call mct_aVect_init(r2x_r, rList=seq_flds_r2x_fields, lsize=lsize)
        call mct_aVect_zero(r2x_r) 
        
        ! Create mct river runoff export state
-       call rof_export(r2x_r%rattr)
+       call rof_export_mct( r2x_r )
     end if
 
     ! Fill in infodata
-    call seq_infodata_PutData( infodata, rof_present=rtm_active, &
-         rofice_present=.false., rof_prognostic=rtm_active, &
-         rof_nx = rtmlon, rof_ny = rtmlat)
-    call seq_infodata_PutData( infodata, flood_present=flood_active)
+    call seq_infodata_PutData( infodata, rof_present=rof_prognostic, rof_nx = rtmlon, rof_ny = rtmlat, &
+         rof_prognostic=rof_prognostic)
+    call seq_infodata_PutData( infodata, flood_present=flood_present)
 
     ! Reset shr logging to original values
     call shr_file_setLogUnit (shrlogunit)
@@ -268,8 +277,6 @@ contains
     endif
 #endif
 
-    if (.not.rtm_active) return
-
     ! Reset shr logging to my log file
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
@@ -280,23 +287,22 @@ contains
          curr_ymd=ymd, curr_tod=tod_sync,  &
          curr_yr=yr_sync, curr_mon=mon_sync, curr_day=day_sync)
 
-    ! Map MCT to land data type (output is totrunin - module variable) 
+    ! Map MCT to land data type (output is totrunin, subrunin)
     call t_startf ('lc_rof_import')
-    call rof_import(x2r_r%rattr, totrunin=totrunin)
+    call rof_import_mct( x2r_r)
     call t_stopf ('lc_rof_import')
 
-    ! First advance rtm time step
+    ! Run mosart (input is *runin, output is rtmCTL%runoff)
+    ! First advance mosart time step
     write(rdate,'(i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') yr_sync,mon_sync,day_sync,tod_sync
     nlend = seq_timemgr_StopAlarmIsOn( EClock )
     rstwr = seq_timemgr_RestartAlarmIsOn( EClock )
     call advance_timestep()
+    call Rtmrun(rstwr,nlend,rdate)
 
-    ! Run rtm (input is totrunin, output is runoff%runoff)
-    call Rtmrun(totrunin, rstwr, nlend, rdate)
-
-    ! Map roff data to coupler datatype (input is runoff%runoff, output is r2x_r%rattr)
+    ! Map roff data to MCT datatype (input is rtmCTL%runoff, output is r2x_r)
     call t_startf ('lc_rof_export')
-    call rof_export(r2x_r%rattr)
+    call rof_export_mct( r2x_r )
     call t_stopf ('lc_rof_export')
 
     ! Check that internal clock is in sync with master clock
@@ -305,9 +311,9 @@ contains
     tod = tod
     if ( .not. seq_timemgr_EClockDateInSync( EClock, ymd, tod ) )then
        call seq_timemgr_EclockGetData( EClock, curr_ymd=ymd_sync, curr_tod=tod_sync )
-       write(iulog,*)' rtm ymd=',ymd     ,'  rtm tod= ',tod
+       write(iulog,*)' mosart ymd=',ymd     ,'  mosart tod= ',tod
        write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync
-       call shr_sys_abort( sub//":: RTM clock is not in sync with Master Sync clock" )
+       call shr_sys_abort( sub//":: MOSART clock is not in sync with Master Sync clock" )
     end if
     
     ! Reset shr logging to my original values
@@ -366,9 +372,9 @@ contains
     character(len=32), parameter :: sub = 'rof_SetgsMap_mct'
     !-----------------------------------------------------
 
-    begr  = runoff%begr
-    endr  = runoff%endr
-    lsize = runoff%lnumr
+    begr  = rtmCTL%begr
+    endr  = rtmCTL%endr
+    lsize = rtmCTL%lnumr
     gsize = rtmlon*rtmlat
 
     ! Check 
@@ -376,12 +382,12 @@ contains
     do n = begr,endr
        ni = ni + 1
        if (ni > lsize) then
-          write(iulog,*) sub, ' : ERROR runoff count',n,ni,runoff%lnumr
+          write(iulog,*) sub, ' : ERROR runoff count',n,ni,rtmCTL%lnumr
           call shr_sys_abort( sub//' ERROR: runoff > expected' )
        endif
     end do
     if (ni /= lsize) then
-       write(iulog,*) sub, ' : ERROR runoff total count',ni,runoff%lnumr
+       write(iulog,*) sub, ' : ERROR runoff total count',ni,rtmCTL%lnumr
        call shr_sys_abort( sub//' ERROR: runoff not equal to expected' )
     endif
 
@@ -390,7 +396,7 @@ contains
     ni = 0
     do n = begr,endr
        ni = ni + 1
-       gindex(ni) = runoff%gindex(n)
+       gindex(ni) = rtmCTL%gindex(n)
     end do
     call mct_gsMap_init( gsMap_rof, gindex, mpicom_r, ROFID, lsize, gsize )
     deallocate(gindex)
@@ -444,42 +450,42 @@ contains
 
     ! Determine bounds numbering consistency
     ni = 0
-    do n = runoff%begr,runoff%endr
+    do n = rtmCTL%begr,rtmCTL%endr
        ni = ni + 1
-       if (ni > runoff%lnumr) then
-          write(iulog,*) sub, ' : ERROR runoff count',n,ni,runoff%lnumr
+       if (ni > rtmCTL%lnumr) then
+          write(iulog,*) sub, ' : ERROR runoff count',n,ni,rtmCTL%lnumr
           call shr_sys_abort( sub//' ERROR: runoff > expected' )
        end if
     end do
-    if (ni /= runoff%lnumr) then
-       write(iulog,*) sub, ' : ERROR runoff total count',ni,runoff%lnumr
+    if (ni /= rtmCTL%lnumr) then
+       write(iulog,*) sub, ' : ERROR runoff total count',ni,rtmCTL%lnumr
        call shr_sys_abort( sub//' ERROR: runoff not equal to expected' )
     endif
 
     ! Fill in correct values for domain components
     ni = 0
-    do n = runoff%begr,runoff%endr
+    do n = rtmCTL%begr,rtmCTL%endr
        ni = ni + 1
-       data(ni) = runoff%lonc(n)
+       data(ni) = rtmCTL%lonc(n)
     end do
     call mct_gGrid_importRattr(dom_r,"lon",data,lsize) 
 
     ni = 0
-    do n = runoff%begr,runoff%endr
+    do n = rtmCTL%begr,rtmCTL%endr
        ni = ni + 1
-       data(ni) = runoff%latc(n)
+       data(ni) = rtmCTL%latc(n)
     end do
     call mct_gGrid_importRattr(dom_r,"lat",data,lsize) 
 
     ni = 0
-    do n = runoff%begr,runoff%endr
+    do n = rtmCTL%begr,rtmCTL%endr
        ni = ni + 1
-       data(ni) = runoff%area(n)*1.0e-6_r8/(re*re)
+       data(ni) = rtmCTL%area(n)*1.0e-6_r8/(re*re)
     end do
     call mct_gGrid_importRattr(dom_r,"area",data,lsize) 
 
     ni = 0
-    do n = runoff%begr,runoff%endr
+    do n = rtmCTL%begr,rtmCTL%endr
        ni = ni + 1
        data(ni) = 1.0_r8
     end do
@@ -493,5 +499,155 @@ contains
 
 !====================================================================================
  
+  subroutine rof_import_mct( x2r_r)
+
+    !---------------------------------------------------------------------------
+    ! DESCRIPTION:
+    ! Obtain the runoff input from the coupler
+    ! convert from kg/m2s to m3/s
+    !
+    ! ARGUMENTS:
+    implicit none
+    type(mct_aVect), intent(inout) :: x2r_r         
+    !
+    ! LOCAL VARIABLES
+    integer :: n2, n, nt, begr, endr, nliq, nfrz
+    character(len=32), parameter :: sub = 'rof_import_mct'
+    !---------------------------------------------------------------------------
+    
+    ! Note that ***runin are fluxes
+
+    nliq = 0
+    nfrz = 0
+    do nt = 1,nt_rtm
+       if (trim(rtm_tracers(nt)) == 'LIQ') then
+          nliq = nt
+       endif
+       if (trim(rtm_tracers(nt)) == 'ICE') then
+          nfrz = nt
+       endif
+    enddo
+    if (nliq == 0 .or. nfrz == 0) then
+       write(iulog,*) trim(sub),': ERROR in rtm_tracers LIQ ICE ',nliq,nfrz,rtm_tracers
+       call shr_sys_abort()
+    endif
+
+    begr = rtmCTL%begr
+    endr = rtmCTL%endr
+    do n = begr,endr
+       n2 = n - begr + 1
+
+       rtmCTL%qsur(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_rofsur,n2) * (rtmCTL%area(n)*0.001_r8)
+       rtmCTL%qsub(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_rofsub,n2) * (rtmCTL%area(n)*0.001_r8)
+       rtmCTL%qgwl(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_rofgwl,n2) * (rtmCTL%area(n)*0.001_r8)
+       if (index_x2r_Flrl_rofdto > 0) then
+          rtmCTL%qdto(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_rofdto,n2) * (rtmCTL%area(n)*0.001_r8)
+       else
+          rtmCTL%qdto(n,nliq) = 0.0_r8
+       endif
+
+       rtmCTL%qsur(n,nfrz) = x2r_r%rAttr(index_x2r_Flrl_rofi,n2) * (rtmCTL%area(n)*0.001_r8)
+       rtmCTL%qsub(n,nfrz) = 0.0_r8
+       rtmCTL%qgwl(n,nfrz) = 0.0_r8
+       rtmCTL%qdto(n,nfrz) = 0.0_r8
+
+    enddo
+
+  end subroutine rof_import_mct
+
+!====================================================================================
+
+  subroutine rof_export_mct( r2x_r )
+
+    !---------------------------------------------------------------------------
+    ! DESCRIPTION:
+    ! Send the runoff model export state to the coupler
+    ! convert from m3/s to kg/m2s
+    !
+    ! ARGUMENTS:
+    implicit none
+    type(mct_aVect), intent(inout) :: r2x_r  ! Runoff to coupler export state
+    !
+    ! LOCAL VARIABLES
+    integer :: ni, n, nt, nliq, nfrz
+    logical,save :: first_time = .true.
+    character(len=32), parameter :: sub = 'rof_export_mct'
+    !---------------------------------------------------------------------------
+    
+    nliq = 0
+    nfrz = 0
+    do nt = 1,nt_rtm
+       if (trim(rtm_tracers(nt)) == 'LIQ') then
+          nliq = nt
+       endif
+       if (trim(rtm_tracers(nt)) == 'ICE') then
+          nfrz = nt
+       endif
+    enddo
+    if (nliq == 0 .or. nfrz == 0) then
+       write(iulog,*) trim(sub),': ERROR in rtm_tracers LIQ ICE ',nliq,nfrz,rtm_tracers
+       call shr_sys_abort()
+    endif
+
+    r2x_r%rattr(:,:) = 0._r8
+
+    if (first_time) then
+       if (masterproc) then
+       if ( ice_runoff )then
+          write(iulog,*)'Snow capping will flow out in frozen river runoff'
+       else
+          write(iulog,*)'Snow capping will flow out in liquid river runoff'
+       endif
+       endif
+       first_time = .false.
+    end if
+
+    ni = 0
+    if ( ice_runoff )then
+       ! separate liquid and ice runoff
+       do n = rtmCTL%begr,rtmCTL%endr
+          ni = ni + 1
+          r2x_r%rAttr(index_r2x_Forr_rofl,ni) =  rtmCTL%direct(n,nliq) / (rtmCTL%area(n)*0.001_r8)
+          r2x_r%rAttr(index_r2x_Forr_rofi,ni) =  rtmCTL%direct(n,nfrz) / (rtmCTL%area(n)*0.001_r8)
+          if (rtmCTL%mask(n) >= 2) then
+             ! liquid and ice runoff are treated separately - this is what goes to the ocean
+             r2x_r%rAttr(index_r2x_Forr_rofl,ni) = r2x_r%rAttr(index_r2x_Forr_rofl,ni) + &
+                rtmCTL%runoff(n,nliq) / (rtmCTL%area(n)*0.001_r8)
+             r2x_r%rAttr(index_r2x_Forr_rofi,ni) = r2x_r%rAttr(index_r2x_Forr_rofi,ni) + &
+                rtmCTL%runoff(n,nfrz) / (rtmCTL%area(n)*0.001_r8)
+             if (ni > rtmCTL%lnumr) then
+                write(iulog,*) sub, ' : ERROR runoff count',n,ni
+                call shr_sys_abort( sub//' : ERROR runoff > expected' )
+             endif
+          endif
+       end do
+    else
+       ! liquid and ice runoff added to liquid runoff, ice runoff is zero
+       do n = rtmCTL%begr,rtmCTL%endr
+          ni = ni + 1
+          r2x_r%rAttr(index_r2x_Forr_rofl,ni) =  &
+             (rtmCTL%direct(n,nfrz)+rtmCTL%direct(n,nliq)) / (rtmCTL%area(n)*0.001_r8)
+          if (rtmCTL%mask(n) >= 2) then
+             r2x_r%rAttr(index_r2x_Forr_rofl,ni) = r2x_r%rAttr(index_r2x_Forr_rofl,ni) + &
+                (rtmCTL%runoff(n,nfrz)+rtmCTL%runoff(n,nliq)) / (rtmCTL%area(n)*0.001_r8)
+             if (ni > rtmCTL%lnumr) then
+                write(iulog,*) sub, ' : ERROR runoff count',n,ni
+                call shr_sys_abort( sub//' : ERROR runoff > expected' )
+             endif
+          endif
+       end do
+    end if
+
+    ! Flooding back to land, sign convention is positive in land->rof direction
+    ! so if water is sent from rof to land, the flux must be negative.
+    ni = 0
+    do n = rtmCTL%begr, rtmCTL%endr
+       ni = ni + 1
+       r2x_r%rattr(index_r2x_Flrr_flood,ni)   = -rtmCTL%flood(n) / (rtmCTL%area(n)*0.001_r8)
+       r2x_r%rattr(index_r2x_Flrr_volr,ni)    = (Trunoff%wr(n,nliq) + Trunoff%wt(n,nliq)) / rtmCTL%area(n)
+       r2x_r%rattr(index_r2x_Flrr_volrmch,ni) = Trunoff%wr(n,nliq) / rtmCTL%area(n)
+    end do
+
+  end subroutine rof_export_mct
 
 end module rof_comp_mct

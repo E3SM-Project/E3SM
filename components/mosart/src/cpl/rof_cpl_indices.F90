@@ -1,11 +1,11 @@
-module rtm_cpl_indices
+module rof_cpl_indices
 !-----------------------------------------------------------------------
 !BOP
 !
-! !MODULE: rtm_cpl_indices
+! !MODULE: rof_cpl_indices
 !
 ! !DESCRIPTION:
-!    Module containing the indices for the fields passed between RTM and
+!    Module containing the indices for the fields passed between ROF and
 !    the driver. 
 !
 ! !USES:
@@ -18,15 +18,16 @@ module rtm_cpl_indices
 !
 ! !PUBLIC MEMBER FUNCTIONS:
 
-  public :: rtm_cpl_indices_set        ! Set the coupler indices
+  public :: rof_cpl_indices_set        ! Set the coupler indices
 
 !
 ! !PUBLIC DATA MEMBERS:
 !
-  integer, public :: index_x2r_Flrl_rofsur = 0  ! lnd->rtm liquid surface runoff forcing from land
-  integer, public :: index_x2r_Flrl_rofgwl = 0  ! lnd->rtm liquid gwl runoff forcing from land
-  integer, public :: index_x2r_Flrl_rofsub = 0  ! lnd->rtm liquid subsurface runoff forcing from land
-  integer, public :: index_x2r_Flrl_rofi  = 0   ! lnd->rtm ice runoff forcing from land
+  integer, public :: index_x2r_Flrl_rofsur = 0  ! lnd->rof liquid surface runoff forcing from land
+  integer, public :: index_x2r_Flrl_rofgwl = 0  ! lnd->rof liquid gwl runoff from land
+  integer, public :: index_x2r_Flrl_rofsub = 0  ! lnd->rof liquid subsurface runoff from land
+  integer, public :: index_x2r_Flrl_rofdto = 0  ! lnd->rof liquid direct to ocean runoff
+  integer, public :: index_x2r_Flrl_rofi  = 0   ! lnd->rof ice runoff forcing from land
 
   integer, public :: nflds_x2r = 0
 
@@ -34,13 +35,13 @@ module rtm_cpl_indices
   integer, parameter, public :: nt_rtm = 2    ! number of tracers
   character(len=3), parameter, public :: rtm_tracers(nt_rtm) =  (/'LIQ','ICE'/)
 
-  ! roff to driver (part of land for now) (optional if RTM is off)
+  ! roff to driver (part of land for now) (optional if ROF is off)
 
-  integer, public :: index_r2x_Forr_rofl  = 0   ! rtm->ocn liquid runoff to ocean
-  integer, public :: index_r2x_Forr_rofi  = 0   ! rtm->ocn ice runoff to ocean
-  integer, public :: index_r2x_Flrr_flood = 0   ! rtm->lnd flood runoff (>fthresh) back to land
-  integer, public :: index_r2x_Flrr_volr = 0   ! rtm->lnd volr total back to land
-  integer, public :: index_r2x_Flrr_volrmch = 0   ! rtm->lnd volr main channel back to land
+  integer, public :: index_r2x_Forr_rofl  = 0   ! rof->ocn liquid runoff to ocean
+  integer, public :: index_r2x_Forr_rofi  = 0   ! rof->ocn ice runoff to ocean
+  integer, public :: index_r2x_Flrr_flood = 0   ! rof->lnd flood runoff (>fthresh) back to land
+  integer, public :: index_r2x_Flrr_volr = 0    ! rof->lnd volr total volume back to land
+  integer, public :: index_r2x_Flrr_volrmch = 0 ! rof->lnd volr main channel back to land
   integer, public :: nflds_r2x = 0
 
 !=======================================================================
@@ -49,13 +50,13 @@ contains
 !=======================================================================
 
 
-  subroutine rtm_cpl_indices_set( )
+  subroutine rof_cpl_indices_set( )
 
 
     !-----------------------------------------------------------------------
     ! !DESCRIPTION: 
     ! Set the coupler indices needed by the rof model coupler interface.
-    ! runoff - (rtm -> ocn) and (rtm->lnd)
+    ! runoff - (rof -> ocn) and (rof->lnd)
     !
     ! !USES:
     use seq_flds_mod  , only: seq_flds_r2x_fields, seq_flds_x2r_fields
@@ -70,17 +71,18 @@ contains
     !
     ! !LOCAL VARIABLES:
     type(mct_aVect)   :: avtmp      ! temporary av
-    character(len=32) :: subname = 'rtm_cpl_indices_set'  ! subroutine name
+    character(len=32) :: subname = 'rof_cpl_indices_set'  ! subroutine name
     !-----------------------------------------------------------------------
 
     ! x2r
 
     call mct_aVect_init(avtmp, rList=seq_flds_x2r_fields, lsize=1)
 
-    index_x2r_Flrl_rofsur = mct_avect_indexra(avtmp,'Flrl_rofsur')
+    index_x2r_Flrl_rofsur = mct_avect_indexra(avtmp,'Flrl_rofsur') !'Flrl_rofsur')
     index_x2r_Flrl_rofgwl = mct_avect_indexra(avtmp,'Flrl_rofgwl')
     index_x2r_Flrl_rofsub = mct_avect_indexra(avtmp,'Flrl_rofsub')
-    index_x2r_Flrl_rofi = mct_avect_indexra(avtmp,'Flrl_rofi')
+    index_x2r_Flrl_rofdto = mct_avect_indexra(avtmp,'Flrl_rofdto',perrwith='quiet')
+    index_x2r_Flrl_rofi   = mct_avect_indexra(avtmp,'Flrl_rofi')
 
     nflds_x2r = mct_avect_nRattr(avtmp)
 
@@ -100,8 +102,8 @@ contains
 
     call mct_aVect_clean(avtmp)
 
-  end subroutine rtm_cpl_indices_set
+  end subroutine rof_cpl_indices_set
 
-end module rtm_cpl_indices
+end module rof_cpl_indices
 
 
