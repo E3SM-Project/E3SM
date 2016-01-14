@@ -2764,7 +2764,7 @@ sub write_filepath
     print $fh "$camsrcdir/cam/src/dynamics/$dyn\n";
     if($dyn eq 'se') {
 	print $fh "$camsrcdir/homme/src/share\n";
-#print $fh "$camsrcdir/homme/src/share/openacc\n";
+	print $fh "$camsrcdir/homme/src/share/openacc\n";
     }
 
     # Parallelization utilies
