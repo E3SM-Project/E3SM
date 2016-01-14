@@ -978,6 +978,9 @@ contains
 
     if (masterproc) write(iulog,*) subname //':: Success '
     delt_save = 0.0
+
+    call t_stopf('rtmi_grid')
+
   end subroutine Rtmini
   !=======================================================================
 
