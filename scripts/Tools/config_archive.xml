@@ -434,6 +434,94 @@
     </tseries_time_variant_variables>
   </comp_archive_spec>
 
+  <comp_archive_spec name="mosart">
+    <rootdir>rof</rootdir>
+    <multi_instance>y</multi_instance>
+    <files>
+      <file_extension suffix=".log\.+">
+	<subdir>logs</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>n</keepLast>
+      </file_extension>
+      <file_extension suffix=".r\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh0\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh1\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh2\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".rh3\.+">
+	<subdir>rest</subdir> 
+	<dispose>y</dispose> 
+	<keepLast>y</keepLast>
+      </file_extension>
+      <file_extension suffix=".h0\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/monthly</tseries_output_subdir>
+	<tseries_tper>monthly</tseries_tper>
+	<tseries_filecat_years>10</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h1\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/daily</tseries_output_subdir>
+	<tseries_tper>daily</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h2\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/hourly6</tseries_output_subdir>
+	<tseries_tper>hourly6</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+      <file_extension suffix=".h3\.+">      
+	<subdir>hist</subdir> 
+	<dispose>n</dispose> 
+	<keepLast>y</keepLast>
+	<tseries_create>FALSE</tseries_create>
+	<tseries_output_format>netcdf4c</tseries_output_format>
+	<tseries_output_subdir>proc/tseries/hourly3</tseries_output_subdir>
+	<tseries_tper>hourly3</tseries_tper>
+	<tseries_filecat_years>1</tseries_filecat_years>
+      </file_extension>
+    </files>
+    <tseries_time_variant_variables>
+      <variable>date_written</variable>
+      <variable>mcdate</variable>
+      <variable>mcsec</variable>
+      <variable>mdcur</variable>
+      <variable>mscur</variable>
+      <variable>nstep</variable>
+      <variable>time</variable>
+      <variable>time_bounds</variable>
+      <variable>time_written</variable>
+    </tseries_time_variant_variables>
+  </comp_archive_spec>
+
   <comp_archive_spec name="cice">
     <rootdir>ice</rootdir>
     <multi_instance>y</multi_instance>
