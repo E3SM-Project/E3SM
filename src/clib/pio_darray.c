@@ -662,8 +662,8 @@ int pio_write_darray_multi_nc_serial(file_desc_t *file, const int nvars, const i
 	     tmp_count[i+regioncnt*fndims] = region->count[i];
 	   }
 	 }
+	 region = region->next;
        }
-       region = region->next;
      }
      if(ios->io_rank>0){
        mpierr = MPI_Recv( &ierr, 1, MPI_INT, 0, 0, ios->io_comm, &status);  // task0 is ready to recieve
