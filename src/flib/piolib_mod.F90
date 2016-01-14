@@ -49,7 +49,8 @@ module piolib_mod
        PIO_set_hint,      &
        PIO_FILE_IS_OPEN, &
        PIO_deletefile, &
-       PIO_get_numiotasks
+       PIO_get_numiotasks, &
+       PIO_iotype_available
 
 #ifdef MEMCHK
 !> this is an internal variable for memory leak debugging
@@ -1191,6 +1192,18 @@ contains
 
    end subroutine getnumiotasks
 
+   logical function pio_iotype_available( iotype) result(available)
+     integer, intent(in) :: iotype
+     interface
+        integer(C_INT) function PIOc_iotype_available(iotype) &
+             bind(C,name="PIOc_iotype_available")
+          use iso_c_binding
+          integer(C_INT), intent(in), value :: iotype
+        end function PIOc_iotype_available
+     end interface
+     available= (PIOc_iotype_available(iotype) == 1)
+
+   end function pio_iotype_available
 
 
 !> 
