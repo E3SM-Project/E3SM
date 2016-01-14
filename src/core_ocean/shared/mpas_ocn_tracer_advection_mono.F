@@ -367,7 +367,7 @@ module ocn_tracer_advection_mono
         ! Accumulate the scaled high order horizontal tendencies
         !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, k)
         do iCell = 1, nCells
-          invAreaCell1 = 1.0 / areaCell(iCell)
+          invAreaCell1 = 1.0_RKIND / areaCell(iCell)
           do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
             do k = 1, maxLevelEdgeTop(iEdge)

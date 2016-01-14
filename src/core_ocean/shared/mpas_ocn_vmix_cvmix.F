@@ -250,8 +250,8 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
 
       !$omp workshare
-      vertViscTopOfCell = 0.0
-      vertDiffTopOfCell = 0.0
+      vertViscTopOfCell = 0.0_RKIND
+      vertDiffTopOfCell = 0.0_RKIND
       !$omp end workshare
 
       !
@@ -261,7 +261,7 @@ contains
       call mpas_pool_get_dimension(diagnosticsPool, 'index_vertNonLocalFluxTemp', index_vertNonLocalFluxTemp)
 
       !$omp workshare
-      vertNonLocalFlux = 0.0
+      vertNonLocalFlux = 0.0_RKIND
       !$omp end workshare
 
       !
@@ -301,17 +301,17 @@ contains
          ! specify geometry/location
          cvmix_variables % SeaSurfaceHeight = ssh(iCell)
          cvmix_variables % Coriolis = fCell(iCell)
-         cvmix_variables % lat = latCell(iCell) * 180.0 / 3.14
-         cvmix_variables % lon = lonCell(iCell) * 180.0 / 3.14
+         cvmix_variables % lat = latCell(iCell) * 180.0_RKIND / 3.14_RKIND
+         cvmix_variables % lon = lonCell(iCell) * 180.0_RKIND / 3.14_RKIND
 
          ! fill vertical position of column
          ! CVMix assume top of ocean is at z=0, so building all z-coordinate data based on layerThickness
-         cvmix_variables % zw_iface(1) = 0.0
-         cvmix_variables % dzw(1) = layerThickness(1,iCell)/2.0
-         cvmix_variables % zt_cntr(1) = -layerThickness(1,iCell)/2.0
+         cvmix_variables % zw_iface(1) = 0.0_RKIND
+         cvmix_variables % dzw(1) = layerThickness(1,iCell)/2.0_RKIND
+         cvmix_variables % zt_cntr(1) = -layerThickness(1,iCell)/2.0_RKIND
          do k=2,maxLevelCell(iCell)
             cvmix_variables % zw_iface(k) = cvmix_variables % zw_iface(k-1) - layerThickness(k-1,iCell)
-            cvmix_variables % zt_cntr(k) = cvmix_variables %  zw_iface(k) - layerThickness(k,iCell)/2.0
+            cvmix_variables % zt_cntr(k) = cvmix_variables %  zw_iface(k) - layerThickness(k,iCell)/2.0_RKIND
             cvmix_variables % dzw(k) = cvmix_variables % zt_cntr(k-1) - cvmix_variables % zt_cntr(k)
             cvmix_variables % dzt(k) = layerThickness(k,iCell)
          enddo
@@ -321,8 +321,8 @@ contains
          do k = maxLevelCell(iCell) + 1, nVertLevels
             cvmix_variables % zw_iface(k+1) = cvmix_variables % zw_iface(maxLevelCell(iCell)+1)
             cvmix_variables % zt_cntr(k) = cvmix_variables % zw_iface(maxLevelCell(iCell)+1)
-            cvmix_variables % dzw(k+1) = 0.0
-            cvmix_variables % dzt(k) = 0.0
+            cvmix_variables % dzw(k+1) = 0.0_RKIND
+            cvmix_variables % dzt(k) = 0.0_RKIND
          enddo
 
          ! fill the intent(in) convective adjustment
@@ -403,13 +403,13 @@ contains
 
                 !compute shear contribution assuming BLdepth is cell bottom
 
-                invAreaCell = 1.0 / areaCell(iCell)
+                invAreaCell = 1.0_RKIND / areaCell(iCell)
                 deltaVelocitySquared = 0.0_RKIND
                 do i=1,nEdgesOnCell(iCell)
                    iEdge = edgesOnCell(i,iCell)
 
                    normalVelocityAv = sum(normalVelocity(1:kav,iEdge))/real(kav, kind=RKIND)
-                   factor = 0.5 * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
+                   factor = 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
                    delU2 = (normalVelocityAv - normalVelocity(kIndexOBL,iEdge))**2
                    deltaVelocitySquared = deltaVelocitySquared + factor * delU2
                enddo
@@ -444,8 +444,8 @@ contains
              endif  ! if (config_use_cvmix_fixed_boundary_layer) then
 
              ! apply minimum limit to OBL
-             if(cvmix_variables % BoundaryLayerDepth .lt. layerThickness(1,iCell)/2.0) then
-                cvmix_variables % BoundaryLayerDepth = layerThickness(1,iCell)/2.0
+             if(cvmix_variables % BoundaryLayerDepth .lt. layerThickness(1,iCell)/2.0_RKIND) then
+                cvmix_variables % BoundaryLayerDepth = layerThickness(1,iCell)/2.0_RKIND
                cvmix_variables % kOBL_depth = cvmix_kpp_compute_kOBL_depth(  &
                           zw_iface = cvmix_variables%zw_iface(1:nVertLevels+1),&
                           zt_cntr = cvmix_variables%zt_cntr(1:nVertLevels),    &
@@ -508,8 +508,8 @@ contains
 
          ! call convective mixing scheme
          if (config_use_cvmix_convection) then
-            cvmix_variables % Mdiff_iface(:)=0.0
-            cvmix_variables % Tdiff_iface(:)=0.0
+            cvmix_variables % Mdiff_iface(:)=0.0_RKIND
+            cvmix_variables % Tdiff_iface(:)=0.0_RKIND
             call cvmix_coeffs_conv( CVmix_vars = cvmix_variables )
 
             ! add convective mixing to vertical viscosity/diffusivity
@@ -527,8 +527,8 @@ contains
 
          ! call shear-based mixing scheme
          if (config_use_cvmix_shear) then
-            cvmix_variables % Mdiff_iface(:)=0.0
-            cvmix_variables % Tdiff_iface(:)=0.0
+            cvmix_variables % Mdiff_iface(:)=0.0_RKIND
+            cvmix_variables % Tdiff_iface(:)=0.0_RKIND
             call cvmix_coeffs_shear( &
                  cvmix_variables, &
                  cvmix_shear_params)
@@ -563,10 +563,10 @@ contains
 
          ! computation of viscosity/diffusivity complete
          ! impose no-flux boundary conditions at top and bottom by zero viscosity/diffusivity
-         vertViscTopOfCell(1,iCell) = 0.0
-         vertDiffTopOfCell(1,iCell) = 0.0
-         vertViscTopOfCell(maxLevelCell(iCell)+1:nVertLevels,iCell)=0.0
-         vertDiffTopOfCell(maxLevelCell(iCell)+1:nVertLevels,iCell)=0.0
+         vertViscTopOfCell(1,iCell) = 0.0_RKIND
+         vertDiffTopOfCell(1,iCell) = 0.0_RKIND
+         vertViscTopOfCell(maxLevelCell(iCell)+1:nVertLevels,iCell)=0.0_RKIND
+         vertDiffTopOfCell(maxLevelCell(iCell)+1:nVertLevels,iCell)=0.0_RKIND
 
       end do  ! do iCell=1,mesh%nCells
       !$omp end do

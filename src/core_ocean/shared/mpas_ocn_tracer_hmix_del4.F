@@ -174,13 +174,13 @@ contains
       delsq_tracer => delsq_tracerField % array
 
       !$omp workshare
-      delsq_tracer(:,:,:) = 0.0
+      delsq_tracer(:,:,:) = 0.0_RKIND
       !$omp end workshare
 
       ! first del2: div(h \nabla \phi) at cell center
       !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, invdcEdge, cell1, cell2, k, iTracer, r_tmp1, r_tmp2)
       do iCell = 1, nCells
-        invAreaCell1 = 1.0 / areaCell(iCell)
+        invAreaCell1 = 1.0_RKIND / areaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
           invdcEdge = dvEdge(iEdge) / dcEdge(iEdge)
@@ -203,7 +203,7 @@ contains
       ! second del2: div(h \nabla [delsq_tracer]) at cell center
       !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, cell1, cell2, invdcEdge, k, iTracer, tracer_turb_flux, flux)
       do iCell = 1, nCells
-        invAreaCell1 = 1.0 / areaCell(iCell)
+        invAreaCell1 = 1.0_RKIND / areaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
           cell1 = cellsOnEdge(1, iEdge)
@@ -266,7 +266,7 @@ contains
 
       del4on = .false.
 
-      if ( config_tracer_del4 > 0.0 ) then
+      if ( config_tracer_del4 > 0.0_RKIND ) then
           del4On = .true.
           eddyDiff4 = config_tracer_del4
       endif

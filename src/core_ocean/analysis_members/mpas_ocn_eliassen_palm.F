@@ -58,7 +58,7 @@ module ocn_eliassen_palm
    !
    !--------------------------------------------------------------------
 
-   real (kind=RKIND), parameter :: epsilonEPFT=1.0e-15
+   real (kind=RKIND), parameter :: epsilonEPFT=1.0e-15_RKIND
 
 !***********************************************************************
 
@@ -191,12 +191,12 @@ contains
          ! compute density/bouyancy for each layer
          !-----------------------------------------------------------------
          do k = 1, nBuoyancyLayers-1
-            potentialDensityMidRef(k) = 0.5*(potentialDensityTopRef(k) + potentialDensityTopRef(k+1))
-            buoyancyMidRef(k) = 0.5*(buoyancyInterfaceRef(k) + buoyancyInterfaceRef(k+1))
+            potentialDensityMidRef(k) = 0.5_RKIND*(potentialDensityTopRef(k) + potentialDensityTopRef(k+1))
+            buoyancyMidRef(k) = 0.5_RKIND*(buoyancyInterfaceRef(k) + buoyancyInterfaceRef(k+1))
          end do
          k=nBuoyancyLayers
          potentialDensityMidRef(k) = 0.5*(potentialDensityTopRef(k) + config_AM_eliassenPalm_rhomax_buoycoor)
-         buoyancyMidRef(k) = 0.5*(buoyancyInterfaceRef(k) + buoyancyInterfaceRef(k+1))
+         buoyancyMidRef(k) = 0.5_RKIND*(buoyancyInterfaceRef(k) + buoyancyInterfaceRef(k+1))
 
          block => block % next
 
@@ -477,14 +477,14 @@ contains
       err = 0
 
       nCellsCum = 0
-      RMSlocal1  = 0.0
-      RMSlocal2  = 0.0
-      RMSglobal1 = 0.0
-      RMSglobal2 = 0.0
-      RMSPVFlux1local  = 0.0
-      RMSPVFlux2local  = 0.0
-      RMSPVFlux1global = 0.0
-      RMSPVFlux2global = 0.0
+      RMSlocal1  = 0.0_RKIND
+      RMSlocal2  = 0.0_RKIND
+      RMSglobal1 = 0.0_RKIND
+      RMSglobal2 = 0.0_RKIND
+      RMSPVFlux1local  = 0.0_RKIND
+      RMSPVFlux2local  = 0.0_RKIND
+      RMSPVFlux1global = 0.0_RKIND
+      RMSPVFlux2global = 0.0_RKIND
 
       dminfo = domain % dminfo
 
@@ -853,15 +853,15 @@ contains
          if(config_AM_eliassenPalm_debug) then
             do i = 1,nCells
                do k = 1, nVertLevels
-                  array1_3D(k,i) = config_AM_eliassenPalm_rhomin_buoycoor*1.02 + &
+                  array1_3D(k,i) = config_AM_eliassenPalm_rhomin_buoycoor*1.02_RKIND + &
                      (zMid(k,i)-zMid(1,i)) * &
-                     (config_AM_eliassenPalm_rhomax_buoycoor*0.98 &
-                     - config_AM_eliassenPalm_rhomin_buoycoor*1.02) / &
+                     (config_AM_eliassenPalm_rhomax_buoycoor*0.98_RKIND &
+                     - config_AM_eliassenPalm_rhomin_buoycoor*1.02_RKIND) / &
                      (zMid(nVertLevels,i) - zMid(1,i))
-                  array2_3D(k,i) = config_AM_eliassenPalm_rhomin_buoycoor*1.02 + &
+                  array2_3D(k,i) = config_AM_eliassenPalm_rhomin_buoycoor*1.02_RKIND + &
                      (zTop(k,i)-zMid(1,i)) * &
-                     (config_AM_eliassenPalm_rhomax_buoycoor*0.98 &
-                     - config_AM_eliassenPalm_rhomin_buoycoor*1.02) / &
+                     (config_AM_eliassenPalm_rhomax_buoycoor*0.98_RKIND &
+                     - config_AM_eliassenPalm_rhomin_buoycoor*1.02_RKIND) / &
                      (zMid(nVertLevels,i) - zMid(1,i))
                end do
             end do
@@ -871,10 +871,10 @@ contains
             do i = 1,nCells
                do k = 1, nBuoyancyLayers
                   array2_3Dbuoy(k,i) = zMid(1,i) + &
-                     (potentialDensityMidRef(k) - config_AM_eliassenPalm_rhomin_buoycoor*1.02) * &
+                     (potentialDensityMidRef(k) - config_AM_eliassenPalm_rhomin_buoycoor*1.02_RKIND) * &
                      (zMid(nVertLevels,i) - zMid(1,i)) / &
-                     (config_AM_eliassenPalm_rhomax_buoycoor*0.98 &
-                     - config_AM_eliassenPalm_rhomin_buoycoor*1.02)
+                     (config_AM_eliassenPalm_rhomax_buoycoor*0.98_RKIND &
+                     - config_AM_eliassenPalm_rhomin_buoycoor*1.02_RKIND)
                end do
             end do
             do i = 1,nCells
@@ -1018,7 +1018,7 @@ contains
          ! Diabatic terms
          !wrk3DBuoyCoor = wMidBuoyCoor * sigma
          !call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, varpisigmaEA)
-         varpisigmaEA = 0.0
+         varpisigmaEA = 0.0_RKIND
 
          !-------------------------------------------------------------
          ! Increment third-order running ensemble average fields
@@ -1035,12 +1035,12 @@ contains
          ! Diabatic terms
          !wrk3DBuoyCoor = uMidBuoyCoor * wMidBuoyCoor * sigma
          !call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, uvarpisigmaEA)
-         uvarpisigmaEA = 0.0
+         uvarpisigmaEA = 0.0_RKIND
 
          ! Diabatic terms
          !wrk3DBuoyCoor = vMidBuoyCoor * wMidBuoyCoor* sigma
          !call updateEnsembleAverage(nBuoyancyLayers, nCells, nSamplesEA, wrk3DBuoyCoor, vvarpisigmaEA)
-         vvarpisigmaEA = 0.0
+         vvarpisigmaEA = 0.0_RKIND
 
          !-------------------------------------------------------------
          ! update number of samples in ensemble average
@@ -1055,7 +1055,7 @@ contains
          call calculateTWA(nBuoyancyLayers, nCells, nBuoyancyLayers, sigmaEA, vsigmaEA,  vTWA)
          ! Diabatic terms
          !call calculateTWA(nBuoyancyLayers, nCells, nBuoyancyLayers, sigmaEA, varpisigmaEA,  varpiTWA)
-         varpiTWA = 0.0
+         varpiTWA = 0.0_RKIND
 
          !-------------------------------------------------------------
          ! compute the Eliassen-Palm flux tensor
@@ -1096,7 +1096,7 @@ contains
          !-------------------------------------------------------------
          ! compute the force from horizontal shear component of the EPFT
          !-------------------------------------------------------------
-         wrkTensor = 0.0
+         wrkTensor = 0.0_RKIND
          wrkTensor(1:2,1:2,:,:) = EPFT(1:2,1:2,:,:)
          call calculateDivEPFT(config_AM_eliassenPalm_debug, &
             domain % on_a_sphere, rho_sw, nBuoyancyLayers, nCells, nEdges, &
@@ -1107,7 +1107,7 @@ contains
          !-------------------------------------------------------------
          ! compute the force from vertical form drag component of the EPFT
          !-------------------------------------------------------------
-         wrkTensor = 0.0
+         wrkTensor = 0.0_RKIND
          wrkTensor(3,1:2,:,:) = EPFT(3,1:2,:,:)
          call calculateDivEPFT(config_AM_eliassenPalm_debug, &
             domain % on_a_sphere, rho_sw, nBuoyancyLayers, nCells, nEdges, &
@@ -1279,7 +1279,7 @@ contains
       ! TESTS: tallying up tests across processors.
       !-------------------------------------------------------------
       if(config_AM_eliassenPalm_debug) then
-        RMSglobal1 = 1.0D36
+        RMSglobal1 = 1.0e+36_RKIND
         call mpas_dmpar_sum_int(dminfo, nCellsCum, nCellsGlobal)
         call mpas_dmpar_sum_real(dminfo, RMSlocal1, RMSglobal1)
         call mpas_dmpar_sum_real(dminfo, RMSlocal2, RMSglobal2)
@@ -1482,7 +1482,7 @@ contains
       !-----------------------------------------------------------------
       firstLayerBuoyCoor = nBuoyancyLayers
       lastLayerBuoyCoor = 1
-      buoyancyMask     = 0.0
+      buoyancyMask     = 0.0_RKIND
 
       !-----------------------------------------------------------------
       ! loop over all cells
@@ -1514,7 +1514,7 @@ contains
 
          ! set mask to 1 inside the range
          do kB = firstLayerBuoyCoor(iCell), lastLayerBuoyCoor(iCell)
-           buoyancyMask(kB,iCell) = 1.0
+           buoyancyMask(kB,iCell) = 1.0_RKIND
          enddo
 
       enddo
@@ -1641,7 +1641,7 @@ contains
       !-----------------------------------------------------------------
       ! initialize intent(out)
       !-----------------------------------------------------------------
-      yFieldOut = 0.0
+      yFieldOut = 0.0_RKIND
 
       !-----------------------------------------------------------------
       ! loop over all columns
@@ -1746,7 +1746,7 @@ contains
       !-----------------------------------------------------------------
       ! initialize sigma assuming zero thickness layers everywhere
       !-----------------------------------------------------------------
-      sigma = 0.0
+      sigma = 0.0_RKIND
 
       !-----------------------------------------------------------------
       ! loop over all column, sigam = delta z / delta b
@@ -1808,7 +1808,7 @@ contains
       !-----------------------------------------------------------------
       ! initialize intent(out)
       !-----------------------------------------------------------------
-      MontgomeryPotential = 0.0
+      MontgomeryPotential = 0.0_RKIND
 
       !-----------------------------------------------------------------
       ! loop over all columns
@@ -1819,7 +1819,7 @@ contains
          ! compute Montgomery potential in top buoyancy layer
          ! at present, assume atmosphere surface pressure is zero (or a constant)
          !-----------------------------------------------------------------
-         pInterfacek = 0.0
+         pInterfacek = 0.0_RKIND
          k = 1
          MontgomeryPotential(k,iCell) = pInterfacek/potDens(k) + gravity*heightInterface(k,iCell)
 
@@ -1892,7 +1892,7 @@ contains
       !-----------------------------------------------------------------
       ! initialize intent(out)
       !-----------------------------------------------------------------
-      normalGradOnEdge = 0.0
+      normalGradOnEdge = 0.0_RKIND
 
       !-----------------------------------------------------------------
       ! loop over edges, compute derivative as (cell2 - cell1) / dc
@@ -1900,11 +1900,11 @@ contains
       do iEdge = 1, nEdges
          ! do not compute the normal derivative at land/sea interface
          if (boundaryEdge(1,iEdge) == 1) then
-            normalGradOnEdge(:,iEdge) = 0.0
+            normalGradOnEdge(:,iEdge) = 0.0_RKIND
          else
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
-            invLength = 1.0 / dcEdge(iEdge)
+            invLength = 1.0_RKIND / dcEdge(iEdge)
             do k = 1, nBuoyancyLayers
               normalGradOnEdge(k,iEdge) = ( field(k,cell2) - field(k,cell1) )*invLength
             enddo
@@ -1953,7 +1953,7 @@ contains
       !-----------------------------------------------------------------
       do iCell = 1, nCells
          do k = 1, nLayers
-            Abar(k,iCell) = (nSamples * Abar(k,iCell) + A(k,iCell)) / (nSamples + 1.0)
+            Abar(k,iCell) = (nSamples * Abar(k,iCell) + A(k,iCell)) / (nSamples + 1.0_RKIND)
          enddo
       enddo
 
@@ -1994,7 +1994,7 @@ contains
       !-----------------------------------------------------------------
       ! initialize intent(out)
       !-----------------------------------------------------------------
-      varTWA = 0.0
+      varTWA = 0.0_RKIND
 
       do iCell = 1, nCells
          do k = 1,nBuoyancyLayers
@@ -2047,7 +2047,7 @@ contains
       real (kind=RKIND) :: HpHp, HpMxp, HpMyp
       real (kind=RKIND) :: dummy1, dummy2, dummy3
 
-      Etensor = 0.0
+      Etensor = 0.0_RKIND
 
       do iCell = 1, nCells
          do kLayer = 1,nLayers
@@ -2066,19 +2066,19 @@ contains
 
             !EPTF_pq(x,y,z) is represented as EPFT(p,q,kLayer,iCell)
             !column 1: Eu
-            Etensor(1,1,kLayer,iCell) = uppupp + 0.5 * HpHp / sigma
+            Etensor(1,1,kLayer,iCell) = uppupp + 0.5_RKIND * HpHp / sigma
             Etensor(2,1,kLayer,iCell) = uppvpp
             Etensor(3,1,kLayer,iCell) = uppwpp + HpMxp / sigma
 
             !column 2: Ev
             Etensor(1,2,kLayer,iCell) = uppvpp
-            Etensor(2,2,kLayer,iCell) = vppvpp + 0.5 * HpHp / sigma
+            Etensor(2,2,kLayer,iCell) = vppvpp + 0.5_RKIND * HpHp / sigma
             Etensor(3,2,kLayer,iCell) = vppwpp + HpMyp / sigma
 
             !column 3: Ew
-            Etensor(1,3,kLayer,iCell) = 0.0
-            Etensor(2,3,kLayer,iCell) = 0.0
-            Etensor(3,3,kLayer,iCell) = 0.0
+            Etensor(1,3,kLayer,iCell) = 0.0_RKIND
+            Etensor(2,3,kLayer,iCell) = 0.0_RKIND
+            Etensor(3,3,kLayer,iCell) = 0.0_RKIND
 
          enddo
       enddo
@@ -2113,7 +2113,7 @@ contains
       real (kind=RKIND) :: sigma
       real (kind=RKIND) :: uppupp, vppvpp
 
-      uvCorr = 0.0 ! jas issue: assign a mask value instead
+      uvCorr = 0.0_RKIND ! jas issue: assign a mask value instead
 
       do iCell = 1, nCells
          do kLayer = 1,nLayers
@@ -2151,7 +2151,7 @@ contains
       real (kind=RKIND) :: sigma
       real (kind=RKIND) :: HpHp
 
-      epe = 0.0
+      epe = 0.0_RKIND
 
       do iCell = 1, nCells
          do kLayer = 1,nLayers
@@ -2159,7 +2159,7 @@ contains
             sigma = max(sigmaEA(kLayer,iCell), epsilonEPFT)
             HpHp   = heightSqEA(kLayer,iCell) - heightEA(kLayer,iCell)*heightEA(kLayer,iCell)
 
-            epe(kLayer,iCell) = 0.5 * HpHp / sigma
+            epe(kLayer,iCell) = 0.5_RKIND * HpHp / sigma
 
          enddo
       enddo
@@ -2194,7 +2194,7 @@ contains
       real (kind=RKIND) :: sigma
       real (kind=RKIND) :: HpMxp
 
-       formDragX = 0.0
+       formDragX = 0.0_RKIND
 
       do iCell = 1, nCells
          do kLayer = 1,nLayers
@@ -2279,12 +2279,12 @@ contains
       includeHalo = .true.
 
       ! initialize work and intent(out)
-      vectorCellOut = 0.0
+      vectorCellOut = 0.0_RKIND
 
       ! loop over all three column vectors
       do q = 1, 3
 
-         scalarWrk1 = 0.0
+         scalarWrk1 = 0.0_RKIND
 
          ! horizontal derivatives
          vectorCellWrk1 = tensorCellIn(:,q,:,:)
@@ -2302,14 +2302,14 @@ contains
              vectorCellWrk1(2,:,iCell) = yCell(iCell)
              vectorCellWrk1(3,:,iCell) = zCell(iCell)
              ! the analytical divergence:
-             divExact(iCell) = -1.0*sin(lonCell(iCell)) * &
-                (1.0 + 2.0*sin(latCell(iCell))) !+ 3.0*sin(latCell(iCell))
+             divExact(iCell) = -1.0_RKIND*sin(lonCell(iCell)) * &
+                (1.0_RKIND + 2.0_RKIND*sin(latCell(iCell))) !+ 3.0*sin(latCell(iCell))
            enddo
          endif
 
          ! zero the vertical component of vectorCellWrk1
          ! the vertical will be treated seperately below
-         vectorCellWrk1(3,:,:) = 0.0
+         vectorCellWrk1(3,:,:) = 0.0_RKIND
 
          if (onASphere) then
 
@@ -2345,7 +2345,7 @@ contains
                 ( &
                 (divExact(:)-scalarWrk1(kLayer,:))/ max(abs(divExact(:)),1.0e-15_RKIND)  &
                 )**2 * &
-                (1.0 - boundaryCell(1,:)) &
+                (1.0_RKIND - boundaryCell(1,:)) &
                 ) / nCells )
               print *, kLayer, wrk
            enddo
@@ -2371,13 +2371,13 @@ contains
 
             ! use q=3 as a test vector
             if (q.eq.3 .and. debugFlag) then
-               vertVector(:) = 0.0
+               vertVector(:) = 0.0_RKIND
             endif
 
 
             do kLayer = 1,nLayers
 
-               wrk = 0.0
+               wrk = 0.0_RKIND
 
                if(kLayer.eq.1) then
                  wrkAbove=sigmaEA(kLayer,iCell)*vertVector(kLayer)
@@ -2444,8 +2444,8 @@ contains
       integer :: i, k
 
       ErtelPVFlux(1,:,:) = divEPFT(2,:,:)
-      ErtelPVFlux(2,:,:) = -1.0 * divEPFT(1,:,:)
-      ErtelPVFlux(3,:,:) = 0.0
+      ErtelPVFlux(2,:,:) = -1.0_RKIND * divEPFT(1,:,:)
+      ErtelPVFlux(3,:,:) = 0.0_RKIND
 
       do i = 1, nCells
          do k = 1,nBuoyancyLayers
@@ -2516,7 +2516,7 @@ contains
 
       includeHalo = .true.
 
-      divVectorCell = 0.0
+      divVectorCell = 0.0_RKIND
 
       ! copy vector into work array
       vectorCellWrk1 = vectorCell
@@ -2533,8 +2533,8 @@ contains
           vectorCellWrk1(2,:,i) = yCell(i)
           vectorCellWrk1(3,:,i) = zCell(i)
           ! the analytical divergence:
-          divExact(i) = -1.0*sin(lonCell(i)) * &
-             (1.0 + 2.0*sin(latCell(i))) !+ 3.0*sin(latCell(i))
+          divExact(i) = -1.0_RKIND*sin(lonCell(i)) * &
+             (1.0_RKIND + 2.0_RKIND*sin(latCell(i))) !+ 3.0*sin(latCell(i))
         enddo
       endif
 
@@ -2571,7 +2571,7 @@ contains
              ( &
              (divExact(:)-divVectorCell(k,:))/ max(abs(divExact(:)),1.0e-15_RKIND)  &
              )**2 * &
-             (1.0 - boundaryCell(1,:)) &
+             (1.0_RKIND - boundaryCell(1,:)) &
              ) / nCells )
            print *, k, wrk
         enddo
@@ -2653,7 +2653,7 @@ contains
         velGradZonal, velGradMerid, includeHalos=.true.)
       vGradZonal = velGradZonal
 
-      ErtelPV = 0.0
+      ErtelPV = 0.0_RKIND
 
       do i = 1, nCells
         do k = 1,nLayers
@@ -2700,7 +2700,7 @@ contains
       integer :: iCell, kLayer
       real (kind=RKIND) :: wrkAbove, wrkBelow, dz
 
-      derivativeField(nLayers, 1:nCells) = 0.0
+      derivativeField(nLayers, 1:nCells) = 0.0_RKIND
 
       do iCell = 1,nCells
 
@@ -2816,13 +2816,13 @@ contains
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(meshPool, 'edgeNormalVectors', edgeNormalVectors)
 
-      divCell(:,:) = 0.0
+      divCell(:,:) = 0.0_RKIND
       do iCell = 1, nCells
-         invAreaCell = 1.0 / areaCell(iCell)
+         invAreaCell = 1.0_RKIND / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
             do k = 1, nVertLevels
-               edgeNormalDotVector = 0.0
+               edgeNormalDotVector = 0.0_RKIND
                do p=1,3
                  edgeNormalDotVector = edgeNormalDotVector + &
                     edgeNormalVectors(p,iEdge)*vectorR3Edge(p,k,iEdge)
@@ -2865,17 +2865,17 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_dimension(meshPool, 'nBuoyancyLayers', nBuoyancyLayers)
 
-      vectorEdge = 0.0
+      vectorEdge = 0.0_RKIND
 
       do iEdge = 1, nEdges
          ! Enforce vector value of zero on boundary edges, e.g. no slip for velocities
          if (boundaryEdge(1,iEdge) == 1) then
-            vectorEdge(:,:,iEdge) = 0.0
+            vectorEdge(:,:,iEdge) = 0.0_RKIND
          else
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
             do k = 1, nBuoyancyLayers
-                vectorEdge(:,k,iEdge) = 0.5*( vectorCell(:,k,cell2) + vectorCell(:,k,cell1) )
+                vectorEdge(:,k,iEdge) = 0.5_RKIND*( vectorCell(:,k,cell2) + vectorCell(:,k,cell1) )
             enddo
          end if
       enddo

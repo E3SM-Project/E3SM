@@ -1047,7 +1047,7 @@ contains
 
       offset = 9 * maxCCsPerDomain * (dmInfo % my_proc_id)
 
-      aggregated = -1.0e34
+      aggregated = -1.0e34_RKIND
       do i = 1, numCCs
          aggregated(9*(i-1) + 1 + offset) = origCCId(i)
          aggregated(9*(i-1) + 2 + offset) = sumVol(i)
@@ -1386,9 +1386,9 @@ contains
          enddo
       enddo
 
-      velocityGradient = 0.0
+      velocityGradient = 0.0_RKIND
       do iCell = 1, nCellsCompute
-         invAreaCell = 1.0 / areaCell(iCell)
+         invAreaCell = 1.0_RKIND / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
             do k = 1, maxLevelCell(iCell)

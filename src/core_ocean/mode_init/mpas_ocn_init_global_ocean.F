@@ -738,7 +738,7 @@ contains
 
          call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
          ! depthIC is the mid-depth of each layer.  Convert to bottom depth.
-         refBottomDepth(1) = 2.0 * depthIC % array(1)
+         refBottomDepth(1) = 2.0_RKIND * depthIC % array(1)
          do k=2,nDepth
             refBottomDepth(k) = refBottomDepth(k-1) + 2*(depthIC % array(k) - refBottomDepth(k-1))
          enddo
@@ -1298,9 +1298,9 @@ contains
              call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
 
              allocate(zMidZLevel(nVertLevels))
-             zMidZLevel(1) = - 0.5*(refBottomDepth(1)) ! could add SSH here
+             zMidZLevel(1) = - 0.5_RKIND*(refBottomDepth(1)) ! could add SSH here
              do k = 2, nVertLevels
-                zMidZLevel(k) = - 0.5*(refBottomDepth(k) + refBottomDepth(k-1))
+                zMidZLevel(k) = - 0.5_RKIND*(refBottomDepth(k) + refBottomDepth(k-1))
              end do
 
              call mpas_pool_begin_iteration(tracersPool)

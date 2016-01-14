@@ -265,7 +265,7 @@ contains
               else if(yCell(iCell) >= yMidGlobal - yOffset .and. &
                       yCell(iCell) < yMidGlobal - yOffset + perturbationWidth) then
                    activeTracers(idx, :, iCell) = activeTracers(idx, :, iCell) - config_baroclinic_channel_temperature_difference * ( 1.0_RKIND - ( yCell(iCell) &
-                                 - ((yMaxGlobal + yMinGlobal) * 0.5 - yOffset)) / perturbationWidth)
+                                 - ((yMaxGlobal + yMinGlobal) * 0.5_RKIND - yOffset)) / perturbationWidth)
               end if
 
               ! Determine yOffset for 3rd crest in sin wave.

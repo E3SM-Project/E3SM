@@ -259,9 +259,9 @@ contains
          do k = 2, maxLevelEdgeTop(iEdge)
             ! efficiency note: these if statements are inside iEdge and k loops.
             ! Perhaps there is a more efficient way to do this.
-            if (RiTopOfEdge(k,iEdge)>0.0) then
+            if (RiTopOfEdge(k,iEdge)>0.0_RKIND) then
                vertViscTopOfEdge(k,iEdge) = vertViscTopOfEdge(k, iEdge) + config_bkrd_vert_visc &
-                  + config_rich_mix / (1.0 + 5.0*RiTopOfEdge(k,iEdge))**2
+                  + config_rich_mix / (1.0_RKIND + 5.0_RKIND*RiTopOfEdge(k,iEdge))**2
                if (vertViscTopOfEdge(k,iEdge) > config_convective_visc) then
                   vertViscTopOfEdge(k,iEdge) = config_convective_visc
                end if
@@ -356,11 +356,11 @@ contains
          do k = 2, maxLevelCell(iCell)
             ! efficiency note: these if statements are inside iEdge and k loops.
             ! Perhaps there is a more efficient way to do this.
-            if (RiTopOfCell(k,iCell)>0.0) then
+            if (RiTopOfCell(k,iCell)>0.0_RKIND) then
                vertDiffTopOfCell(k,iCell) = vertDiffTopOfCell(k, iCell) + config_bkrd_vert_diff &
                   + (config_bkrd_vert_visc &
-                     + config_rich_mix / (1.0 + 5.0*RiTopOfCell(k,iCell))**2) &
-                  / (1.0 + 5.0*RiTopOfCell(k,iCell))
+                     + config_rich_mix / (1.0_RKIND + 5.0_RKIND*RiTopOfCell(k,iCell))**2) &
+                  / (1.0_RKIND + 5.0_RKIND*RiTopOfCell(k,iCell))
                if (vertDiffTopOfCell(k,iCell) > config_convective_diff) then
                   vertDiffTopOfCell(k,iCell) = config_convective_diff
                end if
@@ -487,12 +487,12 @@ contains
 
       ! ddensityTopOfCell(k) = $\rho^*_{k-1}-\rho_k$, where $\rho^*$ has been adiabatically displaced to level k.
       !$omp workshare
-      ddensityTopOfCell = 0.0
-      ddensityTopOfEdge = 0.0
-      du2TopOfEdge=0.0
-      du2TopOfCell = 0.0
-      RiTopOfEdge = 0.0
-      RiTopOfCell = 0.0
+      ddensityTopOfCell = 0.0_RKIND
+      ddensityTopOfEdge = 0.0_RKIND
+      du2TopOfEdge=0.0_RKIND
+      du2TopOfCell = 0.0_RKIND
+      RiTopOfEdge = 0.0_RKIND
+      RiTopOfCell = 0.0_RKIND
       !$omp end workshare
 
       !$omp do schedule(runtime) private(k)
@@ -541,7 +541,7 @@ contains
 
       ! compute RiTopOfEdge using ddensityTopOfEdge and du2TopOfEdge
       ! coef = -g/density_0/2
-      coef = -gravity / rho_sw / 2.0
+      coef = -gravity / rho_sw / 2.0_RKIND
 
       !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges

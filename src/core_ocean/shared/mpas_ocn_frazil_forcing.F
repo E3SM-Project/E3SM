@@ -535,7 +535,7 @@ contains
 !-----------------------------------------------------------------------
     real (kind=RKIND) function ocn_freezing_temperature(salinity)!{{{
       real (kind=RKIND) :: salinity !< Input: Salinity value of water for freezing temperature
-      ocn_freezing_temperature = -1.8
+      ocn_freezing_temperature = -1.8_RKIND
     end function ocn_freezing_temperature!}}}
 
 

@@ -355,15 +355,15 @@ contains
       ! assign config variables
       nVertLevels  = config_iso_vert_levels
       mainChannelDepth  = config_iso_main_channel_depth
-      northWallLat = config_iso_north_wall_lat * pii/180.0
-      southWallLat = config_iso_south_wall_lat * pii/180.0
+      northWallLat = config_iso_north_wall_lat * pii/180.0_RKIND
+      southWallLat = config_iso_south_wall_lat * pii/180.0_RKIND
       ridgeFlag = config_iso_ridge_flag
-      ridgeCenterLon = config_iso_ridge_center_lon * pii/180.0
+      ridgeCenterLon = config_iso_ridge_center_lon * pii/180.0_RKIND
       ridgeHeight  = config_iso_ridge_height
       ridgeWidth   = config_iso_ridge_width
       plateauFlag = config_iso_plateau_flag
-      plateauCenterLon = config_iso_plateau_center_lon * pii/180.0
-      plateauCenterLat = config_iso_plateau_center_lat * pii/180.0
+      plateauCenterLon = config_iso_plateau_center_lon * pii/180.0_RKIND
+      plateauCenterLat = config_iso_plateau_center_lat * pii/180.0_RKIND
       plateauHeight = config_iso_plateau_height
       plateauRadius = config_iso_plateau_radius
       plateauSlopeWidth = config_iso_plateau_slope_width
@@ -375,41 +375,41 @@ contains
       embaymentFlag = config_iso_embayment_flag
       embaymentRadius = config_iso_embayment_radius
       embaymentDepth  = config_iso_embayment_depth
-      embaymentCenterLon = config_iso_embayment_center_lon * pii/180.0
-      embaymentCenterLat = config_iso_embayment_center_lat * pii/180.0
+      embaymentCenterLon = config_iso_embayment_center_lon * pii/180.0_RKIND
+      embaymentCenterLat = config_iso_embayment_center_lat * pii/180.0_RKIND
       depressionFlag = config_iso_depression_flag
       depressionWidth = config_iso_depression_width
       depressionDepth  = config_iso_depression_depth
-      depressionCenterLon = config_iso_depression_center_lon * pii/180.0
-      depressionSouthLat = config_iso_depression_south_lat * pii/180.0
-      depressionNorthLat = config_iso_depression_north_lat * pii/180.0
+      depressionCenterLon = config_iso_depression_center_lon * pii/180.0_RKIND
+      depressionSouthLat = config_iso_depression_south_lat * pii/180.0_RKIND
+      depressionNorthLat = config_iso_depression_north_lat * pii/180.0_RKIND
       salinity0 = config_iso_salinity
       windStressMax = config_iso_wind_stress_max
       windASF = config_iso_asf_wind
       windACC = config_iso_acc_wind
-      latWindTrans = config_iso_wind_trans * pii/180.0
+      latWindTrans = config_iso_wind_trans * pii/180.0_RKIND
       QSouth = config_iso_heat_flux_south
       QMiddle = config_iso_heat_flux_middle
       QNorth = config_iso_heat_flux_north
-      transSS = config_iso_heat_flux_lat_ss * pii/180.0
-      transSM = config_iso_heat_flux_lat_sm * pii/180.0
-      transMN = config_iso_heat_flux_lat_mn * pii/180.0
+      transSS = config_iso_heat_flux_lat_ss * pii/180.0_RKIND
+      transSM = config_iso_heat_flux_lat_sm * pii/180.0_RKIND
+      transMN = config_iso_heat_flux_lat_mn * pii/180.0_RKIND
       tempPistonVel = config_iso_surface_temperature_piston_velocity
       tempT1 = config_iso_initial_temp_t1
       tempT2 = config_iso_initial_temp_t2
       temph0 = config_iso_initial_temp_h0
       temph1 = config_iso_initial_temp_h1
       tempmT = config_iso_initial_temp_mt
-      tempLatS = config_iso_initial_temp_latS * pii/180.0
-      tempLatN = config_iso_initial_temp_latN * pii/180.0
-      regionCenterLon1 = config_iso_region1_center_lon * pii/180.0
-      regionCenterLat1 = config_iso_region1_center_lat * pii/180.0
-      regionCenterLon2 = config_iso_region2_center_lon * pii/180.0
-      regionCenterLat2 = config_iso_region2_center_lat * pii/180.0
-      regionCenterLon3 = config_iso_region3_center_lon * pii/180.0
-      regionCenterLat3 = config_iso_region3_center_lat * pii/180.0
-      regionCenterLon4 = config_iso_region4_center_lon * pii/180.0
-      regionCenterLat4 = config_iso_region4_center_lat * pii/180.0
+      tempLatS = config_iso_initial_temp_latS * pii/180.0_RKIND
+      tempLatN = config_iso_initial_temp_latN * pii/180.0_RKIND
+      regionCenterLon1 = config_iso_region1_center_lon * pii/180.0_RKIND
+      regionCenterLat1 = config_iso_region1_center_lat * pii/180.0_RKIND
+      regionCenterLon2 = config_iso_region2_center_lon * pii/180.0_RKIND
+      regionCenterLat2 = config_iso_region2_center_lat * pii/180.0_RKIND
+      regionCenterLon3 = config_iso_region3_center_lon * pii/180.0_RKIND
+      regionCenterLat3 = config_iso_region3_center_lat * pii/180.0_RKIND
+      regionCenterLon4 = config_iso_region4_center_lon * pii/180.0_RKIND
+      regionCenterLat4 = config_iso_region4_center_lat * pii/180.0_RKIND
       heatRegionFlag1 = config_iso_heat_flux_region1_flag
       heatRegion1flux = config_iso_heat_flux_region1
       heatRegion1Radius = config_iso_heat_flux_region1_radius
@@ -486,13 +486,13 @@ contains
         ! calculate the width of the continental slope,
         ! based on the specified max value of the slope of the continental slope, maxContSlope
         contSlopeWidthRad = &
-           pii * 0.5 * (-shelfDepth + mainChannelDepth) / maxContSlope / sphereRadius
+           pii * 0.5_RKIND * (-shelfDepth + mainChannelDepth) / maxContSlope / sphereRadius
 
         do iCell = 1, nCells
            currentLon = lonCell(iCell)
            currentLat = latCell(iCell)
 
-           bottomDepth(iCell) = 0.0
+           bottomDepth(iCell) = 0.0_RKIND
 
            !!!!!!!!!!!!!!!!!!!!!!!!!
            ! Main channel
@@ -502,15 +502,15 @@ contains
 
            !!!!!!!!!!!!!!!!!!!!!!!!!
            ! set up fill-in features
-           featureDepth = 1.0E6
+           featureDepth = 1.0E6_RKIND
 
            ! feature 1: Add Ridge
            if (ridgeFlag) then
              distance = (currentLon - ridgeCenterLon) &
                *sphereRadius*cos(currentLat)
-             if ( abs(distance) <= 0.6 * ridgeWidth ) then
+             if ( abs(distance) <= 0.6_RKIND * ridgeWidth ) then
                 featureDepth(1) = mainChannelDepth - &
-                  ridgeHeight * exp(-2.0*(distance / ridgeWidth / 0.4)**2)
+                  ridgeHeight * exp(-2.0_RKIND*(distance / ridgeWidth / 0.4_RKIND)**2)
              endif
            endif
 
@@ -524,17 +524,17 @@ contains
                featureDepth(2) = mainChannelDepth - plateauHeight
              else if (abs(distance) > plateauRadius .and. abs(distance) < plateauSlopeWidth) then
                featureDepth(2) = mainChannelDepth - plateauHeight * &
-                    exp( -2 * ( (abs(distance)-plateauRadius) / plateauSlopeWidth / 0.4 ) **2 )
+                    exp( -2 * ( (abs(distance)-plateauRadius) / plateauSlopeWidth / 0.4_RKIND ) **2 )
              endif
            endif
 
            ! feature 3: Add continental slope, or continental shelf break
            if (contSlopeFlag) then
-             zMid = 0.5*(mainChannelDepth+shelfDepth)
-             amplitude = 0.5*(-shelfDepth+mainChannelDepth)
+             zMid = 0.5_RKIND*(mainChannelDepth+shelfDepth)
+             amplitude = 0.5_RKIND*(-shelfDepth+mainChannelDepth)
              if (currentLat <= southWallLat + contSlopeWidthRad&
                  .and. currentLat > southWallLat) then
-               featureDepth(3) = zMid - amplitude * sin( 0.5*pii + pii/contSlopeWidthRad &
+               featureDepth(3) = zMid - amplitude * sin( 0.5_RKIND*pii + pii/contSlopeWidthRad &
                  *(currentLat-southWallLat) )
              endif
            endif
@@ -545,7 +545,7 @@ contains
 
            !!!!!!!!!!!!!!!!!!!!!!!!!
            ! Set up dig-out features
-           featureDepth = 0.0
+           featureDepth = 0.0_RKIND
 
            ! feature 1: Continental shelf
            if (shelfFlag) then
@@ -568,7 +568,7 @@ contains
            ! feature 3: depression
            if (depressionFlag) then
              distance = (currentLon - depressionCenterLon) * sphereRadius*cos(currentLat)
-             if( abs(distance) <= 0.5*depressionWidth &
+             if( abs(distance) <= 0.5_RKIND*depressionWidth &
                .and. currentLat >= depressionSouthLat .and. currentLat <= depressionNorthLat ) &
                then
                featureDepth(3) = depressionDepth
@@ -581,7 +581,7 @@ contains
 
            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
            ! Set maxLevelCell to -1 for cells to be culled
-           if (bottomDepth(iCell) > 0.0) then
+           if (bottomDepth(iCell) > 0.0_RKIND) then
              maxLevelCell(iCell) = 1
            else
              maxLevelCell(iCell) = -1
@@ -666,7 +666,7 @@ contains
               zMid = refZMid(k)
               !temperature = tempT1 + tempT2*tanh(zMid/temph1) + tempmT * zMid
               temperature = (tempT1 + tempT2*tanh((zMid+temph0)/temph1) + tempmT * zMid) &
-                * (-tempLatS+currentLat)*( 1.0/(-tempLatS+tempLatN) )
+                * (-tempLatS+currentLat)*( 1.0_RKIND/(-tempLatS+tempLatN) )
               activeTracers(idx, k, iCell) = temperature
            enddo
 
@@ -815,11 +815,11 @@ contains
         activeTracersPistonVelocity(index_salinity,:) = 0.0_RKIND
 
         ! Set wind stress
-        widthWindASFRad = 1.1*contSlopeWidthRad
+        widthWindASFRad = 1.1_RKIND*contSlopeWidthRad
         do iCell = 1, nCells
            currentLon = lonCell(iCell)
            currentLat = latCell(iCell)
-           windStress = 0.0
+           windStress = 0.0_RKIND
 
             ! Set wind stress over the ACC, or main channel
             if (currentLat > latWindTrans) then

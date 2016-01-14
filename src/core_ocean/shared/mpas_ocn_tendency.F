@@ -139,7 +139,7 @@ contains
       ! height tendency: start accumulating tendency terms
       !
       !$omp workshare
-      tend_layerThickness(:,:) = 0.0
+      tend_layerThickness(:,:) = 0.0_RKIND
       surfaceThicknessFlux(:) = 0.0_RKIND
       !$omp end workshare
 
@@ -278,7 +278,7 @@ contains
       ! velocity tendency: start accumulating tendency terms
       !
       !$omp workshare
-      tend_normalVelocity(:,:) = 0.0
+      tend_normalVelocity(:,:) = 0.0_RKIND
       surfaceStress(:) = 0.0_RKIND
       surfaceStressMagnitude(:) = 0.0_RKIND
       !$omp end workshare
@@ -564,8 +564,8 @@ contains
                ! initialize tracer surface flux and tendency to zero.
                !
                !$omp workshare
-               tracerGroupTend(:,:,:) = 0.0
-               tracerGroupSurfaceFlux(:,:) = 0.0
+               tracerGroupTend(:,:,:) = 0.0_RKIND
+               tracerGroupSurfaceFlux(:,:) = 0.0_RKIND
                !$omp end workshare
 
                !
@@ -863,21 +863,21 @@ contains
       ! Low Frequency Divergence and high frequency thickness Tendency
       !
       !$omp workshare
-      tend_lowFreqDivergence = 0.0
-      tend_highFreqThickness = 0.0
+      tend_lowFreqDivergence = 0.0_RKIND
+      tend_highFreqThickness = 0.0_RKIND
       !$omp end workshare
 
       ! Convert restore time from days to seconds
-      thickness_filter_timescale_sec = config_thickness_filter_timescale*86400.0
-      highFreqThick_restore_time_sec = config_highFreqThick_restore_time*86400.0
+      thickness_filter_timescale_sec = config_thickness_filter_timescale*86400.0_RKIND
+      highFreqThick_restore_time_sec = config_highFreqThick_restore_time*86400.0_RKIND
 
       allocate(div_hu(nVertLevels))
 
       !$omp do schedule(runtime) private(div_hu_btr, invAreaCell, i, iEdge, k, totalThickness)
       do iCell = 1, nCells
-        div_hu(:) = 0.0
-        div_hu_btr = 0.0
-        invAreaCell = 1.0 / areaCell(iCell)
+        div_hu(:) = 0.0_RKIND
+        div_hu_btr = 0.0_RKIND
+        invAreaCell = 1.0_RKIND / areaCell(iCell)
 
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)

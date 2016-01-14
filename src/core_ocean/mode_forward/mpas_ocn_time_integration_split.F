@@ -379,7 +379,7 @@ module ocn_time_integration_split
          call mpas_pool_get_field(diagnosticsPool, 'divergence', divergenceField)
          call mpas_pool_get_field(diagnosticsPool, 'relativeVorticity', relativeVorticityField)
          call mpas_dmpar_exch_halo_field(normalizedRelativeVorticityEdgeField)
-         if (config_mom_del4 > 0.0) then
+         if (config_mom_del4 > 0.0_RKIND) then
            call mpas_dmpar_exch_halo_field(divergenceField)
            call mpas_dmpar_exch_halo_field(relativeVorticityField)
          end if
@@ -533,7 +533,7 @@ module ocn_time_integration_split
                   cell1 = cellsOnEdge(1,iEdge)
                   cell2 = cellsOnEdge(2,iEdge)
 
-                  uTemp = 0.0  ! could put this after with uTemp(maxleveledgetop+1:nvertlevels)=0
+                  uTemp = 0.0_RKIND  ! could put this after with uTemp(maxleveledgetop+1:nvertlevels)=0
                   do k = 1, maxLevelEdgeTop(iEdge)
 
                      ! normalBaroclinicVelocityNew = normalBaroclinicVelocityOld + dt*(-f*normalBaroclinicVelocityPerp + T(u*,w*,p*) + g*grad(SSH*) )
@@ -563,7 +563,7 @@ module ocn_time_integration_split
                      !{\bf u}'_{k,n+1} = {\bf u}'_{k,n} - \Delta t {\overline {\bf G}}
                      !{\bf u}'_{k,n+1/2} = \frac{1}{2}\left({\bf u}^{'}_{k,n} +{\bf u}'_{k,n+1}\right)
                      ! so that normalBaroclinicVelocityNew is at time n+1/2
-                     normalBaroclinicVelocityNew(k,iEdge) = 0.5*( &
+                     normalBaroclinicVelocityNew(k,iEdge) = 0.5_RKIND*( &
                        normalBaroclinicVelocityCur(k,iEdge) + uTemp(k) - dt * barotropicForcing(iEdge))
 
                   enddo
@@ -632,7 +632,7 @@ module ocn_time_integration_split
                ! For Split_Explicit unsplit, simply set normalBarotropicVelocityNew=0, normalBarotropicVelocitySubcycle=0, and uNew=normalBaroclinicVelocityNew
 
                !$omp workshare
-               normalBarotropicVelocityNew(:) = 0.0
+               normalBarotropicVelocityNew(:) = 0.0_RKIND
                normalVelocityNew(:,:)  = normalBaroclinicVelocityNew(:,:)
                !$omp end workshare
 
@@ -678,7 +678,7 @@ module ocn_time_integration_split
 
                if (config_filter_btr_mode) then
                   !$omp workshare
-                  barotropicForcing(:) = 0.0
+                  barotropicForcing(:) = 0.0_RKIND
                   !$omp end workshare
                endif
 
@@ -699,7 +699,7 @@ module ocn_time_integration_split
                   normalBarotropicVelocityNew(iEdge) = normalBarotropicVelocityCur(iEdge)
 
                   ! barotropicThicknessFlux = 0
-                  barotropicThicknessFlux(iEdge) = 0.0
+                  barotropicThicknessFlux(iEdge) = 0.0_RKIND
                end do
                !$omp end do
 
@@ -716,7 +716,7 @@ module ocn_time_integration_split
                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                ! Barotropic subcycle: VELOCITY PREDICTOR STEP
                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-               if (config_btr_gam1_velWt1 > 1.0e-12) then  ! only do this part if it is needed in next SSH solve
+               if (config_btr_gam1_velWt1 > 1.0e-12_RKIND) then  ! only do this part if it is needed in next SSH solve
                   uPerpTime = oldBtrSubcycleTime
 
                   block => domain % blocklist
@@ -749,7 +749,7 @@ module ocn_time_integration_split
                         cell2 = cellsOnEdge(2,iEdge)
 
                         ! Compute the barotropic Coriolis term, -f*uPerp
-                        CoriolisTerm = 0.0
+                        CoriolisTerm = 0.0_RKIND
                         do i = 1, nEdgesOnEdge(iEdge)
                            eoe = edgesOnEdge(i,iEdge)
                            CoriolisTerm = CoriolisTerm + weightsOnEdge(i,iEdge) &
@@ -817,16 +817,16 @@ module ocn_time_integration_split
                 call mpas_pool_get_array(diagnosticsPool, 'barotropicThicknessFlux', barotropicThicknessFlux)
 
                 !$omp workshare
-                sshTend(:) = 0.0
+                sshTend(:) = 0.0_RKIND
                 !$omp end workshare
 
                 if (config_btr_solve_SSH2) then
                    ! If config_btr_solve_SSH2=.true., then do NOT accumulate barotropicThicknessFlux in this SSH predictor
                    ! section, because it will be accumulated in the SSH corrector section.
-                   barotropicThicknessFlux_coeff = 0.0
+                   barotropicThicknessFlux_coeff = 0.0_RKIND
                 else
                    ! otherwise, DO accumulate barotropicThicknessFlux in this SSH predictor section
-                   barotropicThicknessFlux_coeff = 1.0
+                   barotropicThicknessFlux_coeff = 1.0_RKIND
                 endif
 
                 ! config_btr_gam1_velWt1 sets the forward weighting of velocity in the SSH computation
@@ -842,7 +842,7 @@ module ocn_time_integration_split
                     cell1 = cellsOnEdge(1, iEdge)
                     cell2 = cellsOnEdge(2, iEdge)
 
-                    sshEdge = 0.5 * (sshSubcycleCur(cell1) + sshSubcycleCur(cell2) )
+                    sshEdge = 0.5_RKIND * (sshSubcycleCur(cell1) + sshSubcycleCur(cell2) )
 
                    ! method 0: orig, works only without pbc:
                    !thicknessSum = sshEdge + refBottomDepthTopOfCell(maxLevelEdgeTop(iEdge)+1)
@@ -871,7 +871,7 @@ module ocn_time_integration_split
                    cell1 = cellsOnEdge(1,iEdge)
                    cell2 = cellsOnEdge(2,iEdge)
 
-                   sshEdge = 0.5 * (sshSubcycleCur(cell1) &
+                   sshEdge = 0.5_RKIND * (sshSubcycleCur(cell1) &
                              + sshSubcycleCur(cell2) )
 
                    ! method 0: orig, works only without pbc:
@@ -960,7 +960,7 @@ module ocn_time_integration_split
                      cell2 = cellsOnEdge(2,iEdge)
 
                      ! Compute the barotropic Coriolis term, -f*uPerp
-                     CoriolisTerm = 0.0
+                     CoriolisTerm = 0.0_RKIND
                      do i = 1, nEdgesOnEdge(iEdge)
                         eoe = edgesOnEdge(i,iEdge)
                         CoriolisTerm = CoriolisTerm + weightsOnEdge(i,iEdge) &
@@ -1037,7 +1037,7 @@ module ocn_time_integration_split
 
                    call mpas_pool_get_array(diagnosticsPool, 'barotropicThicknessFlux', barotropicThicknessFlux)
                    !$omp workshare
-                   sshTend(:) = 0.0
+                   sshTend(:) = 0.0_RKIND
                    !$omp end workshare
 
                    ! config_btr_gam3_velWt2 sets the forward weighting of velocity in the SSH computation
@@ -1059,7 +1059,7 @@ module ocn_time_integration_split
                        sshCell2 = (1-config_btr_gam2_SSHWt1)* sshSubcycleCur(cell2) &
                                  +   config_btr_gam2_SSHWt1 * sshSubcycleNew(cell2)
 
-                       sshEdge = 0.5 * (sshCell1 + sshCell2)
+                       sshEdge = 0.5_RKIND * (sshCell1 + sshCell2)
 
                       ! method 0: orig, works only without pbc:
                       !thicknessSum = sshEdge + refBottomDepthTopOfCell(maxLevelEdgeTop(iEdge)+1)
@@ -1090,7 +1090,7 @@ module ocn_time_integration_split
                       ! SSH is a linear combination of SSHold and SSHnew.
                       sshCell1 = (1-config_btr_gam2_SSHWt1)* sshSubcycleCur(cell1) + config_btr_gam2_SSHWt1 * sshSubcycleNew(cell1)
                       sshCell2 = (1-config_btr_gam2_SSHWt1)* sshSubcycleCur(cell2) + config_btr_gam2_SSHWt1 * sshSubcycleNew(cell2)
-                      sshEdge = 0.5 * (sshCell1 + sshCell2)
+                      sshEdge = 0.5_RKIND * (sshCell1 + sshCell2)
 
                       ! method 0: orig, works only without pbc:
                       !thicknessSum = sshEdge + refBottomDepthTopOfCell(maxLevelEdgeTop(iEdge)+1)
@@ -1475,7 +1475,7 @@ module ocn_time_integration_split
                         temp = ( tracersGroupCur(i,k,iCell) * layerThicknessCur(k,iCell) + dt * activeTracersTend(i,k,iCell)) / temp_h
 
                         ! This is Phi at n+1/2
-                        tracersGroupNew(i,k,iCell) = 0.5 * ( tracersGroupCur(i,k,iCell) + temp )
+                        tracersGroupNew(i,k,iCell) = 0.5_RKIND * ( tracersGroupCur(i,k,iCell) + temp )
                      end do
                   end do
                end do ! iCell
@@ -1489,14 +1489,14 @@ module ocn_time_integration_split
                         ! h^{hf}_{n+1} was computed in Stage 1
 
                         ! this is h^{hf}_{n+1/2}
-                        highFreqThicknessnew(k,iCell) = 0.5 * (highFreqThicknessCur(k,iCell) + highFreqThicknessNew(k,iCell))
+                        highFreqThicknessnew(k,iCell) = 0.5_RKIND * (highFreqThicknessCur(k,iCell) + highFreqThicknessNew(k,iCell))
 
                         ! this is D^{lf}_{n+1}
                         temp = lowFreqDivergenceCur(k,iCell) &
                          + dt * lowFreqDivergenceTend(k,iCell)
 
                         ! this is D^{lf}_{n+1/2}
-                        lowFreqDivergenceNew(k,iCell) = 0.5 * (lowFreqDivergenceCur(k,iCell) + temp)
+                        lowFreqDivergenceNew(k,iCell) = 0.5_RKIND * (lowFreqDivergenceCur(k,iCell) + temp)
                      end do
                   end do
                   !$omp end do
@@ -1876,7 +1876,7 @@ module ocn_time_integration_split
          if (trim(config_time_integrator) == 'unsplit_explicit') then
             call mpas_pool_get_array(statePool, 'normalBarotropicVelocity', normalBarotropicVelocity)
 
-            normalBarotropicVelocity(:) = 0.0
+            normalBarotropicVelocity(:) = 0.0_RKIND
             normalBaroclinicVelocity(:,:) = normalVelocity(:,:)
 
          elseif (trim(config_time_integrator) == 'split_explicit') then
@@ -1898,14 +1898,14 @@ module ocn_time_integration_split
                ! thicknessSum is initialized outside the loop because on land boundaries
                ! maxLevelEdgeTop=0, but I want to initialize thicknessSum with a
                ! nonzero value to avoid a NaN.
-               layerThicknessEdge1 = 0.5*( layerThickness(1,cell1) + layerThickness(1,cell2) )
+               layerThicknessEdge1 = 0.5_RKIND*( layerThickness(1,cell1) + layerThickness(1,cell2) )
                normalThicknessFluxSum = layerThicknessEdge1 * normalVelocity(1,iEdge)
                layerThicknessSum = layerThicknessEdge1
 
                do k=2, maxLevelEdgeTop(iEdge)
                   ! ocn_diagnostic_solve has not yet been called, so compute hEdge
                   ! just for this edge.
-                  layerThicknessEdge1 = 0.5*( layerThickness(k,cell1) + layerThickness(k,cell2) )
+                  layerThicknessEdge1 = 0.5_RKIND*( layerThickness(k,cell1) + layerThickness(k,cell2) )
 
                   normalThicknessFluxSum = normalThicknessFluxSum &
                      + layerThicknessEdge1 * normalVelocity(k,iEdge)
@@ -1921,8 +1921,8 @@ module ocn_time_integration_split
 
                ! normalBaroclinicVelocity=0, normalVelocity=0 on land cells
                do k = maxLevelEdgeTop(iEdge)+1, nVertLevels
-                  normalBaroclinicVelocity(k,iEdge) = 0.0
-                  normalVelocity(k,iEdge) = 0.0
+                  normalBaroclinicVelocity(k,iEdge) = 0.0_RKIND
+                  normalVelocity(k,iEdge) = 0.0_RKIND
                enddo
             enddo
 
@@ -1930,7 +1930,7 @@ module ocn_time_integration_split
                ! filter normalBarotropicVelocity out of initial condition
 
                 normalVelocity(:,:) = normalBaroclinicVelocity(:,:)
-                normalBarotropicVelocity(:) = 0.0
+                normalBarotropicVelocity(:) = 0.0_RKIND
 
             endif
 

@@ -158,12 +158,12 @@ contains
          do iEdge=1,nEdgesSolve
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
-            invdcEdge = 1.0 / dcEdge(iEdge)
+            invdcEdge = 1.0_RKIND / dcEdge(iEdge)
 
             do k=1,maxLevelEdgeTop(iEdge)
                tend(k,iEdge) = tend(k,iEdge) + edgeMask(k,iEdge) * invdcEdge * ( &
                  - density0Inv * ( pressure(k,cell2) - pressure(k,cell1) ) &
-                 - gdensity0Inv * 0.5*(density(k,cell1)+density(k,cell2)) * ( zMid(k,cell2) - zMid(k,cell1) ) )
+                 - gdensity0Inv * 0.5_RKIND*(density(k,cell1)+density(k,cell2)) * ( zMid(k,cell2) - zMid(k,cell1) ) )
             end do
          end do
          !$omp end do
@@ -177,7 +177,7 @@ contains
          do iEdge=1,nEdgesSolve
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
-            invdcEdge = 1.0 / dcEdge(iEdge)
+            invdcEdge = 1.0_RKIND / dcEdge(iEdge)
 
             do k=1,maxLevelEdgeTop(iEdge)
                tend(k,iEdge) = tend(k,iEdge) + edgeMask(k,iEdge) * invdcEdge * ( &
@@ -198,12 +198,12 @@ contains
          do iEdge=1,nEdgesSolve
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
-            invdcEdge = 1.0 / dcEdge(iEdge)
+            invdcEdge = 1.0_RKIND / dcEdge(iEdge)
 
             do k=1,maxLevelEdgeTop(iEdge)
                tend(k,iEdge) = tend(k,iEdge) + edgeMask(k,iEdge) * invdcEdge * ( &
                   - ( montgomeryPotential(k,cell2) - montgomeryPotential(k,cell1) ) &
-                  +  0.5*(pressure(k,cell1)+pressure(k,cell2)) * ( 1.0/potentialDensity(k,cell2) - 1.0/potentialDensity(k,cell1) ) )
+                  +  0.5_RKIND*(pressure(k,cell1)+pressure(k,cell2)) * ( 1.0_RKIND/potentialDensity(k,cell2) - 1.0_RKIND/potentialDensity(k,cell1) ) )
             end do
          end do
          !$omp end do
@@ -216,7 +216,7 @@ contains
          do iEdge=1,nEdgesSolve
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
-            invdcEdge = 1.0 / dcEdge(iEdge)
+            invdcEdge = 1.0_RKIND / dcEdge(iEdge)
 
             call pGrad_Jacobian_common_level(density(:,cell1),density(:,cell2),zMid(:,cell1),zMid(:,cell2), &
                maxLevelEdgeTop(iEdge), config_common_level_weight, JacobianDxDs)
@@ -226,7 +226,7 @@ contains
             k = 1
             pGrad = edgeMask(k,iEdge) * invdcEdge * ( &
                  - density0Inv * ( pressure(k,cell2) - pressure(k,cell1) ) &
-                 - gdensity0Inv * 0.5*(density(k,cell1)+density(k,cell2)) * ( zMid(k,cell2) - zMid(k,cell1) ) )
+                 - gdensity0Inv * 0.5_RKIND*(density(k,cell1)+density(k,cell2)) * ( zMid(k,cell2) - zMid(k,cell1) ) )
 
             tend(k,iEdge) = tend(k,iEdge) + pGrad
 
@@ -253,7 +253,7 @@ contains
          do iEdge=1,nEdgesSolve
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
-            invdcEdge = 1.0 / dcEdge(iEdge)
+            invdcEdge = 1.0_RKIND / dcEdge(iEdge)
             kMax = maxLevelEdgeTop(iEdge)
 
             ! copy T and S to local column arrays
@@ -271,7 +271,7 @@ contains
             k = 1
             pGrad = edgeMask(k,iEdge) * invdcEdge * ( &
                  - density0Inv * ( pressure(k,cell2) - pressure(k,cell1) ) &
-                 - gdensity0Inv * 0.5*(density(k,cell1)+density(k,cell2)) * ( zMid(k,cell2) - zMid(k,cell1) ) )
+                 - gdensity0Inv * 0.5_RKIND*(density(k,cell1)+density(k,cell2)) * ( zMid(k,cell2) - zMid(k,cell1) ) )
 
             tend(k,iEdge) = tend(k,iEdge) + pGrad
 
@@ -280,9 +280,9 @@ contains
                ! Average alpha and beta over four data points of the Jacobian cell.
                ! Note that inSituThermalExpansionCoeff and inSituSalineContractionCoeff include a 1/density factor,
                ! so must multiply by density here.
-               alpha = 0.25*(  density(k,cell1)*inSituThermalExpansionCoeff (k,cell1) + density(k-1,cell1)*inSituThermalExpansionCoeff (k-1,cell1) &
+               alpha = 0.25_RKIND*(  density(k,cell1)*inSituThermalExpansionCoeff (k,cell1) + density(k-1,cell1)*inSituThermalExpansionCoeff (k-1,cell1) &
                              + density(k,cell2)*inSituThermalExpansionCoeff (k,cell2) + density(k-1,cell2)*inSituThermalExpansionCoeff (k-1,cell2) )
-               beta  = 0.25*(  density(k,cell1)*inSituSalineContractionCoeff(k,cell1) + density(k-1,cell1)*inSituSalineContractionCoeff(k-1,cell1) &
+               beta  = 0.25_RKIND*(  density(k,cell1)*inSituSalineContractionCoeff(k,cell1) + density(k-1,cell1)*inSituSalineContractionCoeff(k-1,cell1) &
                              + density(k,cell2)*inSituSalineContractionCoeff(k,cell2) + density(k-1,cell2)*inSituSalineContractionCoeff(k-1,cell2) )
 
                ! Shchepetkin and McWilliams (2003) (7.16)
@@ -370,23 +370,23 @@ contains
       integer :: k
       real (kind=RKIND) :: Area, zStar, rhoL, rhoR, zC, zGamma
 
-      JacobianDxDs = 0.0
+      JacobianDxDs = 0.0_RKIND
 
       do k=2,kMax
 
          ! eqn 2.7 in Shchepetkin and McWilliams (2003)
          ! Note delta x was removed.  It must be an error in the paper,
          ! as it makes the units incorrect.
-         Area = 0.5*(z1(k-1) - z1(k) + z2(k-1) - z2(k) )
+         Area = 0.5_RKIND*(z1(k-1) - z1(k) + z2(k-1) - z2(k) )
 
          ! eqn 2.8
          zStar = ( z2(k-1)*z1(k-1) - z2(k)*z1(k) )/(z2(k-1)-z2(k) + z1(k-1)-z1(k))
 
          ! eqn 3.2
-         zC = 0.25*( z1(k) + z1(k-1) + z2(k) + z2(k-1) )
+         zC = 0.25_RKIND*( z1(k) + z1(k-1) + z2(k) + z2(k-1) )
 
          ! eqn 4.1
-         zGamma = (1.0 - gamma)*zStar + gamma*zC
+         zGamma = (1.0_RKIND - gamma)*zStar + gamma*zC
 
          rhoL = (rho1(k)*(z1(k-1)-zGamma) + rho1(k-1)*(zGamma-z1(k)))/(z1(k-1) - z1(k))
          rhoR = (rho2(k)*(z2(k-1)-zGamma) + rho2(k-1)*(zGamma-z2(k)))/(z2(k-1) - z2(k))
@@ -450,12 +450,12 @@ contains
 
       integer :: k
 
-      JacobianDxDs = 0.0
+      JacobianDxDs = 0.0_RKIND
 
       do k=2,kMax
 
          ! eqn 2.3 in Shchepetkin and McWilliams (2003)
-         JacobianDxDs(k) = 0.25*(&
+         JacobianDxDs(k) = 0.25_RKIND*(&
               (rho1(k) + rho1(k-1) - rho2(k) - rho2(k-1) )*(z1(k-1) - z1(k) + z2(k-1) - z2(k) ) &
             - (rho1(k-1) - rho1(k) + rho2(k-1) - rho2(k) )*(z1(k) + z1(k-1) - z2(k) - z2(k-1) ) )
       end do
@@ -515,12 +515,12 @@ contains
 
       integer :: k
 
-      JacobianDxDs = 0.0
+      JacobianDxDs = 0.0_RKIND
 
       do k=2,kMax
 
          ! eqn 2.5 in Shchepetkin and McWilliams (2003)
-         JacobianDxDs(k) = 0.5*( &
+         JacobianDxDs(k) = 0.5_RKIND*( &
               (rho1(k-1) - rho2(k))*(z2(k-1) - z1(k) ) &
             + (rho1(k) - rho2(k-1))*(z1(k-1) - z2(k)) )
       end do
@@ -581,14 +581,14 @@ contains
       integer :: k
       real (kind=RKIND) :: FLeft, FTop, FRight, FBottom
 
-      JacobianDxDs = 0.0
+      JacobianDxDs = 0.0_RKIND
 
       do k=2,kMax
 
-         FLeft   = 0.5*( rho1(k) + rho1(k-1) ) * (z1(k-1) - z1(k))
-         FTop    = 0.5*( rho1(k-1) + rho2(k-1) ) * (z2(k-1) - z1(k-1))
-         FRight  = 0.5*( rho2(k) + rho2(k-1) ) * (z2(k-1) - z2(k))
-         FBottom = 0.5*( rho1(k) + rho2(k) ) * (z2(k) - z1(k))
+         FLeft   = 0.5_RKIND*( rho1(k) + rho1(k-1) ) * (z1(k-1) - z1(k))
+         FTop    = 0.5_RKIND*( rho1(k-1) + rho2(k-1) ) * (z2(k-1) - z1(k-1))
+         FRight  = 0.5_RKIND*( rho2(k) + rho2(k-1) ) * (z2(k-1) - z2(k))
+         FBottom = 0.5_RKIND*( rho1(k) + rho2(k) ) * (z2(k) - z1(k))
 
          ! eqn 2.11 in Shchepetkin and McWilliams (2003)
          JacobianDxDs(k) = FLeft + FTop - FRight - FBottom

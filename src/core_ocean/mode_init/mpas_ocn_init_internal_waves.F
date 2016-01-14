@@ -224,7 +224,7 @@ contains
            refTemperatureTop(1) = config_internal_waves_surface_temperature
            refTemperatureTop(nVertLevels+1) = config_internal_waves_bottom_temperature
            deltaTemperature = (config_internal_waves_surface_temperature - config_internal_waves_bottom_temperature)/nVertLevels
-           refTemperature(1) = config_internal_waves_surface_temperature - deltaTemperature/2.0
+           refTemperature(1) = config_internal_waves_surface_temperature - deltaTemperature/2.0_RKIND
            refZTop(1) = 0.0_RKIND
            do k = 2, nVertLevels
               refTemperatureTop(k) = refTemperatureTop(1) - (k-1)*deltaTemperature

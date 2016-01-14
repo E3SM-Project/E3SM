@@ -139,7 +139,7 @@ contains
 
       !$omp do schedule(runtime) private(invAreaCell, i, iEdge, cell1, cell2, r_tmp, k, hhf_turb_flux, flux)
       do iCell = 1, nCells
-         invAreaCell = 1.0 / areaCell(iCell)
+         invAreaCell = 1.0_RKIND / areaCell(iCell)
          do i = 1, nEdgesOncell(iCell)
             iEdge = edgesOnCell(i, iCell)
             cell1 = cellsOnEdge(1,iEdge)

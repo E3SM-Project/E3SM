@@ -47,7 +47,7 @@ module ocn_gm
    logical, pointer :: config_use_standardGM
    logical, pointer :: config_disable_redi_k33
 
-   real (kind=RKIND), parameter :: epsGM = 1.0e-12
+   real (kind=RKIND), parameter :: epsGM = 1.0e-12_RKIND
 
 !***********************************************************************
 

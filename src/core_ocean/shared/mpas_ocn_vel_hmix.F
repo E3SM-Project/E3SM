@@ -145,7 +145,7 @@ contains
 
       if(.not.hmixOn) return
 
-      viscosity = 0.0
+      viscosity = 0.0_RKIND
       err = 0
 
       call mpas_timer_start("del2", .false., del2Timer)

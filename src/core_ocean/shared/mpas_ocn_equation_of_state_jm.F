@@ -161,65 +161,65 @@ contains
       !*** for density of fresh water (standard UNESCO)
 
       real (kind=RKIND), parameter ::              &
-         unt0 =   999.842594,           &
-         unt1 =  6.793952e-2,           &
-         unt2 = -9.095290e-3,           &
-         unt3 =  1.001685e-4,           &
-         unt4 = -1.120083e-6,           &
-         unt5 =  6.536332e-9
+         unt0 =   999.842594_RKIND,           &
+         unt1 =  6.793952e-2_RKIND,           &
+         unt2 = -9.095290e-3_RKIND,           &
+         unt3 =  1.001685e-4_RKIND,           &
+         unt4 = -1.120083e-6_RKIND,           &
+         unt5 =  6.536332e-9_RKIND
 
       !*** for dependence of surface density on salinity (UNESCO)
 
       real (kind=RKIND), parameter ::              &
-         uns1t0 =  0.824493 ,           &
-         uns1t1 = -4.0899e-3,           &
-         uns1t2 =  7.6438e-5,           &
-         uns1t3 = -8.2467e-7,           &
-         uns1t4 =  5.3875e-9,           &
-         unsqt0 = -5.72466e-3,          &
-         unsqt1 =  1.0227e-4,           &
-         unsqt2 = -1.6546e-6,           &
-         uns2t0 =  4.8314e-4
+         uns1t0 =  0.824493_RKIND ,           &
+         uns1t1 = -4.0899e-3_RKIND,           &
+         uns1t2 =  7.6438e-5_RKIND,           &
+         uns1t3 = -8.2467e-7_RKIND,           &
+         uns1t4 =  5.3875e-9_RKIND,           &
+         unsqt0 = -5.72466e-3_RKIND,          &
+         unsqt1 =  1.0227e-4_RKIND,           &
+         unsqt2 = -1.6546e-6_RKIND,           &
+         uns2t0 =  4.8314e-4_RKIND
 
       !*** from Table A1 of Jackett and McDougall
 
       real (kind=RKIND), parameter ::              &
-         bup0s0t0 =  1.965933e+4,       &
-         bup0s0t1 =  1.444304e+2,       &
-         bup0s0t2 = -1.706103   ,       &
-         bup0s0t3 =  9.648704e-3,       &
-         bup0s0t4 = -4.190253e-5
+         bup0s0t0 =  1.965933e+4_RKIND,       &
+         bup0s0t1 =  1.444304e+2_RKIND,       &
+         bup0s0t2 = -1.706103_RKIND   ,       &
+         bup0s0t3 =  9.648704e-3_RKIND,       &
+         bup0s0t4 = -4.190253e-5_RKIND
 
       real (kind=RKIND), parameter ::              &
-         bup0s1t0 =  5.284855e+1,       &
-         bup0s1t1 = -3.101089e-1,       &
-         bup0s1t2 =  6.283263e-3,       &
-         bup0s1t3 = -5.084188e-5
+         bup0s1t0 =  5.284855e+1_RKIND,       &
+         bup0s1t1 = -3.101089e-1_RKIND,       &
+         bup0s1t2 =  6.283263e-3_RKIND,       &
+         bup0s1t3 = -5.084188e-5_RKIND
 
       real (kind=RKIND), parameter ::              &
-         bup0sqt0 =  3.886640e-1,       &
-         bup0sqt1 =  9.085835e-3,       &
-         bup0sqt2 = -4.619924e-4
+         bup0sqt0 =  3.886640e-1_RKIND,       &
+         bup0sqt1 =  9.085835e-3_RKIND,       &
+         bup0sqt2 = -4.619924e-4_RKIND
 
       real (kind=RKIND), parameter ::              &
-         bup1s0t0 =  3.186519   ,       &
-         bup1s0t1 =  2.212276e-2,       &
-         bup1s0t2 = -2.984642e-4,       &
-         bup1s0t3 =  1.956415e-6
+         bup1s0t0 =  3.186519_RKIND   ,       &
+         bup1s0t1 =  2.212276e-2_RKIND,       &
+         bup1s0t2 = -2.984642e-4_RKIND,       &
+         bup1s0t3 =  1.956415e-6_RKIND
 
       real (kind=RKIND), parameter ::              &
-         bup1s1t0 =  6.704388e-3,       &
-         bup1s1t1 = -1.847318e-4,       &
-         bup1s1t2 =  2.059331e-7,       &
-         bup1sqt0 =  1.480266e-4
+         bup1s1t0 =  6.704388e-3_RKIND,       &
+         bup1s1t1 = -1.847318e-4_RKIND,       &
+         bup1s1t2 =  2.059331e-7_RKIND,       &
+         bup1sqt0 =  1.480266e-4_RKIND
 
       real (kind=RKIND), parameter ::              &
-         bup2s0t0 =  2.102898e-4,       &
-         bup2s0t1 = -1.202016e-5,       &
-         bup2s0t2 =  1.394680e-7,       &
-         bup2s1t0 = -2.040237e-6,       &
-         bup2s1t1 =  6.128773e-8,       &
-         bup2s1t2 =  6.207323e-10
+         bup2s0t0 =  2.102898e-4_RKIND,       &
+         bup2s0t1 = -1.202016e-5_RKIND,       &
+         bup2s0t2 =  1.394680e-7_RKIND,       &
+         bup2s1t0 = -2.040237e-6_RKIND,       &
+         bup2s1t1 =  6.128773e-8_RKIND,       &
+         bup2s1t2 =  6.207323e-10_RKIND
 
       integer :: k_test, k_ref
 
@@ -236,10 +236,10 @@ contains
 
 
 !  Jackett and McDougall
-      tmin = -2.0  ! valid pot. temp. range
-      tmax = 40.0
-      smin =  0.0  ! valid salinity, in psu
-      smax = 42.0
+      tmin = -2.0_RKIND  ! valid pot. temp. range
+      tmax = 40.0_RKIND
+      smin =  0.0_RKIND  ! valid salinity, in psu
+      smax = 42.0_RKIND
 
 !  This function computes pressure in bars from depth in meters
 !  using a mean density derived from depth-dependent global
@@ -289,13 +289,13 @@ contains
       ! Note I am using refBottomDepth, so pressure on top level does
       ! not include SSH contribution.  I am not sure if that matters, but
       ! POP does it the same way.
-      depth = 0.5*refBottomDepth(1)
-      pRefEOS(1) = 0.059808*(exp(-0.025*depth) - 1.0) &
-          + 0.100766*depth + 2.28405e-7*depth**2
+      depth = 0.5_RKIND*refBottomDepth(1)
+      pRefEOS(1) = 0.059808_RKIND*(exp(-0.025_RKIND*depth) - 1.0_RKIND) &
+          + 0.100766_RKIND*depth + 2.28405e-7_RKIND*depth**2
       do k = 2,nVertLevels
-         depth = 0.5*(refBottomDepth(k)+refBottomDepth(k-1))
-         pRefEOS(k) = 0.059808*(exp(-0.025*depth) - 1.0) &
-             + 0.100766*depth + 2.28405e-7*depth**2
+         depth = 0.5_RKIND*(refBottomDepth(k)+refBottomDepth(k-1))
+         pRefEOS(k) = 0.059808_RKIND*(exp(-0.025_RKIND*depth) - 1.0_RKIND) &
+             + 0.100766_RKIND*depth + 2.28405e-7_RKIND*depth**2
       enddo
 
       !  If k_displaced=0, in-situ density is returned (no displacement)
@@ -416,20 +416,20 @@ contains
          !$omp do schedule(runtime) private(k, DRDT0, DKDT, DRHODT)
          do iCell=1,nCells
             do k=1,maxLevelCell(iCell)
-               DRDT0 =  unt1 + 2.0*unt2*TQ(k,iCell) +                      &
-                  (3.0*unt3 + 4.0*unt4*TQ(k,iCell) + 5.0*unt5*T2(k,iCell))*T2(k,iCell) + &
-                  (uns1t1 + 2.0*uns1t2*TQ(k,iCell) +                 &
-                   (3.0*uns1t3 + 4.0*uns1t4*TQ(k,iCell))*T2(k,iCell) +         &
-                   (unsqt1 + 2.0*unsqt2*TQ(k,iCell))*SQR(k,iCell) )*SQ(k,iCell)
+               DRDT0 =  unt1 + 2.0_RKIND*unt2*TQ(k,iCell) +                      &
+                  (3.0_RKIND*unt3 + 4.0_RKIND*unt4*TQ(k,iCell) + 5.0_RKIND*unt5*T2(k,iCell))*T2(k,iCell) + &
+                  (uns1t1 + 2.0_RKIND*uns1t2*TQ(k,iCell) +                 &
+                   (3.0_RKIND*uns1t3 + 4.0_RKIND*uns1t4*TQ(k,iCell))*T2(k,iCell) +         &
+                   (unsqt1 + 2.0_RKIND*unsqt2*TQ(k,iCell))*SQR(k,iCell) )*SQ(k,iCell)
 
-               DKDT  = bup0s0t1 + 2.0*bup0s0t2*TQ(k,iCell) +                       &
-                 (3.0*bup0s0t3 + 4.0*bup0s0t4*TQ(k,iCell))*T2(k,iCell) +               &
-                  p(k) *(bup1s0t1 + 2.0*bup1s0t2*TQ(k,iCell) + 3.0*bup1s0t3*T2(k,iCell)) + &
-                  p2(k)*(bup2s0t1 + 2.0*bup2s0t2*TQ(k,iCell)) +                  &
-                  SQ(k,iCell)*(bup0s1t1 + 2.0*bup0s1t2*TQ(k,iCell) + 3.0*bup0s1t3*T2(k,iCell) +  &
-                  p(k)  *(bup1s1t1 + 2.0*bup1s1t2*TQ(k,iCell)) +             &
-                  p2(k) *(bup2s1t1 + 2.0*bup2s1t2*TQ(k,iCell)) +             &
-                  SQR(k,iCell)*(bup0sqt1 + 2.0*bup0sqt2*TQ(k,iCell)))
+               DKDT  = bup0s0t1 + 2.0_RKIND*bup0s0t2*TQ(k,iCell) +                       &
+                 (3.0_RKIND*bup0s0t3 + 4.0_RKIND*bup0s0t4*TQ(k,iCell))*T2(k,iCell) +               &
+                  p(k) *(bup1s0t1 + 2.0_RKIND*bup1s0t2*TQ(k,iCell) + 3.0_RKIND*bup1s0t3*T2(k,iCell)) + &
+                  p2(k)*(bup2s0t1 + 2.0_RKIND*bup2s0t2*TQ(k,iCell)) +                  &
+                  SQ(k,iCell)*(bup0s1t1 + 2.0_RKIND*bup0s1t2*TQ(k,iCell) + 3.0_RKIND*bup0s1t3*T2(k,iCell) +  &
+                  p(k)  *(bup1s1t1 + 2.0_RKIND*bup1s1t2*TQ(k,iCell)) +             &
+                  p2(k) *(bup2s1t1 + 2.0_RKIND*bup2s1t2*TQ(k,iCell)) +             &
+                  SQR(k,iCell)*(bup0sqt1 + 2.0_RKIND*bup0sqt2*TQ(k,iCell)))
 
                DRHODT = (DENOMK(k,iCell)*(DRDT0*BULK_MOD(k,iCell) -                    &
                   p(k)*(unt0+RHO_S(k,iCell))*DKDT*DENOMK(k,iCell)))
@@ -446,8 +446,8 @@ contains
          !$omp do schedule(runtime) private(k, DRDS0, DKDS, DRHODS)
          do iCell=1,nCells
             do k=1,maxLevelCell(iCell)
-               DRDS0  = 2.0*uns2t0*SQ(k,iCell) + WORK1(k,iCell) + 1.5*WORK2(k,iCell)
-               DKDS = WORK3(k,iCell) + 1.5*WORK4(k,iCell)
+               DRDS0  = 2.0_RKIND*uns2t0*SQ(k,iCell) + WORK1(k,iCell) + 1.5_RKIND*WORK2(k,iCell)
+               DKDS = WORK3(k,iCell) + 1.5_RKIND*WORK4(k,iCell)
 
                DRHODS = DENOMK(k,iCell)*(DRDS0*BULK_MOD(k,iCell) -                    &
                    p(k)*(unt0+RHO_S(k,iCell))*DKDS*DENOMK(k,iCell))

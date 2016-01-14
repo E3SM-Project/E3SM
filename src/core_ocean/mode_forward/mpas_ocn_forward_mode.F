@@ -284,7 +284,7 @@ module ocn_forward_mode
       endif
 
       ! find the maximum value of the meshDensity
-      if (config_maxMeshDensity < 0.0) then
+      if (config_maxMeshDensity < 0.0_RKIND) then
         maxDensity=-1
         block => domain % blocklist
         do while (associated(block))

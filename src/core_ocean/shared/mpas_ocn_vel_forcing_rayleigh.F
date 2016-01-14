@@ -173,7 +173,7 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_friction', config_Rayleigh_friction)
       call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_damping_coeff', config_Rayleigh_damping_coeff)
 
-      rayleighDampingCoef = 0.0
+      rayleighDampingCoef = 0.0_RKIND
 
       if (config_Rayleigh_friction) then
           rayleighFrictionOn = .true.

@@ -184,8 +184,8 @@ contains
         cell1 = cellsOnEdge(1, iEdge)
         cell2 = cellsOnEdge(2, iEdge)
 
-        zonalAverage = 0.5 * (windStressZonal(cell1) + windStressZonal(cell2))
-        meridionalAverage = 0.5 * (windStressMeridional(cell1) + windStressMeridional(cell2))
+        zonalAverage = 0.5_RKIND * (windStressZonal(cell1) + windStressZonal(cell2))
+        meridionalAverage = 0.5_RKIND * (windStressMeridional(cell1) + windStressMeridional(cell2))
 
         surfaceStress(iEdge) = surfaceStress(iEdge) + cos(angleEdge(iEdge)) * zonalAverage + sin(angleEdge(iEdge)) * meridionalAverage
       end do

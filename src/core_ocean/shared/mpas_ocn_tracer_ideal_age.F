@@ -113,8 +113,8 @@ contains
       integer :: iCell, iLevel, iTracer
 
       !move to ocean constants
-      real (kind=RKIND), parameter :: c0 = 0.0
-      real (kind=RKIND), parameter :: c1 = 1.0
+      real (kind=RKIND), parameter :: c0 = 0.0_RKIND
+      real (kind=RKIND), parameter :: c1 = 1.0_RKIND
 
       err = 0
 
