@@ -584,7 +584,7 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 			nmloptindef = ezxml_attr(nmlopt_xml, "in_defaults");
 
 			if(strncmp(nmlopttype, "real", 1024) == 0){
-				fortprintf(fd, "      real (kind=RKIND) :: %s = %lf\n", nmloptname, (float)atof(nmloptval));
+				fortprintf(fd, "      real (kind=RKIND) :: %s = %lf\n", nmloptname, (double)atof(nmloptval));
 			} else if(strncmp(nmlopttype, "integer", 1024) == 0){
 				fortprintf(fd, "      integer :: %s = %d\n", nmloptname, atoi(nmloptval));
 			} else if(strncmp(nmlopttype, "logical", 1024) == 0){
