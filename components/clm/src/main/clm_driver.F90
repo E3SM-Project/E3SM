@@ -399,7 +399,7 @@ contains
     ! ============================================================================
 
     if (use_cn) then
-       call t_startf('pdnep_interp')
+       call t_startf('pdep_interp')
        ! PET: switching CN timestep
        call pdep_interp(bounds_proc, atm2lnd_vars)
        call t_stopf('pdep_interp')
