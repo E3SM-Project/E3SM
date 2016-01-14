@@ -52,9 +52,6 @@ module li_diagnostic_vars
    !
    !--------------------------------------------------------------------
 
-   !WHL - debug
-   logical :: firstCall = .true.
-
 !***********************************************************************
 
 contains
@@ -387,10 +384,6 @@ contains
       use mpas_geometry_utils, only: mpas_cells_to_points_using_baryweights
       use mpas_vector_operations, only: mpas_tangential_vector_1d
    
-      !WHL - debug
-      !TODO - Remove these use statements after old advection scheme is removed
-      use li_advection, only: li_vertical_remap, tracer_setup, tracer_finish
-
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -453,18 +446,6 @@ contains
       integer :: blockDirichletMaskChanged, procDirichletMaskChanged
 
       integer :: err_tmp
-
-      !WHL - debug
-      integer, dimension(:), pointer :: indexToCellID
-      integer, pointer :: nVertLevels
-      integer, pointer :: config_stats_cell_ID
-      logical, pointer :: config_print_thickness_advection_info
-      integer :: k
-      type (mpas_pool_type), pointer :: scratchPool
-      real (kind=RKIND), dimension(:,:,:), pointer :: &
-           advectedTracers       ! values of advected tracers
-      type (field3DReal), pointer :: &
-           advectedTracersField  ! scratch field containing values of advected tracers
 
       err = 0
       err_tmp = 0
@@ -536,12 +517,6 @@ contains
           call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
 
           call mpas_pool_get_array(thermalPool, 'temperature', temperature)
-
-          !WHL - debug
-          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-          call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
-          call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
-          call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
 
           ! Lower surface is based on floatation for floating ice.  For grounded ice (and non-ice areas) it is the bed.
           where ( li_mask_is_floating_ice(cellMask) )
@@ -637,67 +612,6 @@ contains
 
           end if ! SIA variables
 
-          !TODO - Simplify the following when the old advection scheme is removed; no need to call vertical remapping here
-          ! Optionally, do vertical remapping of layerThickness and tracers
-          ! Note: For the new advection scheme, vertical remapping is done immediately after the horizontal advection 
-          !       and mass balance calculations. It does not need to be done here.
-
-          if (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'fo') then
-
-             ! do nothing, because vertical remapping has already been done in the li_advection module
-
-          else  ! no tracer advection; check whether the new vertical_remap suborutine has been called yet
-
-             ! create a temporary tracer field to pass to li_vertical_remap
-             call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-             call mpas_pool_get_field(scratchPool, 'workTracerLevelCell', advectedTracersField)
-             call mpas_allocate_scratch_field(advectedTracersField, .true.)
-             advectedTracers => advectedTracersField % array
-
-             if (firstCall) then
-
-                !WHL - debug
-                ! With the old advection scheme, li_vertical_remap is called before the first diagnostic solve.
-                ! This call is not strictly necessary, but skipping it changes the answers.
-                ! So if this is the first call, call li_vertical_remap here instead of waiting until advection is called.
-                ! TODO - This call can be removed once the BFB requirement is relaxed.
-
-                ! Note: I am calling this subroutine tracer_setup instead of li_tracer_setup because it will be private to li_advection after cleanup
-                call tracer_setup(&
-                     meshPool,          &
-                     geometryPool,      &
-                     thermalPool,       &
-                     advectedTracers)
-
-                call li_vertical_remap(thickness, cellMask, meshPool, layerThickness, advectedTracers, err_tmp)
-
-                ! Note: I am calling this subroutine tracer_finish instead of li_tracer_finish because it will be private to li_advection after cleanup
-                call tracer_finish(&
-                     meshPool,          &
-                     geometryPool,      &
-                     thermalPool,       &
-                     advectedTracers)
-
-                firstCall = .false.
-
-             endif  ! firstCall
-
-          endif
-
-          !WHL - debug
-          if (config_print_thickness_advection_info) then
-             do iCell = 1, nCells
-                if (indexToCellID(iCell) == config_stats_cell_ID) then
-                   write(stderrUnit,*) ' '
-                   write(stderrUnit,*) 'Diag solve before velocity (after vertical_remap), iCell (local, global) =', iCell, indexToCellID(iCell)
-                   write(stderrUnit,*) 'layerThickness:'
-                   do k = 1, nVertLevels
-                      write(stderrunit,*) k, layerThickness(k,iCell)
-                   enddo
-                endif
-             enddo
-          endif
-          
           err = ior(err, err_tmp)
 
           ! This information is only needed by external dycores.
@@ -843,8 +757,8 @@ contains
       real (kind=RKIND) :: VelSign
 
       !WHL - debug
-      integer, pointer :: nCells, config_stats_cell_ID
-      integer, dimension(:), pointer :: indexToCellID, indexToEdgeID
+      integer, pointer :: nCells
+      integer, dimension(:), pointer :: indexToCellID
       logical, pointer :: config_print_thickness_advection_info
       integer :: iCell
 
@@ -863,9 +777,6 @@ contains
       !WHL - debug
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
-      call mpas_pool_get_array(meshPool, 'indexToEdgeID', indexToEdgeID)
-      call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
-      call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
 
       ! Calculate h_edge.  This is used by both thickness and tracer advection on the following Forward Euler time step.  
@@ -899,17 +810,18 @@ contains
       endif
 
       ! Note: the outmost layerThicknessEdge may be wrong if its upwind cell is off this block - halo update should be done if this variable will be used.
+      !       This halo update is done near the end of subroutine li_calculate_diagnostic_vars.
 
-      !WHL - debug
-      if (config_print_thickness_advection_info) then
-         write(stderrUnit,*) ' '
-         write(stderrUnit,*) 'End of timestep: iCell (global), new thickness:'
-         do iCell = 1, nCells
-            if (layerThickness(1,iCell) > 0.0_RKIND) then
-               write(stderrUnit,*) indexToCellID(iCell), sum(layerThickness(:,iCell))
-            endif
-         enddo
-      endif
+      !WHL - debug - Comment out for now, but might be useful for future debugging
+!      if (config_print_thickness_advection_info) then
+!         write(stderrUnit,*) ' '
+!         write(stderrUnit,*) 'End of timestep: iCell (global), new thickness:'
+!         do iCell = 1, nCells
+!            if (layerThickness(1,iCell) > 0.0_RKIND) then
+!               write(stderrUnit,*) indexToCellID(iCell), sum(layerThickness(:,iCell))
+!            endif
+!         enddo
+!      endif
 
    end subroutine diagnostic_solve_after_velocity
 

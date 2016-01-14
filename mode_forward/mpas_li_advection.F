@@ -23,7 +23,6 @@ module li_advection
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_constants
-   use mpas_dmpar
    use li_setup
    use li_mask
 
@@ -43,9 +42,6 @@ module li_advection
    !--------------------------------------------------------------------
    public :: li_advection_thickness_tracers
 
-   !TODO - can make the following private once the old advection scheme is removed
-   public :: li_vertical_remap, tracer_setup, tracer_finish  
- 
    !--------------------------------------------------------------------
    !
    ! Private module variables
@@ -101,7 +97,7 @@ module li_advection
 
       logical, intent(in), optional :: &
            advectTracersIn        !< Input: if true, then advect tracers as well as thickness
-                                  !TODO: Default is currently false; change to true
+                                  !TODO: Default is false; change to true?
 
       !-----------------------------------------------------------------
       !
@@ -456,7 +452,7 @@ module li_advection
          ! Note: If tracers are not being advected, then this subroutine simply restores the
          !       layer thickness to sigma coordinate values.
 
-         call li_vertical_remap(thickness, cellMask, meshPool, layerThicknessNew, advectedTracersNew, err_tmp)
+         call vertical_remap(thickness, cellMask, meshPool, layerThicknessNew, advectedTracersNew, err_tmp)
          err = ior(err, err_tmp)
 
          if (advectTracers) then
@@ -1078,7 +1074,7 @@ module li_advection
 
 !-----------------------------------------------------------------------
 !
-!  subroutine li_vertical_remap
+!  subroutine vertical_remap
 !
 !> \brief   Vertical remapping of thickness and tracers
 !> \author  Matt Hoffman
@@ -1091,11 +1087,9 @@ module li_advection
 !>  I have altered the array structures to work with MPAS and refactored it.
 !>  It now does all calculations column-wise, so it can be vectorized using
 !>  OpenMP over either blocks or cells.
-!>  I have dealt with 0 thickness in non-ice cells using eps and the cellMask,
-!>  rather than using if/where-statements.
 !
 !-----------------------------------------------------------------------
-   subroutine li_vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err)
+   subroutine vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err)
 
       !-----------------------------------------------------------------
       !
@@ -1150,18 +1144,13 @@ module li_advection
       integer :: nTracers, iCell, k, k1, k2, nt
 
       ! stuff for making calculations
-      real(kind=RKIND) :: thisThk, zhi, zlo, hOverlap
+      real(kind=RKIND) :: zhi, zlo, hOverlap
 
       ! variables for optional conservation check
       ! set to 'true' for now, since it is inexpensive and might catch problems
       logical, parameter :: checkConservation = .true.
       real (kind=RKIND) :: initEnergySum, finalEnergySum, difference
       real (kind=RKIND), parameter :: eps11 = 1.e-11_RKIND
-      real(kind=RKIND), parameter :: eps30 = 1.0d-30  ! Make a tiny value so we don't corrupt any cells with ice 
-
-      !WHL - debug
-      integer, dimension(:), pointer :: indexToCellID
-      integer, pointer :: config_stats_cell_ID
 
       err = 0
 
@@ -1172,15 +1161,8 @@ module li_advection
       call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
       call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
 
-      !WHL - debug
-      call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
-      call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
-
       allocate(layerInterfaceSigma_Input(nVertLevels+1))
       allocate(hTsum(nTracers, nVertLevels))
-
-      !TODO  We could avoid the eps30 by inserting 'if (thickness(iCell) > 0.0_RKIND'
-      !      Not sure how important it is to avoid the 'if'
 
       ! loop over cells
       do iCell = 1, nCells
@@ -1189,77 +1171,55 @@ module li_advection
             initEnergySum = sum(layerThickness(:,iCell)*tracers(1,:,iCell))
          endif
 
-         thisThk = thickness(iCell)
+         if (thickness(iCell) > 0.0_RKIND) then
 
-         ! *** Calculate vertical sigma coordinates of each layer interface for the input non-sigma state
-         !     (we already have the desired new sigma-based state as layerInterfaceSigma)
+            ! *** Calculate vertical sigma coordinates of each layer interface for the input non-sigma state
+            !     (we already have the desired new sigma-based state as layerInterfaceSigma)
 
-         layerInterfaceSigma_Input(1) = 0.0_RKIND
-         do k = 2, nVertLevels
-            layerInterfaceSigma_Input(k) = layerInterfaceSigma_Input(k-1) + layerThickness(k-1, iCell) / (thisThk + eps30)
-         end do
-         layerInterfaceSigma_Input(nVertLevels+1) = 1.0_RKIND
+            layerInterfaceSigma_Input(1) = 0.0_RKIND
+            do k = 2, nVertLevels
+               layerInterfaceSigma_Input(k) = layerInterfaceSigma_Input(k-1) + layerThickness(k-1, iCell) / thickness(iCell)
+            end do
+            layerInterfaceSigma_Input(nVertLevels+1) = 1.0_RKIND
          
-         !WHL - debug
-         if (indexToCellID(iCell) == config_stats_cell_ID) then
-!            write(stderrUnit,*) ' '
-!            write(stderrUnit,*) 'thisThk:', thisThk
-!            write(stderrUnit,*) 'Start layer 1:', layerThickness(1,iCell)
-         endif
-
-         ! *** Compute new layer thicknesses (layerInterfaceSigma coordinates)
+            ! *** Compute new layer thicknesses (layerInterfaceSigma coordinates)
          
-         do k = 1, nVertLevels
-            layerThickness(k,iCell) = layerThicknessFractions(k) * (thisThk + eps30)
-         end do
+            do k = 1, nVertLevels
+               layerThickness(k,iCell) = layerThicknessFractions(k) * thickness(iCell)
+            end do
 
-         !WHL - debug
-         if (indexToCellID(iCell) == config_stats_cell_ID) then
-!            write(stderrUnit,*) 'New layer 1:', layerThickness(1,iCell)
-         endif
-
-         ! Check for conservation of mass.  Put any residual in the top layer.
-         layerThickness(1,iCell) = layerThickness(1,iCell) + (thisThk - sum(layerThickness(:,iCell)) )
-
-         !WHL - debug
-         if (indexToCellID(iCell) == config_stats_cell_ID) then
-!            write(stderrUnit,*) 'Final layer 1:', layerThickness(1,iCell)
-         endif
-
-         ! TODO This conservation check may make layerThicknesses inconsistent with the sigma levels (which are used below in tracer remapping).
-
-         !-----------------------------------------------------------------
-         ! Compute sum of h*T for each new layer (k2) by integrating
-         ! over the regions of overlap with old layers (k1).
-         ! Note: It might be worth trying a more efficient
-         !       search algorithm if the number of layers is large.
-         !       This algorithm scales as nlyr^2.
-         !-----------------------------------------------------------------
+            !-----------------------------------------------------------------
+            ! Compute sum of h*T for each new layer (k2) by integrating
+            ! over the regions of overlap with old layers (k1).
+            ! Note: It might be worth trying a more efficient
+            !       search algorithm if the number of layers is large.
+            !       This algorithm scales as nlyr^2.
+            !-----------------------------------------------------------------
          
-         do k2 = 1, nVertLevels
-            hTsum(:,k2) = 0.0_RKIND
-            do k1 = 1, nVertLevels
+            do k2 = 1, nVertLevels
+               hTsum(:,k2) = 0.0_RKIND
+               do k1 = 1, nVertLevels
+                  do nt = 1, nTracers
+                     zhi = min (layerInterfaceSigma_Input(k1+1), layerInterfaceSigma(k2+1))
+                     zlo = max (layerInterfaceSigma_Input(k1), layerInterfaceSigma(k2))
+                     hOverlap = max (zhi-zlo, 0.0_RKIND) * thickness(iCell)
+                     hTsum(nt,k2) = htsum(nt,k2) + tracers(nt,k1,iCell) * hOverlap
+                  enddo         ! nt
+               enddo            ! k1
+            enddo               ! k2
+            
+            !-----------------------------------------------------------------
+            ! Compute tracer values in new layers
+            !-----------------------------------------------------------------
+            
+            do k = 1, nVertLevels
                do nt = 1, nTracers
-                  zhi = min (layerInterfaceSigma_Input(k1+1), layerInterfaceSigma(k2+1))
-                  zlo = max (layerInterfaceSigma_Input(k1), layerInterfaceSigma(k2))
-                  hOverlap = max (zhi-zlo, 0.0_RKIND) * thisThk
-                  hTsum(nt,k2) = htsum(nt,k2) + tracers(nt,k1,iCell) * hOverlap
+                  tracers(nt,k,iCell) = hTsum(nt,k) / (layerThickness(k, iCell))
                enddo         ! nt
-            enddo            ! k1
-         enddo               ! k2
+            enddo            ! k
          
-         !-----------------------------------------------------------------
-         ! Compute tracer values in new layers
-         !-----------------------------------------------------------------
-         
-         do k = 1, nVertLevels
-            do nt = 1, nTracers
-               tracers(nt,k,iCell) = hTsum(nt,k) / (layerThickness(k, iCell) + eps30)
-               layerThickness(k,iCell) = layerThickness(k,iCell) * real(li_mask_is_ice_int(cellMask(iCell)), RKIND)
-               ! Note: the last term is used to multiply by 0 where there is no ice in order to clear out garbage introduced by eps30 
-            enddo         ! nt
-         enddo            ! k
-         
+         endif    ! thickness > 0.0
+
          if (checkConservation) then   ! compute new sum of layerThickness*tracer1 in the column
             finalEnergySum = sum(layerThickness(:,iCell)*tracers(1,:,iCell))
             difference = abs(finalEnergySum - initEnergySum)
@@ -1267,6 +1227,7 @@ module li_advection
                if (difference/initEnergySum > eps11) then
                   write(stderrUnit,*) 'WARNING: vertical_remap, mass*tracer conservation error, iCell =', iCell
                   write(stderrUnit,*) 'init energy, final energy, difference:', initEnergySum, finalEnergySum, finalEnergySum - initEnergySum
+                  stop
                endif
             endif
          endif
@@ -1277,7 +1238,7 @@ module li_advection
       deallocate(layerInterfaceSigma_Input)
       deallocate(hTsum)
 
-   end subroutine li_vertical_remap
+    end subroutine vertical_remap
 
 !***********************************************************************
 
