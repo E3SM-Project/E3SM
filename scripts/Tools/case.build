@@ -103,13 +103,9 @@ sub main {
 	$logger->logdie("$TESTCASE build must be invoked via case.testbuild script");
     }
 
-
     $sysmod = "./Tools/check_lockedfiles -cimeroot $CIMEROOT";
     system($sysmod) == 0 or $logger->logdie ("$sysmod failed: $?");
 
-#pw++
-    my $CCSMROOT        = `./xmlquery  CCSMROOT 	-value `;
-#pw--
     $BUILD_THREADED	= `./xmlquery  BUILD_THREADED	-value `;
     $CASEBUILD	        = `./xmlquery  CASEBUILD	-value `;
     $CASETOOLS          = `./xmlquery  CASETOOLS	-value `;
@@ -191,11 +187,9 @@ sub main {
 
     $ENV{OCN_SUBMODEL}        = `./xmlquery  OCN_SUBMODEL	 -value `;
     $ENV{PROFILE_PAPI_ENABLE} = `./xmlquery  PROFILE_PAPI_ENABLE -value `;
-#pw    $ENV{LID}  =  "`date +%y%m%d-%H%M%S`";
-#pw++
+
     my $lid  =  "`date +%y%m%d-%H%M%S`";
     $ENV{LID}  =  $lid;
-#pw--
 
     # Set the overall USE_PETSC variable to TRUE if any of the
     # XXX_USE_PETSC variables are TRUE.
@@ -225,75 +219,62 @@ sub main {
     # ANY of those are true.
     $CISM_USE_TRILINOS = `./xmlquery CISM_USE_TRILINOS -value`;
     my $use_trilinos = 'FALSE';
-# JGF NEED HELP
-# <<<<<<< HEAD:scripts/Tools/case.build
-#     if ($CISM_USE_TRILINOS) {
-# 	if ($CISM_USE_TRILINOS eq 'TRUE') {$use_trilinos = 'TRUE'};
-# 	my $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_TRILINOS -val ${use_trilinos}";
-# 	$ENV{USE_TRILINOS} = ${use_trilinos};
-# 	$ENV{CISM_USE_TRILINOS} = $CISM_USE_TRILINOS;
-#     }
 
-
-#     my $moduleloader = Module::ModuleLoader->new(machine   => $MACH, 
-# 						 compiler  => $COMPILER, 
-# 						 mpilib	   => $MPILIB, 
-# 						 debug	   => $DEBUG, 
-# 						 caseroot  => $CASEROOT, 
-# 						 cimeroot  => $CIMEROOT, 
-# 						 model	   => $MODEL);
-#     $moduleloader->moduleInit();
-#     $moduleloader->findModulesForCase();
-#     $moduleloader->loadModules();
-
-#     $logger->info("    .... checking namelists (calling ./preview_namelists) ");
-#     $sysmod = "./preview_namelists -loglevel $opts{loglevel}";
-#     system($sysmod) == 0 or $logger->logdie ("$sysmod failed: $?");
-# =======
-#     if ($CISM_USE_TRILINOS eq 'TRUE') {$use_trilinos = 'TRUE'};
-#     $ENV{USE_TRILINOS} = ${use_trilinos};
-#     $ENV{CISM_USE_TRILINOS} = $CISM_USE_TRILINOS;
-
-#     # Set the overall USE_ALBANY variable to TRUE if any of the
-#     # XXX_USE_ALBANY variables are TRUE.
-#     # For now, there is just the one MPASLI_USE_ALBANY variable, but in
-#     # the future there may be others -- so USE_ALBANY will be true if
-#     # ANY of those are true.
-
-#     my $use_albany = 'FALSE';
-#     if ($MPASLI_USE_ALBANY eq 'TRUE') {$use_albany = 'TRUE'};
-#     $ENV{USE_ALBANY} = ${use_albany};
-#     $ENV{MPASLI_USE_ALBANY} = $MPASLI_USE_ALBANY;
-
-#     print "    .... checking namelists (calling ./preview_namelists) \n";
-#     $sysmod = "./preview_namelists > /dev/null";
-#     system($sysmod) == 0 or die "$sysmod failed: $?\n";
-# >>>>>>> acme_master:scripts/Tools/cesm_build.pl
+    if ($CISM_USE_TRILINOS) {
+	if ($CISM_USE_TRILINOS eq 'TRUE') {$use_trilinos = 'TRUE'};
+	my $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_TRILINOS -val ${use_trilinos}";
+	$ENV{USE_TRILINOS} = ${use_trilinos};
+	$ENV{CISM_USE_TRILINOS} = $CISM_USE_TRILINOS;
+    }
     
-#pw++
+    # Set the overall USE_ALBANY variable to TRUE if any of the
+    # XXX_USE_ALBANY variables are TRUE.
+    # For now, there is just the one MPASLI_USE_ALBANY variable, but in
+    # the future there may be others -- so USE_ALBANY will be true if
+    # ANY of those are true.
+
+    my $use_albany = 'FALSE';
+    if ($MPASLI_USE_ALBANY eq 'TRUE') {$use_albany = 'TRUE'};
+    $ENV{USE_ALBANY} = ${use_albany};
+    $ENV{MPASLI_USE_ALBANY} = $MPASLI_USE_ALBANY;
+
+    my $moduleloader = Module::ModuleLoader->new(machine   => $MACH, 
+ 						 compiler  => $COMPILER, 
+ 						 mpilib	   => $MPILIB, 
+ 						 debug	   => $DEBUG, 
+ 						 caseroot  => $CASEROOT, 
+ 						 cimeroot  => $CIMEROOT, 
+ 						 model	   => $MODEL);
+    $moduleloader->moduleInit();
+    $moduleloader->findModulesForCase();
+    $moduleloader->loadModules();
+    
+    $logger->info("    .... checking namelists (calling ./preview_namelists) ");
+    $sysmod = "./preview_namelists -loglevel $opts{loglevel}";
+    system($sysmod) == 0 or $logger->logdie ("$sysmod failed: $?");
+
     my $sdate = strftime("%y%m%d-%H%M%S", localtime);
     open my $CS, ">>", "./CaseStatus";
     print $CS "check input started $sdate\n";
-#pw--
+
     checkInputData();
     buildChecks();
-#pw++
+
     $sdate = strftime("%y%m%d-%H%M%S", localtime);
     print $CS "build started $sdate\n";
-#pw--
+
     buildLibraries();
     buildModel();
-#pw++
+
     $sdate = strftime("%y%m%d-%H%M%S", localtime);
     print $CS "build complete $sdate\n";
     close $CS;
-#pw--
-    
-#pw++
-    qx($CASEROOT/Tools/cesm_postbuild -cesmid $lid -cesmroot $CCSMROOT -caseroot $CASEROOT -exedir $EXEROOT)
-#pw--
-}
 
+#MV NEED HELP
+#  my $CCSMROOT = `./xmlquery  CCSMROOT      -value `;
+#  qx($CASEROOT/Tools/cesm_postbuild -cesmid $lid -cesmroot $CCSMROOT -caseroot $CASEROOT -exedir $EXEROOT)
+#MV
+}
 
 #-----------------------------------------------------------------------------------------------
 sub checkInputData()
@@ -447,7 +428,7 @@ sub buildChecks()
 
     my $smpstr = "a$atmstr"."l$lndstr"."r$rofstr"."i$icestr"."o$ocnstr". "g$glcstr"."w$wavstr"."c$cplstr";
 
-    $sysmod = "./xmlchange -noecho -file env_build.xml -id SMP_VALUE -val $smpstr";
+    my $sysmod = "./xmlchange -noecho -file env_build.xml -id SMP_VALUE -val $smpstr";
     system($sysmod) == 0 or $logger->logdie( "$sysmod failed: $?");
 
     $ENV{'SMP_VALUE'} = $smpstr;
@@ -466,8 +447,10 @@ sub buildChecks()
     $ENV{'use_petsc'} = 'FALSE';
     if ( (defined $CLM_USE_PETSC) && ($CLM_USE_PETSC eq 'TRUE')) {$ENV{'use_petsc'} = "TRUE";}
 
-    $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_PETSC -val $ENV{'use_petsc'}";
-    system($sysmod) == 0 or die "$sysmod failed: $?\n";
+    if ($MODEL eq 'acme') {
+	$sysmod = "./xmlchange -noecho -file env_build.xml -id USE_PETSC -val $ENV{'use_petsc'}";
+	system($sysmod) == 0 or die "$sysmod failed: $?\n";
+    }
 
     # set the overall USE_TRILINOS variable to TRUE if any of the XXX_USE_TRILINOS variables are TRUE. 
     # For now, there is just the one CISM_USE_TRILINOS variable, but in the future, there may be others, 
@@ -490,8 +473,10 @@ sub buildChecks()
     $ENV{'use_albany'} = 'FALSE';
     if ( (defined $MPASLI_USE_ALBANY) && ($MPASLI_USE_ALBANY eq 'TRUE')) {$ENV{'use_albany'} = "TRUE";}
 
-    $sysmod = "./xmlchange -noecho -file env_build.xml -id USE_ALBANY -val $ENV{'use_albany'}";
-    system($sysmod) == 0 or die "$sysmod failed: $?\n";
+    if ($MODEL eq 'acme') {
+	$sysmod = "./xmlchange -noecho -file env_build.xml -id USE_ALBANY -val $ENV{'use_albany'}";
+	system($sysmod) == 0 or die "$sysmod failed: $?\n";
+    }
 
     if( ($NINST_BUILD ne $NINST_VALUE) && ($NINST_BUILD != 0)) {
 	my $msg = " ERROR, NINST VALUES HAVE CHANGED \n";
@@ -739,7 +724,7 @@ sub buildModel()
 	
     chdir "$CASEROOT" or $logger->logdie("Could not cd to $CASEROOT: $!");
     
-    $sysmod = "./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val TRUE";
+    my $sysmod = "./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val TRUE";
     system($sysmod) == 0 or $logger->logdie("$sysmod failed: $?");
     
     $sysmod = "./xmlchange -noecho -file env_build.xml -id BUILD_STATUS -val 0";
@@ -761,8 +746,6 @@ sub buildModel()
 	if ($?) { $logger->logdie("ERROR locking file $file, exiting.. ");}
 	$logger->info( " .... locking file $file");
     }
-    
-
 }
 
 main() unless caller; 
