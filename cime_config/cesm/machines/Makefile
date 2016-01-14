@@ -784,7 +784,7 @@ cleancsmshare:
 	$(RM) -fr $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share
 
 cleanpio:
-	$(RM) -f $(PIOLIB)
+	$(RM) -f $(SHAREDPATH)/lib/libpio*
 	$(RM) -fr $(PIO_LIBDIR)
 
 cleanmct:

@@ -97,7 +97,6 @@ int check_file(int ntasks, char *filename) {
     size_t count[NDIM];           /**< Number of elements to read. */
     int buffer[DIM_LEN];          /**< Buffer to read in data. */
     int expected[DIM_LEN];        /**< Data values we expect to find. */
-    int ret;
     
     /* Open the file. */
     if ((ret = nc_open(filename, 0, &ncid)))
