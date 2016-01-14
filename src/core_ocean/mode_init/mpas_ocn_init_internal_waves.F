@@ -134,14 +134,20 @@ contains
       call ocn_generate_vertical_grid( config_vertical_grid, interfaceLocations )
 
       call mpas_pool_get_config(domain % configs, 'config_internal_waves_use_distances', config_internal_waves_use_distances)
-      call mpas_pool_get_config(domain % configs, 'config_internal_waves_amplitude_width_frac', config_internal_waves_amplitude_width_frac)
-      call mpas_pool_get_config(domain % configs, 'config_internal_waves_amplitude_width_dist', config_internal_waves_amplitude_width_dist)
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_amplitude_width_frac', &
+                                config_internal_waves_amplitude_width_frac)
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_amplitude_width_dist', &
+                                config_internal_waves_amplitude_width_dist)
       call mpas_pool_get_config(domain % configs, 'config_internal_waves_bottom_depth', config_internal_waves_bottom_depth)
-      call mpas_pool_get_config(domain % configs, 'config_internal_waves_bottom_temperature', config_internal_waves_bottom_temperature)
-      call mpas_pool_get_config(domain % configs, 'config_internal_waves_surface_temperature', config_internal_waves_surface_temperature)
-      call mpas_pool_get_config(domain % configs, 'config_internal_waves_temperature_difference', config_internal_waves_temperature_difference)
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_bottom_temperature', &
+                                config_internal_waves_bottom_temperature)
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_surface_temperature', &
+                                config_internal_waves_surface_temperature)
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_temperature_difference', &
+                                config_internal_waves_temperature_difference)
       call mpas_pool_get_config(domain % configs, 'config_internal_waves_salinity', config_internal_waves_salinity)
-      call mpas_pool_get_config(domain % configs, 'config_internal_waves_isopycnal_displacement', config_internal_waves_isopycnal_displacement)
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_isopycnal_displacement', &
+                                config_internal_waves_isopycnal_displacement)
       call mpas_pool_get_config(domain % configs, 'config_internal_waves_layer_type', config_internal_waves_layer_type)
 
       ! Determine local min and max values.
@@ -260,8 +266,9 @@ contains
                  if ( abs(yCell(iCell) - yMidGlobal) < perturbationWidth ) then
                     ! If cell is in the southern half, outside the sin width, subtract temperature difference
                     do k = 2, nVertLevels
-                       temperature = -config_internal_waves_temperature_difference * cos(0.5_RKIND * pii * (yCell(iCell) - yMidGlobal) / perturbationWidth) &
-                            * sin ( pii * refBottomDepth(k-1) / refBottomDepth(nVertLevels-1) )
+                       temperature = -config_internal_waves_temperature_difference * cos(0.5_RKIND * pii * (yCell(iCell) &
+                                   - yMidGlobal) / perturbationWidth) * sin ( pii * refBottomDepth(k-1) &
+                                   / refBottomDepth(nVertLevels-1) )
 
                        activeTracers(index_temperature, k, iCell) = activeTracers(index_temperature, k, iCell) + temperature
                     end do

@@ -312,7 +312,8 @@ contains
           displacement_type_local = 'relative'
           k_displaced_local = 0
         else
-          call mpas_dmpar_global_abort('ERROR: tracersSurfaceLayerValue must be present when displacement_type is ''surfaceDisplaced'' in JM EOS')
+          call mpas_dmpar_global_abort('ERROR: tracersSurfaceLayerValue must be present when displacement_type is ' &
+                                    // '''surfaceDisplaced'' in JM EOS')
         endif
       else
         displacement_type_local = trim(displacement_type)

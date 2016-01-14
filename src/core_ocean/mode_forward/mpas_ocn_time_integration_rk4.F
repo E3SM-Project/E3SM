@@ -145,7 +145,8 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroupProvis
 
       ! Tend Array Pointers
-      real (kind=RKIND), dimension(:,:), pointer :: highFreqThicknessTend, lowFreqDivergenceTend, normalVelocityTend, layerThicknessTend
+      real (kind=RKIND), dimension(:,:), pointer :: highFreqThicknessTend, lowFreqDivergenceTend, normalVelocityTend, &
+                                                    layerThicknessTend
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroupTend
 
       ! Diagnostics Array Pointers
@@ -490,7 +491,8 @@ module ocn_time_integration_rk4
            endif
            call mpas_threading_barrier()
 
-           call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, scratchPool, dt, 1)
+           call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, &
+                                scratchPool, dt, 1)
            call mpas_threading_barrier()
            block => block % next
         end do
@@ -568,8 +570,10 @@ module ocn_time_integration_rk4
               !$omp do schedule(runtime) private(k)
               do iCell = 1, nCells
                  do k = 1, maxLevelCell(iCell)
-                    normalVelocityProvis(k, iCell) = normalVelocityCur(k, iCell) + rk_substep_weights(rk_step) * normalVelocityTend(k, iCell)
-                    layerThicknessProvis(k, iCell) = layerThicknessCur(k, iCell) + rk_substep_weights(rk_step) * layerThicknessTend(k, iCell)
+                    normalVelocityProvis(k, iCell) = normalVelocityCur(k, iCell) + rk_substep_weights(rk_step) &
+                                                   * normalVelocityTend(k, iCell)
+                    layerThicknessProvis(k, iCell) = layerThicknessCur(k, iCell) + rk_substep_weights(rk_step) &
+                                                   * layerThicknessTend(k, iCell)
                  end do
               end do
               !$omp end do
@@ -604,7 +608,8 @@ module ocn_time_integration_rk4
 
               if (associated(lowFreqDivergenceCur)) then
                  !$omp workshare
-                 lowFreqDivergenceProvis(:,:) = lowFreqDivergenceCur(:,:) + rk_substep_weights(rk_step) * lowFreqDivergenceTend(:,:)
+                 lowFreqDivergenceProvis(:,:) = lowFreqDivergenceCur(:,:) + rk_substep_weights(rk_step) &
+                                              * lowFreqDivergenceTend(:,:)
                  !$omp end workshare
               end if
 
@@ -714,7 +719,8 @@ module ocn_time_integration_rk4
                        !$omp do schedule(runtime) private(k)
                        do iCell = 1, nCells
                           do k = 1, maxLevelCell(iCell)
-                             tracersNew(:, k, iCell) =  tracersNew(:, k, iCell) + rk_weights(rk_step) * tracersGroupTend(:, k, iCell)
+                             tracersNew(:, k, iCell) = tracersNew(:, k, iCell) + rk_weights(rk_step) &
+                                                     * tracersGroupTend(:, k, iCell)
                           end do
                        end do
                        !$omp end do
@@ -828,7 +834,8 @@ module ocn_time_integration_rk4
         !$omp end master
 
         ! Compute normalGMBolusVelocity, slopeRelative and RediDiffVertCoef if respective flags are turned on
-        ! QC Note: this routine is called here to get updated k33. normalTransportVelocity probably does not need to be updated at all here.
+        ! QC Note: this routine is called here to get updated k33. normalTransportVelocity probably does not need to be
+        !          updated at all here.
         if (config_use_standardGM) then
            call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
         end if

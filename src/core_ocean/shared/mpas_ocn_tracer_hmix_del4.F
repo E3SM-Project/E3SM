@@ -193,7 +193,8 @@ contains
               r_tmp1 = invdcEdge * layerThicknessEdge(k, iEdge) * tracers(iTracer, k, cell1)
               r_tmp2 = invdcEdge * layerThicknessEdge(k, iEdge) * tracers(iTracer, k, cell2)
 
-              delsq_tracer(iTracer, k, iCell) = delsq_tracer(iTracer, k, iCell) - edgeSignOnCell(i, iCell) * (r_tmp2 - r_tmp1) * invAreaCell1
+              delsq_tracer(iTracer, k, iCell) = delsq_tracer(iTracer, k, iCell) - edgeSignOnCell(i, iCell) &
+                                              * (r_tmp2 - r_tmp1) * invAreaCell1
             end do
           end do
         end do

@@ -343,9 +343,12 @@ end subroutine ocn_init_routines_compute_max_level!}}}
          do iEdge = 1, nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
-            meshScalingDel2(iEdge) = 1.0_RKIND / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0_RKIND) / maxMeshDensity)**(3.0_RKIND / 4.0_RKIND)  ! goes as dc**3
-            meshScalingDel4(iEdge) = 1.0_RKIND / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0_RKIND) / maxMeshDensity)**(3.0_RKIND / 4.0_RKIND)  ! goes as dc**3
-            meshScaling(iEdge)     = 1.0_RKIND / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0_RKIND) / maxMeshDensity)**(1.0_RKIND / 4.0_RKIND)
+            meshScalingDel2(iEdge) = 1.0_RKIND / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0_RKIND) &
+                                   / maxMeshDensity)**(3.0_RKIND / 4.0_RKIND)  ! goes as dc**3
+            meshScalingDel4(iEdge) = 1.0_RKIND / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0_RKIND) &
+                                   / maxMeshDensity)**(3.0_RKIND / 4.0_RKIND)  ! goes as dc**3
+            meshScaling(iEdge)     = 1.0_RKIND / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0_RKIND) &
+                                   / maxMeshDensity)**(1.0_RKIND / 4.0_RKIND)
          end do
       end if
 
@@ -450,15 +453,18 @@ end subroutine ocn_init_routines_compute_max_level!}}}
                ! Check if abs(ssh)>2m.  If so, print warning.
                if (abs(sum(layerThickness(1:maxLevelCell(iCell),iCell))-bottomDepth(iCell))>2.0_RKIND) then
                   consistentSSH = .false.
-                  write (stderrUnit,'(a)') ' Warning: abs(sum(h)-bottomDepth)>2m.  Most likely, initial layerThickness does not match bottomDepth.'
+                  write (stderrUnit,'(a)') ' Warning: abs(sum(h)-bottomDepth)>2m.  Most likely, initial layerThickness ' &
+                                        // 'does not match bottomDepth.'
                   write (stderrUnit,*) ' iCell, K=maxLevelCell(iCell), bottomDepth(iCell),sum(h),bottomDepth: ', &
-                                iCell, maxLevelCell(iCell), bottomDepth(iCell),sum(layerThickness(1:maxLevelCell(iCell),iCell)),bottomDepth(iCell), &
+                                iCell, maxLevelCell(iCell), bottomDepth(iCell), sum( &
+                                layerThickness(1:maxLevelCell(iCell), iCell) ), bottomDepth(iCell), &
                                 layerThickness(maxLevelCell(iCell),iCell)
                endif
             enddo
 
             if (.not. consistentSSH) then
-               write(stderrUnit,*) 'Warning: SSH is not consistent. Most likely, initial layerThickness does not match bottomDepth.'
+               write(stderrUnit,*) 'Warning: SSH is not consistent. Most likely, initial layerThickness ' &
+                                // 'does not match bottomDepth.'
             end if
 
          endif ! config_check_ssh_consistency
@@ -471,7 +477,8 @@ end subroutine ocn_init_routines_compute_max_level!}}}
                   write (stderrUnit,'(a)') ' fatal error: bottomDepth and maxLevelCell do not match:'
                   write (stderrUnit,'(a,2i5,10f10.2)') ' iCell, maxLevelCell(iCell), bottomDepth(iCell): ', &
                                 iCell, maxLevelCell(iCell), bottomDepth(iCell)
-                  write (stderrUnit,'(a,10f10.2)') ' refBottomDepth(maxLevelCell(iCell)), refBottomDepthTopOfCell(maxLevelCell(iCell)): ', &
+                  write (stderrUnit,'(a,10f10.2)') ' refBottomDepth(maxLevelCell(iCell)), ' &
+                                                   // 'refBottomDepthTopOfCell(maxLevelCell(iCell)): ', &
                                 refBottomDepth(maxLevelCell(iCell)), refBottomDepthTopOfCell(maxLevelCell(iCell))
                   call mpas_dmpar_abort(dminfo)
                endif

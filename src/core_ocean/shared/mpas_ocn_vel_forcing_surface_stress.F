@@ -70,7 +70,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_forcing_surface_stress_tend(meshPool, surfaceFluxAttenuationCoefficient, surfaceStress, layerThicknessEdge, tend, err)!{{{
+   subroutine ocn_vel_forcing_surface_stress_tend(meshPool, surfaceFluxAttenuationCoefficient, surfaceStress, & !{{{
+                                                  layerThicknessEdge, tend, err)
 
       !-----------------------------------------------------------------
       !

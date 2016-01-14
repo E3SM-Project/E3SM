@@ -64,11 +64,15 @@ module ocn_lagrangian_particle_tracking
    !--------------------------------------------------------------------
 
    ! timer
-   type (timer_node), pointer :: timerTotalLPT, timerInitAlarms, timerInit, timerComputeStartup, timerCompute, timerWrite, timerRestart, timerFinalize, timerValidatedCell
-   type (timer_node), pointer :: timerValidatedCell_out, timerValidatedCell_init, timerVerticalID, timerTransferParticles, timerVelTimeInterp
-   type (timer_node), pointer :: timerVelTimeInterp_out, timerHorizMovement, timerUpdateIOHalo, timerConvertXYZLatLon, timerCellID, timerCellID_init, timerReconstFilter
-   type (timer_node), pointer :: timerReconstFilter_init, timerVelocityPotDensity, timerTimeStepLPT, timerTransferParticles_init, timerTransferParticles_write, timerMemTasksLPT
-   type (timer_node), pointer ::  timerSinglePartStats, timerParticleAssignment, timerHorizVelInterp
+   type (timer_node), pointer :: timerTotalLPT, timerInitAlarms, timerInit, timerComputeStartup, timerCompute, timerWrite, &
+                                 timerRestart, timerFinalize, timerValidatedCell
+   type (timer_node), pointer :: timerValidatedCell_out, timerValidatedCell_init, timerVerticalID, timerTransferParticles, &
+                                 timerVelTimeInterp
+   type (timer_node), pointer :: timerVelTimeInterp_out, timerHorizMovement, timerUpdateIOHalo, timerConvertXYZLatLon, &
+                                 timerCellID, timerCellID_init, timerReconstFilter
+   type (timer_node), pointer :: timerReconstFilter_init, timerVelocityPotDensity, timerTimeStepLPT, &
+                                 timerTransferParticles_init, timerTransferParticles_write, timerMemTasksLPT
+   type (timer_node), pointer :: timerSinglePartStats, timerParticleAssignment, timerHorizVelInterp
    ! neighboring processors and arrays for send numbers / recvs, total number of neighboring processors to a particular processor
    ! allocated in init, deallocated in finalize
    ! these globals could be moved to the framework component, as well
@@ -260,14 +264,16 @@ contains
       type (mpas_particle_type), pointer :: particle
 
       real (kind=RKIND), dimension(3) :: particlePosition, particleVelocity
-      real (kind=RKIND), pointer :: xParticle, yParticle, zParticle, lonVel, latVel, buoyancyParticle, sumU, sumV, sumUU, sumUV, sumVV
+      real (kind=RKIND), pointer :: xParticle, yParticle, zParticle, lonVel, latVel, buoyancyParticle, sumU, sumV, sumUU, &
+                                    sumUV, sumVV
       real (kind=RKIND), dimension(3) :: xSubStep, diffSubStep, diffParticlePosition
       real (kind=RKIND), pointer :: zLevelParticle
       real (kind=RKIND), dimension(:,:), pointer :: zTop, vertVelocityTop, zMid, areaBArray
       real (kind=RKIND), dimension(:), pointer :: bottomDepth
       type (field2DReal), pointer :: normalVelocity, uVertexVelocity, vVertexVelocity, wVertexVelocity, layerThickness
 
-      real (kind=RKIND), dimension(:,:), pointer :: uVertexVelocityArray, vVertexVelocityArray, wVertexVelocityArray, buoyancyTimeInterp, potentialDensity
+      real (kind=RKIND), dimension(:,:), pointer :: uVertexVelocityArray, vVertexVelocityArray, wVertexVelocityArray, &
+                                                    buoyancyTimeInterp, potentialDensity
 
       real(kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
       real(kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
@@ -804,10 +810,12 @@ contains
 #ifdef MPAS_DEBUG
       call mpas_timer_start("trans_from_block_to_blockLPT", .false., timerTransferParticles)
 #endif
-      if (config_AM_lagrPartTrack_reset_particles .and. resetParticleAny) then   ! need to link to currentBlockReset for communication
+      if (config_AM_lagrPartTrack_reset_particles .and. resetParticleAny) then
+         ! need to link to currentBlockReset for communication
          call mpas_particle_list_build_halos(domain, err, 'currentBlockReset', g_compProcNeighs)
          ! take the union of this halo with the particle computation halos to build complete computational halo
-         call mpas_particle_list_self_union_halo_lists(g_compProcNeighs, g_compProcNeighsNearby, domain % dminfo % nprocs, domain % dminfo % my_proc_id)
+         call mpas_particle_list_self_union_halo_lists(g_compProcNeighs, g_compProcNeighsNearby, domain % dminfo % nprocs, &
+                                                       domain % dminfo % my_proc_id)
       else
         allocate(g_compProcNeighs(size(g_compProcNeighsNearby)))
         g_compProcNeighs = g_compProcNeighsNearby
@@ -820,7 +828,8 @@ contains
 #endif
 
       ! do IO communications if this is an output time step
-      if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='lagrPartTrackOutput', direction=MPAS_STREAM_OUTPUT, ierr=err)) then
+      if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='lagrPartTrackOutput', &
+          direction=MPAS_STREAM_OUTPUT, ierr=err)) then
         call write_lagrangian_particle_tracking(domain, err)
       end if
 
@@ -880,7 +889,8 @@ contains
       call mpas_timer_start("restartLPT", .false., timerRestart)
 
       ! do restart if this is a restart step
-      if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='lagrPartTrackRestart', direction=MPAS_STREAM_OUTPUT, ierr=err)) then
+      if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='lagrPartTrackRestart', &
+          direction=MPAS_STREAM_OUTPUT, ierr=err)) then
         call mpas_timer_start("restartLPT", .false., timerRestart)
 
       LIGHT_DEBUG_WRITE('start ocn_restart_lagrangian_particle_tracking')
@@ -1098,6 +1108,7 @@ contains
      !intent (out)
      integer, intent(inout) :: iCell
      integer, intent(out) :: nCellVertices
+     character (len=StrKIND) :: message
 #ifdef MPAS_DEBUG
      logical, pointer :: is_periodic
      real(kind=RKIND), pointer :: x_period, y_period
@@ -1128,8 +1139,10 @@ contains
          yVertex(verticesOnCell(1:nCellVertices,iCell)), &
          zVertex(verticesOnCell(1:nCellVertices,iCell)), &
          xSubStep,ySubStep,zSubStep , on_a_sphere)) then
-           LIGHT_DEBUG_WRITE('Point (' COMMA xSubStep COMMA ySubStep COMMA zSubStep  COMMA ') is horizontally outside cell ' COMMA iCell)
-           LIGHT_DEBUG_WRITE('Cell  (' COMMA xCell(iCell) COMMA yCell(iCell) COMMA zCell(iCell) COMMA ') with index ' COMMA iCell)
+           write(message, *) 'Point (', xSubStep, ySubStep, zSubStep , ') is horizontally outside cell ', iCell
+           LIGHT_DEBUG_WRITE(message)
+           write(message, *) 'Cell  (', xCell(iCell), yCell(iCell), zCell(iCell), ') with index ', iCell
+           LIGHT_DEBUG_WRITE(message)
            LIGHT_DEBUG_WRITE('xVertex = ' COMMA xVertex(verticesOnCell(1:nCellVertices,iCell)))
            LIGHT_DEBUG_WRITE('yVertex = ' COMMA yVertex(verticesOnCell(1:nCellVertices,iCell)))
            LIGHT_DEBUG_WRITE('zVertex = ' COMMA zVertex(verticesOnCell(1:nCellVertices,iCell)))
@@ -1143,8 +1156,10 @@ contains
        if(.not. point_in_cell(nCellVertices, xtmp, ytmp, &
          zVertex(verticesOnCell(1:nCellVertices,iCell)), &
          xSubStep,ySubStep,zSubStep , on_a_sphere)) then
-           LIGHT_DEBUG_WRITE('Point (' COMMA xSubStep COMMA ySubStep COMMA zSubStep  COMMA ') is horizontally outside cell ' COMMA iCell)
-           LIGHT_DEBUG_WRITE('Cell  (' COMMA xCell(iCell) COMMA yCell(iCell) COMMA zCell(iCell) COMMA ') with index ' COMMA iCell)
+           write(message, *) 'Point (', xSubStep, ySubStep, zSubStep, ') is horizontally outside cell ', iCell
+           LIGHT_DEBUG_WRITE(message)
+           write(message, *) 'Cell  (', xCell(iCell), yCell(iCell), zCell(iCell), ') with index ', iCell
+           LIGHT_DEBUG_WRITE(message)
            LIGHT_DEBUG_WRITE('xVertex = ' COMMA xtmp)
            LIGHT_DEBUG_WRITE('yVertex = ' COMMA ytmp)
            LIGHT_DEBUG_WRITE('zVertex = ' COMMA zVertex(verticesOnCell(1:nCellVertices,iCell)))
@@ -1629,14 +1644,16 @@ contains
       type (mpas_particle_type), pointer :: particle
 
       real (kind=RKIND), dimension(3) :: particlePosition, particleVelocity
-      real (kind=RKIND), pointer :: xParticle, yParticle, zParticle, lonVel, latVel, buoyancyParticle, sumU, sumV, sumUU, sumUV, sumVV
+      real (kind=RKIND), pointer :: xParticle, yParticle, zParticle, lonVel, latVel, buoyancyParticle, sumU, sumV, sumUU, &
+                                    sumUV, sumVV
       real (kind=RKIND), dimension(3) :: xSubStep, diffSubStep, diffParticlePosition
       real (kind=RKIND), pointer :: zLevelParticle
       real (kind=RKIND), dimension(:,:), pointer :: zTop, vertVelocityTop, zMid, areaBArray
       real (kind=RKIND), dimension(:), pointer :: bottomDepth
       type (field2DReal), pointer :: normalVelocity, uVertexVelocity, vVertexVelocity, wVertexVelocity, layerThickness
 
-      real (kind=RKIND), dimension(:,:), pointer :: uVertexVelocityArray, vVertexVelocityArray, wVertexVelocityArray, buoyancy, buoyancyTimeInterp, potentialDensity
+      real (kind=RKIND), dimension(:,:), pointer :: uVertexVelocityArray, vVertexVelocityArray, wVertexVelocityArray, buoyancy, &
+                                                    buoyancyTimeInterp, potentialDensity
 
       real(kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
       real(kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
@@ -2256,6 +2273,7 @@ contains
      real (kind=RKIND), parameter :: eps=1e-10_RKIND
      logical, pointer :: onSphere, is_periodic
      real(kind=RKIND), pointer :: x_period, y_period
+     character (len=StrKIND) :: message
      ! choosen based on the parameters, note that we loose about 6 - 7 units of precision because R is so large!
      ! therefore, eps = 1e-10 is conservative, if not too high!  this just helps with numerical stability
      !dpParticle    =   -4.2428037617887103E-011   4.3076544298828060E-011   5.0760704444480953E-011
@@ -2295,7 +2313,9 @@ contains
        LIGHT_DEBUG_ALL_WRITE('dpParticle    = ' COMMA dpParticle)
        LIGHT_DEBUG_ALL_WRITE('pParticle     = ' COMMA pParticle)
        LIGHT_DEBUG_ALL_WRITE('pParticleTemp = ' COMMA pParticleTemp)
-       LIGHT_DEBUG_ALL_WRITE('mpas_arc_length = ' COMMA  mpas_arc_length(pParticle(1),pParticle(2),pParticle(3) , pParticleTemp(1), pParticleTemp(2), pParticleTemp(3)) COMMA 'lenPath = ' COMMA lenPath)
+       write(message, *) 'mpas_arc_length = ',  mpas_arc_length( pParticle(1), pParticle(2), pParticle(3), &
+                         pParticleTemp(1), pParticleTemp(2), pParticleTemp(3)), 'lenPath = ', lenPath
+       LIGHT_DEBUG_ALL_WRITE(message)
        arcLen = mpas_arc_length(pParticle(1),pParticle(2),pParticle(3) , pParticleTemp(1),pParticleTemp(2),pParticleTemp(3))
        if (arcLen > eps) then
          alpha = lenPath / arcLen
@@ -2345,7 +2365,8 @@ contains
      integer, intent(in) :: iLevel                                    !< vertical level / cell of phiInterp
      integer, intent(in) :: nVertLevels                               !< number of vertical levels
      real (kind=RKIND), intent(in) :: zInterp                       !< location to interpolate
-     real (kind=RKIND), dimension(:), intent(in) :: phiVals           !< values at elevation of cell middle (where vertex velocities are defined)
+     real (kind=RKIND), dimension(:), intent(in) :: phiVals           !< values at elevation of cell middle (where vertex
+                                                                      !< velocities are defined)
 
      !-----------------------------------------------------------------
      ! output variables
@@ -2413,7 +2434,8 @@ contains
      integer, intent(in) :: iLevel                                    !< vertical level / cell of phiInterp
      integer, intent(in) :: nVertLevels                               !< number of vertical levels
      real (kind=RKIND), intent(in) :: phiInterp                       !< location to interpolate
-     real (kind=RKIND), dimension(:), intent(in) :: phiVals           !< values at elevation of cell middle (where vertex velocities are defined)
+     real (kind=RKIND), dimension(:), intent(in) :: phiVals           !< values at elevation of cell middle (where vertex
+                                                                      !< velocities are defined)
 
      !-----------------------------------------------------------------
      ! output variables
@@ -2468,7 +2490,8 @@ contains
      integer, intent(in) :: iLevel                                    !< vertical level / cell of phiInterp
      integer, intent(in) :: nVertLevels                               !< number of vertical levels
      real (kind=RKIND), intent(in) :: phiInterp                       !< location to interpolate
-     real (kind=RKIND), dimension(:), intent(in) :: phiVals           !< values at elevation of cell middle (where vertex velocities are defined)
+     real (kind=RKIND), dimension(:), intent(in) :: phiVals           !< values at elevation of cell middle (where vertex
+                                                                      !< velocities are defined)
 
      !-----------------------------------------------------------------
      ! output variables
@@ -2597,7 +2620,8 @@ contains
      integer, intent(in) :: iLevel                                    !< vertical level / cell of phiInterp
      integer, intent(in) :: nVertLevels                               !< number of vertical levels
      real (kind=RKIND), intent(in) :: phiInterp                       !< location to interpolate
-     real (kind=RKIND), dimension(:), intent(in) :: phiVals           !< values at elevation of cell middle (where vertex velocities are defined)
+     real (kind=RKIND), dimension(:), intent(in) :: phiVals           !< values at elevation of cell middle (where vertex
+                                                                      !< velocities are defined)
 
      !-----------------------------------------------------------------
      ! output variables
@@ -2645,7 +2669,8 @@ contains
      !-----------------------------------------------------------------
      integer, intent(in) :: nVertLevels                               !< number of vertical levels
      real (kind=RKIND), intent(in) :: phiInterp                       !< location to interpolate
-     real (kind=RKIND), dimension(:), intent(in) :: phiVals           !< values at elevation of cell middle (where vertex velocities are defined)
+     real (kind=RKIND), dimension(:), intent(in) :: phiVals           !< values at elevation of cell middle (where
+                                                                      !< vertex velocities are defined)
 
      !-----------------------------------------------------------------
      ! output variables
@@ -2656,6 +2681,7 @@ contains
      ! local variables
      !-----------------------------------------------------------------
      integer :: aLevel
+     character (len=StrKIND) :: message
 
      ! make no assumptions
      do aLevel = 1, nVertLevels-1
@@ -2675,9 +2701,11 @@ contains
        ! we are ok
        LIGHT_DEBUG_ALL_WRITE('brute force interpolation successful')
        LIGHT_DEBUG_ALL_WRITE('iLow = ' COMMA iLow COMMA ' iHigh = ' COMMA iHigh)
-       LIGHT_DEBUG_ALL_WRITE('phiInterp = ' COMMA phiInterp COMMA ' phiLow =' COMMA phiVals(iLow) COMMA ' phiHigh = ' COMMA phiVals(iHigh))
+       write(message, *) 'phiInterp = ', phiInterp, ' phiLow =', phiVals(iLow), ' phiHigh = ', phiVals(iHigh)
+       LIGHT_DEBUG_ALL_WRITE(message)
      else
-       write(stderrUnit,*) 'brute force interpolation failed with phiInterp = ', phiInterp, ' phiLow = ', phiVals(iLow), ' phiHigh = ', phiVals(iHigh)
+       write(stderrUnit,*) 'brute force interpolation failed with phiInterp = ', phiInterp, ' phiLow = ', phiVals(iLow), &
+                        // ' phiHigh = ', phiVals(iHigh)
        LIGHT_DEBUG_ALL_WRITE(' phiVals = ' COMMA phiVals(1:nVertLevels))
      end if
 

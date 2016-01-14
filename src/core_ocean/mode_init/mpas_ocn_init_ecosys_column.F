@@ -517,7 +517,8 @@ contains
 
        iErr = 0
 
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_nlon_dimname', config_global_ocean_tracer_nlon_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_nlon_dimname', &
+                                 config_global_ocean_tracer_nlon_dimname)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_dimname', config_global_ocean_depth_dimname)
 
        ! Define stream for reading a column

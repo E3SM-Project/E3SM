@@ -122,10 +122,10 @@ contains
       do iCell=1,nCellsSolve
         do iLevel=1,maxLevelCell(iCell)
           do iTracer=1,nTracers
-             tracer_tend(iTracer, iLevel, iCell) =   tracer_tend(iTracer, iLevel, iCell)  &
-                                                   - layerThickness(iLevel,iCell) * &
-                                                     (tracers(iTracer, iLevel, iCell) - tracersInteriorRestoringValue(iTracer, iLevel, iCell))  &
-                                                   * tracersInteriorRestoringRate(iTracer, iLevel, iCell)
+             tracer_tend(iTracer, iLevel, iCell) = tracer_tend(iTracer, iLevel, iCell)  - layerThickness(iLevel,iCell) &
+                                                 * ( tracers(iTracer, iLevel, iCell) &
+                                                 - tracersInteriorRestoringValue(iTracer, iLevel, iCell) )  &
+                                                 * tracersInteriorRestoringRate(iTracer, iLevel, iCell)
           enddo
         enddo
       enddo

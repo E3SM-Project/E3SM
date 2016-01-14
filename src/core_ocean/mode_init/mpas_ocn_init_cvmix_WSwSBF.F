@@ -154,20 +154,29 @@ contains
       call ocn_generate_vertical_grid(config_cvmix_WSwSBF_vertical_grid, interfaceLocations)
 
       ! load the remaining configuration parameters
-      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_surface_temperature', config_cvmix_WSwSBF_surface_temperature)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_surface_temperature', &
+                                config_cvmix_WSwSBF_surface_temperature)
       call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_surface_salinity', config_cvmix_WSwSBF_surface_salinity)
-      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_surface_restoring_temperature', config_cvmix_WSwSBF_surface_restoring_temperature)
-      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_surface_restoring_salinity', config_cvmix_WSwSBF_surface_restoring_salinity)
-      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_temperature_piston_velocity', config_cvmix_WSwSBF_temperature_piston_velocity)
-      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_salinity_piston_velocity', config_cvmix_WSwSBF_salinity_piston_velocity)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_surface_restoring_temperature', &
+                                config_cvmix_WSwSBF_surface_restoring_temperature)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_surface_restoring_salinity', &
+                                config_cvmix_WSwSBF_surface_restoring_salinity)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_temperature_piston_velocity', &
+                                config_cvmix_WSwSBF_temperature_piston_velocity)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_salinity_piston_velocity', &
+                                config_cvmix_WSwSBF_salinity_piston_velocity)
       call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_sensible_heat_flux', config_cvmix_WSwSBF_sensible_heat_flux)
       call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_latent_heat_flux', config_cvmix_WSwSBF_latent_heat_flux)
-      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_shortwave_heat_flux', config_cvmix_WSwSBF_shortwave_heat_flux)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_shortwave_heat_flux', &
+                                config_cvmix_WSwSBF_shortwave_heat_flux)
       call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_rain_flux', config_cvmix_WSwSBF_rain_flux)
       call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_evaporation_flux', config_cvmix_WSwSBF_evaporation_flux)
-      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_interior_temperature_restoring_rate', config_cvmix_WSwSBF_interior_temperature_restoring_rate)
-      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_interior_salinity_restoring_rate', config_cvmix_WSwSBF_interior_salinity_restoring_rate)
-      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_temperature_gradient', config_cvmix_WSwSBF_temperature_gradient)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_interior_temperature_restoring_rate', &
+                                config_cvmix_WSwSBF_interior_temperature_restoring_rate)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_interior_salinity_restoring_rate', &
+                                config_cvmix_WSwSBF_interior_salinity_restoring_rate)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_temperature_gradient', &
+                                config_cvmix_WSwSBF_temperature_gradient)
       call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_salinity_gradient', config_cvmix_WSwSBF_salinity_gradient)
       call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_bottom_depth', config_cvmix_WSwSBF_bottom_depth)
       call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_max_windstress', config_cvmix_WSwSBF_max_windstress)
@@ -227,9 +236,12 @@ contains
         call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonal, 1)
         call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional, 1)
         call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', activeTracersPistonVelocity, 1)
-        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', activeTracersSurfaceRestoringValue, 1)
-        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringRate', activeTracersInteriorRestoringRate, 1)
-        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringValue', activeTracersInteriorRestoringValue, 1)
+        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', &
+                                 activeTracersSurfaceRestoringValue, 1)
+        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringRate', &
+                                 activeTracersInteriorRestoringRate, 1)
+        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringValue', &
+                                 activeTracersInteriorRestoringValue, 1)
         call mpas_pool_get_array(forcingPool, 'latentHeatFlux', latentHeatFlux)
         call mpas_pool_get_array(forcingPool, 'sensibleHeatFlux', sensibleHeatFlux)
         call mpas_pool_get_array(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFlux)
@@ -364,7 +376,8 @@ contains
               activeTracersInteriorRestoringValue(index_temperature, k, iCell) = activeTracers(index_temperature, k, iCell)
            end if
            if ( associated(activeTracersInteriorRestoringRate) ) then
-              activeTracersInteriorRestoringRate(index_temperature, k, iCell) = config_cvmix_WSwSBF_interior_temperature_restoring_rate
+              activeTracersInteriorRestoringRate(index_temperature, k, iCell) = &
+                                config_cvmix_WSwSBF_interior_temperature_restoring_rate
            end if
         enddo
 
@@ -448,7 +461,8 @@ contains
       if(config_vert_levels <= 0 .and. config_cvmix_WSwSBF_vert_levels > 0) then
          config_vert_levels = config_cvmix_WSwSBF_vert_levels
       else if(config_vert_levels <= 0) then
-         write(stderrUnit,*) 'ERROR: Validation failed for CVMix WSwSBF unit test case. Not given a usable value for vertical levels.'
+         write(stderrUnit,*) 'ERROR: Validation failed for CVMix WSwSBF unit test case. Not given a usable value for ' &
+                          // 'vertical levels.'
          iErr = 1
       end if
 

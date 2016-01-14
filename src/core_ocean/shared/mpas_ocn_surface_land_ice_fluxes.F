@@ -147,7 +147,7 @@ contains
       !
       !-----------------------------------------------------------------
       real (kind=RKIND), dimension(:), intent(inout) :: surfaceStress, & !< Input/Output: Array for total surface stress
-                                                        surfaceStressMagnitude !< Input/Output: Array for magnitude of surface stress
+                                                  surfaceStressMagnitude !< Input/Output: Array for magnitude of surface stress
 
       !-----------------------------------------------------------------
       !
@@ -412,7 +412,8 @@ contains
       if ( .not. standaloneOn ) return
 
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_ISOMIP_gammaT', config_land_ice_flux_ISOMIP_gammaT)
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_useHollandJenkinsAdvDiff', config_land_ice_flux_useHollandJenkinsAdvDiff)
+      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_useHollandJenkinsAdvDiff', &
+                                config_land_ice_flux_useHollandJenkinsAdvDiff)
 
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
@@ -626,7 +627,8 @@ contains
       else
          write(stderrUnit, *) "ERROR: config_land_ice_flux_formulation not one of 'ISOMIP', 'Jenkins', or 'HollandJenkins'."
          err = 1
-         call mpas_dmpar_global_abort("ERROR: config_land_ice_flux_formulation not one of 'ISOMIP', 'Jenkins', or 'HollandJenkins'.")
+         call mpas_dmpar_global_abort("ERROR: config_land_ice_flux_formulation not one of 'ISOMIP', 'Jenkins', " &
+                                      // "or 'HollandJenkins'.")
       end if
 
       Tf0 = config_land_ice_flux_Tf0

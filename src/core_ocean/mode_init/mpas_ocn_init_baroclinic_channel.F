@@ -131,21 +131,28 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_vertical_grid', config_vertical_grid)
 
       call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_use_distances', config_baroclinic_channel_use_distances)
-      call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_gradient_width_dist', config_baroclinic_channel_gradient_width_dist)
-      call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_gradient_width_frac', config_baroclinic_channel_gradient_width_frac)
+      call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_gradient_width_dist', &
+                                config_baroclinic_channel_gradient_width_dist)
+      call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_gradient_width_frac', &
+                                config_baroclinic_channel_gradient_width_frac)
       call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_bottom_depth', config_baroclinic_channel_bottom_depth)
-      call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_surface_temperature', config_baroclinic_channel_surface_temperature)
-      call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_bottom_temperature', config_baroclinic_channel_bottom_temperature)
-      call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_temperature_difference', config_baroclinic_channel_temperature_difference)
+      call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_surface_temperature', &
+                                config_baroclinic_channel_surface_temperature)
+      call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_bottom_temperature', &
+                                config_baroclinic_channel_bottom_temperature)
+      call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_temperature_difference', &
+                                config_baroclinic_channel_temperature_difference)
       call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_salinity', config_baroclinic_channel_salinity)
-      call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_coriolis_parameter', config_baroclinic_channel_coriolis_parameter)
+      call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_coriolis_parameter', &
+                                config_baroclinic_channel_coriolis_parameter)
 
       ! Determine vertical grid for configuration
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-      if ( on_a_sphere ) call mpas_dmpar_global_abort('ERROR: The baroclinic channel configuration can only be applied to a planar mesh. Exiting...')
+      if ( on_a_sphere ) call mpas_dmpar_global_abort('ERROR: The baroclinic channel configuration can only be applied ' &
+                                                   // 'to a planar mesh. Exiting...')
 
       allocate(interfaceLocations(nVertLevelsP1))
       call ocn_generate_vertical_grid( config_vertical_grid, interfaceLocations )
@@ -264,12 +271,14 @@ contains
                    activeTracers(idx, :, iCell) = activeTracers(idx, :, iCell) - config_baroclinic_channel_temperature_difference
               else if(yCell(iCell) >= yMidGlobal - yOffset .and. &
                       yCell(iCell) < yMidGlobal - yOffset + perturbationWidth) then
-                   activeTracers(idx, :, iCell) = activeTracers(idx, :, iCell) - config_baroclinic_channel_temperature_difference * ( 1.0_RKIND - ( yCell(iCell) &
-                                 - ((yMaxGlobal + yMinGlobal) * 0.5_RKIND - yOffset)) / perturbationWidth)
+                   activeTracers(idx, :, iCell) = activeTracers(idx, :, iCell) - config_baroclinic_channel_temperature_difference &
+                                                * ( 1.0_RKIND - ( yCell(iCell) - ((yMaxGlobal + yMinGlobal) * 0.5_RKIND &
+                                                - yOffset)) / perturbationWidth)
               end if
 
               ! Determine yOffset for 3rd crest in sin wave.
-              yOffset = 0.5_RKIND * perturbationWidth * sin(pii * (xCell(iCell) - xPerturbationMin)/(xPerturbationMax - xPerturbationMin))
+              yOffset = 0.5_RKIND * perturbationWidth * sin(pii * (xCell(iCell) - xPerturbationMin) &
+                      / (xPerturbationMax - xPerturbationMin))
 
               if ( yCell(iCell) >= yMidGlobal - yOffset - 0.5_RKIND * perturbationWidth .and. &
                    yCell(iCell) <= yMidGlobal - yOffset + 0.5_RKIND * perturbationWidth .and. &
@@ -278,8 +287,9 @@ contains
 
 
                    do k = 1, nVertLevels
-                      activeTracers(idx, k, iCell) = activeTracers(idx, k, iCell) + &
-                                0.3_RKIND * ( 1.0_RKIND - ( ( yCell(iCell) - (yMidGlobal - yOffset)) /(0.5_RKIND * perturbationWidth)))
+                      activeTracers(idx, k, iCell) = activeTracers(idx, k, iCell) &
+                                + 0.3_RKIND * ( 1.0_RKIND - ( ( yCell(iCell) - (yMidGlobal - yOffset)) &
+                                / (0.5_RKIND * perturbationWidth)))
                    end do
               end if
 
@@ -290,8 +300,10 @@ contains
 
            ! Set layerThickness and restingThickness
            do k = 1, nVertLevels
-              layerThickness(k, iCell) = config_baroclinic_channel_bottom_depth * ( interfaceLocations(k+1) - interfaceLocations(k) )
-              restingThickness(k, iCell) = config_baroclinic_channel_bottom_depth * ( interfaceLocations(k+1) - interfaceLocations(k) )
+              layerThickness(k, iCell) = config_baroclinic_channel_bottom_depth * ( interfaceLocations(k+1) &
+                                       - interfaceLocations(k) )
+              restingThickness(k, iCell) = config_baroclinic_channel_bottom_depth * ( interfaceLocations(k+1) &
+                                         - interfaceLocations(k) )
 
            end do
 

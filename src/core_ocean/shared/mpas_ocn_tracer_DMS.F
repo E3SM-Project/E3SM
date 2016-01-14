@@ -187,10 +187,12 @@ contains
 
          do iLevel=1,maxLevelCell(iCell)
 
-            DMSTracersTend(dmsIndices%dms_ind,iLevel,iCell) = DMSTracersTend(dmsIndices%dms_ind,iLevel,iCell)   &
-                                                                    + DMS_output%DMS_tendencies(iLevel,column,DMS_indices%dms_ind)*layerThickness(iLevel,iCell)
-            DMSTracersTend(dmsIndices%dmsp_ind,iLevel,iCell) = DMSTracersTend(dmsIndices%dmsp_ind,iLevel,iCell)   &
-                                                                    + DMS_output%DMS_tendencies(iLevel,column,DMS_indices%dmsp_ind)*layerThickness(iLevel,iCell)
+            DMSTracersTend(dmsIndices%dms_ind,iLevel,iCell) = DMSTracersTend(dmsIndices % dms_ind, iLevel, iCell)   &
+                                                          + DMS_output % DMS_tendencies(iLevel, column, DMS_indices % dms_ind) &
+                                                          * layerThickness(iLevel,iCell)
+            DMSTracersTend(dmsIndices%dmsp_ind,iLevel,iCell) = DMSTracersTend(dmsIndices % dmsp_ind, iLevel, iCell)   &
+                                                           + DMS_output % DMS_tendencies(iLevel, column, DMS_indices % dmsp_ind) &
+                                                           * layerThickness(iLevel, iCell)
 
          enddo
 

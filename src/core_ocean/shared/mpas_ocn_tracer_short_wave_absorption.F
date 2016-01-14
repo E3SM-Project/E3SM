@@ -62,7 +62,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_short_wave_absorption_tend(meshPool, swForcingPool, forcingPool, index_temperature, layerThickness, penetrativeTemperatureFlux, tend, err)!{{{
+   subroutine ocn_tracer_short_wave_absorption_tend(meshPool, swForcingPool, forcingPool, index_temperature, & !{{{
+                                                    layerThickness, penetrativeTemperatureFlux, tend, err)
 
       !-----------------------------------------------------------------
       !
@@ -111,9 +112,11 @@ contains
 
       err = 0
       if(useJerlov) then
-         call ocn_tracer_short_wave_absorption_jerlov_tend(meshPool, forcingPool, index_temperature, layerThickness, penetrativeTemperatureFlux, tend, err)
+         call ocn_tracer_short_wave_absorption_jerlov_tend(meshPool, forcingPool, index_temperature, layerThickness, &
+                                                           penetrativeTemperatureFlux, tend, err)
       else
-         call ocn_tracer_short_wave_absorption_variable_tend(meshPool,swForcingPool, forcingPool, index_temperature, layerThickness, penetrativeTemperatureFlux,tend,err)
+         call ocn_tracer_short_wave_absorption_variable_tend(meshPool,swForcingPool, forcingPool, index_temperature, &
+                                                             layerThickness, penetrativeTemperatureFlux,tend,err)
       endif
    !--------------------------------------------------------------------
 
@@ -145,7 +148,8 @@ contains
       err = 0
 
       call mpas_pool_get_config(ocnConfigs, 'config_sw_absorption_type', config_sw_absorption_type)
-      call MPAS_pool_get_config(ocnConfigs, 'config_use_activeTracers_surface_bulk_forcing', config_use_activeTracers_surface_bulk_forcing)
+      call MPAS_pool_get_config(ocnConfigs, 'config_use_activeTracers_surface_bulk_forcing', &
+                                config_use_activeTracers_surface_bulk_forcing)
 
       useJerlov=.false.
       if (.not.config_use_activeTracers_surface_bulk_forcing.or.trim( config_sw_absorption_type ) == 'none') return
@@ -154,7 +158,7 @@ contains
          useJerlov=.true.
 !        call ocn_tracer_short_wave_absorption_jerlov_init(err)
       else if ( trim( config_sw_absorption_type ) == 'ohlmann00' ) then
-      	 call ocn_tracer_short_wave_absorption_variable_init(domain, err)
+         call ocn_tracer_short_wave_absorption_variable_init(domain, err)
       else
          write(stderrUnit,*) 'Incorrect option for config_sw_absorption_type. Options are: jerlov or ohlmann00 or none'
          err = 1

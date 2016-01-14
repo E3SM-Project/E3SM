@@ -65,7 +65,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_exponential_decay_compute(nTracers, nCellsSolve, maxLevelCell, layerThickness, tracers, tracersExponentialDecayRate, tracer_tend, err)!{{{
+   subroutine ocn_tracer_exponential_decay_compute(nTracers, nCellsSolve, maxLevelCell, layerThickness, tracers, & !{{{
+                                                   tracersExponentialDecayRate, tracer_tend, err)
 
       !-----------------------------------------------------------------
       !

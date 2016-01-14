@@ -288,7 +288,8 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_iso_heat_flux_lat_ss', config_iso_heat_flux_lat_ss)
       call mpas_pool_get_config(domain % configs, 'config_iso_heat_flux_lat_sm', config_iso_heat_flux_lat_sm)
       call mpas_pool_get_config(domain % configs, 'config_iso_heat_flux_lat_mn', config_iso_heat_flux_lat_mn)
-      call mpas_pool_get_config(domain % configs, 'config_iso_surface_temperature_piston_velocity', config_iso_surface_temperature_piston_velocity)
+      call mpas_pool_get_config(domain % configs, 'config_iso_surface_temperature_piston_velocity', &
+                                config_iso_surface_temperature_piston_velocity)
       call mpas_pool_get_config(domain % configs, 'config_iso_initial_temp_t1', config_iso_initial_temp_t1)
       call mpas_pool_get_config(domain % configs, 'config_iso_initial_temp_t2', config_iso_initial_temp_t2)
       call mpas_pool_get_config(domain % configs, 'config_iso_initial_temp_h0', config_iso_initial_temp_h0)
@@ -315,19 +316,23 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_sponge_l1', config_iso_temperature_sponge_l1)
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_sponge_tau1', config_iso_temperature_sponge_tau1)
 
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_region1_flag', config_iso_temperature_restore_region1_flag)
+      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_region1_flag', &
+                                config_iso_temperature_restore_region1_flag)
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_t1', config_iso_temperature_restore_t1)
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_lcx1', config_iso_temperature_restore_lcx1)
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_lcy1', config_iso_temperature_restore_lcy1)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_region2_flag', config_iso_temperature_restore_region2_flag)
+      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_region2_flag', &
+                                config_iso_temperature_restore_region2_flag)
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_t2', config_iso_temperature_restore_t2)
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_lcx2', config_iso_temperature_restore_lcx2)
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_lcy2', config_iso_temperature_restore_lcy2)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_region3_flag', config_iso_temperature_restore_region3_flag)
+      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_region3_flag', &
+                                config_iso_temperature_restore_region3_flag)
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_t3', config_iso_temperature_restore_t3)
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_lcx3', config_iso_temperature_restore_lcx3)
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_lcy3', config_iso_temperature_restore_lcy3)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_region4_flag', config_iso_temperature_restore_region4_flag)
+      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_region4_flag', &
+                                config_iso_temperature_restore_region4_flag)
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_t4', config_iso_temperature_restore_t4)
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_lcx4', config_iso_temperature_restore_lcx4)
       call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_lcy4', config_iso_temperature_restore_lcy4)
@@ -647,9 +652,12 @@ contains
         call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
         call mpas_pool_get_subpool(forcingPool, 'tracersInteriorRestoringFields', tracersInteriorRestoringFieldsPool)
         call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', activeTracersPistonVelocity, 1)
-        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', activeTracersSurfaceRestoringValue, 1)
-        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringRate', activeTracersInteriorRestoringRate, 1)
-        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringValue', activeTracersInteriorRestoringValue, 1)
+        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', &
+                                 activeTracersSurfaceRestoringValue, 1)
+        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringRate', &
+                                 activeTracersInteriorRestoringRate, 1)
+        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringValue', &
+                                 activeTracersInteriorRestoringValue, 1)
 
         activeTracersInteriorRestoringRate(:,:,:) = 0.0_RKIND
         activeTracersInteriorRestoringValue(:,:,:) = 0.0_RKIND
@@ -737,7 +745,8 @@ contains
                  activeTracersInteriorRestoringValue(idx, k, iCell) = temperature
 
                  idx = index_temperature
-                 activeTracersInteriorRestoringRate(idx, k, iCell) = exp(-abs(distance)/tempSpongeWeightL1) * ( 1.0_RKIND / (tempSpongeTau1*86400.0_RKIND))
+                 activeTracersInteriorRestoringRate(idx, k, iCell) = exp(-abs(distance)/tempSpongeWeightL1) * ( 1.0_RKIND &
+                                                                   / (tempSpongeTau1*86400.0_RKIND))
               endif
 
               ! Interior restoring at localized region 1

@@ -736,7 +736,8 @@ contains
 
         do iTracer = 1, nTracers
           inTracerColumn(:) = activeTracers(iTracer,:,iCell)
-          call ocn_init_interpolation_linear_vert(refZMid(:,iCell), inTracerColumn(:), nVertLevels, zMid(:,iCell), outTracerColumn(:), nVertLevels, extrapolate=.true.)
+          call ocn_init_interpolation_linear_vert(refZMid(:,iCell), inTracerColumn(:), nVertLevels, zMid(:,iCell), &
+                                                  outTracerColumn(:), nVertLevels, extrapolate=.true.)
           activeTracers(iTracer,:,iCell) = outTracerColumn(:)
         end do
       end do

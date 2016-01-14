@@ -189,7 +189,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_vmix_tend_implicit(meshPool, dt, kineticEnergyCell, vertViscTopOfEdge, layerThickness, layerThicknessEdge, normalVelocity, err)!{{{
+   subroutine ocn_vel_vmix_tend_implicit(meshPool, dt, kineticEnergyCell, vertViscTopOfEdge, layerThickness, & !{{{
+                                         layerThicknessEdge, normalVelocity, err)
 
       !-----------------------------------------------------------------
       !
@@ -461,7 +462,8 @@ contains
 
       integer :: timeLevel, k, cell1, cell2, iEdge
       integer, pointer :: nCells, nEdges
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThickness, layerThicknessEdge, vertViscTopOfEdge, vertDiffTopOfCell, kineticEnergyCell
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThickness, layerThicknessEdge, vertViscTopOfEdge, &
+                                                    vertDiffTopOfCell, kineticEnergyCell
       real (kind=RKIND), dimension(:,:), pointer :: vertViscTopOfCell
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop
@@ -525,7 +527,8 @@ contains
       !  Implicit vertical solve for momentum
       !
       call mpas_timer_start('vmix solve momentum', .false.)
-      call ocn_vel_vmix_tend_implicit(meshPool, dt, kineticEnergyCell, vertViscTopOfEdge, layerThickness, layerThicknessEdge, normalVelocity, err)
+      call ocn_vel_vmix_tend_implicit(meshPool, dt, kineticEnergyCell, vertViscTopOfEdge, layerThickness, layerThicknessEdge, &
+                                      normalVelocity, err)
       call mpas_timer_stop('vmix solve momentum')
 
       !

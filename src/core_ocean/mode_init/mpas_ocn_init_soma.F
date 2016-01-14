@@ -239,7 +239,8 @@ contains
            factor = 1.0 - distance**2 / config_soma_domain_width**2
 
            if(factor > config_soma_shelf_width) then
-              bottomDepth(iCell) =  config_soma_shelf_depth + (config_soma_bottom_depth-config_soma_shelf_depth)/2.0_RKIND * (1.0 + tanh(factor/config_soma_phi))
+              bottomDepth(iCell) = config_soma_shelf_depth + (config_soma_bottom_depth-config_soma_shelf_depth)/2.0_RKIND &
+                                 * (1.0 + tanh(factor/config_soma_phi))
            else
               bottomDepth(iCell) = -1.0_RKIND
            endif
@@ -305,9 +306,12 @@ contains
         call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
         call mpas_pool_get_subpool(forcingPool, 'tracersInteriorRestoringFields', tracersInteriorRestoringFieldsPool)
         call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', activeTracersPistonVelocity, 1)
-        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', activeTracersSurfaceRestoringValue, 1)
-        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringRate', activeTracersInteriorRestoringRate, 1)
-        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringValue', activeTracersInteriorRestoringValue, 1)
+        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', &
+                                 activeTracersSurfaceRestoringValue, 1)
+        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringRate', &
+                                 activeTracersInteriorRestoringRate, 1)
+        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringValue', &
+                                 activeTracersInteriorRestoringValue, 1)
 
         do iCell = 1, nCells
            lonCurrent = lonCell(iCell)
@@ -318,8 +322,9 @@ contains
               zMid = refZMid(k)
 
               distance = config_soma_ref_density &
-                  - (1.0_RKIND - config_soma_density_difference_linear) * config_soma_density_difference * tanh(zMid / config_soma_thermocline_depth) &
-                  - config_soma_density_difference_linear * config_soma_density_difference * zMid / config_soma_bottom_depth
+                  - (1.0_RKIND - config_soma_density_difference_linear) * config_soma_density_difference &
+                  * tanh(zMid / config_soma_thermocline_depth) - config_soma_density_difference_linear &
+                  * config_soma_density_difference * zMid / config_soma_bottom_depth
               factor = (config_soma_ref_density - distance) / config_eos_linear_alpha
               temperature = config_soma_surface_temperature + factor
 

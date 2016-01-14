@@ -203,7 +203,8 @@ contains
             do k=1,maxLevelEdgeTop(iEdge)
                tend(k,iEdge) = tend(k,iEdge) + edgeMask(k,iEdge) * invdcEdge * ( &
                   - ( montgomeryPotential(k,cell2) - montgomeryPotential(k,cell1) ) &
-                  +  0.5_RKIND*(pressure(k,cell1)+pressure(k,cell2)) * ( 1.0_RKIND/potentialDensity(k,cell2) - 1.0_RKIND/potentialDensity(k,cell1) ) )
+                  +  0.5_RKIND*(pressure(k,cell1)+pressure(k,cell2)) * ( 1.0_RKIND/potentialDensity(k,cell2) &
+                  - 1.0_RKIND/potentialDensity(k,cell1) ) )
             end do
          end do
          !$omp end do
@@ -247,7 +248,8 @@ contains
 
      elseif (config_pressure_gradient_type.eq.'Jacobian_from_TS') then
 
-         allocate(JacobianDxDs(nVertLevels),JacobianTz(nVertLevels),JacobianSz(nVertLevels), T1(nVertLevels), T2(nVertLevels), S1(nVertLevels), S2(nVertLevels))
+         allocate(JacobianDxDs(nVertLevels),JacobianTz(nVertLevels),JacobianSz(nVertLevels), T1(nVertLevels))
+         allocate(T2(nVertLevels), S1(nVertLevels), S2(nVertLevels))
 
          !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, kMax, k, pGrad, alpha, beta)
          do iEdge=1,nEdgesSolve
@@ -280,10 +282,14 @@ contains
                ! Average alpha and beta over four data points of the Jacobian cell.
                ! Note that inSituThermalExpansionCoeff and inSituSalineContractionCoeff include a 1/density factor,
                ! so must multiply by density here.
-               alpha = 0.25_RKIND*(  density(k,cell1)*inSituThermalExpansionCoeff (k,cell1) + density(k-1,cell1)*inSituThermalExpansionCoeff (k-1,cell1) &
-                             + density(k,cell2)*inSituThermalExpansionCoeff (k,cell2) + density(k-1,cell2)*inSituThermalExpansionCoeff (k-1,cell2) )
-               beta  = 0.25_RKIND*(  density(k,cell1)*inSituSalineContractionCoeff(k,cell1) + density(k-1,cell1)*inSituSalineContractionCoeff(k-1,cell1) &
-                             + density(k,cell2)*inSituSalineContractionCoeff(k,cell2) + density(k-1,cell2)*inSituSalineContractionCoeff(k-1,cell2) )
+               alpha = 0.25_RKIND*(  density(k,cell1)*inSituThermalExpansionCoeff (k,cell1) &
+                                   + density(k-1,cell1)*inSituThermalExpansionCoeff (k-1,cell1) &
+                                   + density(k,cell2)*inSituThermalExpansionCoeff (k,cell2) &
+                                   + density(k-1,cell2)*inSituThermalExpansionCoeff (k-1,cell2) )
+               beta  = 0.25_RKIND*(  density(k,cell1)*inSituSalineContractionCoeff(k,cell1) &
+                                   + density(k-1,cell1)*inSituSalineContractionCoeff(k-1,cell1) &
+                                   + density(k,cell2)*inSituSalineContractionCoeff(k,cell2) &
+                                   + density(k-1,cell2)*inSituSalineContractionCoeff(k-1,cell2) )
 
                ! Shchepetkin and McWilliams (2003) (7.16)
                JacobianDxDs(k) = -alpha*JacobianTz(k) + beta*JacobianSz(k)

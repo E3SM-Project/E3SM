@@ -44,7 +44,8 @@ module ocn_lagrangian_particle_tracking_interpolations
 !>         initialize_weights logical is to determine if weights should be initialized
 !>  Output: reconstructed vector field (measured in X,Y,Z) located at vertices
 !-----------------------------------------------------------------------
-  subroutine ocn_vertex_reconstruction(filterNum, meshPool, scratchPool, particleCellPool, layerThickness, u, uvReconstructX, uvReconstructY, uvReconstructZ )!{{{
+  subroutine ocn_vertex_reconstruction(filterNum, meshPool, scratchPool, particleCellPool, layerThickness, u, & !{{{
+                                       uvReconstructX, uvReconstructY, uvReconstructZ )
 
     implicit none
 
@@ -61,7 +62,8 @@ module ocn_lagrangian_particle_tracking_interpolations
     ! could add additional reconstruction techniques here with switch if desired
 
     ! assumption is made that mpas_init_reconstruct was previously called
-    call ocn_RBFvertex(meshPool, filterNum, layerThickness, u, uvReconstructX, uvReconstructY, uvReconstructZ, .false., scratchPool, particleCellPool)
+    call ocn_RBFvertex(meshPool, filterNum, layerThickness, u, uvReconstructX, uvReconstructY, uvReconstructZ, .false., &
+                       scratchPool, particleCellPool)
 
   end subroutine ocn_vertex_reconstruction!}}}
 
@@ -79,7 +81,8 @@ module ocn_lagrangian_particle_tracking_interpolations
 !>         initialize_weights logical is to determine if weights should be initialized
 !>  Output: reconstructed vector field (measured in X,Y,Z) located at vertices
 !-----------------------------------------------------------------------
-  subroutine ocn_RBFvertex(meshPool, filterNum, layerThickness, u, uvReconstructX, uvReconstructY, uvReconstructZ, initialize_weights, scratchPool, particleCellPool)!{{{
+  subroutine ocn_RBFvertex(meshPool, filterNum, layerThickness, u, uvReconstructX, uvReconstructY, uvReconstructZ, & !{{{
+                           initialize_weights, scratchPool, particleCellPool)
 
     implicit none
 
@@ -211,13 +214,15 @@ module ocn_lagrangian_particle_tracking_interpolations
 
     ! input variables
     type (mpas_pool_type), pointer, intent(in) :: meshPool !< Input: Mesh information
-    real (kind=RKIND), dimension(:,:), pointer, intent(in) :: ucReconstructX, ucReconstructY, ucReconstructZ   !< Input: Cell center values
+    real (kind=RKIND), dimension(:,:), pointer, intent(in) :: ucReconstructX, & !< Input: X Cell center values
+                                                              ucReconstructY, & !< Input: Y Cell center values
+                                                              ucReconstructZ    !< Input: z Cell center values
     integer, dimension(:,:), pointer, intent(in) :: boundaryVertex, boundaryCell !< Input: Boundary flags
 
     ! output variables
-    real (kind=RKIND), dimension(:,:), pointer, intent(out) :: uvReconstructX !< Output: X Component of velocity reconstructed to vertices
-    real (kind=RKIND), dimension(:,:), pointer, intent(out) :: uvReconstructY !< Output: Y Component of velocity reconstructed to vertices
-    real (kind=RKIND), dimension(:,:), pointer, intent(out) :: uvReconstructZ !< Output: Z Component of velocity reconstructed to vertices
+    real (kind=RKIND), dimension(:,:), pointer, intent(out) :: uvReconstructX !< Output: Vertex Reconstructed X Velocity Component
+    real (kind=RKIND), dimension(:,:), pointer, intent(out) :: uvReconstructY !< Output: Vertex Reconstructed Y Velocity Component
+    real (kind=RKIND), dimension(:,:), pointer, intent(out) :: uvReconstructZ !< Output: Vertex Reconstructed Z Velocity Component
 
     ! local variables
     integer, pointer :: nVerticesSolve, nCells, vertexDegree, nVertLevels
@@ -269,7 +274,8 @@ module ocn_lagrangian_particle_tracking_interpolations
       if(any(boundaryVertex(:,aVertex) < 1)) then
         ! get vertex location and cell center locations
         do aCell = 1, vertexDegree
-          ! logical could be moved outside of code block as an optimization (then essentially would have two nearly identical code blocks...)
+          ! logical could be moved outside of code block as an optimization
+          ! (then essentially would have two nearly identical code blocks...)
           if (is_periodic) then
             ! fix periodicity with respect to pointInterp (xVertex)
             pointVertex(1,aCell) = mpas_fix_periodicity(xCell(cellsOnVertex(aCell, aVertex)), xVertex(aVertex), x_period)
@@ -329,12 +335,17 @@ module ocn_lagrangian_particle_tracking_interpolations
 
     ! input variables
     type (mpas_pool_type), pointer, intent(in) :: meshPool !< Input: Mesh information
-    real (kind=RKIND), dimension(:,:), pointer, intent(in) :: uvReconstructX, uvReconstructY, uvReconstructZ   !< Input: Vertex values
+    real (kind=RKIND), dimension(:,:), pointer, intent(in) :: uvReconstructX, & !< Input: Vertex x values
+                                                              uvReconstructY, & !< Input: Vertex y values
+                                                              uvReconstructZ    !< Input: Vertex z values
 
     ! output variables
-    real (kind=RKIND), dimension(:,:), pointer, intent(out) :: ucReconstructX !< Output: X Component of velocity reconstructed to cells
-    real (kind=RKIND), dimension(:,:), pointer, intent(out) :: ucReconstructY !< Output: Y Component of velocity reconstructed to cells
-    real (kind=RKIND), dimension(:,:), pointer, intent(out) :: ucReconstructZ !< Output: Z Component of velocity reconstructed to cells
+    real (kind=RKIND), dimension(:,:), pointer, intent(out) :: ucReconstructX !< Output: X Component of velocity
+                                                                              !<         reconstructed to cells
+    real (kind=RKIND), dimension(:,:), pointer, intent(out) :: ucReconstructY !< Output: Y Component of velocity
+                                                                              !<         reconstructed to cells
+    real (kind=RKIND), dimension(:,:), pointer, intent(out) :: ucReconstructZ !< Output: Z Component of velocity
+                                                                              !<         reconstructed to cells
 
     ! local variables
     integer, pointer :: nCellsSolve, nVertLevels
@@ -485,9 +496,12 @@ module ocn_lagrangian_particle_tracking_interpolations
       do atime = 1,Ntimes
         !call ocn_simple_vector_shapiro_filter(meshPool, scratchPool, boundaryVertex, boundaryCell, &
         !  ucReconstructX, ucReconstructY, ucReconstructZ)
-        call ocn_simple_vector_laplacian_filter(meshPool, scratchPool, boundaryCell % array, layerThickness, ucReconstructX % array)
-        call ocn_simple_vector_laplacian_filter(meshPool, scratchPool, boundaryCell % array, layerThickness, ucReconstructY % array)
-        call ocn_simple_vector_laplacian_filter(meshPool, scratchPool, boundaryCell % array, layerThickness, ucReconstructZ % array)
+        call ocn_simple_vector_laplacian_filter(meshPool, scratchPool, boundaryCell % array, layerThickness, &
+                                                ucReconstructX % array)
+        call ocn_simple_vector_laplacian_filter(meshPool, scratchPool, boundaryCell % array, layerThickness, &
+                                                ucReconstructY % array)
+        call ocn_simple_vector_laplacian_filter(meshPool, scratchPool, boundaryCell % array, layerThickness, &
+                                                ucReconstructZ % array)
 
       end do
 
@@ -546,7 +560,8 @@ module ocn_lagrangian_particle_tracking_interpolations
               cellVol = layerThickness(aLevel,cellsOnCell(aNeigh,aCell)) * areaCell(cellsOnCell(aNeigh,aCell)) &
                 * (1-boundaryCell(aLevel, cellsOnCell(aNeigh,aCell)))
               volSum = volSum + cellVol
-              ucTemp % array(aLevel, aCell) = ucTemp % array(aLevel, aCell) + ucReconstruct(aLevel,cellsOnCell(aNeigh,aCell))* cellVol
+              ucTemp % array(aLevel, aCell) = ucTemp % array(aLevel, aCell) + ucReconstruct(aLevel,cellsOnCell(aNeigh,aCell)) &
+                                            * cellVol
             end do
             ucTemp % array(aLevel, aCell) = ucTemp % array(aLevel, aCell) / volSum
           end if

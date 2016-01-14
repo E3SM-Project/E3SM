@@ -93,15 +93,15 @@ contains
       integer :: iCell, k, idx
 
       ! Define config variable pointers
-      character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid, config_sea_mount_layer_type, config_sea_mount_stratification_type
+      character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid, config_sea_mount_layer_type, &
+                                          config_sea_mount_stratification_type
       real (kind=RKIND), pointer :: config_sea_mount_width, &
-                                    config_sea_mount_bottom_depth, &
-                                    config_sea_mount_height,config_sea_mount_radius, &
+                                    config_sea_mount_bottom_depth, config_sea_mount_height,config_sea_mount_radius, &
                                     config_sea_mount_density_coef_linear, config_sea_mount_density_coef_exp, &
-                                    config_sea_mount_density_gradient_linear, config_sea_mount_density_gradient_exp,&
-                                    config_sea_mount_density_depth_linear, config_sea_mount_density_depth_exp,&
-                                    config_sea_mount_density_ref, config_sea_mount_density_alpha, config_sea_mount_density_Tref, config_sea_mount_salinity, &
-                                    config_sea_mount_coriolis_parameter
+                                    config_sea_mount_density_gradient_linear, config_sea_mount_density_gradient_exp, &
+                                    config_sea_mount_density_depth_linear, config_sea_mount_density_depth_exp, &
+                                    config_sea_mount_density_ref, config_sea_mount_density_alpha, config_sea_mount_density_Tref, &
+                                    config_sea_mount_salinity, config_sea_mount_coriolis_parameter
 
       ! Define dimension pointers
       integer, pointer :: nCellsSolve, nEdgesSolve, nVertLevels, nVertLevelsP1
@@ -151,7 +151,8 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-      if ( on_a_sphere ) call mpas_dmpar_global_abort('ERROR: The sea mount configuration can only be applied to a planar mesh. Exiting...')
+      if ( on_a_sphere ) call mpas_dmpar_global_abort('ERROR: The sea mount configuration can only be applied to ' &
+                                                   // 'a planar mesh. Exiting...')
 
       allocate(interfaceLocations(nVertLevelsP1))
       call ocn_generate_vertical_grid( config_vertical_grid, interfaceLocations )
@@ -249,7 +250,8 @@ contains
            radius =  sqrt( (xCell(iCell)-xMidGlobal)**2 + (yCell(iCell)-yMidGlobal)**2 )
 
            ! Set bottomDepth.  See Beckmann and Haidvogel 1993 eqn 12, Shchepetkin 2003 eqn 4.2
-           bottomDepth(iCell) = config_sea_mount_bottom_depth - config_sea_mount_height * exp(-(max(radius-config_sea_mount_radius,0.0))**2/ config_sea_mount_width**2)
+           bottomDepth(iCell) = config_sea_mount_bottom_depth - config_sea_mount_height &
+                              * exp(-(max(radius-config_sea_mount_radius,0.0))**2 / config_sea_mount_width**2)
 
            ! Set maxLevelCell and layerThickness
            if ( trim(config_sea_mount_layer_type) == 'z-level' ) then
@@ -285,16 +287,20 @@ contains
               z = z - 0.5_RKIND * layerThickness(k, iCell)
 
               if ( trim(config_sea_mount_stratification_type) == 'linear' ) then
-                 densityCell =  config_sea_mount_density_coef_linear - config_sea_mount_density_gradient_linear * z / config_sea_mount_density_depth_linear
+                 densityCell =  config_sea_mount_density_coef_linear - config_sea_mount_density_gradient_linear * z &
+                             / config_sea_mount_density_depth_linear
               elseif ( trim(config_sea_mount_stratification_type) == 'exponential' ) then
-                 densityCell = config_sea_mount_density_coef_exp - config_sea_mount_density_gradient_exp * exp( z / config_sea_mount_density_depth_exp)
+                 densityCell = config_sea_mount_density_coef_exp - config_sea_mount_density_gradient_exp * exp( z &
+                             / config_sea_mount_density_depth_exp)
               else
-                 call mpas_dmpar_global_abort(' Error: Incorrect config_sea_mount_stratification_type: '//config_sea_mount_stratification_type)
+                 call mpas_dmpar_global_abort(' Error: Incorrect config_sea_mount_stratification_type: ' &
+                                              // config_sea_mount_stratification_type)
               end if
 
               ! Back-solve linear EOS for temperature, with S=S_ref
               ! T = T_ref - (rho - rho_ref)/alpha
-              activeTracers(idx, k, iCell) = config_sea_mount_density_Tref - (densityCell - config_sea_mount_density_ref) / config_sea_mount_density_alpha
+              activeTracers(idx, k, iCell) = config_sea_mount_density_Tref - (densityCell - config_sea_mount_density_ref) &
+                                           / config_sea_mount_density_alpha
               z = z - 0.5_RKIND * layerThickness(k, iCell)
 
            end do

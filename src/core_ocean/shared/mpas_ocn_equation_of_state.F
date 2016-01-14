@@ -72,8 +72,9 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, k_displaced, displacement_type, density, err, &
-      thermalExpansionCoeff, salineContractionCoeff, timeLevelIn)!{{{
+   subroutine ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, k_displaced, & !{{{
+                                            displacement_type, density, err, thermalExpansionCoeff, &
+                                            salineContractionCoeff, timeLevelIn)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !  This module contains routines necessary for computing the density
    !  from model temperature and salinity using an equation of state.
@@ -131,13 +132,15 @@ contains
 
       if (linearEos) then
 
-         call ocn_equation_of_state_linear_density(meshPool, k_displaced, displacement_type, indexT, indexS, activeTracers, density, err, &
-            tracersSurfaceValue, thermalExpansionCoeff, salineContractionCoeff)
+         call ocn_equation_of_state_linear_density(meshPool, k_displaced, displacement_type, indexT, indexS, &
+                                                   activeTracers, density, err, tracersSurfaceValue, &
+                                                   thermalExpansionCoeff, salineContractionCoeff)
 
       elseif (jmEos) then
 
-         call ocn_equation_of_state_jm_density(meshPool, scratchPool, k_displaced, displacement_type, indexT, indexS, activeTracers, density, err, &
-            tracersSurfaceValue, thermalExpansionCoeff, salineContractionCoeff)
+         call ocn_equation_of_state_jm_density(meshPool, scratchPool, k_displaced, displacement_type, indexT, indexS, &
+                                               activeTracers, density, err, tracersSurfaceValue, thermalExpansionCoeff, &
+                                               salineContractionCoeff)
 
       endif
 

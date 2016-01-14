@@ -126,7 +126,8 @@ contains
 
       integer, dimension(:), pointer :: maxLevelEdgeTop, maxLevelVertexTop, &
             maxLevelCell, nEdgesOnCell
-      integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge, edgeMask, edgesOnVertex, edgesOnCell, edgeSignOnVertex, edgeSignOnCell
+      integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge, edgeMask, edgesOnVertex, edgesOnCell, edgeSignOnVertex, &
+                                          edgeSignOnCell
 
 
       real (kind=RKIND) :: u_diffusion, invAreaCell1, invAreaCell2, invAreaTri1, &
@@ -215,7 +216,8 @@ contains
          do i = 1, vertexDegree
             iEdge = edgesOnVertex(i, iVertex)
             do k = 1, maxLevelVertexTop(iVertex)
-               delsq_relativeVorticity(k, iVertex) = delsq_relativeVorticity(k, iVertex) + edgeSignOnVertex(i, iVertex) * dcEdge(iEdge) * delsq_u(k, iEdge) * invAreaTri1
+               delsq_relativeVorticity(k, iVertex) = delsq_relativeVorticity(k, iVertex) + edgeSignOnVertex(i, iVertex) &
+                                                   * dcEdge(iEdge) * delsq_u(k, iEdge) * invAreaTri1
             end do
          end do
       end do
@@ -228,7 +230,8 @@ contains
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
             do k = 1, maxLevelCell(iCell)
-               delsq_divergence(k, iCell) = delsq_divergence(k, iCell) - edgeSignOnCell(i, iCell) * dvEdge(iEdge) * delsq_u(k, iEdge) * invAreaCell1
+               delsq_divergence(k, iCell) = delsq_divergence(k, iCell) - edgeSignOnCell(i, iCell) * dvEdge(iEdge) &
+                                          * delsq_u(k, iEdge) * invAreaCell1
             end do
          end do
       end do
@@ -415,7 +418,8 @@ contains
       ! may change boundaries to false later
       call mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, meshPool, edgeSignOnCell, .true., divTensorR3Cell)
 
-      call mpas_vector_R3Cell_to_2DEdge(divTensorR3Cell, meshPool, edgeTangentVectors, .true., normalVectorEdge, tangentialVectorEdge)
+      call mpas_vector_R3Cell_to_2DEdge(divTensorR3Cell, meshPool, edgeTangentVectors, .true., normalVectorEdge, &
+                                        tangentialVectorEdge)
 
       !!!!!!! second div(grad())
 

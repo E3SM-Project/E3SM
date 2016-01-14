@@ -108,8 +108,8 @@ contains
                                     config_overflow_slope_width_dist, config_overflow_plug_width_frac, &
                                     config_overflow_slope_center_frac, config_overflow_slope_width_frac, &
                                     config_overflow_bottom_depth, config_overflow_ridge_depth, &
-                                    config_overflow_plug_temperature, config_overflow_domain_temperature, config_overflow_salinity, &
-                                    config_overflow_isopycnal_min_thickness
+                                    config_overflow_plug_temperature, config_overflow_domain_temperature, &
+                                    config_overflow_salinity, config_overflow_isopycnal_min_thickness
 
 
      real (kind=RKIND), dimension(:), pointer :: interfaceLocations

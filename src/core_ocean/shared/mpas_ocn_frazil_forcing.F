@@ -254,7 +254,8 @@ contains
       !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells
         do k = 1, maxLevelCell(iCell)
-          activeTracersTend(indexTemperature,k,iCell) = activeTracersTend(indexTemperature,k,iCell) + frazilTemperatureTendency(k,iCell)
+          activeTracersTend(indexTemperature,k,iCell) = activeTracersTend(indexTemperature,k,iCell) &
+                                                      + frazilTemperatureTendency(k,iCell)
           activeTracersTend(indexSalinity,k,iCell) = activeTracersTend(indexSalinity,k,iCell) + frazilSalinityTendency(k,iCell)
         end do
       end do
@@ -272,7 +273,7 @@ contains
 !> \date    10/19/2015
 !> \details
 !>   ocn_frazil_forcing_build_arrays computes the tendencies to layer thickness, temperature and salinity
-!>	due to the creation and possible melting of frazil ice
+!>   due to the creation and possible melting of frazil ice
 !>
 !>   these tendencies can be retrieved at any point by calling into ocn_frazil_forcing_{tracers, thickness} routines
 !>
@@ -396,7 +397,8 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_frazil_heat_of_fusion', config_frazil_heat_of_fusion)
       call mpas_pool_get_config(ocnConfigs, 'config_frazil_sea_ice_density', config_frazil_sea_ice_density)
       call mpas_pool_get_config(ocnConfigs, 'config_frazil_ice_reference_salinity', config_frazil_ice_reference_salinity)
-      call mpas_pool_get_config(ocnConfigs, 'config_frazil_maximum_freezing_temperature', config_frazil_maximum_freezing_temperature)
+      call mpas_pool_get_config(ocnConfigs, 'config_frazil_maximum_freezing_temperature', &
+                                config_frazil_maximum_freezing_temperature)
 
       ! get time step in units of seconds
       timeStep = mpas_get_clock_timestep(domain % clock, ierr=err)
@@ -408,8 +410,9 @@ contains
       frazilLayerThicknessTendency = 0.0_RKIND
 
       ! loop over all columns
-      !$omp do schedule(runtime) private(kBottomFrazil, k, columnTemperatureMin, sumNewFrazilIceThickness, oceanFreezingTemperature, &
-      !$omp                              potential, freezingEnergy, meltingEnergy, newFrazilIceThickness, meltedFrazilIceThickness)
+      !$omp do schedule(runtime) private(kBottomFrazil, k, columnTemperatureMin, sumNewFrazilIceThickness, &
+      !$omp                              oceanFreezingTemperature, potential, freezingEnergy, meltingEnergy, &
+      !$omp                              newFrazilIceThickness, meltedFrazilIceThickness)
       do iCell=1,nCells
 
         ! find deepest level where frazil can be created
@@ -424,7 +427,9 @@ contains
         ! find minimum temperature between 1:kBottomFrazil
         columnTemperatureMin = 1.0e30_RKIND
         do k=1,kBottomFrazil
-          if(activeTracers(indexTemperature,k,iCell).lt.columnTemperatureMin) columnTemperatureMin=activeTracers(indexTemperature,k,iCell)
+          if ( activeTracers(indexTemperature,k,iCell) .lt. columnTemperatureMin ) then
+             columnTemperatureMin = activeTracers(indexTemperature,k,iCell)
+          end if
         enddo
 
         ! test min temperature agains max freezing temperature to see if we should even consider creating frazil
@@ -464,8 +469,8 @@ contains
             frazilSalinityTendency(k,iCell) = - newFrazilIceThickness * config_frazil_ice_reference_salinity / dt
 
             ! ocean fluid temperature is warmed due to creation of frazil
-            frazilTemperatureTendency(k,iCell) =  + ( newFrazilIceThickness * config_frazil_heat_of_fusion * config_frazil_sea_ice_density )  &
-                                               / (config_specific_heat_sea_water * rho_sw) / dt
+            frazilTemperatureTendency(k,iCell) =  + ( newFrazilIceThickness * config_frazil_heat_of_fusion &
+                                               * config_frazil_sea_ice_density ) / (config_specific_heat_sea_water * rho_sw) / dt
 
             ! keep track of sum of frazil ice
             sumNewFrazilIceThickness = sumNewFrazilIceThickness + newFrazilIceThickness
@@ -484,20 +489,23 @@ contains
               meltedFrazilIceThickness = min(meltedFrazilIceThickness, sumNewFrazilIceThickness)
 
               ! limit melting by fraction of layer thickness
-              meltedFrazilIceThickness = min(meltedFrazilIceThickness, layerThickness(k,iCell)*config_frazil_fractional_thickness_limit)
+              meltedFrazilIceThickness = min(meltedFrazilIceThickness, layerThickness(k,iCell) &
+                                       * config_frazil_fractional_thickness_limit)
 
               ! compute tendency to thickness, temperature and salinity
 
               ! layer thickness increases due to melting of frazil
               ! note -- scaling by local ocean density to mimimize surface pressure forcing errors
-              frazilLayerThicknessTendency(k,iCell) = + meltedFrazilIceThickness * config_frazil_sea_ice_density / density(k,iCell) / dt
+              frazilLayerThicknessTendency(k,iCell) = + meltedFrazilIceThickness * config_frazil_sea_ice_density &
+                                                    / density(k,iCell) / dt
 
               ! salt is released into ocean with the melting frazil
               frazilSalinityTendency(k,iCell) = + meltedFrazilIceThickness * config_frazil_ice_reference_salinity / dt
 
               ! ocean fluid temperature is cooled due to melting of frazil
-              frazilTemperatureTendency(k,iCell) = - ( meltedFrazilIceThickness * config_frazil_heat_of_fusion * config_frazil_sea_ice_density )  &
-                                                 / (config_specific_heat_sea_water * rho_sw) / dt
+              frazilTemperatureTendency(k,iCell) = - ( meltedFrazilIceThickness * config_frazil_heat_of_fusion &
+                                                 * config_frazil_sea_ice_density ) / (config_specific_heat_sea_water * rho_sw) &
+                                                 / dt
 
               ! keep track of new frazil ice
               sumNewFrazilIceThickness = sumNewFrazilIceThickness - meltedFrazilIceThickness
@@ -510,7 +518,8 @@ contains
 
         ! accumulate frazil mass to column total
         ! note: the accumulatedFrazilIceMass (at both time levels) is reset to zero after being sent to the coupler
-        accumulatedFrazilIceMassNew(iCell) = accumulatedFrazilIceMassOld(iCell) + sumNewFrazilIceThickness*config_frazil_sea_ice_density
+        accumulatedFrazilIceMassNew(iCell) = accumulatedFrazilIceMassOld(iCell) + sumNewFrazilIceThickness &
+                                           * config_frazil_sea_ice_density
 
         ! sea surface pressure due to the net production of frazil ice
         frazilSurfacePressure(iCell) = accumulatedFrazilIceMassNew(iCell) * gravity
