@@ -235,9 +235,12 @@ contains
       call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'minValueWithinOceanLayerRegion', minValueWithinOceanLayerRegion)
       call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'maxValueWithinOceanLayerRegion', maxValueWithinOceanLayerRegion)
       call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'avgValueWithinOceanLayerRegion', avgValueWithinOceanLayerRegion)
-      call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'minValueWithinOceanVolumeRegion', minValueWithinOceanVolumeRegion)
-      call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'maxValueWithinOceanVolumeRegion', maxValueWithinOceanVolumeRegion)
-      call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'avgValueWithinOceanVolumeRegion', avgValueWithinOceanVolumeRegion)
+      call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'minValueWithinOceanVolumeRegion', &
+                               minValueWithinOceanVolumeRegion)
+      call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'maxValueWithinOceanVolumeRegion', &
+                               maxValueWithinOceanVolumeRegion)
+      call mpas_pool_get_array(layerVolumeWeightedAverageAMPool, 'avgValueWithinOceanVolumeRegion', &
+                               avgValueWithinOceanVolumeRegion)
 
       ! loop over blocks
       ! NOTE: code is not valid for multiple blocks !
@@ -386,16 +389,20 @@ contains
       do iRegion=1,nOceanRegionsTmp
         do iDataField=1,nDefinedDataFields
           do iLevel=1,nVertLevels
-             avgValueWithinOceanVolumeRegion(iDataField, iRegion) = avgValueWithinOceanVolumeRegion(iDataField, iRegion) + avgValueWithinOceanLayerRegion(iDataField,iLevel,iRegion)
+             avgValueWithinOceanVolumeRegion(iDataField, iRegion) = avgValueWithinOceanVolumeRegion(iDataField, iRegion) &
+                                                                  + avgValueWithinOceanLayerRegion(iDataField,iLevel,iRegion)
           enddo
         enddo
         do iDataField=4,nDefinedDataFields
-          avgValueWithinOceanVolumeRegion(iDataField, iRegion) = avgValueWithinOceanVolumeRegion(iDataField, iRegion) / max(avgValueWithinOceanVolumeRegion(3,iRegion),1.0e-8_RKIND)
+          avgValueWithinOceanVolumeRegion(iDataField, iRegion) = avgValueWithinOceanVolumeRegion(iDataField, iRegion) &
+                                                               / max(avgValueWithinOceanVolumeRegion(3,iRegion),1.0e-8_RKIND)
         enddo
         ! normalize total region volume by total volume cell area
-        avgValueWithinOceanVolumeRegion(3,iRegion) = avgValueWithinOceanVolumeRegion(3,iRegion) / max(avgValueWithinOceanVolumeRegion(2,iRegion),1.0e-8_RKIND)
+        avgValueWithinOceanVolumeRegion(3,iRegion) = avgValueWithinOceanVolumeRegion(3,iRegion) &
+                                                   / max(avgValueWithinOceanVolumeRegion(2,iRegion),1.0e-8_RKIND)
         ! normalize total volume cell area by total number of cells
-        avgValueWithinOceanVolumeRegion(2,iRegion) = avgValueWithinOceanVolumeRegion(2,iRegion) / max(avgValueWithinOceanVolumeRegion(1,iRegion),1.0e-8_RKIND)
+        avgValueWithinOceanVolumeRegion(2,iRegion) = avgValueWithinOceanVolumeRegion(2,iRegion) &
+                                                   / max(avgValueWithinOceanVolumeRegion(1,iRegion),1.0e-8_RKIND)
       enddo
 
       ! find min/max with region volume
@@ -411,12 +418,15 @@ contains
       do iLevel=1,nVertLevels
          ! normalize all field by total volume in each layer
          do iDataField=4,nDefinedDataFields
-            avgValueWithinOceanLayerRegion(iDataField,iLevel,iRegion) = avgValueWithinOceanLayerRegion(iDataField,iLevel,iRegion) / max(avgValueWithinOceanLayerRegion(3,iLevel,iRegion),1.0e-8_RKIND)
+            avgValueWithinOceanLayerRegion(iDataField,iLevel,iRegion) = avgValueWithinOceanLayerRegion(iDataField,iLevel,iRegion) &
+                                                               / max(avgValueWithinOceanLayerRegion(3,iLevel,iRegion),1.0e-8_RKIND)
          enddo
          ! normalize total layer volume by layer area
-         avgValueWithinOceanLayerRegion(3,iLevel,iRegion) = avgValueWithinOceanLayerRegion(3,iLevel,iRegion) / max(avgValueWithinOceanLayerRegion(2,iLevel,iRegion),1.0e-8_RKIND)
+         avgValueWithinOceanLayerRegion(3,iLevel,iRegion) = avgValueWithinOceanLayerRegion(3,iLevel,iRegion) &
+                                                          / max(avgValueWithinOceanLayerRegion(2,iLevel,iRegion),1.0e-8_RKIND)
          ! normalize total layer area by number of cells in region
-         avgValueWithinOceanLayerRegion(2,iLevel,iRegion) = avgValueWithinOceanLayerRegion(2,iLevel,iRegion) / max(avgValueWithinOceanLayerRegion(1,iLevel,iRegion),1.0e-8_RKIND)
+         avgValueWithinOceanLayerRegion(2,iLevel,iRegion) = avgValueWithinOceanLayerRegion(2,iLevel,iRegion) &
+                                                          / max(avgValueWithinOceanLayerRegion(1,iLevel,iRegion),1.0e-8_RKIND)
       enddo
       enddo
 

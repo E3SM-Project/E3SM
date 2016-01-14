@@ -140,8 +140,8 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: gradTracerEdge, gradTracerTopOfEdge, gradHTracerSlopedTopOfCell, &
          dTracerdZTopOfCell, dTracerdZTopOfEdge, areaCellSum
 
-      type (field2DReal), pointer :: gradTracerEdgeField, gradTracerTopOfEdgeField, gradHTracerSlopedTopOfCellField, dTracerdZTopOfCellField, dTracerdZTopOfEdgeField, &
-         areaCellSumField
+      type (field2DReal), pointer :: gradTracerEdgeField, gradTracerTopOfEdgeField, gradHTracerSlopedTopOfCellField, &
+                                     dTracerdZTopOfCellField, dTracerdZTopOfEdgeField, areaCellSumField
 
       err = 0
 
@@ -247,7 +247,8 @@ contains
          !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
             do k = 2, maxLevelCell(iCell)
-               dTracerdZTopOfCell(k,iCell) = (tracers(iTracer,k-1,iCell) - tracers(iTracer,k,iCell)) / (zMid(k-1,iCell) - zMid(k,iCell))
+               dTracerdZTopOfCell(k,iCell) = (tracers(iTracer,k-1,iCell) - tracers(iTracer,k,iCell)) &
+                                           / (zMid(k-1,iCell) - zMid(k,iCell))
             end do
 
             ! Approximation of dTracerdZTopOfCell on the top and bottom interfaces through the idea of having
@@ -310,11 +311,13 @@ contains
                   iEdge = edgesOnCell(i, iCell)
                   do k = 1, maxLevelEdgeTop(iEdge)
                      s_tmpU = relativeSlopeTapering(k, iEdge) * relativeSlopeTopOfEdge(k, iEdge) * dTracerdZTopOfEdge(k, iEdge)
-                     s_tmpD = relativeSlopeTapering(k+1, iEdge) * relativeSlopeTopOfEdge(k+1, iEdge) * dTracerdZTopOfEdge(k+1, iEdge)
+                     s_tmpD = relativeSlopeTapering(k+1, iEdge) * relativeSlopeTopOfEdge(k+1, iEdge) &
+                            * dTracerdZTopOfEdge(k+1, iEdge)
 
                      flux = 0.5 * dvEdge(iEdge) * ( s_tmpU + s_tmpD )
                      flux = flux * layerThicknessEdge(k, iEdge)
-                     tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + edgeSignOnCell(i, iCell) * config_Redi_kappa * flux * invAreaCell
+                     tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + edgeSignOnCell(i, iCell) * config_Redi_kappa * flux &
+                                             * invAreaCell
                   end do
                end do
             end do

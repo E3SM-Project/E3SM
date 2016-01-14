@@ -190,7 +190,9 @@ contains
             prelim_ALE_Thickness(1:kMax) = ALE_Thickness(1:kMax, iCell)
             remainder = 0.0_RKIND
             do k = 1, kMax
-               newThickness = max(min(prelim_ALE_Thickness(k) + remainder, config_max_thickness_factor * restingThickness(k,iCell)), config_min_thickness)
+               newThickness = max( min(prelim_ALE_Thickness(k) + remainder, &
+                                      config_max_thickness_factor * restingThickness(k,iCell) ), &
+                                  config_min_thickness)
                min_ALE_thickness_down(k) = newThickness - prelim_ALE_Thickness(k)
                remainder = remainder - min_ALE_thickness_down(k)
             end do
@@ -199,13 +201,16 @@ contains
             min_ALE_thickness_up(kMax) = 0.0_RKIND
             prelim_ALE_Thickness(1:kMax) = prelim_ALE_Thickness(1:kMax) + min_ALE_thickness_down(1:kMax)
             do k = kMax-1, 1, -1
-               newThickness = max(min(prelim_ALE_Thickness(k) + remainder, config_max_thickness_factor * restingThickness(k,iCell)), config_min_thickness)
+               newThickness = max( min(prelim_ALE_Thickness(k) + remainder, &
+                                      config_max_thickness_factor * restingThickness(k,iCell) ), &
+                                  config_min_thickness)
                min_ALE_thickness_up(k) = newThickness - prelim_ALE_Thickness(k)
                remainder = remainder - min_ALE_thickness_up(k)
             end do
             min_ALE_thickness_up(1) = min_ALE_thickness_up(1) + remainder
 
-            ALE_Thickness(1:kMax, iCell) = ALE_Thickness(1:kMax, iCell) + min_ALE_thickness_down(1:kMax) + min_ALE_thickness_up(1:kMax)
+            ALE_Thickness(1:kMax, iCell) = ALE_Thickness(1:kMax, iCell) + min_ALE_thickness_down(1:kMax) &
+                                         + min_ALE_thickness_up(1:kMax)
 
          enddo
          !$omp end do

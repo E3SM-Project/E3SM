@@ -322,10 +322,10 @@ contains
 
 
 ! Compute the mixed layer depth based on a gradient threshold in temperature and density
-		if(tGradientFlag) then
-			call mpas_pool_get_array(mixedLayerDepthsAMPool, 'tGradMLD',tGradientMLD)
+        if(tGradientFlag) then
+           call mpas_pool_get_array(mixedLayerDepthsAMPool, 'tGradMLD',tGradientMLD)
 
-            allocate(temperatureGradient(nVertLevels,2))
+           allocate(temperatureGradient(nVertLevels,2))
 
            do iCell = 1,nCellsSolve
 
@@ -343,13 +343,14 @@ contains
 ! smooth the gradients to eliminate reduce single point maxima
 
                do k=2,maxLevelCell(iCell)-1
-                  temperatureGradient(k,1) = (temperatureGradient(k-1,1) + temperatureGradient(k,1) + temperatureGradient(k+1,1)) / float(3)
+                  temperatureGradient(k,1) = (temperatureGradient(k-1,1) + temperatureGradient(k,1) &
+                                           + temperatureGradient(k+1,1)) / float(3)
                enddo
 
 
                do k=2, maxLevelCell(iCell)-1
                   if(.not. found_temp_mld .and. temperatureGradient(k+1,1) .ge. tempGrad) then
-                    call interp_bw_levels(zTop(k,iCell),zTop(k+1,iCell),temperatureGradient(k,1),temperatureGradient(k+1,1),          &
+                    call interp_bw_levels(zTop(k,iCell),zTop(k+1,iCell),temperatureGradient(k,1),temperatureGradient(k+1,1), &
                            tempGrad, interp_local,mldTemp,temperatureGradient(k-1,1),zTop(k-1,iCell))
 
                         mldTemp=max(mldTemp,zTop(k+1,iCell)) !make sure MLD isn't deeper than zMid(k+1)

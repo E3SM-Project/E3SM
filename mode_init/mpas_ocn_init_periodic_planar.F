@@ -134,7 +134,8 @@ contains
     call mpas_pool_get_config(domain % configs, 'config_write_cull_cell_mask', config_write_cull_cell_mask)
     call mpas_pool_get_config(domain % configs, 'config_periodic_planar_bottom_depth', config_periodic_planar_bottom_depth)
     call mpas_pool_get_config(domain % configs, 'config_periodic_planar_vert_levels', config_periodic_planar_vert_levels)
-    call mpas_pool_get_config(domain % configs, 'config_periodic_planar_velocity_strength', config_periodic_planar_velocity_strength)
+    call mpas_pool_get_config(domain % configs, 'config_periodic_planar_velocity_strength', &
+                              config_periodic_planar_velocity_strength)
     call mpas_pool_get_config(domain % configs, 'config_vertical_grid', config_vertical_grid)
     !}}}
 
@@ -145,7 +146,8 @@ contains
     call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
     ! test if configure settings are invalid
-    if ( on_a_sphere ) call mpas_dmpar_global_abort('IERROR: The planar periodic configuration can only be applied to a planar mesh. Exiting...')
+    if ( on_a_sphere ) call mpas_dmpar_global_abort('IERROR: The planar periodic configuration can only be applied to ' &
+                                                 // 'a planar mesh. Exiting...')
 
     ! Define interface locations
     allocate(interfaceLocations(nVertLevelsP1))
@@ -346,7 +348,8 @@ contains
 
        ! Define normalVelocity as (grad psiVertex)
        do iEdge = 1, nEdgesSolve
-         normalVelocity(:,iEdge) = -1.0_RKIND * (psiVertex(verticesOnEdge(1, iEdge)) - psiVertex(verticesOnEdge(2, iEdge)))/dvEdge(iEdge)
+         normalVelocity(:,iEdge) = -1.0_RKIND * (psiVertex(verticesOnEdge(1, iEdge)) &
+                                 - psiVertex(verticesOnEdge(2, iEdge)))/dvEdge(iEdge)
        end do
 
        block_ptr => block_ptr % next

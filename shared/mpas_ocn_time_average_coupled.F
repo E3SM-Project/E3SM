@@ -128,10 +128,13 @@ module ocn_time_average_coupled
         avgTracersSurfaceValue(index_temperature,:) = avgTracersSurfaceValue(index_temperature,:) + T0_Kelvin
         avgTracersSurfaceValue(:,:) = avgTracersSurfaceValue(:,:) / ( nAccumulatedCoupled + 1 )
 
-        avgSurfaceVelocity(:,:)     = ( avgSurfaceVelocity(:,:)     * nAccumulatedCoupled + surfaceVelocity(:,:)     ) / ( nAccumulatedCoupled + 1 )
+        avgSurfaceVelocity(:,:) = ( avgSurfaceVelocity(:,:) * nAccumulatedCoupled + surfaceVelocity(:,:) ) &
+                                / ( nAccumulatedCoupled + 1 )
 
-        avgSSHGradient(index_SSHzonal,:)      = ( avgSSHGradient(index_SSHzonal,:)      * nAccumulatedCoupled + gradSSHZonal(1,:) ) / ( nAccumulatedCoupled + 1 )
-        avgSSHGradient(index_SSHmeridional,:) = ( avgSSHGradient(index_SSHmeridional,:) * nAccumulatedCoupled + gradSSHMeridional(1,:) ) / ( nAccumulatedCoupled + 1 )
+        avgSSHGradient(index_SSHzonal,:) = ( avgSSHGradient(index_SSHzonal,:)      * nAccumulatedCoupled + gradSSHZonal(1,:) ) &
+                                         / ( nAccumulatedCoupled + 1 )
+        avgSSHGradient(index_SSHmeridional,:) = ( avgSSHGradient(index_SSHmeridional,:) * nAccumulatedCoupled &
+                                              + gradSSHMeridional(1,:) ) / ( nAccumulatedCoupled + 1 )
         !$omp end workshare
 
         call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)

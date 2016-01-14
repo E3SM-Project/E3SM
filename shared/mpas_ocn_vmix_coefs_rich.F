@@ -164,16 +164,18 @@ contains
       call mpas_timer_start("eos rich", .false., richEOSTimer)
 
       ! compute in-place density
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, 0, 'relative', density, err, timeLevelIn=timeLevel)
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, 0, 'relative', density, err, &
+                                         timeLevelIn=timeLevel)
 
       ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.
       ! That is, layer k has been displaced to the depth of layer k+1.
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, 1, 'relative', displacedDensity, err, timeLevelIn=timeLevel)
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, 1, 'relative', displacedDensity, err, &
+                                         timeLevelIn=timeLevel)
 
       call mpas_timer_stop("eos rich", richEOSTimer)
 
-      call ocn_vmix_get_rich_numbers(meshPool, scratchPool, indexTemperature, indexSalinity, normalVelocity, layerThickness, layerThicknessEdge, &
-                                  density, displacedDensity, activeTracers, RiTopOfEdge, RiTopOfCell, err1)
+      call ocn_vmix_get_rich_numbers(meshPool, scratchPool, indexTemperature, indexSalinity, normalVelocity, layerThickness, &
+                                     layerThicknessEdge, density, displacedDensity, activeTracers, RiTopOfEdge, RiTopOfCell, err1)
 
       call ocn_vel_vmix_coefs_rich(meshPool, RiTopOfEdge, layerThicknessEdge, vertViscTopOfEdge, err2)
       call ocn_tracer_vmix_coefs_rich(meshPool, RiTopOfCell, layerThickness, vertDiffTopOfCell, err3)
@@ -389,8 +391,9 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vmix_get_rich_numbers(meshPool, scratchPool, indexTemperature, indexSalinity, normalVelocity, layerThickness, layerThicknessEdge, & !{{{
-                                 density, displacedDensity, activeTracers, RiTopOfEdge, RiTopOfCell, err)
+   subroutine ocn_vmix_get_rich_numbers(meshPool, scratchPool, indexTemperature, indexSalinity, normalVelocity, & !{{{
+                                        layerThickness, layerThicknessEdge, density, displacedDensity, activeTracers, &
+                                        RiTopOfEdge, RiTopOfCell, err)
 
       !-----------------------------------------------------------------
       !
@@ -533,7 +536,8 @@ contains
           iEdge = edgesOnCell(i, iCell)
 
           do k = 2, maxLevelEdgeBot(iEdge)
-            du2TopOfCell(k, iCell) = du2TopOfCell(k, iCell) + 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge) * du2TopOfEdge(k, iEdge) * invAreaCell
+            du2TopOfCell(k, iCell) = du2TopOfCell(k, iCell) + 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge) &
+                                   * du2TopOfEdge(k, iEdge) * invAreaCell
           end do
         end do
       end do

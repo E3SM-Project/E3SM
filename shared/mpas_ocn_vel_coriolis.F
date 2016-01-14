@@ -70,7 +70,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_coriolis_tend(meshPool, normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, layerThicknessEdge, normalVelocity, kineticEnergyCell, tend, err)!{{{
+   subroutine ocn_vel_coriolis_tend(meshPool, normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, &
+                                    layerThicknessEdge, normalVelocity, kineticEnergyCell, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -153,7 +154,8 @@ contains
                q = q + weightsOnEdge(j,iEdge) * normalVelocity(k,eoe) * workVorticity * layerThicknessEdge(k,eoe)
             end do
 
-           tend(k,iEdge) = tend(k,iEdge) + edgeMask(k, iEdge) * (q - (   kineticEnergyCell(k,cell2) - kineticEnergyCell(k,cell1) ) * invLength )
+           tend(k,iEdge) = tend(k,iEdge) + edgeMask(k, iEdge) * (q - (   kineticEnergyCell(k,cell2) &
+                         - kineticEnergyCell(k,cell1) ) * invLength )
 
          end do
       end do

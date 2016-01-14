@@ -65,7 +65,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_surface_restoring_compute(nTracers, nCellsSolve, tracers, pistonVelocity, tracersSurfaceRestoringValue, tracersSurfaceFlux, err)!{{{
+   subroutine ocn_tracer_surface_restoring_compute(nTracers, nCellsSolve, tracers, pistonVelocity, &
+                                                   tracersSurfaceRestoringValue, tracersSurfaceFlux, err)!{{{
 
       !-----------------------------------------------------------------
       !

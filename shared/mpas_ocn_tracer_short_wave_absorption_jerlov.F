@@ -74,7 +74,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_short_wave_absorption_jerlov_tend(meshPool, forcingPool, index_temperature, layerThickness, penetrativeTemperatureFlux, tend, err)!{{{
+   subroutine ocn_tracer_short_wave_absorption_jerlov_tend(meshPool, forcingPool, index_temperature, layerThickness, &
+                                                           penetrativeTemperatureFlux, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -142,7 +143,8 @@ contains
             depth = depth + layerThickness(k, iCell)
 
             call ocn_get_jerlov_fraction(depth, weights(k+1))
-            tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell)*(weights(k) - weights(k+1))
+            tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell) &
+                                              * (weights(k) - weights(k+1))
          end do
       end do
       !$omp end do

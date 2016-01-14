@@ -310,18 +310,22 @@ contains
                else
                   call mpas_stream_mgr_read(domain % streamManager, streamID=config_AM_input_stream, ierr=err)
                end if
-               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_restart_stream, direction=MPAS_STREAM_INPUT, ierr=err)
-               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_input_stream, direction=MPAS_STREAM_INPUT, ierr=err)
+               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_restart_stream, &
+                                                 direction=MPAS_STREAM_INPUT, ierr=err)
+               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_input_stream, &
+                                                 direction=MPAS_STREAM_INPUT, ierr=err)
             else if ( associated(config_AM_restart_stream) ) then
                if ( config_do_restart ) then
                   call mpas_stream_mgr_read(domain % streamManager, streamID=config_AM_restart_stream, ierr=err)
                end if
-               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_restart_stream, direction=MPAS_STREAM_INPUT, ierr=err)
+               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_restart_stream, &
+                                                 direction=MPAS_STREAM_INPUT, ierr=err)
             else if ( associated(config_AM_input_stream) ) then
                if ( .not. config_do_restart ) then
                   call mpas_stream_mgr_read(domain % streamManager, streamID=config_AM_input_stream, ierr=err)
                end if
-               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_input_stream, direction=MPAS_STREAM_INPUT, ierr=err)
+               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=config_AM_input_stream, &
+                                                 direction=MPAS_STREAM_INPUT, ierr=err)
             end if
             call mpas_timer_stop(timerName)
          end if
@@ -433,14 +437,16 @@ contains
             end if
 
             if ( config_AM_compute_interval == 'output_interval' .and. config_AM_output_stream == 'none') then
-               call mpas_dmpar_global_abort('ERROR: Analysis member has compute_interval of ''output_interval'' without an output stream.')
+               call mpas_dmpar_global_abort('ERROR: Analysis member has compute_interval of ''output_interval'' ' // &
+                                            'without an output stream.')
             end if
 
             if ( config_AM_compute_interval /= 'output_interval' ) then
                alarmName = poolItr % memberName(1:nameLength) // computeAlarmSuffix
                call mpas_set_timeInterval(alarmTimeStep, timeString=config_AM_compute_interval, ierr=err_tmp)
                if ( config_AM_output_stream /= 'none' ) then
-                  call MPAS_stream_mgr_get_property(domain % streamManager, config_AM_output_stream, MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
+                  call MPAS_stream_mgr_get_property(domain % streamManager, config_AM_output_stream, &
+                                                    MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
                   call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
                else
                   call mpas_pool_get_config(domain % configs, 'config_start_time', config_start_time)
@@ -539,7 +545,8 @@ contains
                configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_output_stream'
                call mpas_pool_get_config(domain % configs, configName, config_AM_output_stream)
                if ( config_AM_output_stream /= 'none' ) then
-                  call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_output_stream, forceWriteNow=.true., ierr=err_tmp)
+                  call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_output_stream, &
+                                             forceWriteNow=.true., ierr=err_tmp)
                end if
                if (.not. config_AM_compute_on_startup) then
                   write(stderrUnit, *) ' *** WARNING: write_on_startup called without compute_on_startup for analysis member: ' &
@@ -628,7 +635,8 @@ contains
 
             ! Compute analysis member just before output
             if ( config_AM_compute_interval == 'output_interval' .and. config_AM_output_stream /= 'none') then
-               if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID=config_AM_output_stream, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
+               if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID=config_AM_output_stream, &
+                    direction=MPAS_STREAM_OUTPUT, ierr=err_tmp) ) then
                   call mpas_timer_start(timerName, .false.)
                   call ocn_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
                   call mpas_timer_stop(timerName)

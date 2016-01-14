@@ -90,12 +90,14 @@ contains
          call ocn_generate_100layerACMEv1_vertical_grid(interfaceLocations)
       else if ( trim(gridType) == '1dCVTgenerator' ) then
          if (.not. present(configPool)) then
-            call mpas_dmpar_global_abort("ERROR: requesting a 1d CVT vertical grid generation without passing the corresponding parameters. Exiting...")
+            call mpas_dmpar_global_abort("ERROR: requesting a 1d CVT vertical grid generation without passing the " &
+                                      // "corresponding parameters. Exiting...")
          else
             call ocn_generate_1dCVT_vertical_grid(configPool, interfaceLocations)
          end if
       else
-         write(stderrUnit, *) ' WARNING: '//trim(gridType)//' is an invalid vertical grid choice. No vertical grid will be generated.'
+         write(stderrUnit, *) ' WARNING: '//trim(gridType)//' is an invalid vertical grid choice. No vertical ' &
+                           // 'grid will be generated.'
       end if
 
    end subroutine ocn_generate_vertical_grid!}}}
@@ -526,7 +528,8 @@ contains
       zMid(:) = 0.0_RKIND
 
       if(present(ssh) .and. .not. present(restingThickness)) then
-         write (stderrUnit,*) ' Error: ssh present but restingThickness not present in ocn_compute_layerThickness_zMid_from_bottomDepth'
+         write (stderrUnit,*) ' Error: ssh present but restingThickness not present ' &
+                           // 'in ocn_compute_layerThickness_zMid_from_bottomDepth'
          iErr = 1
          return
       end if
@@ -768,7 +771,8 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_rx1_max', config_rx1_max)
       call mpas_pool_get_config(domain % configs, 'config_rx1_horiz_smooth_weight', config_rx1_horiz_smooth_weight)
       call mpas_pool_get_config(domain % configs, 'config_rx1_vert_smooth_weight', config_rx1_vert_smooth_weight)
-      call mpas_pool_get_config(domain % configs, 'config_rx1_horiz_smooth_open_ocean_cells', config_rx1_horiz_smooth_open_ocean_cells)
+      call mpas_pool_get_config(domain % configs, 'config_rx1_horiz_smooth_open_ocean_cells', &
+                                config_rx1_horiz_smooth_open_ocean_cells)
       call mpas_pool_get_config(domain % configs, 'config_rx1_min_levels', config_rx1_min_levels)
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
@@ -1095,8 +1099,11 @@ contains
                     zMidNext = 0.5_RKIND*(zInterface(k+1,iCell) + zInterface(k+2,iCell))
                   end if
 
-                  if((bottomDepth(iCell) > -zMidNext) .and. (k < nVertLevels)) cycle ! we haven't got to the layer closest to -bottomDepth yet
-                  if((maxLevelCell(iCell) >= config_rx1_min_levels) .and. (maxLevelCell(iCell) < k)) cycle !we already found the bottom layer above this one
+                  ! we haven't got to the layer closest to -bottomDepth yet
+                  if((bottomDepth(iCell) > -zMidNext) .and. (k < nVertLevels)) cycle
+
+                  !we already found the bottom layer above this one
+                  if((maxLevelCell(iCell) >= config_rx1_min_levels) .and. (maxLevelCell(iCell) < k)) cycle
 
                   ! this must be the bottom layer
                   maxLevelCell(iCell) = k

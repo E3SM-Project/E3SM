@@ -373,9 +373,11 @@ contains
          workArray(27,:) = boundaryLayerDepth(:)
 
          ! build net heat, salinity and fresh water budget
-         ! net heat into ocean = latentHeatFlux+sensibleHeatFlux+longWaveHeatFluxUp+longWaveHeatFluxDown+shortWaveHeatFlux+seaIceHeatFlux+(?seaIceEnergy?)
+         ! net heat into ocean = latentHeatFlux + sensibleHeatFlux + longWaveHeatFluxUp + longWaveHeatFluxDown
+         !                     + shortWaveHeatFlux + seaIceHeatFlux + (?seaIceEnergy?)
          ! net salinity into ocean = seaIceSalinityFlux
-         ! net freshwater into ocean = evaporationFlux+seaIceFreshWaterFlux+riverRunoffFlux+iceRunoffFlux+rainFlux+snowFlux+(?seaIceEnergy?)
+         ! net freshwater into ocean = evaporationFlux + seaIceFreshWaterFlux + riverRunoffFlux + iceRunoffFlux
+         !                           + rainFlux + snowFlux + (?seaIceEnergy?)
          if (activeTracersBulkRestoringPKG) then
             workArray(28,:) =   latentHeatFlux(:) &
                               + sensibleHeatFlux(:) &
@@ -429,10 +431,12 @@ contains
       do iRegion=1,nOceanRegions
          ! normalize all field by total area
          do iDataField=3,nDefinedDataFields
-            avgValueWithinOceanRegion(iDataField,iRegion) = avgValueWithinOceanRegion(iDataField,iRegion) / max(avgValueWithinOceanRegion(2,iRegion),1.0e-8_RKIND)
+            avgValueWithinOceanRegion(iDataField,iRegion) = avgValueWithinOceanRegion(iDataField,iRegion) &
+                                                          / max(avgValueWithinOceanRegion(2,iRegion),1.0e-8_RKIND)
          enddo
          ! normalize total area by number of cells in region
-         avgValueWithinOceanRegion(2,iRegion) = avgValueWithinOceanRegion(2,iRegion) / max(avgValueWithinOceanRegion(1,iRegion),1.0e-8_RKIND)
+         avgValueWithinOceanRegion(2,iRegion) = avgValueWithinOceanRegion(2,iRegion) &
+                                              / max(avgValueWithinOceanRegion(1,iRegion),1.0e-8_RKIND)
       enddo
 
       ! deallocate scratch fields

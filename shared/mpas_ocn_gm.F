@@ -93,10 +93,11 @@ contains
       !
       !-----------------------------------------------------------------
 
-      real(kind=RKIND), dimension(:,:), pointer :: density, displacedDensity, zMid, normalGMBolusVelocity, hEddyFlux, layerThicknessEdge,  &
-         gradDensityEdge, gradDensityTopOfEdge, gradDensityConstZTopOfEdge, gradZMidEdge, &
-         gradZMidTopOfEdge, relativeSlopeTopOfEdge, relativeSlopeTopOfCell, k33, gmStreamFuncTopOfEdge, BruntVaisalaFreqTop, gmStreamFuncTopOfCell, &
-         dDensityDzTopOfEdge, dDensityDzTopOfCell, relativeSlopeTapering, relativeSlopeTaperingCell, areaCellSum
+      real(kind=RKIND), dimension(:,:), pointer :: density, displacedDensity, zMid, normalGMBolusVelocity, hEddyFlux, &
+         layerThicknessEdge, gradDensityEdge, gradDensityTopOfEdge, gradDensityConstZTopOfEdge, gradZMidEdge, &
+         gradZMidTopOfEdge, relativeSlopeTopOfEdge, relativeSlopeTopOfCell, k33, gmStreamFuncTopOfEdge, BruntVaisalaFreqTop, &
+         gmStreamFuncTopOfCell, dDensityDzTopOfEdge, dDensityDzTopOfCell, relativeSlopeTapering, relativeSlopeTaperingCell, &
+         areaCellSum
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
       integer, dimension(:), pointer   :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
@@ -283,7 +284,8 @@ contains
       do iEdge = 1, nEdges
          if (maxLevelEdgeTop(iEdge) .GE. 1) then
             do k = 1, maxLevelEdgeTop(iEdge)+1
-               gradDensityConstZTopOfEdge(k,iEdge) = gradDensityTopOfEdge(k,iEdge) - dDensityDzTopOfEdge(k,iEdge) * gradZMidTopOfEdge(k,iEdge)
+               gradDensityConstZTopOfEdge(k,iEdge) = gradDensityTopOfEdge(k,iEdge) - dDensityDzTopOfEdge(k,iEdge) &
+                                                   * gradZMidTopOfEdge(k,iEdge)
             end do
          end if
       end do
@@ -310,11 +312,14 @@ contains
             relativeSlopeTopOfEdge(k,iEdge) = - gradDensityTopOfEdge(k,iEdge) / min(dDensityDzTopOfEdge(k,iEdge),-epsGM)
          end do
 
-         ! Since dDensityDzTopOfEdge is guaranteed to be zero on the top surface, relativeSlopeTopOfEdge on the top surface is identified with its value on the second interface.
+         ! Since dDensityDzTopOfEdge is guaranteed to be zero on the top surface, relativeSlopeTopOfEdge on the top
+         ! surface is identified with its value on the second interface.
          relativeSlopeTopOfEdge(1,iEdge) = relativeSlopeTopOfEdge(2,iEdge)
 
-         ! dDensityDzTopOfEdge may or may not equal zero on the bottom surface, depending on whether maxLevelEdgeTop(iEdge) = maxLevelEdgeBottom(iEdge). But here we
-         ! take a simplistic approach and identify relativeSlopeTopOfEdge on the bottom surface with its value on the interface just above.
+         ! dDensityDzTopOfEdge may or may not equal zero on the bottom surface, depending on whether
+         ! maxLevelEdgeTop(iEdge) = maxLevelEdgeBottom(iEdge). But here we
+         ! take a simplistic approach and identify relativeSlopeTopOfEdge on the bottom surface with its value on
+         ! the interface just above.
          relativeSlopeTopOfEdge( maxLevelEdgeTop(iEdge)+1, iEdge ) = relativeSlopeTopOfEdge( max(1,maxLevelEdgeTop(iEdge)), iEdge )
 
       end do
@@ -365,7 +370,8 @@ contains
       !$omp do schedule(runtime) private(k)
       do iCell=1,nCells
         do k = 2, maxLevelCell(iCell)
-          relativeSlopeTaperingCell(k,iCell) = min(1.0_RKIND, config_max_relative_slope**2 / (relativeSlopeTopOfCell(k,iCell)**2+epsGM))
+          relativeSlopeTaperingCell(k,iCell) = min(1.0_RKIND, config_max_relative_slope**2 &
+                                             / (relativeSlopeTopOfCell(k,iCell)**2+epsGM))
           k33(k,iCell) = relativeSlopeTaperingCell(k,iCell) * (relativeSlopeTopOfCell(k,iCell))**2
         end do
       end do
@@ -419,17 +425,22 @@ contains
             k = 2
             BruntVaisalaFreqTopEdge = 0.5_RKIND * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
             BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
-            tridiagB(k-1) = - 2.0_RKIND * config_gravWaveSpeed_trunc**2/(layerThicknessEdge(k-1,iEdge)*layerThicknessEdge(k,iEdge)) - BruntVaisalaFreqTopEdge
-            tridiagC(k-1) = 2.0_RKIND * config_gravWaveSpeed_trunc**2/layerThicknessEdge(k,iEdge)/(layerThicknessEdge(k-1,iEdge)+layerThicknessEdge(k,iEdge))
+            tridiagB(k-1) = - 2.0_RKIND * config_gravWaveSpeed_trunc**2 / (layerThicknessEdge(k-1,iEdge) &
+                          * layerThicknessEdge(k,iEdge)) - BruntVaisalaFreqTopEdge
+            tridiagC(k-1) = 2.0_RKIND * config_gravWaveSpeed_trunc**2 / layerThicknessEdge(k, iEdge) &
+                          / (layerThicknessEdge(k-1, iEdge) + layerThicknessEdge(k, iEdge))
             rightHandSide(k-1) = config_standardGM_tracer_kappa * gravity / rho_sw * gradDensityConstZTopOfEdge(k,iEdge)
 
             ! Second to next to the last rows
             do k = 3, maxLevelEdgeTop(iEdge)-1
                BruntVaisalaFreqTopEdge = 0.5_RKIND * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
-               tridiagA(k-2) = 2.0_RKIND * config_gravWaveSpeed_trunc**2/layerThicknessEdge(k-1,iEdge)/(layerThicknessEdge(k-1,iEdge)+layerThicknessEdge(k,iEdge))
-               tridiagB(k-1) = - 2.0_RKIND * config_gravWaveSpeed_trunc**2/(layerThicknessEdge(k-1,iEdge)*layerThicknessEdge(k,iEdge)) - BruntVaisalaFreqTopEdge
-               tridiagC(k-1) = 2.0_RKIND * config_gravWaveSpeed_trunc**2/layerThicknessEdge(k,iEdge)/(layerThicknessEdge(k-1,iEdge)+layerThicknessEdge(k,iEdge))
+               tridiagA(k-2) = 2.0_RKIND * config_gravWaveSpeed_trunc**2 / layerThicknessEdge(k-1, iEdge) &
+                             / (layerThicknessEdge(k-1, iEdge) + layerThicknessEdge(k, iEdge))
+               tridiagB(k-1) = - 2.0_RKIND * config_gravWaveSpeed_trunc**2 / (layerThicknessEdge(k-1, iEdge) &
+                             * layerThicknessEdge(k, iEdge) ) - BruntVaisalaFreqTopEdge
+               tridiagC(k-1) = 2.0_RKIND * config_gravWaveSpeed_trunc**2 / layerThicknessEdge(k, iEdge) &
+                             / (layerThicknessEdge(k-1, iEdge) + layerThicknessEdge(k, iEdge))
                rightHandSide(k-1) = config_standardGM_tracer_kappa * gravity / rho_sw * gradDensityConstZTopOfEdge(k,iEdge)
             end do
 
@@ -437,15 +448,18 @@ contains
             k = maxLevelEdgeTop(iEdge)
             BruntVaisalaFreqTopEdge = 0.5_RKIND * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
             BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
-            tridiagA(k-2) = 2.0_RKIND * config_gravWaveSpeed_trunc**2/layerThicknessEdge(k-1,iEdge)/(layerThicknessEdge(k-1,iEdge)+layerThicknessEdge(k,iEdge))
-            tridiagB(k-1) = - 2.0_RKIND * config_gravWaveSpeed_trunc**2/(layerThicknessEdge(k-1,iEdge)*layerThicknessEdge(k,iEdge)) - BruntVaisalaFreqTopEdge
+            tridiagA(k-2) = 2.0_RKIND * config_gravWaveSpeed_trunc**2 / layerThicknessEdge(k-1,iEdge) &
+                          / (layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge))
+            tridiagB(k-1) = - 2.0_RKIND * config_gravWaveSpeed_trunc**2 / (layerThicknessEdge(k-1, iEdge) &
+                          * layerThicknessEdge(k, iEdge)) - BruntVaisalaFreqTopEdge
             rightHandSide(k-1) = config_standardGM_tracer_kappa * gravity / rho_sw * gradDensityConstZTopOfEdge(k,iEdge)
 
             ! Total number of rows
             N = maxLevelEdgeTop(iEdge) - 1
 
             ! Call the tridiagonal solver
-            call tridiagonal_solve(tridiagA, tridiagB, tridiagC, rightHandSide, gmStreamFuncTopOfEdge(2:maxLevelEdgeTop(iEdge),iEdge), N)
+            call tridiagonal_solve(tridiagA, tridiagB, tridiagC, rightHandSide, &
+                                   gmStreamFuncTopOfEdge(2:maxLevelEdgeTop(iEdge), iEdge), N)
          end if
       end do
       !$omp end do
@@ -454,7 +468,8 @@ contains
       !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
          do k = 1, maxLevelEdgeTop(iEdge)
-            normalGMBolusVelocity(k,iEdge) = (gmStreamFuncTopOfEdge(k,iEdge) - gmStreamFuncTopOfEdge(k+1,iEdge)) / layerThicknessEdge(k,iEdge)
+            normalGMBolusVelocity(k,iEdge) = (gmStreamFuncTopOfEdge(k,iEdge) - gmStreamFuncTopOfEdge(k+1,iEdge)) &
+                                           / layerThicknessEdge(k,iEdge)
          end do
       end do
       !$omp end do

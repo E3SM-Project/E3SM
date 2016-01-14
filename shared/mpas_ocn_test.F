@@ -326,7 +326,8 @@ contains
       zBot = zMax
 
       L = config_gravWaveSpeed_trunc * sqrt(rho_sw * zMax / gravity / config_eos_linear_alpha / config_gm_analytic_temperature3)
-      R = - config_standardGM_tracer_kappa * config_gm_analytic_temperature2 * zMax / config_gm_analytic_temperature3 / config_gm_analytic_ymax
+      R = - config_standardGM_tracer_kappa * config_gm_analytic_temperature2 * zMax / config_gm_analytic_temperature3 &
+        / config_gm_analytic_ymax
       c1 = R*(1-exp(-zBot/L))/(exp(zBot/L) - exp(-zBot/L))
       c2 = R-c1
 

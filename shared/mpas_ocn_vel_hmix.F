@@ -81,8 +81,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_hmix_tend(meshPool, scratchPool, divergence, relativeVorticity, normalVelocity, tangentialVelocity, viscosity, &
-      tend, err)!{{{
+   subroutine ocn_vel_hmix_tend(meshPool, scratchPool, divergence, relativeVorticity, normalVelocity, tangentialVelocity, &
+                                viscosity, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !

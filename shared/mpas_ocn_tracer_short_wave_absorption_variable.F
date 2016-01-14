@@ -70,7 +70,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_short_wave_absorption_variable_tend(meshPool, swForcingPool, forcingPool, index_temperature, layerThickness, penetrativeTemperatureFlux, tend, err)!{{{
+   subroutine ocn_tracer_short_wave_absorption_variable_tend(meshPool, swForcingPool, forcingPool, index_temperature, & !{{{
+                                                             layerThickness, penetrativeTemperatureFlux, tend, err)
 
       !-----------------------------------------------------------------
       !
@@ -160,7 +161,8 @@ contains
              depth = depth + layerThickness(k, iCell)
 
              call ocn_get_variable_sw_fraction(depth, weights(k+1), Avals, Kvals)
-             tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell)*(weights(k) - weights(k+1))
+             tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell) &
+                                               * (weights(k) - weights(k+1) )
            end do
          end do
          !$omp end do
@@ -325,7 +327,8 @@ contains
         real(kind=RKIND) :: dt
 
 
-        call MPAS_pool_get_config(domain%configs, 'config_use_activeTracers_surface_bulk_forcing', config_use_activeTracers_surface_bulk_forcing)
+        call MPAS_pool_get_config(domain%configs, 'config_use_activeTracers_surface_bulk_forcing', &
+                                  config_use_activeTracers_surface_bulk_forcing)
         call MPAS_pool_get_config(domain%configs, 'config_sw_absorption_type', config_sw_absorption_type)
         call MPAS_pool_get_config(domain%configs, 'config_dt', config_dt)
 

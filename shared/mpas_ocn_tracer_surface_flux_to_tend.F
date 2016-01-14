@@ -140,7 +140,8 @@ contains
 
         if(maxLevelCell(iCell) > 0 .and. remainingFlux > 0.0_RKIND) then
           do iTracer = 1, nTracers
-            tend(iTracer, maxLevelCell(iCell), iCell) = tend(iTracer, maxLevelCell(iCell), iCell) + surfaceTracerFlux(iTracer, iCell) * remainingFlux
+            tend(iTracer, maxLevelCell(iCell), iCell) = tend(iTracer, maxLevelCell(iCell), iCell) &
+                                                      + surfaceTracerFlux(iTracer, iCell) * remainingFlux
           end do
         end if
       end do

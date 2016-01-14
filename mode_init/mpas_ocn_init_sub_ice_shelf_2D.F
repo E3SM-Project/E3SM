@@ -153,7 +153,8 @@ module ocn_init_sub_ice_shelf_2D
      call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
      ! you may restrict your case geometry as follows:
-     if ( on_a_sphere ) call mpas_dmpar_global_abort('ERROR: The sub_ice_shelf_2D configuration can only be applied to a planar mesh. Exiting...')
+     if ( on_a_sphere ) call mpas_dmpar_global_abort('ERROR: The sub_ice_shelf_2D configuration can only be applied to ' &
+                                                  // 'a planar mesh. Exiting...')
 
      allocate(interfaceLocations(nVertLevelsP1))
      call ocn_generate_vertical_grid( config_vertical_grid, interfaceLocations )
@@ -265,7 +266,8 @@ module ocn_init_sub_ice_shelf_2D
         block_ptr => block_ptr % next
      end do
 
-     ! compute the vertical grid (layerThickness, restingThickness, maxLevelCell, zMid) based on ssh, bottomDepth and refBottomDepth
+     ! compute the vertical grid (layerThickness, restingThickness, maxLevelCell, zMid) based on ssh,
+     ! bottomDepth and refBottomDepth
      call ocn_init_ssh_and_ssp_vertical_grid(domain, iErr)
 
      if(iErr .ne. 0) then

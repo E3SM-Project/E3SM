@@ -185,7 +185,8 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_background_viscosity', config_cvmix_background_viscosity)
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_background_diffusion', config_cvmix_background_diffusion)
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_stop_OBL_search', config_cvmix_kpp_stop_OBL_search)
-      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_criticalBulkRichardsonNumber', config_cvmix_kpp_criticalBulkRichardsonNumber)
+      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_criticalBulkRichardsonNumber', &
+                                config_cvmix_kpp_criticalBulkRichardsonNumber)
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_shear', config_use_cvmix_shear)
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_convection', config_use_cvmix_convection)
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
@@ -534,7 +535,8 @@ contains
                  cvmix_shear_params)
 
             ! add shear mixing to vertical viscosity/diffusivity
-            ! at present, shear mixing adds in background values when using PP, but background is accounted for seperately. so remove background from shear mixing values
+            ! at present, shear mixing adds in background values when using PP, but background is accounted for seperately.
+            ! so remove background from shear mixing values
             if(config_cvmix_shear_mixing_scheme=='PP') then
                cvmix_variables % Mdiff_iface(:) = cvmix_variables % Mdiff_iface(:) - config_cvmix_background_viscosity
                cvmix_variables % Tdiff_iface(:) = cvmix_variables % Tdiff_iface(:) - config_cvmix_background_diffusion
@@ -643,7 +645,8 @@ contains
 
       ! Convection configs
       logical, pointer ::  config_use_cvmix_convection
-      real (kind=RKIND), pointer :: config_cvmix_convective_diffusion, config_cvmix_convective_viscosity, config_cvmix_convective_triggerBVF
+      real (kind=RKIND), pointer :: config_cvmix_convective_diffusion, config_cvmix_convective_viscosity, &
+                                    config_cvmix_convective_triggerBVF
       logical, pointer :: config_cvmix_convective_basedOnBVF
 
       ! Tidal mixing
@@ -682,7 +685,8 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_tidal_mixing', config_use_cvmix_tidal_mixing)
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_double_diffusion', config_use_cvmix_double_diffusion)
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
-      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_criticalBulkRichardsonNumber', config_cvmix_kpp_criticalBulkRichardsonNumber)
+      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_criticalBulkRichardsonNumber', &
+                                config_cvmix_kpp_criticalBulkRichardsonNumber)
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_stop_OBL_search', config_cvmix_kpp_stop_OBL_search)
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_interpolationOMLType', config_cvmix_kpp_interpolationOMLType)
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_interpolationOMLType', config_cvmix_kpp_interpolationOMLType)
