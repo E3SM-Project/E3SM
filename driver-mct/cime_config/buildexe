@@ -15,6 +15,10 @@ my $EXEROOT   = `./xmlquery EXEROOT   -value`;
 my $MACH      = `./xmlquery MACH      -value`;
 my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
 my $MODEL     = `./xmlquery MODEL     -value`;
+$ENV{PIO_VERSION}  = `./xmlquery PIO_VERSION   -value`;
+
+
+
 
 chdir "${OBJROOT}/${MODEL}/obj";
 
