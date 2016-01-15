@@ -598,13 +598,12 @@ contains
     ! check/set/correct io pio parameters
     !--------------------------------------------------------------------------
     if (pio_stride>0.and.pio_numiotasks<0) then
-       pio_numiotasks = npes/pio_stride
+       pio_numiotasks = max(1,npes/pio_stride)
     else if(pio_numiotasks>0 .and. pio_stride<0) then
-       pio_stride = npes/pio_numiotasks
+       pio_stride = max(1,npes/pio_numiotasks)
     else if(pio_numiotasks<0 .and. pio_stride<0) then
-       pio_stride = npes/4
-       pio_numiotasks = npes/pio_stride
-       pio_numiotasks = max(1, pio_numiotasks)
+       pio_stride = max(1,npes/4)
+       pio_numiotasks = max(1,npes/pio_stride)
     end if
     if(pio_stride == 1) then
        pio_root = 0
