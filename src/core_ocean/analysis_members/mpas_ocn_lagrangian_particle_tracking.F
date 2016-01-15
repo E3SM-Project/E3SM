@@ -2705,7 +2705,7 @@ contains
        LIGHT_DEBUG_ALL_WRITE(message)
      else
        write(stderrUnit,*) 'brute force interpolation failed with phiInterp = ', phiInterp, ' phiLow = ', phiVals(iLow), &
-                        // ' phiHigh = ', phiVals(iHigh)
+                        ' phiHigh = ', phiVals(iHigh)
        LIGHT_DEBUG_ALL_WRITE(' phiVals = ' COMMA phiVals(1:nVertLevels))
      end if
 

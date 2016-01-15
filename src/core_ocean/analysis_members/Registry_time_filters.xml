@@ -31,6 +31,10 @@
 					description="Cutoff time scale $\tau$ for high and low pass filtering (default is 90 days)."
 					possible_values="Any time stamp in 'DD_hh:mm:ss' format. Items can be removed from the left if they are unused."
 		/>
+		<nml_option name="config_AM_timeFilters_compute_cell_centered_values" type="logical" default_value=".true." units="unitless"
+					description="Logical flag determining if cell centered values should be computed."
+					possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<packages>
 		<package name="timeFiltersAMPKG" description="This package includes variables required for the timeFilters analysis member."/>
@@ -45,6 +49,24 @@
 		<var name="normalVelocityFilterTest" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 			 description="normalVelocityTest (for testing purposes)."
 		/>
+		<var name="velocityZonalLowPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="Low-pass time filtered component of horizontal velocity in the eastward direction"
+		/>
+		<var name="velocityMeridionalLowPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="Low-pass time filtered component of horizontal velocity in the northward direction"
+		/>
+		<var name="velocityXLowPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="Low-pass time filtered component of horizontal velocity in the x-direction (cartesian)"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="velocityYLowPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="Low-pass time filtered component of horizontal velocity in the x-direction (cartesian)"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="velocityZLowPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="Low-pass time filtered component of horizontal velocity in the x-direction (cartesian)"
+			 packages="forwardMode;analysisMode"
+		/>
 	</var_struct>
 	<streams>
 		<stream name="timeFiltersOutput" type="output"
@@ -57,9 +79,8 @@
 				clobber_mode="truncate"
 				runtime_format="single_file">
 			<var name="xtime"/>
-			<var name="normalVelocityLowPass"/>
-			<var name="normalVelocityHighPass"/>
-			<var name="normalVelocityFilterTest"/>
+			<var name="velocityZonalLowPass"/>
+			<var name="velocityMeridionalLowPass"/>
 		</stream>
 		<stream name="timeFiltersRestart" type="input;output"
 				mode="forward;analysis"
