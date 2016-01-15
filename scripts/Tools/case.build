@@ -433,14 +433,20 @@ sub buildChecks()
 
     if($BUILD_STATUS != 0) {
 	my $msg = "  ERROR env_build HAS CHANGED \n";
-	$msg .= "  A manual clean of your obj directories is strongly recommended \n";
-	$msg .= "  You should execute the following:  \n";
-	$msg .= "      ./case.clean_build \n";
-	$msg .= "  Then rerun the build script interactively \n";
-	$msg .= "    ---- OR ---- \n";
-	$msg .= "  You can override this error message at your own risk by executing  \n";
-	$msg .= "      rm LockedFiles/env_build* \n";
-	$msg .= "  Then rerun the build script interactively  \n";
+	if($BUILD_STATUS == 1){
+	    $msg .= "  A manual clean of your obj directories is strongly recommended \n";
+	    $msg .= "  You should execute the following:  \n";
+	    $msg .= "      ./case.clean_build \n";
+	    $msg .= "  Then rerun the build script interactively \n";
+	    $msg .= "    ---- OR ---- \n";
+	    $msg .= "  You can override this error message at your own risk by executing  \n";
+	    $msg .= "      rm LockedFiles/env_build.xml \n";
+	    $msg .= "  Then rerun the build script interactively  \n";
+	}else{
+	    $msg .= "  A manual clean of your obj directories is required \n";
+	    $msg .= "  You should execute the following:  \n";
+	    $msg .= "      ./case.clean_build all\n";
+	}
 	$logger->logdie($msg);
     }
 
@@ -458,7 +464,7 @@ sub buildChecks()
 	$msg .= "  Set USE_ESMF_LIB to FALSE with  \n";
 	$msg .= "    ./xmlchange -file env_build.xml -id USE_ESMF_LIB -val FALSE \n";
 	$msg .= "  ---- OR ---- \n";
-	$msg .= "  Make suer the ESMF_LIBDIR used was built with mipuni (or change it to one that was) \n";
+	$msg .= "  Make sure the ESMF_LIBDIR used was built with mipuni (or change it to one that was) \n";
 	$msg .= "  And comment out this if block in Tools/models_buildexe \n";
 	$logger->logdie($msg);
 
@@ -467,7 +473,7 @@ sub buildChecks()
     $sysmod = "./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val FALSE";
     system($sysmod) == 0 or $logger->logdie ("$sysmod failed: $?");
 
-    my @lockedfiles = glob("LockedFiles/env_build*");
+    my @lockedfiles = glob("LockedFiles/env_build.xml");
     foreach my $lf (@lockedfiles) {
 	unlink($lf);
     }
@@ -659,13 +665,13 @@ sub buildModel()
     $sysmod = "./xmlchange -noecho -file env_build.xml -id NINST_BUILD -val $NINST_BUILD";
     system($sysmod) == 0 or $logger->logdie("$sysmod failed: $?");
     
-    my @files2unlink = glob("./LockedFiles/env_build*");
+    my @files2unlink = glob("./LockedFiles/env_build.xml");
     foreach my $file2unlink(@files2unlink) {
 	unlink($file2unlink);
     }
 	
     foreach my $file (qw( ./env_build.xml ) ) {
-	copy($file, "./LockedFiles/$file.locked");
+	copy($file, "./LockedFiles/$file");
 	if ($?) { $logger->logdie("ERROR locking file $file, exiting.. ");}
 	$logger->info( " .... locking file $file");
     }

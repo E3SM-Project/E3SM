@@ -28,7 +28,7 @@
   <xs:element name="section">
     <xs:complexType>
       <xs:sequence>
-	<xs:element ref="key" maxOccurs="unbounded"/>
+	<xs:element ref="key" minOccurs="0" maxOccurs="unbounded"/>
       </xs:sequence>
       <xs:attribute ref="name" use="required"/>
     </xs:complexType>
