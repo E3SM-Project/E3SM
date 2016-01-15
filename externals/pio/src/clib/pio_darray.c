@@ -848,6 +848,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
        brel(vdesc0->iobuf);
        vdesc0->iobuf = NULL;
      }
+       break;
 
    }
    
@@ -897,6 +898,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 	 vdesc0->fillbuf = NULL;
        }
        */
+       break;
      }
    }
 
