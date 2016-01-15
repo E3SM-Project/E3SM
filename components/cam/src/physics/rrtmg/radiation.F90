@@ -406,7 +406,8 @@ end function radiation_nextsw_cday
        if (active_calls(icall)) then
 
           call addfld('SOLIN'//diag(icall),  horiz_only,     'A',   'W/m2', 'Solar insolation', sampling_seq='rad_lwsw')
-          call addfld('SOLL'//diag(icall),  horiz_only,     'A',    'W/m2', 'Solar downward near infrared direct  to surface', sampling_seq='rad_lwsw')
+          call addfld('SOLL'//diag(icall),  horiz_only,     'A',    'W/m2', 'Solar downward near infrared direct  to surface',&
+	   sampling_seq='rad_lwsw')
           call addfld('SOLS'//diag(icall),  horiz_only,     'A',    'W/m2', 'Solar downward visible direct  to surface', &
                                                                                  sampling_seq='rad_lwsw')
           call addfld('SOLLD'//diag(icall),  horiz_only,     'A',   'W/m2', 'Solar downward near infrared diffuse to surface', &
@@ -442,10 +443,12 @@ end function radiation_nextsw_cday
           call addfld('FDS'//diag(icall),  (/ 'ilev' /), 'I',     'W/m2', 'Shortwave downward flux')
           call addfld('FUSC'//diag(icall),  (/ 'ilev' /), 'I',    'W/m2', 'Shortwave clear-sky upward flux')
           call addfld('FDSC'//diag(icall),  (/ 'ilev' /), 'I',    'W/m2', 'Shortwave clear-sky downward flux')
-          call addfld('FSNIRTOA'//diag(icall),  horiz_only,     'A','W/m2', 'Net near-infrared flux (Nimbus-7 WFOV) at top of atmosphere', sampling_seq='rad_lwsw')
+          call addfld('FSNIRTOA'//diag(icall),  horiz_only,     'A','W/m2',&
+	   'Net near-infrared flux (Nimbus-7 WFOV) at top of atmosphere', sampling_seq='rad_lwsw')
           call addfld('FSNRTOAC'//diag(icall),  horiz_only,     'A','W/m2', &
                       'Clearsky net near-infrared flux (Nimbus-7 WFOV) at top of atmosphere', sampling_seq='rad_lwsw')
-          call addfld('FSNRTOAS'//diag(icall),  horiz_only,     'A','W/m2', 'Net near-infrared flux (>= 0.7 microns) at top of atmosphere', sampling_seq='rad_lwsw')
+          call addfld('FSNRTOAS'//diag(icall),  horiz_only,     'A','W/m2', &
+	  'Net near-infrared flux (>= 0.7 microns) at top of atmosphere', sampling_seq='rad_lwsw')
           call addfld ('SWCF'//diag(icall),  horiz_only,     'A',   'W/m2', 'Shortwave cloud forcing', sampling_seq='rad_lwsw')
 
           if (history_amwg) then
