@@ -2834,7 +2834,7 @@ end subroutine cesm_init
                  infodata=infodata, infodata_string='ice2cpl_run', &
                  mpicom_barrier=mpicom_CPLALLICEID, run_barriers=run_barriers, &
                  timer_barrier='CPL:I2C_BARRIER', timer_comp_exch='CPL:I2C', &
-                 timer_map_exch='CPL:i2c_icei2icex', timer_infodata_exch='CPL:r2c_infoexch')
+                 timer_map_exch='CPL:i2c_icei2icex', timer_infodata_exch='CPL:i2c_infoexch')
          endif
 
          !----------------------------------------------------------
