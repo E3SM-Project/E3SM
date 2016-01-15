@@ -67,26 +67,27 @@ contains
 !> \brief   Calls equation of state
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine calls the equation of state to update the density
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, k_displaced, displacement_type, density, err, &
-      thermalExpansionCoeff, salineContractionCoeff, timeLevelIn)!{{{
+   subroutine ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, k_displaced, & !{{{
+                                            displacement_type, density, err, thermalExpansionCoeff, &
+                                            salineContractionCoeff, timeLevelIn)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !  This module contains routines necessary for computing the density
    !  from model temperature and salinity using an equation of state.
    !
    ! Input: mesh - mesh metadata
    !        s - state: activeTracers
-   !        k_displaced 
+   !        k_displaced
    !
-   !  If k_displaced==0, density is returned with no displacement 
+   !  If k_displaced==0, density is returned with no displacement
    !
    !  If k_displaced~=0, density is returned, and is for
-   !  a parcel adiabatically displaced from its original level to level 
-   !  k_displaced.  When using the linear EOS, state % displacedDensity is 
+   !  a parcel adiabatically displaced from its original level to level
+   !  k_displaced.  When using the linear EOS, state % displacedDensity is
    !  still filled, but depth (i.e. pressure) does not modify the output.
    !
    ! Output: s - state: computed density
@@ -131,13 +132,15 @@ contains
 
       if (linearEos) then
 
-         call ocn_equation_of_state_linear_density(meshPool, k_displaced, displacement_type, indexT, indexS, activeTracers, density, err, &
-            tracersSurfaceValue, thermalExpansionCoeff, salineContractionCoeff)
+         call ocn_equation_of_state_linear_density(meshPool, k_displaced, displacement_type, indexT, indexS, &
+                                                   activeTracers, density, err, tracersSurfaceValue, &
+                                                   thermalExpansionCoeff, salineContractionCoeff)
 
       elseif (jmEos) then
 
-         call ocn_equation_of_state_jm_density(meshPool, scratchPool, k_displaced, displacement_type, indexT, indexS, activeTracers, density, err, &
-            tracersSurfaceValue, thermalExpansionCoeff, salineContractionCoeff)
+         call ocn_equation_of_state_jm_density(meshPool, scratchPool, k_displaced, displacement_type, indexT, indexS, &
+                                               activeTracers, density, err, tracersSurfaceValue, thermalExpansionCoeff, &
+                                               salineContractionCoeff)
 
       endif
 
@@ -150,11 +153,11 @@ contains
 !> \brief   Initializes ocean momentum horizontal mixing quantities
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
-!>  This routine initializes a variety of quantities related to 
-!>  horizontal velocity mixing in the ocean. Since a variety of 
+!> \details
+!>  This routine initializes a variety of quantities related to
+!>  horizontal velocity mixing in the ocean. Since a variety of
 !>  parameterizations are available, this routine primarily calls the
-!>  individual init routines for each parameterization. 
+!>  individual init routines for each parameterization.
 !
 !----------------------------------------------------------------------
 

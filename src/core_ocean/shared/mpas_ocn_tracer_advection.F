@@ -14,7 +14,7 @@
 !> \date   03/09/12
 !> \details
 !>  This module contains driver routine for tracer advection tendencys
-!>  as well as the routines for setting up advection coefficients and 
+!>  as well as the routines for setting up advection coefficients and
 !>  initialization of the advection routines.
 !
 !-----------------------------------------------------------------------
@@ -31,7 +31,7 @@ module ocn_tracer_advection
    use ocn_tracer_advection_mono
 
    use ocn_constants
-     
+
    implicit none
    private
    save
@@ -56,7 +56,8 @@ module ocn_tracer_advection
 !>  advection of tracers.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_tracer_advection_tend(tracers, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, meshPool, scratchPool, tend_layerThickness, tend)!{{{
+   subroutine ocn_tracer_advection_tend(tracers, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, meshPool, & !{{{
+                                        scratchPool, tend_layerThickness, tend)
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: tend !< Input/Output: tracer tendency
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input/Output: tracer values
@@ -106,7 +107,7 @@ module ocn_tracer_advection
 !> \author Doug Jacobsen
 !> \date   03/09/12
 !> \details
-!>  This routine is the driver routine for initialization of 
+!>  This routine is the driver routine for initialization of
 !>  the tracer advection routines.
 !
 !-----------------------------------------------------------------------
@@ -135,8 +136,10 @@ module ocn_tracer_advection
 
       if(config_disable_tr_adv) tracerAdvOn = .false.
 
-      call ocn_tracer_advection_std_init(config_horiz_tracer_adv_order, config_vert_tracer_adv_order, config_coef_3rd_order, config_dzdk_positive, config_check_tracer_monotonicity, err_tmp)
-      call ocn_tracer_advection_mono_init(config_num_halos, config_horiz_tracer_adv_order, config_vert_tracer_adv_order, config_coef_3rd_order, config_dzdk_positive, config_check_tracer_monotonicity, err_tmp)
+      call ocn_tracer_advection_std_init(config_horiz_tracer_adv_order, config_vert_tracer_adv_order, config_coef_3rd_order, &
+                                         config_dzdk_positive, config_check_tracer_monotonicity, err_tmp)
+      call ocn_tracer_advection_mono_init(config_num_halos, config_horiz_tracer_adv_order, config_vert_tracer_adv_order, &
+                                          config_coef_3rd_order, config_dzdk_positive, config_check_tracer_monotonicity, err_tmp)
 
       err = ior(err, err_tmp)
 

@@ -70,8 +70,8 @@ contains
 !> \brief   Determines the tracers melt fluxes under land ice
 !> \author  Xylar Asay-Davis
 !> \date    9 September 2015
-!> \details 
-!>  This routine adds land-ice tracer fluxes to the surface flux array 
+!> \details
+!>  This routine adds land-ice tracer fluxes to the surface flux array
 !>  used to compute tracer tendencies later in MPAS.
 !
 !-----------------------------------------------------------------------
@@ -125,7 +125,7 @@ contains
 !> \brief   Computes tendency term for top drag
 !> \author  Xylar Asay-Davis
 !> \date    9 September 2015
-!> \details 
+!> \details
 !>  This routine computes the top-drag tendency for momentum
 !>  based on current state.
 !
@@ -147,7 +147,7 @@ contains
       !
       !-----------------------------------------------------------------
       real (kind=RKIND), dimension(:), intent(inout) :: surfaceStress, & !< Input/Output: Array for total surface stress
-                                                        surfaceStressMagnitude !< Input/Output: Array for magnitude of surface stress
+                                                  surfaceStressMagnitude !< Input/Output: Array for magnitude of surface stress
 
       !-----------------------------------------------------------------
       !
@@ -201,7 +201,7 @@ contains
 !> \brief   Add land-ice fluxes to surfaceThicknessFlux.
 !> \author  Xylar Asay-Davis
 !> \date    11 September 2015
-!> \details 
+!> \details
 !>  This routine adds land-ice freshwater fluxes to the surface thickness flux
 !>  to be converted into a thickness tendency later.
 !
@@ -267,8 +267,8 @@ contains
 !> \brief   Adds the active tracers fluxes from land-ice melting.
 !> \author  Xylar Asay-Davis
 !> \date    11 September 2015
-!> \details 
-!>  This routine adds the active tracers fluxes to surface fluxes 
+!> \details
+!>  This routine adds the active tracers fluxes to surface fluxes
 !>  from which tracer tendencies are computed later.
 !
 !-----------------------------------------------------------------------
@@ -412,7 +412,8 @@ contains
       if ( .not. standaloneOn ) return
 
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_ISOMIP_gammaT', config_land_ice_flux_ISOMIP_gammaT)
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_useHollandJenkinsAdvDiff', config_land_ice_flux_useHollandJenkinsAdvDiff)
+      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_useHollandJenkinsAdvDiff', &
+                                config_land_ice_flux_useHollandJenkinsAdvDiff)
 
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
@@ -422,7 +423,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'landIceBoundaryLayerTracers', landIceBoundaryLayerTracers)
       call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceBoundaryLayerTemperature', indexBLT)
       call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceBoundaryLayerSalinity', indexBLS)
-                                     
+
       if(jenkinsOn .or. hollandJenkinsOn) then
         call mpas_pool_get_array(diagnosticsPool, 'landIceTracerTransferVelocities', landIceTracerTransferVelocities)
         call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceHeatTransferVelocity', indexHeatTrans)
@@ -579,7 +580,7 @@ contains
 !> \author Xylar Asay-Davis
 !> \date   10/02/2014
 !> \details
-!>  This routine initializes a variety of quantities related to 
+!>  This routine initializes a variety of quantities related to
 !>  land-ice forcing.
 !
 !-----------------------------------------------------------------------
@@ -626,7 +627,8 @@ contains
       else
          write(stderrUnit, *) "ERROR: config_land_ice_flux_formulation not one of 'ISOMIP', 'Jenkins', or 'HollandJenkins'."
          err = 1
-         call mpas_dmpar_global_abort("ERROR: config_land_ice_flux_formulation not one of 'ISOMIP', 'Jenkins', or 'HollandJenkins'.")
+         call mpas_dmpar_global_abort("ERROR: config_land_ice_flux_formulation not one of 'ISOMIP', 'Jenkins', " &
+                                      // "or 'HollandJenkins'.")
       end if
 
       Tf0 = config_land_ice_flux_Tf0
@@ -656,7 +658,7 @@ contains
 !>  observations of turbulent mixing rates in the under-ice boundary layer.
 !>  They should be the product of the friction velocity and a (possibly
 !>  spatially variable) non-dimenional transfer coefficient.
-!>  
+!>
 !>  The iceTemperatureDistance is the distance between the location
 !>  where the iceTemperature is supplied and the ice-ocean interface,
 !>  used to compute a temperature gradient.  The ice thermal conductivity,
@@ -739,14 +741,14 @@ contains
 
     !$omp do schedule(runtime) private(iceHeatFluxCoeff, nu, iceDeltaT, T0, transferVelocityRatio, a, b, c)
     do iCell = 1, nCells
-      if(coupled) then 
+      if(coupled) then
         iceHeatFluxCoeff = rho_land_ice*cp_land_ice*kappa_land_ice/iceTemperatureDistance(iCell)
         nu = iceHeatFluxCoeff/(rho_sw*cp_sw*oceanHeatTransferVelocity(iCell))
         iceDeltaT = T0 - iceTemperature(iCell)
       else
         nu = 0.0_RKIND
         iceDeltaT = 0.0_RKIND
-      end if 
+      end if
       T0 = Tf0 + dTf_dp*interfacePressure(iCell)
       transferVelocityRatio = oceanSaltTransferVelocity(iCell)/oceanHeatTransferVelocity(iCell)
 
@@ -799,10 +801,10 @@ contains
 !> \brief   Computes melt fluxes, etc. according to HJ99
 !> \author  Xylar Asay-Davis
 !> \date    3/28/2015
-!> \details 
+!> \details
 !>  This routine computes melt fluxes (melt rate, temperature fluxes
 !>  into the ice and the ocean, and salt flux) as well as the interface
-!>  temperature and salinity.  Following Holland and Jenkins (1999), 
+!>  temperature and salinity.  Following Holland and Jenkins (1999),
 !>  temperature is assumed to be vertically advected and diffused in
 !>  the ice at a rate determined by the melt rate, so that no
 !>  heat transfer velocity for the ice need be supplied.  Except for
@@ -810,16 +812,16 @@ contains
 !>  solution produces an ice temperature profile that is approximately
 !>  constant with depth except near the ice-ocean interface.  The ice
 !>  temperature supplied to this routine should be the far-field value,
-!>  equal to the time-averaged surface temperature. 
-!> 
-!>  The solution is only appropriate for melting (positive ocean 
+!>  equal to the time-averaged surface temperature.
+!>
+!>  The solution is only appropriate for melting (positive ocean
 !>  thickness flux). For freezing, the fluxes should be computed using
 !>  ocn_forcing_compute_melt_fluxes with ``insulating'' ice where
 !>  the iceHeatTransferVelocity is set to zero.
 !
 !-----------------------------------------------------------------------
 
-  subroutine compute_HJ99_melt_fluxes( & 
+  subroutine compute_HJ99_melt_fluxes( &
     oceanTemperature, &
     oceanSalinity, &
     oceanHeatTransferVelocity, &
@@ -913,8 +915,8 @@ contains
       !   2. the turbulent transfer of heat across the boundary layer, based on the termal driving
       outOceanHeatFlux(iCell) = cp_sw*(outFreshwaterFlux(iCell)*outInterfaceTemperature(iCell) &
         - rho_sw*oceanHeatTransferVelocity(iCell)*(oceanTemperature(iCell)-outInterfaceTemperature(iCell)))
- 
-      ! Since we're considering only melting and ignoring diffusion, 
+
+      ! Since we're considering only melting and ignoring diffusion,
       ! the ice loses heat simply by the loss of ice mass at the prescribed
       ! (surface?) ice temperature
       outIceHeatFlux(iCell) = -cp_land_ice*outFreshwaterFlux(iCell)*iceTemperature(iCell)

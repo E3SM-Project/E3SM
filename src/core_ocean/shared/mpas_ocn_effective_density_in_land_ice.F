@@ -111,7 +111,7 @@ contains
                                                   effectiveDensityNew, &
                                                   effectiveDensityScratch
 
-      type (field1DReal), pointer :: effectiveDensityField                                                                                              
+      type (field1DReal), pointer :: effectiveDensityField
 
       real (kind=RKIND) :: weightSum
 
@@ -148,7 +148,7 @@ contains
       !$omp do schedule(runtime)
       do iCell = 1, nCells
          ! TODO: should only apply to floating land ice, once wetting/drying is supported
-         if(landIceFraction(iCell) >= 0.5) then
+         if(landIceFraction(iCell) >= 0.5_RKIND) then
             ! there is sufficient land ice to update the effective density
             effectiveDensityScratch(iCell) = -seaSurfacePressure(iCell)/(ssh(iCell)*gravity)
          else

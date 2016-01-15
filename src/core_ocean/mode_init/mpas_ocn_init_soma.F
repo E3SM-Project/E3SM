@@ -13,7 +13,7 @@
 !> \author Todd Ringler
 !> \date   10/08/2013
 !> \details
-!>  This module contains the routines for initializing the 
+!>  This module contains the routines for initializing the
 !>  the idealized SOMA test case
 !
 !-----------------------------------------------------------------------
@@ -66,7 +66,7 @@ contains
 !> \brief   Setup for soma test case
 !> \author  Todd Ringler
 !> \date    02/26/2014
-!> \details 
+!> \details
 !>  This routine sets up the initial conditions for the
 !>  SOMA configuration.
 !
@@ -81,7 +81,7 @@ contains
 
       ! local work variables
       type (block_type), pointer :: block_ptr
-      
+
       type (mpas_pool_type), pointer :: meshPool, verticalMeshPool, statePool, forcingPool, tracersPool
       type (mpas_pool_type), pointer :: tracersSurfaceRestoringFieldsPool, tracersInteriorRestoringFieldsPool
 
@@ -91,10 +91,10 @@ contains
       real (kind=RKIND) :: deltay, depth, factor, latCenter, lonCenter, windStress
       real (kind=RKIND) :: temperature, salinity
       real (kind=RKIND), dimension(:), pointer :: interfaceLocations
-      
+
       ! Define config variable pointers
       character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid
-      
+
       ! SOMA test case run-time configuration parameters
       integer, pointer :: config_soma_vert_levels
       real (kind=RKIND), pointer :: config_eos_linear_alpha
@@ -115,7 +115,7 @@ contains
       ! Define dimension pointers
       integer, pointer :: nVertLevels, nCells, nVertLevelsP1
       integer, pointer :: index_temperature, index_salinity, index_tracer1
-      
+
       ! Define variable pointers
       logical, pointer :: on_a_sphere
       integer, dimension(:), pointer :: maxLevelCell
@@ -135,7 +135,7 @@ contains
       ! test if SOMA is the desired configuration
       call mpas_pool_get_config(domain % configs, 'config_init_configuration', config_init_configuration)
       if(config_init_configuration .ne. trim('soma')) return
-      
+
       ! get config variables
       call mpas_pool_get_config(domain % configs, 'config_eos_linear_alpha', config_eos_linear_alpha)
       call mpas_pool_get_config(domain % configs, 'config_soma_density_difference_linear', config_soma_density_difference_linear)
@@ -177,11 +177,11 @@ contains
       ! assign config variables
       nVertLevels  = config_soma_vert_levels
       nVertLevelsP1 = nVertLevels + 1
- 
+
       ! set center of SOMA domain
       ! Convert center locations to radians from degrees
-      latCenter = config_soma_center_latitude * pii / 180.0
-      lonCenter = config_soma_center_longitude * pii / 180.0
+      latCenter = config_soma_center_latitude * pii / 180.0_RKIND
+      lonCenter = config_soma_center_longitude * pii / 180.0_RKIND
 
       ! Setup the vertical grid and layerThickness initial condition
       write(stderrUnit,*) 'setting up vertical grid and layer thickness'
@@ -195,7 +195,7 @@ contains
         call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
         call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
-        
+
         ! Set layerThickness and restingThickness
         ! Uniform layer thickness across lat/lon
         do k = 1, nVertLevels
@@ -210,7 +210,7 @@ contains
          end do
 
         block_ptr => block_ptr % next
-      
+
       end do
 
       ! Set bathymetry
@@ -223,7 +223,7 @@ contains
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
         call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
         call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
-        
+
         ! set bottomDepth
         bottomDepth(:) = 0.0_RKIND
         do iCell = 1, nCells
@@ -235,22 +235,23 @@ contains
            deltaLat = latCurrent - latCenter
            xDistance = deltaLon * sphereRadius * cos(latCurrent)
            yDistance = deltaLat * sphereRadius
-           distance = sqrt( xDistance**2 + yDistance**2 ) 
+           distance = sqrt( xDistance**2 + yDistance**2 )
            factor = 1.0 - distance**2 / config_soma_domain_width**2
 
            if(factor > config_soma_shelf_width) then
-              bottomDepth(iCell) =  config_soma_shelf_depth + (config_soma_bottom_depth-config_soma_shelf_depth)/2.0 * (1.0 + tanh(factor/config_soma_phi))
+              bottomDepth(iCell) = config_soma_shelf_depth + (config_soma_bottom_depth-config_soma_shelf_depth)/2.0_RKIND &
+                                 * (1.0 + tanh(factor/config_soma_phi))
            else
               bottomDepth(iCell) = -1.0_RKIND
            endif
 
            ! Set maxLevelCell to -1 for cells to be culled
-           if (bottomDepth(iCell) > 0.0) then
+           if (bottomDepth(iCell) > 0.0_RKIND) then
              maxLevelCell(iCell) = 1
            else
              maxLevelCell(iCell) = -1
            endif
-           
+
            ! Determine maxLevelCell based on bottomDepth and refBottomDepth
            ! Also set botomDepth based on refBottomDepth, since
            ! above bottomDepth was set with continuous analytical functions,
@@ -267,9 +268,9 @@ contains
                 end do
              end if
            end if
-        
+
         enddo ! Looping through with iCell
-        
+
         block_ptr => block_ptr % next
 
       enddo !  done setting bathymetry
@@ -305,21 +306,25 @@ contains
         call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
         call mpas_pool_get_subpool(forcingPool, 'tracersInteriorRestoringFields', tracersInteriorRestoringFieldsPool)
         call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', activeTracersPistonVelocity, 1)
-        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', activeTracersSurfaceRestoringValue, 1)
-        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringRate', activeTracersInteriorRestoringRate, 1)
-        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringValue', activeTracersInteriorRestoringValue, 1)
+        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', &
+                                 activeTracersSurfaceRestoringValue, 1)
+        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringRate', &
+                                 activeTracersInteriorRestoringRate, 1)
+        call mpas_pool_get_array(tracersInteriorRestoringFieldsPool, 'activeTracersInteriorRestoringValue', &
+                                 activeTracersInteriorRestoringValue, 1)
 
         do iCell = 1, nCells
            lonCurrent = lonCell(iCell)
            latCurrent = latCell(iCell)
-           
+
            ! Set initial temperature and salinity
            do k = 1, nVertLevels
               zMid = refZMid(k)
 
-              distance = config_soma_ref_density & 
-                  - (1.0_RKIND - config_soma_density_difference_linear) * config_soma_density_difference * tanh(zMid / config_soma_thermocline_depth) &
-                  - config_soma_density_difference_linear * config_soma_density_difference * zMid / config_soma_bottom_depth
+              distance = config_soma_ref_density &
+                  - (1.0_RKIND - config_soma_density_difference_linear) * config_soma_density_difference &
+                  * tanh(zMid / config_soma_thermocline_depth) - config_soma_density_difference_linear &
+                  * config_soma_density_difference * zMid / config_soma_bottom_depth
               factor = (config_soma_ref_density - distance) / config_eos_linear_alpha
               temperature = config_soma_surface_temperature + factor
 
@@ -328,16 +333,16 @@ contains
 
               if ( associated(activeTracers) ) then
                  activeTracers(index_temperature, k, iCell) = temperature
-                 activeTracers(index_salinity, k, iCell) = salinity 
+                 activeTracers(index_salinity, k, iCell) = salinity
               end if
 
            enddo
-           
+
            ! Set up debugging tracers
            if ( associated(debugTracers) ) then
               debugTracers(index_tracer1, :, iCell) = 1.0_RKIND
            end if
-           
+
         end do ! iCell = 1, nCells
 
         ! Set wind stress
@@ -345,8 +350,8 @@ contains
            lonCurrent = lonCell(iCell)
            latCurrent = latCell(iCell)
 
-           deltay =  sphereRadius * ( latCurrent - latCenter ) 
-           factor = 1.0 - 0.5 * deltay / config_soma_domain_width
+           deltay =  sphereRadius * ( latCurrent - latCenter )
+           factor = 1.0_RKIND - 0.5 * deltay / config_soma_domain_width
            windstress = factor * 0.1 * exp( -(deltay / config_soma_domain_width)**2 ) &
                  * cos(pii * deltay / config_soma_domain_width)
 
@@ -359,7 +364,7 @@ contains
       end do
 
       write(stderrUnit,*) 'exiting ocn_init_setup_soma'
-   
+
    !--------------------------------------------------------------------
 
    end subroutine ocn_init_setup_soma!}}}
@@ -371,7 +376,7 @@ contains
 !> \brief   Validation for SOMA test case
 !> \author  Todd Ringler
 !> \date    02/26/2014
-!> \details 
+!> \details
 !>  This routine validates the configuration options for the SOMA test case.
 !
 !-----------------------------------------------------------------------
@@ -383,7 +388,7 @@ contains
       type (mpas_pool_type), intent(inout) :: configPool, packagePool
       type (mpas_io_context_type), intent(inout) :: iocontext
       integer, intent(out) :: iErr
-      
+
       character (len=StrKIND), pointer :: config_init_configuration
       integer, pointer :: config_vert_levels, config_soma_vert_levels
 
@@ -394,7 +399,7 @@ contains
 
       call mpas_pool_get_config(configPool, 'config_vert_levels', config_vert_levels)
       call mpas_pool_get_config(configPool, 'config_soma_vert_levels', config_soma_vert_levels)
-      
+
       if(config_vert_levels <= 0 .and. config_soma_vert_levels > 0) then
          config_vert_levels = config_soma_vert_levels
       else if (config_vert_levels <= 0) then

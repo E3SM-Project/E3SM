@@ -60,7 +60,7 @@ contains
 !> \brief   computes a tracer tendency to approximate ideal age
 !> \author  Todd Ringler
 !> \date    06/09/2015
-!> \details 
+!> \details
 !>  This routine computes a tracer tendency to approximate ideal age
 !
 !-----------------------------------------------------------------------
@@ -94,7 +94,7 @@ contains
       ! three dimensional arrays
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
         tracers, &
-        tracer_tend 
+        tracer_tend
 
       !-----------------------------------------------------------------
       !
@@ -113,8 +113,8 @@ contains
       integer :: iCell, iLevel, iTracer
 
       !move to ocean constants
-      real (kind=RKIND), parameter :: c0 = 0.0
-      real (kind=RKIND), parameter :: c1 = 1.0
+      real (kind=RKIND), parameter :: c0 = 0.0_RKIND
+      real (kind=RKIND), parameter :: c1 = 1.0_RKIND
 
       err = 0
 
@@ -128,7 +128,7 @@ contains
 
              ! add a tendency increment equivalent to "dt" to entire domain
              tracer_tend(iTracer, iLevel, iCell) =   tracer_tend(iTracer, iLevel, iCell) +  &
-                                                     layerThickness(iLevel,iCell) * c1 
+                                                     layerThickness(iLevel,iCell) * c1
           enddo
         enddo
       enddo
@@ -145,7 +145,7 @@ contains
 !> \brief   Initializes ocean ideal age
 !> \author  Todd Ringler
 !> \date    06/09/2015
-!> \details 
+!> \details
 !>  This routine initializes fields required for tracer ideal age
 !
 !-----------------------------------------------------------------------

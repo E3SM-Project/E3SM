@@ -13,8 +13,8 @@
 !> \author Mark Petersen
 !> \date   September 2011
 !> \details
-!>  This module contains the routines for computing 
-!>  constant vertical mixing coefficients.  
+!>  This module contains the routines for computing
+!>  constant vertical mixing coefficients.
 !>
 !
 !-----------------------------------------------------------------------
@@ -70,7 +70,7 @@ contains
 !> \brief   Computes coefficients for vertical mixing
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the vertical mixing coefficients for momentum
 !>  and tracers based user choices of mixing parameterization.
 !
@@ -125,7 +125,7 @@ contains
       !-----------------------------------------------------------------
       !
       ! call relevant routines for computing tendencies
-      ! note that the user can choose multiple options and the 
+      ! note that the user can choose multiple options and the
       !   tendencies will be added together
       !
       !-----------------------------------------------------------------
@@ -157,7 +157,7 @@ contains
 !> \brief   Computes coefficients for vertical momentum mixing
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the constant vertical mixing coefficients for momentum
 !
 !-----------------------------------------------------------------------
@@ -214,7 +214,7 @@ contains
 !> \brief   Computes coefficients for vertical tracer mixing
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the constant vertical mixing coefficients for tracers
 !
 !-----------------------------------------------------------------------
@@ -271,11 +271,11 @@ contains
 !> \brief   Initializes ocean momentum vertical mixing quantities
 !> \author  Mark Petersen
 !> \date    September 2011
-!> \details 
-!>  This routine initializes a variety of quantities related to 
-!>  vertical velocity mixing in the ocean. Since a variety of 
+!> \details
+!>  This routine initializes a variety of quantities related to
+!>  vertical velocity mixing in the ocean. Since a variety of
 !>  parameterizations are available, this routine primarily calls the
-!>  individual init routines for each parameterization. 
+!>  individual init routines for each parameterization.
 !
 !-----------------------------------------------------------------------
 

@@ -60,7 +60,7 @@ contains
 !> \brief   computes a tracer tendency due to interior restoring
 !> \author  Todd Ringler
 !> \date    06/09/2015
-!> \details 
+!> \details
 !>  This routine computes a tracer tendency due to interior restoring
 !
 !-----------------------------------------------------------------------
@@ -98,7 +98,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
-        tracer_tend 
+        tracer_tend
 
       !-----------------------------------------------------------------
       !
@@ -122,10 +122,10 @@ contains
       do iCell=1,nCellsSolve
         do iLevel=1,maxLevelCell(iCell)
           do iTracer=1,nTracers
-             tracer_tend(iTracer, iLevel, iCell) =   tracer_tend(iTracer, iLevel, iCell)  &
-                                                   - layerThickness(iLevel,iCell) * & 
-                                                     (tracers(iTracer, iLevel, iCell) - tracersInteriorRestoringValue(iTracer, iLevel, iCell))  &
-                                                   * tracersInteriorRestoringRate(iTracer, iLevel, iCell)
+             tracer_tend(iTracer, iLevel, iCell) = tracer_tend(iTracer, iLevel, iCell)  - layerThickness(iLevel,iCell) &
+                                                 * ( tracers(iTracer, iLevel, iCell) &
+                                                 - tracersInteriorRestoringValue(iTracer, iLevel, iCell) )  &
+                                                 * tracersInteriorRestoringRate(iTracer, iLevel, iCell)
           enddo
         enddo
       enddo
@@ -142,7 +142,7 @@ contains
 !> \brief   Initializes ocean interior restoring
 !> \author  Todd Ringler
 !> \date    06/09/2015
-!> \details 
+!> \details
 !>  This routine initializes fields required for tracer interior restoring
 !
 !-----------------------------------------------------------------------

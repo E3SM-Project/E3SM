@@ -64,7 +64,7 @@ contains
 !> \brief   Performs the formation of Sea Ice within the ocean.
 !> \author  Doug Jacobsen
 !> \date    08/19/2013
-!> \details 
+!> \details
 !>   ocn_sea_ice_formation performs the adjustment of tracer values
 !>   and layerThickness based on the formation of frazil ice within the ocean.
 !
@@ -134,7 +134,8 @@ contains
 
       density_ice = rho_ice
 
-      !$omp do schedule(runtime) private(maxLevel, netEnergyChange, k, freezingTemp, availableEnergyChange, energyChange, temperatureChange, thicknessChange, iceThicknessChange, iTracer)
+      !$omp do schedule(runtime) private(maxLevel, netEnergyChange, k, freezingTemp, availableEnergyChange, energyChange, &
+      !$omp                              temperatureChange, thicknessChange, iceThicknessChange, iTracer)
       do iCell = 1, nCellsSolve ! Check performance of these two loop definitions
 !     do iCell = nCellsSolve, 1, -1
          maxLevel = min(maxLevelCell(iCell), verticalLevelCap)
@@ -165,7 +166,7 @@ contains
             do iTracer = 1, nTracers
                if(iTracer /= indexTemperature) then
                   ! computed as:
-                  !    \rho_{ocn} h_{ocn}^{pre} \theta_{ocn}^{pre} = 
+                  !    \rho_{ocn} h_{ocn}^{pre} \theta_{ocn}^{pre} =
                   !               \rho_{ocn}^{new} h_{ocn}^{new} \theta_{ocn}^{new}  =  \rho_{si} h_{si} \theta_{si}
                   tracers(iTracer, k, iCell) = ( rho_sw * layerThickness(k,iCell) * tracers(iTracer, k, iCell) &
                                                - density_ice * iceThicknessChange * iceTracer(iTracer)) / &
@@ -217,7 +218,7 @@ contains
             do iTracer = 1, nTracers
                if(iTracer /= indexTemperature) then
                   ! computed as:
-                  !    \rho_{ocn} h_{ocn}^{pre} \theta_{ocn}^{pre} = 
+                  !    \rho_{ocn} h_{ocn}^{pre} \theta_{ocn}^{pre} =
                   !               \rho_{ocn}^{new} h_{ocn}^{new} \theta_{ocn}^{new}  =  \rho_{si} h_{si} \theta_{si}
                   tracers(iTracer, k, iCell) = ( rho_sw * layerThickness(k,iCell) * tracers(iTracer, k, iCell) &
                                                - density_ice * iceThicknessChange * iceTracer(iTracer)) / &
@@ -248,7 +249,7 @@ contains
 !> \brief   Computes the freezing temperature of the ocean.
 !> \author  Doug Jacobsen
 !> \date    08/29/2013
-!> \details 
+!> \details
 !>  This routine computes the freezing temperature of the ocean at a given
 !>  salinity value.
 !
@@ -256,7 +257,7 @@ contains
     real (kind=RKIND) function ocn_freezing_temperature(salinity)!{{{
       real (kind=RKIND) :: salinity !< Input: Salinity value of water for freezing temperature
 
-      ocn_freezing_temperature = -1.8
+      ocn_freezing_temperature = -1.8_RKIND
     end function ocn_freezing_temperature!}}}
 
 
@@ -267,7 +268,7 @@ contains
 !> \brief   Initializes ocean sea ice module.
 !> \author  Doug Jacobsen
 !> \date    08/19/2013
-!> \details 
+!> \details
 !>  This routine initializes the ocean sea ice module and variables..
 !
 !-----------------------------------------------------------------------

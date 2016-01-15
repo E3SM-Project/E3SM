@@ -6,7 +6,7 @@
 !> \author Doug Jacobsen
 !> \date   12/17/12
 !> \details
-!>  This module contains the routine for computing 
+!>  This module contains the routine for computing
 !>  short wave tendencies
 !
 !-----------------------------------------------------------------------
@@ -18,7 +18,7 @@ module ocn_tracer_short_wave_absorption
    use ocn_constants
    use ocn_tracer_short_wave_absorption_jerlov
    use ocn_tracer_short_wave_absorption_variable
-   
+
    implicit none
    private
    save
@@ -57,12 +57,13 @@ contains
 !> \brief   Computes tendency term for surface fluxes
 !> \author  Doug Jacobsen
 !> \date    12/17/12
-!> \details 
+!> \details
 !>  This routine computes the tendency for tracers based on surface fluxes.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_short_wave_absorption_tend(meshPool, swForcingPool, forcingPool, index_temperature, layerThickness, penetrativeTemperatureFlux, tend, err)!{{{
+   subroutine ocn_tracer_short_wave_absorption_tend(meshPool, swForcingPool, forcingPool, index_temperature, & !{{{
+                                                    layerThickness, penetrativeTemperatureFlux, tend, err)
 
       !-----------------------------------------------------------------
       !
@@ -111,9 +112,11 @@ contains
 
       err = 0
       if(useJerlov) then
-         call ocn_tracer_short_wave_absorption_jerlov_tend(meshPool, forcingPool, index_temperature, layerThickness, penetrativeTemperatureFlux, tend, err)
+         call ocn_tracer_short_wave_absorption_jerlov_tend(meshPool, forcingPool, index_temperature, layerThickness, &
+                                                           penetrativeTemperatureFlux, tend, err)
       else
-         call ocn_tracer_short_wave_absorption_variable_tend(meshPool,swForcingPool, forcingPool, index_temperature, layerThickness, penetrativeTemperatureFlux,tend,err)
+         call ocn_tracer_short_wave_absorption_variable_tend(meshPool,swForcingPool, forcingPool, index_temperature, &
+                                                             layerThickness, penetrativeTemperatureFlux,tend,err)
       endif
    !--------------------------------------------------------------------
 
@@ -126,7 +129,7 @@ contains
 !> \brief   Initializes ocean tracer surface flux quantities
 !> \author  Doug Jacobsen
 !> \date    12/17/12
-!> \details 
+!> \details
 !>  This routine initializes quantities related to surface fluxes in the ocean.
 !
 !-----------------------------------------------------------------------
@@ -136,7 +139,7 @@ contains
    !--------------------------------------------------------------------
 
       type (domain_type) :: domain
-      
+
       integer, intent(out) :: err !< Output: error flag
 
       logical, pointer :: config_use_activeTracers_surface_bulk_forcing
@@ -145,7 +148,8 @@ contains
       err = 0
 
       call mpas_pool_get_config(ocnConfigs, 'config_sw_absorption_type', config_sw_absorption_type)
-      call MPAS_pool_get_config(ocnConfigs, 'config_use_activeTracers_surface_bulk_forcing', config_use_activeTracers_surface_bulk_forcing)
+      call MPAS_pool_get_config(ocnConfigs, 'config_use_activeTracers_surface_bulk_forcing', &
+                                config_use_activeTracers_surface_bulk_forcing)
 
       useJerlov=.false.
       if (.not.config_use_activeTracers_surface_bulk_forcing.or.trim( config_sw_absorption_type ) == 'none') return
@@ -154,8 +158,8 @@ contains
          useJerlov=.true.
 !        call ocn_tracer_short_wave_absorption_jerlov_init(err)
       else if ( trim( config_sw_absorption_type ) == 'ohlmann00' ) then
-      	 call ocn_tracer_short_wave_absorption_variable_init(domain, err)
-      else 
+         call ocn_tracer_short_wave_absorption_variable_init(domain, err)
+      else
          write(stderrUnit,*) 'Incorrect option for config_sw_absorption_type. Options are: jerlov or ohlmann00 or none'
          err = 1
          return

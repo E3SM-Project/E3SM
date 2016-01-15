@@ -9,11 +9,11 @@
 !
 !  ocn_vel_hmix_leith
 !
-!> \brief Ocean horizontal mixing - Leith parameterization 
+!> \brief Ocean horizontal mixing - Leith parameterization
 !> \author Mark Petersen
 !> \date   22 October 2012
 !> \details
-!>  This module contains routines for computing horizontal mixing 
+!>  This module contains routines for computing horizontal mixing
 !>  tendencies using the Leith parameterization.
 !
 !-----------------------------------------------------------------------
@@ -63,7 +63,7 @@ contains
 !> \brief  Computes tendency term for horizontal momentum mixing with Leith parameterization
 !> \author Mark Petersen, Todd Ringler
 !> \date   22 October 2012
-!> \details 
+!> \details
 !> This routine computes the horizontal mixing tendency for momentum
 !> based on the Leith closure.  The Leith closure is the
 !> enstrophy-cascade analogy to the Smagorinsky (1963) energy-cascade
@@ -71,10 +71,10 @@ contains
 !> moving toward the mesh scale. The assumption of an enstrophy cascade
 !> and dimensional analysis produces right-hand-side dissipation,
 !> $\bf{D}$, of velocity of the form
-!> $ {\bf D} = \nabla \cdot \left( \nu_\ast \nabla {\bf u} \right) 
-!>    = \nabla \cdot \left( \gamma \left| \nabla \omega  \right| 
+!> $ {\bf D} = \nabla \cdot \left( \nu_\ast \nabla {\bf u} \right)
+!>    = \nabla \cdot \left( \gamma \left| \nabla \omega  \right|
 !>      \left( \Delta x \right)^3 \nabla \bf{u} \right)
-!> where $\omega$ is the relative vorticity and $\gamma$ is a non-dimensional, 
+!> where $\omega$ is the relative vorticity and $\gamma$ is a non-dimensional,
 !> $O(1)$ parameter. We set $\gamma=1$.
 
 !
@@ -171,7 +171,7 @@ contains
          do k = 1, maxLevelEdgeTop(iEdge)
 
             ! Here -( relativeVorticity(k,vertex2) - relativeVorticity(k,vertex1) ) / dvEdge(iEdge)
-            ! is - \nabla relativeVorticity pointing from vertex 2 to vertex 1, or equivalently 
+            ! is - \nabla relativeVorticity pointing from vertex 2 to vertex 1, or equivalently
             !    + k \times \nabla relativeVorticity pointing from cell1 to cell2.
 
             u_diffusion = ( divergence(k,cell2)  - divergence(k,cell1) ) * invLength_dc &
@@ -203,9 +203,9 @@ contains
 !> \brief   Initializes ocean momentum horizontal mixing with Leith parameterization
 !> \author Mark Petersen
 !> \date   22 October 2012
-!> \details 
-!>  This routine initializes a variety of quantities related to 
-!>  Leith parameterization for horizontal momentum mixing in the ocean.  
+!> \details
+!>  This routine initializes a variety of quantities related to
+!>  Leith parameterization for horizontal momentum mixing in the ocean.
 !
 !-----------------------------------------------------------------------
 

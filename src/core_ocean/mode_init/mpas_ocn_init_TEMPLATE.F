@@ -13,9 +13,9 @@
 !> \author FILL_IN_AUTHOR
 !> \date   FILL_IN_DATE
 !> \details
-!>  This module contains the routines for initializing the 
+!>  This module contains the routines for initializing the
 !>  TEMPLATE initial condition
-!> 
+!>
 !>  In order to add a new analysis member, do the following:
 !>  1. In src/core_ocean/mode_init, copy these to your new analysis member name:
 !>     cp mpas_ocn_init_TEMPLATE.F mpas_ocn_init_your_new_name.F
@@ -24,12 +24,12 @@
 !>  2. In those two new files, replace the following text:
 !>     TEMPLATE, FILL_IN_AUTHOR, FILL_IN_DATE
 !>     TEMPLATE uses underscores (subroutine names), like your_new_name.
-!>  
+!>
 !>  3. Add a #include line for your registry to
 !>     src/core_ocean/mode_init/Registry.xml
-!>  
+!>
 !>  4. Copy and change TEMPLATE lines in src/core_ocean/mode_init/mpas_ocn_init_mode.F
-!>  
+!>
 !>  5. Add these dependency lines by following TEMPLATE examples in:
 !>     in src/core_ocean/mode_init/Makefile
 !
@@ -83,7 +83,7 @@ contains
 !> \brief   Setup for this initial condition
 !> \author  FILL_IN_AUTHOR
 !> \date    FILL_IN_DATE
-!> \details 
+!> \details
 !>  This routine sets up the initial conditions for this case.
 !
 !-----------------------------------------------------------------------
@@ -145,7 +145,8 @@ contains
     call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
     ! you may restrict your case geometry as follows:
-    ! if ( on_a_sphere ) call mpas_dmpar_global_abort('IERROR: The TEMPLATE configuration can only be applied to a planar mesh. Exiting...')
+    ! if ( on_a_sphere ) call mpas_dmpar_global_abort('ERROR: The TEMPLATE configuration can only be applied ' &
+    !                                              // 'to a planar mesh. Exiting...')
 
     allocate(interfaceLocations(nVertLevelsP1))
     call ocn_generate_vertical_grid( config_vertical_grid, interfaceLocations )
@@ -247,26 +248,26 @@ contains
           ! Set temperature
           idx = index_temperature
           do k = 1, nVertLevels
-             ! activeTracers(idx, k, iCell) = 
+             ! activeTracers(idx, k, iCell) =
           end do
 
           ! Set salinity
           idx = index_salinity
           do k = 1, nVertLevels
-             ! activeTracers(idx, k, iCell) = 
+             ! activeTracers(idx, k, iCell) =
           end do
 
           ! Set layerThickness and restingThickness
           do k = 1, nVertLevels
-             ! layerThickness(k, iCell) = 
-             ! restingThickness(k, iCell) = 
+             ! layerThickness(k, iCell) =
+             ! restingThickness(k, iCell) =
           end do
 
           ! Set bottomDepth
-          ! bottomDepth(iCell) = 
+          ! bottomDepth(iCell) =
 
           ! Set maxLevelCell
-          ! maxLevelCell(iCell) = 
+          ! maxLevelCell(iCell) =
 
           ! Set Coriolis parameters, if other than zero
           fCell(iCell) = config_TEMPLATE_coriolis_parameter
@@ -290,7 +291,7 @@ contains
 !> \brief   Validation for this initial condition
 !> \author  FILL_IN_AUTHOR
 !> \date    FILL_IN_DATE
-!> \details 
+!> \details
 !>  This routine validates the configuration options for this case.
 !
 !-----------------------------------------------------------------------

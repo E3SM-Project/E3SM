@@ -13,7 +13,7 @@
 !> \author Doug Jacobsen
 !> \date   02/18/2014
 !> \details
-!>  This module contains the routines for initializing the 
+!>  This module contains the routines for initializing the
 !>  the internal waves test case
 !
 !-----------------------------------------------------------------------
@@ -65,7 +65,7 @@ contains
 !> \brief   Setup for internal waves test case
 !> \author  Doug Jacobsen
 !> \date    02/19/2014
-!> \details 
+!> \details
 !>  This routine sets up the initial conditions for the internal waves test case.
 !
 !-----------------------------------------------------------------------
@@ -134,14 +134,20 @@ contains
       call ocn_generate_vertical_grid( config_vertical_grid, interfaceLocations )
 
       call mpas_pool_get_config(domain % configs, 'config_internal_waves_use_distances', config_internal_waves_use_distances)
-      call mpas_pool_get_config(domain % configs, 'config_internal_waves_amplitude_width_frac', config_internal_waves_amplitude_width_frac)
-      call mpas_pool_get_config(domain % configs, 'config_internal_waves_amplitude_width_dist', config_internal_waves_amplitude_width_dist)
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_amplitude_width_frac', &
+                                config_internal_waves_amplitude_width_frac)
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_amplitude_width_dist', &
+                                config_internal_waves_amplitude_width_dist)
       call mpas_pool_get_config(domain % configs, 'config_internal_waves_bottom_depth', config_internal_waves_bottom_depth)
-      call mpas_pool_get_config(domain % configs, 'config_internal_waves_bottom_temperature', config_internal_waves_bottom_temperature)
-      call mpas_pool_get_config(domain % configs, 'config_internal_waves_surface_temperature', config_internal_waves_surface_temperature)
-      call mpas_pool_get_config(domain % configs, 'config_internal_waves_temperature_difference', config_internal_waves_temperature_difference)
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_bottom_temperature', &
+                                config_internal_waves_bottom_temperature)
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_surface_temperature', &
+                                config_internal_waves_surface_temperature)
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_temperature_difference', &
+                                config_internal_waves_temperature_difference)
       call mpas_pool_get_config(domain % configs, 'config_internal_waves_salinity', config_internal_waves_salinity)
-      call mpas_pool_get_config(domain % configs, 'config_internal_waves_isopycnal_displacement', config_internal_waves_isopycnal_displacement)
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_isopycnal_displacement', &
+                                config_internal_waves_isopycnal_displacement)
       call mpas_pool_get_config(domain % configs, 'config_internal_waves_layer_type', config_internal_waves_layer_type)
 
       ! Determine local min and max values.
@@ -171,7 +177,7 @@ contains
       call mpas_dmpar_min_real(domain % dminfo, xMin, xMinGlobal)
       call mpas_dmpar_max_real(domain % dminfo, xMax, xMaxGlobal)
       call mpas_dmpar_min_real(domain % dminfo, dcEdgEMin, dcEdgeMinGlobal)
- 
+
       yMidGlobal = (yMinGlobal + yMaxGlobal) * 0.5_RKIND
       if(config_internal_waves_use_distances) then
          perturbationWidth = config_internal_waves_amplitude_width_dist
@@ -224,14 +230,14 @@ contains
            refTemperatureTop(1) = config_internal_waves_surface_temperature
            refTemperatureTop(nVertLevels+1) = config_internal_waves_bottom_temperature
            deltaTemperature = (config_internal_waves_surface_temperature - config_internal_waves_bottom_temperature)/nVertLevels
-           refTemperature(1) = config_internal_waves_surface_temperature - deltaTemperature/2.0
+           refTemperature(1) = config_internal_waves_surface_temperature - deltaTemperature/2.0_RKIND
            refZTop(1) = 0.0_RKIND
            do k = 2, nVertLevels
               refTemperatureTop(k) = refTemperatureTop(1) - (k-1)*deltaTemperature
               refTemperature(k) = refTemperature(1) - (k-1)*deltaTemperature
               refZTop(k) = refZTop(k-1) - config_internal_waves_bottom_depth / nVertLevels
            end do
-          
+
         endif
 
         ! Set vertCoordMovementWeights
@@ -260,8 +266,9 @@ contains
                  if ( abs(yCell(iCell) - yMidGlobal) < perturbationWidth ) then
                     ! If cell is in the southern half, outside the sin width, subtract temperature difference
                     do k = 2, nVertLevels
-                       temperature = -config_internal_waves_temperature_difference * cos(0.5_RKIND * pii * (yCell(iCell) - yMidGlobal) / perturbationWidth) &
-                            * sin ( pii * refBottomDepth(k-1) / refBottomDepth(nVertLevels-1) )
+                       temperature = -config_internal_waves_temperature_difference * cos(0.5_RKIND * pii * (yCell(iCell) &
+                                   - yMidGlobal) / perturbationWidth) * sin ( pii * refBottomDepth(k-1) &
+                                   / refBottomDepth(nVertLevels-1) )
 
                        activeTracers(index_temperature, k, iCell) = activeTracers(index_temperature, k, iCell) + temperature
                     end do
@@ -334,7 +341,7 @@ contains
 !> \brief   Validation for internal waves test case
 !> \author  Doug Jacobsen
 !> \date    02/20/2014
-!> \details 
+!> \details
 !>  This routine validates the configuration options for the internal waves test case.
 !
 !-----------------------------------------------------------------------

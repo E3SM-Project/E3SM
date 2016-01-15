@@ -13,7 +13,7 @@
 !> \author Todd Ringler
 !> \date   5 January 2012
 !> \details
-!>  This module contains the routine for computing 
+!>  This module contains the routine for computing
 !>  tendencies based on linear Rayleigh friction.
 !
 !-----------------------------------------------------------------------
@@ -64,7 +64,7 @@ contains
 !> \brief   Computes tendency term from Rayleigh friction
 !> \author  Todd Ringler
 !> \date    5 January 2012
-!> \details 
+!> \details
 !>  This routine computes the Rayleigh friction tendency for momentum
 !>  based on current state.
 !
@@ -79,7 +79,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normalVelocity    !< Input: velocity 
+         normalVelocity    !< Input: velocity
 
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
@@ -114,7 +114,7 @@ contains
       !-----------------------------------------------------------------
       !
       ! call relevant routines for computing tendencies
-      ! note that the user can choose multiple options and the 
+      ! note that the user can choose multiple options and the
       !   tendencies will be added together
       !
       !-----------------------------------------------------------------
@@ -147,9 +147,9 @@ contains
 !> \brief   Initializes ocean Rayleigh friction
 !> \author  Todd Ringler
 !> \date    5 January 2012
-!> \details 
-!>  This routine initializes quantities related to 
-!>  in the ocean. 
+!> \details
+!>  This routine initializes quantities related to
+!>  in the ocean.
 !
 !-----------------------------------------------------------------------
 
@@ -173,7 +173,7 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_friction', config_Rayleigh_friction)
       call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_damping_coeff', config_Rayleigh_damping_coeff)
 
-      rayleighDampingCoef = 0.0
+      rayleighDampingCoef = 0.0_RKIND
 
       if (config_Rayleigh_friction) then
           rayleighFrictionOn = .true.

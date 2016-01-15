@@ -66,7 +66,7 @@ contains
 !> \brief   Determines the tracers forcing array used for the bulk forcing.
 !> \author  Doug Jacobsen
 !> \date    04/25/12
-!> \details 
+!> \details
 !>  This routine computes the tracers forcing arrays used later in MPAS.
 !
 !-----------------------------------------------------------------------
@@ -119,7 +119,7 @@ contains
 !> \brief   Determines the velocity forcing array used for the bulk forcing.
 !> \author  Doug Jacobsen
 !> \date    04/25/12
-!> \details 
+!> \details
 !>  This routine computes the velocity forcing arrays used later in MPAS.
 !
 !-----------------------------------------------------------------------
@@ -140,7 +140,7 @@ contains
       !
       !-----------------------------------------------------------------
       real (kind=RKIND), dimension(:), intent(inout) :: surfaceStress, & !< Input/Output: Array for surface stress
-                                                        surfaceStressMagnitude !< Input/Output: Array for magnitude of surface stress
+                                                  surfaceStressMagnitude !< Input/Output: Array for magnitude of surface stress
 
       !-----------------------------------------------------------------
       !
@@ -184,17 +184,19 @@ contains
         cell1 = cellsOnEdge(1, iEdge)
         cell2 = cellsOnEdge(2, iEdge)
 
-        zonalAverage = 0.5 * (windStressZonal(cell1) + windStressZonal(cell2))
-        meridionalAverage = 0.5 * (windStressMeridional(cell1) + windStressMeridional(cell2))
+        zonalAverage = 0.5_RKIND * (windStressZonal(cell1) + windStressZonal(cell2))
+        meridionalAverage = 0.5_RKIND * (windStressMeridional(cell1) + windStressMeridional(cell2))
 
-        surfaceStress(iEdge) = surfaceStress(iEdge) + cos(angleEdge(iEdge)) * zonalAverage + sin(angleEdge(iEdge)) * meridionalAverage
+        surfaceStress(iEdge) = surfaceStress(iEdge) + cos(angleEdge(iEdge)) * zonalAverage + sin(angleEdge(iEdge)) &
+                             * meridionalAverage
       end do
       !$omp end do
 
       ! Build surface fluxes at cell centers
       !$omp do schedule(runtime)
       do iCell = 1, nCells
-        surfaceStressMagnitude(iCell) = surfaceStressMagnitude(iCell) + sqrt(windStressZonal(iCell)**2 + windStressMeridional(iCell)**2)
+        surfaceStressMagnitude(iCell) = surfaceStressMagnitude(iCell) + sqrt( windStressZonal(iCell)**2 &
+                                      + windStressMeridional(iCell)**2 )
       end do
       !$omp end do
 
@@ -207,7 +209,7 @@ contains
 !> \brief   Determines the thickness forcing array used for the bulk forcing.
 !> \author  Doug Jacobsen
 !> \date    04/25/12
-!> \details 
+!> \details
 !>  This routine computes the thickness forcing arrays used later in MPAS.
 !
 !-----------------------------------------------------------------------
@@ -284,7 +286,7 @@ contains
 !> \brief   Initializes bulk forcing module
 !> \author  Doug Jacobsen
 !> \date    04/25/12
-!> \details 
+!> \details
 !>  This routine initializes the bulk forcing module.
 !
 !-----------------------------------------------------------------------
@@ -319,7 +321,7 @@ contains
 !> \brief   Determines the active tracers forcing array used for the bulk forcing.
 !> \author  Doug Jacobsen
 !> \date    04/25/12
-!> \details 
+!> \details
 !>  This routine computes the active tracers forcing arrays used later in MPAS.
 !
 !-----------------------------------------------------------------------
@@ -362,7 +364,8 @@ contains
 
       type(mpas_pool_type),pointer :: tracersSurfaceFluxPool
 
-      real (kind=RKIND), dimension(:), pointer :: latentHeatFlux, sensibleHeatFlux, longWaveHeatFluxUp, longWaveHeatFluxDown, seaIceHeatFlux
+      real (kind=RKIND), dimension(:), pointer :: latentHeatFlux, sensibleHeatFlux, longWaveHeatFluxUp, longWaveHeatFluxDown, &
+                                                  seaIceHeatFlux
       real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, seaIceSalinityFlux, iceRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: shortWaveHeatFlux, penetrativeTemperatureFlux
 
@@ -395,8 +398,10 @@ contains
       !$omp do schedule(runtime)
       do iCell = 1, nCells
         tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
-                                                           + (latentHeatFlux(iCell) + sensibleHeatFlux(iCell) + longWaveHeatFluxUp(iCell) + longWaveHeatFluxDown(iCell) &
-                                                           + seaIceHeatFlux(iCell) - (snowFlux(iCell) + iceRunoffFlux(iCell)) * latent_heat_fusion_mks) * hflux_factor
+                                                           + (latentHeatFlux(iCell) + sensibleHeatFlux(iCell) &
+                                                           + longWaveHeatFluxUp(iCell) + longWaveHeatFluxDown(iCell) &
+                                                           + seaIceHeatFlux(iCell) - (snowFlux(iCell) + iceRunoffFlux(iCell)) &
+                                                           * latent_heat_fusion_mks) * hflux_factor
 
         tracersSurfaceFlux(index_salinity_flux, iCell) = tracersSurfaceFlux(index_salinity_flux, iCell)  &
                                                         + seaIceSalinityFlux(iCell) * sflux_factor

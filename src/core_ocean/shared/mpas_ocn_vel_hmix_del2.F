@@ -9,11 +9,11 @@
 !
 !  ocn_vel_hmix_del2
 !
-!> \brief Ocean horizontal mixing - Laplacian parameterization 
+!> \brief Ocean horizontal mixing - Laplacian parameterization
 !> \author Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date   September 2011
 !> \details
-!>  This module contains routines for computing horizontal mixing 
+!>  This module contains routines for computing horizontal mixing
 !>  tendencies using a Laplacian formulation.
 !
 !-----------------------------------------------------------------------
@@ -67,7 +67,7 @@ contains
 !> \brief   Computes tendency term for Laplacian horizontal momentum mixing
 !> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date    22 August 2011
-!> \details 
+!> \details
 !>  This routine computes the horizontal mixing tendency for momentum
 !>  based on a Laplacian form for the mixing, \f$\nu_2 \nabla^2 u\f$
 !>  This tendency takes the
@@ -93,9 +93,9 @@ contains
 
       type (mpas_pool_type), intent(in) :: &
          meshPool            !< Input: mesh information
-              
+
       !------ -----------------------------------------------------------
-      !       
+      !
       ! input /output variables
       !
       !-----------------------------------------------------------------
@@ -160,13 +160,13 @@ contains
          vertex1 = verticesOnEdge(1,iEdge)
          vertex2 = verticesOnEdge(2,iEdge)
 
-         invLength1 = 1.0 / dcEdge(iEdge)
-         invLength2 = 1.0 / dvEdge(iEdge)
+         invLength1 = 1.0_RKIND / dcEdge(iEdge)
+         invLength2 = 1.0_RKIND / dvEdge(iEdge)
 
          do k = 1, maxLevelEdgeTop(iEdge)
 
             ! Here -( relativeVorticity(k,vertex2) - relativeVorticity(k,vertex1) ) / dvEdge(iEdge)
-            ! is - \nabla relativeVorticity pointing from vertex 2 to vertex 1, or equivalently 
+            ! is - \nabla relativeVorticity pointing from vertex 2 to vertex 1, or equivalently
             !    + k \times \nabla relativeVorticity pointing from cell1 to cell2.
 
             u_diffusion = ( divergence(k,cell2)  - divergence(k,cell1) ) * invLength1 &
@@ -193,9 +193,9 @@ contains
 !> \brief   Computes tendency term for Laplacian horizontal momentum mixing
 !> \author  Mark Petersen
 !> \date    July 2013
-!> \details 
+!> \details
 !>  This routine computes the horizontal mixing tendency for momentum
-!>  using tensor operations, 
+!>  using tensor operations,
 !>  based on a Laplacian form for the mixing, \f$\nabla\cdot( \nu_2 \nabla(u))\f$
 !>  where \f$\nu_2\f$ is a viscosity.
 !
@@ -262,7 +262,7 @@ contains
       type (field3DReal), pointer :: strainRateR3CellField, strainRateR3EdgeField, divTensorR3CellField, outerProductEdgeField
 
       logical, pointer :: config_use_mom_del2_tensor
-      real (kind=RKIND), pointer :: config_mom_del2_tensor 
+      real (kind=RKIND), pointer :: config_mom_del2_tensor
 
       !-----------------------------------------------------------------
       !
@@ -314,15 +314,15 @@ contains
 
       ! The following loop could possibly be reduced to nEdgesSolve
       !$omp do schedule(runtime) private(visc2, k)
-      do iEdge = 1, nEdges  
+      do iEdge = 1, nEdges
          visc2 = config_mom_del2_tensor * meshScalingDel2(iEdge)
          do k = 1, maxLevelEdgeTop(iEdge)
-            strainRateR3Edge(:,k,iEdge) = visc2 * strainRateR3Edge(:,k,iEdge) 
+            strainRateR3Edge(:,k,iEdge) = visc2 * strainRateR3Edge(:,k,iEdge)
             viscosity(k,iEdge) = viscosity(k,iEdge) + visc2
          end do
          ! Impose zero strain rate at land boundaries
          do k = maxLevelEdgeTop(iEdge)+1, nVertLevels
-            strainRateR3Edge(:,k,iEdge) = 0.0
+            strainRateR3Edge(:,k,iEdge) = 0.0_RKIND
          end do
       end do
       !$omp end do
@@ -334,7 +334,7 @@ contains
 
       ! The following loop could possibly be reduced to nEdgesSolve
       !$omp do schedule(runtime) private(k)
-      do iEdge = 1, nEdges 
+      do iEdge = 1, nEdges
          do k = 1, maxLevelEdgeTop(iEdge)
             tend(k,iEdge) = tend(k,iEdge) + edgeMask(k, iEdge) * normalVectorEdge(k,iEdge)
          end do
@@ -359,9 +359,9 @@ contains
 !> \brief   Initializes ocean momentum Laplacian horizontal mixing
 !> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date    September 2011
-!> \details 
-!>  This routine initializes a variety of quantities related to 
-!>  Laplacian horizontal momentum mixing in the ocean.  
+!> \details
+!>  This routine initializes a variety of quantities related to
+!>  Laplacian horizontal momentum mixing in the ocean.
 !
 !-----------------------------------------------------------------------
 
@@ -386,7 +386,7 @@ contains
 
    hmixDel2On = .false.
 
-   if ( config_mom_del2 > 0.0 ) then
+   if ( config_mom_del2 > 0.0_RKIND ) then
       hmixDel2On = .true.
    endif
 

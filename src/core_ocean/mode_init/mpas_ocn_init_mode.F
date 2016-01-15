@@ -13,7 +13,7 @@
 !> \author Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date   September 2011
 !> \details
-!>  This module contains initialization and timestep drivers for 
+!>  This module contains initialization and timestep drivers for
 !>  the MPAS ocean core.
 !
 !-----------------------------------------------------------------------
@@ -72,7 +72,7 @@ module ocn_init_mode
 !> \brief   Initialize MPAS-Ocean core in init mode
 !> \author  Doug Jacobsen
 !> \date    06/15/2015
-!> \details 
+!> \details
 !>  This function calls all initializations required to start MPAS-Ocean in
 !>  init mode.
 !
@@ -109,7 +109,7 @@ module ocn_init_mode
       ! Set startTimeStamp based on the start time of the simulation clock
       !
       startTime = mpas_get_clock_time(domain % clock, MPAS_START_TIME, err_tmp)
-      call mpas_get_time(startTime, dateTimeString=startTimeStamp) 
+      call mpas_get_time(startTime, dateTimeString=startTimeStamp)
       ierr = ior(ierr, err_tmp)
 
       ! Setup ocean config pool
@@ -158,7 +158,7 @@ module ocn_init_mode
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
-         xtime = startTimeStamp 
+         xtime = startTimeStamp
          block => block % next
       end do
 
@@ -174,7 +174,7 @@ module ocn_init_mode
 !> \brief   Setup MPAS-Ocean clock
 !> \author  Doug Jacobsen
 !> \date    06/15/2015
-!> \details 
+!> \details
 !>  This function initializes the MPAS-Ocean clock for the init mode.
 !
 !-----------------------------------------------------------------------
@@ -231,7 +231,7 @@ module ocn_init_mode
 !> \brief   MPAS-Ocean init mode run step
 !> \author  Doug Jacobsen
 !> \date    06/15/2015
-!> \details 
+!> \details
 !>  This function sets up the initial configuration using the MPAS-Ocean init
 !>  mode.
 !
@@ -241,7 +241,7 @@ module ocn_init_mode
 
       type (domain_type), intent(inout) :: domain
       integer :: iErr
-   
+
       integer :: itimestep
       real (kind=RKIND) :: dt
       type (block_type), pointer :: block_ptr
@@ -259,7 +259,7 @@ module ocn_init_mode
       character (len=StrKIND), pointer :: config_init_configuration
 
       ierr = 0
-   
+
       ! Eventually, dt should be domain specific
       timeStep = mpas_get_clock_timestep(domain % clock, ierr=ierr)
       call mpas_get_timeInterval(timeStep, dt=dt)
@@ -303,15 +303,15 @@ module ocn_init_mode
 !> \brief   MPAS-Ocean init mode run step
 !> \author  Doug Jacobsen
 !> \date    06/15/2015
-!> \details 
+!> \details
 !>  This function sets up the initial configuration using the MPAS-Ocean init
 !>  mode.
 !
 !-----------------------------------------------------------------------
-   
+
    function ocn_init_mode_finalize(domain) result(iErr)!{{{
-   
-      type (domain_type), intent(inout) :: domain 
+
+      type (domain_type), intent(inout) :: domain
       integer :: ierr
 
       iErr = 0
@@ -329,7 +329,7 @@ module ocn_init_mode
 !> \brief   Configuration validation routine
 !> \author  Doug Jacobsen
 !> \date    03/20/2015
-!> \details 
+!> \details
 !>  This routine is used to validate the namelist options against the
 !>  configuration definition. It will call the validate routines for each of the
 !>  configurations to ensure namelist options are set in a valid way.

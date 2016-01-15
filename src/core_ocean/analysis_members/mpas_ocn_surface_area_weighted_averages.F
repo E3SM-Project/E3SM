@@ -186,7 +186,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: seaIceEnergy
 
       real (kind=RKIND), dimension(:), pointer :: surfaceThicknessFlux
-      real (kind=RKIND), dimension(:,:), pointer :: activeTracersSurfaceFlux 
+      real (kind=RKIND), dimension(:,:), pointer :: activeTracersSurfaceFlux
       real (kind=RKIND), dimension(:), pointer ::  penetrativeTemperatureFlux
 
       real (kind=RKIND), dimension(:), pointer :: seaIceSalinityFlux
@@ -248,12 +248,12 @@ contains
       allocate(workBufferSumReduced(kBufferLength))
       allocate(workBufferMinReduced(kBufferLength))
       allocate(workBufferMaxReduced(kBufferLength))
-      workBufferSum=0.0
-      workBufferMin=0.0
-      workBufferMax=0.0
-      workBufferSumReduced=0.0
-      workBufferMinReduced=0.0
-      workBufferMaxReduced=0.0
+      workBufferSum=0.0_RKIND
+      workBufferMin=0.0_RKIND
+      workBufferMax=0.0_RKIND
+      workBufferSumReduced=0.0_RKIND
+      workBufferMinReduced=0.0_RKIND
+      workBufferMaxReduced=0.0_RKIND
 
       ! loop over all ocean regions
       do iRegion=1,nOceanRegions
@@ -343,7 +343,7 @@ contains
          call compute_mask(nCells, nCellsSolve, iRegion, lonCell, latCell, workMask)
 
          ! copy data into work array
-         workArray( :,:) = 0.0
+         workArray( :,:) = 0.0_RKIND
          workArray( 1,:) = workMask(:)
          workArray( 2,:) = areaCell(:)
          if (activeTracersBulkRestoringPKG) workArray( 3,:) = latentHeatFlux(:)
@@ -373,9 +373,11 @@ contains
          workArray(27,:) = boundaryLayerDepth(:)
 
          ! build net heat, salinity and fresh water budget
-         ! net heat into ocean = latentHeatFlux+sensibleHeatFlux+longWaveHeatFluxUp+longWaveHeatFluxDown+shortWaveHeatFlux+seaIceHeatFlux+(?seaIceEnergy?)
+         ! net heat into ocean = latentHeatFlux + sensibleHeatFlux + longWaveHeatFluxUp + longWaveHeatFluxDown
+         !                     + shortWaveHeatFlux + seaIceHeatFlux + (?seaIceEnergy?)
          ! net salinity into ocean = seaIceSalinityFlux
-         ! net freshwater into ocean = evaporationFlux+seaIceFreshWaterFlux+riverRunoffFlux+iceRunoffFlux+rainFlux+snowFlux+(?seaIceEnergy?)
+         ! net freshwater into ocean = evaporationFlux + seaIceFreshWaterFlux + riverRunoffFlux + iceRunoffFlux
+         !                           + rainFlux + snowFlux + (?seaIceEnergy?)
          if (activeTracersBulkRestoringPKG) then
             workArray(28,:) =   latentHeatFlux(:) &
                               + sensibleHeatFlux(:) &
@@ -429,10 +431,12 @@ contains
       do iRegion=1,nOceanRegions
          ! normalize all field by total area
          do iDataField=3,nDefinedDataFields
-            avgValueWithinOceanRegion(iDataField,iRegion) = avgValueWithinOceanRegion(iDataField,iRegion) / max(avgValueWithinOceanRegion(2,iRegion),1.0e-8_RKIND)
+            avgValueWithinOceanRegion(iDataField,iRegion) = avgValueWithinOceanRegion(iDataField,iRegion) &
+                                                          / max(avgValueWithinOceanRegion(2,iRegion),1.0e-8_RKIND)
          enddo
          ! normalize total area by number of cells in region
-         avgValueWithinOceanRegion(2,iRegion) = avgValueWithinOceanRegion(2,iRegion) / max(avgValueWithinOceanRegion(1,iRegion),1.0e-8_RKIND)
+         avgValueWithinOceanRegion(2,iRegion) = avgValueWithinOceanRegion(2,iRegion) &
+                                              / max(avgValueWithinOceanRegion(1,iRegion),1.0e-8_RKIND)
       enddo
 
       ! deallocate scratch fields
@@ -461,7 +465,7 @@ contains
    integer :: iCell
    real(kind=RKIND) :: dtr
 
-   dtr = 4.0*atan(1.0) / 180.0_RKIND
+   dtr = 4.0_RKIND*atan(1.0_RKIND) / 180.0_RKIND
    workMask(:) = 0.0_RKIND
    do iCell=1,nCellsSolve
       workMask(iCell) = 1.0_RKIND
@@ -470,42 +474,42 @@ contains
    if (iRegion.eq.1) then
       ! Arctic
       do iCell=1,nCellsSolve
-        if(latCell(iCell).lt. 60.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).lt. 60.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
    elseif (iRegion.eq.2) then
       ! Equatorial
       do iCell=1,nCellsSolve
-        if(latCell(iCell).gt. 15.0*dtr) workMask(iCell) = 0.0_RKIND
-        if(latCell(iCell).lt.-15.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).gt. 15.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).lt.-15.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
    elseif (iRegion.eq.3) then
       ! Southern Ocean
       do iCell=1,nCellsSolve
-        if(latCell(iCell).gt.-50.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).gt.-50.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
    elseif (iRegion.eq.4) then
       ! Nino 3
       do iCell=1,nCellsSolve
-        if(latCell(iCell).gt.  5.0*dtr) workMask(iCell) = 0.0_RKIND
-        if(latCell(iCell).lt. -5.0*dtr) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).lt.210.0*dtr) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).gt.270.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).gt.  5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).lt. -5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).lt.210.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).gt.270.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
    elseif (iRegion.eq.5) then
       ! Nino 4
       do iCell=1,nCellsSolve
-        if(latCell(iCell).gt.  5.0*dtr) workMask(iCell) = 0.0_RKIND
-        if(latCell(iCell).lt. -5.0*dtr) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).lt.160.0*dtr) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).gt.210.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).gt.  5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).lt. -5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).lt.160.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).gt.210.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
    elseif (iRegion.eq.6) then
       ! Nino 3.4
       do iCell=1,nCellsSolve
-        if(latCell(iCell).gt.  5.0*dtr) workMask(iCell) = 0.0_RKIND
-        if(latCell(iCell).lt. -5.0*dtr) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).lt.190.0*dtr) workMask(iCell) = 0.0_RKIND
-        if(lonCell(iCell).gt.240.0*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).gt.  5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if(latCell(iCell).lt. -5.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).lt.190.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
+        if(lonCell(iCell).gt.240.0_RKIND*dtr) workMask(iCell) = 0.0_RKIND
       enddo
    else
       ! global (do nothing!)
@@ -524,7 +528,7 @@ contains
    real(kind=RKIND), dimension(:), intent(out) :: workMin, workMax, workSum
    integer :: iCell, iData
 
-   workSum = 0.0
+   workSum = 0.0_RKIND
    do iCell=1,nCellsSolve
     workSum(1) = workSum(1) + workMask(iCell)
     workSum(2) = workSum(2) + workArray(2,iCell)*workMask(iCell)

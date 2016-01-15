@@ -87,7 +87,7 @@ contains
 !> \brief   Initializes the ocean constants
 !> \author  Doug Jacobsen
 !> \date    04/25/12
-!> \details 
+!> \details
 !>  This routine sets up constants for use in the ocean model.
 !
 !-----------------------------------------------------------------------
@@ -159,7 +159,7 @@ contains
        vonkar                 = SHR_CONST_KARMAN
        stefan_boltzmann       = SHR_CONST_STEBOL        ! W/m^2/K^4
        latent_heat_vapor_mks  = SHR_CONST_LATVAP        ! J/kg
-       latent_heat_fusion_mks = SHR_CONST_LATICE        ! J/kg 
+       latent_heat_fusion_mks = SHR_CONST_LATICE        ! J/kg
        ocn_ref_salinity       = SHR_CONST_OCN_REF_SAL   ! psu
        sea_ice_salinity       = SHR_CONST_ICE_REF_SAL   ! psu
 #endif

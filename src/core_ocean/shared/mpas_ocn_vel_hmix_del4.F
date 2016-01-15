@@ -13,8 +13,8 @@
 !> \author Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date   September 2011
 !> \details
-!>  This module contains routines and variables for computing 
-!>  horizontal mixing tendencies using a biharmonic formulation. 
+!>  This module contains routines and variables for computing
+!>  horizontal mixing tendencies using a biharmonic formulation.
 !
 !-----------------------------------------------------------------------
 
@@ -67,11 +67,11 @@ contains
 !> \brief   Computes tendency term for biharmonic horizontal momentum mixing
 !> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the horizontal mixing tendency for momentum
 !>  based on a biharmonic form for the mixing.  This mixing tendency
 !>  takes the form  \f$-\nu_4 \nabla^4 u\f$
-!>  but is computed as 
+!>  but is computed as
 !>  \f$\nabla^2 u = \nabla divergence + k \times \nabla relativeVorticity\f$
 !>  applied recursively.
 !>  This formulation is only valid for constant \f$\nu_4\f$ .
@@ -111,7 +111,7 @@ contains
       ! output variables
       !
       !-----------------------------------------------------------------
-    
+
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
@@ -126,7 +126,8 @@ contains
 
       integer, dimension(:), pointer :: maxLevelEdgeTop, maxLevelVertexTop, &
             maxLevelCell, nEdgesOnCell
-      integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge, edgeMask, edgesOnVertex, edgesOnCell, edgeSignOnVertex, edgeSignOnCell
+      integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge, edgeMask, edgesOnVertex, edgesOnCell, edgeSignOnVertex, &
+                                          edgeSignOnCell
 
 
       real (kind=RKIND) :: u_diffusion, invAreaCell1, invAreaCell2, invAreaTri1, &
@@ -183,9 +184,9 @@ contains
       delsq_relativeVorticity => delsq_relativeVorticityField % array
 
       !$omp workshare
-      delsq_u(:,:) = 0.0
-      delsq_relativeVorticity(:,:) = 0.0
-      delsq_divergence(:,:) = 0.0
+      delsq_u(:,:) = 0.0_RKIND
+      delsq_relativeVorticity(:,:) = 0.0_RKIND
+      delsq_divergence(:,:) = 0.0_RKIND
       !$omp end workshare
 
       !Compute delsq_u
@@ -197,8 +198,8 @@ contains
          vertex1 = verticesOnEdge(1,iEdge)
          vertex2 = verticesOnEdge(2,iEdge)
 
-         invDcEdge = 1.0 / dcEdge(iEdge)
-         invDvEdge = 1.0 / max(dvEdge(iEdge), 0.25_RKIND*dcEdge(iEdge))
+         invDcEdge = 1.0_RKIND / dcEdge(iEdge)
+         invDvEdge = 1.0_RKIND / max(dvEdge(iEdge), 0.25_RKIND*dcEdge(iEdge))
 
          do k=1,maxLevelEdgeTop(iEdge)
             ! Compute \nabla^2 u = \nabla divergence + k \times \nabla relativeVorticity
@@ -211,11 +212,12 @@ contains
       ! Compute delsq_relativeVorticity
       !$omp do schedule(runtime) private(invAreaTri1, i, iEdge, k)
       do iVertex = 1, nVertices
-         invAreaTri1 = 1.0 / areaTriangle(iVertex)
+         invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
          do i = 1, vertexDegree
             iEdge = edgesOnVertex(i, iVertex)
             do k = 1, maxLevelVertexTop(iVertex)
-               delsq_relativeVorticity(k, iVertex) = delsq_relativeVorticity(k, iVertex) + edgeSignOnVertex(i, iVertex) * dcEdge(iEdge) * delsq_u(k, iEdge) * invAreaTri1
+               delsq_relativeVorticity(k, iVertex) = delsq_relativeVorticity(k, iVertex) + edgeSignOnVertex(i, iVertex) &
+                                                   * dcEdge(iEdge) * delsq_u(k, iEdge) * invAreaTri1
             end do
          end do
       end do
@@ -224,17 +226,18 @@ contains
       ! Compute delsq_divergence
       !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, k)
       do iCell = 1, nCells
-         invAreaCell1 = 1.0 / areaCell(iCell)
+         invAreaCell1 = 1.0_RKIND / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
             do k = 1, maxLevelCell(iCell)
-               delsq_divergence(k, iCell) = delsq_divergence(k, iCell) - edgeSignOnCell(i, iCell) * dvEdge(iEdge) * delsq_u(k, iEdge) * invAreaCell1
+               delsq_divergence(k, iCell) = delsq_divergence(k, iCell) - edgeSignOnCell(i, iCell) * dvEdge(iEdge) &
+                                          * delsq_u(k, iEdge) * invAreaCell1
             end do
          end do
       end do
       !$omp end do
 
-      ! Compute - \kappa \nabla^4 u 
+      ! Compute - \kappa \nabla^4 u
       ! as  \nabla div(\nabla^2 u) + k \times \nabla ( k \cross curl(\nabla^2 u) )
       !$omp do schedule(runtime) private(cell1, cell2, vertex1, vertex2, invDcEdge, invDvEdge, r_tmp, u_diffusion)
       do iEdge=1,nEdgesSolve
@@ -243,8 +246,8 @@ contains
          vertex1 = verticesOnEdge(1,iEdge)
          vertex2 = verticesOnEdge(2,iEdge)
 
-         invDcEdge = 1.0 / dcEdge(iEdge)
-         invDvEdge = 1.0 / dvEdge(iEdge)
+         invDcEdge = 1.0_RKIND / dcEdge(iEdge)
+         invDvEdge = 1.0_RKIND / dvEdge(iEdge)
          r_tmp = config_mom_del4 * meshScalingDel4(iEdge)
 
          do k=1,maxLevelEdgeTop(iEdge)
@@ -272,10 +275,10 @@ contains
 !> \brief   Computes tendency term for Laplacian horizontal momentum mixing
 !> \author  Mark Petersen
 !> \date    July 2013
-!> \details 
+!> \details
 !>  This routine computes the horizontal mixing tendency for momentum
-!>  using tensor operations, 
-!>  based on a Laplacian form for the mixing, 
+!>  using tensor operations,
+!>  based on a Laplacian form for the mixing,
 !>  \f$-\nabla\cdot( \sqrt{\nu_4} \nabla(\nabla\cdot( \sqrt{\nu_4} \nabla(u))))\f$
 !>  where \f$\nu_4\f$ is the del4 viscosity.
 !
@@ -400,14 +403,14 @@ contains
 
       ! The following loop could possibly be reduced to nEdgesSolve
       !$omp do schedule(runtime) private(visc4_sqrt, k)
-      do iEdge = 1, nEdges 
+      do iEdge = 1, nEdges
          visc4_sqrt = sqrt(config_mom_del4_tensor * meshScalingDel4(iEdge))
          do k = 1, maxLevelEdgeTop(iEdge)
-            strainRateR3Edge(:,k,iEdge) = visc4_sqrt * strainRateR3Edge(:,k,iEdge) 
+            strainRateR3Edge(:,k,iEdge) = visc4_sqrt * strainRateR3Edge(:,k,iEdge)
          end do
          ! Impose zero strain rate at land boundaries
          do k = maxLevelEdgeTop(iEdge)+1, nVertLevels
-            strainRateR3Edge(:,k,iEdge) = 0.0
+            strainRateR3Edge(:,k,iEdge) = 0.0_RKIND
          end do
       end do
       !$omp end do
@@ -415,7 +418,8 @@ contains
       ! may change boundaries to false later
       call mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, meshPool, edgeSignOnCell, .true., divTensorR3Cell)
 
-      call mpas_vector_R3Cell_to_2DEdge(divTensorR3Cell, meshPool, edgeTangentVectors, .true., normalVectorEdge, tangentialVectorEdge)
+      call mpas_vector_R3Cell_to_2DEdge(divTensorR3Cell, meshPool, edgeTangentVectors, .true., normalVectorEdge, &
+                                        tangentialVectorEdge)
 
       !!!!!!! second div(grad())
 
@@ -427,15 +431,15 @@ contains
 
       ! The following loop could possibly be reduced to nEdgesSolve
       !$omp do schedule(runtime) private(visc4_sqrt, k)
-      do iEdge = 1, nEdges  
+      do iEdge = 1, nEdges
          visc4_sqrt = sqrt(config_mom_del4_tensor * meshScalingDel4(iEdge))
          viscosity(:,iEdge) = viscosity(:,iEdge) + config_mom_del4_tensor * meshScalingDel4(iEdge)
          do k = 1, maxLevelEdgeTop(iEdge)
-            strainRateR3Edge(:,k,iEdge) = visc4_sqrt * strainRateR3Edge(:,k,iEdge) 
+            strainRateR3Edge(:,k,iEdge) = visc4_sqrt * strainRateR3Edge(:,k,iEdge)
          end do
          ! Impose zero strain rate at land boundaries
          do k = maxLevelEdgeTop(iEdge)+1, nVertLevels
-            strainRateR3Edge(:,k,iEdge) = 0.0
+            strainRateR3Edge(:,k,iEdge) = 0.0_RKIND
          end do
       end do
       !$omp end do
@@ -473,9 +477,9 @@ contains
 !> \brief   Initializes ocean momentum biharmonic horizontal mixing
 !> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date    September 2011
-!> \details 
-!>  This routine initializes a variety of quantities related to 
-!>  biharmonic horizontal tracer mixing in the ocean.  
+!> \details
+!>  This routine initializes a variety of quantities related to
+!>  biharmonic horizontal tracer mixing in the ocean.
 !
 !-----------------------------------------------------------------------
 
@@ -499,7 +503,7 @@ contains
 
    hmixDel4On = .false.
 
-   if ( config_mom_del4 > 0.0 ) then
+   if ( config_mom_del4 > 0.0_RKIND ) then
       hmixDel4On = .true.
    endif
 

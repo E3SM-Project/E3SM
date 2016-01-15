@@ -854,7 +854,8 @@ subroutine modify_stream(domain, instance, series, err)!{{{
   ! ensure restart stream is empty
   emptyRestartStream = .true.
   call mpas_stream_mgr_begin_iteration(domain % streamManager, streamID=restart_stream_name, ierr=err)
-  do while (mpas_stream_mgr_get_next_field(domain % streamManager, streamID=restart_stream_name, fieldName=fieldName) .and. emptyRestartStream)
+  do while (mpas_stream_mgr_get_next_field(domain % streamManager, streamID=restart_stream_name, fieldName=fieldName) &
+            .and. emptyRestartStream)
     emptyRestartStream = .false.
   end do
 
