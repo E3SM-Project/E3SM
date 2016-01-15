@@ -13,7 +13,7 @@
 !> \author Todd Ringler
 !> \date   06/08/2015
 !> \details
-!>  This module contains routines for computing the tracer tendency due to 
+!>  This module contains routines for computing the tracer tendency due to
 !>    to transit time distribution
 !
 !-----------------------------------------------------------------------
@@ -61,7 +61,7 @@ contains
 !> \brief   computes a tracer tendency to approximate transit time distribution
 !> \author  Todd Ringler
 !> \date    06/09/2015
-!> \details 
+!> \details
 !>  This routine computes a tracer tendency to approximate transit time distribution
 !
 !-----------------------------------------------------------------------
@@ -113,8 +113,8 @@ contains
       integer :: iCell, iLevel, iTracer
 
       !move to ocean constants
-      real (kind=RKIND), parameter :: c0 = 0.0
-      real (kind=RKIND), parameter :: c1 = 1.0
+      real (kind=RKIND), parameter :: c0 = 0.0_RKIND
+      real (kind=RKIND), parameter :: c1 = 1.0_RKIND
 
       err = 0
 
@@ -135,7 +135,7 @@ contains
 !> \brief   Initializes ocean ideal age
 !> \author  Todd Ringler
 !> \date    06/09/2015
-!> \details 
+!> \details
 !>  This routine initializes fields required for tracer ideal age
 !
 !-----------------------------------------------------------------------

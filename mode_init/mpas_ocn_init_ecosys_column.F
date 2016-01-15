@@ -13,8 +13,8 @@
 !> \author Mathew Maltrud
 !> \date   11/01/2015
 !> \details
-!>  This module contains the routines for initializing the 
-!>  the ecosys column test configuration. This in a 
+!>  This module contains the routines for initializing the
+!>  the ecosys column test configuration. This in a
 !>  single column configuration.
 !
 !-----------------------------------------------------------------------
@@ -70,7 +70,7 @@ contains
 !> \brief   Setup for ecosys column test configuration
 !> \author  Mathew Maltrud
 !> \date    11/01/2015
-!> \details 
+!> \details
 !>  This routine sets up the initial conditions for the ecosys column test configuration.
 !
 !-----------------------------------------------------------------------
@@ -211,7 +211,7 @@ contains
               end do
            end do
         end if
-              
+
         if ( associated(ecosysTracers) ) then
 
            fieldName = 'PO4'
@@ -445,7 +445,7 @@ contains
 !> \brief   Validation for ecosys column test case
 !> \author  Mathew Maltrud
 !> \date    11/01/2015
-!> \details 
+!> \details
 !>  This routine validates the configuration options for the ecosys column test configuration.
 !
 !-----------------------------------------------------------------------
@@ -517,7 +517,8 @@ contains
 
        iErr = 0
 
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_nlon_dimname', config_global_ocean_tracer_nlon_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_nlon_dimname', &
+                                 config_global_ocean_tracer_nlon_dimname)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_dimname', config_global_ocean_depth_dimname)
 
        ! Define stream for reading a column

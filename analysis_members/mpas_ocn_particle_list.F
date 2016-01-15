@@ -115,7 +115,8 @@ module ocn_particle_list
   public :: mpas_particle_list_update_halos_start, mpas_particle_list_update_halos_end
   public :: mpas_particle_list_transfer_particles_from_block_to_named_block
   public :: mpas_particle_list_write_halo_data, mpas_particle_list_write_nonhalo_data
-  public :: mpas_particle_list_test_neighscalc, mpas_particle_list_test_numparticles_to_neighprocs, mpas_particle_list_test_num_current_particlelist
+  public :: mpas_particle_list_test_neighscalc, mpas_particle_list_test_numparticles_to_neighprocs
+  public :: mpas_particle_list_test_num_current_particlelist
   public :: mpas_particle_list_self_union_halo_lists
 
   ! subroutine / function definition
@@ -549,7 +550,8 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
 !>  of processors from which data will be received.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_particle_list_update_halos_end(domain, err, destinationName, sendProcNeighs, sendProcSendList, sendProcRecvList) !{{{
+   subroutine mpas_particle_list_update_halos_end(domain, err, destinationName, sendProcNeighs, sendProcSendList, & !{{{
+                                                  sendProcRecvList)
       implicit none
       !-----------------------------------------------------------------
       !
@@ -557,7 +559,8 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
       !
       !-----------------------------------------------------------------
 
-      logical, dimension(:,:), intent(in) :: sendProcRecvList !< x: sendProcNeighs for send. y: each receiving processors on x denoted by true
+      logical, dimension(:,:), intent(in) :: sendProcRecvList !< x: sendProcNeighs for send. y: each receiving
+                                                              !<    processors on x denoted by true
       ! 'ioBlock' and 'currentBlock' are options for destinationName
       character(len=*), intent(in) :: destinationName
       logical, dimension(:), pointer, intent(inout) :: sendProcSendList   !< location of true indicates processors to send data to
@@ -873,7 +876,10 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
       type (field1DInteger), pointer :: field1DIntPointer
       real (kind=RKIND), dimension(:), pointer :: Array1DRealPointer => NULL()
       integer, dimension(:), pointer :: Array1DIntPointer => NULL()
-      integer, dimension(:), pointer :: indexToParticleIDOriginal => NULL(), indexToParticleIDNew => NULL(), orderingVector => NULL()
+      integer, dimension(:), pointer :: indexToParticleIDOriginal => NULL(), &
+                                        indexToParticleIDNew => NULL(), &
+                                        orderingVector => NULL()
+      character (len=StrKIND) :: message
 
       err = 0
 
@@ -886,8 +892,8 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
         ! need to compute the ordering matrices
         call mpas_pool_get_array(lagrPartTrackPool, 'indexToParticleID', indexToParticleIDOriginal)
         call get_halo_data_from_particle_list_array(particlelist, 'indexToParticleID', indexToParticleIDNew)
-        ! note: orderingVector can be a subset of indexToParticleIDNew because this index can include compute as well as IO particles
-        ! however, it must be of the same size as indexToParticleIDOriginal
+        ! note: orderingVector can be a subset of indexToParticleIDNew because this index can include compute as well
+        !       as IO particles however, it must be of the same size as indexToParticleIDOriginal
         call compute_ordering_vector(indexToParticleIDOriginal, indexToParticleIDNew, orderingVector)
               LIGHT_DEBUG_WRITE('write halo data')
               LIGHT_DEBUG_WRITE('indexToParticleIDOriginal =' COMMA indexToParticleIDOriginal)
@@ -928,7 +934,9 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
           elseif (dimItr % memberType == MPAS_POOL_DIMENSION) then
             ! ignore dimensions for now and have this code so they aren't printed as an error message
           else
-            LIGHT_DEBUG_ALL_WRITE("Different type expected in registry for key " COMMA  trim(dimItr % memberName) COMMA  " in nonHalo data for write-- don't know what to do!")
+            write(message, *) "Different type expected in registry for key ", trim(dimItr % memberName), &
+                              " in nonHalo data for write-- don't know what to do!"
+            LIGHT_DEBUG_ALL_WRITE(message)
           end if
         end do
 
@@ -977,7 +985,10 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
       type (field1DInteger), pointer :: field1DIntPointer
       real (kind=RKIND), dimension(:), pointer :: Array1DRealPointer => NULL()
       integer, dimension(:), pointer :: Array1DIntPointer => NULL()
-      integer, dimension(:), pointer :: indexToParticleIDOriginal => NULL(), indexToParticleIDNew => NULL(), orderingVector =>NULL()
+      integer, dimension(:), pointer :: indexToParticleIDOriginal => NULL(), &
+                                        indexToParticleIDNew => NULL(), &
+                                        orderingVector =>NULL()
+      character (len=StrKIND) :: message
 
       err = 0
 
@@ -990,8 +1001,8 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
         ! need to compute the ordering matrices
         call mpas_pool_get_array(lagrPartTrackPool, 'indexToParticleID', indexToParticleIDOriginal)
         call get_halo_data_from_particle_list_array(particlelist, 'indexToParticleID', indexToParticleIDNew)
-        ! note: orderingVector can be a subset of indexToParticleIDNew because this index can include compute as well as IO particles
-        ! however, it must be of the same size as indexToParticleIDOriginal
+        ! note: orderingVector can be a subset of indexToParticleIDNew because this index can include compute as well as
+        !       IO particles however, it must be of the same size as indexToParticleIDOriginal
         call compute_ordering_vector(indexToParticleIDOriginal, indexToParticleIDNew, orderingVector)
 
         ! iterate over each member of the pool and make the relevant assignment
@@ -1015,7 +1026,9 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
               field1DRealPointer % array = Array1DRealPointer(orderingVector)
               deallocate(Array1DRealPointer)
             elseif (dimItr % dataType == MPAS_POOL_INTEGER) then
-              LIGHT_DEBUG_ALL_WRITE("Integer type in registry for key " COMMA dimItr % memberName COMMA " in nonHalo data for write, not yet tested!")
+              write(message, *) "Integer type in registry for key ", dimItr % memberName, &
+                                " in nonHalo data for write, not yet tested!"
+              LIGHT_DEBUG_ALL_WRITE(message)
               ! get data and place it in appropriate array
               call mpas_pool_get_field(lagrPartTrackPool, dimItr % memberName, field1DIntPointer)
               allocate(Array1DIntPointer(count_particlelist(particlelist)))
@@ -1029,7 +1042,9 @@ end subroutine mpas_particle_list_destroy_particle_list !}}}
           elseif (dimItr % memberType == MPAS_POOL_DIMENSION) then
             ! ignore dimensions for now and have this code so they aren't printed as an error message
           else
-            LIGHT_DEBUG_ALL_WRITE("Different type expected in registry for key " COMMA  trim(dimItr % memberName) COMMA  " in nonHalo data for write-- don't know what to do!")
+            write(message, *) "Different type expected in registry for key ", trim(dimItr % memberName), &
+                              " in nonHalo data for write-- don't know what to do!"
+            LIGHT_DEBUG_ALL_WRITE(message)
           end if
         end do
 
@@ -2681,6 +2696,7 @@ end subroutine empty_list_particlelists!}}}
       integer :: particleProc, arrayIndex
       !type (mpas_pool_type), pointer :: lagrPartTrackPool
       type (mpas_particle_type), pointer :: particle
+      character (len=StrKIND) :: message
 
       err = 0
 
@@ -2711,7 +2727,10 @@ end subroutine empty_list_particlelists!}}}
           LIGHT_DEBUG_ALL_WRITE('before mpas call')
           call mpas_get_owning_proc(domain % dminfo, particleBlock, particleProc)
 #ifdef MPAS_DEBUG
-          if(particleBlock /= particleProc) LIGHT_ERROR_WRITE('Error if one block per proc: currentBlock = ' COMMA particleBlock COMMA ' currentProc = ' COMMA particleProc)
+          if(particleBlock /= particleProc) then
+            write(message, *) 'Error if one block per proc: currentBlock = ', particleBlock, ' currentProc = ', particleProc
+            LIGHT_ERROR_WRITE(message)
+          end if
 #endif
           LIGHT_DEBUG_WRITE('after mpas call')
           ! determine whether it belongs on thisBlock
@@ -2726,7 +2745,8 @@ end subroutine empty_list_particlelists!}}}
             if(arrayIndex == -1) LIGHT_ERROR_WRITE('Found processor is not on list of "halo" processors!')
             LIGHT_DEBUG_WRITE('ammending particle to processor index  ' COMMA  arrayIndex)
             call append_particle_to_particlelist(particle, interProcPLArray(arrayIndex)%list)
-            LIGHT_DEBUG_ALL_WRITE('added particle ' COMMA  loc(particle) COMMA  ' on link ' COMMA  loc(particlelist) COMMA  ' to list')
+            write(message, *) 'added particle ', loc(particle), ' on link ', loc(particlelist), ' to list'
+            LIGHT_DEBUG_ALL_WRITE(message)
             if (.not.copyOnly) then
               ! REMOVE PARTICLE FROM EXISTING PARTICLELIST
               ! remove particle reference from existing particle list to prevent bug / hitting null
@@ -2860,6 +2880,7 @@ end subroutine empty_list_particlelists!}}}
      integer :: i, j, numProcs
      integer, dimension(:), pointer :: requestID
      integer :: mpi_ierr
+     character (len=StrKIND) :: message
 
      numProcs = size(procNeighs)
 
@@ -2888,7 +2909,8 @@ end subroutine empty_list_particlelists!}}}
      end do
      do i=1,numProcs
        LIGHT_DEBUG_WRITE('procNeighs=' COMMA  procNeighs)
-       LIGHT_DEBUG_WRITE('sending data i=' COMMA i COMMA  ' procNeighs(i)=' COMMA  procNeighs(i) COMMA  ' nPartSend(i)=' COMMA  nPartSend(i))
+       write(message, *) 'sending data i=', i,  ' procNeighs(i)=',  procNeighs(i),  ' nPartSend(i)=',  nPartSend(i)
+       LIGHT_DEBUG_WRITE(message)
 #ifdef _MPI
          call MPI_ISend(nPartSend(i), 1, MPI_INTEGERKIND, procNeighs(i), domain % dminfo % my_proc_id, &
            domain % dminfo % comm, requestID(numProcs + i), mpi_ierr)
@@ -3165,6 +3187,7 @@ end subroutine allocate_list_particlelists !}}}
      end type
      type (array1DInt_list), dimension(:), pointer :: array1DIntSend, array1DIntRecv
      type (array1DReal_list), dimension(:), pointer :: array1DRealSend, array1DRealRecv
+     character (len=StrKIND) :: message
 
      ! for each entry in the halo pool, want to send and recv the data
 
@@ -3282,7 +3305,8 @@ end subroutine allocate_list_particlelists !}}}
               call MPI_IRecv(array1DIntRecv(i)%val, nPartRecv(i), MPI_INTEGERKIND, procNeighs(i), procNeighs(i), &
                 domain % dminfo % comm, recvRequestID(j), mpi_ierr)
 #endif
-              !if( trim(dimItr % memberName) == 'currentBlock') write(stderrUnit,*) 'currentBlock received ',nPartRecv(i), ' from', procNeighs(i), ' = ', array1DIntRecv(i)%val
+              !if( trim(dimItr % memberName) == 'currentBlock') write(stderrUnit,*) 'currentBlock received ', &
+              !                                                 nPartRecv(i), ' from', procNeighs(i), ' = ', array1DIntRecv(i)%val
               j = j + 1
             end if
           end do
@@ -3293,7 +3317,8 @@ end subroutine allocate_list_particlelists !}}}
               allocate(array1DIntSend(i)%val(nPartSend(i)))
               !write(stderrUnit,*) 'sending int ', trim(dimItr % memberName), ' to ', procNeighs(i)
               call get_nonhalo_data_from_particle_list_array(listSend(i)%list, dimItr % memberName, array1DIntSend(i)%val)
-              !if( trim(dimItr % memberName) == 'currentBlock') write(stderrUnit,*) 'currentBlock sent ',nPartSend(i), ' to ', procNeighs(i), ' = ', array1DIntSend(i)%val
+              !if( trim(dimItr % memberName) == 'currentBlock') write(stderrUnit,*) 'currentBlock sent ',nPartSend(i), &
+              !                                                 ' to ', procNeighs(i), ' = ', array1DIntSend(i)%val
 #ifdef _MPI
               call MPI_ISend(array1DIntSend(i)%val, nPartSend(i), MPI_INTEGERKIND, procNeighs(i), &
                 domain % dminfo % my_proc_id, domain % dminfo % comm, sendRequestID(j), mpi_ierr)
@@ -3337,7 +3362,9 @@ end subroutine allocate_list_particlelists !}}}
        elseif (dimItr % memberType == MPAS_POOL_DIMENSION) then
          ! ignore dimensions for now and have this code so they aren't printed as an error message
        else
-         LIGHT_DEBUG_ALL_WRITE("Different type expected in registry for key " COMMA  trim(dimItr % memberName) COMMA  " in nonHalo data for communication-- don't know what to do!")
+         write(message, *) "Different type expected in registry for key ", trim(dimItr % memberName), &
+                           " in nonHalo data for communication-- don't know what to do!"
+         LIGHT_DEBUG_ALL_WRITE(message)
        end if
      end do
 
@@ -3380,6 +3407,7 @@ end subroutine allocate_list_particlelists !}}}
      end type
      type (array1DInt_list), dimension(:), pointer :: array1DIntSend, array1DIntRecv
      type (array1DReal_list), dimension(:), pointer :: array1DRealSend, array1DRealRecv
+     character (len=StrKIND) :: message
 
      ! for each entry in the halo pool, want to send and recv the data
 
@@ -3497,7 +3525,8 @@ end subroutine allocate_list_particlelists !}}}
               call MPI_IRecv(array1DIntRecv(i)%val, nPartRecv(i), MPI_INTEGERKIND, procNeighs(i), procNeighs(i), &
                 domain % dminfo % comm, recvRequestID(j), mpi_ierr)
 #endif
-              !if( trim(dimItr % memberName) == 'currentBlock') write(stderrUnit,*) 'currentBlock received ',nPartRecv(i), ' from', procNeighs(i), ' = ', array1DIntRecv(i)%val
+              !if( trim(dimItr % memberName) == 'currentBlock') write(stderrUnit,*) 'currentBlock received ',nPartRecv(i), &
+              !                                                 ' from', procNeighs(i), ' = ', array1DIntRecv(i)%val
               j = j + 1
             end if
           end do
@@ -3508,7 +3537,8 @@ end subroutine allocate_list_particlelists !}}}
               allocate(array1DIntSend(i)%val(nPartSend(i)))
               !write(stderrUnit,*) 'sending int ', trim(dimItr % memberName), ' to ', procNeighs(i)
               call get_halo_data_from_particle_list_array(listSend(i)%list, dimItr % memberName, array1DIntSend(i)%val)
-              !if( trim(dimItr % memberName) == 'currentBlock') write(stderrUnit,*) 'currentBlock sent ',nPartSend(i), ' to ', procNeighs(i), ' = ', array1DIntSend(i)%val
+              !if( trim(dimItr % memberName) == 'currentBlock') write(stderrUnit,*) 'currentBlock sent ',nPartSend(i), ' to ', &
+              !                                                 procNeighs(i), ' = ', array1DIntSend(i)%val
 #ifdef _MPI
               call MPI_ISend(array1DIntSend(i)%val, nPartSend(i), MPI_INTEGERKIND, procNeighs(i), &
                 domain % dminfo % my_proc_id, domain % dminfo % comm, sendRequestID(j), mpi_ierr)
@@ -3552,7 +3582,9 @@ end subroutine allocate_list_particlelists !}}}
        elseif (dimItr % memberType == MPAS_POOL_DIMENSION) then
          ! ignore dimensions for now and have this code so they aren't printed as an error message
        else
-         LIGHT_DEBUG_ALL_WRITE("Different type expected in registry for key " COMMA  trim(dimItr % memberName) COMMA  " in halo data for communication-- don't know what to do!")
+         write(message, *) "Different type expected in registry for key ", trim(dimItr % memberName), &
+                           " in halo data for communication-- don't know what to do!"
+         LIGHT_DEBUG_ALL_WRITE(message)
        end if
      end do
 
@@ -3584,6 +3616,7 @@ end subroutine allocate_list_particlelists !}}}
      integer :: i, nPart
      real (kind=RKIND), dimension(:), pointer :: array1DRealPointer
      integer, dimension(:), pointer :: array1DIntPointer
+     character (len=StrKIND) :: message
 
 
      ! get number of particle on list
@@ -3610,7 +3643,9 @@ end subroutine allocate_list_particlelists !}}}
        elseif (dimItr % memberType == MPAS_POOL_DIMENSION) then
          ! ignore dimensions for now and have this code so they aren't printed as an error message
        else
-         LIGHT_DEBUG_ALL_WRITE("Different type expected in registry for key " COMMA  trim(dimItr % memberName) COMMA  " in halo data for communication-- don't know what to do!")
+         write(message, *) "Different type expected in registry for key ", trim(dimItr % memberName), &
+                           " in halo data for communication-- don't know what to do!"
+         LIGHT_DEBUG_ALL_WRITE(message)
        end if
      end do
 
@@ -3762,6 +3797,7 @@ end subroutine allocate_list_particlelists !}}}
       !type (field2DReal), pointer :: field2DRealPointer
       type (field1DInteger), pointer :: field1DIntPointer
       integer, dimension(:), pointer :: array1DInt
+      character (len=StrKIND) :: message
 
       err = 0
 
@@ -3797,7 +3833,9 @@ end subroutine allocate_list_particlelists !}}}
           elseif (dimItr % memberType == MPAS_POOL_DIMENSION) then
             ! ignore dimensions for now and have this code so they aren't printed as an error message
           else
-            LIGHT_DEBUG_WRITE("Different type expected in registry for key " COMMA  trim(dimItr % memberName) COMMA  " in halo data for read-- don't know what to do!")
+            write(message, *) "Different type expected in registry for key ",  trim(dimItr % memberName), &
+                              " in halo data for read-- don't know what to do!"
+            LIGHT_DEBUG_WRITE(message)
             ! false warning for
             !Different type expected in registry for key on_a_sphere in nonHalo data for read, don't know what to do!
             !Different type expected in registry for key sphere_radius in nonHalo data for read, don't know what to do!
@@ -3847,6 +3885,7 @@ end subroutine allocate_list_particlelists !}}}
       type (mpas_particle_list_type), pointer :: particlelist
       type (field1DReal), pointer :: field1DRealPointer
       type (field1DInteger), pointer :: field1DIntPointer
+      character (len=StrKIND) :: message
 
       err = 0
 
@@ -3873,7 +3912,9 @@ end subroutine allocate_list_particlelists !}}}
           elseif (dimItr % memberType == MPAS_POOL_DIMENSION) then
             ! ignore dimensions for now and have this code so they aren't printed as an error message
           else
-            LIGHT_DEBUG_WRITE("Different type expected in registry for key " COMMA  trim(dimItr % memberName) COMMA  " in nonHalo data for read-- don't know what to do!")
+            write(message, *) "Different type expected in registry for key ", trim(dimItr % memberName),  &
+                              " in nonHalo data for read-- don't know what to do!"
+            LIGHT_DEBUG_WRITE(message)
           end if
         end do
 

@@ -183,7 +183,8 @@ contains
       call mpas_pool_get_subpool(block % structs, 'mesh', statePool)
       call mpas_pool_get_array(statePool, 'latEdge', latEdge)
       call mpas_pool_get_array(statePool, 'lonEdge', lonEdge)
-      write(stderrUnit,*) 'lon = ', 180.0_RKIND/pii*lonEdge(iEdgeOutput), ' lat = ', 180.0_RKIND/pii*latEdge(iEdgeOutput), ' iklevel=',iklevel, ' iEdgeOutput=',iEdgeOutput, ' iBlockOutput = ', iBlockOutput
+      write(stderrUnit,*) 'lon = ', 180.0_RKIND/pii*lonEdge(iEdgeOutput), ' lat = ', 180.0_RKIND/pii*latEdge(iEdgeOutput), &
+                          ' iklevel=',iklevel, ' iEdgeOutput=',iEdgeOutput, ' iBlockOutput = ', iBlockOutput
 #endif
 
 #ifdef TIME_FILTERS_DEBUG
@@ -245,7 +246,8 @@ contains
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: timeFiltersAM
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalVelocityLowPass, normalVelocityHighPass, normalVelocityTest
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalVelocityLowPass, normalVelocityHighPass, &
+                                                    normalVelocityTest
       integer, pointer :: nVertLevels, nEdgesSolve
       integer :: k, iEdge
       integer, dimension(:), pointer :: maxLevelEdgeBot

@@ -61,7 +61,7 @@ contains
 !> \brief   Computes relative vorticity and circulation
 !> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date    November 2013
-!> \details 
+!> \details
 !>  Computes relative vorticity and circulation
 !
 !-----------------------------------------------------------------------
@@ -87,10 +87,10 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(out) :: &
-         relativeVorticity 
+         relativeVorticity
 
       real (kind=RKIND), dimension(:,:), intent(out) :: &
-         circulation       
+         circulation
 
       integer, intent(out) :: err !< Output: error flag
 
@@ -123,19 +123,19 @@ contains
       err = 0
 
       !$omp workshare
-      circulation(:,:) = 0.0
-      relativeVorticity(:,:) = 0.0
+      circulation(:,:) = 0.0_RKIND
+      relativeVorticity(:,:) = 0.0_RKIND
       !$omp end workshare
 
       !$omp do schedule(runtime) private(invAreaTri1, i, iEdge, k, r_tmp)
       do iVertex = 1, nVertices
-         invAreaTri1 = 1.0 / areaTriangle(iVertex)
+         invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
          do i = 1, vertexDegree
             iEdge = edgesOnVertex(i, iVertex)
             do k = 1, maxLevelVertexBot(iVertex)
               r_tmp = dcEdge(iEdge) * normalVelocity(k, iEdge)
 
-              circulation(k, iVertex) = circulation(k, iVertex) + edgeSignOnVertex(i, iVertex) * r_tmp 
+              circulation(k, iVertex) = circulation(k, iVertex) + edgeSignOnVertex(i, iVertex) * r_tmp
               relativeVorticity(k, iVertex) = relativeVorticity(k, iVertex) + edgeSignOnVertex(i, iVertex) * r_tmp * invAreaTri1
             end do
          end do

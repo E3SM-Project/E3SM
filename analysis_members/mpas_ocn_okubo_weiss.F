@@ -1047,7 +1047,7 @@ contains
 
       offset = 9 * maxCCsPerDomain * (dmInfo % my_proc_id)
 
-      aggregated = -1.0e34
+      aggregated = -1.0e34_RKIND
       do i = 1, numCCs
          aggregated(9*(i-1) + 1 + offset) = origCCId(i)
          aggregated(9*(i-1) + 2 + offset) = sumVol(i)
@@ -1239,12 +1239,17 @@ contains
       fileID = mpas_get_free_unit()
 
       ! Create output file.
-      open(fileID, file=trim(config_AM_okuboWeiss_directory)//'/eddy_census_'//trim(xtime)//'.txt', STATUS='UNKNOWN', POSITION='rewind')
+      open(fileID, file=trim(config_AM_okuboWeiss_directory)//'/eddy_census_'//trim(xtime)//'.txt', STATUS='UNKNOWN', &
+           POSITION='rewind')
 
       if (use_lat_lon_coords) then
-         write (fileID, '(10A)') '"eddy ID", "number of cells", "volume sum, m^3", "average longitude, degrees", "average latitude, degrees", "average depth, m", "average zonal velocity, m/s", "average meridional velocity, m/s", "average vertical velocity, m/s"'
+         write (fileID, '(10A)') '"eddy ID", "number of cells", "volume sum, m^3", "average longitude, degrees", "average ' &
+                              // 'latitude, degrees", "average depth, m", "average zonal velocity, m/s", "average ' &
+                              // 'meridional velocity, m/s", "average vertical velocity, m/s"'
       else
-         write (fileID, '(10A)') '"eddy ID", "number of cells", "volume sum, m^3", "average x-position, m", "average y-position, m", "average depth, m", "average x-velocity, m/s", "average y-velocity, m/s", "average z-velocity, m/s"'
+         write (fileID, '(10A)') '"eddy ID", "number of cells", "volume sum, m^3", "average x-position, m", "average ' &
+                              // 'y-position, m", "average depth, m", "average x-velocity, m/s", "average y-velocity, ' &
+                              // 'm/s", "average z-velocity, m/s"'
       end if
 
       ! Output number of eddies and statistics for each eddy
@@ -1253,8 +1258,10 @@ contains
          v = aggData(9*(i-1)+2)
          write (fileID, '(I10, A)', advance='no') int(aggData(9*(i-1)+9)), ', '
          write (fileID, '(ES12.5, A)', advance='no') v, ', '
-         write (fileID, '(ES12.5, A, ES12.5, A, ES12.5, A)', advance='no') aggData(9*(i-1)+3)/v, ', ', aggData(9*(i-1)+4)/v, ', ', aggData(9*(i-1)+5)/v, ', '
-         write (fileID, '(ES12.5, A, ES12.5, A, ES12.5)') aggData(9*(i-1)+6)/v, ', ', aggData(9*(i-1)+7)/v, ', ', aggData(9*(i-1)+8)/v
+         write (fileID, '(ES12.5, A, ES12.5, A, ES12.5, A)', advance='no') aggData(9*(i-1)+3)/v, ', ', aggData(9*(i-1)+4)/v, &
+                                                                           ', ', aggData(9*(i-1)+5)/v, ', '
+         write (fileID, '(ES12.5, A, ES12.5, A, ES12.5)') aggData(9*(i-1)+6)/v, ', ', aggData(9*(i-1)+7)/v, ', ', &
+                                                          aggData(9*(i-1)+8)/v
       end do
 
       close(fileID)
@@ -1386,9 +1393,9 @@ contains
          enddo
       enddo
 
-      velocityGradient = 0.0
+      velocityGradient = 0.0_RKIND
       do iCell = 1, nCellsCompute
-         invAreaCell = 1.0 / areaCell(iCell)
+         invAreaCell = 1.0_RKIND / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
             do k = 1, maxLevelCell(iCell)

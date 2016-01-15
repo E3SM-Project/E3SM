@@ -83,7 +83,7 @@ contains
 !> \brief   computes a tracer tendency due to MacroMolecules
 !> \author  Mathew Maltrud
 !> \date    11/01/2015
-!> \details 
+!> \details
 !>  This routine computes a tracer tendency due to MacroMolecules
 !
 !-----------------------------------------------------------------------
@@ -127,7 +127,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
-         MacroMoleculesTracersTend 
+         MacroMoleculesTracersTend
 
       !-----------------------------------------------------------------
       !
@@ -209,14 +209,14 @@ contains
 !> \brief   computes a tracer tendency due to MacroMolecules
 !> \author  Mathew Maltrud
 !> \date    11/01/2015
-!> \details 
+!> \details
 !>  This routine computes a tracer tendency due to MacroMolecules
 !
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_MacroMolecules_surface_flux_compute(activeTracers, MacroMoleculesTracers, forcingPool,  &
       nTracers, nCellsSolve, zMid, indexTemperature, indexSalinity, MacroMoleculesSurfaceFlux, err)!{{{
-     
+
 
       !-----------------------------------------------------------------
       !
@@ -286,7 +286,7 @@ contains
 !> \brief   Initializes ocean surface restoring
 !> \author  Mathew Maltrud
 !> \date    11/01/2015
-!> \details 
+!> \details
 !>  This routine initializes fields required for tracer surface flux restoring
 !
 !-----------------------------------------------------------------------
@@ -316,7 +316,7 @@ contains
       ! get tracers pools
       !
 
-      err = 0 
+      err = 0
 
       !
       ! Get tracer group so we can get the number of tracers in it
@@ -412,7 +412,7 @@ contains
       allocate ( MacroMolecules_input%number_of_active_levels(numColumnsMax) )
 
       allocate ( MacroMolecules_output%MACROS_tendencies(nVertLevels, numColumnsMax, MACROS_tracer_cnt) )
-    
+
     !---------------------------------------------------------------------------
     !   allocate diagnostic output fields
     !---------------------------------------------------------------------------

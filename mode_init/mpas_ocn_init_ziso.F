@@ -184,7 +184,8 @@ contains
     call mpas_pool_get_config(domain % configs, 'config_ziso_restoring_temp_ts', config_ziso_restoring_temp_ts)
     call mpas_pool_get_config(domain % configs, 'config_ziso_restoring_temp_ze', config_ziso_restoring_temp_ze)
     call mpas_pool_get_config(domain % configs, 'config_vertical_grid', config_vertical_grid)
-    call mpas_pool_get_config(domain % configs, 'config_ziso_add_easterly_wind_stress_ASF', config_ziso_add_easterly_wind_stress_ASF)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_add_easterly_wind_stress_ASF', &
+                              config_ziso_add_easterly_wind_stress_ASF)
     call mpas_pool_get_config(domain % configs, 'config_ziso_wind_transition_position', config_ziso_wind_transition_position)
     call mpas_pool_get_config(domain % configs, 'config_ziso_antarctic_shelf_front_width', config_ziso_antarctic_shelf_front_width)
     call mpas_pool_get_config(domain % configs, 'config_ziso_wind_stress_shelf_front_max', config_ziso_wind_stress_shelf_front_max)
@@ -201,7 +202,8 @@ contains
     call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
     ! test if configure settings are invalid
-    if ( on_a_sphere ) call mpas_dmpar_global_abort('IERROR: The ZISO configuration can only be applied to a planar mesh. Exiting...')
+    if ( on_a_sphere ) call mpas_dmpar_global_abort('ERROR: The ZISO configuration can only be ' &
+                                                 // 'applied to a planar mesh. Exiting...')
 
     ! Define interface locations
     allocate(interfaceLocations(nVertLevelsP1))
@@ -350,7 +352,8 @@ contains
             ! bottom depth function to be applied
             bottomDepth(iCell)  = config_ziso_shelf_depth + &
                                   0.5_RKIND*(config_ziso_bottom_depth - config_ziso_shelf_depth) * &
-                                  (1.0_RKIND + tanh((yCell(iCell) - config_ziso_slope_center_position)/config_ziso_slope_half_width))
+                                  (1.0_RKIND + tanh((yCell(iCell) - config_ziso_slope_center_position) / &
+                                  config_ziso_slope_half_width))
           else
             bottomDepth(iCell)  = config_ziso_bottom_depth
           end if
@@ -403,23 +406,23 @@ contains
 
           ! set windstress
           if (config_ziso_add_easterly_wind_stress_ASF) then
-                  if(yCell(iCell) .ge. config_ziso_wind_transition_position) then
-                         windStressZonal(iCell) = config_ziso_wind_stress_max*sin((pii*(yCell(iCell) - &
-                                                  config_ziso_wind_transition_position) / &
-                                                  (config_ziso_meridional_extent - config_ziso_wind_transition_position)))**2
-                  elseif(yCell(iCell) .ge. config_ziso_wind_transition_position - config_ziso_antarctic_shelf_front_width) then
-                    windStressZonal(iCell) = 0.0_RKIND
-                    if(yCell(iCell) .lt. config_ziso_wind_transition_position) then
-                         windStressZonal(iCell) = config_ziso_wind_stress_shelf_front_max * &
-                                                  sin((pii*(config_ziso_wind_transition_position &
-                                                       - yCell(iCell)))/config_ziso_antarctic_shelf_front_width)**2
-                    endif
-                  endif
+            if(yCell(iCell) .ge. config_ziso_wind_transition_position) then
+                   windStressZonal(iCell) = config_ziso_wind_stress_max*sin((pii*(yCell(iCell) - &
+                                            config_ziso_wind_transition_position) / &
+                                            (config_ziso_meridional_extent - config_ziso_wind_transition_position)))**2
+            elseif(yCell(iCell) .ge. config_ziso_wind_transition_position - config_ziso_antarctic_shelf_front_width) then
+              windStressZonal(iCell) = 0.0_RKIND
+              if(yCell(iCell) .lt. config_ziso_wind_transition_position) then
+                   windStressZonal(iCell) = config_ziso_wind_stress_shelf_front_max * &
+                                            sin((pii*(config_ziso_wind_transition_position &
+                                                 - yCell(iCell)))/config_ziso_antarctic_shelf_front_width)**2
+              endif
+            endif
           else
-                  windStressZonal(iCell) = config_ziso_wind_stress_max * exp(-((yCell(iCell) - &
-                                           config_ziso_meridional_extent/2.0_RKIND) / &
-                                           (config_ziso_meridional_extent/2.0_RKIND))**2.0_RKIND)*cos(pii/2.0_RKIND*(yCell(iCell) - &
-                                            config_ziso_meridional_extent/2.0_RKIND)/(config_ziso_meridional_extent/2.0_RKIND))
+            windStressZonal(iCell) = config_ziso_wind_stress_max * exp(-((yCell(iCell) - &
+                                     config_ziso_meridional_extent/2.0_RKIND) / &
+                                     (config_ziso_meridional_extent/2.0_RKIND))**2.0_RKIND) * cos(pii/2.0_RKIND*(yCell(iCell) - &
+                                      config_ziso_meridional_extent/2.0_RKIND)/(config_ziso_meridional_extent/2.0_RKIND))
           endif
           windStressMeridional(iCell) = 0.0_RKIND
 
@@ -466,10 +469,10 @@ contains
             end if
           enddo
 
-!****************************************************************************************************************************************
+!************************************************************************************************************************
 ! this test case is overloaded with the ability to evaluate the frazil algorithm
 ! if config_ziso_enable_frazil is true, some of the configure options are over written to make the test useful for frazil
-!****************************************************************************************************************************************
+!************************************************************************************************************************
 
           if(config_ziso_frazil_enable) then
              config_ziso_initial_temp_t1 = 0.0_RKIND
@@ -490,16 +493,19 @@ contains
              scaleFactor = exp(-distance/config_ziso_meridional_extent*20.0_RKIND)
              if (scaleFactor.gt.0.9_RKIND) write(stderrUnit,*) ' frazil production likely at this cell: ', iCell
              do k = 1, nVertLevels
-                frazil_temperature = config_ziso_frazil_temperature_anomaly + &
-                    config_ziso_initial_temp_t2*tanh(refZMid(k)/config_ziso_initial_temp_h1) + config_ziso_initial_temp_mt*refZMid(k)
-                if (refZMid(k).gt.-50.0) frazil_temperature = frazil_temperature + 1.0_RKIND*cos( refZMid(k) / 50.0_RKIND * pii / 2.0_RKIND)
-                activeTracers(idx, k, iCell) = (1.0_RKIND-scaleFactor)* activeTracers(idx, k, iCell) + scaleFactor*frazil_temperature
+                frazil_temperature = config_ziso_frazil_temperature_anomaly &
+                    + config_ziso_initial_temp_t2 * tanh(refZMid(k) / config_ziso_initial_temp_h1) &
+                    + config_ziso_initial_temp_mt * refZMid(k)
+                if (refZMid(k).gt.-50.0) frazil_temperature = frazil_temperature + 1.0_RKIND*cos( refZMid(k) / 50.0_RKIND &
+                                                            * pii / 2.0_RKIND)
+                activeTracers(idx, k, iCell) = (1.0_RKIND-scaleFactor)* activeTracers(idx, k, iCell) + scaleFactor &
+                                             * frazil_temperature
              end do
           end if
 
-!****************************************************************************************************************************************
+!*********************************************************************************
 ! end frazil overload
-!****************************************************************************************************************************************
+!*********************************************************************************
 
        end do  ! do iCell
 

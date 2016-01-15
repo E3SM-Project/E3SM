@@ -13,7 +13,7 @@
 !> \author Doug Jacobsen
 !> \date   12/17/12
 !> \details
-!>  This module contains the routine for computing 
+!>  This module contains the routine for computing
 !>  tendencies for thickness from surface fluxes
 !
 !-----------------------------------------------------------------------
@@ -64,7 +64,7 @@ contains
 !> \brief   Computes tendency term from horizontal advection of thickness
 !> \author  Doug Jacobsen
 !> \date    15 September 2011
-!> \details 
+!> \details
 !>  This routine computes the horizontal advection tendency for
 !>  thicknes based on current state and user choices of forcings.
 !
@@ -153,9 +153,9 @@ contains
 !> \brief   Initializes ocean horizontal thickness surface fluxes
 !> \author  Doug Jacobsen
 !> \date    12/17/12
-!> \details 
-!>  This routine initializes quantities related to thickness 
-!>  surface fluxes in the ocean. 
+!> \details
+!>  This routine initializes quantities related to thickness
+!>  surface fluxes in the ocean.
 !
 !-----------------------------------------------------------------------
 

@@ -28,7 +28,7 @@ module ocn_tracer_advection_mono
 
    implicit none
    private
-   save 
+   save
 
    real (kind=RKIND) :: coef_3rd_order
    integer :: horizOrder
@@ -59,14 +59,14 @@ module ocn_tracer_advection_mono
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input: current tracer values
       real (kind=RKIND), dimension(:,:), intent(in) :: adv_coefs !< Input: Advection coefficients for 2nd order advection
-      real (kind=RKIND), dimension(:,:), intent(in) :: adv_coefs_3rd !< Input: Advection coefficients for blending in 3rd or 4th order advection
+      real (kind=RKIND), dimension(:,:), intent(in) :: adv_coefs_3rd !< Input: Advection coeffs for mising 3rd/4th order advection
       integer, dimension(:), intent(in) :: nAdvCellsForEdge !< Input: Number of advection cells for each edge
       integer, dimension(:,:), intent(in) :: advCellsForEdge !< Input: List of advection cells for each edge
-      real (kind=RKIND), dimension(:,:), intent(in) :: normalThicknessFlux !< Input: Thichness weighted velocitiy - (nVertLevels, nEdge)
-      real (kind=RKIND), dimension(:,:), intent(in) :: w !< Input: Vertical velocitiy - (nVertLevels+1, nEdges)
-      real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness !< Input: Thickness - (nVertLevels, nCells)
-      real (kind=RKIND), dimension(:,:), intent(in) :: verticalCellSize !< Input: Distance between vertical interfaces of a cell - (nVertLevels, nCells)
-      real (kind=RKIND), dimension(:,:), intent(in) :: tend_layerThickness !< Input: Tendency for thickness field - (nVertLevels, nCells)
+      real (kind=RKIND), dimension(:,:), intent(in) :: normalThicknessFlux !< Input: Thichness weighted velocitiy
+      real (kind=RKIND), dimension(:,:), intent(in) :: w !< Input: Vertical velocity
+      real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness !< Input: Thickness
+      real (kind=RKIND), dimension(:,:), intent(in) :: verticalCellSize !< Input: Distance between vertical interfaces of a cell
+      real (kind=RKIND), dimension(:,:), intent(in) :: tend_layerThickness !< Input: Tendency for thickness field
       real (kind=RKIND), intent(in) :: dt !< Input: Timestep
       type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
       type (mpas_pool_type), intent(in) :: scratchPool !< Input: Scratch fields
@@ -74,7 +74,7 @@ module ocn_tracer_advection_mono
       integer, dimension(:), pointer :: maxLevelCell !< Input: Index to max level at cell center
       integer, dimension(:), pointer :: maxLevelEdgeTop !< Input: Index to max level at edge with non-land cells on both sides
       integer, dimension(:,:), pointer :: highOrderAdvectionMask !< Input: Mask for high order advection
-      integer, dimension(:, :), pointer :: edgeSignOnCell !< Input: Sign for flux from edge on each cell. Used for bit-reproducibility
+      integer, dimension(:, :), pointer :: edgeSignOnCell !< Input: Sign for flux from edge on each cell.
 
       integer :: i, iCell, iEdge, k, iTracer, cell1, cell2, nVertLevels, num_tracers
       integer, pointer :: nCells, nEdges, nCellsSolve, maxEdges
@@ -89,8 +89,8 @@ module ocn_tracer_advection_mono
       real (kind=RKIND), dimension(:,:), pointer :: flux_incoming, flux_outgoing, high_order_horiz_flux, high_order_vert_flux
 
       type (field2DReal), pointer :: highOrderHorizFluxField, tracerNewField, &
-                                     tracerCurField, upwindTendencyField, inverseLayerThicknessField, tracerMinField, tracerMaxField, &
-                                     fluxIncomingField, fluxOutgoingField, highOrderVertFluxField
+                                     tracerCurField, upwindTendencyField, inverseLayerThicknessField, tracerMinField, &
+                                    tracerMaxField, fluxIncomingField, fluxOutgoingField, highOrderVertFluxField
 
 
       real (kind=RKIND), parameter :: eps = 1.e-10_RKIND
@@ -183,7 +183,7 @@ module ocn_tracer_advection_mono
         high_order_horiz_flux = 0.0_RKIND
         !$omp end workshare
 
-        !  Compute the high order vertical flux. Also determine bounds on tracer_cur. 
+        !  Compute the high order vertical flux. Also determine bounds on tracer_cur.
         !$omp do schedule(runtime) private(k, verticalWeightK, verticalWeightKm1, i)
         do iCell = 1, nCells
           k = 1
@@ -196,7 +196,7 @@ module ocn_tracer_advection_mono
           high_order_vert_flux(k,iCell) = w(k,iCell)*(verticalWeightK*tracer_cur(k,iCell)+verticalWeightKm1*tracer_cur(k-1,iCell))
           tracer_max(k,iCell) = max(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
           tracer_min(k,iCell) = min(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
-             
+
           do k=3,maxLevelCell(iCell)-1
              if(vert4thOrder) then
                high_order_vert_flux(k, iCell) = mpas_tracer_advection_vflux4( tracer_cur(k-2,iCell),tracer_cur(k-1,iCell),  &
@@ -207,12 +207,13 @@ module ocn_tracer_advection_mono
              else if (vert2ndOrder) then
                verticalWeightK = verticalCellSize(k-1, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
                verticalWeightKm1 = verticalCellSize(k, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
-               high_order_vert_flux(k,iCell) = w(k,iCell)*(verticalWeightK*tracer_cur(k,iCell)+verticalWeightKm1*tracer_cur(k-1,iCell))
+               high_order_vert_flux(k,iCell) = w(k,iCell) * (verticalWeightK * tracer_cur(k,iCell) + verticalWeightKm1 &
+                                             * tracer_cur(k-1,iCell))
              end if
              tracer_max(k,iCell) = max(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
              tracer_min(k,iCell) = min(tracer_cur(k-1,iCell),tracer_cur(k,iCell),tracer_cur(k+1,iCell))
-          end do 
- 
+          end do
+
           k = max(1, maxLevelCell(iCell))
           verticalWeightK = verticalCellSize(k-1, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
           verticalWeightKm1 = verticalCellSize(k, iCell) / (verticalCellSize(k, iCell) + verticalCellSize(k-1, iCell))
@@ -238,16 +239,19 @@ module ocn_tracer_advection_mono
 
           ! Compute 2nd order fluxes where needed.
           do k = 1, maxLevelEdgeTop(iEdge)
-            tracer_weight = iand(highOrderAdvectionMask(k, iEdge)+1, 1) * (dvEdge(iEdge) * 0.5_RKIND) * normalThicknessFlux(k, iEdge)
+            tracer_weight = iand(highOrderAdvectionMask(k, iEdge)+1, 1) * (dvEdge(iEdge) * 0.5_RKIND) &
+                          * normalThicknessFlux(k, iEdge)
 
-            high_order_horiz_flux(k, iEdge) = high_order_horiz_flux(k, iedge) + tracer_weight * (tracer_cur(k, cell1) + tracer_cur(k, cell2))
+            high_order_horiz_flux(k, iEdge) = high_order_horiz_flux(k, iedge) + tracer_weight * (tracer_cur(k, cell1) &
+                                            + tracer_cur(k, cell2))
           end do ! k loop
 
           ! Compute 3rd or 4th fluxes where requested.
           do i = 1, nAdvCellsForEdge(iEdge)
             iCell = advCellsForEdge(i,iEdge)
             do k = 1, maxLevelCell(iCell)
-              tracer_weight = highOrderAdvectionMask(k, iEdge) * (adv_coefs(i,iEdge) + coef_3rd_order*sign(1.0_RKIND,normalThicknessFlux(k,iEdge))*adv_coefs_3rd(i,iEdge))
+              tracer_weight = highOrderAdvectionMask(k, iEdge) * (adv_coefs(i,iEdge) &
+                            + coef_3rd_order*sign(1.0_RKIND,normalThicknessFlux(k,iEdge))*adv_coefs_3rd(i,iEdge))
 
               tracer_weight = normalThicknessFlux(k,iEdge)*tracer_weight
               high_order_horiz_flux(k,iEdge) = high_order_horiz_flux(k,iEdge) + tracer_weight * tracer_cur(k,iCell)
@@ -274,8 +278,10 @@ module ocn_tracer_advection_mono
           ! flux_outgoing contains the total remaining high order flux out of iCell
           !           it is negative
           do k = 1, maxLevelCell(iCell)
-            flux_incoming (k, iCell) = max(0.0_RKIND, high_order_vert_flux(k+1, iCell)) - min(0.0_RKIND, high_order_vert_flux(k, iCell))
-            flux_outgoing(k, iCell) = min(0.0_RKIND, high_order_vert_flux(k+1, iCell)) - max(0.0_RKIND, high_order_vert_flux(k, iCell))
+            flux_incoming (k, iCell) = max(0.0_RKIND, high_order_vert_flux(k+1, iCell)) &
+                                     - min(0.0_RKIND, high_order_vert_flux(k, iCell))
+            flux_outgoing(k, iCell) = min(0.0_RKIND, high_order_vert_flux(k+1, iCell)) &
+                                    - max(0.0_RKIND, high_order_vert_flux(k, iCell))
           end do ! k Loop
         end do ! iCell Loop
         !$omp end do
@@ -293,7 +299,8 @@ module ocn_tracer_advection_mono
           invAreaCell2 = 1.0_RKIND / areaCell(cell2)
 
           do k = 1, maxLevelEdgeTop(iEdge)
-            flux_upwind = dvEdge(iEdge) * (max(0.0_RKIND,normalThicknessFlux(k,iEdge))*tracer_cur(k,cell1) + min(0.0_RKIND,normalThicknessFlux(k,iEdge))*tracer_cur(k,cell2))
+            flux_upwind = dvEdge(iEdge) * (max(0.0_RKIND,normalThicknessFlux(k,iEdge))*tracer_cur(k,cell1) &
+                        + min(0.0_RKIND,normalThicknessFlux(k,iEdge))*tracer_cur(k,cell2))
             high_order_horiz_flux(k,iEdge) = high_order_horiz_flux(k,iEdge) - flux_upwind
           end do ! k loop
         end do ! iEdge loop
@@ -307,13 +314,16 @@ module ocn_tracer_advection_mono
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             do k = 1, maxLevelEdgeTop(iEdge)
-              flux_upwind = dvEdge(iEdge) * (max(0.0_RKIND,normalThicknessFlux(k,iEdge))*tracer_cur(k,cell1) + min(0.0_RKIND,normalThicknessFlux(k,iEdge))*tracer_cur(k,cell2))
+              flux_upwind = dvEdge(iEdge) * (max(0.0_RKIND,normalThicknessFlux(k,iEdge))*tracer_cur(k,cell1) &
+                                          + min(0.0_RKIND,normalThicknessFlux(k,iEdge))*tracer_cur(k,cell2))
 
               upwind_tendency(k,iCell) = upwind_tendency(k,iCell) + edgeSignOncell(i, iCell) * flux_upwind * invAreaCell1
 
               ! Accumulate remaining high order fluxes
-              flux_outgoing(k,iCell) = flux_outgoing(k,iCell) + min(0.0_RKIND, edgeSignOnCell(i, iCell) * high_order_horiz_flux(k, iEdge)) * invAreaCell1
-              flux_incoming(k,iCell) = flux_incoming(k,iCell) + max(0.0_RKIND, edgeSignOnCell(i, iCell) * high_order_horiz_flux(k, iEdge)) * invAreaCell1
+              flux_outgoing(k,iCell) = flux_outgoing(k,iCell) + min(0.0_RKIND, edgeSignOnCell(i, iCell) &
+                                     * high_order_horiz_flux(k, iEdge)) * invAreaCell1
+              flux_incoming(k,iCell) = flux_incoming(k,iCell) + max(0.0_RKIND, edgeSignOnCell(i, iCell) &
+                                     * high_order_horiz_flux(k, iEdge)) * invAreaCell1
             end do
           end do
         end do
@@ -325,10 +335,12 @@ module ocn_tracer_advection_mono
         !$omp do schedule(runtime) private(k, tracer_max_new, tracer_min_new, tracer_upwind_new, scale_factor)
         do iCell = 1, nCells
           do k = 1, maxLevelCell(iCell)
-            tracer_min_new = (tracer_cur(k,iCell)*layerThickness(k,iCell) + dt*(upwind_tendency(k,iCell)+flux_outgoing(k,iCell))) * inv_h_new(k,iCell)
-            tracer_max_new = (tracer_cur(k,iCell)*layerThickness(k,iCell) + dt*(upwind_tendency(k,iCell)+flux_incoming(k,iCell))) * inv_h_new(k,iCell)
+            tracer_min_new = (tracer_cur(k,iCell)*layerThickness(k,iCell) + dt*(upwind_tendency(k,iCell)+flux_outgoing(k,iCell))) &
+                           * inv_h_new(k,iCell)
+            tracer_max_new = (tracer_cur(k,iCell)*layerThickness(k,iCell) + dt*(upwind_tendency(k,iCell)+flux_incoming(k,iCell))) &
+                           * inv_h_new(k,iCell)
             tracer_upwind_new = (tracer_cur(k,iCell)*layerThickness(k,iCell) + dt*upwind_tendency(k,iCell)) * inv_h_new(k,iCell)
-           
+
             scale_factor = (tracer_max(k,iCell)-tracer_upwind_new)/(tracer_max_new-tracer_upwind_new+eps)
             flux_incoming(k,iCell) = min( 1.0_RKIND, max( 0.0_RKIND, scale_factor) )
 
@@ -367,14 +379,16 @@ module ocn_tracer_advection_mono
         ! Accumulate the scaled high order horizontal tendencies
         !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, k)
         do iCell = 1, nCells
-          invAreaCell1 = 1.0 / areaCell(iCell)
+          invAreaCell1 = 1.0_RKIND / areaCell(iCell)
           do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
             do k = 1, maxLevelEdgeTop(iEdge)
-              tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + edgeSignOnCell(i, iCell) * high_order_horiz_flux(k, iEdge) * invAreaCell1
+              tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + edgeSignOnCell(i, iCell) * high_order_horiz_flux(k, iEdge) &
+                                      * invAreaCell1
 
               if(monotonicityCheck) then
-                tracer_new(k, iCell) = tracer_new(k, iCell) + edgeSignOnCell(i, iCell) * high_order_horiz_flux(k, iEdge) * invAreaCell1
+                tracer_new(k, iCell) = tracer_new(k, iCell) + edgeSignOnCell(i, iCell) * high_order_horiz_flux(k, iEdge) &
+                                     * invAreaCell1
               end if
             end do
           end do
@@ -385,14 +399,17 @@ module ocn_tracer_advection_mono
         !$omp do schedule(runtime) private(k)
         do iCell = 1, nCellsSolve
           do k = 1,maxLevelCell(iCell)
-            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + verticalDivergenceFactor(k) * (high_order_vert_flux(k+1, iCell) - high_order_vert_flux(k, iCell)) + upwind_tendency(k,iCell)
+            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + verticalDivergenceFactor(k) * (high_order_vert_flux(k+1, iCell) &
+                                    - high_order_vert_flux(k, iCell)) + upwind_tendency(k,iCell)
 
             if (monotonicityCheck) then
               !tracer_new holds a tendency for now. Only for a check on monotonicity
-              tracer_new(k, iCell) = tracer_new(k, iCell) + verticalDivergenceFactor(k) * (high_order_vert_flux(k+1, iCell) - high_order_vert_flux(k, iCell)) + upwind_tendency(k,iCell)
+              tracer_new(k, iCell) = tracer_new(k, iCell) + verticalDivergenceFactor(k) * (high_order_vert_flux(k+1, iCell) &
+                                   - high_order_vert_flux(k, iCell)) + upwind_tendency(k,iCell)
 
               !tracer_new is now the new state of the tracer. Only for a check on monotonicity
-              tracer_new(k, iCell) = (tracer_cur(k, iCell)*layerThickness(k, iCell) + dt * tracer_new(k, iCell)) * inv_h_new(k, iCell)
+              tracer_new(k, iCell) = (tracer_cur(k, iCell)*layerThickness(k, iCell) + dt * tracer_new(k, iCell)) &
+                                   * inv_h_new(k, iCell)
             end if
           end do ! k loop
         end do ! iCell loop
@@ -443,7 +460,8 @@ module ocn_tracer_advection_mono
 !>  This routine initializes the monotonic tracer advection tendencity using a FCT.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_tracer_advection_mono_init(nHalos, horiz_adv_order, vert_adv_order, coef_3rd_order_in, dzdk_positive, check_monotonicity, err)!{{{
+   subroutine ocn_tracer_advection_mono_init(nHalos, horiz_adv_order, vert_adv_order, coef_3rd_order_in, dzdk_positive, & !{{{
+                                             check_monotonicity, err)
 
       use mpas_dmpar
       integer, intent(in) :: nHalos !< Input: number of halos in current simulation

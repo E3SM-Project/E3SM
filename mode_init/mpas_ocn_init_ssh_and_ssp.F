@@ -13,7 +13,7 @@
 !> \author Xylar Asay-Davis
 !> \date   06/05/2015
 !> \details
-!>  This module contains the routines for aiding in initializing the 
+!>  This module contains the routines for aiding in initializing the
 !>  sea-surface pressure (SSP) based on the sea-surface height (SSH)
 !>  so that the barotropic pressure-gradient force (PGF) is initially small
 !
@@ -71,12 +71,12 @@ contains
 !> \brief   Initialize z* vertical grid based on SSH
 !> \author  Xylar Asay-Davis
 !> \date    10/21/2015
-!> \details 
-!>  This routine sets up the vertical grid (layerThickness, 
+!> \details
+!>  This routine sets up the vertical grid (layerThickness,
 !>  zMid and restingThickness) needed for computing SSH from
 !>  SSP or visa versa. bottomDepth, refBottomDepth and maxLevelCell
 !>  must have been computed by the test case before calling this
-!>  routine.  If config_iterative_init_variable = 'ssp', the test 
+!>  routine.  If config_iterative_init_variable = 'ssp', the test
 !>  case must compute refSSH before calling this routine.
 !>  modifySSHMask should be set to 1 wherever the ssh or ssp
 !>  should be modified for consistency (e.g. under land ice).
@@ -104,21 +104,21 @@ contains
 !> \brief   Compute the balance SSP given the SSH or visa versa
 !> \author  Xylar Asay-Davis
 !> \date    10/21/2015
-!> \details 
+!> \details
 !>  This routine either updates SSH based on SSP (if config_iterative_init_variable = 'ssh')
 !>  or visa versa (if config_iterative_init_variable = 'ssp').  The routine either produces
-!>  and initial guess at SSP or SSH (if config_read_ssh_and_ssp_from_stream = .false.) 
+!>  and initial guess at SSP or SSH (if config_read_ssh_and_ssp_from_stream = .false.)
 !>  or it updates SSP or SSH based on the change in SSH over a forward run
-!>  (if config_read_ssh_and_ssp_from_stream = .true.).  
+!>  (if config_read_ssh_and_ssp_from_stream = .true.).
 !>  The SSP and SSH are approximately consistent with one another
 !>  in the sense that the horizontal pressure-gradient force (HPGF)
 !>  should be small at the ocean surface.
 !>  ocn_init_ssh_and_ssp_vertical_grid should be called to produce
-!>  the appropriate vertical grid before calling this subroutine.  
+!>  the appropriate vertical grid before calling this subroutine.
 !>  activeTracers should be initialized based on this vertical grid.
 !>  Upon completion, the vertical grid will have been updated (if necessary)
 !>  to be consistent with the SSH, in which case the activeTracers will have been
-!>  interpolated to the new grid. 
+!>  interpolated to the new grid.
 
 !-----------------------------------------------------------------------
 
@@ -151,7 +151,7 @@ contains
          end if
        end if
      else
-       ! In this case, also recompute activeTracers, zMid and layerThickness taking 
+       ! In this case, also recompute activeTracers, zMid and layerThickness taking
        ! the ssh into account
        call initial_guess_ssp_ssh(domain, iErr)
 
@@ -178,12 +178,12 @@ contains
 !> \brief   Initialize z* vertical grid based on SSH
 !> \author  Xylar Asay-Davis
 !> \date    10/21/2015
-!> \details 
-!>  This routine sets up the vertical grid (layerThickness, 
+!> \details
+!>  This routine sets up the vertical grid (layerThickness,
 !>  zMid and restingThickness) needed for computing SSH from
 !>  SSP or visa versa. bottomDepth, refBottomDepth and maxLevelCell
 !>  must have been computed by the test case before calling this
-!>  routine.  If config_iterative_init_variable = 'ssp', the test 
+!>  routine.  If config_iterative_init_variable = 'ssp', the test
 !>  case must compute refSSH before calling this routine.
 
 !-----------------------------------------------------------------------
@@ -247,15 +247,15 @@ contains
          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-  
+
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-  
+
          call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
-  
+
          call mpas_pool_get_array(diagnosticsPool, 'refSSH', refSSH)
          call mpas_pool_get_array(diagnosticsPool, 'deltaSSH', deltaSSH)
          call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
-  
+
          if(config_read_ssh_and_ssp_from_stream) then
            where(modifySSHMask(:) == 1)
              deltaSSH(:) = ssh(:) - refSSH(:)
@@ -267,7 +267,7 @@ contains
            ! we're updating SSP so we want to keep ssh fixed refSSH
            ssh(:) = refSSH(:)
          end if
-  
+
          do iCell = 1, nCells
            if(modifySSHMask(iCell) == 0) then
              ! we don't want the SSH to be modified here, so set it back to zero
@@ -353,14 +353,14 @@ contains
 !> \brief   Compute the balance SSP given the SSH or visa versa
 !> \author  Xylar Asay-Davis
 !> \date    10/12/2015
-!> \details 
+!> \details
 !>  This routine computes the SSH that is approximately consistent
-!>  with a given SSP or visa versa, given reference temperature and 
-!>  salinity fields. activeTracers should be initialized  to reference 
-!>  T and S and will contain T and S interpolated at zMid on completion.  
-!>  This subroutine assumes that zMid and/or layerThickness are needed 
+!>  with a given SSP or visa versa, given reference temperature and
+!>  salinity fields. activeTracers should be initialized  to reference
+!>  T and S and will contain T and S interpolated at zMid on completion.
+!>  This subroutine assumes that zMid and/or layerThickness are needed
 !>  from computing the reference T and S and have already been computed
-!>  with ocn_compute_layerThickness_zMid_from_bottomDepth (omitting the 
+!>  with ocn_compute_layerThickness_zMid_from_bottomDepth (omitting the
 !>  ssh argument) before calling this routine.  zMid and layerThickness
 !>  are recomputed taking the SSH into account in this routine.
 !>  The density and bottom pressure are also computed by this routine.
@@ -487,7 +487,7 @@ contains
 
        call mpas_pool_get_array(scratchPool, 'scratchZMid', refZMid)
 
-       ! interpolate active tracers to the new zMid 
+       ! interpolate active tracers to the new zMid
        call interpolate_activeTracers(meshPool, refZMid, zMid, &
                                       activeTracers, iErr)
        if(iErr .ne. 0) then
@@ -528,7 +528,7 @@ contains
 !> \brief   Update the SSP based on a change in SSH
 !> \author  Xylar Asay-Davis
 !> \date    10/20/2015
-!> \details 
+!> \details
 !>  This routine adds a perturbation to the sea-surface pressure (SSP)
 !>  based on the change in the sea-surface height (SSH) over a short
 !>  forward run as part of an iterative process for finding a compatible
@@ -609,7 +609,7 @@ contains
        end do
 
        block_ptr => block_ptr % next
-     end do !block_ptr 
+     end do !block_ptr
 
    !--------------------------------------------------------------------
 
@@ -622,13 +622,13 @@ contains
 !> \brief   Compute bottom pressure from current state
 !> \author  Xylar Asay-Davis
 !> \date    06/05/2015
-!> \details 
+!> \details
 !>  This routine computes bottom pressure from layerThickness and density
-!>  based on T and S from the current state. The bottom pressure with and 
+!>  based on T and S from the current state. The bottom pressure with and
 !>  without the ssh can be used to determine a seaSurfacePressure that
-!>  roughly consistent with the ssh. 
-!>  bottomDepth, restingThickness, layerThicknesses, zMid, maxLevelCell, 
-!>  temperature and salinity should have already been initialized before 
+!>  roughly consistent with the ssh.
+!>  bottomDepth, restingThickness, layerThicknesses, zMid, maxLevelCell,
+!>  temperature and salinity should have already been initialized before
 !>  calling this routine.
 
 !----------------------------------------------------------------------
@@ -642,7 +642,7 @@ contains
       type (mpas_pool_type), intent(in) :: meshPool, statePool
       type (mpas_pool_type), intent(inout) :: diagnosticsPool, scratchPool
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness
-                                                       
+
 
       real (kind=RKIND), dimension(:,:), intent(out) :: density
       real (kind=RKIND), dimension(:), intent(out) :: bottomPressure
@@ -691,7 +691,7 @@ contains
 !> \brief   interpolate the active tracers from reference fields
 !> \author  Xylar Asay-Davis
 !> \date    10/12/2015
-!> \details 
+!> \details
 !>  Perform linear interpolation of T and S from reference fields without
 !>  the sea-surface height (SSH) displacement at refZMid to new locations
 !>  zMid that take the SSH into account.
@@ -736,7 +736,8 @@ contains
 
         do iTracer = 1, nTracers
           inTracerColumn(:) = activeTracers(iTracer,:,iCell)
-          call ocn_init_interpolation_linear_vert(refZMid(:,iCell), inTracerColumn(:), nVertLevels, zMid(:,iCell), outTracerColumn(:), nVertLevels, extrapolate=.true.)
+          call ocn_init_interpolation_linear_vert(refZMid(:,iCell), inTracerColumn(:), nVertLevels, zMid(:,iCell), &
+                                                  outTracerColumn(:), nVertLevels, extrapolate=.true.)
           activeTracers(iTracer,:,iCell) = outTracerColumn(:)
         end do
       end do
@@ -754,7 +755,7 @@ contains
 !> \brief   interpolate the active tracers from reference fields
 !> \author  Xylar Asay-Davis
 !> \date    10/13/2015
-!> \details 
+!> \details
 !>  In a column, find the depth at which the hydrostatic pressure reaches a given
 !>  value provided a density profile.
 

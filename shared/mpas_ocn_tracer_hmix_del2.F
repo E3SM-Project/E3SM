@@ -13,8 +13,8 @@
 !> \author Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date   September 2011
 !> \details
-!>  This module contains the main driver routine for computing 
-!>  horizontal mixing tendencies.  
+!>  This module contains the main driver routine for computing
+!>  horizontal mixing tendencies.
 !>
 !>  It provides an init and a tend function. Each are described below.
 !
@@ -68,7 +68,7 @@ contains
 !> \brief   Computes Laplacian tendency term for horizontal tracer mixing
 !> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date    September 2011
-!> \details 
+!> \details
 !>  This routine computes the horizontal mixing tendency for tracers
 !>  based on current state using a Laplacian parameterization.
 !
@@ -148,14 +148,14 @@ contains
       !
       !$omp do schedule(runtime) private(invAreaCell, i, iEdge, cell1, cell2, r_tmp, k, iTracer, tracer_turb_flux, flux)
       do iCell = 1, nCells
-        invAreaCell = 1.0 / areaCell(iCell)
+        invAreaCell = 1.0_RKIND / areaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
           cell1 = cellsOnEdge(1,iEdge)
           cell2 = cellsOnEdge(2,iEdge)
 
           r_tmp = meshScalingDel2(iEdge) * eddyDiff2 * dvEdge(iEdge) / dcEdge(iEdge)
-           
+
           do k = 1, maxLevelEdgeTop(iEdge)
             do iTracer = 1, num_tracers
               ! \kappa_2 \nabla \phi on edge
@@ -183,9 +183,9 @@ contains
 !> \brief   Initializes ocean tracer horizontal mixing quantities
 !> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date    September 2011
-!> \details 
-!>  This routine initializes a variety of quantities related to 
-!>  Laplacian horizontal velocity mixing in the ocean. 
+!> \details
+!>  This routine initializes a variety of quantities related to
+!>  Laplacian horizontal velocity mixing in the ocean.
 !
 !-----------------------------------------------------------------------
 
@@ -212,7 +212,7 @@ contains
       del2on = .false.
 
       if ( config_use_tracer_del2 ) then
-         if ( config_tracer_del2 > 0.0 ) then
+         if ( config_tracer_del2 > 0.0_RKIND ) then
             del2On = .true.
             eddyDiff2 = config_tracer_del2
          endif

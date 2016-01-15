@@ -148,7 +148,7 @@ module ocn_forward_mode
       !
       call mpas_timer_start('io_read', .false.)
       call MPAS_stream_mgr_read(domain % streamManager, streamID='mesh', whence=MPAS_STREAM_NEAREST, ierr=err_tmp)
-      
+
       if ( config_do_restart ) then
          if ( config_read_nearest_restart ) then
             call MPAS_stream_mgr_read(domain % streamManager, streamID='restart', whence=MPAS_STREAM_NEAREST, ierr=err_tmp)
@@ -271,9 +271,11 @@ module ocn_forward_mode
          call mpas_dmpar_global_abort('ERROR: Incorrect choice of config_vert_coord_movement.')
       endif
 
-      if(config_vert_coord_movement .ne. 'impermeable_interfaces' .and. config_pressure_gradient_type .eq. 'MontgomeryPotential') then
+      if(config_vert_coord_movement .ne. 'impermeable_interfaces' .and. config_pressure_gradient_type &
+            .eq. 'MontgomeryPotential') then
          write (stderrUnit,*) ' Incorrect combination of config_vert_coord_movement and config_pressure_gradient_type'
-         call mpas_dmpar_global_abort('ERROR: Incorrect combination of config_vert_coord_movement and config_pressure_gradient_type')
+         call mpas_dmpar_global_abort('ERROR: Incorrect combination of config_vert_coord_movement and ' &
+                                   // 'config_pressure_gradient_type')
       end if
 
       if (config_filter_btr_mode.and. &
@@ -284,7 +286,7 @@ module ocn_forward_mode
       endif
 
       ! find the maximum value of the meshDensity
-      if (config_maxMeshDensity < 0.0) then
+      if (config_maxMeshDensity < 0.0_RKIND) then
         maxDensity=-1
         block => domain % blocklist
         do while (associated(block))
@@ -327,7 +329,8 @@ module ocn_forward_mode
       ierr = ior(ierr, err_tmp)
 
       if(ierr.eq.1) then
-          call mpas_dmpar_global_abort('ERROR: An error was encountered while initializing the analysis members in the MPAS-Ocean forward mode')
+          call mpas_dmpar_global_abort('ERROR: An error was encountered while initializing the analysis members in the ' &
+                                    // 'MPAS-Ocean forward mode')
       endif
 
    end function ocn_forward_mode_init!}}}
@@ -456,13 +459,13 @@ module ocn_forward_mode
           call mpas_stream_mgr_write(domain % streamManager, 'output', forceWriteNow=.true., ierr=ierr)
           call mpas_timer_stop('io_write')
       endif
-      	 
-	  ! read initial data required for variable shortwave
-	  call mpas_timer_start('io_shortwave',.false.)
+
+      ! read initial data required for variable shortwave
+      call mpas_timer_start('io_shortwave',.false.)
       call ocn_get_shortWaveData(domain % streamManager, domain, domain % clock, .true.)
       call mpas_timer_stop('io_shortwave')
-      
-      
+
+
       ! During integration, time level 1 stores the model state at the beginning of the
       !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
       itimestep = 0
@@ -518,8 +521,8 @@ module ocn_forward_mode
             block_ptr => block_ptr % next
          end do
 
-         call ocn_analysis_compute(domain, err) 
-         call ocn_analysis_restart(domain, err) 
+         call ocn_analysis_compute(domain, err)
+         call ocn_analysis_restart(domain, err)
          call ocn_analysis_write(domain, err)
 
          call mpas_timer_start('io_write', .false.)
@@ -533,7 +536,8 @@ module ocn_forward_mode
          call mpas_stream_mgr_write(domain % streamManager, streamID='restart', ierr=ierr)
          call mpas_timer_stop('io_write')
 
-         if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr) ) then
+         if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, &
+                                             ierr=ierr) ) then
             open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
             write(22, *) trim(timeStamp)
             close(22)
@@ -551,12 +555,12 @@ module ocn_forward_mode
          call mpas_timer_start('reset_io_alarms', .false.)
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
          call mpas_timer_stop('reset_io_alarms')
-         
+
          ! read next time level data required for variable shortwave
          call mpas_timer_start('io_shortwave',.false.)
          call ocn_get_shortWaveData(domain % streamManager, domain, domain % clock, .false.)
-      	 call mpas_timer_stop('io_shortwave')
-      	 
+         call mpas_timer_stop('io_shortwave')
+
       end do
 
    end function ocn_forward_mode_run!}}}

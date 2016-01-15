@@ -335,17 +335,20 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       ! Typical use cases have the minval(meshScaling)==1.
       ! meshScaling values of approximately 1 indicate the highest resolution of the domain.
 
-      meshScalingDel2(:) = 1.0
-      meshScalingDel4(:) = 1.0
-      meshScaling(:)     = 1.0
+      meshScalingDel2(:) = 1.0_RKIND
+      meshScalingDel4(:) = 1.0_RKIND
+      meshScaling(:)     = 1.0_RKIND
 
       if (scaleHmixWithMesh) then
          do iEdge = 1, nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
-            meshScalingDel2(iEdge) = 1.0 / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0) / maxMeshDensity)**(3.0 / 4.0)  ! goes as dc**3
-            meshScalingDel4(iEdge) = 1.0 / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0) / maxMeshDensity)**(3.0 / 4.0)  ! goes as dc**3
-            meshScaling(iEdge)     = 1.0 / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0) / maxMeshDensity)**(1.0 / 4.0)
+            meshScalingDel2(iEdge) = 1.0_RKIND / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0_RKIND) &
+                                   / maxMeshDensity)**(3.0_RKIND / 4.0_RKIND)  ! goes as dc**3
+            meshScalingDel4(iEdge) = 1.0_RKIND / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0_RKIND) &
+                                   / maxMeshDensity)**(3.0_RKIND / 4.0_RKIND)  ! goes as dc**3
+            meshScaling(iEdge)     = 1.0_RKIND / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0_RKIND) &
+                                   / maxMeshDensity)**(1.0_RKIND / 4.0_RKIND)
          end do
       end if
 
@@ -424,23 +427,23 @@ end subroutine ocn_init_routines_compute_max_level!}}}
          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
          ! TopOfCell needed where zero depth for the very top may be referenced.
-         refBottomDepthTopOfCell(1) = 0.0
+         refBottomDepthTopOfCell(1) = 0.0_RKIND
          do k = 1, nVertLevels
             refBottomDepthTopOfCell(k+1) = refBottomDepth(k)
             refLayerThickness(k) = refBottomDepth(k) - refBottomDepthTopOfCell(k)
-            refZMid(k) = - refBottomDepthTopOfCell(k) - refLayerThickness(k)/2.0
+            refZMid(k) = - refBottomDepthTopOfCell(k) - refLayerThickness(k)/2.0_RKIND
          end do
 
          ! Initialization of vertCoordMovementWeights. This determines how SSH perturbations
          ! are distributed throughout the column.
          if (config_vert_coord_movement.eq.'fixed') then
 
-           vertCoordMovementWeights = 0.0
-           vertCoordMovementWeights(1) = 1.0
+           vertCoordMovementWeights = 0.0_RKIND
+           vertCoordMovementWeights(1) = 1.0_RKIND
 
          elseif (config_vert_coord_movement.eq.'uniform_stretching') then
 
-            vertCoordMovementWeights = 1.0
+            vertCoordMovementWeights = 1.0_RKIND
 
          endif
 
@@ -448,17 +451,20 @@ end subroutine ocn_init_routines_compute_max_level!}}}
             consistentSSH = .true.
             do iCell = 1,nCells
                ! Check if abs(ssh)>2m.  If so, print warning.
-               if (abs(sum(layerThickness(1:maxLevelCell(iCell),iCell))-bottomDepth(iCell))>2.0) then
+               if (abs(sum(layerThickness(1:maxLevelCell(iCell),iCell))-bottomDepth(iCell))>2.0_RKIND) then
                   consistentSSH = .false.
-                  write (stderrUnit,'(a)') ' Warning: abs(sum(h)-bottomDepth)>2m.  Most likely, initial layerThickness does not match bottomDepth.'
+                  write (stderrUnit,'(a)') ' Warning: abs(sum(h)-bottomDepth)>2m.  Most likely, initial layerThickness ' &
+                                        // 'does not match bottomDepth.'
                   write (stderrUnit,*) ' iCell, K=maxLevelCell(iCell), bottomDepth(iCell),sum(h),bottomDepth: ', &
-                                iCell, maxLevelCell(iCell), bottomDepth(iCell),sum(layerThickness(1:maxLevelCell(iCell),iCell)),bottomDepth(iCell), &
+                                iCell, maxLevelCell(iCell), bottomDepth(iCell), sum( &
+                                layerThickness(1:maxLevelCell(iCell), iCell) ), bottomDepth(iCell), &
                                 layerThickness(maxLevelCell(iCell),iCell)
                endif
             enddo
 
             if (.not. consistentSSH) then
-               write(stderrUnit,*) 'Warning: SSH is not consistent. Most likely, initial layerThickness does not match bottomDepth.'
+               write(stderrUnit,*) 'Warning: SSH is not consistent. Most likely, initial layerThickness ' &
+                                // 'does not match bottomDepth.'
             end if
 
          endif ! config_check_ssh_consistency
@@ -471,7 +477,8 @@ end subroutine ocn_init_routines_compute_max_level!}}}
                   write (stderrUnit,'(a)') ' fatal error: bottomDepth and maxLevelCell do not match:'
                   write (stderrUnit,'(a,2i5,10f10.2)') ' iCell, maxLevelCell(iCell), bottomDepth(iCell): ', &
                                 iCell, maxLevelCell(iCell), bottomDepth(iCell)
-                  write (stderrUnit,'(a,10f10.2)') ' refBottomDepth(maxLevelCell(iCell)), refBottomDepthTopOfCell(maxLevelCell(iCell)): ', &
+                  write (stderrUnit,'(a,10f10.2)') ' refBottomDepth(maxLevelCell(iCell)), ' &
+                                                   // 'refBottomDepthTopOfCell(maxLevelCell(iCell)): ', &
                                 refBottomDepth(maxLevelCell(iCell)), refBottomDepthTopOfCell(maxLevelCell(iCell))
                   call mpas_dmpar_abort(dminfo)
                endif
@@ -585,7 +592,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 
       if (.not. config_do_restart) then
          do iCell=1,nCells
-            boundaryLayerDepth(iCell) = layerThickness(1, iCell) * 0.5
+            boundaryLayerDepth(iCell) = layerThickness(1, iCell) * 0.5_RKIND
          end do
       end if
 
@@ -594,15 +601,15 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       call mpas_timer_stop("diagnostic solve", initDiagSolveTimer)
 
       ! initialize velocities and active tracers on land to be zero.
-      areaCell(nCells+1) = -1.0e34
+      areaCell(nCells+1) = -1.0e34_RKIND
 
-      layerThickness(:, nCells+1) = 0.0
+      layerThickness(:, nCells+1) = 0.0_RKIND
 
 
       do iEdge=1, nEdges
-         normalVelocity(maxLevelEdgeTop(iEdge)+1:maxLevelEdgeBot(iEdge), iEdge) = 0.0
+         normalVelocity(maxLevelEdgeTop(iEdge)+1:maxLevelEdgeBot(iEdge), iEdge) = 0.0_RKIND
 
-         normalVelocity(maxLevelEdgeBot(iEdge)+1:nVertLevels,iEdge) = -1.0e34
+         normalVelocity(maxLevelEdgeBot(iEdge)+1:nVertLevels,iEdge) = -1.0e34_RKIND
       end do
 
       call mpas_pool_begin_iteration(tracersPool)
@@ -611,7 +618,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
             call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroup, 1)
             if ( associated(tracersGroup) ) then
                do iCell=1,nCells
-                  tracersGroup(:, maxLevelCell(iCell)+1:nVertLevels,iCell) =  -1.0e34
+                  tracersGroup(:, maxLevelCell(iCell)+1:nVertLevels,iCell) =  -1.0e34_RKIND
                end do
             end if
          end if

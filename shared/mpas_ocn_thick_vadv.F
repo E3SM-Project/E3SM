@@ -13,7 +13,7 @@
 !> \author Doug Jacobsen
 !> \date   16 September 2011
 !> \details
-!>  This module contains the routine for computing 
+!>  This module contains the routine for computing
 !>  tendencies for thickness from vertical advection
 !
 !-----------------------------------------------------------------------
@@ -62,7 +62,7 @@ contains
 !> \brief   Computes tendency term from vertical advection of thickness
 !> \author  Doug Jacobsen
 !> \date    15 September 2011
-!> \details 
+!> \details
 !>  This routine computes the vertical advection tendency for
 !>  thicknes based on current state and user choices of forcings.
 !
@@ -112,7 +112,7 @@ contains
       !-----------------------------------------------------------------
       !
       ! call relevant routines for computing tendencies
-      ! note that the user can choose multiple options and the 
+      ! note that the user can choose multiple options and the
       !   tendencies will be added together
       !
       !-----------------------------------------------------------------
@@ -145,9 +145,9 @@ contains
 !> \brief   Initializes ocean thickness vertical advection
 !> \author  Doug Jacobsen
 !> \date    16 September 2011
-!> \details 
-!>  This routine initializes quantities related to vertical advection of 
-!>  thickness in the ocean. 
+!> \details
+!>  This routine initializes quantities related to vertical advection of
+!>  thickness in the ocean.
 !
 !-----------------------------------------------------------------------
 
@@ -170,7 +170,7 @@ contains
       thickVadvOn = .true.
 
       if(config_disable_thick_vadv) thickVadvOn = .false.
-      
+
       err = 0
 
    !--------------------------------------------------------------------

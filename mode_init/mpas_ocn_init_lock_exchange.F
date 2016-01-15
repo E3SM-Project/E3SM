@@ -13,7 +13,7 @@
 !> \author Doug Jacobsen
 !> \date   02/18/2014
 !> \details
-!>  This module contains the routines for initializing the 
+!>  This module contains the routines for initializing the
 !>  the lock exchange test case
 !
 !-----------------------------------------------------------------------
@@ -66,7 +66,7 @@ contains
 !> \brief   Setup for lock exchange test case
 !> \author  Doug Jacobsen
 !> \date    02/18/2014
-!> \details 
+!> \details
 !>  This routine sets up the initial conditions for the lock exchange test case.
 !>  It is setup in the y direction, such that everything in the southern half of
 !>  the domain has a temperature of 5.0C and the northern half has a value of
@@ -95,10 +95,12 @@ contains
 
       integer, dimension(:), pointer :: maxLevelCell
 
-      real (kind=RKIND), pointer :: config_lock_exchange_south_temp, config_lock_exchange_north_temp, config_lock_exchange_salinity, &
-                                    config_lock_exchange_bottom_depth, config_lock_exchange_isopycnal_min_thickness
+      real (kind=RKIND), pointer :: config_lock_exchange_south_temp, config_lock_exchange_north_temp, &
+                                    config_lock_exchange_salinity, config_lock_exchange_bottom_depth, &
+                                    config_lock_exchange_isopycnal_min_thickness
 
-      real (kind=RKIND), dimension(:), pointer :: xCell, yCell, bottomDepth, refBottomDepthTopOfCell, refBottomDepth, vertCoordMovementWeights, dcEdge
+      real (kind=RKIND), dimension(:), pointer :: xCell, yCell, bottomDepth, refBottomDepthTopOfCell, refBottomDepth, &
+                                                  vertCoordMovementWeights, dcEdge
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
 
@@ -120,14 +122,16 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_lock_exchange_north_temp', config_lock_exchange_north_temp)
       call mpas_pool_get_config(ocnConfigs, 'config_lock_exchange_salinity', config_lock_exchange_salinity)
       call mpas_pool_get_config(ocnConfigs, 'config_lock_exchange_bottom_depth', config_lock_exchange_bottom_depth)
-      call mpas_pool_get_config(ocnConfigs, 'config_lock_exchange_isopycnal_min_thickness', config_lock_exchange_isopycnal_min_thickness)
+      call mpas_pool_get_config(ocnConfigs, 'config_lock_exchange_isopycnal_min_thickness', &
+                                config_lock_exchange_isopycnal_min_thickness)
       call mpas_pool_get_config(ocnConfigs, 'config_lock_exchange_layer_type', config_lock_exchange_layer_type)
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-      if ( on_a_sphere ) call mpas_dmpar_global_abort('ERROR: The lock exchange configuration can not be applied to spherical meshes')
+      if ( on_a_sphere ) call mpas_dmpar_global_abort('ERROR: The lock exchange configuration can not be ' &
+                                                   // 'applied to spherical meshes')
 
       ! Define interface locations
       allocate( interfaceLocations( nVertLevelsP1 ) )
@@ -214,7 +218,8 @@ contains
 
                ! Set layerThickness and restingThickness
                do k = 1, nVertLevels
-                  layerThickness(k, iCell) = config_lock_exchange_bottom_depth * ( interfaceLocations(k+1) - interfaceLocations(k) )
+                  layerThickness(k, iCell) = config_lock_exchange_bottom_depth * ( interfaceLocations(k+1) &
+                                           - interfaceLocations(k) )
                   restingThickness(k, iCell) = layerThickness(k, iCell)
                end do
             else if ( trim(config_lock_exchange_layer_type) == 'isopycnal' ) then
@@ -225,7 +230,8 @@ contains
 
                if(yCell(iCell) < (yMaxGlobal - yMinGlobal) * 0.5_RKIND) then
                   layerThickness(1, iCell) = config_lock_exchange_isopycnal_min_thickness
-                  layerThickness(2:nVertLevels, iCell) = config_lock_exchange_bottom_depth - config_lock_exchange_isopycnal_min_thickness
+                  layerThickness(2:nVertLevels, iCell) = config_lock_exchange_bottom_depth &
+                                                       - config_lock_exchange_isopycnal_min_thickness
                else
                   layerThickness(1, iCell) = config_lock_exchange_bottom_depth - config_lock_exchange_isopycnal_min_thickness
                   layerThickness(2:nVertLevels, iCell) = config_lock_exchange_isopycnal_min_thickness
@@ -280,7 +286,7 @@ contains
 !> \brief   Validation for lock exchange test case
 !> \author  Doug Jacobsen
 !> \date    02/20/2014
-!> \details 
+!> \details
 !>  This routine validates the configuration options for the lock exchange test case.
 !
 !-----------------------------------------------------------------------

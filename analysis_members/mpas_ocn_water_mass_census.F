@@ -390,14 +390,16 @@ contains
       do iTemperatureBin=1,nTemperatureBins
          do iSalinityBin=1,nSalinityBins
             do iRegion=1,nOceanRegionsTmpCensus
-              workBufferSum(iRegion) = workBufferSum(iRegion) + waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion)
+              workBufferSum(iRegion) = workBufferSum(iRegion) &
+                                     + waterMassFractionalDistribution(iTemperatureBin,iSalinityBin,iRegion)
             enddo
          enddo
       enddo
 
       ! use this sum to convert waterMassFractionalDistribution from total volume to fractional volume
       do iRegion=1,nOceanRegionsTmpCensus
-        waterMassFractionalDistribution(:,:,iRegion) = waterMassFractionalDistribution(:,:,iRegion) / max(workBufferSum(iRegion),1.0e-8_RKIND)
+        waterMassFractionalDistribution(:,:,iRegion) = waterMassFractionalDistribution(:,:,iRegion) &
+                                                     / max(workBufferSum(iRegion),1.0e-8_RKIND)
       enddo
 
       ! deallocate buffers
@@ -421,7 +423,7 @@ contains
    integer :: iCell
    real(kind=RKIND) :: dtr
 
-   dtr = 4.0*atan(1.0) / 180.0_RKIND
+   dtr = 4.0_RKIND*atan(1.0_RKIND) / 180.0_RKIND
    workMask(:) = 0.0_RKIND
    do iCell=1,nCellsSolve
       workMask(iCell) = 1.0_RKIND
