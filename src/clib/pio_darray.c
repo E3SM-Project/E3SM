@@ -648,13 +648,6 @@ int pio_write_darray_multi_nc_serial(file_desc_t *file, const int nvars, const i
 	     tmp_start[i+regioncnt*fndims] = region->start[i-(fndims-ndims)];
 	     tmp_count[i+regioncnt*fndims] = region->count[i-(fndims-ndims)];
 	   }
-
-	   if(fndims>1 && ndims<fndims && tmp_count[1+regioncnt*fndims]>0){
-	     tmp_count[regioncnt*fndims] = 1;
-	     tmp_start[regioncnt*fndims] = frame[0];
-	   }else if(fndims==ndims){
-	     tmp_start[regioncnt*fndims]+=vdesc->record;
-	   }
 	 // Non-time dependent array
 	 }else{
 	   for( i=0;i<ndims;i++){
@@ -672,6 +665,7 @@ int pio_write_darray_multi_nc_serial(file_desc_t *file, const int nvars, const i
 	 MPI_Send( &maxregions, 1, MPI_INT, 0, ios->io_rank+ios->num_iotasks, ios->io_comm);
 	 MPI_Send( tmp_start, maxregions*fndims, MPI_OFFSET, 0, ios->io_rank+2*ios->num_iotasks, ios->io_comm);
 	 MPI_Send( tmp_count, maxregions*fndims, MPI_OFFSET, 0, ios->io_rank+3*ios->num_iotasks, ios->io_comm);
+	 //	 printf("%s %d %ld\n",__FILE__,__LINE__,nvars*llen);
 	 MPI_Send( IOBUF, nvars*llen, basetype, 0, ios->io_rank+4*ios->num_iotasks, ios->io_comm);
        }
      }else{
@@ -689,6 +683,7 @@ int pio_write_darray_multi_nc_serial(file_desc_t *file, const int nvars, const i
 	     MPI_Recv( &rregions, 1, MPI_INT, rtask, rtask+ios->num_iotasks, ios->io_comm, &status);
 	     MPI_Recv( tmp_start, rregions*fndims, MPI_OFFSET, rtask, rtask+2*ios->num_iotasks, ios->io_comm, &status);
 	     MPI_Recv( tmp_count, rregions*fndims, MPI_OFFSET, rtask, rtask+3*ios->num_iotasks, ios->io_comm, &status);
+	     //	     printf("%s %d %d %ld\n",__FILE__,__LINE__,rtask,nvars*rlen);
 	     MPI_Recv( IOBUF, nvars*rlen, basetype, rtask, rtask+4*ios->num_iotasks, ios->io_comm, &status);
 	   }
 	 }else{
@@ -706,6 +701,18 @@ int pio_write_darray_multi_nc_serial(file_desc_t *file, const int nvars, const i
 	     for(int nv=0; nv<nvars; nv++){
 	       bufptr = (void *)((char *) IOBUF+ tsize*(nv*rlen + loffset));
 
+	       if(vdesc->record>=0){
+		 if(fndims>1 && ndims<fndims && count[1]>0){
+		   count[0] = 1;
+		   start[0] = frame[nv];
+		 }else if(fndims==ndims){
+		   start[0]+=vdesc->record;
+		 }
+	       }
+
+
+
+
 	       if(basetype == MPI_INTEGER){
 		 ierr = nc_put_vara_int (ncid, vid[nv], start, count, (const int *) bufptr); 
 	       }else if(basetype == MPI_DOUBLE || basetype == MPI_REAL8){
@@ -721,6 +728,12 @@ int pio_write_darray_multi_nc_serial(file_desc_t *file, const int nvars, const i
 		   fprintf(stderr,"vid %d dim %d start %ld count %ld \n",vid[nv],i,start[i],count[i]);
 	       }
 	     }
+	     size_t tsize;
+	     tsize = 1;
+	     for(int i=0;i<fndims;i++){
+	       tsize*=count[i];
+	     } 
+	     loffset += tsize;
 	   }//    for(regioncnt=0;regioncnt<iodesc->maxregions;regioncnt++){ 
 	 } // if(rlen>0)
        } //        for(int rtask=0; rtask<ios->num_iotasks; rtask++){
@@ -786,9 +799,9 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    }
    if(iodesc->rearranger>0){
      if(rlen>0){
-       //       printf("rlen = %ld\n",rlen);
        MPI_Type_size(iodesc->basetype, &vsize);	
-       //iobuf = malloc((size_t) vsize* (size_t) rlen);
+       //printf("rlen*vsize = %ld\n",rlen*vsize);
+
        vdesc0->iobuf = bget((size_t) vsize* (size_t) rlen);
        if(vdesc0->iobuf==NULL){
 	 printf("%s %d %d %ld\n",__FILE__,__LINE__,nvars,vsize*rlen);
@@ -831,8 +844,11 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 				      iodesc->maxregions, iodesc->firstregion, iodesc->llen,
 				      iodesc->maxiobuflen, iodesc->num_aiotasks,
 				      vdesc0->iobuf, frame);     
-     brel(vdesc0->iobuf);
-     vdesc0->iobuf = NULL;
+     if(vdesc0->iobuf != NULL){
+       brel(vdesc0->iobuf);
+       vdesc0->iobuf = NULL;
+     }
+       break;
 
    }
    
@@ -845,6 +861,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
      }
      
      vdesc0->fillbuf = bget(iodesc->holegridsize*vsize*nvars);
+     //printf("%s %d %x\n",__FILE__,__LINE__,vdesc0->fillbuf);
      if(vsize==4){
        for(int nv=0;nv<nvars;nv++){
 	 for(int i=0;i<iodesc->holegridsize;i++){
@@ -869,13 +886,19 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
        break;
      case PIO_IOTYPE_NETCDF4C:
      case PIO_IOTYPE_NETCDF:
-       ierr = pio_write_darray_multi_nc_serial(file, nvars, vid,  
+       /*       ierr = pio_write_darray_multi_nc_serial(file, nvars, vid,  
 					iodesc->ndims, iodesc->basetype, iodesc->gsize,
 					iodesc->maxfillregions, iodesc->fillregion, iodesc->holegridsize,
 					iodesc->holegridsize, iodesc->num_aiotasks,
 					vdesc0->fillbuf, frame);
-       brel(vdesc0->fillbuf);
-       vdesc0->fillbuf = NULL;
+       */
+       /*       if(vdesc0->fillbuf != NULL){
+	 printf("%s %d %x\n",__FILE__,__LINE__,vdesc0->fillbuf);
+	 brel(vdesc0->fillbuf);
+	 vdesc0->fillbuf = NULL;
+       }
+       */
+       break;
      }
    }
 
@@ -1393,7 +1416,6 @@ int pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, const int vi
     region = iodesc->firstregion;
     MPI_Type_size(iodesc->basetype, &tsize);
     if(fndims>ndims){
-      ndims++;
       if(vdesc->record<0) 
 	vdesc->record=0;
     }
@@ -1407,7 +1429,7 @@ int pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, const int vi
       }else{       
 	if(vdesc->record >= 0 && fndims>1){
 	  tmp_start[regioncnt*fndims] = vdesc->record;
-	  for(i=1;i<ndims;i++){
+	  for(i=1;i<fndims;i++){
 	    tmp_start[i+regioncnt*fndims] = region->start[i-1];
 	    tmp_count[i+regioncnt*fndims] = region->count[i-1];
 	   } 
@@ -1415,11 +1437,15 @@ int pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, const int vi
 	    tmp_count[regioncnt*fndims] = 1;
 	}else{
 	  // Non-time dependent array
-	  for(i=0;i<ndims;i++){
+	  for(i=0;i<fndims;i++){
 	    tmp_start[i+regioncnt*fndims] = region->start[i];
 	    tmp_count[i+regioncnt*fndims] = region->count[i];
 	  }
 	}
+	/*	for(i=0;i<fndims;i++){
+	  printf("%d %d %d %ld %ld\n",__LINE__,regioncnt,i,tmp_start[i+regioncnt*fndims],tmp_count[i+regioncnt*fndims]);
+	  }*/
+
       }
       if(region != NULL)
 	region = region->next;
@@ -1481,10 +1507,11 @@ int pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, const int vi
 	  }else{
 	    fprintf(stderr,"Type not recognized %d in pioc_write_darray_nc_serial\n",(int) iodesc->basetype);
 	  }	
+
 	  if(ierr != PIO_NOERR){
-	    for(int i=0;i<fndims;i++){
-	      printf("%d %d %d\n",i,start[i],count[i]);
-	    }
+	    for(int i=0;i<fndims;i++)
+	      fprintf(stderr,"vid %d dim %d start %ld count %ld err %d\n",vid,i,start[i],count[i],ierr);
+	    
 	  }
 
 #endif
