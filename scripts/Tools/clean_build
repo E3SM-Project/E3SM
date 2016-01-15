@@ -12,6 +12,9 @@ $ENV{CASEROOT}       = `./xmlquery CASEROOT       -value `;
 $ENV{DEBUG}          = `./xmlquery DEBUG          -value `;
 $ENV{USE_ESMF_LIB}   = `./xmlquery USE_ESMF_LIB   -value `;
 $ENV{COMP_INTERFACE} = `./xmlquery COMP_INTERFACE -value `;
+$ENV{BUILD_THREADED} = `./xmlquery BUILD_THREADED -value`;
+$ENV{PIO_VERSION} = `./xmlquery PIO_VERSION -value`;
+
 
 sub usage {
     die <<EOF;

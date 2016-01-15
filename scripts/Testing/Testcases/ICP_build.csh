@@ -148,7 +148,7 @@ foreach bx ($bxvals)
         ./xmlchange -file env_build.xml -id CICE_DECOMPTYPE -val cartesian
         ./xmlchange -file env_build.xml -id CICE_DECOMPSETTING -val $decomp
       endif
-      cp env_build.xml LockedFiles/env_build.xml.locked
+      cp env_build.xml LockedFiles/env_build.xml
 
       if ($precheck == 0) then
         ./case.build -testmode

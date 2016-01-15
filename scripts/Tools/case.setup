@@ -289,8 +289,8 @@ if (! $clean ) {
 	
 	# Make a copy of env_mach_pes.xml in order to be able 
 	# to check that it does not change once case.setup is invoked
-	if (! -e "LockedFiles/env_mach_pes.xml.locked") {
-	    $sysmod = "cp env_mach_pes.xml  LockedFiles/env_mach_pes.xml.locked";
+	if (! -e "LockedFiles/env_mach_pes.xml") {
+	    $sysmod = "cp env_mach_pes.xml  LockedFiles/env_mach_pes.xml";
 	    system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 	    $logger->info("Locking file env_mach_pes.xml ");
 	}
