@@ -2700,7 +2700,7 @@ end function diag_ustar
     use stats_sfc_module,       only: nvarmax_sfc, stats_init_sfc ! 
     use error_code,             only: clubb_at_least_debug_level ! 
     use constants_clubb,        only: fstderr, var_length !     
-    use cam_history,            only: addfld
+    use cam_history,            only: addfld, horiz_only
     use namelist_utils,         only: find_group_name
     use units,                  only: getunit, freeunit
     use cam_abortutils,         only: endrun
