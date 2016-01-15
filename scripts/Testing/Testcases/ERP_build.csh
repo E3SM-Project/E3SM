@@ -182,4 +182,4 @@ cp -f env_mach_pes.xml env_mach_pes.xml.2
 # back 
 #
 cp -f env_mach_pes.xml.1 env_mach_pes.xml
-cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml.locked
+cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml

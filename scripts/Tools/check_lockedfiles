@@ -56,8 +56,7 @@ my @lockedfiles = glob ("./LockedFiles/*");
 foreach my $lockedfile (@lockedfiles) {
     my $file = basename("$lockedfile");
     $logger->info("Checking file $file");
-    $file =~ m/(.*)(\.locked)/;
-    $file = $1;
+
     if (!-f $file) {
 	$logger->logdie ("Locked file $file cannot be found");
     }
@@ -68,6 +67,16 @@ foreach my $lockedfile (@lockedfiles) {
 	    $logger->warn( "setting BUILD_COMPLETE to FALSE ");
 	    `./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val FALSE`;
 	    `./xmlchange -noecho -file env_build.xml -id BUILD_STATUS -val 1`;
+
+	    my $pioversion = `xmlquery PIO_VERSION -value`;
+	    my $oldpioversion = `xmlquery PIO_VERSION -value -file LockedFiles/env_build.xml`;
+	    
+	    if($pioversion != $oldpioversion){
+		$logger->warn("Changing PIO_VERSION requires running case.clean_build -all");
+	    `./xmlchange -noecho -file env_build.xml -id BUILD_STATUS -val 2`;
+
+	    }
+
 	} elsif ($file =~ /.*env_mach_pes.*/) {
 	    $logger->logdie ("Invoke case.setup -clean followed by case.setup ");
 	} else {
