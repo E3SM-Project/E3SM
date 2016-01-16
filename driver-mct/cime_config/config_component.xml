@@ -753,7 +753,7 @@
   </entry>
 
   <entry id="BUILD_COMPLETE"> 
-    <type>logical</type>
+    <type>int</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <group>build_status</group>
@@ -799,7 +799,7 @@
 
   <entry id="BUILD_STATUS"> 
     <type>integer</type>
-    <valid_values>0,1</valid_values>  
+    <valid_values>0,1,2</valid_values>  
     <default_value>0</default_value>
     <group>build_status</group>
     <file>env_build.xml</file>
@@ -2284,6 +2284,15 @@
   <!-- definitions pio -->
   <!-- ===================================================================== -->
 
+  <entry id="PIO_VERSION"> 
+    <type>int</type>
+    <default_value>1</default_value>
+    <valid_values>1,2</valid_values>
+    <group>build_macros</group>
+    <file>env_build.xml</file>
+    <desc>PIO library version</desc>
+  </entry>
+
   <entry id="PIO_CONFIG_OPTS"> 
     <type>char</type>
     <default_value></default_value>
@@ -2967,7 +2976,7 @@
       <value compset="_DATM%COPYALL_NPS"    >72</value> 
       <value compset="_DATM.*_CLM"          >48</value>  
       <value compset="_DATM.*_DICE.*_POP2"  >4</value>
-      <value compset="_DATM.*_CICE.*_POP2"  >48</value>
+      <value compset="_DATM.*_CICE.*_POP2"  >24</value>
       <value compset="_DATM.*_CICE.*_DOCN"  >24</value>
       <value compset="_DATM.*_DOCN%US20"    >24</value> 
       <value compset="_MPAS"                >1</value>  
