@@ -879,9 +879,9 @@ sub _create_caseroot_tools
 	"$cimeroot/scripts/Tools/archive_metadata.sh", 
 	"$cimeroot/scripts/Tools/check_case", 
 	"$cimeroot/scripts/Tools/create_production_test", 
+	"$cimeroot/scripts/Tools/st_archive", 
 	"$cimeroot/scripts/Tools/xmlchange",
 	"$cimeroot/scripts/Tools/xmlquery",
-	"$cimeroot/scripts/Tools/st_archive", 
 	"$cimeroot/scripts/Tools/README.post_process", 
 	); 
     foreach my $file (@files) {
@@ -904,7 +904,6 @@ sub _create_caseroot_tools
     # Copy relevant files into $caseroot/Tools/
     @files = ("$cimeroot/scripts/Tools/check_lockedfiles", 
 	      "$cimeroot/scripts/Tools/lt_archive.sh", 
-	      "$cimeroot/scripts/Tools/st_archive", 
 	      "$cimeroot/scripts/Tools/getTiming", 
 	      "$machines_dir/taskmaker.pl", 
 	      "$machines_dir/Makefile",
@@ -1011,7 +1010,7 @@ sub _create_caseroot_files
 
 
     # copy env_case.xml in to locked files
-    $sysmod = "cp $caseroot/env_case.xml $caseroot/LockedFiles/env_case.xml.locked"; 
+    $sysmod = "cp $caseroot/env_case.xml $caseroot/LockedFiles/env_case.xml"; 
     system($sysmod) == 0 or $logger->logdie( "ERROR: create_newcase $sysmod failed: $?");
     $logger->info( "Locking file $caseroot/env_case.xml ");
 

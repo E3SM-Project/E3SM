@@ -52,6 +52,14 @@
     </values>
   </entry>
 
+  <entry id="PIO_REARRANGER">
+    <values>
+      <value>$PIO_VERSION</value>
+    </values>
+  </entry>
+
+
+
   <!--- uncomment and fill in relevant sections 
   <entry id="PIO_DEBUG_LEVEL">
     <values>
