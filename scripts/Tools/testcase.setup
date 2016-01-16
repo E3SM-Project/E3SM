@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #-----------------------------------------------------------------------------------------------
-# testcase_setup - create the $caseroot/$case.test script
+# testcase_setup - create the $caseroot/case.test script
 #-----------------------------------------------------------------------------------------------
 
 use strict;
@@ -160,8 +160,8 @@ my $batchdirectives = $batchmaker->getBatchDirectives();
 ## create test file
 my $sysmod;
 
-my $testfilewrapper = "$caseroot/${case}.test";
-my $testfile = "$caseroot/${case}.testdriver";
+my $testfilewrapper = "$caseroot/case.test";
+my $testfile = "$caseroot/case.testdriver";
 
 my $tfwfh = new IO::File;
 $tfwfh->open(">>$testfilewrapper") or die "can't open file: $testfilewrapper $eol";
