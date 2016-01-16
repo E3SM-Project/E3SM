@@ -2341,7 +2341,7 @@
     <file>env_run.xml</file>
     <desc>pio rearranger choice box=1, subset=2 </desc>
   </entry>
-
+<!--
   <entry id="PIO_REARR_COMM_TYPE">
     <type>char</type>
     <valid_values>p2p,coll,default</valid_values>
@@ -2386,7 +2386,7 @@
     <file>env_run.xml</file>
     <desc>pio rearranger communiation options: TRUE implies enable isend</desc> 
   </entry> 
-
+-->
   <entry id="PIO_TYPENAME">
     <type>char</type>
     <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,default</valid_values>
