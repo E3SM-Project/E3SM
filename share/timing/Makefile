@@ -27,7 +27,9 @@ endif
 # But must be AFTER any definitions it uses are defined.
 # So be careful if moving this either earlier or later in the makefile!!!
 include $(MACFILE)
-
+ifdef GPTL_CPPDEFS
+  CPPDEFS+=$(GPTL_CPPDEFS)
+endif
 INCLDIR += -I$(GPTL_DIR)
 
 ifeq ($(strip $(MPILIB)), mpi-serial)
