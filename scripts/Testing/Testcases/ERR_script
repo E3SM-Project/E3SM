@@ -44,6 +44,7 @@ if( $resubmit > 0 ) then
     ./xmlchange -file env_run.xml -id REST_N       -val ${restn1}
     ./xmlchange -file env_run.xml -id HIST_OPTION  -val ${STOP_OPTION}
     ./xmlchange -file env_run.xml -id HIST_N       -val ${histn}
+    ./xmlchange DOUT_S=TRUE
 
     ./case.run
     if ($status != 0) then

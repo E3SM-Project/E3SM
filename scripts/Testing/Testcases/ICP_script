@@ -43,7 +43,7 @@ while ($cnt < $cntmax && $found == 1)
 
   if (-e env_build.xml.${acnt}) then
     cp -f env_build.xml.${acnt} env_build.xml
-    cp -f env_build.xml LockedFiles/env_build.xml.locked
+    cp -f env_build.xml LockedFiles/env_build.xml
     cp -f $EXEROOT/cesm.exe.${acnt} $EXEROOT/cesm.exe
 
     foreach maskhalo (T F)

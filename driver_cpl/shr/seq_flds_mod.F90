@@ -335,10 +335,8 @@ module seq_flds_mod
      integer :: glc_nec
 
      namelist /seq_cplflds_inparm/  &
-! JGF NEED HELP
-! <<<<<<< HEAD
-!          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, glc_nec, &
-!          ice_ncat, seq_flds_i2o_per_cat
+          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, glc_nec, &
+          ice_ncat, seq_flds_i2o_per_cat, flds_bgc
 ! =======
 !          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_bgc, glc_nec
 ! >>>>>>> acme_master

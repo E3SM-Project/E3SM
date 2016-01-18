@@ -46,8 +46,6 @@ echo " short term archiving is on" >>& $TESTSTATUS_LOG
 
 # set up run
 set DOUT_S_ROOT          = `./xmlquery DOUT_S_ROOT     -value`
-#set DOUT_S_ROOT_LOCKED   = `echo $DOUT_S_ROOT | sed 's/archive/archive.locked/'`
-#set DOUTSR0              =  $DOUT_S_ROOT_LOCKED
 set DOUTSR0              =  $DOUT_S_ROOT
 set orig_clm_bldnml_opts = `./xmlquery CLM_BLDNML_OPTS -value`
 set CASE                 = `./xmlquery CASE -value`

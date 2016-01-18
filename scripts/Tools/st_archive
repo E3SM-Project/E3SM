@@ -20,7 +20,7 @@ use File::Find;
 use File::stat;
 use File::Glob;
 
-# the st_archive is run in the CASEROOT/Tools
+# the st_archive is run in the CASEROOT
 my $cimeroot  = `./xmlquery CIMEROOT  -value`;
 my @dirs = ("$cimeroot/utils/perl5lib" );
 
@@ -130,14 +130,14 @@ ENV_ARCHIVE.XML SCHEMA AND DOCUMENT TYPE DEFINITION (DTD)
         $\DOUT_S_ROOT location.  These may not correspond to the model
         component name.
 
-        <files> <file_extension suffix="[regular expression string]">
+        <files> <file_extension regex_suffix="[regular expression string]">
 	Perl regular expression specification for "globbing" filenames
 	for matching. Run the command "\$CASEROOT/st_archive -input"
 	command to see the list of valid suffices. If the suffix
-	begins with a "." then all files matching *.(suffix) are
+	begins with a "." then all files matching *.(regex_suffix) are
 	included in the globbing. If the suffix begins with a
 	character other than "." then all files matching exactly the
-	(suffix) are included in the globbing.
+	(regex_suffix) are included in the globbing.
 
             <subdir>[string] (logs|rest|hist|init|diag)</subdir> 
 	    subdirectory name to be created under the
@@ -195,7 +195,7 @@ OPTIONS
 
 
 EOF
-#" added per for emacs perl mode parsing
+#" added for emacs perl mode parsing
 
     $logger->info($usgstatement);
     exit(1);
@@ -296,10 +296,9 @@ sub listXMLin
 The env_archive.xml brief XML tag schema:
 
     <comp_archive_spec name="[string:component name] (cpl|dart|cam\*|datm|clm\?|dlnd|rtm|cice|dice|pop|docn|cism|ww3|dwav)">
-	<rootdir>[string:root directory name after DOUT_S_ROOT.locked] (rest|cpl|dart|atm|lnd|rof|ice|ocn|glc|wav)</rootdir>
-        <multi_instance>[string: multi-instance support] (true|false)</multi_instance>
+	<rootdir>[string:root directory name after DOUT_S_ROOT] (rest|cpl|dart|atm|lnd|rof|ice|ocn|glc|wav)</rootdir>
         <files>
-            <file_extension suffix="[string: perl regular expression for matching file suffix patterns"]>
+            <file_extension regex_suffix="[string: perl regular expression for matching file suffix patterns"]>
 	    <keep_last_in_rundir>[string: specify if the most recent copy of the matching file should be saved in the RUNDIR] (true|false)</keep_last_in_rundir> 
         </files>
     </comp_archive_spec>
@@ -336,12 +335,12 @@ EOF
 	my @files = $comp->findnodes('./files/file_extension');
         foreach my $file (@files) 
 	{
-	    my $suffix = $file->getAttribute('suffix');
+	    my $suffix = $file->getAttribute('regex_suffix');
 	    my $subdir = $file->findvalue('./subdir');
 	    my $keep_last_in_rundir = $file->findvalue('./keep_last_in_rundir');
 
 	    $logger->info("\n***** File extension specification");
-	    $logger->info("  suffix = $suffix");  
+	    $logger->info("  regex_suffix = $suffix");  
 	    $logger->info("  subdir = $config{'DOUT_S_ROOT'}/$config{'CASENAME'}$rootdir/$subdir");
 	    $logger->info("  keep_last_in_rundir = $keep_last_in_rundir");
 	}
@@ -428,8 +427,8 @@ sub getcompninst
 
 
 #-----------------------------------------------------------------------------------------------
-# undoArchive routine loops through the ARCHIVE_DIR_LOCKED getting the list of archived files
-# and then moves the file back into the RUNDIR. This has no affect on the ARCHIVE_DIR_LINKED files.
+# undoArchive routine loops through the DOUT_S_ROOT getting the list of archived files
+# and then moves the file back into the RUNDIR. 
 #-----------------------------------------------------------------------------------------------
 sub undoArchive
 {
@@ -488,14 +487,11 @@ sub moveFiles
 
 	if( $keep_last_in_rundir eq 'true' ) {
 #
-# copy the last file into the destination dir and the restdir
+# copy the last file into the destination dir or the restdir
 #
 	    $logger->debug("keepFile = $keepFile"); 
+
 	    copy( $keepFile, $destdir );
-	    if( $destdir !~ /$dname$/ )
-	    {
-		copy( $keepFile, $restdir )
-	    }
 
 	    foreach my $file (@files) {
 		if( $file ne $keepFile && -f $file ) {
@@ -511,17 +507,35 @@ sub moveFiles
 		move( $file, $destdir );
 	    }
 	}
+    }
 #
 # splice the filename out of the runfiles array so it's not revisited
 # should only match on one filename since they must be unique filenames in the rundir
 #
-	foreach my $file (@files) {
-	    if ( -f $file ) {
-		my @index = grep { $runfiles[$_] eq $file } 0..$#runfiles;
-		splice @runfiles, $index[0], 1;
+    foreach my $file (@files) {
+	if ( -f $file ) {
+	    my @index = grep { $runfiles[$_] eq $file } 0..$#runfiles;
+	    splice @runfiles, $index[0], 1;
+	}
+    }
+# 
+# also get the file that matches the dname for this suffix and
+# copy to the restdir for a complete restart set
+#
+    my @restFiles = grep(/${dname}/, @files);
+    if( $#restFiles == 0 ) {
+	my @path = split /\//, $restFiles[$#restFiles]; 
+	if ( $#path >= 0 ) {
+	    $restFile = $path[$#path];
+	    if ( -f $destdir . "/" . $restFile ) {
+		copy( $destdir . "/" . $restFile, $restdir . "/" . $restFile );
 	    }
 	}
     }
+    elsif( $#restFiles > 0 ) {
+	$logger->info("st_archive: multiple restart files found for suffix=$suffix");
+    }
+
 
     return $numfiles, \@runfiles;
 }
@@ -553,7 +567,7 @@ sub archiveProcess
     chdir ($config{'RUNDIR'});
     my @rpointers = <$config{'RUNDIR'}/rpointer.*>;
     foreach my $rpointer (@rpointers) {
-	    copy( $rpointer, $restdir ) or $logger->logdie("st_archive: Error - cannot copy $rpointer file to directory $restdir. Exiting...");
+	copy( $rpointer, $restdir ) or $logger->logdie("st_archive: Error - cannot copy $rpointer file to directory $restdir. Exiting...");
     }
 #
 # main loop through the comp_archive_spec XML elements handling the associated files accordingly
@@ -575,7 +589,7 @@ sub archiveProcess
 	my @infiles = ($xmlcomp->findnodes('./files/file_extension'));
 	foreach my $infile (@infiles) 
 	{
-	    my $suffix = $infile->getAttribute('suffix');
+	    my $suffix = $infile->getAttribute('regex_suffix');
 	    my $subdir = $infile->findvalue('./subdir');
 	    my $keep_last_in_rundir = $infile->findvalue('./keep_last_in_rundir');
 #
@@ -594,7 +608,7 @@ sub archiveProcess
 		    $ninst_suffix = qq(_$ninst_suffix);
 		}
 #
-# build up the new suffix based on whether the XML suffix starts with a "."
+# build up the new suffix based on whether the XML regex_suffix starts with a "."
 #
 		my $newSuffix = qq($suffix);
 		if( substr($suffix, 0, 1) eq '.' ) {

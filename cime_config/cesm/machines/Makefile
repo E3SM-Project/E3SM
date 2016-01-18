@@ -1,5 +1,5 @@
 #===============================================================================
-# Common Makefile: a framework for building all CESM components and more
+# Common Makefile: a framework for building all CIME components and more
 #
 # Command-line variables
 #   MODEL=<model>  ~ a standard macro definition, often found in the included 
@@ -245,7 +245,7 @@ endif
 ifeq ($(MPILIB),mpi-serial)
    CONFIG_ARGS+= --enable-mpiserial
 endif
-ifeq ($(MODEL),pio)
+ifeq  ($(findstring pio,$(MODEL)),pio)
   CONFIG_ARGS+= --enable-timing
   ifeq ($DEBUG,TRUE)
      CONFIG_ARGS+= --enable-debug
@@ -342,7 +342,7 @@ ifndef MCT_LIBDIR
 endif
 
 ifndef PIO_LIBDIR
-  PIO_LIBDIR=$(SHAREDPATH)/pio
+  PIO_LIBDIR=$(SHAREDPATH)/pio$(PIO_VERSION)
 endif
 
 ifndef GPTL_LIBDIR
@@ -489,19 +489,19 @@ $(MCT_LIBDIR)/mct/libmct.a: $(MCT_LIBDIR)/mpeu/libmpeu.a
 $(MCT_LIBDIR)/mpi-serial/libmpi-serial.a: $(MCT_LIBDIR)/mpi-serial/Makefile.conf
 	$(MAKE) -C $(MCT_LIBDIR)/mpi-serial
 
-ifneq ("$(wildcard $(CIMEROOT)/externals/pio/src)", "")
+ifeq ($(PIO_VERSION),2)
 # This is a pio2 library
   PIOLIB = $(PIO_LIBDIR)/libpiof.a $(PIO_LIBDIR)/libpioc.a
   PIOLIBNAME = -lpiof -lpioc
-  PIO_SRC_DIR = $(CIMEROOT)/externals/pio
+  PIO_SRC_DIR = $(CIMEROOT)/externals/pio2
 else
 # This is a pio1 library
   PIOLIB = $(PIO_LIBDIR)/libpio.a
   PIOLIBNAME = -lpio
-  ifneq ("$(wildcard $(CIMEROOT)/externals/pio/pio)", "")
-    PIO_SRC_DIR = $(CIMEROOT)/externals/pio
+  ifneq ("$(wildcard $(CIMEROOT)/externals/pio1/pio)", "")
+    PIO_SRC_DIR = $(CIMEROOT)/externals/pio1
   else
-    PIO_SRC_DIR = $(CIMEROOT)/externals/pio/pio
+    PIO_SRC_DIR = $(CIMEROOT)/externals/pio1/pio
   endif
 endif
 
@@ -753,7 +753,7 @@ cleanatm:
 	cd $(EXEROOT)/atm/obj;  $(RM) -f *.o *.mod
 
 cleancpl:
-	cd $(EXEROOT)/cesm/obj;  $(RM) -f *.o *.mod
+	cd $(EXEROOT)/drv/obj;  $(RM) -f *.o *.mod
 
 cleanocn: 
 	$(RM) -f $(LIBROOT)/libocn.a $(LIBROOT)/libcvmix.a
@@ -784,7 +784,7 @@ cleancsmshare:
 	$(RM) -fr $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share
 
 cleanpio:
-	$(RM) -f $(PIOLIB)
+	$(RM) -f $(SHAREDPATH)/lib/libpio*
 	$(RM) -fr $(PIO_LIBDIR)
 
 cleanmct:
