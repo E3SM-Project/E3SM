@@ -158,17 +158,18 @@ def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_ti
             if (test_status not in [TEST_PASS_STATUS, NAMELIST_FAIL_STATUS]):
                 full_results = parse_test_status_file(test_path)[0]
 
-                if (full_results["BUILD"] != TEST_PASS_STATUS or
-                    full_results["RUN"]   != TEST_PASS_STATUS):
+                if ("BUILD" in full_results): # If did not even make it to build phase, no useful logs
+                    if ( full_results["BUILD"] != TEST_PASS_STATUS or
+                         ("RUN" in full_results and full_results["RUN"] != TEST_PASS_STATUS) ):
 
-                    param = "EXEROOT" if full_results["BUILD"] != TEST_PASS_STATUS else "RUNDIR"
-                    src_dir = acme_util.run_cmd("./xmlquery %s -value" % param, from_dir=os.path.dirname(test_path))
-                    log_dst_dir = os.path.join(log_dir, "%s_%s_logs" % (test_name, param))
-                    os.makedirs(log_dst_dir)
-                    for log_file in glob.glob(os.path.join(src_dir, "*log*")):
-                        shutil.copy(log_file, log_dst_dir)
+                        param = "EXEROOT" if full_results["BUILD"] != TEST_PASS_STATUS else "RUNDIR"
+                        src_dir = acme_util.run_cmd("./xmlquery %s -value" % param, from_dir=os.path.dirname(test_path))
+                        log_dst_dir = os.path.join(log_dir, "%s_%s_logs" % (test_name, param))
+                        os.makedirs(log_dst_dir)
+                        for log_file in glob.glob(os.path.join(src_dir, "*log*")):
+                            shutil.copy(log_file, log_dst_dir)
 
-                    need_to_upload = True
+                        need_to_upload = True
 
         if (need_to_upload):
 
