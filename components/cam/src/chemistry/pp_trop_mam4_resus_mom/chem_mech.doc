@@ -83,10 +83,10 @@ Class List
       ( 19)  dst_a3          
       ( 20)  ncl_a3          
       ( 21)  so4_a3          
-      ( 22)  mom_a3          
-      ( 23)  bc_a3           
-      ( 24)  pom_a3          
-      ( 25)  soa_a3          
+      ( 22)  bc_a3           
+      ( 23)  pom_a3          
+      ( 24)  soa_a3          
+      ( 25)  mom_a3          
       ( 26)  num_a3          
       ( 27)  pom_a4          
       ( 28)  bc_a4           
