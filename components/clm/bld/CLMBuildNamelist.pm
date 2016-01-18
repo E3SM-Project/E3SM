@@ -163,6 +163,7 @@ OPTIONS
                               This turns on the namelist variable: use_cndv
      -ed_mode                 Turn ED (Ecosystem Demography) : [on | off] (default is off)
                               Sets the namelist variable use_ed and use_spit_fire.
+     -fsnowoptics "opticalpropertiesfile" Snow optical properties input file
      -glc_present             Set to true if the glc model is present (not sglc).
                               This is used for error-checking, to make sure other options are
                               set appropriately.
@@ -256,6 +257,7 @@ sub process_commandline {
                clm_demand            => "null",
                help                  => 0,
                glc_nec               => "default",
+	       fsnowoptics           => "default",
                glc_present           => 0,
                glc_smb               => "default",
                l_ncpl                => undef,
@@ -295,6 +297,7 @@ sub process_commandline {
              "chk_res!"                  => \$opts{'chk_res'},
              "note!"                     => \$opts{'note'},
              "megan!"                    => \$opts{'megan'},
+             "fsnowoptics=s"             => \$opts{'fsnowoptics'},
              "glc_nec=i"                 => \$opts{'glc_nec'},
              "glc_present!"              => \$opts{'glc_present'},
              "glc_smb=s"                 => \$opts{'glc_smb'},
