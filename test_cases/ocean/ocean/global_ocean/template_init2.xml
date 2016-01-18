@@ -5,6 +5,8 @@
 		<option name="config_ocean_run_mode">'init'</option>
 		<option name="config_write_cull_cell_mask">.false.</option>
 
+		<option name="config_eos_type">'jm'</option>
+
 		<option name="config_expand_sphere">.true.</option>
 		<option name="config_realistic_coriolis_parameter">.true.</option>
 
@@ -103,6 +105,7 @@
 				<member name="rx1MaxCell" type="var"/>
 				<member name="rx1MaxEdge" type="var"/>
 				<member name="globalRx1Max" type="var"/>
+				<member name="density" type="var"/>
 			</add_contents>
 		</stream>
 		<stream name="forcing_data_init">

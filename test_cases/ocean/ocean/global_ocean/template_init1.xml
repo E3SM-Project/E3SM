@@ -5,6 +5,8 @@
 		<option name="config_ocean_run_mode">'init'</option>
 		<option name="config_write_cull_cell_mask">.true.</option>
 
+		<option name="config_eos_type">'jm'</option>
+
 		<option name="config_global_ocean_swData_file">'swData.nc'</option>
 		<option name="config_global_ocean_swData_nlat_dimname">'t_lat'</option>
 		<option name="config_global_ocean_swData_nlon_dimname">'t_lon'</option>
