@@ -684,6 +684,24 @@ subroutine hetfrz_classnuc_cam_calc( &
    na500                      = 0._r8
    tot_na500                  = 0._r8
 
+   ! initializ diagnostic arrays, otherwise uninitialized for k < top_lev
+   nnuccc_dst(:ncol,:) = 0._r8
+   nnucct_dst(:ncol,:) = 0._r8
+   nnudep_dst(:ncol,:) = 0._r8
+
+   nnuccc_bc(:ncol,:) = 0._r8
+   nnucct_bc(:ncol,:) = 0._r8
+   nnudep_bc(:ncol,:) = 0._r8
+
+   niimm_bc(:ncol,:) = 0._r8
+   nicnt_bc(:ncol,:) = 0._r8
+   nidep_bc(:ncol,:) = 0._r8
+
+   niimm_dst(:ncol,:) = 0._r8
+   nicnt_dst(:ncol,:) = 0._r8
+   nidep_dst(:ncol,:) = 0._r8
+
+
    ! output aerosols as reference information for heterogeneous freezing
    do i = 1, ncol
       do k = top_lev, pver
