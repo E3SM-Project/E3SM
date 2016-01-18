@@ -540,6 +540,8 @@ sub buildModel()
 		   rof => $COMP_ROF);
     my $model;
 
+    my $prev_smp = $ENV{'SMP'};
+
     foreach $model(@modelsbuildorder) {
 
 	my $comp = $models{$model};
@@ -547,6 +549,15 @@ sub buildModel()
 	my $objdir = "";
 	my $libdir = ""; 
 	my $bldroot = "";
+
+        chdir "$CASEROOT";
+        my $comp_uc = 'NTHRDS_'.uc $model;
+        my $NTHRDS   = `./xmlquery $comp_uc -value `;
+        if ($NTHRDS > 1 or $ENV{'BUILD_THREADED'} eq 'TRUE') {
+          $ENV{'SMP'} = 'TRUE';
+        } else {
+          $ENV{'SMP'} = 'FALSE';
+        }
 
 	if ("$comp" eq "clm") {
 
@@ -604,6 +615,8 @@ sub buildModel()
 	    copy($mod, $INCROOT);
 	}
     }
+
+    $ENV{'SMP'} = $prev_smp;
 
     my $file_build = "$EXEROOT/cesm.bldlog.$LID";
     my $now = localtime;
