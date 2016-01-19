@@ -4,7 +4,7 @@ module prep_glc_mod
   use shr_kind_mod    , only: cl => SHR_KIND_CL
   use shr_sys_mod     , only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct    , only: num_inst_glc, num_inst_lnd, num_inst_frc, &
-			      num_inst_ocn  
+                              num_inst_ocn  
   use seq_comm_mct    , only: CPLID, GLCID, logunit
   use seq_comm_mct    , only: seq_comm_getData=>seq_comm_setptrs 
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata  
@@ -611,9 +611,6 @@ contains
     !---------------------------------------------------------------
     ! Description
     ! On the ice sheet grid, calculate shelf boundary fluxes
-
-    use glc_cpl_indices
-    use mpaso_cpl_indices
     
     use shr_const_mod , only: SHR_CONST_KAPPA_LAND_ICE
 
@@ -623,7 +620,22 @@ contains
     type(mct_aVect), pointer :: o2x_ox ! Ocn export, ocn grid, cpl pes
     type(mct_aVect), pointer :: x2g_gx ! Glc import, glc grid, cpl pes
     type(mct_aVect), pointer :: g2x_gx ! Glc import, glc grid, cpl pes
+
+    integer :: index_o2x_So_blt
+    integer :: index_o2x_So_bls
+    integer :: index_o2x_So_htv
+    integer :: index_o2x_So_stv
+    integer :: index_o2x_So_rhoeff
+    integer :: index_g2x_Sg_tbot
+    integer :: index_g2x_Sg_dztbot
     
+    integer :: index_g2x_Sg_blis
+    integer :: index_g2x_Sg_blit
+    integer :: index_g2x_Fogx_qiceho
+    integer :: index_g2x_Fogx_qicelo
+    integer :: index_x2g_Fogx_qiceli
+    integer :: index_x2g_Fogx_qicehi
+
     character(*), parameter :: subname = '(prep_glc_calculate_subshelf_boundary_fluxes)'
     !--------------------------------------------------------------- 
 
@@ -640,9 +652,24 @@ contains
     call seq_map_map(mapper_So2g, o2x_ox, o2x_gx(1), &
     fldlist='So_blt:So_bls:So_htv:So_stv:So_rhoeff',norm=.true.)
 
-    do n=1,gsize
-      !Extract coupler fields used as input to compute_melt_fluxes to local arrays...
+    index_o2x_So_blt =    mct_avect_indexra(o2x_gx(1),'So_blt',perrwith='quiet')
+    index_o2x_So_bls =    mct_avect_indexra(o2x_gx(1),'So_bls',perrwith='quiet')
+    index_o2x_So_htv =    mct_avect_indexra(o2x_gx(1),'So_htv',perrwith='quiet')
+    index_o2x_So_stv =    mct_avect_indexra(o2x_gx(1),'So_stv',perrwith='quiet')
+    index_o2x_So_rhoeff = mct_avect_indexra(o2x_gx(1),'So_rhoeff',perrwith='quiet')
+    index_g2x_Sg_tbot =   mct_avect_indexra(g2x_gx,'Sg_tbot',perrwith='quiet')
+    index_g2x_Sg_dztbot = mct_avect_indexra(g2x_gx,'Sg_dztbot',perrwith='quiet')
+    
+    index_g2x_Sg_blis = mct_avect_indexra(g2x_gx,'Sg_blis',perrwith='quiet')
+    index_g2x_Sg_blit = mct_avect_indexra(g2x_gx,'Sg_blit',perrwith='quiet')
+    index_g2x_Fogx_qiceho = mct_avect_indexra(g2x_gx,'Fogx_qiceho',perrwith='quiet')
+    index_g2x_Fogx_qicelo = mct_avect_indexra(g2x_gx,'Fogx_qicelo',perrwith='quiet')
+    index_x2g_Fogx_qiceli = mct_avect_indexra(x2g_gx,'Fogx_qiceli',perrwith='quiet')
+    index_x2g_Fogx_qicehi = mct_avect_indexra(x2g_gx,'Fogx_qicehi',perrwith='quiet')
 
+    do n=1,gsize
+
+      !Extract glc and ocn-sourced coupler fields used as input to compute_melt_fluxes to local arrays...
       oceanTemperature(n) =               o2x_gx(1)%rAttr(index_o2x_So_blt,n)
       oceanSalinity(n) =                  o2x_gx(1)%rAttr(index_o2x_So_bls,n)
       oceanHeatTransferVelocity(n) =      o2x_gx(1)%rAttr(index_o2x_So_htv,n)
@@ -652,7 +679,7 @@ contains
       iceTemperature(n) =                 g2x_gx%rAttr(index_g2x_Sg_tbot,n)
       iceTemperatureDistance(n) =         g2x_gx%rAttr(index_g2x_Sg_dztbot,n)
 
-      !...and initialize local compute_melt_fluxes output arrays.
+      !... initialize local compute_melt_fluxes output arrays...
       outInterfaceSalinity(n)     =       0.0_r8
       outInterfaceTemperature(n)  =       0.0_r8
       outFreshwaterFlux(n)  =             0.0_r8
@@ -660,6 +687,7 @@ contains
       outIceHeatFlux(n) =                 0.0_r8
     end do
 
+    !...calculate fluxes...
     call compute_melt_fluxes(oceanTemperature,&
                              oceanSalinity,&
                              oceanHeatTransferVelocity,&
@@ -674,6 +702,7 @@ contains
                              outIceHeatFlux,&
                              gsize)
 
+    !...and assign fluxes to glc and ocn-directed coupler fields
     do n=1,gsize
       !Assign outputs from compute_melt_fluxes back into coupler attributes
       g2x_gx%rAttr(index_g2x_Sg_blis,n) =     outInterfaceSalinity(n)    !to ocean
@@ -684,7 +713,7 @@ contains
       x2g_gx%rAttr(index_x2g_Fogx_qiceli,n) = outFreshwaterFlux(n)       !to ice sheet
     end do
 
-    !Remap ocean-side outputs back onto ocean grid done in call to prep_ocn_shelf_calc_g2x_ox
+    !Note: remap ocean-side outputs back onto ocean grid done in call to prep_ocn_shelf_calc_g2x_ox
 
   end subroutine prep_glc_calculate_subshelf_boundary_fluxes
 

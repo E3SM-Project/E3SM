@@ -133,10 +133,10 @@ contains
     ! how this should be handled in CLM and the ice sheet model.
 
     !Following block are subshelf melt routine outputs for ocean import
-    index_g2x_Fogx_qicelo =               mct_avect_indexra(g2x,'Fogx_qicelo',perrwith='quiet')
-    index_g2x_Fogx_qiceho =               mct_avect_indexra(g2x,'Fogx_qiceho',perrwith='quiet')
-    index_g2x_Sg_blis =                   mct_avect_indexra(g2x,'Sg_blis',perrwith='quiet')
-    index_g2x_Sg_blit =                   mct_avect_indexra(g2x,'Sg_blit',perrwith='quiet')
+    index_g2x_Fogx_qicelo = mct_avect_indexra(g2x,'Fogx_qicelo',perrwith='quiet')
+    index_g2x_Fogx_qiceho = mct_avect_indexra(g2x,'Fogx_qiceho',perrwith='quiet')
+    index_g2x_Sg_blis =     mct_avect_indexra(g2x,'Sg_blis',perrwith='quiet')
+    index_g2x_Sg_blit =     mct_avect_indexra(g2x,'Sg_blit',perrwith='quiet')
     
     call mct_aVect_clean(x2g)
     call mct_aVect_clean(g2x)
