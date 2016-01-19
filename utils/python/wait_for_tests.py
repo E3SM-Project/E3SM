@@ -2,8 +2,8 @@ import os, doctest, time, threading, Queue, socket, signal, distutils.spawn, shu
 
 import xml.etree.ElementTree as xmlet
 
-import acme_util
-from acme_util import expect, warning, verbose_print
+import cime_util
+from cime_util import expect, warning, verbose_print
 from collections import OrderedDict
 
 TEST_STATUS_FILENAME      = "TestStatus"
@@ -40,7 +40,7 @@ def set_up_signal_handlers():
 def get_test_time(test_path):
 ###############################################################################
     cmd = "grep TIME %s" % os.path.join(test_path, TEST_STATUS_FILENAME)
-    stat, output, _ = acme_util.run_cmd(cmd, ok_to_fail=True)
+    stat, output, _ = cime_util.run_cmd(cmd, ok_to_fail=True)
     if (stat == 0):
         return int(output.split()[-1])
     else:
@@ -60,7 +60,7 @@ def get_test_output(test_path):
 ###############################################################################
 def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname):
 ###############################################################################
-    git_commit = acme_util.get_current_commit(repo=acme_util.get_cime_root())
+    git_commit = cime_util.get_current_commit(repo=cime_util.get_cime_root())
 
     data_rel_path = os.path.join("Testing", utc_time)
 
@@ -162,7 +162,7 @@ def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_ti
                     full_results["RUN"]   != TEST_PASS_STATUS):
 
                     param = "EXEROOT" if full_results["BUILD"] != TEST_PASS_STATUS else "RUNDIR"
-                    src_dir = acme_util.run_cmd("./xmlquery %s -value" % param, from_dir=os.path.dirname(test_path))
+                    src_dir = cime_util.run_cmd("./xmlquery %s -value" % param, from_dir=os.path.dirname(test_path))
                     log_dst_dir = os.path.join(log_dir, "%s_%s_logs" % (test_name, param))
                     os.makedirs(log_dst_dir)
                     for log_file in glob.glob(os.path.join(src_dir, "*log*")):
@@ -176,8 +176,8 @@ def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_ti
             if (os.path.exists(tarball)):
                 os.remove(tarball)
 
-            acme_util.run_cmd("tar -cf - %s | gzip -c > %s" % (log_dir, tarball))
-            base64 = acme_util.run_cmd("base64 %s" % tarball)
+            cime_util.run_cmd("tar -cf - %s | gzip -c > %s" % (log_dir, tarball))
+            base64 = cime_util.run_cmd("base64 %s" % tarball)
 
             xml_text = \
 r"""<?xml version="1.0" encoding="UTF-8"?>
@@ -217,7 +217,7 @@ def create_cdash_xml(results, cdash_build_name, cdash_project, cdash_build_group
     utc_time_tuple = time.gmtime(current_time)
     cdash_timestamp = time.strftime("%H:%M:%S", utc_time_tuple)
 
-    hostname = acme_util.probe_machine_name()
+    hostname = cime_util.probe_machine_name()
     if (hostname is None):
         hostname = socket.gethostname().split(".")[0]
         warning("Could not convert hostname '%s' into an ACME machine name" % (hostname))
@@ -265,7 +265,7 @@ NightlyStartTime: %s UTC
 
     create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_time, hostname)
 
-    acme_util.run_cmd("ctest -VV -D NightlySubmit", verbose=True)
+    cime_util.run_cmd("ctest -VV -D NightlySubmit", verbose=True)
 
 ###############################################################################
 def reduce_stati(stati, check_throughput=False, check_memory=False, ignore_namelists=False):

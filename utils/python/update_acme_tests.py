@@ -1,7 +1,7 @@
 import os, tempfile
 
-import acme_util
-from acme_util import expect, warning
+import cime_util
+from cime_util import expect, warning
 
 # Here are the tests belonging to acme suites. Format is
 # <test>.<grid>.<compset>.
@@ -115,8 +115,8 @@ def get_test_suite(suite, machine=None, compiler=None):
     """
     expect(suite in _TEST_SUITES, "Unknown test suite: '%s'" % suite)
 
-    machine = acme_util.probe_machine_name() if machine is None else machine
-    compiler = acme_util.get_machine_info("COMPILERS", machine=machine)[0] if compiler is None else compiler
+    machine = cime_util.probe_machine_name() if machine is None else machine
+    compiler = cime_util.get_machine_info("COMPILERS", machine=machine)[0] if compiler is None else compiler
 
     inherits_from, tests_raw = _TEST_SUITES[suite]
     tests = []
@@ -139,7 +139,7 @@ def get_test_suite(suite, machine=None, compiler=None):
                 if (machine in test_mod_machines):
                     test_mod = item[1]
 
-        tests.append(acme_util.get_full_test_name(test_name, machine, compiler, testmod=test_mod))
+        tests.append(cime_util.get_full_test_name(test_name, machine, compiler, testmod=test_mod))
 
     if (inherits_from is not None):
         inherited_tests = get_test_suite(inherits_from, machine, compiler)
@@ -191,16 +191,16 @@ def get_full_test_names(testargs, machine, compiler):
         elif (testarg in acme_test_suites):
             tests_to_run.update(get_test_suite(testarg, machine, compiler))
         else:
-            tests_to_run.add(acme_util.get_full_test_name(testarg, machine, compiler))
+            tests_to_run.add(cime_util.get_full_test_name(testarg, machine, compiler))
 
     for negation in negations:
         if (negation in acme_test_suites):
             for test, testmod in get_test_suite(negation, machine, compiler):
-                fullname = acme_util.get_full_test_name(test, machine, compiler, testmod)
+                fullname = cime_util.get_full_test_name(test, machine, compiler, testmod)
                 if (fullname in tests_to_run):
                     tests_to_run.remove(fullname)
         else:
-            fullname = acme_util.get_full_test_name(negation, machine, compiler)
+            fullname = cime_util.get_full_test_name(negation, machine, compiler)
             if (fullname in tests_to_run):
                 tests_to_run.remove(fullname)
 
@@ -215,11 +215,11 @@ def find_all_supported_platforms():
     tree. A platform is defined by a triple (machine name, compiler,
     mpi library).
     """
-    machines = acme_util.get_machines()
+    machines = cime_util.get_machines()
     platform_set = set()
 
     for machine in machines:
-        compilers, mpilibs = acme_util.get_machine_info(["COMPILERS", "MPILIBS"], machine=machine)
+        compilers, mpilibs = cime_util.get_machine_info(["COMPILERS", "MPILIBS"], machine=machine)
         for compiler in compilers:
             for mpilib in mpilibs:
                 platform_set.add((machine, compiler, mpilib))
@@ -274,10 +274,10 @@ def update_acme_tests(xml_file, categories, platform=None):
         # Prune the non-supported platforms from our list.
         for p in platforms:
             if p not in supported_platforms:
-                acme_util.verbose_print("pruning unsupported platform %s"%repr(p))
+                cime_util.verbose_print("pruning unsupported platform %s"%repr(p))
         platforms = [p for p in platforms if p in supported_platforms]
 
-    manage_xml_entries = os.path.join(acme_util.get_cime_root(), "scripts", "manage_testlists")
+    manage_xml_entries = os.path.join(cime_util.get_cime_root(), "scripts", "manage_testlists")
 
     expect(os.path.isfile(manage_xml_entries),
            "Couldn't find manage_testlists, expected it to be here: '%s'" % manage_xml_entries)
@@ -285,15 +285,15 @@ def update_acme_tests(xml_file, categories, platform=None):
     for category in categories:
         # Remove any existing acme test category from the file.
         if (platform is None):
-            acme_util.run_cmd("%s -model acme -component allactive -removetests -category %s" % (manage_xml_entries, category))
+            cime_util.run_cmd("%s -model acme -component allactive -removetests -category %s" % (manage_xml_entries, category))
         else:
-            acme_util.run_cmd("%s -model acme -component allactive -removetests -category %s -machine %s -compiler %s"
+            cime_util.run_cmd("%s -model acme -component allactive -removetests -category %s -machine %s -compiler %s"
                               % (manage_xml_entries, category, platforms[0][0], platforms[0][1]))
 
         # Generate a list of test entries corresponding to our suite at the top
         # of the file.
         new_test_file = generate_acme_test_entries(category, platforms)
-        acme_util.run_cmd("%s -model acme -component allactive -addlist -file %s -category %s" %
+        cime_util.run_cmd("%s -model acme -component allactive -addlist -file %s -category %s" %
                           (manage_xml_entries, new_test_file, category))
         os.unlink(new_test_file)
 

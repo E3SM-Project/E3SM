@@ -1,11 +1,11 @@
 """
-Common functions used by acme python scripts
+Common functions used by cime python scripts
 """
 
 import sys, socket, re, os, time
 
 _VERBOSE = False
-
+_MODEL = "cesm"
 _MACHINE_INFO = None
 
 # batch-system-name -> ( cmd-to-list-all-jobs-for-user, cmd-to-delete-job )
@@ -36,7 +36,8 @@ _MACHINE_PROJECTS = {
     "blues"     : "ACME",
     "titan"     : "cli115",
     "mira"      : "HiRes_EarthSys",
-    "cetus"     : "HiRes_EarthSys",
+    "cetus"     : "HiRes_EarthSys",    
+    "yellowstone" : "P93300606",
 }
 
 ###############################################################################
@@ -154,7 +155,7 @@ def check_minimum_python_version(major, minor):
 def normalize_case_id(case_id):
 ###############################################################################
     """
-    Given an ACME case_id, return it in form TESTCASE.GRID.COMPSET.PLATFORM
+    Given a CIME case_id, return it in form TESTCASE.GRID.COMPSET.PLATFORM
 
     >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel')
     'ERT.ne16_g37.B1850C5.skybridge_intel'
@@ -173,7 +174,7 @@ def normalize_case_id(case_id):
 def parse_test_name(test_name):
 ###############################################################################
     """
-    Given an ACME test name TESTCASE[_CASEOPTS].GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]],
+    Given a CIME test name TESTCASE[_CASEOPTS].GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]],
     return each component of the testname with machine and compiler split
 
     >>> parse_test_name('ERS.fe12_123.JGF')
@@ -190,7 +191,7 @@ def parse_test_name(test_name):
     rv = [None] * 6
     num_dots = test_name.count(".")
     expect(num_dots >= 2 and num_dots <= 4,
-           "'%s' does not look like an ACME test name, expect TESTCASE.GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]]" % test_name)
+           "'%s' does not look like a CIME test name, expect TESTCASE.GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]]" % test_name)
 
     rv[0:num_dots+1] = test_name.split(".")
     testcase_field_underscores = rv[0].count("_")
@@ -215,7 +216,7 @@ def parse_test_name(test_name):
 def get_full_test_name(test, machine, compiler, testmod=None):
 ###############################################################################
     """
-    Given an ACME test name, return in form TESTCASE.GRID.COMPSET.MACHINE_COMPILER[.TESTMODS]
+    Given a CIME test name, return in form TESTCASE.GRID.COMPSET.MACHINE_COMPILER[.TESTMODS]
     Use the machine, compiler, and testmod provided to fill out the name if needed
 
     >>> get_full_test_name("ERS.ne16_fe16.JGF", "melvin", "gnu")
@@ -242,7 +243,7 @@ def get_full_test_name(test, machine, compiler, testmod=None):
 def probe_machine_name():
 ###############################################################################
     """
-    Use the hostname of your machine to probe for the ACME name for this
+    Use the hostname of your machine to probe for the CIME name for this
     machine.
 
     >>> probe_machine_name() is not None
@@ -498,11 +499,12 @@ def parse_config_machines():
 ###############################################################################
     """
     """
+    global _MODEL
     global _MACHINE_INFO
     if (_MACHINE_INFO is None):
         _MACHINE_INFO = {}
         import xml.etree.ElementTree as ET
-        config_machines_xml = os.path.join(get_cime_root(), "cime_config", "acme", "machines", "config_machines.xml")
+        config_machines_xml = os.path.join(get_cime_root(), "cime_config", _MODEL, "machines", "config_machines.xml")
         tree = ET.parse(config_machines_xml)
         root = tree.getroot()
         expect(root.tag == "config_machines",
@@ -514,6 +516,7 @@ def parse_config_machines():
                 expect("MACH" in machine.attrib, "Invalid machine entry found for machine '%s'" % machine)
                 mach_name = machine.attrib["MACH"]
                 expect(mach_name not in _MACHINE_INFO, "Duplicate machine entry '%s'" % mach_name)
+                print "HERE: " + mach_name
                 data = {}
                 for item in machine:
                     item_data = "" if item.text is None else item.text.strip()
