@@ -72,7 +72,9 @@ module ocn_analysis_mode
 
       ! remove dt later
       real (kind=RKIND) :: dt
-      character (len=StrKIND), pointer :: xtime
+      character (len=StrKIND), pointer :: xtime, simulationStartTime
+      real (kind=RKIND), pointer :: daysSinceStartOfSim
+      type (MPAS_Time_type) :: xtime_timeType, simulationStartTime_timeType
       type (MPAS_Time_Type) :: startTime
 
       ierr = 0
@@ -123,6 +125,20 @@ module ocn_analysis_mode
          endif
 
          xtime = startTimeStamp
+
+         ! Set simulationStartTime only if that variable is not read from the restart file.
+         call mpas_pool_get_array(diagnosticsPool, 'simulationStartTime', simulationStartTime)
+         if (trim(simulationStartTime)=="no_date_available") then
+            simulationStartTime = startTimeStamp
+         end if
+
+         ! compute time since start of simulation, in days
+         call mpas_pool_get_array(diagnosticsPool, 'daysSinceStartOfSim',daysSinceStartOfSim)
+         call mpas_set_time(xtime_timeType, dateTimeString=xtime)
+         call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime)
+         call mpas_get_timeInterval(xtime_timeType - simulationStartTime_timeType,dt=daysSinceStartOfSim)
+         daysSinceStartOfSim = daysSinceStartOfSim*days_per_second
+
          block => block % next
       end do
 
