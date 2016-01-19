@@ -44,10 +44,15 @@ _TEST_SUITES = {
                              "ERS.ne16_ne16.FC5PLMOD",
                              "ERS.ne16_ne16.FC5CLBMG2",
                              "ERS.ne16_ne16.FC5CLBMG2MAM4",
+                             "ERS.ne16_ne16.FC5CLBMG2MAM4MOM",
                              "ERS.ne16_ne16.FC5CLBMG2MAM4RESUS",
+                             "ERS.ne16_ne16.FC5CLBMG2LINMAM4RESUSMOM",
                              "ERS.f19_g16.FC5CLBMG2MAM4RESUSBC",
                              "ERS.f19_g16.FC5CLBMG2MAM4RESUSMOMBC",
-                             "ERS.f19_g16.FC5ATMMOD")
+                             "ERS.f19_g16.FC5ATMMOD",
+                             "SMS.f19_g16.FC5ATMMOD",
+                             "SMS.f19_g16.FC5ATMMODCOSP",
+                             "SMS_D.f19_g16.FC5ATMMODCOSP")
                             ),
 
     "acme_developer" : ("acme_land_developer",
