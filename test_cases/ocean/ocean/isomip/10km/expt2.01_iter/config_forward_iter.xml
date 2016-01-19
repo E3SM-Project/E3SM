@@ -7,14 +7,18 @@
 
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
-		<template file="template_global_stats.xml" path_base="script_test_dir"/>
+		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<option name="config_run_duration">'0000_01:00:00'</option>
 		<option name="config_land_ice_flux_mode">'off'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
-		<template file="template_global_stats.xml" path_base="script_test_dir"/>
+		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<stream name="globalStatsOutput">
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="output_interval">0000_00:00:01</attribute>
+		</stream>
 		<stream name="output_ssh_ssp">
 			<attribute name="type">output</attribute>
 			<attribute name="filename_template">ssh_ssp.nc</attribute>

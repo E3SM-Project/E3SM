@@ -7,6 +7,8 @@
 	</case>
 	<step executable="./run_iter.py">
  		<argument flag="">--iteration_count=20</argument>
+ 		<argument flag="">--plot_globalStats</argument>
+ 		<argument flag="">--plot_ssh_ssp</argument>
 	</step>
 	<case name="forward">
 		<step executable="./run.py" quiet="true" pre_message=" * Running forward" post_message="     Complete"/>

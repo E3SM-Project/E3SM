@@ -18,13 +18,10 @@ options, args = parser.parse_args()
 
 iteration = int(args[0])
 
-varNames = ['kineticEnergyCellMax', 'kineticEnergyCellAvg','layerThicknessMin']
+varNames = ['kineticEnergyCellMax', 'kineticEnergyCellAvg','layerThicknessMin','temperatureAvg']
 timeUnit = 'hours'
-sPerUnit = 60*60
+daysPerUnit = 1/24.
 
-field1 = None
-
-firstYear = None
 inFolder = '.'
 inFiles = glob.glob('%s/analysis_members/global*.nc'%(inFolder))
 if(len(inFiles) == 0):
@@ -39,30 +36,25 @@ times = numpy.empty(0)
 for inFileName in inFiles:
   inFile = Dataset(inFileName,'r')
 
-  nTime = len(inFile.dimensions['Time'])
+  localTime = inFile.variables['daysSinceStartOfSim']
   for varIndex in range(len(varNames)):
     fieldLocal = numpy.array(inFile.variables[varNames[varIndex]])
     fields[varIndex] = numpy.append(fields[varIndex],fieldLocal)
-  xTimes = numpy.array(inFile.variables['xtime'])
-  localTime = numpy.zeros(nTime)
-  for tIndex in range(len(xTimes)):
-    xTime = ''.join(xTimes[tIndex]).strip()
-    year = int(xTime[0:4])
-    if firstYear is None:
-      firstYear = year
-      offsetYear = (firstYear == 0)
-      if(offsetYear):
-        firstYear += 1
-      firstTime = time.mktime(time.strptime('%04i'%firstYear, '%Y'))
-    
-    if(offsetYear):
-      xTime = '%04i'%(year+1)+xTime[4:]
 
-    timeStruct = time.strptime(xTime, '%Y-%m-%d_%H:%M:%S')
-    localTime[tIndex] = (time.mktime(timeStruct)-firstTime)/sPerUnit
-    #print localTime[tIndex]
   times = numpy.append(times,localTime)
   
+if(times[-1] < 1/24.):
+  timeUnit = 's'
+  times *= 3600.*24.
+elif(times[-1] < 1.):
+  timeUnit = 'hrs'
+  times *= 24.
+elif(times[-1] < 365):
+  timeUnit = 'days'
+else:
+  timeUnit = 'yrs'
+  times /= 365
+
 for varIndex in range(len(varNames)):
   plt.figure(varIndex+1)
   plt.plot(times,fields[varIndex])

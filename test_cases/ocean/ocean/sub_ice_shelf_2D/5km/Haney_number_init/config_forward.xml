@@ -15,6 +15,9 @@
 	<streams name="streams.ocean" keep="immutable" mode="forward">
 		<template file="template_forward.xml" path_base="script_resolution_dir"/>
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<stream name="globalStatsOutput">
+			<attribute name="output_interval">0000_00:00:01</attribute>
+		</stream>
 		<stream name="forcing_data">
 			<attribute name="filename_template">forcing_data.nc</attribute>
 			<attribute name="input_interval">initial_only</attribute>
