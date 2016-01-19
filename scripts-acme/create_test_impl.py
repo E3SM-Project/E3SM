@@ -541,6 +541,8 @@ class CreateTest(object):
     ###########################################################################
         """
         Main API for this class.
+
+        Return True if all tests passed.
         """
         start_time = time.time()
 
