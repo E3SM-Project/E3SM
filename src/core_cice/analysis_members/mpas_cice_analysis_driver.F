@@ -382,7 +382,8 @@ contains
 
       character (len=StrKIND) :: configName, alarmName, streamName, timerName
       logical, pointer :: config_AM_enable
-      character (len=StrKIND), pointer :: config_AM_compute_interval, config_AM_output_stream, config_start_time
+      type(MPAS_pool_type), pointer :: diagnosticsPool
+      character (len=StrKIND), pointer :: config_AM_compute_interval, config_AM_output_stream, simulationStartTime
       integer :: nameLength
       type (mpas_pool_iterator_type) :: poolItr
 
@@ -446,8 +447,9 @@ contains
                   call MPAS_stream_mgr_get_property(domain % streamManager, config_AM_output_stream, MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
                   call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
                else
-                  call mpas_pool_get_config(domain % configs, 'config_start_time', config_start_time)
-                  call mpas_set_time(referenceTime, dateTimeString=config_start_time, ierr=err_tmp)
+                  call MPAS_pool_get_subpool(domain % blocklist % structs, "diagnostics", diagnosticsPool)
+                  call MPAS_pool_get_array(diagnosticsPool, "simulationStartTime", simulationStartTime)
+                  call mpas_set_time(referenceTime, dateTimeString=simulationStartTime, ierr=err_tmp)
                end if
                call mpas_add_clock_alarm(domain % clock, alarmName, referenceTime, alarmTimeStep, ierr=err_tmp)
                call mpas_reset_clock_alarm(domain % clock, alarmName, ierr=err_tmp)
