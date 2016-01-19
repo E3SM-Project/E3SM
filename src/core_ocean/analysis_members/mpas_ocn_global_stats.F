@@ -236,7 +236,8 @@ contains
       integer, parameter :: kMaxVariables = 1024 ! this must be a little more than double the number of variables to be reduced
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, maxLevelVertexBot
 
-      character (len=StrKIND), pointer :: xtime
+      character (len=StrKIND), pointer :: xtime, simulationStartTime
+      type (MPAS_Time_type) :: xtime_timeType, simulationStartTime_timeType
 
       real (kind=RKIND) :: volumeCellGlobal, volumeEdgeGlobal, CFLNumberGlobal, localCFL, localSum, areaCellGlobal, &
                            areaEdgeGlobal, areaTriangleGlobal, time_days
@@ -249,6 +250,7 @@ contains
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
+      real (kind=RKIND), pointer :: daysSinceStartOfSim
       real (kind=RKIND), dimension(:), pointer :: minGlobalStats,maxGlobalStats,sumGlobalStats, averages, rms, verticalSumMins, &
                                                   verticalSumMaxes
       real (kind=RKIND), dimension(kMaxVariables) :: sumSquares, reductions, sums, mins, maxes
@@ -329,8 +331,9 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'tangentialVelocity', tangentialVelocity)
          call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
          call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
-
          call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
+         call mpas_pool_get_array(diagnosticsPool, 'simulationStartTime',simulationStartTime)
+         call mpas_pool_get_array(diagnosticsPool, 'daysSinceStartOfSim',daysSinceStartOfSim)
 
          allocate(areaEdge(1:nEdgesSolve))
          areaEdge = dcEdge(1:nEdgesSolve)*dvEdge(1:nEdgesSolve)
@@ -672,13 +675,6 @@ contains
       ! compute the averages (slightly different depending on how the sum was computed)
       variableIndex = 0
 
-      ! time, in days, using a 360 day calendar
-      read (xtime, '(i4,10(a1,i2))') timeYYYY, timeChar, timeMM, timeChar, timeDD, timeChar, timeH, timeChar, timeM, timeChar, &
-                                     timeS
-      ! subtract 31.0 because calendar starts on 00-01-01
-      time_days = timeYYYY*360.0_RKIND + timeMM*30.0_RKIND + timeDD + (timeH + (timeM + timeS/60.0_RKIND)/60.0_RKIND)/24.0_RKIND &
-                - 31.0_RKIND
-
       ! layerThickness
       variableIndex = variableIndex + 1
       averages(variableIndex) = sums(variableIndex)/(areaCellGlobal*nVertLevels)
@@ -783,19 +779,19 @@ contains
          if (dminfo % my_proc_id == IO_NODE) then
             fileID = getFreeUnit()
             open(fileID,file=trim(config_AM_globalStats_directory)//'/stats_min.txt',STATUS='UNKNOWN', POSITION='append')
-            write (fileID,'(100es24.14)') time_days, mins(1:nVariables)
+            write (fileID,'(100es24.14)') daysSinceStartOfSim, mins(1:nVariables)
             close (fileID)
             open(fileID,file=trim(config_AM_globalStats_directory)//'/stats_max.txt',STATUS='UNKNOWN', POSITION='append')
-            write (fileID,'(100es24.14)') time_days, maxes(1:nVariables)
+            write (fileID,'(100es24.14)') daysSinceStartOfSim, maxes(1:nVariables)
             close (fileID)
             open(fileID,file=trim(config_AM_globalStats_directory)//'/stats_sum.txt',STATUS='UNKNOWN', POSITION='append')
-            write (fileID,'(100es24.14)') time_days, sums(1:nVariables)
+            write (fileID,'(100es24.14)') daysSinceStartOfSim, sums(1:nVariables)
             close (fileID)
             open(fileID,file=trim(config_AM_globalStats_directory)//'/stats_rms.txt',STATUS='UNKNOWN', POSITION='append')
-            write (fileID,'(100es24.14)') time_days, rms(1:nVariables)
+            write (fileID,'(100es24.14)') daysSinceStartOfSim, rms(1:nVariables)
             close (fileID)
             open(fileID,file=trim(config_AM_globalStats_directory)//'/stats_avg.txt',STATUS='UNKNOWN', POSITION='append')
-            write (fileID,'(100es24.14)') time_days, averages(1:nVariables)
+            write (fileID,'(100es24.14)') daysSinceStartOfSim, averages(1:nVariables)
             close (fileID)
             open(fileID,file=trim(config_AM_globalStats_directory)//'/stats_time.txt',STATUS='UNKNOWN', POSITION='append')
             write (fileID,'(a)') trim(xtime)

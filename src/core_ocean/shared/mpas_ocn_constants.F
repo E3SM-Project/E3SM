@@ -64,6 +64,7 @@ module ocn_constants
       T0_Kelvin        ,&! zero point for Celsius
       mpercm           ,&! meters per m
       cmperm           ,&! m per meter
+      days_per_second  ,&! days per second
       salt_to_ppt      ,&! salt (kg/kg) to ppt
       ppt_to_salt      ,&! salt ppt to kg/kg
       mass_to_Sv       ,&! mass flux to Sverdrups
@@ -135,6 +136,7 @@ contains
        !
        !-----------------------------------------------------------------------
 
+       days_per_second = 1._RKIND/86400._RKIND     ! days per second
        salt_to_ppt   = 1000._RKIND        ! salt (kg/kg) to ppt
        ppt_to_salt   = 1.e-3_RKIND        ! salt ppt to kg/kg
        mass_to_Sv    = 1.0e-12_RKIND      ! mass flux to Sverdrups

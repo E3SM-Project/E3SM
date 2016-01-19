@@ -14,12 +14,14 @@
 			<attribute name="runtime_format">single_file</attribute>
 			<attribute name="name">globalStatsOutput</attribute>
 			<attribute name="filename_interval">01-00-00_00:00:00</attribute>
-			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="clobber_mode">append</attribute>
 			<attribute name="output_interval">0000_01:00:00</attribute>
+			<attribute name="reference_time">0000-01-01_00:00:00</attribute>
 			<attribute name="filename_template">analysis_members/globalStats.$Y-$M-$D_$h.$m.$s.nc</attribute>
 			<attribute name="packages">globalStatsAMPKG</attribute>
 			<attribute name="type">output</attribute>
 			<add_contents>
+				<member name="daysSinceStartOfSim" type="var"/>
 				<member name="xtime" type="var"/>
 				<member name="minGlobalStats" type="var_array"/>
 				<member name="maxGlobalStats" type="var_array"/>

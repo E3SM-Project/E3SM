@@ -421,6 +421,7 @@
 				runtime_format="single_file">
 
 			<var name="xtime"/>
+			<var name="daysSinceStartOfSim"/>
 			<var_array name="minGlobalStats"/>
 			<var_array name="maxGlobalStats"/>
 			<var_array name="sumGlobalStats"/>
