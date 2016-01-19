@@ -153,6 +153,7 @@ Currently the following streams are supported (term definitions precede the stre
 <datamode datm_mode="CORE2_NYF"     >CORE2_NYF</datamode>
 <datamode datm_mode="CORE2_IAF"     >CORE2_IAF</datamode>
 <datamode datm_mode="WW3"           >COPYALL</datamode>
+<datamode datm_mode="NLDAS"         >CLMNCEP</datamode>
 
 <!-- =========================================  -->
 <!--- streams                                   -->
@@ -165,7 +166,8 @@ Currently the following streams are supported (term definitions precede the stre
 <streamslist datm_mode="CORE2_NYF" >CORE2_NYF.GISS,CORE2_NYF.GXGXS,CORE2_NYF.NCEP</streamslist>
 <streamslist datm_mode="CORE2_IAF" >CORE2_IAF.GCGCS.PREC,CORE2_IAF.GISS.LWDN,CORE2_IAF.GISS.SWDN,CORE2_IAF.GISS.SWUP,CORE2_IAF.NCEP.DN10,CORE2_IAF.NCEP.Q_10,CORE2_IAF.NCEP.SLP_,CORE2_IAF.NCEP.T_10,CORE2_IAF.NCEP.U_10,CORE2_IAF.NCEP.V_10,CORE2_IAF.CORE2.ArcFactor</streamslist>
 <streamslist datm_mode="CPLHIST3HrWx">CPLHIST3HrWx.Solar,CPLHIST3HrWx.Precip,CPLHIST3HrWx.nonSolarNonPrecip</streamslist>
-<streamslist datm_mode="WW3"      >WW3</streamslist>
+<streamslist datm_mode="WW3"       >WW3</streamslist>
+<streamslist datm_mode="NLDAS"     >NLDAS</streamslist>
 
 <!-- =========================================  -->
 <!--- vectors                                   -->
@@ -180,6 +182,7 @@ Currently the following streams are supported (term definitions precede the stre
 <vectors datm_mode="CORE2_NYF"     >u:v</vectors>
 <vectors datm_mode="CORE2_IAF"     >u:v</vectors>
 <vectors datm_mode="WW3"           >u:v</vectors>
+<vectors datm_mode="NLDAS"         >null</vectors>
 
 <!-- =========================================  -->
 <!--- dtlimit (default)                         -->
@@ -1627,6 +1630,48 @@ ncep.v_10.T62.2009.20120412.nc
   uWind    u
   vWind    v
   airSeaTempDiff tbot
+</strm_datvar>
+
+<!-- == NLDAS ==== -->
+
+<strm_year_start stream="NLDAS">1980</strm_year_start>
+<strm_year_end   stream="NLDAS">1980</strm_year_end>
+<strm_year_align stream="NLDAS">1980</strm_year_align>
+<strm_domdir     stream="NLDAS">$DIN_LOC_ROOT/share/domains/domain.clm</strm_domdir>
+<strm_domfil     stream="NLDAS">domain.lnd.nldas2_0224x0464_c110415.nc</strm_domfil>
+<strm_datdir     stream="NLDAS">$DIN_LOC_ROOT/atm/datm7/NLDAS</strm_datdir>
+<strm_datfil     stream="NLDAS">
+  clmforc.nldas.1980-01.nc
+  clmforc.nldas.1980-02.nc
+  clmforc.nldas.1980-03.nc
+  clmforc.nldas.1980-04.nc
+  clmforc.nldas.1980-05.nc
+  clmforc.nldas.1980-06.nc
+  clmforc.nldas.1980-07.nc
+  clmforc.nldas.1980-08.nc
+  clmforc.nldas.1980-09.nc
+  clmforc.nldas.1980-10.nc
+  clmforc.nldas.1980-11.nc
+  clmforc.nldas.1980-12.nc
+</strm_datfil>
+<strm_offset     stream="NLDAS">0</strm_offset>
+<strm_tintalgo   stream="NLDAS">linear</strm_tintalgo>
+<strm_mapalgo    stream="NLDAS">bilinear</strm_mapalgo>
+<strm_domvar     stream="NLDAS">
+  time    time
+  xc      lon
+  yc      lat
+  area    area
+  mask    mask
+</strm_domvar>
+<strm_datvar     stream="NLDAS">
+  TBOT     tbot
+  WIND     wind
+  QBOT     shum
+  PSRF     pbot
+  FLDS     lwdn
+  PRECTmms precn
+  FSDS     swdn
 </strm_datvar>
 
 

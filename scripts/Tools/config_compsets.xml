@@ -18,7 +18,7 @@ Where
    LND  = [CLM40, CLM45, CLM50, DLND, SLND, XLND]
    ICE  = [CICE, DICE, SICE, SICE, MPASCICE]
    OCN  = [POP, DOCN, SOCN, XOCN,AQUAP,MPASO]
-   ROF  = [RTM, DROF, SROF, XROF]
+   ROF  = [RTM, MOSART, DROF, SROF, XROF]
    GLC  = [CISM1, CISM2S, CISM2P, MPASLISIA, MPASLIALB, SGLC, XGLC]
    WAV  = [WW3, DWAV, SWAV, XWAV]
    BGC  = optional BGC scenario 
@@ -99,7 +99,9 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="B_1850"                alias="B1850"         >1850_CAM4_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="B_1850_CAM5"           alias="B1850C5"       >1850_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="B_1850_C5UNI"        alias="B1850C5UNI">1850_CAM5%UNI_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="BM_1850_CAM5"          alias="BM1850C5"      >1850_CAM5_CLM40%SP_CICE_POP2_MOSART_SGLC_SWAV</COMPSET>
 <COMPSET sname="B_1850_CN"             alias="B1850CN"       >1850_CAM4_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="BM_1850_CN"            alias="BM1850CN"      >1850_CAM4_CLM40%CN_CICE_POP2_MOSART_SGLC_SWAV</COMPSET>
 <COMPSET sname="B_1850_CAM5_CN"        alias="B1850C5CN"     >1850_CAM5_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="B_1850_CAM5_CLM45BGC"  alias="B1850C5L45BGC" >1850_CAM5_CLM45%BGC_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="B_1850_WACCM"          alias="B1850W"        >1850_CAM4%WCCM_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
@@ -229,6 +231,8 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="F_2000_CAM5_CLUBB"          alias="FC5CLUBB"        >2000_CAM5%CLB_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_MG2"          alias="FC5MG2"            >2000_CAM5%MG2_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_CLBMG2"          alias="FC5CLBMG2"      >2000_CAM5%CLBMG2_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="F_2000_CAM5_CLBMG2LINMAM4RESUSBC"       alias="FC5CLBMG2LINMAM4RESUSBC" >2000_CAM5%CLBMG2LINMAM4RESUS_CLM45%BC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="F_2000_CAM5_CLBMG2LINMAM4RESUSMOM"      alias="FC5CLBMG2LINMAM4RESUSMOM">2000_CAM5%CLBMG2LINMAM4RESUSMOM_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_CLBMG2MAM4"          alias="FC5CLBMG2MAM4"    >2000_CAM5%CLBMG2MAM4_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_CLBMG2MAM4RESUS"          alias="FC5CLBMG2MAM4RESUS"    >2000_CAM5%CLBMG2MAM4RESUS_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_CLBMG2MAM4RESUSCOSP"          alias="FC5CLBMG2MAM4RESUSCOSP"    >2000_CAM5%CLBMG2MAM4RESUSCOSP_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
@@ -300,6 +304,7 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="I_1850_CLM45  "       alias="I1850CLM45"   >1850_DATM%QIA_CLM45%SP_SICE_SOCN_RTM_SGLC_SWAV</COMPSET>	  
 <COMPSET sname="I_2000"               alias="I"            >2000_DATM%QIA_CLM40%SP_SICE_SOCN_RTM_SGLC_SWAV</COMPSET>	  
 <COMPSET sname="I_2000_CLM45"         alias="ICLM45"       >2000_DATM%QIA_CLM45%SP_SICE_SOCN_RTM_SGLC_SWAV</COMPSET>	  
+<COMPSET sname="IM_2000_CLM45"        alias="IMCLM45"      >2000_DATM%QIA_CLM45%SP_SICE_SOCN_MOSART_SGLC_SWAV</COMPSET>	  
 <COMPSET sname="I_1948-2004"          alias="I4804"        >4804_DATM%QIA_CLM40%SP_SICE_SOCN_RTM_SGLC_SWAV</COMPSET>	  
 <COMPSET sname="I_1948-2004_CLM45"    alias="I4804CLM45"   >4804_DATM%QIA_CLM45%SP_SICE_SOCN_RTM_SGLC_SWAV</COMPSET>	  
 <COMPSET sname="I_1850-2000"          alias="I20TR"        >20TR_DATM%QIA_CLM40%SP_SICE_SOCN_RTM_SGLC_SWAV</COMPSET> 
@@ -307,6 +312,8 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="I_1850-2000_CLM45CN"  alias="I20TRCLM45CN" >20TR_DATM%QIA_CLM45%CN_SICE_SOCN_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="I_1850-2000_CLM45CBCN" alias="I20TRCLM45CBCN" >20TR_SATM%QIA_CLM45%CN_SICE_SOCN_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="I_2000_CN"            alias="ICN"          >2000_DATM%QIA_CLM40%CN_SICE_SOCN_RTM_SGLC_SWAV</COMPSET>	  
+<COMPSET sname="IM_2000_CN"           alias="IMCN"         >2000_DATM%QIA_CLM40%CN_SICE_SOCN_MOSART_SGLC_SWAV</COMPSET>
+<COMPSET sname="IM_2000_CN_NLDAS"     alias="IMCNNLDAS"    >2000_DATM%NLDAS_CLM40%CN_SICE_SOCN_MOSART_SGLC_SWAV</COMPSET>
 <COMPSET sname="I_1850_CN"            alias="I1850CN"      >1850_DATM%QIA_CLM40%CN_SICE_SOCN_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="I_1850_CLM45_CN"      alias="I1850CLM45CN" >1850_DATM%QIA_CLM45%CN_SICE_SOCN_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="I_1850_CLM45CB_CN"    alias="I1850CLM45CBCN" >1850_SATM%QIA_CLM45%CN_SICE_SOCN_RTM_SGLC_SWAV</COMPSET>
@@ -465,6 +472,7 @@ value of RUN_STARTDATE will be date2.
 <COMP_LND compset="_XLND">xlnd</COMP_LND> 
 
 <COMP_ROF compset="_RTM" >rtm </COMP_ROF>
+<COMP_ROF compset="_MOSART" >mosart </COMP_ROF>
 <COMP_ROF compset="_DROF">drof</COMP_ROF> 
 <COMP_ROF compset="_SROF">srof</COMP_ROF> 
 <COMP_ROF compset="_XROF">xrof</COMP_ROF> 
@@ -503,6 +511,7 @@ value of RUN_STARTDATE will be date2.
 <desc compset="_XLND">XLND:</desc>
 
 <desc compset="_RTM" >RTM: </desc>
+<desc compset="_MOSART" >MOSART: </desc>
 <desc compset="_DROF">DROF:</desc>
 <desc compset="_SROF">SROF:</desc>
 <desc compset="_XROF">Xrof:</desc>
@@ -601,6 +610,8 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 <CAM_CONFIG_OPTS compset="_CAM5%CLB"      >-clubb_sgs</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM5%MG2"      >-microphys mg2</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM5%CLBMG2"   >-clubb_sgs -microphys mg2</CAM_CONFIG_OPTS>
+<CAM_CONFIG_OPTS compset="_CAM5%CLBMG2LINMAM4RESUS" >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus -rain_evap_to_coarse_aero</CAM_CONFIG_OPTS>
+<CAM_CONFIG_OPTS compset="_CAM5%CLBMG2LINMAM4RESUSMOM" >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom -rain_evap_to_coarse_aero</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM5%CLBMG2MAM4"   >-clubb_sgs -microphys mg2 -chem trop_mam4</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM5%CLBMG2MAM4RESUS"   >-clubb_sgs -microphys mg2 -chem trop_mam4 -rain_evap_to_coarse_aero</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM5%CLBMG2MAM4RESUSCOSP"   >-clubb_sgs -microphys mg2 -chem trop_mam4 -rain_evap_to_coarse_aero -cosp</CAM_CONFIG_OPTS>
@@ -673,10 +684,8 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 <CAM_NML_USE_CASE compset="2000_CAM5%MOZM"   >2000_cam5_trop_moz_mam3</CAM_NML_USE_CASE> 
 <CAM_NML_USE_CASE compset="1850_CAM5%PM"     >1850_cam5_pm</CAM_NML_USE_CASE> 
 <CAM_NML_USE_CASE compset="2000_CAM5.*PLMOD" >2000_cam5_plmod</CAM_NML_USE_CASE>
-<CAM_NML_USE_CASE compset="2000_CAM5%CLBMG2MAM4RESUS">2000_cam5_plmod_plus_resus</CAM_NML_USE_CASE>
-<CAM_NML_USE_CASE compset="2000_CAM5%CLBMG2MAM4RESUSCOSP">2000_cam5_plmod_plus_resus</CAM_NML_USE_CASE>
-<CAM_NML_USE_CASE compset="2000_CAM5%CLBMG2MAM4RESUSBC">2000_cam5_plmod_plus_resus_bc</CAM_NML_USE_CASE>
-<CAM_NML_USE_CASE compset="2000_CAM5%CLBMG2MAM4RESUSCOSPBC">2000_cam5_plmod_plus_resus_bc</CAM_NML_USE_CASE>
+<CAM_NML_USE_CASE compset="2000_CAM5%CLBMG2MAM4RESUS*">2000_cam5_plmod_plus_resus</CAM_NML_USE_CASE>
+<CAM_NML_USE_CASE compset="2000_CAM5%CLBMG2LINMAM4RESUS*">2000_cam5_linoz_plmod_plus_resus</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="2000_CAM5.*ATMMOD">2000_cam5_atmmod</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="2000_CAM5%COSP"   >2000_cam5_cosp</CAM_NML_USE_CASE>
 <CAM_NML_USE_CASE compset="2000_CAM4%WCMX"   >waccmx_2000_cam4</CAM_NML_USE_CASE>
@@ -740,6 +749,8 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 <desc compset="_CAM5%CLB"    >CAM CLUBB:</desc>
 <desc compset="_CAM5%MG2"    >CAM MG2:</desc>
 <desc compset="_CAM5%CLBMG2"    >CAM CLUBB MG2:</desc>
+<desc compset="_CAM5%CLBMG2LINMAM4RESUS"    >CAM CLUBB MG2 Linoz2 MAM4 resuspension:</desc>
+<desc compset="_CAM5%CLBMG2LINMAM4RESUSMOM" >CAM CLUBB MG2 Linoz2 MAM4 resuspension MOM:</desc>
 <desc compset="_CAM5%CLBMG2MAM4"    >CAM CLUBB MG2 MAM4:</desc>
 <desc compset="_CAM5%CLBMG2MAM4RESUS"    >CAM CLUBB MG2 MAM4 resuspension:</desc>
 <desc compset="_CAM5%CLBMG2MAM4RESUSCOSP"    >CAM CLUBB MG2 MAM4 resuspension COSP:</desc>
@@ -1080,6 +1091,32 @@ RTM       => default RTM model
 RTM%FLOOD => RTM model with flood
 </help>
 
+<!-- ================================================================================== -->
+<!-- SECTION: component mosart -->     
+<!-- ================================================================================== -->
+
+<MOSART_MODE compset="_CAM.*_DOCN.*_MOSART" >ACTIVE</MOSART_MODE>
+<MOSART_MODE compset="_MOSART" grid="r%null">NULL</MOSART_MODE>
+<MOSART_FLOOD_MODE compset="_MOSART%FLOOD">ACTIVE</MOSART_FLOOD_MODE>
+
+<!-- ======================================= -->
+<!--          USER_DEFINED section           -->
+<!-- Add new values for                      -->
+<!--    MOSART_MODE                             -->
+<!--    MOSART_NAMELIST_OPTS                    -->
+<!-- here                                    -->
+<!-- ======================================= -->
+
+<desc compset="_MOSART" >MOSART:</desc>
+<desc compset="_MOSART%FLOOD">MOSART model with flood:</desc>
+
+<help>
+=========================================
+MOSART naming conventions in compset name
+=========================================
+MOSART       => default MOSART model
+MOSART%FLOOD => MOSART model with flood
+</help>
 
 <!-- ================================================================================== -->
 <!-- SECTION: component cism -->     
@@ -1150,6 +1187,7 @@ MPASLIALBFO => external Albany First-order solver
 <DATM_MODE compset="_DATM%NYF"  >CORE2_NYF</DATM_MODE>
 <DATM_MODE compset="_DATM%IAF"  >CORE2_IAF</DATM_MODE>
 <DATM_MODE compset="_DATM%QIA"  >CLM_QIAN </DATM_MODE>
+<DATM_MODE compset="_DATM%NLDAS">NLDAS </DATM_MODE>
 <DATM_MODE compset="_DATM%CRU"  >CLMCRUNCEP</DATM_MODE>
 <DATM_MODE compset="_DATM%1PT"  >CLM1PT</DATM_MODE>
 <DATM_MODE compset="_DATM%S1850">CPLHIST3HrWx</DATM_MODE> 
@@ -1184,6 +1222,10 @@ MPASLIALBFO => external Albany First-order solver
 <DATM_CLMNCEP_YR_ALIGN compset="1850.*_DATM%QIA">1   </DATM_CLMNCEP_YR_ALIGN>
 <DATM_CLMNCEP_YR_START compset="1850.*_DATM%QIA">1948</DATM_CLMNCEP_YR_START>
 <DATM_CLMNCEP_YR_END   compset="1850.*_DATM%QIA">1972</DATM_CLMNCEP_YR_END> 
+
+<DATM_CLMNCEP_YR_ALIGN compset="2000.*_DATM%NLDAS">1   </DATM_CLMNCEP_YR_ALIGN>
+<DATM_CLMNCEP_YR_START compset="2000.*_DATM%NLDAS">1980</DATM_CLMNCEP_YR_START>
+<DATM_CLMNCEP_YR_END   compset="2000.*_DATM%NLDAS">1980</DATM_CLMNCEP_YR_END> 
 
 <DATM_CLMNCEP_YR_ALIGN compset="1850.*_DATM%CRU">1   </DATM_CLMNCEP_YR_ALIGN>
 <DATM_CLMNCEP_YR_START compset="1850.*_DATM%CRU">1901</DATM_CLMNCEP_YR_START>
@@ -1257,6 +1299,7 @@ MPASLIALBFO => external Albany First-order solver
 
 <desc compset="^1850_DATM%QIA"     >QIAN atm input data for 1948-1972:</desc>
 <desc compset="^2000_DATM%QIA"     >QIAN atm input data for 1972-2004:</desc>
+<desc compset="^2000_DATM%NLDAS"   >NLDAS atm input data for 1980:</desc>
 <desc compset="^2003_DATM%QIA"     >QIAN atm input data for 2002-2003:</desc>
 <desc compset="^20TR_DATM%QIA"     >QIAN atm input data for 1948-1972:</desc>
 <desc compset="^4804_DATM%QIA"     >QIAN atm input data for 1948-2004:</desc>
@@ -1279,6 +1322,7 @@ MPASLIALBFO => external Albany First-order solver
 DATM naming conventions in compset name
 =========================================
 DATM%QIA   => QIAN atm input data (1948-1972)
+DATM%NLDAS => NLDAS atm input data (1980)
 DATM%CRU   => CRUNCEP atm input data for (1901-2010)
 DATM%S1850 => CPL history atm input data
 DATM%1PT   => single point tower site atm input data
@@ -2044,6 +2088,7 @@ DOCN%COPY => docn copy mode
 <CCSM_CCOST compset="_DATM.*_SLND.*_CICE.*_POP2_DROF.*_SGLC_SWAV"     >-1</CCSM_CCOST> <!-- G,H --> 
 <CCSM_CCOST compset="_DATM.*_SLND.*_CICE.*_POP2%ECO_DROF.*_SGLC_SWAV" > 1</CCSM_CCOST> <!-- GECO --> 
 <CCSM_CCOST compset="_DATM.*_CLM.*_SICE_SOCN_RTM.*_SGLC_SWAV"         >-2</CCSM_CCOST> <!-- I --> 
+<CCSM_CCOST compset="_DATM.*_CLM.*_SICE_SOCN_MOSART.*_SGLC_SWAV"      >-2</CCSM_CCOST> <!-- IM --> 
 <CCSM_CCOST compset="_SATM_DLND.*_SICE_SOCN_SROF_CISM_SWAV"           >-5</CCSM_CCOST> <!-- TG -->
 <CCSM_CCOST compset="_SATM_DLND.*_SICE_SOCN_RTM.*_SGLC_SWAV"          >-5</CCSM_CCOST> <!-- U -->
 <CCSM_CCOST compset="_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV"             >-6</CCSM_CCOST> <!-- U -->

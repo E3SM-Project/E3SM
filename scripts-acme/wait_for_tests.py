@@ -1,4 +1,4 @@
-import os, doctest, time, threading, Queue, socket, signal, distutils.spawn, shutil, glob
+import os, time, threading, Queue, socket, signal, distutils.spawn, shutil, glob
 
 import xml.etree.ElementTree as xmlet
 
@@ -58,7 +58,7 @@ def get_test_output(test_path):
         return ""
 
 ###############################################################################
-def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname):
+def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, start_time, hostname):
 ###############################################################################
     git_commit = acme_util.get_current_commit(repo=acme_util.get_cime_root())
 
@@ -71,15 +71,15 @@ def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time
     site_elem.attrib["Name"] = hostname
     site_elem.attrib["OSName"] = "Linux"
     site_elem.attrib["Hostname"] = hostname
-    site_elem.attrib["OSVersion"] = "Commit: %s" % git_commit
+    site_elem.attrib["OSVersion"] = "Commit: %s, Total testing time: %d seconds" % (git_commit, time.time() - start_time)
 
     testing_elem = xmlet.SubElement(site_elem, "Testing")
 
     start_date_time_elem = xmlet.SubElement(testing_elem, "StartDateTime")
-    start_date_time_elem.text = time.ctime(current_time)
+    start_date_time_elem.text = time.ctime(start_time)
 
     start_test_time_elem = xmlet.SubElement(testing_elem, "StartTestTime")
-    start_test_time_elem.text = str(int(current_time))
+    start_test_time_elem.text = str(int(start_time))
 
     test_list_elem = xmlet.SubElement(testing_elem, "TestList")
     for test_name in sorted(results):
@@ -158,17 +158,18 @@ def create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_ti
             if (test_status not in [TEST_PASS_STATUS, NAMELIST_FAIL_STATUS]):
                 full_results = parse_test_status_file(test_path)[0]
 
-                if (full_results["BUILD"] != TEST_PASS_STATUS or
-                    full_results["RUN"]   != TEST_PASS_STATUS):
+                if ("BUILD" in full_results): # If did not even make it to build phase, no useful logs
+                    if ( full_results["BUILD"] != TEST_PASS_STATUS or
+                         ("RUN" in full_results and full_results["RUN"] != TEST_PASS_STATUS) ):
 
-                    param = "EXEROOT" if full_results["BUILD"] != TEST_PASS_STATUS else "RUNDIR"
-                    src_dir = acme_util.run_cmd("./xmlquery %s -value" % param, from_dir=os.path.dirname(test_path))
-                    log_dst_dir = os.path.join(log_dir, "%s_%s_logs" % (test_name, param))
-                    os.makedirs(log_dst_dir)
-                    for log_file in glob.glob(os.path.join(src_dir, "*log*")):
-                        shutil.copy(log_file, log_dst_dir)
+                        param = "EXEROOT" if full_results["BUILD"] != TEST_PASS_STATUS else "RUNDIR"
+                        src_dir = acme_util.run_cmd("./xmlquery %s -value" % param, from_dir=os.path.dirname(test_path))
+                        log_dst_dir = os.path.join(log_dir, "%s_%s_logs" % (test_name, param))
+                        os.makedirs(log_dst_dir)
+                        for log_file in glob.glob(os.path.join(src_dir, "*log*")):
+                            shutil.copy(log_file, log_dst_dir)
 
-                    need_to_upload = True
+                        need_to_upload = True
 
         if (need_to_upload):
 
@@ -201,20 +202,18 @@ r"""<?xml version="1.0" encoding="UTF-8"?>
             shutil.rmtree(log_dir)
 
 ###############################################################################
-def create_cdash_xml(results, cdash_build_name, cdash_project, cdash_build_group):
+def create_cdash_xml(results, cdash_build_name, cdash_project, cdash_build_group, start_time):
 ###############################################################################
 
     #
     # Create dart config file
     #
 
-    # Pretending current time is our start time gives us the maximum window (24 hours)
-    # in which these test results will be displayed on the Cdash front-page
-    # dashboard. Cdash removes things from the dashboard after 24 hours from
-    # the NightlyStartTime.
-    current_time = time.time()
+    if (start_time is None):
+        warning("No valid start_time provided, using current time instead")
+        start_time = time.time()
 
-    utc_time_tuple = time.gmtime(current_time)
+    utc_time_tuple = time.gmtime(start_time)
     cdash_timestamp = time.strftime("%H:%M:%S", utc_time_tuple)
 
     hostname = acme_util.probe_machine_name()
@@ -261,7 +260,7 @@ NightlyStartTime: %s UTC
     with open("Testing/TAG", "w") as tag_fd:
         tag_fd.write("%s\n%s\n" % (utc_time, cdash_build_group))
 
-    create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname)
+    create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, start_time, hostname)
 
     create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_time, hostname)
 
@@ -437,7 +436,8 @@ def wait_for_tests(test_paths,
                    ignore_namelists=False,
                    cdash_build_name=None,
                    cdash_project=ACME_MAIN_CDASH,
-                   cdash_build_group=CDASH_DEFAULT_BUILD_GROUP):
+                   cdash_build_group=CDASH_DEFAULT_BUILD_GROUP,
+                   start_time=None):
 ###############################################################################
     # Set up signal handling, we want to print results before the program
     # is terminated
@@ -453,6 +453,6 @@ def wait_for_tests(test_paths,
         all_pass &= test_status == TEST_PASS_STATUS
 
     if (cdash_build_name):
-        create_cdash_xml(test_results, cdash_build_name, cdash_project, cdash_build_group)
+        create_cdash_xml(test_results, cdash_build_name, cdash_project, cdash_build_group, start_time)
 
     return all_pass
