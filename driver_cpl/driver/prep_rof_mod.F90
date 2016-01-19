@@ -250,8 +250,21 @@ contains
     integer, save :: index_l2x_Flrl_rofi
     integer, save :: index_x2r_Flrl_rofl
     integer, save :: index_x2r_Flrl_rofi
+    integer, save :: index_l2x_Flrl_rofl_16O
+    integer, save :: index_l2x_Flrl_rofi_16O
+    integer, save :: index_x2r_Flrl_rofl_16O
+    integer, save :: index_x2r_Flrl_rofi_16O
+    integer, save :: index_l2x_Flrl_rofl_18O
+    integer, save :: index_l2x_Flrl_rofi_18O
+    integer, save :: index_x2r_Flrl_rofl_18O
+    integer, save :: index_x2r_Flrl_rofi_18O
+    integer, save :: index_l2x_Flrl_rofl_HDO
+    integer, save :: index_l2x_Flrl_rofi_HDO
+    integer, save :: index_x2r_Flrl_rofl_HDO
+    integer, save :: index_x2r_Flrl_rofi_HDO
     integer, save :: index_lfrac
     logical, save :: first_time = .true.
+    logical, save :: flds_wiso_rof = .false.
     real(r8)      :: lfrac
     integer       :: nflds,lsize
     logical       :: iamroot
@@ -277,18 +290,58 @@ contains
        index_l2x_Flrl_rofi = mct_aVect_indexRA(l2x_r,'Flrl_rofi' )
        index_x2r_Flrl_rofl = mct_aVect_indexRA(x2r_r,'Flrl_rofl' )
        index_x2r_Flrl_rofi = mct_aVect_indexRA(x2r_r,'Flrl_rofi' )
+
+       index_l2x_Flrl_rofl_16O = mct_aVect_indexRA(l2x_r,'Flrl_rofl_16O', perrWith='quiet' )
+       if ( index_l2x_Flrl_rofl_16O /= 0 ) flds_wiso_rof = .true.
+       if ( flds_wiso_rof ) then
+          index_l2x_Flrl_rofi_16O = mct_aVect_indexRA(l2x_r,'Flrl_rofi_16O' )
+          index_x2r_Flrl_rofl_16O = mct_aVect_indexRA(x2r_r,'Flrl_rofl_16O' )
+          index_x2r_Flrl_rofi_16O = mct_aVect_indexRA(x2r_r,'Flrl_rofi_16O' )
+
+          index_l2x_Flrl_rofl_18O = mct_aVect_indexRA(l2x_r,'Flrl_rofl_18O' )
+          index_l2x_Flrl_rofi_18O = mct_aVect_indexRA(l2x_r,'Flrl_rofi_18O' )
+          index_x2r_Flrl_rofl_18O = mct_aVect_indexRA(x2r_r,'Flrl_rofl_18O' )
+          index_x2r_Flrl_rofi_18O = mct_aVect_indexRA(x2r_r,'Flrl_rofi_18O' )
+
+          index_l2x_Flrl_rofl_HDO = mct_aVect_indexRA(l2x_r,'Flrl_rofl_HDO' )
+          index_l2x_Flrl_rofi_HDO = mct_aVect_indexRA(l2x_r,'Flrl_rofi_HDO' )
+          index_x2r_Flrl_rofl_HDO = mct_aVect_indexRA(x2r_r,'Flrl_rofl_HDO' )
+          index_x2r_Flrl_rofi_HDO = mct_aVect_indexRA(x2r_r,'Flrl_rofi_HDO' )
+       end if
        index_lfrac = mct_aVect_indexRA(fractions_r,"lfrac")
 
        mrgstr(index_x2r_Flrl_rofl) = trim(mrgstr(index_x2r_Flrl_rofl))//' = '// &
           'lfrac*l2x%Flrl_rofl'
        mrgstr(index_x2r_Flrl_rofi) = trim(mrgstr(index_x2r_Flrl_rofi))//' = '// &
           'lfrac*l2x%Flrl_rofi'
+       if ( flds_wiso_rof ) then
+          mrgstr(index_x2r_Flrl_rofl_16O) = trim(mrgstr(index_x2r_Flrl_rofl_16O))//' = '// &
+             'lfrac*l2x%Flrl_rofl_16O'
+          mrgstr(index_x2r_Flrl_rofi_16O) = trim(mrgstr(index_x2r_Flrl_rofi_16O))//' = '// &
+             'lfrac*l2x%Flrl_rofi_16O'
+          mrgstr(index_x2r_Flrl_rofl_18O) = trim(mrgstr(index_x2r_Flrl_rofl_18O))//' = '// &
+             'lfrac*l2x%Flrl_rofl_18O'
+          mrgstr(index_x2r_Flrl_rofi_18O) = trim(mrgstr(index_x2r_Flrl_rofi_18O))//' = '// &
+             'lfrac*l2x%Flrl_rofi_18O'
+          mrgstr(index_x2r_Flrl_rofl_HDO) = trim(mrgstr(index_x2r_Flrl_rofl_HDO))//' = '// &
+             'lfrac*l2x%Flrl_rofl_HDO'
+          mrgstr(index_x2r_Flrl_rofi_HDO) = trim(mrgstr(index_x2r_Flrl_rofi_HDO))//' = '// &
+             'lfrac*l2x%Flrl_rofi_HDO'
+       end if
     end if
 
     do i = 1,lsize
        lfrac = fractions_r%rAttr(index_lfrac,i)
        x2r_r%rAttr(index_x2r_Flrl_rofl,i) = l2x_r%rAttr(index_l2x_Flrl_rofl,i) * lfrac
        x2r_r%rAttr(index_x2r_Flrl_rofi,i) = l2x_r%rAttr(index_l2x_Flrl_rofi,i) * lfrac
+       if ( flds_wiso_rof ) then
+          x2r_r%rAttr(index_x2r_Flrl_rofl_16O,i) = l2x_r%rAttr(index_l2x_Flrl_rofl_16O,i) * lfrac
+          x2r_r%rAttr(index_x2r_Flrl_rofi_16O,i) = l2x_r%rAttr(index_l2x_Flrl_rofi_16O,i) * lfrac
+          x2r_r%rAttr(index_x2r_Flrl_rofl_18O,i) = l2x_r%rAttr(index_l2x_Flrl_rofl_18O,i) * lfrac
+          x2r_r%rAttr(index_x2r_Flrl_rofi_18O,i) = l2x_r%rAttr(index_l2x_Flrl_rofi_18O,i) * lfrac
+          x2r_r%rAttr(index_x2r_Flrl_rofl_HDO,i) = l2x_r%rAttr(index_l2x_Flrl_rofl_HDO,i) * lfrac
+          x2r_r%rAttr(index_x2r_Flrl_rofi_HDO,i) = l2x_r%rAttr(index_l2x_Flrl_rofi_HDO,i) * lfrac
+       end if
     end do
 
     if (first_time) then

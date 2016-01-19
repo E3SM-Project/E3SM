@@ -1142,6 +1142,20 @@ This is only used for C and G compsets.
 Default is false."
 ></entry>
 
+<entry id="FLDS_WISO"
+ type="logical"
+ valid_values="TRUE,FALSE"
+ value="FALSE"
+ group="run_cesm"
+ sdesc="Turn on the passing of water isotope fields through the coupler"
+ ldesc="
+Pass water isotopes though the coupler to the components. This includes adding
+the following isoptopic fields to every coupler field that has to do with water:
+HDO, H218O, H216O
+And pass them to and from: atmosphere model, land model, river model, and sea-ice model.
+Default is FALSE"
+></entry>
+
 <entry id="CCSM_BGC" 
  type="char"
  valid_values="none,CO2A,CO2B,CO2C,CO2_DMSA"  

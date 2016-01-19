@@ -104,8 +104,10 @@ value of RUN_STARTDATE will be date2.
 
 <COMPSET sname="B_1850"                alias="B1850"         >1850_CAM4_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="B_1850_CAM5"           alias="B1850C5"       >1850_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="Bi_1850_CAM5"          alias="Bi1850C5"      >1850_CAM5%WISOall_CLM40%SP_WISO_CICE%WISO_POP2%ISO_RTM%WISO_SGLC_SWAV</COMPSET>
 <COMPSET sname="B_1850_CN"             alias="B1850CN"       >1850_CAM4_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="B_1850_CAM5_CN"        alias="B1850C5CN"     >1850_CAM5_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="Bi_1850_CAM5_CN"       alias="Bi1850C5CN"    >1850_CAM5%WISOall_CLM40%CN_WISO_CICE%WISO_POP2%ISO_RTM%WISO_SGLC_SWAV</COMPSET>
 <COMPSET sname="B_1850_CAM5_CLM45BGC"  alias="B1850C5L45BGC" >1850_CAM5_CLM45%BGC_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="B_1850_CN_CHEM"        alias="B1850CNCHM"    >1850_CAM4%FCHM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="B_1850_RAMPCO2_CN"     alias="B1850RMCN"     >1850_CAM4%RCO2_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
@@ -140,6 +142,7 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="B_1850-2000_CAM5"		alias="BHISTC5"			>HIST_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="B_1850-2000_CN"			alias="BHISTCN"			>HIST_CAM4_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="B_1850-2000_CAM5_CN"		alias="BHISTC5CN"		>HIST_CAM5_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="Bi_1850-2000_CAM5_CN"           alias="BiHISTC5CN"              >HIST_CAM5_CLM40%CN_WISO_CICE%WISO_POP2%ISO_RTM%WISO_SGLC_SWAV</COMPSET>
 <COMPSET sname="B_PIND-PDAY_CAM5_CLM45BGC"	alias="BPIPDC5L45BGC"		>HIST_CAM5_CLM45%BGC_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="B_1850-2000_CN_CHEM"		alias="BHISTCNCHM"		>HIST_CAM4%FCHM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</COMPSET>
 
@@ -196,9 +199,10 @@ value of RUN_STARTDATE will be date2.
 
 <!-- G compsets -->
 
-<COMPSET sname="G_NORMAL_YEAR"  alias="G"   >2000_DATM%NYF_SLND_CICE_POP2_DROF%NYF_SGLC_SWAV</COMPSET>
-<COMPSET sname="G_INTERANNUAL"  alias="GIAF">2000_DATM%IAF_SLND_CICE_POP2_DROF%IAF_SGLC_SWAV</COMPSET>
-<COMPSET sname="G_1850_ECOSYS"  alias="GECO">1850_DATM%NYF_SLND_CICE_POP2%ECO_DROF%NYF_SGLC_SWAV</COMPSET>
+<COMPSET sname="G_NORMAL_YEAR"    alias="G"     >2000_DATM%NYF_SLND_CICE_POP2_DROF%NYF_SGLC_SWAV</COMPSET>
+<COMPSET sname="G_INTERANNUAL"    alias="GIAF"  >2000_DATM%IAF_SLND_CICE_POP2_DROF%IAF_SGLC_SWAV</COMPSET>
+<COMPSET sname="Gi_WATERISOTOPES" alias="GiWISO">2000_DATM%IAF_SLND_CICE%WISO_POP2%ISO_DROF%IAF_SGLC_SWAV</COMPSET>
+<COMPSET sname="G_1850_ECOSYS"    alias="GECO"  >1850_DATM%NYF_SLND_CICE_POP2%ECO_DROF%NYF_SGLC_SWAV</COMPSET>
 
 <!-- E compsets -->
 
@@ -216,6 +220,7 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="F_1850_CAM5_CLM45BGC"       alias="F1850C5L45BGC"   >1850_CAM5_CLM45%BGC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000"                     alias="F"               >2000_CAM4_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5"                alias="FC5"             >2000_CAM5_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="F_2000_CAM5_CN"             alias="FC5CN"           >2000_CAM5_CLM40%CN_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_AMIP"                     alias="FAMIP"           >AMIP_CAM4_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_AMIP_CAM5"                alias="FAMIPC5"         >AMIP_CAM5_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_AMIP_CAM5_L60"            alias="FAMIPC5L60"      >AMIP_CAM5%L60_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
@@ -226,6 +231,7 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="F_AMIP_CN"                  alias="FAMIPCN"         >AMIP_CAM4_CLM40%CN_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_AMIP_CAM5_CN"             alias="FAMIPC5CN"       >AMIP_CAM5_CLM40%CN_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET> 
 <COMPSET sname="F_1850-2000_CN"             alias="FHISTCN"         >HIST_CAM4_CLM40%CN_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="Fi_1850-2000_C5_CN"         alias="FiHISTC5CN"      >HIST_CAM5%WISOall_CLM40%CN_WISO_CICE%PRES_WISO_DOCN%DOM_RTM%WISO_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_CLUBB"          alias="FC5CLUBB"        >2000_CAM5%CLB_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_1850_CAM5_PM"             alias="F1850C5PM"       >1850_CAM5%PM_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_PM"             alias="FC5PM"           >2000_CAM5%PM_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
@@ -261,6 +267,11 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="F_1975-2010_CCMI_REFC1SD_WACCM_MA"    alias="FWMC4L40CCMIR1SD">SDC1_CAM4%WCMA_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_1975-2010_CCMI_REFC1SD_WACCM_TSMLT" alias="FWTC4L40CCMIR1SD">SDC1_CAM4%WTSM_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_1975-2010_CCMI_REFC1SD_TROP_STRAT"  alias="FTSC4L40CCMIR1SD">SDC1_CAM4%SSOA_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
+
+<COMPSET sname="F_2000_iCAM5"           alias="FiC5"       >2000_CAM5%WISOall_CLM40%SP_WISO_CICE%PRES_WISO_DOCN%DOM_RTM%WISO_SGLC_SWAV</COMPSET>
+<COMPSET sname="Fi_2000_CAM5_CN"        alias="FiC5CN"     >2000_CAM5%WISOall_CLM40%CN_WISO_CICE%PRES_WISO_DOCN%DOM_RTM%WISO_SGLC_SWAV</COMPSET>
+<COMPSET sname="Fi_1850_CAM5_CN"        alias="Fi1850C5CN" >1850_CAM5%WISOall_CLM40%CN_WISO_CICE%PRES_WISO_DOCN%DOM_RTM%WISO_SGLC_SWAV</COMPSET>
+<COMPSET sname="Fid_2000_CAM5"          alias="FidC5"      >2000_CAM5%WISOh2o_CLM40%SP_WISO_CICE%PRES_WISO_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 
 <COMPSET sname="F_2000_CAM4_AQUAPLANET" alias="FC4AQUAP" >2000_CAM4_SLND_SICE_AQUAP_SROF_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_AQUAPLANET" alias="FC5AQUAP" >2000_CAM5_SLND_SICE_AQUAP_SROF_SGLC_SWAV</COMPSET>
@@ -303,6 +314,8 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="I_1850-2000_CLM45"    alias="IHISTCLM45"   >HIST_DATM%QIA_CLM45%SP_SICE_SOCN_RTM_SGLC_SWAV</COMPSET> 
 <COMPSET sname="I_2000_CN"            alias="ICN"          >2000_DATM%QIA_CLM40%CN_SICE_SOCN_RTM_SGLC_SWAV</COMPSET>	  
 <COMPSET sname="I_1850_CN"            alias="I1850CN"      >1850_DATM%QIA_CLM40%CN_SICE_SOCN_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="Ii_1850_CN"           alias="Ii1850CN"     >1850_DATM%QIA_CLM40%CN_WISO_SICE_SOCN_RTM%WISO_SGLC_SWAV</COMPSET>
+<COMPSET sname="Ii_1850_SP"           alias="Ii1850SP"     >1850_DATM%QIA_CLM40%SP_WISO_SICE_SOCN_RTM%WISO_SGLC_SWAV</COMPSET>
 <COMPSET sname="I_1850_CLM45_CN"      alias="I1850CLM45CN" >1850_DATM%QIA_CLM45%CN_SICE_SOCN_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="I_1850_CLM45_ED"      alias="I1850CLM45ED"   support_level="Experimental, under development">1850_DATM%QIA_CLM45%ED_SICE_SOCN_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="I_1850_CLM45_CN_FL"   alias="I1850CLM45CNF">1850_DATM%QIA_CLM45%CN_SICE_SOCN_RTM%FLOOD_SGLC_SWAV</COMPSET>
@@ -575,6 +588,8 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 <CAM_CONFIG_OPTS compset="_CAM4"          >-phys cam4</CAM_CONFIG_OPTS>              
 <CAM_CONFIG_OPTS compset="_CAM5"          >-phys cam5</CAM_CONFIG_OPTS> 
 <CAM_CONFIG_OPTS compset="_CAM5%CLB"      >-clubb_sgs</CAM_CONFIG_OPTS>
+<CAM_CONFIG_OPTS compset="_CAM5%WISOall"  >-water_tracer h2o_h216o_hdo_h218o</CAM_CONFIG_OPTS>
+<CAM_CONFIG_OPTS compset="_CAM5%WISOh2o"  >-water_tracer h2o</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM5%WCCB"     >-clubb_sgs</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM4%TBAM"     >-chem trop_bam</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM4%TMOZ"     >-chem trop_mozart</CAM_CONFIG_OPTS>
@@ -725,6 +740,8 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 <desc compset="_CAM5"  >cam5 physics:</desc>
 <desc compset="_CAM5%CLB"    >CAM CLUBB:</desc>
 <desc compset="_CAM5%PM"     >CAM prescribed modal aerosols:</desc>
+<desc compset="_CAM5%WISOall">CAM with all water isotopes:</desc>
+<desc compset="_CAM5%WISOh2o">CAM with water isotopes, but just bulk water (for testing/debugging):</desc>
 <desc compset="_CAM[45]%WCCM">CAM WACCM with daily solar data and SPEs:</desc>
 <desc compset="_CAM5%WCCB"   >CAM WACCM with daily solar data and SPEs, CLUBB enabled:</desc>
 <desc compset="_CAM[45]%WCMX">CAM WACCM-X:</desc>
@@ -761,6 +778,8 @@ CAM naming conventions in compset name
 =========================================
 CAM4% => cam4 physics 
 CAM5% => cam5 physics 
+CAM5%WISOall => cam5 physics with all water isotopes
+CAM5%WISOh2o => cam5 physics with water isotopes on, but just bulk water (for testing/debugging)
 CAM[45]%WCCM => CAM WACCM with daily solar data and SPEs: 
 CAM5%WCCB => CAM WACCM with daily solar data and SPEs, CLUBB enabled: 
 CAM[45]%WCMX => CAM WACCM-X:                    
@@ -855,6 +874,11 @@ CAM[45]%L60  => CAM with 60 layers and full gravity wave spectrum:
 <CLM_FORCE_COLDSTART compset="_CLM.+CISM"        >on</CLM_FORCE_COLDSTART>
 <CLM_FORCE_COLDSTART compset="4804.*_CLM.*_CISM1">off</CLM_FORCE_COLDSTART>
 
+<CLM_NAMELIST_OPTS compset="DATM.+_CLM40%[^_]*SP_WISO"      >tracer_forc=.false.,hydro_tracer=.true.</CLM_NAMELIST_OPTS>
+<CLM_NAMELIST_OPTS compset="DATM.+_CLM40%[^_]*CN_WISO"      >tracer_forc=.false.,hydro_tracer=.true.</CLM_NAMELIST_OPTS>
+<CLM_NAMELIST_OPTS compset="CAM5%WISO.+_CLM40%[^_]*SP_WISO" >tracer_forc=.true.,hydro_tracer=.true.</CLM_NAMELIST_OPTS>
+<CLM_NAMELIST_OPTS compset="CAM5%WISO.+_CLM40%[^_]*CN_WISO" >tracer_forc=.true.,hydro_tracer=.true.</CLM_NAMELIST_OPTS>
+
 <!-- ======================================= -->
 <!--          USER_DEFINED section           -->
 <!-- Add new values for                      -->
@@ -866,11 +890,14 @@ CAM[45]%L60  => CAM with 60 layers and full gravity wave spectrum:
 <!-- and last match is one taken             -->
 <!-- ======================================= -->
 
-<desc compset="_CLM40"          >clm4.0 physics:</desc>
-<desc compset="_CLM40%[^_]*SP"  >clm4.0 Satellite phenology:</desc>
-<desc compset="_CLM40%[^_]*CN"  >clm4.0 cn:</desc>
-<desc compset="_CLM40%[^_]*CNDV">clm4.0 cndv:</desc>
-<desc compset="_CLM40%[^_]*CROP">clm4.0 prognostic crop:</desc>
+<desc compset="_CLM40"             >clm4.0 physics:</desc>
+<desc compset="_CLM40%[^_]*SP"     >clm4.0 Satellite phenology:</desc>
+<desc compset="_CLM40%[^_]*CN"     >clm4.0 cn:</desc>
+<desc compset="_CLM40%[^_]*CNDV"   >clm4.0 cndv:</desc>
+<desc compset="_CLM40%[^_]*CROP"   >clm4.0 prognostic crop:</desc>
+<desc compset="_CLM40%[^_]*SP_WISO">clm4.0 Satellite phenology with water isotopes:</desc>
+<desc compset="_CLM40%[^_]*CN_WISO">clm4.0 cn with water isotopes:</desc>
+
 
 <desc compset="_CLM45"               >clm4.5 physics:</desc>
 <desc compset="_CLM45%[^_]*SP"       >clm4.5 Satellite phenology:</desc>
@@ -892,11 +919,13 @@ CLM naming conventions in compset name
 note: [^_]* means match zero or more of any character BUT an underbar.
       (in other words make sure there is NOT a underbar before the string afterwards)
 
-CLM40            => clm4.0 Physics
-CLM40%[^_]*SP    => clm4.0 Satellite phenology
-CLM40%[^_]*CN    => clm4.0 Carbon Nitrogen
-CLM40%[^_]*CNDV  => clm4.0 Carbon Nitrogen Dynamic Vegetation
-CLM40%[^_]*CROP  => clm4.0 Prognostic crop
+CLM40              => clm4.0 Physics
+CLM40%[^_]*SP      => clm4.0 Satellite phenology
+CLM40%[^_]*CN      => clm4.0 Carbon Nitrogen
+CLM40%[^_]*SP_WISO => clm4.0 Satellite phenology with water isotopes
+CLM40%[^_]*CN_WISO => clm4.0 Carbon Nitrogen with water isotopes
+CLM40%[^_]*CNDV    => clm4.0 Carbon Nitrogen Dynamic Vegetation
+CLM40%[^_]*CROP    => clm4.0 Prognostic crop
 
 CLM45            => clm4.5 Physics
 CLM45%[^_]*SP    => clm4.5 Satellite phenology
@@ -921,6 +950,8 @@ CLM50%[^_]*BGC   => clm5.0 BGC (CN with vertically resolved soil BGC, based on C
 <CICE_MODE compset="CICE%PRES_">prescribed</CICE_MODE>
 
 <CICE_NAMELIST_OPTS compset="_CAM4">cam4=.true.</CICE_NAMELIST_OPTS>  
+<CICE_NAMELIST_OPTS compset="CICE%WISO">tr_iso=.true.</CICE_NAMELIST_OPTS>
+<CICE_NAMELIST_OPTS compset="CICE%PRES_WISO">tr_iso=.true.</CICE_NAMELIST_OPTS>
 
 <!-- ======================================= -->
 <!--          USER_DEFINED section           -->
@@ -953,6 +984,7 @@ CICE%PRES => prescribed cice
 <OCN_TRACER_MODULES compset="HIST.*_POP2">cfc</OCN_TRACER_MODULES> 
 <OCN_TRACER_MODULES compset="5505.*_POP2">cfc</OCN_TRACER_MODULES> 
 <OCN_TRACER_MODULES compset="_POP2%ECO"  >ecosys</OCN_TRACER_MODULES>  
+<OCN_TRACER_MODULES compset="_POP2%ISO"  >wiso</OCN_TRACER_MODULES>
 <OCN_TRACER_MODULES compset="_POP2%DAR"  >$OCN_SUBMODEL</OCN_TRACER_MODULES>   
 <OCN_TRACER_MODULES compset="1850.*_BGC-BDRDDARWIN">iage $OCN_SUBMODEL</OCN_TRACER_MODULES>
 
@@ -1009,6 +1041,7 @@ CICE%PRES => prescribed cice
 <desc compset="_POP2"    >POP2 default:</desc>
 <desc compset="_POP2%1D" >Single column POP2:</desc>
 <desc compset="_POP2%ECO">POP2/Ecosystem:</desc>
+<desc compset="_POP2%ISO">Water isotopes: (requires geotrace branche code)</desc>
 <desc compset="_POP2%DAR">Darwin marine ecosystem: (requires additional MOBY code)</desc>
 
 <help>
@@ -1018,6 +1051,7 @@ POP2 naming conventions in compset name
 POP2     => POP2 default
 POP2%1D  => POP2/Single column
 POP2%ECO => POP2/Ecosystem
+POP2%ISO => POP2/Water isotopes
 POP2%DAR => Darwin marine ecosystem (not supported in community releases)
 </help>
 
@@ -1035,6 +1069,7 @@ POP2%DAR => Darwin marine ecosystem (not supported in community releases)
 <RTM_BLDNML_OPTS   compset="PIPD.*_RTM">-simyr 1850</RTM_BLDNML_OPTS>
 <RTM_BLDNML_OPTS   compset="2000.*_RTM">-simyr 2000</RTM_BLDNML_OPTS>
 
+<RTM_NAMELIST_OPTS compset="RTM%WISO">wiso_runoff=.true.</RTM_NAMELIST_OPTS>
 <RTM_NAMELIST_OPTS compset="_CLM45">rtm_effvel=&apos;ACTIVE&apos;</RTM_NAMELIST_OPTS>
 <RTM_NAMELIST_OPTS compset="_CLM50">rtm_effvel=&apos;ACTIVE&apos;</RTM_NAMELIST_OPTS>
 
@@ -1046,7 +1081,8 @@ POP2%DAR => Darwin marine ecosystem (not supported in community releases)
 <!-- here                                    -->
 <!-- ======================================= -->
 
-<desc compset="_RTM" >RTM:</desc>
+<desc compset="_RTM"      >RTM:</desc>
+<desc compset="_RTM%WISO" >RTM model with water isotopes:</desc>
 <desc compset="_RTM%FLOOD">RTM model with flood:</desc>
 
 <help>
@@ -1054,6 +1090,7 @@ POP2%DAR => Darwin marine ecosystem (not supported in community releases)
 RTM naming conventions in compset name
 =========================================
 RTM       => default RTM model
+RTM%WISO  => RTM model with water isotopes
 RTM%FLOOD => RTM model with flood
 </help>
 
@@ -1663,6 +1700,8 @@ DOCN%COPY => docn copy mode
 <CCSM_CO2_PPMV compset="^2000.+CAM[45]%SMA7">0.000001</CCSM_CO2_PPMV>
 <CCSM_CO2_PPMV compset="^2000.+CAM[45]%SSOA">0.000001</CCSM_CO2_PPMV>
 
+<FLDS_WISO compset="%WISO">TRUE</FLDS_WISO>
+<FLDS_WISO compset="%ISO" >TRUE</FLDS_WISO>
 <!-- ======================================= -->
 <!--          USER_DEFINED section           -->
 <!-- Add new values for                      -->
@@ -1707,6 +1746,8 @@ DOCN%COPY => docn copy mode
 
 <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05" compset="1850_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV">b40_1850_c02c_76jpf</RUN_REFCASE>   
 <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05" compset="1850_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV">0221-01-01</RUN_REFDATE> 
+<RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05" compset="1850_CAM5%WISOall_CLM40%CN_WISO_CICE%WISO_POP2%ISO_RTM%WISO_SGLC_SWAV">b.ie12.Bi1850C5CN.f19_g16.KFoff.01</RUN_REFCASE>
+<RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05" compset="1850_CAM5%WISOall_CLM40%CN_WISO_CICE%WISO_POP2%ISO_RTM%WISO_SGLC_SWAV">0561-01-01</RUN_REFDATE>
 
 <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05" compset="1850_CAM5_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV">b40_1850_2d_r07c5cn_160jp</RUN_REFCASE>   
 <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05" compset="1850_CAM5_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV">0070-01-01</RUN_REFDATE>  
