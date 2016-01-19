@@ -1719,9 +1719,11 @@ NAME:
     if ($lnd_grid ne $rof_grid) {
 	my $map_lnd2rof = $cfg_ref->get('LND2ROF_FMAPNAME');
 	if ($map_lnd2rof eq 'idmap') {
-	    print "No lnd2rof_fmapname exists - RTM mode set to null \n";
+	    print "No lnd2rof_fmapname exists - RTM/MOSART mode set to null \n";
 	    $cfg_ref->set('RTM_MODE', 'NULL');     
 	    $newout{"RTM_MODE"} = 'NULL'; 
+	    $cfg_ref->set('MOSART_MODE', 'NULL');     
+	    $newout{"MOSART_MODE"} = 'NULL'; 
 	}
     }
 

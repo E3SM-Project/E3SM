@@ -59,7 +59,7 @@ set sdate = `date +"%Y-%m-%d %H:%M:%S"`
 echo "model run ended $sdate" >>& $caseroot/CaseStatus
 
 if ($app_jobid == 'unknown') then
-  if (($machine == 'edison') || ($machine == 'titan')) then
+  if ($machine == 'titan') then
 
     set app_jobid = $PBS_JOBID
 
@@ -67,7 +67,11 @@ if ($app_jobid == 'unknown') then
 
     set app_jobid = $COBALT_JOBID
 
-  endif  
+  else if ($machine == 'edison') then
+
+    set app_jobid = $SLURM_JOB_ID
+
+  endif
 endif
 
 if ($app_jobid != 'unknown') then

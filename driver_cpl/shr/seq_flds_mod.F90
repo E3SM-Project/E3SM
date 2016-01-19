@@ -1839,12 +1839,28 @@ module seq_flds_mod
      ! TODO: put in attributes below
      !-----------------------------
 
-     call seq_flds_add(l2x_fluxes,'Flrl_rofl')
-     call seq_flds_add(x2r_fluxes,'Flrl_rofl')
-     longname = 'Water flux from land (liquid)'
-     stdname  = 'water_flux_into_runoff'
+     call seq_flds_add(l2x_fluxes,'Flrl_rofsur')
+     call seq_flds_add(x2r_fluxes,'Flrl_rofsur')
+     longname = 'Water flux from land (liquid surface)'
+     stdname  = 'water_flux_into_runoff_surface'
      units    = 'kg m-2 s-1'
-     attname  = 'Flrl_rofl'
+     attname  = 'Flrl_rofsur'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(l2x_fluxes,'Flrl_rofgwl')
+     call seq_flds_add(x2r_fluxes,'Flrl_rofgwl')
+     longname = 'Water flux from land (liquid glacier, wetland, and lake)'
+     stdname  = 'water_flux_into_runoff_from_gwl'
+     units    = 'kg m-2 s-1'
+     attname  = 'Flrl_rofgwl'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(l2x_fluxes,'Flrl_rofsub')
+     call seq_flds_add(x2r_fluxes,'Flrl_rofsub')
+     longname = 'Water flux from land (liquid subsurface)'
+     stdname  = 'water_flux_into_runoff_subsurface'
+     units    = 'kg m-2 s-1'
+     attname  = 'Flrl_rofsub'
      call metadata_set(attname, longname, stdname, units)
 
      call seq_flds_add(l2x_fluxes,'Flrl_rofi')
@@ -1899,10 +1915,18 @@ module seq_flds_mod
 
      call seq_flds_add(r2x_fluxes,'Flrr_volr')
      call seq_flds_add(x2l_fluxes,'Flrr_volr')
-     longname = 'River channel water volume'
+     longname = 'River channel total water volume'
      stdname  = 'rtm_volr'
      units    = 'm'
      attname  = 'Flrr_volr'
+     call metadata_set(attname, longname, stdname, units)
+
+     call seq_flds_add(r2x_fluxes,'Flrr_volrmch')
+     call seq_flds_add(x2l_fluxes,'Flrr_volrmch')
+     longname = 'River channel main channel water volume'
+     stdname  = 'rtm_volrmch'
+     units    = 'm'
+     attname  = 'Flrr_volrmch'
      call metadata_set(attname, longname, stdname, units)
 
      !-----------------------------
