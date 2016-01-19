@@ -71,6 +71,15 @@
           CHECK_TIMING="FALSE"
           DOUT_S="FALSE" />
 
+<ccsmtest NAME="TESTRUNDIFF"
+          DESC="For testing infra only. Produces a canned hist file."
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          STOP_OPTION="ndays"
+          STOP_N="11"
+          CHECK_TIMING="FALSE"
+          DOUT_S="FALSE" />
+
 <ccsmtest NAME="TESTRUNSLOWPASS"
           DESC="For testing infra only. After 5 minutes of sleep, pass run step."
           INFO_DBUG="1"
