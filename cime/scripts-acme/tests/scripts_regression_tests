@@ -159,7 +159,8 @@ class TestWaitForTests(unittest.TestCase):
         if (expected_results == ["PASS"]*len(expected_results)):
             self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s" % (output, errput))
         else:
-            self.assertNotEqual(stat, 0, msg="COMMAND SHOULD HAVE FAILED\nwait_for_tests output:\n%s\n\nerrput:\n%s" % (output, errput))
+            self.assertEqual(stat, acme_util.TESTS_FAILED_ERR_CODE,
+                             msg="COMMAND SHOULD HAVE DETECTED FAILED TESTS\nwait_for_tests output:\n%s\n\nerrput:\n%s" % (output, errput))
 
         lines = [line for line in output.splitlines() if line.startswith("Test '")]
         self.assertEqual(len(lines), 10)
@@ -244,9 +245,9 @@ class TestWaitForTests(unittest.TestCase):
 
         self.assertFalse(run_thread.isAlive(), msg="wait_for_tests should have finished")
 
-        assert_dashboard_has_build(self, "regression_test_pass")
-
         self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
+
+        assert_dashboard_has_build(self, "regression_test_pass")
 
     ###########################################################################
     def test_wait_for_test_cdash_kill(self):
@@ -265,10 +266,9 @@ class TestWaitForTests(unittest.TestCase):
         run_thread.join(timeout=10)
 
         self.assertFalse(run_thread.isAlive(), msg="wait_for_tests should have finished")
+        self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
 
         assert_dashboard_has_build(self, "regression_test_kill")
-
-        self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
 
         cdash_result_dir = os.path.join(self._testdir_unfinished, "Testing")
         tag_file         = os.path.join(cdash_result_dir, "TAG")
@@ -337,9 +337,9 @@ class TestCreateTest(TestCreateTestCommon):
     ###########################################################################
         stat, output, errput = run_cmd("%s/create_test acme_test_only_pass %s" % (SCRIPT_DIR, extra_args), ok_to_fail=True)
         if (expect_works):
-            self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s" % (output, errput))
+            self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
         else:
-            self.assertNotEqual(stat, 0, msg="COMMAND SHOULD HAVE FAILED\ncreate_test output:\n%s\n\nerrput:\n%s" % (output, errput))
+            self.assertEqual(stat, acme_util.TESTS_FAILED_ERR_CODE, msg="COMMAND SHOULD HAVE DETECTED FAILED TESTS\ncreate_test output:\n%s\n\nerrput:\n%ss\n\ncode: %d" % (output, errput, stat))
 
     ###############################################################################
     def test_create_test_rebless_namelist(self):
@@ -492,7 +492,7 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
         if (expect_works):
             self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\njenkins_generic_job output:\n%s\n\nerrput:\n%s" % (output, errput))
         else:
-            self.assertNotEqual(stat, 0, msg="COMMAND SHOULD HAVE FAILED\njenkins_generic_job output:\n%s\n\nerrput:\n%s" % (output, errput))
+            self.assertEqual(stat, acme_util.TESTS_FAILED_ERR_CODE, msg="COMMAND SHOULD HAVE DETECTED FAILED TESTS\njenkins_generic_job output:\n%s\n\nerrput:\n%s" % (output, errput))
 
     ###########################################################################
     def threaded_test(self, expect_works, extra_args):
@@ -559,9 +559,9 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
         run_thread.join(timeout=10)
 
         self.assertFalse(run_thread.isAlive(), msg="jenkins_generic_job should have finished")
+        self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
         self.assert_no_sentinel()
         assert_dashboard_has_build(self, build_name)
-        self.assertTrue(self._thread_error is None, msg="Thread had failure: %s" % self._thread_error)
 
 ###############################################################################
 class TestUpdateACMETests(unittest.TestCase):
