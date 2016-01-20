@@ -1559,7 +1559,7 @@
 
   <machine MACH="yellowstone">
     <DESC>NCAR IBM, os is Linux, 16 pes/node, batch system is LSF</DESC>
-    <NODENAME_REGEX>yslogin</NODENAME_REGEX>
+    <NODENAME_REGEX>(yslogin.*|pronghorn.*|caldera.*)</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,pgi,gnu,intel15</COMPILERS>
     <MPILIBS>mpich2,pempi,mpi-serial</MPILIBS>

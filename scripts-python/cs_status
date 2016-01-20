@@ -6,8 +6,8 @@ no errors occured (not based on test statuses).
 """
 
 import add_util_path
-import acme_util
-acme_util.check_minimum_python_version(2, 7)
+import cime_util
+cime_util.check_minimum_python_version(2, 7)
 import wait_for_tests
 
 import argparse, sys, os
@@ -39,7 +39,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = parser.parse_args(args[1:])
 
-    acme_util.set_verbosity(args.verbose)
+    cime_util.set_verbosity(args.verbose)
 
     return args.paths
 
@@ -56,7 +56,7 @@ def cs_status(test_paths):
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    acme_util.stop_buffering_output()
+    cime_util.stop_buffering_output()
 
     test_paths = parse_command_line(sys.argv, description)
 
