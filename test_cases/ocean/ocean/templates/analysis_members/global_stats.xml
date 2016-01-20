@@ -23,6 +23,8 @@
 			<add_contents>
 				<member name="daysSinceStartOfSim" type="var"/>
 				<member name="xtime" type="var"/>
+				<member name="volumeCellGlobal" type="var"/>
+				<member name="CFLNumberGlobal" type="var"/>
 				<member name="minGlobalStats" type="var_array"/>
 				<member name="maxGlobalStats" type="var_array"/>
 				<member name="sumGlobalStats" type="var_array"/>

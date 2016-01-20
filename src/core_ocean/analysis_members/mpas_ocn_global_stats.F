@@ -118,13 +118,13 @@ contains
          open(fileID,file=trim(config_AM_globalStats_directory)//'/stats_readme.txt',STATUS='UNKNOWN', POSITION='rewind')
 
             write (fileID,'(a)') 'readme file for MPAS-Ocean global statistics'
-            write (fileID,'(/,a)') 'stats_time.txt. contains: timeIndex, timestamp, CFLNumberGlobal'
+            write (fileID,'(/,a)') 'stats_time.txt. contains: timestamp, time (in days), CFLNumberGlobal'
             write (fileID,'(/,a)') 'All other stats_*.txt. contain the following columns.  Rows correspond to timestamps ' &
                                 // 'in rows of stats_time.txt'
             write (fileID,'(a)')   "See user's guide for units associated with these variables."
 
             i=1
-            write (fileID,'(i5,a)') i,'. time, in days, using a 360 day calendar'; i=i+1
+            write (fileID,'(i5,a)') i,'. time, in days'; i=i+1
             write (fileID,'(i5,a)') i,'. layerThickness'; i=i+1
             write (fileID,'(i5,a)') i,'. normalVelocity'; i=i+1
             write (fileID,'(i5,a)') i,'. tangentialVelocity'; i=i+1
@@ -228,7 +228,7 @@ contains
 
       integer :: err_tmp
       integer :: nCellsGlobal, nEdgesGlobal, nVerticesGlobal, iTracer
-      integer :: elementIndex, variableIndex, nVariables, nSums, nMaxes, nMins
+      integer :: iEdge, variableIndex, nVariables, nSums, nMaxes, nMins
       integer :: k, i, fileID
       integer :: timeYYYY, timeMM, timeDD, timeH, timeM, timeS
       integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, num_activeTracers
@@ -238,9 +238,11 @@ contains
 
       character (len=StrKIND), pointer :: xtime, simulationStartTime
       type (MPAS_Time_type) :: xtime_timeType, simulationStartTime_timeType
+      type (MPAS_TimeInterval_type) :: timeStep
 
-      real (kind=RKIND) :: volumeCellGlobal, volumeEdgeGlobal, CFLNumberGlobal, localCFL, localSum, areaCellGlobal, &
-                           areaEdgeGlobal, areaTriangleGlobal, time_days
+      real (kind=RKIND) :: localCFL, localSum, dt
+      real (kind=RKIND), pointer :: volumeCellGlobal, volumeEdgeGlobal, CFLNumberGlobal, areaCellGlobal, &
+                                    areaEdgeGlobal, areaTriangleGlobal
       real (kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge, areaTriangle, areaEdge
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, normalVelocity, tangentialVelocity, layerThicknessEdge, &
                                                     relativeVorticity, kineticEnergyCell, normalizedRelativeVorticityEdge, &
@@ -278,6 +280,12 @@ contains
       call mpas_pool_get_array(globalStatsAMPool, 'avgGlobalStats', averages)
       call mpas_pool_get_array(globalStatsAMPool, 'vertSumMinGlobalStats', verticalSumMins)
       call mpas_pool_get_array(globalStatsAMPool, 'vertSumMaxGlobalStats', verticalSumMaxes)
+      call mpas_pool_get_array(globalStatsAMPool, 'areaCellGlobal', areaCellGlobal)
+      call mpas_pool_get_array(globalStatsAMPool, 'areaEdgeGlobal', areaEdgeGlobal)
+      call mpas_pool_get_array(globalStatsAMPool, 'areaTriangleGlobal', areaTriangleGlobal)
+      call mpas_pool_get_array(globalStatsAMPool, 'volumeCellGlobal', volumeCellGlobal)
+      call mpas_pool_get_array(globalStatsAMPool, 'volumeEdgeGlobal', volumeEdgeGlobal)
+      call mpas_pool_get_array(globalStatsAMPool, 'CFLNumberGlobal', CFLNumberGlobal)
 
       sums = 0.0_RKIND
       sumSquares = 0.0_RKIND
@@ -287,6 +295,9 @@ contains
       verticalSumMins = 1.0e34_RKIND
       verticalSumMaxes = -1.0e34_RKIND
       reductions = 0.0_RKIND
+
+      timeStep = mpas_get_clock_timestep(domain % clock, ierr=err_tmp)
+      call mpas_get_timeInterval(timeStep, dt=dt)
 
       block => domain % blocklist
       do while (associated(block))
@@ -628,13 +639,11 @@ contains
          sums(nSums) = sums(nSums) + nVerticesSolve
 
          localCFL = 0.0_RKIND
-         do elementIndex = 1,nEdgesSolve
-            ! note: dt not connected.  dt will not be available in post processing mode.
-            !localCFL = max(localCFL, maxval(dt*normalVelocity(:,elementIndex)/dcEdge(elementIndex)))
+         do iEdge = 1,nEdgesSolve
+            localCFL = max(localCFL, maxval(dt*abs(normalVelocity(1:maxLevelEdgeTop(iEdge),iEdge))/dcEdge(iEdge)))
          end do
          nMaxes = nMaxes + 1
          maxes(nMaxes) = localCFL
-
          do i = 1, nVariables
             mins(nMins+i) = min(mins(nMins+i),verticalSumMins_tmp(i))
             maxes(nMaxes+i) = max(maxes(nMaxes+i),verticalSumMaxes_tmp(i))
@@ -794,7 +803,7 @@ contains
             write (fileID,'(100es24.14)') daysSinceStartOfSim, averages(1:nVariables)
             close (fileID)
             open(fileID,file=trim(config_AM_globalStats_directory)//'/stats_time.txt',STATUS='UNKNOWN', POSITION='append')
-            write (fileID,'(a)') trim(xtime)
+            write (fileID,'(a)') trim(xtime), daysSinceStartOfSim, CFLNumberGlobal
             close (fileID)
             open(fileID,file=trim(config_AM_globalStats_directory)//'/stats_colmin.txt',STATUS='UNKNOWN', POSITION='append')
             write (fileID,'(100es24.14)') verticalSumMins(1:nVariables)
