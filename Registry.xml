@@ -2212,31 +2212,6 @@
 			 description="CVMix/KPP: diagnosed surface buoyancy flux due to heat, salt and freshwater fluxes. Positive flux increases buoyancy."
 			 packages="forwardMode;analysisMode"
 		/>
-
-		<var name="areaCellGlobal" type="real" dimensions="Time" units="m^2"
-			 description="sum of the areaCell variable over the full domain, used to normalize global statistics"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="areaEdgeGlobal" type="real" dimensions="Time" units="m^2"
-			 description="sum of the areaEdge variable over the full domain, used to normalize global statistics"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="areaTriangleGlobal" type="real" dimensions="Time" units="m^2"
-			 description="sum of the areaTriangle variable over the full domain, used to normalize global statistics"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="volumeCellGlobal" type="real" dimensions="Time" units="m^3"
-			 description="sum of the volumeCell variable over the full domain, used to normalize global statistics"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="volumeEdgeGlobal" type="real" dimensions="Time" units="m^3"
-			 description="sum of the volumeEdge variable over the full domain, used to normalize global statistics"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="CFLNumberGlobal" type="real" dimensions="Time" units="unitless"
-			 description="maximum CFL number over the full domain"
-			 packages="forwardMode;analysisMode"
-		/>
 		<var name="relativeSlopeTopOfEdge" type="real" dimensions="nVertLevelsP1 nEdges Time" units="non-dimensional"
 			 description="Slope of isopycnal surface relative to constant coordinate surface"
 			 packages="forwardMode;analysisMode"
