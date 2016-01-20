@@ -107,13 +107,13 @@
          prod(20) = 0._r8
          loss(21) = ( + het_rates(22))* y(22)
          prod(21) = 0._r8
-         loss(22) = ( + het_rates(26))* y(26)
+         loss(22) = ( + het_rates(23))* y(23)
          prod(22) = 0._r8
-         loss(23) = ( + het_rates(23))* y(23)
+         loss(23) = ( + het_rates(24))* y(24)
          prod(23) = 0._r8
-         loss(24) = ( + het_rates(24))* y(24)
+         loss(24) = ( + het_rates(25))* y(25)
          prod(24) = 0._r8
-         loss(25) = ( + het_rates(25))* y(25)
+         loss(25) = ( + het_rates(26))* y(26)
          prod(25) = 0._r8
          loss(26) = ( + het_rates(27))* y(27)
          prod(26) = 0._r8
