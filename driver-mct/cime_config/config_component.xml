@@ -3382,6 +3382,52 @@
       machines/compilers.</desc>
   </entry>
 
+  <!-- ======================================================================= -->
+  <!-- MOSART                                                                  -->
+  <!-- ======================================================================= -->
+
+  <entry id="MOSART_MODE">
+    <type>char</type>
+    <valid_values>ACTIVE,NULL</valid_values>
+    <default_value>ACTIVE</default_value>
+    <group>build_component_mosart</group>
+    <file>env_build.xml</file>
+    <desc>mode for mosart model, NULL means mosart is turned off</desc>
+  </entry>
+
+  <entry id="MOSART_FLOOD_MODE">
+    <type>char</type>
+    <valid_values>ACTIVE,NULL</valid_values>
+    <default_value>NULL</default_value>
+    <group>build_component_mosart</group>
+    <file>env_build.xml</file>
+    <desc>mode for mosart flood feature, NULL means mosart flood is turned off</desc>
+  </entry>
+
+  <entry id="MOSART_BLDNML_OPTS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <group>run_component_mosart</group>
+    <file>env_build.xml</file>
+    <desc>MOSART build-namelist options</desc>
+  </entry>
+
+  <entry id="MOSART_NAMELIST_OPTS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <group>run_component_mosart</group>
+    <file>env_build.xml</file>
+    <desc>MOSART specific namelist settings MOSART-specific namelist
+    settings in the MOSART build-namelist.  MOSART_NAMELIST_OPTS is
+    normally set as a compset variable and in general should not be
+    modified for supported compsets.  It is recommended that if you
+    want to modify this value for your experiment, you should use your
+    own user-defined component sets via using create_newcase with a
+    compset_file argument.</desc>
+  </entry>
+
   <entry id="MPASLI_CONFIG_OPTS">
     <type>char</type>
     <valid_values></valid_values>
