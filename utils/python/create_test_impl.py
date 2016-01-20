@@ -239,7 +239,7 @@ class CreateTest(object):
         xml_file = os.path.join(self._get_test_dir(test_name), "env_test.xml")
         xml_bridge_cmd = os.path.join(cime_util.get_acme_scripts_root(), "xml_bridge")
 
-        xml_bridge_cmd += " %s" xml_file
+        xml_bridge_cmd += " %s" % xml_file
         xml_bridge_cmd += " TESTCASE,%s" % test_case
         xml_bridge_cmd += " TEST_TESTID,%s" % self._test_id
 

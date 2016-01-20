@@ -320,6 +320,36 @@ def get_python_libs_location_within_cime():
     From within CIME, return subdirectory of python libraries
     """
     return os.path.join("utils", "python")
+def get_cime_root():
+###############################################################################
+    """
+    Return the absolute path to the root of CIME that contains this script
+
+    >>> os.path.isdir(os.path.join(get_cime_root(), get_acme_scripts_location_within_cime()))
+    True
+    """
+    acme_script_absdir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+    assert acme_script_absdir.endswith(get_python_libs_location_within_cime()), acme_script_absdir
+    return os.path.normpath(acme_script_absdir[:len(acme_script_absdir)-len(get_python_libs_location_within_cime())])
+
+###############################################################################
+
+###############################################################################
+def get_model():
+    global _MODEL
+    if (_MODEL is None):
+        try:
+            _MODEL = os.environ["CIME_MODEL"]
+        except KeyError:
+            modelroot = os.path.join(get_cime_root(),"cime_config")
+            models = os.listdir(modelroot)
+            str = "Environment variable CIME_MODEL must be set to one of: "
+            for model in models:
+                if(os.path.isdir(os.path.join(modelroot,model)) and model != "xml_schemas"):
+                    str += model + ' ,'
+            expect(False,str)
+
+    return _MODEL
 
 ###############################################################################
 def get_model_config_location_within_cime(model=get_model()):
@@ -499,18 +529,6 @@ def set_model(model):
 ###############################################################################
     global _MODEL
     _MODEL = model
-
-###############################################################################
-def get_model():
-###############################################################################
-    global _MODEL
-    if (_MODEL is None):
-        try:
-            _MODEL = os.environ["CIME_MODEL"]
-        except KeyError:
-            raise SystemExit("Environment variable CIME_MODEL must be set")
-
-    return _MODEL
 
 ###############################################################################
 def parse_config_machines():
