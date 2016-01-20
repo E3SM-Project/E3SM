@@ -10,6 +10,9 @@ sub main
     my @dirs = ("$cimeroot/scripts/Tools", "$cimeroot/utils/perl5lib/Config", "$cimeroot/utils/perl5lib");
     unshift @INC, @dirs;
     require ConfigCase;
+    require Log::Log4perl;
+    Log::Log4perl->easy_init({level=>"INFO",
+			  layout=>'%m%n'});
 
     my $mach_dir = shift;
     my $machine  = shift;

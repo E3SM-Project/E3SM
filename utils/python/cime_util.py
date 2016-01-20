@@ -4,8 +4,8 @@ Common functions used by cime python scripts
 
 import sys, socket, re, os, time
 
+_MODEL = None
 _VERBOSE = False
-_MODEL = "cesm"
 _MACHINE_INFO = None
 
 # batch-system-name -> ( cmd-to-list-all-jobs-for-user, cmd-to-delete-job )
@@ -494,17 +494,27 @@ def delete_jobs(jobs):
     del_cmd = "%s %s" % (BATCH_INFO[batch_system][1], " ".join(jobs))
     return run_cmd(del_cmd, ok_to_fail=True, verbose=True)
 
+
+###############################################################################
+def set_model(model):
+    global _MODEL
+    _MODEL = model
+
+def get_model():
+    global _MODEL
+    return _MODEL
+
 ###############################################################################
 def parse_config_machines():
 ###############################################################################
     """
     """
-    global _MODEL
     global _MACHINE_INFO
+    model = get_model()
     if (_MACHINE_INFO is None):
         _MACHINE_INFO = {}
         import xml.etree.ElementTree as ET
-        config_machines_xml = os.path.join(get_cime_root(), "cime_config", _MODEL, "machines", "config_machines.xml")
+        config_machines_xml = os.path.join(get_cime_root(), "cime_config", model, "machines", "config_machines.xml")
         tree = ET.parse(config_machines_xml)
         root = tree.getroot()
         expect(root.tag == "config_machines",
@@ -516,7 +526,6 @@ def parse_config_machines():
                 expect("MACH" in machine.attrib, "Invalid machine entry found for machine '%s'" % machine)
                 mach_name = machine.attrib["MACH"]
                 expect(mach_name not in _MACHINE_INFO, "Duplicate machine entry '%s'" % mach_name)
-                print "HERE: " + mach_name
                 data = {}
                 for item in machine:
                     item_data = "" if item.text is None else item.text.strip()
@@ -528,6 +537,9 @@ def parse_config_machines():
                     data[item.tag.upper()] = item_data
 
                 _MACHINE_INFO[mach_name] = data
+            elif(machine.tag == "default_run_suffix"):
+                #ignore this
+                do_nothing = 1
             else:
                 warning("Ignoring unrecognized tag: '%s'" % machine.tag)
 
@@ -664,3 +676,4 @@ def get_utc_timestamp(timestamp_format="%Y%m%d_%H%M%S"):
     """
     utc_time_tuple = time.gmtime()
     return time.strftime(timestamp_format, utc_time_tuple)
+

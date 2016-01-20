@@ -215,10 +215,10 @@ class CreateTest(object):
             # Parallelizing builds introduces potential sync problems with sharedlibroot
             # Just let every case build it's own
             sharedlibroot = os.path.join(test_dir, "sharedlibroot.%s" % self._test_id)
-
-        create_newcase_cmd = "%s -model acme -case %s -res %s -mach %s -compiler %s -compset %s -testname %s -project %s -nosavetiming -sharedlibroot %s" % \
-                              (os.path.join(self._cime_root, "scripts", "create_newcase"),
-                               test_dir, grid, machine, compiler, compset, test_case, self._project,
+        model = cime_util.get_model()
+        create_newcase_cmd = "%s -model %s -case %s -res %s -mach %s -compiler %s -compset %s -testname %s -project %s -nosavetiming -sharedlibroot %s" % \
+                              (os.path.join(self._cime_root,"scripts", "create_newcase"),
+                               model,test_dir, grid, machine, compiler, compset, test_case, self._project,
                                sharedlibroot)
         if (case_opts is not None):
             create_newcase_cmd += " -confopts _%s" % ("_".join(case_opts))
@@ -239,7 +239,7 @@ class CreateTest(object):
         xml_file = os.path.join(self._get_test_dir(test_name), "env_test.xml")
         xml_bridge_cmd = os.path.join(cime_util.get_acme_scripts_root(), "xml_bridge")
 
-        mach_dir = os.path.join(self._cime_root, "acme", "machines-acme")
+        mach_dir = os.path.join(self._cime_root, cime_util.get_model(), "machines")
         xml_bridge_cmd += " %s %s %s" % (mach_dir, machine, xml_file)
 
         xml_bridge_cmd += " TESTCASE,%s" % test_case
@@ -277,7 +277,7 @@ class CreateTest(object):
         test_case = cime_util.parse_test_name(test_name)[0]
         test_dir  = self._get_test_dir(test_name)
         test_case_definition_dir = os.path.join(self._cime_root, "scripts", "Testing", "Testcases")
-        test_build = os.path.join(test_dir, "%s.test_build" % self._get_case_id(test_name))
+        test_build = os.path.join(test_dir, "case.test_build" )
 
         if (os.path.exists(os.path.join(test_case_definition_dir, "%s_build.csh" % test_case))):
             shutil.copy(os.path.join(test_case_definition_dir, "%s_build.csh" % test_case), test_build)
@@ -342,17 +342,16 @@ class CreateTest(object):
     ###########################################################################
         case_id = self._get_case_id(test_name)
         test_dir = self._get_test_dir(test_name)
-        return self._run_phase_command(test_name, "./%s.test_build" % case_id, BUILD_PHASE, from_dir=test_dir)
+        return self._run_phase_command(test_name, "./case.test_build", BUILD_PHASE, from_dir=test_dir)
 
     ###########################################################################
     def _run_phase(self, test_name):
     ###########################################################################
-        case_id = self._get_case_id(test_name)
         test_dir = self._get_test_dir(test_name)
         if (self._no_batch):
-            return self._run_phase_command(test_name, "./%s.test" % case_id, RUN_PHASE, from_dir=test_dir)
+            return self._run_phase_command(test_name, "./case.test", RUN_PHASE, from_dir=test_dir)
         else:
-            return self._run_phase_command(test_name, "./%s.submit" % case_id, RUN_PHASE, from_dir=test_dir)
+            return self._run_phase_command(test_name, "./case.submit", RUN_PHASE, from_dir=test_dir)
 
     ###########################################################################
     def _update_test_status_file(self, test_name):
