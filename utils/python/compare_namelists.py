@@ -1,6 +1,6 @@
 import argparse, sys, os, re
 
-from acme_util import expect, warning, verbose_print
+from cime_util import expect, warning, verbose_print
 
 ###############################################################################
 def parse_namelists(namelist_lines, filename):

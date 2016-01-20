@@ -1559,6 +1559,7 @@
 
   <machine MACH="yellowstone">
     <DESC>NCAR IBM, os is Linux, 16 pes/node, batch system is LSF</DESC>
+    <NODENAME_REGEX>(yslogin.*|pronghorn.*|caldera.*)</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,pgi,gnu,intel15</COMPILERS>
     <MPILIBS>mpich2,pempi,mpi-serial</MPILIBS>
@@ -1757,10 +1758,9 @@
       <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
   </machine>
-
   <default_run_suffix>
     <default_run_exe>$config{'EXEROOT'}/cesm.exe </default_run_exe>
     <default_run_misc_suffix> >> cesm.log.$LID 2>&amp;1 </default_run_misc_suffix>
   </default_run_suffix>
-
+  
 </config_machines>

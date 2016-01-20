@@ -1,11 +1,11 @@
 """
-Common functions used by acme python scripts
+Common functions used by cime python scripts
 """
 
 import sys, socket, re, os, time
 
+_MODEL = None
 _VERBOSE = False
-
 _MACHINE_INFO = None
 
 # batch-system-name -> ( cmd-to-list-all-jobs-for-user, cmd-to-delete-job )
@@ -37,6 +37,7 @@ _MACHINE_PROJECTS = {
     "titan"     : "cli115",
     "mira"      : "HiRes_EarthSys",
     "cetus"     : "HiRes_EarthSys",
+    "yellowstone" : "P93300606",
 }
 
 # Return this error code if the scripts worked but tests failed
@@ -157,7 +158,7 @@ def check_minimum_python_version(major, minor):
 def normalize_case_id(case_id):
 ###############################################################################
     """
-    Given an ACME case_id, return it in form TESTCASE.GRID.COMPSET.PLATFORM
+    Given a CIME case_id, return it in form TESTCASE.GRID.COMPSET.PLATFORM
 
     >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel')
     'ERT.ne16_g37.B1850C5.skybridge_intel'
@@ -176,7 +177,7 @@ def normalize_case_id(case_id):
 def parse_test_name(test_name):
 ###############################################################################
     """
-    Given an ACME test name TESTCASE[_CASEOPTS].GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]],
+    Given a CIME test name TESTCASE[_CASEOPTS].GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]],
     return each component of the testname with machine and compiler split
 
     >>> parse_test_name('ERS.fe12_123.JGF')
@@ -193,7 +194,7 @@ def parse_test_name(test_name):
     rv = [None] * 6
     num_dots = test_name.count(".")
     expect(num_dots >= 2 and num_dots <= 4,
-           "'%s' does not look like an ACME test name, expect TESTCASE.GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]]" % test_name)
+           "'%s' does not look like a CIME test name, expect TESTCASE.GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]]" % test_name)
 
     rv[0:num_dots+1] = test_name.split(".")
     testcase_field_underscores = rv[0].count("_")
@@ -218,7 +219,7 @@ def parse_test_name(test_name):
 def get_full_test_name(test, machine, compiler, testmod=None):
 ###############################################################################
     """
-    Given an ACME test name, return in form TESTCASE.GRID.COMPSET.MACHINE_COMPILER[.TESTMODS]
+    Given a CIME test name, return in form TESTCASE.GRID.COMPSET.MACHINE_COMPILER[.TESTMODS]
     Use the machine, compiler, and testmod provided to fill out the name if needed
 
     >>> get_full_test_name("ERS.ne16_fe16.JGF", "melvin", "gnu")
@@ -245,7 +246,7 @@ def get_full_test_name(test, machine, compiler, testmod=None):
 def probe_machine_name():
 ###############################################################################
     """
-    Use the hostname of your machine to probe for the ACME name for this
+    Use the hostname of your machine to probe for the CIME name for this
     machine.
 
     >>> probe_machine_name() is not None
@@ -324,9 +325,9 @@ def get_python_libs_location_within_cime():
     return os.path.join("utils", "python")
 
 ###############################################################################
-def get_acme_config_location_within_cime():
+def get_model_config_location_within_cime(model=get_model()):
 ###############################################################################
-    return os.path.join("cime_config", "acme")
+    return os.path.join("cime_config", model)
 
 ###############################################################################
 def get_cime_root():
@@ -374,15 +375,15 @@ def get_python_libs_root():
     return os.path.join(get_cime_root(), get_python_libs_location_within_cime())
 
 ###############################################################################
-def get_acme_config_root():
+def get_model_config_root(model=get_model()):
 ###############################################################################
     """
     Get absolute path to acme config area"
 
-    >>> os.path.isdir(get_acme_config_root())
+    >>> os.path.isdir(get_model_config_root())
     True
     """
-    return os.path.join(get_cime_root(), get_acme_config_location_within_cime())
+    return os.path.join(get_cime_root(), get_model_config_location_within_cime(model))
 
 ###############################################################################
 def stop_buffering_output():
@@ -497,6 +498,30 @@ def delete_jobs(jobs):
     return run_cmd(del_cmd, ok_to_fail=True, verbose=True)
 
 ###############################################################################
+def set_model(model):
+###############################################################################
+    global _MODEL
+    _MODEL = model
+
+###############################################################################
+def get_model():
+###############################################################################
+    global _MODEL
+    if (_MODEL is None):
+        try:
+            _MODEL = os.environ["CIME_MODEL"]
+        except KeyError:
+            modelroot = os.path.join(get_cime_root(), "cime_config")
+            models = os.listdir(modelroot)
+            msg = "Environment variable CIME_MODEL must be set to one of: "
+            for model in models:
+                if(os.path.isdir(os.path.join(modelroot,model)) and model != "xml_schemas"):
+                    msg += model + " ,"
+            expect(False, msg)
+
+    return _MODEL
+
+###############################################################################
 def parse_config_machines():
 ###############################################################################
     """
@@ -505,7 +530,7 @@ def parse_config_machines():
     if (_MACHINE_INFO is None):
         _MACHINE_INFO = {}
         import xml.etree.ElementTree as ET
-        config_machines_xml = os.path.join(get_cime_root(), "cime_config", "acme", "machines", "config_machines.xml")
+        config_machines_xml = os.path.join(get_model_config_root(), "machines", "config_machines.xml")
         tree = ET.parse(config_machines_xml)
         root = tree.getroot()
         expect(root.tag == "config_machines",
@@ -528,6 +553,9 @@ def parse_config_machines():
                     data[item.tag.upper()] = item_data
 
                 _MACHINE_INFO[mach_name] = data
+            elif(machine.tag == "default_run_suffix"):
+                #ignore this
+                do_nothing = 1
             else:
                 warning("Ignoring unrecognized tag: '%s'" % machine.tag)
 
@@ -664,3 +692,4 @@ def get_utc_timestamp(timestamp_format="%Y%m%d_%H%M%S"):
     """
     utc_time_tuple = time.gmtime()
     return time.strftime(timestamp_format, utc_time_tuple)
+
