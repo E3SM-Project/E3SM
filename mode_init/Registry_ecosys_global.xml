@@ -1,0 +1,15 @@
+	<nml_record name="ecosys_global" mode="init" configuration="ecosys_global">
+		<nml_option name="config_global_ecosys_filename" type="character" default_value="unknown" units="unitless"
+			description="Name of file containing global values of ecosys variables"
+			possible_values="path/ecoIC+phaeo.mpas100levs.singleColumn.forMPASO.renamed.nc"
+		/>
+		<nml_option name="config_global_ecosys_forcing_filename" type="character" default_value="unknown" units="unitless"
+			description="Name of file containing global values of ecosys forcing fields"
+			 possible_values="path/ecoForcingAll.forMPASO_100levels.interp360x180.nc"
+		/>
+		<nml_option name="config_global_ecosys_forcing_time_dimname" type="character" default_value="none" units="unitless"
+			description="Name of the dimension that determines the times in ecosys forcing files."
+			possible_values="Dim name from input files."
+		/>
+
+	</nml_record>
