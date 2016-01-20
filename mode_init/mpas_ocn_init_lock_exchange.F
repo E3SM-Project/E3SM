@@ -202,8 +202,6 @@ contains
 
          call ocn_mark_north_boundary(meshPool, yMaxGlobal, dcEdgeMinGlobal, iErr)
          call ocn_mark_south_boundary(meshPool, yMinGlobal, dcEdgeMinGlobal, iErr)
-         call ocn_mark_east_boundary(meshPool, xMaxGlobal, dcEdgeMinGlobal, iErr)
-         call ocn_mark_west_boundary(meshPool, xMinGlobal, dcEdgeMinGlobal, iErr)
 
          do iCell = 1, nCellsSolve
             ! Set temperature, layerThickness, and restingThickness
