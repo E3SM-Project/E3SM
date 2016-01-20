@@ -197,7 +197,7 @@ def create_test(testargs, compiler, no_run, no_build, no_batch, test_root,
                                            clean=clean, compiler=compiler,
                                            compare=compare, generate=generate, namelists_only=namelists_only,
                                            project=project, parallel_jobs=parallel_jobs)
-        return 0 if impl.create_test() else 1
+        return 0 if impl.create_test() else acme_util.TESTS_FAILED_ERR_CODE
     else:
 
         # Delete everything below
