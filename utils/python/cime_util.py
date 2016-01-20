@@ -36,7 +36,7 @@ _MACHINE_PROJECTS = {
     "blues"     : "ACME",
     "titan"     : "cli115",
     "mira"      : "HiRes_EarthSys",
-    "cetus"     : "HiRes_EarthSys",    
+    "cetus"     : "HiRes_EarthSys",
     "yellowstone" : "P93300606",
 }
 
@@ -322,9 +322,9 @@ def get_python_libs_location_within_cime():
     return os.path.join("utils", "python")
 
 ###############################################################################
-def get_acme_config_location_within_cime():
+def get_model_config_location_within_cime(model=get_model()):
 ###############################################################################
-    return os.path.join("cime_config", "acme")
+    return os.path.join("cime_config", model)
 
 ###############################################################################
 def get_cime_root():
@@ -372,15 +372,15 @@ def get_python_libs_root():
     return os.path.join(get_cime_root(), get_python_libs_location_within_cime())
 
 ###############################################################################
-def get_acme_config_root():
+def get_model_config_root(model=get_model()):
 ###############################################################################
     """
     Get absolute path to acme config area"
 
-    >>> os.path.isdir(get_acme_config_root())
+    >>> os.path.isdir(get_model_config_root())
     True
     """
-    return os.path.join(get_cime_root(), get_acme_config_location_within_cime())
+    return os.path.join(get_cime_root(), get_model_config_location_within_cime(model))
 
 ###############################################################################
 def stop_buffering_output():
@@ -494,14 +494,22 @@ def delete_jobs(jobs):
     del_cmd = "%s %s" % (BATCH_INFO[batch_system][1], " ".join(jobs))
     return run_cmd(del_cmd, ok_to_fail=True, verbose=True)
 
-
 ###############################################################################
 def set_model(model):
+###############################################################################
     global _MODEL
     _MODEL = model
 
+###############################################################################
 def get_model():
+###############################################################################
     global _MODEL
+    if (_MODEL is None):
+        try:
+            _MODEL = os.environ["CIME_MODEL"]
+        except KeyError:
+            raise SystemExit("Environment variable CIME_MODEL must be set")
+
     return _MODEL
 
 ###############################################################################
@@ -510,11 +518,10 @@ def parse_config_machines():
     """
     """
     global _MACHINE_INFO
-    model = get_model()
     if (_MACHINE_INFO is None):
         _MACHINE_INFO = {}
         import xml.etree.ElementTree as ET
-        config_machines_xml = os.path.join(get_cime_root(), "cime_config", model, "machines", "config_machines.xml")
+        config_machines_xml = os.path.join(get_model_config_root(), "machines", "config_machines.xml")
         tree = ET.parse(config_machines_xml)
         root = tree.getroot()
         expect(root.tag == "config_machines",

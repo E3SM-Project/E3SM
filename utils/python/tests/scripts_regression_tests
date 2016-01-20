@@ -573,7 +573,7 @@ class TestUpdateACMETests(unittest.TestCase):
     def setUp(self):
     ###########################################################################
         # Grab all active tests
-        self._testlist_allactive = os.path.join(acme_util.get_acme_config_root(), "allactive", "testlist_allactive.xml")
+        self._testlist_allactive = os.path.join(acme_util.get_model_config_root(), "allactive", "testlist_allactive.xml")
         shutil.copy2(self._testlist_allactive, ".")
 
     ###########################################################################

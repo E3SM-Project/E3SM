@@ -14,13 +14,7 @@ sub main
     Log::Log4perl->easy_init({level=>"INFO",
 			  layout=>'%m%n'});
 
-    my $mach_dir = shift;
-    my $machine  = shift;
     my $xml_file = shift;
-
-    print "mach_dir: $mach_dir\n";
-    print "machine: $machine\n";
-    print "xml_file: $xml_file\n";
 
     my $file = "$cimeroot/driver_cpl/cime_config/config_component.xml";
     my $srcroot  = abs_path("$cimeroot/../");
@@ -29,18 +23,13 @@ sub main
 
     $cfg_ref->add_config_variables($file, $srcroot, $cimeroot);
 
-    # $cfg_ref->set_machine("${mach_dir}/config_machines.xml", $machine, 0);
-
     while (my $value = shift) {
         my @key_val_pair = split(",", $value);
-        print "Doing key pair $key_val_pair[0],$key_val_pair[1]\n";
         $cfg_ref->set($key_val_pair[0], $key_val_pair[1]);
     }
 
-    print "About to write file!!\n";
     my $caseheaders = "";
     $cfg_ref->write_file($xml_file, $caseheaders, $caseroot, $cimeroot);
-    print "File write complete!!\n";
 }
 
 main(@ARGV) unless caller();

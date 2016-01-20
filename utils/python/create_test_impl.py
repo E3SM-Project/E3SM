@@ -234,14 +234,12 @@ class CreateTest(object):
     ###########################################################################
     def _xml_phase(self, test_name):
     ###########################################################################
-        test_case, _, _, _, machine, _, _ = cime_util.parse_test_name(test_name)
+        test_case = cime_util.parse_test_name(test_name)[0]
 
         xml_file = os.path.join(self._get_test_dir(test_name), "env_test.xml")
         xml_bridge_cmd = os.path.join(cime_util.get_acme_scripts_root(), "xml_bridge")
 
-        mach_dir = os.path.join(self._cime_root, cime_util.get_model(), "machines")
-        xml_bridge_cmd += " %s %s %s" % (mach_dir, machine, xml_file)
-
+        xml_bridge_cmd += " %s" xml_file
         xml_bridge_cmd += " TESTCASE,%s" % test_case
         xml_bridge_cmd += " TEST_TESTID,%s" % self._test_id
 

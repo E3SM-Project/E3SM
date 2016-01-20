@@ -252,8 +252,6 @@ def _main_func(description):
         return
 
     cime_util.stop_buffering_output()
-    model = os.getenv("CIME_MODEL","acme")
-    cime_util.set_model(model)
     testargs, compiler, no_run, no_build, no_batch, test_root, baseline_root, clean, \
         compare, generate, baseline_name, namelists_only, project, test_id, old, parallel_jobs, \
         = parse_command_line(sys.argv, description)
