@@ -1592,9 +1592,6 @@ contains
     use pio_types
 
     type (iosystem_desc_t), intent(inout)  :: iosystem  ! io descriptor to initalize
-    integer :: opt
-    logical :: disable_flow_control
-    logical :: disable_comp2io_flow_control, disable_io2comp_flow_control
 
 #ifdef _USE_ALLTOALLW
     iosystem%rearr_opts%comm_type = PIO_rearr_comm_coll
@@ -1602,54 +1599,23 @@ contains
     iosystem%rearr_opts%comm_type = PIO_rearr_comm_p2p
 #endif
 
-    disable_flow_control = .false.
-    ! Flow control options are only available for p2p
-    if(iosystem%rearr_opts%comm_type == PIO_rearr_comm_p2p) then
-      ! Disable flow control if we are using serial MPI (serial MPI lib)
-      ! or if user explicitly disables flow control, _NO_FLOW_CONTROL
-#ifdef _MPI_SERIAL
-      disable_flow_control = .true.
-#endif
 #ifdef _NO_FLOW_CONTROL
-      disable_flow_control = .true.
+    iosystem%rearr_opts%comm_fc_opts%fcd = PIO_rearr_comm_fc_2d_disable
+#else
+    ! We ignore the following flags 
+    ! 1) _MPISERIAL : The flow control code is never used when _MPISERIAL is set
+    ! 2) _USE_COMP2IO_FC/_USE_IO2COMP_FC : These flags are not currently used
+    !  (These were experimental flags). The user can explicitly control
+    !  these options (comp2io and io2comp flow control) via rearranger
+    !  options passed to pio_init()
+    iosystem%rearr_opts%comm_fc_opts%fcd = PIO_rearr_comm_fc_2d_enable
 #endif
-      if(.not. disable_flow_control) then
-        disable_comp2io_flow_control = .false.
-        disable_io2comp_flow_control = .false.
-        ! If user explicitly disables flow control in one direction
-        ! by not defining _USE_COMP2IO_FC or _USE_IO2COMP_FC disable
-        ! flow control in that direction (or both directions)
-#ifndef _USE_COMP2IO_FC
-        disable_comp2io_flow_control = .true.
-#endif
-#ifndef _USE_IO2COMP_FC
-        disable_io2comp_flow_control = .true.
-        if(disable_comp2io_flow_control) then
-          disable_flow_control = .true.
-        endif
-#endif
-        if(.not. disable_flow_control) then
-          ! Flow control is enabled in either one or both directions
-          iosystem%rearr_opts%comm_fc_opts%fcd = PIO_rearr_comm_fc_2d_enable
-          if(disable_comp2io_flow_control) then
-            iosystem%rearr_opts%comm_fc_opts%fcd = PIO_rearr_comm_fc_1d_io2comp
-          else if(disable_io2comp_flow_control) then
-            iosystem%rearr_opts%comm_fc_opts%fcd = PIO_rearr_comm_fc_1d_comp2io
-          endif
-          iosystem%rearr_opts%comm_fc_opts%enable_hs = DEF_P2P_HANDSHAKE
-          iosystem%rearr_opts%comm_fc_opts%enable_isend = DEF_P2P_ISEND
-          iosystem%rearr_opts%comm_fc_opts%max_pend_req = DEF_P2P_MAXREQ
-        endif
-      endif
-    else
-      disable_flow_control = .true.
-    endif
-    if(disable_flow_control)then
-      iosystem%rearr_opts%comm_fc_opts%fcd = PIO_rearr_comm_fc_2d_disable
-      iosystem%rearr_opts%comm_fc_opts%enable_hs = .false.
-      iosystem%rearr_opts%comm_fc_opts%enable_isend = .false.
-      iosystem%rearr_opts%comm_fc_opts%max_pend_req = PIO_REARR_COMM_UNLIMITED_PEND_REQ
-    endif
+
+    ! the following will be ignored if not p2p with flow control
+    iosystem%rearr_opts%comm_fc_opts%enable_hs = DEF_P2P_HANDSHAKE
+    iosystem%rearr_opts%comm_fc_opts%enable_isend = DEF_P2P_ISEND
+    iosystem%rearr_opts%comm_fc_opts%max_pend_req = DEF_P2P_MAXREQ
+
   end subroutine init_iosystem_rearr_options
 
 
