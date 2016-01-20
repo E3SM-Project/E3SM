@@ -73,7 +73,7 @@ contains
     integer :: i, mpierr, ndims
 
 #ifdef TIMING
-    call t_startf("pio_read_nfdarray_{TYPE}")
+    call t_startf("PIO:pio_read_nfdarray_{TYPE}")
 #endif
     iotype = File%iotype
     ierr=PIO_noerr
@@ -203,7 +203,7 @@ contains
     endif ! File%iosystem%IOproc
     call check_netcdf(File, ierr,__PIO_FILE__,__LINE__);
 #ifdef TIMING
-    call t_stopf("pio_read_nfdarray_{TYPE}")
+    call t_stopf("PIO:pio_read_nfdarray_{TYPE}")
 #endif
 
   end function read_nfdarray_{TYPE}
