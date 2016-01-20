@@ -14,6 +14,7 @@
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
+		<template file="land_ice_fluxes.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<stream name="globalStatsOutput">
 			<attribute name="clobber_mode">truncate</attribute>
