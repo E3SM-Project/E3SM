@@ -821,7 +821,7 @@ contains
     ! testing.
     !-------------------------------------------
 #ifdef TIMING
-    call t_startf("PIO_initdecomp")
+    call t_startf("PIO:PIO_initdecomp")
 #endif
 #ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
@@ -946,7 +946,7 @@ contains
     end if
 #endif
 #ifdef TIMING
-    call t_stopf("PIO_initdecomp")
+    call t_stopf("PIO:PIO_initdecomp")
 #endif
   end subroutine initdecomp_1dof_nf_i8
 
@@ -1030,7 +1030,7 @@ contains
     nullify(displace)
 
 #ifdef TIMING
-    call t_startf("PIO_initdecomp_dof")
+    call t_startf("PIO:PIO_initdecomp_dof")
 #endif
     if(iosystem%async_interface .and. .not. iosystem%ioproc) then
        msg = PIO_MSG_INITDECOMP_DOF
@@ -1239,7 +1239,7 @@ contains
     end if
 #endif
 #ifdef TIMING
-    call t_stopf("PIO_initdecomp_dof")
+    call t_stopf("PIO:PIO_initdecomp_dof")
 #endif
 
   end subroutine PIO_initdecomp_dof_i8
@@ -1285,7 +1285,7 @@ contains
 
 
 #ifdef TIMING
-    call t_startf("PIO_initdecomp_dof")
+    call t_startf("PIO:PIO_initdecomp_dof")
 #endif
     if(iosystem%async_interface .and. .not. iosystem%ioproc) then
        msg = PIO_MSG_INITDECOMP_DOF
@@ -1415,7 +1415,7 @@ contains
     end if
 #endif
 #ifdef TIMING
-    call t_stopf("PIO_initdecomp_dof")
+    call t_stopf("PIO:PIO_initdecomp_dof")
 #endif
 
   end subroutine PIO_initdecomp_dof_i8_vdc
@@ -1668,7 +1668,7 @@ contains
     integer(i4) :: rearrFlag
 
 #ifdef TIMING
-    call t_startf("PIO_init")
+    call t_startf("PIO:PIO_init")
 #endif
 
     iosystem%error_handling = PIO_internal_error
@@ -1911,7 +1911,7 @@ contains
          iosystem%io_rank, iosystem%iomaster, iosystem%comp_comm, iosystem%io_comm
 
 #ifdef TIMING
-    call t_stopf("PIO_init")
+    call t_stopf("PIO:PIO_init")
 #endif
   end subroutine init_intracom
 
@@ -1950,7 +1950,7 @@ contains
     integer :: itmp
     
 #ifdef TIMING
-    call t_startf("PIO_init")
+    call t_startf("PIO:PIO_init")
 #endif
 #if defined(NO_MPI2) || defined(_MPISERIAL)
     call piodie( __PIO_FILE__,__LINE__, &
@@ -2148,7 +2148,7 @@ contains
     
     if(DebugAsync) print*,__PIO_FILE__,__LINE__, iosystem(1)%ioranks
 #ifdef TIMING
-    call t_stopf("PIO_init")
+    call t_stopf("PIO:PIO_init")
 #endif
 #endif
   end subroutine init_intercom
@@ -2511,7 +2511,7 @@ contains
 
 #endif
 #ifdef TIMING
-    call t_startf("PIO_createfile")
+    call t_startf("PIO:PIO_createfile")
 #endif
 
     if(debug.or.debugasync) print *,'createfile: {comp,io}_rank:',iosystem%comp_rank,iosystem%io_rank, &
@@ -2606,7 +2606,7 @@ contains
     if(debug .and. file%iosystem%io_rank==0) print *,__PIO_FILE__,__LINE__,'open: ',file%fh, myfname
     deallocate(myfname)
 #ifdef TIMING
-    call t_stopf("PIO_createfile")
+    call t_stopf("PIO:PIO_createfile")
 #endif
   end function createfile
 !>
@@ -2675,7 +2675,7 @@ contains
     character(len=:), allocatable :: myfname
     integer :: namelen
 #ifdef TIMING
-    call t_startf("PIO_openfile")
+    call t_startf("PIO:PIO_openfile")
 #endif
 
 
@@ -2768,7 +2768,7 @@ contains
     if(ierr==0) file%file_is_open=.true.
     deallocate(myfname)
 #ifdef TIMING
-    call t_stopf("PIO_openfile")
+    call t_stopf("PIO:PIO_openfile")
 #endif
   end function PIO_openfile
 
@@ -2902,7 +2902,7 @@ contains
     logical, parameter :: check = .true.
 
 #ifdef TIMING
-    call t_startf("PIO_closefile")
+    call t_startf("PIO:PIO_closefile")
 #endif
     if(file%iosystem%async_interface .and. .not. file%iosystem%ioproc) then
        msg = PIO_MSG_CLOSE_FILE
@@ -2927,7 +2927,7 @@ contains
     if(ierr==0) file%file_is_open=.false.
 
 #ifdef TIMING
-    call t_stopf("PIO_closefile")
+    call t_stopf("PIO:PIO_closefile")
 #endif
 
 

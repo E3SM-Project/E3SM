@@ -286,25 +286,25 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, niodof, &
     if (pio_option == COLLECTIVE) then
 
 #ifdef TIMING
-      call t_startf("a2a_box_rear_comp2io_{TYPE}")
+      call t_startf("PIO:a2a_box_rear_comp2io_{TYPE}")
 #endif
       call MPI_ALLTOALLW(src,  a2a_sendcounts, a2a_displs, a2a_sendtypes, &
                          dest, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
                          IOsystem%union_comm, ierror                       )
 #ifdef TIMING
-      call t_stopf("a2a_box_rear_comp2io_{TYPE}")
+      call t_stopf("PIO:a2a_box_rear_comp2io_{TYPE}")
 #endif
       call CheckMPIReturn('box_rearrange', ierror)
     else
 #ifdef TIMING
-      call t_startf("swapm_box_rear_comp2io_{TYPE}")
+      call t_startf("PIO:swapm_box_rear_comp2io_{TYPE}")
 #endif
       call pio_swapm( nprocs, myrank,                            &
         src,  ndof,   a2a_sendcounts, a2a_displs, a2a_sendtypes, &
         dest, niodof, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
         IOsystem%union_comm, pio_hs, pio_isend, pio_maxreq        )
 #ifdef TIMING
-       call t_stopf("swapm_box_rear_comp2io_{TYPE}")
+       call t_stopf("PIO:swapm_box_rear_comp2io_{TYPE}")
 #endif
     endif
     call dealloc_check(a2a_sendcounts)
@@ -323,7 +323,7 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, niodof, &
 #endif
 
 #ifdef TIMING
-    call t_startf("p2p_box_rear_comp2io_{TYPE}")
+    call t_startf("PIO:p2p_box_rear_comp2io_{TYPE}")
 #endif
     !
     ! send data from comp procs
@@ -381,7 +381,7 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, niodof, &
     call dealloc_check(sreq, 'send requests')
 
 #ifdef TIMING
-    call t_stopf("p2p_box_rear_comp2io_{TYPE}")
+    call t_stopf("PIO:p2p_box_rear_comp2io_{TYPE}")
 #endif
 
 #if DEBUG_BARRIER
@@ -588,26 +588,26 @@ subroutine box_rearrange_io2comp_{TYPE} (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
     if (pio_option == COLLECTIVE) then
 
 #ifdef TIMING
-      call t_startf("a2a_box_rear_io2comp_{TYPE}")
+      call t_startf("PIO:a2a_box_rear_io2comp_{TYPE}")
 #endif
       call MPI_ALLTOALLW(iobuf,   a2a_sendcounts, a2a_displs, a2a_sendtypes, &
                          compbuf, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
                          IOsystem%union_comm, ierror                          )
 #ifdef TIMING
-      call t_stopf("a2a_box_rear_io2comp_{TYPE}")
+      call t_stopf("PIO:a2a_box_rear_io2comp_{TYPE}")
 #endif
       call CheckMPIReturn(subName, ierror)
     else
 
 #ifdef TIMING
-      call t_startf("swapm_box_rear_io2comp_{TYPE}")
+      call t_startf("PIO:swapm_box_rear_io2comp_{TYPE}")
 #endif
       call pio_swapm( nprocs, myrank,                               &
         iobuf,   niodof, a2a_sendcounts, a2a_displs, a2a_sendtypes, &
         compbuf, ndof,   a2a_recvcounts, a2a_displs, a2a_recvtypes, &
         IOsystem%union_comm, pio_hs, pio_isend, pio_maxreq           )
 #ifdef TIMING
-      call t_stopf("swapm_box_rear_io2comp_{TYPE}")
+      call t_stopf("PIO:swapm_box_rear_io2comp_{TYPE}")
 #endif
     endif
     call dealloc_check(a2a_sendcounts)
@@ -619,7 +619,7 @@ subroutine box_rearrange_io2comp_{TYPE} (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
   else
 
 #ifdef TIMING
-    call t_startf("p2p_box_rear_io2comp_{TYPE}")
+    call t_startf("PIO:p2p_box_rear_io2comp_{TYPE}")
 #endif
     call alloc_check(rreq, num_iotasks, 'recv requests')
 
@@ -681,7 +681,7 @@ subroutine box_rearrange_io2comp_{TYPE} (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
       call dealloc_check(sreq,'send requests')
     endif
 #ifdef TIMING
-    call t_stopf("p2p_box_rear_io2comp_{TYPE}")
+    call t_stopf("PIO:p2p_box_rear_io2comp_{TYPE}")
 #endif
 
   endif ! POINT_TO_POINT

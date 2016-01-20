@@ -81,7 +81,7 @@ contains
     integer :: xlen, msg, mpierr, isize, itype
 
 #ifdef TIMING
-    call t_startf("pio_put_var1_text")
+    call t_startf("PIO:pio_put_var1_text")
 #endif 
     ierr=PIO_NOERR
     iotype = File%iotype 
@@ -161,7 +161,7 @@ contains
     call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
 
 #ifdef TIMING
-    call t_stopf("pio_put_var1_text")
+    call t_stopf("PIO:pio_put_var1_text")
 #endif 
   end function put_var1_text
 ! TYPE int,real,double
@@ -186,7 +186,7 @@ contains
     integer :: xlen, msg, mpierr, itype
 
 #ifdef TIMING
-    call t_startf("pio_put_var1_{TYPE}")
+    call t_startf("PIO:pio_put_var1_{TYPE}")
 #endif 
     ierr=PIO_NOERR
     iotype = File%iotype 
@@ -257,7 +257,7 @@ contains
     call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
 
 #ifdef TIMING
-    call t_stopf("pio_put_var1_{TYPE}")
+    call t_stopf("PIO:pio_put_var1_{TYPE}")
 #endif 
   end function put_var1_{TYPE}
 
@@ -304,7 +304,7 @@ contains
     integer :: dims({DIMS})
     integer :: start({DIMS}+1), count({DIMS}+1)
 #ifdef TIMING
-    call t_startf("pio_put_var_{DIMS}d_text")
+    call t_startf("PIO:pio_put_var_{DIMS}d_text")
 #endif 
     ierr=PIO_NOERR
 
@@ -398,7 +398,7 @@ contains
 
     call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
 #ifdef TIMING
-    call t_stopf("pio_put_var_{DIMS}d_text")
+    call t_stopf("PIO:pio_put_var_{DIMS}d_text")
 #endif 
   end function put_var_{DIMS}d_text
 
@@ -444,7 +444,7 @@ contains
     end if
 #endif
 #ifdef TIMING
-    call t_startf("pio_put_var_{DIMS}d_{TYPE}")
+    call t_startf("PIO:pio_put_var_{DIMS}d_{TYPE}")
 #endif 
 
     ios=>File%iosystem
@@ -496,7 +496,7 @@ contains
 
     call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
 #ifdef TIMING
-    call t_stopf("pio_put_var_{DIMS}d_{TYPE}")
+    call t_stopf("PIO:pio_put_var_{DIMS}d_{TYPE}")
 #endif 
   end function put_var_{DIMS}d_{TYPE}
 
@@ -529,7 +529,7 @@ contains
     is=0       
 
 #ifdef TIMING
-    call t_startf("pio_put_var_0d_{TYPE}")
+    call t_startf("PIO:pio_put_var_0d_{TYPE}")
 #endif 
 
     ios=>File%iosystem
@@ -572,7 +572,7 @@ contains
 
     call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
 #ifdef TIMING
-    call t_stopf("pio_put_var_0d_{TYPE}")
+    call t_stopf("PIO:pio_put_var_0d_{TYPE}")
 #endif 
   end function put_var_0d_{TYPE}
 
@@ -623,7 +623,7 @@ contains
     type(iosystem_desc_t), pointer :: ios
     integer :: dims({DIMS}), xlen, itype, slen
 #ifdef TIMING
-    call t_startf("pio_put_vara_{DIMS}d_text")
+    call t_startf("PIO:pio_put_vara_{DIMS}d_text")
 #endif 
     ndims=0
     ierr=0
@@ -714,7 +714,7 @@ contains
     call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
 
 #ifdef TIMING
-    call t_stopf("pio_put_vara_{DIMS}d_{TYPE}")
+    call t_stopf("PIO:pio_put_vara_{DIMS}d_{TYPE}")
 #endif 
   end function put_vara_{DIMS}d_text
 ! TYPE int,real,double
@@ -744,7 +744,7 @@ contains
     type(iosystem_desc_t), pointer :: ios
     integer :: dims({DIMS}), xlen, itype, slen
 #ifdef TIMING
-    call t_startf("pio_put_vara_{DIMS}d_{TYPE}")
+    call t_startf("PIO:pio_put_vara_{DIMS}d_{TYPE}")
 #endif 
     ierr=0
     iotype = File%iotype 
@@ -834,7 +834,7 @@ contains
     call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
 
 #ifdef TIMING
-    call t_stopf("pio_put_vara_{DIMS}d_{TYPE}")
+    call t_stopf("PIO:pio_put_vara_{DIMS}d_{TYPE}")
 #endif 
   end function put_vara_{DIMS}d_{TYPE}
 
