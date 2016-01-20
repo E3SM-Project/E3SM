@@ -84,6 +84,11 @@
       <lname>a%360x720cru_l%360x720cru_oi%360x720cru_r%r05_m%360x720cru_g%null_w%null</lname>
     </grid>
 
+    <grid compset="DATM.+CLM">
+      <sname>NLDAS_NLDAS</sname>
+      <lname>a%NLDAS_l%NLDAS_oi%NLDAS_r%NLDAS_m%NLDAS_g%null_w%null</lname>
+    </grid>
+
     <!-- eulerian grids -->
 
     <grid>
@@ -703,6 +708,15 @@
       <file lnd_mask="360x720cru">domain.lnd.360x720_cruncep.100429.nc</file>  
       <path lnd_mask="360x720cru">$DIN_LOC_ROOT/share/domains/domain.clm</path>
       <desc>Exact half-degree CRUNCEP datm forcing grid with CRUNCEP land-mask -- only valid for DATM/CLM compset</desc>
+    </domain>
+
+    <domain name="NLDAS">
+      <nx>464</nx> <ny>224</ny>
+      <file atm_mask="NLDAS">domain.lnd.nldas2_0224x0464_c110415.nc</file>
+      <path atm_mask="NLDAS">$DIN_LOC_ROOT/share/domains/domain.clm</path>
+      <file lnd_mask="NLDAS">domain.lnd.nldas2_0224x0464_c110415.nc</file>
+      <path lnd_mask="NLDAS">$DIN_LOC_ROOT/share/domains/domain.clm</path>
+      <desc>NLDAS US one eighth degree grid -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="0.23x0.31">
@@ -1454,6 +1468,9 @@
     </gridmap>
     <gridmap rof_grid="r05" ocn_grid="mpas120" >
       <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_QU120km_nn_151110.nc</ROF2OCN_RMAPNAME>
+    </gridmap>
+    <gridmap rof_grid="r05" ocn_grid="oEC60to30" >
+      <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_oEC60to30_nn.160113.nc</ROF2OCN_RMAPNAME>
     </gridmap>
     <gridmap rof_grid="r05" ocn_grid="tx1v1" >
       <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_tx1v1_e1000r500_080505.nc</ROF2OCN_RMAPNAME>

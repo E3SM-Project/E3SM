@@ -39,6 +39,9 @@ _MACHINE_PROJECTS = {
     "cetus"     : "HiRes_EarthSys",
 }
 
+# Return this error code if the scripts worked but tests failed
+TESTS_FAILED_ERR_CODE = 165
+
 ###############################################################################
 def expect(condition, error_msg):
 ###############################################################################

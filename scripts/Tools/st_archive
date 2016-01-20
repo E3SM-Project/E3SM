@@ -295,7 +295,7 @@ sub listXMLin
 
 The env_archive.xml brief XML tag schema:
 
-    <comp_archive_spec name="[string:component name] (cpl|dart|cam\*|datm|clm\?|dlnd|rtm|cice|dice|pop|docn|cism|ww3|dwav)">
+    <comp_archive_spec name="[string:component name] (cpl|dart|cam\*|datm|clm\?|dlnd|rtm|mosart|cice|dice|pop|docn|cism|ww3|dwav)">
 	<rootdir>[string:root directory name after DOUT_S_ROOT] (rest|cpl|dart|atm|lnd|rof|ice|ocn|glc|wav)</rootdir>
         <files>
             <file_extension regex_suffix="[string: perl regular expression for matching file suffix patterns"]>

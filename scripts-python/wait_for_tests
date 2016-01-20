@@ -85,7 +85,9 @@ def _main_func(description):
     test_paths, no_wait, check_throughput, check_memory, ignore_namelist_diffs, cdash_build_name, cdash_project, cdash_build_group = \
         parse_command_line(sys.argv, description)
 
-    sys.exit(0 if wait_for_tests.wait_for_tests(test_paths, no_wait, check_throughput, check_memory, ignore_namelist_diffs, cdash_build_name, cdash_project, cdash_build_group) else 1)
+    sys.exit(0 if wait_for_tests.wait_for_tests(test_paths, no_wait, check_throughput, check_memory, ignore_namelist_diffs,
+                                                cdash_build_name, cdash_project, cdash_build_group)
+             else acme_util.TESTS_FAILED_ERR_CODE)
 
 ###############################################################################
 

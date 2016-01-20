@@ -50,7 +50,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     default_baseline_name = acme_util.get_current_branch(repo=acme_util.get_cime_root())
     default_compiler      = acme_util.get_machine_info("COMPILERS")[0]
     scratch_root          = acme_util.get_machine_info("CESMSCRATCHROOT")
-    default_testroot      = os.path.join(scratch_root, "jenkins")
+    default_testroot      = os.path.join(scratch_root)
 
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="Print extra information")
