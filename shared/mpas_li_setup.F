@@ -101,6 +101,14 @@ contains
       ! Make config pool publicly available in this module
       liConfigs => domain % configs
 
+
+      ! Print this run's configs to the err log file
+      write(stderrUnit,*) "MPASLI is using the following configuration:"
+      write(stderrUnit,*) "============================================"
+      call mpas_pool_print_summary(liConfigs, MPAS_POOL_CONFIG)
+      write(stderrUnit,*) "============================================"
+      write(stderrUnit,*) ""
+
       ! ---
       ! Config-specific setup occurs below
       ! ---
