@@ -45,9 +45,9 @@ _TEST_SUITES = {
                              "ERS.ne16_ne16.FC5CLBMG2",
                              "ERS.ne16_ne16.FC5CLBMG2MAM4",
                              "ERS.ne16_ne16.FC5CLBMG2MAM4RESUS",
-                             "ERS.ne16_ne16.FC5CLBMG2MAM4RESUSCOSP",
-                             "ERS.ne16_ne16.FC5CLBMG2MAM4RESUSCOSPBC",
-                             "ERS.ne16_ne16.FC5ATMMOD")
+                             "ERS.f19_g16.FC5CLBMG2MAM4RESUSBC",
+                             "ERS.f19_g16.FC5CLBMG2MAM4RESUSMOMBC",
+                             "ERS.f19_g16.FC5ATMMOD")
                             ),
 
     "cime_developer" : (None,
