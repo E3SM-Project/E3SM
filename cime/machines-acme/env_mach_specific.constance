@@ -33,11 +33,11 @@ if ( $COMPILER == "pgi") then
     module load mvapich2/2.1
     module load netcdf/4.3.2
 
-    module load pnetcdf/1.6.1
-    setenv PNETCDFROOT $NETCDF_LIB/../
+    setenv MPI_LIB $MPI_ROOT/lib
 
-    module load mkl/15.0.1
-    setenv MKL_PATH $MLIB_LIB
+    module load pnetcdf/1.6.1
+    setenv PNETCDFROOT $PNETCDF_LIB/../
+
     setenv NETCDF_HOME $NETCDF_LIB/../
 endif
 
