@@ -476,7 +476,7 @@ module namelist_mod
       ! override the selected partition
       ! method and set it to SFCURVE
       !=================================
-      PARTMETHOD = SFCURVE
+      !PARTMETHOD = SFCURVE
 #endif
        ! ========================
        ! if this is a restart run

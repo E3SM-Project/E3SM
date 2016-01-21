@@ -78,7 +78,7 @@ contains
     ! --------------------------------
     use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology
     ! --------------------------------
-    use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
+    use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopologyCoords, &
          MeshCubeElemCount, MeshCubeEdgeCount
     use cube_mod, only : cube_init_atomic, rotation_init_atomic, set_corner_coordinates, assign_node_numbers_to_elem
     ! --------------------------------
@@ -110,10 +110,15 @@ contains
     use metis_mod, only : genmetispart
     ! --------------------------------
     use spacecurve_mod, only : genspacepart
+    !-----------------
+    use zoltan_mod, only : genzoltanpart, getfixmeshcoordinates
     ! --------------------------------
     use dof_mod, only : global_dof, CreateUniqueIndex, SetElemOffset
     ! --------------------------------
-    use params_mod, only : SFCURVE
+    use params_mod, only : SFCURVE, &
+                           ZOLTAN2RCB, ZOLTAN2MJ, ZOLTAN2RIB, ZOLTAN2HSFC, ZOLTAN2PATOH, ZOLTAN2PHG, ZOLTAN2METIS, &
+                           ZOLTAN2PARMETIS, ZOLTAN2SCOTCH, ZOLTAN2PTSCOTCH, ZOLTAN2BLOCK, ZOLTAN2CYCLIC, ZOLTAN2RANDOM, &
+                           ZOLTAN2ZOLTAN, ZOLTAN2ND, ZOLTAN2PARMA
     ! --------------------------------
     use domain_mod, only : domain1d_t, decompose
     ! --------------------------------
@@ -165,6 +170,9 @@ contains
     real(kind=real_kind) :: approx_elements_per_task
     integer :: n_domains
 
+    real (kind=real_kind) ,  allocatable :: coord_dim1(:)
+    real (kind=real_kind) ,  allocatable :: coord_dim2(:)
+    real (kind=real_kind) ,  allocatable :: coord_dim3(:)
 
 #ifndef CAM
     logical :: repro_sum_use_ddpdd, repro_sum_recompute
@@ -231,6 +239,12 @@ contains
     ! Allocate and initialize the graph (array of GridVertex_t types)
     ! ===============================================================
 
+
+
+    !allocate(coord_dim1(SIZE(GridVertex)))
+    !allocate(coord_dim2(SIZE(GridVertex)))
+    !allocate(coord_dim3(SIZE(GridVertex)))
+
     if (topology=="cube") then
 
        if (par%masterproc) then
@@ -256,9 +270,28 @@ contains
            if (par%masterproc) then
                write(iulog,*) "Set up grid vertex from mesh..."
            end if
-           call MeshCubeTopology(GridEdge, GridVertex)
+           call MeshCubeTopologyCoords(GridEdge, GridVertex, coord_dim1, coord_dim2, coord_dim3)
+
        else
            call CubeTopology(GridEdge,GridVertex)
+           if (partmethod .eq. ZOLTAN2RCB .OR. &
+             partmethod .eq. ZOLTAN2MJ .OR.  &
+             partmethod .eq. ZOLTAN2RIB .OR. &
+             partmethod .eq. ZOLTAN2HSFC .OR. &
+             partmethod .eq. ZOLTAN2PATOH .OR. &
+             partmethod .eq. ZOLTAN2PHG .OR. &
+             partmethod .eq. ZOLTAN2METIS .OR. &
+             partmethod .eq. ZOLTAN2PARMETIS .OR. &
+             partmethod .eq. ZOLTAN2SCOTCH .OR. &
+             partmethod .eq. ZOLTAN2PARMA .OR. &
+             partmethod .eq. ZOLTAN2PTSCOTCH .OR. &
+             partmethod .eq. ZOLTAN2BLOCK .OR. &
+             partmethod .eq. ZOLTAN2CYCLIC .OR. &
+             partmethod .eq. ZOLTAN2RANDOM .OR. &
+             partmethod .eq. ZOLTAN2ZOLTAN .OR. &
+             partmethod .eq. ZOLTAN2ND) then
+            call getfixmeshcoordinates(GridVertex, coord_dim1, coord_dim2, coord_dim3)
+           endif
         end if
 
        if(par%masterproc)       write(iulog,*)"...done."
@@ -271,6 +304,23 @@ contains
     if(partmethod .eq. SFCURVE) then
        if(par%masterproc) write(iulog,*)"partitioning graph using SF Curve..."
        call genspacepart(GridEdge,GridVertex)
+    else if (partmethod .eq. ZOLTAN2RCB .OR. &
+             partmethod .eq. ZOLTAN2MJ .OR.  &
+             partmethod .eq. ZOLTAN2RIB .OR. &
+             partmethod .eq. ZOLTAN2HSFC .OR. &
+             partmethod .eq. ZOLTAN2PATOH .OR. &
+             partmethod .eq. ZOLTAN2PHG .OR. &
+             partmethod .eq. ZOLTAN2METIS .OR. &
+             partmethod .eq. ZOLTAN2PARMETIS .OR. &
+             partmethod .eq. ZOLTAN2PARMA .OR. &
+             partmethod .eq. ZOLTAN2SCOTCH .OR. &
+             partmethod .eq. ZOLTAN2PTSCOTCH .OR. &
+             partmethod .eq. ZOLTAN2BLOCK .OR. &
+             partmethod .eq. ZOLTAN2CYCLIC .OR. &
+             partmethod .eq. ZOLTAN2RANDOM .OR. &
+             partmethod .eq. ZOLTAN2ZOLTAN .OR. &
+             partmethod .eq. ZOLTAN2ND) then
+        call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3)
     else
         if(par%masterproc) write(iulog,*)"partitioning graph using Metis..."
        call genmetispart(GridEdge,GridVertex)
@@ -296,7 +346,6 @@ contains
     !  Generate the communication graph
     ! ====================================================
     call initMetaGraph(iam,MetaVertex(1),GridVertex,GridEdge)
-
 
     nelemd = LocalElemCount(MetaVertex(1))
     if(par%masterproc .and. Debug) then 
@@ -336,6 +385,7 @@ contains
     ! ====================================================
 
     call genEdgeSched(elem,iam,Schedule(1),MetaVertex(1))
+
 
     allocate(global_shared_buf(nelemd,nrepro_vars))
     global_shared_buf=0.0_real_kind
@@ -575,6 +625,7 @@ contains
     end if
 
     call TimeLevel_init(tl)
+
     if(par%masterproc) write(iulog,*) 'end of prim_init'
   end subroutine prim_init1
 !=======================================================================================================!

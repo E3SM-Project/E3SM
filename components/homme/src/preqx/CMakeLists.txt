@@ -3,6 +3,8 @@
 # and executable preqx.
 
 
+INCLUDE_DIRECTORIES ( ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
+LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
 
 SET(UTILS_SHARE_DIR ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(SRC_DIR         ${HOMME_SOURCE_DIR}/src)
@@ -13,7 +15,7 @@ SET(UTILS_TIMING_DIR ${CMAKE_BINARY_DIR}/utils/timing)
 # Make INCLUDE_DIRS global so the tests can access it
 SET (PREQX_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
                         ${UTILS_TIMING_DIR}
-                        ${SRC_SHARE_DIR} CACHE INTERNAL "include directories for preqx")
+                        ${SRC_SHARE_DIR} ${Zoltan_INCLUDE_DIR} CACHE INTERNAL "include directories for preqx")
 
 SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/openacc/bndry_openacc_mod.F90
@@ -96,6 +98,7 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/prim_advection_mod.F90 
   ${SRC_DIR}/forcing_mod.F90 
   ${SRC_SHARE_DIR}/metis_mod.F90 
+  ${SRC_SHARE_DIR}/zoltan_mod.F90
   ${SRC_SHARE_DIR}/prim_driver_mod.F90 
   ${SRC_DIR}/vertical_mod.F90 
   ${SRC_DIR}/prim_movie_mod.F90 
@@ -116,7 +119,14 @@ SET(PREQX_SRCS_F90
 SET(PREQX_SRCS_C
   ${UTILS_SHARE_DIR}/shr_vmath_fwrap.c
   ${SRC_DIR}/jrio.c
+  ${SRC_SHARE_DIR}/zoltan_interface.c 
 )
+
+IF (${HOMME_USE_TRILINOS})
+SET (PREQX_SRCS_CPP ${SRC_SHARE_DIR}/zoltan_cppinterface.cpp)
+SET_SOURCE_FILES_PROPERTIES( ${SRC_SHARE_DIR}/zoltan_cppinterface.cpp PROPERTIES LANGUAGE CXX )
+ENDIF()
+
 
 # If the user specified a file for custom compiler options use those
 IF (DEFINED PREQX_CUSTOM_FLAGS_FILE)
@@ -124,7 +134,7 @@ IF (DEFINED PREQX_CUSTOM_FLAGS_FILE)
 ENDIF ()
 
 # Make SRCS global so the tests can access it
-SET(PREQX_SRCS ${PREQX_SRCS} ${PREQX_SRCS_C} ${PREQX_SRCS_F90} CACHE INTERNAL "Sources for preqx")
+SET(PREQX_SRCS ${PREQX_SRCS} ${PREQX_SRCS_C} ${PREQX_SRCS_F90} ${PREQX_SRCS_CPP} CACHE INTERNAL "Sources for preqx")
 
 # Set up defaults
 IF (NOT PREQX_NP)
@@ -167,12 +177,16 @@ IF (${ENABLE_HORIZ_OPENMP} AND ${ENABLE_COLUMN_OPENMP})
   SET(NESTED_OPENMP TRUE CACHE BOOL "Both horizontal and column threading")
 ENDIF ()
 
+
 # The following macro handles the compilation with the appropriate variables
 ############################################################################
 # createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
 ############################################################################
 createTestExec(preqx preqx ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} 
                ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY})
+ 
+              
+TARGET_LINK_LIBRARIES(preqx ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
 
 IF (${BUILD_PREQX_SPELT})
   MESSAGE(STATUS "  Also building preqx_spelt")
