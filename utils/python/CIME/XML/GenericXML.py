@@ -1,5 +1,6 @@
 """
-Common interface to XML files
+Common interface to XML files, this is an abstract class and is expected to 
+be used by other XML interface modules and not directly. 
 """
 
 import xml.etree.ElementTree as ET
@@ -8,6 +9,7 @@ import logging
 
 class GenericXML:
     def __init__(self, infile=None):
+        """ Initialize an object """
         if(infile == None):
             # if file is not defined just return
             self.filename = None
@@ -24,11 +26,13 @@ class GenericXML:
             self.root.ET.set('version','1.0')
             
     def read(self,infile):
+        """ Read and parse an xml file into the object """
         logger.debug("read: "+infile)
         self.tree = ET.parse(infile)
         self.root = self.tree.getroot()
 
     def write(self, cimeroot, infile):
+        """ Write an xml file from data in self """
         logger.debug("write: "+ infile)
 #        styledoc = os.path.join(cimeroot,"cime_config","xml_schemas","case_xml.xsl")
 #        stylesheet = libxslt.parseStylesheetDoc(styledoc)
@@ -42,6 +46,7 @@ class GenericXML:
             self.tree.write(self.filename)
     
     def GetNode(self, nodename, attributes=None):
+        """ Get an xml element matching nodename with optional attributes """
         xpath = ".//"+nodename
         if(attributes):
             keys = list(attributes.keys())
@@ -64,6 +69,7 @@ class GenericXML:
             return None
 
     def addChild(self, node):
+        """ Add element node to self at root """
         self.tree.insert(self.root, node)
 
 
