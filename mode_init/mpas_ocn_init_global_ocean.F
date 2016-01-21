@@ -143,10 +143,10 @@ contains
       end if
 
       write(stderrUnit,*) 'Initializing vertical coordinate with ssh = 0.'
-      ! compute the vertical grid (layerThickness, restingThickness, maxLevelCell, zMid) 
+      ! compute the vertical grid (layerThickness, restingThickness, maxLevelCell, zMid)
       ! based on bottomDepth and refBottomDepth (and refSSH if land ice is present)
       call ocn_init_ssh_and_ssp_vertical_grid(domain, iErr)
-           
+
       if(iErr .ne. 0) then
         write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_ssp_vertical_grid failed.'
         call mpas_dmpar_finalize(domain % dminfo)
@@ -160,7 +160,7 @@ contains
          call ocn_init_setup_global_ocean_interpolate_swData(domain,iErr)
          write(stderrUnit,*) 'Cleaning penetrating shortwave data'
          call ocn_init_global_ocean_destroy_swData_fields()
-      
+
       endif
 
       write(stderrUnit,*) 'Reading temperature IC.'
@@ -188,7 +188,7 @@ contains
          if(iErr .ne. 0) then
            write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_ssp_balance failed.'
            call mpas_dmpar_finalize(domain % dminfo)
-         end if        
+         end if
 
          write(stderrUnit,*) 'Cleaning up land ice topography IC fields'
          call ocn_init_global_ocean_destroy_land_ice_topography_fields()
@@ -206,7 +206,7 @@ contains
       if(iErr .ne. 0) then
         write(stderrUnit,*) 'ERROR: ocn_compute_Haney_number failed.'
         call mpas_dmpar_finalize(domain % dminfo)
-      end if        
+      end if
 
 
       if (config_global_ocean_cull_inland_seas) then
@@ -590,11 +590,11 @@ contains
              iErr = 1
              call mpas_dmpar_finalize(domain % dminfo)
           endif
- 
+
           do iCell = 1, nCells
              ! Record depth of the bottom of the ocean, before any alterations for modeling purposes.
              ! Flip the sign to positive down.
-             bottomDepthObserved(iCell) = -bottomDepthObserved(iCell) 
+             bottomDepthObserved(iCell) = -bottomDepthObserved(iCell)
              isOcean = bottomDepthObserved(iCell) > 0.0_RKIND
              if (config_global_ocean_topography_has_ocean_frac) then
                 ! if there is an ocean-fraction field, mark cells that are < 50% ocean as land
@@ -693,7 +693,7 @@ contains
 !> \author  Jeremy Fyke, Xylar Asay-Davis, Mark Petersen
 !> \date    06/25/2014
 !> \details
-!>  This routine interpolates ice sheet thickness data to the MPAS mesh. 
+!>  This routine interpolates ice sheet thickness data to the MPAS mesh.
 !
 !-----------------------------------------------------------------------
 
@@ -815,14 +815,14 @@ contains
                 bottomDepth(iCell) = 0.0_RKIND
                 cycle
              end if
-  
+
              if(landIceFracObserved(iCell) > landIceFracThreshold) then
                 landIceFraction(iCell) = landIceFracObserved(iCell)
              end if
-  
+
              ! nothing to do here if the cell is open ocean or land
              if (landIceFraction(iCell) <= 0.0_RKIND .or. maxLevelCell(iCell) <= 0) cycle
-  
+
              modifySSHMask(iCell) = 1
              if(config_iterative_init_variable == 'ssh') then
                 ! we compute the SSP first and find out the SSH
@@ -1806,7 +1806,7 @@ subroutine ocn_init_setup_global_ocean_interpolate_swData(domain, iErr)!{{{
    type(MPAS_TimeInterval_type) :: timeStep ! time step interval
    type(MPAS_Time_Type) :: currentTime
    character(len=STRKIND) :: currentTimeStamp
-   
+
    real (kind=RKIND) :: counter
    real (kind=RKIND) :: dt
    real (kind=RKIND) :: x, x1, x2, y, y1, y2, coef, coef11, coef12, coef21, coef22
