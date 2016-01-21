@@ -84,3 +84,5 @@ endforeach()
 
 create_pFUnit_test(dynamic_vector dynamic_vector_exe
   "${pf_sources}" "${test_sources}")
+
+declare_generated_dependencies(dynamic_vector_exe "${share_genf90_sources}")

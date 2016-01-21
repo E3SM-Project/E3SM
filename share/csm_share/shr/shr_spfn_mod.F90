@@ -9,7 +9,10 @@
 ! HAVE_ERF_EXTERNALS: erf and erfc
 
 ! These compilers have the intrinsics.
-#if defined CPRIBM || defined CPRINTEL || defined __GFORTRAN__ || defined CPRCRAY
+! Intel also has them (and Cray), but as of mid-2015, our implementation is
+! actually faster, in part because they do not properly vectorize, so we
+! pretend that the compiler version doesn't exist.
+#if defined CPRIBM || defined __GFORTRAN__
 #define HAVE_GAMMA_INTRINSICS
 #define HAVE_ERF_INTRINSICS
 #endif
