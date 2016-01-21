@@ -9,7 +9,6 @@
 #-----------------------------------------------------------------------------------------------
 
 use strict;
-use Cwd;
 use English;
 use Getopt::Long;
 use Cwd qw( getcwd abs_path chdir);
@@ -920,13 +919,14 @@ if (! -f "$mkbatch") {
     "$scriptsroot/Tools/st_archive", 
     "$scriptsroot/Tools/getTiming", 
     "$scriptsroot/Tools/SetupTools.pm",
+    "$scriptsroot/Tools/ProjectTools.pm",
     "$scriptsroot/Tools/compare_namelists.pl",
     "$machdir/ccsm_getenv", 
     "$machdir/taskmaker.pl", 
     "$machdir/Makefile",
     "$machdir/mkSrcfiles", 
-    "$machdir/mkDepends", 
-    "$mkbatch");
+    "$machdir/mkDepends");
+    #"$mkbatch");
 
 foreach my $file (@files) {
     $sysmod = "cp -p $file $caseroot/Tools/. "; 
@@ -954,8 +954,8 @@ $sysmod = "cp  $scriptsroot/Tools/cesm_submit $caseroot/$case.submit";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # Create $case.l_archive
-my $sysmod = "env CCSMUSER=$ccsmuser CASE=$case CASEROOT=$caseroot PROJECT=$project env PHASE=set_larch $mkbatch";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+#my $sysmod = "env CCSMUSER=$ccsmuser CASE=$case CASEROOT=$caseroot PROJECT=$project env PHASE=set_larch $mkbatch";
+#system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # Create $caseroot preview_namelist file
 my $file = "${caseroot}/preview_namelists"; 
@@ -1046,6 +1046,9 @@ if(-e "$machdir/env_mach_specific.$mach" ) {
 }else{
     $sysmod = "touch $caseroot/env_mach_specific";
 }
+system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+
+$sysmod = "chmod 755 $caseroot/env_mach_specific";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 # Copy Depends files if they exist

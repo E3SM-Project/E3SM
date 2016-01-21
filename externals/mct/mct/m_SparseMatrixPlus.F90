@@ -326,6 +326,7 @@
               ! instead.
      write(stderr,'(4a)') myname_, &
 	  ':: ERROR--Strategy name = ',strategy,' not supported by this routine.'
+     call die(myname_)
   case default ! strategy name not recognized.
      write(stderr,'(5a)') myname_, &
 	  ':: ERROR--Invalid parallelization strategy name = ',strategy,' not ', &

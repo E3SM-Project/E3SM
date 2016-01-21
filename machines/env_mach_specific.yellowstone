@@ -134,3 +134,6 @@ setenv MP_EAGER_LIMIT 0
 if ( $PROFILE_PAPI_ENABLE == "TRUE" ) then
   setenv REQUEST_SUSPEND_HPC_STAT 1
 endif
+if ( $?PERL ) then
+  printenv
+endif

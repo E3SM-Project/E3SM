@@ -898,7 +898,9 @@ You can edit the xml files directly to change the variable
 values. However, modification of the xml variables is best
 done using <command>xmlchange</command> in the $&CASEROOT;
 directory since it performs variable error checking as part of
-changing values in the xml files. To invoke <command> xmlchange</command>:
+changing values in the xml files. <command>xmlchange</command>
+also records changes to the CaseStatus file for future reference
+and reproducibility. To invoke <command> xmlchange</command>:
 </para>
 
 <screen>

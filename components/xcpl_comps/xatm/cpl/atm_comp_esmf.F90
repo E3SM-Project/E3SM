@@ -63,8 +63,8 @@ subroutine atm_register_esmf(comp, rc)
 
     implicit none
 
-    type(ESMF_GridComp), intent(inout)  :: comp
-    integer,             intent(out)    :: rc
+    type(ESMF_GridComp)     :: comp
+    integer, intent(out)    :: rc
 
     rc = ESMF_SUCCESS
 

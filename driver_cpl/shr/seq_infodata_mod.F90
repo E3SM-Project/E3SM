@@ -99,6 +99,10 @@ MODULE seq_infodata_mod
       real(SHR_KIND_R8)       :: orb_obliqr      ! See shr_orb_mod
       real(SHR_KIND_R8)       :: orb_lambm0      ! See shr_orb_mod
       real(SHR_KIND_R8)       :: orb_mvelpp      ! See shr_orb_mod
+      character(SHR_KIND_CS)  :: wv_sat_scheme   ! Water vapor saturation pressure scheme
+      real(SHR_KIND_R8)       :: wv_sat_transition_start ! Saturation transition range
+      logical                 :: wv_sat_use_tables   ! Saturation pressure lookup tables
+      real(SHR_KIND_R8)       :: wv_sat_table_spacing! Saturation pressure table resolution
       character(SHR_KIND_CL)  :: flux_epbal      ! selects E,P,R adjustment technique 
       logical                 :: flux_albav      ! T => no diurnal cycle in ocn albedos
       real(SHR_KIND_R8)       :: wall_time_limit ! force stop time limit (hours)
@@ -292,6 +296,10 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
     real(SHR_KIND_R8)      :: orb_obliqr         ! Obliquity in radians
     real(SHR_KIND_R8)      :: orb_lambm0         ! lon of per at vernal equ
     real(SHR_KIND_R8)      :: orb_mvelpp         ! mvelp plus pi
+    character(SHR_KIND_CS) :: wv_sat_scheme      ! Water vapor saturation pressure scheme
+    real(SHR_KIND_R8)      :: wv_sat_transition_start! Saturation transition range
+    logical                :: wv_sat_use_tables  ! Saturation pressure lookup tables
+    real(SHR_KIND_R8)      :: wv_sat_table_spacing   ! Saturation pressure table resolution
     character(SHR_KIND_CL) :: flux_epbal         ! selects E,P,R adjustment technique 
     logical                :: flux_albav         ! T => no diurnal cycle in ocn albedos
     real(SHR_KIND_R8)      :: wall_time_limit    ! force stop time limit (hours)
@@ -351,6 +359,8 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
          perpetual, perpetual_ymd, flux_epbal, flux_albav, &
          orb_iyear_align, orb_mode, wall_time_limit,       &
          orb_iyear, orb_obliq, orb_eccen, orb_mvelp,       &
+         wv_sat_scheme, wv_sat_transition_start,           &
+         wv_sat_use_tables, wv_sat_table_spacing,          &
          ice_gnam, rof_gnam, glc_gnam, wav_gnam,           &
          atm_gnam, lnd_gnam, ocn_gnam, cpl_decomp,         &
          shr_map_dopole, vect_map, aoflux_grid, do_histinit,  &
@@ -410,6 +420,10 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        orb_obliq             = SHR_ORB_UNDEF_REAL
        orb_eccen             = SHR_ORB_UNDEF_REAL
        orb_mvelp             = SHR_ORB_UNDEF_REAL
+       wv_sat_scheme         = "GoffGratch"
+       wv_sat_transition_start = 20.0
+       wv_sat_use_tables     = .false.
+       wv_sat_table_spacing  = 1.0
        flux_epbal            = 'off'
        flux_albav            = .false.
        wall_time_limit       = -1.0
@@ -499,6 +513,10 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        infodata%outPathRoot           = outPathRoot
        infodata%perpetual             = perpetual
        infodata%perpetual_ymd         = perpetual_ymd
+       infodata%wv_sat_scheme         = wv_sat_scheme
+       infodata%wv_sat_transition_start = wv_sat_transition_start
+       infodata%wv_sat_use_tables     = wv_sat_use_tables
+       infodata%wv_sat_table_spacing  = wv_sat_table_spacing
        infodata%flux_epbal            = flux_epbal
        infodata%flux_albav            = flux_albav
        infodata%wall_time_limit       = wall_time_limit
@@ -782,9 +800,10 @@ SUBROUTINE seq_infodata_GetData( infodata, case_name, case_desc, timing_dir,  &
            histaux_a2x    , histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yr, &
            histaux_a2x24hr, histaux_l2x   , histaux_r2x     , orb_obliq,      &
            cpl_cdf64, orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
-           orb_eccen, orb_obliqr, orb_lambm0, orb_mvelpp, glc_phase, rof_phase, &
-           atm_phase, lnd_phase, ocn_phase, ice_phase, wav_phase,             &
-           wav_nx, wav_ny, atm_nx, atm_ny,                                    &
+           orb_eccen, orb_obliqr, orb_lambm0, orb_mvelpp, wv_sat_scheme,      &
+           wv_sat_transition_start, wv_sat_use_tables, wv_sat_table_spacing,  &
+           glc_phase, rof_phase, atm_phase, lnd_phase, ocn_phase, ice_phase,  &
+           wav_phase, wav_nx, wav_ny, atm_nx, atm_ny,                         &
            lnd_nx, lnd_ny, rof_nx, rof_ny, ice_nx, ice_ny, ocn_nx, ocn_ny,    &
            glc_nx, glc_ny, eps_frac, eps_amask,                               &
            eps_agrid, eps_aarea, eps_omask, eps_ogrid, eps_oarea,             &
@@ -831,6 +850,10 @@ SUBROUTINE seq_infodata_GetData( infodata, case_name, case_desc, timing_dir,  &
    real(SHR_KIND_R8)   ,optional, intent(OUT) :: orb_lambm0    ! See shr_orb_mod
    real(SHR_KIND_R8)   ,optional, intent(OUT) :: orb_mvelpp    ! See shr_orb_mod
    real(SHR_KIND_R8)   ,optional, intent(OUT) :: orb_mvelp     ! See shr_orb_mod
+   character(len=*)    ,optional, intent(OUT) :: wv_sat_scheme ! Water vapor saturation pressure scheme
+   real(SHR_KIND_R8)   ,optional, intent(OUT) :: wv_sat_transition_start   ! Saturation transition range
+   logical             ,optional, intent(OUT) :: wv_sat_use_tables ! Saturation pressure lookup tables
+   real(SHR_KIND_R8)   ,optional, intent(OUT) :: wv_sat_table_spacing  ! Saturation pressure table resolution
    character(len=*)    ,optional, intent(OUT) :: flux_epbal    ! selects E,P,R adjustment technique 
    logical             ,optional, intent(OUT) :: flux_albav    ! T => no diurnal cycle in ocn albedos
    real(SHR_KIND_R8)   ,optional, intent(OUT) :: wall_time_limit ! force stop wall time (hours)
@@ -974,6 +997,11 @@ SUBROUTINE seq_infodata_GetData( infodata, case_name, case_desc, timing_dir,  &
     if ( present(orb_lambm0)     ) orb_lambm0     = infodata%orb_lambm0   
     if ( present(orb_mvelpp)     ) orb_mvelpp     = infodata%orb_mvelpp
     if ( present(orb_mvelp)      ) orb_mvelp      = infodata%orb_mvelp
+    if ( present(wv_sat_scheme)  ) wv_sat_scheme  = infodata%wv_sat_scheme
+    if ( present(wv_sat_transition_start)) &
+         wv_sat_transition_start = infodata%wv_sat_transition_start
+    if ( present(wv_sat_use_tables)) wv_sat_use_tables = infodata%wv_sat_use_tables
+    if ( present(wv_sat_table_spacing)) wv_sat_table_spacing = infodata%wv_sat_table_spacing
     if ( present(flux_epbal)     ) flux_epbal     = infodata%flux_epbal
     if ( present(flux_albav)     ) flux_albav     = infodata%flux_albav
     if ( present(wall_time_limit)) wall_time_limit= infodata%wall_time_limit
@@ -1121,9 +1149,10 @@ SUBROUTINE seq_infodata_PutData( infodata, case_name, case_desc, timing_dir,  &
            histaux_a2x    , histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yr, &
            histaux_a2x24hr, histaux_l2x   , histaux_r2x     , orb_obliq,      &
            cpl_cdf64, orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
-           orb_eccen, orb_obliqr, orb_lambm0, orb_mvelpp, glc_phase, rof_phase, &
-           atm_phase, lnd_phase, ocn_phase, ice_phase, wav_phase,             &
-           wav_nx, wav_ny, atm_nx, atm_ny,                                    &
+           orb_eccen, orb_obliqr, orb_lambm0, orb_mvelpp, wv_sat_scheme,      &
+           wv_sat_transition_start, wv_sat_use_tables, wv_sat_table_spacing,  &
+           glc_phase, rof_phase, atm_phase, lnd_phase, ocn_phase, ice_phase,  &
+           wav_phase, wav_nx, wav_ny, atm_nx, atm_ny,                         &
            lnd_nx, lnd_ny, rof_nx, rof_ny, ice_nx, ice_ny, ocn_nx, ocn_ny,    &
            glc_nx, glc_ny, eps_frac, eps_amask,                               &
            eps_agrid, eps_aarea, eps_omask, eps_ogrid, eps_oarea,             &
@@ -1170,6 +1199,10 @@ SUBROUTINE seq_infodata_PutData( infodata, case_name, case_desc, timing_dir,  &
    real(SHR_KIND_R8)   ,optional, intent(IN) :: orb_lambm0    ! See shr_orb_mod
    real(SHR_KIND_R8)   ,optional, intent(IN) :: orb_mvelpp    ! See shr_orb_mod
    real(SHR_KIND_R8)   ,optional, intent(IN) :: orb_mvelp     ! See shr_orb_mod
+   character(len=*)    ,optional, intent(IN) :: wv_sat_scheme ! Water vapor saturation pressure scheme
+   real(SHR_KIND_R8)   ,optional, intent(IN) :: wv_sat_transition_start  ! Saturation transition range
+   logical             ,optional, intent(IN) :: wv_sat_use_tables ! Saturation pressure lookup tables
+   real(SHR_KIND_R8)   ,optional, intent(IN) :: wv_sat_table_spacing  ! Saturation pressure table resolution
    character(len=*)    ,optional, intent(IN) :: flux_epbal    ! selects E,P,R adjustment technique 
    logical             ,optional, intent(IN) :: flux_albav    ! T => no diurnal cycle in ocn albedos
    real(SHR_KIND_R8)   ,optional, intent(IN) :: wall_time_limit ! force stop wall time (hours)
@@ -1311,6 +1344,11 @@ SUBROUTINE seq_infodata_PutData( infodata, case_name, case_desc, timing_dir,  &
     if ( present(orb_lambm0)     ) infodata%orb_lambm0     = orb_lambm0   
     if ( present(orb_mvelpp)     ) infodata%orb_mvelpp     = orb_mvelpp
     if ( present(orb_mvelp)      ) infodata%orb_mvelp      = orb_mvelp
+    if ( present(wv_sat_scheme)  ) infodata%wv_sat_scheme  = wv_sat_scheme
+    if ( present(wv_sat_transition_start)) &
+         infodata%wv_sat_transition_start = wv_sat_transition_start
+    if ( present(wv_sat_use_tables)) infodata%wv_sat_use_tables = wv_sat_use_tables
+    if ( present(wv_sat_table_spacing)) infodata%wv_sat_table_spacing = wv_sat_table_spacing
     if ( present(flux_epbal)     ) infodata%flux_epbal     = flux_epbal
     if ( present(flux_albav)     ) infodata%flux_albav     = flux_albav
     if ( present(wall_time_limit)) infodata%wall_time_limit= wall_time_limit
@@ -1476,6 +1514,10 @@ subroutine seq_infodata_bcast(infodata,mpicom)
     call shr_mpi_bcast(infodata%orb_obliqr,            mpicom)
     call shr_mpi_bcast(infodata%orb_lambm0,            mpicom)
     call shr_mpi_bcast(infodata%orb_mvelpp,            mpicom)
+    call shr_mpi_bcast(infodata%wv_sat_scheme,         mpicom)
+    call shr_mpi_bcast(infodata%wv_sat_transition_start, mpicom)
+    call shr_mpi_bcast(infodata%wv_sat_use_tables,     mpicom)
+    call shr_mpi_bcast(infodata%wv_sat_table_spacing,  mpicom)
     call shr_mpi_bcast(infodata%flux_epbal,            mpicom)
     call shr_mpi_bcast(infodata%flux_albav,            mpicom)
     call shr_mpi_bcast(infodata%wall_time_limit,       mpicom)
@@ -1894,7 +1936,9 @@ subroutine seq_infodata_Check( infodata )
 
 ! !USES:
 
+  use shr_assert_mod,   only: shr_assert_in_domain
   use shr_string_mod,   only: shr_string_listIntersect
+  use shr_wv_sat_mod,   only: shr_wv_sat_get_scheme_idx, shr_wv_sat_valid_idx
 
   implicit none
 
@@ -1970,6 +2014,25 @@ subroutine seq_infodata_Check( infodata )
         infodata%orb_lambm0 == SHR_ORB_UNDEF_REAL) then
        call shr_sys_abort(subname//': orb params incorrect')
     endif
+
+    if (.not. shr_wv_sat_valid_idx(shr_wv_sat_get_scheme_idx(trim(infodata%wv_sat_scheme)))) then
+       call shr_sys_abort(subname//': "'//trim(infodata%wv_sat_scheme)//'" &
+            &is not a recognized saturation vapor pressure scheme name')
+    end if
+
+    ! A transition range averaging method in CAM is only valid for:
+    !
+    ! -40 deg C <= T <= 0 deg C
+    !
+    ! shr_wv_sat_mod itself checks for values with the wrong sign, but we
+    ! have to check that the range is no more than 40 deg C here. Even
+    ! though this is a CAM-specific restriction, it's not really likely
+    ! that any other parameterization will be dealing with mixed-phase
+    ! water below 40 deg C anyway.
+    call shr_assert_in_domain(infodata%wv_sat_transition_start, &
+         ge=0._SHR_KIND_R8, le=40._SHR_KIND_R8, &
+         varname="wv_sat_transition_start",&
+         msg="Invalid transition temperature range.")
 
     if ((trim(infodata%aoflux_grid) /= 'ocn') .and. &
         (trim(infodata%aoflux_grid) /= 'atm') .and. &
@@ -2072,6 +2135,11 @@ SUBROUTINE seq_infodata_print( infodata )
        write(logunit,F0I) subname,'orb_iyear                = ', infodata%orb_iyear
        write(logunit,F0I) subname,'orb_iyear_align          = ', infodata%orb_iyear_align
      endif
+
+       write(logunit,F0A) subname,'wv_sat_scheme            = ', trim(infodata%wv_sat_scheme)
+       write(logunit,F0R) subname,'wv_sat_transition_start  = ', infodata%wv_sat_transition_start
+       write(logunit,F0L) subname,'wv_sat_use_tables        = ', infodata%wv_sat_use_tables
+       write(logunit,F0R) subname,'wv_sat_table_spacing     = ', infodata%wv_sat_table_spacing
 
        write(logunit,F0A) subname,'flux_epbal               = ', trim(infodata%flux_epbal)
        write(logunit,F0L) subname,'flux_albav               = ', infodata%flux_albav

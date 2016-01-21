@@ -1,0 +1,2 @@
+# To run all CIME unit tests on yellowstone, run the following command:
+tools/unit_testing/run_tests.py --test-spec-dir=. --compiler=intel

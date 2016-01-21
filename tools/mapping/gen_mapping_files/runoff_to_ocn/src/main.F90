@@ -31,7 +31,7 @@ PROGRAM main
    character( 8)     :: dstr            ! wall clock date
    character(10)     :: tstr            ! wall clock time
 
-   !--- namelis vars ---
+   !--- namelist vars ---
    character(180) :: gridtype      ! type of run-off grid
    character(180) :: file_roff     ! file name: rtm rdirc file
    character(180) :: file_roff_out ! file name: rtm rdirc file

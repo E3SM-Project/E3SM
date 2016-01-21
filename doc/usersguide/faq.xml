@@ -305,8 +305,9 @@ possible to avoid problems running ccsm_getenv later.
 
 <para>
 CESM recommends using the xmlchange tool to modify env variables.  xmlchange
-supports error checking as part of the implementation.  Also, using xmlchange
-will decrease the chance that typographical errors will creep into the
+supports error checking as part of the implementation, and records changes to
+the CaseStatus file for future reference and reproducibility.  Also, using
+xmlchange will decrease the chance that typographical errors will creep into the
 xml files.  Conversion of the xml files to environment variables can fail
 silently with certain xml format errors.  To use xmlchange, do, for instance,
 </para>

@@ -147,5 +147,10 @@ endif
 mv -f $EXEROOT/cesm.exe $EXEROOT/cesm.exe.2
 cp -f env_build.xml env_build.xml.2
 cp -f env_mach_pes.xml env_mach_pes.xml.2
-
-
+#
+# Because mira/cetus interprets its run script differently than
+# other systems we need to copy the original env_mach_pes.xml
+# back 
+#
+cp -f env_mach_pes.xml.1 env_mach_pes.xml
+cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml.locked

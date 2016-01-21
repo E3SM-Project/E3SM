@@ -84,6 +84,8 @@ my @dirs = ("$caseroot/Tools", "$cimeroot/utils/perl5lib");
 
 unshift @INC, @dirs;
 require SetupTools;
+require Task::TaskMaker;
+require Batch::BatchMaker;
 
 my %xmlvars=();
 SetupTools::getxmlvars($caseroot, \%xmlvars);
@@ -218,40 +220,27 @@ if (! $clean ) {
 	# create batch file
 	#--------------------------------------------------------------
 	print "Creating batch script $case.run $eol";
-	my $fh = new IO::File;
-	my $file = "${caseroot}/${case}.run";
+ # Use BatchFactory to get the appropriate instance of a BatchMaker,
+    # use it to create our batch scripts
+    my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $xmlvars{'CASEROOT'},
+                                                  cimeroot => $cimeroot,
+                                                  case      => $xmlvars{'CASE'},
+                                                  mpilib      => $xmlvars{'MPILIB'},
+                                                  scriptsroot => $xmlvars{'SCRIPTSROOT'},
+                                                  machroot => $xmlvars{'CCSM_MACHDIR'},
+                                                  machine => $xmlvars{'MACH'},
+                                                  compiler => $xmlvars{'COMPILER'});
 	
-	$sysmod = "env PHASE=set_batch CASEROOT=$caseroot ./Tools/mkbatch.${mach}";
-	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
-	
-	$sysmod = "${caseroot}/Tools/taskmaker.pl -document >> $file";
-	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
-	
-	$sysmod = "echo cd $caseroot >> $file";  
-	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
-	
-	$sysmod = "cat ${caseroot}/Tools/cesm_prerun_setup >> $file";
-	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
-	
-	$sysmod = "cat ${caseroot}/Tools/cesm_buildnml >> $file";
-	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+    my $inputbatchscript = "$xmlvars{'CCSM_MACHDIR'}/template.cesmrun";
+    my $outputbatchscript = "$xmlvars{'CASEROOT'}/$case.run";
+    $batchmaker->makeBatchScript($inputbatchscript, $outputbatchscript);
+    print "Creating batch script $case.st_archive\n";
+    $batchmaker->overrideNodeCount(1);
+    $batchmaker->makeBatchScript("$xmlvars{'CCSM_MACHDIR'}/template.starchive", "$xmlvars{'CASEROOT'}/$case.st_archive");
+    print "Creating batch script $case.lt_archive\n";
+    $batchmaker->overrideNodeCount(1);
+    $batchmaker->makeBatchScript("$xmlvars{'CCSM_MACHDIR'}/template.ltarchive", "$xmlvars{'CASEROOT'}/$case.lt_archive");
 
-	$sysmod = "cat ${caseroot}/Tools/cesm_prestage >> $file";
-	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
-	
-	$sysmod = "cat ${caseroot}/Tools/cesm_buildnml >> $file";
-	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
-	
-	$sysmod = "env PHASE=set_exe CASE=$case CASEROOT=$caseroot ./Tools/mkbatch.${mach}";
-	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
-	
-	$sysmod = "cat ${caseroot}/Tools/cesm_postrun_setup >> $file";
-	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
-	$fh->close();
-	
-	$sysmod = "chmod 755 $file";
-	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
-	
 	# Make a copy of env_mach_pes.xml in order to be able 
 	# to check that it does not change once cesm_setup is invoked
 	if (! -e "LockedFiles/env_mach_pes.xml.locked") {

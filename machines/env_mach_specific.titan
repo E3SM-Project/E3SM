@@ -105,6 +105,8 @@ setenv OMP_STACKSIZE 64M
 if ( $COMPILER == "intel" ) then
   setenv XTPE_LINK_TYPE dynamic
 endif 
+if ( $?PERL ) then
+  printenv
+endif
 
-#
 

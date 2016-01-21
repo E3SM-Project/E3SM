@@ -208,6 +208,19 @@ require ConfigCase;
 # Check that file is supported 
 my @filenames = qw(env_run.xml env_build.xml env_case.xml env_mach_pes.xml);
 
+# add the post processing XML files to the filenames if they exist
+my $filename = qq(env_postprocess.xml);
+if( -f $filename ) {
+    push(@filenames, $filename);
+}
+my @comps = qw(atm ice lnd ocn);
+foreach my $comp ( @comps ) {
+    $filename = qq(env_diags_$comp.xml);
+    if( -f $filename ) {
+	push(@filenames, $filename);
+    }
+}
+
 # If NOT settings list option, check that file is valid
 # tcraig, add the input file set by the user for things like env_build.xml.001 in tests
 if ( ! defined($settinglist) ) {

@@ -74,7 +74,6 @@
 <entry>RUN ERS.f09_g16.BRCP85C5L45BGC.mira_ibm.allactive-default</entry>
 <entry>RUN ERS_D_Ld7.ne30_g16.B1850C5L45BGC.mira_ibm.allactive-default</entry>
 <entry>RUN ERS_IOP_Ld7.ne30_g16.B1850C5L45BGC.mira_ibm.allactive-default</entry>
-<entry>RUN NCR_P4x1D.T31_g37.B1850C5L45BGC.yellowstone_intel.allactive-default</entry>
 <entry>RUN SMS_Ld1.ne30_ne30.PC5.yellowstone_intel.cam-cam5_port</entry>
 <entry>RUN ERI.f09_g16.B1850C5L45BGC.eos_intel.allactive-default</entry>
 <entry>RUN ERS.T62_t12.G.eos_intel.pop-cice</entry>
@@ -84,6 +83,7 @@
 <entry>RUN ERS_Ld5.f09_g16.ETEST.mira_ibm.cice-default</entry>
 <entry>RUN ERS_Ld7.f09_g16.B1850RMCN.mira_ibm.allactive-default</entry>
 <entry>RUN ERS_Ld9.ne120_g16.B1850C5L45BGC.mira_ibm.allactive-default</entry>
+<entry>RUN ERS.f09_g16.B1850C5CN.mira_ibm.allactive-default</entry>
 
 <entry> FAIL ERP_Ld9.f19_f19.FSTRATSOA.yellowstone_gnu.cam-outfrq9s.cpl.hi.nc : baseline compare cpl.hi (baseline: compare .base file with debug_b18base file) </entry>
 <entry> FAIL ERP_Ln9.ne30_ne30.FAMIPC5L60.yellowstone_intel.cam-outfrq9s.cpl.hi.nc : baseline compare cpl.hi (baseline: compare .base file with debug_b18base file) </entry>
@@ -98,13 +98,6 @@
 <entry> FAIL ERS_IOP_Ld11.f09_g16.BPIPDC5L45BGC.yellowstone_intel.allactive-default.cpl.hi.nc : test compare cpl.hi (.base and .base_pnetcdf files) </entry>
 <entry> FAIL ERS_IOP_Ld11.f09_g16.BPIPDC5L45BGC.yellowstone_intel.allactive-default.cpl.hi.nc : test compare cpl.hi (.rest and .rest_pnetcdf files) </entry>
 <entry> FAIL ERS_Ld7.f19_g16.BGRCP85CN.yellowstone_pgi.allactive-cism-test_coupling.clm2.h0.nc : test compare clm2.h0 (.base and .rest files) </entry>
-PC5<entry> FAIL ERS_Lm3.f09_g16.B1850C5L45BGC.yellowstone_intel.pop.h.nc : test compare pop.h (.base and .rest files) </entry>
-<entry> FAIL ERP_D_Ln9.T31_T31.FC5.goldbach_nag.cam-outfrq9s.cpl.hi.nc : baseline compare cpl.hi (baseline: compare .base file with alpha18abase file) </entry>
-<entry> FAIL ERP_D_Ln9.f19_f19.F.goldbach_nag.cam-outfrq9s.cpl.hi.nc : baseline compare cpl.hi (baseline: compare .base file with alpha18abase file) </entry>
-<entry> FAIL ERP_D_Ln9.f45_f45.FC5CLUBB.goldbach_nag.cam-outfrq9s.cpl.hi.nc : baseline compare cpl.hi (baseline: compare .base file with alpha18abase file) </entry>
-<entry> FAIL ERP_D_Ln9.f45_f45.FSTRATMAM3L45.goldbach_nag.cam-outfrq9s.cpl.hi.nc : baseline compare cpl.hi (baseline: compare .base file with alpha18abase file) </entry>
-<entry> FAIL ERP_D_Ln9.ne16_ne16.FC5L45BGC.goldbach_nag.cam-outfrq9s.cpl.hi.nc : baseline compare cpl.hi (baseline: compare .base file with alpha18abase file) </entry>
-<entry> FAIL ERP_D.f10_f10.IHISTCLM45BGC.goldbach_nag.clm-default.cpl.hi.nc : baseline compare cpl.hi (baseline: compare .base file with alpha18abase file) </entry>
-<entry> FAIL ERP_D_Ld5.ne30_g16.ICLM45BGC.goldbach_nag.clm-default.cpl.hi.nc : baseline compare cpl.hi (baseline: compare .base file with alpha18abase file) </entry>
+<entry> FAIL ERS_Lm3.f09_g16.B1850C5L45BGC.yellowstone_intel.pop.h.nc : test compare pop.h (.base and .rest files) </entry>
 
 </expectedFails>

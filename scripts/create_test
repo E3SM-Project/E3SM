@@ -714,17 +714,14 @@ sub checkOptions
   }
 
   # verify that required directories exist. 
-  foreach my $dir ( qw / cimeroot baselineroot / )
-  {
-    if( defined($opts{$dir}))
-    {
-      if(! -d $opts{$dir})
-      {
-        die "** Directory $dir does NOT exist ($opts{$dir})\n";
-      }
+    die "** Directory cimeroot does NOT exist ($opts{cimeroot})\n"  if(! -d $opts{cimeroot});    
+    if(! -d $opts{baselineroot}){
+	if(! defined $opts{'compare'} && ! defined $opts{'generate'}){
+	    warn "WARNING: Directory baselineroot does NOT exist ($opts{baselineroot})\n"  if(! -d $opts{baselineroot});    
+	}else{
+	    die "** Directory baselineroot does NOT exist ($opts{baselineroot})\n"  if(! -d $opts{baselineroot});    
+	}
     }
-  }
-
   # The specifed compare directory should exist under the specified 
   # $BASELINEROOT/$compare. Die if it does not. 
   if(defined $opts{'baselineroot'} && defined $opts{'compare'})
@@ -1536,10 +1533,11 @@ TESTXML
   }
 
   $testxml .= "</testlist>\n";
-
-  open my $TESTSPEC, ">", "$opts{'testroot'}/testspec.$opts{'testid'}.$opts{'mach'}.xml" or die $!;
+  my $filename = "testspec.$opts{'testid'}.$opts{'mach'}.xml";
+  open my $TESTSPEC, ">", "$opts{'testroot'}/$filename" or die $!;
   print $TESTSPEC $testxml;
   close $TESTSPEC;
+  return $filename;
 }
 
 # Build and submit the test suite. Copy cs.status and cs.submit from Tools,
@@ -1547,8 +1545,8 @@ TESTXML
 # is set, compare the namelists only, otherwise run cs.submit.
 sub testBuildSubmit
 {
-  
-  my $cssubmit = "cs.submit";
+    my $testspecfile = shift;
+    my $cssubmit = "cs.submit";
   my $csstatus = "cs.status";
   copy("$scriptsroot/Tools/testreporter.pl", "$opts{'testroot'}/testreporter.pl");
   chmod 0755, "$opts{'testroot'}/testreporter.pl";
@@ -1558,7 +1556,7 @@ sub testBuildSubmit
   chmod 0755, "$opts{'testroot'}/$csstatus";
   chdir("$opts{'testroot'}");
 
-  exec("./$cssubmit");
+  exec("./$cssubmit --testspec $testspecfile");
 }
 
 # compare baseline namelists against the current test suite's namelists.
@@ -1850,11 +1848,11 @@ sub main
 	{
 	    push(@testspec, doonetest($testname, $cfg_ref));
 	}
-	writeTestListXML(\@testspec, $cfg_ref);
+	my $testspecfilename = writeTestListXML(\@testspec, $cfg_ref);
 	if($opts{'compare'} or $opts{'generate'}){
 	    namelistCompareSuite(@testspec);
 	}
-	testBuildSubmit();
+	testBuildSubmit($testspecfilename);
 	if($opts{'compare'} or $opts{'generate'}){
 	    my $cnt=0;
 	    my $pass=0;

@@ -593,6 +593,11 @@ echo Output Variables: {CC=$CC} {CFLAGS=$CFLAGS} \
 {SRCDIR=$SRCDIR} {FC_DEFINE=$FC_DEFINE}
 echo
 
+if test -n "$DONOTCHECKMPI"; then
+   echo "MPISERIAL ENABLED: CONFIGURING mpi-serial"
+   AC_CONFIG_SUBDIRS(mpi-serial)
+fi
+
 AC_OUTPUT
 
 echo Please check the Makefile.conf

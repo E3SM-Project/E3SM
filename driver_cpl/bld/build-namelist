@@ -417,6 +417,11 @@ add_default($nl, 'orb_mode');
 add_default($nl, 'orb_iyear');
 add_default($nl, 'orb_iyear_align');
 
+add_default($nl, 'wv_sat_scheme');
+add_default($nl, 'wv_sat_transition_start');
+add_default($nl, 'wv_sat_use_tables');
+add_default($nl, 'wv_sat_table_spacing');
+
 add_default($nl, 'budget_inst');
 add_default($nl, 'budget_daily');
 add_default($nl, 'budget_month');

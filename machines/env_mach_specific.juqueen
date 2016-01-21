@@ -18,3 +18,6 @@ else
   setenv XLSMPOPTS "stack=86000000"
 endif
 setenv MPI_TYPE_MAX 100000 
+if ( $?PERL ) then
+  printenv
+endif

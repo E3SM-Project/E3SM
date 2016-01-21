@@ -34,3 +34,6 @@ setenv PERL5LIB "/lustre/janus_scratch/cesm/perlmodules/lib/site_perl/5.16.2:/lu
 # Run time variables
 
 setenv OMP_STACKSIZE 64M
+if ( $?PERL ) then
+  printenv
+endif

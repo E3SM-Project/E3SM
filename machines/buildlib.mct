@@ -30,6 +30,7 @@ echo "MCT_LIBDIR   $MCT_LIBDIR"
   cp $MCT_DIR/mpeu/Makefile mpeu
   mkdir mpi-serial
   cp $MCT_DIR/mpi-serial/Makefile mpi-serial
+  cp $MCT_DIR/mpi-serial/*.h mpi-serial
 
   set runconf = 0
   set runclean = 0
@@ -82,7 +83,7 @@ echo "MCT_LIBDIR   $MCT_LIBDIR"
 
   cp -p Makefile.conf Makefile.conf.old
 
-  $GMAKE  || exit 1
+  $GMAKE  SRCDIR=$MCT_DIR   || exit 1
 
 
   cp -p mct/lib*.a $LIBDIR/lib
@@ -90,7 +91,7 @@ echo "MCT_LIBDIR   $MCT_LIBDIR"
   if ( "$MPILIB" == "mpi-serial" ) then
     cp -p mpi-serial/lib*.a $LIBDIR/lib
     cp -p mpi-serial/*.h $LIBDIR/include
-    cp -p $MCT_DIR/mpi-serial/mpi.h $LIBDIR/include
+    cp -p mpi-serial/*.mod $LIBDIR/include
   endif
   cp -p mct/*.mod $LIBDIR/include/
   cp -p mpeu/*.mod $LIBDIR/include/

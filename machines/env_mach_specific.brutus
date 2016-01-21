@@ -35,7 +35,6 @@ endif
 # The following sets the environment variable NETCDF
 module load netcdf/4.0.1
 
-module list
-
-
-
+if ( $?PERL ) then
+  printenv
+endif
