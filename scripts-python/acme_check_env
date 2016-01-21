@@ -9,9 +9,9 @@ Be sure to source your env_mach_specific file before running this check.
 import sys, os
 
 import add_util_path
-import acme_util
-acme_util.check_minimum_python_version(2, 7)
-from acme_util import run_cmd
+import cime_util
+cime_util.check_minimum_python_version(2, 7)
+from cime_util import run_cmd
 
 # Here's where we keep the various reports and instructions.
 LOG = []
@@ -37,7 +37,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = parser.parse_args(args[1:])
 
-    acme_util.set_verbosity(args.verbose)
+    cime_util.set_verbosity(args.verbose)
 
 ###############################################################################
 def check_sh():

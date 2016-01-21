@@ -9,12 +9,12 @@ Assumes run from root of CIME repository
 """
 
 import add_util_path
-import acme_util
-acme_util.check_minimum_python_version(2, 7)
+import cime_util
+cime_util.check_minimum_python_version(2, 7)
 
 import argparse, sys, os, doctest
 
-from acme_util import expect, warning, verbose_print, run_cmd
+from cime_util import expect, warning, verbose_print, run_cmd
 
 VERBOSE = False
 METADATA_FILE = "DIRMAP"
@@ -55,7 +55,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = parser.parse_args(args[1:])
 
-    acme_util.set_verbosity(args.verbose)
+    cime_util.set_verbosity(args.verbose)
 
     return args.acme_path, args.cime_subdir
 
@@ -147,7 +147,7 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    acme_util.stop_buffering_output()
+    cime_util.stop_buffering_output()
 
     acme_path, subdir = parse_command_line(sys.argv, description)
 

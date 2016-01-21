@@ -11,8 +11,8 @@ to run to test this script.
 """
 
 import add_util_path
-import acme_util
-acme_util.check_minimum_python_version(2, 7)
+import cime_util
+cime_util.check_minimum_python_version(2, 7)
 import wait_for_tests
 
 import argparse, sys, os
@@ -69,7 +69,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = parser.parse_args(args[1:])
 
-    acme_util.set_verbosity(args.verbose)
+    cime_util.set_verbosity(args.verbose)
 
     return args.paths, args.no_wait, args.check_throughput, args.check_memory, args.ignore_namelist_diffs, args.cdash_build_name, args.cdash_project, args.cdash_build_group
 
@@ -77,17 +77,17 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 def _main_func(description):
 ###############################################################################
     if ("--test" in sys.argv):
-        acme_util.run_cmd("python -m doctest %s/wait_for_tests.py -v" % acme_util.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
+        cime_util.run_cmd("python -m doctest %s/wait_for_tests.py -v" % cime_util.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
         return
 
-    acme_util.stop_buffering_output()
+    cime_util.stop_buffering_output()
 
     test_paths, no_wait, check_throughput, check_memory, ignore_namelist_diffs, cdash_build_name, cdash_project, cdash_build_group = \
         parse_command_line(sys.argv, description)
 
     sys.exit(0 if wait_for_tests.wait_for_tests(test_paths, no_wait, check_throughput, check_memory, ignore_namelist_diffs,
                                                 cdash_build_name, cdash_project, cdash_build_group)
-             else acme_util.TESTS_FAILED_ERR_CODE)
+             else cime_util.TESTS_FAILED_ERR_CODE)
 
 ###############################################################################
 
