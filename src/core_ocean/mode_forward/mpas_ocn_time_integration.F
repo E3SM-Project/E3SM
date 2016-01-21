@@ -135,7 +135,7 @@ module ocn_time_integration
 
         if (nanCheck /= nanCheck) then
            write(stderrUnit,*) 'Abort: NaN detected'
-           call mpas_dmpar_abort(dminfo)
+           call mpas_dmpar_global_abort('Abort: NaN detected')
         endif
 
         block => block % next
