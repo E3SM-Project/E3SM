@@ -108,8 +108,8 @@
 					possible_values="Any real positive number."
 	/>
 	<nml_option name="config_global_ocean_interior_restore_rate" type="real" default_value="1.0e-7" units="s^{-1}"
-		    description="Parameter controlling rate to which interior temperature and salinity are restored."
-		    possible_values="Any real positive number."
+			description="Parameter controlling rate to which interior temperature and salinity are restored."
+			possible_values="Any real positive number."
 		/>
 		<nml_option name="config_global_ocean_topography_file" type="character" default_value="none" units="unitless"
 					description="Path to the topography initial condition file."

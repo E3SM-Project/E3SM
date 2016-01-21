@@ -122,8 +122,10 @@ contains
       if ( .not. on_a_sphere ) call mpas_dmpar_global_abort('ERROR: The global ocean configuration can only be applied to ' &
                                                          // 'a spherical mesh. Exiting...')
 
-      call mpas_pool_get_config(domain % configs, 'config_global_ocean_cull_inland_seas', config_global_ocean_cull_inland_seas)
-      call mpas_pool_get_config(domain % configs, 'config_global_ocean_depress_by_land_ice', config_global_ocean_depress_by_land_ice)
+      call mpas_pool_get_config(domain % configs, 'config_global_ocean_cull_inland_seas', &
+            config_global_ocean_cull_inland_seas)
+      call mpas_pool_get_config(domain % configs, 'config_global_ocean_depress_by_land_ice', &
+            config_global_ocean_depress_by_land_ice)
 
       write(stderrUnit,*) 'Reading depth levels.'
       call ocn_init_setup_global_ocean_read_depth_levels(domain, iErr)
@@ -365,11 +367,11 @@ contains
        type (MPAS_Stream_type) :: landIceThicknessStream
 
        character (len=StrKIND), pointer :: config_global_ocean_land_ice_topo_file, config_global_ocean_land_ice_topo_lat_varname, &
-                                           config_global_ocean_land_ice_topo_draft_varname, &
-                                           config_global_ocean_land_ice_topo_ice_frac_varname, &
-                                           config_global_ocean_land_ice_topo_grounded_frac_varname, &
-                                           config_global_ocean_land_ice_topo_nlat_dimname, config_global_ocean_land_ice_topo_lon_varname, &
-                                           config_global_ocean_land_ice_topo_nlon_dimname, config_global_ocean_land_ice_topo_thickness_varname
+            config_global_ocean_land_ice_topo_draft_varname, &
+            config_global_ocean_land_ice_topo_ice_frac_varname, &
+            config_global_ocean_land_ice_topo_grounded_frac_varname, &
+            config_global_ocean_land_ice_topo_nlat_dimname, config_global_ocean_land_ice_topo_lon_varname, &
+            config_global_ocean_land_ice_topo_nlon_dimname, config_global_ocean_land_ice_topo_thickness_varname
 
        logical, pointer :: config_global_ocean_land_ice_topo_latlon_degrees
 
@@ -377,19 +379,30 @@ contains
 
        iErr = 0
 
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_land_ice_topo_file', config_global_ocean_land_ice_topo_file)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_land_ice_topo_lat_varname', config_global_ocean_land_ice_topo_lat_varname)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_land_ice_topo_nlat_dimname', config_global_ocean_land_ice_topo_nlat_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_land_ice_topo_lon_varname', config_global_ocean_land_ice_topo_lon_varname)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_land_ice_topo_nlon_dimname', config_global_ocean_land_ice_topo_nlon_dimname)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_land_ice_topo_thickness_varname', config_global_ocean_land_ice_topo_thickness_varname)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_land_ice_topo_draft_varname', config_global_ocean_land_ice_topo_draft_varname)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_land_ice_topo_ice_frac_varname', config_global_ocean_land_ice_topo_ice_frac_varname)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_land_ice_topo_grounded_frac_varname', config_global_ocean_land_ice_topo_grounded_frac_varname)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_land_ice_topo_latlon_degrees', config_global_ocean_land_ice_topo_latlon_degrees)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_land_ice_topo_file', &
+            config_global_ocean_land_ice_topo_file)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_land_ice_topo_lat_varname', &
+            config_global_ocean_land_ice_topo_lat_varname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_land_ice_topo_nlat_dimname', &
+            config_global_ocean_land_ice_topo_nlat_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_land_ice_topo_lon_varname', &
+            config_global_ocean_land_ice_topo_lon_varname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_land_ice_topo_nlon_dimname', &
+            config_global_ocean_land_ice_topo_nlon_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_land_ice_topo_thickness_varname', &
+            config_global_ocean_land_ice_topo_thickness_varname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_land_ice_topo_draft_varname', &
+            config_global_ocean_land_ice_topo_draft_varname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_land_ice_topo_ice_frac_varname', &
+            config_global_ocean_land_ice_topo_ice_frac_varname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_land_ice_topo_grounded_frac_varname', &
+            config_global_ocean_land_ice_topo_grounded_frac_varname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_land_ice_topo_latlon_degrees', &
+            config_global_ocean_land_ice_topo_latlon_degrees)
 
        ! Define stream for depth levels
-       call MPAS_createStream(landIceThicknessStream, domain % iocontext, config_global_ocean_land_ice_topo_file, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
+       call MPAS_createStream(landIceThicknessStream, domain % iocontext, config_global_ocean_land_ice_topo_file, &
+            MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)
 
        ! Setup landIceThkLat, landIceThkLon, and landIceThkIC fields for stream to be read in
        landIceThkLat % fieldName = trim(config_global_ocean_land_ice_topo_lat_varname)
@@ -1736,7 +1749,8 @@ contains
        iErr = 0
 
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_piston_velocity', config_global_ocean_piston_velocity)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_interior_restore_rate', config_global_ocean_interior_restore_rate)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_interior_restore_rate', &
+          config_global_ocean_interior_restore_rate)
 
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
@@ -2488,7 +2502,8 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
 
       if ( config_global_ocean_depress_by_land_ice) then
          if (trim(config_global_ocean_land_ice_topo_file) == 'none') then
-            write(stderrUnit,*) 'ERROR: Validation failed for global ocean. Invalid filename for config_global_ocean_land_ice_topo_file'
+            write(stderrUnit,*) 'ERROR: Validation failed for global ocean. ', &
+               'Invalid filename for config_global_ocean_land_ice_topo_file'
             iErr = 1
             return
          end if
