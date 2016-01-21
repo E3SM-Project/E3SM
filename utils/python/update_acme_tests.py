@@ -56,7 +56,7 @@ _TEST_SUITES = {
                              "SEQ_PFC_Ld3.f09_g16.X",
                              "ERS_Ld3.ne30_g16_rx1.A",
                              "ERS_N2_Ld3.f19_g16_rx1.A",
-                             "ERS_Ld3.f45_g37_rx1.A")
+                             "ERR_Ld3.f45_g37_rx1.A")
                             ),
 
     "acme_developer" : ("acme_land_developer",

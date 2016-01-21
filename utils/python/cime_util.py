@@ -324,12 +324,6 @@ def get_python_libs_location_within_cime():
     """
     return os.path.join("utils", "python")
 
-###############################################################################
-def get_model_config_location_within_cime(model=get_model()):
-###############################################################################
-    return os.path.join("cime_config", model)
-
-###############################################################################
 def get_cime_root():
 ###############################################################################
     """
@@ -341,6 +335,35 @@ def get_cime_root():
     acme_script_absdir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
     assert acme_script_absdir.endswith(get_python_libs_location_within_cime()), acme_script_absdir
     return os.path.normpath(acme_script_absdir[:len(acme_script_absdir)-len(get_python_libs_location_within_cime())])
+
+###############################################################################
+def set_model(model):
+###############################################################################
+    global _MODEL
+    _MODEL = model
+
+###############################################################################
+def get_model():
+###############################################################################
+    global _MODEL
+    if (_MODEL is None):
+        try:
+            _MODEL = os.environ["CIME_MODEL"]
+        except KeyError:
+            modelroot = os.path.join(get_cime_root(), "cime_config")
+            models = os.listdir(modelroot)
+            msg = "Environment variable CIME_MODEL must be set to one of: "
+            for model in models:
+                if(os.path.isdir(os.path.join(modelroot,model)) and model != "xml_schemas"):
+                    msg += model + " ,"
+            expect(False, msg)
+
+    return _MODEL
+
+###############################################################################
+def get_model_config_location_within_cime(model=get_model()):
+###############################################################################
+    return os.path.join("cime_config", model)
 
 ###############################################################################
 def get_acme_root():
@@ -496,30 +519,6 @@ def delete_jobs(jobs):
 
     del_cmd = "%s %s" % (BATCH_INFO[batch_system][1], " ".join(jobs))
     return run_cmd(del_cmd, ok_to_fail=True, verbose=True)
-
-###############################################################################
-def set_model(model):
-###############################################################################
-    global _MODEL
-    _MODEL = model
-
-###############################################################################
-def get_model():
-###############################################################################
-    global _MODEL
-    if (_MODEL is None):
-        try:
-            _MODEL = os.environ["CIME_MODEL"]
-        except KeyError:
-            modelroot = os.path.join(get_cime_root(), "cime_config")
-            models = os.listdir(modelroot)
-            msg = "Environment variable CIME_MODEL must be set to one of: "
-            for model in models:
-                if(os.path.isdir(os.path.join(modelroot,model)) and model != "xml_schemas"):
-                    msg += model + " ,"
-            expect(False, msg)
-
-    return _MODEL
 
 ###############################################################################
 def parse_config_machines():
