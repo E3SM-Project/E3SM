@@ -477,6 +477,9 @@ MPAS_GPTL_STOP('dyn_tend')
 
             do small_step = 1, number_sub_steps(rk_step)
 
+               call mpas_pool_get_subpool(domain % blocklist % structs, 'diag', diag)
+               call mpas_pool_get_field(diag, 'rho_pp', rho_pp_field)
+               call mpas_dmpar_exch_halo_field(rho_pp_field, (/ 1 /))
 
                call mpas_timer_start('atm_advance_acoustic_step')
                block => domain % blocklist
