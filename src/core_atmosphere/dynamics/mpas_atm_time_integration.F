@@ -3865,17 +3865,18 @@ MPAS_GPTL_STOP('mono_exch_2')
 !            pp_fwd(k,iCell) = pp(k,iCell) + smdiv*rgas_cprcv*theta_m(k,iCell)*exner(k,iCell)*tend_rho(k,iCell)
 !  test new div damping formulation, assume 2 acoustic steps per RK step (factor of 0.5)
             pp_fwd(k,iCell) = pp(k,iCell) + 0.5*smdiv*(pp(k,iCell) - pp_old(k,iCell))
+            dpdz(k,iCell) = -gravity*(rb(k,iCell)*(qtot(k,iCell)) + rr_save(k,iCell)*(1.+qtot(k,iCell)))
           end do
 
-          k = 1
-            dpdz(k,iCell) = 0.5*(  pzm(k,iCell)*(pp_fwd(k+1,iCell) - pp_fwd(k,iCell))   &
-                                 + pzp(k,iCell)*(pp_fwd(k+2,iCell) - pp_fwd(k,iCell)) )
-          do k = 2, nVertLevels-1
-             dpdz(k,iCell) = 0.5*(  pzp(k,iCell)*(pp_fwd(k+1,iCell) - pp_fwd(k  ,iCell))  &
-                                  + pzm(k,iCell)*(pp_fwd(k  ,iCell) - pp_fwd(k-1,iCell)) )
-          end do
-          k = nVertLevels
-          dpdz(k,iCell) = 0.5*pzm(k,iCell)*(pp(k,iCell) - pp(k-1,iCell))
+!          k = 1
+!            dpdz(k,iCell) = 0.5*(  pzm(k,iCell)*(pp_fwd(k+1,iCell) - pp_fwd(k,iCell))   &
+!                                 + pzp(k,iCell)*(pp_fwd(k+2,iCell) - pp_fwd(k,iCell)) )
+!          do k = 2, nVertLevels-1
+!             dpdz(k,iCell) = 0.5*(  pzp(k,iCell)*(pp_fwd(k+1,iCell) - pp_fwd(k  ,iCell))  &
+!                                  + pzm(k,iCell)*(pp_fwd(k  ,iCell) - pp_fwd(k-1,iCell)) )
+!          end do
+!          k = nVertLevels
+!          dpdz(k,iCell) = 0.5*pzm(k,iCell)*(pp(k,iCell) - pp(k-1,iCell))
 
         end do
       end if
@@ -3903,9 +3904,10 @@ MPAS_GPTL_STOP('mono_exch_2')
 !DIR$ IVDEP
          do k=1,nVertLevels
             tend_u_euler(k,iEdge) =  - cqu(k,iEdge)*( (pp_fwd(k,cell2)-pp_fwd(k,cell1))*invDcEdge(iEdge)/(.5*(zz(k,cell2)+zz(k,cell1))) &
-                                                      + 0.5*gravity*zxu(k,iEdge)*(                                                     &
-                                                      (rb(k,cell1)*(qtot(k,cell1)) + rr_save(k,cell1)*(1.+qtot(k,cell1))) +            &
-                                                      (rb(k,cell2)*(qtot(k,cell2)) + rr_save(k,cell2)*(1.+qtot(k,cell2))) )           )
+                                              -0.5*zxu(k,iEdge)*(dpdz(k,cell1)+dpdz(k,cell2)) )
+!                                                      + 0.5*gravity*zxu(k,iEdge)*(                                                     &
+!                                                      (rb(k,cell1)*(qtot(k,cell1)) + rr_save(k,cell1)*(1.+qtot(k,cell1))) +            &
+!                                                      (rb(k,cell2)*(qtot(k,cell2)) + rr_save(k,cell2)*(1.+qtot(k,cell2))) )           )
          end do
 
 
@@ -4304,13 +4306,15 @@ MPAS_GPTL_STOP('mono_exch_2')
          if(rk_step == 1) then
 !DIR$ IVDEP
             do k=2,nVertLevels
-              tend_w_euler(k,iCell) = tend_w_euler(k,iCell)- cqw(k,iCell)*rdzu(k)*(pp(k,iCell)-pp(k-1,iCell)) &
-                                  - cqw(k,iCell)*(        &
-                                    gravity*  &
-                                   ( fzm(k)*(rb(k,iCell)*(qtot(k,iCell)) +         &
-                                             rr_save(k,iCell)*(1.+qtot(k,iCell)))                  &
-                                    +fzp(k)*(rb(k-1,iCell)*(qtot(k-1,iCell))  +  &
-                                             rr_save(k-1,iCell)*(1.+qtot(k-1,iCell))) ))
+              tend_w_euler(k,iCell) = tend_w_euler(k,iCell) - cqw(k,iCell)*(   &
+                                           rdzu(k)*(pp(k,iCell)-pp(k-1,iCell)) &
+                                         - (fzm(k)*dpdz(k,iCell) + fzp(k)*dpdz(k-1,iCell)) )  ! dpdz is the buoyancy term here.
+!                                  - cqw(k,iCell)*(        &
+!                                    gravity*  &
+!                                   ( fzm(k)*(rb(k,iCell)*(qtot(k,iCell)) +         &
+!                                             rr_save(k,iCell)*(1.+qtot(k,iCell)))                  &
+!                                    +fzp(k)*(rb(k-1,iCell)*(qtot(k-1,iCell))  +  &
+!                                             rr_save(k-1,iCell)*(1.+qtot(k-1,iCell))) ))
             end do
           end if
 
