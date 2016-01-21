@@ -10,8 +10,9 @@ set CASE     = `./xmlquery CASE -value`
 
 echo "#! /bin/bash" > $EXEROOT/cesm.exe
 echo "echo Insta pass" >> $EXEROOT/cesm.exe
-echo "echo SUCCESSFUL TERMINATION > $RUNDIR/cpl.log.$TESTID" >> $EXEROOT/cesm.exe
-echo "cp $CIMEROOT/scripts-acme/tests/cpl.hi1.nc.test $RUNDIR/$CASE.cpl.hi.0.nc.base" >> $EXEROOT/cesm.exe
+echo -n "echo SUCCESSFUL TERMINATION > $RUNDIR/cpl.log." >> $EXEROOT/cesm.exe
+echo '$LID' >> $EXEROOT/cesm.exe
+echo "cp $CIMEROOT/utils/python/tests/cpl.hi1.nc.test $RUNDIR/$CASE.cpl.hi.0.nc.base" >> $EXEROOT/cesm.exe
 
 chmod +x $EXEROOT/cesm.exe
 

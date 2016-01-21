@@ -134,16 +134,16 @@ def bless_namelists(test_name, baseline_dir_for_test, testcase_dir_for_test, rep
 def bless_history(test_name, baseline_tag, baseline_dir_for_test, testcase_dir_for_test, report_only, force):
 ###############################################################################
     # Get user that test was run as (affects loc of hist files)
-    user = run_cmd(r"""grep CCSMUSER %s/env_case.xml | sed -E 's/.+value="(.+)".+/\1/g'""" % testcase_dir_for_test)
+    user = run_cmd("./xmlquery USER -value", from_dir=testcase_dir_for_test)
     acme_root = cime_util.get_machine_info("CESMSCRATCHROOT", user=user)
 
     case = os.path.basename(testcase_dir_for_test)
     cime_root = cime_util.get_cime_root()
     compgen = os.path.join(cime_root, "scripts", "Tools", "component_compgen_baseline.sh")
-    machine_env = os.path.join(cime_root, "cime_config", "acme", "machines", ".env_mach_specific.csh")
+    machine_env = os.path.join(testcase_dir_for_test, ".env_mach_specific.sh")
     run_dir = os.path.join(acme_root, case, "run")
     cprnc_loc = cime_util.get_machine_info("CPRNC_ROOT")
-    compgen_cmd = "tcsh -c 'source %s && %s -baseline_dir %s -testcase %s -testcase_base %s -test_dir %s -cprnc_exe %s -generate_tag %s'" % \
+    compgen_cmd = "source %s && %s -baseline_dir %s -testcase %s -testcase_base %s -test_dir %s -cprnc_exe %s -generate_tag %s" % \
                   (machine_env, compgen, baseline_dir_for_test, case, test_name, run_dir, cprnc_loc, baseline_tag)
 
     check_compare = os.path.join(cime_root, "scripts", "Tools", "component_write_comparefail.pl")

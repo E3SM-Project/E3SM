@@ -267,6 +267,8 @@ class CreateTest(object):
         xml_bridge_cmd += " GENERATE_BASELINE,%s" % ("TRUE" if self._generate else "FALSE")
         xml_bridge_cmd += " COMPARE_BASELINE,%s" % ("TRUE" if self._compare else "FALSE")
 
+        xml_bridge_cmd += " CCSM_CPRNC,%s" % cime_util.get_machine_info("CCSM_CPRNC")
+
         return self._run_phase_command(test_name, xml_bridge_cmd, XML_PHASE)
 
     ###########################################################################

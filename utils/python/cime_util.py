@@ -324,6 +324,7 @@ def get_python_libs_location_within_cime():
     """
     return os.path.join("utils", "python")
 
+###############################################################################
 def get_cime_root():
 ###############################################################################
     """
@@ -353,9 +354,7 @@ def get_model():
             modelroot = os.path.join(get_cime_root(), "cime_config")
             models = os.listdir(modelroot)
             msg = "Environment variable CIME_MODEL must be set to one of: "
-            for model in models:
-                if(os.path.isdir(os.path.join(modelroot,model)) and model != "xml_schemas"):
-                    msg += model + " ,"
+            msg += ", ".join([model for model in models if os.path.isdir(os.path.join(modelroot,model)) and model != "xml_schemas"])
             expect(False, msg)
 
     return _MODEL

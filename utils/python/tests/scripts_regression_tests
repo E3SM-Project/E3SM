@@ -594,7 +594,7 @@ class TestBlessTestResults(TestCreateTestCommon):
 
         baseline_dir = baseline_glob[0]
         os.remove(os.path.join(baseline_dir, "cpl.hi.nc"))
-        shutil.copy(os.path.join(SCRIPT_DIR, "tests", "cpl.hi2.nc.test"), os.path.join(baseline_dir, "cpl.hi.nc"))
+        shutil.copy(os.path.join(cime_util.get_python_libs_root(), "tests", "cpl.hi2.nc.test"), os.path.join(baseline_dir, "cpl.hi.nc"))
 
         # Hist compare should now fail
         test_id = "%s-%s" % (self._baseline_name, cime_util.get_utc_timestamp())
