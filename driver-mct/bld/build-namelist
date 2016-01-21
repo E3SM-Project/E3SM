@@ -46,7 +46,7 @@ OPTIONS
      -atm_grid             ATM_GRID variable
      -lnd_grid             LND_GRID variable 
      -ocn_grid             OCN_GRID variable
-     
+     -pio_version       PIO_VERSION (1 or 2)     
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
       1. namelist values set by specific command-line options, i.e. (none right now)
@@ -86,7 +86,8 @@ my %opts = ( help        => 0,
 	     wav_grid    => 0,
 	     atm_grid    => 0,
 	     lnd_grid    => 0,
-	     ocn_grid    => 0);
+	     ocn_grid    => 0,
+             pio_version => 1);
 
 GetOptions(
     "h|help"        => \$opts{'help'},
@@ -102,6 +103,7 @@ GetOptions(
     "atm_grid=s"    => \$opts{'atm_grid'},
     "lnd_grid=s"    => \$opts{'lnd_grid'},
     "ocn_grid=s"    => \$opts{'ocn_grid'},
+    "pio_version=i" => \$opts{pio_version},
 )  or usage();
 
 # Give usage message.
@@ -721,13 +723,13 @@ add_default($nl, 'pio_typename');
 add_default($nl, 'pio_debug_level');
 add_default($nl, 'pio_blocksize');
 add_default($nl, 'pio_buffer_size_limit');
-
-#add_default($nl, 'pio_rearr_comm_type', 'PIO_REARR_COMM_TYPE'=>"$xmlvars{'PIO_REARR_COMM_TYPE'}");
-#add_default($nl, 'pio_rearr_comm_fcd', 'PIO_REARR_COMM_FCD'=>"$xmlvars{'PIO_REARR_COMM_FCD'}");
-#add_default($nl, 'pio_rearr_comm_max_pend_req', 'PIO_REARR_COMM_MAX_PEND_REQ'=>"$xmlvars{'PIO_REARR_COMM_MAX_PEND_REQ'}");
-#add_default($nl, 'pio_rearr_comm_enable_hs', 'PIO_REARR_COMM_ENABLE_HS'=>"$xmlvars{'PIO_REARR_COMM_ENABLE_HS'}");
-#add_default($nl, 'pio_rearr_comm_enable_isend', 'PIO_REARR_COMM_ENABLE_ISEND'=>"$xmlvars{'PIO_REARR_COMM_ENABLE_ISEND'}");
-
+if($opts{pio_version} == 1){
+    add_default($nl, 'pio_rearr_comm_type', 'PIO_REARR_COMM_TYPE'=>"$xmlvars{'PIO_REARR_COMM_TYPE'}");
+    add_default($nl, 'pio_rearr_comm_fcd', 'PIO_REARR_COMM_FCD'=>"$xmlvars{'PIO_REARR_COMM_FCD'}");
+    add_default($nl, 'pio_rearr_comm_max_pend_req', 'PIO_REARR_COMM_MAX_PEND_REQ'=>"$xmlvars{'PIO_REARR_COMM_MAX_PEND_REQ'}");
+    add_default($nl, 'pio_rearr_comm_enable_hs', 'PIO_REARR_COMM_ENABLE_HS'=>"$xmlvars{'PIO_REARR_COMM_ENABLE_HS'}");
+    add_default($nl, 'pio_rearr_comm_enable_isend', 'PIO_REARR_COMM_ENABLE_ISEND'=>"$xmlvars{'PIO_REARR_COMM_ENABLE_ISEND'}");
+}
 # Note: pio_async_interface=.true. is not yet supported
 # If pio_async_interface is .true. or {component}_PIO_* variable is not set or set to -99
 # the component variable will be set using the pio_* value.
