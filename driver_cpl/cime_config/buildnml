@@ -19,6 +19,7 @@ my $CASEBUILD		= `./xmlquery  CASEBUILD	-value`;
 my $CASEROOT		= `./xmlquery  CASEROOT		-value`;
 my $COMP_ATM		= `./xmlquery  COMP_ATM		-value `;
 my $RUNDIR		= `./xmlquery  RUNDIR		-value`;
+my $PIO_VERSION 	= `./xmlquery  PIO_VERSION		-value`;
 
 my $CAM_CONFIG_OPTS;
 if ($COMP_ATM eq 'cam') {
@@ -56,7 +57,7 @@ if ($COMP_ATM eq 'cam') {
 }
 
 SetupTools::create_namelist_infile("$CASEROOT", 
-				   "$CASEROOT/user_nl_cpl", 
+ 				   "$CASEROOT/user_nl_cpl", 
 				   "$CASEBUILD/cplconf/namelist", 
 				   "$infile_text");
 
@@ -70,6 +71,7 @@ $sysmod = "$sysmod -caseroot $CASEROOT";
 $sysmod = "$sysmod -cimeroot $CIMEROOT";
 $sysmod = "$sysmod -grid $GRID -rof_grid $ROF_GRID -atm_grid $ATM_GRID ";
 $sysmod = "$sysmod -lnd_grid $LND_GRID -ocn_grid $OCN_GRID -wav_grid $WAV_GRID";
+$sysmod = "$sysmod -pio_version $PIO_VERSION";
 system($sysmod) == 0 or die "ERROR cpl.buildnml: $sysmod failed: $?\n";
 
 # -----------------------------------------------------
