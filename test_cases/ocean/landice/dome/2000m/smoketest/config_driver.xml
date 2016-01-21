@@ -1,0 +1,9 @@
+<driver_script name="setup_and_run_dome_testcase.py">
+        <case name="setuptest_step">
+                <step executable="./setuptest.py" quiet="false" pre_message=" * Running setuptest step" post_message="     Complete"/>
+        </case>
+        <case name="runmodel_step">
+                <step executable="./runmodel.py" quiet="false" pre_message=" * Running runmodel step" post_message="     Complete"/>
+        </case>
+</driver_script>
+
