@@ -13,7 +13,7 @@
 !> \author Xylar Asay-Davis
 !> \date   06/01/2015
 !> \details
-!>  This module contains the routines for initializing the 
+!>  This module contains the routines for initializing the
 !>  the Ice Shelf/Ocean Model Intercomparision Project (ISOMIP) test cases
 !
 !-----------------------------------------------------------------------
@@ -68,7 +68,7 @@ contains
 !> \brief   Setup for ISoMIP test cases
 !> \author  Xylar Asay-Davis
 !> \date    06/01/2015
-!> \details 
+!> \details
 !>  This routine sets up the initial conditions for the ISOMIP test cases.
 !
 !-----------------------------------------------------------------------
@@ -323,7 +323,7 @@ contains
           y =  yCell(iCell)
 
           ! Compute iceDraft by linear fit
-          do iFit = 1, 4 
+          do iFit = 1, 4
             if((y >= yFit(iFit)) .and. (y <= yFit(iFit+1))) then
               refSSH(iCell) = (zFit(iFit+1) - zFit(iFit))*(y - yFit(iFit)) &
                          / (yFit(iFit+1) - yFit(iFit)) + zFit(iFit)
@@ -335,7 +335,7 @@ contains
           if(landIceFraction(iCell) > 0.0_RKIND) then
             modifySSHMask(iCell) = 1
           end if
-         
+
 
           if(.not. associated(activeTracers)) then
             write(stderrUnit,*) 'ERROR: isomip test case needs activeTracers package to be active.'
@@ -366,7 +366,7 @@ contains
            end if
            if ( associated(activeTracersPistonVelocity) ) then
               ! only restore where there *isn't* land ice
-              activeTracersPistonVelocity(index_salinity, iCell) = (1.0_RKIND - landIceFraction(iCell)) & 
+              activeTracersPistonVelocity(index_salinity, iCell) = (1.0_RKIND - landIceFraction(iCell)) &
                  * config_isomip_salinity_piston_velocity
            end if
 
@@ -386,7 +386,7 @@ contains
 
       ! compute the vertical grid (layerThickness, restingThickness, maxLevelCell, zMid) based on ssh, bottomDepth and refBottomDepth
       call ocn_init_ssh_and_ssp_vertical_grid(domain, iErr)
-           
+
       if(iErr .ne. 0) then
         write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_ssp_vertical_grid failed.'
         return
@@ -427,7 +427,7 @@ contains
 !> \brief   Validation for ISOMIP test cases
 !> \author  Xylar Asay-Davis
 !> \date    06/01/2015
-!> \details 
+!> \details
 !>  This routine validates the configuration options for the ISOMIP test cases.
 !
 !-----------------------------------------------------------------------
@@ -471,7 +471,7 @@ contains
          return
       end if
 
-      
+
 
    !--------------------------------------------------------------------
 

@@ -82,7 +82,7 @@ contains
 !>  modifySSHMask should be set to 1 wherever the ssh or ssp
 !>  should be modified for consistency (e.g. under land ice). This
 !>  routine will take care of setting up partial bottom cells
-!>  by calling ocn_alter_bottomDepth_for_pbcs (except for the 
+!>  by calling ocn_alter_bottomDepth_for_pbcs (except for the
 !>  Haney-number-constrained coordinate, which handle thin bottom
 !>  cells via the Haney-number constraint.
 
@@ -261,7 +261,7 @@ contains
          call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
          call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-  
+
          call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
 
          call mpas_pool_get_array(diagnosticsPool, 'refSSH', refSSH)
@@ -288,7 +288,7 @@ contains
          end do !iCell
 
          if(.not. initRx1WithSSH) then !pbcs are handled differently for the Haney-number-constrained coordinate
-           do iCell = 1, nCells 
+           do iCell = 1, nCells
              call ocn_alter_bottomDepth_for_pbcs(bottomDepth(iCell), refBottomDepth, maxLevelCell(iCell), iErr)
 
              if(iErr .ne. 0) then
@@ -762,7 +762,7 @@ contains
       allocate(inTracerColumn(nVertLevels),outTracerColumn(nVertLevels))
 
       do iCell = 1, nCells
-        inKMax = inMaxLevelCell(iCell) 
+        inKMax = inMaxLevelCell(iCell)
         outKMax = outMaxLevelCell(iCell)
         if((inKMax <= 0) .or. (outKMax <= 0))  cycle
 

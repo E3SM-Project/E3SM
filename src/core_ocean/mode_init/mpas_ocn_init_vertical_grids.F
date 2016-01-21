@@ -675,18 +675,18 @@ contains
         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
         call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-  
+
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-  
+
         call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
-  
+
         call mpas_pool_get_array(diagnosticsPool, 'rx1Edge', rx1Edge)
         call mpas_pool_get_array(diagnosticsPool, 'rx1Cell', rx1Cell)
         call mpas_pool_get_array(diagnosticsPool, 'rx1MaxEdge', rx1MaxEdge)
         call mpas_pool_get_array(diagnosticsPool, 'rx1MaxCell', rx1MaxCell)
         call mpas_pool_get_array(diagnosticsPool, 'globalRx1Max', globalRx1Max)
-  
+
         rx1Edge(:,:) = 0.0_RKIND
         rx1Cell(:,:) = 0.0_RKIND
         rx1MaxEdge(:) = 0.0_RKIND
@@ -702,19 +702,19 @@ contains
             dzVert2 = zMid(k,c2)-zMid(k+1,c2)
             dzEdgeK = zMid(k,c2)-zMid(k,c1)
             dzEdgeKp1 = zMid(k+1,c2)-zMid(k+1,c1)
-  
+
             rx1 = abs(dzEdgeK+dzEdgeKp1)/(dzVert1+dzVert2)
-  
+
             rx1Edge(k,iEdge) = rx1
             rx1Cell(k,c1) = max(rx1Cell(k,c1),rx1)
             rx1Cell(k,c2) = max(rx1Cell(k,c2),rx1)
-  
+
             rx1MaxEdge(iEdge) = max(rx1MaxEdge(iEdge),rx1)
             rx1MaxCell(c2) = max(rx1MaxCell(c2),rx1)
             rx1MaxCell(c1) = max(rx1MaxCell(c1),rx1)
           end do
         end do
-  
+
         localMaxRx1Edge = max(localMaxRx1Edge,maxval(rx1MaxEdge))
 
         block_ptr => block_ptr % next
