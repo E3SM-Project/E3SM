@@ -186,7 +186,8 @@ contains
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-      if ( on_a_sphere ) call mpas_dmpar_global_abort('ERROR: The ISOMIP configuration can only be applied to a planar mesh. Exiting...')
+      if ( on_a_sphere ) call mpas_dmpar_global_abort(&
+           'ERROR: The ISOMIP configuration can only be applied to a planar mesh. Exiting...')
 
       ySouth = config_isomip_southern_boundary
       yNorth = config_isomip_northern_boundary
@@ -283,8 +284,10 @@ contains
         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
 
         call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
-        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', activeTracersPistonVelocity, 1)
-        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', activeTracersSurfaceRestoringValue, 1)
+        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', &
+            activeTracersPistonVelocity, 1)
+        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', &
+            activeTracersSurfaceRestoringValue, 1)
 
 
         ! flat bottom
@@ -384,7 +387,8 @@ contains
       deallocate(columnThicknessFraction)
 
 
-      ! compute the vertical grid (layerThickness, restingThickness, maxLevelCell, zMid) based on ssh, bottomDepth and refBottomDepth
+      ! compute the vertical grid (layerThickness, restingThickness, maxLevelCell, zMid)
+      !  based on ssh, bottomDepth and refBottomDepth
       call ocn_init_ssh_and_ssp_vertical_grid(domain, iErr)
 
       if(iErr .ne. 0) then
