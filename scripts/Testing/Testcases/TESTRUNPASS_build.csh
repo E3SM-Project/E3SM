@@ -6,13 +6,13 @@ set EXEROOT  = `./xmlquery EXEROOT -value`
 set RUNDIR   = `./xmlquery RUNDIR -value`
 set TESTID   = `./xmlquery TEST_TESTID -value`
 
-echo "#! /bin/bash" > $EXEROOT/cesm.exe
-echo "echo Insta pass" >> $EXEROOT/cesm.exe
-echo -n "echo SUCCESSFUL TERMINATION > $RUNDIR/cpl.log." >> $EXEROOT/cesm.exe
-echo '$LID' >> $EXEROOT/cesm.exe
-chmod +x $EXEROOT/cesm.exe
+echo "#! /bin/bash" > $EXEROOT/${CIME_MODEL}.exe
+echo "echo Insta pass" >> $EXEROOT/${CIME_MODEL}.exe
+echo -n "echo SUCCESSFUL TERMINATION > $RUNDIR/cpl.log." >> $EXEROOT/${CIME_MODEL}.exe
+echo '$LID' >> $EXEROOT/${CIME_MODEL}.exe
+chmod +x $EXEROOT/${CIME_MODEL}.exe
 
-echo "Build phase complete, just made simple script for cesm.exe" | tee $EXEROOT/cesm.bldlog.$TESTID
+echo "Build phase complete, just made simple script for ${CIME_MODEL}.exe" | tee $EXEROOT/cesm.bldlog.$TESTID
 
 ./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val TRUE
 

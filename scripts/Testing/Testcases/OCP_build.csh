@@ -112,7 +112,7 @@ while (${bx} < ${OCN_NX})
         if ($cnt < 10  ) set acnt = "000${cnt}"
 
         cp -f env_build.xml env_build.xml.${acnt}
-        cp -f $EXEROOT/cesm.exe $EXEROOT/cesm.exe.${acnt}
+        cp -f $EXEROOT/${CIME_MODEL}.exe $EXEROOT/${CIME_MODEL}.exe.${acnt}
       else
         echo "precheck... $OCN_GRID ${ocn_pes} $NTASKS_OCN $NTHRDS_OCN $bx $by $mxt $decomp"
       endif

@@ -88,9 +88,9 @@ echo "\`date\` -- CSM EXECUTION BEGINS HERE"
 setenv MP_LABELIO yes
 setenv OMP_NUM_THREADS \$maxthrds
 if ( "\$MPILIB" == "mpi-serial" ) then
-    \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+    \$EXEROOT/acme.exe >&! cesm.log.\$LID
 else
-    /usr/local/bin/mpiexec -np \$maxtasks \$EXEROOT/cesm.exe >&! cesm.log.\$LID
+    /usr/local/bin/mpiexec -np \$maxtasks \$EXEROOT/acme.exe >&! cesm.log.\$LID
 endif
 
 wait

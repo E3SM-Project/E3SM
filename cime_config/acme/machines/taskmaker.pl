@@ -269,7 +269,7 @@ for ($c1=1; $c1 < $tottasks; $c1++){     # assign each task to a node
     if ($maxt[$c1] != $thrdcnt) {
       $taskpernode = $MAXTPN / $thrdcnt;
       $taskpernode = ($taskpernode > $taskcnt) ? $taskcnt : $taskpernode;
-      $aprun = $aprun." -n $taskcnt -N $taskpernode -d $thrdcnt \${EXEROOT}/cesm.exe :";
+      $aprun = $aprun." -n $taskcnt -N $taskpernode -d $thrdcnt \${EXEROOT}/acme.exe :";
       $nodecnt = $taskcnt / $taskpernode ;
       $pbsrs = $pbsrs."${nodecnt}:ncpus=${MAXTPN}:mpiprocs=${taskpernode}:ompthreads=${thrdcnt}:model=${nas_node_type}+";
       $thrdcnt = $maxt[$c1];
@@ -287,7 +287,7 @@ if ($COMPILER eq "intel" && $taskpernode>1){
     my $taskpernuma = $taskpernode/2;
     $aprun .= " -S $taskpernuma -cc numa_node ";
 }
-$aprun .= " -n $taskcnt -N $taskpernode -d $thrdcnt \${EXEROOT}/cesm.exe";
+$aprun .= " -n $taskcnt -N $taskpernode -d $thrdcnt \${EXEROOT}/acme.exe";
 
 
 $nodecnt = $taskcnt / $taskpernode ;

@@ -29,7 +29,6 @@ use Exporter qw(import);
 use lib '.';
 use Task::TaskMaker;
 use Config::envBatch;
-#my $cesmRunSuffix = '$config{\'EXEROOT\'}/cesm.exe >> $cesm.log.$LID 2>&1';
 my @requiredargs = qw/caseroot case machroot machine cimeroot/;
 use Log::Log4perl qw(get_logger);
 

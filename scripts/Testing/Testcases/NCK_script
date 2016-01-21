@@ -9,8 +9,8 @@ cd $CASEROOT
 if ( -e env_mach_pes.xml.1 )  then
   cp -f env_mach_pes.xml.1   env_mach_pes.xml
   cp -f env_mach_pes.xml.1   LockedFiles/env_mach_pes.xml
-  rm    $EXEROOT/cesm.exe >& /dev/null
-  cp -f $EXEROOT/cesm.exe.1 $EXEROOT/cesm.exe || exit -9
+  rm    $EXEROOT/${CIME_MODEL}.exe >& /dev/null
+  cp -f $EXEROOT/${CIME_MODEL}.exe.1 $EXEROOT/${CIME_MODEL}.exe || exit -9
   cp -f env_build.xml.1      env_build.xml
   cp -f env_build.xml.1      LockedFiles/env_build.xml
 else
@@ -86,8 +86,8 @@ cp -f env_mach_pes.xml.2 LockedFiles/env_mach_pes.xml
 ./case.setup -clean -testmode
 ./case.setup
 
-rm $EXEROOT/cesm.exe >& /dev/null
-cp -f $EXEROOT/cesm.exe.2 $EXEROOT/cesm.exe || exit -9
+rm $EXEROOT/${CIME_MODEL}.exe >& /dev/null
+cp -f $EXEROOT/${CIME_MODEL}.exe.2 $EXEROOT/${CIME_MODEL}.exe || exit -9
 cp -f env_build.xml.2    env_build.xml
 cp -f env_build.xml.2    LockedFiles/env_build.xml
 

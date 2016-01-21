@@ -92,7 +92,7 @@ if ($status != 0) then
    exit -1    
 endif 
 
-mv -f $EXEROOT/cesm.exe $EXEROOT/cesm.exe.1  || exit -9
+mv -f $EXEROOT/${CIME_MODEL}.exe $EXEROOT/${CIME_MODEL}.exe.1  || exit -9
 cp -f env_mach_pes.xml   env_mach_pes.xml.1
 cp -f env_build.xml       env_build.xml.1
 
@@ -161,7 +161,7 @@ if ($status != 0) then
    exit -1    
 endif 
 
-mv -f $EXEROOT/cesm.exe $EXEROOT/cesm.exe.2  || exit -9
+mv -f $EXEROOT/${CIME_MODEL}.exe $EXEROOT/${CIME_MODEL}.exe.2  || exit -9
 cp -f env_mach_pes.xml   env_mach_pes.xml.2
 cp -f env_build.xml      env_build.xml.2
 
