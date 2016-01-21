@@ -2029,7 +2029,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                                                     rtheta_p_save, rt_diabatic_tend, rho_p, rho_p_save, &
                                                     rho_pp, rho_zz, rho_base, ruAvg, ru_save, ru_p, u, ru, &
                                                     exner, exner_base, rtheta_base, pressure_p,         &
-                                                    zz, theta_m, pressure_b, pressure_p_old
+                                                    zz, theta_m, pressure_b
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
       real (kind=RKIND), dimension(:), pointer :: fzm, fzp
       real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3, zb_cell, zb3_cell
@@ -2073,7 +2073,6 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       call mpas_pool_get_array(diag, 'exner_base', exner_base)
 
       call mpas_pool_get_array(diag, 'pressure_p', pressure_p)
-      call mpas_pool_get_array(diag, 'pressure_p_old', pressure_p_old)
       call mpas_pool_get_array(diag, 'pressure_base', pressure_b)
 
       call mpas_pool_get_array(mesh, 'zz', zz)
@@ -2103,7 +2102,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       call atm_recover_large_step_variables_work(nCells, nEdges, nCellsSolve, nEdgesSolve, dt, ns, rk_step, &
                              wwAvg, rw_save, w, rw, rw_p, rtheta_p, rtheta_pp, rtheta_p_save, rt_diabatic_tend, rho_p, &
                              rho_p_save, rho_pp, rho_zz, rho_base, ruAvg, ru_save, ru_p, u, ru, exner, exner_base, &
-                             rtheta_base, pressure_p, zz, theta_m, pressure_b, pressure_p_old, scalars, fzm, fzp, &
+                             rtheta_base, pressure_p, zz, theta_m, pressure_b, scalars, fzm, fzp, &
                              zb, zb3, zb_cell, zb3_cell, edgesOnCell_sign, cellsOnEdge, edgesOnCell, nEdgesOnCell, &
                              cf1, cf2, cf3, coef_3rd_order, &
                              cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
@@ -2115,7 +2114,7 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
    subroutine atm_recover_large_step_variables_work(nCells, nEdges, nCellsSolve, nEdgesSolve, dt, ns, rk_step, &
                              wwAvg, rw_save, w, rw, rw_p, rtheta_p, rtheta_pp, rtheta_p_save, rt_diabatic_tend, rho_p, &
                              rho_p_save, rho_pp, rho_zz, rho_base, ruAvg, ru_save, ru_p, u, ru, exner, exner_base, &
-                             rtheta_base, pressure_p, zz, theta_m, pressure_b, pressure_p_old, scalars, fzm, fzp, &
+                             rtheta_base, pressure_p, zz, theta_m, pressure_b, scalars, fzm, fzp, &
                              zb, zb3, zb_cell, zb3_cell, edgesOnCell_sign, cellsOnEdge, edgesOnCell, nEdgesOnCell, &
                              cf1, cf2, cf3, coef_3rd_order, &
                              cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
@@ -2159,7 +2158,6 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: zz
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: theta_m
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pressure_b
-      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pressure_p_old
       real (kind=RKIND), dimension(num_scalars,nVertLevels,nCells+1) :: scalars
       real (kind=RKIND), dimension(nVertLevels) :: fzm
       real (kind=RKIND), dimension(nVertLevels) :: fzp
@@ -2230,7 +2228,6 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
                theta_m(k,iCell) = (rtheta_p(k,iCell) + rtheta_base(k,iCell))/rho_zz(k,iCell)
                exner(k,iCell) = (zz(k,iCell)*(rgas/p0)*(rtheta_p(k,iCell)+rtheta_base(k,iCell)))**rcv
                ! pressure_p is perturbation pressure
-               pressure_p_old(k,iCell) = pressure_p(k,iCell)
                pressure_p(k,iCell) = zz(k,iCell) * rgas * (exner(k,iCell)*rtheta_p(k,iCell)+rtheta_base(k,iCell)  &
                                                           * (exner(k,iCell)-exner_base(k,iCell)))
             end do
@@ -3420,7 +3417,7 @@ MPAS_GPTL_STOP('mono_exch_2')
                                                    meshScalingDel2, meshScalingDel4
       real (kind=RKIND), dimension(:,:), pointer :: weightsOnEdge, zgrid, rho_edge, rho_zz, ru, u, v, tend_u, &
                                                     divergence, vorticity, ke, pv_edge, theta_m, rw, tend_rho, &
-                                                    rt_diabatic_tend, tend_theta, tend_w, w, cqw, rb, rr, pp, pp_old, pressure_b, zz, zxu, cqu, & 
+                                                    rt_diabatic_tend, tend_theta, tend_w, w, cqw, rb, rr, pp, pressure_b, zz, zxu, cqu, & 
                                                     h_divergence, kdiff, edgesOnCell_sign, edgesOnVertex_sign, rw_save, ru_save
 
       real (kind=RKIND), dimension(:,:), pointer :: theta_m_save
@@ -3503,7 +3500,6 @@ MPAS_GPTL_STOP('mono_exch_2')
       call mpas_pool_get_array(diag, 'ke', ke)
       call mpas_pool_get_array(diag, 'pv_edge', pv_edge)
       call mpas_pool_get_array(diag, 'pressure_p', pp)
-      call mpas_pool_get_array(diag, 'pressure_p_old', pp_old)
       call mpas_pool_get_array(diag, 'pressure_base', pressure_b)
       call mpas_pool_get_array(diag, 'h_divergence', h_divergence)
       call mpas_pool_get_array(diag, 'exner', exner)
@@ -3591,7 +3587,7 @@ MPAS_GPTL_STOP('mono_exch_2')
          fEdge, dvEdge, dcEdge, invDcEdge, invDvEdge, invAreaCell, invAreaTriangle, meshScalingDel2, meshScalingDel4, &
          weightsOnEdge, zgrid, rho_edge, rho_zz, ru, u, v, tend_u, &
          divergence, vorticity, ke, pv_edge, theta_m, rw, tend_rho, &
-         rt_diabatic_tend, tend_theta, tend_w, w, cqw, rb, rr, pp, pp_old, pressure_b, zz, zxu, cqu, & 
+         rt_diabatic_tend, tend_theta, tend_w, w, cqw, rb, rr, pp, pressure_b, zz, zxu, cqu, & 
          h_divergence, kdiff, edgesOnCell_sign, edgesOnVertex_sign, rw_save, ru_save, &
          theta_m_save, exner, pp_fwd, rr_save, scalars, tend_u_euler, tend_w_euler, tend_theta_euler, deriv_two, &
          cellsOnEdge, verticesOnEdge, edgesOnCell, edgesOnEdge, cellsOnCell, edgesOnVertex, nEdgesOnCell, nEdgesOnEdge, &
@@ -3611,7 +3607,7 @@ MPAS_GPTL_STOP('mono_exch_2')
       fEdge, dvEdge, dcEdge, invDcEdge, invDvEdge, invAreaCell, invAreaTriangle, meshScalingDel2, meshScalingDel4, &
       weightsOnEdge, zgrid, rho_edge, rho_zz, ru, u, v, tend_u, &
       divergence, vorticity, ke, pv_edge, theta_m, rw, tend_rho, &
-      rt_diabatic_tend, tend_theta, tend_w, w, cqw, rb, rr, pp, pp_old, pressure_b, zz, zxu, cqu, & 
+      rt_diabatic_tend, tend_theta, tend_w, w, cqw, rb, rr, pp, pressure_b, zz, zxu, cqu, & 
       h_divergence, kdiff, edgesOnCell_sign, edgesOnVertex_sign, rw_save, ru_save, &
       theta_m_save, exner, pp_fwd, rr_save, scalars, tend_u_euler, tend_w_euler, tend_theta_euler, deriv_two, &
       cellsOnEdge, verticesOnEdge, edgesOnCell, edgesOnEdge, cellsOnCell, edgesOnVertex, nEdgesOnCell, nEdgesOnEdge, &
@@ -3667,7 +3663,6 @@ MPAS_GPTL_STOP('mono_exch_2')
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rb
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: rr
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pp
-      real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pp_old
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: pressure_b
       real (kind=RKIND), dimension(nVertLevels,nCells+1) :: zz
       real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: zxu
@@ -3862,9 +3857,7 @@ MPAS_GPTL_STOP('mono_exch_2')
 !DIR$ IVDEP
           do k = 1,nVertLevels
             tend_rho(k,iCell) = -h_divergence(k,iCell)-rdzw(k)*(rw(k+1,iCell)-rw(k,iCell))
-!            pp_fwd(k,iCell) = pp(k,iCell) + smdiv*rgas_cprcv*theta_m(k,iCell)*exner(k,iCell)*tend_rho(k,iCell)
-!  test new div damping formulation, assume 2 acoustic steps per RK step (factor of 0.5)
-            pp_fwd(k,iCell) = pp(k,iCell) + 0.5*smdiv*(pp(k,iCell) - pp_old(k,iCell))
+            pp_fwd(k,iCell) = pp(k,iCell) + smdiv*rgas_cprcv*theta_m(k,iCell)*exner(k,iCell)*tend_rho(k,iCell)
             dpdz(k,iCell) = -gravity*(rb(k,iCell)*(qtot(k,iCell)) + rr_save(k,iCell)*(1.+qtot(k,iCell)))
           end do
 
@@ -4949,7 +4942,6 @@ MPAS_GPTL_STOP('mono_exch_2')
       real (kind=RKIND), dimension(:,:), pointer :: u
       real (kind=RKIND), dimension(:,:), pointer :: w
       real (kind=RKIND), dimension(:,:), pointer :: pressure_p
-      real (kind=RKIND), dimension(:,:), pointer :: pressure_p_old
       real (kind=RKIND), dimension(:,:), pointer :: exner
       real (kind=RKIND), dimension(:,:), pointer :: exner_base
       real (kind=RKIND), dimension(:), pointer :: fzm, fzp
@@ -4984,7 +4976,6 @@ MPAS_GPTL_STOP('mono_exch_2')
       call mpas_pool_get_array(state, 'u', u, time_lev)
       call mpas_pool_get_array(state, 'w', w, time_lev)
       call mpas_pool_get_array(diag, 'pressure_p', pressure_p)
-      call mpas_pool_get_array(diag, 'pressure_p_old', pressure_p_old)
       call mpas_pool_get_array(diag, 'exner', exner)
       call mpas_pool_get_array(diag, 'exner_base', exner_base)
       call mpas_pool_get_array(mesh, 'fzm', fzm)
@@ -5074,7 +5065,6 @@ MPAS_GPTL_STOP('mono_exch_2')
                                                * (  exner(k,iCell) * rtheta_p(k,iCell) &
                                                   + rtheta_base(k,iCell) * (exner(k,iCell) - exner_base(k,iCell)) &
                                                  )
-            pressure_p_old(k,iCell) = pressure_p(k,iCell)
          end do
       end do
 

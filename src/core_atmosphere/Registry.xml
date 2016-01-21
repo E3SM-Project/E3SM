@@ -305,7 +305,6 @@
 			<var name="rho_zz"/>
 			<var name="theta_m"/>
 			<var name="pressure_p"/>
-			<var name="pressure_p_old"/>
 			<var name="rho"/>
 			<var name="theta"/>
 			<var name="relhum"/>
@@ -811,7 +810,6 @@
 
                 <!-- state variables diagnosed from prognostic state -->
                 <var name="pressure_p"              type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="pressure_p_old"              type="real"     dimensions="nVertLevels nCells Time"/>
 
                 <!-- Diagnostic fields: only written to output                                                           -->
                 <!-- NOTE: added the "r" option to rho,theta,uReconstructZonal,and uReconstructMeridional for use of the -->
