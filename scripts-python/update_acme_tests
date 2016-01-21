@@ -9,9 +9,9 @@ into the XML file.
 """
 
 import add_util_path
-import acme_util
-from acme_util import expect
-acme_util.check_minimum_python_version(2, 7)
+import cime_util
+from cime_util import expect
+cime_util.check_minimum_python_version(2, 7)
 
 import update_acme_tests
 
@@ -54,7 +54,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = parser.parse_args(args[1:])
 
-    acme_util.set_verbosity(args.verbose)
+    cime_util.set_verbosity(args.verbose)
 
     expect(os.path.isfile(args.test_list_path),
            "'%s' is not a valid file" % args.test_list_path)
@@ -71,12 +71,12 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 def _main_func(description):
 ###############################################################################
     if ("--test" in sys.argv):
-        acme_util.run_cmd("python -m doctest %s/update_acme_tests.py -v" % acme_util.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
+        cime_util.run_cmd("python -m doctest %s/update_acme_tests.py -v" % cime_util.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
         return
 
     categories, test_list_path, platform = parse_command_line(sys.argv, description)
 
-    acme_util.stop_buffering_output()
+    cime_util.stop_buffering_output()
 
     update_acme_tests.update_acme_tests(test_list_path, categories, platform)
 

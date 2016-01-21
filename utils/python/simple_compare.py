@@ -1,6 +1,6 @@
 import os, re
 
-from acme_util import expect, warning, verbose_print
+from cime_util import expect, warning, verbose_print
 
 ###############################################################################
 def normalize_string_value(value, case):

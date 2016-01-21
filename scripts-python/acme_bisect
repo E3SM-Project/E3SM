@@ -6,12 +6,12 @@ script is intended to be run by git bisect.
 """
 
 import add_util_path
-import acme_util
-acme_util.check_minimum_python_version(2, 7)
+import cime_util
+cime_util.check_minimum_python_version(2, 7)
 
 import argparse, sys, os, doctest, traceback
 
-from acme_util import expect, warning, verbose_print, run_cmd
+from cime_util import expect, warning, verbose_print, run_cmd
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -32,8 +32,8 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-    default_project  = acme_util.get_machine_project()
-    default_compiler = acme_util.get_machine_info("COMPILERS")[0]
+    default_project  = cime_util.get_machine_project()
+    default_compiler = cime_util.get_machine_info("COMPILERS")[0]
 
     parser.add_argument("testname", help="Name of failing test.")
 
@@ -67,18 +67,18 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = parser.parse_args(args[1:])
 
-    acme_util.set_verbosity(args.verbose)
+    cime_util.set_verbosity(args.verbose)
 
     if (args.test_root is None):
-        args.test_root = os.path.join(acme_util.get_machine_info("CESMSCRATCHROOT", project=args.project), "acme_bisect")
+        args.test_root = os.path.join(cime_util.get_machine_info("CESMSCRATCHROOT", project=args.project), "acme_bisect")
 
     return args.testname, args.good, args.bad, args.test_root, args.compiler, args.project, args.baseline_name, args.check_namelists, args.check_throughput, args.check_memory
 
 ###############################################################################
 def acme_bisect(testname, good, bad, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory):
 ###############################################################################
-    create_test = os.path.join(acme_util.get_acme_scripts_root(), "create_test")
-    wait_for_tests = os.path.join(acme_util.get_acme_scripts_root(), "wait_for_tests")
+    create_test = os.path.join(cime_util.get_acme_scripts_root(), "create_test")
+    wait_for_tests = os.path.join(cime_util.get_acme_scripts_root(), "wait_for_tests")
 
     # Important: we only want to test merges
     commits_we_want_to_test = run_cmd("git rev-list %s..%s --merges --first-parent" % (good, bad)).splitlines()
@@ -100,7 +100,7 @@ def acme_bisect(testname, good, bad, testroot, compiler, project, baseline_name,
     bisect_cmd = "/bin/rm -rf %s/*acme_bisect && %s %s --test-root %s -t acme_bisect --compiler %s -p %s %s" % \
         (testroot, create_test, testname, testroot, compiler, project, compare_args)
 
-    is_batch = acme_util.does_machine_have_batch()
+    is_batch = cime_util.does_machine_have_batch()
     if (is_batch):
         # Forumulate the wait_for_tests command.
 
@@ -125,7 +125,7 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    acme_util.stop_buffering_output()
+    cime_util.stop_buffering_output()
 
     testname, good, bad, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory = \
         parse_command_line(sys.argv, description)
