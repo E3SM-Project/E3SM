@@ -272,7 +272,7 @@ module ocn_init_sub_ice_shelf_2D
 
      if(iErr .ne. 0) then
         write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_ssp_vertical_grid failed.'
-        return
+        call mpas_dmpar_finalize(domain % dminfo)
      end if
 
      block_ptr => domain % blocklist
@@ -318,23 +318,15 @@ module ocn_init_sub_ice_shelf_2D
 
      if(iErr .ne. 0) then
         write(stderrUnit,*) 'ERROR: ocn_init_ssh_and_ssp_balance failed.'
-        return
+        call mpas_dmpar_finalize(domain % dminfo)
      end if
 
-     block_ptr => domain % blocklist
-     do while(associated(block_ptr))
-        call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-        call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
+     call ocn_compute_Haney_number(domain, iErr)
 
-        call ocn_compute_Haney_number(domain % dminfo, meshPool, diagnosticsPool, iErr)
-
-        if(iErr .ne. 0) then
-           write(stderrUnit,*) 'ERROR: ocn_compute_Haney_number failed.'
-           return
-        end if
-
-        block_ptr => block_ptr % next
-     end do
+     if(iErr .ne. 0) then
+        write(stderrUnit,*) 'ERROR: ocn_compute_Haney_number failed.'
+        call mpas_dmpar_finalize(domain % dminfo)
+     end if
 
      !--------------------------------------------------------------------
 
