@@ -147,7 +147,7 @@
 					description="Variable name for the ocean mask in the topography file."
 					possible_values="Variable name from input file."
 		/>
-		<nml_option name="config_global_ocean_topography_method" type="character" default_value="nearest_neighbor" units="unitless"
+		<nml_option name="config_global_ocean_topography_method" type="character" default_value="bilinear_interpolation" units="unitless"
 					description="Method to interpolate topography data to MPAS mesh."
 					possible_values="bilinear_interpolation, nearest_neighbor"
 		/>
