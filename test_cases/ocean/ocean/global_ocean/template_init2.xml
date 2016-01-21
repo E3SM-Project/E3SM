@@ -5,6 +5,8 @@
 		<option name="config_ocean_run_mode">'init'</option>
 		<option name="config_write_cull_cell_mask">.false.</option>
 
+		<option name="config_eos_type">'jm'</option>
+
 		<option name="config_expand_sphere">.true.</option>
 		<option name="config_realistic_coriolis_parameter">.true.</option>
 
@@ -49,6 +51,7 @@
 		<option name="config_global_ocean_topography_lat_varname">'y'</option>
 		<option name="config_global_ocean_topography_lon_varname">'x'</option>
 		<option name="config_global_ocean_topography_varname">'z'</option>
+		<option name="config_global_ocean_topography_method">'bilinear_interpolation'</option>
 		<option name="config_global_ocean_smooth_topography">.true.</option>
 		<option name="config_global_ocean_cull_inland_seas">.true.</option>
 		<option name="config_global_ocean_windstress_file">'wind_stress.nc'</option>
@@ -83,10 +86,26 @@
 				<member name="refBottomDepth" type="var"/>
 				<member name="bottomDepth" type="var"/>
 				<member name="bottomDepthObserved" type="var"/>
+				<member name="oceanFracObserved" type="var"/>
 				<member name="maxLevelCell" type="var"/>
 				<member name="vertCoordMovementWeights" type="var"/>
 				<member name="edgeMask" type="var"/>
 				<member name="cullCell" type="var"/>
+				<member name="landIceDraftObserved" type="var"/>
+				<member name="landIceThkObserved" type="var"/>
+				<member name="landIceFracObserved" type="var"/>
+				<member name="landIceGroundedFracObserved" type="var"/>
+				<member name="landIceFraction" type="var"/>
+				<member name="ssh" type="var"/>
+				<member name="refSSH" type="var"/>
+				<member name="deltaSSH" type="var"/>
+				<member name="modifySSHMask" type="var"/>
+				<member name="rx1Cell" type="var"/>
+				<member name="rx1Edge" type="var"/>
+				<member name="rx1MaxCell" type="var"/>
+				<member name="rx1MaxEdge" type="var"/>
+				<member name="globalRx1Max" type="var"/>
+				<member name="density" type="var"/>
 			</add_contents>
 		</stream>
 		<stream name="forcing_data_init">
@@ -104,6 +123,7 @@
 				<member name="windStressMeridional" type="var"/>
 				<member name="landIceFraction" type="var"/>
 				<member name="landIceSurfaceTemperature" type="var"/>
+				<member name="seaSurfacePressure" type="var"/>
 			</add_contents>
 		</stream>
 		<stream name="shortwave_forcing_data_init">

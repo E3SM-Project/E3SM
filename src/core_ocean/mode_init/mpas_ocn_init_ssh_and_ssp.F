@@ -74,12 +74,17 @@ contains
 !> \details
 !>  This routine sets up the vertical grid (layerThickness,
 !>  zMid and restingThickness) needed for computing SSH from
-!>  SSP or visa versa. bottomDepth, refBottomDepth and maxLevelCell
-!>  must have been computed by the test case before calling this
-!>  routine.  If config_iterative_init_variable = 'ssp', the test
+!>  SSP or visa versa. bottomDepth, refBottomDepth, maxLevelCell
+!>  and modifySSHMask must have been computed by the test case
+!>  before calling this routine.  If
+!>  config_iterative_init_variable = 'ssp', the test
 !>  case must compute refSSH before calling this routine.
 !>  modifySSHMask should be set to 1 wherever the ssh or ssp
-!>  should be modified for consistency (e.g. under land ice).
+!>  should be modified for consistency (e.g. under land ice). This
+!>  routine will take care of setting up partial bottom cells
+!>  by calling ocn_alter_bottomDepth_for_pbcs (except for the
+!>  Haney-number-constrained coordinate, which handle thin bottom
+!>  cells via the Haney-number constraint.
 
 !-----------------------------------------------------------------------
 
@@ -184,8 +189,11 @@ contains
 !>  SSP or visa versa. bottomDepth, refBottomDepth and maxLevelCell
 !>  must have been computed by the test case before calling this
 !>  routine.  If config_iterative_init_variable = 'ssp', the test
-!>  case must compute refSSH before calling this routine.
-
+!>  case must compute refSSH before calling this routine.  This
+!>  routine will take care of setting up partial bottom cells
+!>  by calling ocn_alter_bottomDepth_for_pbcs (except for the
+!>  Haney-number-constrained coordinate, which handle thin bottom
+!>  cells via the Haney-number constraint.
 !-----------------------------------------------------------------------
 
    subroutine ocn_init_vertical_grid(domain, iErr, updateOnly)!{{{
@@ -250,6 +258,10 @@ contains
 
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
+         call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+         call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+
          call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
 
          call mpas_pool_get_array(diagnosticsPool, 'refSSH', refSSH)
@@ -274,6 +286,18 @@ contains
              ssh(iCell) = 0.0_RKIND
            end if
          end do !iCell
+
+         if(.not. initRx1WithSSH) then !pbcs are handled differently for the Haney-number-constrained coordinate
+           do iCell = 1, nCells
+             call ocn_alter_bottomDepth_for_pbcs(bottomDepth(iCell), refBottomDepth, maxLevelCell(iCell), iErr)
+
+             if(iErr .ne. 0) then
+               write(stderrUnit,*) 'ERROR: ocn_alter_bottomDepth_for_pbcs failed.'
+               return
+             end if
+
+           end do
+         end if
 
          block_ptr => block_ptr % next
        end do !block_ptr
@@ -392,8 +416,10 @@ contains
                                                  bottomPressure
 
 
-     real(kind=RKIND), dimension(:,:), pointer :: refZMid
-     type (field2DReal), pointer :: refZMidField
+     real(kind=RKIND), dimension(:,:), pointer :: origZMid
+     integer, dimension(:), pointer :: origMaxLevelCell
+     type (field2DReal), pointer :: origZMidField
+     type (field1DInteger), pointer :: origMaxLevelCellField
      integer, pointer :: nCells, nVertLevels
 
      character (len=StrKIND), pointer :: config_iterative_init_variable
@@ -405,8 +431,10 @@ contains
      call mpas_pool_get_config(ocnConfigs, 'config_iterative_init_variable', config_iterative_init_variable)
      call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
 
-     call mpas_pool_get_field(scratchPool, 'scratchZMid', refZMidField)
-     call mpas_allocate_scratch_field(refZMidField, .false.)
+     call mpas_pool_get_field(scratchPool, 'scratchZMid', origZMidField)
+     call mpas_allocate_scratch_field(origZMidField, .false.)
+     call mpas_pool_get_field(scratchPool, 'scratchMaxLevelCell', origMaxLevelCellField)
+     call mpas_allocate_scratch_field(origMaxLevelCellField, .false.)
 
      block_ptr => domain % blocklist
      do while(associated(block_ptr))
@@ -432,7 +460,8 @@ contains
        call mpas_pool_get_array(diagnosticsPool, 'density', density)
 
        call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
-       call mpas_pool_get_array(scratchPool, 'scratchZMid', refZMid)
+       call mpas_pool_get_array(scratchPool, 'scratchZMid', origZMid)
+       call mpas_pool_get_array(scratchPool, 'scratchMaxLevelCell', origMaxLevelCell)
 
        ! compute the bottom pressure assuming ssh = 0 (the full weight of the water column)
        call compute_density_and_bottom_pressure(meshPool, statePool, diagnosticsPool, scratchPool, &
@@ -451,7 +480,8 @@ contains
        end if
 
        ! save the old zMid for use in tracer inerpolation
-       refZMid(:,:) = zMid(:,:)
+       origZMid(:,:) = zMid(:,:)
+       origMaxLevelCell(:) = maxLevelCell(:)
 
        block_ptr => block_ptr % next
      end do !block_ptr
@@ -485,16 +515,17 @@ contains
        call mpas_pool_get_array(diagnosticsPool, 'bottomPressure', bottomPressure)
        call mpas_pool_get_array(diagnosticsPool, 'density', density)
 
-       call mpas_pool_get_array(scratchPool, 'scratchZMid', refZMid)
+       call mpas_pool_get_array(scratchPool, 'scratchZMid', origZMid)
+       call mpas_pool_get_array(scratchPool, 'scratchMaxLevelCell', origMaxLevelCell)
 
        ! interpolate active tracers to the new zMid
-       call interpolate_activeTracers(meshPool, refZMid, zMid, &
+       call interpolate_activeTracers(meshPool, origZMid, zMid, &
+                                      origMaxLevelCell, maxLevelCell, &
                                       activeTracers, iErr)
        if(iErr .ne. 0) then
          write(stderrUnit,*) 'ERROR: interpolate_activeTracers failed.'
          return
        end if
-       call mpas_deallocate_scratch_field(refZMidField,.true.)
 
        if(config_iterative_init_variable == 'ssp') then
          ! now compute what the weight of each ocean column with the new layer thickness,
@@ -515,7 +546,8 @@ contains
        block_ptr => block_ptr % next
      end do !block_ptr
 
-     call mpas_deallocate_scratch_field(refZMidField, .false.)
+     call mpas_deallocate_scratch_field(origZMidField, .false.)
+     call mpas_deallocate_scratch_field(origMaxLevelCellField, .false.)
 
    !--------------------------------------------------------------------
 
@@ -698,13 +730,15 @@ contains
 
 !-----------------------------------------------------------------------
 
-   subroutine interpolate_activeTracers(meshPool, refZMid, zMid, &
+   subroutine interpolate_activeTracers(meshPool, inZMid, outZMid, &
+                                        inMaxLevelCell, outMaxLevelCell, &
                                         activeTracers, iErr)!{{{
 
    !--------------------------------------------------------------------
 
       type (mpas_pool_type), intent(in) :: meshPool
-      real (kind=RKIND), dimension(:,:), intent(in) :: refZMid, zMid
+      real (kind=RKIND), dimension(:,:), intent(in) :: inZMid, outZMid
+      integer, dimension(:), intent(in) :: inMaxLevelCell, outMaxLevelCell
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: activeTracers
       integer, intent(out) :: iErr
@@ -712,11 +746,8 @@ contains
       ! Define dimension pointers
       integer, pointer :: nCells, nVertLevels
 
-      integer, dimension(:), pointer :: maxLevelCell
-
       ! Define variable pointers
-      integer :: iCell, k, kRef, kMax
-      real (kind=RKIND) :: z, frac
+      integer :: iCell, inKMax, outKMax
 
       real (kind=RKIND), dimension(:), allocatable :: inTracerColumn, outTracerColumn
 
@@ -726,18 +757,24 @@ contains
 
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
       nTracers = size(activeTracers, dim=1)
       allocate(inTracerColumn(nVertLevels),outTracerColumn(nVertLevels))
 
       do iCell = 1, nCells
-        if(maxLevelCell(iCell) <= 0) cycle
+        inKMax = inMaxLevelCell(iCell)
+        outKMax = outMaxLevelCell(iCell)
+        if((inKMax <= 0) .or. (outKMax <= 0))  cycle
 
         do iTracer = 1, nTracers
           inTracerColumn(:) = activeTracers(iTracer,:,iCell)
-          call ocn_init_interpolation_linear_vert(refZMid(:,iCell), inTracerColumn(:), nVertLevels, zMid(:,iCell), &
-                                                  outTracerColumn(:), nVertLevels, extrapolate=.true.)
+          call ocn_init_interpolation_linear_vert(inZMid(1:inKMax,iCell), &
+                                                  inTracerColumn(1:inKMax), &
+                                                  inKMax, &
+                                                  outZMid(1:outKMax,iCell), &
+                                                  outTracerColumn(1:outKMax), &
+                                                  outKMax, &
+                                                  extrapolate=.true.)
           activeTracers(iTracer,:,iCell) = outTracerColumn(:)
         end do
       end do

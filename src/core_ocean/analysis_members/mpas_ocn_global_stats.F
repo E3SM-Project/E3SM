@@ -803,7 +803,7 @@ contains
             write (fileID,'(100es24.14)') daysSinceStartOfSim, averages(1:nVariables)
             close (fileID)
             open(fileID,file=trim(config_AM_globalStats_directory)//'/stats_time.txt',STATUS='UNKNOWN', POSITION='append')
-            write (fileID,'(a)') trim(xtime), daysSinceStartOfSim, CFLNumberGlobal
+            write (fileID,'(a,2es24.14)') trim(xtime), daysSinceStartOfSim, CFLNumberGlobal
             close (fileID)
             open(fileID,file=trim(config_AM_globalStats_directory)//'/stats_colmin.txt',STATUS='UNKNOWN', POSITION='append')
             write (fileID,'(100es24.14)') verticalSumMins(1:nVariables)

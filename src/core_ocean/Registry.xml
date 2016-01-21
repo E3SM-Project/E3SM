@@ -869,7 +869,7 @@
 	</nml_record>
 	<nml_record name="debug" mode="forward;init">
 		<nml_option name="config_disable_redi_k33" type="logical" default_value=".false." units="unitless"
-					description="If true, disables k33 portion of Redi neutral surface mixing." 
+					description="If true, disables k33 portion of Redi neutral surface mixing."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_disable_redi_horizontal_term1" type="logical" default_value=".false." units="unitless"
@@ -991,36 +991,36 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_rx1_smooth_count" type="integer" default_value="20" units="unitless"
-					description="The number of smoothing passes used in modifying the vertical grid such that the Haney number rx1 < rx1Max"
-					possible_values="any positive integer" 
+					description="The number of smoothing passes used in modifying the vertical grid such that the Haney number rx1 is less than rx1Max"
+					possible_values="any positive integer"
 		/>
 		<nml_option name="config_rx1_inner_iteration_count" type="integer" default_value="10" units="unitless"
-					description="The number of inner iterations used in constraining the Haney number rx1 < rx1Max, allowing changes to propagate horizontally within a layer"
+					description="The number of inner iterations used in constraining the Haney number rx1 is less than rx1Max, allowing changes to propagate horizontally within a layer"
 					possible_values="any positive integer"
 		/>
 		<nml_option name="config_rx1_inner_iteration_weight" type="real" default_value="0.1" units="unitless"
 					description="During inner iteration, layers with rx1 > rx1Max are thickened toward a target thickness by this fraction.  A smaller weights will result in less layer thickening but will require more inner iterations to converge."
-					possible_values="a positive value less than or equal to 1" 
+					possible_values="a positive value less than or equal to 1"
 		/>
 		<nml_option name="config_rx1_max" type="real" default_value="10.0" units="unitless"
 					description="The maximum value rx1Max of the Haney number (rx1) after modification of the vertical grid"
-					possible_values="any positive value, typically greater than or equal to 1" 
+					possible_values="any positive value, typically greater than or equal to 1"
 		/>
 		<nml_option name="config_rx1_horiz_smooth_weight" type="real" default_value="0.5" units="unitless"
 					description="The averaging weight of neighbors used for horizontal smoothing of layer interface depth"
-					possible_values="Between 0 and 1, with a larger number indicating more smoothing per iteration" 
+					possible_values="Between 0 and 1, with a larger number indicating more smoothing per iteration"
 		/>
 		<nml_option name="config_rx1_vert_smooth_weight" type="real" default_value="0.5" units="unitless"
 					description="The averaging weight of neighbors used for vertical smoothing of layerThickness"
-					possible_values="Between 0 and 1, with a larger number indicating more smoothing per iteration" 
+					possible_values="Between 0 and 1, with a larger number indicating more smoothing per iteration"
 		/>
 		<nml_option name="config_rx1_horiz_smooth_open_ocean_cells" type="integer" default_value="20" units="unitless"
 					description="The size (in cells) of a buffer region around land ice for smoothing.  Smoothing is performed under land ice and in the buffer region of open ocean."
-					possible_values="any non-negative integer, 0 indiates no buffer region." 
+					possible_values="any non-negative integer, 0 indiates no buffer region."
 		/>
 		<nml_option name="config_rx1_min_levels" type="integer" default_value="3" units="unitless"
 					description="The minimum number of layers in the ocean column in the smoothed region."
-					possible_values="a positive integer" 
+					possible_values="a positive integer"
 		/>
 	</nml_record>
 	<packages>
@@ -1049,7 +1049,7 @@
 				immutable="true"
 				input_interval="initial_only"
 				mode="init">
-				
+
 			<var name="latCell"/>
 			<var name="lonCell"/>
 			<var name="xCell"/>
@@ -1149,7 +1149,7 @@
 		</stream>
 
 		<!-- Forward mode streams -->
-		<stream name="mesh" 
+		<stream name="mesh"
 				type="input"
 				filename_template="mesh.nc"
 				input_interval="initial_only"
@@ -1201,7 +1201,7 @@
 			<var name="restingThickness" packages="forwardMode;analysisMode"/>
 		</stream>
 
-		<stream name="input" 
+		<stream name="input"
 				type="input"
 				filename_template="init.nc"
 				input_interval="initial_only"
@@ -1223,7 +1223,7 @@
 				filename_interval="00-01-00_00:00:00"
 				reference_time="0000-01-01_00:00:00"
 				clobber_mode="truncate"
-				output_interval="0000_01:00:00" 
+				output_interval="0000_01:00:00"
 				runtime_format="single_file" >
 
 			<stream name="mesh"/>
@@ -1285,7 +1285,7 @@
 			<var name="frazilSurfacePressure"/>
 		</stream>
 
-		<stream name="output" 
+		<stream name="output"
 				type="output"
 				filename_template="output/output.$Y-$M-$D_$h.$m.$s.nc"
 				filename_interval="01-00-00_00:00:00"
@@ -1326,7 +1326,7 @@
 				runtime_format="single_file"
 				packages="variableShortwave"
 				mode="forward">
-				
+
 			<var name="xtime"/>
 			<var name="chlorophyllData"/>
 			<var name="zenithAngle"/>
@@ -1738,6 +1738,11 @@
 		/>
 		<var name="bottomDepthObserved" type="real" dimensions="nCells" units="m"
 			 description="Depth of the bottom of the ocean, before any alterations for modeling purposes. Given as a positive distance from sea level."
+			 packages="initMode"
+		/>
+		<var name="oceanFracObserved" type="real" dimensions="nCells" units="unitless"
+			 description="fraction of each cell containing ocean, used to determine which cells are culled as land."
+			 packages="initMode"
 		/>
 		<var name="derivTwo" type="real" dimensions="maxEdges2 TWO nEdges" units="m^{-2}"
 			 description="Value of the second derivative of the polynomial used for reconstruction of cell center quantities at edges."
@@ -1892,7 +1897,7 @@
 		<var_array name="surfaceVelocity" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
 			<var name="surfaceVelocityZonal" array_group="vel_zonal" units="m s^{-1}"
 				 description="Zonal surface velocity reconstructed at cell centers"
-				
+
 			/>
 			<var name="surfaceVelocityMeridional" array_group="vel_meridional" units="m s^{-1}"
 				 description="Meridional surface velocity reconstructed at cell centers"
@@ -1924,12 +1929,12 @@
 			 description="potential density: density displaced adiabatically to the mid-depth of top layer"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="inSituThermalExpansionCoeff" 
+		<var name="inSituThermalExpansionCoeff"
 			 type="real" dimensions="nVertLevels nCells Time" units="C^{-1}"
 			 description="Thermal expansion coefficient (alpha), defined as $-1/\rho d\rho/dT$ (note negative sign).  This is in situ, i.e. not displaced to another depth."
 			 packages="inSituEOS"
 		/>
-		<var name="inSituSalineContractionCoeff" 
+		<var name="inSituSalineContractionCoeff"
 			 type="real" dimensions="nVertLevels nCells Time" units="PSU^{-1}"
 			 description="Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$.  This is also called the haline contraction coefficient.  This is in situ, i.e. not displaced to another depth."
 			 packages="inSituEOS"
@@ -1945,7 +1950,6 @@
 		/>
 		<var name="pressure" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
 			 description="pressure used in the momentum equation"
-			 packages="forwardMode;analysisMode"
 		/>
 		<var name="bottomPressure" type="real" dimensions="nCells Time" units="N m^{-2}"
 			 description="pressure at the sea floor"
@@ -2336,14 +2340,14 @@
 	</var_struct>
 	<var_struct name="shortwave" time_levs="1">
 		<!-- **********************************************************************
-				These fields are necessary for reading in chlorophyll concentrations, 
+				These fields are necessary for reading in chlorophyll concentrations,
 				zenith angle and cloud fraction for horizontally variable shortwave radiation
-				
+
 				They are interpolated in the init core from observations
-		     ********************************************************************** -->
+			********************************************************************** -->
 		<var name="chlorophyllData" type="real" dimensions="nCells Time" units="mg m^{-3}"
 			 description="the concentration of chlorophyll data in mg/m^-3"
-			 packages="variableShortwave"	 
+			 packages="variableShortwave"
 		/>
 		<var name="zenithAngle" type="real" dimensions="nCells Time"  units="none"
 			description="the cos of the solar zenith angle"
@@ -2434,7 +2438,7 @@
 			 packages="activeTracersBulkRestoringPKG;ecosysTracersPKG"
 		/>
 
-		
+
 		<!-- Coupling fields associated with mass or salinity fluxes -->
 		<var name="evaporationFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Evaporation flux at cell centers from coupler. Positive into the ocean."
@@ -2476,10 +2480,10 @@
 			 packages="forwardMode;analysisMode"
 		/>
 		<var_array name="avgTracersSurfaceValue" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
-			<var name="avgTemperatureSurfaceValue" array_group="surfaceValues" units="degrees Celsius" 
+			<var name="avgTemperatureSurfaceValue" array_group="surfaceValues" units="degrees Celsius"
 				 description="Time averaged potential temperature extrapolated to ocean surface"
 			/>
-			<var name="avgSalinitySurfaceValue" array_group="surfaceValues" units="PSU" 
+			<var name="avgSalinitySurfaceValue" array_group="surfaceValues" units="PSU"
 				 description="Time averaged salinity extrapolated to ocean surface"
 			/>
 		</var_array>
@@ -2555,7 +2559,7 @@
 		/>
 
 		<!-- Input fields for forcing due to frazil ice -->
-		
+
 		<!-- Output fields for forcing due to frazil ice -->
 		<var name="frazilLayerThicknessTendency" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="layer thickness tendency due to frazil processes"
@@ -2579,35 +2583,35 @@
 			 units="m^{2} s^{-1}"
 			 description="Flux of thickness through an edge"
 		/>
-		<var name="vorticityGradientTangentialComponent" 
-			persistence="scratch" 
-			type="real" dimensions="nVertLevels nEdges Time" 
+		<var name="vorticityGradientTangentialComponent"
+			persistence="scratch"
+			type="real" dimensions="nVertLevels nEdges Time"
 			units="s^{-1} m^{-1}"
 			description="gradient of vorticity in the tangent direction (positive points from vertex1 to vertex2)"
 		/>
-		<var name="vorticityGradientNormalComponent" 
-			persistence="scratch" 
-			type="real" dimensions="nVertLevels nEdges Time" 
+		<var name="vorticityGradientNormalComponent"
+			persistence="scratch"
+			type="real" dimensions="nVertLevels nEdges Time"
 			units="s^{-1} m^{-1}"
 			description="gradient of vorticity in the normal direction (positive points from cell1 to cell2)"
 		/>
 		<var name="normalizedRelativeVorticityVertex"
-			persistence="scratch" 
+			persistence="scratch"
 			type="real" dimensions="nVertLevels nVertices Time" units="s^{-1}"
 			description="curl of horizontal velocity divided by layer thickness, defined at vertices"
 		/>
 		<var name="normalizedPlanetaryVorticityVertex"
-			persistence="scratch" 
+			persistence="scratch"
 			type="real" dimensions="nVertLevels nVertices Time" units="s^{-1}"
 			description="earth's rotational rate (Coriolis parameter, f) divided by layer thickness, defined at vertices"
 		/>
-		<var name="kineticEnergyVertex" 
-			persistence="scratch" 
+		<var name="kineticEnergyVertex"
+			persistence="scratch"
 			type="real" dimensions="nVertLevels nVertices Time" units="m^2 s^{-2}"
 			description="kinetic energy of horizonal velocity defined at vertices"
 		/>
 		<var name="kineticEnergyVertexOnCells"
-			persistence="scratch" 
+			persistence="scratch"
 			type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
 			description="kinetic energy of horizonal velocity defined at vertices"
 		/>
@@ -2616,90 +2620,90 @@
 			type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
 			description="Density computed by displacing SST and SSS to every vertical layer within the column"
 		/>
-		<var name="thermalExpansionCoeff" 
+		<var name="thermalExpansionCoeff"
 			 persistence="persistent"
 			 type="real" dimensions="nVertLevels nCells Time" units="C^{-1}"
 			 description="Thermal expansion coefficient (alpha), defined as $-1/\rho d\rho/dT$ (note negative sign)."
 		/>
-		<var name="salineContractionCoeff" 
+		<var name="salineContractionCoeff"
 			 persistence="persistent"
 			 type="real" dimensions="nVertLevels nCells Time" units="PSU^{-1}"
 			 description="Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$. This is also called the haline contraction coefficient."
 		/>
 
 		<!-- FIELDS FOR TENSOR OPERATIONS -->
-		<var name="normalVelocityTest" 
-			 persistence="scratch" 
+		<var name="normalVelocityTest"
+			 persistence="scratch"
 			 type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
 			 description="horizonal velocity, normal component to an edge, for testing"
 		/>
 		<var name="tangentialVelocityTest"
-			 persistence="scratch" 
+			 persistence="scratch"
 			 type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
 			 description="horizonal velocity, tangential component to an edge, for testing"
 		/>
-		<var name="strainRateR3Cell" 
-			 persistence="scratch" 
+		<var name="strainRateR3Cell"
+			 persistence="scratch"
 			 type="real" dimensions="SIX nVertLevels nCells" units="s^{-1}"
 			 description="strain rate tensor at cell center, R3, in symmetric 6-index form"
 		/>
-		<var name="strainRateR3CellSolution" 
-			 persistence="scratch" 
+		<var name="strainRateR3CellSolution"
+			 persistence="scratch"
 			 type="real" dimensions="SIX nVertLevels nCells" units="s^{-1}"
 			 description="strain rate solution tensor at cell center, R3, in symmetric 6-index form"
 		/>
-		<var name="strainRateR3Edge" 
-			 persistence="scratch" 
+		<var name="strainRateR3Edge"
+			 persistence="scratch"
 			 type="real" dimensions="SIX nVertLevels nEdges" units="s^{-1}"
 			 description="strain rate tensor at edge, R3, in symmetric 6-index form"
 		/>
-		<var name="strainRateLonLatRCell" 
-			 persistence="scratch" 
+		<var name="strainRateLonLatRCell"
+			 persistence="scratch"
 			 type="real" dimensions="SIX nVertLevels nCells" units="s^{-1}"
 			 description="strain rate tensor at cell center, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
 		/>
-		<var name="strainRateLonLatRCellSolution" 
-			 persistence="scratch" 
+		<var name="strainRateLonLatRCellSolution"
+			 persistence="scratch"
 			 type="real" dimensions="SIX nVertLevels nCells" units="s^{-1}"
 			 description="strain rate tensor at cell center, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
 		/>
-		<var name="strainRateLonLatREdge" 
-			 persistence="scratch" 
+		<var name="strainRateLonLatREdge"
+			 persistence="scratch"
 			 type="real" dimensions="SIX nVertLevels nEdges" units="s^{-1}"
 			 description="strain rate tensor at edge, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
 		/>
-		<var name="divTensorR3Cell" 
-			 persistence="scratch" 
+		<var name="divTensorR3Cell"
+			 persistence="scratch"
 			 type="real" dimensions="R3 nVertLevels nCells" units="s^{-2}"
 			 description="divergence of the tensor at cell center, as an R3 vector"
 		/>
-		<var name="divTensorR3CellSolution" 
-			 persistence="scratch" 
+		<var name="divTensorR3CellSolution"
+			 persistence="scratch"
 			 type="real" dimensions="R3 nVertLevels nCells" units="s^{-2}"
 			 description="divergence of the tensor solution at cell center, as an R3 vector"
 		/>
-		<var name="divTensorLonLatRCell" 
-			 persistence="scratch" 
+		<var name="divTensorLonLatRCell"
+			 persistence="scratch"
 			 type="real" dimensions="R3 nVertLevels nCells" units="s^{-2}"
 			 description="divergence of the tensor at cell center, as a lon-lat-r vector"
 		/>
-		<var name="divTensorLonLatRCellSolution" 
-			 persistence="scratch" 
+		<var name="divTensorLonLatRCellSolution"
+			 persistence="scratch"
 			 type="real" dimensions="R3 nVertLevels nCells" units="s^{-2}"
 			 description="divergence of the tensor at cell center, as a lon-lat-r vector, solution"
 		/>
-		<var name="outerProductEdge" 
-			 persistence="scratch" 
+		<var name="outerProductEdge"
+			 persistence="scratch"
 			 type="real" dimensions="SIX nVertLevels nEdges" units="m^2 s^{-1}"
 			 description="Outer product, $u_e \otimes n_e$, at each edge."
 		/>
-		<var name="normalVectorEdge" 
-			 persistence="scratch" 
+		<var name="normalVectorEdge"
+			 persistence="scratch"
 			 type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
 			 description="Vector component normal to an edge."
 		/>
-		<var name="tangentialVectorEdge" 
-			 persistence="scratch" 
+		<var name="tangentialVectorEdge"
+			 persistence="scratch"
 			 type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
 			 description="Vector component tangent to an edge."
 		/>
@@ -2942,16 +2946,21 @@
 			description="effective seawater density in land ice before horizontal averaging"
 		/>
 		<!-- FIELDS FOR INTERPOLATION DURING INITIALIZATION -->
-		<var name="interpTracer" 
-			persistence="scratch" 
+		<var name="interpTracer"
+			persistence="scratch"
 			type="real" dimensions="nVertLevels nCells" units="various"
 			description="temporary space for holding one tracer at a time as part of horizontal interpolation"
 		/>
 		<!-- FIELDS FOR SSP AND SSH INITIALIZATION -->
-		<var name="scratchZMid" 
-			persistence="scratch" 
+		<var name="scratchZMid"
+			persistence="scratch"
 			type="real" dimensions="nVertLevels nCells" units="m"
-			description="reference z-midpoint of cells for interpolation"
+			description="reference z-midpoint of cells for vertical interpolation of tracers"
+		/>
+		<var name="scratchMaxLevelCell"
+			persistence="scratch"
+			type="integer" dimensions="nCells" units="unitless"
+			description="reference maxLevelCell for vertical interpolation of tracers"
 		/>
 		<!-- FIELDS FOR RX1 INITIALIZATION -->
 		<var name="zInterfaceScratch"

@@ -5,6 +5,8 @@
 		<option name="config_ocean_run_mode">'init'</option>
 		<option name="config_write_cull_cell_mask">.true.</option>
 
+		<option name="config_eos_type">'jm'</option>
+
 		<option name="config_global_ocean_swData_file">'swData.nc'</option>
 		<option name="config_global_ocean_swData_nlat_dimname">'t_lat'</option>
 		<option name="config_global_ocean_swData_nlon_dimname">'t_lon'</option>
@@ -41,6 +43,7 @@
 		<option name="config_global_ocean_topography_lat_varname">'y'</option>
 		<option name="config_global_ocean_topography_lon_varname">'x'</option>
 		<option name="config_global_ocean_topography_varname">'z'</option>
+		<option name="config_global_ocean_topography_method">'bilinear_interpolation'</option>
 		<option name="config_global_ocean_smooth_topography">.true.</option>
 		<option name="config_global_ocean_cull_inland_seas">.true.</option>
 		<option name="config_global_ocean_windstress_file">'wind_stress.nc'</option>
