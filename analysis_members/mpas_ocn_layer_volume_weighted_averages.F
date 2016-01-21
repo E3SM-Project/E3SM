@@ -290,7 +290,7 @@ contains
          if (nDefinedDataFields > nLayerVolWeightedAvgFields) then
              write (stderrUnit,*) 'Abort: nDefinedDataFields > nLayerVolWeightedAvgFields'
              write (stderrUnit,*) '     :  increase size of ocn_layer_volume_weighted_averages scratch space'
-             call mpas_dmpar_abort(dminfo)
+             call mpas_dmpar_global_abort('Abort: nDefinedDataFields > nLayerVolWeightedAvgFields')
          endif
 
          ! get pointers to data that will be analyzed
