@@ -160,7 +160,7 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Rg2i'
           end if
-          call seq_map_init_rcfile(mapper_Rg2i, glc(1), ocn(1), &
+          call seq_map_init_rcfile(mapper_Rg2i, glc(1), ice(1), &
                'seq_maps.rc','glc2ice_rmapname:','glc2ice_rmaptype:',samegrid_ig, &
                'mapper_Rg2i initialization', esmf_map_flag)
        endif
