@@ -45,8 +45,10 @@ class GenericXML:
         else:
             self.tree.write(self.filename)
     
-    def GetNode(self, nodename, attributes=None):
+    def GetNode(self, nodename, attributes=None, root=None):
         """ Get an xml element matching nodename with optional attributes """
+        if(root is None):
+            root = self.root
         xpath = ".//"+nodename
         if(attributes):
             keys = list(attributes.keys())
@@ -59,10 +61,10 @@ class GenericXML:
                 xpath += "@%s=\'%s\'" % (key,attributes[key])
                 cnt=cnt+1
             xpath += "]"
-        nodes = self.root.findall(xpath)
+        nodes = root.findall(xpath)
         findcnt = len(nodes)
         if(findcnt == 1):
-            return node[0]
+            return nodes[0]
         elif(findcnt > 1):
             return nodes
         else:
