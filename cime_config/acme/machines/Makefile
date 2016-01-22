@@ -381,7 +381,7 @@ ifndef MCT_LIBDIR
 endif
 
 ifndef PIO_LIBDIR
-  PIO_LIBDIR=$(SHAREDPATH)/pio
+  PIO_LIBDIR=$(SHAREDPATH)/pio1
 endif
 
 ifndef GPTL_LIBDIR
@@ -539,21 +539,21 @@ $(MCT_LIBDIR)/mct/libmct.a: $(MCT_LIBDIR)/mpeu/libmpeu.a
 $(MCT_LIBDIR)/mpi-serial/libmpi-serial.a: $(MCT_LIBDIR)/mpi-serial/Makefile.conf
 	$(MAKE) -C $(MCT_LIBDIR)/mpi-serial
 
-ifneq ("$(wildcard $(CIMEROOT)/externals/pio/src)", "")
-# This is a pio2 library
-  PIOLIB = $(PIO_LIBDIR)/libpiof.a $(PIO_LIBDIR)/libpioc.a
-  PIOLIBNAME = -lpiof -lpioc
-  PIO_SRC_DIR = $(CIMEROOT)/externals/pio
-else
+# ifneq ("$(wildcard $(CIMEROOT)/externals/pio1/)", "")
+# # This is a pio2 library
+#   PIOLIB = $(PIO_LIBDIR)/libpiof.a $(PIO_LIBDIR)/libpioc.a
+#   PIOLIBNAME = -lpiof -lpioc
+#   PIO_SRC_DIR = $(CIMEROOT)/externals/pio
+# else
 # This is a pio1 library
-  PIOLIB = $(PIO_LIBDIR)/libpio.a
-  PIOLIBNAME = -lpio
-  ifneq ("$(wildcard $(CIMEROOT)/externals/pio/pio)", "")
-    PIO_SRC_DIR = $(CIMEROOT)/externals/pio
-  else
-    PIO_SRC_DIR = $(CIMEROOT)/externals/pio/pio
-  endif
+PIOLIB = $(PIO_LIBDIR)/libpio.a
+PIOLIBNAME = -lpio
+ifneq ("$(wildcard $(CIMEROOT)/externals/pio1/pio)", "")
+  PIO_SRC_DIR = $(CIMEROOT)/externals/pio1
+else
+  PIO_SRC_DIR = $(CIMEROOT)/externals/pio1/pio
 endif
+#endif
 
 MCTLIBS = $(MCT_LIBDIR)/libmct.a $(MCT_LIBDIR)/libmpeu.a 
 

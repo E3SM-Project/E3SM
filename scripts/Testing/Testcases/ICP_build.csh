@@ -163,7 +163,7 @@ foreach bx ($bxvals)
         if ($cnt < 10  ) set acnt = "000${cnt}"
 
         cp -f env_build.xml env_build.xml.${acnt}
-        cp -f $EXEROOT/cesm.exe $EXEROOT/cesm.exe.${acnt}
+        cp -f $EXEROOT/${CIME_MODEL}.exe $EXEROOT/${CIME_MODEL}.exe.${acnt}
       else
 	set ICE_GRID		= `./xmlquery ICE_GRID			-value`
 	set CICE_BLCKX		= `./xmlquery CICE_BLCKX		-value`

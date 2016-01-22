@@ -18,7 +18,7 @@ if ($status != 0) then
    exit -1    
 endif 
 
-mv -f $EXEROOT/cesm.exe $EXEROOT/cesm.exe.mct
+mv -f $EXEROOT/${CIME_MODEL}.exe $EXEROOT/${CIME_MODEL}.exe.mct
 cp -f env_build.xml      env_build.xml.mct
 
 #------------------------------------------------------------
@@ -30,7 +30,7 @@ if ($status != 0) then
    exit -1    
 endif 
 
-mv -f $EXEROOT/cesm.exe $EXEROOT/cesm.exe.esmf
+mv -f $EXEROOT/${CIME_MODEL}.exe $EXEROOT/${CIME_MODEL}.exe.esmf
 cp -f env_build.xml  env_build.xml.esmf
 
 

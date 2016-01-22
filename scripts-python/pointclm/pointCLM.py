@@ -1141,7 +1141,7 @@ if (options.ensemble_file != ''):
                 #else:
                 output.write('mpirun -np '+str(options.np)+' --hostfile '+ \
                                  csmdir+'/cime/scripts-acme/pointclm/temp/mynodefile'+ngst[1:]+ \
-                                 ' '+orig_dir+'/cesm.exe > ccsm_log.txt &\n')
+                                 ' '+orig_dir+'/acme.exe > ccsm_log.txt &\n')
         output.write('wait\n')
         output.close()
 
