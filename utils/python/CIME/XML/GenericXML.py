@@ -49,6 +49,7 @@ class GenericXML:
         """ Get an xml element matching nodename with optional attributes """
         if(root is None):
             root = self.root
+
         xpath = ".//"+nodename
         if(attributes):
             keys = list(attributes.keys())
@@ -62,13 +63,8 @@ class GenericXML:
                 cnt=cnt+1
             xpath += "]"
         nodes = root.findall(xpath)
-        findcnt = len(nodes)
-        if(findcnt == 1):
-            return nodes[0]
-        elif(findcnt > 1):
-            return nodes
-        else:
-            return None
+        return nodes
+
 
     def addChild(self, node):
         """ Add element node to self at root """

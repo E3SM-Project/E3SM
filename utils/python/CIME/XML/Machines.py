@@ -1,7 +1,6 @@
 """
 Interface to the config_machines.xml file.  This class inherits from GenericXML.py
 """
-import xml.etree.ElementTree as ET
 import logging
 from GenericXML import GenericXML
 from CIME.utils import expect
@@ -22,14 +21,15 @@ class Machines(GenericXML):
         return machines
     
     def set_machine(self,machine):
-        self.machine = self.GetNode('machine',{'MACH':machine})
+        self.machine = self.GetNode('machine',{'MACH':machine})[0]
+        expect(self.machine is not None,"No machine %s found" % machine)
+        
         self.name = machine
 
     def GetValue(self,name):
         expect(self.machine is not None, "Machine object has no machine defined")
-        node = self.GetNode(name,root=self.machine)
+        node = self.GetNode(name,root=self.machine)[0]
         expect(node is not None,"No match found for %s in machine %s" % (name,self.name))
-        expect(len(node)==0,"Expecting exactly one match for %s, got %s" % (name,len(node)))
         return node.text
 
     def getfieldfromlist(self, listname, reqval=None):
