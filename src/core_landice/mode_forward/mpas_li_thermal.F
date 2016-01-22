@@ -666,6 +666,15 @@ module li_thermal
 
       err = 0
 
+      ! check that deltat is valid
+      ! Note: With an adaptive time step, deltat is set to 0 at the start of the time step.
+      !       Here we make sure the thermal solver is not called while deltat = 0.
+
+      if (deltat <= 0.0_RKIND) then
+         write(stderrUnit,*) 'ERROR: li_thermal_solver was called with invalid deltat =', deltat
+         call mpas_dmpar_global_abort("An error has occurred in li_thermal. Aborting...")
+      endif
+
       ! block loop
       block => domain % blocklist
       do while (associated(block))
