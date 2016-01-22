@@ -164,6 +164,8 @@
     <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>32</PES_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
     <batch_system type="slurm" version="x.y">
       <queues>
         <queue walltimemax="24:00:00" jobmin="1" jobmax="16384" default="true">regular</queue>
