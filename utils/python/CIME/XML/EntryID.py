@@ -24,4 +24,4 @@ class EntryID(GenericXML):
                 return
             expect(len(nodes) == 0,"More than one match found for id " + vid)
             node = nodes[0]
-        
+        valnode = self->GetNode("value",root=node);
