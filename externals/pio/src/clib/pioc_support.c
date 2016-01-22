@@ -3,7 +3,6 @@
  */
 #include <pio.h>
 #include <pio_internal.h>
-#include "gptl.h"    /* function prototypes and HAVE_MPI logic*/
 
 #include <execinfo.h>
 #define versno 2001

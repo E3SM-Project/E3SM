@@ -49,7 +49,7 @@ echo "" >>& $TESTSTATUS_LOG
 
 echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >&! $TESTSTATUS_OUT
 echo "--- Test Functionality: ---" >>& $TESTSTATUS_OUT
-echo "this test just measures performance - so there are no PASS/FAIL metrics
+echo "this test just measures performance - so there are no PASS/FAIL metrics"
 
 
 
