@@ -1141,10 +1141,6 @@ MPAS_GPTL_STOP('atm_advance_scalars_mono')
 !      do iCell = cellSolveStart,cellSolveEnd
       do iCell = cellStart,cellEnd
          do k = 2, nVertLevels
-            qtotal = 0.0
-            do iq = moist_start, moist_end
-               qtotal = qtotal + 0.5 * (scalars(iq, k, iCell) + scalars(iq, k-1, iCell))
-            end do
             qtotal = 0.5*(qtot(k,iCell)+qtot(k-1,iCell))
             cqw(k,iCell) = 1.0 / (1.0 + qtotal)
          end do
