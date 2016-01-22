@@ -586,7 +586,7 @@ module li_time_integration_fe
             ! Note: This subroutine requires that layerThickness and tracers are correct in halos.
 
             if (config_print_thickness_advection_info) then
-               write(stderrUnit,*) 'Advect thickness and tracers, dt =', dtSeconds
+               write(stdoutUnit,*) 'Advect thickness and tracers, dt =', dtSeconds
             endif
 
             call li_advection_thickness_tracers(&
@@ -603,7 +603,7 @@ module li_time_integration_fe
          elseif (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'none') then
 
             if (config_print_thickness_advection_info) then
-               write(stderrUnit,*) 'Advect thickness (but not tracers), dt =', dtSeconds
+               write(stdoutUnit,*) 'Advect thickness (but not tracers), dt =', dtSeconds
             endif
 
             call li_advection_thickness_tracers(&
