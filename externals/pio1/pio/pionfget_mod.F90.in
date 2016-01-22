@@ -77,7 +77,7 @@ CONTAINS
     integer :: iotype, mpierr, ilen, msg, sofindex, itype
     integer(kind=pio_offset) :: kount(PIO_MAX_VAR_DIMS)
 #ifdef TIMING
-    call t_startf("pio_get_var1_{TYPE}")
+    call t_startf("PIO:pio_get_var1_{TYPE}")
 #endif
     ierr=0
     iotype = File%iotype 
@@ -151,7 +151,7 @@ CONTAINS
     call CheckMPIReturn(subName, mpierr)
 
 #ifdef TIMING
-    call t_stopf("pio_get_var1_{TYPE}")
+    call t_stopf("PIO:pio_get_var1_{TYPE}")
 #endif
   end function get_var1_{TYPE}
 
@@ -220,7 +220,7 @@ CONTAINS
     integer(kind=PIO_OFFSET) :: isize
     type(iosystem_desc_t), pointer :: ios
 #ifdef TIMING
-    call t_startf("pio_get_vara_{DIMS}d_{TYPE}")
+    call t_startf("PIO:pio_get_vara_{DIMS}d_{TYPE}")
 #endif
     ierr=0
     iotype = File%iotype 
@@ -295,7 +295,7 @@ CONTAINS
 
 
 #ifdef TIMING
-    call t_stopf("pio_get_vara_{DIMS}d_{TYPE}")
+    call t_stopf("PIO:pio_get_vara_{DIMS}d_{TYPE}")
 #endif
   end function get_vara_{DIMS}d_{TYPE}
 
@@ -365,7 +365,7 @@ CONTAINS
     integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
-    call t_startf("pio_get_var_{DIMS}d_{TYPE}")
+    call t_startf("PIO:pio_get_var_{DIMS}d_{TYPE}")
 #endif
     ierr=0
     iotype = File%iotype 
@@ -429,7 +429,7 @@ CONTAINS
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
-    call t_stopf("pio_get_var_{DIMS}d_{TYPE}")
+    call t_stopf("PIO:pio_get_var_{DIMS}d_{TYPE}")
 #endif
   end function get_var_{DIMS}d_{TYPE}
 

@@ -1,5 +1,5 @@
 #===============================================================================
-# Common Makefile: a framework for building all CESM components and more
+# Common Makefile: a framework for building all CIME components and more
 #
 # Command-line variables
 #   MODEL=<model>  ~ a standard macro definition, often found in the included 
@@ -13,7 +13,7 @@ null  :=
 comma := ,
 
 # Load dependency search path.
-dirs := .
+dirs := . 
 dirs += $(shell cat Filepath)
 
 cpp_dirs := $(dirs)
@@ -132,6 +132,11 @@ endif
 ifeq (,$(MPILIB))
   MPILIB = $(shell ./xmlquery MPILIB -value)
 endif
+ifeq ($(strip $(PIO_VERSION)),1)
+  CPPDEFS += -DPIO1
+endif
+
+
 
 ifeq (,$(SHAREDPATH))
   SHAREDPATH = $(SHAREDLIBROOT)/$(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)
@@ -201,7 +206,6 @@ ifdef PNETCDF_PATH
     LIB_PNETCDF:=$(PNETCDF_PATH)/lib
   endif
 endif
-
 # Set PETSc info if it is being used
 ifeq ($(strip $(USE_PETSC)), TRUE)
   ifdef PETSC_PATH
@@ -254,8 +258,6 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
   include $(ALBANY_PATH)/export_albany.in
 endif
 
-
-
 # Set HAVE_SLASHPROC on LINUX systems which are not bluegene or Darwin (OSx)
 
 ifeq ($(findstring -DLINUX,$(CPPDEFS)),-DLINUX)
@@ -283,7 +285,7 @@ endif
 ifeq ($(MPILIB),mpi-serial)
    CONFIG_ARGS+= --enable-mpiserial
 endif
-ifeq ($(MODEL),pio)
+ifeq  ($(findstring pio,$(MODEL)),pio)
   CONFIG_ARGS+= --enable-timing
   ifeq ($DEBUG,TRUE)
      CONFIG_ARGS+= --enable-debug
@@ -332,6 +334,7 @@ INCLDIR += -I$(SHAREDPATH)/include -I$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/
 
 vpath  shr%.mod $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share
 
+
 ifdef INC_NETCDF
   INCLDIR += -I$(INC_NETCDF)
 endif
@@ -369,19 +372,20 @@ else
        # GCC needs to be able to link to
        # nagfor runtime to get autoconf
        # tests to work.
-        CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
-        SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf60rts
-      endif
+         CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
+         SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf60rts
+       endif
     endif
   endif
 endif
+
 
 ifndef MCT_LIBDIR
   MCT_LIBDIR=$(SHAREDPATH)/mct
 endif
 
 ifndef PIO_LIBDIR
-  PIO_LIBDIR=$(SHAREDPATH)/pio1
+  PIO_LIBDIR=$(SHAREDPATH)/pio$(PIO_VERSION)
 endif
 
 ifndef GPTL_LIBDIR
@@ -396,7 +400,7 @@ ifndef CISM_LIBDIR
 endif
 
 INCLDIR +=	-I$(SHAREDPATH)/include -I$(CIMEROOT)/share/csm_share/shr \
-		-I$(CIMEROOT)/share/csm_share/include
+		-I$(CIMEROOT)/share/csm_share/include -I$(CIMEROOT)/share/shr_RandNum/include
 #
 # Use the MCT dir for the cache for all configure calls because it is the first one 
 #
@@ -498,7 +502,6 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
   SLIBS += $(ALBANY_LINK_LIBS)
 endif
 
-
 # Add libraries and flags that we need on the link line when C++ code is included
 # We need to do these additions after CONFIG_ARGS is set, because they can sometimes break configure for mct, etc.,
 # if they are added to LDFLAGS in CONFIG_ARGS.
@@ -539,19 +542,20 @@ $(MCT_LIBDIR)/mct/libmct.a: $(MCT_LIBDIR)/mpeu/libmpeu.a
 $(MCT_LIBDIR)/mpi-serial/libmpi-serial.a: $(MCT_LIBDIR)/mpi-serial/Makefile.conf
 	$(MAKE) -C $(MCT_LIBDIR)/mpi-serial
 
-# ifneq ("$(wildcard $(CIMEROOT)/externals/pio1/)", "")
-# # This is a pio2 library
-#   PIOLIB = $(PIO_LIBDIR)/libpiof.a $(PIO_LIBDIR)/libpioc.a
-#   PIOLIBNAME = -lpiof -lpioc
-#   PIO_SRC_DIR = $(CIMEROOT)/externals/pio
-# else
-# This is a pio1 library
-PIOLIB = $(PIO_LIBDIR)/libpio.a
-PIOLIBNAME = -lpio
-ifneq ("$(wildcard $(CIMEROOT)/externals/pio1/pio)", "")
-  PIO_SRC_DIR = $(CIMEROOT)/externals/pio1
+ifeq ($(PIO_VERSION),2)
+# This is a pio2 library
+  PIOLIB = $(PIO_LIBDIR)/libpiof.a $(PIO_LIBDIR)/libpioc.a
+  PIOLIBNAME = -lpiof -lpioc
+  PIO_SRC_DIR = $(CIMEROOT)/externals/pio2
 else
-  PIO_SRC_DIR = $(CIMEROOT)/externals/pio1/pio
+# This is a pio1 library
+  PIOLIB = $(PIO_LIBDIR)/libpio.a
+  PIOLIBNAME = -lpio
+  ifneq ("$(wildcard $(CIMEROOT)/externals/pio1/pio)", "")
+    PIO_SRC_DIR = $(CIMEROOT)/externals/pio1
+  else
+    PIO_SRC_DIR = $(CIMEROOT)/externals/pio1/pio
+  endif
 endif
 #endif
 
@@ -578,6 +582,7 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
               -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
               -D NETCDF_DIR:STRING=$(NETCDF_PATH) \
               -D GPTL_PATH:STRING=$(SHAREDPATH) \
+              -D PIO_ENABLE_TESTS:BOOL=OFF \
               -D USER_CMAKE_MODULE_PATH:STRING=$(CIMEROOT)/externals/CMake
 
 ifdef PNETCDF_PATH
@@ -587,9 +592,6 @@ else
 endif
 ifdef PIO_FILESYSTEM_HINTS
 	CMAKE_OPTS += -D PIO_FILESYSTEM_HINTS:STRING="$(PIO_FILESYSTEM_HINTS)"
-endif
-ifdef PIO_CONFIG_OPTS
-  CMAKE_OPTS += $(PIO_CONFIG_OPTS)
 endif
 
 # This captures the many cism-specific options to cmake
@@ -761,7 +763,6 @@ ifeq ($(MPILIB),mpi-serial)
       -DMPI_Fortran_INCLUDE_PATH=$(SHAREDPATH)/include \
       -DMPI_C_LIBRARIES=$(SHAREDPATH)/lib/libmpi-serial.a \
       -DMPI_Fortran_LIBRARIES=$(SHAREDPATH)/lib/libmpi-serial.a 
-
 endif
 
 $(MCTLIBS)  : $(MPISERIAL)
@@ -778,6 +779,7 @@ $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 
 $(COMPLIB): $(OBJS) 
 	$(AR) -r $(COMPLIB) $(OBJS)
+
 
 .c.o:
 	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS)  $<
@@ -800,29 +802,29 @@ cleanatm:
 	cd $(EXEROOT)/atm/obj;  $(RM) -f *.o *.mod
 
 cleancpl:
-	cd $(EXEROOT)/cesm/obj;  $(RM) -f *.o *.mod
+	cd $(EXEROOT)/drv/obj;  $(RM) -f *.o *.mod
 
-cleanocn:
-	$(RM) -f $(LIBROOT)/libocn.a
+cleanocn: 
+	$(RM) -f $(LIBROOT)/libocn.a 
 	cd $(EXEROOT)/ocn/obj ; $(RM) -f *.o *.mod
 
-cleanwav:
+cleanwav: 
 	$(RM) -f $(LIBROOT)/libwav.a
 	cd $(EXEROOT)/wav/obj ; $(RM) -f *.o *.mod
 
-cleanglc:
+cleanglc: 
 	$(RM) -f $(LIBROOT)/libglc.a
-	$(RM) -fr $(EXEROOT)/glc
+	$(RM) -fr $(EXEROOT)/glc 
 
-cleanice:
+cleanice: 
 	$(RM) -f $(LIBROOT)/libice.a
 	cd $(EXEROOT)/ice/obj ; $(RM) -f *.o *.mod
 
-cleanrof:
+cleanrof: 
 	$(RM) -f $(LIBROOT)/librof.a
 	cd $(EXEROOT)/rof/obj ; $(RM) -f *.o *.mod
 
-cleanlnd:
+cleanlnd: 
 	$(RM) -f $(LIBROOT)/liblnd.a
 	cd $(EXEROOT)/lnd/obj ; $(RM) -f *.o *.mod
 
@@ -831,7 +833,7 @@ cleancsmshare:
 	$(RM) -fr $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share
 
 cleanpio:
-	$(RM) -f $(PIOLIB)
+	$(RM) -f $(SHAREDPATH)/lib/libpio*
 	$(RM) -fr $(PIO_LIBDIR)
 
 cleanmct:
@@ -845,6 +847,7 @@ cleangptl:
 clean: cleanatm cleanocn cleanwav cleanglc cleanice cleanrof cleanlnd
 
 realclean: clean cleancsmshare cleanpio cleanmct cleangptl
+
 
 # the if-tests prevent DEPS files from being created when they're not needed
 ifneq ($(MAKECMDGOALS), db_files)
