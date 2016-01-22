@@ -94,7 +94,7 @@
 </machine>
 
 <machine MACH="edison">
-         <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is PBS</DESC>
+         <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is SLURM</DESC>
          <NODENAME_REGEX>edison</NODENAME_REGEX>
          <TESTS>acme_developer</TESTS>
 	 <COMPILERS>intel,gnu,cray</COMPILERS>
@@ -141,7 +141,7 @@
 </machine>
 
 <machine MACH="corip1">
-    <DESC>NERSC XC30 Haswell, os is CNL, 32 pes/node, batch system is Slurm</DESC>
+    <DESC>NERSC XC40 Haswell, os is CNL, 32 pes/node, batch system is SLURM</DESC>
     <NODENAME_REGEX>cori</NODENAME_REGEX>
     <TESTS>acme_developer</TESTS>
     <COMPILERS>intel,gnu,cray</COMPILERS>
