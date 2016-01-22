@@ -22,18 +22,18 @@ class GenericXML:
             # if file does not exist create a root xml element 
             # and set it's id to file
             self.filename = infile
-            self.root = ET.ElementTree(infile)
-            self.root.ET.set('version','1.0')
+            self.root = ET.Element(infile)
+            self.root.set('version','1.0')
             
     def read(self,infile):
         """ Read and parse an xml file into the object """
-        logger.debug("read: "+infile)
+        logging.info("read: "+infile)
         self.tree = ET.parse(infile)
         self.root = self.tree.getroot()
 
     def write(self, cimeroot, infile):
         """ Write an xml file from data in self """
-        logger.debug("write: "+ infile)
+        logging.info("write: "+ infile)
 #        styledoc = os.path.join(cimeroot,"cime_config","xml_schemas","case_xml.xsl")
 #        stylesheet = libxslt.parseStylesheetDoc(styledoc)
 #        result = stylesheet.applyStyleSheet(self.root, None)
