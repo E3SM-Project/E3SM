@@ -128,8 +128,13 @@ ifeq (,$(NINST_VALUE))
   NINST_VALUE = $(shell ./xmlquery NINST_VALUE -value)
 endif
 ifeq (,$(MPILIB))
-  MPILIB = $(shell ./xmlquery MPILIB -value)
+  MPILIB = $(shell ./xmlquery MPILIB -value)x
 endif
+ifeq ($(strip $(PIO_VERSION)),1)
+  CPPDEFS += -DPIO1
+endif
+
+
 
 ifeq (,$(SHAREDPATH))
   SHAREDPATH = $(SHAREDLIBROOT)/$(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)
