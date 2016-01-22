@@ -73,7 +73,8 @@ _TEST_SUITES = {
                          "ERS_Ld5.T62_mpas120.C_MPAS_NORMAL_YEAR",
                          "ERS.f09_g16_g.MPASLI_ONLY",
                          "SMS.T62_mpas120_gis20.MPAS_LISIO_TEST",
-                         "SMS.f09_g16_a.IGCLM45_MLI")
+                         "SMS.f09_g16_a.IGCLM45_MLI",
+                         "SMS_D_Ld1.ne16_ne16.FC5ATMMOD")
                         ),
 
     "acme_integration" : ("acme_developer",
@@ -99,7 +100,9 @@ _TEST_SUITES = {
                            "SMS.ne16_ne16.FC5AQUAP",
                            "SMS_D.f19_g16.B20TRC5",
                            "SMS_D_Ld3.ne16_ne16.FC5",
-                           "SMS.f09_g16_a.MPASLIALB_ONLY")
+                           "SMS.f09_g16_a.MPASLIALB_ONLY",
+                           "ERS.ne16_ne16.FC5ATMMOD",
+                           "SMS_D_Ld1.ne16_ne16.FC5ATMMODCOSP")
                           ),
 }
 
