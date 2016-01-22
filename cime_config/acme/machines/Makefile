@@ -65,11 +65,13 @@ endif
 
 # Determine whether any C++ code will be included in the build;
 # currently, C++ code is included if and only if we're linking to the
-# trilinos library.
+# trilinos library or the Albany library.
+USE_CXX = false
 ifeq ($(strip $(USE_TRILINOS)), TRUE)
    USE_CXX = true
-else
-   USE_CXX = false
+endif
+ifeq ($(strip $(USE_ALBANY)), TRUE)
+   USE_CXX = true
 endif
 
 ifndef MOD_SUFFIX
@@ -128,7 +130,7 @@ ifeq (,$(NINST_VALUE))
   NINST_VALUE = $(shell ./xmlquery NINST_VALUE -value)
 endif
 ifeq (,$(MPILIB))
-  MPILIB = $(shell ./xmlquery MPILIB -value)x
+  MPILIB = $(shell ./xmlquery MPILIB -value)
 endif
 ifeq ($(strip $(PIO_VERSION)),1)
   CPPDEFS += -DPIO1
@@ -204,7 +206,24 @@ ifdef PNETCDF_PATH
     LIB_PNETCDF:=$(PNETCDF_PATH)/lib
   endif
 endif
+# Set PETSc info if it is being used
+ifeq ($(strip $(USE_PETSC)), TRUE)
+  ifdef PETSC_PATH
+    ifndef INC_PETSC
+      INC_PETSC:=$(PETSC_PATH)/include
+    endif
+    ifndef LIB_PETSC
+      LIB_PETSC:=$(PETSC_PATH)/lib
+    endif
+  else
+    $(error PETSC_PATH must be defined when USE_PETSC is TRUE)
+  endif
 
+  # Get the "PETSC_LIB" list an env var
+  include $(PETSC_PATH)/conf/variables
+endif
+
+# Set Trilinos info if it is being used
 ifeq ($(strip $(USE_TRILINOS)), TRUE)
   ifdef TRILINOS_PATH
     ifndef INC_TRILINOS
@@ -222,6 +241,22 @@ ifeq ($(strip $(USE_TRILINOS)), TRUE)
   include $(INC_TRILINOS)/Makefile.export.Trilinos
 endif
 
+# Set Albany info if it is being used
+ifeq ($(strip $(USE_ALBANY)), TRUE)
+  ifdef ALBANY_PATH
+    ifndef INC_ALBANY
+      INC_ALBANY:=$(ALBANY_PATH)/include
+    endif
+    ifndef LIB_ALBANY
+      LIB_ALBANY:=$(ALBANY_PATH)/lib
+    endif
+  else
+    $(error ALBANY_PATH must be defined when USE_ALBANY is TRUE)
+  endif
+
+  # get the "ALBANY_LINK_LIBS" list as an env var
+  include $(ALBANY_PATH)/export_albany.in
+endif
 
 # Set HAVE_SLASHPROC on LINUX systems which are not bluegene or Darwin (OSx)
 
@@ -312,8 +347,14 @@ endif
 ifdef INC_PNETCDF
   INCLDIR += -I$(INC_PNETCDF)
 endif
+ifdef INC_PETSC
+  INCLDIR += -I$(INC_PETSC)
+endif
 ifdef INC_TRILINOS
   INCLDIR += -I$(INC_TRILINOS)
+endif
+ifdef INC_ALBANY
+  INCLDIR += -I$(INC_ALBANY)
 endif
 
 ifeq ($(MODEL),driver)
@@ -338,9 +379,6 @@ else
   endif
 endif
 
-ifeq ($(COMP_OCN), pop)
-  INCLDIR += -I$(EXEROOT)/ocn/cvmix
-endif
 
 ifndef MCT_LIBDIR
   MCT_LIBDIR=$(SHAREDPATH)/mct
@@ -448,10 +486,20 @@ ifeq ($(USE_ESMF_LIB), TRUE)
   SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
 endif
 
+# Add PETSc libraries
+ifeq ($(strip $(USE_PETSC)), TRUE)
+  SLIBS += -L${LIB_PETSC} ${PETSC_LIB}
+endif
+
 # Add trilinos libraries; too be safe, we include all libraries included in the trilinos build,
 # as well as all necessary third-party libraries
 ifeq ($(strip $(USE_TRILINOS)), TRUE)
   SLIBS += -L$(LIB_TRILINOS) $(Trilinos_LIBRARIES) $(Trilinos_TPL_LIBRARY_DIRS) $(Trilinos_TPL_LIBRARIES)
+endif
+
+# Add Albany libraries.  These are defined in the ALBANY_LINK_LIBS env var that was included above
+ifeq ($(strip $(USE_ALBANY)), TRUE)
+  SLIBS += $(ALBANY_LINK_LIBS)
 endif
 
 # Add libraries and flags that we need on the link line when C++ code is included
@@ -668,9 +716,6 @@ ifeq ($(ULIBDEP),$(null))
 
 
      ULIBDEP += $(LIBROOT)/libocn.a
-     ifeq ($(COMP_OCN), pop)
-       ULIBDEP += $(LIBROOT)/libcvmix.a
-     endif
      ULIBDEP += $(LIBROOT)/librof.a
      ULIBDEP += $(LIBROOT)/libglc.a
      ULIBDEP += $(LIBROOT)/libwav.a
@@ -735,8 +780,6 @@ $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 $(COMPLIB): $(OBJS) 
 	$(AR) -r $(COMPLIB) $(OBJS)
 
-$(LIBROOT)/libcvmix.a:
-	$(MAKE) -f $(CIMEROOT)/../components/pop/source/cvmix/Makefile SRC_DIR=$(CIMEROOT)/../components/pop/source/cvmix FC=$(SFC) FCFLAGS="$(FFLAGS) $(FREEFLAGS)" LIB_DIR=$(LIBROOT)
 
 .c.o:
 	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS)  $<
@@ -762,7 +805,7 @@ cleancpl:
 	cd $(EXEROOT)/drv/obj;  $(RM) -f *.o *.mod
 
 cleanocn: 
-	$(RM) -f $(LIBROOT)/libocn.a $(LIBROOT)/libcvmix.a
+	$(RM) -f $(LIBROOT)/libocn.a 
 	cd $(EXEROOT)/ocn/obj ; $(RM) -f *.o *.mod
 
 cleanwav: 
@@ -810,7 +853,7 @@ realclean: clean cleancsmshare cleanpio cleanmct cleangptl
 ifneq ($(MAKECMDGOALS), db_files)
 ifneq ($(MAKECMDGOALS), db_flags)
 ifeq (,$(findstring clean,$(MAKECMDGOALS)))
-    -include $(CURDIR)/Depends $(CASEROOT)/Depends.$(COMPILER) $(CASEROOT)/Depends.$(MACH)
+    -include $(CURDIR)/Depends $(CASEROOT)/Depends.$(COMPILER) $(CASEROOT)/Depends.$(MACH) $(CASEROOT)/Depends.$(MACH).$(COMPILER)
 endif
 endif
 endif
