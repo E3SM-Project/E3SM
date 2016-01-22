@@ -253,21 +253,21 @@ module li_thermal
          call mpas_pool_get_array(thermalPool, 'basalHeatFlux', basalHeatFlux)
 
          if (config_print_thermal_info) then
-            write(stderrUnit,*) 'Initialize thermal solver, config_temperature_init = ', trim(config_temperature_init)
+            write(stdoutUnit,*) 'Initialize thermal solver, config_temperature_init = ', trim(config_temperature_init)
          endif
 
          ! init for surfaceAirTemperature
          !TODO - Allow for reading surfaceAirTemperature from an external file
          if (trim(config_surface_air_temperature_source) == 'constant') then
             surfaceAirTemperature(:) = config_surface_air_temperature_value
-            if (config_print_thermal_info) write(stderrUnit,*) 'Initialize sfc air temp:', config_surface_air_temperature_value
+            if (config_print_thermal_info) write(stdoutUnit,*) 'Initialize sfc air temp:', config_surface_air_temperature_value
          endif
 
          ! init for basalHeatFlux
          !TODO - Allow for reading basalHeatFlux from an external file
          if (trim(config_basal_heat_flux_source) == 'constant') then
             basalHeatFlux(:) = config_basal_heat_flux_value
-            if (config_print_thermal_info) write(stderrUnit,*) 'Initialize basal heat flux:', config_basal_heat_flux_value
+            if (config_print_thermal_info) write(stdoutUnit,*) 'Initialize basal heat flux:', config_basal_heat_flux_value
          endif
 
          ! Precompute some grid quantities used in the vertical temperature solve
@@ -290,9 +290,9 @@ module li_thermal
          dsigmaTerm(k,2) = 1.0_RKIND/( (layerInterfaceSigma(k+1) - layerInterfaceSigma(k)) * (layerInterfaceSigma(k+1) - layerCenterSigma(k)) )
          
          if (config_print_thermal_info) then
-            write(stderrUnit,*) 'dsigmaTerm coefficients:'
+            write(stdoutUnit,*) 'dsigmaTerm coefficients:'
             do k = 1, nVertLevels
-               write(stderrUnit,*) k, dsigmaTerm(k,1), dsigmaTerm(k,2)
+               write(stdoutUnit,*) k, dsigmaTerm(k,1), dsigmaTerm(k,2)
             enddo
          endif
          
@@ -300,20 +300,20 @@ module li_thermal
 
          if (config_print_thermal_info .and. (circular_shelf_test .or. dome_test)) then
 
-            write(stderrUnit,*) ' '
+            write(stdoutUnit,*) ' '
 
             if (circular_shelf_test) then
                
-               write(stderrUnit,*) 'Circular shelf test:'
+               write(stdoutUnit,*) 'Circular shelf test:'
 
             elseif (dome_test) then
 
-               write(stderrUnit,*) 'Dome test:'
-!                  write(stderrUnit,*) ' '
-!                  write(stderrUnit,*) 'Cells with ice: iCell, thickness'
+               write(stdoutUnit,*) 'Dome test:'
+!                  write(stdoutUnit,*) ' '
+!                  write(stdoutUnit,*) 'Cells with ice: iCell, thickness'
 !                  do iCell = 1, nCellsSolve
 !                     if (thickness(iCell) > 0.0_RKIND) then
-!                        write(stderrUnit,*) iCell, thickness(iCell)
+!                        write(stdoutUnit,*) iCell, thickness(iCell)
 !                     endif
 !                  enddo
                   
@@ -322,30 +322,30 @@ module li_thermal
             !WHL - debug dome - Adjust thickness slightly so the central cell has the same thickness as in CISM
 !!            thickness(:) = thickness(:) * 707.1068115234375000_RKIND / 707.10678118654755_RKIND
             
-            write(stderrUnit,*) ' '
-            write(stderrUnit,*) 'Initial thickness'
+            write(stdoutUnit,*) ' '
+            write(stdoutUnit,*) 'Initial thickness'
             do iRow = nRows, 1, -1
                if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                  write(stderrUnit,'(a3)',advance='no') '    '
+                  write(stdoutUnit,'(a3)',advance='no') '    '
                endif
                do i = nCellsPerRow/2 - 2, nCellsPerRow
                   iCell = (iRow-1)*nCellsPerRow + i
-                  write(stderrUnit,'(f8.2)',advance='no') thickness(iCell)
+                  write(stdoutUnit,'(f8.2)',advance='no') thickness(iCell)
                enddo
-               write(stderrUnit,*) ' '
+               write(stdoutUnit,*) ' '
             enddo
             
-            write(stderrUnit,*) ' '
-            write(stderrUnit,*) 'Initial surfaceAirTemperature'
+            write(stdoutUnit,*) ' '
+            write(stdoutUnit,*) 'Initial surfaceAirTemperature'
             do iRow = nRows, 1, -1
                if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                  write(stderrUnit,'(a3)',advance='no') '    '
+                  write(stdoutUnit,'(a3)',advance='no') '    '
                endif
                do i = nCellsPerRow/2 - 2, nCellsPerRow
                   iCell = (iRow-1)*nCellsPerRow + i
-                  write(stderrUnit,'(f8.2)',advance='no') surfaceAirTemperature(iCell)
+                  write(stdoutUnit,'(f8.2)',advance='no') surfaceAirTemperature(iCell)
                enddo
-               write(stderrUnit,*) ' '
+               write(stdoutUnit,*) ' '
             enddo
             
          endif  ! circ shelf or dome
@@ -369,14 +369,14 @@ module li_thermal
             ! nothing to do; temperature was read from the restart file
             !TODO - Make sure waterfrac is also read, if needed
             if (config_print_thermal_info) then
-               write(stderrUnit,*) 'Initialized ice temperature from the restart file'
+               write(stdoutUnit,*) 'Initialized ice temperature from the restart file'
             endif
 
          elseif (trim(config_temperature_init) == 'file') then
 
             ! Temperature was read from the input file
             if (config_print_thermal_info) then
-               write(stderrUnit,*) 'Initialized ice temperature from the input file'
+               write(stdoutUnit,*) 'Initialized ice temperature from the input file'
             endif
 
             ! If using the enthalpy solver, initialize waterfrac here
@@ -433,50 +433,50 @@ module li_thermal
             waterfrac(:,:) = 0.0_RKIND
 
             if (config_print_thermal_info) then
-               write(stderrUnit,*) 'Initialized a linear temperature profile in each column'
+               write(stdoutUnit,*) 'Initialized a linear temperature profile in each column'
 
                !WHL - debug
                if (circular_shelf_test .or. dome_test) then
 
-                  write(stderrUnit,*) ' '
-                  write(stderrUnit,*) 'Initial layer 1 temperature'
+                  write(stdoutUnit,*) ' '
+                  write(stdoutUnit,*) 'Initial layer 1 temperature'
                   iLayer = 1
                   do iRow = nRows, 1, -1
                      if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                        write(stderrUnit,'(a3)',advance='no') '    '
+                        write(stdoutUnit,'(a3)',advance='no') '    '
                      endif
                      do i = nCellsPerRow/2 - 2, nCellsPerRow
                         iCell = (iRow-1)*nCellsPerRow + i
-                        write(stderrUnit,'(f8.2)',advance='no') temperature(iLayer,iCell)
+                        write(stdoutUnit,'(f8.2)',advance='no') temperature(iLayer,iCell)
                      enddo
-                     write(stderrUnit,*) ' '
+                     write(stdoutUnit,*) ' '
                   enddo
 
-                  write(stderrUnit,*) ' '
-                  write(stderrUnit,*) 'Initial basal temperature'
+                  write(stdoutUnit,*) ' '
+                  write(stdoutUnit,*) 'Initial basal temperature'
                   do iRow = nRows, 1, -1
                      if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                        write(stderrUnit,'(a3)',advance='no') '    '
+                        write(stdoutUnit,'(a3)',advance='no') '    '
                      endif
                      do i = nCellsPerRow/2 - 2, nCellsPerRow
                         iCell = (iRow-1)*nCellsPerRow + i
-                        write(stderrUnit,'(f8.2)',advance='no') basalTemperature(iCell)
+                        write(stdoutUnit,'(f8.2)',advance='no') basalTemperature(iCell)
                      enddo
-                     write(stderrUnit,*) ' '
+                     write(stdoutUnit,*) ' '
                   enddo
 
                   do iCell = 1, nCellsSolve
                      if (indexToCellID(iCell) == config_stats_cell_ID) then
-                        write(stderrUnit,*) ' '
-                        write(stderrUnit,*) 'Diagnostic cell =', iCell
-                        write(stderrUnit,*) 'Thickness =', thickness(iCell)
-                        write(stderrUnit,*) ' '
-                        write(stderrUnit,*) 'Temperature profile (C):'
-                        write(stderrUnit,*) 'Sfc:', surfaceTemperature(iCell) - kelvin_to_celsius
+                        write(stdoutUnit,*) ' '
+                        write(stdoutUnit,*) 'Diagnostic cell =', iCell
+                        write(stdoutUnit,*) 'Thickness =', thickness(iCell)
+                        write(stdoutUnit,*) ' '
+                        write(stdoutUnit,*) 'Temperature profile (C):'
+                        write(stdoutUnit,*) 'Sfc:', surfaceTemperature(iCell) - kelvin_to_celsius
                         do iLayer = 1, nVertLevels
-                           write(stderrUnit,*) iLayer, layerCenterSigma(iLayer), temperature(iLayer,iCell) - kelvin_to_celsius
+                           write(stdoutUnit,*) iLayer, layerCenterSigma(iLayer), temperature(iLayer,iCell) - kelvin_to_celsius
                         enddo
-                        write(stderrUnit,*) 'Bed:', basalTemperature(iCell) - kelvin_to_celsius
+                        write(stdoutUnit,*) 'Bed:', basalTemperature(iCell) - kelvin_to_celsius
                      endif
                   enddo
 
@@ -733,7 +733,7 @@ module li_thermal
          call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
 
          if (config_print_thermal_info) then
-            write(stderrUnit,*) 'Solving for temperature, config_thermal_solver = ', trim(config_thermal_solver)
+            write(stdoutUnit,*) 'Solving for temperature, config_thermal_solver = ', trim(config_thermal_solver)
          endif
 
          ! calculate masks - so we know where the ice is floating
@@ -777,17 +777,17 @@ module li_thermal
             allocate(diffusivity(nVertLevels+1))
 
             if (config_print_thermal_info) then
-               write(stderrUnit,*) ' '
+               write(stdoutUnit,*) ' '
                do iCell = 1, nCellsSolve
                   if (indexToCellID(iCell) == config_stats_cell_ID) then
-                     write(stderrUnit,*) 'thickness =', thickness(iCell)
-                     write(stderrUnit,*) 'Initial temperature, iCell =', iCell
-                     write(stderrUnit,*) 0, surfaceTemperature(iCell)
+                     write(stdoutUnit,*) 'thickness =', thickness(iCell)
+                     write(stdoutUnit,*) 'Initial temperature, iCell =', iCell
+                     write(stdoutUnit,*) 0, surfaceTemperature(iCell)
                      do k = 1, nVertLevels
-                        write(stderrUnit,*) k, temperature(k,iCell)
+                        write(stdoutUnit,*) k, temperature(k,iCell)
                      enddo
-                     write(stderrUnit,*) nVertLevels+1, basalTemperature(iCell)
-                     write(stderrUnit,*) 'Loop over cells'
+                     write(stdoutUnit,*) nVertLevels+1, basalTemperature(iCell)
+                     write(stdoutUnit,*) 'Loop over cells'
                   endif
                enddo
             endif
@@ -834,15 +834,15 @@ module li_thermal
                      basalEnthalpy = basalTemperature(iCell) * rhoi*cp_ice
 
                      if (verboseColumn) then
-                        write(stderrUnit,*) ' '
-                        write(stderrUnit,*) 'Before prognostic enthalpy, iCell =', indexToCellID(iCell)
-                        write(stderrUnit,*) 'thickness =', thickness(iCell)
-                        write(stderrUnit,*) 'Temperature (C), waterfrac, enthalpy/(rhoi*cp_ice):'
-                        write(stderrUnit,*) 0, surfaceEnthalpy/(rhoi*cp_ice)
+                        write(stdoutUnit,*) ' '
+                        write(stdoutUnit,*) 'Before prognostic enthalpy, iCell =', indexToCellID(iCell)
+                        write(stdoutUnit,*) 'thickness =', thickness(iCell)
+                        write(stdoutUnit,*) 'Temperature (C), waterfrac, enthalpy/(rhoi*cp_ice):'
+                        write(stdoutUnit,*) 0, surfaceEnthalpy/(rhoi*cp_ice)
                         do k = 1, nVertLevels
-                           write(stderrUnit,*) k, temperature(k,iCell), waterfrac(k,iCell), enthalpy(k,iCell)/(rhoi*cp_ice)
+                           write(stdoutUnit,*) k, temperature(k,iCell), waterfrac(k,iCell), enthalpy(k,iCell)/(rhoi*cp_ice)
                         enddo
-                        write(stderrUnit,*) nVertLevels+1, basalEnthalpy/(rhoi*cp_ice)
+                        write(stdoutUnit,*) nVertLevels+1, basalEnthalpy/(rhoi*cp_ice)
                      endif
 
                      ! Compute initial internal energy in column (for energy conservation check)
@@ -876,11 +876,11 @@ module li_thermal
                           rhs)
 
                      if (verboseColumn) then
-                        write(stderrUnit,*) ' '
-                        write(stderrUnit,*) 'After matrix elements, iCell =', indexToCellID(iCell)
-                        write(stderrUnit,*) 'k, subd, diag, supd, rhs/(rhoi*ci):'
+                        write(stdoutUnit,*) ' '
+                        write(stdoutUnit,*) 'After matrix elements, iCell =', indexToCellID(iCell)
+                        write(stdoutUnit,*) 'k, subd, diag, supd, rhs/(rhoi*ci):'
                         do k = 1, nVertLevels+2
-                           write(stderrUnit,*) k-1, subdiagonal(k), diagonal(k), superdiagonal(k), rhs(k)/(rhoi*cp_ice)
+                           write(stdoutUnit,*) k-1, subdiagonal(k), diagonal(k), superdiagonal(k), rhs(k)/(rhoi*cp_ice)
                         enddo
                      endif
 
@@ -927,15 +927,15 @@ module li_thermal
                           basalTemperature(iCell))
 
                      if (verboseColumn) then
-                        write(stderrUnit,*) ' '
-                        write(stderrUnit,*) 'After prognostic enthalpy, iCell =', indexToCellID(iCell)
-                        write(stderrUnit,*) 'thickness =', thickness(iCell)
-                        write(stderrUnit,*) 'Temperature, waterfrac, enthalpy/(rhoi*cp_ice):'
-                        write(stderrUnit,*) 0, surfaceEnthalpy/(rhoi*cp_ice)
+                        write(stdoutUnit,*) ' '
+                        write(stdoutUnit,*) 'After prognostic enthalpy, iCell =', indexToCellID(iCell)
+                        write(stdoutUnit,*) 'thickness =', thickness(iCell)
+                        write(stdoutUnit,*) 'Temperature, waterfrac, enthalpy/(rhoi*cp_ice):'
+                        write(stdoutUnit,*) 0, surfaceEnthalpy/(rhoi*cp_ice)
                         do k = 1, nVertLevels
-                           write(stderrUnit,*) k, temperature(k,iCell), waterfrac(k,iCell), enthalpy(k,iCell)/(rhoi*cp_ice)
+                           write(stdoutUnit,*) k, temperature(k,iCell), waterfrac(k,iCell), enthalpy(k,iCell)/(rhoi*cp_ice)
                         enddo
-                        write(stderrUnit,*) nVertLevels+1, basalEnthalpy/(rhoi*cp_ice)
+                        write(stdoutUnit,*) nVertLevels+1, basalEnthalpy/(rhoi*cp_ice)
                      endif
 
                      ! Compute final internal energy in column (for energy conservation check)
@@ -948,14 +948,14 @@ module li_thermal
                   else    ! temperature solver
 
                      if (verboseColumn) then
-                        write(stderrUnit,*) ' '
-                        write(stderrUnit,*) 'Before prognostic temperature, iCell =', indexToCellID(iCell)
-                        write(stderrUnit,*) 'thickness =', thickness(iCell)
-                        write(stderrUnit,*) 0, surfaceTemperature(iCell)
+                        write(stdoutUnit,*) ' '
+                        write(stdoutUnit,*) 'Before prognostic temperature, iCell =', indexToCellID(iCell)
+                        write(stdoutUnit,*) 'thickness =', thickness(iCell)
+                        write(stdoutUnit,*) 0, surfaceTemperature(iCell)
                         do k = 1, nVertLevels
-                           write(stderrUnit,*) k, temperature(k,iCell)
+                           write(stdoutUnit,*) k, temperature(k,iCell)
                         enddo
-                        write(stderrUnit,*) nVertLevels+1, basalTemperature(iCell)
+                        write(stdoutUnit,*) nVertLevels+1, basalTemperature(iCell)
                      endif
 
                      ! Compute initial internal energy in column (for energy conservation check)
@@ -986,12 +986,12 @@ module li_thermal
                           rhs)
 
                      if (verboseColumn) then
-                        write(stderrUnit,*) ' '
-                        write(stderrUnit,*) 'deltat =', deltat
-                        write(stderrUnit,*) 'After matrix elements, iCell =', indexToCellID(iCell)
-                        write(stderrUnit,*) 'k, subd, diag, supd, rhs:'
+                        write(stdoutUnit,*) ' '
+                        write(stdoutUnit,*) 'deltat =', deltat
+                        write(stdoutUnit,*) 'After matrix elements, iCell =', indexToCellID(iCell)
+                        write(stdoutUnit,*) 'k, subd, diag, supd, rhs:'
                         do k = 1, nVertLevels+2
-                           write(stderrUnit,*) k-1, subdiagonal(k), diagonal(k), superdiagonal(k), rhs(k)
+                           write(stdoutUnit,*) k-1, subdiagonal(k), diagonal(k), superdiagonal(k), rhs(k)
                         enddo
                      endif
 
@@ -1023,14 +1023,14 @@ module li_thermal
                      basalConductiveFlux(iCell) = (-iceConductivity/thickness(iCell) ) * dTbot / (1.0_RKIND - layerCenterSigma(nVertLevels))
 
                      if (verboseColumn) then
-                        write(stderrUnit,*) ' '
-                        write(stderrUnit,*) 'After prognostic temperature, iCell =', indexToCellID(iCell)
-                        write(stderrUnit,*) 'thickness =', thickness(iCell)
-                        write(stderrUnit,*) 0, surfaceTemperature(iCell)
+                        write(stdoutUnit,*) ' '
+                        write(stdoutUnit,*) 'After prognostic temperature, iCell =', indexToCellID(iCell)
+                        write(stdoutUnit,*) 'thickness =', thickness(iCell)
+                        write(stdoutUnit,*) 0, surfaceTemperature(iCell)
                         do k = 1, nVertLevels
-                           write(stderrUnit,*) k, temperature(k,iCell)
+                           write(stdoutUnit,*) k, temperature(k,iCell)
                         enddo
-                        write(stderrUnit,*) nVertLevels+1, basalTemperature(iCell)
+                        write(stdoutUnit,*) nVertLevels+1, basalTemperature(iCell)
                      endif
 
                      ! Compute final internal energy in column (for energy conservation check)
@@ -1051,9 +1051,9 @@ module li_thermal
                   columnHeatDissipation = columnHeatDissipation * thickness(iCell)*rhoi*cp_ice
 
                   if (verboseColumn) then
-                     write(stderrUnit,*) ' '
-                     write(stderrUnit,*) 'heatDissipation:', heatDissipation(:,iCell)
-                     write(stderrUnit,*) 'columnHeatDissipation:', columnHeatDissipation
+                     write(stdoutUnit,*) ' '
+                     write(stdoutUnit,*) 'heatDissipation:', heatDissipation(:,iCell)
+                     write(stdoutUnit,*) 'columnHeatDissipation:', columnHeatDissipation
                   endif
 
                   ! Verify that the net input of energy into the column is equal to the change in internal energy.
@@ -1064,28 +1064,28 @@ module li_thermal
                   if (abs((finalEnergy - initialEnergy - deltaEnergy) / deltat) > 1.0e-8_RKIND) then
 
                      if (verboseColumn) then
-                        write(stderrUnit,*) 'Ice thickness:', thickness(iCell)
-                        write(stderrUnit,*) 'config_thermal_thickness:', config_thermal_thickness
-                        write(stderrUnit,*) ' '
-                        write(stderrUnit,*) 'Interior fluxes:'
-                        write(stderrUnit,*) 'sfc conductive flx (W/m^2, positive down)=', surfaceConductiveFlux(iCell)
-                        write(stderrUnit,*) 'bed conductive flx (W/m^2, positive down)=', basalConductiveFlux(iCell)
-                        write(stderrUnit,*) 'column heat dissipation (W/m^2) =', columnHeatDissipation
-                        write(stderrUnit,*) 'Net flux (W/m^2) =', deltaEnergy/deltat
-                        write(stderrUnit,*) ' '
-                        write(stderrUnit,*) 'deltaEnergy (J/m^2) =', deltaEnergy
-                        write(stderrUnit,*) 'initialEnergy (J/m^2) =', initialEnergy
-                        write(stderrUnit,*) 'finalEnergy (J/m^2) =', finalEnergy
-                        write(stderrUnit,*) ' '
-                        write(stderrUnit,*) 'Energy imbalance (J/m^2)=', finalEnergy - initialEnergy - deltaEnergy
-                        write(stderrUnit,*) ' '
-                        write(stderrUnit,*) 'Basal fluxes:'
-                        write(stderrUnit,*) 'frictional =', basalFrictionFlux(iCell)
-                        write(stderrUnit,*) 'geothermal =', basalHeatFlux(iCell)
-                        write(stderrUnit,*) 'flux for bottom melting =', basalFrictionFlux(iCell) + basalHeatFlux(iCell) + basalConductiveFlux(iCell)
+                        write(stdoutUnit,*) 'Ice thickness:', thickness(iCell)
+                        write(stdoutUnit,*) 'config_thermal_thickness:', config_thermal_thickness
+                        write(stdoutUnit,*) ' '
+                        write(stdoutUnit,*) 'Interior fluxes:'
+                        write(stdoutUnit,*) 'sfc conductive flx (W/m^2, positive down)=', surfaceConductiveFlux(iCell)
+                        write(stdoutUnit,*) 'bed conductive flx (W/m^2, positive down)=', basalConductiveFlux(iCell)
+                        write(stdoutUnit,*) 'column heat dissipation (W/m^2) =', columnHeatDissipation
+                        write(stdoutUnit,*) 'Net flux (W/m^2) =', deltaEnergy/deltat
+                        write(stdoutUnit,*) ' '
+                        write(stdoutUnit,*) 'deltaEnergy (J/m^2) =', deltaEnergy
+                        write(stdoutUnit,*) 'initialEnergy (J/m^2) =', initialEnergy
+                        write(stdoutUnit,*) 'finalEnergy (J/m^2) =', finalEnergy
+                        write(stdoutUnit,*) ' '
+                        write(stdoutUnit,*) 'Energy imbalance (J/m^2)=', finalEnergy - initialEnergy - deltaEnergy
+                        write(stdoutUnit,*) ' '
+                        write(stdoutUnit,*) 'Basal fluxes:'
+                        write(stdoutUnit,*) 'frictional =', basalFrictionFlux(iCell)
+                        write(stdoutUnit,*) 'geothermal =', basalHeatFlux(iCell)
+                        write(stdoutUnit,*) 'flux for bottom melting =', basalFrictionFlux(iCell) + basalHeatFlux(iCell) + basalConductiveFlux(iCell)
                      endif   ! verboseColumn
 
-                     write(stderrUnit,*) 'li_thermal, energy conservation error: iCell, imbalance (W/m2):', &
+                     write(stdoutUnit,*) 'li_thermal, energy conservation error: iCell, imbalance (W/m2):', &
                                          indexToCellID(iCell), (finalEnergy - initialEnergy - deltaEnergy)/deltat
                      err = 1
                      
@@ -1205,7 +1205,7 @@ module li_thermal
             basalMassBal(iCell) = groundedBasalMassBal(iCell) + floatingBasalMassBal(iCell)
 
             if (config_print_thermal_info .and. indexToCellID(iCell) == config_stats_cell_ID) then
-               write(stderrUnit,*) 'iCell, basal mass balance (m/yr) (grounded, floating, total):', &
+               write(stdoutUnit,*) 'iCell, basal mass balance (m/yr) (grounded, floating, total):', &
                     iCell, groundedBasalMassBal(iCell)*scyr/rhoi, floatingBasalMassBal(iCell)*scyr/rhoi, basalMassBal(iCell)*scyr/rhoi
             endif
 
@@ -1420,7 +1420,7 @@ module li_thermal
         allocate(flowParamAEdge(nVertLevels))
         
         if (config_print_thermal_info) then
-           write(stderrUnit,*) 'Compute SIA heat dissipation'
+           write(stdoutUnit,*) 'Compute SIA heat dissipation'
         endif
 
         ! compute the heat dissipation on edges
@@ -1443,12 +1443,12 @@ module li_thermal
                    (layerCenterSigma(:) * rhoi * gravity * thicknessEdge * abs(slopeEdge(iEdge))) ** (config_flowLawExponent + 1.0_RKIND)
 
               if (config_print_thermal_info .and. indexToCellID(iCell1) == config_stats_cell_ID) then
-!                 write(stderrUnit,*) ' '
-!                 write(stderrUnit,*) 'Heat dissipation, iEdge, iCell1 =', iEdge, iCell1
-!                 write(stderrUnit,*) 'thicknessEdge:', thicknessEdge
-!                 write(stderrUnit,*) 'flowParamAEdge:', flowParamAEdge(:)
-!                 write(stderrUnit,*) 'slopeEdge:', slopeEdge(iEdge)
-!                 write(stderrUnit,*) 'heatDissipationEdge:', heatDissipationEdge(:,iEdge)
+!                 write(stdoutUnit,*) ' '
+!                 write(stdoutUnit,*) 'Heat dissipation, iEdge, iCell1 =', iEdge, iCell1
+!                 write(stdoutUnit,*) 'thicknessEdge:', thicknessEdge
+!                 write(stdoutUnit,*) 'flowParamAEdge:', flowParamAEdge(:)
+!                 write(stdoutUnit,*) 'slopeEdge:', slopeEdge(iEdge)
+!                 write(stdoutUnit,*) 'heatDissipationEdge:', heatDissipationEdge(:,iEdge)
               endif
 
            else  ! one neighbor cell does not exist
@@ -1467,9 +1467,9 @@ module li_thermal
            heatDissipation(:,iCell) = 0.0_RKIND
 
            if (config_print_thermal_info .and. indexToCellID(iCell) == config_stats_cell_ID) then
-              write(stderrUnit,*) ' '
-              write(stderrUnit,*) 'Heat dissipation, iCell (local, global ID) =', iCell, indexToCellID(iCell)
-              write(stderrUnit,*) 'iEdgeOnCell, iEdge, weightEdge, heatDissipationEdge (layer 1)'
+              write(stdoutUnit,*) ' '
+              write(stdoutUnit,*) 'Heat dissipation, iCell (local, global ID) =', iCell, indexToCellID(iCell)
+              write(stdoutUnit,*) 'iEdgeOnCell, iEdge, weightEdge, heatDissipationEdge (layer 1)'
            endif
 
            do iEdgeOnCell = 1, nEdgesOnCell(iCell)
@@ -1480,15 +1480,15 @@ module li_thermal
               heatDissipation(:,iCell) = heatDissipation(:,iCell) + weightEdge * heatDissipationEdge(:,iEdge)
 
               if (config_print_thermal_info .and. indexToCellID(iCell) == config_stats_cell_ID) then
-                 write(stderrUnit,*) iEdgeOnCell, iEdge, weightEdge, heatDissipationEdge(1,iEdge), heatDissipation(1,iCell)
+                 write(stdoutUnit,*) iEdgeOnCell, iEdge, weightEdge, heatDissipationEdge(1,iEdge), heatDissipation(1,iCell)
               endif
 
            enddo  ! iEdgeOnCell
 
            if (config_print_thermal_info .and. indexToCellID(iCell) == config_stats_cell_ID) then
-              write(stderrUnit,*) 'heatDissipation (deg/s) for cell', iCell
+              write(stdoutUnit,*) 'heatDissipation (deg/s) for cell', iCell
               do iLayer = 1, nVertLevels
-                 write(stderrUnit,*) iLayer, heatDissipation(iLayer,iCell) / (rhoi*cp_ice)
+                 write(stdoutUnit,*) iLayer, heatDissipation(iLayer,iCell) / (rhoi*cp_ice)
               enddo
            endif
 
@@ -1607,7 +1607,7 @@ module li_thermal
         call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
         call mpas_pool_get_config(liConfigs, 'config_print_thermal_info', config_print_thermal_info)
 
-        if (config_print_thermal_info) write(stderrUnit,*) 'Compute basal friction flux'
+        if (config_print_thermal_info) write(stdoutUnit,*) 'Compute basal friction flux'
 
         ! Compute basal frictional heating for each cell
 
@@ -1616,7 +1616,7 @@ module li_thermal
            basalFrictionFlux(iCell) = beta(iCell) * basalSpeed(iCell)
 
            if (config_print_thermal_info .and. indexToCellID(iCell) == config_stats_cell_ID) then
-              write(stderrUnit,*) 'iCell, beta, basalSpeed, basalFrictionFlux:', &
+              write(stdoutUnit,*) 'iCell, beta, basalSpeed, basalFrictionFlux:', &
                    iCell, beta(iCell), basalSpeed(iCell), basalFrictionFlux(iCell)
            endif
 
@@ -2639,7 +2639,7 @@ module li_thermal
          !       z_0 = -100 m by default
 
          !WHL - debug
-!!         write(stderrUnit,*) 'iCell, lowerSurface, hCavity, tanh, zDraft, dzdraft, mass bal (m/yr):'
+!!         write(stdoutUnit,*) 'iCell, lowerSurface, hCavity, tanh, zDraft, dzdraft, mass bal (m/yr):'
 
          do iCell = 1, nCellsSolve
             if (iceMask(iCell) == 1 .and. floatingMask(iCell) == 1) then  ! ice is present and floating
@@ -2648,7 +2648,7 @@ module li_thermal
                zDraft = lowerSurface(iCell) - config_sea_level
                floatingBasalMassBal(iCell) = -bmlt_float_omega * tanh(hCavity/bmlt_float_h0) * max(bmlt_float_z0 - zDraft, 0.0_RKIND)
 
-!!               write(stderrUnit,*) iCell, lowerSurface(iCell), hCavity, tanh(hCavity/bmlt_float_h0), zDraft, max(bmlt_float_z0 - zDraft, 0.0_RKIND), floatingBasalMassBal(iCell)*scyr
+!!               write(stdoutUnit,*) iCell, lowerSurface(iCell), hCavity, tanh(hCavity/bmlt_float_h0), zDraft, max(bmlt_float_z0 - zDraft, 0.0_RKIND), floatingBasalMassBal(iCell)*scyr
 
             endif   ! ice is present and floating
          enddo   ! iCell

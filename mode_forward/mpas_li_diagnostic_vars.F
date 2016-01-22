@@ -757,10 +757,10 @@ contains
       real (kind=RKIND) :: VelSign
 
       !WHL - debug
-      integer, pointer :: nCells
-      integer, dimension(:), pointer :: indexToCellID
-      logical, pointer :: config_print_thickness_advection_info
-      integer :: iCell
+!      integer, pointer :: nCells
+!      integer, dimension(:), pointer :: indexToCellID
+!      logical, pointer :: config_print_thickness_advection_info
+!      integer :: iCell
 
       err = 0
 
@@ -775,9 +775,9 @@ contains
       call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
 
       !WHL - debug
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-      call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
-      call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
+!      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+!      call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
+!      call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
 
       ! Calculate h_edge.  This is used by both thickness and tracer advection on the following Forward Euler time step.  
       ! Note: FO-Upwind thickness advection does not explicitly use h_edge but a FO h_edge is implied.

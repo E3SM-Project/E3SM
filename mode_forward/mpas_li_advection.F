@@ -265,28 +265,14 @@ module li_advection
       case ('fo')
 
          if (config_print_thickness_advection_info) then
-            write(stderrUnit,*) 'Using first-order upwind for thickness advection'
-            write(stderrUnit,*) 'advectTracers =', advectTracers
+            write(stdoutUnit,*) 'Using first-order upwind for thickness advection'
+            write(stdoutUnit,*) 'advectTracers =', advectTracers
+            if (dome_test) then
+               write(stdoutUnit,*) ' '
+               write(stdoutUnit,*) 'Dome test diagnostics:'
+            endif
          endif
          
-         !WHL - debug
-         if (dome_test .and. config_print_thickness_advection_info) then
-            write(stderrUnit,*) ' '
-            write(stderrUnit,*) 'Dome test diagnostics:'
-            write(stderrUnit,*) ' '
-            iLayer = 1
-!            write(stderrUnit,*) 'Initial thickness, layer =', iLayer
-            do iRow = nRows, 1, -1
-               if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-!                  write(stderrUnit,'(a3)',advance='no') '    '
-               endif
-               do i = nCellsPerRow/2 - 2, nCellsPerRow
-                  iCell = (iRow-1)*nCellsPerRow + i
-!                  write(stderrUnit,'(f8.3)',advance='no') oldLayerThickness(iLayer,iCell)
-               enddo
-!               write(stderrUnit,*) ' '
-            enddo
-         endif
 
          if (advectTracers) then
 
@@ -302,23 +288,6 @@ module li_advection
                  thermalPool,       &
                  advectedTracersOld)
 
-            if (dome_test .and. config_print_thickness_advection_info) then
-!               write(stderrUnit,*) ' '
-!               write(stderrUnit,*) 'Initial tracer 1, layer =', iLayer
-               iLayer = 1
-               do iRow = nRows, 1, -1
-                  if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-!                     write(stderrUnit,'(a4)',advance='no') '    '
-                  endif
-                  do i = nCellsPerRow/2 - 2, nCellsPerRow
-                     iCell = (iRow-1)*nCellsPerRow + i
-!                     write(stderrUnit,'(f10.4)',advance='no') advectedTracersOld(1,iLayer,iCell)
-                  enddo
-!                  write(stderrUnit,*) ' '
-               enddo
-               
-            endif
-
          else   ! no tracer advection; pass a tracer array full of zeroes
 
             advectedTracersOld(:,:,:) = 0.0_RKIND
@@ -333,11 +302,11 @@ module li_advection
          if (config_print_thickness_advection_info) then
             do iCell = 1, nCells
                if (indexToCellID(iCell) == config_stats_cell_ID) then
-                  write(stderrUnit,*) 'Before thickness advection, iCell (local, global), thickness:', &
+                  write(stdoutUnit,*) 'Before thickness advection, iCell (local, global), thickness:', &
                        iCell, indexToCellID(iCell), sum(layerThicknessOld(:,iCell))
                   do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                      iEdge = edgesOnCell(iEdgeOnCell,iCell)
-                     write(stderrUnit,*) 'iEdge, layerNormalVelocity:', iEdge, layerNormalVelocity(1,iEdge)
+                     write(stdoutUnit,*) 'iEdge, layerNormalVelocity:', iEdge, layerNormalVelocity(1,iEdge)
                   enddo
                endif
             enddo
@@ -357,42 +326,12 @@ module li_advection
          if (config_print_thickness_advection_info) then
             do iCell = 1, nCells
                if (indexToCellID(iCell) == config_stats_cell_ID) then
-                  write(stderrUnit,*) ' '
-                  write(stderrUnit,*) 'After thickness advection, iCell, new layer thickness:'
+                  write(stdoutUnit,*) ' '
+                  write(stdoutUnit,*) 'After thickness advection, iCell, new layer thickness:'
                   do k = 1, nVertLevels
-                     write(stderrUnit,*) iCell, layerThicknessNew(k,iCell)
+                     write(stdoutUnit,*) iCell, layerThicknessNew(k,iCell)
                   enddo
                endif
-            enddo
-         endif
-
-         !WHL - debug
-         if (dome_test .and. config_print_thickness_advection_info) then
-!            write(stderrUnit,*) ' '
-            iLayer = 1
-!            write(stderrUnit,*) 'New thickness, layer =', iLayer
-            do iRow = nRows, 1, -1
-               if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-!                  write(stderrUnit,'(a3)',advance='no') '    '
-               endif
-               do i = nCellsPerRow/2 - 2, nCellsPerRow
-                  iCell = (iRow-1)*nCellsPerRow + i
-!                  write(stderrUnit,'(f8.3)',advance='no') newLayerThickness(iLayer,iCell)
-               enddo
-!               write(stderrUnit,*) ' '
-            enddo
-!            write(stderrUnit,*) ' '
-!            write(stderrUnit,*) 'New tracer 1, layer =', iLayer
-            iLayer = 1
-            do iRow = nRows, 1, -1
-               if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-!                  write(stderrUnit,'(a4)',advance='no') '    '
-               endif
-               do i = nCellsPerRow/2 - 2, nCellsPerRow
-                  iCell = (iRow-1)*nCellsPerRow + i
-!                  write(stderrUnit,'(f10.4)',advance='no') advectedTracersNew(1,iLayer,iCell)
-               enddo
-!               write(stderrUnit,*) ' '
             enddo
          endif
 
@@ -930,9 +869,9 @@ module li_advection
          invAreaCell = 1.0_RKIND / areaCell(iCell)
 
          if (indexToCellID(iCell) == config_stats_cell_ID .and. config_print_thickness_advection_info) then
-            write(stderrUnit,*) 'In advect_thickness_tracer, iCell =', iCell
-            write(stderrUnit,*)
-            write(stderrUnit,*) 'k, iEdgeOnCell, layerNormalVelocity, layerThicknessEdge, thicknessFluxEdge, thicknessTendency' 
+            write(stdoutUnit,*) 'In advect_thickness_tracer, iCell =', iCell
+            write(stdoutUnit,*)
+            write(stdoutUnit,*) 'k, iEdgeOnCell, layerNormalVelocity, layerThicknessEdge, thicknessFluxEdge, thicknessTendency' 
          endif
 
          ! loop over layers
@@ -972,7 +911,7 @@ module li_advection
 
                !WHL - debug
                if (indexToCellID(iCell) == config_stats_cell_ID .and. k==1 .and. config_print_thickness_advection_info) then
-                  write(stderrUnit,*) k, iEdgeOnCell, layerNormalVelocity(k,iEdge), layerThicknessEdge(k,iEdge), thicknessFluxEdge, thicknessTendency 
+                  write(stdoutUnit,*) k, iEdgeOnCell, layerNormalVelocity(k,iEdge), layerThicknessEdge(k,iEdge), thicknessFluxEdge, thicknessTendency 
                endif
 
             enddo      ! iEdgeOnCell
@@ -1009,8 +948,8 @@ module li_advection
          enddo
 
          if (config_print_thickness_advection_info) then
-            write(stderrUnit,*) 'init volume, final volume, difference:', initVolumeSum, finalVolumeSum, finalVolumeSum - initVolumeSum
-            write(stderrUnit,*) 'init energy, final energy, difference:', initEnergySum, finalEnergySum, finalEnergySum - initEnergySum
+            write(stdoutUnit,*) 'init volume, final volume, difference:', initVolumeSum, finalVolumeSum, finalVolumeSum - initVolumeSum
+            write(stdoutUnit,*) 'init energy, final energy, difference:', initEnergySum, finalEnergySum, finalEnergySum - initEnergySum
          endif
 
          !TODO - Make these fatal errors instead of warnings?
