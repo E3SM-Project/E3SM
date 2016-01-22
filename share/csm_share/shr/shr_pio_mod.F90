@@ -52,7 +52,9 @@ module shr_pio_mod
   integer, allocatable :: io_compid(:)
   integer :: pio_debug_level=0, pio_blocksize=0
   integer(kind=pio_offset_kind) :: pio_buffer_size_limit=-1
-!  type(pio_rearr_opt_t)  :: pio_rearr_opts
+#ifdef PIO1
+  type(pio_rearr_opt_t)  :: pio_rearr_opts
+#endif
   integer :: total_comps=0
 
 #define DEBUGI 1
@@ -174,8 +176,12 @@ contains
     allocate(iosystems(total_comps))
     
     if(pio_async_interface) then
-!       call pio_init(total_comps,mpi_comm_world, comp_comm, io_comm, iosystems, rearr_opts=pio_rearr_opts)
+#ifdef PIO1
+       call pio_init(total_comps,mpi_comm_world, comp_comm, io_comm, iosystems, rearr_opts=pio_rearr_opts)
+
+#else
        call pio_init(total_comps,mpi_comm_world, comp_comm, io_comm, iosystems)
+#endif
        i=1
     else
        do i=1,total_comps
@@ -190,23 +196,24 @@ contains
              call shr_pio_read_component_namelist(nlfilename , comp_comm(i), pio_comp_settings(i)%pio_stride, &
                   pio_comp_settings(i)%pio_root, pio_comp_settings(i)%pio_numiotasks, &
                   pio_comp_settings(i)%pio_iotype, pio_comp_settings(i)%pio_rearranger)
-
-
+#ifdef PIO1
+             call pio_init(comp_comm_iam(i), comp_comm(i), pio_comp_settings(i)%pio_numiotasks, 0, &
+                  pio_comp_settings(i)%pio_stride, &
+                  pio_comp_settings(i)%pio_rearranger, iosystems(i), &
+                  base=pio_comp_settings(i)%pio_root, rearr_opts=pio_rearr_opts)
+             if(comp_comm_iam(i)==0) then
+                write(shr_log_unit,*) io_compname(i),' : pio_numiotasks = ',pio_comp_settings(i)%pio_numiotasks
+                write(shr_log_unit,*) io_compname(i),' : pio_stride = ',pio_comp_settings(i)%pio_stride
+                write(shr_log_unit,*) io_compname(i),' : pio_root = ',pio_comp_settings(i)%pio_root
+                write(shr_log_unit,*) io_compname(i),' : pio_iotype = ',pio_comp_settings(i)%pio_iotype
+             end if
+#else
              call pio_init(comp_comm_iam(i), comp_comm(i), pio_comp_settings(i)%pio_numiotasks, 0, &
                   pio_comp_settings(i)%pio_stride, &
                   pio_comp_settings(i)%pio_rearranger, iosystems(i), &
                   base=pio_comp_settings(i)%pio_root)
-! JGF NEED HELP
-! <<<<<<< HEAD
-! =======
-!                   pio_rearr_subset, iosystems(i), &
-!                   base=pio_comp_settings(i)%pio_root, rearr_opts=pio_rearr_opts)
-!              if(comp_comm_iam(i)==0) then
-!                 write(shr_log_unit,*) io_compname(i),' : pio_numiotasks = ',pio_comp_settings(i)%pio_numiotasks
-!                 write(shr_log_unit,*) io_compname(i),' : pio_stride = ',pio_comp_settings(i)%pio_stride
-!                 write(shr_log_unit,*) io_compname(i),' : pio_root = ',pio_comp_settings(i)%pio_root
-!                 write(shr_log_unit,*) io_compname(i),' : pio_iotype = ',pio_comp_settings(i)%pio_iotype
-!              end if
+#endif
+
 
           end if
        end do
@@ -374,20 +381,18 @@ contains
 
     integer :: iam, ierr, npes, unitn
     logical :: iamroot
-    
+#ifdef PIO1    
+    namelist /pio_default_inparm/ pio_stride, pio_root, pio_numiotasks, &
+          pio_typename, pio_async_interface, pio_debug_level, pio_blocksize, &
+          pio_buffer_size_limit, pio_rearranger, &
+          pio_rearr_comm_type, pio_rearr_comm_fcd, &
+          pio_rearr_comm_max_pend_req, pio_rearr_comm_enable_hs, &
+          pio_rearr_comm_enable_isend
+#else
     namelist /pio_default_inparm/ pio_stride, pio_root, pio_numiotasks, &
           pio_typename, pio_async_interface, pio_debug_level, pio_blocksize, &
           pio_buffer_size_limit, pio_rearranger
-
-! JGF NEED HELP
-! <<<<<<< HEAD
-! =======
-!          pio_typename, pio_async_interface, pio_debug_level, pio_blocksize,&
-!          pio_buffer_size_limit, pio_rearr_comm_type, pio_rearr_comm_fcd, &
-!          pio_rearr_comm_max_pend_req, pio_rearr_comm_enable_hs, &
-!          pio_rearr_comm_enable_isend
-! >>>>>>> acme_master
-
+#endif
 
 
     call mpi_comm_rank(Comm, iam  , ierr)
@@ -449,28 +454,20 @@ contains
        end if
     end if
 
-! JGF NEED HELP
-! <<<<<<< HEAD
      call shr_pio_namelist_set(npes, Comm, pio_stride, pio_root, pio_numiotasks, pio_iotype, &
           iamroot, pio_rearranger)
-! =======
-! >>>>>>> acme_master
-
-
-!    call shr_pio_namelist_set(npes, Comm, pio_stride, pio_root, pio_numiotasks, pio_iotype, iamroot)
+     
     call shr_mpi_bcast(pio_debug_level, Comm)
     call shr_mpi_bcast(pio_blocksize, Comm)
     call shr_mpi_bcast(pio_buffer_size_limit, Comm)
     call shr_mpi_bcast(pio_async_interface, Comm)
-! JGF NEED HELP
-! <<<<<<< HEAD
-     call shr_mpi_bcast(pio_rearranger, Comm)
+    call shr_mpi_bcast(pio_rearranger, Comm)
     
-! =======
-!     call shr_pio_rearr_opts_set(Comm, pio_rearr_comm_type, pio_rearr_comm_fcd, &
-!           pio_rearr_comm_max_pend_req, pio_rearr_comm_enable_hs, &
-!           pio_rearr_comm_enable_isend)
-! >>>>>>> acme_master
+#ifdef PIO1
+     call shr_pio_rearr_opts_set(Comm, pio_rearr_comm_type, pio_rearr_comm_fcd, &
+           pio_rearr_comm_max_pend_req, pio_rearr_comm_enable_hs, &
+           pio_rearr_comm_enable_isend)
+#endif
 
   end subroutine shr_pio_read_default_namelist
 
@@ -677,7 +674,7 @@ contains
     end if
 
   end subroutine shr_pio_namelist_set
-#ifdef DOTHIS
+#ifdef PIO1
   ! This subroutine sets the global PIO rearranger options
   ! The input args that represent the rearranger options are valid only
   ! on the root proc of comm

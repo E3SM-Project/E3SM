@@ -27,7 +27,7 @@ my $NINST_OCN		= `./xmlquery NINST_OCN		-value`;
 my $NINST_ROF		= `./xmlquery NINST_ROF		-value`;
 my $NINST_WAV		= `./xmlquery NINST_WAV		-value`;
 my $NINST_VALUE		= `./xmlquery NINST_VALUE	-value`;
-
+$ENV{PIO_VERSION}  	= `./xmlquery PIO_VERSION	-value`;
 #--------------------------------------------------------------------
 # Filepath: list of source code directories (in order of importance).
 #--------------------------------------------------------------------
