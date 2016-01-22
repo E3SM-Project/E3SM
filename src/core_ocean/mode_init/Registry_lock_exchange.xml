@@ -7,20 +7,24 @@
 					description="Depth of the bottom of the ocean in the lock exchange test case."
 					possible_values="Any positive real value greater than 0."
 		/>
-		<nml_option name="config_lock_exchange_south_temp" type="real" default_value="5.0" units="deg C"
-					description="Temperature of water in the southern half of the domain."
+		<nml_option name="config_lock_exchange_cold_temperature" type="real" default_value="5.0" units="deg C"
+					description="Temperature of water in the cold half of the domain."
 					possible_values="Any real number"
 		/>
-		<nml_option name="config_lock_exchange_north_temp" type="real" default_value="30.0" units="deg C"
-					description="Temperature of water in the northern half of the domain."
+		<nml_option name="config_lock_exchange_warm_temperature" type="real" default_value="30.0" units="deg C"
+					description="Temperature of water in the warm half of the domain."
 					possible_values="Any real number"
+		/>
+		<nml_option name="config_lock_exchange_direction" type="character" default_value="y" units="unitless"
+					description="If y, warm/cold changes in the y-direction.  If z, warm/cold changes in z-direction."
+					possible_values="'x', 'y','z''"
 		/>
 		<nml_option name="config_lock_exchange_salinity" type="real" default_value="35.0" units="PSU"
 					description="Salinity of the water in the entire domain."
 					possible_values="Any real number greater than 0."
 		/>
 		<nml_option name="config_lock_exchange_layer_type" type="character" default_value="z-level" units="unitless"
-					description="Logical flag that controls how the initial conditions should be generated."
+					description="Vertical grid type"
 					possible_values="'z-level', 'isopycnal'"
 		/>
 		<nml_option name="config_lock_exchange_isopycnal_min_thickness" type="real" default_value="0.01" units="m"
