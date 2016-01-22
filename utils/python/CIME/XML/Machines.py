@@ -28,21 +28,27 @@ class Machines(GenericXML):
     def GetValue(self,name):
         expect(self.machine is not None, "Machine object has no machine defined")
         node = self.GetNode(name,root=self.machine)
+        expect(node is not None,"No match found for %s in machine %s" % (name,self.name))
         expect(len(node)==0,"Expecting exactly one match for %s, got %s" % (name,len(node)))
         return node.text
 
+    def getfieldfromlist(self, listname, reqval=None):
+        expect(self.machine is not None, "Machine object has no machine defined")
+        supported_values = self.GetValue(listname).split(',')
+
+        if(reqval is None or reqval == "UNSET"):
+            return supported_values[0]
+        for val in supported_values:
+            if(val == reqval):
+                return reqval
+        logging.critical("%s value %s not supported for machine %s" %
+                         (listname, reqval, self.name))
+
+    def getCompiler(self, compiler=None):
+        return self.getfieldfromlist('Compilers',compiler)
 
     def getMPIlib(self, mpilib=None):
-        expect(self.machine is not None, "Machine object has no machine defined")
-        supported_mpilibs = self.GetValue("MPILIBS")
-        mpilibs = supported_mpilibs.split(',')
-        if(mpilib is None or mpilib == "UNSET"):
-            return mpilibs[0]
-        for lib in mpilibs:
-            print lib
-            if(lib == mpilib):
-                return mpilib
-        logging.critical(mpilib + " not defined for machine " +  self.name)
+        return self.getfieldfromlist('MPILIBS',mpilib)
 
 
 

@@ -3,6 +3,7 @@ Common functions used by cime python scripts
 """
 
 import sys, socket, re, os, time
+from CIME.utils import expect
 
 _MODEL = None
 _VERBOSE = False
@@ -43,21 +44,6 @@ _MACHINE_PROJECTS = {
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 165
 
-###############################################################################
-def expect(condition, error_msg):
-###############################################################################
-    """
-    Similar to assert except doesn't generate an ugly stacktrace. Useful for
-    checking user error, not programming error.
-
-    >>> expect(True, "error1")
-    >>> expect(False, "error2")
-    Traceback (most recent call last):
-        ...
-    SystemExit: FAIL: error2
-    """
-    if (not condition):
-        raise SystemExit("FAIL: %s" % error_msg)
 
 ###############################################################################
 def warning(msg):
