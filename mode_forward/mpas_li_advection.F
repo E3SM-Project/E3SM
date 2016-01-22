@@ -40,7 +40,7 @@ module li_advection
    ! Public member functions
    !
    !--------------------------------------------------------------------
-   public :: li_advection_thickness_tracers
+   public :: li_advection_thickness_tracers, li_layer_normal_velocity
 
    !--------------------------------------------------------------------
    !
@@ -76,7 +76,6 @@ module li_advection
         scratchPool,            &
         layerThicknessOld,      &
         layerThicknessNew,      &
-        allowableDt,            &
         err,                    &
         advectTracersIn)
 
@@ -127,9 +126,6 @@ module li_advection
       real (kind=RKIND), dimension(:,:), intent(out) :: &
            layerThicknessNew      !< Input: new layer thickness
 
-      real (kind=RKIND), intent(out) :: &
-           allowableDt            !< Output: maximum allowable dt based on CFL condition
-
       integer, intent(out) :: &
            err                    !< Output: error flag
 
@@ -154,7 +150,7 @@ module li_advection
            enthalpy                 ! interior ice enthalpy
 
       real (kind=RKIND), dimension(:,:), pointer :: &
-           normalVelocity,        & ! normal component of velocity on cell edges
+           layerNormalVelocity,   & ! normal component of velocity on cell edges at layer midpoints
            layerThicknessEdge       ! layer thickness on upstream edge of cell
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
@@ -229,7 +225,7 @@ module li_advection
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
       ! get arrays from the velocity pool
-      call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
+      call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
 
       ! get arrays from the thermal pool
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
@@ -341,7 +337,7 @@ module li_advection
                        iCell, indexToCellID(iCell), sum(layerThicknessOld(:,iCell))
                   do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                      iEdge = edgesOnCell(iEdgeOnCell,iCell)
-                     write(stderrUnit,*) 'iEdge, normalVelocity:', iEdge, normalVelocity(1,iEdge)
+                     write(stderrUnit,*) 'iEdge, layerNormalVelocity:', iEdge, layerNormalVelocity(1,iEdge)
                   enddo
                endif
             enddo
@@ -350,13 +346,12 @@ module li_advection
          call advect_thickness_tracers_upwind(&
               dt,                      &
               meshPool,                &
-              normalVelocity,          &
+              layerNormalVelocity,     &
               layerThicknessEdge,      & 
               layerThicknessOld,       &
               advectedTracersOld,      &
               layerThicknessNew,       &
               advectedTracersNew,      &
-              allowableDt,             &
               err)
 
          if (config_print_thickness_advection_info) then
@@ -761,13 +756,12 @@ module li_advection
     subroutine advect_thickness_tracers_upwind(&
          dt,                     &
          meshPool,               &
-         normalVelocity,         &
+         layerNormalVelocity,         &
          layerThicknessEdge,     &
          oldLayerThickness,      &
          oldTracers,             &
          newlayerThickness,      &
          newTracers,             &
-         minOfMaxAllowableDt,    &
          err,                    &
          advectTracersIn)
 
@@ -784,7 +778,7 @@ module li_advection
            meshPool              !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-           normalVelocity,     & !< Input: normal velocity on cell edges
+           layerNormalVelocity,& !< Input: normal velocity averaged from interfaces to layer midpoints
            layerThicknessEdge    !< Input: layer thickness on upstream edge
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
@@ -808,9 +802,6 @@ module li_advection
 
       real (kind=RKIND), dimension(:,:,:), intent(out) :: &
            newTracers              !< Output: new tracer values
-
-      real (kind=RKIND), intent(out) :: &
-           minOfMaxAllowableDt     !< Output: maximum allowable dt based on CFL condition
 
       integer, intent(out) :: &
            err                     !< Output: error flag
@@ -850,8 +841,6 @@ module li_advection
 
       real (kind=RKIND) :: &
            invAreaCell,            & ! 1.0/areaCell
-           maxAllowableDt,         & ! max allowable dt based on advective CFL condition
-           layerNormalVelocity,    & ! normal velocity averaged from interfaces to layer midpoints
            thicknessFluxEdge,      & ! thickness flux on an edge
            thicknessTendency,      & ! net thickness tendency for a cell
            newThickness              ! new layer thickness
@@ -917,7 +906,6 @@ module li_advection
       call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
 
       ! initialize output variables
-      minOfMaxAllowableDt = bigNumber
       newLayerThickness(:,:) = 0.0_RKIND
       newTracers(:,:,:) = 0.0_RKIND
 
@@ -961,33 +949,15 @@ module li_advection
                iCell1 = cellsOnEdge(1,iEdge)
                iCell2 = cellsOnEdge(2,iEdge)
 
-               ! Average normal velocities from layer interfaces to layer midpoints for advection
-               ! TODO - This may make more sense to calculate as a 3d field somewhere else
-               !        so it can also be used for tracer advection, output visualization, etc.
-               layerNormalVelocity = 0.5_RKIND * (normalVelocity(k,iEdge) + normalVelocity(k+1,iEdge))
-
-               ! Check for potential CFL violation
-               if (abs(layerNormalVelocity) > 0.0_RKIND) then
-                  maxAllowableDt = (0.5_RKIND * dcEdge(iEdge)) / abs(layerNormalVelocity)
-               else
-                  maxAllowableDt = bigNumber
-               endif
-
-               if ( maxAllowableDt < dt ) then
-                  write(stderrUnit,*) 'CFL violation at level, edge ID (local, global):', k, iEdge, indexToEdgeID(iEdge)
-                  err = err + 1
-               endif
-               minOfMaxAllowableDt = min(minOfMaxAllowableDt, maxAllowableDt)
-
                ! Increment the thickness and thickness*tracer tendencies
 
-               thicknessFluxEdge = layerNormalVelocity * dvEdge(iEdge) * layerThicknessEdge(k,iEdge)
+               thicknessFluxEdge = layerNormalVelocity(k,iEdge) * dvEdge(iEdge) * layerThicknessEdge(k,iEdge)
                thicknessTendency = thicknessTendency &
                                  + edgeSignOnCell(iEdgeOnCell,iCell) * thicknessFluxEdge * invAreaCell
 
                if (advectTracers) then
 
-                  velSign = sign(1.0_RKIND, layerNormalVelocity)
+                  velSign = sign(1.0_RKIND, layerNormalVelocity(k,iEdge))
 
                   ! Assign the upwind tracer values to each edge
                   ! Note: layerThicknessEdge is passed in and does not need to be computed here
@@ -1002,7 +972,7 @@ module li_advection
 
                !WHL - debug
                if (indexToCellID(iCell) == config_stats_cell_ID .and. k==1 .and. config_print_thickness_advection_info) then
-                  write(stderrUnit,*) k, iEdgeOnCell, layerNormalVelocity, layerThicknessEdge(k,iEdge), thicknessFluxEdge, thicknessTendency 
+                  write(stderrUnit,*) k, iEdgeOnCell, layerNormalVelocity(k,iEdge), layerThicknessEdge(k,iEdge), thicknessFluxEdge, thicknessTendency 
                endif
 
             enddo      ! iEdgeOnCell
@@ -1071,6 +1041,130 @@ module li_advection
    !--------------------------------------------------------------------
 
     end subroutine advect_thickness_tracers_upwind
+
+!***********************************************************************
+
+!  routine li_layer_normal_velocity
+!
+!> \brief   Compute layer normal velocity and diagnose the advective CFL limit
+!> \author  William Lipscomb
+!> \date    January 2016
+!> \details 
+!>  This routine computed layer normal velocities on each edge in preparation
+!>  for advection. Given these velocities, it diagnoses the advective CFL limit
+!>  for the edges on this block. The logic here was originally part of
+!>  subroutine advect_thickness_tracers_upwind, but was moved to a separate
+!>  subroutine so that an adaptive timestep could be diagnosed at the start
+!>  of the time step.
+!
+!-----------------------------------------------------------------------
+
+    subroutine li_layer_normal_velocity(&
+         meshPool,               &
+         normalVelocity,         &
+         layerNormalVelocity,    &
+         minOfMaxAllowableDt,    &
+         err)
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), intent(in) :: &
+           meshPool              !< Input: mesh information
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+           normalVelocity        !< Input: normal velocity on cell edges
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+           layerNormalVelocity     !< Output: normal velocity on cell edges, averaged to layer midpoints
+
+      real (kind=RKIND), intent(out) :: &
+           minOfMaxAllowableDt     !< Output: maximum allowable dt based on CFL condition
+
+      integer, intent(out) :: &
+           err                     !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, pointer :: &
+           nEdgesSolve,     & ! dnumber of locally owned edges
+           nVertLevels        ! number of vertical layers
+
+      real (kind=RKIND), dimension(:), pointer :: &
+           dcEdge             ! distance between cell centers on each edge
+
+      logical, pointer :: &
+           config_print_thickness_advection_info
+
+      integer, dimension(:), pointer :: &
+           indexToEdgeID      ! global index for edges
+
+      real (kind=RKIND) :: &
+           maxAllowableDt     ! max allowable dt based on advective CFL condition
+
+      integer :: iEdge, k
+
+      real (kind=RKIND), parameter :: bigNumber = 1.0e16_RKIND  ! This is ~300 million years in seconds, but is small enough not to overflow
+
+      err = 0
+
+      ! get dimensions
+      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+      ! get mesh arrays
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(meshPool, 'indexToEdgeID', indexToEdgeID)
+
+      ! get config variables
+      call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
+
+      ! initialize output variables
+      minOfMaxAllowableDt = bigNumber
+
+      ! loop over local edges
+      do iEdge = 1, nEdgesSolve
+
+         ! loop over layers
+         do k = 1, nVertLevels
+
+            ! average normal velocities from layer interfaces to layer midpoints for advection
+            layerNormalVelocity(k,iEdge) = 0.5_RKIND * (normalVelocity(k,iEdge) + normalVelocity(k+1,iEdge))
+
+            ! Check for potential CFL violation
+            if (abs(layerNormalVelocity(k,iEdge)) > 0.0_RKIND) then
+               maxAllowableDt = (0.5_RKIND * dcEdge(iEdge)) / abs(layerNormalVelocity(k,iEdge))
+            else
+               maxAllowableDt = bigNumber
+            endif
+
+            minOfMaxAllowableDt = min(minOfMaxAllowableDt, maxAllowableDt)
+
+         enddo     ! k
+
+      enddo   ! iEdge
+
+      ! === error check
+      if (err > 0) then
+          write (stderrUnit,*) "An error has occurred in li_layer_normal_velocity."
+      endif
+
+   !--------------------------------------------------------------------
+
+    end subroutine li_layer_normal_velocity
 
 !-----------------------------------------------------------------------
 !
