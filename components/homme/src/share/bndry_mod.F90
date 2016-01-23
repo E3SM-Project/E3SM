@@ -465,8 +465,8 @@ contains
     type (hybrid_t)                   :: hybrid
     type (EdgeBuffer_t)               :: buffer
 
-    call t_adj_detailf(+2)
-    call t_startf('bndry_exchangeV')
+!pw call t_adj_detailf(+2)
+!pw call t_startf('bndry_exchangeV')
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -474,8 +474,8 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
-    call t_stopf('bndry_exchangeV')
-    call t_adj_detailf(-2)
+!pw call t_stopf('bndry_exchangeV')
+!pw call t_adj_detailf(-2)
 
   end subroutine bndry_exchangeV_threaded
 
@@ -487,8 +487,8 @@ contains
     type (EdgeBuffer_t)               :: buffer
     integer :: ithr
 
-    call t_adj_detailf(+2)
-    call t_startf('bndry_exchangeV')
+!pw call t_adj_detailf(+2)
+!pw call t_startf('bndry_exchangeV')
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -497,8 +497,8 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
-    call t_stopf('bndry_exchangeV')
-    call t_adj_detailf(-2)
+!pw call t_stopf('bndry_exchangeV')
+!pw call t_adj_detailf(-2)
 
   end subroutine bndry_exchangeV_nonthreaded
 
@@ -510,8 +510,8 @@ contains
     type (hybrid_t)                   :: hybrid
     type (EdgeBuffer_t)               :: buffer
 
-    call t_adj_detailf(+2)
-    call t_startf('bndry_exchangeS')
+!pw call t_adj_detailf(+2)
+!pw call t_startf('bndry_exchangeS')
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -519,8 +519,8 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
-    call t_stopf('bndry_exchangeS')
-    call t_adj_detailf(-2)
+!pw call t_stopf('bndry_exchangeS')
+!pw call t_adj_detailf(-2)
 
  end subroutine bndry_exchangeS_threaded
 
@@ -532,8 +532,8 @@ contains
     type (hybrid_t)                   :: hybrid
     type (EdgeBuffer_t)               :: buffer
 
-    call t_adj_detailf(+2)
-    call t_startf('bndry_exchangeS_start')
+!pw call t_adj_detailf(+2)
+!pw call t_startf('bndry_exchangeS_start')
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -541,8 +541,8 @@ contains
 !#if (defined HORIZ_OPENMP)
 !    !$OMP BARRIER
 !#endif
-    call t_stopf('bndry_exchangeS_start')
-    call t_adj_detailf(-2)
+!pw call t_stopf('bndry_exchangeS_start')
+!pw call t_adj_detailf(-2)
 
  end subroutine bndry_exchangeS_threaded_start
 
@@ -554,8 +554,8 @@ contains
     type (hybrid_t)                   :: hybrid
     type (EdgeBuffer_t)               :: buffer
 
-    call t_adj_detailf(+2)
-    call t_startf('bndry_exchangeS_finish')
+!pw call t_adj_detailf(+2)
+!pw call t_startf('bndry_exchangeS_finish')
 !#if (defined HORIZ_OPENMP)
 !    !$OMP BARRIER
 !#endif
@@ -563,8 +563,8 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
-    call t_stopf('bndry_exchangeS_finish')
-    call t_adj_detailf(-2)
+!pw call t_stopf('bndry_exchangeS_finish')
+!pw call t_adj_detailf(-2)
 
  end subroutine bndry_exchangeS_threaded_finish
 
@@ -576,8 +576,8 @@ contains
     integer                           :: ithr
     type (EdgeBuffer_t)               :: buffer
 
-    call t_adj_detailf(+2)
-    call t_startf('bndry_exchangeS')
+!pw call t_adj_detailf(+2)
+!pw call t_startf('bndry_exchangeS')
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -586,8 +586,8 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
-    call t_stopf('bndry_exchangeS')
-    call t_adj_detailf(-2)
+!pw call t_stopf('bndry_exchangeS')
+!pw call t_adj_detailf(-2)
 
   end subroutine bndry_exchangeS_nonthreaded
 
@@ -599,8 +599,8 @@ contains
     integer                           :: ithr
     type (EdgeBuffer_t)               :: buffer
 
-    call t_adj_detailf(+2)
-    call t_startf('bndry_exchangeS_start')
+!pw call t_adj_detailf(+2)
+!pw call t_startf('bndry_exchangeS_start')
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
@@ -609,8 +609,8 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
-    call t_stopf('bndry_exchangeS_start')
-    call t_adj_detailf(-2)
+!pw call t_stopf('bndry_exchangeS_start')
+!pw call t_adj_detailf(-2)
 
  end subroutine bndry_exchangeS_nonthreaded_start
 
@@ -622,8 +622,8 @@ contains
     integer                           :: ithr
     type (EdgeBuffer_t)               :: buffer
 
-    call t_adj_detailf(+2)
-    call t_startf('bndry_exchangeS_finish')
+!pw call t_adj_detailf(+2)
+!pw call t_startf('bndry_exchangeS_finish')
 !#if (defined HORIZ_OPENMP)
 !    !$OMP BARRIER
 !#endif
@@ -632,8 +632,8 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
-    call t_stopf('bndry_exchangeS_finish')
-    call t_adj_detailf(-2)
+!pw call t_stopf('bndry_exchangeS_finish')
+!pw call t_adj_detailf(-2)
 
   end subroutine bndry_exchangeS_nonthreaded_finish
 

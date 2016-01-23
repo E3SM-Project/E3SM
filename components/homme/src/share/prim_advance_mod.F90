@@ -172,7 +172,7 @@ contains
 #endif
 
 !JMD    call t_barrierf('sync_prim_advance_exp', hybrid%par%comm)
-!pw    call t_adj_detailf(+1)
+!pw call t_adj_detailf(+1)
     call t_startf('prim_advance_exp')
     nm1   = tl%nm1
     n0    = tl%n0
@@ -301,7 +301,7 @@ contains
           enddo
        end do
        call t_stopf('prim_advance_exp')
-!p2    call t_adj_detailf(-1)
+!pw    call t_adj_detailf(-1)
        return
     endif
 
@@ -800,7 +800,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        integer              :: i,j,k,l,ie,kptr
 
 !JMD       call t_barrierf('sync_prim_advance_si', hybrid%par%comm)
-       call t_adj_detailf(+1)
+!pw    call t_adj_detailf(+1)
        call t_startf('prim_advance_si')
 
        nm1   = tl%nm1
@@ -1515,7 +1515,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
        call prim_diffusion(elem, nets,nete,np1,deriv,dt2,cg%hybrid)
        call t_stopf('prim_advance_si')
-       call t_adj_detailf(-1)
+!pw    call t_adj_detailf(-1)
 #endif
   end subroutine prim_advance_si
 
@@ -1538,7 +1538,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   logical :: filter_ps = .false.
   if (integration == "explicit") filter_ps = .true.
 
-  call t_adj_detailf(+1)
+!pw  call t_adj_detailf(+1)
   call t_startf('preq_robert')
   do ie=nets,nete
      if (filter_ps) then
@@ -1558,7 +1558,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
   end do
   call t_stopf('preq_robert')
-  call t_adj_detailf(-1)
+!pw  call t_adj_detailf(-1)
 
   end subroutine preq_robert3
 
@@ -1795,7 +1795,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
   if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
 !JMD  call t_barrierf('sync_advance_hypervis', hybrid%par%comm)
-  call t_adj_detailf(+1)
+!pw   call t_adj_detailf(+1)
   call t_startf('advance_hypervis')
 
 
@@ -2021,7 +2021,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   endif
 
   call t_stopf('advance_hypervis')
-  call t_adj_detailf(-1)
+!pw  call t_adj_detailf(-1)
 
   end subroutine advance_hypervis
 
@@ -2096,7 +2096,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
   if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
 !JMD  call t_barrierf('sync_advance_hypervis', hybrid%par%comm)
-  call t_adj_detailf(+1) 
+!pw   call t_adj_detailf(+1) 
   call t_startf('advance_hypervis_dp')
 
 
@@ -2349,7 +2349,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   endif
 
   call t_stopf('advance_hypervis_dp')
-  call t_adj_detailf(-1)
+!pw  call t_adj_detailf(-1)
 
   end subroutine advance_hypervis_dp
 
@@ -2415,7 +2415,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
   if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
 !JMD  call t_barrierf('sync_advance_hypervis_lf', hybrid%par%comm)
-  call t_adj_detailf(+1)
+!pw   call t_adj_detailf(+1)
   call t_startf('advance_hypervis_lf')
 
 ! for non-leapfrog,nt=n0=nmt
@@ -2632,7 +2632,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   endif
 
   call t_stopf('advance_hypervis_lf')
-  call t_adj_detailf(-1)
+!pw  call t_adj_detailf(-1)
 
   end subroutine advance_hypervis_lf
 
