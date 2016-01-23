@@ -1654,7 +1654,8 @@ subroutine Cobra_Elem(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
 
 ! if (hybrid%par%masterproc) print *,__FILE__,__LINE__," mass(20,1,4):",mass(20,1,4)
 ! do k=1,np*np
-!   if (hybrid%par%masterproc) print *,__FILE__,__LINE__," maxq(k,20,1,4):",maxq(k,20,1,4) ,minq(k,20,1,4),maxq(k,20,1,4)-minq(k,20,1,4)
+!   if (hybrid%par%masterproc) print *,__FILE__,__LINE__," maxq(k,20,1,4):", &
+!     maxq(k,20,1,4) ,minq(k,20,1,4),maxq(k,20,1,4)-minq(k,20,1,4)
 ! enddo
 ! do k=1,np*np
 !   if (hybrid%par%masterproc) print *,__FILE__,__LINE__," Que(k,20,1,4):",Que(k,20,1,4) ,rho(k,20,4)
