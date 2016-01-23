@@ -165,7 +165,7 @@ if (($save_timing == 'TRUE') || ($save_timing == 'true')) then
       gzip qstatf.$lid qstatf_jobid.$lid
     else if ($machine == 'corip1') then
       sqs -f > sqsf.$lid
-      sqs -w > sqsw.$lid
+      sqs -w -a > sqsw.$lid
       sqs -f $app_jobid > sqsf_jobid.$lid
 #     ssh cmom01 xtdb2proc -f $save_timing_dir/performance_archive/$user/$case/$lid/xtdb2proc.$lid
       squeue > squeue.$lid
@@ -175,7 +175,7 @@ if (($save_timing == 'TRUE') || ($save_timing == 'true')) then
     else if ($machine == 'edison') then
       xtprocadmin > xtprocadmin.$lid
       sqs -f > sqsf.$lid
-      sqs -w > sqsw.$lid
+      sqs -w -a > sqsw.$lid
       sqs -f $app_jobid > sqsf_jobid.$lid
 #     xtnodestat > xtnodestat.$lid
       squeue > squeue.$lid
