@@ -1,11 +1,12 @@
 """
 Common functions used by cime python scripts
 """
-
+import logging
 import sys
 import os
 
 _MODEL = None
+_CIMEROOT = None
 
 def expect(condition, error_msg):
     """
@@ -20,6 +21,7 @@ def expect(condition, error_msg):
     """
     if (not condition):
         raise SystemExit("FAIL: %s" % error_msg)
+
 def get_cime_root():
 ###############################################################################
     """
@@ -28,9 +30,15 @@ def get_cime_root():
     >>> os.path.isdir(os.path.join(get_cime_root(), get_acme_scripts_location_within_cime()))
     True
     """
-    acme_script_absdir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
-    assert acme_script_absdir.endswith(get_python_libs_location_within_cime()), acme_script_absdir
-    return os.path.normpath(acme_script_absdir[:len(acme_script_absdir)-len(get_python_libs_location_within_cime())])
+    global _CIMEROOT
+    if (_CIMEROOT is None):
+        try:
+            _CIMEROOT = os.environ["CIMEROOT"]
+        except KeyError:
+            script_absdir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+            assert acme_script_absdir.endswith(get_python_libs_location_within_cime()), acme_script_absdir
+    logging.info( "CIMEROOT is " + _CIMEROOT)
+    return _CIMEROOT
 
 
 def set_model(model):

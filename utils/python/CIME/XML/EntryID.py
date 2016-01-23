@@ -9,12 +9,13 @@ import os.path
 import logging
 import re
 from GenericXML import GenericXML
+from CIME.utils import expect
 
 class EntryID(GenericXML):
     def __init__(self, infile=None):
         GenericXML.__init__(self,infile)
         
-    def SetDefaultValue(self, vid, attributes):
+    def SetDefaultValue(self, vid, attributes=None):
         """ Set the value of an entry to the default value for that entry
         vid can be an xml node pointer or a string identifier of a node """
         value = None
@@ -25,7 +26,7 @@ class EntryID(GenericXML):
             nodes = self.GetNode("entry",{"id":vid})
             if(nodes is None):
                 return
-            expect(len(nodes) == 0,"More than one match found for id " + vid)
+            expect(len(nodes) == 1,"More than one match found for id " + vid)
             node = nodes[0]
         valnodes = self.GetNode("value",root=node)
         if(valnodes is not None):
@@ -39,7 +40,7 @@ class EntryID(GenericXML):
             value = self.GetNode("default_value",root=node)
         if(value is not None):
             node.set("value",value)
-        return value
+        return value[0].text
 
     def SetValue(self, vid, value):
         val = None
@@ -67,14 +68,16 @@ class EntryID(GenericXML):
             if(nodes is None):
                 return
             node = nodes[0]
+
         if(attribute is not None):
             valnodes = self.GetNode("value",attribute)
             if(valnodes is not None and len(valnodes) == 1):
                 val = valnodes[0].text
-        elif(node.attrib("value")):
-            val = node.attrib("value")
+        elif(node.get("value") is not None):
+            val = node.get("value")
         else:
-            self.SetDefaultValue(vid,value)
+            val = self.SetDefaultValue(vid)
+        return val
 
     def GetValues(self,vid,att):
         values = {}
