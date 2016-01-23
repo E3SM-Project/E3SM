@@ -52,7 +52,7 @@ while ($remaining > 0)
   grep -a -i "model date" $run/*cpl.log.$lid | tail > $dir/cpl.log.$lid.modeldata.$remaining
   cp -p -u $timing/* $dir
 # xtnodestat > $dir/xtnodestat.$lid.$remaining
-  sqs -w > $dir/sqsw.$lid.$remaining
+  sqs -w -a > $dir/sqsw.$lid.$remaining
   chmod a+r $dir/*
   sleep $sample_interval
   set RunTime    = `sqs -f $jid | grep RunTime | sed 's/^ *RunTime=\([0-9]*:[0-9]*:[0-9]*\) .*/\1/' `
