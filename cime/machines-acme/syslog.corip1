@@ -47,8 +47,8 @@ while ($remaining > 0)
   grep -a -i "nstep" $run/*atm.log.$lid | tail > $dir/atm.log.$lid.nstep.$remaining
 # grep -a -i "nstep" $run/cesm.log.$lid | tail > $dir/cesm.log.$lid.nstep.$remaining
   grep -a -i "timestep" $run/*lnd.log.$lid | tail > $dir/lnd.log.$lid.timestep.$remaining
-  grep -a -i "Step number" $run/*ocn.log.$lid | tail > $dir/ocn.log.$lid.stepnum.$remaining
-  grep -a -i "istep1" $run/*ice.log.$lid | tail > $dir/ice.log.$lid.istep.$remaining
+  grep -a -i "timestep" $run/*ocn.log.$lid | tail > $dir/ocn.log.$lid.stepnum.$remaining
+  grep -a -i "timestep" $run/*ice.log.$lid | tail > $dir/ice.log.$lid.istep.$remaining
   grep -a -i "model date" $run/*cpl.log.$lid | tail > $dir/cpl.log.$lid.modeldata.$remaining
   cp -p -u $timing/* $dir
 # xtnodestat > $dir/xtnodestat.$lid.$remaining
