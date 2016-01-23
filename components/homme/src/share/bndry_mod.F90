@@ -127,7 +127,7 @@ contains
     call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
     call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
     !$OMP END MASTER
-    call t_startf('bndry_copy')
+!pw call t_startf('bndry_copy')
     !JMD ithr = omp_get_thread_num()+1
     ! Copy data that doesn't get messaged from the send buffer to the receive
     ! buffer
@@ -136,7 +136,7 @@ contains
     if(length>0) then 
         buffer%receive(iptr:iptr+length-1) = buffer%buf(iptr:iptr+length-1)
     endif
-    call t_stopf('bndry_copy')
+!pw call t_stopf('bndry_copy')
 
   end subroutine bndry_exchangeV_core
 

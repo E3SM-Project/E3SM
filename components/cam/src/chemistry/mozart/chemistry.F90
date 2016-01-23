@@ -1446,13 +1446,13 @@ end function chem_is_active
 !-----------------------------------------------------------------------
 ! compute tendencies and surface fluxes
 !-----------------------------------------------------------------------
-    call t_startf( 'chemdr' )
     do k = 1,pver
        cldw(:ncol,k) = state%q(:ncol,k,ixcldliq) + state%q(:ncol,k,ixcldice)
        if (ixndrop>0) &
             ncldwtr(:ncol,k) = state%q(:ncol,k,ixndrop)
     end do
 
+    call t_startf( 'chemdr' )
     call gas_phase_chemdr(lchnk, ncol, imozart, state%q, &
                           state%phis, state%zm, state%zi, calday, &
                           state%t, state%pmid, state%pdel, state%pint, &

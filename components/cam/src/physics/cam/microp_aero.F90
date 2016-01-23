@@ -46,6 +46,7 @@ use hetfrz_classnuc_cam, only: hetfrz_classnuc_cam_readnl, hetfrz_classnuc_cam_r
 use cam_history,      only: addfld, add_default, outfld
 use cam_logfile,      only: iulog
 use cam_abortutils,       only: endrun
+use perf_mod,         only: t_startf, t_stopf
 
 implicit none
 private
@@ -485,6 +486,8 @@ subroutine microp_aero_run ( &
       pmid  => state%pmid               )
 
 
+   call t_startf('microp_aero_run_init')
+
    itim_old = pbuf_old_tim_idx()
    call pbuf_get_field(pbuf, ast_idx,      ast, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
    if(liqcf_fix) then
@@ -653,12 +656,16 @@ subroutine microp_aero_run ( &
       enddo
    enddo
 
+   call t_stopf('microp_aero_run_init')
+
    !!.......................................................... 
    !! icenul_wsub_scheme = 2 : Mean updraft calculated from Gausssian PDF, with
    !stddev=f(TKE)    
    !!.......................................................... 
 
+   call t_startf('subgrid_mean_updraft')
    call subgrid_mean_updraft(ncol, w0, wsig, w2)
+   call t_stopf('subgrid_mean_updraft')
 
 
    select case (icenul_wsub_scheme)
@@ -684,7 +691,9 @@ subroutine microp_aero_run ( &
    !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
    !ICE Nucleation
 
+   call t_startf('nucleate_ice_cam_calc')
    call nucleate_ice_cam_calc(state, wsubice, pbuf)
+   call t_stopf('nucleate_ice_cam_calc')
 
    !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
    ! get liquid cloud fraction, check for minimum
@@ -722,9 +731,11 @@ subroutine microp_aero_run ( &
 
       call outfld('LCLOUD', lcldn, pcols, lchnk)
 
+      call t_startf('dropmixnuc')
       call dropmixnuc( &
          state, ptend, deltatin, pbuf, wsub, &
          lcldn, lcldo, nctend_mixnuc, factnum)
+      call t_stopf('dropmixnuc')
 
       npccn(:ncol,:) = nctend_mixnuc(:ncol,:)
 
@@ -735,6 +746,7 @@ subroutine microp_aero_run ( &
       ! no tendencies returned from ndrop_bam_run, so just init ptend here
       call physics_ptend_init(ptend, state%psetcols, 'none')
 
+      call t_startf('droplet_act_bulk_aero')
       do k = top_lev, pver
          do i = 1, ncol
 
@@ -754,6 +766,7 @@ subroutine microp_aero_run ( &
             npccn(i,k) = (dum*lcldm(i,k) - nc(i,k))/deltatin
          end do
       end do
+      call t_stopf('droplet_act_bulk_aero')
 
    end if
 
@@ -822,7 +835,9 @@ subroutine microp_aero_run ( &
    if (.not. clim_modal_aero) then
 
       ! ccn concentration as diagnostic
+      call t_startf('ndrop_bam_ccn')
       call ndrop_bam_ccn(lchnk, ncol, maerosol, naer2)
+      call t_stopf('ndrop_bam_ccn')
 
       deallocate( &
          naer2,    &
@@ -833,7 +848,9 @@ subroutine microp_aero_run ( &
    ! heterogeneous freezing
    if (use_hetfrz_classnuc) then
 
+      call t_startf('hetfrz_classnuc_cam_calc')
       call hetfrz_classnuc_cam_calc(state, deltatin, factnum, pbuf)
+      call t_stopf('hetfrz_classnuc_cam_calc')
 
    end if
 

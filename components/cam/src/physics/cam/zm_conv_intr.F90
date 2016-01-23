@@ -418,7 +418,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 ! Begin with Zhang-McFarlane (1996) convection parameterization
 !
    call t_startf ('zm_convr')
-
    call zm_convr(   lchnk   ,ncol    , &
                     state%t       ,state%q(:,:,1)     ,prec    ,jctop   ,jcbot   , &
                     pblh    ,state%zm      ,state%phis    ,state%zi      ,ptend_loc%q(:,:,1)    , &
@@ -428,6 +427,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
                     mu,md,du,eu,ed      , &
                     dp ,dsubcld ,jt,maxg,ideep   , &
                     lengath ,ql      ,rliq  ,landfrac, hu_nm1, cnv_nm1, tm1, qm1 )  !songxl 2014-05-20   
+   call t_stopf ('zm_convr')
 
    call outfld('CAPE', cape, pcols, lchnk)        ! RBN - CAPE output
 !
@@ -465,7 +465,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    ftem(:ncol,:pver) = ptend_loc%s(:ncol,:pver)/cpair
    call outfld('ZMDT    ',ftem           ,pcols   ,lchnk   )
    call outfld('ZMDQ    ',ptend_loc%q(1,1,1) ,pcols   ,lchnk   )
-   call t_stopf ('zm_convr')
 
 !    do i = 1,pcols
 !    do i = 1,nco
@@ -494,7 +493,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
   lq(1) = .TRUE.
   call physics_ptend_init(ptend_loc, state1%psetcols, 'zm_conv_evap', ls=.true., lq=lq)
 
-   call t_startf ('zm_conv_evap')
 !
 ! Determine the phase of the precipitation produced and add latent heat of fusion
 ! Evaporate some of the precip directly into the environment (Sundqvist)
@@ -509,11 +507,13 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
     dp_cldliq(:ncol,:) = 0._r8
     dp_cldice(:ncol,:) = 0._r8
 
+    call t_startf ('zm_conv_evap')
     call zm_conv_evap(state1%ncol,state1%lchnk, &
          state1%t,state1%pmid,state1%pdel,state1%q(:pcols,:pver,1), &
          ptend_loc%s, tend_s_snwprd, tend_s_snwevmlt, ptend_loc%q(:pcols,:pver,1), &
          rprd, cld, ztodt, &
          prec, snow, ntprprd, ntsnprd , flxprec, flxsnow)
+    call t_stopf ('zm_conv_evap')
 
     evapcdp(:ncol,:pver) = ptend_loc%q(:ncol,:pver,1)
 !
@@ -535,7 +535,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    call outfld('PRECCDZM   ',prec,  pcols   ,lchnk   )
 
 
-   call t_stopf ('zm_conv_evap')
 
    call outfld('PRECZ   ', prec   , pcols, lchnk)
 

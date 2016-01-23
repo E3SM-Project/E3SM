@@ -2548,6 +2548,7 @@ if (cosp_runall) then
    ! Make sure that you get cloud information from deep, shallow, and stratiform physics packages.
 
    !print *, 'Allocating memory for gridbox type...'
+   call t_startf("construct_cosp_gridbox1")
    call construct_cosp_gridbox(time, &                          ! 1 double precision = real(r8) X
                                 time_bnds, &                    ! 1 double precision = real(r8)
                                 radar_freq, &                   ! 2 real(r8) X
@@ -2584,6 +2585,7 @@ if (cosp_runall) then
                                 n2o(1,1),&                      ! 33 real(r8) X
                                 co,&                            ! 34 real(r8) X
                                 gbx)                            ! OUT
+   call t_stopf("construct_cosp_gridbox1")
     
    !print *, 'Populating input structure for COSP...'
    ! Note: GBX expects vertical ordering to be from SURFACE(1) to the TOP(nlev), while
@@ -3061,6 +3063,7 @@ end do
 !  POPULATE COSP INPUT VARIABLE ("gbx") FROM CAM VARIABLES for sunlit columns
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
    !print *, 'Allocating memory for gridbox type for isccp sub-columns only...'
+   call t_startf("construct_cosp_gridbox2")
    call construct_cosp_gridbox(time, &                          ! 1 double precision = real(r8) X
                                 time_bnds, &                    ! 1 double precision = real(r8)
                                 radar_freq, &                   ! 2 real(r8) X
@@ -3097,6 +3100,7 @@ end do
                                 n2o(1,1),&                      ! 33 real(r8) X
                                 co,&                            ! 34 real(r8) X
                                 gbx)                            ! OUT
+   call t_stopf("construct_cosp_gridbox2")
     
    !print *, 'Populating input structure for COSP running on day columns only...'
    !! be very explicit about gbx structure sizes.
@@ -3759,6 +3763,7 @@ if (((.not.cosp_sample_atrain) .and. Natrain .gt. 0) .or. ((cosp_sample_atrain) 
 !  POPULATE COSP INPUT VARIABLE ("gbx") FROM CAM VARIABLES for atrain columns
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
    !print *, 'Allocating memory for gridbox type for atrain sub-columns only...'
+   call t_startf("construct_cosp_gridbox3")
    call construct_cosp_gridbox(time, &                          ! 1 double precision = real(r8) X
                                 time_bnds, &                    ! 1 double precision = real(r8)
                                 radar_freq, &                   ! 2 real(r8) X
@@ -3795,6 +3800,7 @@ if (((.not.cosp_sample_atrain) .and. Natrain .gt. 0) .or. ((cosp_sample_atrain) 
                                 n2o(1,1),&                      ! 33 real(r8) X
                                 co,&                            ! 34 real(r8) X
                                 gbx)                            ! OUT
+   call t_stopf("construct_cosp_gridbox3")
     
    !print *, 'Populating input structure for COSP for running lidar/radar simulators only...'
    !! be very explicit about gbx structure sizes.
