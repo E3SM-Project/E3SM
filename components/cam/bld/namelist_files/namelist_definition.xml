@@ -2887,6 +2887,11 @@ Default: 0.001
        group="clubb_param_nl" valid_values="" >
 Background coefficient of eddy diffusion
 Default: 20.0
+
+<entry id="clubb_c_K10" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Coefficient of Kh_zm
+Default: 0.60
 </entry>
 
 <!-- CARMA Sectional Microphysics -->
