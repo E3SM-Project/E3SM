@@ -423,19 +423,20 @@
   <machine MACH="constance">
     <DESC>PNL Haswell cluster, OS is Linux, batch system is SLURM</DESC>
     <OS>LINUX</OS>
-    <COMPILERS>pgi,intel</COMPILERS>
-    <MPILIBS>mvapich2,mvapich</MPILIBS>
-    <RUNDIR>/pic/scratch/$CCSMUSER/$CASE/run</RUNDIR>
-    <EXEROOT>/pic/scratch/$CCSMUSER/$CASE/bld</EXEROOT>
+    <COMPILERS>intel,pgi</COMPILERS>
+    <MPILIBS>mvapich2,openmpi,intelmpi,mvapich</MPILIBS>
+    <RUNDIR>/pic/scratch/$USER/$CASE/run</RUNDIR>
+    <EXEROOT>/pic/scratch/$USER/$CASE/bld</EXEROOT>
     <CESMSCRATCHROOT>/pic/scratch/$USER</CESMSCRATCHROOT>
     <DIN_LOC_ROOT>/pic/scratch/tcraig/IRESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/pic/scratch/tcraig/IRESM/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/pic/scratch/$CCSMUSER/cases/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_S_ROOT>/pic/scratch/$USER/cases/archive/$CASE</DOUT_S_ROOT>
     <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
     <CCSM_BASELINE>/pic/scratch/tcraig/IRESM/ccsm_baselines</CCSM_BASELINE>
     <CCSM_CPRNC>/people/tcraig/bin/cprnc</CCSM_CPRNC>
     <BATCHQUERY>squeue</BATCHQUERY>
     <BATCHSUBMIT>sbatch</BATCHSUBMIT>
+    <BATCHREDIRECT></BATCHREDIRECT>
     <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
@@ -459,7 +460,7 @@
       <executable>srun</executable>  
       <arguments>
         <arg name="mpi">--mpi=none</arg>
-        <arg name="num_tasks">-ntasks={{ num_tasks }}</arg>
+        <arg name="num_tasks">--ntasks={{ num_tasks }}</arg>
         <arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>
         <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
       </arguments>
@@ -467,9 +468,21 @@
     <mpirun mpilib="mvapich">
       <executable>srun</executable>  
       <arguments>
-        <arg name="num_tasks">-ntasks={{ num_tasks }}</arg>
+        <arg name="num_tasks">--ntasks={{ num_tasks }}</arg>
         <arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>
         <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="intelmpi">
+      <executable>mpirun</executable>
+      <arguments>
+	<arg name="num_tasks">-n {{ num_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="openmpi">
+      <executable>mpirun</executable>
+      <arguments>
+	<arg name="num_tasks">-n {{ num_tasks }}</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
@@ -488,14 +501,24 @@
       </modules>
       <modules compiler="intel">
 	<command name="load">intel/15.0.1</command>
-	<command name="load">mvapich2/2.1</command>
 	<command name="load">netcdf/4.3.2</command>
 	<command name="load">mkl/15.0.1</command>
       </modules>
       <modules compiler="pgi">
 	<command name="load">pgi/14.10</command>
-	<command name="load">mvapich2/2.1</command>
 	<command name="load">netcdf/4.3.2</command>
+      </modules>
+      <modules mpilib="mvapich">
+	<command name="load">mvapich2/2.1</command>
+      </modules>
+      <modules mpilib="mvapich2">
+	<command name="load">mvapich2/2.1</command>
+      </modules>
+      <modules mpilib="intelmpi">
+	<command name="load">intelmpi/5.0.1.035</command>
+      </modules>
+      <modules mpilib="openmpi">
+	<command name="load">openmpi/1.8.3</command>
       </modules>
     </module_system>
     <environment_variables>
