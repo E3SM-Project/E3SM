@@ -112,9 +112,7 @@ class GenericXML:
             item_data = item_data.replace(m.group(), os.environ[env_var])
 
         for m in reference_re.finditer(item_data):
-            ref = m.groups()[0]
-            
-            print self.get_value(ref)
+            ref = self.get_value(m.groups()[0])
             item_data = item_data.replace(m.group(), self.get_resolved_value(ref))
 
         return item_data
