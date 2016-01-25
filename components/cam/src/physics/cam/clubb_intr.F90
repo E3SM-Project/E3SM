@@ -342,6 +342,7 @@ end subroutine clubb_init_cnst
     use stats_variables, only: l_stats, l_output_rad_files
     use mpishorthand
     use model_flags,     only: l_diffuse_rtm_and_thlm, l_stability_correct_Kh_N2_zm
+    use parameters_tunable, only: clubb_param_readnl
 #endif
 
     character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
@@ -423,6 +424,9 @@ end subroutine clubb_init_cnst
       l_stability_correct_Kh_N2_zm = .true.   ! CLUBB flag set to true
     endif
       
+    ! read tunable parameters from namelist, handlings of masterproc vs others
+    ! are done within clubb_param_readnl
+    call clubb_param_readnl(nlfile)
 #endif
   end subroutine clubb_readnl
 
