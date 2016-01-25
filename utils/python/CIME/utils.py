@@ -20,7 +20,7 @@ def expect(condition, error_msg):
     SystemExit: FAIL: error2
     """
     if (not condition):
-        traceback()
+#        traceback()
         raise SystemExit("FAIL: %s" % error_msg)
     
 

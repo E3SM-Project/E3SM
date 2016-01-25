@@ -6,7 +6,7 @@ be used by other XML interface modules and not directly.
 import xml.etree.ElementTree as ET
 import sys, os, logging, re, doctest
 
-from CIME.utils import expect
+from CIME.utils import expect, get_cime_root
 
 class GenericXML:
 
@@ -15,6 +15,8 @@ class GenericXML:
         Initialize an object
         """
         self.tree = None
+        self.lookups = {}
+        self.lookups['CIMEROOT'] = get_cime_root()
         if(infile == None):
             # if file is not defined just return
             self.filename = None
@@ -86,7 +88,8 @@ class GenericXML:
         """
         get_value is expected to be defined by the derived classes, if you get here it is an error.
         """
-        expect(False, "Not implemented")
+        return self.lookups[item] 
+#        expect(False, "Not implemented")
 
     def get_resolved_value(self, raw_value):
         """
@@ -102,7 +105,6 @@ class GenericXML:
         """
         reference_re = re.compile(r'\$(\w+)')
         env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
-
         item_data = raw_value
         for m in env_ref_re.finditer(item_data):
             env_var = m.groups()[0]
@@ -111,6 +113,8 @@ class GenericXML:
 
         for m in reference_re.finditer(item_data):
             ref = m.groups()[0]
+            
+            print self.get_value(ref)
             item_data = item_data.replace(m.group(), self.get_resolved_value(ref))
 
         return item_data

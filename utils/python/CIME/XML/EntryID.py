@@ -65,8 +65,8 @@ class EntryID(GenericXML):
             vid = node.attrib("id")
         else:
             nodes = self.get_node("entry",{"id":vid})
-            if(nodes is None):
-                return
+            if(len(nodes) == 0):
+                return GenericXML.get_value(self,vid)
             node = nodes[0]
 
         if(attribute is not None):
@@ -77,6 +77,11 @@ class EntryID(GenericXML):
             val = node.get("value")
         else:
             val = self.set_default_value(vid)
+
+        if(val is None):
+            print "HERE "+vid
+            val = GenericXML.get_value(self,vid)
+
         return val
 
     def get_values(self,vid,att):
