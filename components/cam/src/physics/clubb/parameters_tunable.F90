@@ -35,7 +35,31 @@ module parameters_tunable
   private
 
   public :: setup_parameters, read_parameters, read_param_spread, &
-            get_parameters, adj_low_res_nu, cleanup_nu
+            get_parameters, adj_low_res_nu, cleanup_nu, clubb_param_readnl
+
+  ! The parameters below have the same meaning as those without prefix 'clubb_'
+  ! They can be specified via namelist to ease parameter tuning
+  ! If adding more parameters for tuning via namelist, need to insert blocks
+  ! accordingly in subroutines read_parameters and clubb_paramm_readnl
+  ! (including updating list of nml variables)
+
+  real( kind = core_rknd ) ::      &
+    clubb_C1,                      &
+    clubb_C2rt,                    &
+    clubb_C6rt,                    &
+    clubb_C6rtb,                   &
+    clubb_C7,                      &
+    clubb_C7b,                     &
+    clubb_C8,                      &
+    clubb_C11,                     &
+    clubb_C11b,                    &
+    clubb_C14,                     &
+    clubb_beta,                    &
+    clubb_gamma_coef,              &
+    clubb_mu,                      &
+    clubb_nu1,                     &
+    clubb_c_K10
+    
 
   ! Model constant parameters
   real( kind = core_rknd ), public :: & 
@@ -273,6 +297,101 @@ module parameters_tunable
 
   contains
 
+  !=============================================================================
+  subroutine clubb_param_readnl(filename)
+
+    ! Description:
+    ! Read clubb tunable parameters from namelist to override preset values
+    ! To be called by clubb_readnl in clubb_intr.F90
+    ! Author: Wuyin Lin
+
+    !-----------------------------------------------------------------------
+    use spmd_utils,      only: masterproc
+    use namelist_utils,  only: find_group_name
+    use units,           only: getunit, freeunit
+    use cam_abortutils,  only: endrun
+    use mpishorthand
+
+    implicit none
+
+    ! Input variables
+
+    character(len=*), intent(in) :: filename
+
+    namelist /clubb_param_nl/      &
+    clubb_C1,                      &
+    clubb_C2rt,                    &
+    clubb_C6rt,                    &
+    clubb_C6rtb,                   &
+    clubb_C7,                      &
+    clubb_C7b,                     &
+    clubb_C8,                      &
+    clubb_C11,                     &
+    clubb_C11b,                    &
+    clubb_C14,                     &
+    clubb_beta,                    &
+    clubb_gamma_coef,              &
+    clubb_mu,                      &
+    clubb_nu1,                     &
+    clubb_c_K10
+
+    integer :: read_status
+    integer :: iunit
+
+    ! ---- Begin Code ----
+
+    ! If clubb_tunables_nl present, read in to replace preset values
+    ! This is made available for tuning 
+     
+    clubb_C1 = init_value
+    clubb_C2rt = init_value
+    clubb_C6rt = init_value
+    clubb_C6rtb = init_value
+    clubb_C7 = init_value
+    clubb_C7b = init_value
+    clubb_C8 = init_value
+    clubb_C11 = init_value
+    clubb_C11b = init_value
+    clubb_C14 = init_value
+    clubb_beta = init_value
+    clubb_gamma_coef = init_value
+    clubb_mu = init_value
+    clubb_nu1 = init_value
+
+    if (masterproc) then
+      iunit = getunit()
+      open( iunit, file=trim(filename), status='old' )
+      call find_group_name(iunit, 'clubb_param_nl', status=read_status)
+      if (read_status == 0) then
+         read(unit=iunit, nml=clubb_param_nl,iostat=read_status)
+         if (read_status /= 0) then
+            call endrun('clubb_param_readnl:  error reading namelist')
+         end if
+      endif
+      close(unit=iunit)
+      call freeunit(iunit)
+    end if
+#ifdef SPMD
+   ! Broadcast namelist variables
+   call mpibcast(clubb_C1,         1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C2rt,       1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C6rt,       1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C6rtb,      1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C7,         1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C7b,        1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C8,         1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C11,        1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C11b,       1, mpir8,  0, mpicom)
+   call mpibcast(clubb_C14,        1, mpir8,  0, mpicom)
+   call mpibcast(clubb_beta,       1, mpir8,  0, mpicom)
+   call mpibcast(clubb_gamma_coef, 1, mpir8,  0, mpicom)
+   call mpibcast(clubb_mu,         1, mpir8,  0, mpicom)
+   call mpibcast(clubb_nu1,        1, mpir8,  0, mpicom)
+   call mpibcast(clubb_c_K10       1, mpir8,  0, mpicom)
+#endif
+
+
+  end subroutine clubb_param_readnl
   !=============================================================================
   subroutine setup_parameters & 
             ( deltaz, params, nzmax, &
@@ -680,6 +799,22 @@ module parameters_tunable
       close(unit=iunit)
 
     end if
+
+    if (clubb_C1 /= init_value) C1 = clubb_C1
+    if (clubb_C2rt /= init_value) C2rt = clubb_C2rt
+    if (clubb_C6rt /= init_value) C6rt = clubb_C6rt
+    if (clubb_C6rtb /= init_value) C6rtb = clubb_C6rtb
+    if (clubb_C7 /= init_value) C7 = clubb_C7
+    if (clubb_C7b /= init_value) C7b = clubb_C7b
+    if (clubb_C8 /= init_value) C8 = clubb_C8
+    if (clubb_C11 /= init_value) C11 = clubb_C11
+    if (clubb_C11b /= init_value) C11b = clubb_C11b
+    if (clubb_C14 /= init_value) C14 = clubb_C14
+    if (clubb_beta /= init_value) beta = clubb_beta
+    if (clubb_gamma_coef /= init_value) gamma_coef = clubb_gamma_coef
+    if (clubb_mu /= init_value) mu = clubb_mu
+    if (clubb_nu1 /= init_value) nu1 = clubb_nu1
+    if (clubb_c_K10 /= init_value) c_K10 = clubb_c_K10
 
     ! Put the variables in the output array
     call pack_parameters( C1, C1b, C1c, C2, C2b, C2c, C2rt, C2thl, C2rtthl, &

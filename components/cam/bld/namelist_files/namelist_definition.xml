@@ -2803,6 +2803,97 @@ Background coefficient of eddy diffusion
 Default: 20.0
 </entry>
 
+<!-- Parameters to indirectly control clubb tunable parameters-->
+
+<entry id="clubb_C1" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Constant associated with the dissipation of the variance of vertical velocity
+Default: 1.0. See clubb/parameters_tunable.F90
+</entry>
+
+<entry id="clubb_C2rt" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Constant associated with the dissipation of the variance of total water
+Default: 1.0
+</entry>
+
+<entry id="clubb_C6rt" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Low skewness of Newtonian damping of water flux
+Default: 4.0
+</entry>
+
+<entry id="clubb_C6rtb" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+High skewness of Newtonian damping of water flux
+Default: 6.0
+</entry>
+
+<entry id="clubb_C7" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Low skewness of buoyancy damping of water flux
+Default: 0.5
+</entry>
+
+<entry id="clubb_C7b" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+High skewness of buoyancy damping of water flux
+Default: 0.5
+</entry>
+
+<entry id="clubb_C8" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Constant associated with Newtonian damping of the third moment of vertical velocity
+Default: 4.2
+</entry>
+
+<entry id="clubb_C11" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Low skewnes of buoyancy damping of the third moment of vertical velocity
+Default: 0.7
+</entry>
+
+<entry id="clubb_C11b" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+High skewnes of buoyancy damping of the third moment of vertical velocity
+Default: 0.35
+</entry>
+
+<entry id="clubb_C14" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Constant of Newtonian damping of the variances of u-wind and v-wind
+Default: 1.0
+</entry>
+
+<entry id="clubb_beta" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Constant related to skewness of liquid water potential temperature and total water
+Default: 2.4
+</entry>
+
+<entry id="clubb_gamma_coef" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Constant of the width of PDF in w-coordinate
+Default: 0.32
+</entry>
+
+<entry id="clubb_mu" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Fractional parcel entrainment rate per unit height (1/m)
+Default: 0.001
+</entry>
+
+<entry id="clubb_nu1" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Background coefficient of eddy diffusion
+Default: 20.0
+
+<entry id="clubb_c_K10" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Coefficient of Kh_zm
+Default: 0.60
+</entry>
+
 <!-- CARMA Sectional Microphysics -->
 
 <entry id="carma_model" type="char*32" category="carma"
