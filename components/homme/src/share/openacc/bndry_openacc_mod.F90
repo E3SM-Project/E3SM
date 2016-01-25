@@ -29,6 +29,7 @@ module bndry_openacc_mod
 
   public :: bndry_exchangeS_simple_overlap
   public :: bndry_exchangeV_simple_overlap
+  public :: bndry_exchangeV_timing
   public :: bndry_exchangeV_finer_overlap
 
 contains
@@ -158,6 +159,117 @@ contains
     endif  ! if (hybrid%ithr == 0)
     !$OMP BARRIER
   end subroutine bndry_exchangeS_simple_overlap
+
+  subroutine bndry_exchangeV_timing(hybrid,buffer)
+    use hybrid_mod       , only : hybrid_t
+    use kinds            , only : log_kind
+    use edgetype_mod     , only : Edgebuffer_t
+    use schedtype_mod    , only : schedule_t, cycle_t, schedule
+    use parallel_mod     , only : abortmp, status, srequest, rrequest, mpireal_t, mpiinteger_t, mpi_success
+    use mpi              , only : MPI_REQUEST_NULL
+    use openacc_utils_mod, only : update_host_async, update_device_async, copy_ondev_async, acc_async_test_wrap
+    use perf_mod         , only : t_startf, t_stopf
+    implicit none
+    type (hybrid_t)           :: hybrid
+    type (EdgeBuffer_t)       :: buffer
+    type (Schedule_t),pointer :: pSchedule
+    type (Cycle_t),pointer    :: pCycle
+    integer                   :: dest,length,tag
+    integer                   :: icycle,ierr
+    integer                   :: iptr,source,nlyr
+    integer                   :: nSendCycles,nRecvCycles
+    integer                   :: errorcode,errorlen
+    character*(80) errorstring
+    integer        :: i
+    integer :: nUpdateHost, nSendComp, nRecvComp, nUpdateDev
+    logical :: updateHost(maxCycles), sendComp(maxCycles), recvComp(maxCycles), updateDev(maxCycles)
+    logical :: mpiflag
+    integer :: ithr
+    !$OMP BARRIER
+    if(hybrid%ithr == 0) then 
+      !$acc wait
+      call t_startf('bndry_timing')
+      pSchedule => Schedule(1)
+      nlyr = buffer%nlyr
+      nSendCycles = pSchedule%nSendCycles
+      nRecvCycles = pSchedule%nRecvCycles
+      if (max(nRecvCycles,nSendCycles) > maxCycles) then
+        write(*,*) 'ERROR: Must increase maxCycles'
+        stop
+      endif
+      nUpdateHost = 0
+      nSendComp   = 0
+      nRecvComp   = 0
+      nUpdateDev  = 0
+      updateHost(1:nSendCycles) = .false.
+      sendComp  (1:nSendCycles) = .false.
+      recvComp  (1:nRecvCycles) = .false.
+      updateDev (1:nRecvCycles) = .false.
+      Srequest(:) = MPI_REQUEST_NULL
+      Rrequest(:) = MPI_REQUEST_NULL
+      !==================================================
+      !  Post the Receives 
+      !==================================================
+      do icycle=1,nRecvCycles
+        pCycle => pSchedule%RecvCycle(icycle)
+        source =  pCycle%source - 1
+        length =  nlyr * pCycle%lengthP
+        tag    =  pCycle%tag
+        iptr   =  pCycle%ptrP
+        call MPI_Irecv(buffer%receive(1+nlyr*(iptr-1)),length,MPIreal_t,source,tag,hybrid%par%comm,Rrequest(icycle),ierr)
+        if(ierr .ne. MPI_SUCCESS) then
+          errorcode=ierr
+          call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
+          print *,'bndry_exchangeV: Error after call to MPI_Irecv: ',errorstring
+        endif
+      enddo    ! icycle
+
+      !Copy internal data to receive buffer
+      call t_startf('bndry_timing_internal_on_dev_copy')
+      do ithr = 1 , hybrid%NThreads
+        iptr   = buffer%moveptr(ithr)
+        length = buffer%moveLength(ithr)
+        if(length>0) call copy_ondev_async(buffer%receive(iptr),buffer%buf(iptr),length,1)
+      enddo
+      !$acc wait(1)
+      call t_stopf('bndry_timing_internal_on_dev_copy')
+
+      !Launch PCI-e copies
+      call t_startf('bndry_timing_pcie_d2h')
+      do icycle = 1 , nSendCycles
+        pCycle => pSchedule%SendCycle(icycle)
+        iptr   =  pCycle%ptrP
+        if (pCycle%lengthP > 0) call update_host_async(buffer%buf(1+nlyr*(iptr-1)),nlyr*pCycle%lengthP,1)
+      enddo
+      !$acc wait(1)
+      call t_stopf('bndry_timing_pcie_d2h')
+
+      do icycle = 1 , nSendCycles
+        pCycle => pSchedule%SendCycle(icycle)
+        dest   =  pCycle%dest - 1
+        length =  nlyr * pCycle%lengthP
+        tag    =  pCycle%tag
+        iptr   =  pCycle%ptrP
+        call MPI_Isend(buffer%buf(1+nlyr*(iptr-1)),length,MPIreal_t,dest,tag,hybrid%par%comm,Srequest(icycle),ierr)
+      enddo
+
+      call MPI_Waitall(nSendCycles,Srequest,status,ierr)
+      call MPI_Waitall(nRecvCycles,Rrequest,status,ierr)
+
+      call t_startf('bndry_timing_pcie_h2d')
+      do icycle = 1 , nRecvCycles
+        pCycle => pSchedule%RecvCycle(icycle)
+        iptr   =  pCycle%ptrP
+        call update_device_async(buffer%receive(1+nlyr*(iptr-1)),nlyr*pCycle%lengthP,1)
+        recvComp(icycle) = .true.
+        nRecvComp = nRecvComp + 1
+      enddo
+      !$acc wait(1)
+      call t_stopf('bndry_timing_pcie_h2d')
+      call t_stopf('bndry_timing')
+    endif  ! if (hybrid%ithr == 0)
+    !$OMP BARRIER
+  end subroutine bndry_exchangeV_timing
 
   subroutine bndry_exchangeV_simple_overlap(hybrid,buffer)
     use hybrid_mod       , only : hybrid_t
