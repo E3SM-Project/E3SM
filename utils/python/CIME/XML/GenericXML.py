@@ -6,11 +6,7 @@ be used by other XML interface modules and not directly.
 import xml.etree.ElementTree as ET
 import sys, os, logging, re, doctest
 
-_LIB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
-sys.path.append(_LIB_DIR)
-
-import cime_util
-from cime_util import expect
+from CIME.utils import expect
 
 class GenericXML:
 

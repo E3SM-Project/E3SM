@@ -15,7 +15,7 @@ class EntryID(GenericXML):
     def __init__(self, infile=None):
         GenericXML.__init__(self,infile)
         
-    def SetDefaultValue(self, vid, attributes=None):
+    def set_default_value(self, vid, attributes=None):
         """ Set the value of an entry to the default value for that entry
         vid can be an xml node pointer or a string identifier of a node """
         value = None
@@ -23,12 +23,12 @@ class EntryID(GenericXML):
             node = vid
             vid = node.attrib("id")
         else:
-            nodes = self.GetNode("entry",{"id":vid})
+            nodes = self.get_node("entry",{"id":vid})
             if(nodes is None):
                 return
             expect(len(nodes) == 1,"More than one match found for id " + vid)
             node = nodes[0]
-        valnodes = self.GetNode("value",root=node)
+        valnodes = self.get_node("value",root=node)
         if(valnodes is not None):
             for valnode in valnodes:
                 for att in valnode.attributes:
@@ -37,18 +37,18 @@ class EntryID(GenericXML):
                             value = valnode.text
                             logging.info("id %s value %s" % (vid, valnode.text))
         if(value is None):
-            value = self.GetNode("default_value",root=node)
+            value = self.get_node("default_value",root=node)
         if(value is not None):
             node.set("value",value)
         return value[0].text
 
-    def SetValue(self, vid, value):
+    def set_value(self, vid, value):
         val = None
         if(type(vid) != type(str())):
             node = vid
             vid = node.attrib("id")
         else:
-            nodes = self.GetNode("entry",{"id":vid})
+            nodes = self.get_node("entry",{"id":vid})
             if(nodes is None):
                 return
             expect(len(nodes) == 0,"More than one match found for id " + vid)
@@ -58,38 +58,38 @@ class EntryID(GenericXML):
             node.set("value",value)
         return val
 
-    def GetValue(self, vid, attribute=None):
+    def get_value(self, vid, attribute=None):
         val = None
         if(type(vid) != type(str())):
             node = vid
             vid = node.attrib("id")
         else:
-            nodes = self.GetNode("entry",{"id":vid})
+            nodes = self.get_node("entry",{"id":vid})
             if(nodes is None):
                 return
             node = nodes[0]
 
         if(attribute is not None):
-            valnodes = self.GetNode("value",attribute)
+            valnodes = self.get_node("value",attribute)
             if(valnodes is not None and len(valnodes) == 1):
                 val = valnodes[0].text
         elif(node.get("value") is not None):
             val = node.get("value")
         else:
-            val = self.SetDefaultValue(vid)
+            val = self.set_default_value(vid)
         return val
 
-    def GetValues(self,vid,att):
+    def get_values(self,vid,att):
         values = {}
         if(type(vid) != type(str())):
             node = vid
             vid = node.attrib("id")
         else:
-            nodes = self.GetNode("entry",{"id":vid})
+            nodes = self.get_node("entry",{"id":vid})
             if(nodes is None):
                 return
             node = nodes[0]
-        valnodes = self.GetNode("value",node=node)
+        valnodes = self.get_node("value",node=node)
         if(valnodes is not None):
             for valnode in valnodes:
                 vatt = valnode.attrib(att)

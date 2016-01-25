@@ -4,7 +4,8 @@ Common functions used by cime python scripts
 
 import sys, socket, re, os, time
 from CIME.utils import expect, get_cime_root, get_model, set_model
-
+from CIME.XML.Files import Files
+from CIME.XML.Machines import Machines
 
 _VERBOSE = False
 _MACHINE_INFO = None
@@ -241,8 +242,11 @@ def probe_machine_name():
     hostname = socket.gethostname().split(".")[0]
 
     machines = get_machines()
+    print machines
     for machine in machines:
-        regex_str = get_machine_info("NODENAME_REGEX", machine=machine)
+        regex_str = _MACHINE_INFO.GetValue("NODENAME_REGEX")
+#        regex_str = get_machine_info("NODENAME_REGEX", machine=machine)
+        print regex_str
         if (regex_str):
             regex = re.compile(regex_str)
             if (regex.match(hostname)):
@@ -441,7 +445,8 @@ def find_proc_id(proc_name=None,
 ###############################################################################
 def get_batch_system(machine=None):
 ###############################################################################
-    return get_machine_info("BATCH_SYSTEM", machine=machine)
+    return _MACHINE_INFO.GetValue("BATCH_SYSTEM")
+#    return get_machine_info("BATCH_SYSTEM", machine=machine)
 
 ###############################################################################
 def get_my_queued_jobs():
@@ -474,39 +479,14 @@ def delete_jobs(jobs):
 def parse_config_machines():
 ###############################################################################
     """
+    Moving toward an object oriented model, replace _MACHINE_INFO dict with an object of class Machines
     """
     global _MACHINE_INFO
     if (_MACHINE_INFO is None):
-        _MACHINE_INFO = {}
-        import xml.etree.ElementTree as ET
-        config_machines_xml = os.path.join(get_model_config_root(), "machines", "config_machines.xml")
-        tree = ET.parse(config_machines_xml)
-        root = tree.getroot()
-        expect(root.tag == "config_machines",
-               "The given XML file is not a valid list of machine configurations.")
+        files = Files()
+        config_machines = files.GetResolvedValue(files.GetValue('MACHINES_SPEC_FILE'))
+        _MACHINE_INFO = Machines(config_machines)
 
-        # Each child of this root is a machine entry.
-        for machine in root:
-            if (machine.tag == "machine"):
-                expect("MACH" in machine.attrib, "Invalid machine entry found for machine '%s'" % machine)
-                mach_name = machine.attrib["MACH"]
-                expect(mach_name not in _MACHINE_INFO, "Duplicate machine entry '%s'" % mach_name)
-                data = {}
-                for item in machine:
-                    item_data = "" if item.text is None else item.text.strip()
-                    if (item.tag in ["COMPILERS", "MPILIBS"]):
-                        item_data = [strip_item.strip() for strip_item in item_data.split(",")]
-                    elif(item.tag == "batch_system"):
-                        item_data = item.attrib["type"]
-
-                    data[item.tag.upper()] = item_data
-
-                _MACHINE_INFO[mach_name] = data
-            elif(machine.tag == "default_run_suffix"):
-                #ignore this
-                do_nothing = 1
-            else:
-                warning("Ignoring unrecognized tag: '%s'" % machine.tag)
 
 ###############################################################################
 def get_machine_info(items, machine=None, user=None, project=None, case=None, raw=False):
@@ -535,58 +515,15 @@ def get_machine_info(items, machine=None, user=None, project=None, case=None, ra
 
     import getpass
     user = getpass.getuser() if user is None else user
-
+                              
     if (machine is None):
         machine = probe_machine_name()
+
     expect(machine is not None, "Failed to probe machine. Please provide machine to whatever script you just ran")
-    expect(machine in _MACHINE_INFO, "No info for machine '%s'" % machine)
+    _MACHINE_INFO.set_machine(machine)
 
-    if (isinstance(items, str)):
-        items = [items]
 
-    rv = []
-    if (raw):
-        for item in items:
-            rv.append(_MACHINE_INFO[machine][item])
-    else:
-        reference_re = re.compile(r'\$(\w+)')
-        env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
-        for item in items:
-            item_data = _MACHINE_INFO[machine][item] if item in _MACHINE_INFO[machine] else None
-            if (isinstance(item_data, str)):
-                for m in env_ref_re.finditer(item_data):
-                    env_var = m.groups()[0]
-                    expect(env_var in os.environ,
-                           "Field '%s' for machine '%s' refers to undefined env var '%s'" % (item, machine, env_var))
-                    item_data = item_data.replace(m.group(), os.environ[env_var])
 
-                for m in reference_re.finditer(item_data):
-                    ref = m.groups()[0]
-                    if (ref in _MACHINE_INFO[machine]):
-                        item_data = item_data.replace(m.group(), get_machine_info(ref, machine=machine, user=user, project=project))
-
-                item_data = item_data.replace("$USER", user)
-                # Need extra logic to handle case where user string was brought in from env ($HOME)
-                if (user != getpass.getuser()):
-                    item_data = item_data.replace(getpass.getuser(), user, 1)
-
-                if ("$PROJECT" in item_data):
-                    project = get_machine_project(machine=machine) if project is None else project
-                    expect(project is not None, "Cannot evaluate '%s' without project information" % item)
-                    item_data = item_data.replace("$PROJECT", project)
-
-                # $CASE is another special case, it can only be provided by user
-                # TODO: It actually comes from one of the env xml files
-                if ("$CASE" in item_data):
-                    expect(case is not None, "Data for '%s' required case information but none provided" % item)
-                    item_data = item_data.replace("$CASE", case)
-
-            rv.append(item_data)
-
-    if (len(rv) == 1):
-        return rv[0]
-    else:
-        return rv
 
 ###############################################################################
 def get_machines():
@@ -595,7 +532,8 @@ def get_machines():
     Return all machines defined by the config_machines.xml
     """
     parse_config_machines()
-    return _MACHINE_INFO.keys()
+    
+    return _MACHINE_INFO.list_available_machines()
 
 ###############################################################################
 def get_machine_project(machine=None):
@@ -628,7 +566,8 @@ def does_machine_have_batch(machine=None):
     >>> does_machine_have_batch("skybridge")
     True
     """
-    batch_system = get_machine_info("BATCH_SYSTEM", machine=machine)
+#    batch_system = get_machine_info("BATCH_SYSTEM", machine=machine)
+    batch_system = _MACHINE_INFO.GetValue("BATCH_SYSTEM")
     return not (batch_system is None or batch_system == "none")
 
 ###############################################################################

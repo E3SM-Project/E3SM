@@ -8,13 +8,15 @@ from CIME.utils import expect
 class Machines(GenericXML):
     def __init__(self,infile):
         """ initialize an object """
-        logging.info("Open file "+infile)
+        logging.warn("Open file "+infile)
         self.machine = None
         GenericXML.__init__(self,infile)
     
     def list_available_machines(self):
         machines = []
         nodes  = self.GetNode('machine')
+        print "nodes  %d" % len(nodes)
+
         for node in nodes:
             mach = node.attrib["MACH"]
             machines.append(mach)
