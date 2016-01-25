@@ -687,7 +687,7 @@ add_default($nl, 'profile_single_file', 'val'=>'.true.');
 
 #BSINGH -  Get the value of RAIN_EVAP_TO_COARSE_AERO variable
 my $rain_evap_to_coarse_aero  = $cfg->get('rain_evap_to_coarse_aero'); #BSINGH - See if rain_evap_to_coarse_aero option is selected
-if ($print>=1) { print "Running model with rain_evap_to_coarse_aero (1-YES, 0-NO)?: $rain_evap_to_coarse_aero $eol"; }
+if ($print>=2) { print "Running model with rain_evap_to_coarse_aero (1-YES, 0-NO)?: $rain_evap_to_coarse_aero $eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Add defaults for the CAM component 
