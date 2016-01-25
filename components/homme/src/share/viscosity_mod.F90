@@ -24,6 +24,7 @@ use edge_mod, only : edgevpack, edgerotate, edgevunpack, edgevunpackmin, &
 
 use bndry_mod, only : bndry_exchangev, bndry_exchangeS, bndry_exchangeS_start,bndry_exchangeS_finish
 use control_mod, only : hypervis_scaling, nu, nu_div
+use perf_mod, only: t_startf, t_stopf
 
 implicit none
 save
@@ -157,7 +158,9 @@ logical var_coef1
 #endif
    enddo
    
+   call t_startf('biwk_bexchV')
    call bndry_exchangeV(hybrid,edge3)
+   call t_stopf('biwk_bexchV')
    
    do ie=nets,nete
       rspheremv     => elem(ie)%rspheremp(:,:)
@@ -278,7 +281,9 @@ logical var_coef1
 
    enddo
    
+   call t_startf('biwkdp3d_bexchV')
    call bndry_exchangeV(hybrid,edge3)
+   call t_stopf('biwkdp3d_bexchV')
    
    do ie=nets,nete
       rspheremv     => elem(ie)%rspheremp(:,:)
@@ -364,7 +369,9 @@ logical var_coef1
       enddo
    enddo
 
+   call t_startf('biwksc_bexchV')
    call bndry_exchangeV(hybrid,edgeq)
+   call t_stopf('biwksc_bexchV')
    
    do ie=nets,nete
 
@@ -439,7 +446,9 @@ logical var_coef1
       call edgeVpack(edgeq,Qmax,nlev*qsize,2*nlev*qsize,ie)
    enddo
    
+   call t_startf('biwkscmm_bexchV')
    call bndry_exchangeV(hybrid,edgeq)
+   call t_stopf('biwkscmm_bexchV')
    
    do ie=nets,nete
       do q=1,qsize      
@@ -531,7 +540,11 @@ do ie=nets,nete
    kptr=0
    call edgeVpack(edge1, zeta(1,1,1,ie),nlev,kptr,ie)
 enddo
+
+call t_startf('makeC02d_bexchV')
 call bndry_exchangeV(hybrid,edge1)
+call t_stopf('makeC02d_bexchV')
+
 do ie=nets,nete
    kptr=0
    call edgeVunpack(edge1, zeta(1,1,1,ie),nlev,kptr, ie)
@@ -809,7 +822,9 @@ subroutine neighbor_minmax(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
       call  edgeSpack(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,ie)
    enddo
    
+   call t_startf('nmm_bexchV')
    call bndry_exchangeS(hybrid,edgeMinMax)
+   call t_stopf('nmm_bexchV')
 
    do ie=nets,nete
       kptr = 0
@@ -844,7 +859,9 @@ subroutine neighbor_minmax_start(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh
       call  edgeSpack(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,ie)
    enddo
 
+   call t_startf('nmm_bexchS_start')
    call bndry_exchangeS_start(hybrid,edgeMinMax)
+   call t_stopf('nmm_bexchS_start')
 
 end subroutine neighbor_minmax_start
 subroutine neighbor_minmax_finish(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
@@ -858,7 +875,9 @@ subroutine neighbor_minmax_finish(hybrid,edgeMinMax,nets,nete,min_neigh,max_neig
    ! local 
    integer :: ie,q, k,kptr
 
+   call t_startf('nmm_bexchS_fini')
    call bndry_exchangeS_finish(hybrid,edgeMinMax)
+   call t_stopf('nmm_bexchS_fini')
 
    do ie=nets,nete
       kptr = 0
@@ -932,7 +951,9 @@ integer :: ie,k,q
        call edgeVpack(edgebuf,Qvar,nlev,2*nlev,ie)
     enddo
     
+    call t_startf('nmm_bexchV')
     call bndry_exchangeV(hybrid,edgebuf)
+    call t_stopf('nmm_bexchV')
        
     do ie=nets,nete
 #if (defined COLUMN_OPENMP)

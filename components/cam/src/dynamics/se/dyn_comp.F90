@@ -392,8 +392,10 @@ CONTAINS
 
        do n=1,se_nsplit
           ! forward-in-time RK, with subcycling
+          call t_startf("prim_run_sybcycle")
           call prim_run_subcycle(dyn_state%elem,dyn_state%fvm,hybrid,nets,nete,&
                tstep, TimeLevel, hvcoord, n)
+          call t_stopf("prim_run_sybcycle")
        end do
 
 

@@ -95,6 +95,7 @@ use error_messages, only: handle_errmsg
 use ref_pres,       only: top_lev=>trop_cloud_top_lev
 
 use subcol_utils,   only: subcol_get_scheme
+use perf_mod,       only: t_startf, t_stopf
 
 implicit none
 private
@@ -1519,6 +1520,8 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
 
    !-------------------------------------------------------------------------------
 
+   call t_startf('micro_mg_cam_tend_init')
+
    ! Find the number of levels used in the microphysics.
    nlev  = pver - top_lev + 1
 
@@ -2010,7 +2013,9 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       allocate(packed_qs(mgncol,nlev))
       allocate(packed_ns(mgncol,nlev))
    end if
+   call t_stopf('micro_mg_cam_tend_init')
 
+   call t_startf('micro_mg_cam_tend_loop')
    do it = 1, num_steps
 
       ! Pack input variables that are updated during substeps.
@@ -2032,6 +2037,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
          select case (micro_mg_sub_version)
          case (0)
 
+            call t_startf('micro_mg_tend1')
             call micro_mg_tend1_0( &
                  microp_uniform, mgncol, nlev, mgncol, 1, dtime/num_steps, &
                  packed_t, packed_q, packed_qc, packed_qi, packed_nc,     &
@@ -2056,9 +2062,11 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
                  packed_nfice, packed_prer_evap, do_cldice, errstring,                      &
 		 packed_tnd_qsnow, packed_tnd_nsnow, packed_re_ice,             &
                  packed_frzimm, packed_frzcnt, packed_frzdep)
+            call t_stopf('micro_mg_tend1')
 
          case (5)
 
+            call t_startf('micro_mg_tend1_5')
             call micro_mg_tend1_5( &
                  mgncol,   nlev,     dtime/num_steps,    &
                  packed_t,       packed_q,                     &
@@ -2085,12 +2093,14 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
                  errstring, &
                  packed_tnd_qsnow,          packed_tnd_nsnow,          packed_re_ice, packed_prer_evap,             &
                  packed_frzimm, packed_frzcnt, packed_frzdep)
+            call t_stopf('micro_mg_tend1_5')
 
          end select
       case(2)
          select case (micro_mg_sub_version)
          case (0)
 
+            call t_startf('micro_mg_tend2')
             call micro_mg_tend2_0( &
                  mgncol,         nlev,           dtime/num_steps,&
                  packed_t,               packed_q,               &
@@ -2144,6 +2154,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
                  packed_tnd_qsnow,packed_tnd_nsnow,packed_re_ice,&
 		 packed_prer_evap,                                     &
                  packed_frzimm,  packed_frzcnt,  packed_frzdep   )
+            call t_stopf('micro_mg_tend2')
          end select
       end select
 
@@ -2189,7 +2200,9 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       call post_proc%accumulate()
 
    end do
+   call t_stopf('micro_mg_cam_tend_loop')
 
+   call t_startf('micro_mg_cam_tend_fini')
    ! Divide ptend by substeps.
    call physics_ptend_scale(ptend, 1._r8/num_steps, ncol)
 
@@ -2976,6 +2989,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
 
    ! ptend_loc is deallocated in physics_update above
    call physics_state_dealloc(state_loc)
+   call t_stopf('micro_mg_cam_tend_fini')
 
 end subroutine micro_mg_cam_tend
 
