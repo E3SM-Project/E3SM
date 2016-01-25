@@ -41,6 +41,7 @@ module parameters_tunable
   ! They can be specified via namelist to ease parameter tuning
   ! If adding more parameters for tuning via namelist, need to insert blocks
   ! accordingly in subroutines read_parameters and clubb_paramm_readnl
+  ! (including updating list of nml variables)
 
   real( kind = core_rknd ) ::      &
     clubb_C1,                      &
@@ -56,7 +57,8 @@ module parameters_tunable
     clubb_beta,                    &
     clubb_gamma_coef,              &
     clubb_mu,                      &
-    clubb_nu1
+    clubb_nu1,                     &
+    clubb_c_K10
     
 
   ! Model constant parameters
@@ -316,7 +318,22 @@ module parameters_tunable
 
     character(len=*), intent(in) :: filename
 
-    namelist /clubb_param_nl/ clubb_C2rt, clubb_gamma_coef
+    namelist /clubb_param_nl/      &
+    clubb_C1,                      &
+    clubb_C2rt,                    &
+    clubb_C6rt,                    &
+    clubb_C6rtb,                   &
+    clubb_C7,                      &
+    clubb_C7b,                     &
+    clubb_C8,                      &
+    clubb_C11,                     &
+    clubb_C11b,                    &
+    clubb_C14,                     &
+    clubb_beta,                    &
+    clubb_gamma_coef,              &
+    clubb_mu,                      &
+    clubb_nu1,                     &
+    clubb_c_K10
 
     integer :: read_status
     integer :: iunit
@@ -370,6 +387,7 @@ module parameters_tunable
    call mpibcast(clubb_gamma_coef, 1, mpir8,  0, mpicom)
    call mpibcast(clubb_mu,         1, mpir8,  0, mpicom)
    call mpibcast(clubb_nu1,        1, mpir8,  0, mpicom)
+   call mpibcast(clubb_c_K10       1, mpir8,  0, mpicom)
 #endif
 
 
@@ -796,6 +814,7 @@ module parameters_tunable
     if (clubb_gamma_coef /= init_value) gamma_coef = clubb_gamma_coef
     if (clubb_mu /= init_value) mu = clubb_mu
     if (clubb_nu1 /= init_value) nu1 = clubb_nu1
+    if (clubb_c_K10 /= init_value) c_K10 = clubb_c_K10
 
     ! Put the variables in the output array
     call pack_parameters( C1, C1b, C1c, C2, C2b, C2c, C2rt, C2thl, C2rtthl, &
