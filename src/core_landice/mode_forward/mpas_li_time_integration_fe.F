@@ -28,7 +28,7 @@ module li_time_integration_fe
    use mpas_timer
    use mpas_vector_reconstruction
    use li_velocity, only: li_velocity_solve
-   use li_tendency
+   use li_advection
    use li_calving, only: li_calve_ice, li_restore_calving_front
    use li_thermal, only: li_thermal_solver
    use li_diagnostic_vars
@@ -79,11 +79,13 @@ module li_time_integration_fe
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
-      real (kind=RKIND), intent(in) :: deltat  !< Input: time step
 
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
+
+      real (kind=RKIND), intent(inout) :: deltat  !< Input/output: time step
+
       type (domain_type), intent(inout) :: &
          domain          !< Input/Output: domain object 
 
@@ -110,6 +112,12 @@ module li_time_integration_fe
 
 !!!      procVertexMaskChanged = 0
 
+! === Prepare for advection (including CFL checks) ===========
+
+      call mpas_timer_start("advection prep")
+      call prepare_advection(domain, deltat, err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_timer_stop("advection prep")
 
 ! === Implicit column physics (vertical temperature diffusion) ===========
       call mpas_timer_start("calculate vertical therm")
@@ -117,18 +125,11 @@ module li_time_integration_fe
       err = ior(err, err_tmp)
       call mpas_timer_stop("calculate vertical therm")
 
-! === Calculate tendencies ========================
-      call mpas_timer_start("calculate tendencies")
-      call calculate_tendencies(domain, deltat, err_tmp)
-      err = ior(err, err_tmp)
-      call mpas_timer_stop("calculate tendencies")
-
 ! === Compute new state for prognostic variables ==================================
-! (once implicit column physics are added (i.e. temp diffusion), these calculations will need to be adjusted to apply to the new values as needed)
-      call mpas_timer_start("calc. new prognostic vars")
-      call update_prognostics(domain, deltat, err_tmp)
+      call mpas_timer_start("advect thickness and tracers")
+      call advection_solver(domain, deltat, err_tmp)
       err = ior(err, err_tmp)
-      call mpas_timer_stop("calc. new prognostic vars")
+      call mpas_timer_stop("advect thickness and tracers")
 
 ! === Calve ice ========================                                                                                                                                             
       call mpas_timer_start("calve_ice")
@@ -177,32 +178,37 @@ module li_time_integration_fe
 !***********************************************************************
 !***********************************************************************
 
-
 !***********************************************************************
 !
-!  routine calculate_tendencies
+!  routine prepare_advection
 !
-!> \brief   Calculates tendencies 
-!> \author  Matthew Hoffman
-!> \date    12 September 2013
+!> \brief   Preparation for advection, including CFL diagnostics
+!> \author  Matthew Hoffman and William Lipscomb
+!> \date    January 2016
 !> \details
-!>  This routine calculates tendencies of thickness (and optionally tracers)
-!>  to use with the Forward Euler time integrator.
-!
+!>  This routine does preparatory calculations for advection of thickness
+!>  and tracers:
+!>  (1) Compute layer normal velocities.
+!>  (2) Compute the advective CFL limit (and optionally, the diffusive CFL limit).
+!>  (3) If config_adaptive_timestep = .true., then set dtSeconds based on CFL info.
+!>   These calculations were previously done at the same time as advection, but
+!>   now are done at the start of the timestep to support an adaptive time step.
 !-----------------------------------------------------------------------
 
-   subroutine calculate_tendencies(domain, dtSeconds, err)
+   subroutine prepare_advection(domain, dtSeconds, err)
 
       use mpas_timekeeping
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
-      real (kind=RKIND) :: dtSeconds
 
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
+
+      real (kind=RKIND), intent(inout) :: dtSeconds  !< Input/output: time step
+
       type (domain_type), intent(inout) :: domain  !< Input/Output: domain object
 
       !-----------------------------------------------------------------
@@ -219,38 +225,59 @@ module li_time_integration_fe
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: velocityPool
       type (mpas_pool_type), pointer :: geometryPool
-      type (mpas_pool_type), pointer :: thermalPool
-      type (mpas_pool_type), pointer :: tendencyPool
       type (mpas_pool_type), pointer :: scratchPool
 
-      real (kind=RKIND), dimension(:,:), pointer :: layerThicknessTendency
-      type (field2DReal), pointer :: layerThicknessTendencyField
+      type (field2DReal), pointer :: layerNormalVelocityField
 
-      type (field2DReal), pointer :: layerThicknessField
-      type (field2DReal), pointer :: layerThicknessEdgeField
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
+      real (kind=RKIND), dimension(:,:), pointer :: layerNormalVelocity
 
-      character (len=StrKIND), pointer :: config_thickness_advection
-      character (len=StrKIND), pointer :: config_tracer_advection
       logical, pointer :: config_print_thickness_advection_info
       logical, pointer :: config_adaptive_timestep
       logical, pointer :: config_adaptive_timestep_include_DCFL
 
-      integer :: allowableAdvecDtProcNumberHere, allowableAdvecDtProcNumber
-      real (kind=RKIND) :: allowableAdvecDt, allowableAdvecDtOnProc, allowableAdvecDtAllProcs
-      type (MPAS_TimeInterval_type) :: allowableAdvecDtOnProcInterval, allowableAdvecDtAllProcsInterval
-      character (len=StrKIND) :: allowableAdvecDtOnProcString, allowableAdvecDtAllProcsString
-      integer :: allowableDiffDtProcNumberHere,  allowableDiffDtProcNumber  
-      real (kind=RKIND) :: allowableDiffDt, allowableDiffDtOnProc, allowableDiffDtAllProcs
-      type (MPAS_TimeInterval_type) :: allowableDiffDtOnProcInterval, allowableDiffDtAllProcsInterval
-      character (len=StrKIND) :: allowableDiffDtOnProcString, allowableDiffDtAllProcsString
-      real (kind=RKIND), pointer :: allowableDtACFL, allowableDtDCFL
+      integer :: &
+           allowableAdvecDtProcNumberHere, &
+           allowableAdvecDtProcNumber
+
+      real (kind=RKIND) :: &
+           allowableAdvecDt, &
+           allowableAdvecDtOnProc, &
+           allowableAdvecDtAllProcs
+
+      type (MPAS_TimeInterval_type) :: &
+           allowableAdvecDtOnProcInterval, &
+           allowableAdvecDtAllProcsInterval
+
+      character (len=StrKIND) :: &
+           allowableAdvecDtOnProcString, &
+           allowableAdvecDtAllProcsString
+
+      integer :: &
+           allowableDiffDtProcNumberHere, &
+           allowableDiffDtProcNumber  
+
+      real (kind=RKIND) :: &
+           allowableDiffDt, &
+           allowableDiffDtOnProc, &
+           allowableDiffDtAllProcs
+
+      type (MPAS_TimeInterval_type) :: &
+           allowableDiffDtOnProcInterval, &
+           allowableDiffDtAllProcsInterval
+
+      character (len=StrKIND) :: &
+           allowableDiffDtOnProcString, &
+           allowableDiffDtAllProcsString
+
+      real (kind=RKIND), pointer :: &
+           allowableDtACFL, &
+           allowableDtDCFL
 
       integer :: err_tmp
 
       err = 0
 
-      call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
-      call mpas_pool_get_config(liConfigs, 'config_tracer_advection', config_tracer_advection)
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep', config_adaptive_timestep)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
@@ -260,72 +287,35 @@ module li_time_integration_fe
 
       dminfo => domain % dminfo
 
-      ! Halo updates
-      ! Note: The layer thickness and tracers must be up to date in halos before calling the advection subroutines.
-      !       Currently (Nov. 2015), layerThicknessEdge (which is used by subroutine li_tendency_thickness) is updated 
-      !        at the end of subroutine li_calculate_diagnostic_vars.
-      !       The thermal tracers (temperature, waterfrac, enthalpy) are updated at the end of li_thermal_solver.
-      !       But layerThickness (which is used by subroutine li_tendency_thickness_tracers) needs an update here.
-      !   
-      call mpas_timer_start("halo updates")
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
-      call mpas_pool_get_field(geometryPool, 'layerThickness', layerThicknessField)
-      call mpas_dmpar_exch_halo_field(layerThicknessField)
-      call mpas_timer_stop("halo updates")
+      ! Initialize
 
-      ! ===
-      ! === Thickness and tracer tendencies
-      ! ===
+      err = 0
+
       allowableAdvecDtOnProc = 1.0e36 ! set to large number
       allowableDiffDtOnProc = 1.0e36 ! set to large number
 
       block => domain % blocklist
       do while (associated(block))
+
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-         call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
-         call mpas_pool_get_subpool(block % structs, 'tendency', tendencyPool)
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-         call mpas_pool_get_array(tendencyPool, 'layerThicknessTendency', layerThicknessTendency)
 
-         ! Calculate thickness tendency using state at time n =========
-         ! Optionally, return new tracer values also.
+         call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
+         call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
 
-         !TODO - Remove the older li_tendency_thickness subroutine, and make tracer advection optional
-         !       in the newer li_tendency_thickness_tracers subroutine.
+         ! compute normal velocities and advective CFL limit for this block
 
-         if (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'fo') then
+         call li_layer_normal_velocity( &
+              meshPool,               &
+              normalVelocity,         &
+              layerNormalVelocity,    &
+              allowableAdvecDt,       &
+              err_tmp)
 
-            ! Note: This subroutine requires that layerThickness and tracers are correct in halos.
-            ! Note: This subroutine does not return tracer tendencies. Instead, it returns the updated tracer values.
+         err = ior(err, err_tmp)
 
-            call li_tendency_thickness_tracers(&
-                 dtSeconds,              &
-                 meshPool,               &
-                 velocityPool,           &
-                 geometryPool,           &
-                 thermalPool,            &
-                 scratchPool,            &
-                 layerThicknessTendency, &
-                 allowableAdvecDt,       &
-                 err_tmp)
-
-         else
-
-            call li_tendency_thickness(&
-                 meshPool,               &
-                 velocityPool,           &
-                 geometryPool,           & 
-                 layerThicknessTendency, &
-                 dtSeconds,              &
-                 dminfo,                 &
-                 allowableAdvecDt,       &
-                 err_tmp)
-
-         endif   ! config_thickness_advection = config_tracer_advection
-
-         err = ior(err,err_tmp)
          allowableAdvecDtOnProc = min(allowableAdvecDtOnProc, allowableAdvecDt)
 
          ! Calculate diffusive CFL timestep, if needed
@@ -349,13 +339,6 @@ module li_time_integration_fe
          block => block % next
       end do
 
-      ! Now that we have exited the block loop, do any needed halo updates.
-      call mpas_timer_start("halo updates")
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'tendency', tendencyPool)
-      call mpas_pool_get_field(tendencyPool, 'layerThicknessTendency', layerThicknessTendencyField)
-      call mpas_dmpar_exch_halo_field(layerThicknessTendencyField)
-      call mpas_timer_stop("halo updates")
-
 
       ! Local advective CFL info
       call mpas_set_timeInterval(allowableAdvecDtOnProcInterval, dt=allowableAdvecDtOnProc, ierr=err_tmp)
@@ -366,6 +349,7 @@ module li_time_integration_fe
       if (config_print_thickness_advection_info) then
          write(stdoutUnit,*) '  Maximum allowable time step on THIS processor based on advective CFL is (Days_hhh:mmm:sss):   ' // trim(allowableAdvecDtOnProcString)
       endif
+
 
       ! Local diffusive CFL info
       if (config_adaptive_timestep_include_DCFL) then
@@ -384,14 +368,17 @@ module li_time_integration_fe
       ! then find out what the global CFL limit is.  Don't do this otherwise because
       ! it requires 2 unnecessary MPI communications.
       if (config_print_thickness_advection_info .or. config_adaptive_timestep) then
+
           ! Determine ACFL limit on all procs
           call mpas_dmpar_min_real(dminfo, allowableAdvecDtOnProc, allowableAdvecDtAllProcs)
+
           ! Determine which processor has the limiting CFL
           if (allowableAdvecDtOnProc == allowableAdvecDtAllProcs) then
             allowableAdvecDtProcNumberHere = dminfo % my_proc_id
           else 
             allowableAdvecDtProcNumberHere = -1
           endif
+
           call mpas_dmpar_max_int(dminfo, allowableAdvecDtProcNumberHere, allowableAdvecDtProcNumber)
           call mpas_set_timeInterval(allowableAdvecDtAllProcsInterval, dt=allowableAdvecDtAllProcs, ierr=err_tmp)
           err = ior(err,err_tmp)
@@ -400,21 +387,27 @@ module li_time_integration_fe
 
           ! Repeat for diffusive CFL
           if (config_adaptive_timestep_include_DCFL) then
+
               ! Determine DCFL limit on all procs
               call mpas_dmpar_min_real(dminfo, allowableDiffDtOnProc, allowableDiffDtAllProcs)
+
               ! Determine which processor has the limiting CFL
               if (allowableDiffDtOnProc == allowableDiffDtAllProcs) then
                 allowableDiffDtProcNumberHere = dminfo % my_proc_id
               else 
                 allowableDiffDtProcNumberHere = -1
               endif
+
               call mpas_dmpar_max_int(dminfo, allowableDiffDtProcNumberHere, allowableDiffDtProcNumber)
               call mpas_set_timeInterval(allowableDiffDtAllProcsInterval, dt=allowableDiffDtAllProcs, ierr=err_tmp)
               err = ior(err,err_tmp)
               call mpas_get_timeInterval(allowableDiffDtAllProcsInterval, timeString=allowableDiffDtAllProcsString, ierr=err_tmp)
               err = ior(err,err_tmp)
+
           endif
-      endif
+
+      endif  ! config_print_thickness_advection_info or config_adaptive_timestep
+
 
       ! Write messages if they are turned on
       if (config_print_thickness_advection_info) then
@@ -430,19 +423,19 @@ module li_time_integration_fe
       err = ior(err,err_tmp)
 
 
-
       ! Check for CFL error before finishing
       if (dtSeconds > allowableAdvecDtOnProc) then
          write(stderrUnit,*) 'ERROR: Advective CFL violation on this processor.  Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableAdvecDtOnProcString)
          err = ior(err,1)
       endif
+
       ! Local diffusive CFL info
       if ( (config_adaptive_timestep_include_DCFL) .and. (dtSeconds > allowableDiffDtOnProc) ) then
          write(stderrUnit,*) 'WARNING: Diffusive CFL violation on this processor.  Maximum allowable time step for this processor is (Days_hhh:mmm:sss): ' // trim(allowableDiffDtOnProcString)
       endif
 
       if (err > 0) then
-           write(stderrUnit,*) 'Error in calculating thickness tendency  (possibly CFL violation)'
+           write(stderrUnit,*) 'Error in calculating thickness advection  (possibly CFL violation)'
       endif
 
 
@@ -462,72 +455,44 @@ module li_time_integration_fe
          block => block % next
       end do
 
-      ! ===
-      ! === Tracer tendencies
-      ! ===
-! Commenting out tracer tendencies
-!!!      ! Tracer tendencies
-!!!      block => domain % blocklist
-!!!      do while (associated(block))
-!!!         ! Mesh information
-!!!         mesh => block % mesh
-!!!         ! State at time n
-!!!         stateOld => block % state % time_levs(1) % state
-!!!         ! Tendencies
-!!!         layerThickness_tend => block % tend % layerThickness % array
-!!!         tracer_tendency => block % tend % tracers % array
 
-!!!         ! Calculate tracer tendencies ==========
-!!!         ! There could be a negative layer thickness with SMB turned on!
-!!!         call li_tendency_tracers(mesh, stateOld, layerThickness_tend, tracer_tendency, dt, dminfo, err)
-
-!!!         block => block % next
-!!!      end do 
-
-!!!      if (err == 1) then
-!!!          call mpas_dmpar_global_abort("An error has occurred in li_tendency_tracers. Aborting...")
-!!!      endif
-
-!!!      ! update halos on tracer tend 
-!!!      select case (config_tracer_advection)
-!!!      case ('None')  !===================================================
-!!!          ! Do nothing - no need to waste time doing a halo update if not advecting tracers!  The tendency will be 0 everywhere
-!!!      case default
-!!!          call mpas_dmpar_exch_halo_field3d_real(dminfo, tracer_tendency, &
-!!!                                         size(tracer_tendency,dim=1), mesh % nVertLevels, mesh % nCells, &
-!!!                                         domain % blocklist % parinfo % cellsToSend, domain % blocklist % parinfo % cellsToRecv)
-!!!      end select
+      ! Halo updates
+      call mpas_timer_start("halo updates")
+      call mpas_pool_get_field(velocityPool, 'layerNormalVelocity', layerNormalVelocityField)
+      call mpas_dmpar_exch_halo_field(layerNormalVelocityField)
+      call mpas_timer_stop("halo updates")
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in calculate_tendencies."
+          write (stderrUnit,*) "An error has occurred in prepare_advection."
       endif
 
    !--------------------------------------------------------------------
-   end subroutine calculate_tendencies
-
-
+    end subroutine prepare_advection
 
 !***********************************************************************
 !
-!  routine update_prognostics
+!  routine advection_solver
 !
-!> \brief   Updates prognostic variables 
-!> \author  Matthew Hoffman
-!> \date    12 September 2013
+!> \brief   Advect thickness and tracers 
+!> \author  Matthew Hoffman and William Lipscomb
+!> \date    September 2013; revised December 2015
 !> \details
-!>  This routine updates prognostic variables using a Forward Euler time integrator.
-!>  Note: The thickness field is updated here, but tracers (which have just
-!>        one time level, are not updated. It is assumed that new tracer values
-!>        have already been computed.
+!>  This routine advects thickness and tracers as part of forward Euler
+!>  time integration.
+!>  Note: This routine replaces much of the old subroutines calculate_tendencies
+!>        and update_prognostics. The CFL diagnostics that were previously
+!>        in calculate tendencies are now in prepare_advection.
 !-----------------------------------------------------------------------
 
-   subroutine update_prognostics(domain, deltat, err)
+   subroutine advection_solver(domain, dtSeconds, err)
+
+      use mpas_timekeeping
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
-      real (kind=RKIND) :: deltat
+      real (kind=RKIND), intent(in) :: dtSeconds
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -544,119 +509,193 @@ module li_time_integration_fe
       !-----------------------------------------------------------------
       type (dm_info), pointer :: dminfo
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: meshPool, geometryPool, tendencyPool
+
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: velocityPool
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: thermalPool
+      type (mpas_pool_type), pointer :: scratchPool
+
+      type (field1DReal), pointer :: thicknessField
+
+      type (field2DReal), pointer :: layerThicknessField
+      type (field2DReal), pointer :: layerThicknessEdgeField
+      type (field2DReal), pointer :: temperatureField
+      type (field2DReal), pointer :: waterfracField
+      type (field2DReal), pointer :: enthalpyField
+
+      real (kind=RKIND), dimension(:), pointer :: thickness
+
+      real (kind=RKIND), dimension(:,:), pointer :: layerThicknessOld
+      real (kind=RKIND), dimension(:,:), pointer :: layerThicknessNew
+      real (kind=RKIND), dimension(:,:), pointer :: temperature
+      real (kind=RKIND), dimension(:,:), pointer :: waterfrac
+      real (kind=RKIND), dimension(:,:), pointer :: enthalpy
+
       integer, pointer :: nCells
+
+      character (len=StrKIND), pointer :: config_thickness_advection
+      character (len=StrKIND), pointer :: config_tracer_advection
+
       logical, pointer :: config_print_thickness_advection_info
 
-      real (kind=RKIND), dimension(:), pointer :: thickness, layerThicknessFractions
-      real (kind=RKIND), dimension(:,:), pointer :: layerThicknessOld, layerThicknessNew, layerThicknessTendency 
+      !TODO - Replace masktmp with a scratch field?
       integer, dimension(:), allocatable :: masktmp  ! Temporary mask for assessing new thickness field
+
+      integer :: err_tmp
 
       err = 0
 
-      dminfo => domain % dminfo
+      call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
+      call mpas_pool_get_config(liConfigs, 'config_tracer_advection', config_tracer_advection)
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
+
+      dminfo => domain % dminfo
+
+      ! Halo updates
+      ! Note: The layer thickness and tracers must be up to date in halos before calling the advection subroutines.
+      !       Currently, layerThicknessEdge is updated at the end of subroutine li_calculate_diagnostic_vars.
+      !       The thermal tracers (temperature, waterfrac, enthalpy) are updated at the end of li_thermal_solver.
+      !       But layerThickness (which is used by subroutine li_advection_thickness_tracers) needs an update here.
+      !        We use timeLevel=2 to get the value from the previous timestep.
+
+      call mpas_timer_start("halo updates")
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+      call mpas_pool_get_field(geometryPool, 'layerThickness', layerThicknessField, timeLevel=2)
+      call mpas_dmpar_exch_halo_field(layerThicknessField)
+      call mpas_timer_stop("halo updates")
+
+      ! ===
+      ! === Advect thickness and tracers
+      ! ===
+
+      block => domain % blocklist
+      do while (associated(block))
+
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+
+         ! Note: The old and new layer thickness are input and output arguments, respectively, for the main advection subroutines
+         ! TODO - Use only one time level for the ice geometry, and simply fetch the current layerThickness?
+         call mpas_pool_get_array(geometryPool, 'layerThickness', layerThicknessOld, timeLevel=2)
+         call mpas_pool_get_array(geometryPool, 'layerThickness', layerThicknessNew, timeLevel=1)
+
+         if (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'fo') then
+
+            ! Note: This subroutine requires that layerThickness and tracers are correct in halos.
+
+            if (config_print_thickness_advection_info) then
+               write(stdoutUnit,*) 'Advect thickness and tracers, dt =', dtSeconds
+            endif
+
+            call li_advection_thickness_tracers(&
+                 dtSeconds,              &
+                 meshPool,               &
+                 velocityPool,           &
+                 geometryPool,           &
+                 thermalPool,            &
+                 scratchPool,            &
+                 layerThicknessOld,      &
+                 layerThicknessNew,      &
+                 err_tmp)
+
+         elseif (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'none') then
+
+            if (config_print_thickness_advection_info) then
+               write(stdoutUnit,*) 'Advect thickness (but not tracers), dt =', dtSeconds
+            endif
+
+            call li_advection_thickness_tracers(&
+                 dtSeconds,              &
+                 meshPool,               &
+                 velocityPool,           &
+                 geometryPool,           &
+                 thermalPool,            &
+                 scratchPool,            &
+                 layerThicknessOld,      &
+                 layerThicknessNew,      &
+                 err_tmp,                &
+                 advectTracersIn = .false.)
+
+         endif
+
+         err = ior(err,err_tmp)
+
+         block => block % next
+      end do
+
+      ! Reset negative thicknesses to zero if needed
 
       block => domain % blocklist
       do while (associated(block))
 
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-         call mpas_pool_get_subpool(block % structs, 'tendency', tendencyPool)
+
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-         call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
-
-         ! State at time n
-         call mpas_pool_get_array(geometryPool, 'layerThickness', layerThicknessOld, timeLevel=2)
-!!!         tracersOld => stateOld % tracers % array
-!!!         cellMaskOld => stateOld % cellMask % array
-
-         ! State at time n+1 (advanced by dt by Forward Euler)
-         call mpas_pool_get_array(geometryPool, 'layerThickness', layerThicknessNew, timeLevel=1)
-         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
-!!!         tracersNew => stateNew % tracers % array
-
-         ! Tendencies
-         call mpas_pool_get_array(tendencyPool, 'layerThicknessTendency', layerThicknessTendency)
-!!!         tracer_tendency => block % tend % tracers % array
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel=1)
 
          
-         ! Update thickness ======================
-         
-         ! Commented out usage for advecting thickness as a column
-         !!!thicknessNew = thicknessOld + thickness_tend * dt / SecondsInYear   
-         ! Commented out usage for using FCT for thickness 
-         !!!stateNew % sup_thickness % array(1,:,:) = (stateOld % tracers % array(stateOld % index_temperature,:,:) * layerThicknessOld  + tracer_tendency(stateOld % index_temperature, :, :) * dt / SecondsInYear) / (layerThicknessNew+1.0e-12)
-
-
-         layerThicknessNew = layerThicknessOld + layerThicknessTendency * deltat
-         thickness = sum(layerThicknessNew, 1)
-
-         !Optionally print some information about the new thickness
-         !print *, 'thickness_tend maxval:', maxval(thickness_tend(1:mesh % nCellsSolve))       
-         !print *, 'thicknessOld maxval:', maxval(thicknessOld(1:mesh % nCellsSolve))
-         !print *, '  thicknessNew maxval:', maxval(thicknessNew(1:mesh % nCellsSolve))
          allocate( masktmp(nCells + 1) )
          masktmp = 0
 
-!!!         ! if holding advance within initial extent of ice, set thickness to 0 anywhere it has expanded beyond initial extent
-!!!         if (config_allow_additional_advance .eqv. .false.) then 
-!!!             where ( MASK_WAS_INITIALLY_NOT_ICE(cellMaskOld) )
-!!!                 thicknessNew = 0.0_RKIND
-!!!             end where
-!!!         endif
-
-         ! reset negative thickness to 0.  This should not happen unless negative MB is larger than entire ice column.
          where (thickness < 0.0_RKIND)
             masktmp = 1
             thickness = 0.0_RKIND
-!!!            stateNew % iceArea % array = 0.0_RKIND
+            !TODO - Should layerThickness also be set to 0?
          end where
 
          if (config_print_thickness_advection_info) then
+
             if (sum(masktmp) > 0) then
-               write(stdoutUnit,*) '  Cells with negative thickness (set to 0):',sum(masktmp)
+               write(stdoutUnit,*) '  Cells with negative thickness (set to 0):', sum(masktmp)
             endif
 
-            ! Note how many cells have ice.
+            ! Count how many cells have ice.
             masktmp = 0
             where (thickness > 0.0_RKIND)
                masktmp = 1
             end where
             write(stdoutUnit,*) '  Cells with nonzero thickness:', sum(masktmp)
+
          endif
+
          deallocate(masktmp)
-
-         ! Calculate new tracer values =================
-!!!         if (config_tracer_advection .ne. 'None') then
-!!!           do iTracer = 1, size(tracersNew, 1)
-!!!               where (layerThicknessNew > 0.0_RKIND)
-!!!                   tracersNew(iTracer,:,:) = (tracersOld(iTracer,:,:) * layerThicknessOld &
-!!!                       + tracer_tendency(iTracer,:,:) * dt / SecondsInYear)  /  (layerThicknessNew)
-!!!               elsewhere
-!!!                   ! May or may not want to assign tracer values to non-ice cells
-!!!                   tracersNew(iTracer,:,:) = 0.0_RKIND
-!!!               end where
-!!!           end do
-!!!         endif
-
-!!!         ! Apply calving after we have updated the new state  - TODO Is this the right place?
-!!!         call li_apply_calving(mesh, stateNew, err)
 
          block => block % next
       end do
 
+      ! Halo updates
+      call mpas_timer_start("halo updates")
+
+      ! thickness, layerThickness
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+      call mpas_pool_get_field(geometryPool, 'layerThickness', layerThicknessField, timeLevel=1)
+      call mpas_dmpar_exch_halo_field(layerThicknessField)
+      call mpas_pool_get_field(geometryPool, 'thickness', thicknessField)
+      call mpas_dmpar_exch_halo_field(thicknessField)
+
+      ! temperature, waterfrac, enthalpy
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'thermal', thermalPool)
+      call mpas_pool_get_field(thermalPool, 'temperature', temperatureField)
+      call mpas_dmpar_exch_halo_field(temperatureField)
+      call mpas_pool_get_field(thermalPool, 'waterfrac', waterfracField)
+      call mpas_dmpar_exch_halo_field(waterfracField)
+      call mpas_pool_get_field(thermalPool, 'enthalpy', enthalpyField)
+      call mpas_dmpar_exch_halo_field(enthalpyField)
+
+      call mpas_timer_stop("halo updates")
 
       ! === error check
       if (err > 0) then
-          write (stderrUnit,*) "An error has occurred in update_prognostics."
+          write (stderrUnit,*) "An error has occurred in advection_solver."
       endif
 
-
    !--------------------------------------------------------------------
-   end subroutine update_prognostics
-
-
+    end subroutine advection_solver
 
 !***********************************************************************
 !

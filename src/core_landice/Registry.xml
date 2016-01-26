@@ -392,6 +392,7 @@
 			<var name="meshDensity"/>
 		</stream>
 
+<!-- WHL: When using the enthalpy heat-balance solver, will need to add waterfrac to the streams with temperature. -->
 		<stream name="input"
 				type="input"
 				immutable="true"
@@ -400,9 +401,9 @@
 
 			<stream name="basicmesh"/>
 			<var name="layerThicknessFractions"/>
-			<var_array name="tracers"/>
 			<var name="thickness"/>
 			<var name="bedTopography"/>
+			<var name="temperature"/>
 			<var name="sfcMassBal"/>
 			<var name="floatingBasalMassBal"/>
 <!-- The following variables are used by HO only, and only enabled by the higherOrderVelocity package. -->
@@ -441,9 +442,9 @@
 
 			<stream name="basicmesh"/>
 			<var name="layerThicknessFractions"/>
-			<var_array name="tracers"/>
 			<var name="xtime"/>
 			<var name="thickness"/>
+			<var name="temperature"/>
 			<var name="cellMask"/>
 			<var name="bedTopography"/>
 			<var name="sfcMassBal"/>
@@ -474,11 +475,11 @@
 			<var name="layerThicknessFractions"/>
 			<var name="layerCenterSigma"/>
 			<var name="layerInterfaceSigma"/>
-			<var_array name="tracers"/>
 			<var name="xtime"/>
 			<var name="thickness"/>
 			<var name="lowerSurface"/>
 			<var name="upperSurface"/>
+			<var name="temperature"/>
 			<var name="cellMask"/>
 			<var name="edgeMask"/>
 			<var name="normalVelocity"/>
@@ -735,8 +736,8 @@ is the value of that variable from the *previous* time level!
 		/>
 
 		<!-- Variables only needed for calculating diffusivity at cell centers -->
-		<var name="apparentDiffusivity" type="real" dimensions="nCells Time" units="m^2 s^{-1}"
-			description="apparent diffusivity at cell centers"
+                <var name="apparentDiffusivity" type="real" dimensions="nCells Time" packages="calcDiffusivity"
+                        units="m^2 s^{-1}"  description="apparent diffusivity at cell centers"
 		/>
 	</var_struct>
 
@@ -748,7 +749,10 @@ is the value of that variable from the *previous* time level!
 		     description="flow law parameter, A"
 		/>
 		<var name="normalVelocity" type="real" dimensions="nVertInterfaces nEdges Time" units="m s^{-1}"
-		     description="horizonal velocity, normal component to an edge"
+		     description="horizonal velocity, normal component to an edge, layer interface"
+		/>
+		<var name="layerNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		     description="horizonal velocity, normal component to an edge, layer midpoint"
 		/>
 		<var name="normalVelocityInitial" type="real" dimensions="nVertInterfaces nEdges Time" units="m s^{-1}"
 		     description="horizonal velocity, normal component to an edge, computed at initialization"
@@ -807,18 +811,15 @@ is the value of that variable from the *previous* time level!
 
 	<!-- Variables related to thermal state -->
 	<var_struct name="thermal" time_levs="1">
-		<!-- Note: putting tracers in this pool is a bit awkward since additional tracers may not be thermally-related -->
-		<var_array name="tracers" type="real" dimensions="nVertLevels nCells Time">
-			<var name="temperature" array_group="dynamics" units="K"
-			     description="interior ice temperature"
-			/>
-			<var name="waterfrac" array_group="dynamics" units="unitless"
-			     description="interior water fraction"
-			/>
-			<var name="enthalpy" array_group="dynamics" units="J m^{-3}"
-			     description="interior ice enthalpy"
-			/>
-		</var_array>
+		<var name="temperature" type="real" dimensions="nVertLevels nCells Time" units="K"
+		     description="interior ice temperature"
+		/>
+		<var name="waterfrac" type="real" dimensions="nVertLevels nCells Time" units="unitless"
+		     description="interior water fraction"
+		/>
+		<var name="enthalpy" type="real" dimensions="nVertLevels nCells Time" units="J m^{-3}"
+		     description="interior ice enthalpy"
+		/>
 		<var name="surfaceAirTemperature" type="real" dimensions="nCells Time" units="K"
 		     description="surface air temperature"
 		/>
@@ -843,26 +844,6 @@ is the value of that variable from the *previous* time level!
 		<var name="heatDissipation" type="real" dimensions="nVertLevels nCells Time" units="deg s"
 		     description="interior heat dissipation rate, divided by rhoi*cp_ice"
 		/>
-	</var_struct>
-
-<!-- ================ -->
-
-	<!-- Tendency Variables --> 
-	<var_struct name="tendency" time_levs="1">
-		<var name="layerThicknessTendency" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}" name_in_code="layerThicknessTendency"
-		     description="time tendency of layer thickness"
-		/>
-		<var_array name="tracerTendency" type="real" dimensions="nVertLevels nCells Time" name_in_code="tracerTendency">
-			<var name="temperatureTendency" array_group="dynamics" units="K s^{-1}" name_in_code="temperatureTendency"
-			     description="time tendency of ice temperature"
-			/>
-			<var name="waterfracTendency" array_group="dynamics" units="s^{-1}" name_in_code="waterfracTendency"
-			     description="time tendency of water fraction"
-			/>
-			<var name="enthalpyTendency" array_group="dynamics" units="s^{-1}" name_in_code="enthalpyTendency"
-			     description="time tendency of ice enthalpy"
-			/>
-		</var_array>
 	</var_struct>
 
 <!-- ================ -->

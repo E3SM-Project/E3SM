@@ -52,8 +52,6 @@ module li_diagnostic_vars
    !
    !--------------------------------------------------------------------
 
-
-
 !***********************************************************************
 
 contains
@@ -385,7 +383,7 @@ contains
 
       use mpas_geometry_utils, only: mpas_cells_to_points_using_baryweights
       use mpas_vector_operations, only: mpas_tangential_vector_1d
-      
+   
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -430,8 +428,7 @@ contains
       integer, dimension(:,:), pointer :: baryCellsOnVertex
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, baryWeightsOnVertex
       real (kind=RKIND), dimension(:,:), pointer :: flowParamA
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
-      integer, pointer :: index_temperature
+      real (kind=RKIND), dimension(:,:), pointer :: temperature
       type (field1DInteger), pointer :: cellMaskField, edgeMaskField, vertexMaskField, floatingEdgesField
       integer, pointer :: nCells, nVertices, nEdges
       integer, pointer :: anyDynamicVertexMaskChanged
@@ -517,10 +514,9 @@ contains
           call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
           call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
           call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness, timeLevel = 1)
-          call mpas_pool_get_array(thermalPool, 'tracers', tracers)
-          call mpas_pool_get_dimension(thermalPool, 'index_temperature', index_temperature)
           call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
 
+          call mpas_pool_get_array(thermalPool, 'temperature', temperature)
 
           ! Lower surface is based on floatation for floating ice.  For grounded ice (and non-ice areas) it is the bed.
           where ( li_mask_is_floating_ice(cellMask) )
@@ -562,6 +558,7 @@ contains
                 endif
              end do  ! edges
           endif
+
           ! The remaining calculations are only needed by the SIA solver
           if (trim(config_velocity_solver) == 'sia') then
              call mpas_pool_get_config(liConfigs, 'config_sia_tangent_slope_calculation', config_sia_tangent_slope_calculation)
@@ -575,7 +572,7 @@ contains
              call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
 
              ! Calculate flowA
-             call calculate_flowParamA(meshPool, tracers(index_temperature,:,:), thickness, flowParamA, err_tmp)
+             call calculate_flowParamA(meshPool, temperature(:,:), thickness, flowParamA, err_tmp)
              err = ior(err, err_tmp)
 
              ! Calculate upperSurfaceVertex if needed
@@ -614,18 +611,6 @@ contains
              ! Note: the outer halo may be wrong, but that's ok as long as numhalos>1 because the velocity on the 0-halo will still be correct.
 
           end if ! SIA variables
-
-
-          ! Do vertical remapping of layerThickness and tracers
-          ! Note: It is better to do vertical remapping immediately after the horizontal advection and mass balance calculations.
-          !       This is done with the new option to advect thickness and tracers together using a first-order upwind scheme.
-          !       For the old option where only thickness is advected, the vertical_remap call is done here to avoid answer changes. 
-
-          if (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'fo') then
-             ! do nothing, because vertical remapping is done in the li_tendency module
-          else
-             call vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err_tmp)
-          endif
 
           err = ior(err, err_tmp)
 
@@ -771,6 +756,12 @@ contains
       integer :: iEdge, cell1, cell2, k
       real (kind=RKIND) :: VelSign
 
+      !WHL - debug
+!      integer, pointer :: nCells
+!      integer, dimension(:), pointer :: indexToCellID
+!      logical, pointer :: config_print_thickness_advection_info
+!      integer :: iCell
+
       err = 0
 
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
@@ -783,6 +774,11 @@ contains
       call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge)
       call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
 
+      !WHL - debug
+!      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+!      call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
+!      call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
+
       ! Calculate h_edge.  This is used by both thickness and tracer advection on the following Forward Euler time step.  
       ! Note: FO-Upwind thickness advection does not explicitly use h_edge but a FO h_edge is implied.
       ! Note: SIA velocity solver uses its own local calculation of h_edge that is always 2nd order.
@@ -791,6 +787,7 @@ contains
 
       ! Both thickness and layerThickness should be updated by this time.
       if (config_thickness_advection == 'fo') then
+
          ! If using FO-Upwind then h_edge must be FO.
          do iEdge=1,nEdges
             cell1 = cellsOnEdge(1,iEdge)
@@ -813,318 +810,20 @@ contains
       endif
 
       ! Note: the outmost layerThicknessEdge may be wrong if its upwind cell is off this block - halo update should be done if this variable will be used.
+      !       This halo update is done near the end of subroutine li_calculate_diagnostic_vars.
+
+      !WHL - debug - Comment out for now, but might be useful for future debugging
+!      if (config_print_thickness_advection_info) then
+!         write(stderrUnit,*) ' '
+!         write(stderrUnit,*) 'End of timestep: iCell (global), new thickness:'
+!         do iCell = 1, nCells
+!            if (layerThickness(1,iCell) > 0.0_RKIND) then
+!               write(stderrUnit,*) indexToCellID(iCell), sum(layerThickness(:,iCell))
+!            endif
+!         enddo
+!      endif
 
    end subroutine diagnostic_solve_after_velocity
-
-
-
-!***********************************************************************
-!
-!  subroutine vertical_remap_cism_loops
-!
-!> \brief   Vertical remapping of thickness and tracers
-!> \author  Matt Hoffman
-!> \date    06 February 2013
-!> \details 
-!>  This routine performs vertical remapping of thickness and tracers from one vertical
-!>  coordinate system to another, as is required for our sigma coordinate system.  
-!>  The remapping is first-order accurate.
-!>  This uses code from the CISM glissade_transport.F90 module written by Bill Lipscomb.  
-!>  I have altered the array structures to work with MPAS.  Indexing/looping order is a bit
-!>  of a hodgepodge at the moment and should be optimized.
-!>
-!>  NOTE: This version (with _cism_loops suffix) uses the looping with minimal changes
-!>  from the CISM code.  The other version has been refactored to be more efficient
-!>  for MPAS.  This version is intended to be deleted once tracer advection is
-!>  added to the model and the two versions can be compared.  (I can't test the new
-!>  version until tracer advection exists!)
-!
-!-----------------------------------------------------------------------
-   subroutine vertical_remap_cism_loops(layerThickness, thickness, tracers, meshPool, err)
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:), intent(in) :: &
-         thickness    !< Input: 
-
-      type (mpas_pool_type), intent(in) :: &
-         meshPool          !< Input: LI mesh information
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         layerThickness    !< Input:
-
-      real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
-         tracers    !< Input:
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-      ! pointers to mesh arrays
-      real (kind=RKIND), dimension(:), pointer :: layerThicknessFractions, layerInterfaceSigma
-      ! local arrays
-      real (kind=RKIND), dimension(:), allocatable :: recipThickness
-      real (kind=RKIND), dimension(:,:), allocatable :: layerInterfaceSigma_Input
-      real (kind=RKIND), dimension(:,:,:), allocatable :: hTsum
-      ! counters, mesh variables, index variables
-      integer, pointer :: nCells, nVertLevels
-      integer :: nTracers, iCell, k, k1, k2, nt
-      ! stuff for making calculations
-      real(kind=RKIND) :: thisThk, zhi, zlo, hOverlap
-
-      err = 0
-
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-      nTracers = size(tracers, 1)
-
-      call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
-      call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
-
-      allocate(recipThickness(nCells+1))
-      allocate(layerInterfaceSigma_Input(nVertLevels+1, nCells+1))
-      allocate(hTsum(nCells+1, nTracers, nVertLevels))
-
-      ! *** Calculate reciprocal thickness so we don't divide by 0
-      where (thickness > 0.0_RKIND)
-         recipThickness = 1.0_RKIND / thickness
-      elsewhere
-         recipThickness = 0.0_RKIND
-      end where
-
-      ! *** Calculate vertical sigma coordinates of each layer interface for the input non-sigma state and desired new sigma-based state (we already have that as mesh % layerInterfaceSigma)
-      layerInterfaceSigma_Input(1,:) = 0.0_RKIND 
-      do k = 2, nVertLevels
-        layerInterfaceSigma_Input(k,:) = layerInterfaceSigma_Input(k-1,:) + layerThickness(k-1,:) * recipThickness(:)
-      end do
-      layerInterfaceSigma_Input(nVertLevels+1,:) = 1.0_RKIND 
-
-      ! *** Compute new layer thicknesses (layerInterfaceSigma coordinates)
-      do iCell = 1, nCells
-         thisThk = thickness(iCell)
-         do k = 1, nVertLevels
-           layerThickness(k,iCell) = layerThicknessFractions(k) * thisThk
-         end do
-         ! Check for conservation of mass.  Put any residual in the top layer.
-         layerThickness(1,iCell) = layerThickness(1,iCell) + (thisThk - sum(layerThickness(:,iCell)) )
-      end do
-      ! TODO This conservation check may make layerThicknesses inconsistent with the sigma levels (which are used below in tracer remapping.
-
-       !-----------------------------------------------------------------
-       ! Compute sum of h*T for each new layer (k2) by integrating
-       ! over the regions of overlap with old layers (k1).
-       ! Note: It might be worth trying a more efficient
-       !       search algorithm if the number of layers is large.
-       !       This algorithm scales as nlyr^2.
-       !       Also, may want to rearrange loop order if there are many tracers.
-       !-----------------------------------------------------------------
-
-       do k2 = 1, nVertLevels
-          hTsum(:,:,k2) = 0.d0 
-          do k1 = 1, nVertLevels
-             do nt = 1, nTracers
-                do iCell = 1, nCells
-                      zhi = min (layerInterfaceSigma_Input(k1+1,iCell), layerInterfaceSigma(k2+1)) 
-                      zlo = max (layerInterfaceSigma_Input(k1,iCell), layerInterfaceSigma(k2))
-                      hOverlap = max (zhi-zlo, 0.d0) * thickness(iCell)
-                      hTsum(iCell,nt,k2) = htsum(iCell,nt,k2)    &
-                                       +  tracers(nt,k1,iCell) * hOverlap
-                enddo      ! iCell
-             enddo         ! nt
-          enddo            ! k1
-       enddo               ! k2
- 
-       !-----------------------------------------------------------------
-       ! Compute tracer values in new layers
-       !-----------------------------------------------------------------
- 
-       do k = 1, nVertLevels
-          do nt = 1, nTracers
-                do iCell = 1, nCells
-                   if (layerThickness(k, iCell) > 0.0_RKIND) then
-                      tracers(nt,k,iCell) = hTsum(iCell,nt,k) / layerThickness(k, iCell)
-                   else
-                      tracers(nt,k,iCell) = 0.0_RKIND
-                   endif
-                enddo   ! iCell
-          enddo         ! nt
-       enddo            ! k
-
-      deallocate(recipThickness)
-      deallocate(layerInterfaceSigma_Input)
-      deallocate(hTsum)
-
-   end subroutine vertical_remap_cism_loops
-
-
-
-
-!***********************************************************************
-!
-!  subroutine vertical_remap
-!
-!> \brief   Vertical remapping of thickness and tracers
-!> \author  Matt Hoffman
-!> \date    02 October 2013
-!> \details 
-!>  This routine performs vertical remapping of thickness and tracers from one vertical
-!>  coordinate system to another, as is required for our sigma coordinate system.
-!>  The remapping is first-order accurate.
-!>  This uses code from the CISM glissade_transport.F90 module written by Bill Lipscomb.
-!>  I have altered the array structures to work with MPAS and refactored it.
-!>  It now does all calculations column-wise, so it can be vectorized using
-!>  OpenMP over either blocks or cells.
-!>  I have dealt with 0 thickness in non-ice cells using eps and the cellMask,
-!>  rather than using if/where-statements.
-!
-!-----------------------------------------------------------------------
-   subroutine vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err)
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:), intent(in) :: &
-         thickness    !< Input: ice thickness (already updated)
-
-      integer, dimension(:), intent(in) :: &
-         cellMask    !< Input: mask for cells (needed for determining presence/absence of ice)
-
-      type (mpas_pool_type), intent(in) :: &
-         meshPool          !< Input: LI mesh information
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         layerThickness    !< Input/Output: thickness of layers (to be updated)
-
-      real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
-         tracers    !< Input/Output: tracer values (to be updated)
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-      ! pointers to mesh arrays
-      real (kind=RKIND), dimension(:), pointer :: layerThicknessFractions, layerInterfaceSigma
-      ! local arrays
-      real (kind=RKIND), dimension(:), allocatable :: layerInterfaceSigma_Input
-      real (kind=RKIND), dimension(:,:), allocatable :: hTsum
-      ! counters, mesh variables, index variables
-      integer, pointer :: nCells, nVertLevels
-      integer :: nTracers, iCell, k, k1, k2, nt
-      ! stuff for making calculations
-      real(kind=RKIND) :: thisThk, zhi, zlo, hOverlap
-      real(kind=RKIND), parameter :: eps = 1.0d-30  ! Make a tiny value so we don't corrupt any cells with ice
-
-      err = 0
-
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-      nTracers = size(tracers, 1)
-
-      call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
-      call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
-
-      allocate(layerInterfaceSigma_Input(nVertLevels+1))
-      allocate(hTsum(nTracers, nVertLevels))
-
-      do iCell = 1, nCells  ! Do all calculations column-wise
-
-         thisThk = thickness(iCell)
-
-         ! *** Calculate vertical sigma coordinates of each layer interface for the input non-sigma state 
-         !     (we already have the desired new sigma-based state as mesh % layerInterfaceSigma)
-         layerInterfaceSigma_Input(1) = 0.0_RKIND
-         do k = 2, nVertLevels
-            layerInterfaceSigma_Input(k) = layerInterfaceSigma_Input(k-1) + layerThickness(k-1, iCell) / (thisThk + eps)
-            ! Note: including eps to avoid divide by 0, but need to mask out cells with no ice below in calculating
-            !       layerThickness and tracer values.
-         end do
-         layerInterfaceSigma_Input(nVertLevels+1) = 1.0_RKIND
-
-         ! *** Compute new layer thicknesses (layerInterfaceSigma coordinates)
-
-         do k = 1, nVertLevels
-            layerThickness(k,iCell) = layerThicknessFractions(k) * (thisThk + eps)
-            ! Note: layerThickness will have garbage values in non-ice cells due to eps
-         end do
-         ! Check for conservation of mass.  Put any residual in the top layer.
-         layerThickness(1,iCell) = layerThickness(1,iCell) + (thisThk - sum(layerThickness(:,iCell)) )
-         ! TODO This conservation check may make layerThicknesses inconsistent with the sigma levels (which are used below in tracer remapping.
-
-         !-----------------------------------------------------------------
-         ! Compute sum of h*T for each new layer (k2) by integrating
-         ! over the regions of overlap with old layers (k1).
-         ! Note: It might be worth trying a more efficient
-         !       search algorithm if the number of layers is large.
-         !       This algorithm scales as nlyr^2.
-         !-----------------------------------------------------------------
-
-         do k2 = 1, nVertLevels
-            hTsum(:,k2) = 0.d0
-            do k1 = 1, nVertLevels
-               do nt = 1, nTracers
-                  zhi = min (layerInterfaceSigma_Input(k1+1), layerInterfaceSigma(k2+1))
-                  zlo = max (layerInterfaceSigma_Input(k1), layerInterfaceSigma(k2))
-                  hOverlap = max (zhi-zlo, 0.d0) * thisThk
-                  hTsum(nt,k2) = htsum(nt,k2) + tracers(nt,k1,iCell) * hOverlap
-               enddo         ! nt
-            enddo            ! k1
-         enddo               ! k2
-
-         !-----------------------------------------------------------------
-         ! Compute tracer values in new layers
-         !-----------------------------------------------------------------
-
-         do k = 1, nVertLevels
-            do nt = 1, nTracers
-               tracers(nt,k,iCell) = hTsum(nt,k) / layerThickness(k, iCell) * real(li_mask_is_ice_int(cellMask(iCell)), RKIND)
-               layerThickness(k,iCell) = layerThickness(k,iCell) * real(li_mask_is_ice_int(cellMask(iCell)), RKIND)
-               ! Note: the last term is used to multiply by 0 where there is no ice in order to clear out garbage introduced by eps
-            enddo         ! nt
-         enddo            ! k
-
-      enddo ! nCells
-
-
-      deallocate(layerInterfaceSigma_Input)
-      deallocate(hTsum)
-
-   end subroutine vertical_remap
 
 
 !***********************************************************************
