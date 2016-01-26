@@ -16,6 +16,7 @@
 		<option name="config_use_debugTracers">.true.</option>
 		<option name="config_land_ice_flux_mode">'standalone'</option>
 		<option name="config_use_rx1_constraint">.true.</option>
+		<option name="config_rx1_horiz_smooth_open_ocean_cells">10</option>
 		<option name="config_rx1_max">5.0</option>
 		<option name="config_global_ocean_topography_file">'topography.nc'</option>
 		<option name="config_global_ocean_topography_nlat_dimname">'y'</option>
