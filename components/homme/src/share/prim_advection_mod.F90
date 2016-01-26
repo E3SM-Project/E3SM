@@ -152,14 +152,13 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
   integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, &
                             lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
   logical :: abort=.false.
-  call t_startf('remap1')
 
   if (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2) then
      call remap_Q_ppm(qdp,nx,qsize,dp1,dp2)
-     call t_stopf('remap1')
      return
   endif
 
+  call t_startf('remap_Q_noppm')
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(q,i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
 !$omp    private(jk,zgam,zhdp,h,zarg,rhs,lower_diag,diag,upper_diag,q_diag,tmp_cal,filter_code) &
@@ -395,7 +394,7 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
   enddo
   enddo ! q loop
   if (abort) call abortmp('Bad levels in remap1.  usually CFL violatioin')
-  call t_stopf('remap1')
+  call t_stopf('remap_Q_noppm')
 
 end subroutine remap1
 
@@ -1031,7 +1030,11 @@ contains
           enddo
           call edgeVpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,ie)
        enddo
+
+       call t_startf('pat_spelt_bexchV')
        call bndry_exchangeV(hybrid,edgeAdv1)
+       call t_stopf('pat_spelt_bexchV')
+
        do ie=nets,nete
           call edgeVunpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,ie)
           do k=1,nlev
@@ -1157,7 +1160,11 @@ contains
           ! eta_dot_dpdn at nlevp is zero, so we dont boundary exchange it:
           call edgeVpack(edgeAdv1,eta_dot_dpdn(:,:,1:nlev),nlev,0,ie)
        enddo
+
+       call t_startf('pat_fvm_bexchV')
        call bndry_exchangeV(hybrid,edgeAdv1)
+       call t_stopf('pat_fvm_bexchV')
+
        do ie=nets,nete
           ! restor interior values.  we could avoid this if we created a global array for eta_dot_dpdn
           do k=1,nlevp
@@ -1321,7 +1328,10 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
      enddo
      enddo
   end do
+
+  call t_startf('pat_remap_ale_gexchV')
   call ghost_exchangeVfull(hybrid%par,hybrid%ithr,ghostbuf_tr)
+  call t_stopf('pat_remap_ale_gexchV')
 
   do ie=nets,nete
      num_neighbors = elem(ie)%desc%actual_neigh_edges+1
@@ -1644,7 +1654,8 @@ subroutine Cobra_Elem(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
 
 ! if (hybrid%par%masterproc) print *,__FILE__,__LINE__," mass(20,1,4):",mass(20,1,4)
 ! do k=1,np*np
-!   if (hybrid%par%masterproc) print *,__FILE__,__LINE__," maxq(k,20,1,4):",maxq(k,20,1,4) ,minq(k,20,1,4),maxq(k,20,1,4)-minq(k,20,1,4)
+!   if (hybrid%par%masterproc) print *,__FILE__,__LINE__," maxq(k,20,1,4):", &
+!     maxq(k,20,1,4) ,minq(k,20,1,4),maxq(k,20,1,4)-minq(k,20,1,4)
 ! enddo
 ! do k=1,np*np
 !   if (hybrid%par%masterproc) print *,__FILE__,__LINE__," Que(k,20,1,4):",Que(k,20,1,4) ,rho(k,20,4)
@@ -1786,7 +1797,11 @@ subroutine ALE_RKdss(elem, nets, nete, hy, deriv, dt, tl)
     enddo
     call edgeVpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,ie)
   enddo
+
+  call t_startf('ALE_RKdss_bexchV')
   call bndry_exchangeV(hy,edgeveloc)
+  call t_stopf('ALE_RKdss_bexchV')
+
   do ie=nets,nete
     call edgeVunpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,ie)
     do k=1, nlev
@@ -2182,21 +2197,32 @@ end subroutine ALE_parametric_coords
     ! Also: save a copy of div(U dp) in derived%div(:,:,:,1), which will be DSS'd
     !       and a DSS'ed version stored in derived%div(:,:,:,2)
 
+    call t_startf('precomput_divdp')
     call precompute_divdp( elem , hybrid , deriv , dt , nets , nete , n0_qdp )   
+    call t_stopf('precomput_divdp')
 
     !rhs_multiplier is for obtaining dp_tracers at each stage:
     !dp_tracers(stage) = dp - rhs_multiplier*dt*divdp_proj
+
+    call t_startf('euler_step_0')
     rhs_multiplier = 0
     call euler_step( np1_qdp , n0_qdp  , dt/2 , elem , hvcoord , hybrid , deriv , nets , nete , DSSdiv_vdp_ave , rhs_multiplier )
+    call t_stopf('euler_step_0')
 
+    call t_startf('euler_step_1')
     rhs_multiplier = 1
     call euler_step( np1_qdp , np1_qdp , dt/2 , elem , hvcoord , hybrid , deriv , nets , nete , DSSeta         , rhs_multiplier )
+    call t_stopf('euler_step_1')
 
+    call t_startf('euler_step_2')
     rhs_multiplier = 2
     call euler_step( np1_qdp , np1_qdp , dt/2 , elem , hvcoord , hybrid , deriv , nets , nete , DSSomega       , rhs_multiplier )
+    call t_stopf('euler_step_2')
 
     !to finish the 2D advection step, we need to average the t and t+2 results to get a second order estimate for t+1.
+    call t_startf('qdp_tavg')
     call qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
+    call t_stopf('qdp_tavg')
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !  Dissipation
@@ -2204,7 +2230,9 @@ end subroutine ALE_parametric_coords
     if ( limiter_option == 8  ) then
       ! dissipation was applied in RHS.
     else
+      call t_startf('ah_scalar')
       call advance_hypervis_scalar(edgeadv,elem,hvcoord,hybrid,deriv,tl%np1,np1_qdp,nets,nete,dt)
+      call t_stopf('ah_scalar')
     endif
 !    call extrae_user_function(0)
 
@@ -2317,7 +2345,7 @@ end subroutine ALE_parametric_coords
     dp0(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
   enddo
-  call t_startf('euler_step')
+!pw  call t_startf('euler_step')
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !   compute Q min/max values for lim8
@@ -2325,6 +2353,7 @@ end subroutine ALE_parametric_coords
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   rhs_viss = 0
   if ( limiter_option == 8  ) then
+    call t_startf('bihmix_qminmax')
     ! when running lim8, we also need to limit the biharmonic, so that term needs
     ! to be included in each euler step.  three possible algorithms here:
     ! 1) most expensive:
@@ -2380,9 +2409,9 @@ end subroutine ALE_parametric_coords
     ! compute element qmin/qmax
     if ( rhs_multiplier == 0 ) then
       ! update qmin/qmax based on neighbor data for lim8
-      call t_startf('euler_neighbor_minmax1')
+      call t_startf('eus_neighbor_minmax1')
       call neighbor_minmax(hybrid,edgeAdvQminmax,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
-      call t_stopf('euler_neighbor_minmax1')
+      call t_stopf('eus_neighbor_minmax1')
     endif
 
     ! get niew min/max values, and also compute biharmonic mixing term
@@ -2449,9 +2478,9 @@ end subroutine ALE_parametric_coords
       enddo
       call neighbor_minmax_finish(hybrid,edgeAdvQminmax,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
 #else
-      call t_startf('euler_neighbor_minmax2')
+      call t_startf('eus_neighbor_minmax2')
       call neighbor_minmax(hybrid,edgeAdvQminmax,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
-      call t_stopf('euler_neighbor_minmax2')
+      call t_stopf('eus_neighbor_minmax2')
       call biharmonic_wk_scalar(elem,qtens_biharmonic,deriv,edgeAdv,hybrid,nets,nete) 
 
       do ie = nets , nete
@@ -2470,12 +2499,14 @@ end subroutine ALE_parametric_coords
 
 
     endif
+    call t_stopf('bihmix_qminmax')
   endif  ! compute biharmonic mixing term and qmin/qmax
 
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !   2D Advection step
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  call t_startf('eus_2d_advec')
   do ie = nets , nete
     ! note: eta_dot_dpdn is actually dimension nlev+1, but nlev+1 data is
     ! all zero so we only have to DSS 1:nlev
@@ -2568,7 +2599,9 @@ end subroutine ALE_parametric_coords
       call edgeVpack( edgeAdvp1 , DSSvar(:,:,1:nlev) , nlev , nlev*qsize , ie)
   enddo
 
+  call t_startf('eus_bexchV')
   call bndry_exchangeV( hybrid , edgeAdvp1 )
+  call t_stopf('eus_bexchV')
 
   do ie = nets , nete
     if ( DSSopt == DSSeta         ) DSSvar => elem(ie)%derived%eta_dot_dpdn(:,:,:)
@@ -2599,7 +2632,8 @@ end subroutine ALE_parametric_coords
 !$OMP BARRIER
 #endif
 #endif
-   call t_stopf('euler_step')
+  call t_stopf('eus_2d_advec')
+!pw call t_stopf('euler_step')
   end subroutine euler_step
 !-----------------------------------------------------------------------------
 
@@ -2767,7 +2801,9 @@ end subroutine ALE_parametric_coords
       call edgeVpack  ( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , ie )
     enddo
 
+    call t_startf('ah_scalar_bexchV')
     call bndry_exchangeV( hybrid , edgeAdv )
+    call t_stopf('ah_scalar_bexchV')
 
     do ie = nets , nete
       call edgeVunpack( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , ie )
@@ -2901,13 +2937,21 @@ end subroutine ALE_parametric_coords
         ttmp(:,:,:,1)=elem(ie)%state%t(:,:,:,np1)
 #endif
         ttmp(:,:,:,1)=ttmp(:,:,:,1)*dp_star
+
+        call t_startf('vertical_remap1_1')
         call remap1(ttmp,np,1,dp_star,dp)
+        call t_stopf('vertical_remap1_1')
+
         elem(ie)%state%t(:,:,:,np1)=ttmp(:,:,:,1)/dp
 
         ttmp(:,:,:,1)=elem(ie)%state%v(:,:,1,:,np1)*dp_star
         ttmp(:,:,:,2)=elem(ie)%state%v(:,:,2,:,np1)*dp_star
+
+        call t_startf('vertical_remap1_2')
         call remap1(ttmp,np,2,dp_star,dp)
+        call t_stopf('vertical_remap1_2')
 !        call remap1_nofilter(ttmp,np,2,dp_star,dp)
+
         if ( .not. se_prescribed_wind_2d ) &
              elem(ie)%state%v(:,:,1,:,np1)=ttmp(:,:,:,1)/dp
         if ( .not. se_prescribed_wind_2d ) &
@@ -2940,7 +2984,9 @@ end subroutine ALE_parametric_coords
            enddo
 
         else
+           call t_startf('vertical_remap1_3')
            call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
+           call t_stopf('vertical_remap1_3')
         endif
      endif
 
@@ -2961,7 +3007,11 @@ end subroutine ALE_parametric_coords
             end do
           end do
         end do
+
+        call t_startf('vertical_remap1_4')
         call remap1(cdp,nep,ntrac-1,dpc_star,dpc)
+        call t_stopf('vertical_remap1_4')
+
         do i=1,nep
           do j=1,nep
             do k=1,nlev
@@ -3008,7 +3058,11 @@ end subroutine ALE_parametric_coords
               end do
            end do
            dpc_star=fvm(ie)%dp_fvm(1:nc,1:nc,:,np1_fvm)
+
+           call t_startf('vertical_remap1_5')
            call remap1(cdp,nc,ntrac,dpc_star,dpc)
+           call t_stopf('vertical_remap1_5')
+
            do k=1,nlev
               do j=1,nc
                  do i=1,nc

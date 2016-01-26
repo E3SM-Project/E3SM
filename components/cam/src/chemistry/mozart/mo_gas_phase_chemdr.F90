@@ -379,6 +379,8 @@ contains
     real(r8) :: del_h2so4_gasprod(ncol,pver)
     real(r8) :: vmr0(ncol,pver,gas_pcnst)
 
+    call t_startf('chemdr_init')
+
     ! initialize to NaN to hopefully catch user defined rxts that go unset
     reaction_rates(:,:,:) = nan
 
@@ -748,20 +750,24 @@ contains
 
     vmr0(:ncol,:,:) = vmr(:ncol,:,:) ! mixing ratios before chemistry changes
 
+    call t_stopf('chemdr_init')
+
     !=======================================================================
     !        ... Call the class solution algorithms
     !=======================================================================
     !-----------------------------------------------------------------------
     !	... Solve for "Explicit" species
     !-----------------------------------------------------------------------
+    call t_startf('exp_sol')
     call exp_sol( vmr, reaction_rates, het_rates, extfrc, delt, invariants(1,1,indexm), ncol, lchnk, ltrop_sol )
+    call t_stopf('exp_sol')
 
     !-----------------------------------------------------------------------
     !	... Solve for "Implicit" species
     !-----------------------------------------------------------------------
     if ( has_strato_chem ) wrk(:,:) = vmr(:,:,h2o_ndx)
-    call t_startf('imp_sol')
     !
+    call t_startf('imp_sol')
     call imp_sol( vmr, reaction_rates, het_rates, extfrc, delt, &
                   invariants(1,1,indexm), ncol, lchnk, ltrop_sol(:ncol) )
     call t_stopf('imp_sol')
@@ -783,11 +789,13 @@ contains
 ! Aerosol processes ...
 !
 
+    call t_startf('aero_model_gasaerexch')
     call aero_model_gasaerexch( imozart-1, ncol, lchnk, delt, latndx, lonndx, reaction_rates, &
                                 tfld, pmid, pdel, mbar, relhum, &
                                 zm,  qh2o, cwat, cldfr, ncldwtr, &
                                 invariants(:,:,indexm), invariants, del_h2so4_gasprod,  &
                                 vmr0, vmr, pbuf )
+    call t_stopf('aero_model_gasaerexch')
 
     if ( has_strato_chem ) then 
 
@@ -892,6 +900,7 @@ contains
     wind_speed(:ncol) = sqrt( ufld(:ncol,pver)*ufld(:ncol,pver) + vfld(:ncol,pver)*vfld(:ncol,pver) )
     prect(:ncol) = precc(:ncol) + precl(:ncol)
 
+    call t_startf('drydep')
     if ( drydep_method == DD_XLND ) then
        soilw = -99
        call drydep( ocnfrac, icefrac, ncdate, ts, ps,  &
@@ -912,6 +921,7 @@ contains
             depvel, sflx, mmr, pmid(:,pver), &
             tvs, ncol, icefrac, ocnfrac, lchnk )
     endif
+    call t_stopf('drydep')
 
     drydepflx(:,:) = 0._r8
     do m = 1,pcnst
@@ -922,11 +932,13 @@ contains
        endif
     end do
 
+    call t_startf('chemdr_diags')
     call chm_diags( lchnk, ncol, vmr(:ncol,:,:), mmr_new(:ncol,:,:), &
                     reaction_rates(:ncol,:,:), invariants(:ncol,:,:), depvel(:ncol,:),  sflx(:ncol,:), &
                     mmr_tend(:ncol,:,:), pdel(:ncol,:), pbuf  )
 
     call rate_diags_calc( reaction_rates(:,:,:), vmr(:,:,:), invariants(:,:,indexm), ncol, lchnk )
+    call t_stopf('chemdr_diags')
 
   end subroutine gas_phase_chemdr
 

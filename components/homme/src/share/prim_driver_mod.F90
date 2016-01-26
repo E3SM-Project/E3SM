@@ -31,6 +31,8 @@ module prim_driver_mod
 
   use element_mod, only : element_t, timelevels,  allocate_element_desc
   use thread_mod, only : nThreadsHoriz, omp_get_num_threads
+  use perf_mod, only: t_startf, t_stopf
+
   implicit none
   private
   public :: prim_init1, prim_init2 , prim_run, prim_run_subcycle, prim_finalize, leapfrog_bootstrap
@@ -1410,10 +1412,11 @@ contains
 
     if(disable_diagnostics) compute_diagnostics=.false.
 
-    if (compute_diagnostics) &
-       call prim_diag_scalars(elem,hvcoord,tl,4,.true.,nets,nete)
-
-
+    if (compute_diagnostics) then
+      call t_startf("prim_diag_scalars")
+      call prim_diag_scalars(elem,hvcoord,tl,4,.true.,nets,nete)
+      call t_stopf("prim_diag_scalars")
+    endif
 
 #ifdef CAM
     ! ftype=2  Q was adjusted by physics, but apply u,T forcing here
@@ -1422,19 +1425,34 @@ contains
     ! ftype=-1 do not apply forcing
     call TimeLevel_Qdp( tl, qsplit, n0_qdp)
     if (ftype==0) then
+      call t_startf("ApplyCAMForcing")
       call ApplyCAMForcing(elem, fvm, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
+      call t_stopf("ApplyCAMForcing")
     end if
-    if (ftype==2) call ApplyCAMForcing_dynamics(elem, hvcoord,tl%n0,dt_remap,nets,nete)
+    if (ftype==2) then
+      call t_startf("ApplyCAMForcing_dynamics")
+      call ApplyCAMForcing_dynamics(elem, hvcoord,tl%n0,dt_remap,nets,nete)
+      call t_stopf("ApplyCAMForcing_dynamics")
+    endif
 #endif
 
     ! E(1) Energy after CAM forcing
-    if (compute_energy) call prim_energy_halftimes(elem,hvcoord,tl,1,.true.,nets,nete)
+    if (compute_energy) then
+      call t_startf("prim_energy_halftimes")
+      call prim_energy_halftimes(elem,hvcoord,tl,1,.true.,nets,nete)
+      call t_stopf("prim_energy_halftimes")
+    endif
 
     ! qmass and variance, using Q(n0),Qdp(n0)
-    if (compute_diagnostics) call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
+    if (compute_diagnostics) then
+      call t_startf("prim_diag_scalars")
+      call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
+      call t_stopf("prim_diag_scalars")
+    endif
 
     ! initialize dp3d from ps
     if (rsplit>0) then
+    call t_startf("init_dp3d_from_ps")
     do ie=nets,nete
        do k=1,nlev
           elem(ie)%state%dp3d(:,:,k,tl%n0)=&
@@ -1445,24 +1463,35 @@ contains
        ! vertical_remap.  so to this for debugging:
 !       elem(ie)%state%ps_v(:,:,tl%n0)=-9e9 !outcommented so the pre_scribed winds work with rsplit>0
     enddo
+    call t_stopf("init_dp3d_from_ps")
     endif
 
 #if (USE_OPENACC)
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp) 
+
+    call t_startf("copy_qdp_h2d")
     call copy_qdp_h2d( elem , n0_qdp )
+    call t_stopf("copy_qdp_h2d")
 #endif
 
     ! loop over rsplit vertically lagrangian timesteps
+    call t_startf("prim_step_rX")
     call prim_step(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord,compute_diagnostics,1)
+    call t_stopf("prim_step_rX")
     do r=2,rsplit
        call TimeLevel_update(tl,"leapfrog")
+       call t_startf("prim_step_rX")
        call prim_step(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord,.false.,r)
+       call t_stopf("prim_step_rX")
     enddo
     ! defer final timelevel update until after remap and diagnostics
 
 #if (USE_OPENACC)
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp) 
+
+    call t_startf("copy_qdp_h2d")
     call copy_qdp_d2h( elem , np1_qdp )
+    call t_stopf("copy_qdp_h2d")
 #endif
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1482,6 +1511,7 @@ contains
     ! lnps (we should get rid of this)
     ! Q    (mixing ratio)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    call t_startf("prim_run_subcyle_diags")
     do ie=nets,nete
        elem(ie)%state%lnps(:,:,tl%np1)= LOG(elem(ie)%state%ps_v(:,:,tl%np1))
 #if (defined COLUMN_OPENMP)
@@ -1498,9 +1528,7 @@ contains
           enddo
        enddo
     enddo
-
-
-
+    call t_stopf("prim_run_subcyle_diags")
 
 
     ! now we have:
@@ -1509,17 +1537,32 @@ contains
     !   u(np1)   dynamics at  t+dt_remap
     !
     !   Q(1)   Q at t+dt_remap
-    if (compute_diagnostics) call prim_diag_scalars(elem,hvcoord,tl,2,.false.,nets,nete)
-    if (compute_energy) call prim_energy_halftimes(elem,hvcoord,tl,2,.false.,nets,nete)
+    if (compute_diagnostics) then
+      call t_startf("prim_diag_scalars")
+      call prim_diag_scalars(elem,hvcoord,tl,2,.false.,nets,nete)
+      call t_stopf("prim_diag_scalars")
+    endif
+    if (compute_energy) then
+      call t_startf("prim_energy_halftimes")
+      call prim_energy_halftimes(elem,hvcoord,tl,2,.false.,nets,nete)
+      call t_stopf("prim_energy_halftimes")
+    endif
 
     if (energy_fixer > 0) then
-       call prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete,nsubstep)
+      call t_startf("prim_energy_fixer")
+      call prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete,nsubstep)
+      call t_stopf("prim_energy_fixer")
     endif
 
     if (compute_diagnostics) then
-       call prim_diag_scalars(elem,hvcoord,tl,3,.false.,nets,nete)
-       call prim_energy_halftimes(elem,hvcoord,tl,3,.false.,nets,nete)
-     endif
+      call t_startf("prim_diag_scalars")
+      call prim_diag_scalars(elem,hvcoord,tl,3,.false.,nets,nete)
+      call t_stopf("prim_diag_scalars")
+
+      call t_startf("prim_energy_halftimes")
+      call prim_energy_halftimes(elem,hvcoord,tl,3,.false.,nets,nete)
+      call t_stopf("prim_energy_halftimes")
+    endif
 
     ! =================================
     ! update dynamics time level pointers
@@ -1614,6 +1657,7 @@ contains
     real (kind=real_kind) :: dp_np1(np,np)
     logical :: compute_diagnostics
 
+    call t_startf("prim_step_init")
     dt_q = dt*qsplit
     if (ntrac>0.and.rstep==1) then
        !
@@ -1673,10 +1717,12 @@ contains
          elem(ie)%derived%dp(:,:,:)=elem(ie)%state%dp3d(:,:,:,tl%n0)
       endif
     enddo
+    call t_stopf("prim_step_init")
 
     ! ===============
     ! Dynamical Step
     ! ===============
+    call t_startf("prim_step_dyn")
     n_Q = tl%n0  ! n_Q = timelevel of FV tracers at time t.  need to save this
                  ! FV tracers still carry 3 timelevels
                  ! SE tracers only carry 2 timelevels
@@ -1711,6 +1757,7 @@ contains
       end do
     end if
 #endif
+    call t_stopf("prim_step_dyn")
 
     ! current dynamics state variables:
     !    derived%dp              =  dp at start of timestep
@@ -1739,9 +1786,12 @@ contains
     ! special case in CAM: if CSLAM tracers are turned on , qsize=1 but this tracer should 
     ! not be advected.  This will be cleaned up when the physgrid is merged into CAM trunk
     ! Currently advecting all species
+    call t_startf("prim_step_advec")
     if (qsize > 0) then
+      call t_startf("PAT_remap")
       call Prim_Advec_Tracers_remap(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
            dt_q,tl,nets,nete)
+      call t_stopf("PAT_remap")
     end if
     !
     ! only run fvm transport every fvm_supercycling rstep
@@ -1760,8 +1810,10 @@ contains
       end if
 #if defined(_SPELT)
        !
+       call t_startf("PAT_spelt")
        call Prim_Advec_Tracers_spelt(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
             dt_q,tl,nets,nete)
+       call t_stopf("PAT_spelt")
        do ie=nets,nete
           !           do k=1, nlev
           !             fvm(ie)%c(1:nep,1:nep,k,1,tl%np1)=interpolate_gll2spelt_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
@@ -1787,8 +1839,10 @@ contains
           endif
        endif
 #else
-      call Prim_Advec_Tracers_fvm(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
-           dt_q,tl,nets,nete)
+       call t_startf("PAT_fvm")
+       call Prim_Advec_Tracers_fvm(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
+            dt_q,tl,nets,nete)
+       call t_stopf("PAT_fvm")
        if (rstep.ne.rsplit) then
           !
           ! save velocity for fvm trajecotry algorithm for next fvm time-level update
@@ -1823,6 +1877,7 @@ contains
 !        call overwrite_SEdensity(elem,fvm,dt_q,hybrid,nets,nete,tl%np1)
 #endif
     endif
+    call t_stopf("prim_step_advec")
 
   end subroutine prim_step
 

@@ -823,6 +823,8 @@ end function radiation_nextsw_cday
     character(*), parameter :: name = 'radiation_tend'
 !----------------------------------------------------------------------
 
+    call t_startf ('radiation_tend_init')
+
     lchnk = state%lchnk
     ncol = state%ncol
 
@@ -894,6 +896,8 @@ end function radiation_nextsw_cday
           !   cliqwp(:ncol,k) = clwpobs(k)
           !end do
        endif
+
+       call t_stopf ('radiation_tend_init')
 
        call t_startf('cldoptics')
 
@@ -1024,6 +1028,7 @@ end function radiation_nextsw_cday
        ! Solar radiation computation
 
        if (dosw) then
+          call t_startf ('rad_sw')
 
           call get_variability(sfac)
 
@@ -1031,6 +1036,7 @@ end function radiation_nextsw_cday
           call rad_cnst_get_call_list(active_calls)
 
           ! The climate (icall==0) calculation must occur last.
+          call t_startf ('rad_sw_loop')
           do icall = N_DIAG, 0, -1
 
               if (active_calls(icall)) then
@@ -1093,7 +1099,7 @@ end function radiation_nextsw_cday
 
               end if ! (active_calls(icall))
           end do ! icall
-
+          call t_stopf ('rad_sw_loop')
 
           ! Output cloud optical depth fields for the visible band
           tot_icld_vistau(:ncol,:)  = c_cld_tau(idx_sw_diag,:ncol,:)
@@ -1123,6 +1129,8 @@ end function radiation_nextsw_cday
           if (cldfsnow_idx > 0) then
              call outfld('SNOW_ICLD_VISTAU', snow_icld_vistau, pcols, lchnk)
           endif
+
+          call t_stopf ('rad_sw')
        end if   ! dosw
 
        ! Output aerosol mmr
@@ -1131,6 +1139,7 @@ end function radiation_nextsw_cday
        ! Longwave radiation computation
 
        if (dolw) then
+          call t_startf ('rad_lw')
           !
           ! Convert upward longwave flux units to CGS
           !
@@ -1143,6 +1152,7 @@ end function radiation_nextsw_cday
           call rad_cnst_get_call_list(active_calls)
 
           ! The climate (icall==0) calculation must occur last.
+          call t_startf ('rad_lw_loop')
           do icall = N_DIAG, 0, -1
 
               if (active_calls(icall)) then
@@ -1187,7 +1197,9 @@ end function radiation_nextsw_cday
 
               end if
           end do
+          call t_stopf ('rad_lw_loop')
 
+          call t_stopf ('rad_lw')
        end if  !dolw
 
        ! deconstruct the RRTMG state object
@@ -1201,6 +1213,7 @@ end function radiation_nextsw_cday
        nstep = get_nstep()
 
        if ( dohirs .and. (mod(nstep-1,ihirsfq) .eq. 0) ) then
+          call t_startf ('dohirs')
 
           do i= 1, ncol
              ts(i) = sqrt(sqrt(cam_in%lwup(i)/stebol))
@@ -1240,6 +1253,7 @@ end function radiation_nextsw_cday
              call outfld(msuname(i),britemp(1,i),pcols,lchnk)
           end do
 
+          call t_stopf ('dohirs')
        end if
 
        !! initialize and calculate emis
@@ -1293,6 +1307,8 @@ end function radiation_nextsw_cday
           end do
        end if
 
+       call t_stopf ('radiation_tend_init')
+
     end if   !  if (dosw .or. dolw) then
 
     call t_startf ('radheat_tend')
@@ -1302,11 +1318,14 @@ end function radiation_nextsw_cday
     call t_stopf ('radheat_tend')
 
     ! Compute heating rate for dtheta/dt 
+    call t_startf ('heating_rate')
     do k=1,pver
        do i=1,ncol
           ftem(i,k) = (qrs(i,k) + qrl(i,k))/cpair * (1.e5_r8/state%pmid(i,k))**cappa
        end do
     end do
+    call t_stopf ('heating_rate')
+
     call outfld('HR      ',ftem    ,pcols   ,lchnk   )
 
     ! convert radiative heating rates to Q*dp for energy conservation

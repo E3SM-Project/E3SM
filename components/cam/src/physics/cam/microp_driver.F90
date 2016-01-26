@@ -179,9 +179,9 @@ subroutine microp_driver_tend(state, ptend, dtime, pbuf)
 
    select case (microp_scheme)
    case ('MG')
-      call t_startf('microp_mg_tend')
+      call t_startf('microp_mg_cam_tend')
       call micro_mg_cam_tend(state, ptend, dtime, pbuf)
-      call t_stopf('microp_mg_tend')
+      call t_stopf('microp_mg_cam_tend')
    case ('RK')
       ! microp_driver doesn't handle this one
       continue

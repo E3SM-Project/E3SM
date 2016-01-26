@@ -751,8 +751,8 @@ endif
     integer :: nce
     real (kind=real_kind) :: tmp
 
-    call t_adj_detailf(+2)
-    call t_startf('edgeSpack')
+!pw call t_adj_detailf(+2)
+!pw call t_startf('edgeSpack')
 
     is = edge%putmap(south,ielem)
     ie = edge%putmap(east,ielem)
@@ -811,8 +811,8 @@ endif
         end if
     end do
 
-    call t_stopf('edgeSpack')
-    call t_adj_detailf(-2)
+!pw call t_stopf('edgeSpack')
+!pw call t_adj_detailf(-2)
 
   end subroutine edgeSpack
 
@@ -1461,7 +1461,7 @@ endif
     integer :: i,k,l,iptr,nce
     integer :: is,ie,in,iw
 
-    call t_startf('edgeSunpack')
+!pw call t_startf('edgeSunpack')
     threadsafe=.false.
 
     is=edge%getmap(south,ielem)
@@ -1513,7 +1513,7 @@ endif
             enddo
         endif
     end do
-    call t_stopf('edgeSunpack')
+!pw call t_stopf('edgeSunpack')
     
   end subroutine edgeSunpackMAX
 
@@ -1533,7 +1533,7 @@ endif
     integer :: i,k,l,iptr,nce
     integer :: is,ie,in,iw
 
-    call t_startf('edgeSunpack')
+!pw call t_startf('edgeSunpack')
     threadsafe=.false.
 
     is=edge%getmap(south,ielem)
@@ -1585,7 +1585,7 @@ endif
             enddo
         endif
     end do
-    call t_stopf('edgeSunpack')
+!pw call t_stopf('edgeSunpack')
     
   end subroutine edgeSunpackMIN
 

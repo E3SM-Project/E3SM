@@ -172,7 +172,7 @@ contains
 #endif
 
 !JMD    call t_barrierf('sync_prim_advance_exp', hybrid%par%comm)
-    call t_adj_detailf(+1)
+!pw call t_adj_detailf(+1)
     call t_startf('prim_advance_exp')
     nm1   = tl%nm1
     n0    = tl%n0
@@ -301,7 +301,7 @@ contains
           enddo
        end do
        call t_stopf('prim_advance_exp')
-       call t_adj_detailf(-1)
+!pw    call t_adj_detailf(-1)
        return
     endif
 
@@ -313,21 +313,26 @@ contains
     if (method==0) then
        ! regular LF step
        dt2 = 2*dt
+       call t_startf("LF_timestep")
        call compute_and_apply_rhs(np1,nm1,n0,qn0,dt2,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,eta_ave_w)
+       call t_stopf("LF_timestep")
        dt_vis = dt2  ! dt to use for time-split dissipation
     else if (method==1) then
        ! RK2
        ! forward euler to u(dt/2) = u(0) + (dt/2) RHS(0)  (store in u(np1))
+       call t_startf("RK2_timestep")
        call compute_and_apply_rhs(np1,n0,n0,qn0,dt/2,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0)
        ! leapfrog:  u(dt) = u(0) + dt RHS(dt/2)     (store in u(np1))
        call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w)
+       call t_stopf("RK2_timestep")
     else if (method==2) then
        ! RK2-SSP 3 stage.  matches tracer scheme. optimal SSP CFL, but
        ! not optimal for regular CFL
        ! u1 = u0 + dt/2 RHS(u0)
+       call t_startf("RK2-SSP3_timestep")
        call compute_and_apply_rhs(np1,n0,n0,qn0,dt/2,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,eta_ave_w/3)
        ! u2 = u1 + dt/2 RHS(u1)
@@ -350,9 +355,11 @@ contains
                   + 2*elem(ie)%state%dp3d(:,:,:,np1)/3
           endif
        enddo
+       call t_stopf("RK2-SSP3_timestep")
     else if (method==3) then
        ! classic RK3  CFL=sqrt(3)
        ! u1 = u0 + dt/3 RHS(u0)
+       call t_startf("RK3_timestep")
        call compute_and_apply_rhs(np1,n0,n0,qn0,dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0)
        ! u2 = u0 + dt/2 RHS(u1)
@@ -361,10 +368,12 @@ contains
        ! u3 = u0 + dt RHS(u2)
        call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w)
+       call t_stopf("RK3_timestep")
     else if (method==4) then
        ! KG 4th order 4 stage:   CFL=sqrt(8)
        ! low storage version of classic RK4
        ! u1 = u0 + dt/4 RHS(u0)
+       call t_startf("RK4_timestep")
        call compute_and_apply_rhs(np1,n0,n0,qn0,dt/4,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0)
        ! u2 = u0 + dt/3 RHS(u1)
@@ -376,11 +385,13 @@ contains
        ! u4 = u0 + dt RHS(u3)
        call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w)
+       call t_stopf("RK4_timestep")
     else if (method==5) then
 #if 0
        ! KG 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
        ! but nonlinearly only 2nd order
        ! u1 = u0 + dt/5 RHS(u0)
+       call t_startf("KG3-5stage_timestep")
        call compute_and_apply_rhs(np1,n0,n0,qn0,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0)
        ! u2 = u0 + dt/5 RHS(u1)
@@ -395,9 +406,11 @@ contains
        ! u5 = u0 + dt RHS(u4)
        call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w)
+       call t_stopf("KG3-5stage_timestep")
 #else
        ! Ullrich 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
        ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
+       call t_startf("U3-5stage_timestep")
 
        !
        ! phl: rhs: t=t
@@ -450,6 +463,7 @@ contains
             deriv,nets,nete,.false.,3*eta_ave_w/4)
        ! final method is the same as:
        ! u5 = u0 +  dt/4 RHS(u0)) + 3dt/4 RHS(u4)
+       call t_stopf("U3-5stage_timestep")
 #endif
 
     else if ((method==11).or.(method==12)) then
@@ -460,6 +474,7 @@ contains
 !      if (hybrid%masterthread) print*, "fully implicit integration is still under development"
 
 #ifdef TRILINOS
+      call t_startf("JFNK_imp_timestep")
       lenx=(np*np*nlev*3 + np*np*1)*(nete-nets+1)  ! 3 3d vars plus 1 2d vars
       allocate(xstate(lenx))
       xstate(:) = 0d0
@@ -584,6 +599,7 @@ contains
 			  end do
 		  end do
 	  end do
+      call t_stopf("JFNK_imp_timestep")
 #endif
 
     else
@@ -639,7 +655,7 @@ contains
     tevolve=tevolve+dt
 
     call t_stopf('prim_advance_exp')
-    call t_adj_detailf(-1)
+!pw call t_adj_detailf(-1)
     end subroutine prim_advance_exp
 
 
@@ -784,7 +800,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        integer              :: i,j,k,l,ie,kptr
 
 !JMD       call t_barrierf('sync_prim_advance_si', hybrid%par%comm)
-       call t_adj_detailf(+1)
+!pw    call t_adj_detailf(+1)
        call t_startf('prim_advance_si')
 
        nm1   = tl%nm1
@@ -1092,7 +1108,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
        end do
 
+       call t_startf('pasi_bexchV1')
        call bndry_exchangeV(cg%hybrid,edge2)
+       call t_stopf('pasi_bexchV1')
 
        do ie = nets, nete
 
@@ -1184,7 +1202,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        ! boundary exchange C
        ! ==================================
 
+       call t_startf('pasi_bexchV2')
        call bndry_exchangeV(cg%hybrid,edge1)
+       call t_stopf('pasi_bexchV2')
 
        do ie=nets,nete
 
@@ -1294,7 +1314,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
        end do
 
+       call t_startf('pasi_bexchV3')
        call bndry_exchangeV(cg%hybrid,edge1)
+       call t_stopf('pasi_bexchV3')
 
        do ie = nets, nete
 
@@ -1427,7 +1449,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        ! boundary exchange v at time level n+1
        ! ======================================
 
+       call t_startf('pasi_bexchV4')
        call bndry_exchangeV(cg%hybrid,edge3p1)
+       call t_stopf('pasi_bexchV4')
 
 !KGEN START(prim_advance_si_bug1)
        do ie=nets,nete
@@ -1491,7 +1515,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
        call prim_diffusion(elem, nets,nete,np1,deriv,dt2,cg%hybrid)
        call t_stopf('prim_advance_si')
-       call t_adj_detailf(-1)
+!pw    call t_adj_detailf(-1)
 #endif
   end subroutine prim_advance_si
 
@@ -1514,7 +1538,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   logical :: filter_ps = .false.
   if (integration == "explicit") filter_ps = .true.
 
-  call t_adj_detailf(+1)
+!pw  call t_adj_detailf(+1)
   call t_startf('preq_robert')
   do ie=nets,nete
      if (filter_ps) then
@@ -1534,7 +1558,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
   end do
   call t_stopf('preq_robert')
-  call t_adj_detailf(-1)
+!pw  call t_adj_detailf(-1)
 
   end subroutine preq_robert3
 
@@ -1771,7 +1795,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
   if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
 !JMD  call t_barrierf('sync_advance_hypervis', hybrid%par%comm)
-  call t_adj_detailf(+1)
+!pw   call t_adj_detailf(+1)
   call t_startf('advance_hypervis')
 
 
@@ -1809,7 +1833,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,ie)
         enddo
 
+        call t_startf('ah_bexchV1')
         call bndry_exchangeV(hybrid,edge3)
+        call t_stopf('ah_bexchV1')
 
         do ie=nets,nete
 
@@ -1933,8 +1959,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVpack(edge3,pstens(:,:,ie),1,kptr,ie)
         enddo
 
-
+        call t_startf('ah_bexchV2')
         call bndry_exchangeV(hybrid,edge3)
+        call t_stopf('ah_bexchV2')
 
         do ie=nets,nete
 
@@ -1994,7 +2021,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   endif
 
   call t_stopf('advance_hypervis')
-  call t_adj_detailf(-1)
+!pw  call t_adj_detailf(-1)
 
   end subroutine advance_hypervis
 
@@ -2069,7 +2096,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
   if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
 !JMD  call t_barrierf('sync_advance_hypervis', hybrid%par%comm)
-  call t_adj_detailf(+1) 
+!pw   call t_adj_detailf(+1) 
   call t_startf('advance_hypervis_dp')
 
 
@@ -2107,7 +2134,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,ie)
         enddo
 
+        call t_startf('ahdp_bexchV1')
         call bndry_exchangeV(hybrid,edge3)
+        call t_stopf('ahdp_bexchV1')
 
         do ie=nets,nete
 
@@ -2225,8 +2254,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVpack(edge3,elem(ie)%state%dp3d(:,:,:,nt),nlev,kptr,ie)
         enddo
 
-
+        call t_startf('ahdp_bexchV2')
         call bndry_exchangeV(hybrid,edge3)
+        call t_stopf('ahdp_bexchV2')
 
         do ie=nets,nete
 
@@ -2319,7 +2349,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   endif
 
   call t_stopf('advance_hypervis_dp')
-  call t_adj_detailf(-1)
+!pw  call t_adj_detailf(-1)
 
   end subroutine advance_hypervis_dp
 
@@ -2385,7 +2415,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
   if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
 !JMD  call t_barrierf('sync_advance_hypervis_lf', hybrid%par%comm)
-  call t_adj_detailf(+1)
+!pw   call t_adj_detailf(+1)
   call t_startf('advance_hypervis_lf')
 
 ! for non-leapfrog,nt=n0=nmt
@@ -2429,7 +2459,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVpack(edge3,elem(ie)%state%v(:,:,:,:,nt),2*nlev,kptr,ie)
         enddo
 
+        call t_startf('ahlf_bexchV1')
         call bndry_exchangeV(hybrid,edge3)
+        call t_stopf('ahlf_bexchV1')
 
         do ie=nets,nete
 
@@ -2527,8 +2559,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVpack(edge3,pstens(:,:,ie),1,kptr,ie)
         enddo
 
-
+        call t_startf('ahlf_bexchV2')
         call bndry_exchangeV(hybrid,edge3)
+        call t_stopf('ahlf_bexchV2')
 
         do ie=nets,nete
 
@@ -2599,7 +2632,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   endif
 
   call t_stopf('advance_hypervis_lf')
-  call t_adj_detailf(-1)
+!pw  call t_adj_detailf(-1)
 
   end subroutine advance_hypervis_lf
 
@@ -2712,7 +2745,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 !JMD  call t_barrierf('sync_compute_and_apply_rhs', hybrid%par%comm)
 
-  call t_adj_detailf(+1)
+!pw call t_adj_detailf(+1)
   call t_startf('compute_and_apply_rhs')
   do ie=nets,nete
      !ps => elem(ie)%state%ps_v(:,:,n0)
@@ -3277,7 +3310,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
     ! Insert communications here: for shared memory, just a single
   ! sync is required
   ! =============================================================
+
+  call t_startf('caar_bexchV')
   call bndry_exchangeV(hybrid,edge3p1)
+  call t_stopf('caar_bexchV')
+
   do ie=nets,nete
      ! ===========================================================
      ! Unpack the edges for vgrad_T and v tendencies...
@@ -3359,7 +3396,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #endif
 #endif
   call t_stopf('compute_and_apply_rhs')
-  call t_adj_detailf(-1)
+!pw  call t_adj_detailf(-1)
 
   end subroutine compute_and_apply_rhs
 
@@ -3463,7 +3500,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      pstens(:,:,ie)=minval(phis(:,:,ie))
      call edgeVpack(edge3p1,pstens(:,:,ie),1,0,ie)
   enddo
+
+  call t_startf('smooth_phis_bexchV1')
   call bndry_exchangeV(hybrid,edge3p1)
+  call t_stopf('smooth_phis_bexchV1')
+
   do ie=nets,nete
      call edgeVunpackMin(edge3p1, pstens(:,:,ie), 1, 0, ie)
      pmin(ie)=minval(pstens(:,:,ie))
@@ -3472,7 +3513,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      pstens(:,:,ie)=maxval(phis(:,:,ie))
      call edgeVpack(edge3p1,pstens(:,:,ie),1,0,ie)
   enddo
+
+  call t_startf('smooth_phis_bexchV2')
   call bndry_exchangeV(hybrid,edge3p1)
+  call t_stopf('smooth_phis_bexchV2')
+
   do ie=nets,nete
      call edgeVunpackMax(edge3p1, pstens(:,:,ie), 1, 0, ie)
      pmax(ie)=maxval(pstens(:,:,ie))
@@ -3505,7 +3550,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            pstens(:,:,ie)=laplace_sphere_wk(pstens(:,:,ie),deriv,elem(ie),var_coef=use_var_coef)
            call edgeVpack(edge3p1,pstens(:,:,ie),1,0,ie)
         enddo
+
+        call t_startf('smooth_phis_bexchV3')
         call bndry_exchangeV(hybrid,edge3p1)
+        call t_stopf('smooth_phis_bexchV3')
+
         do ie=nets,nete
            call edgeVunpack(edge3p1, pstens(:,:,ie), 1, 0, ie)
            pstens(:,:,ie)=pstens(:,:,ie)*elem(ie)%rspheremp(:,:)
@@ -3559,7 +3608,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         call edgeVpack(edge3p1,phis(:,:,ie),1,0,ie)
 
      enddo
+
+     call t_startf('smooth_phis_bexchV4')
      call bndry_exchangeV(hybrid,edge3p1)
+     call t_stopf('smooth_phis_bexchV4')
+
      do ie=nets,nete
         call edgeVunpack(edge3p1, phis(:,:,ie), 1, 0, ie)
         phis(:,:,ie)=phis(:,:,ie)*elem(ie)%rspheremp(:,:)
@@ -3659,7 +3712,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
       elem(ie)%state%ps_v(:,:,np1)=elem(ie)%state%ps_v(:,:,np1)*elem(ie)%spheremp(:,:)
      call edgeVpack(edge3p1,elem(ie)%state%ps_v(:,:,np1),1,0,ie)
   enddo
+
+  call t_startf('overwr_SEdens_bexchV')
   call bndry_exchangeV(hybrid,edge3p1)
+  call t_stopf('overwr_SEdens_bexchV')
+
   do ie=nets,nete
      call edgeVunpack(edge3p1, elem(ie)%state%ps_v(:,:,np1), 1, 0, ie)
      elem(ie)%state%ps_v(:,:,np1)=elem(ie)%state%ps_v(:,:,np1)*elem(ie)%rspheremp(:,:)

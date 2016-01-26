@@ -13,6 +13,7 @@ module cam_restart
    use cam_abortutils,   only: endrun
    use camsrfexch,       only: cam_in_t, cam_out_t     
    use dyn_comp,         only: dyn_import_t, dyn_export_t
+   use perf_mod,         only: t_startf, t_stopf
 
 #ifdef SPMD
    use mpishorthand,     only: mpicom, mpir8, mpiint, mpilog
@@ -204,6 +205,7 @@ end subroutine restart_printopts
       !-----------------------------------------------------------------------
       ! Write the master restart dataset
       !-----------------------------------------------------------------------
+      call t_startf("write_restart_master")
 
       if (present(yr_spec).and.present(mon_spec).and.present(day_spec).and.present(sec_spec)) then
          fname = interpret_filename_spec( rfilename_spec, &
@@ -214,6 +216,7 @@ end subroutine restart_printopts
 
       call cam_pio_createfile(File, trim(fname), 0)
       call timemgr_init_restart(File)
+
       call init_restart_dynamics(File, dyn_out)
       call init_restart_physics(File, pbuf2d)
       call init_restart_history(File)
@@ -226,14 +229,22 @@ end subroutine restart_printopts
       end if
       ierr = pio_enddef(File)
 
+      call t_stopf("write_restart_master")
 
       !-----------------------------------------------------------------------
       ! Dynamics, physics, History
       !-----------------------------------------------------------------------
       call timemgr_write_restart(File)
-      call write_restart_dynamics(File, dyn_out)
-      call write_restart_physics(File, cam_in, cam_out, pbuf2d)
 
+      call t_startf("write_restart_dynamics")
+      call write_restart_dynamics(File, dyn_out)
+      call t_stopf("write_restart_dynamics")
+
+      call t_startf("write_restart_physics")
+      call write_restart_physics(File, cam_in, cam_out, pbuf2d)
+      call t_stopf("write_restart_physics")
+
+      call t_startf("write_restart_history")
       if (present(yr_spec).and.present(mon_spec).and.&
            present(day_spec).and.present(sec_spec)) then
          call write_restart_history ( File, &
@@ -241,6 +252,8 @@ end subroutine restart_printopts
       else
          call write_restart_history( File )
       end if
+      call t_stopf("write_restart_history")
+
       call pio_closefile(File)
       !-----------------------------------------------------------------------
       ! Close the master restart file
@@ -248,10 +261,11 @@ end subroutine restart_printopts
 
       if (masterproc) then
 	 pname = fname
+
+         call t_startf("write_rest_pfile")
          call write_rest_pfile()
+         call t_stopf("write_rest_pfile")
       end if
-
-
 
    end subroutine cam_write_restart
 
