@@ -174,6 +174,10 @@
       REAL polpart(npart,5)  ! polynomial coefficients derived for spherical and non spherical
                              ! particules
 
+      real, parameter :: TAUTOT_MAX = 100. ! maximum allowed attenuation from
+                                           ! one layer to TOA in beta perp
+                                           ! calculations
+
 !   grid-box variables:
       REAL rad_part(npoints,nlev,npart)
       REAL rhoair(npoints,nlev), zheight(npoints,nlev+1)
@@ -534,13 +538,20 @@ pnorm_perp_tot(:,:)=0
 
       DO k= nlev-1, 1, -1
         tautot_lay_ice(:) = tautot_ice(:,k)-tautot_ice(:,k+1)
-        WHERE (tautot_lay_ice(:).GT.0.)
-         beta_perp_ice(:,k) = pnorm_perp_ice(:,k)/ EXP(-2.0*tautot_ice(:,k+1)) * (2.*tautot_lay_ice(:)) &
-            & / (1.-exp(-2.0*tautot_lay_ice(:)))
+        where (tautot_ice(:,k+1) .LT. TAUTOT_MAX)
+          WHERE (tautot_lay_ice(:).GT.0.)
+          beta_perp_ice(:,k) = pnorm_perp_ice(:,k)/ EXP(-2.0*tautot_ice(:,k+1)) * (2.*tautot_lay_ice(:)) &
+               & / (1.-exp(-2.0*tautot_lay_ice(:)))
 
-        ELSEWHERE
-         beta_perp_ice(:,k)=pnorm_perp_ice(:,k)/EXP(-2.0*tautot_ice(:,k+1))
-        END WHERE
+          ELSEWHERE
+          beta_perp_ice(:,k)=pnorm_perp_ice(:,k)/EXP(-2.0*tautot_ice(:,k+1))
+          END WHERE
+        else where
+           ! If attenuation to TOA is too large, exp(-2.0*tautot_liq(:,k+1))
+           ! goes to zero and the above code has a divide by zero error. A
+           ! simple fix is to set the beta values of such layers to zero.
+              beta_perp_ice(:,k) = 0
+        end where
       ENDDO
 
 !     Liquid only
@@ -550,13 +561,20 @@ pnorm_perp_tot(:,:)=0
 
       DO k= nlev-1, 1, -1
           tautot_lay_liq(:) = tautot_liq(:,k)-tautot_liq(:,k+1) 
-        WHERE (tautot_lay_liq(:).GT.0.)
-         beta_perp_liq(:,k) = pnorm_perp_liq(:,k)/ EXP(-2.0*tautot_liq(:,k+1)) * (2.*tautot_lay_liq(:)) &
-            & / (1.-exp(-2.0*tautot_lay_liq(:)))
+          where (tautot_liq(:,k+1) .LT. TAUTOT_MAX) 
+              WHERE (tautot_lay_liq(:).GT.0.)
+              beta_perp_liq(:,k) = pnorm_perp_liq(:,k)/ EXP(-2.0*tautot_liq(:,k+1)) * (2.*tautot_lay_liq(:)) &
+                    & / (1.-exp(-2.0*tautot_lay_liq(:)))
 
-        ELSEWHERE
-         beta_perp_liq(:,k)=pnorm_perp_liq(:,k)/EXP(-2.0*tautot_liq(:,k+1))
-        END WHERE
+              ELSEWHERE
+              beta_perp_liq(:,k)=pnorm_perp_liq(:,k)/EXP(-2.0*tautot_liq(:,k+1))
+              END WHERE
+           else where
+           ! If attenuation to TOA is too large, exp(-2.0*tautot_liq(:,k+1))
+           ! goes to zero and the above code has a divide by zero error. A
+           ! simple fix is to set the beta values of such layers to zero.
+              beta_perp_liq(:,k) = 0
+           end where
       ENDDO
 
 
