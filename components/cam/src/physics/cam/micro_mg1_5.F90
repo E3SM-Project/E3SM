@@ -2610,7 +2610,7 @@ subroutine micro_mg_tend ( &
 
   do i = 1,mgncol
      do k=1,nlev
-        if (qc(i,k).ge.qsmall) then
+        if (qc(i,k).ge.qsmall  .and. (nc(i,k)+nctend(i,k)*deltat).gt.10._r8) then
            dum=(qc(i,k)/lcldm(i,k)*rho(i,k)*1000._r8)**2 &
                 /(0.109_r8*(nc(i,k)+nctend(i,k)*deltat)/lcldm(i,k)*rho(i,k)/1.e6_r8)*lcldm(i,k)/cldmax(i,k)
         else
