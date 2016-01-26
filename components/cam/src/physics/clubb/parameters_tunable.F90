@@ -387,7 +387,7 @@ module parameters_tunable
    call mpibcast(clubb_gamma_coef, 1, mpir8,  0, mpicom)
    call mpibcast(clubb_mu,         1, mpir8,  0, mpicom)
    call mpibcast(clubb_nu1,        1, mpir8,  0, mpicom)
-   call mpibcast(clubb_c_K10       1, mpir8,  0, mpicom)
+   call mpibcast(clubb_c_K10,      1, mpir8,  0, mpicom)
 #endif
 
 
