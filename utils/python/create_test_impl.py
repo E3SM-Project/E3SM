@@ -28,11 +28,7 @@ class CreateTest(object):
                  test_root=None, test_id=None,
                  compiler=None,
                  baseline_root=None, baseline_name=None,
-                 clean=False,
-         
-
-
-        compare=False, generate=False, namelists_only=False,
+                 clean=False,compare=False, generate=False, namelists_only=False,
                  project=None, parallel_jobs=None):
     ###########################################################################
         self._cime_root      = cime_util.get_cime_root()
@@ -351,10 +347,6 @@ class CreateTest(object):
     def _run_phase(self, test_name):
     ###########################################################################
         test_dir = self._get_test_dir(test_name)
-# the submit script should do the right thing in either case.
-#        if (self._no_batch):
-#            return self._run_phase_command(test_name, "./case.test", RUN_PHASE, from_dir=test_dir)
-#        else
         return self._run_phase_command(test_name, "./case.submit", RUN_PHASE, from_dir=test_dir)
 
     ###########################################################################

@@ -25,7 +25,6 @@ def expect(condition, error_msg):
     
 
 def get_cime_root():
-###############################################################################
     """
     Return the absolute path to the root of CIME that contains this script
 

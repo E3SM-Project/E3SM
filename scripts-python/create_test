@@ -18,7 +18,8 @@ cime_util.check_minimum_python_version(2, 7)
 import argparse, sys, os, doctest, tempfile
 import update_acme_tests, create_test_impl
 from cime_util import expect, warning, verbose_print, run_cmd
-from CIME.Tests import Tests
+
+
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
@@ -252,7 +253,6 @@ def _main_func(description):
         return
 
     cime_util.stop_buffering_output()
-    tests  = Tests()
 
     testargs, compiler, no_run, no_build, no_batch, test_root, baseline_root, clean, \
         compare, generate, baseline_name, namelists_only, project, test_id, old, parallel_jobs, \

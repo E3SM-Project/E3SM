@@ -511,7 +511,6 @@ def get_machine_info( items, machine=None, user=None, project=None, case=None, r
         machine = probe_machine_name()
 
     expect(machine is not None, "Failed to probe machine. Please provide machine to whatever script you just ran")
-#    _MACHINE_INFO.set_machine(machine)
     if(type(items) == str): 
         result = _MACHINE_INFO.get_resolved_value(_MACHINE_INFO.get_value(items))
     else:
@@ -561,7 +560,6 @@ def does_machine_have_batch(machine=None):
     >>> does_machine_have_batch("skybridge")
     True
     """
-#    batch_system = get_machine_info("BATCH_SYSTEM", machine=machine)
     batch_system = _MACHINE_INFO.get_value("BATCH_SYSTEM")
     return not (batch_system is None or batch_system == "none")
 
