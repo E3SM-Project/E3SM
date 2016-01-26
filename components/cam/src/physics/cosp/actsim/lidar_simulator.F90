@@ -173,10 +173,11 @@
       REAL pi, rhopart(npart)
       REAL polpart(npart,5)  ! polynomial coefficients derived for spherical and non spherical
                              ! particules
-
-      real, parameter :: TAUTOT_MAX = 100. ! maximum allowed attenuation from
-                                           ! one layer to TOA in beta perp
-                                           ! calculations
+      
+      real, parameter :: dummymax = 0.0
+      real, parameter :: TAUTOT_MAX = -0.5*log(tiny(dummymax)) ! maximum allowed attenuation from
+                                           ! one layer to TOA in beta_perp calculations to avoid 
+                                           ! float underflow
 
 !   grid-box variables:
       REAL rad_part(npoints,nlev,npart)
