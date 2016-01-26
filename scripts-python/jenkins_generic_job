@@ -14,7 +14,7 @@ import wait_for_tests
 
 import argparse, sys, os, shutil, glob, doctest, time, signal
 
-from cime_util import expect, warning, verbose_print
+from cime_util import expect, logging.warning, logging.info
 
 SENTINEL_FILE = "ONGOING_TEST"
 
@@ -99,10 +99,10 @@ def cleanup_queue(set_of_jobs_we_created):
     jobs_to_delete = set_of_jobs_we_created & current_jobs
 
     if (jobs_to_delete):
-        warning("Found leftover batch jobs that need to be deleted: %s" % ", ".join(jobs_to_delete))
+        logging.warning("Found leftover batch jobs that need to be deleted: %s" % ", ".join(jobs_to_delete))
         stat = cime_util.delete_jobs(jobs_to_delete)[0]
         if (stat != 0):
-            warning("FAILED to clean up leftover jobs!")
+            logging.warning("FAILED to clean up leftover jobs!")
 
 ###############################################################################
 def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,

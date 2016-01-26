@@ -1,7 +1,7 @@
 import os, tempfile
 
 import cime_util
-from cime_util import expect, warning
+from CIME.utils import expect
 
 # Here are the tests belonging to acme suites. Format is
 # <test>.<grid>.<compset>.

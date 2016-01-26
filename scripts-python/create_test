@@ -14,11 +14,11 @@ If this tool is missing any feature that you need, please notify jgfouca@sandia.
 import add_util_path
 import cime_util
 cime_util.check_minimum_python_version(2, 7)
-
+import logging
 import argparse, sys, os, doctest, tempfile
 import update_acme_tests, create_test_impl
-from cime_util import expect, warning, verbose_print, run_cmd
-
+from cime_util import run_cmd
+from CIME.utils import expect
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -124,7 +124,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = parser.parse_args(args[1:])
 
-    cime_util.set_verbosity(args.verbose)
+    if(args.verbose == True):
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.INFO)
 
     expect(not (args.generate and args.compare),
            "Cannot generate and compare baselines at the same time")
@@ -251,7 +253,10 @@ def _main_func(description):
     if ("--test" in sys.argv):
         cime_util.run_cmd("python -m doctest %s/create_test_impl.py -v" % cime_util.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
         return
-
+#    FORMAT = "%(level)s %(message)s"
+#    logging.basicConfig(format=FORMAT)
+    logging.basicConfig()
+    
     cime_util.stop_buffering_output()
 
     testargs, compiler, no_run, no_build, no_batch, test_root, baseline_root, clean, \

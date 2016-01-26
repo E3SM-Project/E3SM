@@ -1,6 +1,6 @@
-import argparse, sys, os, re
+import argparse, sys, os, re, logging
 
-from cime_util import expect, warning, verbose_print
+from CIME.utils  import expect
 
 ###############################################################################
 def parse_namelists(namelist_lines, filename):
@@ -74,10 +74,10 @@ def parse_namelists(namelist_lines, filename):
 
         line = line.strip()
 
-        verbose_print("Parsing line: '%s'" % line)
+        logging.info("Parsing line: '%s'" % line)
 
         if (line == "" or comment_re.match(line)):
-            verbose_print("  Line was whitespace or comment, skipping.")
+            logging.info("  Line was whitespace or comment, skipping.")
             continue
 
         if (current_namelist is None):
@@ -100,11 +100,11 @@ def parse_namelists(namelist_lines, filename):
 
             rv[current_namelist] = {}
 
-            verbose_print("  Starting namelist '%s'" % current_namelist)
+            logging.info("  Starting namelist '%s'" % current_namelist)
 
         elif (line == "/"):
             # Ends a namelist
-            verbose_print("  Ending namelist '%s'" % current_namelist)
+            logging.info("  Ending namelist '%s'" % current_namelist)
 
             expect(multiline_variable is None,
                    "In file '%s', Incomplete multiline variable: '%s'" % (filename, multiline_variable[0] if multiline_variable is not None else ""))
@@ -115,7 +115,7 @@ def parse_namelists(namelist_lines, filename):
             # Defining a variable (AKA name)
             name, value = name_re.match(line).groups()
 
-            verbose_print("  Parsing variable '%s' with data '%s'" % (name, value))
+            logging.info("  Parsing variable '%s' with data '%s'" % (name, value))
 
             expect(multiline_variable is None,
                    "In file '%s', Incomplete multiline variable: '%s'" % (filename, multiline_variable[0] if multiline_variable is not None else ""))
@@ -130,41 +130,41 @@ def parse_namelists(namelist_lines, filename):
                     expect(m is not None, "In file '%s', Dict entry '%s' does not match expected format" % (filename, token))
                     k, v = m.groups()
                     rv[current_namelist][name][k] = v
-                    verbose_print("    Adding dict entry '%s' -> '%s'" % (k, v))
+                    logging.info("    Adding dict entry '%s' -> '%s'" % (k, v))
 
             elif ("," in value):
                 # list
                 rv[current_namelist][name] = tokens
 
-                verbose_print("    Adding list entries: %s" % ", ".join(tokens))
+                logging.info("    Adding list entries: %s" % ", ".join(tokens))
 
             else:
                 rv[current_namelist][name] = value
 
-                verbose_print("    Setting to value '%s'" % value)
+                logging.info("    Setting to value '%s'" % value)
 
             if (line.endswith(",")):
                 # Value will continue on in subsequent lines
                 multiline_variable = (name, rv[current_namelist][name])
 
-                verbose_print("    Var is multiline...")
+                logging.info("    Var is multiline...")
 
         elif (multiline_variable is not None):
             # Continuation of list or dict variable
             current_value = multiline_variable[1]
-            verbose_print("  Continuing multiline variable '%s' with data '%s'" % (multiline_variable[0], line))
+            logging.info("  Continuing multiline variable '%s' with data '%s'" % (multiline_variable[0], line))
             tokens = [item.strip() for item in comma_re.split(line) if item.strip() != ""]
             if (type(current_value) is list):
                 expect("->" not in line, "In file '%s', multiline list variable '%s' had dict entries" % (filename, multiline_variable[0]))
                 current_value.extend(tokens)
-                verbose_print("    Adding list entries: %s" % ", ".join(tokens))
+                logging.info("    Adding list entries: %s" % ", ".join(tokens))
             elif (type(current_value) is dict):
                 for token in tokens:
                     m = dict_re.match(token)
                     expect(m is not None, "In file '%s', Dict entry '%s' does not match expected format" % (filename, token))
                     k, v = m.groups()
                     current_value[k] = v
-                    verbose_print("    Adding dict entry '%s' -> '%s'" % (k, v))
+                    logging.info("    Adding dict entry '%s' -> '%s'" % (k, v))
             else:
                 expect(False, "In file '%s', Continuation should have been for list or dict, instead it was: '%s'" % (filename, type(current_value)))
 
@@ -172,7 +172,7 @@ def parse_namelists(namelist_lines, filename):
                 # Completed
                 multiline_variable = None
 
-                verbose_print("    Terminating multiline variable")
+                logging.info("    Terminating multiline variable")
 
         else:
             expect(False, "In file '%s', Unrecognized line: '%s'" % (filename, line))

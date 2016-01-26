@@ -2,7 +2,7 @@
 
 import add_util_path
 import sys, os, os.path
-from cime_util import expect, warning, verbose_print, run_cmd
+from cime_util import expect, logging.warning, logging.info, run_cmd
 
 cwd = os.getcwd()
 

@@ -8,13 +8,14 @@ Assumes CIME subdir argument has a DIRMAP file
 Assumes run from root of CIME repository
 """
 
+import logging
 import add_util_path
 import cime_util
 cime_util.check_minimum_python_version(2, 7)
 
 import argparse, sys, os, doctest
-
-from cime_util import expect, warning, verbose_print, run_cmd
+from CIME.utils import expect
+from cime_util import run_cmd
 
 VERBOSE = False
 METADATA_FILE = "DIRMAP"

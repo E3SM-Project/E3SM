@@ -2,12 +2,11 @@
 Common functions used by cime python scripts
 """
 
-import sys, socket, re, os, time
-from CIME.utils import expect, get_cime_root, get_model, set_model
+import sys, socket, re, os, time, logging
+from CIME.utils import expect, get_cime_root, get_model, set_model, get_python_libs_location_within_cime
 from CIME.XML.Files import Files
 from CIME.XML.Machines import Machines
 
-_VERBOSE = False
 _MACHINE_INFO = None
 
 # batch-system-name -> ( cmd-to-list-all-jobs-for-user, cmd-to-delete-job )
@@ -44,28 +43,7 @@ _MACHINE_PROJECTS = {
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 165
-
-
 ###############################################################################
-def warning(msg):
-###############################################################################
-    """
-    Print a warning to stderr
-    """
-    print >> sys.stderr, "WARNING:", msg
-
-###############################################################################
-def verbose_print(msg, override=None):
-###############################################################################
-    if ( (_VERBOSE and not override is False) or override):
-        print msg
-
-###############################################################################
-def set_verbosity(verbose):
-###############################################################################
-    global _VERBOSE
-    _VERBOSE = verbose
-
 _hack=object()
 ###############################################################################
 def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
@@ -96,7 +74,7 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
     if (arg_stderr is _hack):
         arg_stderr = subprocess.PIPE
 
-    verbose_print("RUN: %s" % cmd, verbose)
+    logging.info("RUN: %s" % cmd, verbose)
 
     if (input_str is not None):
         stdin = subprocess.PIPE
@@ -114,9 +92,9 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
     errput = errput.strip() if errput is not None else errput
     stat = proc.wait()
 
-    verbose_print("  stat: %d\n" % stat, verbose)
-    verbose_print("  output: %s\n" % output, verbose)
-    verbose_print("  errput: %s\n" % errput, verbose)
+    logging.info("  stat: %d\n" % stat, verbose)
+    logging.info("  output: %s\n" % output, verbose)
+    logging.info("  errput: %s\n" % errput, verbose)
 
     if (ok_to_fail):
         return stat, output, errput
@@ -296,14 +274,6 @@ def get_cime_location_within_acme():
     From within ACME, return subdirectory where CIME lives.
     """
     return "cime"
-
-###############################################################################
-def get_python_libs_location_within_cime():
-###############################################################################
-    """
-    From within CIME, return subdirectory of python libraries
-    """
-    return os.path.join("utils", "python")
 
 ###############################################################################
 def get_model_config_location_within_cime(model=get_model()):

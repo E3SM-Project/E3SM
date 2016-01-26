@@ -20,9 +20,15 @@ def expect(condition, error_msg):
     SystemExit: FAIL: error2
     """
     if (not condition):
-        #traceback()
-        raise SystemExit("FAIL: %s" % error_msg)
+        logging.exception(error_msg)
+        raise SystemExit()
     
+
+def get_python_libs_location_within_cime():
+    """
+    From within CIME, return subdirectory of python libraries
+    """
+    return os.path.join("utils", "python")
 
 def get_cime_root():
     """
@@ -36,8 +42,9 @@ def get_cime_root():
         try:
             _CIMEROOT = os.environ["CIMEROOT"]
         except KeyError:
-            script_absdir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
-            assert acme_script_absdir.endswith(get_python_libs_location_within_cime()), acme_script_absdir
+            script_absdir = os.path.abspath(os.path.join(os.path.dirname(__file__),".."))
+            assert script_absdir.endswith(get_python_libs_location_within_cime()), script_absdir
+            _CIMEROOT = os.path.abspath(os.path.join(script_absdir,"..",".."))
     logging.info( "CIMEROOT is " + _CIMEROOT)
     return _CIMEROOT
 

@@ -10,8 +10,8 @@ import cime_util
 cime_util.check_minimum_python_version(2, 7)
 
 import argparse, sys, os, doctest, traceback
-
-from cime_util import expect, warning, verbose_print, run_cmd
+from CIME.utils import expect
+from cime_util import run_cmd
 
 ###############################################################################
 def parse_command_line(args, description):

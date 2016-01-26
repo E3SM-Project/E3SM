@@ -87,19 +87,18 @@ class Machines(GenericXML):
         lists and return the first value if reqval is not provided and reqval 
         if it is a valid setting for the machine
         """
-
         expect(self.machine is not None, "Machine object has no machine defined")
         supported_values = self.get_value(listname)
-        if(supported_values is None):
-            logging.critical("No list found for "+listname+" on machine "+self.name)
+        expect(supported_values is not None,
+               "No list found for "+listname+" on machine "+self.name)
         supported_values = supported_values.split(',')
         if(reqval is None or reqval == "UNSET"):
             return supported_values[0]
         for val in supported_values:
             if(val == reqval):
                 return reqval
-        logging.critical("%s value %s not supported for machine %s" %
-                         (listname, reqval, self.name))
+        expect(False,"%s value %s not supported for machine %s" %
+               (listname, reqval, self.name))
 
     def get_compiler(self, compiler=None):
         """

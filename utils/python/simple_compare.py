@@ -1,6 +1,6 @@
-import os, re
+import os, re, logging
 
-from cime_util import expect, warning, verbose_print
+from CIME.utils import expect
 
 ###############################################################################
 def normalize_string_value(value, case):
