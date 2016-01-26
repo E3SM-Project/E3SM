@@ -2,42 +2,97 @@
 Interface to the config_machines.xml file.  This class inherits from GenericXML.py
 """
 import logging
+import re
 from GenericXML import GenericXML
 from CIME.utils import expect
 
 class Machines(GenericXML):
     def __init__(self,infile):
         """ initialize an object """
-        logging.warn("Open file "+infile)
+        logging.info("Open file "+infile)
         self.machine = None
         GenericXML.__init__(self,infile)
     
     def list_available_machines(self):
+        """
+        Return a list of machines defined for a given CIME_MODEL
+        """
         machines = []
-        nodes  = self.GetNode('machine')
-        print "nodes  %d" % len(nodes)
-
+        nodes  = self.get_node('machine')
         for node in nodes:
-            mach = node.attrib["MACH"]
+            mach = {}
+            mach[name] = node.attrib["MACH"]
             machines.append(mach)
         return machines
     
+    def find_machine_from_regex(self, nametomatch):
+        """
+        Given a nametomatch (ie from hostname) find a matching regular expression
+        in the NODENAME_REGEX field in the file.   First match wins.
+        """
+        nodes = self.get_node('machine')
+        for node in nodes:
+            machine = node.get('MACH')
+            logging.debug("machine is "+machine)
+            self.set_machine(machine)
+            regex_str_nodes =  self.get_node('NODENAME_REGEX',root=self.machine)
+            if(len(regex_str_nodes)>0):
+                regex_str = regex_str_nodes[0].text
+                logging.debug("machine regex string is "+ regex_str)
+                if (regex_str is not None):
+                    regex = re.compile(regex_str)
+                    if (regex.match(nametomatch)):
+                        return machine
+
+        return None
+
+
     def set_machine(self,machine):
-        self.machine = self.GetNode('machine',{'MACH':machine})[0]
+        """
+        Sets the machine block in the Machines object
+        """
+        self.machine = self.get_node('machine',{'MACH':machine})[0]
         expect(self.machine is not None,"No machine %s found" % machine)
-        
+                
         self.name = machine
 
-    def GetValue(self,name):
+    def get_value(self,name):
+        """
+        Get Value of fields in the config_machines.xml file
+        """
         expect(self.machine is not None, "Machine object has no machine defined")
-        node = self.GetNode(name,root=self.machine)[0]
-        expect(node is not None,"No match found for %s in machine %s" % (name,self.name))
-        return node.text
+        value = None
+        """
+        COMPILER and MPILIB are special, if called without arguments they get the default value from the
+        COMPILERS and MPILIBS lists in the file. 
+        """
+        if(name == "COMPILER"):
+            value = self.get_compiler()
+        elif(name == "MPILIB"):
+            value = self.get_MPIlib()
+        else:
+            nodes = self.get_node(name,root=self.machine)
+            if(len(nodes)>0):
+                node = nodes[0]
+                expect(node is not None,"No match found for %s in machine %s" % (name,self.name))
+                value = node.text
+        if(value is None):
+            """ if all else fails """
+            value = GenericXML.get_value(self,name)
+        return value
 
-    def getfieldfromlist(self, listname, reqval=None):
+    def get_field_from_list(self, listname, reqval=None):
+        """ 
+        Some of the fields have lists of valid values in the xml, parse these
+        lists and return the first value if reqval is not provided and reqval 
+        if it is a valid setting for the machine
+        """
+
         expect(self.machine is not None, "Machine object has no machine defined")
-        supported_values = self.GetValue(listname).split(',')
-
+        supported_values = self.get_value(listname)
+        if(supported_values is None):
+            logging.critical("No list found for "+listname+" on machine "+self.name)
+        supported_values = supported_values.split(',')
         if(reqval is None or reqval == "UNSET"):
             return supported_values[0]
         for val in supported_values:
@@ -46,11 +101,17 @@ class Machines(GenericXML):
         logging.critical("%s value %s not supported for machine %s" %
                          (listname, reqval, self.name))
 
-    def getCompiler(self, compiler=None):
-        return self.getfieldfromlist('Compilers',compiler)
+    def get_compiler(self, compiler=None):
+        """
+        Get the compiler to use from the list of COMPILERS 
+        """
+        return self.get_field_from_list('COMPILERS',compiler)
 
-    def getMPIlib(self, mpilib=None):
-        return self.getfieldfromlist('MPILIBS',mpilib)
+    def get_MPIlib(self, mpilib=None):
+        """
+        Get the MPILIB to use from the list of MPILIBS
+        """
+        return self.get_field_from_list('MPILIBS',mpilib)
 
 
 

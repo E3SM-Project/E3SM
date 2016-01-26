@@ -88,7 +88,11 @@ class GenericXML:
         """
         get_value is expected to be defined by the derived classes, if you get here it is an error.
         """
-        return self.lookups[item] 
+        logging.debug("Get Value for "+item)
+        if item in self.lookups.keys():
+            return self.lookups[item] 
+        if item in os.environ:
+            return os.environ.get(item)
 #        expect(False, "Not implemented")
 
     def get_resolved_value(self, raw_value):
@@ -103,10 +107,14 @@ class GenericXML:
         >>> obj.get_resolved_value("one $ENV{FOO} two $ENV{BAZ} three")
         'one BAR two BARF three'
         """
+        logging.debug("raw_value "+raw_value)
         reference_re = re.compile(r'\$(\w+)')
         env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
         item_data = raw_value
+
+        logging.debug(" item_data "+item_data)
         for m in env_ref_re.finditer(item_data):
+            logging.debug("look for "+item_data+ " in env")
             env_var = m.groups()[0]
             expect(env_var in os.environ, "Undefined env var '%s'" % env_var)
             item_data = item_data.replace(m.group(), os.environ[env_var])

@@ -16,8 +16,10 @@ class EntryID(GenericXML):
         GenericXML.__init__(self,infile)
         
     def set_default_value(self, vid, attributes=None):
-        """ Set the value of an entry to the default value for that entry
-        vid can be an xml node pointer or a string identifier of a node """
+        """ 
+        Set the value of an entry to the default value for that entry
+        vid can be an xml node pointer or a string identifier of a node 
+        """
         value = None
         if(type(vid) != type(str())):
             node = vid
@@ -43,6 +45,10 @@ class EntryID(GenericXML):
         return value[0].text
 
     def set_value(self, vid, value):
+        """
+        Set the value of an entry-id field to value
+        Returns the value or None if not found
+        """
         val = None
         if(type(vid) != type(str())):
             node = vid
@@ -59,6 +65,11 @@ class EntryID(GenericXML):
         return val
 
     def get_value(self, vid, attribute=None):
+        """
+        get a value for entry with id attribute vid.
+        or from the values field if the attribute argument is provided 
+        and matches
+        """
         val = None
         if(type(vid) != type(str())):
             node = vid
@@ -79,12 +90,16 @@ class EntryID(GenericXML):
             val = self.set_default_value(vid)
 
         if(val is None):
-            print "HERE "+vid
+            """ if all else fails """
             val = GenericXML.get_value(self,vid)
 
         return val
 
     def get_values(self,vid,att):
+        """
+        If an entry includes a list of values return a dict matching each
+        attribute to its associated value
+        """
         values = {}
         if(type(vid) != type(str())):
             node = vid

@@ -239,20 +239,11 @@ def probe_machine_name():
     >>> probe_machine_name() is not None
     True
     """
+    parse_config_machines()
     hostname = socket.gethostname().split(".")[0]
+    machine = _MACHINE_INFO.find_machine_from_regex(hostname)
+    return machine
 
-    machines = get_machines()
-    print machines
-    for machine in machines:
-        regex_str = _MACHINE_INFO.GetValue("NODENAME_REGEX")
-#        regex_str = get_machine_info("NODENAME_REGEX", machine=machine)
-        print regex_str
-        if (regex_str):
-            regex = re.compile(regex_str)
-            if (regex.match(hostname)):
-                return machine
-
-    return None
 
 ###############################################################################
 def get_current_branch(repo=None):
@@ -445,7 +436,7 @@ def find_proc_id(proc_name=None,
 ###############################################################################
 def get_batch_system(machine=None):
 ###############################################################################
-    return _MACHINE_INFO.GetValue("BATCH_SYSTEM")
+    return _MACHINE_INFO.get_value("BATCH_SYSTEM")
 #    return get_machine_info("BATCH_SYSTEM", machine=machine)
 
 ###############################################################################
@@ -484,12 +475,12 @@ def parse_config_machines():
     global _MACHINE_INFO
     if (_MACHINE_INFO is None):
         files = Files()
-        config_machines = files.GetResolvedValue(files.GetValue('MACHINES_SPEC_FILE'))
+        config_machines = files.get_resolved_value(files.get_value('MACHINES_SPEC_FILE'))
         _MACHINE_INFO = Machines(config_machines)
 
 
 ###############################################################################
-def get_machine_info(items, machine=None, user=None, project=None, case=None, raw=False):
+def get_machine_info( items, machine=None, user=None, project=None, case=None, raw=False):
 ###############################################################################
     """
     Return information on machine. If no arg provided, probe for machine.
@@ -515,14 +506,18 @@ def get_machine_info(items, machine=None, user=None, project=None, case=None, ra
 
     import getpass
     user = getpass.getuser() if user is None else user
-                              
+    result = []                          
     if (machine is None):
         machine = probe_machine_name()
 
     expect(machine is not None, "Failed to probe machine. Please provide machine to whatever script you just ran")
-    _MACHINE_INFO.set_machine(machine)
-
-
+#    _MACHINE_INFO.set_machine(machine)
+    if(type(items) == str): 
+        result = _MACHINE_INFO.get_resolved_value(_MACHINE_INFO.get_value(items))
+    else:
+        for item in items:
+            result.append(_MACHINE_INFO.get_resolved_value(_MACHINE_INFO.get_value(item)))
+    return result
 
 
 ###############################################################################
@@ -567,7 +562,7 @@ def does_machine_have_batch(machine=None):
     True
     """
 #    batch_system = get_machine_info("BATCH_SYSTEM", machine=machine)
-    batch_system = _MACHINE_INFO.GetValue("BATCH_SYSTEM")
+    batch_system = _MACHINE_INFO.get_value("BATCH_SYSTEM")
     return not (batch_system is None or batch_system == "none")
 
 ###############################################################################
