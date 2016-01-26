@@ -872,7 +872,7 @@ contains
         call calc_permutation(filedims(1:2), arraydims, perm, isperm)
         if (isperm) then
           allocate(tmp_fld(cnt(1), cnt(2)))
-          ierr = pio_get_var(File, varid, strt(1:2), cnt(1:2), tmp_fld)
+          ierr = pio_get_var(File, varid, strt(1:ndims), cnt(1:ndims), tmp_fld)
           do j = 1, cnt(2)
             ind(2) = j
             do i = 1, cnt(1)
@@ -881,7 +881,7 @@ contains
             end do
           end do
         else
-          ierr = pio_get_var(File, varid, strt(1:2), cnt(1:2), field)
+          ierr = pio_get_var(File, varid, strt(1:ndims), cnt(1:ndims), field)
         end if
       else
         call endrun(trim(subname)//': Incorrect variable rank')
@@ -950,7 +950,7 @@ contains
       else if (ndims == 3) then
         ierr = pio_get_var(File, varid, strt, cnt, field)
       else if (ndims == 2) then
-        ierr = pio_get_var(File, varid, strt(1:2), cnt(1:2), field(:,:,1))
+        ierr = pio_get_var(File, varid, strt(1:ndims), cnt(1:ndims), field(:,:,1))
       else
         call endrun(trim(subname)//': Incorrect variable rank')
       end if
