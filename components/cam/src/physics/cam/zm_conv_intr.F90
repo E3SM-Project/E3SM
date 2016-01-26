@@ -257,7 +257,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    use time_manager,  only: is_first_restart_step             !songxl 2011-09-20
    use physics_buffer, only : pbuf_get_field, physics_buffer_desc, pbuf_old_tim_idx
    use constituents,  only: pcnst, cnst_get_ind, cnst_is_convtran1
-   use check_energy,  only: check_energy_chng
    use physconst,     only: gravit
    use phys_control,  only: cam_physpkg_is
 

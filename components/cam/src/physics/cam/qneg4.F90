@@ -91,11 +91,11 @@ subroutine qneg4 (subnam  ,lchnk   ,ncol    ,ztodt   ,        &
 !
    return
 9000 format(' QNEG4 WARNING from ',a8 &
-            ,' Max possible LH flx exceeded at ',i4,' points. ' &
+            ,' Max possible LH flx exceeded at ',i5,' points. ' &
             ,', Worst excess = ',1pe12.4 &
-            ,', lchnk = ',i3 &
-            ,', i = ',i4 &
-            ,', same as indices lat =', i4 &
-            ,', lon =', i4 &
+            ,', lchnk = ',i5 &
+            ,', i = ',i5 &
+            ,', same as indices lat =', i5 &
+            ,', lon =', i5 &
            )
 end subroutine qneg4
