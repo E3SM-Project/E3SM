@@ -26,7 +26,7 @@
 	</get_file>
 
 	<add_executable source="model" dest="ocean_model"/>
-        <add_executable source="metis" dest="metis"/>
+	<add_executable source="metis" dest="metis"/>
 	<add_executable source="cell_culler" dest="MpasCellCuller.x"/>
 
 	<add_link source_path="mesh_database" source="mesh.QU.120km.151026.nc" dest="base_mesh.nc"/>
@@ -41,6 +41,7 @@
 		<template file="template_init1.xml" path_base="script_core_dir" path="global_ocean"/>
 		<template file="template_init_with_land_ice.xml" path_base="script_configuration_dir"/>
 		<option name="config_read_ssh_and_ssp_from_stream">.true.</option>
+		<option name="config_rx1_horiz_smooth_open_ocean_cells">10</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">

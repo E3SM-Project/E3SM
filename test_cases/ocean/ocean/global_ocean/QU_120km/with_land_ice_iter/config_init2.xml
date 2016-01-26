@@ -2,7 +2,7 @@
 <config case="init_step2">
 
 	<add_executable source="model" dest="ocean_model"/>
-        <add_executable source="metis" dest="metis"/>
+	<add_executable source="metis" dest="metis"/>
 
 	<add_link source="../init_step1/culled_mesh.nc" dest="mesh.nc"/>
 	<add_link source="../init_step1/culled_graph.info" dest="graph.info"/>
@@ -16,6 +16,7 @@
 		<template file="template_init2.xml" path_base="script_configuration_dir"/>
 		<template file="template_init_with_land_ice.xml" path_base="script_configuration_dir"/>
 		<option name="config_read_ssh_and_ssp_from_stream">.true.</option>
+		<option name="config_rx1_horiz_smooth_open_ocean_cells">10</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">
