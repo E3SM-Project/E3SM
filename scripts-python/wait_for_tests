@@ -9,13 +9,16 @@ The easiest way to test this script is to keep a set of create_test
 results laying around somewhere so you don't have to wait for tests
 to run to test this script.
 """
-
+import logging
 import add_util_path
 import cime_util
 cime_util.check_minimum_python_version(2, 7)
 import wait_for_tests
 
 import argparse, sys, os
+
+logging.basicConfig()
+rootlogger = logging.getLogger()
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -69,7 +72,8 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = parser.parse_args(args[1:])
 
-    cime_util.set_verbosity(args.verbose)
+    if(args.verbose == True):
+        rootlogger.setLevel(logging.INFO)
 
     return args.paths, args.no_wait, args.check_throughput, args.check_memory, args.ignore_namelist_diffs, args.cdash_build_name, args.cdash_project, args.cdash_build_group
 

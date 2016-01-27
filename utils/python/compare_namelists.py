@@ -32,7 +32,7 @@ def parse_namelists(namelist_lines, filename):
     >>> parse_namelists('blah', 'foo')
     Traceback (most recent call last):
         ...
-    SystemExit: FAIL: File 'foo' does not appear to be a namelist file, skipping
+    SystemExit: ERROR: File 'foo' does not appear to be a namelist file, skipping
 
     >>> teststr = '''&nml
     ... val = 'one', 'two',
@@ -41,7 +41,7 @@ def parse_namelists(namelist_lines, filename):
     >>> parse_namelists(teststr.splitlines(), 'foo')
     Traceback (most recent call last):
         ...
-    SystemExit: FAIL: In file 'foo', Incomplete multiline variable: 'val'
+    SystemExit: ERROR: In file 'foo', Incomplete multiline variable: 'val'
 
     >>> teststr = '''&nml
     ... val = 'one', 'two',
@@ -49,7 +49,7 @@ def parse_namelists(namelist_lines, filename):
     >>> parse_namelists(teststr.splitlines(), 'foo')
     Traceback (most recent call last):
         ...
-    SystemExit: FAIL: In file 'foo', Incomplete multiline variable: 'val'
+    SystemExit: ERROR: In file 'foo', Incomplete multiline variable: 'val'
 
     >>> teststr = '''&nml
     ... val = 'one', 'two',
@@ -58,7 +58,7 @@ def parse_namelists(namelist_lines, filename):
     >>> parse_namelists(teststr.splitlines(), 'foo')
     Traceback (most recent call last):
         ...
-    SystemExit: FAIL: In file 'foo', multiline list variable 'val' had dict entries
+    SystemExit: ERROR: In file 'foo', multiline list variable 'val' had dict entries
     """
 
     comment_re = re.compile(r'^[#!]')

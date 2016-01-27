@@ -476,10 +476,11 @@ def get_machine_info( items, machine=None, user=None, project=None, case=None, r
 
     import getpass
     user = getpass.getuser() if user is None else user
-    result = []                          
-    if (machine is None and _MACHINE_INFO is None):
+    result = []                
+    if (machine is None and _MACHINE_INFO.name is None):
         machine = probe_machine_name()
-
+    elif(machine is None):
+        machine = _MACHINE_INFO.name
     expect(machine is not None, "Failed to probe machine. Please provide machine to whatever script you just ran")
     if(type(items) == str): 
         result = _MACHINE_INFO.get_value(items)

@@ -3,7 +3,7 @@
 
 <!--
 ===========================
-This file defines compiler flags for building CESM.  General flags are listed first
+This file defines compiler flags for building CIME.  General flags are listed first
 followed by flags specific to particular operating systems, followed by particular machines.
 
 More general flags are replaced by more specific flags. 
@@ -1120,6 +1120,15 @@ for mct, etc.
 	<TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
 	<ALBANY_PATH>$(ALBANY_PATH)</ALBANY_PATH>
 </compiler>
+
+<compiler MACH="caldera">
+  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
+  <NETCDF_PATH>$(NETCDF)</NETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDF)</PNETCDF_PATH>
+  <!-- these flags enable nano timers -->
+ <GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
+</compiler>
+
 
 
 </config_compilers>

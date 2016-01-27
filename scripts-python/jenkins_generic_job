@@ -6,7 +6,7 @@ test suite. Essentially, a wrapper around create_test and
 wait_for_tests that handles cleanup of old test results and
 ensures that the batch system is left in a clean state.
 """
-
+import logging
 import add_util_path
 import cime_util
 cime_util.check_minimum_python_version(2, 7)
@@ -20,6 +20,9 @@ SENTINEL_FILE = "ONGOING_TEST"
 
 # Don't know if this belongs here longterm
 MACHINES_THAT_MAINTAIN_BASELINES = ("redsky", "melvin", "skybridge")
+
+logging.basicConfig()
+rootlogger = logging.getLogger()
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -78,7 +81,8 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = parser.parse_args(args[1:])
 
-    cime_util.set_verbosity(args.verbose)
+    if(args.verbose == True):
+        rootlogger.setLevel(logging.INFO)
 
     expect(not (args.submit_to_cdash and args.generate_baselines),
            "Does not make sense to use -g and -d together")

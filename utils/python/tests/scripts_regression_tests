@@ -668,7 +668,7 @@ class TestUpdateACMETests(unittest.TestCase):
         self.assertTrue("ERS.f19_g16_rx1.E.melvin_gnu" in tests)
 
 ###########################################################################
-    def test_resolve_variable_name(self):
+    def resolve_variable_name(self):
         from  CIME.XML.Machines import Machines
         from CIME.XML.Files import Files
         files = Files()
