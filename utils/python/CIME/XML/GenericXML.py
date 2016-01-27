@@ -117,7 +117,8 @@ class GenericXML:
             var = m.groups()[0]
             logging.debug("find: "+var)
             ref = self.get_value(var)
-            logging.debug("resolve: "+ref)
-            item_data = item_data.replace(m.group(), ref)
+            if(ref is not None):
+                logging.debug("resolve: "+ref)
+                item_data = item_data.replace(m.group(), ref)
 
         return item_data

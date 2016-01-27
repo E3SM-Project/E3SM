@@ -20,8 +20,7 @@ def expect(condition, error_msg):
     SystemExit: FAIL: error2
     """
     if (not condition):
-        logging.exception(error_msg)
-        raise SystemExit()
+        raise SystemExit('ERROR: '+error_msg)
     
 
 def get_python_libs_location_within_cime():

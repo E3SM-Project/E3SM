@@ -58,7 +58,7 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
     >>> run_cmd('ls file_i_hope_doesnt_exist')
     Traceback (most recent call last):
         ...
-    SystemExit: FAIL: Command: 'ls file_i_hope_doesnt_exist' failed with error 'ls: cannot access file_i_hope_doesnt_exist: No such file or directory'
+    SystemExit: ERROR: Command: 'ls file_i_hope_doesnt_exist' failed with error 'ls: cannot access file_i_hope_doesnt_exist: No such file or directory'
 
     >>> run_cmd('ls file_i_hope_doesnt_exist', ok_to_fail=True)[0] != 0
     True
@@ -221,7 +221,6 @@ def probe_machine_name():
     parse_config_machines()
     hostname = socket.gethostname().split(".")[0]
     machine = _MACHINE_INFO.find_machine_from_regex(hostname)
-    print "here "+machine    
     return machine
 
 

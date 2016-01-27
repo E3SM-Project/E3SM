@@ -1031,6 +1031,111 @@
 	<SUPPORTED_BY>jacobsen.douglas -at- gmail.com</SUPPORTED_BY>
 </machine>
 
+<machine MACH="caldera">
+  <DESC>NCAR IBM, os is Linux, 16 pes/node, intended for ncar testing of acme cime</DESC>
+  <NODENAME_REGEX>(pronghorn*|caldera*)</NODENAME_REGEX>
+  <OS>LINUX</OS>
+  <COMPILERS>intel,pgi,gnu</COMPILERS>
+  <MPILIBS>mpich2,pempi,mpi-serial</MPILIBS>
+  <CESMSCRATCHROOT>/glade/scratch/$USER</CESMSCRATCHROOT>
+  <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+  <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+  <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
+  <DIN_LOC_ROOT_CLMFORC>$ENV{CESMROOT}/lmwg</DIN_LOC_ROOT_CLMFORC>
+  <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+  <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>              
+  <CCSM_BASELINE>$ENV{CESMDATAROOT}/ccsm_baselines</CCSM_BASELINE>                   
+  <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc</CCSM_CPRNC>
+  <PERL5LIB>/glade/apps/opt/perlmods/lib64/perl5:/glade/apps/opt/perlmods/share/perl5</PERL5LIB>
+  <BATCHQUERY></BATCHQUERY>                                                                     
+  <BATCHSUBMIT></BATCHSUBMIT>
+  <BATCHREDIRECT></BATCHREDIRECT>
+  <SUPPORTED_BY>jedwards@ucar.edu</SUPPORTED_BY>
+  <GMAKE_J>8</GMAKE_J>
+  <MAX_TASKS_PER_NODE>30</MAX_TASKS_PER_NODE>
+  <PES_PER_NODE>15</PES_PER_NODE>
+  <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+  <batch_system type="none" version="0.0"/>
+  <mpirun mpilib="mpi-serial">
+    <executable></executable>
+  </mpirun>
+  <mpirun mpilib="default" threaded="false">
+    <executable>TARGET_PROCESSOR_LIST=AUTO_SELECT mpirun.lsf $ENV{CESMDATAROOT}/tools/bin/launch </executable>
+  </mpirun>
+  <mpirun mpilib="default" threaded="true">
+    <executable>unset MP_PE_AFFINITY; unset MP_TASK_AFFINITY; unset MP_CPU_BIND_LIST; mpirun.lsf $ENV{CESMDATAROOT}/tools/bin/hybrid_launch </executable>
+  </mpirun>
+  <mpirun compiler="gnu">
+    <executable>mpirun.lsf </executable>
+  </mpirun>
+  <module_system type="module">
+    <init_path lang="perl">/glade/apps/opt/lmod/lmod/init/perl</init_path>
+    <init_path lang="csh">/glade/apps/opt/lmod/lmod/init/csh</init_path>
+    <init_path lang="sh">/glade/apps/opt/lmod/lmod/init/sh</init_path>
+    <cmd_path lang="perl">/glade/apps/opt/lmod/lmod/libexec/lmod perl</cmd_path>
+    <cmd_path lang="sh">module</cmd_path>
+    <cmd_path lang="csh">module</cmd_path>
+    <modules>
+      <command name="purge"/>
+      <command name="load">ncarenv/1.0</command>
+      <command name="load">ncarbinlibs/1.1</command>
+      <command name="load">perlmods</command>
+      <command name="load">gmake/4.1</command>
+      <command name="load">python</command>
+      <command name="load">all-python-libs</command>
+    </modules>
+    <modules compiler="intel">
+      <command name="load">intel/15.0.3</command>
+      <command name="load">mkl/11.1.2</command>
+      <command name="load">trilinos/11.10.2</command>
+      <command name="load">esmf</command>
+    </modules>
+    <modules compiler="intel" mpilib="!mpi-serial" debug="true">
+      <command name="load">esmf-6.3.0rp1-defio-mpi-g</command>
+    </modules>
+    <modules compiler="intel" mpilib="!mpi-serial" debug="false">
+      <command name="load">esmf-6.3.0rp1-defio-mpi-O</command>
+    </modules>
+    <modules compiler="intel" mpilib="mpi-serial" debug="true">
+      <command name="load">esmf-6.3.0rp1-defio-uni-g</command>
+    </modules>
+    <modules compiler="intel" mpilib="mpi-serial" debug="false">
+      <command name="load"> esmf-6.3.0rp1-defio-uni-O</command>
+    </modules>
+    <modules compiler="pgi">
+      <command name="load">pgi/15.10</command>
+    </modules>
+    <modules compiler="gnu">
+      <command name="load">gnu/5.2.0</command>
+    </modules>
+    <modules mpilib="mpi-serial">
+      <command name="load">netcdf/4.3.3.1</command>
+    </modules>
+    <modules mpilib="!mpi-serial">
+      <command name="load">netcdf-mpi/4.3.3.1</command>
+      <command name="load">pnetcdf/1.6.1</command>
+    </modules>
+    <modules>
+      <command name="load">ncarcompilers/1.0</command>
+      <command name="load">cmake/3.0.2</command>
+    </modules>
+  </module_system>
+  <environment_variables>
+    <env name="OMP_STACKSIZE">256M</env>
+    <env name="MP_LABELIO">yes</env>
+    <env name="MP_INFOLEVEL">2</env>
+    <env name="MP_SHARED_MEMORY">yes</env>
+    <env name="MP_EUILIB">us</env>
+    <env name="MP_MPILIB">$MPILIB</env>
+    <env name="MP_STDOUTMODE">unordered</env>
+    <env name="MP_RC_USE_LMC">yes</env>
+  </environment_variables>
+  <environment_variables debug="true">
+    <env name="MP_EAGER_LIMIT">0</env>
+  </environment_variables>
+</machine>
+
+
 <default_run_suffix>
   <default_run_exe>$config{'EXEROOT'}/acme.exe </default_run_exe>
   <default_run_misc_suffix> >> acme.log.$LID 2>&amp;1 </default_run_misc_suffix>

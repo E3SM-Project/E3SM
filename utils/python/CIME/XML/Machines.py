@@ -14,7 +14,7 @@ class Machines(GenericXML):
         GenericXML.__init__(self,infile)
 
     def get_node(self,nodename,attributes=None,root=None):
-        if(self.machine is not None and root is None):
+        if(self.machine is not None and root is None and nodename is not "machine"):
             node = GenericXML.get_node(self,nodename,attributes,root=self.machine)
         else:
             node = GenericXML.get_node(self,nodename,attributes,root)
@@ -39,7 +39,7 @@ class Machines(GenericXML):
         nodes = self.get_node('machine')
         for node in nodes:
             machine = node.get('MACH')
-            logging.debug("machine is "+machine)
+            logging.info("machine is "+machine)
             self.set_machine(machine)
             regex_str_nodes =  self.get_node('NODENAME_REGEX',root=self.machine)
             if(len(regex_str_nodes)>0):
