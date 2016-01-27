@@ -1195,11 +1195,12 @@ end if
     if (present(num_mapped)) then
       if (this%num_elem() > 0) then
         ! Total number of mapped elements
-        allocate(indices(this%num_elem()))
-        indices = [ (i, i = 1, size(indices)) ]
-        tmp_size = COUNT(this%is_mapped(indices))
-        deallocate(indices)
-        nullify(indices)
+        tmp_size=0
+        do i = 1, this%num_elem()
+          if (this%is_mapped(i)) then
+            tmp_size = tmp_size + 1
+          end if
+        end do
       else
         tmp_size = 0
       end if
