@@ -421,7 +421,7 @@ class CreateTest(object):
             # TODO: What to do here? This failure is very severe because the
             # only way for test results to be communicated is by the TestStatus
             # file.
-            logging.warning("VERY BAD! Could not handle TestStatus file '%s': '%s'" %
+            logging.critical("VERY BAD! Could not handle TestStatus file '%s': '%s'" %
                     (os.path.join(self._get_test_dir(test_name), TEST_STATUS_FILENAME), str(e)))
             thread.interrupt_main()
 

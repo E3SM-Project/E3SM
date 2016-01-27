@@ -20,8 +20,6 @@ import update_acme_tests, create_test_impl
 from cime_util import run_cmd
 from CIME.utils import expect
 
-#    FORMAT = "%(level)s %(message)s"
-#    logging.basicConfig(format=FORMAT)
 logging.basicConfig()
 rootlogger = logging.getLogger()
 
@@ -262,7 +260,7 @@ def _main_func(description):
     if ("--test" in sys.argv):
         cime_util.run_cmd("python -m doctest %s/create_test_impl.py -v" % cime_util.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
         return
-    
+
     cime_util.stop_buffering_output()
 
     testargs, compiler, no_run, no_build, no_batch, test_root, baseline_root, clean, \

@@ -6,6 +6,8 @@ LIB_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(LIB_DIR)
 from cime_util import run_cmd
 import cime_util, update_acme_tests, create_test_impl, wait_for_tests
+from  CIME.XML.Machines import Machines
+from CIME.XML.Files import Files
 
 SCRIPT_DIR = cime_util.get_acme_scripts_root()
 
@@ -41,11 +43,8 @@ class RunUnitTests(unittest.TestCase):
     def test_list_acme_tests_unit_test(self):
         self.do_unit_tests("list_acme_tests")
 
-    def test_wait_for_tests_unit_test(self):
-        self.do_unit_tests("wait_for_tests")
-
-    def test_resolve_variable_name(self):
-        self.do_unit_tests("resolve_variable_name")
+    def test_test_resolve_variable_name(self):
+        self.do_unit_tests("test_resolve_variable_name")
 
     def test_cime_util_unit_test(self):
         # A little different since this is a library, not an executable
@@ -668,9 +667,7 @@ class TestUpdateACMETests(unittest.TestCase):
         self.assertTrue("ERS.f19_g16_rx1.E.melvin_gnu" in tests)
 
 ###########################################################################
-    def resolve_variable_name(self):
-        from  CIME.XML.Machines import Machines
-        from CIME.XML.Files import Files
+    def test_resolve_variable_name(self):
         files = Files()
         machinefile = files.get_resolved_value(files.get_value("MACHINES_SPEC_FILE"))        
         self.assertTrue(os.path.isfile(machinefile),msg="Path did not resolve to existing file %s" %

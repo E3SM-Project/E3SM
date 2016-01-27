@@ -531,6 +531,7 @@ def does_machine_have_batch(machine=None):
 ###############################################################################
     """
     Return if this machine has a batch system
+
     >>> does_machine_have_batch("melvin")
     False
     >>> does_machine_have_batch("skybridge")
