@@ -42,7 +42,7 @@ class EntryID(GenericXML):
             value = self.get_node("default_value",root=node)
         if(value is not None):
             node.set("value",value)
-        return value[0].text
+            return value[0].text
 
     def set_value(self, vid, value):
         """

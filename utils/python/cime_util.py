@@ -87,6 +87,7 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
                             stderr=arg_stderr,
                             stdin=stdin,
                             cwd=from_dir)
+    
     output, errput = proc.communicate(input_str)
     output = output.strip() if output is not None else output
     errput = errput.strip() if errput is not None else errput
@@ -220,6 +221,7 @@ def probe_machine_name():
     parse_config_machines()
     hostname = socket.gethostname().split(".")[0]
     machine = _MACHINE_INFO.find_machine_from_regex(hostname)
+    print "here "+machine    
     return machine
 
 
@@ -407,7 +409,6 @@ def find_proc_id(proc_name=None,
 def get_batch_system(machine=None):
 ###############################################################################
     return _MACHINE_INFO.get_value("BATCH_SYSTEM")
-#    return get_machine_info("BATCH_SYSTEM", machine=machine)
 
 ###############################################################################
 def get_my_queued_jobs():
@@ -477,15 +478,20 @@ def get_machine_info( items, machine=None, user=None, project=None, case=None, r
     import getpass
     user = getpass.getuser() if user is None else user
     result = []                          
-    if (machine is None):
+    if (machine is None and _MACHINE_INFO is None):
         machine = probe_machine_name()
 
     expect(machine is not None, "Failed to probe machine. Please provide machine to whatever script you just ran")
     if(type(items) == str): 
-        result = _MACHINE_INFO.get_resolved_value(_MACHINE_INFO.get_value(items))
+        result = _MACHINE_INFO.get_value(items)
+        if(result is not None):
+            result = _MACHINE_INFO.get_resolved_value(result)
     else:
         for item in items:
-            result.append(_MACHINE_INFO.get_resolved_value(_MACHINE_INFO.get_value(item)))
+            thisresult = _MACHINE_INFO.get_value(item)
+            if(thisresult is not None):
+                thisresult = _MACHINE_INFO.get_resolved_value(thisresult)
+            result.append(thisresult)
     return result
 
 
@@ -508,6 +514,7 @@ def get_machine_project(machine=None):
     >>> get_machine_project("skybridge")
     'fy150001'
     """
+    parse_config_machines()
     if ("PROJECT" in os.environ):
         return os.environ["PROJECT"]
 
@@ -524,14 +531,16 @@ def does_machine_have_batch(machine=None):
 ###############################################################################
     """
     Return if this machine has a batch system
-
     >>> does_machine_have_batch("melvin")
     False
     >>> does_machine_have_batch("skybridge")
     True
     """
-    batch_system = _MACHINE_INFO.get_value("BATCH_SYSTEM")
-    return not (batch_system is None or batch_system == "none")
+    parse_config_machines()
+    if(machine is not None):
+        _MACHINE_INFO.set_machine(machine)        
+    batch_system = _MACHINE_INFO.get_node("batch_system")
+    return not (batch_system is None or batch_system[0].get('type') == "none")
 
 ###############################################################################
 def get_utc_timestamp(timestamp_format="%Y%m%d_%H%M%S"):

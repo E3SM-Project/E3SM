@@ -45,12 +45,6 @@ class GenericXML:
         Write an xml file from data in self
         """
         logging.debug("write: "+ infile)
-#        styledoc = os.path.join(cimeroot,"cime_config","xml_schemas","case_xml.xsl")
-#        stylesheet = libxslt.parseStylesheetDoc(styledoc)
-#        result = stylesheet.applyStyleSheet(self.root, None)
-#        style.saveResultToFilename(file, result, 0)
-#        style.freeStylesheet()
-#        result.freeDoc()
         if(infile != None):
             self.tree.write(infile)
         else:
@@ -64,7 +58,7 @@ class GenericXML:
             root = self.root
 
         xpath = ".//"+nodename
-        if(attributes):
+        if(attributes is not None):
             keys = list(attributes.keys())
             cnt = 0
             for key in keys:
@@ -75,6 +69,7 @@ class GenericXML:
                 xpath += "@%s=\'%s\'" % (key,attributes[key])
                 cnt=cnt+1
             xpath += "]"
+        logging.info("xpath = "+ xpath)
         nodes = root.findall(xpath)
         return nodes
 
@@ -111,7 +106,6 @@ class GenericXML:
         reference_re = re.compile(r'\$(\w+)')
         env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
         item_data = raw_value
-
         logging.debug(" item_data "+item_data)
         for m in env_ref_re.finditer(item_data):
             logging.debug("look for "+item_data+ " in env")
@@ -120,7 +114,10 @@ class GenericXML:
             item_data = item_data.replace(m.group(), os.environ[env_var])
 
         for m in reference_re.finditer(item_data):
-            ref = self.get_value(m.groups()[0])
-            item_data = item_data.replace(m.group(), self.get_resolved_value(ref))
+            var = m.groups()[0]
+            logging.debug("find: "+var)
+            ref = self.get_value(var)
+            logging.debug("resolve: "+ref)
+            item_data = item_data.replace(m.group(), ref)
 
         return item_data

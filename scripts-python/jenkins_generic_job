@@ -14,7 +14,7 @@ import wait_for_tests
 
 import argparse, sys, os, shutil, glob, doctest, time, signal
 
-from cime_util import expect, logging.warning, logging.info
+from CIME.utils import expect
 
 SENTINEL_FILE = "ONGOING_TEST"
 

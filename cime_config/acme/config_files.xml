@@ -6,7 +6,7 @@
 
   <entry id="MODEL"> 
     <type>char</type>
-    <default_value>cesm</default_value>
+    <default_value>acme</default_value>
     <group>case_der</group>
     <file>env_case.xml</file>
     <desc>model system name</desc>

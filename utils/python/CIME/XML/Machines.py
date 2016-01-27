@@ -12,7 +12,14 @@ class Machines(GenericXML):
         logging.info("Open file "+infile)
         self.machine = None
         GenericXML.__init__(self,infile)
-    
+
+    def get_node(self,nodename,attributes=None,root=None):
+        if(self.machine is not None and root is None):
+            node = GenericXML.get_node(self,nodename,attributes,root=self.machine)
+        else:
+            node = GenericXML.get_node(self,nodename,attributes,root)
+        return node
+
     def list_available_machines(self):
         """
         Return a list of machines defined for a given CIME_MODEL
@@ -20,8 +27,7 @@ class Machines(GenericXML):
         machines = []
         nodes  = self.get_node('machine')
         for node in nodes:
-            mach = {}
-            mach[name] = node.attrib["MACH"]
+            mach = node.get("MACH")
             machines.append(mach)
         return machines
     
@@ -38,10 +44,11 @@ class Machines(GenericXML):
             regex_str_nodes =  self.get_node('NODENAME_REGEX',root=self.machine)
             if(len(regex_str_nodes)>0):
                 regex_str = regex_str_nodes[0].text
-                logging.debug("machine regex string is "+ regex_str)
                 if (regex_str is not None):
+                    logging.info("machine regex string is "+ regex_str)
                     regex = re.compile(regex_str)
                     if (regex.match(nametomatch)):
+                        logging.info("Found machine: "+machine)
                         return machine
 
         return None
@@ -51,9 +58,11 @@ class Machines(GenericXML):
         """
         Sets the machine block in the Machines object
         """
-        self.machine = self.get_node('machine',{'MACH':machine})[0]
-        expect(self.machine is not None,"No machine %s found" % machine)
-                
+        if(self.machine is not None and self.name is not machine):
+            self.machine = None
+        mach_nodes = self.get_node('machine',{'MACH':machine})
+        expect(mach_nodes is not None,"No machine %s found" % machine)
+        self.machine = mach_nodes[0]
         self.name = machine
 
     def get_value(self,name):

@@ -12,7 +12,7 @@ cime_util.check_minimum_python_version(2, 7)
 import argparse, sys, os
 
 import simple_compare
-from cime_util import expect, logging.warning, logging.info
+from CIME.utils import expect
 
 ###############################################################################
 def parse_command_line(args, description):
