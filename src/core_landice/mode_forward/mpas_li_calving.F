@@ -105,7 +105,7 @@ module li_calving
       type (mpas_pool_type), pointer :: velocityPool
 
       ! calving-relevant config options
-      character (len=StrKIND), pointer :: config_calving
+      character (len=StrKIND), pointer :: config_calving, config_data_calving
       logical, pointer :: config_print_calving_info
 
       real(kind=RKIND), pointer :: config_calving_topography, &
@@ -173,6 +173,7 @@ module li_calving
       ! get config options
       dminfo => domain % dminfo
       call mpas_pool_get_config(liConfigs, 'config_calving', config_calving)
+      call mpas_pool_get_config(liConfigs, 'config_data_calving', config_data_calving)
       call mpas_pool_get_config(liConfigs, 'config_calving_thickness', config_calving_thickness)
       call mpas_pool_get_config(liConfigs, 'config_calving_topography', config_calving_topography)
       call mpas_pool_get_config(liConfigs, 'config_calving_timescale', config_calving_timescale)
@@ -392,12 +393,12 @@ module li_calving
             ! Calve ice in ocean cells that are not on the protected inactive margin
 
             ! SFP: update to allow for data calving option that does NOT update geometry
-            where (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND .and. trim(config_calving) /='data')
+            where (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND .and. trim(config_data_calving) =='false')
 
                calvingThickness = thickness * calvingFraction
                thickness = thickness - calvingThickness
 
-            elsewhere (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND .and. trim(config_calving) =='data')
+            elsewhere (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND .and. trim(config_data_calving) =='true')
 
                calvingThickness = thickness * calvingFraction
 
@@ -457,12 +458,12 @@ module li_calving
                calvingThickness = thickness * calvingFraction
 
                ! SFP: update to allow for data calving option that does NOT update geometry
-               where (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND .and. trim(config_calving) /='data')
+               where (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND .and. trim(config_data_calving) =='false')
 
                   calvingThickness = thickness * calvingFraction
                   thickness = thickness - calvingThickness
 
-               elsewhere (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND .and. trim(config_calving) =='data')
+               elsewhere (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND .and. trim(config_data_calving) =='true')
 
                   calvingThickness = thickness * calvingFraction
 
