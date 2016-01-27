@@ -157,7 +157,7 @@ module cice_column
           index_DICConc, &                         ! nt_bgc_DIC 
           index_dissolvedIronConc, &               ! nt_bgc_Fed 
           index_particulateIronConc, &             ! nt_bgc_Fep 
-          index_verticalAerosolsConc, &            ! nt_zaero             
+          index_verticalAerosolsConc, &            ! nt_zaero            
           index_algaeConcLayer, &                  ! nlt_bgc_N 
           index_algalCarbonLayer, &                ! nlt_bgc_C 
           index_algalChlorophyllLayer, &           ! nlt_bgc_chl 
@@ -813,7 +813,8 @@ contains
          config_use_column_vertical_thermodynamics, &
          config_use_column_biogeochemistry, &
          config_use_column_itd_thermodynamics, &
-         config_calc_surface_temperature
+         config_calc_surface_temperature, &
+         config_use_zaerosols
 
     real(kind=RKIND), pointer :: &
          config_dt
@@ -827,6 +828,7 @@ contains
        call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
        call MPAS_pool_get_config(domain % configs, "config_use_column_itd_thermodynamics", config_use_column_itd_thermodynamics)
        call MPAS_pool_get_config(domain % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
+       call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)                      
 
        call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
 
@@ -872,6 +874,13 @@ contains
 
        call mpas_timer_start("Column update state")
        call cice_column_update_state(domain, "thermodynamics", config_dt, config_dt)
+
+       !-----------------------------------------------------------------
+       ! Separate snow and ice tracers for advection
+       !-----------------------------------------------------------------
+
+       if (config_use_zaerosols) &
+           call column_separate_snow_ice_aerosols(domain)
        call mpas_timer_stop("Column update state")
 
     endif
@@ -898,7 +907,8 @@ contains
 
     logical, pointer :: &
          config_use_column_package, &
-         config_use_column_ridging
+         config_use_column_ridging, &
+         config_use_zaerosols
 
     type(MPAS_pool_type), pointer :: &
          velocitySolver
@@ -911,6 +921,7 @@ contains
     if (config_use_column_package) then
     
        call MPAS_pool_get_config(domain % configs, "config_use_column_ridging", config_use_column_ridging)
+       call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)                
 
        call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolver)
        call MPAS_pool_get_array(velocitySolver, "dynamicsTimeStep", dynamicsTimeStep)
@@ -920,6 +931,8 @@ contains
        !-----------------------------------------------------------------
 
        call mpas_timer_start("Column ridging")
+       if (config_use_zaerosols) & 
+            call column_combine_snow_ice_aerosols(domain)
        if (config_use_column_ridging) &
             call column_ridging(domain)
        call mpas_timer_stop("Column ridging")
@@ -962,7 +975,7 @@ contains
 
     if (config_use_column_package) then
     
-       call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
+       call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)      
        
        !-----------------------------------------------------------------
        ! Shortwave radiation
@@ -2658,7 +2671,8 @@ contains
     logical, pointer :: &
          config_use_brine, &
          config_use_skeletal_biochemistry, &
-         config_use_column_biogeochemistry 
+         config_use_column_biogeochemistry, &
+         config_use_zaerosols 
 
     ! dimensions
     integer, pointer :: &
@@ -2769,6 +2783,9 @@ contains
          iCategory, &
          iAlgae, &
          iBioData, &
+         iBioCount, &
+         iSnowCount, &
+         iIceCount, &
          indexj
         
     real(kind=RKIND), dimension(:), allocatable :: &
@@ -2825,6 +2842,7 @@ contains
        call MPAS_pool_get_config(block % configs, "config_use_brine", config_use_brine)
        call MPAS_pool_get_config(block % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+       call MPAS_pool_get_config(block % configs, "config_use_zaerosols",config_use_zaerosols)
 
        call MPAS_pool_get_array(biogeochemistry, "newlyFormedIce", newlyFormedIce)
        call MPAS_pool_get_array(biogeochemistry, "netNitrateUptake", netNitrateUptake)
@@ -2949,13 +2967,15 @@ contains
           enddo
 #endif
 
-          indexj = ciceTracerObject % index_verticalAerosolsConcLayer(1) 
-          do iBioTracers = 1, maxBCType
-             atmosBioFluxes(indexj -1 + iBioTracers,iCell) = atmosBlackCarbonFlux(iBioTracers,iCell)
-          enddo
-          do iBioTracers = maxBCType + 1, nzAerosols 
-             atmosBioFluxes(indexj -1 + iBioTracers, iCell) = atmosDustFlux(iBioTracers-maxBCType,iCell)
-          enddo
+          if (config_use_zaerosols) then
+             indexj = ciceTracerObject % index_verticalAerosolsConcLayer(1) 
+             do iBioTracers = 1, maxBCType
+                atmosBioFluxes(indexj -1 + iBioTracers,iCell) = atmosBlackCarbonFlux(iBioTracers,iCell)
+             enddo
+             do iBioTracers = maxBCType + 1, nzAerosols 
+                atmosBioFluxes(indexj -1 + iBioTracers, iCell) = atmosDustFlux(iBioTracers-maxBCType,iCell)
+             enddo           
+          endif
 
           do iBioTracers = 1, ciceTracerObject % nBioTracers
              iBioData = ciceTracerObject % index_LayerIndexToDataArray(iBioTracers)
@@ -8984,6 +9004,8 @@ contains
        endif     
        if (.not. pkgTracerZAerosolsActive) then
           call set_stand_in_tracer_array(block, "verticalAerosolsConc")
+          call set_stand_in_tracer_array(block, "verticalAerosolsSnow")
+          call set_stand_in_tracer_array(block, "verticalAerosolsIce")
        endif       
        if (.not. pkgTracerZSalinityActive) then
           call set_stand_in_tracer_array(block, "verticalSalinity")
@@ -9269,6 +9291,8 @@ contains
        endif     
        if (.not. pkgTracerZAerosolsActive) then
           call finalize_stand_in_tracer_array(block, "verticalAerosolsConc")
+          call finalize_stand_in_tracer_array(block, "verticalAerosolsSnow")
+          call finalize_stand_in_tracer_array(block, "verticalAerosolsIce")
        endif       
        if (.not. pkgTracerZSalinityActive) then
           call finalize_stand_in_tracer_array(block, "verticalSalinity")
@@ -9692,7 +9716,8 @@ contains
          use_nitrogen
 
     integer :: &
-         nTracers_temp
+         nTracers_temp, &
+         iAerosols
 
     ! save tracer array size
     nTracers_temp = tracerObject % nTracers
@@ -9870,8 +9895,8 @@ contains
        WRITE (stderrUnit,*) nTracers_temp
        WRITE (stderrUnit,*) tracerObject % nTracers
        call MPAS_dmpar_global_abort("tracer number error")
-    endif
-
+    endif   
+    
   end subroutine init_column_tracer_object_for_biogeochemistry
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -10472,6 +10497,178 @@ contains
     endif ! config_use_column_package
 
   end subroutine cice_column_reinitialize_diagnostics
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  column_separate_snow_ice_aerosols
+!
+!> \brief 
+!> \author Nicole Jeffery, LANL
+!> \date 26 Jan 2016
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine  column_separate_snow_ice_aerosols(domain)
+
+    type(domain_type), intent(inout) :: domain
+
+    type(block_type), pointer :: &
+         block
+
+    type(MPAS_pool_type), pointer :: &
+         mesh, &
+         tracers
+         
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         verticalAerosolsConc, &
+         verticalAerosolsSnow, &
+         verticalAerosolsIce
+
+    integer, pointer :: &
+         nCellsSolve, &
+         nBioLayersP1, &
+         nBioLayersP3, &
+         nCategories, &
+         nzAerosols 
+         
+    integer :: &
+         iCell, &
+         iBioTracers, &
+         iCategory, &
+         iBioData, &
+         iBioCount, &
+         iSnowCount, &
+         iIceCount
+
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nCategories", nCategories)
+    
+    block => domain % blocklist
+    do while (associated(block))
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+
+
+       call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+       call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
+       call MPAS_pool_get_dimension(mesh, "nzAerosols", nzAerosols)
+       call MPAS_pool_get_dimension(mesh, "nBioLayersP1", nBioLayersP1)
+       call MPAS_pool_get_dimension(mesh, "nBioLayersP3", nBioLayersP3)
+
+       call MPAS_pool_get_array(tracers, "verticalAerosolsConc",verticalAerosolsConc,1)
+       call MPAS_pool_get_array(tracers, "verticalAerosolsSnow",verticalAerosolsSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalAerosolsIce",verticalAerosolsIce,1)
+
+       do iCell = 1, nCellsSolve
+          do iCategory = 1, nCategories
+             do iBioTracers = 1, nzAerosols
+                 iSnowCount = (iBioTracers-1)*2
+                 iIceCount = (iBioTracers-1)*nBioLayersP1
+                 iBioData =  (iBioTracers-1)*nBioLayersP3
+                 do iBioCount = 1,2
+                    verticalAerosolsSnow(iBioCount+iSnowCount,iCategory,iCell) = &
+                            verticalAerosolsConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell)
+                 enddo
+                 do iBioCount = 1, nBioLayersP1
+                    verticalAerosolsIce(iBioCount+iIceCount,iCategory,iCell) = &
+                            verticalAerosolsConc(iBioData+iBioCount,iCategory,iCell)
+                 enddo
+             enddo
+          enddo
+       enddo
+
+       block => block % next
+    end do
+
+  end subroutine column_separate_snow_ice_aerosols
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  column_combine_snow_ice_aerosols
+!
+!> \brief 
+!> \author Nicole Jeffery, LANL
+!> \date 26 Jan 2016
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine  column_combine_snow_ice_aerosols(domain)
+
+    type(domain_type), intent(inout) :: domain
+
+    type(block_type), pointer :: &
+         block
+
+    type(MPAS_pool_type), pointer :: &
+         mesh, &
+         tracers
+         
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         verticalAerosolsConc, &
+         verticalAerosolsSnow, &
+         verticalAerosolsIce
+
+    integer, pointer :: &
+         nCellsSolve, &
+         nBioLayersP1, &
+         nBioLayersP3, &
+         nCategories, &
+         nzAerosols 
+         
+    integer :: &
+         iCell, &
+         iBioTracers, &
+         iCategory, &
+         iBioData, &
+         iBioCount, &
+         iSnowCount, &
+         iIceCount
+
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nCategories", nCategories)
+    
+    block => domain % blocklist
+    do while (associated(block))
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+
+
+       call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+       call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
+       call MPAS_pool_get_dimension(mesh, "nzAerosols", nzAerosols)
+       call MPAS_pool_get_dimension(mesh, "nBioLayersP1", nBioLayersP1)
+       call MPAS_pool_get_dimension(mesh, "nBioLayersP3", nBioLayersP3)
+
+       call MPAS_pool_get_array(tracers, "verticalAerosolsConc",verticalAerosolsConc,1)
+       call MPAS_pool_get_array(tracers, "verticalAerosolsSnow",verticalAerosolsSnow,1)
+       call MPAS_pool_get_array(tracers, "verticalAerosolsIce",verticalAerosolsIce,1)
+
+       do iCell = 1, nCellsSolve
+          do iCategory = 1, nCategories
+             do iBioTracers = 1, nzAerosols
+                 iSnowCount = (iBioTracers-1)*2
+                 iIceCount = (iBioTracers-1)*nBioLayersP1
+                 iBioData =  (iBioTracers-1)*nBioLayersP3
+                 do iBioCount = 1,2
+                    verticalAerosolsConc(iBioData+nBioLayersP1+iBioCount,iCategory,iCell) = &
+                            verticalAerosolsSnow(iBioCount+iSnowCount,iCategory,iCell) 
+                 enddo
+                 do iBioCount = 1, nBioLayersP1
+                    verticalAerosolsConc(iBioData+iBioCount,iCategory,iCell) = &
+                            verticalAerosolsIce(iBioCount+iIceCount,iCategory,iCell) 
+                 enddo
+             enddo
+          enddo
+       enddo
+
+       block => block % next
+    end do
+
+  end subroutine column_combine_snow_ice_aerosols
 
 !-----------------------------------------------------------------------
 

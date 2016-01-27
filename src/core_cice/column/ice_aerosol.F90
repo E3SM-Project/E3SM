@@ -451,7 +451,8 @@
                                 vice_old, vsno_old,    &
                                 vicen,    vsnon,       &
                                 aicen,    flux_bio_atm,&
-                                zbgc_atm, nu_diag)
+                                zbgc_atm, flux_bio,    &
+                                nu_diag)
 
       use ice_colpkg_shared, only: hi_ssl, hs_ssl
       use ice_constants_colpkg, only: c0, rhos, rhoi, hs_min, puny, &
@@ -487,7 +488,8 @@
 
       real (kind=dbl_kind),dimension(nbtrcr), intent(inout) :: &
          zbgc_snow, & ! aerosol contribution from snow to ice
-         zbgc_atm     ! and atm to ice concentration * volume (kg or mmol/m^3*m)
+         zbgc_atm,  & ! and atm to ice concentration * volume (kg or mmol/m^3*m)
+         flux_bio     ! total ocean tracer flux (mmol/m^2/s)
 
       real (kind=dbl_kind), dimension(nbtrcr), &
          intent(in) :: &
@@ -517,8 +519,8 @@
 
       real (kind=dbl_kind), dimension(nbtrcr) :: &
          aerotot, aerotot0, & ! for conservation check (mmol/m^3)
-         aero_cons            ! for conservation check (mmol/m^2)
-
+         aero_cons        , & ! for conservation check (mmol/m^2)
+         flux_bio_o           ! initial ocean tracer flux (mmol/m^2/s)
 
       real (kind=dbl_kind), dimension(nbtrcr,2) :: &
          aerosno,  & ! kg/m^2
@@ -530,6 +532,8 @@
          aerosno (:,:) = c0
          aerosno0(:,:) = c0
          aero_cons(:) = c0
+         zbgc_snow(:) = c0
+         zbgc_atm(:) = c0
 
          hs_old    = vsno_old/aice_old
          hslyr_old = hs_old/real(nslyr,kind=dbl_kind)
@@ -540,23 +544,37 @@
          if (aicen > c0) then
             ar = c1/aicen
             hs = vsnon*ar
-            dhs_melts  = -melts*ar
-            dhs_snoice = snoice*ar*rhoi/rhos
+            dhs_melts  = -melts
+            dhs_snoice = snoice*rhoi/rhos
          else ! ice disappeared during time step
             hs = vsnon/aice_old
-            dhs_melts  = -melts/aice_old
-            dhs_snoice = snoice/aice_old*rhoi/rhos
+            dhs_melts  = -melts          
+            dhs_snoice = snoice*rhoi/rhos
          endif
 
          dhs_evap = hs - (hs_old + dhs_melts - dhs_snoice &
                                  + fsnow/rhos*dt)
 
          ! trcrn() has units kg/m^3
+
+      if ((vsno_old .le. puny) .or. (vsnon .le. puny)) then
+
          do k=1,nbtrcr
-            aerosno (k,:) = &
-               trcrn(bio_index(k)+ nblyr+1:bio_index(k)+ nblyr+2)*vsno_old
+            flux_bio(k) = flux_bio(k) +  &
+                         (trcrn(bio_index(k)+ nblyr+1)*dzssl+ &
+                          trcrn(bio_index(k)+ nblyr+2)*dzint)*aice_old/dt
+            trcrn(bio_index(k) + nblyr+1) = c0
+            trcrn(bio_index(k) + nblyr+2) = c0
+         enddo
+
+      elseif (aicen .gt. puny) then
+         
+         do k=1,nbtrcr
+            flux_bio_o(k) = flux_bio(k)
+            aerosno (k,1) = trcrn(bio_index(k)+ nblyr+1) * dzssl * aicen   
+            aerosno (k,2) = trcrn(bio_index(k)+ nblyr+2) * dzint * aicen  
             aerosno0(k,:) = aerosno(k,:)
-            aerotot0(k) = aerosno(k,2) + aerosno(k,1) 
+            aerotot0(k)   = aerosno(k,2) + aerosno(k,1) 
          enddo
 
     !-------------------------------------------------------------------
@@ -594,7 +612,7 @@
             endif
             if (dzint <= puny ) then  ! all snow melts away
                zbgc_snow(:) = zbgc_snow(:) &
-                                + aerosno(:,1) + aerosno(:,2)
+                                + max(c0,aerosno(:,1) + aerosno(:,2))
                aerosno(:,:) = c0
                dzint = max(dzint, c0)
             endif
@@ -603,7 +621,7 @@
     !-------------------------------------------------------------------
     ! snowfall
     !-------------------------------------------------------------------
-         if (fsnow > c0) dzssl = dzssl + fsnow/rhos*dt
+         if (fsnow > c0) dzssl = dzssl + fsnow/rhos*dt 
 
     !-------------------------------------------------------------------
     ! snow-ice formation
@@ -620,7 +638,7 @@
                   sloss1 = max(dhs_snoice-dzint, c0)  &
                            *aerosno(k,1)/dzssl
                aerosno(k,1) = aerosno(k,1) - sloss1
-               zbgc_snow(k)= zbgc_snow(k) &
+               zbgc_snow(k) = zbgc_snow(k) &
                                + (sloss2+sloss1)
             enddo
             dzssl  = dzssl - max(dhs_snoice-dzint, c0)
@@ -643,16 +661,19 @@
             enddo
          else  
             do k=1,nbtrcr
-               aerosno(k,1) = aerosno(k,1) &
-                                + (hs/hs_min)*flux_bio_atm(k)*dt*aicen
                zbgc_atm(k) = zbgc_atm(k) &
-                                + (c1-hs/hs_min)*flux_bio_atm(k)*dt*aicen
+                                + flux_bio_atm(k)*dt*aicen
             enddo
          endif
 
     !-------------------------------------------------------------------
     ! redistribute aerosol within vertical layers
     !-------------------------------------------------------------------
+         if (aicen > c0) then
+            hs = vsnon  * ar     ! new snow thickness
+         else
+            hs = c0
+         endif
          if (dzssl <= puny) then   ! nothing in SSL
             do k=1,nbtrcr
                aerosno(k,2) = aerosno(k,2) + aerosno(k,1)
@@ -661,7 +682,7 @@
          endif
          if (dzint <= puny) then   ! nothing in Snow Int
             do k = 1, nbtrcr
-               zbgc_snow(k) = zbgc_snow(k) + aerosno(k,2)
+               zbgc_snow(k) = zbgc_snow(k) + max(c0,aerosno(k,2))
                aerosno(k,2) = c0
             enddo
          endif
@@ -670,7 +691,7 @@
          dzssl_new  = min(hslyr/c2, hs_ssl)
          dzint_new  = hs - dzssl_new
 
-         if (hs > puny) then !should this really be hs_min or 0? 
+         if (hs > hs_min) then !should this really be hs_min or 0? 
             do k = 1, nbtrcr
                dznew = min(dzssl_new-dzssl, c0)
                sloss1 = c0
@@ -684,7 +705,7 @@
             enddo
          else
             zbgc_snow(:) = zbgc_snow(:)  &
-                             + aerosno(:,1) + aerosno(:,2)
+                             + max(c0,aerosno(:,1) + aerosno(:,2))
             aerosno(:,:) = c0
          endif
 
@@ -693,9 +714,10 @@
     !-------------------------------------------------------------------
          do k = 1, nbtrcr
             aerotot(k) = aerosno(k,2) + aerosno(k,1) &
-                       + zbgc_snow(k) + zbgc_atm(k)
+                       + zbgc_snow(k) + zbgc_atm(k) 
             aero_cons(k) = aerotot(k)-aerotot0(k) &
-                          - (    flux_bio_atm(k)*aicen )*dt 
+                          - (    flux_bio_atm(k)*aicen &
+                          - (flux_bio(k)-flux_bio_o(k))) * dt
             if (aero_cons(k)  > puny .or. zbgc_snow(k) + zbgc_atm(k) < c0) then             
                write(nu_diag,*) 'Conservation failure: aerosols in snow'            
                write(nu_diag,*) 'test aerosol 1'
@@ -716,15 +738,18 @@
     ! reload tracers
     !-------------------------------------------------------------------
          if (vsnon > puny) then
-            aerosno(:,:) = aerosno(:,:)/vsnon
-            zbgc_snow(:) = zbgc_snow(:)*hs/vsnon  !divide by aicen
-            zbgc_atm(:)  = zbgc_atm(:)*hs/vsnon   !divide by aicen
-         endif
          do k = 1,nbtrcr
-         do n = 1,2
-             trcrn(bio_index(k)+nblyr+n)=aerosno(k,n)
+             trcrn(bio_index(k)+nblyr+1)=aerosno(k,1)/dzssl_new * ar 
+             trcrn(bio_index(k)+nblyr+2)=aerosno(k,2)/dzint_new * ar
+             zbgc_snow(k) = zbgc_snow(k) * ar
          enddo
+         else
+         do k = 1,nbtrcr
+            zbgc_snow(k) = (zbgc_snow(k) + aerosno(k,1) + aerosno(k,2)) * ar
+            trcrn(bio_index(k)+nblyr+1)= c0
+            trcrn(bio_index(k)+nblyr+2)= c0
          enddo
+         endif
     !-------------------------------------------------------------------
     ! check for negative values
     !-------------------------------------------------------------------
@@ -759,6 +784,7 @@
               enddo
             enddo
          endif
+        endif
 
       end subroutine update_snow_bgc
 

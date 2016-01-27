@@ -203,7 +203,8 @@
                                 vice_old,  vsno_old,     &
                                 vicen,     vsnon,        &
                                 aicen,     flux_bio_atm, &
-                                zbgc_atmn, nu_diag)
+                                zbgc_atmn, flux_bio,     &
+                                nu_diag)
 
       call z_biogeochemistry   (n_cat,        dt,        &
                                 nilyr,        nslyr,     &

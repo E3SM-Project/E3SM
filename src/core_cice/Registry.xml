@@ -54,6 +54,8 @@
 		<dim name="nParticulateIronLayers" definition="nBioLayersP3*nParticulateIron"/>
 		<dim name="nDissolvedIronLayers"   definition="nBioLayersP3*nDissolvedIron"/>
 		<dim name="nzAerosolsLayers"   definition="nBioLayersP3*nzAerosols"/>
+		<dim name="nzAerosolsSnowLayers"  definition="2*nzAerosols"/>
+		<dim name="nzAerosolsIceLayers"   definition="nBioLayersP1*nzAerosols"/>
 		<dim name="nZBGCTracers"       definition="29"/>
 		<dim name="nRegions"       definition="3"/>
 	</dims>
@@ -453,7 +455,9 @@
 	    <var name="totalVerticalSalinity"/>               
 	    <var name="brineFractionCell"/>    
             <var name="newlyFormedIce"/>   
-	    <var name="verticalAerosolsConc"/>   
+	    <var name="verticalAerosolsConc"/>  
+	    <var name="verticalAerosolsSnow"/>  
+	    <var name="verticalAerosolsIce"/>   
 	    <var name="atmosBlackCarbonFlux"/>     
 	    <var name="atmosDustFlux"/> 
             <var name="oceanDustIronFlux"/>	
@@ -682,6 +686,8 @@
 		<var name="verticalParticulateIronConc"	      type="real"     dimensions="nParticulateIronLayers nCategories nCells Time" name_in_code="verticalParticulateIronConc"   packages="pkgTracerVerticalIron"/>
 		<var name="verticalDissolvedIronConc"	      type="real"     dimensions="nDissolvedIronLayers nCategories nCells Time"   name_in_code="verticalDissolvedIronConc"     packages="pkgTracerVerticalIron"/>
 		<var name="verticalAerosolsConc"	      type="real"     dimensions="nzAerosolsLayers nCategories nCells Time"       name_in_code="verticalAerosolsConc"          packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsSnow"	      type="real"     dimensions="nzAerosolsSnowLayers nCategories nCells Time"       name_in_code="verticalAerosolsSnow"          packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsIce"	              type="real"     dimensions="nzAerosolsIceLayers nCategories nCells Time"       name_in_code="verticalAerosolsIce"          packages="pkgTracerZAerosols"/>
 		<var name="verticalSalinity"		      type="real"     dimensions="nBioLayers nCategories nCells Time"             name_in_code="verticalSalinity"              packages="pkgTracerZSalinity"/>
 	</var_struct>
 	<var_struct name="tracers_aggregate" time_levs="1">
@@ -732,6 +738,8 @@
 		<var name="verticalHumicsConcCell"	      type="real"     dimensions="nBioLayersP3 nCells Time"   name_in_code="verticalHumicsConcCell"       packages="pkgTracerVerticalHumics"/>
 		<var name="verticalParticulateIronConcCell"   type="real"     dimensions="nParticulateIronLayers nCells Time" name_in_code="verticalParticulateIronConcCell" packages="pkgTracerVerticalIron"/>
 		<var name="verticalDissolvedIronConcCell"     type="real"     dimensions="nDissolvedIronLayers nCells Time"   name_in_code="verticalDissolvedIronConcCell"   packages="pkgTracerVerticalIron"/>
+		<var name="verticalAerosolsSnowCell"	      type="real"     dimensions="nzAerosolsSnowLayers nCells Time"       name_in_code="verticalAerosolsSnowCell" packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsIceCell"	      type="real"     dimensions="nzAerosolsIceLayers nCells Time"       name_in_code="verticalAerosolsIceCell" packages="pkgTracerZAerosols"/>
 		<var name="verticalAerosolsConcCell"	      type="real"     dimensions="nzAerosolsLayers nCells Time"       name_in_code="verticalAerosolsConcCell" packages="pkgTracerZAerosols"/>
 		<var name="verticalSalinityCell"	      type="real"     dimensions="nBioLayers nCells Time"             name_in_code="verticalSalinityCell"     packages="pkgTracerZSalinity"/>
 	</var_struct>
@@ -805,7 +813,8 @@
 		<var name="verticalHumicsConcMask"	      type="integer"  dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalHumicsConcMask"       packages="pkgTracerVerticalHumics"/>
 		<var name="verticalParticulateIronConcMask"   type="integer"  dimensions="nParticulateIronLayers nCategories nCells" name_in_code="verticalParticulateIronConcMask" packages="pkgTracerVerticalIron"/>
 		<var name="verticalDissolvedIronConcMask"     type="integer"  dimensions="nDissolvedIronLayers nCategories nCells"   name_in_code="verticalDissolvedIronConcMask"   packages="pkgTracerVerticalIron"/>
-		<var name="verticalAerosolsConcMask"	      type="integer"  dimensions="nzAerosolsLayers nCategories nCells"       name_in_code="verticalAerosolsConcMask"        packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsSnowMask"	      type="integer"  dimensions="nzAerosolsSnowLayers nCategories nCells"       name_in_code="verticalAerosolsSnowMask"        packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsIceMask"	      type="integer"  dimensions="nzAerosolsIceLayers nCategories nCells"       name_in_code="verticalAerosolsIceMask"        packages="pkgTracerZAerosols"/>
 		<var name="verticalSalinityMask"	      type="integer"  dimensions="nBioLayers nCategories nCells"             name_in_code="verticalSalinityMask"            packages="pkgTracerZSalinity"/>
 	</var_struct>
 
@@ -858,10 +867,11 @@
 		<var name="verticalHumicsConcEdgeFlux"		      type="real"     dimensions="nBioLayersP3 nCategories nEdges"   name_in_code="verticalHumicsConcEdgeFlux"       packages="pkgTracerVerticalHumics"/>
 		<var name="verticalParticulateIronConcEdgeFlux"	      type="real"     dimensions="nParticulateIronLayers nCategories nEdges" name_in_code="verticalParticulateIronConcEdgeFlux"  packages="pkgTracerVerticalIron"/>
 		<var name="verticalDissolvedIronConcEdgeFlux"	      type="real"     dimensions="nDissolvedIronLayers nCategories nEdges"   name_in_code="verticalDissolvedIronConcEdgeFlux"    packages="pkgTracerVerticalIron"/>
-		<var name="verticalAerosolsConcEdgeFlux"	      type="real"     dimensions="nzAerosolsLayers nCategories nEdges"       name_in_code="verticalAerosolsConcEdgeFlux"         packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsSnowEdgeFlux"	      type="real"     dimensions="nzAerosolsSnowLayers nCategories nEdges"       name_in_code="verticalAerosolsSnowEdgeFlux"         packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsIceEdgeFlux"	              type="real"     dimensions="nzAerosolsIceLayers nCategories nEdges"       name_in_code="verticalAerosolsIceEdgeFlux"         packages="pkgTracerZAerosols"/>
 		<var name="verticalSalinityEdgeFlux"		      type="real"     dimensions="nBioLayers nCategories nEdges"             name_in_code="verticalSalinityEdgeFlux"             packages="pkgTracerZSalinity"/>
-
 	</var_struct>
+
 	<var_struct name="tracer_products" time_levs="1">
 		<var name="iceAreaCategoryProduct"            type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceAreaCategoryProduct"/>
 		<var name="iceVolumeCategoryProduct"          type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceVolumeCategoryProduct"/>
@@ -911,7 +921,8 @@
 		<var name="verticalHumicsConcProduct"		      type="real"     dimensions="nBioLayersP3 nCategories nCells"   name_in_code="verticalHumicsConcProduct"       packages="pkgTracerVerticalHumics"/>
 		<var name="verticalParticulateIronConcProduct"	      type="real"     dimensions="nParticulateIronLayers nCategories nCells"   name_in_code="verticalParticulateIronConcProduct"  packages="pkgTracerVerticalIron"/>
 		<var name="verticalDissolvedIronConcProduct"	      type="real"     dimensions="nDissolvedIronLayers nCategories nCells"     name_in_code="verticalDissolvedIronConcProduct"    packages="pkgTracerVerticalIron"/>
-		<var name="verticalAerosolsConcProduct"	              type="real"     dimensions="nzAerosolsLayers nCategories nCells"         name_in_code="verticalAerosolsConcProduct"         packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsSnowProduct"	              type="real"     dimensions="nzAerosolsSnowLayers nCategories nCells"         name_in_code="verticalAerosolsSnowProduct"         packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsIceProduct"	              type="real"     dimensions="nzAerosolsIceLayers nCategories nCells"         name_in_code="verticalAerosolsIceProduct"         packages="pkgTracerZAerosols"/>
 		<var name="verticalSalinityProduct"		      type="real"     dimensions="nBioLayers nCategories nCells"               name_in_code="verticalSalinityProduct"             packages="pkgTracerZSalinity"/>
 	</var_struct>
 	<var_struct name="tracer_triangles" time_levs="1">
@@ -963,8 +974,9 @@
 		<var name="verticalHumicsConcTriangle"		      type="real"     dimensions="nBioLayersP3 nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="verticalHumicsConcTriangle"       packages="pkgTracerVerticalHumics"/>
 		<var name="verticalParticulateIronConcTriangle"	      type="real"     dimensions="nParticulateIronLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges" name_in_code="verticalParticulateIronConcTriangle"  packages="pkgTracerVerticalIron"/>
 		<var name="verticalDissolvedIronConcTriangle"	      type="real"     dimensions="nDissolvedIronLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"   name_in_code="verticalDissolvedIronConcTriangle"    packages="pkgTracerVerticalIron"/>
-		<var name="verticalAerosolsConcTriangle"	      type="real"     dimensions="nzAerosolsLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"       name_in_code="verticalAerosolsConcTriangle"         packages="pkgTracerZAerosols"/>
-		<var name="verticalSalinityTriangle"		      type="real"     dimensions="nBioLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"             name_in_code="verticalSalinityTriangle"             packages="pkgTracerZSalinity"/>
+		<var name="verticalAerosolsSnowTriangle"	      type="real"     dimensions="nzAerosolsSnowLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"       name_in_code="verticalAerosolsSnowTriangle"         packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsIceTriangle"	              type="real"     dimensions="nzAerosolsIceLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"       name_in_code="verticalAerosolsIceTriangle"         packages="pkgTracerZAerosols"/>
+		<var name="verticalSalinityTriangle"                  type="real"     dimensions="nBioLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="verticalSalinityTriangle"		packages="pkgTracerZSalinity"/>
 	</var_struct>
 	<var_struct name="tracer_barycenter" time_levs="1">
 		<var name="iceAreaCategoryBarycenterx"        type="real"     dimensions="ONE nCategories nCells"          name_in_code="iceAreaCategoryBarycenterx"/>
@@ -1063,8 +1075,10 @@
 		<var name="verticalParticulateIronConcBarycentery"    type="real"     dimensions="nParticulateIronLayers nCategories nCells"   name_in_code="verticalParticulateIronConcBarycentery"  packages="pkgTracerVerticalIron"/>
 		<var name="verticalDissolvedIronConcBarycenterx"      type="real"     dimensions="nDissolvedIronLayers nCategories nCells"   name_in_code="verticalDissolvedIronConcBarycenterx"  packages="pkgTracerVerticalIron"/>
 		<var name="verticalDissolvedIronConcBarycentery"      type="real"     dimensions="nDissolvedIronLayers nCategories nCells"   name_in_code="verticalDissolvedIronConcBarycentery"  packages="pkgTracerVerticalIron"/>
-		<var name="verticalAerosolsConcBarycenterx"	      type="real"     dimensions="nzAerosolsLayers nCategories nCells"   name_in_code="verticalAerosolsConcBarycenterx"  packages="pkgTracerZAerosols"/>
-		<var name="verticalAerosolsConcBarycentery"	      type="real"     dimensions="nzAerosolsLayers nCategories nCells"   name_in_code="verticalAerosolsConcBarycentery"  packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsSnowBarycenterx"	      type="real"     dimensions="nzAerosolsSnowLayers nCategories nCells"   name_in_code="verticalAerosolsSnowBarycenterx"  packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsSnowBarycentery"	      type="real"     dimensions="nzAerosolsSnowLayers nCategories nCells"   name_in_code="verticalAerosolsSnowBarycentery"  packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsIceBarycenterx"	      type="real"     dimensions="nzAerosolsIceLayers nCategories nCells"   name_in_code="verticalAerosolsIceBarycenterx"  packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsIceBarycentery"	      type="real"     dimensions="nzAerosolsIceLayers nCategories nCells"   name_in_code="verticalAerosolsIceBarycentery"  packages="pkgTracerZAerosols"/>
 		<var name="verticalSalinityBarycenterx"		      type="real"     dimensions="nBioLayers nCategories nCells"   name_in_code="verticalSalinityBarycenterx"  packages="pkgTracerZSalinity"/>
 		<var name="verticalSalinityBarycentery"		      type="real"     dimensions="nBioLayers nCategories nCells"   name_in_code="verticalSalinityBarycentery"  packages="pkgTracerZSalinity"/>
 	</var_struct>
@@ -1213,9 +1227,12 @@
 		<var name="verticalDissolvedIronConcCenter"	      type="real"     dimensions="nDissolvedIronLayers nCategories nCells"   name_in_code="verticalDissolvedIronConcCenter"     packages="pkgTracerVerticalIron"/>
 		<var name="verticalDissolvedIronConcGradx"	      type="real"     dimensions="nDissolvedIronLayers nCategories nCells"   name_in_code="verticalDissolvedIronConcGradx"      packages="pkgTracerVerticalIron"/>
 		<var name="verticalDissolvedIronConcGrady"	      type="real"     dimensions="nDissolvedIronLayers nCategories nCells"   name_in_code="verticalDissolvedIronConcGrady"      packages="pkgTracerVerticalIron"/>
-		<var name="verticalAerosolsConcCenter"	              type="real"     dimensions="nzAerosolsLayers nCategories nCells"   name_in_code="verticalAerosolsConcCenter" packages="pkgTracerZAerosols"/>
-		<var name="verticalAerosolsConcGradx"	              type="real"     dimensions="nzAerosolsLayers nCategories nCells"   name_in_code="verticalAerosolsConcGradx"  packages="pkgTracerZAerosols"/>
-		<var name="verticalAerosolsConcGrady"	              type="real"     dimensions="nzAerosolsLayers nCategories nCells"   name_in_code="verticalAerosolsConcGrady"  packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsSnowCenter"	              type="real"     dimensions="nzAerosolsSnowLayers nCategories nCells"   name_in_code="verticalAerosolsSnowCenter" packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsSnowGradx"	              type="real"     dimensions="nzAerosolsSnowLayers nCategories nCells"   name_in_code="verticalAerosolsSnowGradx"  packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsSnowGrady"	              type="real"     dimensions="nzAerosolsSnowLayers nCategories nCells"   name_in_code="verticalAerosolsSnowGrady"  packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsIceCenter"	              type="real"     dimensions="nzAerosolsIceLayers nCategories nCells"   name_in_code="verticalAerosolsIceCenter" packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsIceGradx"	              type="real"     dimensions="nzAerosolsIceLayers nCategories nCells"   name_in_code="verticalAerosolsIceGradx"  packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsIceGrady"	              type="real"     dimensions="nzAerosolsIceLayers nCategories nCells"   name_in_code="verticalAerosolsIceGrady"  packages="pkgTracerZAerosols"/>
 		<var name="verticalSalinityCenter"		      type="real"     dimensions="nBioLayers nCategories nCells"   name_in_code="verticalSalinityCenter"           packages="pkgTracerZSalinity"/>
 		<var name="verticalSalinityGradx"		      type="real"     dimensions="nBioLayers nCategories nCells"   name_in_code="verticalSalinityGradx"            packages="pkgTracerZSalinity"/>
 		<var name="verticalSalinityGrady"		      type="real"     dimensions="nBioLayers nCategories nCells"   name_in_code="verticalSalinityGrady"            packages="pkgTracerZSalinity"/>
@@ -1269,7 +1286,8 @@
 		<var name="verticalHumicsConcCons"	      type="real"     dimensions="nBioLayersP3 nCategories"   name_in_code="verticalHumicsConcCons"      packages="pkgTracerVerticalHumics"/>
 		<var name="verticalParticulateIronConcCons"   type="real"     dimensions="nParticulateIronLayers nCategories" name_in_code="verticalParticulateIronConcCons"  packages="pkgTracerVerticalIron"/>
 		<var name="verticalDissolvedIronConcCons"     type="real"     dimensions="nDissolvedIronLayers nCategories"   name_in_code="verticalDissolvedIronConcCons"    packages="pkgTracerVerticalIron"/>
-		<var name="verticalAerosolsConcCons"	      type="real"     dimensions="nzAerosolsLayers nCategories"       name_in_code="verticalAerosolsConcCons"         packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsSnowCons"	      type="real"     dimensions="nzAerosolsSnowLayers nCategories"       name_in_code="verticalAerosolsSnowCons"         packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsIceCons"	      type="real"     dimensions="nzAerosolsIceLayers nCategories"       name_in_code="verticalAerosolsIceCons"         packages="pkgTracerZAerosols"/>
 		<var name="verticalSalinityCons"	      type="real"     dimensions="nBioLayers nCategories"             name_in_code="verticalSalinityCons"             packages="pkgTracerZSalinity"/>
 	</var_struct>
 	<var_struct name="tracer_monotonicity" time_levs="1">
@@ -1369,8 +1387,10 @@
 		<var name="verticalParticulateIronConcLocalMax"	      type="real"     dimensions="nParticulateIronLayers nCategories nCells"   name_in_code="verticalParticulateIronConcLocalMax"  packages="pkgTracerVerticalIron"/>
 		<var name="verticalDissolvedIronConcLocalMin"	      type="real"     dimensions="nDissolvedIronLayers nCategories nCells"   name_in_code="verticalDissolvedIronConcLocalMin"  packages="pkgTracerVerticalIron"/>
 		<var name="verticalDissolvedIronConcLocalMax"	      type="real"     dimensions="nDissolvedIronLayers nCategories nCells"   name_in_code="verticalDissolvedIronConcLocalMax"  packages="pkgTracerVerticalIron"/>
-		<var name="verticalAerosolsConcLocalMin"	      type="real"     dimensions="nzAerosolsLayers nCategories nCells"   name_in_code="verticalAerosolsConcLocalMin"  packages="pkgTracerZAerosols"/>
-		<var name="verticalAerosolsConcLocalMax"	      type="real"     dimensions="nzAerosolsLayers nCategories nCells"   name_in_code="verticalAerosolsConcLocalMax"  packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsSnowLocalMin"	      type="real"     dimensions="nzAerosolsSnowLayers nCategories nCells"   name_in_code="verticalAerosolsSnowLocalMin"  packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsSnowLocalMax"	      type="real"     dimensions="nzAerosolsSnowLayers nCategories nCells"   name_in_code="verticalAerosolsSnowLocalMax"  packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsIceLocalMin"	      type="real"     dimensions="nzAerosolsIceLayers nCategories nCells"   name_in_code="verticalAerosolsIceLocalMin"  packages="pkgTracerZAerosols"/>
+		<var name="verticalAerosolsIceLocalMax"	      type="real"     dimensions="nzAerosolsIceLayers nCategories nCells"   name_in_code="verticalAerosolsIceLocalMax"  packages="pkgTracerZAerosols"/>
 		<var name="verticalSalinityLocalMin"		      type="real"     dimensions="nBioLayers nCategories nCells"   name_in_code="verticalSalinityLocalMin"  packages="pkgTracerZSalinity"/>
 		<var name="verticalSalinityLocalMax"		      type="real"     dimensions="nBioLayers nCategories nCells"   name_in_code="verticalSalinityLocalMax"  packages="pkgTracerZSalinity"/>
 	</var_struct>
@@ -1779,7 +1799,7 @@
 		<var name="totalVerticalSalinity"             type="real"     dimensions="nCells Time"                   name_in_code="totalVerticalSalinity"      packages="pkgTracerZSalinity;pkgColumnPackage"/>
 		<var name="totalChlorophyll"                  type="real"     dimensions="nCells Time"                   name_in_code="totalChlorophyll"           packages="pkgTracerVerticalAlgae;pkgTracerSkeletalAlgae"/>
 		<var name="totalNitrate"                      type="real"     dimensions="nCells Time"                   name_in_code="totalNitrate"               packages="pkgTracerSkeletalNitrate;pkgTracerVerticalNitrate"/>
-		<var name="netBrineHeight"                    type="real"     dimensions="nCells Time"                   name_in_code="netBrineHeight"             packages="pkgTracerBrine"/>
+		<var name="netBrineHeight"                    type="real"     dimensions="nCells Time"                   name_in_code="netBrineHeight"             packages="pkgColumnBiogeochemistry;pkgTracerBrine"/>
 		<var name="biologyGrid"                       type="real"     dimensions="nBioLayersP2"                  name_in_code="biologyGrid"                packages="pkgColumnBiogeochemistry;pkgColumnPackage"/>
 		<var name="interfaceBiologyGrid"              type="real"     dimensions="nBioLayersP1"                  name_in_code="interfaceBiologyGrid"       packages="pkgColumnBiogeochemistry;pkgColumnPackage"/>
 		<var name="verticalGrid"                      type="real"     dimensions="nIceLayersP1"                  name_in_code="verticalGrid"               packages="pkgColumnBiogeochemistry;pkgColumnPackage"/>

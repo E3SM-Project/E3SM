@@ -400,8 +400,10 @@ contains
     endif
 
     ! vertical aerosols
-    if (pkgTracerZAerosolsActive) &
-       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAerosolsConc',        'brineFraction')
+    if (pkgTracerZAerosolsActive) then
+          call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAerosolsIce','brineFraction')
+          call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAerosolsSnow','snowVolumeCategory')
+    endif
        
     ! vertical salinity
     if (pkgTracerZSalinityActive) &

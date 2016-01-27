@@ -1703,7 +1703,8 @@ contains
          oceanCoupling, &
          atmosFluxes, &
          drag, &
-         biogeochemistry
+         biogeochemistry, &
+         aerosols
 
     real(kind=RKIND), dimension(:), pointer :: &
          airLevelHeight, &
@@ -1744,7 +1745,8 @@ contains
          oceanDONConc, &
          oceanParticulateIronConc, &
          oceanDissolvedIronConc, &
-         oceanZAerosolConc
+         oceanZAerosolConc, &
+         atmosAerosolFlux
 
     integer, pointer :: &
          maxAlgaeType, &
@@ -1760,7 +1762,8 @@ contains
     logical, pointer :: &
          config_do_restart, &
          config_use_column_biogeochemistry, &
-         config_use_column_package
+         config_use_column_package, &
+         config_use_aerosols
     
     integer, pointer :: &
          nCells
@@ -1855,6 +1858,15 @@ contains
        ! Bio fluxes received from atmosphere
        !-------------------------------------------------------------
 
+       call MPAS_pool_get_config(block % configs, "config_use_aerosols", config_use_aerosols)
+
+       if (config_use_aerosols) then
+          call MPAS_pool_get_subpool(block % structs, "aerosols", aerosols)
+          call MPAS_pool_get_array(aerosols, "atmosAerosolFlux", atmosAerosolFlux)
+
+          atmosAerosolFlux = 1.e-12_RKIND
+       endif
+
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
 
        if (config_use_column_biogeochemistry) then
@@ -1876,16 +1888,12 @@ contains
           call MPAS_pool_get_dimension(block % dimensions, "nZBGCTracers", nZBGCTracers)
 
           atmosBioFluxes = 0.0_RKIND
-          indexj = 2*maxAlgaeType + maxDOCType + maxDICType + maxDONType + 2*maxIronType + 7
-
           do iCell = 1, nCells
              do iBio = 1, maxBCType
                 atmosBlackCarbonFlux(iBio,iCell) =  1.e-12_RKIND
-                atmosBioFluxes(indexj + iBio,iCell) = atmosBlackCarbonFlux(iBio,iCell)
              enddo
              do iBio = 1, maxDustType
                 atmosDustFlux(iBio,iCell) =  1.e-13_RKIND
-                atmosBioFluxes(indexj + maxBCType + iBio, iCell) = atmosDustFlux(iBio,iCell)
              enddo
           enddo ! iCell
 
