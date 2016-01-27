@@ -2,10 +2,11 @@
 Common functions used by cime python scripts
 """
 
-import sys, socket, re, os, time
+import sys, socket, re, os, time, logging
+from CIME.utils import expect, get_cime_root, get_model, set_model, get_python_libs_location_within_cime
+from CIME.XML.Files import Files
+from CIME.XML.Machines import Machines
 
-_MODEL = None
-_VERBOSE = False
 _MACHINE_INFO = None
 
 # batch-system-name -> ( cmd-to-list-all-jobs-for-user, cmd-to-delete-job )
@@ -42,43 +43,7 @@ _MACHINE_PROJECTS = {
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 165
-
 ###############################################################################
-def expect(condition, error_msg):
-###############################################################################
-    """
-    Similar to assert except doesn't generate an ugly stacktrace. Useful for
-    checking user error, not programming error.
-
-    >>> expect(True, "error1")
-    >>> expect(False, "error2")
-    Traceback (most recent call last):
-        ...
-    SystemExit: FAIL: error2
-    """
-    if (not condition):
-        raise SystemExit("FAIL: %s" % error_msg)
-
-###############################################################################
-def warning(msg):
-###############################################################################
-    """
-    Print a warning to stderr
-    """
-    print >> sys.stderr, "WARNING:", msg
-
-###############################################################################
-def verbose_print(msg, override=None):
-###############################################################################
-    if ( (_VERBOSE and not override is False) or override):
-        print msg
-
-###############################################################################
-def set_verbosity(verbose):
-###############################################################################
-    global _VERBOSE
-    _VERBOSE = verbose
-
 _hack=object()
 ###############################################################################
 def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
@@ -93,7 +58,7 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
     >>> run_cmd('ls file_i_hope_doesnt_exist')
     Traceback (most recent call last):
         ...
-    SystemExit: FAIL: Command: 'ls file_i_hope_doesnt_exist' failed with error 'ls: cannot access file_i_hope_doesnt_exist: No such file or directory'
+    SystemExit: ERROR: Command: 'ls file_i_hope_doesnt_exist' failed with error 'ls: cannot access file_i_hope_doesnt_exist: No such file or directory'
 
     >>> run_cmd('ls file_i_hope_doesnt_exist', ok_to_fail=True)[0] != 0
     True
@@ -109,7 +74,7 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
     if (arg_stderr is _hack):
         arg_stderr = subprocess.PIPE
 
-    verbose_print("RUN: %s" % cmd, verbose)
+    logging.info("RUN: %s" % cmd)
 
     if (input_str is not None):
         stdin = subprocess.PIPE
@@ -122,14 +87,15 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
                             stderr=arg_stderr,
                             stdin=stdin,
                             cwd=from_dir)
+    
     output, errput = proc.communicate(input_str)
     output = output.strip() if output is not None else output
     errput = errput.strip() if errput is not None else errput
     stat = proc.wait()
 
-    verbose_print("  stat: %d\n" % stat, verbose)
-    verbose_print("  output: %s\n" % output, verbose)
-    verbose_print("  errput: %s\n" % errput, verbose)
+    logging.info("  stat: %d\n" % stat)
+    logging.info("  output: %s\n" % output)
+    logging.info("  errput: %s\n" % errput)
 
     if (ok_to_fail):
         return stat, output, errput
@@ -252,17 +218,11 @@ def probe_machine_name():
     >>> probe_machine_name() is not None
     True
     """
+    parse_config_machines()
     hostname = socket.gethostname().split(".")[0]
+    machine = _MACHINE_INFO.find_machine_from_regex(hostname)
+    return machine
 
-    machines = get_machines()
-    for machine in machines:
-        regex_str = get_machine_info("NODENAME_REGEX", machine=machine)
-        if (regex_str):
-            regex = re.compile(regex_str)
-            if (regex.match(hostname)):
-                return machine
-
-    return None
 
 ###############################################################################
 def get_current_branch(repo=None):
@@ -315,49 +275,6 @@ def get_cime_location_within_acme():
     From within ACME, return subdirectory where CIME lives.
     """
     return "cime"
-
-###############################################################################
-def get_python_libs_location_within_cime():
-###############################################################################
-    """
-    From within CIME, return subdirectory of python libraries
-    """
-    return os.path.join("utils", "python")
-
-###############################################################################
-def get_cime_root():
-###############################################################################
-    """
-    Return the absolute path to the root of CIME that contains this script
-
-    >>> os.path.isdir(os.path.join(get_cime_root(), get_acme_scripts_location_within_cime()))
-    True
-    """
-    acme_script_absdir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
-    assert acme_script_absdir.endswith(get_python_libs_location_within_cime()), acme_script_absdir
-    return os.path.normpath(acme_script_absdir[:len(acme_script_absdir)-len(get_python_libs_location_within_cime())])
-
-###############################################################################
-def set_model(model):
-###############################################################################
-    global _MODEL
-    _MODEL = model
-
-###############################################################################
-def get_model():
-###############################################################################
-    global _MODEL
-    if (_MODEL is None):
-        try:
-            _MODEL = os.environ["CIME_MODEL"]
-        except KeyError:
-            modelroot = os.path.join(get_cime_root(), "cime_config")
-            models = os.listdir(modelroot)
-            msg = "Environment variable CIME_MODEL must be set to one of: "
-            msg += ", ".join([model for model in models if os.path.isdir(os.path.join(modelroot,model)) and model != "xml_schemas"])
-            expect(False, msg)
-
-    return _MODEL
 
 ###############################################################################
 def get_model_config_location_within_cime(model=get_model()):
@@ -490,7 +407,7 @@ def find_proc_id(proc_name=None,
 ###############################################################################
 def get_batch_system(machine=None):
 ###############################################################################
-    return get_machine_info("BATCH_SYSTEM", machine=machine)
+    return _MACHINE_INFO.get_value("BATCH_SYSTEM")
 
 ###############################################################################
 def get_my_queued_jobs():
@@ -523,42 +440,17 @@ def delete_jobs(jobs):
 def parse_config_machines():
 ###############################################################################
     """
+    Moving toward an object oriented model, replace _MACHINE_INFO dict with an object of class Machines
     """
     global _MACHINE_INFO
     if (_MACHINE_INFO is None):
-        _MACHINE_INFO = {}
-        import xml.etree.ElementTree as ET
-        config_machines_xml = os.path.join(get_model_config_root(), "machines", "config_machines.xml")
-        tree = ET.parse(config_machines_xml)
-        root = tree.getroot()
-        expect(root.tag == "config_machines",
-               "The given XML file is not a valid list of machine configurations.")
+        files = Files()
+        config_machines = files.get_resolved_value(files.get_value('MACHINES_SPEC_FILE'))
+        _MACHINE_INFO = Machines(config_machines)
 
-        # Each child of this root is a machine entry.
-        for machine in root:
-            if (machine.tag == "machine"):
-                expect("MACH" in machine.attrib, "Invalid machine entry found for machine '%s'" % machine)
-                mach_name = machine.attrib["MACH"]
-                expect(mach_name not in _MACHINE_INFO, "Duplicate machine entry '%s'" % mach_name)
-                data = {}
-                for item in machine:
-                    item_data = "" if item.text is None else item.text.strip()
-                    if (item.tag in ["COMPILERS", "MPILIBS"]):
-                        item_data = [strip_item.strip() for strip_item in item_data.split(",")]
-                    elif(item.tag == "batch_system"):
-                        item_data = item.attrib["type"]
-
-                    data[item.tag.upper()] = item_data
-
-                _MACHINE_INFO[mach_name] = data
-            elif(machine.tag == "default_run_suffix"):
-                #ignore this
-                do_nothing = 1
-            else:
-                warning("Ignoring unrecognized tag: '%s'" % machine.tag)
 
 ###############################################################################
-def get_machine_info(items, machine=None, user=None, project=None, case=None, raw=False):
+def get_machine_info( items, machine=None, user=None, project=None, case=None, raw=False):
 ###############################################################################
     """
     Return information on machine. If no arg provided, probe for machine.
@@ -584,58 +476,24 @@ def get_machine_info(items, machine=None, user=None, project=None, case=None, ra
 
     import getpass
     user = getpass.getuser() if user is None else user
-
-    if (machine is None):
+    result = []                
+    if (machine is None and _MACHINE_INFO.name is None):
         machine = probe_machine_name()
+    elif(machine is None):
+        machine = _MACHINE_INFO.name
     expect(machine is not None, "Failed to probe machine. Please provide machine to whatever script you just ran")
-    expect(machine in _MACHINE_INFO, "No info for machine '%s'" % machine)
-
-    if (isinstance(items, str)):
-        items = [items]
-
-    rv = []
-    if (raw):
-        for item in items:
-            rv.append(_MACHINE_INFO[machine][item])
+    if(type(items) == str): 
+        result = _MACHINE_INFO.get_value(items)
+        if(result is not None):
+            result = _MACHINE_INFO.get_resolved_value(result)
     else:
-        reference_re = re.compile(r'\$(\w+)')
-        env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
         for item in items:
-            item_data = _MACHINE_INFO[machine][item] if item in _MACHINE_INFO[machine] else None
-            if (isinstance(item_data, str)):
-                for m in env_ref_re.finditer(item_data):
-                    env_var = m.groups()[0]
-                    expect(env_var in os.environ,
-                           "Field '%s' for machine '%s' refers to undefined env var '%s'" % (item, machine, env_var))
-                    item_data = item_data.replace(m.group(), os.environ[env_var])
+            thisresult = _MACHINE_INFO.get_value(item)
+            if(thisresult is not None):
+                thisresult = _MACHINE_INFO.get_resolved_value(thisresult)
+            result.append(thisresult)
+    return result
 
-                for m in reference_re.finditer(item_data):
-                    ref = m.groups()[0]
-                    if (ref in _MACHINE_INFO[machine]):
-                        item_data = item_data.replace(m.group(), get_machine_info(ref, machine=machine, user=user, project=project))
-
-                item_data = item_data.replace("$USER", user)
-                # Need extra logic to handle case where user string was brought in from env ($HOME)
-                if (user != getpass.getuser()):
-                    item_data = item_data.replace(getpass.getuser(), user, 1)
-
-                if ("$PROJECT" in item_data):
-                    project = get_machine_project(machine=machine) if project is None else project
-                    expect(project is not None, "Cannot evaluate '%s' without project information" % item)
-                    item_data = item_data.replace("$PROJECT", project)
-
-                # $CASE is another special case, it can only be provided by user
-                # TODO: It actually comes from one of the env xml files
-                if ("$CASE" in item_data):
-                    expect(case is not None, "Data for '%s' required case information but none provided" % item)
-                    item_data = item_data.replace("$CASE", case)
-
-            rv.append(item_data)
-
-    if (len(rv) == 1):
-        return rv[0]
-    else:
-        return rv
 
 ###############################################################################
 def get_machines():
@@ -644,7 +502,8 @@ def get_machines():
     Return all machines defined by the config_machines.xml
     """
     parse_config_machines()
-    return _MACHINE_INFO.keys()
+    
+    return _MACHINE_INFO.list_available_machines()
 
 ###############################################################################
 def get_machine_project(machine=None):
@@ -655,6 +514,7 @@ def get_machine_project(machine=None):
     >>> get_machine_project("skybridge")
     'fy150001'
     """
+    parse_config_machines()
     if ("PROJECT" in os.environ):
         return os.environ["PROJECT"]
 
@@ -677,8 +537,11 @@ def does_machine_have_batch(machine=None):
     >>> does_machine_have_batch("skybridge")
     True
     """
-    batch_system = get_machine_info("BATCH_SYSTEM", machine=machine)
-    return not (batch_system is None or batch_system == "none")
+    parse_config_machines()
+    if(machine is not None):
+        _MACHINE_INFO.set_machine(machine)        
+    batch_system = _MACHINE_INFO.get_node("batch_system")
+    return not (batch_system is None or batch_system[0].get('type') == "none")
 
 ###############################################################################
 def get_utc_timestamp(timestamp_format="%Y%m%d_%H%M%S"):

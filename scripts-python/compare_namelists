@@ -9,10 +9,12 @@ import add_util_path
 import cime_util
 cime_util.check_minimum_python_version(2, 7)
 
+import logging
 import argparse, sys, os
 
 import compare_namelists
-from cime_util import expect, warning, verbose_print
+
+from CIME.utils import expect
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -67,9 +69,9 @@ def _main_func(description):
         parse_command_line(sys.argv, description)
 
     if (case is None):
-        warning("No case id data available, will not be able to normalize values as effectively")
+        logging.warning("No case id data available, will not be able to normalize values as effectively")
     else:
-        verbose_print("Using case: '%s'" % case)
+        logging.info("Using case: '%s'" % case)
 
     expect(compare_namelists.compare_namelist_files(gold_file, compare_file, case),
            "Namelist diff between files %s and %s" % (gold_file, compare_file))

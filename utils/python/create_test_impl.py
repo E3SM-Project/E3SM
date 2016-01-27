@@ -2,11 +2,11 @@
 Implementation of create_test functionality from CIME
 """
 
-import sys, os, shutil, traceback, stat, glob, threading, time, thread
+import sys, os, shutil, traceback, stat, glob, threading, time, thread, logging
 
-import cime_util, compare_namelists, wait_for_tests
-
-from cime_util import expect, warning, verbose_print, run_cmd
+import  cime_util, compare_namelists, wait_for_tests
+from CIME.utils import expect
+from cime_util import run_cmd
 from wait_for_tests import TEST_PASS_STATUS, TEST_FAIL_STATUS, TEST_PENDING_STATUS, TEST_STATUS_FILENAME, NAMELIST_FAIL_STATUS, RUN_PHASE, NAMELIST_PHASE
 
 INITIAL_PHASE = "INIT"
@@ -28,8 +28,7 @@ class CreateTest(object):
                  test_root=None, test_id=None,
                  compiler=None,
                  baseline_root=None, baseline_name=None,
-                 clean=False,
-                 compare=False, generate=False, namelists_only=False,
+                 clean=False,compare=False, generate=False, namelists_only=False,
                  project=None, parallel_jobs=None):
     ###########################################################################
         self._cime_root      = cime_util.get_cime_root()
@@ -208,13 +207,9 @@ class CreateTest(object):
         test_case, case_opts, grid, compset, machine, compiler, test_mods = cime_util.parse_test_name(test_name)
         if (compiler != self._compiler):
             raise StandardError("Test '%s' has compiler that does not match instance compliler '%s'" % (test_name, self._compiler))
-        if (self._parallel_jobs == 1):
-            scratch_dir = cime_util.get_machine_info("CESMSCRATCHROOT", machine=machine, project=self._project)
-            sharedlibroot = os.path.join(scratch_dir, "sharedlibroot.%s" % self._test_id)
-        else:
-            # Parallelizing builds introduces potential sync problems with sharedlibroot
-            # Just let every case build it's own
-            sharedlibroot = os.path.join(test_dir, "sharedlibroot.%s" % self._test_id)
+        # Parallelizing builds introduces potential sync problems with sharedlibroot
+        # Just let every case build it's own
+        sharedlibroot = os.path.join(test_dir, "sharedlibroot.%s" % self._test_id)
         model = cime_util.get_model()
         create_newcase_cmd = "%s -model %s -case %s -res %s -mach %s -compiler %s -compset %s -testname %s -project %s -nosavetiming -sharedlibroot %s" % \
                               (os.path.join(self._cime_root,"scripts", "create_newcase"),
@@ -348,10 +343,7 @@ class CreateTest(object):
     def _run_phase(self, test_name):
     ###########################################################################
         test_dir = self._get_test_dir(test_name)
-        if (self._no_batch):
-            return self._run_phase_command(test_name, "./case.test", RUN_PHASE, from_dir=test_dir)
-        else:
-            return self._run_phase_command(test_name, "./case.submit", RUN_PHASE, from_dir=test_dir)
+        return self._run_phase_command(test_name, "./case.submit", RUN_PHASE, from_dir=test_dir)
 
     ###########################################################################
     def _update_test_status_file(self, test_name):
@@ -385,7 +377,7 @@ class CreateTest(object):
             exc_tb = sys.exc_info()[2]
             errput = "Test '%s' failed in phase '%s' with exception '%s'" % (test_name, phase, str(e))
             self._log_output(test_name, errput)
-            warning("Caught exception: %s" % str(e))
+            logging.warning("Caught exception: %s" % str(e))
             traceback.print_tb(exc_tb)
             return False
 
@@ -425,7 +417,7 @@ class CreateTest(object):
             # TODO: What to do here? This failure is very severe because the
             # only way for test results to be communicated is by the TestStatus
             # file.
-            warning("VERY BAD! Could not handle TestStatus file '%s': '%s'" %
+            logging.critical("VERY BAD! Could not handle TestStatus file '%s': '%s'" %
                     (os.path.join(self._get_test_dir(test_name), TEST_STATUS_FILENAME), str(e)))
             thread.interrupt_main()
 
@@ -535,7 +527,7 @@ class CreateTest(object):
                 os.chmod(cs_submit_file, os.stat(cs_submit_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
 
         except Exception as e:
-            warning("FAILED to set up cs files: %s" % str(e))
+            logging.warning("FAILED to set up cs files: %s" % str(e))
 
     ###########################################################################
     def create_test(self):

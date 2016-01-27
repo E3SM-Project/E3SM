@@ -12,7 +12,7 @@ cime_util.check_minimum_python_version(2, 7)
 import argparse, sys, os
 
 import simple_compare
-from cime_util import expect, warning, verbose_print
+from CIME.utils import expect
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -71,9 +71,9 @@ def _main_func(description):
         parse_command_line(sys.argv, description)
 
     if (case is None):
-        warning("No case id data available, will not be able to normalize values as effectively")
+        logging.warning("No case id data available, will not be able to normalize values as effectively")
     else:
-        verbose_print("Using case: '%s'" % case)
+        logging.info("Using case: '%s'" % case)
 
     expect(simple_compare.compare_files(gold_file, compare_file, case),
            "Diff between files %s and %s" % (gold_file, compare_file))

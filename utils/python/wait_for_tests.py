@@ -1,9 +1,9 @@
 import os, time, threading, Queue, socket, signal, distutils.spawn, shutil, glob
-
+import logging
 import xml.etree.ElementTree as xmlet
 
 import cime_util
-from cime_util import expect, warning, verbose_print
+from CIME.utils import expect
 from collections import OrderedDict
 
 TEST_STATUS_FILENAME      = "TestStatus"
@@ -44,7 +44,7 @@ def get_test_time(test_path):
     if (stat == 0):
         return int(output.split()[-1])
     else:
-        warning("No timing data found in %s" % test_path)
+        logging.warning("No timing data found in %s" % test_path)
         return 0
 
 ###############################################################################
@@ -54,7 +54,7 @@ def get_test_output(test_path):
     if (os.path.exists(output_file)):
         return open(output_file, 'r').read()
     else:
-        warning("File '%s' not found" % output_file)
+        logging.warning("File '%s' not found" % output_file)
         return ""
 
 ###############################################################################
@@ -210,7 +210,7 @@ def create_cdash_xml(results, cdash_build_name, cdash_project, cdash_build_group
     #
 
     if (start_time is None):
-        warning("No valid start_time provided, using current time instead")
+        logging.warning("No valid start_time provided, using current time instead")
         start_time = time.time()
 
     utc_time_tuple = time.gmtime(start_time)
@@ -219,7 +219,7 @@ def create_cdash_xml(results, cdash_build_name, cdash_project, cdash_build_group
     hostname = cime_util.probe_machine_name()
     if (hostname is None):
         hostname = socket.gethostname().split(".")[0]
-        warning("Could not convert hostname '%s' into an ACME machine name" % (hostname))
+        logging.warning("Could not convert hostname '%s' into an ACME machine name" % (hostname))
 
     dart_config = \
 """
@@ -318,7 +318,7 @@ def parse_test_status(file_contents):
             else:
                 rv[phase] = status
         else:
-            warning("In TestStatus file for test '%s', line '%s' not in expected format" % (test_name, line))
+            logging.warning("In TestStatus file for test '%s', line '%s' not in expected format" % (test_name, line))
 
     return rv, test_name
 
@@ -355,7 +355,7 @@ def interpret_status(file_contents, check_throughput=False, check_memory=False, 
     reduced_status = reduce_stati(statuses, check_throughput, check_memory, ignore_namelists)
 
     if (RUN_PHASE not in statuses.keys() and reduced_status != TEST_FAIL_STATUS):
-        warning("Very odd: Waiting for test '%s' that has no run phase but did not fail?!?!" % test_name)
+        logging.warning("Very odd: Waiting for test '%s' that has no run phase but did not fail?!?!" % test_name)
 
     return test_name, reduced_status
 
@@ -372,7 +372,7 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
         test_status_filepath = os.path.join(test_path, TEST_STATUS_FILENAME)
     else:
         test_status_filepath = test_path
-    verbose_print("Watching file: '%s'" % test_status_filepath)
+    logging.info("Watching file: '%s'" % test_status_filepath)
 
     while (True):
         if (os.path.exists(test_status_filepath)):
@@ -380,14 +380,14 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
 
             if (test_status == TEST_PENDING_STATUS and (wait and not SIGNAL_RECEIVED)):
                 time.sleep(SLEEP_INTERVAL_SEC)
-                verbose_print("Waiting for test to finish")
+                logging.info("Waiting for test to finish")
             else:
                 results.put( (test_name, test_path, test_status) )
                 break
 
         else:
             if (wait and not SIGNAL_RECEIVED):
-                verbose_print("File '%s' does not yet exist" % test_status_filepath)
+                logging.info("File '%s' does not yet exist" % test_status_filepath)
                 time.sleep(SLEEP_INTERVAL_SEC)
             else:
                 test_name = os.path.abspath(test_status_filepath).split("/")[-2]
@@ -414,7 +414,7 @@ def wait_for_tests_impl(test_paths, no_wait=False, check_throughput=False, check
         if (test_name in test_results):
             prior_path, prior_status = test_results[test_name]
             if (test_status == prior_status):
-                warning("Test name '%s' was found in both '%s' and '%s'" %
+                logging.warning("Test name '%s' was found in both '%s' and '%s'" %
                         (test_name, test_path, prior_path))
             else:
                 raise SystemExit("Test name '%s' was found in both '%s' and '%s' with different results" %
@@ -449,7 +449,7 @@ def wait_for_tests(test_paths,
     for test_name, test_data in sorted(test_results.iteritems()):
         test_path, test_status = test_data
         print "Test '%s' finished with status '%s'" % (test_name, test_status)
-        verbose_print("    Path: %s" % test_path)
+        logging.info("    Path: %s" % test_path)
         all_pass &= test_status == TEST_PASS_STATUS
 
     if (cdash_build_name):

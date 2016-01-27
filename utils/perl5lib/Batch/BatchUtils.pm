@@ -202,29 +202,36 @@ sub submitSingleJob()
 	$submitargs = '' ;
     }
 
-    $logger->info("Submitting job script: $scriptname");
     #my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname $sta_argument";
     chdir $config{'CASEROOT'};
     my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname ";
 
-    $logger->info(": $runcmd");    
     my $output;
-
-    eval {
-	open (my $RUN, "-|", $runcmd) or $logger->logdie ("job submission failed, $!");
-	$output = <$RUN>;
-	close $RUN or $logger->logdie( "job submission failed: |$?|, |$!|");
-    };
-    my $exitstatus = ($?>>8);
+    my $jobid;
+    my $exitstatus;
+    if($config{BATCHSUBMIT} ne ''){    
+	$logger->info("Submitting job script: $runcmd");
+	eval {
+	    open (my $RUN, "-|", $runcmd) or $logger->logdie ("job submission failed, $!");
+	    $output = <$RUN>;
+	    close $RUN or $logger->logdie( "job submission failed: |$?|, |$!|");
+	};
+	chomp $output;	    
+        $jobid = $self->getJobID($output);
+	$logger->debug( "Job ID: $jobid");
+	$exitstatus = ($?>>8);
+    }else{
+	$logger->info("Running job script: $runcmd");
+	system("$runcmd");
+	$exitstatus = ($?>>8);
+    }
     if($exitstatus != 0)
     {
 	$logger->logdie("job submission failed $?");
     }
-    
-    chomp $output;	
-    
-    my $jobid = $self->getJobID($output);
-    $logger->debug( "Job ID: $jobid");
+
+
+
     return $jobid;
 }
 

@@ -1,7 +1,7 @@
-import os, tempfile
+import os, tempfile, logging
 
 import cime_util
-from cime_util import expect, warning
+from CIME.utils import expect
 
 # Here are the tests belonging to acme suites. Format is
 # <test>.<grid>.<compset>.
@@ -274,7 +274,7 @@ def update_acme_tests(xml_file, categories, platform=None):
         # Prune the non-supported platforms from our list.
         for p in platforms:
             if p not in supported_platforms:
-                cime_util.verbose_print("pruning unsupported platform %s"%repr(p))
+                logging.info("pruning unsupported platform %s"%repr(p))
         platforms = [p for p in platforms if p in supported_platforms]
 
     manage_xml_entries = os.path.join(cime_util.get_cime_root(), "scripts", "manage_testlists")

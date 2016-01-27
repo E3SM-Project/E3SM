@@ -128,7 +128,7 @@ ifeq (,$(NINST_VALUE))
   NINST_VALUE = $(shell ./xmlquery NINST_VALUE -value)
 endif
 ifeq (,$(MPILIB))
-  MPILIB = $(shell ./xmlquery MPILIB -value)x
+  MPILIB = $(shell ./xmlquery MPILIB -value)
 endif
 ifeq ($(strip $(PIO_VERSION)),1)
   CPPDEFS += -DPIO1

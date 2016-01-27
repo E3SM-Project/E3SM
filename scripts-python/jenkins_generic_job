@@ -6,7 +6,7 @@ test suite. Essentially, a wrapper around create_test and
 wait_for_tests that handles cleanup of old test results and
 ensures that the batch system is left in a clean state.
 """
-
+import logging
 import add_util_path
 import cime_util
 cime_util.check_minimum_python_version(2, 7)
@@ -14,12 +14,15 @@ import wait_for_tests
 
 import argparse, sys, os, shutil, glob, doctest, time, signal
 
-from cime_util import expect, warning, verbose_print
+from CIME.utils import expect
 
 SENTINEL_FILE = "ONGOING_TEST"
 
 # Don't know if this belongs here longterm
 MACHINES_THAT_MAINTAIN_BASELINES = ("redsky", "melvin", "skybridge")
+
+logging.basicConfig()
+rootlogger = logging.getLogger()
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -78,7 +81,8 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = parser.parse_args(args[1:])
 
-    cime_util.set_verbosity(args.verbose)
+    if(args.verbose == True):
+        rootlogger.setLevel(logging.INFO)
 
     expect(not (args.submit_to_cdash and args.generate_baselines),
            "Does not make sense to use -g and -d together")
@@ -99,10 +103,10 @@ def cleanup_queue(set_of_jobs_we_created):
     jobs_to_delete = set_of_jobs_we_created & current_jobs
 
     if (jobs_to_delete):
-        warning("Found leftover batch jobs that need to be deleted: %s" % ", ".join(jobs_to_delete))
+        logging.warning("Found leftover batch jobs that need to be deleted: %s" % ", ".join(jobs_to_delete))
         stat = cime_util.delete_jobs(jobs_to_delete)[0]
         if (stat != 0):
-            warning("FAILED to clean up leftover jobs!")
+            logging.warning("FAILED to clean up leftover jobs!")
 
 ###############################################################################
 def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
