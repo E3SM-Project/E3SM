@@ -33,7 +33,12 @@ endif
 setenv PATH /projects/ccsm/cmake-2.8.10.2-Linux-i386/bin:$PATH
 
 # Get newer netcdf
-setenv NETCDFROOT /projects/ccsm/yellowstone/netcdf-4.3.2-intel-13.0-openmpi-1.6
+if ( $MPILIB == "mpi-serial") then
+    setenv NETCDFROOT /projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/base
+else
+    setenv NETCDFROOT /projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5
+endif
+
 setenv PATH $NETCDFROOT/bin:$PATH
 setenv LD_LIBRARY_PATH $NETCDFROOT/lib:$LD_LIBRARY_PATH
 setenv NETCDF_INCLUDES $NETCDFROOT/include
