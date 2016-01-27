@@ -544,8 +544,8 @@ pnorm_perp_tot(:,:)=0
          where (tautot_ice(:,k+1) .LT. TAUTOT_MAX)
             WHERE (tautot_lay_ice(:).GT.TAUTOT_SMALL)
                ! Need to compare against TAUTOT_SMALL because when
-               ! tautot_lay_liq(or ice) gets small enough, value of 
-               ! [(1.-exp(-2.0*tautot_lay_liq(:))] approaches zero
+               ! tautot_lay_ice gets small enough, value of 
+               ! [(1.-exp(-2.0*tautot_lay_ice(:))] approaches zero
                beta_perp_ice(:,k) = pnorm_perp_ice(:,k)/ EXP(-2.0*tautot_ice(:,k+1)) * (2.*tautot_lay_ice(:)) &
                                     & / (1.-exp(-2.0*tautot_lay_ice(:)))
 
@@ -553,7 +553,7 @@ pnorm_perp_tot(:,:)=0
                beta_perp_ice(:,k)=pnorm_perp_ice(:,k)/EXP(-2.0*tautot_ice(:,k+1))
             END WHERE
          else where
-            ! If attenuation to TOA is too large, exp(-2.0*tautot_liq(:,k+1))
+            ! If attenuation to TOA is too large, exp(-2.0*tautot_ice(:,k+1))
             ! goes to zero and the above code has a divide by zero error. A
             ! simple fix is to set the beta values of such layers to zero.
             beta_perp_ice(:,k) = 0
@@ -570,7 +570,7 @@ pnorm_perp_tot(:,:)=0
           where (tautot_liq(:,k+1) .LT. TAUTOT_MAX) 
               WHERE (tautot_lay_liq(:).GT. TAUTOT_SMALL)
               ! Need to compare against TAUTOT_SMALL because when
-              ! tautot_lay_liq(or ice) gets small enough, value of 
+              ! tautot_lay_liq gets small enough, value of 
               ! [(1.-exp(-2.0*tautot_lay_liq(:))] approaches zero
                  beta_perp_liq(:,k) = pnorm_perp_liq(:,k)/ EXP(-2.0*tautot_liq(:,k+1)) * (2.*tautot_lay_liq(:)) &
                                       & / (1.-exp(-2.0*tautot_lay_liq(:)))
