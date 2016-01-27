@@ -1583,21 +1583,21 @@
 
 	<!-- melt and growth rates -->
 	<var_struct name="melt_growth_rates" time_levs="1" packages="pkgColumnPackage">
-		<var name="lateralIceMeltFraction"            type="real"     dimensions="nCells"              name_in_code="lateralIceMeltFraction"/>
-		<var name="surfaceIceMelt"                    type="real"     dimensions="nCells"              name_in_code="surfaceIceMelt"/>
-		<var name="surfaceIceMeltCategory"            type="real"     dimensions="nCategories nCells"  name_in_code="surfaceIceMeltCategory"/>
-		<var name="basalIceMelt"                      type="real"     dimensions="nCells"              name_in_code="basalIceMelt"/>
-		<var name="basalIceMeltCategory"              type="real"     dimensions="nCategories nCells"  name_in_code="basalIceMeltCategory"/>
-		<var name="lateralIceMelt"                    type="real"     dimensions="nCells"              name_in_code="lateralIceMelt"/>
-		<var name="snowMelt"                          type="real"     dimensions="nCells"              name_in_code="snowMelt"/>
-		<var name="snowMeltCategory"                  type="real"     dimensions="nCategories nCells"  name_in_code="snowMeltCategory"/>
-		<var name="congelation"                       type="real"     dimensions="nCells"              name_in_code="congelation"/>
-		<var name="congelationCategory"               type="real"     dimensions="nCategories nCells"  name_in_code="congelationCategory"/>
-		<var name="snowiceFormation"                  type="real"     dimensions="nCells"              name_in_code="snowiceFormation"/>
-		<var name="snowiceFormationCategory"          type="real"     dimensions="nCategories nCells"  name_in_code="snowiceFormationCategory"/>
-		<var name="snowThicknessChange"               type="real"     dimensions="nCells"              name_in_code="snowThicknessChange"/>
-                <var name="snowThicknessChangeCategory"       type="real"     dimensions="nCategories nCells"  name_in_code="snowThicknessChangeCategory"/>		
-		<var name="frazilFormation"                   type="real"     dimensions="nCells"              name_in_code="frazilFormation"/>
+		<var name="lateralIceMeltFraction"            type="real"     dimensions="nCells Time"              name_in_code="lateralIceMeltFraction"/>
+		<var name="surfaceIceMelt"                    type="real"     dimensions="nCells Time"              name_in_code="surfaceIceMelt"/>
+		<var name="surfaceIceMeltCategory"            type="real"     dimensions="nCategories nCells Time"  name_in_code="surfaceIceMeltCategory"/>
+		<var name="basalIceMelt"                      type="real"     dimensions="nCells Time"              name_in_code="basalIceMelt"/>
+		<var name="basalIceMeltCategory"              type="real"     dimensions="nCategories nCells Time"  name_in_code="basalIceMeltCategory"/>
+		<var name="lateralIceMelt"                    type="real"     dimensions="nCells Time"              name_in_code="lateralIceMelt"/>
+		<var name="snowMelt"                          type="real"     dimensions="nCells Time"              name_in_code="snowMelt"/>
+		<var name="snowMeltCategory"                  type="real"     dimensions="nCategories nCells Time"  name_in_code="snowMeltCategory"/>
+		<var name="congelation"                       type="real"     dimensions="nCells Time"              name_in_code="congelation"/>
+		<var name="congelationCategory"               type="real"     dimensions="nCategories nCells Time"  name_in_code="congelationCategory"/>
+		<var name="snowiceFormation"                  type="real"     dimensions="nCells Time"              name_in_code="snowiceFormation"/>
+		<var name="snowiceFormationCategory"          type="real"     dimensions="nCategories nCells Time"  name_in_code="snowiceFormationCategory"/>
+		<var name="snowThicknessChange"               type="real"     dimensions="nCells Time"              name_in_code="snowThicknessChange"/>
+                <var name="snowThicknessChangeCategory"       type="real"     dimensions="nCategories nCells Time"  name_in_code="snowThicknessChangeCategory"/>
+		<var name="frazilFormation"                   type="real"     dimensions="nCells Time"              name_in_code="frazilFormation"/>
 	</var_struct>
 
 	<!-- fluxes with the atmosphere -->
@@ -1616,14 +1616,14 @@
 
 	<!-- fluxes with the ocean -->
 	<var_struct name="ocean_fluxes" time_levs="1" packages="pkgColumnPackage">
-		<var name="oceanFreshWaterFlux"               type="real"     dimensions="nCells"              name_in_code="oceanFreshWaterFlux"/>
-		<var name="oceanSaltFlux"                     type="real"     dimensions="nCells"              name_in_code="oceanSaltFlux"/>
-		<var name="oceanHeatFlux"                     type="real"     dimensions="nCells"              name_in_code="oceanHeatFlux"/>
-		<var name="oceanShortwaveFlux"                type="real"     dimensions="nCells"              name_in_code="oceanShortwaveFlux"/>
-		<var name="oceanFreshWaterFluxArea"               type="real"     dimensions="nCells"              name_in_code="oceanFreshWaterFluxArea"/>
-		<var name="oceanSaltFluxArea"                     type="real"     dimensions="nCells"              name_in_code="oceanSaltFluxArea"/>
-		<var name="oceanHeatFluxArea"                     type="real"     dimensions="nCells"              name_in_code="oceanHeatFluxArea"/>
-		<var name="oceanShortwaveFluxArea"                type="real"     dimensions="nCells"              name_in_code="oceanShortwaveFluxArea"/>
+		<var name="oceanFreshWaterFlux"               type="real"     dimensions="nCells Time"              name_in_code="oceanFreshWaterFlux"/>
+		<var name="oceanSaltFlux"                     type="real"     dimensions="nCells Time"              name_in_code="oceanSaltFlux"/>
+		<var name="oceanHeatFlux"                     type="real"     dimensions="nCells Time"              name_in_code="oceanHeatFlux"/>
+		<var name="oceanShortwaveFlux"                type="real"     dimensions="nCells Time"              name_in_code="oceanShortwaveFlux"/>
+		<var name="oceanFreshWaterFluxArea"               type="real"     dimensions="nCells Time"              name_in_code="oceanFreshWaterFluxArea"/>
+		<var name="oceanSaltFluxArea"                     type="real"     dimensions="nCells Time"              name_in_code="oceanSaltFluxArea"/>
+		<var name="oceanHeatFluxArea"                     type="real"     dimensions="nCells Time"              name_in_code="oceanHeatFluxArea"/>
+		<var name="oceanShortwaveFluxArea"                type="real"     dimensions="nCells Time"              name_in_code="oceanShortwaveFluxArea"/>
 	</var_struct>
 
 	<!-- ocean atmosphere interaction -->

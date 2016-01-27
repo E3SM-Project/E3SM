@@ -238,6 +238,7 @@ module cice_core
       use mpas_kind_types
       use mpas_stream_manager
       use mpas_timer
+      use cice_time_integration, only: cice_timestep_finalize
       use cice_forcing, only: cice_forcing_get, cice_forcing_write_restart_times
       use cice_initialize, only: cice_init_post_clock_advance
       use cice_debug, only: istep
@@ -305,9 +306,6 @@ module cice_core
          call mpas_timestep(domain, itimestep, dt, timeStamp)
          call mpas_timer_stop("time integration")
 
-         ! reinitialize fluxes
-         call cice_column_reinitialize_fluxes(domain)
-
          ! update analysis members
          call cice_analysis_compute(domain, ierr)
          call cice_analysis_restart(domain, ierr)
@@ -324,6 +322,9 @@ module cice_core
          end if
 
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+
+         ! finalize the timstep
+         call cice_timestep_finalize(domain)
 
          ! check if the simulation is finished
          if (mpas_is_clock_stop_time(clock)) exit timeLoop

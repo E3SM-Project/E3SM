@@ -23,7 +23,8 @@ module cice_time_integration
   save
 
   public :: &
-       cice_timestep
+       cice_timestep, &
+       cice_timestep_finalize
 
 contains
 
@@ -144,20 +145,17 @@ contains
     call cice_column_postdynamics_time_integration(domain, clock)
     call mpas_timer_stop("Column post-dynamics")
 
-    ! reinitialize fluxes
-    call cice_column_reinitialize_fluxes(domain)
-
   end subroutine cice_timestep!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  store_timestep_counter
 !
-!> \brief 
+!> \brief
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>  
+!>
 !
 !-----------------------------------------------------------------------
 
@@ -195,15 +193,40 @@ contains
        call MPAS_pool_get_array(diagnosticsPool, "timeAverageTestVariable", timeAverageTestVariable)
 
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
-       
+
        mesh_itimestep(1) = itimestep
 
        timeAverageTestVariable = timeAverageTestVariable + config_dt / ciceSecondsPerDay
 
        block => block % next
     end do
-    
+
   end subroutine store_timestep_counter
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_timestep_finalize
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 27th January 2016
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_timestep_finalize(&
+       domain)!{{{
+
+    use cice_column, only: &
+         cice_column_reinitialize_fluxes
+
+    type(domain_type), intent(in) :: &
+         domain
+
+    call cice_column_reinitialize_fluxes(domain)
+
+  end subroutine cice_timestep_finalize
 
 !-----------------------------------------------------------------------
 
