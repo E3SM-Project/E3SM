@@ -207,24 +207,25 @@ sub submitSingleJob()
     chdir $config{'CASEROOT'};
     my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname ";
 
-    $logger->info(": $runcmd");    
+    $logger->info("$runcmd");    
     my $output;
 
     eval {
-	open (my $RUN, "-|", $runcmd) or $logger->logdie ("job submission failed, $!");
-	$output = <$RUN>;
-	close $RUN or $logger->logdie( "job submission failed: |$?|, |$!|");
+	open (RUN, "| $runcmd") or $logger->logdie ("job submission failed, $!");
+	$output = <RUN>;
+	close RUN or $logger->logdie( "job submission failed: |$?|, |$!|");
     };
     my $exitstatus = ($?>>8);
     if($exitstatus != 0)
     {
 	$logger->logdie("job submission failed $?");
     }
-    
-    chomp $output;	
-    
-    my $jobid = $self->getJobID($output);
-    $logger->debug( "Job ID: $jobid");
+    my $jobid;
+    if($config{BATCHSUBMIT} ne ''){
+	chomp $output;	    
+        $jobid = $self->getJobID($output);
+	$logger->debug( "Job ID: $jobid");
+    }
     return $jobid;
 }
 

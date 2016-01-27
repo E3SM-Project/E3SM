@@ -207,13 +207,9 @@ class CreateTest(object):
         test_case, case_opts, grid, compset, machine, compiler, test_mods = cime_util.parse_test_name(test_name)
         if (compiler != self._compiler):
             raise StandardError("Test '%s' has compiler that does not match instance compliler '%s'" % (test_name, self._compiler))
-        if (self._parallel_jobs == 1):
-            scratch_dir = cime_util.get_machine_info("CESMSCRATCHROOT", machine=machine, project=self._project)
-            sharedlibroot = os.path.join(scratch_dir, "sharedlibroot.%s" % self._test_id)
-        else:
-            # Parallelizing builds introduces potential sync problems with sharedlibroot
-            # Just let every case build it's own
-            sharedlibroot = os.path.join(test_dir, "sharedlibroot.%s" % self._test_id)
+        # Parallelizing builds introduces potential sync problems with sharedlibroot
+        # Just let every case build it's own
+        sharedlibroot = os.path.join(test_dir, "sharedlibroot.%s" % self._test_id)
         model = cime_util.get_model()
         create_newcase_cmd = "%s -model %s -case %s -res %s -mach %s -compiler %s -compset %s -testname %s -project %s -nosavetiming -sharedlibroot %s" % \
                               (os.path.join(self._cime_root,"scripts", "create_newcase"),

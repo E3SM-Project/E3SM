@@ -289,7 +289,7 @@ for mct, etc.
   <ADD_CFLAGS DEBUG="FALSE"> -O2 -debug minimal </ADD_CFLAGS>
   <ADD_CFLAGS DEBUG="TRUE"> -O0 -g </ADD_CFLAGS>
   <FFLAGS>  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source </FFLAGS>
-  <CFLAGS> -O2 -fp-model precise </CFLAGS>
+  <CFLAGS> -O2 -fp-model precise -std=gnu99 </CFLAGS>
   <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -openmp </ADD_FFLAGS_NOOPT>
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
