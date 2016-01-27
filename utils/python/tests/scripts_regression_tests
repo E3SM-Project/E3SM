@@ -43,8 +43,14 @@ class RunUnitTests(unittest.TestCase):
     def test_list_acme_tests_unit_test(self):
         self.do_unit_tests("list_acme_tests")
 
-    def test_test_resolve_variable_name(self):
-        self.do_unit_tests("test_resolve_variable_name")
+    def test_wait_for_tests_unit_test(self):
+        self.do_unit_tests("wait_for_tests")
+
+    def test_resolve_variable_name(self):
+        files = Files()
+        machinefile = files.get_resolved_value(files.get_value("MACHINES_SPEC_FILE"))
+        self.assertTrue(os.path.isfile(machinefile),
+                        msg="Path did not resolve to existing file %s" % machinefile)
 
     def test_cime_util_unit_test(self):
         # A little different since this is a library, not an executable
@@ -665,16 +671,6 @@ class TestUpdateACMETests(unittest.TestCase):
         self.assertTrue("ERS.f19_g16_rx1.C.melvin_gnu.test_mod" in tests)
         self.assertTrue("ERS.f19_g16_rx1.D.melvin_gnu" in tests)
         self.assertTrue("ERS.f19_g16_rx1.E.melvin_gnu" in tests)
-
-###########################################################################
-    def test_resolve_variable_name(self):
-        files = Files()
-        machinefile = files.get_resolved_value(files.get_value("MACHINES_SPEC_FILE"))        
-        self.assertTrue(os.path.isfile(machinefile),msg="Path did not resolve to existing file %s" %
-                        machinefile)
-
-
-
 
 if (__name__ == "__main__"):
     unittest.main()
