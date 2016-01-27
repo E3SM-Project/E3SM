@@ -391,9 +391,16 @@ module li_calving
 
             ! Calve ice in ocean cells that are not on the protected inactive margin
 
-            where (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND)
+            ! SFP: update to allow for data calving option that does NOT update geometry
+            where (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND .and. trim(config_calving) /='data')
+
                calvingThickness = thickness * calvingFraction
                thickness = thickness - calvingThickness
+
+            elsewhere (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND .and. trim(config_calving) =='data')
+
+               calvingThickness = thickness * calvingFraction
+
             endwhere
 
             ! clean up
@@ -448,7 +455,18 @@ module li_calving
             where (calvingLawMask == 1)
 
                calvingThickness = thickness * calvingFraction
-               thickness = thickness - calvingThickness
+
+               ! SFP: update to allow for data calving option that does NOT update geometry
+               where (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND .and. trim(config_calving) /='data')
+
+                  calvingThickness = thickness * calvingFraction
+                  thickness = thickness - calvingThickness
+
+               elsewhere (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND .and. trim(config_calving) =='data')
+
+                  calvingThickness = thickness * calvingFraction
+
+               endwhere
 
             endwhere
 
