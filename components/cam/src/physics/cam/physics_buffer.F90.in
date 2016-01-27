@@ -1396,6 +1396,10 @@ CONTAINS
       fdimlens(3) = mdimsize
       frank       = 3
     end if
+    ! Restart does not write a dimension if mdimsize == 1
+    if (mdimsize == 1) then
+      frank = frank - 1
+    end if
 
     adimlens(1) = pcols
     adimlens(2) = mdimsize
@@ -1437,8 +1441,15 @@ CONTAINS
           call pbuf_get_field_restart(pbuf2d, c, index, field(:,:,c),         &
                adimlens(2), grid_select)
         end do
-        call cam_grid_write_dist_array(File, phys_decomp, adimlens,           &
-             fdimlens(1:frank), field, pbuf%hdr%vardesc(grid_select))
+        if (size(field,2) == 1) then
+          ! Special case for 2-D pbuf fields
+          adimlens(2) = adimlens(3)
+          call cam_grid_write_dist_array(File, phys_decomp, adimlens(1:2),    &
+               fdimlens(1:frank), field(:,1,:), pbuf%hdr%vardesc(grid_select))
+        else
+          call cam_grid_write_dist_array(File, phys_decomp, adimlens,         &
+               fdimlens(1:frank), field, pbuf%hdr%vardesc(grid_select))
+        end if
         deallocate(field)
       end if
     end do
@@ -1550,9 +1561,15 @@ CONTAINS
       call cam_pio_handle_error(ierr, trim(subname)//': '//trim(varname)//' not found')
 
       allocate(field(adimlens(1), adimlens(2), begchunk:endchunk))
-
-      call cam_grid_read_dist_array(File, phys_decomp, adimlens,              &
-           fdimlens(1:frank), field, pbuf%hdr%vardesc(grid_select))
+      if (size(field,2) == 1) then
+        ! Special case for 2-D pbuf fields
+        adimlens(2) = adimlens(3)
+        call cam_grid_read_dist_array(File, phys_decomp, adimlens(1:2),       &
+             fdimlens(1:frank), field(:,1,:), pbuf%hdr%vardesc(grid_select))
+      else
+        call cam_grid_read_dist_array(File, phys_decomp, adimlens,            &
+             fdimlens(1:frank), field, pbuf%hdr%vardesc(grid_select))
+      end if
 
       do c = begchunk, endchunk
         if (grid_select == col_type_grid) then
