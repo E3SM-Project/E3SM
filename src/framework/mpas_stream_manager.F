@@ -3675,9 +3675,8 @@ module mpas_stream_manager
                                 call mpas_pool_get_field(allFields, itr % memberName, char0d, timeLevel)
                                 call MPAS_streamAddField(stream % stream, char0d)
                             case (1)
-!                                call mpas_pool_get_field(allFields, itr % memberName, char1d, timeLevel)
-!                                call MPAS_streamAddField(stream % stream, char1d)
-                                 write(stderrUnit,*) 'Error: In build_stream, unsupported type field1DChar.'
+                                 call mpas_pool_get_field(allFields, itr % memberName, char1d, timeLevel)
+                                 call MPAS_streamAddField(stream % stream, char1d)
                         end select
                 end select
 

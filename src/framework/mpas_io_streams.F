@@ -36,6 +36,7 @@ module mpas_io_streams
       module procedure MPAS_streamAddField_4dReal
       module procedure MPAS_streamAddField_5dReal
       module procedure MPAS_streamAddField_0dChar
+      module procedure MPAS_streamAddField_1dChar
    end interface MPAS_streamAddField
 
    interface MPAS_streamUpdateField
@@ -50,6 +51,7 @@ module mpas_io_streams
       module procedure MPAS_streamUpdateField_4dReal
       module procedure MPAS_streamUpdateField_5dReal
       module procedure MPAS_streamUpdateField_0dChar
+      module procedure MPAS_streamUpdateField_1dChar
    end interface MPAS_streamUpdateField
 
    interface MPAS_readStreamAtt
@@ -1480,6 +1482,99 @@ module mpas_io_streams
    end subroutine MPAS_streamAddField_0dChar
 
 
+   subroutine MPAS_streamAddField_1dChar(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field1DChar), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      integer :: io_err
+      integer :: i
+      integer :: idim
+      integer :: totalDimSize, globalDimSize
+      integer :: ndims
+      type (field1dChar), pointer :: field_ptr
+      character (len=StrKIND), dimension(2) :: dimNames
+      character (len=StrKIND), dimension(:), pointer :: dimNamesInq
+      integer, dimension(:), pointer :: dimSizes
+      integer, dimension(:), pointer :: indices
+      type (field_list_type), pointer :: field_list_cursor
+      type (field_list_type), pointer :: new_field_list_node
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+!write(stderrUnit,*) '... Adding field '//trim(field % fieldName)//' to stream'
+
+      ndims = 2
+
+!write(stderrUnit,*) '... field has ', ndims, ' dimensions'
+
+      ! 
+      ! Determine whether the field is decomposed, the indices that are owned by this task's blocks,
+      !    and the total number of outer-indices owned by this task
+      ! 
+      idim = ndims
+      allocate(indices(1))
+      allocate(dimSizes(2))
+      dimSizes(1) = 64
+      dimNames(1) = 'StrLen'
+      dimSizes(2) = field % dimSizes(1)
+      dimNames(2) = field % dimNames(1)
+      globalDimSize = dimSizes(2)
+      totalDimSize = dimSizes(2)
+      
+      if (field % isVarArray) then
+         do i=1,size(field % constituentNames)
+            call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), MPAS_IO_CHAR, dimNames, &
+                                             dimSizes, field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, &
+                                             indices, ierr=io_err)
+         end do
+      else
+         call MPAS_streamAddField_generic(stream, trim(field % fieldName), MPAS_IO_CHAR, dimNames, dimSizes, &
+                                          field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
+      end if
+
+      deallocate(indices)
+      deallocate(dimSizes)
+      if (io_err /= MPAS_STREAM_NOERR) then
+          if (present(ierr)) ierr = MPAS_IO_ERR
+          return
+      end if
+
+      if (field % isVarArray) then
+         do i=1,size(field % constituentNames)
+            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attList)
+         end do
+      else
+         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attList)
+      end if
+
+
+      !
+      ! Set field pointer and type in fieldList
+      !
+      new_field_list_node => stream % fieldList
+      do while (associated(new_field_list_node % next))
+         new_field_list_node => new_field_list_node % next
+      end do
+      new_field_list_node % field_type = FIELD_1D_CHAR
+      new_field_list_node % char1dField => field
+
+!write(stderrUnit,*) '... done adding field'
+
+   end subroutine MPAS_streamAddField_1dChar
+
+
    subroutine MPAS_streamAddField_generic(stream, fieldName, fieldType, dimNames, dimSizes, hasTimeDimension, isDecomposed, &
                                           totalDimSize, globalDimSize, indices, precision, ierr)
 
@@ -2207,6 +2302,50 @@ module mpas_io_streams
    end subroutine MPAS_streamUpdateField_0dChar
 
 
+   subroutine MPAS_streamUpdateField_1dChar(stream, field, ierr)
+
+      implicit none
+
+      type (MPAS_Stream_type), intent(inout) :: stream
+      type (field1DChar), intent(in), target :: field
+      integer, intent(out), optional :: ierr
+
+      type (field_list_type), pointer :: field_cursor
+
+
+      if (present(ierr)) ierr = MPAS_STREAM_NOERR
+
+      !
+      ! Sanity checks
+      !
+      if (.not. stream % isInitialized) then
+         if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
+         return
+      end if
+
+      STREAM_DEBUG_WRITE( '... Updating 1d char field '//trim(field % fieldName)//' in stream' )
+
+      field_cursor => stream % fieldList
+      do while (associated(field_cursor))
+         if (field_cursor % field_type == FIELD_1D_CHAR) then
+            if (field_cursor % char1dField % fieldname == field % fieldname) then
+               STREAM_DEBUG_WRITE( '... found 1d char named '//trim(field_cursor % char0dField % fieldname) )
+               field_cursor % char1dField => field
+               exit
+            end if
+         end if
+         field_cursor => field_cursor % next
+      end do
+      if (.not. associated(field_cursor)) then
+         STREAM_DEBUG_WRITE( '... 1d char field '//trim(field % fieldname)//' not found in stream' )
+         if (present(ierr)) ierr = MPAS_STREAM_FIELD_NOT_FOUND
+      end if
+
+      STREAM_DEBUG_WRITE( '... done updating field' )
+
+   end subroutine MPAS_streamUpdateField_1dChar
+
+
    subroutine MPAS_readStream(stream, frame, ierr)
 
       implicit none
@@ -2232,6 +2371,7 @@ module mpas_io_streams
       type (field0dChar), pointer :: field_0dchar_ptr
       type (field1dChar), pointer :: field_1dchar_ptr
       type (field_list_type), pointer :: field_cursor
+      character (len=StrKIND), dimension(:), pointer :: char1d_temp
       integer                            :: int0d_temp
       integer, dimension(:),     pointer :: int1d_temp
       integer, dimension(:,:),   pointer :: int2d_temp
@@ -2997,6 +3137,31 @@ module mpas_io_streams
             end do
 
          else if (field_cursor % field_type == FIELD_1D_CHAR) then
+!write(stderrUnit,*) 'Reading in field '//trim(field_cursor % char1dField % fieldName)
+!write(stderrUnit,*) '   > is the field decomposed? ', field_cursor % isDecomposed
+!write(stderrUnit,*) '   > outer dimension size ', field_cursor % totalDimSize
+
+!write(stderrUnit,*) 'MGD calling MPAS_io_get_var now...'
+            allocate(char1d_temp(field_cursor % char1dField % dimSizes(1)))
+            call MPAS_io_get_var(stream % fileHandle, field_cursor % char1dField % fieldName, char1d_temp, io_err)
+            call MPAS_io_err_mesg(io_err, .false.)
+            if (io_err /= MPAS_IO_NOERR) then
+                if (present(ierr)) ierr = MPAS_IO_ERR
+                deallocate(char1d_temp)
+                return
+            end if
+
+!write(stderrUnit,*) 'Distributing and Copying field to other blocks'
+
+            call mpas_dmpar_bcast_chars(field_cursor % char1dField % block % domain % dminfo, &
+                                        field_cursor % char1dField % dimSizes(1), char1d_temp)
+            field_1dchar_ptr => field_cursor % char1dField
+            do while (associated(field_1dchar_ptr))
+               field_1dchar_ptr % array(:)(:) = char1d_temp(:)(:)
+               field_1dchar_ptr => field_1dchar_ptr % next
+            end do
+
+            deallocate(char1d_temp)
          end if
          field_cursor => field_cursor % next
       end do
@@ -3593,6 +3758,18 @@ module mpas_io_streams
             if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
 
          else if (field_cursor % field_type == FIELD_1D_CHAR) then
+
+!write(stderrUnit,*) 'Writing out field '//trim(field_cursor % char1dField % fieldName)
+!write(stderrUnit,*) '   > is the field decomposed? ', field_cursor % isDecomposed
+!write(stderrUnit,*) '   > outer dimension size ', field_cursor % totalDimSize
+
+!write(stderrUnit,*) 'Copying field from first block'
+!write(stderrUnit,*) 'MGD calling MPAS_io_put_var now...'
+            call MPAS_io_put_var(stream % fileHandle, field_cursor % char1dField % fieldName, field_cursor % char1dField % array, io_err)
+            call MPAS_io_err_mesg(io_err, .false.)
+            if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
+
+
          end if
          field_cursor => field_cursor % next
       end do
