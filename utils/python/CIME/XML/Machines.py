@@ -67,9 +67,9 @@ class Machines(GenericXML):
         COMPILERS and MPILIBS lists in the file. 
         """
         if(name == "COMPILER"):
-            value = self.get_compiler()
+            value = self.get_default_compiler()
         elif(name == "MPILIB"):
-            value = self.get_MPIlib()
+            value = self.get_default_MPIlib()
         else:
             nodes = self.get_node(name,root=self.machine)
             if(len(nodes)>0):
@@ -100,17 +100,33 @@ class Machines(GenericXML):
         expect(False,"%s value %s not supported for machine %s" %
                (listname, reqval, self.name))
 
-    def get_compiler(self, compiler=None):
+    def get_default_compiler(self):
         """
         Get the compiler to use from the list of COMPILERS 
         """
-        return self.get_field_from_list('COMPILERS',compiler)
+        return self.get_field_from_list('COMPILERS')
 
-    def get_MPIlib(self, mpilib=None):
+    def get_default_MPIlib(self):
         """
         Get the MPILIB to use from the list of MPILIBS
         """
-        return self.get_field_from_list('MPILIBS',mpilib)
+        return self.get_field_from_list('MPILIBS')
+
+    def is_valid_compiler(self,compiler):
+        """
+        Check the compiler is valid for the current machine
+        """
+        if(self.get_field_from_list('COMPILERS',compiler) is not None):
+            return True
+        return False
+
+    def is_valid_MPIlib(self, mpilib):
+        """
+        Check the MPILIB is valid for the current machine
+        """
+        if(self.get_field_from_list('MPILIBS',mpilib) is not None):
+            return True
+        return False
 
 
 

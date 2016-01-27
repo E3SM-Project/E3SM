@@ -20,6 +20,11 @@ import update_acme_tests, create_test_impl
 from cime_util import run_cmd
 from CIME.utils import expect
 
+#    FORMAT = "%(level)s %(message)s"
+#    logging.basicConfig(format=FORMAT)
+logging.basicConfig()
+rootlogger = logging.getLogger()
+
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
@@ -64,6 +69,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="Print extra information")
+
+    parser.add_argument("-d", "--debug", action="store_true",
+                        help="Print debug information (very verbose)")
 
     parser.add_argument("--no-run", action="store_true",
                         help="Do not run generated tests")
@@ -125,8 +133,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     args = parser.parse_args(args[1:])
 
     if(args.verbose == True):
-        logger = logging.getLogger(__name__)
-        logger.setLevel(logging.INFO)
+        rootlogger.setLevel(logging.INFO)
+    if(args.debug == True):
+        rootlogger.setLevel(logging.DEBUG)
 
     expect(not (args.generate and args.compare),
            "Cannot generate and compare baselines at the same time")
@@ -253,9 +262,6 @@ def _main_func(description):
     if ("--test" in sys.argv):
         cime_util.run_cmd("python -m doctest %s/create_test_impl.py -v" % cime_util.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
         return
-#    FORMAT = "%(level)s %(message)s"
-#    logging.basicConfig(format=FORMAT)
-    logging.basicConfig()
     
     cime_util.stop_buffering_output()
 
