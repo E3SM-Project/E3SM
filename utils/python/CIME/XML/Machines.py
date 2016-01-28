@@ -3,6 +3,7 @@ Interface to the config_machines.xml file.  This class inherits from GenericXML.
 """
 import logging
 import re
+import socket
 from GenericXML import GenericXML
 from CIME.utils import expect
 
@@ -31,11 +32,12 @@ class Machines(GenericXML):
             machines.append(mach)
         return machines
     
-    def find_machine_from_regex(self, nametomatch):
+    def probe_machine_name(self):
         """
-        Given a nametomatch (ie from hostname) find a matching regular expression
+        Find a matching regular expression for hostname
         in the NODENAME_REGEX field in the file.   First match wins.
         """
+        nametomatch = socket.gethostname().split(".")[0]
         nodes = self.get_node('machine')
         for node in nodes:
             machine = node.get('MACH')
@@ -137,6 +139,11 @@ class Machines(GenericXML):
             return True
         return False
 
-
+    def has_batch_system(self):
+        """
+        Return if this machine has a batch system
+        """
+        batch_system = self.get_node("batch_system")
+        return not (batch_system is None or batch_system[0].get('type') == "none")        
 
 

@@ -4,9 +4,8 @@ Implementation of create_test functionality from CIME
 
 import sys, os, shutil, traceback, stat, glob, threading, time, thread, logging
 
-import  cime_util, compare_namelists, wait_for_tests
-from CIME.utils import expect
-from cime_util import run_cmd
+import compare_namelists
+from CIME.utils import expect, run_cmd
 from wait_for_tests import TEST_PASS_STATUS, TEST_FAIL_STATUS, TEST_PENDING_STATUS, TEST_STATUS_FILENAME, NAMELIST_FAIL_STATUS, RUN_PHASE, NAMELIST_PHASE
 
 INITIAL_PHASE = "INIT"

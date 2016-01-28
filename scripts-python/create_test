@@ -12,13 +12,14 @@ If this tool is missing any feature that you need, please notify jgfouca@sandia.
 """
 
 import add_util_path
-import cime_util
-cime_util.check_minimum_python_version(2, 7)
+import CIME.utils 
+CIME.utils.check_minimum_python_version(2, 7)
 import logging
 import argparse, sys, os, doctest, tempfile
 import update_acme_tests, create_test_impl
-from cime_util import run_cmd
 from CIME.utils import expect
+from CIME.XML.Machines import Machines
+from CIME.XML.Files import Files
 
 logging.basicConfig()
 rootlogger = logging.getLogger()
@@ -58,10 +59,7 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-    default_project = cime_util.get_machine_project()
-
-    default_compiler = cime_util.get_machine_info("COMPILER")
-    default_baseline_name = cime_util.get_current_branch(repo=cime_util.get_cime_root())
+    default_baseline_name = CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root())
 
     parser.add_argument("testargs", nargs="+", help="Tests or test suites to run. Testnames expect in form CASE.GRID.COMPSET")
 
@@ -103,13 +101,20 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         "Default will be current branch name. Do NOT add the compiler to this argument "
                         "That will be done for you.")
 
-    parser.add_argument("--compiler", default=default_compiler,
-                        help="Compiler to use to build cime.")
+    parser.add_argument("--compiler", 
+                        help="Compiler to use to build cime.  Default will be the name in the Testnames"
+                        " or the default defined for the machine.")
+
+    parser.add_argument("-m", "--machine",
+                        help="The machine for which to build tests, this machine must be defined in the "
+                        "config_mahines.xml file for the given model. Default is to match the name of the "
+                        "machine in the test name or the name of the machine " 
+                        "this script is run on to the NODENAME_REGEX field in config_machines.xml"  )
 
     parser.add_argument("-n", "--namelists-only", action="store_true",
                         help="Only perform namelist actions for tests")
 
-    parser.add_argument("-p", "--project", default=default_project,
+    parser.add_argument("-p", "--project", 
                         help="Specify a project id for the case (optional)."
                         "Used for accounting when on a batch system."
                         "The default is user-specified environment variable PROJECT")
@@ -125,8 +130,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         "will be min(num_cores, num_tests).")
 
     parser.add_argument("--old", action="store_true", help="Use CIME Perl impl")
-
-
 
     args = parser.parse_args(args[1:])
 
@@ -148,25 +151,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     if (args.no_build):
         args.no_run = True
 
-    use_batch = cime_util.does_machine_have_batch()
-    scratch_root, baseline_root = \
-        cime_util.get_machine_info(["CESMSCRATCHROOT", "CCSM_BASELINE"], project=args.project)
-
-    if (not args.no_batch and not use_batch):
-        args.no_batch = True
-
-    # Couple defaults might need fixup because their values were dependent on
-    # information that can't be determined until after args are parsed
-    if (args.test_root is None):
-        args.test_root = scratch_root
-
-    if (args.baseline_root is None):
-        args.baseline_root = baseline_root
-
-    # Convert path-based options to absolute paths
-    args.test_root     = os.path.abspath(args.test_root)
-    args.baseline_root = os.path.abspath(args.baseline_root)
-
     # Namelist-only forces some other options:
     if (args.namelists_only):
         args.no_build = True
@@ -184,22 +168,45 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                    "Missing baseline comparison directory %s" % full_baseline_dir)
 
     if (args.test_id is None):
-        args.test_id = cime_util.get_utc_timestamp()
+        args.test_id = CIME.utils.get_utc_timestamp()
 
-    return args.testargs, args.compiler, args.no_run, args.no_build, args.no_batch, args.test_root, args.baseline_root, \
-        args.clean, args.compare, args.generate, args.baseline_name, args.namelists_only, args.project, args.test_id, args.old, args.parallel_jobs
+    return args.testargs, args.compiler, args.machine, args.no_run, args.no_build, args.no_batch, \
+        args.test_root, args.baseline_root, args.clean, args.compare, args.generate, args.baseline_name, \
+        args.namelists_only, args.project, args.test_id, args.old, args.parallel_jobs
 
 ###############################################################################
-def create_test(testargs, compiler, no_run, no_build, no_batch, test_root,
+def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, test_root,
                 baseline_root, clean, compare, generate,
                 baseline_name, namelists_only, project, test_id, old, parallel_jobs):
 ###############################################################################
-    machine = cime_util.probe_machine_name()
+    files = Files()
+    config_machines = files.get_resolved_value(files.get_value('MACHINES_SPEC_FILE'))
+    machine = Machines(config_machines)
+    if(machine_name is None):
+        machine_name = machine.probe_machine_name()
+    else:
+        machine.set_machine(machine_name)
+    if(project is None):
+        project = cime_util.get_machine_project()
+    if(compiler is None):
+        compiler = machine.get_machine_info("COMPILER")
+    expect(machine.is_valid_compiler(compiler),"Compiler %s not valid for machine %s" %
+           (compiler,machine_name))
+    if(test_root is None):
+        test_root = machine.get_value("CESMSCRATCHROOT",{"project":project})
+    if(baseline_root is None):
+        baseline_root = machine.get_value("CCSM_BASELINE",{"project":project})
+    # Convert path-based options to absolute paths
+    test_root = os.path.abspath(test_root)
+    baseline_root = os.path.abspath(baseline_root)
 
-    tests_to_run = update_acme_tests.get_full_test_names(testargs, machine, compiler)
+    if (not no_batch and not machine.has_batch_system()):
+        no_batch = True
+
+    tests_to_run = update_acme_tests.get_full_test_names(testargs, machine_name, compiler)
 
     if (parallel_jobs is None):
-        parallel_jobs = min(len(tests_to_run), int(cime_util.get_machine_info("MAX_TASKS_PER_NODE")))
+        parallel_jobs = min(len(tests_to_run), int(machine.get_machine_info("MAX_TASKS_PER_NODE")))
 
     expect(len(tests_to_run) > 0, "No tests to run")
 
@@ -211,7 +218,7 @@ def create_test(testargs, compiler, no_run, no_build, no_batch, test_root,
                                            clean=clean, compiler=compiler,
                                            compare=compare, generate=generate, namelists_only=namelists_only,
                                            project=project, parallel_jobs=parallel_jobs)
-        return 0 if impl.create_test() else cime_util.TESTS_FAILED_ERR_CODE
+        return 0 if impl.create_test() else CIME.utils.TESTS_FAILED_ERR_CODE
     else:
 
         # Delete everything below
@@ -220,7 +227,7 @@ def create_test(testargs, compiler, no_run, no_build, no_batch, test_root,
         with open(testlist_file, "w") as fd:
             fd.write("\n".join(tests_to_run))
 
-        create_test_cmd = "./create_test -input_list %s -mach %s" % (testlist_file, machine)
+        create_test_cmd = "./create_test -input_list %s -mach %s" % (testlist_file, machine_name)
         if (no_run):
             create_test_cmd = "%s -autosubmit off" % create_test_cmd
         if (no_build):
@@ -244,8 +251,8 @@ def create_test(testargs, compiler, no_run, no_build, no_batch, test_root,
         if (no_batch):
             create_test_cmd = "%s -autosubmit off -nobatch on" % create_test_cmd
 
-        stat = cime_util.run_cmd(create_test_cmd,
-                                 from_dir=os.path.join(cime_util.get_cime_root(), "scripts"),
+        stat = CIME.utils.run_cmd(create_test_cmd,
+                                 from_dir=os.path.join(CIME.utils.get_cime_root(), "scripts"),
                                  ok_to_fail=True,
                                  verbose=True,
                                  arg_stdout=None, arg_stderr=None)[0]
@@ -258,17 +265,18 @@ def create_test(testargs, compiler, no_run, no_build, no_batch, test_root,
 def _main_func(description):
 ###############################################################################
     if ("--test" in sys.argv):
-        cime_util.run_cmd("python -m doctest %s/create_test_impl.py -v" % cime_util.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
+        CIME.utils.run_cmd("python -m doctest %s/create_test_impl.py -v" % CIME.utils.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
         return
 
-    cime_util.stop_buffering_output()
+    CIME.utils.stop_buffering_output()
 
-    testargs, compiler, no_run, no_build, no_batch, test_root, baseline_root, clean, \
+    testargs, compiler, machine_name, no_run, no_build, no_batch, test_root, baseline_root, clean, \
         compare, generate, baseline_name, namelists_only, project, test_id, old, parallel_jobs, \
         = parse_command_line(sys.argv, description)
 
-    sys.exit(create_test(testargs, compiler, no_run, no_build, no_batch, test_root, baseline_root, clean,
-                         compare, generate, baseline_name, namelists_only, project, test_id, old, parallel_jobs))
+    sys.exit(create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, test_root, 
+                         baseline_root, clean, compare, generate, baseline_name, namelists_only,
+                         project, test_id, old, parallel_jobs))
 
 ###############################################################################
 
