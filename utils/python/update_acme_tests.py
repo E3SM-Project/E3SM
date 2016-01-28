@@ -1,7 +1,7 @@
 import os, tempfile, logging
-
-import cime_util
+import CIME.utils
 from CIME.utils import expect
+from CIME.XML.Machines import Machines
 
 # Here are the tests belonging to acme suites. Format is
 # <test>.<grid>.<compset>.
@@ -114,9 +114,18 @@ def get_test_suite(suite, machine=None, compiler=None):
     Return a list of FULL test names for a suite.
     """
     expect(suite in _TEST_SUITES, "Unknown test suite: '%s'" % suite)
-
-    machine = cime_util.probe_machine_name() if machine is None else machine
-    compiler = cime_util.get_machine_info("COMPILERS", machine=machine)[0] if compiler is None else compiler
+    machobj = Machines()
+    if(machine is None):
+        machobj.probe_machine_name()
+    else:
+        machobj.set_machine(machine)
+    if(compiler is None):
+        compiler = machobj.get_default_compiler()
+    else:
+        if(machobj.is_valid_compiler(compiler)):
+            machobj.set_value('COMPILER',compiler)
+        else:
+            expect(FALSE,"Compiler %s not supported for machine %s" %(compiler,machine))
 
     inherits_from, tests_raw = _TEST_SUITES[suite]
     tests = []
@@ -139,7 +148,7 @@ def get_test_suite(suite, machine=None, compiler=None):
                 if (machine in test_mod_machines):
                     test_mod = item[1]
 
-        tests.append(cime_util.get_full_test_name(test_name, machine, compiler, testmod=test_mod))
+        tests.append(CIME.utils.get_full_test_name(test_name, machine, compiler, testmod=test_mod))
 
     if (inherits_from is not None):
         inherited_tests = get_test_suite(inherits_from, machine, compiler)
@@ -191,16 +200,16 @@ def get_full_test_names(testargs, machine, compiler):
         elif (testarg in acme_test_suites):
             tests_to_run.update(get_test_suite(testarg, machine, compiler))
         else:
-            tests_to_run.add(cime_util.get_full_test_name(testarg, machine, compiler))
+            tests_to_run.add(CIME.utils.get_full_test_name(testarg, machine, compiler))
 
     for negation in negations:
         if (negation in acme_test_suites):
             for test, testmod in get_test_suite(negation, machine, compiler):
-                fullname = cime_util.get_full_test_name(test, machine, compiler, testmod)
+                fullname = CIME.utils.get_full_test_name(test, machine, compiler, testmod)
                 if (fullname in tests_to_run):
                     tests_to_run.remove(fullname)
         else:
-            fullname = cime_util.get_full_test_name(negation, machine, compiler)
+            fullname = CIME.utils.get_full_test_name(negation, machine, compiler)
             if (fullname in tests_to_run):
                 tests_to_run.remove(fullname)
 
@@ -215,7 +224,7 @@ def find_all_supported_platforms():
     tree. A platform is defined by a triple (machine name, compiler,
     mpi library).
     """
-    machines = cime_util.get_machines()
+    machines = CIME.utils.get_machines()
     platform_set = set()
 
     for machine in machines:

@@ -5,11 +5,16 @@ import logging
 import re
 import socket
 from GenericXML import GenericXML
+from Files import Files
 from CIME.utils import expect
 
 class Machines(GenericXML):
-    def __init__(self,infile):
+    def __init__(self,infile=None):
         """ initialize an object """
+        if(infile is None):
+            files = Files()
+            infile = files.get_resolved_value(
+                files.get_value('MACHINES_SPEC_FILE'))
         logging.info("Open file "+infile)
         self.machine = None
         GenericXML.__init__(self,infile)

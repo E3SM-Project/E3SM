@@ -179,23 +179,23 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
                 baseline_root, clean, compare, generate,
                 baseline_name, namelists_only, project, test_id, old, parallel_jobs):
 ###############################################################################
-    files = Files()
-    config_machines = files.get_resolved_value(files.get_value('MACHINES_SPEC_FILE'))
-    machine = Machines(config_machines)
+    machine = Machines()
     if(machine_name is None):
         machine_name = machine.probe_machine_name()
     else:
         machine.set_machine(machine_name)
     if(project is None):
-        project = cime_util.get_machine_project()
+        project = CIME.utils.get_project()
+        if(project is None):
+            project = machine.get_value('PROJECT')
     if(compiler is None):
-        compiler = machine.get_machine_info("COMPILER")
+        compiler = machine.get_default_compiler()
     expect(machine.is_valid_compiler(compiler),"Compiler %s not valid for machine %s" %
            (compiler,machine_name))
     if(test_root is None):
-        test_root = machine.get_value("CESMSCRATCHROOT",{"project":project})
+        test_root = machine.get_resolved_value(machine.get_value("CESMSCRATCHROOT"))
     if(baseline_root is None):
-        baseline_root = machine.get_value("CCSM_BASELINE",{"project":project})
+        baseline_root = machine.get_value("CCSM_BASELINE")
     # Convert path-based options to absolute paths
     test_root = os.path.abspath(test_root)
     baseline_root = os.path.abspath(baseline_root)
@@ -206,12 +206,12 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
     tests_to_run = update_acme_tests.get_full_test_names(testargs, machine_name, compiler)
 
     if (parallel_jobs is None):
-        parallel_jobs = min(len(tests_to_run), int(machine.get_machine_info("MAX_TASKS_PER_NODE")))
+        parallel_jobs = min(len(tests_to_run), int(machine.get_value("MAX_TASKS_PER_NODE")))
 
     expect(len(tests_to_run) > 0, "No tests to run")
 
     if (not old):
-        impl = create_test_impl.CreateTest(tests_to_run,
+        impl = create_test_impl.CreateTest(machine,tests_to_run,
                                            no_run=no_run, no_build=no_build, no_batch=no_batch,
                                            test_root=test_root, test_id=test_id,
                                            baseline_root=baseline_root, baseline_name=baseline_name,

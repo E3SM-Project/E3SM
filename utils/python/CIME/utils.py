@@ -1,13 +1,17 @@
 """
 Common functions used by cime python scripts
+Warning: you cannot use CIME Classes in this module as it causes circular dependancies
 """
 import logging
 import sys
 import os
 import time
+if sys.version_info[0] == 2:
+    from ConfigParser import SafeConfigParser as config_parser
+else:
+    from configparser import ConfigParser as config_parser
 
-_MODEL = None
-_CIMEROOT = None
+_CIMECONFIG=None
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 165
 
@@ -25,6 +29,16 @@ def expect(condition, error_msg):
     if (not condition):
         raise SystemExit('ERROR: '+error_msg)
     
+def read_cime_config_file():
+    global _CIMECONFIG
+    cimeconfigfile = os.path.abspath(os.path.join(os.path.expanduser("~"),
+                                                  ".cime","config"))
+    _CIMECONFIG = config_parser()
+    if(os.path.isfile(cimeconfigfile)):
+        _CIMECONFIG.read(cimeconfigfile)
+    else:
+        logging.warning("File %s not found" % cimeconfigfile)
+        _CIMECONFIG.add_section('main')
 
 def get_python_libs_location_within_cime():
     """
@@ -39,36 +53,49 @@ def get_cime_root():
     >>> os.path.isdir(os.path.join(get_cime_root(), get_acme_scripts_location_within_cime()))
     True
     """
-    global _CIMEROOT
-    if (_CIMEROOT is None):
+    if(_CIMECONFIG is None):
+        read_cime_config_file()
+    if(_CIMECONFIG.has_option('main','CIMEROOT')):
+        cimeroot = _CIMECONFIG.get('main','CIMEROOT')
+    else:
         try:
-            _CIMEROOT = os.environ["CIMEROOT"]
+            cimeroot = os.environ["CIMEROOT"]
         except KeyError:
             script_absdir = os.path.abspath(os.path.join(os.path.dirname(__file__),".."))
             assert script_absdir.endswith(get_python_libs_location_within_cime()), script_absdir
-            _CIMEROOT = os.path.abspath(os.path.join(script_absdir,"..",".."))
-    logging.info( "CIMEROOT is " + _CIMEROOT)
-    return _CIMEROOT
+            cimeroot = os.path.abspath(os.path.join(script_absdir,"..",".."))
+        _CIMECONFIG.set('main','CIMEROOT',cimeroot)
+    logging.info( "CIMEROOT is " + cimeroot)
+    return cimeroot
 
 
 def set_model(model):
-    global _MODEL
-    _MODEL = model
+    if(_CIMECONFIG is None):
+        read_cime_config_file()
+    _CIMECONFIG.set('main','MODEL',model)
 
 
 def get_model():
-    global _MODEL
-    if (_MODEL is None):
-        try:
-            _MODEL = os.environ["CIME_MODEL"]
-        except KeyError:
+    global _CIMECONFIG
+    model = None
+    if(_CIMECONFIG is None):
+        read_cime_config_file()
+    if(_CIMECONFIG.has_option('main','MODEL')):
+        model = _CIMECONFIG.get('main','MODEL')
+    else:
+        model = os.environ.get("CIME_MODEL") 
+        if(model is not None):
+            set_model(model)
+        else:
             modelroot = os.path.join(get_cime_root(), "cime_config")
             models = os.listdir(modelroot)
             msg = "Environment variable CIME_MODEL must be set to one of: "
-            msg += ", ".join([model for model in models if os.path.isdir(os.path.join(modelroot,model)) and model != "xml_schemas"])
+            msg += ", ".join([model for model in models 
+                              if os.path.isdir(os.path.join(modelroot,model)) 
+                              and model != "xml_schemas"])
             expect(False, msg)
 
-    return _MODEL
+    return model
 
 _hack=object()
 
@@ -386,3 +413,33 @@ def get_utc_timestamp(timestamp_format="%Y%m%d_%H%M%S"):
     utc_time_tuple = time.gmtime()
     return time.strftime(timestamp_format, utc_time_tuple)
 
+def get_project():
+    """
+    Hierarchy for choosing PROJECT:
+    1. Environment variable PROJECT
+    2 environment variable ACCOUNT   (this is for backward compatibility)
+    3. File $HOME/.cime/config   (this is new)
+    4 File $HOME/.cesm_proj  (again - backward compatibility)
+    5 config_machines.xml
+    """
+    project = os.environ.get("PROJECT")
+    if(project is not None):
+        return
+    project = os.environ.get("ACCOUNT")
+    if(project is not None):
+        return
+    if(_CIMECONFIG is None):
+        read_cime_config_file()
+    if(_CIMECONFIG.has_option('main','PROJECT')):
+        project = _CIMECONFIG.get('main','PROJECT')
+        if(project is not None):
+            return
+        projectfile = os.path.abspath(os.path.join(os.path.expanduser("~"),
+                                                   ".cesm_proj"))
+        if(os.path.isfile(projectfile)):
+            with open(projectfile,'r') as myfile:
+                project = myfile.read()
+                _CIMECONFIG.set('main','PROJECT',project)
+                
+    return project
+           

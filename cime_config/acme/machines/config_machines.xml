@@ -118,6 +118,7 @@
          <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
     	 <PES_PER_NODE>24</PES_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+	 <PROJECT>acme</PROJECT>
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
          <batch_system type="slurm" version="x.y">
            <queues>
@@ -208,6 +209,7 @@
     <GMAKE_J>8</GMAKE_J>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>32</PES_PER_NODE>
+    <PROJECT>acme</PROJECT>
     <batch_system type="slurm" version="x.y">
       <queues>
         <queue walltimemax="00:06:00" jobmin="1" jobmax="16384" default="true">regular</queue>
@@ -439,6 +441,7 @@
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
 	 <PIO_BUFFER_SIZE_LIMIT>1</PIO_BUFFER_SIZE_LIMIT>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+	 <PROJECT>fy150001</PROJECT>
          <batch_system type="slurm" version="x.y">
            <queues>
              <queue jobmin="1" jobmax="480" default="true">ec</queue>
@@ -483,6 +486,7 @@
          <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
 	 <PIO_BUFFER_SIZE_LIMIT>1</PIO_BUFFER_SIZE_LIMIT>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+	 <PROJECT>fy150001</PROJECT>
          <batch_system type="slurm" version="x.y">
            <queues>
              <queue jobmin="1" jobmax="480" default="true">ec</queue>
@@ -525,6 +529,7 @@
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+	 <PROJECT>ACME</PROJECT>
          <batch_system type="pbs" version="x.y">
            <walltimes>
              <walltime default="true">59:00</walltime>
@@ -565,6 +570,7 @@
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+	 <PROJECT>HiRes_EarthSys</PROJECT>
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
          <batch_system type="cobalt">
            <queues>
@@ -640,6 +646,7 @@
          <GMAKE_J>4</GMAKE_J>
          <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+	 <PROJECT>HiRes_EarthSys</PROJECT>
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
          <batch_system type="cobalt">
            <queues>
@@ -859,6 +866,7 @@
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+	 <PROJECT>cli115</PROJECT>
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
          <batch_system type="pbs">
             <queues>

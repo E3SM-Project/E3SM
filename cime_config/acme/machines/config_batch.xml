@@ -72,7 +72,7 @@
   </batch_system>
 
   <batch_system type="pbs" version="x.y">
-    <batch_query args="-f" >qstat</batch_query>
+    <batch_query args="-u $USER" >qselect</batch_query>
     <batch_submit>qsub </batch_submit>
     <batch_directive>#PBS</batch_directive>
     <jobid_pattern>^(\d+)\.</jobid_pattern>
@@ -106,7 +106,7 @@
   </batch_system>
 
    <batch_system type="slurm" version="x.y">
-     <batch_query>squeue</batch_query>
+     <batch_query args="-o '%i' -h -u $USER">squeue </batch_query>
      <batch_submit>sbatch</batch_submit>
      <batch_directive>#SBATCH</batch_directive>
      <jobid_pattern>(\d+)$</jobid_pattern>
