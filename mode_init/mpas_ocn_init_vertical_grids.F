@@ -752,8 +752,7 @@ contains
       integer, pointer :: config_rx1_smooth_count, config_rx1_inner_iteration_count, config_rx1_horiz_smooth_open_ocean_cells, &
                           config_rx1_min_levels
       real (kind=RKIND), pointer :: config_rx1_max, config_rx1_horiz_smooth_weight, &
-                           config_rx1_vert_smooth_weight, config_rx1_inner_iteration_weight, &
-                           config_rx1_min_layer_thickness
+                           config_rx1_vert_smooth_weight, config_rx1_inner_iteration_weight
 
       type (field2DReal), pointer :: zInterfaceField, layerThicknessNewField
       type (field1DReal), pointer :: zTopField, zBotField, zBotNewField, bottomDepthMaxLevelField
@@ -786,7 +785,6 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_rx1_horiz_smooth_open_ocean_cells', &
                                 config_rx1_horiz_smooth_open_ocean_cells)
       call mpas_pool_get_config(domain % configs, 'config_rx1_min_levels', config_rx1_min_levels)
-      call mpas_pool_get_config(domain % configs, 'config_rx1_min_layer_thickness', config_rx1_min_layer_thickness)
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
@@ -979,7 +977,7 @@ contains
 
             ! no halo exchange in zInterface should be required because halo exchange of zBot will handle this
 
-            layerThickness(:,:) = max(config_rx1_min_layer_thickness, zInterface(1:nVertLevels,:) - zInterface(2:nVertLevels+1,:))
+            layerThickness(:,:) = max(0.0_RKIND, zInterface(1:nVertLevels,:) - zInterface(2:nVertLevels+1,:))
             layerThicknessNew(:,:) = layerThickness(:,:)
 
             ! smooth layerThickness vertically
@@ -1328,4 +1326,4 @@ end module ocn_init_vertical_grids
 
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-! vim: foldmethod=marker et ts=3 tw=132
+! vim: foldmethod=marker

@@ -34,8 +34,6 @@ module ocn_vmix_coefs_rich
    private
    save
 
-   type (timer_node), pointer :: richEOSTimer
-
    !--------------------------------------------------------------------
    !
    ! Public parameters
@@ -161,7 +159,7 @@ contains
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
 
-      call mpas_timer_start("eos rich", .false., richEOSTimer)
+      call mpas_timer_start("eos rich")
 
       ! compute in-place density
       call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, 0, 'relative', density, err, &
@@ -172,7 +170,7 @@ contains
       call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, 1, 'relative', displacedDensity, err, &
                                          timeLevelIn=timeLevel)
 
-      call mpas_timer_stop("eos rich", richEOSTimer)
+      call mpas_timer_stop("eos rich")
 
       call ocn_vmix_get_rich_numbers(meshPool, scratchPool, indexTemperature, indexSalinity, normalVelocity, layerThickness, &
                                      layerThicknessEdge, density, displacedDensity, activeTracers, RiTopOfEdge, RiTopOfCell, err1)

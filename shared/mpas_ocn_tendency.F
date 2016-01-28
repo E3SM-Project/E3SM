@@ -62,10 +62,6 @@ module ocn_tendency
    private
    save
 
-   type (timer_node), pointer :: thickHadvTimer, thickVadvTimer
-   type (timer_node), pointer :: velCorTimer, velVadvTimer, velPgradTimer, velHmixTimer, velForceTimer
-   type (timer_node), pointer :: tracerHadvTimer, tracerVadvTimer, tracerHmixTimer, tracerRestoringTimer
-
    !--------------------------------------------------------------------
    !
    ! Public parameters
@@ -165,21 +161,22 @@ contains
       !
       ! QC Comment (3/15/12): need to make sure that uTranport is the right
       ! transport velocity here.
-      call mpas_timer_start("hadv", .false., thickHadvTimer)
+      call mpas_timer_start("hadv")
       call ocn_thick_hadv_tend(meshPool, normalTransportVelocity, layerThicknessEdge, tend_layerThickness, err)
-      call mpas_timer_stop("hadv", thickHadvTimer)
+      call mpas_timer_stop("hadv")
 
       !
       ! height tendency: vertical advection term -d/dz(hw)
       !
-      call mpas_timer_start("vadv", .false., thickVadvTimer)
+      call mpas_timer_start("vadv")
       call ocn_thick_vadv_tend(meshPool, vertAleTransportTop, tend_layerThickness, err)
-      call mpas_timer_stop("vadv", thickVadvTimer)
+      call mpas_timer_stop("vadv")
 
       !
       ! surface flux tendency
       !
-      call mpas_timer_start("surface flux", .false.)
+      call mpas_timer_start("surface flux")
+
       call ocn_thick_surface_flux_tend(meshPool, fractionAbsorbed, layerThickness, surfaceThicknessFlux, tend_layerThickness, err)
       call mpas_timer_stop("surface flux")
 
@@ -301,22 +298,22 @@ contains
       ! velocity tendency: nonlinear Coriolis term and grad of kinetic energy
       !
 
-      call mpas_timer_start("coriolis", .false., velCorTimer)
+      call mpas_timer_start("coriolis")
       call ocn_vel_coriolis_tend(meshPool, normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, layerThicknessEdge, &
          normalVelocity, kineticEnergyCell, tend_normalVelocity, err)
-      call mpas_timer_stop("coriolis", velCorTimer)
+      call mpas_timer_stop("coriolis")
 
       !
       ! velocity tendency: vertical advection term -w du/dz
       !
-      call mpas_timer_start("vadv", .false., velVadvTimer)
+      call mpas_timer_start("vadv")
       call ocn_vel_vadv_tend(meshPool, normalVelocity, layerThicknessEdge, vertAleTransportTop, tend_normalVelocity, err)
-      call mpas_timer_stop("vadv", velVadvTimer)
+      call mpas_timer_stop("vadv")
 
       !
       ! velocity tendency: pressure gradient
       !
-      call mpas_timer_start("pressure grad", .false., velPgradTimer)
+      call mpas_timer_start("pressure grad")
       if (config_pressure_gradient_type.eq.'Jacobian_from_TS') then
          ! only pass EOS derivatives if needed.
          call mpas_pool_get_array(diagnosticsPool, 'inSituThermalExpansionCoeff',inSituThermalExpansionCoeff)
@@ -329,25 +326,25 @@ contains
               indexTemperature, indexSalinity, activeTracers, tend_normalVelocity, err, &
               inSituThermalExpansionCoeff,inSituSalineContractionCoeff)
       endif
-      call mpas_timer_stop("pressure grad", velPgradTimer)
+      call mpas_timer_stop("pressure grad")
 
       !
       ! velocity tendency: del2 dissipation, \nu_2 \nabla^2 u
       !   computed as \nu( \nabla divergence + k \times \nabla relativeVorticity )
       !   strictly only valid for config_mom_del2 == constant
       !
-      call mpas_timer_start("hmix", .false., velHmixTimer)
+      call mpas_timer_start("hmix")
       call ocn_vel_hmix_tend(meshPool, scratchPool, divergence, relativeVorticity, normalVelocity, tangentialVelocity, viscosity, &
          tend_normalVelocity, err)
-      call mpas_timer_stop("hmix", velHmixTimer)
+      call mpas_timer_stop("hmix")
 
       !
       ! velocity tendency: forcing and bottom drag
       !
-      call mpas_timer_start("forcings", .false., velForceTimer)
+      call mpas_timer_start("forcings")
       call ocn_vel_forcing_tend(meshPool, normalVelocity, surfaceFluxAttenuationCoefficient, surfaceStress, layerThicknessEdge, &
                                 tend_normalVelocity, err)
-      call mpas_timer_stop("forcings", velForceTimer)
+      call mpas_timer_stop("forcings")
 
 
       !
@@ -576,7 +573,7 @@ contains
                ! fill components of surface tracer flux
                !
                if (config_use_tracerGroup_surface_bulk_forcing) then
-                  call mpas_timer_start("bulk_" // trim(groupItr % memberName), .false.)
+                  call mpas_timer_start("bulk_" // trim(groupItr % memberName))
                   call ocn_surface_bulk_forcing_tracers(meshPool, groupItr % memberName, forcingPool, tracerGroup, &
                                                         tracerGroupSurfaceFlux, err)
                   call mpas_timer_stop("bulk_" // trim(groupItr % memberName))
@@ -587,7 +584,7 @@ contains
                ! NOTE: must be called before ocn_tracer_surface_flux_tend
                !
                if ( trim(groupItr % memberName) == 'ecosysTracers' ) then
-                  call mpas_timer_start("ecosys source-sink", .false.)
+                  call mpas_timer_start("ecosys source-sink")
                   call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
                   call ocn_tracer_ecosys_compute(activeTracers, tracerGroup, forcingPool, nTracerGroup, &
                      nCellsSolve, maxLevelCell, nVertLevels, layerThickness, zMid, indexTemperature,    &
@@ -605,7 +602,7 @@ contains
                ! NOTE: must be called before ocn_tracer_surface_flux_tend
                !
                if ( trim(groupItr % memberName) == 'DMSTracers' ) then
-                  call mpas_timer_start("DMS source-sink", .false.)
+                  call mpas_timer_start("DMS source-sink")
                   call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, timeLevel)
                   nTracersEcosys = size(ecosysTracers, dim=1)
                   call ocn_tracer_DMS_compute(tracerGroup, nTracerGroup, ecosysTracers, nTracersEcosys, forcingPool, &
@@ -624,7 +621,7 @@ contains
                ! NOTE: must be called before ocn_tracer_surface_flux_tend
                !
                if ( trim(groupItr % memberName) == 'MacroMoleculesTracers' ) then
-                  call mpas_timer_start("MacroMolecules source-sink", .false.)
+                  call mpas_timer_start("MacroMolecules source-sink")
                   call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, timeLevel)
                   nTracersEcosys = size(ecosysTracers, dim=1)
                   call ocn_tracer_MacroMolecules_compute(tracerGroup, nTracerGroup, ecosysTracers, nTracersEcosys, forcingPool, &
@@ -642,7 +639,7 @@ contains
                ! ocean surface restoring
                !
                  if (config_use_tracerGroup_surface_restoring) then
-                     call mpas_timer_start("surface_restoring_" // trim(groupItr % memberName), .false.)
+                     call mpas_timer_start("surface_restoring_" // trim(groupItr % memberName))
                      call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
                      modifiedGroupName = trim(groupItr % memberName) // "PistonVelocity"
                      call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, trim(modifiedGroupName), &
@@ -657,7 +654,7 @@ contains
 
                ! tracer fluxes at the land-ice / ocean interface
                ! this is a flux at the top ocean surface -- so these fluxes are added into tracerGroupSurfaceFlux
-               call mpas_timer_start("land_ice_" // trim(groupItr % memberName), .false.)
+               call mpas_timer_start("land_ice_" // trim(groupItr % memberName))
                call ocn_surface_land_ice_fluxes_tracers(meshPool, groupItr % memberName, forcingPool, tracerGroupSurfaceFlux, err)
                call mpas_timer_stop("land_ice_" // trim(groupItr % memberName))
 
@@ -731,25 +728,25 @@ contains
                !
 
                ! Monotonoic Advection, or standard advection
-               call mpas_timer_start("adv", .false., tracerHadvTimer)
+               call mpas_timer_start("adv")
                call ocn_tracer_advection_tend(tracerGroup, normalThicknessFlux, vertAleTransportTop, layerThickness, &
                                               layerThickness, dt, meshPool, scratchPool, tend_layerThickness, tracerGroupTend)
-               call mpas_timer_stop("adv", tracerHadvTimer)
+               call mpas_timer_stop("adv")
 
                !
                ! tracer tendency: del2 horizontal tracer diffusion, div(h \kappa_2 \nabla \phi)
                !
-               call mpas_timer_start("hmix", .false., tracerHmixTimer)
+               call mpas_timer_start("hmix")
                call ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracerGroup, &
                                          relativeSlopeTopOfEdge, relativeSlopeTapering, relativeSlopeTaperingCell, &
                                          tracerGroupTend, err)
-               call mpas_timer_stop("hmix", tracerHmixTimer)
+               call mpas_timer_stop("hmix")
 
                !
                ! convert the surface tracer flux into a tracer tendency by distributing the flux across some number
                ! of surface layers
                !
-               call mpas_timer_start("surface_tracer_flux", .false.)
+               call mpas_timer_start("surface_tracer_flux")
                call ocn_tracer_surface_flux_tend(meshPool, fractionAbsorbed, layerThickness, tracerGroupSurfaceFlux, &
                                                  tracerGroupTend, err)
                call mpas_timer_stop("surface_tracer_flux")
@@ -758,7 +755,7 @@ contains
                ! Performing shortwave absorption
                !
                if ( trim(groupItr % memberName) == 'activeTracers' ) then
-                  call mpas_timer_start("short wave", .false.)
+                  call mpas_timer_start("short wave")
                   call ocn_tracer_short_wave_absorption_tend(meshPool, swForcingPool, forcingPool, indexTemperature, &
                                                              layerThickness, penetrativeTemperatureFlux, tracerGroupTend, err)
                   call mpas_timer_stop("short wave")
@@ -768,7 +765,7 @@ contains
                ! Compute tracer tendency due to non-local flux computed in KPP
                !
                if (config_use_cvmix_kpp) then
-                 call mpas_timer_start("non-local flux from KPP", .false.)
+                 call mpas_timer_start("non-local flux from KPP")
                  call ocn_tracer_nonlocalflux_tend(meshPool, vertNonLocalFlux, tracerGroupSurfaceFlux, tracerGroupTend, err)
                  call mpas_timer_stop("non-local flux from KPP")
                end if
@@ -776,25 +773,13 @@ contains
                !
                ! Compute tracer tendency due to production/destruction of frazil ice
                !
-               call mpas_timer_start("frazil", .false.)
+               call mpas_timer_start("frazil")
                call ocn_frazil_forcing_tracers(meshPool, tracersPool, groupItr%memberName, forcingPool, tracerGroupTend, err)
                call mpas_timer_stop("frazil")
 
             end if
          end if
       end do
-      !
-      ! end iterate over tracer categories
-      !
-
-      !
-      ! deallocate workspace
-      !
-      call mpas_deallocate_scratch_field(normalThicknessFluxField, .true.)
-
-      !
-      ! stop timer
-      !
       call mpas_timer_stop("ocn_tend_tracer")
 
       call mpas_threading_barrier()
@@ -925,9 +910,9 @@ contains
       !
       !  high frequency thickness tendency: del2 horizontal hhf diffusion, div(\kappa_{hf} \nabla h^{hf})
       !
-      call mpas_timer_start("hmix", .false., tracerHmixTimer)
+      call mpas_timer_start("hmix")
       call ocn_high_freq_thickness_hmix_del2_tend(meshPool, highFreqThickness, tend_highFreqThickness, err)
-      call mpas_timer_stop("hmix", tracerHmixTimer)
+      call mpas_timer_stop("hmix")
 
       call mpas_timer_stop("ocn_tend_freq_filtered_thickness")
 

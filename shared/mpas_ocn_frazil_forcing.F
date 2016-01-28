@@ -55,7 +55,6 @@ module ocn_frazil_forcing
    !--------------------------------------------------------------------
 
    logical :: frazilFormationOn
-   type (timer_node), pointer :: timer_frazil
 
 !***********************************************************************
 
@@ -363,7 +362,7 @@ contains
       ! if frazil is not enabled, return
       if(.not. frazilFormationOn) return
 
-      call mpas_timer_start("frazil", .false., timer_frazil)
+      call mpas_timer_start("frazil")
 
       ! get pool pointers
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
@@ -526,7 +525,7 @@ contains
 
       enddo   ! do iCell = 1, nCells
 
-      call mpas_timer_stop("frazil", timer_frazil)
+      call mpas_timer_stop("frazil")
 
    end subroutine ocn_frazil_forcing_build_arrays!}}}
 

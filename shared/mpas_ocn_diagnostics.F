@@ -37,8 +37,6 @@ module ocn_diagnostics
    private
    save
 
-   type (timer_node), pointer :: diagEOSTimer
-
    !--------------------------------------------------------------------
    !
    ! Public parameters
@@ -537,8 +535,7 @@ contains
       !
       ! equation of state
       !
-      call mpas_timer_start("equation of state", .false., diagEOSTimer)
-      call mpas_threading_barrier()
+      call mpas_timer_start("equation of state")
 
       ! compute in-place density
       if (config_pressure_gradient_type.eq.'Jacobian_from_TS') then
@@ -563,8 +560,7 @@ contains
                                          err, timeLevelIn=timeLevel)
       call mpas_threading_barrier()
 
-      call mpas_timer_stop("equation of state", diagEOSTimer)
-      call mpas_threading_barrier()
+      call mpas_timer_stop("equation of state")
 
       !
       ! Pressure
