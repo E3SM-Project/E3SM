@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_aerosol.F90 1051 2015-08-28 19:30:11Z njeffery $
+!  SVN:$Id: ice_aerosol.F90 1104 2016-01-28 00:10:05Z njeffery $
 !=======================================================================
 
 ! Aerosol tracer within sea ice
@@ -548,7 +548,7 @@
             dhs_snoice = snoice*rhoi/rhos
          else ! ice disappeared during time step
             hs = vsnon/aice_old
-            dhs_melts  = -melts          
+            dhs_melts  = -melts
             dhs_snoice = snoice*rhoi/rhos
          endif
 

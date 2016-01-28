@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_orbital.F90 1012 2015-06-26 12:34:09Z eclare $
+!  SVN:$Id: ice_orbital.F90 1099 2015-12-12 18:12:30Z eclare $
 !=======================================================================
 
 ! Orbital parameters computed from date
@@ -55,7 +55,7 @@
          nextsw_cday     , & ! julian day of next shortwave calculation
          yday                ! day of the year
 
-      real (kind=dbl_kind), intent(out) :: &
+      real (kind=dbl_kind), intent(inout) :: &
          coszen              ! cosine solar zenith angle 
                              ! negative for sun below horizon
  
@@ -341,7 +341,7 @@ SUBROUTINE shr_orb_params( iyear_AD , eccen , obliq , mvelp    , &
 
    !-------------------------- Formats -----------------------------------------
    character(*),parameter :: svnID  = "SVN " // &
-   "$Id: ice_orbital.F90 1012 2015-06-26 12:34:09Z eclare $"
+   "$Id: ice_orbital.F90 1099 2015-12-12 18:12:30Z eclare $"
    character(*),parameter :: svnURL = "SVN <unknown URL>" 
 !  character(*),parameter :: svnURL = "SVN " // &
 !  "$URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_121022/shr/shr_orb_mod.F90 $"

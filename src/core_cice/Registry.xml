@@ -1691,6 +1691,7 @@
 		<var name="pondAlbedoCell"                    type="real"     dimensions="nCells"                           name_in_code="pondAlbedoCell"/>
 		<var name="effectivePondAreaCategory"         type="real"     dimensions="nCategories nCells"               name_in_code="effectivePondAreaCategory"/>
 		<var name="effectivePondAreaCell"             type="real"     dimensions="nCells"                           name_in_code="effectivePondAreaCell"/>
+		<var name="snowFractionCategory"              type="real"     dimensions="nCategories nCells"               name_in_code="snowFractionCategory"/>
 	</var_struct>
 
 	<!-- form drag formulation -->

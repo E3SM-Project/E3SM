@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_algae.F90 1071 2015-10-28 22:12:56Z njeffery $
+!  SVN:$Id: ice_algae.F90 1104 2016-01-28 00:10:05Z njeffery $
 !=======================================================================
 !
 ! Compute sea ice biogeochemistry (vertical or skeletal layer)

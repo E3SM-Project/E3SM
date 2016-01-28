@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_constants_colpkg.F90 890 2014-11-20 23:35:37Z eclare $
+!  SVN:$Id: ice_constants_colpkg.F90 1326 2015-11-18 23:41:52Z afrobert@nps.edu $
 !=======================================================================
 !
 ! This module defines a variety of physical and numerical constants
@@ -31,7 +31,13 @@
          cp_ocn    = SHR_CONST_CPSW   ,&! specific heat of ocn    (J/kg/K)
                                         ! freshwater value needed for enthalpy
          depressT  = 0.054_dbl_kind   ,&! Tf:brine salinity ratio (C/ppt)
+
+#ifdef RASM_MODS
+         dragio    = 0.00962_dbl_kind ,&! ice-ocn drag coefficient for RASM as temporary measure
+#else
          dragio    = 0.00536_dbl_kind ,&! ice-ocn drag coefficient
+#endif
+
          albocn    = 0.06_dbl_kind    ,&! ocean albedo
          gravit    = SHR_CONST_G     ,&! gravitational acceleration (m/s^2)
          viscosity_dyn = 1.79e-3_dbl_kind, & ! dynamic viscosity of brine (kg/m/s)

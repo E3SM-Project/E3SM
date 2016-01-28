@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_shortwave.F90 1071 2015-10-28 22:12:56Z njeffery $
+!  SVN:$Id: ice_shortwave.F90 1099 2015-12-12 18:12:30Z eclare $
 !=======================================================================
 !
 ! The albedo and absorbed/transmitted flux parameterizations for
@@ -58,7 +58,7 @@
          hp0    = 0.200_dbl_kind    ! pond depth below which transition to bare ice
 
       real (kind=dbl_kind) :: &
-         exp_min              ! minimum exponential value
+         exp_min                    ! minimum exponential value
 
 !=======================================================================
 
@@ -125,7 +125,7 @@
          albin    , & ! bare ice albedo
          albsn        ! snow albedo
 
-      real (kind=dbl_kind), intent(out) :: &
+      real (kind=dbl_kind), intent(inout) :: &
          coszen       ! cosine(zenith angle)
 
       real (kind=dbl_kind), dimension (:,:), intent(inout) :: &
@@ -712,6 +712,7 @@
                           Sswabsn,  Iswabsn,   &
                           albicen,  albsnon,   &
                           albpndn,  apeffn,    &
+                          snowfracn,           &
                           dhsn,     ffracn,    &
                           nu_diag,  l_print_point, &
                           initonly)
@@ -805,7 +806,7 @@
       real(kind=dbl_kind), dimension(:), intent(inout) :: &
            dhsn     ! depth difference for snow on sea ice and pond ice
 
-      real(kind=dbl_kind), intent(out) :: &
+      real(kind=dbl_kind), intent(inout) :: &
            coszen   ! cosine solar zenith angle, < 0 for sun below horizon 
 
       real(kind=dbl_kind), dimension(:), intent(inout) :: &
@@ -819,7 +820,8 @@
            albicen,  & ! albedo bare ice 
            albsnon,  & ! albedo snow 
            albpndn,  & ! albedo pond 
-           apeffn      ! effective pond area used for radiation calculation
+           apeffn,   & ! effective pond area used for radiation calculation
+           snowfracn   ! snow fraction on each category used for radiation
 
       real(kind=dbl_kind), dimension(:,:), intent(inout) :: &
            Sswabsn , & ! SW radiation absorbed in snow layers (W m-2)
@@ -896,7 +898,8 @@
          hsn        = c0
          rhosnwn(:) = c0
          rsnwn(:)   = c0
-         apeffn(n)  = c0 ! for history
+         apeffn(n)    = c0 ! for history
+         snowfracn(n) = c0 ! for history
 
          if (aicen(n) > puny) then
 
@@ -1007,6 +1010,8 @@
                hpn = c0
             endif ! pond type
             
+         snowfracn(n) = fsn ! for history
+
          call shortwave_dEdd(n_aero,        n_zaero,        &
                              dEdd_algae,    nlt_chl_sw,     &
                              nlt_zaero_sw(:),               &
@@ -1141,7 +1146,6 @@
          kalg    , & ! algae absorption coefficient
          R_ice , & ! sea ice tuning parameter; +1 > 1sig increase in albedo
          R_pnd , & ! ponded ice tuning parameter; +1 > 1sig increase in albedo
-         coszen  , & ! cosine of solar zenith angle 
          aice    , & ! concentration of ice 
          vice    , & ! volume of ice 
          hs      , & ! snow depth
@@ -1162,6 +1166,7 @@
          swidf       ! sw down, near IR, diffuse (W/m^2)
 
       real (kind=dbl_kind), intent(inout) :: &
+         coszen  , & ! cosine of solar zenith angle 
          alvdr   , & ! visible, direct, albedo (fraction) 
          alvdf   , & ! visible, diffuse, albedo (fraction) 
          alidr   , & ! near-ir, direct, albedo (fraction) 
@@ -1186,9 +1191,8 @@
       ! local variables
 
       real (kind=dbl_kind) :: &
-         fnidr        ! fraction of direct to total down surface flux in nir
-
-      real (kind=dbl_kind) :: &
+         netsw    , & ! net shortwave
+         fnidr    , & ! fraction of direct to total down surface flux in nir
          hstmp    , & ! snow thickness (set to 0 for bare ice case)
          hi       , & ! ice thickness (all sea ice layers, m)
          fi           ! snow/bare ice fractional coverage (0 to 1)
@@ -1266,12 +1270,14 @@
             ! sea ice SSL, and sea ice below SSL, in that order.
             do na = 1, 4*n_aero, 4
                vsno = hs * aice
-               if (coszen > puny) then ! sun above horizon
+               netsw = swvdr + swidr + swvdf + swidf
+               if (netsw > puny) then ! sun above horizon
+!echmod               if (coszen > puny) then ! sun above horizon
                   aero_mp(na  ) = aero(na  )*vsno
                   aero_mp(na+1) = aero(na+1)*vsno
                   aero_mp(na+2) = aero(na+2)*vice
                   aero_mp(na+3) = aero(na+3)*vice
-               endif                  ! aice > 0 and coszen > 0
+               endif                  ! aice > 0 and netsw > 0
             enddo      ! na
          endif      ! if aerosols
 
@@ -1279,7 +1285,10 @@
          ! ice and bare ice) and ponded ice (if any):
          
          ! sea ice points with sun above horizon
-         if (coszen > puny) then
+         netsw = swvdr + swidr + swvdf + swidf
+         if (netsw > puny) then ! sun above horizon
+            coszen = max(puny,coszen)
+!echmod            if (coszen > puny) then ! sun above horizon
             ! evaluate sea ice thickness and fraction
             hi  = vice / aice
             fi  = c1 - fs - fp
@@ -1317,7 +1326,10 @@
          endif
          
          ! sea ice points with sun above horizon
-         if (coszen > puny) then
+         netsw = swvdr + swidr + swvdf + swidf
+         if (netsw > puny) then ! sun above horizon
+            coszen = max(puny,coszen)
+!echmod         if (coszen > puny) then ! sun above horizon
             ! snow-covered sea ice points
             if(fs > c0) then
                ! calculate snow covered sea ice
@@ -1354,7 +1366,10 @@
          hi = c0
 
          ! sea ice points with sun above horizon
-         if (coszen > puny) then
+         netsw = swvdr + swidr + swvdf + swidf
+         if (netsw > puny) then ! sun above horizon
+            coszen = max(puny,coszen)
+!echmod         if (coszen > puny) then ! sun above horizon
             hi  = vice / aice
             ! if non-zero pond fraction and sufficient pond depth
             if( fp > puny .and. hp > hpmin ) then
@@ -3076,8 +3091,8 @@
  
       real (kind=dbl_kind) :: &
          alpha    , & ! term in direct reflectivity and transmissivity
-         gamma    , & ! term in direct reflectivity and transmissivity
-         el       , & ! term in alpha,gamma,n,u
+         agamm    , & ! term in direct reflectivity and transmissivity
+         el       , & ! term in alpha,agamm,n,u
          taus     , & ! scaled extinction optical depth
          omgs     , & ! scaled single particle scattering albedo
          asys     , & ! scaled asymmetry parameter
@@ -3098,7 +3113,7 @@
  
       real (kind=dbl_kind) :: &
          alp      , & ! temporary for alpha
-         gam      , & ! temporary for gamma
+         gam      , & ! temporary for agamm
          ue       , & ! temporary for u
          extins   , & ! extinction
          amg      , & ! alp - gam
@@ -3133,8 +3148,7 @@
  
       ! Delta-Eddington solution expressions
       alpha(w,uu,gg,e) = p75*w*uu*((c1 + gg*(c1-w))/(c1 - e*e*uu*uu))
-      gamma(w,uu,gg,e) = p5*w*((c1 + c3*gg*(c1-w)*uu*uu) &
-                        / (c1-e*e*uu*uu))
+      agamm(w,uu,gg,e) = p5*w*((c1 + c3*gg*(c1-w)*uu*uu)/(c1-e*e*uu*uu))
       n(uu,et)         = ((uu+c1)*(uu+c1)/et ) - ((uu-c1)*(uu-c1)*et)
       u(w,gg,e)        = c1p5*(c1 - w*gg)/e
       el(w,gg)         = sqrt(c3*(c1-w)*(c1 - w*gg))
@@ -3229,7 +3243,7 @@
             ! evaluate rdir,tdir for direct beam
             trnlay(k) = max(exp_min, exp(-ts/mu0n))
             alp = alpha(ws,mu0n,gs,lm)
-            gam = gamma(ws,mu0n,gs,lm)
+            gam = agamm(ws,mu0n,gs,lm)
             apg = alp + gam
             amg = alp - gam
             rdir(k) = apg*rdif_a(k) +  amg*(tdif_a(k)*trnlay(k) - c1)
@@ -3250,7 +3264,7 @@
                swt = swt + mu*gwt
                trn = max(exp_min, exp(-ts/mu))
                alp = alpha(ws,mu,gs,lm)
-               gam = gamma(ws,mu,gs,lm)
+               gam = agamm(ws,mu,gs,lm)
                apg = alp + gam
                amg = alp - gam
                rdr = apg*R1 + amg*T1*trn - amg

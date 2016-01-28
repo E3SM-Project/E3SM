@@ -93,7 +93,7 @@ ice_atmo.F90
 *ice_colpkg.F90
 *ice_colpkg_shared.F90
 *ice_colpkg_tracers.F90
-ice_firstyear.F90
+ice_firstyear.F90*
 ice_flux_colpkg.F90
 ice_itd.F90
 ice_mechred.F90

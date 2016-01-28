@@ -2097,7 +2097,8 @@ contains
          albedoVisibleDirectCategory, &
          albedoVisibleDiffuseCategory, &
          albedoIRDirectCategory, &
-         albedoIRDiffuseCategory
+         albedoIRDiffuseCategory, &
+         snowFractionCategory
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -2228,6 +2229,7 @@ contains
        call MPAS_pool_get_array(shortwave, "snowAlbedoCategory", snowAlbedoCategory)
        call MPAS_pool_get_array(shortwave, "pondAlbedoCategory", pondAlbedoCategory)
        call MPAS_pool_get_array(shortwave, "effectivePondAreaCategory", effectivePondAreaCategory)
+       call MPAS_pool_get_array(shortwave, "snowFractionCategory", snowFractionCategory)
 
        call MPAS_pool_get_array(ponds, "pondSnowDepthDifference", pondSnowDepthDifference)
        call MPAS_pool_get_array(ponds, "pondLidMeltFluxFraction", pondLidMeltFluxFraction)
@@ -2343,6 +2345,7 @@ contains
                snowAlbedoCategory(:,iCell), &
                pondAlbedoCategory(:,iCell), &
                effectivePondAreaCategory(:,iCell), &
+               snowFractionCategory(:,iCell), &
                pondSnowDepthDifference(:,iCell), &
                pondLidMeltFluxFraction(:,iCell), &
                stdoutUnit, &

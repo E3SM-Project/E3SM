@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_colpkg.F90 1072 2015-10-29 15:36:55Z njeffery $
+!  SVN:$Id: ice_colpkg.F90 1105 2016-01-28 17:14:14Z njeffery $
 !=========================================================================
 !
 ! flags and interface routines for the column package
@@ -164,7 +164,9 @@
             hin_max(0) = c0     ! minimum ice thickness, m
          else
             ! delta function itd category limits
+#ifndef CCSMCOUPLED
             hi_min = p1    ! minimum ice thickness allowed (m) for thermo
+#endif
             cc1 = max(1.1_dbl_kind/rncat,hi_min)
             cc2 = c25*cc1
             cc3 = 2.25_dbl_kind
@@ -362,6 +364,7 @@
 
       use ice_constants_colpkg, only: iyear_AD, eccen, obliqr, lambm0, &
          mvelpp, obliq, mvelp, decln, eccf, log_print
+
 #ifdef CCSMCOUPLED
       use shr_orb_mod, only: shr_orb_params
 #else
@@ -376,6 +379,8 @@
 
       character (char_len), intent(out) :: stop_label
 
+      l_stop = .false.      ! initialized for CCSMCOUPLED
+      stop_label = ''       ! initialized for CCSMCOUPLED
       iyear_AD  = 1950
       log_print = .false.   ! if true, write out orbital parameters
 
@@ -1504,7 +1509,8 @@
                                     lmask_n     , lmask_s     , &
                                     mlt_onset   , frz_onset   , &
                                     yday        , l_stop      , &
-                                    stop_label  , nu_diag)
+                                    stop_label  , nu_diag     , &
+                                    prescribed_ice)
 
       use ice_aerosol, only: update_aerosol
       use ice_atmo, only: neutral_drag_coeffs
@@ -1537,6 +1543,9 @@
       logical (kind=log_kind), intent(in) :: &
          lmask_n     , & ! northern hemisphere mask
          lmask_s         ! southern hemisphere mask
+
+      logical (kind=log_kind), intent(in), optional :: &
+         prescribed_ice  ! if .true., use prescribed ice instead of computed
 
       real (kind=dbl_kind), intent(inout) :: &
          aice        , & ! sea ice concentration
@@ -1852,7 +1861,8 @@
                                  congeln  (n), snoicen  (n), &
                                  mlt_onset,    frz_onset,    &
                                  yday,         dsnown   (n), &
-                                 l_stop,       nu_diag)
+                                 l_stop,       nu_diag,      &
+                                 prescribed_ice)
                
             if (l_stop) then
                stop_label = 'ice: Vertical thermo error'
@@ -2410,6 +2420,7 @@
                                         Sswabsn,  Iswabsn,   &
                                         albicen,  albsnon,   &
                                         albpndn,  apeffn,    &
+                                        snowfracn,           &
                                         dhsn,     ffracn,    &
                                         nu_diag,  l_print_point, &
                                         initonly)
@@ -2457,7 +2468,7 @@
          nextsw_cday     , & ! julian day of next shortwave calculation
          yday                ! day of the year
 
-      real (kind=dbl_kind), intent(out) :: &
+      real (kind=dbl_kind), intent(inout) :: &
          coszen        ! cosine solar zenith angle, < 0 for sun below horizon 
 
       real (kind=dbl_kind), dimension (:), intent(in) :: &
@@ -2505,6 +2516,7 @@
          fswsfcn   , & ! SW absorbed at ice/snow surface (W m-2)
          fswintn   , & ! SW absorbed in ice interior, below surface (W m-2)
          fswthrun  , & ! SW through ice to ocean (W/m^2)
+         snowfracn , & ! snow fraction on each category
          dhsn      , & ! depth difference for snow on sea ice and pond ice
          ffracn    , & ! fraction of fsurfn used to melt ipond
                        ! albedo components for history
@@ -2533,7 +2545,8 @@
          n                  ! thickness category index
 
       logical (kind=log_kind) :: &
-         l_stop          ! if true, abort the model
+         l_stop      ,&  ! if true, abort the model
+         linitonly       ! local flag for initonly
 
       character (char_len) :: stop_label
 
@@ -2543,6 +2556,10 @@
 
         hin = c0
         hbri = c0
+        linitonly = .false.
+        if (present(initonly)) then
+           linitonly = initonly
+        endif
 
          ! Initialize
          do n = 1, ncat
@@ -2557,7 +2574,6 @@
          fswpenln (:,:) = c0
          Iswabsn  (:,:) = c0
          Sswabsn  (:,:) = c0
-         coszen         = c0
          zbion(:,:) = c0
 
          ! Interpolate z-shortwave tracers to shortwave grid
@@ -2578,8 +2594,8 @@
                                      l_stop,       stop_label,&
                                      nu_diag)
               endif
-          enddo
-          endif
+         enddo
+         endif
 
          if (calc_Tsfc) then
          if (trim(shortwave) == 'dEdd') then ! delta Eddington
@@ -2625,9 +2641,10 @@
                           Sswabsn,      Iswabsn,        &
                           albicen,      albsnon,        &
                           albpndn,      apeffn,         &
+                          snowfracn,                    &
                           dhsn,         ffracn,         &
                           nu_diag,      l_print_point,  &
-                          initonly)
+                          linitonly)
  
          else  ! .not. dEdd
 

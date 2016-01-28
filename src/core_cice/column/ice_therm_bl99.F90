@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_therm_bl99.F90 1071 2015-10-28 22:12:56Z njeffery $
+!  SVN:$Id: ice_therm_bl99.F90 1099 2015-12-12 18:12:30Z eclare $
 !=========================================================================
 !
 ! Update ice and snow internal temperatures
@@ -13,7 +13,7 @@
       module ice_therm_bl99
 
       use ice_kinds_mod
-      use ice_constants_colpkg, only: c0, c1, c2, p1, p5, puny, &
+      use ice_constants_colpkg, only: c0, c1, c2, p01, p1, p5, puny, &
           rhoi, rhos, hs_min, cp_ice, cp_ocn, depressT, Lfresh, ksno, kice
       use ice_colpkg_shared, only: conduct, calc_Tsfc, solve_zsal
       use ice_therm_shared, only: ferrmax, l_brine, hfrazilmin
@@ -271,8 +271,13 @@
       !-----------------------------------------------------------------
 !mclaren: Should there be an if calc_Tsfc statement here then?? 
 
-      frac = 0.9
+#ifdef CCSMCOUPLED
+      frac = c1
+      dTemp = p01
+#else
+      frac = 0.9_dbl_kind
       dTemp = 0.02_dbl_kind
+#endif
       if (solve_zsal) dTemp = p1  ! lower tolerance with dynamic salinity
       do k = 1, nilyr
 
@@ -298,6 +303,9 @@
 
       enddo
 
+#ifdef CCSMCOUPLED
+      frac = 0.9_dbl_kind
+#endif
       do k = 1, nslyr
          if (l_snow) then
 
