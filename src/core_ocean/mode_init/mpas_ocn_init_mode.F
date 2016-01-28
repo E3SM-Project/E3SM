@@ -61,8 +61,6 @@ module ocn_init_mode
    public :: ocn_init_mode_init, ocn_init_mode_run, ocn_init_mode_finalize
    public :: ocn_init_mode_setup_clock, ocn_init_mode_validate_configuration
 
-   type (timer_node), pointer :: globalDiagTimer, timeIntTimer, testSuiteTimer
-
    contains
 
 !***********************************************************************

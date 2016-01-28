@@ -58,11 +58,6 @@ module ocn_time_integration_split
 
    public :: ocn_time_integrator_split, ocn_time_integration_split_init
 
-   type (timer_node), pointer :: timer_main, timer_prep, timer_bcl_vel, timer_btr_vel, timer_diagnostic_update, &
-                                 timer_implicit_vmix, timer_halo_diagnostic, timer_halo_normalBarotropicVelocity, &
-                                 timer_halo_ssh, timer_halo_f, timer_halo_thickness, timer_halo_tracers, &
-                                 timer_halo_normalBaroclinicVelocity
-
    contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -202,7 +197,7 @@ module ocn_time_integration_split
       character (len=StrKIND) :: configName
       integer :: threadNum
 
-      call mpas_timer_start("se timestep", .false., timer_main)
+      call mpas_timer_start("se timestep")
 
       call mpas_pool_get_config(domain % configs, 'config_n_bcl_iter_beg', config_n_bcl_iter_beg)
       call mpas_pool_get_config(domain % configs, 'config_n_bcl_iter_mid', config_n_bcl_iter_mid)
@@ -239,8 +234,7 @@ module ocn_time_integration_split
       !  Prep variables before first iteration
       !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      call mpas_timer_start("se prep", .false., timer_prep)
-
+      call mpas_timer_start("se prep")
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
@@ -348,8 +342,7 @@ module ocn_time_integration_split
          block => block % next
       end do
 
-      call mpas_timer_stop("se prep", timer_prep)
-
+      call mpas_timer_stop("se prep")
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! BEGIN large iteration loop
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -366,7 +359,7 @@ module ocn_time_integration_split
 
          call mpas_threading_barrier()
          ! ---  update halos for diagnostic ocean boundayr layer depth
-         call mpas_timer_start("se halo diag obd", .false., timer_halo_diagnostic)
+         call mpas_timer_start("se halo diag obd")
          if (config_use_cvmix_kpp) then
             call mpas_pool_get_field(diagnosticsPool, 'boundaryLayerDepth', boundaryLayerDepthField)
             call mpas_dmpar_exch_halo_field(boundaryLayerDepthField)
@@ -374,7 +367,7 @@ module ocn_time_integration_split
          call mpas_timer_stop("se halo diag obd")
 
          ! ---  update halos for diagnostic variables
-         call mpas_timer_start("se halo diag", .false., timer_halo_diagnostic)
+         call mpas_timer_start("se halo diag")
 
          call mpas_pool_get_field(diagnosticsPool, 'normalizedRelativeVorticityEdge', normalizedRelativeVorticityEdgeField)
          call mpas_pool_get_field(diagnosticsPool, 'divergence', divergenceField)
@@ -384,8 +377,7 @@ module ocn_time_integration_split
            call mpas_dmpar_exch_halo_field(divergenceField)
            call mpas_dmpar_exch_halo_field(relativeVorticityField)
          end if
-         call mpas_timer_stop("se halo diag", timer_halo_diagnostic)
-         call mpas_threading_barrier()
+         call mpas_timer_stop("se halo diag")
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !
@@ -456,7 +448,7 @@ module ocn_time_integration_split
          endif
 
          ! compute velocity tendencies, T(u*,w*,p*)
-         call mpas_timer_start("se bcl vel", .false., timer_bcl_vel)
+         call mpas_timer_start("se bcl vel")
 
          call mpas_timer_start('se bcl vel tend', .false.)
          block => domain % blocklist
@@ -581,19 +573,18 @@ module ocn_time_integration_split
 
             call mpas_threading_barrier()
 
-            call mpas_timer_start("se halo normalBaroclinicVelocity", .false., timer_halo_normalBaroclinicVelocity)
+            call mpas_timer_start("se halo normalBaroclinicVelocity")
             call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
             call mpas_pool_get_field(statePool, 'normalBaroclinicVelocity', normalBaroclinicVelocityField, 2)
 
             call mpas_dmpar_exch_halo_field(normalBaroclinicVelocityField)
-            call mpas_timer_stop("se halo normalBaroclinicVelocity", timer_halo_normalBaroclinicVelocity)
+            call mpas_timer_stop("se halo normalBaroclinicVelocity")
 
             call mpas_threading_barrier()
 
          end do  ! do j=1,config_n_bcl_iter
 
-         call mpas_timer_stop("se bcl vel", timer_bcl_vel)
-
+         call mpas_timer_stop("se bcl vel")
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          ! END baroclinic iterations on linear Coriolis term
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -604,7 +595,7 @@ module ocn_time_integration_split
          !
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         call mpas_timer_start("se_btr_vel", .false., timer_btr_vel)
+         call mpas_timer_start("se btr vel")
 
          oldBtrSubcycleTime = 1
          newBtrSubcycleTime = 2
@@ -778,16 +769,14 @@ module ocn_time_integration_split
                 call mpas_threading_barrier()
 
                 !   boundary update on normalBarotropicVelocityNew
-                call mpas_timer_start("se halo normalBarotropicVelocity", .false., timer_halo_normalBarotropicVelocity)
+                call mpas_timer_start("se halo normalBarotropicVelocity")
                 call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
                 call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
                 call mpas_pool_get_field(statePool, 'normalBarotropicVelocitySubcycle', normalBarotropicVelocitySubcycleField, &
                                             newBtrSubcycleTime)
                 call mpas_dmpar_exch_halo_field(normalBarotropicVelocitySubcycleField)
-                call mpas_timer_stop("se halo normalBarotropicVelocity", timer_halo_normalBarotropicVelocity)
-
-                call mpas_threading_barrier()
+                call mpas_timer_stop("se halo normalBarotropicVelocity")
               endif ! config_btr_gam1_velWt1>1.0e-12
 
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -916,14 +905,13 @@ module ocn_time_integration_split
               call mpas_threading_barrier()
 
               !   boundary update on SSHnew
-              call mpas_timer_start("se halo ssh", .false., timer_halo_ssh)
+              call mpas_timer_start("se halo ssh")
               call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
 
               call mpas_pool_get_field(statePool, 'sshSubcycle', sshSubcycleField, newBtrSubcycleTime)
               call mpas_dmpar_exch_halo_field(sshSubcycleField)
-              call mpas_timer_stop("se halo ssh", timer_halo_ssh)
-              call mpas_threading_barrier()
-
+              call mpas_timer_stop("se halo ssh")
+      
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
               ! Barotropic subcycle: VELOCITY CORRECTOR STEP
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1003,7 +991,7 @@ module ocn_time_integration_split
                 call mpas_threading_barrier()
 
                 !   boundary update on normalBarotropicVelocityNew
-                call mpas_timer_start("se halo normalBarotropicVelocity", .false., timer_halo_normalBarotropicVelocity)
+                call mpas_timer_start("se halo normalBarotropicVelocity")
                 call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
                 call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
@@ -1011,9 +999,7 @@ module ocn_time_integration_split
                                          newBtrSubcycleTime)
 
                 call mpas_dmpar_exch_halo_field(normalBarotropicVelocitySubcycleField)
-                call mpas_timer_stop("se halo normalBarotropicVelocity", timer_halo_normalBarotropicVelocity)
-
-                call mpas_threading_barrier()
+                call mpas_timer_stop("se halo normalBarotropicVelocity")
               end do !do BtrCorIter=1,config_n_btr_cor_iter
 
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1140,16 +1126,14 @@ module ocn_time_integration_split
                 call mpas_threading_barrier()
 
                 !   boundary update on SSHnew
-                call mpas_timer_start("se halo ssh", .false., timer_halo_ssh)
+                call mpas_timer_start("se halo ssh")
                 call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
                 call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
                 call mpas_pool_get_field(statePool, 'sshSubcycle', sshSubcycleField)
 
                 call mpas_dmpar_exch_halo_field(sshSubcycleField)
-                call mpas_timer_stop("se halo ssh", timer_halo_ssh)
-
-                call mpas_threading_barrier()
+                call mpas_timer_stop("se halo ssh")
                endif ! config_btr_solve_SSH2
 
                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1223,13 +1207,13 @@ module ocn_time_integration_split
             call mpas_threading_barrier()
 
             ! boundary update on F
-            call mpas_timer_start("se halo F", .false., timer_halo_f)
+            call mpas_timer_start("se halo F")
             call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
 
             call mpas_pool_get_field(diagnosticsPool, 'barotropicThicknessFlux', barotropicThicknessFluxField)
 
             call mpas_dmpar_exch_halo_field(barotropicThicknessFluxField)
-            call mpas_timer_stop("se halo F", timer_halo_f)
+            call mpas_timer_stop("se halo F")
 
             call mpas_threading_barrier()
 
@@ -1319,7 +1303,7 @@ module ocn_time_integration_split
 
          endif ! split_explicit
 
-         call mpas_timer_stop("se_btr_vel", timer_btr_vel)
+         call mpas_timer_stop("se btr vel")
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !
@@ -1374,14 +1358,14 @@ module ocn_time_integration_split
          call mpas_threading_barrier()
 
          ! update halo for thickness tendencies
-         call mpas_timer_start("se halo thickness", .false., timer_halo_thickness)
+         call mpas_timer_start("se halo thickness")
          call mpas_pool_get_subpool(domain % blocklist % structs, 'tend', tendPool)
          call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
 
          call mpas_pool_get_field(tendPool, 'layerThickness', layerThicknessField)
 
          call mpas_dmpar_exch_halo_field(layerThicknessField)
-         call mpas_timer_stop("se halo thickness", timer_halo_thickness)
+         call mpas_timer_stop("se halo thickness")
 
          call mpas_threading_barrier()
 
@@ -1406,7 +1390,7 @@ module ocn_time_integration_split
          call mpas_threading_barrier()
 
          ! update halo for tracer tendencies
-         call mpas_timer_start("se halo tracers", .false., timer_halo_tracers)
+         call mpas_timer_start("se halo tracers")
          call mpas_pool_get_subpool(domain % blocklist % structs, 'tend', tendPool)
          call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
 
@@ -1420,7 +1404,7 @@ module ocn_time_integration_split
                end if
             end if
          end do
-         call mpas_timer_stop("se halo tracers", timer_halo_tracers)
+         call mpas_timer_stop("se halo tracers")
 
          call mpas_threading_barrier()
 
@@ -1787,9 +1771,9 @@ module ocn_time_integration_split
             call mpas_timer_stop('se final gm comp Bolus vel')
          end if
 
+         call mpas_timer_start('se final mpas reconstruct', .false.)
          call mpas_threading_barrier()
          !$omp master
-         call mpas_timer_start('se final mpas reconstruct', .false.)
          call mpas_reconstruct(meshPool, normalVelocityNew,  &
                           velocityX, velocityY, velocityZ,   &
                           velocityZonal, velocityMeridional, &
@@ -1799,9 +1783,9 @@ module ocn_time_integration_split
                           gradSSHX, gradSSHY, gradSSHZ,   &
                           gradSSHZonal, gradSSHMeridional &
                          )
-         call mpas_timer_stop('se final mpas reconstruct')
          !$omp end master
          call mpas_threading_barrier()
+         call mpas_timer_stop('se final mpas reconstruct')
 
          !$omp workshare
          surfaceVelocity(indexSurfaceVelocityZonal, :) = velocityZonal(1, :)
@@ -1832,8 +1816,7 @@ module ocn_time_integration_split
       end if
 
       call mpas_timer_stop('se fini')
-      call mpas_timer_stop("se timestep", timer_main)
-      call mpas_threading_barrier()
+      call mpas_timer_stop("se timestep")
 
       deallocate(n_bcl_iter)
 

@@ -36,22 +36,14 @@ def find_timer_value(timer_name, directory):#{{{
 					if len(new_block_arr) >= timer_line_size:
 						if sub_timer_name.find(new_block_arr[name_index]) >= 0:
 							try:
-								timer = float(new_block_arr[total_index])
+								timer = timer + float(new_block_arr[total_index])
 								timer_found = True
-								break
 							except ValueError:
-								timer_found = False
+								timer = timer
 						del new_block
 					del new_block_arr
 
-			if timer_found:
-				break
-							
 	return timer_found, timer
-#	if timer_found:
-#		return timer
-#	else:
-#		return False
 #}}}
 
 # Define and process input arguments

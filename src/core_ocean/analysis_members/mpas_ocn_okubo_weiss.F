@@ -96,9 +96,6 @@ module ocn_okubo_weiss
       end subroutine compute_ev_3!}}}
    end interface
 
-   type (timer_node), pointer :: amOWCCTimer, &
-      CCLocalTimer, CCComLoopTimer, CCStatsTimer, CCStatsPerProcT, &
-      CCAggregateStatsT, CCAggGatherT, CCAggSortT, CCOutputT
    integer :: nCellsGlobal
    integer :: nTotalCellsGlobal
    character (len=StrKIND), pointer :: config_AM_okuboWeiss_directory
@@ -531,7 +528,7 @@ contains
       integer communcationLoop
       integer :: update, globalUpdate
 
-      call mpas_timer_start("CC local", .false., CCLocalTimer)
+      call mpas_timer_start("CC local")
 
       call mpas_pool_get_subpool(block % structs, 'okuboWeissAM', okuboWeissAMPool)
 
@@ -604,8 +601,8 @@ contains
          end do
       end do
 
-      call mpas_timer_stop("CC local", CCLocalTimer)
-      call mpas_timer_start("CC communication loop", .false., CCComLoopTimer)
+      call mpas_timer_stop("CC local")
+      call mpas_timer_start("CC communication loop")
 
       ! Merge components that are connected over domain boundaries
       ! Communicate the CC IDs over the halo field.
@@ -658,12 +655,12 @@ contains
             end if
          end if
       end do
-      call mpas_timer_stop("CC communication loop", CCComLoopTimer)
+      call mpas_timer_stop("CC communication loop")
 
-      call mpas_timer_start("CC eddy stats", .false., CCStatsTimer)
+      call mpas_timer_start("CC eddy stats")
       call ocn_compute_eddy_stats(dminfo, block, nVertLevels, nCells, nCellsSolve, nLocalCCs, &
                                   nEdgesOnCell, cellsOnCell, OW_cc_id, OW_thresh)
-      call mpas_timer_stop("CC eddy stats", CCStatsTimer)
+      call mpas_timer_stop("CC eddy stats")
 
    end subroutine ocn_compute_OW_component_IDs!}}}
 
@@ -859,7 +856,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', velZ)
       call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
 
-      call mpas_timer_start("stats per proc", .false., CCStatsPerProcT)
+      call mpas_timer_start("stats per proc")
 
       OW_thresh_local = OW_thresh
 
@@ -968,19 +965,19 @@ contains
          wsPosY = wsPosY *180.0_RKIND/pii
       end if
 
-      call mpas_timer_stop("stats per proc", CCStatsPerProcT)
+      call mpas_timer_stop("stats per proc")
 
       call mpas_dmpar_max_int(dminfo, curCC, maxNumCCs)
 
       ! this merges eddy stats AND outputs the results
-      call mpas_timer_start("aggregate stats", .false., CCAggregateStatsT)
+      call mpas_timer_start("aggregate stats")
       call ocn_aggregate_eddy_stats(dmInfo, use_lat_lon_coords, min_cells, &
                                     curCC, maxNumCCs, &
                                     origCCId, sumVol, numCells, &
                                     wsPosX, wsPosY, wsPosZ, &
                                     wsVelX, wsVelY, wsVelZ, &
                                     OW_cc_id, nVertLevels, nCellsSolve,xtime)
-      call mpas_timer_stop("aggregate stats", CCAggregateStatsT)
+      call mpas_timer_stop("aggregate stats")
 
    end subroutine ocn_compute_eddy_stats!}}}
 
@@ -1043,7 +1040,7 @@ contains
       ! TODO this could be possibly be made more memory and network
       !      efficient with lists, because a large array is allocated
       !      allocated and communicated across all processors to merge eddies
-      call mpas_timer_start("all gather", .false., CCAggGatherT)
+      call mpas_timer_start("all gather")
 
       offset = 9 * maxCCsPerDomain * (dmInfo % my_proc_id)
 
@@ -1070,10 +1067,10 @@ contains
                                      aggregated, &
                                      globalStats)
 
-      call mpas_timer_stop("all gather", CCAggGatherT)
+      call mpas_timer_stop("all gather")
 
       ! Sort partial eddy stats according to eddy ID for efficient merging
-      call mpas_timer_start("sort/reduce", .false., CCAggSortT)
+      call mpas_timer_start("sort/reduce")
 
       totalCCs = maxCCsPerDomain * dmInfo % nprocs
       if (totalCCs > 0) then
@@ -1132,14 +1129,14 @@ contains
                                         + globalStats(9*(i-1)+j)
          end do
       end do
-      call mpas_timer_stop("sort/reduce", CCAggSortT)
+      call mpas_timer_stop("sort/reduce")
 
       ! only output if IO node
       if (dminfo % my_proc_id == IO_NODE) then
          ! Output aggregated
-         call mpas_timer_start("output", .false., CCOutputT)
+         call mpas_timer_start("output")
          call ocn_output_eddy_stats(listIdx, aggregated, use_lat_lon_coords,xtime)
-         call mpas_timer_stop("output", CCOutputT)
+         call mpas_timer_stop("output")
       end if
 
    end subroutine ocn_aggregate_eddy_stats!}}}
@@ -1551,10 +1548,10 @@ contains
 
          ! Compute connected components of thresholded field
          if (config_AM_okuboWeiss_compute_eddy_census) then
-            call mpas_timer_start("OW connected components", .false., amOWCCTimer)
+            call mpas_timer_start("OW connected components")
             call ocn_compute_OW_component_IDs(dminfo, block, meshPool, dminfo % my_proc_id, nVertLevels, &
                                               nCells, OW_thresh, OW_cc_id)
-            call mpas_timer_stop("OW connected components", amOWCCTimer)
+            call mpas_timer_stop("OW connected components")
          end if
 
          call mpas_deallocate_scratch_field(velocityGradientField, .true.)
