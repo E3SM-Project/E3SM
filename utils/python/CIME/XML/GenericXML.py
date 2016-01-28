@@ -40,7 +40,7 @@ class GenericXML:
         self.tree = ET.parse(infile)
         self.root = self.tree.getroot()
 
-    def write(self, cimeroot, infile):
+    def write(self, infile=None):
         """
         Write an xml file from data in self
         """
@@ -73,11 +73,13 @@ class GenericXML:
         nodes = root.findall(xpath)
         return nodes
 
-    def add_child(self, node):
+    def add_child(self, node, root=None):
         """
         Add element node to self at root
         """
-        self.tree.insert(self.root, node)
+        if(root is None):
+            root = self.root
+        self.tree.insert(root, node)
 
     def get_value(self, item):
         """
