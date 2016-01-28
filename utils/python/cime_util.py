@@ -2,7 +2,7 @@
 Common functions used by cime python scripts
 """
 
-import sys, socket, re, os, time, logging
+import sys, socket, re, os, time, logging, getpass
 from CIME.utils import expect, get_cime_root, get_model, set_model, get_python_libs_location_within_cime
 from CIME.XML.Files import Files
 from CIME.XML.Machines import Machines
@@ -87,7 +87,7 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
                             stderr=arg_stderr,
                             stdin=stdin,
                             cwd=from_dir)
-    
+
     output, errput = proc.communicate(input_str)
     output = output.strip() if output is not None else output
     errput = errput.strip() if errput is not None else errput
@@ -415,7 +415,6 @@ def get_my_queued_jobs():
     """
     Return a list of job ids for the current user
     """
-    import getpass
     batch_system = get_batch_system()
     expect(batch_system is not None, "Failed to probe batch system")
 
@@ -448,9 +447,8 @@ def parse_config_machines():
         config_machines = files.get_resolved_value(files.get_value('MACHINES_SPEC_FILE'))
         _MACHINE_INFO = Machines(config_machines)
 
-
 ###############################################################################
-def get_machine_info( items, machine=None, user=None, project=None, case=None, raw=False):
+def get_machine_info(items, machine=None):
 ###############################################################################
     """
     Return information on machine. If no arg provided, probe for machine.
@@ -466,34 +464,34 @@ def get_machine_info( items, machine=None, user=None, project=None, case=None, r
     >>> get_machine_info(["NODENAME_REGEX", "TESTS"], machine="skybridge")
     ['skybridge-login', 'acme_integration']
 
-    >>> get_machine_info("CESMSCRATCHROOT", machine="melvin", user="jenkins")
-    '/home/jenkins/acme/scratch'
+    >>> get_machine_info("CESMSCRATCHROOT", machine="melvin").replace(getpass.getuser(), "USER")
+    '/home/USER/acme/scratch'
 
-    >>> get_machine_info("EXEROOT", machine="melvin", user="jenkins", case="Foo")
-    '/home/jenkins/acme/scratch/Foo/bld'
+    >>> get_machine_info("EXEROOT", machine="melvin").replace(getpass.getuser(), "USER")
+    '/home/USER/acme/scratch/$CASE/bld'
     """
     parse_config_machines()
 
-    import getpass
-    user = getpass.getuser() if user is None else user
-    result = []                
-    if (machine is None and _MACHINE_INFO.name is None):
-        machine = probe_machine_name()
-    elif(machine is None):
-        machine = _MACHINE_INFO.name
+    result = []
+
+    if (machine is None):
+        machine = _MACHINE_INFO.name if _MACHINE_INFO.name is not None else probe_machine_name()
+
     expect(machine is not None, "Failed to probe machine. Please provide machine to whatever script you just ran")
-    if(type(items) == str): 
+
+    _MACHINE_INFO.set_machine(machine)
+
+    if (type(items) == str):
         result = _MACHINE_INFO.get_value(items)
         if(result is not None):
             result = _MACHINE_INFO.get_resolved_value(result)
     else:
         for item in items:
             thisresult = _MACHINE_INFO.get_value(item)
-            if(thisresult is not None):
+            if (thisresult is not None):
                 thisresult = _MACHINE_INFO.get_resolved_value(thisresult)
             result.append(thisresult)
     return result
-
 
 ###############################################################################
 def get_machines():
@@ -502,7 +500,7 @@ def get_machines():
     Return all machines defined by the config_machines.xml
     """
     parse_config_machines()
-    
+
     return _MACHINE_INFO.list_available_machines()
 
 ###############################################################################
@@ -514,7 +512,6 @@ def get_machine_project(machine=None):
     >>> get_machine_project("skybridge")
     'fy150001'
     """
-    parse_config_machines()
     if ("PROJECT" in os.environ):
         return os.environ["PROJECT"]
 
@@ -538,8 +535,8 @@ def does_machine_have_batch(machine=None):
     True
     """
     parse_config_machines()
-    if(machine is not None):
-        _MACHINE_INFO.set_machine(machine)        
+    if (machine is not None):
+        _MACHINE_INFO.set_machine(machine)
     batch_system = _MACHINE_INFO.get_node("batch_system")
     return not (batch_system is None or batch_system[0].get('type') == "none")
 
@@ -554,3 +551,21 @@ def get_utc_timestamp(timestamp_format="%Y%m%d_%H%M%S"):
     utc_time_tuple = time.gmtime()
     return time.strftime(timestamp_format, utc_time_tuple)
 
+###############################################################################
+def setup_standard_logging_options(parser):
+###############################################################################
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Print extra information")
+
+    parser.add_argument("-d", "--debug", action="store_true",
+                        help="Print debug information (very verbose)")
+
+###############################################################################
+def handle_standard_logging_options(args):
+###############################################################################
+    root_logger = logging.getLogger()
+
+    if (args.verbose == True):
+        root_logger.setLevel(logging.INFO)
+    if (args.debug == True):
+        root_logger.setLevel(logging.DEBUG)

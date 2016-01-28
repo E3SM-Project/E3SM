@@ -5,13 +5,11 @@ A script to help track down the commit that caused a test to fail. This
 script is intended to be run by git bisect.
 """
 
-import add_util_path
-import cime_util
-cime_util.check_minimum_python_version(2, 7)
-
-import argparse, sys, os, doctest, traceback
+from standard_script_setup import *
 from CIME.utils import expect
 from cime_util import run_cmd
+
+import argparse, sys, os, doctest, traceback
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -33,7 +31,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
     default_project  = cime_util.get_machine_project()
-    default_compiler = cime_util.get_machine_info("COMPILERS")[0]
+    default_compiler = cime_util.get_machine_info("COMPILER")
+
+    cime_util.setup_standard_logging_options(parser)
 
     parser.add_argument("testname", help="Name of failing test.")
 
@@ -53,9 +53,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-b", "--baseline-name",
                         help="Baseline id for comparing baselines. Not specifying means no comparisons will be done.")
 
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="Print extra information")
-
     parser.add_argument("-n", "--check-namelists", action="store_true",
                         help="Consider a commit to be broken if namelist check fails")
 
@@ -67,7 +64,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = parser.parse_args(args[1:])
 
-    cime_util.set_verbosity(args.verbose)
+    cime_util.handle_standard_logging_options(args)
 
     if (args.test_root is None):
         args.test_root = os.path.join(cime_util.get_machine_info("CESMSCRATCHROOT", project=args.project), "acme_bisect")

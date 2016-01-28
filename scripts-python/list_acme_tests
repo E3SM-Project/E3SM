@@ -5,11 +5,8 @@ List acme test suites. Can be used to show what's being tested. Can just
 list tested grids, compsets, etc.
 """
 
-import add_util_path
-import cime_util
+from standard_script_setup import *
 from cime_util import expect
-cime_util.check_minimum_python_version(2, 7)
-
 import update_acme_tests
 
 import sys, argparse, os, doctest
@@ -38,18 +35,17 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
+    cime_util.setup_standard_logging_options(parser)
+
     parser.add_argument("thing_to_list", choices=("compsets", "grids", "testcases", "tests"),
                         help="The thing you want to list")
 
     parser.add_argument("categories", nargs="*",
                         help="The test categories to list. Default will list all. Test categories: %s" % (", ".join(update_acme_tests.get_test_suites())))
 
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="Print extra information")
-
     args = parser.parse_args(args[1:])
 
-    cime_util.set_verbosity(args.verbose)
+    cime_util.handle_standard_logging_options(args)
 
     if (not args.categories):
         args.categories = update_acme_tests.get_test_suites()
