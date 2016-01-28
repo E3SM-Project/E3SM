@@ -282,7 +282,7 @@ contains
                 * areaCell(iCell) * basalMassBal(iCell) * scyr
 
             ! mass lass due do calving (kg yr^{-1})
-            blockSumCalvingFlux = blockSumCalvingFlux + calvingThickness(iCell) * areaCell(iCell) * config_ice_density / ( deltat * scyr )     
+            blockSumCalvingFlux = blockSumCalvingFlux + calvingThickness(iCell) * areaCell(iCell) * config_ice_density / ( deltat / scyr )     
 
          end do ! end loop over cells
 
