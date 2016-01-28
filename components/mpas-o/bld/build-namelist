@@ -426,8 +426,10 @@ if ($CONTINUE_RUN eq 'TRUE') {
 } else {
 	add_default($nl, 'config_start_time', 'val'=>"'${RUN_STARTDATE}_${START_TOD}'");
 }
+
 #######################
 # namelist group: io  #
+#######################
 
 add_default($nl, 'config_write_output_on_startup');
 add_default($nl, 'config_pio_num_iotasks');
@@ -462,6 +464,14 @@ add_default($nl, 'config_vertical_grid');
 add_default($nl, 'config_1dCVTgenerator_stretch1');
 add_default($nl, 'config_1dCVTgenerator_stretch2');
 add_default($nl, 'config_1dCVTgenerator_dzSeed');
+
+####################################
+# Namelist group: init_ssh_and_ssp #
+####################################
+
+add_default($nl, 'config_read_ssh_and_ssp_from_stream');
+add_default($nl, 'config_iterative_init_variable');
+add_default($nl, 'config_modify_open_ocean_ssh');
 
 ####################################
 # Namelist group: time_integration #
@@ -795,6 +805,20 @@ add_default($nl, 'config_disable_tr_sflux');
 add_default($nl, 'config_disable_tr_nonlocalflux');
 add_default($nl, 'config_read_nearest_restart');
 
+##########################################
+# Namelist group: constrain_Haney_number #
+##########################################
+
+add_default($nl, 'config_use_rx1_constraint');
+add_default($nl, 'config_rx1_smooth_count');
+add_default($nl, 'config_rx1_inner_iteration_count');
+add_default($nl, 'config_rx1_inner_iteration_weight');
+add_default($nl, 'config_rx1_max');
+add_default($nl, 'config_rx1_horiz_smooth_weight');
+add_default($nl, 'config_rx1_vert_smooth_weight');
+add_default($nl, 'config_rx1_horiz_smooth_open_ocean_cells');
+add_default($nl, 'config_rx1_min_levels');
+
 ######################################
 # Namelist group: baroclinic_channel #
 ######################################
@@ -816,8 +840,9 @@ add_default($nl, 'config_baroclinic_channel_coriolis_parameter');
 
 add_default($nl, 'config_lock_exchange_vert_levels');
 add_default($nl, 'config_lock_exchange_bottom_depth');
-add_default($nl, 'config_lock_exchange_south_temp');
-add_default($nl, 'config_lock_exchange_north_temp');
+add_default($nl, 'config_lock_exchange_cold_temperature');
+add_default($nl, 'config_lock_exchange_warm_temperature');
+add_default($nl, 'config_lock_exchange_direction');
 add_default($nl, 'config_lock_exchange_salinity');
 add_default($nl, 'config_lock_exchange_layer_type');
 add_default($nl, 'config_lock_exchange_isopycnal_min_thickness');
@@ -897,7 +922,21 @@ add_default($nl, 'config_global_ocean_topography_latlon_degrees');
 add_default($nl, 'config_global_ocean_topography_lat_varname');
 add_default($nl, 'config_global_ocean_topography_lon_varname');
 add_default($nl, 'config_global_ocean_topography_varname');
+add_default($nl, 'config_global_ocean_topography_has_ocean_frac');
+add_default($nl, 'config_global_ocean_topography_ocean_frac_varname');
+add_default($nl, 'config_global_ocean_topography_method');
 add_default($nl, 'config_global_ocean_smooth_topography');
+add_default($nl, 'config_global_ocean_depress_by_land_ice');
+add_default($nl, 'config_global_ocean_land_ice_topo_file');
+add_default($nl, 'config_global_ocean_land_ice_topo_nlat_dimname');
+add_default($nl, 'config_global_ocean_land_ice_topo_nlon_dimname');
+add_default($nl, 'config_global_ocean_land_ice_topo_latlon_degrees');
+add_default($nl, 'config_global_ocean_land_ice_topo_lat_varname');
+add_default($nl, 'config_global_ocean_land_ice_topo_lon_varname');
+add_default($nl, 'config_global_ocean_land_ice_topo_thickness_varname');
+add_default($nl, 'config_global_ocean_land_ice_topo_draft_varname');
+add_default($nl, 'config_global_ocean_land_ice_topo_ice_frac_varname');
+add_default($nl, 'config_global_ocean_land_ice_topo_grounded_frac_varname');
 add_default($nl, 'config_global_ocean_cull_inland_seas');
 add_default($nl, 'config_global_ocean_windstress_file');
 add_default($nl, 'config_global_ocean_windstress_nlat_dimname');
@@ -1081,6 +1120,21 @@ add_default($nl, 'config_ziso_initial_temp_mt');
 add_default($nl, 'config_ziso_frazil_enable');
 add_default($nl, 'config_ziso_frazil_temperature_anomaly');
 
+####################################
+# Namelist group: sub_ice_shelf_2D #
+####################################
+
+add_default($nl, 'config_sub_ice_shelf_2D_vert_levels');
+add_default($nl, 'config_sub_ice_shelf_2D_bottom_depth');
+add_default($nl, 'config_sub_ice_shelf_2D_cavity_thickness');
+add_default($nl, 'config_sub_ice_shelf_2D_slope_height');
+add_default($nl, 'config_sub_ice_shelf_2D_edge_width');
+add_default($nl, 'config_sub_ice_shelf_2D_y1');
+add_default($nl, 'config_sub_ice_shelf_2D_y2');
+add_default($nl, 'config_sub_ice_shelf_2D_temperature');
+add_default($nl, 'config_sub_ice_shelf_2D_surface_salinity');
+add_default($nl, 'config_sub_ice_shelf_2D_bottom_salinity');
+
 ###################################
 # Namelist group: periodic_planar #
 ###################################
@@ -1098,6 +1152,58 @@ add_default($nl, 'config_ecosys_column_vertical_grid');
 add_default($nl, 'config_ecosys_column_TS_filename');
 add_default($nl, 'config_ecosys_column_ecosys_filename');
 add_default($nl, 'config_ecosys_column_bottom_depth');
+
+#############################
+# Namelist group: sea_mount #
+#############################
+
+add_default($nl, 'config_sea_mount_vert_levels');
+add_default($nl, 'config_sea_mount_layer_type');
+add_default($nl, 'config_sea_mount_stratification_type');
+add_default($nl, 'config_sea_mount_density_coef_linear');
+add_default($nl, 'config_sea_mount_density_coef_exp');
+add_default($nl, 'config_sea_mount_density_gradient_linear');
+add_default($nl, 'config_sea_mount_density_gradient_exp');
+add_default($nl, 'config_sea_mount_density_depth_linear');
+add_default($nl, 'config_sea_mount_density_depth_exp');
+add_default($nl, 'config_sea_mount_density_ref');
+add_default($nl, 'config_sea_mount_density_Tref');
+add_default($nl, 'config_sea_mount_density_alpha');
+add_default($nl, 'config_sea_mount_bottom_depth');
+add_default($nl, 'config_sea_mount_height');
+add_default($nl, 'config_sea_mount_radius');
+add_default($nl, 'config_sea_mount_width');
+add_default($nl, 'config_sea_mount_salinity');
+add_default($nl, 'config_sea_mount_coriolis_parameter');
+
+##########################
+# Namelist group: isomip #
+##########################
+
+add_default($nl, 'config_isomip_vert_levels');
+add_default($nl, 'config_isomip_vertical_level_distribution');
+add_default($nl, 'config_isomip_bottom_depth');
+add_default($nl, 'config_isomip_temperature');
+add_default($nl, 'config_isomip_salinity');
+add_default($nl, 'config_isomip_restoring_temperature');
+add_default($nl, 'config_isomip_temperature_piston_velocity');
+add_default($nl, 'config_isomip_restoring_salinity');
+add_default($nl, 'config_isomip_salinity_piston_velocity');
+add_default($nl, 'config_isomip_coriolis_parameter');
+add_default($nl, 'config_isomip_effective_density');
+add_default($nl, 'config_isomip_southern_boundary');
+add_default($nl, 'config_isomip_northern_boundary');
+add_default($nl, 'config_isomip_western_boundary');
+add_default($nl, 'config_isomip_eastern_boundary');
+add_default($nl, 'config_isomip_y1');
+add_default($nl, 'config_isomip_z1');
+add_default($nl, 'config_isomip_ice_fraction1');
+add_default($nl, 'config_isomip_y2');
+add_default($nl, 'config_isomip_z2');
+add_default($nl, 'config_isomip_ice_fraction2');
+add_default($nl, 'config_isomip_y3');
+add_default($nl, 'config_isomip_z3');
+add_default($nl, 'config_isomip_ice_fraction3');
 
 ################################################
 # Namelist group: tracer_forcing_activeTracers #
@@ -1283,6 +1389,7 @@ add_default($nl, 'config_AM_timeFilters_compute_on_startup');
 add_default($nl, 'config_AM_timeFilters_write_on_startup');
 add_default($nl, 'config_AM_timeFilters_initialize_filters');
 add_default($nl, 'config_AM_timeFilters_tau');
+add_default($nl, 'config_AM_timeFilters_compute_cell_centered_values');
 
 ####################################
 # Namelist group: AM_lagrPartTrack #
@@ -1366,6 +1473,7 @@ my @groups = qw(run_modes
                 decomposition
                 init_setup
                 cvtgenerator
+                init_ssh_and_ssp
                 time_integration
                 ale_vertical_grid
                 ale_frequency_filtered_thickness
@@ -1396,6 +1504,7 @@ my @groups = qw(run_modes
                 split_explicit_ts
                 testing
                 debug
+                constrain_haney_number
                 baroclinic_channel
                 lock_exchange
                 internal_waves
@@ -1405,8 +1514,11 @@ my @groups = qw(run_modes
                 iso
                 soma
                 ziso
+                sub_ice_shelf_2d
                 periodic_planar
                 ecosys_column
+                sea_mount
+                isomip
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
                 tracer_forcing_ecosystracers

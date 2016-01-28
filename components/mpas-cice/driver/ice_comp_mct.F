@@ -53,6 +53,9 @@ module ice_comp_mct
    use cice_mesh, only: cice_latlon_vector_rotation_backward
    use cice_time_integration
 
+   use ice_constants_colpkg, only: &
+       Tffresh
+
 !
 ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -1444,7 +1447,7 @@ contains
 
       do i = 1, nCellsSolve
         n = n + 1
-        seaSurfaceTemperature(i)       = x2i_i % rAttr(index_x2i_So_t, n)
+        seaSurfaceTemperature(i)       = x2i_i % rAttr(index_x2i_So_t, n) - Tffresh
         seaSurfaceSalinity(i)          = x2i_i % rAttr(index_x2i_So_s, n)
         uOceanVelocity(i)              = x2i_i % rAttr(index_x2i_So_u, n)
         vOceanVelocity(i)              = x2i_i % rAttr(index_x2i_So_v, n)

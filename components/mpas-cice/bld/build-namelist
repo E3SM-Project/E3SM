@@ -724,6 +724,58 @@ add_default($nl, 'config_AM_geographicalVectors_output_stream');
 add_default($nl, 'config_AM_geographicalVectors_compute_on_startup');
 add_default($nl, 'config_AM_geographicalVectors_write_on_startup');
 
+##################################
+# Namelist group: AM_loadBalance #
+##################################
+
+add_default($nl, 'config_AM_loadBalance_enable');
+add_default($nl, 'config_AM_loadBalance_compute_interval');
+add_default($nl, 'config_AM_loadBalance_output_stream');
+add_default($nl, 'config_AM_loadBalance_compute_on_startup');
+add_default($nl, 'config_AM_loadBalance_write_on_startup');
+add_default($nl, 'config_AM_loadBalance_nProcs');
+
+#########################################
+# Namelist group: AM_maximumIcePresence #
+#########################################
+
+add_default($nl, 'config_AM_maximumIcePresence_enable');
+add_default($nl, 'config_AM_maximumIcePresence_compute_interval');
+add_default($nl, 'config_AM_maximumIcePresence_output_stream');
+add_default($nl, 'config_AM_maximumIcePresence_compute_on_startup');
+add_default($nl, 'config_AM_maximumIcePresence_write_on_startup');
+add_default($nl, 'config_AM_maximumIcePresence_start_time');
+
+####################################
+# Namelist group: AM_miscellaneous #
+####################################
+
+add_default($nl, 'config_AM_miscellaneous_enable');
+add_default($nl, 'config_AM_miscellaneous_compute_interval');
+add_default($nl, 'config_AM_miscellaneous_output_stream');
+add_default($nl, 'config_AM_miscellaneous_compute_on_startup');
+add_default($nl, 'config_AM_miscellaneous_write_on_startup');
+
+####################################
+# Namelist group: AM_areaVariables #
+####################################
+
+add_default($nl, 'config_AM_areaVariables_enable');
+add_default($nl, 'config_AM_areaVariables_compute_interval');
+add_default($nl, 'config_AM_areaVariables_output_stream');
+add_default($nl, 'config_AM_areaVariables_compute_on_startup');
+add_default($nl, 'config_AM_areaVariables_write_on_startup');
+
+######################################
+# Namelist group: AM_pondDiagnostics #
+######################################
+
+add_default($nl, 'config_AM_pondDiagnostics_enable');
+add_default($nl, 'config_AM_pondDiagnostics_compute_interval');
+add_default($nl, 'config_AM_pondDiagnostics_output_stream');
+add_default($nl, 'config_AM_pondDiagnostics_compute_on_startup');
+add_default($nl, 'config_AM_pondDiagnostics_write_on_startup');
+
 #################################
 # Namelist group: AM_icePresent #
 #################################
@@ -817,6 +869,11 @@ my @groups = qw(cice_model
                 am_ridgingdiagnostics
                 am_conservationcheck
                 am_geographicalvectors
+                am_loadbalance
+                am_maximumicepresence
+                am_miscellaneous
+                am_areavariables
+                am_ponddiagnostics
                 am_icepresent
                 am_timeseriesstatsdaily
                 am_timeseriesstatsmonthly

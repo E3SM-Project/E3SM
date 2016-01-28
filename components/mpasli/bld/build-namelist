@@ -525,7 +525,6 @@ add_default($nl, 'config_AM_globalStats_stream_name');
 add_default($nl, 'config_AM_globalStats_compute_on_startup');
 add_default($nl, 'config_AM_globalStats_write_on_startup');
 
-
 #-----------------------------------------------------------------------------------------------
 # *** Write output namelist file (mpasli_in) and input dataset list (mpasli.input_data_list) ***
 #-----------------------------------------------------------------------------------------------

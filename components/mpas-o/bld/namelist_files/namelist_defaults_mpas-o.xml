@@ -41,11 +41,16 @@
 <config_1dCVTgenerator_stretch2>1.0275</config_1dCVTgenerator_stretch2>
 <config_1dCVTgenerator_dzSeed>1.2</config_1dCVTgenerator_dzSeed>
 
+<!-- init_ssh_and_ssp -->
+<config_read_ssh_and_ssp_from_stream>.false.</config_read_ssh_and_ssp_from_stream>
+<config_iterative_init_variable>'ssp'</config_iterative_init_variable>
+<config_modify_open_ocean_ssh>.false.</config_modify_open_ocean_ssh>
+
 <!-- time_integration -->
 <config_dt ocn_grid="mpas120">'00:30:00'</config_dt>
 <config_dt ocn_grid="oEC60to30">'00:20:00'</config_dt>
-<config_dt ocn_grid="oRRS30to10" >'00:06:00'</config_dt>
-<config_dt ocn_grid="oRRS15to5" >'00:03:45'</config_dt>
+<config_dt ocn_grid="oRRS30to10">'00:06:00'</config_dt>
+<config_dt ocn_grid="oRRS15to5">'00:03:45'</config_dt>
 <config_time_integrator>'split_explicit'</config_time_integrator>
 
 <!-- ALE_vertical_grid -->
@@ -185,7 +190,7 @@
 <!-- shortwaveRadiation -->
 <config_sw_absorption_type>'jerlov'</config_sw_absorption_type>
 <config_jerlov_water_type>3</config_jerlov_water_type>
-<config_forcing_restart_file>'restart_forcing_time_stamp'</config_forcing_restart_file>
+<config_forcing_restart_file>'Restart_forcing_time_stamp'</config_forcing_restart_file>
 
 <!-- frazil_ice -->
 <config_use_frazil_ice_formation>.true.</config_use_frazil_ice_formation>
@@ -292,6 +297,17 @@
 <config_disable_tr_nonlocalflux>.false.</config_disable_tr_nonlocalflux>
 <config_read_nearest_restart>.false.</config_read_nearest_restart>
 
+<!-- constrain_Haney_number -->
+<config_use_rx1_constraint>.false.</config_use_rx1_constraint>
+<config_rx1_smooth_count>20</config_rx1_smooth_count>
+<config_rx1_inner_iteration_count>10</config_rx1_inner_iteration_count>
+<config_rx1_inner_iteration_weight>0.1</config_rx1_inner_iteration_weight>
+<config_rx1_max>10.0</config_rx1_max>
+<config_rx1_horiz_smooth_weight>0.5</config_rx1_horiz_smooth_weight>
+<config_rx1_vert_smooth_weight>0.5</config_rx1_vert_smooth_weight>
+<config_rx1_horiz_smooth_open_ocean_cells>20</config_rx1_horiz_smooth_open_ocean_cells>
+<config_rx1_min_levels>3</config_rx1_min_levels>
+
 <!-- baroclinic_channel -->
 <config_baroclinic_channel_vert_levels>20</config_baroclinic_channel_vert_levels>
 <config_baroclinic_channel_use_distances>.false.</config_baroclinic_channel_use_distances>
@@ -307,8 +323,9 @@
 <!-- lock_exchange -->
 <config_lock_exchange_vert_levels>20</config_lock_exchange_vert_levels>
 <config_lock_exchange_bottom_depth>20.0</config_lock_exchange_bottom_depth>
-<config_lock_exchange_south_temp>5.0</config_lock_exchange_south_temp>
-<config_lock_exchange_north_temp>30.0</config_lock_exchange_north_temp>
+<config_lock_exchange_cold_temperature>5.0</config_lock_exchange_cold_temperature>
+<config_lock_exchange_warm_temperature>30.0</config_lock_exchange_warm_temperature>
+<config_lock_exchange_direction>'y'</config_lock_exchange_direction>
 <config_lock_exchange_salinity>35.0</config_lock_exchange_salinity>
 <config_lock_exchange_layer_type>'z-level'</config_lock_exchange_layer_type>
 <config_lock_exchange_isopycnal_min_thickness>0.01</config_lock_exchange_isopycnal_min_thickness>
@@ -379,7 +396,21 @@
 <config_global_ocean_topography_lat_varname>'none'</config_global_ocean_topography_lat_varname>
 <config_global_ocean_topography_lon_varname>'none'</config_global_ocean_topography_lon_varname>
 <config_global_ocean_topography_varname>'none'</config_global_ocean_topography_varname>
+<config_global_ocean_topography_has_ocean_frac>.false.</config_global_ocean_topography_has_ocean_frac>
+<config_global_ocean_topography_ocean_frac_varname>'none'</config_global_ocean_topography_ocean_frac_varname>
+<config_global_ocean_topography_method>'bilinear_interpolation'</config_global_ocean_topography_method>
 <config_global_ocean_smooth_topography>.true.</config_global_ocean_smooth_topography>
+<config_global_ocean_depress_by_land_ice>.false.</config_global_ocean_depress_by_land_ice>
+<config_global_ocean_land_ice_topo_file>'none'</config_global_ocean_land_ice_topo_file>
+<config_global_ocean_land_ice_topo_nlat_dimname>'none'</config_global_ocean_land_ice_topo_nlat_dimname>
+<config_global_ocean_land_ice_topo_nlon_dimname>'none'</config_global_ocean_land_ice_topo_nlon_dimname>
+<config_global_ocean_land_ice_topo_latlon_degrees>.true.</config_global_ocean_land_ice_topo_latlon_degrees>
+<config_global_ocean_land_ice_topo_lat_varname>'none'</config_global_ocean_land_ice_topo_lat_varname>
+<config_global_ocean_land_ice_topo_lon_varname>'none'</config_global_ocean_land_ice_topo_lon_varname>
+<config_global_ocean_land_ice_topo_thickness_varname>'none'</config_global_ocean_land_ice_topo_thickness_varname>
+<config_global_ocean_land_ice_topo_draft_varname>'none'</config_global_ocean_land_ice_topo_draft_varname>
+<config_global_ocean_land_ice_topo_ice_frac_varname>'none'</config_global_ocean_land_ice_topo_ice_frac_varname>
+<config_global_ocean_land_ice_topo_grounded_frac_varname>'none'</config_global_ocean_land_ice_topo_grounded_frac_varname>
 <config_global_ocean_cull_inland_seas>.true.</config_global_ocean_cull_inland_seas>
 <config_global_ocean_windstress_file>'none'</config_global_ocean_windstress_file>
 <config_global_ocean_windstress_nlat_dimname>'none'</config_global_ocean_windstress_nlat_dimname>
@@ -551,6 +582,18 @@
 <config_ziso_frazil_enable>false</config_ziso_frazil_enable>
 <config_ziso_frazil_temperature_anomaly>-3.0</config_ziso_frazil_temperature_anomaly>
 
+<!-- sub_ice_shelf_2D -->
+<config_sub_ice_shelf_2D_vert_levels>20</config_sub_ice_shelf_2D_vert_levels>
+<config_sub_ice_shelf_2D_bottom_depth>2000.0</config_sub_ice_shelf_2D_bottom_depth>
+<config_sub_ice_shelf_2D_cavity_thickness>25.0</config_sub_ice_shelf_2D_cavity_thickness>
+<config_sub_ice_shelf_2D_slope_height>500.0</config_sub_ice_shelf_2D_slope_height>
+<config_sub_ice_shelf_2D_edge_width>15.0e3</config_sub_ice_shelf_2D_edge_width>
+<config_sub_ice_shelf_2D_y1>30.0e3</config_sub_ice_shelf_2D_y1>
+<config_sub_ice_shelf_2D_y2>60.0e3</config_sub_ice_shelf_2D_y2>
+<config_sub_ice_shelf_2D_temperature>1.0</config_sub_ice_shelf_2D_temperature>
+<config_sub_ice_shelf_2D_surface_salinity>34.5</config_sub_ice_shelf_2D_surface_salinity>
+<config_sub_ice_shelf_2D_bottom_salinity>34.7</config_sub_ice_shelf_2D_bottom_salinity>
+
 <!-- periodic_planar -->
 <config_periodic_planar_vert_levels>100</config_periodic_planar_vert_levels>
 <config_periodic_planar_bottom_depth>2500.0</config_periodic_planar_bottom_depth>
@@ -562,6 +605,52 @@
 <config_ecosys_column_TS_filename>'unknown'</config_ecosys_column_TS_filename>
 <config_ecosys_column_ecosys_filename>'unknown'</config_ecosys_column_ecosys_filename>
 <config_ecosys_column_bottom_depth>6000.0</config_ecosys_column_bottom_depth>
+
+<!-- sea_mount -->
+<config_sea_mount_vert_levels>10</config_sea_mount_vert_levels>
+<config_sea_mount_layer_type>'sigma'</config_sea_mount_layer_type>
+<config_sea_mount_stratification_type>'exponential'</config_sea_mount_stratification_type>
+<config_sea_mount_density_coef_linear>1024</config_sea_mount_density_coef_linear>
+<config_sea_mount_density_coef_exp>1028</config_sea_mount_density_coef_exp>
+<config_sea_mount_density_gradient_linear>0.1</config_sea_mount_density_gradient_linear>
+<config_sea_mount_density_gradient_exp>3.0</config_sea_mount_density_gradient_exp>
+<config_sea_mount_density_depth_linear>4500</config_sea_mount_density_depth_linear>
+<config_sea_mount_density_depth_exp>500</config_sea_mount_density_depth_exp>
+<config_sea_mount_density_ref>1028</config_sea_mount_density_ref>
+<config_sea_mount_density_Tref>5.0</config_sea_mount_density_Tref>
+<config_sea_mount_density_alpha>0.2</config_sea_mount_density_alpha>
+<config_sea_mount_bottom_depth>5000.0</config_sea_mount_bottom_depth>
+<config_sea_mount_height>4500.0</config_sea_mount_height>
+<config_sea_mount_radius>10.0e3</config_sea_mount_radius>
+<config_sea_mount_width>40.0e3</config_sea_mount_width>
+<config_sea_mount_salinity>35.0</config_sea_mount_salinity>
+<config_sea_mount_coriolis_parameter>-1.0e-4</config_sea_mount_coriolis_parameter>
+
+<!-- isomip -->
+<config_isomip_vert_levels>30</config_isomip_vert_levels>
+<config_isomip_vertical_level_distribution>'constant'</config_isomip_vertical_level_distribution>
+<config_isomip_bottom_depth>-900.0</config_isomip_bottom_depth>
+<config_isomip_temperature>-1.9</config_isomip_temperature>
+<config_isomip_salinity>34.4</config_isomip_salinity>
+<config_isomip_restoring_temperature>-1.9</config_isomip_restoring_temperature>
+<config_isomip_temperature_piston_velocity>1.157e-5</config_isomip_temperature_piston_velocity>
+<config_isomip_restoring_salinity>34.4</config_isomip_restoring_salinity>
+<config_isomip_salinity_piston_velocity>1.157e-5</config_isomip_salinity_piston_velocity>
+<config_isomip_coriolis_parameter>-1.4e-4</config_isomip_coriolis_parameter>
+<config_isomip_effective_density>1026.0</config_isomip_effective_density>
+<config_isomip_southern_boundary>0.0</config_isomip_southern_boundary>
+<config_isomip_northern_boundary>1000e3</config_isomip_northern_boundary>
+<config_isomip_western_boundary>0.0</config_isomip_western_boundary>
+<config_isomip_eastern_boundary>500e3</config_isomip_eastern_boundary>
+<config_isomip_y1>0.0</config_isomip_y1>
+<config_isomip_z1>-700.0</config_isomip_z1>
+<config_isomip_ice_fraction1>1.0</config_isomip_ice_fraction1>
+<config_isomip_y2>400e3</config_isomip_y2>
+<config_isomip_z2>-200.0</config_isomip_z2>
+<config_isomip_ice_fraction2>1.0</config_isomip_ice_fraction2>
+<config_isomip_y3>1000e3</config_isomip_y3>
+<config_isomip_z3>-200.0</config_isomip_z3>
+<config_isomip_ice_fraction3>1.0</config_isomip_ice_fraction3>
 
 <!-- tracer_forcing_activeTracers -->
 <config_use_activeTracers>.true.</config_use_activeTracers>
@@ -702,6 +791,7 @@
 <config_AM_timeFilters_write_on_startup>.true.</config_AM_timeFilters_write_on_startup>
 <config_AM_timeFilters_initialize_filters>.true.</config_AM_timeFilters_initialize_filters>
 <config_AM_timeFilters_tau>'90_00:00:00'</config_AM_timeFilters_tau>
+<config_AM_timeFilters_compute_cell_centered_values>.true.</config_AM_timeFilters_compute_cell_centered_values>
 
 <!-- AM_lagrPartTrack -->
 <config_AM_lagrPartTrack_enable>.false.</config_AM_lagrPartTrack_enable>

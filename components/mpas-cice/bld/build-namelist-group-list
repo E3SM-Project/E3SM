@@ -24,6 +24,11 @@ my @groups = qw(cice_model
                 am_ridgingdiagnostics
                 am_conservationcheck
                 am_geographicalvectors
+                am_loadbalance
+                am_maximumicepresence
+                am_miscellaneous
+                am_areavariables
+                am_ponddiagnostics
                 am_icepresent
                 am_timeseriesstatsdaily
                 am_timeseriesstatsmonthly
