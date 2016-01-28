@@ -821,7 +821,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call radheat_init(pref_mid)
 
     call convect_shallow_init(pref_edge, pbuf2d)
-        
+
     call cldfrc_init(dp1)! for passing dp1 on to clubb
     call cldfrc2m_init()
 
