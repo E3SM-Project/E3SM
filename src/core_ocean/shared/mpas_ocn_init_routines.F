@@ -64,7 +64,6 @@ module ocn_init_routines
    ! Private module variables
    !
    !--------------------------------------------------------------------
-   type (timer_node), save, pointer :: initDiagSolveTimer
 
 !***********************************************************************
 
@@ -673,9 +672,9 @@ end subroutine ocn_init_routines_compute_max_level!}}}
          end do
       end if
 
-      call mpas_timer_start("diagnostic solve", .false., initDiagSolveTimer)
+      call mpas_timer_start("diagnostic solve")
       call ocn_diagnostic_solve(dt,  statePool, forcingPool, meshPool, diagnosticsPool, scratchPool)
-      call mpas_timer_stop("diagnostic solve", initDiagSolveTimer)
+      call mpas_timer_stop("diagnostic solve")
 
       ! initialize velocities and tracers on land to be zero.
       areaCell(nCells+1) = -1.0e34

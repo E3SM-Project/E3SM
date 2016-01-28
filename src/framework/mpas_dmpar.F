@@ -62,6 +62,7 @@ include 'mpif.h'
    public :: mpas_dmpar_bcast_doubles
    public :: mpas_dmpar_bcast_logical
    public :: mpas_dmpar_bcast_char
+   public :: mpas_dmpar_bcast_chars
    public :: mpas_dmpar_sum_int
    public :: mpas_dmpar_sum_real
    public :: mpas_dmpar_min_int
@@ -594,6 +595,45 @@ include 'mpif.h'
 #endif
 
    end subroutine mpas_dmpar_bcast_char!}}}
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_bcast_chars
+!
+!> \brief MPAS dmpar broadcast character array routine.
+!> \author Doug Jacobsen
+!> \date   01/22/2016
+!> \details
+!>  This routine broadcasts an array of characters to all processors in the communicator.
+!>  An optional argument specifies the source node; else broadcast from IO_NODE.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_bcast_chars(dminfo, n, carray, proc)!{{{
+
+      implicit none
+
+      type (dm_info), intent(in) :: dminfo !< Input: Domain information
+      integer, intent(in) :: n !< Input: Number of character strings to broadcast
+      character (len=*), dimension(:), intent(inout) :: carray !< Input/Output: Character to be broadcast
+      integer, intent(in), optional :: proc  !< optional argument indicating which processor to broadcast from
+
+#ifdef _MPI
+      integer :: mpi_ierr, source
+      integer :: threadNum
+
+      threadNum = mpas_threading_get_thread_num()
+
+      if ( threadNum == 0 ) then
+         if (present(proc)) then
+            source = proc
+         else
+            source = IO_NODE
+         endif
+
+         call MPI_Bcast(carray, n * len(carray(1)), MPI_CHARACTER, source, dminfo % comm, mpi_ierr)
+      end if
+#endif
+
+   end subroutine mpas_dmpar_bcast_chars!}}}
 
 !-----------------------------------------------------------------------
 !  routine mpas_dmpar_sum_int

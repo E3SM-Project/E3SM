@@ -5,13 +5,15 @@ This directory provides a simple test case workflow definition capability. It
 is intended to house a minimal number of files which can describe the steps to
 setup and configure a test case.
 
-It provides three utility python scripts:
-	* clean_testcase.py
-	* list_testcases.py
-	* setup_testcase.py
+It provides four utility python scripts:
+    * clean_testcase.py
+    * list_testcases.py
+    * setup_testcase.py
+    * manage_regression_suite.py
 
-and a configuration file template:
-	* general.config
+and two configuration file templates:
+    * general.config.test
+    * general.config.ocean
 
 Each of the python scripts can be run with a -h argument only to get usage information.
 
@@ -25,176 +27,15 @@ An example template is placed in templates/ocean/global_stats.xml
 Test cases are described by XML files. Each test case can have an arbitrary
 number of XML files that configure the steps for setting up the test case.
 
-Within each XML file, the following XML description is available:
-
-<config> - This is the overarching parent tag that describes a configuration
-		   for a case.
-	- Attributes:
-		* case: The name of the case directory that will be created from this
-				config tag.
-		* mode: The name of the mode to use from the template input files
-				(namelist and streams). Each core can define these arbitrarily
-	- Children:
-		* <base_mesh>
-		* <add_executable>
-		* <add_link>
-		* <namelist>
-		* <streams>
-		* <run_script>
-	
-<get_file> - This tag defines the need for a base_mesh.nc file, and the
-			 appropriate ways of acquiring the mesh.
-	- Attributes:
-		* hash: (Optional) The expected hash of the mesh file. The acquired
-				mesh file will be validated using this. If this attribute is omitted,
-				the resulting file will not be validated.
-		* dest_path: The path the resulting file should be placed in. Should be
-						the name of a path defined in the config file, or optionally 'case'
-						which is expanded to be the case directory generated from the XML
-						file containing the get_file tag.
-		* file_name: The name of the file that will be downloaded and placed in dest_path.
-	- Children:
-		* <mirror>
-
-<mirror> - This tag defined the different methods of acquiring a base_mesh.nc file.
-	- Attributes:
-		* protocol: A description of how the mesh should be retrieved.
-				    Currently supports wget.
-		* url: Only used if protocol == wget. The url (pre-filename) portion of
-			   the wget command.
-	
-
-<add_executable> - This tag defined the need to link an executable defined in a
-				   configuration file (e.g. general.config) into a case directory.
-	- Attributes:
-		* source: The name of the executable, defined in the configuration file
-				  (e.g. general.config). This name is a short name, and will be
-				  expanded to executables.source
-		* dest: The name of the link that will be generated from the executable.
-
-<add_link> - This tag defined the need to link a file into a case directory.
-	- Attributes:
-		* source_path: The path variable from a configure file to find the
-						source file in. If it is empty, source is assumed to
-						have the full path to the file.
-		* source: The source to generate a symlink from. Relative to the case
-				   directory that will be generated from the parent <config> tag.
-		* dest: The name of the resulting symlink.
-
-<namelist> - This tag defines a namelist that should be generated from a template.
-	- Attributes:
-		* name: The name of the namelist file that will be generated from the
-				template namelist pointed to by the mode attribute of the parent
-				<config> tag.
-	- Children:
-		* <template>
-		* <option>
-
-<option> - This tag defines an option that should be modified in the generated
-		   namelist.
-	- Attributes:
-		* name: The name of the option that should be modifed
-	- Text:
-		* The text within <option> and </option> tags will be used to set the
-		  value of the namelist option.
-
-<streams> - This tag defines a streams file that should be generated from a template.
-	- Attributes:
-		* name: The name of the streams file that will be generated from the
-				template streams file pointed to by the mode attribute of the parent
-				<config> tag.
-		* keep: A definition of which streams to keep from the template. Values are:
-			- all: keep all streams from the template
-			- immutable: keep all immutable streams, and discard any mutable
-						 streams from the template
-			- mutable: keep all mutable streams, and discard any immutable
-					   streams from the template
-			- nonte: discard all streams from teh template
-	- Children:
-		* <template>
-		* <stream>
-
-<stream> - This tag defines a stream that should be modified / created in the
-		   generated streams file.
-	- Attrbutes:
-		* name: The name of the stream that should be modified / created
-	- Children:
-		* <attribute>
-		* <add_contents>
-		* <remove_contents>
-
-<template> - This tag defines a template that should be applied to either a
-			 namelist or a streams file.
-	- Attributes:
-		* name: The name of the template that should be expanded here. When
-				used within a <namelist> tag, the namelist portion of the template
-				will be applied. When used within a <stream> tag, the streams portion
-				of the template will be applied.
-
-<attribute> - This tag defines an attribute that should be created / modified
-			  in a stream definition.
-	- Attributes:
-		* name: The name of the stream attribute to modify / define
-	- Text:
-		* The text in between the <attribute> and </attribute> tags will be
-		  used to set the value of the attribute.
-
-<add_contents> - This tag defines a list of members to add to a stream definition
-	- Children:
-		* <member>
-
-<remove_contents> - This tag defines a list of members to remove from a stream definition
-	- Children:
-		* <member>
-
-<member> - This tag defines a member that should be added or removed from a stream definition.
-	- Attributes:
-		* name: The name of the member that will be defined. If this is in an
-				<add_contents> tag, it will be added to the stream, if it is in a
-				<remove_contents> tag, it will be removed from the stream.
-		* type: The type of the member to add (This is ignored if it's within a
-				<remove_contents> tag). Example values are var, var_array,
-				var_struct, and stream.
-
-<run_script> - This tag defines a new run script that should be generated.
-	- Attributes:
-		* name: The name of the script that will be generated
-	- Children:
-		* <step>
-	
-<step> - This tag defines a step in a run script
-	- Attributes:
-		* executable: The base executable for this step of the run script. e.g. mpirun
-		* executable_name: The name of the executable that has been defined in
-						   the configuration file to be used for this step of the run script.
-		* quiet: If set to true, this step will not print any output when running it's executable.
-		* pre_message: If set, this message will be printed before running the
-					   executable defined for this step. This is written even if quiet=true.
-		* post_message: If set, this messag will be printed after running the
-						executable defined for this step. This is written even if quiet=true.
-	- Children:
-		* <argument>
-
-<argument> - This tag defines arguments for the executable in a specific step of
-			 a run script.
-	- Attributes:
-		* flag: A flag that will come before the argument. e.g. -n
-	- Text:
-		* The text between the <argument> and </argument> tags will be used as
-		  the argument after the flag. In the example "mpirun -n 4" the flag
-		  would be -n, and the text would be 4.
-
-<driver_script> - This tag defines a driver script for a set of case directories.
-	- Attributes:
-		* name: The name of the driver script that will be generated
-	- Children:
-		* <case>
-
-<case> - This tag defines the case that will be used for part of a driver
-		 script. It implies the driver script should `cd` into the case directory before
-		 executing the steps / arguments defined within.
-	- Attributes:
-		* name: The name of the case directory that will be used for this
-				portion of the driver script.
-	- Children:
-		* <step>
+The various XML files that can be used with this test case infrastructure are
+described in the README files contained in the doc directory.
+ - doc/README.config: Describes configuration of a specific step (called a
+                      case) in a test case.
+ - doc/README.driver_script: Describes configuration of a script to drive an
+                             entire test case (multiple steps / cases)
+ - doc/README.template: Describes configuration of a template which can be
+                        applied to multiple config files.
+ - doc/README.regression_suite: Describes configuration of a regression suite,
+                                which is a group of test cases.
+ - doc/README.run_config: Defines how to take a <model_run> step, and convert
+                          it into running the model executable in a specific environment.

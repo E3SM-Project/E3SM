@@ -36,6 +36,7 @@ module mpas_io
       module procedure MPAS_io_get_var_real4d
       module procedure MPAS_io_get_var_real5d
       module procedure MPAS_io_get_var_char0d
+      module procedure MPAS_io_get_var_char1d
    end interface MPAS_io_get_var
 
    interface MPAS_io_put_var
@@ -51,6 +52,7 @@ module mpas_io
       module procedure MPAS_io_put_var_real4d
       module procedure MPAS_io_put_var_real5d
       module procedure MPAS_io_put_var_char0d
+      module procedure MPAS_io_put_var_char1d
    end interface MPAS_io_put_var
 
    interface MPAS_io_get_att
@@ -1314,7 +1316,7 @@ module mpas_io
 
    subroutine MPAS_io_get_var_generic(handle, fieldname, intVal, intArray1d, intArray2d, intArray3d, intArray4d, &
                                                         realVal, realArray1d, realArray2d, realArray3d, realArray4d, realArray5d, &
-                                                        charVal, ierr)
+                                                        charVal, charArray1d, ierr)
 
       implicit none
 
@@ -1332,6 +1334,7 @@ module mpas_io
       real (kind=RKIND), dimension(:,:,:,:), intent(out), optional :: realArray4d
       real (kind=RKIND), dimension(:,:,:,:,:), intent(out), optional :: realArray5d
       character (len=*), intent(out), optional :: charVal
+      character (len=*), dimension(:), intent(out), optional :: charArray1d
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
@@ -1356,6 +1359,8 @@ module mpas_io
       real (kind=R4KIND), dimension(:,:,:), allocatable :: singleArray3d
       real (kind=R4KIND), dimension(:,:,:,:), allocatable :: singleArray4d
       real (kind=R4KIND), dimension(:,:,:,:,:), allocatable :: singleArray5d
+
+      integer i, j
 
       ! Sanity checks
       if (.not. handle % initialized) then
@@ -1430,6 +1435,51 @@ module mpas_io
             count1(1) = field_cursor % fieldhandle % dims(1) % dimsize
             pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start1, count1, tempchar)
             charVal(1:count1(1)) = tempchar(1)(1:count1(1))
+         end if
+      else if (present(charArray1d)) then
+!         write (0,*) '  value is char1'
+         if (field_cursor % fieldhandle % has_unlimited_dim) then
+            ! Can only read one string at a time, since the sizes differ so much (i.e. StrLen != StrKIND)
+            do i = 1, field_cursor % fieldhandle % dims(2) % dimsize
+               start3(1) = 1
+               start3(2) = i
+               start3(3) = handle % frame_number
+               count3(1) = field_cursor % fieldhandle % dims(1) % dimsize ! Should be StrLen
+               count3(2) = 1
+               count3(3) = 1
+               pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start3, count3, tempchar)
+
+               ! Copy all characters up to the first C null char or the end of
+               ! the string, whichever comes first
+               charArray1d(i)(:) = ' '
+               do j = 1, len(tempchar(1))
+                  if ( tempchar(1)(j:j) /= CHAR(0)) then
+                     charArray1d(i)(j:j) = tempchar(1)(j:j)
+                  else
+                     exit
+                  end if
+               end do
+            end do
+         else
+            ! Can only read one string at a time, since the sizes differ so much (i.e. StrLen != StrKIND)
+            do i = 1, field_cursor % fieldhandle % dims(2) % dimsize
+               start2(1) = 1
+               start2(2) = i
+               count2(1) = field_cursor % fieldhandle % dims(1) % dimsize ! Should be StrLen
+               count2(2) = 1
+               pio_ierr = PIO_get_var(handle % pio_file, field_cursor % fieldhandle % fieldid, start2, count2, tempchar)
+
+               ! Copy all characters up to the first C null char or the end of
+               ! the string, whichever comes first
+               charArray1d(i)(:) = ' '
+               do j = 1, len(tempchar(1))
+                  if ( tempchar(1)(j:j) /= CHAR(0)) then
+                     charArray1d(i)(j:j) = tempchar(1)(j:j)
+                  else
+                     exit
+                  end if
+               end do
+            end do
          end if
       else if (present(realArray1d)) then
 !         write (0,*) '  value is real1'
@@ -1975,6 +2025,23 @@ module mpas_io
    end subroutine MPAS_io_get_var_char0d
 
 
+   subroutine MPAS_io_get_var_char1d(handle, fieldname, val, ierr)
+
+      implicit none
+
+      type (MPAS_IO_Handle_type), intent(inout) :: handle
+      character (len=*), intent(in) :: fieldname
+      character (len=*), dimension(:), intent(out) :: val
+      integer, intent(out), optional :: ierr
+
+!     write(stderrUnit,*) 'Called MPAS_io_get_var_char1d()'
+      if (present(ierr)) ierr = MPAS_IO_NOERR
+
+      call MPAS_io_get_var_generic(handle, fieldname, charArray1d=val, ierr=ierr)
+
+   end subroutine MPAS_io_get_var_char1d
+
+
    logical function MPAS_io_would_clobber_records(handle, ierr)
 
       implicit none
@@ -2003,7 +2070,7 @@ module mpas_io
 
    subroutine MPAS_io_put_var_generic(handle, fieldname, intVal, intArray1d, intArray2d, intArray3d, intArray4d, &
                                                         realVal, realArray1d, realArray2d, realArray3d, realArray4d, realArray5d, &
-                                                        charVal, ierr)
+                                                        charVal, charArray1d, ierr)
 
       implicit none
 
@@ -2021,6 +2088,7 @@ module mpas_io
       real (kind=RKIND), dimension(:,:,:,:), intent(in), optional :: realArray4d
       real (kind=RKIND), dimension(:,:,:,:,:), intent(in), optional :: realArray5d
       character (len=*), intent(in), optional :: charVal
+      character (len=*), dimension(:), intent(in), optional :: charArray1d
       integer, intent(out), optional :: ierr
 
       integer :: pio_ierr
@@ -2044,6 +2112,8 @@ module mpas_io
       real (kind=R4KIND), dimension(:,:,:), allocatable :: singleArray3d
       real (kind=R4KIND), dimension(:,:,:,:), allocatable :: singleArray4d
       real (kind=R4KIND), dimension(:,:,:,:,:), allocatable :: singleArray5d
+
+      integer :: i
 
       ! Sanity checks
       if (.not. handle % initialized) then
@@ -2126,6 +2196,28 @@ module mpas_io
             start1(1) = 1
             count1(1) = field_cursor % fieldhandle % dims(1) % dimsize
             pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start1, charVal(1:count1(1)))
+         end if
+      else if (present(charArray1d)) then
+         if (field_cursor % fieldhandle % has_unlimited_dim) then
+            ! Write one string at a time because the sizes differ so much (i.e. StrLen != StrKIND)
+            do i = 1, field_cursor % fieldhandle % dims(2) % dimsize
+               start3(1) = 1
+               start3(2) = i
+               start3(3) = handle % frame_number
+               count3(1) = field_cursor % fieldhandle % dims(1) % dimsize ! Should be StrLen
+               count3(2) = 1
+               count3(3) = 1
+               pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start3, charArray1d(i)(1:count3(1)))
+            end do
+         else
+            ! Write one string at a time because the sizes differ so much (i.e. StrLen != StrKIND)
+            do i = 1, field_cursor % fieldhandle % dims(2) % dimsize
+               start2(1) = 1
+               start2(2) = i
+               count2(1) = field_cursor % fieldhandle % dims(1) % dimsize ! Should be StrLen
+               count2(2) = 1
+               pio_ierr = PIO_put_var(handle % pio_file, field_cursor % fieldhandle % field_desc, start2, charArray1d(i)(1:count2(1)))
+            end do
          end if
       else if (present(realArray1d)) then
          if ((field_cursor % fieldhandle % precision == MPAS_IO_SINGLE_PRECISION) .and. &
@@ -2684,6 +2776,23 @@ module mpas_io
       call MPAS_io_put_var_generic(handle, fieldname, charVal=val, ierr=ierr)
 
    end subroutine MPAS_io_put_var_char0d
+
+
+   subroutine MPAS_io_put_var_char1d(handle, fieldname, val, ierr)
+
+      implicit none
+
+      type (MPAS_IO_Handle_type), intent(inout) :: handle
+      character (len=*), intent(in) :: fieldname
+      character (len=*), dimension(:), intent(in) :: val
+      integer, intent(out), optional :: ierr
+
+!      write(stderrUnit,*) 'Called MPAS_io_put_var_char1d()'
+      if (present(ierr)) ierr = MPAS_IO_NOERR
+
+      call MPAS_io_put_var_generic(handle, fieldname, charArray1d=val, ierr=ierr)
+
+   end subroutine MPAS_io_put_var_char1d
 
 
    subroutine MPAS_io_get_att_int0d(handle, attName, attValue, fieldname, ierr)

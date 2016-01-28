@@ -14,6 +14,7 @@ module test_core_halo_exch
    use mpas_pool_routines
    use mpas_field_routines
    use mpas_dmpar
+   use mpas_timer
    use mpas_threading
    use mpas_io_units
 
@@ -79,6 +80,8 @@ module test_core_halo_exch
       threadNum = mpas_threading_get_thread_num() + 1
 
       threadErrs(threadNum) = 0
+
+      call mpas_timer_start(' Halo Exch Test - Allocate')
 
       ! Allocate all scratch fields
       ! Fill all fields with index values
@@ -397,6 +400,9 @@ module test_core_halo_exch
 
       call mpas_threading_barrier()
 
+      call mpas_timer_stop(' Halo Exch Test - Allocate')
+      call mpas_timer_start(' Halo Exch Test - Exchange')
+
       ! Perform halo exchanges
       call mpas_pool_get_subpool(domain % blocklist % structs, 'haloExchTest', haloExchTestPool)
 
@@ -515,6 +521,8 @@ module test_core_halo_exch
       call mpas_dmpar_exch_halo_field(int1DField)
 
       call mpas_threading_barrier()
+      call mpas_timer_stop(' Halo Exch Test - Exchange')
+      call mpas_timer_start(' Halo Exch Test - Validate')
 
       ! Validate results
       block => domain % blocklist
@@ -1007,6 +1015,8 @@ module test_core_halo_exch
       end do
 
       call mpas_threading_barrier()
+      call mpas_timer_stop(' Halo Exch Test - Validate')
+      call mpas_timer_start(' Halo Exch Test - Deallocate')
 
       ! Deallocatae all scratch fields
       block => domain % blocklist
@@ -1072,6 +1082,7 @@ module test_core_halo_exch
 
          block => block % next
       end do
+      call mpas_timer_stop(' Halo Exch Test - Deallocate')
 
       err = sum(threadErrs)
 
