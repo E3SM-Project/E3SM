@@ -2886,7 +2886,7 @@ module mpas_stream_manager
    
                    ! Verify that the stream is an input stream
                    if (stream_cursor % direction == MPAS_STREAM_INPUT .or. &
-                       stream_cursor % direction /= MPAS_STREAM_INPUT_OUTPUT) then
+                       stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
    
                        !
                        ! What should be the meaning of actualWhen if we read multiple streams in this call?
