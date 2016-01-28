@@ -25,7 +25,7 @@ int nbuf = 0;
 
 int fortprintf(FILE * fd, char * str, ...)/*{{{*/
 {
-	int i, nl, sp, inquotes, q;
+	int i, nl, sp, sp_inquotes, inquotes, q;
 	int lastchar;
 	int errorcode;
 	va_list ap;
@@ -60,7 +60,10 @@ int fortprintf(FILE * fd, char * str, ...)/*{{{*/
 				q = inquotes ? i : -1;
 			}
 			if (fbuffer[i] == '\n') nl = i;                                                               /* The last occurrence of a newline */
-			if (fbuffer[i] == ' ' && !lastchar && fbuffer[i+1] != '&') sp = i;                            /* The last occurrence of a space */
+			if (fbuffer[i] == ' ' && !lastchar && fbuffer[i+1] != '&') {                             /* The last occurrence of a space */
+				sp = i;
+				sp_inquotes = inquotes;
+			}
 		}
 
 #ifdef FORTPRINTF_DEBUG
@@ -99,14 +102,14 @@ int fortprintf(FILE * fd, char * str, ...)/*{{{*/
 		else if (sp >= 0) {
 			snprintf(printbuf, sp+2, "%s", fbuffer);
 			i = sp+1;
-			if (inquotes && (sp > q)) printbuf[i++] = '\'';
+			if (sp_inquotes && (sp > q)) printbuf[i++] = '\'';
 			printbuf[i++] = '&';
 			printbuf[i++] = '\n';
 			printbuf[i++] = '\0';
 			fprintf(fd, "%s", printbuf);
 			sp++;
 			i = 0;
-			if (inquotes && (sp > q)) {
+			if (sp_inquotes && (sp > q)) {
 				inquotes = (inquotes + 1) % 2;
 				fbuffer[i++] = '/';
 				fbuffer[i++] = '/';

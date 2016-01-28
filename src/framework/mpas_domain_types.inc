@@ -22,6 +22,9 @@
       character (len=StrKIND) :: mesh_spec = '' !< mesh_spec attribute, read in from input file.
       character (len=StrKIND) :: parent_id = '' !< parent_id attribute, read in from input file.
 
+      ! Pointer to timer root
+      type (mpas_timer_root), pointer :: timer_root => null()
+
       ! Back pointer to core
       type (core_type), pointer :: core => null()
 

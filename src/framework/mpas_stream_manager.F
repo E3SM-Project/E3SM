@@ -2886,7 +2886,7 @@ module mpas_stream_manager
    
                    ! Verify that the stream is an input stream
                    if (stream_cursor % direction == MPAS_STREAM_INPUT .or. &
-                       stream_cursor % direction /= MPAS_STREAM_INPUT_OUTPUT) then
+                       stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
    
                        !
                        ! What should be the meaning of actualWhen if we read multiple streams in this call?
@@ -3675,9 +3675,8 @@ module mpas_stream_manager
                                 call mpas_pool_get_field(allFields, itr % memberName, char0d, timeLevel)
                                 call MPAS_streamAddField(stream % stream, char0d)
                             case (1)
-!                                call mpas_pool_get_field(allFields, itr % memberName, char1d, timeLevel)
-!                                call MPAS_streamAddField(stream % stream, char1d)
-                                 write(stderrUnit,*) 'Error: In build_stream, unsupported type field1DChar.'
+                                 call mpas_pool_get_field(allFields, itr % memberName, char1d, timeLevel)
+                                 call MPAS_streamAddField(stream % stream, char1d)
                         end select
                 end select
 

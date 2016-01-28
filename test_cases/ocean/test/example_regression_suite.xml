@@ -1,0 +1,5 @@
+<regression_suite name="example_regression_suite">
+	<test name="960 KM Basic Spherical Smoke Test" core="test" configuration="basic_spherical" resolution="960km" test="default">
+		<script name="run_test.py"/>
+	</test>
+</regression_suite>

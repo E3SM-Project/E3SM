@@ -1,0 +1,9 @@
+<run_config>
+	<define_env_var name="OMP_NUM_THREADS" value="attr_threads"/>
+	<step executable="srun">
+		<argument flag="-n">attr_procs</argument>
+		<argument flag="">model</argument>
+		<argument flag="-n">attr_namelist</argument>
+		<argument flag="-s">attr_streams</argument>
+	</step>
+</run_config>
