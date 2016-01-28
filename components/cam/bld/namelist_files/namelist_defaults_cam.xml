@@ -142,6 +142,7 @@
 <ncdata dyn="se" hgrid="ne30np4"  nlev="26"             ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne30np4_L26_c100108.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne30np4_L26_c040422.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-01_ne30np4_L30_c130424.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_0000-10-01_ne30np4_L72_c160127.nc</ncdata>
 <ncdata dyn="se" hgrid="ne60np4"  nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-ne60np4_L30_c090306.nc</ncdata>
 <ncdata dyn="se" hgrid="ne120np4" nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne120np4_L26_c061106.nc</ncdata>
 <ncdata dyn="se" hgrid="ne120np4" nlev="26"             ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne120np4_L26_c110304.nc</ncdata>
@@ -784,6 +785,10 @@
 <clubb_stabcorrect                                > .false. </clubb_stabcorrect>
 <clubb_timestep                                   > 300.0D0 </clubb_timestep>
 <clubb_rnevap_effic                               > 1.2D0   </clubb_rnevap_effic>
+<clubb_liq_deep                                   > 8.e-6   </clubb_liq_deep>
+<clubb_liq_sh                                     > 10.e-6  </clubb_liq_sh>
+<clubb_ice_deep                                   > 25.e-6  </clubb_ice_deep>
+<clubb_ice_sh                                     > 50.e-6  </clubb_ice_sh>
 
 <!-- CLUBB_history -->
 <clubb_history               > .false. </clubb_history>
@@ -801,11 +806,13 @@
 <micro_mg_num_steps   microphys="mg1">    1          </micro_mg_num_steps>
 <micro_mg_dcs         microphys="mg1">    400.D-6    </micro_mg_dcs>
 <micro_mg_dcs         microphys="mg1" unicon="1" >    350.D-6    </micro_mg_dcs>
+<ice_sed_ai           microphys="mg1">    700.0      </ice_sed_ai>
 
 <micro_mg_version     microphys="mg1.5">  1          </micro_mg_version>
 <micro_mg_sub_version microphys="mg1.5">  5          </micro_mg_sub_version>
 <micro_mg_num_steps   microphys="mg1.5">  2          </micro_mg_num_steps>
 <micro_mg_dcs         microphys="mg1.5">  250.D-6    </micro_mg_dcs>
+<ice_sed_ai           microphys="mg1.5">  700.0      </ice_sed_ai>
 
 <micro_mg_version     microphys="mg2">                                 2          </micro_mg_version>
 <micro_mg_sub_version microphys="mg2">                                 0          </micro_mg_sub_version>
@@ -814,6 +821,7 @@
 <micro_mg_dcs         microphys="mg2">                                 150.D-6    </micro_mg_dcs>
 <micro_mg_dcs         microphys="mg2" clubb_sgs="1">                   195.D-6    </micro_mg_dcs>
 <micro_mg_dcs         microphys="mg2" clubb_sgs="1" clubb_do_deep="1"> 195.D-6    </micro_mg_dcs>
+<ice_sed_ai           microphys="mg2">                                 700.0      </ice_sed_ai>
 
 <micro_mg_precip_frac_method                  >  max_overlap </micro_mg_precip_frac_method>
 <micro_mg_precip_frac_method   clubb_sgs="1"  >  in_cloud    </micro_mg_precip_frac_method>

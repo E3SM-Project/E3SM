@@ -220,7 +220,7 @@ subroutine micro_mg_init( &
 !!== KZ_DCS 
      microp_uniform_in, do_cldice_in, use_hetfrz_classnuc_in, &
      micro_mg_precip_frac_method_in, micro_mg_berg_eff_factor_in, &
-     allow_sed_supersat_in, errstring)
+     allow_sed_supersat_in, ice_sed_ai, errstring)
 
   use micro_mg_utils, only: micro_mg_utils_init
 
@@ -243,6 +243,7 @@ subroutine micro_mg_init( &
   real(r8), intent(in)  :: latice
   real(r8), intent(in)  :: rhmini_in    ! Minimum rh for ice cloud fraction > 0.
   real(r8), intent(in)  :: micro_mg_dcs
+  real(r8), intent(in)  :: ice_sed_ai   !Fall speed parameter for cloud ice
 !!== KZ_DCS 
   logical,  intent(in)  :: micro_mg_dcs_tdep
 !!== KZ_DCS 
@@ -271,7 +272,7 @@ subroutine micro_mg_init( &
 
   ! Initialize subordinate utilities module.
   call micro_mg_utils_init(kind, rh2o, cpair, tmelt_in, latvap, latice, &
-       dcs, errstring)
+       dcs, ice_sed_ai, errstring)
 
   if (trim(errstring) /= "") return
 

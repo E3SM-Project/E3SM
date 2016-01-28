@@ -709,6 +709,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     ! local variables
     integer :: lchnk
+    real(r8) :: dp1 = huge(1.0_r8) !set in namelist, assigned in cloud_fraction.F90
 
     !-----------------------------------------------------------------------
 
@@ -820,8 +821,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call radheat_init(pref_mid)
 
     call convect_shallow_init(pref_edge, pbuf2d)
-
-    call cldfrc_init()
+        
+    call cldfrc_init(dp1)! for passing dp1 on to clubb
     call cldfrc2m_init()
 
     call convect_deep_init(pref_edge)
@@ -837,7 +838,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
 
     ! initiate CLUBB within CAM
-    if (do_clubb_sgs) call clubb_ini_cam(pbuf2d)
+    if (do_clubb_sgs) call clubb_ini_cam(pbuf2d,dp1)
 
     call qbo_init
 

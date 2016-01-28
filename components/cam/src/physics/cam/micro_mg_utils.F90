@@ -127,7 +127,7 @@ real(r8), parameter, public :: bc = 2._r8
 real(r8), parameter, public :: as = 11.72_r8
 real(r8), parameter, public :: bs = 0.41_r8
 ! cloud ice
-real(r8), parameter, public :: ai = 700._r8
+real(r8), public :: ai = huge(1.0_r8)                    !Fall speed parameter for cloud ice (micro_mg_utils_init should assign it a valid value)
 real(r8), parameter, public :: bi = 1._r8
 ! rain
 real(r8), parameter, public :: ar = 841.99667_r8
@@ -228,7 +228,7 @@ contains
 ! Check the list at the top of this module for descriptions of all other
 ! arguments.
 subroutine micro_mg_utils_init( kind, rh2o, cpair, tmelt_in, latvap, &
-     latice, dcs, errstring)
+     latice, dcs, ice_sed_ai, errstring)
 
   integer,  intent(in)  :: kind
   real(r8), intent(in)  :: rh2o
@@ -237,6 +237,7 @@ subroutine micro_mg_utils_init( kind, rh2o, cpair, tmelt_in, latvap, &
   real(r8), intent(in)  :: latvap
   real(r8), intent(in)  :: latice
   real(r8), intent(in)  :: dcs
+  real(r8), intent(in)  :: ice_sed_ai !Fall speed parameter for cloud ice
 
   character(128), intent(out) :: errstring
 
@@ -258,6 +259,7 @@ subroutine micro_mg_utils_init( kind, rh2o, cpair, tmelt_in, latvap, &
   rv= rh2o                  ! water vapor gas constant
   cpp = cpair               ! specific heat of dry air
   tmelt = tmelt_in
+  ai    = ice_sed_ai
 
   ! latent heats
 
