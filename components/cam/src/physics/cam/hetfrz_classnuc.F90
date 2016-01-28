@@ -16,6 +16,7 @@ module hetfrz_classnuc
 !   BC(soot) datasets. 
 !   Yong Wang and Xiaohong Liu, UWyo, 05/2013, implement the PDF-contact angle
 !   approach: Y. Wang et al., Atmos. Chem. Phys., 2014.
+!   Jack Chen, NCAR, 09/2015, modify calculation of dust activation fraction.
 !
 !-----------------------------------------------------------------------
 
@@ -124,7 +125,7 @@ subroutine hetfrz_classnuc_calc( &
    real(r8), parameter :: hplanck = 6.63e-34_r8
    real(r8), parameter :: rhplanck = 1._r8/hplanck
    real(r8), parameter :: amu = 1.66053886e-27_r8 
-   real(r8), parameter :: nus = 1.e13_r8          ! frequ. of vibration [s-1] higher freq. (as in P&K, consistent with Anupam's data) 
+   real(r8), parameter :: nus = 1.e13_r8         ! frequ. of vibration [s-1] higher freq. (as in P&K, consistent with Anupam's data) 
    real(r8), parameter :: taufrz = 195.435_r8     ! time constant for falloff of freezing rate [s]
    real(r8), parameter :: rhwincloud = 0.98_r8    ! 98% RH in mixed-phase clouds (Korolev & Isaac, JAS 2006)
    real(r8), parameter :: limfacbc = 0.01_r8      ! max. ice nucleating fraction soot
@@ -174,23 +175,23 @@ subroutine hetfrz_classnuc_calc( &
    !real(r8),parameter :: theta_imm_dust = 30.98       ! contact angle [deg], converted to rad later
    !real(r8),parameter :: dga_imm_dust = 15.7E-20      ! activation energy [J]
    !freezing parameters for deposition nucleation
-   !real(r8),parameter :: theta_dep_dust = 12.7        ! contact angle [deg], converted to rad later !Zimmermann et al (2008), illite
-   !real(r8),parameter :: dga_dep_dust = -6.21E-21     ! activation energy [J]
-   !real(r8),parameter :: theta_dep_bc = 28.           ! contact angle [deg], converted to rad later !Moehler et al (2005), soot
-   !real(r8),parameter :: dga_dep_bc = -2.E-19         ! activation energy [J]
+   !real(r8),parameter :: theta_dep_dust = 12.7       ! contact angle [deg], converted to rad later !Zimmermann et al (2008), illite
+   !real(r8),parameter :: dga_dep_dust = -6.21E-21    ! activation energy [J]
+   !real(r8),parameter :: theta_dep_bc = 28.          ! contact angle [deg], converted to rad later !Moehler et al (2005), soot
+   !real(r8),parameter :: dga_dep_bc = -2.E-19        ! activation energy [J]
    !********************************************************
    ! Wang et al., 2014 fitting parameters
    !********************************************************
    ! freezing parameters for immersion freezing
-   real(r8),parameter :: theta_imm_bc = 48.0_r8               ! contact angle [deg], converted to rad later !DeMott et al (1990)
-   real(r8),parameter :: dga_imm_bc = 14.15E-20_r8            ! activation energy [J]
-   real(r8),parameter :: theta_imm_dust = 46.0_r8             ! contact angle [deg], converted to rad later !DeMott et al (2011) SD
-   real(r8),parameter :: dga_imm_dust = 14.75E-20_r8          ! activation energy [J]
+   real(r8),parameter :: theta_imm_bc = 48.0_r8            ! contact angle [deg], converted to rad later !DeMott et al (1990)
+   real(r8),parameter :: dga_imm_bc = 14.15E-20_r8         ! activation energy [J]
+   real(r8),parameter :: theta_imm_dust = 46.0_r8          ! contact angle [deg], converted to rad later !DeMott et al (2011) SD
+   real(r8),parameter :: dga_imm_dust = 14.75E-20_r8       ! activation energy [J]
    ! freezing parameters for deposition nucleation
-   real(r8),parameter :: theta_dep_dust = 20.0_r8             ! contact angle [deg], converted to rad later !Koehler et al (2010) SD
-   real(r8),parameter :: dga_dep_dust = -8.1E-21_r8           ! activation energy [J]
-   real(r8),parameter :: theta_dep_bc = 28._r8                ! contact angle [deg], converted to rad later !Moehler et al (2005), soot
-   real(r8),parameter :: dga_dep_bc = -2.E-19_r8              ! activation energy [J]
+   real(r8),parameter :: theta_dep_dust = 20.0_r8          ! contact angle [deg], converted to rad later !Koehler et al (2010) SD
+   real(r8),parameter :: dga_dep_dust = -8.1E-21_r8        ! activation energy [J]
+   real(r8),parameter :: theta_dep_bc = 28._r8             ! contact angle [deg], converted to rad later !Moehler et al (2005), soot
+   real(r8),parameter :: dga_dep_bc = -2.E-19_r8           ! activation energy [J]
 
    real(r8) :: Kcoll_bc                                    ! collision kernel [cm3 s-1]
    real(r8) :: Kcoll_dust_a1                               ! collision kernel [cm3 s-1]
@@ -203,6 +204,15 @@ subroutine hetfrz_classnuc_calc( &
    !*****************************************************************************
    ! some variables for PDF theta model
    ! immersion freezing
+   !
+   ! With the original value of pdf_n_theta set to 101 the dust activation
+   ! fraction between -15 and 0 C could be overestimated.  This problem was
+   ! eliminated by increasing pdf_n_theta to 301.  To reduce the expense of
+   ! computing the dust activation fraction the integral is only evaluated
+   ! where dim_theta is non-zero.  This was determined to be between
+   ! dim_theta index values of 53 through 113.  These loop bounds are
+   ! hardcoded in the variables i1 and i2.
+   !
    real(r8),parameter :: theta_min = 1._r8/180._r8*pi
    real(r8),parameter :: theta_max = 179._r8/180._r8*pi
    real(r8) :: x1_imm
@@ -211,7 +221,9 @@ subroutine hetfrz_classnuc_calc( &
    real(r8),parameter :: imm_dust_mean_theta = 46.0_r8/180.0_r8*pi 
    real(r8),parameter :: imm_dust_var_theta = 0.01_r8
    real(r8) :: pdf_d_theta
-   integer,parameter :: pdf_n_theta = 101
+   integer,parameter :: pdf_n_theta = 301
+   integer,parameter :: i1 = 53
+   integer,parameter :: i2 = 113
    real(r8) :: dim_theta(pdf_n_theta)
    real(r8) :: dim_f_imm_dust_a1(pdf_n_theta), dim_f_imm_dust_a3(pdf_n_theta)
    real(r8) :: dim_Jimm_dust_a1(pdf_n_theta), dim_Jimm_dust_a3(pdf_n_theta)
@@ -228,7 +240,9 @@ subroutine hetfrz_classnuc_calc( &
       x1_imm = (LOG(theta_min)-LOG(imm_dust_mean_theta))/(sqrt(2.0_r8)*imm_dust_var_theta)
       x2_imm = (LOG(theta_max)-LOG(imm_dust_mean_theta))/(sqrt(2.0_r8)*imm_dust_var_theta)
       norm_theta_imm = (ERF(x2_imm)-ERF(x1_imm))*0.5_r8
-      do i = 1, pdf_n_theta
+      dim_theta = 0.0_r8
+      pdf_imm_theta = 0.0_r8
+      do i = i1,i2
          dim_theta(i) = 1._r8/180._r8*pi+(i-1)*pdf_d_theta
          pdf_imm_theta(i) = exp(-((LOG(dim_theta(i))-LOG(imm_dust_mean_theta))**2._r8)/(2._r8*imm_dust_var_theta**2._r8))/ &
                                 (dim_theta(i)*imm_dust_var_theta*SQRT(2*pi))/norm_theta_imm
@@ -335,7 +349,9 @@ subroutine hetfrz_classnuc_calc( &
       m = COS(theta_imm_dust*pi/180._r8)
       f_imm_dust_a3 = (2+m)*(1-m)**2/4._r8
    else 
-      do i = 1, pdf_n_theta
+      dim_f_imm_dust_a1 = 0.0_r8
+      dim_f_imm_dust_a3 = 0.0_r8
+      do i = i1,i2
          m = cos(dim_theta(i))
          dim_f_imm_dust_a1(i) = (2+m)*(1-m)**2/4._r8
 
@@ -367,7 +383,9 @@ subroutine hetfrz_classnuc_calc( &
    end if
 
    if (pdf_imm_in) then
-      do i = 1, pdf_n_theta
+      dim_Jimm_dust_a1 = 0.0_r8
+      dim_Jimm_dust_a3 = 0.0_r8
+      do i = i1,i2
          ! 1/sqrt(f)
          dim_Jimm_dust_a1(i) = Aimm_dust_a1*r_dust_a1**2/SQRT(dim_f_imm_dust_a1(i))*EXP((-dga_imm_dust-dim_f_imm_dust_a1(i)* &
             dg0imm_dust_a1)/(kboltz*T))
@@ -383,12 +401,21 @@ subroutine hetfrz_classnuc_calc( &
    if (pdf_imm_in) then
       sum_imm_dust_a1 = 0._r8
       sum_imm_dust_a3 = 0._r8
-      do i = 1, pdf_n_theta-1
+      do i = i1,i2-1
          sum_imm_dust_a1 = sum_imm_dust_a1+0.5_r8*((pdf_imm_theta(i)*exp(-dim_Jimm_dust_a1(i)*deltat)+ &
             pdf_imm_theta(i+1)*exp(-dim_Jimm_dust_a1(i+1)*deltat)))*pdf_d_theta
          sum_imm_dust_a3 = sum_imm_dust_a3+0.5_r8*((pdf_imm_theta(i)*exp(-dim_Jimm_dust_a3(i)*deltat)+ &
             pdf_imm_theta(i+1)*exp(-dim_Jimm_dust_a3(i+1)*deltat)))*pdf_d_theta
       end do
+      do i = i1,i2
+      	   if (sum_imm_dust_a1 > 0.99_r8) then
+               sum_imm_dust_a1 = 1.0_r8
+           end if
+           if (sum_imm_dust_a3 > 0.99_r8) then
+               sum_imm_dust_a3 = 1.0_r8
+           end if
+      end do
+      
    end if
 
    if (.not.tot_in) then
