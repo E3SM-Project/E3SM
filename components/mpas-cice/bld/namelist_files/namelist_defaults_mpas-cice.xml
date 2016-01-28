@@ -232,6 +232,43 @@
 <config_AM_geographicalVectors_compute_on_startup>.false.</config_AM_geographicalVectors_compute_on_startup>
 <config_AM_geographicalVectors_write_on_startup>.false.</config_AM_geographicalVectors_write_on_startup>
 
+<!-- AM_loadBalance -->
+<config_AM_loadBalance_enable>.false.</config_AM_loadBalance_enable>
+<config_AM_loadBalance_compute_interval>'output_interval'</config_AM_loadBalance_compute_interval>
+<config_AM_loadBalance_output_stream>'loadBalanceOutput'</config_AM_loadBalance_output_stream>
+<config_AM_loadBalance_compute_on_startup>.false.</config_AM_loadBalance_compute_on_startup>
+<config_AM_loadBalance_write_on_startup>.false.</config_AM_loadBalance_write_on_startup>
+<config_AM_loadBalance_nProcs>32</config_AM_loadBalance_nProcs>
+
+<!-- AM_maximumIcePresence -->
+<config_AM_maximumIcePresence_enable>.false.</config_AM_maximumIcePresence_enable>
+<config_AM_maximumIcePresence_compute_interval>'dt'</config_AM_maximumIcePresence_compute_interval>
+<config_AM_maximumIcePresence_output_stream>'maximumIcePresenceOutput'</config_AM_maximumIcePresence_output_stream>
+<config_AM_maximumIcePresence_compute_on_startup>.false.</config_AM_maximumIcePresence_compute_on_startup>
+<config_AM_maximumIcePresence_write_on_startup>.false.</config_AM_maximumIcePresence_write_on_startup>
+<config_AM_maximumIcePresence_start_time>'0000-00-00_00:00:00'</config_AM_maximumIcePresence_start_time>
+
+<!-- AM_miscellaneous -->
+<config_AM_miscellaneous_enable>.false.</config_AM_miscellaneous_enable>
+<config_AM_miscellaneous_compute_interval>'dt'</config_AM_miscellaneous_compute_interval>
+<config_AM_miscellaneous_output_stream>'none'</config_AM_miscellaneous_output_stream>
+<config_AM_miscellaneous_compute_on_startup>.false.</config_AM_miscellaneous_compute_on_startup>
+<config_AM_miscellaneous_write_on_startup>.false.</config_AM_miscellaneous_write_on_startup>
+
+<!-- AM_areaVariables -->
+<config_AM_areaVariables_enable>.false.</config_AM_areaVariables_enable>
+<config_AM_areaVariables_compute_interval>'dt'</config_AM_areaVariables_compute_interval>
+<config_AM_areaVariables_output_stream>'none'</config_AM_areaVariables_output_stream>
+<config_AM_areaVariables_compute_on_startup>.false.</config_AM_areaVariables_compute_on_startup>
+<config_AM_areaVariables_write_on_startup>.false.</config_AM_areaVariables_write_on_startup>
+
+<!-- AM_pondDiagnostics -->
+<config_AM_pondDiagnostics_enable>.false.</config_AM_pondDiagnostics_enable>
+<config_AM_pondDiagnostics_compute_interval>'dt'</config_AM_pondDiagnostics_compute_interval>
+<config_AM_pondDiagnostics_output_stream>'none'</config_AM_pondDiagnostics_output_stream>
+<config_AM_pondDiagnostics_compute_on_startup>.false.</config_AM_pondDiagnostics_compute_on_startup>
+<config_AM_pondDiagnostics_write_on_startup>.false.</config_AM_pondDiagnostics_write_on_startup>
+
 <!-- AM_icePresent -->
 <config_AM_icePresent_enable>.false.</config_AM_icePresent_enable>
 <config_AM_icePresent_compute_interval>'dt'</config_AM_icePresent_compute_interval>
